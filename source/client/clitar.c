@@ -37,7 +37,6 @@
 
 #include "includes.h"
 #include "clitar.h"
-#include "../client/client_proto.h"
 
 static int clipfind(char **aret, int ret, char *tok);
 void dos_clean_name(char *s);

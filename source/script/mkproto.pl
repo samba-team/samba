@@ -64,15 +64,16 @@ sub process_file($)
 
 		next if ($line =~ /^\/|[;]/);
 
-		if ($line =~ /^FN_/) {
-			handle_loadparm($line);
-		}
-
 		next unless ( $line =~ /
 			      ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
 			      ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
-			      ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME
+			      ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME|^FN_
 			      /xo);
+
+		if ($line =~ /^FN_/) {
+			handle_loadparm($line);
+			next;
+		}
 
 		if ( $line =~ /\(.*\)\s*$/o ) {
 			chomp $line;
@@ -83,12 +84,12 @@ sub process_file($)
 		print $line;
 
 		while ($line = <FH>) {
-			chomp $line;
 			if ($line =~ /\)\s*$/o) {
+				chomp $line;
 				print "$line;\n";
 				last;
 			}
-			print "$line\n";
+			print $line;
 		}
 	}
 
