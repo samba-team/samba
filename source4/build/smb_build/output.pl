@@ -139,7 +139,7 @@ sub _generate_libraries($)
 
 		foreach my $elem (@{$CTX->{DEPEND}{LIBRARIES}{$key}{SUBSYSTEMS_LIST}}) {
 			if (!defined($CTX->{DEPEND}{SUBSYSTEMS}{$elem})) {
-				die("Library[$NAME] depends on unkown Subsystem[$elem]!\n");
+				die("Library[$NAME] depends on unknown Subsystem[$elem]!\n");
 			}
 			push(@DEPEND_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
 			push(@STATIC_LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
@@ -148,7 +148,7 @@ sub _generate_libraries($)
 
 		foreach my $elem (@{$CTX->{DEPEND}{LIBRARIES}{$key}{LIBRARIES_LIST}}) {
 			if (!defined($CTX->{DEPEND}{EXT_LIBS}{$elem})) {
-				die("Library[$NAME] depends on unkown External Library[$elem]!\n");
+				die("Library[$NAME] depends on unknown External Library[$elem]!\n");
 			}
 			push(@SHARED_LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
 			push(@SHARED_LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
