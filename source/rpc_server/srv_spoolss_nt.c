@@ -541,6 +541,9 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
 	
 	new_printer->notify.option=NULL;
 				
+	/* Add to the internal list. */
+	DLIST_ADD(printers_list, new_printer);
+
 	if (!create_policy_hnd(p, hnd, free_printer_entry, new_printer)) {
 		SAFE_FREE(new_printer);
 		return False;
@@ -557,9 +560,6 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
 	}
 
 	DEBUG(5, ("%d printer handles active\n", (int)p->pipe_handles->count ));
-
-	/* Add to the internal list. */
-	DLIST_ADD(printers_list, new_printer);
 
 	return True;
 }
@@ -2356,6 +2356,9 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 
 	DEBUG(4,("printserver_notify_info\n"));
 	
+	if (!Printer)
+		return WERR_BADFID;
+
 	option=Printer->notify.option;
 	id=1;
 	info->version=2;
@@ -2412,6 +2415,9 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 	print_status_struct status;
 	
 	DEBUG(4,("printer_notify_info\n"));
+
+	if (!Printer)
+		return WERR_BADFID;
 
 	option=Printer->notify.option;
 	id=0xffffffff;
