@@ -1,6 +1,5 @@
-%{
 /*
- * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,95 +31,9 @@
  * SUCH DAMAGE. 
  */
 
-/*
- * This is to handle the definition of this symbol in some AIX
- * headers, which will conflict with the definition that lex will
- * generate for it.  It's only a problem for AIX lex.
- */
+/* $Id$ */
 
-#undef ECHO
+void error_message (const char *, ...)
+__attribute__ ((format (printf, 1, 2)));
 
-#include "compile_et.h"
-#include "parse.h"
-#include "lex.h"
-
-RCSID("$Id$");
-
-static unsigned lineno = 1;
-static int getstring(void);
-
-#define YY_NO_UNPUT
-
-#undef ECHO
-
-%}
-
-
-%%
-et			{ return ET; }
-error_table		{ return ET; }
-ec			{ return EC; }
-error_code		{ return EC; }
-prefix			{ return PREFIX; }
-index			{ return INDEX; }
-id			{ return ID; }
-end			{ return END; }
-[0-9]+			{ yylval.number = atoi(yytext); return NUMBER; }
-#[^\n]*			;
-[ \t]			;
-\n			{ lineno++; }
-\"			{ return getstring(); }
-[a-zA-Z0-9_]+		{ yylval.string = strdup(yytext); return STRING; }
-.			{ return *yytext; }
-%%
-
-#ifndef yywrap /* XXX */
-int
-yywrap () 
-{
-     return 1;
-}
-#endif
-
-static int
-getstring(void)
-{
-    char x[128];
-    int i = 0;
-    int c;
-    int quote = 0;
-    while((c = input()) != EOF){
-	if(quote) {
-	    x[i++] = c;
-	    quote = 0;
-	    continue;
-	}
-	if(c == '\n'){
-	    error_message("unterminated string");
-	    lineno++;
-	    break;
-	}
-	if(c == '\\'){
-	    quote++;
-	    continue;
-	}
-	if(c == '\"')
-	    break;
-	x[i++] = c;
-    }
-    x[i] = '\0';
-    yylval.string = strdup(x);
-    return STRING;
-}
-
-void
-error_message (const char *format, ...)
-{
-     va_list args;
-
-     va_start (args, format);
-     fprintf (stderr, "%s:%d:", filename, lineno);
-     vfprintf (stderr, format, args);
-     va_end (args);
-     numerror++;
-}
+int yylex(void);
