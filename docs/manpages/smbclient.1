@@ -1,11 +1,11 @@
-.TH SMBCLIENT 1 "18 May 1999" "smbclient 2.0.4"
+.TH "smbclient " "1" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smbclient \- ftp-like client to access SMB/CIFS resources on servers
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBsmbclient\fP servicename [password] [-s smb\&.conf] [-B IP addr] [-O socket options][-R name resolve order] [-M NetBIOS name] [-i scope] [-N] [-n NetBIOS name] [-d debuglevel] [-P] [-p port] [-l log basename] [-h] [-I dest IP] [-E] [-U username] [-L NetBIOS name] [-t terminal code] [-m max protocol] [-W workgroup] [-T<c|x>IXFqgbNan] [-D directory] [-c command string]
+\fBsmbclient\fP servicename [password] [-s smb\&.conf] [-B IP addr] [-O socket options][-R name resolve order] [-M NetBIOS name] [-i scope] [-N] [-n NetBIOS name] [-d debuglevel] [-P] [-p port] [-l log basename] [-h] [-I dest IP] [-E] [-U username] [-L NetBIOS name] [-t terminal code] [-m max protocol] [-b buffersize] [-W workgroup] [-T<c|x>IXFqgbNan] [-D directory] [-c command string]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -325,6 +325,12 @@ With the new code in Samba2\&.0,
 protocols level the server supports\&. This parameter is
 preserved for backwards compatibility, but any string
 following the \fB-m\fP will be ignored\&.
+.IP 
+.IP "\fB-b buffersize\fP" 
+This option changes the transmit/send buffer
+size when getting or putting a file from/to the server\&. The default
+is 65520 bytes\&. Setting this value smaller (to 1200 bytes) has been
+observed to speed up file transfers to and from a Win9x server\&.
 .IP 
 .IP "\fB-W WORKGROUP\fP" 
 Override the default workgroup specified in the

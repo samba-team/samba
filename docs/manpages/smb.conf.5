@@ -1,4 +1,4 @@
-.TH SMB.CONF 5 "18 May 1999" "smb.conf 2.0.4"
+.TH "smb\&.conf " "5" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smb\&.conf \- The configuration file for the Samba suite
@@ -2614,35 +2614,30 @@ described in the man page \fBhosts_access (5)\fP\&. Note that this man
 page may not be present on your system, so a brief description will
 be given here also\&.
 .IP 
-\fINOTE:\fP IF you wish to allow the \fBsmbpasswd
-(8)\fP program to be run by local users to change
-their Samba passwords using the local \fBsmbd (8)\fP
-daemon, then you \fIMUST\fP ensure that the localhost is listed in your
-\fBhosts allow\fP list, as \fBsmbpasswd (8)\fP runs
-in client-server mode and is seen by the local
-\fBsmbd\fP process as just another client\&.
+Note that the localhost address 127\&.0\&.0\&.1 will always be allowed
+access unless specifically denied by a "hosts deny" option\&.
 .IP 
 You can also specify hosts by network/netmask pairs and by netgroup
 names if your system supports netgroups\&. The \fIEXCEPT\fP keyword can also
 be used to limit a wildcard list\&. The following examples may provide
 some help:
 .IP 
-\fBExample 1\fP: allow localhost and all IPs in 150\&.203\&.*\&.* except one
+\fBExample 1\fP: allow all IPs in 150\&.203\&.*\&.* except one
 .IP 
-\f(CW	hosts allow = localhost, 150\&.203\&. EXCEPT 150\&.203\&.6\&.66\fP
+\f(CW	hosts allow = 150\&.203\&. EXCEPT 150\&.203\&.6\&.66\fP
 .IP 
-\fBExample 2\fP: allow localhost and hosts that match the given network/netmask
+\fBExample 2\fP: allow hosts that match the given network/netmask
 .IP 
-\f(CW	hosts allow = localhost, 150\&.203\&.15\&.0/255\&.255\&.255\&.0\fP
+\f(CW	hosts allow = 150\&.203\&.15\&.0/255\&.255\&.255\&.0\fP
 .IP 
-\fBExample 3\fP: allow a localhost plus a couple of hosts
+\fBExample 3\fP: allow a couple of hosts
 .IP 
-\f(CW	hosts allow = localhost, lapland, arvidsjaur\fP
+\f(CW	hosts allow = lapland, arvidsjaur\fP
 .IP 
-\fBExample 4\fP: allow only hosts in NIS netgroup "foonet" or localhost, but 
+\fBExample 4\fP: allow only hosts in NIS netgroup "foonet", but 
 deny access from one particular host
 .IP 
-\f(CW 	hosts allow = @foonet, localhost\fP
+\f(CW 	hosts allow = @foonet\fP
 .IP 
 \f(CW 	hosts deny = pirate\fP
 .IP 
@@ -2655,7 +2650,7 @@ host access to see if it does what you expect\&.
 \f(CW	none (i\&.e\&., all hosts permitted access)\fP
 .IP 
 \fBExample:\fP
-\f(CW	allow hosts = 150\&.203\&.5\&. localhost myhost\&.mynet\&.edu\&.au\fP
+\f(CW	allow hosts = 150\&.203\&.5\&. myhost\&.mynet\&.edu\&.au\fP
 .IP 
 .IP "\fBhosts deny (S)\fP" 
 .IP 

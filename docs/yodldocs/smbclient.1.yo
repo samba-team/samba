@@ -8,7 +8,7 @@ manpagename(smbclient)(ftp-like client to access SMB/CIFS resources on servers)
 label(SYNOPSIS)
 manpagesynopsis()
 
-bf(smbclient) link(servicename)(servicename) [link(password)(password)] [link(-s smb.conf)(minuss)] [link(-B IP addr)(minusB)] [link(-O socket options)(minusO)][link(-R name resolve order)(minusR)] [link(-M NetBIOS name)(minusM)] [link(-i scope)(minusi)] [link(-N)(minusN)] [link(-n NetBIOS name)(minusn)] [link(-d debuglevel)(minusd)] [link(-P)(minusP)] [link(-p port)(minusp)] [link(-l log basename)(minusl)] [link(-h)(minush)] [link(-I dest IP)(minusI)] [link(-E)(minusE)] [link(-U username)(minusU)] [link(-L NetBIOS name)(minusL)] [link(-t terminal code)(minust)] [link(-m max protocol)(minusm)] [link(-W workgroup)(minusW)] [link(-T<c|x>IXFqgbNan)(minusT)] [link(-D directory)(minusD)] [link(-c command string)(minusc)]
+bf(smbclient) link(servicename)(servicename) [link(password)(password)] [link(-s smb.conf)(minuss)] [link(-B IP addr)(minusB)] [link(-O socket options)(minusO)][link(-R name resolve order)(minusR)] [link(-M NetBIOS name)(minusM)] [link(-i scope)(minusi)] [link(-N)(minusN)] [link(-n NetBIOS name)(minusn)] [link(-d debuglevel)(minusd)] [link(-P)(minusP)] [link(-p port)(minusp)] [link(-l log basename)(minusl)] [link(-h)(minush)] [link(-I dest IP)(minusI)] [link(-E)(minusE)] [link(-U username)(minusU)] [link(-L NetBIOS name)(minusL)] [link(-t terminal code)(minust)] [link(-m max protocol)(minusm)] [link(-b buffersize)(minusb)] [link(-W workgroup)(minusW)] [link(-T<c|x>IXFqgbNan)(minusT)] [link(-D directory)(minusD)] [link(-c command string)(minusc)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -327,6 +327,12 @@ bf(smbclient) always attempts to connect at the maximum
 protocols level the server supports. This parameter is
 preserved for backwards compatibility, but any string
 following the bf(-m) will be ignored.
+
+label(minusb)
+dit(bf(-b buffersize)) This option changes the transmit/send buffer
+size when getting or putting a file from/to the server. The default
+is 65520 bytes. Setting this value smaller (to 1200 bytes) has been
+observed to speed up file transfers to and from a Win9x server.
 
 label(minusW)
 dit(bf(-W WORKGROUP)) Override the default workgroup specified in the
