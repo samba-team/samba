@@ -49,7 +49,7 @@
 #ifdef SEMMSL
 #define SHMEM_HASH_SIZE (SEMMSL-1)
 #else
-#define SHMEM_HASH_SIZE 113
+#define SHMEM_HASH_SIZE 15
 #endif
 #endif
 
@@ -1311,9 +1311,6 @@ typedef struct
   struct timeval time;
 } share_mode_entry;
 
-
-/* Conversion to hash entry index from device and inode numbers. */
-#define HASH_ENTRY(dev,ino) ((( (uint32)(dev) )* ( (uint32)(ino) )) % lp_shmem_hash_size())
 
 /* each implementation of the share mode code needs
    to support the following operations */

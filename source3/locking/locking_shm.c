@@ -62,6 +62,11 @@ typedef struct
 
 static int read_only;
 
+
+/* Conversion to hash entry index from device and inode numbers. */
+#define HASH_ENTRY(dev,ino) ((( (uint32)(dev) )* ( (uint32)(ino) )) % lp_shmem_hash_size())
+
+
 /*******************************************************************
   deinitialize the shared memory for share_mode management 
   ******************************************************************/
