@@ -4,7 +4,7 @@
    Winbind status program.
 
    Copyright (C) Tim Potter      2000-2002
-   Copyright (C) Andrew Bartlett 2002
+   Copyright (C) Andrew Bartlett 2003
    Copyright (C) Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it> 2000 
 
    This program is free software; you can redistribute it and/or modify
@@ -30,8 +30,9 @@
 #define SQUID_BUFFER_SIZE 2010
 
 enum squid_mode {
+	SQUID_2_4_BASIC,
 	SQUID_2_5_BASIC,
-	SQUID_2_4_BASIC
+	SQUID_2_5_NTLMSSP
 };
 	
 
@@ -88,6 +89,9 @@ static const char *get_winbind_domain(void)
 	struct winbindd_response response;
 
 	static fstring winbind_domain;
+	if (*winbind_domain) {
+		return winbind_domain;
+	}
 
 	ZERO_STRUCT(response);
 
@@ -102,6 +106,32 @@ static const char *get_winbind_domain(void)
 	fstrcpy(winbind_domain, response.data.domain_name);
 
 	return winbind_domain;
+
+}
+
+static const char *get_winbind_netbios_name(void)
+{
+	struct winbindd_response response;
+
+	static fstring winbind_netbios_name;
+
+	if (*winbind_netbios_name) {
+		return winbind_netbios_name;
+	}
+
+	ZERO_STRUCT(response);
+
+	/* Send off request */
+
+	if (winbindd_request(WINBINDD_NETBIOS_NAME, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		d_printf("could not obtain winbind netbios name!\n");
+		return NULL;
+	}
+
+	fstrcpy(winbind_netbios_name, response.data.netbios_name);
+
+	return winbind_netbios_name;
 
 }
 
@@ -146,11 +176,116 @@ static BOOL check_plaintext_auth(const char *user, const char *pass, BOOL stdout
         return (result == NSS_STATUS_SUCCESS);
 }
 
-static void manage_squid_basic_request(enum squid_mode squid_mode) 
+static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state) 
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.auth_crap.user, ntlmssp_state->user);
+
+	fstrcpy(request.data.auth_crap.domain, ntlmssp_state->domain);
+	fstrcpy(request.data.auth_crap.workstation, ntlmssp_state->workstation);
+	
+	memcpy(request.data.auth_crap.chal, ntlmssp_state->chal.data, 
+	       MIN(ntlmssp_state->chal.length, 8));
+
+	memcpy(request.data.auth_crap.lm_resp, ntlmssp_state->lm_resp.data, 
+	       MIN(ntlmssp_state->lm_resp.length, sizeof(request.data.auth_crap.lm_resp)));
+        
+	memcpy(request.data.auth_crap.nt_resp, ntlmssp_state->lm_resp.data,
+	       MIN(ntlmssp_state->nt_resp.length, sizeof(request.data.auth_crap.nt_resp)));
+        
+        request.data.auth_crap.lm_resp_len = ntlmssp_state->lm_resp.length;
+        request.data.auth_crap.nt_resp_len = ntlmssp_state->nt_resp.length;
+
+	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+
+	/* Display response */
+
+	if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS(response.data.auth.nt_status);
+}
+
+static void manage_squid_ntlmssp_request(enum squid_mode squid_mode, 
+					 char *buf, int length) 
+{
+	static NTLMSSP_STATE *ntlmssp_state;
+	DATA_BLOB request, reply;
+	NTSTATUS nt_status;
+
+	if (!ntlmssp_state) {
+		ntlmssp_server_start(&ntlmssp_state);
+		ntlmssp_state->check_password = winbind_pw_check;
+		ntlmssp_state->get_domain = get_winbind_domain;
+		ntlmssp_state->get_global_myname = get_winbind_netbios_name;
+	}
+
+	if (strlen(buf) < 3) {
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+	
+	request = base64_decode_data_blob(buf + 3);
+	
+	DEBUG(0, ("got NTLMSSP packet:\n"));
+	dump_data(0, request.data, request.length);
+
+	nt_status = ntlmssp_server_update(ntlmssp_state, request, &reply);
+	
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		char *reply_base64 = base64_encode_data_blob(reply);
+		x_fprintf(x_stdout, "TT %s\n", reply_base64);
+		SAFE_FREE(reply_base64);
+		data_blob_free(&reply);
+	} else if (!NT_STATUS_IS_OK(nt_status)) {
+		x_fprintf(x_stdout, "NA %s\n", nt_errstr(nt_status));
+	} else {
+		x_fprintf(x_stdout, "AF %s\\%s\n", ntlmssp_state->domain, ntlmssp_state->user);
+	}
+
+	data_blob_free(&request);
+}
+
+static void manage_squid_basic_request(enum squid_mode squid_mode, 
+				       char *buf, int length) 
+{
+	char *user, *pass;	
+	user=buf;
+	
+	pass=memchr(buf,' ',length);
+	if (!pass) {
+		DEBUG(2, ("Password not found. Denying access\n"));
+		x_fprintf(x_stderr, "ERR\n");
+		return;
+	}
+	*pass='\0';
+	pass++;
+	
+	if (squid_mode == SQUID_2_5_BASIC) {
+		rfc1738_unescape(user);
+		rfc1738_unescape(pass);
+	}
+	
+	if (check_plaintext_auth(user, pass, False)) {
+		x_fprintf(x_stdout, "OK\n");
+	} else {
+		x_fprintf(x_stdout, "ERR\n");
+	}
+}
+
+static void manage_squid_request(enum squid_mode squid_mode) 
 {
 	char buf[SQUID_BUFFER_SIZE+1];
 	int length;
-	char *c, *user, *pass;
+	char *c;
 	static BOOL err;
   
 	if (x_fgets(buf, sizeof(buf)-1, x_stdin) == NULL) {
@@ -181,37 +316,21 @@ static void manage_squid_basic_request(enum squid_mode squid_mode)
 		x_fprintf(x_stderr, "ERR\n");
 		return;
 	}
-
-	user=buf;
-
-	pass=memchr(buf,' ',length);
-	if (!pass) {
-		DEBUG(2, ("Password not found. Denying access\n"));
-		x_fprintf(x_stderr, "ERR\n");
-		return;
-	}
-	*pass='\0';
-	pass++;
 	
-	if (squid_mode == SQUID_2_5_BASIC) {
-		rfc1738_unescape(user);
-		rfc1738_unescape(pass);
-	}
-
-	if (check_plaintext_auth(user, pass, False)) {
-		x_fprintf(x_stdout, "OK\n");
-	} else {
-		x_fprintf(x_stdout, "ERR\n");
+	if (squid_mode == SQUID_2_5_BASIC || squid_mode == SQUID_2_4_BASIC) {
+		manage_squid_basic_request(squid_mode, buf, length);
+	} else if (squid_mode == SQUID_2_5_NTLMSSP) {
+		manage_squid_ntlmssp_request(squid_mode, buf, length);
 	}
 }
 
 
-static void squid_basic(enum squid_mode squid_mode) {
+static void squid_stream(enum squid_mode squid_mode) {
 	/* initialize FDescs */
 	x_setbuf(x_stdout, NULL);
 	x_setbuf(x_stderr, NULL);
 	while(1) {
-		manage_squid_basic_request(squid_mode);
+		manage_squid_request(squid_mode);
 	}
 }
 
@@ -392,10 +511,12 @@ int main(int argc, const char **argv)
 	}
 
 	if (helper_protocol) {
-		if (strcmp(helper_protocol, "squid-2.5-basic")== 0) {
-			squid_basic(SQUID_2_5_BASIC);
+		if (strcmp(helper_protocol, "squid-2.5-ntlmssp")== 0) {
+			squid_stream(SQUID_2_5_NTLMSSP);
+		} else if (strcmp(helper_protocol, "squid-2.5-basic")== 0) {
+			squid_stream(SQUID_2_5_BASIC);
 		} else if (strcmp(helper_protocol, "squid-2.4-basic")== 0) {
-			squid_basic(SQUID_2_4_BASIC);
+			squid_stream(SQUID_2_4_BASIC);
 		} else {
 			fprintf(stderr, "unknown helper protocol [%s]\n", helper_protocol);
 			exit(1);

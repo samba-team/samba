@@ -79,10 +79,12 @@ typedef struct ntlmssp_state
 	DATA_BLOB nt_resp;
 	DATA_BLOB chal;
 	void *auth_context;
-	const uint8 *(*get_challenge)(void *auth_context);
-	NTSTATUS (*check_password)(void *auth_context);
+	const uint8 *(*get_challenge)(struct ntlmssp_state *ntlmssp_state);
+	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state);
 
 	const char *(*get_global_myname)(void);
 	const char *(*get_domain)(void);
+
+	int server_role;
 } NTLMSSP_STATE;
 
