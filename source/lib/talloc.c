@@ -241,7 +241,7 @@ void *talloc_reference(const void *context, const void *ptr)
   talloc_reference() has done. The context and pointer arguments
   must match those given to a talloc_reference()
 */
-void *talloc_unreference(const void *context, const void *ptr)
+static int talloc_unreference(const void *context, const void *ptr)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	struct talloc_reference_handle *h;
@@ -255,13 +255,58 @@ void *talloc_unreference(const void *context, const void *ptr)
 		if ((p==NULL && context==NULL) || p+1 == context) break;
 	}
 	if (h == NULL) {
-		return NULL;
+		return -1;
 	}
 
 	talloc_set_destructor(h, NULL);
 	_TLIST_REMOVE(tc->refs, h);
 	talloc_free(h);
-	return discard_const_p(void, ptr);
+	return 0;
+}
+
+/*
+  remove a specific parent context from a pointer. This is a more
+  controlled varient of talloc_free()
+*/
+int talloc_unlink(const void *context, void *ptr)
+{
+	struct talloc_chunk *tc_p, *new_p;
+	void *new_parent;
+
+	if (talloc_unreference(context, ptr) == 0) {
+		return 0;
+	}
+
+	if (context == NULL) {
+		if (talloc_parent_chunk(ptr) != NULL) {
+			return -1;
+		}
+	} else {
+		if (talloc_chunk_from_ptr(context) != talloc_parent_chunk(ptr)) {
+			return -1;
+		}
+	}
+	
+	tc_p = talloc_chunk_from_ptr(ptr);
+
+	if (tc_p->refs == NULL) {
+		return talloc_free(ptr);
+	}
+
+	new_p = talloc_parent_chunk(tc_p->refs);
+	if (new_p) {
+		new_parent = new_p+1;
+	} else {
+		new_parent = NULL;
+	}
+
+	if (talloc_unreference(new_parent, ptr) != 0) {
+		return -1;
+	}
+
+	talloc_steal(new_parent, ptr);
+
+	return 0;
 }
 
 /*
