@@ -731,10 +731,10 @@ krb5_parse_address(krb5_context context,
 
     for(i = 0; i < num_addrs; i++) {
 	if(at[i].parse_addr) {
-	    krb5_address a;
-	    if((*at[i].parse_addr)(context, string, &a) == 0) {
+	    krb5_address addr;
+	    if((*at[i].parse_addr)(context, string, &addr) == 0) {
 		ALLOC_SEQ(addresses, 1);
-		addresses->val[0] = a;
+		addresses->val[0] = addr;
 		return 0;
 	    }
 	}
