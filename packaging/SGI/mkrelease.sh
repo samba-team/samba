@@ -85,19 +85,6 @@ if [ $errstat -ne 0 ]; then
 fi
 mv  bin/smbd bin/smbd.noquota
 
-echo "=====================  Making smbwrapper.32.so ======================="
-# cannot use -mips3 with 32 bit shared libraries so reset the ISA variable
-# just for this object
-ISA=
-export ISA
-make -P "CFLAGS=-O -g3 -woff 1188" bin/smbwrapper.32.so
-errstat=$?
-if [ $errstat -ne 0 ]; then
-  echo "Error $errstat building sources\n";
-  exit $errstat;
-fi
-ISA=-mips3
-export ISA
 echo "=====================  Making Regular versions ======================="
 make -P "CFLAGS=-O -g3 -woff 1188" all
 errstat=$?
