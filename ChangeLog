@@ -1,3 +1,8 @@
+2001-01-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/get_port.c: don't warn if the port name can't be found,
+	nobody cares anyway
+
 2001-01-26  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/hprop.c: make it possible to convert a v4 dump file without
