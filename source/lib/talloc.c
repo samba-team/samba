@@ -26,6 +26,9 @@
 
 #include "includes.h"
 
+#undef talloc
+#define talloc(ctx, size) _talloc(ctx, size)
+
 #define MAX_TALLOC_SIZE 0x10000000
 #define TALLOC_MAGIC 0xe814ec4f
 #define TALLOC_MAGIC_FREE 0x7faebef3
@@ -59,7 +62,7 @@ static struct talloc_chunk *talloc_chunk_from_ptr(void *ptr)
 /* 
    Allocate a bit of memory as a child of an existing pointer
 */
-void *talloc(void *context, size_t size)
+void *_talloc(void *context, size_t size)
 {
 	struct talloc_chunk *tc;
 
@@ -289,7 +292,7 @@ int talloc_free(void *ptr)
 /*
   A talloc version of realloc 
 */
-void *talloc_realloc(void *ptr, size_t size)
+void *_talloc_realloc(void *ptr, size_t size, const char *name)
 {
 	struct talloc_chunk *tc;
 	void *new_ptr;
@@ -302,7 +305,7 @@ void *talloc_realloc(void *ptr, size_t size)
 
 	/* realloc(NULL) is equavalent to malloc() */
 	if (ptr == NULL) {
-		return talloc(NULL, size);
+		return talloc_named_const(NULL, size, name);
 	}
 
 	tc = talloc_chunk_from_ptr(ptr);
@@ -330,6 +333,7 @@ void *talloc_realloc(void *ptr, size_t size)
 	}
 
 	tc->size = size;
+	talloc_set_name_const(tc+1, name);
 
 	return (void *)(tc+1);
 }
@@ -582,26 +586,30 @@ char *talloc_asprintf_append(char *s,
 /*
   alloc an array, checking for integer overflow in the array size
 */
-void *talloc_array(void *ctx, size_t el_size, uint_t count)
+void *talloc_array(void *ctx, size_t el_size, uint_t count, const char *name)
 {
 	if (count == 0 ||
 	    count >= MAX_TALLOC_SIZE/el_size) {
 		return NULL;
 	}
-	return talloc(ctx, el_size * count);
+	return talloc_named_const(ctx, el_size * count, name);
 }
 
 
 /*
   realloc an array, checking for integer overflow in the array size
 */
-void *talloc_realloc_array(void *ptr, size_t el_size, uint_t count)
+void *talloc_realloc_array(void *ptr, size_t el_size, uint_t count, const char *name)
 {
 	if (count == 0 ||
 	    count >= MAX_TALLOC_SIZE/el_size) {
 		return NULL;
 	}
-	return talloc_realloc(ptr, el_size * count);
+	ptr = talloc_realloc(ptr, el_size * count);
+	if (ptr) {
+		talloc_set_name_const(ptr, name);
+	}
+	return ptr;
 }
 
 /*
