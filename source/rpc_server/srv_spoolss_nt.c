@@ -526,7 +526,8 @@ static BOOL open_printer_hnd(POLICY_HND *hnd, char *name)
 		return False;
 	}
 
-	DEBUG(5, ("%d printer handles active\n", ubi_dlCount(&Printer_list)));
+	DEBUG(5, ("%d printer handles active\n", 
+		  (int)ubi_dlCount(&Printer_list)));
 
 	return True;
 }
@@ -1646,14 +1647,17 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPO
  * fill a notify_info struct with info asked
  *
  ********************************************************************/
-static BOOL construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_INFO *info, int snum, SPOOL_NOTIFY_OPTION_TYPE *option_type, uint32 id)
+static BOOL construct_notify_jobs_info(print_queue_struct *queue,
+				       SPOOL_NOTIFY_INFO *info,
+				       NT_PRINTER_INFO_LEVEL *printer,
+				       int snum, SPOOL_NOTIFY_OPTION_TYPE
+				       *option_type, uint32 id) 
 {
 	int field_num,j;
 	uint16 type;
 	uint16 field;
 
 	SPOOL_NOTIFY_INFO_DATA *current_data;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	
 	DEBUG(4,("construct_notify_jobs_info\n"));
 	
@@ -1663,9 +1667,6 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_I
 		(option_type->type==PRINTER_NOTIFY_TYPE?"PRINTER_NOTIFY_TYPE":"JOB_NOTIFY_TYPE"),
 		option_type->count));
 
-	if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
-		return False;
-	
 	for(field_num=0; field_num<option_type->count; field_num++) {
 		field = option_type->fields[field_num];
 
@@ -1683,7 +1684,6 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_I
 		info->count++;
 	}
 
-	free_a_printer(&printer, 2);	
 	return True;
 }
 
@@ -1798,17 +1798,34 @@ static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
 		
 		switch ( option_type->type ) {
 		case PRINTER_NOTIFY_TYPE:
-			if(construct_notify_printer_info(info, snum, option_type, id))
+			if(construct_notify_printer_info(info, snum,
+							 option_type, id))  
 				id--;
 			break;
 			
-		case JOB_NOTIFY_TYPE:
+		case JOB_NOTIFY_TYPE: {
+			NT_PRINTER_INFO_LEVEL *printer = NULL;
+
 			memset(&status, 0, sizeof(status));	
 			count = print_queue_status(snum, &queue, &status);
-			for (j=0; j<count; j++)
-				construct_notify_jobs_info(&queue[j], info, snum, option_type, queue[j].job);
+
+			if (get_a_printer(&printer, 2, 
+					  lp_servicename(snum)) != 0)
+				goto done;
+
+			for (j=0; j<count; j++) {
+				construct_notify_jobs_info(&queue[j], info,
+							   printer, snum,
+							   option_type,
+							   queue[j].job); 
+			}
+
+			free_a_printer(&printer, 2);
+
+		done:
 			safe_free(queue);
 			break;
+		}
 		}
 	}
 	
