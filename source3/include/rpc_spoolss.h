@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean Francois Micouleau      1998-2000.
+   Copyright (C) Gerald Carter                2001-2002.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
