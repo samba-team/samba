@@ -76,7 +76,7 @@ BOOL print_backend_init(void)
 
 	/* handle a Samba upgrade */
 	tdb_writelock(tdb);
-	if (tdb_get_int(tdb, "INFO/version") != PRINT_DATABASE_VERSION) {
+	if (tdb_fetch_int(tdb, "INFO/version") != PRINT_DATABASE_VERSION) {
 		tdb_traverse(tdb, (tdb_traverse_func)tdb_delete, NULL);
 		tdb_store_int(tdb, "INFO/version", PRINT_DATABASE_VERSION);
 	}
@@ -602,7 +602,7 @@ int print_job_start(int snum, char *jobname)
 	/* lock the database */
 	tdb_writelock(tdb);
 
-	next_jobid = tdb_get_int(tdb, "INFO/nextjob");
+	next_jobid = tdb_fetch_int(tdb, "INFO/nextjob");
 	if (next_jobid == -1) next_jobid = 1;
 
 	for (jobid = next_jobid+1; jobid != next_jobid; ) {
@@ -723,7 +723,7 @@ static BOOL print_cache_expired(int snum)
 	fstring key;
 	time_t t2, t = time(NULL);
 	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
-	t2 = tdb_get_int(tdb, key);
+	t2 = tdb_fetch_int(tdb, key);
 	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
 		return True;
 	}

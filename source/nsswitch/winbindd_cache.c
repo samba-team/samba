@@ -101,7 +101,7 @@ static uint32 get_cache_sequence_number(char *domain_name, char *cache_type, cha
 	uint32 seq_num;
 	slprintf(keystr,sizeof(keystr),"CACHESEQ %s/%s/%s",
 		 domain_name, cache_type, subkey?subkey:"");
-	seq_num = (uint32)tdb_get_int(cache_tdb, keystr);
+	seq_num = (uint32)tdb_fetch_int(cache_tdb, keystr);
 	DEBUG(4,("%s is %u\n", keystr, (unsigned)seq_num));
 	return seq_num;
 }
