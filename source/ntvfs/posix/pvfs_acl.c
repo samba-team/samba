@@ -371,7 +371,28 @@ NTSTATUS pvfs_access_check_simple(struct pvfs_state *pvfs,
 				  struct pvfs_filename *name,
 				  uint32_t access_needed)
 {
+	if (access_needed == 0) {
+		return NT_STATUS_OK;
+	}
 	return pvfs_access_check(pvfs, req, name, &access_needed);
+}
+
+/*
+  access check for creating a new file/directory
+*/
+NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs, 
+				  struct smbsrv_request *req,
+				  struct pvfs_filename *name)
+{
+	struct pvfs_filename *parent;
+	NTSTATUS status;
+
+	status = pvfs_resolve_parent(pvfs, req, name, &parent);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return pvfs_access_check_simple(pvfs, req, name, SEC_DIR_ADD_FILE);
 }
 
 

@@ -169,6 +169,11 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 		}
 	}
 
+	status = pvfs_access_check_create(pvfs, req, name2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	fname2 = talloc_asprintf(mem_ctx, "%s/%s", dir_path, fname2);
 	if (fname2 == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -283,6 +288,11 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
+	status = pvfs_access_check_create(pvfs, req, name2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	status = pvfs_can_rename(pvfs, name1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -357,18 +367,30 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 
 	switch (ren->ntrename.in.flags) {
 	case RENAME_FLAG_RENAME:
+		status = pvfs_access_check_create(pvfs, req, name2);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		if (rename(name1->full_name, name2->full_name) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
 		break;
 
 	case RENAME_FLAG_HARD_LINK:
+		status = pvfs_access_check_create(pvfs, req, name2);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		if (link(name1->full_name, name2->full_name) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
 		break;
 
 	case RENAME_FLAG_COPY:
+		status = pvfs_access_check_create(pvfs, req, name2);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		return pvfs_copy_file(pvfs, name1, name2);
 
 	case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
