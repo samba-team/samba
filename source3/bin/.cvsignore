@@ -1,8 +1,12 @@
 .dummy
 .libs
+locktest
+locktest2
 make_printerdef
 make_smbcodepage
 make_unicodemap
+masktest
+msgtest
 nmbd
 nmblookup
 pdbedit
@@ -19,6 +23,7 @@ smbpasswd
 smbsh
 smbspool
 smbstatus
+smbtorture
 smbtree
 smbumount
 swat
