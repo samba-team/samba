@@ -115,10 +115,10 @@ the pserver source code using the the command :
  cvs -d :pserver:cvs@samba.org:/cvsroot co pserver
 
 You really have to know what you are doing to do this. Please don't 
-email samba-bugs with basic cvs or unix security questions. 
+email samba with basic cvs or unix security questions. 
 
 Reporting problems.
 -------------------
 
 If you have any problems with this system please email 
-samba-bugs@samba.org. 
+samba@samba.org. 

@@ -3,7 +3,7 @@
 !==
 Contributed:	January 7, 1997
 Updated:	March 24, 1998
-Contributor:	John H Terpstra <samba-bugs@samba.org>
+Contributor:	John H Terpstra <samba@samba.org>
 		Copyright (C) 1997 - John H Terpstra
 Status:		Current
 

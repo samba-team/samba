@@ -92,7 +92,7 @@ If you want to contribute to the development of the software then
 please join the mailing list. The Samba team accepts patches
 (preferably in "diff -u" format, see docs/BUGS.txt for more details)
 and are always glad to receive feedback or suggestions to the address
-samba-bugs@samba.org. We have recently put a new bug tracking
+samba@samba.org. We have recently put a new bug tracking
 system into place which should help the throughput quite a lot. You
 can also get the Samba sourcecode straight from the CVS tree - see
 http://samba.org/cvs.html.
@@ -112,14 +112,14 @@ something else. However, as you can see from the user survey quite a lot of
 people do seem to like it at the moment :-)
 
 Andrew Tridgell
-Email: samba-bugs@samba.org
+Email: samba@samba.org
 
 3 Ballow Crescent
 Macgregor, A.C.T.
 2615 Australia
 
 Samba Team
-Email: samba-bugs@samba.org
+Email: samba@samba.org
 
 
 MORE INFO

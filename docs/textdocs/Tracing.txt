@@ -1,7 +1,7 @@
 !==
 !== Tracing.txt for Samba release 2.0.4 18 May 1999
 !==
-Contributor:	Andrew Tridgell <samba-bugs@samba.org>
+Contributor:	Andrew Tridgell <samba@samba.org>
 Date:		Old
 Status:		Questionable
 
@@ -93,4 +93,4 @@ read-only. Both fail. This means /dev/null has incorrect permissions.
 
 Have fun!
 
-(please send updates/fixes to this file to samba-bugs@samba.org)
+(please send updates/fixes to this file to samba@samba.org)

@@ -1,7 +1,7 @@
 !==
 !== Printing.txt for Samba release 2.0.4 18 May 1999
 !==
-Contributor:	Unknown <samba-bugs@samba.org>
+Contributor:	Unknown <samba@samba.org>
 Date:		Unknown
 Status:		Current
 
@@ -13,7 +13,7 @@ Samba. This describes how to debug problems with printing from a SMB
 client to a Samba server, not the other way around. For the reverse
 see the examples/printing directory.
 
-Please send enhancements to this file to samba-bugs@samba.org
+Please send enhancements to this file to samba@samba.org
 
 Ok, so you want to print to a Samba server from your PC. The first
 thing you need to understand is that Samba does not actually do any

@@ -1,4 +1,4 @@
-              WHATS NEW IN Samba 2.0.7-pre2
+              WHATS NEW IN Samba 2.0.7-pre3
               =============================
 
 This is the latest stable release of Samba. This is the
@@ -811,7 +811,7 @@ http://samba.org/cvs.html
 
 If you think you have found a bug please email a report to :
 
-        samba-bugs@samba.org
+        samba@samba.org
 
 As always, all bugs are our responsibility.
 
