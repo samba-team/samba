@@ -1282,6 +1282,11 @@ BOOL is_trusted_domain(const char* dom_name)
 	time_t lct;
 	BOOL ret;
 
+	/* no trusted domains for a standalone server */
+
+	if ( lp_server_role() == ROLE_STANDALONE )
+		return False;
+
 	/* if we are a DC, then check for a direct trust relationships */
 
 	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
