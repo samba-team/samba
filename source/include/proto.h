@@ -812,7 +812,7 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
 int dfs_path_error(char* inbuf, char* outbuf);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 		       char** ppdata);
-int unistr_to_dos(char* dst,uint16* src)	       ;
+void unistr_to_dos(char* dst,uint16* src)	       ;
 
 /*The following definitions come from  msdfs/msdfs_tdb.c  */
 
@@ -2609,11 +2609,10 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 void set_pipe_handle_offset(int max_open_files);
 void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
-BOOL pipe_init_outgoing_data(output_data *o_data);
 pipes_struct *open_rpc_pipe_p(char *pipe_name, 
 			      connection_struct *conn, uint16 vuid);
 ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n);
-int read_from_pipe(pipes_struct *p, char *data, int n);
+ssize_t read_from_pipe(pipes_struct *p, char *data, size_t n);
 BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority);
 BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
 BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);

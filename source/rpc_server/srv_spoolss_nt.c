@@ -4140,6 +4140,8 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 
 /****************************************************************************
 ****************************************************************************/
+#if 0
+... Not yet used...
 static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int i=0;
@@ -4179,6 +4181,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	else
 		return NT_STATUS_NO_PROBLEMO;
 }
+#endif
 
 /****************************************************************************
 ****************************************************************************/
