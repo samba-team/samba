@@ -700,7 +700,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	/* Resolve the IP address */
 
 	if (!opt_ipaddr && !resolve_name(server, &server_ip, 0x20))  {
-		DEBUG(1,("Unable to resolve %s\n", server));
+		fprintf(stderr, "Unable to resolve %s\n", server);
 		return 1;
 	}
 	

@@ -407,7 +407,7 @@ BOOL asn1_check_enumerated(ASN1_DATA *data, int v)
 	return !data->has_error && (v == b);
 }
 
-/* check a enumarted value is correct */
+/* write an enumarted value to the stream */
 BOOL asn1_write_enumerated(ASN1_DATA *data, uint8 v)
 {
 	if (!asn1_push_tag(data, ASN1_ENUMERATED)) return False;

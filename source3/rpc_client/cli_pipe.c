@@ -862,10 +862,9 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 			return False;
 		}
 
-		if (data_left == prs_offset(data)) {
+		if (data_left == prs_offset(data))
 			flags |= RPC_FLG_FIRST;
-			callid = 0;
-		}
+
 		if (data_left < max_data)
 			flags |= RPC_FLG_LAST;
 		/*
@@ -1283,6 +1282,9 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs)
 BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 {
 	int fnum;
+
+	/* At the moment we can't have more than one pipe open over
+           a cli connection. )-: */
 
 	SMB_ASSERT(cli->nt_pipe_fnum == 0);
 	
