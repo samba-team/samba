@@ -155,17 +155,6 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 	struct message_rec rec;
 	void *p;
 
-	/*
-	 * Do an early check for process exists - saves adding into a tdb
-	 * and deleting again if the target is not present. JRA.
-	 */
-
-	if (!process_exists(pid)) {
-		DEBUG(2,("message_send_pid: pid %d doesn't exist\n", (int)pid));
-        tdb_delete(tdb, message_key_pid(pid));
-		return False;
-	}
-
 	rec.msg_version = MESSAGE_VERSION;
 	rec.msg_type = msg_type;
 	rec.dest = pid;
@@ -359,12 +348,12 @@ void message_deregister(int msg_type)
 	}	
 }
 
-static struct {
+struct msg_all {
 	int msg_type;
 	void *buf;
 	size_t len;
 	BOOL duplicates;
-} msg_all;
+};
 
 /****************************************************************************
 send one of the messages for the broadcast
@@ -372,11 +361,12 @@ send one of the messages for the broadcast
 static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct connections_data crec;
+	struct msg_all *msg_all = (struct msg_all *)state;
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
 	if (crec.cnum != -1) return 0;
-	message_send_pid(crec.pid, msg_all.msg_type, msg_all.buf, msg_all.len, msg_all.duplicates);
+	message_send_pid(crec.pid, msg_all->msg_type, msg_all->buf, msg_all->len, msg_all->duplicates);
 	return 0;
 }
 
@@ -387,11 +377,13 @@ use it. When we need efficient broadcast we can add it.
 ****************************************************************************/
 BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
 {
+	struct msg_all msg_all;
+
 	msg_all.msg_type = msg_type;
 	msg_all.buf = buf;
 	msg_all.len = len;
 	msg_all.duplicates = duplicates_allowed;
 
-	tdb_traverse(conn_tdb, traverse_fn, NULL);
+	tdb_traverse(conn_tdb, traverse_fn, &msg_all);
 	return True;
 }

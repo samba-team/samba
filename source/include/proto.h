@@ -1536,6 +1536,7 @@ int lp_maxprotocol(void);
 int lp_security(void);
 int lp_maxdisksize(void);
 int lp_lpqcachetime(void);
+int lp_totalprintjobs(void);
 int lp_syslog(void);
 int lp_client_code_page(void);
 int lp_lm_announce(void);

@@ -191,6 +191,7 @@ typedef struct
 	int security;
 	int maxdisksize;
 	int lpqcachetime;
+	int iTotalPrintJobs;
 	int syslog;
 	int os_level;
 	int max_ttl;
@@ -813,6 +814,7 @@ static struct parm_struct parm_table[] = {
 
 	{"Printing Options", P_SEP, P_SEPARATOR},
 	
+	{"total print jobs", P_INTEGER, P_GLOBAL, &Globals.iTotalPrintJobs, NULL, NULL, FLAG_PRINT},
 	{"max print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxPrintJobs, NULL, NULL, FLAG_PRINT},
 	{"load printers", P_BOOL, P_GLOBAL, &Globals.bLoadPrinters, NULL, NULL, FLAG_PRINT},
 	{"printcap name", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_PRINT},
@@ -1201,6 +1203,7 @@ static void init_globals(void)
 	Globals.max_xmit = 65535;
 	Globals.max_mux = 50;	/* This is *needed* for profile support. */
 	Globals.lpqcachetime = 10;
+	Globals.iTotalPrintJobs = 0;  /* no limit specified */
 	Globals.pwordlevel = 0;
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
@@ -1527,6 +1530,7 @@ FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_security, &Globals.security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
+FN_GLOBAL_INTEGER(lp_totalprintjobs, &Globals.iTotalPrintJobs)
 FN_GLOBAL_INTEGER(lp_syslog, &Globals.syslog)
 FN_GLOBAL_INTEGER(lp_client_code_page, &Globals.client_code_page)
 static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
