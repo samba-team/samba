@@ -225,6 +225,11 @@ int main(int argc, char **argv)
 #else
     fprintf(f, "typedef int krb5_socklen_t;\n");
 #endif
+#if defined(HAVE_SSIZE_T)
+    fprintf(f, "typedef ssize_t krb5_ssize_t;\n");
+#else
+    fprintf(f, "typedef int krb5_ssize_t;\n");
+#endif
     fprintf(f, "\n");
 #endif /* KRB5 */
     fprintf(f, "#endif /* %s */\n", hb);
