@@ -22,7 +22,7 @@
 #include "python/py_conv.h"
 
 struct pyconv py_PRINTER_INFO_0[] = {
-	{ "printer_name", PY_UNISTR, offsetof(PRINTER_INFO_0, printername) },
+	{ "name", PY_UNISTR, offsetof(PRINTER_INFO_0, printername) },
 	{ "server_name", PY_UNISTR, offsetof(PRINTER_INFO_0, servername) },
 
 	{ "cjobs", PY_UINT32, offsetof(PRINTER_INFO_0, cjobs) },
@@ -72,7 +72,7 @@ struct pyconv py_PRINTER_INFO_0[] = {
 };	
 
 struct pyconv py_PRINTER_INFO_1[] = {
-	{ "printer_name", PY_UNISTR, offsetof(PRINTER_INFO_1, name) },
+	{ "name", PY_UNISTR, offsetof(PRINTER_INFO_1, name) },
 	{ "description", PY_UNISTR, offsetof(PRINTER_INFO_1, description) },
 	{ "comment", PY_UNISTR, offsetof(PRINTER_INFO_1, comment) },
 	{ "flags", PY_UINT32, offsetof(PRINTER_INFO_1, flags) },
@@ -81,7 +81,7 @@ struct pyconv py_PRINTER_INFO_1[] = {
 
 struct pyconv py_PRINTER_INFO_2[] = {
 	{ "server_name", PY_UNISTR, offsetof(PRINTER_INFO_2, servername) },
-	{ "printer_name", PY_UNISTR, offsetof(PRINTER_INFO_2, printername) },
+	{ "name", PY_UNISTR, offsetof(PRINTER_INFO_2, printername) },
 	{ "share_name", PY_UNISTR, offsetof(PRINTER_INFO_2, sharename) },
 	{ "port_name", PY_UNISTR, offsetof(PRINTER_INFO_2, portname) },
 	{ "driver_name", PY_UNISTR, offsetof(PRINTER_INFO_2, drivername) },
