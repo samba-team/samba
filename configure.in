@@ -735,41 +735,42 @@ AC_OUTPUT(Makefile 			\
 	include/Makefile		\
 	include/kadm5/Makefile		\
 	lib/Makefile			\
-	lib/roken/Makefile		\
-	lib/editline/Makefile		\
-	lib/sl/Makefile			\
-	lib/com_err/Makefile		\
-	lib/asn1/Makefile		\
-	lib/des/Makefile		\
-	lib/krb5/Makefile		\
-	lib/kadm5/Makefile		\
-	lib/hdb/Makefile		\
-	lib/gssapi/Makefile		\
 	lib/45/Makefile			\
-	lib/otp/Makefile		\
+	lib/asn1/Makefile		\
+	lib/com_err/Makefile		\
+	lib/des/Makefile		\
+	lib/editline/Makefile		\
+	lib/gssapi/Makefile		\
+	lib/hdb/Makefile		\
+	lib/kadm5/Makefile		\
 	lib/kafs/Makefile		\
+	lib/krb5/Makefile		\
+	lib/otp/Makefile		\
+	lib/roken/Makefile		\
+	lib/sl/Makefile			\
 	kuser/Makefile			\
 	kpasswd/Makefile		\
 	kadmin/Makefile			\
 	admin/Makefile			\
 	kdc/Makefile			\
 	appl/Makefile			\
-	appl/test/Makefile		\
-	appl/kauth/Makefile		\
-	appl/kx/Makefile		\
-	appl/rsh/Makefile		\
-	appl/popper/Makefile		\
-	appl/push/Makefile		\
-	appl/login/Makefile		\
-	appl/telnet/Makefile		\
-	appl/telnet/libtelnet/Makefile	\
-	appl/telnet/telnet/Makefile	\
-	appl/telnet/telnetd/Makefile	\
+	appl/afsutil/Makefile		\
 	appl/ftp/Makefile		\
 	appl/ftp/common/Makefile	\
 	appl/ftp/ftp/Makefile		\
 	appl/ftp/ftpd/Makefile		\
-	appl/afsutil/Makefile		\
+	appl/kauth/Makefile		\
+	appl/kx/Makefile		\
+	appl/login/Makefile		\
+	appl/otp/Makefile		\
+	appl/popper/Makefile		\
+	appl/push/Makefile		\
+	appl/rsh/Makefile		\
+	appl/telnet/Makefile		\
+	appl/telnet/libtelnet/Makefile	\
+	appl/telnet/telnet/Makefile	\
+	appl/telnet/telnetd/Makefile	\
+	appl/test/Makefile		\
 	doc/Makefile			\
 )
 
