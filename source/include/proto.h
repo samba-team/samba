@@ -327,6 +327,9 @@ pid_t sys_fork(void);
 pid_t sys_getpid(void);
 int sys_popen(const char *command);
 int sys_pclose(int fd);
+void *sys_dlopen(const char *name, int flags);
+void *sys_dlsym(void *handle, char *symbol);
+int sys_dlclose (void *handle);
 
 /*The following definitions come from  lib/talloc.c  */
 

@@ -235,6 +235,7 @@ static uint32 cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
 static uint32 cmd_quit(struct cli_state *cli, int argc, char **argv)
 {
 	exit(0);
+	return NT_STATUS_NOPROBLEMO; /* NOTREACHED */
 }
 
 /* Build in rpcclient commands */

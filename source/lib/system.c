@@ -672,9 +672,6 @@ struct passwd *sys_getpwnam(const char *name)
 		return setup_pwret(&pw_cache.pass);
 	}
 
-	/* no cache hit--use old lookup instead */
-	DEBUG(2,("getpwnam(%s) called\n",name));
-
 	return setup_pwret(getpwnam(name));
 }
 
@@ -1083,4 +1080,35 @@ int sys_pclose(int fd)
 	if (wait_pid == -1)
 		return -1;
 	return wstatus;
+}
+
+/**************************************************************************
+ Wrappers for dlopen, dlsym, dlclose.
+****************************************************************************/
+
+void *sys_dlopen(const char *name, int flags)
+{
+#ifdef HAVE_LIBDL
+	return dlopen(name, flags);
+#else
+	return NULL;
+#endif
+}
+
+void *sys_dlsym(void *handle, char *symbol)
+{
+#ifdef HAVE_LIBDL
+    return dlsym(handle, symbol);
+#else
+    return NULL;
+#endif
+}
+
+int sys_dlclose (void *handle)
+{
+#ifdef HAVE_LIBDL
+	return dlclose(handle);
+#else
+	return 0;
+#endif
 }

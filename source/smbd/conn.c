@@ -170,7 +170,7 @@ void conn_free(connection_struct *conn)
 #ifdef HAVE_LIBDL
 	if (conn->dl_handle != NULL) {
 		/* Close dlopen() handle */
-		dlclose(conn->dl_handle);
+		sys_dlclose(conn->dl_handle);
 	}
 #endif /* HAVE_LIBDL */
 
