@@ -107,6 +107,16 @@ static NTSTATUS dcesrv_crypto_schannel_update(struct dcesrv_auth *auth, TALLOC_C
 }
 
 /*
+  get auth_session_info state
+*/
+static NTSTATUS dcesrv_crypto_schannel_session_info(struct dcesrv_auth *auth, struct auth_session_info **session_info) 
+{
+	struct srv_schannel_state *srv_schannel_state = auth->crypto_ctx.private_data;
+
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/*
   seal a packet
 */
 static NTSTATUS dcesrv_crypto_schannel_seal(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
@@ -173,6 +183,7 @@ static const struct dcesrv_crypto_ops dcesrv_crypto_schannel_ops = {
 	.auth_type	= DCERPC_AUTH_TYPE_SCHANNEL,
 	.start 		= dcesrv_crypto_schannel_start,
 	.update 	= dcesrv_crypto_schannel_update,
+	.session_info 	= dcesrv_crypto_schannel_session_info,
 	.seal 		= dcesrv_crypto_schannel_seal,
 	.sign		= dcesrv_crypto_schannel_sign,
 	.check_sig	= dcesrv_crypto_schannel_check_sig,
