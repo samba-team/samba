@@ -421,7 +421,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 }
 
 
-/* open a rpc connection to a rpc pipe on SMP using the binding
+/* open a rpc connection to a rpc pipe on SMB using the binding
    structure to determine the endpoint and options */
 static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p, 
 					     struct dcerpc_binding *binding,
