@@ -16,7 +16,7 @@ smbw_sample <options> path
      -l logfile
      -P prefix
      -d debuglevel
-     -U username%password
+     -U username%%password
      -R resolve order
 
 note that path must start with /smb/
@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
 		case 'h':
 		default:
 			usage();
+			exit(1);
 		}
 	}
 
