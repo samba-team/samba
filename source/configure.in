@@ -2571,7 +2571,7 @@ AC_ARG_WITH(quotas,
     AC_MSG_RESULT(yes)
     ;;
   esac ],
-  AC_MSG_RESULT(yes)
+  AC_MSG_RESULT(no)
 )
 
 samba_cv_TRY_SYS_QUOTAS=auto
