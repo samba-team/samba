@@ -1,3 +1,15 @@
+1999-10-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/kauth.c (kauth): complain if protection level isn't
+	`private'
+
+	* ftp/krb4.c (krb4_decode): syslog failure reason
+
+	* ftp/kauth.c (kauth): set private level earlier
+
+	* ftp/security.c: get_command_prot; (sec_prot): partially match
+	`command' and `data'
+
 1999-10-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpd.c: change `-l' flag to use arg_collect (this makes
