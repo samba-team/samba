@@ -69,6 +69,17 @@ kadm5_s_init_with_password_ctx(krb5_context context,
 
     ctx->log_context.log_fd   = -1;
 
+    {
+	struct sockaddr_un *un = &ctx->log_context.socket_name;
+
+	memset(un, 0, sizeof(*un));
+	un->sun_family = AF_UNIX;
+	strncpy (un->sun_path, KADM5_LOG_SIGNAL, sizeof(un->sun_path));
+	un->sun_path[sizeof(un->sun_path) - 1] = '\0';
+    }
+
+    ctx->log_context.socket_fd = socket (AF_UNIX, SOCK_DGRAM, 0);
+
     ret = krb5_parse_name(ctx->context, client_name, &ctx->caller);
     if(ret)
 	return ret;
