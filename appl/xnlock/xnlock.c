@@ -44,10 +44,6 @@ char STRING[] = "****************";
 #define MAX_PASSWD_LENGTH 256
 /* (sizeof(STRING)) */
 
-#ifndef MAXPATHLEN
-#define MAXPATHLEN BUFSIZ
-#endif /* MAXPATHLEN */
-
 #define PROMPT	    "Password: "
 #define FAIL_MSG    "Sorry, try again"
 #define LEFT 	001
