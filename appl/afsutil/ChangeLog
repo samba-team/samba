@@ -1,5 +1,7 @@
 2005-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: man_MANS += pagsh.1
+
 	* pagsh.c: add --cache-type that allows the user to control the
 	resulting credential cache type, inherit the type from the
 	invoking process
