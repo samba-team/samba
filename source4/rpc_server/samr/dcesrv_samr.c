@@ -409,6 +409,19 @@ static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *
 	return NT_STATUS_OK;
 }
 
+/*
+  return DomInfo3
+*/
+static NTSTATUS samr_info_DomInfo3(struct samr_domain_state *state,
+				   TALLOC_CTX *mem_ctx,
+				   struct samr_DomInfo3 *info)
+{
+	/* where is this supposed to come from? is it settable? */
+	info->force_logoff_time = 0x8000000000000000LL;
+
+	return NT_STATUS_OK;
+}
+
 /* 
   samr_QueryDomainInfo 
 */
@@ -437,6 +450,9 @@ static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_
 					  &r->out.info->info1);
 	case 2:
 		return samr_info_DomInfo2(d_state, mem_ctx, &r->out.info->info2);
+	case 3:
+		return samr_info_DomInfo3(d_state, mem_ctx,
+					  &r->out.info->info3);
 	}
 
 	return NT_STATUS_INVALID_INFO_CLASS;
