@@ -1,4 +1,11 @@
+Wed Mar  4 01:47:29 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/keytab.c: Implement remove with files. Add memory
+ 	operations.
+
 Tue Mar  3 20:09:59 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/keytab.c: Use function pointers.
 
 	* admin: Remove kdb_edit.
 
