@@ -432,6 +432,7 @@ static uint32 cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **ar
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
+	{ "SAMR", 		NULL,		 		"" },
 	{ "queryuser", 		cmd_samr_query_user, 		"Query user info" },
 	{ "querygroup", 	cmd_samr_query_group, 		"Query group info" },
 	{ "queryusergroups", 	cmd_samr_query_usergroups, 	"Query user groups" },

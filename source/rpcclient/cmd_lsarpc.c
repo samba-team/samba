@@ -297,6 +297,7 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
+	{ "LSARPC", 	NULL,			 	"" },
 	{ "lsaquery", 	cmd_lsa_query_info_policy, 	"Query info policy" },
 	{ "lookupsids", cmd_lsa_lookup_sids, 		"Convert SIDs to names" },
 	{ "lookupnames",cmd_lsa_lookup_names, 		"Convert names to SIDs" },
