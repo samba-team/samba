@@ -238,11 +238,11 @@ void smb_io_strhdr2(char *desc, STRHDR2 *hdr, prs_struct *ps, int depth)
 /*******************************************************************
 creates a UNIHDR structure.
 ********************************************************************/
-void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint32 buffer)
+void make_uni_hdr(UNIHDR *hdr, int len)
 {
 	hdr->uni_str_len = 2 * len;
-	hdr->uni_max_len = 2 * max_len;
-	hdr->buffer      = buffer;
+	hdr->uni_max_len = 2 * len;
+	hdr->buffer      = len != 0 ? 1 : 0;
 }
 
 /*******************************************************************
@@ -334,9 +334,9 @@ void smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth)
 /*******************************************************************
 creates a UNIHDR2 structure.
 ********************************************************************/
-void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate)
+void make_uni_hdr2(UNIHDR2 *hdr, int len)
 {
-	make_uni_hdr(&(hdr->unihdr), max_len, len, terminate);
+	make_uni_hdr(&(hdr->unihdr), len);
 	hdr->buffer = len > 0 ? 1 : 0;
 }
 

@@ -35,7 +35,7 @@ void make_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
 	int len_name = strlen(name);
 
 	trn->sid_name_use = sid_name_use;
-	make_uni_hdr(&(trn->hdr_name), len_name, len_name, 1);
+	make_uni_hdr(&(trn->hdr_name), len_name);
 	make_unistr2(uni_name, name, len_name);
 	trn->domain_idx = idx;
 }
@@ -393,7 +393,7 @@ void make_q_open_secret(LSA_Q_OPEN_SECRET *q_o, POLICY_HND *pol_hnd,
 
 	memcpy(&(q_o->pol), pol_hnd, sizeof(q_o->pol));
 
-	make_uni_hdr(&(q_o->hdr_secret), len, len, 1);
+	make_uni_hdr(&(q_o->hdr_secret), len);
 	make_unistr2(&(q_o->uni_secret), secret_name, len);
 
 	q_o->des_access = desired_access;
@@ -580,7 +580,7 @@ void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
 		r_e->ptr_enum_domains = 1;
 		r_e->num_domains2 = 1;
 
-		make_uni_hdr2(&(r_e->hdr_domain_name ), len_domain_name, len_domain_name, 4);
+		make_uni_hdr2(&(r_e->hdr_domain_name ), len_domain_name);
 		make_unistr2 (&(r_e->uni_domain_name ), domain_name, len_domain_name);
 		make_dom_sid2(&(r_e->other_domain_sid), domain_sid);
 	}
@@ -852,7 +852,7 @@ void make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
 	{
 		const char* name = names[i];
 		int len = strlen(name);
-		make_uni_hdr(&q_l->hdr_name[i], len, len, len != 0);
+		make_uni_hdr(&q_l->hdr_name[i], len);
 		make_unistr2(&q_l->uni_name[i], name, len);
 	}
 

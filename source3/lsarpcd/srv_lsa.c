@@ -182,7 +182,7 @@ static int make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 
 	len = dom_name != NULL ? strlen(dom_name) : 0;
 
-	make_uni_hdr(&(ref->hdr_ref_dom[num].hdr_dom_name), len, len, len != 0 ? 1 : 0);
+	make_uni_hdr(&(ref->hdr_ref_dom[num].hdr_dom_name), len);
 	ref->hdr_ref_dom[num].ptr_dom_sid = dom_sid != NULL ? 1 : 0;
 
 	make_unistr2 (&(ref->ref_dom[num].uni_dom_name), dom_name, len);

@@ -561,13 +561,13 @@ void make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 
 	id->ptr_id_info1 = 1;
 
-	make_uni_hdr(&(id->hdr_domain_name), len_domain_name, len_domain_name, 4);
+	make_uni_hdr(&(id->hdr_domain_name), len_domain_name);
 
 	id->param_ctrl = param_ctrl;
 	make_logon_id(&(id->logon_id), log_id_low, log_id_high);
 
-	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  , len_user_name  , 4);
-	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name , len_wksta_name , 4);
+	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  );
+	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name );
 
 	if (lm_cypher && nt_cypher)
 	{
@@ -677,13 +677,13 @@ void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 
 	id->ptr_id_info2 = 1;
 
-	make_uni_hdr(&(id->hdr_domain_name), len_domain_name, len_domain_name, 4);
+	make_uni_hdr(&(id->hdr_domain_name), len_domain_name);
 
 	id->param_ctrl = param_ctrl;
 	make_logon_id(&(id->logon_id), log_id_low, log_id_high);
 
-	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  , len_user_name  , 4);
-	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name , len_wksta_name , 4);
+	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  );
+	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name );
 
 	if (nt_chal_resp)
 	{
@@ -899,12 +899,12 @@ void make_net_user_info3(NET_USER_INFO_3 *usr,
 	usr->pass_can_change_time  = *pass_can_change_time;
 	usr->pass_must_change_time = *pass_must_change_time;
 
-	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   , len_user_name   , 4);
-	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   , len_full_name   , 4);
-	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script, len_logon_script, 4);
-	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path, len_profile_path, 4);
-	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    , len_home_dir    , 4);
-	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   , len_dir_drive   , 4);
+	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   );
+	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   );
+	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script);
+	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path);
+	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    );
+	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   );
 
 	usr->logon_count = logon_count;
 	usr->bad_pw_count = bad_pw_count;
@@ -924,8 +924,8 @@ void make_net_user_info3(NET_USER_INFO_3 *usr,
 		bzero(usr->user_sess_key, sizeof(usr->user_sess_key));
 	}
 
-	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv, len_logon_srv, 4);
-	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom, len_logon_dom, 4);
+	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
+	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0; /* yes, we're bothering to put a domain SID in */
 
