@@ -603,6 +603,7 @@ typedef struct {
 	(((x)->init_flag & FLAG_SAM_UID) \
 	 && ((x)->init_flag & FLAG_SAM_GID))
 
+#define IS_SAM_SET(x, flag)	((x)->init_flag & (flag))
 		
 typedef struct sam_passwd
 {
