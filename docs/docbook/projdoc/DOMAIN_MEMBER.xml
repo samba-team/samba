@@ -668,7 +668,7 @@ the NIS/NT Samba</ulink>.
 </sect2>
 </sect1>
 
-<sect1>
+<sect1 id="ads-member">
 <title>Samba ADS Domain Membership</title>
 
 <para>
