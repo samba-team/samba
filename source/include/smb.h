@@ -565,6 +565,7 @@ typedef struct lsa_r_query_info
     {
         DOM_QUERY_3 id3;
 		DOM_QUERY_5 id5;
+
     } dom;
 
   uint32 status; /* return code */
@@ -840,17 +841,17 @@ typedef struct lsa_r_sam_logoff_info
 /* SH_INFO_1 (pointers to level 1 share info strings) */
 typedef struct ptr_share_info1
 {
-	uint32 ptr_shi1_netname; /* pointer to net name. */
-	uint32 shi1_type;        /* type of share.  0 - undocumented. */
-	uint32 ptr_shi1_remark;  /* pointer to comment. */
+	uint32 ptr_netname; /* pointer to net name. */
+	uint32 type;        /* type of share.  0 - undocumented. */
+	uint32 ptr_remark;  /* pointer to comment. */
 
 } SH_INFO_1;
 
 /* SH_INFO_1_STR (level 1 share info strings) */
 typedef struct str_share_info1
 {
-	UNISTR2 uni_shi1_netname; /* unicode string of net name */
-	UNISTR2 uni_shi1_remark;  /* unicode string of comment. */
+	UNISTR2 uni_netname; /* unicode string of net name */
+	UNISTR2 uni_remark;  /* unicode string of comment. */
 
 } SH_INFO_1_STR;
 
@@ -879,8 +880,13 @@ typedef struct q_net_share_enum_info
 	uint32 share_level;          /* share level */
 	uint32 switch_value;         /* switch value */
 
-	uint32* ptr_share_info;      /* pointer to SHARE_INFO_1_CTR */
-	SHARE_INFO_1_CTR share_info; /* share info with 0 entries */
+	uint32 ptr_share_info;       /* pointer to SHARE_INFO_1_CTR */
+
+	union
+    {
+		SHARE_INFO_1_CTR info1; /* share info with 0 entries */
+
+    } share;
 
 	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
 
@@ -893,8 +899,12 @@ typedef struct r_net_share_enum_info
 	uint32 share_level;          /* share level */
 	uint32 switch_value;         /* switch value */
 
-	uint32* ptr_share_info;      /* pointer to SHARE_INFO_1_CTR */
-	SHARE_INFO_1_CTR share_info; /* share info with 0 entries */
+	uint32 ptr_share_info;       /* pointer to SHARE_INFO_1_CTR */
+	union
+    {
+		SHARE_INFO_1_CTR info1; /* share info container */
+
+    } share;
 
 	uint32 status;               /* return status */
 
