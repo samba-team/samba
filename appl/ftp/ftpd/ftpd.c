@@ -579,7 +579,8 @@ user(char *name)
 		reply(530, "User %s unknown.", name);
 	    if (!askpasswd && logging)
 		syslog(LOG_NOTICE,
-		       "ANONYMOUS FTP LOGIN REFUSED FROM %s", remotehost);
+		       "ANONYMOUS FTP LOGIN REFUSED FROM %s(%s)",
+		       remotehost, inet_ntoa(his_addr.sin_addr));
 	    return;
 	}
 	if((auth_level & AUTH_PLAIN) == 0 && !auth_complete){
@@ -598,8 +599,10 @@ user(char *name)
 			reply(530, "User %s access denied.", name);
 			if (logging)
 				syslog(LOG_NOTICE,
-				    "FTP LOGIN REFUSED FROM %s, %s",
-				    remotehost, name);
+				       "FTP LOGIN REFUSED FROM %s(%s), %s",
+				       remotehost,
+				       inet_ntoa(his_addr.sin_addr),
+				       name);
 			pw = (struct passwd *) NULL;
 			return;
 		}
@@ -727,8 +730,10 @@ int do_login(int code, char *passwd)
 		setproctitle(proctitle);
 #endif /* HAVE_SETPROCTITLE */
 		if (logging)
-			syslog(LOG_INFO, "ANONYMOUS FTP LOGIN FROM %s, %s",
-			    remotehost, passwd);
+			syslog(LOG_INFO, "ANONYMOUS FTP LOGIN FROM %s(%s), %s",
+			       remotehost, 
+			       inet_ntoa(his_addr.sin_addr),
+			       passwd);
 	} else {
 		reply(code, "User %s logged in.", pw->pw_name);
 #ifdef HAVE_SETPROCTITLE
@@ -736,8 +741,10 @@ int do_login(int code, char *passwd)
 		setproctitle(proctitle);
 #endif /* HAVE_SETPROCTITLE */
 		if (logging)
-			syslog(LOG_INFO, "FTP LOGIN FROM %s as %s",
-			    remotehost, pw->pw_name);
+			syslog(LOG_INFO, "FTP LOGIN FROM %s(%s) as %s",
+			       remotehost,
+			       inet_ntoa(his_addr.sin_addr),
+			       pw->pw_name);
 	}
 	umask(defumask);
 	return 0;
@@ -810,13 +817,16 @@ pass(char *passwd)
 			reply(530, "Login incorrect.");
 			if (logging)
 				syslog(LOG_NOTICE,
-				    "FTP LOGIN FAILED FROM %s, %s",
-				    remotehost, curname);
+				    "FTP LOGIN FAILED FROM %s(%s), %s",
+				       remotehost,
+				       inet_ntoa(his_addr.sin_addr),
+				       curname);
 			pw = NULL;
 			if (login_attempts++ >= 5) {
 				syslog(LOG_NOTICE,
-				    "repeated login failures from %s",
-				    remotehost);
+				       "repeated login failures from %s(%s)",
+				       remotehost,
+				       inet_ntoa(his_addr.sin_addr));
 				exit(0);
 			}
 			return;
@@ -1651,7 +1661,9 @@ dolog(struct sockaddr_in *sin)
 #endif /* HAVE_SETPROCTITLE */
 
 	if (logging)
-		syslog(LOG_INFO, "connection from %s", remotehost);
+		syslog(LOG_INFO, "connection from %s(%s)",
+		       remotehost,
+		       inet_ntoa(his_addr.sin_addr));
 }
 
 /*
