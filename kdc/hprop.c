@@ -62,52 +62,41 @@ static int kaspecials_flag;
 static int
 open_socket(krb5_context context, const char *hostname)
 {
-    struct hostent *hp = NULL;
+    struct addrinfo *ai, *a;
+    struct addrinfo hints;
     int error;
-    int af;
-    char **h;
-    int port;
+    char portstr[NI_MAXSERV];
 
-#ifdef HAVE_IPV6
-    if (hp == NULL)
-	hp = getipnodebyname (hostname, AF_INET6, 0, &error);
-#endif
-    if (hp == NULL)
-	hp = getipnodebyname (hostname, AF_INET, 0, &error);
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
 
-    if(hp == NULL){
-	warnx("%s: %s", hostname, hstrerror(error));
+    snprintf (portstr, sizeof(portstr),
+	      "%u",
+	      ntohs(krb5_getportbyname (context, "hprop", "tcp", HPROP_PORT)));
+
+    error = getaddrinfo (hostname, portstr, &hints, &ai);
+    if (error) {
+	warnx ("%s: %s", hostname, gai_strerror(error));
 	return -1;
     }
-
-    port = krb5_getportbyname (context, "hprop", "tcp", HPROP_PORT);
-
-    af = hp->h_addrtype;
-
-    for (h = hp->h_addr_list; *h != NULL; ++h) {
+    
+    for (a = ai; a != NULL; a = a->ai_next) {
 	int s;
-	struct sockaddr_storage sa_ss;
-	struct sockaddr *sa = (struct sockaddr *)&sa_ss;
 
-	s = socket(af, SOCK_STREAM, 0);
-	if(s < 0){
-	    warn("socket");
-	    freehostent (hp);
-	    return -1;
-	}
-
-	sa->sa_family = af;
-	socket_set_address_and_port (sa, *h, port);
-
-	if (connect (s, sa, socket_sockaddr_size(sa)) < 0) {
+	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+	if (s < 0)
+	    continue;
+	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
 	    warn ("connect(%s)", hostname);
 	    close (s);
 	    continue;
 	}
-	freehostent (hp);
+	freeaddrinfo (ai);
 	return s;
     }
-    freehostent (hp);
+    warnx ("failed to contact %s", hostname);
+    freeaddrinfo (ai);
     return -1;
 }
 

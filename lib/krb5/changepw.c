@@ -38,14 +38,16 @@ RCSID("$Id$");
 static krb5_error_code
 get_kdc_address (krb5_context context,
 		 krb5_realm realm,
-		 struct sockaddr *sa,
-		 int *sa_size)
+		 struct addrinfo **ai)
 {
+    struct addrinfo hints;
     krb5_error_code ret;
-    struct hostent *hostent;
     char **hostlist;
+    int port = 0;
+    char portstr[NI_MAXSERV];
+    int error;
+    char *host;
     char *dot;
-    char *p;
 
     ret = krb5_get_krb_admin_hst (context,
 				  &realm,
@@ -53,33 +55,26 @@ get_kdc_address (krb5_context context,
     if (ret)
 	return ret;
 
-    p = *hostlist;
+    host = *hostlist;
 
-    dot = strchr (p, ':');
-    if (dot)
-	*dot = '\0';
+    dot = strchr (host, ':');
+    if (dot != NULL) {
+	char *end;
 
-#ifdef HAVE_GETHOSTBYNAME2
-#ifdef HAVE_IPV6
-    hostent = gethostbyname2 (p, AF_INET6);
-    if (hostent == NULL)
-#endif
-	hostent = gethostbyname2 (p, AF_INET);
-#else
-    hostent = roken_gethostbyname (p);
-#endif
+	*dot++ = '\0';
+	port = strtol (dot, &end, 0);
+    }
+    if (port == 0)
+	port = krb5_getportbyname (context, "kpasswd", "udp", KPASSWD_PORT);
+    snprintf (portstr, sizeof(portstr), "%u", ntohs(port));
+
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = IPPROTO_UDP;
+
+    error = getaddrinfo (host, portstr, &hints, ai);
     krb5_free_krbhst (context, hostlist);
-    if (hostent == NULL)
-	return h_errno;		/* XXX */
-
-    return krb5_h_addr2sockaddr (hostent->h_addrtype,
-				 hostent->h_addr_list[0],
-				 sa,
-				 sa_size,
-				 krb5_getportbyname (context,
-						     "kpasswd",
-						     "udp",
-						     KPASSWD_PORT));
+    return error;
 }
 
 static krb5_error_code
@@ -284,6 +279,8 @@ krb5_change_password (krb5_context	context,
     krb5_auth_context auth_context = NULL;
     int sock;
     int i;
+    struct addrinfo *ai, *a;
+
     struct sockaddr_storage __ss;
     struct sockaddr *sa = (struct sockaddr *)&__ss;
     int sa_size = sizeof(__ss);
@@ -292,55 +289,60 @@ krb5_change_password (krb5_context	context,
     if (ret)
 	return ret;
 
-    ret = get_kdc_address (context, creds->client->realm, sa, &sa_size);
+    ret = get_kdc_address (context, creds->client->realm, &ai);
     if (ret)
 	goto out;
-
-    sock = socket (sa->sa_family, SOCK_DGRAM, 0);
-    if (sock < 0) {
-	ret = errno;
-	goto out;
-    }
 
     krb5_auth_con_setflags (context, auth_context,
 			    KRB5_AUTH_CONTEXT_DO_SEQUENCE);
 
-    for (i = 0; i < 5; ++i) {
-	fd_set fdset;
-	struct timeval tv;
+    for (a = ai; a != NULL; a = a->ai_next) {
+	sock = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+	if (sock < 0)
+	    continue;
 
-	ret = send_request (context,
-			    &auth_context,
-			    creds,
-			    sock,
-			    sa,
-			    sa_size,
-			    newpw);
-	if (ret)
-	    goto out;
+	for (i = 0; i < 5; ++i) {
+	    fd_set fdset;
+	    struct timeval tv;
 
-	FD_ZERO(&fdset);
-	FD_SET(sock, &fdset);
-	tv.tv_usec = 0;
-	tv.tv_sec  = 1 << i;
+	    ret = send_request (context,
+				&auth_context,
+				creds,
+				sock,
+				sa,
+				sa_size,
+				newpw);
+	    if (ret)
+		goto out;
 
-	ret = select (sock + 1, &fdset, NULL, NULL, &tv);
-	if (ret < 0 && errno != EINTR)
-	    goto out;
-	if (ret == 1)
+	    FD_ZERO(&fdset);
+	    FD_SET(sock, &fdset);
+	    tv.tv_usec = 0;
+	    tv.tv_sec  = 1 << i;
+
+	    ret = select (sock + 1, &fdset, NULL, NULL, &tv);
+	    if (ret < 0 && errno != EINTR)
+		goto out;
+	    if (ret == 1)
+		break;
+	}
+	if (i == 5) {
+	    ret = KRB5_KDC_UNREACH;
+	    close (sock);
+	    continue;
+	}
+
+	ret = process_reply (context,
+			     auth_context,
+			     sock,
+			     result_code,
+			     result_code_string,
+			     result_string);
+	close (sock);
+	if (ret == 0)
 	    break;
     }
-    if (i == 5) {
-	ret = KRB5_KDC_UNREACH;
-	goto out;
-    }
-
-    ret = process_reply (context,
-			 auth_context,
-			 sock,
-			 result_code,
-			 result_code_string,
-			 result_string);
+    freeaddrinfo (ai);
 
 out:
     krb5_auth_con_free (context, auth_context);
