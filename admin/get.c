@@ -73,9 +73,15 @@ get_entry(int argc, char **argv)
 	krb5_unparse_name(context, ent.principal, &name);
 	printf("Principal: %s\n", name);
 	free(name);
-	puttime (*ent.max_life, buf, sizeof(buf));
+	if (ent.max_life)
+	    puttime (*ent.max_life, buf, sizeof(buf));
+	else
+	    strcpy (buf, "infinite");
 	printf("Max ticket life: %s\n", buf);
-	puttime (*ent.max_renew, buf, sizeof(buf));
+	if (ent.max_renew)
+	    puttime (*ent.max_renew, buf, sizeof(buf));
+	else
+	    strcpy (buf, "infinite");
 	printf("Max renewable ticket life: %s\n", buf);
 	if (ent.created_by.principal)
 	    krb5_unparse_name (context, ent.created_by.principal, &name);
@@ -117,7 +123,7 @@ get_entry(int argc, char **argv)
 
 	    printf("Flags: ");
 #define PRINT_FLAG(f)				\
-if(ent.flags. ##f) { 				\
+if(ent.flags. f) { 				\
     if(!first_flag)				\
 	printf(", ");				\
     printf("%s", #f);				\
