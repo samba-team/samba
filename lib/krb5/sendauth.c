@@ -110,6 +110,12 @@ krb5_sendauth(krb5_context context,
 	return KRB5_SENDAUTH_BADRESPONSE; /* XXX */
 
     if (in_creds == NULL) {
+	if (ccache == NULL) {
+	    ret = krb5_cc_default (context, &ccache);
+	    if (ret)
+		return ret;
+	}
+
 	if (client == NULL) {
 	    ret = krb5_cc_get_principal (context, ccache, &this_client);
 	    if (ret)
