@@ -1076,6 +1076,9 @@ struct bitmap {
 #define FILE_WRITE_ATTRIBUTES 0x100
 
 #define FILE_ALL_ATTRIBUTES   0x1FF
+
+/* the desired access to use when opening a pipe */
+#define DESIRED_ACCESS_PIPE 0x2019f
  
 /* Generic access masks & rights. */
 #define SPECIFIC_RIGHTS_MASK 0x00FFFFL
