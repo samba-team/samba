@@ -984,6 +984,14 @@ char *get_socket_name(int fd)
 	struct hostent *hp;
 	struct in_addr addr;
 	char *p;
+
+	/* reverse lookups can be *very* expensive, and in many
+	   situations won't work because many networks don't link dhcp
+	   with dns. To avoid the delay we avoid the lookup if
+	   possible */
+	if (!lp_hostname_lookups()) {
+		return get_socket_addr(fd);
+	}
 	
 	p = get_socket_addr(fd);
 
