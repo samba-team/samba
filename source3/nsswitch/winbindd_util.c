@@ -372,7 +372,7 @@ void establish_connections(BOOL force_reestablish)
 
 		/* Initialise password database and sids */
 		
-//		server_state.pwdb_initialised = pwdb_initialise(False);
+		/* server_state.pwdb_initialised = pwdb_initialise(False); */
 		server_state.pwdb_initialised = True;
 
 		if (!server_state.pwdb_initialised) {
