@@ -371,7 +371,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 			result = NT_STATUS_POSSIBLE_DEADLOCK;
 			continue;
 		}
-
+		
 		result = cli_full_connection(&new_conn->cli, global_myname(), new_conn->controller, 
 			&dc_ip, 0, "IPC$", "IPC", ipc_username, ipc_domain, 
 					     ipc_password, CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, &retry);
@@ -877,10 +877,10 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, const unsigned char *trust_pass
 	}
 			
 	result = cli_nt_setup_creds(conn->cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
-
+	
 	if (got_mutex)
 		secrets_named_mutex_release(lock_name);
-
+			
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
 			  nt_errstr(result)));
@@ -897,7 +897,7 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, const unsigned char *trust_pass
 			
 			/* Try again */
 			result = cli_nt_setup_creds( conn->cli, get_sec_chan(),trust_passwd, &neg_flags, 2);
-
+			
 			if (got_mutex)
 				secrets_named_mutex_release(lock_name);
 		}
