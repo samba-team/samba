@@ -193,7 +193,7 @@ static BOOL rpc_auth_pipe(struct ntdom_info *nt, prs_struct *rdata,
 		smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &auth_req, 0);
 		prs_free_data(&auth_req);
 
-		if (!rpc_hdr_auth_chk(&rhdr_auth))
+		if (!rpc_hdr_ntlmssp_auth_chk(&rhdr_auth))
 		{
 			return False;
 		}
@@ -1271,7 +1271,7 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 	uint32 rpc_call_id;
 	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
 	struct ntuser_creds *usr = cli_conn_get_usercreds(con);
-	BOOL ntlmssp_auth = nt->ntlmssp_cli_flgs != 0;
+	BOOL ntlmsspauth = nt->ntlmssp_cli_flgs != 0;
 
 	if (pipe_name == NULL || abstract == NULL || transfer == NULL)
 	{
@@ -1284,17 +1284,17 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 
 	prs_init(&hdr      , 0x10                     , 4, False);
 	prs_init(&hdr_rb   , 1024                     , 4, False);
-	prs_init(&hdr_auth , (ntlmssp_auth ?    8 : 0), 4, False);
-	prs_init(&auth_req , (ntlmssp_auth ? 1024 : 0), 4, False);
-	prs_init(&auth_ntlm, (ntlmssp_auth ? 1024 : 0), 4, False);
+	prs_init(&hdr_auth , (ntlmsspauth ?    8 : 0), 4, False);
+	prs_init(&auth_req , (ntlmsspauth ? 1024 : 0), 4, False);
+	prs_init(&auth_ntlm, (ntlmsspauth ? 1024 : 0), 4, False);
 
 	prs_init(&rdata    , 0   , 4, True);
 
 	rpc_call_id = get_rpc_call_id();
 	create_rpc_bind_req(&hdr, &hdr_rb,
-	                    ntlmssp_auth ? &hdr_auth : NULL,
-	                    ntlmssp_auth ? &auth_req : NULL,
-	                    ntlmssp_auth ? &auth_ntlm : NULL,
+	                    ntlmsspauth ? &hdr_auth : NULL,
+	                    ntlmsspauth ? &auth_req : NULL,
+	                    ntlmsspauth ? &auth_ntlm : NULL,
 	                    rpc_call_id,
 	                    abstract, transfer,
 	                    global_myname, usr->domain, usr->ntlmssp_flags);
@@ -1329,23 +1329,23 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 			nt->max_recv_frag = hdr_ba.bba.max_rsize;
 		}
 
-		if (valid_ack && ntlmssp_auth)
+		if (valid_ack && ntlmsspauth)
 		{
 			smb_io_rpc_hdr_auth("", &rhdr_auth, &rdata, 0);
 			if (rdata.offset == 0) valid_ack = False;
 		}
 
-		if (valid_ack && ntlmssp_auth)
+		if (valid_ack && ntlmsspauth)
 		{
 			smb_io_rpc_auth_ntlmssp_verifier("", &rhdr_verf, &rdata, 0);
 			if (rdata.offset == 0) valid_ack = False;
 		}
-		if (valid_ack && ntlmssp_auth)
+		if (valid_ack && ntlmsspauth)
 		{
 			smb_io_rpc_auth_ntlmssp_chal("", &rhdr_chal, &rdata, 0);
 			if (rdata.offset == 0) valid_ack = False;
 		}
-		if (valid_ack && ntlmssp_auth)
+		if (valid_ack && ntlmsspauth)
 		{
 			unsigned char p24[24];
 			unsigned char lm_owf[24];

@@ -593,12 +593,9 @@ BOOL smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int de
 /*******************************************************************
 checks an RPC_HDR_AUTH structure.
 ********************************************************************/
-BOOL rpc_hdr_auth_chk(RPC_HDR_AUTH *rai)
+BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH *rai)
 {
-	return ((rai->auth_type == 0x0a || rai->auth_type == 0x44) &&
-	         rai->auth_level == 0x06);
-
-	return True;
+	return (rai->auth_type == 0x0a && rai->auth_level == 0x06);
 }
 
 /*******************************************************************

@@ -84,6 +84,22 @@ typedef struct parse_struct
 
 } prs_struct;
 
+typedef struct ntlmssp_auth_struct
+{
+	RPC_AUTH_NTLMSSP_CHAL     ntlmssp_chal;
+
+	unsigned char ntlmssp_hash[258];
+	uint32 ntlmssp_seq_num;
+	fstring user_name;
+	fstring domain;
+	fstring wks;
+
+	uchar user_sess_key[16];
+
+} ntlmssp_auth_struct;
+
+struct srv_auth_fns;
+
 typedef struct rpcsrv_struct
 {
 	prs_struct data_i; /* input data (intermediate, for fragments) */
@@ -95,22 +111,15 @@ typedef struct rpcsrv_struct
 	prs_struct smb_pdu;
 	prs_struct rsmb_pdu;
 
+	void *auth_info;
+	struct srv_auth_fns *auth;
+	BOOL auth_validated;
+	BOOL faulted_once_before;
+
 	RPC_HDR       hdr;
 	RPC_HDR_BA    hdr_ba;
 	RPC_HDR_RB    hdr_rb;
 	RPC_HDR_REQ   hdr_req;
-
-	RPC_AUTH_NTLMSSP_CHAL     ntlmssp_chal;
-
-	BOOL ntlmssp_auth;
-	BOOL ntlmssp_validated;
-	unsigned char ntlmssp_hash[258];
-	uint32 ntlmssp_seq_num;
-	fstring user_name;
-	fstring domain;
-	fstring wks;
-
-	uchar user_sess_key[16];
 
 	/* per-user authentication info.  hmm, this not appropriate, but
 	   it will do for now.  dcinfo contains NETLOGON-specific info,
@@ -119,6 +128,14 @@ typedef struct rpcsrv_struct
 	struct dcinfo dc;
 
 } rpcsrv_struct;
+
+typedef struct srv_auth_fns
+{
+	BOOL (*api_auth_chk)(rpcsrv_struct *);
+	BOOL (*api_auth_gen)(rpcsrv_struct *, prs_struct *, enum RPC_PKT_TYPE);
+	BOOL (*api_create_pdu)(rpcsrv_struct *, uint32, prs_struct *);
+
+} srv_auth_fns;
 
 typedef struct msrpc_pipes_struct
 {

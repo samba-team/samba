@@ -2984,7 +2984,7 @@ BOOL make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
 				uint8 auth_type, uint8 auth_level,
 				uint8 stub_type_len);
 BOOL smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int depth);
-BOOL rpc_hdr_auth_chk(RPC_HDR_AUTH *rai);
+BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH *rai);
 BOOL make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
 				uint8 stub_type_len,
@@ -3790,7 +3790,6 @@ pipes_struct *get_rpc_pipe(int pnum);
 
 /*The following definitions come from  rpc_server/srv_pipe_srv.c  */
 
-BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start, prs_struct *resp);
 void close_msrpc_command_processor(void);
 void add_msrpc_command_processor(char* pipe_name,
 				char* process_name,
