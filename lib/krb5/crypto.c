@@ -139,13 +139,13 @@ static krb5_error_code derive_key(krb5_context context,
 				  struct key_data *key,
 				  const void *constant,
 				  size_t len);
-static void hmac(krb5_context context,
-		 struct checksum_type *cm, 
-		 const void *data, 
-		 size_t len, 
-		 unsigned usage,
-		 struct key_data *keyblock,
-		 Checksum *result);
+static krb5_error_code hmac(krb5_context context,
+			    struct checksum_type *cm, 
+			    const void *data, 
+			    size_t len, 
+			    unsigned usage,
+			    struct key_data *keyblock,
+			    Checksum *result);
 static void free_key_data(krb5_context context, struct key_data *key);
 
 /************************************************************
@@ -596,12 +596,16 @@ _krb5_PKCS5_PBKDF2(krb5_context context, krb5_cksumtype cktype,
 
 	_krb5_put_int(data + datalen - 4, keypart, 4);
 
-	hmac(context, c, data, datalen, 0, &ksign, &result);
+	ret = hmac(context, c, data, datalen, 0, &ksign, &result);
+	if (ret)
+	    krb5_abortx(context, "hmac failed");
 	memcpy(p, result.checksum.data, len);
 	memcpy(tmpcksum, result.checksum.data, result.checksum.length);
 	for (i = 0; i < iter; i++) {
-	    hmac(context, c, tmpcksum, result.checksum.length,
-		 0, &ksign, &result);
+	    ret = hmac(context, c, tmpcksum, result.checksum.length,
+		       0, &ksign, &result);
+	    if (ret)
+		krb5_abortx(context, "hmac failed");
 	    memcpy(tmpcksum, result.checksum.data, result.checksum.length);
 	    for (j = 0; j < len; j++)
 		p[j] ^= tmpcksum[j];
@@ -1410,7 +1414,7 @@ SHA1_checksum(krb5_context context,
 }
 
 /* HMAC according to RFC2104 */
-static void
+static krb5_error_code
 hmac(krb5_context context,
      struct checksum_type *cm, 
      const void *data, 
@@ -1424,6 +1428,17 @@ hmac(krb5_context context,
     size_t key_len;
     int i;
     
+    ipad = malloc(cm->blocksize + len);
+    if (ipad == NULL)
+	return ENOMEM;
+    opad = malloc(cm->blocksize + cm->checksumsize);
+    if (opad == NULL) {
+	free(ipad);
+	return ENOMEM;
+    }
+    memset(ipad, 0x36, cm->blocksize);
+    memset(opad, 0x5c, cm->blocksize);
+
     if(keyblock->key->keyvalue.length > cm->blocksize){
 	(*cm->checksum)(context, 
 			keyblock, 
@@ -1437,10 +1452,6 @@ hmac(krb5_context context,
 	key = keyblock->key->keyvalue.data;
 	key_len = keyblock->key->keyvalue.length;
     }
-    ipad = malloc(cm->blocksize + len);
-    opad = malloc(cm->blocksize + cm->checksumsize);
-    memset(ipad, 0x36, cm->blocksize);
-    memset(opad, 0x5c, cm->blocksize);
     for(i = 0; i < key_len; i++){
 	ipad[i] ^= key[i];
 	opad[i] ^= key[i];
@@ -1456,7 +1467,39 @@ hmac(krb5_context context,
     free(ipad);
     memset(opad, 0, cm->blocksize + cm->checksumsize);
     free(opad);
+
+    return 0;
 }
+
+krb5_error_code
+krb5_hmac(krb5_context context,
+	  krb5_cksumtype cktype,
+	  const void *data,
+	  size_t len,
+	  unsigned usage, 
+	  krb5_keyblock *key,
+	  Checksum *result)
+{
+    struct checksum_type *c = _find_checksum(cktype);
+    struct key_data kd;
+    krb5_error_code ret;
+
+    if (c == NULL) {
+	krb5_set_error_string (context, "checksum type %d not supported",
+			       cktype);
+	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
+
+    kd.key = key;
+    kd.schedule = NULL;
+
+    ret = hmac(context, c, data, len, usage, &kd, result);
+
+    if (kd.schedule)
+	krb5_free_data(context, kd.schedule);
+
+    return ret;
+ }
 
 static void
 SP_HMAC_SHA1_checksum(krb5_context context,
@@ -1469,11 +1512,14 @@ SP_HMAC_SHA1_checksum(krb5_context context,
     struct checksum_type *c = _find_checksum(CKSUMTYPE_SHA1);
     Checksum res;
     char sha1_data[20];
+    krb5_error_code ret;
 
     res.checksum.data = sha1_data;
     res.checksum.length = sizeof(sha1_data);
 
-    hmac(context, c, data, len, usage, key, &res);
+    ret = hmac(context, c, data, len, usage, key, &res);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
     memcpy(result->checksum.data, res.checksum.data, result->checksum.length);
 }
 
@@ -1498,10 +1544,13 @@ HMAC_MD5_checksum(krb5_context context,
     unsigned char t[4];
     unsigned char tmp[16];
     unsigned char ksign_c_data[16];
+    krb5_error_code ret;
 
     ksign_c.checksum.length = sizeof(ksign_c_data);
     ksign_c.checksum.data   = ksign_c_data;
-    hmac(context, c, signature, sizeof(signature), 0, key, &ksign_c);
+    ret = hmac(context, c, signature, sizeof(signature), 0, key, &ksign_c);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
     ksign.key = &kb;
     kb.keyvalue = ksign_c.checksum;
     MD5_Init (&md5);
@@ -1512,7 +1561,9 @@ HMAC_MD5_checksum(krb5_context context,
     MD5_Update (&md5, t, 4);
     MD5_Update (&md5, data, len);
     MD5_Final (tmp, &md5);
-    hmac(context, c, tmp, sizeof(tmp), 0, &ksign, result);
+    ret = hmac(context, c, tmp, sizeof(tmp), 0, &ksign, result);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
 }
 
 /*
@@ -1533,6 +1584,7 @@ HMAC_MD5_checksum_enc(krb5_context context,
     krb5_keyblock kb;
     unsigned char t[4];
     unsigned char ksign_c_data[16];
+    krb5_error_code ret;
 
     t[0] = (usage >>  0) & 0xFF;
     t[1] = (usage >>  8) & 0xFF;
@@ -1541,10 +1593,14 @@ HMAC_MD5_checksum_enc(krb5_context context,
 
     ksign_c.checksum.length = sizeof(ksign_c_data);
     ksign_c.checksum.data   = ksign_c_data;
-    hmac(context, c, t, sizeof(t), 0, key, &ksign_c);
+    ret = hmac(context, c, t, sizeof(t), 0, key, &ksign_c);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
     ksign.key = &kb;
     kb.keyvalue = ksign_c.checksum;
-    hmac(context, c, data, len, 0, &ksign, result);
+    ret = hmac(context, c, data, len, 0, &ksign, result);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
 }
 
 struct checksum_type checksum_none = {
@@ -2137,7 +2193,7 @@ AES_CTS_encrypt(krb5_context context,
 	k = &aeskey->dkey;
     
     if (len < AES_BLOCK_SIZE)
-	abort();
+	krb5_abortx(context, "invalid use of AES_CTS_encrypt");
     if (len == AES_BLOCK_SIZE) {
 	if (encrypt)
 	    AES_encrypt(data, data, k);
@@ -2177,6 +2233,7 @@ ARCFOUR_subencrypt(krb5_context context,
     RC4_KEY rc4_key;
     unsigned char *cdata = data;
     unsigned char k1_c_data[16], k2_c_data[16], k3_c_data[16];
+    krb5_error_code ret;
 
     t[0] = (usage >>  0) & 0xFF;
     t[1] = (usage >>  8) & 0xFF;
@@ -2186,7 +2243,9 @@ ARCFOUR_subencrypt(krb5_context context,
     k1_c.checksum.length = sizeof(k1_c_data);
     k1_c.checksum.data   = k1_c_data;
 
-    hmac(NULL, c, t, sizeof(t), 0, key, &k1_c);
+    ret = hmac(NULL, c, t, sizeof(t), 0, key, &k1_c);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
 
     memcpy (k2_c_data, k1_c_data, sizeof(k1_c_data));
 
@@ -2199,7 +2258,9 @@ ARCFOUR_subencrypt(krb5_context context,
     cksum.checksum.length = 16;
     cksum.checksum.data   = data;
 
-    hmac(NULL, c, cdata + 16, len - 16, 0, &ke, &cksum);
+    ret = hmac(NULL, c, cdata + 16, len - 16, 0, &ke, &cksum);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
 
     ke.key = &kb;
     kb.keyvalue = k1_c.checksum;
@@ -2207,7 +2268,9 @@ ARCFOUR_subencrypt(krb5_context context,
     k3_c.checksum.length = sizeof(k3_c_data);
     k3_c.checksum.data   = k3_c_data;
 
-    hmac(NULL, c, data, 16, 0, &ke, &k3_c);
+    ret = hmac(NULL, c, data, 16, 0, &ke, &k3_c);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
 
     RC4_set_key (&rc4_key, k3_c.checksum.length, k3_c.checksum.data);
     RC4 (&rc4_key, len - 16, cdata + 16, cdata + 16);
@@ -2234,6 +2297,7 @@ ARCFOUR_subdecrypt(krb5_context context,
     unsigned char *cdata = data;
     unsigned char k1_c_data[16], k2_c_data[16], k3_c_data[16];
     unsigned char cksum_data[16];
+    krb5_error_code ret;
 
     t[0] = (usage >>  0) & 0xFF;
     t[1] = (usage >>  8) & 0xFF;
@@ -2243,7 +2307,9 @@ ARCFOUR_subdecrypt(krb5_context context,
     k1_c.checksum.length = sizeof(k1_c_data);
     k1_c.checksum.data   = k1_c_data;
 
-    hmac(NULL, c, t, sizeof(t), 0, key, &k1_c);
+    ret = hmac(NULL, c, t, sizeof(t), 0, key, &k1_c);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
 
     memcpy (k2_c_data, k1_c_data, sizeof(k1_c_data));
 
@@ -2256,7 +2322,9 @@ ARCFOUR_subdecrypt(krb5_context context,
     k3_c.checksum.length = sizeof(k3_c_data);
     k3_c.checksum.data   = k3_c_data;
 
-    hmac(NULL, c, cdata, 16, 0, &ke, &k3_c);
+    ret = hmac(NULL, c, cdata, 16, 0, &ke, &k3_c);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
 
     RC4_set_key (&rc4_key, k3_c.checksum.length, k3_c.checksum.data);
     RC4 (&rc4_key, len - 16, cdata + 16, cdata + 16);
@@ -2267,7 +2335,9 @@ ARCFOUR_subdecrypt(krb5_context context,
     cksum.checksum.length = 16;
     cksum.checksum.data   = cksum_data;
 
-    hmac(NULL, c, cdata + 16, len - 16, 0, &ke, &cksum);
+    ret = hmac(NULL, c, cdata + 16, len - 16, 0, &ke, &cksum);
+    if (ret)
+	krb5_abortx(context, "hmac failed");
 
     memset (k1_c_data, 0, sizeof(k1_c_data));
     memset (k2_c_data, 0, sizeof(k2_c_data));
