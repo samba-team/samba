@@ -3343,6 +3343,7 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_server/srv_lsa_nt.c  */
 
+#if OLD_NTDOMAIN
 uint32 _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 *r_u);
 uint32 _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *r_u);
 uint32 _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENUM_TRUST_DOM *r_u);
@@ -3351,6 +3352,7 @@ uint32 _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_SI
 uint32 _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP_NAMES *r_u);
 uint32 _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u);
 uint32 _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECRET *r_u);
+#endif
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 
@@ -3555,6 +3557,12 @@ uint32 lookup_user_rid(char *user_name, uint32 *rid);
 
 #if OLD_NTDOMAIN
 BOOL api_wkssvc_rpc(pipes_struct *p);
+#endif
+
+/*The following definitions come from  rpc_server/srv_wkssvc_nt.c  */
+
+#if OLD_NTDOMAIN
+uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO *r_u);
 #endif
 
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
