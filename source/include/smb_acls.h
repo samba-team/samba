@@ -133,6 +133,36 @@ typedef struct acl                 *SMB_ACL_ENTRY_T;
 
 #elif defined(HAVE_IRIX_ACLS)
 
+#define SMB_ACL_TAG_T               acl_tag_t
+#define SMB_ACL_TYPE_T		    acl_type_t
+#define SMB_ACL_PERMSET_T           acl_permset_t
+#define SMB_ACL_PERM_T		    acl_perm_t
+#define SMB_ACL_READ                ACL_READ
+#define SMB_ACL_WRITE               ACL_WRITE
+#define SMB_ACL_EXECUTE             ACL_EXECUTE
+
+/* Types of ACLs. */
+#define SMB_ACL_USER                ACL_USER
+#define SMB_ACL_USER_OBJ            ACL_USER_OBJ
+#define SMB_ACL_GROUP               ACL_GROUP
+#define SMB_ACL_GROUP_OBJ           ACL_GROUP_OBJ
+#define SMB_ACL_OTHER               ACL_OTHER_OBJ
+#define SMB_ACL_MASK                ACL_MASK
+
+typedef struct SMB_ACL_T {
+   int next;
+   BOOL freeaclp;
+   struct acl  *aclp;
+} *SMB_ACL_T;
+
+#define SMB_ACL_ENTRY_T		    acl_entry_t
+
+#define SMB_ACL_FIRST_ENTRY         0
+#define SMB_ACL_NEXT_ENTRY          1
+
+#define SMB_ACL_TYPE_ACCESS         ACL_TYPE_ACCESS
+#define SMB_ACL_TYPE_DEFAULT        ACL_TYPE_DEFAULT
+
 #else /* No ACLs. */
 
 /* No ACLS - fake it. */
