@@ -276,7 +276,7 @@ static void check_log_size( void )
     (void)fclose( dbf );
     dbf = NULL;
     reopen_logs();
-    if( dbf && file_size( debugf ) > maxlog )
+    if( dbf && get_file_size( debugf ) > maxlog )
       {
       pstring name;
 

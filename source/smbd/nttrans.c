@@ -25,7 +25,6 @@
 
 extern int DEBUGLEVEL;
 extern int Protocol;
-extern int Client;  
 extern int smb_read_error;
 extern int global_oplock_break;
 extern BOOL case_sensitive;
@@ -89,7 +88,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
    */
 
   if(params_to_send == 0 && data_to_send == 0) {
-    send_smb(Client,outbuf);
+    send_smb(smbd_server_fd(),outbuf);
     return 0;
   }
 
@@ -218,7 +217,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
           params_to_send, data_to_send, paramsize, datasize));
     
     /* Send the packet */
-    send_smb(Client,outbuf);
+    send_smb(smbd_server_fd(),outbuf);
     
     pp += params_sent_thistime;
     pd += data_sent_thistime;
@@ -1425,7 +1424,6 @@ static ubi_slList change_notify_queue = { NULL, (ubi_slNodePtr)&change_notify_qu
 
 static void change_notify_reply_packet(char *inbuf, int error_class, uint32 error_code)
 {
-  extern int Client;
   char outbuf[smb_size+38];
 
   memset(outbuf, '\0', sizeof(outbuf));
@@ -1450,7 +1448,7 @@ static void change_notify_reply_packet(char *inbuf, int error_class, uint32 erro
    */
   set_message(outbuf,18,0,False);
 
-  send_smb(Client,outbuf);
+  send_smb(smbd_server_fd(),outbuf);
 }
 
 /****************************************************************************
@@ -2680,7 +2678,7 @@ due to being in oplock break state.\n" ));
     /* We need to send an interim response then receive the rest
        of the parameter/data bytes */
     outsize = set_message(outbuf,0,0,True);
-    send_smb(Client,outbuf);
+    send_smb(smbd_server_fd(),outbuf);
 
     while( num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
       BOOL ret;

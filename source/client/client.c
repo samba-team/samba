@@ -41,7 +41,6 @@ static pstring workgroup;
 static char *cmdstr;
 static BOOL got_pass;
 extern struct in_addr ipzero;
-extern pstring scope;
 
 static int name_type = 0x20;
 
@@ -1927,7 +1926,6 @@ static void usage(char *pname)
   DEBUG(0,("\t-O socket_options     socket options to use\n"));
   DEBUG(0,("\t-R name resolve order use these name resolution services only\n"));
   DEBUG(0,("\t-M host               send a winpopup message to the host\n"));
-  DEBUG(0,("\t-i scope              use this NetBIOS scope\n"));
   DEBUG(0,("\t-N                    don't ask for a password\n"));
   DEBUG(0,("\t-n netbios name.      Use this name as my netbios name\n"));
   DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
@@ -2220,9 +2218,6 @@ static int do_message_op(void)
 			pstrcpy(desthost,optarg);
 			message = True;
 			break;
-		case 'i':
-			pstrcpy(scope,optarg);
-			break;
 		case 'N':
 			got_pass = True;
 			break;
@@ -2350,10 +2345,8 @@ static int do_message_op(void)
 	}
 
 	if (!process(base_directory)) {
-		close_sockets();
 		return(1);
 	}
-	close_sockets();
 
 	return(0);
 }

@@ -80,7 +80,10 @@
 #define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
 
 #define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
-                               return(ERROR(ERRDOS,ERRbadfid))
+                               return(ERROR(ERRDOS,ERRbadfid)); \
+                            else if((fsp)->fd == -1) \
+                               return(ERROR(ERRDOS,ERRbadaccess))
+
 #define CHECK_READ(fsp) if (!(fsp)->can_read) \
                                return(ERROR(ERRDOS,ERRbadaccess))
 #define CHECK_WRITE(fsp) if (!(fsp)->can_write) \

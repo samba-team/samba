@@ -548,7 +548,6 @@ BOOL file_exist(char *fname, SMB_STRUCT_STAT * sbuf);
 int file_rename(char *from, char *to);
 time_t file_modtime(char *fname);
 BOOL directory_exist(char *dname, SMB_STRUCT_STAT * st);
-SMB_OFF_T file_size(char *file_name);
 char *attrib_string(uint16 mode);
 void show_msg(char *buf);
 void smb_setlen(char *buf, int len);
@@ -577,13 +576,12 @@ int interpret_protocol(char *str, int def);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
-BOOL matchname(char *remotehost, struct in_addr addr);
 void standard_sub_basic(char *str);
 void standard_sub_vuser(const user_struct * vuser, char *str);
 void standard_sub(connection_struct * conn, user_struct * vuser, char *str);
 BOOL same_net(struct in_addr ip1, struct in_addr ip2, struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
-BOOL process_exists(int pid);
+BOOL process_exists(pid_t pid);
 int get_unixgroups(const char *user, uid_t uid, gid_t gid, int *p_ngroups,
 		   gid_t ** p_groups);
 BOOL get_unix_grps(int *p_ngroups, struct group **p_groups);
@@ -599,8 +597,6 @@ void free_namearray(name_compare_entry * name_array);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
-char *align4(char *q, char *base);
-char *align2(char *q, char *base);
 void out_ascii(FILE * f, const uchar * buf, int len);
 void out_struct(FILE * f, const char *buf1, int len, int per_line);
 void out_data(FILE * f, const char *buf1, int len, int per_line);
@@ -661,10 +657,10 @@ BOOL do_file_lock(int fd, int waitsecs, int type);
 BOOL file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL file_unlock(int fd, int *plock_depth);
 uint32 map_lock_offset(uint32 high, uint32 low);
-SMB_OFF_T get_lock_count(char *data, int data_offset, BOOL large_file_format,
-			 BOOL *err);
-SMB_OFF_T get_lock_offset(char *data, int data_offset, BOOL large_file_format,
-			  BOOL *err);
+SMB_BIG_UINT get_lock_count(char *data, int data_offset,
+			    BOOL large_file_format);
+SMB_BIG_UINT get_lock_offset(char *data, int data_offset,
+			     BOOL large_file_format, BOOL *err);
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 void *startfileent(char *pfile, char *s_readbuf, int bufsize,
 				int *file_lock_depth, BOOL update);
@@ -766,32 +762,34 @@ BOOL create_new_sid(DOM_SID *sid);
 
 BOOL is_a_socket(int fd);
 void set_socket_options(int fd, char *options);
-void close_sockets(void);
-ssize_t write_socket(int fd, char *buf, size_t len);
 int write_data_outstanding(int fd, unsigned int time_out, BOOL *more);
 int read_data_outstanding(int fd, unsigned int time_out);
 ssize_t read_udp_socket(int fd, char *buf, size_t len);
+ssize_t read_socket_with_timeout(int fd, char *buf, size_t mincnt,
+				 size_t maxcnt, unsigned int time_out);
 ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 			  unsigned int time_out);
 BOOL send_keepalive(int client);
 ssize_t read_data(int fd, char *buffer, size_t N);
 ssize_t write_data(int fd, char *buffer, size_t N);
+ssize_t write_socket_data(int fd, char *buffer, size_t N);
+ssize_t write_socket(int fd, char *buf, size_t len);
 ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout);
 BOOL receive_smb(int fd, char *buffer, unsigned int timeout);
 BOOL client_receive_smb(int fd, char *buffer, unsigned int timeout);
+BOOL send_null_session_msg(int fd);
 BOOL send_smb(int fd, char *buffer);
 BOOL send_one_packet(char *buf, int len, struct in_addr ip, int port,
 		     int type);
 int open_socket_in(int type, int port, int dlevel, uint32 socket_addr,
 		   BOOL rebind);
 int open_socket_out(int type, struct in_addr *addr, int port, int timeout);
-void set_client_connection_name(const char *name, int fd);
-void set_client_connection_addr(const char *addr, int fd);
-char *client_connection_name(void);
-char *client_connection_addr(void);
 void reset_globals_after_fork(void);
-char *client_name(int fd);
-char *client_addr(int fd);
+void client_setfd(int fd);
+char *client_name(void);
+char *client_addr(void);
+char *get_socket_name(int fd);
+char *get_socket_addr(int fd);
 int open_pipe_sock(char *path);
 int create_pipe_socket(char *dir, int dir_perms, char *path, int path_perms);
 
@@ -1263,13 +1261,13 @@ int brl_forall(BRLOCK_FN(fn));
 
 void locking_close_file(files_struct *fsp);
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
-	       SMB_OFF_T count,SMB_OFF_T offset, 
+	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       enum brl_type lock_type);
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
-             SMB_OFF_T count,SMB_OFF_T offset,enum brl_type lock_type,
+             SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode);
 BOOL do_unlock(files_struct *fsp,connection_struct *conn,
-               SMB_OFF_T count,SMB_OFF_T offset, 
+               SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       int *eclass,uint32 *ecode);
 BOOL locking_init(int read_only);
 BOOL locking_end(void);
@@ -5848,7 +5846,7 @@ int reply_nttrans(connection_struct *conn,
 
 /*The following definitions come from  smbd/open.c  */
 
-void fd_close(files_struct *fsp, int *err_ret);
+int fd_close(struct connection_struct *conn, files_struct *fsp);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action);
 int open_file_stat(files_struct *fsp,connection_struct *conn,
@@ -6018,6 +6016,8 @@ int reply_getattrE(connection_struct * conn, char *inbuf, char *outbuf,
 
 /*The following definitions come from  smbd/server.c  */
 
+int smbd_server_fd(void);
+void smbd_set_server_fd(int fd);
 BOOL reload_services(BOOL test);
 void exit_server(char *reason);
 

@@ -32,9 +32,6 @@ extern int DEBUGLEVEL;
 
 BOOL passive = False;
 
-/* the client file descriptor */
-int Client = -1;
-
 /* the port, where client connected */
 int ClientPort = 0;
 
@@ -49,7 +46,7 @@ int smb_read_error = 0;
 
 
 /****************************************************************************
-determine if a file descriptor is in fact a socket
+ Determine if a file descriptor is in fact a socket.
 ****************************************************************************/
 BOOL is_a_socket(int fd)
 {
@@ -69,7 +66,8 @@ struct
 	int option;
 	int value;
 	int opttype;
-} socket_options[] =
+}
+socket_options[] =
 {
 	{
 	"SO_KEEPALIVE", SOL_SOCKET, SO_KEEPALIVE, 0, OPT_BOOL}
@@ -94,6 +92,11 @@ struct
 	{
 		"IPTOS_THROUGHPUT", IPPROTO_IP, IP_TOS, IPTOS_THROUGHPUT,
 			OPT_ON}
+	,
+#endif
+#ifdef SO_REUSEPORT
+	{
+	"SO_REUSEPORT", SOL_SOCKET, SO_REUSEPORT, 0, OPT_BOOL}
 	,
 #endif
 #ifdef SO_SNDBUF
@@ -133,7 +136,7 @@ struct
 
 
 /****************************************************************************
-set user socket options
+ Set user socket options.
 ****************************************************************************/
 void set_socket_options(int fd, char *options)
 {
@@ -193,47 +196,18 @@ void set_socket_options(int fd, char *options)
 		}
 
 		if (ret != 0)
-			DEBUG(0, ("Failed to set socket option %s\n", tok));
+			DEBUG(0,
+			      ("Failed to set socket option %s (Error %s)\n",
+			       tok, strerror(errno)));
 	}
 }
 
 
 
 /****************************************************************************
-  close the socket communication
+ Read from a socket.
 ****************************************************************************/
-void close_sockets(void)
-{
-#ifdef WITH_SSL
-	sslutil_disconnect(Client);
-#endif /* WITH_SSL */
 
-	close(Client);
-	Client = -1;
-}
-
-
-
-/****************************************************************************
-write to a socket
-****************************************************************************/
-ssize_t write_socket(int fd, char *buf, size_t len)
-{
-	ssize_t ret = 0;
-
-	if (passive)
-		return (len);
-	DEBUG(6, ("write_socket(%d,%d)\n", fd, len));
-	ret = write_data(fd, buf, len);
-
-	DEBUG(6, ("write_socket(%d,%d) wrote %d\n", fd, len, ret));
-	if (ret <= 0)
-		DEBUG(0,
-		      ("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n",
-		       len, fd, strerror(errno)));
-
-	return (ret);
-}
 
 /*******************************************************************
  checks if write data is outstanding.
@@ -315,7 +289,98 @@ ssize_t read_udp_socket(int fd, char *buf, size_t len)
 }
 
 /****************************************************************************
-read data from a device with a timout in msec.
+ Read data from a socket with a timout in msec.
+mincount = if timeout, minimum to read before returning
+maxcount = number to be read.
+time_out = timeout in milliseconds
+****************************************************************************/
+
+ssize_t read_socket_with_timeout(int fd, char *buf, size_t mincnt,
+				 size_t maxcnt, unsigned int time_out)
+{
+	ssize_t readret;
+	size_t nread = 0;
+
+	/* just checking .... */
+	if (maxcnt <= 0)
+		return (0);
+
+	/* Blocking read */
+	if (time_out <= 0)
+	{
+		if (mincnt == 0)
+			mincnt = maxcnt;
+
+		while (nread < mincnt)
+		{
+#ifdef WITH_SSL
+			if (fd == sslFd)
+			{
+				readret =
+					SSL_read(ssl, buf + nread,
+						 maxcnt - nread);
+			}
+			else
+			{
+				readret =
+					read(fd, buf + nread, maxcnt - nread);
+			}
+#else /* WITH_SSL */
+			readret = read(fd, buf + nread, maxcnt - nread);
+#endif /* WITH_SSL */
+
+			if (readret <= 0)
+			{
+				return readret;
+			}
+
+			nread += readret;
+		}
+		return ((ssize_t) nread);
+	}
+
+	/* Most difficult - timeout read */
+	/* If this is ever called on a disk file and 
+	   mincnt is greater then the filesize then
+	   system performance will suffer severely as 
+	   select always returns true on disk files */
+
+	for (nread = 0; nread < mincnt;)
+	{
+		int selrtn = read_data_outstanding(fd, time_out);
+
+		/* Check if error */
+		if (selrtn <= 0)
+		{
+			return selrtn;
+		}
+
+#ifdef WITH_SSL
+		if (fd == sslFd)
+		{
+			readret = SSL_read(ssl, buf + nread, maxcnt - nread);
+		}
+		else
+		{
+			readret = read(fd, buf + nread, maxcnt - nread);
+		}
+#else /* WITH_SSL */
+		readret = read(fd, buf + nread, maxcnt - nread);
+#endif /* WITH_SSL */
+
+		if (readret <= 0)
+		{
+			return readret;
+		}
+		nread += readret;
+	}
+
+	/* Return the number we got */
+	return ((ssize_t) nread);
+}
+
+/****************************************************************************
+ Read data from a socket with a timout in msec.
 mincount = if timeout, minimum to read before returning
 maxcount = number to be read.
 time_out = timeout in milliseconds
@@ -387,6 +452,9 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 		if (selrtn == -1)
 		{
 			/* something is wrong. Maybe the socket is dead? */
+			DEBUG(0,
+			      ("read_socket_with_timeout: timeout read. select error = %s.\n",
+			       strerror(errno)));
 			smb_read_error = READ_ERROR;
 			return -1;
 		}
@@ -394,6 +462,8 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 		/* Did we timeout ? */
 		if (selrtn == 0)
 		{
+			DEBUG(10,
+			      ("read_socket_with_timeout: timeout read. select timed out.\n"));
 			smb_read_error = READ_TIMEOUT;
 			return -1;
 		}
@@ -414,6 +484,8 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 		if (readret == 0)
 		{
 			/* we got EOF on the file descriptor */
+			DEBUG(5,
+			      ("read_socket_with_timeout: timeout read. EOF from client.\n"));
 			smb_read_error = READ_EOF;
 			return -1;
 		}
@@ -421,6 +493,9 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 		if (readret == -1)
 		{
 			/* the descriptor is probably dead */
+			DEBUG(0,
+			      ("read_socket_with_timeout: timeout read. read error = %s.\n",
+			       strerror(errno)));
 			smb_read_error = READ_ERROR;
 			return -1;
 		}
@@ -432,7 +507,6 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 	return ((ssize_t) nread);
 }
 
-
 /****************************************************************************
 send a keepalive packet (rfc1002)
 ****************************************************************************/
@@ -443,7 +517,7 @@ BOOL send_keepalive(int client)
 	buf[0] = 0x85;
 	buf[1] = buf[2] = buf[3] = 0;
 
-	return (write_data(client, (char *)buf, 4) == 4);
+	return (write_socket_data(client, (char *)buf, 4) == 4);
 }
 
 
@@ -475,11 +549,17 @@ ssize_t read_data(int fd, char *buffer, size_t N)
 
 		if (ret == 0)
 		{
+			DEBUG(10,
+			      ("read_data: read of %d returned 0. Error = %s\n",
+			       (int)(N - total), strerror(errno)));
 			smb_read_error = READ_EOF;
 			return 0;
 		}
 		if (ret == -1)
 		{
+			DEBUG(0,
+			      ("read_data: read failure for %d. Error = %s\n",
+			       (int)(N - total), strerror(errno)));
 			smb_read_error = READ_ERROR;
 			return -1;
 		}
@@ -488,9 +568,55 @@ ssize_t read_data(int fd, char *buffer, size_t N)
 	return (ssize_t) total;
 }
 
+/****************************************************************************
+ Read data from a socket, reading exactly N bytes. 
+****************************************************************************/
+
+static ssize_t read_socket_data(int fd, char *buffer, size_t N)
+{
+	ssize_t ret;
+	size_t total = 0;
+
+	smb_read_error = 0;
+
+	while (total < N)
+	{
+#ifdef WITH_SSL
+		if (fd == sslFd)
+		{
+			ret = SSL_read(ssl, buffer + total, N - total);
+		}
+		else
+		{
+			ret = read(fd, buffer + total, N - total);
+		}
+#else /* WITH_SSL */
+		ret = read(fd, buffer + total, N - total);
+#endif /* WITH_SSL */
+
+		if (ret == 0)
+		{
+			DEBUG(10,
+			      ("read_socket_data: recv of %d returned 0. Error = %s\n",
+			       (int)(N - total), strerror(errno)));
+			smb_read_error = READ_EOF;
+			return 0;
+		}
+		if (ret == -1)
+		{
+			DEBUG(0,
+			      ("read_socket_data: recv failure for %d. Error = %s\n",
+			       (int)(N - total), strerror(errno)));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t) total;
+}
 
 /****************************************************************************
-  write data to a fd 
+ Write data to a fd.
 ****************************************************************************/
 ssize_t write_data(int fd, char *buffer, size_t N)
 {
@@ -513,7 +639,12 @@ ssize_t write_data(int fd, char *buffer, size_t N)
 #endif /* WITH_SSL */
 
 		if (ret == -1)
+		{
+			DEBUG(0,
+			      ("write_data: write failure. Error = %s\n",
+			       strerror(errno)));
 			return -1;
+		}
 		if (ret == 0)
 			return total;
 
@@ -522,6 +653,65 @@ ssize_t write_data(int fd, char *buffer, size_t N)
 	return (ssize_t) total;
 }
 
+/****************************************************************************
+ Write data to a socket - use send rather than write.
+****************************************************************************/
+
+ssize_t write_socket_data(int fd, char *buffer, size_t N)
+{
+	size_t total = 0;
+	ssize_t ret;
+
+	while (total < N)
+	{
+#ifdef WITH_SSL
+		if (fd == sslFd)
+		{
+			ret = SSL_write(ssl, buffer + total, N - total);
+		}
+		else
+		{
+			ret = send(fd, buffer + total, N - total, 0);
+		}
+#else /* WITH_SSL */
+		ret = send(fd, buffer + total, N - total, 0);
+#endif /* WITH_SSL */
+
+		if (ret == -1)
+		{
+			DEBUG(0,
+			      ("write_socket_data: write failure. Error = %s\n",
+			       strerror(errno)));
+			return -1;
+		}
+		if (ret == 0)
+			return total;
+
+		total += ret;
+	}
+	return (ssize_t) total;
+}
+
+/****************************************************************************
+write to a socket
+****************************************************************************/
+ssize_t write_socket(int fd, char *buf, size_t len)
+{
+	ssize_t ret = 0;
+
+	if (passive)
+		return (len);
+	DEBUG(6, ("write_socket(%d,%d)\n", fd, (int)len));
+	ret = write_socket_data(fd, buf, len);
+
+	DEBUG(6, ("write_socket(%d,%d) wrote %d\n", fd, (int)len, (int)ret));
+	if (ret <= 0)
+		DEBUG(0,
+		      ("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n",
+		       (int)len, fd, strerror(errno)));
+
+	return (ret);
+}
 
 
 /****************************************************************************
@@ -542,10 +732,10 @@ static ssize_t read_smb_length_return_keepalive(int fd, char *inbuf,
 	{
 		if (timeout > 0)
 			ok =
-				(read_with_timeout(fd, inbuf, 4, 4, timeout)
-			      == 4);
+				(read_socket_with_timeout
+			      (fd, inbuf, 4, 4, timeout) == 4);
 		else
-			ok = (read_data(fd, inbuf, 4) == 4);
+			ok = (read_socket_data(fd, inbuf, 4) == 4);
 
 		if (!ok)
 			return (-1);
@@ -583,6 +773,8 @@ ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout)
 		if (CVAL(inbuf, 0) != 0x85)
 			break;
 	}
+
+	DEBUG(10, ("read_smb_length: got smb length of %d\n", len));
 
 	return len;
 }
@@ -626,7 +818,7 @@ BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 
 	if (len > 0)
 	{
-		ret = read_data(fd, buffer + 4, len);
+		ret = read_socket_data(fd, buffer + 4, len);
 		if (ret != len)
 		{
 			smb_read_error = READ_ERROR;
@@ -650,7 +842,6 @@ BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 BOOL client_receive_smb(int fd, char *buffer, unsigned int timeout)
 {
 	BOOL ret;
-	uint8 msg_type;
 
 	for (;;)
 	{
@@ -664,20 +855,40 @@ BOOL client_receive_smb(int fd, char *buffer, unsigned int timeout)
 		}
 
 		/* Ignore session keepalive packets. */
-		msg_type = CVAL(buffer, 0);
-		if (msg_type != 0x85)
+		if (CVAL(buffer, 0) != 0x85)
 			break;
-	}
-	if (msg_type == 0)
-	{
-		show_msg(buffer);
-	}
-	else
-	{
-		dump_data(10, buffer, smb_len(buffer) + 4);
 	}
 	show_msg(buffer);
 	return ret;
+}
+
+/****************************************************************************
+  send an null session message to a fd
+****************************************************************************/
+
+BOOL send_null_session_msg(int fd)
+{
+	ssize_t ret;
+	uint32 blank = 0;
+	size_t len = 4;
+	size_t nwritten = 0;
+	char *buffer = (char *)&blank;
+
+	while (nwritten < len)
+	{
+		ret = write_socket(fd, buffer + nwritten, len - nwritten);
+		if (ret <= 0)
+		{
+			DEBUG(0,
+			      ("send_null_session_msg: Error writing %d bytes to client. %d. Exiting\n",
+			       (int)len, (int)ret));
+			exit(1);
+		}
+		nwritten += ret;
+	}
+
+	DEBUG(10, ("send_null_session_msg: sent 4 null bytes to client.\n"));
+	return True;
 }
 
 /****************************************************************************
@@ -697,8 +908,7 @@ BOOL send_smb(int fd, char *buffer)
 		{
 			DEBUG(0,
 			      ("Error writing %d bytes to client. %d. Exiting\n",
-			       len, ret));
-			close_sockets();
+			       (int)len, (int)ret));
 			exit(1);
 		}
 		nwritten += ret;
@@ -804,8 +1014,20 @@ int open_socket_in(int type, int port, int dlevel, uint32 socket_addr,
 			val = 1;
 		else
 			val = 0;
-		setsockopt(res, SOL_SOCKET, SO_REUSEADDR, (char *)&val,
-			   sizeof(val));
+		if (setsockopt
+		    (res, SOL_SOCKET, SO_REUSEADDR, (char *)&val,
+		     sizeof(val)) == -1)
+			DEBUG(dlevel,
+			      ("setsockopt: SO_REUSEADDR=%d on port %d failed with error = %s\n",
+			       val, port, strerror(errno)));
+#ifdef SO_REUSEPORT
+		if (setsockopt
+		    (res, SOL_SOCKET, SO_REUSEPORT, (char *)&val,
+		     sizeof(val)) == -1)
+			DEBUG(dlevel,
+			      ("setsockopt: SO_REUSEPORT=%d on port %d failed with error = %s\n",
+			       val, port, strerror(errno)));
+#endif /* SO_REUSEPORT */
 	}
 
 	/* now we've got a socket - we need to bind it */
@@ -838,14 +1060,14 @@ int open_socket_in(int type, int port, int dlevel, uint32 socket_addr,
 
 
 /****************************************************************************
-  create an outgoing socket
+  create an outgoing socket. timeout is in milliseconds.
   **************************************************************************/
 int open_socket_out(int type, struct in_addr *addr, int port, int timeout)
 {
 	struct sockaddr_in sock_out;
 	int res, ret;
 	int connect_loop = 250;	/* 250 milliseconds */
-	int loops = (timeout * 1000) / connect_loop;
+	int loops = (timeout) / connect_loop;
 
 	/* create a socket to write to */
 	res = socket(PF_INET, type, 0);
@@ -920,49 +1142,9 @@ int open_socket_out(int type, struct in_addr *addr, int port, int timeout)
  expanded if more variables need reseting.
  ******************************************************************/
 
-static BOOL global_client_name_done = False;
-static BOOL global_client_addr_done = False;
-static pstring client_name_buf;
-static fstring client_addr_buf;
-static int last_fd = -1;
-
-void set_client_connection_name(const char *name, int fd)
-{
-	global_client_name_done = True;
-	pstrcpy(client_name_buf, name);
-	last_fd = fd;
-}
-
-void set_client_connection_addr(const char *addr, int fd)
-{
-	global_client_addr_done = True;
-	pstrcpy(client_addr_buf, addr);
-	last_fd = fd;
-}
-
-char *client_connection_name(void)
-{
-	if (global_client_name_done)
-	{
-		return client_name_buf;
-	}
-	return client_name(Client);
-}
-
-char *client_connection_addr(void)
-{
-	if (global_client_addr_done)
-	{
-		return client_addr_buf;
-	}
-	return client_addr(Client);
-}
 
 void reset_globals_after_fork(void)
 {
-	global_client_name_done = False;
-	global_client_addr_done = False;
-
 	/*
 	 * Re-seed the random crypto generator, so all smbd's
 	 * started from the same parent won't generate the same
@@ -974,27 +1156,140 @@ void reset_globals_after_fork(void)
 	}
 }
 
+/* the following 3 client_*() functions are nasty ways of allowing
+   some generic functions to get info that really should be hidden in
+   particular modules */
+static int client_fd = -1;
+
+void client_setfd(int fd)
+{
+	client_fd = fd;
+}
+
+char *client_name(void)
+{
+	return get_socket_name(client_fd);
+}
+
+char *client_addr(void)
+{
+	return get_socket_addr(client_fd);
+}
+
 /*******************************************************************
- return the DNS name of the client 
+ matchname - determine if host name matches IP address. Used to
+ confirm a hostname lookup to prevent spoof attacks
  ******************************************************************/
-char *client_name(int fd)
+static BOOL matchname(char *remotehost, struct in_addr addr)
+{
+	struct hostent *hp;
+	int i;
+
+	if ((hp = Get_Hostbyname(remotehost)) == 0)
+	{
+		DEBUG(0,
+		      ("Get_Hostbyname(%s): lookup failure.\n", remotehost));
+		return False;
+	}
+
+	/*
+	 * Make sure that gethostbyname() returns the "correct" host name.
+	 * Unfortunately, gethostbyname("localhost") sometimes yields
+	 * "localhost.domain". Since the latter host name comes from the
+	 * local DNS, we just have to trust it (all bets are off if the local
+	 * DNS is perverted). We always check the address list, though.
+	 */
+
+	if (strcasecmp(remotehost, hp->h_name)
+	    && strcasecmp(remotehost, "localhost"))
+	{
+		DEBUG(0, ("host name/name mismatch: %s != %s\n",
+			  remotehost, hp->h_name));
+		return False;
+	}
+
+	/* Look up the host address in the address list we just got. */
+	for (i = 0; hp->h_addr_list[i]; i++)
+	{
+		if (memcmp(hp->h_addr_list[i], (caddr_t) & addr, sizeof(addr))
+		    == 0)
+			return True;
+	}
+
+	/*
+	 * The host name does not map to the original host address. Perhaps
+	 * someone has compromised a name server. More likely someone botched
+	 * it, but that could be dangerous, too.
+	 */
+
+	DEBUG(0, ("host name/address mismatch: %s != %s\n",
+		  inet_ntoa(addr), hp->h_name));
+	return False;
+}
+
+/*******************************************************************
+ return the DNS name of the remote end of a socket
+ ******************************************************************/
+char *get_socket_name(int fd)
+{
+	static pstring name_buf;
+	static fstring addr_buf;
+	struct hostent *hp;
+	struct in_addr addr;
+	char *p;
+
+	p = get_socket_addr(fd);
+
+	/* it might be the same as the last one - save some DNS work */
+	if (strcmp(p, addr_buf) == 0)
+		return name_buf;
+
+	pstrcpy(name_buf, "UNKNOWN");
+	if (fd == -1)
+		return name_buf;
+
+	fstrcpy(addr_buf, p);
+
+	if (inet_aton(p, &addr) == 0)
+		return name_buf;
+
+	/* Look up the remote host name. */
+	if (
+	    (hp =
+	     gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr),
+			   AF_INET)) == 0)
+	{
+		DEBUG(1, ("Gethostbyaddr failed for %s\n", p));
+		pstrcpy(name_buf, p);
+	}
+	else
+	{
+		pstrcpy(name_buf, (char *)hp->h_name);
+		if (!matchname(name_buf, addr))
+		{
+			DEBUG(0,
+			      ("Matchname failed on %s %s\n", name_buf, p));
+			pstrcpy(name_buf, "UNKNOWN");
+		}
+	}
+	return name_buf;
+}
+
+/*******************************************************************
+ return the IP addr of the remote end of a socket as a string 
+ ******************************************************************/
+char *get_socket_addr(int fd)
 {
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *)(&sa);
 	int length = sizeof(sa);
-	struct hostent *hp;
+	static fstring addr_buf;
 
-	if (global_client_name_done && last_fd == fd)
-		return client_name_buf;
-
-	last_fd = fd;
-	global_client_name_done = False;
-
-	pstrcpy(client_name_buf, "UNKNOWN");
+	fstrcpy(addr_buf, "0.0.0.0");
 
 	if (fd == -1)
 	{
-		return client_name_buf;
+		return addr_buf;
 	}
 
 	if (getpeername(fd, &sa, &length) < 0)
@@ -1002,66 +1297,12 @@ char *client_name(int fd)
 		DEBUG(0,
 		      ("getpeername failed. Error was %s\n",
 		       strerror(errno)));
-		return client_name_buf;
+		return addr_buf;
 	}
 
-	/* Look up the remote host name. */
-	if ((hp = gethostbyaddr((char *)&sockin->sin_addr,
-				sizeof(sockin->sin_addr), AF_INET)) == 0)
-	{
-		DEBUG(1, ("Gethostbyaddr failed for %s\n", client_addr(fd)));
-		StrnCpy(client_name_buf, client_addr(fd),
-			sizeof(client_name_buf) - 1);
-	}
-	else
-	{
-		StrnCpy(client_name_buf, (char *)hp->h_name,
-			sizeof(client_name_buf) - 1);
-		if (!matchname(client_name_buf, sockin->sin_addr))
-		{
-			DEBUG(0,
-			      ("Matchname failed on %s %s\n", client_name_buf,
-			       client_addr(fd)));
-			pstrcpy(client_name_buf, "UNKNOWN");
-		}
-	}
-	global_client_name_done = True;
-	return client_name_buf;
-}
+	fstrcpy(addr_buf, (char *)inet_ntoa(sockin->sin_addr));
 
-/*******************************************************************
- return the IP addr of the client as a string 
- ******************************************************************/
-char *client_addr(int fd)
-{
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *)(&sa);
-	int length = sizeof(sa);
-
-	if (global_client_addr_done && fd == last_fd)
-		return client_addr_buf;
-
-	last_fd = fd;
-	global_client_addr_done = False;
-
-	fstrcpy(client_addr_buf, "0.0.0.0");
-
-	if (fd == -1)
-	{
-		return client_addr_buf;
-	}
-
-	if (getpeername(fd, &sa, &length) < 0)
-	{
-		DEBUG(0, ("getpeername failed. Error was %s\n",
-			  strerror(errno)));
-		return client_addr_buf;
-	}
-
-	fstrcpy(client_addr_buf, (char *)inet_ntoa(sockin->sin_addr));
-
-	global_client_addr_done = True;
-	return client_addr_buf;
+	return addr_buf;
 }
 
 /*******************************************************************

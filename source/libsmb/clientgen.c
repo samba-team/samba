@@ -52,7 +52,7 @@ static char *cli_put_string(struct cli_state *cli, char *p, const char *str,
 	uint16 flgs2 = SVAL(cli->outbuf, smb_flg2);
 	if (IS_BITS_SET_ALL(flgs2, FLAGS2_UNICODE_STRINGS))
 	{
-		p = align2(p, cli->outbuf);
+		p = ALIGN2(p, cli->outbuf);
 		p = ascii_to_unibuf(p, str, 1024);
 		if (skip_end)
 		{

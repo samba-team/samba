@@ -205,7 +205,6 @@ connection_struct *make_connection(char *service,char *user,
 	const struct passwd *pass = NULL;
 	BOOL guest = False;
 	BOOL force = False;
-	extern int Client;
 	connection_struct *conn;
 	vuser_key key;
 
@@ -223,7 +222,7 @@ connection_struct *make_connection(char *service,char *user,
 		}
 
 		DEBUG(0,("%s (%s) couldn't find service %s\n",
-			 remote_machine, client_connection_addr(), service));
+			 remote_machine, client_addr(), service));
 		*ecode = ERRinvnetname;
 		return NULL;
 	}
@@ -252,7 +251,7 @@ connection_struct *make_connection(char *service,char *user,
 	}
 
 	if (!lp_snum_ok(snum) || 
-	    !check_access(Client, 
+	    !check_access(smbd_server_fd(), 
 			  lp_hostsallow(snum), lp_hostsdeny(snum))) {    
 		*ecode = ERRaccess;
 		return NULL;
@@ -348,7 +347,7 @@ connection_struct *make_connection(char *service,char *user,
 	conn->vuid = vuid;
 	conn->uid = pass->pw_uid;
 	conn->gid = pass->pw_gid;
-	safe_strcpy(conn->client_address, client_connection_addr(), sizeof(conn->client_address)-1);
+	safe_strcpy(conn->client_address, client_addr(), sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = time(NULL);
 	conn->service = snum;
@@ -678,7 +677,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	unbecome_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
-				 remote_machine,client_connection_addr(),
+				 remote_machine,conn->client_address,
 				 lp_servicename(SNUM(conn))));
 
 	if (conn->vfs_ops.disconnect != NULL) {

@@ -28,35 +28,41 @@ extern uint16 global_oplock_port;
 extern BOOL global_client_failed_oplock_break;
 
 /****************************************************************************
-fd support routines - attempt to do a dos_open
+ fd support routines - attempt to do a dos_open.
 ****************************************************************************/
+
 static int fd_open(struct connection_struct *conn, char *fname, 
-			   int flags, mode_t mode)
+		   int flags, mode_t mode)
 {
-  int fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
+	int fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
 
-  /* Fix for files ending in '.' */
-  if((fd == -1) && (errno == ENOENT) &&
+	/* Fix for files ending in '.' */
+	if((fd == -1) && (errno == ENOENT) &&
 	   (strchr(fname,'.')==NULL)) {
-      pstrcat(fname,".");
-      fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
-    }
+		pstrcat(fname,".");
+		fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
+	}
 
-  return fd;
+	DEBUG(10,("fd_open: name %s, mode = %d, fd = %d. %s\n", fname, (int)mode, fd,
+		(fd == -1) ? strerror(errno) : "" ));
+
+	return fd;
 }
 
 /****************************************************************************
-close the file associated with a fsp
+ Close the file associated with a fsp.
 ****************************************************************************/
-void fd_close(files_struct *fsp, int *err_ret)
+
+int fd_close(struct connection_struct *conn, files_struct *fsp)
 {
-	fsp->conn->vfs_ops.close(fsp->fd);
+	int ret = conn->vfs_ops.close(fsp->fd);
 	fsp->fd = -1;
-  }
+	return ret;
+}
 
 
 /****************************************************************************
-check a filename for the pipe string
+ Check a filename for the pipe string.
 ****************************************************************************/
 
 static void check_for_pipe(char *fname)
@@ -73,99 +79,111 @@ static void check_for_pipe(char *fname)
 }
 
 /****************************************************************************
-open a file
+ Open a file.
 ****************************************************************************/
 
 static void open_file(files_struct *fsp,connection_struct *conn,
 		      char *fname1,int flags,mode_t mode)
 {
-  extern struct current_user current_user;
-  pstring fname;
-  int accmode = (flags & O_ACCMODE);
+	extern struct current_user current_user;
+	pstring fname;
+	int accmode = (flags & O_ACCMODE);
 	SMB_STRUCT_STAT sbuf;
 
-  fsp->open = False;
+	fsp->open = False;
 	fsp->fd = 0;
-  fsp->oplock_type = NO_OPLOCK;
-  errno = EPERM;
+	fsp->oplock_type = NO_OPLOCK;
+	errno = EPERM;
 
-  pstrcpy(fname,fname1);
+	pstrcpy(fname,fname1);
 
-  /* check permissions */
+	/* Check permissions */
 
-  /*
-   * This code was changed after seeing a client open request 
-   * containing the open mode of (DENY_WRITE/read-only) with
-   * the 'create if not exist' bit set. The previous code
-   * would fail to open the file read only on a read-only share
-   * as it was checking the flags parameter  directly against O_RDONLY,
-   * this was failing as the flags parameter was set to O_RDONLY|O_CREAT.
-   * JRA.
-   */
+	/*
+	 * This code was changed after seeing a client open request 
+	 * containing the open mode of (DENY_WRITE/read-only) with
+	 * the 'create if not exist' bit set. The previous code
+	 * would fail to open the file read only on a read-only share
+	 * as it was checking the flags parameter  directly against O_RDONLY,
+	 * this was failing as the flags parameter was set to O_RDONLY|O_CREAT.
+	 * JRA.
+	 */
 
 	if (!CAN_WRITE(conn)) {
-    /* It's a read-only share - fail if we wanted to write. */
-    if(accmode != O_RDONLY) {
-      DEBUG(3,("Permission denied opening %s\n",fname));
-      check_for_pipe(fname);
-      return;
-    } else if(flags & O_CREAT) {
-      /* We don't want to write - but we must make sure that O_CREAT
-         doesn't create the file if we have write access into the
-         directory.
-       */
-      flags &= ~O_CREAT;
-    }
-  }
+		/* It's a read-only share - fail if we wanted to write. */
+		if(accmode != O_RDONLY) {
+			DEBUG(3,("Permission denied opening %s\n",fname));
+			check_for_pipe(fname);
+			return;
+		} else if(flags & O_CREAT) {
+			/* We don't want to write - but we must make sure that O_CREAT
+			   doesn't create the file if we have write access into the
+			   directory.
+			*/
+			flags &= ~O_CREAT;
+		}
+	}
 
 	/* actually do the open */
 	fsp->fd = fd_open(conn, fname, flags, mode);
-    
-    	if (fsp->fd == -1)  {
-    DEBUG(3,("Error opening file %s (%s) (flags=%d)\n",
-      fname,strerror(errno),flags));
-    check_for_pipe(fname);
-    return;
-  }
+
+	if (fsp->fd == -1)  {
+		DEBUG(3,("Error opening file %s (%s) (flags=%d)\n",
+			 fname,strerror(errno),flags));
+		check_for_pipe(fname);
+		return;
+	}
 
 	conn->vfs_ops.fstat(fsp->fd, &sbuf);
 
-    conn->num_files_open++;
+	/*
+	 * POSIX allows read-only opens of directories. We don't
+	 * want to do this (we use a different code path for this)
+	 * so catch a directory open and return an EISDIR. JRA.
+	 */
+
+	if(S_ISDIR(sbuf.st_mode)) {
+		fd_close(conn, fsp);
+		errno = EISDIR;
+		return;
+	}
+
+	conn->num_files_open++;
 	fsp->mode = sbuf.st_mode;
 	fsp->inode = sbuf.st_ino;
 	fsp->dev = sbuf.st_dev;
-    GetTimeOfDay(&fsp->open_time);
-    fsp->vuid = current_user.key.vuid;
-    fsp->size = 0;
-    fsp->pos = -1;
-    fsp->open = True;
-    fsp->can_lock = True;
-    fsp->can_read = ((flags & O_WRONLY)==0);
-    fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
-    fsp->share_mode = 0;
+	GetTimeOfDay(&fsp->open_time);
+	fsp->vuid = current_user.key.vuid;
+	fsp->size = 0;
+	fsp->pos = -1;
+	fsp->open = True;
+	fsp->can_lock = True;
+	fsp->can_read = ((flags & O_WRONLY)==0);
+	fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
+	fsp->share_mode = 0;
 	fsp->print_file = False;
-    fsp->modified = False;
-    fsp->oplock_type = NO_OPLOCK;
-    fsp->sent_oplock_break = NO_BREAK_SENT;
-    fsp->is_directory = False;
-    fsp->stat_open = False;
-    fsp->directory_delete_on_close = False;
-    fsp->conn = conn;
-    /*
-     * Note that the file name here is the *untranslated* name
-     * ie. it is still in the DOS codepage sent from the client.
-     * All use of this filename will pass though the sys_xxxx
-     * functions which will do the dos_to_unix translation before
-     * mapping into a UNIX filename. JRA.
-     */
-    string_set(&fsp->fsp_name,fname);
-    fsp->wbmpx_ptr = NULL;      
-    fsp->wcp = NULL; /* Write cache pointer. */
+	fsp->modified = False;
+	fsp->oplock_type = NO_OPLOCK;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
+	fsp->is_directory = False;
+	fsp->stat_open = False;
+	fsp->directory_delete_on_close = False;
+	fsp->conn = conn;
+	/*
+	 * Note that the file name here is the *untranslated* name
+	 * ie. it is still in the DOS codepage sent from the client.
+	 * All use of this filename will pass though the sys_xxxx
+	 * functions which will do the dos_to_unix translation before
+	 * mapping into a UNIX filename. JRA.
+	 */
+	string_set(&fsp->fsp_name,fname);
+	fsp->wbmpx_ptr = NULL;      
+	fsp->wcp = NULL; /* Write cache pointer. */
 
-    DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
-	     *sesssetup_user ? sesssetup_user : conn->user,fsp->fsp_name,
-	     BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
-	     conn->num_files_open));
+	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
+		 *sesssetup_user ? sesssetup_user : conn->user,fsp->fsp_name,
+		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
+		 conn->num_files_open));
 }
 
 /****************************************************************************
@@ -598,7 +616,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 
   open_file(fsp,conn,fname,flags|(flags2&~(O_TRUNC)),mode);
   if (!fsp->open && flags==O_RDWR && errno != ENOENT && fcbopen) {
-    flags = O_RDONLY;
+	  flags = O_RDONLY;
 	  open_file(fsp,conn,fname,flags,mode);
   }
 

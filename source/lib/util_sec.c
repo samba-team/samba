@@ -306,7 +306,6 @@ void become_user_permanently(uid_t uid, gid_t gid)
 }
 
 
-#ifdef AUTOCONF_TEST
 /****************************************************************************
 this function just checks that we don't get ENOSYS back
 ****************************************************************************/
@@ -335,6 +334,7 @@ static int have_syscall(void)
 	return 0;
 }
 
+#ifdef AUTOCONF_TEST
 main()
 {
         if (getuid() != 0) {

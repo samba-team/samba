@@ -810,7 +810,7 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
 	slprintf(bufp, sizeof(fstring), "\\MAILSLOT\\NET\\GETDC%d", dgm_id);
 	mailslot_name = bufp;
 	bufp += (strlen(bufp) + 1);
-	bufp = align2(bufp, buffer);
+	bufp = ALIGN2(bufp, buffer);
 	bufp = ascii_to_unibuf(bufp, srcname, sizeof(buffer) - (bufp - buffer) - 1);
 	SIVAL(bufp,0,1);
 	SSVAL(bufp,4,0xFFFF); 

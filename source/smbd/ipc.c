@@ -37,7 +37,6 @@ extern fstring local_machine;
 #define NERR_notsupported 50
 
 
-extern int Client;
 extern int smb_read_error;
 extern uint32 global_client_caps;
 
@@ -146,7 +145,7 @@ void send_trans_reply(char *outbuf,
 	}
 
 	show_msg(outbuf);
-	send_smb(Client, outbuf);
+	send_smb(smbd_server_fd(), outbuf);
 
 	tot_data = this_ldata;
 	tot_param = this_lparam;
@@ -179,7 +178,7 @@ void send_trans_reply(char *outbuf,
 		SSVAL(outbuf, smb_vwv9, 0);
 
 		show_msg(outbuf);
-		send_smb(Client, outbuf);
+		send_smb(smbd_server_fd(), outbuf);
 
 		tot_data += this_ldata;
 		tot_param += this_lparam;
@@ -473,7 +472,7 @@ int reply_trans(connection_struct * conn, char *inbuf, char *outbuf, int size,
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf, 0, 0, True);
 		show_msg(outbuf);
-		send_smb(Client, outbuf);
+		send_smb(smbd_server_fd(), outbuf);
 	}
 
 	/* receive the rest of the trans packet */

@@ -248,20 +248,20 @@ char            *reqHosts, *resignHosts;
 
     reqHosts = lp_ssl_hosts();
     resignHosts = lp_ssl_hosts_resign();
-    if(!allow_access(resignHosts, reqHosts, client_name(fd), client_addr(fd))){
+    if(!allow_access(resignHosts, reqHosts, get_socket_name(fd), get_socket_addr(fd))){
         sslEnabled = False;
         return 0;
     }
     if(msg_type != 0x81){ /* first packet must be a session request */
         DEBUG( 0, ( "Client %s did not use session setup; access denied\n",
-                     client_addr(fd) ) );
+                     client_addr() ) );
         send_smb(fd, (char *)buf);
         return -1;
     }
     buf[4] = 0x8e;  /* negative session response: use SSL */
     send_smb(fd, (char *)buf);
     if(sslutil_accept(fd) != 0){
-        DEBUG( 0, ( "Client %s failed SSL negotiation!\n", client_addr(fd) ) );
+        DEBUG( 0, ( "Client %s failed SSL negotiation!\n", client_addr() ) );
         return -1;
     }
     return 1;

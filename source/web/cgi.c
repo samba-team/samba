@@ -198,6 +198,7 @@ void cgi_load_variables(FILE *f1)
 	}
 
 	fclose(stdin);
+	open("/dev/null", O_RDWR);
 
 	if ((s=query_string) || (s=getenv("QUERY_STRING"))) {
 		for (tok=strtok(s,"&;");tok;tok=strtok(NULL,"&;")) {
@@ -333,7 +334,7 @@ handle a http authentication line
 static BOOL cgi_handle_authorization(char *line)
 {
 	char *p, *user, *user_pass;
-	const struct passwd *pass = NULL;
+	struct passwd *pass = NULL;
 	BOOL ret = False;
 
 	if (strncasecmp(line,"Basic ", 6)) {
@@ -503,7 +504,7 @@ void cgi_setup(char *rootdir, int auth_required)
 	f = sys_fopen("/tmp/cgi.log", "a");
 	if (f) fprintf(f,"\n[Date: %s   %s (%s)]\n", 
 		       http_timestring(time(NULL)),
-		       client_name(1), client_addr(1));
+		       get_socket_name(1), get_socket_addr(1));
 #endif
 
 	/* we are a mini-web server. We need to read the request from stdin
@@ -603,7 +604,7 @@ return the hostname of the client
 char *cgi_remote_host(void)
 {
 	if (inetd_server) {
-		return client_name(1);
+		return get_socket_name(1);
 	}
 	return getenv("REMOTE_HOST");
 }
@@ -614,7 +615,7 @@ return the hostname of the client
 char *cgi_remote_addr(void)
 {
 	if (inetd_server) {
-		return client_addr(1);
+		return get_socket_addr(1);
 	}
 	return getenv("REMOTE_ADDR");
 }

@@ -27,7 +27,6 @@
 extern int DEBUGLEVEL;
 extern int Protocol;
 extern BOOL case_sensitive;
-extern int Client;
 extern int smb_read_error;
 extern fstring local_machine;
 extern int global_oplock_break;
@@ -66,7 +65,7 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
      the empty packet */
   if(params_to_send == 0 && data_to_send == 0)
   {
-    send_smb(Client,outbuf);
+    send_smb(smbd_server_fd(),outbuf);
     return 0;
   }
 
@@ -161,7 +160,7 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
           params_to_send, data_to_send, paramsize, datasize));
 
     /* Send the packet */
-    send_smb(Client,outbuf);
+    send_smb(smbd_server_fd(),outbuf);
 
     pp += params_sent_thistime;
     pd += data_sent_thistime;
@@ -2288,7 +2287,7 @@ int reply_trans2(connection_struct *conn,
 		/* We need to send an interim response then receive the rest
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
-		send_smb(Client,outbuf);
+		send_smb(smbd_server_fd(),outbuf);
 
 		while (num_data_sofar < total_data || 
 		       num_params_sofar < total_params) {

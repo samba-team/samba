@@ -551,7 +551,7 @@ BOOL check_hosts_equiv(char *user)
 	/* note: don't allow hosts.equiv on root */
 	if (fname && *fname && (pass->pw_uid != 0))
 	{
-		if (check_user_equiv(user, client_connection_name(), fname))
+		if (check_user_equiv(user, client_name(), fname))
 			return (True);
 	}
 
@@ -563,7 +563,7 @@ BOOL check_hosts_equiv(char *user)
 			slprintf(rhostsfile, sizeof(rhostsfile) - 1,
 				 "%s/.rhosts", home);
 			if (check_user_equiv
-			    (user, client_connection_name(), rhostsfile))
+			    (user, client_name(), rhostsfile))
 				return (True);
 		}
 	}

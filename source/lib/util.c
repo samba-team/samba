@@ -24,11 +24,33 @@
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 #ifdef WITH_NISPLUS_HOME
+#ifdef BROKEN_NISPLUS_INCLUDE_FILES
+/*
+ * The following lines are needed due to buggy include files
+ * in Solaris 2.6 which define GROUP in both /usr/include/sys/acl.h and
+ * also in /usr/include/rpcsvc/nis.h. The definitions conflict. JRA.
+ * Also GROUP_OBJ is defined as 0x4 in /usr/include/sys/acl.h and as
+ * an enum in /usr/include/rpcsvc/nis.h.
+ */
+
+#if defined(GROUP)
+#undef GROUP
+#endif
+
+#if defined(GROUP_OBJ)
+#undef GROUP_OBJ
+#endif
+
+#endif /* BROKEN_NISPLUS_INCLUDE_FILES */
+
 #include <rpcsvc/nis.h>
-#else
+
+#else /* !WITH_NISPLUS_HOME */
+
 #include "rpcsvc/ypclnt.h"
-#endif
-#endif
+
+#endif /* WITH_NISPLUS_HOME */
+#endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
 #ifdef WITH_SSL
 #include <ssl.h>
@@ -37,17 +59,12 @@ extern SSL *ssl;
 extern int sslFd;
 #endif /* WITH_SSL */
 
-pstring scope = "";
-
 extern int DEBUGLEVEL;
 
 int Protocol = PROTOCOL_COREPLUS;
 
 /* a default finfo structure to ensure all fields are sensible */
 file_info def_finfo = { -1, 0, 0, 0, 0, 0, 0, "" };
-
-/* the client file descriptor */
-extern int Client;
 
 /* this is used by the chaining code */
 int chain_size = 0;
@@ -72,7 +89,7 @@ fstring local_machine = "";
 fstring remote_arch = "UNKNOWN";
 static enum remote_arch_types ra_type = RA_UNKNOWN;
 fstring remote_proto = "UNKNOWN";
-pstring user_socket_options = "";
+pstring user_socket_options = DEFAULT_SOCKET_OPTIONS;
 
 pstring sesssetup_user = "";
 
@@ -288,18 +305,6 @@ BOOL directory_exist(char *dname, SMB_STRUCT_STAT * st)
 }
 
 /*******************************************************************
-returns the size in bytes of the named file
-********************************************************************/
-SMB_OFF_T file_size(char *file_name)
-{
-	SMB_STRUCT_STAT buf;
-	buf.st_size = 0;
-	if (sys_stat(file_name, &buf) != 0)
-		return (SMB_OFF_T) - 1;
-	return (buf.st_size);
-}
-
-/*******************************************************************
 return a string representing an attribute for a file
 ********************************************************************/
 char *attrib_string(uint16 mode)
@@ -388,7 +393,7 @@ void smb_setlen(char *buf, int len)
 int set_message(char *buf, int num_words, int num_bytes, BOOL zero)
 {
 	if (zero)
-		memset(buf + smb_size, 0, num_words * 2 + num_bytes);
+		memset(buf + smb_size, '\0', num_words * 2 + num_bytes);
 	CVAL(buf, smb_wct) = num_words;
 	SSVAL(buf, smb_vwv + num_words * SIZEOFWORD, num_bytes);
 	smb_setlen(buf, smb_size + num_words * 2 + num_bytes - 4);
@@ -1595,6 +1600,9 @@ BOOL yesno(char *p)
 set the length of a file from a filedescriptor.
 Returns 0 on success, -1 on failure.
 ****************************************************************************/
+
+/* tpot vfs need to recode this function */
+
 int set_filelen(int fd, SMB_OFF_T len)
 {
 /* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
@@ -1653,8 +1661,7 @@ this is a version of setbuffer() for those machines that only have setvbuf
 
 
 /****************************************************************************
- copies or initialises to zeros.  checks NULL pointers, basically.
- returns True on an actual memcpy.
+parse out a filename from a path name. Assumes dos style filenames.
  ****************************************************************************/
 BOOL Memcpy(void *to, const void *from, size_t size)
 {
@@ -1845,56 +1852,6 @@ BOOL zero_ip(struct in_addr ip)
 	uint32 a;
 	putip((char *)&a, (char *)&ip);
 	return (a == 0);
-}
-
-
-/*******************************************************************
- matchname - determine if host name matches IP address 
- ******************************************************************/
-BOOL matchname(char *remotehost, struct in_addr addr)
-{
-	struct hostent *hp;
-	int i;
-
-	if ((hp = Get_Hostbyname(remotehost)) == 0)
-	{
-		DEBUG(0, ("Get_Hostbyname(%s): lookup failure", remotehost));
-		return False;
-	}
-
-	/*
-	 * Make sure that gethostbyname() returns the "correct" host name.
-	 * Unfortunately, gethostbyname("localhost") sometimes yields
-	 * "localhost.domain". Since the latter host name comes from the
-	 * local DNS, we just have to trust it (all bets are off if the local
-	 * DNS is perverted). We always check the address list, though.
-	 */
-
-	if (strcasecmp(remotehost, hp->h_name)
-	    && strcasecmp(remotehost, "localhost"))
-	{
-		DEBUG(0, ("host name/name mismatch: %s != %s",
-			  remotehost, hp->h_name));
-		return False;
-	}
-
-	/* Look up the host address in the address list we just got. */
-	for (i = 0; hp->h_addr_list[i]; i++)
-	{
-		if (memcmp(hp->h_addr_list[i], (caddr_t) & addr, sizeof(addr))
-		    == 0)
-			return True;
-	}
-
-	/*
-	 * The host name does not map to the original host address. Perhaps
-	 * someone has compromised a name server. More likely someone botched
-	 * it, but that could be dangerous, too.
-	 */
-
-	DEBUG(0, ("host name/address mismatch: %s != %s",
-		  inet_ntoa(addr), hp->h_name));
-	return False;
 }
 
 
@@ -2140,15 +2097,13 @@ void standard_sub_basic(char *str)
 		switch (*(p + 1))
 		{
 			case 'I':
-				pstring_sub(p, "%I",
-					    client_connection_addr());
+				pstring_sub(p, "%I", client_addr());
 				break;
 			case 'L':
 				pstring_sub(p, "%L", local_machine);
 				break;
 			case 'M':
-				pstring_sub(p, "%M",
-					    client_connection_name());
+				pstring_sub(p, "%M", client_name());
 				break;
 			case 'R':
 				pstring_sub(p, "%R", remote_proto);
@@ -2421,7 +2376,7 @@ struct hostent *Get_Hostbyname(const char *name)
 check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 
-BOOL process_exists(int pid)
+BOOL process_exists(pid_t pid)
 {
 	return (kill(pid, 0) == 0 || errno != ESRCH);
 }
@@ -2882,6 +2837,9 @@ void set_remote_arch(enum remote_arch_types type)
 		case RA_WINNT:
 			fstrcpy(remote_arch, "WinNT");
 			return;
+		case RA_WIN2K:
+			fstrcpy(remote_arch, "Win2K");
+			return;
 		case RA_SAMBA:
 			fstrcpy(remote_arch, "Samba");
 			return;
@@ -2900,31 +2858,6 @@ enum remote_arch_types get_remote_arch(void)
 	return ra_type;
 }
 
-
-/*******************************************************************
- align a pointer to a multiple of 4 bytes.  
- ********************************************************************/
-char *align4(char *q, char *base)
-{
-	int mod = PTR_DIFF(q, base) & 3;
-	if (mod != 0)
-	{
-		q += 4 - mod;
-	}
-	return q;
-}
-
-/*******************************************************************
-align a pointer to a multiple of 2 bytes
-********************************************************************/
-char *align2(char *q, char *base)
-{
-	if (PTR_DIFF(q, base) & 1)
-	{
-		q++;
-	}
-	return q;
-}
 
 void out_ascii(FILE * f, const uchar * buf, int len)
 {

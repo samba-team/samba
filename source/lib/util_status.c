@@ -57,7 +57,7 @@ BOOL get_connection_status(struct connect_record **crec,
  
   (*crec) = NULL;
  
-   num_recs = file_size(fname) / sizeof(*c);
+   num_recs = get_file_size(fname) / sizeof(*c);
 
   DEBUG(5,("Opened status file %s, record count %d\n",fname, num_recs));
 

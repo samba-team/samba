@@ -70,8 +70,6 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
   code = SVAL(buf,0);
   DEBUG(1,("process_logon_packet: Logon from %s: code = %x\n", inet_ntoa(p->ip), code));
 
-  	dump_data(4, buf, len);
-
   switch (code)
   {
     case 0:    
@@ -118,24 +116,21 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       char *machine = q;
 
       getdc = skip_string(machine,1);
-      unicomp = skip_string(getdc,1);
-
-	q = align2(unicomp, buf);
-
-	/* skip unicode string -- cannot go beyond end of input buffer */
-	q = skip_unibuf(q, buf + len - q);
+      q = skip_string(getdc,1);
+      q = ALIGN2(q, buf);
 
       /* at this point we can work out if this is a W9X or NT style
          request. Experiments show that the difference is wether the
          packet ends here. For a W9X request we now end with a pair of
          bytes (usually 0xFE 0xFF) whereas with NT we have two further
          strings - the following is a simple way of detecting this */
-      if (PTR_DIFF(q, buf) >= len)
-      {
+      if (len - PTR_DIFF(q, buf) <= 3) {
 	      short_request = True;
       } else {
+	      unicomp = q;
 
 	      /* A full length (NT style) request */
+	      q = skip_unibuf(unicomp, PTR_DIFF(buf + len, unicomp));
 
 	      if (len - PTR_DIFF(q, buf) > 8) {
 					/* with NT5 clients we can sometimes
@@ -166,18 +161,14 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       /* PDC and domain name */
       if (!short_request)  /* Make a full reply */
       {
-        q = align2(q, buf);
+        q = ALIGN2(q, buf);
 
         q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
         q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True); /* Domain name*/
 
-	ntversion = 0x1;
-	lmnttoken = 0xffff;
-	lm20token = 0xffff;
-
-        SIVAL(q, 0, ntversion);
-        SSVAL(q, 4, lmnttoken);
-        SSVAL(q, 6, lm20token);
+        SIVAL(q, 0, 1); /* our nt version */
+        SSVAL(q, 4, 0xffff); /* our lmnttoken */
+        SSVAL(q, 6, 0xffff); /* our lm20token */
         q += 8;
       }
 
@@ -207,8 +198,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       q += 2;
       unicomp = q;
-      uniuser = skip_unicode_string(unicomp,1);
-      getdc = skip_unicode_string(uniuser,1);
+      uniuser = skip_unibuf(unicomp, PTR_DIFF(buf+len, unicomp));
+      getdc = skip_unibuf(uniuser,PTR_DIFF(buf+len, uniuser));
       q = skip_string(getdc,1);
       q += 4; /* Account Control Bits - indicating username type */
       domainsidsize = IVAL(q, 0);
@@ -217,7 +208,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       if (domainsidsize != 0)
 	{
 		q += domainsidsize;
-		q = align4(q, buf);
+	      q = ALIGN4(q, buf);
 	}
 	      if (len - PTR_DIFF(q, buf) > 8)
 	      {
@@ -235,18 +226,15 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       ntversion = IVAL(q, 0);
       lmnttoken = SVAL(q, 4);
       lm20token = SVAL(q, 6);
+      q += 8;
 
-      DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %x\n", domainsidsize, ntversion));
+      DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %d\n", domainsidsize, ntversion));
 
       /*
        * we respond regadless of whether the machine is in our password 
        * database. If it isn't then we let smbd send an appropriate error.
        * Let's ignore the SID.
        */
-
-	ntversion = 0x1;
-	lmnttoken = 0xffff;
-	lm20token = 0xffff;
 
       unibuf_to_ascii(ascuser, uniuser, sizeof(ascuser)-1);
       DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
@@ -271,15 +259,14 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       q += dos_PutUniCode(q, reply_name,sizeof(pstring), True);
       unistrcpy(q, uniuser);
-      q = skip_unicode_string(q, 1); /* User name (workstation trust account) */
+      q = skip_unibuf(q, PTR_DIFF(buf+len, q)); /* User name (workstation trust account) */
       q += dos_PutUniCode(q, lp_workgroup(),sizeof(pstring), True);
 
-      SIVAL(q, 0, ntversion);
-      q += 4;
-      SSVAL(q, 0, lmnttoken);
-      q += 2;
-      SSVAL(q, 0, lm20token);
-      q += 2;
+      /* tell the client what version we are */
+      SIVAL(q, 0, 1); /* our ntversion */
+      SSVAL(q, 4, 0xffff); /* our lmnttoken */ 
+      SSVAL(q, 6, 0xffff); /* our lm20token */
+      q += 8;
 
       dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 

@@ -630,6 +630,8 @@ union semun_hack {
 #define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
 #endif
 
+#define SMB_BIG_UINT_BITS (sizeof(SMB_BIG_UINT)*8)
+
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif

@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Blocking Locking functions
-   Copyright (C) Jeremy Allison 1998-2000
+   Copyright (C) Jeremy Allison 1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
-extern int Client;
 extern char *OutBuffer;
 
 /****************************************************************************
@@ -136,7 +135,7 @@ static void send_blocking_reply(char *outbuf, int outsize)
   if(outsize > 4)
     smb_setlen(outbuf,outsize - 4);
 
-  send_smb(Client,outbuf);
+  send_smb(smbd_server_fd(),outbuf);
 }
 
 /****************************************************************************
@@ -182,7 +181,7 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, int eclass, i
     SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 
   ERROR(eclass,ecode);
-  send_smb(Client,outbuf);
+  send_smb(smbd_server_fd(),outbuf);
 }
 
 /****************************************************************************
@@ -196,7 +195,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
   files_struct *fsp = blr->fsp;
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
-  SMB_OFF_T count = (SMB_OFF_T) 0, offset = (SMB_OFF_T) 0;
+  SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT) 0;
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
   char *data;
@@ -220,7 +219,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
     uint32 dummy2;
     BOOL err;
 
-    count = get_lock_count( data, i, large_file_format, &err);
+    count = get_lock_count( data, i, large_file_format);
     offset = get_lock_offset( data, i, large_file_format, &err);
 
     /*
@@ -281,7 +280,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
  
-  if(!do_lock( fsp, conn, numtoread, startpos, READ_LOCK, &eclass, &ecode)) {
+  if(!do_lock( fsp, conn, (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, READ_LOCK, &eclass, &ecode)) {
     if((errno != EACCES) && (errno != EAGAIN)) {
       /*
        * We have other than a "can't get lock" POSIX
@@ -344,7 +343,7 @@ static BOOL process_lock(blocking_lock_record *blr)
   offset = IVAL(inbuf,smb_vwv3);
 
   errno = 0;
-  if (!do_lock(fsp, conn, count, offset, WRITE_LOCK, &eclass, &ecode)) {
+  if (!do_lock(fsp, conn, (SMB_BIG_UINT)count, (SMB_BIG_UINT)offset, WRITE_LOCK, &eclass, &ecode)) {
     if((errno != EACCES) && (errno != EAGAIN)) {
 
       /*
@@ -392,7 +391,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
-  SMB_OFF_T count = 0, offset = 0;
+  SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
   char *data;
   int eclass=0;
@@ -408,7 +407,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
   for(; blr->lock_num < num_locks; blr->lock_num++) {
     BOOL err;
 
-    count = get_lock_count( data, blr->lock_num, large_file_format, &err);
+    count = get_lock_count( data, blr->lock_num, large_file_format);
     offset = get_lock_offset( data, blr->lock_num, large_file_format, &err);
 
     /*

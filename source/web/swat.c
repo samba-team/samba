@@ -975,8 +975,10 @@ static void printers_page(void)
 	/* just in case it goes wild ... */
 	alarm(300);
 
-	dbf = sys_fopen("/dev/null", "w");
+	/* we don't want any SIGPIPE messages */
+	BlockSignals(True,SIGPIPE);
 
+	dbf = sys_fopen("/dev/null", "w");
 	if (!dbf) dbf = stderr;
 
 	/* we don't want stderr screwing us up */

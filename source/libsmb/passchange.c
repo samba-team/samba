@@ -23,7 +23,6 @@
 
 
 extern pstring global_myname;
-extern pstring scope;
 
 /*************************************************************
 change a password on a remote machine using IPC calls

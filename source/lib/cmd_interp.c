@@ -32,7 +32,6 @@
 #endif
 
 extern pstring debugf;
-extern pstring scope;
 extern pstring global_myname;
 
 extern pstring user_socket_options;
@@ -1165,13 +1164,6 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 				cmd_set_options |= CMD_HOST;
 				pstrcpy(cli_info.dest_host, optarg);
 				strupper(cli_info.dest_host);
-				break;
-			}
-
-			case 'i':
-			{
-				cmd_set_options |= CMD_SCOPE;
-				pstrcpy(scope, optarg);
 				break;
 			}
 

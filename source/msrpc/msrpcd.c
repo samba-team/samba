@@ -34,7 +34,6 @@ int last_message = -1;
 /* a useful macro to debug the last message processed */
 #define LAST_MESSAGE() smb_fn_name(last_message)
 
-extern pstring scope;
 extern int DEBUGLEVEL;
 
 extern fstring remote_machine;
@@ -339,7 +338,6 @@ static void usage(char *pname)
 	printf("\t-P                    passive only\n");
 	printf("\t-a                    append to log file (default)\n");
 	printf("\t-o                    overwrite log file, don't append\n");
-	printf("\t-i scope              NetBIOS scope to use (default none)\n");
 	printf("\n");
 }
 
@@ -403,10 +401,6 @@ static void usage(char *pname)
 
 	while ( EOF != (opt = getopt(argc, argv, "i:l:s:d:Dh?Paof:")) )
 		switch (opt)  {
-		case 'i':
-			pstrcpy(scope,optarg);
-			break;
-
 		case 'P':
 			{
 				extern BOOL passive;
