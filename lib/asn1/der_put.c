@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -205,6 +205,31 @@ encode_integer (unsigned char *p, size_t len, const int *data, size_t *size)
     int e;
     
     e = der_put_int (p, len, num, &l);
+    if(e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_Integer, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
+}
+
+int
+encode_unsigned (unsigned char *p, size_t len, const unsigned *data,
+		 size_t *size)
+{
+    unsigned num = *data;
+    size_t ret = 0;
+    size_t l;
+    int e;
+    
+    e = der_put_unsigned (p, len, num, &l);
     if(e)
 	return e;
     p -= l;
