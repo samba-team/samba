@@ -329,90 +329,37 @@ fail:
     return 0;
 }
 
-krb5_error_code
-kadmind_loop (krb5_context, krb5_auth_context, krb5_keytab, int);
-
-void
-handle_v4(krb5_context context,
-	  int len,
-	  int fd);
-
-krb5_error_code
-kadmind_loop(krb5_context context,
-	     krb5_auth_context ac,
-	     krb5_keytab keytab, 
-	     int fd)
+static void
+v5_loop (krb5_context context,
+	 krb5_auth_context ac,
+	 void *kadm_handle,
+	 int fd)
 {
     char *client;
     krb5_error_code ret;
-    void *kadm_handle;
+    ssize_t n;
+    unsigned long len;
+    u_char tmp[4];
+    struct iovec iov[2];
+    krb5_data in, out, msg, reply;
 
-    while(1){
-	krb5_data in, out, msg, reply;
-	unsigned char tmp[4];
-	unsigned long len;
-	ssize_t n;
-	struct iovec iov[2];
-	krb5_boolean krb4_packet = 0;
-	
-	n = krb5_net_read(context, &fd, tmp, 4);
-	if(n == 0)
-	    exit(0);
-	if(n < 0)
-	    krb5_errx(context, 1, "read error: %d", errno);
-	if(n < 4)
-	    krb5_errx(context, 1, "short read (%ld)", (long int)n);
-	_krb5_get_int(tmp, &len, 4);
-	if(len > 0xffff && (len & 0xffff) == ('K' << 8) + 'A') {
-	    len >>= 16;
-	    krb4_packet = 1;
-#ifdef KRB4
-	    handle_v4(context, len, fd);
-#else
-	    krb5_errx(context, 1, "packet appears to be version 4");
-#endif
-	}
-	krb5_net_read(context, &fd, tmp, sizeof(tmp));
-	if(len != sizeof(KRB5_SENDAUTH_VERSION) || 
-	   memcmp(tmp, KRB5_SENDAUTH_VERSION, sizeof(tmp)) != 0)
-	    krb5_errx(context, 1, "bad sendauth version %.8s", tmp);
-	
-	{
-	    krb5_ticket *ticket;
-	    krb5_principal server;
-	    krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
-	    ret = krb5_recvauth(context, &ac, &fd, KADMIN_APPL_VERSION, 
-				server, KRB5_RECVAUTH_IGNORE_VERSION, 
-				keytab, &ticket);
-	    krb5_free_principal(context, server);
-	    
-	    if(ret)
-		krb5_err(context, 1, ret, "krb5_recvauth");
-	    krb5_unparse_name(context, ticket->client, &client);
-	    ret = kadm5_init_with_password_ctx(context, 
-					       client, 
-					       NULL,
-					       KADM5_ADMIN_SERVICE,
-					       NULL, 0, 0, 
-					       &kadm_handle);
-	    if(ret)
-		krb5_abort(context, ret, "kadm5_init_with_password_ctx");
-	}
-	
+    for (;;) {
+	krb5_net_read(context, &fd, tmp, 4);
+	_krb5_get_int (tmp, &len, 4);
 
 	in.length = len;
 	in.data = malloc(in.length);
 	n = krb5_net_read(context, &fd, in.data, in.length);
+	if (n == 0)
+	    exit (0);
 	if(n < 0)
 	    krb5_errx(context, 1, "read error: %d", errno);
 	if(n < in.length)
 	    krb5_errx(context, 1, "short read (%ld)", (long int)n);
-	if(!krb4_packet) {
-	    ret = krb5_rd_priv(context, ac, &in, &out, NULL);
-	    krb5_data_free(&in);
-	    kadmind_dispatch(kadm_handle, &out, &msg);
-	    krb5_data_free(&out);
-	}
+	ret = krb5_rd_priv(context, ac, &in, &out, NULL);
+	krb5_data_free(&in);
+	kadmind_dispatch(kadm_handle, &out, &msg);
+	krb5_data_free(&out);
 	ret = krb5_mk_priv(context, ac, &msg, &reply, NULL);
 	krb5_data_free(&msg);
 	if(ret) 
@@ -431,4 +378,74 @@ kadmind_loop(krb5_context context,
 	if(n < iov[0].iov_len + iov[1].iov_len)
 	    krb5_errx(context, 1, "short write");
     }
+}
+
+static void
+handle_v5(krb5_context context,
+	  krb5_auth_context ac,
+	  krb5_keytab keytab,
+	  int len,
+	  int fd)
+{
+    krb5_error_code ret;
+    u_char tmp[4];
+    krb5_ticket *ticket;
+    krb5_principal server;
+    char *client;
+    void *kadm_handle;
+
+    krb5_net_read(context, &fd, tmp, len);
+    if(len != sizeof(KRB5_SENDAUTH_VERSION) || 
+       memcmp(tmp, KRB5_SENDAUTH_VERSION, len) != 0)
+	krb5_errx(context, 1, "bad sendauth version %.8s", tmp);
+	
+    krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
+    ret = krb5_recvauth(context, &ac, &fd, KADMIN_APPL_VERSION, 
+			server, KRB5_RECVAUTH_IGNORE_VERSION, 
+			keytab, &ticket);
+    krb5_free_principal(context, server);
+	    
+    if(ret)
+	krb5_err(context, 1, ret, "krb5_recvauth");
+    krb5_unparse_name(context, ticket->client, &client);
+    ret = kadm5_init_with_password_ctx(context, 
+				       client, 
+				       NULL,
+				       KADM5_ADMIN_SERVICE,
+				       NULL, 0, 0, 
+				       &kadm_handle);
+    if(ret)
+	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
+    v5_loop (context, ac, kadm_handle, fd);
+}
+
+krb5_error_code
+kadmind_loop(krb5_context context,
+	     krb5_auth_context ac,
+	     krb5_keytab keytab, 
+	     int fd)
+{
+    unsigned char tmp[4];
+    ssize_t n;
+    unsigned long len;
+
+    n = krb5_net_read(context, &fd, tmp, 4);
+    if(n == 0)
+	exit(0);
+    if(n < 0)
+	krb5_errx(context, 1, "read error: %d", errno);
+    if(n < 4)
+	krb5_errx(context, 1, "short read (%ld)", (long int)n);
+    _krb5_get_int(tmp, &len, 4);
+    if(len > 0xffff && (len & 0xffff) == ('K' << 8) + 'A') {
+	len >>= 16;
+#ifdef KRB4
+	handle_v4(context, len, fd);
+#else
+	krb5_errx(context, 1, "packet appears to be version 4");
+#endif
+    } else {
+	handle_v5(context, ac, keytab, len, fd);
+    }
+    return 0;
 }
