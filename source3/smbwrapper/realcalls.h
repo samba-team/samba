@@ -38,6 +38,8 @@ struct dirent *__libc_readdir(DIR * dir);
 #define real_fcntl(fd,cmd,arg)	        (syscall(SYS_fcntl, (fd), (cmd), (arg)))
 #define real_symlink(fn1, fn2)		(syscall(SYS_symlink, (fn1), (fn2)))
 #define real_unlink(fn)			(syscall(SYS_unlink, (fn)))
+#define real_rmdir(fn)			(syscall(SYS_rmdir, (fn)))
+#define real_mkdir(fn, mode)		(syscall(SYS_mkdir, (fn), (mode)))
 #define real_utime(fn, buf)		(syscall(SYS_utime, (fn), (buf)))
 #define real_utimes(fn, buf)		(syscall(SYS_utimes, (fn), (buf)))
 #define real_readlink(fn, buf, bufs)	(syscall(SYS_readlink, (fn), (buf), (bufs)))
