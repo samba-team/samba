@@ -118,7 +118,7 @@ uint32 spoolss_enum_jobs( const POLICY_HND *hnd,
 	prs_struct rbuf;
 	prs_struct buf; 
 	SPOOL_Q_ENUMJOBS q_o;
-	uint32 status = 0x0;
+	uint32 status = NT_STATUS_INTERNAL_ERROR;
 
 	if (hnd == NULL || count == NULL || jobs == NULL)
 	{
