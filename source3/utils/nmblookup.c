@@ -62,22 +62,22 @@ usage on the program
 ****************************************************************************/
 static void usage(void)
 {
-  printf("Usage: nmblookup [-M] [-B bcast address] [-d debuglevel] name\n");
-  printf("Version %s\n",VERSION);
-  printf("\t-d debuglevel         set the debuglevel\n");
-  printf("\t-B broadcast address  the address to use for broadcasts\n");
-  printf("\t-U unicast   address  the address to use for unicast\n");
-  printf("\t-M                    searches for a master browser\n");
-  printf("\t-R                    set recursion desired in packet\n");
-  printf("\t-S                    lookup node status as well\n");
-  printf("\t-T                    translate IP addresses into names\n");
-  printf("\t-r                    Use root port 137 (Win95 only replies to this)\n");
-  printf("\t-A                    Do a node status on <name> as an IP Address\n");
-  printf("\t-i NetBIOS scope      Use the given NetBIOS scope for name queries\n");
-  printf("\t-s smb.conf file      Use the given path to the smb.conf file\n");
-  printf("\t-h                    Print this help message.\n");
-  printf("\n  If you specify -M and name is \"-\", nmblookup looks up __MSBROWSE__<01>\n");
-  printf("\n");
+  d_printf("Usage: nmblookup [-M] [-B bcast address] [-d debuglevel] name\n");
+  d_printf("Version %s\n",VERSION);
+  d_printf("\t-d debuglevel         set the debuglevel\n");
+  d_printf("\t-B broadcast address  the address to use for broadcasts\n");
+  d_printf("\t-U unicast   address  the address to use for unicast\n");
+  d_printf("\t-M                    searches for a master browser\n");
+  d_printf("\t-R                    set recursion desired in packet\n");
+  d_printf("\t-S                    lookup node status as well\n");
+  d_printf("\t-T                    translate IP addresses into names\n");
+  d_printf("\t-r                    Use root port 137 (Win95 only replies to this)\n");
+  d_printf("\t-A                    Do a node status on <name> as an IP Address\n");
+  d_printf("\t-i NetBIOS scope      Use the given NetBIOS scope for name queries\n");
+  d_printf("\t-s smb.conf file      Use the given path to the smb.conf file\n");
+  d_printf("\t-h                    Print this help message.\n");
+  d_printf("\n  If you specify -M and name is \"-\", nmblookup looks up __MSBROWSE__<01>\n");
+  d_printf("\n");
 }
 
 /****************************************************************************
@@ -111,7 +111,7 @@ static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 	struct node_status *status;
 	fstring cleanname;
 
-	printf("Looking up status of %s\n",inet_ntoa(ip));
+	d_printf("Looking up status of %s\n",inet_ntoa(ip));
 	make_nmb_name(&nname, name, type);
 	status = node_status_query(fd,&nname,ip, &count);
 	if (status) {
@@ -120,13 +120,13 @@ static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 			for (j=0;cleanname[j];j++) {
 				if (!isprint((int)cleanname[j])) cleanname[j] = '.';
 			}
-			printf("\t%-15s <%02x> - %s\n",
+			d_printf("\t%-15s <%02x> - %s\n",
 			       cleanname,status[i].type,
 			       node_status_flags(status[i].flags));
 		}
 		free(status);
 	}
-	printf("\n");
+	d_printf("\n");
 }
 
 
@@ -139,7 +139,7 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 	struct in_addr *ip_list=NULL;
 
 	if (got_bcast) {
-		printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
+		d_printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
 		ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
 				     use_bcast?True:recursion_desired,
 				     bcast_addr,&count);
@@ -149,7 +149,7 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 		     !ip_list && j >= 0;
 		     j--) {
 			bcast = iface_n_bcast(j);
-			printf("querying %s on %s\n", 
+			d_printf("querying %s on %s\n", 
 			       lookup, inet_ntoa(*bcast));
 			ip_list = name_query(ServerFD,lookup,lookup_type,
 					     use_bcast,
@@ -164,10 +164,10 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 		if (translate_addresses) {
 			struct hostent *host = gethostbyaddr((char *)&ip_list[j], sizeof(ip_list[j]), AF_INET);
 			if (host) {
-				printf("%s, ", host -> h_name);
+				d_printf("%s, ", host -> h_name);
 			}
 		}
-		printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
+		d_printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
 	}
 
 	/* We can only do find_status if the ip address returned
@@ -310,10 +310,10 @@ int main(int argc,char *argv[])
       }
 
       if (!query_one(lookup, lookup_type)) {
-	printf( "name_query failed to find name %s", lookup );
+	d_printf( "name_query failed to find name %s", lookup );
         if( 0 != lookup_type )
-          printf( "#%02x", lookup_type );
-        printf( "\n" );
+          d_printf( "#%02x", lookup_type );
+        d_printf( "\n" );
       }
   }
   
