@@ -607,9 +607,9 @@
 #endif
 
 #ifndef NO_FACL_WRAPPER
- int  facl(int fd,  int  cmd,  int  nentries, aclent_t *aclbufp)
+ int  facl(int fd,  int  cmd,  int  nentries, void *aclbufp)
 {
-	if (smbw_path(pathp)) {
+	if (smbw_fd(fd)) {
 		return smbw_facl(fd, cmd, nentries, aclbufp);
 	}
 
