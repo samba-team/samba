@@ -19,29 +19,34 @@
 */
 
 #include "includes.h"
+#include "libcli/nbt/libnbt.h"
 #include "libnet/libnet.h"
 
 /* find a domain pdc generic */
-static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_find_pdc *r)
+static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
+					union libnet_find_pdc *r)
 {
-	BOOL ret;
-	struct ipv4_addr ip;
+	const char *address;
+	NTSTATUS status;
+	struct nbt_name name;
 
 	if (is_ipaddress(r->generic.in.domain_name)) {
 		r->generic.out.pdc_name = r->generic.in.domain_name;
 		return NT_STATUS_OK;
 	}
 
-	ret = get_pdc_ip(mem_ctx, r->generic.in.domain_name, &ip);
-	if (!ret) {
-		/* fallback to a workstation name */
-		ret = resolve_name(mem_ctx, r->generic.in.domain_name, &ip, 0x20);
-		if (!ret) {
-			return NT_STATUS_NO_LOGON_SERVERS;
-		}
-	}
+	name.name = r->generic.in.domain_name;
+	name.type = NBT_NAME_PDC;
+	name.scope = NULL;
 
-	r->generic.out.pdc_name = talloc_strdup(mem_ctx, sys_inet_ntoa(ip));
+	status = resolve_name(&name, mem_ctx, &address);
+	if (!NT_STATUS_IS_OK(status)) {
+		name.type = NBT_NAME_SERVER;
+		status = resolve_name(&name, mem_ctx, &address);
+	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	r->generic.out.pdc_name = talloc_strdup(mem_ctx, address);
 
 	return NT_STATUS_OK;
 }

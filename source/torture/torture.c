@@ -44,12 +44,15 @@ BOOL torture_showall = False;
 
 static struct smbcli_state *open_nbt_connection(void)
 {
-	struct nmb_name called, calling;
+	struct nbt_name called, calling;
 	struct smbcli_state *cli;
 	const char *host = lp_parm_string(-1, "torture", "host");
 
-	make_nmb_name(&calling, lp_netbios_name(), 0x0);
-	choose_called_name(&called, host, 0x20);
+	calling.name = lp_netbios_name();
+	calling.type = NBT_NAME_CLIENT;
+	calling.scope = NULL;
+
+	nbt_choose_called_name(NULL, &called, host, NBT_NAME_SERVER);
 
 	cli = smbcli_state_init(NULL);
 	if (!cli) {
@@ -63,23 +66,9 @@ static struct smbcli_state *open_nbt_connection(void)
 	}
 
 	if (!smbcli_transport_establish(cli, &calling, &called)) {
-		/*
-		 * Well, that failed, try *SMBSERVER ... 
-		 * However, we must reconnect as well ...
-		 */
-		if (!smbcli_socket_connect(cli, host)) {
-			printf("Failed to connect with %s\n", host);
-			return False;
-		}
-
-		make_nmb_name(&called, "*SMBSERVER", 0x20);
-		if (!smbcli_transport_establish(cli, &calling, &called)) {
-			printf("%s rejected the session\n",host);
-			printf("We tried with a called name of %s & %s\n",
-				host, "*SMBSERVER");
-			smbcli_shutdown(cli);
-			return NULL;
-		}
+		printf("%s rejected the session\n",host);
+		smbcli_shutdown(cli);
+		return NULL;
 	}
 
 	return cli;

@@ -21,6 +21,7 @@
 */
 
 #include "request.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 struct smbcli_tree;  /* forward declare */
 struct smbcli_request;  /* forward declare */
@@ -151,7 +152,7 @@ struct smbcli_transport {
 
 	/* remember the called name - some sub-protocols require us to
 	   know the server name */
-	struct nmb_name called;
+	struct nbt_name called;
 
 	/* a buffer for partially received SMB packets. */
 	struct {

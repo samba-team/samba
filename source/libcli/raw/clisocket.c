@@ -326,10 +326,11 @@ resolve a hostname and connect
 ****************************************************************************/
 BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, int port)
 {
-	int name_type = 0x20;
-	struct ipv4_addr ip;
-	char *name, *p;
+	int name_type = NBT_NAME_SERVER;
+	const char *address;
 	NTSTATUS status;
+	struct nbt_name nbt_name;
+	char *name, *p;
 
 	name = talloc_strdup(sock, host);
 
@@ -339,13 +340,18 @@ BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, in
 		*p = 0;
 	}
 
-	if (!resolve_name(name, name, &ip, name_type)) {
+	nbt_name.name = name;
+	nbt_name.type = name_type;
+	nbt_name.scope = NULL;
+	
+	status = resolve_name(&nbt_name, sock, &address);
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
 	sock->hostname = name;
 
-	status = smbcli_sock_connect(sock, sys_inet_ntoa(ip), port);
+	status = smbcli_sock_connect(sock, address, port);
 
 	return NT_STATUS_IS_OK(status);
 }

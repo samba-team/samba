@@ -283,3 +283,57 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, struct nbt_name 
 
 	return NT_STATUS_OK;
 }
+
+
+/*
+  copy a nbt name structure
+*/
+NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_name *newname)
+{
+	*newname = *name;
+	newname->name = talloc_strdup(mem_ctx, newname->name);
+	NT_STATUS_HAVE_NO_MEMORY(newname->name);
+	newname->scope = talloc_strdup(mem_ctx, newname->scope);
+	if (name->scope) {
+		NT_STATUS_HAVE_NO_MEMORY(newname->scope);
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  push a nbt name into a blob
+*/
+NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct nbt_name *name)
+{
+	return ndr_push_struct_blob(blob, mem_ctx, name, 
+				    (ndr_push_flags_fn_t)ndr_push_nbt_name);
+}
+
+/*
+  choose a name to use when calling a server in a NBT session request.
+  we use heuristics to see if the name we have been given is a IP
+  address, or a too-long name. If it is then use *SMBSERVER, or a
+  truncated name
+*/
+void nbt_choose_called_name(TALLOC_CTX *mem_ctx,
+			    struct nbt_name *n, const char *name, int type)
+{
+	n->scope = NULL;
+	n->type = type;
+
+	if (is_ipaddress(name)) {
+		n->name = "*SMBSERVER";
+		return;
+	}
+	if (strlen(name) > 15) {
+		const char *p = strchr(name, '.');
+		if (p - name > 15) {
+			n->name = "*SMBSERVER";
+			return;
+		}
+		n->name = talloc_strndup(mem_ctx, name, PTR_DIFF(p, name));
+		return;
+	}
+
+	n->name = talloc_strdup(mem_ctx, name);
+}

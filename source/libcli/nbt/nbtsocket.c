@@ -29,6 +29,16 @@
 #define NBT_MAX_REPLIES 1000
 
 /*
+  destroy a nbt socket
+*/
+static int nbtsock_destructor(void *ptr)
+{
+	struct nbt_name_socket *nbtsock = talloc_get_type(ptr, struct nbt_name_socket);
+	event_remove_fd(nbtsock->event_ctx, nbtsock->fde);
+	return 0;
+}
+
+/*
   destroy a pending request
 */
 static int nbt_name_request_destructor(void *ptr)
@@ -111,6 +121,9 @@ failed:
 	nbt_name_request_destructor(req);
 	req->status = status;
 	req->state = NBT_REQUEST_ERROR;
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
 	talloc_free(tmp_ctx);
 	return;
 }
@@ -184,6 +197,9 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		req->state = NBT_REQUEST_DONE;
 		req->status = NT_STATUS_NO_MEMORY;
 		talloc_free(tmp_ctx);
+		if (req->async.fn) {
+			req->async.fn(req);
+		}
 		return;
 	}
 
@@ -192,15 +208,18 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	req->replies[req->num_replies].packet = talloc_steal(req, packet);
 	req->num_replies++;
 
+	talloc_free(tmp_ctx);
+
 	/* if we don't want multiple replies then we are done */
 	if (!req->allow_multiple_replies ||
 	    req->num_replies == NBT_MAX_REPLIES) {
 		nbt_name_request_destructor(req);
 		req->state = NBT_REQUEST_DONE;
 		req->status = NT_STATUS_OK;
+		if (req->async.fn) {
+			req->async.fn(req);
+		}
 	}
-
-	talloc_free(tmp_ctx);
 }
 
 /*
@@ -257,6 +276,8 @@ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 	fde.private = nbtsock;
 	nbtsock->fde = event_add_fd(nbtsock->event_ctx, &fde);
 
+	talloc_set_destructor(nbtsock, nbtsock_destructor);
+	
 	return nbtsock;
 
 failed:
@@ -273,8 +294,16 @@ static void nbt_name_socket_timeout(struct event_context *ev, struct timed_event
 	struct nbt_name_request *req = talloc_get_type(te->private, 
 						       struct nbt_name_request);
 	nbt_name_request_destructor(req);
-	req->state = NBT_REQUEST_TIMEOUT;
-	req->status = NT_STATUS_IO_TIMEOUT;
+	if (req->num_replies == 0) {
+		req->state = NBT_REQUEST_TIMEOUT;
+		req->status = NT_STATUS_IO_TIMEOUT;
+	} else {
+		req->state = NBT_REQUEST_DONE;
+		req->status = NT_STATUS_OK;
+	}
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
 }
 
 /*
@@ -300,14 +329,20 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	req->allow_multiple_replies = allow_multiple_replies;
 	req->state = NBT_REQUEST_SEND;
 
+	/* we select a random transaction id unless the user supplied one */
 	if (req->request->name_trn_id == 0) {
 		req->request->name_trn_id = random() % UINT16_MAX;
 	}
 
+	/* choose the next available transaction id >= the one asked for.
+	   The strange 2nd call is to try to make the ids less guessable
+	   and less likely to collide. It's not possible to make NBT secure 
+	   to ID guessing, but this at least makes accidential collisions
+	   less likely */
 	id = idr_get_new_above(req->nbtsock->idr, req, 
 			       req->request->name_trn_id, UINT16_MAX);
 	if (id == -1) {
-		id = idr_get_new_above(req->nbtsock->idr, req, 1+(random()%10000),
+		id = idr_get_new_above(req->nbtsock->idr, req, 1+(random()%(UINT16_MAX/2)),
 				       UINT16_MAX);
 	}
 	if (id == -1) goto failed;
@@ -341,6 +376,9 @@ NTSTATUS nbt_name_request_recv(struct nbt_name_request *req)
 		if (event_loop_once(req->nbtsock->event_ctx) != 0) {
 			req->state = NBT_REQUEST_ERROR;
 			req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+			if (req->async.fn) {
+				req->async.fn(req);
+			}
 		}
 	}
 	return req->status;

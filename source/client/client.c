@@ -3105,11 +3105,14 @@ handle a message operation
 ****************************************************************************/
 static int do_message_op(void)
 {
-	struct nmb_name called, calling;
+	struct nbt_name called, calling;
 	const char *server_name;
 
-	make_nmb_name(&calling, lp_netbios_name(), 0x0);
-	choose_called_name(&called, desthost, name_type);
+	calling.name = lp_netbios_name();
+	calling.type = NBT_NAME_CLIENT;
+	calling.scope = NULL;
+
+	nbt_choose_called_name(NULL, &called, desthost, name_type);
 
 	server_name = dest_ip ? dest_ip : desthost;
 

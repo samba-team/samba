@@ -26,7 +26,8 @@
 #include "libcli/composite/composite.h"
 
 /* the stages of this call */
-enum connect_stage {CONNECT_SOCKET, 
+enum connect_stage {CONNECT_RESOLVE, 
+		    CONNECT_SOCKET, 
 		    CONNECT_SESSION_REQUEST, 
 		    CONNECT_NEGPROT,
 		    CONNECT_SESSION_SETUP,
@@ -209,7 +210,7 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 	NTSTATUS status;
-	struct nmb_name calling, called;
+	struct nbt_name calling, called;
 
 	status = smbcli_sock_connect_recv(state->creq);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -225,8 +226,11 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 		return connect_send_negprot(c, io);
 	}
 
-	make_nmb_name(&calling, io->in.calling_name, 0x0);
-	choose_called_name(&called, io->in.called_name, 0x20);
+	calling.name = io->in.calling_name;
+	calling.type = NBT_NAME_CLIENT;
+	calling.scope = NULL;
+
+	nbt_choose_called_name(state, &called, io->in.called_name, NBT_NAME_SERVER);
 
 	state->req = smbcli_transport_connect_send(state->transport, &calling, &called);
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
@@ -239,6 +243,29 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 }
 
 
+/*
+  called when name resolution is finished
+*/
+static NTSTATUS connect_resolve(struct smbcli_composite *c, 
+				struct smb_composite_connect *io)
+{
+	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
+	NTSTATUS status;
+	const char *address;
+
+	status = resolve_name_recv(state->creq, state, &address);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	state->creq = smbcli_sock_connect_send(state->sock, address, state->io->in.port);
+	NT_STATUS_HAVE_NO_MEMORY(state->creq);
+
+	c->stage = CONNECT_SOCKET;
+	state->creq->async.private = c;
+	state->creq->async.fn = composite_handler;
+
+	return NT_STATUS_OK;
+}
+
 
 /*
   handle and dispatch state transitions
@@ -248,6 +275,9 @@ static void state_handler(struct smbcli_composite *c)
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 
 	switch (c->stage) {
+	case CONNECT_RESOLVE:
+		c->status = connect_resolve(c, state->io);
+		break;
 	case CONNECT_SOCKET:
 		c->status = connect_socket(c, state->io);
 		break;
@@ -301,6 +331,7 @@ struct smbcli_composite *smb_composite_connect_send(struct smb_composite_connect
 {
 	struct smbcli_composite *c;
 	struct connect_state *state;
+	struct nbt_name name;
 
 	c = talloc_zero(NULL, struct smbcli_composite);
 	if (c == NULL) goto failed;
@@ -314,11 +345,15 @@ struct smbcli_composite *smb_composite_connect_send(struct smb_composite_connect
 	state->io = io;
 
 	c->state = SMBCLI_REQUEST_SEND;
-	c->stage = CONNECT_SOCKET;
+	c->stage = CONNECT_RESOLVE;
 	c->event_ctx = state->sock->event.ctx;
 	c->private = state;
 
-	state->creq = smbcli_sock_connect_send(state->sock, io->in.dest_host, io->in.port);
+	name.name = io->in.dest_host;
+	name.type = NBT_NAME_SERVER;
+	name.scope = NULL;
+
+	state->creq = resolve_name_send(&name, c->event_ctx);
 	if (state->creq == NULL) goto failed;
 
 	state->creq->async.private = c;

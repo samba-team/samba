@@ -145,41 +145,52 @@ static void smbcli_transport_write_disable(struct smbcli_transport *transport)
   send a session request
 */
 struct smbcli_request *smbcli_transport_connect_send(struct smbcli_transport *transport,
-						     struct nmb_name *calling, 
-						     struct nmb_name *called)
+						     struct nbt_name *calling, 
+						     struct nbt_name *called)
 {
 	uint8_t *p;
-	int len = NBT_HDR_SIZE;
 	struct smbcli_request *req;
+	DATA_BLOB calling_blob, called_blob;
+	TALLOC_CTX *tmp_ctx = talloc_new(transport);
+	NTSTATUS status;
 
-	if (called) {
-		transport->called = *called;
-	}
+	status = nbt_name_dup(transport, called, &transport->called);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+	
+	status = nbt_name_to_blob(tmp_ctx, &calling_blob, calling);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	status = nbt_name_to_blob(tmp_ctx, &called_blob, called);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
 
   	/* allocate output buffer */
 	req = smbcli_request_setup_nonsmb(transport, 
-					  NBT_HDR_SIZE + 2*nbt_mangled_name_len());
-	if (req == NULL) return NULL;
+					  NBT_HDR_SIZE + 
+					  calling_blob.length + called_blob.length);
+	if (req == NULL) goto failed;
 
 	/* put in the destination name */
 	p = req->out.buffer + NBT_HDR_SIZE;
-	name_mangle(called->name, (char *)p, called->name_type);
-	len += name_len((char *)p);
+	memcpy(p, called_blob.data, called_blob.length);
+	p += called_blob.length;
 
-	/* and my name */
-	p = req->out.buffer+len;
-	name_mangle(calling->name, (char *)p, calling->name_type);
-	len += name_len((char *)p);
+	memcpy(p, calling_blob.data, calling_blob.length);
+	p += calling_blob.length;
 
-	_smb_setlen(req->out.buffer,len-4);
+	_smb_setlen(req->out.buffer, PTR_DIFF(p, req->out.buffer)-4);
 	SCVAL(req->out.buffer,0,0x81);
 
 	if (!smbcli_request_send(req)) {
 		smbcli_request_destroy(req);
-		return NULL;
+		goto failed;
 	}
 
+	talloc_free(tmp_ctx);
 	return req;
+
+failed:
+	talloc_free(tmp_ctx);
+	return NULL;
 }
 
 /*
@@ -237,8 +248,8 @@ NTSTATUS smbcli_transport_connect_recv(struct smbcli_request *req)
   send a session request (if needed)
 */
 BOOL smbcli_transport_connect(struct smbcli_transport *transport,
-			      struct nmb_name *calling, 
-			      struct nmb_name *called)
+			      struct nbt_name *calling, 
+			      struct nbt_name *called)
 {
 	struct smbcli_request *req;
 	NTSTATUS status;
