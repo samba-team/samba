@@ -39,3 +39,7 @@
 */
 #define SIGSYS SIGILL
 #endif /* __linux */
+
+#if defined(__NetBSD__)
+#define AFS_SYSCALL 210
+#endif
