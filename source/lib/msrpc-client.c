@@ -130,6 +130,38 @@ BOOL msrpc_receive(int fd, prs_struct *ps)
 }
 
 /****************************************************************************
+close the socket descriptor
+****************************************************************************/
+static void ncalrpc_l_close_socket(struct msrpc_local *msrpc)
+{
+        if (msrpc->fd != -1)
+        {
+                close(msrpc->fd);
+        }
+        msrpc->fd = -1;
+}
+
+
+/****************************************************************************
+shutdown a msrpcent structure
+****************************************************************************/
+void ncalrpc_l_shutdown(struct msrpc_local *msrpc)
+{
+        DEBUG(10, ("msrpc_shutdown\n"));
+        if (msrpc->outbuf)
+        {
+                free(msrpc->outbuf);
+        }
+        if (msrpc->inbuf)
+        {
+                free(msrpc->inbuf);
+        }
+        ncalrpc_l_close_socket(msrpc);
+        memset(msrpc, 0, sizeof(*msrpc));
+}
+
+
+/****************************************************************************
 open the msrpcent sockets
 ****************************************************************************/
 BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name)
