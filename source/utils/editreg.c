@@ -393,9 +393,14 @@ typedef struct sec_desc_s {
   ACL *sacl, *dacl;
 } SEC_DESC;
 
+#define SEC_DESC_NON 0
+#define SEC_DESC_RES 1
+#define SEC_DESC_OCU 2
+
 typedef struct key_sec_desc_s {
   struct key_sec_desc_s *prev, *next;
   int ref_cnt;
+  int state;
   SEC_DESC *sec_desc;
 } KEY_SEC_DESC; 
 
@@ -706,6 +711,15 @@ typedef struct sk_struct {
   char sec_desc[1];
 } SK_HDR;
 
+typedef struct sec_desc_rec {
+  WORD rev;
+  WORD type;
+  DWORD owner_off;
+  DWORD group_off;
+  DWORD sacl_off;
+  DWORD dacl_off;
+} REG_SEC_DESC;
+
 typedef struct hash_struct {
   DWORD nk_off;
   char hash[4];
@@ -897,59 +911,13 @@ int valid_regf_hdr(REGF_HDR *regf_hdr)
  * We allocate the map in increments of 10 entries.
  */
 
-KEY_SEC_DESC *lookup_sec_key(SK_MAP *sk_map, int count, int sk_off)
+/*
+ * Create a new entry in the map, and increase the size of the map if needed
+ */
+
+SK_MAP **alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
 {
-  int i;
-
-  if (!sk_map) return NULL;
-
-  for (i = 0; i < count; i++) {
-
-    if (sk_map[i].sk_off == sk_off)
-      return sk_map[i].key_sec_desc;
-
-  }
-
-  return NULL;
-
-}
-
-KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
-{
-  KEY_SEC_DESC *tmp = NULL;
-
-  if (!sk_hdr) return NULL;
-
-  if (SVAL(&sk_hdr->SK_ID) != REG_SK_ID) {
-    fprintf(stderr, "Unrecognized SK Header ID: %08X, %s\n", (int)sk_hdr,
-	    regf->regfile_name);
-    return NULL;
-  }
-
-  /* 
-   * Now, we need to look up the SK Record in the map, and return it
-   * Since the map contains the SK_OFF mapped to KEY_SEC_DESC, we can
-   * use that
-   */
-
-  if ((tmp = lookup_sec_key(*regf->sk_map, regf->sk_count, sk_off)) != NULL) {
-    tmp->ref_cnt++;
-    return tmp;
-  }
-
-  /*
-   * Now, allocate a KEY_SEC_DESC, and parse the structure here, and add the
-   * new KEY_SEC_DESC to the mapping structure, since the offset supplied is 
-   * the actual offset of structure. The same offset will be used by all
-   * all future references to this structure
-   */
-
-  tmp = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
-  if (!tmp) return NULL;
-
-  tmp->ref_cnt++;
-
-  if (!regf->sk_map) { /* Allocate a block of 10 */
+ if (!regf->sk_map) { /* Allocate a block of 10 */
     regf->sk_map = (SK_MAP **)malloc(sizeof(SK_MAP) * 10);
     if (!regf->sk_map) {
       free(tmp);
@@ -974,10 +942,135 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
     (*regf->sk_map)[index].key_sec_desc = tmp;
     regf->sk_count++;
   }
+ return regf->sk_map;
+}
+
+/*
+ * Search for a KEY_SEC_DESC in the sk_map, but dont create one if not
+ * found
+ */
+
+KEY_SEC_DESC *lookup_sec_key(SK_MAP *sk_map, int count, int sk_off)
+{
+  int i;
+
+  if (!sk_map) return NULL;
+
+  for (i = 0; i < count; i++) {
+
+    if (sk_map[i].sk_off == sk_off)
+      return sk_map[i].key_sec_desc;
+
+  }
+
+  return NULL;
+
+}
+
+/*
+ * Allocate a KEY_SEC_DESC if we can't find one in the map
+ */
+
+KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
+{
+  KEY_SEC_DESC *tmp = lookup_sec_key(*regf->sk_map, regf->sk_count, sk_off);
+
+  if (tmp) {
+    return tmp;
+  }
+  else { /* Allocate a new one */
+    tmp = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
+    if (!tmp) {
+      return NULL;
+    }
+    tmp->state = SEC_DESC_RES;
+    if (!alloc_sk_map_entry(regf, tmp, sk_off)) {
+      return NULL;
+    }
+    return tmp;
+  }
+}
+
+SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
+{
+  SEC_DESC *tmp = NULL;
+  
+  return tmp;
+}
+
+KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
+{
+  KEY_SEC_DESC *tmp = NULL;
+  int sk_next_off, sk_prev_off;
+  REG_SEC_DESC *sec_desc;
+
+  if (!sk_hdr) return NULL;
+
+  if (SVAL(&sk_hdr->SK_ID) != REG_SK_ID) {
+    fprintf(stderr, "Unrecognized SK Header ID: %08X, %s\n", (int)sk_hdr,
+	    regf->regfile_name);
+    return NULL;
+  }
+
+  /* 
+   * Now, we need to look up the SK Record in the map, and return it
+   * Since the map contains the SK_OFF mapped to KEY_SEC_DESC, we can
+   * use that
+   */
+
+  if (((tmp = lookup_sec_key(*regf->sk_map, regf->sk_count, sk_off)) != NULL)
+      && (tmp->state == SEC_DESC_OCU)) {
+    tmp->ref_cnt++;
+    return tmp;
+  }
+
+  /* Here, we have an item in the map that has been reserved, or tmp==NULL. */
+
+  assert(tmp && tmp->state != SEC_DESC_NON);
+
+  /*
+   * Now, allocate a KEY_SEC_DESC, and parse the structure here, and add the
+   * new KEY_SEC_DESC to the mapping structure, since the offset supplied is 
+   * the actual offset of structure. The same offset will be used by all
+   * all future references to this structure
+   * We chould put all this unpleasantness in a function.
+   */
+
+  if (!tmp) {
+    tmp = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
+    if (!tmp) return NULL;
+    bzero(tmp, sizeof(KEY_SEC_DESC));
+    
+    /*
+     * Allocate an entry in the SK_MAP ...
+     */
+    
+    if (!alloc_sk_map_entry(regf, tmp, sk_off)) {
+      return NULL;
+    }
+  }
+
+  tmp->ref_cnt++;
+  tmp->state = SEC_DESC_OCU;
 
   /*
    * Now, process the actual sec desc and plug the values in
    */
+
+  sec_desc = (REG_SEC_DESC *)&sk_hdr->sec_desc[0];
+  tmp->sec_desc = process_sec_desc(regf, sec_desc);
+
+  /*
+   * Now forward and back links. Here we allocate an entry in the sk_map
+   * if it does not exist, and mark it reserved
+   */
+
+  sk_prev_off = IVAL(&sk_hdr->prev_off);
+  tmp->prev = lookup_create_sec_key(regf, *regf->sk_map, sk_prev_off);
+  assert(tmp->prev != NULL);
+  sk_next_off = IVAL(&sk_hdr->prev_off);
+  tmp->next = lookup_create_sec_key(regf, *regf->sk_map, sk_next_off);
+  assert(tmp->next != NULL);
 
   return tmp;
 }
