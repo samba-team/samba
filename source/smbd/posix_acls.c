@@ -161,6 +161,8 @@ static char *create_pai_buf(canon_ace *file_ace_list, canon_ace *dir_ace_list, B
 		if (ace_list->inherited)
 			num_def_entries++;
 
+	DEBUG(10,("create_pai_buf: num_entries = %u, num_def_entries = %u\n", num_entries, num_def_entries ));
+
 	*store_size = PAI_ENTRIES_BASE + ((num_entries + num_def_entries)*PAI_ENTRY_LENGTH);
 
 	pai_buf = malloc(*store_size);
@@ -542,10 +544,10 @@ static void print_canon_ace(canon_ace *pace, int num)
 	dbgtext( "SID = %s ", sid_to_string( str, &pace->trustee));
 	if (pace->owner_type == UID_ACE) {
 		const char *u_name = uidtoname(pace->unix_ug.uid);
-		dbgtext( "uid %u (%s) %s", (unsigned int)pace->unix_ug.uid, u_name, pace->inherited ? "(inherited) " : "");
+		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.uid, u_name );
 	} else if (pace->owner_type == GID_ACE) {
 		char *g_name = gidtoname(pace->unix_ug.gid);
-		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.gid, g_name);
+		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.gid, g_name );
 	} else
 		dbgtext( "other ");
 	switch (pace->type) {
@@ -565,6 +567,8 @@ static void print_canon_ace(canon_ace *pace, int num)
 			dbgtext( "SMB_ACL_OTHER ");
 			break;
 	}
+	if (pace->inherited)
+		dbgtext( "(inherited) ");
 	dbgtext( "perms ");
 	dbgtext( "%c", pace->perms & S_IRUSR ? 'r' : '-');
 	dbgtext( "%c", pace->perms & S_IWUSR ? 'w' : '-');
@@ -1202,7 +1206,7 @@ static void check_owning_objs(canon_ace *ace, DOM_SID *pfile_owner_sid, DOM_SID 
  Unpack a SEC_DESC into two canonical ace lists.
 ****************************************************************************/
 
-static BOOL create_canon_ace_lists(files_struct *fsp, 
+static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 							DOM_SID *pfile_owner_sid,
 							DOM_SID *pfile_grp_sid,
 							canon_ace **ppfile_ace, canon_ace **ppdir_ace,
@@ -1337,7 +1341,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 			current_ace->type = SMB_ACL_OTHER;
 		} else if (sid_equal(&current_ace->trustee, &global_sid_Creator_Owner)) {
 			current_ace->owner_type = UID_ACE;
-			current_ace->unix_ug.world = -1;
+			current_ace->unix_ug.uid = pst->st_uid;
 			current_ace->type = SMB_ACL_USER_OBJ;
 
 			/*
@@ -1350,7 +1354,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 				psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 		} else if (sid_equal(&current_ace->trustee, &global_sid_Creator_Group)) {
 			current_ace->owner_type = GID_ACE;
-			current_ace->unix_ug.world = -1;
+			current_ace->unix_ug.gid = pst->st_gid;
 			current_ace->type = SMB_ACL_GROUP_OBJ;
 
 			/*
@@ -1910,7 +1914,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 	 * Now go through the DACL and create the canon_ace lists.
 	 */
 
-	if (!create_canon_ace_lists( fsp, pfile_owner_sid, pfile_grp_sid,
+	if (!create_canon_ace_lists( fsp, pst, pfile_owner_sid, pfile_grp_sid,
 								&file_ace, &dir_ace, psd->dacl))
 		return False;
 
