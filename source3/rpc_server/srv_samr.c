@@ -679,6 +679,16 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 		free(grps);
 	}
 
+	if (r_e.sam != NULL)
+	{
+		free(r_e.sam);
+	}
+
+	if (r_e.uni_grp_name != NULL)
+	{
+		free(r_e.uni_grp_name);
+	}
+
 	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
 }
 
@@ -763,6 +773,16 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	if (alss != NULL)
 	{
 		free(alss);
+	}
+
+	if (r_e.sam != NULL)
+	{
+		free(r_e.sam);
+	}
+
+	if (r_e.uni_grp_name != NULL)
+	{
+		free(r_e.uni_grp_name);
 	}
 
 	DEBUG(5,("samr_enum_dom_aliases: %d\n", __LINE__));
