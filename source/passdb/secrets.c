@@ -143,9 +143,27 @@ char *trust_keystr(char *domain)
 }
 
 /************************************************************************
- Routine to get the trust account password for a domain.
- The user of this function must have locked the trust password file.
+ Lock the trust password entry.
 ************************************************************************/
+
+BOOL secrets_lock_trust_account_password(char *domain, BOOL dolock)
+{
+	if (!tdb)
+		return False;
+
+	if (dolock)
+		return (tdb_lock_bystring(tdb, trust_keystr(domain)) == 0);
+	else
+		tdb_unlock_bystring(tdb, trust_keystr(domain));
+	return True;
+}
+
+/************************************************************************
+ Routine to get the trust account password for a domain.
+ The user of this function must have locked the trust password file using
+ the above call.
+************************************************************************/
+
 BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time)
 {
