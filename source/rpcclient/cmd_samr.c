@@ -1268,22 +1268,22 @@ struct cmd_set samr_commands[] = {
 
 	{ "SAMR" },
 
-	{ "queryuser", 		cmd_samr_query_user, 		PIPE_SAMR,	"Query user info",         "" },
-	{ "querygroup", 	cmd_samr_query_group, 		PIPE_SAMR,	"Query group info",        "" },
-	{ "queryusergroups", 	cmd_samr_query_usergroups, 	PIPE_SAMR,	"Query user groups",       "" },
-	{ "queryuseraliases", 	cmd_samr_query_useraliases, 	PIPE_SAMR,	"Query user aliases",      "" },
-	{ "querygroupmem", 	cmd_samr_query_groupmem, 	PIPE_SAMR,	"Query group membership",  "" },
-	{ "queryaliasmem", 	cmd_samr_query_aliasmem, 	PIPE_SAMR,	"Query alias membership",  "" },
-	{ "querydispinfo", 	cmd_samr_query_dispinfo, 	PIPE_SAMR,	"Query display info",      "" },
-	{ "querydominfo", 	cmd_samr_query_dominfo, 	PIPE_SAMR,	"Query domain info",       "" },
-	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       PIPE_SAMR,	"Enumerate domain groups", "" },
-	{ "enumalsgroups",      cmd_samr_enum_als_groups,       PIPE_SAMR,	"Enumerate alias groups",  "" },
+	{ "queryuser", 		cmd_samr_query_user, 		PI_SAMR,	"Query user info",         "" },
+	{ "querygroup", 	cmd_samr_query_group, 		PI_SAMR,	"Query group info",        "" },
+	{ "queryusergroups", 	cmd_samr_query_usergroups, 	PI_SAMR,	"Query user groups",       "" },
+	{ "queryuseraliases", 	cmd_samr_query_useraliases, 	PI_SAMR,	"Query user aliases",      "" },
+	{ "querygroupmem", 	cmd_samr_query_groupmem, 	PI_SAMR,	"Query group membership",  "" },
+	{ "queryaliasmem", 	cmd_samr_query_aliasmem, 	PI_SAMR,	"Query alias membership",  "" },
+	{ "querydispinfo", 	cmd_samr_query_dispinfo, 	PI_SAMR,	"Query display info",      "" },
+	{ "querydominfo", 	cmd_samr_query_dominfo, 	PI_SAMR,	"Query domain info",       "" },
+	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       PI_SAMR,	"Enumerate domain groups", "" },
+	{ "enumalsgroups",      cmd_samr_enum_als_groups,       PI_SAMR,	"Enumerate alias groups",  "" },
 
-	{ "createdomuser",      cmd_samr_create_dom_user,       PIPE_SAMR,	"Create domain user",      "" },
-	{ "samlookupnames",     cmd_samr_lookup_names,          PIPE_SAMR,	"Look up names",           "" },
-	{ "samlookuprids",      cmd_samr_lookup_rids,           PIPE_SAMR,	"Look up names",           "" },
-	{ "deletedomuser",      cmd_samr_delete_dom_user,       PIPE_SAMR,	"Delete domain user",      "" },
-	{ "samquerysecobj",     cmd_samr_query_sec_obj,         PIPE_SAMR, "Query SAMR security object",   "" },
+	{ "createdomuser",      cmd_samr_create_dom_user,       PI_SAMR,	"Create domain user",      "" },
+	{ "samlookupnames",     cmd_samr_lookup_names,          PI_SAMR,	"Look up names",           "" },
+	{ "samlookuprids",      cmd_samr_lookup_rids,           PI_SAMR,	"Look up names",           "" },
+	{ "deletedomuser",      cmd_samr_delete_dom_user,       PI_SAMR,	"Delete domain user",      "" },
+	{ "samquerysecobj",     cmd_samr_query_sec_obj,         PI_SAMR, "Query SAMR security object",   "" },
 
 	{ NULL }
 };

@@ -227,7 +227,7 @@ struct cmd_set srvsvc_commands[] = {
 
 	{ "SRVSVC" },
 
-	{ "srvinfo",    cmd_srvsvc_srv_query_info,  PIPE_SRVSVC, "Server query info", "" },
+	{ "srvinfo",    cmd_srvsvc_srv_query_info,  PI_SRVSVC, "Server query info", "" },
 
 	{ NULL }
 };

@@ -693,26 +693,49 @@ BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
 	fstrcpy(pname,"\\PIPE\\");
 	fstrcat(pname,pipe_name);
 
-	for(i=0;pipe_names[i].client_pipe; i++) {
-		if(strequal(pipe_names[i].client_pipe, pname))
+
+#ifndef SUPPORT_NEW_LSARPC_UUID
+
+	/* check for the first pipe matching the name */
+	
+	for ( i=0; pipe_names[i].client_pipe; i++ ) {
+		if ( strequal(pipe_names[i].client_pipe, pname) )
 			break;
 	}
+#else
+	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
+		
+	for ( i=0; pipe_names[i].client_pipe; i++ ) 
+	{
+		if ( strequal(pipe_names[i].client_pipe, pname)
+			&& (abstract->version == pipe_names[i].abstr_syntax.version) 
+			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(RPC_UUID)) == 0)
+			&& (transfer->version == pipe_names[i].trans_syntax.version)
+			&& (memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid, sizeof(RPC_UUID)) == 0) )
+		{
+			break;
+		}
+	}
+#endif
 
 	if(pipe_names[i].client_pipe == NULL)
 		return False;
 
+#ifndef SUPPORT_NEW_LSARPC_UUID
 	/* check the abstract interface */
-	if((abstract->version != pipe_names[i].abstr_syntax.version) ||
-		(memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid,
-			sizeof(RPC_UUID)) != 0))
+	if ( (abstract->version != pipe_names[i].abstr_syntax.version) 
+		|| (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(RPC_UUID)) != 0) )
+	{
 		return False;
+	}
 
 	/* check the transfer interface */
-	if((transfer->version != pipe_names[i].trans_syntax.version) ||
-		(memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid,
-			sizeof(RPC_UUID)) != 0))
+	if ( (transfer->version != pipe_names[i].trans_syntax.version) 
+		|| (memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid, sizeof(RPC_UUID)) != 0) )
+	{
 		return False;
-
+	}
+#endif
 	return True;
 }
 

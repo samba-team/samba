@@ -47,7 +47,7 @@
 struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 				     struct ntuser_creds *creds)
 {
-        return cli_pipe_initialise(cli, system_name, PIPE_LSARPC, creds);
+        return cli_pipe_initialise(cli, system_name, PI_LSARPC, creds);
 }
 
 /** Open a LSA policy handle
@@ -1129,7 +1129,7 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 
 	/* Fetch domain sid */
  
-	if (!cli_nt_session_open(&cli, PIPE_LSARPC)) {
+	if (!cli_nt_session_open(&cli, PI_LSARPC)) {
 		DEBUG(0, ("fetch_domain_sid: Error connecting to SAM pipe\n"));
 		goto done;
 	}

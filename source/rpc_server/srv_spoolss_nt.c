@@ -2375,7 +2375,7 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, char *remote_ma
 	 * Now start the NT Domain stuff :-).
 	 */
 
-	if(cli_nt_session_open(the_cli, PIPE_SPOOLSS) == False) {
+	if(cli_nt_session_open(the_cli, PI_SPOOLSS) == False) {
 		DEBUG(0,("connect_to_client: unable to open the domain client session to machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli)));
 		cli_nt_session_close(the_cli);
 		cli_ulogoff(the_cli);

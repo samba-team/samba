@@ -369,7 +369,7 @@ static int join_domain_byuser(char *domain, char *remote,
 
 	/* Fetch domain sid */
 
-	if (!cli_nt_session_open(&cli, PIPE_LSARPC)) {
+	if (!cli_nt_session_open(&cli, PI_LSARPC)) {
 		DEBUG(0, ("Error connecting to SAM pipe\n"));
 		goto done;
 	}
@@ -390,7 +390,7 @@ static int join_domain_byuser(char *domain, char *remote,
 
 	/* Create domain user */
 
-	if (!cli_nt_session_open(&cli, PIPE_SAMR)) {
+	if (!cli_nt_session_open(&cli, PI_SAMR)) {
 		DEBUG(0, ("Error connecting to SAM pipe\n"));
 		goto done;
 	}

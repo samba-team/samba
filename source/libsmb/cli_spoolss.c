@@ -42,7 +42,7 @@ struct cli_state *cli_spoolss_initialise(struct cli_state *cli,
 					 char *system_name,
 					 struct ntuser_creds *creds)
 {
-        return cli_pipe_initialise(cli, system_name, PIPE_SPOOLSS, creds);
+        return cli_pipe_initialise(cli, system_name, PI_SPOOLSS, creds);
 }
 
 

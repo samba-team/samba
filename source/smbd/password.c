@@ -1352,7 +1352,7 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
 	 * into account also. This patch from "Bjart Kvarme" <bjart.kvarme@usit.uio.no>.
 	 */
 
-	if(cli_nt_session_open(pcli, PIPE_NETLOGON) == False) {
+	if(cli_nt_session_open(pcli, PI_NETLOGON) == False) {
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
 		cli_nt_session_close(pcli);

@@ -212,7 +212,7 @@ void fetch_machine_sid(struct cli_state *cli)
 	}
 
 
-	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
+	if (!cli_nt_session_open (cli, PI_LSARPC)) {
 		fprintf(stderr, "could not initialise lsa pipe\n");
 		goto error;
 	}
@@ -385,18 +385,18 @@ static struct cmd_set rpcclient_commands[] = {
 
 	{ "GENERAL OPTIONS" },
 
-	{ "help", 	cmd_help, 	NULL,	"Get help on commands", "[command]" },
-	{ "?", 		cmd_help, 	NULL,	"Get help on commands", "[command]" },
-	{ "debuglevel", cmd_debuglevel, NULL,	"Set debug level", "level" },
-	{ "list",	cmd_listcommands, NULL,	"List available commands on <pipe>", "pipe" },
-	{ "exit", 	cmd_quit, 	NULL,	"Exit program", "" },
-	{ "quit", 	cmd_quit, 	NULL,	"Exit program", "" },
+	{ "help", 	cmd_help, 	  -1,	"Get help on commands", "[command]" },
+	{ "?", 		cmd_help, 	  -1,	"Get help on commands", "[command]" },
+	{ "debuglevel", cmd_debuglevel,   -1,	"Set debug level", "level" },
+	{ "list",	cmd_listcommands, -1,	"List available commands on <pipe>", "pipe" },
+	{ "exit", 	cmd_quit, 	  -1,	"Exit program", "" },
+	{ "quit", 	cmd_quit, 	  -1,	"Exit program", "" },
 
 	{ NULL }
 };
 
 static struct cmd_set separator_command[] = {
-	{ "---------------", NULL,	NULL,	"----------------------" },
+	{ "---------------", NULL,	-1,	"----------------------" },
 	{ NULL }
 };
 
@@ -491,10 +491,9 @@ static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry,
 
                 /* Open pipe */
 
-                if (cmd_entry->pipe)
-                        if (!cli_nt_session_open(cli, cmd_entry->pipe)) {
-                                DEBUG(0, ("Could not initialise %s\n",
-                                          cmd_entry->pipe));
+                if (cmd_entry->pipe_idx != -1)
+                        if (!cli_nt_session_open(cli, cmd_entry->pipe_idx)) {
+                                DEBUG(0, ("Could not initialise pipe\n"));
                                 goto done;
                         }
 
@@ -504,7 +503,7 @@ static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry,
 
                 /* Cleanup */
 
-                if (cmd_entry->pipe)
+                if (cmd_entry->pipe_idx != -1)
                         cli_nt_session_close(cli);
 
                 talloc_destroy(mem_ctx);

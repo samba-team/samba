@@ -28,7 +28,7 @@ struct cli_state *cli_svrsvc_initialise(struct cli_state *cli,
 					char *system_name,
 					struct ntuser_creds *creds)
 {
-        return cli_pipe_initialise(cli, system_name, PIPE_SRVSVC, creds);
+        return cli_pipe_initialise(cli, system_name, PI_SRVSVC, creds);
 }
 
 NTSTATUS cli_srvsvc_net_srv_get_info(struct cli_state *cli, 

@@ -494,22 +494,31 @@ static NTSTATUS cmd_lsa_query_secobj(struct cli_state *cli,
 	return result;
 }
 
+
+static NTSTATUS cmd_lsa_dsrole_getprimarydominfo(struct cli_state *cli, 
+				     TALLOC_CTX *mem_ctx, int argc, 
+				     char **argv) 
+{
+	return NT_STATUS_OK;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
 
 	{ "LSARPC" },
 
-	{ "lsaquery", 	 cmd_lsa_query_info_policy, 	PIPE_LSARPC, "Query info policy",         "" },
-	{ "lookupsids",  cmd_lsa_lookup_sids, 		PIPE_LSARPC, "Convert SIDs to names",     "" },
-	{ "lookupnames", cmd_lsa_lookup_names, 		PIPE_LSARPC, "Convert names to SIDs",     "" },
-	{ "enumtrust", 	 cmd_lsa_enum_trust_dom, 	PIPE_LSARPC, "Enumerate trusted domains", "" },
-	{ "enumprivs", 	         cmd_lsa_enum_privilege,     PIPE_LSARPC, "Enumerate privileges",                 "" },
-	{ "getdispname",         cmd_lsa_get_dispname,       PIPE_LSARPC, "Get the privilege name",               "" },
-	{ "lsaenumsid",          cmd_lsa_enum_sids,          PIPE_LSARPC, "Enumerate the LSA SIDS",               "" },
-	{ "lsaenumprivsaccount", cmd_lsa_enum_privsaccounts, PIPE_LSARPC, "Enumerate the privileges of an SID",   "" },
-	{ "lsalookupprivvalue",  cmd_lsa_lookupprivvalue,    PIPE_LSARPC, "Get a privilege value given its name", "" },
-	{ "lsaquerysecobj",      cmd_lsa_query_secobj,       PIPE_LSARPC, "Query LSA security object", "" },
+	{ "lsaquery",		cmd_lsa_query_info_policy, 	PI_LSARPC, "Query info policy",         "" },
+	{ "lookupsids",  	cmd_lsa_lookup_sids, 		PI_LSARPC, "Convert SIDs to names",     "" },
+	{ "lookupnames", 	cmd_lsa_lookup_names, 	PI_LSARPC, "Convert names to SIDs",     "" },
+	{ "enumtrust", 	cmd_lsa_enum_trust_dom, 	PI_LSARPC, "Enumerate trusted domains", "" },
+	{ "enumprivs", 	cmd_lsa_enum_privilege,     PI_LSARPC, "Enumerate privileges",                 "" },
+	{ "getdispname",         cmd_lsa_get_dispname,       PI_LSARPC, "Get the privilege name",               "" },
+	{ "lsaenumsid",          cmd_lsa_enum_sids,          PI_LSARPC, "Enumerate the LSA SIDS",               "" },
+	{ "lsaenumprivsaccount", cmd_lsa_enum_privsaccounts, PI_LSARPC, "Enumerate the privileges of an SID",   "" },
+	{ "lsalookupprivvalue",  cmd_lsa_lookupprivvalue,    PI_LSARPC, "Get a privilege value given its name", "" },
+	{ "lsaquerysecobj",      cmd_lsa_query_secobj,       PI_LSARPC, "Query LSA security object", "" },
+	{ "lsarpcbind",	cmd_lsa_dsrole_getprimarydominfo,       PI_LSARPC_V2, "Test 2k UUID in rpc bind", "" },
 
 	{ NULL }
 };

@@ -24,7 +24,7 @@
 /* Opens a SMB connection to a named pipe */
 
 struct cli_state *cli_pipe_initialise(struct cli_state *cli, char *system_name,
-				      char *pipe_name, 
+				      int pipe_idx, 
                                       struct ntuser_creds *creds)
 {
 	struct in_addr dest_ip;
@@ -63,7 +63,7 @@ struct cli_state *cli_pipe_initialise(struct cli_state *cli, char *system_name,
 
 	/* Open a NT session thingy */
 
-	if (!cli_nt_session_open(cli, pipe_name)) {
+	if (!cli_nt_session_open(cli, pipe_idx)) {
 		cli_shutdown(cli);
 		return NULL;
 	}

@@ -31,7 +31,7 @@ struct cli_state *cli_winreg_initialise(struct cli_state *cli,
                                         char *system_name,
                                         struct ntuser_creds *creds)
 {
-        return cli_pipe_initialise(cli, system_name, PIPE_WINREG, creds);
+        return cli_pipe_initialise(cli, system_name, PI_WINREG, creds);
 }
 
 /* Shutdown a server */

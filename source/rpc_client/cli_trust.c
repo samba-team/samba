@@ -126,7 +126,7 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
    * Now start the NT Domain stuff :-).
    */
 
-  if(cli_nt_session_open(&cli, PIPE_NETLOGON) == False) {
+  if(cli_nt_session_open(&cli, PI_NETLOGON) == False) {
     DEBUG(0,("modify_trust_password: unable to open the domain client session to \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
     cli_nt_session_close(&cli);

@@ -29,7 +29,7 @@
 struct cli_state *cli_samr_initialise(struct cli_state *cli, char *system_name,
 				      struct ntuser_creds *creds)
 {
-        return cli_pipe_initialise(cli, system_name, PIPE_SAMR, creds);
+        return cli_pipe_initialise(cli, system_name, PI_SAMR, creds);
 }
 
 /* Connect to SAMR database */
