@@ -1,3 +1,7 @@
+Tue Oct 21 20:21:40 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/kerberos5.c: Check version number of krbtgt.
+
 Mon Oct 20 01:14:53 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/prompter_posix.c (krb5_prompter_posix): implement the
