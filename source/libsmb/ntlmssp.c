@@ -168,9 +168,7 @@ NTSTATUS ntlmssp_set_password(NTLMSSP_STATE *ntlmssp_state, const char *password
  */
 NTSTATUS ntlmssp_set_domain(NTLMSSP_STATE *ntlmssp_state, const char *domain) 
 {
-	/* Possibly make our NTLMv2 client more robust by always having 
-	   an uppercase domain */
-	ntlmssp_state->domain = talloc_strdup_upper(ntlmssp_state->mem_ctx, domain);
+	ntlmssp_state->domain = talloc_strdup(ntlmssp_state->mem_ctx, domain);
 	if (!ntlmssp_state->domain) {
 		return NT_STATUS_NO_MEMORY;
 	}
