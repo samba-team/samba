@@ -1,3 +1,8 @@
+2004-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos4.c: stop the client from renewing tickets into the
+	future From: Jeffrey Hutzelman <jhutz@cmu.edu>
+
 2004-03-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* configure.in: try to handle sys/strtty.h needing sys/stream.h
