@@ -21,7 +21,9 @@
 
 #include "includes.h"
 
+#ifdef WITH_PROFILE
 #define IPC_PERMS ((SHM_R | SHM_W) | (SHM_R>>3) | (SHM_R>>6))
+#endif /* WITH_PROFILE */
 
 static int shm_id;
 static BOOL read_only;
@@ -45,6 +47,7 @@ void profile_message(int msg_type, pid_t src, void *buf, size_t len)
         int level;
 
 	memcpy(&level, buf, sizeof(int));
+#ifdef WITH_PROFILE
 	switch (level) {
 	case 0:		/* turn off profiling */
 		do_profile_flag = False;
@@ -66,6 +69,9 @@ void profile_message(int msg_type, pid_t src, void *buf, size_t len)
 		DEBUG(1,("INFO: Profiling values cleared from pid %d\n", (int)src));
 		break;
 	}
+#else /* WITH_PROFILE */
+	DEBUG(1,("INFO: Profiling support unavailable in this build.\n"));
+#endif /* WITH_PROFILE */
 }
 
 /****************************************************************************
@@ -87,6 +93,7 @@ void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len)
 /*******************************************************************
   open the profiling shared memory area
   ******************************************************************/
+#ifdef WITH_PROFILE
 BOOL profile_setup(BOOL rdonly)
 {
 	struct shmid_ds shm_ds;
@@ -154,3 +161,4 @@ BOOL profile_setup(BOOL rdonly)
 	message_register(MSG_REQ_PROFILELEVEL, reqprofile_message);
 	return True;
 }
+#endif /* WITH_PROFILE */
