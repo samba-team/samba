@@ -717,7 +717,6 @@ BOOL make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO * q_u,
 BOOL samr_io_q_query_userinfo(char *desc, SAMR_Q_QUERY_USERINFO * q_u,
 			      prs_struct * ps, int depth);
 BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
-			  uint16 acb_info,
 			  const uint8 lm_pwd[16], const uint8 nt_pwd[16]);
 BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u, prs_struct * ps,
 			int depth);

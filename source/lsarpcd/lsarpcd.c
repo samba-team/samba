@@ -148,23 +148,26 @@ static void update_trust_account(void)
 
 	if (trust_pwd_needs_changing)
 	{
+		unsigned char trust_passwd[16];
 		unsigned char trust_passwd_hash[16];
 		fstring srv_name;
 		BOOL res2;
 
 		res2 = get_any_dc_name(global_myworkgroup, srv_name);
 
-		generate_random_buffer(trust_passwd_hash, 16, True);
-		secret_store_data(&secret, trust_passwd_hash, 16);
+		generate_random_buffer(trust_passwd, 16, True);
+		secret_store_data(&secret, trust_passwd, 16);
 
-		res2 =
-			res2 ? nt_encrypt_string2(&encsec, &secret,
-						  user_sess_key) : False;
+		res2 = res2 ? secret_to_nt_owf(trust_passwd_hash, &secret) :
+			False;
+
+		res2 = res2 ? nt_encrypt_string2(&encsec, &secret,
+						 user_sess_key) : False;
 
 		if (!strequal("\\\\.", srv_name))
 		{
-			res2 =
-				res2 ?
+
+			res2 = res2 ?
 				modify_trust_password(global_myworkgroup,
 						      srv_name, old_trust,
 						      trust_passwd_hash,

@@ -339,23 +339,14 @@ BOOL secret_get_data(const STRING2 *secret, uchar *data, uint32 *len)
 /****************************************************************************
 obtains a trust account password
 ****************************************************************************/
-BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
-				  const char *secret_name,
-				  uchar trust_passwd[16],
-				  NTTIME * last_update)
+BOOL secret_to_nt_owf(uchar trust_passwd[16], const STRING2 *secret)
 {
-	STRING2 secret;
 	UNISTR2 uni_pwd;
 	uint32 len;
 	pstring data;
 	int i;
 
-	if (!msrpc_lsa_query_secret(srv_name, secret_name, &secret,
-				    last_update))
-	{
-		return False;
-	}
-	if (!secret_get_data(&secret, data, &len))
+	if (!secret_get_data(secret, data, &len))
 	{
 		return False;
 	}
@@ -368,4 +359,22 @@ BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
 	nt_owf_genW(&uni_pwd, trust_passwd);
 
 	return True;
+}
+
+/****************************************************************************
+obtains a trust account password
+****************************************************************************/
+BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
+				  const char *secret_name,
+				  uchar trust_passwd[16],
+				  NTTIME * last_update)
+{
+	STRING2 secret;
+
+	if (!msrpc_lsa_query_secret(srv_name, secret_name, &secret,
+				    last_update))
+	{
+		return False;
+	}
+	return secret_to_nt_owf(trust_passwd, &secret);
 }

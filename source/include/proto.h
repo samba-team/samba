@@ -2583,6 +2583,7 @@ void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */
 
+void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[]);
 void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[]);
 void cmd_netlogon_domain_test(struct client_info *info, int argc,
 			      char *argv[]);

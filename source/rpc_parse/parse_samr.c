@@ -4944,7 +4944,6 @@ static BOOL sam_io_logon_hrs(char *desc, LOGON_HRS * hrs, prs_struct * ps,
 makes a SAM_USER_INFO_12 structure.
 ********************************************************************/
 BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
-			  uint16 acb_info,
 			  const uint8 lm_pwd[16], const uint8 nt_pwd[16])
 {
 	if (usr == NULL)
@@ -4952,24 +4951,26 @@ BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
 
 	DEBUG(5, ("make_sam_user_info12\n"));
 
-	usr->acb_info = acb_info;
-
 	if (lm_pwd == NULL)
 	{
 		bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
+		usr->lm_pwd_active = 0;
 	}
 	else
 	{
 		memcpy(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd));
+		usr->lm_pwd_active = 1;
 	}
 
 	if (nt_pwd == NULL)
 	{
 		bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
+		usr->nt_pwd_active = 0;
 	}
 	else
 	{
 		memcpy(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd));
+		usr->nt_pwd_active = 1;
 	}
 
 	return True;
@@ -4994,7 +4995,8 @@ BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u, prs_struct * ps,
 	prs_uint8s(False, "lm_pwd", ps, depth, u->lm_pwd, sizeof(u->lm_pwd));
 	prs_uint8s(False, "nt_pwd", ps, depth, u->nt_pwd, sizeof(u->nt_pwd));
 
-	prs_uint16("acb_info", ps, depth, &u->acb_info);
+	prs_uint8("lm_pwd_active", ps, depth, &u->lm_pwd_active);
+	prs_uint8("nt_pwd_active", ps, depth, &u->nt_pwd_active);
 	prs_align(ps);
 
 	return True;
@@ -5868,7 +5870,6 @@ uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR * ctr,
 				return NT_STATUS_NO_MEMORY;
 			}
 			make_sam_user_info12(ctr->info.id12,
-					     usr->acb_info,
 					     usr->lm_pwd, usr->nt_pwd);
 			break;
 		}

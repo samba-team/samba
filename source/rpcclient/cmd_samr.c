@@ -2500,7 +2500,8 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 		if (usr != NULL)
 		{
 			nt_lm_owf_gen(password, p->nt_pwd, p->lm_pwd);
-			p->acb_info = 0x101;
+			p->lm_pwd_active = 1;
+			p->nt_pwd_active = 1;
 			res1 = set_samr_set_userinfo2( &pol_dom,
 					    switch_value, rids[0], usr);
 		}

@@ -43,13 +43,29 @@ experimental nt login trust account change.
 ****************************************************************************/
 void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
 {
-	BOOL res = True;
-	char *nt_password;
-	uchar trust_passwd[16];
-	uchar nt_pw[16];
-	uchar lm_pw[16];
-	fstring trust_acct;
 	fstring domain;
+	fstring acct_name;
+	fstring name;
+	fstring sid;
+	DOM_SID sid1;
+	uint32 user_rid; 
+	int opt;
+	char *password = NULL;
+	pstring upwb;
+	int plen = 0;
+	int len = 0;
+	UNISTR2 upw;
+	uchar ntpw[16];
+	STRING2 secret;
+
+	BOOL res = True;
+	POLICY_HND lsa_pol;
+
+	POLICY_HND pol_sec;
+	BOOL res1;
+	uint32 res2;
+
+	uchar old_trust_passwd[16];
 	char *p;
 	uint16 validation_level;
 
@@ -86,50 +102,114 @@ void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
 	argc--;
 	argv++;
 
-
 	if (domain[0] == 0)
 	{
 		report(out_hnd, "no domain specified.\n");
 	}
 
-	nt_owf_genW(nt_password, nt_pw, lm_pw);
-
 	DEBUG(5, ("do_nt_login_test: username %s from: %s\n",
 		  nt_user_name, info->myhostname));
 
-	fstrcpy(trust_acct, info->myhostname);
-	fstrcat(trust_acct, "$");
-
 	res = res ? msrpc_lsa_query_trust_passwd(wks_name, "$MACHINE.ACC",
-						 trust_passwd, NULL) : False;
+						 old_trust_passwd, NULL) : False;
 
+	safe_strcpy(acct_name, argv[0], sizeof(acct_name));
+	len = strlen(acct_name)-1;
+	if (acct_name[len] == '$')
+	{
+		safe_strcpy(name, argv[0], sizeof(name));
+		name[len] = 0;
+	}
+
+	/*
+	 * generate new random password.  unicode string is stored
+	 * in secret $MACHINE.ACC; nt owf is sent in net_srv_pwset.
+	 */
+
+	upw.uni_str_len = 0xc;
+	upw.uni_max_len = 0xc;
+	password = (char*)upw.buffer;
+	plen = upw.uni_str_len * 2;
+	generate_random_buffer(password, plen, True);
+
+	nt_owf_genW(&upw, ntpw);
+
+	/*
+	 * ok.  this looks really weird, but if you don't open
+	 * the connection to the workstation first, then the
+	 * set trust account on the SAM database may get the
+	 * local copy-of trust account out-of-sync with the
+	 * remote one, and you're stuffed!
+	 */
+	res = lsa_open_policy( wks_name, &lsa_pol, True, 0x02000000);
+
+	if (!res)
+	{
+		report(out_hnd, "Connection to %s FAILED\n", wks_name);
+		report(out_hnd, "(Do a \"use \\\\%s -U localadmin\")\n",
+				 wks_name);
+
+		return;
+	}
+	res1 = lsa_open_secret( &lsa_pol, "$MACHINE.ACC", 0x020003, &pol_sec);
+
+	if (!res1)
+	{
+		lsa_close(&lsa_pol);
+		report(out_hnd, "Open Secret failed\n");
+		return;
+	}
+
+	if (!lsa_query_secret(&pol_sec, &secret, NULL) ||
+	    !secret_to_nt_owf(&old_trust_passwd, &secret))
+	{
+		lsa_close(&lsa_pol);
+		lsa_close(&pol_sec);
+		report(out_hnd, "Query local Trust Account password: Failed\n");
+		return;
+	}
+	
+	if (net_srv_pwset(srv_name, &sid1,
+	                              acct_name, , password, plen,
+	                              &user_rid) != NT_STATUS_NOPROBLEMO)
+	{
+		lsa_close(&lsa_pol);
+		lsa_close(&pol_sec);
+		report(out_hnd, "Set remote Trust Account password: Failed\n");
+		return;
+	}
+
+	report(out_hnd, "Set remote Trust Account password: OK\n");
+
+	strupper(domain);
+	strupper(name);
+
+	/* valid pol_sec on $MACHINE.ACC, set trust passwd */
+	secret_store_data(&secret, password, plen);
+
+	res2 = lsa_set_secret(&pol_sec, &secret);
+
+	if (res2 == NT_STATUS_NOPROBLEMO)
+	{
+		report(out_hnd, "Set $MACHINE.ACC: OK\n");
+	}
+	else
+	{
+		report(out_hnd, "Set $MACHINE.ACC: FAILED\n");
+	}
+
+	res1 = res1 ? lsa_close(&pol_sec) : False;
+	res = res ? lsa_close(&lsa_pol) : False;
+
+	memset(&upw, 0, sizeof(upw));
+	memset(ntpw, 0, sizeof(ntpw));
+}
 	res = res ? cli_nt_setup_creds(srv_name, domain, info->myhostname,
 				       trust_acct,
-				       trust_passwd,
+				       old_trust_passwd,
 				       SEC_CHAN_WKSTA,
 				       &validation_level) == 0x0 : False;
 
-
-	memset(trust_passwd, 0, 16);
-
-	/* do an NT login */
-	res = res ? (cli_nt_login_interactive(srv_name, info->myhostname,
-					      domain, nt_user_name,
-					      getuid(), lm_pw, nt_pw,
-					      &info->dom.ctr,
-					      validation_level,
-					      &info->dom.user_info3) ==
-		     0x0) : False;
-
-
-#if 0
-	/* ok!  you're logged in!  do anything you like, then... */
-
-	/* do an NT logout */
-	res =
-		res ? cli_nt_logoff(srv_name, info->myhostname,
-				    &info->dom.ctr) : False;
-#endif
 
 	report(out_hnd, "cmd_nt_login: login (%s) test succeeded: %s\n",
 	       nt_user_name, BOOLSTR(res));

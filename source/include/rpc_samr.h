@@ -286,7 +286,8 @@ typedef struct sam_user_info_12
 	uint8 lm_pwd[16];    /* lm user passwords */
 	uint8 nt_pwd[16];    /* nt user passwords */
 
-	uint16 acb_info; /* account control bits */
+	uint8 lm_pwd_active; 
+	uint8 nt_pwd_active; 
 
 } SAM_USER_INFO_12;
 
