@@ -194,7 +194,6 @@ typedef struct _kadm5_config_params {
 
     /* Client and server fields */
     char *realm;
-    char *profile;
     int kadmind_port;
 
     /* client fields */
@@ -202,23 +201,10 @@ typedef struct _kadm5_config_params {
 
     /* server fields */
     char *dbname;
-    char *admin_dbname;
-    char *admin_lockfile;
     char *acl_file;
-    char *dict_file;
-    char *admin_keytab;
 
     /* server library (database) fields */
-    int mkey_from_kbd;
     char *stash_file;
-    char *mkey_name;
-    krb5_enctype enctype;
-    krb5_deltat max_life;
-    krb5_deltat max_rlife;
-    krb5_timestamp expiration;
-    krb5_flags flags;
-    krb5_key_salt_tuple *keysalts;
-    int32_t num_keysalts;
 } kadm5_config_params;
 
 typedef krb5_error_code kadm5_ret_t;
