@@ -1,7 +1,7 @@
 #include "kuser_locl.h"
 
-char*
-stime(time_t t)
+static char*
+printable_time(time_t t)
 {
     static char s[128];
     strcpy(s, ctime(&t)+ 4);
@@ -48,8 +48,8 @@ main (int argc, char **argv)
 			      ccache,
 			      &creds,
 			      &cursor) == 0) {
-	printf ("%s  ", stime(creds.times.authtime));
-	printf ("%s  ", stime(creds.times.endtime));
+	printf ("%s  ", printable_time(creds.times.authtime));
+	printf ("%s  ", printable_time(creds.times.endtime));
 	err = krb5_unparse_name (context, creds.server, &str);
 	if (err)
 	    abort ();
