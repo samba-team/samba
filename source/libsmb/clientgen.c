@@ -2162,7 +2162,6 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int dirlist_len = 0;
 	int total_received = -1;
 	BOOL First = True;
-	int ff_resume_key = 0;
 	int ff_searchcount=0;
 	int ff_eos=0;
 	int ff_lastname=0;
@@ -2199,12 +2198,12 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,0,ff_dir_handle);
 			SSVAL(param,2,max_matches); /* max count */
 			SSVAL(param,4,info_level); 
-			SIVAL(param,6,ff_resume_key); /* ff_resume_key */
+			SIVAL(param,6,0); /* ff_resume_key */
 			SSVAL(param,10,8+4+2);	/* resume required + close on end + continue */
 			pstrcpy(param+12,mask);
 
-			DEBUG(5,("hand=0x%X resume=%d ff_lastname=%d mask=%s\n",
-				 ff_dir_handle,ff_resume_key,ff_lastname,mask));
+			DEBUG(5,("hand=0x%X ff_lastname=%d mask=%s\n",
+				 ff_dir_handle,ff_lastname,mask));
 		}
 
 		if (!cli_send_trans(cli, SMBtrans2, 
@@ -2257,13 +2256,11 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			switch(info_level)
 				{
 				case 260:
-					ff_resume_key =0;
 					StrnCpy(mask,p+ff_lastname,
 						MIN(sizeof(mask)-1,data_len-ff_lastname));
 					break;
 				case 1:
 					pstrcpy(mask,p + ff_lastname + 1);
-					ff_resume_key = 0;
 					break;
 				}
 		} else {
@@ -2295,8 +2292,8 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 		if (rdata) free(rdata); rdata = NULL;
 		if (rparam) free(rparam); rparam = NULL;
 		
-		DEBUG(3,("received %d entries (eos=%d resume=%d)\n",
-			 ff_searchcount,ff_eos,ff_resume_key));
+		DEBUG(3,("received %d entries (eos=%d)\n",
+			 ff_searchcount,ff_eos));
 
 		if (ff_searchcount > 0) loop_count = 0;
 
