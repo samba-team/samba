@@ -33,14 +33,16 @@ int cli_set_port(struct cli_state *cli, int port)
 }
 
 /****************************************************************************
-recv an smb
+ Recv an smb.
 ****************************************************************************/
+
 BOOL cli_receive_smb(struct cli_state *cli)
 {
 	BOOL ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
-	if (cli->fd == -1) return False; 
+	if (cli->fd == -1)
+		return False; 
 
  again:
 	ret = client_receive_smb(cli->fd,cli->inbuf,abs(cli->timeout));
@@ -103,8 +105,9 @@ BOOL cli_send_smb(struct cli_state *cli)
 }
 
 /****************************************************************************
-setup basics in a outgoing packet
+ Setup basics in a outgoing packet.
 ****************************************************************************/
+
 void cli_setup_packet(struct cli_state *cli)
 {
         cli->rap_error = 0;
@@ -115,33 +118,31 @@ void cli_setup_packet(struct cli_state *cli)
 		uint16 flags2;
 		SCVAL(cli->outbuf,smb_flg,0x8);
 		flags2 = FLAGS2_LONG_PATH_COMPONENTS;
-		if (cli->capabilities & CAP_UNICODE) {
+		if (cli->capabilities & CAP_UNICODE)
 			flags2 |= FLAGS2_UNICODE_STRINGS;
-		}
-		if (cli->capabilities & CAP_STATUS32) {
+		if (cli->capabilities & CAP_STATUS32)
 			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-		}
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
 
 /****************************************************************************
-setup the bcc length of the packet from a pointer to the end of the data
+ Setup the bcc length of the packet from a pointer to the end of the data.
 ****************************************************************************/
+
 void cli_setup_bcc(struct cli_state *cli, void *p)
 {
 	set_message_bcc(cli->outbuf, PTR_DIFF(p, smb_buf(cli->outbuf)));
 }
 
-
-
 /****************************************************************************
-initialise a client structure
+ Initialise a client structure.
 ****************************************************************************/
+
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 {
         /* copy_nt_creds(&cli->usr, usr); */
-	safe_strcpy(cli->domain   , usr->domain   , sizeof(usr->domain   )-1);
+	safe_strcpy(cli->domain, usr->domain, sizeof(usr->domain )-1);
 	safe_strcpy(cli->user_name, usr->user_name, sizeof(usr->user_name)-1);
 	memcpy(&cli->pwd, &usr->pwd, sizeof(usr->pwd));
         cli->ntlmssp_flags = usr->ntlmssp_flags;
@@ -154,8 +155,9 @@ void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 
 
 /****************************************************************************
-initialise a client structure
+ Initialise a client structure.
 ****************************************************************************/
+
 struct cli_state *cli_initialise(struct cli_state *cli)
 {
         BOOL alloced_cli = False;
@@ -174,9 +176,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
                 alloced_cli = True;
 	}
 
-	if (cli->initialised) {
-		cli_shutdown(cli);
-	}
+	if (cli->initialised)
+		cli_close_connection(cli);
 
 	ZERO_STRUCTP(cli);
 
@@ -238,8 +239,10 @@ void cli_close_connection(struct cli_state *cli)
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
-	if (cli->mem_ctx)
+	if (cli->mem_ctx) {
 		talloc_destroy(cli->mem_ctx);
+		cli->mem_ctx = NULL;
+	}
 
 #ifdef WITH_SSL
 	if (cli->fd != -1)
@@ -247,6 +250,7 @@ void cli_close_connection(struct cli_state *cli)
 #endif /* WITH_SSL */
 	if (cli->fd != -1) 
 		close(cli->fd);
+	cli->fd = -1;
 }
 
 /****************************************************************************
