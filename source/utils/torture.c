@@ -690,7 +690,7 @@ static void run_trans2test(void)
 	static struct cli_state cli;
 	int fnum;
 	uint32 size;
-	time_t c_time, a_time, m_time;
+	time_t c_time, a_time, m_time, w_time;
 	char *fname = "\\trans2.tst";
 
 	printf("staring trans2 test\n");
@@ -732,7 +732,20 @@ static void run_trans2test(void)
 		}
 	}
 
+
 	cli_unlink(&cli, fname);
+	fnum = cli_open(&cli, fname, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	cli_close(&cli, fnum);
+	if (!cli_qpathinfo2(&cli, fname, &c_time, &a_time, &m_time, 
+			    &w_time, &size)) {
+		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
+	} else {
+		if (w_time < 60*60*24*2) {
+			printf("write time=%s", ctime(&w_time));
+			printf("This system appears to set a initial 0 write time\n");
+		}
+	}
 
 	close_connection(&cli);
 
