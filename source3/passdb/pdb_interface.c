@@ -43,13 +43,9 @@ BOOL smb_register_passdb(const char *name, pdb_init_function init, int version)
 
 	DEBUG(5,("Attempting to register passdb backend %s\n", name));
 
-	/* Check for duplicates */
-	while(entry) { 
-		if(strcasecmp(name, entry->name) == 0) { 
-			DEBUG(0,("There already is a passdb backend registered with the name %s!\n", name));
-			return False;
-		}
-		entry = entry->next;
+	if (pdb_find_backend_entry(name)) {
+		DEBUG(0,("There already is a passdb backend registered with the name %s!\n", name));
+		return False;
 	}
 
 	entry = smb_xmalloc(sizeof(struct pdb_init_function_entry));
@@ -64,12 +60,9 @@ BOOL smb_register_passdb(const char *name, pdb_init_function init, int version)
 static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
 {
 	struct pdb_init_function_entry *entry = backends;
-	pstring stripped;
-
-	module_path_get_name(name, stripped);
 
 	while(entry) {
-		if (strequal(entry->name, stripped)) return entry;
+		if (strcasecmp(entry->name, name) == 0) return entry;
 		entry = entry->next;
 	}
 
@@ -431,7 +424,7 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 	/* Try to find a module that contains this module */
 	if (!entry) { 
 		DEBUG(2,("No builtin backend found, trying to load plugin\n"));
-		if(smb_probe_module("passdb", module_name) && !(entry = pdb_find_backend_entry(module_name))) {
+		if(smb_probe_module("pdb", module_name) && !(entry = pdb_find_backend_entry(module_name))) {
 			DEBUG(0,("Plugin is available, but doesn't register passdb backend %s\n", module_name));
 			SAFE_FREE(module_name);
 			return NT_STATUS_UNSUCCESSFUL;
