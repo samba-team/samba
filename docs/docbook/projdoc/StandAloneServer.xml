@@ -92,7 +92,37 @@ server and network design.
 <title>Reference Documentation Server</title>
 
 <para>
-Put one here!
+Configuration of a read-only data server that EVERYONE can access is very simple.
+Here is the smb.conf file that will do this. Assume that all the reference documents
+are stored in the directory /export, that the documents are owned by a user other than
+nobody. No home directories are shared, that are no users in the <filename>/etc/passwd</filename>
+Unix system database. This is a very simple system to administer.
+</para>
+
+<para>
+<programlisting>
+	<title>Share Mode Read Only Stand-Alone Server</title>
+	# Global parameters
+	[global]
+		workgroup = MYGROUP
+		netbios name = REFDOCS
+		security = SHARE
+		passdb backend = guest
+		wins server = 192.168.1.1
+
+	[data]
+		comment = Data
+		path = /export
+		guest only = Yes
+</programlisting>
+</para>
+
+<para>
+In the above example the machine name is set to REFDOCS, the workgroup is set to the name
+of the local workgroup so that the machine will appear in with systems users are familiar
+with. The only password backend required is the "guest" backend so as to allow default
+unprivilidged account names to be used. Given that there is a WINS server on this network
+we do use it.
 </para>
 
 </sect2>
@@ -101,16 +131,87 @@ Put one here!
 <title>Central Print Serving</title>
 
 <para>
-Put one here!
+Configuration of a simple print server is very simple if you have all the right tools
+on your system.
 </para>
 
-</sect2>
+<orderedlist>
+<title> Assumptions:</title>
+	<listitem><para>
+	The print server must require no administration
+	</para></listitem>
 
-<sect2>
-<title>Legal Office Daily Work Server</title>
+	<listitem><para>
+	The print spooling and processing system on our print server will be CUPS.
+	(Please refer to the chapter on printing for more information).
+	</para></listitem>
+
+	<listitem><para>
+	All printers will that the print server will service will be network
+	printers. They will be correctly configured, by the administrator, 
+	in the CUPS environment.
+	</para></listitem>
+
+	<listitem><para>
+	All workstations will be installed using postscript drivers. The printer
+	of choice is the Apple Color LaserWriter.
+	</para></listitem>
+</orderedlist>
 
 <para>
-Put one here!
+In this example our print server will spool all incoming print jobs to
+<filename>/var/spool/samba</filename> until the job is ready to be submitted by
+samba to the CUPS print processor. Since all incoming connections will be as
+the anonymous (guest) user two things will be required:
+</para>
+
+<itemizedlist>
+<title>Enablement for Anonymous Printing</title>
+	<listitem><para>
+	The Unix/Linux system must have a <command>guest</command> account.
+	The default for this is usually the account <command>nobody</command>.
+	To find the correct name to use for your version of Samba do the 
+	following:
+	<programlisting>
+		testparm -s -v | grep "guest account"
+	</programlisting>
+	Then make sure that this account exists in your system password
+	database (<filename>/etc/passwd</filename>).
+	</para></listitem>
+
+	<listitem><para>
+	The directory into which Samba will spool the file must have write
+	access for the guest account. The following commands will ensure that
+	this directory is available for use:
+	<programlisting>
+		mkdir /var/spool/samba
+		chown nobody.nobody /var/spool/samba
+		chmod a+rwt /var/spool/samba
+	</programlisting>
+	</para></listitem>
+</itemizedlist>
+
+<para>
+<programlisting>
+	<title>Simple Central Print Server</title>
+	# Global parameters
+	[global]
+		workgroup = MYGROUP
+		netbios name = PTRSVR1
+		security = SHARE
+		passdb backend = guest
+		wins server = 192.168.1.1
+
+	[printers]
+		comment = All Printers
+		path = /var/spool/samba
+		printer admin = root
+		guest ok = Yes
+		printable = Yes
+		printing = cups
+		use client driver = Yes
+		browseable = No
+</programlisting>
 </para>
 
 </sect2>
