@@ -148,6 +148,7 @@ init_context_from_config_file(krb5_context context)
     krb5_kt_register (context, &krb5_mkt_ops);
     krb5_kt_register (context, &krb5_akf_ops);
     krb5_kt_register (context, &krb4_fkt_ops);
+    krb5_kt_register (context, &krb5_srvtab_fkt_ops);
     krb5_kt_register (context, &krb5_any_ops);
     return 0;
 }
