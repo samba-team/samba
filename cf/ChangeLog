@@ -1,3 +1,7 @@
+2002-09-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* auth-modules.m4: only include modules explicitly asked for
+
 2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: test for res_nsearch

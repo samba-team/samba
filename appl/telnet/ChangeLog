@@ -4,6 +4,10 @@
 
 2002-08-28  Johan Danielsson  <joda@pdc.kth.se>
 
+	* telnet/commands.c: remove extra "Toggle"'s
+
+	* telnet/commands.c: IRIX == 4 -> IRIX4
+
 	* telnet/main.c: rename functions to what they're really called
 
 	* telnet/commands.c: kill some might be uninitialized warnings
