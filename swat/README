@@ -1,11 +1,6 @@
 This is a brief description of how to install and use the Samba Web
 Administration Tool on your machine.
 
-Please note that SWAT is still being developed so you should not
-expect it to be bug free. You should only install and use it if you
-want to either get a preview of what we are doing with SWAT or you
-want to help in the development of SWAT.
-
 Installation
 ------------
 
@@ -21,9 +16,7 @@ Running via inetd
 -----------------
 
 You then need to edit your /etc/inetd.conf and /etc/services to enable
-SWAT to be launched via inetd. Note that SWAT can also be launched via
-the cgi-bin mechanisms of a web server (such as apache) and that is
-described below.
+SWAT to be launched via inetd. 
 
 In /etc/services you need to add a line like this:
 
@@ -38,69 +31,27 @@ In /etc/inetd.conf you should add a line like this:
 
 swat    stream  tcp     nowait.400  root    /usr/local/samba/bin/swat swat
 
-If you just want to see a demo of how swat works and don't want to be
-able to actually change any Samba config via swat then you may chose
-to change "root" to some other user that does not have permission to
-write to smb.conf.
-
 One you have edited /etc/services and /etc/inetd.conf you need to send
 a HUP signal to inetd. On many systems "killall -1 inetd" will do this
 on others you will need to use "kill -1 PID" where PID is the process
 ID of the inetd daemon.
 
 
-Running via cgi-bin
--------------------
-
-To run SWAT via your web servers cgi-bin capability you need to copy
-the swat binary to your cgi-bin directory. Note that you should run
-SWAT either via inetd or via cgi-bin but not both.
-
-Then you need to create a swat directory in your web servers root
-directory and copy the images/* and help/* files into there so that
-they are visible via the URL http://your.web.server/swat/
-
-Next you need to make sure you modify your web servers authentication
-to require a username/pssword for the URL
-http://your.web.server/cgi-bin/swat. Don't forgt this step! If you do
-forget it then you will be allowing anyone to edit your Samba
-configuration which would allow them to easily gain root access on your
-machine.
-
-After testing the authentication you need to change the ownership and
-permissions on the swat binary. It should be owned by root wth the
-setuid bit set. It should be ONLY executable by the user that the web
-server runs as. Make sure you do this carefully!
-
-for example, the following would be correct if the web server ran as
-group "nobody".
-
--rws--x---    1 root     nobody    
-
-You must also realise that this means that any user who can run
-programs as the "nobody" group can run swat and modify your Samba
-config. Be sure to think about this!
-
 
 Launching
 ---------
 
 To launch SWAT just run your favourite web browser and point it at
-http://localhost:901/ or http://localhost/cgi-bin/swat/ depending on
-how you installed it.
+http://localhost:901/ 
 
 Note that you can attach to SWAT from any IP connected machine but
 connecting from a remote machine leaves your connection open to
 password sniffing as passwords will be sent in the clear over the
 wire.
 
-If installed via inetd then you should be prompted for a
-username/password when you connect. You will need to provide the
-username "root" and the correct root password. More sophisticated
-authentication options are planned for future versions of SWAT.
-
-If installed via cgi-bin then you should receive whatever
-authentication request you configured in your web server.
+You should be prompted for a username/password when you connect. You
+will need to provide the username "root" and the correct root
+password. 
 
 Running
 -------
