@@ -568,15 +568,6 @@ smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length);
 
 int cli_set_port(struct cli_state *cli, int port);
 char *cli_errstr(struct cli_state *cli);
-void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
-BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen);
-void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen);
-BOOL cli_send_trans(struct cli_state *cli, int trans, 
-                           char *name, int pipe_name_len, 
-                           int fid, int flags,
-                           uint16 *setup, int lsetup, int msetup,
-                           char *param, int lparam, int mparam,
-                           char *data, int ldata, int mdata);
 BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
@@ -3036,7 +3027,16 @@ void file_chain_restore(void);
 
 /*The following definitions come from  smbd/ipc.c  */
 
+void send_trans_reply(char *outbuf,
+				char *rparam, int rparam_len,
+				char *rdata, int rdata_len,
+				BOOL buffer_too_large);
 int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize);
+
+/*The following definitions come from  smbd/lanman.c  */
+
+int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
+		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt);
 
 /*The following definitions come from  smbd/mangle.c  */
 
