@@ -30,49 +30,152 @@
 static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 				  struct pvfs_filename *name, union smb_fileinfo *info)
 {
-	info->generic.out.create_time = name->dos.create_time;
-	info->generic.out.access_time = name->dos.access_time;
-	info->generic.out.write_time = name->dos.write_time;
-	info->generic.out.change_time = name->dos.change_time;
+	switch (info->generic.level) {
+	case RAW_FILEINFO_GETATTR:
+		info->getattr.out.attrib     = name->dos.attrib;
+		info->getattr.out.size       = name->st.st_size;
+		info->getattr.out.write_time = nt_time_to_unix(name->dos.write_time);
+		return NT_STATUS_OK;
 
-	info->generic.out.alloc_size = name->dos.alloc_size;
-	info->generic.out.size = name->st.st_size;
-	info->generic.out.attrib = name->dos.attrib;
-	info->generic.out.nlink = name->dos.nlink;
-	info->generic.out.directory = (name->dos.attrib&FILE_ATTRIBUTE_DIRECTORY)?1:0;
-	info->generic.out.file_id = name->dos.file_id;
+	case RAW_FILEINFO_GETATTRE:
+	case RAW_FILEINFO_STANDARD:
+		info->standard.out.create_time = nt_time_to_unix(name->dos.create_time);
+		info->standard.out.access_time = nt_time_to_unix(name->dos.access_time);
+		info->standard.out.write_time  = nt_time_to_unix(name->dos.write_time);
+		info->standard.out.size        = name->st.st_size;
+		info->standard.out.alloc_size  = name->dos.alloc_size;
+		info->standard.out.attrib      = name->dos.attrib;
+		return NT_STATUS_OK;
 
-	/* REWRITE: TODO stuff in here */
-	info->generic.out.delete_pending = 0;
-	info->generic.out.ea_size = 0;
-	info->generic.out.num_eas = 0;
-	info->generic.out.fname.s = name->original_name;
-	info->generic.out.alt_fname.s = pvfs_short_name(pvfs, name, name);
-	info->generic.out.compressed_size = name->st.st_size;
-	info->generic.out.format = 0;
-	info->generic.out.unit_shift = 0;
-	info->generic.out.chunk_shift = 0;
-	info->generic.out.cluster_shift = 0;
-	
-	info->generic.out.access_flags = 0;
-	info->generic.out.position = 0;
-	info->generic.out.mode = 0;
-	info->generic.out.alignment_requirement = 0;
-	info->generic.out.reparse_tag = 0;
+	case RAW_FILEINFO_EA_SIZE:
+		info->ea_size.out.create_time = nt_time_to_unix(name->dos.create_time);
+		info->ea_size.out.access_time = nt_time_to_unix(name->dos.access_time);
+		info->ea_size.out.write_time  = nt_time_to_unix(name->dos.write_time);
+		info->ea_size.out.size        = name->st.st_size;
+		info->ea_size.out.alloc_size  = name->dos.alloc_size;
+		info->ea_size.out.attrib      = name->dos.attrib;
+		info->ea_size.out.ea_size     = name->dos.ea_size;
+		return NT_STATUS_OK;
 
-	/* setup a single data stream */
-	info->generic.out.num_streams = 1;
-	info->generic.out.streams = talloc_array_p(mem_ctx, 
-						   struct stream_struct,
-						   info->generic.out.num_streams);
-	if (!info->generic.out.streams) {
-		return NT_STATUS_NO_MEMORY;
+	case RAW_FILEINFO_ALL_EAS:
+		info->all_eas.out.num_eas = 0;
+		info->all_eas.out.eas = NULL;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_IS_NAME_VALID:
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_BASIC_INFO:
+	case RAW_FILEINFO_BASIC_INFORMATION:
+		info->basic_info.out.create_time = name->dos.create_time;
+		info->basic_info.out.access_time = name->dos.access_time;
+		info->basic_info.out.write_time  = name->dos.write_time;
+		info->basic_info.out.change_time = name->dos.change_time;
+		info->basic_info.out.attrib      = name->dos.attrib;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_STANDARD_INFO:
+	case RAW_FILEINFO_STANDARD_INFORMATION:
+		info->standard_info.out.alloc_size     = name->dos.alloc_size;
+		info->standard_info.out.size           = name->st.st_size;
+		info->standard_info.out.nlink          = name->st.st_nlink;
+		info->standard_info.out.delete_pending = 0;
+		info->standard_info.out.directory   = 
+			(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)? 1 : 0;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_EA_INFO:
+	case RAW_FILEINFO_EA_INFORMATION:
+		info->ea_info.out.ea_size = name->dos.ea_size;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_NAME_INFO:
+	case RAW_FILEINFO_NAME_INFORMATION:
+		info->name_info.out.fname.s = name->original_name;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALL_INFO:
+	case RAW_FILEINFO_ALL_INFORMATION:
+		info->all_info.out.create_time    = name->dos.create_time;
+		info->all_info.out.access_time    = name->dos.access_time;
+		info->all_info.out.write_time     = name->dos.write_time;
+		info->all_info.out.change_time    = name->dos.change_time;
+		info->all_info.out.attrib         = name->dos.attrib;
+		info->all_info.out.alloc_size     = name->dos.alloc_size;
+		info->all_info.out.size           = name->st.st_size;
+		info->all_info.out.nlink          = name->st.st_nlink;
+		info->all_info.out.delete_pending = 0;
+		info->all_info.out.directory      = 
+			(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)? 1 : 0;
+		info->all_info.out.ea_size        = name->dos.ea_size;
+		info->all_info.out.fname.s        = name->original_name;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALT_NAME_INFO:
+	case RAW_FILEINFO_ALT_NAME_INFORMATION:
+		info->name_info.out.fname.s = pvfs_short_name(pvfs, name, name);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_STREAM_INFO:
+	case RAW_FILEINFO_STREAM_INFORMATION:
+		info->stream_info.out.num_streams = 1;
+		info->stream_info.out.streams = talloc_array_p(mem_ctx, 
+							       struct stream_struct, 1);
+		if (!info->stream_info.out.streams) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		info->stream_info.out.streams[0].size          = name->st.st_size;
+		info->stream_info.out.streams[0].alloc_size    = name->dos.alloc_size;
+		info->stream_info.out.streams[0].stream_name.s = 
+			talloc_strdup(info->stream_info.out.streams, "::$DATA");
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_COMPRESSION_INFO:
+	case RAW_FILEINFO_COMPRESSION_INFORMATION:
+		info->compression_info.out.compressed_size = name->st.st_size;
+		info->compression_info.out.format          = 0;
+		info->compression_info.out.unit_shift      = 0;
+		info->compression_info.out.chunk_shift     = 0;
+		info->compression_info.out.cluster_shift   = 0;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_INTERNAL_INFORMATION:
+		info->internal_information.out.file_id = name->dos.file_id;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ACCESS_INFORMATION:
+		info->access_information.out.access_flags = 0;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_POSITION_INFORMATION:
+		info->position_information.out.position = 0;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_MODE_INFORMATION:
+		info->mode_information.out.mode = 0; /* what is this? */
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
+		info->alignment_information.out.alignment_requirement = 0;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:
+		info->network_open_information.out.create_time = name->dos.create_time;
+		info->network_open_information.out.access_time = name->dos.access_time;
+		info->network_open_information.out.write_time  = name->dos.write_time;
+		info->network_open_information.out.change_time = name->dos.change_time;
+		info->network_open_information.out.alloc_size  = name->dos.alloc_size;
+		info->network_open_information.out.size        = name->st.st_size;
+		info->network_open_information.out.attrib      = name->dos.attrib;
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
+		info->attribute_tag_information.out.attrib      = name->dos.attrib;
+		info->attribute_tag_information.out.reparse_tag = 0;
+		return NT_STATUS_OK;
 	}
-	info->generic.out.streams[0].size = name->st.st_size;
-	info->generic.out.streams[0].alloc_size = name->st.st_size;
-	info->generic.out.streams[0].stream_name.s = talloc_strdup(mem_ctx, "::$DATA");
 
-	return NT_STATUS_OK;
+	return NT_STATUS_INVALID_LEVEL;
 }
 
 /*
@@ -85,12 +188,9 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 	struct pvfs_filename *name;
 	NTSTATUS status;
 
-	if (info->generic.level != RAW_FILEINFO_GENERIC) {
-		return ntvfs_map_qpathinfo(req, info, ntvfs);
-	}
-	
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, info->generic.in.fname, PVFS_RESOLVE_NO_WILDCARD, &name);
+	status = pvfs_resolve_name(pvfs, req, info->generic.in.fname, 
+				   PVFS_RESOLVE_NO_WILDCARD, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -99,7 +199,9 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	return pvfs_map_fileinfo(pvfs, req, name, info);
+	status = pvfs_map_fileinfo(pvfs, req, name, info);
+
+	return status;
 }
 
 /*
@@ -111,10 +213,6 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
 	NTSTATUS status;
-
-	if (info->generic.level != RAW_FILEINFO_GENERIC) {
-		return ntvfs_map_qfileinfo(req, info, ntvfs);
-	}
 
 	f = pvfs_find_fd(pvfs, req, info->generic.in.fnum);
 	if (!f) {
@@ -129,7 +227,36 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	
 	status = pvfs_map_fileinfo(pvfs, req, f->name, info);
 
-	info->generic.out.position = f->position;
+	/* a qfileinfo can fill in a bit more info than a qpathinfo -
+	   now modify the levels that need to be fixed up */
+	switch (info->generic.level) {
+	case RAW_FILEINFO_STANDARD_INFO:
+	case RAW_FILEINFO_STANDARD_INFORMATION:
+		if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+			info->standard_info.out.delete_pending = 1;
+			info->standard_info.out.nlink--;
+		}
+		break;
+
+	case RAW_FILEINFO_ALL_INFO:
+	case RAW_FILEINFO_ALL_INFORMATION:
+		if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+			info->all_info.out.delete_pending = 1;
+			info->all_info.out.nlink--;
+		}
+		break;
+
+	case RAW_FILEINFO_POSITION_INFORMATION:
+		info->position_information.out.position = f->position;
+		break;
+
+	case RAW_FILEINFO_ACCESS_INFORMATION:
+		info->access_information.out.access_flags = f->access_mask;
+		break;
+
+	default:
+		break;
+	}
 	
 	return status;
 }
