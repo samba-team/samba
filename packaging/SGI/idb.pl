@@ -193,6 +193,7 @@ while (@swatfiles) {
 
 print IDB "d 0755 root sys usr/samba/var/ packaging/SGI samba.sw.base\n";
 print IDB "d 0755 root sys usr/samba/var/locks/ packaging/SGI samba.sw.base\n";
+print IDB "f 0644 root sys usr/samba/var/locks/STATUS..LCK packaging/SGI/STATUS..LCK samba.sw.base\n";
 
 print IDB "d 0755 root sys usr/share/catman/u_man/ packaging/SGI samba.man.manpages\n";
 $olddirnum = "0";
