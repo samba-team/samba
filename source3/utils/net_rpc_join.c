@@ -143,11 +143,14 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	switch (sec_channel_type) {
 	case SEC_CHAN_WKSTA:
 		acb_info = ACB_WSTRUST;
+		break;
 	case SEC_CHAN_BDC:
 		acb_info = ACB_SVRTRUST;
+		break;
 #if 0
 	case SEC_CHAN_DOMAIN:
 		acb_info = ACB_DOMTRUST;
+		break;
 #endif
 	}
 

@@ -637,7 +637,7 @@ int net_ads_join(int argc, const char **argv)
 	void *res;
 	DOM_SID dom_sid;
 	char *ou_str;
-	uint32 sec_channel_type;
+	uint32 sec_channel_type = SEC_CHAN_WKSTA;
 	uint32 account_type = UF_WORKSTATION_TRUST_ACCOUNT;
 
 	if (argc > 0) org_unit = argv[0];
@@ -646,11 +646,6 @@ int net_ads_join(int argc, const char **argv)
 		DEBUG(1,("Failed to initialise secrets database\n"));
 		return -1;
 	}
-
-	/* check what type of join 
-	   TODO: make this variable like RPC
-	*/
-	account_type = UF_WORKSTATION_TRUST_ACCOUNT;
 
 	tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 	password = strdup(tmp_password);
