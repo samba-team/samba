@@ -1,6 +1,35 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha14
+- 'Winbind Default Domain' support:
+  This allows winbind to supply usernames without a 'DOMAIN\' 
+  prefix.  Particularly handy for shell and e-mail servers,
+  as well as Unix workstations in NT domains.
+- Associated cleanups in winbindd and smbd.
+  (Alexander Bokovoy <a.bokovoy@sam-solutions.net> and 
+   abartlet)
+- Winbind protocol changes for better Squid intergration
+  (current version is 3) (abartlet)
+- pam_winbind password changing 
+  (Samuel Ziegler <sam@xpedion.com>, tpot)
+- runtime selectable pluggable passdb interface. 
+  (abartlet)
+- 'non unix account' support (abartlet)
+  (This allows machines and even users not to exist
+  in /etc/passwd)
+- Inital implementation of the WINS replication deamon
+  (jfm)
+- Changes for better winbind PDC/BDC failover support
+  (tpot)
+- Various Winbind/ADS mode stabilty and flexablity fixes
+  (tridge)
+- Mangle names like .bashrc properly (trige)
+- CIFS UNIX extensions (client and server) (jra)
+- Universal group support outside smbd (via a cache)
+  (Alexander Bokovoy <a.bokovoy@sam-solutions.net>)
+- Write cache fixes (jra)
+
 Changes in alpha13
 - updates to try to get more out-of-the-box compiles
   (mostly kerberos and ldap stuff) (various)
