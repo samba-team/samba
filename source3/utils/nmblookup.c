@@ -34,7 +34,7 @@ static struct in_addr bcast_addr;
 static BOOL recursion_desired = False;
 static BOOL translate_addresses = False;
 static int ServerFD= -1;
-static int RootPort = 0;
+static int RootPort = False;
 static BOOL find_status=False;
 
 /****************************************************************************
@@ -43,14 +43,14 @@ static BOOL find_status=False;
 static BOOL open_sockets(void)
 {
   ServerFD = open_socket_in( SOCK_DGRAM,
-                             (RootPort ? 137 :0),
-                             3,
+                             (RootPort ? 137 : 0),
+                             (RootPort ?   0 : 3),
                              interpret_addr(lp_socket_address()), True );
 
   if (ServerFD == -1)
     return(False);
 
-  set_socket_options(ServerFD,"SO_BROADCAST");
+  set_socket_options( ServerFD, "SO_BROADCAST" );
 
   DEBUG(3, ("Socket opened.\n"));
   return True;
@@ -200,7 +200,7 @@ int main(int argc,char *argv[])
 	pstrcpy(servicesf, optarg);
 	break;
       case 'r':
-        RootPort = -1;
+        RootPort = True;
         break;
       case 'h':
 	usage();
