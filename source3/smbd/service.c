@@ -691,6 +691,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
 		dbgtext( "%s (%s) ", get_remote_machine_name(), conn->client_address );
+		dbgtext( "%s", srv_is_signing_active() ? "signed " : "");
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
 		dbgtext( "initially as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
