@@ -650,10 +650,10 @@ sync a file
 
 void sync_file(connection_struct *conn, files_struct *fsp)
 {
-#ifdef HAVE_FSYNC
     if(lp_strict_sync(SNUM(conn)) && fsp->fd_ptr != NULL) {
       flush_write_cache(fsp, SYNC_FLUSH);
+#ifdef HAVE_FSYNC
       fsync(fsp->fd_ptr->fd);
-    }
 #endif
+    }
 }
