@@ -16,6 +16,10 @@ Implement RFC1731 and 1734, pop over GSS-API
 
 should test more stuff
 
+** appl/ftp
+
+Implement FTP over IPv6 (RFC2428)
+
 * doc
 
 there's some room for improvement here.
