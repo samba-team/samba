@@ -875,11 +875,11 @@ pass(char *passwd)
 		    if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
 			rval = krb_verify_user(pw->pw_name, "", realm, 
 					       passwd, 1, NULL);
-		    if (rval == KSUCCESS ){
+		    if (rval == KSUCCESS ) {
 			chown (tkt_string(), pw->pw_uid, pw->pw_gid);
 			if(k_hasafs())
 			    k_afsklog(0, 0);
-		    }else 
+		    } else 
 			rval = unix_verify_user(pw->pw_name, passwd);
 		} else {
 		    char *s;
@@ -1763,9 +1763,7 @@ dologout(int status)
     if (logged_in) {
 	seteuid((uid_t)0);
 	logwtmp(ttyline, "", "");
-	dest_tkt();
-	if(k_hasafs())
-	    k_unlog();
+	cond_kdestroy();
     }
     /* beware of flushing buffers after a SIGPIPE */
 #ifdef XXX
