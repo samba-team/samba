@@ -35,7 +35,13 @@ NTSTATUS ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *
 		return NT_STATUS_OK;
 	}
 	NDR_CHECK(ndr_pull_uint32(ndr, &num_auths));
-	return ndr_pull_dom_sid(ndr, ndr_flags, sid);
+	NDR_CHECK(ndr_pull_dom_sid(ndr, ndr_flags, sid));
+	if (sid->num_auths != num_auths) {
+		return ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, 
+				      "Bad conformant size %u should be %u", 
+				      num_auths, sid->num_auths);
+	}
+	return NT_STATUS_OK;
 }
 
 /*
