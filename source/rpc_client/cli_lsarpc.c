@@ -73,7 +73,7 @@ BOOL get_domain_sids(const char *domain, DOM_SID *sid3, DOM_SID *sid5)
 	}
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(srv_name, &pol, False) : False;
+	res = res ? lsa_open_policy(srv_name, &pol, False, 0x02000000) : False;
 
 	if (sid3 != NULL)
 	{
@@ -150,7 +150,7 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 	strupper(srv_name);
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(srv_name, &pol, False) : False;
+	res = res ? lsa_open_policy(srv_name, &pol, False, 0x02000000) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
 	res1 = res ? lsa_query_info_pol(&pol, 3, dom3, &sid3) : False;
@@ -200,7 +200,7 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 do a LSA Open Policy
 ****************************************************************************/
 BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
-			BOOL sec_qos)
+			BOOL sec_qos, uint32 des_access)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -226,12 +226,12 @@ BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 	/* store the parameters */
 	if (sec_qos)
 	{
-		make_lsa_sec_qos(&qos, 2, 1, 0, 0x20000000);
-		make_q_open_pol(&q_o, 0x5c, 0, 0x02000000, &qos);
+		make_lsa_sec_qos(&qos, 2, 1, 0, des_access);
+		make_q_open_pol(&q_o, 0x5c, 0, des_access, &qos);
 	}
 	else
 	{
-		make_q_open_pol(&q_o, 0x5c, 0, 0x1, NULL);
+		make_q_open_pol(&q_o, 0x5c, 0, des_access, NULL);
 	}
 
 	/* turn parameters into data stream */
@@ -258,8 +258,10 @@ BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
 			
-			valid_pol = register_policy_hnd(get_global_hnd_cache(), hnd) &&
-			            set_policy_con(get_global_hnd_cache(), hnd, con, 
+			valid_pol = register_policy_hnd(get_global_hnd_cache(),
+			                                hnd, des_access) &&
+			            set_policy_con(get_global_hnd_cache(),
+			                                 hnd, con, 
 			                                 cli_connection_unlink);
 		}
 	}
@@ -274,7 +276,7 @@ BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 do a LSA Open Policy2
 ****************************************************************************/
 BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
-			BOOL sec_qos)
+			BOOL sec_qos, uint32 des_access)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -301,12 +303,12 @@ BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
 	/* store the parameters */
 	if (sec_qos)
 	{
-		make_lsa_sec_qos(&qos, 2, 1, 0, 0x02000000);
-		make_q_open_pol2(&q_o, server_name, 0, 0x02000000, &qos);
+		make_lsa_sec_qos(&qos, 2, 1, 0, des_access);
+		make_q_open_pol2(&q_o, server_name, 0, des_access, &qos);
 	}
 	else
 	{
-		make_q_open_pol2(&q_o, server_name, 0, 0x02000000, NULL);
+		make_q_open_pol2(&q_o, server_name, 0, des_access, NULL);
 	}
 
 	/* turn parameters into data stream */
@@ -332,8 +334,10 @@ BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
 		{
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
-			valid_pol = register_policy_hnd(get_global_hnd_cache(), hnd) &&
-			            set_policy_con(get_global_hnd_cache(), hnd, con, 
+			valid_pol = register_policy_hnd(get_global_hnd_cache(),
+			                                hnd, des_access) &&
+			            set_policy_con(get_global_hnd_cache(),
+			                                 hnd, con, 
 			                                 cli_connection_unlink);
 		}
 	}

@@ -769,7 +769,7 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 
 	/* lookup domain controller; receive a policy handle */
 	res3 = res3 ? lsa_open_policy(srv_name,
-				&lsa_pol, True) : False;
+				&lsa_pol, True, 0x02000000) : False;
 
 	/* send lsa lookup sids call */
 	res4 = res3 ? lsa_lookup_names(&lsa_pol,

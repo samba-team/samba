@@ -56,7 +56,7 @@ void cmd_lsa_enum_trust_dom(struct client_info *info, int argc, char *argv[])
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy( srv_name,
-				&lsa_pol, False) : False;
+				&lsa_pol, False, 0x02000000) : False;
 
 	do
 	{
@@ -115,7 +115,7 @@ void cmd_lsa_query_info(struct client_info *info, int argc, char *argv[])
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy( srv_name,
-				&lsa_pol, False) : False;
+				&lsa_pol, False, 0x02000000) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
 	res = res ? lsa_query_info_pol( &lsa_pol, 0x03,
@@ -290,7 +290,7 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy( srv_name,
-				&lsa_pol, True) : False;
+				&lsa_pol, True, 0x02000000) : False;
 
 	/* send lsa lookup sids call */
 	res = res ? lsa_lookup_sids( &lsa_pol,

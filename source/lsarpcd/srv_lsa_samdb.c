@@ -26,7 +26,7 @@
 
 #include "includes.h"
 #include "nterr.h"
-#include "sid.h"
+#include "sids.h"
 
 extern int DEBUGLEVEL;
 
@@ -126,7 +126,7 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 	r_q.status = status;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (r_q.status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &q_q->pol))
+	if (r_q.status == 0x0 && !find_policy_by_hnd(get_global_hnd_cache(), &q_q->pol))
 	{
 		r_q.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -532,6 +532,7 @@ static void _lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 	{
 		case 0x03:
 		{
+			extern pstring global_myworkgroup;
 			fstrcpy(name, global_myworkgroup);
 			sid = &global_member_sid;
 			break;

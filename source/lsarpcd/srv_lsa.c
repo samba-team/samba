@@ -85,8 +85,7 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 
 	r_q.status = status;
 
-	/* get a (unique) handle.  open a policy on it. */
-	if (r_q.status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &q_q->pol))
+	if (r_q.status == 0x0 && !find_policy_by_hnd(get_global_hnd_cache(), &q_q->pol))
 	{
 		r_q.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -486,7 +485,6 @@ static void api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
 	ZERO_STRUCT(q_o);
 
 	lsa_io_q_open_pol("", &q_o, data, 0);
-	lsa_reply_open_policy(&q_o, rdata);
 	r_o.status = _lsa_open_policy(NULL, &r_o.pol,
 	                              &q_o.attr, q_o.des_access);
 	lsa_io_r_open_pol("", &r_o, rdata, 0);

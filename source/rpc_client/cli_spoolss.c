@@ -246,9 +246,11 @@ BOOL spoolss_open_printer_ex( const char *printername,
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.handle.data, sizeof(hnd->data));
 
-			valid_pol = register_policy_hnd(get_global_hnd_cache(), hnd) &&
-					    set_policy_con(get_global_hnd_cache(), hnd, con, 
-						cli_connection_unlink);
+			valid_pol = register_policy_hnd(get_global_hnd_cache(),
+			                                hnd, des_access) &&
+			            set_policy_con(get_global_hnd_cache(),
+				               hnd, con, 
+			                       cli_connection_unlink);
 		}
 	}
 

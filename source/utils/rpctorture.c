@@ -483,7 +483,7 @@ static void run_lsahandles(int numops, struct client_info *cli_info)
 		extern struct cli_state *rpc_smb_cli;
 		rpc_smb_cli = smb_cli;
 		POLICY_HND pol;
-		if (!lsa_open_policy(srv_name, &pol, False))
+		if (!lsa_open_policy(srv_name, &pol, False, 0x02000000))
 		{
 			failed++;
 		}

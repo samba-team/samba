@@ -415,7 +415,10 @@ BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from)
 		return False;
 	}
 
-	return register_policy_hnd(get_global_hnd_cache(), to) &&
+	/* fix this when access masks are actually working! */
+	DEBUG(10,("cli_pol_link: lkclXXXX - MAXIMUM_ALLOWED access_mask\n"));
+
+	return register_policy_hnd(get_global_hnd_cache(), to, 0x02000000) &&
 	       set_policy_con(get_global_hnd_cache(), to, con, NULL);
 }
 

@@ -2013,9 +2013,9 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 				DOM_SID *sid,
 				char *domain, size_t len);
 BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
-			BOOL sec_qos);
+			BOOL sec_qos, uint32 des_access);
 BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
-			BOOL sec_qos);
+			BOOL sec_qos, uint32 des_access);
 BOOL lsa_open_secret( const POLICY_HND *hnd,
 				const char *secret_name,
 				uint32 des_access,
@@ -4306,7 +4306,7 @@ uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
 					UNIHDR **hdr_name, UNISTR2** uni_name,
 					uint32 **types);
 uint32 _samr_open_user(const POLICY_HND *domain_pol,
-					uint32 unk_0, uint32 user_rid, 
+					uint32 access_mask, uint32 user_rid, 
 					POLICY_HND *user_pol);
 uint32 _samr_query_userinfo(POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr);
@@ -4317,23 +4317,30 @@ uint32 _samr_set_userinfo2(POLICY_HND *pol, uint16 switch_value,
 uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				uint32 *num_groups,
 				DOM_GID **gids);
-uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol, const UNISTR2 *uni_acct_name,
-						POLICY_HND *alias_pol, uint32 *rid);
+uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
+				const UNISTR2 *uni_acct_name,
+				uint32 access_mask,
+				POLICY_HND *alias_pol, uint32 *rid);
 uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 				const UNISTR2 *uni_acct_name,
 				uint32 access_mask,
 				POLICY_HND *group_pol, uint32 *rid);
 uint32 _samr_query_dom_info(const POLICY_HND *domain_pol, uint16 switch_value, SAM_UNK_CTR *ctr);
-uint32 _samr_create_user(const POLICY_HND *domain_pol, const UNISTR2 *uni_username,
-					uint16 acb_info, uint32 unknown_1, 
-					POLICY_HND *user_pol, uint32 *unknown_0, uint32 *user_rid);
-uint32 _samr_connect_anon(uint16 unknown_0, uint16 unknown_1, uint32 unknown_2, POLICY_HND *connect_pol);
-uint32 _samr_connect(const UNISTR2 *srv_name, uint32 unknown_0, POLICY_HND *connect_pol);
+uint32 _samr_create_user(const POLICY_HND *domain_pol,
+				const UNISTR2 *uni_username,
+				uint16 acb_info, uint32 access_mask, 
+				POLICY_HND *user_pol,
+				uint32 *unknown_0, uint32 *user_rid);
+uint32 _samr_connect_anon(const UNISTR2 *srv_name, uint32 access_mask,
+				POLICY_HND *connect_pol);
+uint32 _samr_connect(const UNISTR2 *srv_name, uint32 access_mask,
+				POLICY_HND *connect_pol);
 uint32 _samr_open_alias(const POLICY_HND *domain_pol,
-					uint32 flags, uint32 alias_rid,
+					uint32 access_mask, uint32 alias_rid,
 					POLICY_HND *alias_pol);
-uint32 _samr_open_group(const POLICY_HND *domain_pol,	uint32 flags, uint32 group_rid,
-					POLICY_HND *group_pol);
+uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
+				uint32 group_rid,
+				POLICY_HND *group_pol);
 uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
 				const UNISTR2 *uni_domain,
 				DOM_SID *dom_sid);

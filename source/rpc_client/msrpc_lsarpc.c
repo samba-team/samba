@@ -64,7 +64,7 @@ uint32 lookup_lsa_names(const char *srv_name,
 		return NT_STATUS_NONE_MAPPED | 0xC0000000;
 	}
 
-	res1 = res1 ? lsa_open_policy(srv_name, &lsa_pol, True) : False;
+	res1 = res1 ? lsa_open_policy(srv_name, &lsa_pol, True, 0x02000000) : False;
 
 	res2 = res1 ? lsa_lookup_names(&lsa_pol,
 				       num_names, names, 
@@ -103,7 +103,7 @@ uint32 lookup_lsa_name(const char *domain,
 	names = &name;
 
 	/* lookup domain controller; receive a policy handle */
-	res3 = res3 ? lsa_open_policy(srv_name, &lsa_pol, True) : False;
+	res3 = res3 ? lsa_open_policy(srv_name, &lsa_pol, True, 0x02000000) : False;
 
 	/* send lsa lookup sids call */
 	res4 = res3 ? lsa_lookup_names(&lsa_pol,
@@ -159,7 +159,7 @@ uint32 lookup_lsa_sid(const char *domain,
 	add_sid_to_array(&num_sids, &sids, sid);
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy( srv_name, &lsa_pol, True) : False;
+	res = res ? lsa_open_policy( srv_name, &lsa_pol, True, 0x02000000) : False;
 
 	/* send lsa lookup sids call */
 	res1 = res ? lsa_lookup_sids( &lsa_pol,
@@ -204,7 +204,7 @@ BOOL msrpc_lsa_query_secret(const char* srv_name,
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy2( srv_name,
-				&lsa_pol, False) : False;
+				&lsa_pol, False, 0x02000000) : False;
 
 	/* lookup domain controller; receive a policy handle */
 	res1 = res ? lsa_open_secret( &lsa_pol,

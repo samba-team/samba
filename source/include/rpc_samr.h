@@ -1067,8 +1067,7 @@ typedef struct q_samr_create_dom_alias_info
 	UNIHDR hdr_acct_desc;
 	UNISTR2 uni_acct_desc;
 
-	uint16 unknown_1;    /* 0x001f */
-	uint16 unknown_2;    /* 0x000f */
+	uint32 access_mask;    /* 0x001f000f */
 
 } SAMR_Q_CREATE_DOM_ALIAS;
 
@@ -1370,7 +1369,7 @@ typedef struct r_samr_lookup_rids_info
 typedef struct q_samr_open_user_info
 {
 	POLICY_HND domain_pol;       /* policy handle */
-	uint32 unknown_0;     /* 32 bit unknown - 0x02011b */
+	uint32 access_mask;     /* 32 bit unknown - 0x02011b */
 	uint32 user_rid;      /* user RID */
 
 } SAMR_Q_OPEN_USER;
@@ -1394,7 +1393,7 @@ typedef struct q_samr_create_user_info
 	UNISTR2 uni_name;       /* unicode account name */
 
 	uint16 acb_info;      /* account control info */
-	uint32 unknown_1;     /* 0xe005 00b0 */
+	uint32 access_mask;     /* 0xe005 00b0 */
 
 } SAMR_Q_CREATE_USER;
 
@@ -1481,7 +1480,7 @@ typedef struct r_samr_add_group_mem_info
 typedef struct q_samr_open_group_info
 {
 	POLICY_HND domain_pol;       /* policy handle */
-	uint32 unknown;         /* 0x0000 0001, 0x0000 0003, 0x0000 001f */
+	uint32 access_mask;         /* 0x0000 0001, 0x0000 0003, 0x0000 001f */
 	uint32 rid_group;        /* rid */
 
 } SAMR_Q_OPEN_GROUP;
@@ -1581,7 +1580,7 @@ typedef struct q_samr_connect_anon_info
 	uint32 ptr;                  /* ptr? */
 	uint16 unknown_0;            /* 0x005c */
 	uint16 unknown_1;            /* 0x0001 */
-	uint32 unknown_2;            /* 0x0000 0020 */
+	uint32 access_mask;
 
 } SAMR_Q_CONNECT_ANON;
 
@@ -1599,7 +1598,7 @@ typedef struct q_samr_connect_info
 	uint32 ptr_srv_name;         /* pointer (to server name?) */
 	UNISTR2 uni_srv_name;        /* unicode server name starting with '\\' */
 
-	uint32 unknown_0;            /* 32 bit unknown */
+	uint32 access_mask;            
 
 } SAMR_Q_CONNECT;
 

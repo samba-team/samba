@@ -128,7 +128,8 @@ static void svc_reply_open_service(SVC_Q_OPEN_SERVICE *q_u,
 		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol))
+	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol,
+	                                      q_u->des_access))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -276,7 +277,7 @@ static void svc_reply_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
 
 	DEBUG(5,("svc_open_sc_man: %d\n", __LINE__));
 
-	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol))
+	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol,		                                      q_u->des_access))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}

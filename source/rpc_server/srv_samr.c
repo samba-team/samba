@@ -626,7 +626,7 @@ static void api_samr_open_user( rpcsrv_struct *p, prs_struct *data, prs_struct *
 	SAMR_R_OPEN_USER r_u;
 	samr_io_q_open_user("", &q_u, data, 0);
 	r_u.status = _samr_open_user(&q_u.domain_pol,
-	                                   q_u.unknown_0, q_u.user_rid,
+	                                   q_u.access_mask, q_u.user_rid,
 	                                  &r_u.user_pol);
 	samr_io_r_open_user("", &r_u, rdata, 0);
 }
@@ -734,9 +734,9 @@ static void api_samr_create_dom_alias( rpcsrv_struct *p, prs_struct *data, prs_s
 	ZERO_STRUCT(r_u);
 
 	samr_io_q_create_dom_alias("", &q_u, data, 0);
-	r_u.status = _samr_create_dom_alias(&q_u.dom_pol, &q_u.uni_acct_desc, &r_u.alias_pol, &r_u.rid);
-
-	/* store the response in the SMB stream */
+	r_u.status = _samr_create_dom_alias(&q_u.dom_pol, &q_u.uni_acct_desc,
+	                                    q_u.access_mask,
+	                                    &r_u.alias_pol, &r_u.rid);
 	samr_io_r_create_dom_alias("", &r_u, rdata, 0);
 }
 
@@ -754,7 +754,7 @@ static void api_samr_create_dom_group( rpcsrv_struct *p, prs_struct *data, prs_s
 	samr_io_q_create_dom_group("", &q_u, data, 0);
 	r_u.status = _samr_create_dom_group(&q_u.pol,
 	                                    &q_u.uni_acct_desc,
-	                                    &q_u.access_mask,
+	                                    q_u.access_mask,
 	                                    &r_u.pol, &r_u.rid);
 
 	/* store the response in the SMB stream */
@@ -797,12 +797,13 @@ static void api_samr_create_user( rpcsrv_struct *p, prs_struct *data, prs_struct
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	/* grab the samr unknown 32 */
 	samr_io_q_create_user("", &q_u, data, 0);
-	r_u.status = _samr_create_user(&q_u.domain_pol, &q_u.uni_name, q_u.acb_info, 
-					   q_u.unknown_1, &r_u.user_pol, &r_u.unknown_0, &r_u.user_rid);
-
-	/* store the response in the SMB stream */
+	r_u.status = _samr_create_user(&q_u.domain_pol,
+	                                   &q_u.uni_name, q_u.acb_info, 
+					   q_u.access_mask,
+					   &r_u.user_pol,
+					   &r_u.unknown_0,
+					   &r_u.user_rid);
 	samr_io_r_create_user("", &r_u, rdata, 0);
 }
 
@@ -818,9 +819,9 @@ static void api_samr_connect_anon( rpcsrv_struct *p, prs_struct *data, prs_struc
 	ZERO_STRUCT(r_u);
 
 	samr_io_q_connect_anon("", &q_u, data, 0);
-	r_u.status = _samr_connect_anon(q_u.unknown_0, q_u.unknown_1, q_u.unknown_2, &r_u.connect_pol);
-
-	/* store the response in the SMB stream */
+	r_u.status = _samr_connect_anon(NULL,
+	                                q_u.access_mask,
+	                                &r_u.connect_pol);
 	samr_io_r_connect_anon("", &r_u, rdata, 0);
 }
 
@@ -836,9 +837,9 @@ static void api_samr_connect( rpcsrv_struct *p, prs_struct *data, prs_struct *rd
 	ZERO_STRUCT(r_u);
 
 	samr_io_q_connect("", &q_u, data, 0);
-	r_u.status = _samr_connect(&q_u.uni_srv_name, q_u.unknown_0, &r_u.connect_pol);
-
-	/* store the response in the SMB stream */
+	r_u.status = _samr_connect(&q_u.uni_srv_name,
+	                           q_u.access_mask,
+	                           &r_u.connect_pol);
 	samr_io_r_connect("", &r_u, rdata, 0);
 }
 
@@ -875,9 +876,8 @@ static void api_samr_open_group( rpcsrv_struct *p, prs_struct *data, prs_struct 
 	ZERO_STRUCT(r_u);
 
 	samr_io_q_open_group("", &q_u, data, 0);
-	r_u.status = _samr_open_group(&q_u.domain_pol, q_u.unknown, q_u.rid_group, &r_u.pol);
-
-	/* store the response in the SMB stream */
+	r_u.status = _samr_open_group(&q_u.domain_pol, q_u.access_mask,
+	                               q_u.rid_group, &r_u.pol);
 	samr_io_r_open_group("", &r_u, rdata, 0);
 }
 

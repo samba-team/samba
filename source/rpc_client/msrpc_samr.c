@@ -748,7 +748,7 @@ BOOL sam_query_aliasmem(const char *srv_name,
 
 		/* lookup domain controller; receive a policy handle */
 		res3 = res3 ? lsa_open_policy( srv_name,
-					&lsa_pol, True) : False;
+					&lsa_pol, True, 0x02000000) : False;
 
 		/* send lsa lookup sids call */
 		res4 = res3 ? lsa_lookup_sids( &lsa_pol,

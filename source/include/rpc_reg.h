@@ -75,7 +75,7 @@ typedef struct q_reg_open_hklm_info
 	uint32 ptr;
 	uint16 unknown_0; /* 0xE084      - 16 bit unknown */
 	uint16 unknown_1; /* random.  changes */
-	uint32 level;     /* 0x0000 0002 - 32 bit unknown */
+	uint32 access_mask;     /* 0x0000 0002 - 32 bit unknown */
 
 } REG_Q_OPEN_HKLM  ;
 
@@ -465,7 +465,7 @@ typedef struct q_reg_open_entry_info
 	UNISTR2 uni_name;       /* unicode registry string name */
 
 	uint32 unknown_0;       /* 32 bit unknown - 0x0000 0000 */
-	uint32 unknown_1;       /* 32 bit unknown - 0x0200 0000 */
+	uint32 access_mask;       /* 32 bit unknown - 0x0200 0000 */
 
 } REG_Q_OPEN_ENTRY;
 
