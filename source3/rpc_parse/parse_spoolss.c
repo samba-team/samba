@@ -379,7 +379,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 	uint32 x;
 	BOOL isvalue;
 	
-	prs_debug(ps, depth, desc, "smb_io_notify_info_data");
+	prs_debug(ps, depth, desc, "smb_io_notify_info_data_strings");
 	depth++;
 	
 	if(!prs_align(ps))

@@ -564,7 +564,7 @@ static BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
 uint32 _spoolss_closeprinter(POLICY_HND *handle)
 {
 	if (!close_printer_handle(handle))
-		return NT_STATUS_INVALID_HANDLE;	
+		return ERROR_INVALID_HANDLE;	
 		
 	return NT_STATUS_NO_PROBLEMO;
 }
@@ -723,7 +723,7 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 	
 	if (!OPEN_HANDLE(Printer)) {
 		*data=(uint8 *)malloc(4*sizeof(uint8));
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	}
 	
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
@@ -767,7 +767,7 @@ uint32 _spoolss_rffpcnex(const POLICY_HND *handle, uint32 flags, uint32 options,
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 
 	if (!OPEN_HANDLE(Printer))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	Printer->notify.flags=flags;
 	Printer->notify.options=options;
@@ -1411,7 +1411,7 @@ static uint32 printer_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info
 	DEBUG(4,("printer_notify_info\n"));
 
 	option=Printer->notify.option;
-	id=1;
+	id=0xffffffff;
 	info->version=2;
 	info->data=NULL;
 	info->count=0;
@@ -1425,15 +1425,14 @@ static uint32 printer_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info
 		switch ( option_type->type ) {
 		case PRINTER_NOTIFY_TYPE:
 			if(construct_notify_printer_info(info, snum, option_type, id))
-				id++;
+				id--;
 			break;
 			
 		case JOB_NOTIFY_TYPE:
 			memset(&status, 0, sizeof(status));	
 			count=get_printqueue(snum, NULL, &queue, &status);
 			for (j=0; j<count; j++)
-				if (construct_notify_jobs_info(&(queue[j]), info, snum, option_type, id))
-					id++;
+				construct_notify_jobs_info(&(queue[j]), info, snum, option_type, queue[j].job);
 			safe_free(queue);
 			break;
 		}
@@ -1466,7 +1465,7 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle, uint32 change,
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 
 	if (!OPEN_HANDLE(Printer))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	DEBUG(4,("Printer type %x\n",Printer->printer_type));
 
@@ -1496,7 +1495,7 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle, uint32 change,
 			break;
 	}
 
-	return NT_STATUS_INVALID_INFO_CLASS;
+	return ERROR_INVALID_HANDLE;
 }
 
 /********************************************************************
@@ -1577,7 +1576,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, pstring 
 	printer->build_version = 0x0565; 	/* build 1381 */
 	printer->unknown7 = 0x1;
 	printer->unknown8 = 0x0;
-	printer->unknown9 = 0x2;
+	printer->unknown9 = 0x0;
 	printer->session_counter = session_counter->counter;
 	printer->unknown11 = 0x0;
 	printer->printer_errors = 0x0;		/* number of print failure */
@@ -2083,7 +2082,7 @@ uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 le
 	case 3:
 	case 4:
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }
@@ -2198,7 +2197,7 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 	pstrcpy(servername, global_myname);
 
 	if (!get_printer_snum(handle, &snum))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	switch (level) {
 	case 0:
@@ -2361,7 +2360,7 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
 	snprintf(temp_helpfile,   sizeof(temp_helpfile)-1,   "%s%s", where, driver.info_3->helpfile);
 	init_unistr( &(info->helpfile), temp_helpfile );
 
-	init_unistr( &(info->monitorname), driver.info_3->monitorname );	
+	init_unistr( &(info->monitorname), driver.info_3->monitorname );
 	init_unistr( &(info->defaultdatatype), driver.info_3->defaultdatatype );
 
 	info->dependentfiles=NULL;
@@ -2499,7 +2498,7 @@ uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_a
 	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
 
 	if (!get_printer_snum(handle, &snum))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	switch (level) {
 	case 1:
@@ -2512,7 +2511,7 @@ uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_a
 		return getprinterdriver2_level3(servername, architecture, snum, buffer, offered, needed);
 		break;				
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }
@@ -2530,7 +2529,7 @@ uint32 _spoolss_startpageprinter(const POLICY_HND *handle)
 	}
 
 	DEBUG(3,("Error in startpageprinter printer handle\n"));
-	return NT_STATUS_INVALID_HANDLE;
+	return ERROR_INVALID_HANDLE;
 }
 
 /****************************************************************************
@@ -2542,7 +2541,7 @@ uint32 _spoolss_endpageprinter(const POLICY_HND *handle)
 	if (!OPEN_HANDLE(Printer))
 	{
 		DEBUG(3,("Error in endpageprinter printer handle\n"));
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	}
 	
 	Printer->page_started=False;
@@ -2570,7 +2569,7 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 
 	if (!OPEN_HANDLE(Printer))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	}
 
 	/*
@@ -2598,7 +2597,7 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 	/* get the share number of the printer */
 	if (!get_printer_snum(handle, &snum))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	}
 
 	/* Create a temporary file in the printer spool directory
@@ -2643,7 +2642,7 @@ uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 	if (!OPEN_HANDLE(Printer))
 	{
 		DEBUG(3,("Error in enddocprinter handle\n"));
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	}
 	
 	Printer->document_started=False;
@@ -2655,7 +2654,7 @@ uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 	
 	if (!get_printer_snum(handle,&snum))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	}
 	
 	/* copy the command into the buffer for extensive meddling. */
@@ -2681,8 +2680,7 @@ uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 	 */
 
 	tstr = lp_printername(snum);
-	if (tstr == NULL || tstr[0] == '\0')
-	{
+	if (tstr == NULL || tstr[0] == '\0') {
 		DEBUG(3,( "No printer name - using %s.\n", SERVICE(snum)));
 		tstr = SERVICE(snum);
 	}
@@ -2692,22 +2690,19 @@ uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 	/* If the lpr command support the 'Job' option replace here */
 	pstring_sub(syscmd, "%j", job_name);
 
-	if ( *syscmd != '\0')
-	{
-	  int ret = smbrun(syscmd, NULL, False);
-	  DEBUG(3,("Running the command `%s' gave %d\n", syscmd, ret));
-	  if (ret < 0)
-		{
+	if ( *syscmd != '\0') {
+		int ret = smbrun(syscmd, NULL, False);
+		DEBUG(3,("Running the command `%s' gave %d\n", syscmd, ret));
+		if (ret < 0) {
 			lpq_reset(snum);
-			return NT_STATUS_ACCESS_DENIED;
+			return ERROR_ACCESS_DENIED;
 		}
 	}
-	else
-		{
-	  DEBUG(0,("Null print command?\n"));
-			lpq_reset(snum);
-			return NT_STATUS_ACCESS_DENIED;
-		}
+	else {
+		DEBUG(0,("Null print command?\n"));
+		lpq_reset(snum);
+		return ERROR_ACCESS_DENIED;
+	}
 
 	lpq_reset(snum);
 
@@ -2727,7 +2722,7 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 	if (!OPEN_HANDLE(Printer))
 	{
 		DEBUG(3,("Error in writeprinter handle\n"));
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	}
 
 	fd = Printer->document_fd;
@@ -2748,10 +2743,10 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command)
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	if (!OPEN_HANDLE(Printer))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	if (!get_printer_snum(handle, &snum) )	 
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	switch (command) {
 		case PRINTER_CONTROL_PAUSE:
@@ -2777,7 +2772,7 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command)
 			break;
 	}
 
-	return NT_STATUS_INVALID_INFO_CLASS;
+	return ERROR_INVALID_FUNCTION;
 }
 
 /********************************************************************
@@ -2800,14 +2795,14 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 	if (level!=2) {
 		DEBUG(0,("Send a mail to jfm@samba.org\n"));
 		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return ERROR_INVALID_LEVEL;
 	}
 
 	if (!OPEN_HANDLE(Printer))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	if (!get_printer_snum(handle, &snum) )
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	
 	get_a_printer(&printer, 2, lp_servicename(snum));
 
@@ -2840,7 +2835,7 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 		free_a_printer(printer, 2);
 		
 		/* I don't really know what to return here !!! */
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return ERROR_ACCESS_DENIED;
 	}
 
 	free_a_printer(printer, 2);
@@ -2858,7 +2853,7 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	
 	if (!OPEN_HANDLE(Printer))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	/* check the level */	
 	switch (level) {
@@ -2881,7 +2876,7 @@ uint32 _spoolss_fcpn(const POLICY_HND *handle)
 	Printer_entry *Printer= find_printer_index_by_hnd(handle);
 	
 	if (!OPEN_HANDLE(Printer))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	
 	Printer->notify.flags=0;
 	Printer->notify.options=0;
@@ -3087,7 +3082,7 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 
 	if (!get_printer_snum(handle, &snum))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	}
 
 	*returned = get_printqueue(snum, NULL, &queue, &prt_status);
@@ -3101,7 +3096,7 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 		return enumjobs_level2(queue, snum, buffer, offered, needed, returned);
 		break;				
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }
@@ -3133,26 +3128,21 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 		
 	memset(&prt_status, 0, sizeof(prt_status));
 
-	if (!get_printer_snum(handle, &snum))
-	{
-		return NT_STATUS_INVALID_HANDLE;
+	if (!get_printer_snum(handle, &snum)) {
+		return ERROR_INVALID_HANDLE;
 	}
 
 	count=get_printqueue(snum, NULL, &queue, &prt_status);		
 
-	while ( (i<count) && found==False )
-	{
+	while ( (i<count) && found==False ) {
 		if ( jobid == queue[i].job )
-		{
 			found=True;
-		}
 		i++;
 	}
 	
-	if (found==True)
-	{
-		switch (command)
-		{
+	if (found==True) {
+		switch (command) {
+		
 			case JOB_CONTROL_CANCEL:
 			case JOB_CONTROL_DELETE:
 			{
@@ -3175,7 +3165,10 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 		}
 	}
 	safe_free(queue);
-	return NT_STATUS_INVALID_INFO_CLASS;
+	
+	/* I really don't know what to return ! */
+	/* need to add code in rpcclient */
+	return ERROR_INVALID_PRINTER_NAME;
 
 }
 
@@ -3580,7 +3573,7 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 		return enumports_level_2(buffer, offered, needed, returned);
 		break;
 	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }
@@ -3643,6 +3636,7 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 		case 1:
 			/* we don't handle yet */
 			/* but I know what to do ... */
+			return ERROR_INVALID_LEVEL;
 			break;
 		case 2:
 			return spoolss_addprinterex_level_2(uni_srv_name, info, 
@@ -3667,7 +3661,7 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 	convert_printer_driver_info(info, &driver, level);
 
 	if (add_a_printer_driver(driver, level)!=0)
-		return NT_STATUS_ACCESS_DENIED;
+		return ERROR_ACCESS_DENIED;
 
 	return NT_STATUS_NO_PROBLEMO;
 }
@@ -3772,13 +3766,13 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 	DEBUG(5,("spoolss_enumprinterdata\n"));
 
 	if (!OPEN_HANDLE(Printer))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	if (!get_printer_snum(handle, &snum))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	
 	if (get_a_printer(&printer, 2, lp_servicename(snum)) != 0x0)
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	/* 
 	 * The NT machine wants to know the biggest size of value and data
@@ -3871,26 +3865,23 @@ uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
 
 	
 	if (!OPEN_HANDLE(Printer))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	if (!get_printer_snum(handle, &snum))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
 	if (status != 0x0)
-		return status;
+		return ERROR_INVALID_NAME;
 
 	convert_specific_param(&param, value , type, data, real_len);
 	unlink_specific_param_if_exist(printer.info_2, param);
 	
 	if (!add_a_specific_param(printer.info_2, param))
-	{
-		status = NT_STATUS_INVALID_PARAMETER;
-	}
+		status = ERROR_INVALID_PARAMETER;
 	else
-	{
 		status = add_a_printer(printer, 2);
-	}
+
 	free_a_printer(printer, 2);
 	
 	return status;
@@ -3909,7 +3900,7 @@ uint32 _spoolss_addform( const POLICY_HND *handle,
 	DEBUG(5,("spoolss_addform\n"));
 
 	if (!OPEN_HANDLE(Printer))
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 
 	count=get_ntforms(&list);
 	add_a_form(&list, form, &count);
@@ -3935,7 +3926,7 @@ uint32 _spoolss_setform( const POLICY_HND *handle,
 
 	if (!OPEN_HANDLE(Printer))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return ERROR_INVALID_HANDLE;
 	}
 	count=get_ntforms(&list);
 	update_a_form(&list, form, count);
@@ -3998,7 +3989,7 @@ uint32 _spoolss_enumprintprocessors(UNISTR2 *name, UNISTR2 *environment, uint32 
 		return enumprintprocessors_level_1(buffer, offered, needed, returned);
 		break;
 	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }
@@ -4048,7 +4039,7 @@ uint32 _spoolss_enumprintprocdatatypes(UNISTR2 *name, UNISTR2 *processor, uint32
 		return enumprintprocdatatypes_level_1(buffer, offered, needed, returned);
 		break;
 	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }
@@ -4139,7 +4130,7 @@ uint32 _spoolss_enumprintmonitors(UNISTR2 *name,uint32 level,
 		return enumprintmonitors_level_2(buffer, offered, needed, returned);
 		break;
 	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }
@@ -4155,7 +4146,7 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 
 	if (info_1 == NULL) {
 		safe_free(queue);
-		return NT_STATUS_NO_MEMORY;
+		return ERROR_NOT_ENOUGH_MEMORY;
 	}
 		
 	for (i=0; i<count && found==False; i++) {
@@ -4189,8 +4180,6 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 
 /****************************************************************************
 ****************************************************************************/
-#if 0
-... Not yet used...
 static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int i=0;
@@ -4200,7 +4189,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 	if (info_2 == NULL) {
 		safe_free(queue);
-		return NT_STATUS_NO_MEMORY;
+		return ERROR_NOT_ENOUGH_MEMORY;
 	}
 
 	for (i=0; i<count && found==False; i++) {
@@ -4230,7 +4219,6 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	else
 		return NT_STATUS_NO_PROBLEMO;
 }
-#endif
 
 /****************************************************************************
 ****************************************************************************/
@@ -4250,9 +4238,7 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 	*needed=0;
 	
 	if (!get_printer_snum(handle, &snum))
-	{
-		return NT_STATUS_INVALID_HANDLE;
-	}
+		return ERROR_INVALID_HANDLE;
 	
 	count=get_printqueue(snum, NULL, &queue, &prt_status);
 	
@@ -4264,11 +4250,11 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 		return getjob_level_1(queue, count, snum, jobid, buffer, offered, needed);
 		break;
 	case 2:
-		return getjob_level_1(queue, count, snum, jobid, buffer, offered, needed);
+		return getjob_level_2(queue, count, snum, jobid, buffer, offered, needed);
 		break;
 	default:
 		safe_free(queue);
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }

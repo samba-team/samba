@@ -1090,11 +1090,20 @@ static void init_locals(void)
     {
     case PRINT_BSD:
     case PRINT_AIX:
+      string_set(&sDefault.szLpqcommand,"lpq -P%p");
+      string_set(&sDefault.szLprmcommand,"lprm -P%p %j");
+      string_set(&sDefault.szPrintcommand,"lpr -r -P%p %s");
+      break;
+
     case PRINT_LPRNG:
     case PRINT_PLP:
       string_set(&sDefault.szLpqcommand,"lpq -P%p");
       string_set(&sDefault.szLprmcommand,"lprm -P%p %j");
       string_set(&sDefault.szPrintcommand,"lpr -r -P%p %s");
+      string_set(&sDefault.szQueuepausecommand, "lpc stop %p");
+      string_set(&sDefault.szQueueresumecommand, "lpc start %p");
+      string_set(&sDefault.szLppausecommand, "lpc hold %p %j");
+      string_set(&sDefault.szLpresumecommand, "lpc release %p %j");
       break;
 
     case PRINT_CUPS:
