@@ -27,6 +27,9 @@ CFLAGS="-g"
 
 dnl Checks for libraries.
 
+AC_FIND_FUNC(socket, socket)
+AC_FIND_FUNC(gethostbyname, nsl)
+
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h limits.h sys/ioctl.h sys/time.h unistd.h)
