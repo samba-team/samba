@@ -26,6 +26,7 @@ Failover finding of BDC's now works again.
 lpq race condition fixes.
 utmp fixes.
 SWAT username detection fix.
+Bugfix for WinNT and Win2K point and print feature.
 
 The upcoming 2.2.0 Samba release will include the following
 new features: 
