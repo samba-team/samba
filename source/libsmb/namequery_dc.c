@@ -40,7 +40,7 @@ BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 	/* Lookup domain controller name */
 	   
 	if ( use_pdc_only && get_pdc_ip(domain, &dc_ip) ) {
-		DEBUG(10,("cm_get_dc_name: Atempting to lookup PDC to avoid sam sync delays\n"));
+		DEBUG(10,("get_dc_name: Atempting to lookup PDC to avoid sam sync delays\n"));
 		
 		if (name_status_find(domain, 0x1c, 0x20, dc_ip, srv_name)) {
 			goto done;
