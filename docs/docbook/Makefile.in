@@ -68,7 +68,7 @@ FAQSRC=faq/samba-pdc-faq.sgml
 ######################################################################
 # Make instructions
 ######################################################################
-all: man
+all: HOWTO proj-doc man-all man-html-all
 
 man: $(MANPAGES)
 
