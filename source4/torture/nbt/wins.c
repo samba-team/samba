@@ -111,7 +111,7 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	CHECK_STRING(io.out.wins_server, address);
 	CHECK_VALUE(io.out.rcode, 0);
 
-	if (nb_flags & NBT_NM_GROUP) {
+	if (name->type != NBT_NAME_MASTER && nb_flags & NBT_NM_GROUP) {
 		printf("Try to register as non-group\n");
 		io.in.nb_flags &= ~NBT_NM_GROUP;
 		status = nbt_name_register_wins(nbtsock, mem_ctx, &io);
@@ -132,6 +132,14 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	query.in.retries = 0;
 
 	status = nbt_name_query(nbtsock, mem_ctx, &query);
+	if (name->type == NBT_NAME_MASTER) {
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			printf("Bad response from %s for name query - %s\n",
+			       address, nt_errstr(status));
+			return False;
+		}
+		return ret;
+	}
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		printf("No response from %s for name query\n", address);
 		return False;
@@ -286,6 +294,11 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, const char *address)
 	name.type = NBT_NAME_CLIENT;
 	name.scope = NULL;
 	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
+
+	name.type = NBT_NAME_MASTER;
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
+
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H | NBT_NM_GROUP);
 
 	name.scope = "example";
 	name.type = 0x72;
