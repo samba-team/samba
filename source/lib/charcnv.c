@@ -40,7 +40,7 @@
 
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
-
+static BOOL conv_silent; /* Should we do a debug if the conversion fails ? */
 
 /**
  * Return the name of a charset to give to iconv().
@@ -141,8 +141,10 @@ void init_iconv(void)
 		/* XXX: Does this really get called every time the dos
 		 * codepage changes? */
 		/* XXX: Is the did_reload test too strict? */
+		conv_silent = True;
 		init_doschar_table();
 		init_valid_table();
+		conv_silent = False;
 	}
 }
 
@@ -178,7 +180,8 @@ size_t convert_string(charset_t from, charset_t to,
 	descriptor = conv_handles[from][to];
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
-		DEBUG(0,("convert_string: Conversion not supported.\n"));
+		if (!conv_silent)
+			DEBUG(0,("convert_string: Conversion not supported.\n"));
 		goto use_as_is;
 	}
 
@@ -190,12 +193,14 @@ size_t convert_string(charset_t from, charset_t to,
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
-				DEBUG(3,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
+				if (!conv_silent)
+					DEBUG(3,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
 				goto use_as_is;
 			case E2BIG:
 				reason="No more room"; 
-				DEBUG(3, ("convert_string: Required %lu, available %lu\n",
-					(unsigned long)srclen, (unsigned long)destlen));
+				if (!conv_silent)
+					DEBUG(3, ("convert_string: Required %lu, available %lu\n",
+						(unsigned long)srclen, (unsigned long)destlen));
 				/* we are not sure we need srclen bytes,
 			          may be more, may be less.
 				  We only know we need more than destlen
@@ -203,10 +208,12 @@ size_t convert_string(charset_t from, charset_t to,
 		               break;
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
-				DEBUG(3,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
+				if (!conv_silent)
+					DEBUG(3,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
 				goto use_as_is;
 			default:
-				DEBUG(0,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
+				if (!conv_silent)
+					DEBUG(0,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
 				break;
 		}
 		/* smb_panic(reason); */
@@ -258,14 +265,16 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	descriptor = conv_handles[from][to];
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
-		DEBUG(0,("convert_string_allocate: Conversion not supported.\n"));
+		if (!conv_silent)
+			DEBUG(0,("convert_string_allocate: Conversion not supported.\n"));
 		goto use_as_is;
 	}
 
 convert:
 	if ((destlen*2) < destlen) {
 		/* wrapped ! abort. */
-		DEBUG(0, ("convert_string_allocate: destlen wrapped !\n"));
+		if (!conv_silent)
+			DEBUG(0, ("convert_string_allocate: destlen wrapped !\n"));
 		if (!ctx)
 			SAFE_FREE(outbuf);
 		return (size_t)-1;
@@ -296,16 +305,19 @@ convert:
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
-				DEBUG(3,("convert_string_allocate: Conversion error: %s(%s)\n",reason,inbuf));
+				if (!conv_silent)
+					DEBUG(3,("convert_string_allocate: Conversion error: %s(%s)\n",reason,inbuf));
 				goto use_as_is;
 			case E2BIG:
 				goto convert;		
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
-				DEBUG(3,("convert_string_allocate: Conversion error: %s(%s)\n",reason,inbuf));
+				if (!conv_silent)
+					DEBUG(3,("convert_string_allocate: Conversion error: %s(%s)\n",reason,inbuf));
 				goto use_as_is;
 		}
-		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
+		if (!conv_silent)
+			DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
 		/* smb_panic(reason); */
 		return (size_t)-1;
 	}
