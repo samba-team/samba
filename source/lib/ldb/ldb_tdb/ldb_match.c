@@ -218,7 +218,7 @@ static int scope_match(const char *dn, const char *base, enum ldb_scope scope)
 	base_len = strlen(base);
 	dn_len = strlen(dn);
 
-	if (ldb_dn_cmp(dn, base) == 0) {
+	if (scope != LDB_SCOPE_ONELEVEL && ldb_dn_cmp(dn, base) == 0) {
 		return 1;
 	}
 
