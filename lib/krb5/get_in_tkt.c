@@ -275,7 +275,8 @@ out:
 
 
 static krb5_error_code
-make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, krb5_keyblock *key)
+make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, 
+		      krb5_enctype etype, krb5_keyblock *key)
 {
     PA_ENC_TS_ENC p;
     u_char buf[1024];
@@ -306,7 +307,7 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, krb5_keyblock *key)
     ret = krb5_encrypt_EncryptedData(context, 
 				     buf + sizeof(buf) - len,
 				     len,
-				     ETYPE_DES_CBC_MD5,
+				     etype,
 				     0,
 				     key,
 				     &encdata);
@@ -441,12 +442,19 @@ init_as_req (krb5_context context,
 	if (ret)
 	    goto fail;
 	
-	ret = (*key_proc)(context, etype, &salt,
-			  keyseed, &key);
-	krb5_data_free (&salt);
+	{
+	    krb5_keytype keytype;
+	    ret = krb5_etype_to_keytype(context, etype, &keytype);
+	    if(ret){
+		krb5_data_free(&salt);
+		goto fail;
+	    }
+	    ret = (*key_proc)(context, keytype, &salt, keyseed, &key);
+	    krb5_data_free (&salt);
+	}
 	if (ret)
 	    goto fail;
-	ret = make_pa_enc_timestamp(context, &a->padata->val[0], key);
+	ret = make_pa_enc_timestamp(context, &a->padata->val[0], etype, key);
 	krb5_free_keyblock (context, key);
 	free (key);
 	if (ret)
@@ -454,11 +462,16 @@ init_as_req (krb5_context context,
 	/* make a v4 salted pa-data */
 	salt.length = 0;
 	salt.data = NULL;
-	ret = (*key_proc)(context, etype, &salt,
-			  keyseed, &key);
+	{
+	    krb5_keytype keytype;
+	    ret = krb5_etype_to_keytype(context, etype, &keytype);
+	    if(ret)
+		goto fail;
+	    ret = (*key_proc)(context, keytype, &salt, keyseed, &key);
+	}
 	if (ret)
 	    goto fail;
-	ret = make_pa_enc_timestamp(context, &a->padata->val[1], key);
+	ret = make_pa_enc_timestamp(context, &a->padata->val[1], etype, key);
 	krb5_free_keyblock (context, key);
 	free (key);
 	if (ret)
@@ -559,18 +572,20 @@ krb5_get_in_cred(krb5_context context,
 			      pa_pw_salt, &index);
     }
     if(pa) {
-	ret = (*key_proc)(context, etype, 
-			  &pa->padata_value, keyseed, &key);
+	krb5_keytype keytype;
+	ret = krb5_etype_to_keytype(context, etype, &keytype);
+	ret = (*key_proc)(context, keytype, &pa->padata_value, keyseed, &key);
     } else {
 	/* make a v5 salted pa-data */
+	krb5_keytype keytype;
 	salt.length = 0;
 	salt.data = NULL;
 	ret = krb5_get_salt (creds->client, &salt);
 	
 	if (ret)
 	    return ret;
-	ret = (*key_proc)(context, etype, &salt,
-			  keyseed, &key);
+	ret = krb5_etype_to_keytype(context, etype, &keytype);
+	ret = (*key_proc)(context, keytype, &salt, keyseed, &key);
 	krb5_data_free (&salt);
     }
     if (ret)
