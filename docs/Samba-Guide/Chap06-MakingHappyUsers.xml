@@ -1287,6 +1287,7 @@ slapd[12164]: conn=1 fd=10 closed
 				<listitem><para>Printers</para></listitem>
 				<listitem><para>Share Point Directory Roots</para></listitem>
 				<listitem><para>Profile Directories</para></listitem>
+				<listitem><para>Configuration of User Rights and Privileges</para></listitem>
 			</orderedlist>
 		</listitem>
 		<listitem><para>Samba-3 BDC Server Configuration</para>
@@ -1298,7 +1299,6 @@ slapd[12164]: conn=1 fd=10 closed
 				<listitem><para>Profiles Directories</para></listitem>
 			</orderedlist>
 		</listitem>
-		<listitem><para>Samba-3 BDC Server Configuration</para></listitem>
 		<listitem><para>Windows XP Client Configuration</para>
 			<orderedlist>
 				<listitem><para>Default Profile Folder Redirection</para></listitem>
