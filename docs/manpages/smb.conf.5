@@ -596,6 +596,8 @@ only guest
 
 only user
 
+oplocks
+
 path
 
 postexec
@@ -2235,6 +2237,22 @@ of the user.
 
 .B Example: 
 	only user = True
+
+.SS oplocks (S)
+This boolean option tells smbd whether to issue oplocks (opportunistic
+locks) to file open requests on this share. The oplock code was introduced in
+Samba 1.9.18 and can dramatically (approx 30% or more) improve the speed
+of access to files on Samba servers. It allows the clients to agressively
+cache files locally and you may want to disable this option for unreliable
+network environments (it is turned on by default in Windows NT Servers).
+For more information see the file Speed.txt in the Samba docs/ directory.
+
+.B Default:
+    oplocks = True
+
+.B Example:
+    oplocks = False
+
 
 .SS os level (G)
 This integer value controls what level Samba advertises itself as for
