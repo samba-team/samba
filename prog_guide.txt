@@ -207,7 +207,7 @@ an idea of what I am talking about.
 In Samba3 many of the core wire structures in the SMB protocol were
 never explicitly defined in Samba. Instead, our parse and generation
 functions just worked directly with wire buffers. The biggest problem
-with this is that is tied our parse code with out "business logic"
+with this is that is tied our parse code with our "business logic"
 much too closely, which meant the code got extremely confusing to
 read.
 
@@ -395,7 +395,7 @@ function, so smbd has a _send() function and the parse function for
 each SMB.
 
 As an example go and have a look at reply_getatr_send() and
-reply_getatr() in smbd/reply.c. Read them? Good.
+reply_getatr() in smb_server/reply.c. Read them? Good.
 
 Notice that reply_getatr() sets up the req->async structure to contain
 the send function. Thats how the backend gets to do an async reply, it
