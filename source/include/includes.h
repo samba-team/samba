@@ -639,6 +639,7 @@ extern int errno;
 #include "secrets.h"
 #include "messages.h"
 #include "util_list.h"
+#include "charset.h"
 
 #include "util_getent.h"
 
