@@ -71,7 +71,7 @@ unwrap_des
 	    krb5_keyblock *key
            )
 {
-  u_char *p, *pad, *seq;
+  u_char *p, *seq;
   size_t len;
   MD5_CTX md5;
   u_char hash[16];
@@ -131,14 +131,11 @@ unwrap_des
       memset (schedule, 0, sizeof(schedule));
   }
   /* check pad */
-
-  pad = (u_char *)input_message_buffer->value + input_message_buffer->length - 1;
-  padlength = *pad;
-
-  for (i = padlength; i > 0 && *pad == padlength; i--, pad--)
-    ;
-  if (i != 0)
-    return GSS_S_BAD_MIC;
+  ret = _gssapi_verify_pad(input_message_buffer, 
+			   input_message_buffer->length - len,
+			   &padlength);
+  if (ret)
+      return ret;
 
   MD5_Init (&md5);
   MD5_Update (&md5, p - 24, 8);
@@ -210,12 +207,11 @@ unwrap_des3
 	    krb5_keyblock *key
            )
 {
-  u_char *p, *pad;
+  u_char *p;
   size_t len;
   u_char *seq;
   krb5_data seq_data;
   u_char cksum[20];
-  int i;
   int32_t seq_number;
   size_t padlength;
   OM_uint32 ret;
@@ -276,14 +272,11 @@ unwrap_des3
       krb5_data_free(&tmp);
   }
   /* check pad */
-
-  pad = (u_char *)input_message_buffer->value + input_message_buffer->length - 1;
-  padlength = *pad;
-
-  for (i = padlength; i > 0 && *pad == padlength; i--, pad--)
-    ;
-  if (i != 0)
-    return GSS_S_BAD_MIC;
+  ret = _gssapi_verify_pad(input_message_buffer, 
+			   input_message_buffer->length - len,
+			   &padlength);
+  if (ret)
+      return ret;
 
   /* verify sequence number */
   
