@@ -329,7 +329,7 @@ creates a UNISTR structure.
 void make_unistr(UNISTR *str, char *buf)
 {
 	/* store the string (null-terminated copy) */
-	struni2((char *)(str->buffer), buf);
+	str_to_unistr16(str->buffer, buf);
 }
 
 /*******************************************************************
@@ -372,7 +372,7 @@ void make_buffer3_str(BUFFER3 *str, char *buf, int len)
 	str->buf_len     = len * 2;
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	struni2(str->buffer, buf);
+	str_to_unistr8(str->buffer, buf);
 }
 
 /*******************************************************************
@@ -573,7 +573,7 @@ void make_unistr2(UNISTR2 *str, const char *buf, int len)
 	str->uni_str_len = len;
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	struni2((char*)(str->buffer), buf);
+	str_to_unistr16((str->buffer), buf);
 }
 
 /*******************************************************************
