@@ -38,7 +38,7 @@ struct dcom_interface_pointer *dcom_interface_pointer_by_ipid(struct GUID *ipid)
 static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct RemoteActivation *r)
 {
 	struct CreateInstance *cr;
-	struct Release *ur;
+	/*struct Release *ur;*/
 	struct dcom_interface_p *o;
 	int i;
 
