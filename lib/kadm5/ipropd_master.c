@@ -32,6 +32,7 @@
  */
 
 #include "iprop.h"
+#include <rtbl.h>
 
 RCSID("$Id$");
 
@@ -83,6 +84,9 @@ struct slave {
     char *name;
     krb5_auth_context ac;
     u_int32_t version;
+    time_t seen;
+    unsigned long flags;
+#define SLAVE_F_DEAD	0x1
     struct slave *next;
 };
 
@@ -108,6 +112,39 @@ check_acl (krb5_context context, const char *name)
     }
     fclose (fp);
     return ret;
+}
+
+static void
+slave_seen(slave *s)
+{
+    s->seen = time(NULL);
+}
+
+static void
+slave_dead(slave *s)
+{
+    s->flags |= SLAVE_F_DEAD;
+    slave_seen(s);
+}
+
+static void
+remove_slave (krb5_context context, slave *s, slave **root)
+{
+    slave **p;
+
+    if (s->fd >= 0)
+	close (s->fd);
+    if (s->name)
+	free (s->name);
+    if (s->ac)
+	krb5_auth_con_free (context, s->ac);
+
+    for (p = root; *p; p = &(*p)->next)
+	if (*p == s) {
+	    *p = s->next;
+	    break;
+	}
+    free (s);
 }
 
 static void
@@ -159,38 +196,36 @@ add_slave (krb5_context context, krb5_keytab keytab, slave **root, int fd)
 	goto error;
     }
     krb5_free_ticket (context, ticket);
+    ticket = NULL;
+
+    {
+	slave *l = *root;
+
+	while (l) {
+	    if (strcmp(l->name, s->name) == 0)
+		break;
+	    l = l->next;
+	}
+	if (l) {
+	    if (l->flags & SLAVE_F_DEAD) {
+		remove_slave(context, l, root);
+	    } else {
+		krb5_warnx (context, "second connection from %s", s->name);
+		goto error;
+	    }
+	}
+    }
+
     krb5_warnx (context, "connection from %s", s->name);
 
     s->version = 0;
+    s->flags = 0;
+    slave_seen(s);
     s->next = *root;
     *root = s;
     return;
 error:
-    if (s->name)
-	free (s->name);
-    if (s->ac)
-	krb5_auth_con_free(context, s->ac);
-    if (ticket)
-    krb5_free_ticket (context, ticket);
-    close (s->fd);
-    free(s);
-}
-
-static void
-remove_slave (krb5_context context, slave *s, slave **root)
-{
-    slave **p;
-
-    close (s->fd);
-    free (s->name);
-    krb5_auth_con_free (context, s->ac);
-
-    for (p = root; *p; p = &(*p)->next)
-	if (*p == s) {
-	    *p = s->next;
-	    break;
-	}
-    free (s);
+    remove_slave(context, s, root);
 }
 
 struct prop_context {
@@ -244,21 +279,33 @@ send_complete (krb5_context context, slave *s,
 
     ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
 
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_write_priv_message");
+    if (ret) {
+	krb5_warn (context, ret, "krb5_write_priv_message");
+	slave_dead(s);
+	return ret;
+    }
 
     ret = hdb_foreach (context, db, 0, prop_one, s);
-    if (ret)
-	krb5_err (context, 1, ret, "hdb_foreach");
+    if (ret) {
+	krb5_warn (context, ret, "hdb_foreach");
+	slave_dead(s);
+	return ret;
+    }
 
     _krb5_put_int (buf, NOW_YOU_HAVE, 4);
     _krb5_put_int (buf + 4, current_version, 4);
     data.length = 8;
 
-    ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
+    s->version = current_version;
 
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_write_priv_message");
+    ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
+    if (ret) {
+	slave_dead(s);
+	krb5_warn (context, ret, "krb5_write_priv_message");
+	return ret;
+    }
+
+    slave_seen(s);
 
     return 0;
 }
@@ -277,6 +324,9 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     int ret = 0;
 
     if (s->version == current_version)
+	return 0;
+
+    if (s->flags & SLAVE_F_DEAD)
 	return 0;
 
     sp = kadm5_log_goto_end (log_fd);
@@ -299,11 +349,15 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     _krb5_put_int(data.data, FOR_YOU, 4);
 
     ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
+    krb5_data_free(&data);
 
     if (ret) {
 	krb5_warn (context, ret, "krb5_write_priv_message");
+	slave_dead(s);
 	return 1;
     }
+    slave_seen(s);
+
     return 0;
 }
 
@@ -337,8 +391,81 @@ process_msg (krb5_context context, slave *s, int log_fd,
     }
 
     krb5_data_free (&out);
+
+    slave_seen(s);
+
     return ret;
 }
+
+#define SLAVE_NAME	"Name"
+#define SLAVE_ADDRESS	"Address"
+#define SLAVE_VERSION	"Version"
+#define SLAVE_STATUS	"Status"
+#define SLAVE_SEEN	"Last Seen"
+
+static void
+write_stats(krb5_context context, slave *slaves, u_int32_t current_version)
+{
+    char str[30];
+    rtbl_t tbl;
+    time_t t = time(NULL);
+    FILE *fp;
+
+    fp = fopen(KADM5_SLAVE_STATS, "w");
+    if (fp == NULL)
+	return;
+
+    strftime(str, sizeof(str), "%Y-%m-%d %H:%M:%S",
+	     localtime(&t));
+    fprintf(fp, "Status for slaves, last updated: %s\n\n", str);
+
+    fprintf(fp, "Master version: %lu\n\n", (unsigned long)current_version);
+
+    tbl = rtbl_create();
+    if (tbl == NULL) {
+	fclose(fp);
+	return;
+    }
+
+    rtbl_add_column(tbl, SLAVE_NAME, 0);
+    rtbl_add_column(tbl, SLAVE_ADDRESS, 0);
+    rtbl_add_column(tbl, SLAVE_VERSION, RTBL_ALIGN_RIGHT);
+    rtbl_add_column(tbl, SLAVE_STATUS, 0);
+    rtbl_add_column(tbl, SLAVE_SEEN, 0);
+
+    rtbl_set_prefix(tbl, "  ");
+    rtbl_set_column_prefix(tbl, SLAVE_NAME, "");
+
+    while (slaves) {
+	krb5_address addr;
+	rtbl_add_column_entry(tbl, SLAVE_NAME, slaves->name);
+	krb5_sockaddr2address (context, (struct sockaddr*)&slaves->addr, &addr);
+	krb5_print_address(&addr, str, sizeof(str), NULL);
+	krb5_free_address(context, &addr);
+	
+	rtbl_add_column_entry(tbl, SLAVE_ADDRESS, str);
+
+	snprintf(str, sizeof(str), "%u", (unsigned)slaves->version);
+	rtbl_add_column_entry(tbl, SLAVE_VERSION, str);
+
+	if (slaves->flags & SLAVE_F_DEAD)
+	    rtbl_add_column_entry(tbl, SLAVE_STATUS, "Down");
+	else
+	    rtbl_add_column_entry(tbl, SLAVE_STATUS, "Up");
+
+	strftime(str, sizeof(str), "%Y-%m-%d %H:%M:%S", 
+		 localtime(&slaves->seen));
+	rtbl_add_column_entry(tbl, SLAVE_SEEN, str);
+
+	slaves = slaves->next;
+    }
+
+    rtbl_format(tbl, fp);
+    rtbl_destroy(tbl);
+
+    fclose(fp);
+}
+
 
 static char *realm;
 static int version_flag;
@@ -473,18 +600,18 @@ main(int argc, char **argv)
 		send_diffs (context, p, log_fd, database, current_version);
 	}
 
-	for(p = slaves; p != NULL; p = p->next)
+	for(p = slaves; ret && p != NULL; p = p->next)
 	    if (FD_ISSET(p->fd, &readset)) {
 		--ret;
 		if(process_msg (context, p, log_fd, database, current_version))
-		    remove_slave (context, p, &slaves);
+		    slave_dead(p);
 	    }
 
 	if (ret && FD_ISSET(listen_fd, &readset)) {
 	    add_slave (context, keytab, &slaves, listen_fd);
 	    --ret;
 	}
-
+	write_stats(context, slaves, current_version);
     }
 
     return 0;
