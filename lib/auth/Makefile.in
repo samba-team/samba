@@ -24,6 +24,8 @@ install: all
 		for i in $$SUBDIRS; \
 		do (cd $$i && $(MAKE) $(MFLAGS) install); done
 
+check:
+
 clean:
 		SUBDIRS=$(SUBDIRS); \
 		for i in $$SUBDIRS; \
