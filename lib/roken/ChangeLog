@@ -1,3 +1,7 @@
+2001-08-08  Assar Westerlund  <assar@sics.se>
+
+	* hstrerror.c: move h_errno to its own file (h_errno.c)
+
 2001-08-04  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: add getarg.3
