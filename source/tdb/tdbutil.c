@@ -355,8 +355,10 @@ TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
 	if (!lp_use_mmap()) tdb_flags |= TDB_NOMMAP;
 
 	tdb = tdb_open(name, hash_size, tdb_flags, 
-		       open_flags, mode, tdb_log);
+				    open_flags, mode);
 	if (!tdb) return NULL;
+
+	tdb_logging_function(tdb, tdb_log);
 
 	return tdb;
 }

@@ -29,7 +29,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
-#include <time.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -174,9 +173,8 @@ static void create_tdb(void)
 		return;
 	}
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open_ex(tok, 0, TDB_CLEAR_IF_FIRST,
-			  O_RDWR | O_CREAT | O_TRUNC, 0600,
-			  tdb_log_to_stderr);
+	tdb = tdb_open(tok, 0, TDB_CLEAR_IF_FIRST,
+		       O_RDWR | O_CREAT | O_TRUNC, 0600);
 	if (!tdb) {
 		printf("Could not create %s: %s\n", tok, strerror(errno));
 	}
@@ -190,7 +188,7 @@ static void open_tdb(void)
 		return;
 	}
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open_ex(tok, 0, 0, O_RDWR, 0600, tdb_log_to_stderr);
+	tdb = tdb_open(tok, 0, 0, O_RDWR, 0600);
 	if (!tdb) {
 		printf("Could not open %s: %s\n", tok, strerror(errno));
 	}
@@ -384,7 +382,6 @@ static void next_record(TDB_CONTEXT *tdb, TDB_DATA *pkey)
 		/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
 		print_rec(tdb, *pkey, dbuf, NULL);
 }
-
 
 int main(int argc, char *argv[])
 {

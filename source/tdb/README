@@ -60,8 +60,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 
    The hash size is advisory, use zero for a default value. 
 
-   Return is NULL on error, in which case errno is also set.  Don't
-   try to call tdb_error or tdb_errname, just do strerror(errno).  
+   return is NULL on error
 
    possible tdb_flags are:
     TDB_CLEAR_IF_FIRST - clear database if we are the only one with it open
