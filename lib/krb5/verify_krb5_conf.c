@@ -307,6 +307,12 @@ struct entry all_strings[] = {
     { NULL }
 };
 
+struct entry all_boolean[] = {
+    { "", krb5_config_string, check_boolean },
+    { NULL }
+};
+
+
 struct entry v4_name_convert_entries[] = {
     { "host", krb5_config_list, all_strings },
     { "plain", krb5_config_list, all_strings },
@@ -432,6 +438,7 @@ struct entry kdc_entries[] = {
     { "enable-kaserver", krb5_config_string, check_boolean },
     { "encode_as_rep_as_tgs_rep", krb5_config_string, check_boolean },
     { "kdc_warn_pwexpire", krb5_config_string, check_time },
+    { "use_2b", krb5_config_list, all_boolean },
     { NULL }
 };
 
@@ -463,6 +470,7 @@ struct entry toplevel_sections[] = {
     { "kdc", krb5_config_list, kdc_entries },
     { "kadmin", krb5_config_list, kadmin_entries },
     { "appdefaults", krb5_config_list, appdefaults_entries },
+    { "gssapi", krb5_config_list, NULL },
 #if 0
     /* MIT stuff */
     { "kdcdefaults", krb5_config_list, kdcdefaults_entries },
