@@ -71,7 +71,7 @@ static struct toktab {
 static char *
 guess_domain (char *hostname, size_t sz)
 {
-    struct addrinfo *ai;
+    struct addrinfo *ai, *a;
     struct addrinfo hints;
     int error;
     char *dot;
@@ -91,8 +91,11 @@ guess_domain (char *hostname, size_t sz)
     if (error)
 	return hostname;
 
-    if (ai->ai_canonname != NULL)
-	strlcpy (hostname, ai->ai_canonname, sz);
+    for (a = ai; a != NULL; a = a->ai_next)
+	if (a->ai_canonname != NULL) {
+	    strlcpy (hostname, ai->ai_canonname, sz);
+	    break;
+	}
     freeaddrinfo (ai);
     dot = strchr (hostname, '.');
     if (dot != NULL)
