@@ -1,2 +1,0 @@
-#!/bin/sh
-echo "Test worked" > PREFIX/testdir/preexec_touch
