@@ -324,7 +324,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 */
 static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
-			    DOM_SID *sid,
+			    const DOM_SID *sid,
 			    char **name,
 			    enum SID_NAME_USE *type)
 {
