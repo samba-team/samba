@@ -155,6 +155,7 @@ kerberos5_send(char *name, Authenticator *ap)
     int ap_opts;
     krb5_data cksum_data;
     char foo[2];
+    extern int net;
     
     printf("[ Trying %s ... ]\r\n", name);
     if (!UserNameRequested) {
@@ -183,6 +184,18 @@ kerberos5_send(char *name, Authenticator *ap)
 	if (auth_debug_mode) {
 	    printf("Kerberos V5: krb5_auth_con_init failed (%s)\r\n",
 		   krb5_get_err_text(context, ret));
+	}
+	return(0);
+    }
+
+    ret = krb5_auth_con_setaddrs_from_fd (context,
+					  auth_context,
+					  &net);
+    if (ret) {
+	if (auth_debug_mode) {
+	    printf ("Kerberos V5:"
+		    " krb5_auth_con_setaddrs_from_fd failed (%s)\r\n",
+		    krb5_get_err_text(context, ret));
 	}
 	return(0);
     }
