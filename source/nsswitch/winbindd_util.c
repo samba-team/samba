@@ -24,12 +24,30 @@
 #include "winbindd.h"
 #include "sids.h"
 
+static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
+{
+	struct in_addr ip;
+	extern pstring global_myname;
+	
+	/* if its our primary domain and password server is not '*' then use the
+	   password server parameter */
+	if (strcmp(domain_name,lp_workgroup()) == 0 && 
+	    strcmp(lp_passwordserver(),"*") != 0) {
+		fstrcpy(domain_controller, lp_passwordserver());
+		return True;
+	}
+
+	if (!resolve_name(domain_name, &ip, 0x1B)) return False;
+
+	return lookup_pdc_name(global_myname, domain_name, &ip, domain_controller);
+}
+
 /* Connect to a domain controller using get_any_dc_name() to discover 
    the domain name and sid */
 
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 {
-    fstring level5_dom, domain_controller;
+    fstring level5_dom;
     BOOL res;
     uint32 enum_ctx = 0;
     uint32 num_doms = 0;
@@ -43,15 +61,14 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
     DEBUG(1, ("looking up sid for domain %s\n", domain_name));
 
     /* Get controller name for domain */
-
-    if (!get_any_dc_name(domain_name, domain_controller)) {
-        return False;
+    if (!resolve_dc_name(domain_name, domain->controller)) {
+	    return False;
     }
 
-    if (strnequal("\\\\", domain_controller, 2)) {
-        fstrcpy(domain->controller, &domain_controller[2]);
-    } else {
-        fstrcpy(domain->controller, domain_controller);
+    if (strcmp(server_state.controller,"*") == 0) {
+	    if (!resolve_dc_name(lp_workgroup(), server_state.controller)) {
+		    return False;
+	    }
     }
 
     /* Lookup sid for domain.  We must call lsa_open_policy() directly to
@@ -62,37 +79,35 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
                         False, SEC_RIGHTS_MAXIMUM_ALLOWED);
         
     if (strequal(domain->controller, server_state.controller)) {
-
         /* Do a level 5 query info policy */
 
         res = server_state.lsa_handle_open ? 
             lsa_query_info_pol(&server_state.lsa_handle, 0x05, level5_dom, 
                                &domain->sid) : False;
-
-        return res;
-    }
+	return res;
+    } 
 
     /* Use lsaenumdomains to get sid for this domain */
-
+    
     res = server_state.lsa_handle_open ?
-        lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
-                           &num_doms, &domains, &sids) : False;
+            lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
+                               &num_doms, &domains, &sids) : False;
     
     /* Look for domain name */
-
+    
     if (res && domains && sids) {
-        int found = False;
-        int i;
-        
-        for(i = 0; i < num_doms; i++) {
-            if (strequal(domain_name, domains[i])) {
-                sid_copy(&domain->sid, sids[i]);
-                found = True;
-                break;
-                }
-        }
-        
-        res = found;
+            int found = False;
+            int i;
+	    
+            for(i = 0; i < num_doms; i++) {
+		    if (strequal(domain_name, domains[i])) {
+			    sid_copy(&domain->sid, sids[i]);
+			    found = True;
+			    break;
+		    }
+            }
+	    
+            res = found;
     }
     
     /* Free memory */
@@ -102,6 +117,7 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 
     return res;
 }
+
 
 static struct winbindd_domain *add_trusted_domain(char *domain_name)
 {
@@ -660,3 +676,21 @@ char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
 
     return result;
 };
+
+
+/* parse a string of the form DOMAIN/user into a domain and a user */
+void parse_domain_user(char *domuser, fstring domain, fstring user)
+{
+	char *p;
+	p = strchr(domuser,'/');
+	if (!p) p = strchr(domuser,'\\');
+	if (!p) {
+		fstrcpy(domain,"");
+		fstrcpy(user, domuser);
+		return;
+	}
+	
+	fstrcpy(user, p+1);
+	fstrcpy(domain, domuser);
+	domain[PTR_DIFF(p, domuser)] = 0;
+}
