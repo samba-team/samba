@@ -373,10 +373,8 @@ int get_new_machine_uid(void)
 
   fp = startsmbpwent(False);
   while((smbpw = getsmbpwent(fp)) != NULL) {
-    if(!(smbpw->acct_ctrl & ACB_SVRTRUST))
-      continue;
-
-    next_uid_start = MIN(next_uid_start, (smbpw->smb_userid-1));
+    if((smbpw->acct_ctrl & (ACB_SVRTRUST|ACB_WSTRUST)))
+      next_uid_start = MIN(next_uid_start, (smbpw->smb_userid-1));
   }
   endsmbpwent(fp);
   return next_uid_start;
@@ -389,7 +387,7 @@ int get_new_machine_uid(void)
 static void usage(char *name, BOOL is_root)
 {
 	if(is_root)
-		fprintf(stderr, "Usage is : %s [-a] [-d] [-m] [-n] [username] [password]\n\
+		fprintf(stderr, "Usage is : %s [-a] [-d] [-m] [-w] [-n] [username] [password]\n\
 %s: [-R <name resolve order>] [-r machine] [username] [password]\n%s: [-h]\n", name, name, name);
 	else
 		fprintf(stderr, "Usage is : %s [-h] [-r machine] [password]\n", name);
@@ -433,6 +431,7 @@ int main(int argc, char **argv)
   BOOL		 add_user = False;
   BOOL		 got_new_pass = False;
   BOOL		 machine_account = False;
+  BOOL		 server_machine_account = False;
   BOOL		 disable_user = False;
   BOOL		 set_no_password = False;
   pstring servicesf = CONFIGFILE;
@@ -468,7 +467,7 @@ int main(int argc, char **argv)
 
   is_root = (real_uid == 0);
 
-  while ((ch = getopt(argc, argv, "adhmnr:R:")) != EOF) {
+  while ((ch = getopt(argc, argv, "adhmnr:R:w")) != EOF) {
     switch(ch) {
     case 'a':
       if(is_root)
@@ -501,9 +500,11 @@ int main(int argc, char **argv)
       } else
         usage(prog_name, is_root);
     case 'm':
-      if(is_root)
+    case 'w':
+      if(is_root) {
         machine_account = True;
-      else
+        server_machine_account = (ch == 'm');
+      } else
         usage(prog_name, is_root);
       break;
     case 'h':
@@ -734,7 +735,8 @@ int main(int argc, char **argv)
 
     pwd = &machine_account_pwd;
     pwd->pw_name = user_name;
-    sprintf(machine_dir_name, "Machine account for %s", user_name);
+    sprintf(machine_dir_name, "%s machine account for %s", 
+              server_machine_account ? "Server" : "Workstation", user_name);
     pwd->pw_gecos = "";
     pwd->pw_dir = machine_dir_name;
     pwd->pw_shell = "";
@@ -815,7 +817,8 @@ int main(int argc, char **argv)
       int new_entry_length;
       char *new_entry;
       long offpos;
-      uint16 acct_ctrl = (machine_account ? ACB_SVRTRUST : ACB_NORMAL);
+      uint16 acct_ctrl = (machine_account ? 
+          ( server_machine_account ? ACB_SVRTRUST : ACB_WSTRUST) : ACB_NORMAL);
 
       /* The add user write needs to be atomic - so get the fd from 
          the fp and do a raw write() call.
