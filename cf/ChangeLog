@@ -1,3 +1,8 @@
+2001-09-13  Assar Westerlund  <assar@sics.se>
+
+	* db.m4: test for the ndbm database really being a .db one
+	and use it when moving/removing database files
+
 2001-09-03  Assar Westerlund  <assar@sics.se>
 
 	* db.m4: prefer ndbm.h to dbm.h
