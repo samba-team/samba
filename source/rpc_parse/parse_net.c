@@ -2129,12 +2129,12 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 		if (!prs_uint32("pwd_len", ps, depth, &len))
                         return False;
 		old_offset = ps->data_offset;
-		if (len == 0x44)
+		if (len > 0)
 		{
 			if (ps->io)
 			{
 				/* reading */
-                                if (!prs_hash1(ps, ps->data_offset, sess_key))
+                                if (!prs_hash1(ps, ps->data_offset, sess_key, len))
                                         return False;
 			}
 			if (!net_io_sam_passwd_info("pass", &info->pass, 
@@ -2144,7 +2144,7 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 			if (!ps->io)
 			{
 				/* writing */
-                                if (!prs_hash1(ps, old_offset, sess_key))
+                                if (!prs_hash1(ps, old_offset, sess_key, len))
                                         return False;
 			}
 		}

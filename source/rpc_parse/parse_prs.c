@@ -1316,7 +1316,7 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *me
 /*******************************************************************
  hash a stream.
  ********************************************************************/
-BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
+BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16], int len)
 {
 	char *q;
 
@@ -1326,12 +1326,12 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("prs_hash1\n"));
 	dump_data(100, sess_key, 16);
-	dump_data(100, q, 68);
+	dump_data(100, q, len);
 #endif
-	SamOEMhash((uchar *) q, sess_key, 68);
+	SamOEMhash((uchar *) q, sess_key, len);
 
 #ifdef DEBUG_PASSWORD
-	dump_data(100, q, 68);
+	dump_data(100, q, len);
 #endif
 
 	return True;
