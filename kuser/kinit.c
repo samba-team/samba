@@ -52,8 +52,8 @@ struct getarg_strings etype_str;
 int use_keytab		= 0;
 char *keytab_str	= NULL;
 #ifdef KRB4
-extern int do_afslog;
-extern int get_v4_tgt;
+int get_v4_tgt		= -1;
+int do_afslog		= -1;
 int convert_524;
 #endif
 int fcache_version;
@@ -553,22 +553,6 @@ main (int argc, char **argv)
     if (ret)
 	errx(1, "krb5_init_context failed: %d", ret);
   
-    /* XXX no way to figure out if set without explict test */
-    if(krb5_config_get_string(context, NULL, "libdefaults", 
-			      "forwardable", NULL))
-	forwardable_flag = krb5_config_get_bool (context, NULL,
-						 "libdefaults",
-						 "forwardable",
-						 NULL);
-
-#ifdef KRB4
-    get_v4_tgt = krb5_config_get_bool_default (context, NULL,
-					       get_v4_tgt,
-					       "libdefaults",
-					       "krb4_get_tickets",
-					       NULL);
-#endif
-
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
     
@@ -634,14 +618,10 @@ main (int argc, char **argv)
 	ticket_life = tmp;
     }
 #ifdef KRB4
-    get_v4_tgt = krb5_config_get_bool_default (context,
-					       NULL,
-					       get_v4_tgt,
-					       "realms",
-					       krb5_principal_get_realm(context,
-									principal),
-					       "krb4_get_tickets",
-					       NULL);
+    if(get_v4_tgt == -1)
+	krb5_appdefault_boolean(context, "kinit", 
+				krb5_principal_get_realm(context, principal), 
+				"krb4_get_tickets", get_v4_tgt, &get_v4_tgt);
 #endif
 
     
