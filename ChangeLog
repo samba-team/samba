@@ -4,6 +4,9 @@
 
 2001-07-31  Assar Westerlund  <assar@sics.se>
 
+	* kpasswd/kpasswd-generator.c (main): implement --version and
+	--help
+
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): update version to
 	18:1:1
 
