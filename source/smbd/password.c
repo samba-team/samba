@@ -1510,13 +1510,14 @@ BOOL check_hosts_equiv(char *user)
 
 int password_client = -1;
 static fstring pserver;
+static char *secserver_inbuf = NULL;
 
 /****************************************************************************
 attempted support for server level security 
 ****************************************************************************/
 BOOL server_cryptkey(char *buf)
 {
-  pstring inbuf,outbuf;
+  pstring outbuf;
   fstring pass_protocol;
   extern fstring remote_machine;
   char *p;
@@ -1525,6 +1526,14 @@ BOOL server_cryptkey(char *buf)
   struct in_addr dest_ip;
   int port = SMB_PORT;
   BOOL ret;
+
+  if(secserver_inbuf == NULL) {
+    secserver_inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+    if(secserver_inbuf == NULL) {
+      DEBUG(0,("server_cryptkey: malloc fail for input buffer.\n"));
+      return False;
+    }
+  }
 
   if (password_client >= 0)
     close(password_client);
@@ -1536,7 +1545,7 @@ BOOL server_cryptkey(char *buf)
     strcpy(pass_protocol,"NT LM 0.12");
   }
 
-  bzero(inbuf,sizeof(inbuf));
+  bzero(secserver_inbuf,BUFFER_SIZE + SAFETY_MARGIN);
   bzero(outbuf,sizeof(outbuf));
 
   for (p=strtok(lp_passwordserver(),LIST_SEP); p ; p = strtok(NULL,LIST_SEP)) {
@@ -1602,8 +1611,8 @@ BOOL server_cryptkey(char *buf)
   send_smb(password_client,outbuf);
   
  
-  if (!receive_smb(password_client,inbuf,5000) ||
-      CVAL(inbuf,0) != 0x82) {
+  if (!receive_smb(password_client,secserver_inbuf,5000) ||
+      CVAL(secserver_inbuf,0) != 0x82) {
     DEBUG(1,("%s rejected the session\n",pserver));
     close(password_client); password_client = -1;
     return(False);
@@ -1624,21 +1633,21 @@ BOOL server_cryptkey(char *buf)
   SSVAL(outbuf,smb_flg2,0x1);
 
   send_smb(password_client,outbuf);
-  ret = receive_smb(password_client,inbuf,5000);
+  ret = receive_smb(password_client,secserver_inbuf,5000);
 
-  if (!ret || CVAL(inbuf,smb_rcls) || SVAL(inbuf,smb_vwv0)) {
+  if (!ret || CVAL(secserver_inbuf,smb_rcls) || SVAL(secserver_inbuf,smb_vwv0)) {
     DEBUG(1,("%s rejected the protocol\n",pserver));
     close(password_client); password_client= -1;
     return(False);
   }
 
-  if (!(CVAL(inbuf,smb_vwv1) & 1)) {
+  if (!(CVAL(secserver_inbuf,smb_vwv1) & 1)) {
     DEBUG(1,("%s isn't in user level security mode\n",pserver));
     close(password_client); password_client= -1;
     return(False);
   }
 
-  memcpy(buf,inbuf,smb_len(inbuf)+4);
+  memcpy(buf,secserver_inbuf,smb_len(secserver_inbuf)+4);
 
   DEBUG(3,("password server OK\n"));
 
@@ -1650,15 +1659,23 @@ attempted support for server level security
 ****************************************************************************/
 BOOL server_validate(char *buf)
 {
-  pstring inbuf,outbuf;  
+  pstring outbuf;  
   BOOL ret;
+
+  if(secserver_inbuf == NULL) {
+    secserver_inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+    if(secserver_inbuf == NULL) {
+      DEBUG(0,("server_validate: malloc fail for input buffer.\n"));
+      return False;
+    }
+  }
 
   if (password_client < 0) {
     DEBUG(1,("%s not connected\n",pserver));
     return(False);
   }  
 
-  bzero(inbuf,sizeof(inbuf));
+  bzero(secserver_inbuf,BUFFER_SIZE + SAFETY_MARGIN);
   memcpy(outbuf,buf,sizeof(outbuf));
 
   /* send a session setup command */
@@ -1668,18 +1685,18 @@ BOOL server_validate(char *buf)
 
   set_message(outbuf,smb_numwords(outbuf),smb_buflen(outbuf),False);
 
-  SCVAL(inbuf,smb_rcls,1);
+  SCVAL(secserver_inbuf,smb_rcls,1);
 
   send_smb(password_client,outbuf);
-  ret = receive_smb(password_client,inbuf,5000);
+  ret = receive_smb(password_client,secserver_inbuf,5000);
 
-  if (!ret || CVAL(inbuf,smb_rcls) != 0) {
+  if (!ret || CVAL(secserver_inbuf,smb_rcls) != 0) {
     DEBUG(1,("password server %s rejected the password\n",pserver));
     return(False);
   }
 
   /* if logged in as guest then reject */
-  if ((SVAL(inbuf,smb_vwv2) & 1) != 0) {
+  if ((SVAL(secserver_inbuf,smb_vwv2) & 1) != 0) {
     DEBUG(1,("password server %s gave us guest only\n",pserver));
     return(False);
   }
