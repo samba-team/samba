@@ -34,6 +34,7 @@ static pstring cd_path = "";
 static pstring service;
 static pstring desthost;
 static pstring username;
+static pstring domain;
 static pstring password;
 static BOOL use_kerberos;
 static BOOL got_pass;
@@ -2260,7 +2261,7 @@ static BOOL browse_host(const char *query_host)
 	status = dcerpc_pipe_connect(&p, binding, 
 				     DCERPC_SRVSVC_UUID, 
 				     DCERPC_SRVSVC_VERSION,
-				     lp_workgroup(), 
+				     domain, 
 				     username, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to connect to %s - %s\n", 
@@ -2803,7 +2804,7 @@ static struct smbcli_state *do_connect(const char *server, const char *share)
 		}
 	}
 
-	status = smbcli_session_setup(c, username, password, lp_workgroup());
+	status = smbcli_session_setup(c, username, password, domain);
 	if (NT_STATUS_IS_ERR(status)) {
 		d_printf("authenticated session setup failed: %s\n", nt_errstr(status));
 		/* if a password was not supplied then try again with a null username */
@@ -2962,13 +2963,11 @@ static void remember_query_host(const char *arg,
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 
-		{ "name-resolve", 'R', POPT_ARG_STRING, NULL, 'R', "Use these name resolution services only", "NAME-RESOLVE-ORDER" },
 		{ "message", 'M', POPT_ARG_STRING, NULL, 'M', "Send message", "HOST" },
 		{ "ip-address", 'I', POPT_ARG_STRING, NULL, 'I', "Use this IP to connect to", "IP" },
 		{ "stderr", 'E', POPT_ARG_NONE, NULL, 'E', "Write messages to stderr instead of stdout" },
 		{ "list", 'L', POPT_ARG_STRING, NULL, 'L', "Get a list of shares available on a host", "HOST" },
 		{ "terminal", 't', POPT_ARG_STRING, NULL, 't', "Terminal I/O code {sjis|euc|jis7|jis8|junet|hex}", "CODE" },
-		{ "max-protocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set the max protocol level", "LEVEL" },
 		{ "tar", 'T', POPT_ARG_STRING, NULL, 'T', "Command line tar", "<c|x>IXFqgbNan" },
 		{ "directory", 'D', POPT_ARG_STRING, NULL, 'D', "Start from directory", "DIR" },
 		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
@@ -3032,12 +3031,6 @@ static void remember_query_host(const char *arg,
 		case 't':
 			pstrcpy(term_code, poptGetOptArg(pc));
 			break;
-		case 'm':
-			lp_set_cmdline("max protocol", poptGetOptArg(pc));
-			break;
-		case 'R':
-			lp_set_cmdline("name resolve order", poptGetOptArg(pc));
-			break;
 		case 'T':
 			if (!tar_parseargs(argc, argv, poptGetOptArg(pc), optind)) {
 				poptPrintUsage(pc, stderr, 0);
@@ -3082,6 +3075,11 @@ static void remember_query_host(const char *arg,
 	poptFreeContext(pc);
 
 	pstrcpy(username, cmdline_auth_info.username);
+	if (cmdline_auth_info.domain[0]) {
+		pstrcpy(domain, cmdline_auth_info.domain);
+	} else {
+		pstrcpy(domain, lp_workgroup());
+	}
 	pstrcpy(password, cmdline_auth_info.password);
 	use_kerberos = cmdline_auth_info.use_kerberos;
 	got_pass = cmdline_auth_info.got_pass;
