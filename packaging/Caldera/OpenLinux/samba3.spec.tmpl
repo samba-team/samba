@@ -206,13 +206,13 @@ rm configure
 autoconf
 
 CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
-	--prefix='$(DESTDIR)/usr' \
-	--localstatedir='$(DESTDIR)/var' \
-	--libdir='$(DESTDIR)%{EtcSamba}' \
-	--sbindir='$(DESTDIR)/usr/sbin' \
+	--prefix=/usr \
+	--localstatedir=/var \
+	--libdir='%{EtcSamba}' \
+	--sbindir=/usr/sbin \
 	--with-privatedir='$(LIBDIR)' \
-	--with-lockdir='$(DESTDIR)/var/lock/samba.d' \
-	--with-swatdir='$(DESTDIR)/usr/share/swat' \
+	--with-lockdir=/var/lock/samba.d \
+	--with-swatdir=/usr/share/swat \
 	--with-smbmount \
 	--with-pam \
 	--with-tdbsam \
@@ -229,7 +229,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-smbwrapper \
 	--with-libsmbclient \
 	--with-acl-support \
-	--with-sambabook=$(DESTDIR)/usr/share/swat/using_samba
+	--with-sambabook=/usr/share/swat/using_samba
 
 # Temp disabled - add later - JHT
 #	--with-pam_smbpass \
@@ -239,12 +239,7 @@ make all nsswitch/libnss_wins.so nsswitch/libnss_winbind.so torture nsswitch/pam
 (cd tdb; make tdbdump tdbtest tdbtorture tdbtool)
 
 cd ../examples/VFS
-#CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
-#        --prefix='$(DESTDIR)/usr' \
-#        --localstatedir='$(DESTDIR)/var' \
-#        --libdir='$(DESTDIR)%{EtcSamba}' \
-#        --sbindir='$(DESTDIR)/usr/sbin'
-make
+make srcdir=../../source
 
 %Install
 %{mkDESTDIR}
@@ -265,7 +260,7 @@ mkdir -p $DESTDIR/usr/share/samba/codepages/src
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
 
-make -C source install installclientlib 
+make -C source DESTDIR=$RPM_BUILD_ROOT install installclientlib 
 
 strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
 # Add links for mount.smbfs
@@ -273,7 +268,7 @@ strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
 	ln -s /usr/bin/smbumount umount.smbfs )
 
 # First install /usr/bin progs
-for i in smbfilter make_printerdef debug2html
+for i in smbfilter debug2html
 do
 	install -m 755 source/bin/$i $DESTDIR/usr/bin
 done
@@ -292,10 +287,6 @@ for i in audit.so recycle.so netatalk.so skel.so
 do
 	install -m755 examples/VFS/$i $DESTDIR/lib/samba
 done
-
-#mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
-
-#cp -p source/codepages/codepage_def.??? $DESTDIR%{EtcSamba}/codepages/src
 
 # Install the nsswitch library extension file
 cp -p source/nsswitch/libnss_wins.so $DESTDIR/lib
