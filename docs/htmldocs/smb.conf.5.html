@@ -572,6 +572,7 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#directory"><strong>directory</strong></a>
 <p><br><li > <a href="smb.conf.5.html#directorymask"><strong>directory mask</strong></a>
 <p><br><li > <a href="smb.conf.5.html#directorymode"><strong>directory mode</strong></a>
+<p><br><li > linf(<strong>directory security mask</strong>)(directorysecuritymask)
 <p><br><li > <a href="smb.conf.5.html#dontdescend"><strong>dont descend</strong></a>
 <p><br><li > <a href="smb.conf.5.html#dosfiletimeresolution"><strong>dos filetime resolution</strong></a>
 <p><br><li > <a href="smb.conf.5.html#dosfiletimes"><strong>dos filetimes</strong></a>
@@ -581,7 +582,9 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#followsymlinks"><strong>follow symlinks</strong></a>
 <p><br><li > <a href="smb.conf.5.html#forcecreatemode"><strong>force create mode</strong></a>
 <p><br><li > <a href="smb.conf.5.html#forcedirectorymode"><strong>force directory mode</strong></a>
+<p><br><li > <a href="smb.conf.5.html#forcedirectorysecuritymode"><strong>force directory security mode</strong></a>
 <p><br><li > <a href="smb.conf.5.html#forcegroup"><strong>force group</strong></a>
+<p><br><li > <a href="smb.conf.5.html#forcesecuritymode"><strong>force security mode</strong></a>
 <p><br><li > <a href="smb.conf.5.html#forceuser"><strong>force user</strong></a>
 <p><br><li > <a href="smb.conf.5.html#fstype"><strong>fstype</strong></a>
 <p><br><li > <a href="smb.conf.5.html#group"><strong>group</strong></a>
@@ -636,6 +639,7 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#revalidate"><strong>revalidate</strong></a>
 <p><br><li > <a href="smb.conf.5.html#rootpostexec"><strong>root postexec</strong></a>
 <p><br><li > <a href="smb.conf.5.html#rootpreexec"><strong>root preexec</strong></a>
+<p><br><li > <a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>
 <p><br><li > <a href="smb.conf.5.html#setdirectory"><strong>set directory</strong></a>
 <p><br><li > <a href="smb.conf.5.html#sharemodes"><strong>share modes</strong></a>
 <p><br><li > <a href="smb.conf.5.html#shortpreservecase"><strong>short preserve case</strong></a>
@@ -1286,7 +1290,8 @@ bits are added).
 <p><br>See the <a href="smb.conf.5.html#forcedirectorymode"><strong>"force directory mode"</strong></a> parameter
 to cause particular mode bits to always be set on created directories.
 <p><br>See also the <a href="smb.conf.5.html#createmode"><strong>"create mode"</strong></a> parameter for masking
-mode bits on created files.
+mode bits on created files, and the <a href="smb.conf.5.html#directorysecuritymask"><strong>"directory security mask"</strong></a>
+parameter.
 <p><br><strong>Default:</strong>
 <code>	directory mask = 0755</code>
 <p><br><strong>Example:</strong>
@@ -1294,6 +1299,31 @@ mode bits on created files.
 <p><br><a name="directorymode"></a>
 <li><strong><strong>directory mode (S)</strong></strong>
 <p><br>Synonym for <a href="smb.conf.5.html#directorymask"><strong>directory mask</strong></a>.
+<p><br><a name="directorysecuritymask"></a>
+<li><strong><strong>directory security mask (S)</strong></strong>
+<p><br>This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+directory using the native NT security dialog box.
+<p><br>This parameter is applied as a mask (AND'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change.
+<p><br>If not set explicitly this parameter is set to the same value as the
+<a href="smb.conf.5.html#directorymask"><strong>directory mask</strong></a> parameter. To allow a user to
+modify all the user/group/world permissions on a directory, set this
+parameter to 0777.
+<p><br><em>Note</em> that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0777.
+<p><br>See also the <a href="smb.conf.5.html#forcedirectorysecuritymode"><strong>force directory security
+mode</strong></a>, <a href="smb.conf.5.html#securitymask"><strong>security
+mask</strong></a>, <a href="smb.conf.5.html#forcesecuritymode"><strong>force security mode</strong></a>
+parameters.
+<p><br><strong>Default:</strong>
+<code>	directory security mask = &lt;same as directory mask&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	directory security mask = 0777</code>
 <p><br><a name="dnsproxy"></a>
 <li><strong><strong>dns proxy (G)</strong></strong>
 <p><br>Specifies that <a href="nmbd.8.html"><strong>nmbd</strong></a> when acting as a WINS
@@ -1552,6 +1582,31 @@ details on masking mode bits on created directories.
 <p><br>would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
+<p><br><a name="forcedirectorysecuritymode"></a>
+<li><strong><strong>force directory security mode (S)</strong></strong>
+<p><br>This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a directory
+using the native NT security dialog box.
+<p><br>This parameter is applied as a mask (OR'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a directory,
+the user has always set to be 'on'.
+<p><br>If not set explicitly this parameter is set to the same value as the
+<a href="smb.conf.5.html#forcedirectorymode"><strong>force directory mode</strong></a> parameter. To allow
+a user to modify all the user/group/world permissions on a directory,
+with restrictions set this parameter to 000.
+<p><br><em>Note</em> that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0000.
+<p><br>See also the <a href="smb.conf.5.html#directorysecuritymask"><strong>directory security mask</strong></a>,
+<a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>, <a href="smb.conf.5.html#forcesecuritymode"><strong>force security
+mode</strong></a> parameters.
+<p><br><strong>Default:</strong>
+<code>	force directory security mode = &lt;same as force directory mode&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	force directory security mode = 0</code>
 <p><br><a name="forcegroup"></a>
 <li><strong><strong>force group (S)</strong></strong>
 <p><br>This specifies a UNIX group name that will be assigned as the default
@@ -1561,10 +1616,51 @@ use the named group for their permissions checking. Thus, by assigning
 permissions for this group to the files and directories within this
 service the Samba administrator can restrict or allow sharing of these
 files.
+<p><br>In Samba 2.0.5 and above this parameter has extended functionality in the following
+way. If the group name listed here has a '+' character prepended to it
+then the current user accessing the share only has the primary group 
+default assigned to this group if they are already assigned as a member
+of that group. This allows an administrator to decide that only users
+who are already in a particular group will create files with group 
+ownership set to that group. This gives a finer granularity of ownership
+assignment. For example, the setting <code>force group = +sys</code> means
+that only users who are already in group sys will have their default
+primary group assigned to sys when accessing this Samba share. All
+other users will retain their ordinary primary group.
+<p><br>If the <a href="smb.conf.5.html#forceuser"><strong>"force user"</strong></a> parameter is also set the
+group specified in <strong>force group</strong> will override the primary group
+set in <a href="smb.conf.5.html#forceuser"><strong>"force user"</strong></a>.
+<p><br>See also <a href="smb.conf.5.html#forceuser"><strong>"force user"</strong></a>
 <p><br><strong>Default:</strong>
 <code>	no forced group</code>
 <p><br><strong>Example:</strong>
 <code>	force group = agroup</code>
+<p><br><a name="forcesecuritymode"></a>
+<li><strong><strong>force security mode (S)</strong></strong>
+<p><br>This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a file
+using the native NT security dialog box.
+<p><br>This parameter is applied as a mask (OR'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a file, the
+user has always set to be 'on'.
+<p><br>If not set explicitly this parameter is set to the same value as the
+<a href="smb.conf.5.html#forcecreatemode"><strong>force create mode</strong></a> parameter. To allow
+a user to modify all the user/group/world permissions on a file,
+with no restrictions set this parameter to 000.
+<p><br><em>Note</em> that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0000.
+<p><br>See also the <a href="smb.conf.5.html#forcedirectorysecuritymode"><strong>force directory security
+mode</strong></a>, <a href="smb.conf.5.html#directorysecuritymask"><strong>directory security
+mask</strong></a>, <a href="smb.conf.5.html#securitymask"><strong>security mask</strong></a>
+parameters.
+<p><br><strong>Default:</strong>
+<code>	force security mode = &lt;same as force create mode&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	force security mode = 0</code>
 <p><br><a name="forceuser"></a>
 <li><strong><strong>force user (S)</strong></strong>
 <p><br>This specifies a UNIX user name that will be assigned as the default
@@ -1576,6 +1672,11 @@ clients still need to connect as a valid user and supply a valid
 password. Once connected, all file operations will be performed as the
 <code>"forced user"</code>, no matter what username the client connected as.
 <p><br>This can be very useful.
+<p><br>In Samba 2.0.5 and above this parameter also causes the primary
+group of the forced user to be used as the primary group for all
+file activity. Prior to 2.0.5 the primary group was left as the
+primary group of the connecting user (this was a bug).
+<p><br>See also <a href="smb.conf.5.html#forcegroup"><strong>"force group"</strong></a>
 <p><br><strong>Default:</strong>
 <code>	no forced user</code>
 <p><br><strong>Example:</strong>
@@ -1716,26 +1817,21 @@ like <code>"allow hosts = 150.203.5."</code>. The full syntax of the list is
 described in the man page <strong>hosts_access (5)</strong>. Note that this man
 page may not be present on your system, so a brief description will
 be given here also.
-<p><br><em>NOTE:</em> IF you wish to allow the <a href="smbpasswd.html.8"><strong>smbpasswd
-(8)</strong></a> program to be run by local users to change
-their Samba passwords using the local <a href="smbd.8.html"><strong>smbd (8)</strong></a>
-daemon, then you <em>MUST</em> ensure that the localhost is listed in your
-<strong>hosts allow</strong> list, as <a href="smbpasswd.html.8"><strong>smbpasswd (8)</strong></a> runs
-in client-server mode and is seen by the local
-<a href="smbd.8.html"><strong>smbd</strong></a> process as just another client.
+<p><br>Note that the localhost address 127.0.0.1 will always be allowed
+access unless specifically denied by a "hosts deny" option.
 <p><br>You can also specify hosts by network/netmask pairs and by netgroup
 names if your system supports netgroups. The <em>EXCEPT</em> keyword can also
 be used to limit a wildcard list. The following examples may provide
 some help:
-<p><br><strong>Example 1</strong>: allow localhost and all IPs in 150.203.*.* except one
-<p><br><code>	hosts allow = localhost, 150.203. EXCEPT 150.203.6.66</code>
-<p><br><strong>Example 2</strong>: allow localhost and hosts that match the given network/netmask
-<p><br><code>	hosts allow = localhost, 150.203.15.0/255.255.255.0</code>
-<p><br><strong>Example 3</strong>: allow a localhost plus a couple of hosts
-<p><br><code>	hosts allow = localhost, lapland, arvidsjaur</code>
-<p><br><strong>Example 4</strong>: allow only hosts in NIS netgroup "foonet" or localhost, but 
+<p><br><strong>Example 1</strong>: allow all IPs in 150.203.*.* except one
+<p><br><code>	hosts allow = 150.203. EXCEPT 150.203.6.66</code>
+<p><br><strong>Example 2</strong>: allow hosts that match the given network/netmask
+<p><br><code>	hosts allow = 150.203.15.0/255.255.255.0</code>
+<p><br><strong>Example 3</strong>: allow a couple of hosts
+<p><br><code>	hosts allow = lapland, arvidsjaur</code>
+<p><br><strong>Example 4</strong>: allow only hosts in NIS netgroup "foonet", but 
 deny access from one particular host
-<p><br><code> 	hosts allow = @foonet, localhost</code>
+<p><br><code> 	hosts allow = @foonet</code>
 <p><br><code> 	hosts deny = pirate</code>
 <p><br>Note that access still requires suitable user-level passwords.
 <p><br>See <a href="testparm.1.html"><strong>testparm (1)</strong></a> for a way of testing your
@@ -1743,7 +1839,7 @@ host access to see if it does what you expect.
 <p><br><strong>Default:</strong>
 <code>	none (i.e., all hosts permitted access)</code>
 <p><br><strong>Example:</strong>
-<code>	allow hosts = 150.203.5. localhost myhost.mynet.edu.au</code>
+<code>	allow hosts = 150.203.5. myhost.mynet.edu.au</code>
 <p><br><a name="hostsdeny"></a>
 <li><strong><strong>hosts deny (S)</strong></strong>
 <p><br>The opposite of <a href="smb.conf.5.html#hostsallow"><strong>'hosts allow'</strong></a> - hosts listed
@@ -2787,7 +2883,7 @@ for details.
 <p><br><strong>Example:</strong>
 <code>	oplocks = False</code>
 <p><br><a name="oplockbreakwaittime"></a>
-<li><strong><strong>oplock break wait time (G)</strong>
+<li><strong><strong>oplock break wait time (G)</strong></strong>
 <p><br>This is a tuning parameter added due to bugs in both Windows 9x and WinNT.
 If Samba responds to a client too quickly when that client issues an SMB that
 can cause an oplock break request, then the client redirector can fail and
@@ -3065,7 +3161,7 @@ time they log in. Maybe a message of the day? Here is an example:
 
 </pre>
 
-<p><br>Of course, this could get annoying after a while :-</strong>
+<p><br>Of course, this could get annoying after a while :-)
 <p><br>See also <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>.
 <p><br><strong>Default:</strong>
 <code>	none (no command executed)</code>
@@ -3706,7 +3802,7 @@ level security without allowing the server to automatically map unknown
 users into the <a href="smb.conf.5.html#guestaccount"><strong>"guest account"</strong></a>. See the
 <a href="smb.conf.5.html#maptoguest"><strong>"map to guest"</strong></a> parameter for details on
 doing this.
-<p><br>e,(BUG:) There is currently a bug in the implementation of
+<p><br><em>BUG:</em> There is currently a bug in the implementation of
 <strong>"security=domain</strong> with respect to multi-byte character
 set usernames. The communication with a Domain Controller
 must be done in UNICODE and Samba currently does not widen
@@ -3722,6 +3818,31 @@ and the <a href="smb.conf.5.html#encryptpasswords"><strong>"encrypted passwords"
 <code> 	security = USER</code>
 <p><br><strong>Example:</strong>
 <code> 	security = DOMAIN</code>
+<p><br><a name="securitymask"></a>
+<li><strong><strong>security mask (S)</strong></strong>
+<p><br>This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+file using the native NT security dialog box.
+<p><br>This parameter is applied as a mask (AND'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change.
+<p><br>If not set explicitly this parameter is set to the same value as the
+<a href="smb.conf.5.html#createmask"><strong>create mask</strong></a> parameter. To allow a user to
+modify all the user/group/world permissions on a file, set this
+parameter to 0777.
+<p><br><em>Note</em> that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0777.
+<p><br>See also the <a href="smb.conf.5.html#forcedirectorysecuritymode"><strong>force directory security
+mode</strong></a>, <a href="smb.conf.5.html#directorysecuritymask"><strong>directory security
+mask</strong></a>, <a href="smb.conf.5.html#forcesecuritymode"><strong>force security
+mode</strong></a> parameters.
+<p><br><strong>Default:</strong>
+<code>	security mask = &lt;same as create mask&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	security mask = 0777</code>
 <p><br><a name="serverstring"></a>
 <li><strong><strong>server string (G)</strong></strong>
 <p><br>This controls what string will show up in the printer comment box in
@@ -3770,6 +3891,8 @@ increase this parameter. Signs that this parameter is set too low are
 users reporting strange problems trying to save files (locking errors)
 and error messages in the smbd log looking like <code>"ERROR
 smb_shm_alloc : alloc of XX bytes failed"</code>.
+<p><br>If your OS refuses the size that Samba asks for then Samba will try a
+smaller size, reducing by a factor of 0.8 until the OS accepts it.
 <p><br><strong>Default:</strong>
 <code>	shared mem size = 1048576</code>
 <p><br><strong>Example:</strong>
@@ -4626,6 +4749,7 @@ permitting), but only via spooling operations.
 
 </pre>
 
+<p><br></ul>
 <p><br><a name="WARNINGS"></a>
 <h2>WARNINGS</h2>
     
