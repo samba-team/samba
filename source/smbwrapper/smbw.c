@@ -1326,7 +1326,7 @@ int smbw_fork(void)
 	return 0;
 }
 
-#ifdef HAVE_ACL
+#ifndef NO_ACL_WRAPPER
 /***************************************************** 
 say no to acls
 *******************************************************/
@@ -1338,7 +1338,7 @@ int smbw_acl(const char *pathp, int cmd, int nentries, aclent_t *aclbufp)
 }
 #endif
 
-#ifdef HAVE_FACL
+#ifndef NO_FACL_WRAPPER
 /***************************************************** 
 say no to acls
 *******************************************************/

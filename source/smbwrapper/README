@@ -4,7 +4,7 @@ filesystem.
 
 *** This is code under development. Some things don't work yet ***
 
-Currently this code has only been tested on:
+Currently this code has been tested on:
 
 - Linux 2.0 with glibc2 (RH5.1)
 - Linux 2.1 with glibc2
@@ -12,8 +12,11 @@ Currently this code has only been tested on:
 - Solaris 2.6 with gcc
 - SunOS 4.1.3 with gcc
 - IRIX 6.4 with cc
+- OSF1 with gcc
 
-It probably won't run on other systems without some porting.
+
+It probably won't run on other systems without some porting. If you
+have a different system then see the file PORTING.
 
 To use it you need to do this:
 
