@@ -40,7 +40,7 @@ lib_LIBRARIES = $(LIBNAME).$(LIBEXT)
 bin_PROGRAMS = compile_et
 include_HEADERS = com_right.h com_err.h
 
-SOURCES = error.c com_err.c
+SOURCES = error.c com_err.c compile_et.c
 OBJECTS = error.o com_err.o
 
 all: $(lib_LIBRARIES) $(bin_PROGRAMS) $(include_HEADERS)
