@@ -1,6 +1,17 @@
+Wed Nov 18 20:25:37 1998  Assar Westerlund  <assar@sics.se>
+
+	* rxtelnet.in: new argument -n for not starting any terminal
+ 	emulator
+
+	* kx.c (doit_passive): parse $DISPLAY correctly
+
 Thu Oct  1 23:02:29 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* kx.h: case MAY_HAVE_X11_PIPES with Solaris
+
+Tue Sep 29 02:22:44 1998  Assar Westerlund  <assar@sics.se>
+
+	* kx.c: fix from Ake Sandgren <ake@cs.umu.se>
 
 Mon Sep 28 18:04:03 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
