@@ -34,6 +34,12 @@
    TALLOC_ALIGN alignment
 */
 
+/* TODO: We could allocate both the talloc_chunk structure, and the
+ * memory it contains all in one allocation, which might be a bit
+ * faster and perhaps use less memory overhead.
+ *
+ * That smells like a premature optimization, though.  -- mbp */
+
 #include "includes.h"
 
 /** Create a new talloc context. **/
