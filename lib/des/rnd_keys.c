@@ -57,6 +57,10 @@ RCSID("$Id$");
 #include <time.h>
 #endif
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -226,7 +230,11 @@ void
 des_rand_data(unsigned char *data, int size)
 {
     struct itimerval tv, otv;
+#ifdef HAVE_SIGACTION
     struct sigaction sa, osa;
+#else
+    RETSIGTYPE (*osa)(int);
+#endif
     int i, j;
     pid_t pid;
     char *rnd_devices[] = {"/dev/random",
@@ -253,11 +261,15 @@ des_rand_data(unsigned char *data, int size)
     gsize = size;
     igdata = 0;
 
+#ifdef HAVE_SIGACTION
     /* Setup signal handler */
     sa.sa_handler = sigALRM;
     sa.sa_flags = 0;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGALRM, &sa, &osa);
+#else
+    osa = signal(SIGALRM, sigALRM);
+#endif
   
     /* Start timer */
     tv.it_value.tv_sec = 0;
@@ -287,7 +299,11 @@ des_rand_data(unsigned char *data, int size)
     kill(pid, SIGKILL);
     waitpid(pid, NULL, 0);
 #endif
+#ifdef HAVE_SIGACTION
     sigaction(SIGALRM, &osa, 0);
+#else
+    signal(SIGALRM, osa < 0 ? SIG_DFL : osa);
+#endif
 }
 #else
 void
