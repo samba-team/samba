@@ -239,7 +239,7 @@ BOOL debug_parse_levels(char *params_str)
 
 	if (debug_parse_params(params, debuglevel_class, 
 			       debuglevel_class_isset)) {
-		debug_message(0, getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
+		debug_message(0, sys_getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
 
 		memcpy(DEBUGLEVEL_CLASS, debuglevel_class, 
 		       sizeof(debuglevel_class));
@@ -276,7 +276,7 @@ void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 
 	DEBUG(3,("INFO: Debug class %s level = %d   (pid %u from pid %u)\n",
 			classname_table[DBGC_ALL],
-			DEBUGLEVEL_CLASS[DBGC_ALL], (unsigned int)getpid(), (unsigned int)src));
+			DEBUGLEVEL_CLASS[DBGC_ALL], (unsigned int)sys_getpid(), (unsigned int)src));
 
 	for (i=1; i<DBGC_LAST; i++) {
 		if (DEBUGLEVEL_CLASS[i])

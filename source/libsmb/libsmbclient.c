@@ -518,7 +518,7 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 		/*
 		 * Hmmm, I want to get hostname as well, but I am too lazy for the moment
 		 */
-		pid = getpid();
+		pid = sys_getpid();
 		slprintf(my_netbios_name, 16, "smbc%s%d", user, pid);
 	}
 	DEBUG(0,("Using netbios name %s.\n", my_netbios_name));

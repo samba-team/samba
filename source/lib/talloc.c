@@ -364,7 +364,7 @@ char *talloc_describe_all(TALLOC_CTX *rt)
 	char *s;
 
 	s = talloc_asprintf(rt, "global talloc allocations in pid: %u\n",
-			    (unsigned) getpid());
+			    (unsigned) sys_getpid());
 	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
 				   "name", "chunks", "bytes");
 	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
