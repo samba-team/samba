@@ -201,7 +201,7 @@ static void free_printer_entry(void *ptr)
 			snum = -1;
 			srv_spoolss_replycloseprinter(snum, &Printer->notify.client_hnd);
 		} else if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) {
-			snum = print_queue_snum(Printer->dev.handlename);
+			snum = print_queue_snum(Printer->sharename);
 			if (snum != -1)
 				srv_spoolss_replycloseprinter(snum,
 						&Printer->notify.client_hnd);
@@ -277,17 +277,19 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd
 ****************************************************************************/
 
 WERROR find_printer_in_print_hnd_cache( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2 **info2, 
-                                        const char *printername )
+                                        const char *servername, const char *printername )
 {
 	Printer_entry *p;
 	
-	DEBUG(10,("find_printer_in_print_hnd_cache: printer [%s]\n", printername));
+	DEBUG(10,("find_printer_in_print_hnd_cache: printer [\\\\%s\\%s]\n", 
+		servername, printername));
 
 	for ( p=printers_list; p; p=p->next )
 	{
 		if ( p->printer_type==PRINTER_HANDLE_IS_PRINTER 
 			&& p->printer_info
-			&& StrCaseCmp(p->dev.handlename, printername) == 0 )
+			&& strequal( p->sharename, printername )
+			&& strequal( p->servername, servername ) )
 		{
 			DEBUG(10,("Found printer\n"));
 			*info2 = dup_printer_2( ctx, p->printer_info->info_2 );
@@ -313,7 +315,7 @@ void invalidate_printer_hnd_cache( char *printername )
 	{
 		if ( p->printer_type==PRINTER_HANDLE_IS_PRINTER 
 			&& p->printer_info
-			&& StrCaseCmp(p->dev.handlename, printername)==0)
+			&& StrCaseCmp(p->sharename, printername)==0)
 		{
 			DEBUG(10,("invalidating printer_info cache for handl:\n"));
 			free_a_printer( &p->printer_info, 2 );
@@ -378,8 +380,8 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 	}
 #endif
 
-	if (del_a_printer(Printer->dev.handlename) != 0) {
-		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
+	if (del_a_printer( Printer->sharename ) != 0) {
+		DEBUG(3,("Error deleting printer %s\n", Printer->sharename));
 		return WERR_BADFID;
 	}
 
@@ -389,9 +391,7 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		pstring command;
 		int ret;
 
-		/* Printer->dev.handlename equals portname equals sharename */
-		slprintf(command, sizeof(command)-1, "%s \"%s\"", cmd,
-					Printer->dev.handlename);
+		pstr_sprintf(command, "%s \"%s\"", cmd, Printer->sharename);
 
 		DEBUG(10,("Running [%s]\n", command));
 		ret = smbrun(command, NULL);
@@ -406,7 +406,7 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		/* go ahead and re-read the services immediately */
 		reload_services( False );
 
-		if ( lp_servicenumber( Printer->dev.handlename )  < 0 )
+		if ( lp_servicenumber( Printer->sharename )  < 0 )
 			return WERR_ACCESS_DENIED;
 	}
 
@@ -427,14 +427,14 @@ static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number)
 	}
 	
 	switch (Printer->printer_type) {
-	case PRINTER_HANDLE_IS_PRINTER:		
-		DEBUG(4,("short name:%s\n", Printer->dev.handlename));			
-		*number = print_queue_snum(Printer->dev.handlename);
-		return (*number != -1);
-	case PRINTER_HANDLE_IS_PRINTSERVER:
-		return False;
-	default:
-		return False;
+		case PRINTER_HANDLE_IS_PRINTER:		
+			DEBUG(4,("short name:%s\n", Printer->sharename));			
+			*number = print_queue_snum(Printer->sharename);
+			return (*number != -1);
+		case PRINTER_HANDLE_IS_PRINTSERVER:
+			return False;
+		default:
+			return False;
 	}
 }
 
@@ -475,6 +475,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	int snum;
 	int n_services=lp_numservices();
 	char *aprinter, *printername;
+	const char *servername;
 	fstring sname;
 	BOOL found=False;
 	NT_PRINTER_INFO_LEVEL *printer;
@@ -482,28 +483,37 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	
 	DEBUG(4,("Setting printer name=%s (len=%lu)\n", handlename, (unsigned long)strlen(handlename)));
 
-	if (Printer->printer_type==PRINTER_HANDLE_IS_PRINTSERVER) {
-		ZERO_STRUCT(Printer->dev.printerservername);
-		strncpy(Printer->dev.printerservername, handlename, strlen(handlename));
-		return True;
-	}
-
-	if (Printer->printer_type!=PRINTER_HANDLE_IS_PRINTER)
-		return False;
-	
-	if (*handlename=='\\') {
-		aprinter=strchr_m(handlename+2, '\\');
-		aprinter++;
+	aprinter = handlename;
+	if ( *handlename == '\\' ) {
+		servername = handlename + 2;
+		if ( (aprinter = strchr_m( handlename+2, '\\' )) != NULL ) {
+			*aprinter = '\0';
+			aprinter++;
+		}
 	}
 	else {
-		aprinter=handlename;
+		servername = "";
 	}
+	
+	/* save the servername to fill in replies on this handle */
+	
+	if ( !is_myname_or_ipaddr( servername ) )
+		return False;
 
-	DEBUGADD(5, ("searching for [%s] (len=%lu)\n", aprinter, (unsigned long)strlen(aprinter)));
+	fstrcpy( Printer->servername, servername );
+	
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER )
+		return True;
 
-	/* have to search on sharename and PRINTER_INFO2->printername */
+	if ( Printer->printer_type != PRINTER_HANDLE_IS_PRINTER )
+		return False;
 
-	for (snum=0; snum<n_services; snum++) {
+	DEBUGADD(5, ("searching for [%s]\n", aprinter ));
+
+	/* Search all sharenames first as this is easier than pulling 
+	   the printer_info_2 off of disk */
+
+	for (snum=0; !found && snum<n_services; snum++) {
 
 		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 			continue;
@@ -516,10 +526,17 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		
 		if ( strequal(sname, aprinter) ) {
 			found = True;
-			break;
 		}
+	}
+
+	/* do another loop to look for printernames */
+	
+	for (snum=0; !found && snum<n_services; snum++) {
+
+		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
+			continue;
 		
-		/* ------ printername ------ */
+		fstrcpy(sname, lp_servicename(snum));
 
 		printer = NULL;
 		result = get_a_printer( NULL, &printer, 2, sname );
@@ -546,21 +563,16 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		DEBUGADD(10, ("printername: %s\n", printername));
 		
 		free_a_printer( &printer, 2);
-		
-		if ( found )
-			break;
 	}
-
 		
-	if (!found) {
+	if ( !found ) {
 		DEBUGADD(4,("Printer not found\n"));
 		return False;
 	}
 	
 	DEBUGADD(4,("set_printer_hnd_name: Printer found: %s -> %s\n", aprinter, sname));
 
-	ZERO_STRUCT(Printer->dev.handlename);
-	fstrcpy(Printer->dev.handlename, sname);
+	fstrcpy(Printer->sharename, sname);
 
 	return True;
 }
@@ -696,10 +708,8 @@ static BOOL is_monitoring_event(Printer_entry *p, uint16 notify_type,
 		}
 	}
 	
-	DEBUG(10, ("%s is not monitoring 0x%02x/0x%02x\n",
-		   (p->printer_type == PRINTER_HANDLE_IS_PRINTER) ?
-		   p->dev.handlename : p->dev.printerservername,
-		   notify_type, notify_field));
+	DEBUG(10, ("Open handle for \\\\%s\\%s is not monitoring 0x%02x/0x%02x\n",
+		   p->servername, p->sharename, notify_type, notify_field));
 	
 	return False;
 }
@@ -995,13 +1005,13 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		if ( !p->notify.client_connected )
 			continue;
 
-		DEBUG(10,("Client connected! [%s]\n", p->dev.handlename));
+		DEBUG(10,("Client connected! [\\\\%s\\%s]\n", p->servername, p->sharename));
 
 		/* For this printer?  Print servers always receive 
                    notifications. */
 
 		if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER )  &&
-		    ( !strequal(msg_group->printername, p->dev.handlename) ) )
+		    ( !strequal(msg_group->printername, p->sharename) ) )
 			continue;
 
 		DEBUG(10,("Our printer\n"));
@@ -1027,7 +1037,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 			
 			
 			DEBUG(10,("process_notify2_message: Sending message type [0x%x] field [0x%2x] for printer [%s]\n",
-				msg->type, msg->field, p->dev.handlename));
+				msg->type, msg->field, p->sharename));
 
 			/* 
 			 * if the is a printer notification handle and not a job notification 
@@ -1323,7 +1333,7 @@ void update_monitored_printq_cache( void )
 		if ( (printer->printer_type == PRINTER_HANDLE_IS_PRINTER) 
 			&& printer->notify.client_connected ) 
 		{
-			snum = print_queue_snum(printer->dev.handlename);
+			snum = print_queue_snum(printer->sharename);
 			print_queue_status( snum, NULL, NULL );
 		}
 		
@@ -1619,9 +1629,9 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		return WERR_INVALID_PRINTER_NAME;
 	
 	Printer=find_printer_index_by_hnd(p, handle);
-	if (!Printer) {
-		DEBUG(0,(" _spoolss_open_printer_ex: logic error. \
-Can't find printer handle we created for printer %s\n", name ));
+	if ( !Printer ) {
+		DEBUG(0,(" _spoolss_open_printer_ex: logic error.  Can't find printer "
+			"handle we created for printer %s\n", name ));
 		close_printer_handle(p,handle);
 		return WERR_INVALID_PRINTER_NAME;
 	}
@@ -1765,10 +1775,11 @@ Can't find printer handle we created for printer %s\n", name ));
 	 if ( (Printer->printer_type != PRINTER_HANDLE_IS_PRINTSERVER)
 	 	&& q_u->printer_default.devmode_cont.devmode_ptr )
 	 { 
-	 	convert_devicemode( Printer->dev.handlename, q_u->printer_default.devmode_cont.devmode,
+	 	convert_devicemode( Printer->sharename, q_u->printer_default.devmode_cont.devmode,
 			&Printer->nt_devmode );
 	 }
 
+#if 0	/* JERRY -- I'm doubtful this is really effective */
 	/* HACK ALERT!!! Sleep for 1/3 of a second to try trigger a LAN/WAN 
 	   optimization in Windows 2000 clients  --jerry */
 
@@ -1778,6 +1789,7 @@ Can't find printer handle we created for printer %s\n", name ));
 		DEBUG(10,("_spoolss_open_printer_ex: Enabling LAN/WAN hack for Win2k clients.\n"));
 		sys_usleep( 500000 );
 	}
+#endif
 
 	return WERR_OK;
 }
@@ -2737,6 +2749,8 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	return WERR_OK;
 }
 
+#if 0	/* JERRY -- disabled; not used for now */
+
 /*******************************************************************
  * fill a notify_info_data with the servername
  ********************************************************************/
@@ -2750,7 +2764,9 @@ void spoolss_notify_server_name(int snum,
 	pstring temp_name, temp;
 	uint32 len;
 
-	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", get_called_name());
+	fstrcpy( temp_name, "\\\\%L" );
+	standard_sub_basic( NULL, temp_name, sizeof(temp_name)-1 );
+
 
 	len = rpcstr_push(temp, temp_name, sizeof(temp)-2, STR_TERMINATE);
 
@@ -2764,6 +2780,9 @@ void spoolss_notify_server_name(int snum,
 	
 	memcpy(data->notify_data.data.string, temp, len);
 }
+
+#endif
+
 
 /*******************************************************************
  * fill a notify_info_data with the printername (not including the servername).
@@ -3437,7 +3456,7 @@ struct s_notify_info_data_table
 
 static const struct s_notify_info_data_table notify_info_data_table[] =
 {
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SERVER_NAME,         "PRINTER_NOTIFY_SERVER_NAME",         NOTIFY_STRING,   spoolss_notify_server_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SERVER_NAME,         "PRINTER_NOTIFY_SERVER_NAME",         NOTIFY_STRING,   NULL},
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINTER_NAME,        "PRINTER_NOTIFY_PRINTER_NAME",        NOTIFY_STRING,   spoolss_notify_printer_name },
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SHARE_NAME,          "PRINTER_NOTIFY_SHARE_NAME",          NOTIFY_STRING,   spoolss_notify_share_name },
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PORT_NAME,           "PRINTER_NOTIFY_PORT_NAME",           NOTIFY_STRING,   spoolss_notify_port_name },
@@ -3464,7 +3483,7 @@ static const struct s_notify_info_data_table notify_info_data_table[] =
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_TOTAL_BYTES,         "PRINTER_NOTIFY_TOTAL_BYTES",         NOTIFY_POINTER,   NULL },
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_BYTES_PRINTED,       "PRINTER_NOTIFY_BYTES_PRINTED",       NOTIFY_POINTER,   NULL },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRINTER_NAME,            "JOB_NOTIFY_PRINTER_NAME",            NOTIFY_STRING,   spoolss_notify_printer_name },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_MACHINE_NAME,            "JOB_NOTIFY_MACHINE_NAME",            NOTIFY_STRING,   spoolss_notify_server_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_MACHINE_NAME,            "JOB_NOTIFY_MACHINE_NAME",            NOTIFY_STRING,   NULL},
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_PORT_NAME,               "JOB_NOTIFY_PORT_NAME",               NOTIFY_STRING,   spoolss_notify_port_name },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_USER_NAME,               "JOB_NOTIFY_USER_NAME",               NOTIFY_STRING,   spoolss_notify_username },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_NOTIFY_NAME,             "JOB_NOTIFY_NOTIFY_NAME",             NOTIFY_STRING,   spoolss_notify_username },
@@ -3979,7 +3998,7 @@ static BOOL construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *p
 
 	init_unistr(&printer->printername, chaine);
 	
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s", get_called_name());
+	slprintf(chaine,sizeof(chaine)-1,"\\\\%s", get_server_name(print_hnd));
 	init_unistr(&printer->servername, chaine);
 	
 	printer->cjobs = count;
@@ -4444,6 +4463,7 @@ static WERROR enum_all_printers_info_1_name(fstring name, NEW_BUFFER *buffer, ui
 		return WERR_INVALID_NAME;
 }
 
+#if 0 	/* JERRY -- disabled for now.  Don't think this is used, tested, or correct */
 /********************************************************************
  enum_all_printers_info_1_remote.
 *********************************************************************/
@@ -4458,9 +4478,10 @@ static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, 
 
 	/* JFM: currently it's more a place holder than anything else.
 	 * In the spooler world there is a notion of server registration.
-	 * the print servers are registring (sp ?) on the PDC (in the same domain)
+	 * the print servers are registered on the PDC (in the same domain)
 	 *
-	 * We should have a TDB here. The registration is done thru an undocumented RPC call.
+	 * We should have a TDB here. The registration is done thru an 
+	 * undocumented RPC call.
 	 */
 	
 	if((printer=(PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1))) == NULL)
@@ -4468,8 +4489,8 @@ static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, 
 
 	*returned=1;
 	
-	slprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", get_called_name());		
-	slprintf(desc, sizeof(desc)-1,"%s", get_called_name());
+	slprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", name);		
+	slprintf(desc, sizeof(desc)-1,"%s", name);
 	slprintf(comment, sizeof(comment)-1, "Logged on Domain");
 
 	init_unistr(&printer->description, desc);
@@ -4498,6 +4519,8 @@ static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, 
 	else
 		return WERR_OK;
 }
+
+#endif
 
 /********************************************************************
  enum_all_printers_info_1_network.
@@ -4605,8 +4628,10 @@ static WERROR enumprinters_level1( uint32 flags, fstring name,
 	if (flags & PRINTER_ENUM_NAME)
 		return enum_all_printers_info_1_name(name, buffer, offered, needed, returned);
 
+#if 0	/* JERRY - disabled for now */
 	if (flags & PRINTER_ENUM_REMOTE)
 		return enum_all_printers_info_1_remote(name, buffer, offered, needed, returned);
+#endif
 
 	if (flags & PRINTER_ENUM_NETWORK)
 		return enum_all_printers_info_1_network(name, buffer, offered, needed, returned);
@@ -5543,6 +5568,7 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	uint32 *needed = &r_u->needed;
 	uint32 *servermajorversion = &r_u->servermajorversion;
 	uint32 *serverminorversion = &r_u->serverminorversion;
+	Printer_entry *printer;
 
 	fstring servername;
 	fstring architecture;
@@ -5554,11 +5580,16 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 
 	DEBUG(4,("_spoolss_getprinterdriver2\n"));
 
+	if ( !(printer = find_printer_index_by_hnd( p, handle )) ) {
+		DEBUG(0,("_spoolss_getprinterdriver2: invalid printer handle!\n"));
+		return WERR_INVALID_PRINTER_NAME;
+	}
+
 	*needed = 0;
 	*servermajorversion = 0;
 	*serverminorversion = 0;
 
-	fstrcpy(servername, get_called_name());
+	fstrcpy(servername, get_server_name( printer ));
 	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
 
 	if (!get_printer_snum(p, handle, &snum))
@@ -5840,11 +5871,9 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 	}
 
 	/* NT seems to like setting the security descriptor even though
-	   nothing may have actually changed.  This causes annoying
-	   dialog boxes when the user doesn't have permission to change
-	   the security descriptor. */
+	   nothing may have actually changed. */
 
-	nt_printing_getsec(p->mem_ctx, Printer->dev.handlename, &old_secdesc_ctr);
+	nt_printing_getsec(p->mem_ctx, Printer->sharename, &old_secdesc_ctr);
 
 	if (DEBUGLEVEL >= 10) {
 		SEC_ACL *the_acl;
@@ -5903,7 +5932,7 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	result = nt_printing_setsec(Printer->dev.handlename, new_secdesc_ctr);
+	result = nt_printing_setsec(Printer->sharename, new_secdesc_ctr);
 
  done:
 
@@ -5911,9 +5940,12 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 }
 
 /********************************************************************
- Do Samba sanity checks on a printer info struct.
- this has changed purpose: it now "canonicalises" printer
- info from a client rather than just checking it is correct
+ Canonicalize printer info from a client
+
+ ATTN: It does not matter what we set the servername to hear 
+ since we do the necessary work in get_a_printer() to set it to 
+ the correct value based on what the client sent in the 
+ _spoolss_open_printer_ex().
  ********************************************************************/
 
 static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
@@ -5921,11 +5953,13 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 	fstring printername;
 	const char *p;
 	
-	DEBUG(5,("check_printer_ok: servername=%s printername=%s sharename=%s portname=%s drivername=%s comment=%s location=%s\n",
-		 info->servername, info->printername, info->sharename, info->portname, info->drivername, info->comment, info->location));
+	DEBUG(5,("check_printer_ok: servername=%s printername=%s sharename=%s "
+		"portname=%s drivername=%s comment=%s location=%s\n",
+		info->servername, info->printername, info->sharename, 
+		info->portname, info->drivername, info->comment, info->location));
 
 	/* we force some elements to "correct" values */
-	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", get_called_name());
+	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", global_myname());
 	fstrcpy(info->sharename, lp_servicename(snum));
 	
 	/* make sure printername is in \\server\printername format */
@@ -5938,7 +5972,7 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 	}
 	
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
-		 get_called_name(), p );
+		 global_myname(), p );
 		 
 	info->attributes |= PRINTER_ATTRIBUTE_SAMBA;
 	info->attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
@@ -6322,18 +6356,16 @@ WERROR _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u
 ****************************************************************************/
 
 static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
-                            int position, int snum)
+                            int position, int snum, 
+                            NT_PRINTER_INFO_LEVEL *ntprinter)
 {
-	pstring temp_name;
-	
 	struct tm *t;
 	
 	t=gmtime(&queue->time);
-	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", get_called_name());
 
 	job_info->jobid=queue->job;	
 	init_unistr(&job_info->printername, lp_servicename(snum));
-	init_unistr(&job_info->machinename, temp_name);
+	init_unistr(&job_info->machinename, ntprinter->info_2->servername);
 	init_unistr(&job_info->username, queue->fs_user);
 	init_unistr(&job_info->document, queue->fs_file);
 	init_unistr(&job_info->datatype, "RAW");
@@ -6355,17 +6387,15 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 			    NT_PRINTER_INFO_LEVEL *ntprinter,
 			    DEVICEMODE *devmode)
 {
-	pstring temp_name;
 	struct tm *t;
 
 	t=gmtime(&queue->time);
-	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", get_called_name());
 
 	job_info->jobid=queue->job;
 	
 	init_unistr(&job_info->printername, ntprinter->info_2->printername);
 	
-	init_unistr(&job_info->machinename, temp_name);
+	init_unistr(&job_info->machinename, ntprinter->info_2->servername);
 	init_unistr(&job_info->username, queue->fs_user);
 	init_unistr(&job_info->document, queue->fs_file);
 	init_unistr(&job_info->notifyname, queue->fs_user);
@@ -6398,6 +6428,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 ****************************************************************************/
 
 static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
+                              NT_PRINTER_INFO_LEVEL *ntprinter,
 			      NEW_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned)
 {
@@ -6412,7 +6443,7 @@ static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
 	}
 	
 	for (i=0; i<*returned; i++)
-		fill_job_info_1(&info[i], &queue[i], i, snum);
+		fill_job_info_1( &info[i], &queue[i], i, snum, ntprinter );
 
 	SAFE_FREE(queue);
 
@@ -6445,10 +6476,10 @@ static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
 ****************************************************************************/
 
 static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
+                              NT_PRINTER_INFO_LEVEL *ntprinter,
 			      NEW_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned)
 {
-	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	JOB_INFO_2 *info = NULL;
 	int i;
 	WERROR result;
@@ -6458,12 +6489,6 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 	if (info==NULL) {
 		*returned=0;
 		result = WERR_NOMEM;
-		goto done;
-	}
-
-	result = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
-	if (!W_ERROR_IS_OK(result)) {
-		*returned = 0;
 		goto done;
 	}
 		
@@ -6523,7 +6548,7 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
 	WERROR wret;
-
+	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	int snum;
 	print_status_struct prt_status;
 	print_queue_struct *queue=NULL;
@@ -6537,9 +6562,15 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	*needed=0;
 	*returned=0;
 
+	/* lookup the printer snum and tdb entry */
+	
 	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
 
+	wret = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
+	if ( !W_ERROR_IS_OK(wret) )
+		return wret;
+	
 	*returned = print_queue_status(snum, &queue, &prt_status);
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
 
@@ -6550,16 +6581,19 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 
 	switch (level) {
 	case 1:
-		wret = enumjobs_level1(queue, snum, buffer, offered, needed, returned);
+		wret = enumjobs_level1(queue, snum, ntprinter, buffer, offered, needed, returned);
 		return wret;
 	case 2:
-		wret = enumjobs_level2(queue, snum, buffer, offered, needed, returned);
+		wret = enumjobs_level2(queue, snum, ntprinter, buffer, offered, needed, returned);
 		return wret;
 	default:
 		SAFE_FREE(queue);
 		*returned=0;
-		return WERR_UNKNOWN_LEVEL;
+		wret = WERR_UNKNOWN_LEVEL;
 	}
+	
+	free_a_printer( &ntprinter, 2 );
+	return wret;
 }
 
 /****************************************************************************
@@ -6866,7 +6900,6 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 
 WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, SPOOL_R_ENUMPRINTERDRIVERS *r_u)
 {
-	UNISTR2 *environment = &q_u->environment;
 	uint32 level = q_u->level;
 	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
@@ -6882,11 +6915,14 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumprinterdrivers\n"));
-	fstrcpy(servername, get_called_name());
 	*needed=0;
 	*returned=0;
 
-	unistr2_to_ascii(architecture, environment, sizeof(architecture)-1);
+	unistr2_to_ascii(architecture, &q_u->environment, sizeof(architecture)-1);
+	unistr2_to_ascii(servername, &q_u->name, sizeof(servername)-1);
+
+	if ( !is_myname_or_ipaddr( servername ) )
+		return WERR_UNKNOWN_PRINTER_DRIVER;
 
 	switch (level) {
 	case 1:
@@ -7387,7 +7423,10 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	}
 	}
 
-	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", get_called_name(),
+	/* use our primary netbios name since get_a_printer() will convert 
+	   it to what the client expects on a case by case basis */
+
+	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname(),
              printer->info_2->sharename);
 
 	
@@ -7659,10 +7698,15 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 {
 	pstring path;
 	pstring long_archi;
+	fstring servername;
 	const char *short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
 
+	unistr2_to_ascii(servername, name, sizeof(servername)-1);
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
+	
+	if ( !is_myname_or_ipaddr( servername ) )
+		return WERR_INVALID_PARAM;
 
 	if (!(short_archi = get_short_archi(long_archi)))
 		return WERR_INVALID_ENVIRONMENT;
@@ -7670,7 +7714,7 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)
 		return WERR_NOMEM;
 
-	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", get_called_name(), short_archi);
+	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", servername, short_archi);
 
 	DEBUG(4,("printer driver directory: [%s]\n", path));
 
@@ -8496,7 +8540,10 @@ WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum,
+                             NT_PRINTER_INFO_LEVEL *ntprinter,
+                             uint32 jobid, NEW_BUFFER *buffer, uint32 offered, 
+			     uint32 *needed)
 {
 	int i=0;
 	BOOL found=False;
@@ -8519,7 +8566,7 @@ static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum, ui
 		return WERR_INVALID_PARAM;
 	}
 	
-	fill_job_info_1(info_1, &((*queue)[i-1]), i, snum);
+	fill_job_info_1( info_1, &((*queue)[i-1]), i, snum, ntprinter );
 	
 	*needed += spoolss_size_job_info_1(info_1);
 
@@ -8541,12 +8588,14 @@ static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum, ui
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum, 
+                             NT_PRINTER_INFO_LEVEL *ntprinter,
+                             uint32 jobid, NEW_BUFFER *buffer, uint32 offered, 
+			     uint32 *needed)
 {
 	int 		i = 0;
 	BOOL 		found = False;
 	JOB_INFO_2 	*info_2;
-	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	WERROR 		ret;
 	DEVICEMODE 	*devmode = NULL;
 	NT_DEVICEMODE	*nt_devmode = NULL;
@@ -8573,10 +8622,6 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum, ui
 		ret = WERR_INVALID_PARAM;
 		goto done;
 	}
-	
-	ret = get_a_printer(NULL, &ntprinter, 2, lp_const_servicename(snum));
-	if (!W_ERROR_IS_OK(ret))
-		goto done;
 	
 	/* 
 	 * if the print job does not have a DEVMODE associated with it, 
@@ -8633,7 +8678,7 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	WERROR		wstatus = WERR_OK;
-
+	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	int snum;
 	int count;
 	print_queue_struct 	*queue = NULL;
@@ -8650,6 +8695,10 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
 	
+	wstatus = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
+	if ( !W_ERROR_IS_OK(wstatus) )
+		return wstatus;
+		
 	count = print_queue_status(snum, &queue, &prt_status);
 	
 	DEBUGADD(4,("count:[%d], prt_status:[%d], [%s]\n",
@@ -8657,11 +8706,11 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 		
 	switch ( level ) {
 	case 1:
-			wstatus = getjob_level_1(&queue, count, snum, jobid, 
+			wstatus = getjob_level_1(&queue, count, snum, ntprinter, jobid, 
 				buffer, offered, needed);
 			break;
 	case 2:
-			wstatus = getjob_level_2(&queue, count, snum, jobid, 
+			wstatus = getjob_level_2(&queue, count, snum, ntprinter, jobid, 
 				buffer, offered, needed);
 			break;
 	default:
@@ -8670,6 +8719,8 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	}
 	
 	SAFE_FREE(queue);
+	free_a_printer( &ntprinter, 2 );
+	
 	return wstatus;
 }
 

@@ -4267,28 +4267,6 @@ void lp_set_logfile(const char *name)
 }
 
 /*******************************************************************
- Return the NetBIOS called name, or my IP - but never global_myname().
-********************************************************************/
-
-const char *get_called_name(void)
-{
-	extern fstring local_machine;
-	static fstring called_name;
-
-	if ( (!*local_machine) ||
-	     (client_socket_port() == 445) ) {
-		/* Everybody coming in on 445 should be able to live with the
-		 * IP address */
-		fstrcpy(called_name, client_socket_addr());
-		DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
-			 called_name));
-		return called_name;
-	}
-
-	return local_machine;
-}
-
-/*******************************************************************
  Return the max print jobs per queue.
 ********************************************************************/
 
