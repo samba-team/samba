@@ -1320,7 +1320,7 @@ int sock_exec(const char *prog);
 /* The following definitions come from lib/util_str.c  */
 
 void set_first_token(char *ptr);
-BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize);
+BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize);
 char **toktocliplist(int *ctok, char *sep);
 int StrCaseCmp(const char *s, const char *t);
 int StrnCaseCmp(const char *s, const char *t, size_t n);
