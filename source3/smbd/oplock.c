@@ -98,6 +98,20 @@ BOOL receive_local_message( char *buffer, int buffer_len, int timeout)
 		selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
 
 		if (selrtn == -1 && errno == EINTR) {
+
+			/*
+			 * Linux 2.0.x seems to have a bug in that
+			 * it can return -1, EINTR with a timeout of zero.
+			 * Make sure we bail out here with a read timeout
+			 * if we got EINTR on a timeout of 1 or less.
+			 */
+
+			if (timeout <= 1) {
+				smb_read_error = READ_TIMEOUT;
+				return False;
+			}
+
+
 			/* could be a kernel oplock interrupt */
 			if (koplocks && koplocks->msg_waiting(&fds)) {
 				return koplocks->receive_message(&fds, buffer, buffer_len);
