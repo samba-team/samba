@@ -4395,22 +4395,29 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 	DEBUG(6,("init_unistr_array\n"));
 	*uni_array=NULL;
 
-	while (1) {
+	while (True) 
+	{
 		if (char_array == NULL)
 			v = "";
 		else {
 			v = char_array[i];
 			if (!v) v = ""; /* hack to handle null lists */
 		}
-		if (strlen(v) == 0) break;
+		
+		if ( !strlen(v) ) 
+			break;
+			
 		slprintf(line, sizeof(line)-1, "\\\\%s%s", servername, v);
+		
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
+		
 		if((tuary=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
 			DEBUG(2,("init_unistr_array: Realloc error\n" ));
 			return;
 		} else
 			*uni_array = tuary;
-		j += (rpcstr_push((*uni_array+j), line, sizeof(uint16)*strlen(line)+2, 0)/ sizeof(uint16));
+			
+		j += (rpcstr_push((*uni_array+j), line, sizeof(uint16)*strlen(line)+2, STR_TERMINATE) / sizeof(uint16));
 		i++;
 	}
 	
@@ -4572,8 +4579,8 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->monitorname, driver.info_3->monitorname );
 	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
 
-	info->dependentfiles=NULL;
-	init_unistr_array(&info->dependentfiles, driver.info_3->dependentfiles, servername);
+	info->dependentfiles = NULL;
+	init_unistr_array( &info->dependentfiles, driver.info_3->dependentfiles, servername );
 
 	info->previousdrivernames=NULL;
 	init_unistr_array(&info->previousdrivernames, &nullstr, servername);
@@ -4596,21 +4603,28 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
  * fill a printer_info_6 struct
  ********************************************************************/
 
-static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fstring servername, fstring architecture, uint32 version)
+static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, 
+              fstring servername, fstring architecture, uint32 version)
 {	
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	WERROR status;
+	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
+	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
+	WERROR 				status;
+	
 	ZERO_STRUCT(driver);
 
 	status=get_a_printer(&printer, 2, lp_servicename(snum) );
+	
 	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", dos_errstr(status)));
+	
 	if (!W_ERROR_IS_OK(status))
 		return WERR_INVALID_PRINTER_NAME;
 
-	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
+	status = get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);
+		
 	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", dos_errstr(status)));
-	if (!W_ERROR_IS_OK(status)) {
+	
+	if (!W_ERROR_IS_OK(status)) 
+	{
 		/*
 		 * Is this a W2k client ?
 		 */
@@ -4821,9 +4835,9 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 
 	DEBUG(4,("_spoolss_getprinterdriver2\n"));
 
-	*needed=0;
-	*servermajorversion=0;
-	*serverminorversion=0;
+	*needed = 0;
+	*servermajorversion = 0;
+	*serverminorversion = 0;
 
 	pstrcpy(servername, get_called_name());
 	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
@@ -5340,7 +5354,8 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	 * requires Win32 client code (see other notes elsewhere in the code).
 	 */
 	if (printer->info_2->devmode &&
-		printer->info_2->devmode->displayfrequency == MAGIC_DISPLAY_FREQUENCY) {
+		printer->info_2->devmode->displayfrequency == MAGIC_DISPLAY_FREQUENCY) 
+	{
  
 		DEBUG(10,("update_printer: Save printer driver init data\n"));
 		printer->info_2->devmode->displayfrequency = 0;
@@ -5356,20 +5371,25 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		
 		srv_spoolss_reset_printerdata( printer->info_2->drivername );
 		
-	} else {
+	} 
+	else 
+	{
 		/*
 		 * When a *new* driver is bound to a printer, the drivername is used to
 		 * lookup previously saved driver initialization info, which is then
 		 * bound to the printer, simulating what happens in the Windows arch.
 		 */
-		if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername)){
-			if (!set_driver_init(printer, 2)) {
+		if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername))
+		{
+			if (!set_driver_init(printer, 2)) 
+			{
 				DEBUG(5,("update_printer: Error restoring driver initialization data for driver [%s]!\n",
 					printer->info_2->drivername));
 			}
 			
 			DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
 				printer->info_2->drivername));
+				
 			notify_printer_driver(snum, printer->info_2->drivername);
 		}
 	}
