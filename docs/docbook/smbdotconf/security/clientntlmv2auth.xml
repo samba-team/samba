@@ -13,6 +13,12 @@
     (including NT4 &lt; SP4, Win9x and Samba 2.2) are not compatible with
     NTLMv2.  </para>
 
+    <para>Similarly, if enabled, NTLMv1, <command
+    moreinfo="none">client lanman auth</command> and <command
+    moreinfo="none">client plaintext auth</command>
+    authentication will be disabled.  This also disables share-level 
+    authentication. </para>
+
     <para>If disabled, an NTLM response (and possibly a LANMAN response)
     will be sent by the client, depending on the value of <command
     moreinfo="none">client lanman auth</command>.  </para>

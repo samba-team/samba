@@ -1427,7 +1427,8 @@ static void init_globals(void)
 	Globals.bClientPlaintextAuth = True;	/* Do use a plaintext password if is requested by the server */
 	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
 	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is available (otherwise NTLMv2) */
-	Globals.bClientNTLMv2Auth = True; /* Client should use NTLMv2 if available. */
+	Globals.bClientNTLMv2Auth = False; /* Client should not use NTLMv2, as we can't tell that the server supports it. */
+	/* Note, that we will use NTLM2 session security (which is different), if it is available */
 
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */

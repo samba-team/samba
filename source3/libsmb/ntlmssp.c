@@ -23,12 +23,6 @@
 
 #include "includes.h"
 
-#if 0
-/* we currently do not know how to get the right session key for this, so
-   we cannot enable it by default... :-( */
-#define USE_NTLM2 1
-#endif
-
 /**
  * Print out the NTLMSSP flags for debugging 
  * @param neg_flags The flags from the packet
@@ -422,9 +416,7 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_client_state *ntlmssp_stat
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
-#ifdef USE_NTLM2
 	ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
-#endif	
 	
 	/* generate the ntlmssp negotiate packet */
 	msrpc_gen(next_request, "CddAA",
@@ -459,16 +451,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 	DATA_BLOB lm_response = data_blob(NULL, 0);
 	DATA_BLOB nt_response = data_blob(NULL, 0);
 	DATA_BLOB session_key = data_blob(NULL, 0);
-	uint8 datagram_sess_key[16];
-	size_t datagram_sess_key_len;
-
-#if 0 /* until we know what flag to tigger it on */
-	generate_random_buffer(datagram_sess_key, sizeof(datagram_sess_key), False);	
-	datagram_sess_key_len = sizeof(datagram_sess_key);
-#else
-	ZERO_STRUCT(datagram_sess_key);
-	datagram_sess_key_len = 0;
-#endif
+	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
 
 	if (!msrpc_parse(&reply, "CdBd",
 			 "NTLMSSP",
@@ -502,7 +485,9 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		} else {
 			chal_parse_string = "CdAdbdd";
 		}
+
 		auth_gen_string = "CdBBAAABd";
+
 		ntlmssp_state->unicode = False;
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_UNICODE;
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
@@ -524,6 +509,10 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 
 	if (!(chal_flags & NTLMSSP_NEGOTIATE_128)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
+	}
+
+	if (!(chal_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_KEY_EXCH;
 	}
 
 	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
@@ -572,31 +561,35 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 			data_blob_free(&struct_blob);
 			return NT_STATUS_NO_MEMORY;
 		}
-#ifdef USE_NTLM2 
 	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		struct MD5Context md5_session_nonce_ctx;
 		uchar nt_hash[16];
 		uchar session_nonce[16];
+		uchar session_nonce_hash[16];
+		uchar nt_session_key[16];
 		E_md4hash(ntlmssp_state->password, nt_hash);
 		
+		lm_response = data_blob(NULL, 24);
 		generate_random_buffer(lm_response.data, 8, False);
 		memset(lm_response.data+8, 0, 16);
-		
+
+		memcpy(session_nonce, challenge_blob.data, 8);
+		memcpy(&session_nonce[8], lm_response.data, 8);
+	
 		MD5Init(&md5_session_nonce_ctx);
 		MD5Update(&md5_session_nonce_ctx, challenge_blob.data, 8);
 		MD5Update(&md5_session_nonce_ctx, lm_response.data, 8);
-		MD5Final(session_nonce, &md5_session_nonce_ctx);
+		MD5Final(session_nonce_hash, &md5_session_nonce_ctx);
 		
 		nt_response = data_blob(NULL, 24);
 		SMBNTencrypt(ntlmssp_state->password,
-			     challenge_blob.data,
+			     session_nonce_hash,
 			     nt_response.data);
 
-		/* This is *NOT* the correct session key algorithm - just 
-		   fill in the bytes with something... */
 		session_key = data_blob(NULL, 16);
-		SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
-#endif 
+
+		SMBsesskeygen_ntv1(nt_hash, NULL, nt_session_key);
+		hmac_md5(nt_session_key, session_nonce, sizeof(session_nonce), session_key.data);
 	} else {
 		
 		
@@ -627,6 +620,18 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 	}
 	data_blob_free(&struct_blob);
 
+	/* Key exchange encryptes a new client-generated session key with
+	   the password-derived key */
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
+		uint8 client_session_key[16];
+		
+		generate_random_buffer(client_session_key, sizeof(client_session_key), False);	
+		encrypted_session_key = data_blob(client_session_key, sizeof(client_session_key));
+		SamOEMhash(encrypted_session_key.data, session_key.data, encrypted_session_key.length);
+		data_blob_free(&session_key);
+		session_key = data_blob(client_session_key, sizeof(client_session_key));
+	}
+
 	/* this generates the actual auth packet */
 	if (!msrpc_gen(next_request, auth_gen_string, 
 		       "NTLMSSP", 
@@ -636,7 +641,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		       ntlmssp_state->domain, 
 		       ntlmssp_state->user, 
 		       ntlmssp_state->get_global_myname(), 
-		       datagram_sess_key, datagram_sess_key_len,
+		       encrypted_session_key.data, encrypted_session_key.length,
 		       ntlmssp_state->neg_flags)) {
 		
 		data_blob_free(&lm_response);
@@ -644,6 +649,8 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		data_blob_free(&session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	data_blob_free(&encrypted_session_key);
 
 	data_blob_free(&ntlmssp_state->chal);
 	data_blob_free(&ntlmssp_state->lm_resp);
@@ -683,6 +690,8 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_CLIENT_STATE **ntlmssp_state)
 	(*ntlmssp_state)->neg_flags = 
 		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_NTLM |
+		NTLMSSP_NEGOTIATE_NTLM2 |
+		NTLMSSP_NEGOTIATE_KEY_EXCH |
 		NTLMSSP_REQUEST_TARGET;
 
 	(*ntlmssp_state)->ref_count = 1;
