@@ -409,7 +409,7 @@ static int num_backends;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.
 */
-static NTSTATUS auth_register(void *_ops)
+static NTSTATUS auth_register(const void *_ops)
 {
 	const struct auth_operations *ops = _ops;
 	struct auth_operations *new_ops;
@@ -467,7 +467,6 @@ const struct auth_critical_sizes *auth_interface_version(void)
 		sizeof(struct auth_operations),
 		sizeof(struct auth_methods),
 		sizeof(struct auth_context),
-		sizeof(struct auth_ntlmssp_state),
 		sizeof(struct auth_usersupplied_info),
 		sizeof(struct auth_serversupplied_info),
 		sizeof(struct auth_str),
@@ -482,6 +481,13 @@ const struct auth_critical_sizes *auth_interface_version(void)
 BOOL auth_init(void)
 {
 	NTSTATUS status;
+	
+	/* ugly cludge, to go away */
+	static BOOL initialised;
+
+	if (initialised) {
+		return True;
+	}
 
 	status = register_subsystem("auth", auth_register); 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -491,6 +497,7 @@ BOOL auth_init(void)
 	/* FIXME: Perhaps panic if a basic backend, such as SAM, fails to initialise? */
 	static_init_auth;
 
+	initialised = True;
 	DEBUG(3,("AUTH subsystem version %d initialised\n", AUTH_INTERFACE_VERSION));
 	return True;
 }

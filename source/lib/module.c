@@ -153,7 +153,7 @@ NTSTATUS register_subsystem(const char *name, register_backend_function callback
 	return NT_STATUS_OK;
 }
 
-NTSTATUS register_backend(const char *subsystem, void *args)
+NTSTATUS register_backend(const char *subsystem, const void *args)
 {
 	/* Find the specified subsystem */
 	struct subsystem *s = subsystems;
