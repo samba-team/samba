@@ -99,9 +99,10 @@
 #define STATIC	static
 #endif
 
-/* It is really only FreeBSD that still suffers from MD5 based crypts,
- * for now let all platforms support it. */
+/* It is really only FreeBSD that still suffers from MD5 based crypts */
+#ifdef __FreeBSD__
 #define MD5_CRYPT_SUPPORT 1
+#endif
 #if     MD5_CRYPT_SUPPORT
 /*
  * ----------------------------------------------------------------------------
@@ -319,6 +320,11 @@ const char *salt;
 	{
 	static char buff[14];
 
+#if     MD5_CRYPT_SUPPORT
+	if (!strncmp(salt, "$1$", 3))
+		return crypt_md5(buf, salt);
+#endif
+
 	return(des_fcrypt(buf,salt,buff));
 	}
 
@@ -336,11 +342,6 @@ char *ret;
 	unsigned char bb[9];
 	unsigned char *b=bb;
 	unsigned char c,u;
-
-#if     MD5_CRYPT_SUPPORT
-	if (!strncmp(salt, "$1$", 3))
-		return crypt_md5(buf, salt);
-#endif
 
 	/* eay 25/08/92
 	 * If you call crypt("pwd","*") as often happens when you
