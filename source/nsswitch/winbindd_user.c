@@ -145,9 +145,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	
 	/* The following costs 3 packets */
 
-#if 0
-
-	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
+	if (!winbindd_lookup_userinfo(name_domain, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
 		return WINBINDD_ERROR;
@@ -157,11 +155,6 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
 
-#endif
-
-        group_rid = DOMAIN_GROUP_RID_GUESTS;
-        fstrcpy(gecos_name, "foo");
-	
 	/* Now take all this information and fill in a passwd structure */
 	
 	if (!winbindd_fill_pwent(name_domain, state->request.data.username, 
@@ -236,9 +229,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 	/* Get some user info */
 	
-#if 0
-
-	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
+	if (!winbindd_lookup_userinfo(domain->name, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
 			  "user '%s'\n", user_name));
 		return WINBINDD_ERROR;
@@ -247,10 +238,6 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	group_rid = user_info->info.id21->group_rid;
 	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
-#endif
-
-        group_rid = DOMAIN_GROUP_RID_GUESTS;
-        fstrcpy(gecos_name, "foo");
 
 	/* Resolve gid number */
 
@@ -272,8 +259,6 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	return WINBINDD_OK;
 }
 
-#if 0
-
 /*
  * set/get/endpwent functions
  */
@@ -282,68 +267,61 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 {
-    struct winbindd_domain *tmp;
+        struct winbindd_domain *tmp;
+        
+        DEBUG(3, ("[%5d]: setpwent\n", state->pid));
+        
+        /* Check user has enabled this */
+        
+        if (!lp_winbind_enum_users())
+                return WINBINDD_ERROR;
 
-    DEBUG(3, ("[%5d]: setpwent\n", state->pid));
-
-    if (state == NULL) return WINBINDD_ERROR;
-    
-    /* Check user has enabled this */
-
-    if (!lp_winbind_enum_users()) {
-	    return WINBINDD_ERROR;
-    }
-
-    /* Free old static data if it exists */
-
-    if (state->getpwent_state != NULL) {
-        free_getent_state(state->getpwent_state);
-        state->getpwent_state = NULL;
-    }
-
-    /* Create sam pipes for each domain we know about */
-
-    for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-        struct getent_state *domain_state;
-
-        /* Skip domains other than WINBINDD_DOMAIN environment variable */
-
-        if ((strcmp(state->request.domain, "") != 0) &&
-	    !check_domain_env(state->request.domain, tmp->name)) {
-                continue;
+        /* Free old static data if it exists */
+        
+        if (state->getpwent_state != NULL) {
+                free_getent_state(state->getpwent_state);
+                state->getpwent_state = NULL;
         }
+        
+        /* Create sam pipes for each domain we know about */
+        
+        for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+                struct getent_state *domain_state;
+                
+                /* Skip domains other than WINBINDD_DOMAIN environment
+                   variable */
+                
+                if ((strcmp(state->request.domain, "") != 0) &&
+                    !check_domain_env(state->request.domain, tmp->name))
+                        continue;
 
-        /* Create a state record for this domain */
+                /* Create a state record for this domain */
+                
+                if ((domain_state = (struct getent_state *)
+                     malloc(sizeof(struct getent_state))) == NULL)
+                        return WINBINDD_ERROR;
+                
+                ZERO_STRUCTP(domain_state);
+                domain_state->domain = tmp;
 
-        if ((domain_state = (struct getent_state *)
-             malloc(sizeof(struct getent_state))) == NULL) {
-
-            return WINBINDD_ERROR;
+                /* Add to list of open domains */
+                
+                DLIST_ADD(state->getpwent_state, domain_state);
         }
-
-        ZERO_STRUCTP(domain_state);
-        domain_state->domain = tmp;
-
-        /* Add to list of open domains */
-
-        DLIST_ADD(state->getpwent_state, domain_state)
-    }
-
-    return WINBINDD_OK;
+        
+        return WINBINDD_OK;
 }
 
 /* Close file pointer to ntdom passwd database */
 
 enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 {
-    DEBUG(3, ("[%5d]: endpwent\n", state->pid));
+        DEBUG(3, ("[%5d]: endpwent\n", state->pid));
 
-    if (state == NULL) return WINBINDD_ERROR;
-
-    free_getent_state(state->getpwent_state);    
-    state->getpwent_state = NULL;
-
-    return WINBINDD_OK;
+        free_getent_state(state->getpwent_state);    
+        state->getpwent_state = NULL;
+        
+        return WINBINDD_OK;
 }
 
 /* Get partial list of domain users for a domain.  We fill in the sam_entries,
@@ -362,9 +340,8 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	struct getpwent_user *name_list = NULL;
 	uint32 group_rid;
 
-	if (ent->got_all_sam_entries) {
+	if (ent->got_all_sam_entries)
 		return False;
-	}
 
 	ZERO_STRUCT(info1);
 	ZERO_STRUCT(ctr);
@@ -389,10 +366,6 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	   something like that. */ 
 
 	group_rid = DOMAIN_GROUP_RID_USERS;
-
-	if (!domain_handles_open(ent->domain)) {
-		return WINBINDD_ERROR;
-	}
 
 	/* Free any existing user info */
 
@@ -486,22 +459,18 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: getpwent\n", state->pid));
 
-	if (state == NULL) return WINBINDD_ERROR;
-
 	/* Check user has enabled this */
 
-	if (!lp_winbind_enum_users()) {
+	if (!lp_winbind_enum_users())
 		return WINBINDD_ERROR;
-	}
 
 	/* Allocate space for returning a chunk of users */
 
 	num_users = MIN(MAX_GETPWENT_USERS, state->request.data.num_entries);
 	
 	if ((state->response.extra_data = 
-	     malloc(num_users * sizeof(struct winbindd_pw))) == NULL) {
+	     malloc(num_users * sizeof(struct winbindd_pw))) == NULL)
 		return WINBINDD_ERROR;
-	}
 
 	memset(state->response.extra_data, 0, num_users * 
 	       sizeof(struct winbindd_pw));
@@ -509,9 +478,8 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 	user_list = (struct winbindd_pw *)state->response.extra_data;
 	sep = lp_winbind_separator();
 	
-	if (!(ent = state->getpwent_state)) {
+	if (!(ent = state->getpwent_state))
 		return WINBINDD_ERROR;
-	}
 
 	/* Start sending back users */
 
@@ -540,7 +508,8 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
  
 			/* No more domains */
 
-			if (!ent) break;
+			if (!ent) 
+                                break;
 		}
 
 		name_list = ent->sam_entries;
@@ -579,11 +548,9 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 			state->response.length += 
 				sizeof(struct winbindd_pw);
 
-		} else {
+		} else
 			DEBUG(1, ("could not lookup domain user %s\n",
 				  domain_user_name));
-		}
-		
 	}
 
 	/* Out of domains */
@@ -617,10 +584,6 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
 		if ((strcmp(state->request.domain, "") != 0) &&
 		    !check_domain_env(state->request.domain, domain->name)) {
-			continue;
-		}
-
-		if (!domain_handles_open(domain)) {
 			continue;
 		}
 
@@ -692,5 +655,3 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
 	return WINBINDD_OK;
 }
-
-#endif

@@ -24,39 +24,33 @@
 #include "winbindd.h"
 #include "sids.h"
 
-#if 0
-
-static void winbindd_kill_connections(struct winbindd_domain *domain);
-
 /* Add a trusted domain to our list of domains */
 
-static struct winbindd_domain *add_trusted_domain(char *domain_name)
+static struct winbindd_domain *add_trusted_domain(char *domain_name,
+                                                  DOM_SID *domain_sid)
 {
     struct winbindd_domain *domain, *tmp;
 
     for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
 	    if (strcmp(domain_name, tmp->name) == 0) {
-		    DEBUG(3, ("domain %s already in trusted list\n",
+		    DEBUG(3, ("domain %s already in domain list\n",
 			      domain_name));
 		    return tmp;
 	    }
     }
 
-    DEBUG(1, ("adding trusted domain %s\n", domain_name));
+    DEBUG(1, ("adding domain %s\n", domain_name));
 
     /* Create new domain entry */
 
-    if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL) {
+    if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL)
         return NULL;
-    }
 
     /* Fill in fields */
 
     ZERO_STRUCTP(domain);
-
-    if (domain_name) {
-        fstrcpy(domain->name, domain_name);
-    }
+    fstrcpy(domain->name, domain_name);
+    sid_copy(&domain->sid, domain_sid);
 
     /* Link to domain list */
 
@@ -67,41 +61,54 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name)
 
 /* Look up global info for the winbind daemon */
 
-static BOOL get_trusted_domains(void)
+BOOL get_domain_info(void)
 {
 	uint32 enum_ctx = 0;
 	uint32 num_doms = 0;
 	char **domains = NULL;
-	DOM_SID *sids = NULL;
-	BOOL result;
+	DOM_SID *sids = NULL, domain_sid;
+        NTSTATUS result;
+        CLI_POLICY_HND *hnd;
 	int i;
+        fstring level5_dom;
 	
 	DEBUG(1, ("getting trusted domain list\n"));
 
 	/* Add our workgroup - keep handle to look up trusted domains */
-	if (!add_trusted_domain(lp_workgroup())) {
-		DEBUG(0, ("could not add record for domain %s\n", 
-			  lp_workgroup()));
-		return False;
-	}
+
+        if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+                return False;
+
+        result = cli_lsa_query_info_policy(hnd->cli, hnd->cli->mem_ctx,
+                                           &hnd->pol, 0x05, level5_dom,
+                                           &domain_sid);
+
+        if (!NT_STATUS_IS_OK(result))
+                return False;
+
+	add_trusted_domain(lp_workgroup(), &domain_sid);
 	
 	/* Enumerate list of trusted domains */	
-	result = wb_lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
-				       &num_doms, &domains, &sids);
+
+        if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+                return False;
+
+        result = cli_lsa_enum_trust_dom(hnd->cli, hnd->cli->mem_ctx,
+                                        &hnd->pol, &enum_ctx, &num_doms, 
+                                        &domains, &sids);
 	
-	if (!result || !domains) return False;
+        if (!NT_STATUS_IS_OK(result))
+                return False;
 	
         /* Add each domain to the trusted domain list */
-	for(i = 0; i < num_doms; i++) {
-		if (!add_trusted_domain(domains[i])) {
-			DEBUG(0, ("could not add record for domain %s\n", 
-				  domains[i]));
-			result = False;
-		}
-	}
+
+	for(i = 0; i < num_doms; i++)
+		add_trusted_domain(domains[i], &sids[i]);
 	
 	return True;
 }
+
+#if 0
 
 /* Open sam and sam domain handles */
 
@@ -408,9 +415,11 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
         return NT_STATUS_IS_OK(result);
 }
 
+#if 0
+
 /* Lookup domain controller and sid for a domain */
 
-BOOL get_domain_info(struct winbindd_domain *domain)
+ BOOL get_domain_info(struct winbindd_domain *domain)
 {
         fstring sid_str;
         
@@ -432,6 +441,8 @@ BOOL get_domain_info(struct winbindd_domain *domain)
         
         return True;
 }        
+
+#endif
 
 /* Lookup a sid in a domain from a name */
 
@@ -518,16 +529,30 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
         return False;
 }
 
-#if 0
-
 /* Lookup user information from a rid */
 
-BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
-                              uint32 user_rid, SAM_USERINFO_CTR **user_info)
+BOOL winbindd_lookup_userinfo(char *domain_name, uint32 user_rid, 
+                              SAM_USERINFO_CTR **user_info)
 {
-	return wb_get_samr_query_userinfo(&domain->sam_dom_handle, 0x15, 
-					  user_rid, user_info);
+        CLI_POLICY_HND *hnd;
+        uint16 info_level = 0x15;
+        NTSTATUS result;
+        struct winbindd_domain *domain;
+
+        if (!(domain = find_domain_from_name(domain_name)))
+                return False;
+
+        if (!(hnd = cm_get_sam_user_handle(domain_name, &domain->sid, 
+                                           user_rid)))
+                return False;
+
+        result = cli_samr_query_userinfo(hnd->cli, hnd->cli->mem_ctx,
+                                         &hnd->pol, info_level, user_info);
+
+        return NT_STATUS_IS_OK(result);
 }                                   
+
+#if 0
 
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
 
@@ -587,14 +612,8 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 	/* Search through list */
 
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (strcmp(domain_name, tmp->name) == 0) {
-
-			if (!tmp->got_domain_info) {
-				get_domain_info(tmp);
-			}
-
-                        return tmp->got_domain_info ? tmp : NULL;
-                }
+		if (strcmp(domain_name, tmp->name) == 0)
+                        return tmp;
         }
 
 	/* Not found */
@@ -609,14 +628,17 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 	struct winbindd_domain *tmp;
 
 	/* Search through list */
+
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
 		if (sid_equal(sid, &tmp->sid)) {
-			if (!tmp->got_domain_info) return NULL;
+			if (!tmp->got_domain_info) 
+                                return NULL;
                         return tmp;
                 }
         }
 
 	/* Not found */
+
 	return NULL;
 }
 
@@ -704,8 +726,6 @@ BOOL winbindd_param_init(void)
     return True;
 }
 
-#if 0
-
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
    application. */
@@ -714,8 +734,20 @@ NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
 				 uint32 *start_ndx, uint16 info_level, 
 				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
-	return wb_samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
-				      info_level, num_entries, ctr);
+        CLI_POLICY_HND *hnd;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+        if (!(hnd = cm_get_sam_dom_handle(domain->name, &domain->sid)))
+                return result;
+
+        result = cli_samr_query_dispinfo(hnd->cli, hnd->cli->mem_ctx,
+                                         &hnd->pol, start_ndx, info_level,
+                                         num_entries, 0xffff, ctr);
+
+        if (!NT_STATUS_IS_OK(result))
+                return result;
+
+        return NT_STATUS_OK;
 }
 
 /* Check if a domain is present in a comma-separated list of domains */
@@ -733,8 +765,6 @@ BOOL check_domain_env(char *domain_env, char *domain)
 
 	return False;
 }
-
-#endif
 
 /* Parse a string of the form DOMAIN/user into a domain and a user */
 
