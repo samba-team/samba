@@ -4550,6 +4550,10 @@ BOOL sam_io_user_info12(char *desc,  SAM_USER_INFO_12 *u, prs_struct *ps, int de
 {
 	if (u == NULL) return False;
 
+	DEBUG(10,("possible security breach!\n"));
+
+	return False;
+#if 0
 	prs_debug(ps, depth, desc, "samr_io_r_user_info12");
 	depth++;
 
@@ -4559,6 +4563,7 @@ BOOL sam_io_user_info12(char *desc,  SAM_USER_INFO_12 *u, prs_struct *ps, int de
 	prs_uint8s(False, "nt_pwd", ps, depth, u->nt_pwd, sizeof(u->nt_pwd));
 
 	return True;
+#endif
 }
 
 /*******************************************************************
@@ -5472,6 +5477,9 @@ BOOL samr_io_userinfo_ctr(char *desc,  SAM_USERINFO_CTR *ctr, prs_struct *ps, in
 		}
 		case 0x12:
 		{
+			DEBUG(0,("samr_io_userinfo_ctr: security breach!\n"));
+			return False;
+#if 0
 			if (ps->io)
 			{
 				/* reading */
@@ -5488,6 +5496,7 @@ BOOL samr_io_userinfo_ctr(char *desc,  SAM_USERINFO_CTR *ctr, prs_struct *ps, in
 				return False;
 			}
 			break;
+#endif
 		}
 		case 21:
 		{
