@@ -287,7 +287,7 @@ static BOOL matchparam(const char **haystack_list, const char *needle)
 	}
 
 	for(i=0; haystack_list[i] ; i++) {
-		if(!unix_wild_match((char *)haystack_list[i], (char *)needle)) {
+		if(!unix_wild_match(haystack_list[i], needle)) {
 			return True;
 		}
 	}
@@ -333,7 +333,7 @@ static int recycle_unlink(vfs_handle_struct *handle, connection_struct *conn, co
 	BOOL exist;
 	int rc = -1;
 
-	repository = alloc_sub_conn(conn, (char *)recycle_repository(handle));
+	repository = alloc_sub_conn(conn, recycle_repository(handle));
 	ALLOC_CHECK(repository, done);
 	/* shouldn't we allow absolute path names here? --metze */
 	trim_string(repository, "/", "/");
