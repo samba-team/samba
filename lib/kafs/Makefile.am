@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4) -DLIBDIR=\"$(libdir)\" $(AFS_EXTRA_DEFS)
+INCLUDES += $(INCLUDE_krb4) $(AFS_EXTRA_DEFS)
 
 if KRB4
 AFSLIBS = libkafs.la
