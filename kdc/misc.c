@@ -47,20 +47,22 @@ db_fetch(krb5_principal principal)
 {
     hdb_entry *ent;
     krb5_error_code ret;
-
-    ret = db->open(context, db, O_RDONLY, 0);
-    if (ret) {
-	kdc_log(0, "Failed to open database: %s", 
-		krb5_get_err_text(context, ret));
-	return NULL;
-    }
+    int i;
     ALLOC(ent);
     ent->principal = principal;
-    ret = db->fetch(context, db, HDB_F_DECRYPT, ent);
-    db->close(context, db);
-    if(ret){
-	free(ent);
-	return NULL;
+
+    for(i = 0; i < num_db; i++) {
+	ret = db[i]->open(context, db[i], O_RDONLY, 0);
+	if (ret) {
+	    kdc_log(0, "Failed to open database: %s", 
+		    krb5_get_err_text(context, ret));
+	    continue;
+	}
+	ret = db[i]->fetch(context, db[i], HDB_F_DECRYPT, ent);
+	db[i]->close(context, db[i]);
+	if(ret == 0)
+	    return ent;
     }
-    return ent;
+    free(ent);
+    return NULL;
 }

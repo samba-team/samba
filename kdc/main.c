@@ -59,9 +59,24 @@ main(int argc, char **argv)
 
     configure(argc, argv);
 
-    ret = hdb_create(context, &db, database);
-    if(ret)
-	krb5_err(context, 1, ret, "hdb_create %s", database);
+    if(databases == NULL) {
+	db = malloc(sizeof(*db));
+	num_db = 1;
+	ret = hdb_create(context, &db[0], NULL);
+	if(ret)
+	    krb5_err(context, 1, ret, "hdb_create %s", HDB_DEFAULT_DB);
+    } else {
+	char **d;
+	int i;
+	/* count databases */
+	for(d = databases, i = 0; *d; d++, i++);
+	db = malloc(i * sizeof(*db));
+	for(d = databases, num_db = 0; *d; d++) {
+	    ret = hdb_create(context, &db[num_db++], *d);
+	    if(ret)
+		krb5_err(context, 1, ret, "hdb_create %s", *d);
+	}
+    }
     ret = hdb_set_master_keyfile(context, db, keyfile);
     if (ret)
 	krb5_err(context, 1, ret, "hdb_set_master_keyfile");
