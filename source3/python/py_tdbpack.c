@@ -69,7 +69,7 @@ to be the same as the default Python encoding).
 
 tdbpack format strings:
 
-    'f': NUL-terminated string in codepage 850
+    'f': NUL-terminated string in codepage iso8859-1
    
     'P': same as 'f'
 
