@@ -14,6 +14,8 @@ string_to_key_test_LDADD = libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
 
+n_fold_test_LDADD = $(string_to_key_test_LDADD)
+
 lib_LTLIBRARIES = libkrb5.la
 
 ERR_FILES = krb5_err.c heim_err.c
