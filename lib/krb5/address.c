@@ -27,7 +27,7 @@ krb5_address_search(krb5_context context,
     int i;
 
     for (i = 0; i < addrlist->len; ++i)
-	if (krb5_address_compare (context, addr, addrlist->val[i]))
+	if (krb5_address_compare (context, addr, &addrlist->val[i]))
 	    return TRUE;
     return FALSE;
 }
