@@ -1,8 +1,99 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
-# we want to be compatibe with older versions of Samba
+
+#################################################
+# Directory handling stuff to support both the
+# legacy SAMBA directories and FHS compliant
+# ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
+
+AC_ARG_WITH(fhs, [  --with-fhs            use FHS-compliant paths [default=no]],
+    codepagedir="\$(DATADIR)/codepages"
+    configdir="${sysconfdir}/samba"
+    lockdir="\${VARDIR}/lock/samba"
+    logfilebase="\${VARDIR}/log/samba"
+    privatedir="\${CONFIGDIR}/private"
+    swatdir="\${DATADIR}/swat",
+    codepagedir="\$(LIBDIR)/codepages"
+    configdir="\${prefix}/lib"
+    lockdir="\${prefix}/var/locks"
+    logfilebase="\${VARDIR}"
+    privatedir="\${prefix}/private"
+    sbindir="\${prefix}/bin"
+    swatdir="\${prefix}/swat")
+
+AC_SUBST(codepagedir)
+AC_SUBST(configdir)
+AC_SUBST(lockdir)
+AC_SUBST(logfilebase)
+AC_SUBST(privatedir)
+AC_SUBST(swatdir)
+
+#################################################
+# set private directory location
+AC_ARG_WITH(privatedir,
+[  --with-privatedir=DIR     Where to put smbpasswd ($privatedir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-privatedir called without argument - will use default])
+  ;;
+  * )
+    privatedir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set lock directory location
+AC_ARG_WITH(lockdir,
+[  --with-lockdir=DIR     Where to put lock files ($lockdir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-lockdir called without argument - will use default])
+  ;;
+  * )
+    lockdir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set SWAT directory location
+AC_ARG_WITH(swatdir,
+[  --with-swatdir=DIR     Where to put SWAT files ($swatdir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-swatdir called without argument - will use default])
+  ;;
+  * )
+    swatdir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set configuration directory location
+AC_ARG_WITH(configdir,
+[  --with-configdir=DIR     Where to put configuration files ($configdir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-configdir called without argument - will use default])
+  ;;
+  * )
+    configdir="$withval"
+    ;;
+  esac])
+
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
@@ -15,8 +106,15 @@ AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
 AC_SUBST(SHLIBEXT)
 
-# compile with optimisation and without debugging by default
-CFLAGS=${CFLAGS-"-O"}
+# compile with optimization and without debugging by default
+OPTIM=${CFLAGS-"-O"}
+
+AC_ARG_ENABLE(debug, [  --enable-debug        turn on debugging [default=no]],
+    [if eval "test x$enable_debug = xyes"; then
+	OPTIM="-g"
+    fi])
+
+CFLAGS="${CFLAGS:=} $OPTIM"
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -1695,70 +1793,6 @@ AC_ARG_WITH(vfs,
 )
 
 #################################################
-#################################################
-# set private directory location
-AC_ARG_WITH(privatedir,
-[  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody calls it without argument
-  #
-    AC_MSG_WARN([--with-privatedir called without argument - will use default])
-    privatedir='${prefix}/private'
-  ;;
-  * )
-    privatedir="$withval"
-    ;;
-  esac
-  AC_SUBST(privatedir)],
-  [privatedir='${prefix}/private'
-   AC_SUBST(privatedir)]
-)
-
-#################################################
-# set lock directory location
-AC_ARG_WITH(lockdir,
-[  --with-lockdir=DIR     Where to put lock files ($ac_default_prefix/var/locks)],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody calls it without argument
-  #
-    AC_MSG_WARN([--with-lockdir called without argument - will use default])
-    lockdir='$(VARDIR)/locks'
-  ;;
-  * )
-    lockdir="$withval"
-    ;;
-  esac
-  AC_SUBST(lockdir)],
-  [lockdir='$(VARDIR)/locks'
-   AC_SUBST(lockdir)]
-)
-
-#################################################
-# set SWAT directory location
-AC_ARG_WITH(swatdir,
-[  --with-swatdir=DIR     Where to put SWAT files ($ac_default_prefix/swat)],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_WARN([--with-swatdir called without argument - will use default])
-    swatdir='${prefix}/swat'
-  ;;
-  * )
-    swatdir="$withval"
-    ;;
-  esac
-  AC_SUBST(swatdir)],
-  [swatdir='${prefix}/swat'
-   AC_SUBST(swatdir)]
-)
-
-#################################################
 # these tests are taken from the GNU fileutils package
 AC_CHECKING(how to get filesystem space usage)
 space=no
@@ -2031,6 +2065,7 @@ samba_cv_HAVE_POSIX_ACLS=yes,samba_cv_HAVE_POSIX_ACLS=no)])
   AC_DEFINE(HAVE_NO_ACLS)
   AC_MSG_RESULT(no)
 )
+
 echo "checking configure summary"
 AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            echo "configure OK";,
@@ -2038,5 +2073,14 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 
 builddir=`pwd`
 AC_SUBST(builddir)
+
+#################################################
+# check for the historical SAMBA installation
+
+if test "$prefix" = /usr/local/samba -a "$sbindir" = "\${exec_prefix}/sbin"; then
+	# Put all binaries under the /usr/local/samba/bin directory.
+	sbindir="$bindir"
+fi
+
 
 AC_OUTPUT(include/stamp-h Makefile)
