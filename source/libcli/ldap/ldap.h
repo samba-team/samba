@@ -33,8 +33,8 @@ enum ldap_request_tag {
 	LDAP_TAG_ModifyResponse = 7,
 	LDAP_TAG_AddRequest = 8,
 	LDAP_TAG_AddResponse = 9,
-	LDAP_TAG_DeleteRequest = 10,
-	LDAP_TAG_DeleteResponse = 11,
+	LDAP_TAG_DelRequest = 10,
+	LDAP_TAG_DelResponse = 11,
 	LDAP_TAG_ModifyDNRequest = 12,
 	LDAP_TAG_ModifyDNResponse = 13,
 	LDAP_TAG_CompareRequest = 14,
@@ -155,7 +155,7 @@ struct ldap_AddRequest {
 	struct ldap_attribute *attributes;
 };
 
-struct ldap_DeleteRequest {
+struct ldap_DelRequest {
 	const char *dn;
 };
 
@@ -199,8 +199,8 @@ union ldap_Request {
 	struct ldap_Result 		ModifyResponse;
 	struct ldap_AddRequest 		AddRequest;
 	struct ldap_Result 		AddResponse;
-	struct ldap_DeleteRequest 	DeleteRequest;
-	struct ldap_Result 		DeleteResponse;
+	struct ldap_DelRequest 		DelRequest;
+	struct ldap_Result 		DelResponse;
 	struct ldap_ModifyDNRequest 	ModifyDNRequest;
 	struct ldap_Result 		ModifyDNResponse;
 	struct ldap_CompareRequest 	CompareRequest;

@@ -146,8 +146,8 @@ queue_reply:
 	return ldapsrv_queue_reply(call, done_r);
 }
 
-static NTSTATUS sldb_Delete(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-				     struct ldap_DeleteRequest *r)
+static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
+				     struct ldap_DelRequest *r)
 {
 	struct ldap_Result *delete_result;
 	struct ldapsrv_reply *delete_reply;
@@ -155,7 +155,7 @@ static NTSTATUS sldb_Delete(struct ldapsrv_partition *partition, struct ldapsrv_
 	struct samdb_context *samdb;
 	struct ldb_context *ldb;
 
-	DEBUG(0, ("sldb_Delete: %s\n", r->dn));
+	DEBUG(0, ("sldb_Del: %s\n", r->dn));
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
@@ -163,9 +163,9 @@ static NTSTATUS sldb_Delete(struct ldapsrv_partition *partition, struct ldapsrv_
 	ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
 	ldb_ret = ldb_delete(ldb, r->dn);
 
-	delete_reply = ldapsrv_init_reply(call, LDAP_TAG_DeleteResponse);
+	delete_reply = ldapsrv_init_reply(call, LDAP_TAG_DelResponse);
 
-	delete_result = &delete_reply->msg.r.DeleteResponse;
+	delete_result = &delete_reply->msg.r.DelResponse;
 	delete_result->dn = talloc_steal(delete_reply, r->dn);
 
 	if (ldb_ret != 0) {
@@ -190,7 +190,7 @@ static NTSTATUS sldb_Delete(struct ldapsrv_partition *partition, struct ldapsrv_
 
 static const struct ldapsrv_partition_ops sldb_ops = {
 	.Search		= sldb_Search,
-	.Delete		= sldb_Delete
+	.Del		= sldb_Del
 };
 
 const struct ldapsrv_partition_ops *ldapsrv_get_sldb_partition_ops(void)

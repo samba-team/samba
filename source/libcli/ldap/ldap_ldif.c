@@ -352,8 +352,8 @@ static struct ldap_message *ldif_read(int (*fgetc_fn)(void *),
 	}
 
 	if (strequal(value.data, "delete")) {
-		msg->type = LDAP_TAG_DeleteRequest;
-		msg->r.DeleteRequest.dn = dn;
+		msg->type = LDAP_TAG_DelRequest;
+		msg->r.DelRequest.dn = dn;
 		return msg;
 	}
 

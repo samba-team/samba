@@ -330,21 +330,21 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 	return part->ops->Add(part, call, req);
 }
 
-static NTSTATUS ldapsrv_DeleteRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 {
-	struct ldap_DeleteRequest *req = &call->request.r.DeleteRequest;
+	struct ldap_DelRequest *req = &call->request.r.DelRequest;
 	struct ldapsrv_partition *part;
 
-	DEBUG(10, ("DeleteRequest"));
+	DEBUG(10, ("DelRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
 
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
-	if (!part->ops->Delete) {
+	if (!part->ops->Del) {
 		return ldapsrv_unwilling(call, 53);
 	}
 
-	return part->ops->Delete(part, call, req);
+	return part->ops->Del(part, call, req);
 }
 
 static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
@@ -419,8 +419,8 @@ static NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 		return ldapsrv_ModifyRequest(call);
 	case LDAP_TAG_AddRequest:
 		return ldapsrv_AddRequest(call);
-	case LDAP_TAG_DeleteRequest:
-		return ldapsrv_DeleteRequest(call);
+	case LDAP_TAG_DelRequest:
+		return ldapsrv_DelRequest(call);
 	case LDAP_TAG_ModifyDNRequest:
 		return ldapsrv_ModifyDNRequest(call);
 	case LDAP_TAG_CompareRequest:
