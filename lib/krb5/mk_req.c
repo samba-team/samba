@@ -56,6 +56,8 @@ krb5_mk_req(krb5_context context,
   krb5_data realm_data;
   char **p;
 
+  memset(&this_cred, 0, sizeof(this_cred));
+
   r = krb5_cc_get_principal(context, ccache, &this_cred.client);
   
   if(r)
@@ -80,6 +82,9 @@ krb5_mk_req(krb5_context context,
   if (r)
     return r;
   this_cred.times.endtime = 0;
+  if (auth_context && *auth_context && (*auth_context)->enctype)
+      krb5_etype_to_keytype(context, (*auth_context)->enctype,
+			    &this_cred.session.keytype);
 
   r = krb5_get_credentials (context, 0, ccache, &this_cred, &cred);
   if (r)
