@@ -118,6 +118,11 @@ static void calc_maxfd(struct event_context *ev)
 	}
 }
 
+/* to mark the ev->maxfd invalid
+ * this means we need to recalculate it
+ */
+#define EVENT_INVALID_MAXFD (-1)
+
 /*
   remove a fd based event
   the event to remove is matched by looking at the handler
@@ -132,8 +137,6 @@ BOOL event_remove_fd(struct event_context *ev, struct fd_event *e1)
 		    e->fd == e1->fd && 
 		    e->handler == e1->handler) {
 			e->ref_count--;
-			/* possibly calculate the new maxfd */
-			calc_maxfd(ev);
 			return True;
 		}
 	}
@@ -151,7 +154,6 @@ void event_remove_fd_all(struct event_context *ev, int fd)
 			e->ref_count--;
 		}
 	}
-	calc_maxfd(ev);
 }
 
 /*
@@ -166,7 +168,6 @@ void event_remove_fd_all_handler(struct event_context *ev, void *handler)
 			e->ref_count--;
 		}
 	}
-	calc_maxfd(ev);
 }
 
 
@@ -289,6 +290,9 @@ int event_loop_wait(struct event_context *ev)
 			struct fd_event *next = fe->next;
 			if (fe->ref_count == 0) {
 				DLIST_REMOVE(ev->fd_events, fe);
+				if (ev->maxfd == fe->fd) {
+					ev->maxfd = EVENT_INVALID_MAXFD;
+				}
 				free(fe);
 			} else {
 				if (fe->flags & EVENT_FD_READ) {
@@ -316,39 +320,50 @@ int event_loop_wait(struct event_context *ev)
 			}
 		}
 
+		/* only do a select() if there're fd_events
+		 * otherwise we would block for a the time in tval,
+		 * and if there're no fd_events present anymore we want to
+		 * leave the event loop directly
+		 */
+		if (ev->fd_events) {
+			/* we maybe need to recalculate the maxfd */
+			if (ev->maxfd == EVENT_INVALID_MAXFD) {
+				calc_maxfd(ev);
+			}
 
-		/* TODO:
+			/* TODO:
+			 * we don't use sys_select() as it isn't thread
+			 * safe. We need to replace the magic pipe handling in
+			 * sys_select() with something in the events
+			 * structure - for now just use select() 
+			 */
+			selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, &tval);
 
-		we don't use sys_select() as it isn't thread
-		safe. We need to replace the magic pipe handling in
-		sys_select() with something in the events
-		structure - for now just use select() */
-		selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, &tval);
+			t = time(NULL);
 
-		t = time(NULL);
+			if (selrtn == -1 && errno == EBADF) {
+				/* the socket is dead! this should never
+				   happen as the socket should have first been
+				   made readable and that should have removed
+				   the event, so this must be a bug. This is a
+				   fatal error. */
+				DEBUG(0,("EBADF on event_loop_wait - exiting\n"));
+				return -1;
+			}
 
-		if (selrtn == -1 && errno == EBADF) {
-			/* the socket is dead! this should never
-			   happen as the socket should have first been
-			   made readable and that should have removed
-			   the event, so this must be a bug. This is a
-			   fatal error. */
-			DEBUG(0,("EBADF on event_loop_wait - exiting\n"));
-			return -1;
-		}
-
-		if (selrtn > 0) {
-			/* at least one file descriptor is ready - check
-			   which ones and call the handler, being careful to allow
-			   the handler to remove itself when called */
-			for (fe=ev->fd_events; fe; fe=fe->next) {
-				uint16 flags = 0;
-				if (FD_ISSET(fe->fd, &r_fds)) flags |= EVENT_FD_READ;
-				if (FD_ISSET(fe->fd, &w_fds)) flags |= EVENT_FD_WRITE;
-				if (fe->ref_count && flags) {
-					fe->ref_count++;
-					fe->handler(ev, fe, t, flags);
-					fe->ref_count--;
+			if (selrtn > 0) {
+				/* at least one file descriptor is ready - check
+				   which ones and call the handler, being careful to allow
+				   the handler to remove itself when called */
+				for (fe=ev->fd_events; fe; fe=fe->next) {
+					uint16 flags = 0;
+					if (FD_ISSET(fe->fd, &r_fds)) flags |= EVENT_FD_READ;
+					if (FD_ISSET(fe->fd, &w_fds)) flags |= EVENT_FD_WRITE;
+					if (fe->ref_count && flags) {
+						fe->ref_count++;
+						fe->handler(ev, fe, t, flags);
+						fe->ref_count--;
+					}
 				}
 			}
 		}
