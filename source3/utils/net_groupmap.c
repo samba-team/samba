@@ -262,7 +262,7 @@ static int net_groupmap_add(int argc, const char **argv)
 		return -1;
 	}
 	
-	if ( (rid == 0) || (string_sid[0] == '\0') ) {
+	if ( (rid == 0) && (string_sid[0] == '\0') ) {
 		d_printf("No rid or sid specified, choosing algorithmic mapping\n");
 		rid = pdb_gid_to_group_rid(gid);
 	}
