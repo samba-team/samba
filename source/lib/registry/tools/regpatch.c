@@ -59,8 +59,6 @@
 #define CMD_KEY 1
 #define CMD_VAL 2
 
-#include "includes.h"
-
 typedef struct val_spec_list {
   struct val_spec_list *next;
   char *name;
