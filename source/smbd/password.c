@@ -1000,21 +1000,19 @@ struct cli_state *server_cryptkey(void)
 	}
 
 	make_nmb_name(&calling, local_machine, 0x0 , scope);
+	make_nmb_name(&called , desthost     , 0x20, scope);
 
-    if(strlen(desthost) > 15)
-	{
-		DEBUG(1,("server_cryptkey: %s is too long for a password server NetBIOS \
-name, using *SMBSERVER for the connection.\n", desthost ));
-		make_nmb_name(&called , "*SMBSERVER", 0x20, scope);
-	}
-	else
-		make_nmb_name(&called , desthost     , 0x20, scope);
-
-	if (!cli_session_request(cli, &calling, &called))
-	{
-		DEBUG(1,("%s rejected the session\n",desthost));
+	if (!cli_session_request(cli, &calling, &called)) {
+		/* try with *SMBSERVER if the first name fails */
 		cli_shutdown(cli);
-		return NULL;
+		make_nmb_name(&called , "*SMBSERVER", 0x20, scope);
+		if (!cli_initialise(cli) ||
+		    !cli_connect(cli, desthost, &dest_ip) ||
+		    !cli_session_request(cli, &calling, &called)) {
+			DEBUG(1,("%s rejected the session\n",desthost));
+			cli_shutdown(cli);
+			return NULL;
+		}
 	}
 
 	DEBUG(3,("got session\n"));
