@@ -54,7 +54,7 @@ static int num_args = sizeof(args) / sizeof(args[0]);
 static void
 usage(void)
 {
-    arg_printusage(args, num_args, "cpw", "principal...");
+    arg_printusage(args, num_args, "passwd", "principal...");
 }
 
 static int
