@@ -1612,8 +1612,10 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	if (!fsp) {
 		/* Perhaps it is a directory */
-		fsp = open_directory(conn, filename, &st,
-				(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
+		if (errno == EISDIR)
+			fsp = open_directory(conn, filename, &st,
+					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
+
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
 			r_u->status = ERROR_ACCESS_DENIED;
@@ -1705,8 +1707,10 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	if (!fsp) {
 		/* Perhaps it is a directory */
-		fsp = open_directory(conn, filename, &st,
-					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
+		if (errno == EISDIR)
+			fsp = open_directory(conn, filename, &st,
+						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
+
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
 			r_u->status = ERROR_ACCESS_DENIED;
