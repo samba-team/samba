@@ -420,3 +420,22 @@ SEOUL KOREA
 
 SAMBA Experience : SunOS, Solaris, Linux, SCO-Unix, Win95/NT/3.1
 ------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------
+UNITED STATES
+
+Stelias Computing is the developer of the InfoMagic Workgroup Server, a
+Linux distribution customized for use as a PC and Macintosh file and
+print server (using Samba and netatalk respectively).  Stelias also
+offers custom system programming and Samba support contracts.
+
+For information about the InfoMagic Workgroup Server contact InfoMagic:
+   http://www.infomagic.com/
+   questions@infomagic.com
+   voice: 800-800-6613 or 520-526-9565
+   fax:   520-526-9573
+
+To contact Stelias about custom arrangments, send email to
+info@stelias.com.
+------------------------------------------------------------------------------
