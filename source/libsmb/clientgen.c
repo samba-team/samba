@@ -3055,7 +3055,7 @@ BOOL cli_initialise(struct cli_state *cli)
 	cli->uid = getuid();
 	cli->protocol = PROTOCOL_NT1;
 	cli->timeout = 20000;
-	cli->bufsize = 4096;
+	cli->bufsize = 0x10000;
 	cli->max_xmit = cli->bufsize - 4;
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf  = (char *)malloc(cli->bufsize);
