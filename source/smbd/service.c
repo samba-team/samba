@@ -371,7 +371,7 @@ connection_struct *make_connection(char *service,char *user,char *password,
 		}
 	}
 
-	if (NT_STATUS_IS_ERR(share_sanity_checks(snum, service, dev))) {
+	if (NT_STATUS_IS_ERR(*status = share_sanity_checks(snum, service, dev))) {
 		return NULL;
 	}	
 
