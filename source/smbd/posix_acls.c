@@ -57,8 +57,6 @@ typedef struct canon_ace {
  * +------+------+-------------+---------------------+-------------+--------------------+
  */
 
-#define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
-
 #define PAI_VERSION_OFFSET	0
 #define PAI_FLAG_OFFSET		1
 #define PAI_NUM_ENTRIES_OFFSET	2
