@@ -300,7 +300,10 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 						     &next_parms,
 						     (void*)&state, 
 						     smbcli_list_old_callback);
-			
+
+			if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES)) {
+				break;
+			}
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_destroy(state.mem_ctx);
 				return -1;
