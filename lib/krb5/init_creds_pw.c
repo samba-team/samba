@@ -253,7 +253,7 @@ get_init_creds_common(krb5_context context,
 	    return ENOMEM;
 	memcpy (*etypes, options->etype_list,
 		options->etype_list_length * sizeof(krb5_enctype));
-	(*etypes)[options->etype_list_length] = 0;
+	(*etypes)[options->etype_list_length] = ETYPE_NULL;
     }
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST) {
 	*pre_auth_types = malloc((options->preauth_list_length + 1)
@@ -262,7 +262,7 @@ get_init_creds_common(krb5_context context,
 	    return ENOMEM;
 	memcpy (*pre_auth_types, options->preauth_list,
 		options->preauth_list_length * sizeof(krb5_preauthtype));
-	(*pre_auth_types)[options->preauth_list_length] = 0;
+	(*pre_auth_types)[options->preauth_list_length] = KRB5_PADATA_NONE;
     }
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_SALT)
 	;			/* XXX */
@@ -473,7 +473,7 @@ krb5_get_init_creds_password(krb5_context context,
 			    goto out;
 			}
 			pre_auth_types[0] = KRB5_PADATA_ENC_TIMESTAMP;
-			pre_auth_types[1] = 0;
+			pre_auth_types[1] = KRB5_PADATA_NONE;
 			break;
 		    case pa_etype_info:
 			preauth = &preauth2;
@@ -495,7 +495,7 @@ krb5_get_init_creds_password(krb5_context context,
 		if (pre_auth_types == NULL)
 		    goto out;
 		pre_auth_types[0] = KRB5_PADATA_ENC_TIMESTAMP;
-		pre_auth_types[1] = 0;
+		pre_auth_types[1] = KRB5_PADATA_NONE;
 	    }
 	    krb5_free_kdc_rep (context, &kdc_reply);
 	    break;
