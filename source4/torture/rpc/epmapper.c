@@ -270,6 +270,73 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
+static BOOL test_Delete(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct epm_entry_t *entries)
+{
+	NTSTATUS status;
+	struct epm_Delete r;
+
+	r.in.num_ents = 1;
+	r.in.entries = entries;
+	
+	status = dcerpc_epm_Delete(p, mem_ctx, &r);
+	if (NT_STATUS_IS_ERR(status)) {
+		printf("Delete failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (r.out.result != 0) {
+		printf("Delete failed - %d\n", r.out.result);
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_Insert(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct epm_Insert r;
+	struct dcerpc_binding bd;
+
+	r.in.num_ents = 1;
+
+	r.in.entries = talloc_array_p(mem_ctx, struct epm_entry_t, 1);
+	ZERO_STRUCT(r.in.entries[0].object);
+	r.in.entries[0].annotation = "smbtorture endpoint";
+	status = dcerpc_parse_binding(mem_ctx, "ncalrpc:[SMBTORTURE]", &bd);
+	if (NT_STATUS_IS_ERR(status)) {
+		printf("Unable to generate dcerpc_binding struct\n");
+		return False;
+	}
+
+	r.in.entries[0].tower = talloc_p(mem_ctx, struct epm_twr_t);
+
+	status = dcerpc_binding_build_tower(mem_ctx, &bd, &r.in.entries[0].tower->tower);
+	if (NT_STATUS_IS_ERR(status)) {
+		printf("Unable to build tower from binding struct\n");
+		return False;
+	}
+	
+	r.in.replace = 0;
+
+	status = dcerpc_epm_Insert(p, mem_ctx, &r);
+	if (NT_STATUS_IS_ERR(status)) {
+		printf("Insert failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (r.out.result != 0) {
+		printf("Insert failed - %d\n", r.out.result);
+		return False;
+	}
+
+	if (!test_Delete(p, mem_ctx, r.in.entries)) {
+		return False; 
+	}
+
+	return True;
+}
+
 static BOOL test_InqObject(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -305,6 +372,10 @@ BOOL torture_rpc_epmapper(void)
 	}
 
 	if (!test_Lookup(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_Insert(p, mem_ctx)) {
 		ret = False;
 	}
 
