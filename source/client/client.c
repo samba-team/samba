@@ -430,7 +430,7 @@ static void cmd_dir(void)
 
 	do_dskattr();
 
-	DEBUG(3, ("Total bytes listed: %llu\n", dir_total));
+	DEBUG(3, ("Total bytes listed: %.0f\n", (double)dir_total));
 }
 
 
