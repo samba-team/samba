@@ -48,6 +48,23 @@ Winbind in a samba controlled domain
 One Time Migration script from a Windows NT 4.0 PDC to a Samba PDC
 ldap passwd sync
 
+http://www.unav.es/cti/ldap-smb/smb-ldap-3-howto.html
+
 Not release-critical:
 docs/docbook/devdoc/* - most of these docs are outdated and need updates...
 docs/docbook/projdoc/Diagnosis.sgml - Needs extension
+
+Documentation for following smb.conf.5 parameters does not exist:
+set primary group script // logon
+-valid                   // misc
+acl compatibility        // protocol
+client signing           // protocol
+client use spnego        // protocol
+profile acls             // protocol
+client lanman auth       // security
+client NTLMv2 auth       // security
+idmap backend            // security
+preload modules          // security
+sam backend              // security
+kernel change notify     // tuning
+lpq cache time           // tuning
