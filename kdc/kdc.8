@@ -136,6 +136,13 @@ How long before password/principal expiration the KDC should start
 sending out warning messages.
 .El
 .Pp
+The configuration file is only read when the 
+.Nm
+is started.
+So if changes to the configuration file are to take effect, the
+.Nm
+needs to be restarted.
+.Pp
 An example of a config file:
 .Bd -literal -offset indent
 [kdc]
