@@ -86,15 +86,21 @@ void status_page(void)
 		stop_nmbd();
 	}
 
-	for (i=0;cgi_vnum(i, &v); i++) {
-		if (strncmp(v, "kill_", 5) != 0) continue;
-		pid = atoi(v+5);
-		if (pid > 0) {
-			printf("killing %d<br>\n", pid);
-			kill_pid(pid);
+	f = fopen(fname,"r");
+	if (f) {
+		while (!feof(f)) {
+			if (fread(&crec,sizeof(crec),1,f) != 1)	break;
+			if (crec.magic == 0x280267 && crec.cnum == -1 &&
+			    process_exists(crec.pid)) {
+				char buf[30];
+				sprintf(buf,"kill_%d", crec.pid);
+				if (cgi_variable(buf)) {
+					kill_pid(pid);
+				}
+			}
 		}
+		fclose(f);
 	}
-
 
 	printf("<H2>Server Status</H2>\n");
 
