@@ -91,7 +91,6 @@ PyObject *spoolss_setjob(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
-	PyObject *result;
 	uint32 level = 0, command, jobid;
 	static char *kwlist[] = {"jobid", "command", "level", NULL};
 
@@ -105,6 +104,106 @@ PyObject *spoolss_setjob(PyObject *self, PyObject *args, PyObject *kw)
 	
 	werror = cli_spoolss_setjob(hnd->cli, hnd->mem_ctx, &hnd->pol,
 				    jobid, level, command);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+	
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+/* Get job */
+
+PyObject *spoolss_getjob(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	WERROR werror;
+	PyObject *result;
+	uint32 level = 1, jobid, needed;
+	static char *kwlist[] = {"jobid", "level", NULL};
+	JOB_INFO_CTR ctr;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "i|i", kwlist, &jobid,
+					 &level))
+		return NULL;
+	
+	/* Call rpc function */
+	
+	werror = cli_spoolss_getjob(hnd->cli, hnd->mem_ctx, 0, &needed,
+				    &hnd->pol, jobid, level, &ctr);
+
+	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
+		werror = cli_spoolss_getjob(
+			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol,
+			jobid, level, &ctr);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
+	switch(level) {
+	case 1:
+		py_from_JOB_INFO_1(&result, ctr.job.job_info_1);
+		break;
+	case 2:
+		py_from_JOB_INFO_2(&result, ctr.job.job_info_2);
+		break;
+	}
+
+	return result;
+}
+
+/* Start page printer.  This notifies the spooler that a page is about to be
+   printed on the specified printer. */
+
+PyObject *spoolss_startpageprinter(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	WERROR werror;
+	static char *kwlist[] = { NULL };
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "", kwlist))
+		return NULL;
+	
+	/* Call rpc function */
+	
+	werror = cli_spoolss_startpageprinter(
+		hnd->cli, hnd->mem_ctx, &hnd->pol);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+	
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+/* End page printer.  This notifies the spooler that a page has finished
+   being printed on the specified printer. */
+
+PyObject *spoolss_endpageprinter(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	WERROR werror;
+	static char *kwlist[] = { NULL };
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "", kwlist))
+		return NULL;
+	
+	/* Call rpc function */
+	
+	werror = cli_spoolss_endpageprinter(
+		hnd->cli, hnd->mem_ctx, &hnd->pol);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));

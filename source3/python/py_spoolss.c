@@ -192,7 +192,18 @@ Set the form given by the dictionary argument.
           "Enumerate jobs" },
 
         { "setjob", spoolss_setjob, METH_VARARGS | METH_KEYWORDS,
-          "Set job command" },
+          "Set job information" },
+
+        { "getjob", spoolss_getjob, METH_VARARGS | METH_KEYWORDS,
+          "Get job information" },
+
+        { "startpageprinter", spoolss_startpageprinter, 
+           METH_VARARGS | METH_KEYWORDS,
+          "Notify spooler that a page is about to be printed." },
+
+        { "endpageprinter", spoolss_endpageprinter, 
+           METH_VARARGS | METH_KEYWORDS,
+          "Notify spooler that a page is about to be printed." },
 
 	{ NULL }
 

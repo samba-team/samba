@@ -49,6 +49,9 @@ BOOL py_to_FORM(FORM *form, PyObject *dict);
 
 PyObject *spoolss_enumjobs(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_setjob(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_getjob(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_startpageprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_endpageprinter(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_jobs_conv.c  */
 
