@@ -2093,7 +2093,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
   if (is_locked(fsp,conn,smb_maxcnt,startpos, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));
-  nread = read_file(fsp,data,smb_maxcnt);
+  nread = read_file(fsp,data,startpos,smb_maxcnt);
 
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -3869,7 +3869,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
     {
       size_t N = MIN(max_per_packet,tcount-total_read);
   
-      nread = read_file(fsp,data,N);
+      nread = read_file(fsp,data,startpos,N);
 
       if (nread <= 0) nread = 0;
 
