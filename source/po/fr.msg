@@ -1,5 +1,5 @@
 # French messages for international release of SWAT.
-# Copyright (C) 2001 François Le Lay <fanch@tuxfamily.org>
+# Copyright (C) 2001 FranÃ§ois Le Lay <fanch@tuxfamily.org>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -20,10 +20,10 @@ msgstr ""
 "Project-Id-Version: i18n_swat \n"
 "POT-Creation-Date: 2003-10-06 05:30+0900\n"
 "PO-Revision-Date: 2000-02-08 14:45+0100\n"
-"Last-Translator: François Le Lay <fanch@tuxfamily.org>\n"
+"Last-Translator: FranÃ§ois Le Lay <fanch@tuxfamily.org>\n"
 "Language-Team: (Samba Team) <samba-technical@samba.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: \n"
 
 #: ../web/swat.c:117
@@ -37,7 +37,7 @@ msgstr "Aide"
 
 #: ../web/swat.c:206 ../web/swat.c:220 ../web/swat.c:235 ../web/swat.c:243 ../web/swat.c:252 ../web/swat.c:261 ../web/swat.c:267 ../web/swat.c:273 ../web/swat.c:286
 msgid "Set Default"
-msgstr "Définir par défaut"
+msgstr "DÃ©finir par dÃ©faut"
 
 #: ../web/swat.c:408
 #, c-format
@@ -52,7 +52,7 @@ msgstr ""
 #: ../web/swat.c:501
 #, c-format
 msgid "Logged in as <b>%s</b>"
-msgstr "Connecté en tant que <b>%s</b>"
+msgstr "ConnectÃ© en tant que <b>%s</b>"
 
 #: ../web/swat.c:505
 msgid "Home"
@@ -60,7 +60,7 @@ msgstr "Home"
 
 #: ../web/swat.c:507
 msgid "Globals"
-msgstr "Paramètres Généraux"
+msgstr "ParamÃ¨tres GÃ©nÃ©raux"
 
 #: ../web/swat.c:508
 msgid "Shares"
@@ -96,7 +96,7 @@ msgstr "Vue Basique"
 
 #: ../web/swat.c:528 ../web/swat.c:531
 msgid "Advanced"
-msgstr "Vue Détaillée"
+msgstr "Vue DÃ©taillÃ©e"
 
 #: ../web/swat.c:529
 msgid "Change View To"
@@ -112,7 +112,7 @@ msgstr "Vue Normale"
 
 #: ../web/swat.c:560
 msgid "Full View"
-msgstr "Vue Complète"
+msgstr "Vue ComplÃ¨te"
 
 #. Here we first set and commit all the parameters that were selected
 #. in the previous screen.
@@ -147,7 +147,7 @@ msgstr "commentaire"
 
 #: ../web/swat.c:726
 msgid "Edit Parameter Values"
-msgstr "Paramètres Imprimantes"
+msgstr "ParamÃ¨tres Imprimantes"
 
 #: ../web/swat.c:732
 msgid "Server Type"
@@ -215,11 +215,11 @@ msgstr "Sauver les modifications"
 
 #: ../web/swat.c:819 ../web/swat.c:919 ../web/swat.c:1267
 msgid "Reset Values"
-msgstr "Réinitialiser Valeurs"
+msgstr "RÃ©initialiser Valeurs"
 
 #: ../web/swat.c:844
 msgid "Share Parameters"
-msgstr "Paramètres de partage"
+msgstr "ParamÃ¨tres de partage"
 
 #: ../web/swat.c:887
 msgid "Choose Share"
@@ -231,11 +231,11 @@ msgstr "Supprimer un partage"
 
 #: ../web/swat.c:908
 msgid "Create Share"
-msgstr "Créer un partage"
+msgstr "CrÃ©er un partage"
 
 #: ../web/swat.c:944
 msgid "password change in demo mode rejected"
-msgstr "changement de mot de passe en mode démo rejeté"
+msgstr "changement de mot de passe en mode dÃ©mo rejetÃ©"
 
 #: ../web/swat.c:957
 msgid "Can't setup password database vectors."
@@ -243,19 +243,19 @@ msgstr ""
 
 #: ../web/swat.c:983
 msgid " Must specify \"User Name\" "
-msgstr "  Le champ \"Nom d'utilisateur\" doit être spécifié"
+msgstr "  Le champ \"Nom d'utilisateur\" doit Ãªtre spÃ©cifiÃ©"
 
 #: ../web/swat.c:999
 msgid " Must specify \"Old Password\" "
-msgstr " Le champ  \"Ancien mot de passe\" doît être spécifié"
+msgstr " Le champ  \"Ancien mot de passe\" doÃ®t Ãªtre spÃ©cifiÃ©"
 
 #: ../web/swat.c:1005
 msgid " Must specify \"Remote Machine\" "
-msgstr "  Le champ \"Machine Distante\" doît être spécifié"
+msgstr "  Le champ \"Machine Distante\" doÃ®t Ãªtre spÃ©cifiÃ©"
 
 #: ../web/swat.c:1012
 msgid " Must specify \"New, and Re-typed Passwords\" "
-msgstr "Les champs \"Nouveau mot de passe\" et  \"Confirmation du nouveau mot de passe\" doivent être spécifiés \n"
+msgstr "Les champs \"Nouveau mot de passe\" et  \"Confirmation du nouveau mot de passe\" doivent Ãªtre spÃ©cifiÃ©s \n"
 
 #: ../web/swat.c:1018
 msgid " Re-typed password didn't match new password "
@@ -264,12 +264,12 @@ msgstr " Echec de la confirmation du nouveau mot de passe"
 #: ../web/swat.c:1048
 #, c-format
 msgid " The passwd for '%s' has been changed."
-msgstr " Le mot de passe de '%s' a été modifié. "
+msgstr " Le mot de passe de '%s' a Ã©tÃ© modifiÃ©. "
 
 #: ../web/swat.c:1051
 #, c-format
 msgid " The passwd for '%s' has NOT been changed."
-msgstr " Le mot de passe de '%s' n'a PAS été modifié. \n"
+msgstr " Le mot de passe de '%s' n'a PAS Ã©tÃ© modifiÃ©. \n"
 
 #: ../web/swat.c:1076
 msgid "Server Password Management"
@@ -308,7 +308,7 @@ msgstr "Supprimer Utilisateur"
 
 #: ../web/swat.c:1108
 msgid "Disable User"
-msgstr "Désactiver Utilisateur"
+msgstr "DÃ©sactiver Utilisateur"
 
 #: ../web/swat.c:1110
 msgid "Enable User"
@@ -324,7 +324,7 @@ msgstr " Machine distante : "
 
 #: ../web/swat.c:1179
 msgid "Printer Parameters"
-msgstr "Paramètres Imprimantes"
+msgstr "ParamÃ¨tres Imprimantes"
 
 #: ../web/swat.c:1181
 msgid "Important Note:"
@@ -332,11 +332,11 @@ msgstr "Note Importante:"
 
 #: ../web/swat.c:1182
 msgid "Printer names marked with [*] in the Choose Printer drop-down box "
-msgstr "Les Noms d'imprimantes marqués du signe [*] dans le menu déroulant Choisir Imprimante"
+msgstr "Les Noms d'imprimantes marquÃ©s du signe [*] dans le menu dÃ©roulant Choisir Imprimante"
 
 #: ../web/swat.c:1183
 msgid "are autoloaded printers from "
-msgstr "désignent des imprimantes automatiquement chargées depuis le "
+msgstr "dÃ©signent des imprimantes automatiquement chargÃ©es depuis le "
 
 #: ../web/swat.c:1184
 msgid "Printcap Name"
@@ -356,7 +356,7 @@ msgstr "Supprimer Imprimante"
 
 #: ../web/swat.c:1257
 msgid "Create Printer"
-msgstr "Créer Imprimante"
+msgstr "CrÃ©er Imprimante"
 
 #: ../web/statuspage.c:123
 msgid "RDONLY     "
@@ -376,15 +376,15 @@ msgstr "Statut du Serveur"
 
 #: ../web/statuspage.c:314
 msgid "Auto Refresh"
-msgstr "Rafraîchissement Automatique"
+msgstr "RafraÃ®chissement Automatique"
 
 #: ../web/statuspage.c:315 ../web/statuspage.c:320
 msgid "Refresh Interval: "
-msgstr "Intervalle de rafraîchissement: "
+msgstr "Intervalle de rafraÃ®chissement: "
 
 #: ../web/statuspage.c:319
 msgid "Stop Refreshing"
-msgstr "Stopper Rafraîchissement"
+msgstr "Stopper RafraÃ®chissement"
 
 #: ../web/statuspage.c:334
 msgid "version:"
@@ -534,7 +534,7 @@ msgstr "Options de base"
 
 #: ../param/loadparm.c:775
 msgid "Security Options"
-msgstr "Options de Sécurité"
+msgstr "Options de SÃ©curitÃ©"
 
 #: ../param/loadparm.c:859
 msgid "Logging Options"
@@ -546,7 +546,7 @@ msgstr "Options de Protocole"
 
 #: ../param/loadparm.c:911
 msgid "Tuning Options"
-msgstr "Options de réglage"
+msgstr "Options de rÃ©glage"
 
 #: ../param/loadparm.c:940
 msgid "Printing Options"
