@@ -144,6 +144,16 @@ setup(
               extra_compile_args = flags_list,
               extra_objects = obj_list),
 
+    # SRVSVC pipe module
+
+    Extension(name = "srvsvc",
+              sources = [samba_srcdir + "python/py_srvsvc.c",
+                         samba_srcdir + "python/py_common.c"],
+              libraries = lib_list,
+              library_dirs = ["/usr/kerberos/lib"],
+              extra_compile_args = flags_list,
+              extra_objects = obj_list),
+
     # tdb module
 
     Extension(name = "tdb",
