@@ -539,6 +539,7 @@ copy_stream(FILE *from, FILE *to)
     int n;
     int bytes = 0;
     int werr;
+    int hashbytes = HASHBYTES;
     
 #ifdef HAVE_MMAP
     struct stat st;
@@ -560,6 +561,10 @@ copy_stream(FILE *from, FILE *to)
 	if(werr < 0)
 	    break;
 	bytes += werr;
+	while(hash && bytes > hashbytes){
+	    putchar('#');
+	    hashbytes += HASHBYTES;
+	}
     }
     sec_fflush(to);
     if(n < 0)
