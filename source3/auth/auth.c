@@ -289,7 +289,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 			unbecome_root();
 			
 			if (NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(5, ("check_ntlm_password:  PAM Account for user [%s] suceeded\n", 
+				DEBUG(5, ("check_ntlm_password:  PAM Account for user [%s] succeeded\n", 
 					  pdb_username));
 			} else {
 				DEBUG(3, ("check_ntlm_password:  PAM Account for user [%s] FAILED with error %s\n", 
@@ -299,7 +299,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG((*server_info)->guest ? 5 : 2, 
-			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] suceeded\n", 
+			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] succeeded\n", 
 			       (*server_info)->guest ? "guest " : "", 
 			       user_info->smb_name.str, 
 			       user_info->internal_username.str, 
