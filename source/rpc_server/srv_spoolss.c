@@ -931,7 +931,7 @@ static void api_spoolss_enumforms(rpcsrv_struct *p, prs_struct *data,
 	r_u.offered = q_u.buf_size;
 	r_u.level = q_u.level;
 	r_u.status = _spoolss_enumforms(&q_u.handle,
-				q_u. level,
+				q_u.level,
 				&r_u.forms_1,
 				&r_u.offered,
 				&r_u.numofforms);
@@ -940,63 +940,6 @@ static void api_spoolss_enumforms(rpcsrv_struct *p, prs_struct *data,
 	spoolss_free_r_enumforms(&r_u);
 }
 
-/****************************************************************************
-****************************************************************************/
-static void fill_port_2(PORT_INFO_2 *port, char *name)
-{
-	make_unistr(&(port->port_name), name);
-	make_unistr(&(port->monitor_name), "Moniteur Local");
-	make_unistr(&(port->description), "Local Port");
-#define PORT_TYPE_WRITE 1
-	port->port_type=PORT_TYPE_WRITE;
-	port->reserved=0x0;	
-}
-
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_enumports(SPOOL_Q_ENUMPORTS *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ENUMPORTS r_u;
-	int i=0;
-	PORT_INFO_2 *ports_2=NULL;
-	int n_services=lp_numservices();
-	int snum;
-
-	DEBUG(4,("spoolss_reply_enumports\n"));
-	
-	r_u.offered=q_u->buf_size;
-	r_u.level=q_u->level;
-	r_u.status=0x0;
-		
-	switch (r_u.level)
-	{
-		case 2:
-		{
-			ports_2=(PORT_INFO_2 *)malloc(n_services*sizeof(PORT_INFO_2));
-			for (snum=0; snum<n_services; snum++)
-			{
-				if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-				{
-					DEBUGADD(6,("Filling port number [%d]\n",i));
-					fill_port_2(&(ports_2[i]), lp_servicename(snum));
-					i++;
-				}
-			}
-   			r_u.port.port_info_2=ports_2;
-   			break;
-   		}
-	}
-	r_u.numofports=i;
-	spoolss_io_r_enumports("",&r_u,rdata,0);
-	switch (r_u.level)
-	{
-		case 2:
-		{
-			free(ports_2);
-			break;
-		}
-	}
-}
 
 /****************************************************************************
 ****************************************************************************/
@@ -1004,12 +947,21 @@ static void api_spoolss_enumports(rpcsrv_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPORTS q_u;
+	SPOOL_R_ENUMPORTS r_u;
 	
 	spoolss_io_q_enumports("", &q_u, data, 0);
 
-	spoolss_reply_enumports(&q_u, rdata);
+	r_u.offered=q_u.buf_size;
+	r_u.level=q_u.level;
+	r_u.status = _spoolss_enumports(&q_u.name,
+				q_u.level,
+				&r_u.ctr,
+				&r_u.offered,
+				&r_u.numofports);
 	
 	spoolss_io_free_buffer(&(q_u.buffer));
+	spoolss_io_r_enumports("",&r_u,rdata,0);
+	spoolss_free_r_enumports(&r_u);
 }
 
 /****************************************************************************

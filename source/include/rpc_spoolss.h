@@ -1077,16 +1077,23 @@ typedef struct spool_q_enumports
 	uint32 buf_size;
 } SPOOL_Q_ENUMPORTS;
 
+typedef struct port_info_ctr_info
+{
+	union {
+		PORT_INFO_1 *info_1;
+		PORT_INFO_2 *info_2;
+	} port;
+
+} PORT_INFO_CTR;
+
 typedef struct spool_r_enumports
 {
 	uint32 level;
-	union {
-		PORT_INFO_1 *port_info_1;
-		PORT_INFO_2 *port_info_2;
-	} port;
+	PORT_INFO_CTR ctr;
 	uint32 offered;
 	uint32 numofports;
 	uint32 status;
+
 } SPOOL_R_ENUMPORTS;
 
 #define JOB_CONTROL_PAUSE              1

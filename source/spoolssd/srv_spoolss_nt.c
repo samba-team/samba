@@ -2908,8 +2908,6 @@ uint32 _spoolss_enumforms( const POLICY_HND *handle,
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
 static void fill_port_2(PORT_INFO_2 *port, char *name)
@@ -2924,49 +2922,47 @@ static void fill_port_2(PORT_INFO_2 *port, char *name)
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumports(SPOOL_Q_ENUMPORTS *q_u, prs_struct *rdata)
+uint32 _spoolss_enumports( const UNISTR2 *name,
+				uint32 level,
+				PORT_INFO_CTR *ctr,
+				uint32 *offered,
+				uint32 *numofports)
 {
-	SPOOL_R_ENUMPORTS r_u;
-	int i=0;
-	PORT_INFO_2 *ports_2=NULL;
 	int n_services=lp_numservices();
 	int snum;
 
 	DEBUG(4,("spoolss_enumports\n"));
 	
-	offered=buf_size;
-	level=level;
-	status=0x0;
-		
+	(*numofports) = 0;
+
 	switch (level)
 	{
 		case 2:
 		{
+			PORT_INFO_2 *ports_2=NULL;
 			ports_2=(PORT_INFO_2 *)malloc(n_services*sizeof(PORT_INFO_2));
 			for (snum=0; snum<n_services; snum++)
 			{
-				if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
+				if ( lp_browseable(snum) &&
+				     lp_snum_ok(snum) && 
+				     lp_print_ok(snum) )
 				{
-					DEBUGADD(6,("Filling port number [%d]\n",i));
-					fill_port_2(&(ports_2[i]), lp_servicename(snum));
-					i++;
+					DEBUGADD(6,("Filling port no [%d]\n",
+					              (*numofports)));
+					fill_port_2(&(ports_2[(*numofports)]),
+					            lp_servicename(snum));
+					(*numofports)++;
 				}
 			}
-   			port.port_info_2=ports_2;
-   			break;
+   			ctr->port.info_2=ports_2;
+   			return 0x0;
    		}
 	}
-	numofports=i;
-	spoolss_io_r_enumports("",&r_u,rdata,0);
-	switch (level)
-	{
-		case 2:
-		{
-			free(ports_2);
-			break;
-		}
-	}
+
+   	return NT_STATUS_INVALID_INFO_CLASS;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

@@ -3178,7 +3178,7 @@ BOOL spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, 
 		case 2:
 		{
 			PORT_INFO_2 *port_2;
-			port_2=r_u->port.port_info_2;
+			port_2=r_u->ctr.port.info_2;
 			
 			for (i=0; i<r_u->numofports; i++)
 			{
@@ -3219,7 +3219,7 @@ BOOL spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, 
 				PORT_INFO_2 *info;
 				for (i=0; i<r_u->numofports; i++)
 				{
-					info = &(r_u->port.port_info_2[i]);
+					info = &(r_u->ctr.port.info_2[i]);
 					smb_io_port_2(desc, info, ps, depth, &start_offset, &end_offset);
 				}
 				break;
@@ -3241,6 +3241,17 @@ BOOL spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, 
 	return True;
 }
 
+void spoolss_free_r_enumports(SPOOL_R_ENUMPORTS *r_u)
+{
+	switch (r_u->level)
+	{
+		case 2:
+		{
+			safe_free(r_u->ctr.port.info_2);
+			break;
+		}
+	}
+}
 /*******************************************************************
 ********************************************************************/  
 BOOL spoolss_io_q_enumports(char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth)
