@@ -1,0 +1,202 @@
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<refentry id="swat">
+
+<refmeta>
+	<refentrytitle>swat</refentrytitle>
+	<manvolnum>8</manvolnum>
+</refmeta>
+
+
+<refnamediv>
+	<refname>swat</refname>
+	<refpurpose>Samba Web Administration Tool</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>nmblookup</command>
+		<arg choice="opt">-s &lt;smb config file&gt;</arg>
+		<arg choice="opt">-a</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This tool is part of the <ulink url="samba.7.html">
+	Samba</ulink> suite.</para>
+
+
+	<para><command>swat</command> allows a Samba administrator to 
+	configure the complex <ulink url="smb.conf.5.html"><filename>
+	smb.conf(5)</filename></ulink> file via a Web browser. In addition, 
+	a <command>swat</command> configuration page has help links 
+	to all the configurable options in the smb.conf file allowing an 
+	administrator to easily look up the effects of any change. </para>
+
+	<para>swat is run from inetd </para>
+</refsect1>
+
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+		<term>-s smb configuration file</term>
+		<listitem><para>The default configuration file path is 
+		determined at compile time.  The file specified contains 
+		the configuration details required by the <command>smbd
+		</command> server. This is the file that swat will modify. 
+		The information in this file includes server-specific 
+		information such as what printcap file to use, as well as 
+		descriptions of all the services that the server is to provide.
+		See <filename>smb.conf</filename> for more information. 
+		</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>-a</term>
+		<listitem><para>This option disables authentication and puts 
+		swat in demo mode. In that mode anyone will be able to modify 
+		the smb.conf file. </para>
+		
+		<para><emphasis>Do NOT enable this option on a production 
+		server. </emphasis></para></listitem>
+		</varlistentry>
+	</variablelist>
+
+
+<RefSect1><title>Installation</title>
+
+<para>After
+you compile SWAT you need to run "make install" <ItemizedList MARK=Bullet>
+<term>to install the </term><listitem><para>swat binary
+and the various help files and images. A default install would put these
+in: </para></listitem>
+</ItemizedList>
+
+
+<para> <BR>
+ <BR>
+/usr/local/samba/bin/swat<BR>
+/usr/local/samba/swat/images/*<BR>
+/usr/local/samba/swat/help/*<BR>
+ <BR>
+  
+
+<para></RefSect1>
+
+<RefSect1><title>Inetd Installation</title>
+
+<para>You need to edit your CW/etc/inetd.conf and CW/etc/services
+to enable SWAT to be launched via inetd.  
+
+<para>In CW/etc/services you need to
+add a line like this: 
+
+<para>CWswat            901/tcp 
+
+<para>Note for NIS/YP users -
+you may need to rebuild the NIS service maps rather than alter your local
+CW/etc/services file. 
+
+<para>the choice of port number isn't really important except
+that it should be less than 1024 and not currently used (using a number
+above 1024 presents an obscure security hole depending on the implementation
+details of your inetd daemon). 
+
+<para>In CW/etc/inetd.conf you should add a line
+like this: 
+
+<para>CWswat    stream  tcp     nowait.400  root    /usr/local/samba/bin/swat
+swat 
+
+<para>One you have edited CW/etc/services and CW/etc/inetd.conf you need
+to send a HUP signal to inetd. To do this use CW"kill -1 PID" where PID is
+the process ID of the inetd daemon. 
+
+<para></RefSect1>
+
+<RefSect1><title>Launching</title>
+
+<para>To launch swat just run your
+favorite web browser and point it at CW<Command>http://localhost:901/.</Command> 
+
+<para>Note that
+you can attach to swat from any IP connected machine but connecting from
+a remote machine leaves your connection open to password sniffing as passwords
+will be sent in the clear over the wire. 
+
+<para></RefSect1>
+
+<RefSect1><title>Files</title>
+
+<para>/etc/inetd.conf 
+
+<para>This file must
+contain suitable startup information for the meta-daemon.  
+
+<para>/etc/services
+
+
+<para>This file must contain a mapping of service name (e.g., swat) to service
+port (e.g., 901) and protocol type (e.g., tcp).  
+
+<para>/usr/local/samba/lib/smb.conf
+
+
+<para>This is the default location of the <I>smb.conf</I> server configuration file that
+swat edits. Other common places that systems install this file are <I>/usr/samba/lib/smb.conf</I>
+and <I>/etc/smb.conf</I>. 
+
+<para>This file describes all the services the server is to
+make available to clients. See <Command>smb.conf (5)</Command> for more information. 
+
+<para></RefSect1>
+
+<refsect1>
+	<title>WANRNIGS</title>
+
+	<para><command>swat</command> will rewrite your <filename>smb.conf
+	</filename> file. It will rearrange the entries and delete all 
+	comments, <parameter>include=</parameter> and <parameter>copy="
+	</parameter> options. If you have a carefully crafted <filename>
+	smb.conf</filanem> then back it up or don't use swat! </para>
+</refsect1>
+
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 2.2 of 
+	the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+	<para><command>inetd(5)</command>,
+	<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
+	<ulink url="smb.conf.5.html">smb.conf(5)</ulink>
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+	
+	<para>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</para>
+	
+	<para>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</para>
+</refsect1>
+
+</refentry>
