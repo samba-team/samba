@@ -7,7 +7,7 @@ Group: Networking
 Source: ftp://samba.org/pub/samba/samba-PVERSION.tar.gz
 Patch: makefile-path.patch
 Patch1: smbw.patch
-Patch2: nss-wins.patch
+#Patch2: nss-wins.patch
 Requires: pam >= 0.64 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
 BuildRoot: /var/tmp/samba
@@ -164,7 +164,7 @@ install.
 %setup
 %patch -p1
 %patch1 -p1
-%patch2 -p1
+#%patch2 -p1
 
 %build
 cd source
