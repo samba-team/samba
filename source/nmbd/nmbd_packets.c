@@ -1902,7 +1902,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
 
   memset((char *)&p,'\0',sizeof(p));
 
-  if(ismyip(dest_ip))
+  if(ismyip(dest_ip) && (dest_port == DGRAM_PORT)) /* Only if to DGRAM_PORT */
     loopback_this_packet = True;
 
   /* generate_name_trn_id(); */ /* Not used, so gone, RJS */

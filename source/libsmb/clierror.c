@@ -202,7 +202,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_
 	}
 	if (rcls == ERRSRV) {
 		switch (code) {
-		case ERRbadpw: return EPERM;
+		case ERRbadpw: return EACCES;
 		case ERRaccess: return EACCES;
 		case ERRnoresource: return ENOMEM;
 		case ERRinvdevice: return ENODEV;
