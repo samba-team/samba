@@ -186,6 +186,9 @@ make -j${NUMCPU} bin/smbspool
 
 ## Build VFS modules
 cd ../examples/VFS
+CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
+        --prefix=%{prefix} \
+        --localstatedir=/var
 make
 
 

@@ -8,6 +8,8 @@ Source: ftp://samba.org/pub/samba/samba-%{version}.tar.gz
 Packager: John H Terpstra [Samba-Team] <jht@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
+Provides: samba = %{version}
+Obsoletes: samba-common, samba-client, samba-swat
 BuildRoot: /var/tmp/samba
 Prefix: /usr
 
@@ -43,10 +45,13 @@ for Shadow passwords and quotas. Do NOT recompile with the
 SHADOW_PWD option enabled
 
 %changelog
-* Mon May 6 2002 Gerald Carter <jerry@samba.org>
-  - moved findsmb to a standard component in samba's
-    "make install".  Removed from specfile.
+* Sun Jun 2 2002 Gerald Carter <jerry@samba.org>
+  - include audit and recycle VFS modules in /usr/lib/samba
 
+* Mon May 6 2002 Gerald Carter <jerry@samba.org>
+  - moved findsmb to a standard component in samba's 
+    "make install".  Removed from specfile.
+ 
 * Sun Oct 14 2001 Andrew Bartlett <abartlet@samba.org>
  - Set SBINDIR for codepage/manpage install, cope with 
     broken Makefile
@@ -149,6 +154,7 @@ SHADOW_PWD option enabled
 %setup
 
 %build
+## Build main Samba source
 cd source
 
 %ifarch ia64
@@ -166,6 +172,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-codepagedir=/etc/codepages \
 	--with-fhs \
 	--with-quotas \
+	--with-msdfs \
 	--with-smbmount \
 	--with-pam \
 	--with-syslog \
@@ -175,7 +182,15 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 make -j${NUMCPU} proto
 make -j${NUMCPU} all nsswitch/libnss_wins.so
 make -j${NUMCPU} debug2html
-make -j${NUMCPU} bin/smbspool everything
+make -j${NUMCPU} bin/smbspool
+
+## Build VFS modules
+cd ../examples/VFS
+CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
+        --prefix=%{prefix} \
+        --localstatedir=/var
+make
+
 
 
 %install
@@ -191,9 +206,10 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{images,help,include,using_samba}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
 mkdir -p $RPM_BUILD_ROOT/var/cache/samba
-mkdir -p $RPM_BUILD_ROOT/var/log/samba
+mkdir -p $RPM_BUILD_ROOT/var/{log,run}/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/lib/security
+mkdir -p $RPM_BUILD_ROOT%{prefix}/lib/samba
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
@@ -246,6 +262,10 @@ install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 # Install winbind shared libraries
 install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
 install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
+
+# Install the VFS modules
+install -m755 examples/VFS/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba
+install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba
 
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
@@ -494,6 +514,8 @@ MANDIR_MACRO/man8/*
 %dir /etc/codepages/*
 %attr(755,root,root) %dir /var/cache/samba
 %dir /var/log/samba
+%dir /var/run/samba
 %attr(1777,root,root) %dir /var/spool/samba
 %attr(-,root,root) /lib/libnss_winbind.so
 %attr(-,root,root) /lib/security/pam_winbind.so
+%attr(755,root,root) %{prefix}/lib/samba/*.so
