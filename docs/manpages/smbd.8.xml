@@ -138,7 +138,7 @@
 		<varlistentry>
 		<term>-p &lt;port number(s)&gt;</term>
 		<listitem><para><replaceable>port number(s)</replaceable> is a 
-		space or comma-seperated list of TCP ports smbd should listen on.
+		space or comma-separated list of TCP ports smbd should listen on.
 		The default value is taken from the <smbconfoption><name>ports</name></smbconfoption> parameter in &smb.conf;</para>
 
 		<para>The default ports are 139 (used for SMB over NetBIOS over TCP)
