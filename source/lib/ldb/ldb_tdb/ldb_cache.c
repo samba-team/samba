@@ -222,6 +222,7 @@ int ltdb_attribute_flags(struct ldb_context *ldb, const char *attr_name)
 		{ "CASE_INSENSITIVE", LTDB_FLAG_CASE_INSENSITIVE },
 		{ "INTEGER", LTDB_FLAG_INTEGER },
 		{ "WILDCARD", LTDB_FLAG_WILDCARD },
+		{ "HIDDEN", LTDB_FLAG_HIDDEN },
 		{ NULL, 0}
 	};
 	size_t len;
