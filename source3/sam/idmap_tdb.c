@@ -46,20 +46,6 @@ static struct idmap_state {
 } idmap_state;
 
 /**********************************************************************
- Return the TDB_CONTEXT* for winbindd_idmap.  I **really** feel
- dirty doing this, but not so dirty that I want to create another 
- tdb
-***********************************************************************/
-
-TDB_CONTEXT *idmap_tdb_handle( void )
-{
-	if ( idmap_tdb )
-		return idmap_tdb;
-	
-	return NULL;
-}
-
-/**********************************************************************
  allocate a new RID; We don't care if is a user or group
 **********************************************************************/
 
@@ -648,6 +634,27 @@ static void db_idmap_status(void)
 	}
 
 	/* Display complete mapping of users and groups to rids */
+}
+
+/**********************************************************************
+ Return the TDB_CONTEXT* for winbindd_idmap.  I **really** feel
+ dirty doing this, but not so dirty that I want to create another 
+ tdb
+***********************************************************************/
+
+TDB_CONTEXT *idmap_tdb_handle( void )
+{
+	if ( idmap_tdb )
+		return idmap_tdb;
+		
+	/* go ahead an open it;  db_idmap_init() doesn't use any params 
+	   right now */
+	   
+	db_idmap_init( NULL );
+	if ( idmap_tdb )
+		return idmap_tdb;
+		
+	return NULL;
 }
 
 static struct idmap_methods db_methods = {
