@@ -220,7 +220,7 @@ GtkWidget* create_rpcwin (void)
   return rpcwin;
 }
 
-static void on_open_nt4_activate (GtkMenuItem *menuitem, gpointer user_data)
+static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	gint result = gtk_dialog_run(GTK_DIALOG(create_openfilewin()));
 	char *filename;
@@ -228,7 +228,7 @@ static void on_open_nt4_activate (GtkMenuItem *menuitem, gpointer user_data)
 	switch(result) {
 	case GTK_RESPONSE_OK:
 		filename = strdup(gtk_file_selection_get_filename(GTK_FILE_SELECTION(openfilewin)));
-		error = reg_open("nt4", filename, NULL, &registry);
+		error = reg_open(user_data, filename, NULL, &registry);
 		if(!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(error);
 			break;
@@ -407,6 +407,7 @@ GtkWidget* create_mainwin (void)
 	GtkWidget *menu_file;
 	GtkWidget *menu_file_menu;
 	GtkWidget *open_nt4;
+	GtkWidget *open_w95;
 	GtkWidget *open_gconf;
 	GtkWidget *open_remote;
 	GtkWidget *separatormenuitem1;
@@ -454,6 +455,10 @@ GtkWidget* create_mainwin (void)
 	open_nt4 = gtk_image_menu_item_new_with_mnemonic("_Open NT4 file");
 	gtk_widget_show (open_nt4);
 	gtk_container_add (GTK_CONTAINER (menu_file_menu), open_nt4);
+
+	open_w95 = gtk_image_menu_item_new_with_mnemonic("_Open Win9x file");
+	gtk_widget_show (open_w95);
+	gtk_container_add (GTK_CONTAINER (menu_file_menu), open_w95);
 
 	open_gconf = gtk_image_menu_item_new_with_mnemonic ("_Open GConf");
 	gtk_widget_show (open_gconf);
@@ -595,8 +600,11 @@ GtkWidget* create_mainwin (void)
   gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR (statusbar), FALSE);
 
   g_signal_connect ((gpointer) open_nt4, "activate",
-                    G_CALLBACK (on_open_nt4_activate),
-                    NULL);
+                    G_CALLBACK (on_open_file_activate),
+                    "nt4");
+  g_signal_connect ((gpointer) open_w95, "activate",
+                    G_CALLBACK (on_open_file_activate),
+                    "w95");
   g_signal_connect ((gpointer) open_gconf, "activate",
                     G_CALLBACK (on_open_gconf_activate),
                     NULL);

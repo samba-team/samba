@@ -31,18 +31,17 @@
 typedef unsigned int DWORD;
 typedef unsigned short WORD;
 
-typedef struct regc_block {
-	DWORD REGC_ID;		/* REGC */
+typedef struct creg_block {
+	DWORD CREG_ID;		/* CREG */
 	DWORD uk1;
 	DWORD rgdb_offset;
 	DWORD chksum;
 	WORD  num_rgdb;
 	WORD  flags;
-	DWORD  uk2;
-	DWORD  uk3;
-	DWORD  uk4;
-	DWORD  uk5;
-} REGC_HDR;
+	DWORD uk2;
+	DWORD uk3;
+	DWORD uk4;
+} CREG_HDR;
 
 typedef struct rgkn_block {
 	DWORD RGKN_ID; 		/* RGKN */
@@ -56,7 +55,7 @@ typedef struct rgkn_block {
 } RGKN_HDR;
 
 typedef struct rgkn_key {
-	DWORD inuse;
+	DWORD type;
 	DWORD hash;
 	DWORD next_free;
 	DWORD parent;
@@ -80,7 +79,7 @@ typedef struct rgdb_block {
 } RGDB_HDR;
 
 typedef struct rgdb_key {
-	DWORD inuse;
+	DWORD type;
 	DWORD hash;
 	DWORD next_free;
 	DWORD parent;
@@ -97,64 +96,112 @@ typedef struct rgdb_value {
 	DWORD data_len;
 } RGDB_VALUE;
 
-typedef struct regc_struct_s {
+typedef struct creg_struct_s {
 	int fd;
-	struct stat sbuf;
 	BOOL modified;
 	char *base;
-} REGC;
+	struct stat sbuf;
+	CREG_HDR *creg_hdr;
+	RGKN_HDR *rgkn_hdr;
+	char *rgkn;
+} CREG;
+
+static DWORD str_to_dword(const char *a) {
+    int i;
+    unsigned long ret = 0;
+    for(i = strlen(a)-1; i >= 0; i--) {
+        ret = ret * 0x100 + a[i];
+    }
+    return ret;
+}
+
+#define LOCN(creg, o) (((creg)->base + sizeof(CREG_HDR) + o))
 
 static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *credentials)
 {
-	REGC *regc = talloc_p(h->mem_ctx, REGC);
-	REGC_HDR *regc_hdr;
-	RGKN_HDR *rgkn_hdr;
-	DWORD regc_id, rgkn_id;
-	memset(regc, 0, sizeof(REGC));
-	h->backend_data = regc;
+	CREG *creg = talloc_p(h->mem_ctx, CREG);
+	DWORD creg_id, rgkn_id;
+	memset(creg, 0, sizeof(CREG));
+	h->backend_data = creg;
+	DWORD i, nfree = 0;
+	DWORD offset;
 
-	if((regc->fd = open(location, O_RDONLY, 0000)) < 0) {
+	if((creg->fd = open(location, O_RDONLY, 0000)) < 0) {
 		return WERR_FOOBAR;
 	}
 
-	if(fstat(regc->fd, &regc->sbuf) < 0) {
+    if (fstat(creg->fd, &creg->sbuf) < 0) {
+		return WERR_FOOBAR;
+    }
+
+    creg->base = mmap(0, creg->sbuf.st_size, PROT_READ, MAP_SHARED, creg->fd, 0);
+                                                                                                                                              
+    if ((int)creg->base == 1) {
+		DEBUG(0,("Could not mmap file: %s, %s\n", location, strerror(errno)));
+        return WERR_FOOBAR;
+    }
+
+	creg->creg_hdr = (CREG_HDR *)creg->base;
+
+	if ((creg_id = IVAL(&creg->creg_hdr->CREG_ID,0)) != str_to_dword("CREG")) {
+		DEBUG(0, ("Unrecognized Windows 95 registry header id: 0x%0X, %s\n", 
+				  creg_id, location));
 		return WERR_FOOBAR;
 	}
 
-	regc->base = mmap(0, regc->sbuf.st_size, PROT_READ, MAP_SHARED, regc->fd, 0);
-	regc_hdr = (REGC_HDR *)regc->base;
+	creg->rgkn_hdr = (RGKN_HDR *)LOCN(creg, 0);
 
-	if ((int)regc->base == 1) {
-		return WERR_FOOBAR;
-	}
-	
-	if ((regc_id = IVAL(&regc_hdr->REGC_ID,0)) != str_to_dword("REGC")) {
-		DEBUG(0, ("Unrecognized Windows 95 registry header id: %0X, %s\n", 
-				  regc_id, location));
-		return WERR_FOOBAR;
-	}
-
-	rgkn_hdr = (RGKN_HDR *)regc->base + sizeof(REGC_HDR);
-
-	if ((rgkn_id = IVAL(&rgkn_hdr->RGKN_ID,0)) != str_to_dword("RGKN")) {
-		DEBUG(0, ("Unrecognized Windows 95 registry key index id: %0X, %s\n", 
+	if ((rgkn_id = IVAL(&creg->rgkn_hdr->RGKN_ID,0)) != str_to_dword("RGKN")) {
+		DEBUG(0, ("Unrecognized Windows 95 registry key index id: 0x%0X, %s\n", 
 				  rgkn_id, location));
 		return WERR_FOOBAR;
 	}
 
-	//rgkn = (RGKN_KEY *)regc->base + sizeof(REGC_HDR) + sizeof(RGKN_HDR);
+#if 0 
+	for(i = 0; i < creg->rgkn_hdr->size; i+=sizeof(RGKN_KEY)) {
+		RGKN_KEY *key = (RGKN_KEY *)LOCN(creg, sizeof(RGKN_HDR) + i);
+		if(nfree > 0) {
+			nfree--;
+		} else if(key->type == 0) {
+			DEBUG(0,("Not used\n"));
+			/* Not used */
+		} else if(key->type == 0x80000000) {
+			DEBUG(0,("Regular key\n"));
+			/* Regular key */
+		} else {
+			DEBUG(0,("Invalid key type in RGKN: %0X\n", key->type));
+		}
+	}
 
-	/* FIXME */
+	curpos += creg->rgkn_hdr->size + sizeof(RGKN_HDR);
+#endif
+	offset = creg->rgkn_hdr->size;
+
+	DEBUG(0, ("Reading %d rgdb entries\n", creg->creg_hdr->num_rgdb));
+	for(i = 0; i < creg->creg_hdr->num_rgdb; i++) {
+		RGDB_HDR *rgdb_hdr = (RGDB_HDR *)LOCN(creg, offset);
+		
+		if(strncmp((char *)&(rgdb_hdr->RGDB_ID), "RGDB", 4)) {
+			DEBUG(0, ("unrecognized rgdb entry: %4s, %s\n", 
+					  &rgdb_hdr->RGDB_ID, location));
+			return WERR_FOOBAR;
+		} else {
+			DEBUG(0, ("Valid rgdb entry\n"));
+		}
+
+		offset+=rgdb_hdr->size;
+	}
+	
 
 	return WERR_OK;
 }
 
 static WERROR w95_close_reg(REG_HANDLE *h)
 {
-	REGC *regc = h->backend_data;
-    if (regc->base) munmap(regc->base, regc->sbuf.st_size);
-    regc->base = NULL;
-    close(regc->fd);
+	CREG *creg = h->backend_data;
+	if (creg->base) munmap(creg->base, creg->sbuf.st_size);
+	creg->base = NULL;
+    close(creg->fd);
 	return WERR_OK;
 }
 
