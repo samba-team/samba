@@ -1,3 +1,9 @@
+1999-12-20  Assar Westerlund  <assar@sics.se>
+
+	* pop_init.c (pop_init): use getnameinfo_verified
+
+	* pop_debug.c (get_socket): use getaddrinfo
+
 1999-12-03  Johan Danielsson  <joda@pdc.kth.se>
 
 	* pop_init.c: optionally trace connected addresses to a file
