@@ -137,6 +137,7 @@ int shadow_copy_closedir(vfs_handle_struct *handle, connection_struct *conn, DIR
 {
 	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
 
+	SAFE_FREE(dirp->dirs);
 	SAFE_FREE(dirp);
  
 	return 0;	
