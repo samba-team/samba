@@ -364,8 +364,27 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
 			      struct pvfs_filename *name)
 {
+	dev_t device;
+	ino_t inode;
+
+	if (name->exists) {
+		device = name->st.st_dev;
+		inode = name->st.st_ino;
+	}
+
 	if (fstat(fd, &name->st) == -1) {
 		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (name->exists &&
+	    (device != name->st.st_dev || inode != name->st.st_ino)) {
+		/* the file we are looking at has changed! this could
+		 be someone trying to exploit a race
+		 condition. Certainly we don't want to continue
+		 operating on this file */
+		DEBUG(0,("pvfs: WARNING: file '%s' changed during resole - failing\n",
+			 name->full_name));
+		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
 	name->exists = True;
