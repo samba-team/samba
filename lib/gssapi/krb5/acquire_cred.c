@@ -51,16 +51,20 @@ OM_uint32 gss_acquire_cred
     krb5_error_code kret = 0;
     krb5_ccache ccache;
 
+    gssapi_krb5_init ();
+
     handle = (gss_cred_id_t)malloc(sizeof(*handle));
     if (handle == GSS_C_NO_CREDENTIAL)
         return GSS_S_FAILURE;
 
     memset(handle, 0, sizeof (*handle));
 
-    ret = gss_duplicate_name(minor_status, desired_name, &handle->principal);
-    if (ret) {
-	free(handle);
-        return ret;
+    if (desired_name != NULL) {
+	ret = gss_duplicate_name(minor_status, desired_name, &handle->principal);
+	if (ret) {
+	    free(handle);
+	    return ret;
+	}
     }
 
     if (krb5_cc_default(gssapi_krb5_context, &ccache) == 0) {
@@ -71,7 +75,15 @@ OM_uint32 gss_acquire_cred
 	    krb5_cc_close(gssapi_krb5_context, ccache);
 	    goto try_keytab;
 	}
-	if (krb5_principal_compare(gssapi_krb5_context, handle->principal,
+	if (handle->principal == NULL) {
+	    ret = gss_duplicate_name(minor_status, def_princ, &handle->principal);
+	    if (ret) {
+		free(handle);
+		krb5_free_principal(gssapi_krb5_context, def_princ);
+		krb5_cc_close(gssapi_krb5_context, ccache);
+		return ret;
+	    }
+	} else if (krb5_principal_compare(gssapi_krb5_context, handle->principal,
 				   def_princ) == FALSE) {
 	    krb5_free_principal(gssapi_krb5_context, def_princ);
 	    krb5_cc_close(gssapi_krb5_context, ccache);
