@@ -143,15 +143,15 @@ WERROR dcom_ping(struct dcom_context *ctx)
 	return WERR_OK;
 }
 
-WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface_p ***ip, WERROR *results)
+static WERROR dcom_create_object_remote(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface_p ***ip, WERROR *results)
 {
+	uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
+	struct dcerpc_pipe *p;
+	struct dcom_object_exporter *m;
+	NTSTATUS status;
 	struct RemoteActivation r;
 	struct DUALSTRINGARRAY dualstring;
 	int i;
-	struct dcom_object_exporter *m;
-	struct dcerpc_pipe *p;
-	NTSTATUS status;
-	uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 
 	status = dcom_connect_host(ctx, &p, server);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -207,7 +207,60 @@ WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const ch
 	return WERR_OK;
 }
 
-WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface_p **ip)
+WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface_p ***ip, WERROR *results)
+{
+	struct dcom_interface_p *factory, *iunk;
+	struct QueryInterface qr;
+	struct Release rr;
+	struct CreateInstance cr;
+	WERROR error;
+	int i;
+	NTSTATUS status;
+
+	if (server != NULL) {
+		return dcom_create_object_remote(ctx, clsid, server, num_ifaces, iid, ip, results);
+	}
+	
+	/* Obtain class object */
+	error = dcom_get_class_object(ctx, clsid, server, iid, &factory);
+	if (!W_ERROR_IS_OK(error)) {
+		DEBUG(3, ("Unable to obtain class object for %s\n", GUID_string(NULL, clsid)));
+		return error;
+	}
+
+	dcom_OBJREF_from_ifacep(ctx, &cr.in.pUnknown->obj, factory);
+
+	GUID_from_string(DCERPC_ICLASSFACTORY_UUID, cr.in.iid);
+	
+	/* Run IClassFactory::CreateInstance() */
+	status = dcom_IClassFactory_CreateInstance(factory, ctx, &cr);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(3, ("Error while calling IClassFactory::CreateInstance : %s\n", nt_errstr(status)));
+		return ntstatus_to_werror(status);
+	}
+	
+	/* Release class object */
+	status = dcom_IUnknown_Release(factory, ctx, &rr);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(3, ("Error freeing class factory: %s\n", nt_errstr(status)));
+		return ntstatus_to_werror(status);
+	}
+	
+	/* Do one or more QueryInterface calls */
+	for (i = 0; i < num_ifaces; i++) {
+		qr.in.iid = &iid[i];
+		status = dcom_IUnknown_QueryInterface(iunk, ctx, &qr);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(4, ("Error obtaining interface %s : %s\n", GUID_string(NULL, &iid[i]), nt_errstr(status)));
+			return ntstatus_to_werror(status);
+		}
+		results[i] = qr.out.result;
+	}
+
+	return WERR_OK;
+}
+
+WERROR dcom_get_class_object_remote(struct dcom_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface_p **ip)
 {
 	struct dcom_object_exporter *m;
 	struct RemoteActivation r;
@@ -255,6 +308,36 @@ WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const
 	m = oxid_mapping_by_oxid(ctx, r.out.pOxid);
 	m->bindings = *r.out.pdsaOxidBindings;
 
+	return WERR_OK;
+}
+
+WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface_p **ip)
+{
+	const struct dcom_class *c;
+	struct QueryInterface qi;
+	NTSTATUS status;
+	
+	if (server != NULL) {
+		return dcom_get_class_object_remote(ctx, clsid, server, iid, ip);
+	}
+
+	c = dcom_class_by_clsid(clsid);
+	if (!c) {
+		/* FIXME: Better error code.. */
+		return WERR_DEST_NOT_FOUND;
+	}
+	
+	qi.in.iid = iid;
+
+	status = dcom_IUnknown_QueryInterface(c->class_object, ctx, &qi );
+	if (NT_STATUS_IS_ERR(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(qi.out.result)) { return qi.out.result; }
+
+	dcom_ifacep_from_OBJREF(ctx, ip, &qi.out.data->obj);
+	
 	return WERR_OK;
 }
 
@@ -326,6 +409,12 @@ struct dcom_object *dcom_object_by_oid(struct dcom_object_exporter *ox, HYPER_T 
 	return o;
 }
 
+
+NTSTATUS dcom_OBJREF_from_ifacep(struct dcom_context *ctx, struct OBJREF *o, struct dcom_interface_p *_p)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;	
+}
+
 NTSTATUS dcom_ifacep_from_OBJREF(struct dcom_context *ctx, struct dcom_interface_p **_p, struct OBJREF *o)
 {
 	struct dcom_interface_p *p = talloc_p(ctx, struct dcom_interface_p);
@@ -363,7 +452,7 @@ NTSTATUS dcom_ifacep_from_OBJREF(struct dcom_context *ctx, struct dcom_interface
 		p->ipid = o->u_objref.u_handler.std.ipid;
 		p->object = dcom_object_by_oid(p->ox, o->u_objref.u_standard.std.oid);
 		p->ox->resolver_address = o->u_objref.u_handler.saResAddr;
-		p->vtable = dcom_vtable_by_clsid(&o->u_objref.u_handler.clsid);
+/*FIXME		p->vtable = dcom_vtable_by_clsid(&o->u_objref.u_handler.clsid);*/
 		/* FIXME: Do the custom unmarshaling call */
 	
 		*_p = p;
@@ -371,7 +460,6 @@ NTSTATUS dcom_ifacep_from_OBJREF(struct dcom_context *ctx, struct dcom_interface
 		
 	case OBJREF_CUSTOM:
 		{
-			const struct dcom_interface *imarshal = dcom_vtable_by_clsid(&o->u_objref.u_custom.clsid);
 			p->vtable = NULL;
 		
 		/* FIXME: Do the actual custom unmarshaling call */
@@ -436,4 +524,26 @@ NTSTATUS dcom_ifacep_from_OBJREF(struct dcom_context *ctx, struct dcom_interface
 #endif
 
 	return NT_STATUS_NOT_SUPPORTED;	
+}
+
+HYPER_T dcom_get_current_oxid(void)
+{
+	return getpid();
+}
+
+struct dcom_interface_p *dcom_new_local_ifacep(struct dcom_context *ctx, const struct dcom_interface *iface, void *vtable, struct dcom_object *object)
+{
+	struct dcom_interface_p *ip = talloc_p(ctx, struct dcom_interface_p);
+
+	ip->ctx = ctx;
+	ip->interface = iface;
+	ip->vtable = vtable;
+	uuid_generate_random(&ip->ipid);
+	ip->object = object;
+	ip->objref_flags = 0;
+	ip->orpc_flags = 0;
+	ip->ox = NULL;
+	ip->private_references = 1;
+	
+	return ip;
 }

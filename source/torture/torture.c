@@ -141,6 +141,15 @@ BOOL torture_close_connection(struct smbcli_state *c)
 	return ret;
 }
 
+/* initialise a DCOM context */
+NTSTATUS torture_dcom_init(struct dcom_context **ctx)
+{
+	dcom_init(ctx, lp_parm_string(-1, "torture", "userdomain"),
+				 	lp_parm_string(-1, "torture", "username"), 
+					lp_parm_string(-1, "torture", "password"));
+
+	return NT_STATUS_OK;
+}
 
 /* open a rpc connection to the chosen binding string */
 NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, 
