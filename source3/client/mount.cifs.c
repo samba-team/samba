@@ -61,7 +61,7 @@ static int got_gid = 0;
 static int free_share_name = 0;
 static char * user_name = NULL;
 static char * mountpassword = NULL;
-static char * domain_name = NULL;
+char * domain_name = NULL;
 
 
 /* BB finish BB
@@ -632,7 +632,6 @@ static char * check_for_domain(char **ppuser)
 
 /*	move_string(*ppuser, usernm+1) */
 	len = strlen(usernm+1);
-	printf("\nlen %d original_len %d\n",len, original_len);
 
 	if(len >= original_len) {
 		/* should not happen */
@@ -776,7 +775,6 @@ int main(int argc, char ** argv)
 	int flags = MS_MANDLOCK; /* no need to set legacy MS_MGC_VAL */
 	char * orgoptions = NULL;
 	char * share_name = NULL;
-	char * domain_name = NULL;
 	char * ipaddr = NULL;
 	char * uuid = NULL;
 	char * mountpoint;
@@ -927,14 +925,12 @@ int main(int argc, char ** argv)
 
         if (orgoptions && parse_options(orgoptions, &flags))
                 return -1;
-	
 	ipaddr = parse_server(&share_name);
 	if((ipaddr == NULL) && (got_ip == 0)) {
 		printf("No ip address specified and hostname not found\n");
 		return -1;
 	}
 	
-
 	/* BB save off path and pop after mount returns? */
 	resolved_path = malloc(PATH_MAX+1);
 	if(resolved_path) {
@@ -1022,13 +1018,14 @@ mount_retry:
 		domain_name = check_for_domain(&user_name);
 		strncat(options,",user=",6);
 		strcat(options,user_name);
-	} 
-	if(retry == 0)
+	}
+	if(retry == 0) {
 		if(domain_name) { 
 			/* extra length accounted for in option string above */
 			strncat(options,",domain=",8);
 			strcat(options,domain_name);
 		}
+	}
 	if(mountpassword) {
 		/* Commas have to be doubled, or else they will
 		look like the parameter separator */
