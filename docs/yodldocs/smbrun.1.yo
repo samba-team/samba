@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(smbrun)(1)(23 Oct 1998)(Samba)(SAMBA)
+manpage(smbrun htmlcommand((1)))(1)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(smbrun)(interface program between smbd and external programs)

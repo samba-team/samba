@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(smbd)(8)(23 Oct 1998)(Samba)(SAMBA)
+manpage(smbd htmlcommand((8)))(8)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(smbd)(server to provide SMB/CIFS services to clients)
@@ -15,7 +15,8 @@ manpagedescription()
 
 This program is part of the bf(Samba) suite.
 
-bf(smbd) is the server daemon that provides filesharing services to
+bf(smbd) is the server daemon that provides filesharing and printing
+services to
 Windows clients. The server provides filespace and printer services to
 clients using the SMB (or CIFS) protocol. This is compatible with the
 LanManager protocol, and can service LanManager clients.  These
@@ -24,18 +25,20 @@ Windows NT, OS/2, DAVE for Macintosh, and smbfs for Linux.
 
 An extensive description of the services that the server can provide
 is given in the man page for the configuration file controlling the
-attributes of those services (see bf(smb.conf (5))).  This man page
+attributes of those services (see 
+url(bf(smb.conf (5)))(smb.conf.5.html).  This man page
 will not describe the services, but will concentrate on the
 administrative aspects of running the server.
 
 Please note that there are significant security implications to
-running this server, and the bf(smb.conf (5)) manpage should be
+running this server, and the 
+url(bf(smb.conf (5)))(smb.conf.5.html) manpage should be
 regarded as mandatory reading before proceeding with installation.
 
 A session is created whenever a client requests one. Each client gets
 a copy of the server for each session. This copy then services all
 connections made by the client during that session. When all
-connections from its client are are closed, the copy of the server for
+connections from its client are closed, the copy of the server for
 that client terminates.
 
 The configuration file, and any files that it includes, are
@@ -123,14 +126,13 @@ This parameter is not normally specified except in the above
 situation.
 
 label(minuss)
-dit(bf(-s configuration file)) The default configuration file name is
-determined at compile time.
-
+dit(bf(-s configuration file))
 The file specified contains the configuration details required by the
 server.  The information in this file includes server-specific
 information such as what printcap file to use, as well as descriptions
 of all the services that the server is to provide. See bf(smb.conf
 (5)) for more information.
+The default configuration file name is determined at compile time.
 
 label(minusi)
 dit(bf(-i scope)) This specifies a NetBIOS scope that the server will use
@@ -156,22 +158,22 @@ bf(/etc/inetd.conf)
 
 If the server is to be run by the inetd meta-daemon, this file must
 contain suitable startup information for the meta-daemon. See the
-section em(INSTALLATION) below.
+section link(INSTALLATION)(INSTALLATION) below.
 
 bf(/etc/rc)
 
-(or whatever initialisation script your system uses).
+(or whatever initialization script your system uses).
 
 If running the server as a daemon at startup, this file will need to
 contain an appropriate startup sequence for the server. See the
-section em(INSTALLATION) below.
+section link(INSTALLATION)(INSTALLATION) below.
 
 bf(/etc/services)
 
 If running the server via the meta-daemon inetd, this file must
-contain a mapping of service name (eg., netbios-ssn) to service port
-(eg., 139) and protocol type (eg., tcp). See the section
-em(INSTALLATION) below.
+contain a mapping of service name (e.g., netbios-ssn) to service port
+(e.g., 139) and protocol type (e.g., tcp). See the section
+link(INSTALLATION)(INSTALLATION) below.
 
 bf(/usr/local/samba/lib/smb.conf)
 
@@ -180,7 +182,7 @@ file. Other common places that systems install this file are
 em(/usr/samba/lib/smb.conf) and em(/etc/smb.conf).
 
 This file describes all the services the server is to make available
-to clients. See bf(smb.conf (5)) for more information.
+to clients. See url(bf(smb.conf (5)))(smb.conf.5.html) for more information.
 
 label(LIMITATIONS)
 manpagesection(LIMITATIONS)
@@ -224,11 +226,11 @@ exists in Linux, as testing on other systems has thus far shown them
 to be immune.
 
 The server log files should be put in a directory readable and
-writable only by root, as the log files may contain sensitive
+writeable only by root, as the log files may contain sensitive
 information.
 
 The configuration file should be placed in a directory readable and
-writable only by root, as the configuration file controls security for
+writeable only by root, as the configuration file controls security for
 the services offered by the server. The configuration file can be made
 readable by all if desired, but this is not necessary for correct
 operation of the server and is not recommended. A sample configuration
@@ -255,8 +257,9 @@ utilities such as the tcpd TCP-wrapper may be used for extra security.
 For serious use as file server it is recommended that bf(smbd) be run
 as a daemon.
 
-When you've decided, continue with either em(RUNNING THE SERVER AS A
-DAEMON) or em(RUNNING THE SERVER ON REQUEST).
+When you've decided, continue with either 
+link(RUNNING THE SERVER AS A DAEMON)(RUNNINGTHESERVERASADAEMON) or 
+link(RUNNING THE SERVER ON REQUEST)(RUNNINGTHESERVERONREQUEST).
 
 label(RUNNINGTHESERVERASADAEMON)
 manpagesection(RUNNING THE SERVER AS A DAEMON)
@@ -281,19 +284,19 @@ configuration file location and debug level as desired:
 
 tt(/usr/local/samba/bin/smbd -D -l /var/adm/smblogs/log -s /usr/local/samba/lib/smb.conf)
 
-(The above should appear in your initialisation script as a single line. 
+(The above should appear in your initialization script as a single line. 
 Depending on your terminal characteristics, it may not appear that way in
 this man page. If the above appears as more than one line, please treat any 
 newlines or indentation as a single space or TAB character.)
 
 If the options used at compile time are appropriate for your system,
-all parameters except the desired debug level and link(bf(-D))(minusD) may be
-omitted. See the section em(OPTIONS) above.
+all parameters except link(bf(-D))(minusD) may be
+omitted. See the section link(OPTIONS)(OPTIONS) above.
 
 label(RUNNINGTHESERVERONREQUEST)
 manpagesection(RUNNING THE SERVER ON REQUEST)
 
- If your system uses a meta-daemon such as inetd, you can arrange to
+ If your system uses a meta-daemon such as bf(inetd), you can arrange to
 have the smbd server started whenever a process attempts to connect to
 it. This requires several changes to the startup files on the host
 machine. If you are experimenting as an ordinary user rather than as
@@ -338,10 +341,10 @@ start with, the following two services should be all you need:
 verb(
 
 [homes]
-  writable = yes
+  writeable = yes
 
 [printers]
- writable = no
+ writeable = no
  printable = yes
  path = /tmp
  public = yes
@@ -363,7 +366,8 @@ If your machine's name is "fred" and your name is "mary", you should
 now be able to connect to the service tt(\\fred\mary).
 
 To properly test and experiment with the server, we recommend using
-the smbclient program (see bf(smbclient (1))) and also going through
+the smbclient program (see 
+url(bf(smbclient (1)))(smbclient.1.html)) and also going through
 the steps outlined in the file em(DIAGNOSIS.txt) in the em(docs/)
 directory of your Samba installation.
 
@@ -383,8 +387,8 @@ The number and nature of diagnostics available depends on the debug
 level used by the server. If you have problems, set the debug level to
 3 and peruse the log files.
 
-Most messages are reasonably self-explanatory. Unfortunately, at time
-of creation of this man page there are too many diagnostics available
+Most messages are reasonably self-explanatory. Unfortunately, at the time
+this man page was created, there are too many diagnostics available
 in the source code to warrant describing each and every diagnostic. At
 this stage your best bet is still to grep the source code and inspect
 the conditions that gave rise to the diagnostics you are seeing.
@@ -397,7 +401,7 @@ configuration file within a short period of time.
 
 To shut down a users smbd process it is recommended that SIGKILL (-9)
 em(NOT) be used, except as a last resort, as this may leave the shared
-memory area in an inconsistant state. The safe way to terminate an
+memory area in an inconsistent state. The safe way to terminate an
 smbd is to send it a SIGTERM (-15) signal and wait for it to die on
 its own.
 
@@ -429,7 +433,7 @@ label(AUTHOR)
 manpageauthor()
 
 The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+Andrew Tridgell email(samba-bugs@samba.anu.edu.au). Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 

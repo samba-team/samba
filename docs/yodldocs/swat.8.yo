@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(swat)(8)(23 Oct 1998)(Samba)(SAMBA)
+manpage(swat htmlcommand((8)))(8)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(swat)(swat - Samba Web Administration Tool)
@@ -122,7 +122,7 @@ your Samba configuration which would allow them to easily gain root
 access on your machine.
 
 After testing the authentication you need to change the ownership and
-permissions on the bf(swat) binary. It should be owned by root wth the
+permissions on the bf(swat) binary. It should be owned by root with the
 setuid bit set. It should be ONLY executable by the user that the web
 server runs as. Make sure you do this carefully!
 
@@ -131,14 +131,14 @@ group tt("nobody").
 
 tt(-rws--x---    1 root     nobody    )
 
-You must also realise that this means that any user who can run
+You must also realize that this means that any user who can run
 programs as the tt("nobody") group can run bf(swat) and modify your
 Samba config. Be sure to think about this!
 
 label(LAUNCHING)
 manpagesection(LAUNCHING)
 
-To launch bf(swat) just run your favourite web browser and point it at
+To launch bf(swat) just run your favorite web browser and point it at
 tt(http://localhost:901/) or tt(http://localhost/cgi-bin/swat/)
 depending on how you installed it.
 
@@ -166,8 +166,8 @@ section link(bf(RUNNING VIA INETD))(RUNNINGVIAINETD) above.
 bf(/etc/services)
 
 If running the server via the meta-daemon inetd, this file must
-contain a mapping of service name (eg., swat) to service port
-(eg., 901) and protocol type (eg., tcp). See the section
+contain a mapping of service name (e.g., swat) to service port
+(e.g., 901) and protocol type (e.g., tcp). See the section
 link(bf(RUNNING VIA INETD))(RUNNINGVIAINETD) above.
 
 bf(/usr/local/samba/lib/smb.conf)

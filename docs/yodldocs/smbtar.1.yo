@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(smbtar)(1)(23 Oct 1998)(Samba)(SAMBA)
+manpage(smbtar htmlcommand((1)))(1)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(smbtar)(shell script for backing up SMB/CIFS shares directly to UNIX tape drives)

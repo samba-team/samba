@@ -1,6 +1,6 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(smbstatus)(1)(23 Oct 1998)(Samba)(SAMBA)
+manpage(smbstatus htmlcommand((1)))(1)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(smbstatus)(report on current Samba connections)
