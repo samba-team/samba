@@ -43,6 +43,7 @@ struct lock_struct {
 	struct lock_context context;
 	br_off start;
 	br_off size;
+	int fnum;
 	enum lock_type lock_type;
 };
 
@@ -102,7 +103,7 @@ void brl_init(void)
 /****************************************************************************
 lock a range of bytes
 ****************************************************************************/
-BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, 
+BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      uint16 smbpid, pid_t pid, uint16 tid,
 	      br_off start, br_off size, 
 	      enum lock_type lock_type)
@@ -127,6 +128,7 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino,
 	lock.context.tid = tid;
 	lock.start = start;
 	lock.size = size;
+	lock.fnum = fnum;
 	lock.lock_type = lock_type;
 
 	if (dbuf.dptr) {
@@ -161,7 +163,7 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino,
 /****************************************************************************
 unlock a range of bytes
 ****************************************************************************/
-BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, 
+BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
 		br_off start, br_off size)
 {
@@ -192,6 +194,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino,
 	count = dbuf.dsize / sizeof(*locks);
 	for (i=0; i<count; i++) {
 		if (brl_same_context(&locks[i].context, &context) &&
+		    locks[i].fnum == fnum &&
 		    locks[i].start == start &&
 		    locks[i].size == size) {
 			/* found it - delete it */
@@ -272,4 +275,56 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino,
 	if (dbuf.dptr) free(dbuf.dptr);
 	tdb_unlockchain(tdb, kbuf);
 	return False;
+}
+
+
+/****************************************************************************
+remove any locks associated with a open file
+****************************************************************************/
+void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
+{
+	struct lock_key key;
+	TDB_DATA kbuf, dbuf;
+	int count, i;
+	struct lock_struct *locks;
+
+	key.device = dev;
+	key.inode = ino;
+	kbuf.dptr = (char *)&key;
+	kbuf.dsize = sizeof(key);
+
+	dbuf.dptr = NULL;
+
+	tdb_lockchain(tdb, kbuf);
+	dbuf = tdb_fetch(tdb, kbuf);
+
+	if (!dbuf.dptr) goto fail;
+
+	/* there are existing locks - remove any for this fnum */
+	locks = (struct lock_struct *)dbuf.dptr;
+	count = dbuf.dsize / sizeof(*locks);
+	for (i=0; i<count; i++) {
+		if (locks[i].context.tid == tid &&
+		    locks[i].context.pid == pid &&
+		    locks[i].fnum == fnum) {
+			/* found it - delete it */
+			if (count > 1 && i < count-1) {
+				memmove(&locks[i], &locks[i+1], 
+					sizeof(*locks)*((count-1) - i));
+			}
+			count--;
+			i--;
+		}
+	}
+
+	if (count == 0) {
+		tdb_delete(tdb, kbuf);
+	} else if (count < (dbuf.dsize / sizeof(*locks))) {
+		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+	}
+
+	/* we didn't find it */
+ fail:
+	if (dbuf.dptr) free(dbuf.dptr);
+	tdb_unlockchain(tdb, kbuf);
 }

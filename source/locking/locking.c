@@ -40,6 +40,19 @@ static TDB_CONTEXT *tdb;
 
 int global_smbpid;
 
+
+/****************************************************************************
+remove any locks on this fd
+****************************************************************************/
+void locking_close_file(files_struct *fsp)
+{
+	if (!lp_locking(SNUM(fsp->conn))) return;
+
+	brl_close(fsp->fd_ptr->dev, fsp->fd_ptr->inode, 
+		  getpid(), fsp->conn->cnum, fsp->fnum);
+}
+
+
 /****************************************************************************
  Utility function called to see if a file region is locked.
 ****************************************************************************/
@@ -83,7 +96,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 		  lock_type, (double)offset, (double)count, fsp->fsp_name ));
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		ok = brl_lock(fsp->fd_ptr->dev, fsp->fd_ptr->inode,
+		ok = brl_lock(fsp->fd_ptr->dev, fsp->fd_ptr->inode, fsp->fnum,
 			      global_smbpid, getpid(), conn->cnum, 
 			      offset, count, 
 			      lock_type);
@@ -114,7 +127,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 		  (double)offset, (double)count, fsp->fsp_name ));
 	
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		ok = brl_unlock(fsp->fd_ptr->dev, fsp->fd_ptr->inode, 
+		ok = brl_unlock(fsp->fd_ptr->dev, fsp->fd_ptr->inode, fsp->fnum,
 				global_smbpid, getpid(), conn->cnum, 
 				offset, count);
 	}

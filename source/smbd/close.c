@@ -115,6 +115,8 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
 		release_file_oplock(fsp);
 
+	locking_close_file(fsp);
+
 	if(fd_attempt_close(fsp->fd_ptr,&err) == 0)
 		last_reference = True;
 
