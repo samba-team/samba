@@ -242,10 +242,14 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 				 tdb->fd, offset, rw_type, lck_type));
 			return TDB_ERRCODE(TDB_ERR_LOCK_TIMEOUT, -1);
 		}
-		/* Otherwise - generic lock error. */
-		/* errno set by fcntl */
-		TDB_LOG((tdb, 5, "tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d: %s\n", 
-			 tdb->fd, offset, rw_type, lck_type, strerror(errno)));
+		/* Otherwise - generic lock error. errno set by fcntl.
+		 * EAGAIN is an expected return from non-blocking
+		 * locks. */
+		if (errno != EAGAIN) {
+			TDB_LOG((tdb, 5, "tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d: %s\n", 
+				 tdb->fd, offset, rw_type, lck_type, 
+				 strerror(errno)));
+		}
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
 	}
 	return 0;
