@@ -122,11 +122,11 @@ do_list(const char *keytab_string)
 			 ((unsigned char*)entry.keyblock.keyvalue.data)[i]);
 	    CHECK_MAX(key);
 	}
-	kp->next = NULL;
 	*kie = kp;
 	kie = &kp->next;
 	krb5_kt_free_entry(context, &entry);
     }
+    *kie = NULL; /* termiate list */
     ret = krb5_kt_end_seq_get(context, keytab, &cursor);
 
     printf("%-*s  %-*s  %-*s", max_version, "Vno", 
