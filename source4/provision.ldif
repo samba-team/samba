@@ -482,6 +482,11 @@ objectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 unicodePwd: ${RANDPASS}
 servicePrincipalName: HOST/${DNSNAME}
+servicePrincipalName: HOST/${NETBIOSNAME}
+servicePrincipalName: CIFS/${DNSNAME}
+servicePrincipalName: CIFS/${NETBIOSNAME}
+servicePrincipalName: LDAP/${DNSNAME}
+servicePrincipalName: LDAP/${NETBIOSNAME}
 
 dn: CN=krbtgt,CN=Users,${BASEDN}
 objectClass: top
