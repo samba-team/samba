@@ -208,8 +208,8 @@ static char *debug_list_class_names_and_levels(void)
 		dim += l;
 	}
 
-	/* create single string list */
-	b = buf = malloc(dim);
+	/* create single string list - add space for newline */
+	b = buf = malloc(dim+1);
 	if (!buf) {
 		err = True;
 		goto done;
@@ -219,7 +219,8 @@ static char *debug_list_class_names_and_levels(void)
 		strncpy(b, list[i], l);
 		b = b + l;
 	}
-	b[-1] = '\0';
+	b[-1] = '\n'; /* replace last space with newline */
+	b[0] = '\0';  /* null terminate string */
 
 done:
 	/* free strings list */
