@@ -1412,10 +1412,10 @@ BOOL lp_file_list_changed(void)
 
     mod_time = file_modtime(n2);
 
-    if (f->modtime != mod_time)
-    {
-      DEBUG(6,("file %s modified: %s\n", n2, ctime(&mod_time)));
-      return(True);
+    if (f->modtime != mod_time) {
+	    DEBUG(6,("file %s modified: %s\n", n2, ctime(&mod_time)));
+	    f->modtime = mod_time;
+	    return(True);
     }
     f = f->next;   
   }
