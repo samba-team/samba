@@ -42,7 +42,7 @@ RCSID("$Id$");
  * We would like to always use this signal but there is a link error
  * on NEXTSTEP
  */
-#ifndef NeXT
+#if !defined(NeXT) && !defined(__APPLE__)
 /*
  * Bugs:
  *
