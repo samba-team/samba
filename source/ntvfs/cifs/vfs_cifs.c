@@ -148,7 +148,12 @@ static NTSTATUS cvfs_connect(struct request_context *req, const char *sharename)
 	/* if we are mapping trans2, then we need to not give a trans2
 	   pointer in the operations structure */
 	if (private->map_calls && in_list("trans2", private->map_calls, True)) {
-		conn->ntvfs_ops->trans2 = NULL;
+		struct ntvfs_ops *ops = talloc_memdup(conn->mem_ctx,conn->ntvfs_ops,sizeof(*ops));
+		if (!ops) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		ops->trans2 = NULL;
+		conn->ntvfs_ops = ops;
 	}	  
 
 	/* we need to tell the event loop that we wish to receive read events
