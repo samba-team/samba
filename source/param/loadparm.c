@@ -1184,7 +1184,7 @@ static struct parm_struct parm_table[] = {
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL, NULL, FLAG_ADVANCED}, 
-	{"winbind enable local accounts", P_BOOL, P_GLOBAL, &Globals.bWinbindEnableLocalAccounts, NULL, NULL, FLAG_ADVANCED}, 
+	{"winbind enable local accounts", P_BOOL, P_GLOBAL, &Globals.bWinbindEnableLocalAccounts, NULL, NULL, FLAG_ADVANCED|FLAG_DEPRECATED}, 
 	{"winbind enum users", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumUsers, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind enum groups", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumGroups, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind use default domain", P_BOOL, P_GLOBAL, &Globals.bWinbindUseDefaultDomain, NULL, NULL, FLAG_ADVANCED}, 
