@@ -381,8 +381,12 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
         conn->vfs_conn->uid = conn->uid;
         conn->vfs_conn->gid = conn->gid;
         conn->vfs_conn->ngroups = conn->ngroups;
-        conn->vfs_conn->groups = (gid_t *)memdup(conn->groups, 
-                                                 conn->ngroups * sizeof(gid_t));
+	if (conn->vfs_conn->ngroups != 0) {
+		conn->vfs_conn->groups = (gid_t *)memdup(conn->groups, 
+							 conn->ngroups * sizeof(gid_t));
+	} else {
+		conn->vfs_conn->groups = NULL;
+	}
 
 	/* Initialise VFS function pointers */
 
