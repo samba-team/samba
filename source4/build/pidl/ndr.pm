@@ -20,6 +20,12 @@ sub get_typedef($)
 	return $typedefs{$n};
 }
 
+sub get_typefamily($)
+{
+	my $n = shift;
+	return $typefamily{$n};
+}
+
 sub RegisterPrimitives()
 {
 	my %type_alignments = 
