@@ -51,6 +51,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
@@ -113,7 +116,7 @@
  *
  */
 
-enum auth_method { AUTH_KRB4, AUTH_KRB5 };
+enum auth_method { AUTH_KRB4, AUTH_KRB5, AUTH_BROKEN };
 
 extern enum auth_method auth_method;
 extern int do_encrypt;
@@ -128,6 +131,8 @@ extern des_cblock iv;
 #define COMMAND_SZ 1024
 
 #define RSH_BUFSIZ 10240
+
+#define PATH_RSH BINDIR "/rsh"
 
 ssize_t do_read (int fd, void *buf, size_t sz);
 ssize_t do_write (int fd, void *buf, size_t sz);
