@@ -3,7 +3,7 @@
    Main SMB server routines
    Copyright (C) Andrew Tridgell		1992-1998
    Copyright (C) Martin Pool			2002
-   Copyright (C) Jelmer Vernooij		2002
+   Copyright (C) Jelmer Vernooij		2002-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -669,11 +669,7 @@ static BOOL init_structs(void )
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
 	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
-	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug},
-	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile},
-	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options},
-	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_log_base},
-	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
+	POPT_COMMON_SAMBA
 	{ NULL }
 	};
 
