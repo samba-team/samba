@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBLOOKUP" "1" "18 March 2003" "" ""
+.TH "NMBLOOKUP" "1" "24 March 2003" "" ""
 
 .SH NAME
 nmblookup \- NetBIOS over TCP/IP client used to lookup NetBIOS  names
@@ -53,8 +53,38 @@ in addition, if the \fBnmbd\fR(8) daemon is running on this machine it also bind
 Interpret \fIname\fR as 
 an IP Address and do a node status query on this address.
 .TP
-\fB-h\fR
-Print a help (usage) message.
+\fB-n <primary NetBIOS name>\fR
+This option allows you to override
+the NetBIOS name that Samba uses for itself. This is identical
+to setting the \fINetBIOS
+name\fR parameter in the \fBsmb.conf\fR(5) file.  However, a command
+line setting will take precedence over settings in
+\fBsmb.conf\fR(5).
+.TP
+\fB-i <scope>\fR
+This specifies a NetBIOS scope that
+\fBnmblookup\fR will use to communicate with when
+generating NetBIOS names. For details on the use of NetBIOS
+scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes are
+\fBvery\fR rarely used, only set this parameter
+if you are the system administrator in charge of all the
+NetBIOS systems you communicate with.
+.TP
+\fB-W|--workgroup=domain\fR
+Set the SMB domain of the username.   This
+overrides the default domain which is the domain defined in
+smb.conf.  If the domain specified is the same as the servers 
+NetBIOS name, it causes the client to log on using the servers local 
+SAM (as opposed to the Domain SAM). 
+.TP
+\fB-O socket options\fR
+TCP socket options to set on the client
+socket. See the socket options parameter in
+the \fBsmb.conf\fR(5) manual page for the list of valid
+options. 
+.TP
+\fB-h|--help\fR
+Print a summary of command line options.
 .TP
 \fB-B <broadcast address>\fR
 Send the query to the given broadcast address. Without 
@@ -69,37 +99,46 @@ host \fIunicast address\fR. This option
 (along with the \fI-R\fR option) is needed to 
 query a WINS server.
 .TP
-\fB-d <debuglevel>\fR
-debuglevel is an integer from 0 to 10.
-
-The default value if this parameter is not specified 
-is zero.
-
-The higher this value, the more detail will be logged 
-about the activities of \fBnmblookup\fR. At level 
-0, only critical errors and serious warnings will be logged.
-
-Levels above 1 will generate considerable amounts of 
-log data, and should only be used when investigating a problem. 
-Levels above 3 are designed for use only by developers and 
-generate HUGE amounts of data, most of which is extremely cryptic.
-
-Note that specifying this parameter here will override 
-the \fI  log level\fR parameter in the \fI  smb.conf(5)\fR file.
+\fB-V\fR
+Prints the version number for 
+\fBsmbd\fR.
 .TP
-\fB-s <smb.conf>\fR
-This parameter specifies the pathname to 
-the Samba configuration file,   smb.conf(5)  This file controls all aspects of
-the Samba setup on the machine.
+\fB-s <configuration file>\fR
+The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See \fIsmb.conf(5)\fR for more information.
+The default configuration file name is determined at 
+compile time.
 .TP
-\fB-i <scope>\fR
-This specifies a NetBIOS scope that
-\fBnmblookup\fR will use to communicate with when 
-generating NetBIOS names. For details on the use of NetBIOS 
-scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes are 
-\fBvery\fR rarely used, only set this parameter 
-if you are the system administrator in charge of all the 
-NetBIOS systems you communicate with.
+\fB-d|--debug=debuglevel\fR
+\fIdebuglevel\fR is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.
+
+The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.
+
+Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.
+
+Note that specifying this parameter here will 
+override the log
+level file.
+.TP
+\fB-l|--logfile=logbasename\fR
+File name for log/debug files. The extension
+".client" will be appended. The log file is
+never removed by the client.
 .TP
 \fB-T\fR
 This causes any IP addresses found in the 

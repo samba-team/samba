@@ -30,6 +30,16 @@
 			</address>
 		</affiliation>
 	</author>
+	<author>
+		<firstname>John H</firstname><surname>Terpstra</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address>
+				<email>jht@samba.org</email>
+			</address>
+		</affiliation>
+	</author>
+	
 	<pubdate>February 2003</pubdate>
 </chapterinfo>
 
@@ -104,6 +114,10 @@
 		<para>Other Microsoft operating systems which also exhibit 
 		this behavior includes</para>
 		
+		<para> These versions of MS Windows do not support full domain
+		security protocols, although they may log onto a domain environment.
+		Of these Only MS Windows XP Home does NOT support domain logons.</para>
+
 		<simplelist>
 			<member>MS DOS Network client 3.0 with 
 			the basic network redirector installed</member>
@@ -112,8 +126,25 @@
 			update installed</member>
 			
 			<member>Windows 98 [se]</member>
+
+			<member>Windows Me</member>
+
+			<member>Windows XP Home</member>
+		</simplelist>
+
+		<para> The following versions of MS Windows fully support domain
+		security protocols.</para>
+
+		<simplelist>
+			<member>Windows NT 3.5x</member>
+
+			<member>Windows NT 4.0</member>
 			
-			<member>Windows 2000</member>
+			<member>Windows 2000 Professional</member>
+
+			<member>Windows 200x Server/Advanced Server</member>
+
+			<member>Windows XP Professional</member>
 		</simplelist>
 		
 		<para><emphasis>Note :</emphasis>All current release of 
@@ -121,23 +152,36 @@
 		SMB Challenge/Response mechanism described here.  Enabling
 		clear text authentication does not disable the ability
 		of the client to participate in encrypted authentication.</para>
+
+
+		<para>MS Windows clients will cache the encrypted password alone.
+		Even when plain text passwords are re-enabled, through the appropriate
+		registry change, the plain text password is NEVER cached. This means that
+		in the event that a network connections should become disconnected (broken)
+		only the cached (encrypted) password will be sent to the resource server
+		to affect a auto-reconnect. If the resource server does not support encrypted
+		passwords the auto-reconnect will fail. <emphasis>USE OF ENCRYPTED PASSWORDS
+		IS STRONGLY ADVISED.</emphasis></para>
 	</warning>
 
 	<sect2>
 		<title>Advantages of SMB Encryption</title>
 
 		<simplelist>
-			<member>plain text passwords are not passed across 
+			<member>Plain text passwords are not passed across 
 			the network. Someone using a network sniffer cannot just 
 			record passwords going to the SMB server.</member>
 		 
 			<member>WinNT doesn't like talking to a server 
-			that isn't using SMB encrypted passwords. It will refuse 
+			that SM not support encrypted passwords. It will refuse 
 			to browse the server if the server is also in user level 
 			security mode. It will insist on prompting the user for the 
 			password on each connection, which is very annoying. The
 			only things you can do to stop this is to use SMB encryption.
 			</member>
+
+			<member>Encrypted password support allows auto-matic share
+			(resource) reconnects.</member>
 		</simplelist>
 	</sect2>
 
@@ -146,16 +190,15 @@
 		<title>Advantages of non-encrypted passwords</title>
 
 		<simplelist>
-			<member>plain text passwords are not kept 
-			on disk. </member>
+			<member>Plain text passwords are not kept 
+			on disk, and are NOT cached in memory. </member>
 			
-			<member>uses same password file as other unix 
+			<member>Uses same password file as other unix 
 			services such as login and ftp</member>
 			
-			<member>you are probably already using other 
-			services (such as telnet and ftp) which send plain text 
-			passwords over the net, so sending them for SMB isn't 
-			such a big deal.</member>
+			<member>Use of other services (such as telnet and ftp) which
+			send plain text passwords over the net, so sending them for SMB
+			isn't such a big deal.</member>
 		</simplelist>
 	</sect2>
 </sect1>
@@ -166,8 +209,7 @@
 	
 	<para>The smbpasswd utility is a utility similar to the 
 	<command>passwd</command> or <command>yppasswd</command> programs.
-	It maintains the two 32 byte password fields 
-	in the passdb backend. </para>
+	It maintains the two 32 byte password fields in the passdb backend. </para>
 
 	<para><command>smbpasswd</command> works in a client-server mode 
 	where it contacts the local smbd to change the user's password on its 
@@ -352,11 +394,12 @@ the details of configuring these packages are beyond the scope of this document.
 <title>Supported LDAP Servers</title>
 
 <para>
-The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
-2.0 server and client libraries.  The same code should be able to work with
-Netscape's Directory Server and client SDK. However, due to lack of testing
-so far, there are bound to be compile errors and bugs.  These should not be
-hard to fix. If you are so inclined, please be sure to forward all patches to
+The LDAP samdb code in 2.2.3 (and later) has been developed and tested
+using the OpenLDAP 2.0 server and client libraries. 
+The same code should be able to work with Netscape's Directory Server
+and client SDK. However, due to lack of testing so far, there are bound
+to be compile errors and bugs.  These should not be hard to fix.
+If you are so inclined, please be sure to forward all patches to
 <ulink url="samba-patches@samba.org">samba-patches@samba.org</ulink> and
 <ulink url="jerry@samba.org">jerry@samba.org</ulink>.
 </para>

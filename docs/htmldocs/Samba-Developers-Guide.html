@@ -816,20 +816,86 @@ NAME="SMBPASSWDFILEFORMAT"
 ></DD
 ><DT
 >14. <A
-HREF="#RPC-PLUGIN"
->RPC Pluggable Modules</A
+HREF="#MODULES"
+>Modules</A
 ></DT
 ><DD
 ><DL
 ><DT
 >14.1. <A
 HREF="#AEN3225"
->About</A
+>Advantages</A
 ></DT
 ><DT
 >14.2. <A
-HREF="#AEN3228"
+HREF="#AEN3234"
+>Loading modules</A
+></DT
+><DD
+><DL
+><DT
+>14.2.1. <A
+HREF="#AEN3240"
+>Static modules</A
+></DT
+><DT
+>14.2.2. <A
+HREF="#AEN3247"
+>Shared modules</A
+></DT
+></DL
+></DD
+><DT
+>14.3. <A
+HREF="#AEN3251"
+>Writing modules</A
+></DT
+><DD
+><DL
+><DT
+>14.3.1. <A
+HREF="#AEN3262"
+>Static/Shared selection in configure.in</A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>15. <A
+HREF="#RPC-PLUGIN"
+>RPC Pluggable Modules</A
+></DT
+><DD
+><DL
+><DT
+>15.1. <A
+HREF="#AEN3301"
+>About</A
+></DT
+><DT
+>15.2. <A
+HREF="#AEN3304"
 >General Overview</A
+></DT
+></DL
+></DD
+><DT
+>16. <A
+HREF="#PACKAGING"
+>Notes to packagers</A
+></DT
+><DD
+><DL
+><DT
+>16.1. <A
+HREF="#AEN3337"
+>Versioning</A
+></DT
+><DT
+>16.2. <A
+HREF="#AEN3343"
+>Modules</A
 ></DT
 ></DL
 ></DD
@@ -9323,16 +9389,243 @@ CLASS="FILENAME"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="RPC-PLUGIN"
+NAME="MODULES"
 ></A
->Chapter 14. RPC Pluggable Modules</H1
+>Chapter 14. Modules</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
 NAME="AEN3225"
->14.1. About</A
+>14.1. Advantages</A
+></H2
+><P
+>The new modules system has the following advantages:</P
+><P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>Transparent loading of static and shared modules (no need 
+for a subsystem to know about modules)</TD
+></TR
+><TR
+><TD
+>Simple selection between shared and static modules at configure time</TD
+></TR
+><TR
+><TD
+>"preload modules" option for increasing performance for stable modules</TD
+></TR
+><TR
+><TD
+>No nasty #define stuff anymore</TD
+></TR
+><TR
+><TD
+>All backends are available as plugin now (including pdb_ldap and pdb_tdb)</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3234"
+>14.2. Loading modules</A
+></H2
+><P
+>Some subsystems in samba use different backends. These backends can be 
+either statically linked in to samba or available as a plugin. A subsystem 
+should have a function that allows a module to register itself. For example, 
+the passdb subsystem has: </P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>BOOL smb_register_passdb(const char *name, pdb_init_function init, int version);</PRE
+></P
+><P
+>This function will be called by the initialisation function of the module to 
+register itself. </P
+><DIV
+CLASS="SECT2"
+><HR><H3
+CLASS="SECT2"
+><A
+NAME="AEN3240"
+>14.2.1. Static modules</A
+></H3
+><P
+>The modules system compiles a list of initialisation functions for the 
+static modules of each subsystem. This is a define. For example, 
+it is here currently (from <TT
+CLASS="FILENAME"
+>include/config.h</TT
+>): </P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>/* Static init functions */
+#define static_init_pdb { pdb_mysql_init(); pdb_ldap_init(); pdb_smbpasswd_init(); pdb_tdbsam_init(); pdb_guest_init();}</PRE
+></P
+><P
+>These functions should be called before the subsystem is used. That 
+should be done when the subsystem is initialised or first used. </P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H3
+CLASS="SECT2"
+><A
+NAME="AEN3247"
+>14.2.2. Shared modules</A
+></H3
+><P
+>If a subsystem needs a certain backend, it should check if it has 
+already been registered. If the backend hasn't been registered already, 
+the subsystem should call smb_probe_module(char *subsystem, char *backend).
+This function tries to load the correct module from a certain path
+($LIBDIR/subsystem/backend.so). If the first character in 'backend' 
+is a slash, smb_probe_module() tries to load the module from the 
+absolute path specified in 'backend'.</P
+><P
+>After smb_probe_module() has been executed, the subsystem 
+should check again if the module has been registered. </P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3251"
+>14.3. Writing modules</A
+></H2
+><P
+>Each module has an initialisation function. For modules that are 
+included with samba this name is '<VAR
+CLASS="REPLACEABLE"
+>subsystem</VAR
+>_<VAR
+CLASS="REPLACEABLE"
+>backend</VAR
+>_init'. For external modules (that will never be built-in, but only available as a module) this name is always 'init_module'. (In the case of modules included with samba, the configure system will add a #define subsystem_backend_init() init_module()).
+The prototype for these functions is:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>int init_module(void);</PRE
+></P
+><P
+>This function should call one or more 
+registration functions. The function should return non-zero on success and zero on 
+failure.</P
+><P
+>For example, pdb_ldap_init() contains: </P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>int pdb_ldap_init(void)
+{
+    smb_register_passdb("ldapsam", pdb_init_ldapsam, PASSDB_INTERFACE_VERSION);
+    smb_register_passdb("ldapsam_nua", pdb_init_ldapsam_nua, PASSDB_INTERFACE_VERSION);
+	return TRUE;
+}</PRE
+></P
+><DIV
+CLASS="SECT2"
+><HR><H3
+CLASS="SECT2"
+><A
+NAME="AEN3262"
+>14.3.1. Static/Shared selection in configure.in</A
+></H3
+><P
+>Some macros in configure.in generate the various defines and substs that 
+are necessary for the system to work correct. All modules that should 
+be built by default have to be added to the variable 'default_modules'. 
+For example, if ldap is found, pdb_ldap is added to this variable.</P
+><P
+>On the bottom of configure.in, SMB_MODULE() should be called 
+for each module and SMB_SUBSYSTEM() for each subsystem.</P
+><P
+>Syntax:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>SMB_MODULE(<VAR
+CLASS="REPLACEABLE"
+>subsystem</VAR
+>_<VAR
+CLASS="REPLACEABLE"
+>backend</VAR
+>, <VAR
+CLASS="REPLACEABLE"
+>object files</VAR
+>, <VAR
+CLASS="REPLACEABLE"
+>plugin name</VAR
+>, <VAR
+CLASS="REPLACEABLE"
+>subsystem name</VAR
+>, <VAR
+CLASS="REPLACEABLE"
+>static_action</VAR
+>, <VAR
+CLASS="REPLACEABLE"
+>shared_action</VAR
+>)
+SMB_SUBSYSTEM(<VAR
+CLASS="REPLACEABLE"
+>subsystem</VAR
+>)</PRE
+></P
+><P
+>Also, make sure to add the correct directives to 
+<TT
+CLASS="FILENAME"
+>Makefile.in</TT
+>. <VAR
+CLASS="REPLACEABLE"
+>@SUBSYSTEM_STATIC@</VAR
+>
+will be replaced with a list of objects files of the modules that need to 
+be linked in statically. <VAR
+CLASS="REPLACEABLE"
+>@SUBSYSTEM_MODULES@</VAR
+> will 
+be replaced with the names of the plugins to build.</P
+><P
+>You must make sure all .c files that contain defines that can 
+be changed by ./configure are rebuilded in the 'modules_clean' make target. 
+Practically, this means all c files that contain <B
+CLASS="COMMAND"
+>static_init_subsystem;</B
+> calls need to be rebuilded.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="RPC-PLUGIN"
+></A
+>Chapter 15. RPC Pluggable Modules</H1
+><DIV
+CLASS="SECT1"
+><H2
+CLASS="SECT1"
+><A
+NAME="AEN3301"
+>15.1. About</A
 ></H2
 ><P
 >This document describes how to make use the new RPC Pluggable Modules features
@@ -9346,8 +9639,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3228"
->14.2. General Overview</A
+NAME="AEN3304"
+>15.2. General Overview</A
 ></H2
 ><P
 >When an RPC call is sent to smbd, smbd tries to load a shared library by the
@@ -9363,10 +9656,10 @@ CLASS="FILENAME"
 These shared libraries should be located in the <TT
 CLASS="FILENAME"
 >&#60;sambaroot&#62;/lib/rpc</TT
->.  smbd then attempts to call the rpc_pipe_init function within
-the shared library.</P
+>.  smbd then attempts to call the init_module function within
+the shared library. Check the chapter on modules for more information.</P
 ><P
->In the rpc_pipe_init function, the library should call 
+>In the init_module function, the library should call 
 rpc_pipe_register_commands().  This function takes the following arguments:</P
 ><P
 ><PRE
@@ -9408,6 +9701,56 @@ CLASS="VARIABLELIST"
 ><P
 >See rpc_server/srv_reg.c and rpc_server/srv_reg_nt.c for a small example of
 how to use this library.</P
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="PACKAGING"
+></A
+>Chapter 16. Notes to packagers</H1
+><DIV
+CLASS="SECT1"
+><H2
+CLASS="SECT1"
+><A
+NAME="AEN3337"
+>16.1. Versioning</A
+></H2
+><P
+>Please, please update the version number in 
+<TT
+CLASS="FILENAME"
+>source/include/version.h</TT
+> to include the versioning of your package. This makes it easier to distinguish standard samba builds
+from custom-build samba builds (distributions often patch packages). For 
+example, a good version would be: </P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>Version 2.999+3.0.alpha21-5 for Debian</PRE
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3343"
+>16.2. Modules</A
+></H2
+><P
+>Samba now has support for building parts of samba as plugins. This 
+makes it possible to, for example, put ldap or mysql support in a seperate 
+package, thus making it possible to have a normal samba package not 
+depending on ldap or mysql. To build as much parts of samba 
+as a plugin, run: </P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>./configure --with-shared-modules=rpc,vfs,auth,pdb,charset</PRE
+></P
 ></DIV
 ></DIV
 ></DIV

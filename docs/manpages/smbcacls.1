@@ -3,13 +3,13 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBCACLS" "1" "18 March 2003" "" ""
+.TH "SMBCACLS" "1" "24 March 2003" "" ""
 
 .SH NAME
 smbcacls \- Set or get ACLs on an NT file or directory names
 .SH SYNOPSIS
 
-\fBsmbcacls\fR \fB//server/share\fR \fBfilename\fR [ \fB-U username\fR ] [ \fB-A acls\fR ] [ \fB-M acls\fR ] [ \fB-D acls\fR ] [ \fB-S acls\fR ] [ \fB-C name\fR ] [ \fB-G name\fR ] [ \fB-n\fR ] [ \fB-h\fR ]
+\fBsmbcacls\fR \fB//server/share\fR \fBfilename\fR [ \fB-D acls\fR ] [ \fB-M acls\fR ] [ \fB-A acls\fR ] [ \fB-S acls\fR ] [ \fB-C name\fR ] [ \fB-G name\fR ] [ \fB-n\fR ] [ \fB-t\fR ] [ \fB-U username\fR ] [ \fB-h\fR ] [ \fB-d\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -71,9 +71,9 @@ This option displays all ACL information in numeric
 format.  The default is to convert SIDs to names and ACE types 
 and masks to a readable string format.  
 .TP
-\fB-h\fR
-Print usage information on the \fBsmbcacls
-\fR program.
+\fB-t\fR
+Don't actually do anything, only validate the correctness of 
+the arguments.
 .SH "ACL FORMAT"
 .PP
 The format of an ACL is one or more ACL entries separated by 
@@ -172,7 +172,7 @@ of 1 is returned.  If there was an error parsing any command line
 arguments, an exit status of 2 is returned. 
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of the Samba suite.
+This man page is correct for version 3.0 of the Samba suite.
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 

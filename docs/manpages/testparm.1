@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "TESTPARM" "1" "18 March 2003" "" ""
+.TH "TESTPARM" "1" "24 March 2003" "" ""
 
 .SH NAME
 testparm \- check an smb.conf configuration file for  internal correctness
@@ -40,8 +40,12 @@ Without this option, \fBtestparm\fR
 will prompt for a carriage return after printing the service 
 names and before dumping the service definitions.
 .TP
-\fB-h\fR
-Print usage message 
+\fB-h|--help\fR
+Print a summary of command line options.
+.TP
+\fB-V\fR
+Prints the version number for 
+\fBsmbd\fR.
 .TP
 \fB-L servername\fR
 Sets the value of the %L macro to \fIservername\fR.

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "VFSTEST" "1" "18 March 2003" "" ""
+.TH "VFSTEST" "1" "24 March 2003" "" ""
 
 .SH NAME
 vfstest \- tool for testing samba VFS modules
@@ -24,6 +24,28 @@ supports cascaded VFS modules.
 \fB-c|--command=command\fR
 Execute the specified (colon-separated) commands.
 See below for the commands that are available.
+.TP
+\fB-h|--help\fR
+Print a summary of command line options.
+.TP
+\fB-l|--logfile=logbasename\fR
+File name for log/debug files. The extension
+\&'.client' will be appended. The log file is never removed
+by the client.
+.TP
+\fB-V\fR
+Prints the version number for 
+\fBsmbd\fR.
+.TP
+\fB-s <configuration file>\fR
+The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See \fIsmb.conf(5)\fR for more information.
+The default configuration file name is determined at 
+compile time.
 .TP
 \fB-d|--debug=debuglevel\fR
 \fIdebuglevel\fR is an integer 
@@ -47,13 +69,10 @@ Note that specifying this parameter here will
 override the log
 level file.
 .TP
-\fB-h|--help\fR
-Print a summary of command line options.
-.TP
 \fB-l|--logfile=logbasename\fR
 File name for log/debug files. The extension
-\&'.client' will be appended. The log file is never removed
-by the client.
+".client" will be appended. The log file is
+never removed by the client.
 .SH "COMMANDS"
 .PP
 \fBVFS COMMANDS\fR

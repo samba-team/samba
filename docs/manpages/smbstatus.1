@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBSTATUS" "1" "18 March 2003" "" ""
+.TH "SMBSTATUS" "1" "24 March 2003" "" ""
 
 .SH NAME
 smbstatus \- report on current Samba connections
@@ -27,8 +27,46 @@ shared memory area.
 \fB-b|--brief\fR
 gives brief output.
 .TP
-\fB-d|--debug=<debuglevel>\fR
-sets debugging to specified level
+\fB-V\fR
+Prints the version number for 
+\fBsmbd\fR.
+.TP
+\fB-s <configuration file>\fR
+The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See \fIsmb.conf(5)\fR for more information.
+The default configuration file name is determined at 
+compile time.
+.TP
+\fB-d|--debug=debuglevel\fR
+\fIdebuglevel\fR is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.
+
+The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.
+
+Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.
+
+Note that specifying this parameter here will 
+override the log
+level file.
+.TP
+\fB-l|--logfile=logbasename\fR
+File name for log/debug files. The extension
+".client" will be appended. The log file is
+never removed by the client.
 .TP
 \fB-v|--verbose\fR
 gives verbose output.
@@ -46,10 +84,8 @@ Useful for scripting.
 \fB-S|--shares\fR
 causes smbstatus to only list shares.
 .TP
-\fB-s|--conf=<configuration file>\fR
-The default configuration file name is
-determined at compile time. The file specified contains the
-configuration details required by the server. See \fBsmb.conf\fR(5) for more information.
+\fB-h|--help\fR
+Print a summary of command line options.
 .TP
 \fB-u|--user=<username>\fR
 selects information relevant to 
