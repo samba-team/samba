@@ -1658,14 +1658,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
         if(fsp->is_directory)
           return(ERROR(ERRDOS,ERRnoaccess));
         /*
-         * TODO - check here is this means set
-         * this flag bit on all open files that
-         * reference this particular dev/inode pair.
-         * If so we'll need to search the open
-         * file entries here and set this flag on 
-         * all of them that match. JRA.
+         * Set the delete on close flag in the reference
+         * counted struct. Delete when the last reference
+         * goes away.
          */
-        fsp->delete_on_close = CVAL(pdata,0);
+        fsp->fd_ptr->delete_on_close = CVAL(pdata,0);
       } else
         return(ERROR(ERRDOS,ERRunknownlevel));
       break;

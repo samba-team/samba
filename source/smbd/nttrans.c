@@ -317,24 +317,24 @@ static int map_create_disposition( uint32 create_disposition)
   switch( create_disposition ) {
   case FILE_CREATE:
     /* create if not exist, fail if exist */
-    ret = 0x10;
+    ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL);
     break;
   case FILE_SUPERSEDE:
   case FILE_OVERWRITE_IF:
     /* create if not exist, trunc if exist */
-    ret = 0x12;
+    ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
     break;
   case FILE_OPEN:
     /* fail if not exist, open if exists */
-    ret = 0x1;
+    ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN);
     break;
   case FILE_OPEN_IF:
     /* create if not exist, open if exists */
-    ret = 0x11;
+    ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_OPEN);
     break;
   case FILE_OVERWRITE:
     /* fail if not exist, truncate if exists */
-    ret = 0x2;
+    ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
     break;
   default:
     DEBUG(0,("map_create_disposition: Incorrect value for create_disposition = %d\n",
@@ -358,13 +358,13 @@ static int map_share_mode( char *fname, uint32 desired_access, uint32 share_acce
 
   switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA) ) {
   case FILE_READ_DATA:
-    smb_open_mode = 0;
+    smb_open_mode = DOS_OPEN_RDONLY;
     break;
   case FILE_WRITE_DATA:
-    smb_open_mode = 1;
+    smb_open_mode = DOS_OPEN_WRONLY;
     break;
   case FILE_READ_DATA|FILE_WRITE_DATA:
-    smb_open_mode = 2;
+    smb_open_mode = DOS_OPEN_RDWR;
     break;
   }
 
@@ -386,7 +386,7 @@ static int map_share_mode( char *fname, uint32 desired_access, uint32 share_acce
     if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
                               FILE_EXECUTE|FILE_READ_ATTRIBUTES|
                               FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS))
-      smb_open_mode = 0;
+      smb_open_mode = DOS_OPEN_RDONLY;
     else {
       DEBUG(0,("map_share_mode: Incorrect value %lx for desired_access to file %s\n",
              (unsigned long)desired_access, fname));
@@ -394,27 +394,37 @@ static int map_share_mode( char *fname, uint32 desired_access, uint32 share_acce
     }
   }
 
-  /* Add in the requested share mode - ignore FILE_SHARE_DELETE for now. */
+  /*
+   * Set the special bit that means allow share delete.
+   * This is held outside the normal share mode bits at 1<<15.
+   * JRA.
+   */
+
+  if(share_access & FILE_SHARE_DELETE)
+    smb_open_mode |= ALLOW_SHARE_DELETE;
+
+  /* Add in the requested share mode. */
   switch( share_access & (FILE_SHARE_READ|FILE_SHARE_WRITE)) {
   case FILE_SHARE_READ:
-    smb_open_mode |= (DENY_WRITE<<4);
+    smb_open_mode |= SET_DENY_MODE(DENY_WRITE);
     break;
   case FILE_SHARE_WRITE:
-    smb_open_mode |= (DENY_READ<<4);
+    smb_open_mode |= SET_DENY_MODE(DENY_READ);
     break;
   case (FILE_SHARE_READ|FILE_SHARE_WRITE):
-    smb_open_mode |= (DENY_NONE<<4);
+    smb_open_mode |= SET_DENY_MODE(DENY_NONE);
     break;
   case FILE_SHARE_NONE:
-    smb_open_mode |= (DENY_ALL<<4);
+    smb_open_mode |= SET_DENY_MODE(DENY_ALL);
     break;
   }
 
   /*
-   * Handle a O_SYNC request.
+   * Handle an O_SYNC request.
    */
+
   if(file_attributes & FILE_FLAG_WRITE_THROUGH)
-    smb_open_mode |= (1<<14);
+    smb_open_mode |= FILE_SYNC_OPENMODE;
 
   DEBUG(10,("map_share_mode: Mapped desired access %lx, share access %lx, file attributes %lx \
 to open_mode %x\n", (unsigned long)desired_access, (unsigned long)share_access,

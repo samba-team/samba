@@ -505,7 +505,6 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     fsp->granted_oplock = False;
     fsp->sent_oplock_break = False;
     fsp->is_directory = False;
-    fsp->delete_on_close = False;
     fsp->conn = conn;
     /*
      * Note that the file name here is the *untranslated* name
@@ -657,8 +656,8 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
 			     char *fname,
 			     BOOL fcbopen, int *flags)
 {
-  int old_open_mode = share->share_mode &0xF;
-  int old_deny_mode = (share->share_mode >>4)&7;
+  int old_open_mode = GET_OPEN_MODE(share->share_mode);
+  int old_deny_mode = GET_DENY_MODE(share->share_mode);
 
   if (old_deny_mode > 4 || old_open_mode > 2)
   {
@@ -702,7 +701,8 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
 {
   int flags=0;
   int flags2=0;
-  int deny_mode = (share_mode>>4)&7;
+  int deny_mode = GET_DENY_MODE(share_mode);
+  BOOL allow_share_delete = GET_ALLOW_SHARE_DELETE(share_mode);
   SMB_STRUCT_STAT sbuf;
   BOOL file_existed = file_exist(fname,&sbuf);
   BOOL share_locked = False;
@@ -733,7 +733,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
     return;
   }
 
-  if ((ofun & 0x3) == 0 && file_existed)  
+  if ((GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_FAIL) && file_existed)  
   {
     DEBUG(5,("open_file_shared: create new requested for file %s and file already exists.\n",
           fname ));
@@ -741,24 +741,25 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
     return;
   }
       
-  if (ofun & 0x10)
+  if (GET_FILE_CREATE_DISPOSITION(ofun) == FILE_CREATE_IF_NOT_EXIST)
     flags2 |= O_CREAT;
-  if ((ofun & 0x3) == 2)
+
+  if (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)
     flags2 |= O_TRUNC;
 
   /* note that we ignore the append flag as 
      append does not mean the same thing under dos and unix */
 
-  switch (share_mode&0xF)
+  switch (GET_OPEN_MODE(share_mode))
   {
-    case 1: 
+    case DOS_OPEN_WRONLY: 
       flags = O_WRONLY; 
       break;
-    case 0xF: 
+    case DOS_OPEN_FCB: 
       fcbopen = True;
       flags = O_RDWR; 
       break;
-    case 2: 
+    case DOS_OPEN_RDWR: 
       flags = O_RDWR; 
       break;
     default:
@@ -767,7 +768,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   }
 
 #if defined(O_SYNC)
-  if (share_mode&(1<<14)) {
+  if (GET_FILE_SYNC_OPENMODE(share_mode)) {
 	  flags2 |= O_SYNC;
   }
 #endif /* O_SYNC */
@@ -792,7 +793,8 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
     return;
   }
 
-  if (deny_mode == DENY_FCB) deny_mode = DENY_DOS;
+  if (deny_mode == DENY_FCB)
+    deny_mode = DENY_DOS;
 
   if (lp_share_modes(SNUM(conn))) 
   {
@@ -908,17 +910,19 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
     switch (flags) 
     {
       case O_RDONLY:
-        open_mode = 0;
+        open_mode = DOS_OPEN_RDONLY;
         break;
       case O_RDWR:
-        open_mode = 2;
+        open_mode = DOS_OPEN_RDWR;
         break;
       case O_WRONLY:
-        open_mode = 1;
+        open_mode = DOS_OPEN_WRONLY;
         break;
     }
 
-    fsp->share_mode = (deny_mode<<4) | open_mode;
+    fsp->share_mode = SET_DENY_MODE(deny_mode) | 
+                      SET_OPEN_MODE(open_mode) | 
+                      SET_ALLOW_SHARE_DELETE(allow_share_delete);
 
     if (Access)
       (*Access) = open_mode;
@@ -971,11 +975,10 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
     unlock_share_entry( conn, dev, inode, token);
 }
 
-
-
 /****************************************************************************
  Open a directory from an NT SMB call.
 ****************************************************************************/
+
 int open_directory(files_struct *fsp,connection_struct *conn,
 		   char *fname, int smb_ofun, mode_t unixmode, int *action)
 {
@@ -1057,6 +1060,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 check if the share mode on a file allows it to be deleted or unlinked
 return True if sharing doesn't prevent the operation
 ********************************************************************/
+
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
 {
   int i;
@@ -1156,9 +1160,20 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
           }
         }
 
-        /* someone else has a share lock on it, check to see 
-           if we can too */
-        if ((share_entry->share_mode != DENY_DOS) || (share_entry->pid != pid))
+        /* 
+         * If this is a delete request and ALLOW_SHARE_DELETE is set then allow 
+         * this to proceed. This takes precedence over share modes.
+         */
+
+        if(!rename_op && GET_ALLOW_SHARE_DELETE(share_entry->share_mode))
+          continue;
+
+        /* 
+         * Someone else has a share lock on it, check to see 
+         * if we can too.
+         */
+
+        if ((GET_DENY_MODE(share_entry->share_mode) != DENY_DOS) || (share_entry->pid != pid))
           goto free_and_exit;
 
       } /* end for */
@@ -1173,8 +1188,14 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 
   /* XXXX exactly what share mode combinations should be allowed for
      deleting/renaming? */
-  /* If we got here then either there were no share modes or
-     all share modes were DENY_DOS and the pid == getpid() */
+  /* 
+   * If we got here then either there were no share modes or
+   * all share modes were DENY_DOS and the pid == getpid() or
+   * delete access was requested and all share modes had the
+   * ALLOW_SHARE_DELETE bit set (takes precedence over other
+   * share modes).
+   */
+
   ret = True;
 
 free_and_exit:
@@ -1184,5 +1205,3 @@ free_and_exit:
     free((char *)old_shares);
   return(ret);
 }
-
-
