@@ -1,3 +1,8 @@
+2001-09-10  Assar Westerlund  <assar@sics.se>
+
+	* kafs.h, common.c: look for configuration files in /etc/arla (the
+	location in debian's arla package)
+
 2001-08-26  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: handle both krb5 and krb4 cases
