@@ -5,6 +5,8 @@ SHELL = /bin/sh
 srcdir = @srcdir@
 VPATH = @srcdir@
 
+top_builddir = ../..
+
 CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
@@ -97,7 +99,7 @@ dist: $(DISTFILES)
 
 KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
-OTPLIB=-L../../lib/otp -lotp
+OTPLIB=@LIB_otp@
 
 popper$(EXECSUFFIX): $(POPPER_OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(POPPER_OBJECTS) $(OTPLIB) $(KLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)

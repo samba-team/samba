@@ -5,7 +5,7 @@ SHELL = /bin/sh
 srcdir = @srcdir@
 VPATH = @srcdir@
 
-topdir = ../..
+top_builddir = ../..
 
 XINCS = @X_CFLAGS@
 XLIBS = @X_LIBS@ -lXt @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@

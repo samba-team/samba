@@ -8,13 +8,13 @@ srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
 VPATH		= @srcdir@
 
-topdir		= ../../..
+top_builddir		= ../../..
 
 CC 	= @CC@
 RANLIB 	= @RANLIB@
 DEFS 	= @DEFS@
 CFLAGS 	= @CFLAGS@
-CPPFLAGS= @CPPFLAGS@ -I. -I$(srcdir) -I$(topdir) -I$(top_srcdir) -I$(topdir)/include -I$(top_srcdir)/include -I$(srcdir)/../common  @INCLUDE_readline@
+CPPFLAGS= @CPPFLAGS@ -I. -I$(srcdir) -I$(top_builddir) -I$(top_srcdir) -I$(top_builddir)/include -I$(top_srcdir)/include -I$(srcdir)/../common  @INCLUDE_readline@
 LD_FLAGS = @LD_FLAGS@
 LIB_tgetent = @LIB_tgetent@
 LIBS	 = @LIBS@ @LIB_readline@
@@ -30,9 +30,9 @@ libdir = @libdir@
 transform=@program_transform_name@
 EXECSUFFIX=@EXECSUFFIX@
 
-INCTOP = $(topdir)/include
+INCTOP = $(top_builddir)/include
 
-LIBTOP = $(topdir)/lib
+LIBTOP = $(top_builddir)/lib
 
 PROGS = ftp$(EXECSUFFIX)
 
