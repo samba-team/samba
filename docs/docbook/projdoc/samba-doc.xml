@@ -24,7 +24,7 @@ The most recent version of this document can be found at
 <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
 on the "Documentation" page.  Please send updates to
 <ulink url="mailto:jelmer@samba.org">Jelmer Vernooij</ulink>,
-<ulink url="mailto:jht@samba.org">John H Terpstra</ulink> or
+<ulink url="mailto:jht@samba.org">John H. Terpstra</ulink> or
 <ulink url="mailto:jerry@samba.org">Gerald (Jerry) Carter</ulink>.
 </para>
 
@@ -47,7 +47,11 @@ distribution.  A copy can be found on-line at <ulink
 url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
 
-&attributions;
+<sect1>
+	<title>Attributions</title>
+	
+	&attributions;
+</sect1>
 
 </legalnotice>
 </bookinfo>

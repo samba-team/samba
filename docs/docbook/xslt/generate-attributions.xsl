@@ -21,8 +21,9 @@
 <xsl:template match="chapter">
 	<xsl:element name="varlistentry">
 		<xsl:element name="term">
-			<xsl:element name="xref">
-				<xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+			<xsl:element name="link">
+				<xsl:attribute name="linkend"><xsl:value-of select="@id"/></xsl:attribute>
+				<xsl:value-of select="title"/>
 			</xsl:element>
 		</xsl:element>
 		<xsl:element name="listitem">

@@ -2,11 +2,7 @@
 
 <chapterinfo>
 	&author.jelmer;
-	<author>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-		</affiliation>
-	</author>
+	<author><surname>Someone; Tridge or Karl Auer perhaps?</surname></author>
 	<pubdate> 27 June 1997 </pubdate>
 </chapterinfo>
 
