@@ -57,7 +57,7 @@ struct dptr_struct {
 
 static struct bitmap *dptr_bmap;
 static struct dptr_struct *dirptrs;
-static int dptrs_open = 0;
+static int dirhandles_open = 0;
 
 #define INVALID_DPTR_KEY (-3)
 
@@ -135,7 +135,7 @@ static struct dptr_struct *dptr_get(int key, BOOL forclose)
 	for(dptr = dirptrs; dptr; dptr = dptr->next) {
 		if(dptr->dnum == key) {
 			if (!forclose && !dptr->dir_hnd) {
-				if (dptrs_open >= MAX_OPEN_DIRECTORIES)
+				if (dirhandles_open >= MAX_OPEN_DIRECTORIES)
 					dptr_idleoldest();
 				DEBUG(4,("dptr_get: Reopening dptr key %d\n",key));
 				if (!(dptr->dir_hnd = OpenDir(dptr->conn, dptr->path))) {
@@ -385,7 +385,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 
 	string_set(&conn->dirpath,dir2);
 
-	if (dptrs_open >= MAX_OPEN_DIRECTORIES)
+	if (dirhandles_open >= MAX_OPEN_DIRECTORIES)
 		dptr_idleoldest();
 
 	dptr = SMB_MALLOC_P(struct dptr_struct);
@@ -968,7 +968,7 @@ struct smb_Dir *OpenDir(connection_struct *conn, const char *name)
 		goto fail;
 	}
 
-	dptrs_open++;
+	dirhandles_open++;
 	return dirp;
 
   fail:
@@ -1004,7 +1004,7 @@ int CloseDir(struct smb_Dir *dirp)
 	}
 	SAFE_FREE(dirp->name_cache);
 	SAFE_FREE(dirp);
-	dptrs_open--;
+	dirhandles_open--;
 	return ret;
 }
 

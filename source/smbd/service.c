@@ -60,17 +60,26 @@ BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 	last_flags = flags;
 	
 	/* Obey the client case sensitivity requests - only for clients that support it. */
-	if (lp_casesensitive(snum) == Auto) {
-		/* We need this uglyness due to DOS/Win9x clients that lie about case insensitivity. */
-		enum remote_arch_types ra_type = get_remote_arch();
-		if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
-			/* Client can't support per-packet case sensitive pathnames. */
+	switch (lp_casesensitive(snum)) {
+		case Auto:
+			{
+				/* We need this uglyness due to DOS/Win9x clients that lie about case insensitivity. */
+				enum remote_arch_types ra_type = get_remote_arch();
+				if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
+					/* Client can't support per-packet case sensitive pathnames. */
+					conn->case_sensitive = False;
+				} else {
+					conn->case_sensitive = !(flags & FLAG_CASELESS_PATHNAMES);
+				}
+			}
+			break;
+		case True:
+			conn->case_sensitive = True;
+			break;
+		default:
 			conn->case_sensitive = False;
-		} else {
-			conn->case_sensitive = !(flags & FLAG_CASELESS_PATHNAMES);
-		}
+			break;
 	}
-
 	magic_char = lp_magicchar(snum);
 	return(True);
 }
