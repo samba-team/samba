@@ -85,16 +85,8 @@ BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2)
 		pwd_obfuscate(pwd2);
 		return True;
 	}
-	if (pwd1->crypted || pwd2->crypted)
-	{
-		DEBUG(5,("pwd_compare: cannot compare crypted passwords\n"));
-		pwd_obfuscate(pwd1);
-		pwd_obfuscate(pwd2);
-		return False;
-	}
 
-	if (!pwd1->crypted   && !pwd2->crypted &&
-	    !pwd1->null_pwd  && !pwd2->null_pwd &&
+	if (!pwd1->null_pwd  && !pwd2->null_pwd &&
 	    !pwd1->cleartext && !pwd2->cleartext)
 	{
 		if (memcmp(pwd1->smb_nt_pwd, pwd2->smb_nt_pwd, 16) == 0)
