@@ -1024,7 +1024,6 @@ if test "$enable_shared" = "yes"; then
 			*irix6*) AC_DEFINE(IRIX6,1,[Whether the host os is irix6])
 			;;
 			esac
-			ATTEMPT_WRAP32_BUILD=yes
 			BLDSHARED="true"
 			LDSHFLAGS="-set_version sgi1.0 -shared"
 			SONAMEFLAG="-soname "
@@ -2035,27 +2034,19 @@ AC_ARG_WITH(smbwrapper,
 	WRAPPROG="bin/smbsh\$(EXEEXT)"
 	WRAP="bin/smbwrapper.$SHLIBEXT"
 
-	if test x$ATTEMPT_WRAP32_BUILD = x; then
-		WRAP32=""
-	else
-			WRAP32=bin/smbwrapper.32.$SHLIBEXT
-	fi
-
 # Conditions under which smbwrapper should not be built.
 
 	if test x$PICFLAG = x; then
 	   echo No support for PIC code - disabling smbwrapper and smbsh
 	   WRAPPROG=""
 	   WRAP=""
-	   WRAP32=""
 	elif test x$ac_cv_func_syscall = xno; then
 	   AC_MSG_RESULT([No syscall() -- disabling smbwrapper and smbsh])
 	   WRAPPROG=""
 	   WRAP=""
-	   WRAP32=""
 	fi
-	EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WRAPPROG $WRAP $WRAP32"
-	SMBWRAPPER="$WRAPPROG $WRAP $WRAP32"
+	EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WRAPPROG $WRAP"
+	SMBWRAPPER="$WRAPPROG $WRAP"
     ;;
   *)
     AC_MSG_RESULT(no)

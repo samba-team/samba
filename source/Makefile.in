@@ -106,7 +106,6 @@ FLAGS3 =
 FLAGS4 = 
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4)
 FLAGS  = $(ISA) $(FLAGS5) 
-FLAGS32  = $(ISA32) $(FLAGS5)
 
 PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATE_DIR)\"
 PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
@@ -567,7 +566,6 @@ NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) \
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
-PICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
 LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.po)
 
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
@@ -658,11 +656,10 @@ modules: SHOWFLAGS proto_exists $(MODULES)
 everything: all libsmbclient debug2html smbfilter talloctort modules torture
 
 .SUFFIXES:
-.SUFFIXES: .c .o .po .po32 .lo
+.SUFFIXES: .c .o .po .lo
 
 SHOWFLAGS:
 	@echo "Using FLAGS = $(FLAGS)"
-	@echo "      FLAGS32 = $(FLAGS32)"
 	@echo "      LIBS = $(LIBS)"
 	@echo "      LDSHFLAGS = $(LDSHFLAGS)"
 	@echo "      LDFLAGS = $(LDFLAGS)"
@@ -717,16 +714,6 @@ smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
 	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< -o $*.@PICSUFFIX@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@
 @POBAD_CC@	@mv $*.po.o $@
-
-# this is for IRIX
-.c.po32: 
-	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
-	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-	@echo Compiling $*.c with @PICFLAG@ and -32
-	@$(CC) -32 -I. -I$(srcdir) $(FLAGS32) $(PATH_FLAGS) @PICFLAG@ -c $< \
-	  -o $*.po32.o 
-@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po32$$%.o%'` $@.o
-	@mv $*.po32.o $@
 
 bin/.dummy:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then :; else \
@@ -890,11 +877,6 @@ bin/smbsh@EXEEXT@: $(SMBSH_OBJ) bin/.dummy
 bin/smbwrapper.@SHLIBEXT@: $(PICOBJS) bin/.dummy
 	@echo Linking shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PICOBJS) $(LIBS) \
-		@SONAMEFLAG@`basename $@` $(KRB5LIBS)
-
-bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
-	@echo Linking shared library $@
-	@$(SHLD) -32 $(LDSHFLAGS) -o $@ $(PICOBJS32) $(LIBS) \
 		@SONAMEFLAG@`basename $@` $(KRB5LIBS)
 
 bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
@@ -1231,7 +1213,7 @@ uninstallscripts:
 TOPFILES=dynconfig.o dynconfig.po
 
 clean: delheaders python_clean
-	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
+	-rm -f core */*~ *~ */*.o */*.po */*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
 		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp
 
