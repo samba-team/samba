@@ -1769,6 +1769,18 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli, uint16 fnum,
 BOOL do_srv_net_srv_get_info(struct cli_state *cli, uint16 fnum,
 			char *server_name, uint32 switch_value, SRV_INFO_CTR *ctr);
 
+/*The following definitions come from  rpc_client/cli_svcctl.c  */
+
+BOOL do_svc_open_sc_man(struct cli_state *cli, uint16 fnum, 
+				char *srv_name, char *db_name,
+				uint32 des_access,
+				POLICY_HND *hnd);
+BOOL do_svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *hnd,
+				uint32 services_type, uint32 services_state,
+				uint32 buf_size, uint32 *resume_hnd);
+BOOL do_svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
+
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 
 BOOL do_wks_query_info(struct cli_state *cli, uint16 fnum, 
@@ -2482,12 +2494,17 @@ void srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *
 
 /*The following definitions come from  rpc_parse/parse_svc.c  */
 
-void make_svc_q_open_policy(SVC_Q_OPEN_POLICY *q_u,
-				char *server, uint16 unknown)  ;
-void svc_io_q_open_policy(char *desc, SVC_Q_OPEN_POLICY *q_u, prs_struct *ps, int depth);
-void make_svc_r_open_policy(SVC_R_OPEN_POLICY *r_u, POLICY_HND *hnd,
+void make_svc_q_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
+				char *server, char *database,
+				uint32 des_access)  ;
+void svc_io_q_open_sc_man(char *desc, SVC_Q_OPEN_SC_MAN *q_u, prs_struct *ps, int depth);
+void make_svc_r_open_sc_man(SVC_R_OPEN_SC_MAN *r_u, POLICY_HND *hnd,
 				uint32 status)  ;
-void svc_io_r_open_policy(char *desc,  SVC_R_OPEN_POLICY *r_u, prs_struct *ps, int depth);
+void svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, int depth);
+void make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_c, POLICY_HND *hnd,
+				uint32 service_type, uint32 service_state,
+				uint32 buf_size, uint32 enum_hnd );
+void svc_io_q_enum_svcs_status(char *desc,  SVC_Q_ENUM_SVCS_STATUS *q_u, prs_struct *ps, int depth);
 void make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd);
 void svc_io_q_close(char *desc,  SVC_Q_CLOSE *q_u, prs_struct *ps, int depth);
 void svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth);
@@ -2636,6 +2653,10 @@ void cmd_srv_enum_conn(struct client_info *info);
 void cmd_srv_enum_shares(struct client_info *info);
 void cmd_srv_enum_sess(struct client_info *info);
 void cmd_srv_enum_files(struct client_info *info);
+
+/*The following definitions come from  rpcclient/cmd_svcctl.c  */
+
+void cmd_svc_enum(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_wkssvc.c  */
 
