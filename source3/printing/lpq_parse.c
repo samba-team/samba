@@ -592,7 +592,7 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
 {
   fstring tok[7];
   int count=0;
-  const char *cline;
+  const char *cline = line;
 
   DEBUG(4,("antes [%s]\n", line));
 
