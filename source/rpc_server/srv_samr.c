@@ -444,7 +444,7 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 	{
 		BOOL ret;
 		char *name;
-		int i;
+		int i = 0;
 		got_grps = True;
 
 		become_root(True);
