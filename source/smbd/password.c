@@ -525,7 +525,7 @@ BOOL pass_check_smb(char *user, char *domain,
 		return(True);
 	}
 	
-	DEBUG(3,("Error smb_password_check failed\n"));
+	DEBUG(1,("smb_password_check failed. Invalid password given for user '%s'\n", user));
 	return False;
 }
 

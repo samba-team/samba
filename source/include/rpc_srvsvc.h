@@ -249,7 +249,7 @@ typedef struct r_net_conn_enum_info
 
 /* oops - this is going to take up a *massive* amount of stack. */
 /* the UNISTR2s already have 1024 uint16 chars in them... */
-#define MAX_SHARE_ENTRIES 128
+#define MAX_SHARE_ENTRIES 200
 
 /* SH_INFO_1 (pointers to level 1 share info strings) */
 typedef struct ptr_share_info1

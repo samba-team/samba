@@ -768,7 +768,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     if(smb_ntpasslen)
     {
       if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL))
-        DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
+        DEBUG(2,("NT Password did not match for user '%s' ! Defaulting to Lanman\n", user));
       else
         valid_nt_password = True;
     } 
