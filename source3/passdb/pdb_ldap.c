@@ -237,7 +237,7 @@ static BOOL ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * l
 		return False;
 	}
 	
-	DEBUG(2, ("ldap_connect_system: succesful connection to the LDAP server\n"));
+	DEBUG(2, ("ldap_connect_system: successful connection to the LDAP server\n"));
 	return True;
 }
 
@@ -521,7 +521,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	
 		pw = getpwnam_alloc(username);
 		if (pw == NULL) {
-			DEBUG (2,("init_sam_from_ldap: User [%s] does not ave a uid!\n", username));
+			DEBUG (2,("init_sam_from_ldap: User [%s] does not have a uid!\n", username));
 			return False;
 		}
 		uid = pw->pw_uid;
@@ -740,7 +740,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	} else if (ldap_state->permit_non_unix_accounts) {
 		rid = ldapsam_get_next_available_nua_rid(ldap_state);
 		if (rid == 0) {
-			DEBUG(0, ("NO user RID specified on account %s, and findining next available NUA RID failed, cannot store!\n", pdb_get_username(sampass)));
+			DEBUG(0, ("NO user RID specified on account %s, and finding next available NUA RID failed, cannot store!\n", pdb_get_username(sampass)));
 			return False;
 		}
 	} else {
@@ -1097,7 +1097,7 @@ static BOOL ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	if (ldap_count_entries(ldap_struct, result) < 1)
 	{
 		DEBUG(4,
-		      ("We don't find this user [%s] count=%d\n", sname,
+		      ("We didn't find the user [%s] count=%d\n", sname,
 		       ldap_count_entries(ldap_struct, result)));
 		ldap_unbind(ldap_struct);
 		return False;
@@ -1151,7 +1151,7 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	if (ldap_count_entries(ldap_struct, result) < 1)
 	{
 		DEBUG(0,
-		      ("We don't find this rid [%i] count=%d\n", rid,
+		      ("We didn't find the rid [%i] count=%d\n", rid,
 		       ldap_count_entries(ldap_struct, result)));
 		ldap_unbind(ldap_struct);
 		return False;
@@ -1205,7 +1205,7 @@ static BOOL ldapsam_delete_sam_account(struct pdb_methods *my_methods, const SAM
 	
 	if (!ldapsam_connect_system(ldap_state, ldap_struct)) {
 		ldap_unbind (ldap_struct);
-		DEBUG(0, ("Failed to delete user %s from LDAP.\n", sname));
+		DEBUG(0, ("failed to delete user %s from the LDAP database.\n", sname));
 		return False;
 	}
 
