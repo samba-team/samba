@@ -52,7 +52,7 @@ static struct name_record *add_dns_result(struct nmb_name *question, struct in_a
 #ifndef SYNC_DNS
 
 static int fd_in = -1, fd_out = -1;
-static int child_pid = -1;
+static pid_t child_pid = -1;
 static int in_dns;
 
 /* this is the structure that is passed between the parent and child */
@@ -147,7 +147,7 @@ void start_async_dns(void)
 		fd_out = fd2[1];
 		close(fd1[1]);
 		close(fd2[0]);
-		DEBUG(0,("started asyncdns process %d\n", child_pid));
+		DEBUG(0,("started asyncdns process %d\n", (int)child_pid));
 		return;
 	}
 
