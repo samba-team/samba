@@ -23,6 +23,9 @@
 #include "includes.h"
 #include "printing.h"
 
+extern SIG_ATOMIC_T got_sig_term;
+extern SIG_ATOMIC_T reload_after_sighup;
+
 /* Current printer interface */
 static BOOL remove_from_jobs_changed(int snum, uint32 jobid);
 
@@ -971,7 +974,7 @@ static void check_job_changed(int snum, TDB_DATA data, uint32 jobid)
  Update the internal database from the system print queue for a queue.
 ****************************************************************************/
 
-static void print_queue_update(int snum)
+static void print_queue_update_internal(int snum)
 {
 	int i, qcount;
 	print_queue_struct *queue = NULL;
@@ -1148,6 +1151,89 @@ static void print_queue_update(int snum)
 	/* Delete our pid from the db. */
 	set_updating_pid(printer_name, True);
 	release_print_db(pdb);
+}
+
+/****************************************************************************
+this is the receive function of the background lpq updater
+****************************************************************************/
+static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t len)
+{
+	int snum;
+	snum=*((int *)buf);
+	print_queue_update_internal(snum);
+}
+
+static pid_t background_lpq_updater_pid = -1;
+
+/****************************************************************************
+main thread of the background lpq updater
+****************************************************************************/
+void start_background_queue(void)
+{
+	DEBUG(3,("start_background_queue: Starting background LPQ thread\n"));
+	background_lpq_updater_pid = sys_fork();
+
+	if (background_lpq_updater_pid == -1) {
+		DEBUG(5,("start_background_queue: background LPQ thread failed to start. %s\n", strerror(errno) ));
+		exit(1);
+	}
+
+	if(background_lpq_updater_pid == 0) {
+		/* Child. */
+		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
+
+		claim_connection( NULL, "smbd lpq backend", 0, False, 
+			FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINTING );
+
+		if (!locking_init(0)) {
+			exit(1);
+		}
+
+		if (!print_backend_init()) {
+			exit(1);
+		}
+
+		message_register(MSG_PRINTER_UPDATE, print_queue_receive);
+		
+		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
+		while (1) {
+			pause();
+			
+			/* check for some essential signals first */
+			
+                        if (got_sig_term) {
+                                exit_server("Caught TERM signal");
+                        }
+
+                        if (reload_after_sighup) {
+                                change_to_root_user();
+                                DEBUG(1,("Reloading services after SIGHUP\n"));
+                                reload_services(False);
+                                reload_after_sighup = 0;
+                        }
+			
+			/* now check for messages */
+			
+			DEBUG(10,("start_background_queue: background LPQ thread got a message\n"));
+			message_dispatch();
+		}
+	}
+}
+
+/****************************************************************************
+update the internal database from the system print queue for a queue
+****************************************************************************/
+static void print_queue_update(int snum)
+{
+	/* 
+	 * Make sure that the backgroup queueu process exists.  
+	 * Otherwise just do the update ourselves 
+	 */
+	   
+	if ( background_lpq_updater_pid != -1 )
+		message_send_pid(background_lpq_updater_pid, MSG_PRINTER_UPDATE, &snum, sizeof(snum), False);
+	else
+		print_queue_update_internal( snum );
 }
 
 /****************************************************************************
