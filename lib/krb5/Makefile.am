@@ -144,7 +144,8 @@ man_MANS =					\
 	krb5_sname_to_principal.3		\
 	krb5_unparse_name.3			\
 	krb5_warn.3				\
-	verify_krb5_conf.8
+	verify_krb5_conf.8			\
+	krb5_auth_context.3
 
 include_HEADERS = krb5.h krb5-protos.h krb5-private.h krb5_err.h heim_err.h
 
