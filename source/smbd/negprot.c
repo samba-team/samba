@@ -278,11 +278,19 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	
 	if (lp_server_signing()) {
-		secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
-		/* No raw mode with smb signing. */
-		capabilities &= ~CAP_RAW_MODE;
-		if (lp_server_signing() == Required)
-			secword |=NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
+	       	if (lp_security() >= SEC_USER) {
+			secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
+			/* No raw mode with smb signing. */
+			capabilities &= ~CAP_RAW_MODE;
+			if (lp_server_signing() == Required)
+				secword |=NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
+			srv_set_signing_negotiated();
+		} else {
+			DEBUG(0,("reply_nt1: smb signing is incompatible with share level security !\n"));
+			if (lp_server_signing() == Required) {
+				exit_server("reply_nt1: smb signing required and share level security selected.");
+			}
+		}
 	}
 
 	set_message(outbuf,17,0,True);

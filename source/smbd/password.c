@@ -111,7 +111,7 @@ void invalidate_all_vuids(void)
  *
  */
 
-int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
+int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB response_blob, const char *smb_name)
 {
 	user_struct *vuser = NULL;
 
@@ -241,12 +241,10 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 		vuser->homes_snum = -1;
 	}
 	
-#if 0 /* JRATEST. */
-	if (lp_server_signing() && !vuser->guest && !srv_signing_active()) {
+	if (lp_server_signing() && !vuser->guest && !srv_is_signing_active()) {
 		/* Try and turn on server signing on the first non-guest sessionsetup. */
-		srv_set_signing(session_key.data, nt_response);
+		srv_set_signing(vuser->session_key, response_blob);
 	}
-#endif
 
 	return vuser->vuid;
 }

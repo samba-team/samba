@@ -57,6 +57,7 @@ static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
 		if (t->mid == mid) {
 			*reply_seq_num = t->reply_seq_num;
 			DLIST_REMOVE(*list, t);
+			SAFE_FREE(t);
 			return True;
 		}
 	}
@@ -179,7 +180,7 @@ static void free_signing_context(struct smb_sign_info *si)
 
 static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good) 
 {
-	DEBUG(10, ("got SMB signature of\n"));
+	DEBUG(10, ("signing_good: got SMB signature of\n"));
 	dump_data(10,&inbuf[smb_ss_field] , 8);
 
 	if (good && !si->doing_signing) {
@@ -251,17 +252,27 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
  SMB signing - Simple implementation - send the MAC.
 ************************************************************/
 
-static void cli_simple_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
+static void simple_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 {
 	unsigned char calc_md5_mac[16];
 	struct smb_basic_signing_context *data = si->signing_context;
+
+	if (!si->doing_signing)
+		return;
+
+	/* JRA Paranioa test - we should be able to get rid of this... */
+	if (smb_len(outbuf) < (smb_ss_field + 8 - 4)) {
+		DEBUG(1, ("simple_sign_outgoing_message: Logic error. Can't check signature on short packet! smb_len = %u\n",
+					smb_len(outbuf) ));
+		abort();
+	}
 
 	/* mark the packet as signed - BEFORE we sign it...*/
 	mark_packet_signed(outbuf);
 
 	simple_packet_signature(data, outbuf, data->send_seq_num, calc_md5_mac);
 
-	DEBUG(10, ("sent SMB signature of\n"));
+	DEBUG(10, ("simple_sign_outgoing_message: sent SMB signature of\n"));
 	dump_data(10, calc_md5_mac, 8);
 
 	memcpy(&outbuf[smb_ss_field], calc_md5_mac, 8);
@@ -270,17 +281,19 @@ static void cli_simple_sign_outgoing_message(char *outbuf, struct smb_sign_info 
 	Uncomment this to test if the remote server actually verifies signatures...*/
 
 	data->send_seq_num++;
+#if 1 /* JRATEST */
 	store_sequence_for_reply(&data->outstanding_packet_list, 
 				 SVAL(outbuf,smb_mid),
 				 data->send_seq_num);
 	data->send_seq_num++;
+#endif /* JRATEST */
 }
 
 /***********************************************************
  SMB signing - Simple implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL cli_simple_check_incoming_message(char *inbuf, struct smb_sign_info *si)
+static BOOL simple_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 {
 	BOOL good;
 	uint32 reply_seq_number;
@@ -289,11 +302,24 @@ static BOOL cli_simple_check_incoming_message(char *inbuf, struct smb_sign_info 
 
 	struct smb_basic_signing_context *data = si->signing_context;
 
+	if (!si->doing_signing)
+		return True;
+
+	if (smb_len(inbuf) < (smb_ss_field + 8 - 4)) {
+		DEBUG(1, ("simple_check_incoming_message: Can't check signature on short packet! smb_len = %u\n", smb_len(inbuf)));
+		return False;
+	}
+
+#if 1 /* JRATEST */
 	if (!get_sequence_for_reply(&data->outstanding_packet_list, 
 				    SVAL(inbuf, smb_mid), 
 				    &reply_seq_number)) {
 		return False;
 	}
+#else /* JRATEST */
+	reply_seq_number = data->send_seq_num;
+	data->send_seq_num++;
+#endif /* JRATEST */
 
 	simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
 
@@ -301,10 +327,10 @@ static BOOL cli_simple_check_incoming_message(char *inbuf, struct smb_sign_info 
 	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
 	
 	if (!good) {
-		DEBUG(5, ("BAD SIG: wanted SMB signature of\n"));
+		DEBUG(5, ("simple_check_incoming_message: BAD SIG: wanted SMB signature of\n"));
 		dump_data(5, calc_md5_mac, 8);
 		
-		DEBUG(5, ("BAD SIG: got SMB signature of\n"));
+		DEBUG(5, ("simple_check_incoming_message: BAD SIG: got SMB signature of\n"));
 		dump_data(5, server_sent_mac, 8);
 	}
 	return signing_good(inbuf, si, good);
@@ -314,7 +340,7 @@ static BOOL cli_simple_check_incoming_message(char *inbuf, struct smb_sign_info 
  SMB signing - Simple implementation - free signing context
 ************************************************************/
 
-static void cli_simple_free_signing_context(struct smb_sign_info *si)
+static void simple_free_signing_context(struct smb_sign_info *si)
 {
 	struct smb_basic_signing_context *data = si->signing_context;
 	struct outstanding_packet_lookup *list = data->outstanding_packet_list;
@@ -357,7 +383,8 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 	data->mac_key = data_blob(NULL, response.length + 16);
 
 	memcpy(&data->mac_key.data[0], user_session_key, 16);
-	memcpy(&data->mac_key.data[16],response.data, response.length);
+	if (response.length)
+		memcpy(&data->mac_key.data[16],response.data, response.length);
 
 	/* Initialise the sequence number */
 	data->send_seq_num = 0;
@@ -365,9 +392,9 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 	/* Initialise the list of outstanding packets */
 	data->outstanding_packet_list = NULL;
 
-	cli->sign_info.sign_outgoing_message = cli_simple_sign_outgoing_message;
-	cli->sign_info.check_incoming_message = cli_simple_check_incoming_message;
-	cli->sign_info.free_signing_context = cli_simple_free_signing_context;
+	cli->sign_info.sign_outgoing_message = simple_sign_outgoing_message;
+	cli->sign_info.check_incoming_message = simple_check_incoming_message;
+	cli->sign_info.free_signing_context = simple_free_signing_context;
 
 	return True;
 }
@@ -376,7 +403,7 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
  SMB signing - TEMP implementation - calculate a MAC to send.
 ************************************************************/
 
-static void cli_temp_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
+static void temp_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 {
 	/* mark the packet as signed - BEFORE we sign it...*/
 	mark_packet_signed(outbuf);
@@ -391,7 +418,7 @@ static void cli_temp_sign_outgoing_message(char *outbuf, struct smb_sign_info *s
  SMB signing - TEMP implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL cli_temp_check_incoming_message(char *inbuf, struct smb_sign_info *si)
+static BOOL temp_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 {
 	return True;
 }
@@ -400,7 +427,7 @@ static BOOL cli_temp_check_incoming_message(char *inbuf, struct smb_sign_info *s
  SMB signing - TEMP implementation - free signing context
 ************************************************************/
 
-static void cli_temp_free_signing_context(struct smb_sign_info *si)
+static void temp_free_signing_context(struct smb_sign_info *si)
 {
 	return;
 }
@@ -426,9 +453,9 @@ BOOL cli_temp_set_signing(struct cli_state *cli)
 
 	cli->sign_info.signing_context = NULL;
 	
-	cli->sign_info.sign_outgoing_message = cli_temp_sign_outgoing_message;
-	cli->sign_info.check_incoming_message = cli_temp_check_incoming_message;
-	cli->sign_info.free_signing_context = cli_temp_free_signing_context;
+	cli->sign_info.sign_outgoing_message = temp_sign_outgoing_message;
+	cli->sign_info.check_incoming_message = temp_check_incoming_message;
+	cli->sign_info.free_signing_context = temp_free_signing_context;
 
 	return True;
 }
@@ -450,28 +477,15 @@ void cli_calculate_sign_mac(struct cli_state *cli)
 /**
  * Check a packet with the current mechanism
  * @return False if we had an established signing connection
- *         which had a back checksum, True otherwise
+ *         which had a bad checksum, True otherwise.
  */
  
 BOOL cli_check_sign_mac(struct cli_state *cli) 
 {
-	BOOL good;
-
-	if (smb_len(cli->inbuf) < (smb_ss_field + 8 - 4)) {
-		DEBUG(cli->sign_info.doing_signing ? 1 : 10, ("Can't check signature on short packet! smb_len = %u\n", smb_len(cli->inbuf)));
-		good = False;
-	} else {
-		good = cli->sign_info.check_incoming_message(cli->inbuf, &cli->sign_info);
+	if (!cli->sign_info.check_incoming_message(cli->inbuf, &cli->sign_info)) {
+		free_signing_context(&cli->sign_info);	
+		return False;
 	}
-
-	if (!good) {
-		if (cli->sign_info.doing_signing) {
-			return False;
-		} else {
-			free_signing_context(&cli->sign_info);	
-		}
-	}
-
 	return True;
 }
 
@@ -507,17 +521,9 @@ BOOL srv_oplock_set_signing(BOOL onoff)
 
 BOOL srv_check_sign_mac(char *inbuf)
 {
-	if (!srv_sign_info.doing_signing)
-		return True;
-
 	/* Check if it's a session keepalive. */
 	if(CVAL(inbuf,0) == SMBkeepalive)
 		return True;
-
-	if (smb_len(inbuf) < (smb_ss_field + 8 - 4)) {
-		DEBUG(1, ("srv_check_sign_mac: Can't check signature on short packet! smb_len = %u\n", smb_len(inbuf) ));
-		return False;
-	}
 
 	return srv_sign_info.check_incoming_message(inbuf, &srv_sign_info);
 }
@@ -536,14 +542,23 @@ void srv_calculate_sign_mac(char *outbuf)
 	if(CVAL(outbuf,0) == SMBkeepalive)
 		return;
 
-	/* JRA Paranioa test - we should be able to get rid of this... */
-	if (smb_len(outbuf) < (smb_ss_field + 8 - 4)) {
-		DEBUG(1, ("srv_calculate_sign_mac: Logic error. Can't check signature on short packet! smb_len = %u\n",
-					smb_len(outbuf) ));
-		abort();
-	}
-
 	srv_sign_info.sign_outgoing_message(outbuf, &srv_sign_info);
+}
+
+/***********************************************************
+ Called by server negprot when signing has been negotiated.
+************************************************************/
+
+void srv_set_signing_negotiated(void)
+{
+	srv_sign_info.allow_smb_signing = True;
+	srv_sign_info.negotiated_smb_signing = True;
+	if (lp_server_signing() == Required)
+		srv_sign_info.mandatory_signing = True;
+
+	srv_sign_info.sign_outgoing_message = temp_sign_outgoing_message;
+	srv_sign_info.check_incoming_message = temp_check_incoming_message;
+	srv_sign_info.free_signing_context = temp_free_signing_context;
 }
 
 /***********************************************************
@@ -551,7 +566,56 @@ void srv_calculate_sign_mac(char *outbuf)
  reads/writes if it is.
 ************************************************************/
 
-BOOL srv_signing_active(void)
+BOOL srv_is_signing_active(void)
 {
 	return srv_sign_info.doing_signing;
+}
+
+/***********************************************************
+ Turn on signing from this packet onwards. 
+************************************************************/
+
+void srv_set_signing(const uchar user_session_key[16], const DATA_BLOB response)
+{
+	struct smb_basic_signing_context *data;
+
+	if (!user_session_key)
+		return;
+
+	if (!srv_sign_info.negotiated_smb_signing && !srv_sign_info.mandatory_signing) {
+		DEBUG(5,("srv_set_signing: signing negotiated = %u, mandatory_signing = %u. Not allowing smb signing.\n",
+			(unsigned int)srv_sign_info.negotiated_smb_signing,
+			(unsigned int)srv_sign_info.mandatory_signing ));
+		return;
+	}
+
+	/* Once we've turned on, ignore any more sessionsetups. */
+	if (srv_sign_info.doing_signing) {
+		return;
+	}
+	
+	if (srv_sign_info.free_signing_context)
+		srv_sign_info.free_signing_context(&srv_sign_info);
+	
+	srv_sign_info.doing_signing = True;
+
+	data = smb_xmalloc(sizeof(*data));
+
+	srv_sign_info.signing_context = data;
+	
+	data->mac_key = data_blob(NULL, response.length + 16);
+
+	memcpy(&data->mac_key.data[0], user_session_key, 16);
+	if (response.length)
+		memcpy(&data->mac_key.data[16],response.data, response.length);
+
+	/* Initialise the sequence number */
+	data->send_seq_num = 0;
+
+	/* Initialise the list of outstanding packets */
+	data->outstanding_packet_list = NULL;
+
+	srv_sign_info.sign_outgoing_message = simple_sign_outgoing_message;
+	srv_sign_info.check_incoming_message = simple_check_incoming_message;
+	srv_sign_info.free_signing_context = simple_free_signing_context;
 }

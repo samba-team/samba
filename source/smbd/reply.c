@@ -1472,7 +1472,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	files_struct *fsp;
 	START_PROFILE(SMBreadbraw);
 
-	if (srv_signing_active()) {
+	if (srv_is_signing_active()) {
 		exit_server("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
 	}
 
@@ -1874,7 +1874,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	int outsize = 0;
 	START_PROFILE(SMBwritebraw);
 
-	if (srv_signing_active()) {
+	if (srv_is_signing_active()) {
 		exit_server("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
 	}
 
