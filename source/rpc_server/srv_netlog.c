@@ -644,6 +644,7 @@ static BOOL api_net_sam_logon(prs_struct *data, prs_struct *rdata)
     struct smb_passwd *smb_pass = NULL;
     UNISTR2 *uni_samlogon_user = NULL;
     fstring nt_username;
+    struct passwd *pw;
     
     user_struct *vuser = NULL;
     
@@ -708,7 +709,7 @@ static BOOL api_net_sam_logon(prs_struct *data, prs_struct *rdata)
         /*
          * Do any case conversions.
          */
-        (void)Get_Pwnam(nt_username, True);
+        pw=Get_Pwnam(nt_username, True);
         
         become_root(True);
         smb_pass = getsmbpwnam(nt_username);
@@ -758,7 +759,8 @@ static BOOL api_net_sam_logon(prs_struct *data, prs_struct *rdata)
         pstring domain_groups;
         uint32 r_uid;
         uint32 r_gid;
-        
+        fstring full_name;
+	
         /* set up pointer indicating user/password failed to be found */
         usr_info.ptr_user_info = 0;
         
@@ -769,17 +771,27 @@ static BOOL api_net_sam_logon(prs_struct *data, prs_struct *rdata)
         /* possibly a better way would be to do a become_user() call */
         sam_logon_in_ssb = True;
         pstrcpy(samlogon_user, nt_username);
-        
+
         pstrcpy(logon_script, lp_logon_script());
+        standard_sub_advanced(-1, nt_username, "", pw->pw_gid, logon_script);
+	
         pstrcpy(profile_path, lp_logon_path());
+        standard_sub_advanced(-1, nt_username, "", pw->pw_gid, profile_path);
         
         pstrcpy(my_workgroup, lp_workgroup());
         
         pstrcpy(home_drive, lp_logon_drive());
+        standard_sub_advanced(-1, nt_username, "", pw->pw_gid, home_drive);
+
         pstrcpy(home_dir, lp_logon_home());
+        standard_sub_advanced(-1, nt_username, "", pw->pw_gid, home_dir);
         
         pstrcpy(my_name, global_myname);
         strupper(my_name);
+
+	fstrcpy(full_name, "<Full Name>");
+	if (lp_unix_realname())
+		fstrcpy(full_name, pw->pw_gecos);
         
         /*
          * This is the point at which we get the group
@@ -809,7 +821,7 @@ static BOOL api_net_sam_logon(prs_struct *data, prs_struct *rdata)
                                 &dummy_time, /* pass_must_change_time */
                                 
                                 nt_username   , /* user_name */
-                                vuser->user.full_name, /* full_name */
+                                full_name,	/* full_name */
                                 logon_script    , /* logon_script */
                                 profile_path    , /* profile_path */
                                 home_dir        , /* home_dir */
