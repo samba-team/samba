@@ -53,79 +53,91 @@ decrypt_authenticator (krb5_context context,
 }
 
 krb5_error_code
-krb5_rd_req_with_keyblock(krb5_context context,
-			  krb5_auth_context *auth_context,
-			  const krb5_data *inbuf,
-			  krb5_const_principal server,
-			  krb5_keyblock *keyblock,
-			  krb5_flags *ap_req_options,
-			  krb5_ticket **ticket)
+krb5_decode_ap_req(krb5_context context,
+		   const krb5_data *inbuf,
+		   AP_REQ *ap_req)
 {
-  krb5_error_code ret;
-  AP_REQ ap_req;
-  size_t len;
-  struct timeval now;
-
-  if (*auth_context == NULL) {
-    ret = krb5_auth_con_init(context, auth_context);
+    krb5_error_code ret;
+    size_t len;
+    ret = decode_AP_REQ(inbuf->data, inbuf->length, ap_req, &len);
     if (ret)
-      return ret;
-  }
+	return ret;
+    if (ap_req->pvno != 5){
+	free_AP_REQ(ap_req);
+	return KRB5KRB_AP_ERR_BADVERSION;
+    }
+    if (ap_req->msg_type != krb_ap_req){
+	free_AP_REQ(ap_req);
+	return KRB5KRB_AP_ERR_MSG_TYPE;
+    }
+    if (ap_req->ticket.tkt_vno != 5){
+	free_AP_REQ(ap_req);
+	return KRB5KRB_AP_ERR_BADVERSION;
+    }
+    if (ap_req->ap_options.use_session_key)
+	abort ();
+    return 0;
+}
 
-  ret = decode_AP_REQ(inbuf->data, inbuf->length, &ap_req, &len);
-  if (ret)
-      return ret;
-  if (ap_req.pvno != 5)
-    return KRB5KRB_AP_ERR_BADVERSION;
-  if (ap_req.msg_type != krb_ap_req)
-    return KRB5KRB_AP_ERR_MSG_TYPE;
-  if (ap_req.ticket.tkt_vno != 5)
-    return KRB5KRB_AP_ERR_BADVERSION;
-  if (ap_req.ap_options.use_session_key)
-    abort ();
-  else {
-    Authenticator authenticator;
-    krb5_ticket *t;
-
-    t = malloc(sizeof(*t));
+krb5_error_code
+krb5_verify_ap_req(krb5_context context,
+		   krb5_auth_context *auth_context,
+		   AP_REQ *ap_req,
+		   krb5_const_principal server,
+		   krb5_keyblock *keyblock,
+		   krb5_flags *ap_req_options,
+		   krb5_ticket **ticket)
+{
+    krb5_ticket t;
+    krb5_auth_context ac;
+    krb5_error_code ret;
+    
+    if(auth_context){
+	if(*auth_context == NULL){
+	    krb5_auth_con_init(context, &ac);
+	    *auth_context = ac;
+	}else
+	    ac = *auth_context;
+    }else
+	krb5_auth_con_init(context, &ac);
+	
     ret = decrypt_tkt_enc_part (context,
 				keyblock,
-				&ap_req.ticket.enc_part,
-				&t->tkt);
+				&ap_req->ticket.enc_part,
+				&t.ticket);
     if (ret)
 	return ret;
+    
+    principalname2krb5_principal(&t.server,
+				 ap_req->ticket.sname,
+				 ap_req->ticket.realm);
 
-    principalname2krb5_principal(&t->enc_part2.client,
-				 t->tkt.cname,
-				 t->tkt.crealm);
-    if (ticket)
-	*ticket = t;
-
+    principalname2krb5_principal(&t.client,
+				 t.ticket.cname,
+				 t.ticket.crealm);
     /* save key */
 
-    (*auth_context)->key.keytype = t->tkt.key.keytype;
-    krb5_data_copy(&(*auth_context)->key.keyvalue,
-		   t->tkt.key.keyvalue.data,
-		   t->tkt.key.keyvalue.length);
+    copy_EncryptionKey(&t.ticket.key, &ac->key);
 
     ret = decrypt_authenticator (context,
-				 &t->tkt.key,
-				 &ap_req.authenticator,
-				 &authenticator);
-    if (ret)
+				 &t.ticket.key,
+				 &ap_req->authenticator,
+				 ac->authenticator);
+    if (ret){
+	/* XXX free data */
 	return ret;
+    }
 
-    copy_Authenticator(&authenticator, (*auth_context)->authenticator);
     {
 	krb5_principal p1, p2;
 	krb5_boolean res;
 	
 	principalname2krb5_principal(&p1,
-				     authenticator.cname,
-				     authenticator.crealm);
+				     ac->authenticator->cname,
+				     ac->authenticator->crealm);
 	principalname2krb5_principal(&p2, 
-				     t->tkt.cname,
-				     t->tkt.crealm);
+				     t.ticket.cname,
+				     t.ticket.crealm);
 	res = krb5_principal_compare (context, p1, p2);
 	krb5_free_principal (context, p1);
 	krb5_free_principal (context, p2);
@@ -135,48 +147,81 @@ krb5_rd_req_with_keyblock(krb5_context context,
 
     /* check addresses */
 
-    if (t->tkt.caddr
-	&& (*auth_context)->remote_address
+    if (t.ticket.caddr
+	&& ac->remote_address
 	&& !krb5_address_search (context,
-				 (*auth_context)->remote_address,
-				 t->tkt.caddr))
-	    return KRB5KRB_AP_ERR_BADADDR;
+				 ac->remote_address,
+				 t.ticket.caddr))
+	return KRB5KRB_AP_ERR_BADADDR;
 
-    if (authenticator.seq_number)
-      (*auth_context)->remote_seqnumber = *(authenticator.seq_number);
-
-    free_Authenticator(&authenticator);
+    if (ac->authenticator->seq_number)
+	ac->remote_seqnumber = *ac->authenticator->seq_number;
 
     /* XXX - Xor sequence numbers */
 
     /* XXX - subkeys? */
-
+    
     if (ap_req_options) {
-      *ap_req_options = 0;
-      if (ap_req.ap_options.use_session_key)
-	*ap_req_options |= AP_OPTS_USE_SESSION_KEY;
-      if (ap_req.ap_options.mutual_required)
-	*ap_req_options |= AP_OPTS_MUTUAL_REQUIRED;
+	*ap_req_options = 0;
+	if (ap_req->ap_options.use_session_key)
+	    *ap_req_options |= AP_OPTS_USE_SESSION_KEY;
+	if (ap_req->ap_options.mutual_required)
+	    *ap_req_options |= AP_OPTS_MUTUAL_REQUIRED;
     }
 
-    /* Check address and time */
-    gettimeofday (&now, NULL);
-    if ((t->tkt.starttime ? *t->tkt.starttime : t->tkt.authtime)
-	- now.tv_sec > 600 ||
-	t->tkt.flags.invalid)
-      return KRB5KRB_AP_ERR_TKT_NYV;
-    if (now.tv_sec - t->tkt.endtime > 600)
-      return KRB5KRB_AP_ERR_TKT_EXPIRED;
-
-    if(ticket)
-	*ticket = t;
-    else{
-	free_EncTicketPart(&t->tkt);
-	free(t);
+    {
+	time_t now = time (NULL);
+	time_t start = t.ticket.authtime;
+	if(t.ticket.starttime)
+	    start = *t.ticket.starttime;
+	if(start - now > context->max_skew || t.ticket.flags.invalid)
+	    return KRB5KRB_AP_ERR_TKT_NYV;
+	if(now - t.ticket.endtime > context->max_skew)
+	    return KRB5KRB_AP_ERR_TKT_EXPIRED;
     }
-    free_AP_REQ(&ap_req);
+    
+    if(ticket){
+	*ticket = malloc(sizeof(**ticket));
+	**ticket = t;
+    } else
+	free_EncTicketPart(&t.ticket);
     return 0;
-  }
+}
+		   
+
+krb5_error_code
+krb5_rd_req_with_keyblock(krb5_context context,
+			  krb5_auth_context *auth_context,
+			  const krb5_data *inbuf,
+			  krb5_const_principal server,
+			  krb5_keyblock *keyblock,
+			  krb5_flags *ap_req_options,
+			  krb5_ticket **ticket)
+{
+    krb5_error_code ret;
+    AP_REQ ap_req;
+    size_t len;
+    struct timeval now;
+
+    if (*auth_context == NULL) {
+	ret = krb5_auth_con_init(context, auth_context);
+	if (ret)
+	    return ret;
+    }
+
+    ret = krb5_decode_ap_req(context, inbuf, &ap_req);
+    if(ret)
+	return ret;
+    
+    ret = krb5_verify_ap_req(context,
+			     auth_context,
+			     &ap_req,
+			     server,
+			     keyblock,
+			     ap_req_options,
+			     ticket);
+    free_AP_REQ(&ap_req);
+    return ret;
 }
 
 krb5_error_code
