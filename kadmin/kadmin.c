@@ -154,10 +154,12 @@ static SL_cmd commands[] = {
 krb5_context context;
 void *kadm_handle;
 
+static SL_cmd *actual_cmds;
+
 int
 help(int argc, char **argv)
 {
-    sl_help(commands, argc, argv);
+    sl_help(actual_cmds, argc, argv);
     return 0;
 }
 
@@ -199,7 +201,6 @@ main(int argc, char **argv)
     kadm5_config_params conf;
     int optind = 0;
     int e;
-    SL_cmd *cmd;
 
     set_progname(argv[0]);
 
@@ -254,7 +255,7 @@ main(int argc, char **argv)
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
 					     &kadm_handle);
-	cmd = commands;
+	actual_cmds = commands;
     } else {
 	ret = kadm5_c_init_with_password_ctx(context, 
 					     client_name,
@@ -262,17 +263,17 @@ main(int argc, char **argv)
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
 					     &kadm_handle);
-	cmd = commands + 4; /* XXX */
+	actual_cmds = commands + 4; /* XXX */
     }
     
     if(ret)
 	krb5_err(context, 1, ret, "kadm5_init_with_password");
     if (argc != 0) {
-	ret = sl_command (cmd, argc, argv);
+	ret = sl_command (actual_cmds, argc, argv);
 	if(ret == -1)
 	    krb5_warnx (context, "unrecognized command: %s", argv[0]);
     } else
-	ret = sl_loop (cmd, "kadmin> ") != 0;
+	ret = sl_loop (actual_cmds, "kadmin> ") != 0;
 
     kadm5_destroy(kadm_handle);
     krb5_config_file_free (context, cf);
