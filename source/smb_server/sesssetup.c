@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "version.h"
 #include "auth/auth.h"
 #include "smb_server/smb_server.h"
 
