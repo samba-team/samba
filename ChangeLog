@@ -1,5 +1,23 @@
 2005-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kpasswd/kpasswdd.8: document --addresses, controls what
+	addresses kpasswd should listen too
+
+	* kpasswd/kpasswdd.c: add --addresses, controls what addresses
+	kpasswd should listen too
+
+	* lib/krb5/addr_families.c (krb5_parse_address): filter out dup
+	addresses from getaddrinfo
+
+	* kpasswd/kpasswd.1: document -c
+
+	* kpasswd/kpasswd.c: allow specifying a credential cache to use
+	for the admin principal
+
+	* include/bits.c: constify to avoid warning with -Wwrite-string
+	
+	* NEWS: add 0.6.2 and 0.6.3 items
+	
 	* lib/krb5/krb5_keyblock.3: document krb5_generate_subkey_extended
 
 	* lib/krb5/krb5_is_thread_safe.3: document function
