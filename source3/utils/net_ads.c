@@ -59,6 +59,10 @@ static int net_ads_info(int argc, const char **argv)
 	ADS_STRUCT *ads;
 
 	ads = ads_init(NULL, NULL, opt_host, NULL, NULL);
+
+	/* we want this servers realm, not our realm */
+	SAFE_FREE(ads->realm);
+
 	ads_connect(ads);
 
 	if (!ads) {
