@@ -21,7 +21,7 @@
 		<xsl:apply-templates/>
 	</xsl:variable>
 	<!-- Now put varlistentry into separate file _if_ it has anchor associated with it -->
-	<xsl:variable name="filename"><xsl:text>examples/</xsl:text><xsl:value-of select="@name"/></xsl:variable>
+	<xsl:variable name="filename"><xsl:text>output/examples/</xsl:text><xsl:value-of select="@name"/></xsl:variable>
 	<!-- Debug message for an operator, just to show progress of processing :) -->
 	<xsl:message>
 		<xsl:text>Writing </xsl:text>
