@@ -41,6 +41,8 @@ static void msg_deliver(void)
   pstring name;
   int i;
   int fd;
+  char *msg;
+  int len;
 
   if (! (*lp_msg_command()))
     {
@@ -61,16 +63,23 @@ static void msg_deliver(void)
   /*
    * Incoming message is in DOS codepage format. Convert to UNIX.
    */
-
-  if(msgpos > 0) {
-    msgbuf[msgpos] = '\0'; /* Ensure null terminated. */
-  }
-
-  for (i=0;i<msgpos;) {
-    if (msgbuf[i]=='\r' && i<(msgpos-1) && msgbuf[i+1]=='\n') {
-      i++; continue;      
+  
+  if ((len = convert_string_allocate(CH_DOS, CH_UNIX, msgbuf, msgpos, (void **) &msg)) < 0 || !msg) {
+    DEBUG(3,("Conversion failed, delivering message in DOS codepage format\n"));
+    for (i = 0; i < msgpos;) {
+      if (msgbuf[i] == '\r' && i < (msgpos-1) && msgbuf[i+1] == '\n') {
+	i++; continue;
+      }
+      write(fd, &msgbuf[i++], 1);
     }
-    write(fd,&msgbuf[i++],1);
+  } else {
+    for (i = 0; i < len;) {
+      if (msg[i] == '\r' && i < (len-1) && msg[i+1] == '\n') {
+	i++; continue;
+      }
+      write(fd, &msg[i++],1);
+    }
+    SAFE_FREE(msg);
   }
   close(fd);
 

@@ -186,7 +186,7 @@ size_t convert_string(charset_t from, charset_t to,
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
 
-static size_t convert_string_allocate(charset_t from, charset_t to,
+size_t convert_string_allocate(charset_t from, charset_t to,
 		      		void const *src, size_t srclen, void **dest)
 {
 	size_t i_len, o_len, destlen;
