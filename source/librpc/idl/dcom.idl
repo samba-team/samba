@@ -262,7 +262,8 @@ interface ObjectRpcBaseTypes
 	typedef [public] struct 
 	{
 		uint32 size;
-		[subcontext(4)] OBJREF obj;
+		uint32 sizex;
+		[subcontext(4),align(1)] OBJREF obj;
 	} MInterfacePointer;
 }
 
@@ -503,4 +504,20 @@ uuid(DB7C21F8-FE33-4C11-AEA5-CEB56F076FBB),
 	{
 		[helpstring("method MakeCoffee")] HRESULT MakeCoffee(BSTR *flavor);
 	}
+}
+
+[
+	object,
+	uuid("0000000C-0000-0000-C000-000000000046"),
+	helpstring("Stream")
+]
+interface IStream : IUnknown
+{
+	WERROR Read([in] uint32 num_requested, 
+				[out,size_is(*num_read)] uint8 *data, 
+				[out] uint32 *num_read);
+
+	WERROR Write([in,size_is(num_requested)] uint8 *data,
+				 [in] uint32 num_requested,
+				 [out] uint32 *num_written);
 }

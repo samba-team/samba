@@ -216,7 +216,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	pr = talloc_p(NULL, struct ndr_print);
 	pr->print = ndr_print_debug_helper;
 	pr->depth = 1;
-	f->ndr_print(pr, function, flags | NDR_IN, st);
+	f->ndr_print(pr, function, flags, st);
 
 	if (!NT_STATUS_IS_OK(status) ||
 	    ndr->offset != ndr->data_size) {

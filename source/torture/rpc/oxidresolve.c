@@ -150,7 +150,7 @@ static int test_ResolveOxid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T 
 	NTSTATUS status;
 	uint16 protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
 
-	r.in.pOxid = &oxid;
+	r.in.pOxid = oxid;
 	r.in.cRequestedProtseqs = 2;
 	r.in.arRequestedProtseqs = protseq;
 
@@ -189,7 +189,7 @@ static int test_ResolveOxid2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T
 		return 0;
 	}
 	
-	printf("Remote server versions: %d, %d\n", r.out.pComVersion->MajorVersion, r.out.pComVersion->MinorVersion);
+	printf("Remote server versions: %d, %d\n", r.out.ComVersion.MajorVersion, r.out.ComVersion.MinorVersion);
 
 	return 1;
 }
