@@ -442,12 +442,14 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 }
 
 /****************************************************************************
- Reply to set a security descriptor on an fsp. If it succeeds it returns
+ Reply to set a security descriptor on an fsp. security_info_sent is the
+ description of the following NT ACL.
  This should be the only external function needed for the UNIX style set ACL.
 ****************************************************************************/
 
-BOOL set_nt_acl(files_struct *fsp, SEC_DESC *pdesc)
+BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 {
+  connection_struct *conn = fsp->conn;
   uid_t user = (uid_t)-1;
   gid_t grp = (gid_t)-1;
   mode_t perms = 0;
