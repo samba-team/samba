@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -117,16 +117,17 @@ main (int argc, char **argv)
   argc -= optind;
   argv += optind;
 
-  if (hexp)
+  if (hexp) {
     if (extendedp)
       fn = otp_print_hex_extended;
     else
       fn = otp_print_hex;
-  else
+  } else {
     if (extendedp)
       fn = otp_print_stddict_extended;
     else
       fn = otp_print_stddict;
+  }
 
   return print (argc, argv, count, alg, fn);
 }
