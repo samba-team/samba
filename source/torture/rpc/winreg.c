@@ -160,51 +160,104 @@ static BOOL test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-#if 0
+static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		     struct policy_handle *handle, int depth);
 
-static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			   struct policy_handle *handle)
+static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			 struct policy_handle *handle, int depth)
 {
+	struct winreg_EnumKey r;
+	struct winreg_EnumKeyNameRequest keyname;
+	struct winreg_String classname;
+	struct winreg_Time tm;
 	NTSTATUS status;
-	struct winreg_QueryInfoKey qik;
-	struct winreg_EnumValue r;
-	struct winreg_String name;
-	uint32 type;
-	uint32 value1, value2;
-
-	printf("\ntesting EnumValue\n");
-
-	qik.in.handle = handle;
-	init_winreg_String(&qik.in.class, NULL);
-
-	status = dcerpc_winreg_QueryInfoKey(p, mem_ctx, &qik);
-
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("QueryInfoKey failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
 
 	r.in.handle = handle;
-	r.in.val_index = 0;
-	init_winreg_String(&name, "");
-	r.in.name = &name;
-	type = 0;
-	r.in.type = r.out.type = &type;
-	r.in.value = NULL;
-	value1 = 0;
-	value2 = 0;
-	r.in.value1 = &value1;
-	r.in.value2 = &value2;
+	r.in.enum_index = 0;
+	r.in.key_name_len = r.out.key_name_len = 0;
+	r.in.unknown = r.out.unknown = 0x0414;
+	keyname.unknown = 0x0000020a;
+	init_winreg_String(&keyname.key_name, NULL);
+	init_winreg_String(&classname, NULL);
+	r.in.in_name = &keyname;
+	r.in.class = &classname;
+	tm.low = tm.high = 0x7fffffff;
+	r.in.last_changed_time = &tm;
 
 	do {
-		status = dcerpc_winreg_EnumValue(p, mem_ctx, &r);
-		r.in.val_index++;
+		status = dcerpc_winreg_EnumKey(p, mem_ctx, &r);
+
+		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
+			struct policy_handle key_handle;
+
+			if (!test_OpenKey(
+				    p, mem_ctx, handle, r.out.out_name->name,
+				    &key_handle)) {
+				printf("OpenKey(%s) failed - %s\n",
+				       r.out.out_name->name, 
+				       win_errstr(r.out.result));
+				goto next_key;
+			}
+
+			test_key(p, mem_ctx, &key_handle, depth + 1);
+		}
+
+	next_key:
+
+		r.in.enum_index++;
+
 	} while (W_ERROR_IS_OK(r.out.result));
 
 	return True;
 }
 
-#endif
+static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			   struct policy_handle *handle)
+{
+	struct winreg_EnumValue r;
+	struct winreg_EnumValueName name;
+	struct winreg_Uint8buf value;
+	struct winreg_Uint16buf buf;
+	uint32 type, requested_len, returned_len;
+	NTSTATUS status;
+
+	r.in.handle = handle;
+	r.in.enum_index = 0;
+
+	buf.max_len = 0x7fff;
+	buf.offset = 0;
+	buf.len = 0;
+	buf.buffer = NULL;
+
+	name.len = 0;
+	name.max_len = buf.max_len * 2;
+	name.buf = &buf;
+
+	r.in.name = r.out.name = &name;
+	
+	type = 0;
+	r.in.type = &type;
+
+	value.max_len = 0xffff;
+	value.offset = 0;
+	value.len = 0;
+	value.buffer = NULL;
+
+	r.in.value = &value;
+
+	requested_len = value.max_len;
+	r.in.requested_len = &requested_len;
+	returned_len = 0;
+	r.in.returned_len = &returned_len;
+
+	do {
+
+		status = dcerpc_winreg_EnumValue(p, mem_ctx, &r);
+		r.in.enum_index++;
+	} while (W_ERROR_IS_OK(r.out.result));
+			
+	return True;
+}
 
 static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *handle)
@@ -315,99 +368,20 @@ static BOOL test_OpenHKCU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		     struct policy_handle *handle, int depth)
 {
-	struct winreg_EnumKey ek;
-	struct winreg_EnumKeyNameRequest keyname;
-	struct winreg_String classname;
-	struct winreg_Time tm;
-	struct winreg_EnumValue ev;
-	struct winreg_EnumValueName name;
-	struct winreg_Uint8buf value;
-	struct winreg_Uint16buf buf;
-	uint32 type, requested_len, returned_len;
-	NTSTATUS status;
-
 	if (depth == MAX_DEPTH)
 		return True;
 
 	if (!test_QueryInfoKey(p, mem_ctx, handle, NULL)) {
-		;
 	}
 
-	/* Enumerate keys */
+	if (!test_EnumKey(p, mem_ctx, handle, depth)) {
+	}
 
-	ek.in.handle = handle;
-	ek.in.key_index = 0;
-	ek.in.key_name_len = ek.out.key_name_len = 0;
-	ek.in.unknown = ek.out.unknown = 0x0414;
-	keyname.unknown = 0x0000020a;
-	init_winreg_String(&keyname.key_name, NULL);
-	init_winreg_String(&classname, NULL);
-	ek.in.in_name = &keyname;
-	ek.in.class = &classname;
-	tm.low = tm.high = 0x7fffffff;
-	ek.in.last_changed_time = &tm;
-
-	do {
-		status = dcerpc_winreg_EnumKey(p, mem_ctx, &ek);
-
-		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(ek.out.result)) {
-			struct policy_handle key_handle;
-
-			if (!test_OpenKey(
-				    p, mem_ctx, handle, ek.out.out_name->name,
-				    &key_handle)) {
-				printf("OpenKey(%s) failed - %s\n",
-				       ek.out.out_name->name, 
-				       win_errstr(ek.out.result));
-				goto next_key;
-			}
-
-			test_key(p, mem_ctx, &key_handle, depth + 1);
-		}
-
-	next_key:
-
-		ek.in.key_index++;
-
-	} while (W_ERROR_IS_OK(ek.out.result));
+	if (!test_EnumValue(p, mem_ctx, handle)) {
+	}
 
 	/* Enumerate values */
 
-	ev.in.handle = handle;
-	ev.in.val_index = 0;
-
-	buf.max_len = 0x7fff;
-	buf.offset = 0;
-	buf.len = 0;
-	buf.buffer = NULL;
-
-	name.len = 0;
-	name.max_len = buf.max_len * 2;
-	name.buf = &buf;
-
-	ev.in.name = ev.out.name = &name;
-	
-	type = 0;
-	ev.in.type = &type;
-
-	value.max_len = 0xffff;
-	value.offset = 0;
-	value.len = 0;
-	value.buffer = NULL;
-
-	ev.in.value = &value;
-
-	requested_len = value.max_len;
-	ev.in.requested_len = &requested_len;
-	returned_len = 0;
-	ev.in.returned_len = &returned_len;
-
-	do {
-
-		status = dcerpc_winreg_EnumValue(p, mem_ctx, &ev);
-		ev.in.val_index++;
-	} while (W_ERROR_IS_OK(ev.out.result));
-			
 	test_CloseKey(p, mem_ctx, handle);
 
 	return True;
