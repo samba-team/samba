@@ -1027,16 +1027,16 @@ WERROR _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R
 	if (Printer && Printer->document_started)
 		_spoolss_enddocprinter_internal(p, handle);          /* print job was not closed */
 
+	if (!close_printer_handle(p, handle))
+		return WERR_BADFID;	
+		
 	/* clear the returned printer handle.  Observed behavior 
 	   from Win2k server.  Don't think this really matters.
 	   Previous code just copied the value of the closed
 	   handle.    --jerry */
 
-	memset(&r_u->handle, 0x0, sizeof(r_u->handle));
+	memset(&r_u->handle, '\0', sizeof(r_u->handle));
 
-	if (!close_printer_handle(p, handle))
-		return WERR_BADFID;	
-		
 	return WERR_OK;
 }
 
