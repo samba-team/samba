@@ -2492,6 +2492,7 @@ void init_owf_info(OWF_INFO *hash, uint8 data[16]);
 BOOL smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
 BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 BOOL smb_io_pol_hnd(char *desc, POLICY_HND *pol, prs_struct *ps, int depth);
+void init_unistr3(UNISTR3 *str, const char *buf);
 BOOL smb_io_unistr3(char *desc, UNISTR3 *name, prs_struct *ps, int depth);
 BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64);
 
@@ -3512,7 +3513,8 @@ void init_srv_share_info502(SH_INFO_502 *sh502,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
 				char *path, char *passwd, SEC_DESC *psd, size_t sd_size);
-void init_srv_share_info502_str(SH_INFO_502_STR *sh502,
+void init_srv_share_info502_str(SH_INFO_502_STR *sh502str,
+				SH_INFO_502 *ptrs,
 				char *net_name, char *remark,
 				char *path, char *passwd, SEC_DESC *psd, size_t sd_size);
 void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
@@ -3587,6 +3589,10 @@ void init_time_of_day_info(TIME_OF_DAY_INFO *tod, uint32 elapsedt, uint32 msecs,
 			   uint32 zone, uint32 tintervals, uint32 day,
 			   uint32 month, uint32 year, uint32 weekday);
 BOOL srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *ps, int depth);
+BOOL srv_io_q_net_disk_enum(char *desc, SRV_Q_NET_DISK_ENUM *q_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_disk_enum(char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_struct *ps, int depth);
+BOOL srv_io_q_net_name_validate(char *desc, SRV_Q_NET_NAME_VALIDATE *q_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_name_validate(char *desc, SRV_R_NET_NAME_VALIDATE *r_n, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_wks.c  */
 
@@ -3810,6 +3816,8 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u);
 uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u);
 uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET_REMOTE_TOD *r_u);
+uint32 _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_DISK_ENUM *r_u);
+uint32 _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV_R_NET_NAME_VALIDATE *r_u);
 
 /*The following definitions come from  rpc_server/srv_util.c  */
 
