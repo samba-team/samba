@@ -164,7 +164,7 @@ static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const 
 static NTSTATUS remote_op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
 {
 	int i;
-	char **ifaces = str_list_make(lp_parm_string(-1,"dcerpc_remote","interfaces"),NULL);
+	char **ifaces = str_list_make(dce_ctx, lp_parm_string(-1,"dcerpc_remote","interfaces"),NULL);
 
 	if (!ifaces) {
 		DEBUG(3,("remote_op_init_server: no interfaces configured\n"));
@@ -177,19 +177,19 @@ static NTSTATUS remote_op_init_server(struct dcesrv_context *dce_ctx, const stru
 		
 		if (!ep_server->interface_by_name(&iface, ifaces[i])) {
 			DEBUG(0,("remote_op_init_server: failed to find interface = '%s'\n", ifaces[i]));
-			str_list_free(&ifaces);
+			talloc_free(ifaces);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
 		ret = remote_register_one_iface(dce_ctx, &iface);
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(0,("remote_op_init_server: failed to register interface = '%s'\n", ifaces[i]));
-			str_list_free(&ifaces);
+			talloc_free(ifaces);
 			return ret;
 		}
 	}
 
-	str_list_free(&ifaces);
+	talloc_free(ifaces);
 	return NT_STATUS_OK;
 }
 

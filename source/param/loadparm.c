@@ -1437,7 +1437,7 @@ char **lp_parm_string_list(int lookup_service, const char *type, const char *opt
 	const char *value = get_parametrics(lookup_service, type, option);
 	
 	if (value)
-		return str_list_make(value, separator);
+		return str_list_make(NULL, value, separator);
 
 	return NULL;
 }
@@ -1513,15 +1513,17 @@ static void free_service(service *pservice)
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
-		    parm_table[i].class == P_LOCAL)
+		    parm_table[i].class == P_LOCAL) {
 			string_free((char **)
 				    (((char *)pservice) +
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
-		else if (parm_table[i].type == P_LIST &&
-			 parm_table[i].class == P_LOCAL)
-			     str_list_free((char ***)
-			     		    (((char *)pservice) +
-					     PTR_DIFF(parm_table[i].ptr, &sDefault)));
+		} else if (parm_table[i].type == P_LIST &&
+			   parm_table[i].class == P_LOCAL) {
+			char ***listp = (char ***)(((char *)pservice) + 
+						   PTR_DIFF(parm_table[i].ptr, &sDefault));
+			talloc_free(*listp);
+			*listp = NULL;
+		}
 	}
 				
 	DEBUG(5,("Freeing parametrics:\n"));
@@ -1853,7 +1855,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 					strupper(*(char **)dest_ptr);
 					break;
 				case P_LIST:
-					str_list_copy((char ***)dest_ptr, *(const char ***)src_ptr);
+					*(char ***)dest_ptr = str_list_copy(NULL, *(const char ***)src_ptr);
 					break;
 				default:
 					break;
@@ -2365,7 +2367,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_LIST:
-			*(char ***)parm_ptr = str_list_make(pszParmValue, NULL);
+			*(char ***)parm_ptr = str_list_make(NULL, pszParmValue, NULL);
 			break;
 
 		case P_STRING:
@@ -2588,7 +2590,8 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 			return (*((char *)ptr1) == *((char *)ptr2));
 		
 		case P_LIST:
-			return str_list_compare(*(char ***)ptr1, *(char ***)ptr2);
+			return str_list_equal((const char **)(*(char ***)ptr1), 
+					      (const char **)(*(char ***)ptr2));
 
 		case P_STRING:
 		case P_USTRING:
@@ -2664,8 +2667,8 @@ static BOOL is_default(int i)
 		return False;
 	switch (parm_table[i].type) {
 		case P_LIST:
-			return str_list_compare (parm_table[i].def.lvalue, 
-						*(char ***)parm_table[i].ptr);
+			return str_list_equal((const char **)parm_table[i].def.lvalue, 
+					      (const char **)(*(char ***)parm_table[i].ptr));
 		case P_STRING:
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,
@@ -2922,8 +2925,8 @@ static void lp_save_defaults(void)
 			continue;
 		switch (parm_table[i].type) {
 			case P_LIST:
-				str_list_copy(&(parm_table[i].def.lvalue),
-					    *(const char ***)parm_table[i].ptr);
+				parm_table[i].def.lvalue = str_list_copy(NULL, 
+									 *(const char ***)parm_table[i].ptr);
 				break;
 			case P_STRING:
 			case P_USTRING:
