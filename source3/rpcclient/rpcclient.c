@@ -101,7 +101,8 @@ static void rpcclient_stop(void)
 
 #define COMPL_NONE 0
 #define COMPL_REGKEY 1
-#define COMPL_REGVAL 2
+#define COMPL_SAMUSR 3
+#define COMPL_SAMGRP 4
 
 /****************************************************************************
  This defines the commands supported by this client
@@ -112,60 +113,393 @@ struct
 	void (*fn)(struct client_info*);
 	char *description;
 	char compl_args[2];
-} commands[] = 
+}
+commands[] = 
 {
-  {"eventlog",   cmd_eventlog,         "list the events",{COMPL_NONE, COMPL_NONE}},
-  {"svcenum",    cmd_svc_enum,         "[-i] Lists Services Manager",{COMPL_NONE, COMPL_NONE}},
-  {"at",         cmd_at,               "Scheduler control (at /? for syntax)",{COMPL_NONE, COMPL_NONE}},
-  {"time",       cmd_time,             "Display remote time",{COMPL_NONE, COMPL_NONE}},
-  {"regenum",    cmd_reg_enum,         "<keyname> Registry Enumeration (keys, values)",{COMPL_REGKEY, COMPL_NONE}},
-  {"regdeletekey",cmd_reg_delete_key,  "<keyname> Registry Key Delete",{COMPL_REGKEY, COMPL_NONE}},
-  {"regcreatekey",cmd_reg_create_key,  "<keyname> [keyclass] Registry Key Create",{COMPL_REGKEY, COMPL_NONE}},
-  {"shutdown",cmd_reg_shutdown,  "[-m message] [-t timeout] [-r or --reboot] Server Shutdown",{COMPL_NONE, COMPL_NONE}},
-  {"regquerykey",cmd_reg_query_key,    "<keyname> Registry Key Query",{COMPL_REGKEY, COMPL_NONE}},
-  {"regdeleteval",cmd_reg_delete_val,  "<valname> Registry Value Delete",{COMPL_REGKEY, COMPL_REGVAL}},
-  {"regcreateval",cmd_reg_create_val,  "<valname> <valtype> <value> Registry Key Create",{COMPL_REGKEY, COMPL_NONE}},
-  {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> Registry Key Security",{COMPL_REGKEY, COMPL_NONE}},
-  {"regtestsec", cmd_reg_test_key_sec, "<keyname> Test Registry Key Security",{COMPL_REGKEY, COMPL_NONE}},
-  {"ntlogin",    cmd_netlogon_login_test, "[username] [password] NT Domain login test",{COMPL_NONE, COMPL_NONE}},
-  {"domtrust",    cmd_netlogon_domain_test, "<domain> NT Inter-Domain test",{COMPL_NONE, COMPL_NONE}},
-  {"wksinfo",    cmd_wks_query_info,   "Workstation Query Info",{COMPL_NONE, COMPL_NONE}},
-  {"srvinfo",    cmd_srv_query_info,   "Server Query Info",{COMPL_NONE, COMPL_NONE}},
-  {"srvsessions",cmd_srv_enum_sess,    "List sessions on a server",{COMPL_NONE, COMPL_NONE}},
-  {"srvshares",  cmd_srv_enum_shares,  "List shares on a server",{COMPL_NONE, COMPL_NONE}},
-  {"srvconnections",cmd_srv_enum_conn, "List connections on a server",{COMPL_NONE, COMPL_NONE}},
-  {"srvfiles",   cmd_srv_enum_files,   "List files on a server",{COMPL_NONE, COMPL_NONE}},
-  {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)",{COMPL_NONE, COMPL_NONE}},
-  {"lookupsids", cmd_lsa_lookup_sids,  "Resolve names from SIDs",{COMPL_NONE, COMPL_NONE}},
-  {"lookupnames",cmd_lsa_lookup_names,  "Resolve SIDs from names",{COMPL_NONE, COMPL_NONE}},
-  {"lookupdomain",cmd_sam_lookup_domain, "Obtain SID for a local domain",{COMPL_NONE, COMPL_NONE}},
-  {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)",{COMPL_NONE, COMPL_NONE}},
-  {"addgroupmem",cmd_sam_add_groupmem,"<group rid> [member rid1] [member rid2] ... SAM Add Domain Group Member",{COMPL_NONE, COMPL_NONE}},
-  {"addaliasmem",cmd_sam_add_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Add Domain Alias Member",{COMPL_NONE, COMPL_NONE}},
-  {"delgroupmem",cmd_sam_del_groupmem,"<group rid> [member rid1] [member rid2] ... SAM Delete Domain Group Member",{COMPL_NONE, COMPL_NONE}},
-  {"delaliasmem",cmd_sam_del_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Delete Domain Alias Member",{COMPL_NONE, COMPL_NONE}},
-  {"creategroup",cmd_sam_create_dom_group,"SAM Create Domain Group",{COMPL_NONE, COMPL_NONE}},
-  {"createalias",cmd_sam_create_dom_alias,"SAM Create Domain Alias",{COMPL_NONE, COMPL_NONE}},
-  {"createuser", cmd_sam_create_dom_user,"<username> SAM Create Domain User",{COMPL_NONE, COMPL_NONE}},
-  {"delgroup",   cmd_sam_delete_dom_group,"SAM Delete Domain Group",{COMPL_NONE, COMPL_NONE}},
-  {"delalias",   cmd_sam_delete_dom_alias,"SAM Delete Domain Alias",{COMPL_NONE, COMPL_NONE}},
-  {"ntpass",     cmd_sam_ntchange_pwd, "NT SAM Password Change",{COMPL_NONE, COMPL_NONE}},
-  {"samuser",    cmd_sam_query_user,   "<username> SAM User Query (experimental!)",{COMPL_NONE, COMPL_NONE}},
-  {"samtest",    cmd_sam_test      ,   "SAM User Encrypted RPC test (experimental!)",{COMPL_NONE, COMPL_NONE}},
-  {"enumaliases",cmd_sam_enum_aliases, "SAM Aliases Database Query (experimental!)",{COMPL_NONE, COMPL_NONE}},
-  {"enumgroups", cmd_sam_enum_groups,  "SAM Group Database Query (experimental!)",{COMPL_NONE, COMPL_NONE}},
-  {"dominfo",    cmd_sam_query_dominfo, "SAM Query Domain Info",{COMPL_NONE, COMPL_NONE}},
-  {"dispinfo",   cmd_sam_query_dispinfo, "SAM Query Display Info",{COMPL_NONE, COMPL_NONE}},
-  {"querysecret", cmd_lsa_query_secret, "LSA Query Secret (developer use)",{COMPL_NONE, COMPL_NONE}},
-  {"samsync",    cmd_sam_sync,    "SAM Synchronization Test (experimental)",{COMPL_NONE, COMPL_NONE}},
-  {"quit",       cmd_quit,        "logoff the server",{COMPL_NONE, COMPL_NONE}},
-  {"q",          cmd_quit,        "logoff the server",{COMPL_NONE, COMPL_NONE}},
-  {"exit",       cmd_quit,        "logoff the server",{COMPL_NONE, COMPL_NONE}},
-  {"bye",        cmd_quit,        "logoff the server",{COMPL_NONE, COMPL_NONE}},
-  {"help",       cmd_help,        "[command] give help on a command",{COMPL_NONE, COMPL_NONE}},
-  {"?",          cmd_help,        "[command] give help on a command",{COMPL_NONE, COMPL_NONE}},
-  {"!",          NULL,            "run a shell command on the local system",{COMPL_NONE, COMPL_NONE}},
-  {"",           NULL,            NULL,{COMPL_NONE, COMPL_NONE}}
+	/*
+	 * eventlog
+	 */
+
+	{
+		"eventlog",
+		cmd_eventlog,
+		"list the events",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
+	 * service control
+	 */
+
+	{
+		"svcenum",
+		cmd_svc_enum,
+		"[-i] Lists Services Manager",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
+	 * scheduler
+	 */
+
+	{
+		"at",
+		cmd_at,
+		"Scheduler control (at /? for syntax)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
+	 * registry
+	 */
+
+	{
+		"regenum",
+		cmd_reg_enum,
+		"<keyname> Registry Enumeration (keys, values)",
+		{COMPL_REGKEY, COMPL_NONE}
+	},
+	{
+		"regdeletekey",
+		cmd_reg_delete_key,
+		"<keyname> Registry Key Delete",
+		{COMPL_REGKEY, COMPL_NONE}
+	},
+	{
+		"regcreatekey",
+		cmd_reg_create_key,
+		"<keyname> [keyclass] Registry Key Create",
+		{COMPL_REGKEY, COMPL_NONE}
+	},
+	{
+		"shutdown",
+		cmd_reg_shutdown,
+		"[-m message] [-t timeout] [-r or --reboot] Server Shutdown",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"regquerykey",
+		cmd_reg_query_key,
+		"<keyname> Registry Key Query",
+		{COMPL_REGKEY, COMPL_NONE}
+	},
+	{
+		"regdeleteval",
+		cmd_reg_delete_val,
+		"<valname> Registry Value Delete",
+		{COMPL_REGKEY, COMPL_REGKEY}
+	},
+	{
+		"regcreateval",
+		cmd_reg_create_val,
+		"<valname> <valtype> <value> Registry Key Create",
+		{COMPL_REGKEY, COMPL_NONE}
+	},
+	{
+		"reggetsec",
+		cmd_reg_get_key_sec,
+		"<keyname> Registry Key Security",
+		{COMPL_REGKEY, COMPL_NONE}
+	},
+	{
+		"regtestsec",
+		cmd_reg_test_key_sec,
+		"<keyname> Test Registry Key Security",
+		{COMPL_REGKEY, COMPL_NONE}
+	},
+
+	/*
+	 * server
+	 */
+	{
+		"time",
+		cmd_time,
+		"Display remote time",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	{
+		"wksinfo",
+		cmd_wks_query_info,
+		"Workstation Query Info",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"srvinfo",
+		cmd_srv_query_info,
+		"Server Query Info",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"srvsessions",
+		cmd_srv_enum_sess,
+		"List sessions on a server",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"srvshares",
+		cmd_srv_enum_shares,
+		"List shares on a server",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"srvconnections",
+		cmd_srv_enum_conn,
+		"List connections on a server",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"srvfiles",
+		cmd_srv_enum_files,
+		"List files on a server",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
+	 * lsa
+	 */
+
+	{
+		"lsaquery",
+		cmd_lsa_query_info,
+		"Query Info Policy (domain member or server)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"lookupsids",
+		cmd_lsa_lookup_sids,
+		"Resolve names from SIDs",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"lookupnames",
+		cmd_lsa_lookup_names,
+		"Resolve SIDs from names",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"querysecret",
+		cmd_lsa_query_secret,
+		"LSA Query Secret (developer use)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
+	 * netlogon
+	 */
+
+	{
+		"ntlogin",
+		cmd_netlogon_login_test,
+		"[username] [password] NT Domain login test",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"domtrust",
+		cmd_netlogon_domain_test,
+		"<domain> NT Inter-Domain test",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
+	 * sam
+	 */
+
+	{
+		"lookupdomain",
+		cmd_sam_lookup_domain,
+		"Obtain SID for a local domain",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"enumusers",
+		cmd_sam_enum_users,
+		"SAM User Database Query (experimental!)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"addgroupmem",
+		cmd_sam_add_groupmem,
+		"<group rid> [member rid1] [member rid2] ... SAM Add Domain Group Member",
+		{COMPL_SAMGRP, COMPL_SAMGRP}
+	},
+
+	{
+		"addaliasmem",
+		cmd_sam_add_aliasmem,
+		"<alias rid> [member sid1] [member sid2] ... SAM Add Domain Alias Member",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"delgroupmem",
+		cmd_sam_del_groupmem,
+		"<group rid> [member rid1] [member rid2] ... SAM Delete Domain Group Member",
+		{COMPL_SAMGRP, COMPL_SAMGRP}
+	},
+	{
+		"delaliasmem",
+		cmd_sam_del_aliasmem,
+		"<alias rid> [member sid1] [member sid2] ... SAM Delete Domain Alias Member",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"creategroup",
+		cmd_sam_create_dom_group,
+		"SAM Create Domain Group",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"createalias",
+		cmd_sam_create_dom_alias,
+		"SAM Create Domain Alias",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"createuser",
+		cmd_sam_create_dom_user,
+		"<username> SAM Create Domain User",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"delgroup",
+		cmd_sam_delete_dom_group,
+		"SAM Delete Domain Group",
+		{COMPL_SAMGRP, COMPL_NONE}
+	},
+	{
+		"delalias",
+		cmd_sam_delete_dom_alias,
+		"SAM Delete Domain Alias",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"ntpass",
+		cmd_sam_ntchange_pwd,
+		"NT SAM Password Change",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"samuser",
+		cmd_sam_query_user,
+		"<username> SAM User Query (experimental!)",
+		{COMPL_SAMUSR, COMPL_NONE}
+	},
+	{
+		"samgroup",
+		cmd_sam_query_group,
+		"<username> SAM Group Query (experimental!)",
+		{COMPL_SAMGRP, COMPL_NONE}
+	},
+	{
+		"samgroupmem",
+		cmd_sam_query_groupmem,
+		"SAM Group Members (experimental!)",
+		{COMPL_SAMGRP, COMPL_NONE}
+	},
+	{
+		"samtest",
+		cmd_sam_test      ,
+		"SAM User Encrypted RPC test (experimental!)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"enumaliases",
+		cmd_sam_enum_aliases,
+		"SAM Aliases Database Query (experimental!)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"enumgroups",
+		cmd_sam_enum_groups,
+		"SAM Group Database Query (experimental!)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"dominfo",
+		cmd_sam_query_dominfo,
+		"SAM Query Domain Info",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"dispinfo",
+		cmd_sam_query_dispinfo,
+		"SAM Query Display Info",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"samsync",
+		cmd_sam_sync,
+		"SAM Synchronization Test (experimental)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
+	 * bye bye
+	 */
+
+	{
+		"quit",
+		cmd_quit,
+		"logoff the server",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"q",
+		cmd_quit,
+		"logoff the server",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"exit",
+		cmd_quit,
+		"logoff the server",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"bye",
+		cmd_quit,
+		"logoff the server",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
+	 * eek!
+	 */
+
+	{
+		"help",
+		cmd_help,
+		"[command] give help on a command",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"?",
+		cmd_help,
+		"[command] give help on a command",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
+	 * shell
+	 */
+
+	{
+		"!",
+		NULL,
+		"run a shell command on the local system",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
+	 * oop!
+	 */
+
+	{
+		"",
+		NULL,
+		NULL,
+		{COMPL_NONE, COMPL_NONE}
+	}
 };
 
 
@@ -471,25 +805,12 @@ static void reg_init(int val, const char *full_keyname, int num)
 	}
 }
 
-static int key_val = 0;
-static void add_reg_name(const char *name)
-{
-	reg_name = (char**)Realloc(reg_name, (reg_list_len+1) *
-	                                   sizeof(reg_name[0]));
-
-	if (reg_name != NULL)
-	{
-		reg_name[reg_list_len] = strdup(name);
-		reg_list_len++;
-	}
-}
 static void reg_key_list(const char *full_name,
 				const char *name, time_t key_mod_time)
 {
-	if (IS_BITS_SET_ALL(key_val, 1))
-	{
-		add_reg_name(name);
-	}
+	fstring key_name;
+	slprintf(key_name, sizeof(key_name)-1, "%s\\", name);
+	add_chars_to_array(&reg_list_len, &reg_name, key_name);
 }
 
 static void reg_val_list(const char *full_name,
@@ -497,24 +818,29 @@ static void reg_val_list(const char *full_name,
 				uint32 type,
 				BUFFER2 *value)
 {
-	if (IS_BITS_SET_ALL(key_val, 2))
-	{
-		add_reg_name(name);
-	}
+	add_chars_to_array(&reg_list_len, &reg_name, name);
 }
 
-static pstring last_full_keyname = "";
+static char **cmd_argv;
+static uint32 cmd_argc;
 
-char *complete_regenum(char *text, int state)
+static char *complete_regenum(char *text, int state)
 {
 	pstring full_keyname;
 	static uint32 i = 0;
     
-	DEBUG(10,("complete_regenum: %s (%d)\n", text, state));
-
 	if (state == 0)
 	{
-		pstrcpy(full_keyname, cli_info.cur_dir);
+		if (cmd_argc >= 2 && cmd_argv != NULL && cmd_argv[1] != NULL)
+		{
+			char *sep;
+			pstrcpy(full_keyname, cmd_argv[1]);
+			sep = strrchr(full_keyname, '\\');
+			if (sep != NULL)
+			{
+				*sep = 0;
+			}
+		}
 
 		/* Iterate all keys / values */
 		if (!msrpc_reg_enum_key(smb_cli, full_keyname,
@@ -528,28 +854,11 @@ char *complete_regenum(char *text, int state)
 
 	for (; i < reg_list_len; i++)
 	{
-		DEBUG(10,("match: %s key: %s\n", text, reg_name[i]));
 		if (text == NULL || text[0] == 0 ||
 		    strnequal(text, reg_name[i], strlen(text)))
 		{
-			pstring tmp_keyname;
 			char *name = strdup(reg_name[i]);
 			i++;
-
-			slprintf(tmp_keyname, sizeof(tmp_keyname)-1, "%s\\%s",
-				 cli_info.cur_dir, name);
-
-			/* Iterate all keys / values */
-			if (msrpc_reg_enum_key(smb_cli, tmp_keyname,
-				   NULL, NULL, NULL))
-			{
-				pstrcpy(last_full_keyname, tmp_keyname);
-			}
-			else
-			{
-				last_full_keyname[0] = 0;
-			}
-
 			return name;
 		}
 	}
@@ -557,43 +866,84 @@ char *complete_regenum(char *text, int state)
 	return NULL;
 }
 
-char *complete_end_reg(char *text, int state)
-{
-	pstring full_keyname;
-    
-	DEBUG(10,("complete_end_reg: %s (%d)\n", text, state));
 
+static char *complete_samenum_usr(char *text, int state)
+{
+	static uint32 i = 0;
+	static uint32 num_usrs = 0;
+	static struct acct_info *sam = NULL;
+    
 	if (state == 0)
 	{
-		slprintf(full_keyname, sizeof(full_keyname)-1, "%s\\%s",
-		         cli_info.cur_dir, text);
+		free(sam);
+		sam = NULL;
+		num_usrs = 0;
 
-		/* Iterate all keys / values */
-		if (msrpc_reg_enum_key(smb_cli, full_keyname,
-		                   reg_init, reg_key_list, reg_val_list))
+		/* Iterate all users */
+		if (msrpc_sam_enum_users(&cli_info, &sam, &num_usrs,
+		                   NULL, NULL, NULL, NULL) == 0)
 		{
-			pstrcpy(cli_info.cur_dir, full_keyname);
+			return NULL;
 		}
+
+		i = 0;
     	}
 
+	for (; i < num_usrs; i++)
+	{
+		char *usr_name = sam[i].acct_name;
+		if (text == NULL || text[0] == 0 ||
+		    strnequal(text, usr_name, strlen(text)))
+		{
+			char *name = strdup(usr_name);
+			i++;
+			return name;
+		}
+	}
+	
 	return NULL;
 }
 
-char *complete_regenum_key(char *text, int state)
+static char *complete_samenum_grp(char *text, int state)
 {
-	key_val = 1;
-	return complete_regenum(text, state);
-}
+	static uint32 i = 0;
+	static uint32 num_grps = 0;
+	static struct acct_info *sam = NULL;
+    
+	if (state == 0)
+	{
+		free(sam);
+		sam = NULL;
+		num_grps = 0;
 
-char *complete_regenum_val(char *text, int state)
-{
-	key_val = 2;
-	return complete_regenum(text, state);
+		/* Iterate all groups */
+		if (msrpc_sam_enum_groups(&cli_info, &sam, &num_grps,
+		                   NULL, NULL, NULL) == 0)
+		{
+			return NULL;
+		}
+
+		i = 0;
+    	}
+
+	for (; i < num_grps; i++)
+	{
+		char *grp_name = sam[i].acct_name;
+		if (text == NULL || text[0] == 0 ||
+		    strnequal(text, grp_name, strlen(text)))
+		{
+			char *name = strdup(grp_name);
+			i++;
+			return name;
+		}
+	}
+	
+	return NULL;
 }
 
 /* Complete an rpcclient command */
 
-char *complete_cmd(char *text, int state)
+static char *complete_cmd(char *text, int state)
 {
     static int cmd_index;
     char *name;
@@ -617,17 +967,33 @@ char *complete_cmd(char *text, int state)
 
 /* Main completion function */
 
-char **completion_fn(char *text, int start, int end)
+static char **completion_fn(char *text, int start, int end)
 {
+	pstring tmp;
+	pstring cmd_partial;
 	int cmd_index;
 	int num_words;
+	char *ptr = cmd_partial;
 
     int i;
     char lastch = ' ';
 
+	free_char_array(cmd_argc, cmd_argv);
+	cmd_argc = 0;
+	cmd_argv = NULL;
+
+	safe_strcpy(cmd_partial, rl_line_buffer,
+	            MAX(sizeof(cmd_partial),end)-1);
+
+	if (next_token(&ptr, tmp, NULL, sizeof(tmp)))
+	{
+		add_chars_to_array(&cmd_argc, &cmd_argv, tmp);
+	}
+
     /* Complete rpcclient command */
 
-    if (start == 0) {
+    if (start == 0)
+	{
 	return completion_matches(text, complete_cmd);
     }
 
@@ -636,7 +1002,13 @@ char **completion_fn(char *text, int start, int end)
     num_words = 0;
     for (i = 0; i <= end; i++) {
 	if ((rl_line_buffer[i] != ' ') && (lastch == ' '))
-	    num_words++;
+	{
+		if (next_token(&ptr, tmp, NULL, sizeof(tmp)))
+		{
+			add_chars_to_array(&cmd_argc, &cmd_argv, tmp);
+		}
+		num_words++;
+	}
 	lastch = rl_line_buffer[i];
     }
     
@@ -660,11 +1032,14 @@ char **completion_fn(char *text, int start, int end)
         switch (commands[cmd_index].compl_args[num_words - 2])
         {
 
-        case COMPL_REGVAL:
-          return completion_matches(text, complete_regenum_val);
+        case COMPL_SAMGRP:
+          return completion_matches(text, complete_samenum_grp);
+
+        case COMPL_SAMUSR:
+          return completion_matches(text, complete_samenum_usr);
 
         case COMPL_REGKEY:
-          return completion_matches(text, complete_regenum_key);
+          return completion_matches(text, complete_regenum);
 
         default:
             /* An invalid completion type */
@@ -683,16 +1058,8 @@ char **completion_fn(char *text, int start, int end)
    completions are found, we assign this stub completion function
    to the rl_completion_entry_function variable. */
 
-char *complete_cmd_null(char *text, int state)
+static char *complete_cmd_null(char *text, int state)
 {
-	DEBUG(10,("complete_cmd_null: %s %d\n", text, state));
-
-	if (last_full_keyname[0] != 0)
-	{
-		DEBUG(10,("last_keyname: %s\n", last_full_keyname));
-		pstrcpy(cli_info.cur_dir, last_full_keyname);
-		
-	}
 	return NULL;
 }
 

@@ -6,11 +6,6 @@
 /*The following definitions come from  client/client.c  */
 
 void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs);
-void complete_process_file(file_info *f);
-char *complete_remote_file(char *text, int state);
-char *complete_cmd(char *text, int state);
-char **completion_fn(char *text, int start, int end);
-char *complete_cmd_null(char *text, int state);
 struct cli_state *do_connect(char *server, char *share, int smb_port);
 
 /*The following definitions come from  client/clitar.c  */
@@ -486,6 +481,7 @@ void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
 void free_char_array(uint32 num_entries, char **entries);
+BOOL add_chars_to_array(uint32 *len, char ***array, const char *name);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -3216,18 +3212,6 @@ void cmd_reg_shutdown(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
-void cmd_sam_ntchange_pwd(struct client_info *info);
-void cmd_sam_test(struct client_info *info);
-void cmd_sam_lookup_domain(struct client_info *info);
-void cmd_sam_del_aliasmem(struct client_info *info);
-void cmd_sam_delete_dom_alias(struct client_info *info);
-void cmd_sam_add_aliasmem(struct client_info *info);
-void cmd_sam_create_dom_user(struct client_info *info);
-void cmd_sam_create_dom_alias(struct client_info *info);
-void cmd_sam_del_groupmem(struct client_info *info);
-void cmd_sam_delete_dom_group(struct client_info *info);
-void cmd_sam_add_groupmem(struct client_info *info);
-void cmd_sam_create_dom_group(struct client_info *info);
 uint32 sam_query_usergroups(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
 				char *domain,
@@ -3246,13 +3230,8 @@ int msrpc_sam_enum_users(struct client_info *info,
 			USER_INFO_FN(usr_inf_fn),
 			USER_MEM_FN(usr_grp_fn),
 			USER_MEM_FN(usr_als_fn));
-void cmd_sam_enum_users(struct client_info *info);
-void cmd_sam_query_user(struct client_info *info);
-void cmd_sam_query_dispinfo(struct client_info *info);
 BOOL sam_query_dominfo(struct client_info *info, DOM_SID *sid1,
 				uint32 switch_value, SAM_UNK_CTR *ctr);
-void cmd_sam_query_dominfo(struct client_info *info);
-void cmd_sam_enum_aliases(struct client_info *info);
 BOOL sam_query_groupmem(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
 				uint32 group_rid,
@@ -3266,6 +3245,25 @@ uint32 msrpc_sam_enum_groups(struct client_info *info,
 				GROUP_FN(grp_fn),
 				GROUP_INFO_FN(grp_inf_fn),
 				GROUP_MEM_FN(grp_mem_fn));
+void cmd_sam_ntchange_pwd(struct client_info *info);
+void cmd_sam_test(struct client_info *info);
+void cmd_sam_lookup_domain(struct client_info *info);
+void cmd_sam_del_aliasmem(struct client_info *info);
+void cmd_sam_delete_dom_alias(struct client_info *info);
+void cmd_sam_add_aliasmem(struct client_info *info);
+void cmd_sam_create_dom_user(struct client_info *info);
+void cmd_sam_create_dom_alias(struct client_info *info);
+void cmd_sam_del_groupmem(struct client_info *info);
+void cmd_sam_delete_dom_group(struct client_info *info);
+void cmd_sam_add_groupmem(struct client_info *info);
+void cmd_sam_create_dom_group(struct client_info *info);
+void cmd_sam_enum_users(struct client_info *info);
+void cmd_sam_query_groupmem(struct client_info *info);
+void cmd_sam_query_group(struct client_info *info);
+void cmd_sam_query_user(struct client_info *info);
+void cmd_sam_query_dispinfo(struct client_info *info);
+void cmd_sam_query_dominfo(struct client_info *info);
+void cmd_sam_enum_aliases(struct client_info *info);
 void cmd_sam_enum_groups(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
@@ -3396,10 +3394,6 @@ void display_sam_unk_ctr(FILE *out_hnd, enum action_type action,
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
 void rpcclient_init(void);
-char *complete_remote_regenum(char *text, int state);
-char *complete_cmd(char *text, int state);
-char **completion_fn(char *text, int start, int end);
-char *complete_cmd_null(char *text, int state);
 
 /*The following definitions come from  smbd/blocking.c  */
 

@@ -3243,3 +3243,21 @@ void free_char_array(uint32 num_entries, char **entries)
 		free(entries);
 	}
 }
+
+BOOL add_chars_to_array(uint32 *len, char ***array, const char *name)
+{
+	if (len == NULL || array == NULL)
+	{
+		return False;
+	}
+
+	(*array) = (char**)Realloc((*array), ((*len)+1) * sizeof((*array)[0]));
+
+	if ((*array) != NULL)
+	{
+		(*array)[(*len)] = strdup(name);
+		(*len)++;
+		return True;
+	}
+	return True;
+}

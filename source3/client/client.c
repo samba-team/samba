@@ -1586,7 +1586,7 @@ static pstring result;
 
 /* Iterator function for do_list() */
 
-void complete_process_file(file_info *f)
+static void complete_process_file(file_info *f)
 {
     /* Do we have a partial match? */
     
@@ -1607,7 +1607,7 @@ void complete_process_file(file_info *f)
 
 /* Complete a remote file */
 
-char *complete_remote_file(char *text, int state)
+static char *complete_remote_file(char *text, int state)
 {
     int attribute = aDIR | aSYSTEM | aHIDDEN;
     pstring mask;
@@ -1638,7 +1638,7 @@ char *complete_remote_file(char *text, int state)
 
 /* Complete a smbclient command */
 
-char *complete_cmd(char *text, int state)
+static char *complete_cmd(char *text, int state)
 {
     static int cmd_index;
     char *name;
@@ -1667,7 +1667,7 @@ char *complete_cmd(char *text, int state)
    filename_completion_function() builtin to GNU readline for local 
    files. */
 
-char **completion_fn(char *text, int start, int end)
+static char **completion_fn(char *text, int start, int end)
 {
   int i, num_words, cmd_index;
   char lastch = ' ';
@@ -1734,7 +1734,7 @@ char **completion_fn(char *text, int start, int end)
    completions are found, we assign this stub completion function
    to the rl_completion_entry_function variable. */
 
-char *complete_cmd_null(char *text, int state)
+static char *complete_cmd_null(char *text, int state)
 {
     return NULL;
 }
