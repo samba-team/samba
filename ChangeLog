@@ -7,6 +7,10 @@ Wed Sep  3 16:01:07 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 Tue Sep  2 02:00:03 1997  Assar Westerlund  <assar@sics.se>
 
+	* include/bits.c: Don't generate ifndef's in bits.h.  Instead, use
+ 	them when building the program.  This makes it possible to include
+ 	bits.h without having defined all HAVE_INT17_T symbols.
+	
 	* configure.in: test for sigaction
 
 	* doc: updated documentation.
