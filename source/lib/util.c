@@ -1441,9 +1441,10 @@ void smb_panic(const char *why)
 	if (backtrace_strings) {
 		for (i = 0; i < backtrace_size; i++)
 			DEBUG(0, (" #%u %s\n", i, backtrace_strings[i]));
+
+		SAFE_FREE(backtrace_strings);
 	}
 
-	free(backtrace_strings);
 #endif
 
 	dbgflush();
