@@ -22,6 +22,8 @@
 
 #include "includes.h"
 
+#include "module_dummy.h"
+
 static fstring password;
 static fstring username;
 static int got_pass;

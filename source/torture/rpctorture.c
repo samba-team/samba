@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+#include "module_dummy.h"
+
 #ifndef REGISTER
 #define REGISTER 0
 #endif

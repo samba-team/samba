@@ -31,6 +31,9 @@
 #include "includes.h"
 #include "../web/swat_proto.h"
 
+#define HAVE_SMB_REGISTER_PASSDB
+#include "module_dummy.h"
+
 #define GLOBALS_SNUM -1
 
 static BOOL demo_mode = False;

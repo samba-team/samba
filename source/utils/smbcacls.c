@@ -24,6 +24,8 @@
 
 #include "includes.h"
 
+#include "module_dummy.h"
+
 static pstring owner_username;
 static fstring server;
 static int test_args = False;

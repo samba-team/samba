@@ -23,6 +23,10 @@
 #include "includes.h"
 #include "rpcclient.h"
 
+
+#define HAVE_SMB_REGISTER_PASSDB
+#include "module_dummy.h"
+
 DOM_SID domain_sid;
 
 

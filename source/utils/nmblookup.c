@@ -24,6 +24,8 @@
 
 #include "includes.h"
 
+#include "module_dummy.h"
+
 extern BOOL AllowDebugChange;
 
 static BOOL give_flags = False;

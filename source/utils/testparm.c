@@ -34,6 +34,8 @@
 
 #include "includes.h"
 
+#include "module_dummy.h"
+
 extern BOOL AllowDebugChange;
 
 /***********************************************
