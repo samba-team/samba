@@ -48,7 +48,7 @@ static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name);
 
 static void pdb_force_pw_initialization(SAM_ACCOUNT *pass) 
 {
-	const char *lm_pwd, *nt_pwd;
+	const uint8 *lm_pwd, *nt_pwd;
 	
 	/* only reset a password if the last set time has been 
 	   explicitly been set to zero.  A default last set time 
@@ -233,7 +233,7 @@ static NTSTATUS context_getsampwsid(struct pdb_context *context, SAM_ACCOUNT *sa
 static NTSTATUS context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	const char *lm_pw, *nt_pw;
+	const uint8 *lm_pw, *nt_pw;
 	uint16 acb_flags;
 
 	if ((!context) || (!context->pdb_methods)) {
@@ -262,7 +262,7 @@ static NTSTATUS context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT
 static NTSTATUS context_update_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	const char *lm_pw, *nt_pw;
+	const uint8 *lm_pw, *nt_pw;
 	uint16 acb_flags;
 
 	if (!context) {
