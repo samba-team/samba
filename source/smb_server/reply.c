@@ -43,7 +43,7 @@
 	
 /* useful wrapper for talloc with NO_MEMORY reply */
 #define REQ_TALLOC(ptr, size) do { \
-	ptr = talloc(req->mem_ctx, size); \
+	ptr = talloc(req, size); \
 	if (!ptr) { \
 		req_reply_error(req, NT_STATUS_NO_MEMORY); \
 		return; \
@@ -678,7 +678,7 @@ void reply_readbraw(struct smbsrv_request *req)
 	/* before calling the backend we setup the raw buffer. This
 	 * saves a copy later */
 	req->out.size = io.readbraw.in.maxcnt + NBT_HDR_SIZE;
-	req->out.buffer = talloc(req->mem_ctx, req->out.size);
+	req->out.buffer = talloc(req, req->out.size);
 	if (req->out.buffer == NULL) {
 		goto failed;
 	}
@@ -702,7 +702,7 @@ void reply_readbraw(struct smbsrv_request *req)
 failed:
 	/* any failure in readbraw is equivalent to reading zero bytes */
 	req->out.size = 4;
-	req->out.buffer = talloc(req->mem_ctx, req->out.size);
+	req->out.buffer = talloc(req, req->out.size);
 	SIVAL(req->out.buffer, 0, 0); /* init NBT header */
 
 	req_send_reply_nosign(req);

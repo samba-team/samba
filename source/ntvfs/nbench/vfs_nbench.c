@@ -100,7 +100,7 @@ static NTSTATUS nbench_connect(struct smbsrv_request *req, const char *sharename
 	NTSTATUS status;
 	char *logname = NULL;
 
-	private = talloc_p(req->tcon->mem_ctx, struct nbench_private);
+	private = talloc_p(req->tcon, struct nbench_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}

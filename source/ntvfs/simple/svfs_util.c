@@ -35,9 +35,9 @@ char *svfs_unix_path(struct smbsrv_request *req, const char *name)
 	char *ret;
 
 	if (*name != '\\') {
-		ret = talloc_asprintf(req->mem_ctx, "%s/%s", private->connectpath, name);
+		ret = talloc_asprintf(req, "%s/%s", private->connectpath, name);
 	} else {
-		ret = talloc_asprintf(req->mem_ctx, "%s%s", private->connectpath, name);
+		ret = talloc_asprintf(req, "%s%s", private->connectpath, name);
 	}
 	all_string_sub(ret, "\\", "/", 0);
 
