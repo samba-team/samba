@@ -3,6 +3,7 @@
 #endif
 
 #include "tvbuff.h"
+#include <string.h>
 
 #include "packet-dcerpc.h"
 #include "packet-dcerpc-nt.h"
@@ -12,6 +13,7 @@ static int hf_string4_len = -1;
 static int hf_string4_offset = -1;
 static int hf_string4_len2 = -1;
 static int hf_string_data = -1;
+static int hf_subtree_list = -1;
 
 static gint ett_array = -1;
 
@@ -319,6 +321,7 @@ void ndr_pull_HYPER_T(struct e_ndr_pull *ndr, proto_tree *tree, int hf,
 void ndr_pull_dom_sid2(struct e_ndr_pull *ndr, proto_tree *tree, int flags)
 {
 	guint32 num_auths;
+
 	if (!(flags & NDR_SCALARS)) {
 		return;
 	}
@@ -339,9 +342,9 @@ void ndr_pull_align(struct e_ndr_pull *ndr, int size)
 	}
 }
 
-void ndr_pull_subcontext_flags_fn(struct e_ndr_pull *ndr, proto_tree *tree,
-				  size_t sub_size,
-				  void (*fn)(struct e_ndr_pull *, 
+void ndr_pull_subcontext_flags_fn(struct e_ndr_pull *ndr,
+				  proto_tree *tree, size_t sub_size,
+				  void (*fn)(struct e_ndr_pull *,
 					     proto_tree *tree, int ndr_flags))
 {
 	struct e_ndr_pull ndr2;
@@ -447,7 +450,7 @@ void ndr_pull_set_offset(struct e_ndr_pull *ndr, guint32 ofs)
 static int hf_relative_ofs = -1;
 
 void ndr_pull_relative(struct e_ndr_pull *ndr, proto_tree *tree,
-		       void (*fn)(struct e_ndr_pull *, 
+		       void (*fn)(struct e_ndr_pull *,
 				  proto_tree *tree, int ndr_flags))
 {
 	struct e_ndr_pull ndr2;
@@ -535,15 +538,67 @@ void ndr_pull_array(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags,
 		proto_item *item;
 		item = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, "Array entry");
 		subtrees[i] = proto_item_add_subtree(item, ett_array);
-		pull_fn(ndr, subtrees[i], NDR_SCALARS);
+
+		if ((ndr_flags & (NDR_SCALARS|NDR_BUFFERS)) == (NDR_SCALARS|NDR_BUFFERS))
+			pull_fn(ndr, subtrees[i], NDR_SCALARS);
+		else
+			pull_fn(ndr, tree, NDR_SCALARS);
+
 	}
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 buffers:
 	for (i=0;i<count;i++) {
-		pull_fn(ndr, subtrees[i], NDR_BUFFERS);
+		if ((ndr_flags & (NDR_SCALARS|NDR_BUFFERS)) == (NDR_SCALARS|NDR_BUFFERS))
+			pull_fn(ndr, subtrees[i], NDR_BUFFERS);
+		else
+			pull_fn(ndr, tree, NDR_BUFFERS);
 	}
  done: 
 	g_free(subtrees);
+}
+
+struct subtree_info {
+	char *name;
+	proto_tree *subtree;
+};
+
+proto_tree *get_subtree(proto_tree *tree, char *name, struct e_ndr_pull *ndr,
+			gint ett)
+{
+	GSList *list, *l;
+	proto_item *item;
+	struct subtree_info *info;
+
+	/* Get current list value */
+
+	if (!tree)
+		return NULL;
+
+	list = (GSList *)tree->user_data;
+
+	/* Look for name */
+
+	for (l = list; l; l = g_slist_next(l)) {
+		info = list->data;
+		if (strcmp(name, info->name) == 0)
+			return info->subtree;
+	}
+	
+	/* Create new subtree entry */
+	
+	info = (struct subtree_info *)g_malloc(sizeof(struct subtree_info));
+	
+	info->name = g_strdup(name);
+	item = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, name);
+	info->subtree = proto_item_add_subtree(item, ett);
+
+	/* Don't forget to add new list head */
+
+	list = g_slist_append(list, info);
+
+	tree->user_data = list;
+
+	return info->subtree;
 }
 
 void proto_register_eparser(void)
@@ -556,6 +611,7 @@ void proto_register_eparser(void)
 	{ &hf_subcontext_size_2, { "Subcontext size2", "eparser.subcontext_size2", FT_UINT16, BASE_DEC, NULL, 0x0, "Subcontext size2", HFILL }},
 	{ &hf_subcontext_size_4, { "Subcontext size4", "eparser.subcontext_size4", FT_UINT16, BASE_DEC, NULL, 0x0, "Subcontext size4", HFILL }},
 	{ &hf_relative_ofs, { "Relative offset", "eparser.relative_offset", FT_UINT32, BASE_DEC, NULL, 0x0, "Relative offset", HFILL }},
+	{ &hf_subtree_list, { "Subtree list", "", FT_UINT64, BASE_DEC, NULL, 0, "", HFILL }},
 	};
 	static gint *ett[] = {
 		&ett_array,
