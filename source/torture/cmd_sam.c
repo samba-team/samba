@@ -172,6 +172,11 @@ static NTSTATUS cmd_enum_domains(struct samtest_state *st, TALLOC_CTX *mem_ctx, 
 		return status;
 	}
 
+	if (domain_count == 0) {
+		printf("No domains found!\n");
+		return NT_STATUS_OK;
+	}
+
 	for (i = 0; i < domain_count; i++) {
 		printf("%s %s\n", domain_names[i], sid_string_static(&domain_sids[i]));
 	}
@@ -335,6 +340,11 @@ static NTSTATUS cmd_enum_accounts(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status = context_sam_enum_accounts(st->context, st->token, &sid, 0, &account_count, &accounts))) {
 		printf("context_sam_enum_accounts failed: %s\n", nt_errstr(status));
 		return status;
+	}
+
+	if (account_count == 0) {
+		printf("No accounts found!\n");
+		return NT_STATUS_OK;
 	}
 
 	for (i = 0; i < account_count; i++)
