@@ -1632,21 +1632,10 @@ struct ntdom_info
 	vuser_key key;
 };
 
-struct msrpc_local
-{
-        fstring pipe_name;
-        struct ntdom_info nt;
-#if 0
-        cli_auth_fns *auth;
-        void *auth_info;
-#endif
-
-        int fd;
-        BOOL initialised;
-        char *inbuf;
-        char *outbuf;
-};
-
+/*
+ * Network Computing Architechture Context Name Named Pipe
+ * See MSDN docs for more information
+ */
 struct ncacn_np
 {
         fstring pipe_name;
