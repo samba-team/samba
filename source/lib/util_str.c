@@ -1020,13 +1020,13 @@ any of " ; ' or ` in the insert string are replaced with _
 void string_sub(char *s,const char *pattern,const char *insert)
 {
 	char *p;
-	size_t ls,lp,li, i;
+	ssize_t ls,lp,li, i;
 
 	if (!insert || !pattern || !s) return;
 
-	ls = strlen(s);
-	lp = strlen(pattern);
-	li = strlen(insert);
+	ls = (ssize_t)strlen(s);
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
 
 	if (!*pattern) return;
 	
@@ -1057,13 +1057,13 @@ Use with caution!
 void all_string_sub(char *s,const char *pattern,const char *insert)
 {
 	char *p;
-	size_t ls,lp,li;
+	ssize_t ls,lp,li;
 
 	if (!insert || !pattern || !s) return;
 
-	ls = strlen(s);
-	lp = strlen(pattern);
-	li = strlen(insert);
+	ls = (ssize_t)strlen(s);
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
 
 	if (!*pattern) return;
 	
