@@ -1,5 +1,5 @@
 !==
-!== Support.txt for Samba release 2.0.0-alpha11 09 Oct 1998
+!== Support.txt for Samba release 2.0
 !==
 The Samba Consultants List
 ==========================
@@ -33,12 +33,12 @@ These are currently:
 Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
-    AMERICA - CENTRAL & SOUTH                     4
-    AMERICA - USA                                38
+    AMERICA - MEXICO/CENTRAL & SOUTH              5
+    AMERICA - USA                                39
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      20
     CANADA                                       10
-    EUROPE                                       41
+    EUROPE                                       40
     MIDDLE EAST                                   1
 
 AFRICA
@@ -152,6 +152,25 @@ URL: http://www.opensys.hn
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+GUADALAJARA, JAL.. - MEXICO
+
+Leonardo Madrigal del Valle
+E-mail: lmadrig@acnet.net
+Phone: (3) 1228260
+
+Samba experience:
+Server: Samba 1.9.15 and above with any kind of unix system.
+We have been doing many development projects on Windows (NT/95),
+Macintosh, UNIX and embedded system platforms in the area of networking
+drivers and applications during the last few years. 
+
+In regards to SAMBA, we have a lot of experience in SMB/CIFS protocol
+development. We have special expertise in porting SAMBA to embedded system
+environments for NT/WIN95/WFW client/server connectivity.
+Client: WinNT, Win95, WfWg, Win 3.1 & LAN WorkPlace.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
 VILLAHERMOSA, TAB. - MEXICO
 
 Carlos Enrique García Díaz
@@ -187,6 +206,26 @@ steveg@coactiv.net
 
 We are LAN/WAN integrators who specialize in the standard fare (i.e. Novell 
 and NT) as well as UNIX, NTRIGUE and SAMBA.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ARIZONA - USA
+
+
+PSN Internet Service
+4700 N. Central #107
+Phoenix, AZ 85012
+Phone: (602) 266-0911    Fax: (602) 248-8153    Web: http://www.psn.net/vpn/
+Contacts: Michael Almond or Joseph H. Hickman    sales@psn.net, samba-support@psn.net
+
+PSN Internet Service has implemented many VPN's using SAMBA for our customers.  We can help
+you configure your servers or provide storage space on our servers.   PSN has POPs
+throughout the US.
+
+Michael Almond
+Planet Systems Network of America, Inc.
+602-266-0911 x2001
+http://www.psn.net
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -276,21 +315,6 @@ San Francisco, CA  94107
 http://www.steam.com/
 (415) 920-3800
 cliff@steam.com
-------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
-CALIFORNIA - USA
-
-Craftwork Solutions Inc. 
-
-Craftwork Solutions Inc. is dedicated to providing the best possible
-services to our customers. The Craftworks team will provide you with a
-total solution package that will work for you both today and tomorrow.
-With our own Linux Distribution which we are constantly improving to make
-it the best and using it to provide total solutions for companies which
-are open to using Linux.
-
-Please contact mary@craftwork.com 
 ------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------
@@ -559,17 +583,18 @@ Expertise includes:
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-KANSAS - USA
+KANSAS- USA
 
 NT Integrators
-2400 W. 31st Street
-Lawrence, KS 66046
-USA
-913-842-1100
-http://www.ntintegrators.com/
-email: watts@sunflower.com
+901 Kentucky Street
+Suite 105
+Lawrence, KS 66044
+785-842-1100
 
-My consulting company does NT/Linux/Samba/etc support.
+http://www.ntintegrators.com/
+email: ballard@ntii.net
+
+Consulting company that does NT/Linux/Samba/etc integration and support.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -597,6 +622,21 @@ Kansas City area:
    540-5218 - fax
 
 email: dlparker@dlpinc00.com
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+MASSACHUSETT - USA
+
+Tim Riker
+506 Walpole St.
+Norwood, MA 02062-1719
+timr@pop3.silverplatter.com
+1(781)255-2014
+http://webspirs.silverplatter.com/~timr/
+
+Experienced with Samba installations on multiple platforms and
+architectures.
+See resume on the web for more info.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -631,34 +671,18 @@ Piscataway, NJ 08855                                    Fax  : 908-981-1858
 ------------------------------------------------------------------------------
 NEW YORK - USA
 
-67.2 Psytronics Solutions
+Psytronics
+99 Leroy Street
+Binghamton, NY 13905
 
-     90 County Line Road
-     Massapequa, NY 11758
-     U.S.A.
+info@psytronics.com
+www.psytronics.com
 
-Phone: +1 516 598 4619
-
-Fax: +1 516 598 4619
-
-EMail: info@psytronics.com
-
-URL: http://www.psytronics.com
-
-Contact: Jaron Rubenstein
-
-Type of support: Whatever is required. Support contracts available.
-
-Special expertise:
-
-     Familiar with most topics. Specializing in dial-up server (PPP) 
-installation and configuration, custom programming, and Internet and
-Intranet server configuration.  Authorized Red Hat Reseller. 
-
-Sample prices:
-
-     Upon request, usually US$50-$100/hour. Educational discounts
-available.
+Psytronics is an authorized Red Hat Support Partner. Psytronics offers
+e-mail, phone, and on-site support as well as remote network
+administration services. We specialize in Linux/Windows heterogeneous
+network integration, custom software development, and Internet/Intranet
+server configuration.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
