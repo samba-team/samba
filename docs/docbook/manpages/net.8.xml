@@ -3,32 +3,7 @@
                   "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
 
 <!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
-
-<!-- This one is only used by shutdown (RPC) -->
-<!ENTITY net.arg.shutdown '
-<varlistentry>
-<term>-r</term>
-<listitem><para>
-Reboot after shutdown.
-</para></listitem>
-</varlistentry>
-
-<varlistentry>
-<term>-f</term>
-<listitem><para>
-Force shutting down all applications.
-</para></listitem>
-</varlistentry>
-
-<varlistentry>
-<term>-t timeout</term>
-<listitem><para>
-Timeout before system will be shut down. An interactive 
-user of the system can use this time to cancel the shutdown.
-</para></listitem>
-</varlistentry>'>
 ]>
-
 <refentry id="net.8">
 
 <refmeta>
@@ -754,7 +729,28 @@ Interdomain account must already be created on the remote PDC.
 <para>Shut down the remote server.</para>
 
 <variablelist>
-&net.arg.shutdown;
+<varlistentry>
+<term>-r</term>
+<listitem><para>
+Reboot after shutdown.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>-f</term>
+<listitem><para>
+Force shutting down all applications.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>-t timeout</term>
+<listitem><para>
+Timeout before system will be shut down. An interactive 
+user of the system can use this time to cancel the shutdown.
+</para></listitem>
+</varlistentry>'>
+
 <varlistentry>
 <term>-C message</term>
 <listitem><para>Display the specified message on the screen to 
