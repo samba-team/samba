@@ -48,26 +48,21 @@ RCSID("$Id$");
 #include <krb.h>
 
 
-#define POSIX_GETPW_R
-#ifndef POSIX_GETPW_R
+#ifndef POSIX_GETPWNAM_R
 
-/* This code assumes that getpwnam_r et al is following POSIX.1c,
- * however, the result is only tested for inequality with zero and the
- * result parameter is never used, so there shouldn't be any problems
- * using this with Digital UNIX 3.x, which has an earlier
- * implementation.
- *
- * The following functions could be used for replacement, if necessary
+/* These functions translate from the old Digital UNIX 3.x interface
+ * to POSIX.1c.
  */
-
 
 static int
 posix_getpwnam_r(const char *name, struct passwd *pwd, 
 	   char *buffer, int len, struct passwd **result)
 {
+    int save_errno = errno;
     int ret = getpwnam_r(name, pwd, buffer, len);
     if(ret < 0){
 	ret = errno;
+	errno = save_errno;
 	*result = NULL;
     }else{
 	*result = pwd;
@@ -81,9 +76,11 @@ static int
 posix_getpwuid_r(uid_t uid, struct passwd *pwd, 
 		 char *buffer, int len, struct passwd **result)
 {
+    int save_errno = errno;
     int ret = getpwuid_r(uid, pwd, buffer, len);
     if(ret < 0){
 	ret = errno;
+	errno = save_errno;
 	*result = NULL;
     }else{
 	*result = pwd;
@@ -93,9 +90,12 @@ posix_getpwuid_r(uid_t uid, struct passwd *pwd,
 
 #define getpwuid_r posix_getpwuid_r
 
-#endif /* POSIX_GETPW*_R */
+#endif /* POSIX_GETPWNAM_R */
 
-/* Is it necessary to have all functions? I think not. */
+struct state{
+    char ticket[MaxPathLen];
+    int valid;
+};
 
 int 
 siad_init(void)
@@ -112,9 +112,11 @@ siad_chk_invoker(void)
 int 
 siad_ses_init(SIAENTITY *entity, int pkgind)
 {
-    entity->mech[pkgind] = (int*)malloc(MaxPathLen);
-    if(entity->mech[pkgind] == NULL)
+    struct state *s = malloc(sizeof(*s));
+    if(s == NULL)
 	return SIADFAIL;
+    memset(s, 0, sizeof(*s));
+    entity->mech[pkgind] = (int*)s;
     return SIADSUCCESS;
 }
 
@@ -146,11 +148,12 @@ setup_password(SIAENTITY *e, prompt_t *p)
     return SIADSUCCESS;
 }
 
-int 
-siad_ses_authent(sia_collect_func_t *collect, 
-		 SIAENTITY *entity, 
-		 int siastat,
-		 int pkgind)
+
+static int 
+common_auth(sia_collect_func_t *collect, 
+	    SIAENTITY *entity, 
+	    int siastat,
+	    int pkgind)
 {
     prompt_t prompts[2], *pr;
     if((siastat == SIADSUCCESS) && (geteuid() == 0))
@@ -193,34 +196,61 @@ siad_ses_authent(sia_collect_func_t *collect,
     {
 	char realm[REALM_SZ];
 	int ret;
-	struct passwd pw, *pwd;
-	char pwbuf[1024];
+	struct passwd pw, *pwd, fpw, *fpwd;
+	char *toname, *toinst;
+	char pwbuf[1024], fpwbuf[1024];
+	struct state *s = (struct state*)entity->mech[pkgind];
 
 	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
 	    return SIADFAIL;
-	snprintf((char*)entity->mech[pkgind], sizeof(entity->mech[pkgind]),
-		 "%s%u_%u", 
-		 TKT_ROOT,
-		 (unsigned)pwd->pw_uid,
-		 (unsigned)getpid());
-	krb_set_tkt_string((char*)entity->mech[pkgind]);
+
+	if(getpwuid_r(getuid(), &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0)
+	    return SIADFAIL;
 	
+	snprintf(s->ticket, sizeof(s->ticket),
+		 TKT_ROOT "%u_%u", (unsigned)pwd->pw_uid, (unsigned)getpid());
 	krb_get_lrealm(realm, 1);
-	ret = krb_verify_user(entity->name, "", realm, 
+	toname = entity->name;
+	toinst = "";
+	if(entity->authtype == SIA_A_SUAUTH){
+	    snprintf(s->ticket, sizeof(s->ticket), TKT_ROOT "_%s_to_%s_%d", 
+		     fpwd->pw_name, pwd->pw_name, getpid());
+	    if(strcmp(pwd->pw_name, "root") == 0){
+		toname = fpwd->pw_name;
+		toinst = pwd->pw_name;
+	    }
+	}
+
+	krb_set_tkt_string(s->ticket);
+	
+	if(krb_kuserok(toname, toinst, realm, entity->name))
+	    return SIADFAIL;
+	ret = krb_verify_user(toname, toinst, realm,
 			      entity->password, 1, NULL);
 	if(ret){
 	    if(ret != KDC_PR_UNKNOWN)
 		/* since this is most likely a local user (such as
                    root), just silently return failure when the
                    principal doesn't exist */
-		SIALOG("WARNING", "krb_verify_user(%s): %s", 
-		       entity->name, krb_get_err_text(ret));
+		SIALOG("WARNING", "krb_verify_user(%s.%s): %s", 
+		       toname, toinst, krb_get_err_text(ret));
 	    return SIADFAIL;
 	}
 	if(sia_make_entity_pwd(pwd, entity) == SIAFAIL)
 	    return SIADFAIL;
+	s->valid = 1;
     }
     return SIADSUCCESS;
+}
+
+
+int 
+siad_ses_authent(sia_collect_func_t *collect, 
+		 SIAENTITY *entity, 
+		 int siastat,
+		 int pkgind)
+{
+    return common_auth(collect, entity, siastat, pkgind);
 }
 
 int 
@@ -236,9 +266,10 @@ siad_ses_launch(sia_collect_func_t *collect,
 		int pkgind)
 {
     char buf[MaxPathLen];
-    static char env[64];
-    chown((char*)entity->mech[pkgind],entity->pwd->pw_uid, entity->pwd->pw_gid);
-    snprintf(env, sizeof(env), "KRBTKFILE=%s", (char*)entity->mech[pkgind]);
+    static char env[MaxPathLen];
+    struct state *s = (struct state*)entity->mech[pkgind];
+    chown(s->ticket, entity->pwd->pw_uid, entity->pwd->pw_gid);
+    snprintf(env, sizeof(env), "KRBTKFILE=%s", s->ticket);
     putenv(env);
     if (k_hasafs()) {
 	char cell[64];
@@ -264,197 +295,12 @@ siad_ses_suauthent(sia_collect_func_t *collect,
 		   int siastat,
 		   int pkgind)
 {
-    char name[ANAME_SZ];
-    char toname[ANAME_SZ];
-    char toinst[INST_SZ];
-    char realm[REALM_SZ];
-    struct passwd pw, *pwd, topw, *topwd;
-    char pw_buf[1024], topw_buf[1024];
-    
     if(geteuid() != 0)
 	return SIADFAIL;
-    if(siastat == SIADSUCCESS)
-	return SIADSUCCESS;
-    if(getpwuid_r(getuid(), &pw, pw_buf, sizeof(pw_buf), &pwd) != 0)
+    if(entity->name == NULL)
 	return SIADFAIL;
-    if(entity->name[0] == 0 || strcmp(entity->name, "root") == 0){
-	strcpy(toname, pwd->pw_name);
-	strcpy(toinst, "root");
-	if(getpwnam_r("root", &topw, topw_buf, sizeof(topw_buf), &topwd) != 0)
-	    return SIADFAIL;
-    }else{
-	strcpy(toname, entity->name);
-	toinst[0] = 0;
-	if(getpwnam_r(entity->name, &topw, 
-		      topw_buf, sizeof(topw_buf), &topwd) != 0)
-	    return SIADFAIL;
-    }
-    if(krb_get_lrealm(realm, 1))
-      return SIADFAIL;
-    if(entity->password == NULL){
-	prompt_t prompt;
-	int ret;
-	if(collect == NULL)
-	    return SIADFAIL;
-	setup_password(entity, &prompt);
-	asprintf (&prompt.prompt,
-		  "%s%s%s@%s's Password: ",
-		  toname, toinst[0] ? "." : "",
-		  toinst[0] ? toinst, "",
-		  realm);
-	if (prompt.prompt == NULL)
-	    return SIADFAIL;
-	ret = (*collect)(0, SIAONELINER, (unsigned char*)"", 1, &prompt);
-	free(prompt.prompt);
-	if(ret != SIACOLSUCCESS)
-	    return SIADFAIL;
-    }
-    if(entity->password == NULL)
-	return SIADFAIL;
-    {
-	int ret;
-
-	if(krb_kuserok(toname, toinst, realm, entity->name))
-	    return SIADFAIL;
-	
-	snprintf((char*)entity->mech[pkgind], sizeof(entity->mech[pkgind]),
-		 "/tmp/tkt_%s_to_%s_%d", 
-		 pwd->pw_name, topwd->pw_name, getpid());
-	krb_set_tkt_string((char*)entity->mech[pkgind]);
-	ret = krb_verify_user(toname, toinst, realm, entity->password, 1, NULL);
-	if(ret){
-	    SIALOG("WARNING", "krb_verify_user(%s.%s): %s", toname, toinst, 
-		   krb_get_err_text(ret));
-	    return SIADFAIL;
-	}
-    }
-    if(sia_make_entity_pwd(topwd, entity) == SIAFAIL)
-	return SIADFAIL;
-    return SIADSUCCESS;
+    if(entity->name[0] == 0)
+	strcpy(entity->name, "root");
+    return common_auth(collect, entity, siastat, pkgind);
 }
 
-/* Conflicting types between different versions of SIA, and they are
-   never called anyway */
-
-#if 0
-
-int 
-siad_ses_reauthent(sia_collect_func_t *collect,
-		   SIAENTITY *entity,
-		   int siastat,
-		   int pkgind)
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_chg_finger(sia_collect_func_t *collect,
-		const char *username, int argc, char *argv[])
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_chg_password(sia_collect_func_t *collect,
-		  const char *username, int argc, char *argv[])
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_chg_shell(sia_collect_func_t *collect,
-	       const char *username, int argc, char *argv[])
-{
-    return SIADFAIL;
-}
-
-
-int siad_getpwent (struct passwd *result, char *buf, int bufsize, 
-		   struct sia_context *context)
-/*
-  int
-  siad_getpwent(const char *name, struct passwd *result, char *buf, int bufsize,
-  struct sia_context *context)
-  */
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_getpwuid(uid_t uid, struct passwd *result, char *buf, int bufsize, 
-	      struct sia_context *context)
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_getpwnam(const char *name, struct passwd *result, char *buf,
-	      int bufsize, struct sia_context *context)
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_setpwent(struct sia_context *context)
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_endpwent(struct sia_context *context)
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_getgrent(struct group *result, char *buf, int bufsize, 
-	      struct sia_context *context)
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_getgrgid(gid_t gid, struct group *result, char *buf, int bufsize,
-	      struct sia_context *context)
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_getgrnam(const char *name, struct group *result, char *buf, 
-	      int bufsize, struct sia_context *context)
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_setgrent(struct sia_context *context)
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_endgrent(struct sia_context *context)
-{
-    return SIADFAIL;
-}
-
-
-int 
-siad_chk_user(const char *logname, int checkflag)
-{
-    return SIADFAIL;
-}
-#endif
