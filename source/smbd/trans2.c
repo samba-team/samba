@@ -2154,7 +2154,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 					}
 					close_file(new_fsp,True);
 				} else {
-					ret = vfs_allocate_file_space(fsp, size);
+					ret = vfs_allocate_file_space(fsp, allocation_size);
 					if (vfs_fstat(fsp,fd,&new_sbuf) != 0) {
 						DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
 						ret = -1;
