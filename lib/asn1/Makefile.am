@@ -2,6 +2,9 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
+WFLAGS=-Wall -Wno-unused -Wconversion -Wmissing-prototypes -Wredundant-decls
+CFLAGS=$(WFLAGS) @CFLAGS@
+
 lib_LIBRARIES = libasn1.a
 
 SUFFIXES = .x

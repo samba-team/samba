@@ -15,7 +15,7 @@ length_int (unsigned val)
 }
 
 size_t
-length_len (int len)
+length_len (size_t len)
 {
   if (len < 128)
     return 1;

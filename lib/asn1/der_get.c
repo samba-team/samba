@@ -9,252 +9,273 @@ RCSID("$Id$");
  * indicating how many actually got read, or <0 in case of errors.
  */
 
-int
-der_get_int (unsigned char *p, int len, unsigned *ret)
-{
-  int val = 0;
-  int oldlen = len;
+/* 
+ * All decoding functions take a pointer `p' to first position in
+ * which to read, from the left, `len' which means the maximum number
+ * of characters we are able to read and return the status as an int
+ */
 
-  while (len--)
-    val = val * 256 + *p++;
-  *ret = val;
-  return oldlen;
-}
 
 int
-der_get_length (unsigned char *p, int len, int *ret)
+der_get_int (unsigned char *p, size_t len, unsigned *ret, size_t *size)
 {
-  int val;
+    unsigned val = 0;
+    size_t oldlen = len;
 
-  if (--len < 0)
-    return -1;
-  val = *p++;
-  if (val < 128) {
+    while (len--)
+	val = val * 256 + *p++;
     *ret = val;
-    return 1;
-  } else {
-    int l;
-    unsigned tmp;
-
-    val &= 0x7F;
-    if (len < val)
-      return -1;
-    l = der_get_int (p, val, &tmp);
-    *ret = tmp;
-    if (l < 0)
-      return l;
-    else
-      return l+1;
-  }
+    *size = oldlen;
+    return 0;
 }
 
 int
-der_get_general_string (unsigned char *p, int len, general_string *str)
+der_get_length (unsigned char *p, size_t len, size_t *val, size_t *size)
 {
-  int l, slen;
-  char *s;
+    size_t v;
 
-  l = der_get_length (p, len, &slen);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  if (len < slen)
-    return -1;
-  s = malloc (slen + 1);
-  if (s == NULL)
-    return -1;
-  memcpy (s, p, slen);
-  s[slen] = '\0';
-  *str = s;
-  return slen + l;
+    if (--len < 0)
+	return ASN1_OVERRUN;
+    v = *p++;
+    if (v < 128) {
+	*val = v;
+	*size = 1;
+    } else {
+	int e;
+	size_t l;
+	unsigned tmp;
+
+	v &= 0x7F;
+	if (len < v)
+	    return ASN1_OVERRUN;
+	e = der_get_int (p, v, &tmp, &l);
+	if(e) return e;
+	*val = tmp;
+	*size = l + 1;
+    }
+    return 0;
 }
 
 int
-der_get_octet_string (unsigned char *p, int len, octet_string *data)
+der_get_general_string (unsigned char *p, size_t len, 
+			general_string *str, size_t *size)
 {
-  int l, slen;
+    size_t l, slen;
+    char *s;
+    int e;
 
-  l = der_get_length (p, len, &slen);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  if (len < slen)
-    return -1;
-  data->length = slen;
-  data->data = malloc(slen);
-  if (data->data == NULL && data->length != 0)
-    return -1;
-  memcpy (data->data, p, slen);
-  return slen + l;
+    e = der_get_length (p, len, &slen, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    if (len < slen)
+	return ASN1_OVERRUN;
+    s = malloc (slen + 1);
+    if (s == NULL)
+	return ENOMEM;
+    memcpy (s, p, slen);
+    s[slen] = '\0';
+    *str = s;
+    *size = slen + l;
+    return 0;
 }
 
 int
-der_get_tag (unsigned char *p, int len, Der_class *class, Der_type *type,
-	     int *tag)
+der_get_octet_string (unsigned char *p, size_t len, 
+		      octet_string *data, size_t *size)
 {
-  if (len < 1)
-    return -1;
-  *class = ((*p) >> 6) & 0x03;
-  *type = ((*p) >> 5) & 0x01;
-  *tag = (*p) & 0x1F;
-  return 1;
+    size_t l, slen;
+    int e;
+    
+    e = der_get_length (p, len, &slen, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    if (len < slen)
+	ASN1_OVERRUN;
+    data->length = slen;
+    data->data = malloc(slen);
+    if (data->data == NULL && data->length != 0)
+	return ENOMEM;
+    memcpy (data->data, p, slen);
+    *size = slen + l;
+    return 0;
 }
 
 int
-der_match_tag (unsigned char *p, int len, Der_class class, Der_type type,
-	       int tag)
+der_get_tag (unsigned char *p, size_t len, Der_class *class, Der_type *type,
+	     int *tag, size_t *size)
 {
-  int l;
-  Der_class thisclass;
-  Der_type thistype;
-  int thistag;
-
-  l = der_get_tag (p, len, &thisclass, &thistype, &thistag);
-  if (l < 0)
-    return l;
-  if (class == thisclass && type == thistype && tag == thistag)
-    return l;
-  else
-    return -1;
+    if (len < 1)
+	return ASN1_OVERRUN;
+    *class = ((*p) >> 6) & 0x03;
+    *type = ((*p) >> 5) & 0x01;
+    *tag = (*p) & 0x1F;
+    *size = 1;
+    return 0;
 }
 
 int
-der_match_tag_and_length (unsigned char *p, int len,
+der_match_tag (unsigned char *p, size_t len, Der_class class, Der_type type,
+	       int tag, size_t *size)
+{
+    size_t l;
+    Der_class thisclass;
+    Der_type thistype;
+    int thistag;
+    int e;
+
+    e = der_get_tag (p, len, &thisclass, &thistype, &thistag, &l);
+    if (e) return e;
+    if (class != thisclass || type != thistype)
+	return ASN1_BAD_ID;
+    if(tag > thistag)
+	return ASN1_MISPLACED_FIELD;
+    if(tag < thistag)
+	return ASN1_MISSING_FIELD;
+    *size = l;
+    return 0;
+}
+
+int
+der_match_tag_and_length (unsigned char *p, size_t len,
 			  Der_class class, Der_type type, int tag,
-			  int *length_ret)
+			  size_t *length_ret, size_t *size)
 {
-  int ret = 0;
-  int l;
+    size_t l, ret = 0;
+    int e;
 
-  l = der_match_tag (p, len, class, type, tag);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  l = der_get_length (p, len, length_ret);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  return ret;
+    e = der_match_tag (p, len, class, type, tag, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    e = der_get_length (p, len, length_ret, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
 }
 
 int
-decode_integer (unsigned char *p, int len, unsigned *num)
+decode_integer (unsigned char *p, size_t len, unsigned *num, size_t *size)
 {
-  int ret = 0;
-  int l, reallen;
+    size_t ret = 0;
+    size_t l, reallen;
+    int e;
 
-  l = der_match_tag (p, len, UNIV, PRIM, UT_Integer);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  l = der_get_length (p, len, &reallen);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  l = der_get_int (p, reallen, num);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  return ret;
+    e = der_match_tag (p, len, UNIV, PRIM, UT_Integer, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    e = der_get_length (p, len, &reallen, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    e = der_get_int (p, reallen, num, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
 }
 
 int
-decode_general_string (unsigned char *p, int len, general_string *str)
+decode_general_string (unsigned char *p, size_t len, 
+		       general_string *str, size_t *size)
 {
-  int ret = 0;
-  int l;
+    size_t ret = 0;
+    size_t l;
+    int e;
 
-  l = der_match_tag (p, len, UNIV, PRIM, UT_GeneralString);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  l = der_get_general_string (p, len, str);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  return ret;
+    e = der_match_tag (p, len, UNIV, PRIM, UT_GeneralString, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    e = der_get_general_string (p, len, str, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
 }
 
 int
-decode_octet_string (unsigned char *p, int len, octet_string *k)
+decode_octet_string (unsigned char *p, size_t len, 
+		     octet_string *k, size_t *size)
 {
-  int ret = 0;
-  int l;
+    size_t ret = 0;
+    size_t l;
+    int e;
 
-  l = der_match_tag (p, len, UNIV, PRIM, UT_OctetString);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  l = der_get_octet_string (p, len, k);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  return ret;
+    e = der_match_tag (p, len, UNIV, PRIM, UT_OctetString, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    e = der_get_octet_string (p, len, k, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
 }
 
 static void
 generalizedtime2time (char *s, time_t *t)
 {
-  struct tm tm;
+    struct tm tm;
 
-  sscanf (s, "%04d%02d%02d%02d%02d%02dZ",
-	  &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour,
-	  &tm.tm_min, &tm.tm_sec);
-  tm.tm_year -= 1900;
-  tm.tm_mon -= 1;
-  *t = timegm (&tm);
+    sscanf (s, "%04d%02d%02d%02d%02d%02dZ",
+	    &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour,
+	    &tm.tm_min, &tm.tm_sec);
+    tm.tm_year -= 1900;
+    tm.tm_mon -= 1;
+    *t = timegm (&tm);
 }
 
 int
-decode_generalized_time (unsigned char *p, int len, time_t *t)
+decode_generalized_time (unsigned char *p, size_t len, time_t *t, size_t *size)
 {
-  octet_string k;
-  char times[32]; /* XXX */
-  int ret = 0;
-  int l;
+    octet_string k;
+    char *times;
+    size_t ret = 0;
+    size_t l;
+    int e;
 
-  l = der_match_tag (p, len, UNIV, PRIM, UT_GeneralizedTime);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  l = der_get_octet_string (p, len, &k);
-  if (l < 0)
-    return l;
-  p += l;
-  len -= l;
-  ret += l;
-  strncpy(times, (char*)k.data, k.length);
-  times[k.length] = 0;
-  generalizedtime2time (times, t);
-  free (k.data);
-  return ret;
+    e = der_match_tag (p, len, UNIV, PRIM, UT_GeneralizedTime, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    e = der_get_octet_string (p, len, &k, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    times = realloc(k.data, k.length + 1);
+    if (times == NULL){
+	free(k.data);
+	return ENOMEM;
+    }
+    times[k.length] = 0;
+    generalizedtime2time (times, t);
+    free (times);
+    *size = ret;
+    return 0;
 }
 
 
 int
-fix_dce(int reallen, int *len)
+fix_dce(size_t reallen, size_t *len)
 {
     if(reallen == 0)
 	return 1;

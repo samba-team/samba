@@ -276,12 +276,16 @@ generate_type (Symbol *s)
     fprintf (codefile, 
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n"
+	     "#include \"libasn1.h\"\n\n"
+#if 0
 	     "#include <stdio.h>\n"
 	     "#include <stdlib.h>\n"
 	     "#include <time.h>\n"
 	     "#include <" STEM ".h>\n\n"
-	     "#include <der.h>\n",
-	     orig_filename);
+	     "#include <asn1_err.h>\n"
+	     "#include <der.h>\n"
+#endif
+	     ,orig_filename);
     generate_type_header (s);
     generate_type_encode (s);
     generate_type_decode (s);

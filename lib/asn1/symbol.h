@@ -43,7 +43,7 @@ struct symbol {
 
 typedef struct symbol Symbol;
 
-void initsym ();
+void initsym (void);
 Symbol *addsym (char *);
 void output_name (char *);
 #endif

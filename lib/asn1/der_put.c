@@ -12,183 +12,204 @@ RCSID("$Id$");
  */
 
 int
-der_put_int (unsigned char *p, int len, unsigned val)
+der_put_int (unsigned char *p, size_t len, unsigned val, size_t *size)
 {
-  unsigned char *base = p;
+    unsigned char *base = p;
 
-  if (val) {
-    while (len > 0 && val) {
-      *p-- = val % 256;
-      val /= 256;
-      --len;
-    }
-    if (val)
-      return -1;
-    else
-      return base - p;
-  } else if (len < 1)
-    return -1;
-  else {
-    *p = 0;
-    return 1;
-  }
-}
-
-int
-der_put_length (unsigned char *p, int len, int val)
-{
-  if (val < 128) {
-    if (len < 1)
-      return -1;
+    if (val) {
+	while (len > 0 && val) {
+	    *p-- = val % 256;
+	    val /= 256;
+	    --len;
+	}
+	if (val)
+	    return ASN1_OVERFLOW;
+	else
+	    return base - p;
+    } else if (len < 1)
+	return ASN1_OVERFLOW;
     else {
-      *p = val;
-      return 1;
+	*p = 0;
+	*size = 1;
+	return 0;
     }
-  } else {
-    int l;
+}
 
-    l = der_put_int (p, len - 1,val);
-    if (l < 0)
-      return l;
+int
+der_put_length (unsigned char *p, size_t len, size_t val, size_t *size)
+{
+    if (val < 128) {
+	if (len < 1)
+	    return ASN1_OVERFLOW;
+	else {
+	    *p = val;
+	    *size = 1;
+	    return 0;
+	}
+    } else {
+	size_t l;
+	int e;
+
+	e = der_put_int (p, len - 1, val, &l);
+	if (e)
+	    return e;
+	p -= l;
+	*p = 0x80 | l;
+	*size = l + 1;
+	return 0;
+    }
+}
+
+int
+der_put_general_string (unsigned char *p, size_t len, 
+			general_string *str, size_t *size)
+{
+    size_t slen = strlen(*str);
+    size_t l;
+    int e;
+
+    if (len < slen)
+	return ASN1_OVERFLOW;
+    p -= slen;
+    len -= slen;
+    memcpy (p+1, *str, slen);
+    e = der_put_length (p, len, slen, &l);
+    if(e)
+	return e;
+    *size = slen + l;
+    return 0;
+}
+
+int
+der_put_octet_string (unsigned char *p, size_t len, 
+		      octet_string *data, size_t *size)
+{
+    size_t l;
+    int e;
+
+    if (len < data->length)
+	return ASN1_OVERFLOW;
+    p -= data->length;
+    len -= data->length;
+    memcpy (p+1, data->data, data->length);
+    e = der_put_length (p, len, data->length, &l);
+    if(e)
+	return e;
+    *size = l + data->length;
+    return 0;
+}
+
+int
+der_put_tag (unsigned char *p, size_t len, Der_class class, Der_type type,
+	     int tag, size_t *size)
+{
+    if (len < 1)
+	return ASN1_OVERFLOW;
+    *p = (class << 6) | (type << 5) | tag; /* XXX */
+    *size = 1;
+    return 0;
+}
+
+int
+der_put_length_and_tag (unsigned char *p, size_t len, size_t len_val,
+			Der_class class, Der_type type, int tag, size_t *size)
+{
+    size_t ret = 0;
+    size_t l;
+    int e;
+
+    e = der_put_length (p, len, len_val, &l);
+    if(e)
+	return e;
     p -= l;
-    *p = 0x80 | l;
-    return l + 1;
-  }
+    len -= l;
+    ret += l;
+    e = der_put_tag (p, len, class, type, tag, &l);
+    if(e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
 }
 
 int
-der_put_general_string (unsigned char *p, int len, general_string *str)
+encode_integer (unsigned char *p, size_t len, unsigned *data, size_t *size)
 {
-  int slen = strlen(*str);
-  int l;
-
-  if (len < slen)
-    return -1;
-  p -= slen;
-  len -= slen;
-  memcpy (p+1, *str, slen);
-  l = der_put_length (p, len, slen);
-  if(l < 0)
-    return l;
-  return slen + l;
+    unsigned num = *data;
+    size_t ret = 0;
+    size_t l;
+    int e;
+    
+    e = der_put_int (p, len, num, &l);
+    if(e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    e = der_put_length (p, len, l, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    e = der_put_tag (p, len, UNIV, PRIM, UT_Integer, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
 }
 
 int
-der_put_octet_string (unsigned char *p, int len, octet_string *data)
+encode_general_string (unsigned char *p, size_t len, 
+		       general_string *data, size_t *size)
 {
-  int l;
+    size_t ret = 0;
+    size_t l;
+    int e;
 
-  if (len < data->length)
-    return -1;
-  p -= data->length;
-  len -= data->length;
-  memcpy (p+1, data->data, data->length);
-  l = der_put_length (p, len, data->length);
-  if (l < 0)
-    return l;
-  return l + data->length;
+    e = der_put_general_string (p, len, data, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    e = der_put_tag (p, len, UNIV, PRIM, UT_GeneralString, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
 }
 
 int
-der_put_tag (unsigned char *p, int len, Der_class class, Der_type type,
-	     int tag)
+encode_octet_string (unsigned char *p, size_t len, 
+		     octet_string *k, size_t *size)
 {
-  if (len < 1)
-    return -1;
-  *p = (class << 6) | (type << 5) | tag; /* XXX */
-  return 1;
-}
+    size_t ret = 0;
+    size_t l;
+    int e;
 
-int
-der_put_length_and_tag (unsigned char *p, int len, int len_val,
-			Der_class class, Der_type type, int tag)
-{
-  int ret = 0;
-  int l;
-
-  l = der_put_length (p, len, len_val);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  l = der_put_tag (p, len, class, type, tag);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  return ret;
-}
-
-int
-encode_integer (unsigned char *p, int len, unsigned *data)
-{
-  unsigned num = *data;
-  int ret = 0;
-  int l;
-
-  l = der_put_int (p, len, num);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  l = der_put_length (p, len, l);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  l = der_put_tag (p, len, UNIV, PRIM, UT_Integer);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  return ret;
-}
-
-int
-encode_general_string (unsigned char *p, int len, general_string *data)
-{
-  int ret = 0;
-  int l;
-
-  l = der_put_general_string (p, len, data);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  l = der_put_tag (p, len, UNIV, PRIM, UT_GeneralString);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  return ret;
-}
-
-int
-encode_octet_string (unsigned char *p, int len, octet_string *k)
-{
-  int ret = 0;
-  int l;
-
-  l = der_put_octet_string (p, len, k);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  l = der_put_tag (p, len, UNIV, PRIM, UT_OctetString);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  return ret;
+    e = der_put_octet_string (p, len, k, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    e = der_put_tag (p, len, UNIV, PRIM, UT_OctetString, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
 }
 
 void
@@ -205,25 +226,27 @@ time2generalizedtime (time_t t, octet_string *s)
 }
 
 int
-encode_generalized_time (unsigned char *p, int len, time_t *t)
+encode_generalized_time (unsigned char *p, size_t len, time_t *t, size_t *size)
 {
-  octet_string k;
-  int l;
-  int ret = 0;
+    size_t ret = 0;
+    size_t l;
+    octet_string k;
+    int e;
 
-  time2generalizedtime (*t, &k);
-  l = der_put_octet_string (p, len, &k);
-  free (k.data);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  l = der_put_tag (p, len, UNIV, PRIM, UT_GeneralizedTime);
-  if (l < 0)
-    return l;
-  p -= l;
-  len -= l;
-  ret += l;
-  return ret;
+    time2generalizedtime (*t, &k);
+    e = der_put_octet_string (p, len, &k, &l);
+    free (k.data);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    e = der_put_tag (p, len, UNIV, PRIM, UT_GeneralizedTime, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
 }

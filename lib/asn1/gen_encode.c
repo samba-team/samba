@@ -6,7 +6,7 @@ static void
 encode_primitive (char *typename, char *name)
 {
     fprintf (codefile,
-	     "l = encode_%s(p, len, %s);\n"
+	     "e = encode_%s(p, len, %s, &l);\n"
 	     "BACK;\n",
 	     typename,
 	     name);
@@ -21,7 +21,7 @@ encode_type (char *name, Type *t)
     encode_type (name, t->symbol->type);
 #endif
     fprintf (codefile,
-	     "l = encode_%s(p, len, %s);\n"
+	     "e = encode_%s(p, len, %s, &l);\n"
 	     "BACK;\n",
 	     t->symbol->gen_name, name);
     break;
@@ -77,8 +77,8 @@ encode_type (char *name, Type *t)
 	     "len -= 2;\n"
 	     "ret += 2;\n"
 	     "}\n\n"
-	     "l = der_put_length_and_tag (p, len, ret, UNIV, PRIM,"
-	     "UT_BitString);\n"
+	     "e = der_put_length_and_tag (p, len, ret, UNIV, PRIM,"
+	     "UT_BitString, &l);\n"
 	     "BACK;\n",
 	     rest);
     break;
@@ -105,7 +105,8 @@ encode_type (char *name, Type *t)
 #endif
       encode_type (s, m->type);
       fprintf (codefile,
-	       "l = der_put_length_and_tag (p, len, ret, CONTEXT, CONS, %d);\n"
+	       "e = der_put_length_and_tag (p, len, ret, CONTEXT, CONS, "
+	       "%d, &l);\n"
 	       "BACK;\n",
 	       m->val);
 #if 1
@@ -118,7 +119,7 @@ encode_type (char *name, Type *t)
       free (s);
     }
     fprintf (codefile,
-	     "l = der_put_length_and_tag (p, len, ret, UNIV, CONS, UT_Sequence);\n"
+	     "e = der_put_length_and_tag (p, len, ret, UNIV, CONS, UT_Sequence, &l);\n"
 	     "BACK;\n");
     break;
   }
@@ -141,7 +142,7 @@ encode_type (char *name, Type *t)
 	     "ret += oldret;\n"
 #endif
 	     "}\n"
-	     "l = der_put_length_and_tag (p, len, ret, UNIV, CONS, UT_Sequence);\n"
+	     "e = der_put_length_and_tag (p, len, ret, UNIV, CONS, UT_Sequence, &l);\n"
 	     "BACK;\n");
     free (n);
     break;
@@ -155,7 +156,7 @@ encode_type (char *name, Type *t)
   case TApplication:
     encode_type (name, t->subtype);
     fprintf (codefile,
-	     "l = der_put_length_and_tag (p, len, ret, APPL, CONS, %d);\n"
+	     "e = der_put_length_and_tag (p, len, ret, APPL, CONS, %d, &l);\n"
 	     "BACK;\n",
 	     t->application);
     break;
@@ -168,29 +169,29 @@ void
 generate_type_encode (Symbol *s)
 {
   fprintf (headerfile,
-	   "int encode_%s(unsigned char *, int, %s *);\n",
+	   "int encode_%s(unsigned char *, size_t, %s *, size_t *);\n",
 	   s->gen_name, s->gen_name);
 
-  fprintf (codefile, "#define BACK if (l < 0) return l; p -= l; len -= l; ret += l\n\n");
+  fprintf (codefile, "#define BACK if (e) return e; p -= l; len -= l; ret += l\n\n");
 
 
   fprintf (codefile, "int\n"
-	   "encode_%s(unsigned char *p, int len, %s *data)\n"
+	   "encode_%s(unsigned char *p, size_t len, %s *data, size_t *size)\n"
 	   "{\n",
 	   s->gen_name, s->gen_name);
 
   switch (s->type->type) {
   case TInteger:
-    fprintf (codefile, "return encode_integer (p, len, data);\n");
+    fprintf (codefile, "return encode_integer (p, len, data, size);\n");
     break;
   case TOctetString:
-    fprintf (codefile, "return encode_octet_string (p, len, data);\n");
+    fprintf (codefile, "return encode_octet_string (p, len, data, size);\n");
     break;
   case TGeneralizedTime:
-    fprintf (codefile, "return encode_generalized_time (p, len, data);\n");
+    fprintf (codefile, "return encode_generalized_time (p, len, data, size);\n");
     break;
   case TGeneralString:
-    fprintf (codefile, "return encode_general_string (p, len, data);\n");
+    fprintf (codefile, "return encode_general_string (p, len, data, size);\n");
     break;
   case TBitString:
   case TSequence:
@@ -198,11 +199,13 @@ generate_type_encode (Symbol *s)
   case TApplication:
   case TType:
     fprintf (codefile,
-	     "int ret = 0;\n"
-	     "int l, i;\n\n");
+	     "size_t ret = 0;\n"
+	     "size_t l;\n"
+	     "int i, e;\n\n");
     
     encode_type ("data", s->type);
-    fprintf (codefile, "return ret;\n");
+    fprintf (codefile, "*size = ret;\n"
+	     "return 0;\n");
     break;
   default:
     abort ();

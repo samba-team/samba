@@ -9,10 +9,11 @@
 #include <string.h>
 #include "symbol.h"
 #include "lex.h"
-#include "gen.h"
+#include "asn1_locl.h"
 
 static Type *new_type (Typetype t);
 void yyerror (char *);
+int yylex();
 
 #ifndef HAVE_STRDUP
 char *strdup(char *);

@@ -18,8 +18,11 @@
 #include "symbol.h"
 
 
+void generate_type (Symbol *);
+void generate_constant (Symbol *);
 void generate_type_encode (Symbol *s);
 void generate_type_decode (Symbol *s);
+void generate_seq_type_decode (Symbol *s);
 void generate_type_free (Symbol *s);
 void generate_type_length (Symbol *s);
 void generate_type_copy (Symbol *s);
@@ -27,10 +30,7 @@ void generate_type_maybe (Symbol *s);
 
 void init_generate (char *filename);
 void close_generate(void);
-void initsym(void);
 int yyparse(void);
-
-int fix_dce(int, int*);
 
 extern FILE *headerfile, *codefile, *logfile;
 
