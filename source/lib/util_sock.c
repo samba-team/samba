@@ -29,6 +29,29 @@ int lastport=0;
 
 int smb_read_error = 0;
 
+static char *get_socket_addr(int fd)
+{
+	struct sockaddr sa;
+	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+	int     length = sizeof(sa);
+	static fstring addr_buf;
+
+	fstrcpy(addr_buf,"0.0.0.0");
+
+	if (fd == -1) {
+		return addr_buf;
+	}
+	
+	if (getsockname(fd, &sa, &length) < 0) {
+		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
+		return addr_buf;
+	}
+	
+	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
+	
+	return addr_buf;
+}
+
 /****************************************************************************
  Determine if a file descriptor is in fact a socket.
 ****************************************************************************/
@@ -949,29 +972,6 @@ char *get_peer_addr(int fd)
 	}
 	
 	if (getpeername(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
-		return addr_buf;
-	}
-	
-	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
-	
-	return addr_buf;
-}
-
-static char *get_socket_addr(int fd)
-{
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	int     length = sizeof(sa);
-	static fstring addr_buf;
-
-	fstrcpy(addr_buf,"0.0.0.0");
-
-	if (fd == -1) {
-		return addr_buf;
-	}
-	
-	if (getsockname(fd, &sa, &length) < 0) {
 		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
 		return addr_buf;
 	}
