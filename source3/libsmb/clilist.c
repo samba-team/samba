@@ -178,7 +178,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,6,info_level); 
 			SIVAL(param,8,0);
 			p = param+12;
-			p += clistr_push(cli, param+12, mask, -1, 
+			p += clistr_push(cli, param+12, mask, sizeof(param)-12, 
 					 STR_TERMINATE);
 		} else {
 			setup = TRANSACT2_FINDNEXT;
@@ -188,7 +188,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SIVAL(param,6,0); /* ff_resume_key */
 			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
 			p = param+12;
-			p += clistr_push(cli, param+12, mask, -1, 
+			p += clistr_push(cli, param+12, mask, sizeof(param)-12, 
 					 STR_TERMINATE);
 		}
 
