@@ -209,6 +209,7 @@ crypt_md5(pw, salt)
 	/* Now make the output string */
 	strcpy(passwd, magic); /* sizeof(passwd) > sizeof(magic) */
 	strncat(passwd, sp, sl); /* ok, since sl <= 8 */
+	strcat(passwd, "$");
 
 	MD5Final(final,&ctx);
 
