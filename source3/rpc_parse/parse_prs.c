@@ -116,10 +116,9 @@ BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout)
 
 void prs_mem_free(prs_struct *ps)
 {
-	if(ps->is_dynamic && (ps->data_p != NULL))
-		free(ps->data_p);
+	if(ps->is_dynamic)
+		SAFE_FREE(ps->data_p);
 	ps->is_dynamic = False;
-	ps->data_p = NULL;
 	ps->buffer_size = 0;
 	ps->data_offset = 0;
 }
