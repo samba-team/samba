@@ -174,6 +174,18 @@ struct addrinfo {
 
 #endif
 
+/*
+ * constants for inet_ntop
+ */
+
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN    16
+#endif
+
+#ifndef INET6_ADDRSTRLEN
+#define INET6_ADDRSTRLEN   46
+#endif
+
 #ifndef HAVE___ATTRIBUTE__
 #define __attribute__(x)
 #endif
