@@ -43,7 +43,7 @@ extern BOOL global_encrypted_passwords_negotiated;
  set.
 ****************************************************************************/
 
-NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
+NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_wcard_names)
 {
 	char *d = destname;
 	const char *s = srcname;
@@ -119,7 +119,21 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 			s++;
 		} else {
 			if (!(*s & 0x80)) {
-				*d++ = *s++;
+				if (allow_wcard_names) {
+					*d++ = *s++;
+				} else {
+					switch (*s) {
+						case '*':
+						case '?':
+						case '<':
+						case '>':
+						case '"':
+							return NT_STATUS_OBJECT_NAME_INVALID;
+						default:
+							*d++ = *s++;
+							break;
+					}
+				}
 			} else {
 				switch(next_mb_char_size(s)) {
 					case 4:
@@ -147,7 +161,7 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
  Pull a string and check the path - provide for error return.
 ****************************************************************************/
 
-size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len, size_t src_len, int flags, NTSTATUS *err)
+size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len, size_t src_len, int flags, NTSTATUS *err, BOOL allow_wcard_names)
 {
 	pstring tmppath;
 	char *tmppath_ptr = tmppath;
@@ -161,7 +175,7 @@ size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len
 	} else {
 		ret = srvstr_pull( inbuf, tmppath_ptr, src, dest_len, src_len, flags);
 	}
-	*err = check_path_syntax(dest, tmppath);
+	*err = check_path_syntax(dest, tmppath, allow_wcard_names);
 	return ret;
 }
 
@@ -516,7 +530,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	START_PROFILE(SMBchkpth);
 
-	srvstr_get_path(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), 0, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBchkpth);
 		return ERROR_NT(status);
@@ -525,6 +539,10 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 
 	unix_convert(name,conn,0,&bad_path,&sbuf);
+	if (bad_path) {
+		END_PROFILE(SMBchkpth);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
 
 	mode = SVAL(inbuf,smb_vwv0);
 
@@ -548,18 +566,11 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			 * the parent directory is valid but not the
 			 * last component - it returns NT_STATUS_OBJECT_NAME_NOT_FOUND
 			 * for that case and NT_STATUS_OBJECT_PATH_NOT_FOUND
-			 * if the path is invalid.
+			 * if the path is invalid. This is different from set_bad_path_error()
+			 * in the non-NT error case.
 			 */
-			if (bad_path) {
-				END_PROFILE(SMBchkpth);
-				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
-			} else {
-				END_PROFILE(SMBchkpth);
-				return ERROR_NT(NT_STATUS_OBJECT_NAME_NOT_FOUND);
-			}
-		} else if (errno == ENOTDIR) {
 			END_PROFILE(SMBchkpth);
-			return ERROR_NT(NT_STATUS_NOT_A_DIRECTORY);
+			return ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpath);
 		}
 
 		END_PROFILE(SMBchkpth);
@@ -594,7 +605,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	START_PROFILE(SMBgetatr);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, fname, p, sizeof(fname), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path(inbuf, fname, p, sizeof(fname), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBgetatr);
 		return ERROR_NT(status);
@@ -613,6 +624,10 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		ok = True;
 	} else {
 		unix_convert(fname,conn,0,&bad_path,&sbuf);
+		if (bad_path) {
+			END_PROFILE(SMBgetatr);
+			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		}
 		if (check_name(fname,conn)) {
 			if (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,fname,&sbuf) == 0) {
 				mode = dos_mode(conn,fname,&sbuf);
@@ -669,13 +684,17 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	START_PROFILE(SMBsetatr);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, fname, p, sizeof(fname), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path(inbuf, fname, p, sizeof(fname), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBsetatr);
 		return ERROR_NT(status);
 	}
 
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
+	if (bad_path) {
+		END_PROFILE(SMBsetatr);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
 
 	mode = SVAL(inbuf,smb_vwv0);
 	mtime = make_unix_date3(inbuf+smb_vwv1);
@@ -798,7 +817,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	maxentries = SVAL(inbuf,smb_vwv0); 
 	dirtype = SVAL(inbuf,smb_vwv1);
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, path, p, sizeof(path), 0, STR_TERMINATE, &nt_status);
+	p += srvstr_get_path(inbuf, path, p, sizeof(path), 0, STR_TERMINATE, &nt_status, True);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		END_PROFILE(SMBsearch);
 		return ERROR_NT(nt_status);
@@ -976,7 +995,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	outsize = set_message(outbuf,1,0,True);
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, path, p, sizeof(path), 0, STR_TERMINATE, &err);
+	p += srvstr_get_path(inbuf, path, p, sizeof(path), 0, STR_TERMINATE, &err, True);
 	if (!NT_STATUS_IS_OK(err)) {
 		END_PROFILE(SMBfclose);
 		return ERROR_NT(err);
@@ -1028,7 +1047,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
  
 	share_mode = SVAL(inbuf,smb_vwv0);
 
-	srvstr_get_path(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), 0, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopen);
 		return ERROR_NT(status);
@@ -1037,12 +1056,21 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
+	if (bad_path) {
+		END_PROFILE(SMBopen);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
     
 	fsp = open_file_shared(conn,fname,&sbuf,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 			(uint32)dos_attr, oplock_request,&rmode,NULL);
 
 	if (!fsp) {
 		END_PROFILE(SMBopen);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			clear_cached_errors();
+			return -1;
+		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
 	}
 
@@ -1117,7 +1145,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopenX);
 		return ERROR_NT(status);
@@ -1126,12 +1154,21 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
+	if (bad_path) {
+		END_PROFILE(SMBopenX);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
     
 	fsp = open_file_shared(conn,fname,&sbuf,smb_mode,smb_ofun,(uint32)smb_attr,
 			oplock_request, &rmode,&smb_action);
       
 	if (!fsp) {
 		END_PROFILE(SMBopenX);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			clear_cached_errors();
+			return -1;
+		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
 	}
 
@@ -1230,7 +1267,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	com = SVAL(inbuf,smb_com);
 
 	createmode = SVAL(inbuf,smb_vwv0);
-	srvstr_get_path(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), 0, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
 		return ERROR_NT(status);
@@ -1239,6 +1276,10 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
+	if (bad_path) {
+		END_PROFILE(SMBcreate);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
 
 	if (createmode & aVOLID)
 		DEBUG(0,("Attempt to create file (%s) with volid set - please report this\n",fname));
@@ -1257,6 +1298,11 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
 	if (!fsp) {
 		END_PROFILE(SMBcreate);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			clear_cached_errors();
+			return -1;
+		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
 	}
  
@@ -1297,7 +1343,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	START_PROFILE(SMBctemp);
 
 	createattr = SVAL(inbuf,smb_vwv0);
-	srvstr_get_path(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), 0, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBctemp);
 		return ERROR_NT(status);
@@ -1311,6 +1357,10 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
+	if (bad_path) {
+		END_PROFILE(SMBctemp);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
   
 	tmpfd = smb_mkstemp(fname);
 	if (tmpfd == -1) {
@@ -1332,6 +1382,11 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	if (!fsp) {
 		END_PROFILE(SMBctemp);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			clear_cached_errors();
+			return -1;
+		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
 	}
 
@@ -1373,15 +1428,20 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  Check if a user is allowed to rename a file.
 ********************************************************************/
 
-static NTSTATUS can_rename(char *fname,connection_struct *conn, SMB_STRUCT_STAT *pst)
+static NTSTATUS can_rename(char *fname,connection_struct *conn, uint16 dirtype, SMB_STRUCT_STAT *pst)
 {
 	int smb_action;
 	int access_mode;
 	files_struct *fsp;
+	uint16 fmode;
 
 	if (!CAN_WRITE(conn))
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
-	
+
+	fmode = dos_mode(conn,fname,pst);
+	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
+		return NT_STATUS_NO_SUCH_FILE;
+
 	if (S_ISDIR(pst->st_mode))
 		return NT_STATUS_OK;
 
@@ -1561,7 +1621,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				/* Quick check for "." and ".." */
 				if (fname[0] == '.') {
 					if (!fname[1] || (fname[1] == '.' && !fname[2])) {
-						if ((dirtype & aDIR)) {
+						if ((dirtype & FILE_ATTRIBUTE_DIRECTORY) && (dirtype & FILE_ATTRIBUTE_SYSTEM)) {
 							sys_direntry = True;
 						} else {
 							continue;
@@ -1574,6 +1634,8 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				
 				if (sys_direntry) {
 					error = NT_STATUS_OBJECT_NAME_INVALID;
+					DEBUG(3,("unlink_internals: system directory delete denied [%s] mask [%s]\n",
+						fname, mask));
 					break;
 				}
 
@@ -1612,7 +1674,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	
 	dirtype = SVAL(inbuf,smb_vwv0);
 	
-	srvstr_get_path(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), 0, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), 0, STR_TERMINATE, &status, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBunlink);
 		return ERROR_NT(status);
@@ -1623,8 +1685,14 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
 	status = unlink_internals(conn, dirtype, name);
-	if (!NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			clear_cached_errors();
+			return -1;
+		}
 		return ERROR_NT(status);
+	}
 
 	/*
 	 * Win2k needs a changenotify request response before it will
@@ -1661,12 +1729,13 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 #if defined(WITH_SENDFILE)
 	/*
-	 * We can only use sendfile on a non-chained packet and on a file
-	 * that is exclusively oplocked. reply_readbraw has already checked the length.
+	 * We can only use sendfile on a non-chained packet 
+	 * but we can use on a non-oplocked file. tridge proved this
+	 * on a train in Germany :-). JRA.
+	 * reply_readbraw has already checked the length.
 	 */
 
-	if ((nread > 0) && (lp_write_cache_size(SNUM(conn)) == 0) &&
-			EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && lp_use_sendfile(SNUM(conn)) ) {
+	if ((nread > 0) && (lp_write_cache_size(SNUM(conn)) == 0) && lp_use_sendfile(SNUM(conn)) ) {
 		DATA_BLOB header;
 
 		_smb_setlen(outbuf,nread);
@@ -1999,12 +2068,13 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 #if defined(WITH_SENDFILE)
 	/*
-	 * We can only use sendfile on a non-chained packet and on a file
-	 * that is exclusively oplocked.
+	 * We can only use sendfile on a non-chained packet 
+	 * but we can use on a non-oplocked file. tridge proved this
+	 * on a train in Germany :-). JRA.
 	 */
 
-	if ((CVAL(inbuf,smb_vwv0) == 0xFF) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) &&
-			lp_use_sendfile(SNUM(conn)) && (lp_write_cache_size(SNUM(conn)) == 0) ) {
+	if ((CVAL(inbuf,smb_vwv0) == 0xFF) && lp_use_sendfile(SNUM(conn)) &&
+			(lp_write_cache_size(SNUM(conn)) == 0) ) {
 		SMB_STRUCT_STAT sbuf;
 		DATA_BLOB header;
 
@@ -3138,15 +3208,16 @@ NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
+	if (bad_path) {
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+
 	if (check_name(directory, conn))
 		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory));
 	
 	if (ret == -1) {
 	        if(errno == ENOENT) {
-			if (bad_path)
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			else
-				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 		return map_nt_error_from_unix(errno);
 	}
@@ -3165,7 +3236,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	NTSTATUS status;
 	START_PROFILE(SMBmkdir);
  
-	srvstr_get_path(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), 0, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmkdir);
 		return ERROR_NT(status);
@@ -3335,7 +3406,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	NTSTATUS status;
 	START_PROFILE(SMBrmdir);
 
-	srvstr_get_path(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), 0, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBrmdir);
 		return ERROR_NT(status);
@@ -3344,6 +3415,10 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf)
 
 	unix_convert(directory,conn, NULL,&bad_path,&sbuf);
+	if (bad_path) {
+		END_PROFILE(SMBrmdir);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
   
 	if (check_name(directory,conn)) {
 		dptr_closepath(directory,SVAL(inbuf,smb_pid));
@@ -3475,7 +3550,7 @@ static void rename_open_files(connection_struct *conn, SMB_DEV_T dev, SMB_INO_T 
  Rename an open file - given an fsp.
 ****************************************************************************/
 
-NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *newname, BOOL replace_if_exists)
+NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *newname, uint16 attrs, BOOL replace_if_exists)
 {
 	SMB_STRUCT_STAT sbuf;
 	BOOL bad_path = False;
@@ -3556,7 +3631,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	error = can_rename(newname,conn,&sbuf);
+	error = can_rename(newname,conn,attrs,&sbuf);
 
 	if (dest_exists && !NT_STATUS_IS_OK(error)) {
 		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
@@ -3762,7 +3837,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		}
 
-		error = can_rename(directory,conn,&sbuf1);
+		error = can_rename(directory,conn,attrs,&sbuf1);
 
 		if (!NT_STATUS_IS_OK(error)) {
 			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
@@ -3853,7 +3928,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					DEBUG(6,("rename %s failed. Error %s\n", fname, nt_errstr(error)));
 					continue;
 				}
-				error = can_rename(fname,conn,&sbuf1);
+				error = can_rename(fname,conn,attrs,&sbuf1);
 				if (!NT_STATUS_IS_OK(error)) {
 					DEBUG(6,("rename %s refused\n", fname));
 					continue;
@@ -3924,13 +3999,13 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	START_PROFILE(SMBmv);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
 		return ERROR_NT(status);
 	}
 	p++;
-	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
 		return ERROR_NT(status);
@@ -3944,6 +4019,11 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	status = rename_internals(conn, name, newname, attrs, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			clear_cached_errors();
+			return -1;
+		}
 		return ERROR_NT(status);
 	}
 
@@ -3989,7 +4069,8 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		return(False);
 
 	fsp1 = open_file_shared(conn,src,&src_sbuf,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),FILE_ATTRIBUTE_NORMAL,0,&Access,&action);
+					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),FILE_ATTRIBUTE_NORMAL,INTERNAL_OPEN_ONLY,
+					&Access,&action);
 
 	if (!fsp1)
 		return(False);
@@ -4002,7 +4083,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		ZERO_STRUCTP(&sbuf2);
 
 	fsp2 = open_file_shared(conn,dest,&sbuf2,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-			ofun,dosattrs,0,&Access,&action);
+			ofun,dosattrs,INTERNAL_OPEN_ONLY,&Access,&action);
 
 	if (!fsp2) {
 		close_file(fsp1,False);
@@ -4070,12 +4151,12 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	*directory = *mask = 0;
 
 	p = smb_buf(inbuf);
-	p += srvstr_get_path(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcopy);
 		return ERROR_NT(status);
 	}
-	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcopy);
 		return ERROR_NT(status);
@@ -4235,7 +4316,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
-	srvstr_get_path(inbuf, newdir, smb_buf(inbuf) + 1, sizeof(newdir), 0, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, newdir, smb_buf(inbuf) + 1, sizeof(newdir), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(pathworks_setdir);
 		return ERROR_NT(status);

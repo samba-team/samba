@@ -47,6 +47,7 @@ static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
 
 #define ERROR_NO_SUCH_DOMAIN   0x54b
 #define ERROR_NO_LOGON_SERVERS 0x51f
+#define NO_ERROR               0x0
 
 /*************************************************************************
  net_reply_logon_ctrl:
@@ -104,24 +105,66 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
         uint32 flags = 0x0;
         uint32 pdc_connection_status = 0x0;
         uint32 logon_attempts = 0x0;
-        uint32 tc_status = ERROR_NO_LOGON_SERVERS;
-        const char *trusted_domain = "test_domain";
+        uint32 tc_status;
+	fstring servername, domain, dc_name, dc_name2;
+	struct in_addr dc_ip;
 
-        DEBUG(0, ("*** net long ctrl2 %d, %d, %d\n",
-                  q_u->function_code, q_u->query_level, q_u->switch_value));
+	/* this should be \\global_myname() */
+	unistr2_to_ascii(servername, &q_u->uni_server_name, sizeof(servername));
 
-	DEBUG(6,("_net_logon_ctrl2: %d\n", __LINE__));
+	r_u->status = NT_STATUS_OK;
+	
+	tc_status = ERROR_NO_SUCH_DOMAIN;
+	fstrcpy( dc_name, "" );
+	
+	switch ( q_u->function_code ) {
+		case NETLOGON_CONTROL_TC_QUERY:
+			unistr2_to_ascii(domain, &q_u->info.info6.domain, sizeof(domain));
+				
+			if ( !is_trusted_domain( domain ) )
+				break;
+				
+			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ip ) ) {
+				tc_status = ERROR_NO_LOGON_SERVERS;
+				break;
+			}
 
+			fstr_sprintf( dc_name, "\\\\%s", dc_name2 );
+				
+			tc_status = NO_ERROR;
+			
+			break;
+			
+		case NETLOGON_CONTROL_REDISCOVER:
+			unistr2_to_ascii(domain, &q_u->info.info6.domain, sizeof(domain));
+				
+			if ( !is_trusted_domain( domain ) )
+				break;
+				
+			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ip ) ) {
+				tc_status = ERROR_NO_LOGON_SERVERS;
+				break;
+			}
 
-	/* set up the Logon Control2 response */
-	init_net_r_logon_ctrl2(r_u, q_u->query_level,
-			       flags, pdc_connection_status, logon_attempts,
-			       tc_status, trusted_domain);
+			fstr_sprintf( dc_name, "\\\\%s", dc_name2 );
+				
+			tc_status = NO_ERROR;
+			
+			break;
+			
+		default:
+			/* no idea what this should be */
+			DEBUG(0,("_net_logon_ctrl2: unimplemented function level [%d]\n",
+				q_u->function_code));
+	}
+	
+	/* prepare the response */
+	
+	init_net_r_logon_ctrl2( r_u, q_u->query_level, flags, 
+		pdc_connection_status, logon_attempts, tc_status, dc_name );
 
         if (lp_server_role() == ROLE_DOMAIN_BDC)
                 send_sync_message();
-
-	DEBUG(6,("_net_logon_ctrl2: %d\n", __LINE__));
 
 	return r_u->status;
 }

@@ -1003,9 +1003,9 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	driver_unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
 	fsp = open_file_shared(conn, filepath, &stat_buf,
-						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
+						   SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
+						   FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
 	if (!fsp) {
 		/* Old file not found, so by definition new file is in fact newer */
 		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
@@ -1032,9 +1032,9 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	driver_unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
 	fsp = open_file_shared(conn, filepath, &stat_buf,
-						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
+						   SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
+						   FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
 	if (!fsp) {
 		/* New file not found, this shouldn't occur if the caller did its job */
 		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
@@ -1148,9 +1148,9 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	driver_unix_convert(driverpath,conn,NULL,&bad_path,&st);
 
 	fsp = open_file_shared(conn, driverpath, &st,
-						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
+						   SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
+						   FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
 	if (!fsp) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));

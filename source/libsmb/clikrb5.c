@@ -124,13 +124,13 @@
 #endif
 
 #if defined(HAVE_KRB5_GET_PERMITTED_ENCTYPES)
-krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
+ krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
 					    krb5_enctype **enctypes)
 {
 	return krb5_get_permitted_enctypes(context, enctypes);
 }
 #elif defined(HAVE_KRB5_GET_DEFAULT_IN_TKT_ETYPES)
-krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
+ krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
 					    krb5_enctype **enctypes)
 {
 	return krb5_get_default_in_tkt_etypes(context, enctypes);
@@ -231,6 +231,13 @@ krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
 	*naddrs = num_kdcs;
 	*addr_pp = sa;
 	return 0;
+}
+#endif
+
+#if !defined(HAVE_KRB5_FREE_UNPARSED_NAME)
+ void krb5_free_unparsed_name(krb5_context context, char *val)
+{
+	SAFE_FREE(val);
 }
 #endif
 
@@ -413,11 +420,12 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 failed:
 
 	if ( context ) {
-#if 0 	/* JERRY -- disabled since it causes heimdal 0.6.1rc3 to die 
-	   SuSE 9.1 Pro */
+/* Removed by jra. They really need to fix their kerberos so we don't leak memory. 
+ JERRY -- disabled since it causes heimdal 0.6.1rc3 to die
+          SuSE 9.1 Pro 
+*/
 		if (ccdef)
 			krb5_cc_close(context, ccdef);
-#endif
 		if (auth_context)
 			krb5_auth_con_free(context, auth_context);
 		krb5_free_context(context);
@@ -464,6 +472,17 @@ failed:
 	return &kdata;
 }
 #endif
+
+ krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry)
+{
+#if defined(HAVE_KRB5_KT_FREE_ENTRY)
+	return krb5_kt_free_entry(context, kt_entry);
+#elif defined(HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS)
+	return krb5_free_keytab_entry_contents(context, kt_entry);
+#else
+#error UNKNOWN_KT_FREE_FUNCTION
+#endif
+}
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */

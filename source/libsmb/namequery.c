@@ -56,7 +56,8 @@ static struct node_status *parse_node_status(char *p, int *num_names, struct nod
 		return NULL;
 
 	ret = (struct node_status *)malloc(sizeof(struct node_status)* (*num_names));
-	if (!ret) return NULL;
+	if (!ret)
+		return NULL;
 
 	p++;
 	for (i=0;i< *num_names;i++) {
@@ -556,84 +557,80 @@ XFILE *startlmhosts(char *fname)
 
 BOOL getlmhostsent( XFILE *fp, pstring name, int *name_type, struct in_addr *ipaddr)
 {
-  pstring line;
+	pstring line;
 
-  while(!x_feof(fp) && !x_ferror(fp)) {
-    pstring ip,flags,extra;
-    const char *ptr;
-    char *ptr1;
-    int count = 0;
+	while(!x_feof(fp) && !x_ferror(fp)) {
+		pstring ip,flags,extra;
+		const char *ptr;
+		char *ptr1;
+		int count = 0;
 
-    *name_type = -1;
+		*name_type = -1;
 
-    if (!fgets_slash(line,sizeof(pstring),fp))
-      continue;
+		if (!fgets_slash(line,sizeof(pstring),fp)) {
+			continue;
+		}
 
-    if (*line == '#')
-      continue;
+		if (*line == '#') {
+			continue;
+		}
 
-    pstrcpy(ip,"");
-    pstrcpy(name,"");
-    pstrcpy(flags,"");
+		pstrcpy(ip,"");
+		pstrcpy(name,"");
+		pstrcpy(flags,"");
 
-    ptr = line;
+		ptr = line;
 
-    if (next_token(&ptr,ip   ,NULL,sizeof(ip)))
-      ++count;
-    if (next_token(&ptr,name ,NULL, sizeof(pstring)))
-      ++count;
-    if (next_token(&ptr,flags,NULL, sizeof(flags)))
-      ++count;
-    if (next_token(&ptr,extra,NULL, sizeof(extra)))
-      ++count;
+		if (next_token(&ptr,ip   ,NULL,sizeof(ip)))
+			++count;
+		if (next_token(&ptr,name ,NULL, sizeof(pstring)))
+			++count;
+		if (next_token(&ptr,flags,NULL, sizeof(flags)))
+			++count;
+		if (next_token(&ptr,extra,NULL, sizeof(extra)))
+			++count;
 
-    if (count <= 0)
-      continue;
+		if (count <= 0)
+			continue;
 
-    if (count > 0 && count < 2)
-    {
-      DEBUG(0,("getlmhostsent: Ill formed hosts line [%s]\n",line));
-      continue;
-    }
+		if (count > 0 && count < 2) {
+			DEBUG(0,("getlmhostsent: Ill formed hosts line [%s]\n",line));
+			continue;
+		}
 
-    if (count >= 4)
-    {
-      DEBUG(0,("getlmhostsent: too many columns in lmhosts file (obsolete syntax)\n"));
-      continue;
-    }
+		if (count >= 4) {
+			DEBUG(0,("getlmhostsent: too many columns in lmhosts file (obsolete syntax)\n"));
+			continue;
+		}
 
-    DEBUG(4, ("getlmhostsent: lmhost entry: %s %s %s\n", ip, name, flags));
+		DEBUG(4, ("getlmhostsent: lmhost entry: %s %s %s\n", ip, name, flags));
 
-    if (strchr_m(flags,'G') || strchr_m(flags,'S'))
-    {
-      DEBUG(0,("getlmhostsent: group flag in lmhosts ignored (obsolete)\n"));
-      continue;
-    }
+		if (strchr_m(flags,'G') || strchr_m(flags,'S')) {
+			DEBUG(0,("getlmhostsent: group flag in lmhosts ignored (obsolete)\n"));
+			continue;
+		}
 
-    *ipaddr = *interpret_addr2(ip);
+		*ipaddr = *interpret_addr2(ip);
 
-    /* Extra feature. If the name ends in '#XX', where XX is a hex number,
-       then only add that name type. */
-    if((ptr1 = strchr_m(name, '#')) != NULL)
-    {
-      char *endptr;
+		/* Extra feature. If the name ends in '#XX', where XX is a hex number,
+			then only add that name type. */
+		if((ptr1 = strchr_m(name, '#')) != NULL) {
+			char *endptr;
+      			ptr1++;
 
-      ptr1++;
-      *name_type = (int)strtol(ptr1, &endptr, 16);
+			*name_type = (int)strtol(ptr1, &endptr, 16);
+			if(!*ptr1 || (endptr == ptr1)) {
+				DEBUG(0,("getlmhostsent: invalid name %s containing '#'.\n", name));
+				continue;
+			}
 
-      if(!*ptr1 || (endptr == ptr1))
-      {
-        DEBUG(0,("getlmhostsent: invalid name %s containing '#'.\n", name));
-        continue;
-      }
+			*(--ptr1) = '\0'; /* Truncate at the '#' */
+		}
 
-      *(--ptr1) = '\0'; /* Truncate at the '#' */
-    }
+		return True;
+	}
 
-    return True;
-  }
-
-  return False;
+	return False;
 }
 
 /********************************************************
@@ -998,145 +995,145 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 				  struct ip_service **return_iplist, 
 				  int *return_count, const char *resolve_order)
 {
-  pstring name_resolve_list;
-  fstring tok;
-  const char *ptr;
-  BOOL allones = (strcmp(name,"255.255.255.255") == 0);
-  BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
-  BOOL is_address = is_ipaddress(name);
-  BOOL result = False;
-  int i;
+	pstring name_resolve_list;
+	fstring tok;
+	const char *ptr;
+	BOOL allones = (strcmp(name,"255.255.255.255") == 0);
+	BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
+	BOOL is_address = is_ipaddress(name);
+	BOOL result = False;
+	int i;
 
-  *return_iplist = NULL;
-  *return_count = 0;
+	*return_iplist = NULL;
+	*return_count = 0;
 
-  DEBUG(10, ("internal_resolve_name: looking up %s#%x\n", name, name_type));
+	DEBUG(10, ("internal_resolve_name: looking up %s#%x\n", name, name_type));
 
-  if (allzeros || allones || is_address) {
+	if (allzeros || allones || is_address) {
   
-	if ( (*return_iplist = (struct ip_service *)malloc(sizeof(struct ip_service))) == NULL ) {
-		DEBUG(0,("internal_resolve_name: malloc fail !\n"));
-		return False;
-	}
-	
-	if(is_address) { 
-		/* ignore the port here */
-		(*return_iplist)->port = PORT_NONE;
-		
-		/* if it's in the form of an IP address then get the lib to interpret it */
-		if (((*return_iplist)->ip.s_addr = inet_addr(name)) == 0xFFFFFFFF ){
-			DEBUG(1,("internal_resolve_name: inet_addr failed on %s\n", name));
+		if ( (*return_iplist = (struct ip_service *)malloc(sizeof(struct ip_service))) == NULL ) {
+			DEBUG(0,("internal_resolve_name: malloc fail !\n"));
 			return False;
 		}
-	} else {
-		(*return_iplist)->ip.s_addr = allones ? 0xFFFFFFFF : 0;
+	
+		if(is_address) { 
+			/* ignore the port here */
+			(*return_iplist)->port = PORT_NONE;
+		
+			/* if it's in the form of an IP address then get the lib to interpret it */
+			if (((*return_iplist)->ip.s_addr = inet_addr(name)) == 0xFFFFFFFF ){
+				DEBUG(1,("internal_resolve_name: inet_addr failed on %s\n", name));
+				return False;
+			}
+		} else {
+			(*return_iplist)->ip.s_addr = allones ? 0xFFFFFFFF : 0;
+		}
+		*return_count = 1;
+		return True;
 	}
-	*return_count = 1;
-	return True;
-  }
   
-  /* Check name cache */
+	/* Check name cache */
 
-  if (namecache_fetch(name, name_type, return_iplist, return_count)) {
- 	/* This could be a negative response */
-	return (*return_count > 0);
-  }
+	if (namecache_fetch(name, name_type, return_iplist, return_count)) {
+		/* This could be a negative response */
+		return (*return_count > 0);
+	}
 
-  /* set the name resolution order */
+	/* set the name resolution order */
 
-  if ( strcmp( resolve_order, "NULL") == 0 ) {
-    DEBUG(8,("internal_resolve_name: all lookups disabled\n"));
-    return False;
-  }
+	if ( strcmp( resolve_order, "NULL") == 0 ) {
+		DEBUG(8,("internal_resolve_name: all lookups disabled\n"));
+		return False;
+	}
   
-  if ( !resolve_order )
-    pstrcpy(name_resolve_list, lp_name_resolve_order());
-  else
-    pstrcpy(name_resolve_list, resolve_order);
+	if ( !resolve_order ) {
+		pstrcpy(name_resolve_list, lp_name_resolve_order());
+	} else {
+		pstrcpy(name_resolve_list, resolve_order);
+
+		if ( !name_resolve_list[0] ) {
+			ptr = "host";
+		} else {
+			ptr = name_resolve_list;
+		}
+
+		/* iterate through the name resolution backends */
   
-  if ( !name_resolve_list[0] )
-    ptr = "host";
-  else
-    ptr = name_resolve_list;
+		while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
+			if((strequal(tok, "host") || strequal(tok, "hosts"))) {
+				if (resolve_hosts(name, name_type, return_iplist, return_count)) {
+					result = True;
+					goto done;
+				}
+			} else if(strequal( tok, "ads")) {
+				/* deal with 0x1c names here.  This will result in a
+					SRV record lookup for _ldap._tcp.<domain> if we
+					are using 'security = ads' */
+				if (resolve_ads(name, name_type, return_iplist, return_count)) {
+					result = True;
+					goto done;
+				}
+			} else if(strequal( tok, "lmhosts")) {
+				if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
+					result = True;
+					goto done;
+				}
+			} else if(strequal( tok, "wins")) {
+				/* don't resolve 1D via WINS */
+				if (name_type != 0x1D && resolve_wins(name, name_type, return_iplist, return_count)) {
+					result = True;
+					goto done;
+				}
+			} else if(strequal( tok, "bcast")) {
+				if (name_resolve_bcast(name, name_type, return_iplist, return_count)) {
+					result = True;
+					goto done;
+				}
+			} else {
+				DEBUG(0,("resolve_name: unknown name switch type %s\n", tok));
+			}
+		}
 
-  /* iterate through the name resolution backends */
-  
-  while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
-	  if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-		  if (resolve_hosts(name, name_type, return_iplist, return_count)) {
-			  result = True;
-			  goto done;
-		  }
-	  } else if(strequal( tok, "ads")) {
-                  /* deal with 0x1c names here.  This will result in a
-		     SRV record lookup for _ldap._tcp.<domain> if we
-		     are using 'security = ads' */
-		  if (resolve_ads(name, name_type, return_iplist, return_count)) {
-		    result = True;
-		    goto done;
-		  }
-	  } else if(strequal( tok, "lmhosts")) {
-		  if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
-		    result = True;
-		    goto done;
-		  }
-	  } else if(strequal( tok, "wins")) {
-		  /* don't resolve 1D via WINS */
-		  if (name_type != 0x1D &&
-		      resolve_wins(name, name_type, return_iplist, return_count)) {
-		    result = True;
-		    goto done;
-		  }
-	  } else if(strequal( tok, "bcast")) {
-		  if (name_resolve_bcast(name, name_type, return_iplist, return_count)) {
-		    result = True;
-		    goto done;
-		  }
-	  } else {
-		  DEBUG(0,("resolve_name: unknown name switch type %s\n", tok));
-	  }
-  }
+		/* All of the resolve_* functions above have returned false. */
 
-  /* All of the resolve_* functions above have returned false. */
+		SAFE_FREE(*return_iplist);
+		*return_count = 0;
 
-  SAFE_FREE(*return_iplist);
-  *return_count = 0;
+		return False;
 
-  return False;
+  done:
 
- done:
+		/* Remove duplicate entries.  Some queries, notably #1c (domain
+			controllers) return the PDC in iplist[0] and then all domain
+			controllers including the PDC in iplist[1..n].  Iterating over
+			the iplist when the PDC is down will cause two sets of timeouts. */
 
-  /* Remove duplicate entries.  Some queries, notably #1c (domain
-     controllers) return the PDC in iplist[0] and then all domain
-     controllers including the PDC in iplist[1..n].  Iterating over
-     the iplist when the PDC is down will cause two sets of timeouts. */
-
-  if ( *return_count ) {
-    *return_count = remove_duplicate_addrs2( *return_iplist, *return_count );
-  }
+		if ( *return_count ) {
+			*return_count = remove_duplicate_addrs2( *return_iplist, *return_count );
+		}
  
-  /* Save in name cache */
-  if ( DEBUGLEVEL >= 100 ) {
-    for (i = 0; i < *return_count && DEBUGLEVEL == 100; i++)
-      DEBUG(100, ("Storing name %s of type %d (%s:%d)\n", name,
-                name_type, inet_ntoa((*return_iplist)[i].ip), (*return_iplist)[i].port));
-  }
+		/* Save in name cache */
+		if ( DEBUGLEVEL >= 100 ) {
+			for (i = 0; i < *return_count && DEBUGLEVEL == 100; i++)
+				DEBUG(100, ("Storing name %s of type %d (%s:%d)\n", name,
+					name_type, inet_ntoa((*return_iplist)[i].ip), (*return_iplist)[i].port));
+		}
    
-  namecache_store(name, name_type, *return_count, *return_iplist);
+		namecache_store(name, name_type, *return_count, *return_iplist);
 
-  /* Display some debugging info */
+		/* Display some debugging info */
 
-  if ( DEBUGLEVEL >= 10 ) {
-    DEBUG(10, ("internal_resolve_name: returning %d addresses: ", 
-   	       *return_count));
+		if ( DEBUGLEVEL >= 10 ) {
+			DEBUG(10, ("internal_resolve_name: returning %d addresses: ", *return_count));
 
-    for (i = 0; i < *return_count; i++)
-	  DEBUGADD(10, ("%s:%d ", inet_ntoa((*return_iplist)[i].ip), (*return_iplist)[i].port));
-
-    DEBUG(10, ("\n"));
-  }
+			for (i = 0; i < *return_count; i++) {
+				DEBUGADD(10, ("%s:%d ", inet_ntoa((*return_iplist)[i].ip), (*return_iplist)[i].port));
+			}
+			DEBUG(10, ("\n"));
+		}
+	}
   
-  return result;
+	return result;
 }
 
 /********************************************************
@@ -1218,8 +1215,9 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 
 	/* Look up #1B name */
 
-	if (!internal_resolve_name(domain, 0x1b, &ip_list, &count, lp_name_resolve_order()))
+	if (!internal_resolve_name(domain, 0x1b, &ip_list, &count, lp_name_resolve_order())) {
 		return False;
+	}
 
 	/* if we get more than 1 IP back we have to assume it is a
 	   multi-homed PDC and not a mess up */
@@ -1298,16 +1296,17 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 					num_addresses += auto_count;
 				done_auto_lookup = True;
 				DEBUG(8,("Adding %d DC's from auto lookup\n", auto_count));
-			}
-			else 
+			} else  {
 				num_addresses++;
+			}
 		}
 
 		/* if we have no addresses and haven't done the auto lookup, then
 		   just return the list of DC's */
 		   
-		if ( (num_addresses == 0) && !done_auto_lookup )
+		if ( (num_addresses == 0) && !done_auto_lookup ) {
 			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
+		}
 
 		/* maybe we just failed? */
 		
@@ -1317,8 +1316,7 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 		}
 		
 		if ( (return_iplist = (struct ip_service *)
-			malloc(num_addresses * sizeof(struct ip_service))) == NULL ) 
-		{
+				malloc(num_addresses * sizeof(struct ip_service))) == NULL ) {
 			DEBUG(3,("get_dc_list: malloc fail !\n"));
 			return False;
 		}
@@ -1335,6 +1333,13 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 			
 			if ( strequal(name, "*") ) {
 				for ( j=0; j<auto_count; j++ ) {
+					/* Check for and don't copy any known bad DC IP's. */
+					if(!NT_STATUS_IS_OK(check_negative_conn_cache(domain, 
+							inet_ntoa(auto_ip_list[j].ip)))) {
+						DEBUG(5,("get_dc_list: negative entry %s removed from DC list\n",
+							inet_ntoa(auto_ip_list[j].ip) ));
+						continue;
+					}
 					return_iplist[local_count].ip   = auto_ip_list[j].ip;
 					return_iplist[local_count].port = auto_ip_list[j].port;
 					local_count++;
@@ -1356,6 +1361,13 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 
 			/* explicit lookup; resolve_name() will handle names & IP addresses */
 			if ( resolve_name( name, &name_ip, 0x20 ) ) {
+
+				/* Check for and don't copy any known bad DC IP's. */
+				if( !NT_STATUS_IS_OK(check_negative_conn_cache(domain, inet_ntoa(name_ip))) ) {
+					DEBUG(5,("get_dc_list: negative entry %s removed from DC list\n",name ));
+					continue;
+				}
+
 				return_iplist[local_count].ip 	= name_ip;
 				return_iplist[local_count].port = port;
 				local_count++;
@@ -1368,8 +1380,9 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 		/* need to remove duplicates in the list if we have any 
 		   explicit password servers */
 		   
-		if ( local_count )
+		if ( local_count ) {
 			local_count = remove_duplicate_addrs2( return_iplist, local_count );
+		}
 		
 		if ( DEBUGLEVEL >= 4 ) {
 			DEBUG(4,("get_dc_list: returning %d ip addresses in an %sordered list\n", local_count, 
@@ -1392,8 +1405,9 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 }
 
 /*********************************************************************
- small wrapper function to get the DC list and sort it if neccessary 
+ Small wrapper function to get the DC list and sort it if neccessary.
 *********************************************************************/
+
 BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL ads_only )
 {
 	BOOL ordered;
@@ -1401,13 +1415,14 @@ BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *c
 	DEBUG(8,("get_sorted_dc_list: attempting lookup using [%s]\n",
 		(ads_only ? "ads" : lp_name_resolve_order())));
 	
-	if ( !get_dc_list(domain, ip_list, count, ads_only, &ordered) )
-		return False;
+	if ( !get_dc_list(domain, ip_list, count, ads_only, &ordered) ) {
+		return False; 
+	}
 		
 	/* only sort if we don't already have an ordered list */
-	if ( !ordered )
+	if ( !ordered ) {
 		sort_ip_list2( *ip_list, *count );
+	}
 		
 	return True;
 }
-

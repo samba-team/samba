@@ -314,7 +314,7 @@ static WERROR cmd_spoolss_enum_printers(struct cli_state *cli,
 		return WERR_OK;
 	}
 
-	if (argc == 2)
+	if (argc >= 2)
 		info_level = atoi(argv[1]);
 
 	if (argc == 3)
@@ -538,6 +538,76 @@ static WERROR cmd_spoolss_setprinter(struct cli_state *cli,
 	result = cli_spoolss_setprinter(cli, mem_ctx, &pol, info_level, &ctr, 0);
 	if (W_ERROR_IS_OK(result))
 		printf("Success in setting comment.\n");
+
+ done:
+	if (opened_hnd)
+		cli_spoolss_close_printer(cli, mem_ctx, &pol);
+
+	return result;
+}
+
+/***********************************************************************
+ * Set printer name - use a level2 set.
+ */
+static WERROR cmd_spoolss_setprintername(struct cli_state *cli,
+                                       TALLOC_CTX *mem_ctx,
+                                       int argc, const char **argv)
+{
+	POLICY_HND 	pol;
+	WERROR		result;
+	uint32 		needed;
+	uint32 		info_level = 2;
+	BOOL 		opened_hnd = False;
+	PRINTER_INFO_CTR ctr;
+	fstring 	printername,
+			servername,
+			user,
+			new_printername;
+
+	if (argc == 1 || argc > 3) {
+		printf("Usage: %s printername new_printername\n", argv[0]);
+
+		return WERR_OK;
+	}
+
+	/* Open a printer handle */
+	if (argc == 3) {
+		fstrcpy(new_printername, argv[2]);
+	}
+
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
+	fstrcpy(printername, argv[1]);
+	fstrcpy(user, cli->user_name);
+
+	/* get a printer handle */
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
+				PRINTER_ALL_ACCESS, servername,
+				user, &pol);
+				
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	opened_hnd = True;
+
+	/* Get printer info */
+        result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed, &pol, info_level, &ctr);
+
+        if (W_ERROR_V(result) == ERRinsufficientbuffer)
+                result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, info_level, &ctr);
+
+        if (!W_ERROR_IS_OK(result))
+                goto done;
+
+
+	/* Modify the printername. */
+	init_unistr(&ctr.printers_2->printername, new_printername);
+	ctr.printers_2->devmode = NULL;
+	ctr.printers_2->secdesc = NULL;
+
+	result = cli_spoolss_setprinter(cli, mem_ctx, &pol, info_level, &ctr, 0);
+	if (W_ERROR_IS_OK(result))
+		printf("Success in setting printername.\n");
 
  done:
 	if (opened_hnd)
@@ -1844,6 +1914,7 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 	PRINTER_INFO_CTR ctr;
 	PRINTER_INFO_0 info;
 	REGISTRY_VALUE value;
+	UNISTR2 data;
 
 	/* parse the command arguements */
 	if (argc != 4) {
@@ -1881,10 +1952,11 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 
 	/* Set the printer data */
 	
+	init_unistr2(&data, argv[3], UNI_STR_TERMINATE);
 	fstrcpy(value.valuename, argv[2]);
 	value.type = REG_SZ;
-	value.size = strlen(argv[3]) + 1;
-	value.data_p = talloc_memdup(mem_ctx, argv[3], value.size);
+	value.size = data.uni_str_len * 2;
+	value.data_p = talloc_memdup(mem_ctx, data.buffer, value.size);
 
 	result = cli_spoolss_setprinterdata(cli, mem_ctx, &pol, &value);
 		
@@ -2331,6 +2403,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "deleteform",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_deleteform,         PI_SPOOLSS, "Delete form",                         "" },
 	{ "enumforms",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_forms,         PI_SPOOLSS, "Enumerate forms",                     "" },
 	{ "setprinter",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprinter,         PI_SPOOLSS, "Set printer comment",                 "" },
+	{ "setprintername",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprintername,         PI_SPOOLSS, "Set printername",                 "" },
 	{ "setprinterdata",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprinterdata,     PI_SPOOLSS, "Set REG_SZ printer data",             "" },
 	{ "rffpcnex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_rffpcnex,           PI_SPOOLSS, "Rffpcnex test", "" },
 

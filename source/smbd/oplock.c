@@ -388,6 +388,30 @@ pid %d, port %d, dev = %x, inode = %.0f, file_id = %lu\n",
 				(int)remotepid, from_port, (unsigned int)dev, (double)inode, file_id));
 			break;
 
+		case RETRY_DEFERRED_OPEN_CMD:
+
+			/* Request to retry and open that would return SHARING_VIOLATION. */
+			if (msg_len != DEFERRED_OPEN_MSG_LEN) {
+				DEBUG(0,("process_local_message: incorrect length for RETRY_DEFERRED_OPEN_CMD (was %d, should be %d).\n",
+					(int)msg_len, (int)DEFERRED_OPEN_MSG_LEN));
+				return False;
+			}
+			{
+				uint16 mid;
+
+				memcpy((char *)&remotepid, msg_start+DEFERRED_OPEN_PID_OFFSET,sizeof(remotepid));
+				memcpy((char *)&inode, msg_start+DEFERRED_OPEN_INODE_OFFSET,sizeof(inode));
+				memcpy((char *)&dev, msg_start+DEFERRED_OPEN_DEV_OFFSET,sizeof(dev));
+				memcpy((char *)&mid, msg_start+DEFERRED_OPEN_MID_OFFSET,sizeof(mid));
+
+				DEBUG(5,("process_local_message: RETRY_DEFERRED_OPEN from \
+pid %d, port %d, dev = %x, inode = %.0f, mid = %u\n",
+					(int)remotepid, from_port, (unsigned int)dev, (double)inode, (unsigned int)mid));
+
+				schedule_sharing_violation_open_smb_message(mid);
+			}
+			return True;
+
 		/* 
 		 * Keep this as a debug case - eventually we can remove it.
 		 */
@@ -592,6 +616,8 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 	 */
 
 	if (global_client_caps & CAP_LEVEL_II_OPLOCKS) {
+		BOOL sign_state;
+
 		/*
 		 * If we are sending an oplock break due to an SMB sent
 		 * by our own client we ensure that we wait at leat
@@ -603,10 +629,16 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 		wait_before_sending_break(local_request);
 
 		/* Prepare the SMBlockingX message. */
-
 		prepare_break_message( outbuf, fsp, False);
+
+		/* Save the server smb signing state. */
+		sign_state = srv_oplock_set_signing(False);
+
 		if (!send_smb(smbd_server_fd(), outbuf))
 			exit_server("oplock_break_level2: send_smb failed.");
+
+		/* Restore the sign state to what it was. */
+		srv_oplock_set_signing(sign_state);
 	}
 
 	/*
@@ -1215,7 +1247,51 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 }
 
 /****************************************************************************
-setup oplocks for this process
+ Send a 'retry your open' message to a process with a deferred open entry.
+****************************************************************************/
+
+BOOL send_deferred_open_retry_message(deferred_open_entry *entry)
+{
+	char de_msg[DEFERRED_OPEN_MSG_LEN];
+	struct sockaddr_in addr_out;
+	pid_t pid = sys_getpid();
+
+	memset(de_msg, '\0', DEFERRED_OPEN_MSG_LEN);
+	SSVAL(de_msg,DEFERRED_OPEN_CMD_OFFSET,RETRY_DEFERRED_OPEN_CMD);
+	memcpy(de_msg+DEFERRED_OPEN_PID_OFFSET,(char *)&pid,sizeof(pid));
+	memcpy(de_msg+DEFERRED_OPEN_DEV_OFFSET,(char *)&entry->dev,sizeof(entry->dev));
+	memcpy(de_msg+DEFERRED_OPEN_INODE_OFFSET,(char *)&entry->inode,sizeof(entry->inode));
+	memcpy(de_msg+DEFERRED_OPEN_MID_OFFSET,(char *)&entry->mid,sizeof(entry->mid));
+
+	/* Set the address and port. */
+	memset((char *)&addr_out,'\0',sizeof(addr_out));
+	addr_out.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	addr_out.sin_port = htons( entry->port );
+	addr_out.sin_family = AF_INET;
+   
+	if( DEBUGLVL( 3 ) ) {
+		dbgtext( "send_deferred_open_retry_message: sending a message to ");
+		dbgtext( "pid %d on port %d ", (int)entry->pid, entry->port );
+		dbgtext( "for dev = %x, inode = %.0f, mid = %u\n",
+			(unsigned int)entry->dev, (double)entry->inode, (unsigned int)entry->mid );
+	}
+
+	if(sys_sendto(oplock_sock,de_msg,DEFERRED_OPEN_MSG_LEN,0,
+			(struct sockaddr *)&addr_out,sizeof(addr_out)) < 0) {
+		if( DEBUGLVL( 0 ) ) {
+			dbgtext( "send_deferred_open_retry_message: failed sending a message to ");
+			dbgtext( "pid %d on port %d ", (int)entry->pid, entry->port );
+			dbgtext( "for dev = %x, inode = %.0f, mid = %u\n",
+				(unsigned int)entry->dev, (double)entry->inode, (unsigned int)entry->mid );
+			dbgtext( "Error was %s\n", strerror(errno) );
+		}
+		return False;
+	}
+	return True;
+}
+
+/****************************************************************************
+ Setup oplocks for this process.
 ****************************************************************************/
 
 BOOL init_oplocks(void)

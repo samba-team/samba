@@ -23,6 +23,9 @@
 #include "includes.h"
 #include "printing.h"
 
+extern SIG_ATOMIC_T got_sig_term;
+extern SIG_ATOMIC_T reload_after_sighup;
+
 /* Current printer interface */
 static BOOL remove_from_jobs_changed(int snum, uint32 jobid);
 
@@ -597,6 +600,7 @@ void pjob_delete(int snum, uint32 jobid)
 	tdb_delete(pdb->tdb, print_key(jobid));
 	release_print_db(pdb);
 	rap_jobid_delete(snum, jobid);
+	remove_from_jobs_changed( snum, jobid );
 }
 
 /****************************************************************************
@@ -1195,6 +1199,22 @@ void start_background_queue(void)
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		while (1) {
 			pause();
+			
+			/* check for some essential signals first */
+			
+                        if (got_sig_term) {
+                                exit_server("Caught TERM signal");
+                        }
+
+                        if (reload_after_sighup) {
+                                change_to_root_user();
+                                DEBUG(1,("Reloading services after SIGHUP\n"));
+                                reload_services(False);
+                                reload_after_sighup = 0;
+                        }
+			
+			/* now check for messages */
+			
 			DEBUG(10,("start_background_queue: background LPQ thread got a message\n"));
 			message_dispatch();
 		}
@@ -1211,9 +1231,13 @@ static void print_queue_update(int snum)
 	 * Otherwise just do the update ourselves 
 	 */
 	   
-	if ( background_lpq_updater_pid != -1 )
-		message_send_pid(background_lpq_updater_pid, MSG_PRINTER_UPDATE, &snum, sizeof(snum), False);
-	else
+	if ( background_lpq_updater_pid != -1 ) {
+		become_root();
+		message_send_pid(background_lpq_updater_pid,
+				 MSG_PRINTER_UPDATE, &snum, sizeof(snum),
+				 False);
+		unbecome_root();
+	} else
 		print_queue_update_internal( snum );
 }
 

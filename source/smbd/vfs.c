@@ -784,6 +784,31 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	return (path);
 }
 
+BOOL canonicalize_path(connection_struct *conn, pstring path)
+{
+#ifdef REALPATH_TAKES_NULL
+	char *resolved_name = SMB_VFS_REALPATH(conn,path,NULL);
+	if (!resolved_name) {
+		return False;
+	}
+	pstrcpy(path, resolved_name);
+	SAFE_FREE(resolved_name);
+	return True;
+#else
+#ifdef PATH_MAX
+        char resolved_name_buf[PATH_MAX+1];
+#else
+        pstring resolved_name_buf;
+#endif
+	char *resolved_name = SMB_VFS_REALPATH(conn,path,resolved_name_buf);
+	if (!resolved_name) {
+		return False;
+	}
+	pstrcpy(path, resolved_name);
+	return True;
+#endif /* REALPATH_TAKES_NULL */
+}
+
 /*******************************************************************
  Reduce a file name, removing .. elements and checking that
  it is below dir in the heirachy. This uses realpath.
@@ -804,6 +829,7 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 	char *resolved_name = NULL;
 	size_t con_path_len = strlen(conn->connectpath);
 	char *p = NULL;
+	int saved_errno = errno;
 
 	DEBUG(3,("reduce_name [%s] [%s]\n", fname, conn->connectpath));
 
@@ -817,6 +843,7 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 		switch (errno) {
 			case ENOTDIR:
 				DEBUG(3,("reduce_name: Component not a directory in getting realpath for %s\n", fname));
+				errno = saved_errno;
 				return False;
 			case ENOENT:
 			{
@@ -841,6 +868,7 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 #endif
 				if (!resolved_name) {
 					DEBUG(3,("reduce_name: couldn't get realpath for %s\n", fname));
+					errno = saved_errno;
 					return False;
 				}
 				pstrcpy(tmp_fname, resolved_name);
@@ -851,6 +879,7 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 				resolved_name = strdup(tmp_fname);
 				if (!resolved_name) {
 					DEBUG(0,("reduce_name: malloc fail for %s\n", tmp_fname));
+					errno = saved_errno;
 					return False;
 				}
 #else
@@ -865,6 +894,7 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 			}
 			default:
 				DEBUG(1,("reduce_name: couldn't get realpath for %s\n", fname));
+				errno = saved_errno;
 				return False;
 		}
 	}
@@ -875,13 +905,15 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 		DEBUG(0,("reduce_name: realpath doesn't return absolute paths !\n"));
 		if (free_resolved_name)
 			SAFE_FREE(resolved_name);
+		errno = saved_errno;
 		return False;
 	}
 
 	if (strncmp(conn->connectpath, resolved_name, con_path_len) != 0) {
-		DEBUG(2, ("reduce_name: Bad access attemt: %s is a symlink outside the share path", fname));
+		DEBUG(2, ("reduce_name: Bad access attempt: %s is a symlink outside the share path", fname));
 		if (free_resolved_name)
 			SAFE_FREE(resolved_name);
+		errno = EACCES;
 		return False;
 	}
 
@@ -900,11 +932,13 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 		DEBUG(3,("reduce_name: denied: file path name %s is a symlink\n",fname));
 		if (free_resolved_name)
 			SAFE_FREE(resolved_name);
+		errno = EACCES;
 		return False;
 	}
 
 	DEBUG(3,("reduce_name: %s reduced to %s\n", fname, p));
 	if (free_resolved_name)
 		SAFE_FREE(resolved_name);
+	errno = saved_errno;
 	return(True);
 }

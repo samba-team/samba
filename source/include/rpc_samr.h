@@ -1068,6 +1068,14 @@ typedef struct samr_group_info1
 
 } GROUP_INFO1;
 
+typedef struct samr_group_info2
+{
+	uint16 level;
+	UNIHDR hdr_acct_name;
+	UNISTR2 uni_acct_name;
+
+} GROUP_INFO2;
+
 typedef struct samr_group_info3
 {
 	uint32 unknown_1; /* 0x0000 0003 - number of group members? */
@@ -1090,6 +1098,7 @@ typedef struct group_info_ctr
 	union
  	{
 		GROUP_INFO1 info1;
+		GROUP_INFO2 info2;
 		GROUP_INFO3 info3;
 		GROUP_INFO4 info4;
 
@@ -1734,11 +1743,7 @@ typedef struct q_samr_get_dom_pwinfo
 typedef struct r_samr_get_dom_pwinfo
 {
 	/*
-	 * Previously this was 3 uint16's.  However, after some tests
-	 * it appears that the data len for the signing needs to be 16.
-	 * Not sure how 3 unit16's ever worked since the length always
-	 * turned out to 12.  3 uint32's + NT_STATUS == 16 bytes.  Tested
-	 * using NT and 2k.  --jerry
+	 * See Samba4 IDL
 	 */
 	uint16 unk_0;
 	uint32 unk_1;

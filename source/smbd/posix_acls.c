@@ -880,7 +880,7 @@ static mode_t map_nt_perms( SEC_ACCESS sec_access, int type)
  Unpack a SEC_DESC into a UNIX owner and group.
 ****************************************************************************/
 
-static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd)
+static BOOL unpack_nt_owners(int snum, SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd)
 {
 	DOM_SID owner_sid;
 	DOM_SID grp_sid;
@@ -910,15 +910,17 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		sid_copy(&owner_sid, psd->owner_sid);
 		if (!NT_STATUS_IS_OK(sid_to_uid(&owner_sid, puser))) {
-#if ACL_FORCE_UNMAPPABLE
-			/* this allows take ownership to work reasonably */
-			extern struct current_user current_user;
-			*puser = current_user.uid;
-#else
-			DEBUG(3,("unpack_nt_owners: unable to validate owner sid for %s\n",
-				 sid_string_static(&owner_sid)));
-			return False;
-#endif
+			if (lp_force_unknown_acl_user(snum)) {
+				/* this allows take ownership to work
+				 * reasonably */
+				extern struct current_user current_user;
+				*puser = current_user.uid;
+			} else {
+				DEBUG(3,("unpack_nt_owners: unable to validate"
+					 " owner sid for %s\n",
+					 sid_string_static(&owner_sid)));
+				return False;
+			}
 		}
  	}
 
@@ -930,14 +932,16 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
 		sid_copy(&grp_sid, psd->grp_sid);
 		if (!NT_STATUS_IS_OK(sid_to_gid( &grp_sid, pgrp))) {
-#if ACL_FORCE_UNMAPPABLE
-			/* this allows take group ownership to work reasonably */
-			extern struct current_user current_user;
-			*pgrp = current_user.gid;
-#else
-			DEBUG(3,("unpack_nt_owners: unable to validate group sid.\n"));
-			return False;
-#endif
+			if (lp_force_unknown_acl_user(snum)) {
+				/* this allows take group ownership to work
+				 * reasonably */
+				extern struct current_user current_user;
+				*pgrp = current_user.gid;
+			} else {
+				DEBUG(3,("unpack_nt_owners: unable to validate"
+					 " group sid.\n"));
+				return False;
+			}
 		}
 	}
 
@@ -3005,7 +3009,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * Unpack the user/group/world id's.
 	 */
 
-	if (!unpack_nt_owners( &sbuf, &user, &grp, security_info_sent, psd))
+	if (!unpack_nt_owners( SNUM(conn), &sbuf, &user, &grp, security_info_sent, psd))
 		return False;
 
 	/*

@@ -5,7 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000,
  *  Copyright (C) Jeremy Allison               2001-2002,
- *  Copyright (C) Gerald Carter		       2000-2003,
+ *  Copyright (C) Gerald Carter		       2000-2004,
  *  Copyright (C) Tim Potter                   2001-2002.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -312,6 +312,7 @@ void invalidate_printer_hnd_cache( char *printername )
 	for ( p=printers_list; p; p=p->next )
 	{
 		if ( p->printer_type==PRINTER_HANDLE_IS_PRINTER 
+			&& p->printer_info
 			&& StrCaseCmp(p->dev.handlename, printername)==0)
 		{
 			DEBUG(10,("invalidating printer_info cache for handl:\n"));
@@ -507,17 +508,19 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 			continue;
 		
+		/* ------ sharename ------ */
+
 		fstrcpy(sname, lp_servicename(snum));
 
 		DEBUGADD(10, ("share: %s\n",sname));
 		
-		/* sharename */
 		if ( strequal(sname, aprinter) ) {
 			found = True;
 			break;
 		}
 		
-		/* printername */
+		/* ------ printername ------ */
+
 		printer = NULL;
 		result = get_a_printer( NULL, &printer, 2, sname );
 		if ( !W_ERROR_IS_OK(result) ) {
@@ -534,10 +537,8 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 			continue;
 		}
 		
-		/* FIXME!! not mb safe here */
 		printername++;
 			
-		/* sharename */
 		if ( strequal(printername, aprinter) ) {
 			found = True;
 		}
@@ -1188,6 +1189,12 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 		ZERO_STRUCT( notify );
 		notify2_unpack_msg( &notify, &msg_tv, msg_ptr, msg_len );
 		msg_ptr += msg_len;
+
+		/* we don't know if the change was from us or not so kill 
+		   any cached printer objects */
+
+		if ( notify.type == PRINTER_NOTIFY_TYPE )
+			invalidate_printer_hnd_cache( notify.printer );
 		
 		/* add to correct list in container */
 		
@@ -4310,11 +4317,10 @@ static BOOL construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *p
 static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *printer, int snum)
 {
 	char *guid_str = NULL;
-	UUID_FLAT guid;
+	struct uuid guid; 
 	
 	if (is_printer_published(print_hnd, snum, &guid)) {
-		asprintf(&guid_str, "{%s}", 
-			 smb_uuid_string_static(smb_uuid_unpack_static(guid)));
+		asprintf(&guid_str, "{%s}", smb_uuid_string_static(guid));
 		strupper_m(guid_str);
 		init_unistr(&printer->guid, guid_str);
 		printer->action = SPOOL_DS_PUBLISH;

@@ -11,6 +11,11 @@ AC_ENABLE_SHARED
 SMB_VERSION_STRING=`cat include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
+SAMBA_VERSION_SVN_REVISION=`cat include/version.h | grep 'SAMBA_VERSION_SVN_REVISION' | cut -d ' ' -f3-`
+if test -n "${SAMBA_VERSION_SVN_REVISION}";then
+	echo "BUILD REVISION: ${SAMBA_VERSION_SVN_REVISION}"
+fi
+
 #################################################
 # Directory handling stuff to support both the
 # legacy SAMBA directories and FHS compliant
@@ -707,10 +712,12 @@ if test x$enable_cups != xno; then
 	AC_PATH_PROG(CUPS_CONFIG, cups-config)
 
         if test "x$CUPS_CONFIG" != x; then
-                        AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
+                AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
 		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
 		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
 		PRINT_LIBS="$PRINT_LIBS `$CUPS_CONFIG --libs`"
+	elif test x$enable_cups == xyes; then
+		AC_MSG_ERROR(Cups support required but cups-config not located.  Make sure cups-devel related files are installed.)
         fi
 fi
 
@@ -2708,6 +2715,7 @@ if test x"$with_ads_support" != x"no"; then
   # now see if we can find the krb5 libs in standard paths
   # or as specified above
   AC_CHECK_LIB_EXT(krb5, KRB5_LIBS, krb5_mk_req_extended)
+  AC_CHECK_LIB_EXT(krb5, KRB5_LIBS, krb5_kt_compare)
 
   ########################################################
   # now see if we can find the gssapi libs in standard paths
@@ -2730,6 +2738,9 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_free_ktypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_data_contents, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal_get_comp_string, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_free_unparsed_name, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_free_keytab_entry_contents, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_kt_free_entry, $KRB5_LIBS)
 
   LIBS="$LIBS $KRB5_LIBS"
   
@@ -2812,6 +2823,18 @@ if test x"$with_ads_support" != x"no"; then
               [Whether the AP_OPTS_USE_SUBKEY ap option is available])
   fi
 
+  AC_CACHE_CHECK([for KV5M_KEYTAB],
+                 samba_cv_HAVE_KV5M_KEYTAB,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keytab_entry entry; entry.magic = KV5M_KEYTAB;],
+      samba_cv_HAVE_KV5M_KEYTAB=yes,
+      samba_cv_HAVE_KV5M_KEYTAB=no)])
+
+  if test x"$samba_cv_HAVE_KV5M_KEYTAB" = x"yes"; then
+      AC_DEFINE(HAVE_KV5M_KEYTAB,1,
+             [Whether the KV5M_KEYTAB option is available])
+  fi
+
   AC_CACHE_CHECK([for the krb5_princ_component macro],
                 samba_cv_HAVE_KRB5_PRINC_COMPONENT,[
     AC_TRY_LINK([#include <krb5.h>],
@@ -2862,7 +2885,45 @@ if test x"$with_ads_support" != x"no"; then
     KRB5_LIBS=""
     with_ads_support=no 
   fi
-  LIBS="$ac_save_LIBS"
+
+  AC_CACHE_CHECK([for WRFILE: keytab support],
+                samba_cv_HAVE_WRFILE_KEYTAB,[
+    AC_TRY_RUN([
+#include<krb5.h>
+  main()
+  {
+    krb5_context context;
+    krb5_keytab keytab;
+
+    krb5_init_context(&context);
+    if (krb5_kt_resolve(context, "WRFILE:api", &keytab))
+      exit(0);
+    exit(1);
+  }],
+  samba_cv_HAVE_WRFILE_KEYTAB=no,
+  samba_cv_HAVE_WRFILE_KEYTAB=yes)])
+
+  if test x"$samba_cv_HAVE_WRFILE_KEYTAB" = x"yes"; then
+      AC_DEFINE(HAVE_WRFILE_KEYTAB,1,
+               [Whether the WRFILE:-keytab is supported])
+  fi
+
+  AC_CACHE_CHECK([for krb5_princ_realm returns krb5_realm or krb5_data],
+               samba_cv_KRB5_PRINC_REALM_RETURNS_REALM,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+    [
+    krb5_context context;
+    krb5_principal principal;
+    krb5_realm realm; realm = *krb5_princ_realm(context, principal);],
+    samba_cv_KRB5_PRINC_REALM_RETURNS_REALM=yes,
+    samba_cv_KRB5_PRINC_REALM_RETURNS_REALM=no)])
+
+  if test x"$samba_cv_KRB5_PRINC_REALM_RETURNS_REALM" = x"yes"; then
+    AC_DEFINE(KRB5_PRINC_REALM_RETURNS_REALM,1,
+              [Whether krb5_princ_realm returns krb5_realm or krb5_data])
+  fi
+
+LIBS="$ac_save_LIBS"
 fi
 
 ########################################################
@@ -2948,6 +3009,7 @@ AC_ARG_WITH(smbmount,
   esac ],
   AC_MSG_RESULT(no)
 )
+
 
 
 #################################################

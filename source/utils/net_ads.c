@@ -55,6 +55,8 @@ int net_ads_usage(int argc, const char **argv)
 "\n\tperform a raw LDAP search and dump the results\n"
 "\nnet ads dn"\
 "\n\tperform a raw LDAP search and dump attributes of a particular DN\n"
+"\nnet ads keytab"\
+"\n\tcreates and updates the kerberos system keytab file\n"
 		);
 	return -1;
 }
@@ -109,8 +111,8 @@ static int net_ads_info(int argc, const char **argv)
 	d_printf("LDAP port: %d\n", ads->ldap_port);
 	d_printf("Server time: %s\n", http_timestring(ads->config.current_time));
 
-       d_printf("KDC server: %s\n", ads->auth.kdc_server );
-       d_printf("Server time offset: %d\n", ads->auth.time_offset );
+	d_printf("KDC server: %s\n", ads->auth.kdc_server );
+	d_printf("Server time offset: %d\n", ads->auth.time_offset );
 
 	return 0;
 }
@@ -214,6 +216,7 @@ static int net_ads_workgroup(int argc, const char **argv)
 	if (!(ads = ads_startup())) return -1;
 
 	if (!(ctx = talloc_init("net_ads_workgroup"))) {
+		ads_destroy(&ads);
 		return -1;
 	}
 
@@ -221,13 +224,14 @@ static int net_ads_workgroup(int argc, const char **argv)
 		d_printf("Failed to find workgroup for realm '%s'\n", 
 			 ads->config.realm);
 		talloc_destroy(ctx);
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	d_printf("Workgroup: %s\n", workgroup);
 
 	talloc_destroy(ctx);
-
+	ads_destroy(&ads);
 	return 0;
 }
 
@@ -274,7 +278,9 @@ static int ads_user_add(int argc, const char **argv)
 
 	if (argc < 1) return net_ads_user_usage(argc, argv);
 	
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
 	status = ads_find_user_acct(ads, &res, argv[0]);
 
@@ -342,13 +348,18 @@ static int ads_user_info(int argc, const char **argv)
 	char **grouplist;
 	char *escaped_user = escape_ldap_string_alloc(argv[0]);
 
-	if (argc < 1) return net_ads_user_usage(argc, argv);
+	if (argc < 1) {
+		return net_ads_user_usage(argc, argv);
+	}
 	
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
 	if (!escaped_user) {
 		d_printf("ads_user_info: failed to escape user %s\n", argv[0]);
-		return -1;
+		ads_destroy(&ads);
+	 	return -1;
 	}
 
 	asprintf(&searchstring, "(sAMAccountName=%s)", escaped_user);
@@ -357,6 +368,7 @@ static int ads_user_info(int argc, const char **argv)
 
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_search: %s\n", ads_errstr(rc));
+		ads_destroy(&ads);
 		return -1;
 	}
 	
@@ -374,7 +386,6 @@ static int ads_user_info(int argc, const char **argv)
 	}
 	
 	ads_msgfree(ads, res);
-
 	ads_destroy(&ads);
 	return 0;
 }
@@ -386,13 +397,18 @@ static int ads_user_delete(int argc, const char **argv)
 	void *res;
 	char *userdn;
 
-	if (argc < 1) return net_ads_user_usage(argc, argv);
+	if (argc < 1) {
+		return net_ads_user_usage(argc, argv);
+	}
 	
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
 	rc = ads_find_user_acct(ads, &res, argv[0]);
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(0, ("User %s does not exist\n", argv[0]));
+		ads_destroy(&ads);
 		return -1;
 	}
 	userdn = ads_get_dn(ads, res);
@@ -401,10 +417,12 @@ static int ads_user_delete(int argc, const char **argv)
 	ads_memfree(ads, userdn);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("User %s deleted\n", argv[0]);
+		ads_destroy(&ads);
 		return 0;
 	}
 	d_printf("Error deleting user %s: %s\n", argv[0], 
 		 ads_errstr(rc));
+	ads_destroy(&ads);
 	return -1;
 }
 
@@ -423,7 +441,9 @@ int net_ads_user(int argc, const char **argv)
 	char *disp_fields[2] = {NULL, NULL};
 	
 	if (argc == 0) {
-		if (!(ads = ads_startup())) return -1;
+		if (!(ads = ads_startup())) {
+			return -1;
+		}
 
 		if (opt_long_list_entries)
 			d_printf("\nUser name             Comment"\
@@ -454,9 +474,13 @@ static int ads_group_add(int argc, const char **argv)
 	void *res=NULL;
 	int rc = -1;
 
-	if (argc < 1) return net_ads_group_usage(argc, argv);
+	if (argc < 1) {
+		return net_ads_group_usage(argc, argv);
+	}
 	
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
 	status = ads_find_user_acct(ads, &res, argv[0]);
 
@@ -495,13 +519,18 @@ static int ads_group_delete(int argc, const char **argv)
 	void *res;
 	char *groupdn;
 
-	if (argc < 1) return net_ads_group_usage(argc, argv);
+	if (argc < 1) {
+		return net_ads_group_usage(argc, argv);
+	}
 	
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
 	rc = ads_find_user_acct(ads, &res, argv[0]);
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(0, ("Group %s does not exist\n", argv[0]));
+		ads_destroy(&ads);
 		return -1;
 	}
 	groupdn = ads_get_dn(ads, res);
@@ -510,10 +539,12 @@ static int ads_group_delete(int argc, const char **argv)
 	ads_memfree(ads, groupdn);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("Group %s deleted\n", argv[0]);
+		ads_destroy(&ads);
 		return 0;
 	}
 	d_printf("Error deleting group %s: %s\n", argv[0], 
 		 ads_errstr(rc));
+	ads_destroy(&ads);
 	return -1;
 }
 
@@ -531,7 +562,9 @@ int net_ads_group(int argc, const char **argv)
 	char *disp_fields[2] = {NULL, NULL};
 
 	if (argc == 0) {
-		if (!(ads = ads_startup())) return -1;
+		if (!(ads = ads_startup())) {
+			return -1;
+		}
 
 		if (opt_long_list_entries)
 			d_printf("\nGroup name            Comment"\
@@ -555,21 +588,25 @@ static int net_ads_status(int argc, const char **argv)
 	ADS_STATUS rc;
 	void *res;
 
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
 	rc = ads_find_machine_acct(ads, &res, global_myname());
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_find_machine_acct: %s\n", ads_errstr(rc));
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
 		d_printf("No machine account for '%s' found\n", global_myname());
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	ads_dump(ads, res);
-
+	ads_destroy(&ads);
 	return 0;
 }
 
@@ -593,13 +630,14 @@ static int net_ads_leave(int argc, const char **argv)
 
 	rc = ads_leave_realm(ads, global_myname());
 	if (!ADS_ERR_OK(rc)) {
-	    d_printf("Failed to delete host '%s' from the '%s' realm.\n", 
-		     global_myname(), ads->config.realm);
-	    return -1;
+		d_printf("Failed to delete host '%s' from the '%s' realm.\n", 
+			global_myname(), ads->config.realm);
+		ads_destroy(&ads);
+		return -1;
 	}
 
 	d_printf("Removed '%s' from realm '%s'\n", global_myname(), ads->config.realm);
-
+	ads_destroy(&ads);
 	return 0;
 }
 
@@ -659,7 +697,9 @@ int net_ads_join(int argc, const char **argv)
 	const char *short_domain_name = NULL;
 	TALLOC_CTX *ctx = NULL;
 
-	if (argc > 0) org_unit = argv[0];
+	if (argc > 0) {
+		org_unit = argv[0];
+	}
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -669,15 +709,19 @@ int net_ads_join(int argc, const char **argv)
 	tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 	password = strdup(tmp_password);
 
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
 	if (!*lp_realm()) {
 		d_printf("realm must be set in in smb.conf for ADS join to succeed.\n");
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (strcmp(ads->config.realm, lp_realm()) != 0) {
 		d_printf("realm of remote server (%s) and realm in smb.conf (%s) DO NOT match.  Aborting join\n", ads->config.realm, lp_realm());
+		ads_destroy(&ads);
 		return -1;
 	}
 
@@ -691,35 +735,41 @@ int net_ads_join(int argc, const char **argv)
 	if (rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_NO_SUCH_OBJECT) {
 		d_printf("ads_join_realm: organizational unit %s does not exist (dn:%s)\n", 
 			 org_unit, dn);
+		ads_destroy(&ads);
 		return -1;
 	}
 	free(dn);
 
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
+		ads_destroy(&ads);
 		return -1;
 	}	
 
 	rc = ads_join_realm(ads, global_myname(), account_type, org_unit);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	rc = ads_domain_sid(ads, &dom_sid);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_domain_sid: %s\n", ads_errstr(rc));	
-	return -1;
+		ads_destroy(&ads);
+		return -1;
 	}
 
 	if (asprintf(&machine_account, "%s$", global_myname()) == -1) {
 		d_printf("asprintf failed\n");
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	rc = ads_set_machine_password(ads, machine_account, password);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_set_machine_password: %s\n", ads_errstr(rc));
+		ads_destroy(&ads);
 		return -1;
 	}
 	
@@ -727,6 +777,7 @@ int net_ads_join(int argc, const char **argv)
 	
 	if ( !(ctx = talloc_init("net ads join")) ) {
 		d_printf("talloc_init() failed!\n");
+		ads_destroy(&ads);
 		return -1;
 	}
 	
@@ -738,9 +789,9 @@ int net_ads_join(int argc, const char **argv)
 			d_printf("Using the name [%s] from the server.\n", short_domain_name);
 			d_printf("You should set \"workgroup = %s\" in smb.conf.\n", short_domain_name);
 		}
-	}
-	else
+	} else {
 		short_domain_name = lp_workgroup();
+	}
 	
 	d_printf("Using short domain name -- %s\n", short_domain_name);
 	
@@ -751,30 +802,41 @@ int net_ads_join(int argc, const char **argv)
 	    
 	if (!secrets_store_domain_sid(lp_workgroup(), &dom_sid)) {
 		DEBUG(1,("Failed to save domain sid\n"));
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (!secrets_store_machine_password(password, lp_workgroup(), sec_channel_type)) {
 		DEBUG(1,("Failed to save machine password\n"));
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (!secrets_store_domain_sid(short_domain_name, &dom_sid)) {
 		DEBUG(1,("Failed to save domain sid\n"));
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (!secrets_store_machine_password(password, short_domain_name, sec_channel_type)) {
 		DEBUG(1,("Failed to save machine password\n"));
+		ads_destroy(&ads);
 		return -1;
 	}
 	
+	/* Now build the keytab, using the same ADS connection */
+	if (lp_use_kerberos_keytab() && ads_keytab_create_default(ads)) {
+		DEBUG(1,("Error creating host keytab!\n"));
+	}
+
 	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->config.realm);
 
 	SAFE_FREE(password);
 	SAFE_FREE(machine_account);
-	if ( ctx )
+	if ( ctx ) {
 		talloc_destroy(ctx);
+	}
+	ads_destroy(&ads);
 	return 0;
 }
 
@@ -801,26 +863,29 @@ static int net_ads_printer_search(int argc, const char **argv)
 	ADS_STATUS rc;
 	void *res = NULL;
 
-	if (!(ads = ads_startup())) 
+	if (!(ads = ads_startup())) {
 		return -1;
+	}
 
 	rc = ads_find_printers(ads, &res);
 
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_find_printer: %s\n", ads_errstr(rc));
 		ads_msgfree(ads, res);
-		return -1;
+		ads_destroy(&ads);
+	 	return -1;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
 		d_printf("No results found\n");
 		ads_msgfree(ads, res);
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	ads_dump(ads, res);
 	ads_msgfree(ads, res);
-
+	ads_destroy(&ads);
 	return 0;
 }
 
@@ -831,34 +896,41 @@ static int net_ads_printer_info(int argc, const char **argv)
 	const char *servername, *printername;
 	void *res = NULL;
 
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
-	if (argc > 0)
+	if (argc > 0) {
 		printername = argv[0];
-	else
+	} else {
 		printername = "*";
+	}
 
-	if (argc > 1)
+	if (argc > 1) {
 		servername =  argv[1];
-	else
+	} else {
 		servername = global_myname();
+	}
 
 	rc = ads_find_printer_on_server(ads, &res, printername, servername);
 
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_find_printer_on_server: %s\n", ads_errstr(rc));
 		ads_msgfree(ads, res);
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
 		d_printf("Printer '%s' not found\n", printername);
 		ads_msgfree(ads, res);
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	ads_dump(ads, res);
 	ads_msgfree(ads, res);
+	ads_destroy(&ads);
 
 	return 0;
 }
@@ -881,17 +953,21 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	char *prt_dn, *srv_dn, **srv_cn;
 	void *res = NULL;
 
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
-	if (argc < 1)
+	if (argc < 1) {
 		return net_ads_printer_usage(argc, argv);
+	}
 	
 	printername = argv[0];
 
-	if (argc == 2)
+	if (argc == 2) {
 		servername = argv[1];
-	else
+	} else {
 		servername = global_myname();
+	}
 		
 	/* Get printer data from SPOOLSS */
 
@@ -908,6 +984,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		d_printf("Unable to open a connnection to %s to obtain data "
 			 "for %s\n", servername, printername);
+		ads_destroy(&ads);
 		return -1;
 	}
 
@@ -918,6 +995,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	if (ads_count_replies(ads, res) == 0) {
 		d_printf("Could not find machine account for server %s\n", 
 			 servername);
+		ads_destroy(&ads);
 		return -1;
 	}
 
@@ -932,10 +1010,12 @@ static int net_ads_printer_publish(int argc, const char **argv)
         rc = ads_add_printer_entry(ads, prt_dn, mem_ctx, &mods);
         if (!ADS_ERR_OK(rc)) {
                 d_printf("ads_publish_printer: %s\n", ads_errstr(rc));
+		ads_destroy(&ads);
                 return -1;
         }
  
         d_printf("published printer\n");
+	ads_destroy(&ads);
  
 	return 0;
 }
@@ -948,27 +1028,33 @@ static int net_ads_printer_remove(int argc, const char **argv)
 	char *prt_dn;
 	void *res = NULL;
 
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
-	if (argc < 1)
+	if (argc < 1) {
 		return net_ads_printer_usage(argc, argv);
+	}
 
-	if (argc > 1)
+	if (argc > 1) {
 		servername = argv[1];
-	else
+	} else {
 		servername = global_myname();
+	}
 
 	rc = ads_find_printer_on_server(ads, &res, argv[0], servername);
 
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_find_printer_on_server: %s\n", ads_errstr(rc));
 		ads_msgfree(ads, res);
+		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
 		d_printf("Printer '%s' not found\n", argv[1]);
 		ads_msgfree(ads, res);
+		ads_destroy(&ads);
 		return -1;
 	}
 
@@ -979,9 +1065,11 @@ static int net_ads_printer_remove(int argc, const char **argv)
 
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_del_dn: %s\n", ads_errstr(rc));
+		ads_destroy(&ads);
 		return -1;
 	}
 
+	ads_destroy(&ads);
 	return 0;
 }
 
@@ -1001,116 +1089,123 @@ static int net_ads_printer(int argc, const char **argv)
 
 static int net_ads_password(int argc, const char **argv)
 {
-    ADS_STRUCT *ads;
-    const char *auth_principal = opt_user_name;
-    const char *auth_password = opt_password;
-    char *realm = NULL;
-    char *new_password = NULL;
-    char *c, *prompt;
-    const char *user;
-    ADS_STATUS ret;
+	ADS_STRUCT *ads;
+	const char *auth_principal = opt_user_name;
+	const char *auth_password = opt_password;
+	char *realm = NULL;
+	char *new_password = NULL;
+	char *c, *prompt;
+	const char *user;
+	ADS_STATUS ret;
 
-    if (opt_user_name == NULL || opt_password == NULL) {
-	    d_printf("You must supply an administrator username/password\n");
-	    return -1;
-    }
+	if (opt_user_name == NULL || opt_password == NULL) {
+		d_printf("You must supply an administrator username/password\n");
+		return -1;
+	}
 
+	if (argc < 1) {
+		d_printf("ERROR: You must say which username to change password for\n");
+		return -1;
+	}
+
+	user = argv[0];
+	if (!strchr_m(user, '@')) {
+		asprintf(&c, "%s@%s", argv[0], lp_realm());
+		user = c;
+	}
+
+	use_in_memory_ccache();    
+	c = strchr(auth_principal, '@');
+	if (c) {
+		realm = ++c;
+	} else {
+		realm = lp_realm();
+	}
+
+	/* use the realm so we can eventually change passwords for users 
+	in realms other than default */
+	if (!(ads = ads_init(realm, NULL, NULL))) {
+		return -1;
+	}
+
+	/* we don't actually need a full connect, but it's the easy way to
+		fill in the KDC's addresss */
+	ads_connect(ads);
     
-    if (argc < 1) {
-	    d_printf("ERROR: You must say which username to change password for\n");
-	    return -1;
-    }
+	if (!ads || !ads->config.realm) {
+		d_printf("Didn't find the kerberos server!\n");
+		return -1;
+	}
 
-    user = argv[0];
-    if (!strchr(user, '@')) {
-	    asprintf(&c, "%s@%s", argv[0], lp_realm());
-	    user = c;
-    }
+	if (argv[1]) {
+		new_password = (char *)argv[1];
+	} else {
+		asprintf(&prompt, "Enter new password for %s:", user);
+		new_password = getpass(prompt);
+		free(prompt);
+	}
 
-    use_in_memory_ccache();    
-    c = strchr(auth_principal, '@');
-    if (c) {
-	    realm = ++c;
-    } else {
-	    realm = lp_realm();
-    }
-
-    /* use the realm so we can eventually change passwords for users 
-    in realms other than default */
-    if (!(ads = ads_init(realm, NULL, NULL))) return -1;
-
-    /* we don't actually need a full connect, but it's the easy way to
-       fill in the KDC's addresss */
-    ads_connect(ads);
-    
-    if (!ads || !ads->config.realm) {
-	    d_printf("Didn't find the kerberos server!\n");
-	    return -1;
-    }
-
-    if (argv[1]) {
-	   new_password = (char *)argv[1];
-    } else {
-	   asprintf(&prompt, "Enter new password for %s:", user);
-	   new_password = getpass(prompt);
-	   free(prompt);
-    }
-
-    ret = kerberos_set_password(ads->auth.kdc_server, auth_principal, 
+	ret = kerberos_set_password(ads->auth.kdc_server, auth_principal, 
 				auth_password, user, new_password, ads->auth.time_offset);
-    if (!ADS_ERR_OK(ret)) {
-	d_printf("Password change failed :-( ...\n");
+	if (!ADS_ERR_OK(ret)) {
+		d_printf("Password change failed :-( ...\n");
+		ads_destroy(&ads);
+		return -1;
+	}
+
+	d_printf("Password change for %s completed.\n", user);
 	ads_destroy(&ads);
-	return -1;
-    }
 
-    d_printf("Password change for %s completed.\n", user);
-    ads_destroy(&ads);
-
-    return 0;
+	return 0;
 }
-
 
 int net_ads_changetrustpw(int argc, const char **argv)
 {    
-    ADS_STRUCT *ads;
-    char *host_principal;
-    char *hostname;
-    ADS_STATUS ret;
+	ADS_STRUCT *ads;
+	char *host_principal;
+	fstring my_fqdn;
+	ADS_STATUS ret;
 
-    if (!secrets_init()) {
-	    DEBUG(1,("Failed to initialise secrets database\n"));
-	    return -1;
-    }
+	if (!secrets_init()) {
+		DEBUG(1,("Failed to initialise secrets database\n"));
+		return -1;
+	}
 
-    net_use_machine_password();
+	net_use_machine_password();
 
-    use_in_memory_ccache();
+	use_in_memory_ccache();
 
-    if (!(ads = ads_startup())) {
-	    return -1;
-    }
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
-    hostname = strdup(global_myname());
-    strlower_m(hostname);
-    asprintf(&host_principal, "%s@%s", hostname, ads->config.realm);
-    SAFE_FREE(hostname);
-    d_printf("Changing password for principal: HOST/%s\n", host_principal);
+	name_to_fqdn(my_fqdn, global_myname());
+	strlower_m(my_fqdn);
+	asprintf(&host_principal, "%s@%s", my_fqdn, ads->config.realm);
+	d_printf("Changing password for principal: HOST/%s\n", host_principal);
+
+	ret = ads_change_trust_account_password(ads, host_principal);
+
+	if (!ADS_ERR_OK(ret)) {
+		d_printf("Password change failed :-( ...\n");
+		ads_destroy(&ads);
+		SAFE_FREE(host_principal);
+		return -1;
+	}
     
-    ret = ads_change_trust_account_password(ads, host_principal);
+	d_printf("Password change for principal HOST/%s succeeded.\n", host_principal);
 
-    if (!ADS_ERR_OK(ret)) {
-	d_printf("Password change failed :-( ...\n");
+	if (lp_use_kerberos_keytab()) {
+		d_printf("Attempting to update system keytab with new password.\n");
+		if (ads_keytab_create_default(ads)) {
+			d_printf("Failed to update system keytab.\n");
+		}
+	}
+
 	ads_destroy(&ads);
 	SAFE_FREE(host_principal);
-	return -1;
-    }
-    
-    d_printf("Password change for principal HOST/%s succeeded.\n", host_principal);
-    ads_destroy(&ads);
-    SAFE_FREE(host_principal);
 
-    return 0;
+	return 0;
 }
 
 /*
@@ -1157,6 +1252,7 @@ static int net_ads_search(int argc, const char **argv)
 			       ldap_exp, attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("search failed: %s\n", ads_errstr(rc));
+		ads_destroy(&ads);
 		return -1;
 	}	
 
@@ -1216,6 +1312,7 @@ static int net_ads_dn(int argc, const char **argv)
 			       "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("search failed: %s\n", ads_errstr(rc));
+		ads_destroy(&ads);
 		return -1;
 	}	
 
@@ -1230,6 +1327,86 @@ static int net_ads_dn(int argc, const char **argv)
 	return 0;
 }
 
+static int net_ads_keytab_usage(int argc, const char **argv)
+{
+	d_printf(
+		"net ads keytab <COMMAND>\n"\
+"<COMMAND> can be either:\n"\
+"  CREATE    Creates a fresh keytab\n"\
+"  ADD       Adds new service principal\n"\
+"  FLUSH     Flushes out all keytab entries\n"\
+"  HELP      Prints this help message\n"\
+"The ADD command will take arguments, the other commands\n"\
+"will not take any arguments.   The arguments given to ADD\n"\
+"should be a list of principals to add.  For example, \n"\
+"   net ads keytab add srv1 srv2\n"\
+"will add principals for the services srv1 and srv2 to the\n"\
+"system's keytab.\n"\
+"\n"
+		);
+	return -1;
+}
+
+static int net_ads_keytab_flush(int argc, const char **argv)
+{
+	int ret;
+	ADS_STRUCT *ads;
+
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+	ret = ads_keytab_flush(ads);
+	ads_destroy(&ads);
+	return ret;
+}
+
+static int net_ads_keytab_add(int argc, const char **argv)
+{
+	int i;
+	int ret = 0;
+	ADS_STRUCT *ads;
+
+	d_printf("Processing principals to add...\n");
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+	for (i = 0; i < argc; i++) {
+		ret |= ads_keytab_add_entry(ads, argv[i]);
+	}
+	ads_destroy(&ads);
+	return ret;
+}
+
+static int net_ads_keytab_create(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	int ret;
+
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+	ret = ads_keytab_create_default(ads);
+	ads_destroy(&ads);
+	return ret;
+}
+
+int net_ads_keytab(int argc, const char **argv)
+{
+	struct functable func[] = {
+		{"CREATE", net_ads_keytab_create},
+		{"ADD", net_ads_keytab_add},
+		{"FLUSH", net_ads_keytab_flush},
+		{"HELP", net_ads_keytab_usage},
+		{NULL, NULL}
+	};
+
+	if (!lp_use_kerberos_keytab()) {
+		d_printf("\nWarning: \"use kerberos keytab\" must be set to \"true\" in order to \
+use keytab functions.\n");
+	}
+
+	return net_run_function(argc, argv, func, net_ads_keytab_usage);
+}
 
 int net_ads_help(int argc, const char **argv)
 {
@@ -1269,6 +1446,7 @@ int net_ads(int argc, const char **argv)
 		{"DN", net_ads_dn},
 		{"WORKGROUP", net_ads_workgroup},
 		{"LOOKUP", net_ads_lookup},
+		{"KEYTAB", net_ads_keytab},
 		{"HELP", net_ads_help},
 		{NULL, NULL}
 	};
@@ -1282,6 +1460,11 @@ static int net_ads_noads(void)
 {
 	d_printf("ADS support not compiled in\n");
 	return -1;
+}
+
+int net_ads_keytab(int argc, const char **argv)
+{
+	return net_ads_noads();
 }
 
 int net_ads_usage(int argc, const char **argv)

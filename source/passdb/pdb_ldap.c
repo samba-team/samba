@@ -1043,9 +1043,13 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			DEBUG(7, ("bad password count is reset, deleting login cache entry for %s\n", pdb_get_nt_username(sampass)));
 			login_cache_delentry(sampass);
 		} else {
-			LOGIN_CACHE cache_entry ={time(NULL),
-						  pdb_get_acct_ctrl(sampass),
-						  badcount, badtime};
+			LOGIN_CACHE cache_entry;
+
+			cache_entry.entry_timestamp = time(NULL);
+			cache_entry.acct_ctrl = pdb_get_acct_ctrl(sampass);
+			cache_entry.bad_password_count = badcount;
+			cache_entry.bad_password_time = badtime;
+
 			DEBUG(7, ("Updating bad password count and time in login cache\n"));
 			login_cache_write(sampass, cache_entry);
 		}
@@ -1130,6 +1134,19 @@ static NTSTATUS ldapsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	return NT_STATUS_OK;
 }
 
+static void append_attr(char ***attr_list, const char *new_attr)
+{
+	int i;
+
+	for (i=0; (*attr_list)[i] != NULL; i++)
+		;
+
+	(*attr_list) = Realloc((*attr_list), sizeof(**attr_list) * (i+2));
+	SMB_ASSERT((*attr_list) != NULL);
+	(*attr_list)[i] = strdup(new_attr);
+	(*attr_list)[i+1] = NULL;
+}
+
 /**********************************************************************
 Get SAM_ACCOUNT entry from LDAP by username.
 *********************************************************************/
@@ -1145,6 +1162,7 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	int rc;
 	
 	attr_list = get_userattr_list( ldap_state->schema_ver );
+	append_attr(&attr_list, MODIFY_TIMESTAMP_STRING);
 	rc = ldapsam_search_suffix_by_name(ldap_state, sname, &result, attr_list);
 	free_attr_list( attr_list );
 
@@ -1190,6 +1208,7 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 	switch ( ldap_state->schema_ver ) {
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			attr_list = get_userattr_list(ldap_state->schema_ver);
+			append_attr(&attr_list, MODIFY_TIMESTAMP_STRING);
 			rc = ldapsam_search_suffix_by_sid(ldap_state, sid, result, attr_list);
 			free_attr_list( attr_list );
 

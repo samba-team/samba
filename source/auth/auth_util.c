@@ -972,25 +972,25 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 {
 	struct passwd *pw = NULL;
 	char *p;
-	fstring mapped_username;
-	fstring strip_username;
+	fstring username;
 	
 	/* we only save a copy of the username it has been mangled 
 	   by winbindd use default domain */
 	   
 	save_username[0] = '\0';
-	
-	/* save a local copy of the username and run it through the 
-	   username map */
 	   
-	fstrcpy( mapped_username, domuser );
-	map_username( mapped_username );	
+	/* don't call map_username() here since it has to be done higher 
+	   up the stack so we don't call it mutliple times */
+
+	fstrcpy( username, domuser );
 	
-	p = strchr_m( mapped_username, *lp_winbind_separator() );
+	p = strchr_m( username, *lp_winbind_separator() );
 	
 	/* code for a DOMAIN\user string */
 	
 	if ( p ) {
+		fstring strip_username;
+
 		pw = Get_Pwnam( domuser );
 		if ( pw ) {	
 			/* make sure we get the case of the username correct */
@@ -999,8 +999,10 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 			if ( !strchr_m( pw->pw_name, *lp_winbind_separator() ) ) {
 				char *domain;
 				
-				domain = mapped_username;
+				/* split the domain and username into 2 strings */
 				*p = '\0';
+				domain = username;
+
 				fstr_sprintf(save_username, "%s%c%s", domain, *lp_winbind_separator(), pw->pw_name);
 			}
 			else
@@ -1011,26 +1013,26 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 		}
 
 		/* setup for lookup of just the username */
-		/* remember that p and mapped_username are overlapping memory */
+		/* remember that p and username are overlapping memory */
 
 		p++;
 		fstrcpy( strip_username, p );
-		fstrcpy( mapped_username, strip_username );
+		fstrcpy( username, strip_username );
 	}
 	
 	/* just lookup a plain username */
 	
-	pw = Get_Pwnam(mapped_username);
+	pw = Get_Pwnam(username);
 		
 	/* Create local user if requested. */
 	
 	if ( !pw && create ) {
 		/* Don't add a machine account. */
-		if (mapped_username[strlen(mapped_username)-1] == '$')
+		if (username[strlen(username)-1] == '$')
 			return NULL;
 
-		auth_add_user_script(NULL, mapped_username);
-		pw = Get_Pwnam(mapped_username);
+		auth_add_user_script(NULL, username);
+		pw = Get_Pwnam(username);
 	}
 	
 	/* one last check for a valid passwd struct */
@@ -1207,7 +1209,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	
 	/* Create a 'combined' list of all SIDs we might want in the SD */
 	
-	all_group_SIDs = malloc(sizeof(DOM_SID) * (info3->num_groups2 +info3->num_other_sids));
+	all_group_SIDs = malloc(sizeof(DOM_SID) * (info3->num_groups2 + info3->num_other_sids + n_lgroupSIDs));
 	
 	if (!all_group_SIDs) {
 		DEBUG(0, ("malloc() failed for DOM_SID list!\n"));
@@ -1215,12 +1217,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		free_server_info(server_info);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-#if 0 	/* JERRY -- no such thing as local groups in current code */
-	/* Copy the 'local' sids */
-	memcpy(all_group_SIDs, lgroupSIDs, sizeof(DOM_SID) * n_lgroupSIDs);
-	SAFE_FREE(lgroupSIDs);
-#endif
 
 	/* and create (by appending rids) the 'domain' sids */
 	
@@ -1254,13 +1250,22 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		sid_copy(&all_group_SIDs[info3->num_groups2 + i],
 			 &info3->other_sids[i].sid);
 	}
+
+
+	/* add local alias sids */ 
+
+	for (i = 0; i < n_lgroupSIDs; i++) {
+		sid_copy(&all_group_SIDs[info3->num_groups2 +
+					 info3->num_other_sids + i],
+			 &lgroupSIDs[i]);
+	}
 	
 	/* Where are the 'global' sids... */
 
 	/* can the user be guest? if yes, where is it stored? */
 	
 	nt_status = create_nt_user_token(&user_sid, &group_sid,
-		info3->num_groups2 + info3->num_other_sids,
+		info3->num_groups2 + info3->num_other_sids + n_lgroupSIDs,
 		all_group_SIDs, False, &token);
 		
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
@@ -1425,8 +1430,10 @@ BOOL is_trusted_domain(const char* dom_name)
 
 	/* if we are a DC, then check for a direct trust relationships */
 
-	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
+	if ( IS_DC ) {
 		become_root();
+		DEBUG (5,("is_trusted_domain: Checking for domain trust with [%s]\n",
+			dom_name ));
 		ret = secrets_fetch_trusted_domain_password(dom_name, &pass, &trustdom_sid, &lct);
 		unbecome_root();
 		SAFE_FREE(pass);

@@ -94,7 +94,7 @@ This handles the following different forms:
 4) ip/mask
 5) bcast/mask
 ****************************************************************************/
-static void interpret_interface(const char *token)
+static void interpret_interface(char *token)
 {
 	struct in_addr ip, nmask;
 	char *p;
@@ -130,9 +130,9 @@ static void interpret_interface(const char *token)
 	}
 
 	/* parse it into an IP address/netmasklength pair */
-	*p++ = 0;
-
+	*p = 0;
 	ip = *interpret_addr2(token);
+	*p++ = '/';
 
 	if (strlen(p) > 2) {
 		nmask = *interpret_addr2(p);
@@ -207,7 +207,11 @@ void load_interfaces(void)
 
 	if (ptr) {
 		while (*ptr) {
-			interpret_interface(*ptr);
+			char *ptr_cpy = strdup(*ptr);
+			if (ptr_cpy) {
+				interpret_interface(ptr_cpy);
+				free(ptr_cpy);
+			}
 			ptr++;
 		}
 	}
