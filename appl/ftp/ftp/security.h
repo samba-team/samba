@@ -105,6 +105,8 @@ int sec_putc (int, FILE *);
 int sec_read (int, void *, int);
 int sec_read_msg (char *, int);
 int sec_vfprintf (FILE *, const char *, va_list);
+int sec_fprintf2(FILE *f, const char *fmt, ...);
+int sec_vfprintf2(FILE *, const char *, va_list);
 int sec_write (int, char *, int);
 
 #ifdef FTP_SERVER
