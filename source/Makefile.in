@@ -342,7 +342,7 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		$(PARAM_OBJ) $(TDB_OBJ) $(PASSDB_OBJ)
 
 PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
-LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.0=.po)
+LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.po)
 
 WINBINDD_OBJ1 = \
 		nsswitch/winbindd.o       \
