@@ -292,6 +292,9 @@ const struct server_service_ops *server_service_byname(const char *name)
 	if (strcmp("rpc",name)==0) {
 		return dcesrv_get_ops();
 	}
+	if (strcmp("ldap",name)==0) {
+		return ldapsrv_get_ops();
+	}
 	return NULL;
 }
 
