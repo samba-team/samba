@@ -500,13 +500,15 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	/* These values MAY be in LDAP, but they can also be retrieved through 
 	 *  sys_getpw*() which is how we're doing it 
 	 */
-	pw = getpwnam(username);
+	pw = getpwnam_alloc(username);
 	if (pw == NULL) {
 		DEBUG (2,("init_sam_from_ldap: User [%s] does not ave a uid!\n", username));
 		return False;
 	}
 	uid = pw->pw_uid;
 	gid = pw->pw_gid;
+
+	passwd_free(&pw);
 
 	/* FIXME: hours stuff should be cleaner */
 	
