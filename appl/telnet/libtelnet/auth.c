@@ -155,6 +155,13 @@ Authenticator authenticators[] = {
 				kerberos5_printsub },
 #endif
 #ifdef	KRB4
+	{ AUTHTYPE_KERBEROS_V4, AUTH_WHO_CLIENT|AUTH_HOW_MUTUAL,
+				kerberos4_init,
+				kerberos4_send,
+				kerberos4_is,
+				kerberos4_reply,
+				kerberos4_status,
+				kerberos4_printsub },
 	{ AUTHTYPE_KERBEROS_V4, AUTH_WHO_CLIENT|AUTH_HOW_ONE_WAY,
 				kerberos4_init,
 				kerberos4_send,
