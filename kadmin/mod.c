@@ -136,7 +136,8 @@ mod_entry(int argc, char **argv)
 	    printf ("no such principal: %s\n", argv[0]);
 	    return 0;
 	}
-	edit_entry(&princ, &mask, NULL, 0);
+	if(edit_entry(&princ, &mask, NULL, 0))
+	    goto out;
     } else {
 	princ.principal = princ_ent;
     }
@@ -144,6 +145,7 @@ mod_entry(int argc, char **argv)
     ret = kadm5_modify_principal(kadm_handle, &princ, mask);
     if(ret)
 	krb5_warn(context, ret, "kadm5_modify_principal");
+  out:
     kadm5_free_principal_ent(kadm_handle, &princ);
     return 0;
 }
