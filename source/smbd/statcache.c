@@ -154,17 +154,13 @@ BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath,
 
   *start = name;
 
-#ifdef WITH_PROFILE
-  INC_PROFILE_COUNT(statcache_lookups);
-#endif
+  DO_PROFILE_INC(statcache_lookups);
 
   /*
    * Don't lookup trivial valid directory entries.
    */
   if((*name == '\0') || (strcmp(name, ".") == 0) || (strcmp(name, "..") == 0)) {
-#ifdef WITH_PROFILE
-    INC_PROFILE_COUNT(statcache_misses);
-#endif
+    DO_PROFILE_INC(statcache_misses);
     return False;
   }
 
@@ -185,23 +181,17 @@ BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath,
         /*
          * We reached the end of the name - no match.
          */
-#ifdef WITH_PROFILE
-	INC_PROFILE_COUNT(statcache_misses);
-#endif
+	DO_PROFILE_INC(statcache_misses);
         return False;
       }
       if((*chk_name == '\0') || (strcmp(chk_name, ".") == 0)
                           || (strcmp(chk_name, "..") == 0)) {
-#ifdef WITH_PROFILE
-	INC_PROFILE_COUNT(statcache_misses);
-#endif
+	DO_PROFILE_INC(statcache_misses);
         return False;
       }
     } else {
       scp = (stat_cache_entry *)(hash_elem->value);
-#ifdef WITH_PROFILE
-      INC_PROFILE_COUNT(statcache_hits);
-#endif
+      DO_PROFILE_INC(statcache_hits);
       trans_name = scp->names+scp->name_len+1;
       if(conn->vfs_ops.stat(conn,dos_to_unix(trans_name,False), pst) != 0) {
         /* Discard this entry - it doesn't exist in the filesystem.  */

@@ -635,12 +635,7 @@ extern int errno;
 
 #include "msdfs.h"
 
-#ifdef WITH_PROFILE
 #include "profile.h"
-#else
-#define START_PROFILE(x)
-#define END_PROFILE(x)
-#endif
 
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
