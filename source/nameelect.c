@@ -776,7 +776,7 @@ void process_election(struct packet_struct *p,char *buf)
 
 	if (ip_equal(d->bcast_ip,wins_ip))
 	{
-		DEBUG(3,("Unexpected election request from %s %s on WINS net\n",
+		DEBUG(0,("Unexpected election request from %s %s on WINS net\n",
 		          name, inet_ntoa(p->ip)));
 		return;
 	}

@@ -138,66 +138,6 @@ static void response_name_reg(struct nmb_name *ans_name,
   }
 }
 
-
-/****************************************************************************
-  response from a name query announce host
-  NAME_QUERY_ANNOUNCE_HOST is dealt with here
-  ****************************************************************************/
-static void response_announce_host(struct nmb_name *ans_name, 
-		struct nmb_packet *nmb, 
-		struct response_record *n, struct subnet_record *d)
-{
-	DEBUG(4, ("Name query at %s ip %s - ",
-		  namestr(&n->name), inet_ntoa(n->send_ip)));
-
-	if (!name_equal(&n->name, ans_name))
-	{
-		/* someone gave us the wrong name as a reply. oops. */
-		/* XXXX should say to them 'oi! release that name!' */
-
-		DEBUG(4,("unexpected name received: %s\n", namestr(ans_name)));
-		return;
-	}
-
-	if (nmb->header.rcode == 0 && nmb->answers->rdata)
-    {
-		/* we had sent out a name query to the current owner
-		   of a name because someone else wanted it. now they
-		   have responded saying that they still want the name,
-		   so the other host can't have it.
-		 */
-
-		/* first check all the details are correct */
-
-		int nb_flags = nmb->answers->rdata[0];
-		struct in_addr found_ip;
-
-		putip((char*)&found_ip,&nmb->answers->rdata[2]);
-
-		if (nb_flags != n->nb_flags)
-		{
-			/* someone gave us the wrong nb_flags as a reply. oops. */
-			/* XXXX should say to them 'oi! release that name!' */
-
-			DEBUG(4,("expected nb_flags: %d\n", n->nb_flags));
-			DEBUG(4,("unexpected nb_flags: %d\n", nb_flags));
-			return;
-		}
-
-    	/* do an announce host */
-    	do_announce_host(ANN_HostAnnouncement,
-				n->my_name  , 0x00, d->myip,
-				n->name.name, 0x1d, found_ip,
-				n->ttl,
-				n->my_name, n->server_type, n->my_comment);
-	}
-	else
-	{
-		/* XXXX negative name query response. no master exists. oops */
-	}
-}
-
-
 /****************************************************************************
   response from a name query server check. states of type NAME_QUERY_DOM_SRV_CHK,
   NAME_QUERY_SRV_CHK, and NAME_QUERY_FIND_MST dealt with here.
@@ -267,25 +207,6 @@ static BOOL interpret_node_status(struct subnet_record *d,
       if (NAME_CONFLICT (nb_flags)) { strcat(flags,"<CONFLICT> "); }
       if (NAME_ACTIVE   (nb_flags)) { strcat(flags,"<ACTIVE> "); add=True; }
       if (NAME_PERMANENT(nb_flags)) { strcat(flags,"<PERMANENT> "); add=True;}
-
-/* I don't think we should be messing with our namelist here... JRA */      
-#if 0
-      /* might as well update our namelist while we're at it */
-      if (add)
-	{
-	  struct in_addr nameip;
-	  enum name_source src;
-	  
-	  if (ismyip(ip)) {
-	    nameip = ipzero;
-	    src = SELF;
-	  } else {
-	    nameip = ip;
-	    src = STATUS_QUERY;
-	  }
-	  add_netbios_entry(d,qname,type,nb_flags,2*60*60,src,nameip,True,bcast);
-	} 
-#endif /* JRA */
 
       /* we want the server name */
       if (serv_name && !*serv_name && !group && type == 0x20)
@@ -586,7 +507,7 @@ void debug_state_type(int state)
     case NAME_QUERY_CONFIRM      : DEBUG(4,("NAME_QUERY_CONFIRM\n")); break;
     case NAME_QUERY_SYNC_LOCAL   : DEBUG(4,("NAME_QUERY_SYNC_LOCAL\n")); break;
     case NAME_QUERY_SYNC_REMOTE  : DEBUG(4,("NAME_QUERY_SYNC_REMOTE\n")); break;
-    case NAME_QUERY_ANNOUNCE_HOST: DEBUG(4,("NAME_QUERY_ANNCE_HOST\n"));break;
+/*    case NAME_QUERY_ANNOUNCE_HOST: DEBUG(4,("NAME_QUERY_ANNCE_HOST\n"));break; */
     case NAME_QUERY_DOMAIN       : DEBUG(4,("NAME_QUERY_DOMAIN\n")); break;
       
     case NAME_REGISTER           : DEBUG(4,("NAME_REGISTER\n")); break;
@@ -664,7 +585,7 @@ static BOOL response_problem_check(struct response_record *n,
 			     lots of responses */
 			  return False;
 			}
-		      case NAME_QUERY_ANNOUNCE_HOST:
+/*		      case NAME_QUERY_ANNOUNCE_HOST: */
 		      case NAME_QUERY_DOM_SRV_CHK:
 		      case NAME_QUERY_SRV_CHK:
 		      case NAME_QUERY_MST_CHK:
@@ -733,7 +654,7 @@ static BOOL response_compatible(struct response_record *n,
 
     case NAME_REGISTER_CHALLENGE: /* this is a query: we then do a register */
     case NAME_QUERY_CONFIRM:
-    case NAME_QUERY_ANNOUNCE_HOST:
+/*    case NAME_QUERY_ANNOUNCE_HOST: */
     case NAME_QUERY_SYNC_LOCAL:
     case NAME_QUERY_SYNC_REMOTE:
     case NAME_QUERY_DOM_SRV_CHK:
@@ -813,12 +734,6 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
 	break;
       }
     
-    case NAME_QUERY_ANNOUNCE_HOST:
-      {
-	response_announce_host(ans_name, nmb, n, d);
-	break;
-      }
-      
     case NAME_QUERY_CONFIRM:
     case NAME_QUERY_SYNC_LOCAL:
     case NAME_QUERY_SYNC_REMOTE:

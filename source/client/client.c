@@ -85,7 +85,7 @@ static BOOL call_api(int prcnt,int drcnt,
 		     int *rprcnt,int *rdrcnt,
 		     char *param,char *data,
 		     char **rparam,char **rdata);
-
+static BOOL do_this_one(file_info *finfo);
 
 /* clitar bits insert */
 extern int blocksize;
@@ -135,6 +135,8 @@ int get_total_time_ms = 0;
 int put_total_size = 0;
 int put_total_time_ms = 0;
 
+/* totals globals */
+int dir_total = 0;
 
 extern int Client;
 
@@ -473,12 +475,15 @@ static void cmd_cd(char *inbuf,char *outbuf)
   ****************************************************************************/
 static void display_finfo(file_info *finfo)
 {
-  time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
-  DEBUG(0,("  %-30s%7.7s%10d  %s",
-	   CNV_LANG(finfo->name),
+  if (do_this_one(finfo)) {
+    time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
+    DEBUG(0,("  %-30s%7.7s%10d  %s",
+  	   CNV_LANG(finfo->name),
 	   attrib_string(finfo->mode),
 	   finfo->size,
 	   asctime(LocalTime(&t))));
+    dir_total += finfo->size;
+  }
 }
 
 
@@ -1104,6 +1109,7 @@ static void cmd_dir(char *inbuf,char *outbuf)
   fstring buf;
   char *p=buf;
 
+  dir_total = 0;
   strcpy(mask,cur_dir);
   if(mask[strlen(mask)-1]!='\\')
     strcat(mask,"\\");
@@ -1122,6 +1128,8 @@ static void cmd_dir(char *inbuf,char *outbuf)
   do_dir(inbuf,outbuf,mask,attribute,NULL,recurse);
 
   do_dskattr();
+
+  DEBUG(3, ("Total bytes listed: %d\n", dir_total));
 }
 
 

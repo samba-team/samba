@@ -41,7 +41,7 @@ static int attribute = aDIR | aSYSTEM | aHIDDEN;
 #endif
 
 static char *tarbuf;
-static int tp, ntarf, tbufsiz;
+static int tp, ntarf, tbufsiz, ttarf;
 /* Incremental mode */
 BOOL tar_inc=False;
 /* Reset archive bit */
@@ -271,8 +271,8 @@ static void initarbuf()
   tbufsiz=blocksize*TBLOCK;
   tarbuf=malloc(tbufsiz);
 
-  /* reset tar buffer pointer and tar file counter */
-  tp=0; ntarf=0;
+  /* reset tar buffer pointer and tar file counter and total dumped */
+  tp=0; ntarf=0; ttarf=0;
 }
 
 /****************************************************************************
@@ -1078,6 +1078,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       if (finfo.size % TBLOCK)
 	dozerobuf(tarhandle, TBLOCK - (finfo.size % TBLOCK));
       
+      ttarf+=finfo.size + TBLOCK - (finfo.size % TBLOCK);
       ntarf++;
     }
   
@@ -1606,6 +1607,7 @@ int process_tar(char *inbuf, char *outbuf)
     free(tarbuf);
     
     DEBUG(0, ("tar: dumped %d tar files\n", ntarf));
+    DEBUG(0, ("Total bytes written: %d\n", ttarf));
     break;
   }
 

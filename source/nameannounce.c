@@ -222,78 +222,49 @@ void announce_server(struct subnet_record *d, struct work_record *work,
      */
 	uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT;
 	BOOL wins_iface = ip_equal(d->bcast_ip, wins_ip);
-	
-	if (wins_iface && server_type != 0)
-	{
-		/* wins pseudo-ip interface */
-		if (!AM_MASTER(work))
-		{
-			/* non-master announce by unicast to the domain 
-			   master */
-			if (!lp_wins_support() && *lp_wins_server())
-			{
-				/* look up the domain master with the WINS server */
-				queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,
-					 NAME_QUERY_ANNOUNCE_HOST,
-					 work->work_group,0x1b,0,ttl*1000,
-					 server_type,name,comment,
-					 False, True, ipzero, d->bcast_ip);
-			}
-			else
-			{
-				/* we are the WINS server, but not the domain master.  */
-				/* XXXX we need to look up the domain master in our
-				   WINS database list, and do_announce_host(). maybe
-				   we could do a name query on the unsuspecting domain
-				   master just to make sure it's awake. */
-			}
-		}
 
-		/* XXXX any other kinds of announcements we need to consider here?
-		   e.g local master browsers... no. local master browsers do
-		   local master announcements to their domain master. they even
-		   use WINS lookup of the domain master if another wins server
-		   is being used! 
-		 */
+    if(wins_iface)
+    {
+      DEBUG(0,("announce_server: error - announcement requested on WINS \
+interface for workgroup %s, name %s\n", work->work_group, name));
+      return;
+    }
+
+	if (AM_MASTER(work))
+	{
+		DEBUG(3,("sending local master announce to %s for %s(1e)\n",
+						inet_ntoa(d->bcast_ip),work->work_group));
+
+		do_announce_host(ANN_LocalMasterAnnouncement,
+						name            , 0x00, d->myip,
+						work->work_group, 0x1e, d->bcast_ip,
+						ttl,
+						name, server_type, comment);
+
+		DEBUG(3,("sending domain announce to %s for %s\n",
+						inet_ntoa(d->bcast_ip),work->work_group));
+
+		/* XXXX should we do a domain-announce-kill? */
+		if (server_type != 0)
+		{
+			do_announce_host(ANN_DomainAnnouncement,
+						name    , 0x00, d->myip,
+						MSBROWSE, 0x01, d->bcast_ip,
+						ttl,
+						work->work_group, server_type ? domain_type : 0,
+						name);
+		}
 	}
 	else
 	{
-		if (AM_MASTER(work))
-		{
-			DEBUG(3,("sending local master announce to %s for %s(1e)\n",
-							inet_ntoa(d->bcast_ip),work->work_group));
+		DEBUG(3,("sending host announce to %s for %s(1d)\n",
+						inet_ntoa(d->bcast_ip),work->work_group));
 
-			do_announce_host(ANN_LocalMasterAnnouncement,
-							name            , 0x00, d->myip,
-							work->work_group, 0x1e, d->bcast_ip,
-							ttl,
-							name, server_type, comment);
-
-			DEBUG(3,("sending domain announce to %s for %s\n",
-							inet_ntoa(d->bcast_ip),work->work_group));
-
-			/* XXXX should we do a domain-announce-kill? */
-			if (server_type != 0)
-			{
-				do_announce_host(ANN_DomainAnnouncement,
-							name    , 0x00, d->myip,
-							MSBROWSE, 0x01, d->bcast_ip,
-							ttl,
-							work->work_group, server_type ? domain_type : 0,
-							name);
-			}
-		}
-		else
-		{
-			DEBUG(3,("sending host announce to %s for %s(1d)\n",
-							inet_ntoa(d->bcast_ip),work->work_group));
-
-			do_announce_host(ANN_HostAnnouncement,
-							name            , 0x00, d->myip,
-							work->work_group, 0x1d, d->bcast_ip,
-							ttl,
-							name, server_type, comment);
-		}
+		do_announce_host(ANN_HostAnnouncement,
+						name            , 0x00, d->myip,
+						work->work_group, 0x1d, d->bcast_ip,
+						ttl,
+						name, server_type, comment);
 	}
 }
 
@@ -435,24 +406,6 @@ workgroup %s\n", am_master, work->work_group));
       char *name;
       int   type;
 
-#if 0 /* I don't think this option should be used for this purpose. 
-         JRA.
-       */
-      if (*lp_domain_controller())
-        {
-          /* the domain controller option is used to manually specify
-             the domain master browser to sync with
-           */
-
-          /* XXXX i'm not sure we should be using the domain controller
-             option for this purpose.
-           */
-
-          name = lp_domain_controller();
-          type = 0x20;
-        }
-      else
-#endif /* REMOVE SUSPECT CODE. */
         {
           /* assume that the domain master browser we want to sync
              with is our own domain.
