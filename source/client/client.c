@@ -1062,7 +1062,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	int fnum;
 	XFILE *f;
 	int start = 0;
-	int nread = 0;
+	off_t nread = 0;
 	char *buf = NULL;
 	int maxwrite = io_bufsize;
 	int rc = 0;
