@@ -63,7 +63,12 @@ using the full path name in the "print command"
 to print. Fix your lpr system.
 
 - you get an extra blank page of output. Fix this in your lpr system,
-probably by editing /etc/printcap
+probably by editing /etc/printcap. It could also be caused by
+incorrect setting on your client. For example, under Win95 there is a
+option Printers|Printer Name|(Right
+Click)Properties|Postscript|Advanced| that allows you to choose if a
+Ctrl-D is appended to all jobs. This will affect if a blank page is
+output. 
 
 - you get raw postscript instead of nice graphics on the output. Fix
 this either by using a "print command" that cleans up the file before
