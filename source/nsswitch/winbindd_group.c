@@ -463,7 +463,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	/* get the domain local groups if we are a member of 
 	   a native win2k domain */
 	   
-	if ( domain->native_mode )
+	if ( domain->native_mode && domain->methods->enum_local_groups )
 	{
 		DEBUG(4,("get_sam_group_entries: Native Mode 2k domain; enumerating local groups as well\n"));
 		
