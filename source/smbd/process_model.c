@@ -43,7 +43,7 @@ const struct model_ops *process_model_startup(const char *model)
 }
 
 /* the list of currently registered process models */
-static struct {
+static struct process_model {
 	struct model_ops *ops;
 } *models = NULL;
 static int num_models;
@@ -65,7 +65,7 @@ NTSTATUS register_process_model(const void *_ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	models = Realloc(models, sizeof(models[0]) * (num_models+1));
+	models = realloc_p(models, struct process_model, num_models+1);
 	if (!models) {
 		smb_panic("out of memory in register_process_model");
 	}

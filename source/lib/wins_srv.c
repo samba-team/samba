@@ -238,7 +238,7 @@ char **wins_srv_tags(void)
 		}
 
 		/* add it to the list */
-		ret = (char **)Realloc(ret, (count+2) * sizeof(char *));
+		ret = realloc_p(ret, char *, count+2);
 		ret[count] = strdup(t_ip.tag);
 		if (!ret[count]) break;
 		count++;
