@@ -53,7 +53,6 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
     RC4(0, 0, 0, 0);
   ], [
   crypto_lib=libcrypto openssl=yes
-  AC_DEFINE([HAVE_OPENSSL], 1, [define to use openssl's libcrypto])
   AC_MSG_RESULT([libcrypto])])
   CPPFLAGS="$save_CPPFLAGS"
   LIBS="$save_LIBS"
@@ -185,6 +184,9 @@ if test "$crypto_lib" = "unknown"; then
 
 fi
 
+if test "$openssl" = "yes"; then
+  AC_DEFINE([HAVE_OPENSSL], 1, [define to use openssl's libcrypto])
+fi
 AM_CONDITIONAL(HAVE_OPENSSL, test "$openssl" = yes)dnl
 
 AC_SUBST(DIR_des)
