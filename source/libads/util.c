@@ -62,7 +62,6 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 failed:
 	SAFE_FREE(service_principal);
 	SAFE_FREE(password);
-	SAFE_FREE(new_password);
 	return ret;
 }
 #endif
