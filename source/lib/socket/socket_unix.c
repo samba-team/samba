@@ -172,10 +172,6 @@ static NTSTATUS unixdom_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 		flgs |= MSG_PEEK;
 	}
 
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		flgs |= MSG_DONTWAIT;
-	}
-
 	if (flags & SOCKET_FLAG_BLOCK) {
 		flgs |= MSG_WAITALL;
 	}
@@ -206,11 +202,6 @@ static NTSTATUS unixdom_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 	int flgs = 0;
 
 	*sendlen = 0;
-
-	/* TODO: we need to map all flags here */
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		flgs |= MSG_DONTWAIT;
-	}
 
 	len = send(sock->fd, blob->data, blob->length, flgs);
 	if (len == -1) {
