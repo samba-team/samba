@@ -19,6 +19,8 @@ open(MAKEFILE,"../../source/Makefile") || die "Unable to open Makefile\n";
 @makefile = <MAKEFILE>;
 @sprogs = grep(/^SPROGS /,@makefile);
 @progs1 = grep(/^PROGS1 /,@makefile);
+@progs2 = grep(/^PROGS2 /,@makefile);
+@mprogs = grep(/^MPROGS /,@makefile);
 @progs = grep(/^PROGS /,@makefile);
 @scripts = grep(/^SCRIPTS /,@makefile);
 @codepage = grep(/^CODEPAGELIST/,@makefile);
@@ -32,9 +34,17 @@ if (@progs) {
   @progs[0] =~ s/^.*\=//;
   @progs = split(' ',@progs[0]);
 }
+if (@mprogs) {
+  @mprogs[0] =~ s/^.*\=//;
+  @mprogs = split(' ',@mprogs[0]);
+}
 if (@progs1) {
   @progs1[0] =~ s/^.*\=//;
   @progs1 = split(' ',@progs1[0]);
+}
+if (@progs2) {
+  @progs2[0] =~ s/^.*\=//;
+  @progs2 = split(' ',@progs2[0]);
 }
 if (@scripts) {
   @scripts[0] =~ s/^.*\=//;
@@ -57,7 +67,7 @@ system("cp ../swat/README ../packaging/SGI/swat");
 chdir $curdir;
 
 # add my local files to the list of binaries to install
-@bins = sort byfilename (@sprogs,@progs,@progs1,@scripts,("/findsmb","/sambalp","/smbprint"));
+@bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,("/findsmb","/sambalp","/smbprint"));
 
 # get a complete list of all files in the tree
 chdir '../../';
