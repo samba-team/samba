@@ -62,7 +62,7 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	/* copy over the token */
 	pbuf = buff;
 	for (quoted = False; len < bufsize && *s && (quoted || !strchr_m(sep,*s)); s++) {
-		if (*s == '\"') {
+		if (*s == '\"' || *s == '\'') {
 			quoted = !quoted;
 		} else {
 			len++;
