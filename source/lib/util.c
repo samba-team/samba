@@ -4471,11 +4471,8 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
   int ret;
 
   if(lp_ole_locking_compat()) {
-#ifdef LARGE_SMB_OFF_T
-    SMB_OFF_T mask = 0xC000000000000000LL;
-#else
-    SMB_OFF_T mask = 0xC0000000;
-#endif
+    SMB_OFF_T mask = ((SMB_OFF_T)0xC) << (SMB_OFF_T_BITS-4);
+    SMB_OFF_T mask2= ((SMB_OFF_T)0x3) << (SMB_OFF_T_BITS-4);
 
     /* make sure the count is reasonable, we might kill the lockd otherwise */
     count &= ~mask;
@@ -4485,17 +4482,9 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
        still allows OLE2 apps to operate, but should stop lockd from
        dieing */
     if ((offset & mask) != 0)
-#ifdef LARGE_SMB_OFF_T
-      offset = (offset & ~mask) | (((offset & mask) >> 2) & 0x3000000000000000LL);
-#else
-      offset = (offset & ~mask) | (((offset & mask) >> 2) & 0x30000000);
-#endif
+      offset = (offset & ~mask) | (((offset & mask) >> 2) & mask2);
   } else {
-#ifdef LARGE_SMB_OFF_T
-    SMB_OFF_T mask = 0x8000000000000000LL;
-#else
-    SMB_OFF_T mask = 0x80000000;
-#endif
+    SMB_OFF_T mask = ((SMB_OFF_T)0x8) << (SMB_OFF_T_BITS-4);
     SMB_OFF_T neg_mask = ~mask;
 
     /* interpret negative counts as large numbers */
