@@ -182,6 +182,7 @@ int dos_mkdir(char *dname,mode_t mode);
 int dos_rmdir(char *dname);
 int dos_chdir(char *dname);
 int dos_utime(char *fname,struct utimbuf *times);
+int copy_reg(char *source, const char *dest);
 int dos_rename(char *from, char *to);
 int dos_chmod(char *fname,mode_t mode);
 char *dos_getwd(char *unix_path);
@@ -264,7 +265,7 @@ void generate_wellknown_sids(void);
 BOOL generate_sam_sid(char *domain_name);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain);
 BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
-BOOL split_domain_name(char *fullname, char *domain, char *name);
+BOOL split_domain_name(const char *fullname, char *domain, char *name);
 
 /*The following definitions come from  lib/signal.c  */
 
@@ -353,6 +354,7 @@ void putip(void *dest,void *src);
 char *dns_to_netbios_name(char *dns_name);
 int name_mangle( char *In, char *Out, char name_type );
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
+int file_rename(char *from, char *to);
 time_t file_modtime(char *fname);
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st);
 SMB_OFF_T file_size(char *file_name);

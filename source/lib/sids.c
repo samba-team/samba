@@ -312,9 +312,9 @@ BOOL generate_sam_sid(char *domain_name)
 	strupper(file_name);
 	pstrcat(sid_file, file_name);
     
-	if (file_exists(machine_sid_file, NULL))
+	if (file_exist(machine_sid_file, NULL))
 	{
-		if (file_exists(machine_sid_file, NULL))
+		if (file_exist(machine_sid_file, NULL))
 		{
 			DEBUG(0,("both %s and %s exist when only one should, unable to continue\n",
 			          machine_sid_file, sid_file));
@@ -548,10 +548,10 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain)
 }
 
 /**************************************************************************
- splits a name of format \DOMAIN\name into its two components.
+ splits a name of format \DOMAIN\name or name into its two components.
  sets the DOMAIN name to global_sam_name if it has not been specified.
 ***************************************************************************/
-BOOL split_domain_name(char *fullname, char *domain, char *name)
+BOOL split_domain_name(const char *fullname, char *domain, char *name)
 {
 	fstring full_name;
 	char *p;
@@ -580,6 +580,6 @@ BOOL split_domain_name(char *fullname, char *domain, char *name)
 		fstrcpy(name, full_name);
 	}
 
-	DEBUG(5,("name '%s' split into '%s\\%s'\n", fullname, domain, name));
+	DEBUG(10,("name '%s' split into domain:%s and nt name:%s'\n", fullname, domain, name));
 	return True;
 }

@@ -951,7 +951,7 @@ BOOL lookupsmbpwntnam(char *fullntname, DOM_NAME_MAP *gmep)
 {
 	DEBUG(10,("lookupsmbpwntnam: nt user name %s\n", fullntname));
 
-	if (!split_domain_name(fullntname, nt_name, nt_domain))
+	if (!split_domain_name(fullntname, nt_domain, nt_name))
 	{
 		return False;
 	}
