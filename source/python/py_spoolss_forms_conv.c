@@ -57,23 +57,30 @@ BOOL py_to_FORM(FORM *form, PyObject *dict)
 {
 	PyObject *obj, *dict_copy = PyDict_Copy(dict);
 	char *name;
+	BOOL result = False;
 
-	obj = PyDict_GetItemString(dict, "name");
+	if (!(obj = PyDict_GetItemString(dict_copy, "name")) || 
+	    !PyString_Check(obj))
+		goto done;
 
-	if (!obj || !PyString_Check(obj))
-		return False;
-
-	PyDict_DelItemString(dict_copy, "level");
 	PyDict_DelItemString(dict_copy, "name");
 
-	if (!to_struct(form, dict_copy, py_FORM)) {
-		Py_DECREF(dict_copy);
-		return False;
-	}
+	if (!(obj = PyDict_GetItemString(dict_copy, "level")) ||
+	    !PyInt_Check(obj))
+		goto done;
+
+	PyDict_DelItemString(dict_copy, "level");
+
+	if (!to_struct(form, dict_copy, py_FORM))
+		goto done;
 
 	name = PyString_AsString(obj);
 
 	init_unistr2(&form->name, name, strlen(name) + 1);
 	
-	return True;
+	result = True;
+
+done:
+	Py_DECREF(dict_copy);
+	return result;
 }
