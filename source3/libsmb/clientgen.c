@@ -1337,7 +1337,9 @@ int cli_nt_create(struct cli_state *cli, const char *fname)
 	pstrcpy(p,fname);
 	p = skip_string(p,1);
 
-	cli_send_smb(cli, True);
+	if (!cli_send_smb(cli, True)) {
+		return -1;
+	}
 	if (!cli_receive_smb(cli)) {
 		return -1;
 	}
@@ -2945,7 +2947,7 @@ static int cli_init_redirect(struct cli_state *cli,
 	if (strequal(srv_name, "*SMBSERVER"))
 	{
 		fstrcpy(ip_name, "\\\\");
-		inet_aton(&ip_name[2], destip);
+		destip->s_addr = inet_addr(&ip_name[2]);
 		srv_name = ip_name;
 	}
 

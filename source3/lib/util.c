@@ -3234,11 +3234,18 @@ char *get_trusted_serverlist(const char* domain)
 	static char *server_list = NULL;
 	static pstring srv_list;
 	char *trusted_list = lp_trusted_domains();
+	int my_role = lp_server_role();
 
 	if (strequal(lp_workgroup(), domain))
 	{
-		DEBUG(10,("local domain server list: %s\n", server_list));
-		pstrcpy(srv_list, lp_passwordserver());
+		if ((my_role == ROLE_DOMAIN_PDC) || (my_role == ROLE_DOMAIN_NONE)) {
+			 pstrcpy(srv_list,global_myname);
+		}
+		/* we must be a BDC or MEMBER if we execute this branch */
+		else {
+			pstrcpy(srv_list, lp_passwordserver());
+		}
+		DEBUG(10,("local domain server list: %s\n", srv_list));
 		return srv_list;
 	}
 
