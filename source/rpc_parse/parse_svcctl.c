@@ -481,7 +481,7 @@ BOOL svcctl_io_q_start_service(const char *desc, SVCCTL_Q_START_SERVICE *q_u, pr
 	if(!prs_uint32("parmcount", ps, depth, &q_u->parmcount))
 		return False;
 
-	if(!smb_io_unistr2_array("parameters", &q_u->parameters, ps, depth))
+	if ( !prs_pointer("rights", ps, depth, (void**)&q_u->parameters, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	return True;
