@@ -8023,6 +8023,9 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
 
 	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename );
+	
+	if ( W_ERROR_IS_OK(status) )
+		mod_a_printer( *printer, 2 );
 
 	free_a_printer(&printer, 2);
 
@@ -8886,6 +8889,9 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 
 	status = delete_printer_dataex( printer, keyname, valuename );
 
+	if ( W_ERROR_IS_OK(status) )
+		mod_a_printer( *printer, 2 );
+		
 	free_a_printer(&printer, 2);
 
 	return status;
