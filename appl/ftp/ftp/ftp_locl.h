@@ -6,6 +6,9 @@
 #endif
 
 #include <sys/param.h>
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/types.h>
