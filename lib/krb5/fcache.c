@@ -40,6 +40,10 @@
 
 RCSID("$Id$");
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 typedef struct krb5_fcache{
     char *filename;
     int version;
@@ -86,7 +90,7 @@ erase_file(const char *filename)
     off_t pos;
     char *p;
 
-    fd = open(filename, O_RDWR);
+    fd = open(filename, O_RDWR | O_BINARY);
     if(fd < 0)
 	if(errno == ENOENT)
 	    return 0;
@@ -122,7 +126,7 @@ fcc_initialize(krb5_context context,
     if((ret = erase_file(filename)))
 	return ret;
   
-    fd = open(filename, O_RDWR | O_CREAT | O_EXCL, 0600);
+    fd = open(filename, O_RDWR | O_CREAT | O_EXCL | O_BINARY, 0600);
     if(fd == -1)
 	return errno;
     {
@@ -179,7 +183,7 @@ fcc_store_cred(krb5_context context,
 
     f = FILENAME(id);
 
-    fd = open(f, O_WRONLY | O_APPEND);
+    fd = open(f, O_WRONLY | O_APPEND | O_BINARY);
     if(fd < 0)
 	return errno;
     {
@@ -249,7 +253,7 @@ init_fcc (krb5_context context,
     int16_t tag;
     krb5_storage *sp;
 
-    fd = open(fcache->filename, O_RDONLY);
+    fd = open(fcache->filename, O_RDONLY | O_BINARY);
     if(fd < 0)
 	return errno;
     sp = krb5_storage_from_fd(fd);

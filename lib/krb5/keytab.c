@@ -40,6 +40,10 @@
 
 RCSID("$Id$");
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 static struct krb5_keytab_data *kt_types;
 static int num_kt_types;
 
@@ -554,7 +558,7 @@ fkt_start_seq_get(krb5_context context,
 		  krb5_keytab id, 
 		  krb5_kt_cursor *c)
 {
-    return fkt_start_seq_get_int(context, id, O_RDONLY, c);
+    return fkt_start_seq_get_int(context, id, O_RDONLY | O_BINARY, c);
 }
 
 static krb5_error_code
@@ -626,9 +630,9 @@ fkt_add_entry(krb5_context context,
     struct fkt_data *d = id->data;
     off_t pos_start, pos_end;
     
-    fd = open (d->filename, O_WRONLY);
+    fd = open (d->filename, O_WRONLY | O_BINARY);
     if (fd < 0) {
-	fd = open (d->filename, O_WRONLY | O_CREAT, 0600);
+	fd = open (d->filename, O_WRONLY | O_CREAT | O_BINARY, 0600);
 	if (fd < 0)
 	    return errno;
 	sp = krb5_storage_from_fd(fd);
@@ -673,7 +677,7 @@ fkt_remove_entry(krb5_context context,
     krb5_kt_cursor cursor;
     off_t pos_start, pos_end;
     
-    fkt_start_seq_get_int(context, id, O_RDWR, &cursor);
+    fkt_start_seq_get_int(context, id, O_RDWR | O_BINARY, &cursor);
     pos_start = cursor.offset;
     while(krb5_kt_next_entry(context, id, &e, &cursor) == 0) {
 	if(kt_compare(context, &e, entry->principal, 
