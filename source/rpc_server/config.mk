@@ -97,6 +97,8 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_netlogon]
 INIT_OBJ_FILES = \
 		rpc_server/netlogon/dcerpc_netlogon.o
+ADD_OBJ_FILES = \
+		rpc_server/netlogon/schannel_state.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB \
 		DCERPC_COMMON

@@ -251,7 +251,10 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 
 	pipe_state->computer_name = talloc_strdup(pipe_state->mem_ctx, r->in.computer_name);
 
-	return NT_STATUS_OK;
+	/* remember this session key state */
+	nt_status = schannel_store_session_key(mem_ctx, pipe_state->computer_name, pipe_state->creds);
+
+	return nt_status;
 }
 						 
 
