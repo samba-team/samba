@@ -1,0 +1,19 @@
+<chapter id="upgrading-to-3.0">
+<chapterinfo>
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+		<affiliation>Samba Team</affiliation>
+	</author>
+	<pubdate>25 October 2002</pubdate>
+</chapterinfo>
+
+<title>Issues when upgrading from 2.2 to 3.0</title>
+
+<sect1>
+<title>Charsets</title>
+
+FIXME
+
+</sect1>
+
+</chapter>
