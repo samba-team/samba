@@ -22,11 +22,20 @@ LDADD = libhdb.la \
 lib_LTLIBRARIES = libhdb.la
 libhdb_la_LDFLAGS = -version-info 1:0:0
 
-libhdb_la_SOURCES = hdb.c common.c db.c ndbm.c $(BUILT_SOURCES)
+libhdb_la_SOURCES = hdb.c common.c db.c ndbm.c print.c $(BUILT_SOURCES)
+libhdb_la_LDFLAGS = -version-info 1:0:0
 
-include_HEADERS = hdb.h hdb_err.h hdb_asn1.h
+include_HEADERS = hdb.h hdb_err.h hdb_asn1.h hdb-protos.h hdb-private.h
 
 libhdb_la_LIBADD = 
+
+$(libhdb_la_OBJECTS): $(srcdir)/hdb-protos.h $(srcdir)/hdb-private.h
+
+$(srcdir)/hdb-protos.h:
+	cd $(srcdir); perl ../../cf/make-proto.pl -o hdb-protos.h $(libhdb_la_SOURCES) || rm -f hdb-protos.h
+
+$(srcdir)/hdb-private.h:
+	cd $(srcdir); perl ../../cf/make-proto.pl -p hdb-private.h $(libhdb_la_SOURCES) || rm -f hdb-private.h
 
 $(foo) hdb_asn1.h: asn1_files
 
