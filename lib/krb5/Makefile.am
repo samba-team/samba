@@ -98,10 +98,10 @@ libkrb5_la_SOURCES = \
 	$(ERR_FILES)
 
 
-$(libkrb5_a_OBJECTS): $(srcdir)/krb5-protos.h
+$(libkrb5_la_OBJECTS): $(srcdir)/krb5-protos.h
 
 $(srcdir)/krb5-protos.h:
-	cd $(srcdir); perl ../../cf/make-proto.pl $(libkrb5_a_SOURCES) > krb5-protos.h || rm -f krb5-protos.h
+	cd $(srcdir); perl ../../cf/make-proto.pl $(libkrb5_la_SOURCES) > krb5-protos.h || rm -f krb5-protos.h
 
 INCLUDES = $(INCLUDE_krb4)
 
@@ -133,4 +133,4 @@ all-local: $(inc_DATA)
 .et.h:
 	$(COMPILE_ET) $<
 
-$(libkrb5_a_OBJECTS): krb5_err.h heim_err.h
+$(libkrb5_la_OBJECTS): krb5_err.h heim_err.h

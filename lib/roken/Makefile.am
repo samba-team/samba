@@ -34,7 +34,7 @@ libroken_la_SOURCES =				\
 
 libroken_la_LIBADD = @LTLIBOBJS@
 
-$(LIBOBJS) $(libroken_a_OBJECTS): roken.h
+$(LIBOBJS) $(libroken_la_OBJECTS): roken.h
 
 incdir = $(includedir)
 inc_DATA = roken.h
@@ -56,7 +56,7 @@ roken.h: make-roken
 make-roken.c: roken.h.in roken.awk
 	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
 
-print_version.o: print_version.h
+print_version.lo: print_version.h
 
 print_version.h: make-print-version
 	./make-print-version print_version.h

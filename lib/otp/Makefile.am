@@ -6,7 +6,9 @@ INCLUDES = -I$(top_builddir)/include
 
 noinst_PROGRAMS = otptest
 
-otptest_LDADD = libotp.a $(top_builddir)/lib/des/libdes.la $(top_builddir)/lib/roken/libroken.la
+otptest_LDADD = libotp.la \
+	$(top_builddir)/lib/des/libdes.la \
+	$(top_builddir)/lib/roken/libroken.la
 
 lib_LTLIBRARIES = libotp.la
 

@@ -92,6 +92,6 @@ all-local: $(inc_DATA)
 .et.c:
 	$(COMPILE_ET) $<
 
-$(libkadm5srv_a_OBJECTS): kadm5_err.h
+$(libkadm5srv_la_OBJECTS): kadm5_err.h
 
-client_glue.o server_glue.o: $(srcdir)/common_glue.c
+client_glue.lo server_glue.lo: $(srcdir)/common_glue.c
