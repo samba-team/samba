@@ -286,6 +286,8 @@ this one is for AIX
 	/* Loop through interfaces, looking for given IP address */
 	i = ifc.ifc_len;
 	while (i > 0) {
+		int inc;
+
 #ifdef DEBUG
 		fprintf(stderr,"interface %s\n", 
 			inet_ntoa((*(struct sockaddr_in *)&ifr->ifr_addr).sin_addr));
@@ -294,9 +296,21 @@ this one is for AIX
 		    (*(struct sockaddr_in *) &ifr->ifr_addr).sin_addr.s_addr) {
 			break;
 		}
-		i -= ifr->ifr_addr.sa_len + IFNAMSIZ;
-		ifr = (struct ifreq*) ((char*) ifr + ifr->ifr_addr.sa_len + 
-				       IFNAMSIZ);
+
+		/*
+		 * Patch from Archie Cobbs (archie@whistle.com).
+		 * The addresses in the SIOCGIFCONF interface list have a
+		 * minimum size. Usually this doesn't matter, but if your machine has
+		 * tunnel interfaces, etc. that have a zero length "link address",
+		 * this does matter.
+		 */
+
+		inc = ifr->ifr_addr.sa_len;
+		if (inc < sizeof(ifr->ifr_addr))
+			inc = sizeof(ifr->ifr_addr);
+		inc += IFNAMSIZ;
+		ifr = (struct ifreq*) (((char*) ifr) + inc);
+		i -= inc;
 	}
   
 
