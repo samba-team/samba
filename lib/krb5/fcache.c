@@ -337,12 +337,7 @@ fcc_get_next (krb5_context context,
 	      krb5_cc_cursor *cursor,
 	      krb5_creds *creds)
 {
-    krb5_error_code err;
-    krb5_storage *sp;
-    sp =  krb5_storage_from_fd(cursor->u.fd);
-    err = fcc_read_cred (cursor->u.fd, creds);
-    krb5_storage_free(sp);
-    return err;
+    return fcc_read_cred (cursor->u.fd, creds);
 }
 
 static krb5_error_code
