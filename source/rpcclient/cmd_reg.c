@@ -172,7 +172,7 @@ static void cmd_reg_enum(struct client_info *info)
 		 */
 
 		uint32 val_type;
-		BUFFER2 value;
+		REGVAL_BUFFER value;
 		fstring val_name;
 
 		/* unknown 1a it */

@@ -30,10 +30,10 @@
 #define DBGC_CLASS DBGC_RPC_PARSE
 
 /*******************************************************************
- Fill in a BUFFER2 for the data given a REGISTRY_VALUE
+ Fill in a REGVAL_BUFFER for the data given a REGISTRY_VALUE
  *******************************************************************/
 
-static uint32 reg_init_buffer2( BUFFER2 *buf2, REGISTRY_VALUE *val )
+static uint32 reg_init_regval_buffer( REGVAL_BUFFER *buf2, REGISTRY_VALUE *val )
 {
 	uint32		real_size = 0;
 	
@@ -41,7 +41,7 @@ static uint32 reg_init_buffer2( BUFFER2 *buf2, REGISTRY_VALUE *val )
 		return 0;
 		
 	real_size = regval_size(val);
-	init_buffer2( buf2, (unsigned char*)regval_data_p(val), real_size );
+	init_regval_buffer( buf2, (unsigned char*)regval_data_p(val), real_size );
 
 	return real_size;
 }
@@ -844,15 +844,14 @@ makes a structure.
 ********************************************************************/
 
 BOOL init_reg_q_info(REG_Q_INFO *q_u, POLICY_HND *pol, const char *val_name,
-                     BUFFER2 *value_output)
+                     REGVAL_BUFFER *value_output)
 {
         if (q_u == NULL)
                 return False;
 
         q_u->pol = *pol;
 
-        init_unistr2(&q_u->uni_type, val_name, UNI_STR_TERMINATE);
-        init_uni_hdr(&q_u->hdr_type, &q_u->uni_type);
+        init_unistr4(&q_u->name, val_name, UNI_STR_TERMINATE);
 
         q_u->ptr_reserved = 1;
         q_u->ptr_buf = 1;
@@ -888,9 +887,7 @@ BOOL reg_io_q_info(const char *desc,  REG_Q_INFO *q_u, prs_struct *ps, int depth
 	
 	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
 		return False;
-	if(!smb_io_unihdr ("", &q_u->hdr_type, ps, depth))
-		return False;
-	if(!smb_io_unistr2("", &q_u->uni_type, q_u->hdr_type.buffer, ps, depth))
+	if(!prs_unistr4("name", ps, depth, &q_u->name))
 		return False;
 
 	if(!prs_align(ps))
@@ -934,11 +931,11 @@ BOOL reg_io_q_info(const char *desc,  REG_Q_INFO *q_u, prs_struct *ps, int depth
  New version to replace older init_reg_r_info()
 ********************************************************************/
 
-BOOL new_init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_u,
+BOOL init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_u,
 		     REGISTRY_VALUE *val, WERROR status)
 {
-	uint32		buf_len = 0;
-	BUFFER2		buf2;
+	uint32			buf_len = 0;
+	REGVAL_BUFFER		buf2;
 		
 	if( !r_u || !val )
 		return False;
@@ -946,56 +943,22 @@ BOOL new_init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_u,
 	r_u->type = TALLOC_P( get_talloc_ctx(), uint32 );
 	*r_u->type = val->type;
 
-	/* if include_keyval is not set, don't send the key value, just
-	   the buflen data. probably used by NT5 to allocate buffer space - SK */
-
-	if ( include_keyval ) {
-		r_u->ptr_uni_val = 1;
-		buf_len = reg_init_buffer2( &r_u->uni_val, val );
+	buf_len = reg_init_regval_buffer( &buf2, val );
 	
-	}
-	else {
-		/* dummy buffer used so we can get the size */
-		r_u->ptr_uni_val = 0;
-		buf_len = reg_init_buffer2( &buf2, val );
-	}
-
 	r_u->buf_max_len = TALLOC_P( get_talloc_ctx(), uint32 );
 	*r_u->buf_max_len = buf_len;
 
 	r_u->buf_len = TALLOC_P( get_talloc_ctx(), uint32 );
 	*r_u->buf_len = buf_len;
-
-	r_u->status = status;
-
-	return True;
-}
-
-/*******************************************************************
- Inits a structure.
-********************************************************************/
-
-BOOL init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_u,
-		     BUFFER2* buf, uint32 type, WERROR status)
-{
-	if( !r_u )
-		return False;
-  
-	r_u->type = TALLOC_P( get_talloc_ctx(), uint32 );
-	*r_u->type = type;
-
+	
 	/* if include_keyval is not set, don't send the key value, just
 	   the buflen data. probably used by NT5 to allocate buffer space - SK */
 
-	r_u->ptr_uni_val = include_keyval ? 1:0;
-	r_u->uni_val = *buf;
-
-	r_u->buf_max_len = TALLOC_P( get_talloc_ctx(), uint32 );
-	*r_u->buf_max_len = r_u->uni_val.buf_max_len;
-
-
-	r_u->buf_len = TALLOC_P( get_talloc_ctx(), uint32 );
-	*r_u->buf_len = r_u->uni_val.buf_len;
+	if ( include_keyval ) {
+		r_u->value = TALLOC_P( get_talloc_ctx(), REGVAL_BUFFER );
+		/* steal the memory */
+		*r_u->value = buf2;
+	}
 
 	r_u->status = status;
 
@@ -1020,14 +983,8 @@ BOOL reg_io_r_info(const char *desc, REG_R_INFO *r_u, prs_struct *ps, int depth)
 	if ( !prs_pointer("type", ps, depth, (void**)&r_u->type, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
-	if(!prs_uint32("ptr_uni_val", ps, depth, &(r_u->ptr_uni_val)))
+	if ( !prs_pointer("value", ps, depth, (void**)&r_u->value, sizeof(REGVAL_BUFFER), (PRS_POINTER_CAST)smb_io_regval_buffer))
 		return False;
-
-	if(r_u->ptr_uni_val != 0) {
-		if(!smb_io_buffer2("uni_val", &r_u->uni_val, r_u->ptr_uni_val, ps, depth))
-			return False;
-	}
-
 	if(!prs_align(ps))
 		return False;
 
@@ -1061,8 +1018,8 @@ void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_u, POLICY_HND *pol,
 	q_u->type = TALLOC_P( get_talloc_ctx(), uint32 );
 	*q_u->type = 0x0;
 
-	q_u->ptr_value = 1;
-	q_u->buf_value.buf_max_len = max_buf_len;
+	q_u->value = TALLOC_P( get_talloc_ctx(), REGVAL_BUFFER );
+	q_u->value->buf_max_len = max_buf_len;
 
 	q_u->len_value1 = TALLOC_P( get_talloc_ctx(), uint32 );
 	*q_u->len_value1 = max_buf_len;
@@ -1096,8 +1053,8 @@ void init_reg_r_enum_val(REG_R_ENUM_VALUE *r_u, REGISTRY_VALUE *val )
 
 	/* REG_SZ & REG_MULTI_SZ must be converted to UNICODE */
 	
-	r_u->ptr_value = 1;
-	real_size = reg_init_buffer2( &r_u->buf_value, val );
+	r_u->value = TALLOC_P( get_talloc_ctx(), REGVAL_BUFFER );
+	real_size = reg_init_regval_buffer( r_u->value, val );
 	
 	/* lengths */
 
@@ -1139,9 +1096,7 @@ BOOL reg_io_q_enum_val(const char *desc,  REG_Q_ENUM_VALUE *q_u, prs_struct *ps,
 	if(!prs_pointer("type", ps, depth, (void**)&q_u->type, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
-	if(!prs_uint32("ptr_value", ps, depth, &q_u->ptr_value))
-		return False;
-	if(!smb_io_buffer2("buf_value", &q_u->buf_value, q_u->ptr_value, ps, depth))
+	if ( !prs_pointer("value", ps, depth, (void**)&q_u->value, sizeof(REGVAL_BUFFER), (PRS_POINTER_CAST)smb_io_regval_buffer))
 		return False;
 	if(!prs_align(ps))
 		return False;
@@ -1158,9 +1113,9 @@ BOOL reg_io_q_enum_val(const char *desc,  REG_Q_ENUM_VALUE *q_u, prs_struct *ps,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_enum_val(const char *desc,  REG_R_ENUM_VALUE *q_u, prs_struct *ps, int depth)
+BOOL reg_io_r_enum_val(const char *desc,  REG_R_ENUM_VALUE *r_u, prs_struct *ps, int depth)
 {
-	if ( !q_u )
+	if ( !r_u )
 		return False;
 
 	prs_debug(ps, depth, desc, "reg_io_r_enum_val");
@@ -1169,28 +1124,26 @@ BOOL reg_io_r_enum_val(const char *desc,  REG_R_ENUM_VALUE *q_u, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_unistr4("name", ps, depth, &q_u->name ))
+	if(!prs_unistr4("name", ps, depth, &r_u->name ))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("type", ps, depth, (void**)&q_u->type, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("type", ps, depth, (void**)&r_u->type, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
-	if(!prs_uint32("ptr_value", ps, depth, &q_u->ptr_value))
-		return False;
-	if(!smb_io_buffer2("buf_value", &q_u->buf_value, q_u->ptr_value, ps, depth))
+	if ( !prs_pointer("value", ps, depth, (void**)&r_u->value, sizeof(REGVAL_BUFFER), (PRS_POINTER_CAST)smb_io_regval_buffer))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("len_value1", ps, depth, (void**)&q_u->len_value1, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("len_value1", ps, depth, (void**)&r_u->len_value1, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
-	if(!prs_pointer("len_value2", ps, depth, (void**)&q_u->len_value2, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("len_value2", ps, depth, (void**)&r_u->len_value2, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
 
-	if(!prs_werror("status", ps, depth, &q_u->status))
+	if(!prs_werror("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;

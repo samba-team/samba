@@ -947,28 +947,28 @@ BOOL prs_buffer5(BOOL charmode, const char *name, prs_struct *ps, int depth, BUF
  in byte chars. String is in little-endian format.
  ********************************************************************/
 
-BOOL prs_buffer2(BOOL charmode, const char *name, prs_struct *ps, int depth, BUFFER2 *str)
+BOOL prs_regval_buffer(BOOL charmode, const char *name, prs_struct *ps, int depth, REGVAL_BUFFER *buf)
 {
 	char *p;
-	char *q = prs_mem_get(ps, str->buf_len);
+	char *q = prs_mem_get(ps, buf->buf_len);
 	if (q == NULL)
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		if (str->buf_len > str->buf_max_len) {
+		if (buf->buf_len > buf->buf_max_len) {
 			return False;
 		}
-		if ( str->buf_max_len ) {
-			str->buffer = PRS_ALLOC_MEM(ps, uint16, str->buf_max_len);
-			if ( str->buffer == NULL )
+		if ( buf->buf_max_len ) {
+			buf->buffer = PRS_ALLOC_MEM(ps, uint16, buf->buf_max_len);
+			if ( buf->buffer == NULL )
 				return False;
 		}
 	}
 
-	p = (char *)str->buffer;
+	p = (char *)buf->buffer;
 
-	dbg_rw_punival(charmode, name, depth, ps, q, p, str->buf_len/2);
-	ps->data_offset += str->buf_len;
+	dbg_rw_punival(charmode, name, depth, ps, q, p, buf->buf_len/2);
+	ps->data_offset += buf->buf_len;
 
 	return True;
 }

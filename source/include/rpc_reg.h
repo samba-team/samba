@@ -233,8 +233,7 @@ typedef struct {
 	uint32 val_index;
 	UNISTR4 name;
 	uint32 *type;  
-	uint32 ptr_value;  /* pointer */
-	BUFFER2 buf_value; /* value, in byte buffer */
+	REGVAL_BUFFER *value; /* value, in byte buffer */
 	uint32 *len_value1; 
 	uint32 *len_value2; 
 } REG_Q_ENUM_VALUE;
@@ -242,8 +241,7 @@ typedef struct {
 typedef struct { 
 	UNISTR4 name;
 	uint32 *type;
-	uint32 ptr_value;
-	BUFFER2 buf_value;
+	REGVAL_BUFFER *value;
 	uint32 *len_value1;
 	uint32 *len_value2;
 	WERROR status;
@@ -395,9 +393,7 @@ typedef struct {
 
 typedef struct {
 	POLICY_HND pol;		/* policy handle */
-
-	UNIHDR  hdr_type;	/* unicode product type header */
-	UNISTR2 uni_type;	/* unicode product type - "ProductType" */
+	UNISTR4  name;
 
 	uint32 ptr_reserved;	/* pointer */
   
@@ -415,11 +411,9 @@ typedef struct {
 
 } REG_Q_INFO;
 
-typedef struct r_reg_info_info
-{ 
+typedef struct { 
 	uint32 *type;
-	uint32 ptr_uni_val;	/* key value pointer */
-	BUFFER2 uni_val;	/* key value */
+	REGVAL_BUFFER *value;	/* key value */
 	uint32 *buf_max_len;
 	uint32 *buf_len;
 	WERROR status;	/* return status */

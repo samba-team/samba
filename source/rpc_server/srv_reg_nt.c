@@ -362,7 +362,7 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 		
 	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->name));
 	
-	rpcstr_pull(name, q_u->uni_type.buffer, sizeof(name), q_u->uni_type.uni_str_len*2, 0);
+	rpcstr_pull(name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0);
 
 	DEBUG(5,("reg_info: looking up value: [%s]\n", name));
 
@@ -439,7 +439,7 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
   
 out:
-	new_init_reg_r_info(q_u->ptr_buf, r_u, val, status);
+	init_reg_r_info(q_u->ptr_buf, r_u, val, status);
 	
 	regval_ctr_destroy( &regvals );
 	free_registry_value( val );

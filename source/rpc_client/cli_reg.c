@@ -331,7 +331,7 @@ do a REG Query Info
 ****************************************************************************/
 WERROR cli_reg_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                            POLICY_HND *hnd, const char *val_name,
-                           uint32 *type, BUFFER2 *buffer)
+                           uint32 *type, REGVAL_BUFFER *buffer)
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 
@@ -354,14 +354,13 @@ WERROR cli_reg_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Unmarshall response */
 
-	r_o.uni_val = *buffer;
 	if (!reg_io_r_info("", &r_o, &rbuf, 0))
 		goto done;
 
 	result = r_o.status;
 	if (NT_STATUS_IS_OK(result)) {
 		*type = *r_o.type;
-		*buffer = r_o.uni_val;
+		*buffer = *r_o.value;
 	}
 
 done:
@@ -693,7 +692,7 @@ do a REG Enum Value
 WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                           POLICY_HND *hnd, int val_index, int max_valnamelen,
                           int max_valbufsize, fstring val_name,
-                          uint32 *val_type, BUFFER2 *value)
+                          uint32 *val_type, REGVAL_BUFFER *value)
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 
@@ -713,7 +712,6 @@ WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 
 	ZERO_STRUCT(r_o);
-	r_o.buf_value = *value;
 
 	/* Unmarshall response */
 
@@ -725,7 +723,7 @@ WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	    NT_STATUS_EQUAL(result, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		(*val_type) = *r_o.type;
 		unistr2_to_ascii(val_name, r_o.name.string, sizeof(fstring)-1);
-		*value = r_o.buf_value;
+		*value = *r_o.value;
 	}
 
 done:

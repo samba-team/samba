@@ -132,28 +132,6 @@ BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Reads or writes a LOOKUP_LEVEL structure.
-********************************************************************/
-
-BOOL smb_io_lookup_level(const char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth)
-{
-	if (level == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_lookup_level");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint16("value", ps, depth, &level->value))
-		return False;
-	if(!prs_align(ps))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Gets an enumeration handle from an ENUM_HND structure.
 ********************************************************************/
 
@@ -707,10 +685,10 @@ BOOL smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Inits a BUFFER2 structure.
+ Inits a REGVAL_BUFFER structure.
 ********************************************************************/
 
-void init_buffer2(BUFFER2 *str, const uint8 *buf, size_t len)
+void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len)
 {
 	ZERO_STRUCTP(str);
 
@@ -723,50 +701,39 @@ void init_buffer2(BUFFER2 *str, const uint8 *buf, size_t len)
 		SMB_ASSERT(str->buf_max_len >= str->buf_len);
 		str->buffer = TALLOC_ZERO(get_talloc_ctx(), str->buf_max_len);
 		if (str->buffer == NULL)
-			smb_panic("init_buffer2: talloc fail\n");
+			smb_panic("init_regval_buffer: talloc fail\n");
 		memcpy(str->buffer, buf, str->buf_len);
 	}
 }
 
 /*******************************************************************
- Reads or writes a BUFFER2 structure.
+ Reads or writes a REGVAL_BUFFER structure.
    the uni_max_len member tells you how large the buffer is.
    the uni_str_len member tells you how much of the buffer is really used.
 ********************************************************************/
 
-BOOL smb_io_buffer2(const char *desc, BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth)
+BOOL smb_io_regval_buffer(const char *desc, prs_struct *ps, int depth, REGVAL_BUFFER *buf2)
 {
-	if (buf2 == NULL)
+
+	prs_debug(ps, depth, desc, "smb_io_regval_buffer");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+		
+	if(!prs_uint32("uni_max_len", ps, depth, &buf2->buf_max_len))
+		return False;
+	if(!prs_uint32("offset     ", ps, depth, &buf2->offset))
+		return False;
+	if(!prs_uint32("buf_len    ", ps, depth, &buf2->buf_len))
 		return False;
 
-	if (buffer) {
+	/* buffer advanced by indicated length of string
+	   NOT by searching for null-termination */
 
-		prs_debug(ps, depth, desc, "smb_io_buffer2");
-		depth++;
+	if(!prs_regval_buffer(True, "buffer     ", ps, depth, buf2))
+		return False;
 
-		if(!prs_align(ps))
-			return False;
-		
-		if(!prs_uint32("uni_max_len", ps, depth, &buf2->buf_max_len))
-			return False;
-		if(!prs_uint32("offset     ", ps, depth, &buf2->offset))
-			return False;
-		if(!prs_uint32("buf_len    ", ps, depth, &buf2->buf_len))
-			return False;
-
-		/* buffer advanced by indicated length of string
-		   NOT by searching for null-termination */
-
-		if(!prs_buffer2(True, "buffer     ", ps, depth, buf2))
-			return False;
-
-	} else {
-
-		prs_debug(ps, depth, desc, "smb_io_buffer2 - NULL");
-		depth++;
-		memset((char *)buf2, '\0', sizeof(*buf2));
-
-	}
 	return True;
 }
 

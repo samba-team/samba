@@ -324,18 +324,6 @@ char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
 
 
 /*******************************************************************
-Return a number stored in a buffer
-********************************************************************/
-
-uint32 buffer2_to_uint32(BUFFER2 *str)
-{
-	if (str->buf_len == 4)
-		return IVAL(str->buffer, 0);
-	else
-		return 0;
-}
-
-/*******************************************************************
  Convert a wchar to upper case.
 ********************************************************************/
 
