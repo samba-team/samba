@@ -99,6 +99,7 @@ PyObject *spoolss_closeprinter(PyObject *self, PyObject *args);
 PyObject *spoolss_getprinter(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_printers_conv.c  */
 
