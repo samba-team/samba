@@ -551,6 +551,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 						  blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DATA_BLOB null = data_blob(NULL, 0);
 			if (turn == 1) {
 				/* and wrap it in a SPNEGO wrapper */
 				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
@@ -559,13 +560,15 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 				msg1 = spnego_gen_auth(blob_out);
 			}
 		
+			cli_simple_set_signing(cli, 
+					       ntlmssp_state->session_key.data, 
+					       null); 
+			
 			/* now send that blob on its way */
 			if (!cli_session_setup_blob_send(cli, msg1)) {
 				return False;
 			}
 			data_blob_free(&msg1);
-			
-			cli_ntlmssp_set_signing(cli, ntlmssp_state);
 			
 			blob = cli_session_setup_blob_receive(cli);
 
