@@ -10,6 +10,7 @@ msgtest
 net
 nmbd
 nmblookup
+nsstest
 pdbedit
 rpcclient
 samsync
@@ -18,6 +19,7 @@ smbcacls
 smbclient
 smbcontrol
 smbd
+smbfilter
 smbgroupedit
 smbmnt
 smbmount
