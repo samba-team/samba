@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "28 January 2002" "" ""
+.TH "SMB.CONF" "5" "19 February 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -545,18 +545,6 @@ each parameter for details. Note that some are synonyms.
 \fIchange share command\fR
 .TP 0.2i
 \(bu
-\fIcharacter set\fR
-.TP 0.2i
-\(bu
-\fIclient code page\fR
-.TP 0.2i
-\(bu
-\fIcode page directory\fR
-.TP 0.2i
-\(bu
-\fIcoding system\fR
-.TP 0.2i
-\(bu
 \fIconfig file\fR
 .TP 0.2i
 \(bu
@@ -1005,9 +993,6 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIutmp directory\fR
-.TP 0.2i
-\(bu
-\fIvalid chars\fR
 .TP 0.2i
 \(bu
 \fIwinbind cache time\fR
@@ -1560,7 +1545,8 @@ Windows NT PDC is an onerous task. This option allows smbdto create the required
 \fBON DEMAND\fR when a user accesses the Samba server.
 
 In order to use this option, smbd
-must be set to \fIsecurity = server\fR or \fI security = domain\fR and \fIadd user script\fR
+must \fBNOT\fR be set to \fIsecurity = share\fR
+and \fIadd user script\fR
 must be set to a full pathname for a script that will create a UNIX 
 user given one argument of \fI%u\fR, which expands into 
 the UNIX user name to create.
@@ -1832,208 +1818,6 @@ Default: \fBnone\fR
 .PP
 .PP
 Example: \fBchange share command = /usr/local/bin/addshare\fR
-.PP
-.TP
-\fBcharacter set (G)\fR
-This allows smbdto map incoming filenames 
-from a DOS Code page (see the client 
-code page parameter) to several built in UNIX character sets. 
-The built in code page translations are:
-.RS
-.TP 0.2i
-\(bu
-ISO8859-1 : Western European 
-UNIX character set. The parameter \fIclient code page\fR
-\fBMUST\fR be set to code page 850 if the 
-\fIcharacter set\fR parameter is set to
-ISO8859-1 in order for the conversion to the 
-UNIX character set to be done correctly.
-.TP 0.2i
-\(bu
-ISO8859-2 : Eastern European 
-UNIX character set. The parameter \fIclient code page
-\fR\fBMUST\fR be set to code page 852 if 
-the \fI character set\fR parameter is set 
-to ISO8859-2 in order for the conversion 
-to the UNIX character set to be done correctly. 
-.TP 0.2i
-\(bu
-ISO8859-5 : Russian Cyrillic 
-UNIX character set. The parameter \fIclient code page
-\fR\fBMUST\fR be set to code page 
-866 if the \fIcharacter set \fR parameter is 
-set to ISO8859-5 in order for the conversion 
-to the UNIX character set to be done correctly. 
-.TP 0.2i
-\(bu
-ISO8859-7 : Greek UNIX 
-character set. The parameter \fIclient code page
-\fR\fBMUST\fR be set to code page 
-737 if the \fIcharacter set\fR parameter is 
-set to ISO8859-7 in order for the conversion 
-to the UNIX character set to be done correctly.
-.TP 0.2i
-\(bu
-KOI8-R : Alternate mapping 
-for Russian Cyrillic UNIX character set. The parameter 
-\fIclient code page\fR \fBMUST\fR 
-be set to code page 866 if the \fIcharacter set\fR 
-parameter is set to KOI8-R in order for the 
-conversion to the UNIX character set to be done correctly.
-.RE
-.PP
-\fBBUG\fR. These MSDOS code page to UNIX character 
-set mappings should be dynamic, like the loading of MS DOS code pages, 
-not static.
-.PP
-.PP
-Normally this parameter is not set, meaning no filename 
-translation is done.
-.PP
-.PP
-Default: \fBcharacter set = <empty string>\fR
-.PP
-.PP
-Example: \fBcharacter set = ISO8859-1\fR
-.PP
-.TP
-\fBclient code page (G)\fR
-This parameter specifies the DOS code page 
-that the clients accessing Samba are using. To determine what code 
-page a Windows or DOS client is using, open a DOS command prompt 
-and type the command \fBchcp\fR. This will output 
-the code page. The default for USA MS-DOS, Windows 95, and
-Windows NT releases is code page 437. The default for western 
-European releases of the above operating systems is code page 850.
-
-This parameter tells smbd(8)
-which of the \fIcodepage.XXX
-\fRfiles to dynamically load on startup. These files,
-described more fully in the manual page  \fBmake_smbcodepage(1)\fR, tell \fB smbd\fR how to map lower to upper case characters to provide 
-the case insensitivity of filenames that Windows clients expect.
-
-Samba currently ships with the following code page files :
-.RS
-.TP 0.2i
-\(bu
-Code Page 437 - MS-DOS Latin US
-.TP 0.2i
-\(bu
-Code Page 737 - Windows '95 Greek
-.TP 0.2i
-\(bu
-Code Page 850 - MS-DOS Latin 1
-.TP 0.2i
-\(bu
-Code Page 852 - MS-DOS Latin 2
-.TP 0.2i
-\(bu
-Code Page 861 - MS-DOS Icelandic
-.TP 0.2i
-\(bu
-Code Page 866 - MS-DOS Cyrillic
-.TP 0.2i
-\(bu
-Code Page 932 - MS-DOS Japanese SJIS
-.TP 0.2i
-\(bu
-Code Page 936 - MS-DOS Simplified Chinese
-.TP 0.2i
-\(bu
-Code Page 949 - MS-DOS Korean Hangul
-.TP 0.2i
-\(bu
-Code Page 950 - MS-DOS Traditional Chinese
-.RE
-.PP
-Thus this parameter may have any of the values 437, 737, 850, 852,
-861, 932, 936, 949, or 950. If you don't find the codepage you need,
-read the comments in one of the other codepage files and the
-\fBmake_smbcodepage(1)\fR man page and write one. Please 
-remember to donate it back to the Samba user community.
-.PP
-.PP
-This parameter co-operates with the \fIvalid
-chars\fR parameter in determining what characters are
-valid in filenames and how capitalization is done. If you set both
-this parameter and the \fIvalid chars\fR parameter
-the \fIclient code page\fR parameter 
-\fBMUST\fR be set before the \fIvalid 
-chars\fR parameter in the \fIsmb.conf\fR
-file. The \fIvalid chars\fR string will then 
-augment the character settings in the \fIclient code page\fR 
-parameter.
-.PP
-.PP
-If not set, \fIclient code page\fR defaults 
-to 850.
-.PP
-.PP
-See also : \fIvalid 
-chars\fR,  \fIcode page directory\fR
-.PP
-.PP
-Default: \fBclient code page = 850\fR
-.PP
-.PP
-Example: \fBclient code page = 936\fR
-.PP
-.TP
-\fBcode page directory (G)\fR
-Define the location of the various client code page
-files.
-
-See also \fIclient
-code page\fR
-
-Default: \fBcode page directory = ${prefix}/lib/codepages
-\fR
-Example: \fBcode page directory = /usr/share/samba/codepages
-\fR.TP
-\fBcoding system (G)\fR
-This parameter is used to determine how incoming 
-Shift-JIS Japanese characters are mapped from the incoming \fIclient code page\fR
-used by the client, into file names in the UNIX filesystem. 
-Only useful if \fIclient code page\fR is set to 
-932 (Japanese Shift-JIS). The options are :
-.RS
-.TP 0.2i
-\(bu
-SJIS - Shift-JIS. Does no 
-conversion of the incoming filename.
-.TP 0.2i
-\(bu
-JIS8, J8BB, J8BH, J8@B, 
-J8@J, J8@H  - Convert from incoming Shift-JIS to eight 
-bit JIS code with different shift-in, shift out codes.
-.TP 0.2i
-\(bu
-JIS7, J7BB, J7BH, J7@B, J7@J, 
-J7@H  - Convert from incoming Shift-JIS to seven bit 
-JIS code with different shift-in, shift out codes.
-.TP 0.2i
-\(bu
-JUNET, JUBB, JUBH, JU@B, JU@J, JU@H  
-- Convert from incoming Shift-JIS to JUNET code with different shift-in, 
-shift out codes.
-.TP 0.2i
-\(bu
-EUC - Convert an incoming 
-Shift-JIS character to EUC code.
-.TP 0.2i
-\(bu
-HEX - Convert an incoming 
-Shift-JIS character to a 3 byte hex representation, i.e. 
-:AB.
-.TP 0.2i
-\(bu
-CAP - Convert an incoming 
-Shift-JIS character to the 3 byte hex representation used by 
-the Columbia AppleTalk Program (CAP), i.e. :AB. 
-This is used for compatibility between Samba and CAP.
-.RE
-.PP
-Default: \fBcoding system = <empty value>\fR
 .PP
 .TP
 \fBcomment (S)\fR
@@ -2350,18 +2134,11 @@ DEMAND\fR when a user accesses the Samba server and the
 Windows NT user no longer exists.
 
 In order to use this option, \fBsmbd\fR must be 
-set to \fIsecurity = domain\fR and \fIdelete 
-user script\fR must be set to a full pathname for a script 
-that will delete a UNIX user given one argument of \fI%u
-\fR, which expands into the UNIX user name to delete.
-\fBNOTE\fR that this is different to the \fIadd user script\fR
-which will work with the \fIsecurity = server\fR option 
-as well as \fIsecurity = domain\fR. The reason for this
-is only when Samba is a domain member does it get the information
-on an attempted user logon that a user no longer exists. In the
-\fIsecurity = server\fR mode a missing user
-is treated the same as an invalid password logon attempt. Deleting
-the user in this circumstance would not be a good idea.
+set to \fIsecurity = domain\fR or \fIsecurity =
+user\fR and \fIdelete user script\fR 
+must be set to a full pathname for a script 
+that will delete a UNIX user given one argument of \fI%u\fR, 
+which expands into the UNIX user name to delete.
 
 When the Windows user attempts to access the Samba server, 
 at \fBlogin\fR (session setup in the SMB protocol) 
@@ -6988,64 +6765,6 @@ native system is set to use (usually
 \fI/var/run/utmp\fR on Linux).
 
 Default: \fBno utmp directory\fR
-.TP
-\fBvalid chars (G)\fR
-The option allows you to specify additional 
-characters that should be considered valid by the server in 
-filenames. This is particularly useful for national character 
-sets, such as adding u-umlaut or a-ring.
-
-The option takes a list of characters in either integer 
-or character form with spaces between them. If you give two 
-characters with a colon between them then it will be taken as 
-an lowercase:uppercase pair.
-
-If you have an editor capable of entering the characters 
-into the config file then it is probably easiest to use this 
-method. Otherwise you can specify the characters in octal, 
-decimal or hexadecimal form using the usual C notation.
-
-For example to add the single character 'Z' to the charset 
-(which is a pointless thing to do as it's already there) you could 
-do one of the following
-
-.sp
-.nf
-		valid chars = Z
-		valid chars = z:Z
-		valid chars = 0132:0172
-		
-.sp
-.fi
-
-The last two examples above actually add two characters, 
-and alter the uppercase and lowercase mappings appropriately.
-
-Note that you \fBMUST\fR specify this parameter 
-after the \fIclient code page\fR parameter if you 
-have both set. If \fIclient code page\fR is set after 
-the \fIvalid chars\fR parameter the \fIvalid 
-chars\fR settings will be overwritten.
-
-See also the \fIclient 
-code page\fR parameter.
-
-Default: \fBSamba defaults to using a reasonable set 
-of valid characters for English systems\fR
-
-Example: \fBvalid chars = 0345:0305 0366:0326 0344:0304
-\fR
-The above example allows filenames to have the Swedish 
-characters in them.
-
-\fBNOTE:\fR It is actually quite difficult to 
-correctly produce a \fIvalid chars\fR line for 
-a particular system. To automate the process tino@augsburg.net <URL:mailto:tino@augsburg.net> has written 
-a package called \fBvalidchars\fR which will automatically 
-produce a complete \fIvalid chars\fR line for
-a given client system. Look in the \fIexamples/validchars/
-\fRsubdirectory of your Samba source code distribution 
-for this package.
 .TP
 \fBvalid users (S)\fR
 This is a list of users that should be allowed 
