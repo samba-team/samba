@@ -21,10 +21,13 @@ krb5_error_code
 krb5_data_alloc(krb5_data *p, int len)
 {
   krb5_data_free(p);
-  p->data = (krb5_pointer)malloc(len);
-  if(!p->data)
-    return ENOMEM;
-  p->length = len; 
+  if (len) {
+    p->data = (krb5_pointer)malloc(len);
+    if(!p->data)
+      return ENOMEM;
+  } else
+    p->data = NULL;
+  p->length = len;
   return 0;
 }
 
@@ -44,11 +47,13 @@ krb5_error_code
 krb5_data_copy(krb5_data *p, void *data, size_t len)
 {
   krb5_data_free(p);
-  p->data = (krb5_pointer)malloc(len);
-  if(!p->data)
-    return ENOMEM;
-  memmove(p->data, data, len);
+  if (len) {
+      p->data = (krb5_pointer)malloc(len);
+      if(!p->data)
+	  return ENOMEM;
+      memmove(p->data, data, len);
+  } else
+      p->data = NULL;
   p->length = len;
   return 0;
 }
-
