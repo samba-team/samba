@@ -1115,7 +1115,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
-#if 0 /* JRATEST */
+#if 1 /* JRATEST */
 	nt_printing_getsec(sharename, &info.secdesc_buf);
 #endif /* JRATEST */
 

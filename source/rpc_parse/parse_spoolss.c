@@ -823,9 +823,9 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 
 	if (!prs_align(ps))
 		return False;
-	if (!prs_uint32("type", ps, depth, &(r_u->type)))
+	if (!prs_uint32("type", ps, depth, &r_u->type))
 		return False;
-	if (!prs_uint32("size", ps, depth, &(r_u->size)))
+	if (!prs_uint32("size", ps, depth, &r_u->size))
 		return False;
 	
 	if (!prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size))
@@ -834,9 +834,9 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 	if (!prs_align(ps))
 		return False;
 	
-	if (!prs_uint32("needed", ps, depth, &(r_u->needed)))
+	if (!prs_uint32("needed", ps, depth, &r_u->needed))
 		return False;
-	if (!prs_uint32("status", ps, depth, &(r_u->status)))
+	if (!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 		
 	return True;
@@ -2844,7 +2844,7 @@ BOOL spoolss_io_r_getprinter(char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps
 
 	if (!prs_align(ps))
 		return False;
-		
+
 	if (!prs_uint32("needed", ps, depth, &r_u->needed))
 		return False;
 		
@@ -4545,18 +4545,18 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 
 	if(!prs_align(ps))
 		return False;
-	if(!smb_io_pol_hnd("printer handle", &(q_u->handle), ps, depth))
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
 		return False;
-	if(!smb_io_unistr2("", &(q_u->value), True, ps, depth))
+	if(!smb_io_unistr2("", &q_u->value, True, ps, depth))
 		return False;
 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("type", ps, depth, &(q_u->type)))
+	if(!prs_uint32("type", ps, depth, &q_u->type))
 		return False;
 
-	if(!prs_uint32("max_len", ps, depth, &(q_u->max_len)))
+	if(!prs_uint32("max_len", ps, depth, &q_u->max_len))
 		return False;
 
 	switch (q_u->type)
@@ -4575,7 +4575,7 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 			break;
 	}	
 	
-	if(!prs_uint32("real_len", ps, depth, &(q_u->real_len)))
+	if(!prs_uint32("real_len", ps, depth, &q_u->real_len))
 		return False;
 
 	return True;
@@ -4595,7 +4595,7 @@ BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_st
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status",     ps, depth, &(r_u->status)))
+	if(!prs_uint32("status",     ps, depth, &r_u->status))
 		return False;
 
 	return True;
