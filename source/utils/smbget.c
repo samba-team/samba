@@ -219,7 +219,7 @@ void print_progress(const char *name, time_t start, time_t now, off_t start_pos,
 	char *status, *filename;
 	int len;
 	if(now - start)avg = 1.0 * (pos - start_pos) / (now - start);
-	eta = (total - pos - start_pos) / avg;
+	eta = (total - pos) / avg;
 	if(total)prcnt = 100.0 * pos / total;
 
 	human_readable(pos, hpos, sizeof(hpos));
