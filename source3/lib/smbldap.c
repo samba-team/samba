@@ -221,7 +221,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 /*******************************************************************
  find the ldap password
 ******************************************************************/
-BOOL fetch_ldap_pw(char **dn, char** pw)
+static BOOL fetch_ldap_pw(char **dn, char** pw)
 {
 	char *key = NULL;
 	size_t size;
