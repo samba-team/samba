@@ -897,8 +897,14 @@ account without a valid local system user.\n", user_name);
 		pdb_init_sam 	      (&new_sam_acct);
 		pdb_set_mem_ownership (&new_sam_acct, False);
 		pdb_set_username      (&new_sam_acct, user_name);
+		pdb_set_fullname      (&new_sam_acct, pwd->pw_gecos);
 		pdb_set_uid	      (&new_sam_acct, pwd->pw_uid);
+		pdb_set_gid	      (&new_sam_acct, pwd->pw_gid);
 		pdb_set_pass_last_set_time(&new_sam_acct, time(NULL));
+		pdb_set_profile_path  (&new_sam_acct, lp_logon_path());
+		pdb_set_homedir       (&new_sam_acct, lp_logon_home());
+		pdb_set_dir_drive     (&new_sam_acct, lp_logon_drive());
+		pdb_set_logon_script  (&new_sam_acct, lp_logon_script());
 
 		/* set account flags */
 		pdb_set_acct_ctrl(&new_sam_acct,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) );

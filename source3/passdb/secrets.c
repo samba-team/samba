@@ -30,7 +30,6 @@ static TDB_CONTEXT *tdb;
 BOOL secrets_init(void)
 {
 	pstring fname;
-	char *p;
 
 	if (tdb) return True;
 
