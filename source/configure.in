@@ -943,9 +943,11 @@ AC_MSG_CHECKING([compiler flags for position-independent code])
 AC_MSG_RESULT([$PICFLAGS])
 
 # try to work out how to produce pic code with this compiler
-AC_PROG_CC_FLAG(fpic)
-if test $ac_cv_prog_cc_fpic = yes; then
-    PICFLAG="-fpic";
+if test x$PICFLAG = x; then
+  AC_PROG_CC_FLAG(fpic)
+  if test $ac_cv_prog_cc_fpic = yes; then
+      PICFLAG="-fpic";
+  fi
 fi
 if test x$PICFLAG = x; then
   AC_PROG_CC_FLAG(KPIC)

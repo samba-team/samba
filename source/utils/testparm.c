@@ -73,7 +73,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	}
 
 	if (!directory_exist(lp_piddir(), &st)) {
-		printf("ERROR: tdb directory %s does not exist\n",
+		printf("ERROR: pid directory %s does not exist\n",
 		       lp_piddir());
 		ret = 1;
 	}
