@@ -1191,6 +1191,7 @@ int reply_open(char *inbuf,char *outbuf)
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+    Files[fnum].reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
  
@@ -1208,6 +1209,7 @@ int reply_open(char *inbuf,char *outbuf)
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+    Files[fnum].reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1291,6 +1293,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+    Files[fnum].reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1308,6 +1311,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+    Files[fnum].reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1437,6 +1441,7 @@ int reply_mknew(char *inbuf,char *outbuf)
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+    Files[fnum].reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1464,6 +1469,7 @@ int reply_mknew(char *inbuf,char *outbuf)
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+    Files[fnum].reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
  
@@ -1519,6 +1525,7 @@ int reply_ctemp(char *inbuf,char *outbuf)
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+    Files[fnum].reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1538,6 +1545,7 @@ int reply_ctemp(char *inbuf,char *outbuf)
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+    Files[fnum].reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -2572,15 +2580,19 @@ int reply_printopen(char *inbuf,char *outbuf)
 
   strcpy(fname2,(char *)mktemp(fname));
 
-  if (!check_name(fname2,cnum))
-    return(ERROR(ERRDOS,ERRnoaccess));
+  if (!check_name(fname2,cnum)) {
+	  Files[fnum].reserved = False;
+	  return(ERROR(ERRDOS,ERRnoaccess));
+  }
 
   /* Open for exclusive use, write only. */
   open_file_shared(fnum,cnum,fname2,(DENY_ALL<<4)|1, 0x12, unix_mode(cnum,0), 
                    0, NULL, NULL);
 
-  if (!Files[fnum].open)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  if (!Files[fnum].open) {
+	  Files[fnum].reserved = False;
+	  return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   /* force it to be a print file */
   Files[fnum].print_file = True;
@@ -3250,7 +3262,10 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
   open_file_shared(fnum1,cnum,src,(DENY_NONE<<4),
 		   1,0,0,&Access,&action);
 
-  if (!Files[fnum1].open) return(False);
+  if (!Files[fnum1].open) {
+	  Files[fnum1].reserved = False;
+	  return(False);
+  }
 
   if (!target_is_directory && count)
     ofun = 1;
@@ -3265,6 +3280,7 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
 
   if (!Files[fnum2].open) {
     close_file(fnum1,False);
+    Files[fnum2].reserved = False;
     return(False);
   }
 

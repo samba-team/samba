@@ -1443,6 +1443,7 @@ typedef struct
   BOOL modified;
   BOOL granted_oplock;
   BOOL sent_oplock_break;
+  BOOL reserved;
   char *name;
 } files_struct;
 
