@@ -17,15 +17,17 @@
 		<command>smbcacls</command>
 		<arg choice="req">//server/share</arg>
 		<arg choice="req">filename</arg>
-		<arg choice="opt">-U username</arg>
-		<arg choice="opt">-A acls</arg>
-		<arg choice="opt">-M acls</arg>
 		<arg choice="opt">-D acls</arg>
+		<arg choice="opt">-M acls</arg>
+		<arg choice="opt">-A acls</arg>
 		<arg choice="opt">-S acls</arg>
 		<arg choice="opt">-C name</arg>
 		<arg choice="opt">-G name</arg>
 		<arg choice="opt">-n</arg>
+		<arg choice="opt">-t</arg>
+		<arg choice="opt">-U username</arg>
 		<arg choice="opt">-h</arg>
+		<arg choice="opt">-d</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -34,7 +36,7 @@
 
 	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
-	
+
 	<para>The <command>smbcacls</command> program manipulates NT Access Control
 	Lists (ACLs) on SMB file shares. </para>
 </refsect1>
@@ -131,8 +133,14 @@
 		and masks to a readable string format.  </para></listitem>
 		</varlistentry>
 		
-		
-		
+		<varlistentry>
+		<term>-t</term>
+		<listitem><para>
+		Don't actually do anything, only validate the correctness of 
+		the arguments.
+		</para></listitem>
+		</varlistentry>
+				
 		<varlistentry>
 		<term>-h</term>
 		<listitem><para>Print usage information on the <command>smbcacls
@@ -232,7 +240,7 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of the Samba suite.</para>
+	<para>This man page is correct for version 3.0 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
