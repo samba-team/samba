@@ -1534,11 +1534,7 @@ DRIVER_DIRECTORY_1;
 
 typedef struct driver_info_ctr_info
 {
-	union
-	{
-		DRIVER_DIRECTORY_1 info_1;
-	}
-	driver;
+	DRIVER_DIRECTORY_1 *info1;
 }
 DRIVER_DIRECTORY_CTR;
 

@@ -1,12 +1,13 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
-   NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell              1994-2000
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
-   Copyright (C) Jean-Francois Micouleau      1999-2000
-   Copyright (C) Gerald Carter                     2000
-   
+   Version 2.2
+   RPC pipe client
+
+   Copyright (C) Gerald Carter                     2001
+   Copyright (C) Tim Potter                        2000
+   Copyright (C) Andrew Tridgell              1992-1999
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
+ 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -23,18 +24,29 @@
 */
 
 #include "includes.h"
-#include "nterr.h"
-#include "rpc_parse.h"
-#include "rpc_client.h"
-#include "rpcclient.h"
 
 extern int DEBUGLEVEL;
 
-#define DEBUG_TESTING
+extern pstring server;
+extern pstring global_myname;
+extern pstring username, password;
+extern pstring workgroup;
 
-extern FILE* out_hnd;
+struct table_node {
+	char 	*long_archi;
+	char 	*short_archi;
+	int	version;
+};
+ 
+struct table_node archi_table[]= {
 
-extern struct user_creds *usr_creds;
+	{"Windows 4.0",          "WIN40",	0 },
+	{"Windows NT x86",       "W32X86",	2 },
+	{"Windows NT R4000",     "W32MIPS",	2 },
+	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
+	{"Windows NT PowerPC",   "W32PPC",	2 },
+	{NULL,                   "",		-1 }
+};
 
 /****************************************************************************
 function to do the mapping between the long architecture name and
@@ -42,21 +54,6 @@ the short one.
 ****************************************************************************/
 BOOL get_short_archi(char *short_archi, char *long_archi)
 {
-        struct table {
-                char *long_archi;
-                char *short_archi;
-        };
-
-        struct table archi_table[]=
-        {
-                {"Windows 4.0",          "WIN40"    },
-                {"Windows NT x86",       "W32X86"   },
-                {"Windows NT R4000",     "W32MIPS"  },
-                {"Windows NT Alpha_AXP", "W32ALPHA" },
-                {"Windows NT PowerPC",   "W32PPC"   },
-                {NULL,                   ""         }
-        };
-
         int i=-1;
 
         DEBUG(107,("Getting architecture dependant directory\n"));
@@ -66,7 +63,7 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
                   StrCaseCmp(long_archi, archi_table[i].long_archi) );
 
         if (archi_table[i].long_archi==NULL) {
-                DEBUGADD(107,("Unknown architecture [%s] !\n", long_archi));
+                DEBUGADD(10,("Unknown architecture [%s] !\n", long_archi));
                 return FALSE;
         }
 
@@ -76,732 +73,867 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
         DEBUGADD(108,("long architecture: [%s]\n", long_archi));
         DEBUGADD(108,("short architecture: [%s]\n", short_archi));
 
-        return TRUE;
+        return True;
+}
+
+
+/**********************************************************************
+ * dummy function  -- placeholder
+  */
+static uint32 cmd_spoolss_not_implemented (struct cli_state *cli, 
+					   int argc, char **argv)
+{
+	printf ("(*) This command is not currently implemented.\n");
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /****************************************************************************
-nt spoolss query
-****************************************************************************/
-uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[])
+ display sec_ace structure
+ ****************************************************************************/
+static void display_sec_ace(SEC_ACE *ace)
 {
-	PRINTER_INFO_CTR ctr;
-	
-	uint32 flags;
-	uint32 level = 1;
-	fstring srv_name;
+	fstring sid_str;
 
-	ZERO_STRUCT(ctr);
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
-	
-	flags=PRINTER_ENUM_LOCAL;
-	report (out_hnd, "Flags = PRINTER_ENUM_LOCAL\n");
-	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
-		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
-	else
-		report(out_hnd, "FAILED\n");
-		
-		
-	flags=PRINTER_ENUM_NAME;
-	report (out_hnd, "Flags = PRINTER_ENUM_NAME\n");	
-	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
-		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
-	else
-		report(out_hnd, "FAILED\n");
+	sid_to_string(sid_str, &ace->sid);
+	printf("\t\tSID: %s\n", sid_str);
 
-	flags=PRINTER_ENUM_SHARED|PRINTER_ENUM_NAME;
-	report (out_hnd, "Flags = PRINTER_ENUM_SHARED|PRINTER_ENUM_NAME\n");
-	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
-		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
-	else
-		report(out_hnd, "FAILED\n");
-
-	flags=PRINTER_ENUM_CONNECTIONS;
-	report (out_hnd, "Flags = PRINTER_ENUM_CONNECTIONS\n");	
-	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
-		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
-	else
-		report(out_hnd, "FAILED\n");
-		
-	flags=PRINTER_ENUM_NETWORK;
-	report (out_hnd, "Flags = PRINTER_ENUM_NETWORK\n");
-	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
-		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
-	else
-		report(out_hnd, "FAILED\n");
-		
-	flags=PRINTER_ENUM_REMOTE;
-	report (out_hnd, "Flags = PRINTER_ENUM_REMOTE\n");
-	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
-		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
-	else
-		report(out_hnd, "FAILED\n");
-
-	return NT_STATUS_NOPROBLEMO;
+	printf("\t\ttype:[%d], flags:[0x%02x], mask:[0x%08x]\n", 
+	       ace->type, ace->flags, ace->info.mask);
 }
 
 /****************************************************************************
-nt spoolss query
-****************************************************************************/
-uint32 cmd_spoolss_enum_ports(struct client_info *info, int argc, char *argv[])
+ display sec_acl structure
+ ****************************************************************************/
+static void display_sec_acl(SEC_ACL *acl)
 {
-	PORT_INFO_CTR ctr;
-	uint32 level;
-	fstring srv_name;
-	
-	if (argc < 2)
-	{
-		report (out_hnd, "spoolenumports <level>\n");
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	if (acl->size != 0 && acl->num_aces != 0) {
+		int i;
 
-		
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
-	
-	level = atoi(argv[1]);
-	
-	if (msrpc_spoolss_enum_ports(srv_name, level, &ctr))
-		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
-	else
-		report(out_hnd, "FAILED\n");
-		
-	return NT_STATUS_NOPROBLEMO;
+		printf("\t\tRevision:[%d]\n", acl->revision);
+		for (i = 0; i < acl->num_aces; i++) {
+			display_sec_ace(&acl->ace[i]);
+		}
+	}
 }
 
 /****************************************************************************
-nt spoolss query
-****************************************************************************/
-uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[])
+ display sec_desc structure
+ ****************************************************************************/
+static void display_sec_desc(SEC_DESC *sec)
 {
-	fstring srv_name;
-	fstring station;
-	char *printer_name;
+	fstring sid_str;
 
-	if (argc < 2) {
-		report(out_hnd, "spoolenumdata <printer name>\n");
-		return NT_STATUS_INVALID_PARAMETER;
+	printf("\tRevision:[%d]\n", sec->revision);
+
+	if (sec->off_owner_sid) {
+		sid_to_string(sid_str, sec->owner_sid);
+		printf("\tOwner SID: %s\n", sid_str);
 	}
 
-	printer_name = argv[1];
-
-	fstrcpy(station, "\\\\");
-	fstrcat(station, info->myhostname);
-	strupper(station);
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
-
-	if (!strnequal("\\\\", printer_name, 2))
-	{
-		fstrcat(srv_name, "\\");
-		fstrcat(srv_name, printer_name);
-		printer_name = srv_name;
+	if (sec->off_grp_sid) {
+		sid_to_string(sid_str, sec->grp_sid);
+		printf("\tGroup SID: %s\n", sid_str);
 	}
 
-	DEBUG(0,("spoolenumdata - printer: %s station: %s user: %s\n", printer_name, station, usr_creds->ntc.user_name));
+	if (sec->off_sacl) display_sec_acl(sec->sacl);
+	if (sec->off_dacl) display_sec_acl(sec->dacl);
+}
 
-	if (msrpc_spoolss_enum_printerdata( printer_name, station,
-	                        usr_creds->ntc.user_name))
-	{
-		DEBUG(0,("cmd_spoolss_enum_printerdata: query succeeded\n"));
+/***********************************************************************
+ * Get printer information
+ */
+static uint32 cmd_spoolss_open_printer_ex(struct cli_state *cli, int argc, char **argv)
+{
+	uint32 		result = NT_STATUS_UNSUCCESSFUL; 
+	pstring		printername;
+	fstring		server, user;
+	POLICY_HND	hnd;
+	
+	if (argc != 2) {
+		printf("Usage: %s <printername>\n", argv[0]);
 		return NT_STATUS_NOPROBLEMO;
 	}
-	report(out_hnd, "FAILED\n");
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-/****************************************************************************
-nt spoolss query
-****************************************************************************/
-uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[])
-{
-        PRINTER_INFO_CTR ctr;
-        fstring srv_name;
-        fstring station;
-        char *printer_name;
-        uint32 level;
-
-	ZERO_STRUCT(ctr);
-
-        if (argc < 2) {
-                report(out_hnd, "spoolgetprinter <printer name>\n");
-                return NT_STATUS_INVALID_PARAMETER;
-        }
-
-        printer_name = argv[1];
-
-        fstrcpy(station, "\\\\");
-        fstrcat(station, info->myhostname);
-        strupper(station);
-
-        fstrcpy(srv_name, "\\\\");
-        fstrcat(srv_name, info->dest_host);
-        strupper(srv_name);
-
-        if (!strnequal("\\\\", printer_name, 2))
-        {
-                fstrcat(srv_name, "\\");
-                fstrcat(srv_name, printer_name);
-                printer_name = srv_name;
-        }
-
-        if (argc < 4)
-                level=2;
-        else
-                level = atoi(argv[2]);
-
-        if (msrpc_spoolss_getprinter(printer_name, level, station, "Administrator", ctr))
-                DEBUG(5,("cmd_spoolss_getprinter: query succeeded\n"));
-        else
-                report(out_hnd, "FAILED\n");
-
-        return NT_STATUS_NOPROBLEMO;
-}
-
-
-static void display_spool_job_info_ctr( const char* printer_name,
-                                const char* station,
-                                uint32 level,
-                                uint32 num, void *const *const ctr)
-{
-        display_job_info_ctr(out_hnd, ACTION_HEADER   , level, num, ctr);
-        display_job_info_ctr(out_hnd, ACTION_ENUMERATE, level, num, ctr);
-        display_job_info_ctr(out_hnd, ACTION_FOOTER   , level, num, ctr);
-}
-
-/****************************************************************************
-nt spoolss query
-****************************************************************************/
-uint32 cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
-{
-        fstring srv_name;
-        fstring station;
-        char *printer_name;
-
-        void **ctr = NULL;
-        uint32 level = 1;
-
-        if (argc < 2) {
-                report(out_hnd, "spooljobs <printer name>\n");
-                return NT_STATUS_INVALID_PARAMETER;
-        }
-
-        printer_name = argv[1];
-
-        fstrcpy(station, "\\\\");
-        fstrcat(station, info->myhostname);
-        strupper(station);
-
-        fstrcpy(srv_name, "\\\\");
-        fstrcat(srv_name, info->dest_host);
-        strupper(srv_name);
-
-        if (!strnequal("\\\\", printer_name, 2))
-        {
-                fstrcat(srv_name, "\\");
-                fstrcat(srv_name, printer_name);
-                printer_name = srv_name;
-        }
-
-        DEBUG(4,("spoolopen - printer: %s station: %s user: %s\n", printer_name, 
-		  station, usr_creds->ntc.user_name));
-
-        if (msrpc_spoolss_enum_jobs( printer_name, station,
-                                usr_creds->ntc.user_name,
-                                level, &ctr, display_spool_job_info_ctr))
-        {
-                DEBUG(5,("cmd_spoolss_enum_jobs: query succeeded\n"));
-                return NT_STATUS_NOPROBLEMO;
-        }
-        report(out_hnd, "FAILED\n");
-        return NT_STATUS_UNSUCCESSFUL;
-}
-
-/****************************************************************************
-nt spoolss query
-****************************************************************************/
-uint32 cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[])
-{
-        fstring srv_name;
-        fstring station;
-        char *printer_name;
-        POLICY_HND hnd;
-
-        BOOL res = True;
-
-        if (argc < 2)
-        {
-                report(out_hnd, "spoolopen <printer name>\n");
-                return NT_STATUS_INVALID_PARAMETER;
-        }
-
-        printer_name = argv[1];
-
-        fstrcpy(station, "\\\\");
-        fstrcat(station, info->myhostname);
-        strupper(station);
-
-        fstrcpy(srv_name, "\\\\");
-        fstrcat(srv_name, info->dest_host);
-        strupper(srv_name);
-
-        if (!strnequal("\\\\", printer_name, 2))
-        {
-                fstrcat(srv_name, "\\");
-                fstrcat(srv_name, printer_name);
-                printer_name = srv_name;
-        }
-
-        DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
-                printer_name, station, usr_creds->ntc.user_name));
-
-        res = res ? spoolss_open_printer_ex( printer_name, "", PRINTER_ALL_ACCESS,
-                                station, "Administrator", &hnd) : False;
-
-        res = res ? spoolss_closeprinter(&hnd) : False;
-
-        if (res)
-        {
-                DEBUG(5,("cmd_spoolss_open_printer_ex: query succeeded\n"));
-                report(out_hnd, "OK\n");
-                return NT_STATUS_NOPROBLEMO;
-        }
-        DEBUG(5,("cmd_spoolss_open_printer_ex: query failed\n"));
-        return NT_STATUS_UNSUCCESSFUL;
-}
-
-/****************************************************************************
-nt spoolss query
-****************************************************************************/
-uint32 cmd_spoolss_getprinterdata(struct client_info *info, int argc, char *argv[])
-{
-        fstring srv_name;
-        fstring station;
-        char *printer_name;
-        char *value_name;
-
-        NEW_BUFFER ctr;
-        uint32 status;
-        uint32 type = 1;
-
-        if (argc < 3) {
-                report(out_hnd, "spoolgetdata <printer name> <value name>\n");
-                return NT_STATUS_INVALID_PARAMETER;
-        }
-
-        printer_name = argv[1];
-        value_name = argv[2];
-
-        fstrcpy(station, "\\\\");
-        fstrcat(station, info->myhostname);
-        strupper(station);
-
-        fstrcpy(srv_name, "\\\\");
-        fstrcat(srv_name, info->dest_host);
-        strupper(srv_name);
-
-        if (!strnequal("\\\\", printer_name, 2))
-        {
-                fstrcat(srv_name, "\\");
-                fstrcat(srv_name, printer_name);
-                printer_name = srv_name;
-        }
-
-        DEBUG(4,("spoolgetdata - printer: %s station: %s value: %s\n",
-                                printer_name, station, value_name));
-
-        status = msrpc_spoolss_getprinterdata( printer_name, station,
-                                /* "Administrateur", */
-                                usr_creds->ntc.user_name,
-                                value_name, &type,
-                                &ctr, NULL);
-
-        if (status == NT_STATUS_NOPROBLEMO)
-        {
-                DEBUG(5,("cmd_spoolss_getprinterdata: query succeeded\n"));
-        }
-        else
-        {
-                report(out_hnd, "FAILED\n");
-        }
-
-        return status;
-}
-
-/****************************************************************************
-nt spoolss query
-****************************************************************************/
-uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *argv[])
-{
-        PRINTER_DRIVER_CTR ctr;
-        fstring srv_name;
-        fstring station;
-        char *printer_name;
-        fstring environment;
-        uint32 level;
-
-	ZERO_STRUCT(ctr);
-
-        if (argc < 2) {
-                report(out_hnd, "spoolgetprinterdriver <printer name>\n");
-                return NT_STATUS_INVALID_PARAMETER;
-        }
-
-        printer_name = argv[1];
-
-        fstrcpy(station, "\\\\");
-        fstrcat(station, info->myhostname);
-        strupper(station);
-
-        fstrcpy(srv_name, "\\\\");
-        fstrcat(srv_name, info->dest_host);
-        strupper(srv_name);
-
-        if (!strnequal("\\\\", printer_name, 2))
-        {
-                fstrcat(srv_name, "\\");
-                fstrcat(srv_name, printer_name);
-                printer_name = srv_name;
-        }
-
-	report (out_hnd, "Environment = Windows NT x86\n");
-        fstrcpy(environment, "Windows NT x86");
-        level=3;
-        if (msrpc_spoolss_getprinterdriver(printer_name, environment, level, station, "Administrator", ctr))
-                DEBUG(5,("cmd_spoolss_getprinterdriver: query succeeded\n"));
-        else
-                report(out_hnd, "FAILED\n");
-
-	report (out_hnd, "Environment = Windows 4.0\n");
-        fstrcpy(environment, "Windows 4.0");
-        level=3;
-        if (msrpc_spoolss_getprinterdriver(printer_name, environment, level, station, "Administrator", ctr))
-                DEBUG(5,("cmd_spoolss_getprinterdriver: query succeeded\n"));
-        else
-                report(out_hnd, "FAILED\n");
-
-	return NT_STATUS_NOPROBLEMO;
-}
-
-/****************************************************************************
-nt spoolss query
-****************************************************************************/
-uint32 cmd_spoolss_enumprinterdrivers(struct client_info *info, int argc, char *argv[])
-{
-        PRINTER_DRIVER_CTR ctr;
-        fstring srv_name;
-        fstring environment;
-        uint32 level;
-
-	ZERO_STRUCT(ctr);
-        fstrcpy(srv_name, "\\\\");
-        fstrcat(srv_name, info->dest_host);
-        strupper(srv_name);
-
-        fstrcpy(environment, "Windows NT x86");
-        level=3;
-
-        if (msrpc_spoolss_enumprinterdrivers(srv_name, environment, level, ctr))
-                DEBUG(5,("cmd_spoolss_enumprinterdrivers: query succeeded\n"));
-        else
-                report(out_hnd, "FAILED\n");
-
-        return NT_STATUS_NOPROBLEMO;
-}
-
-/****************************************************************************
-nt spoolss query
-****************************************************************************/
-uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char *argv[])
-{
-        DRIVER_DIRECTORY_CTR ctr;
-        int i;
-
-        uint32 level = 1;
-
-        fstring srv_name;
-	fstring env;
-
-	ZERO_STRUCT(ctr);
-        fstrcpy(srv_name, "\\\\");
-        fstrcat(srv_name, info->dest_host);
-        strupper(srv_name);
-
-        if (argc < 2) {
-                report(out_hnd, "spoolgetprinterdriverdir <arch>\n");
-                return NT_STATUS_NOPROBLEMO;
-        }
-
-        fstrcpy(env, argv[1]);
-
-        for (i=3; i<=argc; i++) {
-                fstrcat(env, " ");
-                fstrcat(env, argv[i]);
-        }
-
-        if (msrpc_spoolss_getprinterdriverdir(srv_name, env, level, ctr))
-                DEBUG(5,("cmd_spoolss_getprinterdriverdir: query succeeded\n"));
-        else
-                report(out_hnd, "FAILED\n");
-
-        return NT_STATUS_NOPROBLEMO;
-}
-
-/********************************************************************************
- send an AddPrinterEx() request
-********************************************************************************/
-uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[])
-{
-        fstring 	srv_name, 
-			printer_name, 
-			driver_name,
-			port_name,
-			share_name;
-	POLICY_HND hnd;
-	PRINTER_INFO_2 	print_info_2;
-	PORT_INFO_1	*port_info_1 = NULL;
-	NEW_BUFFER 	buffer;
-	uint32		status,
-			needed,
-			returned;
-	uint32		i;
-	fstring		srv_port_name;
-	BOOL		valid_port = False;
-	TALLOC_CTX	*mem_ctx = NULL;
-
-        fstrcpy(srv_name, "\\\\");
-        fstrcat(srv_name, info->dest_host);
-        strupper(srv_name);
-
-	/* check (and copy) the command line arguments */
-        if (argc < 5) {
-                report(out_hnd, "spooladdprinterex <name> <shared name> <driver> <port>\n");
-                return NT_STATUS_INVALID_PARAMETER;
-        }
-	else
-	{
-		fstrcpy(printer_name, argv[1]);
-		fstrcpy(share_name, argv[2]);
-        	fstrcpy(driver_name, argv[3]);
-		fstrcpy(port_name, argv[4]);
+	
+	if (!cli)
+		return NT_STATUS_UNSUCCESSFUL;
+		
+
+	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (server);
+	fstrcpy  (user, cli->user_name);
+	fstrcpy  (printername, argv[1]);
+
+		
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
-	/* Verify that the specified port is ok; spoolss_enum_ports() should 
-	   be a level 1 since all we need is the name */
-	if ((mem_ctx=talloc_init()) == NULL)
-	{
-		DEBUG(0, ("cmd_spoolss_addprinterex: talloc_init() failed!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	init_buffer (&buffer, 0, mem_ctx);
-	
-	/* send a NULL buffer first */
-	status=spoolss_enum_ports(srv_name, 1, &buffer, 0, 
-				     &needed, &returned);
-	
-	/* send the right amount of space this time */
-	if (status==ERROR_INSUFFICIENT_BUFFER) {
-		init_buffer(&buffer, needed, mem_ctx);
-		status=spoolss_enum_ports(srv_name, 1, &buffer, 
-					  needed, &needed, &returned);
-					  
-		/* if the call succeeded, then decode the buffer into 
-		   an PRINTER_INFO_1 structre */
-		if (status == NT_STATUS_NO_PROBLEMO)
-		{
-			decode_port_info_1(&buffer, returned, &port_info_1);
-		}
-		else
-		{
-			report (out_hnd, "cmd_spoolss_addprinterex: FAILED to enumerate ports\n");
-			return NT_STATUS_NOPROBLEMO;
+
+	/* Open the printer handle */
+	result = cli_spoolss_open_printer_ex (cli, printername, "", 
+				MAXIMUM_ALLOWED_ACCESS, server, user, &hnd);
+
+	if (result == NT_STATUS_NOPROBLEMO) {
+		printf ("Printer %s opened successfully\n", printername);
+		result = cli_spoolss_close_printer (cli, &hnd);
+		if (result != NT_STATUS_NOPROBLEMO) {
+			printf ("Error closing printer handle! (%s)\n", get_nt_error_msg(result));
 		}
 	}
+
+	cli_nt_session_close(cli);
+
+	return result;
+}
+
+
+/****************************************************************************
+printer info level 0 display function
+****************************************************************************/
+static void display_print_info_0(PRINTER_INFO_0 *i1)
+{
+	fstring 	name;
+	fstring 	the_server;
+
+	unistr_to_ascii(name, i1->printername.buffer, sizeof(name) - 1);
+	unistr_to_ascii(the_server, i1->servername.buffer, sizeof(the_server) - 1);
+
+	printf("\tprintername:[%s]\n", name);
+	printf("\tservername:[%s]\n", the_server);
+	printf("\tcjobs:[0x%x]\n", i1->cjobs);
+	printf("\ttotal_jobs:[0x%x]\n", i1->total_jobs);
 	
-	/*
-	 * now we have an array of port names and we can interate
-	 * through it to verify port_name before actually attempting 
-	 * to add the printer on the server.
-	 */
-	for (i=0; i<returned; i++)
+	printf("\t:date: [%d]-[%d]-[%d] (%d)\n", i1->year, i1->month, 
+	       i1->day, i1->dayofweek);
+	printf("\t:time: [%d]-[%d]-[%d]-[%d]\n", i1->hour, i1->minute, 
+	       i1->second, i1->milliseconds);
+	
+	printf("\tglobal_counter:[0x%x]\n", i1->global_counter);
+	printf("\ttotal_pages:[0x%x]\n", i1->total_pages);
+	
+	printf("\tmajorversion:[0x%x]\n", i1->major_version);
+	printf("\tbuildversion:[0x%x]\n", i1->build_version);
+	
+	printf("\tunknown7:[0x%x]\n", i1->unknown7);
+	printf("\tunknown8:[0x%x]\n", i1->unknown8);
+	printf("\tunknown9:[0x%x]\n", i1->unknown9);
+	printf("\tsession_counter:[0x%x]\n", i1->session_counter);
+	printf("\tunknown11:[0x%x]\n", i1->unknown11);
+	printf("\tprinter_errors:[0x%x]\n", i1->printer_errors);
+	printf("\tunknown13:[0x%x]\n", i1->unknown13);
+	printf("\tunknown14:[0x%x]\n", i1->unknown14);
+	printf("\tunknown15:[0x%x]\n", i1->unknown15);
+	printf("\tunknown16:[0x%x]\n", i1->unknown16);
+	printf("\tchange_id:[0x%x]\n", i1->change_id);
+	printf("\tunknown18:[0x%x]\n", i1->unknown18);
+	printf("\tstatus:[0x%x]\n", i1->status);
+	printf("\tunknown20:[0x%x]\n", i1->unknown20);
+	printf("\tc_setprinter:[0x%x]\n", i1->c_setprinter);
+	printf("\tunknown22:[0x%x]\n", i1->unknown22);
+	printf("\tunknown23:[0x%x]\n", i1->unknown23);
+	printf("\tunknown24:[0x%x]\n", i1->unknown24);
+	printf("\tunknown25:[0x%x]\n", i1->unknown25);
+	printf("\tunknown26:[0x%x]\n", i1->unknown26);
+	printf("\tunknown27:[0x%x]\n", i1->unknown27);
+	printf("\tunknown28:[0x%x]\n", i1->unknown28);
+	printf("\tunknown29:[0x%x]\n", i1->unknown29);
+}
+
+/****************************************************************************
+printer info level 1 display function
+****************************************************************************/
+static void display_print_info_1(PRINTER_INFO_1 *i1)
+{
+	fstring desc;
+	fstring name;
+	fstring comm;
+
+	unistr_to_ascii(desc, i1->description.buffer, sizeof(desc) - 1);
+	unistr_to_ascii(name, i1->name       .buffer, sizeof(name) - 1);
+	unistr_to_ascii(comm, i1->comment    .buffer, sizeof(comm) - 1);
+
+	printf("\tflags:[0x%x]\n", i1->flags);
+	printf("\tname:[%s]\n", name);
+	printf("\tdescription:[%s]\n", desc);
+	printf("\tcomment:[%s]\n\n", comm);
+}
+
+/****************************************************************************
+printer info level 2 display function
+****************************************************************************/
+static void display_print_info_2(PRINTER_INFO_2 *i2)
+{
+	fstring servername;
+	fstring printername;
+	fstring sharename;
+	fstring portname;
+	fstring drivername;
+	fstring comment;
+	fstring location;
+	fstring sepfile;
+	fstring printprocessor;
+	fstring datatype;
+	fstring parameters;
+	
+	unistr_to_ascii(servername, i2->servername.buffer, 
+			sizeof(servername) - 1);
+	unistr_to_ascii(printername, i2->printername.buffer, 
+			sizeof(printername) - 1);
+	unistr_to_ascii(sharename, i2->sharename.buffer,
+			sizeof(sharename) - 1);
+	unistr_to_ascii(portname, i2->portname.buffer, sizeof(portname) - 1);
+	unistr_to_ascii(drivername, i2->drivername.buffer, 
+			sizeof(drivername) - 1);
+	unistr_to_ascii(comment, i2->comment.buffer, sizeof(comment) - 1);
+	unistr_to_ascii(location, i2->location.buffer, sizeof(location) - 1);
+	unistr_to_ascii(sepfile, i2->sepfile.buffer, sizeof(sepfile) - 1);
+	unistr_to_ascii(printprocessor, i2->printprocessor.buffer, 
+			sizeof(printprocessor) - 1);
+	unistr_to_ascii(datatype, i2->datatype.buffer, sizeof(datatype) - 1);
+	unistr_to_ascii(parameters, i2->parameters.buffer, 
+			sizeof(parameters) - 1);
+
+	printf("\tservername:[%s]\n", servername);
+	printf("\tprintername:[%s]\n", printername);
+	printf("\tsharename:[%s]\n", sharename);
+	printf("\tportname:[%s]\n", portname);
+	printf("\tdrivername:[%s]\n", drivername);
+	printf("\tcomment:[%s]\n", comment);
+	printf("\tlocation:[%s]\n", location);
+	printf("\tsepfile:[%s]\n", sepfile);
+	printf("\tprintprocessor:[%s]\n", printprocessor);
+	printf("\tdatatype:[%s]\n", datatype);
+	printf("\tparameters:[%s]\n", parameters);
+	printf("\tattributes:[0x%x]\n", i2->attributes);
+	printf("\tpriority:[0x%x]\n", i2->priority);
+	printf("\tdefaultpriority:[0x%x]\n", i2->defaultpriority);
+	printf("\tstarttime:[0x%x]\n", i2->starttime);
+	printf("\tuntiltime:[0x%x]\n", i2->untiltime);
+	printf("\tstatus:[0x%x]\n", i2->status);
+	printf("\tcjobs:[0x%x]\n", i2->cjobs);
+	printf("\taverageppm:[0x%x]\n", i2->averageppm);
+
+	if (i2->secdesc) display_sec_desc(i2->secdesc);
+}
+
+/****************************************************************************
+printer info level 3 display function
+****************************************************************************/
+static void display_print_info_3(PRINTER_INFO_3 *i3)
+{
+	printf("\tflags:[0x%x]\n", i3->flags);
+
+	display_sec_desc(i3->secdesc);
+}
+
+/* Enumerate printers */
+
+static uint32 cmd_spoolss_enum_printers(struct cli_state *cli, int argc, char **argv)
+{
+	uint32 			result = NT_STATUS_UNSUCCESSFUL, 
+				info_level = 1;
+	PRINTER_INFO_CTR	ctr;
+	int 			returned;
+	uint32			i;
+	
+	if (argc > 2) 
 	{
-		/* compare port_info_1[i].port_name to the port_name specified */
-		unistr_to_ascii(srv_port_name, port_info_1[i].port_name.buffer, 
-				sizeof(srv_port_name)-1);
-		if (strequal(srv_port_name, port_name))
-		{
-			valid_port = True;
+		printf("Usage: %s [level]\n", argv[0]);
+		return NT_STATUS_NOPROBLEMO;
+	}
+
+	if (argc == 2) {
+		info_level = atoi(argv[1]);
+	}
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Enumerate printers  -- Should we enumerate types other 
+	   than PRINTER_ENUM_LOCAL?  Maybe accept as a parameter?  --jerry */
+	ZERO_STRUCT(ctr);
+	result = cli_spoolss_enum_printers(cli, PRINTER_ENUM_LOCAL, 
+					   info_level, &returned, &ctr);
+
+	if (result == NT_STATUS_NOPROBLEMO) {
+		switch(info_level) {
+		case 0:
+			for (i=0; i<returned; i++) {
+				display_print_info_0(&(ctr.printers_0[i]));
+			}
+			break;
+		case 1:
+			for (i=0; i<returned; i++) {
+				display_print_info_1(&(ctr.printers_1[i]));
+			}
+			break;
+		case 2:
+			for (i=0; i<returned; i++) {
+				display_print_info_2(&(ctr.printers_2[i]));
+			}
+			break;
+		case 3:
+			for (i=0; i<returned; i++) {
+				display_print_info_3(&(ctr.printers_3[i]));
+			}
+			break;
+		default:
+			printf("unknown info level %d\n", info_level);
 			break;
 		}
 	}
-	if (!valid_port)
-	{
-		report (out_hnd, "cmd_spoolss_addprinterex: Invalid port specified!\n");
+
+	cli_nt_session_close(cli);
+
+	return result;
+}
+
+/****************************************************************************
+port info level 1 display function
+****************************************************************************/
+static void display_port_info_1(PORT_INFO_1 *i1)
+{
+	fstring buffer;
+	
+	unistr_to_ascii(buffer, i1->port_name.buffer, sizeof(buffer)-1);
+	printf("\tPort Name:\t[%s]\n", buffer);
+}
+
+/****************************************************************************
+port info level 2 display function
+****************************************************************************/
+static void display_port_info_2(PORT_INFO_2 *i2)
+{
+	fstring buffer;
+	
+	unistr_to_ascii(buffer, i2->port_name.buffer, sizeof(buffer) - 1);
+	printf("\tPort Name:\t[%s]\n", buffer);
+	unistr_to_ascii(buffer, i2->monitor_name.buffer, sizeof(buffer) - 1);
+	printf("\tMonitor Name:\t[%s]\n", buffer);
+	unistr_to_ascii(buffer, i2->description.buffer, sizeof(buffer) - 1);
+	printf("\tDescription:\t[%s]\n", buffer);
+	printf("\tPort Type:\t[%d]\n", i2->port_type);
+	printf("\tReserved:\t[%d]\n", i2->reserved);
+	printf("\n");
+}
+
+/* Enumerate ports */
+
+static uint32 cmd_spoolss_enum_ports(struct cli_state *cli, int argc, char **argv)
+{
+	uint32 			result = NT_STATUS_UNSUCCESSFUL, 
+				info_level = 1;
+	PORT_INFO_CTR 		ctr;
+	int 			returned;
+	
+	if (argc > 2) {
+		printf("Usage: %s [level]\n", argv[0]);
 		return NT_STATUS_NOPROBLEMO;
 	}
-	
-	/*
-	 * Need to build the PRINTER_INFO_2 struct here.
-	 * I think it would be better only to deal with a PRINTER_INFO_2
-	 * and the abstract the creation of a SPOOL_PRINTER_INFO_LEVEL_2
-	 * from that rather than dealing with the struct passed directly 
-	 * on the wire.  We don't need the extra *_ptr fields, etc... 
-	 * here anyways.  --jerry
-	 */
-	ZERO_STRUCTP(&print_info_2);
-	/* init_unistr( &print_info_2.servername, 	srv_name); */
-	init_unistr( &print_info_2.printername,	printer_name);
-	init_unistr( &print_info_2.sharename, 	share_name);
-	init_unistr( &print_info_2.portname,	port_name);
-	init_unistr( &print_info_2.drivername,	driver_name);
-	init_unistr( &print_info_2.comment,	"Created by rpcclient");
-	init_unistr( &print_info_2.printprocessor, "winprint");
-	init_unistr( &print_info_2.datatype,	"RAW");
-	print_info_2.devmode = NULL;
-	print_info_2.secdesc = NULL;
-	print_info_2.attributes 	= PRINTER_ATTRIBUTE_SHARED;
-	print_info_2.priority 		= 0;
-	print_info_2.defaultpriority	= 0;
-	print_info_2.starttime		= 0;
-	print_info_2.untiltime		= 0;
-	
-	/* These three fields must not be used by AddPrinter() 
-	   as defined in the MS Platform SDK documentation..  --jerry
-	print_info_2.status		= 0;
-	print_info_2.cjobs		= 0;
-	print_info_2.averageppm		= 0;
-	*/
 
+	if (argc == 2) {
+		info_level = atoi(argv[1]);
+	}
 
-	/* if successful, spoolss_addprinterex() should return True and hnd 
-	   should be a valid handle to an open printer */
-	if (spoolss_addprinterex(&hnd, srv_name, &print_info_2))
-	{
-		DEBUG(0,("cmd_spoolss_addprinterex: [%s] added successfully.\n", printer_name));
-		if (!spoolss_closeprinter( &hnd ))
-		{
-			report (out_hnd, "cmd_spoolss_addprinterex: spoolss_closeprinter FAILED!\n");
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Enumerate ports */
+	ZERO_STRUCT(ctr);
+
+	result = cli_spoolss_enum_ports(cli, info_level, &returned, &ctr);
+
+	if (result == NT_STATUS_NOPROBLEMO) {
+		int i;
+
+		for (i = 0; i < returned; i++) {
+			switch (info_level) {
+			case 1:
+				display_port_info_1(&ctr.port.info_1[i]);
+			break;
+			case 2:
+				display_port_info_2(&ctr.port.info_2[i]);
+				break;
+			default:
+				printf("unknown info level %d\n", info_level);
+				break;
+			}
 		}
 	}
-	else
-	{
-		report (out_hnd, "cmd_spoolss_addprinterex: spoolss_addprinterex FAILED!\n");
+
+	cli_nt_session_close(cli);
+
+	return result;
+}
+
+/***********************************************************************
+ * Get printer information
+ */
+static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **argv)
+{
+	POLICY_HND 	pol;
+	uint32 		result, 
+			info_level = 1;
+	BOOL 		opened_hnd = False;
+	PRINTER_INFO_CTR ctr;
+	fstring 	printername, 
+			servername,
+			username;
+
+	if (argc == 1 || argc > 3) {
+		printf("Usage: %s <printername> [level]\n", argv[0]);
+		return NT_STATUS_NOPROBLEMO;
 	}
 
-	
-        return NT_STATUS_NOPROBLEMO;
-}
-        
-/********************************************************************************
- send an AddPrinterDriver() request
-********************************************************************************/
-uint32 cmd_spoolss_addprinterdriver(struct client_info *info, int argc, char *argv[])
-{
-	PRINTER_DRIVER_CTR	driver_info;
-	DRIVER_INFO_3		info3;
-	fstring			arch;
-        fstring 		srv_name;
-	uint32			result = NT_STATUS_NO_PROBLEMO;
-	
-	/* parse the command arguements */
-	if (argc < 3)
-	{
-		report (out_hnd, "spooladdprinterdriver <arch>\\\n");
-		report (out_hnd, "\t<Long Printer Name>:<Driver File Name>:<Data File Name>:\\\n");
-    		report (out_hnd, "\t<Config File Name>:<Help File Name>:<Language Monitor Name>:\\\n");
-	    	report (out_hnd, "\t<Default Data Type>:<Comma Separated list of Files>\n");
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-                return NT_STATUS_INVALID_PARAMETER;
-        }
-	else
+	/* Open a printer handle */
+	if (argc == 3) {
+		info_level = atoi(argv[2]);
+	}
+
+	slprintf (servername, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (servername);
+	slprintf (printername, sizeof(fstring), "%s\\%s", servername, argv[1]);
+	fstrcpy  (username, cli->user_name);
+	
+	/* get a printer handle */
+	if ((result = cli_spoolss_open_printer_ex(
+		cli, printername, "", MAXIMUM_ALLOWED_ACCESS, servername,
+		username, &pol)) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+ 
+	opened_hnd = True;
+
+	/* Get printer info */
+	if ((result = cli_spoolss_getprinter(cli, &pol, info_level, &ctr))
+	    != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	/* Display printer info */
+
+	switch (info_level) {
+	case 0: 
+		display_print_info_0(ctr.printers_0);
+		break;
+	case 1:
+		display_print_info_1(ctr.printers_1);
+		break;
+	case 2:
+		display_print_info_2(ctr.printers_2);
+		break;
+	case 3:
+		display_print_info_3(ctr.printers_3);
+		break;
+	default:
+		printf("unknown info level %d\n", info_level);
+		break;
+	}
+
+ done: 
+	if (opened_hnd) 
+		cli_spoolss_close_printer(cli, &pol);
+
+	cli_nt_session_close(cli);
+
+	return result;
+}
+
+/****************************************************************************
+printer info level 0 display function
+****************************************************************************/
+static void display_print_driver_1(DRIVER_INFO_1 *i1)
+{
+	fstring name;
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+
+	printf ("Printer Driver Info 1:\n");
+	printf ("\tDriver Name: [%s]\n\n", name);
+	
+	return;
+}
+
+/****************************************************************************
+printer info level 1 display function
+****************************************************************************/
+static void display_print_driver_2(DRIVER_INFO_2 *i1)
+{
+	fstring name;
+	fstring architecture;
+	fstring driverpath;
+	fstring datafile;
+	fstring configfile;
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
+	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
+	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
+	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
+
+	printf ("Printer Driver Info 2:\n");
+	printf ("\tVersion: [%x]\n", i1->version);
+	printf ("\tDriver Name: [%s]\n", name);
+	printf ("\tArchitecture: [%s]\n", architecture);
+	printf ("\tDriver Path: [%s]\n", driverpath);
+	printf ("\tDatafile: [%s]\n", datafile);
+	printf ("\tConfigfile: [%s]\n\n", configfile);
+
+	return;
+}
+
+/****************************************************************************
+printer info level 2 display function
+****************************************************************************/
+static void display_print_driver_3(DRIVER_INFO_3 *i1)
+{
+	fstring name;
+	fstring architecture;
+	fstring driverpath;
+	fstring datafile;
+	fstring configfile;
+	fstring helpfile;
+	fstring dependentfiles;
+	fstring monitorname;
+	fstring defaultdatatype;
+	
+	int length=0;
+	BOOL valid = True;
+	
+	if (i1 == NULL)
+		return;
+
+	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
+	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
+	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
+	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
+	unistr_to_ascii(helpfile, i1->helpfile.buffer, sizeof(helpfile)-1);
+	
+	unistr_to_ascii(monitorname, i1->monitorname.buffer, sizeof(monitorname)-1);
+	unistr_to_ascii(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype)-1);
+
+	printf ("Printer Driver Info 3:\n");
+	printf ("\tVersion: [%x]\n", i1->version);
+	printf ("\tDriver Name: [%s]\n",name );
+	printf ("\tArchitecture: [%s]\n", architecture);
+	printf ("\tDriver Path: [%s]\n", driverpath);
+	printf ("\tDatafile: [%s]\n", datafile);
+	printf ("\tConfigfile: [%s]\n", configfile);
+	printf ("\tHelpfile: [%s]\n\n", helpfile);
+
+	while (valid)
 	{
-		ZERO_STRUCT(info3);
+		unistr_to_ascii(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles)-1);
+		length+=strlen(dependentfiles)+1;
 		
-		/* get the enviorment for the driver */
-		if (!get_short_archi(arch, argv[1]))
+		if (strlen(dependentfiles) > 0)
 		{
-			report (out_hnd, "Unknown architechture [%s]\n", argv[1]);
-			return NT_STATUS_INVALID_PARAMETER;
-			
+			printf ("\tDependentfiles: [%s]\n", dependentfiles);
 		}
 		else
 		{
-			set_drv_info_3_env(&info3, arch);
+			valid = False;
+		}
+	}
+	
+	printf ("\n");
+
+	printf ("\tMonitorname: [%s]\n", monitorname);
+	printf ("\tDefaultdatatype: [%s]\n\n", defaultdatatype);
+
+	return;	
+}
+
+/***********************************************************************
+ * Get printer information
+ */
+static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv)
+{
+	POLICY_HND 	pol;
+	uint32 		result, 
+			info_level = 3;
+	BOOL 		opened_hnd = False;
+	PRINTER_DRIVER_CTR 	ctr;
+	fstring 	printername, 
+			server, 
+			user;
+	uint32		i;
+
+	if ((argc == 1) || (argc > 3)) 
+	{
+		printf("Usage: %s <printername> [level]\n", argv[0]);
+		return NT_STATUS_NOPROBLEMO;
+	}
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
+	{
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* get the arguments need to open the printer handle */
+	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (server);
+	fstrcpy  (user, cli->user_name);
+	fstrcpy  (printername, argv[1]);
+	if (argc == 3)
+		info_level = atoi(argv[2]);
+
+	/* Open a printer handle */
+	if ((result=cli_spoolss_open_printer_ex (cli, printername, "", 
+		    MAXIMUM_ALLOWED_ACCESS, server, user, &pol)) != NT_STATUS_NO_PROBLEMO) 
+	{
+		printf ("Error opening printer handle for %s!\n", printername);
+		return result;
+	}
+
+	opened_hnd = True;
+
+	/* loop through and print driver info level for each architecture */
+	for (i=0; archi_table[i].long_archi!=NULL; i++) 
+	{
+		result = cli_spoolss_getprinterdriver (cli, &pol, info_level, 
+				archi_table[i].long_archi, &ctr);
+				
+		switch (result)
+		{
+		case NT_STATUS_NO_PROBLEMO:
+			break;
+			
+		case ERROR_UNKNOWN_PRINTER_DRIVER:
+			continue;
+
+		default:
+			printf ("Error getting driver for %s [%s] - %s\n", printername,
+				archi_table[i].long_archi, get_nt_error_msg(result));
+			continue;
+		}
+
+			
+		printf ("\n[%s]\n", archi_table[i].long_archi);
+		switch (info_level) 
+		{
+			
+		case 1:
+			display_print_driver_1 (ctr.info1);
+			break;
+		case 2:
+			display_print_driver_2 (ctr.info2);
+			break;
+		case 3:
+			display_print_driver_3 (ctr.info3);
+			break;
+		default:
+			printf("unknown info level %d\n", info_level);
+			break;
 		}
 		
-		/* fill in the other struct members */
-		if (!init_drv_info_3_members(&info3, argv[2]))
+	
+	}
+	
+
+	/* cleanup */
+	if (opened_hnd)
+		cli_spoolss_close_printer (cli, &pol);
+	cli_nt_session_close (cli);
+	
+	if (result==ERROR_UNKNOWN_PRINTER_DRIVER)
+		return NT_STATUS_NO_PROBLEMO;
+	else 
+		return result;
+		
+}
+
+/***********************************************************************
+ * Get printer information
+ */
+static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **argv)
+{
+	uint32 		result, 
+			info_level = 1;
+	PRINTER_DRIVER_CTR 	ctr;
+	fstring 	server;
+	uint32		i, j,
+			returned;
+
+	if (argc > 2) 
+	{
+		printf("Usage: enumdrivers [level]\n");
+		return NT_STATUS_NOPROBLEMO;
+	}
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
+	{
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* get the arguments need to open the printer handle */
+	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (server);
+	if (argc == 2)
+		info_level = atoi(argv[1]);
+
+
+	/* loop through and print driver info level for each architecture */
+	for (i=0; archi_table[i].long_archi!=NULL; i++) 
+	{
+		returned = 0;	
+		result = cli_spoolss_enumprinterdrivers (cli, info_level, 
+				archi_table[i].long_archi, &returned, &ctr);
+
+		if (returned == 0)
+			continue;
+			
+
+		if (result != NT_STATUS_NO_PROBLEMO)
 		{
-			report (out_hnd, "Invalid parameter list.\n");
-			return NT_STATUS_INVALID_PARAMETER;
+			printf ("Error getting driver for environment [%s] - %s\n",
+				archi_table[i].long_archi, get_nt_error_msg(result));
+			continue;
+		}
+		
+		printf ("\n[%s]\n", archi_table[i].long_archi);
+		switch (info_level) 
+		{
+			
+		case 1:
+			for (j=0; j < returned; j++) {
+				display_print_driver_1 (&(ctr.info1[j]));
+			}
+			break;
+		case 2:
+			for (j=0; j < returned; j++) {
+				display_print_driver_2 (&(ctr.info2[j]));
+			}
+			break;
+		case 3:
+			for (j=0; j < returned; j++) {
+				display_print_driver_3 (&(ctr.info3[j]));
+			}
+			break;
+		default:
+			printf("unknown info level %d\n", info_level);
+			break;
 		}
 	}
 	
-	/* get the server name */
-        fstrcpy(srv_name, "\\\\");
-        fstrcat(srv_name, info->dest_host);
-        strupper(srv_name);
+
+	/* cleanup */
+	cli_nt_session_close (cli);
 	
-	/* call AddPrinterDriver() woth an info level 3 */
-	driver_info.info3 = &info3;
-	if ((result=spoolss_addprinterdriver(srv_name, 3, &driver_info)) != NT_STATUS_NO_PROBLEMO)
+	if (result==ERROR_UNKNOWN_PRINTER_DRIVER)
+		return NT_STATUS_NO_PROBLEMO;
+	else 
+		return result;
+		
+}
+
+/****************************************************************************
+printer info level 1 display function
+****************************************************************************/
+static void display_printdriverdir_1(DRIVER_DIRECTORY_1 *i1)
+{
+        fstring name;
+        if (i1 == NULL)
+                return;
+ 
+        unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+ 
+	printf ("\tDirectory Name:[%s]\n", name);
+}
+
+/***********************************************************************
+ * Get printer driver directory information
+ */
+static uint32 cmd_spoolss_getdriverdir(struct cli_state *cli, int argc, char **argv)
+{
+	uint32 			result;
+	fstring			env;
+	DRIVER_DIRECTORY_CTR	ctr;
+
+	if (argc > 2) 
 	{
-		report( out_hnd, "spoolss_addprinterdriver: Add Printer failed [%d]\n",
-			result);
+		printf("Usage: %s [environment]\n", argv[0]);
+		return NT_STATUS_NOPROBLEMO;
 	}
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
+	{
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* get the arguments need to open the printer handle */
+	if (argc == 2)
+		fstrcpy (env, argv[1]);
 	else
+		fstrcpy (env, "Windows NT x86");
+
+	/* Get the directory.  Only use Info level 1 */
+	if ((result = cli_spoolss_getprinterdriverdir (cli, 1, env, &ctr)) 
+	     != NT_STATUS_NO_PROBLEMO)
 	{
-		fstring driver_name;
-		unistr_to_ascii (driver_name, info3.name.buffer, sizeof(driver_name)-1);
-		report( out_hnd, "cmd_spoolss_addprinterdriver: Printer Driver [%s] added successfully\n", driver_name);
+		return result;
 	}
+
 	
-	free_drv_info_3(&info3);
+	display_printdriverdir_1 (ctr.info1);
+
+	/* cleanup */
+	cli_nt_session_close (cli);
 	
-        return result;
-}	
+	return result;
+		
+}
 
 /*******************************************************************************
  set the version and environment fields of a DRIVER_INFO_3 struct
  ******************************************************************************/
 void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
 {
-	if (strcmp(arch, "WIN40") == 0)
+
+	int i;
+	
+	for (i=0; archi_table[i].long_archi != NULL; i++) 
 	{
-		info->version = 0;
-		init_unistr(&info->architecture, "Windows 4.0");
+		if (strcmp(arch, archi_table[i].short_archi) == 0)
+		{
+			info->version = archi_table[i].version;
+			init_unistr (&info->architecture, archi_table[i].long_archi);
+			break;
+		}
 	}
-	else if (strcmp(arch, "W32X86") == 0)
-	{
-		info->version = 2;
-		init_unistr(&info->architecture, "Windows NT x86");
-	}
-	else if (strcmp(arch, "W32MIPS") == 0)
-	{
-		info->version = 2;
-		init_unistr(&info->architecture, "Windows NT R4000");
-	}
-	else if (strcmp(arch, "W32ALPHA") == 0)
-	{
-		info->version = 2;
-		init_unistr(&info->architecture, "Windows NT Alpha_AXP");
-	}
-	else if (strcmp(arch, "W32PPC") == 0)
-	{
-		info->version = 2;
-		init_unistr(&info->architecture, "Windows NT PowerPC");
-	}
-	else
+	
+	if (archi_table[i].long_archi == NULL)
 	{
 		DEBUG(0, ("set_drv_info_3_env: Unknown arch [%s]\n", arch));
 	}
 	
 	return;
 }
+
 
 /**************************************************************************
  wrapper for strtok to get the next parameter from a delimited list.
@@ -834,7 +966,7 @@ static char* get_driver_3_param (char* str, char* delim, UNISTR* dest)
 	     <Config File Name>:<Help File Name>:<Language Monitor Name>:\
 	     <Default Data Type>:<Comma Separated list of Files> 
  *******************************************************************************/
-BOOL init_drv_info_3_members (DRIVER_INFO_3 *info, char *args)
+static BOOL init_drv_info_3_members (DRIVER_INFO_3 *info, char *args)
 {
 	char	*str, *str2;
 	uint32	len, i;
@@ -879,19 +1011,160 @@ BOOL init_drv_info_3_members (DRIVER_INFO_3 *info, char *args)
 	return True;
 }
 
-/*****************************************************************************
- free any dynamically allocated members
- ****************************************************************************/
-void free_drv_info_3 (DRIVER_INFO_3 *info)
+
+static uint32 cmd_spoolss_addprinterdriver (struct cli_state *cli, int argc, char **argv)
 {
-	if (info->dependentfiles != NULL)
+	uint32 			result,
+				level = 3;
+	PRINTER_DRIVER_CTR	ctr;
+	DRIVER_INFO_3		info3;
+	fstring			arch;
+	fstring			driver_name;
+
+	/* parse the command arguements */
+	if (argc != 3)
 	{
-		free(info->dependentfiles);
-		info->dependentfiles = NULL;
+		printf ("Usage: %s <Environment>\\\n", argv[0]);
+		printf ("\t<Long Printer Name>:<Driver File Name>:<Data File Name>:\\\n");
+    		printf ("\t<Config File Name>:<Help File Name>:<Language Monitor Name>:\\\n");
+	    	printf ("\t<Default Data Type>:<Comma Separated list of Files>\n");
+
+		return NT_STATUS_NOPROBLEMO;
+        }
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
+	{
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+		
+	/* Fill in the DRIVER_INFO_3 struct */
+	ZERO_STRUCT(info3);
+	if (!get_short_archi(arch, argv[1]))
+	{
+		printf ("Error Unknown architechture [%s]\n", argv[1]);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	else
+		set_drv_info_3_env(&info3, arch);
+
+	if (!init_drv_info_3_members(&info3, argv[2]))
+	{
+		printf ("Error Invalid parameter list - %s.\n", argv[2]);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+
+	/* Get the directory.  Only use Info level 1 */
+	ctr.info3 = &info3;
+	if ((result = cli_spoolss_addprinterdriver (cli, level, &ctr)) 
+	     != NT_STATUS_NO_PROBLEMO)
+	{
+		return result;
+	}
+
+	unistr_to_ascii (driver_name, info3.name.buffer, sizeof(driver_name)-1);
+	printf ("Printer Driver %s successfully installed.\n", driver_name);
+
+	/* cleanup */
+	cli_nt_session_close (cli);
 	
-	return;
+	return result;
+		
 }
 
 
+static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **argv)
+{
+	uint32 			result,
+				level = 2;
+	PRINTER_INFO_CTR	ctr;
+	PRINTER_INFO_2		info2;
+	fstring			server;
+	
+	/* parse the command arguements */
+	if (argc != 5)
+	{
+		printf ("Usage: %s <name> <shared name> <driver> <port>\n", argv[0]);
+		return NT_STATUS_NOPROBLEMO;
+        }
 
+        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        strupper (server);
+
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) 
+	{
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+		
+	/* Fill in the DRIVER_INFO_3 struct */
+	ZERO_STRUCT(info2);
+#if 0	/* JERRY */
+	init_unistr( &info2.servername, 	server);
+#endif
+	init_unistr( &info2.printername,	argv[1]);
+	init_unistr( &info2.sharename, 		argv[2]);
+	init_unistr( &info2.drivername,		argv[3]);
+	init_unistr( &info2.portname,		argv[4]);
+	init_unistr( &info2.comment,		"Created by rpcclient");
+	init_unistr( &info2.printprocessor, 	"winprint");
+	init_unistr( &info2.datatype,		"RAW");
+	info2.devmode = 	NULL;
+	info2.secdesc = 	NULL;
+	info2.attributes 	= PRINTER_ATTRIBUTE_SHARED;
+	info2.priority 		= 0;
+	info2.defaultpriority	= 0;
+	info2.starttime		= 0;
+	info2.untiltime		= 0;
+	
+	/* These three fields must not be used by AddPrinter() 
+	   as defined in the MS Platform SDK documentation..  
+	   --jerry
+	info2.status		= 0;
+	info2.cjobs		= 0;
+	info2.averageppm	= 0;
+	*/
+
+
+
+	/* Get the directory.  Only use Info level 1 */
+	ctr.printers_2 = &info2;
+	if ((result = cli_spoolss_addprinterex (cli, level, &ctr)) 
+	     != NT_STATUS_NO_PROBLEMO)
+	{
+		return result;
+	}
+
+	printf ("Printer %s successfully installed.\n", argv[1]);
+
+	/* cleanup */
+	cli_nt_session_close (cli);
+	
+	return result;
+		
+}
+
+
+/* List of commands exported by this module */
+struct cmd_set spoolss_commands[] = {
+
+	{ "SPOOLSS", 		NULL, 				"" },
+	{ "adddriver",		cmd_spoolss_addprinterdriver,	"Add a print driver" },
+	{ "addprinter",		cmd_spoolss_addprinterex,	"Add a printer" },
+	{ "enumdata",		cmd_spoolss_not_implemented,	"Enumerate printer data (*)" },
+	{ "enumjobs",		cmd_spoolss_not_implemented,	"Enumerate print jobs (*)" },
+	{ "enumports", 		cmd_spoolss_enum_ports, 	"Enumerate printer ports" },
+	{ "enumdrivers", 	cmd_spoolss_enum_drivers, 	"Enumerate installed printer drivers" },
+	{ "enumprinters", 	cmd_spoolss_enum_printers, 	"Enumerate printers" },
+	{ "getdata",		cmd_spoolss_not_implemented,	"Get print driver data (*)" },
+	{ "getdriver",		cmd_spoolss_getdriver,		"Get print driver information" },
+	{ "getdriverdir",	cmd_spoolss_getdriverdir,	"Get print driver upload directory" },
+	{ "getprinter", 	cmd_spoolss_getprinter, 	"Get printer info" },
+	{ "openprinter",	cmd_spoolss_open_printer_ex,	"Open printer handle" },
+	{ NULL, NULL, NULL }
+};

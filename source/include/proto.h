@@ -44,15 +44,6 @@ void charset_initialise(void);
 void codepage_initialise(int client_codepage);
 void add_char_string(char *s);
 
-/*The following definitions come from  lib/cmd_interp.c  */
-
-void free_cmd_set_array(uint32 num_entries, struct command_set **entries);
-struct command_set *add_cmd_set_to_array(uint32 *len, struct command_set ***array,
-					 const struct command_set *cmd);
-void add_command_set(const struct command_set *cmds);
-void cmd_set_no_autoconnect(void);
-int command_main(int argc, char *argv[]);
-
 /*The following definitions come from  lib/crc32.c  */
 
 uint32 crc32_calc_buffer( char *buffer, uint32 count);
@@ -712,6 +703,81 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *pol,
 uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, POLICY_HND *pol, 
 			      uint32 *enum_ctx, uint32 *num_domains,
 			      char ***domain_names, DOM_SID **domain_sids);
+
+/*The following definitions come from  libsmb/cli_samr.c  */
+
+struct cli_state *cli_samr_initialise(struct cli_state *cli, char *system_name,
+				      struct ntuser_creds *creds);
+void cli_samr_shutdown(struct cli_state *cli);
+uint32 cli_samr_connect(struct cli_state *cli, char *srv_name,
+			uint32 access_mask, POLICY_HND *connect_pol);
+uint32 cli_samr_close(struct cli_state *cli, POLICY_HND *connect_pol);
+uint32 cli_samr_open_domain(struct cli_state *cli, POLICY_HND *connect_pol,
+			    uint32 access_mask, DOM_SID *domain_sid,
+			    POLICY_HND *domain_pol);
+uint32 cli_samr_open_user(struct cli_state *cli, POLICY_HND *domain_pol,
+			  uint32 access_mask, uint32 user_rid,
+			  POLICY_HND *user_pol);
+uint32 cli_samr_open_group(struct cli_state *cli, POLICY_HND *domain_pol,
+			  uint32 access_mask, uint32 group_rid,
+			  POLICY_HND *group_pol);
+uint32 cli_samr_query_userinfo(struct cli_state *cli, POLICY_HND *user_pol, 
+			       uint16 switch_value, SAM_USERINFO_CTR *ctr);
+uint32 cli_samr_query_groupinfo(struct cli_state *cli, POLICY_HND *group_pol,
+				uint32 info_level, GROUP_INFO_CTR *ctr);
+uint32 cli_samr_query_usergroups(struct cli_state *cli, POLICY_HND *user_pol,
+				 uint32 *num_groups, DOM_GID **gid);
+uint32 cli_samr_query_groupmem(struct cli_state *cli, POLICY_HND *group_pol,
+			       uint32 *num_mem, uint32 **rid, uint32 **attr);
+
+/*The following definitions come from  libsmb/cli_spoolss.c  */
+
+struct cli_state *cli_spoolss_initialise(struct cli_state *cli, 
+					 char *system_name,
+					 struct ntuser_creds *creds);
+void cli_spoolss_shutdown(struct cli_state *cli);
+uint32 cli_spoolss_open_printer_ex(struct cli_state *cli, char *printername,
+				   char *datatype, uint32 access_required,
+				   char *station, char *username,
+				   POLICY_HND *pol);
+uint32 cli_spoolss_close_printer(struct cli_state *cli, POLICY_HND *pol);
+uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
+				 uint32 level, int *returned, 
+				 PRINTER_INFO_CTR *ctr);
+uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level, 
+			      int *returned, PORT_INFO_CTR *ctr);
+uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
+			      uint32 level, PRINTER_INFO_CTR *ctr);
+uint32 cli_spoolss_getprinterdriver (
+	struct cli_state 	*cli, 
+	POLICY_HND 		*pol, 
+	uint32 			level,
+	char* 			env,
+	PRINTER_DRIVER_CTR  	*ctr
+);
+uint32 cli_spoolss_enumprinterdrivers (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	char* 			env,
+	uint32			*returned,
+	PRINTER_DRIVER_CTR  	*ctr
+);
+uint32 cli_spoolss_getprinterdriverdir (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	char* 			env,
+	DRIVER_DIRECTORY_CTR  	*ctr
+);
+uint32 cli_spoolss_addprinterdriver (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	PRINTER_DRIVER_CTR  	*ctr
+);
+uint32 cli_spoolss_addprinterex (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	PRINTER_INFO_CTR  	*ctr
+);
 
 /*The following definitions come from  libsmb/cliconnect.c  */
 
@@ -2073,48 +2139,6 @@ BOOL do_samr_query_userinfo(struct cli_state *cli,
 				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
 
-/*The following definitions come from  rpc_client/cli_spoolss.c  */
-
-uint32 spoolss_enum_printerdrivers(const char *srv_name, const char *environment,
-                                   uint32 level, NEW_BUFFER *buffer, uint32 offered,
-                                   uint32 *needed, uint32 *returned);
-uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
-                             NEW_BUFFER *buffer, uint32 offered,
-                             uint32 *needed, uint32 *returned);
-uint32 spoolss_enum_ports(fstring srv_name, uint32 level,
-                             NEW_BUFFER *buffer, uint32 offered,
-                             uint32 *needed, uint32 *returned);
-uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjobs,
-                         uint32 level, NEW_BUFFER *buffer, uint32 offered,
-                         uint32 *needed, uint32 *returned);
-uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
-                        	uint32 *valuelen, uint16 *value, uint32 *rvaluelen,
-                        	uint32 *type, uint32 *datalen, uint8 *data, 
-				uint32 *rdatalen);
-uint32 spoolss_getprinter(const POLICY_HND *hnd, uint32 level,
-                             NEW_BUFFER *buffer, uint32 offered,
-                             uint32 *needed);
-uint32 spoolss_getprinterdriver(const POLICY_HND *hnd,
-                                const char *environment, uint32 level,
-                                NEW_BUFFER *buffer, uint32 offered,
-                                uint32 *needed);
-BOOL spoolss_open_printer_ex(  const char *printername,
-                         const char *datatype, uint32 access_required,
-                         const char *station,  const char *username,
-                        POLICY_HND *hnd);
-BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 *info2);
-BOOL spoolss_closeprinter(POLICY_HND *hnd);
-uint32 spoolss_getprinterdata(const POLICY_HND *hnd, UNISTR2 *valuename,
-                        uint32 in_size,
-                        uint32 *type,
-                        uint32 *out_size,
-                        uint8 *data,
-                        uint32 *needed);
-uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 level,
-                             NEW_BUFFER *buffer, uint32 offered,
-                             uint32 *needed);
-uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIVER_CTR *info);
-
 /*The following definitions come from  rpc_client/cli_spoolss_notify.c  */
 
 BOOL spoolss_disconnect_from_client( struct cli_state *cli);
@@ -2166,42 +2190,6 @@ void cli_use_wait_keyboard(void);
 BOOL do_wks_query_info(struct cli_state *cli, 
 			char *server_name, uint32 switch_value,
 			WKS_INFO_100 *wks100);
-
-/*The following definitions come from  rpc_client/msrpc_spoolss.c  */
-
-void init_buffer(NEW_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx);
-void decode_port_info_1(NEW_BUFFER *buffer, uint32 returned, 
-			PORT_INFO_1 **info);
-void decode_port_info_2(NEW_BUFFER *buffer, uint32 returned, 
-			PORT_INFO_2 **info);
-BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags, 
-				 uint32 level, PRINTER_INFO_CTR ctr);
-BOOL msrpc_spoolss_enum_ports(char* srv_name, 
-				 uint32 level, PORT_INFO_CTR *ctr);
-uint32 msrpc_spoolss_getprinterdata( const char* printer_name,
-                                const char* station,
-                                const char* user_name,
-                                const char* value_name,
-                                uint32 *type,
-                                NEW_BUFFER *buffer,
-                                void *fn);
-BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
-                                const char* station, const char* user_name,
-                                uint32 level,
-                                void ***ctr, JOB_INFO_FN(fn));
-BOOL msrpc_spoolss_enum_printerdata( const char* printer_name, 
-		const char* station, const char* user_name );
-BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level,
-                const char* station, const char* user_name,
-                PRINTER_INFO_CTR ctr);
-BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
-                const char *environment, const uint32 level,
-                const char* station, const char* user_name,
-                PRINTER_DRIVER_CTR ctr);
-BOOL msrpc_spoolss_enumprinterdrivers( const char* srv_name,
-                const char *environment, const uint32 level,
-                PRINTER_DRIVER_CTR ctr);
-BOOL msrpc_spoolss_getprinterdriverdir(char* srv_name, char* env_name, uint32 level, DRIVER_DIRECTORY_CTR ctr);
 
 /*The following definitions come from  rpc_client/ncacn_np_use.c  */
 
@@ -3177,11 +3165,17 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		uint32 access_required,
 		const fstring clientname,
 		const fstring user_name);
-BOOL make_spoolss_q_addprinterex(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name,
-				 const char* clientname, const char* user_name,
-				 uint32 level, PRINTER_INFO_2 *info);
-BOOL make_spool_printer_info_2(TALLOC_CTX *ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
-			       PRINTER_INFO_2 *info);
+BOOL make_spoolss_q_addprinterex(
+	SPOOL_Q_ADDPRINTEREX *q_u, 
+	const char *srv_name,
+	const char* clientname, 
+	const char* user_name,
+	uint32 level, 
+	PRINTER_INFO_CTR *ctr);
+BOOL make_spool_printer_info_2(
+	SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
+	PRINTER_INFO_2 *info
+);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
@@ -3290,7 +3284,7 @@ BOOL spoolss_io_r_schedulejob(char *desc, SPOOL_R_SCHEDULEJOB *r_u, prs_struct *
 BOOL spoolss_io_q_schedulejob(char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_setjob(char *desc, SPOOL_R_SETJOB *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_setjob(char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int depth);
-BOOL new_spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u,
                                 const char *name,
                                 const char *environment,
@@ -3316,12 +3310,16 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
                                           prs_struct *ps, int depth);
 BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
-BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTERDRIVER *q_u, 
-				     const char* srv_name, uint32 level, 
-				     PRINTER_DRIVER_CTR *info);
-BOOL make_spool_driver_info_3(TALLOC_CTX *ctx, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
-			      DRIVER_INFO_3 *info3);
-BOOL make_spool_buffer5(TALLOC_CTX *ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
+BOOL make_spoolss_q_addprinterdriver(
+	SPOOL_Q_ADDPRINTERDRIVER *q_u, 
+	const char* srv_name, 
+	uint32 level, 
+	PRINTER_DRIVER_CTR *info);
+BOOL make_spool_driver_info_3(
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
+	DRIVER_INFO_3 *info3
+);
+BOOL make_spool_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src);
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
@@ -3688,67 +3686,23 @@ uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO 
 
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
-uint32 cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[]);
-void add_lsa_commands(void);
+
+/*The following definitions come from  rpcclient/cmd_samr.c  */
+
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
 BOOL get_short_archi(char *short_archi, char *long_archi);
-uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_enum_ports(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_getprinterdata(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_enumprinterdrivers(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]);
-uint32 cmd_spoolss_addprinterdriver(struct client_info *info, int argc, char *argv[]);
 void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch);
-BOOL init_drv_info_3_members (DRIVER_INFO_3 *info, char *args);
-void free_drv_info_3 (DRIVER_INFO_3 *info);
-
-/*The following definitions come from  rpcclient/display_sec.c  */
-
-void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *const sec);
-
-/*The following definitions come from  rpcclient/display_spool.c  */
-
-void display_printer_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
-				uint32 count, PRINTER_INFO_CTR ctr);
-void display_port_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
-				uint32 count, PORT_INFO_CTR *ctr);
-void display_port_info_1(FILE *out_hnd, enum action_type action, PORT_INFO_1 *i1);
-void display_port_info_2(FILE *out_hnd, enum action_type action, PORT_INFO_2 *i2);
-void display_printer_enumdata(FILE *out_hnd, enum action_type action, uint32 idx, 
-				uint32 valuelen, uint16 *value, uint32 rvaluelen,
-				uint32 type, 
-				uint32 datalen, uint8 *data, uint32 rdatalen);
-void display_job_info_2(FILE *out_hnd, enum action_type action, 
-		JOB_INFO_2 *const i2);
-void display_job_info_1(FILE *out_hnd, enum action_type action, 
-		JOB_INFO_1 *const i1);
-void display_job_info_2_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 count, JOB_INFO_2 *const *const ctr);
-void display_job_info_1_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 count, JOB_INFO_1 *const *const ctr);
-void display_job_info_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 level, uint32 count,
-				void *const *const ctr);
-void display_printer_driver_ctr(FILE *out_hnd, enum action_type action, uint32 level,
-				uint32 count, PRINTER_DRIVER_CTR ctr);
-void display_printerdriverdir_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
-				DRIVER_DIRECTORY_CTR ctr);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
-
-/*The following definitions come from  rpcclient/spoolss_cmds.c  */
-
-void add_spl_commands(void);
+void fetch_domain_sid(struct cli_state *cli);
+void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
+			  char* domain, char* password);
+void add_command_set(struct cmd_set *cmd_set);
+struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
+				   struct ntuser_creds *creds);
 
 /*The following definitions come from  smbd/blocking.c  */
 
