@@ -1559,7 +1559,7 @@ as shown in <link linkend="brsex3">example below</link>.
 	<tgroup cols="3" align="left">
 		<colspec align="left"/>
 		<colspec align="left"/>
-		<colspec align="justify" width="1*"/>
+		<colspec align="justify" colwidth="1*"/>
 
 	<thead>
 		<row><entry>Subnet</entry><entry>Browse Master</entry><entry>List</entry></row>

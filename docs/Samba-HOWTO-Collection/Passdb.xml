@@ -1413,8 +1413,8 @@ access to attrs=SambaLMPassword,SambaNTPassword
 		<table iframe="all" id="ldappwsync">
 			<title>Possible <emphasis>ldap passwd sync</emphasis> values</title>
 		<tgroup cols="2">
-			<colspec align="left" width="1*"/>
-			<colspec align="justify" width="4*"/>
+			<colspec align="left" colwidth="1*"/>
+			<colspec align="justify" colwidth="4*"/>
 		<thead>
 			<row><entry align="left">Value</entry><entry align="center">Description</entry></row>
 		</thead>

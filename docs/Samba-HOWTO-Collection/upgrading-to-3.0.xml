@@ -332,7 +332,7 @@ complete descriptions of new or modified parameters.
         <table frame='all' id="tdbfiledesc"><title>TDB File Descriptions</title>
         <tgroup cols='3'>
 			<colspec align="left"/>
-			<colspec align="justify" width="1*"/>
+			<colspec align="justify" colwidth="1*"/>
 			<colspec align="left"/>
                 <thead>
                 <row>
