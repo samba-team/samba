@@ -92,6 +92,8 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 #else
 	struct flock fl;
 
+        if (tdb->fd == -1) return 0;   /* for in memory tdb */
+
 	if (tdb->read_only) return -1;
 
 	fl.l_type = set==LOCK_SET?rw_type:F_UNLCK;
@@ -194,7 +196,7 @@ static tdb_off tdb_hash_top(TDB_CONTEXT *tdb, unsigned hash)
 static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
 {
 	struct stat st;
-	if (offset <= tdb->map_size) return 0;
+	if ((offset <= tdb->map_size) || (tdb->fd == -1)) return 0;
 
 	fstat(tdb->fd, &st);
 	if (st.st_size <= (ssize_t)offset) {
@@ -337,8 +339,10 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 	length = ((tdb->map_size + length + TDB_PAGE_SIZE) & ~(TDB_PAGE_SIZE - 1)) - tdb->map_size;
 
 	/* expand the file itself */
-	lseek(tdb->fd, tdb->map_size + length - 1, SEEK_SET);
-	if (write(tdb->fd, &b, 1) != 1) goto fail;
+        if (tdb->fd != -1) {
+            lseek(tdb->fd, tdb->map_size + length - 1, SEEK_SET);
+            if (write(tdb->fd, &b, 1) != 1) goto fail;
+        }
 
 	/* form a new freelist record */
 	offset = FREELIST_TOP;
@@ -349,13 +353,17 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 	}
 
 #if HAVE_MMAP
-	if (tdb->map_ptr) {
+	if (tdb->fd != -1 && tdb->map_ptr) {
 		munmap(tdb->map_ptr, tdb->map_size);
 		tdb->map_ptr = NULL;
 	}
 #endif
 
 	tdb->map_size += length;
+
+        if (tdb->fd == -1) {
+            tdb->map_ptr = realloc(tdb->map_ptr, tdb->map_size);
+        }
 
 	/* write it out */
 	if (rec_write(tdb, tdb->map_size - length, &rec) == -1) {
@@ -367,10 +375,13 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 	if (ofs_write(tdb, offset, &ptr) == -1) goto fail;
 
 #if HAVE_MMAP
-	tdb->map_ptr = (void *)mmap(NULL, tdb->map_size, 
-				   PROT_READ|PROT_WRITE,
-				   MAP_SHARED | MAP_FILE, tdb->fd, 0);
+        if (tdb->fd != -1) {
+            tdb->map_ptr = (void *)mmap(NULL, tdb->map_size, 
+                                        PROT_READ|PROT_WRITE,
+                                        MAP_SHARED | MAP_FILE, tdb->fd, 0);
+        }
 #endif
+
 	tdb_unlock(tdb, -1);
 	return 0;
 
@@ -478,37 +489,52 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 {
 	struct tdb_header header;
 	tdb_off offset;
-	int i;
+	int i, size = 0;
 	tdb_off buf[16];
 
-	/* create the header */
-	memset(&header, 0, sizeof(header));
-	memcpy(header.magic_food, TDB_MAGIC_FOOD, strlen(TDB_MAGIC_FOOD)+1);
-	header.version = TDB_VERSION;
-	header.hash_size = hash_size;
-	lseek(tdb->fd, 0, SEEK_SET);
-	ftruncate(tdb->fd, 0);
-
-	if (write(tdb->fd, &header, sizeof(header)) != sizeof(header)) {
-		tdb->ecode = TDB_ERR_IO;
-		return -1;
-	}
+        /* create the header */
+        memset(&header, 0, sizeof(header));
+        memcpy(header.magic_food, TDB_MAGIC_FOOD, strlen(TDB_MAGIC_FOOD)+1);
+        header.version = TDB_VERSION;
+        header.hash_size = hash_size;
+        lseek(tdb->fd, 0, SEEK_SET);
+        ftruncate(tdb->fd, 0);
+        
+        if (tdb->fd != -1 && write(tdb->fd, &header, sizeof(header)) != 
+            sizeof(header)) {
+            tdb->ecode = TDB_ERR_IO;
+            return -1;
+        } else size += sizeof(header);
 	
-	/* the freelist and hash pointers */
-	offset = 0;
-	memset(buf, 0, sizeof(buf));
-	for (i=0;(hash_size+1)-i >= 16; i += 16) {
-		if (write(tdb->fd, buf, sizeof(buf)) != sizeof(buf)) {
-			tdb->ecode = TDB_ERR_IO;
-			return -1;
-		}
-	}
-	for (;i<hash_size+1; i++) {
-		if (write(tdb->fd, buf, sizeof(tdb_off)) != sizeof(tdb_off)) {
-			tdb->ecode = TDB_ERR_IO;
-			return -1;
-		}
-	}
+        /* the freelist and hash pointers */
+        offset = 0;
+        memset(buf, 0, sizeof(buf));
+
+        for (i=0;(hash_size+1)-i >= 16; i += 16) {
+            if (tdb->fd != -1 && write(tdb->fd, buf, sizeof(buf)) != 
+                sizeof(buf)) {
+                tdb->ecode = TDB_ERR_IO;
+                return -1;
+            } else size += sizeof(buf);
+        }
+
+        for (;i<hash_size+1; i++) {
+            if (tdb->fd != -1 && write(tdb->fd, buf, sizeof(tdb_off)) != 
+                sizeof(tdb_off)) {
+                tdb->ecode = TDB_ERR_IO;
+                return -1;
+            } else size += sizeof(tdb_off);
+        }
+
+        if (tdb->fd == -1) {
+            tdb->map_ptr = calloc(size, 1);
+            tdb->map_size = size;
+            if (tdb->map_ptr == NULL) {
+                tdb->ecode = TDB_ERR_IO;
+                return -1;
+            }
+            memcpy(&tdb->header, &header, sizeof(header));
+        }
 
 #if TDB_DEBUG
 	printf("initialised database of hash_size %u\n", 
@@ -1082,6 +1108,8 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	TDB_CONTEXT tdb, *ret;
 	struct stat st;
 
+	memset(&tdb, 0, sizeof(tdb));
+
 	tdb.fd = -1;
 	tdb.name = NULL;
 	tdb.map_ptr = NULL;
@@ -1092,14 +1120,14 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 
 	if (hash_size == 0) hash_size = DEFAULT_HASH_SIZE;
 
-	memset(&tdb, 0, sizeof(tdb));
-
 	tdb.read_only = ((open_flags & O_ACCMODE) == O_RDONLY);
 
-	tdb.fd = open(name, open_flags, mode);
-	if (tdb.fd == -1) {
+        if (name != NULL) {
+            tdb.fd = open(name, open_flags, mode);
+            if (tdb.fd == -1) {
 		goto fail;
-	}
+            }
+        }
 
 	/* ensure there is only one process initialising at once */
 	tdb_brlock(&tdb, GLOBAL_LOCK, LOCK_SET, F_WRLCK, F_SETLKW);
@@ -1126,23 +1154,32 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		if (tdb_new_database(&tdb, hash_size) == -1) goto fail;
 
 		lseek(tdb.fd, 0, SEEK_SET);
-		if (read(tdb.fd, &tdb.header, sizeof(tdb.header)) != sizeof(tdb.header)) goto fail;
+		if (tdb.fd != -1 && read(tdb.fd, &tdb.header, 
+                                         sizeof(tdb.header)) != 
+                                         sizeof(tdb.header)) 
+                    goto fail;
 	}
 
-	fstat(tdb.fd, &st);
+        if (tdb.fd != -1) {
+            fstat(tdb.fd, &st);
 
-	/* map the database and fill in the return structure */
-	tdb.name = (char *)strdup(name);
-	tdb.locked = (int *)calloc(tdb.header.hash_size+1, 
-				   sizeof(tdb.locked[0]));
-	if (!tdb.locked) {
-		goto fail;
-	}
-	tdb.map_size = st.st_size;
+            /* map the database and fill in the return structure */
+            tdb.name = (char *)strdup(name);
+            tdb.map_size = st.st_size;
+        }
+
+        tdb.locked = (int *)calloc(tdb.header.hash_size+1, 
+                                   sizeof(tdb.locked[0]));
+        if (!tdb.locked) {
+            goto fail;
+        }
+
 #if HAVE_MMAP
-	tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
-				  tdb.read_only? PROT_READ : PROT_READ|PROT_WRITE,
-				  MAP_SHARED | MAP_FILE, tdb.fd, 0);
+        if (tdb.fd != -1) {
+            tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
+                                       tdb.read_only? PROT_READ : PROT_READ|PROT_WRITE,
+                                       MAP_SHARED | MAP_FILE, tdb.fd, 0);
+        }
 #endif
 
 	ret = (TDB_CONTEXT *)malloc(sizeof(tdb));
@@ -1159,7 +1196,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	return ret;
 
  fail:
-	if (tdb.name) free(tdb.name);
+        if (tdb.name) free(tdb.name);
 	if (tdb.fd != -1) close(tdb.fd);
 	if (tdb.map_ptr) munmap(tdb.map_ptr, tdb.map_size);
 
@@ -1173,8 +1210,15 @@ int tdb_close(TDB_CONTEXT *tdb)
 
 	if (tdb->name) free(tdb->name);
 	if (tdb->fd != -1) close(tdb->fd);
-	if (tdb->map_ptr) munmap(tdb->map_ptr, tdb->map_size);
 	if (tdb->locked) free(tdb->locked);
+
+	if (tdb->map_ptr) {
+            if (tdb->fd != -1) {
+                munmap(tdb->map_ptr, tdb->map_size);
+            } else {
+                free(tdb->map_ptr);
+            }
+        }
 
 	memset(tdb, 0, sizeof(*tdb));
 	free(tdb);
