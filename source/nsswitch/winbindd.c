@@ -46,73 +46,73 @@ static BOOL reload_services_file(void)
 
 void winbindd_dump_status(void)
 {
-    struct winbindd_cli_state *tmp;
+	struct winbindd_cli_state *tmp;
 
-    DEBUG(0, ("Global status for winbindd:\n"));
+	DEBUG(0, ("Global status for winbindd:\n"));
 
-    /* Print client state information */
-    
-    DEBUG(0, ("\t%d clients currently active\n", num_clients));
-
-    if (DEBUGLEVEL >= 2) {
-        DEBUG(2, ("\tclient list:\n"));
-        for(tmp = client_list; tmp; tmp = tmp->next) {
-            DEBUG(2, ("\t\tpid %d, sock %d, rbl %d, wbl %d\n",
-                      tmp->pid, tmp->sock, tmp->read_buf_len, 
-                      tmp->write_buf_len));
-        }
-    }
+	/* Print client state information */
+	
+	DEBUG(0, ("\t%d clients currently active\n", num_clients));
+	
+	if (DEBUGLEVEL >= 2) {
+		DEBUG(2, ("\tclient list:\n"));
+		for(tmp = client_list; tmp; tmp = tmp->next) {
+			DEBUG(2, ("\t\tpid %d, sock %d, rbl %d, wbl %d\n",
+				  tmp->pid, tmp->sock, tmp->read_buf_len, 
+				  tmp->write_buf_len));
+		}
+	}
 }
 
 /* Print winbindd status to log file */
 
 static void do_print_winbindd_status(void)
 {
-    winbindd_dump_status();
-    winbindd_idmap_dump_status();
-    winbindd_cache_dump_status();
+	winbindd_dump_status();
+	winbindd_idmap_dump_status();
+	winbindd_cache_dump_status();
 }
 
 /* Flush client cache */
 
 static void do_flush_caches(void)
 {
-    /* Clear cached user and group enumation info */
-
-    winbindd_flush_cache();
+	/* Clear cached user and group enumation info */
+	
+	winbindd_flush_cache();
 }
 
 /* Handle the signal by unlinking socket and exiting */
 
 static void termination_handler(int signum)
 {
-    pstring path;
-
-    /* Remove socket file */
-
-    slprintf(path, sizeof(path), "%s/%s", 
-	     WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
-    unlink(path);
-
-    exit(0);
+	pstring path;
+	
+	/* Remove socket file */
+	
+	slprintf(path, sizeof(path), "%s/%s", 
+		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
+	unlink(path);
+	
+	exit(0);
 }
 
 static BOOL print_winbindd_status;
 
 static void sigusr1_handler(int signum)
 {
-    BlockSignals(True, SIGUSR1);
-    print_winbindd_status = True;
-    BlockSignals(False, SIGUSR1);
+	BlockSignals(True, SIGUSR1);
+	print_winbindd_status = True;
+	BlockSignals(False, SIGUSR1);
 }
 
 static BOOL do_sighup;
 
 static void sighup_handler(int signum)
 {
-    BlockSignals(True, SIGHUP);
-    do_sighup = True;
-    BlockSignals(False, SIGHUP);
+	BlockSignals(True, SIGHUP);
+	do_sighup = True;
+	BlockSignals(False, SIGHUP);
 }
 
 /* Create winbindd socket */
@@ -293,36 +293,36 @@ static void process_request(struct winbindd_cli_state *state)
 
 static void new_connection(int accept_sock)
 {
-    struct sockaddr_un sunaddr;
-    struct winbindd_cli_state *state;
-    int len, sock;
-    
-    /* Accept connection */
-    
-    len = sizeof(sunaddr);
-    if ((sock = accept(accept_sock, (struct sockaddr *)&sunaddr, &len)) 
-        == -1) {
-        
-        return;
-    }
-
-    DEBUG(6,("accepted socket %d\n", sock));
-
-    /* Create new connection structure */
-
-    if ((state = (struct winbindd_cli_state *)
-         malloc(sizeof(*state))) == NULL) {
-
-        return;
-    }
-
-    ZERO_STRUCTP(state);
-    state->sock = sock;
-
-    /* Add to connection list */
-
-    DLIST_ADD(client_list, state);
-    num_clients++;
+	struct sockaddr_un sunaddr;
+	struct winbindd_cli_state *state;
+	int len, sock;
+	
+	/* Accept connection */
+	
+	len = sizeof(sunaddr);
+	if ((sock = accept(accept_sock, (struct sockaddr *)&sunaddr, &len)) 
+	    == -1) {
+		
+		return;
+	}
+	
+	DEBUG(6,("accepted socket %d\n", sock));
+	
+	/* Create new connection structure */
+	
+	if ((state = (struct winbindd_cli_state *)
+	     malloc(sizeof(*state))) == NULL) {
+		
+		return;
+	}
+	
+	ZERO_STRUCTP(state);
+	state->sock = sock;
+	
+	/* Add to connection list */
+	
+	DLIST_ADD(client_list, state);
+	num_clients++;
 }
 
 /* Remove a client connection from client connection list */
