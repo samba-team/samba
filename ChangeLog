@@ -1,3 +1,8 @@
+Wed Jul  9 06:58:00 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/{rd,mk}_{*}.c: more checking for addresses and stuff
+	according to pseudocode from 1510
+
 Wed Jul  9 06:06:06 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/hdb/hdb.c: Add hdb_etype2key.
@@ -7,6 +12,12 @@ Wed Jul  9 06:06:06 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 	
 Wed Jul  9 03:51:12 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/asn1/k5.asn1: Made all `s_address' OPTIONAL according to
+ 	draft-ietf-cat-kerberos-r-00.txt
+
+	* lib/krb5/principal.c (krb5_parse_name): default to local realm
+ 	if none given
+	
 	* kuser/kinit.c: New option `-p' and prompt
 
 Wed Jul  9 02:30:06 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
