@@ -259,6 +259,7 @@ http_query(const char *host, const char *page,
 	} else
 	    abort();
     }
+    close(s);
     return 0;
 }
 
@@ -268,7 +269,7 @@ main(int argc, char **argv)
 {
     struct http_req req;
     const char *host, *page;
-    int i, done, print_body, gssapi_done, debug_print = 0;
+    int i, done, print_body, gssapi_done, gssapi_started, debug_print = 0;
     char *headers[10]; /* XXX */
     int num_headers;
     gss_ctx_id_t context_hdl = GSS_C_NO_CONTEXT;
@@ -303,6 +304,7 @@ main(int argc, char **argv)
     done = 0;
     num_headers = 0;
     gssapi_done = 1;
+    gssapi_started = 0;
     do {
 	print_body = 0;
 
@@ -362,6 +364,10 @@ main(int argc, char **argv)
 			errx(1, "invalid base64 Negotiate token %s", &h[i]);
 		    input_token.length = len;
 		} else {
+		    if (gssapi_started)
+			errx(1, "Negotiate already started");
+		    gssapi_started = 1;
+
 		    input_token.length = 0;
 		    input_token.value = NULL;
 		}
