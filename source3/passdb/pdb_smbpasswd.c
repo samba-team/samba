@@ -1386,7 +1386,7 @@ static NTSTATUS smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUN
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
 
-	DEBUG(10, ("pdb_getsampwrid: search by rid: %d\n", rid));
+	DEBUG(10, ("smbpasswd_getsampwrid: search by rid: %d\n", rid));
 
 	/* More special case 'guest account' hacks... */
 	if (rid == DOMAIN_USER_RID_GUEST) {
