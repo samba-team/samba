@@ -591,7 +591,7 @@ static BOOL smbshut(file_info finfo, int fnum, char *inbuf, char *outbuf)
   put_dos_date3(outbuf,smb_vwv1,finfo.mtime);
   
   DEBUG(3,("Setting date to %s (0x%X)",
-	   asctime(LocalTime(&finfo.mtime,GMT_TO_LOCAL)),
+	   asctime(LocalTime(&finfo.mtime)),
 	   finfo.mtime));
   
   send_smb(Client,outbuf);
@@ -1655,7 +1655,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 	if (sys_stat(argv[Optind], &stbuf) == 0) {
 	  newer_than = stbuf.st_mtime;
 	  DEBUG(1,("Getting files newer than %s",
-		   asctime(LocalTime(&newer_than,GMT_TO_LOCAL))));
+		   asctime(LocalTime(&newer_than))));
 	  Optind++;
 	} else {
 	  DEBUG(0,("Error setting newer-than time\n"));

@@ -1798,6 +1798,11 @@ static void reply_name_query(struct packet_struct *p)
       return;
     }
 
+    if (!lp_proxy_name_resolution() && n->source != SELF) {
+      DEBUG(3,("no proxy resolution\n"));
+      return;
+    }
+
     /* don't respond to bcast queries for addresses on the same net as the 
        machine doing the querying unless its our IP */
     if (bcast && 

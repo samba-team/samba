@@ -44,8 +44,13 @@ smbclient \- ftp-like Lan Manager client program
 ] [
 .B -p
 .I port number
+] [
+.B -c
+.I command string
+] [
 .B -T
 .I tar options
+] [
 .B -D
 .I initial directory
 ]
@@ -437,6 +442,19 @@ Create a tar file of the files beneath users/docs.
 Change to initial directory before starting. Probably only of any use
 with the tar (\-T) option.
 
+
+.RE
+
+.B -c
+.I command string
+
+.RS 3
+
+command string is a semicolon separated list of commands to be
+executed instead of prompting from stdin. -N is implied by -c.
+
+This is particularly useful in scripts and for printing stdin to
+the server, e.g. -c 'print -'.
 
 .RE
 

@@ -467,7 +467,7 @@ static void fill_printjob_info(int cnum, int snum, int uLevel,
   time_t t = queue->time;
 
   /* the client expects localtime */
-  t += GMT_TO_LOCAL*TimeDiff(t);
+  t -= TimeDiff(t);
 
   PACKI(desc,"W",((snum%0xFF)<<8) | (queue->job%0xFF)); /* uJobId */
   if (uLevel == 1) {
@@ -479,7 +479,7 @@ static void fill_printjob_info(int cnum, int snum, int uLevel,
     PACKI(desc,"W",n+1);		/* uPosition */
     PACKI(desc,"W",queue->status); /* fsStatus */
     PACKS(desc,"z","");		/* pszStatus */
-    PACKI(desc,"D",queue->time); /* ulSubmitted */
+    PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
     PACKS(desc,"z",queue->file); /* pszComment */
   }
@@ -488,7 +488,7 @@ static void fill_printjob_info(int cnum, int snum, int uLevel,
     PACKS(desc,"z",queue->user); /* pszUserName */
     PACKI(desc,"W",n+1);		/* uPosition */
     PACKI(desc,"W",queue->status); /* fsStatus */
-    PACKI(desc,"D",queue->time); /* ulSubmitted */
+    PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
     PACKS(desc,"z","Samba");	/* pszComment */
     PACKS(desc,"z",queue->file); /* pszDocument */
@@ -1289,7 +1289,7 @@ static BOOL api_NetRemoteTOD(int cnum,int uid, char *param,char *data,
 
     /* the client expects to get localtime, not GMT, in this bit 
        (I think, this needs testing) */
-    t = LocalTime(&unixdate,GMT_TO_LOCAL);
+    t = LocalTime(&unixdate);
 
     SIVAL(p,4,0);		/* msecs ? */
     CVAL(p,8) = t->tm_hour;

@@ -232,6 +232,8 @@ int main(int argc, char **argv)
   char           *pfile = SMB_PASSWD_FILE;
   char            readbuf[16 * 1024];
   
+  TimeInit();
+
   setup_logging(argv[0],True);
   
   charset_initialise();

@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
   BOOL processes_only=False;
   int last_pid=0;
 
+  TimeInit();
   setup_logging(argv[0],True);
 
   charset_initialise();
@@ -146,7 +147,7 @@ int main(int argc, char *argv[])
 	  printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
 		 crec.name,uidtoname(crec.uid),gidtoname(crec.gid),crec.pid,
 		 crec.machine,crec.addr,
-		 asctime(LocalTime(&crec.start,GMT_TO_LOCAL)));
+		 asctime(LocalTime(&crec.start)));
       }
     }
   fclose(f);
@@ -217,7 +218,7 @@ int main(int argc, char *argv[])
       case 1: printf("WRONLY "); break;
       case 2: printf("RDWR   "); break;
       }
-    printf(" %s   %s",fname,asctime(LocalTime(&t,GMT_TO_LOCAL)));
+    printf(" %s   %s",fname,asctime(LocalTime(&t)));
   }
   closedir(dir);
 

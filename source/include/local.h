@@ -83,12 +83,6 @@
    manager window? */
 #define FSTYPE_STRING "Samba"
 
-/* we have two time standards - local and GMT. This will try to sort them out.
- */
-
-#define LOCAL_TO_GMT 1
-#define GMT_TO_LOCAL (-1)
-
 /* do you want smbd to send a 1 byte packet to nmbd to trigger it to start 
    when smbd starts? */
 #ifndef PRIME_NMBD

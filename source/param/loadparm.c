@@ -161,6 +161,7 @@ typedef struct
    BOOL bReadbmpx;
    BOOL bSyslogOnly;
    BOOL bBrowseList;
+   BOOL bProxyNameResolution;
 } global;
 
 static global Globals;
@@ -236,6 +237,7 @@ typedef struct
   BOOL bSyncAlways;
   char magic_char;
   BOOL *copymap;
+  BOOL bDeleteReadonly;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -307,6 +309,7 @@ static service sDefault =
   False, /* bSyncAlways */
   '~',   /* magic char */
   NULL,  /* copymap */
+  False, /* bDeleteReadonly */
   ""     /* dummy */
 };
 
@@ -413,6 +416,7 @@ struct parm_struct
   {"domain master",    P_BOOL,    P_GLOBAL, &Globals.bDomainMaster,     NULL},
   {"domain logons",    P_BOOL,    P_GLOBAL, &Globals.bDomainLogons,     NULL},
   {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL},
+  {"proxy name resolution",P_BOOL,P_GLOBAL,&Globals.bProxyNameResolution,NULL},
 
   {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL},
   {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL},
@@ -493,6 +497,7 @@ struct parm_struct
   {"magic script",     P_STRING,  P_LOCAL,  &sDefault.szMagicScript,    NULL},
   {"magic output",     P_STRING,  P_LOCAL,  &sDefault.szMagicOutput,    NULL},
   {"mangled map",      P_STRING,  P_LOCAL,  &sDefault.szMangledMap,     NULL},
+  {"delete readonly",  P_BOOL,    P_LOCAL,  &sDefault.bDeleteReadonly,  NULL},
 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL}
 };
@@ -568,6 +573,7 @@ static void init_globals(void)
   Globals.bDomainMaster = False;
   Globals.bDomainLogons = False;
   Globals.bBrowseList = True;
+  Globals.bProxyNameResolution = True;
 
 #ifdef KANJI
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
@@ -595,6 +601,7 @@ static void init_locals(void)
     {
     case PRINT_BSD:
     case PRINT_AIX:
+    case PRINT_PLP:
       string_initial(&sDefault.szLpqcommand,"lpq -P%p");
       string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
       string_initial(&sDefault.szPrintcommand,"lpr -r -P%p %s");
@@ -705,6 +712,7 @@ FN_GLOBAL_BOOL(lp_strip_dot,&Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords,&Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_syslog_only,&Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
+FN_GLOBAL_BOOL(lp_proxy_name_resolution,&Globals.bProxyNameResolution)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
@@ -778,6 +786,7 @@ FN_LOCAL_BOOL(lp_manglednames,bMangledNames)
 FN_LOCAL_BOOL(lp_widelinks,bWidelinks)
 FN_LOCAL_BOOL(lp_syncalways,bSyncAlways)
 FN_LOCAL_BOOL(lp_map_system,bMap_system)
+FN_LOCAL_BOOL(lp_delete_readonly,bDeleteReadonly)
 
 FN_LOCAL_INTEGER(lp_create_mode,iCreate_mode)
 FN_LOCAL_INTEGER(lp_max_connections,iMaxConnections)
@@ -1291,6 +1300,8 @@ static BOOL handle_printing(char *pszParmValue,int *val)
     *val = PRINT_BSD;
   else if (strequal(pszParmValue,"qnx"))
     *val = PRINT_QNX;
+  else if (strequal(pszParmValue,"plp"))
+    *val = PRINT_PLP;
   return(True);
 }
 

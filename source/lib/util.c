@@ -30,8 +30,6 @@ BOOL passive = False;
 
 int Protocol = PROTOCOL_COREPLUS;
 
-int serverzone=0;
-
 /* a default finfo structure to ensure all fields are sensible */
 file_info def_finfo = {-1,0,0,0,0,0,0,""};
 
@@ -407,141 +405,6 @@ void file_unlock(int fd)
   close(fd);
 }
 
-/*******************************************************************
-a gettimeofday wrapper
-********************************************************************/
-void GetTimeOfDay(struct timeval *tval)
-{
-#ifdef GETTIMEOFDAY1
-  gettimeofday(tval);
-#else
-  gettimeofday(tval,NULL);
-#endif
-}
-
-int extra_time_offset = 0;
-
-static int timediff = 0;
-
-/*******************************************************************
-init the time differences
-********************************************************************/
-void TimeInit(void)
-{
-  struct tm tm_utc,tm_local;
-  time_t t;
-
-  t = time(NULL);
-
-  tm_utc = *(gmtime(&t));
-  tm_local = *(localtime(&t));
-
-#ifdef HAVE_GMTOFF
-  timediff = -tm_local.tm_gmtoff;  
-#else
-  timediff = mktime(&tm_utc) - mktime(&tm_local);
-#endif
-
-  if (serverzone == 0) {
-    serverzone = timediff - DSTDiff(t);
-    DEBUG(4,("Serverzone is %d\n",serverzone));
-  }
-}
-
-
-/*******************************************************************
-return the DST offset for a particular time
-We keep a table of DST offsets to prevent calling localtime() on each 
-call of this function. This saves a LOT of time on many unixes.
-********************************************************************/
-int DSTDiff(time_t t)
-{
-  static struct dst_table {time_t start,end; BOOL is_dst;} *dst_table = NULL;
-  static int table_size = 0;
-  int i;
-  BOOL is_dst = False;
-
-  if (t == 0) t = time(NULL);
-
-#ifndef NO_ISDST
-  for (i=0;i<table_size;i++)
-    if (t >= dst_table[i].start && t <= dst_table[i].end) break;
-
-  if (i<table_size) {
-    is_dst = dst_table[i].is_dst;
-  } else {
-    time_t low,high;
-
-    dst_table = (struct dst_table *)Realloc(dst_table,
-					      sizeof(dst_table[0])*(i+1));
-    if (!dst_table) {
-      table_size = 0;
-      return(0);
-    }
-
-    table_size++;
-
-    dst_table[i].is_dst = is_dst = (localtime(&t)->tm_isdst?True:False);
-    dst_table[i].start = dst_table[i].end = t;
-    
-    /* no entry will cover more than 6 months */
-    low = t - 3*30*24*60*60;
-
-    /* widen the new entry using two bisection searches */
-    while (low+60*60 < dst_table[i].start) {
-      t = low + (dst_table[i].start-low)/2;
-      if ((localtime(&t)->tm_isdst?True:False) == is_dst)
-	dst_table[i].start = t;
-      else
-	low = t;
-    }
-
-    high = low + 3*30*24*60*60;
-    while (high-60*60 > dst_table[i].end) {
-      t = high - (high-dst_table[i].end)/2;
-      if ((localtime(&t)->tm_isdst?True:False) == is_dst)
-	dst_table[i].end = t;
-      else
-	high = t;
-    }    
-
-/*
-    DEBUG(1,("Added DST entry from %s ",
-	     asctime(localtime(&dst_table[i].start))));
-    DEBUG(1,("to %s (%d)\n",asctime(localtime(&dst_table[i].end)),
-	     dst_table[i].is_dst));
-*/
-  }
-#endif
-
-  return((is_dst?60*60:0) - (extra_time_offset*60));
-}
-
-/****************************************************************************
-return the difference between local and GMT time
-****************************************************************************/
-int TimeDiff(time_t t)
-{
-  static BOOL initialised = False;
-  if (!initialised) {initialised=True; TimeInit();}
-  return(timediff - DSTDiff(t));
-}
-
-/****************************************************************************
-try to optimise the localtime call, it can be quite expenive on some machines
-timemul is normally LOCAL_TO_GMT, GMT_TO_LOCAL or 0
-****************************************************************************/
-struct tm *LocalTime(time_t *t,int timemul)
-{
-  time_t t2 = *t;
-
-  if (timemul)
-    t2 += timemul * TimeDiff(t2);
-
-  return(gmtime(&t2));
-}
-
-
 /****************************************************************************
 determine if a file descriptor is in fact a socket
 ****************************************************************************/
@@ -822,32 +685,6 @@ void close_sockets(void )
 }
 
 /****************************************************************************
-  return the date and time as a string
-****************************************************************************/
-char *timestring(void )
-{
-  static char TimeBuf[100];
-  time_t t;
-  t = time(NULL);
-#ifdef NO_STRFTIME
-  strcpy(TimeBuf, asctime(LocalTime(&t,GMT_TO_LOCAL)));
-#elif defined(CLIX) || defined(CONVEX)
-  strftime(TimeBuf,100,"%m/%d/%y %I:%M:%S %p",LocalTime(&t,GMT_TO_LOCAL));
-#elif defined(AMPM)
-  strftime(TimeBuf,100,"%D %r",LocalTime(&t,GMT_TO_LOCAL));
-#elif defined(TZ_TIME)
-  {
-    strftime(TimeBuf,100,"%D:%T",LocalTime(&t,0));
-    sprintf(TimeBuf+strlen(TimeBuf)," %+03d%02d",
-	    -TimeDiff(t)/(60*60),-(TimeDiff(t)/60)%60);
-  }
-#else
-  strftime(TimeBuf,100,"%D %T",LocalTime(&t,GMT_TO_LOCAL));
-#endif
-  return(TimeBuf);
-}
-
-/****************************************************************************
 determine whether we are in the specified group
 ****************************************************************************/
 BOOL in_group(gid_t group, int current_gid, int ngroups, int *groups)
@@ -1048,159 +885,6 @@ uint32 file_size(char *file_name)
   buf.st_size = 0;
   sys_stat(file_name,&buf);
   return(buf.st_size);
-}
-
-/****************************************************************************
-check if it's a null mtime
-****************************************************************************/
-static BOOL null_mtime(time_t mtime)
-{
-  if (mtime == 0 || mtime == 0xFFFFFFFF)
-    return(True);
-  return(False);
-}
-
-/*******************************************************************
-  create a 16 bit dos packed date
-********************************************************************/
-static uint16 make_dos_date1(time_t unixdate,struct tm *t)
-{
-  uint16 ret=0;
-  ret = (((unsigned)(t->tm_mon+1)) >> 3) | ((t->tm_year-80) << 1);
-  ret = ((ret&0xFF)<<8) | (t->tm_mday | (((t->tm_mon+1) & 0x7) << 5));
-  return(ret);
-}
-
-/*******************************************************************
-  create a 16 bit dos packed time
-********************************************************************/
-static uint16 make_dos_time1(time_t unixdate,struct tm *t)
-{
-  uint16 ret=0;
-  ret = ((((unsigned)t->tm_min >> 3)&0x7) | (((unsigned)t->tm_hour) << 3));
-  ret = ((ret&0xFF)<<8) | ((t->tm_sec/2) | ((t->tm_min & 0x7) << 5));
-  return(ret);
-}
-
-/*******************************************************************
-  create a 32 bit dos packed date/time from some parameters
-  This takes a GMT time and returns a packed localtime structure
-********************************************************************/
-static uint32 make_dos_date(time_t unixdate)
-{
-  struct tm *t;
-  uint32 ret=0;
-
-  t = LocalTime(&unixdate,GMT_TO_LOCAL);
-
-  ret = make_dos_date1(unixdate,t);
-  ret = ((ret&0xFFFF)<<16) | make_dos_time1(unixdate,t);
-
-  return(ret);
-}
-
-/*******************************************************************
-put a dos date into a buffer (time/date format)
-This takes GMT time and puts local time in the buffer
-********************************************************************/
-void put_dos_date(char *buf,int offset,time_t unixdate)
-{
-  uint32 x = make_dos_date(unixdate);
-  SIVAL(buf,offset,x);
-}
-
-/*******************************************************************
-put a dos date into a buffer (date/time format)
-This takes GMT time and puts local time in the buffer
-********************************************************************/
-void put_dos_date2(char *buf,int offset,time_t unixdate)
-{
-  uint32 x = make_dos_date(unixdate);
-  x = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
-  SIVAL(buf,offset,x);
-}
-
-/*******************************************************************
-put a dos 32 bit "unix like" date into a buffer. This routine takes
-GMT and converts it to LOCAL time before putting it (most SMBs assume
-localtime for this sort of date)
-********************************************************************/
-void put_dos_date3(char *buf,int offset,time_t unixdate)
-{
-  if (!null_mtime(unixdate))
-    unixdate += GMT_TO_LOCAL*TimeDiff(unixdate);
-  SIVAL(buf,offset,unixdate);
-}
-
-/*******************************************************************
-  interpret a 32 bit dos packed date/time to some parameters
-********************************************************************/
-static void interpret_dos_date(uint32 date,int *year,int *month,int *day,int *hour,int *minute,int *second)
-{
-  uint32 p0,p1,p2,p3;
-
-  p0=date&0xFF; p1=((date&0xFF00)>>8)&0xFF; 
-  p2=((date&0xFF0000)>>16)&0xFF; p3=((date&0xFF000000)>>24)&0xFF;
-
-  *second = 2*(p0 & 0x1F);
-  *minute = ((p0>>5)&0xFF) + ((p1&0x7)<<3);
-  *hour = (p1>>3)&0xFF;
-  *day = (p2&0x1F);
-  *month = ((p2>>5)&0xFF) + ((p3&0x1)<<3) - 1;
-  *year = ((p3>>1)&0xFF) + 80;
-}
-
-/*******************************************************************
-  create a unix date (int GMT) from a dos date (which is actually in
-  localtime)
-********************************************************************/
-time_t make_unix_date(void *date_ptr)
-{
-  uint32 dos_date=0;
-  struct tm t;
-  time_t ret;
-
-  dos_date = IVAL(date_ptr,0);
-
-  if (dos_date == 0) return(0);
-  
-  interpret_dos_date(dos_date,&t.tm_year,&t.tm_mon,
-		     &t.tm_mday,&t.tm_hour,&t.tm_min,&t.tm_sec);
-  t.tm_wday = 1;
-  t.tm_yday = 1;
-  t.tm_isdst = -1;
-  
-  /* mktime() also does the local to GMT time conversion for us. XXXXX
-     Do all unixes do this the same?? */
-  ret = mktime(&t);
-
-  return(ret);
-}
-
-/*******************************************************************
-like make_unix_date() but the words are reversed
-********************************************************************/
-time_t make_unix_date2(void *date_ptr)
-{
-  uint32 x,x2;
-
-  x = IVAL(date_ptr,0);
-  x2 = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
-  SIVAL(&x,0,x2);
-
-  return(make_unix_date((void *)&x));
-}
-
-/*******************************************************************
-  create a unix GMT date from a dos date in 32 bit "unix like" format
-these generally arrive as localtimes, with corresponding DST
-********************************************************************/
-time_t make_unix_date3(void *date_ptr)
-{
-  time_t t = IVAL(date_ptr,0);
-  if (!null_mtime(t))
-    t += LOCAL_TO_GMT*TimeDiff(t);
-  return(t);
 }
 
 /*******************************************************************
@@ -3528,6 +3212,13 @@ expand a pointer to be a particular size
 void *Realloc(void *p,int size)
 {
   void *ret=NULL;
+
+  if (size == 0) {
+    if (p) free(p);
+    DEBUG(5,("Realloc asked for 0 bytes\n"));
+    return NULL;
+  }
+
   if (!p)
     ret = (void *)malloc(size);
   else
@@ -3538,25 +3229,6 @@ void *Realloc(void *p,int size)
 
   return(ret);
 }
-
-/****************************************************************************
-set the time on a file
-****************************************************************************/
-BOOL set_filetime(char *fname,time_t mtime)
-{  
-  struct utimbuf times;
-
-  if (null_mtime(mtime)) return(True);
-
-  times.modtime = times.actime = mtime;
-
-  if (sys_utime(fname,&times)) {
-    DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
-  }
-    
-  return(True);
-}
-
 
 #ifdef NOSTRDUP
 /****************************************************************************
@@ -3596,57 +3268,6 @@ int Strlen(char *s)
   return(ret);
 }
 #endif
-
-
-/****************************************************************************
-return a time at the start of the current month
-****************************************************************************/
-time_t start_of_month(void)
-{
-  time_t t = time(NULL);
-  struct tm *t2;
-  
-  t2 = gmtime(&t);
-  
-  t2->tm_mday = 1;
-  t2->tm_hour = 0;
-  t2->tm_min = 0;
-  t2->tm_sec = 0;
-  
-  return(mktime(t2));
-}
-
-
-/*******************************************************************
-  check for a sane unix date
-********************************************************************/
-BOOL sane_unix_date(time_t unixdate)
-{
-  struct tm t,today;
-  time_t t_today = time(NULL);
-  
-  t = *(LocalTime(&unixdate,LOCAL_TO_GMT));
-  today = *(LocalTime(&t_today,LOCAL_TO_GMT));
-  
-  if (t.tm_year < 80)
-    return(False);
-  
-  if (t.tm_year >  today.tm_year)
-    return(False);
-  
-  if (t.tm_year == today.tm_year &&
-      t.tm_mon > today.tm_mon)
-    return(False);
-  
-  
-  if (t.tm_year == today.tm_year &&
-      t.tm_mon == today.tm_mon &&
-      t.tm_mday > (today.tm_mday+1))
-    return(False);
-  
-  return(True);
-}
-
 
 
 #ifdef NO_FTRUNCATE
@@ -3730,11 +3351,7 @@ int open_socket_in(int type, int port, int dlevel)
   int res;
 
   /* get my host name */
-#ifdef MAXHOSTNAMELEN
   if (gethostname(host_name, MAXHOSTNAMELEN) == -1) 
-#else
-  if (gethostname(host_name, sizeof(host_name)) == -1) 
-#endif
     { DEBUG(0,("gethostname failed\n")); return -1; } 
 
   /* get host info */
@@ -3907,76 +3524,6 @@ BOOL zero_ip(struct in_addr ip)
   unsigned long a;
   putip((char *)&a,(char *)&ip);
   return(a == 0);
-}
-
-#define TIME_FIXUP_CONSTANT (369.0*365.25*24*60*60-(3.0*24*60*60+6.0*60*60))
-
-/****************************************************************************
-interpret an 8 byte "filetime" structure to a time_t
-It's originally in "100ns units since jan 1st 1601"
-
-It appears to be kludge-GMT (at least for file listings). This means
-its the GMT you get by taking a localtime and adding the
-serverzone. This is NOT the same as GMT in some cases. This routine
-converts this to real GMT.
-****************************************************************************/
-time_t interpret_long_date(char *p)
-{
-  double d;
-  time_t ret;
-  uint32 tlow,thigh;
-  tlow = IVAL(p,0);
-  thigh = IVAL(p,4);
-
-  if (thigh == 0) return(0);
-
-  d = ((double)thigh)*4.0*(double)(1<<30);
-  d += (tlow&0xFFF00000);
-  d *= 1.0e-7;
- 
-  /* now adjust by 369 years to make the secs since 1970 */
-  d -= TIME_FIXUP_CONSTANT;
-
-  if (d>=MAXINT)
-    return(0);
-
-  ret = (time_t)(d+0.5);
-
-  /* this takes us from kludge-GMT to real GMT */
-  ret += TimeDiff(ret) - serverzone;
-
-  return(ret);
-}
-
-
-/****************************************************************************
-put a 8 byte filetime from a time_t
-This takes real GMT as input and converts to kludge-GMT
-****************************************************************************/
-void put_long_date(char *p,time_t t)
-{
-  uint32 tlow,thigh;
-  double d;
-
-  if (t==0) {
-    SIVAL(p,0,0); SIVAL(p,4,0);
-    return;
-  }
-
-  /* this converts GMT to kludge-GMT */
-  t -= TimeDiff(t) - serverzone; 
-
-  d = (double) (t);
-
-  d += TIME_FIXUP_CONSTANT;
-
-  d *= 1.0e7;
-
-  thigh = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
-  tlow = (uint32)(d - ((double)thigh)*4.0*(double)(1<<30));
-
-  SIVAL(p,0,tlow);
-  SIVAL(p,4,thigh);
 }
 
 /*******************************************************************

@@ -46,6 +46,8 @@ int main(int argc, char *argv[])
   pstring configfile;
   int s;
 
+  TimeInit();
+
   setup_logging(argv[0],True);
   
   charset_initialise();

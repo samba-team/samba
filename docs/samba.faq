@@ -548,6 +548,37 @@ properly. Samba needs to be able to switch uids on the connection and
 it can't if your OS has a trapdoor uid system. You'll know this
 because Samba will note it in your logs.
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 5: Problem with printers under NT
+
+This info from Stefan Hergeth may be useful:
+
+ A network-printer (with ethernetcard) is connected to the NT-Clients via
+ our UNIX-Fileserver (SAMBA-Server), like the configuration told by
+ Matthew Harrell <harrell@leech.nrl.navy.mil> (see WinNT.txt)
+
+ 1.) If a user has choosen this printer as the default printer in his
+     NT-Session and this printer is not connected to the network
+     (e.g. switched off) than this user has a problem with the SAMBA-
+     connection of his filesystems. It's very slow.
+
+ 2.) If the printer is connected to the network everything works fine.
+
+ 3.) When the smbd ist started with debug level 3, you can see that the
+     NT spooling system try to connect to the printer many times. If the
+     printer ist not connected to the network this request fails and the
+     NT spooler is wasting a lot of time to connect to the printer service.
+     This seems to be the reason for the slow network connection.
+
+ 4.) Maybe it's possible to change this behaviour by setting different printer
+     properties in the Print-Manager-Menu of NT, but i didn't try it
+     yet.
+
+ I hope this information will help in some way.
+
+ Stefan Hergeth <hergeth@f7axp1.informatik.fh-muenchen.de>
+
+
 ===============================================================================
 SECTION FIVE: Specific client application problems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
