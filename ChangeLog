@@ -2,6 +2,8 @@
 
 	* admin/ktutil.c (kt_remove): -t should be -e
 
+	* configure.in (CHECK_NETINET_IP_AND_TCP): use
+
 	* kdc/hpropd.c: support for dumping to krb4.  From Miroslav Ruda
  	<ruda@ics.muni.cz>
 
