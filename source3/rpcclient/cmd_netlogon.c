@@ -43,7 +43,13 @@ experimental nt login.
 ****************************************************************************/
 void cmd_netlogon_login_test(struct client_info *info)
 {
+	extern BOOL global_machine_password_needs_changing;
+
+	fstring nt_user_name;
+	fstring password;
 	BOOL res = True;
+	char *nt_password;
+	unsigned char trust_passwd[16];
 
 	/* machine account passwords */
 	pstring new_mach_pwd;
@@ -51,7 +57,28 @@ void cmd_netlogon_login_test(struct client_info *info)
 	/* initialisation */
 	new_mach_pwd[0] = 0;
 
-	DEBUG(5,("do_nt_login_test: %d\n", __LINE__));
+	if (!next_token(NULL, nt_user_name, NULL, sizeof(nt_user_name)))
+	{
+		fstrcpy(nt_user_name, smb_cli->user_name);
+		if (nt_user_name[0] == 0)
+		{
+			fprintf(out_hnd,"ntlogin: must specify username with anonymous connection\n");
+			return;
+		}
+	}
+
+	if (next_token(NULL, password, NULL, sizeof(password)))
+	{
+		nt_password = password;
+	}
+	else
+	{
+		nt_password = getpass("Enter NT Login password:");
+	}
+
+	DEBUG(5,("do_nt_login_test: username %s\n", nt_user_name));
+
+	res = res ? trust_get_passwd(trust_passwd, info->myhostname, smb_cli->domain) : False;
 
 #if 0
 	/* check whether the user wants to change their machine password */
@@ -60,38 +87,40 @@ void cmd_netlogon_login_test(struct client_info *info)
 	                                info->mach_acct, new_mach_pwd) : False;
 #endif
 	/* open NETLOGON session.  negotiate credentials */
-	res = res ? do_nt_session_open(smb_cli, 
-	                          info->dest_host, info->myhostname,
-	                          info->mach_acct,
-	                          smb_cli->user_name, smb_cli->domain,
-	                          info->dom.sess_key, &info->dom.clnt_cred) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, False) : False;
+
+	res = res ? cli_nt_setup_creds(smb_cli, trust_passwd) : False;
 
 	/* change the machine password? */
-	if (new_mach_pwd != NULL && new_mach_pwd[0] != 0)
+	if (global_machine_password_needs_changing)
 	{
-		res = res ? do_nt_srv_pwset(smb_cli, info->dom.lsarpc_fnum,
-		                   info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
-		                   new_mach_pwd,
-		                   info->dest_host, info->mach_acct, info->myhostname) : False;
+		unsigned char new_trust_passwd[16];
+		generate_random_buffer(new_trust_passwd, 16, True);
+		res = res ? cli_nt_srv_pwset(smb_cli, new_trust_passwd) : False;
+
+		if (res)
+		{
+			global_machine_password_needs_changing = !set_trust_account_password(new_trust_passwd);
+		}
+
+		memset(new_trust_passwd, 0, 16);
 	}
 
-	/* create the user-identification info */
-	make_nt_login_interactive(&info->dom.ctr,
-	                 info->dom.sess_key,
-	                 smb_cli->domain, info->myhostname,
-	                 getuid(), smb_cli->user_name);
+	memset(trust_passwd, 0, 16);
 
 	/* do an NT login */
-	res = res ? do_nt_login(smb_cli, info->dom.lsarpc_fnum,
-	                        info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
-	                        &info->dom.ctr, info->dest_host, info->myhostname, &info->dom.user_info3) : False;
+	res = res ? cli_nt_login_interactive(smb_cli,
+	                 smb_cli->domain, nt_user_name,
+	                 getuid(), nt_password,
+	                 &info->dom.ctr, &info->dom.user_info3) : False;
+
+	/*** clear out the password ***/
+	memset(password, 0, sizeof(password));
 
 	/* ok!  you're logged in!  do anything you like, then... */
-	   
+
 	/* do an NT logout */
-	res = res ? do_nt_logoff(smb_cli, info->dom.lsarpc_fnum,
-	                         info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
-	                         &info->dom.ctr, info->dest_host, info->myhostname) : False;
+	res = res ? cli_nt_logoff(smb_cli, &info->dom.ctr) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli);

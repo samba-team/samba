@@ -83,7 +83,7 @@ BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd)
 {
   unsigned char processed_new_pwd[16];
 
-  DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
+  DEBUG(5,("cli_nt_srv_pwset: %d\n", __LINE__));
 
 #ifdef DEBUG_PASSWORD
   dump_data(6, new_hashof_mach_pwd, 16);
@@ -96,7 +96,6 @@ BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd)
   return cli_net_srv_pwset(cli, processed_new_pwd);
 }
 
-#if UNUSED_CODE
 /****************************************************************************
 NT login - interactive.
 *NEVER* use this code. This method of doing a logon (sending the cleartext
@@ -149,7 +148,6 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
 
   return ret;
 }
-#endif
 
 /****************************************************************************
 NT login - network.
@@ -177,7 +175,6 @@ BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username,
   return cli_net_sam_logon(cli, ctr, user_info3);
 }
 
-#if UNUSED_CODE
 /****************************************************************************
 NT Logoff.
 ****************************************************************************/
@@ -188,4 +185,3 @@ BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
   /* Send client sam-logoff request - update credentials on success. */
   return cli_net_sam_logoff(cli, ctr);
 }
-#endif

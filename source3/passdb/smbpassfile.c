@@ -24,6 +24,8 @@ extern int DEBUGLEVEL;
 static int gotalarm;
 int pw_file_lock_depth = 0;
 
+BOOL global_machine_password_needs_changing = False;
+
 /***************************************************************
  Signal function to tell us we timed out.
 ****************************************************************/
@@ -316,5 +318,39 @@ account is now invalid. Please recreate. Error was %s.\n", strerror(errno) ));
   }
 
   fflush(mach_passwd_fp);
+  return True;
+}
+
+BOOL trust_get_passwd( unsigned char trust_passwd[16], char *myname, char *domain)
+{
+  time_t lct;
+
+  /*
+   * Get the machine account password.
+   */
+  if(!trust_password_lock( myname, domain, False)) {
+    DEBUG(0,("domain_client_validate: unable to open the machine account password file for \
+machine %s in domain %s.\n", myname, domain ));
+    return False;
+  }
+
+  if(get_trust_account_password( trust_passwd, &lct) == False) {
+    DEBUG(0,("domain_client_validate: unable to read the machine account password for \
+machine %s in domain %s.\n", myname, domain ));
+    trust_password_unlock();
+    return False;
+  }
+
+  trust_password_unlock();
+
+  /* 
+   * Here we check the last change time to see if the machine
+   * password needs changing. JRA. 
+   */
+
+  if(time(NULL) > lct + lp_machine_password_timeout())
+  {
+    global_machine_password_needs_changing = True;
+  }
   return True;
 }

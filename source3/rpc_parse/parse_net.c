@@ -539,6 +539,75 @@ static int make_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
 }
 
 /*******************************************************************
+makes a NET_ID_INFO_1 structure.
+********************************************************************/
+void make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
+				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
+				char *user_name, char *wksta_name,
+				char sess_key[16],
+				unsigned char lm_cypher[16], unsigned char nt_cypher[16])
+{
+	int len_domain_name = strlen(domain_name);
+	int len_user_name   = strlen(user_name  );
+	int len_wksta_name  = strlen(wksta_name );
+
+	unsigned char lm_owf[16];
+	unsigned char nt_owf[16];
+
+	if (id == NULL) return;
+
+	DEBUG(5,("make_id_info1: %d\n", __LINE__));
+
+	id->ptr_id_info1 = 1;
+
+	make_uni_hdr(&(id->hdr_domain_name), len_domain_name, len_domain_name, 4);
+
+	id->param_ctrl = param_ctrl;
+	make_logon_id(&(id->logon_id), log_id_low, log_id_high);
+
+	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  , len_user_name  , 4);
+	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name , len_wksta_name , 4);
+
+	if (lm_cypher && nt_cypher)
+	{
+		unsigned char key[16];
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("lm cypher:"));
+		dump_data(100, lm_cypher, 16);
+
+		DEBUG(100,("nt cypher:"));
+		dump_data(100, nt_cypher, 16);
+#endif
+
+		memset(key, 0, 16);
+		memcpy(key, sess_key, 16);
+
+		memcpy(lm_cypher, lm_owf, 16);
+		SamOEMhash(lm_owf, key, False);
+		memcpy(lm_cypher, lm_owf, 16);
+		SamOEMhash(nt_owf, key, False);
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("encrypt of lm owf password:"));
+		dump_data(100, lm_owf, 16);
+
+		DEBUG(100,("encrypt of nt owf password:"));
+		dump_data(100, nt_owf, 16);
+#endif
+		/* set up pointers to cypher blocks */
+		lm_cypher = lm_owf;
+		nt_cypher = nt_owf;
+	}
+
+	make_owf_info(&(id->lm_owf), lm_cypher);
+	make_owf_info(&(id->nt_owf), nt_cypher);
+
+	make_unistr2(&(id->uni_domain_name), domain_name, len_domain_name);
+	make_unistr2(&(id->uni_user_name  ), user_name  , len_user_name  );
+	make_unistr2(&(id->uni_wksta_name ), wksta_name , len_wksta_name );
+}
+
+/*******************************************************************
 reads or writes an NET_ID_INFO_1 structure.
 ********************************************************************/
 static void net_io_id_info1(char *desc,  NET_ID_INFO_1 *id, prs_struct *ps, int depth)

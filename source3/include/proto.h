@@ -1189,6 +1189,7 @@ BOOL trust_password_unlock(void);
 BOOL trust_password_delete( char *domain, char *name );
 BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
 BOOL set_trust_account_password( unsigned char *md4_new_pwd);
+BOOL trust_get_passwd( unsigned char trust_passwd[16], char *myname, char *domain);
 
 /*The following definitions come from  printing/pcap.c  */
 
@@ -1452,6 +1453,11 @@ void make_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *acct_name,
                 uint16 sec_chan, char *comp_name, DOM_CRED *cred, char nt_cypher[16]);
 void net_io_q_srv_pwset(char *desc,  NET_Q_SRV_PWSET *q_s, prs_struct *ps, int depth);
 void net_io_r_srv_pwset(char *desc,  NET_R_SRV_PWSET *r_s, prs_struct *ps, int depth);
+void make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
+				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
+				char *user_name, char *wksta_name,
+				char sess_key[16],
+				unsigned char lm_cypher[16], unsigned char nt_cypher[16]);
 void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				char *user_name, char *wksta_name,
@@ -1910,6 +1916,10 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 
 void cmd_lsa_query_info(struct client_info *info);
 void cmd_lsa_lookup_sids(struct client_info *info);
+
+/*The following definitions come from  rpcclient/cmd_netlogon.c  */
+
+void cmd_netlogon_login_test(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 

@@ -391,7 +391,6 @@ password ?).\n", cli->desthost ));
   return ok;
 }
 
-#if UNUSED_CODE
 /***************************************************************************
 LSA SAM Logoff.
 
@@ -465,7 +464,6 @@ password ?).\n", cli->desthost ));
 
   return ok;
 }
-#endif
 
 /*********************************************************
  Change the domain password on the PDC.
@@ -605,6 +603,7 @@ BOOL change_trust_account_password( char *domain, char *remote_machine_list)
   unsigned char old_trust_passwd_hash[16];
   unsigned char new_trust_passwd_hash[16];
   time_t lct;
+  BOOL res;
 
   if(!get_trust_account_password( old_trust_passwd_hash, &lct)) {
     DEBUG(0,("change_trust_account_password: unable to read the machine \
@@ -629,9 +628,15 @@ domain %s.\n", timestring(), domain));
        * Return the result of trying to write the new password
        * back into the trust account file.
        */
-      return set_trust_account_password(new_trust_passwd_hash);
+      res = set_trust_account_password(new_trust_passwd_hash);
+      memset(new_trust_passwd_hash, 0, 16);
+      memset(old_trust_passwd_hash, 0, 16);
+      return res;
     }
   }
+
+  memset(new_trust_passwd_hash, 0, 16);
+  memset(old_trust_passwd_hash, 0, 16);
 
   DEBUG(0,("%s : change_trust_account_password: Failed to change password for \
 domain %s.\n", timestring(), domain));
