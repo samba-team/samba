@@ -136,7 +136,7 @@ sub fn_prefix($)
 {
 	my $fn = shift;
 	if ($fn->{TYPE} eq "TYPEDEF") {
-		if (util::has_property($fn->{DATA}, "public")) {
+		if (util::has_property($fn, "public")) {
 			return "";
 		}
 	}
@@ -466,7 +466,7 @@ sub ParseElementPullSwitch($$$$)
 	check_null_pointer($switch_var);
 
 	if (!defined $utype ||
-	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
+	    !util::has_property($utype, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
 		if (util::is_enum($e2->{TYPE})) {
@@ -515,7 +515,7 @@ sub ParseElementPushSwitch($$$$)
 
 	my $utype = $structs{$e->{TYPE}};
 	if (!defined $utype ||
-	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
+	    !util::has_property($utype, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
 		pidl "\t\tNDR_CHECK(ndr_push_$e2->{TYPE}(ndr, $switch_var));\n";
@@ -964,8 +964,8 @@ sub ParseStructNdrSize($)
 	pidl $static . "size_t ndr_size_$t->{NAME}(int ret, const struct $t->{NAME} *r, int flags)\n";
 	pidl "{\n";
 
-	if (util::has_property($t->{DATA}, "flag")) {
-		pidl "\tflags = flags | " . $t->{DATA}->{PROPERTIES}->{flag} . ";\n";	
+	if (util::has_property($t, "flag")) {
+		pidl "\tflags = flags | " . $t->{PROPERTIES}->{flag} . ";\n";	
 	}
 
 	pidl "\tif(!r) return 0;\n";
@@ -1172,8 +1172,8 @@ sub ParseUnionNdrSize($)
 
 	pidl $static . "size_t ndr_size_$t->{NAME}(int ret, const union $t->{NAME} *data, uint16 level, int flags)\n";
 	pidl "{\n";
-	if (util::has_property($t->{DATA}, "flag")) {
-		pidl "\tflags = flags | " . $t->{DATA}->{PROPERTIES}->{flag} . ";\n";	
+	if (util::has_property($t, "flag")) {
+		pidl "\tflags = flags | " . $t->{PROPERTIES}->{flag} . ";\n";	
 	}
 	pidl "\tif(!data) return 0;\n\n";
 	
@@ -1260,7 +1260,7 @@ sub ParseTypedefPush($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, const struct $e->{NAME} *r)";
+		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r)";
 		pidl "\n{\n";
 		ParseTypePush($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1268,7 +1268,7 @@ sub ParseTypedefPush($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, const union $e->{NAME} *r)";
+		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $e->{NAME} *r)";
 		pidl "\n{\n";
 		ParseTypePush($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1713,7 +1713,7 @@ sub ParseInterface($)
 	}
 	foreach my $d (@{$data}) {
 		if ($d->{TYPE} eq "TYPEDEF" &&
-		    !util::has_property($d->{DATA}, "noprint")) {
+		    !util::has_property($d, "noprint")) {
 			ParseTypedefPrint($d);
 		}
 		if ($d->{TYPE} eq "FUNCTION" &&

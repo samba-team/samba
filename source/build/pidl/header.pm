@@ -188,14 +188,14 @@ sub HeaderTypedef($)
 sub HeaderTypedefProto($)
 {
     my($d) = shift;
-    if (!util::has_property($d->{DATA}, "public")) {
+    if (!util::has_property($d, "public")) {
 	    return;
     }
 
     if ($d->{DATA}{TYPE} eq "STRUCT") {
 	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $d->{NAME} *r);\n";
 	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $d->{NAME} *r);\n";
-	    if (!util::has_property($d->{DATA}, "noprint")) {
+	    if (!util::has_property($d, "noprint")) {
 		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, struct $d->{NAME} *r);\n";
 	    }
 
@@ -206,7 +206,7 @@ sub HeaderTypedefProto($)
     if ($d->{DATA}{TYPE} eq "UNION") {
 	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
 	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
-	    if (!util::has_property($d->{DATA}, "noprint")) {
+	    if (!util::has_property($d, "noprint")) {
 		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, int level, union $d->{NAME} *r);\n";
 	    }
     }
