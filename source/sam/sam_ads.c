@@ -622,7 +622,7 @@ static NTSTATUS sam_ads_set_sec_desc(const SAM_METHODS *sam_method, const NT_USE
 			      const DOM_SID *sid, const SEC_DESC *sd)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -677,7 +677,7 @@ static NTSTATUS sam_ads_lookup_name(const SAM_METHODS *sam_method, const NT_USER
 static NTSTATUS sam_ads_update_domain(const SAM_METHODS *sam_method, const SAM_DOMAIN_HANDLE *domain)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -984,7 +984,7 @@ done:
 static NTSTATUS sam_ads_update_account(const SAM_METHODS *sam_method, const SAM_ACCOUNT_HANDLE *account)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -992,7 +992,7 @@ static NTSTATUS sam_ads_update_account(const SAM_METHODS *sam_method, const SAM_
 static NTSTATUS sam_ads_delete_account(const SAM_METHODS *sam_method, const SAM_ACCOUNT_HANDLE *account)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 
 
@@ -1003,7 +1003,7 @@ static NTSTATUS sam_ads_delete_account(const SAM_METHODS *sam_method, const SAM_
 static NTSTATUS sam_ads_enum_accounts(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint16 acct_ctrl, uint32 *account_count, SAM_ACCOUNT_ENUM **accounts)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1040,7 +1040,7 @@ static NTSTATUS sam_ads_get_account_by_sid(const SAM_METHODS *sam_method, const 
 static NTSTATUS sam_ads_get_account_by_sid(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *account_sid, SAM_ACCOUNT_HANDLE **account)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1078,7 +1078,7 @@ static NTSTATUS sam_ads_get_account_by_name(const SAM_METHODS *sam_method, const
 static NTSTATUS sam_ads_get_account_by_name(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, const char *account_name, SAM_ACCOUNT_HANDLE **account)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1088,7 +1088,7 @@ static NTSTATUS sam_ads_get_account_by_name(const SAM_METHODS *sam_method, const
 static NTSTATUS sam_ads_create_group(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *group_name, uint16 group_ctrl, SAM_GROUP_HANDLE **group)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1096,7 +1096,7 @@ static NTSTATUS sam_ads_create_group(const SAM_METHODS *sam_method, const NT_USE
 static NTSTATUS sam_ads_add_group(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1104,7 +1104,7 @@ static NTSTATUS sam_ads_add_group(const SAM_METHODS *sam_method, const SAM_GROUP
 static NTSTATUS sam_ads_update_group(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1112,7 +1112,7 @@ static NTSTATUS sam_ads_update_group(const SAM_METHODS *sam_method, const SAM_GR
 static NTSTATUS sam_ads_delete_group(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1196,7 +1196,7 @@ static NTSTATUS sam_ads_enum_groups(const SAM_METHODS *sam_method, const NT_USER
 static NTSTATUS sam_ads_get_group_by_sid(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *groupsid, SAM_GROUP_HANDLE **group)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1204,7 +1204,7 @@ static NTSTATUS sam_ads_get_group_by_sid(const SAM_METHODS *sam_method, const NT
 static NTSTATUS sam_ads_get_group_by_name(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, const char *name, SAM_GROUP_HANDLE **group)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1212,7 +1212,7 @@ static NTSTATUS sam_ads_get_group_by_name(const SAM_METHODS *sam_method, const N
 static NTSTATUS sam_ads_add_member_to_group(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1220,7 +1220,7 @@ static NTSTATUS sam_ads_add_member_to_group(const SAM_METHODS *sam_method, const
 static NTSTATUS sam_ads_delete_member_from_group(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1228,7 +1228,7 @@ static NTSTATUS sam_ads_delete_member_from_group(const SAM_METHODS *sam_method, 
 static NTSTATUS sam_ads_enum_groupmembers(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group, uint32 *members_count, SAM_GROUP_MEMBER **members)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }
@@ -1236,7 +1236,7 @@ static NTSTATUS sam_ads_enum_groupmembers(const SAM_METHODS *sam_method, const S
 static NTSTATUS sam_ads_get_groups_of_sid(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, const DOM_SID **sids, const uint16 group_ctrl, uint32 *group_count, SAM_GROUP_ENUM **groups)
 {
 	ADS_STATUS	ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	DEBUG(0,("sam_ads: %s was called!\n",__FUNCTION__));
+	DEBUG(0,("sam_ads: %s was called!\n",FUNCTION_MACRO));
 	SAM_ASSERT(sam_method);
 	return ads_ntstatus(ads_status);
 }

@@ -100,7 +100,7 @@ void cgi_load_variables(void)
 #ifdef DEBUG_COMMENTS
 	char dummy[100]="";
 	print_title(dummy);
-	d_printf("<!== Start dump in cgi_load_variables() %s ==>\n",__FILE__);
+	d_printf("<!== Start dump in cgi_load_variables() %s ==>\n",FILE_MACRO);
 #endif
 
 	if (!content_length) {
