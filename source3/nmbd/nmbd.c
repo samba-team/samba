@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Jeremy Allison 1997-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,11 +18,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    
-   Revision History:
-
-   14 jan 96: lkcl@pires.co.uk
-   added multiple workgroup domain master support
-
 */
 
 #include "includes.h"
@@ -47,136 +43,140 @@ BOOL found_lm_clients = False;
 time_t StartupTime = 0;
 
 /**************************************************************************** **
-  catch a sigterm
+ Handle a SIGTERM in band.
  **************************************************************************** */
-static void sig_term(int sig)
+
+static void terminate(void)
 {
-  BlockSignals(True,SIGTERM);
+	DEBUG(0,("Got SIGTERM: going down...\n"));
   
-  DEBUG(0,("Got SIGTERM: going down...\n"));
+	/* Write out wins.dat file if samba is a WINS server */
+	wins_write_database(False);
   
-  /* Write out wins.dat file if samba is a WINS server */
-  wins_write_database(False);
+	/* Remove all SELF registered names. */
+	release_my_names();
   
-  /* Remove all SELF registered names. */
-  release_my_names();
-  
-  /* Announce all server entries as 0 time-to-live, 0 type. */
-  announce_my_servers_removed();
+	/* Announce all server entries as 0 time-to-live, 0 type. */
+	announce_my_servers_removed();
 
-  /* If there was an async dns child - kill it. */
-  kill_async_dns_child();
+	/* If there was an async dns child - kill it. */
+	kill_async_dns_child();
 
-  exit(0);
-
-} /* sig_term */
+	exit(0);
+}
 
 /**************************************************************************** **
- catch a sighup
+ Catch a SIGTERM signal.
  **************************************************************************** */
-static VOLATILE sig_atomic_t reload_after_sighup = False;
+
+static VOLATILE sig_atomic_t got_sig_term;
+
+static void sig_term(int sig)
+{
+	got_sig_term = 1;
+	sys_select_signal();
+}
+
+/**************************************************************************** **
+ Catch a SIGHUP signal.
+ **************************************************************************** */
+
+static VOLATILE sig_atomic_t reload_after_sighup;
 
 static void sig_hup(int sig)
 {
-  BlockSignals( True, SIGHUP );
-
-  DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
-
-  write_browse_list( 0, True );
-
-  dump_all_namelists();
-
-  reload_after_sighup = True;
-
-  BlockSignals(False,SIGHUP);
-
-} /* sig_hup */
-
+	reload_after_sighup = 1;
+	sys_select_signal();
+}
 
 #if DUMP_CORE
 /**************************************************************************** **
- prepare to dump a core file - carefully!
+ Prepare to dump a core file - carefully!
  **************************************************************************** */
+
 static BOOL dump_core(void)
 {
-  char *p;
-  pstring dname;
-  pstrcpy( dname, lp_logfile() );
-  if ((p=strrchr_m(dname,'/')))
-    *p=0;
-  pstrcat( dname, "/corefiles" );
-  mkdir( dname, 0700 );
-  sys_chown( dname, getuid(), getgid() );
-  chmod( dname, 0700 );
-  if ( chdir(dname) )
-    return( False );
-  umask( ~(0700) );
+	char *p;
+	pstring dname;
+	pstrcpy( dname, lp_logfile() );
+	if ((p=strrchr_m(dname,'/')))
+		*p=0;
+	pstrcat( dname, "/corefiles" );
+	mkdir( dname, 0700 );
+	sys_chown( dname, getuid(), getgid() );
+	chmod( dname, 0700 );
+	if ( chdir(dname) )
+		return( False );
+	umask( ~(0700) );
 
 #ifdef HAVE_GETRLIMIT
 #ifdef RLIMIT_CORE
-  {
-    struct rlimit rlp;
-    getrlimit( RLIMIT_CORE, &rlp );
-    rlp.rlim_cur = MAX( 4*1024*1024, rlp.rlim_cur );
-    setrlimit( RLIMIT_CORE, &rlp );
-    getrlimit( RLIMIT_CORE, &rlp );
-    DEBUG( 3, ( "Core limits now %d %d\n", (int)rlp.rlim_cur, (int)rlp.rlim_max ) );
-  }
+	{
+		struct rlimit rlp;
+		getrlimit( RLIMIT_CORE, &rlp );
+		rlp.rlim_cur = MAX( 4*1024*1024, rlp.rlim_cur );
+		setrlimit( RLIMIT_CORE, &rlp );
+		getrlimit( RLIMIT_CORE, &rlp );
+		DEBUG( 3, ( "Core limits now %d %d\n", (int)rlp.rlim_cur, (int)rlp.rlim_max ) );
+	}
 #endif
 #endif
 
 
-  DEBUG(0,("Dumping core in %s\n",dname));
-  abort();
-  return( True );
-} /* dump_core */
+	DEBUG(0,("Dumping core in %s\n",dname));
+	abort();
+	return( True );
+}
 #endif
-
 
 /**************************************************************************** **
- possibly continue after a fault
+ Possibly continue after a fault.
  **************************************************************************** */
+
 static void fault_continue(void)
 {
 #if DUMP_CORE
-  dump_core();
+	dump_core();
 #endif
-} /* fault_continue */
+}
 
 /**************************************************************************** **
- expire old names from the namelist and server list
+ Expire old names from the namelist and server list.
  **************************************************************************** */
+
 static void expire_names_and_servers(time_t t)
 {
-  static time_t lastrun = 0;
+	static time_t lastrun = 0;
   
-  if ( !lastrun )
-    lastrun = t;
-  if ( t < (lastrun + 5) )
-    return;
-  lastrun = t;
+	if ( !lastrun )
+		lastrun = t;
+	if ( t < (lastrun + 5) )
+		return;
+	lastrun = t;
 
-  /*
-   * Expire any timed out names on all the broadcast
-   * subnets and those registered with the WINS server.
-   * (nmbd_namelistdb.c)
-   */
-  expire_names(t);
+	/*
+	 * Expire any timed out names on all the broadcast
+	 * subnets and those registered with the WINS server.
+	 * (nmbd_namelistdb.c)
+	 */
 
-  /*
-   * Go through all the broadcast subnets and for each
-   * workgroup known on that subnet remove any expired
-   * server names. If a workgroup has an empty serverlist
-   * and has itself timed out then remove the workgroup.
-   * (nmbd_workgroupdb.c)
-   */
-  expire_workgroups_and_servers(t);
-} /* expire_names_and_servers */
+	expire_names(t);
 
+	/*
+	 * Go through all the broadcast subnets and for each
+	 * workgroup known on that subnet remove any expired
+	 * server names. If a workgroup has an empty serverlist
+	 * and has itself timed out then remove the workgroup.
+	 * (nmbd_workgroupdb.c)
+	 */
+
+	expire_workgroups_and_servers(t);
+}
 
 /************************************************************************** **
-reload the list of network interfaces
+ Reload the list of network interfaces.
  ************************************************************************** */
+
 static BOOL reload_interfaces(time_t t)
 {
 	static time_t lastt;
@@ -253,293 +253,321 @@ static BOOL reload_interfaces(time_t t)
 	return False;
 }
 
-
-
 /**************************************************************************** **
-  reload the services file
+ Reload the services file.
  **************************************************************************** */
+
 static BOOL reload_nmbd_services(BOOL test)
 {
-  BOOL ret;
-  extern fstring remote_machine;
+	BOOL ret;
+	extern fstring remote_machine;
 
-  fstrcpy( remote_machine, "nmbd" );
+	fstrcpy( remote_machine, "nmbd" );
 
-  if ( lp_loaded() )
-  {
-    pstring fname;
-    pstrcpy( fname,lp_configfile());
-    if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE))
-    {
-      pstrcpy(dyn_CONFIGFILE,fname);
-      test = False;
-    }
-  }
+	if ( lp_loaded() ) {
+		pstring fname;
+		pstrcpy( fname,lp_configfile());
+		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
+			pstrcpy(dyn_CONFIGFILE,fname);
+			test = False;
+		}
+	}
 
-  if ( test && !lp_file_list_changed() )
-    return(True);
+	if ( test && !lp_file_list_changed() )
+		return(True);
 
-  ret = lp_load( dyn_CONFIGFILE, True , False, False);
+	ret = lp_load( dyn_CONFIGFILE, True , False, False);
 
-  /* perhaps the config filename is now set */
-  if ( !test )
-  {
-    DEBUG( 3, ( "services not loaded\n" ) );
-    reload_nmbd_services( True );
-  }
+	/* perhaps the config filename is now set */
+	if ( !test ) {
+		DEBUG( 3, ( "services not loaded\n" ) );
+		reload_nmbd_services( True );
+	}
 
-  /* Do a sanity check for a misconfigured nmbd */
-  if( lp_wins_support() && wins_srv_count() )
-    {
-    if( DEBUGLVL(0) )
-      {
-      dbgtext( "ERROR: 'wins support = true' and 'wins server = <server>'\n" );
-      dbgtext( "are conflicting settings.  nmbd aborting.\n" );
-      }
-    exit(10);
-    }
+	/* Do a sanity check for a misconfigured nmbd */
+	if( lp_wins_support() && wins_srv_count() ) {
+		if( DEBUGLVL(0) ) {
+			dbgtext( "ERROR: 'wins support = true' and 'wins server = <server>'\n" );
+			dbgtext( "are conflicting settings.  nmbd aborting.\n" );
+		}
+		exit(10);
+	}
 
-  return(ret);
-} /* reload_nmbd_services */
+	return(ret);
+}
 
 /**************************************************************************** **
  The main select loop.
  **************************************************************************** */
+
 static void process(void)
 {
-  BOOL run_election;
+	BOOL run_election;
 
-  while( True )
-  {
-    time_t t = time(NULL);
+	while( True ) {
+		time_t t = time(NULL);
 
-    /* check for internal messages */
-    message_dispatch();
+		/* Check for internal messages */
 
-    /*
-     * Check all broadcast subnets to see if
-     * we need to run an election on any of them.
-     * (nmbd_elections.c)
-     */
-    run_election = check_elections();
+		message_dispatch();
 
-    /*
-     * Read incoming UDP packets.
-     * (nmbd_packets.c)
-     */
-    if(listen_for_packets(run_election))
-      return;
+		/*
+		 * Check all broadcast subnets to see if
+		 * we need to run an election on any of them.
+		 * (nmbd_elections.c)
+		 */
 
-    /*
-     * Process all incoming packets
-     * read above. This calls the success and
-     * failure functions registered when response
-     * packets arrrive, and also deals with request
-     * packets from other sources.
-     * (nmbd_packets.c)
-     */
-    run_packet_queue();
+		run_election = check_elections();
 
-    /*
-     * Run any elections - initiate becoming
-     * a local master browser if we have won.
-     * (nmbd_elections.c)
-     */
-    run_elections(t);
+		/*
+		 * Read incoming UDP packets.
+		 * (nmbd_packets.c)
+		 */
 
-    /*
-     * Send out any broadcast announcements
-     * of our server names. This also announces
-     * the workgroup name if we are a local
-     * master browser.
-     * (nmbd_sendannounce.c)
-     */
-    announce_my_server_names(t);
-
-    /*
-     * Send out any LanMan broadcast announcements
-     * of our server names.
-     * (nmbd_sendannounce.c)
-     */
-    announce_my_lm_server_names(t);
-
-    /*
-     * If we are a local master browser, periodically
-     * announce ourselves to the domain master browser.
-     * This also deals with syncronising the domain master
-     * browser server lists with ourselves as a local
-     * master browser.
-     * (nmbd_sendannounce.c)
-     */
-    announce_myself_to_domain_master_browser(t);
-
-    /*
-     * Fullfill any remote announce requests.
-     * (nmbd_sendannounce.c)
-     */
-    announce_remote(t);
-
-    /*
-     * Fullfill any remote browse sync announce requests.
-     * (nmbd_sendannounce.c)
-     */
-    browse_sync_remote(t);
-
-    /*
-     * Scan the broadcast subnets, and WINS client
-     * namelists and refresh any that need refreshing.
-     * (nmbd_mynames.c)
-     */
-    refresh_my_names(t);
-
-    /*
-     * Scan the subnet namelists and server lists and
-     * expire thos that have timed out.
-     * (nmbd.c)
-     */
-    expire_names_and_servers(t);
-
-    /*
-     * Write out a snapshot of our current browse list into
-     * the browse.dat file. This is used by smbd to service
-     * incoming NetServerEnum calls - used to synchronise
-     * browse lists over subnets.
-     * (nmbd_serverlistdb.c)
-     */
-    write_browse_list(t, False);
-
-    /*
-     * If we are a domain master browser, we have a list of
-     * local master browsers we should synchronise browse
-     * lists with (these are added by an incoming local
-     * master browser announcement packet). Expire any of
-     * these that are no longer current, and pull the server
-     * lists from each of these known local master browsers.
-     * (nmbd_browsesync.c)
-     */
-    dmb_expire_and_sync_browser_lists(t);
-
-    /*
-     * Check that there is a local master browser for our
-     * workgroup for all our broadcast subnets. If one
-     * is not found, start an election (which we ourselves
-     * may or may not participate in, depending on the
-     * setting of the 'local master' parameter.
-     * (nmbd_elections.c)
-     */
-    check_master_browser_exists(t);
-
-    /*
-     * If we are configured as a logon server, attempt to
-     * register the special NetBIOS names to become such
-     * (WORKGROUP<1c> name) on all broadcast subnets and
-     * with the WINS server (if used). If we are configured
-     * to become a domain master browser, attempt to register
-     * the special NetBIOS name (WORKGROUP<1b> name) to
-     * become such.
-     * (nmbd_become_dmb.c)
-     */
-    add_domain_names(t);
-
-    /*
-     * If we are a WINS server, do any timer dependent
-     * processing required.
-     * (nmbd_winsserver.c)
-     */
-    initiate_wins_processing(t);
-
-    /*
-     * If we are a domain master browser, attempt to contact the
-     * WINS server to get a list of all known WORKGROUPS/DOMAINS.
-     * This will only work to a Samba WINS server.
-     * (nmbd_browsesync.c)
-     */
-    if (lp_enhanced_browsing()) {
-	    collect_all_workgroup_names_from_wins_server(t);
-    }
-
-    /*
-     * Go through the response record queue and time out or re-transmit
-     * and expired entries.
-     * (nmbd_packets.c)
-     */
-    retransmit_or_expire_response_records(t);
-
-    /*
-     * check to see if any remote browse sync child processes have completed
-     */
-    sync_check_completion();
-
-    /*
-     * regularly sync with any other DMBs we know about 
-     */
-    if (lp_enhanced_browsing()) {
-	    sync_all_dmbs(t);
-    }
-
-    /*
-     * clear the unexpected packet queue 
-     */
-    clear_unexpected(t);
-
-    /*
-     * Reload the services file if we got a sighup.
-     */
-
-    if(reload_after_sighup) {
-	    reload_nmbd_services( True );
-	    reopen_logs();
-	    if(reload_interfaces(0))
+		if(listen_for_packets(run_election))
 			return;
-	    reload_after_sighup = False;
-    }
 
-    /* check for new network interfaces */
-    if(reload_interfaces(t))
-		return;
+		/*
+		 * Handle termination inband.
+		 */
 
-    /* free up temp memory */
-    lp_talloc_free();
-  }
-} /* process */
+		if (got_sig_term) {
+			got_sig_term = 0;
+			terminate();
+		}
 
+		/*
+		 * Process all incoming packets
+		 * read above. This calls the success and
+		 * failure functions registered when response
+		 * packets arrrive, and also deals with request
+		 * packets from other sources.
+		 * (nmbd_packets.c)
+		 */
+
+		run_packet_queue();
+
+		/*
+		 * Run any elections - initiate becoming
+		 * a local master browser if we have won.
+		 * (nmbd_elections.c)
+		 */
+
+		run_elections(t);
+
+		/*
+		 * Send out any broadcast announcements
+		 * of our server names. This also announces
+		 * the workgroup name if we are a local
+		 * master browser.
+		 * (nmbd_sendannounce.c)
+		 */
+
+		announce_my_server_names(t);
+
+		/*
+		 * Send out any LanMan broadcast announcements
+		 * of our server names.
+		 * (nmbd_sendannounce.c)
+		 */
+
+		announce_my_lm_server_names(t);
+
+		/*
+		 * If we are a local master browser, periodically
+		 * announce ourselves to the domain master browser.
+		 * This also deals with syncronising the domain master
+		 * browser server lists with ourselves as a local
+		 * master browser.
+		 * (nmbd_sendannounce.c)
+		 */
+
+		announce_myself_to_domain_master_browser(t);
+
+		/*
+		 * Fullfill any remote announce requests.
+		 * (nmbd_sendannounce.c)
+		 */
+
+		announce_remote(t);
+
+		/*
+		 * Fullfill any remote browse sync announce requests.
+		 * (nmbd_sendannounce.c)
+		 */
+
+		browse_sync_remote(t);
+
+		/*
+		 * Scan the broadcast subnets, and WINS client
+		 * namelists and refresh any that need refreshing.
+		 * (nmbd_mynames.c)
+		 */
+
+		refresh_my_names(t);
+
+		/*
+		 * Scan the subnet namelists and server lists and
+		 * expire thos that have timed out.
+		 * (nmbd.c)
+		 */
+
+		expire_names_and_servers(t);
+
+		/*
+		 * Write out a snapshot of our current browse list into
+		 * the browse.dat file. This is used by smbd to service
+		 * incoming NetServerEnum calls - used to synchronise
+		 * browse lists over subnets.
+		 * (nmbd_serverlistdb.c)
+		 */
+
+		write_browse_list(t, False);
+
+		/*
+		 * If we are a domain master browser, we have a list of
+		 * local master browsers we should synchronise browse
+		 * lists with (these are added by an incoming local
+		 * master browser announcement packet). Expire any of
+		 * these that are no longer current, and pull the server
+		 * lists from each of these known local master browsers.
+		 * (nmbd_browsesync.c)
+		 */
+
+		dmb_expire_and_sync_browser_lists(t);
+
+		/*
+		 * Check that there is a local master browser for our
+		 * workgroup for all our broadcast subnets. If one
+		 * is not found, start an election (which we ourselves
+		 * may or may not participate in, depending on the
+		 * setting of the 'local master' parameter.
+		 * (nmbd_elections.c)
+		 */
+
+		check_master_browser_exists(t);
+
+		/*
+		 * If we are configured as a logon server, attempt to
+		 * register the special NetBIOS names to become such
+		 * (WORKGROUP<1c> name) on all broadcast subnets and
+		 * with the WINS server (if used). If we are configured
+		 * to become a domain master browser, attempt to register
+		 * the special NetBIOS name (WORKGROUP<1b> name) to
+		 * become such.
+		 * (nmbd_become_dmb.c)
+		 */
+
+		add_domain_names(t);
+
+		/*
+		 * If we are a WINS server, do any timer dependent
+		 * processing required.
+		 * (nmbd_winsserver.c)
+		 */
+
+		initiate_wins_processing(t);
+
+		/*
+		 * If we are a domain master browser, attempt to contact the
+		 * WINS server to get a list of all known WORKGROUPS/DOMAINS.
+		 * This will only work to a Samba WINS server.
+		 * (nmbd_browsesync.c)
+		 */
+
+		if (lp_enhanced_browsing())
+			collect_all_workgroup_names_from_wins_server(t);
+
+		/*
+		 * Go through the response record queue and time out or re-transmit
+		 * and expired entries.
+		 * (nmbd_packets.c)
+		 */
+
+		retransmit_or_expire_response_records(t);
+
+		/*
+		 * check to see if any remote browse sync child processes have completed
+		 */
+
+		sync_check_completion();
+
+		/*
+		 * regularly sync with any other DMBs we know about 
+		 */
+
+		if (lp_enhanced_browsing())
+			sync_all_dmbs(t);
+
+		/*
+		 * clear the unexpected packet queue 
+		 */
+
+		clear_unexpected(t);
+
+		/*
+		 * Reload the services file if we got a sighup.
+		 */
+
+		if(reload_after_sighup) {
+			DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
+			write_browse_list( 0, True );
+			dump_all_namelists();
+			reload_nmbd_services( True );
+			reopen_logs();
+			if(reload_interfaces(0))
+				return;
+			reload_after_sighup = 0;
+		}
+
+		/* check for new network interfaces */
+
+		if(reload_interfaces(t))
+			return;
+
+		/* free up temp memory */
+			lp_talloc_free();
+	}
+}
 
 /**************************************************************************** **
- open the socket communication
+ Open the socket communication.
  **************************************************************************** */
+
 static BOOL open_sockets(BOOL isdaemon, int port)
 {
-  /* The sockets opened here will be used to receive broadcast
-     packets *only*. Interface specific sockets are opened in
-     make_subnet() in namedbsubnet.c. Thus we bind to the
-     address "0.0.0.0". The parameter 'socket address' is
-     now deprecated.
-   */
+	/*
+	 * The sockets opened here will be used to receive broadcast
+	 * packets *only*. Interface specific sockets are opened in
+	 * make_subnet() in namedbsubnet.c. Thus we bind to the
+	 * address "0.0.0.0". The parameter 'socket address' is
+	 * now deprecated.
+	 */
 
-  if ( isdaemon )
-    ClientNMB = open_socket_in(SOCK_DGRAM, port,0,0,True);
-  else
-    ClientNMB = 0;
+	if ( isdaemon )
+		ClientNMB = open_socket_in(SOCK_DGRAM, port,0,0,True);
+	else
+		ClientNMB = 0;
   
-  ClientDGRAM = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3,0,True);
+	ClientDGRAM = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3,0,True);
 
-  if ( ClientNMB == -1 )
-    return( False );
+	if ( ClientNMB == -1 )
+		return( False );
 
-  /* we are never interested in SIGPIPE */
-  BlockSignals(True,SIGPIPE);
+	/* we are never interested in SIGPIPE */
+	BlockSignals(True,SIGPIPE);
 
-  set_socket_options( ClientNMB,   "SO_BROADCAST" );
-  set_socket_options( ClientDGRAM, "SO_BROADCAST" );
+	set_socket_options( ClientNMB,   "SO_BROADCAST" );
+	set_socket_options( ClientDGRAM, "SO_BROADCAST" );
 
-  DEBUG( 3, ( "open_sockets: Broadcast sockets opened.\n" ) );
-  return( True );
-} /* open_sockets */
-
+	DEBUG( 3, ( "open_sockets: Broadcast sockets opened.\n" ) );
+	return( True );
+}
 
 /**************************************************************************** **
- initialise connect, service and file structs
+ Initialise connect, service and file structs.
  **************************************************************************** */
+
 static BOOL init_structs(void)
 {
   extern fstring local_machine;
@@ -626,11 +654,12 @@ static BOOL init_structs(void)
     DEBUGADD( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names[n] ) );
 
   return( True );
-} /* init_structs */
+}
 
 /**************************************************************************** **
- usage on the program
+ Usage on the program.
  **************************************************************************** */
+
 static void usage(char *pname)
 {
 
@@ -649,7 +678,7 @@ static void usage(char *pname)
   printf( "\t-p port               Listen on the specified port\n" );
   printf( "\t-s configuration file Configuration file name\n" );
   printf( "\n");
-} /* usage */
+}
 
 
 /**************************************************************************** **
@@ -877,4 +906,4 @@ static void usage(char *pname)
   if (dbf)
     x_fclose(dbf);
   return(0);
-} /* main */
+}
