@@ -650,23 +650,23 @@ BOOL make_sam_user_info24(SAM_USER_INFO_24 *usr,
 	char newpass[516], uint16 passlen);
 BOOL make_sam_user_info23W(SAM_USER_INFO_23 *usr,
 
-	NTTIME *logon_time, /* all zeros */
-	NTTIME *logoff_time, /* all zeros */
-	NTTIME *kickoff_time, /* all zeros */
-	NTTIME *pass_last_set_time, /* all zeros */
-	NTTIME *pass_can_change_time, /* all zeros */
-	NTTIME *pass_must_change_time, /* all zeros */
+	const NTTIME *logon_time, /* all zeros */
+	const NTTIME *logoff_time, /* all zeros */
+	const NTTIME *kickoff_time, /* all zeros */
+	const NTTIME *pass_last_set_time, /* all zeros */
+	const NTTIME *pass_can_change_time, /* all zeros */
+	const NTTIME *pass_must_change_time, /* all zeros */
 
-	UNISTR2 *user_name, /* NULL */
-	UNISTR2 *full_name,
-	UNISTR2 *home_dir,
-	UNISTR2 *dir_drive,
-	UNISTR2 *log_scr,
-	UNISTR2 *prof_path,
-	UNISTR2 *desc,
-	UNISTR2 *wkstas,
-	UNISTR2 *unk_str,
-	UNISTR2 *mung_dial,
+	const UNISTR2 *user_name, 
+	const UNISTR2 *full_name,
+	const UNISTR2 *home_dir,
+	const UNISTR2 *dir_drive,
+	const UNISTR2 *log_scr,
+	const UNISTR2 *prof_path,
+	const UNISTR2 *desc,
+	const UNISTR2 *wkstas,
+	const UNISTR2 *unk_str,
+	const UNISTR2 *mung_dial,
 
 	uint32 user_rid, /* 0x0000 0000 */
 	uint32 group_rid,
@@ -714,7 +714,39 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 *usr,
 	, uint32 unknown_6
 #endif
 			);
-BOOL make_sam_user_info21(SAM_USER_INFO_21 *usr,
+BOOL make_sam_user_info21W(SAM_USER_INFO_21 *usr,
+
+	const NTTIME *logon_time,
+	const NTTIME *logoff_time,
+	const NTTIME *kickoff_time,
+	const NTTIME *pass_last_set_time,
+	const NTTIME *pass_can_change_time,
+	const NTTIME *pass_must_change_time,
+
+	const UNISTR2 *user_name, 
+	const UNISTR2 *full_name,
+	const UNISTR2 *home_dir,
+	const UNISTR2 *dir_drive,
+	const UNISTR2 *log_scr,
+	const UNISTR2 *prof_path,
+	const UNISTR2 *desc,
+	const UNISTR2 *wkstas,
+	const UNISTR2 *unk_str,
+	const UNISTR2 *mung_dial,
+
+	const uchar lm_pwd[16],
+	const uchar nt_pwd[16],
+
+	uint32 user_rid,
+	uint32 group_rid,
+	uint16 acb_info, 
+
+	uint32 unknown_3,
+	uint16 logon_divs,
+	const LOGON_HRS *hrs,
+	uint32 unknown_5,
+	uint32 unknown_6);
+BOOL make_sam_user_info21A(SAM_USER_INFO_21 *usr,
 
 	NTTIME *logon_time,
 	NTTIME *logoff_time,

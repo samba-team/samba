@@ -2,7 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Samba utility functions
-   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Andrew Tridgell              1992-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +21,8 @@
 */
 
 #include "includes.h"
+
+extern int DEBUGLEVEL;
 
 /*******************************************************************
  Put an ASCII string into a UNICODE buffer (little endian).
@@ -350,12 +353,22 @@ int StrCaseCmpW(const UNISTR2 *ws, const UNISTR2 *wt)
 	uint16 *s = ws->buffer;
 	uint16 *t = wt->buffer;
 
+	if (ws->uni_str_len != wt->uni_str_len)
+	{
+		return False;
+	}
+
     while (len > 0 && *s && *t && toupper(*s) == toupper(*t))
     {
       s++;
       t++;
 	len--;
     }
+
+	if (len == 0)
+	{
+		return 0;
+	}
 
     return(toupper(*s) - toupper(*t));
 }
@@ -367,13 +380,14 @@ int StrCaseCmpW(const UNISTR2 *ws, const UNISTR2 *wt)
 ********************************************************************/
 BOOL unistr2equal(const UNISTR2 *s1, const UNISTR2 *s2)
 {
+#if 0
+	DEBUG(20,("unistr2equal:\n"));
+	dump_data(20, s1, sizeof(*s1));
+	dump_data(20, s2, sizeof(*s2));
+#endif
+
   if (s1 == s2) return(True);
   if (!s1 || !s2) return(False);
   
-	if (s1->uni_str_len != s1->uni_str_len)
-	{
-		return False;
-	}
-
   return(StrCaseCmpW(s1,s2)==0);
 }

@@ -4845,23 +4845,23 @@ static BOOL sam_io_user_info24(char *desc, SAM_USER_INFO_24 *usr, prs_struct *ps
  *************************************************************************/
 BOOL make_sam_user_info23W(SAM_USER_INFO_23 *usr,
 
-	NTTIME *logon_time, /* all zeros */
-	NTTIME *logoff_time, /* all zeros */
-	NTTIME *kickoff_time, /* all zeros */
-	NTTIME *pass_last_set_time, /* all zeros */
-	NTTIME *pass_can_change_time, /* all zeros */
-	NTTIME *pass_must_change_time, /* all zeros */
+	const NTTIME *logon_time, /* all zeros */
+	const NTTIME *logoff_time, /* all zeros */
+	const NTTIME *kickoff_time, /* all zeros */
+	const NTTIME *pass_last_set_time, /* all zeros */
+	const NTTIME *pass_can_change_time, /* all zeros */
+	const NTTIME *pass_must_change_time, /* all zeros */
 
-	UNISTR2 *user_name, /* NULL */
-	UNISTR2 *full_name,
-	UNISTR2 *home_dir,
-	UNISTR2 *dir_drive,
-	UNISTR2 *log_scr,
-	UNISTR2 *prof_path,
-	UNISTR2 *desc,
-	UNISTR2 *wkstas,
-	UNISTR2 *unk_str,
-	UNISTR2 *mung_dial,
+	const UNISTR2 *user_name, 
+	const UNISTR2 *full_name,
+	const UNISTR2 *home_dir,
+	const UNISTR2 *dir_drive,
+	const UNISTR2 *log_scr,
+	const UNISTR2 *prof_path,
+	const UNISTR2 *desc,
+	const UNISTR2 *wkstas,
+	const UNISTR2 *unk_str,
+	const UNISTR2 *mung_dial,
 
 	uint32 user_rid, /* 0x0000 0000 */
 	uint32 group_rid,
@@ -5171,6 +5171,130 @@ static BOOL sam_io_user_info23(char *desc,  SAM_USER_INFO_23 *usr, prs_struct *p
 
 
 /*************************************************************************
+ make_sam_user_info21W
+
+ unknown_3 = 0x00ff ffff
+ unknown_5 = 0x0002 0000
+ unknown_6 = 0x0000 04ec 
+
+ *************************************************************************/
+BOOL make_sam_user_info21W(SAM_USER_INFO_21 *usr,
+
+	const NTTIME *logon_time,
+	const NTTIME *logoff_time,
+	const NTTIME *kickoff_time,
+	const NTTIME *pass_last_set_time,
+	const NTTIME *pass_can_change_time,
+	const NTTIME *pass_must_change_time,
+
+	const UNISTR2 *user_name, 
+	const UNISTR2 *full_name,
+	const UNISTR2 *home_dir,
+	const UNISTR2 *dir_drive,
+	const UNISTR2 *log_scr,
+	const UNISTR2 *prof_path,
+	const UNISTR2 *desc,
+	const UNISTR2 *wkstas,
+	const UNISTR2 *unk_str,
+	const UNISTR2 *mung_dial,
+
+	const uchar lm_pwd[16],
+	const uchar nt_pwd[16],
+
+	uint32 user_rid,
+	uint32 group_rid,
+	uint16 acb_info, 
+
+	uint32 unknown_3,
+	uint16 logon_divs,
+	const LOGON_HRS *hrs,
+	uint32 unknown_5,
+	uint32 unknown_6)
+{
+	int len_user_name    = user_name != NULL ? user_name->uni_str_len : 0;
+	int len_full_name    = full_name != NULL ? full_name->uni_str_len : 0;
+	int len_home_dir     = home_dir  != NULL ? home_dir ->uni_str_len : 0;
+	int len_dir_drive    = dir_drive != NULL ? dir_drive->uni_str_len : 0;
+	int len_logon_script = log_scr   != NULL ? log_scr  ->uni_str_len : 0;
+	int len_profile_path = prof_path != NULL ? prof_path->uni_str_len : 0;
+	int len_description  = desc      != NULL ? desc     ->uni_str_len : 0;
+	int len_workstations = wkstas    != NULL ? wkstas   ->uni_str_len : 0;
+	int len_unknown_str  = unk_str   != NULL ? unk_str  ->uni_str_len : 0;
+	int len_munged_dial  = mung_dial != NULL ? mung_dial->uni_str_len : 0;
+
+	usr->logon_time            = *logon_time;
+	usr->logoff_time           = *logoff_time;
+	usr->kickoff_time          = *kickoff_time;
+	usr->pass_last_set_time    = *pass_last_set_time;
+	usr->pass_can_change_time  = *pass_can_change_time;
+	usr->pass_must_change_time = *pass_must_change_time;
+
+	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   );
+	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   );
+	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    );
+	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   );
+	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script);
+	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path);
+	make_uni_hdr(&(usr->hdr_acct_desc   ), len_description );
+	make_uni_hdr(&(usr->hdr_workstations), len_workstations);
+	make_uni_hdr(&(usr->hdr_unknown_str ), len_unknown_str );
+	make_uni_hdr(&(usr->hdr_munged_dial ), len_munged_dial );
+
+	if (lm_pwd == NULL)
+	{
+		bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
+	}
+	else
+	{
+		memcpy(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd));
+	}
+	if (nt_pwd == NULL)
+	{
+		bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
+	}
+	else
+	{
+		memcpy(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd));
+	}
+
+	usr->user_rid  = user_rid;
+	usr->group_rid = group_rid;
+	usr->acb_info = acb_info;
+	usr->unknown_3 = unknown_3; /* 0x00ff ffff */
+
+	usr->logon_divs = logon_divs; /* should be 168 (hours/week) */
+	usr->ptr_logon_hrs = hrs ? 1 : 0;
+	usr->unknown_5 = unknown_5; /* 0x0002 0000 */
+
+	bzero(usr->padding1, sizeof(usr->padding1));
+
+	copy_unistr2(&(usr->uni_user_name   ), user_name);
+	copy_unistr2(&(usr->uni_full_name   ), full_name);
+	copy_unistr2(&(usr->uni_home_dir    ), home_dir );
+	copy_unistr2(&(usr->uni_dir_drive   ), dir_drive);
+	copy_unistr2(&(usr->uni_logon_script), log_scr  );
+	copy_unistr2(&(usr->uni_profile_path), prof_path);
+	copy_unistr2(&(usr->uni_acct_desc   ), desc     );
+	copy_unistr2(&(usr->uni_workstations), wkstas   );
+	copy_unistr2(&(usr->uni_unknown_str ), unk_str  );
+	copy_unistr2(&(usr->uni_munged_dial ), mung_dial);
+
+	usr->unknown_6 = unknown_6; /* 0x0000 04ec */
+	usr->padding4 = 0;
+
+	if (hrs)
+	{
+		memcpy(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
+	}
+	else
+	{
+		memset(&(usr->logon_hrs), 0xff, sizeof(usr->logon_hrs));
+	}
+
+	return True;
+}
+
+/*************************************************************************
  make_sam_user_info21
 
  unknown_3 = 0x00ff ffff
@@ -5178,7 +5302,7 @@ static BOOL sam_io_user_info23(char *desc,  SAM_USER_INFO_23 *usr, prs_struct *p
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
-BOOL make_sam_user_info21(SAM_USER_INFO_21 *usr,
+BOOL make_sam_user_info21A(SAM_USER_INFO_21 *usr,
 
 	NTTIME *logon_time,
 	NTTIME *logoff_time,

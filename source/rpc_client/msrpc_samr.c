@@ -603,7 +603,7 @@ int msrpc_sam_enum_users( const char* srv_name,
 		do
 		{
 			status = samr_enum_dom_users( &pol_dom,
-			     &start_idx, acb_mask, unk_1, 0x100000,
+			     &start_idx, acb_mask, unk_1, 0x10000,
 			     sam, num_sam_entries);
 
 		} while (status == STATUS_MORE_ENTRIES);
@@ -1263,10 +1263,8 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 
 		*rid = rids[0];
 
-		if(rids)
-			free(rids);
-		if(types)
-			free(types);
+		safe_free(rids);
+		safe_free(types);
 	}
 
 	DEBUG(5,("create_samr_domain_user: name: %s rid 0x%x\n",

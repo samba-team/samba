@@ -1643,7 +1643,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 		hrs.hours[i] = sam_pass->hours[i];
 	}
 
-	make_sam_user_info21(id21,
+	make_sam_user_info21A(id21,
 
 			   &sam_pass->logon_time,
 			   &sam_pass->logoff_time,
