@@ -443,7 +443,7 @@ SMBTORTURE_RPC_OBJ = torture/rpc/lsa.o torture/rpc/echo.o torture/rpc/dfs.o \
 		torture/rpc/spoolss.o torture/rpc/samr.o torture/rpc/wkssvc.o \
 		torture/rpc/srvsvc.o torture/rpc/atsvc.o torture/rpc/eventlog.o \
 		torture/rpc/epmapper.o torture/rpc/winreg.o torture/rpc/mgmt.o \
-		torture/rpc/scanner.o
+		torture/rpc/scanner.o torture/rpc/autoidl.o
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/torture_util.o torture/nbio.o torture/scanner.o \
 		torture/utable.o torture/denytest.o torture/mangle_test.o \
