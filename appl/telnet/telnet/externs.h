@@ -70,7 +70,7 @@
 #  ifdef SYSV_TERMIO
 #   include <sys/termio.h>
 #  else
-#   include <sys/termios.h>
+#   include <termios.h>
 #   define termio termios
 #  endif
 # endif
