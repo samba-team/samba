@@ -706,10 +706,9 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 		return;
 
 	data->notify_data.data.length = prs_offset(&ps);
-	data->notify_data.data.string =
-		talloc(mem_ctx, prs_offset(&ps));
+	data->notify_data.data.string = talloc(mem_ctx, prs_offset(&ps));
 
-	memcpy(data->notify_data.data.string, prs_data_p(&ps), prs_offset(&ps));
+	prs_copy_all_data_out((char *)data->notify_data.data.string, &ps);
 
 	prs_mem_free(&ps);
 }

@@ -782,7 +782,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	if (psd->off_owner_sid != 0) {
 
-		tmp_offset = ps->data_offset;
+		tmp_offset = prs_offset(ps);
 		if(!prs_set_offset(ps, old_offset + psd->off_owner_sid))
 			return False;
 
@@ -803,7 +803,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	if (psd->off_grp_sid != 0) {
 
-		tmp_offset = ps->data_offset;
+		tmp_offset = prs_offset(ps);
 		if(!prs_set_offset(ps, old_offset + psd->off_grp_sid))
 			return False;
 
@@ -823,7 +823,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 	}
 
 	if ((psd->type & SEC_DESC_SACL_PRESENT) && psd->off_sacl) {
-		tmp_offset = ps->data_offset;
+		tmp_offset = prs_offset(ps);
 		if(!prs_set_offset(ps, old_offset + psd->off_sacl))
 			return False;
 		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))
@@ -835,7 +835,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 
 	if ((psd->type & SEC_DESC_DACL_PRESENT) && psd->off_dacl != 0) {
-		tmp_offset = ps->data_offset;
+		tmp_offset = prs_offset(ps);
 		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
 			return False;
 		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
