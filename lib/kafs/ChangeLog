@@ -1,13 +1,13 @@
-Mon Oct 18 17:40:21 1999  Bjoern Groenvall  <bg@mummel.sics.se>
-
-	* common.c (find_cells): Trim trailing whitespace from
- 	cellname. Lines starting with # are regarded as comments.
-
 1999-10-20  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: set version to 1:1:1
 
 	* afskrb5.c (get_cred): always request a DES key
+
+Mon Oct 18 17:40:21 1999  Bjoern Groenvall  <bg@mummel.sics.se>
+
+	* common.c (find_cells): Trim trailing whitespace from
+ 	cellname. Lines starting with # are regarded as comments.
 
 Fri Oct  8 18:17:22 1999  Bjoern Groenvall  <bg@mummel.sics.se>
 
