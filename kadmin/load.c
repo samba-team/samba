@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -288,8 +288,10 @@ parse_generation(char *str, GENERATION **gen)
     char *p;
     int v;
 
-    if(strcmp(str, "-") == 0 || *str == '\0')
+    if(strcmp(str, "-") == 0 || *str == '\0') {
 	*gen = NULL;
+	return 0;
+    }
     *gen = calloc(1, sizeof(**gen));
 
     p = strsep(&str, ":");
