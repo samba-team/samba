@@ -54,8 +54,9 @@ int net_ads_usage(int argc, const char **argv)
 static int net_ads_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
+	extern char *opt_host;
 
-	ads = ads_init(NULL, NULL, NULL, NULL);
+	ads = ads_init(NULL, opt_host, NULL, NULL);
 	ads_connect(ads);
 
 	if (!ads) {
@@ -81,10 +82,10 @@ static ADS_STRUCT *ads_startup(void)
 	BOOL second_time = False;
 	extern char *opt_password;
 	extern char *opt_user_name;
+	extern char *opt_host;
 	extern BOOL opt_user_specified;
-
-
-	ads = ads_init(NULL, NULL, NULL, NULL);
+	
+	ads = ads_init(NULL, opt_host, NULL, NULL);
 
 	if (!opt_user_name) {
 		opt_user_name = "administrator";
