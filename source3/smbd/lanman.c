@@ -1465,12 +1465,24 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *para
 }
 
 /****************************************************************************
-  view list of shares available
-  ****************************************************************************/
-static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
-  			      int mdrcnt,int mprcnt,
-  			      char **rdata,char **rparam,
-  			      int *rdata_len,int *rparam_len)
+  View the list of available shares.
+
+  This function is the server side of the NetShareEnum() RAP call.
+  It fills the return buffer with share names and share comments.
+  Note that the return buffer normally (in all known cases) allows only
+  twelve byte strings for share names (plus one for a nul terminator).
+  Share names longer than 12 bytes must be skipped.
+ ****************************************************************************/
+static BOOL api_RNetShareEnum( connection_struct *conn,
+                               uint16             vuid,
+                               char              *param,
+                               char              *data,
+                               int                mdrcnt,
+                               int                mprcnt,
+                               char             **rdata,
+                               char             **rparam,
+                               int               *rdata_len,
+                               int               *rparam_len )
 {
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
@@ -1490,7 +1502,9 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
   
   data_len = fixed_len = string_len = 0;
   for (i=0;i<count;i++)
-    if (lp_browseable(i) && lp_snum_ok(i))
+    if( lp_browseable( i )
+        && lp_snum_ok( i )
+        && (strlen( lp_servicename( i ) ) < 13) )   /* Maximum name length. */
     {
       total++;
       data_len += fill_share_info(conn,i,uLevel,0,&f_len,0,&s_len,0);
@@ -1511,10 +1525,16 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
   p = *rdata;
   f_len = fixed_len;
   s_len = string_len;
-  for (i = 0; i < count;i++)
-    if (lp_browseable(i) && lp_snum_ok(i))
-      if (fill_share_info(conn,i,uLevel,&p,&f_len,&p2,&s_len,*rdata) < 0)
+  for( i = 0; i < count; i++ )
+    {
+    if( lp_browseable( i )
+        && lp_snum_ok( i )
+        && (strlen( lp_servicename( i ) ) < 13) )
+      {
+      if( fill_share_info( conn,i,uLevel,&p,&f_len,&p2,&s_len,*rdata ) < 0 )
  	break;
+      }
+    }
   
   *rparam_len = 8;
   *rparam = REALLOC(*rparam,*rparam_len);
@@ -1527,7 +1547,7 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
  	   counted,total,uLevel,
   	   buf_len,*rdata_len,mdrcnt));
   return(True);
-}
+} /* api_RNetShareEnum */
 
 /****************************************************************************
   Add a share
