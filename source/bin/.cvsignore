@@ -28,6 +28,7 @@ smbstatus
 smbtorture
 smbumount
 swat
+tdbbackup
 testparm
 testprns
 wbinfo
