@@ -29,6 +29,8 @@
  Log tdb messages via DEBUG().
 ****************************************************************************/
 
+static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+
 static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 {
 	va_list ap;

@@ -129,7 +129,7 @@ AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings a
 	debug=yes
 	CFLAGS="${CFLAGS} -g -Wall"
         developer=yes
-    	DEVELOPER_CFLAGS="-Wshadow -Werror-implicit-function-declaration -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Wdeclaration-after-statement -DDEBUG_PASSWORD -DDEVELOPER"
+    	DEVELOPER_CFLAGS="-Wshadow -Werror-implicit-function-declaration -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Wdeclaration-after-statement -Wmissing-format-attribute -Wformat=2 -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
 AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
@@ -137,7 +137,7 @@ AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnin
 	debug=yes
 	CFLAGS="${CFLAGS} -g -Wall"
         developer=yes
-	DEVELOPER_CFLAGS="-Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings  -Wdeclaration-after-statement -DDEBUG_PASSWORD -DDEVELOPER"
+	DEVELOPER_CFLAGS="-Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings  -Wdeclaration-after-statement -Wmissing-format-attribute -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
 AC_ARG_ENABLE(gtkdeveloper, [  --enable-gtkdeveloper  Turn on developer warnings and debugging, except -Wstrict-prototypes and -Wshadow (default=no)],
@@ -145,7 +145,7 @@ AC_ARG_ENABLE(gtkdeveloper, [  --enable-gtkdeveloper  Turn on developer warnings
 	debug=yes
 	CFLAGS="${CFLAGS} -g -Wall"
         developer=yes
-	DEVELOPER_CFLAGS="-Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings  -Wdeclaration-after-statement -DDEBUG_PASSWORD -DDEVELOPER"
+	DEVELOPER_CFLAGS="-Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings  -Wdeclaration-after-statement -Wmissing-format-attribute -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
 experimental=no

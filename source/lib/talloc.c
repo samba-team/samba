@@ -122,6 +122,8 @@ void talloc_increase_ref_count(void *ptr)
 /*
   add a name to an existing pointer - va_list version
 */
+static void talloc_set_name_v(void *ptr, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+
 static void talloc_set_name_v(void *ptr, const char *fmt, va_list ap)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
@@ -393,7 +395,8 @@ char *talloc_strndup(void *t, const char *p, size_t n)
 	return ret;
 }
 
- char *talloc_vasprintf(void *t, const char *fmt, va_list ap)
+static char *talloc_vasprintf(void *t, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+static char *talloc_vasprintf(void *t, const char *fmt, va_list ap)
 {	
 	int len;
 	char *ret;
@@ -434,8 +437,10 @@ char *talloc_asprintf(void *t, const char *fmt, ...) _PRINTF_ATTRIBUTE(2,3)
  * and return @p s, which may have moved.  Good for gradually
  * accumulating output into a string buffer.
  **/
+
 char *talloc_vasprintf_append(char *s,
-			      const char *fmt, va_list ap)
+			      const char *fmt, va_list ap) _PRINTF_ATTRIBUTE(2,0)
+
 {	
 	int len, s_len;
 	va_list ap2;

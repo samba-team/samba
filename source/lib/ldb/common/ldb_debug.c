@@ -52,6 +52,8 @@ int ldb_set_debug(struct ldb_context *ldb,
   debug function for ldb_set_debug_stderr
 */
 static void ldb_debug_stderr(void *context, enum ldb_debug_level level, 
+			     const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
+static void ldb_debug_stderr(void *context, enum ldb_debug_level level, 
 			     const char *fmt, va_list ap)
 {
 	if (level <= LDB_DEBUG_WARNING) {
