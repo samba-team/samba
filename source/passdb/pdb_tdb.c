@@ -1011,7 +1011,7 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 
 int pdb_tdbsam_init(void)
 {
-	smb_register_passdb("tdbsam", pdb_init_tdbsam, PASSDB_INTERFACE_VERSION);
+	smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam", pdb_init_tdbsam);
 	return True;
 }
 
