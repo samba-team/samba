@@ -3671,9 +3671,13 @@ int find_free_file(void )
 		if (first_file == 0) first_file = 1;
 	}
 
+	if (first_file == MAX_OPEN_FILES)
+		first_file = 0;
+
 	for (i=first_file;i<MAX_OPEN_FILES;i++)
 		if (!Files[i].open) {
 			memset(&Files[i], 0, sizeof(Files[i]));
+			first_file++;
 			return(i);
 		}
 
@@ -3681,6 +3685,7 @@ int find_free_file(void )
 	for (i=1;i<first_file;i++)
 		if (!Files[i].open) {
 			memset(&Files[i], 0, sizeof(Files[i]));
+			first_file++;
 			return(i);
 		}
 
