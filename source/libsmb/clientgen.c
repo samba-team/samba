@@ -2540,18 +2540,17 @@ retry:
 		/* For information, here is the response structure.
 		 * We do the byte-twiddling to for portability.
 		struct RetargetResponse{
-		unsigned char type;
-		unsigned char flags;
-		int16 length;
-		int32 ip_addr;
-		int16 port;
+			unsigned char type;
+			unsigned char flags;
+			int16 length;
+			int32 ip_addr;
+			int16 port;
 		};
 		*/
 		int port = (CVAL(cli->inbuf,8)<<8)+CVAL(cli->inbuf,9);
 		/* SESSION RETARGET */
 		putip((char *)&cli->dest_ip,cli->inbuf+4);
 
-		close_sockets();
 		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, port, LONG_CONNECT_TIMEOUT);
 		if (cli->fd == -1)
 			return False;
@@ -2561,7 +2560,18 @@ retry:
 		set_socket_options(cli->fd,user_socket_options);
 
 		/* Try again */
-		return cli_session_request(cli, calling, called);
+		{
+			static int depth;
+			BOOL ret;
+			if (depth > 4) {
+				DEBUG(0,("Retarget recursion - failing\n"));
+				return False;
+			}
+			depth++;
+			ret = cli_session_request(cli, calling, called);
+			depth--;
+			return ret;
+		}
 	} /* C. Hoch 9/14/95 End */
 
 #ifdef WITH_SSL
