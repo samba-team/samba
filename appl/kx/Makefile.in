@@ -44,10 +44,10 @@ WRITEAUTH = @NEED_WRITEAUTH_TRUE@ writeauth.o
 
 SOURCES_KX     = kx.c writeauth.c
 SOURCES_KXD    = kxd.c writeauth.c
-SOURCES_COMMON = common.c # encdata.c
+SOURCES_COMMON = common.c krb4.c krb5.c context.c
 
-OBJECTS_KX     = kx.o common.o encdata.o $(WRITEAUTH)
-OBJECTS_KXD    = kxd.o common.o encdata.o $(WRITEAUTH)
+OBJECTS_KX     = kx.o common.o krb4.o krb5.o context.o $(WRITEAUTH)
+OBJECTS_KXD    = kxd.o common.o krb4.o krb5.o context.o $(WRITEAUTH)
 
 OBJECTS = $(OBJECTS_KX) $(OBJECTS_KXD)
 SOURCES = $(SOURCES_KX) $(SOURCES_KXD) $(SOURCES_COMMON)
