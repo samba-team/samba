@@ -20,8 +20,10 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 #include "libcli/raw/libcliraw.h"
 
+#define TORTURE_TRANS_DATA 0
 
 /*
   check out of bounds for incoming data
@@ -198,20 +200,21 @@ NTSTATUS smb_raw_trans_recv(struct smbcli_request *req,
 	return smb_raw_trans2_recv(req, mem_ctx, parms);
 }
 
-/****************************************************************************
- trans/trans2 raw async interface - only BLOBs used in this interface.
- note that this doesn't yet support multi-part requests
-****************************************************************************/
+
+/*
+  trans/trans2 raw async interface - only BLOBs used in this interface.
+*/
 struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
-					       struct smb_trans2 *parms,
-					       uint8_t command)
+						  struct smb_trans2 *parms,
+						  uint8_t command)
 {
 	int wct = 14 + parms->in.setup_count;
-	struct smbcli_request *req; 
+	struct smbcli_request *req, *req2; 
 	uint8_t *outdata,*outparam;
 	int i;
 	int padding;
 	size_t namelen = 0;
+	uint16_t data_disp, data_length, max_data;
 
 	if (command == SMBtrans)
 		padding = 1;
@@ -236,6 +239,19 @@ struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
 	/* make sure we don't leak data via the padding */
 	memset(req->out.data, 0, padding);
 
+	data_length = parms->in.data.length;
+
+	max_data = smb_raw_max_trans_data(tree, parms->in.params.length);
+	if (max_data < data_length) {
+		data_length = max_data;
+	}
+
+#if TORTURE_TRANS_DATA
+	if (data_length > 1) {
+		data_length /= 2;
+	}
+#endif
+
 	/* primary request */
 	SSVAL(req->out.vwv,VWV(0),parms->in.params.length);
 	SSVAL(req->out.vwv,VWV(1),parms->in.data.length);
@@ -247,7 +263,7 @@ struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
 	SSVAL(req->out.vwv,VWV(8),0); /* reserved */
 	SSVAL(req->out.vwv,VWV(9),parms->in.params.length);
 	SSVAL(req->out.vwv,VWV(10),PTR_DIFF(outparam,req->out.hdr)+namelen);
-	SSVAL(req->out.vwv,VWV(11),parms->in.data.length);
+	SSVAL(req->out.vwv,VWV(11),data_length);
 	SSVAL(req->out.vwv,VWV(12),PTR_DIFF(outdata,req->out.hdr)+namelen);
 	SSVAL(req->out.vwv,VWV(13),parms->in.setup_count);
 	for (i=0;i<parms->in.setup_count;i++)	{
@@ -257,22 +273,88 @@ struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
 		smbcli_req_append_blob(req, &parms->in.params);
 	}
 	if (parms->in.data.data) {
-		smbcli_req_append_blob(req, &parms->in.data);
+		DATA_BLOB data;
+		data.data = parms->in.data.data;
+		data.length = data_length;
+		smbcli_req_append_blob(req, &data);
 	}
 
 	if (!smbcli_request_send(req)) {
 		smbcli_request_destroy(req);
 		return NULL;
 	}
+
+	data_disp = data_length;
+
+
+	if (data_disp != parms->in.data.length) {
+		/* TODO: this should be done asynchronously .... */
+		if (!smbcli_request_receive(req) ||
+		    !NT_STATUS_IS_OK(req->status)) {
+			return req;
+		}
+
+		req->state = SMBCLI_REQUEST_RECV;
+		DLIST_ADD(req->transport->pending_recv, req);
+	}
+
+
+	while (data_disp != parms->in.data.length) {
+		data_length = parms->in.data.length - data_disp;
+
+		max_data = smb_raw_max_trans_data(tree, 0);
+		if (max_data < data_length) {
+			data_length = max_data;
+		}
+
+#if TORTURE_TRANS_DATA
+		if (data_length > 1) {
+			data_length /= 2;
+		}
+#endif
+
+		req2 = smbcli_request_setup(tree, command+1, 9, data_length);
+		if (!req2) {
+			return NULL;
+		}
+		req2->mid = req->mid;
+		SSVAL(req2->out.hdr, HDR_MID, req2->mid);
+
+		outdata = req2->out.data;
+
+		SSVAL(req2->out.vwv,VWV(0), parms->in.params.length);
+		SSVAL(req2->out.vwv,VWV(1), parms->in.data.length);
+		SSVAL(req2->out.vwv,VWV(2), 0);
+		SSVAL(req2->out.vwv,VWV(3), 0);
+		SSVAL(req2->out.vwv,VWV(4), 0);
+		SSVAL(req2->out.vwv,VWV(5), data_length);
+		SSVAL(req2->out.vwv,VWV(6), PTR_DIFF(outdata,req2->out.hdr));
+		SSVAL(req2->out.vwv,VWV(7), data_disp);
+		SSVAL(req2->out.vwv,VWV(8), 0xFFFF);
+
+		memcpy(req2->out.data, parms->in.data.data + data_disp, data_length);
+		
+		data_disp += data_length;
+
+		req2->one_way_request = 1;
+
+		if (!smbcli_request_send(req2)) {
+			smbcli_request_destroy(req2);
+			return NULL;
+		}
+
+		req->seq_num = req2->seq_num;
+	}
+	
 	
 	return req;
 }
 
-/****************************************************************************
- trans/trans2 raw async interface - only BLOBs used in this interface.
-note that this doesn't yet support multi-part requests
-****************************************************************************/
 
+/*
+  trans/trans2 raw async interface - only BLOBs used in this interface.
+  note that this doesn't yet support multi-part requests
+*/
 struct smbcli_request *smb_raw_trans_send(struct smbcli_tree *tree,
 				       struct smb_trans2 *parms)
 {
@@ -311,6 +393,7 @@ NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
 	if (!req) return NT_STATUS_UNSUCCESSFUL;
 	return smb_raw_trans_recv(req, mem_ctx, parms);
 }
+
 
 /****************************************************************************
   receive a SMB nttrans response allocating the necessary memory
