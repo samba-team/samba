@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -142,6 +142,10 @@ otp_verify(struct passwd *pwd, const char *password)
 #endif /* OTP */
 
 
+#ifdef KRB4
+static int pag_set = 0;
+#endif
+
 #ifdef KRB5
 static krb5_context context;
 static krb5_ccache  id, id2;
@@ -266,8 +270,6 @@ krb5_finish (void)
 }
 
 #ifdef KRB4
-
-static int pag_set = 0;
 
 static void
 krb5_get_afs_tokens (const struct passwd *pwd)
