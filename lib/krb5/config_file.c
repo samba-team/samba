@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -229,11 +229,11 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent)
 	if (buf[strlen(buf) - 1] == '\n')
 	    buf[strlen(buf) - 1] = '\0';
 	p = buf;
-	while(isspace(*p))
+	while(isspace((unsigned char)*p))
 	    ++p;
 	if (*p == '#' || *p == ';')
 	    continue;
-	while(isspace(*p))
+	while(isspace((unsigned char)*p))
 	    ++p;
 	if (*p == '}')
 	    return 0;
@@ -253,7 +253,7 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
     int ret = 0;
 
     p1 = p;
-    while (*p && !isspace(*p))
+    while (*p && !isspace((unsigned char)*p))
 	++p;
     if (*p == '\0')
 	return -1;
@@ -264,12 +264,12 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
     tmp->name = strdup(p1);
     tmp->next = NULL;
     ++p;
-    while (isspace(*p))
+    while (isspace((unsigned char)*p))
 	++p;
     if (*p != '=')
 	return -1;
     ++p;
-    while(isspace(*p))
+    while(isspace((unsigned char)*p))
 	++p;
     if (*p == '{') {
 	tmp->type = krb5_config_list;
@@ -277,7 +277,7 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
 	ret = parse_list (f, lineno, &tmp->u.list);
     } else {
 	p1 = p;
-	while (*p && !isspace(*p))
+	while (*p && !isspace((unsigned char)*p))
 	    ++p;
 	*p = '\0';
 	tmp->type = krb5_config_string;
@@ -313,7 +313,7 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
 	if(buf[strlen(buf) - 1] == '\n')
 	    buf[strlen(buf) - 1] = '\0';
 	p = buf;
-	while(isspace(*p))
+	while(isspace((unsigned char)*p))
 	    ++p;
 	if (*p == '#' || *p == ';')
 	    continue;
