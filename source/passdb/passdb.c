@@ -918,8 +918,8 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 
 		pdb_free_sam(&sam_user);
 
-		if (!sid_peek_rid(psid, &rid)) {
-			DEBUG(2, ("sid_peek_rid failed!  what kind of sid is this? '%s'\n", sid_to_string(str, psid)));
+		if (!sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
+			DEBUG(3, ("sid_peek_rid failed - sid '%s' is not in our domain\n", sid_to_string(str, psid)));
 			return False;
 		}
 
