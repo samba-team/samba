@@ -487,7 +487,7 @@ void request_finished(struct winbindd_cli_state *state)
 void request_finished_cont(void *private)
 {
 	struct winbindd_cli_state *state = private;
-	return request_finished(state);
+	request_finished(state);
 }
 
 static void request_recv(void *private, BOOL success)
