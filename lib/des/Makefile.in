@@ -24,11 +24,16 @@ exec_prefix = @exec_prefix@
 bindir = @bindir@
 libdir = @libdir@
 transform=@program_transform_name@
+EXECSUFFIX=@EXECSUFFIX@
 
 PICFLAGS = @PICFLAGS@
  
-PROGS = destest mdtest des rpw speed
-PROGS2INSTALL = des
+PROGS = destest$(EXECSUFFIX) \
+	mdtest$(EXECSUFFIX) \
+	des$(EXECSUFFIX) \
+	rpw$(EXECSUFFIX) \
+	speed$(EXECSUFFIX)
+PROGS2INSTALL = des$(EXECSUFFIX)
 LIBNAME = $(LIBPREFIX)des
 LIBEXT = @LIBEXT@
 LIBPREFIX = @LIBPREFIX@
@@ -82,9 +87,9 @@ uninstall:
 TAGS: $(LIBSRC)
 	etags $(LIBSRC)
 
-check: destest mdtest
-	./destest
-	./mdtest
+check: destest$(EXECSUFFIX) mdtest$(EXECSUFFIX)
+	./destest$(EXECSUFFIX)
+	./mdtest$(EXECSUFFIX)
 
 clean:
 	rm -f $(LIB) *.o *.a $(PROGS)
@@ -112,19 +117,19 @@ $(LIBNAME).$(SHLIBEXT): $(LIBOBJ)
 	rm -f $@
 	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(LIBOBJ)
 
-mdtest: mdtest.o
+mdtest$(EXECSUFFIX): mdtest.o
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ mdtest.o -L. -ldes
 
-destest: destest.o
+destest$(EXECSUFFIX): destest.o
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ destest.o -L. -ldes
 
-des: des.o
+des$(EXECSUFFIX): des.o
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ des.o -L. -ldes
 
-rpw: rpw.o
+rpw$(EXECSUFFIX): rpw.o
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ rpw.o -L. -ldes
 
-speed: speed.o
+speed$(EXECSUFFIX): speed.o
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ speed.o -L. -ldes
 
 $(LIBOBJ): ../../config.h

@@ -24,9 +24,10 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 bindir = @bindir@
 transform=@program_transform_name@
+EXECSUFFIX=@EXECSUFFIX@
 
-X_PROGS_BIN = kx rxterm rxtelnet
-X_PROGS_LIBEXEC = kxd
+X_PROGS_BIN = kx$(EXECSUFFIX) rxterm rxtelnet
+X_PROGS_LIBEXEC = kxd$(EXECSUFFIX)
 
 PROG_BIN	= @MAKE_X_PROGS_BIN@
 PROG_LIBEXEC	= @MAKE_X_PROGS_LIBEXEC@
@@ -92,10 +93,10 @@ dist: $(DISTFILES)
 KLIB= -L../../lib/krb -lkrb -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
 
-kx: $(OBJECTS_KX)
+kx$(EXECSUFFIX): $(OBJECTS_KX)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KX) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
-kxd: $(OBJECTS_KXD)
+kxd$(EXECSUFFIX): $(OBJECTS_KXD)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 rxterm: rxterm.in

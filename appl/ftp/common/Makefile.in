@@ -21,14 +21,20 @@ OBJECTS = $(libcommon_OBJS)
 
 libcommon_OBJS = base64.o glob.o
 
-all: libcommon.a
+LIBNAME = $(LIBPREFIX)common
+LIBEXT = @LIBEXT@
+LIBPREFIX = @LIBPREFIX@
+LIB = $(LIBNAME).$(LIBEXT)
+
+all: $(LIB)
 
 .c.o:
 	$(CC) -c $(CFLAGS) -I$(srcdir) -I../../../include -I../../.. $(DEFS) $<
 
-libcommon.a: $(libcommon_OBJS)
-	ar cr libcommon.a $(libcommon_OBJS)
-	$(RANLIB) libcommon.a
+$(LIB): $(libcommon_OBJS)
+	rm -f $@
+	ar cr $@ $(libcommon_OBJS)
+	-$(RANLIB) $@
 
 install:
 

@@ -27,8 +27,9 @@ libdir = @libdir@
 bindir = @bindir@
 mandir = @mandir@
 transform=@program_transform_name@
+EXECSUFFIX=@EXECSUFFIX@
 
-X_PROGS_BIN = xnlock
+X_PROGS_BIN = xnlock$(EXECSUFFIX)
 
 PROG_BIN	= @MAKE_X_PROGS_BIN@
 PROG_LIBEXEC	= 
@@ -92,7 +93,7 @@ dist: $(DISTFILES)
 KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
 
-xnlock: xnlock.o
+xnlock$(EXECSUFFIX): xnlock.o
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ xnlock.o @KRB_KAFS_LIB@ $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../config.h

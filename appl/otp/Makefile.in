@@ -22,9 +22,10 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 bindir = @bindir@
 transform=@program_transform_name@
+EXECSUFFIX=@EXECSUFFIX@
 
-PROG_SUIDBIN	= otp
-PROG_BIN	= otpprint
+PROG_SUIDBIN	= otp$(EXECSUFFIX)
+PROG_BIN	= otpprint$(EXECSUFFIX)
 PROGS = $(PROG_BIN) $(PROG_SUIDBIN)
 
 SOURCES_OTP    = otp.c
@@ -77,10 +78,10 @@ realclean: distclean
 OLIB=-L../../lib/otp -lotp -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
 
-otp: $(OBJECTS_OTP)
+otp$(EXECSUFFIX): $(OBJECTS_OTP)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTP) $(OLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
-otpprint: $(OBJECTS_OTPPRINT)
+otpprint$(EXECSUFFIX): $(OBJECTS_OTPPRINT)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTPPRINT) $(OLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../config.h

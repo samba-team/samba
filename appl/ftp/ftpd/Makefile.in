@@ -26,6 +26,7 @@ prefix 	= @prefix@
 exec_prefix = @exec_prefix@
 libexecdir = @libexecdir@
 transform=@program_transform_name@
+EXECSUFFIX=@EXECSUFFIX@
 
 ATHENA = ../../..
 
@@ -39,7 +40,7 @@ LIBDES	= -L$(LIBTOP)/des -ldes
 LIBOTP  = -L$(LIBTOP)/otp -lotp
 LIBROKEN= -L$(LIBTOP)/roken -lroken
 
-PROGS = ftpd
+PROGS = ftpd$(EXECSUFFIX)
 
 ftpd_SOURCES = ftpd.c ftpcmd.c logwtmp.c popen.c auth.c krb4.c kauth.c
 ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o
@@ -47,7 +48,7 @@ ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o
 SOURCES = $(ftpd_SOURCES)
 OBJECTS = $(ftpd_OBJS)
 
-all: ftpd
+all: $(PROGS)
 
 .c.o:
 	$(CC) -c $(CFLAGS) -I$(srcdir) -I../../.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
@@ -63,8 +64,8 @@ uninstall:
 	  rm -f $(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
-ftpd: $(ftpd_OBJS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LIBKAFS) $(LIBKRB) $(LIBOTP) $(LIBDES) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+ftpd$(EXECSUFFIX): $(ftpd_OBJS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(ftpd_OBJS) ../common/libcommon.a $(LIBKAFS) $(LIBKRB) $(LIBOTP) $(LIBDES) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<

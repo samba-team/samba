@@ -29,8 +29,9 @@ LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
 SHARED = @SHARED@
+EXECSUFFIX=@EXECSUFFIX@
 LIB = $(LIBNAME).$(LIBEXT)
-PROGS = otptest
+PROGS = otptest$(EXECSUFFIX)
 
 LIB_SOURCES = otp.c otp_challenge.c otp_db.c otp_md.c \
 	  otp_parse.c otp_print.c otp_verify.c
@@ -65,8 +66,8 @@ uninstall:
 TAGS: $(SOURCES)
 	etags $(SOURCES)
 
-check:	otptest
-	./otptest
+check:	otptest$(EXECSUFFIX)
+	./otptest$(EXECSUFFIX)
 
 clean:
 	rm -f $(LIB) $(PROGS) *.o *.a
@@ -79,7 +80,7 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
-otptest: $(OTPTEST_OBJECTS)
+otptest$(EXECSUFFIX): $(OTPTEST_OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OTPTEST_OBJECTS) -L. -lotp -L../des -ldes $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 $(LIBNAME).a: $(LIB_OBJECTS)

@@ -11,6 +11,10 @@ AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
+LIBNAME = $(LIBPREFIX)telnet
+LIBEXT = @LIBEXT@
+LIBPREFIX = @LIBPREFIX@
+LIB = $(LIBNAME).$(LIBEXT)
 
 prefix = @prefix@
 
@@ -18,16 +22,17 @@ SOURCES=auth.c encrypt.c genget.c enc_des.c misc.c kerberos.c read_password.c
 
 OBJECTS=auth.o encrypt.o genget.o enc_des.o misc.o kerberos.o read_password.o
 
-all: libtelnet.a
+all: $(LIB)
 
 libtop = @libtop@
 
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I../../../include -I../../.. -I$(srcdir)/.. $<
 
-libtelnet.a: $(OBJECTS)
-	$(AR) cr libtelnet.a $(OBJECTS)
-	$(RANLIB) libtelnet.a
+$(LIB): $(OBJECTS)
+	rm -f $@
+	$(AR) cr $@ $(OBJECTS)
+	-$(RANLIB) $@
 
 install:
 	@true

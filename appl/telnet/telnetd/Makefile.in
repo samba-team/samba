@@ -23,8 +23,9 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 libexecdir = @libexecdir@
 transform=@program_transform_name@
+EXECSUFFIX=@EXECSUFFIX@
 
-PROGS = telnetd
+PROGS = telnetd$(EXECSUFFIX)
 
 SOURCES=telnetd.c state.c termstat.c slc.c sys_term.c \
 	utility.c global.c authenc.c
@@ -42,13 +43,13 @@ LIBROKEN	= -L../../../lib/roken -lroken
 KLIB=$(LIBKAFS) $(LIBKRB) $(LIBDES)
 
 
-all: telnetd
+all: $(PROGS)
 
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I../../../include -I.. -I../../.. -I$(srcdir)/.. -I. -I$(srcdir) $<
 
-telnetd: $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnetd $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ $(LIBROKEN)
+telnetd$(EXECSUFFIX): $(OBJECTS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ $(LIBROKEN)
 
 install: all
 	$(MKINSTALLDIRS) $(libexecdir)

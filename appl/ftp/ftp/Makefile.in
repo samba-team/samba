@@ -23,6 +23,7 @@ prefix 	= @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
 transform=@program_transform_name@
+EXECSUFFIX=@EXECSUFFIX@
 
 ATHENA = ../../..
 
@@ -30,7 +31,7 @@ INCTOP = $(ATHENA)/include
 
 LIBTOP = $(ATHENA)/lib
 
-PROGS = ftp
+PROGS = ftp$(EXECSUFFIX)
 
 ftp_OBJS = cmds.o cmdtab.o ftp.o krb4.o main.o ruserpass.o domacro.o \
 	globals.o kauth.o
@@ -57,7 +58,7 @@ uninstall:
 	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
-ftp: $(ftp_OBJS) # ../common/libcommon.a
+ftp$(EXECSUFFIX): $(ftp_OBJS) # ../common/libcommon.a
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(ftp_OBJS) ../common/libcommon.a -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS) -L$(LIBTOP)/roken -lroken
 
 TAGS: $(SOURCES)

@@ -17,12 +17,13 @@ INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
-PROGS = telnet
+PROGS = telnet$(EXECSUFFIX)
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
 transform=@program_transform_name@
+EXECSUFFIX=@EXECSUFFIX@
 
 SOURCES=authenc.c commands.c main.c network.c ring.c \
 	sys_bsd.c telnet.c terminal.c \
@@ -40,13 +41,13 @@ LIBROKEN	= -L../../../lib/roken -lroken
 KLIB=$(LIBKRB) $(LIBDES)
 
 
-all: telnet
+all: $(PROGS)
 
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I../../../include -I.. -I../../.. -I$(srcdir)/.. $<
 
-telnet: $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnet $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ @LIB_setupterm@ $(LIBROKEN)
+telnet$(EXECSUFFIX): $(OBJECTS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ @LIB_setupterm@ $(LIBROKEN)
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)
