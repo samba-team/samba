@@ -300,7 +300,7 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 		return False;
 
 	/* Check if this is our own sid.  This should perhaps be done by
-		winbind?  For the moment handle it here. */
+	   winbind?  For the moment handle it here. */
 
 	if (sid->num_auths == 5) {
 		DOM_SID tmp_sid;
