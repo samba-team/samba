@@ -37,6 +37,13 @@ static files_struct *oplock_save_chain_fsp = NULL;
 
 static int files_used;
 
+/* A singleton cache to speed up searching by dev/inode. */
+static struct fsp_singleton_cache {
+	files_struct *fsp;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+} fsp_fi_cache;
+
 /****************************************************************************
  Return a unique number identifying this fsp over the life of this pid.
 ****************************************************************************/
@@ -122,6 +129,11 @@ files_struct *file_new(connection_struct *conn)
 		 i, fsp->fnum, files_used));
 
 	chain_fsp = fsp;
+
+	/* A new fsp invalidates a negative fsp_fi_cache. */
+	if (fsp_fi_cache.fsp == NULL) {
+		ZERO_STRUCT(fsp_fi_cache);
+	}
 	
 	return fsp;
 }
@@ -299,19 +311,34 @@ files_struct *file_find_fsp(files_struct *orig_fsp)
 
 /****************************************************************************
  Find the first fsp given a device and inode.
+ We use a singleton cache here to speed up searching from getfilepathinfo
+ calls.
 ****************************************************************************/
 
 files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	files_struct *fsp;
 
+	if (fsp_fi_cache.dev == dev && fsp_fi_cache.inode == inode) {
+		/* Positive or negative cache hit. */
+		return fsp_fi_cache.fsp;
+	}
+
+	fsp_fi_cache.dev = dev;
+	fsp_fi_cache.inode = inode;
+
 	for (fsp=Files;fsp;fsp=fsp->next) {
 		if ( fsp->fd != -1 &&
 				fsp->dev == dev &&
-				fsp->inode == inode )
+				fsp->inode == inode ) {
+			/* Setup positive cache. */
+			fsp_fi_cache.fsp = fsp;
 			return fsp;
+		}
 	}
 
+	/* Setup negative cache. */
+	fsp_fi_cache.fsp = NULL;
 	return NULL;
 }
 
@@ -342,10 +369,33 @@ files_struct *file_find_print(void)
 	files_struct *fsp;
 
 	for (fsp=Files;fsp;fsp=fsp->next) {
-		if (fsp->print_file) return fsp;
+		if (fsp->print_file) {
+			return fsp;
+		}
 	} 
 
 	return NULL;
+}
+
+/****************************************************************************
+ Set a pending modtime across all files with a given dev/ino pair.
+****************************************************************************/
+
+void fsp_set_pending_modtime(files_struct *tfsp, time_t pmod)
+{
+	files_struct *fsp;
+
+	if (null_mtime(pmod)) {
+		return;
+	}
+
+	for (fsp = Files;fsp;fsp=fsp->next) {
+		if ( fsp->fd != -1 &&
+				fsp->dev == tfsp->dev &&
+				fsp->inode == tfsp->inode ) {
+			fsp->pending_modtime = pmod;
+		}
+	}
 }
 
 /****************************************************************************
@@ -390,6 +440,11 @@ void file_free(files_struct *fsp)
 
 	if (fsp == chain_fsp) {
 		chain_fsp = NULL;
+	}
+
+	/* Closing a file can invalidate the positive cache. */
+	if (fsp == fsp_fi_cache.fsp) {
+		ZERO_STRUCT(fsp_fi_cache);
 	}
 
 	SAFE_FREE(fsp);
