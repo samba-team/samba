@@ -248,7 +248,7 @@ send_via_proxy (krb5_context context,
     struct addrinfo hints;
     struct addrinfo *ai, *a;
     int ret;
-    int s;
+    int s = -1;
     char portstr[NI_MAXSERV];
 		 
     if (proxy == NULL)
