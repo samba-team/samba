@@ -196,7 +196,7 @@ encode_octet_string (unsigned char *p, int len, krb5_data *k)
   return ret;
 }
 
-static void
+void
 time2generalizedtime (time_t t, krb5_data *s)
 {
      struct tm *tm;
