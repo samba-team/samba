@@ -154,7 +154,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		return False;
 	}
 
-	total_recs = file_size(fname) / sizeof(crec);
+	total_recs = get_file_size(fname) / sizeof(crec);
 			
 	/* find a free spot */
 	for (i=0;i<max_connections;i++) {

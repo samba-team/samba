@@ -296,6 +296,7 @@ typedef struct
   char *volume;
   char *fstype;
   int  iMinPrintSpace;
+  int  iWriteCacheSize;
   int  iCreate_mask;
   int  iCreate_force_mode;
   int  iSecurity_mask;
@@ -397,6 +398,7 @@ static service sDefault =
   NULL,    /* volume */
   NULL,    /* fstype */
   0,       /* iMinPrintSpace */
+  0,       /* iWriteCacheSize */
   0744,    /* iCreate_mask */
   0000,    /* iCreate_force_mode */
   -1,      /* iSecurity_mask */
@@ -675,6 +677,7 @@ static struct parm_struct parm_table[] =
   {"stat cache size",  P_INTEGER, P_GLOBAL, &Globals.stat_cache_size,   NULL,   NULL,  0},
   {"strict sync",      P_BOOL,    P_LOCAL,  &sDefault.bStrictSync,      NULL,   NULL,  FLAG_SHARE},
   {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL,  FLAG_SHARE},
+  {"write cache size", P_INTEGER, P_LOCAL,  &sDefault.iWriteCacheSize,  NULL,   NULL,  FLAG_SHARE},
 
   {"Printing Options", P_SEP, P_SEPARATOR},
   {"load printers",    P_BOOL,    P_GLOBAL, &Globals.bLoadPrinters,     NULL,   NULL,  FLAG_PRINT},
@@ -1393,6 +1396,7 @@ FN_LOCAL_INTEGER(lp_defaultcase,iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace,iMinPrintSpace)
 FN_LOCAL_INTEGER(lp_printing,iPrinting)
 FN_LOCAL_INTEGER(lp_oplock_contention_limit,iOplockContentionLimit)
+FN_LOCAL_INTEGER(lp_write_cache_size,iWriteCacheSize)
 
 FN_LOCAL_CHAR(lp_magicchar,magic_char)
 

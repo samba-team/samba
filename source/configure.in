@@ -1308,25 +1308,6 @@ AC_ARG_WITH(ssl,
   AC_MSG_RESULT(no)
 )
 
-
-#################################################
-# check for experimental mmap support
-AC_MSG_CHECKING(whether to use MMAP)
-AC_ARG_WITH(mmap,
-[  --with-mmap     Include experimental MMAP support
-  --without-mmap  Don't include MMAP support (default)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_MMAP)
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
 #################################################
 # check for syslog logging
 AC_MSG_CHECKING(whether to use syslog logging)

@@ -79,14 +79,14 @@ int dos_PutUniCode(char *dst,const char *src, ssize_t len)
  Skip past some unicode strings in a buffer.
 ********************************************************************/
 
-char *skip_unicode_string(const char *buf,int n)
+char *skip_unicode_string(char *buf,int n)
 {
 	while (n--) {
 		while (*buf)
 			buf += 2;
 		buf += 2;
 	}
-	return((char *)buf);
+	return(buf);
 }
 
 /*******************************************************************

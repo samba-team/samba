@@ -227,7 +227,7 @@ int name_mangle( char *In, char *Out, char name_type );
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
 time_t file_modtime(char *fname);
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st);
-SMB_OFF_T file_size(char *file_name);
+SMB_OFF_T get_file_size(char *file_name);
 char *attrib_string(uint16 mode);
 void unix_format(char *fname);
 void dos_format(char *fname);
@@ -408,7 +408,7 @@ char *string_truncate(char *s, int length);
 /*The following definitions come from  lib/util_unistr.c  */
 
 int dos_PutUniCode(char *dst,const char *src, ssize_t len);
-char *skip_unicode_string(const char *buf,int n);
+char *skip_unicode_string(char *buf,int n);
 char *dos_unistrn2(uint16 *src, int len);
 char *dos_unistr2(uint16 *src);
 char *dos_unistr2_to_str(UNISTR2 *str);
@@ -1200,6 +1200,7 @@ int lp_defaultcase(int );
 int lp_minprintspace(int );
 int lp_printing(int );
 int lp_oplock_contention_limit(int );
+int lp_write_cache_size(int );
 char lp_magicchar(int );
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
@@ -2428,8 +2429,12 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 /*The following definitions come from  smbd/fileio.c  */
 
 SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos);
+BOOL read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n);
+void delete_write_cache(files_struct *fsp);
+void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size);
+ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason);
 void sync_file(connection_struct *conn, files_struct *fsp);
 
 /*The following definitions come from  smbd/filename.c  */

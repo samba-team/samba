@@ -2073,6 +2073,8 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
   CHECK_FSP(fsp,conn);
 
+  flush_write_cache(fsp, READRAW_FLUSH);
+
   startpos = IVAL(inbuf,smb_vwv1);
   if(CVAL(inbuf,smb_wct) == 10) {
     /*
@@ -2534,9 +2536,10 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   /* X/Open SMB protocol says that if smb_vwv1 is
      zero then the file size should be extended or
      truncated to the size given in smb_vwv[2-3] */
-  if(numtowrite == 0)
-    nwritten = set_filelen(fsp->fd_ptr->fd, (SMB_OFF_T)startpos);
-  else
+  if(numtowrite == 0) {
+    if((nwritten = set_filelen(fsp->fd_ptr->fd, (SMB_OFF_T)startpos)) >= 0)
+      set_filelen_write_cache(fsp, startpos); 
+  } else
     nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
@@ -2654,6 +2657,8 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
+
+  flush_write_cache(fsp, SEEK_FLUSH);
 
   mode = SVAL(inbuf,smb_vwv1) & 3;
   startpos = IVALS(inbuf,smb_vwv2);

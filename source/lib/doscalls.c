@@ -315,7 +315,7 @@ time_t dos_file_modtime(char *fname)
 
 SMB_OFF_T dos_file_size(char *file_name)
 {
-  return file_size(dos_to_unix(file_name, False));
+  return get_file_size(dos_to_unix(file_name, False));
 }
 
 /*******************************************************************

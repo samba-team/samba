@@ -392,7 +392,7 @@ BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
 /*******************************************************************
 returns the size in bytes of the named file
 ********************************************************************/
-SMB_OFF_T file_size(char *file_name)
+SMB_OFF_T get_file_size(char *file_name)
 {
   SMB_STRUCT_STAT buf;
   buf.st_size = 0;
@@ -3169,13 +3169,13 @@ char *smbd_mktemp(char *template)
 {
 	char *p = mktemp(template);
 	char *p2;
-	struct stat st;
+	SMB_STRUCT_STAT st;
 
 	if (!p) return NULL;
 
 	while ((p2=strchr(p,'%'))) {
 		p2[0] = 'A';
-		while (stat(p,&st) == 0 && p2[0] < 'Z') {
+		while (sys_stat(p,&st) == 0 && p2[0] < 'Z') {
 			/* damn, it exists */
 			p2[0]++;
 		}

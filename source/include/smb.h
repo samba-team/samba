@@ -608,6 +608,23 @@ struct current_user
 	gid_t *groups;
 };
 
+typedef struct write_cache
+{
+    SMB_OFF_T file_size;
+    SMB_OFF_T offset;
+    size_t alloc_size;
+    size_t data_size;
+    char *data;
+} write_cache;
+
+/*
+ * Reasons for cache flush.
+ */
+
+#define NUM_FLUSH_REASONS 8 /* Keep this in sync with the enum below. */
+enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
+                         OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH };     
+
 typedef struct files_struct
 {
 	struct files_struct *next, *prev;
@@ -618,9 +635,8 @@ typedef struct files_struct
 	SMB_OFF_T size;
 	mode_t mode;
 	uint16 vuid;
-	char *mmap_ptr;
-	SMB_OFF_T mmap_size;
 	write_bmpx_struct *wbmpx_ptr;
+    write_cache *wcp;
 	struct timeval open_time;
 	int share_mode;
 	time_t pending_modtime;

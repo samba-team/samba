@@ -1971,6 +1971,9 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
     } else {
       set_filelen(fd, size);
     }
+
+    if(fsp)
+      set_filelen_write_cache(fsp, size);
   }
 
   SSVAL(params,0,0);

@@ -39,6 +39,9 @@
    quite large. */
 #define MAX_DIRECTORY_HANDLES 2048
 
+/* maximum number of file caches per smbd */
+#define MAX_WRITE_CACHES 10
+
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY
 #define SYSLOG_FACILITY LOG_DAEMON
