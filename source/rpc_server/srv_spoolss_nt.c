@@ -3402,16 +3402,21 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 		}
 
 		acl = secdesc_ctr->sec->dacl;
-		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
-			   PRINTERNAME(snum), acl->num_aces));
 
-		for (i = 0; i < acl->num_aces; i++) {
-			fstring sid_str;
+		if (acl) {
+			DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
+				   PRINTERNAME(snum), acl->num_aces));
 
-			sid_to_string(sid_str, &acl->ace[i].sid);
-
-			DEBUG(10, ("%s 0x%08x\n", sid_str, 
-				   acl->ace[i].info.mask));
+			for (i = 0; i < acl->num_aces; i++) {
+				fstring sid_str;
+				
+				sid_to_string(sid_str, &acl->ace[i].sid);
+				
+				DEBUG(10, ("%s 0x%08x\n", sid_str, 
+					   acl->ace[i].info.mask));
+			}
+		} else {
+			DEBUG(10, ("dacl for secdesc_ctr is NULL\n"));
 		}
 	}
 
@@ -3532,6 +3537,13 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 
 /* Return true if two devicemodes are equal */
 
+#define DEVMODE_CHECK_INT(field) \
+    if (d1->field != d2->field) { \
+        DEBUG(10, ("nt_devicemode_equal(): " #field " not equal (%d != %d)\n", \
+            d1->field, d2->field)); \
+        return False; \
+    }
+
 static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
 {
 	if (!d1 && !d2) goto equal;  /* if both are NULL they are equal */
@@ -3547,55 +3559,44 @@ static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
 		return False;
 	}
 
-	if (d1->specversion != d2->specversion ||
-	    d1->driverversion != d2->driverversion ||
-	    d1->size != d2->size ||
-	    d1->driverextra != d2->driverextra ||
-	    d1->orientation != d2->orientation ||
-	    d1->papersize != d2->papersize ||
-	    d1->paperlength != d2->paperlength ||
-	    d1->paperwidth != d2->paperwidth ||
-	    d1->scale != d2->scale ||
-	    d1->copies != d2->copies ||
-	    d1->defaultsource != d2->defaultsource ||
-	    d1->printquality != d2->printquality ||
-	    d1->color != d2->color ||
-	    d1->duplex != d2->duplex ||
-	    d1->yresolution != d2->yresolution ||
-	    d1->ttoption != d2->ttoption ||
-	    d1->collate != d2->collate ||
-	    d1->logpixels != d2->logpixels) {
-		DEBUG(10, ("nt_devicemode_equal(): specversion-logpixels "
-			   "not equal\n"));
-		return False;
-	}
+	DEVMODE_CHECK_INT(specversion);
+	DEVMODE_CHECK_INT(driverversion);
+	DEVMODE_CHECK_INT(driverextra);
+	DEVMODE_CHECK_INT(orientation);
+	DEVMODE_CHECK_INT(papersize);
+	DEVMODE_CHECK_INT(paperlength);
+	DEVMODE_CHECK_INT(paperwidth);
+	DEVMODE_CHECK_INT(scale);
+	DEVMODE_CHECK_INT(copies);
+	DEVMODE_CHECK_INT(defaultsource);
+	DEVMODE_CHECK_INT(printquality);
+	DEVMODE_CHECK_INT(color);
+	DEVMODE_CHECK_INT(duplex);
+	DEVMODE_CHECK_INT(yresolution);
+	DEVMODE_CHECK_INT(ttoption);
+	DEVMODE_CHECK_INT(collate);
+	DEVMODE_CHECK_INT(logpixels);
 
-	if (d1->fields != d2->fields ||
-	    d1->bitsperpel != d2->bitsperpel ||
-	    d1->pelswidth != d2->pelswidth ||
-	    d1->pelsheight != d2->pelsheight ||
-	    d1->displayflags != d2->displayflags ||
-	    d1->displayfrequency != d2->displayfrequency ||
-	    d1->icmmethod != d2->icmmethod ||
-	    d1->icmintent != d2->icmintent ||
-	    d1->mediatype != d2->mediatype ||
-	    d1->dithertype != d2->dithertype ||
-	    d1->reserved1 != d2->reserved1 ||
-	    d1->reserved2 != d2->reserved2 ||
-	    d1->panningwidth != d2->panningwidth ||
-	    d1->panningheight != d2->panningheight) {
-		DEBUG(10, ("nt_devicemode_equal(): fields-panningheight "
-			   "not equal\n"));
-		return False;
-	}
+	DEVMODE_CHECK_INT(fields);
+	DEVMODE_CHECK_INT(bitsperpel);
+	DEVMODE_CHECK_INT(pelswidth);
+	DEVMODE_CHECK_INT(pelsheight);
+	DEVMODE_CHECK_INT(displayflags);
+	DEVMODE_CHECK_INT(displayfrequency);
+	DEVMODE_CHECK_INT(icmmethod);
+	DEVMODE_CHECK_INT(icmintent);
+	DEVMODE_CHECK_INT(mediatype);
+	DEVMODE_CHECK_INT(dithertype);
+	DEVMODE_CHECK_INT(reserved1);
+	DEVMODE_CHECK_INT(reserved2);
+	DEVMODE_CHECK_INT(panningwidth);
+	DEVMODE_CHECK_INT(panningheight);
 
 	/* compare the private data if it exists */
 	if (!d1->driverextra && !d2->driverextra) goto equal;
 
-	if (d1->driverextra != d2->driverextra) {
-		DEBUG(10, ("nt_devicemode_equal(): driverextra not equal\n"));
-		return False;
-	}
+
+	DEVMODE_CHECK_INT(driverextra);
 
 	if (memcmp(d1->private, d2->private, d1->driverextra)) {
 		DEBUG(10, ("nt_devicemode_equal(): private data not equal\n"));
@@ -3629,21 +3630,40 @@ static BOOL nt_printer_param_equal(NT_PRINTER_PARAM *p1,
 
 		while(q) {
 
-			if (strequal(p1->value, q->value) &&
-			    p1->type == q->type &&
-			    p1->data_len == q->data_len &&
-			    memcmp(p1->data, q->data, p1->data_len) == 0) {
-				found = True;
-				goto found_it;
+			if (strequal(p1->value, q->value)) {
+
+				if (p1->type != q->type) {
+					DEBUG(10, ("nt_printer_param_equal():"
+						   "types for %s differ (%d != %d)\n",
+						   p1->value, p1->type,
+						   q->type));
+					break;
+				}
+
+				if (p1->data_len != q->data_len) {
+					DEBUG(10, ("nt_printer_param_equal():"
+						   "len for %s differs (%d != %d)\n",
+						   p1->value, p1->data_len,
+						   q->data_len));
+					break;
+				}
+
+				if (memcmp(p1->data, q->data, p1->data_len) == 0) {
+					found = True;
+				} else {
+					DEBUG(10, ("nt_printer_param_equal():"
+						   "data for %s differs\n", p1->value));
+				}
+
+				break;
 			}
 
 			q = q->next;
 		}
 
-	found_it:
 		if (!found) {
 			DEBUG(10, ("nt_printer_param_equal(): param %s "
-				   "differs\n", p1->value));
+				   "does not exist\n", p1->value));
 			return False;
 		}
 
@@ -3660,6 +3680,20 @@ static BOOL nt_printer_param_equal(NT_PRINTER_PARAM *p1,
  * Called by update_printer when trying to work out whether to
  * actually update printer info.
  ********************************************************************/
+
+#define PI_CHECK_INT(field) \
+    if (pi1->field != pi2->field) { \
+        DEBUG(10, ("nt_printer_info_level_equal(): " #field " not equal (%d != %d)\n", \
+            pi1->field, pi2->field)); \
+        return False; \
+    }
+
+#define PI_CHECK_STR(field) \
+    if (!strequal(pi1->field, pi2->field)) { \
+        DEBUG(10, ("nt_printer_info_level_equal(): " #field " not equal (%s != %s)\n", \
+            pi1->field, pi2->field)); \
+        return False; \
+    }
 
 static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 					NT_PRINTER_INFO_LEVEL *p2)
@@ -3687,44 +3721,32 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	pi1 = p1->info_2;
 	pi2 = p2->info_2;
 
-	if (pi1->attributes != pi2->attributes ||
-	    pi1->priority != pi2->priority ||
-	    pi1->default_priority != pi2->default_priority ||
-	    pi1->starttime != pi2->starttime ||
-	    pi1->untiltime != pi2->untiltime ||
-	    pi1->averageppm != pi2->averageppm) {
-		DEBUG(10, ("nt_printer_info_level_equal(): attr-ppm values "
-			   "differ\n"));
-		return False;
-	}
+	PI_CHECK_INT(attributes);
+	PI_CHECK_INT(priority);
+	PI_CHECK_INT(default_priority);
+	PI_CHECK_INT(starttime);
+	PI_CHECK_INT(untiltime);
+	PI_CHECK_INT(averageppm);
 
 	/* Yuck - don't check the printername or servername as the
 	   add_a_printer() code plays games with them.  You can't
 	   change the printername or the sharename through this interface
 	   in Samba. */
 
-	if (!strequal(pi1->sharename, pi2->sharename) ||
-	    !strequal(pi1->portname, pi2->portname) ||
-	    !strequal(pi1->drivername, pi2->drivername) ||
-	    !strequal(pi1->comment, pi2->comment) ||
-	    !strequal(pi1->location, pi2->location)) {
-		DEBUG(10, ("nt_printer_info_level_equal(): values for names "
-			   "differ\n"));
-		return False;
-	}
+	PI_CHECK_STR(sharename);
+	PI_CHECK_STR(portname);
+	PI_CHECK_STR(drivername);
+	PI_CHECK_STR(comment);
+	PI_CHECK_STR(location);
 
 	if (!nt_devicemode_equal(pi1->devmode, pi2->devmode)) {
 		return False;
 	}
 
-	if (!strequal(pi1->sepfile, pi2->sepfile) ||
-	    !strequal(pi1->printprocessor, pi2->printprocessor) ||
-	    !strequal(pi1->datatype, pi2->datatype) ||
-	    !strequal(pi1->parameters, pi2->parameters)) {
-		DEBUG(10, ("nt_printer_info_level_equal(): sep-params values "
-			   "differ\n"));
-		return False;
-	}
+	PI_CHECK_STR(sepfile);
+	PI_CHECK_STR(printprocessor);
+	PI_CHECK_STR(datatype);
+	PI_CHECK_STR(parameters);
 
 	if (!nt_printer_param_equal(pi1->specific, pi2->specific)) {
 		return False;
@@ -3734,13 +3756,9 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 		return False;
 	}
 
-	if (pi1->changeid != pi2->changeid ||
-	    pi1->c_setprinter != pi2->c_setprinter ||
-	    pi1->setuptime != pi2->setuptime) {
-		DEBUG(10, ("nt_printer_info_level_equal(): id-setuptime "
-			   "values differ\n"));
-		return False;
-	}
+	PI_CHECK_INT(changeid);
+	PI_CHECK_INT(c_setprinter);
+	PI_CHECK_INT(setuptime);
 
  equal:
 	DEBUG(10, ("nt_printer_info_level_equal(): infos are identical\n"));
