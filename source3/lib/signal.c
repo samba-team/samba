@@ -57,8 +57,6 @@ static void sig_cld_leave_status(int signum)
 
 #if !defined(HAVE_SIGACTION)
 	CatchSignal(SIGCLD, sig_cld_leave_status);
-#else
-	;
 #endif
 }
 
