@@ -179,6 +179,7 @@ typedef struct
 	int maxprotocol;
 	int minprotocol;
 	int security;
+	char **AuthMethods;
 	BOOL paranoid_server_security;
 	int maxdisksize;
 	int lpqcachetime;
@@ -238,7 +239,6 @@ typedef struct
 	BOOL bNullPasswords;
 	BOOL bObeyPamRestrictions;
 	BOOL bLoadPrinters;
-	BOOL bUseRhosts;
 	BOOL bLargeReadwrite;
 	BOOL bReadRaw;
 	BOOL bWriteRaw;
@@ -261,7 +261,6 @@ typedef struct
 	BOOL bRestrictAnonymous;
 	BOOL bLanmanAuth;
 	BOOL bNTLMAuth;
-	BOOL bPlaintextToSmbpasswd;
 	BOOL bDebugHiresTimestamp;
 	BOOL bDebugPid;
 	BOOL bDebugUid;
@@ -661,6 +660,7 @@ static struct parm_struct parm_table[] = {
 	{"Security Options", P_SEP, P_SEPARATOR},
 	
 	{"security", P_ENUM, P_GLOBAL, &Globals.security, NULL, enum_security, FLAG_BASIC},
+	{"auth methods", P_LIST, P_GLOBAL, &Globals.AuthMethods, NULL, NULL, FLAG_BASIC},
 	{"encrypt passwords", P_BOOL, P_GLOBAL, &Globals.bEncryptPasswords, NULL, NULL, FLAG_BASIC},
 	{"update encrypted", P_BOOL, P_GLOBAL, &Globals.bUpdateEncrypt, NULL, NULL, FLAG_BASIC},
 	{"allow trusted domains", P_BOOL, P_GLOBAL, &Globals.bAllowTrustedDomains, NULL, NULL, 0},
@@ -691,8 +691,6 @@ static struct parm_struct parm_table[] = {
 	{"restrict anonymous", P_BOOL, P_GLOBAL, &Globals.bRestrictAnonymous, NULL, NULL, 0},
 	{"lanman auth", P_BOOL, P_GLOBAL, &Globals.bLanmanAuth, NULL, NULL, 0},
 	{"ntlm auth", P_BOOL, P_GLOBAL, &Globals.bNTLMAuth, NULL, NULL, 0},
-	{"plaintext to smbpasswd", P_BOOL, P_GLOBAL, &Globals.bPlaintextToSmbpasswd, NULL, NULL, 0},
-	{"use rhosts", P_BOOL, P_GLOBAL, &Globals.bUseRhosts, NULL, NULL, 0},
 	
 	{"username", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"user", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, 0},
@@ -1191,7 +1189,7 @@ static void init_globals(void)
 	string_set(&Globals.szPassdbModulePath, "");
 
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
-	
+
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
@@ -1218,7 +1216,6 @@ static void init_globals(void)
 	string_set(&Globals.szNameResolveOrder, "lmhosts wins host bcast");
 
 	Globals.bLoadPrinters = True;
-	Globals.bUseRhosts = False;
 	Globals.max_packet = 65535;
 	Globals.mangled_stack = 50;
 	Globals.max_xmit = 65535;
@@ -1281,7 +1278,6 @@ static void init_globals(void)
 	Globals.bRestrictAnonymous = False;
 	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
 	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is available (otherwise NTLMv2) */
-	Globals.bPlaintextToSmbpasswd = False;	/* Check the passwords with smbpasswd, even if in plaintext */
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
@@ -1543,7 +1539,6 @@ FN_GLOBAL_BOOL(lp_wins_proxy, &Globals.bWINSproxy)
 FN_GLOBAL_BOOL(lp_local_master, &Globals.bLocalMaster)
 FN_GLOBAL_BOOL(lp_domain_logons, &Globals.bDomainLogons)
 FN_GLOBAL_BOOL(lp_load_printers, &Globals.bLoadPrinters)
-FN_GLOBAL_BOOL(lp_use_rhosts, &Globals.bUseRhosts)
 FN_GLOBAL_BOOL(lp_readprediction, &Globals.bReadPrediction)
 FN_GLOBAL_BOOL(lp_readbmpx, &Globals.bReadbmpx)
 FN_GLOBAL_BOOL(lp_readraw, &Globals.bReadRaw)
@@ -1573,7 +1568,6 @@ FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
 FN_GLOBAL_BOOL(lp_restrict_anonymous, &Globals.bRestrictAnonymous)
 FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
 FN_GLOBAL_BOOL(lp_ntlm_auth, &Globals.bNTLMAuth)
-FN_GLOBAL_BOOL(lp_plaintext_to_smbpasswd, &Globals.bPlaintextToSmbpasswd)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
 FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_BOOL(lp_enhanced_browsing, &Globals.enhanced_browsing)
@@ -1594,6 +1588,7 @@ FN_GLOBAL_INTEGER(lp_deadtime, &Globals.deadtime)
 FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_minprotocol, &Globals.minprotocol)
 FN_GLOBAL_INTEGER(lp_security, &Globals.security)
+FN_GLOBAL_LIST(lp_auth_methods, &Globals.AuthMethods)
 FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)

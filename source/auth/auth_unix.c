@@ -82,7 +82,10 @@ check if a username/password is OK assuming the password
 in PLAIN TEXT
 ****************************************************************************/
 
-NTSTATUS check_unix_security(const auth_usersupplied_info *user_info, auth_serversupplied_info **server_info)
+NTSTATUS check_unix_security(void *my_private_data,
+			     const auth_usersupplied_info *user_info, 
+			     const auth_authsupplied_info *auth_info,
+			     auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	struct passwd *pass = NULL;
@@ -104,9 +107,19 @@ NTSTATUS check_unix_security(const auth_usersupplied_info *user_info, auth_serve
 		if (pass) {
 			make_server_info_pw(server_info, pass);
 		} else {
+			/* we need to do somthing more useful here */
 			nt_status = NT_STATUS_NO_SUCH_USER;
 		}
 	}
 
 	return nt_status;
+}
+
+BOOL auth_init_unix(auth_methods **auth_method) 
+{
+	if (!make_auth_methods(auth_method)) {
+		return False;
+	}
+	(*auth_method)->auth = check_unix_security;
+	return True;
 }

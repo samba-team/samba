@@ -23,48 +23,8 @@
 
 #include "includes.h"
 
-/* Data to do lanman1/2 password challenge. */
-static unsigned char saved_challenge[8];
-static BOOL challenge_sent=False;
 extern fstring remote_machine;
 extern pstring global_myname;
-
-/*******************************************************************
- Get the next challenge value - no repeats.
-********************************************************************/
-
-void generate_next_challenge(char *challenge)
-{
-	unsigned char buf[8];
-
-	generate_random_buffer(buf,8,False);
-	memcpy(saved_challenge, buf, 8);
-	memcpy(challenge,buf,8);
-	challenge_sent = True;
-}
-
-/*******************************************************************
- Set the last challenge sent, usually from a password server.
-********************************************************************/
-
-BOOL set_challenge(unsigned char *challenge)
-{
-	memcpy(saved_challenge,challenge,8);
-	challenge_sent = True;
-	return(True);
-}
-
-/*******************************************************************
- Get the last challenge sent.
-********************************************************************/
-
-BOOL last_challenge(unsigned char *challenge)
-{
-	if (!challenge_sent)
-		return(False);
-	memcpy(challenge,saved_challenge,8);
-	return(True);
-}
 
 /****************************************************************************
  Create a UNIX user on demand.
@@ -166,7 +126,6 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 			   const char *client_domain, 
 			   const char *domain,
 			   const char *wksta_name, 
-			   DATA_BLOB sec_blob, 
 			   DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
 			   DATA_BLOB plaintext, 
 			   uint32 ntlmssp_flags, BOOL encrypted)
@@ -226,7 +185,6 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 
 	DEBUG(5,("makeing blobs for %s's user_info struct\n", internal_username));
 
-	(*user_info)->sec_blob = data_blob(sec_blob.data, sec_blob.length);
 	(*user_info)->lm_resp = data_blob(lm_pwd.data, lm_pwd.length);
 	(*user_info)->nt_resp = data_blob(nt_pwd.data, nt_pwd.length);
 	(*user_info)->plaintext_password = data_blob(plaintext.data, plaintext.length);
@@ -246,7 +204,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 BOOL make_user_info_map(auth_usersupplied_info **user_info, 
 			const char *smb_name, 
 			const char *client_domain, 
-			const char *wksta_name, DATA_BLOB sec_blob, 
+			const char *wksta_name, 
 			DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
 			DATA_BLOB plaintext, 
 			uint32 ntlmssp_flags, BOOL encrypted)
@@ -265,7 +223,7 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 	return make_user_info(user_info, 
 			      smb_name, internal_username,
 			      client_domain, domain,
-			      wksta_name, sec_blob,
+			      wksta_name, 
 			      lm_pwd, nt_pwd,
 			      plaintext, 
 			      ntlmssp_flags, encrypted);
@@ -280,12 +238,11 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info, 
 				     char *smb_name, 
 				     char *client_domain, 
-				     char *wksta_name, uchar chal[8],
+				     char *wksta_name, 
 				     uchar *lm_network_pwd, int lm_pwd_len,
 				     uchar *nt_network_pwd, int nt_pwd_len)
 {
 	BOOL ret;
-	DATA_BLOB sec_blob = data_blob(chal, sizeof(chal));
 	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
 	DATA_BLOB nt_blob = data_blob(nt_network_pwd, nt_pwd_len);
 	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
@@ -301,8 +258,8 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 
 	ret = make_user_info_map(user_info, 
 				 smb_name, client_domain, 
-				 wksta_name, sec_blob, 
-				 nt_blob, lm_blob,
+				 wksta_name, 
+				 lm_blob, nt_blob,
 				 plaintext_blob, 
 				 ntlmssp_flags, True);
 		
@@ -320,6 +277,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 					 char *smb_name, 
 					 char *client_domain, 
 					 char *wksta_name, 
+					 char chal[8], 
 					 uchar lm_interactive_pwd[16], 
 					 uchar nt_interactive_pwd[16], 
 					 uchar *dc_sess_key)
@@ -329,11 +287,8 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
 	unsigned char key[16];
-	uint8 chal[8];
 	uint32 ntlmssp_flags = 0;
 	
-	generate_random_buffer(chal, 8, False);
-
 	ZERO_STRUCT(key);
 	memcpy(key, dc_sess_key, 8);
 	
@@ -362,7 +317,6 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 	dump_data(100, nt_pwd, sizeof(nt_pwd));
 #endif
 	
-	generate_random_buffer(chal, 8, False);
 	SMBOWFencrypt((const unsigned char *)lm_pwd, chal, local_lm_response);
 	SMBOWFencrypt((const unsigned char *)nt_pwd, chal, local_nt_response);
 	
@@ -373,7 +327,6 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 
 	{
 		BOOL ret;
-		DATA_BLOB sec_blob = data_blob(chal, sizeof(chal));
 		DATA_BLOB local_lm_blob = data_blob(local_lm_response, sizeof(local_lm_response));
 		DATA_BLOB local_nt_blob = data_blob(local_nt_response, sizeof(local_nt_response));
 		DATA_BLOB plaintext_blob = data_blob(NULL, 0);
@@ -385,7 +338,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 
 		ret = make_user_info_map(user_info, 
 					 smb_name, client_domain, 
-					 wksta_name, sec_blob, 
+					 wksta_name, 
 					 local_lm_blob,
 					 local_nt_blob,
 					 plaintext_blob, 
@@ -402,13 +355,14 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 ****************************************************************************/
 
 BOOL make_user_info_winbind(auth_usersupplied_info **user_info, 
-                            char *username,
-                            char *domain, 
-                            char *password)
+                            const char *username,
+                            const char *domain, 
+                            const char *password,
+			    char chal[8] /* Give winbind back the challange we used */
+	)
 {
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
-	char chal[8];
 	DATA_BLOB local_lm_blob;
 	DATA_BLOB local_nt_blob;
 	DATA_BLOB plaintext_blob;
@@ -453,16 +407,11 @@ BOOL make_user_info_winbind(auth_usersupplied_info **user_info,
 
 	{
 		BOOL ret;
-		DATA_BLOB sec_blob = data_blob(chal, sizeof(chal));
-		
-		if (!sec_blob.data) {
-			return False;
-		}
 
 		ret = make_user_info(user_info, 
 				     username, username,
 				     domain, domain, 
-				     global_myname, sec_blob, 
+				     global_myname, 
 				     local_nt_blob,
 				     local_lm_blob,
 				     plaintext_blob, 
@@ -483,12 +432,10 @@ BOOL make_user_info_winbind(auth_usersupplied_info **user_info,
 BOOL make_user_info_winbind_crap(auth_usersupplied_info **user_info, 
 				 char *smb_name, 
 				 char *client_domain, 
-				 uchar chal[8],
 				 uchar *lm_network_pwd, int lm_pwd_len,
 				 uchar *nt_network_pwd, int nt_pwd_len)
 {
 	BOOL ret;
-	DATA_BLOB sec_blob = data_blob(chal, 8);
 	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
 	DATA_BLOB nt_blob = data_blob(nt_network_pwd, nt_pwd_len);
 	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
@@ -502,7 +449,7 @@ BOOL make_user_info_winbind_crap(auth_usersupplied_info **user_info,
 	ret = make_user_info(user_info, 
 			     smb_name, smb_name, 
 			     client_domain, client_domain, 
-			     global_myname, sec_blob, 
+			     global_myname, 
 			     nt_blob, lm_blob,
 			     plaintext_blob, 
 			     ntlmssp_flags, True);
@@ -517,59 +464,30 @@ BOOL make_user_info_winbind_crap(auth_usersupplied_info **user_info,
 ****************************************************************************/
 
 BOOL make_user_info_for_reply(auth_usersupplied_info **user_info, 
-			      char *smb_name,
-			      char *client_domain, 
-			      DATA_BLOB lm_resp, DATA_BLOB nt_resp,
-			      DATA_BLOB plaintext_password,
-			      BOOL encrypted)
+			      char *smb_name, 
+			      char *client_domain,
+			      char chal[8],
+			      DATA_BLOB plaintext_password)
 {
-	uchar chal[8];
 
 	DATA_BLOB local_lm_blob;
 	DATA_BLOB local_nt_blob;
-	DATA_BLOB sec_blob;
 	BOOL ret = False;
 	uint32 ntlmssp_flags = 0;
 			
-	if (encrypted) {
-		DATA_BLOB no_plaintext_blob = data_blob(NULL, 0); 
-		if (!last_challenge(chal)) {
-			DEBUG(0,("Encrypted login but no challange set!\n"));
-			return False;
-		}
-		sec_blob = data_blob(chal, 8);
-		
-		if (lm_resp.length == 24) {
-			ntlmssp_flags |= NTLMSSP_NEGOTIATE_OEM;
-		}
-		if (nt_resp.length == 0) {
-		} else if (nt_resp.length == 24) {
-			ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM;
-		} else {
-			ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM2;
-		}
-
-		return make_user_info_map(user_info, smb_name, 
-					  client_domain, 
-					  remote_machine, sec_blob,
-					  lm_resp, 
-					  nt_resp, 
-					  no_plaintext_blob, 
-					  ntlmssp_flags, encrypted);
-	}
-
-	generate_random_buffer(chal, 8, False);
-
-	sec_blob = data_blob(chal, 8);
-	
 	/*
 	 * Not encrypted - do so.
 	 */
 	
-	DEBUG(5,("pass_check_smb: User passwords not in encrypted format.\n"));
+	DEBUG(5,("make_user_info_for_reply: User passwords not in encrypted format.\n"));
 	
 	if (plaintext_password.data) {
 		unsigned char local_lm_response[24];
+		
+#ifdef DEBUG_PASSWORD
+		DEBUG(10,("Unencrypted password (len %d):\n",plaintext_password.length));
+		dump_data(100, plaintext_password.data, plaintext_password.length);
+#endif
 
 		SMBencrypt( (const uchar *)plaintext_password.data, chal, local_lm_response);
 		local_lm_blob = data_blob(local_lm_response, 24);
@@ -587,14 +505,46 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 	ret = make_user_info_map(user_info, smb_name,
 				 client_domain, 
 				 remote_machine,
-				 sec_blob,
 				 local_lm_blob,
 				 local_nt_blob,
 				 plaintext_password, 
-				 ntlmssp_flags, encrypted);
+				 ntlmssp_flags, False);
 	
 	data_blob_free(&local_lm_blob);
 	return ret;
+}
+
+/****************************************************************************
+ Create an auth_usersupplied_data structure
+****************************************************************************/
+
+BOOL make_user_info_for_reply_enc(auth_usersupplied_info **user_info, 
+			      char *smb_name,
+			      char *client_domain, 
+			      DATA_BLOB lm_resp, DATA_BLOB nt_resp,
+			      DATA_BLOB plaintext_password)
+{
+	uint32 ntlmssp_flags = 0;
+
+	DATA_BLOB no_plaintext_blob = data_blob(NULL, 0); 
+	
+	if (lm_resp.length == 24) {
+		ntlmssp_flags |= NTLMSSP_NEGOTIATE_OEM;
+	}
+	if (nt_resp.length == 0) {
+	} else if (nt_resp.length == 24) {
+		ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM;
+	} else {
+		ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM2;
+	}
+
+	return make_user_info_map(user_info, smb_name, 
+				 client_domain, 
+				 remote_machine, 
+				 lm_resp, 
+				 nt_resp, 
+				 no_plaintext_blob, 
+				 ntlmssp_flags, True);
 }
 
 /****************************************************************************
@@ -603,7 +553,6 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 
 BOOL make_user_info_guest(auth_usersupplied_info **user_info) 
 {
-	DATA_BLOB sec_blob = data_blob(NULL, 0);
 	DATA_BLOB lm_blob = data_blob(NULL, 0);
 	DATA_BLOB nt_blob = data_blob(NULL, 0);
 	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
@@ -612,7 +561,7 @@ BOOL make_user_info_guest(auth_usersupplied_info **user_info)
 	return make_user_info(user_info, 
 			      "","", 
 			      "","", 
-			      "", sec_blob,
+			      "", 
 			      nt_blob, lm_blob,
 			      plaintext_blob, 
 			      ntlmssp_flags, True);
@@ -680,7 +629,6 @@ void free_user_info(auth_usersupplied_info **user_info)
 		SAFE_FREE((*user_info)->internal_username.str);
 		SAFE_FREE((*user_info)->client_domain.str);
 		SAFE_FREE((*user_info)->domain.str);
-		data_blob_free(&(*user_info)->sec_blob);
 		data_blob_free(&(*user_info)->lm_resp);
 		data_blob_free(&(*user_info)->nt_resp);
 		SAFE_FREE((*user_info)->interactive_password);
@@ -725,6 +673,22 @@ BOOL make_server_info_guest(auth_serversupplied_info **server_info)
 	return False;
 }
 
+/***************************************************************************
+ Make an auth_methods struct
+***************************************************************************/
+
+BOOL make_auth_methods(auth_methods **auth_method) 
+{
+	*auth_method = malloc(sizeof(**auth_method));
+	if (!*auth_method) {
+		DEBUG(0,("make_auth_method: malloc failed!\n"));
+		return False;
+	}
+	ZERO_STRUCTP(*auth_method);
+	
+	return True;
+}
+
 /****************************************************************************
  Delete a SID token.
 ****************************************************************************/
@@ -763,26 +727,4 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
     token->num_sids = ptoken->num_sids;
 
 	return token;
-}
-
-/****************************************************************************
- Check for a guest logon (username = "") and if so create the required 
- structure.
-****************************************************************************/
-
-NTSTATUS check_guest_security(const auth_usersupplied_info *user_info, 
-			      auth_serversupplied_info **server_info)
-{
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-
-	if (!(user_info->internal_username.str 
-	      && *user_info->internal_username.str)) { 
-		if (make_server_info_guest(server_info)) {
-			nt_status = NT_STATUS_OK;
-		} else {
-			nt_status = NT_STATUS_NO_SUCH_USER;
-		}
-	}
-
-	return nt_status;
 }

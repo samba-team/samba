@@ -566,26 +566,46 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 	switch (ctr->switch_value) {
 	case NET_LOGON_TYPE:
+	{
+		auth_authsupplied_info *auth_info = NULL;
+		make_auth_info_fixed(&auth_info, ctr->auth.id2.lm_chal);
 		/* Standard challange/response authenticaion */
 		make_user_info_netlogon_network(&user_info, 
 						nt_username, nt_domain, 
-						nt_workstation, ctr->auth.id2.lm_chal, 
+						nt_workstation, 
 						ctr->auth.id2.lm_chal_resp.buffer,
 						ctr->auth.id2.lm_chal_resp.str_str_len,
 						ctr->auth.id2.nt_chal_resp.buffer,
 						ctr->auth.id2.nt_chal_resp.str_str_len);
+
+		status = check_password(user_info, auth_info, &server_info);
+		free_auth_info(&auth_info);
+			
 		break;
+	}
 	case INTERACTIVE_LOGON_TYPE:
 		/* 'Interactive' autheticaion, supplies the password in its MD4 form, encrypted
 		   with the session key.  We will convert this to challange/responce for the 
 		   auth subsystem to chew on */
 	{
+		auth_authsupplied_info *auth_info = NULL;
+		DATA_BLOB chal;
+		if (!make_auth_info_subsystem(&auth_info)) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		chal = auth_get_challange(auth_info);
+
 		make_user_info_netlogon_interactive(&user_info, 
 						    nt_username, nt_domain, 
-						    nt_workstation, 
+						    nt_workstation, chal.data,
 						    ctr->auth.id1.lm_owf.data, 
 						    ctr->auth.id1.nt_owf.data, 
 						    p->dc.sess_key);
+		status = check_password(user_info, auth_info, &server_info);
+		data_blob_free(&chal);
+		free_auth_info(&auth_info);
+
 		break;
 	}
 	default:
@@ -593,8 +613,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		return NT_STATUS_INVALID_INFO_CLASS;
 	} /* end switch */
 	
-	status = check_password(user_info, &server_info);
-
 	free_user_info(&user_info);
 	
 	DEBUG(5, ("_net_sam_logon: check_password returned status %s\n", 

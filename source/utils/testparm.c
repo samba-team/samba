@@ -92,12 +92,6 @@ to a valid password server.\n", sec_setting );
 		ret = 1;
 	}
 
-	if(lp_use_rhosts() && !lp_hostname_lookups()) {
-		printf("ERROR: The setting 'use rhosts = yes' requires the 'hostname lookups = yes'.\n");
-		ret = 1;
-	}
-
-
 	/*
 	 * Password chat sanity checks.
 	 */

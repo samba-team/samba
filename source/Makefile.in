@@ -197,7 +197,8 @@ NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o
 PLAINTEXT_AUTH_OBJ = passdb/pampass.o passdb/pass_check.o
 
 AUTH_OBJ = smbd/auth.o smbd/auth_smbpasswd.o smbd/auth_server.o smbd/auth_domain.o \
-	   smbd/auth_rhosts.o smbd/auth_unix.o smbd/auth_util.o	$(PLAINTEXT_AUTH_OBJ) \
+	   smbd/auth_rhosts.o smbd/auth_unix.o smbd/auth_util.o	smbd/auth_winbind.o \
+	   smbd/auth_info.o smbd/auth_builtin.o $(PLAINTEXT_AUTH_OBJ) \
 	   libsmb/domain_client_validate.o 
 
 

@@ -1112,19 +1112,23 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 
   if (keepalive && (t - last_keepalive_sent_time)>keepalive) 
   {
-    struct cli_state *cli = server_client();
-    if (!send_keepalive(smbd_server_fd())) {
-      DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
-      return False;
-    }	    
-    /* also send a keepalive to the password server if its still
-       connected */
-    if (cli && cli->initialised)
-      if (!send_keepalive(cli->fd)) {
-        DEBUG( 2, ( "password server keepalive failed.\n"));
-        cli_shutdown(cli);
-      }
-    last_keepalive_sent_time = t;
+	  extern auth_authsupplied_info *negprot_global_auth_info;
+	  if (!send_keepalive(smbd_server_fd())) {
+		  DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
+		  return False;
+	  }
+	  
+	  /* send a keepalive for a password server or the like.
+	     This is attached to the auth_info created in the
+	     negprot */
+	  if (negprot_global_auth_info 
+	      && negprot_global_auth_info->challange_set_method 
+	      && negprot_global_auth_info->challange_set_method->send_keepalive) {
+		  negprot_global_auth_info->challange_set_method->send_keepalive
+			  (&negprot_global_auth_info->challange_set_method->private_data);
+	  }
+
+	  last_keepalive_sent_time = t;
   }
 
   /* check for connection timeouts */

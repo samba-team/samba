@@ -27,6 +27,7 @@ extern fstring global_myworkgroup;
 extern fstring remote_machine;
 BOOL global_encrypted_passwords_negotiated = False;
 BOOL global_spnego_negotiated = False;
+auth_authsupplied_info *negprot_global_auth_info = NULL;
 
 /****************************************************************************
 reply for the core protocol
@@ -68,6 +69,7 @@ static int reply_lanman1(char *inbuf, char *outbuf)
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int secword=0;
   time_t t = time(NULL);
+  DATA_BLOB cryptkey;
 
   global_encrypted_passwords_negotiated = lp_encrypted_passwords();
 
@@ -77,8 +79,14 @@ static int reply_lanman1(char *inbuf, char *outbuf)
   set_message(outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
   SSVAL(outbuf,smb_vwv1,secword); 
   /* Create a token value and add it to the outgoing packet. */
-  if (global_encrypted_passwords_negotiated) 
-    generate_next_challenge(smb_buf(outbuf));
+  if (global_encrypted_passwords_negotiated) {
+	  if (!make_auth_info_subsystem(&negprot_global_auth_info)) {
+		  smb_panic("cannot make_negprot_global_auth_info!\n");
+	  }
+	  cryptkey = auth_get_challange(negprot_global_auth_info);
+	  memcpy(smb_buf(outbuf), cryptkey.data, 8);
+	  data_blob_free(&cryptkey);
+  }
 
   Protocol = PROTOCOL_LANMAN1;
 
@@ -106,39 +114,25 @@ static int reply_lanman2(char *inbuf, char *outbuf)
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int secword=0;
   time_t t = time(NULL);
-  struct cli_state *cli = NULL;
-  char cryptkey[8];
-  char crypt_len = 0;
+  DATA_BLOB cryptkey;
 
   global_encrypted_passwords_negotiated = lp_encrypted_passwords();
-
-  if (lp_security() == SEC_SERVER) {
-	  cli = server_cryptkey();
-  }
-
-  if (cli) {
-	  DEBUG(3,("using password server validation\n"));
-	  global_encrypted_passwords_negotiated = ((cli->sec_mode & 2) != 0);
-  }
-
+  
   if (lp_security()>=SEC_USER) secword |= 1;
   if (global_encrypted_passwords_negotiated) secword |= 2;
 
-  if (global_encrypted_passwords_negotiated) {
-	  crypt_len = 8;
-	  if (!cli) {
-		  generate_next_challenge(cryptkey);
-	  } else {
-		  memcpy(cryptkey, cli->secblob.data, 8);
-		  set_challenge((unsigned char *)cryptkey);
-	  }
-  }
-
-  set_message(outbuf,13,crypt_len,True);
+  set_message(outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
   SSVAL(outbuf,smb_vwv1,secword); 
   SIVAL(outbuf,smb_vwv6,sys_getpid());
-  if (global_encrypted_passwords_negotiated) 
-	  memcpy(smb_buf(outbuf), cryptkey, 8);
+
+  if (global_encrypted_passwords_negotiated) {
+	  if (!make_auth_info_subsystem(&negprot_global_auth_info)) {
+		  smb_panic("cannot make_negprot_global_auth_info!\n");
+	  }
+	  cryptkey = auth_get_challange(negprot_global_auth_info);
+	  memcpy(smb_buf(outbuf), cryptkey.data, 8);
+	  data_blob_free(&cryptkey);
+  }
 
   Protocol = PROTOCOL_LANMAN2;
 
@@ -202,45 +196,22 @@ static int reply_nt1(char *inbuf, char *outbuf)
 
 	int secword=0;
 	time_t t = time(NULL);
-	struct cli_state *cli = NULL;
-	uint8 cryptkey[8];
+	DATA_BLOB cryptkey;
 	char *p, *q;
 	BOOL negotiate_spnego = False;
 
 	global_encrypted_passwords_negotiated = lp_encrypted_passwords();
 
-	if (lp_security() == SEC_SERVER) {
-		DEBUG(5,("attempting password server validation\n"));
-		cli = server_cryptkey();
-	} else {
-		DEBUG(5,("not attempting password server validation\n"));
-		/* do spnego in user level security if the client
-		   supports it and we can do encrypted passwords */
-		if (global_encrypted_passwords_negotiated && 
-		    (lp_security() == SEC_USER ||
-		     lp_security() == SEC_DOMAIN) &&
-		    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
-			negotiate_spnego = True;
-			capabilities |= CAP_EXTENDED_SECURITY;
-		}
+	/* do spnego in user level security if the client
+	   supports it and we can do encrypted passwords */
+	
+	if (global_encrypted_passwords_negotiated && 
+	    (lp_security() != SEC_SHARE) &&
+	    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
+		negotiate_spnego = True;
+		capabilities |= CAP_EXTENDED_SECURITY;
 	}
 	
-	if (cli) {
-		DEBUG(3,("using password server validation\n"));
-		global_encrypted_passwords_negotiated = ((cli->sec_mode & 2) != 0);
-	} else {
-		DEBUG(3,("not using password server validation\n"));
-	}
-	
-	if (global_encrypted_passwords_negotiated) {
-		if (!cli) {
-			generate_next_challenge((char *)cryptkey);
-		} else {
-			memcpy(cryptkey, cli->secblob.data, 8);
-			set_challenge(cryptkey);
-		}
-	}
-
 	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
 	
 	if (lp_large_readwrite() && (SMB_OFF_T_BITS == 64)) {
@@ -283,7 +254,14 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	
 	p = q = smb_buf(outbuf);
 	if (!negotiate_spnego) {
-		if (global_encrypted_passwords_negotiated) memcpy(p, cryptkey, 8);
+		if (global_encrypted_passwords_negotiated) { 
+			if (!make_auth_info_subsystem(&negprot_global_auth_info)) {
+				smb_panic("cannot make_negprot_global_auth_info!\n");
+			}
+			cryptkey = auth_get_challange(negprot_global_auth_info);
+			memcpy(p, cryptkey.data, 8);
+			data_blob_free(&cryptkey);
+		}
 		SSVALS(outbuf,smb_vwv16+1,8);
 		p += 8;
 		DEBUG(3,("not using SPNEGO\n"));
@@ -467,11 +445,6 @@ int reply_negprot(connection_struct *conn,
   /* possibly reload - change of architecture */
   reload_services(True);      
     
-  /* a special case to stop password server loops */
-  if (Index == 1 && strequal(remote_machine,myhostname()) && 
-      (lp_security()==SEC_SERVER || lp_security()==SEC_DOMAIN))
-    exit_server("Password server loop!");
-  
   /* Check for protocols, most desirable first */
   for (protocol = 0; supported_protocols[protocol].proto_name; protocol++)
     {
@@ -508,3 +481,4 @@ int reply_negprot(connection_struct *conn,
   END_PROFILE(SMBnegprot);
   return(outsize);
 }
+

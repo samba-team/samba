@@ -25,30 +25,18 @@
 extern pstring global_myname;
 
 /****************************************************************************
- Return the client state structure.
-****************************************************************************/
-
-struct cli_state *server_client(void)
-{
-	static struct cli_state pw_cli;
-	return &pw_cli;
-}
-
-/****************************************************************************
  Support for server level security.
 ****************************************************************************/
 
-struct cli_state *server_cryptkey(void)
+static struct cli_state *server_cryptkey(void)
 {
-	struct cli_state *cli;
+	struct cli_state *cli = NULL;
 	fstring desthost;
 	struct in_addr dest_ip;
 	char *p, *pserver;
 	BOOL connected_ok = False;
 
-	cli = server_client();
-
-	if (!cli_initialise(cli))
+	if (!(cli = cli_initialise(cli)))
 		return NULL;
 
 	/* security = server just can't function with spnego */
@@ -88,7 +76,11 @@ struct cli_state *server_cryptkey(void)
 
 	if (!attempt_netbios_session_request(cli, global_myname, desthost, &dest_ip))
 		return NULL;
-
+	
+	if (strequal(desthost,myhostname())) {
+		exit_server("Password server loop!");
+	}
+	
 	DEBUG(3,("got session\n"));
 
 	if (!cli_negprot(cli)) {
@@ -109,13 +101,82 @@ struct cli_state *server_cryptkey(void)
 	return cli;
 }
 
+/****************************************************************************
+ Clean up our allocated cli.
+****************************************************************************/
+
+static void free_server_private_data(void **private_data_pointer) 
+{
+	struct cli_state **cli = (struct cli_state **)private_data_pointer;
+	if (*cli && (*cli)->initialised) {
+		cli_shutdown(*cli);
+		
+		SAFE_FREE(*cli);
+	}
+}
+
+/****************************************************************************
+ Send a 'keepalive' packet down the cli pipe.
+****************************************************************************/
+
+static void send_server_keepalive(void **private_data_pointer) 
+{
+	struct cli_state **cli = (struct cli_state **)private_data_pointer;
+	
+	/* also send a keepalive to the password server if its still
+	   connected */
+	if (cli && *cli && (*cli)->initialised) {
+		if (!send_keepalive((*cli)->fd)) {
+			DEBUG( 2, ( "password server keepalive failed.\n"));
+			cli_shutdown(*cli);
+			SAFE_FREE(*cli);
+		}
+	}
+}
+
+/****************************************************************************
+ Get the challange out of a password server.
+****************************************************************************/
+
+static DATA_BLOB auth_get_challange_server(void **my_private_data, const struct authsupplied_info *auth_info) 
+{
+	struct cli_state *cli = server_cryptkey();
+	
+	if (cli) {
+		DEBUG(3,("using password server validation\n"));
+		if ((cli->sec_mode & 2) == 0) {
+			/* We can't work with unencrypted password servers
+			   unless 'encrypt passwords = no' */
+			DEBUG(5,("make_auth_info_server: Server is unencrypted, no challange available..\n"));
+
+			*my_private_data = (void *)cli;
+			return data_blob(NULL, 0);
+			
+		} else if (cli->secblob.length < 8) {
+			/* We can't do much if we don't get a full challange */
+			DEBUG(2,("make_auth_info_server: Didn't receive a full challange from server\n"));
+			cli_shutdown(cli);
+			return data_blob(NULL, 0);
+		}
+
+		*my_private_data = (void *)cli;
+		
+		return data_blob(cli->secblob.data,8);
+	} else {
+		return data_blob(NULL, 0);
+	}
+}
+
 
 /****************************************************************************
  Check for a valid username and password in security=server mode.
   - Validate a password with the password server.
 ****************************************************************************/
 
-NTSTATUS check_server_security(const auth_usersupplied_info *user_info, auth_serversupplied_info **server_info)
+static NTSTATUS check_smbserver_security(void *my_private_data, 
+				  const auth_usersupplied_info *user_info, 
+				  const auth_authsupplied_info *auth_info,
+				  auth_serversupplied_info **server_info)
 {
 	struct cli_state *cli;
 	static unsigned char badpass[24];
@@ -123,13 +184,32 @@ NTSTATUS check_server_security(const auth_usersupplied_info *user_info, auth_ser
 	static BOOL tested_password_server = False;
 	static BOOL bad_password_server = False;
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	BOOL locally_made_cli = False;
 
-	cli = server_client();
+	cli = my_private_data;
+	
+	if (cli) {
+	} else {
+		cli = server_cryptkey();
+		locally_made_cli = True;
+	}
 
-	if (!cli->initialised) {
+	if (!cli || !cli->initialised) {
 		DEBUG(1,("password server %s is not connected\n", cli->desthost));
-		return(NT_STATUS_LOGON_FAILURE);
+		return NT_STATUS_LOGON_FAILURE;
 	}  
+	
+	if ((cli->sec_mode & 2) == 0) {
+		if (user_info->encrypted) {
+			DEBUG(1,("password server %s is plaintext, but we are encrypted. This just can't work :-(\n", cli->desthost));
+			return NT_STATUS_LOGON_FAILURE;		
+		}
+	} else {
+		if (memcmp(cli->secblob.data, auth_info->challange.data, 8) != 0) {
+			DEBUG(1,("the challange that the password server (%s) supplied us is not the one we gave our client. This just can't work :-(\n", cli->desthost));
+			return NT_STATUS_LOGON_FAILURE;		
+		}
+	}
 
 	if(badpass[0] == 0)
 		memset(badpass, 0x1f, sizeof(badpass));
@@ -206,17 +286,32 @@ use this machine as the password server.\n"));
 	 * not guest enabled, we can try with the real password.
 	 */
 
-	if (!cli_session_setup(cli, user_info->smb_name.str, 
-			       (char *)user_info->lm_resp.data, 
-			       user_info->lm_resp.length, 
-			       (char *)user_info->nt_resp.data, 
-			       user_info->nt_resp.length, 
-			       user_info->domain.str)) {
-		DEBUG(1,("password server %s rejected the password\n", cli->desthost));
-		/* Make this cli_nt_error() when the conversion is in */
-		nt_status = cli_nt_error(cli);
+	if (!user_info->encrypted) {
+		/* Plaintext available */
+		if (!cli_session_setup(cli, user_info->smb_name.str, 
+				       (char *)user_info->plaintext_password.data, 
+				       user_info->plaintext_password.length, 
+				       NULL, 0,
+				       user_info->domain.str)) {
+			DEBUG(1,("password server %s rejected the password\n", cli->desthost));
+			/* Make this cli_nt_error() when the conversion is in */
+			nt_status = cli_nt_error(cli);
+		} else {
+			nt_status = NT_STATUS_OK;
+		}
 	} else {
-		nt_status = NT_STATUS_OK;
+		if (!cli_session_setup(cli, user_info->smb_name.str, 
+				       (char *)user_info->lm_resp.data, 
+				       user_info->lm_resp.length, 
+				       (char *)user_info->nt_resp.data, 
+				       user_info->nt_resp.length, 
+				       user_info->domain.str)) {
+			DEBUG(1,("password server %s rejected the password\n", cli->desthost));
+			/* Make this cli_nt_error() when the conversion is in */
+			nt_status = cli_nt_error(cli);
+		} else {
+			nt_status = NT_STATUS_OK;
+		}
 	}
 
 	/* if logged in as guest then reject */
@@ -238,5 +333,22 @@ use this machine as the password server.\n"));
 		}
 	}
 
+	if (locally_made_cli) {
+		cli_shutdown(cli);
+		SAFE_FREE(cli);
+	}
+
 	return(nt_status);
+}
+
+BOOL auth_init_smbserver(auth_methods **auth_method) 
+{
+	if (!make_auth_methods(auth_method)) {
+		return False;
+	}
+	(*auth_method)->auth = check_smbserver_security;
+	(*auth_method)->get_chal = auth_get_challange_server;
+	(*auth_method)->send_keepalive = send_server_keepalive;
+	(*auth_method)->free_private_data = free_server_private_data;
+	return True;
 }

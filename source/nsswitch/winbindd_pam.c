@@ -40,6 +40,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
         NET_USER_INFO_3 info3;
 	NET_ID_INFO_CTR ctr;
         struct cli_state *cli;
+	uchar chal[8];
 
 	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
 		  state->request.data.auth.user));
@@ -59,7 +60,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	if (state->request.data.auth.pass[0])
 		make_user_info_winbind(&user_info, 
                                        name_user, name_domain,
-                                       state->request.data.auth.pass);
+                                       state->request.data.auth.pass,
+				       chal);
 	else
 		return WINBINDD_ERROR;
 	
@@ -87,7 +89,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
                 goto done;
         }
 
-	result = cli_nt_login_network(cli, user_info, smb_uid_low, 
+	result = cli_nt_login_network(cli, user_info, chal, smb_uid_low, 
 				      &ctr, &info3);
 
         free_user_info(&user_info);
@@ -123,7 +125,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
        	make_user_info_winbind_crap(
                 &user_info, name_user, 
-                name_domain, state->request.data.auth_crap.chal,
+                name_domain, 
                 (uchar *)state->request.data.auth_crap.lm_resp,
                 state->request.data.auth_crap.lm_resp_len,
                 (uchar *)state->request.data.auth_crap.nt_resp,
@@ -153,8 +155,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
                 goto done;
         }
 
-	result = cli_nt_login_network(cli, user_info, smb_uid_low, 
-				      &ctr, &info3);
+	result = cli_nt_login_network(cli, user_info, state->request.data.auth_crap.chal,
+				      smb_uid_low, &ctr, &info3);
 
         free_user_info(&user_info);
 

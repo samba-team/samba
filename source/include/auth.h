@@ -53,8 +53,6 @@ typedef struct usersupplied_info
 	
 	uint32 ntlmssp_flags;
 
-	DATA_BLOB sec_blob;
-
 	AUTH_STR           client_domain;          /* domain name string */
 	AUTH_STR           domain;               /* domain name after mapping */
 	AUTH_STR           internal_username;    /* username after mapping */
@@ -69,16 +67,16 @@ typedef struct usersupplied_info
 #define SAM_FILL_UNIX  0x08
 #define SAM_FILL_ALL (SAM_FILL_NAME | SAM_FILL_INFO3 | SAM_FILL_SAM | SAM_FILL_UNIX)
 
-typedef struct serversupplied_info
+typedef struct serversupplied_info 
 {
 	BOOL guest;
 	
 	/* This groups info is needed for when we become_user() for this uid */
 	int n_groups;
 	gid_t *groups;
-
+	
 	/* NT group information taken from the info3 structure */
-
+	
 	NT_USER_TOKEN *ptok;
 	
 	uchar session_key[16];
@@ -86,8 +84,52 @@ typedef struct serversupplied_info
 	uint8 first_8_lm_hash[8];
 
 	uint32 sam_fill_level;  /* How far is this structure filled? */
-
+	
 	SAM_ACCOUNT *sam_account;
+	
+	void *pam_handle;
+	
 } auth_serversupplied_info;
+
+typedef struct authsupplied_info {
+	DATA_BLOB challange; 
+
+	/* Who set this up in the first place? */ 
+	char *challange_set_by; \
+
+	struct auth_methods *challange_set_method; 
+	/* What order are the various methods in?   Try to stop it changing under us */ 
+	struct auth_methods *auth_method_list;	
+} auth_authsupplied_info;
+
+typedef struct auth_methods
+{
+	struct auth_methods *prev, *next;
+	char *name; /* What name got this module */
+
+	NTSTATUS (*auth)(void *my_private_data, 
+			 const auth_usersupplied_info *user_info, 
+			 const struct authsupplied_info *auth_info,
+			 auth_serversupplied_info **server_info);
+
+	DATA_BLOB (*get_chal)(void **my_private_data, const struct authsupplied_info *auth_info);
+	
+	/* Used to keep tabs on things like the cli for SMB server authentication */
+	void *private_data;
+	
+	/* Function to clean up the above arbitary structure */
+	void (*free_private_data)(void **private_data);
+
+	/* Function to send a keepalive message on the above structure */
+	void (*send_keepalive)(void **private_data);
+
+} auth_methods;
+
+typedef struct auth_init_function {
+	char *name;
+	/* Function to create a member of the authmethods list */
+	BOOL (*init)(struct auth_methods **auth_method);
+} auth_init_function;
+
 
 #endif /* _SMBAUTH_H_ */

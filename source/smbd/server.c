@@ -476,7 +476,7 @@ void exit_server(char *reason)
 {
 	static int firsttime=1;
 	extern char *last_inbuf;
-
+	extern auth_authsupplied_info *negprot_global_auth_info;
 
 	if (!firsttime)
 		exit(0);
@@ -484,6 +484,8 @@ void exit_server(char *reason)
 
 	change_to_root_user();
 	DEBUG(2,("Closing connections\n"));
+
+	free_auth_info(&negprot_global_auth_info);
 
 	conn_close_all();
 

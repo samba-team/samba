@@ -271,9 +271,10 @@ static BOOL find_connect_pdc(struct cli_state *pcli,
 ************************************************************************/
 
 NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info, 
-			      auth_serversupplied_info **server_info, 
-			      char *server, unsigned char *trust_passwd,
-			      time_t last_change_time)
+				uchar chal[8],
+				auth_serversupplied_info **server_info, 
+				char *server, unsigned char *trust_passwd,
+				time_t last_change_time)
 {
 	fstring remote_machine;
 	NET_ID_INFO_CTR ctr;
@@ -330,7 +331,7 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
          * in the info3 structure.  
          */
 
-	status = cli_nt_login_network(&cli, user_info, smb_uid_low, 
+	status = cli_nt_login_network(&cli, user_info, chal, smb_uid_low, 
 				      &ctr, &info3);
         
 	if (!NT_STATUS_IS_OK(status)) {
