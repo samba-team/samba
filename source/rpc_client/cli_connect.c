@@ -130,6 +130,8 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		if (con->msrpc.smb == NULL)
 		{
 			cli_connection_free(con);
+			con->msrpc.cli = NULL;
+			return NULL;
 		}
 		else
 		{
