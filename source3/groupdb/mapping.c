@@ -135,19 +135,16 @@ static BOOL default_group_mapping(void)
 
 static BOOL init_group_mapping(void)
 {
-	static pid_t local_pid;
 	const char *vstring = "INFO/version";
 	int32 vers_id;
 	
-	if (tdb && local_pid == sys_getpid())
+	if (tdb)
 		return True;
 	tdb = tdb_open_log(lock_path("group_mapping.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open group mapping database\n"));
 		return False;
 	}
-
-	local_pid = sys_getpid();
 
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb, vstring, 0);
