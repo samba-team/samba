@@ -440,5 +440,5 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 int brl_forall(BRLOCK_FN(fn))
 {
 	if (!tdb) return 0;
-	return tdb_traverse(tdb, traverse_fn, (BRLOCK_FN_CAST())fn);
+	return tdb_traverse(tdb, traverse_fn, (void *)fn);
 }

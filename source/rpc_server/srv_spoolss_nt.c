@@ -5174,7 +5174,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	ZERO_STRUCT(old_param);
 
 	if (get_specific_param(*printer, 2, param->value, &old_param.data,
-			       &old_param.type, &old_param.data_len)) {
+			       &old_param.type, (unsigned int *)&old_param.data_len)) {
 
 		if (param->type == old_param.type &&
 		    param->data_len == old_param.data_len &&

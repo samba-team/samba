@@ -654,14 +654,12 @@ uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
 			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 			driver=driver_abstract.info_3;
 			return clean_up_driver_struct_level_3(driver, user);
-			break;
 		}
 		case 6:
 		{
 			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver;
 			driver=driver_abstract.info_6;
 			return clean_up_driver_struct_level_6(driver, user);
-			break;
 		}
 		default:
 			return ERROR_INVALID_PARAMETER;
@@ -710,8 +708,8 @@ Version information in Microsoft files is held in a VS_VERSION_INFO structure.
 There are two case to be covered here: PE (Portable Executable) and NE (New
 Executable) files. Both files support the same INFO structure, but PE files
 store the signature in unicode, and NE files store it as !unicode.
-****************************************************************************/
 //static BOOL get_file_version(connection_struct *conn, int fd, char *fname,
+****************************************************************************/
 static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
 							 uint32 *minor)
 {

@@ -72,9 +72,6 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	struct connections_data crec;
 	TDB_DATA kbuf, dbuf;
 
-	if (max_connections <= 0)
-		return(True);
-
 	if (!tdb) {
 		tdb = tdb_open(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST, 
 			       O_RDWR | O_CREAT, 0644);
