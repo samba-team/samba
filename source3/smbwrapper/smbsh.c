@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 	smbw_setshared(line, wd);
 
 	slprintf(line,sizeof(line)-1,"%s/smbwrapper.so", libd);
-	etenv("LD_PRELOAD", line);
+	setenv("LD_PRELOAD", line);
 
 	slprintf(line,sizeof(line)-1,"%s/smbwrapper.32.so", libd);
 
