@@ -80,7 +80,7 @@
 
 /* what default type of filesystem do we want this to show up as in a
    NT file manager window? */
-#define FSTYPE_STRING "Samba"
+#define FSTYPE_STRING "NTFS"
 
 /* the default guest account - normally set in the Makefile or smb.conf */
 #ifndef GUEST_ACCOUNT
