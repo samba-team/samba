@@ -1,4 +1,6 @@
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+]>
 <refentry id="nmblookup">
 
 <refmeta>
@@ -101,12 +103,8 @@
 
 
 
-		<varlistentry>
-		<term>-h</term> 
-		<listitem><para>Print a help (usage) message.</para></listitem>
-		</varlistentry>
-
-
+		&popt.common.connection;
+		&stdarg.help;
 
 		<varlistentry>
 		<term>-B &lt;broadcast address&gt;</term> 
@@ -131,48 +129,8 @@
 		</varlistentry>
 		
 		
-		<varlistentry>
-		<term>-d &lt;debuglevel&gt;</term> 
-		<listitem><para>debuglevel is an integer from 0 to 10.</para>
+		&popt.common.samba;
 
-		<para>The default value if this parameter is not specified 
-		is zero.</para>
-
-		<para>The higher this value, the more detail will be logged 
-		about the activities of <command>nmblookup</command>. At level 
-		0, only critical errors and serious warnings will be logged.</para>
-
-		<para>Levels above 1 will generate considerable amounts of 
-		log data, and should only be used when investigating a problem. 
-		Levels above 3 are designed for use only by developers and 
-		generate HUGE amounts of data, most of which is extremely cryptic.</para>
-
-		<para>Note that specifying this parameter here will override 
-		the <ulink url="smb.conf.5.html#LOGLEVEL"><parameter>
-		log level</parameter></ulink> parameter in the <filename>
-		smb.conf(5)</filename> file.</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>-s &lt;smb.conf&gt;</term> 
-		<listitem><para>This parameter specifies the pathname to 
-		the Samba configuration file, <ulink url="smb.conf.5.html">
-		smb.conf(5)</ulink>.  This file controls all aspects of
-		the Samba setup on the machine.</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>-i &lt;scope&gt;</term> 
-		<listitem><para>This specifies a NetBIOS scope that
-		<command>nmblookup</command> will use to communicate with when 
-		generating NetBIOS names. For details on the use of NetBIOS 
-		scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes are 
-		<emphasis>very</emphasis> rarely used, only set this parameter 
-		if you are the system administrator in charge of all the 
-		NetBIOS systems you communicate with.</para></listitem>
-		</varlistentry>
-		
-		
 		<varlistentry>
 		<term>-T</term> 
 		<listitem><para>This causes any IP addresses found in the 

@@ -1,4 +1,6 @@
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+]>
 <refentry id="swat.8">
 
 <refmeta>
@@ -67,10 +69,9 @@
 		server. </emphasis></para></listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>-V</term>
-		<listitem><para>Print version number of samba suite</para></listitem>
-		</varlistentry>
+		&popt.common.samba;
+		&stdarg.help;
+
 	</variablelist>
 
 </refsect1>

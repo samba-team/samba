@@ -1,4 +1,6 @@
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+]>
 <refentry id="wbinfo.1">
 
 <refmeta>
@@ -226,6 +228,8 @@
 		</para></listitem>
 		</varlistentry>
 
+		&stdarg.version;
+		&stdarg.help;
 
 	</variablelist>
 </refsect1>

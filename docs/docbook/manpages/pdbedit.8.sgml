@@ -327,9 +327,8 @@ account policy value for bad lockout attempt is now 3
 		</listitem>
 		</varlistentry>
 		
-		&stdarg.debuglevel;
 		&stdarg.help;
-		&stdarg.configfile;
+		&popt.common.samba;
 
 	</variablelist>
 </refsect1>

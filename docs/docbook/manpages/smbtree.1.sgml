@@ -65,6 +65,8 @@
 		</para></listitem>
 		</varlistentry>
 
+		&popt.common.samba;
+		&popt.common.credentials;
 		&stdarg.help;
 		
 	</variablelist>

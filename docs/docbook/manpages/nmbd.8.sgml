@@ -1,4 +1,6 @@
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+]>
 <refentry id="nmbd.8">
 
 <refmeta>
@@ -112,13 +114,6 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-a</term>
-		<listitem><para>If this parameter is specified, each new 
-		connection will append log messages to the log file.  
-		This is the default.</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
 		<term>-i</term>
 		<listitem><para>If this parameter is specified it causes the
 		server to run "interactively", not as a daemon, even if the
@@ -129,19 +124,7 @@
 		given. </para></listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>-o</term>
-		<listitem><para>If this parameter is specified, the 
-		log files will be overwritten when opened.  By default, 
-		<command>smbd</command> will append entries to the log 
-		files.</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>-h</term>
-		<listitem><para>Prints the help information (usage) 
-		for <command>nmbd</command>.</para></listitem>
-		</varlistentry>
+		&stdarg.help;
 		
 		<varlistentry>
 		<term>-H &lt;filename&gt;</term>
@@ -165,66 +148,9 @@
 	<manvolnum>5</manvolnum></citerefentry> man page for details on the contents of this file.</para></listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>-V</term>
-		<listitem><para>Prints the version number for 
-		<command>nmbd</command>.</para></listitem>
-		</varlistentry>
+		&popt.common.samba;
+		&popt.common.connection;
 		
-		<varlistentry>
-		<term>-d &lt;debug level&gt;</term>
-		<listitem><para>debuglevel is an integer 
-		from 0 to 10.  The default value if this parameter is 
-		not specified is zero.</para>
-		
-		<para>The higher this value, the more detail will 
-		be logged to the log files about the activities of the 
-		server. At level 0, only critical errors and serious 
-		warnings will be logged. Level 1 is a reasonable level for
-		day to day running - it generates a small amount of 
-		information about operations carried out.</para>
-
-		<para>Levels above 1 will generate considerable amounts 
-		of log data, and should only be used when investigating 
- 		a problem. Levels above 3 are designed for use only by developers 
-		and generate HUGE amounts of log data, most of which is extremely 
-		cryptic.</para>
-
-		<para>Note that specifying this parameter here will override 
-		the <ulink url="smb.conf.5.html#loglevel"><parameter>log level</parameter></ulink> 
-		parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-	<manvolnum>5</manvolnum></citerefentry> file.</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>-l &lt;log directory&gt;</term>
-		<listitem><para>The -l parameter specifies a directory 
-		into which the "log.nmbd" log file will be created
-		for operational data from the running <command>nmbd</command>
-		server. The default log directory is compiled into Samba
-		as part of the build process. Common defaults are <filename>
-		/usr/local/samba/var/log.nmb</filename>, <filename>
-		/usr/samba/var/log.nmb</filename> or
-		<filename>/var/log/log.nmb</filename>.  <emphasis>Beware:</emphasis>
-                If the directory specified does not exist, <command>nmbd</command>
-                will log to the default debug log location defined at compile time.
-		</para></listitem>
-		</varlistentry>
-		
-		
-		<varlistentry>
-		<term>-n &lt;primary NetBIOS name&gt;</term>
-		<listitem><para>This option allows you to override
-		the NetBIOS name that Samba uses for itself. This is identical 
-		to setting the <ulink url="smb.conf.5.html#netbiosname"><parameter>NetBIOS
-		name</parameter></ulink> parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-	<manvolnum>5</manvolnum></citerefentry> file.  However, a command
-		line setting will take precedence over settings in 
-		<citerefentry><refentrytitle>smb.conf</refentrytitle>
-	<manvolnum>5</manvolnum></citerefentry>.</para></listitem>
-		</varlistentry>
-
-
 		<varlistentry>
 		<term>-p &lt;UDP port number&gt;</term>
 		<listitem><para>UDP port number is a positive integer value.
@@ -234,18 +160,6 @@
 		won't need help!</para></listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>-s &lt;configuration file&gt;</term>
-		<listitem><para>The default configuration file name
-		is set at build time, typically as <filename>
-		/usr/local/samba/lib/smb.conf</filename>, but
-		this may be changed when Samba is autoconfigured.</para>
-
-		<para>The file specified contains the configuration details
-		required by the server. See <citerefentry><refentrytitle>smb.conf</refentrytitle>
-	<manvolnum>5</manvolnum></citerefentry> for more information.
-		</para></listitem>
-		</varlistentry>
 	</variablelist>
 </refsect1>
 

@@ -1,4 +1,7 @@
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+]>
+
 <refentry id="smbstatus.1">
 
 <refmeta>
@@ -54,13 +57,7 @@
 		<listitem><para>gives brief output.</para></listitem>
 		</varlistentry>
 
-
-		<varlistentry>
-		<term>-d|--debug=&lt;debuglevel&gt;</term>
-		<listitem><para>sets debugging to specified level</para>
-		</listitem>
-		</varlistentry>
-
+		&popt.common.samba;
 
 		<varlistentry>
 		<term>-v|--verbose</term>
@@ -96,18 +93,7 @@
 		</listitem>
 		</varlistentry>
 
-
-
-		<varlistentry>
-		<term>-s|--conf=&lt;configuration file&gt;</term>
-		<listitem><para>The default configuration file name is
-		determined at compile time. The file specified contains the
-		configuration details required by the server. See <citerefentry>
-		<refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
-		</citerefentry> for more information.</para>
-		</listitem>
-		</varlistentry>
-
+		&stdarg.help;
 
 		<varlistentry>
 		<term>-u|--user=&lt;username&gt;</term>
