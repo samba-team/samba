@@ -186,7 +186,7 @@ void standard_sub_basic(char *str)
 			string_sub(p,"%U",tmp_str,l);
 			break;
 		case 'G' :
-			if ((pass = Get_Pwnam(current_user_info.smb_name, False))!=NULL) {
+			if ((pass = Get_Pwnam(current_user_info.smb_name))!=NULL) {
 				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
 			} else {
 				p += 2;

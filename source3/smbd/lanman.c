@@ -1954,7 +1954,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
   /*
    * Do any UNIX username case mangling.
    */
-  passwd = Get_Pwnam( user, True);
+  passwd = Get_Pwnam_Modify( user );
 
   /*
    * Attempt to verify the old password against smbpasswd entries
@@ -2082,7 +2082,7 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
   /*
    * Do any UNIX username case mangling.
    */
-  (void)Get_Pwnam( user, True);
+  (void)Get_Pwnam_Modify( user );
 
   if (pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL))
   {

@@ -276,7 +276,7 @@ void add_session_user(char *user)
   fstring suser;
   StrnCpy(suser,user,sizeof(suser)-1);
 
-  if (!Get_Pwnam(suser,True)) return;
+  if (!Get_Pwnam_Modify(suser)) return;
 
   if (suser && *suser && !in_list(suser,session_users,False))
     {
@@ -551,7 +551,7 @@ and given password ok (%s)\n", user));
 	if (!ok && GUEST_OK(snum)) {
 		fstring guestname;
 		StrnCpy(guestname,lp_guestaccount(snum),sizeof(guestname)-1);
-		if (Get_Pwnam(guestname,True)) {
+		if (Get_Pwnam(guestname)) {
 			fstrcpy(user,guestname);
 			ok = True;
 			DEBUG(3,("authorise_login: ACCEPTED: guest account and guest ok (%s)\n",

@@ -89,7 +89,7 @@ NTSTATUS check_unix_security(const auth_usersupplied_info *user_info, auth_serve
 
 	become_root();
 	
-	pass = Get_Pwnam(user_info->unix_username.str, False);
+	pass = Get_Pwnam(user_info->unix_username.str);
 
 	nt_status = pass_check(pass,
 				pass ? pass->pw_name : user_info->unix_username.str, 

@@ -22,18 +22,18 @@
 #include "includes.h"
 
 /* internal functions */
-static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (char *), int N);
-static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (char *), int N);
+static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (const char *), int N);
+static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (const char *), int N);
 
 /****************************************************************************
  Get a users home directory.
 ****************************************************************************/
 
-char *get_user_home_dir(char *user)
+char *get_user_home_dir(const char *user)
 {
   static struct passwd *pass;
 
-  pass = Get_Pwnam(user, False);
+  pass = Get_Pwnam(user);
 
   if (!pass) return(NULL);
   return(pass->pw_dir);      
@@ -158,7 +158,7 @@ BOOL map_username(char *user)
  Get_Pwnam wrapper
 ****************************************************************************/
 
-static struct passwd *_Get_Pwnam(char *s)
+static struct passwd *_Get_Pwnam(const char *s)
 {
   struct passwd *ret;
 
@@ -183,18 +183,16 @@ static struct passwd *_Get_Pwnam(char *s)
  *   - in all lower case if this differs from transmitted
  *   - in all upper case if this differs from transmitted
  *   - using lp_usernamelevel() for permutations.
- * NOTE: This can potentially modify 'user' depending on value of
- *       allow_change!
  */
-struct passwd *Get_Pwnam(char *user,BOOL allow_change)
+struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 {
-	fstring user2;
 	struct passwd *ret = NULL;
+
+	if (!user2 || !(*user2))
+		return(NULL);
 
 	if (!user || !(*user))
 		return(NULL);
-
-	fstrcpy(user2, user);
 
 	/* Try in all lower case first as this is the most 
 	   common case on UNIX systems */
@@ -228,10 +226,44 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 
 done:
 	DEBUG(5,("Get_Pwnam %s find a valid username!\n",ret ? "did":"didn't"));
-	/* If caller wants the modified username, ensure they get it  */
-	if(allow_change)
-		fstrcpy(user,user2);
+	return ret;
+}
 
+/****************************************************************************
+ Get_Pwnam wrapper for modification.
+  NOTE: This can potentially modify 'user'! 
+****************************************************************************/
+
+struct passwd *Get_Pwnam_Modify(char *user)
+{
+	fstring user2;
+	struct passwd *ret;
+
+	fstrcpy(user2, user);
+
+	ret = Get_Pwnam_internals(user, user2);
+	
+	/* If caller wants the modified username, ensure they get it  */
+	fstrcpy(user,user2);
+
+	/* We can safely assume ret is NULL if none of the above succeed */
+	return(ret);  
+}
+
+/****************************************************************************
+ Get_Pwnam wrapper without modification.
+  NOTE: This with NOT modify 'user'! 
+****************************************************************************/
+
+struct passwd *Get_Pwnam(const char *user)
+{
+	fstring user2;
+	struct passwd *ret;
+
+	fstrcpy(user2, user);
+
+	ret = Get_Pwnam_internals(user, user2);
+	
 	/* We can safely assume ret is NULL if none of the above succeed */
 	return(ret);  
 }
@@ -240,7 +272,7 @@ done:
  Check if a user is in a netgroup user list.
 ****************************************************************************/
 
-static BOOL user_in_netgroup_list(char *user,char *ngname)
+static BOOL user_in_netgroup_list(const char *user, const char *ngname)
 {
 #ifdef HAVE_NETGROUP
   static char *mydomain = NULL;
@@ -333,11 +365,11 @@ failed with error %s\n", strerror(errno) ));
  Check if a user is in a UNIX group.
 ****************************************************************************/
 
-static BOOL user_in_unix_group_list(char *user,char *gname)
+static BOOL user_in_unix_group_list(const char *user,const char *gname)
 {
 	struct group *gptr;
 	char **member;  
-	struct passwd *pass = Get_Pwnam(user,False);
+	struct passwd *pass = Get_Pwnam(user);
 
 	DEBUG(10,("user_in_unix_group_list: checking user %s in group %s\n", user, gname));
 
@@ -532,7 +564,11 @@ struct passwd *smb_getpwnam(char *user, BOOL allow_change)
 	char *sep;
 	extern pstring global_myname;
 
-	pw = Get_Pwnam(user, allow_change);
+	if (allow_change) {
+		pw = Get_Pwnam_Modify(user);
+	} else {
+		pw = Get_Pwnam(user);
+	}
 	if (pw) return pw;
 
 	/* if it is a domain qualified name and it isn't in our password
@@ -543,8 +579,11 @@ struct passwd *smb_getpwnam(char *user, BOOL allow_change)
 	p = strchr_m(user,*sep);
 	if (p && 
 	    strncasecmp(global_myname, user, strlen(global_myname))==0) {
-		return Get_Pwnam(p+1, allow_change);
+		if (allow_change) {
+			pw = Get_Pwnam_Modify(p+1);
+		} else {
+			pw = Get_Pwnam(p+1);
+		}
 	}
-
 	return NULL;
 }
