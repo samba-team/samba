@@ -197,9 +197,10 @@ done:
  * @return number of passwords migrated
  */
 
-int migrate_trust_passwords(void)
+int migrate_trust_passwords(struct pdb_context *pdb_ctx)
 {
 	int migrated = 0;
+	NTSTATUS nt_status;
 	SAM_TRUST_PASSWD trust;
 	const size_t max_name_len = sizeof(trust.private.uni_name)/2;
 	/* nt workstation trust */
@@ -208,6 +209,9 @@ int migrate_trust_passwords(void)
 	time_t lct;
 	uint32 chan = 0;
 	DOM_SID dom_sid;
+
+	/* sanity-check */
+	if (!pdb_ctx) return 0;
 
 	/* Checking whether passwords have already been migrated */
 	if (secrets_passwords_migrated(False)) return migrated;
@@ -242,6 +246,7 @@ int migrate_trust_passwords(void)
 		else
 			return 0;
 		
+		nt_status = pdb_ctx->pdb_add_trust_passwd(pdb_ctx, &trust);
 		migrated++;
 	}
 
