@@ -7,7 +7,14 @@
 			<address><email>jelmer@samba.org</email></address>
 		</affiliation>
 	</author>
-	<pubdate> 19 March 2003 </pubdate>
+	<author>
+		<firstname>Stefan</firstname><surname>Metzmacher</surname>
+		<affiliation>
+			<address><email>metze@metzemix.de</email></address>
+		</affiliation>
+		<contrib>events interface</contrib>
+	</author>
+	<pubdate> 17 September 2003 </pubdate>
 </chapterinfo>
 
 <title>Modules</title>
@@ -161,4 +168,161 @@ be used as probing will most likely disappear in the future.</para>
 
 </sect2>
 </sect1>
+
+<sect1>
+<title>Registration of events</title>
+
+<sect2>
+<title>Intention</title>
+
+<para>
+For some modules it is necessary to drop idle database connections,
+or do other things periodically.
+Some modules need to do close database connections or similar things
+when the server exits.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Advantages</title>
+
+<para>
+The event registration system has the following advantages:
+</para>
+
+<simplelist>
+<member>Every module is able to register/unregister idle or exit handlers called from the main server loop</member>
+<member>No need for hacking the main server anymore</member>
+</simplelist>
+
+</sect2>
+
+<sect2>
+<title>General stuff</title>
+
+<para>
+Each event has an event_id of type smb_event_id_t, which identifies the event in its event list.
+(Take a look at <filename>include/module.h</filename> and <filename>lib/module.c</filename>.)
+There are currently two event types:
+</para>
+
+<simplelist>
+<member>idle events</member>
+<member>exit events</member>
+</simplelist>
+
+</sect2>
+
+<sect2>
+<title>Type: idle event</title>
+
+<para>
+Idle events are called periodically from the main server loop.
+if the specified interval is less or equal than 0, the default SMB_IDLE_EVENT_DEFAULT_INTERVAL (180 s) is used.
+if the specified interval is less than SMB_IDLE_EVENT_MIN_INTERVAL (30 s), SMB_IDLE_EVENT_MIN_INTERVAL is used.
+In any other case the specified interval is used.
+</para>
+
+<note><para>
+the real interval can be differ from the specified interval about up to +/- 30 s.
+</para></note>
+
+<para>
+Idle events can be registered via the
+<programlisting>
+smb_event_id_t smb_register_idle_event(smb_idle_event_fn *fn, void *data, time_t interval);
+</programlisting> function.
+</para>
+
+<variablelist>
+
+<varlistentry><term>fn</term>
+<listitem><para>
+the function pointer to idle handler function.
+this function must have the following prototype!
+<programlisting>
+void example_idle_event_fn(void **data, time_t *interval, time_t now);
+</programlisting>
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>data</term>
+<listitem><para>this is a pointer to private data which is passed to the idle function when it's called.</para></listitem>
+</varlistentry>
+
+<varlistentry><term>interval</term>
+<listitem><para>
+this is a pointer to the time_t interval in witch the idle handler function is called.
+the idle handler is able to change it's interval.
+</para></listitem>
+</varlistentry>
+</variablelist>
+
+<para>
+the event_id is returned on succes, on failure SMB_EVENT_ID_INVALID is returned.
+</para>
+
+<para>
+Idle events can be unregistered via the
+<programlisting>
+BOOL smb_unregister_idle_event(smb_event_id_t id);
+</programlisting> function.
+</para>
+
+<para>
+True is returned on success, False on failure.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Type: exit event</title>
+
+<para>Exit events are called when the server exits</para>
+
+<para>
+Exit events can be registered via the
+<programlisting>
+smb_event_id_t smb_register_exit_event(smb_exit_event_fn *fn, void *data);
+</programlisting> function.
+</para>
+
+<variablelist>
+
+<varlistentry><term>fn</term>
+<listitem><para>
+the function pointer to exit handler function.
+this function must have the following prototype!
+<programlisting>
+void example_exit_event_fn(void **data);
+</programlisting>
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>data</term>
+<listitem><para>this is a pointer to private data which is passed to the exit function when it's called.</para></listitem>
+</varlistentry>
+
+</variablelist>
+
+<para>
+the event_id is returned on success, on failure SMB_EVENT_ID_INVALID is returned.
+</para>
+
+<para>
+Exit events can be unregistered via the
+<programlisting>
+BOOL smb_unregister_exit_event(smb_event_id_t id);
+</programlisting> function.
+</para>
+
+<para>
+True is returned on succes, False on failure.
+</para>
+
+</sect2>
+
+</sect1>
+
 </chapter>
