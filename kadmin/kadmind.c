@@ -88,9 +88,6 @@ usage(int ret)
     exit (ret);
 }
 
-krb5_error_code
-kadmind_loop (krb5_context, krb5_auth_context, krb5_keytab, int);
-
 int
 main(int argc, char **argv)
 {
