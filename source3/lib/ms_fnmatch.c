@@ -1,14 +1,9 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0
-   
+   filename matching routine
    Copyright (C) Andrew Tridgell 1992-1998 
 
-   This module is derived from fnmatch.c copyright by the Free
-   Software Foundation. It has been extensively modified to implement
-   the wildcard matcing semantics of Microsoft SMB servers.
-
-   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -23,8 +18,12 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+/*
+   This module was originally based on fnmatch.c copyright by the Free
+   Software Foundation. It bears little resemblence to that code now 
+*/  
 
-/* this matches only filenames, with no directory component */
+
 #if FNMATCH_TEST
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +33,10 @@
 
 /* the following function was derived using the masktest utility -
    after years of effort we finally have a perfect MS wildcard
-   matching routine! */
+   matching routine! 
+
+   NOTE: this matches only filenames with no directory component
+*/
 int ms_fnmatch(char *pattern, char *string)
 {
 	char *p = pattern, *n = string;
@@ -85,7 +87,7 @@ int ms_fnmatch(char *pattern, char *string)
 		}
 	}
 	
-	if (! *n)	return 0;
+	if (! *n) return 0;
 	
 	return -1;
 }
@@ -143,4 +145,5 @@ static char *match_test(char *pattern, char *file, char *short_name)
 	}
 	return 0;
 }
-#endif
+#endif /* FNMATCH_TEST */
+
