@@ -22,6 +22,19 @@
 */
 #include "includes.h"
 
+/**
+ * @file
+ *
+ * @brief Character-set conversion routines built on our iconv.
+ * 
+ * @note Samba's internal character set (at least in the 3.0 series)
+ * is always the same as the one for the Unix filesystem.  It is
+ * <b>not</b> necessarily UTF-8 and may be different on machines that
+ * need i18n filenames to be compatible with Unix software.  It does
+ * have to be a superset of ASCII.  All multibyte sequences must start
+ * with a byte with the high bit set.
+ */
+
 static pstring cvtbuf;
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
