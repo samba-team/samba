@@ -351,7 +351,7 @@ static const char *smb_peer_name(struct dcerpc_pipe *p)
 /*
   fetch the user session key 
 */
-NTSTATUS smb_session_key(struct dcerpc_pipe *p, DATA_BLOB *session_key)
+static NTSTATUS smb_session_key(struct dcerpc_pipe *p, DATA_BLOB *session_key)
 {
 	struct smb_private *smb = p->transport.private;
 
