@@ -1433,10 +1433,10 @@ krb5_get_init_creds(krb5_context context,
  out:
     memset (buf, 0, sizeof(buf));
     free_init_creds_ctx(context, &ctx);
-    if (ret == 0) {
+    krb5_free_kdc_rep (context, &kdc_reply);
+    if (ret == 0)
 	*creds = ctx.cred;
-	krb5_free_kdc_rep (context, &kdc_reply);
-    } else
+    else
 	krb5_free_cred_contents (context, &ctx.cred);
 
     return ret;
