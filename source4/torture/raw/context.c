@@ -40,7 +40,7 @@
 
 #define CHECK_NOT_VALUE(v, correct) do { \
 	if ((v) == (correct)) { \
-		printf("(%d) Incorrect value %s=%d - should be %d\n", \
+		printf("(%d) Incorrect value %s=%d - should not be %d\n", \
 		       __LINE__, #v, v, correct); \
 		ret = False; \
 		goto done; \
@@ -106,6 +106,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_session_setup(session2, mem_ctx, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	session2->vuid = setup.generic.out.vuid;
 	printf("vuid1=%d vuid2=%d vuid3=%d\n", cli->session->vuid, session->vuid, session2->vuid);
 	
 	CHECK_NOT_VALUE(session->vuid, session2->vuid);
