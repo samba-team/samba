@@ -126,7 +126,7 @@ send_request (krb5_context context,
 			&krb_priv_data,
 			NULL);
     if (ret)
-	return ret;
+	goto out2;
 
     len = 6 + ap_req_data.length + krb_priv_data.length;
     p = header;
@@ -155,11 +155,13 @@ send_request (krb5_context context,
     iov[2].iov_len     = krb_priv_data.length;
 
     if (sendmsg (sock, &msghdr, 0) < 0)
-	return errno;
+	ret = errno;
 
-    krb5_data_free (&ap_req_data);
+out1:
     krb5_data_free (&krb_priv_data);
-    return 0;
+out2:
+    krb5_data_free (&ap_req_data);
+    return ret;
 }
 
 static void
