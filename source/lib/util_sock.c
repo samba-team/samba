@@ -873,7 +873,7 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 	int *sockets;
 	BOOL good_connect;
 
-	fd_set wr_fds;
+	fd_set r_fds, wr_fds;
 	struct timeval tv;
 	int maxfd;
 
@@ -928,9 +928,11 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 
 	maxfd = 0;
 	FD_ZERO(&wr_fds);
+	FD_ZERO(&r_fds);
 
 	for (i=0; i<num_addrs; i++) {
 		FD_SET(sockets[i], &wr_fds);
+		FD_SET(sockets[i], &r_fds);
 		if (sockets[i]>maxfd)
 			maxfd = sockets[i];
 	}
@@ -938,7 +940,7 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 	tv.tv_sec = 0;
 	tv.tv_usec = connect_loop;
 
-	res = sys_select(maxfd+1, NULL, &wr_fds, NULL, &tv);
+	res = sys_select(maxfd+1, &r_fds, &wr_fds, NULL, &tv);
 
 	if (res < 0)
 		goto done;
@@ -948,21 +950,15 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 
 	for (i=0; i<num_addrs; i++) {
 
-		int sockerr, sockerr_len;
-		
 		if (!FD_ISSET(sockets[i], &wr_fds))
 			continue;
 
-		sockerr_len = sizeof(sockerr);
+		/* Stevens, Network Programming says that if there's a
+		 * successful connect, the socket is only writable. Upon an
+		 * error, it's both readable and writable. */
 
-		res = getsockopt(sockets[i], SOL_SOCKET, SO_ERROR, &sockerr,
-				 &sockerr_len);
-
-		if (res < 0)
-			goto done;
-
-		if (sockerr == 0) {
-			/* Hey, we got a connection */
+		if (!FD_ISSET(sockets[i], &r_fds)) {
+			/* Only writable, so it's connected */
 			resulting_index = i;
 			goto done;
 		}

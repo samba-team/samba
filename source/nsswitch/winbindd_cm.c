@@ -593,9 +593,15 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 {
 	struct ip_service *iplist = NULL;
 	int i, num = 0;
+	struct bitmap *replied;
 
 	if (!internal_resolve_name(domain->name, 0x1c, &iplist, &num,
 				   lp_name_resolve_order()))
+		return False;
+
+	replied = bitmap_talloc(mem_ctx, num);
+
+	if (replied == NULL)
 		return False;
 
 	for (i=0; i<num; i++) {
@@ -614,7 +620,7 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 
 			fstring dcname;
 
-			if (iplist[j].ip.s_addr == 0)
+			if (bitmap_query(replied, j))
 				continue;
 
 			if (receive_getdc_response(iplist[j].ip,
@@ -623,7 +629,7 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 				add_one_dc_unique(mem_ctx, domain->name,
 						  dcname, iplist[j].ip,
 						  dcs, num_dcs);
-				iplist[i].ip.s_addr = 0;
+				bitmap_set(replied, j);
 			} else {
 				retry = True;
 			}
