@@ -78,7 +78,7 @@ static struct smbw_dir *cur_dir;
 /***************************************************** 
 add a entry to a directory listing
 *******************************************************/
-static void smbw_dir_add(struct file_info *finfo, const char *mask, void * NULL)
+static void smbw_dir_add(struct file_info *finfo, const char *mask)
 {
 	DEBUG(5,("%s\n", finfo->name));
 
@@ -237,8 +237,7 @@ int smbw_dir_open(const char *fname)
 			smbw_share_add("..",0,"");
 		}
 #endif
-		if (cli_list(&srv->cli, mask, aHIDDEN|aSYSTEM|aDIR, 
-			     smbw_dir_add, NULL) < 0) {
+		if (cli_list(&srv->cli, mask, aHIDDEN|aSYSTEM|aDIR, smbw_dir_add) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
 		}
