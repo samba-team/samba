@@ -13,7 +13,7 @@ hdb_principal2key(krb5_context context, krb5_principal p, krb5_data *key)
     krb5_store_principal(sp, p);
     krb5_storage_to_data(sp, key);
     krb5_storage_free(sp);
-    krb5_free_principal(new);
+    krb5_free_principal(context, new);
 }
 
 void

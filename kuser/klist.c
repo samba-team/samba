@@ -65,7 +65,7 @@ main (int argc, char **argv)
 	abort ();
 
 
-    krb5_free_principal (principal);
+    krb5_free_principal (context, principal);
 
     krb5_free_context (context);
     return 0;

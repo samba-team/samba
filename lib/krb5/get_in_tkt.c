@@ -60,7 +60,7 @@ extract_ticket(krb5_context context,
 	creds->ticket.length = len;
 	creds->second_ticket.length = 0;
     }
-    /*     krb5_free_principal (rep->part1.ticket.sprinc);*/
+    /*     krb5_free_principal (context, rep->part1.ticket.sprinc);*/
 
     salt.length = 0;
     salt.data = NULL;
