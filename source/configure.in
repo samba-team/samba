@@ -851,7 +851,8 @@ case "$host_os" in
 			;;
 		*solaris*) AC_DEFINE(SUNOS5)
 			BLDSHARED="true"
-			LDSHFLAGS="-h \$@ -G"
+			LDSHFLAGS="-G"
+			SONAMEFLAG="-h "
 			if test "${ac_cv_prog_CC}" = "gcc"; then
 				PICFLAG="-fPIC"
 			else
@@ -863,11 +864,13 @@ case "$host_os" in
 		;;
 		*sunos*) AC_DEFINE(SUNOS4)
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-h,\$@ -G"
+			LDSHFLAGS="-G"
+			SONAMEFLAG="-Wl,-h,"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
 		;;
 		*bsd*)  BLDSHARED="true"
-			LDSHFLAGS="-Wl,-soname,\$@ -shared"
+			LDSHFLAGS="-shared"
+			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
@@ -878,7 +881,8 @@ case "$host_os" in
 			esac
 			ATTEMPT_WRAP32_BUILD=yes
 			BLDSHARED="true"
-			LDSHFLAGS="-set_version sgi1.0 -soname \$@ -shared"
+			LDSHFLAGS="-set_version sgi1.0 -shared"
+			SONAMEFLAG="-soname "
 			SHLD="\${LD}" 
 			if test "${ac_cv_prog_CC}" = "gcc"; then
 				PICFLAG="-fPIC"
@@ -899,7 +903,8 @@ case "$host_os" in
 			if test $ac_cv_prog_cc_Ae = yes; then
 				BLDSHARED="true"
 				SHLD="/usr/bin/ld"
-				LDSHFLAGS="-B symbolic -b -z +h \$@"
+				LDSHFLAGS="-B symbolic -b -z"
+				SONAMEFLAG="+h "
 				PICFLAG="+z"
 			fi
 			DYNEXP="-Wl,-E"
@@ -908,13 +913,15 @@ case "$host_os" in
 		*qnx*) AC_DEFINE(QNX);;
 		*osf*) AC_DEFINE(OSF1)
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-soname,\$@ -shared"
+			LDSHFLAGS="-shared"
+			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 		;;
 		*sco*) AC_DEFINE(SCO);;
 		*unixware*) AC_DEFINE(UNIXWARE)
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-soname,\$@ -shared"
+			LDSHFLAGS="-shared"
+			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-KPIC"
 		;;
 		*next2*) AC_DEFINE(NEXT2);;
@@ -2674,10 +2681,10 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 	WINBIND_STARGETS="bin/winbindd"
 	case "$host_os" in
         *irix*)
-		WINBIND_LTARGETS="libns_winbind.so"
+		WINBIND_LTARGETS="nsswitch/libns_winbind.so"
                 ;;
         *)
-		WINBIND_LTARGETS="libnss_winbind.so"
+		WINBIND_LTARGETS="nsswitch/libnss_winbind.so"
                 ;;
 	esac
 
