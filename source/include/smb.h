@@ -184,8 +184,10 @@ implemented */
 #define ERROR_EAS_DIDNT_FIT		(275) /* Extended attributes didn't fit */
 #define ERROR_EAS_NOT_SUPPORTED		(282) /* Extended attributes not supported */
 #define ERROR_NOTIFY_ENUM_DIR	       (1022) /* Buffer too small to return change notify. */
+#define ERROR_UNKNOWN_PRINTER_DRIVER   (1797)
 #define ERROR_INVALID_PRINTER_NAME     (1801)
 #define ERROR_INVALID_DATATYPE	       (1804)
+#define ERROR_INVALID_ENVIRONMENT      (1805)
 
 /* here's a special one from observing NT */
 #define ERRnoipc 66 /* don't support ipc */

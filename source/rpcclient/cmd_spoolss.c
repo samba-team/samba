@@ -470,7 +470,7 @@ uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char 
 
         fstrcpy(env, argv[1]);
 
-        for (i=2; i<argc; i++) {
+        for (i=2; i<=argc; i++) {
                 fstrcat(env, " ");
                 fstrcat(env, argv[i]);
         }

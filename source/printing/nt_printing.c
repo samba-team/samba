@@ -37,8 +37,8 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 /* we need to have a small set of default forms to support our
    default printer */
 static nt_forms_struct default_forms[] = {
-	{"Letter", 0x20, 0x34b5b, 0x44367, 0x0, 0x0, 0x34b5b, 0x44367},
-	{"A4", 0xb0, 0x3354f, 0x4884e, 0x0, 0x0, 0x3354f, 0x4884e}
+	{"Letter", 0x2, 0x34b5b, 0x44367, 0x0, 0x0, 0x34b5b, 0x44367},
+	{"A4", 0x2, 0x3354f, 0x4884e, 0x0, 0x0, 0x3354f, 0x4884e}
 };
 
 
@@ -216,7 +216,7 @@ get the nt drivers list
 
 traverse the database and look-up the matching names
 ****************************************************************************/
-int get_ntdrivers(fstring **list, char *architecture)
+int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 {
 	int total=0;
 	fstring short_archi;
@@ -224,7 +224,7 @@ int get_ntdrivers(fstring **list, char *architecture)
 	TDB_DATA kbuf, newkey;
 
 	get_short_archi(short_archi, architecture);
-	slprintf(key, sizeof(key), "%s%s/", DRIVERS_PREFIX, short_archi);
+	slprintf(key, sizeof(key), "%s%s/%d/", DRIVERS_PREFIX, short_archi, version);
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
@@ -245,7 +245,7 @@ int get_ntdrivers(fstring **list, char *architecture)
 function to do the mapping between the long architecture name and
 the short one.
 ****************************************************************************/
-void get_short_archi(char *short_archi, char *long_archi)
+BOOL get_short_archi(char *short_archi, char *long_archi)
 {
 	struct table {
 		char *long_archi;
@@ -256,9 +256,9 @@ void get_short_archi(char *short_archi, char *long_archi)
 	{
 		{"Windows 4.0",          "WIN40"    },
 		{"Windows NT x86",       "W32X86"   },
-		{"Windows NT R4000",     "W32mips"  },
-		{"Windows NT Alpha_AXP", "W32alpha" },
-		{"Windows NT PowerPC",   "W32ppc"   },
+		{"Windows NT R4000",     "W32MIPS"  },
+		{"Windows NT Alpha_AXP", "W32ALPHA" },
+		{"Windows NT PowerPC",   "W32PPC"   },
 		{NULL,                   ""         }
 	};
 	
@@ -267,17 +267,192 @@ void get_short_archi(char *short_archi, char *long_archi)
 	DEBUG(107,("Getting architecture dependant directory\n"));
 	do {
 		i++;
-	} while ( (archi_table[i].long_archi!=NULL ) && strncmp(long_archi, archi_table[i].long_archi, strlen(long_archi)) );
+	} while ( (archi_table[i].long_archi!=NULL ) && 
+	          StrCaseCmp(long_archi, archi_table[i].long_archi) );
 
-	if (archi_table[i].long_archi==NULL)
-	{
+	if (archi_table[i].long_archi==NULL) {
 		DEBUGADD(107,("Unknown architecture [%s] !\n", long_archi));
+		return FALSE;
 	}
+
 	StrnCpy (short_archi, archi_table[i].short_archi, strlen(archi_table[i].short_archi));
 
 	DEBUGADD(108,("index: [%d]\n", i));
 	DEBUGADD(108,("long architecture: [%s]\n", long_archi));
 	DEBUGADD(108,("short architecture: [%s]\n", short_archi));
+	
+	return TRUE;
+}
+
+/****************************************************************************
+****************************************************************************/
+static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
+{
+	fstring architecture;
+	fstring new_name;
+	char *p;
+	int i;
+	
+	/* jfm:7/16/2000 the client always sends the cversion=0.
+	 * The server should check which version the driver is by reading the PE header
+	 * of driver->driverpath.
+	 *
+	 * For Windows 95/98 the version is 0 (so the value sent is correct)
+	 * For Windows NT (the architecture doesn't matter)
+	 *	NT 3.1: cversion=0
+	 *	NT 3.5/3.51: cversion=1
+	 *	NT 4: cversion=2
+	 *	NT2K: cversion=3
+	 */
+
+	get_short_archi(architecture, driver->environment);
+
+	/* if it's Windows 95/98, we keep the version at 0
+	 * jfmxxx: I need to redo that more correctly for NT2K.
+	 */
+	 
+	if (StrCaseCmp(driver->environment, "Windows 4.0")==0)
+		driver->cversion=0;
+	else
+		driver->cversion=2;
+
+	/* clean up the driver name.
+	 * we can get .\driver.dll
+	 * or worse c:\windows\system\driver.dll !
+	 */
+	/* using an intermediate string to not have overlaping memcpy()'s */
+	if ((p = strrchr(driver->driverpath,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->driverpath, new_name);
+	}
+
+	if ((p = strrchr(driver->datafile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->datafile, new_name);
+	}
+
+	if ((p = strrchr(driver->configfile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->configfile, new_name);
+	}
+
+	if ((p = strrchr(driver->helpfile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->helpfile, new_name);
+	}
+
+	if (driver->dependentfiles) {
+		for (i=0; *driver->dependentfiles[i]; i++) {
+			if ((p = strrchr(driver->dependentfiles[i],'\\')) != NULL) {
+				fstrcpy(new_name, p+1);
+				fstrcpy(driver->dependentfiles[i], new_name);
+			}
+		}
+	}
+}
+
+/****************************************************************************
+****************************************************************************/
+static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
+{
+
+}
+
+/****************************************************************************
+****************************************************************************/
+uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level)
+{
+	switch (level) {
+		case 3:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
+			driver=driver_abstract.info_3;
+			clean_up_driver_struct_level_3(driver);
+			break;
+		}
+		case 6:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver;
+			driver=driver_abstract.info_6;
+			clean_up_driver_struct_level_6(driver);
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+****************************************************************************/
+uint32 move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user)
+{
+	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
+	fstring architecture;
+	fstring clean_driver_name;
+	pstring new_dir;
+	pstring old_name;
+	pstring new_name;
+	connection_struct *conn;
+	fstring inbuf;
+	fstring outbuf;
+	struct smb_passwd *smb_pass;
+	int ecode;
+	int outsize = 0;
+	int i;
+
+	if (level==3)
+		driver=driver_abstract.info_3;
+	
+	get_short_archi(architecture, driver->environment);
+
+	/* clean up the driver's name */
+	fstrcpy(clean_driver_name, driver->name);
+	all_string_sub(clean_driver_name, "/", "#", 0);
+	
+	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
+	smb_pass = getsmbpwnam(uidtoname(user->uid));
+	conn = make_connection("print$", uidtoname(user->uid), smb_pass->smb_nt_passwd, 24, "A:", user->vuid, &ecode);
+
+	/* 
+	 * make the directories version and version\driver_name 
+	 * under the architecture directory.
+	 */
+	DEBUG(5,("Creating first directory\n"));
+	slprintf(new_dir, sizeof(new_dir), "%s\\%d", architecture, driver->cversion);
+	mkdir_internal(conn, inbuf, outbuf, new_dir);
+
+	slprintf(new_dir, sizeof(new_dir), "%s\\%d\\%s", architecture, driver->cversion, clean_driver_name);
+	mkdir_internal(conn, inbuf, outbuf, new_dir);
+
+	/* move all the files, one by one, 
+	 * from archi\filexxx.yyy to
+	 * archi\version\driver name\filexxx.yyy 
+	 */
+
+	DEBUG(5,("Moving file now !\n"));
+	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->driverpath);	
+	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->driverpath);	
+	outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+
+	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->datafile);	
+	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->datafile);	
+	outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+
+	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->configfile);	
+	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->configfile);	
+	outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+
+	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->helpfile);	
+	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->helpfile);	
+	outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+
+	if (driver->dependentfiles) {
+		for (i=0; *driver->dependentfiles[i]; i++) {
+			slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->dependentfiles[i]);	
+			slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->dependentfiles[i]);	
+			outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+		}
+	}
+
+	close_cnum(conn, user->vuid);
 }
 
 /****************************************************************************
@@ -286,24 +461,49 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 {
 	int len, buflen;
 	fstring architecture;
+	pstring directory;
+	fstring clean_driver_name;
+	pstring temp_name;
 	pstring key;
 	char *buf;
 	int i, ret;
 	TDB_DATA kbuf, dbuf;
 
 	get_short_archi(architecture, driver->environment);
-	slprintf(key, sizeof(key), "%s%s/%s", DRIVERS_PREFIX, architecture, driver->name);
 
-	/*
-	 * cversion must be 2.
-	 * when adding a printer ON the SERVER
-	 * rpcAddPrinterDriver defines it to zero
-	 * which is wrong !!!
-	 *
-	 * JFM, 4/14/99
+	/* The names are relative. We store them in the form: \print$\arch\version\printer-name\driver.xxx
+	 * \\server is added in the rpc server layer.
+	 * It does make sense to NOT store the server's name in the printer TDB.
 	 */
-	driver->cversion=2;
+
+	/* clean up the driver's name */
+	fstrcpy(clean_driver_name, driver->name);
+	all_string_sub(clean_driver_name, "/", "#", 0);
 	
+	slprintf(directory, sizeof(directory), "\\print$\\%s\\%d\\%s\\", architecture, driver->cversion, clean_driver_name);
+
+	
+	fstrcpy(temp_name, driver->driverpath);
+	slprintf(driver->driverpath, sizeof(driver->driverpath), "%s%s", directory, temp_name);
+
+	fstrcpy(temp_name, driver->datafile);
+	slprintf(driver->datafile, sizeof(driver->datafile), "%s%s", directory, temp_name);
+
+	fstrcpy(temp_name, driver->configfile);
+	slprintf(driver->configfile, sizeof(driver->configfile), "%s%s", directory, temp_name);
+
+	fstrcpy(temp_name, driver->helpfile);
+	slprintf(driver->helpfile, sizeof(driver->helpfile), "%s%s", directory, temp_name);
+
+	if (driver->dependentfiles) {
+		for (i=0; *driver->dependentfiles[i]; i++) {
+			fstrcpy(temp_name, driver->dependentfiles[i]);
+			slprintf(driver->dependentfiles[i], sizeof(driver->dependentfiles[i]), "%s%s", directory, temp_name);
+		}
+	}
+
+	slprintf(key, sizeof(key), "%s%s/%d/%s", DRIVERS_PREFIX, architecture, driver->cversion, driver->name);
+
 	buf = NULL;
 	len = buflen = 0;
 
@@ -319,7 +519,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 			driver->helpfile,
 			driver->monitorname,
 			driver->defaultdatatype);
-	
+
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
 			len += tdb_pack(buf+len, buflen-len, "f", 
@@ -395,7 +595,7 @@ static uint32 get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring in_prt, fstring in_arch)
+static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring in_prt, fstring in_arch, uint32 version)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 driver;
 	TDB_DATA kbuf, dbuf;
@@ -407,14 +607,20 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	ZERO_STRUCT(driver);
 
 	get_short_archi(architecture, in_arch);
-	slprintf(key, sizeof(key), "%s%s/%s", DRIVERS_PREFIX, architecture, in_prt);
+
+	DEBUG(8,("get_a_printer_driver_3: [%s%s/%d/%s]\n", DRIVERS_PREFIX, architecture, version, in_prt));
+
+	slprintf(key, sizeof(key), "%s%s/%d/%s", DRIVERS_PREFIX, architecture, version, in_prt);
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 	
 	dbuf = tdb_fetch(tdb, kbuf);
+#if 0
 	if (!dbuf.dptr) return get_a_printer_driver_3_default(info_ptr, in_prt, in_arch);
-
+#else
+	if (!dbuf.dptr) return 5;
+#endif
 	len += tdb_unpack(dbuf.dptr, dbuf.dsize, "dffffffff", 
 			  &driver.cversion,
 			  driver.name,
@@ -464,7 +670,7 @@ uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
 	int i;
 	line[0] = '\0';
 
-	slprintf(key, sizeof(key), "%s%s/%s", DRIVERS_PREFIX, "WIN40", model);
+	slprintf(key, sizeof(key), "%s%s/%d/%s", DRIVERS_PREFIX, "WIN40", 0, model);
 	DEBUG(10,("driver key: [%s]\n", key));
 	
 	kbuf.dptr = key;
@@ -472,7 +678,7 @@ uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
 	if (!tdb_exists(tdb, kbuf)) return False;
 
 	ZERO_STRUCT(info3);
-	get_a_printer_driver_3(&info3, model, "Windows 4.0");
+	get_a_printer_driver_3(&info3, model, "Windows 4.0", 0);
 	
     DEBUGADD(10,("info3->name            [%s]\n", info3->name));
     DEBUGADD(10,("info3->datafile        [%s]\n", info3->datafile));
@@ -754,7 +960,7 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	safe_free(buf);
 
 	DEBUG(8,("packed printer [%s] with driver [%s] portname=[%s] len=%d\n", 
-		 info->portname, info->drivername, info->portname, len));
+		 info->sharename, info->drivername, info->portname, len));
 
 	return ret;
 }
@@ -1071,6 +1277,8 @@ static int unpack_specifics(NT_PRINTER_PARAM **list, char *buf, int buflen)
 				  &param.data);
 		param.next = *list;
 		*list = memdup(&param, sizeof(param));
+
+		DEBUG(8,("specific: [%s], len: %d\n", param.value, param.data_len));
 	}
 
 	return len;
@@ -1110,8 +1318,10 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	if ((info.devmode = construct_nt_devicemode(info.printername)) == NULL)
 		goto fail;
 
+#if 1
 	if (!nt_printing_getsec(sharename, &info.secdesc_buf))
 		goto fail;
+#endif
 
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
 	if (! *info_ptr) {
@@ -1141,8 +1351,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 		
 	ZERO_STRUCT(info);
 
-	slprintf(key, sizeof(key), "%s%s",
-		 PRINTERS_PREFIX, sharename);
+	slprintf(key, sizeof(key), "%s%s", PRINTERS_PREFIX, sharename);
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -1184,7 +1393,9 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
+#if 1 /* JRATEST */
 	nt_printing_getsec(sharename, &info.secdesc_buf);
+#endif /* JRATEST */
 
 	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
@@ -1393,7 +1604,7 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 /****************************************************************************
 ****************************************************************************/
 uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level, 
-                            fstring printername, fstring architecture)
+                            fstring printername, fstring architecture, uint32 version)
 {
 	uint32 success;
 	
@@ -1403,7 +1614,7 @@ uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 		{
 			success=get_a_printer_driver_3(&(driver->info_3), 
 			                               printername,
-						       architecture);
+						       architecture, version);
 			break;
 		}
 		default:
@@ -1644,6 +1855,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	init_sec_access(&sa, PRINTER_ACE_PRINT);
 	init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
 
 	/* Make the security descriptor owned by the Administrators group
 	   on the PDC of the domain. */

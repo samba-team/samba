@@ -1668,8 +1668,10 @@ int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
 BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
-int get_ntdrivers(fstring **list, char *architecture);
-void get_short_archi(char *short_archi, char *long_archi);
+int get_ntdrivers(fstring **list, char *architecture, uint32 version);
+BOOL get_short_archi(char *short_archi, char *long_archi);
+uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level);
+uint32 move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user);
 uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model);
 uint32 del_a_printer(char *sharename);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
@@ -1682,7 +1684,7 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level, 
-                            fstring printername, fstring architecture);
+                            fstring printername, fstring architecture, uint32 version);
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,
                                  fstring value, uint8 **data, uint32 *type, uint32 *len);
@@ -2318,7 +2320,6 @@ BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *
 BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str);
 BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str);
 BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth);
-BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str);
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str);
 BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, int len, int max_buf_size);
 BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset);
@@ -3112,9 +3113,8 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle);
-uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
-				uint32 level,
-				const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
+uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
+				 uint32 level, const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
 uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environment, uint32 level,
 					NEW_BUFFER *buffer, uint32 offered, 
 					uint32 *needed);
@@ -3625,6 +3625,7 @@ int reply_printclose(connection_struct *conn,
 int reply_printqueue(connection_struct *conn,
 		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int mkdir_internal(connection_struct *conn, char *inbuf, char *outbuf, pstring directory);
 int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 BOOL rmdir_internals(connection_struct *conn, char *directory);
 int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);

@@ -1791,8 +1791,13 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!new_smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
 
-	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, &i, &sec_offset))
+#if 0 /* JFMTEST */
+	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, NULL, &sec_offset))
 		return False;
+#else
+	if (!new_smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
+		return False;
+#endif
 
 	if (!prs_uint32("attributes", ps, depth, &info->attributes))
 		return False;
@@ -1811,12 +1816,13 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!prs_uint32("averageppm", ps, depth, &info->averageppm))
 		return False;
 
-	if (!prs_uint32_post("secdesc_ptr", ps, depth, &i, sec_offset, info->secdesc ? prs_offset(ps) : 0 ))
+#if 0 /* JFMTEST */
+	if (!prs_uint32_post("secdesc_ptr", ps, depth, NULL, sec_offset, info->secdesc ? prs_offset(ps)-buffer->struct_start : 0 ))
 		return False;
 
 	if (!sec_io_desc("secdesc", &info->secdesc, ps, depth)) 
 		return False;
-
+#endif
 	return True;
 }
 
@@ -4285,7 +4291,6 @@ BOOL make_spoolss_q_getprinterdriverdir(SPOOL_Q_GETPRINTERDRIVERDIR *q_u,
                                 NEW_BUFFER *buffer, uint32 offered)
 {
 	init_buf_unistr2(&q_u->name, &q_u->name_ptr, servername);
-
 	init_buf_unistr2(&q_u->environment, &q_u->environment_ptr, env_name);
 
         q_u->level=level;

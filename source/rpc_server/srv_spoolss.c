@@ -880,7 +880,7 @@ static BOOL api_spoolss_addprinterdriver(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_addprinterdriver(&q_u.server_name, q_u.level, &q_u.info);
+	r_u.status = _spoolss_addprinterdriver(p, &q_u.server_name, q_u.level, &q_u.info);
 				
 	if(!spoolss_io_r_addprinterdriver("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addprinterdriver: unable to marshall SPOOL_R_ADDPRINTERDRIVER.\n"));

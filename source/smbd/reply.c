@@ -3101,15 +3101,14 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
 
 
 /****************************************************************************
-  reply to a mkdir
+ The guts of the mkdir command, split out so it may be called by the NT SMB
+ code. 
 ****************************************************************************/
-int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int mkdir_internal(connection_struct *conn, char *inbuf, char *outbuf, pstring directory)
 {
-  pstring directory;
-  int outsize,ret= -1;
   BOOL bad_path = False;
- 
-  pstrcpy(directory,smb_buf(inbuf) + 1);
+  int ret= -1;
+  
   unix_convert(directory,conn,0,&bad_path,NULL);
   
   if (check_name(directory, conn))
@@ -3125,10 +3124,23 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
+}
 
-  outsize = set_message(outbuf,0,0,True);
+/****************************************************************************
+  reply to a mkdir
+****************************************************************************/
+int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+{
+  pstring directory;
+  int outsize;
+ 
+  pstrcpy(directory,smb_buf(inbuf) + 1);
 
-  DEBUG( 3, ( "mkdir %s ret=%d\n", directory, ret ) );
+  outsize=mkdir_internal(conn, inbuf, outbuf, directory);
+  if(outsize == 0)
+    outsize = set_message(outbuf,0,0,True);
+
+  DEBUG( 3, ( "mkdir %s ret=%d\n", directory, outsize ) );
 
   return(outsize);
 }

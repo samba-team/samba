@@ -628,61 +628,6 @@ BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int de
  in little-endian format then do it as a stream of bytes.
  ********************************************************************/
 
-#ifndef RPCCLIENT_TEST
-BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
-{
-	int len = 0;
-	unsigned char *p = (unsigned char *)str->buffer;
-	uint8 *start;
-	char *q;
-	char zero=0;
-
-	for(len = 0; len < (sizeof(str->buffer) / sizeof(str->buffer[0])) &&
-			   str->buffer[len] != 0; len++)
-		;
-
-	q = prs_mem_get(ps, (len+1)*2);
-	if (q == NULL)
-		return False;
-
-	start = (uint8*)q;
-
-	for(len = 0; len < (sizeof(str->buffer) / sizeof(str->buffer[0])) &&
-			   str->buffer[len] != 0; len++) {
-		if(ps->bigendian_data) {
-			RW_SVAL(ps->io, ps->bigendian_data, q, *p, 0);
-			p += 2;
-			q += 2;
-		} else {
-			RW_CVAL(ps->io, q, *p, 0);
-			p++;
-			q++;
-			RW_CVAL(ps->io, q, *p, 0);
-			p++;
-			q++;
-		}
-	}
-	
-	/*
-	 * even if the string is 'empty' (only an \0 char)
-	 * at this point the leading \0 hasn't been parsed.
-	 * so parse it now
-	 */
-
-	RW_CVAL(ps->io, q, zero, 0);
-	q++;
-	RW_CVAL(ps->io, q, zero, 0);
-	q++;
-
-	len++;
-		
-	ps->data_offset += len*2;
-
-	dump_data(5+depth, (char *)start, len * 2);
-
-	return True;
-}
-#else
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 {
 	int len = 0;
@@ -768,8 +713,6 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 	
 	return True;
 }
-
-#endif	/* RPCCLIENT_TEST */
 
 
 /*******************************************************************
