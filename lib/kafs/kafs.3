@@ -163,6 +163,7 @@ Example:
 .Bd -literal
 [appdefaults]
 	SU.SE = { afs-use-524 = local }
+	PDC.KTH.SE = { afs-use-524 = yes }
 	afs-use-524 = yes
 .Ed
 .Pp
@@ -171,6 +172,9 @@ libkafs will use the
 as application name when running the
 .Nm krb5_appdefault
 function call.
+.Pp
+The (uppercased) cellname is used as the realm to the
+.Nm krb5_appdefault function.
 .Pp
 .\" The extra arguments are the ubiquitous context, and the cache id where
 .\" to store any obtained tickets. Since AFS servers normally can't handle
