@@ -1,3 +1,12 @@
+2003-12-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/eai_to_heim_errno.c: EAI_ADDRFAMILY and EAI_NODATA is
+	deprecated in RFC3493
+
+	* lib/krb5/verify_krb5_conf.c (check_host): don't check for
+	EAI_NODATA, because its depricated in RFC3493 Pointed out by
+	Hajimu UMEMOTO <ume@mahoroba.org> on heimdal-discuss
+
 2003-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/Makefile.am: move test_crypto to noinst_PROGRAMS
