@@ -1,13 +1,178 @@
+                =================================
+                Release Notes for Samba 3.0.5pre1
+                            May 25, 2004
+                =================================
+		 
+This is a preview release of the Samba 3.0.5 code base and is
+provided for testing only.  This release is *not* intended for
+production servers.  Use at your own risk.
+
+There have been several bug fixes since the 3.0.4 release that
+we feel are important to make available to the Samba community
+for wider testings.  See the "Changes" section for details on
+exact updates.
+
+Common bugs fixed in Samba 3.0.4 include:
+
+  o Schannel failure in winbindd.
+  o Numerous memory leaks.
+  o Incompatibilities between the 'write list' and 'force user'
+    smb.conf options.
+
+ATTENTION! NEW BEHAVIOR!
+-------------------------
+
+Beginning with Samba 3.0.5pre1, clients supporting the UNIX 
+extensions to the CIFS protocol can create symlinks to 
+absolute paths which will be **followed** by the server.  This 
+functionality has been requested in order to correctly support 
+certain applications when the user's home directory is mounted 
+using some type of CIFS client (e.g. the cifsvfs in the Linux 
+2.6 kernel).
+
+If this behavior is not acceptable for your production environment
+you can set 'wide links = no' in the specific share declaration in 
+the server's smb.conf.  Be aware that disabling wide link support 
+out of a share in Samba may impact the server's performance due 
+to the fact that smbd will now have to check each path additional 
+times before traversing it.
+
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.4
+--------------------
+
+smb.conf changes
+----------------
+
+    Parameter Name              Action
+    --------------              ------
+    printcap cache time         New
+    
+    
+commits
+-------
+o   Jeremy Allison <jra@samba.org>
+    * Correct path parsing bug that broke DeletePrinterDriverEx().
+    * Fix bugs in check_path_syntax() caught by asserts.
+    * Internal change - rearrange internal global case setting 
+      variables to a per connection basis.
+    * BUG 1345: Fix premature optimization in unix_convert(). 
+    * Allow clients to truncate a locked file.
+    * BUG 1319: Always check to see if a user as write access
+      to a share, even when 'force user' is set.
+    * Fix specific case of open that doesn't cause oplock break, 
+      or share mode check.
+    * Correct sid type is WKN_GROUP, not alias. Added some 
+      more known types (inspired by patch from Jianliang Lu).
+    * Allow creation of absolute symlink paths via CIFS clients.
+    
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Fix parsing bug in GetDomPwInfo().
+    * Fix segfault in 'ntlm_auth --diagnostics'.
+
+
+o   Jerome Borsboom <j.borsboom@erasmusmc.nl> 
+    * Ensure error status codes don't get overwritten in 
+      lsa_lookup_sids() server code.
+
+
+o   Gerald Carter <jerry@samba.org>
+    * Fix a few bugs in the Fedora Packaging files.
+    * Fix for setting the called name to by our IP if the 
+      called name was *SMBSERVER and *SMBSERV.   Fixes issue 
+      with connecting to printers via \\ip.ad.dr.ess\printer 
+      UNC path.
+    * BUG 1315: fix for schannel client connections to servers
+      when we haven't specifically negotiated AUTH_PIPE_SEAL.
+    * Allow PrinterDriverData valuenames with embedded backslashes
+      (Fixes bug with one of the Konica Fiery drivers).
+
+
+o   Steve French <sfrench@us.ibm.com>
+    * Handle -S and user mount parms in mount.cifs.
+    
+    
+o   kawasa_r@itg.hitachi.co.jp
+    * Correct more memory leaks and initialization bugs.
+    * Fix bug that prevented core dumps from being generated 
+      even if you tried.
+    * Connect to the winbind pipe in non-blocking mode to 
+      prevent processes from hanging.
+
+
+o   Stephan Kulow <coolo@suse.de>
+    * Fix crash bug in libsmbclient.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Added vfs_full_audit module.
+    * Add vfs_afsacl.c which can display & set AFS acls via 
+      the NT security editor.
+    * Fix crash bug caused by trying to Base64 encode a NULL string.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Add the acls debug class.
+    * Fix logic bug in netbios name truncate routine.
+    * Fix smbd crash caused by smbtorture IOCTL test.
+
+
+o   Jianliang Lu <j.lu@tiesse.com>
+    * Fix to stop smbd hanging on missing group member in 
+      get_memberuids().
+    * Make sure Samba returns the correct group types.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 1279: SMBjobid fix for Samba print servers running on 
+      Big-Endian platforms.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * fix a configure logic bug for linux/XFS quotas when 
+      using --with-sys-quotas.
+    * Use quota debug class in quota code.
+
+      
+o   Lars Müller <lmuelle@suse.de>
+    * BUG 1279: Added 'printcap cache time' parameter.
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+    * Fix error return codes on some lock messages.
+    * BUG 1178: Make the libsmbclient routines callable 
+      by C++ programs.
+    * BUG 1333: Make sure we return an error code when 
+      things go wrong.
+    * BUG 1301: Return NT_STATUS_SHARING_VIOLATION when 
+      share mode locking requests fail.
+
+
+o   Simo Source <idra@samba.org>
+    * Update Debian stable & unstable packaging.
+    
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Fixed bug in handling of timeout in socket connections.
+    
+    
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Additional NT status to unix error mappings.
+
+
+Changes for older versions follow below:
+
+    --------------------------------------------------
                  =============================
                  Release Notes for Samba 3.0.4
                           May 8, 2004
                  =============================
-
-This is the latest stable release of Samba. This is the version 
-that production Samba servers should be running for all 
-current bug-fixes.  There have been several issues fixes since 
-the 3.0.3 release and new features have been added as well.  
-See the "Changes" section for details on exact updates.
 
 Common bugs fixed in Samba 3.0.4 include:
 
@@ -17,11 +182,6 @@ Common bugs fixed in Samba 3.0.4 include:
   o Managing print jobs via Windows on Big-Endian servers.
   o Several memory leaks in winbindd and smbd.
   o Compile issues on AIX and *BSD.
-
-
-######################################################################
-Changes
-#######
 
 Changes since 3.0.3
 --------------------
@@ -570,8 +730,8 @@ o   TAKEDA yasuma <yasuma@miraclelinux.com>
       cmd_chown, cmd_chmod smbclient functions.
 
 
-o    Shiro Yamada <shiro@miraclelinux.com>
-     * BUG 1129: install image files for SWAT.
+o   Shiro Yamada <shiro@miraclelinux.com>
+    * BUG 1129: install image files for SWAT.
 
       
     --------------------------------------------------
@@ -926,7 +1086,7 @@ o   Tim Potter <tpot@samba.org>
     * BUG 924: Fix typo in RW2 torture test.
     
     
-o   Richard Sharpe <shape@samba.org>
+o   Richard Sharpe <rsharpe@samba.org>
     * Small fixes to torture.c to cleanup the error handling 
       and prevent crashes.
 
