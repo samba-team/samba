@@ -898,6 +898,63 @@ BOOL get_myname(char *my_name)
 	return(True);
 }
 
+
+/****************************************************************************
+ Get my own name, including domain.
+****************************************************************************/
+
+BOOL get_myfullname(char *my_name)
+{
+	pstring hostname;
+
+	*hostname = 0;
+
+	/* get my host name */
+	if (gethostname(hostname, sizeof(hostname)) == -1) {
+		DEBUG(0,("gethostname failed\n"));
+		return False;
+	} 
+
+	/* Ensure null termination. */
+	hostname[sizeof(hostname)-1] = '\0';
+
+	if (my_name)
+		fstrcpy(my_name, hostname);
+	return True;
+}
+
+/****************************************************************************
+ Get my own domain name.
+****************************************************************************/
+
+BOOL get_mydomname(fstring my_domname)
+{
+	pstring hostname;
+	char *p;
+
+	*hostname = 0;
+	/* get my host name */
+	if (gethostname(hostname, sizeof(hostname)) == -1) {
+		DEBUG(0,("gethostname failed\n"));
+		return False;
+	} 
+
+	/* Ensure null termination. */
+	hostname[sizeof(hostname)-1] = '\0';
+
+	p = strchr_m(hostname, '.');
+
+	if (!p)
+		return False;
+
+	p++;
+	
+	if (my_domname)
+		fstrcpy(my_domname, p);
+
+	return True;
+}
+
 /****************************************************************************
  Get my own canonical name, including domain.
 ****************************************************************************/
@@ -1432,13 +1489,13 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 
 const char *readdirname(DIR *p)
 {
-	SMB_STRUCT_DIRENT *ptr;
+	struct smb_dirent *ptr;
 	char *dname;
 
 	if (!p)
 		return(NULL);
   
-	ptr = (SMB_STRUCT_DIRENT *)sys_readdir(p);
+	ptr = (struct smb_dirent *)sys_readdir(p);
 	if (!ptr)
 		return(NULL);
 

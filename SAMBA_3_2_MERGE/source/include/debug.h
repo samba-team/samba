@@ -18,6 +18,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _DEBUG_H
+#define _DEBUG_H
+
 /* the debug operations structure - contains function pointers to 
    various debug implementations of each operation */
 struct debug_ops {
@@ -50,3 +53,5 @@ enum debug_logtype {DEBUG_FILE, DEBUG_STDOUT, DEBUG_STDERR};
 
 /* keep some debug class defines for now to avoid changing old code too much */
 #define DBGC_AUTH 0
+
+#endif	/* _DEBUG_H */

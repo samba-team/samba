@@ -22,6 +22,9 @@
   this provides definitions for the libcli/rpc/ MSRPC library
 */
 
+#ifndef _LIBNDR_H
+#define _LIBNDR_H
+
 
 /* offset lists are used to allow a push/pull function to find the
    start of an encapsulating structure */
@@ -244,3 +247,5 @@ typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32_t,
 
 /* now pull in the individual parsers */
 #include "librpc/gen_ndr/tables.h"
+
+#endif	/* _LIBNDR_H */

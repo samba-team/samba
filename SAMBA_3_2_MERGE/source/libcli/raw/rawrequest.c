@@ -274,7 +274,7 @@ BOOL cli_request_send(struct cli_request *req)
 	uint_t ret;
 
 	if (IVAL(req->out.buffer, 0) == 0) {
-		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
+		_smb_setlen(req->out.buffer, (req->out.size - NBT_HDR_SIZE));
 	}
 
 	cli_request_calculate_sign_mac(req);

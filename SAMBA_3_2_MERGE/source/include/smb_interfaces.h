@@ -18,6 +18,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+#ifndef _SMB_INTERFACES_H
+#define _SMB_INTERFACES_H
 
 
 /* Globally Unique ID */
@@ -1950,3 +1952,4 @@ union smb_search_close {
 	} findclose;
 };
 
+#endif	/* _SMB_INTERFACES_H */

@@ -701,11 +701,11 @@ typedef int socklen_t;
  * Type for dirent structure.
  */
 
-#ifndef SMB_STRUCT_DIRENT
+#ifndef smb_dirent
 #  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_DIRENT64)
-#    define SMB_STRUCT_DIRENT struct dirent64
+#    define smb_dirent dirent64
 #  else
-#    define SMB_STRUCT_DIRENT struct dirent
+#    define smb_dirent dirent
 #  endif
 #endif
 
@@ -806,24 +806,18 @@ extern int errno;
 #include "debugparse.h"
 
 #include "version.h"
-
 #include "privileges.h"
-
 #include "smb.h"
-
+#include "ntdomain.h"
+#include "rewrite.h"
 #include "nameserv.h"
-
 #include "secrets.h"
 
 #include "byteorder.h"
 
-#include "rpc_creds.h"
-
 #include "mapping.h"
 
 #include "passdb.h"
-
-#include "ntdomain.h"
 
 #include "rpc_misc.h"
 

@@ -27,6 +27,12 @@
 #ifndef _SMB_H
 #define _SMB_H
 
+#ifndef _BOOL
+typedef int BOOL;
+#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
+#endif
+
+
 #if defined(LARGE_SMB_OFF_T)
 #define BUFFER_SIZE (128*1024)
 #else /* no large readwrite possible */
@@ -43,15 +49,7 @@
 #define SMB_PORTS "445 139"
 
 #define Undefined (-1)
-#define False (0)
-#define True (1)
-#define Auto (2)
 #define Required (3)
-
-#ifndef _BOOL
-typedef int BOOL;
-#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
-#endif
 
 /* limiting size of ipc replies */
 #define REALLOC(ptr,size) Realloc(ptr,MAX((size),4*1024))
@@ -62,14 +60,6 @@ typedef int BOOL;
 #define DEF_CREATE_MASK (0755)
 #endif
 
-/* string manipulation flags - see clistr.c and srvstr.c */
-#define STR_TERMINATE 1
-#define STR_UPPER 2
-#define STR_ASCII 4
-#define STR_UNICODE 8
-#define STR_NOALIGN 16
-#define STR_TERMINATE_ASCII 128
-
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
 
@@ -77,13 +67,6 @@ enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, SMB_SIGNING_REQU
 
 /* Debugging stuff */
 #include "debug.h"
-
-/* types of socket errors */
-enum socket_error {SOCKET_READ_TIMEOUT,
-                   SOCKET_READ_EOF,
-                   SOCKET_READ_ERROR,
-                   SOCKET_WRITE_ERROR,
-                   SOCKET_READ_BAD_SIG};
 
 /* this defines the error codes that receive_smb can put in smb_read_error */
 #define READ_TIMEOUT 1
@@ -109,13 +92,144 @@ enum socket_error {SOCKET_READ_TIMEOUT,
 #define DENY_WRITE 2
 #define DENY_READ 3
 #define DENY_NONE 4
-#define DENY_FCB 7
+#define DENY_FCB 0xF
 
 /* open modes */
 #define DOS_OPEN_RDONLY 0
 #define DOS_OPEN_WRONLY 1
 #define DOS_OPEN_RDWR 2
 #define DOS_OPEN_FCB 0xF
+
+/**********************************/
+/* SMBopen field definitions      */
+#define OPEN_FLAGS_DENY_MASK  0x70
+#define OPEN_FLAGS_DENY_DOS   0x00
+#define OPEN_FLAGS_DENY_ALL   0x10
+#define OPEN_FLAGS_DENY_WRITE 0x20
+#define OPEN_FLAGS_DENY_READ  0x30
+#define OPEN_FLAGS_DENY_NONE  0x40
+
+#define OPEN_FLAGS_MODE_MASK  0x0F
+#define OPEN_FLAGS_OPEN_READ     0
+#define OPEN_FLAGS_OPEN_WRITE    1
+#define OPEN_FLAGS_OPEN_RDWR     2
+#define OPEN_FLAGS_FCB        0xFF
+
+
+/**********************************/
+/* SMBopenX field definitions     */
+
+/* OpenX Flags field. */
+#define OPENX_FLAGS_ADDITIONAL_INFO      0x01
+#define OPENX_FLAGS_REQUEST_OPLOCK       0x02
+#define OPENX_FLAGS_REQUEST_BATCH_OPLOCK 0x04
+#define OPENX_FLAGS_EA_LEN               0x08
+#define OPENX_FLAGS_EXTENDED_RETURN      0x10
+
+/* desired access (open_mode), split info 4 4-bit nibbles */
+#define OPENX_MODE_ACCESS_MASK   0x000F
+#define OPENX_MODE_ACCESS_READ   0x0000
+#define OPENX_MODE_ACCESS_WRITE  0x0001
+#define OPENX_MODE_ACCESS_RDWR   0x0002
+#define OPENX_MODE_ACCESS_EXEC   0x0003
+#define OPENX_MODE_ACCESS_FCB    0x000F
+
+#define OPENX_MODE_DENY_SHIFT    4
+#define OPENX_MODE_DENY_MASK     (0xF        << OPENX_MODE_DENY_SHIFT)
+#define OPENX_MODE_DENY_DOS      (DENY_DOS   << OPENX_MODE_DENY_SHIFT)
+#define OPENX_MODE_DENY_ALL      (DENY_ALL   << OPENX_MODE_DENY_SHIFT)
+#define OPENX_MODE_DENY_WRITE    (DENY_WRITE << OPENX_MODE_DENY_SHIFT)
+#define OPENX_MODE_DENY_READ     (DENY_READ  << OPENX_MODE_DENY_SHIFT)
+#define OPENX_MODE_DENY_NONE     (DENY_NONE  << OPENX_MODE_DENY_SHIFT)
+#define OPENX_MODE_DENY_FCB      (0xF        << OPENX_MODE_DENY_SHIFT)
+
+#define OPENX_MODE_LOCALITY_MASK 0x0F00 /* what does this do? */
+
+#define OPENX_MODE_NO_CACHE      0x1000
+#define OPENX_MODE_WRITE_THRU    0x4000
+
+/* open function values */
+#define OPENX_OPEN_FUNC_MASK  0x3
+#define OPENX_OPEN_FUNC_FAIL  0x0
+#define OPENX_OPEN_FUNC_OPEN  0x1
+#define OPENX_OPEN_FUNC_TRUNC 0x2
+
+/* The above can be OR'ed with... */
+#define OPENX_OPEN_FUNC_CREATE 0x10
+
+/* openx action in reply */
+#define OPENX_ACTION_EXISTED    1
+#define OPENX_ACTION_CREATED    2
+#define OPENX_ACTION_TRUNCATED  3
+
+
+/**********************************/
+/* SMBntcreateX field definitions */
+
+/* ntcreatex flags field. */
+#define NTCREATEX_FLAGS_REQUEST_OPLOCK       0x02
+#define NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK 0x04
+#define NTCREATEX_FLAGS_OPEN_DIRECTORY       0x08
+#define NTCREATEX_FLAGS_EXTENDED             0x10
+
+/* the ntcreatex access_mask field 
+   this is split into 4 pieces
+   AAAABBBBCCCCCCCCDDDDDDDDDDDDDDDD
+   A -> GENERIC_RIGHT_*
+   B -> SEC_RIGHT_*
+   C -> STD_RIGHT_*
+   D -> SA_RIGHT_*
+   
+   which set of SA_RIGHT_* bits is applicable depends on the type
+   of object.
+*/
+
+
+
+/* ntcreatex share_access field */
+#define NTCREATEX_SHARE_ACCESS_NONE   0
+#define NTCREATEX_SHARE_ACCESS_READ   1
+#define NTCREATEX_SHARE_ACCESS_WRITE  2
+#define NTCREATEX_SHARE_ACCESS_DELETE 4
+
+/* ntcreatex open_disposition field */
+#define NTCREATEX_DISP_SUPERSEDE 0     /* supersede existing file (if it exists) */
+#define NTCREATEX_DISP_OPEN 1          /* if file exists open it, else fail */
+#define NTCREATEX_DISP_CREATE 2        /* if file exists fail, else create it */
+#define NTCREATEX_DISP_OPEN_IF 3       /* if file exists open it, else create it */
+#define NTCREATEX_DISP_OVERWRITE 4     /* if exists overwrite, else fail */
+#define NTCREATEX_DISP_OVERWRITE_IF 5  /* if exists overwrite, else create */
+
+/* ntcreatex create_options field */
+#define NTCREATEX_OPTIONS_DIRECTORY            0x0001
+#define NTCREATEX_OPTIONS_WRITE_THROUGH        0x0002
+#define NTCREATEX_OPTIONS_SEQUENTIAL_ONLY      0x0004
+#define NTCREATEX_OPTIONS_SYNC_ALERT	       0x0010
+#define NTCREATEX_OPTIONS_ASYNC_ALERT	       0x0020
+#define NTCREATEX_OPTIONS_NON_DIRECTORY_FILE   0x0040
+#define NTCREATEX_OPTIONS_NO_EA_KNOWLEDGE      0x0200
+#define NTCREATEX_OPTIONS_EIGHT_DOT_THREE_ONLY 0x0400
+#define NTCREATEX_OPTIONS_RANDOM_ACCESS        0x0800
+#define NTCREATEX_OPTIONS_DELETE_ON_CLOSE      0x1000
+#define NTCREATEX_OPTIONS_OPEN_BY_FILE_ID      0x2000
+
+/* ntcreatex impersonation field */
+#define NTCREATEX_IMPERSONATION_ANONYMOUS      0
+#define NTCREATEX_IMPERSONATION_IDENTIFICATION 1
+#define NTCREATEX_IMPERSONATION_IMPERSONATION  2
+#define NTCREATEX_IMPERSONATION_DELEGATION     3
+
+/* ntcreatex security flags bit field */
+#define NTCREATEX_SECURITY_DYNAMIC             1
+#define NTCREATEX_SECURITY_ALL                 2
+
+/* ntcreatex create_action in reply */
+#define NTCREATEX_ACTION_EXISTED     1
+#define NTCREATEX_ACTION_CREATED     2
+#define NTCREATEX_ACTION_TRUNCATED   3
+/* the value 5 can also be returned when you try to create a directory with
+   incorrect parameters - what does it mean? maybe created temporary file? */
+#define NTCREATEX_ACTION_UNKNOWN 5
 
 /* define shifts and masks for share and open modes. */
 #define OPEN_MODE_MASK 0xF
@@ -168,20 +282,8 @@ typedef union unid_t {
  * SMB UCS2 (16-bit unicode) internal type.
  */
 
-typedef uint16 smb_ucs2_t;
+typedef uint16_t smb_ucs2_t;
 
-/* ucs2 string types. */
-typedef smb_ucs2_t wpstring[PSTRING_LEN];
-typedef smb_ucs2_t wfstring[FSTRING_LEN];
-
-#ifdef WORDS_BIGENDIAN
-#define UCS2_SHIFT 8
-#else
-#define UCS2_SHIFT 0
-#endif
-
-/* turn a 7 bit character into a ucs2 character */
-#define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
@@ -277,6 +379,49 @@ typedef struct _nt_user_token {
 	size_t num_sids;
 	DOM_SID *user_sids;
 } NT_USER_TOKEN;
+
+#define NT_HASH_LEN 16
+#define LM_HASH_LEN 16
+
+/* the basic packet size, assuming no words or bytes. Does not include the NBT header */
+#define MIN_SMB_SIZE 35
+
+/* when using NBT encapsulation every packet has a 4 byte header */
+#define NBT_HDR_SIZE 4
+
+/* offsets into message header for common items - NOTE: These have
+   changed from being offsets from the base of the NBT packet to the base of the SMB packet.
+   this has reduced all these values by 4
+*/
+#define HDR_COM 4
+#define HDR_RCLS 5
+#define HDR_REH 6
+#define HDR_ERR 7
+#define HDR_FLG 9
+#define HDR_FLG2 10
+#define HDR_PIDHIGH 12
+#define HDR_SS_FIELD 14
+#define HDR_TID 24
+#define HDR_PID 26
+#define HDR_UID 28
+#define HDR_MID 30
+#define HDR_WCT 32
+#define HDR_VWV 33
+
+
+/* types of buffers in core SMB protocol */
+#define SMB_DATA_BLOCK 0x1
+#define SMB_ASCII4     0x4
+
+
+/* flag defines. CIFS spec 3.1.1 */
+#define FLAG_SUPPORT_LOCKREAD       0x01
+#define FLAG_CLIENT_BUF_AVAIL       0x02
+#define FLAG_RESERVED               0x04
+#define FLAG_CASELESS_PATHNAMES     0x08
+#define FLAG_CANONICAL_PATHNAMES    0x10
+#define FLAG_REQUEST_OPLOCK         0x20
+#define FLAG_REQUEST_BATCH_OPLOCK   0x40
 
 /*** query a local group, get a list of these: shows who is in that group ***/
 
@@ -557,15 +702,6 @@ struct server_info_struct
 };
 
 
-/* used for network interfaces */
-struct interface
-{
-	struct interface *next, *prev;
-	struct in_addr ip;
-	struct in_addr bcast;
-	struct in_addr nmask;
-};
-
 /* struct returned by get_share_modes */
 typedef struct {
 	pid_t pid;
@@ -618,27 +754,6 @@ typedef struct {
 #define LOCAL_INTERDOM_ACCOUNT 0x100
 #define LOCAL_AM_ROOT 0x200  /* Act as root */
 
-/* key and data in the connections database - used in smbstatus and smbd */
-struct connections_key {
-	pid_t pid;
-	int cnum;
-	fstring name;
-};
-
-struct connections_data {
-	int magic;
-	pid_t pid;
-	int cnum;
-	uid_t uid;
-	gid_t gid;
-	char name[24];
-	char addr[24];
-	char machine[FSTRING_LEN];
-	time_t start;
-	uint32 bcast_msg_flags;
-};
-
-
 /* key and data records in the tdb locking database */
 struct locking_key {
 	SMB_DEV_T dev;
@@ -657,6 +772,19 @@ struct locking_data {
 };
 
 
+/* passed to br lock code */
+enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
+
+#define BRLOCK_FN_CAST() \
+	void (*)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
+				 enum brl_type lock_type, \
+				 br_off start, br_off size)
+#define BRLOCK_FN(fn) \
+	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
+				 enum brl_type lock_type, \
+				 br_off start, br_off size)
+
+#if 0
 /* the following are used by loadparm for option lists */
 typedef enum
 {
@@ -669,22 +797,11 @@ typedef enum
   P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
 } parm_class;
 
-/* passed to br lock code */
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
-
 struct enum_list {
 	int value;
 	const char *name;
 };
 
-#define BRLOCK_FN_CAST() \
-	void (*)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
-				 enum brl_type lock_type, \
-				 br_off start, br_off size)
-#define BRLOCK_FN(fn) \
-	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
-				 enum brl_type lock_type, \
-				 br_off start, br_off size)
 struct parm_struct
 {
 	const char *label;
@@ -702,11 +819,7 @@ struct parm_struct
 		char **lvalue;
 	} def;
 };
-
-struct bitmap {
-	uint32 *b;
-	unsigned int n;
-};
+#endif
 
 /* The following flags are used in SWAT */
 #define FLAG_BASIC 	0x0001 /* Display only in BASIC view */
@@ -813,7 +926,7 @@ struct bitmap {
 
 /* Core+ protocol */
 #define SMBlockread	  0x13   /* Lock a range and read */
-#define SMBwriteunlock 0x14 /* Unlock a range then write */
+#define SMBwriteunlock 0x14 /* write then range then unlock it */
 #define SMBreadbraw   0x1a  /* read a block of data with no smb header */
 #define SMBwritebraw  0x1d  /* write a block of data with no smb header */
 #define SMBwritec     0x20  /* secondary write request */
@@ -860,6 +973,9 @@ struct bitmap {
 #define SMBntcreateX     0xA2   /* NT create and X */
 #define SMBntcancel      0xA4   /* NT cancel */
 #define SMBntrename      0xA5   /* NT rename */
+
+/* used to indicate end of chain */
+#define SMB_CHAIN_NONE   0xFF
 
 /* These are the trans subcommands */
 #define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01 
@@ -1280,6 +1396,7 @@ char *strdup(char *s);
 
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets */
+#if 0
 enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANMAN1,PROTOCOL_LANMAN2,PROTOCOL_NT1};
 
 /* security levels */
@@ -1308,6 +1425,7 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2
 
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};
+#endif
 
 /*
  * Global value meaing that the smb_uid field should be
@@ -1475,21 +1593,6 @@ typedef char nstring[MAX_NETBIOSNAME_LEN];
 /* Unix character, NetBIOS namestring. Type used to manipulate name in nmbd. */
 typedef char unstring[MAX_NETBIOSNAME_LEN*4];
 
-/* A netbios name structure. */
-struct nmb_name {
-	nstring      name;
-	char         scope[64];
-	unsigned int name_type;
-};
-
-
-/* A netbios node status array element. */
-struct node_status {
-	nstring name;
-	unsigned char type;
-	unsigned char flags;
-};
-
 struct pwd_info
 {
 	BOOL null_pwd;
@@ -1499,7 +1602,7 @@ struct pwd_info
 
 };
 
-typedef struct user_struct
+typedef struct user_struct_x
 {
 	struct user_struct *next, *prev;
 	uint16 vuid; /* Tag for this entry. */
@@ -1529,15 +1632,8 @@ typedef struct user_struct
 
 	struct auth_serversupplied_info *server_info;
 
-} user_struct;
+} user_struct_x;
 
-
-struct unix_error_map {
-	int unix_error;
-	int dos_class;
-	int dos_code;
-	NTSTATUS nt_error;
-};
 
 /*
 #include "ntdomain.h"
@@ -1580,6 +1676,7 @@ struct unix_error_map {
 
 #define SAFE_NETBIOS_CHARS ". -_"
 
+#if 0
 /* generic iconv conversion structure */
 typedef struct {
 	size_t (*direct)(void *cd, char **inbuf, size_t *inbytesleft,
@@ -1591,6 +1688,7 @@ typedef struct {
 	void *cd_direct, *cd_pull, *cd_push;
 	char *from_name, *to_name;
 } *smb_iconv_t;
+#endif
 
 /* The maximum length of a trust account password.
    Used when we randomly create it, 15 char passwords

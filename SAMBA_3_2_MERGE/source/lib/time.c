@@ -293,44 +293,24 @@ struct tm *LocalTime(time_t *t)
 /****************************************************************************
 interpret an 8 byte "filetime" structure to a time_t
 It's originally in "100ns units since jan 1st 1601"
-
-It appears to be kludge-GMT (at least for file listings). This means
-its the GMT you get by taking a localtime and adding the
-serverzone. This is NOT the same as GMT in some cases. This routine
-converts this to real GMT.
 ****************************************************************************/
-time_t nt_time_to_unix(NTTIME *nt)
+time_t nt_time_to_unix(NTTIME nt)
 {
-  double d;
-  time_t ret;
-  /* The next two lines are a fix needed for the 
-     broken SCO compiler. JRA. */
-  time_t l_time_min = TIME_T_MIN;
-  time_t l_time_max = TIME_T_MAX;
+	if (nt == 0) {
+		return 0;
+	}
+	if (nt == -1LL) {
+		return (time_t)-1;
+	}
+	nt += 1000*1000*10/2;
+	nt /= 1000*1000*10;
+	nt -= TIME_FIXUP_CONSTANT;
 
-  if (nt->high == 0 || (nt->high == 0xffffffff && nt->low == 0xffffffff))
-	  return(0);
+	if (TIME_T_MIN >= nt || nt >= TIME_T_MAX) {
+		return 0;
+	}
 
-  d = ((double)nt->high)*4.0*(double)(1<<30);
-  d += (nt->low&0xFFF00000);
-  d *= 1.0e-7;
- 
-  /* now adjust by 369 years to make the secs since 1970 */
-  d -= TIME_FIXUP_CONSTANT;
-
-  if (d <= l_time_min)
-	  return (l_time_min);
-
-  if (d >= l_time_max)
-	  return (l_time_max);
-
-  ret = (time_t)(d+0.5);
-
-  /* this takes us from kludge-GMT to real GMT */
-  ret -= get_serverzone();
-  ret += LocTimeDiff(ret);
-
-  return(ret);
+	return (time_t)nt;
 }
 
 /****************************************************************************

@@ -141,6 +141,7 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@
 
 BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
+BIN_PROGS = bin/smbclient@EXEEXT@
 
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@
@@ -240,8 +241,8 @@ LIBADS_SERVER_OBJ = libads/util.o libads/kerberos_verify.o
 
 SECRETS_OBJ = passdb/secrets.o passdb/machine_sid.o 
 
-LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
-	     libsmb/namequery.o libsmb/conncache.o 
+LIBNMB_OBJ = libcli/unexpected.o libcli/namecache.o libcli/nmblib.o \
+	     libcli/namequery.o libsmb/conncache.o 
 
 LIBSAMBA_OBJ = libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o libsmb/ntlm_check.o \
 	libsmb/ntlmssp.o libsmb/ntlmssp_parse.o libsmb/ntlmssp_sign.o
@@ -346,9 +347,9 @@ LIBCLI_RAW_OBJ = \
                 libcli/raw/rawdate.o
 
 
-LIBCLI_OBJ1 = libcli/cliconnect.o libcli/clideltree.o libcli/clidfs.o \
+LIBCLI_OBJ1 = libcli/cliconnect.o libcli/clideltree.o \
              libcli/clifile.o libcli/clilist.o libcli/climessage.o \
-             libcli/clireadwrite.o libcli/clisecdesc.o  libcli/clitrans2.o
+             libcli/clireadwrite.o libcli/clitrans2.o
 
 LIBCLI_OBJ = $(LIBCLI_OBJ1) $(LIBCLI_UTILS_OBJ) $(LIBCLI_AUTH_OBJ) \
              $(LIBCLI_RAW_OBJ)
@@ -803,8 +804,10 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 
 basics: idl proto_exists
 
-all : SHOWFLAGS basics $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
-	$(MODULES) @EXTRA_ALL_TARGETS@
+#all : SHOWFLAGS basics $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
+#	$(MODULES) @EXTRA_ALL_TARGETS@
+
+all: SHOWFLAGS basics $(BIN_PROGS)
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 

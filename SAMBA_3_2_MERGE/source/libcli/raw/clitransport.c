@@ -103,7 +103,7 @@ BOOL cli_transport_connect(struct cli_transport *transport,
 	name_mangle(calling->name, p, calling->name_type);
 	len += name_len(p);
 
-	_smb_setlen(req->out.buffer,len-4);
+	_smb_setlen(req->out.buffer,(len-4));
 	SCVAL(req->out.buffer,0,0x81);
 
 	if (!cli_request_send(req) ||

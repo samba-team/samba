@@ -157,7 +157,7 @@ BOOL cli_sock_connect_byname(struct cli_socket *sock, const char *host, int port
 		*p = 0;
 	}
 
-	if (!resolve_name(mem_ctx, name, &ip, name_type)) {
+	if (!resolve_name(mem_ctx,name, &ip, name_type)) {
 		talloc_destroy(mem_ctx);
 		return False;
 	}
