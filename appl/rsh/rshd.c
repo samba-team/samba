@@ -102,6 +102,7 @@ fatal (int sock, const char *m, ...)
     *buf = 1;
     va_start(args, m);
     len = vsnprintf (buf + 1, sizeof(buf) - 1, m, args);
+    len = min(len, sizeof(buf) - 1);
     va_end(args);
     syslog (LOG_ERR, "%s", buf + 1);
     net_write (sock, buf, len + 1);
