@@ -58,7 +58,7 @@ static void usage(void)
 		printf("  -R ORDER             name resolve order\n");
 		printf("  -j DOMAIN            join domain name\n");
 		printf("  -a                   add user\n");
-		printf("  -d                   delete user\n");
+		printf("  -d                   disable user\n");
 		printf("  -e                   enable user\n");
 		printf("  -n                   set no password\n");
 		printf("  -m                   machine trust account\n");
@@ -371,7 +371,25 @@ static int process_root(int argc, char *argv[])
 	}
 	
 	if (!new_passwd) {
-		new_passwd = prompt_for_new_password(stdin_passwd_get);
+
+		/*
+		 * If we are trying to enable a user, first we need to find out
+		 * if they are using a modern version of the smbpasswd file that
+		 * disables a user by just writing a flag into the file. If so
+		 * then we can re-enable a user without prompting for a new
+		 * password. If not (ie. they have a no stored password in the
+		 * smbpasswd file) then we need to prompt for a new password.
+		 */
+
+		if(enable_user) {
+			struct smb_passwd *smb_pass = getsmbpwnam(user_name);
+			if((smb_pass != NULL) && (smb_pass->smb_passwd != NULL)) {
+				new_passwd = "XXXX"; /* Don't care. */
+			}
+		}
+
+		if(!new_passwd)
+			new_passwd = prompt_for_new_password(stdin_passwd_get);
 	}
 	
 	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
