@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
@@ -117,6 +118,7 @@
 #define PRINTER_CONTROL_PURGE		0x00000003
 #define PRINTER_CONTROL_SET_STATUS	0x00000004
 
+#define PRINTER_STATUS_OK               0x00000000
 #define PRINTER_STATUS_PAUSED		0x00000001
 #define PRINTER_STATUS_ERROR		0x00000002
 #define PRINTER_STATUS_PENDING_DELETION	0x00000004
@@ -157,17 +159,18 @@
 
 /* JOB status codes. */
 
-#define JOB_STATUS_PAUSED		0x001
-#define JOB_STATUS_ERROR		0x002
-#define JOB_STATUS_DELETING		0x004
-#define JOB_STATUS_SPOOLING		0x008
-#define JOB_STATUS_PRINTING		0x010
-#define JOB_STATUS_OFFLINE		0x020
-#define JOB_STATUS_PAPEROUT		0x040
-#define JOB_STATUS_PRINTED		0x080
-#define JOB_STATUS_DELETED		0x100
-#define JOB_STATUS_BLOCKED		0x200
-#define JOB_STATUS_USER_INTERVENTION	0x400
+#define JOB_STATUS_QUEUED               0x0000
+#define JOB_STATUS_PAUSED		0x0001
+#define JOB_STATUS_ERROR		0x0002
+#define JOB_STATUS_DELETING		0x0004
+#define JOB_STATUS_SPOOLING		0x0008
+#define JOB_STATUS_PRINTING		0x0010
+#define JOB_STATUS_OFFLINE		0x0020
+#define JOB_STATUS_PAPEROUT		0x0040
+#define JOB_STATUS_PRINTED		0x0080
+#define JOB_STATUS_DELETED		0x0100
+#define JOB_STATUS_BLOCKED		0x0200
+#define JOB_STATUS_USER_INTERVENTION	0x0400
 
 /* ACE masks for the various print permissions */
 
@@ -194,11 +197,12 @@
 #define JOB_WRITE	STANDARD_RIGHTS_WRITE_ACCESS|JOB_ACCESS_ADMINISTER
 #define JOB_EXECUTE	STANDARD_RIGHTS_EXECUTE_ACCESS|JOB_ACCESS_ADMINISTER
 
-/* Print notification constants */
+/* Notify field types */
 
-#define ONE_VALUE 1
-#define TWO_VALUE 2
-#define POINTER   3
+#define ONE_VALUE 1		/* Notify data is stored in value1 */
+#define TWO_VALUE 2		/* Notify data is stored in value2 */
+#define POINTER   3		/* Data is a pointer to a buffer */
+#define STRING    4		/* Data is a pointer to a buffer w/length */
 
 #define PRINTER_NOTIFY_TYPE 0x00
 #define JOB_NOTIFY_TYPE     0x01
@@ -314,8 +318,6 @@
 				 PRINTER_CHANGE_PRINTER_DRIVER )
 
 #define PRINTER_NOTIFY_INFO_DISCARDED	0x1
-
-#define PRINTER_NOTIFY_VERSION 0x2
 
 /*
  * Set of macros for flagging what changed in the PRINTER_INFO_2 struct
@@ -1203,8 +1205,8 @@ typedef struct job_info_ctr_info
 {
 	union
 	{
-		JOB_INFO_1 *job_info_1;
-		JOB_INFO_2 *job_info_2;
+		JOB_INFO_1 **job_info_1;
+		JOB_INFO_2 **job_info_2;
 		void *info;
 	} job;
 
@@ -2118,3 +2120,4 @@ SPOOL_R_GETPRINTPROCESSORDIRECTORY;
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
 
 #endif /* _RPC_SPOOLSS_H */
+

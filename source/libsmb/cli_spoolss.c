@@ -1556,11 +1556,11 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	switch(level) {
 	case 1:
 		decode_jobs_1(mem_ctx, r.buffer, r.returned,
-			      &ctr->job.job_info_1);
+				ctr->job.job_info_1);
 		break;
 	case 2:
 		decode_jobs_2(mem_ctx, r.buffer, r.returned,
-			      &ctr->job.job_info_2);
+				ctr->job.job_info_2);
 		break;
 	default:
 		DEBUG(3, ("unsupported info level %d", level));
@@ -1669,10 +1669,10 @@ WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	switch(level) {
 	case 1:
-		decode_jobs_1(mem_ctx, r.buffer, 1, &ctr->job.job_info_1);
+		decode_jobs_1(mem_ctx, r.buffer, 1, ctr->job.job_info_1);
 		break;
 	case 2:
-		decode_jobs_2(mem_ctx, r.buffer, 1, &ctr->job.job_info_2);
+		decode_jobs_2(mem_ctx, r.buffer, 1, ctr->job.job_info_2);
 		break;
 	default:
 		DEBUG(3, ("unsupported info level %d", level));

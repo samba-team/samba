@@ -30,6 +30,7 @@
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
+/* #define EMULATE_WIN2K_HACK	1 */
 
 #ifndef MAX_OPEN_PRINTER_EXS
 #define MAX_OPEN_PRINTER_EXS 50
@@ -80,6 +81,7 @@ typedef struct _Printer{
 		SPOOL_NOTIFY_OPTION *option;
 		POLICY_HND client_hnd;
 		uint32 client_connected;
+		uint32 change;
 	} notify;
 	struct {
 		fstring machine;
@@ -190,10 +192,10 @@ static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
-		if(!spoolss_disconnect_from_client(&cli))
-			return;
-
-		message_deregister(MSG_PRINTER_NOTIFY);
+		cli_nt_session_close(&cli);
+		cli_ulogoff(&cli);
+		cli_shutdown(&cli);
+		message_deregister(MSG_PRINTER_NOTIFY2);
 	}
 
 	smb_connections--;
@@ -438,7 +440,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	 * anymore, so I've simplified this loop greatly.  Here
 	 * we are just verifying that the printer name is a valid
 	 * printer service defined in smb.conf
-	 *                          --jerry [Fri Feb 15 11:17:46 CST 2002] 
+	 *                          --jerry [Fri Feb 15 11:17:46 CST 2002]
 	 */
 
 	for (snum=0; snum<n_services; snum++) {
@@ -547,31 +549,322 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 
 	return True;
 }
+
 /***************************************************************************
- Always give preference Printer_entry.notify.option over 
- Printer_entry.notify.flags.  Return True if we should send notification 
- events using SPOOLSS_RRPCN.  False means that we should use 
- SPOOLSS_ROUTERREPLYPRINTER.
+ check to see if the client motify handle is monitoring the notification
+ given by (notify_type, notify_field).
  **************************************************************************/
-static BOOL valid_notify_options(Printer_entry *printer)
+
+static BOOL is_monitoring_event_flags(uint32 flags, uint16 notify_type,
+				      uint16 notify_field)
 {
-	if (printer->notify.option == NULL)
-		return False;
-		
 	return True;
 }
 
-/***************************************************************************
- Simple check to see if the client motify handle is set to watch for events
- represented by 'flags'
- 
- FIXME!!!! only a stub right now     --jerry
- **************************************************************************/
- 
-static BOOL is_client_monitoring_event(Printer_entry *p, uint32 flags)
+static BOOL is_monitoring_event(Printer_entry *p, uint16 notify_type,
+				uint16 notify_field)
 {
+	SPOOL_NOTIFY_OPTION *option = p->notify.option;
+	uint32 i, j;
+	
+	if (p->notify.flags)
+		return is_monitoring_event_flags(
+			p->notify.flags, notify_type, notify_field);
 
-	return True;
+	for (i = 0; i < option->count; i++) {
+		
+		/* Check match for notify_type */
+		
+		if (option->ctr.type[i].type != notify_type)
+			continue;
+
+		/* Check match for field */
+		
+		for (j = 0; j < option->ctr.type[i].count; j++) {
+			if (option->ctr.type[i].fields[j] == notify_field) {
+				return True;
+			}
+		}
+	}
+	
+	DEBUG(10, ("%s is not monitoring 0x%02x/0x%02x\n",
+		   (p->printer_type == PRINTER_HANDLE_IS_PRINTER) ?
+		   p->dev.handlename : p->dev.printerservername,
+		   notify_type, notify_field));
+	
+	return False;
+}
+
+/* Convert a notification message to a SPOOL_NOTIFY_INFO_DATA struct */
+
+static void notify_one_value(struct spoolss_notify_msg *msg,
+			     SPOOL_NOTIFY_INFO_DATA *data,
+			     TALLOC_CTX *mem_ctx)
+{
+	data->notify_data.value[0] = msg->notify.value[0];
+	data->notify_data.value[1] = 0;
+}
+
+static void notify_string(struct spoolss_notify_msg *msg,
+			  SPOOL_NOTIFY_INFO_DATA *data,
+			  TALLOC_CTX *mem_ctx)
+{
+	UNISTR2 unistr;
+	
+	/* The length of the message includes the trailing \0 */
+
+	init_unistr2(&unistr, msg->notify.data, msg->len);
+
+	data->notify_data.data.length = msg->len * 2;
+	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, msg->len * 2);
+
+	if (!data->notify_data.data.string) {
+		data->notify_data.data.length = 0;
+		return;
+	}
+	
+	memcpy(data->notify_data.data.string, unistr.buffer, msg->len * 2);
+}
+
+static void notify_system_time(struct spoolss_notify_msg *msg,
+			       SPOOL_NOTIFY_INFO_DATA *data,
+			       TALLOC_CTX *mem_ctx)
+{
+	SYSTEMTIME systime;
+	prs_struct ps;
+
+	if (msg->len != sizeof(time_t)) {
+		DEBUG(5, ("notify_system_time: received wrong sized message (%d)\n",
+			  msg->len));
+		return;
+	}
+
+	if (!prs_init(&ps, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+		DEBUG(5, ("notify_system_time: prs_init() failed\n"));
+		return;
+	}
+
+	if (!make_systemtime(&systime, localtime((time_t *)msg->notify.data))) {
+		DEBUG(5, ("notify_system_time: unable to make systemtime\n"));
+		return;
+	}
+
+	if (!spoolss_io_system_time("", &ps, 0, &systime))
+		return;
+
+	data->notify_data.data.length = prs_offset(&ps);
+	data->notify_data.data.string =
+		talloc(mem_ctx, prs_offset(&ps));
+
+	memcpy(data->notify_data.data.string, prs_data_p(&ps), prs_offset(&ps));
+
+	prs_mem_free(&ps);
+}
+
+struct notify2_message_table {
+	char *name;
+	void (*fn)(struct spoolss_notify_msg *msg,
+		   SPOOL_NOTIFY_INFO_DATA *data, TALLOC_CTX *mem_ctx);
+};
+
+static struct notify2_message_table printer_notify_table[] = {
+	/* 0x00 */ { "PRINTER_NOTIFY_SERVER_NAME", NULL },
+	/* 0x01 */ { "PRINTER_NOTIFY_PRINTER_NAME", NULL },
+	/* 0x02 */ { "PRINTER_NOTIFY_SHARE_NAME", NULL },
+	/* 0x03 */ { "PRINTER_NOTIFY_PORT_NAME", NULL },
+	/* 0x04 */ { "PRINTER_NOTIFY_DRIVER_NAME", NULL },
+	/* 0x05 */ { "PRINTER_NOTIFY_COMMENT", NULL },
+	/* 0x06 */ { "PRINTER_NOTIFY_LOCATION", NULL },
+	/* 0x07 */ { "PRINTER_NOTIFY_DEVMODE", NULL },
+	/* 0x08 */ { "PRINTER_NOTIFY_SEPFILE", NULL },
+	/* 0x09 */ { "PRINTER_NOTIFY_PRINT_PROCESSOR", NULL },
+	/* 0x0a */ { "PRINTER_NOTIFY_PARAMETERS", NULL },
+	/* 0x0b */ { "PRINTER_NOTIFY_DATATYPE", NULL },
+	/* 0x0c */ { "PRINTER_NOTIFY_SECURITY_DESCRIPTOR", NULL },
+	/* 0x0d */ { "PRINTER_NOTIFY_ATTRIBUTES", NULL },
+	/* 0x0e */ { "PRINTER_NOTIFY_PRIORITY", NULL },
+	/* 0x0f */ { "PRINTER_NOTIFY_DEFAULT_PRIORITY", NULL },
+	/* 0x10 */ { "PRINTER_NOTIFY_START_TIME", NULL },
+	/* 0x11 */ { "PRINTER_NOTIFY_UNTIL_TIME", NULL },
+	/* 0x12 */ { "PRINTER_NOTIFY_STATUS", notify_one_value },
+};
+
+static struct notify2_message_table job_notify_table[] = {
+	/* 0x00 */ { "JOB_NOTIFY_PRINTER_NAME", NULL },
+	/* 0x01 */ { "JOB_NOTIFY_MACHINE_NAME", NULL },
+	/* 0x02 */ { "JOB_NOTIFY_PORT_NAME", NULL },
+	/* 0x03 */ { "JOB_NOTIFY_USER_NAME", notify_string },
+	/* 0x04 */ { "JOB_NOTIFY_NOTIFY_NAME", NULL },
+	/* 0x05 */ { "JOB_NOTIFY_DATATYPE", NULL },
+	/* 0x06 */ { "JOB_NOTIFY_PRINT_PROCESSOR", NULL },
+	/* 0x07 */ { "JOB_NOTIFY_PARAMETERS", NULL },
+	/* 0x08 */ { "JOB_NOTIFY_DRIVER_NAME", NULL },
+	/* 0x09 */ { "JOB_NOTIFY_DEVMODE", NULL },
+	/* 0x0a */ { "JOB_NOTIFY_STATUS", notify_one_value },
+	/* 0x0b */ { "JOB_NOTIFY_STATUS_STRING", NULL },
+	/* 0x0c */ { "JOB_NOTIFY_SECURITY_DESCRIPTOR", NULL },
+	/* 0x0d */ { "JOB_NOTIFY_DOCUMENT", notify_string },
+	/* 0x0e */ { "JOB_NOTIFY_PRIORITY", NULL },
+	/* 0x0f */ { "JOB_NOTIFY_POSITION", NULL },
+	/* 0x10 */ { "JOB_NOTIFY_SUBMITTED", notify_system_time },
+	/* 0x11 */ { "JOB_NOTIFY_START_TIME", NULL },
+	/* 0x12 */ { "JOB_NOTIFY_UNTIL_TIME", NULL },
+	/* 0x13 */ { "JOB_NOTIFY_TIME", NULL },
+	/* 0x14 */ { "JOB_NOTIFY_TOTAL_PAGES", notify_one_value },
+	/* 0x15 */ { "JOB_NOTIFY_PAGES_PRINTED", NULL },
+	/* 0x16 */ { "JOB_NOTIFY_TOTAL_BYTES", notify_one_value },
+	/* 0x17 */ { "JOB_NOTIFY_BYTES_PRINTED", NULL },
+};
+
+/***********************************************************************
+ Send a change notication message on all handles which have a call 
+ back registered
+ **********************************************************************/
+
+static void process_notify2_message(struct spoolss_notify_msg *msg, 
+				    TALLOC_CTX *mem_ctx)
+{
+	Printer_entry *p;
+
+	for (p = printers_list; p; p = p->next) {
+		SPOOL_NOTIFY_INFO_DATA *data;
+		uint32 data_len = 1;
+		uint32 id;
+
+		/* Is there notification on this handle? */
+
+		if (!p->notify.client_connected)
+			continue;
+
+		/* For this printer?  Print servers always receive 
+                   notifications. */
+
+		if (p->printer_type == PRINTER_HANDLE_IS_PRINTER &&
+		    !strequal(msg->printer, p->dev.handlename))
+			continue;
+
+		/* Are we monitoring this event? */
+
+		if (!is_monitoring_event(p, msg->type, msg->field))
+			continue;
+
+		/* OK - send the event to the client */
+
+		data = talloc(mem_ctx, sizeof(SPOOL_NOTIFY_INFO_DATA));
+
+		ZERO_STRUCTP(data);
+
+		/* Convert unix jobid to smb jobid */
+
+		id = msg->id;
+
+		if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) {
+
+			id = sysjob_to_jobid(msg->id);
+
+			if (id == -1) {
+				DEBUG(3, ("no such unix jobid %d\n", msg->id));
+				goto done;
+			}
+		}
+
+		construct_info_data(data, msg->type, msg->field, id);
+
+		switch(msg->type) {
+		case PRINTER_NOTIFY_TYPE:
+			if (printer_notify_table[msg->field].fn)
+				printer_notify_table[msg->field].fn(
+					msg, data, mem_ctx);
+			else
+				goto done;
+			break;
+		case JOB_NOTIFY_TYPE:
+			if (job_notify_table[msg->field].fn)
+				job_notify_table[msg->field].fn(
+					msg, data, mem_ctx);
+			else
+				goto done;
+			break;
+		default:
+			DEBUG(5, ("Unknown notification type %d\n", 
+				  msg->type));
+			goto done;
+		}
+
+		if (!p->notify.flags)
+			cli_spoolss_rrpcn(
+				&cli, mem_ctx, &p->notify.client_hnd, 
+				data_len, data, p->notify.change, 0);
+		else {
+			NT_PRINTER_INFO_LEVEL *printer = NULL;
+
+			get_a_printer(&printer, 2, msg->printer);
+
+			if (!printer) {
+				DEBUG(5, ("unable to load info2 for %s\n",
+					  msg->printer));
+				goto done;
+			}
+
+			/* XXX: This needs to be updated for 
+                           PRINTER_CHANGE_SET_PRINTER_DRIVER. */ 
+
+			cli_spoolss_routerreplyprinter(
+				&cli, mem_ctx, &p->notify.client_hnd,
+				0, printer->info_2->changeid);
+
+			free_a_printer(&printer, 2);
+		}
+	}
+done:
+	return;
+}
+
+/* Receive a notify2 message */
+
+static void receive_notify2_message(int msg_type, pid_t src, void *buf, 
+				    size_t len)
+{
+	struct spoolss_notify_msg msg;
+	int offset = 0;
+	TALLOC_CTX *mem_ctx = talloc_init();
+
+	/* Unpack message */
+
+	ZERO_STRUCT(msg);
+
+	offset += tdb_unpack((char *)buf + offset, len - offset, "f",
+			     msg.printer);
+	
+	offset += tdb_unpack((char *)buf + offset, len - offset, "ddddd",
+			     &msg.type, &msg.field, &msg.id, &msg.len, &msg.flags);
+
+	if (msg.len == 0)
+		tdb_unpack((char *)buf + offset, len - offset, "dd",
+			   &msg.notify.value[0], &msg.notify.value[1]);
+	else
+		tdb_unpack((char *)buf + offset, len - offset, "B", 
+			   &msg.len, &msg.notify.data);
+
+	DEBUG(3, ("got NOTIFY2 message, type %d, field 0x%02x, flags 0x%04x\n",
+		  msg.type, msg.field, msg.flags));
+
+	if (msg.len == 0)
+		DEBUG(3, ("value1 = %d, value2 = %d\n", msg.notify.value[0],
+			  msg.notify.value[1]));
+	else
+		dump_data(3, msg.notify.data, msg.len);
+
+	/* Process message */
+
+	process_notify2_message(&msg, mem_ctx);
+
+	/* Free message */
+
+	if (msg.len > 0)
+		free(msg.notify.data);
+
+	talloc_destroy(mem_ctx);
 }
 
 /***************************************************************************
@@ -598,228 +891,56 @@ static WERROR srv_spoolss_routerreplyprinter (struct cli_state *reply_cli, TALLO
 	return result;
 }
 
-/***********************************************************************
- Wrapper around the decision of which RPC use to in the change 
- notification
- **********************************************************************/
- 
-static WERROR srv_spoolss_send_event_to_client(Printer_entry* Printer, 
-	struct cli_state *send_cli,	PRINTER_MESSAGE_INFO *msg, 
-	NT_PRINTER_INFO_LEVEL *info)
-{
-	WERROR result;
-	
-	if (valid_notify_options(Printer)) {
-		/* This is a single call that can send information about multiple changes */
-		if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
-			msg->flags |= PRINTER_MESSAGE_ATTRIBUTES;
-
-		result = cli_spoolss_reply_rrpcn(send_cli, send_cli->mem_ctx, &Printer->notify.client_hnd, 
-				msg, info);
-	}
-	else {
-		/* This requires that the server send an individual event notification for each change */
-		result = srv_spoolss_routerreplyprinter(send_cli, send_cli->mem_ctx, &Printer->notify.client_hnd, 
-				msg, info);
-	}
-	
-	return result;
-}
-
-
-/***********************************************************************
- Send a change notication message on all handles which have a call 
- back registered
- **********************************************************************/
-
-static void send_spoolss_event_notification(PRINTER_MESSAGE_INFO *msg)
-{
-	Printer_entry *find_printer;
-	WERROR result;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-
-	if (!msg) {
-		DEBUG(0,("send_spoolss_event_notification: NULL msg pointer!\n"));
-		return;
-	}
-
-	for(find_printer = printers_list; find_printer; find_printer = find_printer->next) {
-
-		/*
-		 * If the entry has a connected client we send the message. There should 
-		 * only be one of these normally when dealing with the NT/2k spooler.
-		 * However, iterate over all to make sure we deal with user applications
-		 * in addition to spooler service.
-		 *
-		 * While we are only maintaining a single connection to the client, 
-		 * the FindFirstPrinterChangeNotification() call is made on a printer 
-		 * handle, so "client_connected" represents the whether or not the 
-		 * client asked for change notication on this handle.
-		 * 
-		 * --jerry
-		 */
-
-		if (find_printer->notify.client_connected==True) {
-		
-			/* does the client care about what changed? */
-
-			if (msg->flags && !is_client_monitoring_event(find_printer, msg->flags)) {
-				DEBUG(10,("send_spoolss_event_notification: Client [%s] not monitoring these events\n",
-					find_printer->client.machine)); 
-				continue;
-			}
-
-			if (find_printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
-				DEBUG(10,("send_spoolss_event_notification: printserver [%s]\n", find_printer->dev.printerservername ));
-			else
-				DEBUG(10,("send_spoolss_event_notification: printer [%s]\n", find_printer->dev.handlename));
-
-			/*
-			 * if handle is a printer, only send if the printer_name matches.
-			 * ...else if handle is a printerserver, send to all
-			 */
-
-			if (*msg->printer_name && (find_printer->printer_type==PRINTER_HANDLE_IS_PRINTER) 
-				&& !strequal(msg->printer_name, find_printer->dev.handlename)) 
-			{
-				DEBUG(10,("send_spoolss_event_notification: ignoring message sent to %s [%s]\n",
-					msg->printer_name, find_printer->dev.handlename ));
-				continue;
-			}
-
-
-			/* lookup the printer if we have a name if we don't already have a 
-			   valid NT_PRINTER_INFO_LEVEL structure. And yes I'm assuming we 
-			   will always have a non-empty msg.printer_name */
-				   
-			if (!printer || !printer->info_2 || strcmp(msg->printer_name, printer->info_2->printername)) 
-			{
-			
-				if (printer) {
-					free_a_printer(&printer, 2);
-					printer = NULL;
-				}
-					
-				result = get_a_printer(&printer, 2, msg->printer_name);
-				if (!W_ERROR_IS_OK(result))
-					continue;
-			}
-
-			/* issue the client call */
-
-			result = srv_spoolss_send_event_to_client(find_printer, &cli, msg, printer);
-			
-			if (!W_ERROR_IS_OK(result)) {
-				DEBUG(5,("send_spoolss_event_notification: Event notification failed [%s]\n",
-					dos_errstr(result)));
-		}
-	}
-}
-
-	return;
-}
-/***************************************************************************
- Receive the notify message and decode the message.  Do not send 
- notification if we sent this originally as that would result in 
- duplicates.
-****************************************************************************/
-
-static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
-{
-	PRINTER_MESSAGE_INFO msg;
-	
-	if (len < sizeof(msg)) {
-		DEBUG(2,("srv_spoolss_receive_message: got incorrect message size (%u)!\n", (unsigned int)len));
-		return;
-	}
-
-	memcpy(&msg, buf, sizeof(PRINTER_MESSAGE_INFO));
-	
-	DEBUG(10,("srv_spoolss_receive_message: Got message printer change [queue = %s] low=0x%x  high=0x%x flags=0x%x\n",
-		msg.printer_name, (unsigned int)msg.low, (unsigned int)msg.high, msg.flags ));
-
-	/* Iterate the printer list */
-	
-	send_spoolss_event_notification(&msg);
-	
-}
-
-/***************************************************************************
- Send a notify event.
-****************************************************************************/
-
-static BOOL srv_spoolss_sendnotify(char* printer_name, uint32 high, uint32 low, uint32 flags)
-{
-	char msg[sizeof(PRINTER_MESSAGE_INFO)];
-	PRINTER_MESSAGE_INFO info;
-	
-	ZERO_STRUCT(info);
-
-	info.low 	= low;
-	info.high	= high;
-	info.flags	= flags;
-	fstrcpy(info.printer_name, printer_name);
-	
-	memcpy(msg, &info, sizeof(PRINTER_MESSAGE_INFO));	
-
-	DEBUG(10,("srv_spoolss_sendnotify: printer change low=0x%x  high=0x%x [%s], flags=0x%x\n", 
-		low, high, printer_name, flags));
-		
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, sizeof(PRINTER_MESSAGE_INFO), 
-		False, NULL);
-
-	return True;
-}	
-
 /********************************************************************
  Send a message to ourself about new driver being installed
  so we can upgrade the information for each printer bound to this
  driver
-********************************************************************/
-
+ ********************************************************************/
+ 
 static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
 {
 	int len = strlen(drivername);
-
+	
 	if (!len)
 		return False;
 
 	DEBUG(10,("srv_spoolss_drv_upgrade_printer: Sending message about driver upgrade [%s]\n",
 		drivername));
-
+		
 	message_send_pid(sys_getpid(), MSG_PRINTER_DRVUPGRADE, drivername, len+1, False);
+
 	return True;
 }
 
 /**********************************************************************
  callback to receive a MSG_PRINTER_DRVUPGRADE message and interate
- over all printers, upgrading ones as neessary
-**********************************************************************/
-
+ over all printers, upgrading ones as neessary 
+ **********************************************************************/
+ 
 void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 {
 	fstring drivername;
 	int snum;
 	int n_services = lp_numservices();
-
+	
 	len = MIN(len,sizeof(drivername)-1);
 	strncpy(drivername, buf, len);
-
+	
 	DEBUG(10,("do_drv_upgrade_printer: Got message for new driver [%s]\n", drivername ));
 
 	/* Iterate the printer list */
-
+	
 	for (snum=0; snum<n_services; snum++)
 	{
 		if (lp_snum_ok(snum) && lp_print_ok(snum) ) 
 		{
 			WERROR result;
 			NT_PRINTER_INFO_LEVEL *printer = NULL;
-
+			
 			result = get_a_printer(&printer, 2, lp_servicename(snum));
 			if (!W_ERROR_IS_OK(result))
 				continue;
-
+				
 			if (printer && printer->info_2 && !strcmp(drivername, printer->info_2->drivername)) 
 			{
 				DEBUG(6,("Updating printer [%s]\n", printer->info_2->printername));
@@ -828,16 +949,16 @@ void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 				
 				result = mod_a_printer(*printer, 2);
 				if (!W_ERROR_IS_OK(result)) {
-					DEBUG(3,("do_drv_upgrade_printer: mod_a_printer() failed with status [%s]\n",
-					dos_errstr(result)));
+					DEBUG(3,("do_drv_upgrade_printer: mod_a_printer() failed with status [%s]\n", 
+						dos_errstr(result)));
 				}
 			}
 			
-			free_a_printer(&printer, 2);
+			free_a_printer(&printer, 2);			
 		}
 	}
-
-	/* all done */
+	
+	/* all done */	
 }
 
 /********************************************************************
@@ -1005,7 +1126,7 @@ Can't find printer handle we created for printer %s\n", name ));
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-/*
+	/*
 	   First case: the user is opening the print server:
 
 	   Disallow MS AddPrinterWizard if parameter disables it. A Win2k
@@ -1381,10 +1502,6 @@ WERROR _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 
 	update_c_setprinter(False);
 
-	if (W_ERROR_IS_OK(result)) {
-		srv_spoolss_sendnotify(Printer->dev.handlename, 0, PRINTER_CHANGE_DELETE_PRINTER, 0x0);
-	}
-		
 	return result;
 }
 
@@ -1683,6 +1800,96 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 		return WERR_OK;
 }
 
+/*********************************************************
+ Connect to the client machine.
+**********************************************************/
+
+static BOOL spoolss_connect_to_client(struct cli_state *the_cli, char *remote_machine)
+{
+	extern pstring global_myname;
+
+	ZERO_STRUCTP(the_cli);
+	if(cli_initialise(the_cli) == NULL) {
+		DEBUG(0,("connect_to_client: unable to initialize client connection.\n"));
+		return False;
+	}
+
+	if(!resolve_name( remote_machine, &the_cli->dest_ip, 0x20)) {
+		DEBUG(0,("connect_to_client: Can't resolve address for %s\n", remote_machine));
+		cli_shutdown(the_cli);
+	return False;
+	}
+
+	if (ismyip(the_cli->dest_ip)) {
+		DEBUG(0,("connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
+		cli_shutdown(the_cli);
+		return False;
+	}
+
+	if (!cli_connect(the_cli, remote_machine, &the_cli->dest_ip)) {
+		DEBUG(0,("connect_to_client: unable to connect to SMB server on machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		cli_shutdown(the_cli);
+		return False;
+	}
+  
+	if (!attempt_netbios_session_request(the_cli, global_myname, remote_machine, &the_cli->dest_ip)) {
+		DEBUG(0,("connect_to_client: machine %s rejected the NetBIOS session request.\n", 
+			remote_machine));
+		return False;
+	}
+
+	the_cli->protocol = PROTOCOL_NT1;
+    
+	if (!cli_negprot(the_cli)) {
+		DEBUG(0,("connect_to_client: machine %s rejected the negotiate protocol. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		cli_shutdown(the_cli);
+		return False;
+	}
+
+	if (the_cli->protocol != PROTOCOL_NT1) {
+		DEBUG(0,("connect_to_client: machine %s didn't negotiate NT protocol.\n", remote_machine));
+		cli_shutdown(the_cli);
+		return False;
+	}
+    
+	/*
+	 * Do an anonymous session setup.
+	 */
+    
+	if (!cli_session_setup(the_cli, "", "", 0, "", 0, "")) {
+		DEBUG(0,("connect_to_client: machine %s rejected the session setup. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		cli_shutdown(the_cli);
+		return False;
+	}
+    
+	if (!(the_cli->sec_mode & 1)) {
+		DEBUG(0,("connect_to_client: machine %s isn't in user level security mode\n", remote_machine));
+		cli_shutdown(the_cli);
+		return False;
+	}
+    
+	if (!cli_send_tconX(the_cli, "IPC$", "IPC", "", 1)) {
+		DEBUG(0,("connect_to_client: machine %s rejected the tconX on the IPC$ share. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		cli_shutdown(the_cli);
+		return False;
+	}
+
+	/*
+	 * Ok - we have an anonymous connection to the IPC$ share.
+	 * Now start the NT Domain stuff :-).
+	 */
+
+	if(cli_nt_session_open(the_cli, PIPE_SPOOLSS) == False) {
+		DEBUG(0,("connect_to_client: unable to open the domain client session to machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli)));
+		cli_nt_session_close(the_cli);
+		cli_ulogoff(the_cli);
+		cli_shutdown(the_cli);
+		return False;
+	} 
+
+	return True;
+}
+
 /***************************************************************************
  Connect to the client.
 ****************************************************************************/
@@ -1703,15 +1910,14 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 		if(!spoolss_connect_to_client(&cli, unix_printer))
 			return False;
 			
-		message_register(MSG_PRINTER_NOTIFY, srv_spoolss_receive_message);
-
+		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message);
 	}
 
 	smb_connections++;
 
 	result = cli_spoolss_reply_open_printer(&cli, cli.mem_ctx, printer, localprinter, 
 			type, handle);
-
+			
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(5,("srv_spoolss_reply_open_printer: Client RPC returned [%s]\n",
 			dos_errstr(result)));
@@ -1757,15 +1963,17 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 
 	Printer->notify.option=dup_spool_notify_option(option);
 
-	unistr2_to_ascii(Printer->notify.localmachine, localmachine, sizeof(Printer->notify.localmachine)-1);
+	unistr2_to_ascii(Printer->notify.localmachine, localmachine, 
+		       sizeof(Printer->notify.localmachine)-1);
 
-	/* connect to the client machine and send a ReplyOpenPrinter */
-	if(srv_spoolss_replyopenprinter(Printer->notify.localmachine,
+	/* Connect to the client machine and send a ReplyOpenPrinter */
+
+	if(!srv_spoolss_replyopenprinter(Printer->notify.localmachine,
 					Printer->notify.printerlocal, 1,
 					&Printer->notify.client_hnd))
-	{
-		Printer->notify.client_connected=True;
-	}
+		return WERR_SERVER_UNAVAILABLE;
+
+	Printer->notify.client_connected=True;
 
 	return WERR_OK;
 }
@@ -1787,7 +1995,7 @@ void spoolss_notify_server_name(int snum,
 
 	len = rpcstr_push(temp, temp_name, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 
 	if (!data->notify_data.data.string) {
@@ -1822,7 +2030,7 @@ void spoolss_notify_printer_name(int snum,
 
 	len = rpcstr_push(temp, p, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1848,7 +2056,7 @@ void spoolss_notify_share_name(int snum,
 
 	len = rpcstr_push(temp, lp_servicename(snum), sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1876,7 +2084,7 @@ void spoolss_notify_port_name(int snum,
 
 	len = rpcstr_push(temp, printer->info_2->portname, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1902,7 +2110,8 @@ void spoolss_notify_driver_name(int snum,
 	uint32 len;
 
 	len = rpcstr_push(temp, printer->info_2->drivername, sizeof(temp)-2, STR_TERMINATE);
-	data->notify_data.data.length = len / 2 - 1;
+
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1931,7 +2140,7 @@ void spoolss_notify_comment(int snum,
 	else
 		len = rpcstr_push(temp, printer->info_2->comment, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1958,7 +2167,7 @@ void spoolss_notify_location(int snum,
 
 	len = rpcstr_push(temp, printer->info_2->location,sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -1997,7 +2206,7 @@ void spoolss_notify_sepfile(int snum,
 
 	len = rpcstr_push(temp, printer->info_2->sepfile, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -2024,7 +2233,7 @@ void spoolss_notify_print_processor(int snum,
 
 	len = rpcstr_push(temp,  printer->info_2->printprocessor, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -2051,7 +2260,7 @@ void spoolss_notify_parameters(int snum,
 
 	len = rpcstr_push(temp,  printer->info_2->parameters, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -2078,7 +2287,7 @@ void spoolss_notify_datatype(int snum,
 
 	len = rpcstr_push(temp, printer->info_2->datatype, sizeof(pstring)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -2238,7 +2447,7 @@ static void spoolss_notify_username(int snum,
 
 	len = rpcstr_push(temp, queue->fs_user, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -2278,7 +2487,7 @@ static void spoolss_notify_job_name(int snum,
 
 	len = rpcstr_push(temp, queue->fs_file, sizeof(temp)-2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -2328,7 +2537,7 @@ static void spoolss_notify_job_status_string(int snum,
 
 	len = rpcstr_push(temp, p, sizeof(temp) - 2, STR_TERMINATE);
 
-	data->notify_data.data.length = len / 2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 	
 	if (!data->notify_data.data.string) {
@@ -2452,8 +2661,6 @@ static void spoolss_notify_submitted_time(int snum,
 	SSVAL(p, 14, st.milliseconds);
 }
 
-#define END 65535
-
 struct s_notify_info_data_table
 {
 	uint16 type;
@@ -2471,18 +2678,18 @@ struct s_notify_info_data_table
 
 struct s_notify_info_data_table notify_info_data_table[] =
 {
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SERVER_NAME,         "PRINTER_NOTIFY_SERVER_NAME",         POINTER,   spoolss_notify_server_name },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINTER_NAME,        "PRINTER_NOTIFY_PRINTER_NAME",        POINTER,   spoolss_notify_printer_name },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SHARE_NAME,          "PRINTER_NOTIFY_SHARE_NAME",          POINTER,   spoolss_notify_share_name },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PORT_NAME,           "PRINTER_NOTIFY_PORT_NAME",           POINTER,   spoolss_notify_port_name },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,         "PRINTER_NOTIFY_DRIVER_NAME",         POINTER,   spoolss_notify_driver_name },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_COMMENT,             "PRINTER_NOTIFY_COMMENT",             POINTER,   spoolss_notify_comment },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_LOCATION,            "PRINTER_NOTIFY_LOCATION",            POINTER,   spoolss_notify_location },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SERVER_NAME,         "PRINTER_NOTIFY_SERVER_NAME",         STRING,   spoolss_notify_server_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINTER_NAME,        "PRINTER_NOTIFY_PRINTER_NAME",        STRING,   spoolss_notify_printer_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SHARE_NAME,          "PRINTER_NOTIFY_SHARE_NAME",          STRING,   spoolss_notify_share_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PORT_NAME,           "PRINTER_NOTIFY_PORT_NAME",           STRING,   spoolss_notify_port_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,         "PRINTER_NOTIFY_DRIVER_NAME",         STRING,   spoolss_notify_driver_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_COMMENT,             "PRINTER_NOTIFY_COMMENT",             STRING,   spoolss_notify_comment },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_LOCATION,            "PRINTER_NOTIFY_LOCATION",            STRING,   spoolss_notify_location },
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DEVMODE,             "PRINTER_NOTIFY_DEVMODE",             POINTER,   spoolss_notify_devmode },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SEPFILE,             "PRINTER_NOTIFY_SEPFILE",             POINTER,   spoolss_notify_sepfile },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINT_PROCESSOR,     "PRINTER_NOTIFY_PRINT_PROCESSOR",     POINTER,   spoolss_notify_print_processor },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PARAMETERS,          "PRINTER_NOTIFY_PARAMETERS",          POINTER,   spoolss_notify_parameters },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DATATYPE,            "PRINTER_NOTIFY_DATATYPE",            POINTER,   spoolss_notify_datatype },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SEPFILE,             "PRINTER_NOTIFY_SEPFILE",             STRING,   spoolss_notify_sepfile },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINT_PROCESSOR,     "PRINTER_NOTIFY_PRINT_PROCESSOR",     STRING,   spoolss_notify_print_processor },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PARAMETERS,          "PRINTER_NOTIFY_PARAMETERS",          STRING,   spoolss_notify_parameters },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DATATYPE,            "PRINTER_NOTIFY_DATATYPE",            STRING,   spoolss_notify_datatype },
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SECURITY_DESCRIPTOR, "PRINTER_NOTIFY_SECURITY_DESCRIPTOR", POINTER,   spoolss_notify_security_desc },
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_ATTRIBUTES,          "PRINTER_NOTIFY_ATTRIBUTES",          ONE_VALUE, spoolss_notify_attributes },
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRIORITY,            "PRINTER_NOTIFY_PRIORITY",            ONE_VALUE, spoolss_notify_priority },
@@ -2497,20 +2704,20 @@ struct s_notify_info_data_table notify_info_data_table[] =
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PAGES_PRINTED,       "PRINTER_NOTIFY_PAGES_PRINTED",       POINTER,   NULL },
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_TOTAL_BYTES,         "PRINTER_NOTIFY_TOTAL_BYTES",         POINTER,   NULL },
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_BYTES_PRINTED,       "PRINTER_NOTIFY_BYTES_PRINTED",       POINTER,   NULL },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRINTER_NAME,            "JOB_NOTIFY_PRINTER_NAME",            POINTER,   spoolss_notify_printer_name },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_MACHINE_NAME,            "JOB_NOTIFY_MACHINE_NAME",            POINTER,   spoolss_notify_server_name },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PORT_NAME,               "JOB_NOTIFY_PORT_NAME",               POINTER,   spoolss_notify_port_name },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_USER_NAME,               "JOB_NOTIFY_USER_NAME",               POINTER,   spoolss_notify_username },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_NOTIFY_NAME,             "JOB_NOTIFY_NOTIFY_NAME",             POINTER,   spoolss_notify_username },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DATATYPE,                "JOB_NOTIFY_DATATYPE",                POINTER,   spoolss_notify_datatype },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRINT_PROCESSOR,         "JOB_NOTIFY_PRINT_PROCESSOR",         POINTER,   spoolss_notify_print_processor },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PARAMETERS,              "JOB_NOTIFY_PARAMETERS",              POINTER,   spoolss_notify_parameters },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DRIVER_NAME,             "JOB_NOTIFY_DRIVER_NAME",             POINTER,   spoolss_notify_driver_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRINTER_NAME,            "JOB_NOTIFY_PRINTER_NAME",            STRING,   spoolss_notify_printer_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_MACHINE_NAME,            "JOB_NOTIFY_MACHINE_NAME",            STRING,   spoolss_notify_server_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PORT_NAME,               "JOB_NOTIFY_PORT_NAME",               STRING,   spoolss_notify_port_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_USER_NAME,               "JOB_NOTIFY_USER_NAME",               STRING,   spoolss_notify_username },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_NOTIFY_NAME,             "JOB_NOTIFY_NOTIFY_NAME",             STRING,   spoolss_notify_username },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DATATYPE,                "JOB_NOTIFY_DATATYPE",                STRING,   spoolss_notify_datatype },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRINT_PROCESSOR,         "JOB_NOTIFY_PRINT_PROCESSOR",         STRING,   spoolss_notify_print_processor },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PARAMETERS,              "JOB_NOTIFY_PARAMETERS",              STRING,   spoolss_notify_parameters },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DRIVER_NAME,             "JOB_NOTIFY_DRIVER_NAME",             STRING,   spoolss_notify_driver_name },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_DEVMODE,                 "JOB_NOTIFY_DEVMODE",                 POINTER,   spoolss_notify_devmode },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_STATUS,                  "JOB_NOTIFY_STATUS",                  ONE_VALUE, spoolss_notify_job_status },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_STATUS_STRING,           "JOB_NOTIFY_STATUS_STRING",           POINTER,   spoolss_notify_job_status_string },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_STATUS_STRING,           "JOB_NOTIFY_STATUS_STRING",           STRING,   spoolss_notify_job_status_string },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_SECURITY_DESCRIPTOR,     "JOB_NOTIFY_SECURITY_DESCRIPTOR",     POINTER,   NULL },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DOCUMENT,                "JOB_NOTIFY_DOCUMENT",                POINTER,   spoolss_notify_job_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DOCUMENT,                "JOB_NOTIFY_DOCUMENT",                STRING,   spoolss_notify_job_name },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRIORITY,                "JOB_NOTIFY_PRIORITY",                ONE_VALUE, spoolss_notify_priority },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_POSITION,                "JOB_NOTIFY_POSITION",                ONE_VALUE, spoolss_notify_job_position },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_SUBMITTED,               "JOB_NOTIFY_SUBMITTED",               POINTER,   spoolss_notify_submitted_time },
@@ -2520,8 +2727,6 @@ struct s_notify_info_data_table notify_info_data_table[] =
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_PAGES,             "JOB_NOTIFY_TOTAL_PAGES",             ONE_VALUE, spoolss_notify_total_pages },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_PAGES_PRINTED,           "JOB_NOTIFY_PAGES_PRINTED",           ONE_VALUE, spoolss_notify_pages_printed },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_BYTES,             "JOB_NOTIFY_TOTAL_BYTES",             ONE_VALUE, spoolss_notify_job_size },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_BYTES_PRINTED,           "JOB_NOTIFY_BYTES_PRINTED",           ONE_VALUE, NULL },
-{ END,                 END,                                "",                                   END,       NULL }
 };
 
 /*******************************************************************
@@ -2532,43 +2737,46 @@ static uint32 size_of_notify_info_data(uint16 type, uint16 field)
 {
 	int i=0;
 
-	while (notify_info_data_table[i].type != END)
-	{
-		if ( (notify_info_data_table[i].type == type ) &&
-		     (notify_info_data_table[i].field == field ) )
-		{
-			return (notify_info_data_table[i].size);
+	for (i = 0; i < sizeof(notify_info_data_table); i++) {
+		if (notify_info_data_table[i].type == type &&
+		    notify_info_data_table[i].field == field) {
+			switch(notify_info_data_table[i].size) {
+			case ONE_VALUE:
+			case TWO_VALUE:
+				return 1;
+			case STRING:
+				return 2;
+
+			/* The only pointer notify data I have seen on
+			   the wire is the submitted time and this has
+			   the notify size set to 4. -tpot */
+
+			case POINTER:
+				return 4;
+			}
 		}
-		i++;
 	}
-	return (65535);
+
+	DEBUG(5, ("invalid notify data type %d/%d\n", type, field));
+
+	return 0;
 }
 
 /*******************************************************************
  Return the type of notify_info_data.
 ********************************************************************/
 
-static BOOL type_of_notify_info_data(uint16 type, uint16 field)
+static int type_of_notify_info_data(uint16 type, uint16 field)
 {
 	int i=0;
 
-	while (notify_info_data_table[i].type != END)
-	{
-		if ( (notify_info_data_table[i].type == type ) &&
-		     (notify_info_data_table[i].field == field ) )
-		{
-			if (notify_info_data_table[i].size == POINTER)
-			{
-				return (False);
-			}
-			else
-			{
-				return (True);
-			}
-		}
-		i++;
+	for (i = 0; i < sizeof(notify_info_data_table); i++) {
+		if (notify_info_data_table[i].type == type &&
+		    notify_info_data_table[i].field == field)
+			return notify_info_data_table[i].size;
 	}
-	return (False);
+
+	return False;
 }
 
 /****************************************************************************
@@ -2576,21 +2784,18 @@ static BOOL type_of_notify_info_data(uint16 type, uint16 field)
 
 static int search_notify(uint16 type, uint16 field, int *value)
 {	
-	int j;
-	BOOL found;
+	int i;
 
-	for (j=0, found=False; found==False && notify_info_data_table[j].type != END ; j++)
-	{
-		if ( (notify_info_data_table[j].type  == type  ) &&
-		     (notify_info_data_table[j].field == field ) )
-			found=True;
+	for (i = 0; i < sizeof(notify_info_data_table); i++) {
+		if (notify_info_data_table[i].type == type &&
+		    notify_info_data_table[i].field == field &&
+		    notify_info_data_table[i].fn != NULL) {
+			*value = i;
+			return True;
+		}
 	}
-	*value=--j;
-
-	if ( found && (notify_info_data_table[j].fn != NULL) )
-		return True;
-	else
-		return False;	
+	
+	return False;	
 }
 
 /****************************************************************************
@@ -2601,7 +2806,12 @@ void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 
 	info_data->type     = type;
 	info_data->field    = field;
 	info_data->reserved = 0;
-	info_data->id       = id;
+
+	if (type == JOB_NOTIFY_TYPE)
+		info_data->id = id;
+	else 
+		info_data->id = 0;
+
 	info_data->size     = size_of_notify_info_data(type, field);
 	info_data->enc_type = type_of_notify_info_data(type, field);
 }
@@ -2650,7 +2860,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 
 		current_data=&info->data[info->count];
 
-		construct_info_data(current_data, type, field, id);		
+		construct_info_data(current_data, type, field, id);
 
 		DEBUG(10,("construct_notify_printer_info: calling [%s]  snum=%d  printername=[%s])\n",
 				notify_info_data_table[j].name, snum, printer->info_2->printername ));
@@ -2892,7 +3102,6 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-/*	uint32 change = q_u->change; - notused. */
 /*	SPOOL_NOTIFY_OPTION *option = q_u->option; - notused. */
 	SPOOL_NOTIFY_INFO *info = &r_u->info;
 
@@ -2910,16 +3119,18 @@ WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCN
 
 	DEBUG(4,("Printer type %x\n",Printer->printer_type));
 
-	/* jfm: the change value isn't used right now.
-	 * 	we will honour it when
-	 *	a) we'll be able to send notification to the client
-	 *	b) we'll have a way to communicate between the spoolss process.
-	 *
-	 *	same thing for option->flags
+	/*
+	 * 	We are now using the change value, and 
 	 *	I should check for PRINTER_NOTIFY_OPTIONS_REFRESH but as
 	 *	I don't have a global notification system, I'm sending back all the
 	 *	informations even when _NOTHING_ has changed.
 	 */
+
+	/* We need to keep track of the change value to send back in 
+           RRPCN replies otherwise our updates are ignored. */
+
+	if (Printer->notify.client_connected)
+		Printer->notify.change = q_u->change;
 
 	/* just ignore the SPOOL_NOTIFY_OPTION */
 	
@@ -3051,7 +3262,6 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
  * construct_printer_info_1
  * fill a printer_info_1 struct
  ********************************************************************/
-
 static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int snum)
 {
 	pstring chaine;
@@ -3126,8 +3336,10 @@ static DEVICEMODE *construct_dev_mode(int snum)
 	if (printer->info_2->devmode)
 		ntdevmode = dup_nt_devicemode(printer->info_2->devmode);
 
-	if (ntdevmode == NULL)
+	if (ntdevmode == NULL) {
+		DEBUG(5, ("BONG! There was no device mode!\n"));
 		goto fail;
+	}
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
 
@@ -3545,9 +3757,9 @@ static WERROR enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint3
 	}
 	
 	/* check the required size. */	
-	for (i=0; i<*returned; i++)
+	for (i=0; i<*returned; i++) 
 		(*needed) += spoolss_size_printer_info_2(&printers[i]);
-
+	
 	if (!alloc_buffer_size(buffer, *needed)) {
 		for (i=0; i<*returned; i++) {
 			free_devmode(printers[i].devmode);
@@ -3777,7 +3989,7 @@ static WERROR getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_2(printer);
-
+	
 	if (!alloc_buffer_size(buffer, *needed)) {
 		free_printer_info_2(printer);
 		return WERR_INSUFFICIENT_BUFFER;
@@ -4824,6 +5036,7 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 
 static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 {
+	extern userdom_struct current_user_info;
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
 	pstring command;
@@ -4838,14 +5051,13 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 			get_called_name());
 	/* change \ to \\ for the shell */
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
-	standard_sub_basic("", remote_machine);
-
+	standard_sub_basic(current_user_info.smb_name, remote_machine);
+	
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, driverlocation, remote_machine);
 
-	/* Convert script args to unix-codepage */
 	DEBUG(10,("Running [%s]\n", command));
 	ret = smbrun(command, &fd);
 	DEBUGADD(10,("returned [%d]\n", ret));
@@ -4873,9 +5085,6 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	}
 
 	file_lines_free(qlines);
-
-	update_server_announce_as_printserver();
-
 	return True;
 }
 
@@ -5139,13 +5348,10 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	int snum;
 	NT_PRINTER_INFO_LEVEL *printer = NULL, *old_printer = NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
-	PRINTER_MESSAGE_INFO msg;
 	WERROR result;
 
 	DEBUG(8,("update_printer\n"));
-	
-	ZERO_STRUCT(msg);
-	
+
 	result = WERR_OK;
 
 	if (level!=2) {
@@ -5263,7 +5469,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 				DEBUG(5,("update_printer: Error restoring driver initialization data for driver [%s]!\n",
 					printer->info_2->drivername));
 			}
-			msg.flags |= PRINTER_MESSAGE_DRIVER;
+			notify_printer_driver(snum, printer->info_2->drivername);
 		}
 	}
 
@@ -5274,26 +5480,18 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	   all the possible changes                                         */
 
 	if (!strequal(printer->info_2->comment, old_printer->info_2->comment))
-		msg.flags |= PRINTER_MESSAGE_COMMENT;
+		notify_printer_comment(snum, printer->info_2->comment);
 
 	if (!strequal(printer->info_2->sharename, old_printer->info_2->sharename))
-		msg.flags |= PRINTER_MESSAGE_SHARENAME;
+		notify_printer_sharename(snum, printer->info_2->sharename);
 
 	if (!strequal(printer->info_2->portname, old_printer->info_2->portname))
-		msg.flags |= PRINTER_MESSAGE_PORT;
+		notify_printer_port(snum, printer->info_2->portname);
 
 	if (!strequal(printer->info_2->location, old_printer->info_2->location))
-		msg.flags |= PRINTER_MESSAGE_LOCATION;
+		notify_printer_location(snum, printer->info_2->location);
 
-	msg.low = PRINTER_CHANGE_ADD_PRINTER;
-	fstrcpy(msg.printer_name, printer->info_2->printername);
-
-	/* only send a notify if something changed */
-	if (msg.flags) {
-		srv_spoolss_sendnotify(msg.printer_name, 0, PRINTER_CHANGE_ADD_PRINTER, msg.flags);
-	}
-
- done:
+done:
 	free_a_printer(&printer, 2);
 	free_a_printer(&old_printer, 2);
 
@@ -5411,7 +5609,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 
 static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
                             int position, int snum, 
-			    NT_PRINTER_INFO_LEVEL *ntprinter, 
+			    NT_PRINTER_INFO_LEVEL *ntprinter,
 			    DEVICEMODE *devmode)
 {
 	pstring temp_name;
@@ -5528,7 +5726,7 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 		*returned = 0;
 		goto done;
 	}
-
+		
 	if (!(devmode = construct_dev_mode(snum))) {
 		*returned = 0;
 		result = WERR_NOMEM;
@@ -5571,6 +5769,7 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 	SAFE_FREE(info);
 
 	return result;
+
 }
 
 /****************************************************************************
@@ -6516,9 +6715,6 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	}
 
 	update_c_setprinter(False);
-
-	srv_spoolss_sendnotify(printer->info_2->printername, 0, PRINTER_CHANGE_ADD_PRINTER, 0x0);
-
 	free_a_printer(&printer,2);
 
 	return WERR_OK;
@@ -6593,27 +6789,27 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	}
 
 	/* BEGIN_ADMIN_LOG */
-	switch(level) {
-		case 3:
-			sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
-				driver.info_3->name,drv_ver_to_os[driver.info_3->cversion],uidtoname(user.uid));
-			fstrcpy(driver_name, driver.info_3->name);
-			break;
-		case 6:
-			sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
-				driver.info_6->name,drv_ver_to_os[driver.info_6->version],uidtoname(user.uid));
-			fstrcpy(driver_name, driver.info_6->name);
-			break;
-	}
+        switch(level) {
+	    case 3:
+		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
+			driver.info_3->name,drv_ver_to_os[driver.info_3->cversion],uidtoname(user.uid));
+		fstrcpy(driver_name, driver.info_3->name);
+		break;
+	    case 6:   
+		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
+			driver.info_6->name,drv_ver_to_os[driver.info_6->version],uidtoname(user.uid));
+		fstrcpy(driver_name, driver.info_6->name);
+		break;
+        }
 	/* END_ADMIN_LOG */
 
-	/*
+	/* 
 	 * I think this is where he DrvUpgradePrinter() hook would be
 	 * be called in a driver's interface DLL on a Windows NT 4.0/2k
 	 * server.  Right now, we just need to send ourselves a message
-	 * to update each printer bound to this driver.   --jerry
+	 * to update each printer bound to this driver.   --jerry	
 	 */
-
+	 
 	if (!srv_spoolss_drv_upgrade_printer(driver_name)) {
 		DEBUG(0,("_spoolss_addprinterdriver: Failed to send message about upgrading driver [%s]!\n",
 			driver_name));
@@ -6656,9 +6852,9 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 				/*
 				 * No 2k/Xp driver found, delete init data (if any) for the new Nt driver.
 				*/
-		if (!del_driver_init(driver_name))
+				if (!del_driver_init(driver_name))
 					DEBUG(6,("_spoolss_addprinterdriver: del_driver_init(%s) Nt failed!\n", driver_name));
-	} else {
+			} else {
 				/*
 				 * a 2k/Xp driver was found, don't delete init data because Nt driver will use it.
 				*/
@@ -6680,10 +6876,10 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 		default:
 			DEBUG(0,("_spoolss_addprinterdriver: invalid level=%d\n", level));
 			break;
-	}
+ 	}
 
 	
- done:
+done:
 	free_a_printer_driver(driver, level);
 	return err;
 }
@@ -6869,7 +7065,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		if((*out_value=(uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL)
 			return WERR_NOMEM;
 
-		*out_value_len = rpcstr_push((char *)*out_value, "", in_value_len, 0);
+		*out_value_len = (uint32)rpcstr_push((char *)*out_value, "", in_value_len, 0);
 
 		/* the data is counted in bytes */
 		*out_max_data_len = in_data_len;
@@ -6897,7 +7093,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		return WERR_NOMEM;
 	}
 	
-	*out_value_len = rpcstr_push((char *)*out_value,value, in_value_len, 0);
+	*out_value_len = (uint32)rpcstr_push((char *)*out_value,value, in_value_len, 0);
 
 	*out_type=type;
 
@@ -7604,7 +7800,7 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	free_job_info_2(info_2);	/* Also frees devmode */
 	SAFE_FREE(info_2);
 	free_a_printer(&ntprinter, 2);
-	
+
 	return ret;
 }
 
