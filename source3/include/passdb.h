@@ -76,11 +76,11 @@ typedef struct pdb_methods
 	
 	BOOL (*getsampwrid)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, uint32 rid);
 	
-	BOOL (*add_sam_account)(struct pdb_methods *, const SAM_ACCOUNT *sampass);
+	BOOL (*add_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
 	
-	BOOL (*update_sam_account)(struct pdb_methods *, const SAM_ACCOUNT *sampass);
+	BOOL (*update_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
 	
-	BOOL (*delete_sam_account)(struct pdb_methods *, const SAM_ACCOUNT *username);
+	BOOL (*delete_sam_account)(struct pdb_methods *, SAM_ACCOUNT *username);
 	
 	void *private_data;  /* Private data of some kind */
 	
