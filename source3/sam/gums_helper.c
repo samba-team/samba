@@ -372,7 +372,7 @@ NTSTATUS gums_init_builtin_groups(void)
 	g_obj.type = GUMS_OBJ_GROUP;
 	g_obj.version = 1;
 	g_obj.seq_num = 0;
-	g_obj.mem_ctx = talloc_init_named("gums_init_backend_acct");
+	g_obj.mem_ctx = talloc_init("gums_init_backend_acct");
 	if (g_obj.mem_ctx == NULL) {
 		DEBUG(0, ("gums_init_backend: Out of Memory!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -591,7 +591,7 @@ NTSTATUS gums_init_builtin_groups(void)
 	g_priv.type = GUMS_OBJ_GROUP;
 	g_priv.version = 1;
 	g_priv.seq_num = 0;
-	g_priv.mem_ctx = talloc_init_named("gums_init_backend_priv");
+	g_priv.mem_ctx = talloc_init("gums_init_backend_priv");
 	if (g_priv.mem_ctx == NULL) {
 		DEBUG(0, ("gums_init_backend: Out of Memory!\n"));
 		return NT_STATUS_NO_MEMORY;
