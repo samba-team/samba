@@ -105,4 +105,31 @@ void mini_inetd (int port);
 #define STDERR_FILENO 2
 #endif
 
+#ifndef max
+#define max(a,b) (((a)>(b))?(a):(b))
+#endif
+
+#ifndef min
+#define min(a,b) (((a)<(b))?(a):(b))
+#endif
+
+#include <syslog.h>
+/* Misc definitions for old syslogs */
+
+#ifndef LOG_DAEMON
+#define openlog(id,option,facility) openlog((id),(option))
+#endif
+#ifndef LOG_ODELAY
+#define LOG_ODELAY 0
+#endif
+#ifndef LOG_CONS
+#define LOG_CONS 0
+#endif
+#ifndef LOG_AUTH
+#define LOG_AUTH 0
+#endif
+#ifndef LOG_AUTHPRIV
+#define LOG_AUTHPRIV LOG_AUTH
+#endif
+
 #endif /*  __ROKEN_H__ */
