@@ -40,42 +40,13 @@
 
 RCSID("$Id$");
 
-time_t
-get_time(const char *prompt, time_t def)
-{
-    char buf[1024];
-    int tmp;
-    
-    while(1){
-	if(def == 0)
-	    printf("%s: [infinite] ", prompt);
-	else
-	    printf("%s: [%d] ", prompt, def);
-	fgets(buf, sizeof(buf), stdin);
-	if(buf[strlen(buf) - 1] == '\n')
-	    buf[strlen(buf) - 1] = 0;
-	if(buf[0] == 0)
-	    return def;
-	if(strncmp(buf, "infinite", strlen(buf)) == 0)
-	    return 0;
-	if(sscanf(buf, "%d", &tmp) == 1)
-	    return tmp;
-	printf("Please specify a number\n");
-    }
-}
-
-
 int
 init(int argc, char **argv)
 {
     HDB *db;
-    char s[1024];
-    char *p;
-    int line;
     int err;
     int i;
 
-    int tmp;
     int default_life = 86400;
     int default_renew = 5 * 86400;
     int max_life = 0;
@@ -85,7 +56,7 @@ init(int argc, char **argv)
 
     err = hdb_open(context, &db, database, O_RDWR | O_CREAT, 0600);
     if(err){
-	warnx("hdb_open: %s", krb5_get_err_text(context, err));
+	krb5_warn(context, err, "hdb_open");
 	return 0;
     }
     memset(&ent, 0, sizeof(ent));
@@ -98,21 +69,21 @@ init(int argc, char **argv)
 	err = db->fetch(context, db, &ent);
 	switch(err){
 	case 0:
-	    fprintf(stderr, "Entry already exists\n");
+	    krb5_warnx(context, "Entry already exists");
 	    krb5_free_principal(context, ent.principal);
 	    continue;
 	case HDB_ERR_NOENTRY:
 	    break;
 	default:
-	    warnx("hdb_fetch: %s", krb5_get_err_text(context, err));
+	    krb5_warn(context, err, "hdb_fetch");
 	    db->close(context, db);
 	    return 0;
 	}
 	
-	max_life = gettime("Realm max ticket life", "infinite");
-	max_renew = gettime("Realm max renewable ticket life", "infinite");
-	default_life = gettime("Default ticket life", "1 day");
-	default_renew = gettime("Default renewable ticket life", "7 days");
+	max_life = getlife("Realm max ticket life", "infinite");
+	max_renew = getlife("Realm max renewable ticket life", "infinite");
+	default_life = getlife("Default ticket life", "1 day");
+	default_renew = getlife("Default renewable ticket life", "7 days");
 	
 	/* Create `krbtgt/REALM' */
 	init_des_key(&ent);

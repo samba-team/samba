@@ -99,7 +99,6 @@ parse_integer(unsigned *u, char *s)
 static void
 parse_keys(hdb_entry *ent, char *str)
 {
-    Key *key;
     int tmp;
     char *p;
     int i;
@@ -205,7 +204,6 @@ doit(char *filename, int merge)
     char *p;
     int line;
     int err;
-    int i;
     int flags = O_RDWR;
 
     struct entry e;
@@ -213,14 +211,14 @@ doit(char *filename, int merge)
 
     f = fopen(filename, "r");
     if(f == NULL){
-	fprintf(stderr, "%s: %s\n", filename, strerror(errno));
+	krb5_warn(context, errno, "%s: %s", filename);
 	return;
     }
     if(!merge)
 	flags |= O_CREAT | O_TRUNC;
     err = hdb_open(context, &db, database, flags, 0600);
     if(err){
-	fprintf(stderr, "hdb_open: %s\n", krb5_get_err_text(context, err));
+	krb5_warn(context, err, "hdb_open");
 	fclose(f);
 	return;
     }
@@ -298,7 +296,7 @@ int
 load(int argc, char **argv)
 {
     if(argc < 2){
-	fprintf(stderr, "Usage: load filename\n");
+	krb5_warnx(context, "Usage: load filename");
 	return 0;
     }
     doit(argv[1], 0);
@@ -309,7 +307,7 @@ int
 merge(int argc, char **argv)
 {
     if(argc < 2){
-	fprintf(stderr, "Usage: merge filename\n");
+	krb5_warnx(context, "Usage: merge filename");
 	return 0;
     }
     doit(argv[1], 1);
