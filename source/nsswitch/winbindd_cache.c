@@ -49,7 +49,7 @@ void wcache_flush_cache(void)
 	if (opt_nocache) return;
 
 	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
-				   TDB_NOLOCK, O_RDWR | O_CREAT | O_TRUNC, 0600);
+				   TDB_DEFAULT, O_RDWR | O_CREAT | O_TRUNC, 0600);
 
 	if (!wcache->tdb) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
