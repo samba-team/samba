@@ -921,7 +921,7 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 
 	if (ucs2_align(base_ptr, src, flags)) {
 		src = (const void *)((const char *)src + 1);
-		if (src_len > 0)
+		if (src_len != (size_t)-1)
 			src_len--;
 	}
 
