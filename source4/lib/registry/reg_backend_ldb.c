@@ -35,8 +35,15 @@ static int reg_close_ldb_key (void *data)
 	struct ldb_key_data *kd = key->backend_data;
 	struct ldb_context *c = key->hive->backend_data;
 
-	ldb_search_free(c, kd->subkeys); kd->subkeys = NULL;
-	ldb_search_free(c, kd->values); kd->values = NULL;
+	if (kd->subkeys) {
+		ldb_search_free(c, kd->subkeys); 
+		kd->subkeys = NULL;
+	}
+
+	if (kd->values) {
+		ldb_search_free(c, kd->values); 
+		kd->values = NULL;
+	}
 	return 0;
 }
 
@@ -85,7 +92,7 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 
 	/* Do a search if necessary */
 	if (kd->subkeys == NULL) {
-		kd->subkey_count = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(key=*)", NULL,&kd->subkeys);
+		kd->subkey_count = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(key=*)", NULL, &kd->subkeys);
 
 		if(kd->subkey_count < 0) {
 			DEBUG(0, ("Error getting subkeys for '%s': %s\n", kd->dn, ldb_errstring(c)));
@@ -133,14 +140,17 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 	return WERR_OK;
 }
 
-static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const char *name, struct registry_key **key)
+static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const char *name, struct registry_key **key)
 {
-	struct ldb_context *c = h->backend_data;
+	struct ldb_context *c = h->hive->backend_data;
 	struct ldb_message **msg;
 	char *ldap_path;
 	int ret;
-	struct ldb_key_data *newkd;
-	ldap_path = reg_path_to_ldb(mem_ctx, name, NULL);
+	struct ldb_key_data *kd = h->backend_data, *newkd;
+	ldap_path = talloc_asprintf(mem_ctx, "%s%s%s", 
+								reg_path_to_ldb(mem_ctx, name, NULL), 
+								kd->dn?",":"",
+								kd->dn?kd->dn:"");
 
 	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL,&msg);
 
@@ -153,7 +163,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const c
 
 	*key = talloc_p(mem_ctx, struct registry_key);
 	talloc_set_destructor(*key, reg_close_ldb_key);
-	(*key)->name = talloc_strdup(mem_ctx, strrchr(name, '\\'));
+	(*key)->name = talloc_strdup(mem_ctx, strrchr(name, '\\')?strchr(name, '\\'):name);
 	(*key)->backend_data = newkd = talloc_zero_p(*key, struct ldb_key_data);
 	newkd->dn = talloc_strdup(mem_ctx, msg[0]->dn); 
 
@@ -165,6 +175,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const c
 static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 {
 	struct ldb_context *c;
+	struct ldb_key_data *kd;
 
 	if (!hive->location) return WERR_INVALID_PARAM;
 	c = ldb_connect(hive->location, 0, NULL);
@@ -179,7 +190,8 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 	hive->root = talloc_zero_p(hive, struct registry_key);
 	talloc_set_destructor (hive->root, reg_close_ldb_key);
 	hive->root->name = talloc_strdup(hive->root, "");
-	hive->root->backend_data = talloc_zero_p(hive->root, struct ldb_key_data);
+	hive->root->backend_data = kd = talloc_zero_p(hive->root, struct ldb_key_data);
+	kd->dn = talloc_strdup(hive->root, "key=root");
 	
 
 	return WERR_OK;
