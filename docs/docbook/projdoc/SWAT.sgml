@@ -1,0 +1,80 @@
+<chapter id="SWAT">
+<chapterinfo>
+	<author>
+		<firstname>John H</firstname><surname>Terpstra</surname>
+	</author>
+	<pubdate>April 3, 2003</pubdate>
+</chapterinfo>
+
+<title>SWAT - The Samba Web Admininistration Tool</title>
+
+<para>
+This is a rough guide to SWAT.
+</para>
+
+<sect1>
+<title>SWAT Features and Benefits</title>
+
+<para>You must use at least the following ...</para>
+
+<sect2>
+<title>The SWAT Home Page</title>
+
+<para>
+Blah blah here.
+</para>
+
+</sect2>
+<sect2>
+<title>Global Settings</title>
+
+<para>
+Document steps right here!
+</para>
+
+</sect2>
+<sect2>
+<title>The SWAT Wizard</title>
+
+<para>
+Lots of blah blah here.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Share Settings</title>
+
+<para>
+Document steps right here!
+</para>
+
+</sect2>
+
+<sect2>
+<title>Printing Settings</title>
+
+<para>
+Document steps right here!
+</para>
+
+</sect2>
+<sect2>
+<title>The Status Page</title>
+
+<para>
+Document steps right here!
+</para>
+
+</sect2>
+
+<sect2>
+<title>The Password Change Page</title>
+
+<para>
+Document steps right here!
+</para>
+
+</sect2>
+</sect1>
+</chapter>
