@@ -1,5 +1,7 @@
 Tue Oct 28 00:11:22 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kdc/connect.c: Log bad requests.
+
 	* kdc/kerberos5.c: Move stuff that's in common between as_rep and
  	tgs_rep to separate functions.
 
