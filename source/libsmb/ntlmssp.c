@@ -645,7 +645,15 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		}
 	}
 
+	/*
+	 * Note we don't check here for NTLMv2 auth settings. If NTLMv2 auth
+	 * is required (by "ntlm auth = no" and "lm auth = no" being set in the
+	 * smb.conf file) and no NTLMv2 response was sent then the password check
+	 * will fail here. JRA.
+	 */
+
 	/* Finally, actually ask if the password is OK */
+
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_state->check_password(ntlmssp_state, &nt_session_key, &lm_session_key))) {
 		data_blob_free(&encrypted_session_key);
 		return nt_status;
@@ -685,9 +693,13 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		session_key = nt_session_key;
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified nt session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
+	} else if (lm_session_key.data) {
+		session_key = lm_session_key;
+		DEBUG(10,("ntlmssp_server_auth: Using unmodified lm session key.\n"));
+		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
 	} else {
 		data_blob_free(&encrypted_session_key);
-		DEBUG(10,("ntlmssp_server_auth: Failed to create unmodified nt session key.\n"));
+		DEBUG(10,("ntlmssp_server_auth: Failed to create unmodified session key.\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
