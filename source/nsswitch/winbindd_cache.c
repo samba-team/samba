@@ -230,14 +230,14 @@ void winbindd_store_group_cache(struct winbindd_domain *domain,
 }
 
 static void store_cache_entry(struct winbindd_domain *domain, char *cache_type,
-                              char *name, void *buf, int len)
+			      char *name, void *buf, int len)
 {
 	fstring keystr;
 
 	/* Create key for store */
 
 	snprintf(keystr, sizeof(keystr), "%s/%s/%s", cache_type, 
-                 domain->name, name);
+		 domain->name, name);
 
 	/* Store it */
 
@@ -261,15 +261,32 @@ void winbindd_store_name_cache_entry(struct winbindd_domain *domain,
 /* Fill a SID cache entry */
 
 void winbindd_store_sid_cache_entry(struct winbindd_domain *domain, 
-                                     char *name, struct winbindd_sid *sid)
+				    char *name, struct winbindd_sid *sid)
 {
+	fstring name_domain, name_user;
+	char *key_name;
+
 	if (lp_winbind_cache_time() == 0) 
 		return;
 
-	store_cache_entry(domain, CACHE_TYPE_SID, name, sid, 
+	/* Store the lowercased username as a key */
+
+	if (!parse_domain_user(name, name_domain, name_user))
+		return;
+
+	strlower(name_user);
+	
+	if (asprintf(&key_name, "%s\\%s", name_domain, name_user) < 0)
+		return;
+
+	/* Store cache entry and update seqnum */
+
+	store_cache_entry(domain, CACHE_TYPE_SID, key_name, sid, 
 		sizeof(struct winbindd_sid));
 
-	set_cache_sequence_number(domain, CACHE_TYPE_SID, name);
+	set_cache_sequence_number(domain, CACHE_TYPE_SID, key_name);
+
+	SAFE_FREE(key_name);
 }
 
 /* Fill a user info cache entry */

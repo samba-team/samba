@@ -281,7 +281,7 @@ static void store_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME
 		*p = '\0';
 
 	if ((domain = find_domain_from_name(domain_str)) == NULL)
-        return;
+		return;
 
 	sid_to_string(sid_val.sid, sid);
 	sid_val.type = (int)type;
@@ -296,30 +296,38 @@ static void store_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME
 
 static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME_USE *type)
 {
-	fstring domain_str;
-	char *p;
+	fstring name_domain, name_user;
+	char *key_name = NULL;
 	struct winbindd_sid sid_ret;
 	struct winbindd_domain *domain;
+	BOOL result = False;
 
 	/* Get name from domain. */
-	fstrcpy( domain_str, name);
-	p = strchr(domain_str, '\\');
-	if (p)
-		*p = '\0';
+	
+	if (!parse_domain_user(name, name_domain, name_user))
+		goto done;
 
-	if ((domain = find_domain_from_name(domain_str)) == NULL)
-        return False;
+	if ((domain = find_domain_from_name(name_domain)) == NULL)
+		goto done;
 
-	if (!winbindd_fetch_sid_cache_entry(domain, name, &sid_ret))
-		return False;
+	strlower(name_user);	/* Username in key is lowercased */
 
-	string_to_sid( sid, sid_ret.sid);
+	if (asprintf(&key_name, "%s\\%s", name_domain, name_user) < 0)
+		goto done;
+
+	if (!winbindd_fetch_sid_cache_entry(domain, key_name, &sid_ret))
+		goto done;
+
+	string_to_sid(sid, sid_ret.sid);
 	*type = (enum SID_NAME_USE)sid_ret.type;
 
-	DEBUG(10,("winbindd_lookup_sid_by_name_in_cache: Cache hit for name %s. SID = %s\n",
-		name, sid_ret.sid ));
+	DEBUG(10, ("winbindd_lookup_sid_by_name_in_cache: Cache hit for name %s. SID = %s\n", name, sid_ret.sid));
 
-	return True;
+	result = True;
+
+ done:
+	SAFE_FREE(key_name);
+	return result;
 }
 
 /* Store a name in a domain indexed by SID in the cache. */
@@ -337,7 +345,7 @@ static void store_name_by_sid_in_cache(DOM_SID *sid, fstring name, enum SID_NAME
 	sid_split_rid(&domain_sid, &rid);
 
 	if ((domain = find_domain_from_sid(&domain_sid)) == NULL)
-        return;
+		return;
 
 	sid_to_string(sid_str, sid);
 	fstrcpy( name_val.name, name );
@@ -388,9 +396,9 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 	DOM_SID *sids = NULL;
 	uint32 *types = NULL;
 	CLI_POLICY_HND *hnd;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *mem_ctx;
-	BOOL rv = False;
+	char **names;
         
 	/* Don't bother with machine accounts */
         
@@ -416,38 +424,50 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 				num_names, (char **)&name, &sids, 
 				&types, &num_sids);
         
-	/* Return rid and type if lookup successful */
-        
-	if (NT_STATUS_IS_OK(result)) {
-                
-		/* Return sid */
-                
-		if ((sid != NULL) && (sids != NULL))
-			sid_copy(sid, &sids[0]);
-                
-		/* Return name type */
-                
-		if ((type != NULL) && (types != NULL))
-			*type = (enum SID_NAME_USE)types[0];
-
-		/* Store the forward and reverse map of this lookup in the cache. */
-		store_sid_by_name_in_cache(name, &sids[0], (enum SID_NAME_USE)types[0]);
-		store_name_by_sid_in_cache(&sids[0], name, (enum SID_NAME_USE)types[0]);
-	} else {
-		/* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
+	/* JRA. Here's where we add the -ve cache store with a name type of
+	   SID_NAME_USE_NONE. */
+		
+	if (!NT_STATUS_IS_OK(result)) {
 		DOM_SID nullsid;
-
+		
 		ZERO_STRUCT(nullsid);
 		store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
 		*type = SID_NAME_UNKNOWN;
+
+		goto done;
 	}
 
-	rv = NT_STATUS_IS_OK(result);
+	/* Return sid */
+                
+	if ((sid != NULL) && (sids != NULL))
+		sid_copy(sid, &sids[0]);
+	
+	/* Return name type */
+	
+	if ((type != NULL) && (types != NULL))
+		*type = (enum SID_NAME_USE)types[0];
+	
+	/* Now we do a reverse lookup of the SID to get the correct
+	   capitalisation of the name. */
+
+	result = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol, 1,
+				     sids, &names, &types, &num_names);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Store the forward and reverse map of this lookup in the cache. */
+
+	store_sid_by_name_in_cache(
+		names[0], &sids[0], (enum SID_NAME_USE)types[0]);
+
+	store_name_by_sid_in_cache(
+		&sids[0], names[0], (enum SID_NAME_USE)types[0]);
 
  done:
 	talloc_destroy(mem_ctx);
         
-	return rv;
+	return NT_STATUS_IS_OK(result);
 }
 
 /**
