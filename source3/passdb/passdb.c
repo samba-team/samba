@@ -989,23 +989,6 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	return True;
 }
 
-/** 
- * Quick hack to do an easy ucs2 -> mulitbyte conversion 
- * @return static buffer containing the converted string
- **/
-
-const char *pdb_unistr2_convert(const UNISTR2 *from)
-{
-	static pstring convert_buffer;
-	*convert_buffer = 0;
-	if (!from) {
-		return NULL;
-	}
-
-	unistr2_to_ascii(convert_buffer, from, sizeof(pstring));
-	return convert_buffer;
-}
-
 /*************************************************************
  Change a password entry in the local smbpasswd file.
 
