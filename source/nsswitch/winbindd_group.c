@@ -25,6 +25,8 @@
 #include "includes.h"
 #include "winbindd.h"
 
+extern BOOL opt_nocache;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -964,7 +966,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	/* Treat the info3 cache as authoritative as the
 	   lookup_usergroups() function may return cached data. */
 
-	if ((info3 = netsamlogon_cache_get(mem_ctx, &user_sid))) {
+	if ( !opt_nocache && (info3 = netsamlogon_cache_get(mem_ctx, &user_sid))) {
 
 		DEBUG(10, ("winbindd_getgroups: info3 has %d groups, %d other sids\n",
 			   info3->num_groups2, info3->num_other_sids));
