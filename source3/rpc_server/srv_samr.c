@@ -413,7 +413,7 @@ static BOOL samr_reply_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 	r_u.status = 0x0;
 
 	/* find the connection policy handle. */
-	if (r_u.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->connect_pol)) == -1))
+	if (r_u.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
 	{
 		r_u.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -1995,7 +1995,9 @@ static BOOL samr_reply_connect(SAMR_Q_CONNECT *q_u, prs_struct *rdata)
 	}
 
 	/* associate the domain SID with the (unique) handle. */
-	if (r_u.status == 0x0 && !set_lsa_policy_samr_pol_status(&(r_u.connect_pol), q_u->unknown_0))
+	if (r_u.status == 0x0 && 
+	    !set_lsa_policy_samr_pol_status(&(r_u.connect_pol), 
+					    q_u->access_mask))
 	{
 		/* oh, whoops.  don't know what error message to return, here */
 		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
