@@ -103,7 +103,9 @@ add_users (unsigned n)
     unsigned nwords;
     char **words;
 
-    krb5_init_context(&context);
+    ret = krb5_init_context(&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
     ret = kadm5_s_init_with_password_ctx(context, 
 					 KADM5_ADMIN_SERVICE,
 					 NULL,
