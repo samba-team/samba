@@ -12,9 +12,9 @@
 # Note: Under this directory rpm expects to find the same directories that are under the
 #   /usr/src/redhat directory
 #
-if [ -x ~/.rpmmacros ]; then
+if [ -f ~/.rpmmacros ]; then
 	TOPDIR=`awk '/topdir/ {print $2}' < ~/.rpmmacros`
-	if [ z$TOPDIR <> "z" ]; then
+	if [ z$TOPDIR != "z" ]; then
 		SPECDIR=${TOPDIR}/SPECS
 		SRCDIR=${TOPDIR}/SOURCES
 	fi
