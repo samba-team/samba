@@ -1,3 +1,7 @@
+2001-06-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* init_c.c: call krb5_get_init_creds_opt_set_default_flags
+
 2001-02-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* replay_log.c: add --{start-end}-version flags to replay just
