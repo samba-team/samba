@@ -1,15 +1,15 @@
 /*
- * Test for single process memory leaks using getgrent() and friends
+ * Test for single process memory leaks using getpwent() and friends
  */
 
 #include <stdio.h>
 #include <signal.h>
-#include <grp.h>
+#include <pwd.h>
 #include <fcntl.h>
 
 int main(int argc, char **argv)
 {
-	struct group *grp;
+	struct passwd *pwd;
 
 	/* Do this a couple of times */
 
@@ -18,14 +18,14 @@ int main(int argc, char **argv)
 
 		/* Enumerate domain groups */
 
-		setgrent();
+		setpwent();
 
-		while((grp = getgrent())) {
-			if (strchr(grp->gr_name, '/')) 
+		while((pwd = getpwent())) {
+			if (strchr(pwd->pw_name, '/')) 
 				got_dom_group = 1;
 		}
 
-		endgrent();
+		endpwent();
 
 		/* Check we actually got one or more domain groups */
 		
@@ -36,8 +36,8 @@ int main(int argc, char **argv)
 
 		/* Check for exit condition */
 
-		if (open("/tmp/leaktest1.exit", O_RDONLY) != -1) {
-			unlink("/tmp/leaktest1.exit");
+		if (open("/tmp/leaktest2.exit", O_RDONLY) != -1) {
+			unlink("/tmp/leaktest2.exit");
 			return 0;
 		}
 	}

@@ -5,70 +5,90 @@
 load_lib util-defs.exp
 load_lib "$srcdir/lib/compile.exp"
 
-# Compile test program
+# A list of tests to run
 
-simple_compile "leaktest1"
+set leaktests [list "leaktest1" "leaktest2" "leaktest3" "leaktest4"]
 
-# Run it as a subprocess and leakcheck in the other
+# Run an individual test
 
-system "$srcdir/$subdir/leaktest1 &"
+proc take_test { args } {
+    global srcdir
+    global subdir
 
-set num_loops 0
+    set cmd [lindex $args 0]
 
-while { 1 } {
-    
-    # Get process info
-    
-    spawn ps auxww
-    
-    set got_self 0
-    set got_winbindd 0
-    
-    expect {
-	-re "((\[0-9]+ +\[0-9]+) pts\[^\r]*winbindd\[^\r]*)\r\n" { \
-		set winbindd_vsz [lindex [split $expect_out(2,string) " "] 0]; \
-		set got_winbindd 1; exp_continue; }
-	-re "((\[0-9]+ +\[0-9]+) pts\[^\r]*$subdir/leaktest1\[^\r]*)\r\n" { \
-		set self_vsz [lindex [split $expect_out(2,string) " "] 0]; \
-		set got_self 1; exp_continue; }
-	eof { if { !$got_winbindd } { \
-		perror "could not find ps entry for winbindd"; \
-		return -1; }
-	if { !$got_self } { \
-		perror "could not find ps entry for self"; \
-		return -1; }}
-	timeout { perror "timed out running ps"; return -1 }
-    }
-    
-    verbose "winbindd size = $winbindd_vsz, test program size = $self_vsz"
-    
-    # Take a sample point after a couple of iterations
-    
-    if { $num_loops == 10 } {
-	set self_sample_vsz $self_vsz
-	set winbindd_sample_vsz $self_vsz
-    }
-    
-    # After a few more iterations check current size against sample
-    
-    if { $num_loops == 100 } {
-	if { $self_vsz > $self_sample_vsz } {
-	    fail "memory leak in test program"
-	} else {
-	    pass "no leaks in test program"
+    # Set test running in the background - getting fork working was too
+    # much of a nightmare.
+
+    system "$srcdir/$subdir/$cmd &"
+
+    set num_loops 0
+
+    while { 1 } {
+
+	# Get process info
+	
+	spawn ps auxww
+	
+	set got_self 0
+	set got_winbindd 0
+
+	# Yuck.  These regular expressions are pretty hairy.  They're also
+	# seriously linked to Linux ps.  )-:
+	
+	expect {
+	    -re "((\[0-9]+ +\[0-9]+) pts\[^\r]*winbindd\[^\r]*)\r\n" { \
+		    set winbindd_vsz [lindex [split $expect_out(2,string) " "] 0]; \
+		    set got_winbindd 1; exp_continue; }
+	    -re "((\[0-9]+ +\[0-9]+) pts\[^\r]*$subdir/$cmd\[^\r]*)\r\n" { \
+		    set self_vsz [lindex [split $expect_out(2,string) " "] 0]; \
+		    set got_self 1; exp_continue; }
+	    eof { if { !$got_winbindd } { \
+		    perror "could not find ps entry for winbindd"; \
+		    return -1; }
+	    if { !$got_self } { \
+		    perror "could not find ps entry for self"; \
+		    return -1; }}
+	    timeout { perror "timed out running ps"; return -1 }
 	}
-	if { $winbindd_vsz > $winbindd_vsz } {
-	    fail "memory leak in winbind"
-	} else {
-	    pass "no leaks in winbindd"
+
+	verbose "$num_loops: winbindd size = $winbindd_vsz, test program size = $self_vsz"
+	
+	# Take a sample point after a couple of iterations
+	
+	if { $num_loops == 10 } {
+	    set self_sample_vsz $self_vsz
+	    set winbindd_sample_vsz $self_vsz
 	}
 	
-	system "touch /tmp/leaktest1.exit"
-	return
+	# After a few more iterations check current size against sample
+	
+	if { $num_loops == 100 } {
+	    if { $self_vsz > $self_sample_vsz } {
+		fail "memory leak in test program"
+	    } else {
+		pass "no leaks in test program"
+	    }
+	    if { $winbindd_vsz > $winbindd_vsz } {
+		fail "memory leak in winbind"
+	    } else {
+		pass "no leaks in winbindd"
+	    }
+	    
+	    system "touch /tmp/$cmd.exit"
+	    return
+	}
+	
+	# Increment loop counter
+	
+	incr num_loops
+	sleep 2
     }
-    
-    # Increment loop counter
-    
-    incr num_loops
-    sleep 2
+}
+
+# Run all tests
+
+foreach { test } $leaktests {
+    simple_compile "$test"
+    take_test $test
 }
