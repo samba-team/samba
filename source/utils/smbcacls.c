@@ -62,7 +62,9 @@ static void SidToString(fstring str, DOM_SID *sid)
 	if (numeric) {
 		sid_to_string(str, sid);
 	} else {
-		printf("need to add LSA lookups\n");
+
+		/* Need to add LSA lookups */
+
 		sid_to_string(str, sid);
 	}
 }
@@ -73,8 +75,10 @@ static BOOL StringToSid(DOM_SID *sid, fstring str)
 	if (strncmp(str,"S-", 2) == 0) {
 		return string_to_sid(sid, str);
 	} else {
-		printf("need to add LSA lookups\n");
-		return False;
+
+		/* Need to add LSA lookups */
+
+		return string_to_sid(sid, str);
 	}
 }
 
@@ -347,13 +351,24 @@ static void cacl_set(struct cli_state *cli, char *filename,
 
 	case ACL_MODIFY:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
+			BOOL found = False;
+
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (sid_equal(&sd->dacl->ace[i].sid,
 					      &old->dacl->ace[j].sid)) {
 					old->dacl->ace[j] = sd->dacl->ace[i];
+					found = True;
 				}
 			}
+
+			if (!found) {
+				fstring str;
+
+				SidToString(str, &sd->dacl->ace[i].sid);
+				printf("ACL for SID %s not found\n", str);
+			}
 		}
+
 		break;
 
 	case ACL_ADD:
@@ -485,7 +500,7 @@ static void usage(void)
 \t-n                      don't resolve sids or masks to names\n\
 \t-h                      print help\n\
 \n\
-An acl is of the form SID:type/flags/mask\n\
+An acl is of the form ACL:<SID>:type/flags/mask\n\
 You can string acls together with spaces, commas or newlines\n\
 ");
 }
