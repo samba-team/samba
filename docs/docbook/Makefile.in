@@ -1,0 +1,75 @@
+#################################################################
+# Makefile.in for Samba Documentation
+# Authors:	James Moore <jmoore@php.net>
+#               Gerald Carter <jerry@samba.org>
+#
+# Please see http://www.samba.org/samba/cvs.html
+# for information on getting the latest  
+# source and doucmentation source files.  
+#
+
+# Autoconf Variables
+SRCDIR = @srcdir@
+JADE = @JADE@
+NSGMLS = @NSGMLS@
+ONSGMLS=@ONSGMLS@
+SGMLSPL=@SGMLSPL@
+#CATALOG = @CATALOG@
+
+#Stylesheets and Dependicies
+SGML_SHARE=/usr/local/share/sgml
+HTML_STYLESHEET = $(srcdir)/stylesheets/html.dsl
+HTML_DEPS = $(srcdir)/stylesheets/html-common.dsl $(srcdir)/stylesheets/common.dsl
+
+MANPAGES=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
+	manpages/smbspool.8.sgml manpages/lmhosts.5.sgml \
+	manpages/smbcontrol.1.sgml  manpages/smbstatus.1.sgml \
+	manpages/make_smbcodepage.1.sgml  manpages/smbd.8.sgml \
+	manpages/smbtar.1.sgml manpages/nmbd.8.sgml manpages/smbmnt.8.sgml \
+	manpages/smbumount.8.sgml manpages/nmblookup.1.sgml \
+	manpages/smbmount.8.sgml manpages/swat.8.sgml manpages/rpcclient.1.sgml	 \
+	manpages/smbpasswd.5.sgml manpages/testparm.1.sgml manpages/samba.7.sgml \
+	manpages/smbpasswd.8.sgml manpages/testprns.1.sgml \
+	manpages/smb.conf.5.sgml manpages/smbrun.1.sgml manpages/wbinfo.1.sgml \
+	manpages/smbcacls.1.sgml manpages/smbsh.1.sgml manpages/winbindd.8.sgml 
+
+#Make instructions
+#all: html man pdf text
+all: man
+
+man: $(MANPAGES)
+	@echo Building $< man page
+	@$(ONSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+
+
+
+#Dependencies
+html.dsl: stylesheets/html.dsl.in ./config.status
+	CONFIG_FILES=$@ CONFIG_HEADERS=./config.status
+
+common.dsl: stylesheets/common.dsl.in ./config.status
+	CONFIG_FILES=$@ CONFIG_HEADERS=./config.status
+
+#Make Rule Aliases
+samba-pdc-faq: samba-pdc-faq.html samba-pdc-faq.txt
+samba-pdc-faq.html: faq/samba-pdc-faq.html
+samba-pdc-faq.txt: faq/samba-pdc-faq.txt
+
+
+faq/samba-pdc-faq.html: $(srcdir)/faq/samba-pdc-faq.sgml $(HTML_DEPS)
+	@test -d docs || mkdir docs
+	@test -d docs/faq || mkdir docs/faq
+	$(JADE) $(CATALOG) -d $(HTML_STYLESHEET) -V use-output-dir -t sgml $(srcdir)/faq/samba-pdc-faq.sgml
+
+faq/faq.txt: samba-pdc-faq.html
+	lynx -nolist -dump file:`pwd`/docs/faq/samba-pdc-faq.html > `pwd`/docs/faq/samba-pdc-faq.txt
+
+#Clean Rule
+clean: 
+	(
+	cd $(srcdir) \
+	rm -rf docs
+	)
+	 
+
+
