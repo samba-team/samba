@@ -423,11 +423,13 @@ BOOL make_user_info_winbind(auth_usersupplied_info **user_info,
 	if (*password) {
 		SMBencrypt( (const uchar *)password, chal, local_lm_response);
 		
-		/* This encrypts the lm_pwd feild, which actualy contains the password
-		   rather than the nt_pwd field becouse that contains nothing */
+		/* This encrypts the lm_pwd field, which actualy contains
+		   the password rather than the nt_pwd field becouse that
+		   contains nothing */
 		
-		/* WATCH OUT. This doesn't work if the incoming password is incorrectly cased. 
-		   We might want to add a check here and only do an LM in that case */
+		/* WATCH OUT. This doesn't work if the incoming password is
+		   incorrectly cased.  We might want to add a check here
+		   and only do an LM in that case */
 		
 		SMBNTencrypt((const uchar *)password, chal, local_nt_response);
 
