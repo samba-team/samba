@@ -852,7 +852,7 @@ sub _prepare_makefile_in($)
 
 	$output .= _prepare_dummy_MAKEDIR();
 
-	$output .= _prepare_std_CC_rule("c","o","","Compiling","Rule for std objectfiles");
+	$output .= _prepare_std_CC_rule("c","o","\@PICFLAG\@","Compiling","Rule for std objectfiles");
 	$output .= _prepare_std_CC_rule("h","h.gch","","Precompiling","Rule for precompiled headerfiles");
 
 	$output .= _prepare_obj_lists($CTX);
