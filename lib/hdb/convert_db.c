@@ -56,6 +56,8 @@ func(krb5_context context, HDB *db, hdb_entry *entry, void *data)
     for(i = 0; i < entry->keys.len; i++) 
 	if(entry->keys.val[i].key.keytype == KEYTYPE_DES)
 	    n += 2;
+	else if(entry->keys.val[i].key.keytype == KEYTYPE_DES3)
+	    n += 1;
     k = malloc(sizeof(*k) * (entry->keys.len + n));
     n = 0;
     for(i = 0; i < entry->keys.len; i++) {
@@ -66,6 +68,11 @@ func(krb5_context context, HDB *db, hdb_entry *entry, void *data)
 	    copy_Key(&entry->keys.val[i], &k[n+2]);
 	    k[n+2].key.keytype = ETYPE_DES_CBC_MD5;
 	    n += 2;
+	}
+	else if(entry->keys.val[i].key.keytype == KEYTYPE_DES3) {
+	    copy_Key(&entry->keys.val[i], &k[n+1]);
+	    k[n+1].key.keytype = ETYPE_DES3_CBC_MD5;
+	    n += 1;
 	}
 	n++;
     }
