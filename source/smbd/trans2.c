@@ -2472,7 +2472,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						return -1;
 					}          
 
-					new_fsp = open_file_shared(conn, fname, &sbuf,
+					new_fsp = open_file_shared1(conn, fname, &sbuf,FILE_WRITE_DATA,
 							SET_OPEN_MODE(DOS_OPEN_RDWR),
 							(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 							0, 0, &access_mode, &action);
