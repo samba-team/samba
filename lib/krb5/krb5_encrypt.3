@@ -1,4 +1,4 @@
-.\" Copyright (c) 1999 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1999 - 2003 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,14 +31,18 @@
 .\"
 .\" $Id$
 .\"
-.Dd April  7, 1999
+.Dd August 24, 2003
 .Dt KRB5_ENCRYPT 3
 .Os HEIMDAL
 .Sh NAME
 .Nm krb5_decrypt ,
 .Nm krb5_decrypt_EncryptedData ,
 .Nm krb5_encrypt ,
-.Nm krb5_encrypt_EncryptedData
+.Nm krb5_encrypt_EncryptedData,
+.Nm krb5_crypto_getblocksize ,
+.Nm krb5_crypto_getpadsize ,
+.Nm krb5_crypto_getenctype ,
+.Nm krb5_crypto_getconfoundersize
 .Nd encrypt and decrypt data
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -52,6 +56,28 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn krb5_decrypt "krb5_context context" "krb5_crypto crypto" "unsigned usage" "void *data" "size_t len" "krb5_data *result"
 .Ft krb5_error_code
 .Fn krb5_decrypt_EncryptedData "krb5_context context" "krb5_crypto crypto" "unsigned usage" "EncryptedData *e" "krb5_data *result"
+.Ft krb5_error_code
+.Fo krb5_crypto_getblocksize
+.Fa "krb5_context context"
+.Fa "size_t *blocksize"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_crypto_getenctype
+.Fa "krb5_context context"
+.Fa "krb5_crypto crypto"
+.Fa "krb5_enctype *enctype"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_crypto_getpadsize
+.Fa "krb5_context context"
+.Fa size_t *padsize"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_crypto_getconfoundersize
+.Fa "krb5_context context"
+.Fa "krb5_crypto crypto
+.Fa size_t *confoundersize"
+.Fc
 .Sh DESCRIPTION
 These functions are used to encrypt and decrypt data.
 .Pp
@@ -80,6 +106,12 @@ is not zero, it will be put in the
 and
 .Fn krb5_decrypt_EncryptedData
 works similarly.
+.Pp
+.Fn krb5_crypto_getconfoundersize ,
+.Fn krb5_crypto_getblocksize ,
+.Fn krb5_crypto_getenctype ,
+.Fn krb5_crypto_getpadsize
+all returns various (sometimes) useful information from a crypto context.
 .\" .Sh EXAMPLE
 .\" .Sh BUGS
 .Sh SEE ALSO
