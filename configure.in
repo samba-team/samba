@@ -21,31 +21,11 @@ AC_CANONICAL_HOST
 CANONICAL_HOST=$host
 AC_SUBST(CANONICAL_HOST)
 
-sunos=no
-case "$host" in 
-*-*-sunos4*)
-	sunos=40
-	;;
-*-*-solaris2.7)
-	sunos=57
-	;;
-*-*-solaris2.8)
-	sunos=58
-	;;
-*-*-solaris2*)
-	sunos=50
-	;;
-esac
-if test "$sunos" != no; then
-	AC_DEFINE_UNQUOTED(SunOS, $sunos, 
-		[Define to what version of SunOS you are running.])
-fi
-
 dnl
 dnl this is needed to run the configure tests against glibc
 dnl
-
-AC_DEFINE(_GNU_SOURCE, 1, [defining this enables extensions on glibc-based systems such as Linux])
+AC_DEFINE([_GNU_SOURCE], 1,
+	[Define to enable extensions on glibc-based systems such as Linux.])
 
 AC_OBJEXT
 AC_EXEEXT
@@ -226,6 +206,7 @@ AC_C_INLINE
 
 rk_AIX
 rk_IRIX
+rk_SUNOS
 
 KRB_CHECK_X
 
