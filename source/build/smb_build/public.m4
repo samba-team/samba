@@ -13,7 +13,7 @@ dnl		2:subsystem,
 dnl		3:default_build,
 dnl		4:init_obj_files,
 dnl		5:add_obj_files,
-dnl		6:required_libs,
+dnl		6:required_libraries,
 dnl		7:required_subsystems
 dnl		)
 dnl
@@ -45,7 +45,7 @@ dnl SMB_SUBSYSTEM(
 dnl		1:name,
 dnl		2:init_obj_files,
 dnl		3:add_obj_files,
-dnl		4:required_libs,
+dnl		4:required_libraries,
 dnl		5:required_subsystems
 dnl		)
 dnl
@@ -95,7 +95,7 @@ dnl		2:major_version
 dnl		3:minor_version
 dnl		4:release_version
 dnl		5:obj_files,
-dnl		6:required_libs,
+dnl		6:required_libraries,
 dnl		7:required_subsystems
 dnl		)
 dnl
@@ -127,7 +127,7 @@ dnl		1:name,
 dnl		2:build_targets,
 dnl		3:install_path
 dnl		4:obj_files,
-dnl		5:required_libs,
+dnl		5:required_libraries,
 dnl		6:required_subsystems
 dnl		)
 dnl
