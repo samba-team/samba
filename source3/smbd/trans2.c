@@ -1251,6 +1251,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   mode = dos_mode(conn,fname,&sbuf);
   size = sbuf.st_size;
   if (mode & aDIR) size = 0;
+
+  /* from now on we only want the part after the / */
+  fname = p;
   
   params = *pparams = Realloc(*pparams,2); bzero(params,2);
   data_size = 1024;
@@ -1399,6 +1402,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       SIVAL(pdata,20,l);	
       pstrcpy(pdata+24,fname);
       break;
+
     default:
       return(ERROR(ERRDOS,ERRunknownlevel));
     }
