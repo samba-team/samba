@@ -1243,7 +1243,7 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 
 	(*alias_rids) = TALLOC_ARRAY(mem_ctx, uint32, *num_aliases);
 
-	if (!(*alias_rids))
+	if ((*num_aliases != 0) && ((*alias_rids) == NULL))
 		return NT_STATUS_NO_MEMORY;
 
 	for (i=0; i<(*num_aliases); i++)
