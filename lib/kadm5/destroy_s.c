@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,9 +45,11 @@ kadm5_s_destroy(void *server_handle)
 {
     kadm5_ret_t ret;
     kadm5_server_context *context = server_handle;
-    ret = context->db->destroy(context->context, context->db);
+    krb5_context kcontext = context->context;
+
+    ret = context->db->destroy(kcontext, context->db);
     if(context->my_context)
-	krb5_free_context(context->context);
+	krb5_free_context(kcontext);
     return ret;
 }
 
