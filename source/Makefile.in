@@ -369,6 +369,7 @@ SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
 		 $(LIBMSRPC_OBJ) $(GROUPDB_OBJ)
 
+TALLOCTORT_OBJ = lib/talloctort.o  $(LIB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
 
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \
@@ -477,6 +478,8 @@ rpctorture : SHOWFLAGS bin/rpctorture
 debug2html : SHOWFLAGS bin/debug2html
 
 smbfilter : SHOWFLAGS bin/smbfilter
+
+talloctort : SHOWFLAGS bin/talloctort
 
 nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
@@ -634,6 +637,10 @@ bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ) bin/.dummy
 bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/talloctort: $(TALLOCTORT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(TALLOCTORT_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/masktest: $(MASKTEST_OBJ) bin/.dummy
 	@echo Linking $@
