@@ -735,8 +735,8 @@ void strlower_m(char *s)
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
-		*s = tolower((unsigned char)*s);
+	while (*s && !(((uint8_t)s[0]) & 0x7F)) {
+		*s = tolower((uint8_t)*s);
 		s++;
 	}
 
@@ -759,8 +759,8 @@ void strupper_m(char *s)
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
-		*s = toupper((unsigned char)*s);
+	while (*s && !(((uint8_t)s[0]) & 0x7F)) {
+		*s = toupper((uint8_t)*s);
 		s++;
 	}
 
@@ -784,7 +784,7 @@ size_t strlen_m(const char *s)
 		return 0;
 	}
 
-	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
+	while (*s && !(((uint8_t)s[0]) & 0x7F)) {
 		s++;
 		count++;
 	}
@@ -841,8 +841,8 @@ char *binary_string(char *buf, int len)
 		return NULL;
 	for (j=i=0;i<len;i++) {
 		s[j] = '\\';
-		s[j+1] = hex[((unsigned char)buf[i]) >> 4];
-		s[j+2] = hex[((unsigned char)buf[i]) & 0xF];
+		s[j+1] = hex[((uint8_t)buf[i]) >> 4];
+		s[j+2] = hex[((uint8_t)buf[i]) & 0xF];
 		j += 3;
 	}
 	s[j] = 0;
@@ -1210,7 +1210,7 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 {
 	size_t i;
 	size_t num_chars = 0;
-	unsigned char   lonybble, hinybble;
+	uint8_t   lonybble, hinybble;
 	const char     *hexchars = "0123456789ABCDEF";
 	char           *p1 = NULL, *p2 = NULL;
 
@@ -1302,7 +1302,7 @@ DATA_BLOB base64_decode_data_blob(const char *s)
 {
 	int bit_offset, byte_offset, idx, i, n;
 	DATA_BLOB decoded = data_blob(s, strlen(s)+1);
-	unsigned char *d = decoded.data;
+	uint8_t *d = decoded.data;
 	char *p;
 
 	n=i=0;
@@ -1357,7 +1357,7 @@ char * base64_encode_data_blob(DATA_BLOB data)
 	char *result = malloc(output_len); /* get us plenty of space */
 
 	while (len-- && out_cnt < (data.length * 2) - 5) {
-		int c = (unsigned char) *(data.data++);
+		int c = (uint8_t) *(data.data++);
 		bits += c;
 		char_count++;
 		if (char_count == 3) {

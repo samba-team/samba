@@ -119,8 +119,8 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 {
 	/* Static buffers we will return. */
 	FILE *fp = (FILE *)vp;
-	unsigned char   c;
-	unsigned char  *p;
+	uint8_t   c;
+	uint8_t  *p;
 	size_t            linebuf_len;
 
 	if (fp == NULL)
@@ -186,7 +186,7 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 			continue;
 		}
 
-		p = (unsigned char *) strchr_m(linebuf, ':');
+		p = (uint8_t *) strchr_m(linebuf, ':');
 		if (p == NULL)
 		{
 			DEBUG(0, ("getfileline: malformed line entry (no :)\n"));

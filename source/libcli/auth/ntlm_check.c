@@ -178,7 +178,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *user_sess_key, 
 			     DATA_BLOB *lm_sess_key)
 {
-	static const unsigned char zeros[8];
+	static const uint8_t zeros[8];
 	if (nt_pw == NULL) {
 		DEBUG(3,("ntlm_password_check: NO NT password stored for user %s.\n", 
 			 username));
@@ -232,7 +232,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		DEBUG(4,("ntlm_password_check: checking plaintext passwords for user %s\n",
 			 username));
 		if (nt_pw && nt_response->length) {
-			unsigned char pwhash[16];
+			uint8_t pwhash[16];
 			mdfour(pwhash, nt_response->data, nt_response->length);
 			if (memcmp(pwhash, nt_pw, sizeof(pwhash)) == 0) {
 				return NT_STATUS_OK;
@@ -255,7 +255,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			/* Only the fisrt 14 chars are considered, password need not be null terminated. */
 
 			/* we *might* need to upper-case the string here */
-			E_P16((const unsigned char *)dospwd, p16);
+			E_P16((const uint8_t *)dospwd, p16);
 
 			if (memcmp(p16, lm_pw, sizeof(p16)) == 0) {
 				return NT_STATUS_OK;

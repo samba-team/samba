@@ -27,7 +27,7 @@ static void MD5Transform(uint32_t buf[4], uint32_t const in[16]);
 /*
  * Note: this code is harmless on little-endian machines.
  */
-static void byteReverse(unsigned char *buf, unsigned longs)
+static void byteReverse(uint8_t *buf, unsigned longs)
 {
     uint32_t t;
     do {
@@ -57,7 +57,7 @@ void MD5Init(struct MD5Context *ctx)
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-void MD5Update(struct MD5Context *ctx, unsigned char const *buf, unsigned len)
+void MD5Update(struct MD5Context *ctx, uint8_t const *buf, unsigned len)
 {
     register uint32_t t;
 
@@ -73,7 +73,7 @@ void MD5Update(struct MD5Context *ctx, unsigned char const *buf, unsigned len)
     /* Handle any leading odd-sized chunks */
 
     if (t) {
-	unsigned char *p = (unsigned char *) ctx->in + t;
+	uint8_t *p = (uint8_t *) ctx->in + t;
 
 	t = 64 - t;
 	if (len < t) {
@@ -105,10 +105,10 @@ void MD5Update(struct MD5Context *ctx, unsigned char const *buf, unsigned len)
  * Final wrapup - pad to 64-byte boundary with the bit pattern 
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-void MD5Final(unsigned char digest[16], struct MD5Context *ctx)
+void MD5Final(uint8_t digest[16], struct MD5Context *ctx)
 {
     unsigned int count;
-    unsigned char *p;
+    uint8_t *p;
 
     /* Compute number of bytes mod 64 */
     count = (ctx->bits[0] >> 3) & 0x3F;
@@ -141,7 +141,7 @@ void MD5Final(unsigned char digest[16], struct MD5Context *ctx)
     ((uint32_t *) ctx->in)[15] = ctx->bits[1];
 
     MD5Transform(ctx->buf, (uint32_t *) ctx->in);
-    byteReverse((unsigned char *) ctx->buf, 4);
+    byteReverse((uint8_t *) ctx->buf, 4);
     memmove(digest, ctx->buf, 16);
     memset(ctx, 0, sizeof(ctx));	/* In case it's sensitive */
 }

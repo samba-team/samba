@@ -47,7 +47,7 @@ static int base64_decode(char *s)
 {
 	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int bit_offset, byte_offset, idx, i, n;
-	unsigned char *d = (unsigned char *)s;
+	uint8_t *d = (uint8_t *)s;
 	char *p;
 
 	n=i=0;
@@ -90,7 +90,7 @@ char *ldb_base64_encode(struct ldb_context *ldb, const char *buf, int len)
 {
 	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int bit_offset, byte_offset, idx, i;
-	const unsigned char *d = (const unsigned char *)buf;
+	const uint8_t *d = (const uint8_t *)buf;
 	int bytes = (len*8 + 5)/6;
 	char *out;
 
@@ -123,7 +123,7 @@ char *ldb_base64_encode(struct ldb_context *ldb, const char *buf, int len)
 int ldb_should_b64_encode(const struct ldb_val *val)
 {
 	int i;
-	unsigned char *p = val->data;
+	uint8_t *p = val->data;
 
 	if (val->length == 0 || p[0] == ' ' || p[0] == ':') {
 		return 1;

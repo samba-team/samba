@@ -862,8 +862,8 @@ struct nmb_name {
 /* A netbios node status array element. */
 struct node_status {
 	char name[16];
-	unsigned char type;
-	unsigned char flags;
+	uint8_t type;
+	uint8_t flags;
 };
 
 #include "rpc_secdes.h"

@@ -306,7 +306,7 @@ int x_fgetc(XFILE *f)
 		return EOF;
 	}
 
-	ret = *(unsigned char *)(f->next);
+	ret = *(uint8_t *)(f->next);
 	f->next++;
 	f->bufused--;
 	return ret;

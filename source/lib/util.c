@@ -677,7 +677,7 @@ void set_remote_arch(struct server_context *smb, enum remote_arch_types type)
 }
 
 
-void print_asc(int level, const unsigned char *buf,int len)
+void print_asc(int level, const uint8_t *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
@@ -686,7 +686,7 @@ void print_asc(int level, const unsigned char *buf,int len)
 
 void dump_data(int level, const char *buf1,int len)
 {
-	const unsigned char *buf = (const unsigned char *)buf1;
+	const uint8_t *buf = (const uint8_t *)buf1;
 	int i=0;
 	if (len<=0) return;
 

@@ -348,7 +348,7 @@ NTSTATUS cli_close(struct cli_tree *tree, int fnum)
 ****************************************************************************/
 NTSTATUS cli_locktype(struct cli_tree *tree, int fnum, 
 		      uint32_t offset, uint32_t len, int timeout, 
-		      unsigned char locktype)
+		      uint8_t locktype)
 {
 	union smb_lock parms;
 	struct smb_lock_entry lock[1];

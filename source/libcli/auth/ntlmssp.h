@@ -171,13 +171,13 @@ typedef struct ntlmssp_state
 	char recv_sign_key[16];
 	char recv_seal_key[16];
 
-	unsigned char send_sign_hash[258];
-	unsigned char send_seal_hash[258];
-	unsigned char recv_sign_hash[258];
-	unsigned char recv_seal_hash[258];
+	uint8_t send_sign_hash[258];
+	uint8_t send_seal_hash[258];
+	uint8_t recv_sign_hash[258];
+	uint8_t recv_seal_hash[258];
 
 	/* ntlmv1 */
-	unsigned char ntlmssp_hash[258];
+	uint8_t ntlmssp_hash[258];
 
 	/* it turns out that we don't always get the
 	   response in at the time we want to process it.

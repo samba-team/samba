@@ -258,7 +258,7 @@ static void dohash(char *out, char *in, char *key, int forw)
 	permute(out, rl, perm6, 64);
 }
 
-static void str_to_key(const unsigned char *str,unsigned char *key)
+static void str_to_key(const uint8_t *str,uint8_t *key)
 {
 	int i;
 
@@ -276,13 +276,13 @@ static void str_to_key(const unsigned char *str,unsigned char *key)
 }
 
 
-void smbhash(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw)
+void smbhash(uint8_t *out, const uint8_t *in, const uint8_t *key, int forw)
 {
 	int i;
 	char outb[64];
 	char inb[64];
 	char keyb[64];
-	unsigned char key2[8];
+	uint8_t key2[8];
 
 	str_to_key(key, key2);
 
@@ -304,53 +304,53 @@ void smbhash(unsigned char *out, const unsigned char *in, const unsigned char *k
 	}
 }
 
-void E_P16(const unsigned char *p14,unsigned char *p16)
+void E_P16(const uint8_t *p14,uint8_t *p16)
 {
 	unsigned const char sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
 	smbhash(p16, sp8, p14, 1);
 	smbhash(p16+8, sp8, p14+7, 1);
 }
 
-void E_P24(const unsigned char *p21, const unsigned char *c8, unsigned char *p24)
+void E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24)
 {
 	smbhash(p24, c8, p21, 1);
 	smbhash(p24+8, c8, p21+7, 1);
 	smbhash(p24+16, c8, p21+14, 1);
 }
 
-void D_P16(const unsigned char *p14, const unsigned char *in, unsigned char *out)
+void D_P16(const uint8_t *p14, const uint8_t *in, uint8_t *out)
 {
 	smbhash(out, in, p14, 0);
         smbhash(out+8, in+8, p14+7, 0);
 }
 
-void E_old_pw_hash( unsigned char *p14, const unsigned char *in, unsigned char *out)
+void E_old_pw_hash( uint8_t *p14, const uint8_t *in, uint8_t *out)
 {
         smbhash(out, in, p14, 1);
         smbhash(out+8, in+8, p14+7, 1);
 }
 
-void cred_hash1(unsigned char *out, const unsigned char *in, const unsigned char *key)
+void cred_hash1(uint8_t *out, const uint8_t *in, const uint8_t *key)
 {
-	unsigned char buf[8];
+	uint8_t buf[8];
 
 	smbhash(buf, in, key, 1);
 	smbhash(out, buf, key+9, 1);
 }
 
-void cred_hash2(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw)
+void cred_hash2(uint8_t *out, const uint8_t *in, const uint8_t *key, int forw)
 {
-	unsigned char buf[8];
-	unsigned char key2[8];
+	uint8_t buf[8];
+	uint8_t key2[8];
 	ZERO_STRUCT(key2);
 	smbhash(buf, in, key, forw);
 	key2[0] = key[7];
 	smbhash(out, buf, key2, forw);
 }
 
-void cred_hash3(unsigned char *out, unsigned char *in, const unsigned char *key, int forw)
+void cred_hash3(uint8_t *out, uint8_t *in, const uint8_t *key, int forw)
 {
-        unsigned char key2[8];
+        uint8_t key2[8];
 	ZERO_STRUCT(key2);
         smbhash(out, in, key, forw);
         key2[0] = key[7];
@@ -358,20 +358,20 @@ void cred_hash3(unsigned char *out, unsigned char *in, const unsigned char *key,
 }
 
 
-void SamOEMhashBlob(unsigned char *data, int len, const DATA_BLOB *key)
+void SamOEMhashBlob(uint8_t *data, int len, const DATA_BLOB *key)
 {
-	unsigned char s_box[256];
-	unsigned char index_i = 0;
-	unsigned char index_j = 0;
-	unsigned char j = 0;
+	uint8_t s_box[256];
+	uint8_t index_i = 0;
+	uint8_t index_j = 0;
+	uint8_t j = 0;
 	int ind;
 	
 	for (ind = 0; ind < 256; ind++) {
-		s_box[ind] = (unsigned char)ind;
+		s_box[ind] = (uint8_t)ind;
 	}
 
 	for (ind = 0; ind < 256; ind++) {
-		unsigned char tc;
+		uint8_t tc;
 
 		j += (s_box[ind] + key->data[ind%key->length]);
 
@@ -380,8 +380,8 @@ void SamOEMhashBlob(unsigned char *data, int len, const DATA_BLOB *key)
 		s_box[j] = tc;
 	}
 	for (ind = 0; ind < len; ind++) {
-		unsigned char tc;
-		unsigned char t;
+		uint8_t tc;
+		uint8_t t;
 
 		index_i++;
 		index_j += s_box[index_i];
@@ -399,7 +399,7 @@ void SamOEMhashBlob(unsigned char *data, int len, const DATA_BLOB *key)
   a varient that assumes a 16 byte key. This should be removed
   when the last user is gone
 */
-void SamOEMhash(unsigned char *data, const unsigned char keystr[16], int len)
+void SamOEMhash(uint8_t *data, const uint8_t keystr[16], int len)
 {
 	DATA_BLOB key = data_blob(keystr, 16);
 	
