@@ -59,7 +59,7 @@ krb5_error_code
 krb5_data_alloc(krb5_data *p, int len)
 {
     p->data = malloc(len);
-    if(p->data == NULL)
+    if(len && p->data == NULL)
 	return ENOMEM;
     p->length = len;
     return 0;
@@ -70,7 +70,7 @@ krb5_data_realloc(krb5_data *p, int len)
 {
     void *tmp;
     tmp = realloc(p->data, len);
-    if(!tmp)
+    if(len && !tmp)
 	return ENOMEM;
     p->data = tmp;
     p->length = len;
