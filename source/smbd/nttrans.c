@@ -706,6 +706,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	files_struct *fsp=NULL;
 	char *p = NULL;
 	BOOL stat_open_only = False;
+	time_t c_time;
 	START_PROFILE(SMBntcreateX);
 
 	/* If it's an IPC, use the pipe handler. */
@@ -996,7 +997,16 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	p += 4;
 	
 	/* Create time. */  
-	put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+
+	if (lp_dos_filetime_resolution(SNUM(conn))) {
+		c_time &= ~1;
+		sbuf.st_atime &= ~1;
+		sbuf.st_mtime &= ~1;
+		sbuf.st_mtime &= ~1;
+	}
+
+	put_long_date(p,c_time);
 	p += 8;
 	put_long_date(p,sbuf.st_atime); /* access time */
 	p += 8;
@@ -1203,6 +1213,7 @@ static int call_nt_transact_create(connection_struct *conn,
   int smb_attr;
   int error_class;
   uint32 error_code;
+  time_t c_time;
 
   DEBUG(5,("call_nt_transact_create\n"));
 
@@ -1484,7 +1495,16 @@ static int call_nt_transact_create(connection_struct *conn,
   p += 8;
 
   /* Create time. */
-  put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+  c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+
+  if (lp_dos_filetime_resolution(SNUM(conn))) {
+    c_time &= ~1;
+    sbuf.st_atime &= ~1;
+    sbuf.st_mtime &= ~1;
+    sbuf.st_mtime &= ~1;
+  }
+
+  put_long_date(p,c_time);
   p += 8;
   put_long_date(p,sbuf.st_atime); /* access time */
   p += 8;
