@@ -269,8 +269,6 @@ krb5_finish (void)
     krb5_free_context(context);
 }
 
-#ifdef KRB4
-
 static void
 krb5_get_afs_tokens (const struct passwd *pwd)
 {
@@ -299,8 +297,6 @@ krb5_get_afs_tokens (const struct passwd *pwd)
 	krb5_cc_close (context, id2);
     }
 }
-
-#endif /* KRB4 */
 
 #endif /* KRB5 */
 
@@ -598,9 +594,10 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 	    krb5_cc_close (context, id);
 	}
     }
+#endif /* KRB4 */
 
     krb5_get_afs_tokens (pwd);
-#endif /* KRB4 */
+
     krb5_finish ();
 #endif /* KRB5 */
 
