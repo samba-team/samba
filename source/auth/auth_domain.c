@@ -212,7 +212,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 	result = cli_nt_setup_creds(*cli, sec_chan, trust_passwd, &neg_flags, 2);
 
         if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
+		DEBUG(0,("connect_to_domain_password_server: unable to setup the NETLOGON credentials to machine \
 %s. Error was : %s.\n", remote_machine, nt_errstr(result)));
 		cli_nt_session_close(*cli);
 		cli_ulogoff(*cli);
@@ -274,9 +274,9 @@ static NTSTATUS find_connect_dc(struct cli_state **cli,
 
 	if ( !rpc_find_dc(lp_workgroup(), srv_name, &dc_ip) ) {
 		DEBUG(0,("find_connect_dc: Failed to find an DCs for %s\n", lp_workgroup()));
-			return NT_STATUS_NO_LOGON_SERVERS;
+		return NT_STATUS_NO_LOGON_SERVERS;
 	}
-
+	
 	return attempt_connect_to_dc( cli, domain, &dc_ip, setup_creds_as, 
 			sec_chan, trust_passwd );
 }
