@@ -420,6 +420,8 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 
 	if (dest_len)
 		dest[MIN(ret, dest_len-1)] = 0;
+	else 
+		dest[0] = 0;
 
 	return src_len;
 }
