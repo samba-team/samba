@@ -2614,5 +2614,5 @@ int pdb_ldap_init(void)
 {
 	smb_register_passdb("ldapsam", pdb_init_ldapsam, PASSDB_INTERFACE_VERSION);
 	smb_register_passdb("ldapsam_nua", pdb_init_ldapsam_nua, PASSDB_INTERFACE_VERSION);
-	return TRUE;
+	return True;
 }
