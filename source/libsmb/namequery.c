@@ -344,8 +344,7 @@ FILE *startlmhosts(char *fname)
 /********************************************************
  Parse the next line in the lmhosts file.
 *********************************************************/
-
-BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr)
+BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr)
 {
   pstring line;
 
@@ -370,7 +369,7 @@ BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr
 
     if (next_token(&ptr,ip   ,NULL,sizeof(ip)))
       ++count;
-    if (next_token(&ptr,name ,NULL, sizeof(name)))
+    if (next_token(&ptr,name ,NULL, sizeof(pstring)))
       ++count;
     if (next_token(&ptr,flags,NULL, sizeof(flags)))
       ++count;
