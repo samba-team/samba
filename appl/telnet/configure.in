@@ -1,0 +1,186 @@
+#
+# configure script for telnet
+#
+# $Id$
+#
+
+
+
+AC_INIT(telnet/telnet.c)
+AC_CONFIG_HEADER(config.h)
+
+# This may be overridden using --prefix=/usr to configure
+AC_PREFIX_DEFAULT(/usr/athena)
+
+# We want these before the checks, so the checks can modify their values.
+test -z "$CFLAGS" && CFLAGS=-g auto_cflags=1
+test -z "$LDFLAGS" && LDFLAGS=-g
+
+AC_PROG_CC
+AC_PROG_RANLIB
+
+# If we're using gcc and the user hasn't specified CFLAGS, add -O to CFLAGS.
+test -n "$GCC" && test -n "$auto_cflags" && CFLAGS="$CFLAGS -O"
+
+AC_SUBST(CFLAGS)dnl
+AC_SUBST(LDFLAGS)dnl
+
+AC_PROG_INSTALL
+
+#
+# authentication
+#
+
+AC_MSG_CHECKING(for authentication)
+
+AC_ARG_ENABLE(authentication, [  --enable-authentication   configure with authentication],
+[
+	if test "$enableval" = no; then
+		do_authentication=no
+	else
+		do_authentication=yes
+	fi
+	unset telnet_cv_opt_authentication
+],[
+	do_authentication=yes
+])
+
+AC_CACHE_VAL(telnet_cv_opt_authentication, 
+	telnet_cv_opt_authentication=$do_authentication)
+
+if test "$telnet_cv_opt_authentication" != no; then
+	AC_DEFINE(AUTHENTICATION)
+	AC_DEFINE(KRB4)
+fi
+
+AC_MSG_RESULT($telnet_cv_opt_authentication)
+
+AC_SUBST(AUTHENTICATION)
+AC_SUBST(KRB4)
+
+#
+# encryption
+#
+
+
+AC_MSG_CHECKING(for encryption)
+
+AC_ARG_ENABLE(encryption, [  --enable-encryption       configure with encryption],
+[
+	if test "$enableval" = no; then
+		do_encryption=no
+	else
+		do_encryption=yes
+	fi
+	unset telnet_cv_opt_encryption
+],[
+	do_encryption=$telnet_cv_opt_authentication
+])
+
+AC_CACHE_VAL(telnet_cv_opt_encryption, 
+	telnet_cv_opt_encryption=$do_encryption)
+
+if test "$telnet_cv_opt_encryption" != no; then
+	AC_DEFINE(ENCRYPTION)
+	AC_DEFINE(DES_ENCRYPTION)
+fi
+
+AC_MSG_RESULT($telnet_cv_opt_encryption)
+
+AC_SUBST(ENCRYPTION)
+AC_SUBST(DES_ENCRYPTION)
+
+#
+# default im
+#
+
+
+AC_MSG_CHECKING(for default im)
+
+AC_ARG_ENABLE(default-im, [  --enable-default-im[=ARG] default initial banner], [
+
+if test "$enableval" != yes; then
+	default_im=$enableval
+else
+	os_ver=`uname -s`
+	case $os_ver in
+		AIX)
+			os_rel=`uname -v`.`uname -r`
+		;;
+		*)
+			os_rel=`uname -r`
+		;;
+	esac
+
+	default_im="$os_ver $os_rel (%h) (%t)"
+fi 
+unset telnet_cv_opt_default_im
+], [
+	default_im=no
+])
+AC_CACHE_VAL(telnet_cv_opt_default_im, telnet_cv_opt_default_im="$default_im")
+
+if test "$telnet_cv_opt_default_im" != no; then
+	AC_DEFINE_UNQUOTED(USE_IM, "$telnet_cv_opt_default_im")
+fi
+
+AC_MSG_RESULT($telnet_cv_opt_default_im)
+
+AC_SUBST(USE_IM)
+
+#
+# misc options
+#
+
+AC_DEFINE(DIAGNOSTICS)
+AC_SUBST(DIAGNOSTICS)
+
+AC_DEFINE(KLUDGELINEMODE)
+AC_SUBST(KLUDGELINEMODE)
+
+AC_DEFINE(ENV_HACK)
+AC_SUBST(ENV_HACK)
+
+AC_DEFINE(OLD_ENVIRON)
+AC_SUBST(OLD_ENVIRON)
+
+AC_REPLACE_FUNCS(getent herror memmove setenv strdup strerror)
+
+AC_CHECK_FUNCS(cgetent uname vfork vhangup)
+
+AC_CHECK_FUNCS(tgetent)
+if test $ac_cv_func_tgetent = no; then
+  # tgetent is not in the default libraries.  See if it's in some other.
+  for lib in termcap; do
+    AC_CHECK_LIB($lib, tgetent, [AC_DEFINE(HAVE_TGETENT)
+      LIBS="$LIBS -l$lib"; break])
+  done
+fi
+
+AC_CHECK_FUNCS(setupterm)
+
+
+# these two are mainly here for solaris
+AC_CHECK_FUNCS(socket)
+if test "$ac_cv_func_socket" = no; then
+	AC_CHECK_LIB(socket, socket)
+fi
+AC_CHECK_FUNCS(gethostbyname)
+if test "$ac_cv_func_gethostbyname" = no; then
+	AC_CHECK_LIB(nsl, gethostbyname)
+fi
+
+AC_CHECK_LIB(util, logout)
+
+AC_SUBST(HAVE_LIBTERMCAP)
+
+AC_CHECK_HEADERS(termios.h sys/select.h utmpx.h sac.h)
+
+if test "$ac_cv_header_sac_h" = yes ; then
+	AC_DEFINE(STREAMSPTY)
+fi
+AC_SUBST(STREAMSPTY)
+
+###
+
+AC_OUTPUT(Makefile libtelnet/Makefile telnet/Makefile telnetd/Makefile)
