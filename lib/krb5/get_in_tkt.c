@@ -36,14 +36,12 @@ int
 extract_ticket(krb5_context context, 
 	       krb5_kdc_rep *rep, 
 	       krb5_creds *creds,		
-	       krb5_key_proc key_proc,
+	       krb5_keyblock *key,
 	       krb5_const_pointer keyseed,
 	       krb5_decrypt_proc decrypt_proc,
 	       krb5_const_pointer decryptarg)
 {
-    krb5_keyblock *key;
     krb5_error_code err;
-    krb5_data salt;
 
     principalname2krb5_principal(&creds->client, 
 				 rep->part1.cname, 
@@ -62,19 +60,6 @@ extract_ticket(krb5_context context,
     }
     /*     krb5_free_principal (context, rep->part1.ticket.sprinc);*/
 
-    salt.length = 0;
-    salt.data = NULL;
-    err = krb5_get_salt (creds->client, &salt);
-
-    if (err)
-	return err;
-
-    err = (*key_proc)(context, rep->part1.enc_part.etype, &salt,
-		      keyseed, &key);
-    krb5_data_free (&salt);
-    if (err)
-	return err;
-    
     if (decrypt_proc == NULL)
 	decrypt_proc = decrypt_tkt;
     
@@ -164,6 +149,9 @@ krb5_get_in_tkt(krb5_context context,
     krb5_data req, resp;
     struct timeval tv;
     char buf[BUFSIZ];
+    krb5_data salt;
+    krb5_keyblock *key;
+    PA_DATA padata;
 
     memset(&a, 0, sizeof(a));
 
@@ -201,23 +189,55 @@ krb5_get_in_tkt(krb5_context context,
     a.req_body.enc_authorization_data = NULL;
     a.req_body.additional_tickets = NULL;
 
+    /* moved the call of `key_proc' here so that the key is available
+       when/if creating pre-authentication */
+
+    salt.length = 0;
+    salt.data = NULL;
+    err = krb5_get_salt (creds->client, &salt);
+
+    if (err)
+	return err;
+
+    err = (*key_proc)(context, *(a.req_body.etype.val), &salt,
+		      keyseed, &key);
+    krb5_data_free (&salt);
+    if (err)
+	return err;
+    
     /* not sure this is the way to use `ptypes' */
     if (ptypes == NULL || *ptypes == KRB5_PADATA_NONE)
 	a.padata = NULL;
     else if (*ptypes ==  KRB5_PADATA_ENC_TIMESTAMP) {
 	PA_ENC_TS_ENC p;
-	u_char buf[17];
+	u_char buf[1024];
 	struct timeval tv;
 	int len;
+	unsigned foo;
 
 	gettimeofday (&tv, NULL);
-	p.patimestamp = p.tv_sec;
-	p.pausec      = &p.tv_usec;
+	p.patimestamp = tv.tv_sec;
+	foo = tv.tv_usec;
+	p.pausec      = &foo;
 
 	len = encode_PA_ENC_TS_ENC(buf + sizeof(buf) - 1,
 				   sizeof(buf),
 				   &p);
+	if (len < 0)
+	  return ASN1_PARSE_ERROR;
 
+	err = krb5_encrypt (context,
+			    buf + sizeof(buf) - len,
+			    len,
+			    key,
+			    &padata.padata_value);
+	if (err)
+	    return err;
+	
+	padata.padata_type = pa_enc_timestamp;
+	a.padata = malloc(sizeof(*a.padata));
+	a.padata->len = 1;
+	a.padata->val = &padata;
     } else
 	return KRB5_PREAUTH_BAD_TYPE;
 
@@ -249,7 +269,7 @@ krb5_get_in_tkt(krb5_context context,
     }
     krb5_data_free(&resp);
 
-    err = extract_ticket(context, &rep, creds, key_proc, keyseed, 
+    err = extract_ticket(context, &rep, creds, key, keyseed, 
 			 decrypt_proc, decryptarg);
 
     free_KDC_REP(&rep.part1);
