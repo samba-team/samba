@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "registry.h"
+#include "system/filesys.h"
 #include "system/shmem.h"
 
 /**

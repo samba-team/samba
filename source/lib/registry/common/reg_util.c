@@ -25,7 +25,7 @@
 #define DBGC_CLASS DBGC_REGISTRY
 
 static const struct {
-	uint32 id;
+	uint32_t id;
 	const char *name;
 } reg_value_types[] = {
 	{ REG_SZ, "REG_SZ" },
@@ -122,9 +122,9 @@ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *da
       		(*value)->data_len = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, data_str, strlen(data_str), &(*value)->data_blk);
 			break;
 		case REG_DWORD:
-			(*value)->data_len = sizeof(uint32);
-			(*value)->data_blk = talloc(mem_ctx, uint32);
-			*((uint32 *)(*value)->data_blk) = strtol(data_str, NULL, 0);
+			(*value)->data_len = sizeof(uint32_t);
+			(*value)->data_blk = talloc(mem_ctx, uint32_t);
+			*((uint32_t *)(*value)->data_blk) = strtol(data_str, NULL, 0);
 			break;
 
 		case REG_NONE:
@@ -269,7 +269,7 @@ WERROR reg_key_del_abs(struct registry_context *ctx, const char *path)
 	return error;
 }
 
-WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx, const char *path, uint32 access_mask, struct security_descriptor *sec_desc, struct registry_key **result)
+WERROR reg_key_add_abs(TALLOC_CTX *mem_ctx, struct registry_context *ctx, const char *path, uint32_t access_mask, struct security_descriptor *sec_desc, struct registry_key **result)
 {
 	struct registry_key *parent;
 	const char *n;

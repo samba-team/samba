@@ -24,6 +24,7 @@
 #include "dynconfig.h"
 #include "registry.h"
 #include "lib/cmdline/popt_common.h"
+#include "system/filesys.h"
 
 /*
  * Routines to parse a REGEDIT4 file

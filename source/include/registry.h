@@ -138,7 +138,7 @@ struct hive_operations {
 	WERROR (*flush_key) (struct registry_key *);
 
 	/* Value management */
-	WERROR (*set_value)(struct registry_key *, const char *name, uint32 type, void *data, int len); 
+	WERROR (*set_value)(struct registry_key *, const char *name, uint32_t type, void *data, int len); 
 	WERROR (*del_value)(struct registry_key *, const char *valname);
 };
 
@@ -153,7 +153,7 @@ struct registry_hive {
  * contains zero or more hives */
 struct registry_context {
     void *backend_data;
-	WERROR (*get_predefined_key) (struct registry_context *, uint32 hkey, struct registry_key **);
+	WERROR (*get_predefined_key) (struct registry_context *, uint32_t hkey, struct registry_key **);
 };
 
 struct reg_init_function_entry {
