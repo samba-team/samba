@@ -583,6 +583,68 @@ static BOOL setup_bind_nak(pipes_struct *p, prs_struct *pd)
 }
 
 /*******************************************************************
+ Marshall a fault pdu.
+*******************************************************************/
+
+static BOOL setup_fault_pdu(pipes_struct *p)
+{
+	prs_struct outgoing_pdu;
+	RPC_HDR fault_hdr;
+	RPC_HDR_RESP hdr_resp;
+	RPC_HDR_FAULT fault_resp;
+
+	/*
+	 * Marshall directly into the outgoing PDU space. We
+	 * must do this as we need to set to the bind response
+	 * header and are never sending more than one PDU here.
+	 */
+
+	prs_init( &outgoing_pdu, 0, 4, MARSHALL);
+	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
+
+	/*
+	 * Initialize a fault header.
+	 */
+
+	init_rpc_hdr(&fault_hdr, RPC_FAULT, RPC_FLG_FIRST | RPC_FLG_LAST | RPC_FLG_NOCALL,
+            p->hdr.call_id, RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_FAULT_LEN, 0);
+
+	/*
+	 * Initialize the HDR_RESP and FAULT parts of the PDU.
+	 */
+
+	memset((char *)&hdr_resp, '\0', sizeof(hdr_resp));
+
+	fault_resp.status = 0x1c010002;
+	fault_resp.reserved = 0;
+
+	/*
+	 * Marshall the header into the outgoing PDU.
+	 */
+
+	if(!smb_io_rpc_hdr("", &fault_hdr, &outgoing_pdu, 0)) {
+		DEBUG(0,("setup_bind_nak: marshalling of RPC_HDR failed.\n"));
+		return False;
+	}
+
+	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &outgoing_pdu, 0)) {
+		DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_RESP.\n"));
+		return False;
+	}
+
+	if(!smb_io_rpc_hdr_fault("fault", &fault_resp, &outgoing_pdu, 0)) {
+		DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_FAULT.\n"));
+		return False;
+	}
+
+	p->out_data.data_sent_length = 0;
+	p->out_data.current_pdu_len = prs_offset(&outgoing_pdu);
+	p->out_data.current_pdu_sent = 0;
+
+	return True;
+}
+
+/*******************************************************************
  Respond to a pipe bind request.
 *******************************************************************/
 
@@ -1052,6 +1114,7 @@ BOOL rpc_command(pipes_struct *p, char *input_data, int data_len)
  		break;
 	case RPC_REQUEST:
 		if (p->ntlmssp_auth_requested && !p->ntlmssp_auth_validated) {
+
 			/* authentication _was_ requested
 			   and it failed.  sorry, no deal!
 			 */
@@ -1072,8 +1135,10 @@ authentication failed. Denying the request.\n", p->name));
 		break;
 	}
 
-	if (!reply)
-		DEBUG(3,("rpc_command: DCE/RPC fault should be sent here\n"));
+	if (!reply) {
+		DEBUG(3,("rpc_command: DCE/RPC fault sent on pipe %s\n", p->pipe_srv_name));
+		reply = setup_fault_pdu(p);
+	}
 
 	return reply;
 }
