@@ -4,8 +4,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000.
- *  Copyright (C) Gerald Carter                2000
+ *  Copyright (C) Jean François Micouleau      1998-2000,
+ *  Copyright (C) Gerald Carter                2000,
+ *  Copyright (C) Tim Potter		       2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -190,6 +191,10 @@ static BOOL smb_io_doc_info_container(char *desc, DOC_INFO_CONTAINER *cont, prs_
 /*******************************************************************
 reads or writes an NOTIFY OPTION TYPE structure.
 ********************************************************************/  
+
+/* NOTIFY_OPTION_TYPE and NOTIFY_OPTION_TYPE_DATA are really one
+   structure.  The _TYPE structure is really the deferred referrants (i.e
+   the notify fields array) of the _TYPE structure. -tpot */
 
 static BOOL smb_io_notify_option_type(char *desc, SPOOL_NOTIFY_OPTION_TYPE *type, prs_struct *ps, int depth)
 {
@@ -3171,6 +3176,21 @@ uint32 spoolss_size_driverdir_info_1(DRIVER_DIRECTORY_1 *info)
 return the size required by a struct in the stream
 ********************************************************************/  
 
+uint32 spoolss_size_printprocessordirectory_info_1(PRINTPROCESSOR_DIRECTORY_1 *info)
+{
+	int size=0;
+
+	size=str_len_uni(&info->name);	/* the string length       */
+	size=size+1;			/* add the leading zero    */
+	size=size*2;			/* convert in char         */
+
+	return size;
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/  
+
 uint32 spoolss_size_port_info_2(PORT_INFO_2 *info)
 {
 	int size=0;
@@ -4729,13 +4749,13 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 	fstring f, *tar;
 	int n = 0;
 	char *src;
- 
+
 	if (buf5==NULL)
 		return False;
- 
+
 	src = (char *)buf5->buffer;
 	*ar = NULL;
- 
+
 	while (src < ((char *)buf5->buffer) + buf5->buf_len*2) {
 		unistr_to_dos(f, src, sizeof(f)-1);
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
@@ -5574,10 +5594,10 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 
 	switch (q_u->type)
 	{
-		case 0x1:
-		case 0x3:
-		case 0x4:
-		case 0x7:
+		case REG_SZ:
+		case REG_BINARY:
+		case REG_DWORD:
+		case REG_MULTI_SZ:
             if (q_u->max_len) {
                 if (UNMARSHALLING(ps))
     				q_u->data=(uint8 *)prs_alloc_mem(ps, q_u->max_len * sizeof(uint8));
@@ -6299,10 +6319,10 @@ BOOL spoolss_io_r_enumprinterkey(char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_st
 
 	if (!smb_io_buffer5("", &r_u->keys, ps, depth))
 		return False;
-
+	
 	if(!prs_align(ps))
 		return False;
-	
+
 	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
 		return False;
 
