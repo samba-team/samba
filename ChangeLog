@@ -1,3 +1,9 @@
+2000-03-11  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kaserver.c (do_authenticate, do_getticket): call check_flags
+	* kdc/kerberos4.c (do_version4): call check_flags.
+	* kdc/kerberos5.c (check_flags): make global
+
 2000-03-10  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password): evil
