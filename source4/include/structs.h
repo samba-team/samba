@@ -46,7 +46,6 @@ struct samr_CryptPassword;
 struct samr_CryptPasswordEx;
 struct samr_LogonHours;
 
-struct netr_SamInfo3;
 struct netr_Authenticator;
 union netr_Validation;
 
@@ -111,3 +110,9 @@ struct net_context;
 struct file_info;
 
 struct xattr_DosEAs;
+
+struct test_join;
+
+struct test_join_ads_dc;
+
+struct netr_LMSessionKey;
