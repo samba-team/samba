@@ -1,3 +1,9 @@
+2002-02-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* login_locl.h: include netgroup.h and rpcsvc/ypclnt.h
+
+	* login.c: make this build without krb5
+
 2001-09-17  Assar Westerlund  <assar@sics.se>
 
 	* login.c (do_login): add setpcred
