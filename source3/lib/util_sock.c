@@ -116,7 +116,7 @@ static void print_socket_options(int s)
  Set user socket options.
 ****************************************************************************/
 
-void set_socket_options(int fd, char *options)
+void set_socket_options(int fd, const char *options)
 {
 	fstring tok;
 

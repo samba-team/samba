@@ -182,7 +182,7 @@ char *get_numlist(char *p, uint32 **num, int *count)
  Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/
 
-BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
+BOOL file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
   SMB_STRUCT_STAT st;
 	if (!sbuf)
@@ -198,7 +198,7 @@ BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
  Check a files mod time.
 ********************************************************************/
 
-time_t file_modtime(char *fname)
+time_t file_modtime(const char *fname)
 {
   SMB_STRUCT_STAT st;
   

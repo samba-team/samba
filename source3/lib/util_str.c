@@ -937,3 +937,28 @@ char *binary_string(char *buf, int len)
 	return s;
 }
 
+
+/* Just a typesafety wrapper for snprintf into a pstring */
+int pstr_sprintf(pstring s, const char *fmt, ...)
+{
+	va_list ap;
+	int ret;
+
+	va_start(ap, fmt);
+	ret = vsnprintf(PSTR_MUTABLE(s), PSTRING_LEN, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
+
+/* Just a typesafety wrapper for snprintf into a pstring */
+int fstr_sprintf(fstring s, const char *fmt, ...)
+{
+	va_list ap;
+	int ret;
+
+	va_start(ap, fmt);
+	ret = vsnprintf(FSTR_MUTABLE(s), FSTRING_LEN, fmt, ap);
+	va_end(ap);
+	return ret;
+}
