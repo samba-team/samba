@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "../utils/net.h"
+#include "utils/net.h"
 
 int net_common_methods_usage(int argc, const char**argv)
 {

@@ -17,7 +17,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "../utils/ntlm_auth_proto.h"
+#include "utils/ntlm_auth_proto.h"
  
 /* Some of the popt variables are needed in the diagnostics code */
 extern const char *opt_username;

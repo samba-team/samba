@@ -25,7 +25,7 @@
 
 #include "includes.h"
 
-#include "../include/libsmb_internal.h"
+#include "include/libsmb_internal.h"
 
 struct smbc_compat_fdlist {
 	SMBCFILE * file;

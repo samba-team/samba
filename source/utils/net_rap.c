@@ -24,7 +24,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "includes.h"
-#include "../utils/net.h"
+#include "utils/net.h"
 
 /* The following messages were for error checking that is not properly 
    reported at the moment.  Which should be reinstated? */

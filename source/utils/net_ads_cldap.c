@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "../utils/net.h"
+#include "utils/net.h"
 
 #ifdef HAVE_ADS
 

@@ -38,7 +38,7 @@
 /*****************************************************/
 
 #include "includes.h"
-#include "../utils/net.h"
+#include "utils/net.h"
 
 /***********************************************************************/
 /* Beginning of internationalization section.  Translatable constants  */

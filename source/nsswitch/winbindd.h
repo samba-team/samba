@@ -230,7 +230,7 @@ struct winbindd_idmap_methods {
   void (*status)(void);
 };
 
-#include "../nsswitch/winbindd_proto.h"
+#include "nsswitch/winbindd_proto.h"
 
 #include "rpc_parse.h"
 #include "rpc_client.h"
