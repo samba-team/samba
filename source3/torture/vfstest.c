@@ -4,6 +4,7 @@
 
    Copyright (C) Simo Sorce 2002
    Copyright (C) Eric Lorimer 2002
+   Copyright (C) Jelmer Vernooij 2002
 
    Most of this code was ripped off of rpcclient.
    Copyright (C) Tim Potter 2000-2001
@@ -44,13 +45,8 @@ static char **completion_fn(char *text, int start, int end)
 	int i, count=0;
 	struct cmd_list *commands = cmd_list;
 
-#if 0	/* JERRY */
-	/* FIXME!!!  -- what to do when completing argument? */
-	/* for words not at the start of the line fallback 
-	   to filename completion */
 	if (start) 
 		return NULL;
-#endif
 
 	/* make sure we have a list of valid commands */
 	if (!commands) 
@@ -437,10 +433,8 @@ int main(int argc, char *argv[])
 	   a fixed location or certain compilers complain */
 	poptContext pc;
 	struct poptOption long_options[] = {
-/*		{"conf",	's', POPT_ARG_STRING, 	&opt_configfile, 's'},*/
 		{"debug",       'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
 		{"debuglevel",  'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
-/*		{"user",	'U', POPT_ARG_STRING,	&opt_username, 'U'},*/
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
 		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l'},
 		{"help",	'h', POPT_ARG_NONE,	0, 'h'},
@@ -468,23 +462,6 @@ int main(int argc, char *argv[])
 		case 'd':
 			DEBUGLEVEL = opt_debuglevel;
 			break;
-			
-			/*
-		case 'U': {
-			char *lp;
-
-			pstrcpy(username,opt_username);
-
-			if ((lp=strchr_m(username,'%'))) {
-				*lp = 0;
-				pstrcpy(password,lp+1);
-				got_pass = 1;
-				memset(strchr_m(opt_username,'%') + 1, 'X',
-				       strlen(password));
-			}
-			break;
-		}
-		*/
 			
 		case 'h':
 		default:
