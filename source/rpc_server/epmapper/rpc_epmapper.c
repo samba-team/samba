@@ -296,6 +296,7 @@ static NTSTATUS epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			break;
 		}
 		fill_protocol_tower(mem_ctx, &r->out.towers->twr->towers, &eps[i]);
+		r->out.towers->twr->tower_length = 0;
 		return NT_STATUS_OK;
 	}
 
