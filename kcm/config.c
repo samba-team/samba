@@ -153,7 +153,7 @@ static int parse_owners(kcm_ccache ccache)
     int gid_p = 0;
 
     if (system_user != NULL) {
-	if (isdigit(system_user[0])) {
+	if (isdigit((unsigned char)system_user[0])) {
 	    pw = getpwuid(atoi(system_user));
 	} else {
 	    pw = getpwnam(system_user);
@@ -172,7 +172,7 @@ static int parse_owners(kcm_ccache ccache)
     }
 
     if (system_group != NULL) {
-	if (isdigit(system_group[0])) {
+	if (isdigit((unsigned char)system_group[0])) {
 	    gr = getgrgid(atoi(system_group));
 	} else {
 	    gr = getgrnam(system_group);
