@@ -8294,14 +8294,28 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		<para>You should point this at your WINS server if you have a
 		multi-subnetted network.</para>
 
+		<para>If you want to work in multiple namespaces, you can 
+		give every wins server a 'tag'. For each tag, only one 
+		(working) server will be queried for a name. The tag should be 
+		seperated from the ip address by a colon.
+		</para>
+
 		<note><para>You need to set up Samba to point 
 		to a WINS server if you have multiple subnets and wish cross-subnet 
 		browsing to work correctly.</para></note>
+		
 
 		<para>See the documentation file <ulink url="improved-browsing.html">Browsing</ulink> in the samba howto collection.</para>
 
 		<para>Default: <emphasis>not enabled</emphasis></para>
-		<para>Example: <command>wins server = 192.9.200.1</command></para>
+		<para>Example: <command>wins server = mary:192.9.200.1 fred:192.168.3.199 mary:192.168.2.61</command></para>
+		<para>For this example when querying a certain name, 192.19.200.1 will 
+		be asked first and if that doesn't respond 192.168.2.61. If either 
+		of those doesn't know the name 192.168.3.199 will be queried.
+		</para>
+
+		<para>Example: <command>wins server = 192.9.200.1 192.168.2.61</command></para>
+		
 		</listitem>
 		</varlistentry>
 
