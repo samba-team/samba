@@ -44,8 +44,6 @@ struct units {
     unsigned mult;
 };
 
-typedef struct units units;
-
 int
 parse_units (const char *s, const struct units *units,
 	     const char *def_unit);
