@@ -319,7 +319,7 @@ Comma Separated list of Files
 	</itemizedlist>
 
 
-	<para><emphasis>SPOOLSS Commands</emphasis></para>
+	<para><emphasis>General Commands</emphasis></para>
 
 	<itemizedlist>
 		<listitem><para><command>set</command> - Set miscellaneous 
