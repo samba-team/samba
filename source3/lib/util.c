@@ -2089,8 +2089,10 @@ void *smb_xmalloc(size_t size)
 	void *p;
 	if (size == 0)
 		smb_panic("smb_xmalloc: called with zero size.\n");
-	if ((p = malloc(size)) == NULL)
+	if ((p = malloc(size)) == NULL) {
+		DEBUG(0, ("smb_xmalloc() failed to allocate %lu bytes\n", (unsigned long)size));
 		smb_panic("smb_xmalloc: malloc fail.\n");
+	}
 	return p;
 }
 

@@ -171,14 +171,14 @@ BOOL claim_connection(connection_struct *conn, const char *name,int max_connecti
 	if (conn) {
 		crec.uid = conn->uid;
 		crec.gid = conn->gid;
-		StrnCpy(crec.name,
+		safe_strcpy(crec.name,
 			lp_servicename(SNUM(conn)),sizeof(crec.name)-1);
 	}
 	crec.start = time(NULL);
 	crec.bcast_msg_flags = msg_flags;
 	
-	StrnCpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine)-1);
-	StrnCpy(crec.addr,conn?conn->client_address:client_addr(),sizeof(crec.addr)-1);
+	safe_strcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine)-1);
+	safe_strcpy(crec.addr,conn?conn->client_address:client_addr(),sizeof(crec.addr)-1);
 
 	dbuf.dptr = (char *)&crec;
 	dbuf.dsize = sizeof(crec);

@@ -20,9 +20,6 @@
 
 #include "includes.h"
 
-#define srvstr_push(base_ptr, dest, src, dest_len, flags) \
-    push_string(base_ptr, dest, src, dest_len, flags)
-
 #define srvstr_pull(base_ptr, dest, src, dest_len, src_len, flags) \
     pull_string(base_ptr, dest, src, dest_len, src_len, flags)
 
