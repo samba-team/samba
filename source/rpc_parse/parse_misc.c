@@ -775,6 +775,8 @@ void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
 
 void init_string2(STRING2 *str, char *buf, int len)
 {
+	int alloc_len = 0;
+
 	/* set up string lengths. */
 	str->str_max_len = len;
 	str->undoc       = 0;
@@ -786,8 +788,8 @@ void init_string2(STRING2 *str, char *buf, int len)
 			parse_misc_talloc = talloc_init();
 
 		if (len < MAX_STRINGLEN)
-			len = MAX_STRINGLEN;
-		str->buffer = talloc(parse_misc_talloc, len);
+			alloc_len = MAX_STRINGLEN;
+		str->buffer = talloc(parse_misc_talloc, alloc_len);
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail\n");
 		memcpy(str->buffer, buf, len);
