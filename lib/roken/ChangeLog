@@ -1,3 +1,7 @@
+2001-07-31  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (libroken_la_LDFLAGS): update version to 14:1:5
+
 2001-07-23  Assar Westerlund  <assar@sics.se>
 
 	* getarg.c (arg_match_long): fix parsing of arg_counter optional

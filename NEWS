@@ -1,3 +1,11 @@
+Changes in release 0.4d
+
+ * fix building problem on Irix
+
+ * make `ktutil get' more efficient
+
+ * bug fixes
+
 Changes in release 0.4c
 
  * fix buffer overrun in telnetd

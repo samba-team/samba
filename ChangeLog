@@ -1,3 +1,8 @@
+2001-07-31  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): update version to
+	18:1:1
+
 2001-07-27  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/context.c (init_context_from_config_file): check
