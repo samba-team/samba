@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -145,5 +145,55 @@ krb5_append_addresses(krb5_context context,
 	    dest->len++;
 	}
     }
+    return 0;
+}
+
+/*
+ * Create an address of type KRB5_ADDRESS_ADDRPORT from (addr, port)
+ */
+
+krb5_error_code
+krb5_make_addrport (krb5_address **res, const krb5_address *addr, int16_t port)
+{
+    krb5_error_code ret;
+    size_t len = addr->address.length + 2 + 4 * 4;
+    u_char *p;
+
+    *res = malloc (sizeof(**res));
+    if (*res == NULL)
+	return ENOMEM;
+    (*res)->addr_type = KRB5_ADDRESS_ADDRPORT;
+    ret = krb5_data_alloc (&(*res)->address, len);
+    if (ret) {
+	free (*res);
+	return ret;
+    }
+    p = (*res)->address.data;
+    *p++ = 0;
+    *p++ = 0;
+    *p++ = (addr->addr_type     ) & 0xFF;
+    *p++ = (addr->addr_type >> 8) & 0xFF;
+
+    *p++ = (addr->address.length      ) & 0xFF;
+    *p++ = (addr->address.length >>  8) & 0xFF;
+    *p++ = (addr->address.length >> 16) & 0xFF;
+    *p++ = (addr->address.length >> 24) & 0xFF;
+
+    memcpy (p, addr->address.data, addr->address.length);
+    p += addr->address.length;
+
+    *p++ = 0;
+    *p++ = 0;
+    *p++ = (KRB5_ADDRESS_IPPORT     ) & 0xFF;
+    *p++ = (KRB5_ADDRESS_IPPORT >> 8) & 0xFF;
+
+    *p++ = (2      ) & 0xFF;
+    *p++ = (2 >>  8) & 0xFF;
+    *p++ = (2 >> 16) & 0xFF;
+    *p++ = (2 >> 24) & 0xFF;
+
+    memcpy (p, &port, 2);
+    p += 2;
+
     return 0;
 }
