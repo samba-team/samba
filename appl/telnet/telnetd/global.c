@@ -91,7 +91,7 @@ int unpcc;  /* characters left unprocessed by CRAY-2 terminal routine */
 char *unptyip;  /* pointer to remaining characters in buffer */
 #endif
 
-int	pty, net;
+int	ourpty, net;
 int	SYNCHing;		/* we are in TELNET SYNCH mode */
 
 #ifndef	P

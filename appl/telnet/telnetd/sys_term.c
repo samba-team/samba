@@ -94,6 +94,9 @@ extern struct sysv sysv;
 #define SCPYN(a, b)	(void) strncpy(a, b, sizeof(a))
 #define SCMPN(a, b)	strncmp(a, b, sizeof(a))
 
+#ifdef  HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
 #ifdef	HAVE_SYS_STREAM_H
 #include <sys/stream.h>
 #endif
@@ -181,7 +184,7 @@ init_termbuf()
 # ifdef  STREAMSPTY
 	(void) tcgetattr(ttyfd, &termbuf);
 # else
-	(void) tcgetattr(pty, &termbuf);
+	(void) tcgetattr(ourpty, &termbuf);
 # endif
 	termbuf2 = termbuf;
 }
@@ -209,7 +212,7 @@ set_termbuf()
 # ifdef  STREAMSPTY
 		(void) tcsetattr(ttyfd, TCSANOW, &termbuf);
 # else
-		(void) tcsetattr(pty, TCSANOW, &termbuf);
+		(void) tcsetattr(ourpty, TCSANOW, &termbuf);
 # endif
 # if	defined(CRAY2) && defined(UNICOS5)
 	needtermstat = 1;
@@ -543,7 +546,7 @@ tty_setlinemode(on)
 # else
 	linestate = on;
 # endif
-	(void) ioctl(pty, TIOCEXT, (char *)&on);
+	(void) ioctl(ourpty, TIOCEXT, (char *)&on);
 # ifndef convex
 	init_termbuf();
 # endif
@@ -978,7 +981,7 @@ int getptyslave(void)
 	  char *ptymodules[] = { "pckt", NULL };
 
 	  maybe_push_modules(t, ttymodules);
-	  maybe_push_modules(pty, ptymodules);
+	  maybe_push_modules(ourpty, ptymodules);
 	}
 #endif
 	/*
@@ -1044,9 +1047,9 @@ int getptyslave(void)
 	 * protocol for /bin/login, if the authentication works.
 	 */
 #else
-	if (pty > 2) {
-		(void) close(pty);
-		pty = -1;
+	if (ourpty > 2) {
+		(void) close(ourpty);
+		ourpty = -1;
 	}
 #endif
 }
@@ -1351,7 +1354,7 @@ startslave(host, autologin, autoname)
 	for (i = 0; ; i++) {
 		char tbuf[128];
 		alarm(15);
-		n = read(pty, ptyip, BUFSIZ);
+		n = read(ourpty, ptyip, BUFSIZ);
 		if (i == 3 || n >= 0 || !gotalarm)
 			break;
 		gotalarm = 0;
@@ -1547,7 +1550,7 @@ void start_login(char *host, int autologin, char *name)
 		 *	local-user\0remote-user\0term/speed\0
 		 */
 
-		if (pty > 2) {
+		if (ourpty > 2) {
 			register char *cp;
 			char speed[128];
 			int isecho, israw, xpty, len;
@@ -1569,7 +1572,7 @@ void start_login(char *host, int autologin, char *name)
 			addarg(&argv, "-r");
 			addarg(&argv, LOGIN_HOST);
 
-			xpty = pty;
+			xpty = ourpty;
 # ifndef  STREAMSPTY
 			pty = 0;
 # else
@@ -1605,7 +1608,7 @@ void start_login(char *host, int autologin, char *name)
 					write(xpty, "\n", 1);
 				}
 			}
-			pty = xpty;
+			ourpty = xpty;
 		}
 #  else /* LOGIN_R */
 		addarg(&argv, name);
@@ -1636,8 +1639,8 @@ void start_login(char *host, int autologin, char *name)
 		unsetenv("USER");
 	}
 #if	defined(AUTHENTICATION) && defined(NO_LOGIN_F) && defined(LOGIN_R)
-	if (pty > 2)
-		close(pty);
+	if (ourpty > 2)
+		close(ourpty);
 #endif
 	closelog();
 	/*
@@ -1770,7 +1773,7 @@ cleanup(sig)
 	setutent();	/* just to make sure */
 #  endif /* CRAY */
 	rmut(line);
-	close(pty);
+	close(ourpty);
 	(void) shutdown(net, 2);
 #  ifdef CRAY
 	if (t == 0)

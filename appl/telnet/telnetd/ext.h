@@ -86,7 +86,7 @@ extern int unpcc;  /* characters left unprocessed by CRAY-2 terminal routine */
 extern char *unptyip;  /* pointer to remaining characters in buffer */
 #endif
 
-extern int	pty, net;
+extern int	ourpty, net;
 extern char	*line;
 extern int	SYNCHing;		/* we are in TELNET SYNCH mode */
 
