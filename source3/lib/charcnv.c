@@ -213,7 +213,6 @@ convert:
 			break;
 		case E2BIG:
 			goto convert;		
-			break;
 		case EILSEQ:
 			reason="Illegal myltibyte sequence";
 			break;

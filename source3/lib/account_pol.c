@@ -71,34 +71,24 @@ static char *decode_account_policy_name(int field)
 	switch (field) {
 		case AP_MIN_PASSWORD_LEN:
 			return "min password length";
-			break;
 		case AP_PASSWORD_HISTORY:
 			return "password history";
-			break;
 		case AP_USER_MUST_LOGON_TO_CHG_PASS:
 			return "user must logon to change password";
-			break;
 		case AP_MAX_PASSWORD_AGE:
 			return "maximum password age";
-			break;
 		case AP_MIN_PASSWORD_AGE:
 			return "minimum password age";
-			break;
 		case AP_LOCK_ACCOUNT_DURATION:
 			return "lockout duration";
-			break;
 		case AP_RESET_COUNT_TIME:
 			return "reset count minutes";
-			break;
 		case AP_BAD_ATTEMPT_LOCKOUT:
 			return "bad lockout attempt";
-			break;
 		case AP_TIME_TO_LOGOUT:
 			return "disconnect time";
-			break;
 		default:
 			return "undefined value";
-			break;
 	}
 }
 

@@ -744,7 +744,7 @@ BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
 ********************************************************************/
 
 void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *sess_key, char *acct_name, 
-                uint16 sec_chan, char *comp_name, DOM_CRED *cred, char hashed_mach_pwd[16])
+                uint16 sec_chan, char *comp_name, DOM_CRED *cred, uchar hashed_mach_pwd[16])
 {
 	unsigned char nt_cypher[16];
 	
