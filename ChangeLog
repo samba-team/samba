@@ -1,3 +1,8 @@
+Fri Mar  6 00:41:30 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/send_to_kdc.c: Recognize `http/' and `udp/' as protocol
+ 	specifications.
+
 Wed Mar  4 01:47:29 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* admin/ktutil.c: Implement `add' and `remove' functions. Make
