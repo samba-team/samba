@@ -151,6 +151,10 @@ void remove_sharing_violation_open_smb_message(uint16 mid)
 {
 	struct pending_message_list *pml;
 
+	if (!lp_defer_sharing_violations()) {
+		return;
+	}
+
 	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
 		if (mid == SVAL(pml->buf.data,smb_mid)) {
 			DEBUG(10,("remove_sharing_violation_open_smb_message: deleting mid %u len %u\n",
@@ -171,6 +175,10 @@ void schedule_sharing_violation_open_smb_message(uint16 mid)
 {
 	struct pending_message_list *pml;
 	int i = 0;
+
+	if (!lp_defer_sharing_violations()) {
+		return;
+	}
 
 	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
 		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);
@@ -197,6 +205,11 @@ void schedule_sharing_violation_open_smb_message(uint16 mid)
 BOOL open_was_deferred(uint16 mid)
 {
 	struct pending_message_list *pml;
+
+	if (!lp_defer_sharing_violations()) {
+		return False;
+	}
+
 	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid) {
 			return True;
@@ -212,6 +225,11 @@ BOOL open_was_deferred(uint16 mid)
 struct pending_message_list *get_open_deferred_message(uint16 mid)
 {
 	struct pending_message_list *pml;
+
+	if (!lp_defer_sharing_violations()) {
+		return NULL;
+	}
+
 	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid) {
 			return pml;
@@ -230,6 +248,10 @@ BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private,
 	uint16 mid = SVAL(InBuffer,smb_mid);
 	struct timeval tv;
 	SMB_BIG_INT tdif;
+
+	if (!lp_defer_sharing_violations()) {
+		return True;
+	}
 
 	tv = *ptv;
 	tdif = tv.tv_sec;

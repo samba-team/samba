@@ -115,6 +115,10 @@ static void notify_deferred_opens(files_struct *fsp)
 	int num_de_entries, i;
 	pid_t mypid = sys_getpid();
 
+	if (!lp_defer_sharing_violations()) {
+		return;
+	}
+
 	num_de_entries = get_deferred_opens(fsp->conn, fsp->dev, fsp->inode, &de_array);
 	for (i = 0; i < num_de_entries; i++) {
 		deferred_open_entry *entry = &de_array[i];
