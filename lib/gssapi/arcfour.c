@@ -263,7 +263,7 @@ _gssapi_verify_mic_arcfour
     /* draft: memcpy (T_plus_hdr_plus_msg + 04, MIC_hdr, 8); */
     /* draft: memcpy (T_plus_hdr_plus_msg + 12, msg, msg_len); */
   
-    kret = arcfour_mic_cksum(p, 8, message_buffer, key,
+    kret = arcfour_mic_cksum(p - 8, 8, message_buffer, key,
 			     cksum_data, sizeof(cksum_data));
     if (kret) {
 	*minor_status = kret;
@@ -300,9 +300,9 @@ _gssapi_verify_mic_arcfour
     gssapi_decode_om_uint32(p, &seq_number);
 
     if (context_handle->more_flags & LOCAL)
-	cmp = memcmp(&p[4], "\xff\xff\xff\xff", 4);
-    else
 	cmp = memcmp(&p[4], "\x00\x00\x00\x00", 4);
+    else
+	cmp = memcmp(&p[4], "\xff\xff\xff\xff", 4);
     
     if (cmp != 0) {
 	*minor_status = 0;
