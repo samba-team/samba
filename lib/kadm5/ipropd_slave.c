@@ -245,20 +245,12 @@ receive_everything (krb5_context context, int *fd,
 	krb5_err (context, 1, ret, "db->open");
 
     do {
-	krb5_data packet;
 	krb5_storage *sp;
 
-	ret = krb5_read_message (context, fd, &packet);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_read_message");
+	ret = krb5_read_priv_message(context, auth_context, &fd, &data);
 
-	ret = krb5_rd_priv (context,
-			    auth_context,
-			    &packet,
-			    &data,
-			    NULL);
 	if (ret)
-	    krb5_err (context, 1, ret, "krb5_rd_priv");
+	    krb5_err (context, 1, ret, "krb5_read_priv_message");
 
 	sp = krb5_storage_from_data (&data);
 	krb5_ret_int32 (sp, &opcode);
@@ -281,7 +273,6 @@ receive_everything (krb5_context context, int *fd,
 	    hdb_free_entry (context, &entry);
 	    krb5_data_free (&data);
 	}
-	krb5_data_free (&packet);
     } while (opcode == ONE_PRINC);
 
     if (opcode != NOW_YOU_HAVE)
@@ -412,18 +403,14 @@ main(int argc, char **argv)
 
     for (;;) {
 	int ret;
-	krb5_data data, out;
+	krb5_data out;
 	krb5_storage *sp;
 	int32_t tmp;
 
-	ret = krb5_read_message (context, &master_fd, &data);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_read_message");
+	ret = krb5_read_priv_message(context, auth_context, &master_fd, &out);
 
-	ret = krb5_rd_priv (context, auth_context, &data, &out, NULL);
-	krb5_data_free (&data);
 	if (ret)
-	    krb5_err (context, 1, ret, "krb5_rd_priv");
+	    krb5_err (context, 1, ret, "krb5_read_priv_message");
 
 	sp = krb5_storage_from_mem (out.data, out.length);
 	krb5_ret_int32 (sp, &tmp);
