@@ -3469,9 +3469,8 @@ BOOL is_vetoed_name(char *name)
   return 0;
 }
 
-BOOL is_vetoed_path(char *name)
+static BOOL is_in_path(char *name, char *namelist)
 {
-  char *namelist = lp_veto_files();
   char *nameptr = namelist;
   char *sub;
   char *name_end;
@@ -3520,6 +3519,22 @@ BOOL is_vetoed_path(char *name)
       nameptr = name_end + 1;
     }
   return 0;
+}
+
+/****************************************************************************
+used to make files hidden, but still accessible
+****************************************************************************/
+BOOL is_hidden_path(char *path)
+{
+  return is_in_path(path, lp_hide_files());
+}
+
+/****************************************************************************
+used to make files _completely_ inaccessible
+****************************************************************************/
+BOOL is_vetoed_path(char *path)
+{
+  return is_in_path(path, lp_veto_files());
 }
 
 /****************************************************************************
