@@ -936,7 +936,10 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 		status = dcerpc_bind_auth_schannel(tmp_ctx, 
 						   p, pipe_uuid, pipe_version, 
 						   credentials);
-	} else if (!cli_credentials_is_anonymous(credentials)) {
+	} else if (!cli_credentials_is_anonymous(credentials) &&
+		!(binding->transport == NCACN_NP &&
+		  !(binding->flags & DCERPC_SIGN) &&
+		  !(binding->flags & DCERPC_SEAL))) {
 		uint8_t auth_type;
 		if (binding->flags & DCERPC_AUTH_SPNEGO) {
 			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
