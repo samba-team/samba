@@ -29,6 +29,12 @@
    will be a multiple of the page size on almost any system */
 #define CLI_BUFFER_SIZE (0xFFFF)
 
+
+/* clistr flags - see clistr.c */
+#define CLISTR_TERMINATE 1
+#define CLISTR_CONVERT 2
+#define CLISTR_UPPER 4
+
 /*
  * These definitions depend on smb.h
  */

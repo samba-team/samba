@@ -95,19 +95,35 @@ BOOL cli_send_smb(struct cli_state *cli)
 	return True;
 }
 
+int cli_use_unicode = 0;
+
 /****************************************************************************
 setup basics in a outgoing packet
 ****************************************************************************/
 void cli_setup_packet(struct cli_state *cli)
 {
+	static int initialised;
+
+	/* the USE_UNICODE check will be deleted once our client side unicode 
+	   support is complete (tridge) */
+	if (!initialised) {
+		initialised = 1;
+		if (getenv("USE_UNICODE")) cli_use_unicode = 1;
+	}
+
         cli->rap_error = 0;
         cli->nt_error = 0;
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
 	SSVAL(cli->outbuf,smb_uid,cli->vuid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
 	if (cli->protocol > PROTOCOL_CORE) {
+		uint16 flags2;
 		SCVAL(cli->outbuf,smb_flg,0x8);
-		SSVAL(cli->outbuf,smb_flg2,0x1);
+		flags2 = FLAGS2_LONG_PATH_COMPONENTS;
+		if (cli_use_unicode && cli->capabilities & CAP_UNICODE) {
+			flags2 |= FLAGS2_UNICODE_STRINGS;
+		}
+		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
 
