@@ -26,7 +26,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-const char *get_global_sam_name() 
+const char *get_global_sam_name(void) 
 {
 	if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
 		return lp_workgroup();
