@@ -159,7 +159,7 @@ static void decode_port_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
         PORT_INFO_2 *inf;
 
         inf=(PORT_INFO_2*)talloc(mem_ctx, returned*sizeof(PORT_INFO_2));
-	memset(info, 0, returned*sizeof(PORT_INFO_2));
+	memset(inf, 0, returned*sizeof(PORT_INFO_2));
 
         prs_set_offset(&buffer->prs, 0);
 
@@ -499,7 +499,7 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			      uint32 offered, uint32 *needed,
-			      uint32 level, int *num_ports, PORT_INFO_CTR *ctr)
+			      uint32 level, uint32 *num_ports, PORT_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPORTS q;
