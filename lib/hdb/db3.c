@@ -37,7 +37,13 @@ RCSID("$Id$");
 
 #if HAVE_DB3
 
+#ifdef HAVE_DB4_DB_H
+#include <db4/db.h>
+#elif defined(HAVE_DB3_DB_H)
+#include <db3/db.h>
+#else
 #include <db.h>
+#endif
 
 static krb5_error_code
 DB_close(krb5_context context, HDB *db)
