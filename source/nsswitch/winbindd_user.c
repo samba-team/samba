@@ -123,7 +123,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 
 	/* Check for cached user entry */
 
-	if (winbindd_fetch_user_cache_entry(name_domain, name_user,
+	if (winbindd_fetch_user_cache_entry(domain, name_user,
 					    &state->response.data.pw)) {
 		return WINBINDD_OK;
 	}
@@ -167,7 +167,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 		return WINBINDD_ERROR;
 	}
 	
-	winbindd_store_user_cache_entry(name_domain, name_user, 
+	winbindd_store_user_cache_entry(domain, name_user, 
 					&state->response.data.pw);
 	
 	return WINBINDD_OK;
@@ -207,7 +207,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	
 	/* Check for cached uid entry */
 
-	if (winbindd_fetch_uid_cache_entry(domain->name, 
+	if (winbindd_fetch_uid_cache_entry(domain, 
 					   state->request.data.uid,
 					   &state->response.data.pw)) {
 		return WINBINDD_OK;
@@ -257,7 +257,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 		return WINBINDD_ERROR;
 	}
 	
-	winbindd_store_uid_cache_entry(domain->name, state->request.data.uid,
+	winbindd_store_uid_cache_entry(domain, state->request.data.uid,
 				       &state->response.data.pw);
 	
 	return WINBINDD_OK;
@@ -355,7 +355,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 #if 0
 	/* Look in cache for entries, else get them direct */
 		    
-	if (winbindd_fetch_user_cache(ent->domain->name,
+	if (winbindd_fetch_user_cache(ent->domain,
 				      (struct getpwent_user **)
 				      &ent->sam_entries, 
 				      &ent->num_sam_entries)) {
@@ -437,7 +437,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 #if 0
 	/* Fill cache with received entries */
 	
-	winbindd_store_user_cache(ent->domain->name, ent->sam_entries, 
+	winbindd_store_user_cache(ent->domain, ent->sam_entries, 
 				  ent->num_sam_entries);
 #endif
 
