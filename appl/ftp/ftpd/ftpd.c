@@ -322,7 +322,7 @@ main(int argc, char **argv)
 	if(sp)
 	    port = sp->s_port;
 	else
-	    if(isdigit(port_string[0]))
+	    if(isdigit((unsigned char)port_string[0]))
 		port = htons(atoi(port_string));
 	    else
 		warnx("bad value for -p");
@@ -1103,9 +1103,9 @@ done:
 int 
 filename_check(char *filename)
 {
-    char *p;
+    unsigned char *p;
 
-    p = strrchr(filename, '/');
+    p = (unsigned char *)strrchr(filename, '/');
     if(p)
 	filename = p + 1;
 
