@@ -262,9 +262,8 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 		goto out;
 	}
 
-	name_to_fqdn(myname, global_myname());
-	strlower_m(myname);
-	asprintf(&host_princ_s, "host/%s@%s", myname, lp_realm());
+	asprintf(&host_princ_s, "%s$", global_myname());
+	strlower_m(host_princ_s);
 	ret = krb5_parse_name(context, host_princ_s, &host_princ);
 	if (ret) {
 		DEBUG(1,("ads_verify_ticket: krb5_parse_name(%s) failed (%s)\n",
