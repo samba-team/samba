@@ -595,7 +595,7 @@ static uint32 get_maxrid(void)
 	pdb_free_sam(&pwd);
 
 	if (!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries,
-				    ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
+				    ENUM_ONLY_MAPPED))
 		return max_rid;
 
 	for (i = 0; i < num_entries; i++) {

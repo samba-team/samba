@@ -1649,7 +1649,7 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 		return False;
 
 	/* get list of domain groups SID_DOMAIN_GRP=2 */
-	if(!pdb_enum_group_mapping(SID_NAME_DOM_GRP , &group_list, &num_entries, False, False)) {
+	if(!pdb_enum_group_mapping(SID_NAME_DOM_GRP , &group_list, &num_entries, False)) {
 		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));
 		return False;
 	}

@@ -403,8 +403,16 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 	/* get the generic lsa policy SD until we store it */
 	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
 
-	if(!se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted, &status))
-		return status;
+	if(!se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted, &status)) {
+		if (geteuid() != 0) {
+			return status;
+		}
+		DEBUG(4,("ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
+			 acc_granted, des_access));
+		DEBUGADD(4,("but overwritten by euid == 0\n"));
+		acc_granted = des_access;
+	}
+
 
 	/* associate the domain SID with the (unique) handle. */
 	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
@@ -441,8 +449,15 @@ NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *
 	/* get the generic lsa policy SD until we store it */
 	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
 
-	if(!se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted, &status))
-		return status;
+	if(!se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted, &status)) {
+		if (geteuid() != 0) {
+			return status;
+		}
+		DEBUG(4,("ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
+			 acc_granted, des_access));
+		DEBUGADD(4,("but overwritten by euid == 0\n"));
+		acc_granted = des_access;
+	}
 
 	/* associate the domain SID with the (unique) handle. */
 	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
@@ -844,7 +859,7 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* get the list of mapped groups (domain, local, builtin) */
-	if(!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
+	if(!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED))
 		return NT_STATUS_OK;
 
 	if (q_u->enum_context >= num_entries)
@@ -949,8 +964,6 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LS
 {
 	struct lsa_info *info=NULL;
 	GROUP_MAP map;
-	int i=0;
-
 	LUID_ATTR *set=NULL;
 
 	r_u->status = NT_STATUS_OK;
@@ -959,9 +972,10 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LS
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!pdb_getgrsid(&map, info->sid, MAPPING_WITH_PRIV))
+	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
+#if 0 /* privileges currently not implemented! */
 	DEBUG(10,("_lsa_enum_privsaccount: %d privileges\n", map.priv_set.count));
 	if (map.priv_set.count!=0) {
 	
@@ -982,6 +996,9 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LS
 
 	init_lsa_r_enum_privsaccount(r_u, set, map.priv_set.count, 0);	
 	free_privilege(&map.priv_set);	
+#endif
+
+	init_lsa_r_enum_privsaccount(r_u, set, 0, 0);
 
 	return r_u->status;
 }
@@ -1000,7 +1017,7 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!pdb_getgrsid(&map, info->sid, MAPPING_WITHOUT_PRIV))
+	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	/*
@@ -1012,7 +1029,7 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
 	  they can be ORed together
 	*/
 
-	r_u->access=map.systemaccount;
+	r_u->access = PR_LOG_ON_LOCALLY | PR_ACCESS_FROM_NETWORK;
 
 	return r_u->status;
 }
@@ -1031,15 +1048,11 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!pdb_getgrsid(&map, info->sid, MAPPING_WITH_PRIV))
+	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
-
-	map.systemaccount=q_u->access;
 
 	if(!pdb_update_group_mapping_entry(&map))
 		return NT_STATUS_NO_SUCH_GROUP;
-
-	free_privilege(&map.priv_set);
 
 	return r_u->status;
 }
@@ -1050,20 +1063,22 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 
 NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u)
 {
+#if 0
 	struct lsa_info *info=NULL;
 	GROUP_MAP map;
 	int i=0;
-
 	LUID_ATTR *luid_attr=NULL;
 	PRIVILEGE_SET *set=NULL;
+#endif
 
 	r_u->status = NT_STATUS_OK;
 
+#if 0 /* privileges are not implemented */
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!pdb_getgrsid(&map, info->sid, MAPPING_WITH_PRIV))
+	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	set=&q_u->set;
@@ -1085,6 +1100,7 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 	
 	free_privilege(&map.priv_set);	
 
+#endif
 	return r_u->status;
 }
 
@@ -1094,20 +1110,22 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 
 NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEPRIVS *r_u)
 {
+#if 0
 	struct lsa_info *info=NULL;
 	GROUP_MAP map;
 	int i=0;
-
 	LUID_ATTR *luid_attr=NULL;
 	PRIVILEGE_SET *set=NULL;
+#endif
 
 	r_u->status = NT_STATUS_OK;
 
+#if 0 /* privileges are not implemented */
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!pdb_getgrsid(&map, info->sid, MAPPING_WITH_PRIV))
+	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	if (q_u->allrights!=0) {
@@ -1141,7 +1159,7 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 		return NT_STATUS_NO_SUCH_GROUP;
 	
 	free_privilege(&map.priv_set);	
-
+#endif
 	return r_u->status;
 }
 

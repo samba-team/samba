@@ -460,7 +460,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 
 	sid = *pdb_get_group_sid(sam_account);
 
-	if (!pdb_getgrsid(&map, sid, False)) {
+	if (!pdb_getgrsid(&map, sid)) {
 		DEBUG(0, ("Primary group of %s has no mapping!\n",
 			  pdb_get_username(sam_account)));
 		pdb_free_sam(&sam_account);
@@ -518,7 +518,7 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	sid_append_rid(&group_sid, rid);
 	sid_to_string(sid_string, &group_sid);
 
-	if (pdb_getgrsid(&map, group_sid, False)) {
+	if (pdb_getgrsid(&map, group_sid)) {
 		grp = getgrgid(map.gid);
 		insert = False;
 	}
@@ -543,9 +543,6 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	map.sid_name_use = SID_NAME_DOM_GRP;
 	fstrcpy(map.nt_name, name);
 	fstrcpy(map.comment, comment);
-
-	map.priv_set.count = 0;
-	map.priv_set.set = NULL;
 
 	if (insert)
 		pdb_add_group_mapping_entry(&map);
@@ -573,7 +570,7 @@ fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 	sid_copy(&group_sid, get_global_sam_sid());
 	sid_append_rid(&group_sid, rid);
 
-	if (!get_domain_group_from_sid(group_sid, &map, False)) {
+	if (!get_domain_group_from_sid(group_sid, &map)) {
 		DEBUG(0, ("Could not find global group %d\n", rid));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -698,7 +695,7 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	sid_append_rid(&alias_sid, rid);
 	sid_to_string(sid_string, &alias_sid);
 
-	if (pdb_getgrsid(&map, alias_sid, False)) {
+	if (pdb_getgrsid(&map, alias_sid)) {
 		grp = getgrgid(map.gid);
 		insert = False;
 	}
@@ -727,9 +724,6 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 
 	fstrcpy(map.nt_name, name);
 	fstrcpy(map.comment, comment);
-
-	map.priv_set.count = 0;
-	map.priv_set.set = NULL;
 
 	if (insert)
 		pdb_add_group_mapping_entry(&map);
