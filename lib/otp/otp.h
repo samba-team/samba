@@ -50,6 +50,9 @@ typedef unsigned char OtpKey[OTPKEYSIZE];
 #define OTP_USER_TIMEOUT   60
 #define OTP_DB_TIMEOUT     60
 
+#define OTP_HEXPREFIX "hex:"
+#define OTP_WORDPREFIX "word:"
+
 typedef enum { ALG_MD4, ALG_MD5, ALG_SHA } OtpAlgID;
 
 typedef struct {
