@@ -3228,3 +3228,37 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 	return(True);
 }
 
+char *get_trusted_serverlist(const char* domain)
+{
+	pstring tmp;
+	static char *server_list = NULL;
+	static pstring srv_list;
+	char *trusted_list = lp_trusted_domains();
+
+	if (strequal(lp_workgroup(), domain))
+	{
+		DEBUG(10,("local domain server list: %s\n", server_list));
+		pstrcpy(srv_list, lp_passwordserver());
+		return srv_list;
+	}
+
+	if (!next_token(&trusted_list, tmp, NULL, sizeof(tmp)))
+	{
+		return NULL;
+	}
+
+	do
+	{
+		fstring trust_dom;
+		split_at_first_component(tmp, trust_dom, '=', srv_list);
+
+		if (strequal(domain, trust_dom))
+		{
+			return srv_list;
+			DEBUG(10,("trusted: %s\n", server_list));
+		}
+
+	} while (next_token(NULL, tmp, NULL, sizeof(tmp)));
+
+	return NULL;
+}

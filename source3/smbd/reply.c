@@ -507,48 +507,24 @@ static BOOL check_domain_security(char *orig_user, char *domain,
 	uint16 acct_type = 0;
 
 	char *server_list = NULL;
-	pstring srv_list;
-	char *trusted_list = lp_trusted_domains();
 
 	if (lp_security() == SEC_SHARE || lp_security() == SEC_SERVER)
 	{
 		return False;
 	}
 		
-	if (lp_security() == SEC_DOMAIN)
+	if (lp_security() == SEC_DOMAIN && strequal(domain, global_myworkgroup))
 	{
 		fstrcpy(acct_name, global_myname);
 		acct_type = SEC_CHAN_WKSTA;
-		if (strequal(lp_workgroup(), domain))
-		{
-			DEBUG(10,("local domain server list: %s\n", server_list));
-			pstrcpy(srv_list, lp_passwordserver());
-			server_list = srv_list;
-		}
 	}
-
-	if (server_list == NULL)
+	else
 	{
-		pstring tmp;
-		if (next_token(&trusted_list, tmp, NULL, sizeof(tmp)))
-		{
-			do
-			{
-				fstring trust_dom;
-				split_at_first_component(tmp, trust_dom, '=', srv_list);
-
-				if (strequal(domain, trust_dom))
-				{
-					DEBUG(10,("trusted domain server list: %s\n", server_list));
-					fstrcpy(acct_name, global_myworkgroup);
-					acct_type = SEC_CHAN_DOMAIN;
-					server_list = srv_list;
-					break;
-				}
-
-			} while (next_token(NULL, tmp, NULL, sizeof(tmp)));
-		}
+		fstrcpy(acct_name, global_myworkgroup);
+		acct_type = SEC_CHAN_DOMAIN;
 	}
+
+	server_list = get_trusted_serverlist(domain);
 
 	if (server_list == NULL)
 	{
