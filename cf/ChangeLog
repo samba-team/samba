@@ -1,5 +1,7 @@
 2003-08-27  Johan Danielsson  <joda@pdc.kth.se>
 
+	* vararray.m4: test for variable-length arrays
+
 	* roken-frag.m4: test for poll and poll.h
 
 2003-08-16  Love  <lha@stacken.kth.se>
