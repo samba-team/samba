@@ -1,5 +1,15 @@
 2004-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c: pass client hdb_entry to pk_check_client
+	
+	* kdc/kdc_locl.h: pass client hdb_entry to pk_check_client
+	
+	* kuser/kinit.c: rename ca_dir to pkinit/x509_anchors since its
+	more like that language in RFC3280
+	
+	* lib/krb5/pkinit.c: rename ca_dir to pkinit/x509_anchors since
+	its more like that language in RFC3280
+	
 	* lib/krb5/krb5.conf.5: document
 	[libdefaults]fcc-mit-ticketflags=boolean
 
