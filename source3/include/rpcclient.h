@@ -25,7 +25,7 @@
 
 struct cmd_set {
 	char *name;
-	uint32 (*fn)(int argc, char **argv);
+	uint32 (*fn)(struct cli_state*, int argc, char **argv);
 	char *description;
 };
 

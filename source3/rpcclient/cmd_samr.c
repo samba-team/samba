@@ -95,15 +95,16 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	}
 }
 
-/* Query user information */
-
-static uint32 cmd_samr_query_user(int argc, char **argv) 
+/**********************************************************************
+ * Query user information 
+ */
+static uint32 cmd_samr_query_user(struct cli_state *cli, int argc, char **argv) 
 {
-	struct cli_state cli;
 	POLICY_HND connect_pol, domain_pol, user_pol;
-	uint32 result = NT_STATUS_UNSUCCESSFUL, info_level = 21;
-	struct ntuser_creds creds;
-	BOOL got_connect_pol = False, got_domain_pol = False,
+	uint32 	result = NT_STATUS_UNSUCCESSFUL, 
+		info_level = 21;
+	BOOL 	got_connect_pol = False, 
+		got_domain_pol = False,
 		got_user_pol = False;
 	SAM_USERINFO_CTR user_ctr;
 	SAM_USER_INFO_21 info_21;
@@ -113,25 +114,22 @@ static uint32 cmd_samr_query_user(int argc, char **argv)
 		return 0;
 	}
 
-	/* Open a lsa handle */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (!cli_samr_initialise(&cli, server, &creds)) {
-		goto done;
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	if ((result = cli_samr_connect(&cli, server, MAXIMUM_ALLOWED_ACCESS,
+	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
 				       &connect_pol)) !=
 	    NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
 
 	got_connect_pol = True;
-	fetch_domain_sid();
+	fetch_domain_sid(cli);
 
-	if ((result = cli_samr_open_domain(&cli, &connect_pol,
+	if ((result = cli_samr_open_domain(cli, &connect_pol,
 					   MAXIMUM_ALLOWED_ACCESS,
 					   &domain_sid, &domain_pol))
 	     != NT_STATUS_NOPROBLEMO) {
@@ -140,7 +138,7 @@ static uint32 cmd_samr_query_user(int argc, char **argv)
 
 	got_domain_pol = True;
 
-	if ((result = cli_samr_open_user(&cli, &domain_pol,
+	if ((result = cli_samr_open_user(cli, &domain_pol,
 					 MAXIMUM_ALLOWED_ACCESS,
 					 0x1f4, &user_pol))
 	    != NT_STATUS_NOPROBLEMO) {
@@ -154,7 +152,7 @@ static uint32 cmd_samr_query_user(int argc, char **argv)
 
 	user_ctr.info.id21 = &info_21;
 
-	if ((result = cli_samr_query_userinfo(&cli, &user_pol, info_level,
+	if ((result = cli_samr_query_userinfo(cli, &user_pol, info_level,
 					      &user_ctr)) 
 	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -162,12 +160,12 @@ static uint32 cmd_samr_query_user(int argc, char **argv)
 
 	display_sam_user_info_21(&info_21);
 
- done:
-	if (got_user_pol) cli_samr_close(&cli, &user_pol);
-	if (got_domain_pol) cli_samr_close(&cli, &domain_pol);
-	if (got_connect_pol) cli_samr_close(&cli, &connect_pol);
+done:
+	if (got_user_pol) cli_samr_close(cli, &user_pol);
+	if (got_domain_pol) cli_samr_close(cli, &domain_pol);
+	if (got_connect_pol) cli_samr_close(cli, &connect_pol);
 
-	cli_samr_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
@@ -215,14 +213,13 @@ static void display_group_info_ctr(GROUP_INFO_CTR *ctr)
 	}
 }
 
-/* Query group information */
-
-static uint32 cmd_samr_query_group(int argc, char **argv) 
+/***********************************************************************
+ * Query group information 
+ */
+static uint32 cmd_samr_query_group(struct cli_state *cli, int argc, char **argv) 
 {
-	struct cli_state cli;
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	uint32 result = NT_STATUS_UNSUCCESSFUL, info_level = 1;
-	struct ntuser_creds creds;
 	BOOL got_connect_pol = False, got_domain_pol = False,
 		got_group_pol = False;
 	GROUP_INFO_CTR group_ctr;
@@ -232,25 +229,22 @@ static uint32 cmd_samr_query_group(int argc, char **argv)
 		return 0;
 	}
 
-	/* Open a lsa handle */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (!cli_samr_initialise(&cli, server, &creds)) {
-		goto done;
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	if ((result = cli_samr_connect(&cli, server, MAXIMUM_ALLOWED_ACCESS,
+	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
 				       &connect_pol)) !=
 	    NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
 
 	got_connect_pol = True;
-	fetch_domain_sid();
+	fetch_domain_sid(cli);
 
-	if ((result = cli_samr_open_domain(&cli, &connect_pol,
+	if ((result = cli_samr_open_domain(cli, &connect_pol,
 					   MAXIMUM_ALLOWED_ACCESS,
 					   &domain_sid, &domain_pol))
 	     != NT_STATUS_NOPROBLEMO) {
@@ -259,7 +253,7 @@ static uint32 cmd_samr_query_group(int argc, char **argv)
 
 	got_domain_pol = True;
 
-	if ((result = cli_samr_open_group(&cli, &domain_pol,
+	if ((result = cli_samr_open_group(cli, &domain_pol,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  0x202, &group_pol))
 	    != NT_STATUS_NOPROBLEMO) {
@@ -270,7 +264,7 @@ static uint32 cmd_samr_query_group(int argc, char **argv)
 
 	ZERO_STRUCT(group_ctr);
 
-	if ((result = cli_samr_query_groupinfo(&cli, &group_pol, info_level,
+	if ((result = cli_samr_query_groupinfo(cli, &group_pol, info_level,
 					       &group_ctr)) 
 	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -278,24 +272,22 @@ static uint32 cmd_samr_query_group(int argc, char **argv)
 
 	display_group_info_ctr(&group_ctr);
 
- done:
-	if (got_group_pol) cli_samr_close(&cli, &group_pol);
-	if (got_domain_pol) cli_samr_close(&cli, &domain_pol);
-	if (got_connect_pol) cli_samr_close(&cli, &connect_pol);
+done:
+	if (got_group_pol) cli_samr_close(cli, &group_pol);
+	if (got_domain_pol) cli_samr_close(cli, &domain_pol);
+	if (got_connect_pol) cli_samr_close(cli, &connect_pol);
 
-	cli_samr_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
 
 /* Query groups a user is a member of */
 
-static uint32 cmd_samr_query_usergroups(int argc, char **argv) 
+static uint32 cmd_samr_query_usergroups(struct cli_state *cli, int argc, char **argv) 
 {
-	struct cli_state cli;
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	uint32 result = NT_STATUS_UNSUCCESSFUL;
-	struct ntuser_creds creds;
 	BOOL got_connect_pol = False, got_domain_pol = False,
 		got_user_pol = False;
 	uint32 num_groups, user_rid;
@@ -309,25 +301,22 @@ static uint32 cmd_samr_query_usergroups(int argc, char **argv)
 
 	sscanf(argv[1], "%i", &user_rid);
 
-	/* Open a lsa handle */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (!cli_samr_initialise(&cli, server, &creds)) {
-		goto done;
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	if ((result = cli_samr_connect(&cli, server, MAXIMUM_ALLOWED_ACCESS,
+	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
 				       &connect_pol)) !=
 	    NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
 
 	got_connect_pol = True;
-	fetch_domain_sid();
+	fetch_domain_sid(cli);
 
-	if ((result = cli_samr_open_domain(&cli, &connect_pol,
+	if ((result = cli_samr_open_domain(cli, &connect_pol,
 					   MAXIMUM_ALLOWED_ACCESS,
 					   &domain_sid, &domain_pol))
 	     != NT_STATUS_NOPROBLEMO) {
@@ -336,7 +325,7 @@ static uint32 cmd_samr_query_usergroups(int argc, char **argv)
 
 	got_domain_pol = True;
 
-	if ((result = cli_samr_open_user(&cli, &domain_pol,
+	if ((result = cli_samr_open_user(cli, &domain_pol,
 					 MAXIMUM_ALLOWED_ACCESS,
 					 user_rid, &user_pol))
 	    != NT_STATUS_NOPROBLEMO) {
@@ -345,7 +334,7 @@ static uint32 cmd_samr_query_usergroups(int argc, char **argv)
 
 	got_user_pol = True;
 
-	if ((result = cli_samr_query_usergroups(&cli, &user_pol,
+	if ((result = cli_samr_query_usergroups(cli, &user_pol,
 						&num_groups, &user_gids))
 	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -357,24 +346,23 @@ static uint32 cmd_samr_query_usergroups(int argc, char **argv)
 	}
 
  done:
-	if (got_user_pol) cli_samr_close(&cli, &user_pol);
-	if (got_domain_pol) cli_samr_close(&cli, &domain_pol);
-	if (got_connect_pol) cli_samr_close(&cli, &connect_pol);
+	if (got_user_pol) cli_samr_close(cli, &user_pol);
+	if (got_domain_pol) cli_samr_close(cli, &domain_pol);
+	if (got_connect_pol) cli_samr_close(cli, &connect_pol);
 
-	cli_samr_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
 
 /* Query members of a group */
 
-static uint32 cmd_samr_query_groupmem(int argc, char **argv) 
+static uint32 cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **argv) 
 {
-	struct cli_state cli;
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	uint32 result = NT_STATUS_UNSUCCESSFUL;
-	struct ntuser_creds creds;
-	BOOL got_connect_pol = False, got_domain_pol = False,
+	BOOL 	got_connect_pol = False, 
+		got_domain_pol = False,
 		got_group_pol = False;
 	uint32 num_members, *group_rids, *group_attrs, group_rid;
 	int i;
@@ -386,25 +374,22 @@ static uint32 cmd_samr_query_groupmem(int argc, char **argv)
 
 	sscanf(argv[1], "%i", &group_rid);
 
-	/* Open a lsa handle */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (!cli_samr_initialise(&cli, server, &creds)) {
-		goto done;
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
-	if ((result = cli_samr_connect(&cli, server, MAXIMUM_ALLOWED_ACCESS,
+
+	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
 				       &connect_pol)) !=
 	    NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
 
 	got_connect_pol = True;
-	fetch_domain_sid();
+	fetch_domain_sid(cli);
 
-	if ((result = cli_samr_open_domain(&cli, &connect_pol,
+	if ((result = cli_samr_open_domain(cli, &connect_pol,
 					   MAXIMUM_ALLOWED_ACCESS,
 					   &domain_sid, &domain_pol))
 	     != NT_STATUS_NOPROBLEMO) {
@@ -413,7 +398,7 @@ static uint32 cmd_samr_query_groupmem(int argc, char **argv)
 
 	got_domain_pol = True;
 
-	if ((result = cli_samr_open_group(&cli, &domain_pol,
+	if ((result = cli_samr_open_group(cli, &domain_pol,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  group_rid, &group_pol))
 	    != NT_STATUS_NOPROBLEMO) {
@@ -422,7 +407,7 @@ static uint32 cmd_samr_query_groupmem(int argc, char **argv)
 
 	got_group_pol = True;
 
-	if ((result = cli_samr_query_groupmem(&cli, &group_pol,
+	if ((result = cli_samr_query_groupmem(cli, &group_pol,
 					      &num_members, &group_rids,
 					      &group_attrs))
 	    != NT_STATUS_NOPROBLEMO) {
@@ -435,11 +420,11 @@ static uint32 cmd_samr_query_groupmem(int argc, char **argv)
 	}
 
  done:
-	if (got_group_pol) cli_samr_close(&cli, &group_pol);
-	if (got_domain_pol) cli_samr_close(&cli, &domain_pol);
-	if (got_connect_pol) cli_samr_close(&cli, &connect_pol);
+	if (got_group_pol) cli_samr_close(cli, &group_pol);
+	if (got_domain_pol) cli_samr_close(cli, &domain_pol);
+	if (got_connect_pol) cli_samr_close(cli, &connect_pol);
 
-	cli_samr_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
@@ -447,9 +432,10 @@ static uint32 cmd_samr_query_groupmem(int argc, char **argv)
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
-	{ "queryuser", cmd_samr_query_user, "Query user info" },
-	{ "querygroup", cmd_samr_query_group, "Query group info" },
-	{ "queryusergroups", cmd_samr_query_usergroups, "Query user groups" },
-	{ "querygroupmem", cmd_samr_query_groupmem, "Query group membership" },
+	{ "queryuser", 		cmd_samr_query_user, 		"Query user info" },
+	{ "querygroup", 	cmd_samr_query_group, 		"Query group info" },
+	{ "queryusergroups", 	cmd_samr_query_usergroups, 	"Query user groups" },
+	{ "querygroupmem", 	cmd_samr_query_groupmem, 	"Query group membership" },
 	{ NULL, NULL, NULL }
 };
+

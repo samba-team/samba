@@ -23,50 +23,45 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-	
-/* Connect info */
+extern fstring debugf;
+
+/* Various pipe commands */
+extern struct cmd_set lsarpc_commands[];
+extern struct cmd_set samr_commands[];
+extern struct cmd_set spoolss_commands[];
 
 pstring password;
 pstring username;
 pstring workgroup;
 pstring server;
 
-/* Various pipe commands */
-
-extern struct cmd_set lsarpc_commands[];
-extern struct cmd_set samr_commands[];
-extern struct cmd_set spoolss_commands[];
 
 DOM_SID domain_sid;
 
-/* Fetch the SID for this domain */
 
-void fetch_domain_sid(void)
+/* Fetch the SID for this domain */
+void fetch_domain_sid(struct cli_state *cli)
 {
-	struct cli_state cli;
 	POLICY_HND pol;
 	uint32 result = 0, info_class = 5;
-	struct ntuser_creds creds;
 	fstring domain_name;
 	static BOOL got_domain_sid;
 
 	if (got_domain_sid) return;
 
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
 
-	if (cli_lsa_initialise(&cli, server, &creds) == NULL) {
+	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
 		fprintf(stderr, "could not initialise lsa pipe\n");
 		goto error;
 	}
-
-	if ((result = cli_lsa_open_policy(&cli, True, 
+	
+	if ((result = cli_lsa_open_policy(cli, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol) != NT_STATUS_NOPROBLEMO)) {
 		goto error;
 	}
 
-	if ((result = cli_lsa_query_info_policy(&cli, &pol, info_class, 
+	if ((result = cli_lsa_query_info_policy(cli, &pol, info_class, 
 						domain_name, &domain_sid))
 	    != NT_STATUS_NOPROBLEMO) {
 		goto error;
@@ -74,8 +69,8 @@ void fetch_domain_sid(void)
 
 	got_domain_sid = True;
 
-	cli_lsa_close(&cli, &pol);
-	cli_lsa_shutdown(&cli);
+	cli_lsa_close(cli, &pol);
+	cli_nt_session_close(cli);
 
 	return;
 
@@ -91,7 +86,8 @@ void fetch_domain_sid(void)
 
 /* Initialise client credentials for authenticated pipe access */
 
-void init_rpcclient_creds(struct ntuser_creds *creds)
+void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
+			  char* workgroup, char* password)
 {
 	ZERO_STRUCTP(creds);
 	
@@ -112,7 +108,7 @@ static struct cmd_list {
 	struct cmd_set *cmd_set;
 } *cmd_list;
 
-static uint32 cmd_help(int argc, char **argv)
+static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
 {
 	struct cmd_list *temp_list;
 
@@ -129,7 +125,7 @@ static uint32 cmd_help(int argc, char **argv)
 	return 0;
 }
 
-static uint32 cmd_debuglevel(int argc, char **argv)
+static uint32 cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
 {
 	if (argc > 2) {
 		printf("Usage: %s [debuglevel]\n", argv[0]);
@@ -145,7 +141,7 @@ static uint32 cmd_debuglevel(int argc, char **argv)
 	return NT_STATUS_NOPROBLEMO;
 }
 
-static uint32 cmd_quit(int argc, char **argv)
+static uint32 cmd_quit(struct cli_state *cli, int argc, char **argv)
 {
 	exit(0);
 }
@@ -153,10 +149,10 @@ static uint32 cmd_quit(int argc, char **argv)
 /* Build in rpcclient commands */
 
 static struct cmd_set rpcclient_commands[] = {
-	{ "help", cmd_help, "Print list of commands" },
+	{ "help", 	cmd_help, 	"Print list of commands" },
 	{ "debuglevel", cmd_debuglevel, "Set debug level" },
-	{ "quit", cmd_quit, "Exit program" },
-	{ "?", cmd_help, "Print list of commands" },
+	{ "quit", 	cmd_quit, 	"Exit program" },
+	{ "?", 		cmd_help, 	"Print list of commands" },
 
 	{ NULL, NULL, NULL }
 };
@@ -176,7 +172,7 @@ void add_command_set(struct cmd_set *cmd_set)
 	DLIST_ADD(cmd_list, entry);
 }
 
-static uint32 do_cmd(struct cmd_set *cmd_entry, char *cmd)
+static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd)
 {
 	char *p = cmd, **argv = NULL;
 	uint32 result;
@@ -218,7 +214,7 @@ static uint32 do_cmd(struct cmd_set *cmd_entry, char *cmd)
 
 	/* Call the function */
 
-	result = cmd_entry->fn(argc, argv);
+	result = cmd_entry->fn(cli, argc, argv);
 				
 	/* Cleanup */
 
@@ -233,7 +229,7 @@ static uint32 do_cmd(struct cmd_set *cmd_entry, char *cmd)
 
 /* Process a command entered at the prompt or as part of -c */
 
-static uint32 process_cmd(char *cmd)
+static uint32 process_cmd(struct cli_state *cli, char *cmd)
 {
 	struct cmd_list *temp_list;
 	BOOL found = False;
@@ -253,7 +249,7 @@ static uint32 process_cmd(char *cmd)
 		while(temp_set->name) {
 			if (strequal(buf, temp_set->name)) {
 				found = True;
-				result = do_cmd(temp_set, cmd);
+				result = do_cmd(cli, temp_set, cmd);
 				goto done;
 			}
 			temp_set++;
@@ -273,18 +269,59 @@ static uint32 process_cmd(char *cmd)
 	return result;
 }
 
-/* Print usage information */
+/************************************************************************/
+struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
+				   struct ntuser_creds *creds)
+{
+	struct in_addr dest_ip;
+	struct nmb_name calling, called;
+	fstring dest_host;
+	extern pstring global_myname;
+	struct ntuser_creds anon;
 
+	/* Initialise cli_state information */
+	if (!cli_initialise(cli)) {
+		return NULL;
+	}
+
+	if (!creds) {
+		ZERO_STRUCT(anon);
+		anon.pwd.null_pwd = 1;
+		creds = &anon;
+	}
+
+	cli_init_creds(cli, creds);
+
+	/* Establish a SMB connection */
+	if (!resolve_srv_name(system_name, dest_host, &dest_ip)) {
+		return NULL;
+	}
+
+	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20);
+	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
+
+	if (!cli_establish_connection(cli, dest_host, &dest_ip, &calling, 
+				      &called, "IPC$", "IPC", False, True)) {
+		return NULL;
+	}
+	
+	return cli;
+}
+
+
+/* Print usage information */
 static void usage(char *pname)
 {
 	printf("Usage: %s server [options]\n", pname);
 
-	printf("\t-N                    don't ask for a password\n");
+	printf("\t-c \"command string\"   execute semicolon separated cmds\n");
 	printf("\t-d debuglevel         set the debuglevel\n");
+	printf("\t-l logfile            name of logfile to use as opposed to stdout\n");
 	printf("\t-h                    Print this help message.\n");
+	printf("\t-N                    don't ask for a password\n");
+	printf("\t-s configfile         specify an alternative config file\n");
 	printf("\t-U username           set the network username\n");
 	printf("\t-W workgroup          set the workgroup name\n");
-	printf("\t-c command string     execute semicolon separated cmds\n");
 	printf("\n");
 }
 
@@ -297,41 +334,24 @@ static void usage(char *pname)
 	struct in_addr dest_ip;
 	extern pstring global_myname;
 	BOOL got_pass = False;
+	BOOL interactive = True;
 	BOOL have_ip = False;
 	int opt;
+	int olddebug;
 	pstring cmdstr = "", servicesf = CONFIGFILE;
-	extern FILE *dbf;
+	struct ntuser_creds	creds;
+	struct cli_state	cli;
 
 	setlinebuf(stdout);
-	dbf = stderr;
-
-	setup_logging(argv[0], True);
 
 #ifdef HAVE_LIBREADLINE
 	/* Allow conditional parsing of the ~/.inputrc file. */
 	rl_readline_name = "rpcclient";
 #endif    
 	
-	DEBUGLEVEL = 2;
-
-	/* Load smb.conf file */
-
-	charset_initialise();
-
-	if (!lp_load(servicesf,True,False,False)) {
-		fprintf(stderr, "Can't load %s\n", servicesf);
-	}
-
-	codepage_initialise(lp_client_code_page());
-	load_interfaces();
-
-	TimeInit();
-
-	get_myname((*global_myname)?NULL:global_myname);
-	strupper(global_myname);
+	DEBUGLEVEL = 1;
 
 	/* Parse options */
-
 	if (argc < 2) {
 		usage(argv[0]);
 		return 0;
@@ -342,21 +362,35 @@ static void usage(char *pname)
 	argv++;
 	argc--;
 
-	while ((opt = getopt(argc, argv, "s:Nd:I:U:W:c:")) != EOF) {
+	while ((opt = getopt(argc, argv, "s:Nd:I:U:W:c:l:")) != EOF) {
 		switch (opt) {
-		case 's':
-			pstrcpy(servicesf, optarg);
-			break;
-		case 'N':
+		case 'c':
+			pstrcpy(cmdstr, optarg);
 			got_pass = True;
 			break;
+
 		case 'd':
 			DEBUGLEVEL = atoi(optarg);
 			break;
+
 		case 'I':
 			dest_ip = *interpret_addr2(optarg);
 			have_ip = True;
 			break;
+			
+		case 'l':
+			slprintf(debugf, sizeof(debugf) - 1, "%s.client", optarg);
+			interactive = False;
+			break;
+
+		case 'N':
+			got_pass = True;
+			break;
+			
+		case 's':
+			pstrcpy(servicesf, optarg);
+			break;
+
 		case 'U': {
 			char *lp;
 			pstrcpy(username,optarg);
@@ -368,50 +402,95 @@ static void usage(char *pname)
 			}
 			break;
 		}
+		
 		case 'W':
 			pstrcpy(workgroup, optarg);
 			break;
-		case 'c':
-			pstrcpy(cmdstr, optarg);
-			got_pass = True;
-			break;
+			
 		case 'h':
 		default:
 			usage(argv[0]);
 			exit(1);
 		}
 	}
+	
+	/* the following functions are part of the Samba debugging
+	   facilities.  See lib/debug.c */
+	setup_logging (argv[0], interactive);
+	if (!interactive) 
+		reopen_logs();
+
+	charset_initialise();
+	
+	/* FIXME!  How to get this DEBUGLEVEL to last over lp_load()? */
+	olddebug = DEBUGLEVEL;
+
+	/* Load smb.conf file */
+	if (!lp_load(servicesf,True,False,False)) {
+		fprintf(stderr, "Can't load %s\n", servicesf);
+	}
+	DEBUGLEVEL = olddebug;
+
+	codepage_initialise(lp_client_code_page());
+	load_interfaces();
+
+	TimeInit();
+
+	get_myname((*global_myname)?NULL:global_myname);
+	strupper(global_myname);
+	
+	/*
+	 * initialize the credentials struct.  Get password
+	 * from stdin if necessary
+	 */
+	if (!got_pass) {
+		init_rpcclient_creds (&creds, username, workgroup, "");
+		pwd_read(&creds.pwd, "Password : ", lp_encrypted_passwords());
+	}
+	else {
+		init_rpcclient_creds (&creds, username, workgroup, password);
+	}
+	memset(password,'X',strlen(password));
+
+	/* open a connection to the specified server */
+	ZERO_STRUCTP (&cli);
+	if (!setup_connection (&cli, server, &creds)) {
+		return 0;
+	}
+	
+	/* There are no pointers in ntuser_creds struct so zero it out */
+	ZERO_STRUCTP (&creds);
+	
 
 	/* Load command lists */
-
 	add_command_set(rpcclient_commands);
+	add_command_set(spoolss_commands);
 	add_command_set(lsarpc_commands);
 	add_command_set(samr_commands);
-	add_command_set(spoolss_commands);
+
 
 	/* Do anything specified with -c */
-
 	if (cmdstr[0]) {
 		pstring cmd;
 		char *p = cmdstr;
 		uint32 result;
 
 		while(next_token(&p, cmd, ";", sizeof(pstring))) {
-			result = process_cmd(cmd);
+			result = process_cmd(&cli, cmd);
 		}
 
 		return 0;
 	}
 
-	/* Loop around accepting commands */
 
+	/* Loop around accepting commands */
 	while(1) {
 		pstring prompt, cmd;
 		uint32 result;
 
 		ZERO_STRUCT(cmd);
 		
-		slprintf(prompt, sizeof(prompt) - 1, "rpcclient> ");
+		slprintf(prompt, sizeof(prompt) - 1, "rpcclient $> ");
 
 #if HAVE_READLINE
 		cmd = readline(prompt);
@@ -424,8 +503,9 @@ static void usage(char *pname)
 
 		cmd[strlen(cmd) - 1] = '\0';
 #endif
-		result = process_cmd(cmd);
+		result = process_cmd(&cli, cmd);
 	}
-
+	
 	return 0;
 }
+

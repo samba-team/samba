@@ -224,11 +224,9 @@ static void display_print_info_3(PRINTER_INFO_3 *i3)
 
 /* Enumerate printers */
 
-static uint32 cmd_spoolss_enum_printers(int argc, char **argv)
+static uint32 cmd_spoolss_enum_printers(struct cli_state *cli, int argc, char **argv)
 {
 	uint32 result = NT_STATUS_UNSUCCESSFUL, info_level = 1;
-	struct cli_state cli;
-	struct ntuser_creds creds;
 	PRINTER_INFO_CTR ctr;
 	int returned;
 	
@@ -242,19 +240,14 @@ static uint32 cmd_spoolss_enum_printers(int argc, char **argv)
 	}
 
 	/* Initialise RPC connection */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (cli_spoolss_initialise(&cli, server, &creds) == NULL) {
-		goto done;
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Enumerate printers */
-
 	ZERO_STRUCT(ctr);
-
-	result = cli_spoolss_enum_printers(&cli, PRINTER_ENUM_LOCAL, 
+	result = cli_spoolss_enum_printers(cli, PRINTER_ENUM_LOCAL, 
 					   info_level, &returned, &ctr);
 
 	if (result == NT_STATUS_NOPROBLEMO) {
@@ -277,8 +270,7 @@ static uint32 cmd_spoolss_enum_printers(int argc, char **argv)
 		}
 	}
 
- done:
-	cli_spoolss_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
@@ -314,11 +306,9 @@ static void display_port_info_2(PORT_INFO_2 *i2)
 
 /* Enumerate ports */
 
-static uint32 cmd_spoolss_enum_ports(int argc, char **argv)
+static uint32 cmd_spoolss_enum_ports(struct cli_state *cli, int argc, char **argv)
 {
 	uint32 result = NT_STATUS_UNSUCCESSFUL, info_level = 1;
-	struct cli_state cli;
-	struct ntuser_creds creds;
 	PORT_INFO_CTR ctr;
 	int returned;
 	
@@ -332,19 +322,15 @@ static uint32 cmd_spoolss_enum_ports(int argc, char **argv)
 	}
 
 	/* Initialise RPC connection */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (cli_spoolss_initialise(&cli, server, &creds) == NULL) {
-		goto done;
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* Enumerate printers */
-
+	/* Enumerate ports */
 	ZERO_STRUCT(ctr);
 
-	result = cli_spoolss_enum_ports(&cli, info_level, &returned, &ctr);
+	result = cli_spoolss_enum_ports(cli, info_level, &returned, &ctr);
 
 	if (result == NT_STATUS_NOPROBLEMO) {
 		int i;
@@ -364,21 +350,18 @@ static uint32 cmd_spoolss_enum_ports(int argc, char **argv)
 		}
 	}
 
- done:
-	cli_spoolss_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
 
 /* Get printer information */
 
-static uint32 cmd_spoolss_getprinter(int argc, char **argv)
+static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **argv)
 {
-	struct cli_state cli;
 	POLICY_HND pol;
 	uint32 result, info_level = 1;
 	BOOL opened_hnd = False;
-	struct ntuser_creds creds;
 	PRINTER_INFO_CTR ctr;
 	fstring printer_name, station_name;
 
@@ -388,12 +371,9 @@ static uint32 cmd_spoolss_getprinter(int argc, char **argv)
 	}
 
 	/* Initialise RPC connection */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (cli_spoolss_initialise(&cli, server, &creds) == NULL) {
-		goto done;
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Open a printer handle */
@@ -408,7 +388,7 @@ static uint32 cmd_spoolss_getprinter(int argc, char **argv)
 	slprintf(station_name, sizeof(fstring), "\\\\%s", global_myname);
 
 	if ((result = cli_spoolss_open_printer_ex(
-		&cli, printer_name, "", MAXIMUM_ALLOWED_ACCESS, station_name,
+		cli, printer_name, "", MAXIMUM_ALLOWED_ACCESS, station_name,
 		username, &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
@@ -416,8 +396,7 @@ static uint32 cmd_spoolss_getprinter(int argc, char **argv)
 	opened_hnd = True;
 
 	/* Get printer info */
-
-	if ((result = cli_spoolss_getprinter(&cli, &pol, info_level, &ctr))
+	if ((result = cli_spoolss_getprinter(cli, &pol, info_level, &ctr))
 	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
@@ -443,9 +422,9 @@ static uint32 cmd_spoolss_getprinter(int argc, char **argv)
 	}
 
  done: 
-	if (opened_hnd) cli_spoolss_closeprinter(&cli, &pol);
+	if (opened_hnd) cli_spoolss_closeprinter(cli, &pol);
 
-	cli_spoolss_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
@@ -454,9 +433,9 @@ static uint32 cmd_spoolss_getprinter(int argc, char **argv)
 
 struct cmd_set spoolss_commands[] = {
 
-	{ "enumprinters", cmd_spoolss_enum_printers, "Enumerate printers" },
-	{ "enumports", cmd_spoolss_enum_ports, "Enumerate printer ports" },
-	{ "getprinter", cmd_spoolss_getprinter, "Get printer info" },
+	{ "enumprinters", 	cmd_spoolss_enum_printers, 	"Enumerate printers" },
+	{ "enumports", 		cmd_spoolss_enum_ports, 	"Enumerate printer ports" },
+	{ "getprinter", 	cmd_spoolss_getprinter, 	"Get printer info" },
 
 	{ NULL, NULL, NULL }
 };
