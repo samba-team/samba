@@ -53,7 +53,8 @@ intr(int sig)
 }
 
 static int
-read_string(const char *prompt, char *buf, size_t len, int echo)
+read_string(const char *preprompt, const char *prompt, 
+	    char *buf, size_t len, int echo)
 {
     struct sigaction sigs[47];
     struct sigaction sa;
@@ -76,7 +77,7 @@ read_string(const char *prompt, char *buf, size_t len, int echo)
     if((tty = fopen("/dev/tty", "r")) == NULL)
 	tty = stdin;
        
-    fprintf(stderr, "%s", prompt);
+    fprintf(stderr, "%s%s", preprompt, prompt);
     fflush(stderr);
 
     if(echo == 0){
@@ -127,24 +128,20 @@ read_string(const char *prompt, char *buf, size_t len, int echo)
 int
 UI_UTIL_read_pw_string(char *buf, int length, char *prompt, int verify)
 {
+    size_t plen;
     int ret;
 
-    ret = read_string(prompt, buf, length, 0);
+    ret = read_string("", prompt, buf, length, 0);
     if (ret)
 	return ret;
 
     if (verify) {
-	char *prompt2, *buf2;
+	char *buf2;
 	buf2 = malloc(length);
 	if (buf2 == NULL)
 	    return 1;
-	asprintf(&prompt2, "Verify password - %s", prompt2);
-	if (prompt2 == NULL) {
-	    free(buf2);
-	    return 1;
-	}
-	ret = read_string(prompt2, buf2, length, 0);
-	free(prompt2);
+
+	ret = read_string("Verify password - ", prompt, buf2, length, 0);
 	if (ret) {
 	    free(buf2);
 	    return ret;
