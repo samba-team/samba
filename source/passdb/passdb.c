@@ -1701,3 +1701,51 @@ uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_
 
 	return (buflen);
 }
+
+
+/**********************************************************************
+**********************************************************************/
+
+static BOOL get_free_ugid_range(uint32 *low, uint32 *high)
+{
+	uid_t u_low, u_high;
+	gid_t g_low, g_high;
+
+	if (!lp_idmap_uid(&u_low, &u_high) || !lp_idmap_gid(&g_low, &g_high)) {
+		return False;
+	}
+	
+	*low  = (u_low < g_low)   ? u_low  : g_low;
+	*high = (u_high < g_high) ? u_high : g_high;
+	
+	return True;
+}
+
+/******************************************************************
+ Get the the non-algorithmic RID range if idmap range are defined
+******************************************************************/
+
+BOOL get_free_rid_range(uint32 *low, uint32 *high)
+{
+	uint32 id_low, id_high;
+
+	if (!lp_enable_rid_algorithm()) {
+		*low = BASE_RID;
+		*high = (uint32)-1;
+	}
+
+	if (!get_free_ugid_range(&id_low, &id_high)) {
+		return False;
+	}
+
+	*low = fallback_pdb_uid_to_user_rid(id_low);
+	if (fallback_pdb_user_rid_to_uid((uint32)-1) < id_high) {
+		*high = (uint32)-1;
+	} else {
+		*high = fallback_pdb_uid_to_user_rid(id_high);
+	}
+
+	return True;
+}
+
+

@@ -61,7 +61,7 @@ static NTSTATUS db_allocate_rid(uint32 *rid, int rid_type)
 	
 	/* cannot fail since idmap is only called winbindd */
 	
-	idmap_get_free_rid_range( &lowrid, &highrid );
+	get_free_rid_range( &lowrid, &highrid );
 	
 	tmp_rid = lowrid;
 	
