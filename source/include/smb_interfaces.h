@@ -1454,9 +1454,6 @@ union smb_lock {
 	struct {
 		enum lock_level level;
 
-		struct {
-
-		} in;
 	} generic;
 
 	/* SMBlock interface */

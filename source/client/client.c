@@ -2402,8 +2402,12 @@ static char **remote_completion(const char *text, int len)
 {
 	pstring dirmask;
 	int i;
-	completion_remote_t info = { "", NULL, 1, len, text, len };
+	completion_remote_t info = { "", NULL, 1, NULL, NULL, NULL };
 
+	info.samelen = len;
+	info.text = text;
+	info.len = len;
+ 
 	if (len >= PATH_MAX)
 		return(NULL);
 

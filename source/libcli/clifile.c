@@ -505,11 +505,11 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 	}
 
 	if (a_time) {
-		*a_time = &parms.getattre.out.access_time;
+		*a_time = parms.getattre.out.access_time;
 	}
 
 	if (m_time) {
-		*m_time = &parms.getattre.out.write_time;
+		*m_time = parms.getattre.out.write_time;
 	}
 
 	return True;
