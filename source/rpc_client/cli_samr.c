@@ -34,6 +34,34 @@ extern int DEBUGLEVEL;
 
 
 /****************************************************************************
+do a SAMR create domain user
+****************************************************************************/
+BOOL create_samr_domain_user(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol_open_domain,
+				const char *acct_name, uint16 acb_info,
+				uint32 *rid)
+{
+	POLICY_HND pol_open_user;
+	BOOL ret = True;
+
+	if (pol_open_domain == NULL || acct_name == NULL) return False;
+
+	/* send create user */
+	if (!samr_create_dom_user(cli, fnum,
+				pol_open_domain,
+				acct_name, acb_info, 0xe005000b,
+				&pol_open_user, rid))
+	{
+		return False;
+	}
+
+	DEBUG(5,("create_samr_domain_user: name: %s rid 0x%x\n",
+	          acct_name, *rid));
+
+	return samr_close(cli, fnum, &pol_open_user) && ret;
+}
+
+/****************************************************************************
 do a SAMR create domain alias
 ****************************************************************************/
 BOOL create_samr_domain_alias(struct cli_state *cli, uint16 fnum, 
@@ -1118,6 +1146,65 @@ BOOL samr_delete_dom_alias(struct cli_state *cli, uint16 fnum,
 }
 
 /****************************************************************************
+do a SAMR Create Domain User
+****************************************************************************/
+BOOL samr_create_dom_user(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *domain_pol, const char *acct_name,
+				uint32 unk_0, uint32 unk_1,
+				POLICY_HND *user_pol, uint32 *rid)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_CREATE_USER q_o;
+	BOOL valid_pol = False;
+
+	if (user_pol == NULL || domain_pol == NULL || acct_name == NULL || rid == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_CREATE_USER */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Create Domain User. Name:%s\n", acct_name));
+
+	/* store the parameters */
+	make_samr_q_create_user(&q_o, domain_pol, acct_name, unk_0, unk_1);
+
+	/* turn parameters into data stream */
+	samr_io_q_create_user("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SAMR_CREATE_USER, &data, &rdata))
+	{
+		SAMR_R_CREATE_USER r_o;
+		BOOL p;
+
+		samr_io_r_create_user("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_CREATE_USER: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			memcpy(user_pol, &r_o.user_pol, sizeof(r_o.user_pol));
+			*rid = r_o.user_rid;
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
 do a SAMR Create Domain Alias
 ****************************************************************************/
 BOOL samr_create_dom_alias(struct cli_state *cli, uint16 fnum, 
@@ -1569,7 +1656,8 @@ BOOL samr_set_groupinfo(struct cli_state *cli, uint16 fnum,
 do a SAMR Open Domain
 ****************************************************************************/
 BOOL samr_open_domain(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *connect_pol, uint32 flags, DOM_SID *sid,
+				POLICY_HND *connect_pol, uint32 ace_perms,
+				DOM_SID *sid,
 				POLICY_HND *domain_pol)
 {
 	pstring sid_str;
@@ -1579,8 +1667,12 @@ BOOL samr_open_domain(struct cli_state *cli, uint16 fnum,
 	SAMR_Q_OPEN_DOMAIN q_o;
 	BOOL valid_pol = False;
 
-	sid_to_string(sid_str, sid);
-	DEBUG(4,("SAMR Open Domain.  SID:%s Flags:%x\n", sid_str, flags));
+	if (DEBUGLVL(4))
+	{
+		sid_to_string(sid_str, sid);
+		DEBUG(4,("SAMR Open Domain.  SID:%s Permissions:%x\n",
+					sid_str, ace_perms));
+	}
 
 	if (connect_pol == NULL || sid == NULL || domain_pol == NULL) return False;
 
@@ -1590,7 +1682,7 @@ BOOL samr_open_domain(struct cli_state *cli, uint16 fnum,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_open_domain(&q_o, connect_pol, flags, sid);
+	make_samr_q_open_domain(&q_o, connect_pol, ace_perms, sid);
 
 	/* turn parameters into data stream */
 	samr_io_q_open_domain("", &q_o,  &data, 0);

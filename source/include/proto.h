@@ -1695,6 +1695,10 @@ BOOL do_reg_shutdown(struct cli_state *cli, uint16 fnum,
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
+BOOL create_samr_domain_user(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol_open_domain,
+				const char *acct_name, uint16 acb_info,
+				uint32 *rid);
 BOOL create_samr_domain_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				const char *acct_name, const char *acct_desc,
@@ -1763,6 +1767,10 @@ BOOL samr_add_aliasmem(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *alias_pol, DOM_SID *sid);
 BOOL samr_delete_dom_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *alias_pol);
+BOOL samr_create_dom_user(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *domain_pol, const char *acct_name,
+				uint32 unk_0, uint32 unk_1,
+				POLICY_HND *user_pol, uint32 *rid);
 BOOL samr_create_dom_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *domain_pol, const char *acct_name,
 				POLICY_HND *alias_pol, uint32 *rid);
@@ -1783,7 +1791,8 @@ BOOL samr_create_dom_group(struct cli_state *cli, uint16 fnum,
 BOOL samr_set_groupinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *group_pol, GROUP_INFO_CTR *ctr);
 BOOL samr_open_domain(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *connect_pol, uint32 flags, DOM_SID *sid,
+				POLICY_HND *connect_pol, uint32 ace_perms,
+				DOM_SID *sid,
 				POLICY_HND *domain_pol);
 BOOL samr_query_lookup_domain(struct cli_state *cli, uint16 fnum, 
 			      POLICY_HND *pol, const char *dom_name,
@@ -2442,6 +2451,12 @@ void make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
 				uint32 unk_0, uint32 rid);
 void samr_io_q_open_user(char *desc,  SAMR_Q_OPEN_USER *q_u, prs_struct *ps, int depth);
 void samr_io_r_open_user(char *desc,  SAMR_R_OPEN_USER *r_u, prs_struct *ps, int depth);
+void make_samr_q_create_user(SAMR_Q_CREATE_USER *q_u,
+				POLICY_HND *pol,
+				const char *name,
+				uint16 acb_info, uint32 unk_1);
+void samr_io_q_create_user(char *desc,  SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth);
+void samr_io_r_create_user(char *desc,  SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth);
 void make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				POLICY_HND *hnd, uint16 switch_value);
 void samr_io_q_query_userinfo(char *desc,  SAMR_Q_QUERY_USERINFO *q_u, prs_struct *ps, int depth);
@@ -2793,6 +2808,7 @@ void cmd_sam_lookup_domain(struct client_info *info);
 void cmd_sam_del_aliasmem(struct client_info *info);
 void cmd_sam_delete_dom_alias(struct client_info *info);
 void cmd_sam_add_aliasmem(struct client_info *info);
+void cmd_sam_create_dom_user(struct client_info *info);
 void cmd_sam_create_dom_alias(struct client_info *info);
 void cmd_sam_del_groupmem(struct client_info *info);
 void cmd_sam_delete_dom_group(struct client_info *info);

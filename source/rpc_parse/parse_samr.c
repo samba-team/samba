@@ -3774,6 +3774,75 @@ void samr_io_r_open_user(char *desc,  SAMR_R_OPEN_USER *r_u, prs_struct *ps, int
 }
 
 /*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void make_samr_q_create_user(SAMR_Q_CREATE_USER *q_u,
+				POLICY_HND *pol,
+				const char *name,
+				uint16 acb_info, uint32 unk_1)
+{
+	int len_name;
+	if (q_u == NULL) return;
+	len_name = strlen(name);
+
+	DEBUG(5,("samr_make_samr_q_create_user\n"));
+
+	memcpy(&q_u->domain_pol, pol, sizeof(q_u->domain_pol));
+	
+	make_uni_hdr(&(q_u->hdr_name), len_name, len_name, 1);  
+	make_unistr2(&(q_u->uni_name), name, len_name);
+
+	q_u->acb_info = acb_info;
+	q_u->unknown_1 = unk_1;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_create_user(char *desc,  SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_create_user");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("domain_pol", &(q_u->domain_pol), ps, depth); 
+	prs_align(ps);
+
+	smb_io_unihdr ("unihdr", &(q_u->hdr_name), ps, depth); 
+	smb_io_unistr2("unistr2", &(q_u->uni_name), q_u->hdr_name.buffer, ps, depth); 
+	prs_align(ps);
+
+	prs_uint16("acb_info", ps, depth, &(q_u->acb_info));
+	prs_align(ps);
+	prs_uint32("unknown_1", ps, depth, &(q_u->unknown_1));
+
+	prs_align(ps);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_create_user(char *desc,  SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_create_user");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("user_pol", &(r_u->user_pol), ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("unknown_0", ps, depth, &(r_u->unknown_0));
+	prs_uint32("user_rid ", ps, depth, &(r_u->user_rid ));
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
+
+/*******************************************************************
 makes a SAMR_Q_QUERY_USERINFO structure.
 ********************************************************************/
 void make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,

@@ -244,7 +244,7 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 ace_perms = 0x200003f3; /* absolutely no idea. */
 	DOM_SID member_sid; 
 	uint32 alias_rid;
 
@@ -281,7 +281,7 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	/* connect to the domain */
@@ -335,7 +335,7 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 ace_perms = 0x200003f3; /* absolutely no idea. */
 	uint32 alias_rid = 0;
 	const char *names[1];
 	uint32 rid [MAX_LOOKUP_SIDS];
@@ -374,7 +374,7 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	names[0] = name;
@@ -433,7 +433,7 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	BOOL res2 = True;
 	BOOL res3 = True;
 	BOOL res4 = True;
-	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 ace_perms = 0x200003f3; /* absolutely no idea. */
 	uint32 alias_rid;
 	const char **names = NULL;
 	int num_names = 0;
@@ -525,7 +525,7 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	/* connect to the domain */
@@ -583,6 +583,93 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 
 
 /****************************************************************************
+SAM create domain user.
+****************************************************************************/
+void cmd_sam_create_dom_user(struct client_info *info)
+{
+	uint16 fnum;
+	fstring srv_name;
+	fstring domain;
+	fstring acct_name;
+	fstring acct_desc;
+	fstring sid;
+	DOM_SID sid1;
+	BOOL res = True;
+	BOOL res1 = True;
+	uint32 ace_perms = 0x200003f3; /* absolutely no idea. */
+	uint32 user_rid; 
+
+	sid_copy(&sid1, &info->dom.level5_sid);
+	sid_to_string(sid, &sid1);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (sid1.num_auths == 0)
+	{
+		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (!next_token(NULL, acct_name, NULL, sizeof(acct_name)))
+	{
+		fprintf(out_hnd, "createuser: <acct name> [acct description]\n");
+	}
+
+	if (!next_token(NULL, acct_desc, NULL, sizeof(acct_desc)))
+	{
+		acct_desc[0] = 0;
+	}
+
+
+	fprintf(out_hnd, "SAM Create Domain User\n");
+	fprintf(out_hnd, "Domain: %s Name: %s Description: %s\n",
+	                  domain, acct_name, acct_desc);
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, fnum, 
+				srv_name, 0x00000020,
+				&info->dom.samr_pol_connect) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, fnum, 
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	/* create a domain user */
+	res1 = res ? create_samr_domain_user(smb_cli, fnum, 
+				&info->dom.samr_pol_open_domain,
+	                        acct_name, ACB_NORMAL, &user_rid) : False;
+
+	res = res ? samr_close(smb_cli, fnum,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	res = res ? samr_close(smb_cli, fnum,
+	            &info->dom.samr_pol_connect) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res && res1)
+	{
+		DEBUG(5,("cmd_sam_create_dom_user: succeeded\n"));
+		fprintf(out_hnd, "Create Domain User: OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_create_dom_user: failed\n"));
+		fprintf(out_hnd, "Create Domain User: FAILED\n");
+	}
+}
+
+
+/****************************************************************************
 SAM create domain alias.
 ****************************************************************************/
 void cmd_sam_create_dom_alias(struct client_info *info)
@@ -596,7 +683,7 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL res1 = True;
-	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 ace_perms = 0x00000211; /* permissions */
 	uint32 alias_rid; 
 
 	sid_copy(&sid1, &info->dom.level5_sid);
@@ -639,7 +726,7 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	/* create a domain alias */
@@ -684,7 +771,7 @@ void cmd_sam_del_groupmem(struct client_info *info)
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 ace_perms = 0x200003f3; /* absolutely no idea. */
 	uint32 member_rid; 
 	uint32 group_rid;
 
@@ -721,7 +808,7 @@ void cmd_sam_del_groupmem(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	/* connect to the domain */
@@ -776,7 +863,7 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 ace_perms = 0x200003f3; /* absolutely no idea. */
 	uint32 group_rid = 0;
 	const char *names[1];
 	uint32 rid [MAX_LOOKUP_SIDS];
@@ -815,7 +902,7 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	names[0] = name;
@@ -872,7 +959,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 ace_perms = 0x200003f3; /* absolutely no idea. */
 	uint32 group_rid = 0;
 	const char **names = NULL;
 	uint32 num_names = 0;
@@ -925,7 +1012,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
@@ -999,7 +1086,7 @@ void cmd_sam_create_dom_group(struct client_info *info)
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL res1 = True;
-	uint32 flags = 0x220; /* absolutely no idea. */
+	uint32 ace_perms = 0x220; /* absolutely no idea. */
 	uint32 group_rid; 
 
 	sid_copy(&sid1, &info->dom.level5_sid);
@@ -1042,7 +1129,7 @@ void cmd_sam_create_dom_group(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	/* read some users */
@@ -1192,7 +1279,7 @@ void cmd_sam_enum_users(struct client_info *info)
 	uint16 unk_0 = 0x0;
 	uint16 acb_mask = 0;
 	uint16 unk_1 = 0x0;
-	uint32 flags = 0x304; /* access control permissions */
+	uint32 ace_perms = 0x304; /* access control permissions */
 	fstring tmp;
 	int i;
 
@@ -1269,12 +1356,12 @@ void cmd_sam_enum_users(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	/* connect to the S-1-5-20 domain */
 	res1 = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid_1_5_20,
+	            &info->dom.samr_pol_connect, ace_perms, &sid_1_5_20,
 	            &info->dom.samr_pol_open_builtindom) : False;
 
 	info->dom.sam = NULL;
@@ -1358,7 +1445,7 @@ void cmd_sam_query_user(struct client_info *info)
 	DOM_SID sid1;
 	int user_idx = 0;  /* FIXME maybe ... */
 	BOOL res = True;
-	uint32 flags = 0x304; /* absolutely no idea. */
+	uint32 ace_perms = 0x304; /* absolutely no idea. */
 	fstring rid_str ;
 	fstring info_str;
 	uint32 user_rid = 0;
@@ -1403,7 +1490,7 @@ void cmd_sam_query_user(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum,
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	fprintf(out_hnd, "User RID: %8x  User Name: %s\n",
@@ -1456,7 +1543,7 @@ void cmd_sam_query_dominfo(struct client_info *info)
 	BOOL res = True;
 	fstring info_str;
 	uint32 switch_value = 2;
-	uint32 flags = 0x304; /* absolutely no idea. */
+	uint32 ace_perms = 0x304; /* absolutely no idea. */
 
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
@@ -1492,7 +1579,7 @@ void cmd_sam_query_dominfo(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	/* send a samr 0x8 command */
@@ -1531,7 +1618,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL request_member_info = False;
-	uint32 flags = 0x200003f3; /* access control permissions */
+	uint32 ace_perms = 0x200003f3; /* access control permissions */
 	fstring tmp;
 	uint32 alias_idx;
 
@@ -1572,7 +1659,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum,
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	info->dom.sam = NULL;
@@ -1740,7 +1827,7 @@ void cmd_sam_enum_groups(struct client_info *info)
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL request_member_info = False;
-	uint32 flags = 0x200003f3; /* access control permissions. */
+	uint32 ace_perms = 0x200003f3; /* access control permissions. */
 	fstring tmp;
 	uint32 group_idx;
 
@@ -1779,7 +1866,7 @@ void cmd_sam_enum_groups(struct client_info *info)
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum,
-	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	info->dom.sam = NULL;
