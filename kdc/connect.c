@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -102,12 +102,14 @@ add_standard_ports (int family)
 }
 
 static void
-parse_ports(char *str)
+parse_ports(const char *str)
 {
     char *pos = NULL;
     char *p;
-    p = strtok_r(str, " \t", &pos);
-    while(p){
+    char *str_copy = strdup (str);
+
+    p = strtok_r(str_copy, " \t", &pos);
+    while(p != NULL) {
 	if(strcmp(p, "+") == 0) {
 #ifdef HAVE_IPV6
 	    add_standard_ports(AF_INET6);
@@ -136,6 +138,7 @@ parse_ports(char *str)
 	    
 	p = strtok_r(NULL, " \t", &pos);
     }
+    free (str_copy);
 }
 
 struct descr {
