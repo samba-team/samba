@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -76,12 +76,13 @@
 #include <err.h>
 #include <roken.h>
 #include <krb5.h>
-#include <kadm5/admin.h>
+#include <hdb.h>
 #include <hdb_err.h>
+#include <kadm5/admin.h>
+#include <kadm5/private.h>
 #include <parse_time.h>
 #include <getarg.h>
 
-#include "hdb.h"
 
 extern krb5_context context;
 extern void * kadm_handle;
