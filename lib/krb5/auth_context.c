@@ -16,7 +16,7 @@ krb5_auth_con_init(krb5_context context,
     if (!p->authenticator)
 	return ENOMEM;
     p->flags = KRB5_AUTH_CONTEXT_DO_TIME;
-    p->cksumtype = CKSUMTYPE_RSA_MD4; /* XXX - CKSUMTYPE_RSA_MD4_DES */;
+    p->cksumtype = CKSUMTYPE_RSA_MD5_DES;
     p->enctype   = ETYPE_DES_CBC_CRC;
     p->local_address = NULL;
     p->remote_address = NULL;
