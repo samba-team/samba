@@ -133,6 +133,33 @@ static BOOL rpc_check_hdr(prs_struct *rdata, RPC_HDR *rhdr,
 	return True;
 }
 
+static void NTLMSSPcalc_ap( struct cli_state *cli, unsigned char *data, int len)
+{
+	unsigned char *hash = cli->ntlmssp_hash;
+    unsigned char index_i = hash[256];
+    unsigned char index_j = hash[257];
+    int ind;
+
+    for( ind = 0; ind < len; ind++)
+    {
+        unsigned char tc;
+        unsigned char t;
+
+        index_i++;
+        index_j += hash[index_i];
+
+        tc = hash[index_i];
+        hash[index_i] = hash[index_j];
+        hash[index_j] = tc;
+
+        t = hash[index_i] + hash[index_j];
+        data[ind] = data[ind] ^ hash[t];
+    }
+
+    hash[256] = index_i;
+    hash[257] = index_j;
+}
+
 /****************************************************************************
  decrypt data on an rpc pipe
  ****************************************************************************/
@@ -157,7 +184,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 	{
 		DEBUG(10,("rpc_auth_pipe: seal\n"));
 		dump_data(100, reply_data, data_len);
-		NTLMSSPcalc(cli->ntlmssp_hash, (uchar*)reply_data, data_len);
+		NTLMSSPcalc_ap(cli, (uchar*)reply_data, data_len);
 		dump_data(100, reply_data, data_len);
 	}
 
@@ -185,7 +212,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 
 		DEBUG(10,("rpc_auth_pipe: verify\n"));
 		dump_data(100, data, auth_len);
-		NTLMSSPcalc(cli->ntlmssp_hash, (uchar*)(data+4), auth_len - 4);
+		NTLMSSPcalc_ap(cli, (uchar*)(data+4), auth_len - 4);
 		prs_init(&auth_verf, 0x08, 4, 0, True);
 		memcpy(auth_verf.data->data, data, 16);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &auth_verf, 0);
@@ -612,7 +639,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	if (auth_seal)
 	{
 		crc32 = crc32_calc_buffer(data->offset, mem_data(&data->data, 0));
-		NTLMSSPcalc(cli->ntlmssp_hash, (uchar*)mem_data(&data->data, 0), data->offset);
+		NTLMSSPcalc_ap(cli, (uchar*)mem_data(&data->data, 0), data->offset);
 	}
 
 	if (auth_seal || auth_verify)
@@ -629,7 +656,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 
 		make_rpc_auth_ntlmssp_chk(&chk, NTLMSSP_SIGN_VERSION, crc32, cli->ntlmssp_seq_num++);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &auth_verf, 0);
-		NTLMSSPcalc(cli->ntlmssp_hash, (uchar*)mem_data(&auth_verf.data, 4), 12);
+		NTLMSSPcalc_ap(cli, (uchar*)mem_data(&auth_verf.data, 4), 12);
 	}
 
 	if (auth_seal || auth_verify)
