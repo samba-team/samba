@@ -456,6 +456,10 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 		!strncasecmp(pipe_name, "\\pipe\\", 6)) {
 		pipe_name+=6;
 	}
+
+	if (pipe_name[0] != '\\') {
+		pipe_name = talloc_asprintf(mem_ctx, "\\%s", pipe_name);
+	}
 	
 	if (!username || !username[0]) {
 		status = smbcli_full_connection(NULL, &cli, lp_netbios_name(),
