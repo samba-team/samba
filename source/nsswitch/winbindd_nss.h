@@ -288,4 +288,9 @@ struct winbindd_response {
 	void *extra_data;               /* getgrnam, getgrgid, getgrent */
 };
 
+struct wb_client_state {
+	int lsa_socket;
+	int idmap_socket;
+};
+
 #endif

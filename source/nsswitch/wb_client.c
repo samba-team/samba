@@ -696,36 +696,6 @@ BOOL winbind_sid_to_gid_query(gid_t *pgid, const DOM_SID *sid)
 
 /***********************************************************************/
 
-static int lsa_socket(void)
-{
-	static int fd = -1;
-
-	if (fd != -1) {
-		struct timeval tv;
-		fd_set r_fds;
-
-		/* Catch pipe close on other end by checking if a read() call
-		   would not block by calling select(). */
-
-		FD_ZERO(&r_fds);
-		FD_SET(fd, &r_fds);
-		ZERO_STRUCT(tv);
-		
-		if ( (select(fd + 1, &r_fds, NULL, NULL, &tv) == -1) ||
-		     FD_ISSET(fd, &r_fds) ) {
-			close(fd);
-			fd = -1;
-		}
-	}
-
-	if (fd != -1)
-		return fd;
-
-	fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR, "lsa");
-
-	return fd;
-}
-
 /* Write data to winbindd socket */
 
 static int wb_write_sock(int fd, const void *buffer, int count)
@@ -845,17 +815,62 @@ static int wb_read_sock(int fd, void *buffer, int count)
 	return result;
 }
 
-BOOL wb_single_request(TALLOC_CTX *mem_ctx, int fd,
-		       const char *request, char **response)
+static BOOL wb_single_request(TALLOC_CTX *mem_ctx, int *fd, const char *name,
+			      int max_attempts, const char *request,
+			      char **response)
 {
 	fstring header;
 	int response_len;
 
-	if (wb_write_sock(fd, request, strlen(request)) < 0)
+	int attempts = 0;
+
+	/* If the DC a winbindd is connected to has shut down the connection,
+	 * the normal behaviour of that winbindd is to die at that moment. The
+	 * parent winbindd should restart that child. This routine should give
+	 * the child some time to reconnect to the DC. */
+
+ retry:
+	if (attempts > 0)
+		close(*fd);
+
+	if (attempts > max_attempts)
 		return False;
 
-	if (wb_read_sock(fd, header, 12) < 0)
-		return False;
+	if (*fd != -1) {
+		struct timeval tv;
+		fd_set r_fds;
+
+		/* Catch pipe close on other end by checking if a read() call
+		   would not block by calling select(). */
+
+		FD_ZERO(&r_fds);
+		FD_SET(*fd, &r_fds);
+		ZERO_STRUCT(tv);
+		
+		if ( (select(*fd + 1, &r_fds, NULL, NULL, &tv) == -1) ||
+		     FD_ISSET(*fd, &r_fds) ) {
+			close(*fd);
+			*fd = -1;
+		}
+	}
+
+	if (*fd == -1) {
+		if (attempts > 0)
+			smb_msleep(attempts*100);
+		
+		*fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR, name);
+	}
+
+	attempts += 1;
+
+	if (*fd == -1)
+		goto retry;
+
+	if (wb_write_sock(*fd, request, strlen(request)) < 0)
+		goto retry;
+
+	if (wb_read_sock(*fd, header, 12) < 0)
+		goto retry;
 
 	if (strncmp(header, "OK ", strlen("OK ")) != 0)
 		return False;
@@ -864,29 +879,65 @@ BOOL wb_single_request(TALLOC_CTX *mem_ctx, int fd,
 
 	*response = talloc(mem_ctx, response_len+1);
 
-	if (wb_read_sock(fd, *response, response_len) < 0)
-		return False;
+	if (wb_read_sock(*fd, *response, response_len) < 0)
+		goto retry;
 
 	(*response)[response_len] = '\0';
 
 	return True;
 }
 
-
-BOOL wb_sidtoname(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-		  char **domain, char **name, enum SID_NAME_USE *type)
+BOOL wb_fetchpid(const char *socket_name, pid_t *pid)
 {
-	int fd = lsa_socket();
+	TALLOC_CTX *mem_ctx = talloc_init("wb_fetchpid");
+	char *response;
+	int fd = -1;
+
+	if (!wb_single_request(mem_ctx, &fd, socket_name, 1,
+			       "pid\n", &response))
+		return False;
+
+	close(fd);
+
+	*pid = strtol(response, NULL, 0);
+
+	return True;
+}
+
+void wb_init_client_state(struct wb_client_state *state)
+{
+	state->lsa_socket = -1;
+	state->idmap_socket = -1;
+}
+
+void wb_destroy_client_state(struct wb_client_state *state)
+{
+	if (state->lsa_socket > 0)
+		close(state->lsa_socket);
+
+	if (state->idmap_socket > 0)
+		close(state->idmap_socket);
+}
+
+static BOOL wb_lsa_request(struct wb_client_state *state,
+			   TALLOC_CTX *mem_ctx, const char *request,
+			   char **response)
+{
+	return wb_single_request(mem_ctx, &state->lsa_socket, "lsa", 4,
+				 request, response);
+}
+
+BOOL wb_sidtoname(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
+		  const DOM_SID *sid, char **domain, char **name,
+		  enum SID_NAME_USE *type)
+{
 	fstring request;
 	char *response;
 	char *p, *q;
 
-	if (fd == -1)
-		return False;
-
 	fstr_sprintf(request, "sidtoname %s\n", sid_string_static(sid));
 
-	if (!wb_single_request(mem_ctx, fd, request, &response))
+	if (!wb_lsa_request(state, mem_ctx, request, &response))
 		return False;
 
 	p = strchr(response, '\\');
@@ -910,18 +961,15 @@ BOOL wb_sidtoname(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	return True;
 }
 
-BOOL wb_nametosid(TALLOC_CTX *mem_ctx, const char *name, DOM_SID *sid)
+BOOL wb_nametosid(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
+		  const char *name, DOM_SID *sid)
 {
-	int fd = lsa_socket();
 	fstring request;
 	char *response;
 
-	if (fd == -1)
-		return False;
-
 	fstr_sprintf(request, "nametosid %s\n", name);
 
-	if (!wb_single_request(mem_ctx, fd, request, &response))
+	if (!wb_lsa_request(state, mem_ctx, request, &response))
 		return False;
 
 	if (!string_to_sid(sid, response))
@@ -930,19 +978,16 @@ BOOL wb_nametosid(TALLOC_CTX *mem_ctx, const char *name, DOM_SID *sid)
 	return True;
 }
 
-BOOL wb_enumtrust(TALLOC_CTX *mem_ctx, int *num, char ***names, DOM_SID **sids)
+BOOL wb_enumtrust(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
+		  int *num, char ***names, DOM_SID **sids)
 {
-	int fd = lsa_socket();
 	fstring request;
 	char *p, *response;
 	int i;
 
-	if (fd == -1)
-		return False;
-
 	fstr_sprintf(request, "enumtrust\n");
 
-	if (!wb_single_request(mem_ctx, fd, request, &response))
+	if (!wb_lsa_request(state, mem_ctx, request, &response))
 		return False;
 
 	*num = strtol(response, &p, 10);
@@ -979,19 +1024,16 @@ BOOL wb_enumtrust(TALLOC_CTX *mem_ctx, int *num, char ***names, DOM_SID **sids)
 	return True;
 }
 
-BOOL wb_dominfo(TALLOC_CTX *mem_ctx, char **name, DOM_SID *sid)
+BOOL wb_dominfo(struct wb_client_state *state,
+		TALLOC_CTX *mem_ctx, char **name, DOM_SID *sid)
 {
-	int fd = lsa_socket();
 	fstring request;
 	char *response;
 	char *p;
 
-	if (fd == -1)
-		return False;
-
 	fstr_sprintf(request, "dominfo\n");
 
-	if (!wb_single_request(mem_ctx, fd, request, &response))
+	if (!wb_lsa_request(state, mem_ctx, request, &response))
 		return False;
 
 	p = strchr(response, '\\');

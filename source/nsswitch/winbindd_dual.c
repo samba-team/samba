@@ -222,7 +222,7 @@ struct winbindd_single_client {
 	char *response;
 };
 
-enum wb_connection_type { WB_LSA_CONNECTION, WB_SAMR_CONNECTION };
+enum wb_connection_type { WB_LSA_PROXY, WB_SAMR_PROXY, WB_IDMAP_DAEMON };
 
 struct winbindd_connection {
 	enum wb_connection_type type;
@@ -252,7 +252,6 @@ struct winbindd_child {
 	struct winbindd_connection conn;
 
 	pid_t pid;
-	BOOL seen;
 };
 
 struct winbindd_single_function {
@@ -296,7 +295,8 @@ static void winbindd_remove_single_client(struct winbindd_single_daemon *d,
 	d->num_clients--;
 }
 
-static void new_single_client(struct winbindd_single_daemon *d, int listen_sock)
+static void new_single_client(struct winbindd_single_daemon *d,
+			      int listen_sock)
 {
 	struct sockaddr_un sunaddr;
 	struct winbindd_single_client *client;
@@ -340,8 +340,8 @@ static NTSTATUS winbindd_lsa_nametosid(struct winbindd_single_daemon *d,
 	uint32 *types;
 	NTSTATUS result;
 
-	result = cli_lsa_lookup_names(d->cli, mem_ctx, &d->pol, 1, &request_data,
-				      &sids, &types);
+	result = cli_lsa_lookup_names(d->cli, mem_ctx, &d->pol, 1,
+				      &request_data, &sids, &types);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -541,6 +541,92 @@ static NTSTATUS winbindd_samr_enumusers(struct winbindd_single_daemon *d,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS winbindd_idmap_sidtouid(struct winbindd_single_daemon *d,
+					TALLOC_CTX *mem_ctx,
+					struct winbindd_single_client *client,
+					const char *request_data)
+{
+	DOM_SID sid;
+	NTSTATUS result;
+	uid_t uid;
+
+	if (!string_to_sid(&sid, request_data))
+		return NT_STATUS_INVALID_PARAMETER;
+
+	result = idmap_sid_to_uid(&sid, &uid, 0);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	asprintf(&client->response, "%d\n", uid);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS winbindd_idmap_sidtogid(struct winbindd_single_daemon *d,
+					TALLOC_CTX *mem_ctx,
+					struct winbindd_single_client *client,
+					const char *request_data)
+{
+	DOM_SID sid;
+	NTSTATUS result;
+	gid_t gid;
+
+	if (!string_to_sid(&sid, request_data))
+		return NT_STATUS_INVALID_PARAMETER;
+
+	result = idmap_sid_to_gid(&sid, &gid, 0);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	asprintf(&client->response, "%d\n", gid);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS winbindd_idmap_uidtosid(struct winbindd_single_daemon *d,
+					TALLOC_CTX *mem_ctx,
+					struct winbindd_single_client *client,
+					const char *request_data)
+{
+	DOM_SID sid;
+	NTSTATUS result;
+	uid_t uid;
+
+	uid = strtol(request_data, NULL, 10);
+
+	result = idmap_uid_to_sid(&sid, uid);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	asprintf(&client->response, "%s\n", sid_string_static(&sid));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS winbindd_idmap_gidtosid(struct winbindd_single_daemon *d,
+					TALLOC_CTX *mem_ctx,
+					struct winbindd_single_client *client,
+					const char *request_data)
+{
+	DOM_SID sid;
+	NTSTATUS result;
+	gid_t gid;
+
+	gid = strtol(request_data, NULL, 10);
+
+	result = idmap_gid_to_sid(&sid, gid);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	asprintf(&client->response, "%s\n", sid_string_static(&sid));
+
+	return NT_STATUS_OK;
+}
+
 static void winbind_single_process(struct winbindd_single_daemon *d,
 				   struct winbindd_single_client *client)
 {
@@ -579,7 +665,7 @@ static void winbind_single_process(struct winbindd_single_daemon *d,
 	}
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL) &&
-	    (d->cli->fd == -1)) {
+	    (d->cli != NULL) && (d->cli->fd == -1)) {
 		/* Disconnected */
 		exit(1);
 	}
@@ -774,7 +860,6 @@ static struct winbindd_single_function lsa_functions[] = {
 	{ NULL, NULL }
 };
 
-
 static struct winbindd_single_function samr_functions[] = {
 	{ "enumusers", winbindd_samr_enumusers },
 	{ "groupmem", winbindd_samr_groupmem },
@@ -782,10 +867,28 @@ static struct winbindd_single_function samr_functions[] = {
 	{ NULL, NULL }
 };
 
+static struct winbindd_single_function idmap_functions[] = {
+	{ "sidtouid", winbindd_idmap_sidtouid },
+	{ "sidtogid", winbindd_idmap_sidtogid },
+	{ "uidtosid", winbindd_idmap_uidtosid },
+	{ "gidtosid", winbindd_idmap_gidtosid },
+	{ NULL, NULL }
+};
+
 static NTSTATUS prepare_lsa_pol(TALLOC_CTX *mem_ctx,
 				struct winbindd_single_daemon *d)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	result = cli_full_connection(&d->cli, global_myname(), d->conn.dc_name,
+				     &d->conn.dc_ip, 0, "IPC$", "IPC", "", "",
+				     "", 0, Undefined, NULL);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Child: Could not open IPC$: %s\n",
+			  nt_errstr(result)));
+		return result;
+	}
 
 	if (!cli_nt_session_open(d->cli, PI_LSARPC)) {
 		DEBUG(0, ("Child: Could not open pipe: %s\n",
@@ -811,6 +914,16 @@ static NTSTATUS prepare_samr_pol(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol;
+
+	result = cli_full_connection(&d->cli, global_myname(), d->conn.dc_name,
+				     &d->conn.dc_ip, 0, "IPC$", "IPC", "", "",
+				     "", 0, Undefined, NULL);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Child: Could not open IPC$: %s\n",
+			  nt_errstr(result)));
+		return result;
+	}
 
 	if (!cli_nt_session_open(d->cli, PI_SAMR)) {
 		DEBUG(0, ("Child: Could not open pipe: %s\n",
@@ -845,27 +958,10 @@ static struct winbindd_child *children = NULL;
 
 static BOOL check_child(TALLOC_CTX *mem_ctx, struct winbindd_child *child)
 {
-	int fd;
-	fstring request;
-	char *response;
 	pid_t pid;
 
-	fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR,
-				     child->conn.socket_name);
-
-	if (fd < 0)
+	if (!wb_fetchpid(child->conn.socket_name, &pid))
 		return False;
-
-	fstrcpy(request, "pid\n");
-
-	if (!wb_single_request(mem_ctx, fd, request, &response)) {
-		close(fd);
-		return False;
-	}
-
-	close(fd);
-
-	pid = strtol(response, NULL, 0);
 
 	if (pid != child->pid) {
 		kill(pid, SIGTERM);
@@ -905,24 +1001,18 @@ static BOOL restart_child(TALLOC_CTX *mem_ctx, struct winbindd_child *child)
 		_exit(0);
 	}
 
-	result = cli_full_connection(&d.cli, global_myname(), d.conn.dc_name,
-				     &d.conn.dc_ip, 0, "IPC$", "IPC",
-				     "", "", "", 0, Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0, ("Child: Could not open IPC$: %s\n",
-			  nt_errstr(result)));
-		exit(0);
-	}
-
 	switch (child->conn.type) {
-	case WB_LSA_CONNECTION:
+	case WB_LSA_PROXY:
 		d.functions = lsa_functions;
 		result = prepare_lsa_pol(mem_ctx, &d);
 		break;
-	case WB_SAMR_CONNECTION:
+	case WB_SAMR_PROXY:
 		d.functions = samr_functions;
 		result = prepare_samr_pol(mem_ctx, &d);
+		break;
+	case WB_IDMAP_DAEMON:
+		d.functions = idmap_functions;
+		result = NT_STATUS_OK;
 		break;
 	default:
 		smb_panic("Unknown child type\n");
@@ -952,7 +1042,7 @@ static BOOL new_samr_child(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	child->conn.type = WB_SAMR_CONNECTION;
+	child->conn.type = WB_SAMR_PROXY;
 	fstr_sprintf(child->conn.socket_name, "samr-%s",
 		     sid_string_static(sid));
 	fstrcpy(child->conn.domain_name, domain_name);
@@ -961,7 +1051,8 @@ static BOOL new_samr_child(TALLOC_CTX *mem_ctx,
 
 	if (!get_dc_name(child->conn.domain_name, NULL, child->conn.dc_name,
 			 &child->conn.dc_ip)) {
-		DEBUG(0, ("Could not find our DC\n"));
+		DEBUG(0, ("Could not find DC for %s\n",
+			  child->conn.domain_name));
 		free(child);
 		return False;
 	}
@@ -971,19 +1062,21 @@ static BOOL new_samr_child(TALLOC_CTX *mem_ctx,
 	return restart_child(mem_ctx, child);
 }
 
-static void add_ourself(TALLOC_CTX *mem_ctx, int *num_domains,
+static void add_ourself(struct wb_client_state *state,
+			TALLOC_CTX *mem_ctx, int *num_domains,
 			char ***domain_names, DOM_SID **sids)
 {
 	char *my_name;
 	DOM_SID my_sid;
 
-	if (!wb_dominfo(mem_ctx, &my_name, &my_sid))
+	if (!wb_dominfo(state, mem_ctx, &my_name, &my_sid))
 		return;
 
-	*domain_names = Realloc((*domain_names),
-				((*num_domains)+1) * sizeof(**domain_names));
-	*sids =         Realloc((*sids),
-				((*num_domains)+1) * sizeof(**sids));
+	*domain_names = talloc_realloc(mem_ctx, (*domain_names),
+				       ((*num_domains)+1) *
+				       sizeof(**domain_names));
+	*sids =         talloc_realloc(mem_ctx, (*sids),
+				       ((*num_domains)+1) * sizeof(**sids));
 
 	(*domain_names)[*num_domains] = my_name;
 	sid_copy(&((*sids)[*num_domains]), &my_sid);
@@ -995,6 +1088,7 @@ void check_children(void)
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_child *child;
 	struct winbindd_child *lsa_child;
+	struct wb_client_state state;
 
 	int num_domains;
 	char **domain_names;
@@ -1010,34 +1104,31 @@ void check_children(void)
 
 	lsa_child = NULL;
 
+	wb_init_client_state(&state);
+
 	for (child = children; child != NULL; child = child->next) {
+		if (child->conn.type == WB_LSA_PROXY) {
+			SMB_ASSERT(lsa_child == NULL);
+			lsa_child = child;
+		}
 
-		child->seen = False;
-
-		if (child->conn.type != WB_LSA_CONNECTION)
-			continue;
-		SMB_ASSERT(lsa_child == NULL);
-		lsa_child = child;
+		if (!check_child(mem_ctx, child) &&
+		    !restart_child(mem_ctx, child)) {
+			DEBUG(1, ("Could not restart child for %d\n",
+				  child->pid));
+		}
 	}
 
 	/* We have to have one and only one lsa child */
 	SMB_ASSERT(lsa_child != NULL);
 
-	/* The LSA child must always stay */
-	lsa_child->seen = True;
-
-	if (!check_child(mem_ctx, lsa_child) &&
-	    !restart_child(mem_ctx, lsa_child)) {
-		DEBUG(1, ("Could not connect/restart to LSA\n"));
-		return;
-	}
-
-	if (!wb_enumtrust(mem_ctx, &num_domains, &domain_names, &sids)) {
+	if (!wb_enumtrust(&state, mem_ctx,
+			  &num_domains, &domain_names, &sids)) {
 		DEBUG(1, ("Could not list trusted domains\n"));
-		return;
+		goto done;
 	}
 
-	add_ourself(mem_ctx, &num_domains, &domain_names, &sids);
+	add_ourself(&state, mem_ctx, &num_domains, &domain_names, &sids);
 
 	for (i=0; i<num_domains; i++) {
 
@@ -1045,20 +1136,13 @@ void check_children(void)
 
 		for (child = children; child != NULL; child = child->next) {
 
-			if (child->conn.type != WB_SAMR_CONNECTION)
+			if (child->conn.type != WB_SAMR_PROXY)
 				continue;
 
 			if (sid_compare(&child->conn.sam_sid, &sids[i]) != 0)
 				continue;
 
 			found = True;
-			child->seen = True;
-
-			if (!check_child(mem_ctx, child) &&
-			    !restart_child(mem_ctx, child)) {
-				DEBUG(1, ("Could not restart SAMR for %s\n",
-					  sid_string_static(&sids[i])));
-			}
 		}
 
 		if (found)
@@ -1071,6 +1155,9 @@ void check_children(void)
 				  domain_names[i]));
 		}
 	}
+ done:
+	wb_destroy_client_state(&state);
+	return;
 }	
 
 void do_single_daemons(void)
@@ -1084,7 +1171,7 @@ void do_single_daemons(void)
 		return;
 	}
 
-	child->conn.type = WB_LSA_CONNECTION;
+	child->conn.type = WB_LSA_PROXY;
 	fstrcpy(child->conn.socket_name, "lsa");
 	fstrcpy(child->conn.domain_name, lp_workgroup());
 	child->pid = -1;
@@ -1096,6 +1183,18 @@ void do_single_daemons(void)
 		return;
 	}
 
+	DLIST_ADD(children, child);
+
+	child = malloc(sizeof(*child));
+
+	if (child == NULL) {
+		DEBUG(0, ("Could not malloc child\n"));
+		return;
+	}
+
+	child->conn.type = WB_IDMAP_DAEMON;
+	fstrcpy(child->conn.socket_name, "idmap");
+	
 	DLIST_ADD(children, child);
 
 	check_children();
