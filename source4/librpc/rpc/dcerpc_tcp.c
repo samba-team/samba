@@ -155,6 +155,10 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 	int fd;
 	struct in_addr addr;
 
+	if (port == 0) {
+		port = 135;
+	}
+
 	addr.s_addr = interpret_addr(server);
 	if (addr.s_addr == 0) {
 		return NT_STATUS_BAD_NETWORK_NAME;
@@ -195,6 +199,7 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		dcerpc_pipe_close(*p);
+		return status;
 	}
 
         return NT_STATUS_OK;
