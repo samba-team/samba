@@ -2768,7 +2768,7 @@ fi
 
 AC_MSG_CHECKING(whether to use included popt)
 if test x"$INCLUDED_POPT" = x"yes"; then
-    AC_MSG_RESULT($srcdir/popt)
+    AC_MSG_RESULT(yes)
     BUILD_POPT='$(POPT_OBJS)'
     FLAGS1="-I$srcdir/popt"
 else
