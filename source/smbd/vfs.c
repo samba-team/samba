@@ -75,8 +75,13 @@ struct vfs_ops default_vfs_ops = {
 	vfswrap_fset_nt_acl,
 	vfswrap_set_nt_acl,
 
+#if defined(HAVE_NO_ACLS)
+	NULL,
+	NULL
+#else
 	vfswrap_chmod_acl,
 	vfswrap_fchmod_acl
+#endif
 };
 
 /****************************************************************************
