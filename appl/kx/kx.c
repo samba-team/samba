@@ -4,13 +4,6 @@ RCSID("$Id$");
 
 char *prog;
 
-static void
-usage()
-{
-     fprintf (stderr, "Usage: %s host\n", prog);
-     exit (1);
-}
-
 static u_int32_t display_num;
 static char xauthfile[MaxPathLen];
 
@@ -219,7 +212,7 @@ passive (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
  */
 
 static int
-doit (char *host, int passivep)
+doit (char *host, int passivep, int debugp)
 {
      des_key_schedule schedule;
      des_cblock key;
@@ -273,15 +266,19 @@ doit (char *host, int passivep)
 	  }
 	  /* close (otherside); */
 	  fn = passive;
-	  pid = fork();
-	  if (pid < 0) {
-	       fprintf (stderr, "%s: fork: %s\n", prog, strerror(errno));
-	       return 1;
-	  } else if (pid > 0) {
+	  if(debugp)
 	       printf ("%d\t%s\n", display_num, xauthfile);
-	       exit (0);
-	  } else {
-	      fclose(stdout);
+	  else {
+	      pid = fork();
+	      if (pid < 0) {
+		  fprintf (stderr, "%s: fork: %s\n", prog, strerror(errno));
+		  return 1;
+	      } else if (pid > 0) {
+		  printf ("%d\t%s\n", display_num, xauthfile);
+		  exit (0);
+	      } else {
+		  fclose(stdout);
+	      }
 	  }
      } else {
 	  display_num = get_xsockets (&rendez_vous, NULL);
@@ -317,6 +314,13 @@ doit (char *host, int passivep)
      }
 }
 
+static void
+usage(void)
+{
+    fprintf (stderr, "Usage: %s [-d] host\n", prog);
+    exit (1);
+}
+
 /*
  * kx - forward x connection over a kerberos-encrypted channel.
  *
@@ -328,9 +332,25 @@ main(int argc, char **argv)
 {
      int passivep;
      char *disp;
+     int debugp = 0;
+     int c;
 
      prog = argv[0];
-     if (argc != 2)
+     while((c = getopt(argc, argv, "d")) != EOF) {
+	 switch(c) {
+	 case 'd' :
+	     debugp = 1;
+	     break;
+	 case '?':
+	 default:
+	     usage();
+	 }
+     }
+
+     argc -= optind;
+     argv += optind;
+
+     if (argc != 1)
 	  usage ();
      disp = getenv("DISPLAY");
      passivep = disp != NULL && 
@@ -340,5 +360,5 @@ main(int argc, char **argv)
       */
      passivep = 1;
      signal (SIGCHLD, childhandler);
-     return doit (argv[1], passivep);
+     return doit (argv[0], passivep, debugp);
 }
