@@ -80,8 +80,7 @@ cleanup(void)
 }
 
 static int
-recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
-	   struct sockaddr_in *retaddr)
+recv_conn (int sock, des_cblock *key, des_key_schedule schedule)
 {
      int status;
      KTEXT_ST ticket;
@@ -93,6 +92,7 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
      char version[KRB_SENDAUTH_VLEN];
      u_char ok = 0;
      struct passwd *passwd;
+     char remotehost[MaxHostNameLen];
 
      addrlen = sizeof(thisaddr);
      if (getsockname (sock, (struct sockaddr *)&thisaddr, &addrlen) < 0 ||
@@ -105,6 +105,8 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	  return 1;
      }
 
+     inaddr2str (thataddr.sin_addr, remotehost, sizeof(remotehost));
+
      k_getsockinst (sock, instance);
      status = krb_recvauth (KOPT_DO_MUTUAL, sock, &ticket, "rcmd", instance,
 			    &thataddr, &thisaddr, &auth, "", schedule,
@@ -113,6 +115,7 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	 strncmp(version, KX_VERSION, KRB_SENDAUTH_VLEN) != 0) {
 	  return 1;
      }
+     memcpy(key, &auth.session, sizeof(des_cblock));
      if (krb_net_read (sock, user, sizeof(user)) != sizeof(user))
 	  return 1;
      passwd = k_getpwnam (user);
@@ -125,12 +128,16 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	 setuid(passwd->pw_uid)) {
 	  return fatal (sock, "Cannot set uid");
      }
+     syslog (LOG_INFO, "from %s(%s): %s -> %s",
+	     remotehost,
+	     inet_ntoa(thataddr.sin_addr),
+	     krb_unparse_name_long (auth.pname, auth.pinst, auth.prealm),
+	     user);
+
      umask(077);
      if (krb_net_write (sock, &ok, sizeof(ok)) != sizeof(ok))
 	  return 1;
 
-     memcpy(key, &auth.session, sizeof(des_cblock));
-     *retaddr = thataddr;
      return 0;
 }
 
@@ -175,26 +182,51 @@ start_session (int fd, int sock, des_cblock *key,
 }
 
 static int
-doit_conn (int fd, struct sockaddr_in *thataddr,
+doit_conn (int fd, int meta_sock,
 	   des_cblock *key, des_key_schedule schedule)
 {
-  int sock;
-  int one = 1;
+    int sock, sock2;
+    int one = 1;
+    struct sockaddr_in thisaddr;
+    int addrlen;
+    char tmp[6];
 
-  sock = socket (AF_INET, SOCK_STREAM, 0);
-  if (sock < 0) {
-    char msg[200];
-    sprintf (msg, "socket: %s", strerror(errno));
-    return fatal (sock, msg);
-  }
+    sock = socket (AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+	syslog (LOG_ERR, "socket: %m");
+	return 1;
+    }
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
-  setsockopt (sock, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
+    setsockopt (sock, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
 #endif
-  if (connect (sock, (struct sockaddr *)thataddr,
-	       sizeof(*thataddr)) < 0) {
-    abort ();
-  }
-  return start_session (fd, sock, key, schedule);
+    memset (&thisaddr, 0, sizeof(thisaddr));
+    if (bind (sock, (struct sockaddr *)&thisaddr, sizeof(thisaddr)) < 0) {
+	syslog (LOG_ERR, "bind: %m");
+	return 1;
+    }
+    addrlen = sizeof(thisaddr);
+    if (getsockname (sock, (struct sockaddr *)&thisaddr,
+		     &addrlen) < 0) {
+	syslog (LOG_ERR, "getsockname: %m");
+	return 1;
+    }
+    if (listen (sock, SOMAXCONN) < 0) {
+	syslog (LOG_ERR, "listen: %m");
+	return 1;
+    }
+    sprintf (tmp, "%d", ntohs(thisaddr.sin_port));
+    if (krb_net_write (meta_sock, tmp, sizeof(tmp)) != sizeof(tmp)) {
+	syslog (LOG_ERR, "write: %m");
+	return 1;
+    }
+    sock2 = accept (sock, (struct sockaddr *)&thisaddr, &addrlen);
+    if (sock2 < 0) {
+	syslog (LOG_ERR, "accept: %m");
+	return 1;
+    }
+    close (sock);
+    close (meta_sock);
+    return start_session (fd, sock2, key, schedule);
 }
 
 /*
@@ -217,12 +249,11 @@ static int
 doit(int sock, int tcpp)
 {
      u_char passivep;
-     struct sockaddr_in thataddr;
      des_key_schedule schedule;
      des_cblock key;
      int localx, tcpx;
 
-     if (recv_conn (sock, &key, schedule, &thataddr))
+     if (recv_conn (sock, &key, schedule))
 	  return 1;
      if (krb_net_read (sock, &passivep, sizeof(passivep)) != sizeof(passivep))
 	  return 1;
@@ -237,19 +268,11 @@ doit(int sock, int tcpp)
 	  if (krb_net_write (sock, display, display_size) != display_size)
 	       return 1;
 	  strncpy(xauthfile, tempnam("/tmp", NULL), xauthfile_size);
-	  if (krb_net_write (sock, xauthfile, xauthfile_size) !=
-	      xauthfile_size)
+	  if (krb_net_write (sock, xauthfile, xauthfile_size)
+	      != xauthfile_size)
 	       return 1;
 	  if(create_and_write_cookie (xauthfile, cookie, cookie_len))
 	       return 1;
-	  {
-	      char tmp[6];
-
-	      if(krb_net_read(sock, tmp, sizeof(tmp)) != sizeof(tmp))
-		  return -1;
-	      thataddr.sin_port = htons(atoi(tmp));
-	  }
-
 	  for (;;) {
 	       pid_t child;
 	       int fd;
@@ -280,16 +303,15 @@ doit(int sock, int tcpp)
 		   if (fd >= 0 && suspicious_address (fd, peer)) {
 		       close (fd);
 		       continue;
-		   }		       
+		   }
 	       } else
 		   continue;
 	       if (fd < 0)
 		    if (errno == EINTR)
 			 continue;
 		    else {
-			 char msg[200];
-			 sprintf (msg, "accept: %s\n", strerror (errno));
-			 return fatal (sock, msg);
+			syslog (LOG_ERR, "accept: %m");
+			return 1;
 		    }
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
 	       setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, (void *)&one,
@@ -297,14 +319,13 @@ doit(int sock, int tcpp)
 #endif
 	       child = fork ();
 	       if (child < 0) {
-		    char msg[200];
-		    sprintf (msg, "fork: %s\n", strerror (errno));
-		    return fatal(sock, msg);
+		   syslog (LOG_ERR, "fork: %m");
+		   return 1;
 	       } else if (child == 0) {
 		    close (localx);
 		    if (tcpp)
 			 close (tcpx);
-		    return doit_conn (fd, &thataddr, &key, schedule);
+		    return doit_conn (fd, sock, &key, schedule);
 	       } else {
 		    close (fd);
 	       }
@@ -323,12 +344,12 @@ doit(int sock, int tcpp)
 static void
 usage (void)
 {
-     fprintf (stderr, "Usage: %s [-i] [-t]\n", prog);
+     fprintf (stderr, "Usage: %s [-i] [-t] [-p port]\n", prog);
      exit (1);
 }
 
 /*
- * xkd - receive a forwarded X conncection
+ * kxd - receive a forwarded X conncection
  */
 
 int
@@ -337,10 +358,11 @@ main (int argc, char **argv)
      int c;
      int no_inetd = 0;
      int tcpp = 0;
+     int port = 0;
 
      prog = argv[0];
 
-     while( (c = getopt (argc, argv, "it")) != EOF) {
+     while( (c = getopt (argc, argv, "itp:")) != EOF) {
 	  switch (c) {
 	  case 'i':
 	       no_inetd = 1;
@@ -348,6 +370,9 @@ main (int argc, char **argv)
 	  case 't':
 	       tcpp = 1;
 	       break;
+	  case 'p':
+	      port = htons(atoi (optarg));
+	      break;
 	  case '?':
 	  default:
 	       usage ();
@@ -355,7 +380,8 @@ main (int argc, char **argv)
      }
 
      if (no_inetd)
-	  mini_inetd (k_getportbyname("kx", "tcp", htons(KX_PORT)));
+	  mini_inetd (port ? port : k_getportbyname("kx", "tcp",
+						    htons(KX_PORT)));
      openlog(prog, LOG_PID|LOG_CONS, LOG_DAEMON);
      signal (SIGCHLD, childhandler);
      return doit(STDIN_FILENO, tcpp);

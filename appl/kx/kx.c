@@ -100,7 +100,7 @@ usr2handler (int sig)
 
 static int
 connect_host (char *host, char *user, des_cblock *key,
-	      des_key_schedule schedule, int passivep)
+	      des_key_schedule schedule, int passivep, int port)
 {
      CREDENTIALS cred;
      KTEXT_ST text;
@@ -128,7 +128,7 @@ connect_host (char *host, char *user, des_cblock *key,
 
      memset (&thataddr, 0, sizeof(thataddr));
      thataddr.sin_family = AF_INET;
-     thataddr.sin_port   = k_getportbyname ("kx", "tcp", htons(KX_PORT));
+     thataddr.sin_port   = port;
      for(p = hostent->h_addr_list; *p; ++p) {
 	 int one = 1;
 
@@ -174,6 +174,8 @@ connect_host (char *host, char *user, des_cblock *key,
 		   krb_get_err_text(status));
 	  return -1;
      }
+
+     memcpy(key, cred.session, sizeof(des_cblock));
      strncpy (name, user, sizeof(name));
      name[sizeof(name) - 1] = '\0';
      if (krb_net_write (s, name, sizeof(name)) != sizeof(name)) {
@@ -211,26 +213,7 @@ connect_host (char *host, char *user, des_cblock *key,
 	  return -1;
      }
 
-     memcpy(key, cred.session, sizeof(des_cblock));
      return s;
-}
-
-static int
-active (int fd, char *host, char *user,
-	des_cblock *iv, des_key_schedule schedule)
-{
-     int kxd;
-     u_char zero = 0;
-
-     kxd = connect_host (host, user, iv, schedule, 0); /* XXX */
-     if (kxd < 0)
-	  return 1;
-     if (krb_net_write (kxd, &zero, sizeof(zero)) != sizeof(zero)) {
-	  fprintf (stderr, "%s: write: %s\n", prog,
-		   strerror(errno));
-	  return 1;
-     }
-     return copy_encrypted (fd, kxd, iv, schedule);
 }
 
 /*
@@ -311,159 +294,185 @@ start_session(int xserver, int fd, des_cblock *iv,
      return copy_encrypted (xserver, fd, iv, schedule);
 }
 
-static int
-passive (int fd, char *host, char *user, des_cblock *iv,
-	 des_key_schedule schedule)
+static void
+status_output (int debugp)
 {
-     int xserver;
-
-     xserver = connect_local_xsocket (0);
-     if (xserver < 0)
-	  return 1;
-     return start_session (xserver, fd, iv, schedule);
+    if(debugp)
+	printf ("%u\t%s\t%s\n", (unsigned)getpid(), display, xauthfile);
+    else {
+	pid_t pid;
+	
+	pid = fork();
+	if (pid < 0) {
+	    fprintf (stderr, "%s: fork: %s\n", prog, strerror(errno));
+	    exit (1);
+	} else if (pid > 0) {
+	    printf ("%u\t%s\t%s\n", (unsigned)pid, display, xauthfile);
+	    exit (0);
+	} else {
+	    fclose(stdout);
+	}
+    }
 }
 
 /*
- * Connect to the given host.
- * Iff passivep, give it a port number to call you back and then wait.
- * Else, listen on a local display and then connect to the remote host
- * when a local client gets connected.
+ *
  */
 
 static int
-doit (char *host, char *user, int passivep, int debugp, int tcpp)
+doit_passive (char *host, char *user, int debugp, int port)
+{
+     des_key_schedule schedule;
+     des_cblock key;
+     int otherside;
+
+     otherside = connect_host (host, user, &key, schedule, 1, port);
+     if (otherside < 0)
+	 return 1;
+     status_output (debugp);
+     for (;;) {
+	 char tmp[6];
+	 pid_t child;
+	 int i;
+
+	 i = krb_net_read (otherside, tmp, sizeof(tmp));
+	 if (i < 0) {
+	     fprintf (stderr, "%s: read: %s\n", prog, strerror(errno));
+	     return 1;
+	 } else if (i == 0)
+	     return 0;
+	 ++nchild;
+	 child = fork ();
+	 if (child < 0) {
+	     fprintf (stderr, "%s: fork: %s\n", prog,
+		      strerror(errno));
+	     continue;
+	 } else if (child == 0) {
+	     struct sockaddr_in addr;
+	     int addrlen = sizeof(addr);
+	     int fd;
+	     int one = 1;
+	     int port;
+	     int xserver;
+
+	     if (getpeername (otherside, (struct sockaddr *)&addr,
+			      &addrlen) < 0) {
+		 fprintf (stderr, "%s: getpeername: %s\n", prog,
+			  strerror(errno));
+		 exit (1);
+	     }
+	     close (otherside);
+
+	     sscanf (tmp, "%d", &port);
+	     addr.sin_port = htons(port);
+	     fd = socket (AF_INET, SOCK_STREAM, 0);
+	     if (fd < 0) {
+		 fprintf (stderr, "%s: socket: %s\n", prog, strerror(errno));
+		 exit (1);
+	     }
+#if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
+	     setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, (void *)&one,
+			 sizeof(one));
+#endif
+	     if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+		 fprintf (stderr, "%s: connect: %s\n", prog, strerror(errno));
+		 exit (1);
+	     }
+	     xserver = connect_local_xsocket (0);
+	     if (xserver < 0)
+		 return 1;
+	     return start_session (xserver, fd, &key, schedule);
+	 } else {
+	 }
+     }
+}
+
+/*
+ *
+ */
+
+static int
+doit_active (char *host, char *user, int debugpp, int tcpp, int port)
 {
      des_key_schedule schedule;
      des_cblock key;
      int rendez_vous1 = 0, rendez_vous2 = 0;
-     int (*fn)(int fd, char *host, char *user, des_cblock *iv,
-	       des_key_schedule schedule);
-     pid_t pid;
 
-     if (passivep) {
-	  struct sockaddr_in newaddr;
-	  int addrlen;
-	  int otherside;
-
-	  otherside = connect_host (host, user, &key, schedule, passivep);
-	  if (otherside < 0)
-	       return 1;
-
-	  rendez_vous1 = socket (AF_INET, SOCK_STREAM, 0);
-	  if (rendez_vous1 < 0) {
-	       fprintf (stderr, "%s: socket failed: %s\n", prog,
-			strerror(errno));
-	       return 1;
-	  }
-	  memset (&newaddr, 0, sizeof(newaddr));
-	  if (bind (rendez_vous1, (struct sockaddr *)&newaddr,
-		    sizeof(newaddr)) < 0) {
-	       fprintf (stderr, "%s: bind: %s\n", prog, strerror(errno));
-	       return 1;
-	  }
-	  addrlen = sizeof(newaddr);
-	  if (getsockname (rendez_vous1, (struct sockaddr *)&newaddr,
-			   &addrlen) < 0) {
-	       fprintf (stderr, "%s: getsockname: %s\n", prog,
-			strerror(errno));
-	       return 1;
-	  }
-	  if (listen (rendez_vous1, SOMAXCONN) < 0) {
-	       fprintf (stderr, "%s: listen: %s\n", prog, strerror(errno));
-	       return 1;
-	  }
-	  {
-	      char tmp[6];
-
-	      sprintf (tmp, "%d", ntohs(newaddr.sin_port));
-	      if (krb_net_write (otherside, tmp, sizeof(tmp))
-		  != sizeof(tmp)) {
-		  fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
-		  return 1;
-	      }
-	  }
-	  /* close (otherside); */
-	  fn = passive;
-     } else {
-	  display_num = get_xsockets (&rendez_vous1,
-				      tcpp ? &rendez_vous2 : NULL);
-	  if (display_num < 0)
-	       return 1;
-	  strncpy(xauthfile, tempnam("/tmp", NULL), xauthfile_size);
-	  if (create_and_write_cookie (xauthfile, cookie, cookie_len))
-	      return 1;
-
-	  fn = active;
-     }
-     if(debugp)
-	 printf ("%u\t%s\t%s\n", (unsigned)getpid(), display, xauthfile);
-     else {
-	 pid = fork();
-	 if (pid < 0) {
-	     fprintf (stderr, "%s: fork: %s\n", prog, strerror(errno));
-	     return 1;
-	 } else if (pid > 0) {
-	     printf ("%u\t%s\t%s\n", (unsigned)pid, display, xauthfile);
-	     exit (0);
-	 } else {
-	     fclose(stdout);
-	 }
-     }
+     display_num = get_xsockets (&rendez_vous1,
+				 tcpp ? &rendez_vous2 : NULL);
+     if (display_num < 0)
+	 return 1;
+     strncpy(xauthfile, tempnam("/tmp", NULL), xauthfile_size);
+     if (create_and_write_cookie (xauthfile, cookie, cookie_len))
+	 return 1;
+     status_output (debugpp);
      for (;;) {
-	  fd_set fdset;
-	  pid_t child;
-	  int fd, thisfd;
-	  int zero = 0;
-	  int one = 1;
+	 fd_set fdset;
+	 pid_t child;
+	 int fd, thisfd;
+	 int zero = 0;
+	 int one = 1;
 
-	  FD_ZERO(&fdset);
-	  if (rendez_vous1)
-	      FD_SET(rendez_vous1, &fdset);
-	  if (rendez_vous2)
-	      FD_SET(rendez_vous2, &fdset);
-	  if (select(FD_SETSIZE, &fdset, NULL, NULL, NULL) <= 0)
-	      continue;
-	  if (rendez_vous1 && FD_ISSET(rendez_vous1, &fdset))
-	      thisfd = rendez_vous1;
-	  else if (rendez_vous2 && FD_ISSET(rendez_vous2, &fdset))
-	      thisfd = rendez_vous2;
-	  else
-	      continue;
+	 FD_ZERO(&fdset);
+	 if (rendez_vous1)
+	     FD_SET(rendez_vous1, &fdset);
+	 if (rendez_vous2)
+	     FD_SET(rendez_vous2, &fdset);
+	 if (select(FD_SETSIZE, &fdset, NULL, NULL, NULL) <= 0)
+	     continue;
+	 if (rendez_vous1 && FD_ISSET(rendez_vous1, &fdset))
+	     thisfd = rendez_vous1;
+	 else if (rendez_vous2 && FD_ISSET(rendez_vous2, &fdset))
+	     thisfd = rendez_vous2;
+	 else
+	     continue;
 
-	  fd = accept (thisfd, NULL, &zero);
-	  if (fd < 0)
-	       if (errno == EINTR)
-		    continue;
-	       else {
-		    fprintf (stderr, "%s: accept: %s\n", prog,
-			     strerror(errno));
-		    return 1;
-	       }
+	 fd = accept (thisfd, NULL, &zero);
+	 if (fd < 0)
+	     if (errno == EINTR)
+		 continue;
+	     else {
+		 fprintf (stderr, "%s: accept: %s\n", prog,
+			  strerror(errno));
+		 return 1;
+	     }
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
-	  setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
+	 setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
 #endif
-	  ++nchild;
-	  child = fork ();
-	  if (child < 0) {
-	       fprintf (stderr, "%s: fork: %s\n", prog,
-			strerror(errno));
-	       continue;
-	  } else if (child == 0) {
-	       if (rendez_vous1)
-		   close (rendez_vous1);
-	       if (rendez_vous2)
-		   close (rendez_vous2);
-	       return (*fn)(fd, host, user, &key, schedule);
-	  } else {
-	       close (fd);
-	  }
+	 ++nchild;
+	 child = fork ();
+	 if (child < 0) {
+	     fprintf (stderr, "%s: fork: %s\n", prog,
+		      strerror(errno));
+	     continue;
+	 } else if (child == 0) {
+	     int kxd;
+	     u_char zero = 0;
+
+	     if (rendez_vous1)
+		 close (rendez_vous1);
+	     if (rendez_vous2)
+		 close (rendez_vous2);
+	     kxd = connect_host (host, user, &key, schedule, 0, port);
+	     if (kxd < 0)
+		 return 1;
+	     if (krb_net_write (kxd, &zero, sizeof(zero)) != sizeof(zero)) {
+		 fprintf (stderr, "%s: write: %s\n", prog,
+			  strerror(errno));
+		 return 1;
+	     }
+	     return copy_encrypted (fd, kxd, &key, schedule);
+	 } else {
+	     close (fd);
+	 }
      }
 }
 
 static void
 usage(void)
 {
-    fprintf (stderr, "Usage: %s [-d] [-t] [-l remoteuser] host\n", prog);
+    fprintf (stderr, "Usage: %s [-p port] [-d] [-t] [-l remoteuser] host\n",
+	     prog);
     exit (1);
 }
 
@@ -480,9 +489,10 @@ main(int argc, char **argv)
      char *disp, *user = NULL;
      int debugp = 0, tcpp = 0;
      int c;
+     int port = 0;
 
      prog = argv[0];
-     while((c = getopt(argc, argv, "tdl:")) != EOF) {
+     while((c = getopt(argc, argv, "tdl:p:")) != EOF) {
 	 switch(c) {
 	 case 'd' :
 	     debugp = 1;
@@ -492,6 +502,9 @@ main(int argc, char **argv)
 	     break;
 	 case 'l' :
 	     user = optarg;
+	     break;
+	 case 'p' :
+	     port = htons(atoi (optarg));
 	     break;
 	 case '?':
 	 default:
@@ -512,11 +525,16 @@ main(int argc, char **argv)
 	  }
 	  user = strdup (p->pw_name);
      }
+     if (port == 0)
+	 port = k_getportbyname ("kx", "tcp", htons(KX_PORT));
      disp = getenv("DISPLAY");
      passivep = disp != NULL && 
        (*disp == ':' || strncmp(disp, "unix", 4) == 0);
      signal (SIGCHLD, childhandler);
      signal (SIGUSR1, usr1handler);
      signal (SIGUSR2, usr2handler);
-     return doit (argv[0], user, passivep, debugp, tcpp);
+     if (passivep)
+	 return doit_passive (argv[0], user, debugp, port);
+     else
+	 return doit_active  (argv[0], user, debugp, tcpp, port);
 }
