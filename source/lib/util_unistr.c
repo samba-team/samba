@@ -946,7 +946,7 @@ int strcmp_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
 
 		if (c1 == 0)
 			break;
-    }
+	}
 	return 0;
 }
 
@@ -968,7 +968,7 @@ int strncmp_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2, size_t len)
 		if (c1 == 0)
 			break;
 
-    }
+	}
 	return 0;
 }
 
@@ -1977,3 +1977,17 @@ smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length)
 
 	return s;
 }
+
+/******************************************************************
+ functions for UTF8 support (using in kanji.c)
+ ******************************************************************/
+smb_ucs2_t doscp2ucs2(int w)
+{
+  return ((smb_ucs2_t)doscp_to_ucs2[w]);
+}
+
+int ucs2doscp(smb_ucs2_t w)
+{
+  return ((int)ucs2_to_doscp[w]);
+}
+

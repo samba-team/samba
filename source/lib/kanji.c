@@ -22,6 +22,8 @@
      and extend coding system to EUC/SJIS/JIS/HEX at 1994.10.11
      and add all jis codes sequence type at 1995.8.16
      Notes: Hexadecimal code by <ohki@gssm.otuka.tsukuba.ac.jp>
+   Adding features about Machine dependent codes and User Defined Codes
+     by Hiroshi MIURA <miura@samba.gr.jp> 2000.3.19
 */
 
 #define _KANJI_C_
@@ -387,15 +389,63 @@ static char cvtbuf[2*sizeof(pstring)];
 
 static int euc2sjis (int hi, int lo)
 {
-  if (hi & 1)
-    return ((hi / 2 + (hi < 0xdf ? 0x31 : 0x71)) << 8) |
-            (lo - (lo >= 0xe0 ? 0x60 : 0x61));
-  else
-    return ((hi / 2 + (hi < 0xdf ? 0x30 : 0x70)) << 8) | (lo - 2);
+  int w;
+  int maxidx = SJISREVTBLSIZ;
+  int minidx = 0;
+  int i = 2;
+
+  if (hi & 1) {
+    hi = hi / 2 + (hi < 0xdf ? 0x31 : 0x71);
+    w =  (hi << 8) | (lo - (lo >= 0xe0 ? 0x60 : 0x61));
+  } else {
+    hi = hi / 2 + (hi < 0xdf ? 0x30 : 0x70);
+    w = (hi << 8) | (lo - 2);
+  }
+  if  ( (0x87 < hi ) && (hi < 0xed ) ) {
+    return w;
+  }
+  while ( maxidx >= minidx ) {
+    if ( sjisrev[i].start > w ) {
+      maxidx = i-1;
+    } else if ( w > sjisrev[i].end ) {
+      minidx = i+1;
+    } else {
+      w -= sjisrev[i].start;
+      w += sjisrev[i].rstart;
+      break;
+    }
+   i = (int)( minidx + (maxidx - minidx) % 2 );  
+  }
+  return w;  
 }
 
 static int sjis2euc (int hi, int lo)
 {
+  int minidx = 0;
+  int maxidx = SJISCONVTBLSIZ -1; /* max index 1 less than number of entries */
+  int i = ( 0 + SJISCONVTBLSIZ ) % 2;
+  int w = (int)((hi << 8) | lo);
+
+  if ( (sjisconv[0].start < w) && (w < sjisconv[SJISCONVTBLSIZ-1].end) ) {
+    while (maxidx >= minidx) {
+      if ( sjisconv[i].start > w ) {
+	maxidx = i-1;
+      } else if (w > sjisconv[i].end) {
+	minidx = i+1;
+      } else {
+	w -= sjisconv[i].start;
+	w += sjisconv[i].rstart;
+	break;
+      }
+      i = (int)( minidx + (maxidx-minidx)%2 );
+    }
+    hi = (int) ((w >> 8) & 0xff);
+    lo = (int) (w & 0xff);
+  }
+  if (hi >= 0xf0) {
+     hi = GETAHI;
+     lo = GETALO;
+  }
   if (lo >= 0x9f)
     return ((hi * 2 - (hi >= 0xe0 ? 0xe0 : 0x60)) << 8) | (lo + 2);
   else
@@ -418,7 +468,7 @@ static char *sj_to_euc(char *from, BOOL overwrite)
     if (is_shift_jis (*from)) {
       int code = sjis2euc ((int) from[0] & 0xff, (int) from[1] & 0xff);
       *out++ = (code >> 8) & 0xff;
-      *out++ = code;
+      *out++ = code & 0xff;
       from += 2;
     } else if (is_kana (*from)) {
       *out++ = (char)euc_kana;
@@ -451,7 +501,7 @@ static char *euc_to_sj(char *from, BOOL overwrite)
     if (is_euc (*from)) {
       int code = euc2sjis ((int) from[0] & 0xff, (int) from[1] & 0xff);
       *out++ = (code >> 8) & 0xff;
-      *out++ = code;
+      *out++ = code & 0xff;
       from += 2;
     } else if (is_euc_kana (*from)) {
       *out++ = from[1];
@@ -461,8 +511,259 @@ static char *euc_to_sj(char *from, BOOL overwrite)
     }
   }
   *out = 0;
+
   if (overwrite) {
-    pstrcpy(save, (char *) cvtbuf);
+	pstrcpy(save, (char *) cvtbuf); 
+    return save;
+  } else {
+    return cvtbuf;
+  }
+}
+
+/*******************************************************************
+  EUC3 <-> SJIS
+********************************************************************/
+static int sjis3euc (int hi, int lo, int *len)
+{
+  int i,w;
+  int minidx;
+  int maxidx;
+
+  w = (int)((hi << 8) | lo);
+
+  /* no sjis */
+ if ( ( 0x40 >= lo ) && (lo >= 0xfc) && (lo == 0x7f )) {
+     w = (GETAHI << 8) | GETALO;
+
+ /* IBM Extended Kanji */
+ } else  if (( w == 0xfa54 )||( w == 0x81ca )) {
+    *len = 2;
+    return (0xa2cc);
+
+  } else if (( w ==  0xfa5b )||( w == 0x81e6)) {
+    *len = 2;
+    return (0xa2e8);
+
+  } else if (( 0xfa <= hi ) && ( hi <= 0xfc ) ) {
+    i = w - 0xfa40 - ( hi - 0xfa )*( 0xfb40 - 0xfafc) - ((lo < 0x7f)? 0 : 1 );
+    if ( i <= EUC3CONVTBLSIZ ){
+      *len = 3;
+      return euc3conv[i];
+    }  
+
+/* NEC selected IBM Extend Kanji */
+    /* there are 3 code that is not good for conv */
+  } else if (( 0x8754 <= w ) && ( w <= 0x878a)) {
+    minidx = 0;
+    maxidx = EUC3CONV2TBLSIZ;
+    i = minidx + (maxidx - minidx) % 2;
+    while ( maxidx >= minidx ) {
+      if ( euc3conv2[i].sjis > w ) {
+	maxidx = i-1;
+      } else if ( w > euc3conv2[i].sjis ) {
+	minidx = i+1;
+      } else {
+	*len = 3;
+	return (euc3conv2[i].euc);
+      }
+      i = (int)( minidx + (maxidx - minidx) % 2 );  
+    }
+    /* else normal EUC */
+
+  } else if (( w == 0xeef9 ) || ( w == 0x81ca )) {  
+    *len = 2; 
+    return (0xa2cc);
+
+  } else if (( 0xed <= hi ) && ( hi <= 0xef )) {
+    minidx = 0;
+    maxidx = SJISREVTBLSIZ;
+    i = 10;
+    while ( maxidx >= minidx ) {
+      if ( sjisrev[i].start > w ) {
+	maxidx = i-1;
+      } else if ( w > sjisrev[i].end ) {
+	minidx = i+1;
+      } else {
+	w -= sjisrev[i].start;
+	w += sjisrev[i].rstart;
+	break;
+      }
+      i = (int)( minidx + (maxidx - minidx) % 2 );  
+    }
+    if ( w >= 0xfa40 ) {
+      i = w - 0xfa40 - ( hi - 0xfa )*( 0xfb40 - 0xfafc) - ((lo < 0x7f)? 0 : 1 );
+      if ( i <= EUC3CONVTBLSIZ ){
+	*len = 3;
+	return euc3conv[i];
+      } else {
+	w = (GETAHI << 8) | GETALO;
+      }
+    }
+    /* else normal EUC */
+
+/* UDC half low*/
+/* this area maps to the G2 UDC area: 0xf5a1 -- 0xfefe */
+  } else if ((0xf0 <= hi) && (hi <= 0xf4)) {
+    *len = 2;
+    if (lo >= 0x9f) {
+      return (((hi * 2 - 0xea) << 8) | (lo + 2));
+    } else {
+      return (((hi * 2 - 0xeb) << 8) | (lo + (lo >=0x7f ? 0x60: 0x61 )));
+    }
+
+/* UDC half high*/
+/* this area maps to the G3 UDC area: 0xf8f5a1 -- 0xf8fefe */
+  } else if ((0xf5 <= hi) && (hi <= 0xf9)) {  
+    *len = 3;
+    if (lo >= 0x9f) {
+      return (((hi*2 - 0xf4) << 8) | (lo + 2));
+    } else {
+      return (((hi*2 - 0xf5) << 8) | (lo + (lo >= 0x7f ? 0x60: 0x61 )));
+    }
+    /* ....checked all special case */
+  }
+
+  /*  These Normal 2 byte EUC */
+  *len = 2;
+  hi = (int) ((w >> 8) & 0xff);
+  lo = (int) (w & 0xff);
+
+  if (hi >= 0xf0) {    /* Check range */
+     hi = GETAHI;
+     lo = GETALO;
+  }
+
+  if (lo >= 0x9f)
+    return ((hi * 2 - (hi >= 0xe0 ? 0xe0 : 0x60)) << 8) | (lo + 2);
+  else
+    return ((hi * 2 - (hi >= 0xe0 ? 0xe1 : 0x61)) << 8) |
+            (lo + (lo >= 0x7f ? 0x60 : 0x61));
+}
+
+static int  euc3sjis (int hi, int lo, BOOL is_3byte)
+{
+  int w;
+
+  w = (int)((hi << 8) | lo);
+  if (is_3byte) {
+    if (( 0xf5 <= hi) && ( hi <= 0xfe)) {
+     /* UDC half high*/
+     /* this area maps to the G3 UDC area */
+     /* 0xf8f5a1 -- 0xf8fefe --> 0xf540 -- 0xf9fc */
+      if (hi & 1) {
+	return (((hi / 2 + 0x7b) << 8) | (lo - (lo >= 0xe0 ? 0x60 : 0x61)));
+      } else {
+	return (((hi / 2 + 0x7a) << 8) | (lo - 2));
+      }
+    } else {
+      /* Using map table */
+      int minidx = 0;
+      int maxidx = EUC3REVTBLSIZ;
+      int i = minidx + (maxidx - minidx) % 2;
+
+      while ( maxidx >= minidx ) {
+	if (euc3rev[i].euc > w) {
+	  maxidx = i-1;
+	} else if (euc3rev[i].euc < w) {
+	  minidx = i+1;
+	} else {
+	  return (euc3rev[i].sjis);
+	}
+	i = (int)( minidx + ( maxidx - minidx ) % 2);
+      }
+      return ((GETAHI << 8 ) | GETALO);
+    }
+  } else { /* is_2byte */
+    if ((0xf5 <= hi) && (hi <= 0xfe)) {
+      /* UDC half low*/
+      /* this area maps to the G2 UDC area */
+      /* 0xf5a1 -- 0xfefe  --> 0xf040 -- 0xf4fc */
+      if (hi & 1) {
+	return (((hi / 2 + 0x76) << 8) | (lo - (lo >= 0xe0 ? 0x60 : 0x61)));
+      } else {
+	return (((hi / 2 + 0x75) << 8) | (lo - 2));
+      }
+    } else { /* Normal EUC */
+      if (hi & 1) {
+	hi = hi / 2 + (hi < 0xdf ? 0x31 : 0x71);
+	return ((hi << 8) | (lo - (lo >= 0xe0 ? 0x60 : 0x61)));
+      } else {
+	hi = hi / 2 + (hi < 0xdf ? 0x30 : 0x70);
+	return ((hi << 8) | (lo - 2));
+      }
+    }
+  }
+}
+
+/*******************************************************************
+ Convert FROM contain SHIFT JIS codes to EUC codes (with SS2)
+ return converted buffer
+********************************************************************/
+
+static char *sj_to_euc3(char *from, BOOL overwrite)
+{
+  char *out;
+  char *save;
+  int len;
+
+  save = (char *) from;
+  for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-4);) {
+    if (is_shift_jis (*from)) {
+      int code = sjis3euc ((int) from[0] & 0xff, (int) from[1] & 0xff, &len);
+      if (len == 3) {
+	*out++ = (char)euc_sup;
+      }
+      *out++ = (code >> 8) & 0xff;
+      *out++ = code & 0xff;
+      from += 2;
+    } else if (is_kana (*from)) {
+      *out++ = (char)euc_kana;
+      *out++ = *from++;
+    } else {
+      *out++ = *from++;
+    }
+  }
+  *out = 0;
+  if (overwrite) {
+    pstrcpy((char *) save, (char *) cvtbuf);
+    return (char *) save;
+  } else {
+    return cvtbuf;
+  }
+}
+
+/*******************************************************************
+ Convert FROM contain EUC codes (with Sup-Kanji) to SHIFT JIS codes
+ return converted buffer
+********************************************************************/
+static char *euc3_to_sj(char *from, BOOL overwrite)
+{
+  char *out;
+  char *save;
+
+  save = (char *) from;
+  for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3); ) {
+    if (is_euc_sup (*from)) {
+      int code = euc3sjis((int) from[1] & 0xff, (int) from[2] & 0xff, True);
+      *out++ = (code >> 8) & 0xff;
+      *out++ = code & 0xff;
+      from += 3;
+    } else if (is_euc (*from)) {
+      int code = euc3sjis ((int) from[0] & 0xff, (int) from[1] & 0xff,False);
+      *out++ = (code >> 8) & 0xff;
+      *out++ = code & 0xff;
+      from += 2;
+    } else if (is_euc_kana (*from)) {
+      *out++ = from[1];
+      from += 2;
+    } else {
+      *out++ = *from++;
+    }
+  }
+  *out = 0;
+
+  if (overwrite) {
+	pstrcpy(save, (char *) cvtbuf); 
     return save;
   } else {
     return cvtbuf;
@@ -475,6 +776,31 @@ static char *euc_to_sj(char *from, BOOL overwrite)
 
 static int sjis2jis(int hi, int lo)
 {
+  int minidx = 0;
+  int maxidx = SJISCONVTBLSIZ -1; /* max index 1 less than number of entries */
+  int i = (0 + SJISCONVTBLSIZ) % 2;
+  int w = (int)((hi << 8) | lo);
+
+  if ((sjisconv[0].start < w) && (w < sjisconv[SJISCONVTBLSIZ-1].end)) {
+    while (maxidx >= minidx) {
+      if (sjisconv[i].start > w) {
+	maxidx = i-1;
+      } else if (w > sjisconv[i].end) {
+	minidx = i+1;
+      } else {
+	w -= sjisconv[i].start;
+	w += sjisconv[i].rstart;
+	break;
+      }
+      i = (int)( minidx + (maxidx-minidx) %2 );
+    }
+    hi = (int) ((w >> 8) & 0xff);
+    lo = (int) (w & 0xff);
+  }
+  if (hi >= 0xf0) {
+     hi = GETAHI;
+     lo = GETALO;
+  }
   if (lo >= 0x9f)
     return ((hi * 2 - (hi >= 0xe0 ? 0x160 : 0xe0)) << 8) | (lo - 0x7e);
   else
@@ -484,11 +810,35 @@ static int sjis2jis(int hi, int lo)
 
 static int jis2sjis(int hi, int lo)
 {
-  if (hi & 1)
-    return ((hi / 2 + (hi < 0x5f ? 0x71 : 0xb1)) << 8) |
-            (lo + (lo >= 0x60 ? 0x20 : 0x1f));
-  else
-    return ((hi / 2 + (hi < 0x5f ? 0x70 : 0xb0)) << 8) | (lo + 0x7e);
+  int w;
+  int minidx = 0;
+  int maxidx = SJISREVTBLSIZ;
+  int i = 2;
+
+  if (hi & 1) {
+    hi = hi / 2 + (hi < 0x5f ? 0x71 : 0xb1);
+    w  = (hi << 8) | (lo + (lo >= 0x60 ? 0x20 : 0x1f));
+  } else {
+    hi = hi / 2 + (hi < 0x5f ? 0x70 : 0xb0); 
+    w  = (hi << 8) | (lo + 0x7e);
+  }
+
+  if  (( 0x87 < hi ) && ( hi < 0xed )) {
+    return w;
+  }
+  while (maxidx >= minidx) {
+    if (sjisrev[i].start > w) {
+      maxidx = i-1;
+    } else if (w > sjisrev[i].end) {
+      minidx = i+1;
+    } else {
+      w -= sjisrev[i].start;
+      w += sjisrev[i].rstart;
+      break;
+    }
+    i = (int)( minidx + (maxidx-minidx) %2 );
+  }
+  return w;  
 }
 
 /*******************************************************************
@@ -999,6 +1349,90 @@ static char *sj_to_sj(char *from, BOOL overwrite)
     }
 }
 
+/*******************************************************************
+ cp to utf8
+********************************************************************/
+static char *cp_to_utf8(char *from, BOOL overwrite)
+{
+  unsigned char *dst;
+  unsigned char *src;
+  smb_ucs2_t val;
+  int w;
+  size_t len;
+
+  src = (unsigned char *)from;
+  dst = (unsigned char *)cvtbuf;
+  while (*src && (((char *)dst - cvtbuf) < sizeof(cvtbuf)-4)) {
+    len = _skip_multibyte_char(*src);
+    if ( len == 2 ) {
+      w = (int)(*src++ & 0xff);
+      w = (int)((w << 8)|(*src++ & 0xff));
+    } else {
+      w = (int)(*src++ & 0xff);
+    }
+    val = doscp2ucs2(w);
+
+    if ( val <= 0x7f ) {
+      *dst++ = (char)(val & 0xff);
+    } else if ( val <= 0x7ff ){
+      *dst++ = (char)( 0xc0 | ((val >> 6) & 0xff)); 
+      *dst++ = (char)( 0x80 | ( val & 0x3f ));
+    } else {
+      *dst++ = (char)( 0xe0 | ((val >> 12) & 0x0f));
+      *dst++ = (char)( 0x80 | ((val >> 6)  & 0x3f));
+      *dst++ = (char)( 0x80 | (val & 0x3f));
+    }
+
+  }
+  *dst++='\0';
+  if (overwrite) {
+    pstrcpy ((char *) from, (char *) cvtbuf);
+    return (char *) from;
+  } else {
+    return cvtbuf;
+  }
+}
+
+/*******************************************************************
+ utf8 to cp
+********************************************************************/
+static char *utf8_to_cp(char *from, BOOL overwrite)
+{
+  unsigned char *src;
+  unsigned char *dst;
+  smb_ucs2_t val;
+  int w;
+
+  src = (unsigned char *)from; 
+  dst = (unsigned char *)cvtbuf; 
+
+  while (*src && ((char *)dst - cvtbuf < sizeof(cvtbuf)-4)) {
+    val = (*src++ & 0xff);
+    if (val < 0x80) {
+      *dst++ = (char)(val & 0x7f); 
+    } else if ((0xc0 <= val) && (val <= 0xdf) 
+	       && (0x80 <= *src) && (*src <= 0xbf)) {
+      w = ucs2doscp( ((val & 31) << 6)  | ((*src++) & 63 ));
+      *dst++ = (char)((w >> 8) & 0xff);
+      *dst++ = (char)(w & 0xff);
+    } else {
+      val  = (val & 0x0f) << 12;
+      val |= ((*src++ & 0x3f) << 6);
+      val |= (*src++ & 0x3f);
+      w = ucs2doscp(val);
+      *dst++ = (char)((w >> 8) & 0xff);
+      *dst++ = (char)(w & 0xff);
+    }
+  }
+  *dst++='\0';
+  if (overwrite) {
+    pstrcpy ((char *) from, (char *) cvtbuf);
+    return (char *) from;
+  } else {
+    return cvtbuf;
+  }
+}
+
 /************************************************************************
  conversion:
  _dos_to_unix		_unix_to_dos
@@ -1045,6 +1479,14 @@ static void setup_string_function(int codes)
     case CAP_CODE:
 	_dos_to_unix = sj_to_cap;
 	_unix_to_dos = cap_to_sj;
+	break;
+    case UTF8_CODE:
+	_dos_to_unix = cp_to_utf8;
+	_unix_to_dos = utf8_to_cp;
+	break;
+    case EUC3_CODE:
+	_dos_to_unix = sj_to_euc3;
+	_unix_to_dos = euc3_to_sj;
 	break;
     }
 }
@@ -1142,6 +1584,10 @@ void interpret_coding_system(char *str)
 	codes = JUNET_CODE;
 	jis_kso = '@';
 	jis_ksi = 'H';
+    } else if (strequal (str, "utf8")) {
+      codes = UTF8_CODE;
+    } else if (strequal (str, "euc3")) {
+      codes = EUC3_CODE;
     }	
     setup_string_function (codes);
 }

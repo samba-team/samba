@@ -356,7 +356,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	fstring           null_pw;
 	files_struct      *fsp = NULL;
 	SMB_STRUCT_STAT   st;
-	struct smb_passwd *smb_pass;
+	struct passwd *pass;
 	connection_struct *conn;
 
 	/* If architecture is Windows 95/98, the version is always 0. */
@@ -366,9 +366,9 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	}
 
 	become_root();
-	smb_pass = getsmbpwuid(user->uid);
-	if(smb_pass == NULL) {
-		DEBUG(0,("get_correct_cversion: Unable to get smbpasswd entry for uid %u\n",
+	pass = getpwuid(user->uid);
+	if(pass == NULL) {
+		DEBUG(0,("get_correct_cversion: Unable to get passwd entry for uid %u\n",
 				(unsigned int)user->uid ));
 		unbecome_root();
 		*perr = ERROR_ACCESS_DENIED;
@@ -378,7 +378,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 
 	/* connect to the print$ share under the same account as the user connected
 	 * to the rpc pipe */	
-	fstrcpy(user_name, smb_pass->smb_name );
+	fstrcpy(user_name, pass->pw_name );
 	DEBUG(10,("get_correct_cversion: uid %d -> user %s\n", (int)user->uid, user_name));
 
 	/* Null password is ok - we are already an authenticated user... */
@@ -2115,12 +2115,13 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 		 global_myname, sharename);
 	fstrcpy(info.sharename, sharename);
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
-#if 0 /*JRR test*/
 	fstrcpy(info.drivername, lp_printerdriver(snum));
-#else
-	fstrcpy(info.drivername, "None");
-	DEBUG(0,("get_a_printer_2_default: driver name set to [%s]\n", info.drivername));
-#endif
+
+	if (!*info.drivername)
+		fstrcpy(info.drivername, "NO DRIVER AVAILABLE FOR THIS PRINTER");
+
+	DEBUG(10,("get_a_printer_2_default: driver name set to [%s]\n", info.drivername));
+
 	pstrcpy(info.comment, "");
 	fstrcpy(info.printprocessor, "winprint");
 	fstrcpy(info.datatype, "RAW");
