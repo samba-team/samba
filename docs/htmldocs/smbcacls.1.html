@@ -1,6 +1,6 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>smbcacls</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="smbcacls.1"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>smbcacls &#8212; Set or get ACLs on an NT file or directory names</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">smbcacls</tt>  {//server/share} {filename} [-D acls] [-M acls] [-A acls] [-S acls] [-C name] [-G name] [-n] [-t] [-U username] [-h] [-d]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p>The <b class="command">smbcacls</b> program manipulates NT Access Control
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>smbcacls</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="smbcacls.1"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>smbcacls &#8212; Set or get ACLs on an NT file or directory names</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">smbcacls</tt>  {//server/share} {filename} [-D acls] [-M acls] [-a acls] [-S acls] [-C name] [-G name] [-n] [-t] [-U username] [-h] [-d]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p>The <b class="command">smbcacls</b> program manipulates NT Access Control
 	Lists (ACLs) on SMB file shares. </p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><p>The following options are available to the <b class="command">smbcacls</b> program.  
-	The format of ACLs is described in the section ACL FORMAT </p><div class="variablelist"><dl><dt><span class="term">-A acls</span></dt><dd><p>Add the ACLs specified to the ACL list.  Existing 
+	The format of ACLs is described in the section ACL FORMAT </p><div class="variablelist"><dl><dt><span class="term">-a acls</span></dt><dd><p>Add the ACLs specified to the ACL list.  Existing 
 		access control entries are unchanged. </p></dd><dt><span class="term">-M acls</span></dt><dd><p>Modify the mask value (permissions) for the ACLs 
 		specified on the command line.  An error will be printed for each 
 		ACL specified that was not already present in the ACL list
@@ -28,8 +28,8 @@
 		Don't actually do anything, only validate the correctness of 
 		the arguments.
 		</p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
-</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the version number for 
-<b class="command">smbd</b>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
+</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the program version number.
+</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
 information such as what printcap file to use, as well 
@@ -42,13 +42,13 @@ not specified is zero.</p><p>The higher this value, the more detail will be
 logged to the log files about the activities of the 
 server. At level 0, only critical errors and serious 
 warnings will be logged. Level 1 is a reasonable level for
-day to day running - it generates a small amount of 
+day-to-day running - it generates a small amount of 
 information about operations carried out.</p><p>Levels above 1 will generate considerable 
 amounts of log data, and should only be used when 
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2800108"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
+override the <a class="indexterm" name="id2800147"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
 <tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
