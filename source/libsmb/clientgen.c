@@ -2424,7 +2424,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->mid = 1;
 	cli->vuid = UID_FIELD_INVALID;
 	cli->protocol = PROTOCOL_NT1;
-	cli->timeout = 20000;
+	cli->timeout = 20000; /* Timeout is in milliseconds. */
 	cli->bufsize = CLI_BUFFER_SIZE+4;
 	cli->max_xmit = cli->bufsize;
 	cli->outbuf = (char *)malloc(cli->bufsize);

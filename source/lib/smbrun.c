@@ -116,10 +116,26 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	/* in this newer method we will exec /bin/sh with the correct
 	   arguments, after first setting stdout to point at the file */
 	
-	if ((pid=fork())) {
+	if ((pid=fork()) < 0) {
+		DEBUG(0,("smbrun: fork failed with error %s\n", strerror(errno) ));
+		return errno;
+    }
+
+	if (pid) {
+		/*
+		 * Parent.
+		 */
 		int status=0;
+		pid_t wpid;
+
 		/* the parent just waits for the child to exit */
-		if (sys_waitpid(pid,&status,0) != pid) {
+		while((wpid = sys_waitpid(pid,&status,0)) < 0) {
+			if(errno == EINTR) {
+				errno = 0;
+				continue;
+			}
+		}
+		if (wpid != pid) {
 			DEBUG(2,("waitpid(%d) : %s\n",pid,strerror(errno)));
 			return -1;
 		}

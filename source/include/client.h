@@ -111,7 +111,7 @@ struct cli_state {
 	uint32 servertime;
 	int readbraw_supported;
 	int writebraw_supported;
-	int timeout;
+	int timeout; /* in milliseconds. */
 	int max_xmit;
 	int max_mux;
 	char *outbuf;

@@ -202,10 +202,11 @@ ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
 int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 {
 	int num = 0;
-	int len = 0;
+	int pdu_len = 0;
 	uint32 hdr_num = 0;
-	int data_hdr_pos;
-	int data_pos;
+	int pdu_data_sent; /* amount of current pdu already sent */
+	int data_pos; /* entire rpc data sent - no headers, no auth verifiers */
+	int this_pdu_data_pos;
 
 	DEBUG(6,("read_pipe: %x", p->pnum));
 
@@ -231,33 +232,35 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 		 p, p->file_offset, n));
 
 	/* the read request starts from where the SMBtrans2 left off. */
-	data_hdr_pos = p->file_offset - p->prev_pdu_file_offset;
-	data_pos     = data_hdr_pos - p->hdr_offsets;
+	data_pos = p->file_offset - p->hdr_offsets;
+	this_pdu_data_pos = data_pos - p->prev_pdu_file_offset;
+	pdu_data_sent = p->file_offset - p->prev_pdu_file_offset;
 
 	if (!IS_BITS_SET_ALL(p->hdr.flags, RPC_FLG_LAST))
 	{
 		/* intermediate fragment - possibility of another header */
 		
-		DEBUG(5,("read_pipe: frag_len: %d data_pos: %d data_hdr_pos: %d\n",
-			 p->hdr.frag_len, data_pos, data_hdr_pos));
+		DEBUG(5,("read_pipe: frag_len: %d data_pos: %d pdu_data_sent: %d\n",
+			 p->hdr.frag_len, data_pos, pdu_data_sent));
 		
-		if (data_hdr_pos == 0)
+		if (pdu_data_sent == 0)
 		{
 			DEBUG(6,("read_pipe: next fragment header\n"));
 
 			/* this is subtracted from the total data bytes, later */
 			hdr_num = 0x18;
 			p->hdr_offsets += 0x18;
+			data_pos -= 0x18;
 
 			/* create and copy in a new header. */
-			create_rpc_reply(p, p->file_offset - p->hdr_offsets, p->rdata.offset);
+			create_rpc_reply(p, data_pos, p->rdata.offset);
 		}			
 	}
 	
-	len = mem_buf_len(p->rhdr.data);
-	num = len - (int)data_pos;
+	pdu_len = mem_buf_len(p->rhdr.data);
+	num = pdu_len - (int)this_pdu_data_pos;
 	
-	DEBUG(6,("read_pipe: len: %d num: %d n: %d\n", len, num, n));
+	DEBUG(6,("read_pipe: pdu_len: %d num: %d n: %d\n", pdu_len, num, n));
 	
 	if (num > n) num = n;
 	if (num <= 0)
@@ -271,17 +274,17 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 		DEBUG(5,("read_pipe: warning - data read only part of a header\n"));
 	}
 
-	mem_buf_copy(data, p->rhdr.data, data_pos, num);
+	mem_buf_copy(data, p->rhdr.data, pdu_data_sent, num);
 	
-	data_pos += num;
-	data_hdr_pos += num;
 	p->file_offset  += num;
+	pdu_data_sent  += num;
 	
 	if (hdr_num == 0x18 && num == 0x18)
 	{
 		DEBUG(6,("read_pipe: just header read\n"));
 	}
-	else if (data_hdr_pos == p->hdr.frag_len)
+
+	if (pdu_data_sent == p->hdr.frag_len)
 	{
 		DEBUG(6,("read_pipe: next fragment expected\n"));
 		p->prev_pdu_file_offset = p->file_offset;

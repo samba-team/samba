@@ -152,9 +152,9 @@
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
 
-/* how long to wait for a socket connect to happen */
-#define LONG_CONNECT_TIMEOUT 30
-#define SHORT_CONNECT_TIMEOUT 5
+/* how long (in miliseconds) to wait for a socket connect to happen */
+#define LONG_CONNECT_TIMEOUT 30000
+#define SHORT_CONNECT_TIMEOUT 5000
 
 /* default socket options. Dave Miller thinks we should default to TCP_NODELAY
    given the socket IO pattern that Samba uses*/

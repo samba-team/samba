@@ -679,14 +679,14 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
 
 
 /****************************************************************************
-  create an outgoing socket
+  create an outgoing socket. timeout is in milliseconds.
   **************************************************************************/
 int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 {
   struct sockaddr_in sock_out;
   int res,ret;
   int connect_loop = 250; /* 250 milliseconds */
-  int loops = (timeout * 1000) / connect_loop;
+  int loops = (timeout) / connect_loop;
 
   /* create a socket to write to */
   res = socket(PF_INET, type, 0);

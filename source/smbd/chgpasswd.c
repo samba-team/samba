@@ -318,7 +318,14 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
       kill(pid, SIGKILL); /* be sure to end this process */
     }
 
-    if ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
+	while((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
+      if(errno == EINTR) {
+        errno = 0;
+        continue;
+      }
+    }
+
+    if (wpid < 0) {
       DEBUG(3,("The process is no longer waiting!\n\n"));
       close(master);
       CatchChild();
