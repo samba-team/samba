@@ -160,6 +160,10 @@ $public_h_header .= "#ifdef __STDC__
 #endif
 
 ";
+} else {
+    $public_h_header .= "#include <stdarg.h>
+
+";
 }
 
 $private_h_header = "/* This is a generated file */
@@ -178,6 +182,10 @@ $private_h_header .= "#ifdef __STDC__
 #define __P(x) ()
 #endif
 #endif
+
+";
+} else {
+    $private_h_header .= "#include <stdarg.h>
 
 ";
 }
