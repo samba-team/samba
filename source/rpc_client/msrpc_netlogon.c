@@ -75,7 +75,8 @@ static uint32 domain_client_validate( const char *user, const char *domain,
 		return False;
 	}
 
-	if (!msrpc_lsa_query_trust_passwd( trust_passwd))
+	if (!msrpc_lsa_query_trust_passwd( "\\\\.", "$MACHINE.ACC",
+	                                   trust_passwd))
 	{
 		return False;
 	}
