@@ -16,6 +16,9 @@ utmpx_update(struct utmpx *ut, char *line, char *user, char *host)
     struct timeval tmp;
 
     strncpy(ut->ut_line, clean_ttyname(line), sizeof(ut->ut_line));
+#ifdef HAVE_UT_ID
+    strncpy(ut->ut_id, make_id(ut->ut_line), sizeof(ut->ut_id));
+#endif
     strncpy(ut->ut_user, user, sizeof(ut->ut_user));
     strncpy(ut->ut_host, host, sizeof(ut->ut_host));
 #ifdef HAVE_UT_SYSLEN
