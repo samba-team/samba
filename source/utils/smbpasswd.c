@@ -461,7 +461,7 @@ int main(int argc, char **argv)
     struct cli_state cli;
     struct in_addr ip;
 
-    if(!resolve_name( remote_machine, &ip)) {
+    if(!resolve_name( remote_machine, &ip, 0x20)) {
       fprintf(stderr, "%s: unable to find an IP address for machine %s.\n",
               prog_name, remote_machine );
       exit(1);

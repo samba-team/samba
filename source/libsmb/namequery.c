@@ -414,13 +414,161 @@ void endlmhosts(FILE *fp)
   fclose(fp);
 }
 
+
+
+/********************************************************
+resolve via "bcast" method
+*********************************************************/
+static BOOL resolve_bcast(char *name, struct in_addr *return_ip, int name_type)
+{
+	int sock, i;
+	
+	/*
+	 * "bcast" means do a broadcast lookup on all the local interfaces.
+	 */
+
+	DEBUG(3,("resolve_name: Attempting broadcast lookup for name %s<0x20>\n", name));
+
+	sock = open_socket_in( SOCK_DGRAM, 0, 3,
+			       interpret_addr(lp_socket_address()) );
+
+	if (sock != -1) {
+		struct in_addr *iplist = NULL;
+		int count;
+		int num_interfaces = iface_count();
+		set_socket_options(sock,"SO_BROADCAST");
+		/*
+		 * Lookup the name on all the interfaces, return on
+		 * the first successful match.
+		 */
+		for( i = 0; i < num_interfaces; i++) {
+			struct in_addr sendto_ip;
+			/* Done this way to fix compiler error on IRIX 5.x */
+			sendto_ip = *iface_bcast(*iface_n_ip(i));
+			iplist = name_query(sock, name, name_type, True, 
+					    False, sendto_ip, &count, NULL);
+			if(iplist != NULL) {
+				*return_ip = iplist[0];
+				free((char *)iplist);
+				close(sock);
+				return True;
+			}
+		}
+		close(sock);
+	}
+
+	return False;
+}
+
+
+
+/********************************************************
+resolve via "wins" method
+*********************************************************/
+static BOOL resolve_wins(char *name, struct in_addr *return_ip, int name_type)
+{
+      int sock;
+      struct in_addr wins_ip;
+      BOOL wins_ismyip;
+
+      /*
+       * "wins" means do a unicast lookup to the WINS server.
+       * Ignore if there is no WINS server specified or if the
+       * WINS server is one of our interfaces (if we're being
+       * called from within nmbd - we can't do this call as we
+       * would then block).
+       */
+
+      DEBUG(3,("resolve_name: Attempting wins lookup for name %s<0x20>\n", name));
+
+      if(!*lp_wins_server()) {
+	      DEBUG(3,("resolve_name: WINS server resolution selected and no WINS server present.\n"));
+	      return False;
+      }
+
+      wins_ip = *interpret_addr2(lp_wins_server());
+      wins_ismyip = ismyip(wins_ip);
+
+      if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
+	      sock = open_socket_in( SOCK_DGRAM, 0, 3,
+				     interpret_addr(lp_socket_address()) );
+	      
+	      if (sock != -1) {
+		      struct in_addr *iplist = NULL;
+		      int count;
+		      iplist = name_query(sock, name, name_type, False, 
+					  True, wins_ip, &count, NULL);
+		      if(iplist != NULL) {
+			      *return_ip = iplist[0];
+			      free((char *)iplist);
+			      close(sock);
+			      return True;
+		      }
+		      close(sock);
+	      }
+      }
+
+      return False;
+}
+
+
+/********************************************************
+resolve via "lmhosts" method
+*********************************************************/
+static BOOL resolve_lmhosts(char *name, struct in_addr *return_ip, int name_type)
+{
+	/*
+	 * "lmhosts" means parse the local lmhosts file.
+	 */
+	
+	FILE *fp;
+	pstring lmhost_name;
+	int name_type2;
+
+	DEBUG(3,("resolve_name: Attempting lmhosts lookup for name %s\n", name));
+
+	fp = startlmhosts( LMHOSTSFILE );
+	if(fp) {
+		while (getlmhostsent(fp, lmhost_name, &name_type2, return_ip)) {
+			if (strequal(name, lmhost_name) && 
+			    name_type == name_type2) {
+				endlmhosts(fp);
+				return True; 
+			}
+		}
+		endlmhosts(fp);
+	}
+	return False;
+}
+
+
+/********************************************************
+resolve via "hosts" method
+*********************************************************/
+static BOOL resolve_hosts(char *name, struct in_addr *return_ip)
+{
+	/*
+	 * "host" means do a localhost, or dns lookup.
+	 */
+	struct hostent *hp;
+
+	DEBUG(3,("resolve_name: Attempting host lookup for name %s\n", name));
+	
+	if (((hp = Get_Hostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
+		putip((char *)return_ip,(char *)hp->h_addr);
+		return True;
+	}
+	return False;
+}
+
+
 /********************************************************
  Resolve a name into an IP address. Use this function if
  the string is either an IP address, DNS or host name
  or NetBIOS name. This uses the name switch in the
  smb.conf to determine the order of name resolution.
 *********************************************************/
-BOOL resolve_name(char *name, struct in_addr *return_ip)
+BOOL resolve_name(char *name, struct in_addr *return_ip, int name_type)
 {
   int i;
   BOOL pure_address = True;
@@ -452,122 +600,27 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
   if (!ptr || !*ptr) ptr = "host";
 
   while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
-    if(strequal(tok, "host") || strequal(tok, "hosts")) {
-
-      /*
-       * "host" means do a localhost, or dns lookup.
-       */
-
-      struct hostent *hp;
-
-      DEBUG(3,("resolve_name: Attempting host lookup for name %s\n", name));
-
-      if (((hp = Get_Hostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
-        putip((char *)return_ip,(char *)hp->h_addr);
-        return True;
-      }
-
-    } else if(strequal( tok, "lmhosts")) {
-
-      /*
-       * "lmhosts" means parse the local lmhosts file.
-       */
-
-      FILE *fp;
-      pstring lmhost_name;
-      int name_type;
-
-      DEBUG(3,("resolve_name: Attempting lmhosts lookup for name %s\n", name));
-
-      fp = startlmhosts( LMHOSTSFILE );
-      if(fp) {
-        while( getlmhostsent(fp, lmhost_name, &name_type, return_ip ) ) {
-          if( strequal(name, lmhost_name )) {
-            endlmhosts(fp);
-            return True; 
-          }
-        }
-        endlmhosts(fp);
-      }
-
-    } else if(strequal( tok, "wins")) {
-
-      int sock;
-
-      /*
-       * "wins" means do a unicast lookup to the WINS server.
-       * Ignore if there is no WINS server specified or if the
-       * WINS server is one of our interfaces (if we're being
-       * called from within nmbd - we can't do this call as we
-       * would then block).
-       */
-
-      DEBUG(3,("resolve_name: Attempting wins lookup for name %s<0x20>\n", name));
-
-      if(*lp_wins_server()) {
-        struct in_addr wins_ip = *interpret_addr2(lp_wins_server());
-        BOOL wins_ismyip = ismyip(wins_ip);
-
-        if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
-          sock = open_socket_in( SOCK_DGRAM, 0, 3,
-                               interpret_addr(lp_socket_address()) );
-
-          if (sock != -1) {
-            struct in_addr *iplist = NULL;
-            int count;
-            iplist = name_query(sock, name, 0x20, False, True, wins_ip, &count, NULL);
-            if(iplist != NULL) {
-              *return_ip = iplist[0];
-              free((char *)iplist);
-              close(sock);
-              return True;
-            }
-            close(sock);
-          }
-        }
-      } else {
-        DEBUG(3,("resolve_name: WINS server resolution selected and no WINS server present.\n"));
-      }
-    } else if(strequal( tok, "bcast")) {
-
-      int sock;
-
-      /*
-       * "bcast" means do a broadcast lookup on all the local interfaces.
-       */
-
-      DEBUG(3,("resolve_name: Attempting broadcast lookup for name %s<0x20>\n", name));
-
-      sock = open_socket_in( SOCK_DGRAM, 0, 3,
-                             interpret_addr(lp_socket_address()) );
-
-      if (sock != -1) {
-        struct in_addr *iplist = NULL;
-        int count;
-        int num_interfaces = iface_count();
-        set_socket_options(sock,"SO_BROADCAST");
-        /*
-         * Lookup the name on all the interfaces, return on
-         * the first successful match.
-         */
-        for( i = 0; i < num_interfaces; i++) {
-          struct in_addr sendto_ip;
-          /* Done this way to fix compiler error on IRIX 5.x */
-          sendto_ip = *iface_bcast(*iface_n_ip(i));
-          iplist = name_query(sock, name, 0x20, True, False, sendto_ip, &count, NULL);
-          if(iplist != NULL) {
-            *return_ip = iplist[0];
-            free((char *)iplist);
-            close(sock);
-            return True;
-          }
-        }
-        close(sock);
-      }
-
-    } else {
-      DEBUG(0,("resolve_name: unknown name switch type %s\n", tok));
-    }
+	  if((strequal(tok, "host") || strequal(tok, "hosts"))) {
+		  if (name_type == 0x20 && resolve_hosts(name, return_ip)) {
+			  return True;
+		  }
+	  } else if(strequal( tok, "lmhosts")) {
+		  if (resolve_lmhosts(name, return_ip, name_type)) {
+			  return True;
+		  }
+	  } else if(strequal( tok, "wins")) {
+		  /* don't resolve 1D via WINS */
+		  if (name_type != 0x1D &&
+		      resolve_wins(name, return_ip, name_type)) {
+			  return True;
+		  }
+	  } else if(strequal( tok, "bcast")) {
+		  if (resolve_bcast(name, return_ip, name_type)) {
+			  return True;
+		  }
+	  } else {
+		  DEBUG(0,("resolve_name: unknown name switch type %s\n", tok));
+	  }
   }
 
   return False;
@@ -576,39 +629,11 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
 
 
 /********************************************************
-find the IP address of the master browser for a workgroup
+find the IP address of the master browser or DMB for a workgroup
 *********************************************************/
 BOOL find_master(char *group, struct in_addr *master_ip)
 {
-	int sock;
-	struct in_addr *iplist = NULL;
-        int count, i;
-        int num_interfaces = iface_count();
+	if (resolve_name(group, master_ip, 0x1D)) return True;
 
-	sock = open_socket_in( SOCK_DGRAM, 0, 3,
-			       interpret_addr(lp_socket_address()) );
-
-	if (sock == -1) return False;
-
-        set_socket_options(sock,"SO_BROADCAST");
-
-        /*
-         * Lookup the name on all the interfaces, return on
-         * the first successful match.
-         */
-        for( i = 0; i < num_interfaces; i++) {
-		struct in_addr sendto_ip;
-		/* Done this way to fix compiler error on IRIX 5.x */
-		sendto_ip = *iface_bcast(*iface_n_ip(i));
-		iplist = name_query(sock, group, 0x1D, True, False, 
-				    sendto_ip, &count, NULL);
-		if(iplist != NULL) {
-			*master_ip = iplist[0];
-			free((char *)iplist);
-			close(sock);
-			return True;
-		}
-        }
-        close(sock);
-	return False;
+	return resolve_name(group, master_ip, 0x1B);
 }
