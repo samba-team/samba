@@ -895,6 +895,7 @@ static void init_printer_values(void)
 static void init_globals(void)
 {
 	int i;
+	char *myname;
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
@@ -913,7 +914,9 @@ static void init_globals(void)
 	do_parameter("socket options", "TCP_NODELAY");
 #endif
 	do_parameter("workgroup", DEFAULT_WORKGROUP);
-	do_parameter("netbios name", get_myname());
+	myname = get_myname();
+	do_parameter("netbios name", myname);
+	SAFE_FREE(myname);
 	do_parameter("max protocol", "NT1");
 	do_parameter("name resolve order", "lmhosts wins host bcast");
 
