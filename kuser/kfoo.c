@@ -40,6 +40,7 @@
 
 RCSID("$Id$");
 
+int
 main(int argc, char **argv)
 {
     krb5_context context;
