@@ -705,6 +705,63 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	return (path);
 }
 
+
+/* check if the file 'nmae' is a symlink, in that case check that it point to
+   a file that reside under the 'dir' tree */
+
+static BOOL readlink_check(connection_struct *conn, char *dir, char *name)
+{
+	BOOL ret = True;
+	pstring flink;
+	pstring cleanlink;
+	pstring savedir;
+	pstring realdir;
+	size_t reallen;
+
+	if (!vfs_GetWd(conn, savedir)) {
+		DEBUG(0,("couldn't vfs_GetWd for %s %s\n", name, dir));
+		return False;
+	}
+
+	if (vfs_ChDir(conn, dir) != 0) {
+		DEBUG(0,("couldn't vfs_ChDir to %s\n", dir));
+		return False;
+	}
+
+	if (!vfs_GetWd(conn, realdir)) {
+		DEBUG(0,("couldn't vfs_GetWd for %s\n", dir));
+		vfs_ChDir(conn, savedir);
+		return(False);
+	}
+	
+	reallen = strlen(realdir);
+	if (realdir[reallen -1] == '/') {
+		reallen--;
+		realdir[reallen] = 0;
+	}
+
+	if (conn->vfs_ops.readlink(conn, name, flink, sizeof(pstring) -1) != -1) {
+		DEBUG(3,("reduce_name: file path name %s is a symlink\nChecking it's path\n", name));
+		if (*flink == '/') {
+			pstrcpy(cleanlink, flink);
+		} else {
+			pstrcpy(cleanlink, realdir);
+			pstrcat(cleanlink, "/");
+			pstrcat(cleanlink, flink);
+		}
+		unix_clean_name(cleanlink);
+
+		if (strncmp(cleanlink, realdir, reallen) != 0) {
+			DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n", name, realdir, cleanlink, (int)reallen));
+			ret = False;
+		}
+	}
+
+	vfs_ChDir(conn, savedir);
+	
+	return ret;
+}
+
 /*******************************************************************
  Reduce a file name, removing .. elements and checking that
  it is below dir in the heirachy. This uses vfs_GetWd() and so must be run
@@ -749,7 +806,7 @@ BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
 	p = strrchr(base_name,'/');
 
 	if (!p)
-		return(True);
+		return readlink_check(conn, dir, s);
 
 	if (!vfs_GetWd(conn,wd)) {
 		DEBUG(0,("couldn't vfs_GetWd for %s %s\n",s,dir));
@@ -783,7 +840,7 @@ BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
 
 	if (!vfs_GetWd(conn,newname)) {
 		vfs_ChDir(conn,wd);
-		DEBUG(2,("couldn't get vfs_GetWd for %s %s\n",s,dir2));
+		DEBUG(2,("couldn't get vfs_GetWd for %s %s\n",s,base_name));
 		return(False);
 	}
 
@@ -800,6 +857,11 @@ BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
 		if (strncmp(newname,dir2,l) != 0) {
 			vfs_ChDir(conn,wd);
 			DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,(int)l));
+			return(False);
+		}
+
+		if (!readlink_check(conn, dir, newname)) {
+			DEBUG(2, ("Bad access attemt? %s is a symlink outside the share path", s));
 			return(False);
 		}
 
@@ -821,3 +883,4 @@ BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
 	return(True);
 #endif
 }
+
