@@ -1,3 +1,15 @@
+Fri Mar 14 02:49:51 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* kdc/dump.c: Database dump program.
+
+	* kdc/ank.c: Trivial database editing program.
+
+	* kdc/{kdc.c, load.c}: Use libhdb.
+
+	* lib/hdb: New database routine library.
+
+	* lib/krb5/error/Makefile.am: Add hdb_err.
+
 Wed Mar 12 17:41:14 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* kdc/kdc.c: Rewritten AS, and somewhat more working TGS support.
