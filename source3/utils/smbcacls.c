@@ -282,14 +282,14 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 
 	fnum = cli_nt_create(cli, filename);
 	if (fnum == -1) {
-		printf("Failed to open %s\n", filename);
+		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		return;
 	}
 
 	sd = cli_query_secdesc(cli, fnum);
 
 	if (!sd) {
-		printf("ERROR: secdesc query failed\n");
+		printf("ERROR: secdesc query failed: %s\n", cli_errstr(cli));
 		return;
 	}
 
@@ -319,7 +319,7 @@ static void cacl_set(struct cli_state *cli, char *filename,
 
 	fnum = cli_nt_create(cli, filename);
 	if (fnum == -1) {
-		printf("Failed to open %s\n", filename);
+		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		return;
 	}
 
@@ -392,7 +392,7 @@ static void cacl_set(struct cli_state *cli, char *filename,
 			   NULL, old->dacl, &sd_size);
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
-		printf("ERROR: secdesc set failed\n");
+		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
 		return;
 	}
 
