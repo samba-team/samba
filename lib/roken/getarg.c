@@ -172,7 +172,7 @@ arg_match_long(struct getargs *args, size_t num_args,
 		    partial = &args[i];
 		    optarg  = p + p_len;
 		} else if (args[i].type == arg_flag
-			   && strncmp (argv, "no-", 3) == 0) {
+			   && strncmp (p, "no-", 3) == 0) {
 		    negate = !negate;
 		    p += 3;
 		    p_len -= 3;
