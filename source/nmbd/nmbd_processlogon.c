@@ -44,9 +44,9 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   pstring outbuf;
   int code;
   uint16 token = 0;
-  uint32 ntversion;
-  uint16 lmnttoken;
-  uint16 lm20token;
+  uint32 ntversion = 0;
+  uint16 lmnttoken = 0;
+  uint16 lm20token = 0;
   uint32 domainsidsize;
   BOOL short_request = 0;
   char *getdc;
