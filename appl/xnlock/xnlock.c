@@ -584,12 +584,8 @@ verify_krb5(const char *password)
 	    ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
 	    if(ret == 0) {
 		ret = krb524_convert_creds_kdc(context, id, &cred, &c);
-		if(ret == 0) {
-		    snprintf(krb4tkfile, sizeof(krb4tkfile), "%s%d", TKT_ROOT,
-			     getuid());
-		    krb_set_tkt_string(krb4tkfile);
+		if(ret == 0) 
 		    tf_setup(&c, c.pname, c.pinst);
-		}
 		memset(&c, 0, sizeof(c));
 		krb5_free_creds_contents(context, &cred);
 	    }
