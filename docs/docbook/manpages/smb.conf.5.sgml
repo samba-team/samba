@@ -4577,7 +4577,7 @@
 			connected subnet.</para></listitem>
 		</itemizedlist>
 
-		<para>Default: <command>name resolve order = lmhosts host wins bcast
+		<para>Default: <command>name resolve order = lmhosts wins host bcast
 		</command></para>
 		<para>Example: <command>name resolve order = lmhosts bcast host
 		</command></para>
