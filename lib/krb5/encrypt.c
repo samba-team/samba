@@ -90,11 +90,11 @@ static int num_etypes = sizeof(em) / sizeof(em[0]);
 
 static krb5_error_code
 krb5_do_encrypt(krb5_context context,
-		 void *ptr, 
-		 size_t len,
-		 struct encryption_type *et,
-		 krb5_keyblock *keyblock,
-		 krb5_data *result)
+		void *ptr, 
+		size_t len,
+		struct encryption_type *et,
+		const krb5_keyblock *keyblock,
+		krb5_data *result)
 {
     size_t sz;
     unsigned char *p;
@@ -157,7 +157,7 @@ krb5_encrypt (krb5_context context,
 	      void *ptr,
 	      size_t len,
 	      int etype,
-	      krb5_keyblock *keyblock,
+	      const krb5_keyblock *keyblock,
 	      krb5_data *result)
 {
     struct encryption_type *e;
@@ -171,7 +171,7 @@ krb5_decrypt (krb5_context context,
 	      void *ptr,
 	      size_t len,
 	      int etype,
-	      krb5_keyblock *keyblock,
+	      const krb5_keyblock *keyblock,
 	      krb5_data *result)
 {
     struct encryption_type *e;
