@@ -29,6 +29,7 @@ struct tdb_header {
 	char magic_food[32]; /* for /etc/magic */
 	unsigned version; /* version of the code */
 	unsigned hash_size; /* number of hash entries */
+	tdb_off reserved[32];
 };
 
 typedef struct {
