@@ -1,6 +1,6 @@
 %{
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,6 +42,7 @@ RCSID("$Id$");
 
 void yyerror (char *s);
 long name2number(const char *str);
+void error_message(char *, ...);
 
 extern char *yytext;
 
