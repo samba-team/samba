@@ -80,7 +80,6 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 						krb5_keyblock *keyblock)
 {
 	krb5_error_code ret = 0;
-	krb5_error_code our_ret = 0;
 	krb5_keytab keytab = NULL;
 	krb5_kt_cursor kt_cursor;
 	krb5_keytab_entry kt_entry;
@@ -89,6 +88,7 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 	const char *my_name, *my_fqdn;
 	int i;
 	int number_matched_principals = 0;
+	const char *last_error_message;
 
 	/* Generate the list of principal names which we expect
 	 * clients might want to use for authenticating to the file
@@ -111,7 +111,8 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 
 	ret = krb5_kt_default(context, &keytab);
 	if (ret) {
-		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_default failed (%s)\n", error_message(ret)));
+		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_default failed (%s)\n", 
+			  smb_get_krb5_error_message(context, ret, mem_ctx)));
 		goto out;
 	}
 
@@ -121,37 +122,43 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 
 	ret = krb5_kt_start_seq_get(context, keytab, &kt_cursor);
 	if (ret) {
-		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_start_seq_get failed (%s)\n", error_message(ret)));
+		last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
+		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_start_seq_get failed (%s)\n", 
+			  last_error_message));
 		goto out;
 	}
   
 	ret = krb5_kt_start_seq_get(context, keytab, &kt_cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
+		ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN; /* Pick an error... */
 		while (ret && (krb5_kt_next_entry(context, keytab, &kt_entry, &kt_cursor) == 0)) {
-			ret = krb5_unparse_name(context, kt_entry.principal, &entry_princ_s);
-			if (ret) {
-				DEBUG(1, ("ads_keytab_verify_ticket: krb5_unparse_name failed (%s)\n", error_message(ret)));
+			krb5_error_code upn_ret;
+			upn_ret = krb5_unparse_name(context, kt_entry.principal, &entry_princ_s);
+			if (upn_ret) {
+				last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
+				DEBUG(1, ("ads_keytab_verify_ticket: krb5_unparse_name failed (%s)\n", 
+					  last_error_message));
+				ret = upn_ret;
 				break;
 			}
-			ret = KRB5_BAD_ENCTYPE;
-			for (i = 0; i < sizeof(valid_princ_formats) / sizeof(valid_princ_formats[0]); i++) {
-				if (strequal(entry_princ_s, valid_princ_formats[i])) {
-					number_matched_principals++;
-					p_packet->length = ticket->length;
-					p_packet->data = (krb5_pointer)ticket->data;
-					*pp_tkt = NULL;
-					our_ret = krb5_rd_req(context, &auth_context, p_packet, kt_entry.principal, keytab, NULL, pp_tkt);
-					if (our_ret !=  KRB5_BAD_ENCTYPE) {
-						ret = our_ret;
-					}
-					if (our_ret) {
-						DEBUG(10, ("ads_keytab_verify_ticket: krb5_rd_req(%s) failed: %s\n",
-							entry_princ_s, error_message(our_ret)));
-					} else {
-						DEBUG(3,("ads_keytab_verify_ticket: krb5_rd_req succeeded for principal %s\n",
-							entry_princ_s));
-						break;
-					}
+			for (i = 0; i < ARRAY_SIZE(valid_princ_formats); i++) {
+				if (!strequal(entry_princ_s, valid_princ_formats[i])) {
+					continue;
+				}
+
+				number_matched_principals++;
+				p_packet->length = ticket->length;
+				p_packet->data = (krb5_pointer)ticket->data;
+				*pp_tkt = NULL;
+				ret = krb5_rd_req(context, &auth_context, p_packet, kt_entry.principal, keytab, NULL, pp_tkt);
+				if (ret) {
+					last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
+					DEBUG(10, ("ads_keytab_verify_ticket: krb5_rd_req(%s) failed: %s\n",
+						   entry_princ_s, last_error_message));
+				} else {
+					DEBUG(3,("ads_keytab_verify_ticket: krb5_rd_req succeeded for principal %s\n",
+						 entry_princ_s));
+					break;
 				}
 			}
 
@@ -177,7 +184,7 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 			DEBUG(3, ("ads_keytab_verify_ticket: krb5_rd_req failed for all %d matched keytab principals\n",
 				number_matched_principals));
 		}
-		DEBUG(3, ("ads_keytab_verify_ticket: last error: %s\n", error_message(ret)));
+		DEBUG(3, ("ads_keytab_verify_ticket: last error: %s\n", last_error_message));
 	}
 
 	if (entry_princ_s) {
@@ -304,7 +311,7 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 	
 		DEBUG((our_ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
 				("ads_secrets_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
-				(unsigned int)enctypes[i], error_message(our_ret)));
+				 (unsigned int)enctypes[i], smb_get_krb5_error_message(context, our_ret, mem_ctx)));
 
 		if (our_ret !=  KRB5_BAD_ENCTYPE) {
 			ret = our_ret;
@@ -355,7 +362,7 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 	ret = krb5_parse_name(context, host_princ_s, &host_princ);
 	if (ret) {
 		DEBUG(1,("ads_verify_ticket: krb5_parse_name(%s) failed (%s)\n",
-					host_princ_s, error_message(ret)));
+			 host_princ_s, error_message(ret)));
 		goto out;
 	}
 
@@ -400,14 +407,14 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 
 	if (ret) {
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
-			 error_message(ret)));
+			 smb_get_krb5_error_message(context, ret, mem_ctx)));
 		goto out;
 	}
 
 	ret = krb5_mk_rep(context, auth_context, &packet);
 	if (ret) {
 		DEBUG(3,("ads_verify_ticket: Failed to generate mutual authentication reply (%s)\n",
-			error_message(ret)));
+			 smb_get_krb5_error_message(context, ret, mem_ctx)));
 		goto out;
 	}
 
@@ -434,7 +441,7 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 	if ((ret = krb5_unparse_name(context, get_principal_from_tkt(tkt),
 				     &malloc_principal))) {
 		DEBUG(3,("ads_verify_ticket: krb5_unparse_name failed (%s)\n", 
-			 error_message(ret)));
+			 smb_get_krb5_error_message(context, ret, mem_ctx)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
 	}

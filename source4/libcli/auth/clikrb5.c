@@ -461,4 +461,18 @@ cleanup_princ:
 #endif
 }
 
+ char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx) 
+{
+	char *ret;
+	
+#if defined(HAVE_KRB5_GET_ERROR_STRING) && defined(HAVE_KRB5_FREE_ERROR_STRING) 	
+	char *context_error = krb5_get_error_string(context);
+	ret = talloc_asprintf(mem_ctx, "%s: %s", error_message(code), context_error);
+	krb5_free_error_string(context, context_error);
+#else 
+	ret = talloc_strdup(mem_ctx, error_message(code));
+#endif
+	return ret;
+}
+
 #endif
