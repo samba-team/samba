@@ -14,6 +14,7 @@ start a telnet and forward X-connections.
 .Op Fl t Ar telnet_args
 .Op Fl x Ar xterm_args
 .Op Fl w Ar term_emulator
+.Op Fl n
 .Ar host
 .Op Ar port
 .Sh DESCRIPTION
@@ -49,6 +50,8 @@ as arguments to
 Use
 .Ar term_emulator
 instead of xterm.
+.It Fl n
+Do not start any terminal emulator.
 .El
 .Sh EXAMPLE
 To login from host
