@@ -1115,7 +1115,7 @@ static double create_procs(void (*fn)(int ))
 		return end_timer();
 	}
 
-	memset(child_status, 0, sizeof(int)*nprocs);
+	memset((char *)child_status, 0, sizeof(int)*nprocs);
 
 	for (i=0;i<nprocs;i++) {
 		if (fork() == 0) {
