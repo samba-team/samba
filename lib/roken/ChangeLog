@@ -1,3 +1,7 @@
+1999-07-06  Assar Westerlund  <assar@sics.se>
+
+	* readv.c (readv): typo
+
 1999-07-03  Assar Westerlund  <assar@sics.se>
 
 	* writev.c (writev): error check malloc properly
