@@ -40,7 +40,7 @@ if len(args) == 0:
 for test in args:
 
    try:
-      module = __import__(test)
+      module = __import__('torture_%s' % test)
    except ImportError:
       print 'No such module "%s"' % test
       sys.exit(1)
