@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "26 July 2001" "" ""
+.TH "SMB.CONF" "5" "03 August 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -6673,7 +6673,7 @@ Default: \fBno username map\fR
 
 Example: \fBusername map = /usr/local/samba/lib/users.map
 \fR.TP
-\fButmp\fR
+\fButmp (G)\fR
 This boolean parameter is only available if 
 Samba has been configured and compiled with the option \fB --with-utmp\fR. If set to true then Samba will attempt
 to add utmp or utmpx records (depending on the UNIX system) whenever a
