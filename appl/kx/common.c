@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -500,6 +500,30 @@ create_and_write_cookie (char *xauthfile,
  * cookie and copy the rest of it to `sock'.
  * Expect cookies iff cookiesp.
  * Return 0 iff ok.
+ *
+ * The protocol is as follows:
+ *
+ * C->S:	[Bl]				1
+ *		unused				1
+ *		protocol major version		2
+ *		protocol minor version		2
+ *		length of auth protocol name(n)	2
+ *		length of auth protocol data	2
+ *		unused				2
+ *		authorization protocol name	n
+ *		pad				pad(n)
+ *		authorization protocol data	d
+ *		pad				pad(d)
+ *
+ * S->C:	Failed
+ *		0				1
+ *		length of reason		1
+ *		protocol major version		2
+ *		protocol minor version		2
+ *		length in 4 bytes unit of
+ *		additional data (n+p)/4		2
+ *		reason				n
+ *		unused				p = pad(n)
  */
 
 int
@@ -510,6 +534,12 @@ verify_and_remove_cookies (int fd, int sock, int cookiesp)
      unsigned n, d, npad, dpad;
      char *protocol_name, *protocol_data;
      u_char zeros[6] = {0, 0, 0, 0, 0, 0};
+     u_char refused[20] = {0, 10, 
+			   0, 0, /* protocol major version  */
+			   0, 0, /* protocol minor version */
+			   0, 0, /* length of additional data / 4 */
+			   'b', 'a', 'd', ' ', 'c', 'o', 'o', 'k', 'i', 'e',
+			   0, 0};
 
      if (krb_net_read (fd, beg, sizeof(beg)) != sizeof(beg))
 	  return 1;
@@ -531,7 +561,7 @@ verify_and_remove_cookies (int fd, int sock, int cookiesp)
      protocol_data = malloc(d + dpad);
      if (d + dpad != 0 && protocol_data == NULL) {
 	 free (protocol_name);
-	 goto fail;
+	 return 1;
      }
      if (krb_net_read (fd, protocol_name, n + npad) != n + npad)
 	 goto fail;
@@ -539,16 +569,27 @@ verify_and_remove_cookies (int fd, int sock, int cookiesp)
 	 goto fail;
      if (cookiesp) {
 	 if (strncmp (protocol_name, COOKIE_TYPE, strlen(COOKIE_TYPE)) != 0)
-	     goto fail;
+	     goto refused;
 	 if (d != cookie_len ||
 	     memcmp (protocol_data, cookie, cookie_len) != 0)
-	     goto fail;
+	     goto refused;
      }
      free (protocol_name);
      free (protocol_data);
      if (krb_net_write (sock, zeros, 6) != 6)
 	  return 1;
      return 0;
+refused:
+     refused[2] = beg[2];
+     refused[3] = beg[3];
+     refused[4] = beg[4];
+     refused[5] = beg[5];
+     if (bigendianp)
+	 refused[7] = 3;
+     else
+	 refused[6] = 3;
+
+     krb_net_write (fd, refused, sizeof(refused));
 fail:
      free (protocol_name);
      free (protocol_data);
