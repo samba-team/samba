@@ -463,6 +463,7 @@ void fail_next_srvsvc_open(void)
 {
   fail_next_srvsvc = True;
   fail_time = time(NULL);
+  DEBUG(10,("fail_next_srvsvc_open: setting up timeout close of \\srvsvc pipe for print fix.\n"));
 }
 
 /****************************************************************************
@@ -490,10 +491,12 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	if(fail_next_srvsvc && (time(NULL) > fail_time + HACK_FAIL_TIME)) {
 		fail_next_srvsvc = False;
 		fail_time = (time_t)0;
+		DEBUG(10,("nt_open_pipe: End of timeout close of \\srvsvc pipe for print fix.\n"));
 	}
 
 	if(fail_next_srvsvc && strequal(fname, "\\srvsvc")) {
 		fail_next_srvsvc = False;
+		DEBUG(10,("nt_open_pipe: Deliberately failing open of \\srvsvc pipe for print fix.\n"));
 		return(ERROR(ERRSRV,ERRaccess));
 	}
 
