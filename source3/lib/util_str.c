@@ -428,7 +428,9 @@ BOOL trim_string(char *s,const char *front,const char *back)
 
 	if (front_len) {
 		while (len && strncmp(s, front, front_len)==0) {
-			memcpy(s, s+front_len, (len-front_len)+1);
+			/* Must use memmove here as src & dest can
+			 * easily overlap. Found by valgrind. JRA. */
+			memmove(s, s+front_len, (len-front_len)+1);
 			len -= front_len;
 			ret=True;
 		}
