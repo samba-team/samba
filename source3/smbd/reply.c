@@ -669,10 +669,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	time_t date;
 	int dirtype;
 	int outsize = 0;
-	int numentries = 0;
+	unsigned int numentries = 0;
+	unsigned int maxentries = 0;
 	BOOL finished = False;
-	int maxentries;
-	int i;
 	char *p;
 	BOOL ok = False;
 	int status_len;
@@ -786,6 +785,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 					numentries = 0;
 				p += DIR_STRUCT_SIZE;
 			} else {
+				unsigned int i;
+				maxentries = MIN(maxentries, ((BUFFER_SIZE - (p - outbuf))/DIR_STRUCT_SIZE));
+
 				DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
 				conn->dirpath,lp_dontdescend(SNUM(conn))));
 				if (in_list(conn->dirpath, lp_dontdescend(SNUM(conn)),True))
@@ -845,7 +847,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory, sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
-	DEBUG( 4, ( "%s mask=%s path=%s dtype=%d nument=%d of %d\n",
+	DEBUG( 4, ( "%s mask=%s path=%s dtype=%d nument=%u of %u\n",
 		smb_fn_name(CVAL(inbuf,smb_com)), 
 		mask, directory, dirtype, numentries, maxentries ) );
 

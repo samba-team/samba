@@ -82,7 +82,7 @@ static int interpret_long_filename(struct cli_state *cli,
 			
 		case 260: /* NT uses this, but also accepts 2 */
 		{
-			int namelen, slen;
+			size_t namelen, slen;
 			p += 4; /* next entry offset */
 			p += 4; /* fileindex */
 				
