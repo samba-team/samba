@@ -44,7 +44,19 @@ extern int DEBUGLEVEL;
 #define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
 #endif
 
+/*******************************************************************
+ External access to time_t_min and time_t_max.
+********************************************************************/
 
+time_t get_time_t_min(void)
+{
+	return TIME_T_MIN;
+}
+
+time_t get_time_t_max(void)
+{
+	return TIME_T_MAX;
+}
 
 /*******************************************************************
 a gettimeofday wrapper
@@ -121,7 +133,7 @@ Updated by Paul Eggert <eggert@twinsun.com>
 ********************************************************************/
 static int TimeZoneFaster(time_t t)
 {
-  static struct dst_table {time_t start,end; int zone;} *dst_table = NULL;
+  static struct dst_table {time_t start,end; int zone;} *tdt, *dst_table = NULL;
   static int table_size = 0;
   int i;
   int zone = 0;
@@ -141,13 +153,18 @@ static int TimeZoneFaster(time_t t)
     time_t low,high;
 
     zone = TimeZone(t);
-    dst_table = (struct dst_table *)Realloc(dst_table,
+    tdt = (struct dst_table *)Realloc(dst_table,
 					      sizeof(dst_table[0])*(i+1));
-    if (!dst_table) {
+    if (!tdt) {
+      DEBUG(0,("TimeZoneFaster: out of memory!\n"));
+      if (dst_table)
+        free(dst_table);
       table_size = 0;
     } else {
-      table_size++;
 
+      dst_table = tdt;
+      table_size++;
+    
       dst_table[i].zone = zone; 
       dst_table[i].start = dst_table[i].end = t;
     
@@ -304,6 +321,12 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 		nt->high = 0;
 		return;
 	}
+	if (t == TIME_T_MAX)
+	{
+		nt->low = 0xffffffff;
+		nt->high = 0x7fffffff;
+		return;
+	}		
 	if (t == -1)
 	{
 		nt->low = 0xffffffff;

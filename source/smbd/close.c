@@ -78,7 +78,7 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
 		return;
 	}
 
-	transfer_file(tmp_fd,outfd,st.st_size, NULL,0,0);
+	transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_size);
 	close(tmp_fd);
 	close(outfd);
   }
@@ -152,6 +152,9 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	lock_share_entry_fsp(fsp);
 	share_entry_count = del_share_mode(fsp, &share_entry);
+
+	DEBUG(10,("close_normal_file: share_entry_count = %d for file %s\n",
+		share_entry_count, fsp->fsp_name ));
 
 	/*
 	 * We delete on close if it's the last open, and the

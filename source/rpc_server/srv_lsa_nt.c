@@ -176,7 +176,7 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 	if (mapped_count == 0)
 		r_l->status = NT_STATUS_NONE_MAPPED;
 	else
-		r_l->status = NT_STATUS_NO_PROBLEMO;
+		r_l->status = NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -276,7 +276,7 @@ static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 	if (mapped_count == 0)
 		r_l->status = NT_STATUS_NONE_MAPPED;
 	else
-		r_l->status = NT_STATUS_NO_PROBLEMO;
+		r_l->status = NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -291,7 +291,7 @@ uint32 _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 
 	if (!create_policy_hnd(p, &r_u->pol, NULL, NULL))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -306,7 +306,7 @@ uint32 _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *r_
 	if (!create_policy_hnd(p, &r_u->pol, NULL, NULL))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -323,8 +323,8 @@ uint32 _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENU
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* set up the LSA QUERY INFO response */
-	init_r_enum_trust_dom(r_u, enum_context, dom_name, dom_sid,
-	      dom_name != NULL ? NT_STATUS_NO_PROBLEMO : NT_STATUS_UNABLE_TO_FREE_VM);
+	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, dom_name, dom_sid,
+	      dom_name != NULL ? NT_STATUS_OK : NT_STATUS_UNABLE_TO_FREE_VM);
 
 	return r_u->status;
 }
@@ -341,7 +341,7 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 	char *name = NULL;
 	DOM_SID *sid = NULL;
 
-	r_u->status = NT_STATUS_NO_PROBLEMO;
+	r_u->status = NT_STATUS_OK;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
@@ -434,7 +434,7 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 		break;
 	}
 
-	if(r_u->status == NT_STATUS_NO_PROBLEMO) {
+	if(r_u->status == NT_STATUS_OK) {
 		r_u->undoc_buffer = 0x22000000; /* bizarre */
 		r_u->info_class = q_u->info_class;
 	}
@@ -508,7 +508,7 @@ uint32 _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u)
 		return NT_STATUS_INVALID_HANDLE;
 
 	close_policy_hnd(p, &q_u->pol);
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -532,8 +532,8 @@ uint32 _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R
   fstrcpy(username, vuser->user.smb_name);
   fstrcpy(domname, vuser->user.domain);
   
-  ulen = strlen(username);
-  dlen = strlen(domname);
+  ulen = strlen(username) + 1;
+  dlen = strlen(domname) + 1;
   
   init_uni_hdr(&r_u->hdr_user_name, ulen);
   r_u->ptr_user_name = 1;
@@ -545,7 +545,7 @@ uint32 _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R
   r_u->ptr_dom_name = 1;
   init_unistr2(&r_u->uni2_dom_name, domname, dlen);
 
-  r_u->status = NT_STATUS_NO_PROBLEMO;
+  r_u->status = NT_STATUS_OK;
   
   return r_u->status;
 }

@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #ifdef WITH_SSL
-#include <ssl.h>
+#include <openssl/ssl.h>
 #undef Realloc  /* SSLeay defines this and samba has a function of this name */
 extern SSL  *ssl;
 extern int  sslFd;
@@ -490,30 +490,31 @@ static ssize_t read_socket_data(int fd,char *buffer,size_t N)
 
 ssize_t write_data(int fd,char *buffer,size_t N)
 {
-  size_t total=0;
-  ssize_t ret;
+	size_t total=0;
+	ssize_t ret;
 
-  while (total < N)
-  {
+	while (total < N) {
 #ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_write(ssl,buffer + total,N - total);
-    }else{
-      ret = write(fd,buffer + total,N - total);
-    }
+		if(fd == sslFd){
+			ret = SSL_write(ssl,buffer + total,N - total);
+		} else {
+			ret = write(fd,buffer + total,N - total);
+		}
 #else /* WITH_SSL */
-    ret = write(fd,buffer + total,N - total);
+		ret = write(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
-    if (ret == -1) {
-      DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
-      return -1;
-    }
-    if (ret == 0) return total;
+		if (ret == -1) {
+			DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0)
+			return (ssize_t)total;
 
-    total += ret;
-  }
-  return (ssize_t)total;
+		total += (size_t)ret;
+	}
+
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -775,64 +776,70 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
 }
 
 /****************************************************************************
-open a socket of the specified type, port and address for incoming data
+ Open a socket of the specified type, port, and address for incoming data.
 ****************************************************************************/
 
-int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind)
+int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL rebind )
 {
-  struct sockaddr_in sock;
-  int res;
+	struct sockaddr_in sock;
+	int res;
 
-  memset((char *)&sock,'\0',sizeof(sock));
+	memset( (char *)&sock, '\0', sizeof(sock) );
 
 #ifdef HAVE_SOCK_SIN_LEN
-  sock.sin_len = sizeof(sock);
+	sock.sin_len         = sizeof(sock);
 #endif
-  sock.sin_port = htons( port );
-  sock.sin_family = AF_INET;
-  sock.sin_addr.s_addr = socket_addr;
-  res = socket(AF_INET, type, 0);
-  if (res == -1) 
-    { DEBUG(0,("socket failed\n")); return -1; }
+	sock.sin_port        = htons( port );
+	sock.sin_family      = AF_INET;
+	sock.sin_addr.s_addr = socket_addr;
 
-  {
-    int val=1;
-	if(rebind)
-		val=1;
-	else
-		val=0;
-    if(setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) == -1)
-		DEBUG(dlevel,("setsockopt: SO_REUSEADDR=%d on port %d failed with error = %s\n",
-			val, port, strerror(errno) ));
+	res = socket( AF_INET, type, 0 );
+	if( res == -1 ) {
+		if( DEBUGLVL(0) ) {
+			dbgtext( "open_socket_in(): socket() call failed: " );
+			dbgtext( "%s\n", strerror( errno ) );
+		}
+		return -1;
+	}
+
+	/* This block sets/clears the SO_REUSEADDR and possibly SO_REUSEPORT. */
+	{
+		int val = rebind ? 1 : 0;
+		if( setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) == -1 ) {
+			if( DEBUGLVL( dlevel ) ) {
+				dbgtext( "open_socket_in(): setsockopt: " );
+				dbgtext( "SO_REUSEADDR = %s ", val?"True":"False" );
+				dbgtext( "on port %d failed ", port );
+				dbgtext( "with error = %s\n", strerror(errno) );
+			}
+		}
 #ifdef SO_REUSEPORT
-    if(setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1)
-		DEBUG(dlevel,("setsockopt: SO_REUSEPORT=%d on port %d failed with error = %s\n",
-			val, port, strerror(errno) ));
+		if( setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1 ) {
+			if( DEBUGLVL( dlevel ) ) {
+				dbgtext( "open_socket_in(): setsockopt: ");
+				dbgtext( "SO_REUSEPORT = %d ", val?"True":"False" );
+				dbgtext( "on port %d failed ", port );
+				dbgtext( "with error = %s\n", strerror(errno) );
+			}
+		}
 #endif /* SO_REUSEPORT */
-  }
+	}
 
-  /* now we've got a socket - we need to bind it */
-  if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0) 
-    { 
-      if (port) {
-	if (port == SMB_PORT || port == NMB_PORT)
-	  DEBUG(dlevel,("bind failed on port %d socket_addr=%s (%s)\n",
-			port,inet_ntoa(sock.sin_addr),strerror(errno))); 
-	close(res); 
+	/* now we've got a socket - we need to bind it */
+	if( bind( res, (struct sockaddr *)&sock, sizeof(sock) ) == -1 ) {
+		if( DEBUGLVL(dlevel) && (port == SMB_PORT || port == NMB_PORT) ) {
+			dbgtext( "bind failed on port %d ", port );
+			dbgtext( "socket_addr = %s.\n", inet_ntoa( sock.sin_addr ) );
+			dbgtext( "Error = %s\n", strerror(errno) );
+		}
+		close( res ); 
+		return( -1 ); 
+	}
 
-	if (dlevel > 0 && port < 1000)
-	  port = 7999;
+	DEBUG( 3, ( "bind succeeded on port %d\n", port ) );
 
-	if (port >= 1000 && port < 9000)
-	  return(open_socket_in(type,port+1,dlevel,socket_addr,rebind));
-      }
-
-      return(-1); 
-    }
-  DEBUG(3,("bind succeeded on port %d\n",port));
-
-  return res;
-}
+	return( res );
+ }
 
 /****************************************************************************
   create an outgoing socket. timeout is in milliseconds.
@@ -889,7 +896,7 @@ connect_again:
 #endif
 
   if (ret < 0) {
-    DEBUG(1,("error connecting to %s:%d (%s)\n",
+    DEBUG(2,("error connecting to %s:%d (%s)\n",
 	     inet_ntoa(*addr),port,strerror(errno)));
     close(res);
     return -1;

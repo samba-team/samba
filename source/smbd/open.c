@@ -3,6 +3,7 @@
    Version 1.9.
    file opening and share modes
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -452,108 +453,151 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 							SMB_INO_T inode, int share_mode, int *p_flags, int *p_oplock_request,
 							BOOL *p_all_current_opens_are_level_II)
 {
-  int i;
-  int num_share_modes;
-  int oplock_contention_count = 0;
-  share_mode_entry *old_shares = 0;
-  BOOL fcbopen = False;
-  BOOL broke_oplock;	
+	int i;
+	int num_share_modes;
+	int oplock_contention_count = 0;
+	share_mode_entry *old_shares = 0;
+	BOOL fcbopen = False;
+	BOOL broke_oplock;	
 
-  if(GET_OPEN_MODE(share_mode) == DOS_OPEN_FCB)
-    fcbopen = True;
+	if(GET_OPEN_MODE(share_mode) == DOS_OPEN_FCB)
+		fcbopen = True;
 
-  num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+	num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
 
-  if(num_share_modes == 0)
-    return 0;
+	if(num_share_modes == 0)
+		return 0;
 
-  /*
-   * Check if the share modes will give us access.
-   */
+	/*
+	 * Check if the share modes will give us access.
+	 */
 
-  do {
+	do {
+		share_mode_entry broken_entry;
 
-    broke_oplock = False;
-    *p_all_current_opens_are_level_II = True;
+		broke_oplock = False;
+		*p_all_current_opens_are_level_II = True;
 
-    for(i = 0; i < num_share_modes; i++) {
-      share_mode_entry *share_entry = &old_shares[i];
+		for(i = 0; i < num_share_modes; i++) {
+			share_mode_entry *share_entry = &old_shares[i];
 
-      /* 
-       * By observation of NetBench, oplocks are broken *before* share
-       * modes are checked. This allows a file to be closed by the client
-       * if the share mode would deny access and the client has an oplock. 
-       * Check if someone has an oplock on this file. If so we must break 
-       * it before continuing. 
-       */
+			/* 
+			 * By observation of NetBench, oplocks are broken *before* share
+			 * modes are checked. This allows a file to be closed by the client
+			 * if the share mode would deny access and the client has an oplock. 
+			 * Check if someone has an oplock on this file. If so we must break 
+			 * it before continuing. 
+			 */
 
-      if((*p_oplock_request && EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) ||
-         (!*p_oplock_request && (share_entry->op_type != NO_OPLOCK))) {
+			if((*p_oplock_request && EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) ||
+						(!*p_oplock_request && (share_entry->op_type != NO_OPLOCK))) {
 
-        BOOL opb_ret;
+				BOOL opb_ret;
 
-        DEBUG(5,("open_mode_check: oplock_request = %d, breaking oplock (%x) on file %s, \
+				DEBUG(5,("open_mode_check: oplock_request = %d, breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsigned int)dev, (double)inode));
 
-        /* Oplock break - unlock to request it. */
-        unlock_share_entry(conn, dev, inode);
+				/* Oplock break - unlock to request it. */
+				unlock_share_entry(conn, dev, inode);
 
-        opb_ret = request_oplock_break(share_entry, dev, inode);
+				opb_ret = request_oplock_break(share_entry, dev, inode);
 
-        /* Now relock. */
-        lock_share_entry(conn, dev, inode);
+				/* Now relock. */
+				lock_share_entry(conn, dev, inode);
 
-        if(opb_ret == False) {
-          free((char *)old_shares);
-          DEBUG(0,("open_mode_check: FAILED when breaking oplock (%x) on file %s, \
+				if(opb_ret == False) {
+					DEBUG(0,("open_mode_check: FAILED when breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
-          errno = EACCES;
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbadshare;
-          return -1;
-        }
+					free((char *)old_shares);
+					errno = EACCES;
+					unix_ERR_class = ERRDOS;
+					unix_ERR_code = ERRbadshare;
+					return -1;
+				}
 
-        broke_oplock = True;
-        *p_all_current_opens_are_level_II = False;
-        break;
+				broke_oplock = True;
+				broken_entry = *share_entry;
+				break;
 
-      } else if (!LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
-        *p_all_current_opens_are_level_II = False;
-      }
+			} else if (!LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
+				*p_all_current_opens_are_level_II = False;
+			}
 
-      /* someone else has a share lock on it, check to see 
-         if we can too */
+			/* someone else has a share lock on it, check to see 
+				if we can too */
 
-      if(check_share_mode(share_entry, share_mode, fname, fcbopen, p_flags) == False) {
-        free((char *)old_shares);
-        errno = EACCES;
-        return -1;
-      }
+			if(check_share_mode(share_entry, share_mode, fname, fcbopen, p_flags) == False) {
+				free((char *)old_shares);
+				errno = EACCES;
+				return -1;
+			}
 
-    } /* end for */
+		} /* end for */
 
-    if(broke_oplock) {
-      free((char *)old_shares);
-      num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
-      oplock_contention_count++;
-    }
-  } while(broke_oplock);
+		if(broke_oplock) {
+			free((char *)old_shares);
+			num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+			oplock_contention_count++;
 
-  if(old_shares != 0)
-    free((char *)old_shares);
+			/* Paranoia check that this is no longer an exlusive entry. */
+			for(i = 0; i < num_share_modes; i++) {
+				share_mode_entry *share_entry = &old_shares[i];
 
-  /*
-   * Refuse to grant an oplock in case the contention limit is
-   * reached when going through the lock list multiple times.
-   */
+				if (share_modes_identical(&broken_entry, share_entry) && 
+								EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type) ) {
 
-  if(oplock_contention_count >= lp_oplock_contention_limit(SNUM(conn))) {
-    *p_oplock_request = 0;
-    DEBUG(4,("open_mode_check: oplock contention = %d. Not granting oplock.\n",
-          oplock_contention_count ));
-  }
+					/*
+					 * This should not happen. The target left this oplock
+					 * as exlusive.... The process *must* be dead.... 
+					 */
 
-  return num_share_modes;
+					DEBUG(0,("open_mode_check: exlusive oplock left by process %d after break ! For file %s, \
+dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fname, (unsigned int)dev, (double)inode));
+
+					if (process_exists(broken_entry.pid)) {
+						pstring errmsg;
+						slprintf(errmsg, sizeof(errmsg)-1, 
+									"open_mode_check: Existant process %d left active oplock.\n",
+								broken_entry.pid );
+						smb_panic(errmsg);
+					}
+
+					if (del_share_entry(dev, inode, &broken_entry, NULL) == -1) {
+						errno = EACCES;
+						unix_ERR_class = ERRDOS;
+						unix_ERR_code = ERRbadshare;
+						return -1;
+					}
+
+					/*
+					 * We must reload the share modes after deleting the 
+					 * other process's entry.
+					 */
+
+					free((char *)old_shares);
+					num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+					break;
+				}
+			} /* end for paranoia... */
+		} /* end if broke_oplock */
+
+	} while(broke_oplock);
+
+	if(old_shares != 0)
+		free((char *)old_shares);
+
+	/*
+	 * Refuse to grant an oplock in case the contention limit is
+	 * reached when going through the lock list multiple times.
+	 */
+
+	if(oplock_contention_count >= lp_oplock_contention_limit(SNUM(conn))) {
+		*p_oplock_request = 0;
+		DEBUG(4,("open_mode_check: oplock contention = %d. Not granting oplock.\n",
+				oplock_contention_count ));
+	}
+
+	return num_share_modes;
 }
 
 /****************************************************************************
@@ -569,6 +613,7 @@ static void kernel_flock(files_struct *fsp, int deny_mode)
 	else if (deny_mode == DENY_ALL) kernel_mode = LOCK_MAND;
 	if (kernel_mode) flock(fsp->fd, kernel_mode);
 #endif
+	;;
 }
 
 
@@ -1041,7 +1086,7 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 			}
 
 			if(vfs_mkdir(conn,fname, unix_mode(conn,aDIR, fname)) < 0) {
-				DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
+				DEBUG(2,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
 				file_free(fsp);
 				return NULL;
@@ -1213,11 +1258,10 @@ dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (doub
             unlock_share_entry(conn, dev, inode);
             if(request_oplock_break(share_entry, dev, inode) == False)
             {
-              free((char *)old_shares);
-
               DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
 
+              free((char *)old_shares);
               return False;
             }
             lock_share_entry(conn, dev, inode);

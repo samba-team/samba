@@ -857,120 +857,111 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
 {
-  char *str1 = param+2;
-  char *str2 = skip_string(str1,1);
-  char *p = skip_string(str2,1);
-  char *QueueName = p;
-  int uLevel;
-  int count=0;
-  int snum;
-  char* str3;
-  struct pack_desc desc;
-  print_queue_struct *queue=NULL;
-  print_status_struct status;
-  char* tmpdata=NULL;
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *p = skip_string(str2,1);
+	char *QueueName = p;
+	int uLevel;
+	int count=0;
+	int snum;
+	char* str3;
+	struct pack_desc desc;
+	print_queue_struct *queue=NULL;
+	print_status_struct status;
+	char* tmpdata=NULL;
 
-  memset((char *)&status,'\0',sizeof(status));
-  memset((char *)&desc,'\0',sizeof(desc));
+	memset((char *)&status,'\0',sizeof(status));
+	memset((char *)&desc,'\0',sizeof(desc));
  
-  p = skip_string(p,1);
-  uLevel = SVAL(p,0);
-  str3 = p + 4;
+	p = skip_string(p,1);
+	uLevel = SVAL(p,0);
+	str3 = p + 4;
  
-  /* remove any trailing username */
-  if ((p = strchr(QueueName,'%'))) *p = 0;
+	/* remove any trailing username */
+	if ((p = strchr(QueueName,'%')))
+		*p = 0;
  
-  DEBUG(3,("PrintQueue uLevel=%d name=%s\n",uLevel,QueueName));
+	DEBUG(3,("api_DosPrintQGetInfo: uLevel=%d name=%s\n",uLevel,QueueName));
  
-  /* check it's a supported varient */
-  if (!prefix_ok(str1,"zWrLh")) return False;
-  if (!check_printq_info(&desc,uLevel,str2,str3)) {
-    /*
-     * Patch from Scott Moomaw <scott@bridgewater.edu>
-     * to return the 'invalid info level' error if an
-     * unknown level was requested.
-     */
-    *rdata_len = 0;
-    *rparam_len = 6;
-    *rparam = REALLOC(*rparam,*rparam_len);
-    SSVALS(*rparam,0,ERROR_INVALID_LEVEL);
-    SSVAL(*rparam,2,0);
-    SSVAL(*rparam,4,0);
-    return(True);
-  }
+	/* check it's a supported varient */
+	if (!prefix_ok(str1,"zWrLh"))
+		return False;
+	if (!check_printq_info(&desc,uLevel,str2,str3)) {
+		/*
+		 * Patch from Scott Moomaw <scott@bridgewater.edu>
+		 * to return the 'invalid info level' error if an
+		 * unknown level was requested.
+		 */
+		*rdata_len = 0;
+		*rparam_len = 6;
+		*rparam = REALLOC(*rparam,*rparam_len);
+		SSVALS(*rparam,0,ERRunknownlevel);
+		SSVAL(*rparam,2,0);
+		SSVAL(*rparam,4,0);
+		return(True);
+	}
  
-  snum = lp_servicenumber(QueueName);
-  if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
-    if (pnum >= 0) {
-      lp_add_printer(QueueName,pnum);
-      snum = lp_servicenumber(QueueName);
-    }
-  }
+	snum = lp_servicenumber(QueueName);
+	if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
+		int pnum = lp_servicenumber(PRINTERS_NAME);
+		if (pnum >= 0) {
+			lp_add_printer(QueueName,pnum);
+			snum = lp_servicenumber(QueueName);
+		}
+	}
   
-  if (snum < 0 || !VALID_SNUM(snum)) return(False);
+	if (snum < 0 || !VALID_SNUM(snum))
+		return(False);
 
-  if (uLevel==52) {
-	  count = get_printerdrivernumber(snum);
-	  DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
-  } else {
-	  count = print_queue_status(snum, &queue,&status);
-  }
+	if (uLevel==52) {
+		count = get_printerdrivernumber(snum);
+		DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
+	} else {
+		count = print_queue_status(snum, &queue,&status);
+	}
 
-  if (mdrcnt > 0) {
-    *rdata = REALLOC(*rdata,mdrcnt);
-    desc.base = *rdata;
-    desc.buflen = mdrcnt;
-  } else {
-    /*
-     * Don't return data but need to get correct length
-     *  init_package will return wrong size if buflen=0
-     */
-     desc.buflen = getlen(desc.format);
-     desc.base = tmpdata = (char *) malloc (desc.buflen);
-  }
+	if (mdrcnt > 0) {
+		*rdata = REALLOC(*rdata,mdrcnt);
+		desc.base = *rdata;
+		desc.buflen = mdrcnt;
+	} else {
+		/*
+		 * Don't return data but need to get correct length
+		 * init_package will return wrong size if buflen=0
+		 */
+		desc.buflen = getlen(desc.format);
+		desc.base = tmpdata = (char *) malloc (desc.buflen);
+	}
 
-  if (init_package(&desc,1,count)) {
-	  desc.subcount = count;
-	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
-  } else if(uLevel == 0) {
-#if 0
+	if (init_package(&desc,1,count)) {
+		desc.subcount = count;
+		fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
+	} 
+  
 	/*
-	 * This is a *disgusting* hack.
-	 * This is *so* bad that even I'm embarrassed (and I
-	 * have no shame). Here's the deal :
- 	 * Until we get the correct SPOOLSS code into smbd
- 	 * then when we're running with NT SMB support then
- 	 * NT makes this call with a level of zero, and then
- 	 * immediately follows it with an open request to
- 	 * the \\SRVSVC pipe. If we allow that open to
- 	 * succeed then NT barfs when it cannot open the
- 	 * \\SPOOLSS pipe immediately after and continually
- 	 * whines saying "Printer name is invalid" forever
- 	 * after. If we cause *JUST THIS NEXT OPEN* of \\SRVSVC
- 	 * to fail, then NT downgrades to using the downlevel code
- 	 * and everything works as well as before. I hate
- 	 * myself for adding this code.... JRA.
- 	 */
-
-	fail_next_srvsvc_open();
-#endif
-  }
-
-  *rdata_len = desc.usedlen;
+	 * We must set the return code to ERRbuftoosmall
+	 * in order to support lanman style printing with Win NT/2k
+	 * clients       --jerry
+	 */
+	if (!mdrcnt && lp_disable_spoolss())
+		desc.errcode = ERRbuftoosmall;
+	
+	*rdata_len = desc.usedlen;
   
-  *rparam_len = 6;
-  *rparam = REALLOC(*rparam,*rparam_len);
-  SSVALS(*rparam,0,desc.errcode);
-  SSVAL(*rparam,2,0);
-  SSVAL(*rparam,4,desc.neededlen);
-  
-  DEBUG(4,("printqgetinfo: errorcode %d\n",desc.errcode));
+	*rparam_len = 6;
+	*rparam = REALLOC(*rparam,*rparam_len);
+	SSVALS(*rparam,0,desc.errcode);
+	SSVAL(*rparam,2,0);
+	SSVAL(*rparam,4,desc.neededlen);
 
-  if (queue) free(queue);
-  if (tmpdata) free (tmpdata);
+	DEBUG(4,("printqgetinfo: errorcode %d\n",desc.errcode));
 
-  return(True);
+	if (queue)
+		free(queue);
+	if (tmpdata)
+		free (tmpdata);
+
+	return(True);
 }
 
 /****************************************************************************
@@ -1009,7 +1000,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
     *rdata_len = 0;
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);
-    SSVALS(*rparam,0,ERROR_INVALID_LEVEL);
+    SSVALS(*rparam,0,ERRunknownlevel);
     SSVAL(*rparam,2,0);
     SSVAL(*rparam,4,0);
     return(True);
@@ -1143,10 +1134,16 @@ static int get_server_info(uint32 servertype,
     if (!*ptr) continue;
     
     if (count == alloced) {
+      struct srv_info_struct *ts;
+
       alloced += 10;
-      (*servers) = (struct srv_info_struct *)
-	Realloc(*servers,sizeof(**servers)*alloced);
-      if (!(*servers)) return(0);
+      ts = (struct srv_info_struct *)Realloc(*servers,sizeof(**servers)*alloced);
+      if (!ts) {
+        DEBUG(0,("get_server_info: failed to enlarge servers info struct!\n"));
+        return(0);
+      }
+      else
+        *servers = ts;      
       memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
     }
     s = &(*servers)[count];
@@ -1775,7 +1772,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   {
     fstring saved_pass2;
-    struct smb_passwd *smbpw = NULL;
+    SAM_ACCOUNT *sampass = NULL;
 
     /*
      * Save the new password as change_oem_password overwrites it
@@ -1784,8 +1781,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
     fstrcpy(saved_pass2, pass2);
 
-    if (check_plaintext_password(user,pass1,strlen(pass1),&smbpw) &&
-        change_oem_password(smbpw,pass2,False))
+    if (check_plaintext_password(user,pass1,strlen(pass1),&sampass) &&
+        change_oem_password(sampass,pass2,False))
     {
       SSVAL(*rparam,0,NERR_Success);
 
@@ -1826,10 +1823,10 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   if(SVAL(*rparam,0) != NERR_Success)
   {
-    struct smb_passwd *sampw = NULL;
+    SAM_ACCOUNT *sampass = NULL;
 
-    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &sampw) && 
-       change_lanman_password(sampw,(unsigned char *)pass1,(unsigned char *)pass2))
+    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &sampass) && 
+       change_lanman_password(sampass,(unsigned char *)pass1,(unsigned char *)pass2))
     {
       SSVAL(*rparam,0,NERR_Success);
     }

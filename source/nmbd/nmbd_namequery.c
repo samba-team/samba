@@ -121,9 +121,9 @@ static void query_name_response( struct subnet_record   *subrec,
   }
   
   if(success && rrec->success_fn)
-    (*rrec->success_fn)(subrec, rrec->userdata, question_name, answer_ip, nmb->answers);
+    (*(query_name_success_function)rrec->success_fn)(subrec, rrec->userdata, question_name, answer_ip, nmb->answers);
   else if( rrec->fail_fn)
-    (*rrec->fail_fn)(subrec, rrec, question_name, nmb->header.rcode);
+    (*(query_name_fail_function)rrec->fail_fn)(subrec, rrec, question_name, nmb->header.rcode);
 
 }
 
@@ -156,7 +156,7 @@ static void query_name_timeout_response(struct subnet_record *subrec,
       dbgtext( "on subnet %s.\n", subrec->subnet_name );
       }
     if(rrec->fail_fn)
-      (*rrec->fail_fn)(subrec, rrec, question_name, 0);
+      (*(query_name_fail_function)rrec->fail_fn)(subrec, rrec, question_name, 0);
   }
 
   remove_response_record(subrec, rrec);
@@ -242,7 +242,7 @@ BOOL query_name(struct subnet_record *subrec, char *name, int type,
 
     /* Call the success function directly. */
     if(success_fn)
-      (*success_fn)(subrec, userdata, &nmbname, namerec->data.ip[0], &rrec);
+      (*(query_name_success_function)success_fn)(subrec, userdata, &nmbname, namerec->data.ip[0], &rrec);
     return False;
   }
 

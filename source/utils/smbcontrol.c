@@ -44,7 +44,7 @@ static void usage(BOOL doexit)
 {
 	int i;
 	if (doexit) {
-		printf("Usage: smbcontrol -i\n");
+		printf("Usage: smbcontrol -i -s configfile\n");
 		printf("       smbcontrol <destination> <message-type> <parameters>\n\n");
 	} else {
 		printf("<destination> <message-type> <parameters>\n\n");
@@ -129,7 +129,7 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 	pid_t pid = 0;
 	TDB_CONTEXT *the_tdb;
 
-	the_tdb = tdb_open_log(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
+	the_tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDWR, 0);
 	if (!the_tdb) {
 		fprintf(stderr,"Failed to open connections database in send_message.\n");
 		return False;
@@ -340,22 +340,26 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 	setup_logging(argv[0],True);
 	
 	charset_initialise();
-	lp_load(servicesf,False,False,False);
-
-	if (!message_init()) exit(1);
 
 	if (argc < 2) usage(True);
 
-	while ((opt = getopt(argc, argv,"i")) != EOF) {
+	while ((opt = getopt(argc, argv,"is:")) != EOF) {
 		switch (opt) {
 		case 'i':
 			interactive = True;
+			break;
+		case 's':
+			pstrcpy(servicesf, optarg);
 			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
 			usage(True);
 		}
 	}
+
+	lp_load(servicesf,False,False,False);
+
+	if (!message_init()) exit(1);
 
 	argc -= optind;
 	argv = &argv[optind];

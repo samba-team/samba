@@ -262,7 +262,7 @@ static BOOL user_in_netgroup_list(char *user,char *ngname)
           user, mydomain, ngname));
     DEBUG(5,("innetgr is %s\n",
           innetgr(ngname, NULL, user, mydomain)
-          ? "TRUE" : "FALSE"));
+          ? "True" : "False"));
 
     if (innetgr(ngname, NULL, user, mydomain))
       return (True);

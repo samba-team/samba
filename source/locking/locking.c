@@ -108,12 +108,9 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 	if (!lp_locking(SNUM(conn)))
 		return(True);
 
-	if (count == 0) {
-		*eclass = ERRDOS;
-		*ecode = ERRnoaccess;
-		return False;
-	}
-	
+	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
+
+
 	DEBUG(10,("do_lock: lock type %s start=%.0f len=%.0f requested for file %s\n",
 		  lock_type_name(lock_type), (double)offset, (double)count, fsp->fsp_name ));
 
@@ -239,13 +236,14 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 	int i, del_count=0;
 	pid_t mypid = sys_getpid();
 	BOOL check_self = *(BOOL *)state;
+	int ret = 0;
 
 	tdb_chainlock(tdb, kbuf);
 
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
 
-	for (i=0;i<data->num_share_mode_entries;) {
+	for (i=0;i<data->u.num_share_mode_entries;) {
 
 		if (check_self && (shares[i].pid == mypid)) {
 			DEBUG(0,("locking : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
@@ -259,7 +257,7 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 			continue;
 		}
 
-		data->num_share_mode_entries--;
+		data->u.num_share_mode_entries--;
 		memmove(&shares[i], &shares[i+1],
 		dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares)));
 		del_count++;
@@ -270,13 +268,16 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 	dbuf.dsize -= del_count * sizeof(*shares);
 
 	/* store it back in the database */
-	if (data->num_share_mode_entries == 0)
-		tdb_delete(ttdb, kbuf);
-	else
-		tdb_store(ttdb, kbuf, dbuf, TDB_REPLACE);
+	if (data->u.num_share_mode_entries == 0) {
+		if (tdb_delete(ttdb, kbuf) == -1)
+			ret = -1;
+	} else {
+		if (tdb_store(ttdb, kbuf, dbuf, TDB_REPLACE) == -1)
+			ret = -1;
+	}
 
 	tdb_chainunlock(tdb, kbuf);
-	return 0;
+	return ret;
 }
 
 /****************************************************************************
@@ -295,7 +296,7 @@ BOOL locking_init(int read_only)
 		return True;
 
 	tdb = tdb_open_log(lock_path("locking.tdb"), 
-		       0, TDB_CLEAR_IF_FIRST, 
+		       0, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
 		       read_only?O_RDONLY:O_RDWR|O_CREAT,
 		       0644);
 
@@ -340,8 +341,9 @@ BOOL locking_end(void)
 }
 
 /*******************************************************************
- form a static locking key for a dev/inode pair 
+ Form a static locking key for a dev/inode pair.
 ******************************************************************/
+
 static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	static struct locking_key key;
@@ -354,14 +356,20 @@ static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
 	kbuf.dsize = sizeof(key);
 	return kbuf;
 }
+
 static TDB_DATA locking_key_fsp(files_struct *fsp)
 {
 	return locking_key(fsp->dev, fsp->inode);
 }
 
+#ifndef LOCK_SHARE_ENTRY_SPIN_COUNT
+#define LOCK_SHARE_ENTRY_SPIN_COUNT 100
+#endif
+
 /*******************************************************************
  Lock a hash bucket entry.
 ******************************************************************/
+
 BOOL lock_share_entry(connection_struct *conn,
 		      SMB_DEV_T dev, SMB_INO_T inode)
 {
@@ -371,16 +379,17 @@ BOOL lock_share_entry(connection_struct *conn,
 /*******************************************************************
  Unlock a hash bucket entry.
 ******************************************************************/
+
 void unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode)
 {
 	tdb_chainunlock(tdb, locking_key(dev, inode));
 }
 
-
 /*******************************************************************
  Lock a hash bucket entry. use a fsp for convenience
 ******************************************************************/
+
 BOOL lock_share_entry_fsp(files_struct *fsp)
 {
 	return tdb_chainlock(tdb, locking_key(fsp->dev, fsp->inode)) == 0;
@@ -389,6 +398,7 @@ BOOL lock_share_entry_fsp(files_struct *fsp)
 /*******************************************************************
  Unlock a hash bucket entry.
 ******************************************************************/
+
 void unlock_share_entry_fsp(files_struct *fsp)
 {
 	tdb_chainunlock(tdb, locking_key(fsp->dev, fsp->inode));
@@ -397,6 +407,7 @@ void unlock_share_entry_fsp(files_struct *fsp)
 /*******************************************************************
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
+
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares)
@@ -408,17 +419,118 @@ int get_share_modes(connection_struct *conn,
 	*shares = NULL;
 
 	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
-	if (!dbuf.dptr) return 0;
+	if (!dbuf.dptr)
+		return 0;
 
 	data = (struct locking_data *)dbuf.dptr;
-	ret = data->num_share_mode_entries;
+	ret = data->u.num_share_mode_entries;
 	if(ret)
 		*shares = (share_mode_entry *)memdup(dbuf.dptr + sizeof(*data), ret * sizeof(**shares));
 	free(dbuf.dptr);
 
-	if (! *shares) return 0;
+	if (! *shares)
+		return 0;
 
 	return ret;
+}
+
+/*******************************************************************
+ Fill a share mode entry.
+********************************************************************/
+
+static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_type)
+{
+	share_mode_entry *e = (share_mode_entry *)p;
+	void *x = &e->time; /* Needed to force alignment. p may not be aligned.... */
+
+	memset(e, '\0', sizeof(share_mode_entry));
+	e->pid = sys_getpid();
+	e->share_mode = fsp->share_mode;
+	e->op_port = port;
+	e->op_type = op_type;
+	memcpy(x, &fsp->open_time, sizeof(struct timeval));
+}
+
+/*******************************************************************
+ Check if two share mode entries are identical, ignoring oplock 
+ and port info and also ignoring the delete on close setting. 
+********************************************************************/
+
+BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)
+{
+	return (e1->pid == e2->pid &&
+		(e1->share_mode & ~DELETE_ON_CLOSE_FLAG) == (e2->share_mode & ~DELETE_ON_CLOSE_FLAG) &&
+		e1->time.tv_sec == e2->time.tv_sec &&
+		e1->time.tv_usec == e2->time.tv_usec );
+}
+
+/*******************************************************************
+ Delete a specific share mode. Return the number
+ of entries left, and a memdup'ed copy of the entry deleted (if required).
+ Ignore if no entry deleted.
+********************************************************************/
+
+ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
+			share_mode_entry *entry, share_mode_entry **ppse)
+{
+	TDB_DATA dbuf;
+	struct locking_data *data;
+	int i, del_count=0;
+	share_mode_entry *shares;
+	ssize_t count = 0;
+
+	if (ppse)
+		*ppse = NULL;
+
+	/* read in the existing share modes */
+	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
+	if (!dbuf.dptr)
+		return -1;
+
+	data = (struct locking_data *)dbuf.dptr;
+	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
+
+	/*
+	 * Find any with this pid and delete it
+	 * by overwriting with the rest of the data 
+	 * from the record.
+	 */
+
+	DEBUG(10,("del_share_mode: num_share_modes = %d\n", data->u.num_share_mode_entries ));
+
+	for (i=0;i<data->u.num_share_mode_entries;) {
+		if (share_modes_identical(&shares[i], entry)) {
+			if (ppse)
+				*ppse = memdup(&shares[i], sizeof(*shares));
+			data->u.num_share_mode_entries--;
+			memmove(&shares[i], &shares[i+1], 
+				dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares)));
+			del_count++;
+
+			DEBUG(10,("del_share_mode: deleting entry %d\n", i ));
+
+		} else {
+			i++;
+		}
+	}
+
+	if (del_count) {
+		/* the record may have shrunk a bit */
+		dbuf.dsize -= del_count * sizeof(*shares);
+
+		count = (ssize_t)data->u.num_share_mode_entries;
+
+		/* store it back in the database */
+		if (data->u.num_share_mode_entries == 0) {
+			if (tdb_delete(tdb, locking_key(dev, inode)) == -1)
+				count = -1;
+		} else {
+			if (tdb_store(tdb, locking_key(dev, inode), dbuf, TDB_REPLACE) == -1)
+				count = -1;
+		}
+	}
+	free(dbuf.dptr);
+	return count;
 }
 
 /*******************************************************************
@@ -426,78 +538,29 @@ int get_share_modes(connection_struct *conn,
  of entries left, and a memdup'ed copy of the entry deleted.
 ********************************************************************/
 
-size_t del_share_mode(files_struct *fsp, share_mode_entry **ppse)
+ssize_t del_share_mode(files_struct *fsp, share_mode_entry **ppse)
 {
-	TDB_DATA dbuf;
-	struct locking_data *data;
-	int i, del_count=0;
-	share_mode_entry *shares;
-	pid_t pid = sys_getpid();
-	size_t count;
+	share_mode_entry entry;
 
-	*ppse = NULL;
+	/*
+	 * Fake up a share_mode_entry for comparisons.
+	 */
 
-	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, locking_key_fsp(fsp));
-	if (!dbuf.dptr) return 0;
-
-	data = (struct locking_data *)dbuf.dptr;
-	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
-
-	/* find any with our pid and delete it by overwriting with the rest of the data 
-	   from the record */
-	for (i=0;i<data->num_share_mode_entries;) {
-		if (shares[i].pid == pid &&
-		    memcmp(&shares[i].time, 
-			   &fsp->open_time,sizeof(struct timeval)) == 0) {
-			*ppse = memdup(&shares[i], sizeof(*shares));
-			data->num_share_mode_entries--;
-			memmove(&shares[i], &shares[i+1], 
-				dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares)));
-			del_count++;
-		} else {
-			i++;
-		}
-	}
-
-	/* the record has shrunk a bit */
-	dbuf.dsize -= del_count * sizeof(*shares);
-
-	count = data->num_share_mode_entries;
-
-	/* store it back in the database */
-	if (data->num_share_mode_entries == 0) {
-		tdb_delete(tdb, locking_key_fsp(fsp));
-	} else {
-		tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
-	}
-
-	free(dbuf.dptr);
-	return count;
-}
-
-/*******************************************************************
-fill a share mode entry
-********************************************************************/
-static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_type)
-{
-	share_mode_entry *e = (share_mode_entry *)p;
-	e->pid = sys_getpid();
-	e->share_mode = fsp->share_mode;
-	e->op_port = port;
-	e->op_type = op_type;
-	memcpy((char *)&e->time, (char *)&fsp->open_time, sizeof(struct timeval));
+	fill_share_mode((char *)&entry, fsp, 0, 0);
+	return del_share_entry(fsp->dev, fsp->inode, &entry, ppse);
 }
 
 /*******************************************************************
  Set the share mode of a file. Return False on fail, True on success.
 ********************************************************************/
+
 BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 {
 	TDB_DATA dbuf;
 	struct locking_data *data;
 	char *p=NULL;
 	int size;
+	BOOL ret = True;
 		
 	/* read in the existing share modes if any */
 	dbuf = tdb_fetch(tdb, locking_key_fsp(fsp));
@@ -511,23 +574,28 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 
 		size = sizeof(*data) + sizeof(share_mode_entry) + strlen(fname) + 1;
 		p = (char *)malloc(size);
+		if (!p)
+			return False;
 		data = (struct locking_data *)p;
-		data->num_share_mode_entries = 1;
+		data->u.num_share_mode_entries = 1;
 		pstrcpy(p + sizeof(*data) + sizeof(share_mode_entry), fname);
 		fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 		dbuf.dptr = p;
 		dbuf.dsize = size;
-		tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+		if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
+			ret = False;
 		free(p);
-		return True;
+		return ret;
 	}
 
 	/* we're adding to an existing entry - this is a bit fiddly */
 	data = (struct locking_data *)dbuf.dptr;
 
-	data->num_share_mode_entries++;
+	data->u.num_share_mode_entries++;
 	size = dbuf.dsize + sizeof(share_mode_entry);
 	p = malloc(size);
+	if (!p)
+		return False;
 	memcpy(p, dbuf.dptr, sizeof(*data));
 	fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 	memcpy(p + sizeof(*data) + sizeof(share_mode_entry), dbuf.dptr + sizeof(*data),
@@ -535,16 +603,17 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	free(dbuf.dptr);
 	dbuf.dptr = p;
 	dbuf.dsize = size;
-	tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+	if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
+		ret = False;
 	free(p);
-	return True;
+	return ret;
 }
 
-
 /*******************************************************************
-a generic in-place modification call for share mode entries
+ A generic in-place modification call for share mode entries.
 ********************************************************************/
-static BOOL mod_share_mode(files_struct *fsp,
+
+static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *entry,
 			   void (*mod_fn)(share_mode_entry *, SMB_DEV_T, SMB_INO_T, void *),
 			   void *param)
 {
@@ -552,33 +621,32 @@ static BOOL mod_share_mode(files_struct *fsp,
 	struct locking_data *data;
 	int i;
 	share_mode_entry *shares;
-	pid_t pid = sys_getpid();
-	int need_store=0;
+	BOOL need_store=False;
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, locking_key_fsp(fsp));
-	if (!dbuf.dptr) return False;
+	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
+	if (!dbuf.dptr)
+		return False;
 
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
 
 	/* find any with our pid and call the supplied function */
-	for (i=0;i<data->num_share_mode_entries;i++) {
-		if (pid == shares[i].pid && 
-		    shares[i].share_mode == fsp->share_mode &&
-		    memcmp(&shares[i].time, 
-			   &fsp->open_time,sizeof(struct timeval)) == 0) {
-			mod_fn(&shares[i], fsp->dev, fsp->inode, param);
-			need_store=1;
+	for (i=0;i<data->u.num_share_mode_entries;i++) {
+		if (share_modes_identical(entry, &shares[i])) {
+			mod_fn(&shares[i], dev, inode, param);
+			need_store=True;
 		}
 	}
 
 	/* if the mod fn was called then store it back */
 	if (need_store) {
-		if (data->num_share_mode_entries == 0) {
-			tdb_delete(tdb, locking_key_fsp(fsp));
+		if (data->u.num_share_mode_entries == 0) {
+			if (tdb_delete(tdb, locking_key(dev, inode)) == -1)
+				need_store = False;
 		} else {
-			tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+			if (tdb_store(tdb, locking_key(dev, inode), dbuf, TDB_REPLACE) == -1)
+				need_store = False;
 		}
 	}
 
@@ -586,11 +654,11 @@ static BOOL mod_share_mode(files_struct *fsp,
 	return need_store;
 }
 
-
 /*******************************************************************
  Static function that actually does the work for the generic function
  below.
 ********************************************************************/
+
 static void remove_share_oplock_fn(share_mode_entry *entry, SMB_DEV_T dev, SMB_INO_T inode, 
                                    void *param)
 {
@@ -604,15 +672,22 @@ static void remove_share_oplock_fn(share_mode_entry *entry, SMB_DEV_T dev, SMB_I
 /*******************************************************************
  Remove an oplock port and mode entry from a share mode.
 ********************************************************************/
+
 BOOL remove_share_oplock(files_struct *fsp)
 {
-	return mod_share_mode(fsp, remove_share_oplock_fn, NULL);
+	share_mode_entry entry;
+	/*
+	 * Fake up an entry for comparisons...
+	 */
+	fill_share_mode((char *)&entry, fsp, 0, 0);
+	return mod_share_mode(fsp->dev, fsp->inode, &entry, remove_share_oplock_fn, NULL);
 }
 
 /*******************************************************************
  Static function that actually does the work for the generic function
  below.
 ********************************************************************/
+
 static void downgrade_share_oplock_fn(share_mode_entry *entry, SMB_DEV_T dev, SMB_INO_T inode, 
                                    void *param)
 {
@@ -624,9 +699,15 @@ static void downgrade_share_oplock_fn(share_mode_entry *entry, SMB_DEV_T dev, SM
 /*******************************************************************
  Downgrade a oplock type from exclusive to level II.
 ********************************************************************/
+
 BOOL downgrade_share_oplock(files_struct *fsp)
 {
-	return mod_share_mode(fsp, downgrade_share_oplock_fn, NULL);
+	share_mode_entry entry;
+	/*
+	 * Fake up an entry for comparisons...
+	 */
+	fill_share_mode((char *)&entry, fsp, 0, 0);
+	return mod_share_mode(fsp->dev, fsp->inode, &entry, downgrade_share_oplock_fn, NULL);
 }
 
 /*******************************************************************
@@ -643,33 +724,36 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 
 	/* read in the existing share modes */
 	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
-	if (!dbuf.dptr) return False;
+	if (!dbuf.dptr)
+		return False;
 
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
 
 	/* Set/Unset the delete on close element. */
-	for (i=0;i<data->num_share_mode_entries;i++,shares++) {
+	for (i=0;i<data->u.num_share_mode_entries;i++,shares++) {
 		shares->share_mode = (delete_on_close ?
                             (shares->share_mode | DELETE_ON_CLOSE_FLAG) :
                             (shares->share_mode & ~DELETE_ON_CLOSE_FLAG) );
 	}
 
 	/* store it back */
-	if (data->num_share_mode_entries) {
-		if (tdb_store(tdb, locking_key(dev,inode), dbuf, TDB_REPLACE)==-1)
+	if (data->u.num_share_mode_entries) {
+		if (tdb_store(tdb, locking_key(dev,inode), dbuf, TDB_REPLACE)==-1) {
+			free(dbuf.dptr);
 			return False;
+		}
 	}
 
 	free(dbuf.dptr);
 	return True;
 }
 
-
 /****************************************************************************
-traverse the whole database with this function, calling traverse_callback
-on each share mode
+ Traverse the whole database with this function, calling traverse_callback
+ on each share mode
 ****************************************************************************/
+
 static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
                        void* state)
 {
@@ -682,9 +766,9 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
-	name = dbuf.dptr + sizeof(*data) + data->num_share_mode_entries*sizeof(*shares);
+	name = dbuf.dptr + sizeof(*data) + data->u.num_share_mode_entries*sizeof(*shares);
 
-	for (i=0;i<data->num_share_mode_entries;i++) {
+	for (i=0;i<data->u.num_share_mode_entries;i++) {
 		traverse_callback(&shares[i], name);
 	}
 	return 0;
@@ -694,8 +778,10 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
  Call the specified function on each entry under management by the
  share mode system.
 ********************************************************************/
+
 int share_mode_forall(SHAREMODE_FN(fn))
 {
-	if (!tdb) return 0;
+	if (!tdb)
+		return 0;
 	return tdb_traverse(tdb, traverse_fn, (void*)fn);
 }

@@ -207,6 +207,11 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	   signals */
 	if (selrtn == -1 && errno == EINTR) {
 		async_processing(&fds, buffer, buffer_len);
+		/*
+		 * After async processing we must go and do the select again, as
+		 * the state of the flag in fds for the server file descriptor is
+		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
+		 */
 		goto again;
 	}
 
@@ -223,9 +228,21 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		return False;
 	}
 
-	if (!FD_ISSET(smbd_server_fd(),&fds) || selrtn > 1) {
+	/*
+	 * Ensure we process oplock break messages by preference.
+	 * This is IMPORTANT ! Otherwise we can starve other processes
+	 * sending us an oplock break message. JRA.
+	 */
+
+	if (oplock_message_waiting(&fds)) {
+		DEBUG(10,("receive_message_or_smb: oplock_message is waiting.\n"));
 		async_processing(&fds, buffer, buffer_len);
-		if (!FD_ISSET(smbd_server_fd(),&fds)) goto again;
+		/*
+		 * After async processing we must go and do the select again, as
+		 * the state of the flag in fds for the server file descriptor is
+		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
+		 */
+		goto again;
 	}
 	
 	return receive_smb(smbd_server_fd(), buffer, 0);
@@ -349,12 +366,12 @@ struct smb_message_struct
 /* 0x18 */ { NULL, NULL, 0 },
 /* 0x19 */ { NULL, NULL, 0 },
 /* 0x1a */ { "SMBreadbraw",reply_readbraw,AS_USER},
-/* 0x1b */ { "SMBreadBmpx",reply_readbmpx,AS_USER},
-/* 0x1c */ { "SMBreadBs",NULL,AS_USER},
+/* 0x1b */ { "SMBreadBmpx",NULL,0},
+/* 0x1c */ { "SMBreadBs",NULL,0},
 /* 0x1d */ { "SMBwritebraw",reply_writebraw,AS_USER},
-/* 0x1e */ { "SMBwriteBmpx",reply_writebmpx,AS_USER},
-/* 0x1f */ { "SMBwriteBs",reply_writebs,AS_USER},
-/* 0x20 */ { "SMBwritec",NULL,AS_USER},
+/* 0x1e */ { "SMBwriteBmpx",NULL,0},
+/* 0x1f */ { "SMBwriteBs",NULL,0},
+/* 0x20 */ { "SMBwritec",NULL,0},
 /* 0x21 */ { NULL, NULL, 0 },
 /* 0x22 */ { "SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE },
 /* 0x23 */ { "SMBgetattrE",reply_getattrE,AS_USER },
@@ -790,6 +807,12 @@ static BOOL smbd_process_limit(void)
 
 		total_smbds = 1; /* In case we need to create the entry. */
 
+		if (!conn_tdb_ctx()) {
+			DEBUG(0,("smbd_process_limit: max smbd processes parameter set with status parameter not \
+set. Ignoring max smbd restriction.\n"));
+			return False;
+		}
+
 		if (tdb_change_int_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
 			return True;
 
@@ -1103,7 +1126,10 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
     /* also send a keepalive to the password server if its still
        connected */
     if (cli && cli->initialised)
-      send_keepalive(cli->fd);
+      if (!send_keepalive(cli->fd)) {
+        DEBUG( 2, ( "password server keepalive failed.\n"));
+        cli_shutdown(cli);
+      }
     last_keepalive_sent_time = t;
   }
 
@@ -1166,9 +1192,10 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 
   /*
    * Now we are root, check if the log files need pruning.
+   * Force a log file check.
    */
-  if(need_to_check_log_size())
-      check_log_size();
+  force_check_log_size();
+  check_log_size();
 
   /*
    * Modify the select timeout depending upon

@@ -539,7 +539,7 @@ static BOOL spool_io_user_level(char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps,
  * on reading allocate memory for the private member
  ********************************************************************/
 
-static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
+BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_devmode");
 	depth++;
@@ -1861,12 +1861,19 @@ static BOOL smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16
 			   an extra NULL for termination */
 			if (l_chaine > 0)
 			{
+				uint16 *tc2;
+
 				realloc_size = (l_chaine2+l_chaine+2)*sizeof(uint16);
 
 				/* Yes this should be realloc - it's freed below. JRA */
 
-				if((chaine2=(uint16 *)Realloc(chaine2, realloc_size)) == NULL)
+				if((tc2=(uint16 *)Realloc(chaine2, realloc_size)) == NULL) {
+					if (chaine2)
+						free(chaine2);
 					return False;
+				} else
+					chaine2 = tc2;
+
 				memcpy(chaine2+l_chaine2, chaine.buffer, (l_chaine+1)*sizeof(uint16));
 				l_chaine2+=l_chaine+1;
 			}
@@ -4703,7 +4710,7 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 ********************************************************************/  
 static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 {
-	fstring f;
+	fstring f, *tar;
 	int n = 0;
 	char *src;
 
@@ -4715,7 +4722,11 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 	while (src < ((char *)buf5->buffer) + buf5->buf_len*2) {
 		unistr_to_dos(f, src, sizeof(f)-1);
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
-		*ar = (fstring *)Realloc(*ar, sizeof(fstring)*(n+2));
+		tar = (fstring *)Realloc(*ar, sizeof(fstring)*(n+2));
+		if (!tar)
+			return False;
+		else
+			*ar = tar;
 		fstrcpy((*ar)[n], f);
 		n++;
 	}

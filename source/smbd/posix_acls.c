@@ -419,7 +419,7 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 
 	if(security_info_sent == 0) {
 		DEBUG(0,("unpack_nt_owners: no security info sent !\n"));
-		return False;
+		return True;
 	}
 
 	/*
@@ -438,8 +438,10 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		sid_copy(&owner_sid, psd->owner_sid);
-		if (!sid_to_uid( &owner_sid, puser, &sid_type))
+		if (!sid_to_uid( &owner_sid, puser, &sid_type)) {
 			DEBUG(3,("unpack_nt_owners: unable to validate owner sid.\n"));
+			return False;
+		}
  	}
 
 	/*
@@ -449,8 +451,10 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
 		sid_copy(&grp_sid, psd->grp_sid);
-		if (!sid_to_gid( &grp_sid, pgrp, &sid_type))
+		if (!sid_to_gid( &grp_sid, pgrp, &sid_type)) {
 			DEBUG(3,("unpack_nt_owners: unable to validate group sid.\n"));
+			return False;
+		}
 	}
 
 	DEBUG(5,("unpack_nt_owners: owner_sids validated.\n"));
@@ -709,6 +713,17 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 	for(i = 0; i < dacl->num_aces; i++) {
 		enum SID_NAME_USE sid_type;
 		SEC_ACE *psa = &dacl->ace[i];
+
+		/*
+		 * Ignore non-mappable SIDs (NT Authority, BUILTIN etc).
+		 */
+
+		if (non_mappable_sid(&psa->sid)) {
+			fstring str;
+			DEBUG(10,("create_canon_ace_lists: ignoring non-mappable SID %s\n",
+				sid_to_string(str, &psa->sid) ));
+			continue;
+		}
 
 		/*
 		 * Create a cannon_ace entry representing this NT DACL ACE.
@@ -1457,7 +1472,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 					uid_to_sid( &sid, *puid);
 					unix_ug.uid = *puid;
 					owner_type = UID_ACE;
-					sys_acl_free_qualifier((void *)puid);
+					sys_acl_free_qualifier((void *)puid,tagtype);
 					break;
 				}
 			case SMB_ACL_GROUP_OBJ:
@@ -1476,7 +1491,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 					gid_to_sid( &sid, *pgid);
 					unix_ug.gid = *pgid;
 					owner_type = GID_ACE;
-					sys_acl_free_qualifier((void *)pgid);
+					sys_acl_free_qualifier((void *)pgid,tagtype);
 					break;
 				}
 			case SMB_ACL_MASK:
@@ -1705,14 +1720,14 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 
 	if(default_ace || fsp->is_directory || fsp->fd == -1) {
 		if (sys_acl_set_file(dos_to_unix(fsp->fsp_name,False), the_acl_type, the_acl) == -1) {
-			DEBUG(0,("set_canon_ace_list: sys_acl_set_file type %s failed for file %s (%s).\n",
+			DEBUG(2,("set_canon_ace_list: sys_acl_set_file type %s failed for file %s (%s).\n",
 					the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
 					fsp->fsp_name, strerror(errno) ));
 			goto done;
 		}
 	} else {
 		if (sys_acl_set_fd(fsp->fd, the_acl) == -1) {
-			DEBUG(0,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
+			DEBUG(2,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
 					fsp->fsp_name, strerror(errno) ));
 			goto done;
 		}
@@ -2213,11 +2228,11 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 	}
 
 	/*
-	 * If this is a simple 3 element ACL then it's a standard
+	 * If this is a simple 3 element ACL or no elements then it's a standard
 	 * UNIX permission set. Just use chmod...	
 	 */
 
-	if (num_entries == 3)
+	if ((num_entries == 3) || (num_entries == 0))
 		return -1;
 
 	return 0;

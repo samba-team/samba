@@ -130,10 +130,12 @@ BOOL profile_setup(BOOL rdonly)
 		return False;
 	}
 
+#if 0
 	if (shm_ds.shm_perm.cuid != 0 || shm_ds.shm_perm.cgid != 0) {
 		DEBUG(0,("ERROR: root did not create the shmem\n"));
 		return False;
 	}
+#endif
 
 	if (shm_ds.shm_segsz != sizeof(*profile_h)) {
 		DEBUG(0,("WARNING: profile size is %d (expected %d). Deleting\n",

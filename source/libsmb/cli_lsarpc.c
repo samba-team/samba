@@ -127,7 +127,7 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*pol = r.pol;
 	}
 
@@ -175,7 +175,7 @@ uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) == NT_STATUS_OK) {
 		*pol = r.pol;
 	}
 
@@ -233,7 +233,7 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (result != NT_STATUS_NOPROBLEMO && result != 0x00000107 &&
+	if (result != NT_STATUS_OK && result != 0x00000107 &&
 	    result != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
 		
 		/* An actual error occured */
@@ -241,7 +241,7 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = NT_STATUS_NOPROBLEMO;
+	result = NT_STATUS_OK;
 
 	/* Return output parameters */
 
@@ -336,7 +336,7 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (result != NT_STATUS_NOPROBLEMO && 
+	if (result != NT_STATUS_OK && 
 	    result != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
 
 		/* An actual error occured */
@@ -344,7 +344,7 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = NT_STATUS_NOPROBLEMO;
+	result = NT_STATUS_OK;
 
 	/* Return output parameters */
 
@@ -430,7 +430,7 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -525,7 +525,7 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	   0x8000001a (NT_STATUS_UNABLE_TO_FREE_VM) so we ignore it and
 	   pretend everything is OK. */
 
-	if (result != NT_STATUS_NOPROBLEMO && 
+	if (result != NT_STATUS_OK && 
 	    result != NT_STATUS_UNABLE_TO_FREE_VM) {
 
 		/* An actual error ocured */
@@ -533,7 +533,7 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = NT_STATUS_NOPROBLEMO;
+	result = NT_STATUS_OK;
 
 	/* Return output parameters */
 

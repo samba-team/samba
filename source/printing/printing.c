@@ -55,7 +55,7 @@ BOOL print_backend_init(void)
 	char *sversion = "INFO/version";
 
 	if (tdb && local_pid == sys_getpid()) return True;
-	tdb = tdb_open_log(lock_path("printing.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_open_log(lock_path("printing.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("print_backend_init: Failed to open printing backend database. Error = [%s]\n",
 				 tdb_errorstr(tdb)));
@@ -72,10 +72,10 @@ BOOL print_backend_init(void)
 	tdb_unlock_bystring(tdb, sversion);
 
 	/* select the appropriate printing interface... */
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
 	if (strcmp(lp_printcapname(), "cups") == 0)
 		current_printif = &cups_printif;
-#endif /* HAVE_LIBCUPS */
+#endif /* HAVE_CUPS */
 
 	/* do NT print initialization... */
 	return nt_printing_init();
@@ -623,7 +623,7 @@ BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
 	if (!owner && 
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
-		*errcode = ERROR_ACCESS_DENIED;
+		*errcode = ERRnoaccess;
 		return False;
 	}
 
@@ -662,7 +662,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
-		*errcode = ERROR_ACCESS_DENIED;
+		*errcode = ERRnoaccess;
 		return False;
 	}
 
@@ -670,7 +670,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	ret = (*(current_printif->job_pause))(snum, pjob);
 
 	if (ret != 0) {
-		*errcode = ERROR_INVALID_PARAMETER;
+		*errcode = ERRinvalidparam;
 		return False;
 	}
 
@@ -706,14 +706,14 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
-		*errcode = ERROR_ACCESS_DENIED;
+		*errcode = ERRnoaccess;
 		return False;
 	}
 
 	ret = (*(current_printif->job_resume))(snum, pjob);
 
 	if (ret != 0) {
-		*errcode = ERROR_INVALID_PARAMETER;
+		*errcode = ERRinvalidparam;
 		return False;
 	}
 
@@ -916,8 +916,8 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	tdb_store_int(tdb, "INFO/nextjob", jobid);
 
 	/* we have a job entry - now create the spool file */
-	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%sXXXXXX", 
-		 path, PRINT_SPOOL_PREFIX);
+	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%s%.6d.XXXXXX", 
+		 path, PRINT_SPOOL_PREFIX, jobid);
 	pjob.fd = smb_mkstemp(pjob.filename);
 
 	if (pjob.fd == -1) {
@@ -1199,14 +1199,14 @@ BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 	int ret;
 	
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		*errcode = ERROR_ACCESS_DENIED;
+		*errcode = ERRnoaccess;
 		return False;
 	}
 
 	ret = (*(current_printif->queue_pause))(snum);
 
 	if (ret != 0) {
-		*errcode = ERROR_INVALID_PARAMETER;
+		*errcode = ERRinvalidparam;
 		return False;
 	}
 
@@ -1231,14 +1231,14 @@ BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 	int ret;
 
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		*errcode = ERROR_ACCESS_DENIED;
+		*errcode = ERRnoaccess;
 		return False;
 	}
 
 	ret = (*(current_printif->queue_resume))(snum);
 
 	if (ret != 0) {
-		*errcode = ERROR_INVALID_PARAMETER;
+		*errcode = ERRinvalidparam;
 		return False;
 	}
 

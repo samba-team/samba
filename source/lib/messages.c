@@ -90,7 +90,7 @@ BOOL message_init(void)
 	if (tdb) return True;
 
 	tdb = tdb_open_log(lock_path("messages.tdb"), 
-		       0, TDB_CLEAR_IF_FIRST, 
+		       0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
 		       O_RDWR|O_CREAT,0600);
 
 	if (!tdb) {
@@ -299,11 +299,15 @@ void message_dispatch(void)
 	struct dispatch_fns *dfn;
 
 	if (!received_signal) return;
+
+	DEBUG(10,("message_dispatch: received_signal = %d\n", received_signal));
+
 	received_signal = 0;
 
 	while (message_recv(&msg_type, &src, &buf, &len)) {
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
+				DEBUG(10,("message_dispatch: processing message of type %d.\n", msg_type));
 				dfn->fn(msg_type, src, buf, len);
 			}
 		}
@@ -322,12 +326,19 @@ void message_register(int msg_type,
 
 	dfn = (struct dispatch_fns *)malloc(sizeof(*dfn));
 
-	ZERO_STRUCTP(dfn);
+	if (dfn != NULL) {
 
-	dfn->msg_type = msg_type;
-	dfn->fn = fn;
+		ZERO_STRUCTPN(dfn);
 
-	DLIST_ADD(dispatch_fns, dfn);
+		dfn->msg_type = msg_type;
+		dfn->fn = fn;
+
+		DLIST_ADD(dispatch_fns, dfn);
+	}
+	else {
+	
+		DEBUG(0,("message_register: Not enough memory. malloc failed!\n"));
+	}
 }
 
 /****************************************************************************

@@ -176,9 +176,6 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, int eclass, i
 	char *inbuf = blr->inbuf;
 	construct_reply_common(inbuf, outbuf);
 
-	if(eclass == 0) /* NT Error. */
-		SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-
 	ERROR(eclass,ecode);
 	if (!send_smb(smbd_server_fd(),outbuf))
 		exit_server("generic_blocking_lock_error: send_smb failed.\n");
@@ -419,7 +416,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
      * request would never have been queued. JRA.
      */
     errno = 0;
-    if(!do_lock(fsp,conn,count,lock_pid,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
+    if(!do_lock(fsp,conn,lock_pid,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
                 &eclass, &ecode))
       break;
   }

@@ -48,6 +48,20 @@ int32 get_number_of_exclusive_open_oplocks(void)
   return exclusive_oplocks_open;
 }
 
+/****************************************************************************
+ Return True if an oplock message is pending.
+****************************************************************************/
+
+BOOL oplock_message_waiting(fd_set *fds)
+{
+	if (koplocks && koplocks->msg_waiting(fds))
+		return True;
+
+	if (FD_ISSET(oplock_sock, fds))
+		return True;
+
+	return False;
+}
 
 /****************************************************************************
  Read an oplock break message from either the oplock UDP fd or the
@@ -630,7 +644,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   time_t start_time;
   BOOL shutdown_server = False;
   BOOL oplock_timeout = False;
-  connection_struct *saved_conn;
+  connection_struct *saved_user_conn;
+  connection_struct *saved_fsp_conn;
   int saved_vuid;
   pstring saved_dir; 
   int timeout = (OPLOCK_BREAK_TIMEOUT * 1000);
@@ -734,9 +749,10 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
    * Save the information we need to re-become the
    * user, then unbecome the user whilst we're doing this.
    */
-  saved_conn = fsp->conn;
+  saved_user_conn = current_user.conn;
   saved_vuid = current_user.vuid;
-  vfs_GetWd(saved_conn,saved_dir);
+  saved_fsp_conn = fsp->conn;
+  vfs_GetWd(saved_fsp_conn,saved_dir);
   unbecome_user();
   /* Save the chain fnum. */
   file_chain_save();
@@ -810,7 +826,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
    * Go back to being the user who requested the oplock
    * break.
    */
-  if(!become_user(saved_conn, saved_vuid))
+  if((saved_user_conn != NULL) && (saved_vuid != UID_FIELD_INVALID) && !become_user(saved_user_conn, saved_vuid))
   {
     DEBUG( 0, ( "oplock_break: unable to re-become user!" ) );
     DEBUGADD( 0, ( "Shutting down server\n" ) );
@@ -818,7 +834,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
     exit_server("unable to re-become user");
   }
   /* Including the directory. */
-  vfs_ChDir(saved_conn,saved_dir);
+  vfs_ChDir(saved_fsp_conn,saved_dir);
 
   /* Restore the chain fnum. */
   file_chain_restore();
@@ -902,6 +918,19 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
     }
 
     DEBUG(5,("request_oplock_break: breaking our own oplock\n"));
+
+#if 1 /* JRA PARANOIA TEST.... */
+    {
+      files_struct *fsp = file_find_dit(dev, inode, &share_entry->time);
+      if (!fsp) {
+        DEBUG(0,("request_oplock_break: PANIC : breaking our own oplock requested for \
+dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x and no fsp found !\n",
+            (unsigned int)dev, (double)inode, (int)share_entry->time.tv_sec,
+            (int)share_entry->time.tv_usec ));
+        smb_panic("request_oplock_break: no fsp found for our own oplock\n");
+      }
+    }
+#endif /* END JRA PARANOIA TEST... */
 
     /* Call oplock break direct. */
     return oplock_break(dev, inode, &share_entry->time, True);
@@ -1128,6 +1157,9 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 
 	num_share_modes = get_share_modes(fsp->conn, fsp->dev, fsp->inode, &share_list);
 
+	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
+			num_share_modes ));
+
 	for(i = 0; i < num_share_modes; i++) {
 		share_mode_entry *share_entry = &share_list[i];
 
@@ -1139,6 +1171,9 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		 * that are still waiting their turn to remove their LEVEL_II state, and
 		 * also no harm to ignore existing NO_OPLOCK states. JRA.
 		 */
+
+		DEBUG(10,("release_level_2_oplocks_on_change: share_entry[%i]->op_type == %d\n",
+				i, share_entry->op_type ));
 
 		if (share_entry->op_type == NO_OPLOCK)
 			continue;
@@ -1166,6 +1201,8 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 				abort();
 			}
 
+			DEBUG(10,("release_level_2_oplocks_on_change: breaking our own oplock.\n"));
+
 			oplock_break_level2(new_fsp, True, token);
 
 		} else {
@@ -1175,17 +1212,19 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			 * message.
 			 */
 
+			DEBUG(10,("release_level_2_oplocks_on_change: breaking remote oplock.\n"));
 			request_oplock_break(share_entry, fsp->dev, fsp->inode);
 		}
 	}
 
-	free((char *)share_list);
+	if (share_list)
+		free((char *)share_list);
 	unlock_share_entry_fsp(fsp);
 
 	/* Paranoia check... */
 	if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(0,("release_level_2_oplocks_on_change: PANIC. File %s still has a level II oplock.\n", fsp->fsp_name));
-		abort();
+		smb_panic("release_level_2_oplocks_on_change");
 	}
 }
 

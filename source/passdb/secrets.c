@@ -30,18 +30,14 @@ static TDB_CONTEXT *tdb;
 BOOL secrets_init(void)
 {
 	pstring fname;
-	char *p;
 
-	if (tdb) return True;
+	if (tdb)
+		return True;
 
-	pstrcpy(fname, lp_smb_passwd_file());
-	p = strrchr(fname, '/');
-	if(!p) return False;
-
-	*p = 0;
+	get_private_directory(fname);
 	pstrcat(fname,"/secrets.tdb");
 
-	tdb = tdb_open_log(fname, 0, 0, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));
@@ -56,11 +52,13 @@ BOOL secrets_init(void)
 void *secrets_fetch(char *key, size_t *size)
 {
 	TDB_DATA kbuf, dbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	dbuf = tdb_fetch(tdb, kbuf);
-	if (size) *size = dbuf.dsize;
+	if (size)
+		*size = dbuf.dsize;
 	return dbuf.dptr;
 }
 
@@ -69,7 +67,8 @@ void *secrets_fetch(char *key, size_t *size)
 BOOL secrets_store(char *key, void *data, size_t size)
 {
 	TDB_DATA kbuf, dbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	dbuf.dptr = data;
@@ -83,7 +82,8 @@ BOOL secrets_store(char *key, void *data, size_t size)
 BOOL secrets_delete(char *key)
 {
 	TDB_DATA kbuf;
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key);
 	return tdb_delete(tdb, kbuf) == 0;
@@ -110,8 +110,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	if (dyn_sid == NULL)
 		return False;
 
-	if (size != sizeof(DOM_SID))
-	{ 
+	if (size != sizeof(DOM_SID)) { 
 		free(dyn_sid);
 		return False;
 	}
@@ -121,10 +120,10 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	return True;
 }
 
-
 /************************************************************************
 form a key for fetching a domain trust password
 ************************************************************************/
+
 char *trust_keystr(char *domain)
 {
 	static fstring keystr;
@@ -211,4 +210,45 @@ void reset_globals_after_fork(void)
 	 * sequence.
 	 */
 	generate_random_buffer( &dummy, 1, True);
+}
+
+BOOL secrets_store_ldap_pw(char* dn, char* pw)
+{
+	fstring key;
+	char *p;
+	
+	pstrcpy(key, dn);
+	for (p=key; *p; p++)
+		if (*p == ',') *p = '/';
+	
+	return secrets_store(key, pw, strlen(pw));
+}
+
+BOOL fetch_ldap_pw(char *dn, char* pw, int len)
+{
+	fstring key;
+	char *p;
+	void *data = NULL;
+	size_t size;
+	
+	pstrcpy(key, dn);
+	for (p=key; *p; p++)
+		if (*p == ',') *p = '/';
+	
+	data=secrets_fetch(key, &size);
+	if (!size) {
+		DEBUG(0,("fetch_ldap_pw: no ldap secret retrieved!\n"));
+		return False;
+	}
+	
+	if (size > len-1)
+	{
+		DEBUG(0,("fetch_ldap_pw: ldap secret is too long (%d > %d)!\n", size, len-1));
+		return False;
+	}
+
+	memcpy(pw, data, size);
+	pw[size] = '\0';
+	
+	return True;
 }

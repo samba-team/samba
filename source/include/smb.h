@@ -153,119 +153,7 @@ implemented */
 #define STYPE_IPC       3	/* Interprocess communication (IPC) */
 #define STYPE_HIDDEN    0x80000000 /* share is a hidden one (ends with $) */
 
-/* SMB X/Open error codes for the ERRDOS error class */
-#define ERRbadfunc 1 /* Invalid function (or system call) */
-#define ERRbadfile 2 /* File not found (pathname error) */
-#define ERRbadpath 3 /* Directory not found */
-#define ERRnofids 4 /* Too many open files */
-#define ERRnoaccess 5 /* Access denied */
-#define ERRbadfid 6 /* Invalid fid */
-#define ERRnomem 8 /* Out of memory */
-#define ERRbadmem 9 /* Invalid memory block address */
-#define ERRbadenv 10 /* Invalid environment */
-#define ERRbadaccess 12 /* Invalid open mode */
-#define ERRbaddata 13 /* Invalid data (only from ioctl call) */
-#define ERRres 14 /* reserved */
-#define ERRbaddrive 15 /* Invalid drive */
-#define ERRremcd 16 /* Attempt to delete current directory */
-#define ERRdiffdevice 17 /* rename/move across different filesystems */
-#define ERRnofiles 18 /* no more files found in file search */
-#define ERRbadshare 32 /* Share mode on file conflict with open mode */
-#define ERRlock 33 /* Lock request conflicts with existing lock */
-#define ERRunsup 50 /* Request unsupported, returned by Win 95, RJS 20Jun98 */
-#define ERRnosuchshare 67 /* You specified an invalid share name */
-#define ERRfilexists 80 /* File in operation already exists */
-#define ERRcannotopen 110 /* Cannot open the file specified */
-#define ERRunknownlevel 124
-#define ERRnotlocked 158 /* This region is not locked by this locking context. */
-#define ERRrename 183
-#define ERRbadpipe 230 /* Named pipe invalid */
-#define ERRpipebusy 231 /* All instances of pipe are busy */
-#define ERRpipeclosing 232 /* named pipe close in progress */
-#define ERRnotconnected 233 /* No process on other end of named pipe */
-#define ERRmoredata 234 /* More data to be returned */
-#define ERRbaddirectory 267 /* Invalid directory name in a path. */
-#define ERRunknownipc 2142
-#define ERRbuftoosmall 2123
-#define ERRnosuchprintjob 2151
-
-#define ERROR_SUCCESS                     (0)
-#define ERROR_INVALID_FUNCTION		  (1)
-#define ERROR_ACCESS_DENIED		  (5)
-#define ERROR_INVALID_HANDLE		  (6)
-#define ERROR_NOT_ENOUGH_MEMORY		  (8)
-#define ERROR_INVALID_PARAMETER		 (87)
-#define ERROR_INSUFFICIENT_BUFFER	(122)
-#define ERROR_INVALID_NAME		(123)
-#define ERROR_INVALID_LEVEL		(124)
-#define ERROR_MORE_DATA         (234)
-#define ERROR_NO_MORE_ITEMS		(259)
-#define ERROR_EAS_DIDNT_FIT		(275) /* Extended attributes didn't fit */
-#define ERROR_EAS_NOT_SUPPORTED		(282) /* Extended attributes not supported */
-#define ERROR_NOTIFY_ENUM_DIR	       (1022) /* Buffer too small to return change notify. */
-#define ERROR_UNKNOWN_PRINTER_DRIVER   (1797)
-#define ERROR_INVALID_PRINTER_NAME     (1801)
-#define ERROR_INVALID_DATATYPE	       (1804)
-#define ERROR_INVALID_ENVIRONMENT      (1805)
-#define ERROR_PRINTER_DRIVER_IN_USE    (3001) 
-
-/* here's a special one from observing NT */
-#define ERRnoipc 66 /* don't support ipc */
-
-/* Error codes for the ERRSRV class */
-
-#define ERRerror 1 /* Non specific error code */
-#define ERRbadpw 2 /* Bad password */
-#define ERRbadtype 3 /* reserved */
-#define ERRaccess 4 /* No permissions to do the requested operation */
-#define ERRinvnid 5 /* tid invalid */
-#define ERRinvnetname 6 /* Invalid servername */
-#define ERRinvdevice 7 /* Invalid device */
-#define ERRqfull 49 /* Print queue full */
-#define ERRqtoobig 50 /* Queued item too big */
-#define ERRinvpfid 52 /* Invalid print file in smb_fid */
-#define ERRsmbcmd 64 /* Unrecognised command */
-#define ERRsrverror 65 /* smb server internal error */
-#define ERRfilespecs 67 /* fid and pathname invalid combination */
-#define ERRbadlink 68 /* reserved */
-#define ERRbadpermits 69 /* Access specified for a file is not valid */
-#define ERRbadpid 70 /* reserved */
-#define ERRsetattrmode 71 /* attribute mode invalid */
-#define ERRpaused 81 /* Message server paused */
-#define ERRmsgoff 82 /* Not receiving messages */
-#define ERRnoroom 83 /* No room for message */
-#define ERRrmuns 87 /* too many remote usernames */
-#define ERRtimeout 88 /* operation timed out */
-#define ERRnoresource  89 /* No resources currently available for request. */
-#define ERRtoomanyuids 90 /* too many userids */
-#define ERRbaduid 91 /* bad userid */
-#define ERRuseMPX 250 /* temporarily unable to use raw mode, use MPX mode */
-#define ERRuseSTD 251 /* temporarily unable to use raw mode, use standard mode */
-#define ERRcontMPX 252 /* resume MPX mode */
-#define ERRbadPW /* reserved */
-#define ERRnosupport 0xFFFF
-#define ERRunknownsmb 22 /* from NT 3.5 response */
-
-
-/* Error codes for the ERRHRD class */
-
-#define ERRnowrite 19 /* read only media */
-#define ERRbadunit 20 /* Unknown device */
-#define ERRnotready 21 /* Drive not ready */
-#define ERRbadcmd 22 /* Unknown command */
-#define ERRdata 23 /* Data (CRC) error */
-#define ERRbadreq 24 /* Bad request structure length */
-#define ERRseek 25
-#define ERRbadmedia 26
-#define ERRbadsector 27
-#define ERRnopaper 28
-#define ERRwrite 29 /* write fault */
-#define ERRread 30 /* read fault */
-#define ERRgeneral 31 /* General hardware failure */
-#define ERRwrongdisk 34
-#define ERRFCBunavail 35
-#define ERRsharebufexc 36 /* share buffer exceeded */
-#define ERRdiskfull 39
+#include "doserr.h"
 
 #ifndef _PSTRING
 
@@ -325,57 +213,6 @@ typedef struct nttime_info
 #define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
  
 #define MAX_HOURS_LEN 32
-
-struct sam_passwd
-{
-	time_t logon_time;            /* logon time */
-	time_t logoff_time;           /* logoff time */
-	time_t kickoff_time;          /* kickoff time */
-	time_t pass_last_set_time;    /* password last set time */
-	time_t pass_can_change_time;  /* password can change time */
-	time_t pass_must_change_time; /* password must change time */
-
-	char *smb_name;     /* username string */
-	char *full_name;    /* user's full name string */
-	char *home_dir;     /* home directory string */
-	char *dir_drive;    /* home directory drive string */
-	char *logon_script; /* logon script string */
-	char *profile_path; /* profile path string */
-	char *acct_desc  ;  /* user description string */
-	char *workstations; /* login from workstations string */
-	char *unknown_str ; /* don't know what this is, yet. */
-	char *munged_dial ; /* munged path name and dial-back tel number */
-
-	uid_t smb_userid;       /* this is actually the unix uid_t */
-	gid_t smb_grpid;        /* this is actually the unix gid_t */
-	uint32 user_rid;      /* Primary User ID */
-	uint32 group_rid;     /* Primary Group ID */
-
-	unsigned char *smb_passwd; /* Null if no password */
-	unsigned char *smb_nt_passwd; /* Null if no password */
-
-	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-	uint32 unknown_3; /* 0x00ff ffff */
-
-	uint16 logon_divs; /* 168 - number of hours in a week */
-	uint32 hours_len; /* normally 21 bytes */
-	uint8 hours[MAX_HOURS_LEN];
-
-	uint32 unknown_5; /* 0x0002 0000 */
-	uint32 unknown_6; /* 0x0000 04ec */
-};
-
-struct smb_passwd
-{
-	uid_t smb_userid;     /* this is actually the unix uid_t */
-	char *smb_name;     /* username string */
-
-	unsigned char *smb_passwd; /* Null if no password */
-	unsigned char *smb_nt_passwd; /* Null if no password */
-
-	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-	time_t pass_last_set_time;    /* password last set time */
-};
 
 
 struct sam_disp_info
@@ -697,69 +534,48 @@ typedef struct
 #define SHAREMODE_FN(fn) \
 	void (*fn)(share_mode_entry *, char*)
 
-/*
- * Each implementation of the password database code needs
- * to support the following operations.
- */
+typedef struct sam_passwd
+{
+	time_t logon_time;            /* logon time */
+	time_t logoff_time;           /* logoff time */
+	time_t kickoff_time;          /* kickoff time */
+	time_t pass_last_set_time;    /* password last set time */
+	time_t pass_can_change_time;  /* password can change time */
+	time_t pass_must_change_time; /* password must change time */
 
-struct passdb_ops {
-  /*
-   * Password database ops.
-   */
-  void *(*startsmbpwent)(BOOL);
-  void (*endsmbpwent)(void *);
-  SMB_BIG_UINT (*getsmbpwpos)(void *);
-  BOOL (*setsmbpwpos)(void *, SMB_BIG_UINT);
+	pstring username;     /* UNIX username string */
+	pstring domain;       /* Windows Domain name */
+	pstring nt_username;  /* Windows username string */
+	pstring full_name;    /* user's full name string */
+	pstring home_dir;     /* home directory string */
+	pstring dir_drive;    /* home directory drive string */
+	pstring logon_script; /* logon script string */
+	pstring profile_path; /* profile path string */
+	pstring acct_desc  ;  /* user description string */
+	pstring workstations; /* login from workstations string */
+	pstring unknown_str ; /* don't know what this is, yet. */
+	pstring munged_dial ; /* munged path name and dial-back tel number */
 
-  /*
-   * smb password database query functions.
-   */
-  struct smb_passwd *(*getsmbpwnam)(char *);
-  struct smb_passwd *(*getsmbpwuid)(uid_t);
-  struct smb_passwd *(*getsmbpwrid)(uint32);
-  struct smb_passwd *(*getsmbpwent)(void *);
+	uid_t uid;          /* this is actually the unix uid_t */
+	gid_t gid;          /* this is actually the unix gid_t */
+	uint32 user_rid;    /* Primary User ID */
+	uint32 group_rid;   /* Primary Group ID */
 
-  /*
-   * smb password database modification functions.
-   */
-  BOOL (*add_smbpwd_entry)(struct smb_passwd *);
-  BOOL (*mod_smbpwd_entry)(struct smb_passwd *, BOOL);
-  BOOL (*del_smbpwd_entry)(const char *);
+	unsigned char *lm_pw; /* Null if no password */
+	unsigned char *nt_pw; /* Null if no password */
 
-  /*
-   * Functions that manupulate a struct sam_passwd.
-   */
-  struct sam_passwd *(*getsam21pwent)(void *);
+	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+	uint32 unknown_3; /* 0x00ff ffff */
 
-  /*
-   * sam password database query functions.
-   */
-  struct sam_passwd *(*getsam21pwnam)(char *);
-  struct sam_passwd *(*getsam21pwuid)(uid_t);
-  struct sam_passwd *(*getsam21pwrid)(uint32);
+	uint16 logon_divs; /* 168 - number of hours in a week */
+	uint32 hours_len; /* normally 21 bytes */
+	uint8 hours[MAX_HOURS_LEN];
 
-  /*
-   * sam password database modification functions.
-   */
-  BOOL (*add_sam21pwd_entry)(struct sam_passwd *);
-  BOOL (*mod_sam21pwd_entry)(struct sam_passwd *, BOOL);
+	uint32 unknown_5; /* 0x0002 0000 */
+	uint32 unknown_6; /* 0x0000 04ec */
+	
+} SAM_ACCOUNT;
 
-  /*
-   * sam query display info functions.
-   */
-  struct sam_disp_info *(*getsamdispnam)(char *);
-  struct sam_disp_info *(*getsamdisprid)(uint32);
-  struct sam_disp_info *(*getsamdispent)(void *);
-
-#if 0
-  /*
-   * password checking functions
-   */
-  struct smb_passwd *(*smb_password_chal  )(char *username, char lm_pass[24], char nt_pass[24], char chal[8]);
-  struct smb_passwd *(*smb_password_check )(char *username, char lm_hash[16], char nt_hash[16]);
-  struct passwd     *(*unix_password_check)(char *username, char *pass, int pass_len);
-#endif
-};
 
 /*
  * Flags for local user manipulation.
@@ -771,6 +587,7 @@ struct passdb_ops {
 #define LOCAL_ENABLE_USER 0x8
 #define LOCAL_TRUST_ACCOUNT 0x10
 #define LOCAL_SET_NO_PASSWORD 0x20
+#define LOCAL_SET_LDAP_ADMIN_PW 0x40
 
 /* key and data in the connections database - used in smbstatus and smbd */
 struct connections_key {
@@ -799,7 +616,10 @@ struct locking_key {
 };
 
 struct locking_data {
-	int num_share_mode_entries;
+	union {
+		int num_share_mode_entries;
+		share_mode_entry dummy; /* Needed for alignment. */
+	} u;
 	/* the following two entries are implicit 
 	   share_mode_entry modes[num_share_mode_entries];
            char file_name[];
@@ -1302,10 +1122,6 @@ struct bitmap {
 
 
 #define SMB_SUCCESS 0  /* The request was successful. */
-#define ERRDOS 0x01 /*  Error is from the core DOS operating system set. */
-#define ERRSRV 0x02  /* Error is generated by the server network file manager.*/
-#define ERRHRD 0x03  /* Error is an hardware error. */
-#define ERRCMD 0xFF  /* Command was not in the "SMB" format. */
 
 #ifdef HAVE_STDARG_H
 int slprintf(char *str, int n, char *format, ...)
@@ -1447,6 +1263,12 @@ enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 ,PRINT_TEST,PRINT_VLP
 #endif /* DEVELOPER */
 };
+
+/* LDAP schema types */
+enum schema_types {SCHEMA_COMPAT, SCHEMA_AD, SCHEMA_SAMBA};
+
+/* LDAP SSL options */
+enum ldap_ssl_types {LDAP_SSL_ON, LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_SAMBA};
@@ -1760,5 +1582,13 @@ typedef struct user_struct
 
 #include "nsswitch/winbindd_nss.h"
 #include "smb_acls.h"
+
+/* Used by winbindd_glue functions */
+
+typedef struct {
+	struct cli_state *cli;
+	POLICY_HND handle;
+	TALLOC_CTX *mem_ctx;
+} CLI_POLICY_HND;
 
 #endif /* _SMB_H */

@@ -22,125 +22,95 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
+extern uint32 global_client_caps;
 
 /* these can be set by some functions to override the error codes */
 int unix_ERR_class=SMB_SUCCESS;
 int unix_ERR_code=0;
 
-
-/****************************************************************************
-  create an error packet from a cached error.
-****************************************************************************/
-int cached_error_packet(char *inbuf,char *outbuf,files_struct *fsp,int line)
-{
-  write_bmpx_struct *wbmpx = fsp->wbmpx_ptr;
-
-  int32 eclass = wbmpx->wr_errclass;
-  int32 err = wbmpx->wr_error;
-
-  /* We can now delete the auxiliary struct */
-  free((char *)wbmpx);
-  fsp->wbmpx_ptr = NULL;
-  return error_packet(inbuf,outbuf,eclass,err,line);
-}
-
-
-struct
-{
-  int unixerror;
-  int smbclass;
-  int smbcode;
-} unix_smb_errmap[] =
-{
-  {EPERM,ERRDOS,ERRnoaccess},
-  {EACCES,ERRDOS,ERRnoaccess},
-  {ENOENT,ERRDOS,ERRbadfile},
-  {ENOTDIR,ERRDOS,ERRbadpath},
-  {EIO,ERRHRD,ERRgeneral},
-  {EBADF,ERRSRV,ERRsrverror},
-  {EINVAL,ERRSRV,ERRsrverror},
-  {EEXIST,ERRDOS,ERRfilexists},
-  {ENFILE,ERRDOS,ERRnofids},
-  {EMFILE,ERRDOS,ERRnofids},
-  {ENOSPC,ERRHRD,ERRdiskfull},
+struct {
+	int unixerror;
+	int smbclass;
+	int smbcode;
+} unix_smb_errmap[] = {
+	{EPERM,ERRDOS,ERRnoaccess},
+	{EACCES,ERRDOS,ERRnoaccess},
+	{ENOENT,ERRDOS,ERRbadfile},
+	{ENOTDIR,ERRDOS,ERRbadpath},
+	{EIO,ERRHRD,ERRgeneral},
+	{EBADF,ERRDOS,ERRbadfid},
+	{EINVAL,ERRSRV,ERRsrverror},
+	{EEXIST,ERRDOS,ERRfilexists},
+	{ENFILE,ERRDOS,ERRnofids},
+	{EMFILE,ERRDOS,ERRnofids},
+	{ENOSPC,ERRHRD,ERRdiskfull},
 #ifdef EDQUOT
-  {EDQUOT,ERRHRD,ERRdiskfull},
+	{EDQUOT,ERRHRD,ERRdiskfull},
 #endif
 #ifdef ENOTEMPTY
-  {ENOTEMPTY,ERRDOS,ERRnoaccess},
+	{ENOTEMPTY,ERRDOS,ERRnoaccess},
 #endif
 #ifdef EXDEV
-  {EXDEV,ERRDOS,ERRdiffdevice},
+	{EXDEV,ERRDOS,ERRdiffdevice},
 #endif
-  {EROFS,ERRHRD,ERRnowrite},
-  {0,0,0}
+	{EROFS,ERRHRD,ERRnowrite},
+	{0,0,0}
 };
 
 /****************************************************************************
-  create an error packet from errno
+ Create an error packet from errno.
 ****************************************************************************/
-int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line)
+
+int unix_error_packet(char *outbuf,int def_class,uint32 def_code,int line, const char *file)
 {
-  int eclass=def_class;
-  int ecode=def_code;
-  int i=0;
+	int eclass=def_class;
+	int ecode=def_code;
+	int i=0;
 
-  if (unix_ERR_class != SMB_SUCCESS)
-    {
-      eclass = unix_ERR_class;
-      ecode = unix_ERR_code;
-      unix_ERR_class = SMB_SUCCESS;
-      unix_ERR_code = 0;
-    }
-  else
-    {
-      while (unix_smb_errmap[i].smbclass != 0)
-      {
-	    if (unix_smb_errmap[i].unixerror == errno)
-	    {
-	      eclass = unix_smb_errmap[i].smbclass;
-	      ecode = unix_smb_errmap[i].smbcode;
-	      break;
-	    }
-	  i++;
-      }
-    }
+	if (unix_ERR_class != SMB_SUCCESS) {
+		eclass = unix_ERR_class;
+		ecode = unix_ERR_code;
+		unix_ERR_class = SMB_SUCCESS;
+		unix_ERR_code = 0;
+	} else {
+		while (unix_smb_errmap[i].smbclass != 0) {
+			if (unix_smb_errmap[i].unixerror == errno) {
+				eclass = unix_smb_errmap[i].smbclass;
+				ecode = unix_smb_errmap[i].smbcode;
+				break;
+			}
+			i++;
+		}
+	}
 
-  return(error_packet(inbuf,outbuf,eclass,ecode,line));
+	return(error_packet(outbuf,0,eclass,ecode,line,file));
 }
 
-
 /****************************************************************************
-  create an error packet. Normally called using the ERROR() macro
+ Create an error packet. Normally called using the ERROR() macro.
 ****************************************************************************/
-int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line)
+
+int error_packet(char *outbuf,uint32 nt_err, int error_class,uint32 error_code,int line, const char *file)
 {
-  int outsize = set_message(outbuf,0,0,True);
-  int cmd = CVAL(inbuf,smb_com);
-  int flgs2 = SVAL(outbuf,smb_flg2); 
+	int outsize = set_message(outbuf,0,0,True);
+	int cmd = CVAL(outbuf,smb_com);
 
-  if (errno != 0)
-    DEBUG(3,("error string = %s\n",strerror(errno)));
+	if (errno != 0)
+		DEBUG(3,("error string = %s\n",strerror(errno)));
   
-  if ((flgs2 & FLAGS2_32_BIT_ERROR_CODES) == FLAGS2_32_BIT_ERROR_CODES)
-  {
-    SIVAL(outbuf,smb_rcls,error_code);
+	if ((global_client_caps & CAP_STATUS32) && (nt_err != 0)) {
+		SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+		SIVAL(outbuf,smb_rcls,nt_err);
     
-    DEBUG( 3, ( "32 bit error packet at line %d cmd=%d (%s) eclass=%08x [%s]\n",
-              line, cmd, smb_fn_name(cmd), error_code, smb_errstr(outbuf) ) );
-  }
-  else
-  {
-    CVAL(outbuf,smb_rcls) = error_class;
-    SSVAL(outbuf,smb_err,error_code);  
-    DEBUG( 3, ( "error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",
-	      line,
-	      (int)CVAL(inbuf,smb_com),
-	      smb_fn_name(CVAL(inbuf,smb_com)),
-	      error_class,
-	      error_code ) );
+		DEBUG( 3, ( "32 bit error packet at %s(%d) cmd=%d (%s) eclass=%08x [%s]\n",
+			file, line, cmd, smb_fn_name(cmd), nt_err, smb_errstr(outbuf) ) );
 
-  }
+	} else {
+		CVAL(outbuf,smb_rcls) = error_class;
+		SSVAL(outbuf,smb_err,error_code);  
+		DEBUG( 3, ( "error packet at %s(%d) cmd=%d (%s) eclass=%d ecode=%d\n",
+				file, line, cmd, smb_fn_name(cmd), error_class, error_code ) );
+	}
   
-  return(outsize);
+	return(outsize);
 }

@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
  Check if this ACE has a SID in common with the token.
 **********************************************************************************/
 
-static BOOL token_sid_in_ace( NT_USER_TOKEN *token, SEC_ACE *ace)
+static BOOL token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
 {
 	size_t i;
 
@@ -154,7 +154,7 @@ static BOOL get_max_access( SEC_ACL *the_acl, NT_USER_TOKEN *token, uint32 *gran
 	 */
 
 	*granted = acc_granted;
-	*status = NT_STATUS_NOPROBLEMO;
+	*status = NT_STATUS_OK;
 	return True;
 }
 
@@ -201,24 +201,27 @@ void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping)
  "Access-Checking" document in MSDN.
 *****************************************************************************/ 
 
-BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
+BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, uint32 *status)
 {
 	extern NT_USER_TOKEN anonymous_token;
 	size_t i;
 	SEC_ACL *the_acl;
 	fstring sid_str;
-	NT_USER_TOKEN *token = user->nt_user_token ? user->nt_user_token : &anonymous_token;
 	uint32 tmp_acc_desired = acc_desired;
 
 	if (!status || !acc_granted)
 		return False;
 
-	*status = NT_STATUS_NOPROBLEMO;
+	if (!token)
+		token = &anonymous_token;
+
+	*status = NT_STATUS_OK;
 	*acc_granted = 0;
 
-	DEBUG(10,("se_access_check: requested access %x, for uid %u\n", 
-				(unsigned int)acc_desired, (unsigned int)user->uid ));
+	DEBUG(10,("se_access_check: requested access %x, for  NT token with %u entries and first sid %s.\n",
+				(unsigned int)acc_desired, (unsigned int)token->num_sids,
+				sid_to_string(sid_str, &token->user_sids[0])));
 
 	/*
 	 * No security descriptor or security descriptor with no DACL
@@ -228,7 +231,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	/* ACL must have something in it */
 
 	if (!sd || (sd && (!(sd->type & SEC_DESC_DACL_PRESENT) || sd->dacl == NULL))) {
-		*status = NT_STATUS_NOPROBLEMO;
+		*status = NT_STATUS_OK;
 		*acc_granted = acc_desired;
 		DEBUG(5, ("se_access_check: no sd or blank DACL, access allowed\n"));
 		return True;
@@ -276,7 +279,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 			  (unsigned int)tmp_acc_desired ));
 
 		tmp_acc_desired = check_ace( ace, token, tmp_acc_desired, status);
-		if (*status != NT_STATUS_NOPROBLEMO) {
+		if (*status != NT_STATUS_OK) {
 			*acc_granted = 0;
 			DEBUG(5,("se_access_check: ACE %u denied with status %x.\n", (unsigned int)i, (unsigned int)*status ));
 			return False;
@@ -290,7 +293,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 
 	if (tmp_acc_desired == 0) {
 		*acc_granted = acc_desired;
-		*status = NT_STATUS_NOPROBLEMO;
+		*status = NT_STATUS_OK;
 		DEBUG(5,("se_access_check: access (%x) granted.\n", (unsigned int)acc_desired ));
 		return True;
 	}

@@ -85,16 +85,23 @@ static void unescape(char *buf)
 
 static char *grab_line(FILE *f, int *cl)
 {
-	char *ret;
+	char *ret = NULL;
 	int i = 0;
-	int len = 1024;
-
-	ret = (char *)malloc(len);
-	if (!ret) return NULL;
-	
+	int len = 0;
 
 	while ((*cl)) {
-		int c = fgetc(f);
+		int c;
+	
+		if (i == len) {
+			char *ret2;
+			if (len == 0) len = 1024;
+			else len *= 2;
+			ret2 = (char *)Realloc(ret, len);
+			if (!ret2) return ret;
+			ret = ret2;
+		}
+	
+		c = fgetc(f);
 		(*cl)--;
 
 		if (c == EOF) {
@@ -108,13 +115,6 @@ static char *grab_line(FILE *f, int *cl)
 
 		ret[i++] = c;
 
-		if (i == len-1) {
-			char *ret2;
-			ret2 = (char *)realloc(ret, len*2);
-			if (!ret2) return ret;
-			len *= 2;
-			ret = ret2;
-		}
 	}
 	
 

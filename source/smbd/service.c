@@ -516,6 +516,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				*ecode = ERRaccess;
 				DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
 					service ));
+				yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
 				conn_free(conn);
 				return NULL;
 			} else {
@@ -527,6 +528,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	if (!vfs_init(conn)) {
 		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
+		yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
 		conn_free(conn);
 		return NULL;
 	}
@@ -540,6 +542,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
 			conn_free(conn);
 			*ecode = ERRsrverror;
 			return NULL;
@@ -592,6 +595,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
 			conn_free(conn);
 			*ecode = ERRsrverror;
 			return NULL;

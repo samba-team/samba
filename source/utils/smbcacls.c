@@ -94,7 +94,7 @@ static BOOL cacls_open_policy_hnd(void)
 
 		if (cli_lsa_open_policy(&lsa_cli, lsa_cli.mem_ctx, True, 
 					GENERIC_EXECUTE_ACCESS, &pol)
-		    != NT_STATUS_NOPROBLEMO) {
+		    != NT_STATUS_OK) {
 			return False;
 		}
 
@@ -119,7 +119,7 @@ static void SidToString(fstring str, DOM_SID *sid)
 
 	if (!cacls_open_policy_hnd() ||
 	    cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  &pol, 1, sid, &names, &types, 
-				&num_names) != NT_STATUS_NOPROBLEMO ||
+				&num_names) != NT_STATUS_OK ||
 	    !names || !names[0]) {
 		return;
 	}
@@ -143,7 +143,7 @@ static BOOL StringToSid(DOM_SID *sid, char *str)
 
 	if (!cacls_open_policy_hnd() ||
 	    cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, &str, &sids, &types, 
-				 &num_sids) != NT_STATUS_NOPROBLEMO) {
+				 &num_sids) != NT_STATUS_OK) {
 		result = False;
 		goto done;
 	}

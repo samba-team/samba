@@ -112,8 +112,6 @@ BOOL dfs_io_q_dfs_remove(char *desc, DFS_Q_DFS_REMOVE *q_d, prs_struct *ps, int 
 	if(q_d->ptr_ShareName)
 		if (!smb_io_unistr2("ShareName",&q_d->ShareName,  q_d->ptr_ShareName, ps, depth))
 			return False;
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }

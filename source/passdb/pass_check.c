@@ -27,9 +27,9 @@
 extern int DEBUGLEVEL;
 
 /* these are kept here to keep the string_combinations function simple */
-static char this_user[100] = "";
-static char this_salt[100] = "";
-static char this_crypted[100] = "";
+static fstring this_user;
+static fstring this_salt;
+static fstring this_crypted;
 
 #ifdef WITH_AFS
 
@@ -599,7 +599,7 @@ static BOOL password_check(char *password)
 {
 
 #ifdef WITH_PAM
-	return (smb_pam_passcheck(this_user, password) == NT_STATUS_NOPROBLEMO);
+	return (smb_pam_passcheck(this_user, password) == NT_STATUS_OK);
 #endif /* WITH_PAM */
 
 #ifdef WITH_AFS

@@ -475,7 +475,7 @@ uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 			return r_l.status;
 		}
 
-		result = NT_STATUS_NOPROBLEMO;
+		result = NT_STATUS_OK;
 
 		if (p) {
 			if (t_names.ptr_trans_names != 0

@@ -282,13 +282,25 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
   if (feof(f))
     return(NULL);
 
+  if (maxlen <2) return(NULL);
+
   if (!s2)
     {
+      char *t;
+
       maxlen = MIN(maxlen,8);
-      s = (char *)Realloc(s,maxlen);
+      t = (char *)Realloc(s,maxlen);
+      if (!t) {
+        DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
+        if (s)
+          free(s);
+        return(NULL);
+      } else
+        s = t;
     }
 
-  if (!s || maxlen < 2) return(NULL);
+  if (!s)
+    return(NULL);
 
   *s = 0;
 
@@ -323,12 +335,19 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
 	  s[len++] = c;
 	  s[len] = 0;
 	}
-      if (!s2 && len > maxlen-3)
-	{
-	  maxlen *= 2;
-	  s = (char *)Realloc(s,maxlen);
-	  if (!s) return(NULL);
-	}
+      if (!s2 && len > maxlen-3) {
+        char *t;
+
+        maxlen *= 2;
+        t = (char *)Realloc(s,maxlen);
+        if (!t) {
+          DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
+          if (s)
+            free(s);
+          return(NULL);
+        } else
+          s = t;
+      }
     }
   return(s);
 }
@@ -340,7 +359,7 @@ load from a pipe into memory
 char *file_pload(char *syscmd, size_t *size)
 {
 	int fd, n;
-	char *p;
+	char *p, *tp;
 	pstring buf;
 	size_t total;
 	
@@ -351,11 +370,15 @@ char *file_pload(char *syscmd, size_t *size)
 	total = 0;
 
 	while ((n = read(fd, buf, sizeof(buf))) > 0) {
-		p = Realloc(p, total + n + 1);
-		if (!p) {
+		tp = Realloc(p, total + n + 1);
+		if (!tp) {
+			DEBUG(0,("file_pload: failed to exand buffer!\n"));
 			close(fd);
+			if (p)
+				free(p);
 			return NULL;
-		}
+		} else
+			p = tp;
 		memcpy(p+total, buf, n);
 		total += n;
 	}

@@ -99,11 +99,36 @@ static BOOL brl_same_context(struct lock_context *ctx1,
 static BOOL brl_conflict(struct lock_struct *lck1, 
 			 struct lock_struct *lck2)
 {
+	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
+		return False;
+	}
+
+	if (brl_same_context(&lck1->context, &lck2->context) &&
+	    lck2->lock_type == READ_LOCK && lck1->fnum == lck2->fnum) {
+		return False;
+	}
+
+	if (lck1->start >= (lck2->start + lck2->size) ||
+	    lck2->start >= (lck1->start + lck1->size)) {
+		return False;
+	}
+	    
+	return True;
+} 
+
+/****************************************************************************
+ Check to see if this lock conflicts, but ignore our own locks on the
+ same fnum only.
+****************************************************************************/
+
+static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck2)
+{
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
 		return False;
 
 	if (brl_same_context(&lck1->context, &lck2->context) &&
-	    lck2->lock_type == READ_LOCK && lck1->fnum == lck2->fnum) return False;
+				lck1->fnum == lck2->fnum)
+		return False;
 
 	if (lck1->start >= (lck2->start + lck2->size) ||
 	    lck2->start >= (lck1->start + lck1->size)) return False;
@@ -176,7 +201,7 @@ void brl_init(int read_only)
 
 	if (tdb)
 		return;
-	tdb = tdb_open_log(lock_path("brlock.tdb"), 0, TDB_CLEAR_IF_FIRST, 
+	tdb = tdb_open_log(lock_path("brlock.tdb"), 0, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST),
 		       read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
 	if (!tdb) {
 		DEBUG(0,("Failed to open byte range locking database\n"));
@@ -218,10 +243,18 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct lock, *locks;
+	char *tp;
 
 	kbuf = locking_key(dev,ino);
 
 	dbuf.dptr = NULL;
+
+#if 0
+	if (start == 0 && size == 0) {
+		tdb_delete(tdb, kbuf);
+		return True;
+	}
+#endif
 
 	tdb_chainlock(tdb, kbuf);
 	dbuf = tdb_fetch(tdb, kbuf);
@@ -245,9 +278,18 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		}
 	}
 
+#if 0
+	if (start == 0 && size == 0) {
+		if (dbuf.dptr) free(dbuf.dptr);
+		tdb_chainunlock(tdb, kbuf);		
+		return True;
+	}
+#endif
+
 	/* no conflicts - add it to the list of locks */
-	dbuf.dptr = Realloc(dbuf.dptr, dbuf.dsize + sizeof(*locks));
-	if (!dbuf.dptr) goto fail;
+	tp = Realloc(dbuf.dptr, dbuf.dsize + sizeof(*locks));
+	if (!tp) goto fail;
+	else dbuf.dptr = tp;
 	memcpy(dbuf.dptr + dbuf.dsize, &lock, sizeof(lock));
 	dbuf.dsize += sizeof(lock);
 	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
@@ -294,21 +336,37 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	/* there are existing locks - find a match */
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);
-	for (i=0; i<count; i++) {
 
+	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 
-#if 0
-		/* JRATEST - DEBUGGING INFO */
-		if(!brl_same_context(&lock->context, &context)) {
-			DEBUG(10,("brl_unlock: Not same context. l_smbpid = %u, l_pid = %u, l_tid = %u: \
-smbpid = %u, pid = %u, tid = %u\n",
-				lock->context.smbpid, lock->context.pid, lock->context.tid,
-				context.smbpid, context.pid, context.tid ));
+		if (lock->lock_type == WRITE_LOCK &&
+		    brl_same_context(&lock->context, &context) &&
+		    lock->fnum == fnum &&
+		    lock->start == start &&
+		    lock->size == size) {
+			/* found it - delete it */
+			if (count == 1) {
+				tdb_delete(tdb, kbuf);
+			} else {
+				if (i < count-1) {
+					memmove(&locks[i], &locks[i+1], 
+						sizeof(*locks)*((count-1) - i));
+				}
+				dbuf.dsize -= sizeof(*locks);
+				tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+			}
 
+			free(dbuf.dptr);
+			tdb_chainunlock(tdb, kbuf);
+			return True;
 		}
-		/* JRATEST */
-#endif
+	}
+
+	locks = (struct lock_struct *)dbuf.dptr;
+	count = dbuf.dsize / sizeof(*locks);
+	for (i=0; i<count; i++) {
+		struct lock_struct *lock = &locks[i];
 
 		if (brl_same_context(&lock->context, &context) &&
 		    lock->fnum == fnum &&
@@ -340,25 +398,6 @@ smbpid = %u, pid = %u, tid = %u\n",
 	return False;
 }
 
-/****************************************************************************
- Check to see if this lock conflicts, but ignore our own locks on the
- same fnum only.
-****************************************************************************/
-
-static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck2)
-{
-	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
-		return False;
-
-	if (brl_same_context(&lck1->context, &lck2->context) &&
-				lck1->fnum == lck2->fnum)
-		return False;
-
-	if (lck1->start >= (lck2->start + lck2->size) ||
-	    lck2->start >= (lck1->start + lck1->size)) return False;
-	    
-	return True;
-} 
 
 /****************************************************************************
  Test if we could add a lock if we wanted to.

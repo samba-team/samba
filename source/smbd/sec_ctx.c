@@ -223,6 +223,10 @@ BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
 	struct sec_ctx *prev_ctx_p;
 	BOOL result = True;
 
+	if (non_root_mode()) {
+		return True;
+	}
+
 	become_root();
 
 	/* Call initgroups() to get user groups */
@@ -356,7 +360,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	current_user.gid = gid;
 	current_user.ngroups = ngroups;
 	current_user.groups = groups;
-	current_user.nt_user_token = token;
+	current_user.nt_user_token = ctx_p->token;
 }
 
 /****************************************************************************

@@ -95,6 +95,7 @@ typedef struct tdb_context {
 	dev_t device;	/* uniquely identifies this tdb */
 	ino_t inode;	/* uniquely identifies this tdb */
 	void (*log_fn)(struct tdb_context *tdb, int level, const char *, ...); /* logging function */
+	int open_flags; /* flags used in the open - needed by reopen */
 } TDB_CONTEXT;
 
 typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *);

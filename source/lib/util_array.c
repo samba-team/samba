@@ -58,18 +58,20 @@ void* add_copy_to_array(uint32 *len, void ***array, const void *item,
 
 void* add_item_to_array(uint32 *len, void ***array, void *item)
 {
+	void **tary;
+
 	if (len == NULL || array == NULL)
-	{
 		return NULL;
-	}
 
-	(*array) = (void**)Realloc((*array), ((*len)+1)*sizeof((*array)[0]));
-
-	if ((*array) != NULL)
-	{
+	tary = (void**)Realloc((*array), ((*len)+1)*sizeof((*array)[0]));
+ 
+	if (tary != NULL) {
+		(*array) = tary;
 		(*array)[(*len)] = item;
 		(*len)++;
 		return item;
+	} else {
+		free((char *)*array);
 	}
 	return NULL;
 }

@@ -71,6 +71,19 @@ static void populate_printers(void)
 			tmp=strchr(tmp, ' ');
 			tmp++;
 		}
+
+		/* Eat whitespace. */
+
+		while(*tmp == ' ')
+			++tmp;
+
+		/*
+		 * On HPUX there is an extra line that can be ignored.
+		 * d.thibadeau 2001/08/09
+		 */
+		if(!strncmp("remote to",tmp,9))
+			continue;
+
 		name = tmp;
 
 		/* truncate the ": ..." */

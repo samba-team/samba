@@ -127,8 +127,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 
 	if (conn->force_user || 
 		conn->admin_user ||
-	    lp_security() == SEC_SHARE ||
-	    !(vuser) || (vuser->guest)) {
+	    (lp_security() == SEC_SHARE)) {
 		uid = conn->uid;
 		gid = conn->gid;
 		current_user.groups = conn->groups;
@@ -280,7 +279,9 @@ BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	fstring sid;
 	char *sep = lp_winbind_separator();
 
-	if (!winbind_lookup_name(name, psid, name_type)) {
+	*name_type = SID_NAME_UNKNOWN;
+
+	if (!winbind_lookup_name(name, psid, name_type) || (*name_type != SID_NAME_USER) ) {
 		BOOL ret;
 
 		DEBUG(10, ("lookup_name: winbind lookup for %s failed - trying local\n", name));
@@ -296,21 +297,19 @@ BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 			switch (lp_server_role()) {
 				case ROLE_DOMAIN_PDC:
 				case ROLE_DOMAIN_BDC:
-					if (strequal(domain, global_myworkgroup))
+					if (strequal(domain, global_myworkgroup)) {
 						fstrcpy(domain, global_myname);
+						ret = local_lookup_name(domain, username, psid, name_type);
+					}
 					/* No break is deliberate here. JRA. */
 				default:
 					if (strcasecmp(global_myname, domain) != 0) {
-						DEBUG(5, ("domain %s is not local\n", domain));
-						return False;
+						DEBUG(5, ("lookup_name: domain %s is not local\n", domain));
+						ret = local_lookup_name(global_myname, username, psid, name_type);
 					}
 			}
-
-			ret = local_lookup_name(domain, username, psid, 
-						name_type);
 		} else {
-			ret = local_lookup_name(global_myname, name, psid, 
-						name_type);
+			ret = local_lookup_name(global_myname, name, psid, name_type);
 		}
 
 		if (ret) {
@@ -325,9 +324,9 @@ BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 		return ret;
 	}
 
-		DEBUG(10,("lookup_name (winbindd): %s -> SID %s (type %u)\n",
-			  name, sid_to_string(sid, psid), 
-			  (unsigned int)*name_type));
+	DEBUG(10,("lookup_name (winbindd): %s -> SID %s (type %u)\n",
+		  name, sid_to_string(sid, psid), 
+		  (unsigned int)*name_type));
 	return True;
 }
 
@@ -340,6 +339,8 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 {
 	if (!name_type)
 		return False;
+
+	*name_type = SID_NAME_UNKNOWN;
 
 	/* Check if this is our own sid.  This should perhaps be done by
 	   winbind?  For the moment handle it here. */
@@ -421,7 +422,7 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
  *THE CANONICAL* convert SID to uid function.
  Tries winbind first - then uses local lookup.
  Returns True if this name is a user sid and the conversion
- was done correctly, False if not.
+ was done correctly, False if not. sidtype is set by this function.
 *****************************************************************/  
 
 BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
@@ -435,7 +436,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 	 * First we must look up the name and decide if this is a user sid.
 	 */
 
-	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
+	if ( (!winbind_lookup_sid(psid, dom_name, name, &name_type)) || (name_type != SID_NAME_USER) ) {
 		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed - trying local.\n",
 				sid_to_string(sid_str, psid) ));
 

@@ -415,6 +415,86 @@ ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
 }
 
 /****************************************************************************
+ An allocate file space call using the vfs interface.
+ Allocates space for a file from a filedescriptor.
+ Returns 0 on success, -1 on failure.
+****************************************************************************/
+
+int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
+{
+	int ret;
+	SMB_STRUCT_STAT st;
+	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
+
+	if (!lp_strict_allocate(SNUM(fsp->conn)))
+		return vfs_set_filelen(fsp, len);
+		
+	release_level_2_oplocks_on_change(fsp);
+
+	/*
+	 * Actually try and commit the space on disk....
+	 */
+
+	DEBUG(10,("vfs_allocate_file_space: file %s, len %.0f\n", fsp->fsp_name, (double)len ));
+
+	ret = vfs_fstat(fsp,fsp->fd,&st);
+	if (ret == -1)
+		return ret;
+
+	if (len == st.st_size)
+		return 0;
+
+	if (len < st.st_size) {
+		/* Shrink - use ftruncate. */
+
+		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current size %.0f\n",
+				fsp->fsp_name, (double)st.st_size ));
+
+		if ((ret = vfs_ops->ftruncate(fsp, fsp->fd, len)) != -1) {
+			set_filelen_write_cache(fsp, len);
+		}
+		return ret;
+	}
+
+	/* Grow - we need to write out the space.... */
+	{
+		static unsigned char zero_space[65536];
+
+		SMB_OFF_T start_pos = st.st_size;
+		SMB_OFF_T len_to_write = len - st.st_size;
+		SMB_OFF_T retlen;
+
+		DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f\n",
+				fsp->fsp_name, (double)st.st_size ));
+
+		if ((retlen = vfs_ops->lseek(fsp, fsp->fd, start_pos, SEEK_SET)) != start_pos)
+			return -1;
+
+		while ( len_to_write > 0) {
+			SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),len_to_write);
+
+			retlen = vfs_ops->write(fsp,fsp->fd,(char *)zero_space,current_len_to_write);
+			if (retlen <= 0) {
+				/* Write fail - return to original size. */
+				int save_errno = errno;
+				fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, st.st_size);
+				errno = save_errno;
+				DEBUG(10,("vfs_allocate_file_space: file %s, grow. write fail %s\n",
+					fsp->fsp_name, strerror(errno) ));
+				return -1;
+			}
+
+			DEBUG(10,("vfs_allocate_file_space: file %s, grow. wrote %.0f\n",
+					fsp->fsp_name, (double)retlen ));
+
+			len_to_write -= retlen;
+		}
+		set_filelen_write_cache(fsp, len);
+	}
+	return 0;
+}
+
+/****************************************************************************
  A vfs set_filelen call.
  set the length of a file from a filedescriptor.
  Returns 0 on success, -1 on failure.
@@ -425,100 +505,35 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 	int ret;
 
 	release_level_2_oplocks_on_change(fsp);
-	if ((ret = fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, len)) != -1) {
+	if ((ret = fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, len)) != -1)
 		set_filelen_write_cache(fsp, len);
-	}
 
 	return ret;
 }
 
 /****************************************************************************
- Transfer some data between two file_struct's.
+ Transfer some data (n bytes) between two file_struct's.
 ****************************************************************************/
 
-SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp,
-			    int out_fd, files_struct *out_fsp,
-			    SMB_OFF_T n, char *header, int headlen, int align)
+static files_struct *in_fsp;
+static files_struct *out_fsp;
+
+static ssize_t read_fn(int fd, void *buf, size_t len)
 {
-  static char *buf=NULL;
-  static int size=0;
-  char *buf1,*abuf;
-  SMB_OFF_T total = 0;
+	return in_fsp->conn->vfs_ops.read(in_fsp, fd, buf, len);
+}
 
-  DEBUG(4,("vfs_transfer_file n=%.0f  (head=%d) called\n",(double)n,headlen));
+static ssize_t write_fn(int fd, const void *buf, size_t len)
+{
+	return out_fsp->conn->vfs_ops.write(out_fsp, fd, buf, len);
+}
 
-  /* Check we have at least somewhere to read from */
+SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
+{
+	in_fsp = in;
+	out_fsp = out;
 
-  SMB_ASSERT((in_fd != -1) || (in_fsp != NULL));
-
-  if (size == 0) {
-    size = lp_readsize();
-    size = MAX(size,1024);
-  }
-
-  while (!buf && size>0) {
-    buf = (char *)Realloc(buf,size+8);
-    if (!buf) size /= 2;
-  }
-
-  if (!buf) {
-    DEBUG(0,("Can't allocate transfer buffer!\n"));
-    exit(1);
-  }
-
-  abuf = buf + (align%8);
-
-  if (header)
-    n += headlen;
-
-  while (n > 0)
-  {
-    int s = (int)MIN(n,(SMB_OFF_T)size);
-    int ret,ret2=0;
-
-    ret = 0;
-
-    if (header && (headlen >= MIN(s,1024))) {
-      buf1 = header;
-      s = headlen;
-      ret = headlen;
-      headlen = 0;
-      header = NULL;
-    } else {
-      buf1 = abuf;
-    }
-
-    if (header && headlen > 0)
-    {
-      ret = MIN(headlen,size);
-      memcpy(buf1,header,ret);
-      headlen -= ret;
-      header += ret;
-      if (headlen <= 0) header = NULL;
-    }
-
-    if (s > ret) {
-      ret += in_fsp ?
-	  in_fsp->conn->vfs_ops.read(in_fsp,in_fsp->fd,buf1+ret,s-ret) : read(in_fd,buf1+ret,s-ret);
-    }
-
-    if (ret > 0) {
-		if (out_fsp)
-		    ret2 = out_fsp->conn->vfs_ops.write(out_fsp,out_fsp->fd,buf1,ret);
-		else
-		    ret2= (out_fd != -1) ? write_data(out_fd,buf1,ret) : ret;
-    }
-
-      if (ret2 > 0) total += ret2;
-      /* if we can't write then dump excess data */
-      if (ret2 != ret)
-        vfs_transfer_file(in_fd, in_fsp, -1,NULL,n-(ret+headlen),NULL,0,0);
-
-    if (ret <= 0 || ret2 != ret)
-      return(total);
-    n -= ret;
-  }
-  return(total);
+	return transfer_file_internal(in_fsp->fd, out_fsp->fd, n, read_fn, write_fn);
 }
 
 /*******************************************************************

@@ -72,7 +72,7 @@ uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO 
 		return NT_STATUS_NO_MEMORY;
 
 	create_wks_info_100(wks100);
-	init_wks_r_query_info(r_u, q_u->switch_value, wks100, NT_STATUS_NOPROBLEMO);
+	init_wks_r_query_info(r_u, q_u->switch_value, wks100, NT_STATUS_OK);
 
 	DEBUG(5,("_wks_query_info: %d\n", __LINE__));
 

@@ -25,6 +25,32 @@
 
 #include "includes.h"
 
+NSS_STATUS winbindd_request(int req_type,
+                                 struct winbindd_request *request,
+                                 struct winbindd_response *response);
+
+/* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
+   form DOMAIN/user into a domain and a user */
+
+static void parse_domain_user(char *domuser, fstring domain, fstring user)
+{
+        char *p;
+        char *sep = lp_winbind_separator();
+        if (!sep) sep = "\\";
+        p = strchr(domuser,*sep);
+        if (!p) p = strchr(domuser,'\\');
+        if (!p) {
+                fstrcpy(domain,"");
+                fstrcpy(user, domuser);
+                return;
+        }
+        
+        fstrcpy(user, p+1);
+        fstrcpy(domain, domuser);
+        domain[PTR_DIFF(p, domuser)] = 0;
+        strupper(domain);
+}
+
 /* Call winbindd to convert a name to a sid */
 
 BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name_type)
@@ -42,7 +68,8 @@ BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name
 	ZERO_STRUCT(response);
 
 	fstrcpy(request.data.name, name);
-	if ((result = (NSS_STATUS)winbindd_request(WINBINDD_LOOKUPNAME, &request, 
+
+	if ((result = winbindd_request(WINBINDD_LOOKUPNAME, &request, 
 				       &response)) == NSS_STATUS_SUCCESS) {
 		string_to_sid(sid, response.data.sid.sid);
 		*name_type = (enum SID_NAME_USE)response.data.sid.type;
@@ -70,7 +97,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_N
 	
 	/* Make request */
 
-	result = (NSS_STATUS)winbindd_request(WINBINDD_LOOKUPSID, &request, &response);
+	result = winbindd_request(WINBINDD_LOOKUPSID, &request, &response);
 
 	/* Copy out result */
 
@@ -171,7 +198,7 @@ BOOL winbind_sid_to_gid(gid_t *pgid, DOM_SID *sid)
 	
 	/* Make request */
 
-	result = winbindd_request(WINBINDD_SID_TO_UID, &request, &response);
+	result = winbindd_request(WINBINDD_SID_TO_GID, &request, &response);
 
 	/* Copy out result */
 
@@ -252,7 +279,7 @@ static int wb_getgroups(char *user, gid_t **groups)
 
 int winbind_initgroups(char *user, gid_t gid)
 {
-	gid_t *groups = NULL;
+	gid_t *tgr, *groups = NULL;
 	int result;
 	char *sep;
 
@@ -284,13 +311,14 @@ int winbind_initgroups(char *user, gid_t gid)
 		/* Add group to list if necessary */
 
 		if (!is_member) {
-			groups = Realloc(groups, sizeof(gid_t) * ngroups + 1);
+			tgr = (gid_t *)Realloc(groups, sizeof(gid_t) * ngroups + 1);
 			
-			if (!groups) {
+			if (!tgr) {
 				errno = ENOMEM;
 				result = -1;
 				goto done;
-			}
+			} else
+				groups = tgr;
 
 			groups[ngroups] = gid;
 			ngroups++;

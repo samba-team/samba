@@ -28,6 +28,7 @@ extern int global_oplock_break;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
+extern uint32 global_client_caps;
 
 static char *known_nt_pipes[] = {
   "\\LANMAN",
@@ -63,8 +64,8 @@ struct generic_mapping file_generic_mapping = {
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_error, char *params,
-                           int paramsize, char *pdata, int datasize)
+static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_error, int eclass, uint32 ecode,
+							char *params, int paramsize, char *pdata, int datasize)
 {
   extern int max_send;
   int data_to_send = datasize;
@@ -84,10 +85,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
   set_message(outbuf,18,0,True);
 
   if(nt_error != 0) {
-    /* NT Error. */
-    SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-
-    ERROR(0,nt_error);
+    ERROR_BOTH(nt_error,eclass,ecode);
   }
 
   /* 
@@ -256,29 +254,29 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
 
 static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
-  /*
-   * We need various heuristics here to detect a unicode string... JRA.
-   */
+	/*
+	 * We need various heuristics here to detect a unicode string... JRA.
+	 */
 
-  DEBUG(10,("get_filename: data_offset = %d, data_len = %d, fname_len = %d\n",
-           data_offset, data_len, fname_len ));
+	DEBUG(10,("get_filename: data_offset = %d, data_len = %d, fname_len = %d\n",
+			data_offset, data_len, fname_len ));
 
-  if(data_len - fname_len > 1) {
-    /*
-     * NT 5.0 Beta 2 has kindly sent us a UNICODE string
-     * without bothering to set the unicode bit. How kind.
-     *
-     * Firstly - ensure that the data offset is aligned
-     * on a 2 byte boundary - add one if not.
-     */
-    fname_len = fname_len/2;
-    if(data_offset & 1)
-      data_offset++;
-    pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
-  } else {
-    StrnCpy(fname,inbuf+data_offset,fname_len);
-    fname[fname_len] = '\0';
-  }
+	if(data_len - fname_len > 1) {
+		/*
+		 * NT 5.0 Beta 2 has kindly sent us a UNICODE string
+		 * without bothering to set the unicode bit. How kind.
+		 *
+		 * Firstly - ensure that the data offset is aligned
+		 * on a 2 byte boundary - add one if not.
+		 */
+		fname_len = fname_len/2;
+		if(data_offset & 1)
+			data_offset++;
+		pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
+	} else {
+		StrnCpy(fname,inbuf+data_offset,fname_len);
+		fname[fname_len] = '\0';
+	}
 }
 
 /****************************************************************************
@@ -288,32 +286,38 @@ static void get_filename( char *fname, char *inbuf, int data_offset, int data_le
 
 static void get_filename_transact( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
-  /*
-   * We need various heuristics here to detect a unicode string... JRA.
-   */
+	DEBUG(10,("get_filename_transact: data_offset = %d, data_len = %d, fname_len = %d\n",
+			data_offset, data_len, fname_len ));
 
-  DEBUG(10,("get_filename_transact: data_offset = %d, data_len = %d, fname_len = %d\n",
-           data_offset, data_len, fname_len ));
+	/*
+	 * Win2K sends a unicode filename plus one extra alingment byte.
+	 * WinNT4.x send an ascii string with multiple garbage bytes on
+	 * the end here.
+	 */
 
-  /*
-   * Win2K sends a unicode filename plus one extra alingment byte.
-   * WinNT4.x send an ascii string with multiple garbage bytes on
-   * the end here.
-   */
+	/*
+	 * We need various heuristics here to detect a unicode string... JRA.
+	 */
 
-  if((data_len == 1) || (inbuf[data_offset] == '\0')) {
-    /*
-     * Ensure that the data offset is aligned
-     * on a 2 byte boundary - add one if not.
-     */
-    fname_len = fname_len/2;
-    if(data_offset & 1)
-      data_offset++;
-    pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
-  } else {
-    StrnCpy(fname,inbuf+data_offset,fname_len);
-    fname[fname_len] = '\0';
-  }
+	if( ((fname_len % 2) == 0) &&
+		(
+			(data_len == 1) ||
+			(inbuf[data_offset] == '\0') ||
+			((fname_len > 1) && (inbuf[data_offset+1] == '\\') && (inbuf[data_offset+2] == '\0'))
+		)) {
+
+		/*
+		 * Ensure that the data offset is aligned
+		 * on a 2 byte boundary - add one if not.
+		 */
+		fname_len = fname_len/2;
+		if(data_offset & 1)
+			data_offset++;
+		pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
+	} else {
+		StrnCpy(fname,inbuf+data_offset,fname_len);
+		fname[fname_len] = '\0';
+	}
 }
 
 /****************************************************************************
@@ -526,69 +530,6 @@ to open_mode %x\n", (unsigned long)desired_access, (unsigned long)share_access,
   return smb_open_mode;
 }
 
-#if 0
-/*
- * This is a *disgusting* hack.
- * This is *so* bad that even I'm embarrassed (and I
- * have no shame). Here's the deal :
- * Until we get the correct SPOOLSS code into smbd
- * then when we're running with NT SMB support then
- * NT makes this call with a level of zero, and then
- * immediately follows it with an open request to
- * the \\SRVSVC pipe. If we allow that open to
- * succeed then NT barfs when it cannot open the
- * \\SPOOLSS pipe immediately after and continually
- * whines saying "Printer name is invalid" forever
- * after. If we cause *JUST THIS NEXT OPEN* of \\SRVSVC
- * to fail, then NT downgrades to using the downlevel code
- * and everything works as well as before. I hate
- * myself for adding this code.... JRA.
- *
- * The HACK_FAIL_TIME define allows only a 2
- * second window for this to occur, just in
- * case...
- */
-
-static BOOL fail_next_srvsvc = False;
-static time_t fail_time;
-#define HACK_FAIL_TIME 2 /* In seconds. */
-
-void fail_next_srvsvc_open(void)
-{
-  /* Check client is WinNT proper; Win2K doesn't like Jeremy's hack - matty */
-  if (get_remote_arch() != RA_WINNT)
-    return;
-
-  fail_next_srvsvc = True;
-  fail_time = time(NULL);
-  DEBUG(10,("fail_next_srvsvc_open: setting up timeout close of \\srvsvc pipe for print fix.\n"));
-}
-
-/*
- * HACK alert.... see above - JRA.
- */
-
-BOOL should_fail_next_srvsvc_open(const char *pipename)
-{
-
-  DEBUG(10,("should_fail_next_srvsvc_open: fail = %d, pipe = %s\n",
-    (int)fail_next_srvsvc, pipename));
-
-  if(fail_next_srvsvc && (time(NULL) > fail_time + HACK_FAIL_TIME)) {
-    fail_next_srvsvc = False;
-    fail_time = (time_t)0;
-    DEBUG(10,("should_fail_next_srvsvc_open: End of timeout close of \\srvsvc pipe for print fix.\n"));
-  }
-
-  if(fail_next_srvsvc && strequal(pipename, "srvsvc")) {
-    fail_next_srvsvc = False;
-    DEBUG(10,("should_fail_next_srvsvc_open: Deliberately failing open of \\srvsvc pipe for print fix.\n"));
-    return True;
-  }
-  return False;
-}
-#endif
-
 /****************************************************************************
  Reply to an NT create and X call on a pipe.
 ****************************************************************************/
@@ -603,6 +544,10 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
     
 	/* See if it is one we want to handle. */
+
+	if (lp_disable_spoolss() && strequal(fname, "\\spoolss"))
+		return(ERROR(ERRSRV,ERRaccess));
+
 	for( i = 0; known_nt_pipes[i]; i++ )
 		if( strequal(fname,known_nt_pipes[i]))
 			break;
@@ -613,11 +558,6 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	/* Strip \\ off the name. */
 	fname++;
     
-#if 0
-	if(should_fail_next_srvsvc_open(fname))
-		return (ERROR(ERRSRV,ERRaccess));
-#endif
-
 	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
 	p = open_rpc_pipe_p(fname, conn, vuid);
@@ -744,7 +684,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
       size_t dir_name_len;
 
       if(!dir_fsp) {
-	END_PROFILE(SMBntcreateX);
+        END_PROFILE(SMBntcreateX);
         return(ERROR(ERRDOS,ERRbadfid));
       }
 
@@ -757,11 +697,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
                    smb_buflen(inbuf),fname_len);
 
         if( strchr(fname, ':')) {
-          SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
           END_PROFILE(SMBntcreateX);
-          return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
+          return(ERROR_BOTH(NT_STATUS_OBJECT_PATH_NOT_FOUND,ERRDOS,ERRbadpath));
         }
-	END_PROFILE(SMBntcreateX);
+        END_PROFILE(SMBntcreateX);
         return(ERROR(ERRDOS,ERRbadfid));
       }
 
@@ -898,9 +837,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(file_attributes);
-					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 					END_PROFILE(SMBntcreateX);
-					return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
+					return(ERROR_BOTH(NT_STATUS_FILE_IS_A_DIRECTORY,ERRDOS,ERRbadaccess));
 				}
 	
 				oplock_request = 0;
@@ -1092,7 +1030,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
 
 	/* Send the required number of replies */
-	send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
+	send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, params, 69, *ppdata, 0);
 
 	return -1;
 }
@@ -1101,7 +1039,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
  Internal fn to set security descriptors.
 ****************************************************************************/
 
-static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint security_info_sent, int *pdef_class,uint32 *pdef_code)
+static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 security_info_sent, int *pdef_class,uint32 *pdef_code)
 {
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
@@ -1281,8 +1219,7 @@ static int call_nt_transact_create(connection_struct *conn,
                             total_parameter_count - 53 - fname_len, fname_len);
 
       if( strchr(fname, ':')) {
-          SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-          return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
+        return(ERROR_BOTH(NT_STATUS_OBJECT_PATH_NOT_FOUND,ERRDOS,ERRbadpath));
       }
 
       return(ERROR(ERRDOS,ERRbadfid));
@@ -1388,8 +1325,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
 			if (create_options & FILE_NON_DIRECTORY_FILE) {
 				restore_case_semantics(file_attributes);
-				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-				return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
+				return(ERROR_BOTH(NT_STATUS_FILE_IS_A_DIRECTORY,ERRDOS, ERRbadaccess));
 			}
 	
 			oplock_request = 0;
@@ -1521,7 +1457,7 @@ static int call_nt_transact_create(connection_struct *conn,
   DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
   /* Send the required number of replies */
-  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
+  send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, params, 69, *ppdata, 0);
 
   return -1;
 }
@@ -1621,7 +1557,7 @@ static int call_nt_transact_rename(connection_struct *conn,
     /*
      * Rename was successful.
      */
-    send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
+    send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, NULL, 0, NULL, 0);
 
     DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
           fsp->fsp_name, new_name));
@@ -1685,7 +1621,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   if(max_data_count < sd_size) {
 
-    send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL,
+    send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL, ERRDOS, 122,
                     params, 4, *ppdata, 0);
     return -1;
   }
@@ -1741,7 +1677,7 @@ security descriptor.\n"));
 
   talloc_destroy(mem_ctx);
 
-  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sd_size);
+  send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, params, 4, data, (int)sd_size);
   return -1;
 }
 
@@ -1780,7 +1716,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   if (!set_sd( fsp, data, total_data_count, security_info_sent, &error_class, &error_code))
 		return (ERROR(error_class, error_code));
 
-  send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
+  send_nt_replies(inbuf, outbuf, bufsize, 0, 0, 0, NULL, 0, NULL, 0);
   return -1;
 }
    
@@ -1798,7 +1734,7 @@ static int call_nt_transact_ioctl(connection_struct *conn,
     DEBUG(0,("call_nt_transact_ioctl: Currently not implemented.\n"));
     logged_message = True; /* Only print this once... */
   }
-  return(ERROR(ERRSRV,ERRnosupport));
+  return(ERROR_BOTH(NT_STATUS_NOT_IMPLEMENTED,ERRSRV,ERRnosupport));
 }
    
 /****************************************************************************

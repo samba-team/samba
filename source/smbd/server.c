@@ -158,7 +158,11 @@ max can be %d\n",
 			s = fd_listenset[i] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
 			if(s == -1)
 				return False;
-				/* ready to listen */
+
+			/* ready to listen */
+			set_socket_options(s,"SO_KEEPALIVE"); 
+			set_socket_options(s,user_socket_options);
+
 			if (listen(s, 5) == -1) {
 				DEBUG(0,("listen: %s\n",strerror(errno)));
 				close(s);
@@ -178,6 +182,9 @@ max can be %d\n",
 			return(False);
 		
 		/* ready to listen */
+		set_socket_options(s,"SO_KEEPALIVE"); 
+		set_socket_options(s,user_socket_options);
+
 		if (listen(s, 5) == -1) {
 			DEBUG(0,("open_sockets: listen: %s\n",
 				 strerror(errno)));
@@ -271,6 +278,9 @@ max can be %d\n",
 				   that client substitutions will be
 				   done correctly in the process.  */
 				reset_globals_after_fork();
+
+				/* tdb needs special fork handling */
+				tdb_reopen_all();
 
 				return True; 
 			}
@@ -574,7 +584,7 @@ static void usage(char *pname)
 
 		case 'l':
 			specified_logfile = True;
-			pstrcpy(debugf,optarg);
+			slprintf(debugf, sizeof(debugf)-1, "%s/log.smbd", optarg);
 			break;
 
 		case 'a':
@@ -698,10 +708,10 @@ static void usage(char *pname)
 	
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
-		DEBUG(0,("ERROR: failed to setup profiling\n"));
+		DEBUG(0,("ERROR: failed to setup profiling shared memory\n"));
 		return -1;
 	}
-#endif
+#endif /* WITH_PROFILE */
 
 #ifdef WITH_SSL
 	{
@@ -771,7 +781,7 @@ static void usage(char *pname)
 		exit(1);
 	}
 
-	if(!initialize_password_db()) {
+	if(!initialize_password_db(False)) {
 		exit(1);
 	}
 

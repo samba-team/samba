@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -111,6 +112,9 @@ static void create_tdb(void)
 	if (tdb) tdb_close(tdb);
 	tdb = tdb_open(tok, 0, TDB_CLEAR_IF_FIRST,
 		       O_RDWR | O_CREAT | O_TRUNC, 0600);
+	if (!tdb) {
+		printf("Could not create %s: %s\n", tok, strerror(errno));
+	}
 }
 
 static void open_tdb(void)
@@ -122,6 +126,9 @@ static void open_tdb(void)
 	}
 	if (tdb) tdb_close(tdb);
 	tdb = tdb_open(tok, 0, 0, O_RDWR, 0600);
+	if (!tdb) {
+		printf("Could not open %s: %s\n", tok, strerror(errno));
+	}
 }
 
 static void insert_tdb(void)

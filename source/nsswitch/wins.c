@@ -68,16 +68,19 @@ struct in_addr *lookup_backend(const char *name, int *count)
 {
 	int fd;
 	static int initialised;
-	struct in_addr *ret;
+	struct in_addr *ret = NULL;
 	struct in_addr  p;
 	int j;
 
 	if (!initialised) {
 		initialised = 1;
 		DEBUGLEVEL = 0;
+
+		/* needed for lp_xx() functions */
+		charset_initialise();
+
 		TimeInit();
 		setup_logging("nss_wins",True);
-		charset_initialise();
 		lp_load(CONFIGFILE,True,False,False);
 		load_interfaces();
 	}
@@ -129,8 +132,8 @@ struct in_addr *lookup_backend(const char *name, int *count)
 gethostbyname() - we ignore any domain portion of the name and only
 handle names that are at most 15 characters long
   **************************************************************************/
-
-NSS_STATUS _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
+enum nss_status 
+_nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 			  char *buffer, size_t buflen, int *errnop,
 			  int *h_errnop)
 {
@@ -138,7 +141,7 @@ NSS_STATUS _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 	struct in_addr *ip_list;
 	int i, count;
 	size_t namelen = strlen(name) + 1;
-
+		
 	memset(he, '\0', sizeof(*he));
 
 	ip_list = lookup_backend(name, &count);

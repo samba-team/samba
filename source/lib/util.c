@@ -3,6 +3,7 @@
    Version 1.9.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -52,7 +53,7 @@
 #endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
 #ifdef WITH_SSL
-#include <ssl.h>
+#include <openssl/ssl.h>
 #undef Realloc  /* SSLeay defines this and samba has a function of this name */
 extern SSL  *ssl;
 extern int  sslFd;
@@ -92,27 +93,28 @@ char **my_netbios_names;
 
 
 /****************************************************************************
-  find a suitable temporary directory. The result should be copied immediately
-  as it may be overwritten by a subsequent call
-  ****************************************************************************/
+ Find a suitable temporary directory. The result should be copied immediately
+ as it may be overwritten by a subsequent call.
+****************************************************************************/
+
 char *tmpdir(void)
 {
-  char *p;
-  if ((p = getenv("TMPDIR"))) {
-    return p;
-  }
-  return "/tmp";
+	char *p;
+	if ((p = getenv("TMPDIR")))
+		return p;
+	return "/tmp";
 }
 
 /****************************************************************************
-determine whether we are in the specified group
+ Determine whether we are in the specified group.
 ****************************************************************************/
 
 BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 {
 	int i;
 
-	if (group == current_gid) return(True);
+	if (group == current_gid)
+		return(True);
 
 	for (i=0;i<ngroups;i++)
 		if (group == groups[i])
@@ -121,14 +123,13 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 	return(False);
 }
 
-
 /****************************************************************************
-like atoi but gets the value up to the separater character
+ Like atoi but gets the value up to the separater character.
 ****************************************************************************/
+
 char *Atoic(char *p, int *n, char *c)
 {
-	if (!isdigit((int)*p))
-	{
+	if (!isdigit((int)*p)) {
 		DEBUG(5, ("Atoic: malformed number\n"));
 		return NULL;
 	}
@@ -136,12 +137,9 @@ char *Atoic(char *p, int *n, char *c)
 	(*n) = atoi(p);
 
 	while ((*p) && isdigit((int)*p))
-	{
 		p++;
-	}
 
-	if (strchr(c, *p) == NULL)
-	{
+	if (strchr(c, *p) == NULL) {
 		DEBUG(5, ("Atoic: no separator characters (%s) not found\n", c));
 		return NULL;
 	}
@@ -150,27 +148,29 @@ char *Atoic(char *p, int *n, char *c)
 }
 
 /*************************************************************************
- reads a list of numbers
+ Reads a list of numbers.
  *************************************************************************/
+
 char *get_numlist(char *p, uint32 **num, int *count)
 {
 	int val;
 
 	if (num == NULL || count == NULL)
-	{
 		return NULL;
-	}
 
 	(*count) = 0;
 	(*num  ) = NULL;
 
-	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':')
-	{
-		(*num) = Realloc((*num), ((*count)+1) * sizeof(uint32));
-		if ((*num) == NULL)
-		{
+	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':') {
+		uint32 *tn;
+
+		tn = Realloc((*num), ((*count)+1) * sizeof(uint32));
+		if (tn == NULL) {
+			if (*num)
+				free(*num);
 			return NULL;
-		}
+		} else
+			(*num) = tn;
 		(*num)[(*count)] = val;
 		(*count)++;
 		p++;
@@ -179,52 +179,40 @@ char *get_numlist(char *p, uint32 **num, int *count)
 	return p;
 }
 
-
 /*******************************************************************
-  check if a file exists - call vfs_file_exist for samba files
+ Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/
+
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
 {
-  SMB_STRUCT_STAT st;
-  if (!sbuf) sbuf = &st;
+	SMB_STRUCT_STAT st;
+	if (!sbuf)
+		sbuf = &st;
   
-  if (sys_stat(fname,sbuf) != 0) 
-    return(False);
+	if (sys_stat(fname,sbuf) != 0) 
+		return(False);
 
-  return(S_ISREG(sbuf->st_mode));
+	return(S_ISREG(sbuf->st_mode));
 }
 
 /*******************************************************************
-  rename a unix file
+ Check a files mod time.
 ********************************************************************/
-int file_rename(char *from, char *to)
-{
-	int rcode = rename (from, to);
 
-	if (errno == EXDEV) 
-	{
-		/* Rename across filesystems needed. */
-		rcode = copy_reg (from, to);        
-	}
-	return rcode;
-}
-
-/*******************************************************************
-check a files mod time
-********************************************************************/
 time_t file_modtime(char *fname)
 {
-  SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT st;
   
-  if (sys_stat(fname,&st) != 0) 
-    return(0);
+	if (sys_stat(fname,&st) != 0) 
+		return(0);
 
-  return(st.st_mtime);
+	return(st.st_mtime);
 }
 
 /*******************************************************************
-  check if a directory exists
+ Check if a directory exists.
 ********************************************************************/
+
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
 {
   SMB_STRUCT_STAT st2;
@@ -522,111 +510,85 @@ int set_blocking(int fd, BOOL set)
 }
 
 /****************************************************************************
-transfer some data between two fd's
+ Transfer some data between two fd's.
 ****************************************************************************/
-SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align)
+
+ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
+						ssize_t (*write_fn)(int, const void *, size_t))
 {
-  static char *buf=NULL;  
-  static int size=0;
-  char *buf1,*abuf;
-  SMB_OFF_T total = 0;
+	static char buf[16384];
+	size_t total = 0;
+	ssize_t read_ret;
+	size_t write_total = 0;
+    ssize_t write_ret;
 
-  DEBUG(4,("transfer_file n=%.0f  (head=%d) called\n",(double)n,headlen));
+	while (total < n) {
+		size_t num_to_read_thistime = MIN((n - total), sizeof(buf));
 
-  if (size == 0) {
-    size = lp_readsize();
-    size = MAX(size,1024);
-  }
+		read_ret = (*read_fn)(infd, buf + total, num_to_read_thistime);
+		if (read_ret == -1) {
+			DEBUG(0,("transfer_file_internal: read failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (read_ret == 0)
+			break;
 
-  while (!buf && size>0) {
-    buf = (char *)Realloc(buf,size+8);
-    if (!buf) size /= 2;
-  }
+		write_total = 0;
+ 
+		while (write_total < read_ret) {
+			write_ret = (*write_fn)(outfd,buf + total, read_ret);
+ 
+			if (write_ret == -1) {
+				DEBUG(0,("transfer_file_internal: write failure. Error = %s\n", strerror(errno) ));
+				return -1;
+			}
+			if (write_ret == 0)
+				return (ssize_t)total;
+ 
+			write_total += (size_t)write_ret;
+		}
 
-  if (!buf) {
-    DEBUG(0,("Can't allocate transfer buffer!\n"));
-    exit(1);
-  }
+		total += (size_t)read_ret;
+	}
 
-  abuf = buf + (align%8);
-
-  if (header)
-    n += headlen;
-
-  while (n > 0)
-  {
-    int s = (int)MIN(n,(SMB_OFF_T)size);
-    int ret,ret2=0;
-
-    ret = 0;
-
-    if (header && (headlen >= MIN(s,1024))) {
-      buf1 = header;
-      s = headlen;
-      ret = headlen;
-      headlen = 0;
-      header = NULL;
-    } else {
-      buf1 = abuf;
-    }
-
-    if (header && headlen > 0)
-    {
-      ret = MIN(headlen,size);
-      memcpy(buf1,header,ret);
-      headlen -= ret;
-      header += ret;
-      if (headlen <= 0) header = NULL;
-    }
-
-    if (s > ret)
-      ret += read(infd,buf1+ret,s-ret);
-
-    if (ret > 0)
-    {
-      ret2 = (outfd>=0?write_data(outfd,buf1,ret):ret);
-      if (ret2 > 0) total += ret2;
-      /* if we can't write then dump excess data */
-      if (ret2 != ret)
-        transfer_file(infd,-1,n-(ret+headlen),NULL,0,0);
-    }
-    if (ret <= 0 || ret2 != ret)
-      return(total);
-    n -= ret;
-  }
-  return(total);
+	return (ssize_t)total;		
 }
 
+SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
+{
+	return (SMB_OFF_T)transfer_file_internal(infd, outfd, (size_t)n, read, write);
+}
 
 /*******************************************************************
-sleep for a specified number of milliseconds
+ Sleep for a specified number of milliseconds.
 ********************************************************************/
+
 void msleep(int t)
 {
-  int tdiff=0;
-  struct timeval tval,t1,t2;  
-  fd_set fds;
+	int tdiff=0;
+	struct timeval tval,t1,t2;  
+	fd_set fds;
 
-  GetTimeOfDay(&t1);
-  GetTimeOfDay(&t2);
+	GetTimeOfDay(&t1);
+	GetTimeOfDay(&t2);
   
-  while (tdiff < t) {
-    tval.tv_sec = (t-tdiff)/1000;
-    tval.tv_usec = 1000*((t-tdiff)%1000);
+	while (tdiff < t) {
+		tval.tv_sec = (t-tdiff)/1000;
+		tval.tv_usec = 1000*((t-tdiff)%1000);
  
-    FD_ZERO(&fds);
-    errno = 0;
-    sys_select_intr(0,&fds,&tval);
+		FD_ZERO(&fds);
+		errno = 0;
+		sys_select_intr(0,&fds,&tval);
 
-    GetTimeOfDay(&t2);
-    tdiff = TvalDiff(&t1,&t2);
-  }
+		GetTimeOfDay(&t2);
+		tdiff = TvalDiff(&t1,&t2);
+	}
 }
 
-
 /****************************************************************************
-become a daemon, discarding the controlling terminal
+ Become a daemon, discarding the controlling terminal.
 ****************************************************************************/
+
 void become_daemon(void)
 {
 	if (sys_fork()) {
@@ -650,74 +612,64 @@ void become_daemon(void)
 	close_low_fds();
 }
 
-
 /****************************************************************************
-put up a yes/no prompt
+ Put up a yes/no prompt
 ****************************************************************************/
+
 BOOL yesno(char *p)
 {
-  pstring ans;
-  printf("%s",p);
+	pstring ans;
+	printf("%s",p);
 
-  if (!fgets(ans,sizeof(ans)-1,stdin))
-    return(False);
+	if (!fgets(ans,sizeof(ans)-1,stdin))
+		return(False);
 
-  if (*ans == 'y' || *ans == 'Y')
-    return(True);
+	if (*ans == 'y' || *ans == 'Y')
+		return(True);
 
-  return(False);
+	return(False);
 }
 
-#ifdef HPUX
 /****************************************************************************
-this is a version of setbuffer() for those machines that only have setvbuf
+ Expand a pointer to be a particular size.
 ****************************************************************************/
- void setbuffer(FILE *f,char *buf,int bufsize)
-{
-  setvbuf(f,buf,_IOFBF,bufsize);
-}
-#endif
 
-/****************************************************************************
-expand a pointer to be a particular size
-****************************************************************************/
 void *Realloc(void *p,size_t size)
 {
-  void *ret=NULL;
+	void *ret=NULL;
 
-  if (size == 0) {
-    if (p) free(p);
-    DEBUG(5,("Realloc asked for 0 bytes\n"));
-    return NULL;
-  }
+	if (size == 0) {
+		if (p)
+			free(p);
+		DEBUG(5,("Realloc asked for 0 bytes\n"));
+		return NULL;
+	}
 
-  if (!p)
-    ret = (void *)malloc(size);
-  else
-    ret = (void *)realloc(p,size);
+	if (!p)
+		ret = (void *)malloc(size);
+	else
+		ret = (void *)realloc(p,size);
 
-  if (!ret)
-    DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
+	if (!ret)
+		DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
 
-  return(ret);
+	return(ret);
 }
 
-
 /****************************************************************************
-free memory, checks for NULL
+ Free memory, checks for NULL.
 ****************************************************************************/
+
 void safe_free(void *p)
 {
 	if (p != NULL)
-	{
 		free(p);
-	}
 }
 
-
 /****************************************************************************
-get my own name and IP
+ Get my own name and IP.
 ****************************************************************************/
+
 BOOL get_myname(char *my_name)
 {
 	pstring hostname;
@@ -736,7 +688,8 @@ BOOL get_myname(char *my_name)
 	if (my_name) {
 		/* split off any parts after an initial . */
 		char *p = strchr(hostname,'.');
-		if (p) *p = 0;
+		if (p)
+			*p = 0;
 		
 		fstrcpy(my_name,hostname);
 	}
@@ -745,8 +698,9 @@ BOOL get_myname(char *my_name)
 }
 
 /****************************************************************************
-interpret a protocol description string, with a default
+ Interpret a protocol description string, with a default.
 ****************************************************************************/
+
 int interpret_protocol(char *str,int def)
 {
   if (strequal(str,"NT1"))
@@ -1808,7 +1762,131 @@ BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 	return ms_fnmatch(p2, s2) == 0;
 }
 
+/*********************************************************
+ Recursive routine that is called by unix_wild_match.
+*********************************************************/
 
+static BOOL unix_do_match(char *regexp, char *str)
+{
+	char *p;
+
+	for( p = regexp; *p && *str; ) {
+
+		switch(*p) {
+			case '?':
+				str++;
+				p++;
+				break;
+
+			case '*':
+
+				/*
+				 * Look for a character matching 
+				 * the one after the '*'.
+				 */
+				p++;
+				if(!*p)
+					return True; /* Automatic match */
+				while(*str) {
+
+					while(*str && (*p != *str))
+						str++;
+
+					/*
+					 * Patch from weidel@multichart.de. In the case of the regexp
+					 * '*XX*' we want to ensure there are at least 2 'X' characters
+					 * in the string after the '*' for a match to be made.
+					 */
+
+					{
+						int matchcount=0;
+
+						/*
+						 * Eat all the characters that match, but count how many there were.
+						 */
+
+						while(*str && (*p == *str)) {
+							str++;
+							matchcount++;
+						}
+
+						/*
+						 * Now check that if the regexp had n identical characters that
+						 * matchcount had at least that many matches.
+						 */
+
+						while ( *(p+1) && (*(p+1) == *p)) {
+							p++;
+							matchcount--;
+						}
+
+						if ( matchcount <= 0 )
+							return False;
+					}
+
+					str--; /* We've eaten the match char after the '*' */
+
+					if(unix_do_match(p, str))
+						return True;
+
+					if(!*str)
+						return False;
+					else
+						str++;
+				}
+				return False;
+
+			default:
+				if(*str != *p)
+					return False;
+				str++;
+				p++;
+				break;
+		}
+	}
+
+	if(!*p && !*str)
+		return True;
+
+	if (!*p && str[0] == '.' && str[1] == 0)
+		return(True);
+  
+	if (!*str && *p == '?') {
+		while (*p == '?')
+			p++;
+		return(!*p);
+	}
+
+	if(!*str && (*p == '*' && p[1] == '\0'))
+		return True;
+
+	return False;
+}
+
+/*******************************************************************
+ Simple case insensitive interface to a UNIX wildcard matcher.
+*******************************************************************/
+
+BOOL unix_wild_match(char *pattern, char *string)
+{
+	pstring p2, s2;
+	char *p;
+
+	pstrcpy(p2, pattern);
+	pstrcpy(s2, string);
+	strlower(p2);
+	strlower(s2);
+
+	/* Remove any *? and ** from the pattern as they are meaningless */
+	for(p = p2; *p; p++)
+		while( *p == '*' && (p[1] == '?' ||p[1] == '*'))
+			pstrcpy( &p[1], &p[2]);
+ 
+	if (strequal(p2,"*"))
+		return True;
+
+	return unix_do_match(p2, s2) == 0;	
+}
 
 #ifdef __INSURE__
 

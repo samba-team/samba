@@ -66,7 +66,8 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
    * Receive an auth-2 challenge response and check it.
    */
 
-  if (!cli_net_auth2(cli, SEC_CHAN_WKSTA, 0x000001ff, &srv_chal))
+  if (!cli_net_auth2(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+                     SEC_CHAN_WKSTA : SEC_CHAN_BDC, 0x000001ff, &srv_chal))
   {
     DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed\n"));
     return False;

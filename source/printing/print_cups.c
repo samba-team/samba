@@ -21,7 +21,7 @@
 #include "printing.h"
 #include "smb.h"
 
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
 #include <cups/cups.h>
 #include <cups/language.h>
 
@@ -365,7 +365,7 @@ cups_job_delete(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "job-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, pjob->user);
 
        /*
 	* Do the request and get back a response...
@@ -455,7 +455,7 @@ cups_job_pause(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "job-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, pjob->user);
 
        /*
 	* Do the request and get back a response...
@@ -545,7 +545,7 @@ cups_job_resume(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "job-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, pjob->user);
 
        /*
 	* Do the request and get back a response...
@@ -638,7 +638,7 @@ cups_job_submit(int snum, struct printjob *pjob)
         	     "printer-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, pjob->user);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
         	     pjob->jobname);
@@ -818,17 +818,16 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 		{
 			qalloc += 16;
 
-			if (qalloc == 16)
-				temp = malloc(sizeof(print_queue_struct) * qalloc);
-			else
-				temp = realloc(queue, sizeof(print_queue_struct) * qalloc);
+			temp = Realloc(queue, sizeof(print_queue_struct) * qalloc);
 
 			if (temp == NULL)
 			{
+				DEBUG(0,("cups_queue_get: Not enough memory!"));
 				ippDelete(response);
 				httpClose(http);
 
-				return (qcount);
+				free (queue);
+				return (0);
 			}
 
 			queue = temp;
@@ -959,6 +958,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 		DEBUG(0,("Unable to get printer status for %s - %s\n", PRINTERNAME(snum),
 			 ippErrorString(cupsLastError())));
 		httpClose(http);
+		*q = queue;
 		return (qcount);
 	}
 
@@ -968,7 +968,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 			 ippErrorString(response->request.status.status_code)));
 		ippDelete(response);
 		httpClose(http);
-
+		*q = queue;
 		return (qcount);
 	}
 
@@ -1008,6 +1008,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 static int
 cups_queue_pause(int snum)
 {
+	extern userdom_struct current_user_info;
 	int		ret;		/* Return value */
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
@@ -1018,15 +1019,15 @@ cups_queue_pause(int snum)
 
 	DEBUG(5,("cups_queue_pause(%d)\n", snum));
 
-       /*
-        * Make sure we don't ask for passwords...
-	*/
+	/*
+	 * Make sure we don't ask for passwords...
+	 */
 
         cupsSetPasswordCB(cups_passwd_cb);
 
-       /*
-	* Try to connect to the server...
-	*/
+	/*
+	 * Try to connect to the server...
+	 */
 
 	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
 	{
@@ -1035,15 +1036,15 @@ cups_queue_pause(int snum)
 		return (1);
 	}
 
-       /*
-	* Build an IPP_PAUSE_PRINTER request, which requires the following
-	* attributes:
-	*
-	*    attributes-charset
-	*    attributes-natural-language
-	*    printer-uri
-	*    requesting-user-name
-	*/
+	/*
+	 * Build an IPP_PAUSE_PRINTER request, which requires the following
+	 * attributes:
+	 *
+	 *    attributes-charset
+	 *    attributes-natural-language
+	 *    printer-uri
+	 *    requesting-user-name
+	 */
 
 	request = ippNew();
 
@@ -1064,7 +1065,7 @@ cups_queue_pause(int snum)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, current_user_info.unix_name);
 
        /*
 	* Do the request and get back a response...
@@ -1072,7 +1073,7 @@ cups_queue_pause(int snum)
 
         ret = 1;
 
-	if ((response = cupsDoRequest(http, request, "/admin")) != NULL)
+	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL)
 	{
 	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
 		DEBUG(0,("Unable to pause printer %s - %s\n", PRINTERNAME(snum),
@@ -1099,6 +1100,7 @@ cups_queue_pause(int snum)
 static int
 cups_queue_resume(int snum)
 {
+	extern userdom_struct current_user_info;
 	int		ret;		/* Return value */
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
@@ -1109,9 +1111,9 @@ cups_queue_resume(int snum)
 
 	DEBUG(5,("cups_queue_resume(%d)\n", snum));
 
-       /*
-        * Make sure we don't ask for passwords...
-	*/
+	/*
+	 * Make sure we don't ask for passwords...
+	 */
 
         cupsSetPasswordCB(cups_passwd_cb);
 
@@ -1155,15 +1157,15 @@ cups_queue_resume(int snum)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, current_user_info.unix_name);
 
-       /*
-	* Do the request and get back a response...
-	*/
+	/*
+	 * Do the request and get back a response...
+	 */
 
         ret = 1;
 
-	if ((response = cupsDoRequest(http, request, "/admin")) != NULL)
+	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL)
 	{
 	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
 		DEBUG(0,("Unable to resume printer %s - %s\n", PRINTERNAME(snum),
@@ -1186,4 +1188,4 @@ cups_queue_resume(int snum)
 #else
  /* this keeps fussy compilers happy */
  void print_cups_dummy(void) {}
-#endif /* HAVE_LIBCUPS */
+#endif /* HAVE_CUPS */
