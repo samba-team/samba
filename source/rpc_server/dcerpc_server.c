@@ -595,6 +595,10 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_ORPC) {
+		pull->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
+	}
+
 	r = talloc(call, call->conn->iface->ndr->calls[opnum].struct_size);
 	if (!r) {
 		return NT_STATUS_NO_MEMORY;

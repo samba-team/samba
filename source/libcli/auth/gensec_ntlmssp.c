@@ -442,8 +442,5 @@ NTSTATUS gensec_ntlmssp_init(void)
 		return ret;
 	}
 
-	/* ugly cludge, but we need the auth subsystem for this to work */
-	auth_init();
-
 	return ret;
 }
