@@ -1,6 +1,11 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha12
+- doc updates (jerry)
+- store domain sid on ADS join (tridge)
+- allow a winbind username on ADS connection (tridge)
+
 Changes in alpha11
 - fixed fallback to "ads server" option (tridge)
 - fix ACL failure on HP HFS (jra)
