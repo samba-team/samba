@@ -673,12 +673,16 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     if (strlen(directory) == 0)
       pstrcpy(directory,"./");
     memset((char *)status,'\0',21);
-    SCVAL(status,0,dirtype);
+    SCVAL(status,0,(dirtype & 0x1F));
   }
   else
   {
+    int status_dirtype;
     memcpy(status,p,21);
-    dirtype = CVAL(status,0) & 0x1F;
+    status_dirtype = CVAL(status,0) & 0x1F;
+    if (status_dirtype != (dirtype & 0x1F))
+      dirtype = status_dirtype;
+
     conn->dirptr = dptr_fetch(status+12,&dptr_num);      
     if (!conn->dirptr)
       goto SearchEmpty;

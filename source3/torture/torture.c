@@ -3533,6 +3533,105 @@ static BOOL run_dirtest(int dummy)
 	return correct;
 }
 
+static void del_fn(file_info *finfo, const char *mask, void *state)
+{
+	struct cli_state *pcli = (struct cli_state *)state;
+	fstring fname;
+	slprintf(fname, sizeof(fname), "\\LISTDIR\\%s", finfo->name);
+
+	if (strcmp(finfo->name, ".") == 0 || strcmp(finfo->name, "..") == 0)
+		return;
+
+	if (finfo->mode & aDIR) {
+		if (!cli_rmdir(pcli, fname))
+			printf("del_fn: failed to rmdir %s\n,", fname );
+	} else {
+		if (!cli_unlink(pcli, fname))
+			printf("del_fn: failed to unlink %s\n,", fname );
+	}
+}
+
+static BOOL run_dirtest1(int dummy)
+{
+	int i;
+	static struct cli_state cli;
+	int fnum, num_seen;
+	BOOL correct = True;
+
+	printf("starting directory test\n");
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	cli_sockopt(&cli, sockops);
+
+	cli_list(&cli, "\\LISTDIR\\*", 0, del_fn, &cli);
+	cli_list(&cli, "\\LISTDIR\\*", aDIR, del_fn, &cli);
+	cli_rmdir(&cli, "\\LISTDIR");
+	cli_mkdir(&cli, "\\LISTDIR");
+
+	/* Create 1000 files and 1000 directories. */
+	for (i=0;i<1000;i++) {
+		fstring fname;
+		slprintf(fname, sizeof(fname), "\\LISTDIR\\f%d", i);
+		fnum = cli_nt_create_full(&cli, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
+				   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0);
+		if (fnum == -1) {
+			fprintf(stderr,"Failed to open %s\n", fname);
+			return False;
+		}
+		cli_close(&cli, fnum);
+	}
+	for (i=0;i<1000;i++) {
+		fstring fname;
+		slprintf(fname, sizeof(fname), "\\LISTDIR\\d%d", i);
+		if (!cli_mkdir(&cli, fname)) {
+			fprintf(stderr,"Failed to open %s\n", fname);
+			return False;
+		}
+	}
+
+	/* Now ensure that doing an old list sees both files and directories. */
+	num_seen = cli_list_old(&cli, "\\LISTDIR\\*", aDIR, list_fn, NULL);
+	printf("num_seen = %d\n", num_seen );
+	/* We should see 100 files + 1000 directories + . and .. */
+	if (num_seen != 2002)
+		correct = False;
+
+	/* Ensure if we have the "must have" bits we only see the
+	 * relevent entries.
+	 */
+	num_seen = cli_list_old(&cli, "\\LISTDIR\\*", (aDIR<<8)|aDIR, list_fn, NULL);
+	printf("num_seen = %d\n", num_seen );
+	if (num_seen != 1002)
+		correct = False;
+
+	num_seen = cli_list_old(&cli, "\\LISTDIR\\*", (aARCH<<8)|aDIR, list_fn, NULL);
+	printf("num_seen = %d\n", num_seen );
+	if (num_seen != 1000)
+		correct = False;
+
+	/* Delete everything. */
+	cli_list(&cli, "\\LISTDIR\\*", 0, del_fn, &cli);
+	cli_list(&cli, "\\LISTDIR\\*", aDIR, del_fn, &cli);
+	cli_rmdir(&cli, "\\LISTDIR");
+
+#if 0
+	printf("Matched %d\n", cli_list(&cli, "a*.*", 0, list_fn, NULL));
+	printf("Matched %d\n", cli_list(&cli, "b*.*", 0, list_fn, NULL));
+	printf("Matched %d\n", cli_list(&cli, "xyzabc", 0, list_fn, NULL));
+#endif
+
+	if (!torture_close_connection(&cli)) {
+		correct = False;
+	}
+
+	printf("finished dirtest1\n");
+
+	return correct;
+}
+
 static BOOL run_error_map_extract(int dummy) {
 	
 	static struct cli_state c_dos;
@@ -3761,6 +3860,7 @@ static struct {
 	{"OPLOCK2",  run_oplock2, 0},
 	{"OPLOCK3",  run_oplock3, 0},
 	{"DIR",  run_dirtest, 0},
+	{"DIR1",  run_dirtest1, 0},
 	{"DENY1",  torture_denytest1, 0},
 	{"DENY2",  torture_denytest2, 0},
 	{"TCON",  run_tcon_test, 0},
