@@ -45,7 +45,7 @@
 		uint32 reserved2;
 		uint32 panningwidth;
 		uint32 panningheight;
-//		uint8  private[driverextra];
+		uint8  private[driverextra];
 	} spoolss_DeviceMode;
 
 	typedef struct {
@@ -81,7 +81,7 @@
 
 	typedef struct {
 		uint32 flags;
-		[relative] security_descriptor *secdesc;
+		security_descriptor secdesc;
 	} spoolss_PrinterInfo3;
 
 	typedef struct {
@@ -153,9 +153,8 @@
 		[in]	 uint32 firstjob,
 		[in]	 uint32 numjobs,
 		[in]	 uint32 level,
-		[in,out] uint8_buf *buffer,
-		[in]	 uint32 offered,
-		[out]	 uint32 needed,
+		[in,out]     DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
 		[out]	 uint32 numjobs
 		);
 
@@ -537,13 +536,12 @@
 		[in,ref] policy_handle *handle,
 		[in]	 uint32 enum_index,
 		[in]     uint32 value_offered,
-		[in]     uint32 data_offered,
 		[out]	 uint32 value_len,
 		[out]	 unistr *value_name,
 		[out]	 uint32 value_needed,
 		[out]    uint32 printerdata_type,
-		[out]    uint8_buf printerdata,
-		[out]    uint32 data_needed
+		[in,out]     DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size
 		);
 
 	/******************/

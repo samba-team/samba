@@ -174,6 +174,7 @@ typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
 typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint16, void *);
 
 /* now pull in the individual parsers */
+#include "librpc/ndr/ndr_basic.h"
 #include "librpc/ndr/ndr_sec.h"
 #include "librpc/ndr/ndr_misc.h"
 #include "librpc/ndr/ndr_echo.h"

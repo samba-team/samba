@@ -1,0 +1,53 @@
+/*
+  miscellaneous IDL structures
+*/
+
+[ uuid(0-0-0-0-0),
+  version(0.0),
+  pointer_default(unique)
+] interface misc
+{
+
+	/* a domain SID. Note that unlike Samba3 this contains a pointer,
+	   so you can't copy them using assignment */
+	typedef [public,noprint] struct {
+		uint8  sid_rev_num;             /**< SID revision number */
+		uint8  num_auths;               /**< Number of sub-authorities */
+		uint8  id_auth[6];              /**< Identifier Authority */
+		uint32 sub_auths[num_auths];
+	} dom_sid;
+
+	typedef [public] struct {
+		uint8 type;  /* xxxx_xxxx_ACE_TYPE - e.g allowed / denied etc */
+		uint8 flags; /* xxxx_INHERIT_xxxx - e.g OBJECT_INHERIT_ACE */
+		uint32 access_mask;
+
+#if 0
+		/* the 'obj' part is present when type is XXXX_TYPE_XXXX_OBJECT */
+		struct {
+			uint32 flags;
+			GUID object_guid;
+			GUID inherit_guid;
+		} *obj;
+#endif
+
+		dom_sid trustee;
+	} security_ace;
+
+	typedef [public] struct {
+		uint16 revision;
+		uint32 num_aces;
+		security_ace aces[num_aces];
+	} security_acl;
+
+
+	typedef [public] struct {
+		uint8 revision;
+		uint16 type;     /* SEC_DESC_xxxx flags */
+		[relative] dom_sid *owner_sid; 
+		[relative] dom_sid *group_sid;
+		[relative] security_acl *sacl; /* system ACL */
+		[relative] security_acl *dacl; /* user (discretionary) ACL */
+	} security_descriptor;
+
+}

@@ -126,7 +126,7 @@ buffers:
 	}
 	if (r->stores) {
 		NDR_CHECK(ndr_push_uint32(ndr, r->num_stores));
-		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->stores, sizeof(r->stores[0]), r->num_stores, (ndr_push_flags_fn_t)ndr_push_dfs_StorageInfo));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->stores, sizeof(r->stores[0]), r->num_stores, (ndr_push_flags_fn_t)ndr_push_dfs_StorageInfo));
 	}
 done:
 	return NT_STATUS_OK;
@@ -156,7 +156,7 @@ buffers:
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_BUFFERS, &r->guid));
 	if (r->stores) {
 		NDR_CHECK(ndr_push_uint32(ndr, r->num_stores));
-		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->stores, sizeof(r->stores[0]), r->num_stores, (ndr_push_flags_fn_t)ndr_push_dfs_StorageInfo));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->stores, sizeof(r->stores[0]), r->num_stores, (ndr_push_flags_fn_t)ndr_push_dfs_StorageInfo));
 	}
 done:
 	return NT_STATUS_OK;
@@ -223,7 +223,7 @@ buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
 		NDR_CHECK(ndr_push_uint32(ndr, r->count));
-		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info1));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info1));
 	}
 done:
 	return NT_STATUS_OK;
@@ -241,7 +241,7 @@ buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
 		NDR_CHECK(ndr_push_uint32(ndr, r->count));
-		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info2));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info2));
 	}
 done:
 	return NT_STATUS_OK;
@@ -259,7 +259,7 @@ buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
 		NDR_CHECK(ndr_push_uint32(ndr, r->count));
-		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info3));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info3));
 	}
 done:
 	return NT_STATUS_OK;
@@ -277,7 +277,7 @@ buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
 		NDR_CHECK(ndr_push_uint32(ndr, r->count));
-		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info4));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info4));
 	}
 done:
 	return NT_STATUS_OK;
@@ -295,7 +295,7 @@ buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
 		NDR_CHECK(ndr_push_uint32(ndr, r->count));
-		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info200));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info200));
 	}
 done:
 	return NT_STATUS_OK;
@@ -313,7 +313,7 @@ buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
 		NDR_CHECK(ndr_push_uint32(ndr, r->count));
-		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info300));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->s, sizeof(r->s[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dfs_Info300));
 	}
 done:
 	return NT_STATUS_OK;

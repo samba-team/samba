@@ -77,7 +77,7 @@ NTSTATUS ndr_push_samr_OpenDomain(struct ndr_push *ndr, struct samr_OpenDomain *
 {
 	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.access_mask));
-	NDR_CHECK(ndr_push_dom_sid2(ndr, r->in.sid));
+	NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
 
 	return NT_STATUS_OK;
 }
@@ -546,7 +546,7 @@ NTSTATUS ndr_pull_samr_LookupDomain(struct ndr_pull *ndr, struct samr_LookupDoma
 		r->out.sid = NULL;
 	}
 	if (r->out.sid) {
-		NDR_CHECK(ndr_pull_dom_sid2(ndr, r->out.sid));
+		NDR_CHECK(ndr_pull_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -1507,7 +1507,7 @@ buffers:
 		NDR_CHECK(ndr_pull_uint32(ndr, &_length));
 		if (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, "Bad array offset 0x%08x", _offset);
 		if (_length > 1260 || _length != r->units_per_week/8) return ndr_pull_error(ndr, NDR_ERR_LENGTH, "Bad array length 0x%08x > size 0x%08x", _offset, 1260);
-		NDR_CHECK(ndr_pull_array_uint8(ndr, r->logon_hours, _length));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->logon_hours, _length));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1543,7 +1543,7 @@ buffers:
 		NDR_CHECK(ndr_pull_uint32(ndr, &_length));
 		if (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, "Bad array offset 0x%08x", _offset);
 		if (_length > 1260 || _length != r->units_per_week/8) return ndr_pull_error(ndr, NDR_ERR_LENGTH, "Bad array length 0x%08x > size 0x%08x", _offset, 1260);
-		NDR_CHECK(ndr_pull_array_uint8(ndr, r->logon_hours, _length));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->logon_hours, _length));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1603,7 +1603,7 @@ buffers:
 		NDR_CHECK(ndr_pull_uint32(ndr, &_length));
 		if (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, "Bad array offset 0x%08x", _offset);
 		if (_length > 1260 || _length != r->units_per_week/8) return ndr_pull_error(ndr, NDR_ERR_LENGTH, "Bad array length 0x%08x > size 0x%08x", _offset, 1260);
-		NDR_CHECK(ndr_pull_array_uint8(ndr, r->logon_hours, _length));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->logon_hours, _length));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1855,7 +1855,7 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->buffer, r->buf_count, sizeof(r->buffer[0]));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, r->buffer, r->buf_count));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->buffer, r->buf_count));
 	}
 	if (r->logon_hours) {
 	{
@@ -1871,7 +1871,7 @@ buffers:
 		NDR_CHECK(ndr_pull_uint32(ndr, &_length));
 		if (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, "Bad array offset 0x%08x", _offset);
 		if (_length > 1260 || _length != r->units_per_week/8) return ndr_pull_error(ndr, NDR_ERR_LENGTH, "Bad array length 0x%08x > size 0x%08x", _offset, 1260);
-		NDR_CHECK(ndr_pull_array_uint8(ndr, r->logon_hours, _length));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->logon_hours, _length));
 	}
 done:
 	return NT_STATUS_OK;
