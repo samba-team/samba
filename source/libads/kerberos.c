@@ -3,7 +3,7 @@
    kerberos utility library
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Remus Koos 2001
-   Copyright (C) Nalin Dahyabhai 2004.
+   Copyright (C) Nalin Dahyabhai <nalin@redhat.com> 2004.
    Copyright (C) Jeremy Allison 2004.
 
    This program is free software; you can redistribute it and/or modify
