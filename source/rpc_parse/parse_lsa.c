@@ -2,9 +2,10 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1999,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
- *  Copyright (C) Paul Ashton                  1997-1999.
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Paul Ashton                  1997-2000,
+ *  Copyright (C) Elrond                            2000.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1449,7 +1450,8 @@ reads or writes a DOM_RID2 structure.
 ********************************************************************/
 BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth)
 {
-	if (rid2 == NULL) return False;
+	if (rid2 == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_dom_rid2");
 	depth++;
@@ -1467,9 +1469,11 @@ BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a dom query structure.
 ********************************************************************/
-static BOOL lsa_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int depth)
+static BOOL lsa_io_dom_query(char *desc, DOM_QUERY *d_q,
+			     prs_struct *ps, int depth)
 {
-	if (d_q == NULL) return False;
+	if (d_q == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "lsa_io_dom_query");
 	depth++;
@@ -1482,7 +1486,8 @@ static BOOL lsa_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int de
 	prs_uint32("buffer_dom_name", ps, depth, &(d_q->buffer_dom_name)); /* undocumented domain name string buffer pointer */
 	prs_uint32("buffer_dom_sid ", ps, depth, &(d_q->buffer_dom_sid )); /* undocumented domain SID string buffer pointer */
 
-	smb_io_unistr2("unistr2", &(d_q->uni_domain_name), d_q->buffer_dom_name, ps, depth); /* domain name (unicode string) */
+	smb_io_unistr2("unistr2", &(d_q->uni_domain_name),
+		       d_q->buffer_dom_name, ps, depth); /* domain name (unicode string) */
 
 	prs_align(ps);
 
@@ -1538,7 +1543,8 @@ static BOOL lsa_io_dom_query_2(char *desc, DOM_QUERY_2 *d_q,
 /*******************************************************************
 reads or writes a dom query structure.
 ********************************************************************/
-static BOOL lsa_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+static BOOL lsa_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q,
+			       prs_struct *ps, int depth)
 {
 	lsa_io_dom_query("", d_q, ps, depth);
 
@@ -1548,7 +1554,8 @@ static BOOL lsa_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, in
 /*******************************************************************
 reads or writes a dom query structure.
 ********************************************************************/
-static BOOL lsa_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+static BOOL lsa_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q,
+			       prs_struct *ps, int depth)
 {
 	lsa_io_dom_query("", d_q, ps, depth);
 
@@ -1646,11 +1653,186 @@ BOOL lsa_io_q_set_info(char *desc, LSA_Q_SET_INFO * q_q,
 	prs_uint16("info_class", ps, depth, &q_q->info_class);
 	prs_align(ps);
 
-	if (!lsa_io_info_union("", &(q_q->info), q_q->info_class,
-			       ps, depth))
+	if (!lsa_io_info_union("", &(q_q->info), q_q->info_class, ps, depth))
 	{
 		return False;
 	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_q_enum_privs(char *desc, LSA_Q_ENUM_PRIVS * q_q,
+			 prs_struct *ps, int depth)
+{
+	if (q_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_enum_privs");
+	depth++;
+
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
+
+	prs_uint32("unk0", ps, depth, &q_q->unk0);
+	prs_uint32("unk1", ps, depth, &q_q->unk1);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static BOOL lsa_io_priv_entries(char *desc, LSA_PRIV_ENTRY *entries,
+				uint32 count, prs_struct *ps, int depth)
+{
+	uint32 i;
+
+	if (entries == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_priv_entries");
+	depth++;
+
+	prs_align(ps);
+
+	for (i = 0; i < count; i++)
+	{
+		fstring tmp;
+		if (MARSHALLING(ps))
+		{
+			make_unihdr_from_unistr2(&entries[i].hdr_name,
+						 &entries[i].name);
+		}
+		slprintf(tmp, sizeof(tmp), "hdr_name[%d]", i);
+		if (!smb_io_unihdr(tmp, &entries[i].hdr_name, ps, depth))
+			return False;
+		prs_uint32("num ", ps, depth, &entries[i].num);
+		prs_uint32("unk2", ps, depth, &entries[i].unk2);
+	}
+	for (i = 0; i < count; i++)
+	{
+		fstring tmp;
+		slprintf(tmp, sizeof(tmp), "name[%d]", i);
+		if (!smb_io_unistr2(tmp, &entries[i].name,
+				    entries[i].hdr_name.buffer, ps, depth))
+			return False;
+		prs_align(ps);
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_r_enum_privs(char *desc, LSA_R_ENUM_PRIVS * r_q,
+			 prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_enum_privs");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("count", ps, depth, &r_q->count);
+	prs_uint32("count1", ps, depth, &r_q->count1);
+	prs_uint32("ptr", ps, depth, &r_q->ptr);
+
+	if (r_q->ptr)
+	{
+		prs_uint32("count2", ps, depth, &r_q->count2);
+		if (UNMARSHALLING(ps))
+			r_q->privs = g_new(LSA_PRIV_ENTRY, r_q->count2);
+		if (r_q->privs == NULL)
+		{
+			return False;
+		}
+		if (!lsa_io_priv_entries("", r_q->privs, r_q->count2,
+					 ps, depth))
+			return False;
+	}
+
+	prs_uint32("status", ps, depth, &r_q->status);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_q_priv_info(char *desc, LSA_Q_PRIV_INFO * q_q,
+			prs_struct *ps, int depth)
+{
+	if (q_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_priv_info");
+	depth++;
+
+	prs_align(ps);
+
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
+
+	if (MARSHALLING(ps))
+	{
+		make_unihdr_from_unistr2(&q_q->hdr_name, &q_q->name);
+	}
+	if (!smb_io_unihdr("hdr_name", &q_q->hdr_name, ps, depth))
+		return False;
+	if (!smb_io_unistr2("name", &q_q->name, q_q->hdr_name.buffer,
+			    ps, depth))
+		return False;
+	prs_align(ps);
+
+	prs_uint16("unk0", ps, depth, &q_q->unk0);
+	prs_uint16("unk1", ps, depth, &q_q->unk1);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_r_priv_info(char *desc, LSA_R_PRIV_INFO * r_q,
+			prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_priv_info");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("ptr_info", ps, depth, &r_q->ptr_info);
+
+	if (r_q->ptr_info)
+	{
+		uint32 old_align;
+		if (MARSHALLING(ps))
+		{
+			make_unihdr_from_unistr2(&r_q->hdr_desc, &r_q->desc);
+		}
+		if (!smb_io_unihdr("hdr_desc", &r_q->hdr_desc, ps, depth))
+			return False;
+
+		/* Don't align after desc */
+		old_align = ps->align;
+		ps->align = 0;
+		if (!smb_io_unistr2("desc", &r_q->desc, r_q->hdr_desc.buffer,
+				    ps, depth))
+			return False;
+		ps->align = old_align;
+	}
+
+	prs_uint16("unk", ps, depth, &r_q->unk);
+	prs_uint32("status", ps, depth, &r_q->status);
 
 	return True;
 }

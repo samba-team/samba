@@ -2,9 +2,10 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Tridgell 1992-1997,2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1997,2000
+   Copyright (C) Paul Ashton 1997,2000
+   Copyright (C) Elrond 2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -88,6 +89,7 @@ enum SID_NAME_USE
 
 /* ntlsa pipe */
 #define LSA_CLOSE              0x00
+#define LSA_ENUM_PRIVS         0x02
 #define LSA_QUERYSECOBJECT     0x03
 #define LSA_OPENPOLICY         0x06
 #define LSA_QUERYINFOPOLICY    0x07
@@ -99,6 +101,7 @@ enum SID_NAME_USE
 #define LSA_OPENSECRET         0x1c
 #define LSA_SETSECRET          0x1d
 #define LSA_QUERYSECRET        0x1e
+#define LSA_PRIV_INFO          0x21
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_UNK_2D             0x2d /* LsaGetConnectedCredentials ? */
 
@@ -246,6 +249,57 @@ typedef struct lsa_q_set_info
 
 	LSA_INFO_UNION info;
 } LSA_Q_SET_INFO;
+
+
+typedef struct lsa_enum_priv_entry
+{
+	UNIHDR hdr_name;
+	UNISTR2 name;
+	uint32 num;
+	uint32 unk2; /* always 0, ptr? */
+} LSA_PRIV_ENTRY;
+
+/* LSA_Q_ENUM_PRIVS - LSA enum privileges */
+typedef struct lsa_q_enum_privs
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 unk0;
+	uint32 unk1;
+} LSA_Q_ENUM_PRIVS;
+
+typedef struct lsa_r_enum_privs
+{
+	uint32 count;
+	uint32 count1;
+	uint32 ptr;
+	uint32 count2;
+
+	LSA_PRIV_ENTRY *privs;
+
+	uint32 status;
+} LSA_R_ENUM_PRIVS;
+
+
+/* LSA_Q_PRIV_INFO - LSA get privilege info */
+typedef struct lsa_q_priv_info
+{
+	POLICY_HND pol; /* policy handle */
+	UNIHDR hdr_name;
+	UNISTR2 name;
+	uint16 unk0; /* 0x407 */
+	uint16 unk1; /* 0x407, alignment? */
+} LSA_Q_PRIV_INFO;
+
+typedef struct lsa_r_priv_info
+{
+	uint32 ptr_info;
+	UNIHDR hdr_desc;
+	UNISTR2 desc;
+	/* Don't align ! */
+	uint16 unk; /* 0x0 or 0x407 */
+	/* align */
+	uint32 status;
+} LSA_R_PRIV_INFO;
 
 
 /* LSA_Q_CREATE_SECRET - LSA Create Secret */

@@ -782,3 +782,65 @@ uint32 _lsa_open_secret(const POLICY_HND * hnd,
 
 	return NT_STATUS_NOPROBLEMO;
 }
+
+#define LSA_NUM_PRIVS 23
+static const struct privs
+{
+	uint32 num;
+	const char *name;
+} privs[LSA_NUM_PRIVS+1] = {
+	{  2, "SeCreateTokenPrivilege" },
+	{  3, "SeAssignPrimaryTokenPrivilege" },
+	{  4, "SeLockMemoryPrivilege" },
+	{  5, "SeIncreaseQuotaPrivilege" },
+	{  6, "SeMachineAccountPrivilege" },
+	{  7, "SeTcbPrivilege" },
+	{  8, "SeSecurityPrivilege" },
+	{  9, "SeTakeOwnershipPrivilege" },
+	{ 10, "SeLoadDriverPrivilege" },
+	{ 11, "SeSystemProfilePrivilege" },
+	{ 12, "SeSystemtimePrivilege" },
+	{ 13, "SeProfileSingleProcessPrivilege" },
+	{ 14, "SeIncreaseBasePriorityPrivilege" },
+	{ 15, "SeCreatePagefilePrivilege" },
+	{ 16, "SeCreatePermanentPrivilege" },
+	{ 17, "SeBackupPrivilege" },
+	{ 18, "SeRestorePrivilege" },
+	{ 19, "SeShutdownPrivilege" },
+	{ 20, "SeDebugPrivilege" },
+	{ 21, "SeAuditPrivilege" },
+	{ 22, "SeSystemEnvironmentPrivilege" },
+	{ 23, "SeChangeNotifyPrivilege" },
+	{ 24, "SeRemoteShutdownPrivilege" },
+	{  0, NULL }
+};
+
+uint32 _lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
+		       uint32 *count, LSA_PRIV_ENTRY **entries)
+{
+	uint32 i;
+	LSA_PRIV_ENTRY *entry;
+
+	if (hnd == NULL || count == NULL || entries == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	if (find_policy_by_hnd(get_global_hnd_cache(), hnd) == -1)
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	(*entries) = g_new(LSA_PRIV_ENTRY, LSA_NUM_PRIVS);
+	if (! *entries)
+		return NT_STATUS_NO_MEMORY;
+
+	*count = LSA_NUM_PRIVS;
+
+	entry = *entries;
+	for (i = 0; privs[i].name && i < LSA_NUM_PRIVS; i++, entry++)
+	{
+		unistr2_assign_ascii_str(&entry->name, privs[i].name);
+		entry->num = privs[i].num;
+	}
+
+	return NT_STATUS_NOPROBLEMO;
+}

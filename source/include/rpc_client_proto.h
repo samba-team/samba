@@ -159,6 +159,10 @@ BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,
 			uint32 * num_doms, char ***names, DOM_SID *** sids);
 BOOL lsa_close(POLICY_HND *hnd);
+BOOL lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
+		    uint32 *count, LSA_PRIV_ENTRY **entries);
+uint32 lsa_priv_info(const POLICY_HND *hnd, const char *name, uint16 unk,
+		     UNISTR2 **desc, uint16 *unk0);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 

@@ -2,9 +2,10 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Tridgell              1992-1997,2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,2000,
+ *  Copyright (C) Paul Ashton                       1997,2000,
+ *  Copyright (C) Elrond                                 2000.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1239,4 +1240,116 @@ BOOL lsa_close(POLICY_HND *hnd)
 	close_policy_hnd(get_global_hnd_cache(), hnd);
 
 	return valid_close;
+}
+
+/****************************************************************************
+do a LSA Enum Privileges
+****************************************************************************/
+BOOL lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
+		    uint32 *count, LSA_PRIV_ENTRY **entries)
+{
+	BOOL valid_resp = False;
+	prs_struct rbuf;
+	prs_struct buf;
+	LSA_Q_ENUM_PRIVS q_q;
+
+	if (hnd == NULL)
+		return False;
+
+	prs_init(&buf, 0, 4, False);
+	prs_init(&rbuf, 0, 4, True);
+
+	DEBUG(4, ("LSA Enum Privileges\n"));
+
+	/* store the parameters */
+	q_q.pol = *hnd;
+	q_q.unk0 = unk0;
+	q_q.unk1 = unk1;
+
+	/* turn parameters into data stream */
+	if (lsa_io_q_enum_privs("", &q_q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_ENUM_PRIVS, &buf, &rbuf))
+	{
+		LSA_R_ENUM_PRIVS r_q;
+		BOOL p;
+
+		ZERO_STRUCT(r_q);
+
+		p = lsa_io_r_enum_privs("", &r_q, &rbuf, 0)
+			&& rbuf.offset != 0;
+
+		if (p)
+		{
+			if (r_q.ptr == 0)
+				r_q.count = 0;
+			if (count)
+				*count = r_q.count;
+
+			if (entries)
+				*entries = r_q.privs;
+			else
+				safe_free(r_q.privs);
+
+			valid_resp = True;
+		}
+	}
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf);
+
+	return valid_resp;
+}
+
+/****************************************************************************
+do a LSA Privileges Info
+****************************************************************************/
+uint32 lsa_priv_info(const POLICY_HND *hnd, const char *name, uint16 unk,
+		     UNISTR2 **desc, uint16 *unk0)
+{
+	BOOL status = NT_STATUS_UNSUCCESSFUL;
+	prs_struct rbuf;
+	prs_struct buf;
+	LSA_Q_PRIV_INFO q_q;
+
+	if (hnd == NULL)
+		return False;
+
+	prs_init(&buf, 0, 4, False);
+	prs_init(&rbuf, 0, 4, True);
+
+	DEBUG(4, ("LSA Privileges Info\n"));
+
+	/* store the parameters */
+	q_q.pol = *hnd;
+	unistr2_assign_ascii_str(&q_q.name, name);
+	q_q.unk0 = unk;
+	q_q.unk1 = unk;
+
+	/* turn parameters into data stream */
+	if (lsa_io_q_priv_info("", &q_q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_PRIV_INFO, &buf, &rbuf))
+	{
+		LSA_R_PRIV_INFO r_q;
+		BOOL p;
+
+		ZERO_STRUCT(r_q);
+
+		p = lsa_io_r_priv_info("", &r_q, &rbuf, 0)
+			&& rbuf.offset != 0;
+
+		if (p && r_q.ptr_info)
+		{
+			if (desc)
+				(*desc) = unistr2_dup(&r_q.desc);
+			if (unk0)
+				(*unk0) = r_q.unk;
+		}
+		if (p)
+			status = r_q.status;
+	}
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf);
+
+	return status;
 }

@@ -83,6 +83,20 @@ static const struct command_set lsa_commands[] =
 		{NULL, NULL}
 	},
 
+	{
+		"enumprivs",
+		cmd_lsa_enum_privs,
+		"lsa enum privileges",
+		{NULL, NULL}
+	},
+
+	{
+		"privinfo",
+		cmd_lsa_priv_info,
+		"lsa privilege info",
+		{NULL, NULL}
+	},
+
 	/*
 	 * oop!
 	 */

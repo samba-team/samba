@@ -2,8 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-1999
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
+   Copyright (C) Andrew Tridgell 1994-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
+   Copyright (C) Elrond 2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "rpc_parse.h"
 #include "rpc_client.h"
 #include "rpcclient.h"
 #include "nterr.h"
@@ -505,4 +507,114 @@ void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd, "LSA Query Secret: failed\n");
 	}
+}
+
+/****************************************************************************
+****************************************************************************/
+uint32 cmd_lsa_enum_privs(struct client_info *info, int argc, char *argv[])
+{
+	fstring srv_name;
+	uint32 unk0 = 0, unk1 = 0x1000;
+	BOOL do_info = False;
+	POLICY_HND lsa_pol;
+	uint32 count;
+	LSA_PRIV_ENTRY *privs;
+
+	BOOL res = True;
+	BOOL res1 = True;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	DEBUG(4, ("cmd_lsa_enum_privileges: server:%s\n", srv_name));
+
+	if (argc >= 2 && strequal(argv[1], "-i"))
+		do_info = True;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_policy(srv_name,
+				    &lsa_pol, False,
+				    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
+
+
+	res1 = res ? lsa_enum_privs(&lsa_pol, unk0, unk1,
+				    &count, &privs) : False;
+
+	if (res1)
+	{
+		uint32 i;
+		for (i = 0; i < count; i++)
+		{
+			char *name;
+			name = unistr2_to_ascii(NULL, &privs[i].name, 0);
+			report(out_hnd, "\t%3d  %s\n", privs[i].num, name);
+			if (do_info)
+			{
+				UNISTR2 *uni_desc = NULL;
+				uint16 unknown = 0;
+				char *desc;
+				lsa_priv_info(&lsa_pol, name, 0x407,
+					      &uni_desc, &unknown);
+				desc = unistr2_to_ascii(NULL, uni_desc, 0);
+				report(out_hnd, "\t\t%s (0x%x)\n",
+				       desc, unknown);
+				safe_free(desc);
+				unistr2_free(uni_desc);
+			}
+			safe_free(name);
+		}
+	}
+
+	res = res ? lsa_close(&lsa_pol) : False;
+
+	return 0;
+}
+
+/****************************************************************************
+****************************************************************************/
+uint32 cmd_lsa_priv_info(struct client_info *info, int argc, char *argv[])
+{
+	fstring srv_name;
+	uint16 unk = 0x407;
+	POLICY_HND lsa_pol;
+	const char *name;
+
+	BOOL res = True;
+	BOOL res1 = True;
+
+	if (argc < 2)
+	{
+		report(out_hnd, "privinfo <priv-name>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	name = argv[1];
+
+	if (argc >= 3)
+	{
+		unk = atoi(argv[2]);
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	DEBUG(4, ("cmd_lsa_enum_privileges: server:%s\n", srv_name));
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_policy(srv_name,
+				    &lsa_pol, False,
+				    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
+
+
+	res1 = res ? lsa_priv_info(&lsa_pol, name, unk, NULL, NULL) == 0x0 : False;
+
+	res = res ? lsa_close(&lsa_pol) : False;
+
+	if (res1)
+	{
+	}
+
+	return 0;
 }

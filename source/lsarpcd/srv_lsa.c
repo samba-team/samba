@@ -436,6 +436,52 @@ static BOOL api_lsa_open_secret(prs_struct *data, prs_struct *rdata)
 }
 
 /***************************************************************************
+ api_lsa_enum_privs
+ ***************************************************************************/
+static BOOL api_lsa_enum_privs(prs_struct *data, prs_struct *rdata)
+{
+	LSA_Q_ENUM_PRIVS q_o;
+	LSA_R_ENUM_PRIVS r_o;
+	BOOL ret;
+
+	ZERO_STRUCT(r_o);
+	ZERO_STRUCT(q_o);
+
+	if (!lsa_io_q_enum_privs("", &q_o, data, 0))
+	{
+		return False;
+	}
+
+	r_o.status = _lsa_enum_privs(&q_o.pol, q_o.unk0, q_o.unk1,
+				     &r_o.count, &r_o.privs);
+
+	r_o.count2 = r_o.count1 = r_o.count;
+	r_o.ptr = (r_o.count != 0 ? 1 : 0);
+
+	ret = lsa_io_r_enum_privs("", &r_o, rdata, 0);
+
+	safe_free(r_o.privs);
+
+	return ret;
+}
+
+/***************************************************************************
+api_lsa_priv_info
+ ***************************************************************************/
+static BOOL api_lsa_priv_info(prs_struct *data, prs_struct *rdata)
+{
+	LSA_Q_PRIV_INFO q_i;
+	ZERO_STRUCT(q_i);
+
+	if (!lsa_io_q_priv_info("", &q_i, data, 0))
+	{
+		return False;
+	}
+
+	return False;
+}
+
+/***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
 static const struct api_struct api_lsa_cmds[] = {
@@ -452,6 +498,8 @@ static const struct api_struct api_lsa_cmds[] = {
 	{"LSA_LOOKUPNAMES", LSA_LOOKUPNAMES, api_lsa_lookup_names},
 	{"LSA_SET_INFO", LSA_SET_INFO, api_lsa_set_info},
 /*	{"LSA_UNK_2D",  LSA_UNK_2D, api_lsa_unk_2d}, */
+	{"LSA_ENUM_PRIVS", LSA_ENUM_PRIVS, api_lsa_enum_privs},
+	{"LSA_PRIV_INFO", LSA_PRIV_INFO, api_lsa_priv_info},
 	{NULL, 0, NULL}
 };
 

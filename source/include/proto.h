@@ -1346,6 +1346,8 @@ uint32 _lsa_create_secret(const POLICY_HND * hnd,
 uint32 _lsa_open_secret(const POLICY_HND * hnd,
 			const UNISTR2 * secret_name, uint32 des_access,
 			POLICY_HND * hnd_secret);
+uint32 _lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
+		       uint32 *count, LSA_PRIV_ENTRY **entries);
 
 /*The following definitions come from  msdfs/msdfs.c  */
 
@@ -1836,8 +1838,8 @@ char *lp_deluser_script(void);
 char *lp_wins_hook(void);
 char *lp_nt_forms(void);
 char *lp_nt_drivers_file(void);
-char *lp_surs_domainrange_uid(void);
-char *lp_surs_domainrange_gid(void);
+char *lp_winbind_uid(void);
+char *lp_winbind_gid(void);
 char *lp_template_homedir(void);
 char *lp_template_shell(void);
 char *lp_ldap_server(void);
@@ -2988,6 +2990,8 @@ void cmd_lsa_create_secret(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_query_secret_secobj(struct client_info *info, int argc,
 				 char *argv[]);
 void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_lsa_enum_privs(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_lsa_priv_info(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */
 
