@@ -1144,7 +1144,7 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
                                   char **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count)
+				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
 	pstring fname;
 	char *params = *ppparams;
@@ -1783,7 +1783,7 @@ int reply_nttranss(connection_struct *conn,
 static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
                                   char **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count)
+				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
 	char *setup = *ppsetup;
 	files_struct *fsp;
@@ -1819,7 +1819,7 @@ name = %s\n", fsp->fsp_name ));
 static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
                                   char **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count)
+				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
 	char *params = *ppparams;
 	pstring new_name;
@@ -1886,9 +1886,8 @@ static size_t get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
 static int call_nt_transact_query_security_desc(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
                                   char **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count)
+				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
-	uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
 	char *params = *ppparams;
 	char *data = *ppdata;
 	prs_struct pd;
@@ -1998,7 +1997,7 @@ security descriptor.\n"));
 static int call_nt_transact_set_security_desc(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
                                   char **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count)
+				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
 	char *params= *ppparams;
 	char *data = *ppdata;
@@ -2039,7 +2038,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn, char *inb
 static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
                                   char **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count)
+				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
 	uint32 function;
 	uint16 fidnum;
@@ -2116,7 +2115,6 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 * Allocate the correct amount and return the pointer to let
 		 * it be deallocated when we return.
 		 */
-		uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
 		SHADOW_COPY_DATA *shadow_data = NULL;
 		TALLOC_CTX *shadow_mem_ctx = NULL;
 		BOOL labels = False;
@@ -2289,10 +2287,9 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
                                   char **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count)
+				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
-	uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
 	char *params = *ppparams;
 	char *pdata = *ppdata;
 	char *entry;
@@ -2539,7 +2536,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
                                   char **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count)
+				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
 	char *params = *ppparams;
 	char *pdata = *ppdata;
@@ -2658,10 +2655,10 @@ int reply_nttrans(connection_struct *conn,
 			char *inbuf,char *outbuf,int length,int bufsize)
 {
 	int  outsize = 0;
+	uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
 #if 0 /* Not used. */
 	uint16 max_setup_count = CVAL(inbuf, smb_nt_MaxSetupCount);
 	uint32 max_parameter_count = IVAL(inbuf, smb_nt_MaxParameterCount);
-	uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
 #endif /* Not used. */
 	uint32 total_parameter_count = IVAL(inbuf, smb_nt_TotalParameterCount);
 	uint32 total_data_count = IVAL(inbuf, smb_nt_TotalDataCount);
@@ -2872,7 +2869,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 							length, bufsize, 
 							&setup, setup_count,
 							&params, total_parameter_count, 
-							&data, total_data_count);
+							&data, total_data_count, max_data_count);
 			END_PROFILE_NESTED(NT_transact_create);
 			break;
 		case NT_TRANSACT_IOCTL:
@@ -2881,7 +2878,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 							 length, bufsize, 
 							 &setup, setup_count,
 							 &params, total_parameter_count, 
-							 &data, total_data_count);
+							 &data, total_data_count, max_data_count);
 			END_PROFILE_NESTED(NT_transact_ioctl);
 			break;
 		case NT_TRANSACT_SET_SECURITY_DESC:
@@ -2890,7 +2887,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 							 length, bufsize, 
 							 &setup, setup_count,
 							 &params, total_parameter_count, 
-							 &data, total_data_count);
+							 &data, total_data_count, max_data_count);
 			END_PROFILE_NESTED(NT_transact_set_security_desc);
 			break;
 		case NT_TRANSACT_NOTIFY_CHANGE:
@@ -2899,7 +2896,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 							 length, bufsize, 
 							 &setup, setup_count,
 							 &params, total_parameter_count, 
-							 &data, total_data_count);
+							 &data, total_data_count, max_data_count);
 			END_PROFILE_NESTED(NT_transact_notify_change);
 			break;
 		case NT_TRANSACT_RENAME:
@@ -2908,7 +2905,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 							 length, bufsize, 
 							 &setup, setup_count,
 							 &params, total_parameter_count, 
-							 &data, total_data_count);
+							 &data, total_data_count, max_data_count);
 			END_PROFILE_NESTED(NT_transact_rename);
 			break;
 
@@ -2918,7 +2915,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 							 length, bufsize, 
 							 &setup, setup_count,
 							 &params, total_parameter_count, 
-							 &data, total_data_count);
+							 &data, total_data_count, max_data_count);
 			END_PROFILE_NESTED(NT_transact_query_security_desc);
 			break;
 #ifdef HAVE_SYS_QUOTAS
@@ -2928,7 +2925,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 							 length, bufsize, 
 							 &setup, setup_count,
 							 &params, total_parameter_count, 
-							 &data, total_data_count);
+							 &data, total_data_count, max_data_count);
 			END_PROFILE_NESTED(NT_transact_get_user_quota);
 			break;
 		case NT_TRANSACT_SET_USER_QUOTA:
@@ -2937,7 +2934,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 							 length, bufsize, 
 							 &setup, setup_count,
 							 &params, total_parameter_count, 
-							 &data, total_data_count);
+							 &data, total_data_count, max_data_count);
 			END_PROFILE_NESTED(NT_transact_set_user_quota);
 			break;					
 #endif /* HAVE_SYS_QUOTAS */
