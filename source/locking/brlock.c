@@ -162,6 +162,10 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
 } 
 
 
+#if DONT_DO_THIS
+	/* doing this traversal could kill solaris machines under high load (tridge) */
+	/* delete any dead locks */
+
 /****************************************************************************
  Delete a record if it is for a dead process, if check_self is true, then
  delete any records belonging to this pid also (there shouldn't be any).
@@ -215,6 +219,7 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 	tdb_chainunlock(tdb, kbuf);
 	return 0;
 }
+#endif
 
 /****************************************************************************
  Open up the brlock.tdb database.
@@ -222,8 +227,6 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 
 void brl_init(int read_only)
 {
-	BOOL check_self = False;
-
 	if (tdb)
 		return;
 	tdb = tdb_open_log(lock_path("brlock.tdb"), 0,  TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST),
@@ -236,8 +239,10 @@ void brl_init(int read_only)
 #if DONT_DO_THIS
 	/* doing this traversal could kill solaris machines under high load (tridge) */
 	/* delete any dead locks */
-	if (!read_only)
+	if (!read_only) {
+		BOOL check_self = False;
 		tdb_traverse(tdb, delete_fn, &check_self);
+	}
 #endif
 }
 
@@ -247,16 +252,16 @@ void brl_init(int read_only)
 
 void brl_shutdown(int read_only)
 {
-	BOOL check_self = True;
-
 	if (!tdb)
 		return;
 
 #if DONT_DO_THIS
 	/* doing this traversal could kill solaris machines under high load (tridge) */
 	/* delete any dead locks */
-	if (!read_only)
+	if (!read_only) {
+		BOOL check_self = True;
 		tdb_traverse(tdb, delete_fn, &check_self);
+	}
 #endif
 
 	tdb_close(tdb);
