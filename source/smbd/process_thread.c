@@ -49,19 +49,19 @@ static int thread_get_id(struct smbsrv_request *req)
 static void thread_accept_connection(struct event_context *ev, struct fd_event *srv_fde, 
 			      time_t t, uint16_t flags)
 {		
-	int accepted_fd, rc;
-	struct sockaddr addr;
-	socklen_t in_addrlen = sizeof(addr);
+	NTSTATUS status;
+	struct socket_context *sock;
+	int rc;
 	pthread_t thread_id;
 	pthread_attr_t thread_attr;
 	struct server_socket *server_socket = srv_fde->private;
 	struct server_connection *conn;
 
 	/* accept an incoming connection. */
-	accepted_fd = accept(srv_fde->fd,&addr,&in_addrlen);
-	if (accepted_fd == -1) {
-		DEBUG(0,("standard_accept_connection: accept: %s\n",
-			 strerror(errno)));
+	status = socket_accept(server_socket->socket, &sock, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("accept_connection_single: accept: %s\n",
+			 nt_errstr(status)));
 		return;
 	}
 	
@@ -72,16 +72,18 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 	   main event_context is continued.
 	*/
 
-
 	ev = event_context_init();
 	if (!ev) {
 		DEBUG(0,("thread_accept_connection: failed to create event_context!\n"));
+		socket_destroy(sock);
 		return; 
 	}
 
-	conn = server_setup_connection(ev, server_socket, accepted_fd, t);
+	conn = server_setup_connection(ev, server_socket, sock, t);
 	if (!conn) {
-		DEBUG(0,("server_setup_connection(ev, server_socket, accepted_fd) failed\n"));
+		DEBUG(0,("server_setup_connection(ev, server_socket, sock, t) failed\n"));
+		event_context_destroy(ev);
+		socket_destroy(sock);
 		return;
 	}
 
@@ -98,9 +100,12 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 	pthread_attr_destroy(&thread_attr);
 	if (rc == 0) {
 		DEBUG(4,("accept_connection_thread: created thread_id=%lu for fd=%d\n", 
-			(unsigned long int)thread_id, accepted_fd));
+			(unsigned long int)thread_id, socket_get_fd(sock)));
 	} else {
-		DEBUG(0,("accept_connection_thread: thread create failed for fd=%d, rc=%d\n", accepted_fd, rc));
+		DEBUG(0,("accept_connection_thread: thread create failed for fd=%d, rc=%d\n", socket_get_fd(sock), rc));
+		event_context_destroy(ev);
+		socket_destroy(sock);
+		return;
 	}
 }
 

@@ -60,35 +60,40 @@ receive a SMB request from the wire, forming a request_context from the result
 ****************************************************************************/
 static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_conn)
 {
+	NTSTATUS status;
 	ssize_t len, len2;
-	char header[4];
+	DATA_BLOB tmp_blob;
 	struct smbsrv_request *req;
 
-	len = read_data(smb_conn->connection->event.fde->fd, header, 4);
-	if (len != 4) {
+	status = socket_recv(smb_conn->connection->socket, smb_conn, &tmp_blob, 4, SOCKET_FLAG_BLOCK|SOCKET_FLAG_PEEK);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+	if (tmp_blob.length != 4) {
 		return NULL;
 	}
 
-	len = smb_len(header);
+	len = smb_len(tmp_blob.data);
+	talloc_free(tmp_blob.data);
 
 	req = init_smb_request(smb_conn);
 
 	GetTimeOfDay(&req->request_time);
 	req->chained_fnum = -1;
-	
-	/* allocate the incoming buffer at the right size */
-	req->in.buffer = talloc(req, len + NBT_HDR_SIZE);
 
-	/* fill in the already received header */
-	memcpy(req->in.buffer, header, 4);
+	len2 = len + NBT_HDR_SIZE;
 
-	len2 = read_data(smb_conn->connection->event.fde->fd, req->in.buffer + NBT_HDR_SIZE, len);
-	if (len2 != len) {
+	status = socket_recv(smb_conn->connection->socket, req, &tmp_blob, len2, SOCKET_FLAG_BLOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+	if (tmp_blob.length != len2) {
 		return NULL;
 	}
 
 	/* fill in the rest of the req->in structure */
-	req->in.size = len + NBT_HDR_SIZE;
+	req->in.buffer = tmp_blob.data;
+	req->in.size = len2;
 	req->in.allocated = req->in.size;
 	req->in.hdr = req->in.buffer + NBT_HDR_SIZE;
 	req->in.vwv = req->in.hdr + HDR_VWV;
@@ -683,12 +688,15 @@ static void add_socket(struct server_service *service,
 {
 	const char **ports = lp_smb_ports();
 	int i;
+	char *ip_str = talloc_strdup(service->mem_ctx, inet_ntoa(*ifip));
 
 	for (i=0;ports[i];i++) {
 		uint16_t port = atoi(ports[i]);
 		if (port == 0) continue;
-		service_setup_socket(service, model_ops, socket_ctx, ifip, &port);
+		service_setup_socket(service, model_ops, ip_str, &port);
 	}
+
+	talloc_free(ip_str);
 }
 
 /****************************************************************************
@@ -831,8 +839,10 @@ void smbsrv_accept(struct server_connection *conn)
 
 	/* set an initial client name based on its IP address. This will be replaced with
 	   the netbios name later if it gives us one */
-	socket_addr = get_socket_addr(smb_conn, conn->event.fde->fd);
-	sub_set_remote_machine(socket_addr);
+	socket_addr = socket_get_peer_addr(conn->socket, smb_conn);
+	if (socket_addr) {
+		sub_set_remote_machine(socket_addr);
+	}
 
 	/* now initialise a few default values associated with this smb socket */
 	smb_conn->negotiate.max_send = 0xFFFF;

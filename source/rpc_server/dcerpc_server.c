@@ -929,7 +929,7 @@ NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
 */
 NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn, 
 		       void *private,
-		       ssize_t (*write_fn)(void *, const void *, size_t))
+		       ssize_t (*write_fn)(void *, DATA_BLOB *))
 {
 	struct dcesrv_call_state *call;
 	struct dcesrv_call_reply *rep;
@@ -942,7 +942,7 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	}
 	rep = call->replies;
 
-	nwritten = write_fn(private, rep->data.data, rep->data.length);
+	nwritten = write_fn(private, &rep->data);
 	if (nwritten == -1) {
 		/* TODO: hmm, how do we cope with this? destroy the
 		   connection perhaps? */
@@ -972,13 +972,13 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 /*
   write_fn() for dcesrv_output_blob()
 */
-static ssize_t dcesrv_output_blob_write_fn(void *private, const void *buf, size_t count)
+static ssize_t dcesrv_output_blob_write_fn(void *private, DATA_BLOB *out)
 {
 	DATA_BLOB *blob = private;
-	if (count < blob->length) {
-		blob->length = count;
+	if (out->length < blob->length) {
+		blob->length = out->length;
 	}
-	memcpy(blob->data, buf, blob->length);
+	memcpy(blob->data, out->data, blob->length);
 	return blob->length;
 }
 

@@ -36,18 +36,17 @@ static void standard_model_startup(void)
 */
 static void standard_accept_connection(struct event_context *ev, struct fd_event *srv_fde, time_t t, uint16_t flags)
 {
-	int accepted_fd;
-	struct sockaddr addr;
-	socklen_t in_addrlen = sizeof(addr);
-	pid_t pid;
+	NTSTATUS status;
+	struct socket_context *sock;
 	struct server_socket *server_socket = srv_fde->private;
 	struct server_connection *conn;
+	pid_t pid;
 
 	/* accept an incoming connection. */
-	accepted_fd = accept(srv_fde->fd,&addr,&in_addrlen);
-	if (accepted_fd == -1) {
-		DEBUG(0,("standard_accept_connection: accept: %s\n",
-			 strerror(errno)));
+	status = socket_accept(server_socket->socket, &sock, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("accept_connection_single: accept: %s\n",
+			 nt_errstr(status)));
 		return;
 	}
 
@@ -56,7 +55,7 @@ static void standard_accept_connection(struct event_context *ev, struct fd_event
 	if (pid != 0) {
 		/* parent or error code ... */
 
-		close(accepted_fd);
+		socket_destroy(sock);
 		/* go back to the event loop */
 		return;
 	}
@@ -75,9 +74,9 @@ static void standard_accept_connection(struct event_context *ev, struct fd_event
 
 	set_need_random_reseed();
 
-	conn = server_setup_connection(ev, server_socket, accepted_fd, t);
+	conn = server_setup_connection(ev, server_socket, sock, t);
 	if (!conn) {
-		DEBUG(0,("server_setup_connection(ev, server_socket, accepted_fd) failed\n"));
+		DEBUG(0,("server_setup_connection(ev, server_socket, sock, t) failed\n"));
 		return;
 	}
 

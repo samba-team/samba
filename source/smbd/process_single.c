@@ -36,23 +36,22 @@ static void single_start_server(void)
 */
 static void single_accept_connection(struct event_context *ev, struct fd_event *srv_fde, time_t t, uint16_t flags)
 {
-	int accepted_fd;
-	struct sockaddr addr;
-	socklen_t in_addrlen = sizeof(addr);
+	NTSTATUS status;
+	struct socket_context *sock;
 	struct server_socket *server_socket = srv_fde->private;
 	struct server_connection *conn;
 
 	/* accept an incoming connection. */
-	accepted_fd = accept(srv_fde->fd,&addr,&in_addrlen);
-	if (accepted_fd == -1) {
+	status = socket_accept(server_socket->socket, &sock, 0);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("accept_connection_single: accept: %s\n",
-			 strerror(errno)));
+			 nt_errstr(status)));
 		return;
 	}
 
-	conn = server_setup_connection(ev, server_socket, accepted_fd, t);
+	conn = server_setup_connection(ev, server_socket, sock, t);
 	if (!conn) {
-		DEBUG(0,("server_setup_connection(ev, server_socket, accepted_fd) failed\n"));
+		DEBUG(0,("server_setup_connection(ev, server_socket, sock, t) failed\n"));
 		return;
 	}
 

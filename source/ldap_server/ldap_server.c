@@ -33,13 +33,15 @@ static void ldapsrv_terminate_connection(struct ldapsrv_connection *ldap_conn, c
   add a socket address to the list of events, one event per port
 */
 static void add_socket(struct server_service *service, 
-		       const struct model_ops *model_ops,
-		       struct socket_context *socket_ctx, 
+		       const struct model_ops *model_ops, 
 		       struct in_addr *ifip)
 {
 	uint16_t port = 389;
+	char *ip_str = talloc_strdup(service->mem_ctx, inet_ntoa(*ifip));
 
-	service_setup_socket(service, model_ops, socket_ctx, ifip, &port);
+	service_setup_socket(service, model_ops, ip_str, &port);
+
+	talloc_free(ip_str);
 }
 
 /****************************************************************************
@@ -67,7 +69,7 @@ static void ldapsrv_init(struct server_service *service,
 				continue;
 			}
 
-			add_socket(service, model_ops, NULL, ifip);
+			add_socket(service, model_ops, ifip);
 		}
 	} else {
 		struct in_addr *ifip;
@@ -79,7 +81,7 @@ static void ldapsrv_init(struct server_service *service,
 
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
 		ifip = interpret_addr2(mem_ctx, lp_socket_address());
-		add_socket(service, model_ops, NULL, ifip);
+		add_socket(service, model_ops, ifip);
 
 		talloc_destroy(mem_ctx);
 	}
@@ -103,25 +105,42 @@ static BOOL append_to_buf(struct rw_buffer *buf, uint8_t *data, size_t length)
 	return True;
 }
 
-static BOOL read_into_buf(int fd, struct rw_buffer *buf)
+static BOOL read_into_buf(struct socket_context *sock, struct rw_buffer *buf)
 {
-	char tmp_buf[1024];
-	int len;
+	NTSTATUS status;
+	DATA_BLOB tmp_blob;
+	BOOL ret;
 
-	len = read(fd, tmp_buf, sizeof(tmp_buf));
-	if (len == 0)
+	status = socket_recv(sock, sock, &tmp_blob, 1024, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("socket_recv: %s\n",nt_errstr(status)));
 		return False;
+	}
 
-	return append_to_buf(buf, tmp_buf, len);
+	ret = append_to_buf(buf, tmp_blob.data, tmp_blob.length);
+
+	talloc_free(tmp_blob.data);
+
+	return ret;
 }
 
-static BOOL write_from_buf(int fd, struct rw_buffer *buf)
+static BOOL write_from_buf(struct socket_context *sock, struct rw_buffer *buf)
 {
-	int len;
+	NTSTATUS status;
+	DATA_BLOB tmp_blob;
+	size_t sendlen;
 
-	len = write(fd, buf->data, buf->length);
-	if (len != buf->length)
+	tmp_blob.data = buf->data;
+	tmp_blob.length = buf->length;
+
+	status = socket_send(sock, sock, &tmp_blob, &sendlen, 0);
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
+	}
+
+	if (buf->length != sendlen) {
+		return False;
+	}
 
 	return True;
 }
@@ -495,7 +514,7 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 
 	DEBUG(10,("ldapsrv_recv\n"));
 
-	if (!read_into_buf(conn->event.fde->fd, &ldap_conn->in_buffer)) {
+	if (!read_into_buf(conn->socket, &ldap_conn->in_buffer)) {
 		ldapsrv_terminate_connection(ldap_conn, "read_into_buf() failed");
 		return;
 	}
@@ -570,7 +589,7 @@ static void ldapsrv_send(struct server_connection *conn, time_t t,
 
 	DEBUG(10,("ldapsrv_send\n"));
 
-	if (!write_from_buf(conn->event.fde->fd, &ldap_conn->out_buffer)) {
+	if (!write_from_buf(conn->socket, &ldap_conn->out_buffer)) {
 		ldapsrv_terminate_connection(ldap_conn, "write_from_buf() failed");
 		return;
 	}
@@ -617,7 +636,7 @@ static void ldapsrv_accept(struct server_connection *conn)
 	ldap_conn->connection = conn;
 
 	conn->private_data = ldap_conn;
-	
+
 	return;
 }
 
