@@ -60,9 +60,11 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 /*******************************************************************
  api_reg_close
  ********************************************************************/
-static BOOL api_reg_close(prs_struct *data, prs_struct *rdata )
+static BOOL api_reg_close(pipes_struct *p)
 {
 	REG_Q_CLOSE q_r;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* grab the reg unknown 1 */
 	reg_io_q_close("", &q_r, data, 0);
@@ -100,9 +102,11 @@ static void reg_reply_open(REG_Q_OPEN_HKLM *q_r,
 /*******************************************************************
  api_reg_open
  ********************************************************************/
-static BOOL api_reg_open(prs_struct *data, prs_struct *rdata )
+static BOOL api_reg_open(pipes_struct *p)
 {
 	REG_Q_OPEN_HKLM q_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* grab the reg open */
 	reg_io_q_open_hklm("", &q_u, data, 0);
@@ -165,9 +169,11 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 /*******************************************************************
  api_reg_open_entry
  ********************************************************************/
-static BOOL api_reg_open_entry(prs_struct *data, prs_struct *rdata )
+static BOOL api_reg_open_entry(pipes_struct *p)
 {
 	REG_Q_OPEN_ENTRY q_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* grab the reg open entry */
 	reg_io_q_open_entry("", &q_u, data, 0);
@@ -237,9 +243,11 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 /*******************************************************************
  api_reg_info
  ********************************************************************/
-static BOOL api_reg_info(prs_struct *data, prs_struct *rdata )
+static BOOL api_reg_info(pipes_struct *p)
 {
 	REG_Q_INFO q_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* grab the reg unknown 0x11*/
 	reg_io_q_info("", &q_u, data, 0);
@@ -266,8 +274,8 @@ static struct api_struct api_reg_cmds[] =
 /*******************************************************************
  receives a reg pipe and responds.
  ********************************************************************/
-BOOL api_reg_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_reg_rpc(pipes_struct *p)
 {
-	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds, data);
+	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds);
 }
 #undef OLD_NTDOMAIN

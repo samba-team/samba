@@ -80,9 +80,11 @@ static BOOL wks_reply_query_info(WKS_Q_QUERY_INFO *q_u,
 /*******************************************************************
  api_wks_query_info
  ********************************************************************/
-static BOOL api_wks_query_info(prs_struct *data, prs_struct *rdata)
+static BOOL api_wks_query_info(pipes_struct *p)
 {
 	WKS_Q_QUERY_INFO q_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* grab the net share enum */
 	if(!wks_io_q_query_info("", &q_u, data, 0))
@@ -108,9 +110,9 @@ struct api_struct api_wks_cmds[] =
 /*******************************************************************
  receives a wkssvc pipe and responds.
  ********************************************************************/
-BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_wkssvc_rpc(pipes_struct *p)
 {
-	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds, data);
+	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds);
 }
 
 #undef OLD_NTDOMAIN

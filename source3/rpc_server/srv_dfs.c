@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -35,17 +34,18 @@ extern pstring global_myname;
 /**********************************************************************
  api_dfs_exist
  **********************************************************************/
-static BOOL api_dfs_exist( prs_struct *data,
-			   prs_struct *rdata)
+static BOOL api_dfs_exist(pipes_struct *p)
 {
-  DFS_R_DFS_EXIST r_d;
+	DFS_R_DFS_EXIST r_d;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
-  if(lp_host_msdfs()) 
-    r_d.dfs_exist_flag = 1;
-  else
-    r_d.dfs_exist_flag = 0; 
-
-  return dfs_io_r_dfs_exist("", &r_d, rdata, 0);
+	if(lp_host_msdfs()) 
+		r_d.dfs_exist_flag = 1;
+	else
+		r_d.dfs_exist_flag = 0; 
+	
+	return dfs_io_r_dfs_exist("", &r_d, rdata, 0);
 }
 
 static uint32 init_reply_dfs_add(DFS_Q_DFS_ADD* q_a)
@@ -109,19 +109,21 @@ static uint32 init_reply_dfs_add(DFS_Q_DFS_ADD* q_a)
 /*****************************************************************
  api_dfs_add
  *****************************************************************/
-static BOOL api_dfs_add(prs_struct* data, prs_struct* rdata)
+static BOOL api_dfs_add(pipes-struct *p)
 {
-  DFS_Q_DFS_ADD q_a;
-  DFS_R_DFS_ADD r_a;
+	DFS_Q_DFS_ADD q_a;
+	DFS_R_DFS_ADD r_a;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
-  if(!dfs_io_q_dfs_add("", &q_a, data, 0))
-    return False;
-  
-  r_a.status = init_reply_dfs_add(&q_a);
-
-  dfs_io_r_dfs_add("", &r_a, rdata, 0);
-
-  return True;
+	if(!dfs_io_q_dfs_add("", &q_a, data, 0))
+		return False;
+	
+	r_a.status = init_reply_dfs_add(&q_a);
+	
+	dfs_io_r_dfs_add("", &r_a, rdata, 0);
+	
+	return True;
 }
 
 static uint32 init_reply_dfs_remove(DFS_Q_DFS_REMOVE* q_r)
@@ -198,19 +200,19 @@ static uint32 init_reply_dfs_remove(DFS_Q_DFS_REMOVE* q_r)
 /*****************************************************************
  api_dfs_remove
  *****************************************************************/
-static BOOL api_dfs_remove(prs_struct* data, prs_struct* rdata)
+static BOOL api_dfs_remove(pipes_struct *p)
 {
-  DFS_Q_DFS_REMOVE q_r;
-  DFS_R_DFS_REMOVE r_r;
-
-  if(!dfs_io_q_dfs_remove("", &q_r, data, 0))
-    return False;
-
-  r_r.status = init_reply_dfs_remove(&q_r);
-
-  dfs_io_r_dfs_remove("", &r_r, rdata, 0);
-
-  return True;
+	DFS_Q_DFS_REMOVE q_r;
+	DFS_R_DFS_REMOVE r_r;
+	
+	if(!dfs_io_q_dfs_remove("", &q_r, data, 0))
+		return False;
+	
+	r_r.status = init_reply_dfs_remove(&q_r);
+	
+	dfs_io_r_dfs_remove("", &r_r, rdata, 0);
+	
+	return True;
 }
 
 static BOOL init_reply_dfs_info_1(struct junction_map* j, DFS_INFO_1* dfs1, int num_j)
@@ -377,59 +379,63 @@ static uint32 init_reply_dfs_get_info(UNISTR2* uni_path, uint32 level,
 /*******************************************************************
  api_dfs_get_info
  *******************************************************************/
-static BOOL api_dfs_get_info(prs_struct* data, prs_struct* rdata)
+static BOOL api_dfs_get_info(pipes_struct *p)
 {
-  DFS_Q_DFS_GET_INFO q_i;
-  DFS_R_DFS_GET_INFO r_i;
+	DFS_Q_DFS_GET_INFO q_i;
+	DFS_R_DFS_GET_INFO r_i;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
-  ZERO_STRUCT(r_i);
-
-  if(!dfs_io_q_dfs_get_info("", &q_i, data, 0))
-    return False;
-
-  r_i.status = init_reply_dfs_get_info(&q_i.uni_path, q_i.level, &r_i);
-
-  if(!dfs_io_r_dfs_get_info("", &r_i, rdata, 0))
-    return False;
-
-  switch(r_i.level) {
-  case 1: free(r_i.ctr.dfs.info1); break;
-  case 2: free(r_i.ctr.dfs.info2); break;
-  case 3: 
-    {
-      free(r_i.ctr.dfs.info3->storages);
-      free(r_i.ctr.dfs.info3);
-      break;
-    }
-  }
-  return True;
+	ZERO_STRUCT(r_i);
+	
+	if(!dfs_io_q_dfs_get_info("", &q_i, data, 0))
+		return False;
+	
+	r_i.status = init_reply_dfs_get_info(&q_i.uni_path, q_i.level, &r_i);
+	
+	if(!dfs_io_r_dfs_get_info("", &r_i, rdata, 0))
+		return False;
+	
+	switch(r_i.level) {
+	case 1: free(r_i.ctr.dfs.info1); break;
+	case 2: free(r_i.ctr.dfs.info2); break;
+	case 3: {
+		free(r_i.ctr.dfs.info3->storages);
+		free(r_i.ctr.dfs.info3);
+		break;
+	}
+	}
+	return True;
 }
 
 /*******************************************************************
  api_dfs_enum
  *******************************************************************/
-static BOOL api_dfs_enum(prs_struct* data, prs_struct* rdata)
+static BOOL api_dfs_enum(pipes_struct *p)
 {
-  DFS_Q_DFS_ENUM q_e;
-  DFS_R_DFS_ENUM q_r;
+	DFS_Q_DFS_ENUM q_e;
+	DFS_R_DFS_ENUM q_r;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
-  if(!dfs_io_q_dfs_enum("", &q_e, data, 0))
-    return False;
-
-  q_r.status = init_reply_dfs_enum(q_e.level, &q_r);
-
-  if(!dfs_io_r_dfs_enum("", &q_r, rdata, 0))
-      return False;
-  switch(q_e.level) {
-  case 1: 
-    free(q_r.ctr->dfs.info1); break;
-  case 2:
-    free(q_r.ctr->dfs.info2); break;
-  case 3:
-    free(q_r.ctr->dfs.info3->storages); free(q_r.ctr->dfs.info3); break;
-  }
-  free(q_r.ctr);
-  return True;
+	if(!dfs_io_q_dfs_enum("", &q_e, data, 0))
+		return False;
+	
+	q_r.status = init_reply_dfs_enum(q_e.level, &q_r);
+	
+	if(!dfs_io_r_dfs_enum("", &q_r, rdata, 0))
+		return False;
+	switch(q_e.level) {
+	case 1: 
+		free(q_r.ctr->dfs.info1); break;
+	case 2:
+		free(q_r.ctr->dfs.info2); break;
+	case 3:
+		free(q_r.ctr->dfs.info3->storages); 
+		free(q_r.ctr->dfs.info3); break;
+	}
+	free(q_r.ctr);
+	return True;
 }
 
 /*******************************************************************
@@ -437,20 +443,20 @@ static BOOL api_dfs_enum(prs_struct* data, prs_struct* rdata)
 ********************************************************************/
 struct api_struct api_netdfs_cmds[] =
 {
-  {"DFS_EXIST",        DFS_EXIST,               api_dfs_exist    },
-  {"DFS_ADD",          DFS_ADD,                 api_dfs_add      },
-  {"DFS_REMOVE",       DFS_REMOVE,              api_dfs_remove   },
-  {"DFS_GET_INFO",     DFS_GET_INFO,            api_dfs_get_info },
-  {"DFS_ENUM",         DFS_ENUM,                api_dfs_enum     },
-  {NULL,                      0,                NULL             }
+	{"DFS_EXIST",        DFS_EXIST,               api_dfs_exist    },
+	{"DFS_ADD",          DFS_ADD,                 api_dfs_add      },
+	{"DFS_REMOVE",       DFS_REMOVE,              api_dfs_remove   },
+	{"DFS_GET_INFO",     DFS_GET_INFO,            api_dfs_get_info },
+	{"DFS_ENUM",         DFS_ENUM,                api_dfs_enum     },
+	{NULL,               0,                       NULL             }
 };
 
 /*******************************************************************
 receives a netdfs pipe and responds.
 ********************************************************************/
-BOOL api_netdfs_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_netdfs_rpc(pipes_struct *p)
 {
-	return api_rpcTNP(p, "api_netdfs_rpc", api_netdfs_cmds, data); 
+	return api_rpcTNP(p, "api_netdfs_rpc", api_netdfs_cmds);
 }
 
 #endif
