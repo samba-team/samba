@@ -140,7 +140,7 @@ main(argc, argv)
       sprintf (ccname,
         "FILE:/opt/dcelocal/var/security/creds/dcecred_%8.8x", 
         pag);
-      setenv("KRB5CCNAME",ccname,1);
+      esetenv("KRB5CCNAME",ccname,1);
       execl("/bin/csh","csh",0);
     }
     else {

@@ -330,7 +330,7 @@ int krb5_dfs_pag(context, flag, principal, luser)
       close(fd[0]);
       if (j > 0) {
         newccname[j] = '\0'; 
-        setenv("KRB5CCNAME",newccname,1);
+        esetenv("KRB5CCNAME",newccname,1);
         sscanf(&newccname[j-8],"%8x",&new_pag);
         if (new_pag && strncmp("FILE:/opt/dcelocal/var/security/creds/dcecred_", newccname, 46) == 0) {
           if((pag = krb5_dfs_newpag(new_pag)) != -2) {

@@ -286,10 +286,10 @@ afs_gettktstring (void)
 	}
     }
 #ifdef KRB5
-    setenv("KRB5CCNAME",krb5ccname,1);
+    esetenv("KRB5CCNAME",krb5ccname,1);
 #endif
 #ifdef KRB4
-    setenv("KRBTKFILE",krbtkfile,1);
+    esetenv("KRBTKFILE",krbtkfile,1);
     return krbtkfile;
 #else
     return "";

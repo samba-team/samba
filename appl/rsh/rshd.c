@@ -685,7 +685,7 @@ doit (int do_kerberos, int check_rhosts)
     }
 
 #if defined(DCE) && defined(AIX)
-    setenv("AUTHSTATE", "DCE", 1);
+    esetenv("AUTHSTATE", "DCE", 1);
 #endif
 
     pwd = getpwnam (server_user);
@@ -734,7 +734,7 @@ doit (int do_kerberos, int check_rhosts)
 
 #if defined(DCE)
     if (kerberos_status) {
-	setenv("KRB5CCNAME", tkfile, 1);
+	esetenv("KRB5CCNAME", tkfile, 1);
 	dfspag = krb5_dfs_pag(context, kerberos_status, user_ticket->client, server_user);
     }
 #endif

@@ -83,7 +83,7 @@ main(int argc, char **argv)
   f = mkstemp (tf + 5);
   close (f);
   unlink (tf + 5);
-  setenv("KRB5CCNAME", tf, 1);
+  esetenv("KRB5CCNAME", tf, 1);
 #endif
 
 #ifdef KRB4
@@ -91,7 +91,7 @@ main(int argc, char **argv)
   f = mkstemp (tf);
   close (f);
   unlink (tf);
-  setenv("KRBTKFILE", tf, 1);
+  esetenv("KRBTKFILE", tf, 1);
 #endif
 
   i = 0;

@@ -206,7 +206,7 @@ krb5_start_session(void)
 
     asprintf(&cc_name, "%s:%s", krb5_cc_get_type(context, ccache2),
 	     krb5_cc_get_name(context, ccache2));
-    setenv("KRB5CCNAME", cc_name, 1);
+    esetenv("KRB5CCNAME", cc_name, 1);
 
     /* we want to export this even if we don't directly support KRB4 */
     {
@@ -220,7 +220,7 @@ krb5_start_session(void)
 	fd = mkstemp(tkfile);
 	if(fd >= 0) {
 	    close(fd);
-	    setenv("KRBTKFILE", tkfile, 1);
+	    esetenv("KRBTKFILE", tkfile, 1);
 	}
     }
             
@@ -376,16 +376,16 @@ main(int argc, char **argv)
 	    if (environ == NULL)
 		err (1, "malloc");
 	    environ[0] = NULL;
-	    setenv ("PATH", _PATH_DEFPATH, 1);
+	    esetenv ("PATH", _PATH_DEFPATH, 1);
 	    if (t)
-		setenv ("TERM", t, 1);
+		esetenv ("TERM", t, 1);
 	    if (chdir (su_info->pw_dir) < 0)
 		errx (1, "no directory");
 	}
 	if (full_login || su_info->pw_uid)
-	    setenv ("USER", su_info->pw_name, 1);
-	setenv("HOME", su_info->pw_dir, 1);
-	setenv("SHELL", shell, 1);
+	    esetenv ("USER", su_info->pw_name, 1);
+	esetenv("HOME", su_info->pw_dir, 1);
+	esetenv("SHELL", shell, 1);
     }
 
     {

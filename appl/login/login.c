@@ -696,7 +696,7 @@ main(int argc, char **argv)
     }
 
 #if defined(DCE) && defined(AIX)
-    setenv("AUTHSTATE", "DCE", 1);
+    esetenv("AUTHSTATE", "DCE", 1);
 #endif
 
     /* XXX should we care about environment on the command line? */

@@ -100,7 +100,7 @@ gss_userok(void *app_data, char *username)
               krb5_afslog(gssapi_krb5_context, ccache, 0, 0);
            }
 #endif
-           setenv ("KRB5CCNAME", ticketfile, 1);
+           esetenv ("KRB5CCNAME", ticketfile, 1);
            
 fail:
            if (ccache)

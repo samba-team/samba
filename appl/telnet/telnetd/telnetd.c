@@ -738,7 +738,7 @@ Please contact your net administrator");
      */
     *user_name = 0;
     level = getterminaltype(user_name, sizeof(user_name));
-    setenv("TERM", terminaltype ? terminaltype : "network", 1);
+    esetenv("TERM", terminaltype ? terminaltype : "network", 1);
 
 #ifdef _SC_CRAY_SECURE_SYS
     if (secflag) {
