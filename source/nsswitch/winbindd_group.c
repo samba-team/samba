@@ -1,7 +1,9 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 2.0
+
    Winbind daemon for ntdom nss module
+
    Copyright (C) Tim Potter 2000
    
    This program is free software; you can redistribute it and/or modify
@@ -143,7 +145,7 @@ static BOOL winbindd_fill_grent_mem(char *server_name, char *domain_name,
             if (!winbindd_lookup_aliasmem(server_name, &domain_sid, 
                                           current_group->group_rid, 
                                           sam_dom_handle, &num_names, 
-                                          &rid_mem, &names, &name_types) &&
+                                          &sids, &names, &name_types) &&
                 !winbindd_lookup_aliasmem(server_name, global_sid_builtin, 
                                           current_group->group_rid, 
                                           sam_dom_handle, &num_sids, 
@@ -294,18 +296,16 @@ static BOOL winbindd_fill_grent_mem(char *server_name, char *domain_name,
 
 /* Return a group structure from a group name */
 
-enum winbindd_result winbindd_getgrnam_from_group(char *groupname,
-                                                  POLICY_HND *sam_dom_handle,
-                                                  struct winbindd_gr *gr)
+enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_state *state)
 {
     DOM_SID domain_sid, domain_group_sid;
-    uint32 name_type;
+    uint32 name_type, group_rid;
     fstring name_domain, name_group, temp_name, domain_controller;
     POSIX_ID surs_gid;
 
     /* Look for group domain name */
 
-    fstrcpy(temp_name, groupname);
+    fstrcpy(temp_name, state->request.data.groupname);
     fstrcpy(name_domain, strtok(temp_name, "/\\"));
     fstrcpy(name_group, strtok(NULL, ""));
 
@@ -349,19 +349,15 @@ enum winbindd_result winbindd_getgrnam_from_group(char *groupname,
 
     }
 
-    if (gr != NULL) {
-        DOM_SID temp;
-        uint32 group_rid;
+    winbindd_fill_grent(&state->response.data.gr, 
+                        state->request.data.groupname, surs_gid.id);
         
-        winbindd_fill_grent(gr, groupname, surs_gid.id);
+    sid_split_rid(&domain_group_sid, &group_rid);
         
-        sid_copy(&temp, &domain_group_sid);
-        sid_split_rid(&temp, &group_rid);
-        
-        if (!winbindd_fill_grent_mem(domain_controller, name_domain, 
-                                     group_rid, name_type, NULL, gr)) {
-            return WINBINDD_ERROR;
-        }
+    if (!winbindd_fill_grent_mem(domain_controller, name_domain, 
+                                 group_rid, name_type, NULL, 
+                                 &state->response.data.gr)) {
+        return WINBINDD_ERROR;
     }
 
     return WINBINDD_OK;
@@ -369,18 +365,17 @@ enum winbindd_result winbindd_getgrnam_from_group(char *groupname,
 
 /* Return a group structure from a gid number */
 
-enum winbindd_result winbindd_getgrnam_from_gid(gid_t gid, 
-                                                struct winbindd_gr *gr)
+enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_state *state)
 {
     DOM_SID domain_sid, domain_group_sid;
-    uint32 name_type;
+    uint32 name_type, group_rid;
     fstring group_name, domain_controller, domain_name;
     POSIX_ID surs_gid;
 
     /* Get sid from gid */
 
     surs_gid.type = SURS_POSIX_GID_AS_GRP;
-    surs_gid.id = gid;
+    surs_gid.id = state->request.data.gid;
 
     if (!winbindd_surs_unixid_to_sam_sid(&surs_gid, &domain_group_sid, 
                                          False)) {
@@ -390,16 +385,17 @@ enum winbindd_result winbindd_getgrnam_from_gid(gid_t gid,
         if (!winbindd_surs_unixid_to_sam_sid(&surs_gid, &domain_group_sid, 
                                              False)) {
             DEBUG(1, ("Could not convert gid %d to domain or local sid\n",
-                      gid));
+                      state->request.data.gid));
             return WINBINDD_ERROR;
         }
     }
 
     /* Find domain controller and domain sid */
 
-    if (!find_domain_sid_from_gid(gid, &domain_sid, domain_controller,
-                                  domain_name)) {
-        DEBUG(0, ("Could not find domain for gid %d\n", gid));
+    if (!find_domain_sid_from_gid(state->request.data.gid, &domain_sid, 
+                                  domain_controller, domain_name)) {
+        DEBUG(0, ("Could not find domain for gid %d\n", 
+                  state->request.data.gid));
         return WINBINDD_ERROR;
     }
 
@@ -420,19 +416,14 @@ enum winbindd_result winbindd_getgrnam_from_gid(gid_t gid,
 
     /* Fill in group structure */
 
-    if (gr != NULL) {
-        DOM_SID temp;
-        uint32 group_rid;
+    winbindd_fill_grent(&state->response.data.gr, group_name, surs_gid.id);
 
-        winbindd_fill_grent(gr, group_name, surs_gid.id);
-
-        sid_copy(&temp, &domain_group_sid);
-        sid_split_rid(&temp, &group_rid);
+    sid_split_rid(&domain_group_sid, &group_rid);
         
-        if (!winbindd_fill_grent_mem(domain_controller, domain_name, 
-                                     group_rid, name_type, NULL, gr)) {
-            return WINBINDD_ERROR;
-        }
+    if (!winbindd_fill_grent_mem(domain_controller, domain_name, 
+                                 group_rid, name_type, NULL, 
+                                 &state->response.data.gr)) {
+        return WINBINDD_ERROR;
     }
 
     return WINBINDD_OK;
@@ -442,260 +433,189 @@ enum winbindd_result winbindd_getgrnam_from_gid(gid_t gid,
  * set/get/endgrent functions
  */
 
-/* Static data for these calls */
-
-struct winbindd_enum_grent_sam_pipes {
-    BOOL valid;
-    POLICY_HND sam_handle;
-    POLICY_HND sam_dom_handle;
-    struct acct_info *sam_entries;
-    uint32 index, num_sam_entries;  
-    fstring domain_name;
-    BOOL got_sam_entries;
-};
-
-struct winbindd_enum_grent {
-    pid_t pid;
-    struct winbindd_enum_grent_sam_pipes *sam_pipes;
-    int num_sam_pipes, index;
-    struct winbindd_enum_grent *prev, *next;
-};
-
-static struct winbindd_enum_grent *enum_grent_list = NULL;
-
-extern struct winbind_domain *domain_list;
-extern int num_domain;
-
-/* Return the winbindd_enum_grent structure for a given pid */
-
-static struct winbindd_enum_grent *get_grent_static(pid_t pid)
-{
-    struct winbindd_enum_grent *tmp;
-
-    for(tmp = enum_grent_list; tmp != NULL; tmp = tmp->next) {
-        if (tmp->pid == pid) {
-            return tmp;
-        }
-    }
-
-    return NULL;
-}
-
 /* "Rewind" file pointer for group database enumeration */
 
-enum winbindd_result winbindd_setgrent(pid_t pid)
+enum winbindd_result winbindd_setgrent(struct winbindd_state *state)
 {
-    struct winbindd_enum_grent *enum_grent = get_grent_static(pid);
-    struct winbind_domain *tmp;
-    int i;
+    struct winbindd_domain *tmp;
+
+    if (state == NULL) return WINBINDD_ERROR;
 
     /* Free old static data if it exists */
 
-    if (enum_grent != NULL) {
-
-        DLIST_REMOVE(enum_grent_list, enum_grent);
-
-        if (enum_grent->sam_pipes != NULL) {
-            free(enum_grent->sam_pipes);
-        }
-
-        free(enum_grent);
+    if (state->getgrent_state != NULL) {
+        free_getent_state(state->getgrent_state);
+        state->getgrent_state = NULL;
     }
 
-    /* Create new static data */
-
-    if ((enum_grent = (struct winbindd_enum_grent *)
-         malloc(sizeof(*enum_grent))) == NULL) {
-
-        return WINBINDD_ERROR;
-    }
-
-    /* Fill in fields */
-
-    ZERO_STRUCTP(enum_grent);
-    enum_grent->pid = pid;
-
-    if ((enum_grent->sam_pipes = (struct winbindd_enum_grent_sam_pipes *)
-         malloc(sizeof(*enum_grent->sam_pipes) * num_domain)) == NULL) {
-
-        free(enum_grent);
-        return WINBINDD_ERROR;
-    }
-
-    enum_grent->num_sam_pipes = num_domain;
-    memset(enum_grent->sam_pipes, 0, sizeof(*enum_grent->sam_pipes) *
-           num_domain);
-
-    /* Connect to samr pipe for each domain */
-
-    i = 0;
+    /* Create sam pipes for each domain we know about */
 
     for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+        struct getent_state *domain_state;
         BOOL res;
+
+        /* Create a state record for this domain */
+
+        if ((domain_state = (struct getent_state *)
+             malloc(sizeof(struct getent_state))) == NULL) {
+
+            return WINBINDD_ERROR;
+        }
+
+        ZERO_STRUCTP(domain_state);
 
         /* Connect to sam database */
 
         res = samr_connect(tmp->domain_controller, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                           &enum_grent->sam_pipes[i].sam_handle);
+                           &domain_state->sam_handle);
 
-        res = res ? samr_open_domain(&enum_grent->sam_pipes[i].sam_handle, 
+        {
+            fstring sid_str;
+
+            sid_to_string(sid_str, &tmp->domain_sid);
+            fprintf(stderr, "opening pipe to %s, domain %s\n",
+                    sid_str, tmp->domain_name);
+        }
+
+        res = res ? samr_open_domain(&domain_state->sam_handle, 
                                      0x304, &tmp->domain_sid, 
-                                     &enum_grent->sam_pipes[i].sam_dom_handle)
-            : False;
+                                     &domain_state->sam_dom_handle) : False;
 
         if (res) {
-            fstrcpy(enum_grent->sam_pipes[i].domain_name,
-                    tmp->domain_name);
-            enum_grent->sam_pipes[i].valid = True;
+
+            /* Add to list of open domains */
+
+            fstrcpy(domain_state->domain_name, tmp->domain_name);
+
+            DLIST_ADD(state->getgrent_state, domain_state);
+
         } else {
 
-            /* Close everything */
+            /* Error opening sam pipes */
 
-            samr_close(&enum_grent->sam_pipes[i].sam_dom_handle);
-            samr_close(&enum_grent->sam_pipes[i].sam_handle);
+            samr_close(&domain_state->sam_dom_handle);
+            samr_close(&domain_state->sam_handle);
+
+            free(domain_state);
         }
-
-        i++;
-    }
-
-    /* Add static data to list */
-
-    DLIST_ADD(enum_grent_list, enum_grent);
-
-    return WINBINDD_OK;
-}
-
-enum winbindd_result winbindd_endgrent(pid_t pid)
-{
-    struct winbindd_enum_grent *enum_grent = get_grent_static(pid);
-
-    /* Free handles and stuff */
-
-    if (enum_grent != NULL) {
-        int i;
-
-        /* Close handles */
-
-        for(i = 0; i < enum_grent->num_sam_pipes; i++) {
-            if (enum_grent->sam_pipes[i].valid) {
-                samr_close(&enum_grent->sam_pipes[i].sam_dom_handle);
-                samr_close(&enum_grent->sam_pipes[i].sam_handle);
-            }
-        }
-
-        /* Free structure */
-
-        DLIST_REMOVE(enum_grent_list, enum_grent);
-
-        if (enum_grent->sam_pipes != NULL) {
-            free(enum_grent->sam_pipes);
-        }
-
-        free(enum_grent);
     }
 
     return WINBINDD_OK;
 }
 
-enum winbindd_result winbindd_getgrent(pid_t pid, struct winbindd_gr *gr)
+/* Close file pointer to ntdom group database */
+
+enum winbindd_result winbindd_endgrent(struct winbindd_state *state)
 {
-    struct winbindd_enum_grent *enum_grent = get_grent_static(pid);
+    if (state == NULL) return WINBINDD_ERROR;
 
-    /* Must have called setgrent() beforehand */
+    free_getent_state(state->getgrent_state);
+    state->getgrent_state = NULL;
 
-    if (enum_grent == NULL) {
-        return WINBINDD_ERROR;
-    }
+    return WINBINDD_OK;
+}
 
-    /* While we still have an unprocessed samr pipe */
+/* Fetch next group entry from netdom database */
 
-    while (enum_grent->index < enum_grent->num_sam_pipes) {
-        struct winbindd_enum_grent_sam_pipes *sam_pipe;
+enum winbindd_result winbindd_getgrent(struct winbindd_state *state)
+{
+    if (state == NULL) return WINBINDD_ERROR;
+
+    /* Process the current head of the getent_state list */
+
+    while(state->getgrent_state != NULL) {
+        struct getent_state *ent = state->getgrent_state;
+
+        /* Get list of entries if we haven't already got them */
+
+        if (!ent->got_sam_entries) {
+            uint32 status, start_ndx = 0, start_ndx2 = 0;
         
-        sam_pipe = &enum_grent->sam_pipes[enum_grent->index];
+            /* Get list of groups for this domain */
 
-        if (sam_pipe->valid) {
+            if (strcmp(ent->domain_name, "BUILTIN") == 0) {
 
-            /* Get list of entries if we haven't already got them */
+                /* Enumerate aliases */
 
-            if (!sam_pipe->got_sam_entries) {
-                uint32 status, start_ndx = 0, start_ndx2 = 0;
-        
-                /* Get list of groups for this domain */
-
-                if (strcmp(sam_pipe->domain_name, "BUILTIN") == 0) {
-
-                    /* Enumerate aliases */
-
-                    do {
-            
-                        status =
-                            samr_enum_dom_aliases(&sam_pipe->sam_dom_handle,
-                                      &start_ndx, 0x100000,
-                                      &sam_pipe->sam_entries,
-                                      &sam_pipe->num_sam_entries);
+                do {
+                    status =
+                        samr_enum_dom_aliases(&ent->sam_dom_handle,
+                                              &start_ndx, 0x100000,
+                                              &ent->sam_entries,
+                                              &ent->num_sam_entries);
                     } while (status == STATUS_MORE_ENTRIES);
 
-                } else {
+            } else {
                         
-                    /* Enumerate domain groups */
+                /* Enumerate domain groups */
                         
-                    do {
-                        status =
-                            samr_enum_dom_groups(&sam_pipe->sam_dom_handle,
-                                                 &start_ndx, 0x100000,
-                                                 &sam_pipe->sam_entries,
-                                                 &sam_pipe->num_sam_entries);
-                    } while (status == STATUS_MORE_ENTRIES);
+                do {
+                    status =
+                        samr_enum_dom_groups(&ent->sam_dom_handle,
+                                             &start_ndx, 0x100000,
+                                             &ent->sam_entries,
+                                             &ent->num_sam_entries);
+                } while (status == STATUS_MORE_ENTRIES);
 
-                    /* Enumerate domain aliases */
-                    
-                    do {
-                        status = 
-                            samr_enum_dom_aliases(&sam_pipe->sam_dom_handle,
-                                                  &start_ndx2, 0x100000,
-                                                  &sam_pipe->sam_entries,
-                                                  &sam_pipe->num_sam_entries);
-                    } while (status == STATUS_MORE_ENTRIES);
-                }
+                /* Enumerate domain aliases */
 
-                sam_pipe->got_sam_entries = True;
+                do {
+                    status = 
+                        samr_enum_dom_aliases(&ent->sam_dom_handle,
+                                              &start_ndx2, 0x100000,
+                                              &ent->sam_entries,
+                                              &ent->num_sam_entries);
+                } while (status == STATUS_MORE_ENTRIES);
             }
 
-            /* Send back a group */
+            fprintf(stderr, "*** read %d sam entries\n", ent->num_sam_entries);
 
-            while (sam_pipe->index < sam_pipe->num_sam_entries) {
-                enum winbindd_result result;
-                fstring domain_group_name;
-                char *group_name = (sam_pipe->sam_entries)
-                    [sam_pipe->index].acct_name; 
+            /* Close down pipes */
+
+            samr_close(&ent->sam_dom_handle);
+            samr_close(&ent->sam_handle);
+
+            ent->got_sam_entries = True;
+        }
+
+        /* Send back a group */
+
+        while (ent->sam_entry_index < ent->num_sam_entries) {
+            enum winbindd_result result;
+            fstring domain_group_name;
+            char *group_name = (ent->sam_entries)
+                [ent->sam_entry_index].acct_name; 
    
-                /* Prepend domain to name */
+            /* Prepend domain to name */
 
-                fstrcpy(domain_group_name, sam_pipe->domain_name);
-                fstrcat(domain_group_name, "/");
-                fstrcat(domain_group_name, group_name);
+            fstrcpy(domain_group_name, ent->domain_name);
+            fstrcat(domain_group_name, "/");
+            fstrcat(domain_group_name, group_name);
    
-                /* Get group entry from group name */
+            /* Get group entry from group name */
 
-                result = winbindd_getgrnam_from_group(
-                    domain_group_name, &sam_pipe->sam_dom_handle, gr);
-                sam_pipe->index++;
+            fstrcpy(state->request.data.groupname, domain_group_name);
+            result = winbindd_getgrnam_from_group(state);
+
+            ent->sam_entry_index++;
                                                       
-                if (result == WINBINDD_OK) {
-                    return result;
-                }
-
-                /* Try next group */
-
-                DEBUG(1, ("could not getgrnam_from_group for group name %s\n",
-                          domain_group_name));
+            if (result == WINBINDD_OK) {
+                return result;
             }
+
+            /* Try next group */
+
+            DEBUG(1, ("could not getgrnam_from_group for group name %s\n",
+                      domain_group_name));
         }
 
-        /* Try next pipe */
-
-        enum_grent->index++;
+        /* We've exhausted all users for this pipe - close it down and
+           start on the next one. */
+        
+        if (ent->sam_entries != NULL) free(ent->sam_entries);
+        ent->sam_entries = NULL;
+        
+        DLIST_REMOVE(state->getgrent_state, state->getgrent_state);
     }
 
     /* Out of pipes so we're done */

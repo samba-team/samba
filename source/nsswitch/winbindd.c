@@ -1,6 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 2.0
+
    Winbind daemon for ntdom nss module
 
    Copyright (C) Tim Potter 2000
@@ -27,321 +28,10 @@
 #include <unistd.h>
 
 #include "includes.h"
-#include "sids.h"
 
-/* Connect to a domain controller and return the domain name and sid */
+/* List of all connected clients */
 
-BOOL lookup_domain_sid(fstring domain_name, DOM_SID *domain_sid,
-                       fstring domain_controller)
-{
-    POLICY_HND lsa_handle;
-    DOM_SID level3_sid, level5_sid;
-    fstring level3_dom, level5_dom;
-    fstring system_name;
-    BOOL res;
-
-    if (!get_any_dc_name(domain_name, system_name)) {
-        return False;
-    }
-
-    if (domain_controller != NULL) {
-        fstrcpy(domain_controller, system_name);
-    }
-
-    /* Get SID from domain controller */
-
-    res = lsa_open_policy(system_name, &lsa_handle, False, 
-                          SEC_RIGHTS_MAXIMUM_ALLOWED);
-
-    res = res ? lsa_query_info_pol(&lsa_handle, 0x03, level3_dom, 
-                                   &level3_sid) : False;
-
-    res = res ? lsa_query_info_pol(&lsa_handle, 0x05, level5_dom, 
-                                   &level5_sid) : False;
-
-    lsa_close(&lsa_handle);
-
-    /* Return domain sid if successful */
-
-    if (res && (domain_sid != NULL)) {
-        sid_copy(domain_sid, &level5_sid);
-        fstrcpy(domain_name, level5_dom);
-    }
-
-    return res;
-}
-
-/* Lookup a sid and type within a domain from a username */
-
-BOOL winbindd_lookup_by_name(char *system_name, DOM_SID *level5_sid,
-                             fstring name, DOM_SID *sid,
-                             enum SID_NAME_USE *type)
-{
-    POLICY_HND lsa_handle;
-    BOOL res;
-    DOM_SID *sids = NULL;
-    int num_sids = 0, num_names = 1;
-    uint32 *types = NULL;
-
-    if (name == NULL) {
-        return 0;
-    }
-
-    res = lsa_open_policy(system_name, &lsa_handle, True, 
-                          SEC_RIGHTS_MAXIMUM_ALLOWED);
-    
-    res = res ? lsa_lookup_names(&lsa_handle, num_names, (char **)&name,
-                                 &sids, &types, &num_sids) : False;
-
-    lsa_close(&lsa_handle);
-
-    /* Return rid and type if lookup successful */
-
-    if (res) {
-
-        if ((sid != NULL) && (sids != NULL)) {
-            sid_copy(sid, &sids[0]);
-        }
-
-        if ((type != NULL) && (types != NULL)) {
-            *type = types[0];
-        }
-    }
-    
-    /* Free memory */
-
-    if (types != NULL) { free(types); }
-    if (sids != NULL) { free(sids); }
-
-    return res;
-}
-
-/* Lookup a name and type within a domain from a sid */
-
-int winbindd_lookup_by_sid(char *system_name, DOM_SID *level5_sid,
-                           DOM_SID *sid, char *name,
-                           enum SID_NAME_USE *type)
-{
-    POLICY_HND lsa_handle;
-    int num_sids = 1, num_names = 0;
-    uint32 *types = NULL;
-    char **names;
-    BOOL res;
-
-    res = lsa_open_policy(system_name, &lsa_handle, True, 
-                          SEC_RIGHTS_MAXIMUM_ALLOWED);
-
-    res = res ? lsa_lookup_sids(&lsa_handle, num_sids, &sid,
-                                &names, &types, &num_names) : False;
-
-    lsa_close(&lsa_handle);
-
-    /* Return name and type if successful */
-
-    if (res) {
-        if ((names != NULL) && (name != NULL)) {
-            fstrcpy(name, names[0]);
-        }
-
-        if ((type != NULL) && (types != NULL)) {
-            *type = types[0];
-        }
-    }
-
-    /* Free memory */
-
-    if (types != NULL) { free(types); }
-
-    if (names != NULL) { 
-        int i;
-
-        for (i = 0; i < num_names; i++) {
-            if (names[i] != NULL) {
-                free(names[i]);
-            }
-            free(names); 
-        }
-    }
-
-    return res;
-}
-
-/* Lookup user information from a rid */
-
-int winbindd_lookup_userinfo(char *system_name, DOM_SID *dom_sid,
-                             uint32 user_rid, POLICY_HND *sam_dom_handle,
-                             SAM_USERINFO_CTR *user_info)
-{
-    POLICY_HND sam_handle, local_sam_dom_handle;
-    BOOL res = True, local_handle = False;
-
-    if (sam_dom_handle == NULL) {
-        sam_dom_handle = &local_sam_dom_handle;
-        local_handle = True;
-    }
-
-    /* Open connection to SAM pipe and SAM domain */
-
-    if (local_handle) {
-
-        res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                           &sam_handle);
-
-        res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                                     dom_sid, sam_dom_handle) : False;
-    }
-
-    /* Get user info */
-
-    res = res ? get_samr_query_userinfo(sam_dom_handle, 0x15, 
-                                        user_rid, user_info) : False;
-
-    /* Close up shop */
-
-    if (local_handle) {
-        samr_close(sam_dom_handle);
-        samr_close(&sam_handle);
-    }
-
-    return res;
-}                                   
-
-/* Lookup group information from a rid */
-
-int winbindd_lookup_groupinfo(char *system_name, DOM_SID *dom_sid,
-                              uint32 group_rid, GROUP_INFO_CTR *info)
-{
-    POLICY_HND sam_handle, sam_dom_handle;
-    BOOL res;
-
-    /* Open connection to SAM pipe and SAM domain */
-
-    res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_handle);
-
-    res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                                 dom_sid, &sam_dom_handle) : False;
-    /* Query group info */
-    
-    res = res ? get_samr_query_groupinfo(&sam_dom_handle, 1,
-                                         group_rid, info) : False;
-
-    /* Close up shop */
-
-    samr_close(&sam_dom_handle);
-    samr_close(&sam_handle);
-
-    return res;
-}
-
-/* Lookup group membership given a rid */
-
-int winbindd_lookup_groupmem(char *system_name, DOM_SID *dom_sid,
-                             uint32 group_rid, POLICY_HND *sam_dom_handle,
-                             uint32 *num_names, uint32 **rid_mem, 
-                             char ***names, uint32 **name_types)
-{
-    POLICY_HND sam_handle, local_sam_dom_handle;
-    BOOL res = True, local_handle = False;
-
-    if (sam_dom_handle == NULL) {
-        sam_dom_handle = &local_sam_dom_handle;
-        local_handle = True;
-    }
-
-    /* Open connection to SAM pipe and SAM domain */
-
-    if (local_handle) {
-
-        res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                           &sam_handle);
-
-        res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                                     dom_sid, sam_dom_handle) : False;
-    }
-    /* Query group membership */
-    
-    res = res ? sam_query_groupmem(sam_dom_handle, group_rid, num_names, 
-                                   rid_mem, names, name_types) : False;
-
-    /* Close up shop */
-
-    if (local_handle) {
-        samr_close(sam_dom_handle);
-        samr_close(&sam_handle);
-    }
-
-    return res;
-}
-
-/* Lookup alias membership given a rid */
-
-int winbindd_lookup_aliasmem(char *system_name, DOM_SID *dom_sid,
-                             uint32 alias_rid, POLICY_HND *sam_dom_handle,
-                             uint32 *num_names, DOM_SID ***sids, 
-                             char ***names, uint32 **name_types)
-{
-    POLICY_HND sam_handle, local_sam_dom_handle;
-    BOOL res = True, local_handle = False;
-
-    if (sam_dom_handle == NULL) {
-        sam_dom_handle = &local_sam_dom_handle;
-        local_handle = True;
-    }
-
-    /* Open connection to SAM pipe and SAM domain */
-
-    if (local_handle) {
-
-        res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                           &sam_handle);
-
-        res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                                     dom_sid, sam_dom_handle) : False;
-    }
-
-    /* Query alias membership */
-    
-    res = res ? sam_query_aliasmem(system_name, sam_dom_handle, alias_rid,
-                                   num_names, sids, names, name_types)
-        : False;
-
-    /* Close up shop */
-
-    if (local_handle) {
-        samr_close(sam_dom_handle);
-        samr_close(&sam_handle);
-    }
-
-    return res;
-}
-
-/* Lookup alias information given a rid */
-
-int winbindd_lookup_aliasinfo(char *system_name, DOM_SID *dom_sid,
-                              uint32 alias_rid, ALIAS_INFO_CTR *info)
-{
-    POLICY_HND sam_handle, sam_dom_handle;
-    BOOL res;
-
-    /* Open connection to SAM pipe and SAM domain */
-
-    res = samr_connect(system_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                       &sam_handle);
-
-    res = res ? samr_open_domain(&sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                                 dom_sid, &sam_dom_handle) : False;
-    /* Query group info */
-    
-    res = res ? get_samr_query_aliasinfo(&sam_dom_handle, 1,
-                                         alias_rid, info) : False;
-
-    /* Close up shop */
-
-    samr_close(&sam_dom_handle);
-    samr_close(&sam_handle);
-
-    return res;
-}
+static struct winbindd_state *client_list;
 
 /* Handle termination signals */
 
@@ -356,16 +46,17 @@ static void termination_handler(int signum)
 
 /* Create winbindd socket */
 
-int create_sock(void)
+static int create_sock(void)
 {
     struct sockaddr_un sunaddr;
     struct stat st;
     int sock;
     mode_t old_umask;
+    char *path = WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME;
 
     /* Create the socket directory or reuse the existing one */
 
-    if ((lstat(WINBINDD_SOCKET_DIR, &st) < 0) && (errno != ENOENT)) {
+    if ((lstat(WINBINDD_SOCKET_DIR, &st) == -1) && (errno != ENOENT)) {
         DEBUG(0, ("lstat failed on socket directory %s: %s\n",
                   WINBINDD_SOCKET_DIR, sys_errlist[errno]));
         return -1;
@@ -375,7 +66,7 @@ int create_sock(void)
 
         /* Create directory */
 
-        if (mkdir(WINBINDD_SOCKET_DIR, 0755) < 0) {
+        if (mkdir(WINBINDD_SOCKET_DIR, 0755) == -1) {
             DEBUG(0, ("error creating socket directory %s: %s\n",
                       WINBINDD_SOCKET_DIR, sys_errlist[errno]));
             return -1;
@@ -404,27 +95,28 @@ int create_sock(void)
 
     sock = socket(AF_UNIX, SOCK_STREAM, 0);
     
-    if (sock < 0) {
+    if (sock == -1) {
         perror("socket");
         return -1;
     }
     
+    unlink(path);
     memset(&sunaddr, 0, sizeof(sunaddr));
     sunaddr.sun_family = AF_UNIX;
-    strncpy(sunaddr.sun_path, WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME, 
+    strncpy(sunaddr.sun_path, path,
             sizeof(sunaddr.sun_path));
     
-    if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) < 0) {
+    if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
         DEBUG(0, ("bind failed on winbind socket %s: %s\n",
-                  WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME,
+                  path,
                   sys_errlist[errno]));
         close(sock);
         return -1;
     }
     
-    if (listen(sock, 5) < 0) {
+    if (listen(sock, 5) == -1) {
         DEBUG(0, ("listen failed on winbind socket %s: %s\n",
-                  WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME,
+                  path,
                   sys_errlist[errno]));
         close(sock);
         return -1;
@@ -437,28 +129,311 @@ int create_sock(void)
     return sock;
 }
 
-/*
- * Main function 
- */
+
+static void process_request(struct winbindd_state *state)
+{
+    /* Process command */
+
+    state->response.result = WINBINDD_ERROR;
+
+    switch(state->request.cmd) {
+        
+        /* User functions */
+        
+    case WINBINDD_GETPWNAM_FROM_USER: 
+        state->response.result = winbindd_getpwnam_from_user(state);
+        break;
+        
+    case WINBINDD_GETPWNAM_FROM_UID:
+        state->response.result = winbindd_getpwnam_from_uid(state);
+        break;
+        
+    case WINBINDD_SETPWENT:
+        fprintf(stderr, "calling setpwent()\n");
+        state->response.result = winbindd_setpwent(state);
+        break;
+        
+    case WINBINDD_ENDPWENT:
+        fprintf(stderr, "calling endpwent()\n");
+        state->response.result = winbindd_endpwent(state);
+        break;
+        
+    case WINBINDD_GETPWENT:
+        fprintf(stderr, "calling getpwent()\n");
+        state->response.result = winbindd_getpwent(state);
+        break;
+        
+        /* Group functions */
+        
+    case WINBINDD_GETGRNAM_FROM_GROUP:
+        state->response.result = winbindd_getgrnam_from_group(state);
+        break;
+        
+    case WINBINDD_GETGRNAM_FROM_GID:
+        state->response.result = winbindd_getgrnam_from_gid(state);
+        break;
+        
+    case WINBINDD_SETGRENT:
+        state->response.result = winbindd_setgrent(state);
+        break;
+        
+    case WINBINDD_ENDGRENT:
+        state->response.result = winbindd_endgrent(state);
+        break;
+        
+    case WINBINDD_GETGRENT:
+        state->response.result = winbindd_getgrent(state);
+        break;
+        
+        /* Oops */
+        
+    default:
+        DEBUG(0, ("oops - unknown winbindd command %d\n", state->request.cmd));
+        break;
+    }
+}
+
+/* Process a new connection by adding it to the client connection list */
+
+static void new_connection(int accept_sock)
+{
+    struct sockaddr_un sunaddr;
+    struct winbindd_state *state;
+    int len, sock;
+    
+    /* Accept connection */
+    
+    len = sizeof(sunaddr);
+    if ((sock = accept(accept_sock, (struct sockaddr *)&sunaddr, &len)) 
+        == -1) {
+        
+        return;
+    }
+
+    fprintf(stderr, "accepted socket %d\n", sock);
+
+    /* Create new connection structure */
+
+    if ((state = (struct winbindd_state *)malloc(sizeof(*state))) == NULL) {
+        return;
+    }
+
+    ZERO_STRUCTP(state);
+    state->sock = sock;
+
+    /* Add to connection list */
+
+    DLIST_ADD(client_list, state);
+}
+
+/* Remove a client connection from client connection list */
+
+static void remove_client(struct winbindd_state *state)
+{
+    /* It's a dead client - hold a funeral */
+
+    close(state->sock);
+//    free_state_info(state);
+    DLIST_REMOVE(client_list, state);
+    free(state);
+}
+
+/* Process a complete received packet from a client */
+
+static void process_packet(struct winbindd_state *state)
+{
+    /* Process request */
+
+    process_request(state);
+
+    /* Update client state */
+
+    state->read_buf_len = 0;
+    state->write_buf_len = sizeof(state->response);
+}
+
+/* Read some data from a client connection */
+
+static void client_read(struct winbindd_state *state)
+{
+    int n;
+    
+    /* Read data */
+
+    n = read(state->sock, state->read_buf_len + (char *)&state->request, 
+             sizeof(state->request) - state->read_buf_len);
+
+    fprintf(stderr, "read returned %d on sock %d\n", n, state->sock);
+
+    /* Read failed, kill client */
+
+    if ((n == -1) || (n == 0)) {
+        fprintf(stderr, "finished reading, n = %d\n", n);
+        state->finished = True;
+        return;
+    }
+
+    /* Update client state */
+
+    state->read_buf_len += n;
+}
+
+/* Write some data to a client connection */
+
+static void client_write(struct winbindd_state *state)
+{
+    int n;
+
+    /* Write data */
+
+    n = write(state->sock, (sizeof(state->response) - state->write_buf_len) +
+              (char *)&state->response,
+              state->write_buf_len);
+
+    fprintf(stderr, "write returned %d on sock %d\n", n, state->sock);
+
+    /* Write failed, kill cilent */
+
+    if (n == -1 || n == 0) {
+        fprintf(stderr, "finished writing\n");
+        state->finished = True;
+        return;
+    }
+
+    /* Update client state */
+    
+    state->write_buf_len -= n;
+}
+
+/* Process incoming clients on accept_sock.  We use a tricky non-blocking,
+   non-forking, non-threaded model which allows us to handle many
+   simultaneous connections while remaining impervious to many denial of
+   service attacks. */
+
+static void process_loop(int accept_sock)
+{
+    /* We'll be doing this a lot */
+
+    while (1) {
+        struct winbindd_state *state;
+        fd_set r_fds, w_fds;
+        int maxfd = accept_sock, selret;
+
+        /* Initialise fd lists for select() */
+
+        FD_ZERO(&r_fds);
+        FD_ZERO(&w_fds);
+        FD_SET(accept_sock, &r_fds);
+
+        /* Set up client readers and writers */
+
+        state = client_list;
+
+        while (state) {
+
+            /* Dispose of client connection if it is marked as finished */ 
+
+            if (state->finished) {
+                struct winbindd_state *next = state->next;
+
+                fprintf(stderr, "removing client sock %d\n", state->sock);
+                remove_client(state);
+                state = next;
+                continue;
+            }
+
+            /* Select requires we know the highest fd used */
+
+            if (state->sock > maxfd) maxfd = state->sock;
+
+            /* Add fd for reading */
+
+            if (state->read_buf_len != sizeof(state->request)) {
+
+                fprintf(stderr, "adding sock %d for reading\n", state->sock);
+                FD_SET(state->sock, &r_fds);
+            }
+
+            /* Add fd for writing */
+
+            if (state->write_buf_len) {
+
+                fprintf(stderr, "adding sock %d for writing\n", state->sock);
+                FD_SET(state->sock, &w_fds);
+            }
+
+            state = state->next;
+        }
+
+        /* Call select */
+        
+        fprintf(stderr, "calling select\n");
+        selret = select(maxfd + 1, &r_fds, &w_fds, NULL, NULL);
+        
+        if (selret == -1 || selret == 0) {
+
+            /* Select error, something is badly wrong */
+
+            DEBUG(0, ("select returned %d", selret));
+            return;
+        }
+
+        /* Create a new connection if accept_sock readable */
+
+        if (FD_ISSET(accept_sock, &r_fds)) {
+            new_connection(accept_sock);
+        }
+
+        /* Process activity on client connections */
+
+        for (state = client_list; state ; state = state->next) {
+
+            /* Data available for reading */
+
+            if (FD_ISSET(state->sock, &r_fds)) {
+
+                /* Read data */
+
+                client_read(state);
+
+                /* A request packet might be complete */
+
+                if (state->read_buf_len == sizeof(state->request)) {
+                    process_packet(state);
+                }
+            }
+
+            /* Data available for writing */
+
+            if (FD_ISSET(state->sock, &w_fds)) {
+                client_write(state);
+            }
+        }
+    }
+}
+
+/* Main function */
 
 int main(int argc, char **argv)
 {
     extern fstring global_myname;
-    int sock, sock2;
     extern pstring debugf;
+    int accept_sock;
 
     /* Initialise samba/rpc client stuff */
 
-    setup_logging("winbindd", False); /* XXX change to false for daemon log */
+    setup_logging("winbindd", True); /* XXX change to false for daemon log */
     slprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
     reopen_logs();
 
     if (!*global_myname) {
         char *p;
-        fstrcpy( global_myname, myhostname() );
-        p = strchr( global_myname, '.' );
-        if (p) 
+
+        fstrcpy(global_myname, myhostname());
+        p = strchr(global_myname, '.');
+        if (p) {
             *p = 0;
+        }
     }
 
     TimeInit();
@@ -472,6 +447,11 @@ int main(int argc, char **argv)
 
     pwdb_initialise(False);
 
+    if (!winbindd_surs_init()) {
+        DEBUG(0, ("Could not initialise surs information\n"));
+        return 1;
+    }
+
     /* Setup signal handlers */
 
     signal(SIGINT, termination_handler);
@@ -479,109 +459,16 @@ int main(int argc, char **argv)
     signal(SIGTERM, termination_handler);
     signal(SIGPIPE, SIG_IGN);
 
-    /* Loop waiting for requests */
+    /* Create UNIX domain socket */
 
-    if ((sock = create_sock()) == -1) {
+    if ((accept_sock = create_sock()) == -1) {
         DEBUG(0, ("failed to create socket\n"));
         return 1;
     }
 
-    /* Get the domain sid */
+    /* Loop waiting for requests */
 
-    if (!winbindd_surs_init()) {
-        DEBUG(0, ("Could not initialise surs information\n"));
-        return 1;
-    }
-
-    while (1) {
-        int len;
-        struct sockaddr_un sunaddr;
-        struct winbindd_request request;
-        struct winbindd_response response;
-
-        /* Accept connection */
-
-        len = sizeof(sunaddr);
-        sock2 = accept(sock, (struct sockaddr *)&sunaddr, &len);
-
-        /* Read command */
-
-        if (read_sock(sock2, &request, sizeof(request)) < 0) {
-            close(sock2);
-            continue;
-        }
-
-        response.result = WINBINDD_ERROR;
-
-        /* Process command */
-
-        switch(request.cmd) {
-            
-            /* User functions */
-
-        case WINBINDD_GETPWNAM_FROM_USER: 
-            response.result = 
-                winbindd_getpwnam_from_user(request.data.username, NULL,
-                                            &response.data.pw);
-            break;
-            
-        case WINBINDD_GETPWNAM_FROM_UID:
-            response.result = 
-               winbindd_getpwnam_from_uid(request.data.uid, &response.data.pw);
-            break;
-            
-        case WINBINDD_SETPWENT:
-            response.result = winbindd_setpwent(request.pid);
-            break;
-
-        case WINBINDD_ENDPWENT:
-            response.result = winbindd_endpwent(request.pid);
-            break;
-
-        case WINBINDD_GETPWENT:
-            response.result = 
-                winbindd_getpwent(request.pid, &response.data.pw);
-            break;
-
-            /* Group functions */
-
-        case WINBINDD_GETGRNAM_FROM_GROUP:
-            response.result = 
-                winbindd_getgrnam_from_group(request.data.groupname, NULL,
-                                             &response.data.gr);
-            break;
-
-        case WINBINDD_GETGRNAM_FROM_GID:
-            response.result = 
-                winbindd_getgrnam_from_gid(request.data.gid, 
-                                           &response.data.gr);
-            break;
-
-        case WINBINDD_SETGRENT:
-            response.result = winbindd_setgrent(request.pid);
-            break;
-
-        case WINBINDD_ENDGRENT:
-            response.result = winbindd_endgrent(request.pid);
-            break;
-
-        case WINBINDD_GETGRENT:
-            response.result = 
-                winbindd_getgrent(request.pid, &response.data.gr);
-            break;
-
-            /* Oops */
-
-        default:
-            DEBUG(0, ("oops - unknown winbindd command %d\n", request.cmd));
-            break;
-        }
-
-        /* Send response */
-
-        write_sock(sock2, &response, sizeof(response));
-        close(sock2);
-    }
+    process_loop(accept_sock);
 
     return 0;
 }

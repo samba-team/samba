@@ -1,7 +1,8 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 2.0
-   Winbind daemon for ntdom nss module
+
+   Winbind daemon - user related function
 
    Copyright (C) Tim Potter 2000
    
@@ -23,8 +24,7 @@
 #include "includes.h"
 #include "nterr.h"
 
-/* Fill a pwent structure with information we have obtained from the
-   PDC. */
+/* Fill a pwent structure with information we have obtained */
 
 static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
                                 uid_t unix_uid, gid_t unix_gid, 
@@ -62,7 +62,7 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 
     /* Password */
 
-    strncpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
+    strncpy(pw->pw_passwd, "*", sizeof(pw->pw_passwd) - 1);
 
     /* Shell */
 
@@ -71,19 +71,17 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 
 /* Return a password structure from a username */
 
-enum winbindd_result winbindd_getpwnam_from_user(char *user_name,
-                                                 POLICY_HND *sam_dom_handle,
-                                                 struct winbindd_pw *pw)
+enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_state *state) 
 {
     uint32 name_type, user_rid;
     SAM_USERINFO_CTR user_info;
     DOM_SID domain_sid, user_sid, group_sid, tmp_sid;
     fstring name_domain, name_user, tmp_name, domain_controller;
     POSIX_ID uid, gid;
-    
+
     /* Look for user domain name */
 
-    fstrcpy(tmp_name, user_name);
+    fstrcpy(tmp_name, state->request.data.username);
     fstrcpy(name_domain, strtok(tmp_name, "/\\"));
     fstrcpy(name_user, strtok(NULL, ""));
 
@@ -116,7 +114,7 @@ enum winbindd_result winbindd_getpwnam_from_user(char *user_name,
     sid_split_rid(&tmp_sid, &user_rid);
 
     if (!winbindd_lookup_userinfo(domain_controller, &domain_sid, user_rid, 
-                                  sam_dom_handle, &user_info)) {
+                                  NULL, &user_info)) {
         DEBUG(1, ("pwnam_from_user(): error getting user info for user '%s'\n",
                   name_user));
         return WINBINDD_ERROR;
@@ -144,9 +142,9 @@ enum winbindd_result winbindd_getpwnam_from_user(char *user_name,
 
     /* Now take all this information and fill in a passwd structure */
             
-    if (pw != NULL) {
-        winbindd_fill_pwent(pw, user_name, uid.id, gid.id, &user_info);
-    }
+    winbindd_fill_pwent(&state->response.data.pw, 
+                        state->request.data.username, uid.id, gid.id, 
+                        &user_info);
             
     /* Free user info */
 
@@ -157,8 +155,7 @@ enum winbindd_result winbindd_getpwnam_from_user(char *user_name,
 
 /* Return a password structure given a uid number */
 
-enum winbindd_result winbindd_getpwnam_from_uid(uid_t uid, 
-                                                struct winbindd_pw *pw)
+enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_state *state)
 {
     DOM_SID domain_sid, tmp_sid, domain_user_sid;
     uint32 user_rid;
@@ -169,18 +166,21 @@ enum winbindd_result winbindd_getpwnam_from_uid(uid_t uid,
 
     /* Get sid from uid */
 
-    surs_uid.id = uid;
+    surs_uid.id = state->request.data.uid;
     surs_uid.type = SURS_POSIX_UID_AS_USR;
 
     if (!winbindd_surs_unixid_to_sam_sid(&surs_uid, &domain_user_sid, True)) {
-        DEBUG(1, ("Could not convert uid %d to domain sid\n", uid));
+        DEBUG(1, ("Could not convert uid %d to domain sid\n", 
+                  state->request.data.uid));
         return WINBINDD_ERROR;
     }
     
     /* Find domain controller and domain sid */
 
-    if (!find_domain_sid_from_uid(uid, &domain_sid, NULL, domain_controller)) {
-        DEBUG(0, ("Could not find domain for uid %d\n", uid));
+    if (!find_domain_sid_from_uid(state->request.data.uid, &domain_sid, 
+                                  NULL, domain_controller)) {
+        DEBUG(0, ("Could not find domain for uid %d\n", 
+                  state->request.data.uid));
         return WINBINDD_ERROR;
     }
 
@@ -223,7 +223,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(uid_t uid,
 
     /* Fill in password structure */
 
-    winbindd_fill_pwent(pw, username, surs_uid.id, surs_gid.id, &user_info);
+    winbindd_fill_pwent(&state->response.data.pw, username, surs_uid.id, 
+                        surs_gid.id, &user_info);
 
     /* Free user info */
 
@@ -236,247 +237,162 @@ enum winbindd_result winbindd_getpwnam_from_uid(uid_t uid,
  * set/get/endpwent functions
  */
 
-/* Static data for these calls  */
-
-struct winbindd_enum_pwent_sam_pipes {
-    BOOL valid;
-    POLICY_HND sam_handle;
-    POLICY_HND sam_dom_handle;
-    struct acct_info *sam_entries;
-    uint32 index, num_sam_entries;  
-    fstring domain_name;
-    BOOL got_sam_entries;
-};
-
-struct winbindd_enum_pwent {
-    pid_t pid;
-    struct winbindd_enum_pwent_sam_pipes *sam_pipes;
-    int num_sam_pipes, index;
-    struct winbindd_enum_pwent *prev, *next;
-};
-
-static struct winbindd_enum_pwent *enum_pwent_list = NULL;
-
-extern int num_domain;
-extern struct winbind_domain *domain_list;
-
-/* Get static data for getpwent() and friends */
-
-static struct winbindd_enum_pwent *get_pwent_static(pid_t pid)
-{
-    struct winbindd_enum_pwent *tmp;
-
-    /* Look through static data list for data associated with pid */
-
-    for(tmp = enum_pwent_list; tmp != NULL; tmp = tmp->next) {
-        if (tmp->pid == pid) {
-            return tmp;
-        }
-    }
-
-    return NULL;
-}
-
 /* Rewind file pointer for ntdom passwd database */
 
-enum winbindd_result winbindd_setpwent(pid_t pid)
+enum winbindd_result winbindd_setpwent(struct winbindd_state *state)
 {
-    struct winbindd_enum_pwent *enum_pwent = get_pwent_static(pid);
-    struct winbind_domain *tmp;
-    int i;
+    struct winbindd_domain *tmp;
 
+    if (state == NULL) return WINBINDD_ERROR;
+    
     /* Free old static data if it exists */
 
-    if (enum_pwent != NULL) {
-
-        DLIST_REMOVE(enum_pwent_list, enum_pwent);
-
-        if (enum_pwent->sam_pipes != NULL) {
-            free(enum_pwent->sam_pipes);
-        }
-
-        free(enum_pwent);
+    if (state->getpwent_state != NULL) {
+        free_getent_state(state->getpwent_state);
+        state->getpwent_state = NULL;
     }
-
-    /* Create new static data */
-
-    if ((enum_pwent = (struct winbindd_enum_pwent *)
-         malloc(sizeof(*enum_pwent))) == NULL) {
-
-        return WINBINDD_ERROR;
-    }
-
-    /* Fill in fields */
-
-    ZERO_STRUCTP(enum_pwent);
-    enum_pwent->pid = pid;
-    
-    if ((enum_pwent->sam_pipes = (struct winbindd_enum_pwent_sam_pipes *)
-         malloc(sizeof(*enum_pwent->sam_pipes) * num_domain)) == NULL) {
-        
-        free(enum_pwent);
-        return WINBINDD_ERROR;
-    }
-
-    enum_pwent->num_sam_pipes = num_domain;
-    memset(enum_pwent->sam_pipes, 0, sizeof(*enum_pwent->sam_pipes) * 
-           num_domain);
 
     /* Create sam pipes for each domain we know about */
 
-    i = 0;
-
     for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+        struct getent_state *domain_state;
         BOOL res;
+
+        /* No point looking up BUILTIN users as they don't exist */
+
+        if (strcmp(tmp->domain_name, "BUILTIN") == 0) {
+            continue;
+        }
+
+        /* Create a state record for this domain */
+
+        if ((domain_state = (struct getent_state *)
+             malloc(sizeof(struct getent_state))) == NULL) {
+
+            return WINBINDD_ERROR;
+        }
+
+        ZERO_STRUCTP(domain_state);
 
         /* Connect to sam database */
 
-        res = samr_connect(tmp->domain_controller, 
-                           SEC_RIGHTS_MAXIMUM_ALLOWED, 
-                           &enum_pwent->sam_pipes[i].sam_handle);
+        res = samr_connect(tmp->domain_controller, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+                           &domain_state->sam_handle);
 
-        res = res ? samr_open_domain(&enum_pwent->sam_pipes[i].sam_handle,
+        res = res ? samr_open_domain(&domain_state->sam_handle,
                                      0x304, &tmp->domain_sid, 
-                                     &enum_pwent->sam_pipes[i].sam_dom_handle)
-            : False;
+                                     &domain_state->sam_dom_handle) : False;
 
         if (res) {
-            fstrcpy(enum_pwent->sam_pipes[i].domain_name, tmp->domain_name);
-            enum_pwent->sam_pipes[i].valid = True;
+
+            /* Add to list of open domains */
+
+            fstrcpy(domain_state->domain_name, tmp->domain_name);
+            DLIST_ADD(state->getpwent_state, domain_state);
+
         } else {
 
-            /* Ugh - failed for some reason */
+            /* Error opening sam pipes */
 
-            samr_close(&enum_pwent->sam_pipes[i].sam_dom_handle);
-            samr_close(&enum_pwent->sam_pipes[i].sam_handle);
+            samr_close(&domain_state->sam_dom_handle);
+            samr_close(&domain_state->sam_handle);
+
+            free(domain_state);
         }
 
-        i++;
     }
-
-    DLIST_ADD(enum_pwent_list, enum_pwent);
 
     return WINBINDD_OK;
 }
 
 /* Close file pointer to ntdom passwd database */
 
-enum winbindd_result winbindd_endpwent(pid_t pid)
+enum winbindd_result winbindd_endpwent(struct winbindd_state *state)
 {
-    struct winbindd_enum_pwent *enum_pwent = get_pwent_static(pid);
+    if (state == NULL) return WINBINDD_ERROR;
 
-    /* Free handles and stuff */
-
-    if (enum_pwent != NULL) {
-        int i;
-
-        /* Close handles */
-
-        for(i = 0; i < enum_pwent->num_sam_pipes; i++) {
-            if (enum_pwent->sam_pipes[i].valid) {
-                BOOL res;
-
-                res = samr_close(&enum_pwent->sam_pipes[i].sam_dom_handle);
-                res = samr_close(&enum_pwent->sam_pipes[i].sam_handle);
-            }
-        }
-
-        /* Free structure */
-
-        DLIST_REMOVE(enum_pwent_list, enum_pwent);
-
-        if (enum_pwent->sam_pipes != NULL) {
-            free(enum_pwent->sam_pipes);
-        }
-
-        free(enum_pwent);
-    }
+    free_getent_state(state->getpwent_state);    
+    state->getpwent_state = NULL;
 
     return WINBINDD_OK;
 }
 
 /* Fetch next passwd entry from ntdom database */
 
-enum winbindd_result winbindd_getpwent(pid_t pid, struct winbindd_pw *pw)
+enum winbindd_result winbindd_getpwent(struct winbindd_state *state)
 {
-    struct winbindd_enum_pwent *enum_pwent = get_pwent_static(pid);
+    if (state == NULL) return WINBINDD_ERROR;
 
-    /* Must have called setpwent() beforehand */
+    /* Process the current head of the getent_state list */
 
-    if (enum_pwent == NULL) {
-        return WINBINDD_ERROR;
-    }
+    while(state->getpwent_state != NULL) {
+        struct getent_state *ent = state->getpwent_state;
 
-    /* While we still have an unprocessed samr pipe */
+        /* Get list of user entries for this pipe */
 
-    while (enum_pwent->index < enum_pwent->num_sam_pipes) {
-        struct winbindd_enum_pwent_sam_pipes *sam_pipe;
+        if (!ent->got_sam_entries) {
+            uint32 status, start_ndx = 0;
+            
+            do {
+                status =
+                    samr_enum_dom_users(
+                        &ent->sam_dom_handle, &start_ndx, 0, 0, 0x10000,
+                        &ent->sam_entries, &ent->num_sam_entries);
+            } while (status == STATUS_MORE_ENTRIES);
+            
+            samr_close(&ent->sam_dom_handle);
+            samr_close(&ent->sam_handle);
+
+            ent->got_sam_entries = True;
+        }
         
-        sam_pipe = &enum_pwent->sam_pipes[enum_pwent->index];
+        /* Send back a user */
 
-        if (sam_pipe->valid) {
-
-            /* Get list of user entries for this pipe */
-
-            if (!sam_pipe->got_sam_entries) {
-                uint32 status, start_ndx = 0;
+        while (ent->sam_entry_index < ent->num_sam_entries) {
+            enum winbindd_result result;
+            fstring domain_user_name;
+            char *user_name = (ent->sam_entries)
+                [ent->sam_entry_index].acct_name; 
                 
-                do {
-                    status =
-                        samr_enum_dom_users(
-                            &sam_pipe->sam_dom_handle,
-                            &start_ndx, 0, 0, 0x10000,
-                            &sam_pipe->sam_entries,
-                            &sam_pipe->num_sam_entries);
-                } while (status == STATUS_MORE_ENTRIES);
-                
-                sam_pipe->got_sam_entries = 1;
+            /* Don't bother with machine accounts */
+
+            if (user_name[strlen(user_name) - 1] == '$') {
+                ent->sam_entry_index++;
+                continue;
             }
-   
-            /* Send back a user */
 
-            while (sam_pipe->index < sam_pipe->num_sam_entries) {
-                enum winbindd_result result;
-                fstring domain_user_name;
-                char *user_name = (sam_pipe->sam_entries)
-                    [sam_pipe->index].acct_name; 
-                
-                /* Don't bother with machine accounts */
-
-                if (user_name[strlen(user_name) - 1] == '$') {
-                    sam_pipe->index++;
-                    continue;
-                }
-
-                /* Prepend domain to name */
+            /* Prepend domain to name */
         
-                fstrcpy(domain_user_name, sam_pipe->domain_name);
-                fstrcat(domain_user_name, "/");
-                fstrcat(domain_user_name, user_name);
+            fstrcpy(domain_user_name, ent->domain_name);
+            fstrcat(domain_user_name, "/");
+            fstrcat(domain_user_name, user_name);
                 
-                /* Get passwd entry from user name */
+            /* Get passwd entry from user name */
                 
-                result = winbindd_getpwnam_from_user(domain_user_name, 
-                                                     &sam_pipe->sam_dom_handle,
-                                                     pw);
-                sam_pipe->index++;
-                
-                /* Return if user lookup worked */
-                
-                if (result == WINBINDD_OK) {
-                    return result;
-                }
-                
-                /* Try next user */
+            fstrcpy(state->request.data.username, domain_user_name);
+            result = winbindd_getpwnam_from_user(state);
 
-                DEBUG(1, ("could not getpwnam_from_user for username %s\n",
-                          domain_user_name));
+            ent->sam_entry_index++;
+                
+            /* Return if user lookup worked */
+                
+            if (result == WINBINDD_OK) {
+                return result;
             }
+                
+            /* Try next user */
+            
+            DEBUG(1, ("could not getpwnam_from_user for username %s\n",
+                      domain_user_name));
         }
 
-        /* Try next pipe */
+        /* We've exhausted all users for this pipe - close it down and
+           start on the next one. */
+        
+        if (ent->sam_entries != NULL) free(ent->sam_entries);
+        ent->sam_entries = NULL;
 
-        enum_pwent->index++;
+        DLIST_REMOVE(state->getpwent_state, state->getpwent_state);
     }
 
     /* Out of pipes so we're done */
