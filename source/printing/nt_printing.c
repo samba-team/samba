@@ -1819,8 +1819,7 @@ uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 	{
 		case 3: 
 		{
-			success=get_a_printer_driver_3(&(driver->info_3), 
-			                               printername,
+			success=get_a_printer_driver_3(&driver->info_3, printername,
 						       architecture, version);
 			break;
 		}
@@ -1829,7 +1828,8 @@ uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 			break;
 	}
 	
-	if (success == 0) dump_a_printer_driver(*driver, level);
+	if (success == 0)
+		dump_a_printer_driver(*driver, level);
 	return (success);
 }
 
