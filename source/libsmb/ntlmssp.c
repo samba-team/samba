@@ -65,6 +65,7 @@ NTSTATUS ntlmssp_server_end(NTLMSSP_STATE **ntlmssp_state)
 {
 	TALLOC_CTX *mem_ctx = (*ntlmssp_state)->mem_ctx;
 
+	data_blob_free(&(*ntlmssp_state)->chal);
 	data_blob_free(&(*ntlmssp_state)->lm_resp);
 	data_blob_free(&(*ntlmssp_state)->nt_resp);
 
@@ -145,6 +146,9 @@ NTSTATUS ntlmssp_negotiate(NTLMSSP_STATE *ntlmssp_state,
 	debug_ntlmssp_flags(neg_flags);
 
 	cryptkey = ntlmssp_state->get_challenge(ntlmssp_state->auth_context);
+
+	data_blob_free(&ntlmssp_state->chal);
+	ntlmssp_state->chal = data_blob(cryptkey, 8);
 
 	/* Give them the challenge. For now, ignore neg_flags and just
 	   return the flags we want. Obviously this is not correct */
