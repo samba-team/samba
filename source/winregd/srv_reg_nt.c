@@ -153,11 +153,11 @@ uint32 _reg_info(POLICY_HND* pol, BUFFER2* buf, uint32* type)
 		char *key;
 		if (lp_server_role() == ROLE_DOMAIN_PDC)
 		{
-			key = "ServerNT";
+			key = "LanmanNT";
 		}
 		else
 		{
-			key = "LanmanNT";
+			key = "ServerNT";
 		}
 		make_buffer2(buf, key, strlen(key));
 		*type = 0x1;
