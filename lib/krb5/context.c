@@ -220,6 +220,9 @@ krb5_init_context(krb5_context *context)
     krb5_cc_register(p, &krb5_acc_ops, TRUE);
     krb5_cc_register(p, &krb5_fcc_ops, TRUE);
     krb5_cc_register(p, &krb5_mcc_ops, TRUE);
+#ifdef HAVE_KCM
+    krb5_cc_register(p, &krb5_kcm_ops, TRUE);
+#endif
 
     p->num_kt_types = 0;
     p->kt_types     = NULL;
