@@ -271,7 +271,18 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	  if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {     
 		  struct nmb_packet *nmb2 = &p2->packet.nmb;
 		  debug_nmb_packet(p2);
-		  
+
+		  if( 0 == nmb2->header.opcode		/* A query response   */
+		      && !(bcast)			/* from a WINS server */
+		      && 0x03 == nmb2->header.rcode	/* Name doesn't exist */
+		    ) {
+		    /* If we get a Negative Name Query Response from a WINS
+		     * server, we should give up.
+		     */
+		    free_packet(p2);
+		    return( NULL );
+		    }
+
 		  if (nmb2->header.opcode != 0 ||
 		      nmb2->header.nm_flags.bcast ||
 		      nmb2->header.rcode ||
@@ -499,13 +510,16 @@ static BOOL resolve_wins(const char *name, int name_type,
 	wins_ip = *interpret_addr2(lp_wins_server());
 	wins_ismyip = ismyip(wins_ip);
 
+	DEBUG(3, ("resolve_wins: WINS server == <%s>\n", inet_ntoa(wins_ip)) );
 	if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
-		sock = open_socket_in( SOCK_DGRAM, 0, 3,
-							interpret_addr(lp_socket_address()), True );
-	      
+		sock = open_socket_in(  SOCK_DGRAM, 0, 3,
+					interpret_addr(lp_socket_address()),
+					True );
 		if (sock != -1) {
-			*return_iplist = name_query(sock, name, name_type, False, 
-								True, wins_ip, return_count);
+			*return_iplist = name_query( sock,      name,
+						     name_type, False, 
+						     True,      wins_ip,
+						     return_count);
 			if(*return_iplist != NULL) {
 				close(sock);
 				return True;
@@ -609,6 +623,7 @@ BOOL is_ip_address(const char *name)
   return True;
 }
 
+
 /********************************************************
  Internal interface to resolve a name into an IP address.
  Use this function if the string is either an IP address, DNS
@@ -701,6 +716,7 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 		free((char *)ip_list);
 	return False;
 }
+
 
 /********************************************************
  resolve a name of format \\server_name or \\ipaddress
