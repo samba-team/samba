@@ -193,6 +193,10 @@ AC_SUBST(DFS_DYNAMIC_YES)
 AC_SUBST(DFS_DYNAMIC_NO)
 DFS_DYNAMIC_YES="#"
 DFS_DYNAMIC_NO=
+AC_SUBST(ECHO_DYNAMIC_YES)
+AC_SUBST(ECHO_DYNAMIC_NO)
+ECHO_DYNAMIC_YES="#"
+ECHO_DYNAMIC_NO=
 
 # compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
@@ -273,6 +277,11 @@ then
           DFS_DYNAMIC_NO="#"
 	  AC_DEFINE(RPC_DFS_DYNAMIC, 1, 
 	            [Define to make the NETDFS pipe dynamic])
+	 ;; echo)
+          ECHO_DYNAMIC_YES=
+          ECHO_DYNAMIC_NO="#"
+	  AC_DEFINE(RPC_ECHO_DYNAMIC, 1, 
+	            [Define to make the ECHO pipe dynamic])
 	 ;; esac
          done
 fi
@@ -3267,12 +3276,19 @@ AC_MSG_CHECKING(whether to build winbind)
 
 HAVE_WINBIND=yes
 
+# Define the winbind shared library name and any specific linker flags
+# it needs to be built with.
+
+WINBIND_NSS=libnss_winbind
+WINBIND_NSS_LDSHFLAGS=$LDSHFLAGS
+
 case "$host_os" in
 	*linux*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_linux.o"
 		;;
 	*irix*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_irix.o"
+		WINBIND_NSS="libns_winbind"
 		;;
 	*solaris*)
 		# Solaris winbind client is implemented as a wrapper around
@@ -3286,6 +3302,7 @@ case "$host_os" in
 		;;
 	*aix*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_aix.o"
+		WINBIND_NSS_LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-ewb_aix_init"
 		;;
 	*)
 		HAVE_WINBIND=no
@@ -3293,6 +3310,8 @@ case "$host_os" in
 		;;
 esac
 
+AC_SUBST(WINBIND_NSS)
+AC_SUBST(WINBIND_NSS_LDSHFLAGS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 
