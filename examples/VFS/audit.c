@@ -45,7 +45,7 @@
 #define SYSLOG_PRIORITY   LOG_NOTICE
 #endif
 
-static struct vfs_ops *global_vfs_ops;
+static struct vfs_ops default_vfs_ops;
 
 /* Implementation of vfs_ops.  Pass everything on to the default
    operation but log event first. */
@@ -62,12 +62,11 @@ static int audit_connect(struct connection_struct *conn, const char *svc,
 static void audit_disconnect(struct connection_struct *conn)
 {
 	syslog(SYSLOG_PRIORITY, "disconnected\n");
-	global_vfs_ops->disconnect(conn);
 }
 
 static DIR *audit_opendir(struct connection_struct *conn, const char *fname)
 {
-	DIR *result = global_vfs_ops->opendir(conn, fname);
+	DIR *result = default_vfs_ops.opendir(conn, fname);
 
 	syslog(SYSLOG_PRIORITY, "opendir %s %s%s\n",
 	       fname,
@@ -80,7 +79,7 @@ static DIR *audit_opendir(struct connection_struct *conn, const char *fname)
 static int audit_mkdir(struct connection_struct *conn, const char *path, 
                        mode_t mode)
 {
-	int result = global_vfs_ops->mkdir(conn, path, mode);
+	int result = default_vfs_ops.mkdir(conn, path, mode);
 
 	syslog(SYSLOG_PRIORITY, "mkdir %s %s%s\n", 
 	       path,
@@ -92,7 +91,7 @@ static int audit_mkdir(struct connection_struct *conn, const char *path,
 
 static int audit_rmdir(struct connection_struct *conn, const char *path)
 {
-	int result = global_vfs_ops->rmdir(conn, path);
+	int result = default_vfs_ops.rmdir(conn, path);
 
 	syslog(SYSLOG_PRIORITY, "rmdir %s %s%s\n", 
 	       path, 
@@ -105,7 +104,7 @@ static int audit_rmdir(struct connection_struct *conn, const char *path)
 static int audit_open(struct connection_struct *conn, const char *fname, 
                       int flags, mode_t mode) 
 {
-	int result = global_vfs_ops->open(conn, fname, flags, mode);
+	int result = default_vfs_ops.open(conn, fname, flags, mode);
 
 	syslog(SYSLOG_PRIORITY, "open %s (fd %d) %s%s%s\n", 
 	       fname, result,
@@ -118,7 +117,7 @@ static int audit_open(struct connection_struct *conn, const char *fname,
 
 static int audit_close(struct files_struct *fsp, int fd)
 {
-	int result = global_vfs_ops->close(fsp, fd);
+	int result = default_vfs_ops.close(fsp, fd);
 
 	syslog(SYSLOG_PRIORITY, "close fd %d %s%s\n",
 	       fd,
@@ -131,7 +130,7 @@ static int audit_close(struct files_struct *fsp, int fd)
 static int audit_rename(struct connection_struct *conn, const char *old, 
                         const char *new)
 {
-	int result = global_vfs_ops->rename(conn, old, new);
+	int result = default_vfs_ops.rename(conn, old, new);
 
 	syslog(SYSLOG_PRIORITY, "rename %s -> %s %s%s\n",
 	       old, new,
@@ -143,7 +142,7 @@ static int audit_rename(struct connection_struct *conn, const char *old,
 
 static int audit_unlink(struct connection_struct *conn, const char *path)
 {
-	int result = global_vfs_ops->unlink(conn, path);
+	int result = default_vfs_ops.unlink(conn, path);
 
 	syslog(SYSLOG_PRIORITY, "unlink %s %s%s\n",
 	       path,
@@ -156,7 +155,7 @@ static int audit_unlink(struct connection_struct *conn, const char *path)
 static int audit_chmod(struct connection_struct *conn, const char *path, 
                        mode_t mode)
 {
-	int result = global_vfs_ops->chmod(conn, path, mode);
+	int result = default_vfs_ops.chmod(conn, path, mode);
 
 	syslog(SYSLOG_PRIORITY, "chmod %s mode 0x%x %s%s\n",
 	       path, mode,
@@ -176,6 +175,12 @@ struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *ops)
 	openlog("smbd_audit", LOG_PID, SYSLOG_FACILITY);
 	syslog(SYSLOG_PRIORITY, "initialised\n");
 
+        /* Save a copy of the default ops */
+
+        default_vfs_ops = *ops;
+
+        /* Override our ones */
+
         ops->connect = audit_connect;
         ops->disconnect = audit_disconnect;
         ops->opendir = audit_opendir;
@@ -186,8 +191,6 @@ struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *ops)
         ops->rename = audit_rename;
         ops->unlink = audit_unlink;
         ops->chmod = audit_chmod;
-
-        global_vfs_ops = ops;
 
 	return(ops);
 }
