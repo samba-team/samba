@@ -147,7 +147,7 @@ static void smbw_printjob_add(struct print_job_info *job)
 	finfo.atime = job->t;
 	finfo.ctime = job->t;
 	finfo.uid   = (uid_t)-1;
-	nametouid(job->user, finfo.uid);
+	nametouid(job->user, &finfo.uid);
 	finfo.mode = aRONLY;
 	finfo.size = job->size;
 
