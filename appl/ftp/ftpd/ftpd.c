@@ -1698,6 +1698,8 @@ send_file_list(char *whichf)
 	int freeglob = 0;
 	glob_t gl;
 
+	char buf[MaxPathLen];
+
 	if (strpbrk(whichf, "~{[*?") != NULL) {
 		int flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE;
 
@@ -1750,8 +1752,9 @@ send_file_list(char *whichf)
 					goto out;
 				transflag++;
 			}
-			fprintf(dout, "%s%s\n", dirname,
+			sprintf(buf, "%s%s\n", dirname,
 				type == TYPE_A ? "\r" : "");
+			auth_write(fileno(dout), buf, strlen(buf));
 			byte_count += strlen(dirname) + 1;
 			continue;
 		} else if (!S_ISDIR(st.st_mode))
@@ -1775,26 +1778,25 @@ send_file_list(char *whichf)
 			 * not a directory or special file.
 			 */
 			if (simple || (stat(nbuf, &st) == 0 &&
-			    S_ISREG(st.st_mode))) {
-				if (dout == NULL) {
-					dout = dataconn("file list", (off_t)-1,
-						"w");
-					if (dout == NULL)
-						goto out;
-					transflag++;
-				}
-				if (nbuf[0] == '.' && nbuf[1] == '/')
-					fprintf(dout, "%s%s\n", &nbuf[2],
-						type == TYPE_A ? "\r" : "");
-				else
-					fprintf(dout, "%s%s\n", nbuf,
-						type == TYPE_A ? "\r" : "");
-				byte_count += strlen(nbuf) + 1;
+				       S_ISREG(st.st_mode))) {
+			    if (dout == NULL) {
+				dout = dataconn("file list", (off_t)-1, "w");
+				if (dout == NULL)
+				    goto out;
+				transflag++;
+			    }
+			    if(strncmp(nbuf, "./", 2) == 0)
+				sprintf(buf, "%s%s\n", nbuf +2,
+					type == TYPE_A ? "\r" : "");
+			    else
+				sprintf(buf, "%s%s\n", nbuf,
+					type == TYPE_A ? "\r" : "");
+			    auth_write(fileno(dout), buf, strlen(buf));
+			    byte_count += strlen(nbuf) + 1;
 			}
 		}
 		(void) closedir(dirp);
 	}
-
 	if (dout == NULL)
 		reply(550, "No files found.");
 	else if (ferror(dout) != 0)
@@ -1803,8 +1805,11 @@ send_file_list(char *whichf)
 		reply(226, "Transfer complete.");
 
 	transflag = 0;
-	if (dout != NULL)
-		(void) fclose(dout);
+	if (dout != NULL){
+	    auth_write(fileno(dout), buf, 0); /* XXX flush */
+	    
+	    (void) fclose(dout);
+	}
 	data = -1;
 	pdata = -1;
 out:
