@@ -33,6 +33,7 @@ extern char magic_char;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
+extern BOOL is_unix_charset_unsafe;
 extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 
@@ -110,7 +111,8 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 			}
 			s++;
 		} else {
-			if ((*s & 0x80) && IS_DIRECTORY_SEP(s[1])) {
+			/* Activate this codepath only if we know that Unix charset may contain unsafe '\\' */
+			if ((is_unix_charset_unsafe == True) && ((*s & 0x80) && IS_DIRECTORY_SEP(s[1]))) {
 				/* 
 				 * Potential mb char with second char a directory separator.
 				 * All the encodings we care about are 2 byte only, so do a
