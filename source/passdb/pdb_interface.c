@@ -788,7 +788,7 @@ BOOL pdb_getgrgid(GROUP_MAP *map, gid_t gid)
 			       pdb_getgrgid(pdb_context, map, gid));
 }
 
-BOOL pdb_getgrnam(GROUP_MAP *map, char *name)
+BOOL pdb_getgrnam(GROUP_MAP *map, const char *name)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
