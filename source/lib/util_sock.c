@@ -901,10 +901,13 @@ int create_pipe_socket(char *dir, int dir_perms,
 	int s;
 	struct sockaddr_un sa;
 
-	DEBUG(0,("create_pipe_socket: %s %d %s %d\n",
+	DEBUG(0,("create_pipe_socket: %s perms=%d %s perms=%d\n",
 	           dir, dir_perms, path, path_perms));
 
-	DEBUG(0,("*** RACE CONDITION.  PLEASE SOMEONE EXAMINE create_pipe_Socket AND FIX IT ***\n"));
+	DEBUG(0,("*** Please someone examine create_pipe_socket and fix it ***\n"));
+	DEBUG(0,("*** if used other than for exclusive root access ***\n"));
+	DEBUG(0,("*** (see perms, which should be 0700 and 0600) ***\n"));
+	DEBUG(0,("*** there is a race condition to be exploited. ***\n"));
 
 	mkdir(dir, dir_perms);
 

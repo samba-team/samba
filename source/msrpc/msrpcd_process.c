@@ -147,20 +147,6 @@ static void process_msrpc(msrpc_pipes_struct *p, int c)
   static int trans_num;
   int32 len = prs_buf_len(&pdu);
 
-  if (trans_num == 0) {
-	  /* on the first packet, check the global hosts allow/ hosts
-	     deny parameters before doing any parsing of the packet
-	     passed to us by the client.  This prevents attacks on our
-	     parsing code from hosts not in the hosts allow list */
-	  if (!check_access(c, lp_hostsallow(-1), lp_hostsdeny(-1))) {
-		  /* send a negative session response "not listining on calling
-		   name" */
-		  DEBUG( 1, ( "Connection denied from %s\n",
-			      client_addr(c) ) );
-		  exit_server("connection denied");
-	  }
-  }
-
   DEBUG( 6, ( "got message of len 0x%x\n", len ) );
 
 	dump_data(10, pdu.data, len);
