@@ -952,6 +952,7 @@ pk_mk_pa_reply(krb5_context context,
 krb5_error_code
 pk_check_client(krb5_context context,
                 krb5_principal client_princ,
+		const hdb_entry *client,
                 pk_client_params *client_params,
 		char **subject_name)
 {
