@@ -11,8 +11,6 @@ static des_key_schedule schedule;
 
 static char *data_buffer;
 
-enum { prot_clear, prot_safe, prot_confidential, prot_private };
-
 extern struct sockaddr_in hisctladdr, myctladdr;
 
 int auth_complete;
@@ -21,6 +19,8 @@ static int command_prot;
 
 static int auth_pbsz;
 static int data_prot;
+
+static int request_data_prot;
 
 
 static struct {
@@ -70,6 +70,49 @@ void sec_status(void)
     }
 }
 
+static int
+sec_prot_internal(int level)
+{
+    int ret;
+    char *p;
+    int s = 1048576;
+
+    int old_verbose = verbose;
+    verbose = 0;
+
+    if(!auth_complete){
+	fprintf(stderr, "No security data exchange has taken place.\n");
+	return -1;
+    }
+
+    if(level){
+	ret = command("PBSZ %d", s);
+	if(ret != COMPLETE){
+	    fprintf(stderr, "Failed to set protection buffer size.\n");
+	    return -1;
+	}
+	auth_pbsz = s;
+	p = strstr(reply_string, "PBSZ=");
+	if(p)
+	    sscanf(p, "PBSZ=%d", &s);
+	if(s < auth_pbsz)
+	    auth_pbsz = s;
+	if(data_buffer)
+	    free(data_buffer);
+	data_buffer = malloc(auth_pbsz);
+    }
+    verbose = old_verbose;
+    ret = command("PROT %c", level["CSEP"]); /* XXX :-) */
+    if(ret != COMPLETE){
+	fprintf(stderr, "Failed to set protection level.\n");
+	return -1;
+    }
+    
+    data_prot = level;
+    return 0;
+}
+
+
 void sec_prot(int argc, char **argv)
 {
     int s;
@@ -84,17 +127,12 @@ void sec_prot(int argc, char **argv)
 	return;
     }
     if(!auth_complete){
-	fprintf(stderr, "ehu?\n");
+	fprintf(stderr, "No security data exchange has taken place.\n");
 	code = -1;
 	return;
     }
     level = name_to_level(argv[1]);
     
-    if(level == prot_confidential){
-	printf("Confidential protection is not defined for Kerberos.\n");
-	code = -1;
-	return;
-    }
 
     if(level == -1){
 	fprintf(stderr,
@@ -103,33 +141,36 @@ void sec_prot(int argc, char **argv)
 	code = -1;
 	return;
     }
-    if(level){
-	s = 65536;
-	ret = command("PBSZ %d", s);
-	if(ret != COMPLETE){
-	    fprintf(stderr, "Ehu?\n");
-	    code = -1;
-	    return;
-	}
-	auth_pbsz = s;
-	p = strstr(reply_string, "PBSZ=");
-	if(p)
-	    sscanf(p, "PBSZ=%d", &s);
-	if(s < auth_pbsz)
-	    auth_pbsz = s;
-	if(data_buffer)
-	    free(data_buffer);
-	data_buffer = malloc(auth_pbsz);
-    }
     
-    ret = command("PROT %c", level["CSEP"]); /* XXX :-) */
-    if(ret != COMPLETE){
-	fprintf(stderr, "Ehu ?\n");
+    if(level == prot_confidential){
+	printf("Confidential protection is not defined with Kerberos.\n");
 	code = -1;
 	return;
     }
-    data_prot = level;
+
+    if(sec_prot_internal(level) < 0){
+	code = -1;
+	return;
+    }
     code = 0;
+}
+
+void
+sec_set_protection_level(void)
+{
+    if(auth_complete && data_prot != request_data_prot)
+	sec_prot_internal(request_data_prot);
+}
+
+
+int
+sec_request_prot(char *level)
+{
+    int l = name_to_level(level);
+    if(l == -1)
+	return -1;
+    request_data_prot = l;
+    return 0;
 }
 
 

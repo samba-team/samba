@@ -43,6 +43,7 @@ static	FILE *cfile;
 #define	PASSWD	3
 #define	ACCOUNT 4
 #define MACDEF  5
+#define PROT	6
 #define	ID	10
 #define	MACH	11
 
@@ -59,6 +60,7 @@ static struct toktab {
 	{ "account",	ACCOUNT },
 	{ "machine",	MACH },
 	{ "macdef",	MACDEF },
+	{ "prot", 	PROT }, 
 	{ NULL,		0 }
 };
 
@@ -66,7 +68,6 @@ int
 ruserpass(char *host, char **aname, char **apass, char **aacct)
 {
 	char *hdir, buf[BUFSIZ], *tmp;
-	char myname[MAXHOSTNAMELEN], *mydomain;
 	int t, i, c, usedefault = 0;
 	struct stat stb;
 
@@ -80,10 +81,11 @@ ruserpass(char *host, char **aname, char **apass, char **aacct)
 			warn("%s", buf);
 		return (0);
 	}
-	if (gethostname(myname, sizeof(myname)) < 0)
-		myname[0] = '\0';
-	if ((mydomain = strchr(myname, '.')) == NULL)
-		mydomain = "";
+	if(k_gethostname(myhostname, MaxHostNameLen) < 0)
+	    strcpy(myhostname, "");
+	if((mydomain = strchr(myhostname, '.')) == NULL)
+	    mydomain = myhostname;
+
 next:
 	while ((t = token())) switch(t) {
 
@@ -213,6 +215,11 @@ next:
 				goto bad;
 			}
 			break;
+		case PROT:
+		    token();
+		    if(sec_request_prot(tokval) < 0)
+			warnx("Unknown protection level \"%s\"", tokval);
+		    break;
 		default:
 			warnx("Unknown .netrc keyword %s", tokval);
 			break;
