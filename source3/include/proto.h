@@ -756,9 +756,6 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 char *Strstr(char *s, char *p);
 time_t Mktime(struct tm      *t);
 int InNetGr(char *group,char *host,char *user,char *dom);
-void *malloc_wrapped(int size,char *file,int line);
-void *realloc_wrapped(void *ptr,int size,char *file,int line);
-void free_wrapped(void *ptr,char *file,int line);
 void *memcpy_wrapped(void *d,void *s,int l,char *fname,int line);
 
 /*The following definitions come from  reply.c  */
