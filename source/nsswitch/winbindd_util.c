@@ -214,10 +214,17 @@ BOOL init_domain_list(void)
 
 	result = cache_methods.domain_sid(domain, &domain->sid);
 	while (!NT_STATUS_IS_OK(result)) {
+
 		sleep(10);
 		DEBUG(1,("Retrying startup domain sid fetch for %s\n",
 			 domain->name));
 		result = cache_methods.domain_sid(domain, &domain->sid);
+
+		/* If we don't call lp_talloc_free() here we end up 
+		   accumulating memory in the "global" lp_talloc in
+		   param/loadparm.c */
+
+		lp_talloc_free();
 	}
        
 	/* get any alternate name for the primary domain */
