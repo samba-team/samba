@@ -1,0 +1,9 @@
+# Samba.winbind configure script
+
+
+  echo "heres where wed create links to winbind libs"
+  ln -s /usr/local/samba/lib/winbind/libnss_winbind.so /usr/lib/libnss_winbind.1
+  ln -s /usr/local/samba/lib/winbind/pam_winbind.so /usr/lib/security/libpam_winbind.1
+
+
+exit 0

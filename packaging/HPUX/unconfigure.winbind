@@ -1,0 +1,8 @@
+# Samba.winbind configure script
+
+
+ echo  "heres where wed remove links to winbind libs"
+ rm /usr/lib/libnss_winbind.1
+ rm /usr/lib/security/libpam_winbind.1
+
+exit 0

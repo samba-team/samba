@@ -1,0 +1,254 @@
+#!/bin/sh
+# Initial configuration script for Samba.
+# This script should be run once, immediately after Samba is installed,
+# to get a basic smb.conf script into place.  Subsequent modification
+# of this initial configuration should be done by swat.
+#
+# It is expected that in future versions of Samba, swat will be able to
+# do the initial configuration as well, and this script will become
+# unnecessary.
+
+CONF_SRC=/usr/lib/samba/lib/smb.conf.default
+CONF=/usr/lib/samba/lib/smb.conf
+
+# getyn: ask a question, return value indicates response
+
+getyn () {
+    while true; do
+        echo "$1 [$2] \c"
+        read answer
+	[ -z "$answer" ] && answer=$2
+
+        case $answer in
+	    [Yy]*) echo; return 0;
+		   ;;
+            [Nn]*) echo; return 1;
+		   ;;
+            *)     echo "Please answer yes or no."
+	           continue
+	           ;;
+	esac
+    done
+}
+
+# conf_replace: call sed to replace strings in smb.conf file with new
+# values, and if necessary uncomment the lines in which those strings
+# appear.  For this to work, the source file needs to contain unique
+# placeholder strings to be replaced, e.g., %%WORKGROUP%%
+
+conf_replace () {
+    sed -e 's/^;*\(.*\)'$1'\(.*\)$/\1'$2'\2/' < $CONF > /tmp/smb.conf.$$
+    cp -f /tmp/smb.conf.$$ $CONF
+    rm -f /tmp/smb.conf.$$
+}
+
+# Begin main
+
+# Check whether conf file has already been edited
+if [ -f $CONF ]; then
+    cmp -s $CONF_SRC $CONF || {
+        echo "The file $CONF appears to have been previously edited.
+If you continue, this file will be restored to its original
+state and any changes you have made may be lost.\n"
+        if getyn "Continue?" No; then
+            echo "Backing up $CONF to ${CONF}-\n"
+            cp -f $CONF ${CONF}-
+            cp -f $CONF_SRC $CONF
+        else
+            exit 0
+        fi
+    }
+else
+    cp -f $CONF_SRC $CONF
+fi
+
+# Question 1:  Workgroup/Domain Name
+# Default is MYGROUP.  Responses must begin with an alphabetical
+# character and contain no punctuation.
+while true; do
+    default=MYGROUP
+    echo "Enter Workgroup/NT-Domain name: [$default] \c"
+    read workgroup
+
+    if [ -z "$workgroup" ]; then
+        workgroup=$default
+    fi
+
+    set -- $workgroup
+    if [ $# -gt 1 ]; then
+        echo "ERROR: Workgroup names cannot contain spaces or punctuation.\n"
+        continue
+    fi
+
+    workgroup=`echo $workgroup | tr a-z A-Z | tr -d [:punct:]`
+    if expr "$workgroup" : '[^A-Z]' >&-; then
+        echo "ERROR: Workgroup name must begin with an alphabetic character.\n"
+        continue
+    fi
+
+    echo "Workgroup name set to \"$workgroup\".\n"
+
+    break
+done
+
+
+# Question 2:  Machine Name
+# Default is the uname, forced to capital letters and with punctuation
+# excised.  Responses must begin with an alphabetical
+# character and contain no punctuation.
+while true; do
+    default=`uname -n | tr a-z A-Z | tr -d [:punct:]`
+    echo "Enter Machine name: [$default] \c"
+    read name
+
+    if [ -z "$name" ]; then
+        name=$default
+    fi
+
+    set -- $name
+    if [ $# -gt 1 ]; then
+        echo "ERROR: Machine names cannot contain spaces or punctuation.\n"
+        continue
+    fi
+
+    name=`echo $name | tr a-z A-Z | tr -d [:punct:]`
+    if expr "$name" : '[^A-Z]' >&-; then
+        echo "ERROR: Machine name must begin with an alphabetic character.\n"
+        continue
+    fi
+
+    echo "Machine name set to \"$name\".\n"
+
+    break
+done
+
+# Question 3:  use WINS?
+wins=false
+if getyn "Will this system use WINS (recommended)?" Yes; then
+    wins=true
+fi
+
+# Optional questions, asked only if WINS will be used
+if [ "$wins" = "true" ]; then
+    # Question 3.1:  Are we the WINS server?
+    echo "NOTE: A workgroup can have only one WINS server."
+    wins_svr=false
+    if getyn "Will this system be the WINS server for your workgroup?" No; then
+        wins_svr=true
+    fi
+
+    # Question 3.2:  Who is the WINS server?
+    if [ "$wins_svr" = "false" ]; then
+        while true; do
+            echo "Enter the address of the primary WINS server for your workgroup: \c"
+	    read wins_addr
+
+	    if expr "$wins_addr" : '[0-9][0-9]*.[0-9][0-9]*.[0-9][0-9]*.[0-9][0-9]*$' >&- ; then
+	        echo
+	        break
+            fi
+
+	    echo "ERROR: Invalid IP address format.\n"
+	done
+    fi
+fi
+
+# Question 4: Which interfaces will be active?
+iflist=`ifconfig -a | grep -v LOOPBACK | grep '^[^ ]*:' | cut -f1 -d:`
+
+set -- $iflist
+if [ "$#" -eq 0 ]; then
+    echo "FATAL ERROR: No network interfaces"
+    exit 1
+elif [ "$#" -eq 1 ]; then
+    interfaces=$1
+else
+    while true; do
+        interfaces=""
+        echo "Which of the following interfaces should Samba run on?\n"
+        for i in $iflist; do
+            addr=`ifconfig $i | grep "inet " | sed 's/inet \([^ ]*\) .*$/\1/'`
+            echo "\t$i:\t$addr"
+        done
+        echo "\nList all interfaces to activate (e.g., net0, net1, etc): \c"
+	read response
+	for i in $response; do
+	    found=false
+	    for j in $iflist; do
+	        if [ "$i" = "$j" ]; then
+		     found=true
+		     break
+		fi
+	    done
+	    if [ "$found" = "true" ]; then
+	        interfaces="$interfaces $j"
+            else
+	        echo "ERROR: Invalid interface name $i\n"
+	        continue 2
+            fi
+	done
+
+        interfaces="$interfaces lo0 atl0"
+	break
+    done
+fi
+
+# Question 5: Are we part of an existing security domain or active # directory?
+domain_exists=false
+if getyn "Will this system be part of a currently existing Microsoft Security\n\
+Domain or Active Directory?" No; then
+    domain_exists=true
+fi
+
+# Optional questions, depending on response to question 5
+if [ "$domain_exists" = "true" ]; then
+    # Question 5.1: (if yes to 5) Who's the PDC?
+    default='*'
+    echo "Enter the name of the Primary Domain Controller: [*] \c"
+    read pdc
+    if [ -z "$pdc" ]; then
+        pdc=$default
+    else
+        pdc=`echo $pdc | tr a-z A-Z | tr -d [:punct:]`
+    fi
+    echo "Primary Domain Controller set to \"$pdc\".\n"
+else
+    # Question 5.2: (if no to 5) Are we going to be the PDC?
+    domain_master=false
+    if getyn "Will this system be the domain controller for a new Microsoft\n\
+Security Domain?" No; then
+        domain_master=true
+    fi
+fi
+
+# Done asking questions.
+# Edit conf file with new values
+conf_replace %%WORKGROUP%% "$workgroup"
+conf_replace %%NBNAME%% "$name"
+
+if [ "$wins" = true ]; then
+    if [ "$wins_svr" = true ]; then
+        conf_replace %%WINSSUPPORT%% yes
+    else
+        conf_replace %%WINSSERVER%% $wins_addr
+    fi
+fi
+
+conf_replace %%INTERFACES%% "$interfaces"
+conf_replace %%BINDONLY%% yes
+
+if [ "$domain_exists" = true ]; then
+    conf_replace %%SECURITY%% domain
+    conf_replace %%PWSERVER%% "$pdc"
+else
+    conf_replace %%SECURITY%% user
+fi
+
+if [ "$domain_master" = true ]; then
+    conf_replace %%DOMAINMASTER%% yes
+    conf_replace %%DOMAINLOGONS%% yes
+    conf_replace %%OSLEVEL%% 33
+else
+    conf_replace %%OSLEVEL%% 20
+fi
+
