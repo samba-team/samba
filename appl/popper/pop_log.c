@@ -14,17 +14,16 @@ RCSID("$Id$");
 int
 pop_log(POP *p, int stat, char *format, ...)
 {
-    static char msgbuf[MAXLINELEN];
+    char msgbuf[MAXLINELEN];
     va_list     ap;
 
     va_start(ap, format);
-    vsprintf(msgbuf,format,ap);
+    vsnprintf(msgbuf, sizeof(msgbuf), format, ap);
 
     if (p->debug && p->trace) {
         fprintf(p->trace,"%s\n",msgbuf);
         fflush(p->trace);
-    }
-    else {
+    } else {
         syslog (stat,"%s",msgbuf);
     }
     va_end(ap);
