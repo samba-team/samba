@@ -36,8 +36,10 @@ RCSID("$Id$");
 
 static int version_flag;
 static int help_flag;
+static char *admin_principal_str;
 
 static struct getargs args[] = {
+    { "admin-principal",	0,   arg_string, &admin_principal_str },
     { "version", 		0,   arg_flag, &version_flag },
     { "help",			0,   arg_flag, &help_flag }
 };
@@ -55,12 +57,14 @@ main (int argc, char **argv)
     krb5_error_code ret;
     krb5_context context;
     krb5_principal principal;
+    krb5_principal admin_principal;
     int optind = 0;
     krb5_get_init_creds_opt opt;
     krb5_creds cred;
     int result_code;
     krb5_data result_code_string, result_string;
     char pwbuf[BUFSIZ];
+    krb5_ccache id;
 
     optind = krb5_program_setup(&context, argc, argv,
 				args, sizeof(args) / sizeof(args[0]), usage);
@@ -79,26 +83,34 @@ main (int argc, char **argv)
     krb5_get_init_creds_opt_set_forwardable (&opt, FALSE);
     krb5_get_init_creds_opt_set_proxiable (&opt, FALSE);
 
+    admin_principal = NULL;
+
     argc -= optind;
     argv += optind;
-
-    if (argc > 1)
-	usage (1, args, sizeof(args) / sizeof(args[0]));
 
     ret = krb5_init_context (&context);
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
   
-    if(argv[0]) {
-	ret = krb5_parse_name (context, argv[0], &principal);
+    if (admin_principal_str) {
+	ret = krb5_parse_name (context, admin_principal_str, &admin_principal);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_parse_name");
-    } else
-	principal = NULL;
+    } else if (argc == 1) {
+	ret = krb5_parse_name (context, argv[0], &admin_principal);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_parse_name");
+    } else {
+	ret = krb5_get_default_principal (context, &admin_principal);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_get_default_principal");
+    }
+
+    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
 
     ret = krb5_get_init_creds_password (context,
 					&cred,
-					principal,
+					admin_principal,
 					NULL,
 					krb5_prompter_posix,
 					NULL,
@@ -118,18 +130,35 @@ main (int argc, char **argv)
 	krb5_err(context, 1, ret, "krb5_get_init_creds");
     }
 
+    ret = krb5_cc_initialize(context, id, admin_principal);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_initialize");
+
+    ret = krb5_cc_store_cred(context, id, &cred);    
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_store_cred");
+
+
+
+    if(argv[0]) {
+	ret = krb5_parse_name (context, argv[0], &principal);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_parse_name");
+    }
+
     krb5_data_zero (&result_code_string);
     krb5_data_zero (&result_string);
 
     if(des_read_pw_string (pwbuf, sizeof(pwbuf), "New password: ", 1) != 0)
 	return 1;
 
-    ret = krb5_change_password (context, &cred, pwbuf,
-				&result_code,
-				&result_code_string,
-				&result_string);
+    ret = krb5_set_password (context, id, pwbuf,
+			     principal,
+			     &result_code,
+			     &result_code_string,
+			     &result_string);
     if (ret)
-	krb5_err (context, 1, ret, "krb5_change_password");
+	krb5_err (context, 1, ret, "krb5_set_password");
 
     printf ("%s%s%.*s\n", krb5_passwd_result_to_string(context,
 						       result_code),
