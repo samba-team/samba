@@ -1,3 +1,10 @@
+2001-11-30  Assar Westerlund  <assar@sics.se>
+
+	* getifaddrs.c: support SIOCGLIFCONF and SIOCGLIFFLAGS which are
+	used on Solaris 8 to retrieve addresses larger than `struct
+	sockaddr'.  From Magnus Ahltorp <ahltorp@nada.kth.se> (with some
+	modifications by me)
+
 2001-10-27  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libroken_la_LDFLAGS): set version to 15:0:6
