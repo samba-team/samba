@@ -82,7 +82,7 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
 				  &server);
     if (ret) {
 	pop_log (p, POP_FAILURE,
-		 "krb5_sname_to_principal: %s",
+		 "krb5_sock_to_principal: %s",
 		 krb5_get_err_text(p->context, ret));
 	exit (1);
     }
@@ -100,6 +100,7 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
 	krb5_auth_con_free (p->context, auth_context);
 	krb5_copy_principal (p->context, ticket->client, &p->principal);
 	krb5_free_ticket (p->context, ticket);
+
     }
     return ret;
 }
