@@ -117,7 +117,8 @@ static int rw_torture(int numops)
 	int pid2, pid = getpid();
 	int i;
 
-	fnum2 = cli_open(&cli, lockfname, O_RDWR | O_EXCL, DENY_NONE);
+	fnum2 = cli_open(&cli, lockfname, O_RDWR | O_CREAT | O_EXCL, 
+			 DENY_NONE);
 	if (fnum2 == -1)
 		fnum2 = cli_open(&cli, lockfname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
