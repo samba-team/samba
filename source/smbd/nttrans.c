@@ -1,3 +1,4 @@
+#define OLD_NTDOMAIN 1
 /*
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -2160,7 +2161,7 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
 
   for(i = 0; i < dacl->num_aces; i++) {
     DOM_SID ace_sid;
-    SEC_ACE *psa = &dacl->ace_list[i];
+    SEC_ACE *psa = &dacl->ace[i];
 
     if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) &&
        (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
@@ -2669,3 +2670,4 @@ due to being in oplock break state.\n" ));
 		     calls have already sent it. If outsize != -1 then it is
 		     returning an error packet. */
 }
+#undef OLD_NTDOMAIN

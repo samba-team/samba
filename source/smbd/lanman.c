@@ -1,3 +1,4 @@
+#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -3179,3 +3180,5 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
   return -1;
 }
 
+
+#undef OLD_NTDOMAIN

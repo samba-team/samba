@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -1391,3 +1393,5 @@ Disabling kernel oplock support.\n", strerror(errno) ));
   }
 #endif /* HAVE_KERNEL_OPLOCKS */
 }
+
+#undef OLD_NTDOMAIN

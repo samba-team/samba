@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -437,3 +439,5 @@ int reply_negprot(connection_struct *conn,
 
   return(outsize);
 }
+
+#undef OLD_NTDOMAIN

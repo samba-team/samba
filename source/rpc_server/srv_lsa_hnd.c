@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -304,3 +306,5 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd)
 
 	return True;
 }
+
+#undef OLD_NTDOMAIN

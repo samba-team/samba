@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -225,3 +227,5 @@ int close_file(files_struct *fsp, BOOL normal_close)
 		return close_statfile(fsp, normal_close);
 	return close_normal_file(fsp, normal_close);
 }
+
+#undef OLD_NTDOMAIN

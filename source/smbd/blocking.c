@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -631,3 +633,5 @@ void process_blocking_lock_queue(time_t t)
     blr = (blocking_lock_record *)ubi_slNext(blr);
   }
 }
+
+#undef OLD_NTDOMAIN

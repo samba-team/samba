@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -935,3 +937,5 @@ BOOL check_plaintext_password(char *user, char *old_passwd,
 	else
 		return (True);
 }
+
+#undef OLD_NTDOMAIN

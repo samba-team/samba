@@ -1,3 +1,4 @@
+#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -363,3 +364,4 @@ void file_chain_restore(void)
 {
 	chain_fsp = oplock_save_chain_fsp;
 }
+#undef OLD_NTDOMAIN

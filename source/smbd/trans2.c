@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -2396,3 +2398,5 @@ int reply_trans2(connection_struct *conn,
 			   call_trans2xxx calls have already sent
 			   it. If outsize != -1 then it is returning */
 }
+
+#undef OLD_NTDOMAIN

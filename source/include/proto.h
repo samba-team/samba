@@ -160,6 +160,7 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 
 /*The following definitions come from  lib/msrpc_use.c  */
 
+#if OLD_NTDOMAIN
 void init_msrpc_use(void);
 void free_msrpc_use(void);
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
@@ -171,6 +172,7 @@ BOOL msrpc_use_del(const char* pipe_name,
 				BOOL force_close,
 				BOOL *connection_closed);
 void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use);
+#endif
 
 /*The following definitions come from  lib/pidfile.c  */
 
@@ -1645,8 +1647,10 @@ int sysv_printername_ok(char *name);
 
 /*The following definitions come from  printing/printfsp.c  */
 
+#if OLD_NTDOMAIN
 files_struct *print_fsp_open(connection_struct *conn,char *jobname);
 void print_fsp_end(files_struct *fsp);
+#endif
 
 /*The following definitions come from  printing/printing.c  */
 
@@ -2685,10 +2689,13 @@ BOOL wks_io_r_query_info(char *desc, WKS_R_QUERY_INFO *r_u, prs_struct *ps, int 
 
 /*The following definitions come from  rpc_server/srv_lsa.c  */
 
+#if OLD_NTDOMAIN
 BOOL api_ntlsa_rpc(pipes_struct *p, prs_struct *data);
+#endif
 
 /*The following definitions come from  rpc_server/srv_lsa_hnd.c  */
 
+#if OLD_NTDOMAIN
 void init_lsa_policy_hnd(void);
 BOOL open_lsa_policy_hnd(POLICY_HND *hnd);
 int find_lsa_policy_by_hnd(POLICY_HND *hnd);
@@ -2699,10 +2706,13 @@ BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
 uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd);
 BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name);
 BOOL close_lsa_policy_hnd(POLICY_HND *hnd);
+#endif
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 
+#if OLD_NTDOMAIN
 BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
+#endif
 
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
@@ -2719,6 +2729,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
+#if OLD_NTDOMAIN
 void set_pipe_handle_offset(int max_open_files);
 void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
@@ -2731,10 +2742,13 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
 BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);
 pipes_struct *get_rpc_pipe(int pnum);
+#endif
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
 
+#if OLD_NTDOMAIN
 BOOL api_reg_rpc(pipes_struct *p, prs_struct *data);
+#endif
 
 /*The following definitions come from  rpc_server/srv_samr.c  */
 
@@ -2744,7 +2758,9 @@ BOOL api_samr_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_spoolss.c  */
 
+#if OLD_NTDOMAIN
 BOOL api_spoolss_rpc(pipes_struct *p, prs_struct *data);
+#endif
 
 /*The following definitions come from  rpc_server/srv_spoolss_nt.c  */
 
@@ -2854,10 +2870,13 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 
+#if OLD_NTDOMAIN
 BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data);
+#endif
 
 /*The following definitions come from  rpc_server/srv_util.c  */
 
+#if OLD_NTDOMAIN
 int make_dom_gids(char *gids_str, DOM_GID **ppgids);
 void get_domain_user_groups(char *domain_groups, char *user);
 uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type);
@@ -2866,10 +2885,13 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type);
 uint32 lookup_group_rid(char *group_name, uint32 *rid);
 uint32 lookup_alias_rid(char *alias_name, uint32 *rid);
 uint32 lookup_user_rid(char *user_name, uint32 *rid);
+#endif
 
 /*The following definitions come from  rpc_server/srv_wkssvc.c  */
 
+#if OLD_NTDOMAIN
 BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
+#endif
 
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
@@ -2976,14 +2998,17 @@ void rpcclient_init(void);
 
 /*The following definitions come from  smbd/blocking.c  */
 
+#if OLD_NTDOMAIN
 BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num);
 void remove_pending_lock_requests_by_fid(files_struct *fsp);
 void remove_pending_lock_requests_by_mid(int mid);
 BOOL blocking_locks_pending(void);
 void process_blocking_lock_queue(time_t t);
+#endif
 
 /*The following definitions come from  smbd/chgpasswd.c  */
 
+#if OLD_NTDOMAIN
 BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL check_lanman_password(char *user, uchar * pass1,
@@ -3002,14 +3027,18 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd,
 			 BOOL override);
 BOOL check_plaintext_password(char *user, char *old_passwd,
 			      int old_passwd_size, struct smb_passwd **psmbpw);
+#endif
 
 /*The following definitions come from  smbd/close.c  */
 
+#if OLD_NTDOMAIN
 void close_filestruct(files_struct *fsp);
 int close_file(files_struct *fsp, BOOL normal_close);
+#endif
 
 /*The following definitions come from  smbd/conn.c  */
 
+#if OLD_NTDOMAIN
 void conn_init(void);
 int conn_num_open(void);
 BOOL conn_snum_used(int snum);
@@ -3018,6 +3047,7 @@ connection_struct *conn_new(void);
 void conn_close_all(void);
 BOOL conn_idle_all(time_t t, int deadtime);
 void conn_free(connection_struct *conn);
+#endif
 
 /*The following definitions come from  smbd/connection.c  */
 
@@ -3031,6 +3061,7 @@ SMB_BIG_UINT sys_disk_free(char *path, BOOL small_query,
 
 /*The following definitions come from  smbd/dir.c  */
 
+#if OLD_NTDOMAIN
 void init_dptrs(void);
 char *dptr_path(int key);
 char *dptr_wcard(int key);
@@ -3056,23 +3087,29 @@ int TellDir(void *p);
 void DirCacheAdd( char *path, char *name, char *dname, int snum );
 char *DirCacheCheck( char *path, char *name, int snum );
 void DirCacheFlush(int snum);
+#endif
 
 /*The following definitions come from  smbd/dosmode.c  */
 
+#if OLD_NTDOMAIN
 mode_t unix_mode(connection_struct *conn,int dosmode,const char *fname);
 int dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf);
 int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *st);
 int file_utime(connection_struct *conn, char *fname, struct utimbuf *times);
 BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime);
+#endif
 
 /*The following definitions come from  smbd/error.c  */
 
+#if OLD_NTDOMAIN
 int cached_error_packet(char *inbuf,char *outbuf,files_struct *fsp,int line);
 int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line);
 int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line);
+#endif
 
 /*The following definitions come from  smbd/fileio.c  */
 
+#if OLD_NTDOMAIN
 SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos);
 BOOL read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
@@ -3081,15 +3118,19 @@ void delete_write_cache(files_struct *fsp);
 void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size);
 ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason);
 void sync_file(connection_struct *conn, files_struct *fsp);
+#endif
 
 /*The following definitions come from  smbd/filename.c  */
 
+#if OLD_NTDOMAIN
 BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
                   BOOL *bad_path, SMB_STRUCT_STAT *pst);
 BOOL check_name(char *name,connection_struct *conn);
+#endif
 
 /*The following definitions come from  smbd/files.c  */
 
+#if OLD_NTDOMAIN
 files_struct *file_new(void );
 void file_close_conn(connection_struct *conn);
 void file_init(void);
@@ -3105,19 +3146,24 @@ files_struct *file_fsp(char *buf, int where);
 void file_chain_reset(void);
 void file_chain_save(void);
 void file_chain_restore(void);
+#endif
 
 /*The following definitions come from  smbd/ipc.c  */
 
+#if OLD_NTDOMAIN
 void send_trans_reply(char *outbuf,
 				char *rparam, int rparam_len,
 				char *rdata, int rdata_len,
 				BOOL buffer_too_large);
 int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize);
+#endif
 
 /*The following definitions come from  smbd/lanman.c  */
 
+#if OLD_NTDOMAIN
 int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
 		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt);
+#endif
 
 /*The following definitions come from  smbd/mangle.c  */
 
@@ -3130,6 +3176,7 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum);
 
 /*The following definitions come from  smbd/message.c  */
 
+#if OLD_NTDOMAIN
 int reply_sends(connection_struct *conn,
 		char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_sendstrt(connection_struct *conn,
@@ -3138,12 +3185,15 @@ int reply_sendtxt(connection_struct *conn,
 		  char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_sendend(connection_struct *conn,
 		  char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+#endif
 
 /*The following definitions come from  smbd/negprot.c  */
 
+#if OLD_NTDOMAIN
 int reply_negprot(connection_struct *conn, 
 		  char *inbuf,char *outbuf, int dum_size, 
 		  int dum_buffsize);
+#endif
 
 /*The following definitions come from  smbd/noquotas.c  */
 
@@ -3151,6 +3201,7 @@ BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT
 
 /*The following definitions come from  smbd/nttrans.c  */
 
+#if OLD_NTDOMAIN
 void fail_next_srvsvc_open(void);
 BOOL should_fail_next_srvsvc_open(const char *pipename);
 int reply_ntcreate_and_X(connection_struct *conn,
@@ -3165,9 +3216,11 @@ BOOL process_pending_change_notify_queue(time_t t);
 BOOL change_notifies_pending(void);
 int reply_nttrans(connection_struct *conn,
 		  char *inbuf,char *outbuf,int length,int bufsize);
+#endif
 
 /*The following definitions come from  smbd/open.c  */
 
+#if OLD_NTDOMAIN
 int fd_close(struct connection_struct *conn, files_struct *fsp);
 files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action);
@@ -3176,9 +3229,11 @@ files_struct *open_file_stat(connection_struct *conn,
 files_struct *open_directory(connection_struct *conn,
 		   char *fname, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
+#endif
 
 /*The following definitions come from  smbd/oplock.c  */
 
+#if OLD_NTDOMAIN
 int32 get_number_of_exclusive_open_oplocks(void);
 BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
@@ -3193,9 +3248,11 @@ BOOL request_oplock_break(share_mode_entry *share_entry,
                           SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
 void check_kernel_oplocks(void);
+#endif
 
 /*The following definitions come from  smbd/password.c  */
 
+#if OLD_NTDOMAIN
 void generate_next_challenge(char *challenge);
 BOOL set_challenge(unsigned char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
@@ -3227,18 +3284,22 @@ BOOL domain_client_validate( char *user, char *domain,
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen,
                              BOOL *user_exists);
+#endif
 
 /*The following definitions come from  smbd/pipes.c  */
 
+#if OLD_NTDOMAIN
 int reply_open_pipe_and_X(connection_struct *conn,
 			  char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize);
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
+#endif
 
 /*The following definitions come from  smbd/process.c  */
 
+#if OLD_NTDOMAIN
 BOOL push_oplock_pending_smb_message(char *buf, int msg_len);
 BOOL receive_next_smb(char *inbuf, int bufsize, int timeout);
 void respond_to_all_remaining_local_messages(void);
@@ -3248,9 +3309,11 @@ void construct_reply_common(char *inbuf,char *outbuf);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 void check_reload(int t);
 void smbd_process(void);
+#endif
 
 /*The following definitions come from  smbd/reply.c  */
 
+#if OLD_NTDOMAIN
 int reply_special(char *inbuf,char *outbuf);
 int reply_tcon(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
@@ -3318,20 +3381,25 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+#endif
 
 /*The following definitions come from  smbd/server.c  */
 
+#if OLD_NTDOMAIN
 int smbd_server_fd(void);
 void smbd_set_server_fd(int fd);
 BOOL reload_services(BOOL test);
 void exit_server(char *reason);
+#endif
 
 /*The following definitions come from  smbd/service.c  */
 
+#if OLD_NTDOMAIN
 BOOL become_service(connection_struct *conn,BOOL do_chdir);
 int find_service(char *service);
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
 void close_cnum(connection_struct *conn, uint16 vuid);
+#endif
 
 /*The following definitions come from  smbd/ssl.c  */
 
@@ -3352,6 +3420,7 @@ BOOL reset_stat_cache( void );
 
 /*The following definitions come from  smbd/trans2.c  */
 
+#if OLD_NTDOMAIN
 int reply_findclose(connection_struct *conn,
 		    char *inbuf,char *outbuf,int length,int bufsize);
 int reply_findnclose(connection_struct *conn, 
@@ -3360,9 +3429,11 @@ int reply_transs2(connection_struct *conn,
 		  char *inbuf,char *outbuf,int length,int bufsize);
 int reply_trans2(connection_struct *conn,
 		 char *inbuf,char *outbuf,int length,int bufsize);
+#endif
 
 /*The following definitions come from  smbd/uid.c  */
 
+#if OLD_NTDOMAIN
 void init_uid(void);
 BOOL become_guest(void);
 BOOL become_user(connection_struct *conn, uint16 vuid);
@@ -3371,6 +3442,7 @@ BOOL become_authenticated_pipe_user(pipes_struct *p);
 BOOL unbecome_authenticated_pipe_user(pipes_struct *p);
 void become_root(BOOL save_dir) ;
 void unbecome_root(BOOL restore_dir);
+#endif
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
 
