@@ -3073,7 +3073,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	   requires Full Access to the printer to change security
 	   information. */ 
 	if (!print_access_check(&user, snum, PRINTER_ACE_FULL_CONTROL)) {
-		result = NT_STATUS_ACCESS_DENIED;
+		result = ERROR_ACCESS_DENIED;
 		goto done;
 	}
 
@@ -3157,7 +3157,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 	if (!print_access_check(NULL, snum, PRINTER_ACE_FULL_CONTROL)) {
 		DEBUG(3, ("printer property change denied by security "
 			  "descriptor\n"));
-		result = NT_STATUS_ACCESS_DENIED;
+		result = ERROR_ACCESS_DENIED;
 		goto done;
 	}
 	
@@ -4545,7 +4545,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	if (!print_access_check(NULL, snum, PRINTER_ACE_FULL_CONTROL)) {
 		DEBUG(3, ("security descriptor change denied by existing "
 			  "security descriptor\n"));
-		return NT_STATUS_ACCESS_DENIED;
+		return ERROR_ACCESS_DENIED;
 	}
 
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
