@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -122,7 +122,7 @@ main(int argc, char **argv)
 	usage (0);
 
     if (version_flag) {
-	print_version (NULL);
+	fprintf (stderr, "%s from %s-%s)\n", __progname, PACKAGE, VERSION);
 	return 0;
     }
 

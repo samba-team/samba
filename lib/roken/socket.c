@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -246,9 +246,9 @@ socket_set_port (struct sockaddr *sa, int port)
 void
 socket_set_debug (int sock)
 {
+#if defined(SO_DEBUG) && defined(HAVE_SETSOCKOPT)
     int on = 1;
 
-#if defined(SO_DEBUG) && defined(HAVE_SETSOCKOPT)
     if (setsockopt (sock, SOL_SOCKET, SO_DEBUG, (void *) &on, sizeof (on)) < 0)
 	warn ("setsockopt SO_DEBUG (ignored)");
 #endif

@@ -1,3 +1,5 @@
+# $Id$
+
 BEGIN {
 	print "#include <stdio.h>"
 	print "#ifdef HAVE_CONFIG_H"
@@ -13,6 +15,8 @@ BEGIN {
 	print "puts(\"\");"
 }
 END {
+	print "puts(\"#define ROKEN_VERSION \" VERSION );"
+	print "puts(\"\");"
 	print "puts(\"#endif /* __ROKEN_H__ */\");"
 	print "exit(0);"
 	print "}"

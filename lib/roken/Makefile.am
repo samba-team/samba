@@ -1,11 +1,13 @@
 # $Id$
 
-include $(top_srcdir)/Makefile.am.common
+AUTOMAKE_OPTIONS = foreign no-dependencies
+
+AM_CFLAGS += $(WFLAGS)
 
 CLEANFILES = roken.h make-roken.c
 
 lib_LTLIBRARIES = libroken.la
-libroken_la_LDFLAGS = -version-info 8:1:3
+libroken_la_LDFLAGS = -version-info @VERSION@:0:0
 
 noinst_PROGRAMS = make-roken
 
@@ -16,11 +18,15 @@ check_PROGRAMS = parse_bytes-test \
 
 TESTS = $(check_PROGRAMS)
 
-getaddrinfo_test_LDADD = libroken.la
-parse_bytes_test_LDADD = libroken.la
+LIB_crypt = @LIB_crypt@
+
+common_LDADD = libroken.la $(LIB_crypt)
+
 strpftime_test_SOURCES = strpftime-test.c strftime.c strptime.c snprintf.c
 snprintf_test_SOURCES  = snprintf-test.c snprintf.c
-snprintf_test_LDADD    = -lm
+snprintf_test_LDADD    = $(common_LDADD) -lm
+getaddrinfo_test_LDADD = $(common_LDADD)
+parse_bytes_test_LDADD = $(common_LDADD)
 
 libroken_la_SOURCES =		\
 	base64.c		\
@@ -131,20 +137,16 @@ EXTRA_libroken_la_SOURCES =	\
 	warnx.c			\
 	writev.c
 
-EXTRA_DIST = resource.h roken.awk roken.def roken.dsp roken.h.in \
-	roken.mak roken.rc
-
-
+EXTRA_DIST = roken.awk roken.h.in
 
 libroken_la_LIBADD = @LTLIBOBJS@
 
 $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h
 
-include_HEADERS = $(err_h) base64.h getarg.h \
-	parse_bytes.h parse_time.h parse_units.h \
-	resolve.h roken.h roken-common.h
-
-build_HEADERZ = $(err_h) $(fnmatch_h) $(glob_h) xdbm.h
+include_HEADERS = $(err_h) base64.h getarg.h		\
+	parse_bytes.h parse_time.h parse_units.h	\
+	resolve.h roken.h roken-common.h		\
+	$(err_h) $(fnmatch_h) $(glob_h) xdbm.h
 
 if have_err_h
 err_h =
