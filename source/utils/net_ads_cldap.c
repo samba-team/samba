@@ -139,7 +139,7 @@ static int send_cldap_netlogon(int sock, const char *domain,
 	asn1_write_enumerated(&data, 0);
 	asn1_write_Integer(&data, 0);
 	asn1_write_Integer(&data, 0);
-	asn1_write_BOOLEAN(&data, False);
+	asn1_write_BOOLEAN2(&data, False);
 	asn1_push_tag(&data, ASN1_CONTEXT(0));
 
 	asn1_push_tag(&data, ASN1_CONTEXT(3));

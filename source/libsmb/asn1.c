@@ -239,6 +239,17 @@ BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 	return !data->has_error;
 }
 
+/* write a BOOLEAN - hmm, I suspect this one is the correct one, and the
+   above boolean is bogus. Need to check */
+BOOL asn1_write_BOOLEAN2(ASN1_DATA *data, BOOL v)
+{
+	asn1_push_tag(data, ASN1_BOOLEAN);
+	asn1_write_uint8(data, v);
+	asn1_pop_tag(data);
+	return !data->has_error;
+}
+
+
 BOOL asn1_read_BOOLEAN(ASN1_DATA *data, BOOL *v)
 {
 	asn1_start_tag(data, ASN1_BOOLEAN);
@@ -500,17 +511,17 @@ int asn1_tag_remaining(ASN1_DATA *data)
 BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 {
 	uint8 b;
-	pstring oid;
+	pstring oid_str;
 	fstring el;
 
 	if (!asn1_start_tag(data, ASN1_OID)) return False;
 	asn1_read_uint8(data, &b);
 
-	oid[0] = 0;
+	oid_str[0] = 0;
 	fstr_sprintf(el, "%u",  b/40);
-	pstrcat(oid, el);
+	pstrcat(oid_str, el);
 	fstr_sprintf(el, " %u",  b%40);
-	pstrcat(oid, el);
+	pstrcat(oid_str, el);
 
 	while (!data->has_error && asn1_tag_remaining(data) > 0) {
 		unsigned v = 0;
@@ -519,12 +530,12 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 			v = (v<<7) | (b&0x7f);
 		} while (!data->has_error && b & 0x80);
 		fstr_sprintf(el, " %u",  v);
-		pstrcat(oid, el);
+		pstrcat(oid_str, el);
 	}
 
 	asn1_end_tag(data);
 
-	*OID = strdup(oid);
+	*OID = strdup(oid_str);
 
 	return (*OID && !data->has_error);
 }

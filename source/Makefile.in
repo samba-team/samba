@@ -210,7 +210,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o \
-	  lib/genparser.o lib/genparser_samba.o libsmb/asn1.o
+	  lib/genparser.o lib/genparser_samba.o 
 
 LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o 
 
@@ -231,7 +231,7 @@ KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
 
 LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
 	     libads/krb5_setpw.o libads/ldap_user.o \
-	     libads/ads_struct.o \
+	     libads/ads_struct.o libads/kerberos_keytab.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
 	     libads/ads_ldap.o libads/authdata.o
 
@@ -246,7 +246,7 @@ LIBSAMBA_OBJ = libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o libsmb/ntlm_ch
 	libsmb/ntlmssp.o libsmb/ntlmssp_parse.o libsmb/ntlmssp_sign.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
-	     libsmb/clikrb5.o libsmb/clispnego.o \
+	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
@@ -260,7 +260,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
 	       rpc_client/cli_wkssvc.o rpc_client/cli_dfs.o \
-	       rpc_client/cli_reg.o rpc_client/cli_pipe.o \
+	       rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
 	       rpc_client/cli_ds.o rpc_client/cli_echo.o \
 	       rpc_client/cli_shutdown.o rpc_client/cli_epmapper.o
@@ -343,6 +343,7 @@ NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o
 
 VFS_AUDIT_OBJ = modules/vfs_audit.o
 VFS_EXTD_AUDIT_OBJ = modules/vfs_extd_audit.o
+VFS_FULL_AUDIT_OBJ = modules/vfs_full_audit.o
 VFS_FAKE_PERMS_OBJ = modules/vfs_fake_perms.o
 VFS_RECYCLE_OBJ = modules/vfs_recycle.o
 VFS_NETATALK_OBJ = modules/vfs_netatalk.o
@@ -479,7 +480,7 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSCHANGE_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) 
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
 		$(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
-		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(DUMMYROOT_OBJ)
+		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(DUMMYROOT_OBJ) $(LIBSMB_OBJ)
 
 SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ) $(SECRETS_OBJ)
 
@@ -622,17 +623,16 @@ SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBSMB_OBJ) \
 	    $(SMBW_OBJ1) $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
-	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ) \
+	    $(LIBMSRPC_OBJ) \
 	    $(RPC_PIPE_OBJ) $(RPC_PARSE_OBJ) $(KRBCLIENT_OBJ) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
 	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
 	    $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
 	    $(LIB_SMBD_OBJ) $(AUTH_SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
-	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) \
-	    $(RPC_LSA_DS_OBJ) $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) \
-	    $(RPC_SPOOLSS_OBJ) $(RPC_ECHO_OBJ) $(RPC_EPMAPPER_OBJ) \
-	    $(SMBLDAP_OBJ) $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ)
+	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_LSA_DS_OBJ) \
+	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
+	    $(RPC_ECHO_OBJ) $(SMBLDAP_OBJ) $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
@@ -695,7 +695,7 @@ TDBDUMP_OBJ = tdb/tdbdump.o $(TDBBASE_OBJ)
 NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o 
 
 NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
-		libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
+		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		libads/kerberos_verify.o $(SECRETS_OBJ) $(SERVER_MUTEX_OBJ) \
 		libads/authdata.o $(RPC_PARSE_OBJ0) \
 		$(DOSERR_OBJ)
@@ -858,27 +858,27 @@ bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(LDFLAGS) $(LIBS) @POPTLIBS@
+	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@
 
 bin/editreg@EXEEXT@: $(EDITREG_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(EDITREG_OBJ) $(LDFLAGS) $(LIBS) @POPTLIBS@
+	@$(CC) $(FLAGS) -o $@ $(EDITREG_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@
 
 bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CUPS_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(CUPS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/smbmount@EXEEXT@: $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/smbmnt@EXEEXT@: $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(LDFLAGS) 
+	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(DYNEXP) $(LDFLAGS) 
 
 bin/smbumount@EXEEXT@: $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(LDFLAGS)
+	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
 bin/testparm@EXEEXT@: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -930,15 +930,15 @@ bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJ) bin/.dummy
 
 bin/talloctort@EXEEXT@: $(TALLOCTORT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TALLOCTORT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(TALLOCTORT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
 bin/masktest@EXEEXT@: $(MASKTEST_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MASKTEST_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(SECRETS_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(MASKTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(SECRETS_OBJ)
 
 bin/msgtest@EXEEXT@: $(MSGTEST_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) 
 
 bin/smbcacls@EXEEXT@: $(SMBCACLS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -950,11 +950,11 @@ bin/smbcquotas@EXEEXT@: $(SMBCQUOTAS_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/locktest@EXEEXT@: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/nsstest@EXEEXT@: $(NSSTEST_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS)  $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS)  $(LDAP_LIBS)
 
 bin/vfstest@EXEEXT@: $(VFSTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -966,11 +966,11 @@ bin/smbiconv@EXEEXT@: $(SMBICONV_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/log2pcap@EXEEXT@: $(LOG2PCAP_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LOG2PCAP_OBJ) $(LDFLAGS) @POPTLIBS@ $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(LOG2PCAP_OBJ) $(LDFLAGS) $(DYNEXP) @POPTLIBS@ $(LIBS)
 
 bin/locktest2@EXEEXT@: $(LOCKTEST2_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/rpctorture@EXEEXT@: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
@@ -978,7 +978,7 @@ bin/rpctorture@EXEEXT@: $(RPCTORTURE_OBJ) bin/.dummy
 
 bin/debug2html@EXEEXT@: $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
 bin/smbfilter@EXEEXT@: $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
@@ -986,7 +986,7 @@ bin/smbfilter@EXEEXT@: $(SMBFILTER_OBJ) bin/.dummy
 
 bin/smbw_sample@EXEEXT@: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBW_OBJ) utils/smbw_sample.o $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBW_OBJ) utils/smbw_sample.o $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/smbsh@EXEEXT@: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
@@ -1000,7 +1000,7 @@ bin/smbwrapper.@SHLIBEXT@: $(PICOBJS) bin/.dummy
 
 bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_PICOBJS) $(LDFLAGS) $(DYNEXP) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_PICOBJS) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
 
@@ -1080,7 +1080,8 @@ bin/librpc_epmapper.@SHLIBEXT@: $(RPC_EPMAPPER_OBJ)
 
 bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo "Linking $@"
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(WINBINDD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
+		@POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS)
 
 # Please don't add .o files to libnss_winbind, libnss_wins, or the pam_winbind
 # libraries.  Add to the appropriate PICOBJ variable instead.
@@ -1189,6 +1190,11 @@ bin/extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ:.o=.@PICSUFFIX@)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXTD_AUDIT_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
+bin/full_audit.@SHLIBEXT@: $(VFS_FULL_AUDIT_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FULL_AUDIT_OBJ:.o=.@PICSUFFIX@) \
+		@SONAMEFLAG@`basename $@`
+
 bin/recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ:.o=.@PICSUFFIX@) \
@@ -1241,13 +1247,14 @@ bin/afsacl.@SHLIBEXT@: $(VFS_AFSACL_OBJ:.o=.po)
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WBINFO_OBJ) $(LIBS) @POPTLIBS@
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(WBINFO_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@
 
 bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-		$(UBIQX_OBJ) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(NTLM_AUTH_OBJ) \
+		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) $(LIBS) \
+		@POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
@@ -1258,31 +1265,28 @@ bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBBACKUP_OBJ)
 
 bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TDBDUMP_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBDUMP_OBJ)
 
 bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
-	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
+	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
 
 bin/t_strstr@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strstr.o
-	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_strstr.o -L ./bin -lbigballofmud
+	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strstr.o -L ./bin -lbigballofmud
 
 bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
-	$(CC) $(FLAGS) -o $@ torture/t_stringoverflow.o -L./bin -lbigballofmud
+	$(CC) $(FLAGS) -o $@ $(DYNEXP) torture/t_stringoverflow.o -L./bin -lbigballofmud
 
 bin/t_doschar@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_doschar.o
-	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_doschar.o -L ./bin -lbigballofmud
+	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_doschar.o -L ./bin -lbigballofmud
 bin/t_push_ucs2@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
-	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_push_ucs2.o -L ./bin -lbigballofmud
-
-bin/t_asn1@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_asn1.o
-	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_asn1.o -L ./bin -lbigballofmud
+	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_push_ucs2.o -L ./bin -lbigballofmud
 
 bin/t_snprintf@EXEEXT@: lib/snprintf.c
-	$(CC) $(FLAGS) -o $@ -DTEST_SNPRINTF lib/snprintf.c -lm
+	$(CC) $(FLAGS) -o $@ $(DYNEXP) -DTEST_SNPRINTF lib/snprintf.c -lm
 install: installbin installman installscripts installdat installswat installmodules @INSTALLCLIENT@
 
 install-everything: install installmodules

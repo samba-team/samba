@@ -178,15 +178,13 @@ PyObject *spoolss_hnd_getprinterdriver(PyObject *self, PyObject *args,
 	uint32 needed;
 	char *arch = "Windows NT x86";
 	int version = 2;
-	static char *kwlist[] = {"level", "arch", "version", NULL};
+	static char *kwlist[] = {"level", "arch", NULL};
 
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "|isi", kwlist, &level, &arch, &version))
+		    args, kw, "|is", kwlist, &level, &arch))
 		return NULL;
-
-	ZERO_STRUCT(ctr);
 
 	/* Call rpc function */
 

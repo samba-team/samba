@@ -45,7 +45,7 @@ static int generate_trn_id(void)
  Parse a node status response into an array of structures.
 ****************************************************************************/
 
-static struct node_status *parse_node_status(char *p, int *num_names)
+static struct node_status *parse_node_status(char *p, int *num_names, struct node_status_extra *extra)
 {
 	struct node_status *ret;
 	int i;
@@ -69,6 +69,12 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 		DEBUG(10, ("%s#%02x: flags = 0x%02x\n", ret[i].name, 
 			   ret[i].type, ret[i].flags));
 	}
+	/*
+	 * Also, pick up the MAC address ...
+	 */
+	if (extra) {
+		memcpy(&extra->mac_addr, p, 6); /* Fill in the mac addr */
+	}
 	return ret;
 }
 
@@ -79,7 +85,8 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 **************************************************************************/
 
 struct node_status *node_status_query(int fd,struct nmb_name *name,
-				      struct in_addr to_ip, int *num_names)
+				      struct in_addr to_ip, int *num_names,
+				      struct node_status_extra *extra)
 {
 	BOOL found=False;
 	int retries = 2;
@@ -150,7 +157,7 @@ struct node_status *node_status_query(int fd,struct nmb_name *name,
 				continue;
 			}
 
-			ret = parse_node_status(&nmb2->answers->rdata[0], num_names);
+			ret = parse_node_status(&nmb2->answers->rdata[0], num_names, extra);
 			free_packet(p2);
 			return ret;
 		}
@@ -191,7 +198,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 
 	/* W2K PDC's seem not to respond to '*'#0. JRA */
 	make_nmb_name(&nname, q_name, q_type);
-	status = node_status_query(sock, &nname, to_ip, &count);
+	status = node_status_query(sock, &nname, to_ip, &count, NULL);
 	close(sock);
 	if (!status)
 		goto done;
@@ -985,8 +992,8 @@ static BOOL resolve_ads(const char *name, int name_type,
 **********************************************************************/
 
 BOOL internal_resolve_name(const char *name, int name_type,
-			   struct ip_service **return_iplist, 
-			   int *return_count, const char *resolve_order)
+				  struct ip_service **return_iplist, 
+				  int *return_count, const char *resolve_order)
 {
 	pstring name_resolve_list;
 	fstring tok;

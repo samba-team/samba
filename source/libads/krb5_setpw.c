@@ -56,7 +56,7 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 
 	princ = strdup(principal);
 
-	if ((c = strchr(princ, '/')) == NULL) {
+	if ((c = strchr_m(princ, '/')) == NULL) {
 	    c = princ; 
 	} else {
 	    *c = '\0';
@@ -66,7 +66,7 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 
 	princ_part2 = c;
 
-	if ((c = strchr(c, '@')) != NULL) {
+	if ((c = strchr_m(c, '@')) != NULL) {
 	    *c = '\0';
 	    c++;
 	    realm = c;
@@ -462,14 +462,21 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 {
 
 	ADS_STATUS aret;
-	krb5_error_code ret;
+	krb5_error_code ret = 0;
 	krb5_context context = NULL;
-	krb5_principal principal;
-	char *princ_name;
-	char *realm;
-	krb5_creds creds, *credsp;
+	krb5_principal principal = NULL;
+	char *princ_name = NULL;
+	char *realm = NULL;
+	krb5_creds creds, *credsp = NULL;
+#if KRB5_PRINC_REALM_RETURNS_REALM
+	krb5_realm orig_realm;
+#else
+	krb5_data orig_realm;
+#endif
 	krb5_ccache ccache = NULL;
 
+	ZERO_STRUCT(creds);
+	
 	ret = krb5_init_context(&context);
 	if (ret) {
 		DEBUG(1,("Failed to init krb5 context (%s)\n", error_message(ret)));
@@ -487,14 +494,19 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 		return ADS_ERROR_KRB5(ret);
 	}
 
-	ZERO_STRUCT(creds);
-	
-	realm = strchr(princ, '@');
+	realm = strchr_m(princ, '@');
+	if (!realm) {
+		krb5_cc_close(context, ccache);
+	        krb5_free_context(context);
+		DEBUG(1,("Failed to get realm\n"));
+		return ADS_ERROR_KRB5(-1);
+	}
 	realm++;
 
 	asprintf(&princ_name, "kadmin/changepw@%s", realm);
 	ret = krb5_parse_name(context, princ_name, &creds.server);
 	if (ret) {
+		krb5_cc_close(context, ccache);
                 krb5_free_context(context);
 		DEBUG(1,("Failed to parse kadmin/changepw (%s)\n", error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
@@ -504,16 +516,23 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	/* parse the principal we got as a function argument */
 	ret = krb5_parse_name(context, princ, &principal);
 	if (ret) {
+		krb5_cc_close(context, ccache);
+	        krb5_free_principal(context, creds.server);
                 krb5_free_context(context);
 		DEBUG(1,("Failed to parse %s (%s)\n", princ_name, error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
 
-	krb5_princ_set_realm(context, creds.server,
-			     krb5_princ_realm(context, principal));
+	/* The creds.server principal takes ownership of this memory.
+		Remember to set back to original value before freeing. */
+	orig_realm = *krb5_princ_realm(context, creds.server);
+	krb5_princ_set_realm(context, creds.server, krb5_princ_realm(context, principal));
 	
 	ret = krb5_cc_get_principal(context, ccache, &creds.client);
 	if (ret) {
+		krb5_cc_close(context, ccache);
+		krb5_princ_set_realm(context, creds.server, &orig_realm);
+	        krb5_free_principal(context, creds.server);
 	        krb5_free_principal(context, principal);
                 krb5_free_context(context);
 		DEBUG(1,("Failed to get principal from ccache (%s)\n", 
@@ -523,7 +542,10 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	
 	ret = krb5_get_credentials(context, 0, ccache, &creds, &credsp); 
 	if (ret) {
+		krb5_cc_close(context, ccache);
 	        krb5_free_principal(context, creds.client);
+		krb5_princ_set_realm(context, creds.server, &orig_realm);
+	        krb5_free_principal(context, creds.server);
 	        krb5_free_principal(context, principal);
 	        krb5_free_context(context);
 		DEBUG(1,("krb5_get_credentials failed (%s)\n", error_message(ret)));
@@ -538,7 +560,10 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 
 	krb5_free_creds(context, credsp);
 	krb5_free_principal(context, creds.client);
+	krb5_princ_set_realm(context, creds.server, &orig_realm);
+        krb5_free_principal(context, creds.server);
 	krb5_free_principal(context, principal);
+	krb5_cc_close(context, ccache);
 	krb5_free_context(context);
 
 	return aret;

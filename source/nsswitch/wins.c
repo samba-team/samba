@@ -145,7 +145,7 @@ static struct node_status *lookup_byaddr_backend(char *addr, int *count)
 
 	make_nmb_name(&nname, "*", 0);
 	ip = *interpret_addr2(addr);
-	status = node_status_query(fd,&nname,ip, count);
+	status = node_status_query(fd,&nname,ip, count, NULL);
 
 	close(fd);
 	return status;

@@ -69,7 +69,7 @@ int opt_port = 0;
 int opt_verbose = 0;
 int opt_maxusers = -1;
 const char *opt_comment = "";
-const char *opt_container = "";
+const char *opt_container = "cn=Users";
 int opt_flags = -1;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;
@@ -148,7 +148,7 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 		}
 	}
 	
-	nt_status = cli_full_connection(c, opt_requester_name, server_name, 
+	nt_status = cli_full_connection(c, NULL, server_name, 
 					server_ip, opt_port,
 					service_name, service_type,  
 					opt_user_name, opt_workgroup,
@@ -810,10 +810,8 @@ static struct functable net_func[] = {
 		}
 	}
 
-	if (!opt_requester_name) {
-		static fstring myname;
-		get_myname(myname);
-		opt_requester_name = myname;
+	if (opt_requester_name) {
+		set_global_myname(opt_requester_name);
 	}
 
 	if (!opt_user_name && getenv("LOGNAME")) {

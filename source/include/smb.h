@@ -1565,6 +1565,12 @@ struct node_status {
 	unsigned char flags;
 };
 
+/* The extra info from a NetBIOS node status query */
+struct node_status_extra {
+	unsigned char mac_addr[6];
+	/* There really is more here ... */ 
+};
+
 struct pwd_info
 {
 	BOOL null_pwd;
@@ -1690,7 +1696,7 @@ struct ip_service {
 
 typedef struct smb_sign_info {
 	void (*sign_outgoing_message)(char *outbuf, struct smb_sign_info *si);
-	BOOL (*check_incoming_message)(char *inbuf, struct smb_sign_info *si, BOOL expected_ok);
+	BOOL (*check_incoming_message)(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok);
 	void (*free_signing_context)(struct smb_sign_info *si);
 	void *signing_context;
 

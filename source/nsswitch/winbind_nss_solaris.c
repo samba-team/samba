@@ -49,6 +49,28 @@
 
 #define NSS_ARGS(args) ((nss_XbyY_args_t *)args)
 
+#ifdef HPUX
+
+/*
+ * HP-UX 11 has no definiton of the nss_groupsbymem structure.   This
+ * definition is taken from the nss_ldap project at:
+ *  http://www.padl.com/OSS/nss_ldap.html
+ */
+
+struct nss_groupsbymem {
+       const char *username;
+       gid_t *gid_array;
+       int maxgids;
+       int force_slow_way;
+       int (*str2ent)(const char *instr, int instr_len, void *ent, 
+		      char *buffer, int buflen);
+       nss_status_t (*process_cstr)(const char *instr, int instr_len, 
+				    struct nss_groupsbymem *);
+       int numgids;
+};
+
+#endif /* HPUX */
+
 #define make_pwent_str(dest, src) 					\
 {									\
   if((dest = get_static(buffer, buflen, strlen(src)+1)) == NULL)	\

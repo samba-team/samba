@@ -203,7 +203,6 @@ typedef struct
 	int lpqcachetime;
 	int iMaxSmbdProcesses;
 	BOOL bDisableSpoolss;
-	int iTotalPrintJobs;
 	int syslog;
 	int os_level;
 	int enhanced_browsing;
@@ -291,6 +290,7 @@ typedef struct
 	BOOL bUnixExtensions;
 	BOOL bDisableNetbios;
 	BOOL bKernelChangeNotify;
+	BOOL bUseKerberosKeytab;
 	BOOL bDeferSharingViolations;
 	int restrict_anonymous;
 	int name_cache_timeout;
@@ -872,6 +872,7 @@ static struct parm_struct parm_table[] = {
 	{"hosts deny", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"deny hosts", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_HIDE}, 
 	{"preload modules", P_LIST, P_GLOBAL, &Globals.szPreloadModules, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL}, 
+	{"use kerberos keytab", P_BOOL, P_GLOBAL, &Globals.bUseKerberosKeytab, NULL, NULL, FLAG_ADVANCED}, 
 
 	{N_("Logging Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1203,24 +1204,18 @@ static void init_printer_values(service *pService)
 		case PRINT_LPROS2:
 			string_set(&pService->szLpqcommand, "lpq -P'%p'");
 			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
-			string_set(&pService->szPrintcommand,
-				   "lpr -r -P'%p' %s");
+			string_set(&pService->szPrintcommand, "lpr -r -P'%p' %s");
 			break;
 
 		case PRINT_LPRNG:
 		case PRINT_PLP:
 			string_set(&pService->szLpqcommand, "lpq -P'%p'");
 			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
-			string_set(&pService->szPrintcommand,
-				   "lpr -r -P'%p' %s");
-			string_set(&pService->szQueuepausecommand,
-				   "lpc stop '%p'");
-			string_set(&pService->szQueueresumecommand,
-				   "lpc start '%p'");
-			string_set(&pService->szLppausecommand,
-				   "lpc hold '%p' %j");
-			string_set(&pService->szLpresumecommand,
-				   "lpc release '%p' %j");
+			string_set(&pService->szPrintcommand, "lpr -r -P'%p' %s");
+			string_set(&pService->szQueuepausecommand, "lpc stop '%p'");
+			string_set(&pService->szQueueresumecommand, "lpc start '%p'");
+			string_set(&pService->szLppausecommand, "lpc hold '%p' %j");
+			string_set(&pService->szLpresumecommand, "lpc release '%p' %j");
 			break;
 
 		case PRINT_CUPS:
@@ -1235,20 +1230,13 @@ static void init_printer_values(service *pService)
 
 	                string_set(&Globals.szPrintcapname, "cups");
 #else
-			string_set(&pService->szLpqcommand,
-			           "/usr/bin/lpstat -o '%p'");
-			string_set(&pService->szLprmcommand,
-			           "/usr/bin/cancel '%p-%j'");
-			string_set(&pService->szPrintcommand,
-			           "/usr/bin/lp -d '%p' %s; rm %s");
-			string_set(&pService->szLppausecommand,
-				   "lp -i '%p-%j' -H hold");
-			string_set(&pService->szLpresumecommand,
-				   "lp -i '%p-%j' -H resume");
-			string_set(&pService->szQueuepausecommand,
-			           "/usr/bin/disable '%p'");
-			string_set(&pService->szQueueresumecommand,
-			           "/usr/bin/enable '%p'");
+			string_set(&pService->szLpqcommand, "/usr/bin/lpstat -o '%p'");
+			string_set(&pService->szLprmcommand, "/usr/bin/cancel '%p-%j'");
+			string_set(&pService->szPrintcommand, "/usr/bin/lp -d '%p' %s; rm %s");
+			string_set(&pService->szLppausecommand, "lp -i '%p-%j' -H hold");
+			string_set(&pService->szLpresumecommand, "lp -i '%p-%j' -H resume");
+			string_set(&pService->szQueuepausecommand, "/usr/bin/disable '%p'");
+			string_set(&pService->szQueueresumecommand, "/usr/bin/enable '%p'");
 			string_set(&Globals.szPrintcapname, "lpstat");
 #endif /* HAVE_CUPS */
 			break;
@@ -1257,17 +1245,12 @@ static void init_printer_values(service *pService)
 		case PRINT_HPUX:
 			string_set(&pService->szLpqcommand, "lpstat -o%p");
 			string_set(&pService->szLprmcommand, "cancel %p-%j");
-			string_set(&pService->szPrintcommand,
-				   "lp -c -d%p %s; rm %s");
-			string_set(&pService->szQueuepausecommand,
-				   "disable %p");
-			string_set(&pService->szQueueresumecommand,
-				   "enable %p");
+			string_set(&pService->szPrintcommand, "lp -c -d%p %s; rm %s");
+			string_set(&pService->szQueuepausecommand, "disable %p");
+			string_set(&pService->szQueueresumecommand, "enable %p");
 #ifndef HPUX
-			string_set(&pService->szLppausecommand,
-				   "lp -i %p-%j -H hold");
-			string_set(&pService->szLpresumecommand,
-				   "lp -i %p-%j -H resume");
+			string_set(&pService->szLppausecommand, "lp -i %p-%j -H hold");
+			string_set(&pService->szLpresumecommand, "lp -i %p-%j -H resume");
 #endif /* HPUX */
 			break;
 
@@ -1398,7 +1381,6 @@ static void init_globals(void)
 	Globals.lpqcachetime = 10;
 	Globals.bDisableSpoolss = False;
 	Globals.iMaxSmbdProcesses = 0;/* no limit specified */
-	Globals.iTotalPrintJobs = 0;  /* no limit specified */
 	Globals.pwordlevel = 0;
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
@@ -1674,7 +1656,7 @@ FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
-FN_GLOBAL_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
+FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
@@ -1794,6 +1776,7 @@ FN_GLOBAL_BOOL(lp_use_spnego, &Globals.bUseSpnego)
 FN_GLOBAL_BOOL(lp_client_use_spnego, &Globals.bClientUseSpnego)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_GLOBAL_BOOL(lp_kernel_change_notify, &Globals.bKernelChangeNotify)
+FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
 FN_GLOBAL_BOOL(lp_defer_sharing_violations, &Globals.bDeferSharingViolations)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
@@ -3569,6 +3552,7 @@ static void dump_a_service(service * pService, FILE * f)
 					((char *)pService) + pdiff, f);
 			fprintf(f, "\n");
 		}
+	}
 
 		if (pService->param_opt != NULL) {
 			data = pService->param_opt;
@@ -3578,7 +3562,6 @@ static void dump_a_service(service * pService, FILE * f)
 			}
         	}
 	}
-}
 
 
 /***************************************************************************

@@ -396,9 +396,6 @@
 #endif
 
 #if defined (HAVE_NETGROUP)
-#if defined(HAVE_RPCSVC_YPCLNT_H)
-#include <rpcsvc/ypclnt.h>
-#endif
 #if defined(HAVE_RPCSVC_YP_PROT_H)
 /*
  * HP-UX 11.X has TCP_NODELAY and TCP_MAXSEG defined in <netinet/tcp.h> which
@@ -414,6 +411,9 @@
 #undef TCP_MAXSEG
 #endif
 #include <rpcsvc/yp_prot.h>
+#endif
+#if defined(HAVE_RPCSVC_YPCLNT_H)
+#include <rpcsvc/ypclnt.h>
 #endif
 #endif /* HAVE_NETGROUP */
 
@@ -1340,6 +1340,10 @@ krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype
 krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_context auth_context, krb5_keyblock *keyblock);
 #endif
 
+#ifndef HAVE_KRB5_FREE_UNPARSED_NAME
+void krb5_free_unparsed_name(krb5_context ctx, char *val);
+#endif
+
 /* Samba wrapper function for krb5 functionality. */
 void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
 int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
@@ -1351,6 +1355,15 @@ void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
 BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote);
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 #endif /* HAVE_KRB5 */
+
+
+#ifdef HAVE_LDAP
+
+/* function declarations not included in proto.h */
+LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
+
+#endif	/* HAVE_LDAP */
+
 
 /* TRUE and FALSE are part of the C99 standard and gcc, but
    unfortunately many vendor compilers don't support them.  Use True

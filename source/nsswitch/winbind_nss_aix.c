@@ -977,16 +977,7 @@ int wb_aix_init(struct secmethod_table *methods)
 {
 	ZERO_STRUCTP(methods);
 
-	/* This symbol isn't defined on AIX5.1 and earlier and none of
-	 * the example code available even initialises the
-	 * method_version field.  It's unclear what this should be set
-	 * to for versions of AIX other than 5.2.  See bugzilla entry
-	 * #1542.
-	 */
-
-#ifdef SECMETHOD_VERSION_520
 	methods->method_version = SECMETHOD_VERSION_520;
-#endif
 
 	methods->method_getgrgid           = wb_aix_getgrgid;
 	methods->method_getgrnam           = wb_aix_getgrnam;
