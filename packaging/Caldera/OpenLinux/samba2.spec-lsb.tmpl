@@ -64,6 +64,12 @@ Summary(it) 	: Strumento per l'amministrazione di Samba via Web.
 Summary(pt) 	: Ferramenta Web de administração de Samba (Samba Web Administration Tool).
 
 
+%Package debug
+Group          : Server/Network
+
+Summary        : Programs to debug Samba and to test SMB client integrity
+
+
 %Description
 Samba provides an SMB server which can be used to provide network
 services to SMB (sometimes called "Lan Manager") clients, including
@@ -181,6 +187,11 @@ todas as opções configuraveis no smb.conf, permitindo a um admnistrador
 verificar rapidamente o efeite de qualquer alteração.
 
 
+%Description debug
+This package contains programs that can be used to crash test any SMB
+server. Please use it with care. If you do not need it then do NOT install.
+
+
 %Prep
 %setup -n samba
 %patch0 -p1
@@ -254,6 +265,9 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 
 
 make LOGFILEBASE=/var/log/samba.d all nsswitch
+# debug package:
+make LOGFILEBASE=/var/log/samba.d smbfilter smbtorture debug2html locktest2
+make LOGFILEBASE=/var/log/samba.d masktest bin/smbspool
 
 
 %Install
@@ -291,6 +305,10 @@ ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so
 
 # install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
 
+for f in debug2html smbtorture smbfilter locktest2 masktest smbspool; do
+	install -m 755 source/bin/$f $DESTDIR/usr/sbin/$f
+done
+
 #lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
@@ -308,6 +326,8 @@ cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
 cp -p $VVS/samba.logrotate $DESTDIR/etc/logrotate.d/samba
 cp -p $VVS/README.home $DESTDIR/etc/skel/Samba/README.txt
 cp -p $VVS/README.Public $DESTDIR/%{LSBservedir}/Public/README.txt
+cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
+
 install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/%{Name}
 
 for f in testparm testprns; do
@@ -353,6 +373,7 @@ cp -p swat/README $DOCD/README.swat
 %{mkLists} -c samba
 cat << 'EOF' | %{mkLists} -d samba
 Samba					base
+%{LSBservedir}				config-IGNORED
 ^/(etc|var|home|tmp)			config-IGNORED
 swat					swat
 doc/samba-[^/]+/$			base
@@ -362,6 +383,7 @@ man					IGNORED
 @default@
 EOF
 cat << 'EOF' | %{mkLists} -f -a samba
+\.old$					IGNORED
 Samba/README.txt			base
 ^/etc					config-IGNORED
 /doc/samba-[^/]+/(COPYING|README$)	base
@@ -371,6 +393,11 @@ doc/samba-[^/]+/(COPYING|README$)	base
 smb(mount|mnt|umount)			smbfs
 mount.smbfs				smbfs
 swat					swat
+torture					debug
+debug					debug
+smbfilter				debug
+locktest2				debug
+masktest				debug
 @default@
 EOF
 
@@ -414,6 +441,10 @@ test "$1" = "0" || exit 0
 %dir %attr(755,root,root) /var/lock/samba.d
 %dir %attr(755,root,root) /var/log/samba.d
 %dir %attr(1777,root,root) /var/spool/samba
+%dir %attr(755,root,root) %{LSBservedir}
+%dir %attr(755,root,root) %{LSBservedir}/netlogon
+%dir %attr(755,root,root) %{LSBservedir}/profiles
+%dir %attr(755,root,root) %{LSBservedir}/Public
 
 
 %Files doc -f files-samba-doc
@@ -429,6 +460,10 @@ test "$1" = "0" || exit 0
 %config %attr(644,root,root) %{NKinetdir}/swat
 
 
+%Files -n samba-debug  -f files-samba-debug
+%defattr(-,root,root)
+
+
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec-lsb.tmpl,v 1.1.2.4 2001/01/18 10:48:32 jht Exp $
+$Id: samba2.spec-lsb.tmpl,v 1.1.2.5 2001/01/24 00:06:06 jht Exp $

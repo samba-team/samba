@@ -207,6 +207,7 @@
 # the default is to use the user's home directory
 [profiles]
     path = @samba_home@/profiles
+    writeable = yes
     browseable = no
     guest ok = yes
 

@@ -1,0 +1,10 @@
+This directory is used to store the roaming Profiles of your Windows
+users. For more information install the package samba-doc and read
+file /usr/share/doc/samba-2.0.7/docs/textdocs/DOMAIN.txt
+
+The default configuration opens the access rights for read/write for
+anyone. If you see a problem in it, disable the Profiles support in
+your samba configuration: either edit file /etc/samba.d/smb.conf or
+use swat ( http://localhost:901/ ).
+
+2000-01-23,  Klaus Singvogel,  Caldera (Deutschland) GmbH.
