@@ -619,7 +619,7 @@ _krb5_PKCS5_PBKDF2(krb5_context context, krb5_cksumtype cktype,
     return 0;
 }
 
-int _krb5_AES_string_to_default_iterator = 45056;
+int _krb5_AES_string_to_default_iterator = 4096;
 
 static krb5_error_code
 AES_string_to_key(krb5_context context,
@@ -668,14 +668,20 @@ AES_string_to_key(krb5_context context,
     return ret;
 }
 
+struct krb5_aes_schedule {
+    AES_KEY ekey;
+    AES_KEY dkey;
+};
+
 static void
 AES_schedule(krb5_context context, struct key_data *kd)
 {
-    AES_KEY *key = kd->schedule->data;
+    struct krb5_aes_schedule *key = kd->schedule->data;
     int bits = kd->key->keyvalue.length * 8;
-    
-    AES_set_encrypt_key(kd->key->keyvalue.data, bits, &key[0]);
-    AES_set_decrypt_key(kd->key->keyvalue.data, bits, &key[1]);
+
+    memset(key, 0, sizeof(*key));
+    AES_set_encrypt_key(kd->key->keyvalue.data, bits, &key->ekey);
+    AES_set_decrypt_key(kd->key->keyvalue.data, bits, &key->dkey);
 }
 
 /*
@@ -739,7 +745,7 @@ struct key_type keytype_aes128 = {
     "aes-128",
     128,
     16,
-    sizeof(AES_KEY) * 2,
+    sizeof(struct krb5_aes_schedule),
     NULL,
     AES_schedule,
     AES_salt
@@ -750,7 +756,7 @@ struct key_type keytype_aes256 = {
     "aes-256",
     256,
     32,
-    sizeof(AES_KEY) * 2,
+    sizeof(struct krb5_aes_schedule),
     NULL,
     AES_schedule,
     AES_salt
@@ -2047,7 +2053,7 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
 void
 _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
 		      size_t len, const void *aes_key,
-		      unsigned char *ivec, const int enc)
+		      unsigned char *ivec, const int encrypt)
 {
     unsigned char tmp[AES_BLOCK_SIZE];
     const AES_KEY *key = aes_key; /* XXX remove this when we always have AES */
@@ -2058,7 +2064,7 @@ _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
      * then at least one blocksize.
      */
 
-    if (enc == AES_ENCRYPT) {
+    if (encrypt) {
 
 	while(len > AES_BLOCK_SIZE) {
 	    for (i = 0; i < AES_BLOCK_SIZE; i++)
@@ -2119,13 +2125,14 @@ AES_CTS_encrypt(krb5_context context,
 		int usage,
 		void *ivec)
 {
-    AES_KEY *k = key->schedule->data;
+    struct krb5_aes_schedule *aeskey = key->schedule->data;
     char local_ivec[AES_BLOCK_SIZE];
+    AES_KEY *k;
 
     if (encrypt)
-	k = &k[0];
+	k = &aeskey->ekey;
     else
-	k = &k[1];
+	k = &aeskey->dkey;
     
     if (len < AES_BLOCK_SIZE)
 	abort();
@@ -2456,7 +2463,7 @@ static struct encryption_type enctype_aes128_cts_hmac_sha1 = {
     &keytype_aes128,
     &checksum_sha1,
     &checksum_hmac_sha1_aes128,
-    0,
+    F_DERIVED,
     AES_CTS_encrypt,
 };
 static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
@@ -2468,7 +2475,7 @@ static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
     &keytype_aes256,
     &checksum_sha1,
     &checksum_hmac_sha1_aes256,
-    0,
+    F_DERIVED,
     AES_CTS_encrypt,
 };
 #endif /* ENABLE_AES */
@@ -3362,6 +3369,10 @@ derive_key(krb5_context context,
 			      kt->type);
 	ret = KRB5_CRYPTO_INTERNAL;
 	break;
+    }
+    if (key->schedule) {
+	krb5_free_data(context, key->schedule);
+	key->schedule = NULL;
     }
     memset(k, 0, nblocks * et->blocksize);
     free(k);
