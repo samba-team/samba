@@ -3394,6 +3394,13 @@ SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), bin/fake_perms.so, VFS)
 SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK), bin/netatalk.so, VFS)
 SMB_SUBSYSTEM(VFS)
 
+SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), bin/recycle.so, VFS)
+SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), bin/audit.so, VFS)
+SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), bin/extd_audit.so, VFS)
+SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), bin/fake_perms.so, VFS)
+SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK), bin/netatalk.so, VFS)
+SMB_SUBSYSTEM(VFS)
+
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
 AC_SUBST(MODULES_CLEAN)

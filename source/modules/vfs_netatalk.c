@@ -410,10 +410,9 @@ static vfs_op_tuple atalk_ops[] = {
 };
 
 /* VFS initialisation function.  Return vfs_op_tuple array back to SAMBA. */
-vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
+static vfs_op_tuple *netatalk_init(const struct vfs_ops *def_vfs_ops,
   struct smb_vfs_handle_struct *vfs_handle)
 {
-	*vfs_version = SMB_VFS_INTERFACE_VERSION;
 	memcpy(&default_vfs_ops, def_vfs_ops, sizeof(struct vfs_ops));
 	
 	atalk_handle = vfs_handle;
@@ -422,8 +421,7 @@ vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
 	return atalk_ops;
 }
 
-/* VFS finalization function. */
-void vfs_done(connection_struct *conn)
+int vfs_netatalk_init(void)
 {
-	DEBUG(3, ("ATALK: vfs module unloaded\n"));
+	return smb_register_vfs("netatalk", netatalk_init, SMB_VFS_INTERFACE_VERSION);
 }

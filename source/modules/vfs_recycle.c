@@ -87,13 +87,12 @@ static vfs_op_tuple recycle_ops[] = {
  *
  * @retval initialised vfs_op_tuple array
  **/
-vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
+static vfs_op_tuple *recycle_init(const struct vfs_ops *def_vfs_ops,
 			struct smb_vfs_handle_struct *vfs_handle)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 
 	DEBUG(10, ("Initializing VFS module recycle\n"));
-	*vfs_version = SMB_VFS_INTERFACE_VERSION;
 	memcpy(&default_vfs_ops, def_vfs_ops, sizeof(struct vfs_ops));
 	vfs_recycle_debug_level = debug_add_class("vfs_recycle_bin");
 	if (vfs_recycle_debug_level == -1) {
@@ -118,39 +117,6 @@ vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
 	((recycle_bin_private_data *)(recycle_bin_private_handle->data))->conns = NULL;
 
 	return recycle_ops;
-}
-
-/**
- * VFS finalization function.
- *
- **/
-void vfs_done(void)
-{
-	recycle_bin_private_data *recdata;
-	recycle_bin_connections *recconn;
-
-	DEBUG(10, ("Unloading/Cleaning VFS module recycle bin\n"));
-
-	if (recycle_bin_private_handle)
-		recdata = (recycle_bin_private_data *)(recycle_bin_private_handle->data);
-	else {
-		DEBUG(0, ("Recycle bin not initialized!\n"));
-		return;
-	}
-
-	if (recdata) {
-		if (recdata->conns) {
-			recconn = recdata->conns;
-			while (recconn) {
-				talloc_destroy(recconn->data->mem_ctx);
-				recconn = recconn->next;
-			}
-		}
-		if (recdata->mem_ctx) {
-			talloc_destroy(recdata->mem_ctx);
-		}
-		recdata = NULL;
-	}
 }
 
 static int recycle_connect(struct connection_struct *conn, const char *service, const char *user)
@@ -645,4 +611,9 @@ done:
 	SAFE_FREE(temp_name);
 	SAFE_FREE(final_name);
 	return rc;
+}
+
+int vfs_recycle_init(void)
+{
+	return smb_register_vfs("recycle", recycle_init, SMB_VFS_INTERFACE_VERSION);
 }

@@ -136,8 +136,7 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 
 QUOTAOBJS=@QUOTAOBJS@
 
-VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_extd_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ \
-	bin/vfs_netatalk.@SHLIBEXT@ bin/vfs_fake_perms.@SHLIBEXT@
+VFS_MODULES = @VFS_MODULES@
 PDB_MODULES = @PDB_MODULES@
 RPC_MODULES = @RPC_MODULES@
 CHARSET_MODULES = @CHARSET_MODULES@
@@ -327,8 +326,8 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/change_trust_pw.o \
 	       $(MANGLE_OBJ)
 
-SMBD_OBJ_BASE = $(SMBD_OBJ_SRV) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
-		$(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) \
+SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(MSDFS_OBJ) $(LIBSMB_OBJ) \
+		$(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) $(UBIQX_OBJ) \
 		$(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
 		$(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
 		$(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) \
@@ -346,8 +345,7 @@ PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o 
 
 MSDFS_OBJ = msdfs/msdfs.o 
 
-SMBD_OBJ = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE)
-
+SMBD_OBJ = $(SMBD_OBJ_BASE) $(SMBD_OBJ_MAIN)
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
             nmbd/nmbd_browsesync.o nmbd/nmbd_elections.o \
@@ -603,7 +601,7 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(POPT_LIB_O
 # now the rules...
 ######################################################################
 all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
-	$(TORTURE_PROGS) @EXTRA_ALL_TARGETS@
+	$(TORTURE_PROGS) $(MODULES) @EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
@@ -1020,27 +1018,27 @@ bin/xml.@SHLIBEXT@: $(XML_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(XML_OBJ) @XML_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/vfs_audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ)
+bin/audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/vfs_extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ)
+bin/extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/vfs_recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ)
+bin/recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/vfs_netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ)
+bin/netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/vfs_fake_perms.@SHLIBEXT@: $(VFS_FAKE_PERMS_OBJ)
+bin/fake_perms.@SHLIBEXT@: $(VFS_FAKE_PERMS_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ) \
 		@SONAMEFLAG@`basename $@`
@@ -1074,7 +1072,7 @@ bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
 	$(CC) $(FLAGS) -o $@ torture/t_stringoverflow.o -L./bin -lbigballofmud
 
-install: installbin installman installscripts installdat installswat 
+install: installbin installman installscripts installdat installswat installmodules
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privelege

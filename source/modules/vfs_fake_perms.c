@@ -267,12 +267,11 @@ static vfs_op_tuple fake_perms_ops[] = {
 
 /* VFS initialisation - return initialized vfs_op_tuple array back to Samba */
 
-vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
+static vfs_op_tuple *fake_perms_init(const struct vfs_ops *def_vfs_ops,
 			struct smb_vfs_handle_struct *vfs_handle)
 {
 	DEBUG(3, ("Initialising default vfs hooks\n"));
 
-	*vfs_version = SMB_VFS_INTERFACE_VERSION;
 	memcpy(&default_vfs_ops, def_vfs_ops, sizeof(struct vfs_ops));
 	
 	/* Remember vfs_handle for further allocation and referencing of private
@@ -282,8 +281,7 @@ vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
 	return fake_perms_ops;
 }
 
-/* VFS finalization function */
-void vfs_done(connection_struct *conn)
+int vfs_fake_perms_init(void)
 {
-	DEBUG(3, ("Finalizing default vfs hooks\n"));
+	return smb_register_vfs("fake_perms", fake_perms_init, SMB_VFS_INTERFACE_VERSION);
 }
