@@ -66,6 +66,11 @@
 		<para><emphasis>WARNING: Do NOT enable this option on a production 
 		server. </emphasis></para></listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>-V</term>
+		<listitem><para>Print version number of samba suite</para></listitem>
+		</varlistentry>
 	</variablelist>
 
 </refsect1>
@@ -73,6 +78,12 @@
 <refsect1>
 
 	<title>INSTALLATION</title>
+
+	<para>Swat is included as binary package with most distributions. The 
+	package manager in this case takes care of the installation and 
+	configuration. This section is only for those who have compiled 
+	swat from scratch.
+	</para>
 
 	<para>After you compile SWAT you need to run <command>make install
 	</command> to install the <command>swat</command> binary
@@ -97,7 +108,7 @@
 
 		<para><command>swat            901/tcp</command></para>
 
-		<para>Note for NIS/YP users - you may need to rebuild the 
+		<para>Note for NIS/YP and LDAP users - you may need to rebuild the 
 		NIS service maps rather than alter your local <filename>
 		/etc/services</filename> file. </para>
 
@@ -121,17 +132,19 @@
 	</refsect2>
 
 
-	<refsect2>
-		<title>Launching</title>
 
-		<para>To launch SWAT just run your favorite web browser and 
-		point it at "http://localhost:901/".</para>
+</refsect1>
 
-		<para>Note that you can attach to SWAT from any IP connected 
-		machine but connecting from a remote machine leaves your 
-		connection open to password sniffing as passwords will be sent 
-		in the clear over the wire. </para>
-	</refsect2>
+<refsect1>
+	<title>LAUNCHING</title>
+
+	<para>To launch SWAT just run your favorite web browser and 
+	point it at "http://localhost:901/".</para>
+
+	<para>Note that you can attach to SWAT from any IP connected 
+	machine but connecting from a remote machine leaves your 
+	connection open to password sniffing as passwords will be sent 
+	in the clear over the wire. </para>
 </refsect1>
 
 <refsect1>
@@ -180,7 +193,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of the Samba suite.</para>
+	<para>This man page is correct for version 3.0 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
