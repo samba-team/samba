@@ -1,3 +1,9 @@
+2001-06-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/crypto.c (krb5_string_to_key_derived): fix memory leak
+	* lib/krb5/krbhst.c (config_get_hosts): free hostlist
+	* kuser/kinit.c: free principal
+
 2001-06-18  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kerberos5.c: update to new krb5_auth_con* names
