@@ -896,27 +896,31 @@ BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 creates a structure.
 ********************************************************************/
 BOOL make_reg_r_info(REG_R_INFO *r_r,
-				uint32 type, char *buf,
+				uint32 *type, BUFFER2 *buf,
 				uint32 status)
 {
-	int len;
+	if (r_r == NULL) return False;
 
-	if (r_r == NULL || buf == NULL) return False;
-
-	len = strlen(buf);
-
-	r_r->ptr_type = type;
+	r_r->ptr_type = type != NULL ? 1 : 0;
 	r_r->type = type;
 
-	r_r->ptr_uni_type = 1;
-	make_buffer2(&(r_r->uni_type), buf, len);
+	r_r->ptr_uni_type = buf != NULL ? 1 : 0;
+	r_r->uni_type = buf;
 
-	r_r->ptr_max_len = 1;
-	r_r->buf_max_len = r_r->uni_type.buf_max_len;
+	if (buf != NULL)
+	{
+		r_r->ptr_max_len = 1;
+		r_r->buf_max_len = r_r->uni_type->buf_max_len;
 
-	r_r->ptr_len = 1;
-	r_r->buf_len = r_r->uni_type.buf_len;
-
+		r_r->ptr_len = 1;
+		r_r->buf_len = r_r->uni_type->buf_len;
+	}
+	else
+	{
+		r_r->ptr_max_len = 0;
+		r_r->ptr_len = 0;
+	}
+		
 	r_r->status = status;
 
 	return True;
@@ -937,11 +941,11 @@ BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 	prs_uint32("ptr_type", ps, depth, &(r_r->ptr_type));
 	if (r_r->ptr_type != 0)
 	{
-		prs_uint32("type", ps, depth, &(r_r->type));
+		prs_uint32("type", ps, depth, r_r->type);
 	}
 
 	prs_uint32("ptr_uni_type", ps, depth, &(r_r->ptr_uni_type));
-	smb_io_buffer2("uni_type", &(r_r->uni_type), r_r->ptr_uni_type, ps, depth);
+	smb_io_buffer2("uni_type", r_r->uni_type, r_r->ptr_uni_type, ps, depth);
 	prs_align(ps);
 
 	prs_uint32("ptr_max_len", ps, depth, &(r_r->ptr_max_len));

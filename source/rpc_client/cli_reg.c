@@ -451,7 +451,7 @@ do a REG Query Info
 ****************************************************************************/
 BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				const char* val_name,
-				char *type)
+				uint32 *type, BUFFER2 *buffer)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -480,6 +480,9 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 
 		ZERO_STRUCT(r_o);
 
+		r_o.type = type;
+		r_o.uni_type = buffer;
+
 		reg_io_r_info("", &r_o, &rbuf, 0);
 		p = rbuf.offset != 0;
 
@@ -493,8 +496,6 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 		if (p)
 		{
 			valid_query = True;
-			unibuf_to_ascii(type, (const char*)r_o.uni_type.buffer,
-				MIN(r_o.uni_type.buf_len, sizeof(fstring)-1));
 		}
 	}
 

@@ -187,6 +187,8 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 	uint32 status     = 0;
 
 	REG_R_INFO r_u;
+	uint32 type = 1;
+	BUFFER2 buf;
 
 	DEBUG(5,("reg_info: %d\n", __LINE__));
 
@@ -197,7 +199,9 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 
 	if (status == 0)
 	{
-		make_reg_r_info(&r_u, 1, "LanmanNT", status);
+		char *key = "LanmanNT";
+		make_buffer2(&buf, key, strlen(key));
+		make_reg_r_info(&r_u, &type, &buf, status);
 	}
 
 

@@ -1874,7 +1874,7 @@ BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 BOOL do_reg_unknown_1a(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint32 *unk);
 BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				const char* val_name,
-				char *type);
+				uint32 *type, BUFFER2 *buf);
 BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				uint32 sec_buf_size, SEC_DESC *sec_buf);
 BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
@@ -2499,7 +2499,7 @@ BOOL make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, const char *val_name,
 				uint8 major, uint8 minor);
 BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth);
 BOOL make_reg_r_info(REG_R_INFO *r_r,
-				uint32 type, char *buf,
+				uint32 *type, BUFFER2 *buf,
 				uint32 status);
 BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth);
 BOOL make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
