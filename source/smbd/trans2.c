@@ -681,14 +681,14 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				pstrcpy(mangled_name, fname);
 				mangle_map(mangled_name,True,True,SNUM(conn));
 				mangled_name[12] = 0;
-				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER);
+				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
 				SSVAL(p, 0, len);
 			} else {
 				SSVAL(p,0,0);
 				*(p+2) = 0;
 			}
 			p += 2 + 24;
-			len = srvstr_push(outbuf, p, fname, -1, 0);
+			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(q,0,len);
 			p += len;
 			len = PTR_DIFF(p, pdata);
@@ -709,7 +709,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 16;
 			SIVAL(p,0,nt_extmode); p += 4;
 			p += 4;
-			len = srvstr_push(outbuf, p, fname, -1, 0);
+			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(p, -4, len);
 			p += len;
 			len = PTR_DIFF(p, pdata);
@@ -732,7 +732,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 4;
 
 			SIVAL(p,4,0); /* ea size */
-			len = srvstr_push(outbuf, p+8, fname, -1, 0);
+			len = srvstr_push(outbuf, p+8, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(p, 0, len);
 			p += 8 + len;
 
@@ -748,7 +748,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 4;
 			/* this must *not* be null terminated or w2k gets in a loop trying to set an
 			   acl on a dir (tridge) */
-			len = srvstr_push(outbuf, p, fname, -1, 0);
+			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(p, -4, len);
 			p += len;
 			len = PTR_DIFF(p, pdata);
