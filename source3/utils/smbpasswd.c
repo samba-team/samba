@@ -269,12 +269,12 @@ static int process_root(int argc, char *argv[])
 		case 'x':
 			local_flags |= LOCAL_DELETE_USER;
 			user_name = optarg;
-			new_passwd = "XXXXXX";
+			new_passwd = xstrdup("XXXXXX");
 			break;
 		case 'd':
 			local_flags |= LOCAL_DISABLE_USER;
 			user_name = optarg;
-			new_passwd = "XXXXXX";
+			new_passwd = xstrdup("XXXXXX");
 			break;
 		case 'e':
 			local_flags |= LOCAL_ENABLE_USER;
@@ -285,7 +285,7 @@ static int process_root(int argc, char *argv[])
 			break;
 		case 'n':
 			local_flags |= LOCAL_SET_NO_PASSWORD;
-			new_passwd = "NO PASSWORD";
+			new_passwd = xstrdup("NO PASSWORD");
 			break;
 		case 'j':
 			new_domain = optarg;
@@ -344,7 +344,7 @@ static int process_root(int argc, char *argv[])
 		break;
 	case 2:
 		user_name = argv[0];
-		new_passwd = argv[1];
+		new_passwd = xstrdup(argv[1]);
 		break;
 	default:
 		usage();
@@ -373,6 +373,7 @@ static int process_root(int argc, char *argv[])
 		}
 
 		if (local_flags & LOCAL_ADD_USER) {
+		        safe_free(new_passwd);
 			new_passwd = xstrdup(user_name);
 			strlower(new_passwd);
 		}
@@ -404,7 +405,7 @@ static int process_root(int argc, char *argv[])
 		if(local_flags & LOCAL_ENABLE_USER) {
 			struct smb_passwd *smb_pass = getsmbpwnam(user_name);
 			if((smb_pass != NULL) && (smb_pass->smb_passwd != NULL)) {
-				new_passwd = "XXXX"; /* Don't care. */
+				new_passwd = xstrdup("XXXX"); /* Don't care. */
 			}
 		}
 
