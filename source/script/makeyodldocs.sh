@@ -55,6 +55,7 @@ do
 				exit 1
 			fi
 			cp $bn.html ../htmldocs || echo "Cannot create $YODLDIR/../htmldocs/$bn.html"
+			rm -f $bn.html
 		;;
 		*)
 #
