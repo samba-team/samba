@@ -722,7 +722,8 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 }
 
 /*******************************************************************
-check to see if a user can write a file. This is only approximate,
+check to see if a user can write a file (and only files, we do not
+check dirs on this one). This is only approximate,
 it is used as part of the "hide unwriteable" option. Don't
 use it for anything security sensitive
 ********************************************************************/
@@ -756,8 +757,7 @@ static BOOL user_can_write_file(connection_struct *conn, char *name)
 	/* Pseudo-open the file (note - no fd's created). */
 
 	if(S_ISDIR(ste.st_mode))	
-		 fsp = open_directory(conn, name, &ste, 0, SET_DENY_MODE(DENY_NONE), (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-			unix_mode(conn, aDIR, name), &smb_action);
+		return True;
 	else
 		fsp = open_file_shared1(conn, name, &ste, FILE_WRITE_ATTRIBUTES, SET_DENY_MODE(DENY_NONE),
 			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
@@ -838,7 +838,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 		}
 
 		/* Honour _hide unwriteable_ option */
-		if (normal_entry && conn && lp_hideunwriteable(SNUM(conn))) {
+		if (normal_entry && conn && lp_hideunwriteable_files(SNUM(conn))) {
 			char *entry;
 			int ret=0;
       
