@@ -1087,7 +1087,7 @@ bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
 	$(CC) $(FLAGS) -o $@ torture/t_stringoverflow.o -L./bin -lbigballofmud
 
-install: installbin installman installscripts installdat installswat installmodules
+install: installbin installman installscripts installdat installswat installmodules installclientlib
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privelege
@@ -1127,7 +1127,7 @@ installswat: installdirs
 installclientlib: bin/libsmbclient.@SHLIBEXT@
 	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)${prefix}/lib
 	-$(INSTALLCLIENTCMD_A) bin/libsmbclient.a $(DESTDIR)${prefix}/lib
-	-$(INSTALLCMD) -d $(DESTDIR)${prefix}/include
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)${prefix}/include
 	-$(INSTALLCMD) include/libsmbclient.h $(DESTDIR)${prefix}/include
 
 # Python extensions

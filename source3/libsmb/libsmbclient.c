@@ -351,8 +351,8 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
 
 SMBCSRV *smbc_server(SMBCCTX *context,
 		     const char *server, const char *share, 
-		     char *workgroup, char *username, 
-		     char *password)
+		     fstring workgroup, fstring username, 
+		     fstring password)
 {
 	SMBCSRV *srv=NULL;
 	int auth_called = 0;
@@ -813,27 +813,6 @@ static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
 
 	}
 
-	if (!file->file) {
-
-		return context->closedir(context, file);
-
-	}
-
-	if (!cli_close(&file->srv->cli, file->cli_fd)) {
-		DEBUG(3, ("cli_close failed on %s. purging server.\n", 
-			  file->fname));
-		/* Deallocate slot and remove the server 
-		 * from the server cache if unused */
-		errno = smbc_errno(context, &file->srv->cli);  
-		srv = file->srv;
-		DLIST_REMOVE(context->internal->_files, file);
-		SAFE_FREE(file->fname);
-		SAFE_FREE(file);
-		context->callbacks.remove_unused_server_fn(context, srv);
-
-		return -1;
-	}
-
 	DLIST_REMOVE(context->internal->_files, file);
 	SAFE_FREE(file->fname);
 	SAFE_FREE(file);
@@ -1087,12 +1066,16 @@ static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int 
 
 	case SEEK_END:
 		if (!cli_qfileinfo(&file->srv->cli, file->cli_fd, NULL, &size, NULL, NULL,
-				   NULL, NULL, NULL) &&
-		    !cli_getattrE(&file->srv->cli, file->cli_fd, NULL, &size, NULL, NULL,
-				  NULL)) {
-
+				   NULL, NULL, NULL)) 
+		{
+		    SMB_BIG_UINT b_size = size;
+		    if (!cli_getattrE(&file->srv->cli, file->cli_fd, NULL, &b_size, NULL, NULL,
+				      NULL)) 
+		    {
 			errno = EINVAL;
 			return -1;
+		    } else
+			size = b_size;
 		}
 		file->offset = size + offset;
 		break;
@@ -1290,12 +1273,15 @@ static int smbc_fstat_ctx(SMBCCTX *context, SMBCFILE *file, struct stat *st)
 	}
 
 	if (!cli_qfileinfo(&file->srv->cli, file->cli_fd,
-			   &mode, &size, &c_time, &a_time, &m_time, NULL, &ino) &&
-	    !cli_getattrE(&file->srv->cli, file->cli_fd,
-			  &mode, &size, &c_time, &a_time, &m_time)) {
+			   &mode, &size, &c_time, &a_time, &m_time, NULL, &ino)) {
+	    SMB_BIG_UINT b_size = size;
+	    if (!cli_getattrE(&file->srv->cli, file->cli_fd,
+			  &mode, &b_size, &c_time, &a_time, &m_time)) {
 
 		errno = EINVAL;
 		return -1;
+	    } else
+		size = b_size;
 
 	}
 
@@ -1524,8 +1510,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
-
-	    DEBUG(4, ("no valid context\n"));
+	        DEBUG(4, ("no valid context\n"));
 		errno = EINVAL;
 		return NULL;
 
@@ -1535,14 +1520,12 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 		DEBUG(4, ("no valid fname\n"));
 		errno = EINVAL;
 		return NULL;
-
 	}
 
 	if (smbc_parse_path(context, fname, server, share, path, user, password)) {
-	    DEBUG(4, ("no valid path\n"));
+	        DEBUG(4, ("no valid path\n"));
 		errno = EINVAL;
 		return NULL;
-
 	}
 
 	DEBUG(4, ("parsed path: fname='%s' server='%s' share='%s' path='%s'\n", fname, server, share, path));
@@ -1571,9 +1554,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 	if (server[0] == (char)0) {
 	    struct in_addr server_ip;
-
-	    DEBUG(4, ("empty server\n"));
-
+	        DEBUG(4, ("empty server\n"));
 		if (share[0] != (char)0 || path[0] != (char)0) {
 		    DEBUG(4,("share %d path %d\n", share[0], path[0]));
 			errno = EINVAL;
@@ -1582,7 +1563,6 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 				SAFE_FREE(dir);
 			}
 			return NULL;
-
 		}
 
 		/* We have server and share and path empty ... so list the workgroups */
@@ -1680,7 +1660,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 				srv = smbc_server(context, buserver, "IPC$", workgroup, user, password);
 
 				if (!srv) {
-
+				        DEBUG(0, ("got no contact to IPC$\n"));
 					if (dir) {
 						SAFE_FREE(dir->fname);
 						SAFE_FREE(dir);
@@ -2760,8 +2740,8 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 			slprintf(context->netbios_name, 16, "smbc%s%d", context->user, pid);
 		}
 	}
-	DEBUG(1,("Using netbios name %s.\n", context->netbios_name));
-	
+
+	DEBUG(1, ("Using netbios name %s.\n", context->netbios_name));
 
 	if (!context->workgroup) {
 		if (lp_workgroup()) {
@@ -2772,7 +2752,8 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 			context->workgroup = strdup("samba");
 		}
 	}
-	DEBUG(1,("Using workgroup %s.\n", context->workgroup));
+
+	DEBUG(1, ("Using workgroup %s.\n", context->workgroup));
 					
 	/* shortest timeout is 1 second */
 	if (context->timeout > 0 && context->timeout < 1000) 
