@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,6 +78,9 @@ kafs_settoken(const char *cell, uid_t uid, CREDENTIALS *c)
     ct.ViceId = uid;	/* is this always valid? */
     ct.BeginTimestamp = 1 + c->issue_date;
     ct.EndTimestamp = krb_life_to_time(c->issue_date, c->lifetime);
+    if(ct.EndTimestamp < time(NULL))
+	return 0; /* don't store tokens that has expired (and possibly
+		     overwriting valid tokens)*/
 
 #define ODD(x) ((x) & 1)
     /* If we don't know the numerical ID lifetime should be even? */
