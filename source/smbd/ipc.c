@@ -3629,7 +3629,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
          */
 
         if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine,
-                                strlen(local_machine)) == 0)) {
+                                strlen(local_machine)) == 0) && 
+                                (name[strlen(local_machine)+1] == '\\')) {
           name_offset = strlen(local_machine)+1;
         }
 

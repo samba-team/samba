@@ -122,7 +122,8 @@ typedef struct unihdr2_info
 /* UNISTR - unicode string size and buffer */
 typedef struct unistr_info
 {
-  uint16 buffer[MAX_UNISTRLEN]; /* unicode characters. ***MUST*** be null-terminated */
+  /* unicode characters. ***MUST*** be little-endian. ***MUST*** be null-terminated */
+  uint16 buffer[MAX_UNISTRLEN];
 } UNISTR;
 
 /* BUFHDR - buffer header */
@@ -141,7 +142,8 @@ typedef struct buffer2_info
   uint32 buf_max_len;
   uint32 undoc;
   uint32 buf_len;
-  uint16 buffer[MAX_UNISTRLEN]; /* unicode characters. **NOT** necessarily null-terminated */
+  /* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
+  uint16 buffer[MAX_UNISTRLEN];
 
 } BUFFER2;
 
@@ -160,7 +162,8 @@ typedef struct unistr2_info
   uint32 uni_max_len;
   uint32 undoc;
   uint32 uni_str_len;
-  uint16 buffer[MAX_UNISTRLEN]; /* unicode characters. **NOT** necessarily null-terminated */
+  /* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
+  uint16 buffer[MAX_UNISTRLEN];
 
 } UNISTR2;
 
@@ -284,4 +287,3 @@ typedef struct lsa_policy_info
 } POLICY_HND;
 
 #endif /* _RPC_MISC_H */
-

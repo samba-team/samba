@@ -73,7 +73,7 @@ char *unistrn2(uint16 *src, int len)
 
 	for (p = lbuf; *src && p-lbuf < MAXUNI-2 && len > 0; len--, src++)
 	{
-		*p++ = (*src & 0xff);
+		*p++ = (SVAL(src,0) & 0xff);
 	}
 
 	*p = 0;
@@ -97,7 +97,7 @@ char *unistr2(uint16 *src)
 
 	for (p = lbuf; *src && p-lbuf < MAXUNI-2; p++, src++)
 	{
-		*p = (*src & 0xff);
+		*p = (SVAL(src,0) & 0xff);
 	}
 
 	*p = 0;
@@ -119,7 +119,7 @@ char *unistr2_to_str(UNISTR2 *str)
 
 	for (p = lbuf; *src && p-lbuf < max_size; p++, src++)
 	{
-		*p = (*src & 0xff);
+		*p = (SVAL(src,0) & 0xff);
 	}
 
 	*p = 0;
@@ -157,7 +157,7 @@ char *buffer2_to_str(BUFFER2 *str)
 
 	for (p = lbuf; *src && p-lbuf < max_size; p++, src++)
 	{
-		*p = (*src & 0xff);
+		*p = (SVAL(src,0) & 0xff);
 	}
 
 	*p = 0;
@@ -185,7 +185,7 @@ char *buffer2_to_multistr(BUFFER2 *str)
 		}
 		else
 		{
-			*p = (*src & 0xff);
+			*p = (SVAL(src,0) & 0xff);
 		}
 	}
 
@@ -234,7 +234,7 @@ char *unistr(char *buf)
 
 	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf += 2)
 	{
-		*p = *buf;
+		*p = (SVAL(buf,0) & 0xff);
 	}
 	*p = 0;
 	return lbuf;

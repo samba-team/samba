@@ -70,7 +70,7 @@ Corrections by richard.kettlewell@kewill.com
   epoch = (t->tm_year - 70) * YEAR + 
     ((n / 4 - n / 100 + n / 400) - (1969 / 4 - 1969 / 100 + 1969 / 400)) * DAY;
 
-  y = t->tm_year;
+  y = t->tm_year + 1900;
   m = 0;
 
   for(i = 0; i < t->tm_mon; i++) {
