@@ -112,12 +112,6 @@ pop_dropinfo(POP *p)
                 }
                 mp = p->mlp + msg_num - 2;
             }
-#ifdef DEBUG
-            if(p->debug)
-                pop_log(p,POP_DEBUG,
-                    "Msg %d at offset %d is %d octets long and has %u lines.",
-                        mp->number,mp->offset,mp->length,mp->lines);
-#endif /* DEBUG */
             ++mp;
             mp->number = msg_num;
             mp->length = 0;
@@ -131,7 +125,9 @@ pop_dropinfo(POP *p)
 #endif
 #ifdef DEBUG
             if(p->debug)
-                pop_log(p,POP_DEBUG, "Msg %d being added to list", mp->number);
+                pop_log(p, POP_DEBUG,
+			"Msg %d at offset %u being added to list",
+			mp->number, mp->offset);
 #endif /* DEBUG */
         }
 #ifdef UIDL
