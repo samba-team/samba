@@ -171,10 +171,12 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 			status = lookup_name(dom_name, user, &sid, &name_type);
 		}
 
+#if 0 /* This is not true. */
 		if (name_type == SID_NAME_WKN_GRP) {
 			/* BUILTIN aliases are still aliases :-) */
 			name_type = SID_NAME_ALIAS;
 		}
+#endif
 
 		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
 			  "not found"));
