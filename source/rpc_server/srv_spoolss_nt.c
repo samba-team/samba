@@ -672,6 +672,11 @@ static BOOL convert_devicemode(const DEVICEMODE *devmode, NT_DEVICEMODE *nt_devm
  ********************************************************************/
 uint32 _spoolss_closeprinter(POLICY_HND *handle)
 {
+	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+
+	if (Printer && Printer->document_started)
+		_spoolss_enddocprinter(handle);          /* print job was not closed */
+
 	if (!close_printer_handle(handle))
 		return ERROR_INVALID_HANDLE;	
 		
@@ -683,6 +688,11 @@ uint32 _spoolss_closeprinter(POLICY_HND *handle)
  ********************************************************************/
 uint32 _spoolss_deleteprinter(POLICY_HND *handle)
 {
+	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+
+	if (Printer && Printer->document_started)
+		_spoolss_enddocprinter(handle);          /* print job was not closed */
+
 	if (!delete_printer_handle(handle))
 		return ERROR_INVALID_HANDLE;	
 		
@@ -3024,6 +3034,21 @@ uint32 _spoolss_endpageprinter(POLICY_HND *handle)
 	return NT_STATUS_NO_PROBLEMO;
 }
 
+/****************************************************************************
+ Return a user struct for a pipe user.
+****************************************************************************/
+
+static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
+{
+	if (p->ntlmssp_auth_validated) {
+		memcpy(user, &p->pipe_user, sizeof(user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(user, &current_user, sizeof(user));
+	}
+
+	return user;
+}
 
 /********************************************************************
  * api_spoolss_getprinter
@@ -3046,12 +3071,7 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 		return ERROR_INVALID_HANDLE;
 	}
 
-	if (p->ntlmssp_auth_validated) {
-		memcpy(&user, &p->pipe_user, sizeof(user));
-	} else {
-		extern struct current_user current_user;
-		memcpy(&user, &current_user, sizeof(user));
-	}
+	get_current_user(&user, p);
 
 	/*
 	 * a nice thing with NT is it doesn't listen to what you tell it.
@@ -3149,12 +3169,7 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 	int errcode = 0;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
-	if (p->ntlmssp_auth_validated) {
-		memcpy(&user, &p->pipe_user, sizeof(user));
-	} else {
-		extern struct current_user current_user;
-		memcpy(&user, &current_user, sizeof(user));
-	}
+	get_current_user(&user, p);
 
 	if (!OPEN_HANDLE(Printer)) {
 		DEBUG(0,("control_printer: Invalid handle (%s)\n", OUR_HANDLE(handle)));
@@ -3218,12 +3233,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	}
 
 	/* Work out which user is performing the operation */
-	if (p->ntlmssp_auth_validated) {
-		memcpy(&user, &p->pipe_user, sizeof(user));
-	} else {
-		extern struct current_user current_user;
-		memcpy(&user, &current_user, sizeof(user));
-	}
+	get_current_user(&user, p);
 
 	/* Check the user has permissions to change the security
 	   descriptor.  By experimentation with two NT machines, the user
@@ -3745,7 +3755,7 @@ uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid)
 uint32 _spoolss_setjob( POLICY_HND *handle,
 				uint32 jobid,
 				uint32 level,
-		                pipes_struct *p,
+                pipes_struct *p,
 				JOB_INFO *ctr,
 				uint32 command)
 
@@ -3763,13 +3773,8 @@ uint32 _spoolss_setjob( POLICY_HND *handle,
 	if (!print_job_exists(jobid)) {
 		return ERROR_INVALID_PRINTER_NAME;
 	}
-	
-	if (p->ntlmssp_auth_validated) {
-		memcpy(&user, &p->pipe_user, sizeof(user));
-	} else {
-		extern struct current_user current_user;
-	        memcpy(&user, &current_user, sizeof(user));
-	}
+
+	get_current_user(&user, p);	
 
 	switch (command) {
 	case JOB_CONTROL_CANCEL:
@@ -4545,13 +4550,8 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 	struct current_user user;
 	
 	ZERO_STRUCT(driver);
-	
-	if (p->ntlmssp_auth_validated) {
-		memcpy(&user, &p->pipe_user, sizeof(user));
-	} else {
-		extern struct current_user current_user;
-		memcpy(&user, &current_user, sizeof(user));
-	}
+
+	get_current_user(&user, p);	
 	
 	convert_printer_driver_info(info, &driver, level);
 
