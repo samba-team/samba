@@ -1590,6 +1590,7 @@ static BOOL ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		rc = ldap_modify_s(ldap_struct, dn, mods);
 	}
 	else {
+		make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", "account");
 		rc = ldap_add_s(ldap_struct, dn, mods);
 	}
 
