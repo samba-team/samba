@@ -141,22 +141,22 @@ int vsnprintf (char *str, size_t sz, const char *format, va_list ap)
      __attribute__((format (printf, 3, 0)));
 #endif
 
-#ifndef HAVE_ASPRINTF
+#if !defined(HAVE_ASPRINTF) || defined(NEED_ASPRINTF_PROTO)
 int asprintf (char **ret, const char *format, ...)
      __attribute__ ((format (printf, 2, 3)));
 #endif
 
-#ifndef HAVE_VASPRINTF
+#if !defined(HAVE_VASPRINTF) || defined(NEED_VASPRINTF_PROTO)
 int vasprintf (char **ret, const char *format, va_list ap)
      __attribute__((format (printf, 2, 0)));
 #endif
 
-#ifndef HAVE_ASNPRINTF
+#if !defined(HAVE_ASNPRINTF) || defined(NEED_ASNPRINTF_PROTO)
 int asnprintf (char **ret, size_t max_sz, const char *format, ...)
      __attribute__ ((format (printf, 3, 4)));
 #endif
 
-#ifndef HAVE_VASNPRINTF
+#if !defined(HAVE_VASNPRINTF) || defined(NEED_VASNPRINTF_PROTO)
 int vasnprintf (char **ret, size_t max_sz, const char *format, va_list ap)
      __attribute__((format (printf, 3, 0)));
 #endif
