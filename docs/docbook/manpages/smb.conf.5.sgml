@@ -2651,12 +2651,6 @@
 		mode after the mask set in the <parameter>create mask</parameter> 
 		parameter is applied.</para>
 		
-		<para>Note that by default this parameter does not apply to permissions
-		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <link 
-		linkend="RESTRICTACLWITHMASK"><parameter>restrict acl with 
-		mask</parameter></link> to <constant>true</constant>.</para>
-
 		<para>See also the parameter <link linkend="CREATEMASK"><parameter>create 
 		mask</parameter></link> for details on masking mode bits on files.</para>
 
@@ -2684,12 +2678,6 @@
 		bits to a created directory. This operation is done after the mode 
 		mask in the parameter <parameter>directory mask</parameter> is 
 		applied.</para>
-
-		<para>Note that by default this parameter does not apply to permissions
-		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <link 
-		linkend="RESTRICTACLWITHMASK"><parameter>restrict acl with 
-		mask</parameter></link> to <constant>true</constant>.</para>
 
 		<para>See also the parameter <link linkend="DIRECTORYMASK"><parameter>
 		directory mask</parameter></link> for details on masking mode bits 
@@ -6232,34 +6220,6 @@
 
 		<para>Default: <command>remote browse sync = &lt;empty string&gt;
 		</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-		<varlistentry>
-		<term><anchor id="RESTRICTACLWITHMASK">restrict acl with mask (S)</term>
-		<listitem><para>This is a boolean parameter.  If set to <constant>false</constant> (default), then 
-		creation of files with access control lists (ACLS) and modification of ACLs
-		using the Windows NT/2000 ACL editor will be applied directly to the file
-		or directory.</para>
-
-		<para>If set to <constant>true</constant>, then all requests to set an ACL on a file will have the
-		parameters <link linkend="CREATEMASK"><parameter>create mask</parameter></link>,
-		<link linkend="FORCECREATEMODE"><parameter>force create mode</parameter></link>
-		applied before setting the ACL, and all requests to set an ACL on a directory will
-		have the parameters <link linkend="DIRECTORYMASK"><parameter>directory 
-		mask</parameter></link>, <link linkend="FORCEDIRECTORYMODE"><parameter>force 
-		directory mode</parameter></link> applied before setting the ACL.
-		</para>
-
-		<para>See also <link linkend="CREATEMASK"><parameter>create mask</parameter></link>,
-		<link linkend="FORCECREATEMODE"><parameter>force create mode</parameter></link>,
-		<link linkend="DIRECTORYMASK"><parameter>directory mask</parameter></link>,
-		<link linkend="FORCEDIRECTORYMODE"><parameter>force directory mode</parameter></link>
-		</para>
-
-		<para>Default: <command>restrict acl with mask = no</command></para>
 		</listitem>
 		</varlistentry>
 

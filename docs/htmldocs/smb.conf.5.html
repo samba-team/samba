@@ -8187,22 +8187,6 @@ CLASS="PARAMETER"
 > 
 		parameter is applied.</P
 ><P
->Note that by default this parameter does not apply to permissions
-		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <A
-HREF="#RESTRICTACLWITHMASK"
-><TT
-CLASS="PARAMETER"
-><I
->restrict acl with 
-		mask</I
-></TT
-></A
-> to <TT
-CLASS="CONSTANT"
->true</TT
->.</P
-><P
 >See also the parameter <A
 HREF="#CREATEMASK"
 ><TT
@@ -8261,22 +8245,6 @@ CLASS="PARAMETER"
 ></TT
 > is 
 		applied.</P
-><P
->Note that by default this parameter does not apply to permissions
-		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <A
-HREF="#RESTRICTACLWITHMASK"
-><TT
-CLASS="PARAMETER"
-><I
->restrict acl with 
-		mask</I
-></TT
-></A
-> to <TT
-CLASS="CONSTANT"
->true</TT
->.</P
 ><P
 >See also the parameter <A
 HREF="#DIRECTORYMASK"
@@ -15151,108 +15119,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="RESTRICTACLWITHMASK"
-></A
->restrict acl with mask (S)</DT
-><DD
-><P
->This is a boolean parameter.  If set to <TT
-CLASS="CONSTANT"
->false</TT
-> (default), then 
-		creation of files with access control lists (ACLS) and modification of ACLs
-		using the Windows NT/2000 ACL editor will be applied directly to the file
-		or directory.</P
-><P
->If set to <TT
-CLASS="CONSTANT"
->true</TT
->, then all requests to set an ACL on a file will have the
-		parameters <A
-HREF="#CREATEMASK"
-><TT
-CLASS="PARAMETER"
-><I
->create mask</I
-></TT
-></A
->,
-		<A
-HREF="#FORCECREATEMODE"
-><TT
-CLASS="PARAMETER"
-><I
->force create mode</I
-></TT
-></A
->
-		applied before setting the ACL, and all requests to set an ACL on a directory will
-		have the parameters <A
-HREF="#DIRECTORYMASK"
-><TT
-CLASS="PARAMETER"
-><I
->directory 
-		mask</I
-></TT
-></A
->, <A
-HREF="#FORCEDIRECTORYMODE"
-><TT
-CLASS="PARAMETER"
-><I
->force 
-		directory mode</I
-></TT
-></A
-> applied before setting the ACL.
-		</P
-><P
->See also <A
-HREF="#CREATEMASK"
-><TT
-CLASS="PARAMETER"
-><I
->create mask</I
-></TT
-></A
->,
-		<A
-HREF="#FORCECREATEMODE"
-><TT
-CLASS="PARAMETER"
-><I
->force create mode</I
-></TT
-></A
->,
-		<A
-HREF="#DIRECTORYMASK"
-><TT
-CLASS="PARAMETER"
-><I
->directory mask</I
-></TT
-></A
->,
-		<A
-HREF="#FORCEDIRECTORYMODE"
-><TT
-CLASS="PARAMETER"
-><I
->force directory mode</I
-></TT
-></A
->
-		</P
-><P
->Default: <B
-CLASS="COMMAND"
->restrict acl with mask = no</B
-></P
-></DD
-><DT
-><A
 NAME="RESTRICTANONYMOUS"
 ></A
 >restrict anonymous (G)</DT
@@ -19316,7 +19182,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6086"
+NAME="AEN6051"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19346,7 +19212,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6092"
+NAME="AEN6057"
 ></A
 ><H2
 >VERSION</H2
@@ -19357,7 +19223,7 @@ NAME="AEN6092"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6095"
+NAME="AEN6060"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19436,7 +19302,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6115"
+NAME="AEN6080"
 ></A
 ><H2
 >AUTHOR</H2

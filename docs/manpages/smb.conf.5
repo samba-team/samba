@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "12 October 2001" "" ""
+.TH "SMB.CONF" "5" "17 October 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -2808,11 +2808,6 @@ permissions changed. The default for this parameter is (in octal)
 mode after the mask set in the \fIcreate mask\fR 
 parameter is applied.
 
-Note that by default this parameter does not apply to permissions
-set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-this mask on access control lists also, they need to set the \fIrestrict acl with 
-mask\fR to true.
-
 See also the parameter \fIcreate 
 mask\fR for details on masking mode bits on files.
 
@@ -2836,11 +2831,6 @@ parameter is (in octal) 0000 which will not add any extra permission
 bits to a created directory. This operation is done after the mode 
 mask in the parameter \fIdirectory mask\fR is 
 applied.
-
-Note that by default this parameter does not apply to permissions
-set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-this mask on access control lists also, they need to set the \fIrestrict acl with 
-mask\fR to true.
 
 See also the parameter \fI directory mask\fR for details on masking mode bits 
 on created directories.
@@ -5600,27 +5590,6 @@ is in fact the browse master on its segment.
 
 Default: \fBremote browse sync = <empty string>
 \fR.TP
-\fBrestrict acl with mask (S)\fR
-This is a boolean parameter. If set to false (default), then 
-creation of files with access control lists (ACLS) and modification of ACLs
-using the Windows NT/2000 ACL editor will be applied directly to the file
-or directory.
-
-If set to true, then all requests to set an ACL on a file will have the
-parameters \fIcreate mask\fR,
-\fIforce create mode\fR
-applied before setting the ACL, and all requests to set an ACL on a directory will
-have the parameters \fIdirectory 
-mask\fR, \fIforce 
-directory mode\fR applied before setting the ACL.
-
-See also \fIcreate mask\fR,
-\fIforce create mode\fR,
-\fIdirectory mask\fR,
-\fIforce directory mode\fR
-
-Default: \fBrestrict acl with mask = no\fR
-.TP
 \fBrestrict anonymous (G)\fR
 This is a boolean parameter. If it is true, then 
 anonymous access to the server will be restricted, namely in the 
