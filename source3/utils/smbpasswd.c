@@ -63,7 +63,7 @@ static void usage(void)
 	printf("  -i                   interdomain trust account\n");
 	printf("  -m                   machine trust account\n");
 	printf("  -n                   set no password\n");
-	printf("  -w                   ldap admin password\n");
+	printf("  -w PASSWORD          ldap admin password\n");
 	printf("  -x                   delete user\n");
 	printf("  -R ORDER             name resolve order\n");
 
