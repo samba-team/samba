@@ -1,3 +1,7 @@
+1999-07-12  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: handle not building X programs
+
 1999-07-06  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/addr_families.c (ipv6_parse_addr): remove duplicate
