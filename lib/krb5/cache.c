@@ -477,5 +477,4 @@ void
 krb5_cc_clear_mcred(krb5_creds *mcred)
 {
     memset(mcred, 0, sizeof(*mcred));
-    return 0;
 }
