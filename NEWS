@@ -1,3 +1,9 @@
+Changes in release 0.1n:
+
+ * v6-ify the remaining programs.
+ * add `ank --random-password' and `cpw --random-password' in kadmin
+ * bug fixes
+
 Changes in release 0.1m:
 
  * support for getting default from krb5.conf for kinit/kf/rsh/telnet.
