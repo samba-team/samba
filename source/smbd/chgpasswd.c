@@ -456,7 +456,7 @@ BOOL chgpasswd(const char *name, const struct passwd *pass,
 
 	DEBUG(3, ("chgpasswd: Password change (as_root=%s) for user: %s\n", BOOLSTR(as_root), name));
 
-#if DEBUG_PASSWORD
+#ifdef DEBUG_PASSWORD
 	DEBUG(100, ("chgpasswd: Passwords: old=%s new=%s\n", oldpass, newpass));
 #endif
 

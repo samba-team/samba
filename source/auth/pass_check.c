@@ -599,7 +599,7 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 
 	NTSTATUS nt_status;
 
-#if DEBUG_PASSWORD
+#ifdef DEBUG_PASSWORD
 	DEBUG(100, ("checking user=[%s] pass=[%s]\n", user, password));
 #endif
 
