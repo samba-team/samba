@@ -749,7 +749,7 @@ AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
-AC_CHECK_FUNCS(syslog vsyslog getgrouplist)
+AC_CHECK_FUNCS(syslog vsyslog getgrouplist timegm)
 # setbuffer is needed for smbtorture
 AC_CHECK_FUNCS(setbuffer)
 
@@ -2069,6 +2069,17 @@ if test x"$with_ldap_support" = x"yes"; then
   fi
 fi
 
+########################################################
+# Compile with MySQL support?
+AM_PATH_MYSQL()
+CFLAGS="$CFLAGS $MYSQL_CFLAGS"
+
+
+########################################################
+# Compile with XML support?
+AM_PATH_XML2()
+CFLAGS="$CFLAGS $XML_CFLAGS"
+
 #################################################
 # check for automount support
 AC_MSG_CHECKING(whether to use AUTOMOUNT)
@@ -2194,6 +2205,24 @@ if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
 	AC_DEFINE(HAVE_TRUNCATED_SALT,1,[Whether crypt needs truncated salt])
 fi
 fi
+
+# New experimental SAM system
+
+AC_MSG_CHECKING([whether to build the new (experimental) SAM database])
+AC_ARG_WITH(sam,
+[  --with-sam              Build new (experimental) SAM database (default=no)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_SAM,1,[Whether to build the new (experimental) SAM database])
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
 
 ########################################################################################
 ##
@@ -2385,7 +2414,7 @@ AC_ARG_WITH(manpages-langs,
   esac
 
   AC_MSG_RESULT($manlangs)
-  manlangs=`echo $manlangs | sed "s/,/ /"`   # replacing commas with spaces to produce a list
+  manlangs=`echo $manlangs | sed "s/,/ /g"`   # replacing commas with spaces to produce a list
   AC_SUBST(manlangs)],
 
   [manlangs="en"
@@ -3131,7 +3160,7 @@ AC_SUBST(builddir)
 # I added make files that are outside /source directory.
 # I know this is not a good solution, will work out a better
 # solution soon.			--simo
-AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/pdb/mysql/Makefile ../examples/pdb/xml/Makefile)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile)
 
 #################################################
 # Print very concise instructions on building/use

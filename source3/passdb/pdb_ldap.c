@@ -1907,49 +1907,49 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ldapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
+static NTSTATUS lsapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
 				 DOM_SID sid, BOOL with_priv)
 {
 	return get_group_map_from_sid(sid, map, with_priv) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS ldapsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
+static NTSTATUS lsapsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
 				 gid_t gid, BOOL with_priv)
 {
 	return get_group_map_from_gid(gid, map, with_priv) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
+static NTSTATUS lsapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 				 char *name, BOOL with_priv)
 {
 	return get_group_map_from_ntname(name, map, with_priv) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
+static NTSTATUS lsapsam_add_group_mapping_entry(struct pdb_methods *methods,
 						GROUP_MAP *map)
 {
 	return add_mapping_entry(map, TDB_INSERT) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
+static NTSTATUS lsapsam_update_group_mapping_entry(struct pdb_methods *methods,
 						   GROUP_MAP *map)
 {
 	return add_mapping_entry(map, TDB_REPLACE) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
+static NTSTATUS lsapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 						   DOM_SID sid)
 {
 	return group_map_remove(sid) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
+static NTSTATUS lsapsam_enum_group_mapping(struct pdb_methods *methods,
 					   enum SID_NAME_USE sid_name_use,
 					   GROUP_MAP **rmap, int *num_entries,
 					   BOOL unix_only, BOOL with_priv)

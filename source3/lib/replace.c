@@ -430,3 +430,28 @@ char *rep_inet_ntoa(struct in_addr ip)
 #endif /* HAVE_VSYSLOG */
 
 
+#ifndef HAVE_TIMEGM
+/*
+  see the timegm man page on linux
+*/
+ time_t timegm(struct tm *tm) 
+{
+	time_t ret;
+	char *tz;
+	char *tzvar;
+	
+	tz = getenv("TZ");
+	putenv("TZ=");
+	tzset();
+	ret = mktime(tm);
+	if (tz) {
+		asprintf(&tzvar, "TZ=%s", tz);
+		putenv(tzvar);
+		safe_free(tzvar);
+	} else {
+		putenv("TZ");
+	}
+	tzset();
+	return ret;
+}
+#endif

@@ -94,10 +94,10 @@ static pstring fileselection = "";
 extern file_info def_finfo;
 
 /* timing globals */
-int get_total_size = 0;
-int get_total_time_ms = 0;
-static int put_total_size = 0;
-static int put_total_time_ms = 0;
+SMB_BIG_UINT get_total_size = 0;
+unsigned int get_total_time_ms = 0;
+static SMB_BIG_UINT put_total_size = 0;
+static unsigned int put_total_time_ms = 0;
 
 /* totals globals */
 static double dir_total;
