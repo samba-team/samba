@@ -42,7 +42,7 @@ BOOL do_reg_connect(struct cli_state *cli, char *full_keyname,
 	fstring key_name;
 	char *srch;
 	BOOL res1;
-	BOOL res;
+	BOOL res = False;
 	BOOL hklm = False;
 	BOOL hku  = False;
 
@@ -70,16 +70,16 @@ BOOL do_reg_connect(struct cli_state *cli, char *full_keyname,
 
 	if (hklm)
 	{
-		res = res ? do_reg_open_hklm(cli,
+		res = do_reg_open_hklm(cli,
 				0x84E0, 0x02000000,
-				reg_hnd) : False;
+				reg_hnd);
 	}
 	
 	if (hku)
 	{
-		res = res ? do_reg_open_hku(cli,
+		res = do_reg_open_hku(cli,
 				0x84E0, 0x02000000,
-				reg_hnd) : False;
+				reg_hnd);
 	}
 
 	/* open an entry */
