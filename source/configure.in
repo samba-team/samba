@@ -2808,7 +2808,10 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
-AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/VFS/block/Makefile ../examples/pdb/mysql/Makefile ../examples/pdb/xml/Makefile)
+# I added make files that are outside /source directory.
+# I know this is not a good solution, will work out a better
+# solution soon.			--simo
+AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/VFS/block/Makefile ../examples/VFS/netatalk/Makefile ../examples/pdb/mysql/Makefile ../examples/pdb/xml/Makefile)
 
 #################################################
 # Print very concise instructions on building/use
