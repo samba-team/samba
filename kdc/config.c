@@ -462,6 +462,13 @@ configure(int argc, char **argv)
 	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
 
 	pk_initialize(user_id, x509_anchors);
+
+	enable_pkinit_princ_in_cert = 
+	    krb5_config_get_bool_default(context, 
+					 NULL, TRUE,
+					 "kdc",
+					 "pkinit-principal-in-certificate",
+					 NULL);
     }
 #endif
 
