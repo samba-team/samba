@@ -467,6 +467,12 @@ static int parse_options(char * options, int * filesys_flags)
 			*filesys_flags &= ~MS_NOEXEC;
 		} else if (strncmp(data, "guest", 5) == 0) {
 			got_password=1;
+                        /* remove the parm since it would otherwise be logged by kern */
+ 			data[0] = ',';
+                        data[1] = ',';
+                        data[2] = ',';
+ 			data[3] = ',';
+			data[4] = ',';
 		} else if (strncmp(data, "ro", 2) == 0) {
 			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
