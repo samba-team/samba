@@ -94,6 +94,7 @@ static struct vfs_ops default_vfs = {
 		vfswrap_mknod,
 		vfswrap_realpath,
 	
+		/* Windows ACL operations. */
 		vfswrap_fget_nt_acl,
 		vfswrap_get_nt_acl,
 		vfswrap_fset_nt_acl,
@@ -124,7 +125,22 @@ static struct vfs_ops default_vfs = {
 		vfswrap_sys_acl_get_perm,
 		vfswrap_sys_acl_free_text,
 		vfswrap_sys_acl_free_acl,
-		vfswrap_sys_acl_free_qualifier
+		vfswrap_sys_acl_free_qualifier,
+
+		/* EA operations. */
+		vfswrap_getxattr,
+		vfswrap_lgetxattr,
+		vfswrap_fgetxattr,
+		vfswrap_listxattr,
+		vfswrap_llistxattr,
+		vfswrap_flistxattr,
+		vfswrap_removexattr,
+		vfswrap_lremovexattr,
+		vfswrap_fremovexattr,
+		vfswrap_setxattr,
+		vfswrap_lsetxattr,
+		vfswrap_fsetxattr
+
 	}
 };
 
