@@ -64,8 +64,8 @@ static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_in
 
 #define func_winreg_OpenHive(k,n) static NTSTATUS winreg_Open ## k (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct winreg_Open ## k *r) \
 { \
-	/*struct _privatedata *data = dce_call->conn->private*/; \
-	/*REG_KEY *root = reg_get_root(data->registry)*/; \
+	/*struct _privatedata *data = dce_call->conn->private;*/ \
+	/*REG_KEY *root = reg_get_root(data->registry);*/ \
 	REG_KEY *k /*= reg_open_key(root, n)*/; \
 \
 	if(!k) { \
