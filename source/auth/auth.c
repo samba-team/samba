@@ -384,7 +384,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 	char **auth_method_list = NULL; 
 	NTSTATUS nt_status;
 
-	if (lp_auth_methods() && !lp_list_copy(&auth_method_list, lp_auth_methods())) {
+	if (lp_auth_methods() && !str_list_copy(&auth_method_list, lp_auth_methods())) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -393,33 +393,33 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		{
 		case SEC_DOMAIN:
 			DEBUG(5,("Making default auth method list for security=domain\n"));
-			auth_method_list = lp_list_make("guest samstrict ntdomain");
+			auth_method_list = str_list_make("guest samstrict ntdomain");
 			break;
 		case SEC_SERVER:
 			DEBUG(5,("Making default auth method list for security=server\n"));
-			auth_method_list = lp_list_make("guest samstrict smbserver");
+			auth_method_list = str_list_make("guest samstrict smbserver");
 			break;
 		case SEC_USER:
 			if (lp_encrypted_passwords()) {	
 				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = yes\n"));
-				auth_method_list = lp_list_make("guest sam");
+				auth_method_list = str_list_make("guest sam");
 			} else {
 				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = no\n"));
-				auth_method_list = lp_list_make("guest unix");
+				auth_method_list = str_list_make("guest unix");
 			}
 			break;
 		case SEC_SHARE:
 			if (lp_encrypted_passwords()) {
 				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = yes\n"));
-				auth_method_list = lp_list_make("guest sam");
+				auth_method_list = str_list_make("guest sam");
 			} else {
 				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = no\n"));
-				auth_method_list = lp_list_make("guest unix");
+				auth_method_list = str_list_make("guest unix");
 			}
 			break;
 		case SEC_ADS:
 			DEBUG(5,("Making default auth method list for security=ADS\n"));
-			auth_method_list = lp_list_make("guest samstrict ads ntdomain");
+			auth_method_list = str_list_make("guest samstrict ads ntdomain");
 			break;
 		default:
 			DEBUG(5,("Unknown auth method!\n"));
@@ -430,11 +430,11 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_text_list(auth_context, auth_method_list))) {
-		lp_list_free(&auth_method_list);
+		str_list_free(&auth_method_list);
 		return nt_status;
 	}
 	
-	lp_list_free(&auth_method_list);
+	str_list_free(&auth_method_list);
 	return nt_status;
 }
 

@@ -152,7 +152,7 @@ initialise and fill the in-memory partner table.
 int init_wins_partner_table(void)
 {
 	int i=1,j=0,k;
-	char **partner = lp_list_make(lp_wins_partners());
+	char **partner = str_list_make(lp_wins_partners());
 
 	if (partner==NULL) {
 		DEBUG(0,("wrepld: no partner list in smb.conf, exiting\n"));
@@ -185,7 +185,7 @@ int init_wins_partner_table(void)
 		for (j=0; j<i; j++)
 			global_wins_table[k][j]=global_wins_table[0][j];
 	
-	lp_list_free (&partner);
+	str_list_free (&partner);
 	
 	return i;
 }
