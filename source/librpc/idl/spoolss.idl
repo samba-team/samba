@@ -836,7 +836,11 @@
 	/******************/
 	/* Function: 0x4f */
 	WERROR spoolss_EnumPrinterDataEx(
-		[in,ref] policy_handle *handle
+		[in,ref] policy_handle *handle,
+		[in] unistr key_name,
+		[out] DATA_BLOB buffer,
+		[in,out] uint32 buf_size,
+		[out] uint32 count
 	);
 
 	/******************/
