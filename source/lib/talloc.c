@@ -338,6 +338,19 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 		return NULL;
 }
 
+/* strndup with a talloc */
+char *talloc_strndup(TALLOC_CTX *mem_ctx, const char *str, size_t maxlen)
+{
+	size_t len = strnlen(str, maxlen);
+	void *ret = TALLOC(mem_ctx, len+1);
+
+	if (ret != NULL) {
+		memcpy(ret, str, len);
+		((char *)ret)[len] = '\0';
+	}
+	return ret;
+}
+
 /** strdup_upper with a talloc */
 char *talloc_strdup_upper(TALLOC_CTX *t, const char *p)
 {

@@ -283,6 +283,19 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 }
 
 /*******************************************************************
+ Convert a (little-endian) UNISTR3 structure to an ASCII string
+********************************************************************/
+void unistr3_to_ascii(char *dest, const UNISTR3 *str, size_t maxlen)
+{
+	if (str == NULL) {
+		*dest='\0';
+		return;
+	}
+	pull_ucs2(NULL, dest, str->str.buffer, maxlen, str->uni_str_len*2,
+	          STR_NOALIGN);
+}
+	
+/*******************************************************************
 give a static string for displaying a UNISTR2
 ********************************************************************/
 const char *unistr2_static(const UNISTR2 *str)
@@ -309,18 +322,6 @@ char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
 	return s;
 }
 
-
-/*******************************************************************
-Return a number stored in a buffer
-********************************************************************/
-
-uint32 buffer2_to_uint32(BUFFER2 *str)
-{
-	if (str->buf_len == 4)
-		return IVAL(str->buffer, 0);
-	else
-		return 0;
-}
 
 /*******************************************************************
  Convert a wchar to upper case.

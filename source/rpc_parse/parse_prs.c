@@ -589,6 +589,37 @@ BOOL prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8)
 }
 
 /*******************************************************************
+ Stream a uint16* (allocate memory if unmarshalling)
+ ********************************************************************/
+
+BOOL prs_pointer( const char *name, prs_struct *ps, int depth, 
+                 void **data, size_t data_size,
+                 BOOL(*prs_fn)(const char*, prs_struct*, int, void*) )
+{
+	uint32 data_p;
+
+	/* caputure the pointer value to stream */
+
+	data_p = (uint32) *data;
+
+	if ( !prs_uint32("ptr", ps, depth, &data_p ))
+		return False;
+
+	/* we're done if there is no data */
+
+	if ( !data_p )
+		return True;
+
+	if (UNMARSHALLING(ps)) {
+		if ( !(*data = PRS_ALLOC_MEM_VOID(ps, data_size)) )
+			return False;
+	}
+
+	return prs_fn(name, ps, depth, *data);
+}
+
+
+/*******************************************************************
  Stream a uint16.
  ********************************************************************/
 
@@ -598,12 +629,12 @@ BOOL prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
 	if (q == NULL)
 		return False;
 
-    if (UNMARSHALLING(ps)) {
+	if (UNMARSHALLING(ps)) {
 		if (ps->bigendian_data)
 			*data16 = RSVAL(q,0);
 		else
 			*data16 = SVAL(q,0);
-    } else {
+	} else {
 		if (ps->bigendian_data)
 			RSSVAL(q,0,*data16);
 		else
@@ -644,34 +675,6 @@ BOOL prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32)
 	ps->data_offset += sizeof(uint32);
 
 	return True;
-}
-
-/*******************************************************************
- Stream a uint32* (allocate memory if unmarshalling)
- ********************************************************************/
-
-BOOL prs_uint32_p(const char *name, prs_struct *ps, int depth, uint32 **data32)
-{
-	uint32 data_p;
-
-	/* caputure the pointer value to stream */
-
-	data_p = (uint32) *data32;
-
-	if ( !prs_uint32("ptr", ps, depth, &data_p ))
-		return False;
-
-	/* we're done if there is no data */
-
-	if ( !data_p )
-		return True;
-
-	if (UNMARSHALLING(ps)) {
-		if ( !(*data32 = PRS_ALLOC_MEM(ps, uint32, 1)) )
-			return False;
-	}
-
-	return prs_uint32(name, ps, depth, *data32);
 }
 
 /*******************************************************************
@@ -944,28 +947,28 @@ BOOL prs_buffer5(BOOL charmode, const char *name, prs_struct *ps, int depth, BUF
  in byte chars. String is in little-endian format.
  ********************************************************************/
 
-BOOL prs_buffer2(BOOL charmode, const char *name, prs_struct *ps, int depth, BUFFER2 *str)
+BOOL prs_regval_buffer(BOOL charmode, const char *name, prs_struct *ps, int depth, REGVAL_BUFFER *buf)
 {
 	char *p;
-	char *q = prs_mem_get(ps, str->buf_len);
+	char *q = prs_mem_get(ps, buf->buf_len);
 	if (q == NULL)
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		if (str->buf_len > str->buf_max_len) {
+		if (buf->buf_len > buf->buf_max_len) {
 			return False;
 		}
-		if ( str->buf_max_len ) {
-			str->buffer = PRS_ALLOC_MEM(ps, uint16, str->buf_max_len);
-			if ( str->buffer == NULL )
+		if ( buf->buf_max_len ) {
+			buf->buffer = PRS_ALLOC_MEM(ps, uint16, buf->buf_max_len);
+			if ( buf->buffer == NULL )
 				return False;
 		}
 	}
 
-	p = (char *)str->buffer;
+	p = (char *)buf->buffer;
 
-	dbg_rw_punival(charmode, name, depth, ps, q, p, str->buf_len/2);
-	ps->data_offset += str->buf_len;
+	dbg_rw_punival(charmode, name, depth, ps, q, p, buf->buf_len/2);
+	ps->data_offset += buf->buf_len;
 
 	return True;
 }

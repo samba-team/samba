@@ -299,7 +299,7 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
 	r_u.status = _net_logon_ctrl(p, &q_u, &r_u);
 
 	if(!net_io_r_logon_ctrl("", &r_u, rdata, 0)) {
-		DEBUG(0,("net_reply_logon_ctrl2: Failed to marshall NET_R_LOGON_CTRL2.\n"));
+		DEBUG(0,("net_reply_logon_ctrl2: Failed to marshall NET_R_LOGON_CTRL.\n"));
 		return False;
 	}
 

@@ -791,3 +791,25 @@ SMB_BIG_INT usec_time_diff(struct timeval *larget, struct timeval *smallt)
 	SMB_BIG_INT sec_diff = larget->tv_sec - smallt->tv_sec;
 	return (sec_diff * 1000000) + (SMB_BIG_INT)(larget->tv_usec - smallt->tv_usec);
 }
+
+
+/****************************************************************************
+ convert ASN.1 GeneralizedTime string to unix-time
+ returns 0 on failure; Currently ignores timezone. 
+****************************************************************************/
+time_t generalized_to_unix_time(const char *str)
+{ 
+	struct tm tm;
+
+	ZERO_STRUCT(tm);
+
+	if (sscanf(str, "%4d%2d%2d%2d%2d%2d", 
+		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
+		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
+		return 0;
+	}
+	tm.tm_year -= 1900;
+	tm.tm_mon -= 1;
+
+	return timegm(&tm);
+}

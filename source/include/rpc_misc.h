@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   SMB parameters and setup
+
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
@@ -27,6 +27,9 @@
 #define _RPC_MISC_H 
 
 #define SMB_RPC_INTERFACE_VERSION 1
+
+#define PRS_POINTER_CAST BOOL (*)(const char*, prs_struct*, int, void*)
+
 
 /* well-known RIDs - Relative IDs */
 
@@ -88,12 +91,6 @@ typedef struct enum_hnd_info
 	uint32 handle;           /* enumeration handle */
 } ENUM_HND;
 
-/* LOOKUP_LEVEL - switch value */
-typedef struct lookup_level_info
-{
-	uint16 value;
-} LOOKUP_LEVEL;
-
 /* DOM_SID2 - security id */
 typedef struct sid_info_2
 {
@@ -138,17 +135,25 @@ typedef struct bufhdr_info
 	uint32 buf_len;
 } BUFHDR;
 
-/* BUFFER2 - unicode string, size (in uint8 ascii chars) and buffer */
-/* pathetic.  some stupid team of \PIPE\winreg writers got the concept */
-/* of a unicode string different from the other \PIPE\ writers */
-typedef struct buffer2_info
-{
+/* 
+   OLD COMMENT: 
+      BUFFER2 - unicode string, size (in uint8 ascii chars) and buffer 
+      pathetic.  some stupid team of \PIPE\winreg writers got the concept
+      of a unicode string different from the other \PIPE\ writers
+
+   NEW COMMENT: 
+      buffer used by \winreg\ calls to fill in arbitrary REG_XXX values.
+      It *may* look like a UNISTR2 but it is *not*.  This is not a goof
+      by the winreg developers.  It is a generic buffer 
+*/
+
+typedef struct {
 	uint32 buf_max_len;
 	uint32 offset;
 	uint32 buf_len;
 	/* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
 	uint16 *buffer;
-} BUFFER2;
+} REGVAL_BUFFER;
 
 /* BUFFER3 */
 typedef struct buffer3_info
@@ -176,6 +181,13 @@ typedef struct unistr2_info
 		the NULL character */
 	uint16 *buffer;
 } UNISTR2;
+
+/* UNIHDR + UNISTR2* */
+typedef struct {
+	uint16 length;	/* number of bytes not counting NULL terminatation */
+	uint16 size;	/* number of bytes including NULL terminatation */
+	UNISTR2 *string;
+} UNISTR4;
 
 /* STRING2 - string size (in uint8 chars) and buffer */
 typedef struct string2_info
