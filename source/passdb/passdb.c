@@ -852,6 +852,9 @@ void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
  by _api_samr_create_user() in rpc_server/srv_samr.c
  
  --jerry
+
+ FIXME ! The new password is in UNIX character set. Must be
+ changed to DOS codepage before hashing.
  *************************************************************/
 
 BOOL local_password_change(char *user_name, int local_flags,
@@ -1646,17 +1649,22 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 
 /*********************************************************************
  Set the user's PLAINTEXT password.  Used as an interface to the above.
+ NB. The plaintext is in UNIX character set. Must be converted to DOS
+ codepage.
  ********************************************************************/
 
-BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, char *plaintext)
+BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 {
 	uchar new_lanman_p16[16];
 	uchar new_nt_p16[16];
+	fstring dos_plaintext;
 
 	if (!sampass || !plaintext)
 		return False;
 	
-	nt_lm_owf_gen (plaintext, new_nt_p16, new_lanman_p16);
+	fstrcpy(dos_plaintext, unix_to_dos_static(plaintext));
+
+	nt_lm_owf_gen (dos_plaintext, new_nt_p16, new_lanman_p16);
 
 	if (!pdb_set_nt_passwd (sampass, new_nt_p16)) 
 		return False;
