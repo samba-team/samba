@@ -636,7 +636,7 @@ return the hostname of the client
 char *cgi_remote_host(void)
 {
 	if (inetd_server) {
-		return get_socket_name(1);
+		return get_socket_name(1,False);
 	}
 	return getenv("REMOTE_HOST");
 }
