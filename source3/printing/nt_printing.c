@@ -93,7 +93,7 @@ get the nt drivers list
 
 open the rectory and look-up the matching names
 ****************************************************************************/
-int get_ntdrivers(fstring **list, char *architecture)
+int get_ntdrivers(connection_struct *conn, fstring **list, char *architecture)
 {
 	void *dirp;
 	char *dpname;
@@ -106,7 +106,7 @@ int get_ntdrivers(fstring **list, char *architecture)
 	DEBUG(5,("Getting the driver list from directory: [%s]\n", lp_nt_drivers_file()));
 	
 	*list=NULL;
-	dirp = OpenDir(NULL, lp_nt_drivers_file(), False);
+	dirp = OpenDir(conn, lp_nt_drivers_file(), False);
 
 	if (!dirp)
 	{

@@ -105,6 +105,7 @@ struct
   char *description;
 } commands[] = 
 {
+  {"eventlog",   cmd_eventlog,         "list the events"},
   {"svcenum",    cmd_svc_enum,         "[-i] Lists Services Manager"},
   {"at",         cmd_at,               "Scheduler control (at /? for syntax)"},
   {"time",       cmd_time,             "Display remote time"},

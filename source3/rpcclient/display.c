@@ -1827,6 +1827,82 @@ void display_at_job_info(FILE *out_hnd, enum action_type action,
 	}
 }
 
+/****************************************************************************
+ display structure
+ ****************************************************************************/
+void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTLOGRECORD *ev)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\tevent log records\n"); 
+			fprintf(out_hnd, "\t-----------------\n");
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring temp;
+			fprintf(out_hnd, "\t\trecord n.:\t%d\n", ev->recordnumber);
+			
+			fprintf(out_hnd, "\t\tsource\teventnumber\teventtype\tcategory\n");
+			unistr_to_ascii(temp, ev->sourcename.buffer, sizeof(temp)-1);
+			
+			fprintf(out_hnd, "\t\t%s", temp);
+			
+			fprintf(out_hnd, "\t%d\t\t", ev->eventnumber&0x0000FFFF);
+			
+			switch (ev->eventtype)
+			{
+				case EVENTLOG_OK:
+					fprintf(out_hnd, "Normal");
+					break;
+ 
+				case EVENTLOG_ERROR:
+					fprintf(out_hnd, "Error");
+					break;
+			
+				case EVENTLOG_WARNING:
+					fprintf(out_hnd, "Warning");
+					break;
+			
+				case EVENTLOG_INFORMATION:
+					fprintf(out_hnd, "Information");
+					break;
+			
+				case EVENTLOG_AUDIT_OK:
+					fprintf(out_hnd, "Audit Normal");
+					break;
+			
+				case EVENTLOG_AUDIT_ERROR:
+					fprintf(out_hnd, "Audit Error\n");
+					break;			
+			}
+			
+			fprintf(out_hnd, "\t%d\n", ev->category);
+			fprintf(out_hnd, "\t\tcreationtime:\t%s\n", http_timestring(ev->creationtime));
+			fprintf(out_hnd, "\t\twritetime:\t%s\n", http_timestring(ev->writetime));
+
+			unistr_to_ascii(temp, ev->computername.buffer, sizeof(temp)-1);
+			fprintf(out_hnd, "\t\tcomputer:\t%s\n", temp);
+
+			if (ev->num_of_strings!=0)
+			{
+				unistr_to_ascii(temp, ev->strings.buffer, sizeof(temp)-1);
+				fprintf(out_hnd, "\t\tdescription:\t%s\n", temp);
+			}
+
+			fprintf(out_hnd, "\n");			
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
 
 #if COPY_THIS_TEMPLATE
 /****************************************************************************

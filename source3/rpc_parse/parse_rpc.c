@@ -152,6 +152,16 @@ interface/version dce/rpc pipe identification
 	}, 0x00                       \
 }                                 \
 
+#define SYNT_EVENTLOG_V0            \
+{                                 \
+	{                             \
+		0xdc, 0x3f, 0x27, 0x82,   \
+		0x2a, 0xe3, 0xc3, 0x18,   \
+		0x3f, 0x78, 0x82, 0x79,   \
+		0x29, 0xdc, 0x23, 0xea    \
+	}, 0x00                       \
+}
+                                 \
 struct pipe_id_info pipe_names [] =
 {
 	/* client pipe , abstract syntax , server pipe   , transfer syntax */
@@ -164,6 +174,7 @@ struct pipe_id_info pipe_names [] =
 	{ PIPE_WINREG  , SYNT_WINREG_V1  , PIPE_WINREG   , TRANS_SYNT_V2 },
 	{ PIPE_ATSVC   , SYNT_ATSVC_V1   , PIPE_ATSVC    , TRANS_SYNT_V2 },
 	{ PIPE_SPOOLSS , SYNT_SPOOLSS_V1 , PIPE_SPOOLSS  , TRANS_SYNT_V2 },
+	{ PIPE_EVENTLOG, SYNT_EVENTLOG_V0, PIPE_EVENTLOG , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0    , NULL          , SYNT_NONE_V0  }
 };
 

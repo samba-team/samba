@@ -61,7 +61,7 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 /*******************************************************************
  api_reg_close
  ********************************************************************/
-static void api_reg_close( uint16 vuid, prs_struct *data,
+static void api_reg_close( pipes_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_CLOSE q_r;
@@ -100,7 +100,7 @@ static void reg_reply_open(REG_Q_OPEN_HKLM *q_r,
 /*******************************************************************
  api_reg_open
  ********************************************************************/
-static void api_reg_open( uint16 vuid, prs_struct *data,
+static void api_reg_open( pipes_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_OPEN_HKLM q_u;
@@ -164,7 +164,7 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 /*******************************************************************
  api_reg_open_entry
  ********************************************************************/
-static void api_reg_open_entry( uint16 vuid, prs_struct *data,
+static void api_reg_open_entry( pipes_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_OPEN_ENTRY q_u;
@@ -209,7 +209,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 /*******************************************************************
  api_reg_info
  ********************************************************************/
-static void api_reg_info( uint16 vuid, prs_struct *data,
+static void api_reg_info( pipes_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_INFO q_u;
