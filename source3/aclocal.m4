@@ -54,6 +54,7 @@ AC_DEFUN(SMB_MODULE,
 		$4_MODULES="$$4_MODULES $3"
 		AC_MSG_RESULT([shared])
 		[$6]
+		string_shared_modules="$string_shared_modules $1"
 	elif test x"$DEST" = xSTATIC; then
 		[init_static_modules_]translit([$4], [A-Z], [a-z])="$[init_static_modules_]translit([$4], [A-Z], [a-z]) $1_init();"
 		string_static_modules="$string_static_modules $1"
@@ -62,6 +63,7 @@ AC_DEFUN(SMB_MODULE,
 		[$5]
 		AC_MSG_RESULT([static])
 	else
+	    string_ignored_modules="$string_ignored_modules $1"
 		AC_MSG_RESULT([not])
 	fi
 ])
