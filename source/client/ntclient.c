@@ -66,16 +66,16 @@ BOOL do_nt_login_test(struct in_addr dest_ip, char *dest_host, char *myhostname,
 
 	DEBUG(5,("do_nt_login_test: %d\n", __LINE__));
 
+	/* check whether the user wants to change their machine password */
+	res = res ? trust_account_check(dest_ip, dest_host, myhostname, workgroup,
+	                                mach_acct, new_mach_pwd) : False;
+
 	/* open NETLOGON session.  negotiate credentials */
 	res = res ? do_nt_session_open(&cli, &fnum,
 	                          dest_ip, dest_host, myhostname,
 	                          mach_acct,
 	                          username, workgroup,
 	                          sess_key, &clnt_cred) : False;
-
-	/* check whether the user wants to change their machine password */
-	res = res ? trust_account_check(dest_ip, dest_host, myhostname, workgroup,
-	                                mach_acct, new_mach_pwd) : False;
 
 	/* change the machine password? */
 	if (new_mach_pwd != NULL && new_mach_pwd[0] != 0)

@@ -41,7 +41,6 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
-extern BOOL sess_trust_acct;
 extern fstring myworkgroup;
 extern int Client;
 extern int global_oplock_break;
@@ -120,7 +119,7 @@ int reply_special(char *inbuf,char *outbuf)
 			break;
 		}
 
-		add_session_user(remote_machine);
+		add_session_user(remote_machine, NULL);
 
 		reload_services(True);
 		reopen_logs();
@@ -269,7 +268,8 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if ((SVAL(inbuf,smb_vwv2) & 0x1) != 0)
     close_cnum(SVAL(inbuf,smb_tid),vuid);
 
-  if (passlen > MAX_PASS_LEN) {
+  if (passlen > MAX_PASS_LEN)
+  {
 	  overflow_attack(passlen);
   }
   
@@ -374,350 +374,495 @@ int reply_ioctl(char *inbuf,char *outbuf)
 
 
 /****************************************************************************
-reply to a session setup command
-****************************************************************************/
+ always return an error: it's just a matter of which one...
+ ****************************************************************************/
+static int session_trust_account(char *inbuf, char *outbuf, char *user,
+				char *smb_passwd, int smb_passlen,
+				char *smb_nt_passwd, int smb_nt_passlen)
+{
+#ifdef NTDOMAIN
+	struct smb_passwd *smb_trust_acct = NULL; /* check if trust account exists */
+	if (lp_security() == SEC_USER)
+	{
+		smb_trust_acct = get_smbpwd_entry(user, 0);
+	}
+	else
+	{
+		DEBUG(3,("Trust account %s only supported with security = user\n", user));
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
+	}
+
+	if (smb_trust_acct == NULL)
+	{
+		/* lkclXXXX: workstation entry doesn't exist */
+		DEBUG(4,("Trust account %s user doesn't exist\n",user));
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_NO_SUCH_USER));
+	}
+	else
+	{
+		if (!smb_password_ok(user, smb_nt_passwd, smb_nt_passlen))
+		{
+			DEBUG(4,("Trust Account %s - password failed\n", user));
+			SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+			return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
+		}
+
+		if (IS_BITS_SET(smb_trust_acct->acct_ctrl, ACB_DOMTRUST))
+		{
+			DEBUG(4,("Domain trust account %s denied by server\n",user));
+			SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+			return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)); 
+		}
+		if (IS_BITS_SET(smb_trust_acct->acct_ctrl, ACB_SVRTRUST))
+		{
+			DEBUG(4,("Server trust account %s denied by server\n",user));
+			SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+			return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT)); 
+		}
+		if (IS_BITS_SET(smb_trust_acct->acct_ctrl, ACB_WSTRUST))
+		{
+			DEBUG(4,("Wksta trust account %s denied by server\n", user));
+			SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+			return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT)); 
+		}
+	}
+
+	/* don't know what to do: indicate logon failure */
+	SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+	return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
+
+#else
+	/* deny access from (trust) accounts - ending in $ */
+	SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+	return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
+#endif
+}
+
+/****************************************************************************
+ check the password: maybe change to guest access mode...
+ ****************************************************************************/
+static BOOL sess_passwd_check(BOOL *guest, char *user, char *domain,
+				char *smb_passwd, int smb_passlen,
+				char *smb_nt_passwd, int smb_nt_passlen)
+{
+	struct cli_state *pwd_srv = NULL;
+
+	/* security = server mode.  check against the password server */
+	if (lp_security() == SEC_SERVER && 
+	               ((pwd_srv = pwd_server_connection()) != NULL) &&
+	                 server_validate(pwd_srv, user, domain, 
+	                               smb_passwd, smb_passlen, 
+	                               smb_nt_passwd, smb_nt_passlen) &&
+	                !check_hosts_equiv(user, guest))
+	{
+		DEBUG(3,("sess_passwd_check: accepted password (security=server)\n"));
+		return True;
+	}
+
+	if (*guest == True)
+	{
+		/* check_hosts_equiv(), through Get_Pwnam(), may set guest access */
+		return True;
+	}
+
+	/* If an NT password was supplied try and validate with that
+	   first. This is superior as the passwords are mixed case 
+	   128 length unicode */
+	if (smb_nt_passlen != 0 && password_ok(user,NULL, smb_nt_passwd,smb_nt_passlen,NULL))
+	{
+		DEBUG(3,("sess_passwd_check: accepted NT password\n"));
+		return True;
+	} 
+
+	/* check the LM password instead */
+	if (password_ok(user,NULL, smb_passwd,smb_passlen,NULL))
+	{
+		DEBUG(3,("sess_passwd_check: accepted LM password\n"));
+		return True;
+	}
+
+	DEBUG(4,("sess_passwd_check: password checks failed: checking guest access mode\n"));
+	if (lp_security() >= SEC_USER)
+	{	
+		DEBUG(4,("sess_passwd_check: security=user/server.  checking -DGUEST_SESSSETUP\n"));
+#if (GUEST_SESSSETUP == 0)
+		DEBUG(4,("sess_passwd_check: guest access REFUSED (-DGUEST_SESSSETUP=0)\n"));
+		return False;
+#endif
+#if (GUEST_SESSSETUP == 1)
+		if (Get_Pwnam(user, True, guest))
+		{
+			DEBUG(4,("sess_passwd_check: guest access REFUSED (-DGUEST_SESSSETUP=1)\n"));
+			return False;
+		}
+#endif
+		DEBUG(4,("sess_passwd_check: accepting as guest (-DGUEST_SESSSETUP=2)\n"));
+	}
+
+	/* allow guest access */
+	DEBUG(3,("Registering username %s for guest access\n",user));
+
+	strcpy(user, lp_guestaccount(-1));
+	*guest = True;
+
+	return True;
+}
+
+/****************************************************************************
+ check the password: maybe change to guest access mode...
+ ****************************************************************************/
+static void sess_get_info(char *inbuf, char *user, char *domain,
+				char *smb_passwd, int *smb_passlen)
+{
+	BOOL doencrypt = SMBENCRYPT();
+
+    *smb_passlen = SVAL(inbuf,smb_vwv7);
+
+    if (*smb_passlen > MAX_PASS_LEN)
+    {
+	    overflow_attack(*smb_passlen);
+    }
+
+    memcpy(smb_passwd,smb_buf(inbuf),*smb_passlen);
+    pstrcpy(user,smb_buf(inbuf)+*smb_passlen);
+
+    if (lp_security() != SEC_SERVER && !doencrypt)
+	{
+	    *smb_passlen = strlen(smb_passwd);
+    }
+}
+
+/****************************************************************************
+ check the password: maybe change to guest access mode...
+ ****************************************************************************/
+static void sess_get_info_nt1(char *inbuf, char *user, char *domain,
+				char *smb_passwd, int *smb_passlen,
+				char *smb_nt_passwd, int *smb_nt_passlen)
+{
+	BOOL doencrypt = SMBENCRYPT();
+	uint16 passlen1 = SVAL(inbuf,smb_vwv7);
+	uint16 passlen2 = SVAL(inbuf,smb_vwv8);
+	uint32 client_caps = IVAL(inbuf,smb_vwv11);
+	enum remote_arch_types ra_type = get_remote_arch();
+
+	char *native_os = NULL;
+	char *native_lm = NULL;
+
+	char *p = smb_buf(inbuf);    
+
+	/* client_caps is used as final determination if client is NT or Win95. 
+	   This is needed to return the correct error codes in some
+	   circumstances.
+	 */
+
+	if (ra_type == RA_WINNT || ra_type == RA_WIN95)
+	{
+		if (client_caps & (CAP_NT_SMBS | CAP_STATUS32))
+		{
+			set_remote_arch( RA_WINNT);
+		}
+		else
+		{
+			set_remote_arch( RA_WIN95);
+		}
+	}
+
+	if (passlen1 != 24 && passlen2 != 24)
+	{
+		doencrypt = False;
+	}
+
+	if (passlen1 > MAX_PASS_LEN)
+	{
+		overflow_attack(passlen1);
+	}
+
+	if (passlen2 > MAX_PASS_LEN)
+	{
+		overflow_attack(passlen2);
+	}
+
+	passlen1 = MIN(passlen1, MAX_PASS_LEN);
+	passlen2 = MIN(passlen2, MAX_PASS_LEN);
+
+	if (doencrypt)
+	{
+		/* Save the lanman2 password and the NT md4 password. */
+		*smb_passlen = passlen1;
+		memcpy(smb_passwd,p,*smb_passlen);
+
+		*smb_nt_passlen = passlen2;
+		memcpy(smb_nt_passwd,p+passlen1,*smb_nt_passlen);
+	}
+	else
+	{
+		/* both Win95 and WinNT stuff up the password lengths for
+		   non-encrypting systems. Uggh. 
+
+		   if passlen1==24 its a win95 system, and its setting the
+		   password length incorrectly. Luckily it still works with the
+		   default code because Win95 will null terminate the password
+		   anyway 
+
+		   if passlen1>0 and passlen2>0 then maybe its a NT box and its
+		   setting passlen2 to some random value which really stuffs
+		   things up. we need to fix that one.
+		 */
+
+		if (passlen1 > 0 && passlen2 > 0 && passlen2 != 24 && passlen2 != 1)
+		{
+			passlen2 = 0;
+		}
+
+		/* we use the first password that they gave */
+		*smb_passlen = passlen1;
+		StrnCpy(smb_passwd,p,*smb_passlen);      
+
+		/* trim the password */
+		*smb_passlen = strlen(smb_passwd);
+
+		/* wfwg sometimes uses a space instead of a null */
+		if (strequal(smb_passwd," "))
+		{
+			*smb_passlen = 0;
+			*smb_passwd  = 0;
+		}
+	}
+
+	p += passlen1 + passlen2;
+
+	fstrcpy(user,p); p = skip_string(p, 1);
+	fstrcpy(domain, p); p = skip_string(p, 1);
+	native_os = p; p = skip_string(p, 2);
+	native_lm = p; 
+
+	DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
+			domain, native_os, native_lm));
+}
+
+/****************************************************************************
+ decode the SMBsessionsetupX request
+ ****************************************************************************/
+static void decode_sesssetup_and_X(char *inbuf, char *user, char *domain,
+				char *smb_passwd, int *smb_passlen,
+				char *smb_nt_passwd, int *smb_nt_passlen)
+{
+	int smb_mpxmax;     
+	int smb_vc_num;     
+	uint32 smb_sesskey;    
+
+	smb_mpxmax  = SVAL(inbuf,smb_vwv3);
+	smb_vc_num  = SVAL(inbuf,smb_vwv4);
+	smb_sesskey = IVAL(inbuf,smb_vwv5);
+
+	if (Protocol < PROTOCOL_NT1)
+	{
+		sess_get_info(inbuf, user, domain,
+				smb_passwd, smb_passlen);
+	}
+	else
+	{
+		sess_get_info_nt1(inbuf, user, domain,
+				smb_passwd, smb_passlen,
+				smb_nt_passwd, smb_nt_passlen);
+    }
+}
+
+
+/****************************************************************************
+ reply to a session setup command
+ ****************************************************************************/
+static int construct_reply_sesssetup_and_X(char *inbuf, char *outbuf,
+				int length, int bufsize,
+				char *user, BOOL guest)
+{
+	uint16 sess_vuid;
+	int unix_gid;
+	int unix_uid;
+	int smb_bufsize;    
+
+	static BOOL done_sesssetup = False;
+
+	smb_bufsize = SVAL(inbuf,smb_vwv2);
+
+	if (Protocol < PROTOCOL_NT1)
+	{
+		set_message(outbuf, 3, 0, True);
+	}
+	else
+	{
+		char *p;
+		set_message(outbuf, 3, 3, True);
+		p = smb_buf(outbuf);
+
+		strcpy(p, "Unix"); p = skip_string(p,1);
+		strcpy(p, "Samba "); strcat(p,VERSION); p = skip_string(p,1);
+		strcpy(p, myworkgroup); p = skip_string(p,1);
+
+		set_message(outbuf,3,PTR_DIFF(p, smb_buf(outbuf)), False);
+		/* perhaps grab OS version here?? */
+	}
+
+	/* Set the correct uid in the outgoing and incoming packets
+	   We will use this on future requests to determine which
+	   user we should become.
+	 */
+	{
+		struct passwd *pw = Get_Pwnam(user, False, NULL);
+		if (!pw)
+		{
+			DEBUG(1,("Username %s is invalid on this system\n", user));
+			return (ERROR(ERRSRV, ERRbadpw));
+		}
+		unix_gid = pw->pw_gid;
+		unix_uid = pw->pw_uid;
+	}
+
+	if (guest)
+	{
+		/* indicate whether logged on as a user or not */
+		SSVAL(outbuf, smb_vwv2, SESSION_LOGGED_ON_AS_USER);
+	}
+
+	/* register the name and uid as being validated, so further connections
+	   to a uid can get through without a password, on the same VC
+	 */
+	sess_vuid = register_vuid(unix_uid, unix_gid, user, guest);
+
+	SSVAL(outbuf, smb_uid, sess_vuid);
+	SSVAL(inbuf , smb_uid, sess_vuid);
+
+	if (!done_sesssetup)
+	{
+		max_send = MIN(max_send, smb_bufsize);
+	}
+
+	DEBUG(6,("Client requested max send size of %d\n", max_send));
+
+	done_sesssetup = True;
+
+	return chain_reply(inbuf,outbuf,length,bufsize);
+}
+
+
+/****************************************************************************
+ reply to a session setup command
+ ****************************************************************************/
+static int process_sesssetup(char *inbuf,char *outbuf, int length,int bufsize,
+				BOOL *guest, char *user, char *domain,
+				char *smb_passwd   , int smb_passlen,
+				char *smb_nt_passwd, int smb_nt_passlen)
+{
+	/* If no username is sent use the guest account */
+	if (*user == 0)
+	{
+		strcpy(user,lp_guestaccount(-1));
+
+		/* If no user and no password then set guest flag. */
+		if (*smb_passwd == 0)
+		{
+			(*guest) = True;
+		}
+	}
+
+	/**** reconfigure the server, according to the (new?) username ****/
+
+	strlower(user);
+	strcpy(sesssetup_user,user);
+	reload_services(True);
+	add_session_user(user, (*smb_passwd == 0) ? guest : NULL);
+
+	/* password checks: server-mode nt, lm or cleartext, guest access */
+	if (!(*guest) && !sess_passwd_check(guest, user, domain,
+	                                 smb_passwd, smb_passlen,
+	                                 smb_nt_passwd, smb_nt_passlen))
+	{
+		return False;
+	}
+
+	/* check granting guest access (again) if the username doesn't exist. */
+	if (!(*guest) && !Get_Pwnam(user, True, guest))
+	{
+		DEBUG(3,("No such user - using guest account\n"));
+	}
+	
+	/* guest mode requested - check there's a guest account set up! */
+	if ((*guest) && *lp_guestaccount(-1) == 0)
+	{
+		DEBUG(2, ("reply_sesssetup_X: guest access *would* be granted if guest account existed...\n"));
+		return False;
+	}
+
+	/* ok! we're clear - either guest access or validated user access */
+
+	/* anything but guest account, try and add a home directory share */
+	if (!(*guest) && lp_servicenumber(user) < 0)     
+	{
+		int homes = lp_servicenumber(HOMES_NAME);
+		pstring home;
+		get_home_server_and_dir(user, NULL, home);
+
+		if (homes >= 0 && home[0])
+		{
+			lp_add_home(user, homes, home);
+		}
+	}
+
+	return True;
+}
+
+
+/****************************************************************************
+ reply to a session setup command
+ ****************************************************************************/
 int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
-  uint16 sess_vuid;
-  int gid;
-  int uid;
-  int   smb_bufsize;    
-  int   smb_mpxmax;     
-  int   smb_vc_num;     
-  uint32   smb_sesskey;    
-  int   smb_lm_passlen = 0;   
-  pstring smb_lm_passwd;
-  int   smb_nt_passlen = 0;   
-  pstring smb_nt_passwd;
-  BOOL valid_nt_passwd = False;
-  BOOL valid_lm_passwd = False;
-  pstring user;
-  BOOL guest=False;
-  static BOOL done_sesssetup = False;
-  BOOL doencrypt = SMBENCRYPT();
-  char *domain = "";
-  struct cli_state *pwd_srv = NULL;
-  struct smb_passwd *smb_trust_acct = NULL; /* check if trust account exists */
+	int smb_passlen = 0;   
+	int smb_nt_passlen = 0;   
 
-  /* if the account ends in $ it's a trust account */
-  sess_trust_acct = False;
+	pstring smb_passwd;
+	pstring smb_nt_passwd;
 
-  *smb_lm_passwd = 0;
-  *smb_nt_passwd = 0;
-  
-  smb_bufsize = SVAL(inbuf,smb_vwv2);
-  smb_mpxmax = SVAL(inbuf,smb_vwv3);
-  smb_vc_num = SVAL(inbuf,smb_vwv4);
-  smb_sesskey = IVAL(inbuf,smb_vwv5);
+	pstring user;
+	fstring domain;
 
-  if (Protocol < PROTOCOL_NT1) {
-    smb_lm_passlen = SVAL(inbuf,smb_vwv7);
-    if (smb_lm_passlen > MAX_PASS_LEN)
-    {
-	    overflow_attack(smb_lm_passlen);
-    }
+	BOOL guest = False;
 
-    memcpy(smb_lm_passwd,smb_buf(inbuf),smb_lm_passlen);
-    pstrcpy(user,smb_buf(inbuf)+smb_lm_passlen);
+	*domain        = 0;
+	*smb_passwd    = 0;
+	*smb_nt_passwd = 0;
 
-    if (lp_security() != SEC_SERVER && !doencrypt) {
-	    smb_lm_passlen = strlen(smb_lm_passwd);
-    }
-  } else {
-    uint16 passlen1 = SVAL(inbuf,smb_vwv7);
-    uint16 passlen2 = SVAL(inbuf,smb_vwv8);
-    uint32 client_caps = IVAL(inbuf,smb_vwv11);
-    enum remote_arch_types ra_type = get_remote_arch();
+	decode_sesssetup_and_X(inbuf, user, domain,
+				           smb_passwd   , &smb_passlen,
+				           smb_nt_passwd, &smb_nt_passlen);
 
-    char *p = smb_buf(inbuf);    
+	DEBUG(3,("sesssetupX:name=[%s]\n",user));
 
-    /* client_caps is used as final determination if client is NT or Win95. 
-       This is needed to return the correct error codes in some
-       circumstances.
-     */
-    
-    if(ra_type == RA_WINNT || ra_type == RA_WIN95)
-    {
-      if(client_caps & (CAP_NT_SMBS | CAP_STATUS32))
-        set_remote_arch( RA_WINNT);
-      else
-        set_remote_arch( RA_WIN95);
-    }
-
-    if (passlen1 != 24 && passlen2 != 24)
-      doencrypt = False;
-
-    if (passlen1 > MAX_PASS_LEN) {
-	    overflow_attack(passlen1);
-    }
-
-    passlen1 = MIN(passlen1, MAX_PASS_LEN);
-    passlen2 = MIN(passlen2, MAX_PASS_LEN);
-
-    if(doencrypt) {
-      /* Save the lanman2 password and the NT md4 password. */
-      smb_lm_passlen = passlen1;
-      memcpy(smb_lm_passwd,p,smb_lm_passlen);
-      smb_nt_passlen = passlen2;
-      memcpy(smb_nt_passwd,p+passlen1,smb_nt_passlen);
-    } else {
-      /* both Win95 and WinNT stuff up the password lengths for
-	 non-encrypting systems. Uggh. 
-      
-	 if passlen1==24 its a win95 system, and its setting the
-	 password length incorrectly. Luckily it still works with the
-	 default code because Win95 will null terminate the password
-	 anyway 
-
-	 if passlen1>0 and passlen2>0 then maybe its a NT box and its
-	 setting passlen2 to some random value which really stuffs
-	 things up. we need to fix that one.  */
-      if (passlen1 > 0 && passlen2 > 0 && passlen2 != 24 &&
-	  passlen2 != 1) {
-	passlen2 = 0;
-      }
-      /* we use the first password that they gave */
-      smb_lm_passlen = passlen1;
-      StrnCpy(smb_lm_passwd,p,smb_lm_passlen);      
-      
-      /* trim the password */
-      smb_lm_passlen = strlen(smb_lm_passwd);
-
-      /* wfwg sometimes uses a space instead of a null */
-      if (strequal(smb_lm_passwd," ")) {
-	smb_lm_passlen = 0;
-	*smb_lm_passwd = 0;
-      }
-    }
-    
-    p += passlen1 + passlen2;
-    fstrcpy(user,p); p = skip_string(p,1);
-    domain = p;
-
-    DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
-	     domain,skip_string(p,1),skip_string(p,2)));
-  }
-
-
-  DEBUG(3,("sesssetupX:name=[%s]\n",user));
-
-  /* If name ends in $ then it's asking for a trust account. */
-  /* there are three types of these: Server (BDCs); Workstation */
-  /* (Domain members; Domain (Trusted Domains) */
+	/* If name ends in $ then it's asking for a trust account. */
+	/* there are three types of these: Server (BDCs); Workstation */
+	/* (Domain members; Domain (Trusted Domains) */
 
 	if (user[strlen(user) - 1] == '$')
 	{
-#ifdef NTDOMAIN
-		sess_trust_acct = True;
-		if (lp_security() == SEC_USER)
-		{
-			smb_trust_acct = get_smbpwd_entry(user, 0);
-		}
-		else
-		{
-			DEBUG(3,("Trust account %s only supported with security = user\n",
-					user));
-			SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-			/* lkclXXXX this looks like a wacky error code to return! */
-			return(ERROR(0, 0xc0000000|NT_STATUS_INVALID_DISPOSITION));
-		}
-
-		if (smb_trust_acct == NULL)
-		{
-			/* lkclXXXX: workstation entry doesn't exist */
-			DEBUG(4,("Trust account %s user doesn't exist\n",user));
-			SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-			return(ERROR(0, 0xc0000000|NT_STATUS_NO_SUCH_USER));
-		}
-		else
-		{
-			if (!smb_password_ok(user, smb_nt_passwd, smb_nt_passlen))
-			{
-				DEBUG(4,("Trust Account %s - password failed\n", user));
-				return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
-			}
-
-			if (BIT_SET(smb_trust_acct->acct_ctrl, ACB_DOMTRUST))
-			{
-				DEBUG(4,("Domain trust account %s denied by server\n",user));
-				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-				return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)); 
-			}
-			if (BIT_SET(smb_trust_acct->acct_ctrl, ACB_SVRTRUST))
-			{
-				DEBUG(4,("Server trust account %s denied by server\n",user));
-				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-				return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT)); 
-			}
-			if (BIT_SET(smb_trust_acct->acct_ctrl, ACB_WSTRUST))
-			{
-				DEBUG(4,("Wksta trust account %s denied by server\n", user));
-				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-				return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT)); 
-			}
-		}
-
-		DEBUG(4,("Trust account %s accepted to Domain [%s]\n", user, domain));
-		strcpy(user,lp_guestaccount(-1));
-		guest = True;
-#else
-		/* deny access from (trust) accounts - ending in $ */
-		return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
-#endif
+		return session_trust_account(inbuf, outbuf, user,
+		                             smb_passwd, smb_passlen,
+		                             smb_nt_passwd, smb_nt_passlen);
 	}
 
-  /* If no username is sent use the guest account */
-  if (!*user)
-  {
-      strcpy(user,lp_guestaccount(-1));
-      /* If no user and no password then set guest flag. */
-      if( *smb_lm_passwd == 0)
-      {
-        guest = True;
-      }
-  }
-
-  strlower(user);
-
-  strcpy(sesssetup_user,user);
-
-  reload_services(True);
-
-  add_session_user(user);
-
-  /* Check if the given username was the guest user with no password.
-     We need to do this check after add_session_user() as that
-     call can potentially change the username (via map_username via
-     Get_Pwnam).
-   */
-
-  if(!guest && strequal(user,lp_guestaccount(-1)) && (*smb_lm_passwd == 0))
-  {
-    guest = True;
-  }
-
-	if (!guest && !(lp_security() == SEC_SERVER && 
-	               ((pwd_srv = pwd_server_connection()) != NULL) &&
-	               server_validate(pwd_srv, user, domain, 
-	                               smb_lm_passwd, smb_lm_passlen, 
-	                               smb_nt_passwd, smb_nt_passlen)) &&
-	               !check_hosts_equiv(user))
+	/* check username and possibly guest access rights */
+	if (!process_sesssetup(inbuf, outbuf, length, bufsize,
+	                       &guest, user, domain,
+		                   smb_passwd, smb_passlen,
+		                   smb_nt_passwd, smb_nt_passlen))
 	{
-
-		/* now check if it's a valid username/password */
-		/* If an NT password was supplied try and validate with that
-		   first. This is superior as the passwords are mixed case 
-		   128 length unicode */
-
-		if (smb_nt_passlen)
-		{
-			/* check the NT password, if there is one. */
-			if(!password_ok(user,smb_nt_passwd,smb_nt_passlen,NULL))
-			{
-				DEBUG(0,("NT Password did not match!\n"));
-			}
-			else
-			{
-				valid_nt_passwd = True;
-			}
-		} 
-
-
-		/* check the LM password instead */
-		if (!valid_nt_passwd && !password_ok(user,smb_lm_passwd,smb_lm_passlen,NULL))
-		{
-			if (lp_security() >= SEC_USER)
-			{
-#if (GUEST_SESSSETUP == 0)
-				return(ERROR(ERRSRV,ERRbadpw));
-#endif
-#if (GUEST_SESSSETUP == 1)
-				if (Get_Pwnam(user,True))
-					return(ERROR(ERRSRV,ERRbadpw));
-#endif
-			}
-
-			/* no lm or nt password specified: username doesn't exist.  allow guest access */
-			if (*smb_lm_passwd || !Get_Pwnam(user,True))
-			{
-				strcpy(user, lp_guestaccount(-1));
-			}
-			DEBUG(3,("Registered username %s for guest access\n",user));
-			guest = True;
-		}
-		else
-		{
-			valid_lm_passwd = True;
-		}
+		return (ERROR(ERRSRV, ERRbadpw));
 	}
 
-  if (!Get_Pwnam(user,True))
-  {
-    DEBUG(3,("No such user %s - using guest account\n",user));
-    strcpy(user,lp_guestaccount(-1));
-    guest = True;
-  }
-
-  if (!strequal(user,lp_guestaccount(-1)) && lp_servicenumber(user) < 0)      
-    {
-      int homes = lp_servicenumber(HOMES_NAME);
-      char *home = get_home_dir(user);
-      if (homes >= 0 && home)
-      {
-	   lp_add_home(user,homes,home);
-      }
-    }
-
-
-  /* it's ok - setup a reply */
-  if (Protocol < PROTOCOL_NT1) {
-    set_message(outbuf,3,0,True);
-  } else {
-    char *p;
-    set_message(outbuf,3,3,True);
-    p = smb_buf(outbuf);
-    strcpy(p,"Unix"); p = skip_string(p,1);
-    strcpy(p,"Samba "); strcat(p,VERSION); p = skip_string(p,1);
-    strcpy(p,myworkgroup); p = skip_string(p,1);
-    set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
-    /* perhaps grab OS version here?? */
-  }
-
-  /* Set the correct uid in the outgoing and incoming packets
-     We will use this on future requests to determine which
-     user we should become.
-     */
-  {
-    struct passwd *pw = Get_Pwnam(user,False);
-    if (!pw) {
-      DEBUG(1,("Username %s is invalid on this system\n",user));
-      return(ERROR(ERRSRV,ERRbadpw));
-    }
-    gid = pw->pw_gid;
-    uid = pw->pw_uid;
-  }
-
-  if (guest && !sess_trust_acct)
-  {
-    /* indicate whether logged on as a user or not */
-    SSVAL(outbuf,smb_vwv2, SESSION_LOGGED_ON_AS_USER);
-  }
-
-  /* register the name and uid as being validated, so further connections
-     to a uid can get through without a password, on the same VC */
-  sess_vuid = register_vuid(uid,gid,user,guest);
- 
-  SSVAL(outbuf,smb_uid,sess_vuid);
-  SSVAL(inbuf,smb_uid,sess_vuid);
-
-  if (!done_sesssetup)
-    max_send = MIN(max_send,smb_bufsize);
-
-  DEBUG(6,("Client requested max send size of %d\n", max_send));
-
-  done_sesssetup = True;
-
-  return chain_reply(inbuf,outbuf,length,bufsize);
+	return construct_reply_sesssetup_and_X(inbuf, outbuf,
+	                                       length, bufsize,
+	                                       user, guest);
 }
 
 

@@ -26,20 +26,6 @@ extern int DEBUGLEVEL;
 static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (), int N);
 static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (), int N);
 
-/****************************************************************************
-get a users home directory. tries as-is then lower case
-****************************************************************************/
-char *get_home_dir(char *user)
-{
-  static struct passwd *pass;
-
-  pass = Get_Pwnam(user,False);
-
-  if (!pass) return(NULL);
-  return(pass->pw_dir);      
-}
-
-
 /*******************************************************************
 map a username from a dos name to a unix name by looking in the username
 map
@@ -141,7 +127,7 @@ a wrapper for getpwnam() that tries with all lower and all upper case
 if the initial name fails. Also tried with first letter capitalised
 Note that this changes user!
 ****************************************************************************/
-struct passwd *Get_Pwnam(char *user,BOOL allow_change)
+struct passwd *Get_Pwnam(char *user,BOOL allow_change, BOOL *changed_to_guest)
 {
   fstring user2;
   int last_char;
@@ -159,6 +145,12 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
   }
 
   map_username(user);
+
+  if (allow_change && changed_to_guest && strequal(user, lp_guestaccount(-1)))
+  {
+    DEBUG(3,("Get_Pwnam: user has been changed to guest account %s\n", user));
+    *changed_to_guest = True;
+  }
 
   ret = _Get_Pwnam(user);
   if (ret) return(ret);
@@ -188,6 +180,7 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
   /* try all combinations up to usernamelevel */
   strlower(user);
   ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
+
   if (ret) return(ret);
 
   if (allow_change)
@@ -242,7 +235,7 @@ BOOL user_in_list(char *user,char *list)
 	{
           struct group *gptr;
           char **member;  
-	  struct passwd *pass = Get_Pwnam(user,False);
+	  struct passwd *pass = Get_Pwnam(user, False, NULL);
 
 	  if (pass) { 
 	    gptr = getgrgid(pass->pw_gid);

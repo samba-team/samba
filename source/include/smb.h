@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
@@ -53,7 +53,8 @@
 #define BOOLSTR(b) ((b) ? "Yes" : "No")
 #define BITSETB(ptr,bit) ((((char *)ptr)[0] & (1<<(bit)))!=0)
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
-#define BIT_SET(var,bit) (((var)|(bit))==(bit))
+#define IS_BITS_SET(var,bit) (((var)&(bit))==(bit))
+#define IS_BITS_CLR(var,bit) (((var)&(~(bit)))==0)
 
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((char *)(p1)) - (char *)(p2)))
 
@@ -301,7 +302,6 @@ struct smb_passwd
 
 struct cli_state {
 	int fd;
-	int cnum;
 	int pid;
 	int mid;
 	int uid;
@@ -310,6 +310,11 @@ struct cli_state {
 	int error;
 	int privileges;
 	fstring eff_name;
+
+	/* tconX-specific information */
+	int cnum;
+	fstring fullshare;
+	fstring dev;
 
 	fstring full_dest_host_name;
 	char called_netbios_name[16];
@@ -354,6 +359,48 @@ typedef struct
 
 } file_info;
 
+
+struct tar_client_info
+{
+	int blocksize;
+	BOOL inc;
+	BOOL reset;
+	BOOL excl;
+	char type;
+	int attrib;
+	char **cliplist;
+	int clipn;
+	int tp;
+	int num_files;
+	int buf_size;
+	int bytes_written;
+	char *buf;
+	int handle;
+	int print_mode;
+	char *file_mode;
+};
+
+struct client_info 
+{
+	pstring cur_dir;
+	pstring base_dir;
+	pstring file_sel;
+	time_t newer_than;
+	int archive_level;
+	int dir_total;
+	int put_total_time_ms;
+	int put_total_size;
+	int get_total_time_ms;
+	int get_total_size;
+	int print_mode;
+	BOOL translation;
+	BOOL recurse_dir;
+	BOOL prompt;
+	BOOL lowercase;
+	BOOL abort_mget;
+
+	struct tar_client_info tar;
+};
 
 /* Structure used when SMBwritebmpx is active */
 typedef struct
@@ -1040,8 +1087,8 @@ enum security_types
 };
 
 /* bit-masks for security mode.  see cifs6.txt Negprot 4.1.1 server response */
-#define USE_USER_LEVEL_SECURITY 1
-#define USE_CHALLENGE_RESPONSE  2
+#define USE_USER_LEVEL_SECURITY 0x01
+#define USE_CHALLENGE_RESPONSE  0x02
 
 /* printing types */
 enum printing_types

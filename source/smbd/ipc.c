@@ -1510,7 +1510,7 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
 
   DEBUG(3,("Set password for <%s>\n",user));
 
-  if (password_ok(user,pass1,strlen(pass1),NULL) &&
+  if (password_ok(user, NULL, pass1,strlen(pass1),NULL) &&
       chgpasswd(user,pass1,pass2))
   {
     SSVAL(*rparam,0,NERR_Success);

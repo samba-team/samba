@@ -585,13 +585,19 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
   if (Protocol >= PROTOCOL_LANMAN1 && use_setup)
     {
       fstring pword;
+      char ntpword[24];
       int passlen = strlen(pass)+1;
+      int ntpasslen = 0;
       strcpy(pword,pass);      
 
-      if (doencrypt && *pass) {
+      if (doencrypt && *pass)
+      {
 	DEBUG(3,("Using encrypted passwords\n"));
 	passlen = 24;
-	SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);
+	SMBencrypt  ((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);
+
+	ntpasslen = 24;
+	SMBNTencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)ntpword);
       }
 
       /* if in share level security then don't send a password now */
@@ -628,15 +634,21 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
 	SSVAL(outbuf,smb_vwv4,getpid());
 	SIVAL(outbuf,smb_vwv5,sesskey);
 	SSVAL(outbuf,smb_vwv7,passlen);
-	SSVAL(outbuf,smb_vwv8,0);
+	SSVAL(outbuf,smb_vwv8,ntpasslen);
+
 	p = smb_buf(outbuf);
-	memcpy(p,pword,passlen); p += SVAL(outbuf,smb_vwv7);
+
+	memcpy(p,pword  ,passlen); p += passlen;
+    if (ntpasslen == 24)
+	{
+		memcpy(p,ntpword,passlen); p += passlen;
+	}
 	strcpy(p,username);p = skip_string(p,1);
 	strcpy(p,workgroup);p = skip_string(p,1);
 	strcpy(p,"Unix");p = skip_string(p,1);
 	strcpy(p,"Samba");p = skip_string(p,1);
 	set_message(outbuf,13,PTR_DIFF(p,smb_buf(outbuf)),False);
-      }
+    }
 
       send_smb(Client,outbuf);
       receive_smb(Client,inbuf,CLIENT_TIMEOUT);

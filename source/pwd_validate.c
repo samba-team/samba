@@ -156,7 +156,7 @@ BOOL server_validate2(struct cli_state *clnt, char *user, char *domain,
 		return False;
 	}
 
-	if (!(BIT_SET(SVAL(clnt->inbuf,smb_vwv2), SESSION_LOGGED_ON_AS_USER)))
+	if (!(IS_BITS_SET(SVAL(clnt->inbuf,smb_vwv2), SESSION_LOGGED_ON_AS_USER)))
 	{
 		DEBUG(1,("server %s gave us guest access only\n", clnt->full_dest_host_name));
 	}

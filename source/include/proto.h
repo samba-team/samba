@@ -36,12 +36,18 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass);
 
 /*The following definitions come from  client.c  */
 
-void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num);
-void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir);
 void cmd_help(void);
 
 /*The following definitions come from  clientgen.c  */
 
+BOOL cli_send_trans(struct cli_state *cli,
+			   int trans, char *name, int pipe_name_len,
+               int fid, int flags,
+			   char *data,char *param,uint16 *setup, int ldata,int lparam,
+			   int lsetup,int mdata,int mparam,int msetup);
+BOOL cli_receive_trans(struct cli_state *cli,
+			      int trans,int *data_len,
+			      int *param_len, char **data,char **param);
 BOOL cli_api_pipe(struct cli_state *cli,
 	char *pipe_name, int pipe_name_len,
 	int prcnt,int drcnt, int srcnt,
@@ -50,6 +56,8 @@ BOOL cli_api_pipe(struct cli_state *cli,
 	char *param, char *data, uint16 *setup,
 	char **rparam,char **rdata);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
+BOOL cli_NetShareEnum(struct cli_state *cli, BOOL sort, BOOL *long_share_name,
+		       void (*fn)(char *, uint32, char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(char *, uint32, char *));
 BOOL cli_session_setup(struct cli_state *cli, 
@@ -60,13 +68,68 @@ BOOL cli_session_setup(struct cli_state *cli,
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    char *share, char *dev, char *pass, int passlen);
 BOOL cli_tdis(struct cli_state *cli);
+BOOL cli_rmdir(struct cli_state *cli, char *dname);
 BOOL cli_unlink(struct cli_state *cli, char *fname);
-int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
-BOOL cli_close(struct cli_state *cli, int fnum);
+int cli_send_message(struct cli_state *cli, 
+				char *username, char *desthost,
+				char *message, int *total_len);
+void cli_do_dir(struct cli_state *cli, struct client_info *info,
+				char *Mask,int attribute, BOOL recurse_dir,
+				void (*fn)(struct cli_state*, struct client_info*, file_info*));
+BOOL cli_stat(struct cli_state *cli, char *file);
+BOOL cli_print(struct cli_state *cli, struct client_info *info,
+				FILE *f, char *lname, char *rname);
+int cli_queue(struct cli_state *cli, struct client_info *info,
+				void (*fn)(uint16, char*, uint32, uint8));
+BOOL cli_cancel(struct cli_state *cli, uint16 job, uint16 *cancelled);
+int cli_pqueue_2(struct cli_state *cli, struct client_info *info,
+			void (*fn)(char*, uint16, uint16, char *, time_t, uint32, char *));
+BOOL cli_printq_info(struct cli_state *cli, struct client_info *info,
+				char *name, uint16 *priority,
+				uint16 *start_time, uint16 *until_time,
+				char *separator_file, char *print_processor,
+				char *params, char *comment,
+				uint16 *status, uint16 *jobs,
+				char *printers, char *driver_name,
+				char **driver_data, int *driver_count);
+int cli_long_dir(struct cli_state *cli, struct client_info *info,
+				char *Mask,int attribute, BOOL recurse_dir,
+				void (*fn)(struct cli_state*, struct client_info*, file_info*));
+int cli_short_dir(struct cli_state *cli, struct client_info *info,
+				char *Mask,int attribute, BOOL recurse_dir,
+				void (*fn)(struct cli_state*, struct client_info*, file_info*));
+void cli_dir(struct cli_state *cli, struct client_info *info,
+				char *Mask,int attribute, BOOL recurse_dir,
+				void (*fn)(struct cli_state*, struct client_info*, file_info*));
+int cli_put(struct cli_state *cli, struct client_info *info,
+				char *rname,char *lname, file_info *finfo,
+				int (*read_fn)(struct client_info *, char*, int, int, FILE *));
+int cli_get(struct cli_state *cli, struct client_info *info,
+				char *rname,char *lname,file_info *finfo1,
+				int handle,
+				int (*init_fn)(struct client_info *, int, char*, file_info *),
+				int (*write_fn)(struct client_info *, int, char*, int),
+				int (*end_fn)(struct client_info*, int, char*, int, file_info*));
+BOOL cli_chkpath(struct cli_state *cli, char *path);
+BOOL cli_dskattr(struct cli_state *cli,
+				uint16 *num_blocks, uint32 *block_size, uint16 *free_blocks);
+BOOL cli_mkdir(struct cli_state *cli, char *name);
+BOOL cli_move(struct cli_state *cli, char *src, char *dest);
+BOOL cli_getatr(struct cli_state *cli, char *fname,
+				uint8 *fattr, uint16 *ftime, uint16 *fsize);
+BOOL cli_setatr(struct cli_state *cli, char *fname,
+				uint8 fattr, uint16 write_time);
+BOOL cli_create(struct cli_state *cli,
+				char *name, uint16 file_mode, uint16 make_time, int *fnum);
+uint16 cli_open(struct cli_state *cli, char *fname, int flags, int share_mode,
+			uint16 *fmode, time_t *mtime, uint32 *fsize);
+BOOL cli_close(struct cli_state *cli, int fnum, time_t close_time);
 BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
-int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
-int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
+int cli_readx(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
+int cli_writeraw(struct cli_state *cli,int fnum,int pos,char *buf,int n);
+int cli_write(struct cli_state *cli,int fnum,int pos,char *buf,int n);
+int cli_write_x(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli,
 			char *called_host_name        , int called_name_type,
@@ -78,40 +141,24 @@ char *cli_errstr(struct cli_state *cli);
 BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 int cli_setpid(struct cli_state *cli, int pid);
-
-/*The following definitions come from  clientutil.c  */
-
-void cli_setup_pkt(char *outbuf);
-BOOL cli_call_api(char *pipe_name, int pipe_name_len,
-			int prcnt,int drcnt, int srcnt,
-		     int mprcnt,int mdrcnt,
-		     int *rprcnt,int *rdrcnt,
-		     char *param,char *data, uint16 *setup,
-		     char **rparam,char **rdata);
-BOOL cli_receive_trans_response(char *inbuf,int trans,
-                                   int *data_len,int *param_len,
-				   char **data,char **param);
-BOOL cli_send_trans_request(char *outbuf,int trans,
-			       char *name,int namelen, int fid,int flags,
-			       char *data,char *param,uint16 *setup,
-			       int ldata,int lparam,int lsetup,
-			       int mdata,int mparam,int msetup);
-BOOL cli_send_session_request(char *inbuf,char *outbuf);
-BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup);
-void cli_send_logout(void );
-BOOL cli_open_sockets(int port );
-BOOL cli_reopen_connection(char *inbuf,char *outbuf);
+BOOL cli_establish_connection(struct cli_state *cli,
+				char *dest_host, uint8 name_type, struct in_addr *dest_ip,
+				char *my_hostname,
+				char *passwd_report,
+				char *username, char *user_pass, char *workgroup,
+				char *service, char *service_type,
+				BOOL do_tcon, BOOL do_shutdown);
 
 /*The following definitions come from  clitar.c  */
 
-int padit(char *buf, int bufsize, int padsize);
-void cmd_block(void);
-void cmd_tarmode(void);
-void cmd_setmode(void);
-void cmd_tar(char *inbuf, char *outbuf);
-int process_tar(char *inbuf, char *outbuf);
+void cmd_block(struct cli_state *cli, struct client_info *info);
+void cmd_tarmode(struct cli_state *cli, struct client_info *info);
+void cmd_setmode(struct cli_state *cli, struct client_info *info);
+void cmd_tar(struct cli_state *cli, struct client_info *info);
+int process_tar(struct cli_state *cli, struct client_info *info);
 int clipfind(char **aret, int ret, char *tok);
-int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
+int tar_parseargs(struct client_info *info,
+				int argc, char *argv[], char *Optarg, int Optind);
 
 /*The following definitions come from  credentials.c  */
 
@@ -660,16 +707,15 @@ user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 uint16 register_vuid(int uid,int gid, char *name,BOOL guest);
-void add_session_user(char *user);
+void add_session_user(char *user, BOOL *changed_to_guest);
 void dfs_unlogin(void);
 BOOL password_check(char *password);
-BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(char *user,char *password, int pwlen);
-BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd);
+BOOL password_ok(char *user, BOOL *guest, char *password, int pwlen, struct passwd *pwd);
 BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid);
-BOOL check_hosts_equiv(char *user);
+BOOL check_hosts_equiv(char *user, BOOL *guest);
 
 /*The following definitions come from  pcap.c  */
 
@@ -898,7 +944,7 @@ BOOL do_lsa_req_chal(struct cli_state *cli, uint16 fnum,
 		char *desthost, char *myhostname,
         DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
 BOOL do_lsa_srv_pwset(struct cli_state *cli, uint16 fnum,
-		uchar sess_key[8], 
+		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *mach_acct, uint16 sec_chan_type, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *srv_cred,
 		char nt_owf_new_mach_pwd[16]);
@@ -1284,9 +1330,8 @@ void unbecome_root(BOOL restore_dir);
 
 /*The following definitions come from  username.c  */
 
-char *get_home_dir(char *user);
 void map_username(char *user);
-struct passwd *Get_Pwnam(char *user,BOOL allow_change);
+struct passwd *Get_Pwnam(char *user,BOOL allow_change, BOOL *changed_to_guest);
 BOOL user_in_list(char *user,char *list);
 
 /*The following definitions come from  util.c  */
@@ -1396,7 +1441,10 @@ BOOL zero_ip(struct in_addr ip);
 void reset_globals_after_fork();
 char *client_name(void);
 char *client_addr(void);
-char *automount_server(char *user_name);
+void get_home_server_and_dir(char *user_name,
+				char *server_name, char *server_dir);
+void automount_server_share(char *user_name,
+				char *server_name, char *server_dir);
 void standard_sub_basic(char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 int PutUniCode(char *dst,char *src);
@@ -1431,3 +1479,6 @@ char *align_offset(char *q, char *base, int align_offset_len);
 void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);
+int writefile(BOOL translation, int f, char *b, int n);
+int readfile(BOOL translation, char *b, int size, int n, FILE *f);
+int printread(BOOL translation, FILE *f,char *b,int n);

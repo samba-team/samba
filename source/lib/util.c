@@ -3591,21 +3591,84 @@ char *client_addr(void)
   return addr_buf;
 }
 
-char *automount_server(char *user_name)
+/****************************************************************************
+get a users home directory.
+****************************************************************************/
+static char *get_home_dir(char *user)
 {
-	static pstring server_name;
+  static struct passwd *pass;
+
+  pass = Get_Pwnam(user,False, NULL);
+
+  if (!pass) return(NULL);
+  return(pass->pw_dir);      
+}
+
+
+/*******************************************************************
+ get server name and server directory
+ ******************************************************************/
+void get_home_server_and_dir(char *user_name,
+				char *server_name, char *server_dir)
+{
+	if (server_name)
+	{
+		/* set to default of local machine */
+		fstrcpy(server_name, local_machine);
+	}
+	if (server_dir)
+	{
+		char *home = get_home_dir(user_name);
+		if (home)
+		{
+			pstrcpy(server_name, home);
+		}
+		else
+		{
+			server_name[0] = 0;
+		}
+	}
 
 #if (defined(NETGROUP) && defined (AUTOMOUNT))
+	{
+		pstring home_srv;
+		pstring home_dir;
+
+		automount_server_share(user_name, home_srv, home_dir);
+
+		if (*home_srv)
+		{
+			strcpy(server_name, home_srv);
+		}
+		if (*home_dir)
+		{
+			pstrcpy(server_dir, home_dir);
+		}
+	}
+#endif
+}
+
+
+/*******************************************************************
+ get server name and server directory
+ ******************************************************************/
+void automount_server_share(char *user_name,
+				char *server_name, char *server_dir)
+{
 	int nis_error;        /* returned by yp all functions */
 	char *nis_result;     /* yp_match inits this */
 	int nis_result_len;  /* and set this */
 	char *nis_domain;     /* yp_get_default_domain inits this */
 	char *nis_map = (char *)lp_nis_home_map_name();
-	int home_server_len;
 
-	/* set to default of local machine */
-	pstrcpy(server_name, local_machine);
-
+	if (server_name)
+	{
+		*server_name = 0;
+	}
+	if (server_dir)
+	{
+		*server_dir = 0;
+	}
 	if ((nis_error = yp_get_default_domain(&nis_domain)) != 0)
 	{
 		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
@@ -3622,23 +3685,24 @@ char *automount_server(char *user_name)
 
 	if (!nis_error && lp_nis_home_map())
 	{
-		home_server_len = strcspn(nis_result,":");
-		DEBUG(5, ("NIS lookup succeeded.  Home server length: %d\n",home_server_len));
-		if (home_server_len > sizeof(pstring))
+		int home_server_len = strcspn(nis_result,":");
+		int server_dir_len = nis_result_len - home_server_len;
+
+		DEBUG(5, ("NIS lookup succeeded: %s\n", nis_result));
+
+		if (server_name)
 		{
-			home_server_len = sizeof(pstring);
+			strncpy(server_name, nis_result, home_server_len);
 		}
-		strncpy(server_name, nis_result, home_server_len);
+		if (server_dir)
+		{
+			strncpy(server_dir, &nis_result[home_server_len], server_dir_len);
+		}
 	}
-#else
-	/* use the local machine name instead of the auto-map server */
-	pstrcpy(server_name, local_machine);
-#endif
 
-	DEBUG(4,("Home server: %s\n", server_name));
-
-	return server_name;
+	DEBUG(4,("Home server: %s dir: %s\n", server_name, server_dir));
 }
+
 
 /*******************************************************************
 sub strings with useful parameters
@@ -3658,7 +3722,7 @@ void standard_sub_basic(char *str)
 		{
 			case 'G' :
 			{
-				if ((pass = Get_Pwnam(sesssetup_user,False))!=NULL)
+				if ((pass = Get_Pwnam(sesssetup_user,False, NULL))!=NULL)
 				{
 					string_sub(p,"%G",gidtoname(pass->pw_gid));
 				}
@@ -3668,7 +3732,13 @@ void standard_sub_basic(char *str)
 				}
 				break;
 			}
-			case 'N' : string_sub(p,"%N", automount_server(username)); break;
+			case 'N' :
+			{
+				fstring server_name;
+				get_home_server_and_dir(username, server_name, NULL);
+				string_sub(p,"%N", server_name);
+				break;
+			}
 			case 'I' : string_sub(p,"%I", client_addr()); break;
 			case 'L' : string_sub(p,"%L", local_machine); break;
 			case 'M' : string_sub(p,"%M", client_name()); break;
@@ -4561,4 +4631,83 @@ char *tab_depth(int depth)
 	return spaces;
 }
 
+
+/****************************************************************************
+write to a local file with CR/LF->LF cli_info.translation if appropriate.
+return the number taken from the buffer. This may not equal the number written.
+****************************************************************************/
+int writefile(BOOL translation, int f, char *b, int n)
+{
+  int i;
+
+  if (!translation)
+    return(write(f,b,n));
+  
+  i = 0;
+  while (i < n)
+    {
+      if (*b == '\r' && (i<(n-1)) && *(b+1) == '\n')
+	{
+	  b++;i++;
+	}
+      if (write(f, b, 1) != 1)
+	{
+	  break;
+	}
+      b++;
+      i++;
+    }
+  
+  return(i);
+}
+
+/****************************************************************************
+  read from a file with LF->CR/LF cli_info.translation if appropriate.
+  return the number read. read approx n bytes.
+****************************************************************************/
+int readfile(BOOL translation, char *b, int size, int n, FILE *f)
+{
+  int i;
+  int c;
+
+  if (!translation || (size != 1))
+    return(fread(b,size,n,f));
+  
+  i = 0;
+  while (i < n)
+    {
+      if ((c = getc(f)) == EOF)
+	{
+	  break;
+	}
+      
+      if (c == '\n') /* change all LFs to CR/LF */
+	{
+	  b[i++] = '\r';
+	  n++;
+	}
+      
+      if(i < n)
+        b[i++] = c;
+    }
+  
+  return(i);
+}
+
+/****************************************************************************
+ read from a file with print info->translation. return the number read.
+ read approx n bytes.
+ ****************************************************************************/
+int printread(BOOL translation, FILE *f,char *b,int n)
+{
+  int i;
+
+  i = readfile(translation, b,1, n-1,f);
+#if FORMFEED
+  if (feof(f) && i>0)
+    b[i++] = '\014';
+#endif
+
+  return(i);
+}
 

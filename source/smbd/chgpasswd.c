@@ -102,7 +102,7 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram)
 {
   int slave;
   struct termios stermios;
-  struct passwd *pass = Get_Pwnam(name,True);
+  struct passwd *pass = Get_Pwnam(name,True, False);
   int gid = pass->pw_gid;
   int uid = pass->pw_uid;
 

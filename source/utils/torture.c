@@ -144,7 +144,7 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 			break;
 		}
 
-		if (cli_write(c, fnum, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
+		if (cli_write_x(c, fnum, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
 			printf("write failed (%s)\n", cli_errstr(c));
 		}
 
@@ -158,7 +158,7 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 			printf("data corruption!\n");
 		}
 
-		if (!cli_close(c, fnum)) {
+		if (!cli_close(c, fnum, 0)) {
 			printf("close failed (%s)\n", cli_errstr(c));
 		}
 
@@ -288,7 +288,7 @@ static void run_locktest1(void)
 		printf("error: This server appears not to support timed lock requests\n");
 	}
 
-	if (!cli_close(&cli1, fnum2)) {
+	if (!cli_close(&cli1, fnum2, 0)) {
 		printf("close1 failed (%s)\n", cli_errstr(&cli1));
 		return;
 	}
@@ -306,12 +306,12 @@ static void run_locktest1(void)
 		}
 	}
 
-	if (!cli_close(&cli1, fnum1)) {
+	if (!cli_close(&cli1, fnum1, 0)) {
 		printf("close2 failed (%s)\n", cli_errstr(&cli1));
 		return;
 	}
 
-	if (!cli_close(&cli2, fnum3)) {
+	if (!cli_close(&cli2, fnum3, 0)) {
 		printf("close3 failed (%s)\n", cli_errstr(&cli2));
 		return;
 	}

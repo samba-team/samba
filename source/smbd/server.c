@@ -2119,15 +2119,16 @@ int find_service(char *service)
    /* now handle the special case of a home directory */
    if (iService < 0)
    {
-      char *phome_dir = get_home_dir(service);
+      pstring home_dir;
+      get_home_server_and_dir(service, NULL, home_dir);
       DEBUG(3,("checking for home directory %s gave %s\n",service,
-	    phome_dir?phome_dir:"(NULL)"));
-      if (phome_dir)
+	    home_dir[0]?home_dir:"(NULL)"));
+      if (home_dir[0])
       {   
 	 int iHomeService;
 	 if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
 	 {
-	    lp_add_home(service,iHomeService,phome_dir);
+	    lp_add_home(service,iHomeService,home_dir);
 	    iService = lp_servicenumber(service);
 	 }
       }
@@ -2379,6 +2380,7 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 {
   extern int Client;
 
+  bzero(&pwd_srv, sizeof(pwd_srv));
   if (is_daemon)
   {
     int num_interfaces = iface_count();
@@ -3303,7 +3305,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 
   if (strequal(service,HOMES_NAME))
     {
-      if (*user && Get_Pwnam(user,True))
+      if (*user && Get_Pwnam(user,True, NULL))
 	return(make_connection(user,user,password,pwlen,dev,vuid));
 
       if (validated_username(vuid))
@@ -3340,7 +3342,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   strlower(user);
 
   /* add it as a possible user name */
-  add_session_user(service);
+  add_session_user(service, NULL);
 
   /* shall we let them in? */
   if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid))
@@ -3360,7 +3362,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   bzero((char *)pcon,sizeof(*pcon));
 
   /* find out some info about the user */
-  pass = Get_Pwnam(user,True);
+  pass = Get_Pwnam(user,True, NULL);
 
   if (pass == NULL)
     {
@@ -3446,7 +3448,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       struct passwd *pass2;
       fstring fuser;
       fstrcpy(fuser,lp_force_user(snum));
-      pass2 = (struct passwd *)Get_Pwnam(fuser,True);
+      pass2 = (struct passwd *)Get_Pwnam(fuser,True, NULL);
       if (pass2)
 	{
 	  pcon->uid = pass2->pw_uid;
@@ -3548,7 +3550,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 #endif
 
   num_connections_open++;
-  add_session_user(user);
+  add_session_user(user, NULL);
   
   /* execute any "preexec = " line */
   if (*lp_preexec(SNUM(cnum)))
@@ -3728,10 +3730,13 @@ int reply_lanman2(char *outbuf)
 	  crypt_len = 8;
 	  if (pwd_srv.initialised)
       {
-		  generate_next_challenge(cryptkey);
-	  } else {
+          /* use password server's challenge */
 		  memcpy(cryptkey, pwd_srv.cryptkey, 8);
 		  set_challenge(pwd_srv.cryptkey);
+	  }
+      else
+      {
+		  generate_next_challenge(cryptkey);
 	  }
   }
 
@@ -3772,24 +3777,27 @@ int reply_nt1(char *outbuf)
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
   int data_len;
-  struct cli_state *cli = NULL;
   char cryptkey[8];
   char crypt_len = 0;
 
   if (lp_security() == SEC_SERVER && server_cryptkey(&pwd_srv, local_machine))
   {
 	  DEBUG(3,("using password server validation\n"));
-	  doencrypt = ((pwd_srv.sec_mode & 2) != 0);
+	  doencrypt = IS_BITS_SET(pwd_srv.sec_mode, USE_CHALLENGE_RESPONSE);
   }
 
   if (doencrypt)
   {
 	  crypt_len = 8;
-	  if (!cli) {
+	  if (pwd_srv.initialised)
+      {
+          /* use password server's challenge */
+		  memcpy(cryptkey, pwd_srv.cryptkey, 8);
+		  set_challenge(pwd_srv.cryptkey);
+	  }
+      else
+      {
 		  generate_next_challenge(cryptkey);
-	  } else {
-		  memcpy(cryptkey, cli->cryptkey, 8);
-		  set_challenge(cli->cryptkey);
 	  }
   }
 
@@ -3797,8 +3805,8 @@ int reply_nt1(char *outbuf)
 	  capabilities |= CAP_RAW_MODE;
   }
 
-  if (lp_security() >= SEC_USER) secword |= 1;
-  if (doencrypt) secword |= 2;
+  if (lp_security() >= SEC_USER) secword |= USE_USER_LEVEL_SECURITY;
+  if (doencrypt) secword |= USE_CHALLENGE_RESPONSE;
 
   /* decide where (if) to put the encryption challenge, and
      follow it with the OEM'd domain name
@@ -3806,12 +3814,14 @@ int reply_nt1(char *outbuf)
   data_len = crypt_len + strlen(myworkgroup) + 1;
 
   set_message(outbuf,17,data_len,True);
-  strcpy(smb_buf(outbuf)+crypt_len, myworkgroup);
 
   CVAL(outbuf,smb_vwv1) = secword;
   SSVALS(outbuf,smb_vwv16+1,crypt_len);
   if (doencrypt) 
+  {
 	  memcpy(smb_buf(outbuf), cryptkey, 8);
+  }
+  strcpy(smb_buf(outbuf)+crypt_len, myworkgroup);
 
   Protocol = PROTOCOL_NT1;
 
@@ -4357,26 +4367,31 @@ do some standard substitutions in a string
 ****************************************************************************/
 void standard_sub(int cnum,char *str)
 {
-  if (VALID_CNUM(cnum)) {
-    char *p, *s, *home;
+	char *p, *s;
 
-    for ( s=str ; (p=strchr(s, '%')) != NULL ; s=p ) {
-      switch (*(p+1)) {
-        case 'H' : if ((home = get_home_dir(Connections[cnum].user))!=NULL)
-                     string_sub(p,"%H",home);
-                   else
-                     p += 2;
-                   break;
-        case 'P' : string_sub(p,"%P",Connections[cnum].connectpath); break;
-        case 'S' : string_sub(p,"%S",lp_servicename(Connections[cnum].service)); break;
-        case 'g' : string_sub(p,"%g",gidtoname(Connections[cnum].gid)); break;
-        case 'u' : string_sub(p,"%u",Connections[cnum].user); break;
-        case '\0' : p++; break; /* don't run off the end of the string */
-        default  : p+=2; break;
-      }
-    }
-  }
-  standard_sub_basic(str);
+	if (!VALID_CNUM(cnum)) return;
+
+	for ( s=str ; (p=strchr(s, '%')) != NULL ; s=p )
+	{
+		switch (*(p+1))
+		{
+			case 'H' :
+			{
+				pstring home;
+				get_home_server_and_dir(Connections[cnum].user, NULL, home);
+				string_sub(p,"%H",home);
+
+				break;
+			}
+			case 'P' : string_sub(p,"%P",Connections[cnum].connectpath); break;
+			case 'S' : string_sub(p,"%S",lp_servicename(Connections[cnum].service)); break;
+			case 'g' : string_sub(p,"%g",gidtoname(Connections[cnum].gid)); break;
+			case 'u' : string_sub(p,"%u",Connections[cnum].user); break;
+			case '\0' : p++; break; /* don't run off the end of the string */
+			default  : p+=2; break;
+		}
+	}
+	standard_sub_basic(str);
 }
 
 /*

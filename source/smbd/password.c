@@ -232,12 +232,12 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
 /****************************************************************************
 add a name to the session users list
 ****************************************************************************/
-void add_session_user(char *user)
+void add_session_user(char *user, BOOL *changed_to_guest)
 {
   fstring suser;
   StrnCpy(suser,user,sizeof(suser)-1);
 
-  if (!Get_Pwnam(suser,True)) return;
+  if (!Get_Pwnam(suser,True, changed_to_guest)) return;
 
   if (suser && *suser && !in_list(suser,session_users,False))
     {
@@ -792,10 +792,8 @@ Hence we make a direct return to avoid a second chance!!!
 /****************************************************************************
 core of smb password checking routine.
 ****************************************************************************/
-BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8)
+static BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8)
 {
-  /* Finish the encryption of part_passwd. */
-  unsigned char p21[21];
   unsigned char p24[24];
 
   if (part_passwd == NULL)
@@ -804,9 +802,8 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
     return True;
   }
 
-  memset(p21,'\0',21);
-  memcpy(p21,part_passwd,16);
-  E_P24(p21, c8, p24);
+    SMBencrypt(part_passwd, c8, p24);
+
 #if DEBUG_PASSWORD
   {
     int i;
@@ -916,7 +913,7 @@ BOOL smb_password_ok(char *user,char *password, int pwlen)
 /****************************************************************************
 check if a username/password is OK
 ****************************************************************************/
-BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
+BOOL password_ok(char *user, BOOL *guest, char *password, int pwlen, struct passwd *pwd)
 {
   pstring pass2;
   int level = lp_passwordlevel();
@@ -955,7 +952,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
       user = pass->pw_name;
     } 
   else 
-    pass = Get_Pwnam(user,True);
+    pass = Get_Pwnam(user,True, guest);
 
   DEBUG(4,("SMB Password - pwlen = %d, challenge_done = %d\n", pwlen, challenge_done));
 
@@ -1208,7 +1205,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
     while (getnetgrent(&host, &user, &domain)) {
       if (user) {
 	if (user_ok(user, snum) && 
-	    password_ok(user,password,pwlen,NULL)) {
+	    password_ok(user, NULL, password,pwlen,NULL)) {
 	  endnetgrent();
 	  return(user);
 	}
@@ -1230,7 +1227,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	    static fstring name;
 	    strcpy(name,*member);
 	    if (user_ok(name,snum) &&
-		password_ok(name,password,pwlen,NULL))
+		password_ok(name,NULL, password,pwlen,NULL))
 	      return(&name[0]);
 	    member++;
 	  }
@@ -1243,7 +1240,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	  while (pwd = getpwent ()) {
 	    if (*(pwd->pw_passwd) && pwd->pw_gid == gptr->gr_gid) {
 	      /* This Entry have PASSWORD and same GID then check pwd */
-	      if (password_ok(NULL, password, pwlen, pwd)) {
+	      if (password_ok(NULL, NULL, password, pwlen, pwd)) {
 		strcpy(tm, pwd->pw_name);
 		endpwent ();
 		return tm;
@@ -1296,14 +1293,14 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
       /* check the given username and password */
       if (!ok && (*user) && user_ok(user,snum)) {
-	ok = password_ok(user,password, pwlen, NULL);
+	ok = password_ok(user, NULL, password, pwlen, NULL);
 	if (ok) DEBUG(3,("ACCEPTED: given username password ok\n"));
       }
 
       /* check for a previously registered guest username */
       if (!ok && (vuser != 0) && vuser->guest) {	  
 	if (user_ok(vuser->name,snum) &&
-	    password_ok(vuser->name, password, pwlen, NULL)) {
+	    password_ok(vuser->name, NULL, password, pwlen, NULL)) {
 	  strcpy(user, vuser->name);
 	  vuser->guest = False;
 	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
@@ -1327,7 +1324,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 	      strcpy(user2,auser);
 	      if (!user_ok(user2,snum)) continue;
 		  
-	      if (password_ok(user2,password, pwlen, NULL)) {
+	      if (password_ok(user2,NULL, password, pwlen, NULL)) {
 		ok = True;
 		strcpy(user,user2);
 		DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
@@ -1347,7 +1344,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
       }
 
       /* check for a rhosts entry */
-      if (!ok && user_ok(user,snum) && check_hosts_equiv(user)) {
+      if (!ok && user_ok(user,snum) && check_hosts_equiv(user, NULL)) {
 	ok = True;
 	DEBUG(3,("ACCEPTED: hosts equiv or rhosts entry\n"));
       }
@@ -1379,7 +1376,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 		fstring user2;
 		strcpy(user2,auser);
 		if (user_ok(user2,snum) && 
-		    password_ok(user2,password,pwlen,NULL))
+		    password_ok(user2,NULL, password,pwlen,NULL))
 		  {
 		    ok = True;
 		    strcpy(user,user2);
@@ -1395,7 +1392,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
     {
       fstring guestname;
       StrnCpy(guestname,lp_guestaccount(snum),sizeof(guestname)-1);
-      if (Get_Pwnam(guestname,True))
+      if (Get_Pwnam(guestname,True, guest))
 	{
 	  strcpy(user,guestname);
 	  ok = True;
@@ -1525,11 +1522,11 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 /****************************************************************************
 check for a possible hosts equiv or rhosts entry for the user
 ****************************************************************************/
-BOOL check_hosts_equiv(char *user)
+BOOL check_hosts_equiv(char *user, BOOL *guest)
 {
   char *fname = NULL;
   pstring rhostsfile;
-  struct passwd *pass = Get_Pwnam(user,True);
+  struct passwd *pass = Get_Pwnam(user,True, guest);
 
   if (!pass) 
     return(False);
@@ -1545,8 +1542,9 @@ BOOL check_hosts_equiv(char *user)
   
   if (lp_use_rhosts())
     {
-      char *home = get_home_dir(user);
-      if (home)
+      pstring home;
+      get_home_server_and_dir(user, NULL, home);
+      if (home[0])
 	{
 	  sprintf(rhostsfile, "%s/.rhosts", home);
 	  if (check_user_equiv(user,client_name(),rhostsfile))

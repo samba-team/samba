@@ -63,6 +63,8 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 	static struct cli_state cli;
 	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 
+	bzero(&cli, sizeof(cli));
+
 	if (!d || !work ) return;
 
 	if(d != wins_client_subnet) {

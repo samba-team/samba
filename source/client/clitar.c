@@ -23,321 +23,45 @@
 #include "includes.h"
 #include "clitar.h"
 
-extern BOOL recurse;
-
 #define SEPARATORS " \t\n\r"
 extern int DEBUGLEVEL;
-extern int Client;
 
 /* These defines are for the do_setrattr routine, to indicate
  * setting and reseting of file attributes in the function call */
-#define ATTRSET 1
-#define ATTRRESET 0
-
-static int attribute = aDIR | aSYSTEM | aHIDDEN;
-
-#ifndef CLIENT_TIMEOUT
-#define CLIENT_TIMEOUT (30*1000)
-#endif
-
-static char *tarbuf;
-static int tp, ntarf, tbufsiz, ttarf;
-/* Incremental mode */
-BOOL tar_inc=False;
-/* Reset archive bit */
-BOOL tar_reset=False;
-/* Include / exclude mode (true=include, false=exclude) */
-BOOL tar_excl=True;
-char tar_type='\0';
-static char **cliplist=NULL;
-static int clipn=0;
+#define ATTRSET   True
+#define ATTRRESET False
 
 extern file_info def_finfo;
-extern BOOL lowercase;
-extern int cnum;
-extern BOOL readbraw_supported;
-extern int max_xmit;
-extern pstring cur_dir;
-extern int get_total_time_ms;
-extern int get_total_size;
-extern int Protocol;
 
-int blocksize=20;
-int tarhandle;
-
-static void writetarheader();
-static void do_atar();
-static void do_tar();
-static void oct_it();
-static void fixtarname();
-static int dotarbuf();
-static void dozerobuf();
-static void dotareof();
-static void initarbuf();
-static int do_setrattr();
-
-/* restore functions */
-static long readtarheader();
-static long unoct();
-static void do_tarput();
-static void unfixtarname();
-
-/*
- * tar specific utitlities
- */
 
 /****************************************************************************
-Write a tar header to buffer
-****************************************************************************/
-static void writetarheader(int f,  char *aname, int size, time_t mtime,
-			   char *amode)
-{
-  union hblock hb;
-  int i, chk, l;
-  char *jp;
-
-  memset(hb.dummy, 0, sizeof(hb.dummy));
-  
-  l=strlen(aname);
-  if (l >= NAMSIZ) {
-	  /* write a GNU tar style long header */
-	  char *b;
-	  b = (char *)malloc(l+TBLOCK+100);
-	  if (!b) {
-		  DEBUG(0,("out of memory\n"));
-		  exit(1);
-	  }
-	  writetarheader(f, "/./@LongLink", l+1, 0, "     0 \0");
-	  memset(b, 0, l+TBLOCK+100);
-	  fixtarname(b, aname, l+1);
-	  i = strlen(b)+1;
-	  dotarbuf(f, b, TBLOCK*((i+(TBLOCK-1)/TBLOCK)));
-	  free(b);
-  }
-
-  /* use l + 1 to do the null too */
-  fixtarname(hb.dbuf.name, aname, (l >= NAMSIZ) ? NAMSIZ : l + 1);
-
-  if (lowercase)
-    strlower(hb.dbuf.name);
-
-  /* write out a "standard" tar format header */
-
-  hb.dbuf.name[NAMSIZ-1]='\0';
-  strcpy(hb.dbuf.mode, amode);
-  oct_it(0L, 8, hb.dbuf.uid);
-  oct_it(0L, 8, hb.dbuf.gid);
-  oct_it((long) size, 13, hb.dbuf.size);
-  oct_it((long) mtime, 13, hb.dbuf.mtime);
-  memcpy(hb.dbuf.chksum, "        ", sizeof(hb.dbuf.chksum));
-  memset(hb.dbuf.linkname, 0, NAMSIZ);
-  if (strcmp("/./@LongLink", aname) == 0) {
-	  /* we're doing a GNU tar long filename */
-	  hb.dbuf.linkflag='L';
-  } else {
-	  hb.dbuf.linkflag='0';
-  }
-  
-  for (chk=0, i=sizeof(hb.dummy), jp=hb.dummy; --i>=0;) chk+=(0xFF & *jp++);
-
-  oct_it((long) chk, 8, hb.dbuf.chksum);
-  hb.dbuf.chksum[6] = '\0';
-
-  (void) dotarbuf(f, hb.dummy, sizeof(hb.dummy));
-}
-
-/****************************************************************************
-Read a tar header into a hblock structure, and validate
+Convert from UNIX to DOS file names
 ***************************************************************************/
-static long readtarheader(union hblock *hb, file_info *finfo, char *prefix)
+static void unfixtarname(char *tar_ptr, char *fp, int l)
 {
-  long chk, fchk;
-  int i;
-  char *jp;
-
-  /*
-   * read in a "standard" tar format header - we're not that interested
-   * in that many fields, though
+  /* remove '.' from start of file name, convert from unix /'s to
+   * dos \'s in path. Kill any absolute path names.
    */
 
-  /* check the checksum */
-  for (chk=0, i=sizeof(hb->dummy), jp=hb->dummy; --i>=0;) chk+=(0xFF & *jp++);
+  if (*fp == '.') fp++;
+  if (*fp == '\\' || *fp == '/') fp++;
 
-  if (chk == 0)
-    return chk;
-
-  /* compensate for blanks in chksum header */
-  for (i=sizeof(hb->dbuf.chksum), jp=hb->dbuf.chksum; --i>=0;)
-    chk-=(0xFF & *jp++);
-
-  chk += ' ' * sizeof(hb->dbuf.chksum);
-
-  fchk=unoct(hb->dbuf.chksum, sizeof(hb->dbuf.chksum));
-
-  DEBUG(5, ("checksum totals chk=%d fchk=%d chksum=%s\n",
-	    chk, fchk, hb->dbuf.chksum));
-
-  if (fchk != chk)
-    {
-      DEBUG(0, ("checksums don't match %d %d\n", fchk, chk));
-      return -1;
-    }
-
-  strcpy(finfo->name, prefix);
-
-  /* use l + 1 to do the null too; do prefix - prefcnt to zap leading slash */
-  unfixtarname(finfo->name + strlen(prefix), hb->dbuf.name,
-	       strlen(hb->dbuf.name) + 1);
-
-/* can't handle links at present */
-  if (hb->dbuf.linkflag != '0') {
-    if (hb->dbuf.linkflag == 0) {
-      DEBUG(6, ("Warning: NULL link flag (gnu tar archive ?) %s\n",
-		finfo->name));
-    } else { 
-      DEBUG(0, ("this tar file appears to contain some kind of link - ignoring\n"));
-      return -2;
-    }
-  }
-    
-  if ((unoct(hb->dbuf.mode, sizeof(hb->dbuf.mode)) & S_IFDIR)
-    || (*(finfo->name+strlen(finfo->name)-1) == '\\'))
-    {
-      finfo->mode=aDIR;
-    }
-  else
-    finfo->mode=0; /* we don't care about mode at the moment, we'll
-		    * just make it a regular file */
-  /*
-   * Bug fix by richard@sj.co.uk
-   *
-   * REC: restore times correctly (as does tar)
-   * We only get the modification time of the file; set the creation time
-   * from the mod. time, and the access time to current time
-   */
-  finfo->mtime = finfo->ctime = strtol(hb->dbuf.mtime, NULL, 8);
-  finfo->atime = time(NULL);
-  finfo->size = unoct(hb->dbuf.size, sizeof(hb->dbuf.size));
-
-  return True;
-}
-
-/****************************************************************************
-Write out the tar buffer to tape or wherever
-****************************************************************************/
-static int dotarbuf(int f, char *b, int n)
-{
-  int fail=1, writ=n;
-
-  /* This routine and the next one should be the only ones that do write()s */
-  if (tp + n >= tbufsiz)
-    {
-      int diff;
-
-      diff=tbufsiz-tp;
-      memcpy(tarbuf + tp, b, diff);
-      fail=fail && (1+write(f, tarbuf, tbufsiz));
-      n-=diff;
-      b+=diff;
-      tp=0;
-
-      while (n >= tbufsiz)
-	{
-	  fail=fail && (1 + write(f, b, tbufsiz));
-	  n-=tbufsiz;
-	  b+=tbufsiz;
-	}
-    }
-  if (n>0) {
-    memcpy(tarbuf+tp, b, n);
-    tp+=n;
-  }
-
-  return(fail ? writ : 0);
-}
-
-/****************************************************************************
-Write a zeros to buffer / tape
-****************************************************************************/
-static void dozerobuf(int f, int n)
-{
-  /* short routine just to write out n zeros to buffer -
-   * used to round files to nearest block
-   * and to do tar EOFs */
-
-  if (n+tp >= tbufsiz)
-    {
-      memset(tarbuf+tp, 0, tbufsiz-tp);
-      write(f, tarbuf, tbufsiz);
-      memset(tarbuf, 0, (tp+=n-tbufsiz));
-    }
-  else
-    {
-      memset(tarbuf+tp, 0, n);
-      tp+=n;
-    }
-}
-
-/****************************************************************************
-Malloc tape buffer
-****************************************************************************/
-static void initarbuf()
-{
-  /* initialize tar buffer */
-  tbufsiz=blocksize*TBLOCK;
-  tarbuf=malloc(tbufsiz);
-
-  /* reset tar buffer pointer and tar file counter and total dumped */
-  tp=0; ntarf=0; ttarf=0;
-}
-
-/****************************************************************************
-Write two zero blocks at end of file
-****************************************************************************/
-static void dotareof(int f)
-{
-  struct stat stbuf;
-  /* Two zero blocks at end of file, write out full buffer */
-
-  (void) dozerobuf(f, TBLOCK);
-  (void) dozerobuf(f, TBLOCK);
-
-  if (fstat(f, &stbuf) == -1)
-    {
-      DEBUG(0, ("Couldn't stat file handle\n"));
-      return;
-    }
-
-  /* Could be a pipe, in which case S_ISREG should fail,
-   * and we should write out at full size */
-  if (tp > 0) write(f, tarbuf, S_ISREG(stbuf.st_mode) ? tp : tbufsiz);
-}
-
-/****************************************************************************
-(Un)mangle DOS pathname, make nonabsolute
-****************************************************************************/
-static void fixtarname(char *tptr, char *fp, int l)
-{
-  /* add a '.' to start of file name, convert from ugly dos \'s in path
-   * to lovely unix /'s :-} */
-
-  *tptr++='.';
   if(lp_client_code_page() == KANJI_CODEPAGE)
   {
     while (l > 0) {
       if (is_shift_jis (*fp)) {
-        *tptr++ = *fp++;
-        *tptr++ = *fp++;
+        *tar_ptr++ = *fp++;
+        *tar_ptr++ = *fp++;
         l -= 2;
       } else if (is_kana (*fp)) {
-        *tptr++ = *fp++;
+        *tar_ptr++ = *fp++;
         l--;
-      } else if (*fp == '\\') {
-        *tptr++ = '/';
+      } else if (*fp == '/') {
+        *tar_ptr++ = '\\';
         fp++;
         l--;
       } else {
-        *tptr++ = *fp++;
+        *tar_ptr++ = *fp++;
         l--;
       }
     }
@@ -346,8 +70,48 @@ static void fixtarname(char *tptr, char *fp, int l)
   {
     while (l--)
     {
-      *tptr=(*fp == '\\') ? '/' : *fp;
-      tptr++;
+      *tar_ptr=(*fp == '/') ? '\\' : *fp;
+      tar_ptr++;
+      fp++;
+    }
+  }
+}
+
+/****************************************************************************
+(Un)mangle DOS pathname, make nonabsolute
+****************************************************************************/
+static void fixtarname(char *tar_ptr, char *fp, int l)
+{
+  /* add a '.' to start of file name, convert from ugly dos \'s in path
+   * to lovely unix /'s :-} */
+
+  *tar_ptr++='.';
+  if(lp_client_code_page() == KANJI_CODEPAGE)
+  {
+    while (l > 0) {
+      if (is_shift_jis (*fp)) {
+        *tar_ptr++ = *fp++;
+        *tar_ptr++ = *fp++;
+        l -= 2;
+      } else if (is_kana (*fp)) {
+        *tar_ptr++ = *fp++;
+        l--;
+      } else if (*fp == '\\') {
+        *tar_ptr++ = '/';
+        fp++;
+        l--;
+      } else {
+        *tar_ptr++ = *fp++;
+        l--;
+      }
+    }
+  }
+  else
+  {
+    while (l--)
+    {
+      *tar_ptr=(*fp == '\\') ? '/' : *fp;
+      tar_ptr++;
       fp++;
     }
   }
@@ -427,285 +191,287 @@ static int strslashcmp(char *s1, char *s2)
 }
 
 /*
+ * tar specific utitlities
+ */
+
+/****************************************************************************
+Write out the tar buffer to tape or wherever
+****************************************************************************/
+static int do_tar_buf(struct client_info *info, int f, char *b, int n)
+{
+  int fail=1, writ=n;
+
+  /* This routine and the next one should be the only ones that do write()s */
+  if (info->tar.tp + n >= info->tar.buf_size)
+    {
+      int diff;
+
+      diff=info->tar.buf_size-info->tar.tp;
+      memcpy(info->tar.buf + info->tar.tp, b, diff);
+      fail=fail && (1+write(f, info->tar.buf, info->tar.buf_size));
+      n-=diff;
+      b+=diff;
+      info->tar.tp=0;
+
+      while (n >= info->tar.buf_size)
+	{
+	  fail=fail && (1 + write(f, b, info->tar.buf_size));
+	  n-=info->tar.buf_size;
+	  b+=info->tar.buf_size;
+	}
+    }
+  if (n>0) {
+    memcpy(info->tar.buf+info->tar.tp, b, n);
+    info->tar.tp+=n;
+  }
+
+  return(fail ? writ : 0);
+}
+
+/****************************************************************************
+Write a tar header to buffer
+****************************************************************************/
+static void write_tar_hdr(struct client_info *info,
+				int f,  char *aname, int size, time_t mtime)
+{
+  union hblock hb;
+  int i, chk, l;
+  char *jp;
+
+  memset(hb.dummy, 0, sizeof(hb.dummy));
+  
+  l=strlen(aname);
+  if (l >= NAMSIZ)
+  {
+    struct client_info in;
+	char *b;
+	memcpy(&in, info, sizeof(in));
+
+	  /* write a GNU tar style long header */
+	  b = (char *)malloc(l+TBLOCK+100);
+	  if (!b) {
+		  DEBUG(0,("out of memory\n"));
+		  exit(1);
+	  }
+
+      in.tar.file_mode = "     0 \0";
+	  write_tar_hdr(&in, f, "/./@LongLink", l+1, 0);
+	  memset(b, 0, l+TBLOCK+100);
+	  fixtarname(b, aname, l+1);
+	  i = strlen(b)+1;
+	  do_tar_buf(info, f, b, TBLOCK*((i+(TBLOCK-1)/TBLOCK)));
+	  free(b);
+  }
+
+  /* use l + 1 to do the null too */
+  fixtarname(hb.dbuf.name, aname, (l >= NAMSIZ) ? NAMSIZ : l + 1);
+
+  if (info->lowercase)
+    strlower(hb.dbuf.name);
+
+  /* write out a "standard" tar format header */
+
+  hb.dbuf.name[NAMSIZ-1]='\0';
+  strcpy(hb.dbuf.mode, info->tar.file_mode);
+  oct_it(0L, 8, hb.dbuf.uid);
+  oct_it(0L, 8, hb.dbuf.gid);
+  oct_it((long) size, 13, hb.dbuf.size);
+  oct_it((long) mtime, 13, hb.dbuf.mtime);
+  memcpy(hb.dbuf.chksum, "        ", sizeof(hb.dbuf.chksum));
+  memset(hb.dbuf.linkname, 0, NAMSIZ);
+  if (strcmp("/./@LongLink", aname) == 0) {
+	  /* we're doing a GNU tar long filename */
+	  hb.dbuf.linkflag='L';
+  } else {
+	  hb.dbuf.linkflag='0';
+  }
+  
+  for (chk=0, i=sizeof(hb.dummy), jp=hb.dummy; --i>=0;) chk+=(0xFF & *jp++);
+
+  oct_it((long) chk, 8, hb.dbuf.chksum);
+  hb.dbuf.chksum[6] = '\0';
+
+  (void) do_tar_buf(info, f, hb.dummy, sizeof(hb.dummy));
+}
+
+/****************************************************************************
+Read a tar header into a hblock structure, and validate
+***************************************************************************/
+static long read_tar_hdr(struct cli_state *cli, struct client_info *info,
+				union hblock *hb, file_info *finfo, char *prefix)
+{
+  long chk, fchk;
+  int i;
+  char *jp;
+
+  /*
+   * read in a "standard" tar format header - we're not that interested
+   * in that many fields, though
+   */
+
+  /* check the checksum */
+  for (chk=0, i=sizeof(hb->dummy), jp=hb->dummy; --i>=0;) chk+=(0xFF & *jp++);
+
+  if (chk == 0)
+    return chk;
+
+  /* compensate for blanks in chksum header */
+  for (i=sizeof(hb->dbuf.chksum), jp=hb->dbuf.chksum; --i>=0;)
+    chk-=(0xFF & *jp++);
+
+  chk += ' ' * sizeof(hb->dbuf.chksum);
+
+  fchk=unoct(hb->dbuf.chksum, sizeof(hb->dbuf.chksum));
+
+  DEBUG(5, ("checksum totals chk=%d fchk=%d chksum=%s\n",
+	    chk, fchk, hb->dbuf.chksum));
+
+  if (fchk != chk)
+    {
+      DEBUG(0, ("checksums don't match %d %d\n", fchk, chk));
+      return -1;
+    }
+
+  strcpy(finfo->name, prefix);
+
+  /* use l + 1 to do the null too; do prefix - prefcnt to zap leading slash */
+  unfixtarname(finfo->name + strlen(prefix), hb->dbuf.name,
+	       strlen(hb->dbuf.name) + 1);
+
+/* can't handle links at present */
+  if (hb->dbuf.linkflag != '0') {
+    if (hb->dbuf.linkflag == 0) {
+      DEBUG(6, ("Warning: NULL link flag (gnu tar archive ?) %s\n",
+		finfo->name));
+    } else { 
+      DEBUG(0, ("this tar file appears to contain some kind of link - ignoring\n"));
+      return -2;
+    }
+  }
+    
+  if ((unoct(hb->dbuf.mode, sizeof(hb->dbuf.mode)) & S_IFDIR)
+    || (*(finfo->name+strlen(finfo->name)-1) == '\\'))
+    {
+      finfo->mode=aDIR;
+    }
+  else
+    finfo->mode=0; /* we don't care about mode at the moment, we'll
+		    * just make it a regular file */
+  /*
+   * Bug fix by richard@sj.co.uk
+   *
+   * REC: restore times correctly (as does tar)
+   * We only get the modification time of the file; set the creation time
+   * from the mod. time, and the access time to current time
+   */
+  finfo->mtime = finfo->ctime = strtol(hb->dbuf.mtime, NULL, 8);
+  finfo->atime = time(NULL);
+  finfo->size = unoct(hb->dbuf.size, sizeof(hb->dbuf.size));
+
+  return True;
+}
+
+/****************************************************************************
+Write a zeros to buffer / tape
+****************************************************************************/
+static void do_zero_buf(struct client_info *info, int f, int n)
+{
+  /* short routine just to write out n zeros to buffer -
+   * used to round files to nearest block
+   * and to do tar EOFs */
+
+  if (n+info->tar.tp >= info->tar.buf_size)
+    {
+      memset(info->tar.buf+info->tar.tp, 0, info->tar.buf_size-info->tar.tp);
+      write(f, info->tar.buf, info->tar.buf_size);
+      memset(info->tar.buf, 0, (info->tar.tp+=n-info->tar.buf_size));
+    }
+  else
+    {
+      memset(info->tar.buf+info->tar.tp, 0, n);
+      info->tar.tp+=n;
+    }
+}
+
+/****************************************************************************
+Malloc tape buffer
+****************************************************************************/
+static void init_tar_buf(struct client_info *info)
+{
+  /* initialize tar buffer */
+  info->tar.buf_size=info->tar.blocksize*TBLOCK;
+  info->tar.buf=malloc(info->tar.buf_size);
+
+  /* reset tar buffer pointer and tar file counter and total dumped */
+  info->tar.tp=0; info->tar.num_files=0; info->tar.bytes_written=0;
+}
+
+/****************************************************************************
+Write two zero blocks at end of file
+****************************************************************************/
+static void do_tar_eof(struct client_info *info, int f)
+{
+  struct stat stbuf;
+  /* Two zero blocks at end of file, write out full buffer */
+
+  (void) do_zero_buf(info, f, TBLOCK);
+  (void) do_zero_buf(info, f, TBLOCK);
+
+  if (fstat(f, &stbuf) == -1)
+    {
+      DEBUG(0, ("Couldn't stat file handle\n"));
+      return;
+    }
+
+  /* Could be a pipe, in which case S_ISREG should fail,
+   * and we should write out at full size */
+  if (info->tar.tp > 0) write(f, info->tar.buf, S_ISREG(stbuf.st_mode) ? info->tar.tp : info->tar.buf_size);
+}
+
+/*
  * general smb utility functions
  */
 /****************************************************************************
 Set DOS file attributes
 ***************************************************************************/
-static int do_setrattr(char *fname, int attr, int setit)
+static BOOL do_setrattr(struct cli_state *cli, struct client_info *info,
+				char *fname, uint8 attr, int setit)
 {
   /*
    * First get the existing attribs from existing file
    */
-  char *inbuf,*outbuf;
-  char *p;
   pstring name;
-  int fattr;
+
+  uint8 fattr;
+  uint16 write_time;
+  uint16 fsize;
 
   strcpy(name,fname);
   strcpy(fname,"\\");
   strcat(fname,name);
 
-  inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-  outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-
-  if (!inbuf || !outbuf)
-    {
-      DEBUG(0,("out of memory\n"));
-      return False;
-    }
-
-  /* send an smb getatr message */
-
-  memset(outbuf,0,smb_size);
-  set_message(outbuf,0,2 + strlen(fname),True);
-  CVAL(outbuf,smb_com) = SMBgetatr;
-  SSVAL(outbuf,smb_tid,cnum);
-  cli_setup_pkt(outbuf);
-
-  p = smb_buf(outbuf);
-  *p++ = 4;
-  strcpy(p,fname);
-  p += (strlen(fname)+1);
-  
-  *p++ = 4;
-  *p++ = 0;
-
-  send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-
-  if (CVAL(inbuf,smb_rcls) != 0)
-    DEBUG(5,("getatr: %s\n",smb_errstr(inbuf)));
-  else
-    {
-      DEBUG(5,("\nattr 0x%X  time %d  size %d\n",
-	       (int)CVAL(inbuf,smb_vwv0),
-	       SVAL(inbuf,smb_vwv1),
-	       SVAL(inbuf,smb_vwv3)));
-    }
-
-  fattr=CVAL(inbuf,smb_vwv0);
-
   /* combine found attributes with bits to be set or reset */
 
-  attr=setit ? (fattr | attr) : (fattr & ~attr);
+  if (!cli_getatr(cli, fname, &fattr, &write_time, &fsize)) return False;
 
-  /* now try and set attributes by sending smb reset message */
+  attr = setit ? (fattr | attr) : (fattr & ~attr);
 
-  /* clear out buffer and start again */
-  memset(outbuf,0,smb_size);
-  set_message(outbuf,8,4 + strlen(fname),True);
-  CVAL(outbuf,smb_com) = SMBsetatr;
-  SSVAL(outbuf,smb_tid,cnum);
-  cli_setup_pkt(outbuf);
-
-  SSVAL(outbuf,smb_vwv0,attr);
-
-  p = smb_buf(outbuf);
-  *p++ = 4;      
-  strcpy(p,fname);
-  p += (strlen(fname)+1);
-  
-  *p++ = 4;
-  *p++ = 0;
-
-  send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-  
-  if (CVAL(inbuf,smb_rcls) != 0)
-    {
-      DEBUG(0,("%s setting attributes on file %s\n",
-	    smb_errstr(inbuf), fname));
-      free(inbuf);free(outbuf);
-      return(False);
-    }
-
-  free(inbuf);free(outbuf);
-  return(True);
-}
-
-/****************************************************************************
-Create a file on a share
-***************************************************************************/
-static BOOL smbcreat(file_info finfo, int *fnum, char *inbuf, char *outbuf)
-{
-  char *p;
-  /* *must* be called with buffer ready malloc'ed */
-  /* open remote file */
-  
-  memset(outbuf,0,smb_size);
-  set_message(outbuf,3,2 + strlen(finfo.name),True);
-  CVAL(outbuf,smb_com) = SMBcreate;
-  SSVAL(outbuf,smb_tid,cnum);
-  cli_setup_pkt(outbuf);
-  
-  SSVAL(outbuf,smb_vwv0,finfo.mode);
-  put_dos_date3(outbuf,smb_vwv1,finfo.mtime);
-  
-  p = smb_buf(outbuf);
-  *p++ = 4;      
-  strcpy(p,finfo.name);
-  
-  send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-  
-  if (CVAL(inbuf,smb_rcls) != 0)
-    {
-      DEBUG(0,("%s opening remote file %s\n",smb_errstr(inbuf),
-	       finfo.name));
-      return 0;
-    }
-  
-  *fnum = SVAL(inbuf,smb_vwv0);
-  return True;
-}
-
-/****************************************************************************
-Write a file to a share
-***************************************************************************/
-static BOOL smbwrite(int fnum, int n, int low, int high, int left,
-		     char *bufferp, char *inbuf, char *outbuf)
-{
-  /* *must* be called with buffer ready malloc'ed */
-
-  memset(outbuf,0,smb_size);
-  set_message(outbuf,5,n + 3,True);
-  
-  memcpy(smb_buf(outbuf)+3, bufferp, n);
-  
-  set_message(outbuf,5,n + 3, False);
-  CVAL(outbuf,smb_com) = SMBwrite;
-  SSVAL(outbuf,smb_tid,cnum);
-  cli_setup_pkt(outbuf);
-  
-  SSVAL(outbuf,smb_vwv0,fnum);
-  SSVAL(outbuf,smb_vwv1,n);
-  SIVAL(outbuf,smb_vwv2,low);
-  SSVAL(outbuf,smb_vwv4,left);
-  CVAL(smb_buf(outbuf),0) = 1;
-  SSVAL(smb_buf(outbuf),1,n);
-
-  send_smb(Client,outbuf); 
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-  
-  if (CVAL(inbuf,smb_rcls) != 0)
-    {
-      DEBUG(0,("%s writing remote file\n",smb_errstr(inbuf)));
-      return False;
-    }
-  
-  if (n != SVAL(inbuf,smb_vwv0))
-    {
-      DEBUG(0,("Error: only wrote %d bytes out of %d\n",
-	       SVAL(inbuf,smb_vwv0), n));
-      return False;
-    }
-
-  return True;
-}
-
-/****************************************************************************
-Close a file on a share
-***************************************************************************/
-static BOOL smbshut(file_info finfo, int fnum, char *inbuf, char *outbuf)
-{
-  /* *must* be called with buffer ready malloc'ed */
-
-  memset(outbuf,0,smb_size);
-  set_message(outbuf,3,0,True);
-  CVAL(outbuf,smb_com) = SMBclose;
-  SSVAL(outbuf,smb_tid,cnum);
-  cli_setup_pkt(outbuf);
-  
-  SSVAL(outbuf,smb_vwv0,fnum);
-  put_dos_date3(outbuf,smb_vwv1,finfo.mtime);
-  
-  DEBUG(3,("Setting date to %s (0x%X)",
-	   asctime(LocalTime(&finfo.mtime)),
-	   finfo.mtime));
-  
-  send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-  
-  if (CVAL(inbuf,smb_rcls) != 0)
-    {
-      DEBUG(0,("%s closing remote file %s\n",smb_errstr(inbuf),
-	       finfo.name));
-      return False;
-    }
-
-  return True;
-}
-
-/****************************************************************************
-Verify existence of path on share
-***************************************************************************/
-static BOOL smbchkpath(char *fname, char *inbuf, char *outbuf)
-{
-  char *p;
-
-  memset(outbuf,0,smb_size);
-  set_message(outbuf,0,4 + strlen(fname),True);
-  CVAL(outbuf,smb_com) = SMBchkpth;
-  SSVAL(outbuf,smb_tid,cnum);
-  cli_setup_pkt(outbuf);
-
-  p = smb_buf(outbuf);
-  *p++ = 4;
-  strcpy(p,fname);
-
-  send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-
-  DEBUG(5,("smbchkpath: %s\n",smb_errstr(inbuf)));
-
-  return(CVAL(inbuf,smb_rcls) == 0);
-}
-
-/****************************************************************************
-Make a directory on share
-***************************************************************************/
-static BOOL smbmkdir(char *fname, char *inbuf, char *outbuf)
-{
-  /* *must* be called with buffer ready malloc'ed */
-  char *p;
-
-  memset(outbuf,0,smb_size);
-  set_message(outbuf,0,2 + strlen(fname),True);
-  
-  CVAL(outbuf,smb_com) = SMBmkdir;
-  SSVAL(outbuf,smb_tid,cnum);
-  cli_setup_pkt(outbuf);
-  
-  p = smb_buf(outbuf);
-  *p++ = 4;      
-  strcpy(p,fname);
-  
-  send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-  
-  if (CVAL(inbuf,smb_rcls) != 0)
-    {
-      DEBUG(0,("%s making remote directory %s\n",
-	       smb_errstr(inbuf),fname));
-      return(False);
-    }
-
-  return(True);
+  return cli_setatr(cli, fname, fattr, 0); /* zero write time: no change */
 }
 
 /****************************************************************************
 Ensure a remote path exists (make if necessary)
 ***************************************************************************/
-static BOOL ensurepath(char *fname, char *inbuf, char *outbuf)
+static BOOL ensurepath(struct cli_state *cli, struct client_info *info,
+				char *fname)
 {
   /* *must* be called with buffer ready malloc'ed */
   /* ensures path exists */
 
-  pstring partpath, ffname;
+  pstring part_path, ffname;
   char *p=fname, *basehack;
 
-  *partpath = 0;
+  *part_path = 0;
 
   /* fname copied to ffname so can strtok */
 
@@ -721,440 +487,137 @@ static BOOL ensurepath(char *fname, char *inbuf, char *outbuf)
 
   while (p)
     {
-      strcat(partpath, p);
+      strcat(part_path, p);
 
-      if (!smbchkpath(partpath, inbuf, outbuf)) {
-	if (!smbmkdir(partpath, inbuf, outbuf))
+      if (!cli_chkpath(cli, part_path)) {
+	if (!cli_mkdir(cli, part_path))
 	  {
-	    DEBUG(0, ("Error mkdirhiering\n"));
+	    DEBUG(0, ("Error mkdir\n"));
 	    return False;
 	  }
 	else
-	  DEBUG(3, ("mkdirhiering %s\n", partpath));
+	  DEBUG(3, ("mkdir %s\n", part_path));
 
       }
 
-      strcat(partpath, "\\");
+      strcat(part_path, "\\");
       p = strtok(NULL,"/\\");
     }
 
     return True;
 }
 
-int padit(char *buf, int bufsize, int padsize)
+static int padit(struct client_info *info, char *buf, int bufsize, int padsize)
 {
   int berr= 0;
   int bytestowrite;
   
   DEBUG(0, ("Padding with %d zeros\n", padsize));
   memset(buf, 0, bufsize);
-  while( !berr && padsize > 0 ) {
+  while( !berr && padsize > 0 )
+  {
     bytestowrite= MIN(bufsize, padsize);
-    berr = dotarbuf(tarhandle, buf, bytestowrite) != bytestowrite;
+    berr = do_tar_buf(info, info->tar.handle, buf, bytestowrite) != bytestowrite;
     padsize -= bytestowrite;
   }
   
   return berr;
 }
 
-/*
- * smbclient functions
- */
 /****************************************************************************
 append one remote file to the tar file
 ***************************************************************************/
-static void do_atar(char *rname,char *lname,file_info *finfo1)
+static BOOL tar_write_check(struct client_info *info,
+				int handle, char *rname, file_info *finfo)
 {
-  int fnum;
-  uint32 nread=0;
-  char *p;
-  char *inbuf,*outbuf;
-  file_info finfo;
-  BOOL close_done = False;
-  BOOL shallitime=True;
-  BOOL ignore_close_error = False;
-  char *dataptr=NULL;
-  int datalen=0;
+	DEBUG(3,("file %s attrib 0x%X\n", rname, finfo->mode));
 
-  struct timeval tp_start;
-  GetTimeOfDay(&tp_start);
-
-  if (finfo1) 
-    finfo = *finfo1;
-  else
-    finfo = def_finfo;
-
-  inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-  outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-
-  if (!inbuf || !outbuf)
-    {
-      DEBUG(0,("out of memory\n"));
-      return;
-    }
-
-  memset(outbuf,0,smb_size);
-  set_message(outbuf,15,1 + strlen(rname),True);
-
-  CVAL(outbuf,smb_com) = SMBopenX;
-  SSVAL(outbuf,smb_tid,cnum);
-  cli_setup_pkt(outbuf);
-
-  SSVAL(outbuf,smb_vwv0,0xFF);
-  SSVAL(outbuf,smb_vwv2,1);
-  SSVAL(outbuf,smb_vwv3,(DENY_NONE<<4));
-  SSVAL(outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
-  SSVAL(outbuf,smb_vwv5,aSYSTEM | aHIDDEN);
-  SSVAL(outbuf,smb_vwv8,1);
-
-  p = smb_buf(outbuf);
-  strcpy(p,rname);
-  p = skip_string(p,1);
-
-  dos_clean_name(rname);
-
-  /* do a chained openX with a readX? */  
-  if (finfo.size > 0)
-    {
-      SSVAL(outbuf,smb_vwv0,SMBreadX);
-      SSVAL(outbuf,smb_vwv1,PTR_DIFF(p,outbuf) - 4);
-      memset(p,0,200);
-      p -= smb_wct;
-      SSVAL(p,smb_wct,10);
-      SSVAL(p,smb_vwv0,0xFF);
-      SSVAL(p,smb_vwv5,MIN(max_xmit-500,finfo.size));
-      SSVAL(p,smb_vwv9,MIN(0xFFFF,finfo.size));
-      smb_setlen(outbuf,smb_len(outbuf)+11*2+1);  
-    }
-  
-  send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-
-  if (CVAL(inbuf,smb_rcls) != 0)
-    {
-      if (CVAL(inbuf,smb_rcls) == ERRSRV &&
-	  SVAL(inbuf,smb_err) == ERRnoresource &&
-	  cli_reopen_connection(inbuf,outbuf))
+	if (info->tar.inc && !(finfo->mode & aARCH))
 	{
-	  do_atar(rname,lname,finfo1);
-	  free(inbuf);free(outbuf);
-	  return;
+		DEBUG(4, ("skipping %s - archive bit not set\n", rname));
+		return False;
 	}
 
-      DEBUG(0,("%s opening remote file %s\n",smb_errstr(inbuf),rname));
-      free(inbuf);free(outbuf);
-      return;
-    }
+	/* write a tar header, don't bother with mode - just set to 100644 */
+    info->tar.file_mode = "100644 \0";
+	write_tar_hdr(info, handle, rname, finfo->size, finfo->mtime);
 
-  strcpy(finfo.name,rname);
-  if (!finfo1)
-    {
-      finfo.mode = SVAL(inbuf,smb_vwv3);
-      finfo.size = IVAL(inbuf,smb_vwv4);
-      finfo.mtime = make_unix_date3(inbuf+smb_vwv6);
-      finfo.atime = finfo.ctime = finfo.mtime;
-    }
+	return True;
+}
 
-  DEBUG(3,("file %s attrib 0x%X\n",finfo.name,finfo.mode));
-
-  fnum = SVAL(inbuf,smb_vwv2);
-
-  if (tar_inc && !(finfo.mode & aARCH))
-    {
-      DEBUG(4, ("skipping %s - archive bit not set\n", finfo.name));
-      shallitime=0;
-    }
-  else
-    {
-      if (SVAL(inbuf,smb_vwv0) == SMBreadX)
+/****************************************************************************
+pad tar file out
+***************************************************************************/
+static BOOL tar_pad_check(struct client_info *info,
+				int handle, char *buf, int nread, file_info *finfo)
+{
+	/* pad tar file with zero's if we couldn't get entire file */
+	if (nread < finfo->size)
 	{
-	  p = (inbuf+4+SVAL(inbuf,smb_vwv1)) - smb_wct;
-	  datalen = SVAL(p,smb_vwv5);
-	  dataptr = inbuf + 4 + SVAL(p,smb_vwv6);
-	}
-      else
-	{
-	  dataptr = NULL;
-	  datalen = 0;
+		DEBUG(0, ("Didn't get entire file. size=%d, nread=%d\n",
+					finfo->size, nread));
+		if (padit(info, buf, BUFFER_SIZE, finfo->size - nread))
+		{
+			DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
+			return False;
+		}
 	}
 
-      DEBUG(1,("getting file %s of size %d bytes as a tar file %s",
-	       finfo.name,
-	       finfo.size,
-	       lname));
-      
-      /* write a tar header, don't bother with mode - just set to 100644 */
-      writetarheader(tarhandle, rname, finfo.size, finfo.mtime, "100644 \0");
-      
-      while (nread < finfo.size && !close_done)
+	/* round tar file to nearest block */
+	if (finfo->size % TBLOCK)
 	{
-	  int method = -1;
-	  static BOOL can_chain_close=True;
-
-	  p=NULL;
-	  
-	  DEBUG(3,("nread=%d\n",nread));
-	  
-	  /* 3 possible read types. readbraw if a large block is required.
-	     readX + close if not much left and read if neither is supported */
-
-	  /* we might have already read some data from a chained readX */
-	  if (dataptr && datalen>0)
-	    method=3;
-	  
-	  /* if we can finish now then readX+close */
-	  if (method<0 && can_chain_close && (Protocol >= PROTOCOL_LANMAN1) && 
-	      ((finfo.size - nread) < 
-	       (max_xmit - (2*smb_size + 13*SIZEOFWORD + 300))))
-	    method = 0;
-	  
-	  /* if we support readraw then use that */
-	  if (method<0 && readbraw_supported)
-	    method = 1;
-	  
-	  /* if we can then use readX */
-	  if (method<0 && (Protocol >= PROTOCOL_LANMAN1))
-	    method = 2;
-	  
-	  
-	  switch (method)
-	    {
-	      /* use readX */
-	    case 0:
-	    case 2:
-	      if (method == 0)
-		close_done = True;
-	      
-	      /* use readX + close */
-	      memset(outbuf,0,smb_size);
-	      set_message(outbuf,10,0,True);
-	      CVAL(outbuf,smb_com) = SMBreadX;
-	      SSVAL(outbuf,smb_tid,cnum);
-	      cli_setup_pkt(outbuf);
-	      
-	      if (close_done)
-		{
-		  CVAL(outbuf,smb_vwv0) = SMBclose;
-		  SSVAL(outbuf,smb_vwv1,PTR_DIFF(smb_buf(outbuf),outbuf) - 4);
-		}
-	      else
-		CVAL(outbuf,smb_vwv0) = 0xFF;	      
-	      
-	      
-	      SSVAL(outbuf,smb_vwv2,fnum);
-	      SIVAL(outbuf,smb_vwv3,nread);
-	      SSVAL(outbuf,smb_vwv5,MIN(max_xmit-200,finfo.size - nread));
-	      SSVAL(outbuf,smb_vwv6,0);
-	      SIVAL(outbuf,smb_vwv7,0);
-	      SSVAL(outbuf,smb_vwv9,MIN(0xFFFF,finfo.size-nread));
-	      
-	      if (close_done)
-		{
-		  p = smb_buf(outbuf);
-		  memset(p,0,9);
-		  
-		  CVAL(p,0) = 3;
-		  SSVAL(p,1,fnum);
-		  SIVALS(p,3,-1);
-		  
-		  /* now set the total packet length */
-		  smb_setlen(outbuf,smb_len(outbuf)+9);
-		}
-	      
-	      send_smb(Client,outbuf);
-	      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-	      
-	      if (CVAL(inbuf,smb_rcls) != 0)
-		{
-		  DEBUG(0,("Error %s reading remote file\n",smb_errstr(inbuf)));
-		  break;
-		}
-	      
-	      if (close_done &&
-		  SVAL(inbuf,smb_vwv0) != SMBclose)
-		{
-		  /* NOTE: WfWg sometimes just ignores the chained
-		     command! This seems to break the spec? */
-		  DEBUG(3,("Rejected chained close?\n"));
-		  close_done = False;
-		  can_chain_close = False;
-		  ignore_close_error = True;
-		}
-	      
-	      datalen = SVAL(inbuf,smb_vwv5);
-	      dataptr = inbuf + 4 + SVAL(inbuf,smb_vwv6);
-	      break;
-	      
-	      
-	      /* use readbraw */
-	    case 1:
-	      {
-		static int readbraw_size = 0xFFFF;
-		
-		extern int Client;
-		memset(outbuf,0,smb_size);
-		set_message(outbuf,8,0,True);
-		CVAL(outbuf,smb_com) = SMBreadbraw;
-		SSVAL(outbuf,smb_tid,cnum);
-		cli_setup_pkt(outbuf);
-		SSVAL(outbuf,smb_vwv0,fnum);
-		SIVAL(outbuf,smb_vwv1,nread);
-		SSVAL(outbuf,smb_vwv3,MIN(finfo.size-nread,readbraw_size));
-		SSVAL(outbuf,smb_vwv4,0);
-		SIVALS(outbuf,smb_vwv5,-1);
-		send_smb(Client,outbuf);
-		
-		/* Now read the raw data into the buffer and write it */	  
-		if(read_smb_length(Client,inbuf,0) == -1) {
-		  DEBUG(0,("Failed to read length in readbraw\n"));	    
-		  exit(1);
-		}
-		
-		/* Even though this is not an smb message, smb_len
-		   returns the generic length of an smb message */
-		datalen = smb_len(inbuf);
-		
-		if (datalen == 0)
-		  {
-		    /* we got a readbraw error */
-		    DEBUG(4,("readbraw error - reducing size\n"));
-		    readbraw_size = (readbraw_size * 9) / 10;
-		    
-		    if (readbraw_size < max_xmit)
-		      {
-			DEBUG(0,("disabling readbraw\n"));
-			readbraw_supported = False;
-		      }
-
-		    dataptr=NULL;
-		    continue;
-		  }
-
-		if(read_data(Client,inbuf,datalen) != datalen) {
-		  DEBUG(0,("Failed to read data in readbraw\n"));
-		  exit(1);
-		}
-		dataptr = inbuf;
-	      }
-	      break;
-
-	    case 3:
-	      /* we've already read some data with a chained readX */
-	      break;
-	      
-	    default:
-	      /* use plain read */
-	      memset(outbuf,0,smb_size);
-	      set_message(outbuf,5,0,True);
-	      CVAL(outbuf,smb_com) = SMBread;
-	      SSVAL(outbuf,smb_tid,cnum);
-	      cli_setup_pkt(outbuf);
-	      
-	      SSVAL(outbuf,smb_vwv0,fnum);
-	      SSVAL(outbuf,smb_vwv1,MIN(max_xmit-200,finfo.size - nread));
-	      SIVAL(outbuf,smb_vwv2,nread);
-	      SSVAL(outbuf,smb_vwv4,finfo.size - nread);
-	      
-	      send_smb(Client,outbuf);
-	      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-	      
-	      if (CVAL(inbuf,smb_rcls) != 0)
-		{
-		  DEBUG(0,("Error %s reading remote file\n",smb_errstr(inbuf)));
-		  break;
-		}
-	      
-	      datalen = SVAL(inbuf,smb_vwv0);
-	      dataptr = smb_buf(inbuf) + 3;
-	      break;
-	    }
-	  
-	  
-	  /* add received bits of file to buffer - dotarbuf will
-	   * write out in 512 byte intervals */
-	  if (dotarbuf(tarhandle,dataptr,datalen) != datalen)
-	    {
-	      DEBUG(0,("Error writing to tar file - %s\n", strerror(errno)));
-	      break;
-	    }
-	  
-	  nread += datalen;
-	  if (datalen == 0) 
-	    {
-	      DEBUG(0,("Error reading file %s. Got 0 bytes\n", rname));
-	      break;
-	    }
-
-	  dataptr=NULL;
-	  datalen=0;
+		do_zero_buf(info, info->tar.handle, TBLOCK - (finfo->size % TBLOCK));
 	}
 
-       /* pad tar file with zero's if we couldn't get entire file */
-       if (nread < finfo.size)
-        {
-          DEBUG(0, ("Didn't get entire file. size=%d, nread=%d\n", finfo.size, nread));
-          if (padit(inbuf, BUFFER_SIZE, finfo.size - nread))
-              DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
-        }
+	info->tar.bytes_written += finfo->size + TBLOCK - (finfo->size % TBLOCK);
+	info->tar.num_files++;
 
-      /* round tar file to nearest block */
-      if (finfo.size % TBLOCK)
-	dozerobuf(tarhandle, TBLOCK - (finfo.size % TBLOCK));
-      
-      ttarf+=finfo.size + TBLOCK - (finfo.size % TBLOCK);
-      ntarf++;
-    }
-  
-  if (!close_done)
-    {
-      memset(outbuf,0,smb_size);
-      set_message(outbuf,3,0,True);
-      CVAL(outbuf,smb_com) = SMBclose;
-      SSVAL(outbuf,smb_tid,cnum);
-      cli_setup_pkt(outbuf);
-      
-      SSVAL(outbuf,smb_vwv0,fnum);
-      SIVALS(outbuf,smb_vwv1,-1);
-      
-      send_smb(Client,outbuf);
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-      
-      if (!ignore_close_error && CVAL(inbuf,smb_rcls) != 0)
+	return True;
+}
+
+/****************************************************************************
+append one remote file to the tar file
+***************************************************************************/
+static void do_atar(struct cli_state *cli, struct client_info *info,
+				char *rname,char *lname,file_info *finfo1)
+{
+	uint32 nread=0;
+
+	struct timeval tar_tp_start;
+	GetTimeOfDay(&tar_tp_start);
+
+	nread = cli_get(cli, info, rname, lname, finfo1, info->tar.handle,
+				tar_write_check, do_tar_buf, tar_pad_check);
+
+	/* reset the archive bit */
+	if (info->tar.reset)
 	{
-	  DEBUG(0,("Error %s closing remote file\n",smb_errstr(inbuf)));
-	  free(inbuf);free(outbuf);
-	  return;
+		do_setrattr(cli, info, rname, aARCH, ATTRRESET);
 	}
-    }
 
-  if (shallitime)
-    {
-      struct timeval tp_end;
-      int this_time;
+	{
+		struct timeval tar_tp_end;
+		int this_time;
 
-      /* if shallitime is true then we didn't skip */
-      if (tar_reset) (void) do_setrattr(finfo.name, aARCH, ATTRRESET);
-      
-      GetTimeOfDay(&tp_end);
-      this_time = 
-	(tp_end.tv_sec - tp_start.tv_sec)*1000 +
-	  (tp_end.tv_usec - tp_start.tv_usec)/1000;
-      get_total_time_ms += this_time;
-      get_total_size += finfo.size;
+		GetTimeOfDay(&tar_tp_end);
+		this_time = 
+		(tar_tp_end.tv_sec - tar_tp_start.tv_sec)*1000 +
+		(tar_tp_end.tv_usec - tar_tp_start.tv_usec)/1000;
+		info->get_total_time_ms += this_time;
+		info->get_total_size    += nread;
 
-      /* Thanks to Carel-Jan Engel (ease@mail.wirehub.nl) for this one */
-      DEBUG(1,("(%g kb/s) (average %g kb/s)\n",
-	       finfo.size / MAX(0.001, (1.024*this_time)),
-	       get_total_size / MAX(0.001, (1.024*get_total_time_ms))));
-    }
-  
-  free(inbuf);free(outbuf);
+		/* Thanks to Carel-Jan Engel (ease@mail.wirehub.nl) for this one */
+		DEBUG(1,("(%g kb/s) (average %g kb/s)\n",
+			nread                / MAX(0.001, (1.024*this_time)),
+			info->get_total_size / MAX(0.001,(1.024*info->get_total_time_ms))));
+	}
 }
 
 /****************************************************************************
 Append single file to tar file (or not)
 ***************************************************************************/
-static void do_tar(file_info *finfo)
+static void do_tar(struct cli_state *cli, struct client_info *info,
+				file_info *finfo)
 {
   pstring rname;
 
@@ -1162,16 +625,16 @@ static void do_tar(file_info *finfo)
     return;
 
   /* Is it on the exclude list ? */
-  if (!tar_excl && clipn) {
+  if (!info->tar.excl && info->tar.clipn) {
     pstring exclaim;
 
-    strcpy(exclaim, cur_dir);
+    strcpy(exclaim, info->cur_dir);
     *(exclaim+strlen(exclaim)-1)='\0';
 
     strcat(exclaim, "\\");
     strcat(exclaim, finfo->name);
 
-    if (clipfind(cliplist, clipn, exclaim)) {
+    if (clipfind(info->tar.cliplist, info->tar.clipn, exclaim)) {
       DEBUG(3,("Skipping file %s\n", exclaim));
       return;
     }
@@ -1181,110 +644,48 @@ static void do_tar(file_info *finfo)
     {
       pstring saved_curdir;
       pstring mtar_mask;
-      char *inbuf,*outbuf;
 
-      inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-      outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+      strcpy(saved_curdir,info->cur_dir);
 
-      if (!inbuf || !outbuf)
-	{
-	  DEBUG(0,("out of memory\n"));
-	  return;
-	}
-
-      strcpy(saved_curdir,cur_dir);
-
-      strcat(cur_dir,finfo->name);
-      strcat(cur_dir,"\\");
+      strcat(info->cur_dir,finfo->name);
+      strcat(info->cur_dir,"\\");
 
       /* write a tar directory, don't bother with mode - just set it to
        * 40755 */
-      writetarheader(tarhandle, cur_dir, 0, finfo->mtime, "040755 \0");
-      strcpy(mtar_mask,cur_dir);
+	
+      info->tar.file_mode = "040755 \0";
+      write_tar_hdr(info, info->tar.handle, info->cur_dir, 0, finfo->mtime);
+      strcpy(mtar_mask,info->cur_dir);
       strcat(mtar_mask,"*");
       
-      do_dir((char *)inbuf,(char *)outbuf,mtar_mask,attribute,do_tar,recurse);
-      strcpy(cur_dir,saved_curdir);
-      free(inbuf);free(outbuf);
+      cli_dir(cli, info, mtar_mask, info->tar.attrib, info->recurse_dir, do_tar);
+      strcpy(info->cur_dir,saved_curdir);
     }
   else
     {
-      strcpy(rname,cur_dir);
+      strcpy(rname,info->cur_dir);
       strcat(rname,finfo->name);
-      do_atar(rname,finfo->name,finfo);
+      do_atar(cli, info, rname,finfo->name,finfo);
     }
 }
 
-/****************************************************************************
-Convert from UNIX to DOS file names
-***************************************************************************/
-static void unfixtarname(char *tptr, char *fp, int l)
-{
-  /* remove '.' from start of file name, convert from unix /'s to
-   * dos \'s in path. Kill any absolute path names.
-   */
-
-  if (*fp == '.') fp++;
-  if (*fp == '\\' || *fp == '/') fp++;
-
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-    while (l > 0) {
-      if (is_shift_jis (*fp)) {
-        *tptr++ = *fp++;
-        *tptr++ = *fp++;
-        l -= 2;
-      } else if (is_kana (*fp)) {
-        *tptr++ = *fp++;
-        l--;
-      } else if (*fp == '/') {
-        *tptr++ = '\\';
-        fp++;
-        l--;
-      } else {
-        *tptr++ = *fp++;
-        l--;
-      }
-    }
-  }
-  else
-  {
-    while (l--)
-    {
-      *tptr=(*fp == '/') ? '\\' : *fp;
-      tptr++;
-      fp++;
-    }
-  }
-}
-
-static void do_tarput()
+static void do_tarput(struct cli_state *cli, struct client_info *info)
 {
   file_info finfo;
   int nread=0, bufread;
-  char *inbuf,*outbuf; 
   int fsize=0;
   int fnum;
-  struct timeval tp_start;
+  struct timeval tar_tp_start;
   BOOL tskip=False;       /* We'll take each file as it comes */
 
-  GetTimeOfDay(&tp_start);
-  
-  inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-  outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-  
-  if (!inbuf || !outbuf)
-    {
-      DEBUG(0,("out of memory\n"));
-      return;
-    }
+  GetTimeOfDay(&tar_tp_start);
   
   /*
-   * Must read in tbufsiz dollops
+   * Must read in info->tar.buf_size dollops
    */
 
   /* These should be the only reads in clitar.c */
-  while ((bufread=read(tarhandle, tarbuf, tbufsiz))>0) {
+  while ((bufread=read(info->tar.handle, info->tar.buf, info->tar.buf_size))>0) {
     char *bufferp, *endofbuffer;
     int chunk;
 
@@ -1298,7 +699,7 @@ static void do_tarput()
       /* It's a shorty - a short read that is */
       DEBUG(3, ("Short read, read %d so far (need %d)\n", bufread, lchunk));
 
-      while ((lread=read(tarhandle, tarbuf+bufread, lchunk))>0) {
+      while ((lread=read(info->tar.handle, info->tar.buf+bufread, lchunk))>0) {
 	bufread+=lread;
 	if (!(lchunk-=lread)) break;
       }
@@ -1307,8 +708,8 @@ static void do_tarput()
       if (lread<=0) break;
     }
 
-    bufferp=tarbuf; 
-    endofbuffer=tarbuf+bufread;
+    bufferp=info->tar.buf; 
+    endofbuffer=info->tar.buf+bufread;
 
     if (tskip) {
       if (fsize<bufread) {
@@ -1325,7 +726,7 @@ static void do_tarput()
     do {
       if (!fsize)
 	{
-	  switch (readtarheader((union hblock *) bufferp, &finfo, cur_dir))
+	  switch (read_tar_hdr(cli, info, (union hblock *) bufferp, &finfo, info->cur_dir))
 	    {
 	    case -2:             /* something dodgy but not fatal about this */
 	      DEBUG(0, ("skipping %s...\n", finfo.name));
@@ -1333,20 +734,18 @@ static void do_tarput()
 	      continue;
 	    case -1:
 	      DEBUG(0, ("abandoning restore\n"));
-	      free(inbuf); free(outbuf);
 	      return;
 	    case 0: /* chksum is zero - we assume that one all zero
 		     *header block will do for eof */
 	      DEBUG(0,
-		    ("total of %d tar files restored to share\n", ntarf));
-	      free(inbuf); free(outbuf);
+		    ("total of %d tar files restored to share\n", info->tar.num_files));
 	      return;
 	    default:
 	      break;
 	    }
 
-	  tskip=clipn
-	    && (clipfind(cliplist, clipn, finfo.name) ^ tar_excl);
+	  tskip=info->tar.clipn
+	    && (clipfind(info->tar.cliplist, info->tar.clipn, finfo.name) ^ info->tar.excl);
 	  if (tskip) {
 	    bufferp+=TBLOCK;
 	    if (finfo.mode & aDIR)
@@ -1366,11 +765,10 @@ static void do_tarput()
 
 	  if (finfo.mode & aDIR)
 	    {
-	      if (!smbchkpath(finfo.name, inbuf, outbuf)
-		  && !smbmkdir(finfo.name, inbuf, outbuf))
+	      if (!cli_chkpath(cli, finfo.name)
+		  && !cli_mkdir(cli, finfo.name))
 		{
 		  DEBUG(0, ("abandoning restore\n"));
-		  free(inbuf); free(outbuf);
 		  return;
 	      }
 	      else
@@ -1382,11 +780,10 @@ static void do_tarput()
 	  
 	  fsize=finfo.size;
 
-	  if (ensurepath(finfo.name, inbuf, outbuf)
-	      && !smbcreat(finfo, &fnum, inbuf, outbuf))
+	  if (ensurepath(cli, info, finfo.name) &&
+          !cli_create(cli, finfo.name, finfo.mode, finfo.mtime, &fnum))
 	    {
 	      DEBUG(0, ("abandoning restore\n"));
-	      free(inbuf);free(outbuf);
 	      return;
 	    }
 
@@ -1403,19 +800,14 @@ static void do_tarput()
 	? fsize - nread : endofbuffer - bufferp;
       
       while (chunk > 0) {
-	int minichunk=MIN(chunk, max_xmit-200);
+	int minichunk=MIN(chunk, cli->max_xmit-200);
 	
-	if (!smbwrite(fnum, /* file descriptor */
-		      minichunk, /* n */
+	if (!cli_write(cli, fnum, /* file descriptor */
 		      nread, /* offset low */
-		      0, /* offset high - not implemented */
-		      fsize-nread, /* left - only hint to server */
 		      bufferp,
-		      inbuf,
-		      outbuf))
+		      minichunk)) /* n */
 	  {
 	    DEBUG(0, ("Error writing remote file\n"));
-	    free(inbuf); free(outbuf);
 	    return;
 	  }
 	DEBUG(5, ("chunk writing fname=%s fnum=%d nread=%d minichunk=%d chunk=%d size=%d\n", finfo.name, fnum, nread, minichunk, chunk, fsize));
@@ -1426,25 +818,22 @@ static void do_tarput()
       
       if (nread>=fsize)
 	{
-	  if (!smbshut(finfo, fnum, inbuf, outbuf))
+	  if (!cli_close(cli, fnum, 0))
 	    {
 	      DEBUG(0, ("Error closing remote file\n"));
-	      free(inbuf);free(outbuf);
 	      return;
 	    }
 	  if (fsize % TBLOCK) bufferp+=TBLOCK - (fsize % TBLOCK);
 	  DEBUG(5, ("bufferp is now %d (psn=%d)\n",
-		    (long) bufferp, (long)(bufferp - tarbuf)));
-	  ntarf++;
+		    (long) bufferp, (long)(bufferp - info->tar.buf)));
+	  info->tar.num_files++;
 	  fsize=0;
 	}
     } while (bufferp < endofbuffer);
   }
 
   DEBUG(0, ("premature eof on tar file ?\n"));
-  DEBUG(0,("total of %d tar files restored to share\n", ntarf));
-
-  free(inbuf); free(outbuf);
+  DEBUG(0,("total of %d tar files restored to share\n", info->tar.num_files));
 }
 
 /*
@@ -1454,7 +843,7 @@ static void do_tarput()
 /****************************************************************************
 Blocksize command
 ***************************************************************************/
-void cmd_block(void)
+void cmd_block(struct cli_state *cli, struct client_info *info)
 {
   fstring buf;
   int block;
@@ -1472,38 +861,38 @@ void cmd_block(void)
       return;
     }
 
-  blocksize=block;
-  DEBUG(1,("blocksize is now %d\n", blocksize));
+  info->tar.blocksize=block;
+  DEBUG(1,("blocksize is now %d\n", info->tar.blocksize));
 }
 
 /****************************************************************************
 command to set incremental / reset mode
 ***************************************************************************/
-void cmd_tarmode(void)
+void cmd_tarmode(struct cli_state *cli, struct client_info *info)
 {
   fstring buf;
 
   while (next_token(NULL,buf,NULL)) {
     if (strequal(buf, "full"))
-      tar_inc=False;
+      info->tar.inc=False;
     else if (strequal(buf, "inc"))
-      tar_inc=True;
+      info->tar.inc=True;
     else if (strequal(buf, "reset"))
-      tar_reset=True;
+      info->tar.reset=True;
     else if (strequal(buf, "noreset"))
-      tar_reset=False;
+      info->tar.reset=False;
     else DEBUG(0, ("tarmode: unrecognised option %s\n", buf));
   }
 
   DEBUG(0, ("tarmode is now %s, %s\n",
-	    tar_inc ? "incremental" : "full",
-	    tar_reset ? "reset" : "noreset"));
+	    info->tar.inc ? "incremental" : "full",
+	    info->tar.reset ? "reset" : "noreset"));
 }
 
 /****************************************************************************
 Feeble attrib command
 ***************************************************************************/
-void cmd_setmode(void)
+void cmd_setmode(struct cli_state *cli, struct client_info *info)
 {
   char *q;
   fstring buf;
@@ -1519,7 +908,7 @@ void cmd_setmode(void)
       return;
     }
 
-  strcpy(fname, cur_dir);
+  strcpy(fname, info->cur_dir);
   strcat(fname, buf);
 
   while (next_token(NULL,buf,NULL)) {
@@ -1551,14 +940,14 @@ void cmd_setmode(void)
     }
 
   DEBUG(1, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
-  (void) do_setrattr(fname, attra[ATTRSET], ATTRSET);
-  (void) do_setrattr(fname, attra[ATTRRESET], ATTRRESET);
+  do_setrattr(cli, info, fname, attra[ATTRSET], ATTRSET);
+  do_setrattr(cli, info, fname, attra[ATTRRESET], ATTRRESET);
 }
 
 /****************************************************************************
 Principal command for creating / extracting
 ***************************************************************************/
-void cmd_tar(char *inbuf, char *outbuf)
+void cmd_tar(struct cli_state *cli, struct client_info *info)
 {
   fstring buf;
   char **argl;
@@ -1571,10 +960,12 @@ void cmd_tar(char *inbuf, char *outbuf)
     }
 
   argl=toktocliplist(&argcl, NULL);
-  if (!tar_parseargs(argcl, argl, buf, 0))
+  if (!tar_parseargs(info, argcl, argl, buf, 0))
+  {
     return;
+  }
 
-  process_tar(inbuf, outbuf);
+  process_tar(cli, info);
 
   free(argl);
 }
@@ -1582,63 +973,63 @@ void cmd_tar(char *inbuf, char *outbuf)
 /****************************************************************************
 Command line (option) version
 ***************************************************************************/
-int process_tar(char *inbuf, char *outbuf)
+int process_tar(struct cli_state *cli, struct client_info *info)
 {
-  initarbuf();
-  switch(tar_type) {
+  init_tar_buf(info);
+  switch(info->tar.type) {
   case 'x':
-    do_tarput();
-    free(tarbuf);
-    close(tarhandle);
+    do_tarput(cli, info);
+    free(info->tar.buf);
+    close(info->tar.handle);
     break;
   case 'r':
   case 'c':
-    if (clipn && tar_excl) {
+    if (info->tar.clipn && info->tar.excl) {
       int i;
       pstring tarmac;
 
-      for (i=0; i<clipn; i++) {
-	DEBUG(0,("arg %d = %s\n", i, cliplist[i]));
+      for (i=0; i<info->tar.clipn; i++) {
+	DEBUG(0,("arg %d = %s\n", i, info->tar.cliplist[i]));
 
-	if (*(cliplist[i]+strlen(cliplist[i])-1)=='\\') {
-	  *(cliplist[i]+strlen(cliplist[i])-1)='\0';
+	if (*(info->tar.cliplist[i]+strlen(info->tar.cliplist[i])-1)=='\\') {
+	  *(info->tar.cliplist[i]+strlen(info->tar.cliplist[i])-1)='\0';
 	}
 	
-	if (strrchr(cliplist[i], '\\')) {
+	if (strrchr(info->tar.cliplist[i], '\\')) {
 	  pstring saved_dir;
 	  
-	  strcpy(saved_dir, cur_dir);
+	  strcpy(saved_dir, info->cur_dir);
 	  
-	  if (*cliplist[i]=='\\') {
-	    strcpy(tarmac, cliplist[i]);
+	  if (*info->tar.cliplist[i]=='\\') {
+	    strcpy(tarmac, info->tar.cliplist[i]);
 	  } else {
-	    strcpy(tarmac, cur_dir);
-	    strcat(tarmac, cliplist[i]);
+	    strcpy(tarmac, info->cur_dir);
+	    strcat(tarmac, info->tar.cliplist[i]);
 	  }
-	  strcpy(cur_dir, tarmac);
-	  *(strrchr(cur_dir, '\\')+1)='\0';
+	  strcpy(info->cur_dir, tarmac);
+	  *(strrchr(info->cur_dir, '\\')+1)='\0';
 
-	  do_dir((char *)inbuf,(char *)outbuf,tarmac,attribute,do_tar,recurse);
-	  strcpy(cur_dir,saved_dir);
+	  cli_dir(cli, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
+	  strcpy(info->cur_dir,saved_dir);
 	} else {
-	  strcpy(tarmac, cur_dir);
-	  strcat(tarmac, cliplist[i]);
-	  do_dir((char *)inbuf,(char *)outbuf,tarmac,attribute,do_tar,recurse);
+	  strcpy(tarmac, info->cur_dir);
+	  strcat(tarmac, info->tar.cliplist[i]);
+	  cli_dir(cli, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
 	}
       }
     } else {
       pstring mask;
-      strcpy(mask,cur_dir);
+      strcpy(mask,info->cur_dir);
       strcat(mask,"\\*");
-      do_dir((char *)inbuf,(char *)outbuf,mask,attribute,do_tar,recurse);
+	  cli_dir(cli, info, mask, info->tar.attrib, info->recurse_dir, do_tar);
     }
     
-    if (ntarf) dotareof(tarhandle);
-    close(tarhandle);
-    free(tarbuf);
+    if (info->tar.num_files) do_tar_eof(info, info->tar.handle);
+    close(info->tar.handle);
+    free(info->tar.buf);
     
-    DEBUG(0, ("tar: dumped %d tar files\n", ntarf));
-    DEBUG(0, ("Total bytes written: %d\n", ttarf));
+    DEBUG(0, ("tar: dumped %d tar files\n", info->tar.num_files));
+    DEBUG(0, ("Total bytes written: %d\n", info->tar.bytes_written));
     break;
   }
 
@@ -1668,32 +1059,33 @@ int clipfind(char **aret, int ret, char *tok)
 }
 
 /****************************************************************************
-Parse tar arguments. Sets tar_type, tar_excl, etc.
+Parse tar arguments. Sets info->tar.type, info->tar.excl, etc.
 ***************************************************************************/
-int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
+int tar_parseargs(struct client_info *info,
+				int argc, char *argv[], char *Optarg, int Optind)
 {
   char tar_clipfl='\0';
 
   /* Reset back to defaults - could be from interactive version 
    * reset mode and archive mode left as they are though
    */
-  tar_type='\0';
-  tar_excl=True;
+  info->tar.type='\0';
+  info->tar.excl=True;
 
   while (*Optarg) 
     switch(*Optarg++) {
     case 'c':
-      tar_type='c';
+      info->tar.type='c';
       break;
     case 'x':
-      if (tar_type=='c') {
+      if (info->tar.type=='c') {
 	printf("Tar must be followed by only one of c or x.\n");
 	return 0;
       }
-      tar_type='x';
+      info->tar.type='x';
       break;
     case 'b':
-      if (Optind>=argc || !(blocksize=atoi(argv[Optind]))) {
+      if (Optind>=argc || !(info->tar.blocksize=atoi(argv[Optind]))) {
 	DEBUG(0,("Option b must be followed by valid blocksize\n"));
 	return 0;
       } else {
@@ -1701,7 +1093,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
       }
       break;
     case 'g':
-      tar_inc=True;
+      info->tar.inc=True;
       break;
     case 'N':
       if (Optind>=argc) {
@@ -1709,12 +1101,12 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 	return 0;
       } else {
 	struct stat stbuf;
-	extern time_t newer_than;
 	
-	if (sys_stat(argv[Optind], &stbuf) == 0) {
-	  newer_than = stbuf.st_mtime;
+	if (sys_stat(argv[Optind], &stbuf) == 0)
+	{
+	  info->newer_than = stbuf.st_mtime;
 	  DEBUG(1,("Getting files newer than %s",
-		   asctime(LocalTime(&newer_than))));
+		   asctime(LocalTime(&info->newer_than))));
 	  Optind++;
 	} else {
 	  DEBUG(0,("Error setting newer-than time\n"));
@@ -1723,7 +1115,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
       }
       break;
     case 'a':
-      tar_reset=True;
+      info->tar.reset=True;
       break;
     case 'I':
       if (tar_clipfl) {
@@ -1744,22 +1136,22 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
       return 0;
     }
 
-  if (!tar_type) {
+  if (!info->tar.type) {
     printf("Option T must be followed by one of c or x.\n");
     return 0;
   }
 
-  tar_excl=tar_clipfl!='X';
+  info->tar.excl=tar_clipfl!='X';
   if (Optind+1<argc) {
-    cliplist=argv+Optind+1;
-    clipn=argc-Optind-1;
+    info->tar.cliplist=argv+Optind+1;
+    info->tar.clipn=argc-Optind-1;
   }
   if (Optind>=argc || !strcmp(argv[Optind], "-")) {
     /* Sets tar handle to either 0 or 1, as appropriate */
-    tarhandle=(tar_type=='c');
+    info->tar.handle=(info->tar.type=='c');
   } else {
-    if ((tar_type=='x' && (tarhandle = open(argv[Optind], O_RDONLY)) == -1)
-	|| (tar_type=='c' && (tarhandle=creat(argv[Optind], 0644)) < 0))
+    if ((info->tar.type=='x' && (info->tar.handle = open(argv[Optind], O_RDONLY)) == -1)
+	|| (info->tar.type=='c' && (info->tar.handle=creat(argv[Optind], 0644)) < 0))
       {
 	DEBUG(0,("Error opening local file %s - %s\n",
 		 argv[Optind], strerror(errno)));
