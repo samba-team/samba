@@ -1,5 +1,9 @@
 2001-03-26  Assar Westerlund  <assar@sics.se>
 
+	* parse_units.c (parse_something): do not check the return value
+	from strtod, it might return != 0.0 when the string has no digits.
+	just testing if it consumed any characters is enough and more
+	resilient
 	* glob.c: add GLOB_LIMIT (from NetBSD)
 
 2001-02-20  Assar Westerlund  <assar@sics.se>
