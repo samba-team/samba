@@ -1,9 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   dcerpc authentication operations
+   schannel library code
 
-   Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,22 +22,14 @@
 
 #include "includes.h"
 
-/*
-  do a non-athenticated dcerpc bind
-*/
-NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
-			       const char *uuid, unsigned version)
-{
+struct schannel_state {
 	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
+	uint8 session_key[16];
+	uint32 seq_num;
+	BOOL initiator;
+	DATA_BLOB signature;
+};
 
-	mem_ctx = talloc_init("dcerpc_bind_auth_ntlm");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
+#define NETSEC_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
+#define NETSEC_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
 
-	status = dcerpc_bind_byuuid(p, mem_ctx, uuid, version);
-	talloc_destroy(mem_ctx);
-
-	return status;
-}
