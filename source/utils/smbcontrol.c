@@ -369,6 +369,9 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 			fprintf(stderr, "Must specify subcommand:\n");
 			fprintf(stderr, "\tqueuepause <printername>\n");
 			fprintf(stderr, "\tqueueresume <printername>\n");
+			fprintf(stderr, "\tjobpause <printername> <unix jobid>\n");
+			fprintf(stderr, "\tjobresume <printername> <unix jobid>\n");
+			fprintf(stderr, "\tjobdelete <printername> <unix jobid>\n");
 			return False;
 		}
 
