@@ -2623,6 +2623,10 @@ void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries);
 void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries);
 void free_job_info_2(JOB_INFO_2 *job);
 void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries);
+BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_q_replycloseprinter(char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
@@ -3293,6 +3297,12 @@ BOOL init_oplocks(void);
 
 #if OLD_NTDOMAIN
 struct kernel_oplocks *irix_init_kernel_oplocks(void) ;
+#endif
+
+/*The following definitions come from  smbd/oplock_linux.c  */
+
+#if OLD_NTDOMAIN
+struct kernel_oplocks *linux_init_kernel_oplocks(void) ;
 #endif
 
 /*The following definitions come from  smbd/password.c  */
