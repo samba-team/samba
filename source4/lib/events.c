@@ -157,7 +157,8 @@ static int event_fd_destructor(void *ptr)
   add a fd based event
   return NULL on failure (memory allocation error)
 */
-struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e0) 
+struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e0, 
+			      TALLOC_CTX *mem_ctx) 
 {
 	struct fd_event *e = talloc(ev->events, struct fd_event);
 	if (!e) return NULL;
@@ -168,6 +169,9 @@ struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e0)
 		ev->maxfd = e->fd;
 	}
 	talloc_set_destructor(e, event_fd_destructor);
+	if (mem_ctx) {
+		talloc_steal(mem_ctx, e);
+	}
 	return e;
 }
 
@@ -226,7 +230,8 @@ static int event_timed_destructor(void *ptr)
   add a timed event
   return NULL on failure (memory allocation error)
 */
-struct timed_event *event_add_timed(struct event_context *ev, struct timed_event *e0) 
+struct timed_event *event_add_timed(struct event_context *ev, struct timed_event *e0,
+				    TALLOC_CTX *mem_ctx) 
 {
 	struct timed_event *e = talloc(ev->events, struct timed_event);
 	if (!e) return NULL;
@@ -234,6 +239,9 @@ struct timed_event *event_add_timed(struct event_context *ev, struct timed_event
 	e->event_ctx = ev;
 	DLIST_ADD(ev->timed_events, e);
 	talloc_set_destructor(e, event_timed_destructor);
+	if (mem_ctx) {
+		talloc_steal(mem_ctx, e);
+	}
 	return e;
 }
 
@@ -259,7 +267,8 @@ static int event_loop_destructor(void *ptr)
   add a loop event
   return NULL on failure (memory allocation error)
 */
-struct loop_event *event_add_loop(struct event_context *ev, struct loop_event *e0)
+struct loop_event *event_add_loop(struct event_context *ev, struct loop_event *e0,
+				  TALLOC_CTX *mem_ctx)
 {
 	struct loop_event *e = talloc(ev->events, struct loop_event);
 	if (!e) return NULL;
@@ -267,6 +276,9 @@ struct loop_event *event_add_loop(struct event_context *ev, struct loop_event *e
 	e->event_ctx = ev;
 	DLIST_ADD(ev->loop_events, e);
 	talloc_set_destructor(e, event_loop_destructor);
+	if (mem_ctx) {
+		talloc_steal(mem_ctx, e);
+	}
 	return e;
 }
 

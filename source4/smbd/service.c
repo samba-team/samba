@@ -163,15 +163,14 @@ struct server_stream_socket *service_setup_stream_socket(struct server_service *
 	stream_socket->service		= service;
 	stream_socket->socket		= sock;
 	stream_socket->event.ctx	= service->server->event.ctx;
-	stream_socket->event.fde	= event_add_fd(stream_socket->event.ctx, &fde);
+	stream_socket->event.fde	= event_add_fd(stream_socket->event.ctx, 
+						       &fde, stream_socket);
 	if (!stream_socket->event.fde) {
-		DEBUG(0,("event_add_fd(stream_socket->event.ctx, &fde) failed\n"));
 		socket_destroy(sock);
 		return NULL;
 	}
 
 	talloc_steal(stream_socket, sock);
-	talloc_steal(stream_socket, stream_socket->event.fde);
 
 	if (stream_socket->stream.ops->socket_init) {
 		stream_socket->stream.ops->socket_init(stream_socket);
@@ -239,11 +238,8 @@ struct server_connection *server_setup_connection(struct event_context *ev,
 	stream_socket->stream.ops->accept_connection(srv_conn);
 
 	/* accpect_connection() of the service may changed idle.next_event */
-	srv_conn->event.fde	= event_add_fd(ev,&fde);
-	srv_conn->event.idle	= event_add_timed(ev,&idle);
-
-	talloc_steal(srv_conn, srv_conn->event.fde);
-	talloc_steal(srv_conn, srv_conn->event.idle);
+	srv_conn->event.fde	= event_add_fd(ev, &fde, srv_conn);
+	srv_conn->event.idle	= event_add_timed(ev, &idle, srv_conn);
 
 	talloc_set_destructor(srv_conn, server_connection_destructor);
 
