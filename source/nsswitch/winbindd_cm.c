@@ -145,6 +145,13 @@ static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 
 	/* Lookup domain controller name. Try the real PDC first to avoid
 	   SAM sync delays */
+	if (get_dc_list(True, domain, &ip_list, &count) &&
+	    name_status_find(domain, 0x1c, 0x20, ip_list[0], srv_name)) {
+		*dc_ip = ip_list[0];
+		SAFE_FREE(ip_list);
+		return True;
+	}
+
 	if (!get_dc_list(True, domain, &ip_list, &count)) {
 		if (!get_dc_list(False, domain, &ip_list, &count)) {
 			DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
