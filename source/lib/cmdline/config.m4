@@ -72,7 +72,7 @@ AC_CHECK_LIB(readline, rl_completion_matches,
 TMP_LIBCMDLINE_OBJS="lib/cmdline/readline.o lib/cmdline/popt_common.o"
 TMP_LIBCMDLINE_LIBS="$TERMLIBS"
 
-SMB_EXT_LIB(READLINE, [$TERMLIBS])
+SMB_EXT_LIB(READLINE, [${TMP_LIBCMDLINE_LIBS}])
 
 SMB_SUBSYSTEM(LIBCMDLINE,[],
 		[${TMP_LIBCMDLINE_OBJS}],
