@@ -700,6 +700,7 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{True, "1"},
 	{True, "On"},
 	{True, "enabled"},
+	{Auto, "auto"},
 	{Required, "required"},
 	{Required, "mandatory"},
 	{Required, "force"},
@@ -1514,6 +1515,9 @@ static void init_globals(void)
 
 	Globals.bUseSpnego = True;
 	Globals.bClientUseSpnego = True;
+
+	Globals.client_signing = Auto;
+	Globals.server_signing = False;
 
 	string_set(&Globals.smb_ports, SMB_PORTS);
 }
