@@ -1325,7 +1325,11 @@ BOOL domain_client_validate( char *user, char *domain,
        */
 
       for(i = 0; i < count; i++) {
-        if((connected_ok = connect_to_domain_password_server(&cli, inet_ntoa(ip_list[i]))))
+        fstring dc_name;
+        if(!lookup_pdc_name(global_myname, lp_workgroup(), &ip_list[i], dc_name))
+          continue;
+
+        if((connected_ok = connect_to_domain_password_server(&cli, dc_name)))
           break;
       }
 
