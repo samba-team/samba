@@ -90,6 +90,7 @@ sub process_file($)
 {
 	my $idl_file = shift;
 	my $output;
+	my $pidl;
 
 	my $basename = basename($idl_file, ".idl");
 
@@ -104,46 +105,40 @@ sub process_file($)
 	print "Compiling $idl_file\n";
 
 	if ($opt_parse) {
-		my($idl) = IdlParse($idl_file);
-		defined $idl || die "Failed to parse $idl_file";
-		util::SaveStructure($pidl_file, $idl) || die "Failed to save $pidl_file";
-		
-		IdlValidator::Validate($idl);
+		$pidl = IdlParse($idl_file);
+		defined $pidl || die "Failed to parse $idl_file";
+		IdlValidator::Validate($pidl);
+		if ($opt_keep && !util::SaveStructure($pidl_file, $pidl)) {
+			    die "Failed to save $pidl_file\n";
+		}		
+	} else {
+		$pidl = util::LoadStructure($pidl_file);
 	}
 	
 	if ($opt_dump) {
-		my($idl) = util::LoadStructure($pidl_file);
-		print IdlDump::Dump($idl);
+		print IdlDump::Dump($pidl);
 	}
 	
 	if ($opt_header) {
-		my($idl) = util::LoadStructure($pidl_file);
 		my($header) = util::ChangeExtension($output, "h");
-		util::FileSave($header, IdlHeader::Parse($idl));
+		util::FileSave($header, IdlHeader::Parse($pidl));
 	}
 	
 	if ($opt_parser) {
-		my($idl) = util::LoadStructure($pidl_file);
 		my($parser) = util::ChangeExtension($output, "c");
-		IdlParser::Parse($idl, $parser);
+		IdlParser::Parse($pidl, $parser);
 	}
 	
 	if ($opt_eparser) {
-		my($idl) = util::LoadStructure($pidl_file);
 		my($parser) = util::ChangeExtension($output, "c");
-		util::FileSave($parser, IdlEParser::Parse($idl));
+		util::FileSave($parser, IdlEParser::Parse($pidl));
 	}
 	
 	if ($opt_diff) {
-		my($idl) = util::LoadStructure($pidl_file);
 		my($tempfile) = util::ChangeExtension($output, "tmp");
-		util::FileSave($tempfile, IdlDump::Dump($idl));
+		util::FileSave($tempfile, IdlDump::Dump($pidl));
 		system("diff -wu $idl_file $tempfile");
 		unlink($tempfile);
-	}
-	
-	if (!$opt_keep) {
-		system("rm -f $pidl_file");
 	}
 }
 
