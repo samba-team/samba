@@ -75,15 +75,15 @@ interface epmapper
 	} epm_protocol_info;
 
 	typedef struct {
-		//FIXME	
+		/*FIXME	*/
 	} epm_rhs_dnet_nsp;
 
 	typedef struct {
-		//FIXME
+		/*FIXME*/
 	} epm_rhs_osi_tp4;
 
 	typedef struct {
-		//FIXME
+		/*FIXME*/
 	} epm_rhs_osi_clns;
 	
 	typedef struct {
@@ -111,7 +111,7 @@ interface epmapper
 	} epm_rhs_uuid;
 
 	typedef struct {
-		//FIXME	
+		/*FIXME	*/
 	} epm_rhs_ipx;
 
 	typedef struct {
