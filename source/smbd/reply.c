@@ -2367,10 +2367,12 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
 	int outsize = set_message(outbuf,0,0,True);
+	uint16 fnum = SVAL(inbuf,smb_vwv0);
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	START_PROFILE(SMBflush);
 
-	CHECK_FSP(fsp,conn);
+	if (fnum != 0xFFFF)
+		CHECK_FSP(fsp,conn);
 	
 	if (!fsp) {
 		file_sync_all(conn);
@@ -2737,7 +2739,7 @@ int reply_printclose(connection_struct *conn,
 
 	if (!CAN_PRINT(conn)) {
 		END_PROFILE(SMBsplclose);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
   
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
