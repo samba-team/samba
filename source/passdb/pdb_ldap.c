@@ -3424,6 +3424,7 @@ static BOOL init_trustpw_from_ldap(struct ldapsam_privates* ldap_state, SAM_TRUS
 	unsigned char pass[16];
 	DOM_SID dom_sid;
 	time_t lct;
+	const char *attr_domain, *attr_ntpw, *attr_sid, *attr_lct, *attr_flags;
 
 	if (!ldap_state || !trust || !entry) {
 		DEBUG(0, ("init_trustpw_from_ldap: NULL pointer passed!\n"));
@@ -3435,61 +3436,79 @@ static BOOL init_trustpw_from_ldap(struct ldapsam_privates* ldap_state, SAM_TRUS
 		return False;
 	}
 
+	/* Attribute names to avoid extra calls get_attr_key2string and make code clearer */
+	attr_domain = get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN);
+	attr_ntpw   = get_attr_key2string(trustpw_attr_list, LDAP_ATTR_NTPW);
+	attr_sid    = get_attr_key2string(trustpw_attr_list, LDAP_ATTR_SID);
+	attr_lct    = get_attr_key2string(trustpw_attr_list, LDAP_ATTR_PWD_LAST_SET);
+	attr_flags  = get_attr_key2string(trustpw_attr_list, LDAP_ATTR_TRUST_PASSWD_FLAGS);
+
 	/* Domain name */
 	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-					   get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN),
-					   value, sizeof(value));
+					   attr_domain, value, sizeof(value));
 	if (!ret) {
-		DEBUG(1, ("No attribute %s found\n", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN)));
+		DEBUG(1, ("No attribute %s found\n", attr_domain));
 		return False;
 	}
 	pdb_set_tp_domain_name_c(trust, value);
-
-	/* Trust password hash */
-	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-					   get_attr_key2string(trustpw_attr_list, LDAP_ATTR_NTPW),
-					   value, sizeof(value));
-	if (!ret) {
-		DEBUG(1, ("No attribute %s found\n", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_NTPW)));
-		return False;
-	}
-	pdb_gethexpwd(value, pass);
-	memset((char*)value, 0, strlen(value) + 1);
-	pdb_set_tp_pass(trust, pass);
+	DEBUG(10, ("Trust password field filled with (%s=%s)\n", attr_domain,
+		  pdb_get_tp_domain_name_c(trust)));
 
 	/* Flags */
 	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-					   get_attr_key2string(trustpw_attr_list, LDAP_ATTR_TRUST_PASSWD_FLAGS),
-					   value, sizeof(value));
+					   attr_flags, value, sizeof(value));
 	if (!ret) {
-		DEBUG(1, ("No attribute %s found\n",
-			  get_attr_key2string(trustpw_attr_list, LDAP_ATTR_TRUST_PASSWD_FLAGS)));
+		DEBUG(1, ("No attribute %s found\n", attr_flags));
 		return False;
 	}
 	pdb_set_tp_flags(trust, atoi(value));
+	DEBUG(10, ("Trust password field filled with (%s=%hu)\n", attr_flags,
+		  pdb_get_tp_flags(trust)));
+
+	/* Trust password hash */
+	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+					   attr_ntpw, value, sizeof(value));
+	if (!ret) {
+		DEBUG(1, ("No attribute %s found\n", attr_ntpw));
+		return False;
+	}
+
+	if (pdb_get_tp_flags(trust) & PASS_TRUST_NT) {
+		pdb_gethexpwd(value, pass);
+		pdb_set_tp_pass(trust, pass);
+	} else if (pdb_get_tp_flags(trust) & PASS_TRUST_ADS)
+		pdb_set_tp_pass(trust, value);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(10, ("Trust password field filled with (%s=%s)\n", attr_ntpw, value));
+#else
+	DEBUG(10, ("Trust password field (%s) filled\n", attr_ntpw));
+#endif
+	memset((char*)value, 0, sizeof(value));
 
 	/* Domain SID */
 	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-					   get_attr_key2string(trustpw_attr_list, LDAP_ATTR_SID),
-					   value, sizeof(value));
+					   attr_sid, value, sizeof(value));
 	if (!ret) {
-		DEBUG(1, ("No attribute %s found\n", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_SID)));
+		DEBUG(1, ("No attribute %s found\n", attr_sid));
 		return False;
 	}
 	string_to_sid(&dom_sid, value);
 	pdb_set_tp_domain_sid(trust, &dom_sid);
+	DEBUG(10, ("Trust password field filled with (%s=%s)\n", attr_sid,
+		  sid_string_static(pdb_get_tp_domain_sid(trust))));
 
 	/* Last change time */
 	ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-					   get_attr_key2string(trustpw_attr_list, LDAP_ATTR_PWD_LAST_SET),
-					   value, sizeof(value));
+					   attr_lct, value, sizeof(value));
 	if (!ret) {
-		DEBUG(1, ("No attribute %s found\n",
-			  get_attr_key2string(trustpw_attr_list, LDAP_ATTR_PWD_LAST_SET)));
+		DEBUG(1, ("No attribute %s found\n", attr_lct));
 		return False;
 	}
 	lct = (time_t) atoi(value);
 	pdb_set_tp_mod_time(trust, lct);
+	DEBUG(10, ("Trust password field filled with (%s=%u)\n", attr_lct,
+		  (unsigned int)pdb_get_tp_mod_time(trust)));
 
 	return True;
 }
