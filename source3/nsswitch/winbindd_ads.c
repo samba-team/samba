@@ -598,18 +598,21 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	rc = ads_search_retry_dn(ads, (void**)&msg, user_dn, attrs);
 	if (!ADS_ERR_OK(rc)) {
 		status = ads_ntstatus(rc);
-		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: %s\n", 
+			 sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
 	
 	if (!msg) {
-		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: NULL msg\n", sid_to_string(sid_string, sid)));
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: NULL msg\n", 
+			 sid_to_string(sid_string, sid)));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group_rid)) {
-		DEBUG(1,("%s: No primary group for sid=%s !?\n", domain->name, sid_to_string(sid_string, sid)));
+		DEBUG(1,("%s: No primary group for sid=%s !?\n", 
+			 domain->name, sid_to_string(sid_string, sid)));
 		goto done;
 	}
 
@@ -677,7 +680,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	uint32 current_usn;
 	int num_retries = 0;
 
-	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, sid_string_static(group_sid)));
+	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, 
+		  sid_string_static(group_sid)));
 
 	*num_names = 0;
 
@@ -738,13 +742,15 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		}
 
 		if (first_usn != current_usn) {
-			DEBUG(5, ("ads: lookup_groupmem USN on this record changed - restarting search\n"));
+			DEBUG(5, ("ads: lookup_groupmem USN on this record changed"
+				  " - restarting search\n"));
 			if (num_retries < 5) {
 				num_retries++;
 				num_members = 0;
 				continue;
 			} else {
-				DEBUG(5, ("ads: lookup_groupmem USN on this record changed - restarted search too many times, aborting!\n"));
+				DEBUG(5, ("ads: lookup_groupmem USN on this record changed"
+					  " - restarted search too many times, aborting!\n"));
 				status = NT_STATUS_UNSUCCESSFUL;
 				goto done;
 			}
@@ -858,7 +864,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	}
 	
 	if ( NT_STATUS_IS_OK(result) )
-		result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, &domains, (unsigned int *)&count );
+		result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, 
+						    flags, &domains, (unsigned int *)&count );
 	
 	if ( NT_STATUS_IS_OK(result) && count) {
 	
