@@ -201,7 +201,6 @@ char *lp_passwd_program(void);
 char *lp_passwd_chat(void);
 char *lp_passwordserver(void);
 char *lp_workgroup(void);
-char *lp_domain_controller(void);
 char *lp_username_map(void);
 char *lp_character_set(void);
 char *lp_logon_script(void);
@@ -227,6 +226,7 @@ BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
 BOOL lp_wins_proxy(void);
 BOOL lp_local_master(void);
+BOOL lp_domain_controller(void);
 BOOL lp_domain_master(void);
 BOOL lp_domain_logons(void);
 BOOL lp_preferred_master(void);
@@ -763,6 +763,14 @@ int reply_writebs(char *inbuf,char *outbuf);
 int reply_setattrE(char *inbuf,char *outbuf);
 int reply_getattrE(char *inbuf,char *outbuf);
 
+/*The following definitions come from  rpc_pipes/lsa_hnd.c  */
+
+void init_lsa_policy_hnd(void);
+BOOL open_lsa_policy_hnd(LSA_POL_HND *hnd, DOM_SID *sid);
+BOOL set_lsa_policy_samr_rid(LSA_POL_HND *hnd, uint32 rid);
+uint32 get_lsa_policy_samr_rid(LSA_POL_HND *hnd);
+BOOL close_lsa_policy_hnd(LSA_POL_HND *hnd);
+
 /*The following definitions come from  rpc_pipes/lsaparse.c  */
 
 void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
@@ -772,6 +780,9 @@ char* lsa_io_q_open_pol(BOOL io, LSA_Q_OPEN_POL *r_q, char *q, char *base, int a
 char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int align, int depth);
 void make_q_query(LSA_Q_QUERY_INFO *q_q, LSA_POL_HND *hnd, uint16 info_class);
 char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int align, int depth);
+char* lsa_io_q_enum_trust_dom(BOOL io, LSA_Q_ENUM_TRUST_DOM *q_e, char *q, char *base, int align, int depth);
+void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, LSA_POL_HND *hnd, uint32 status);
+char* lsa_io_r_enum_trust_dom(BOOL io, LSA_R_ENUM_TRUST_DOM *r_e, char *q, char *base, int align, int depth);
 void make_q_close(LSA_Q_CLOSE *q_c, LSA_POL_HND *hnd);
 char* lsa_io_q_close(BOOL io, LSA_Q_CLOSE *q_c, char *q, char *base, int align, int depth);
 void make_r_close(LSA_R_CLOSE *q_r, LSA_POL_HND *hnd);
@@ -840,6 +851,7 @@ BOOL rpc_pipe_bind(char *pipe_name, uint16 fnum, uint32 call_id,
 
 /*The following definitions come from  rpc_pipes/pipe_hnd.c  */
 
+void reset_chain_pnum(void);
 void init_rpc_pipe_hnd(void);
 int open_rpc_pipe_hnd(char *pipe_name, int cnum);
 char *get_rpc_pipe_hnd_name(int pnum);
@@ -861,6 +873,13 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
 
+/*The following definitions come from  rpc_pipes/pipesamr.c  */
+
+BOOL api_samrTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
+
 /*The following definitions come from  rpc_pipes/pipesrvsvc.c  */
 
 BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
@@ -870,6 +889,7 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 
 /*The following definitions come from  rpc_pipes/pipeutil.c  */
 
+void create_pol_hnd(LSA_POL_HND *hnd);
 void initrpcreply(char *inbuf, char *q);
 void endrpcreply(char *inbuf, char *q, int datalen, int rtnval, int *rlen);
 BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
@@ -878,6 +898,35 @@ int make_dom_sids(char *sids_str, DOM_SID *sids, int max_sids);
 int make_dom_gids(char *gids_str, DOM_GID *gids);
 int create_rpc_request(uint32 call_id, uint8 op_num, char *q, int data_len);
 int create_rpc_reply(uint32 call_id, char *q, int data_len);
+
+/*The following definitions come from  rpc_pipes/pipewkssvc.c  */
+
+BOOL api_wkssvcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
+
+/*The following definitions come from  rpc_pipes/samrparse.c  */
+
+char* samr_io_q_close(BOOL io, SAMR_Q_CLOSE *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_close(BOOL io, SAMR_R_CLOSE *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_open_secret(BOOL io, SAMR_Q_OPEN_SECRET *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_open_secret(BOOL io, SAMR_R_OPEN_SECRET *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_unknown_11(BOOL io, SAMR_Q_UNKNOWN_11 *q_u, char *q, char *base, int align, int depth);
+void make_samr_r_unknown_11(SAMR_R_UNKNOWN_11 *r_u,
+		uint32 switch_value, uint32 unknown_0, uint32 status);
+char* samr_io_r_unknown_11(BOOL io, SAMR_R_UNKNOWN_11 *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_unknown_22(BOOL io, SAMR_Q_UNKNOWN_22 *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_unknown_22(BOOL io, SAMR_R_UNKNOWN_22 *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_unknown_24(BOOL io, SAMR_Q_UNKNOWN_24 *q_u, char *q, char *base, int align, int depth);
+void make_samr_r_unknown_24(SAMR_R_UNKNOWN_24 *r_u,
+				uint16 unknown_0, NTTIME *expiry, char *mach_acct,
+				uint32 unknown_id_0, uint32 status);
+char* samr_io_r_unknown_24(BOOL io, SAMR_R_UNKNOWN_24 *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_unknown_32(BOOL io, SAMR_Q_UNKNOWN_32 *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_unknown_32(BOOL io, SAMR_R_UNKNOWN_32 *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_unknown_39(BOOL io, SAMR_Q_UNKNOWN_39 *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_unknown_39(BOOL io, SAMR_R_UNKNOWN_39 *r_u, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  rpc_pipes/smbparse.c  */
 
@@ -969,6 +1018,11 @@ char* srv_io_share_1_ctr(BOOL io, SHARE_INFO_1_CTR *ctr, char *q, char *base, in
 char* srv_io_q_net_share_enum(BOOL io, SRV_Q_NET_SHARE_ENUM *q_n, char *q, char *base, int align, int depth);
 char* srv_io_r_net_share_enum(BOOL io, SRV_R_NET_SHARE_ENUM *r_n, char *q, char *base, int align, int depth);
 
+/*The following definitions come from  rpc_pipes/wksparse.c  */
+
+char* wks_io_q_unknown_0(BOOL io, WKS_Q_UNKNOWN_0 *q_u, char *q, char *base, int align, int depth);
+char* wks_io_r_unknown_0(BOOL io, WKS_R_UNKNOWN_0 *r_u, char *q, char *base, int align, int depth);
+
 /*The following definitions come from  server.c  */
 
 void  *dflt_sig(void);
@@ -1051,8 +1105,9 @@ char *smb_errstr(char *inbuf);
 
 int pw_file_lock(char *name, int type, int secs);
 int pw_file_unlock(int fd);
-struct smb_passwd *get_smbpwnam(char *name);
-BOOL add_smbpwnam(struct smb_passwd* pwd);
+struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid);
+BOOL add_smbpwd_entry(struct smb_passwd* pwd);
+BOOL mod_smbpwd_entry(struct smb_passwd* pwd);
 
 /*The following definitions come from  status.c  */
 

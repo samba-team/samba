@@ -57,6 +57,8 @@ char * known_pipes [] =
 #if NTDOMAIN
   "NETLOGON",
   "srvsvc",
+  "wkssvc",
+  "samr",
 #endif
   NULL
 };
@@ -138,6 +140,8 @@ int reply_pipe_close(char *inbuf,char *outbuf)
   int pnum = get_rpc_pipe_num(inbuf,smb_vwv0);
   int cnum = SVAL(inbuf,smb_tid);
   int outsize = set_message(outbuf,0,0,True);
+
+  DEBUG(5,("reply_pipe_close: pnum:%x cnum:%x\n", pnum, cnum));
 
   if (!close_rpc_pipe_hnd(pnum, cnum)) return(ERROR(ERRDOS,ERRbadfid));
 

@@ -323,6 +323,8 @@ void become_local_master(struct subnet_record *d, struct work_record *work)
    */
   uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT;
 
+  if (lp_domain_controller()) domain_type |= SV_TYPE_DOMAIN_CTRL;
+
   if (!work || !d) 
     return;
   

@@ -118,12 +118,13 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 		{
 			char *q = buf + 2;
 			char *machine = q;
+
 			mailslot = skip_string(machine,1);
 			unicomp = skip_string(mailslot,1);
 
-			q = align2(q, buf);
+			q = align2(unicomp, buf);
 
-			q = skip_unicode_string(unicomp,1);
+			q = skip_unicode_string(q, 1);
 
 			ntversion = IVAL(q, 0); q += 4;
 			lmnttoken = SVAL(q, 0); q += 2;
@@ -176,17 +177,21 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 			ntversion = IVAL(q, 0); q += 4;
 			lmnttoken = SVAL(q, 0); q += 2;
 			lm20token = SVAL(q, 0); q += 2;
+
 			DEBUG(3,("SAMLOGON sidsize %d ntv %d\n", domainsidsize, ntversion));
 
 			/*
 			  If MACHINE$ is in our password database then respond, else ignore.
 			  Let's ignore the SID.
 			*/
-			strcpy(ascuser,unistr(uniuser));
+
+			strcpy(ascuser, unistr(uniuser));
 			DEBUG(3,("SAMLOGON user %s\n", ascuser));
+
 			strcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER */
-			strcpy(reply_name+2,my_name); /* PAXX: Assuming we are logon svr */
-			smb_pass = get_smbpwnam(ascuser);
+			strcpy(reply_name+2,my_name); 
+
+			smb_pass = get_smbpwd_entry(ascuser, 0);
 
 			if(!smb_pass)
 			{

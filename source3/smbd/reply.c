@@ -498,7 +498,8 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* If name ends in $ then I think it's asking about whether a */
   /* computer with that name (minus the $) has access. For now */
   /* say yes to everything ending in $. */
-  if (user[strlen(user) - 1] == '$') {
+  if (user[strlen(user) - 1] == '$')
+  {
 #ifdef NTDOMAIN
     struct smb_passwd *smb_pass; /* To check if machine account exists */
 /* 
@@ -511,15 +512,18 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
    a domain. This may be the source of future bugs if we cannot
    be sure whether to reject this or not.
 */
-   smb_pass = get_smbpwnam(user);
-   if(smb_pass)
+   /* non-null user name indicates search by username not by smb userid */
+   smb_pass = get_smbpwd_entry(user, 0);
+
+   if (!smb_pass)
    {
      /* PAXX: This is the NO LOGON workstation trust account stuff */
-     DEBUG(4,("Rejecting workstation trust account %s",user));
+     DEBUG(4,("No Workstation trust account %s",user));
      SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
      CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
-     return(ERROR(NT_STATUS_ALLOTTED_SPACE_EXCEEDED, 0xc000)); /* 0x99 NT error, 0xc00 */
+     return(ERROR(NT_STATUS_LOGON_FAILURE, 0xc000)); /* 0x109 NT error, 0xc000 */
    }
+
    computer_id = True;
 #else /* not NTDOMAIN, leave this in. PAXX: Someone get rid of this */
     user[strlen(user) - 1] = '\0';

@@ -127,7 +127,6 @@ typedef struct
   char *szSocketOptions;
   char *szValidChars;
   char *szWorkGroup;
-  char *szDomainController;
   char *szDomainAdminUsers;
   char *szDomainGuestUsers;
   char *szDomainHostsallow; 
@@ -175,6 +174,7 @@ typedef struct
   BOOL bWINSproxy;
   BOOL bLocalMaster;
   BOOL bPreferredMaster;
+  BOOL bDomainController;
   BOOL bDomainMaster;
   BOOL bDomainLogons;
   BOOL bEncryptPasswords;
@@ -454,7 +454,7 @@ struct parm_struct
   {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL},
   {"domain other sids",P_STRING,  P_GLOBAL, &Globals.szDomainOtherSIDs, NULL},
   {"domain groups",    P_STRING,  P_GLOBAL, &Globals.szDomainGroups,    NULL},
-  {"domain controller",P_STRING,  P_GLOBAL, &Globals.szDomainController,NULL},
+  {"domain controller",P_BOOL  ,  P_GLOBAL, &Globals.bDomainController,NULL},
   {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL},
   {"domain guest users",P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL},
   {"domain hosts allow",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL},
@@ -863,7 +863,6 @@ FN_GLOBAL_STRING(lp_passwd_program,&Globals.szPasswdProgram)
 FN_GLOBAL_STRING(lp_passwd_chat,&Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver,&Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_workgroup,&Globals.szWorkGroup)
-FN_GLOBAL_STRING(lp_domain_controller,&Globals.szDomainController)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
@@ -892,6 +891,7 @@ FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)
 FN_GLOBAL_BOOL(lp_local_master,&Globals.bLocalMaster)
+FN_GLOBAL_BOOL(lp_domain_controller,&Globals.bDomainController)
 FN_GLOBAL_BOOL(lp_domain_master,&Globals.bDomainMaster)
 FN_GLOBAL_BOOL(lp_domain_logons,&Globals.bDomainLogons)
 FN_GLOBAL_BOOL(lp_preferred_master,&Globals.bPreferredMaster)

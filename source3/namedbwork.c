@@ -89,8 +89,11 @@ static struct work_record *make_workgroup(char *name)
   StrnCpy(work->work_group,name,sizeof(work->work_group)-1);
   work->serverlist = NULL;
   
-  work->ServerType = lp_default_server_announce() | (lp_local_master() ? 
-                          SV_TYPE_POTENTIAL_BROWSER : 0 );
+  /* set up initial value for server announce type */
+  work->ServerType  = lp_default_server_announce();
+  work->ServerType |= lp_local_master() ? SV_TYPE_POTENTIAL_BROWSER : 0;
+  work->ServerType |= lp_domain_controller() ?  SV_TYPE_DOMAIN_CTRL : 0;
+
   work->RunningElection = False;
   work->ElectionCount = 0;
   work->announce_interval = 0;
