@@ -391,7 +391,8 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
 	getutmpx(u, &ux);
 
 #if defined(HAVE_UX_UT_SYSLEN)
-	ux.ut_syslen = strlen(hostname) + 1;	/* include end NULL */
+	if (hostname) ux.ut_syslen = strlen(hostname) + 1;	/* include end NULL */
+	else ux.ut_syslen = 0;
 #endif
 	safe_strcpy(ux.ut_host, hostname, sizeof(ux.ut_host)-1);
 
