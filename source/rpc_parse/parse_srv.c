@@ -774,13 +774,22 @@ static BOOL srv_io_srv_sess_info_1(char *desc, SRV_SESS_INFO_1 *ss1, prs_struct 
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_sess_ctr(char *desc, SRV_SESS_INFO_CTR *ctr, prs_struct *ps, int depth)
+static BOOL srv_io_srv_sess_ctr(char *desc, SRV_SESS_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
 {
-	if (ctr == NULL)
-		return False;
+	SRV_SESS_INFO_CTR *ctr = *pp_ctr;
 
 	prs_debug(ps, depth, desc, "srv_io_srv_sess_ctr");
 	depth++;
+
+	if(UNMARSHALLING(ps)) {
+		ctr = *pp_ctr = (SRV_SESS_INFO_CTR *)prs_alloc_mem(ps, sizeof(SRV_SESS_INFO_CTR));
+		if (ctr == NULL)
+			return False;
+		ZERO_STRUCTP(ctr);
+	}
+
+	if (ctr == NULL)
+		return False;
 
 	if(!prs_align(ps))
 		return False;
@@ -868,7 +877,7 @@ BOOL srv_io_q_net_sess_enum(char *desc, SRV_Q_NET_SESS_ENUM *q_n, prs_struct *ps
 		return False;
 	
 	if (q_n->sess_level != -1) {
-		if(!srv_io_srv_sess_ctr("sess_ctr", q_n->ctr, ps, depth))
+		if(!srv_io_srv_sess_ctr("sess_ctr", &q_n->ctr, ps, depth))
 			return False;
 	}
 
@@ -900,7 +909,7 @@ BOOL srv_io_r_net_sess_enum(char *desc, SRV_R_NET_SESS_ENUM *r_n, prs_struct *ps
 		return False;
 
 	if (r_n->sess_level != -1) {
-		if(!srv_io_srv_sess_ctr("sess_ctr", r_n->ctr, ps, depth))
+		if(!srv_io_srv_sess_ctr("sess_ctr", &r_n->ctr, ps, depth))
 			return False;
 	}
 
@@ -1131,13 +1140,22 @@ static BOOL srv_io_srv_conn_info_1(char *desc, SRV_CONN_INFO_1 *ss1, prs_struct 
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_conn_ctr(char *desc, SRV_CONN_INFO_CTR *ctr, prs_struct *ps, int depth)
+static BOOL srv_io_srv_conn_ctr(char *desc, SRV_CONN_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
 {
-	if (ctr == NULL)
-		return False;
+	SRV_CONN_INFO_CTR *ctr = *pp_ctr;
 
 	prs_debug(ps, depth, desc, "srv_io_srv_conn_ctr");
 	depth++;
+
+	if (UNMARSHALLING(ps)) {
+		ctr = *pp_ctr = (SRV_CONN_INFO_CTR *)prs_alloc_mem(ps, sizeof(SRV_CONN_INFO_CTR));
+		if (ctr == NULL)
+			return False;
+		ZERO_STRUCTP(ctr);
+	}
+		
+	if (ctr == NULL)
+		return False;
 
 	if(!prs_align(ps))
 		return False;
@@ -1225,7 +1243,7 @@ BOOL srv_io_q_net_conn_enum(char *desc, SRV_Q_NET_CONN_ENUM *q_n, prs_struct *ps
 		return False;
 	
 	if (q_n->conn_level != -1) {
-		if(!srv_io_srv_conn_ctr("conn_ctr", q_n->ctr, ps, depth))
+		if(!srv_io_srv_conn_ctr("conn_ctr", &q_n->ctr, ps, depth))
 			return False;
 	}
 
@@ -1257,7 +1275,7 @@ BOOL srv_io_r_net_conn_enum(char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *p
 		return False;
 
 	if (r_n->conn_level != -1) {
-		if(!srv_io_srv_conn_ctr("conn_ctr", r_n->ctr, ps, depth))
+		if(!srv_io_srv_conn_ctr("conn_ctr", &r_n->ctr, ps, depth))
 			return False;
 	}
 
@@ -1405,8 +1423,17 @@ static BOOL srv_io_srv_file_info_3(char *desc, SRV_FILE_INFO_3 *fl3, prs_struct 
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_file_ctr(char *desc, SRV_FILE_INFO_CTR *ctr, prs_struct *ps, int depth)
+static BOOL srv_io_srv_file_ctr(char *desc, SRV_FILE_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
 {
+	SRV_FILE_INFO_CTR *ctr = *pp_ctr;
+
+	if (UNMARSHALLING(ps)) {
+		ctr = *pp_ctr = (SRV_FILE_INFO_CTR *)prs_alloc_mem(ps, sizeof(SRV_FILE_INFO_CTR));
+		if (ctr == NULL)
+			return False;
+		ZERO_STRUCTP(ctr);
+	}
+
 	if (ctr == NULL)
 		return False;
 
@@ -1495,7 +1522,7 @@ BOOL srv_io_q_net_file_enum(char *desc, SRV_Q_NET_FILE_ENUM *q_n, prs_struct *ps
 		return False;
 
 	if (q_n->file_level != -1) {
-		if(!srv_io_srv_file_ctr("file_ctr", q_n->ctr, ps, depth))
+		if(!srv_io_srv_file_ctr("file_ctr", &q_n->ctr, ps, depth))
 			return False;
 	}
 
@@ -1527,7 +1554,7 @@ BOOL srv_io_r_net_file_enum(char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps
 		return False;
 
 	if (r_n->file_level != 0) {
-		if(!srv_io_srv_file_ctr("file_ctr", r_n->ctr, ps, depth))
+		if(!srv_io_srv_file_ctr("file_ctr", &r_n->ctr, ps, depth))
 			return False;
 	}
 
