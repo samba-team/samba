@@ -2575,7 +2575,6 @@ static int do_message_op(void)
 			got_pass = True;
 			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
 		}
-		strupper(username);
 	}
 
 	/* modification to support PASSWD environmental var
@@ -2592,7 +2591,6 @@ static int do_message_op(void)
 
 	if (*username == 0 && getenv("LOGNAME")) {
 		pstrcpy(username,getenv("LOGNAME"));
-		strupper(username);
 	}
 
 	if (*username == 0) {
