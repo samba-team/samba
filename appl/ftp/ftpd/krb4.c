@@ -204,7 +204,10 @@ int krb4_read(int fd, void *data, int length)
     }
 
     while(length){
-	krb_net_read(fd, &len, 4);
+	if(krb_net_read(fd, &len, 4) < 4){
+	    reply(400, "Unexpected end of file.\n");
+	    return -1;
+	}
 	len = ntohl(len);
 	krb_net_read(fd, data_buffer, len);
 	if(data_protection == prot_safe)
