@@ -298,3 +298,49 @@ NTSTATUS sid_to_gid(const DOM_SID *sid, gid_t *gid)
 
 	return ret;
 }
+
+/* Initialize idmap withWellknown SIDs like Guest, that are necessary
+ * to make samba run properly */
+BOOL idmap_init_wellknown_sids(void)
+{
+	const char *guest_account = lp_guestaccount();
+	struct passwd *pass;
+	DOM_SID sid;
+	unid_t id;
+	int flags;
+
+	if (!(guest_account && *guest_account)) {
+		DEBUG(1, ("NULL guest account!?!?\n"));
+		return False;
+	}
+
+	pass = getpwnam_alloc(guest_account);
+	if (!pass) {
+		return False;
+	}
+
+	flags = ID_USERID;
+	id.uid = pass->pw_uid;
+	sid_copy(&sid, get_global_sam_sid());
+	sid_append_rid(&sid, DOMAIN_USER_RID_GUEST);
+	if (NT_STATUS_IS_ERR(idmap_set_mapping(&sid, id, flags))) {
+		passwd_free(&pass);
+		return False;
+	}
+
+	/* check if DOMAIN_GROUP_RID_GUESTS SID is set, if not store the
+	 * guest account gid as mapping */
+	flags = ID_GROUPID | ID_NOMAP;
+	sid_copy(&sid, get_global_sam_sid());
+	sid_append_rid(&sid, DOMAIN_GROUP_RID_GUESTS);
+	if (NT_STATUS_IS_ERR(idmap_get_id_from_sid(&id, &flags, &sid))) {
+		flags = ID_GROUPID;
+		id.gid = pass->pw_gid;
+		if (NT_STATUS_IS_ERR(idmap_set_mapping(&sid, id, flags))) {
+			passwd_free(&pass);
+			return False;
+		}
+	}
+
+	return True;
+}

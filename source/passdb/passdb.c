@@ -37,7 +37,7 @@
  Fill the SAM_ACCOUNT with default values.
  ***********************************************************/
 
-static void pdb_fill_default_sam(SAM_ACCOUNT *user)
+void pdb_fill_default_sam(SAM_ACCOUNT *user)
 {
 	ZERO_STRUCT(user->private); /* Don't touch the talloc context */
 
@@ -296,7 +296,7 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 
 		/* set Domain Users by default ! */
 		sid_copy(&g_sid, get_global_sam_sid());
-		sid_append_rid(&g_sid,  DOMAIN_GROUP_RID_USERS);
+		sid_append_rid(&g_sid, DOMAIN_GROUP_RID_USERS);
 		pdb_set_group_sid(*new_sam_acct, &g_sid, PDB_SET);
 	}
 	return NT_STATUS_OK;
@@ -671,7 +671,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	GROUP_MAP map;
 
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid)){
-		DEBUG(0,("local_sid_to_gid: sid_peek_check_rid return False! SID: %s\n",
+		DEBUG(0,("local_lookup_sid: sid_peek_check_rid return False! SID: %s\n",
 			sid_string_static(&map.sid)));
 		return False;
 	}	

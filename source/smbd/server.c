@@ -833,10 +833,13 @@ static BOOL init_structs(void )
 	if (!init_registry())
 		exit(1);
 
+	if(!initialize_password_db(False))
+		exit(1);
+
 	if (!idmap_init())
 		exit(1);
 
-	if(!initialize_password_db(False))
+	if (!idmap_init_wellknown_sids())
 		exit(1);
 
 	static_init_rpc;
