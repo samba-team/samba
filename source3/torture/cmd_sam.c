@@ -22,6 +22,30 @@
 #include "includes.h"
 #include "samtest.h"
 
+static NTSTATUS cmd_context(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	NTSTATUS status;
+	char **plugins;
+	int i;
+
+	plugins = malloc(argc * sizeof(char *));
+
+	for(i = 1; i < argc; i++)
+		plugins[i-1] = argv[i];
+
+	plugins[argc-1] = NULL;
+
+	if(!NT_STATUS_IS_OK(status = make_sam_context_list(&st->context, plugins))) {
+		printf("make_sam_context_list failed: %s\n", nt_errstr(status));
+		SAFE_FREE(plugins);
+		return status;
+	}
+
+	SAFE_FREE(plugins);
+	
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS cmd_load_module(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	char *plugin_arg[2];
@@ -148,6 +172,11 @@ static NTSTATUS cmd_enum_domains(struct samtest_state *st, TALLOC_CTX *mem_ctx, 
 		return status;
 	}
 
+	if (domain_count == 0) {
+		printf("No domains found!\n");
+		return NT_STATUS_OK;
+	}
+
 	for (i = 0; i < domain_count; i++) {
 		printf("%s %s\n", domain_names[i], sid_string_static(&domain_sids[i]));
 	}
@@ -165,7 +194,115 @@ static NTSTATUS cmd_update_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 
 static NTSTATUS cmd_show_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+	DOM_SID sid;
+	SAM_DOMAIN_HANDLE *domain;
+	uint32 tmp_uint32;
+	uint16 tmp_uint16;
+	NTTIME tmp_nttime;
+	BOOL tmp_bool;
+	const char *tmp_string;
+
+	if (argc != 2) {
+		printf("Usage: show_domain <sid>\n");
+		return status;
+	}
+
+	if (!string_to_sid(&sid, argv[1])){
+		printf("Unparseable SID specified!\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!NT_STATUS_IS_OK(status = context_sam_get_domain_by_sid(st->context, st->token, DOMAIN_ALL_ACCESS, &sid, &domain))) {
+		printf("context_sam_get_domain_by_sid failed\n");
+		return status;
+	}
+
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_num_accounts(domain, &tmp_uint32))) {
+		printf("sam_get_domain_num_accounts failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Number of accounts: %d\n", tmp_uint32);
+	}
+
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_num_groups(domain, &tmp_uint32))) {
+		printf("sam_get_domain_num_groups failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Number of groups: %d\n", tmp_uint32);
+	}
+	
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_num_aliases(domain, &tmp_uint32))) {
+		printf("sam_get_domain_num_aliases failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Number of aliases: %d\n", tmp_uint32);
+	}
+	
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_name(domain, &tmp_string))) {
+		printf("sam_get_domain_name failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Domain Name: %s\n", tmp_string);
+	}
+	
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_lockout_count(domain, &tmp_uint16))) {
+		printf("sam_get_domain_lockout_count failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Lockout Count: %d\n", tmp_uint16);
+	}
+
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_force_logoff(domain, &tmp_bool))) {
+		printf("sam_get_domain_force_logoff failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Force Logoff: %s\n", (tmp_bool?"Yes":"No"));
+	}
+	
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_lockout_duration(domain, &tmp_nttime))) {
+		printf("sam_get_domain_lockout_duration failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Lockout duration: %d\n", tmp_nttime.low);
+	}
+
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_login_pwdchange(domain, &tmp_bool))) {
+		printf("sam_get_domain_login_pwdchange failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Password changing allowed: %s\n", (tmp_bool?"Yes":"No"));
+	}
+	
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_max_pwdage(domain, &tmp_nttime))) {
+		printf("sam_get_domain_max_pwdage failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Maximum password age: %d\n", tmp_nttime.low);
+	}
+	
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_min_pwdage(domain, &tmp_nttime))) {
+		printf("sam_get_domain_min_pwdage failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Minimal password age: %d\n", tmp_nttime.low);
+	}
+	
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_min_pwdlength(domain, &tmp_uint16))) {
+		printf("sam_get_domain_min_pwdlength: %s\n", nt_errstr(status));
+	} else {
+		printf("Minimal Password Length: %d\n", tmp_uint16);
+	}
+
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_pwd_history(domain, &tmp_uint16))) {
+		printf("sam_get_domain_pwd_history failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Password history: %d\n", tmp_uint16);
+	}
+
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_reset_count(domain, &tmp_nttime))) {
+		printf("sam_get_domain_reset_count failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Reset count: %d\n", tmp_nttime.low);
+	}
+
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_server(domain, &tmp_string))) {
+		printf("sam_get_domain_server failed: %s\n", nt_errstr(status));
+	} else {
+		printf("Server: %s\n", tmp_string);
+	}
+	
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_create_account(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
@@ -185,7 +322,40 @@ static NTSTATUS cmd_delete_account(struct samtest_state *st, TALLOC_CTX *mem_ctx
 
 static NTSTATUS cmd_enum_accounts(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+	DOM_SID sid;
+	int32 account_count, i;
+	SAM_ACCOUNT_ENUM *accounts;
+
+	if (argc != 2) {
+		printf("Usage: enum_accounts <domain-sid>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!string_to_sid(&sid, argv[1])){
+		printf("Unparseable SID specified!\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!NT_STATUS_IS_OK(status = context_sam_enum_accounts(st->context, st->token, &sid, 0, &account_count, &accounts))) {
+		printf("context_sam_enum_accounts failed: %s\n", nt_errstr(status));
+		return status;
+	}
+
+	if (account_count == 0) {
+		printf("No accounts found!\n");
+		return NT_STATUS_OK;
+	}
+
+	for (i = 0; i < account_count; i++)
+		printf("%s\t%s\t%s\t%s\t%d\n", 
+			   sid_string_static(&accounts[i].sid), accounts[i].account_name,
+			   accounts[i].full_name, accounts[i].account_desc, 
+			   accounts[i].acct_ctrl);
+
+	SAFE_FREE(accounts);
+	
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_lookup_account_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
@@ -255,6 +425,7 @@ struct cmd_set sam_general_commands[] = {
 	{ "General SAM Commands" },
 
 	{ "load", cmd_load_module, "Load a module", "load <module.so> [domain-sid]" },
+	{ "context", cmd_context, "Load specified context", "context [DOMAIN|]backend1[:options] [DOMAIN|]backend2[:options]" },
 	{ "get_sec_desc", cmd_get_sec_desc, "Get security descriptor info", "get_sec_desc <access-token> <sid>" },
 	{ "set_sec_desc", cmd_set_sec_desc, "Set security descriptor info", "set_sec_desc <access-token> <sid>" },
 	{ "lookup_sid", cmd_lookup_sid, "Lookup type of specified SID", "lookup_sid <sid>" },

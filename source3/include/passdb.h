@@ -49,21 +49,21 @@ typedef struct pdb_context
 	/* These functions are wrappers for the functions listed above.
 	   They may do extra things like re-reading a SAM_ACCOUNT on update */
 
-	BOOL (*pdb_setsampwent)(struct pdb_context *, BOOL update);
+	NTSTATUS (*pdb_setsampwent)(struct pdb_context *, BOOL update);
 	
 	void (*pdb_endsampwent)(struct pdb_context *);
 	
-	BOOL (*pdb_getsampwent)(struct pdb_context *, SAM_ACCOUNT *user);
+	NTSTATUS (*pdb_getsampwent)(struct pdb_context *, SAM_ACCOUNT *user);
 	
-	BOOL (*pdb_getsampwnam)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const char *username);
+	NTSTATUS (*pdb_getsampwnam)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const char *username);
 	
-	BOOL (*pdb_getsampwsid)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const DOM_SID *sid);
+	NTSTATUS (*pdb_getsampwsid)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const DOM_SID *sid);
 	
-	BOOL (*pdb_add_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
+	NTSTATUS (*pdb_add_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
 	
-	BOOL (*pdb_update_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
+	NTSTATUS (*pdb_update_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
 	
-	BOOL (*pdb_delete_sam_account)(struct pdb_context *, SAM_ACCOUNT *username);
+	NTSTATUS (*pdb_delete_sam_account)(struct pdb_context *, SAM_ACCOUNT *username);
 	
 	void (*free_fn)(struct pdb_context **);
 	
@@ -80,21 +80,21 @@ typedef struct pdb_methods
 	struct pdb_methods *next;
 	struct pdb_methods *prev;
 
-	BOOL (*setsampwent)(struct pdb_methods *, BOOL update);
+	NTSTATUS (*setsampwent)(struct pdb_methods *, BOOL update);
 	
 	void (*endsampwent)(struct pdb_methods *);
 	
-	BOOL (*getsampwent)(struct pdb_methods *, SAM_ACCOUNT *user);
+	NTSTATUS (*getsampwent)(struct pdb_methods *, SAM_ACCOUNT *user);
 	
-	BOOL (*getsampwnam)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const char *username);
+	NTSTATUS (*getsampwnam)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const char *username);
 	
-	BOOL (*getsampwsid)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const DOM_SID *Sid);
+	NTSTATUS (*getsampwsid)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const DOM_SID *Sid);
 	
-	BOOL (*add_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
+	NTSTATUS (*add_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
 	
-	BOOL (*update_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
+	NTSTATUS (*update_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
 	
-	BOOL (*delete_sam_account)(struct pdb_methods *, SAM_ACCOUNT *username);
+	NTSTATUS (*delete_sam_account)(struct pdb_methods *, SAM_ACCOUNT *username);
 	
 	void *private_data;  /* Private data of some kind */
 	

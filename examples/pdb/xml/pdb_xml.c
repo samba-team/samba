@@ -287,23 +287,24 @@ xmlNodePtr parseSambaXMLFile(struct pdb_xml *data)
 	return cur;
 }
 
-static BOOL xmlsam_setsampwent(struct pdb_methods *methods, BOOL update)
+static NTSTATUS xmlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 {
 	pdb_xml *data;
 
 	if (!methods) {
 		DEBUG(0, ("Invalid methods\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	data = (pdb_xml *) methods->private_data;
 	if (!data) {
 		DEBUG(0, ("Invalid pdb_xml_data\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	data->pwent = parseSambaXMLFile(data);
 	if (!data->pwent)
-		return False;
-	return True;
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	return NT_STATUS_OK;
 }
 
 /***************************************************************
@@ -335,19 +336,19 @@ static void xmlsam_endsampwent(struct pdb_methods *methods)
   Get one SAM_ACCOUNT from the list (next in line)
  *****************************************************************/
 
-static BOOL xmlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
+static NTSTATUS xmlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
 {
 	pdb_xml *data;
 
 	if (!methods) {
 		DEBUG(0, ("Invalid methods\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	data = (pdb_xml *) methods->private_data;
 
 	if (!data) {
 		DEBUG(0, ("Invalid pdb_xml_data\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	while (data->pwent) {
@@ -356,18 +357,18 @@ static BOOL xmlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
 
 			parseUser(data->doc, data->ns, data->pwent, user);
 			data->pwent = data->pwent->next;
-			return True;
+			return NT_STATUS_OK;
 		}
 		data->pwent = data->pwent->next;
 	}
-	return False;
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /***************************************************************************
   Adds an existing SAM_ACCOUNT
  ****************************************************************************/
 
-static BOOL xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * u)
+static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * u)
 {
 	pstring temp;
 	fstring sid_str;
@@ -379,13 +380,13 @@ static BOOL xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * u)
 
 	if (!methods) {
 		DEBUG(0, ("Invalid methods\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	data = (pdb_xml *) methods->private_data;
 	if (!data) {
 		DEBUG(0, ("Invalid pdb_xml_data\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Create a new document if we can't open the current one */
@@ -504,7 +505,7 @@ static BOOL xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * u)
 	xmlNewChild(user, data->ns, "unknown_6", iota(pdb_get_unknown6(u)));
 	xmlSaveFile(data->location, data->doc);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS pdb_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
