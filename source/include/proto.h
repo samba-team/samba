@@ -73,7 +73,8 @@ void cli_sockopt(struct cli_state *cli, char *options);
 /*The following definitions come from  clientutil.c  */
 
 void cli_setup_pkt(char *outbuf);
-BOOL cli_call_api(char *pipe_name, int prcnt,int drcnt, int srcnt,
+BOOL cli_call_api(char *pipe_name, int pipe_name_len,
+			int prcnt,int drcnt, int srcnt,
 		     int mprcnt,int mdrcnt,
 		     int *rprcnt,int *rdrcnt,
 		     char *param,char *data, uint16 *setup,
@@ -82,7 +83,7 @@ BOOL cli_receive_trans_response(char *inbuf,int trans,
                                    int *data_len,int *param_len,
 				   char **data,char **param);
 BOOL cli_send_trans_request(char *outbuf,int trans,
-			       char *name,int fid,int flags,
+			       char *name,int name_len, int fid,int flags,
 			       char *data,char *param,uint16 *setup,
 			       int ldata,int lparam,int lsetup,
 			       int mdata,int mparam,int msetup);

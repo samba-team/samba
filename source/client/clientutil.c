@@ -92,7 +92,8 @@ void cli_setup_pkt(char *outbuf)
 /****************************************************************************
 call a remote api
 ****************************************************************************/
-BOOL cli_call_api(char *pipe_name, int prcnt,int drcnt, int srcnt,
+BOOL cli_call_api(char *pipe_name, int pipe_name_len,
+			int prcnt,int drcnt, int srcnt,
 		     int mprcnt,int mdrcnt,
 		     int *rprcnt,int *rdrcnt,
 		     char *param,char *data, uint16 *setup,
@@ -104,7 +105,9 @@ BOOL cli_call_api(char *pipe_name, int prcnt,int drcnt, int srcnt,
   if (!inbuf) inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   if (!outbuf) outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
 
-  cli_send_trans_request(outbuf,SMBtrans,pipe_name, 0,0,
+  if (pipe_name_len == 0) pipe_name_len = strlen(pipe_name);
+
+  cli_send_trans_request(outbuf,SMBtrans,pipe_name, pipe_name_len, 0,0,
 		     data, param, setup,
 		     drcnt, prcnt, srcnt,
 		     mdrcnt, mprcnt, 0);
@@ -194,7 +197,7 @@ BOOL cli_receive_trans_response(char *inbuf,int trans,
   send a SMB trans or trans2 request
   ****************************************************************************/
 BOOL cli_send_trans_request(char *outbuf,int trans,
-			       char *name,int fid,int flags,
+			       char *name,int name_len, int fid,int flags,
 			       char *data,char *param,uint16 *setup,
 			       int ldata,int lparam,int lsetup,
 			       int mdata,int mparam,int msetup)
@@ -215,7 +218,7 @@ BOOL cli_send_trans_request(char *outbuf,int trans,
   SSVAL(outbuf,smb_tid,cnum);
   cli_setup_pkt(outbuf);
 
-  outparam = smb_buf(outbuf)+(trans==SMBtrans ? strlen(name)+1 : 3);
+  outparam = smb_buf(outbuf)+(trans==SMBtrans ? name_len+1 : 3);
   outdata = outparam+this_lparam;
 
   /* primary request */
@@ -235,7 +238,7 @@ BOOL cli_send_trans_request(char *outbuf,int trans,
     SSVAL(outbuf,smb_setup+i*SIZEOFWORD,setup[i]);
   p = smb_buf(outbuf);
   if (trans==SMBtrans)
-    strcpy(p,name);			/* name[] */
+    memcpy(p,name, name_len+1);			/* name[] */
   else
     {
       *p++ = 0;				/* put in a null smb_name */
