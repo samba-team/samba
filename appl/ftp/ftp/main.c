@@ -208,6 +208,13 @@ add_history(char *p)
 {
 }
 
+#else
+
+/* These should not really be here */
+
+char *readline(char *);
+void add_history(char *);
+
 #endif
 
 /*
