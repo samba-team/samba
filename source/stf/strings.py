@@ -33,7 +33,7 @@ def signum(a):
 class StrCaseCmp_Ascii_Tests(comfychair.TestCase):
     """String comparisons in simple ASCII""" 
     def run_strcmp(self, a, b, expect):
-        out = self.runcmd('t_strcmp \"%s\" \"%s\"' % (a, b))
+        out, err = self.runcmd('t_strcmp \"%s\" \"%s\"' % (a, b))
         if signum(int(out)) != expect:
             self.fail("comparison failed:\n"
                       "  a=%s\n"
