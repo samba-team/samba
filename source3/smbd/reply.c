@@ -1043,6 +1043,10 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
 	if (!fsp) {
 		END_PROFILE(SMBopen);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
 	}
 
@@ -1132,6 +1136,10 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
       
 	if (!fsp) {
 		END_PROFILE(SMBopenX);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
 	}
 
@@ -1257,6 +1265,10 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
 	if (!fsp) {
 		END_PROFILE(SMBcreate);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
 	}
  
@@ -1332,6 +1344,10 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	if (!fsp) {
 		END_PROFILE(SMBctemp);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
 	}
 
@@ -1623,8 +1639,13 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
 	status = unlink_internals(conn, dirtype, name);
-	if (!NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
 		return ERROR_NT(status);
+	}
 
 	/*
 	 * Win2k needs a changenotify request response before it will
@@ -3944,6 +3965,10 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	status = rename_internals(conn, name, newname, attrs, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
 		return ERROR_NT(status);
 	}
 
@@ -3989,7 +4014,8 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		return(False);
 
 	fsp1 = open_file_shared(conn,src,&src_sbuf,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),FILE_ATTRIBUTE_NORMAL,0,&Access,&action);
+					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),FILE_ATTRIBUTE_NORMAL,INTERNAL_OPEN_ONLY,
+					&Access,&action);
 
 	if (!fsp1)
 		return(False);
@@ -4002,7 +4028,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		ZERO_STRUCTP(&sbuf2);
 
 	fsp2 = open_file_shared(conn,dest,&sbuf2,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-			ofun,dosattrs,0,&Access,&action);
+			ofun,dosattrs,INTERNAL_OPEN_ONLY,&Access,&action);
 
 	if (!fsp2) {
 		close_file(fsp1,False);
