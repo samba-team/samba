@@ -57,7 +57,7 @@ send_request (krb5_context context,
 
     ret = krb5_mk_req_extended (context,
 				auth_context,
-				AP_OPTS_MUTUAL_REQUIRED,
+				AP_OPTS_MUTUAL_REQUIRED | AP_OPTS_USE_SUBKEY,
 				NULL, /* in_data */
 				creds,
 				&ap_req_data);
