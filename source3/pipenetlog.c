@@ -508,6 +508,7 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		pstring home_drive;
 		pstring my_name;
 		pstring my_workgroup;
+		pstring domain_groups;
 		pstring dom_sid;
 		extern pstring myname;
 
@@ -517,6 +518,9 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		get_myname(myname, NULL);
 
 		pstrcpy(samlogon_user, unistr2(q_l.sam_id.auth.id1.uni_user_name.buffer));
+
+		DEBUG(3,("SAM Logon. Domain:[%s].  User [%s]\n",
+		          lp_workgroup(), samlogon_user));
 
 		/* hack to get standard_sub_basic() to use the sam logon username */
 		sam_logon_in_ssb = True;
@@ -529,7 +533,28 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		pstrcpy(home_drive  , lp_logon_drive ());
 		pstrcpy(home_dir    , lp_logon_home  ());
 
-		num_gids = make_domain_gids(lp_domain_groups(), gids);
+		/* any additional groups this user is in.  e.g power users */
+		pstrcpy(domain_groups, lp_domain_groups());
+
+		/* one RID group always added: 512 (Admin); 513 (Users); 514 (Guests) */
+
+		if (user_in_list(samlogon_user, lp_domain_guest_users()))
+		{
+			DEBUG(3,("domain guest access granted\n"));
+			strcat(domain_groups, " 514/7 ");
+		}
+		else if (user_in_list(samlogon_user, lp_domain_admin_users()))
+		{
+			DEBUG(3,("domain admin access granted\n"));
+			strcat(domain_groups, " 512/7 ");
+		}
+		else
+		{
+			DEBUG(3,("domain user access granted\n"));
+			strcat(domain_groups, " 513/7 ");
+		}
+
+		num_gids = make_domain_gids(domain_groups, gids);
 
 		sam_logon_in_ssb = False;
 

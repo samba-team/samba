@@ -178,6 +178,8 @@ char *lp_announce_version(void);
 char *lp_netbios_aliases(void);
 char *lp_domainsid(void);
 char *lp_domain_groups(void);
+char *lp_domain_admin_users(void);
+char *lp_domain_guest_users(void);
 BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
 BOOL lp_wins_proxy(void);
