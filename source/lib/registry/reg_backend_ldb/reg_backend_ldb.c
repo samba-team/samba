@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "lib/registry/common/registry.h"
-#include "lib/ldb/include/ldb.h"
 
 char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path)
 {
@@ -81,7 +80,7 @@ static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
 		/* FIXME */
 	}
 
-	ldap_search_free(c, msg);
+	ldb_search_free(c, msg);
 	talloc_destroy(mem_ctx);
 	return WERR_OK;
 }
@@ -103,7 +102,7 @@ static WERROR ldb_open_key(REG_HANDLE *h, const char *name, REG_KEY **key)
 		/* FIXME */
 	}
 
-	ldap_search_free(c, msg);
+	ldb_search_free(c, msg);
 	talloc_destroy(mem_ctx);
 
 	return WERR_OK;;
