@@ -1047,14 +1047,9 @@ void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 
 	DEBUG(5,("make_samr_r_enum_dom_users\n"));
 
-	if (num_sam_entries >= MAX_SAM_ENTRIES)
-	{
-		num_sam_entries = MAX_SAM_ENTRIES;
-		DEBUG(5,("limiting number of entries to %d\n",
-			 num_sam_entries));
-	}
-
 	r_u->next_idx = next_idx;
+	r_u->sam = NULL;
+	r_u->uni_acct_name = NULL;
 
 	if (num_sam_entries != 0)
 	{
@@ -1063,8 +1058,14 @@ void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		r_u->num_entries2 = num_sam_entries;
 		r_u->num_entries3 = num_sam_entries;
 
-		SMB_ASSERT_ARRAY(r_u->sam, num_sam_entries);
-		SMB_ASSERT_ARRAY(r_u->uni_acct_name, num_sam_entries);
+		r_u->sam = Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
+		r_u->uni_acct_name = Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_acct_name[0]));
+
+		if (r_u->sam == NULL || r_u->uni_acct_name == NULL)
+		{
+			DEBUG(0,("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
+			return;
+		}
 
 		for (i = 0; i < num_sam_entries; i++)
 		{
@@ -1110,15 +1111,23 @@ void samr_io_r_enum_dom_users(char *desc,  SAMR_R_ENUM_DOM_USERS *r_u, prs_struc
 		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
 		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
 
-		SMB_ASSERT_ARRAY(r_u->sam, r_u->num_entries2);
+		if (ps->io)
+		{
+			r_u->sam = Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
+			r_u->uni_acct_name = Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_acct_name[0]));
+		}
+
+		if ((r_u->sam == NULL || r_u->uni_acct_name == NULL) && r_u->num_entries2 != 0)
+		{
+			DEBUG(0,("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
+			return;
+		}
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
 			prs_grow(ps);
 			sam_io_sam_entry("", &(r_u->sam[i]), ps, depth);
 		}
-
-		SMB_ASSERT_ARRAY(r_u->uni_acct_name, r_u->num_entries2);
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{

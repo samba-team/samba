@@ -354,6 +354,16 @@ static void samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 	/* store the response in the SMB stream */
 	samr_io_r_enum_dom_users("", &r_e, rdata, 0);
 
+	if (r_e.sam != NULL)
+	{
+		free(r_e.sam);
+	}
+
+	if (r_e.uni_acct_name != NULL)
+	{
+		free(r_e.uni_acct_name);
+	}
+
 	DEBUG(5,("samr_enum_dom_users: %d\n", __LINE__));
 
 }
