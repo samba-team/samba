@@ -19,7 +19,7 @@
 ########################################################
 SAMBA_VERSION_MAJOR=3
 SAMBA_VERSION_MINOR=0
-SAMBA_VERSION_RELEASE=1
+SAMBA_VERSION_RELEASE=2
 
 ########################################################
 # If a official release has a serious bug              #
@@ -41,7 +41,7 @@ SAMBA_VERSION_REVISION=
 # e.g. SAMBA_VERSION_PRE_RELEASE=1                     #
 #  ->  "2.2.9pre1"                                     #
 ########################################################
-SAMBA_VERSION_PRE_RELEASE=
+SAMBA_VERSION_PRE_RELEASE=1
 
 ########################################################
 # For 'rc' releases the version will be                #
@@ -51,7 +51,7 @@ SAMBA_VERSION_PRE_RELEASE=
 # e.g. SAMBA_VERSION_RC_RELEASE=1                      #
 #  ->  "3.0.0rc1"                                      #
 ########################################################
-SAMBA_VERSION_RC_RELEASE=2
+SAMBA_VERSION_RC_RELEASE=
 
 ########################################################
 # For 'beta' releases the version will be              #
