@@ -72,6 +72,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
         --with-quotas \
         --with-smbmount \
         --with-pam \
+        --with-pam_smbpass \
         --with-syslog \
         --with-utmp \
         --with-netatalk \
@@ -85,7 +86,7 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba,xinetd.d,codepages/src}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
-mkdir -p $RPM_BUILD_ROOT/lib
+mkdir -p $RPM_BUILD_ROOT/lib/security
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT/home/samba
 mkdir -p $RPM_BUILD_ROOT/sbin
@@ -102,7 +103,7 @@ for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
-for i in smbtar 
+for i in smbtar
 do
 install -m755 source/script/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -123,7 +124,7 @@ for i in *.1
 do
 install -m644 docs/manpages/$i $RPM_BUILD_ROOT%{prefix}/share/man/man1
 done
- 
+
 # Install codepage source files
 for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
@@ -138,6 +139,9 @@ done
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 # Make link for wins resolver
 ( cd $RPM_BUILD_ROOT/lib; ln -s libnss_wins.so libnss_wins.so.2; )
+
+# PAM Authentication file
+install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
@@ -219,24 +223,13 @@ if !( grep ^[:space:]*swat /etc/services > /dev/null ) then
 	echo 'swat		901/tcp				# Add swat service used via inetd' >> /etc/services
 fi
 
-# Add swat entry to /etc/inetd.conf if needed
-if [ -f /etc/inetd.conf ]; then
-	if !( grep ^[:space:]*swat /etc/inetd.conf > /dev/null ) then
-		echo '#swat	stream	tcp	nowait.400	root	%{prefix}/sbin/swat swat' >> /etc/inetd.conf
-	killall -1 inetd || :
-	fi
-fi
-
 %preun
 if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
 
-    # We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
+    # We want to remove the browse.dat file
     if [ -e /var/lock/samba/browse.dat ]; then
 	    rm -f /var/lock/samba/browse.dat
-    fi
-    if [ -e /var/lock/samba/wins.dat ]; then
-	    rm -f /var/lock/samba/wins.dat
     fi
 fi
 
@@ -256,10 +249,6 @@ if [ $1 = 0 ] ; then
     # Remove swat entries from /etc/inetd.conf and /etc/services
     cd /etc
     tmpfile=/etc/tmp.$$
-	if [ -f /etc/inetd.conf ]; then
-      sed -e '/^[:space:]*swat.*$/d' /etc/inetd.conf > $tmpfile
-      mv $tmpfile inetd.conf
-	fi
     sed -e '/^[:space:]*swat.*$/d' /etc/services > $tmpfile
     mv $tmpfile services
 fi

@@ -28,7 +28,7 @@ Requires    	: libpam >= 0.66, SysVinit-scripts >= 1.04-6
 
 BuildRoot   	: /tmp/%{Name}-%{Version}
 
-Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}-%{date}.tar.gz
+Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}.tar.gz
 #Patch0: %{Name}-%{Version}-smbmount.patch
 #Patch1: %{Name}-%{Version}-install.patch
 #Patch2: %{Name}-%{Version}-smbconf.patch
@@ -82,7 +82,7 @@ Maschinen ein.
 
 %Description -l es
 Samba dispone de un servidor SMB que puede utilizarse para proporcionar
-servicios de red a clientes SMB (a veces conocido como "Lan Manager"), 
+servicios de red a clientes SMB (a veces conocido como "Lan Manager"),
 incluyendo varias versiones de MS Windows, OS/2 y otras máquinas Linux.
 
 %Description -l fr
@@ -152,8 +152,8 @@ ficheiros de servidores SMB.
 
 %Description -n swat
 SWAT allows a Samba administrator to configure the complex smb.conf
-file via a Web browser.  It also provides links to all the configurable 
-options in the smb.conf file allowing an administrator to easily look 
+file via a Web browser.  It also provides links to all the configurable
+options in the smb.conf file allowing an administrator to easily look
 up the effects of any change.
 
 %Description -l de -n swat
@@ -186,13 +186,8 @@ todas as opções configuraveis no smb.conf, permitindo a um admnistrador
 verificar rapidamente o efeite de qualquer alteração.
 
 
-%Description debug
-This package contains programs that can be used to crash test any SMB
-server. Please use it with care. If you do not need it then do NOT install.
-
-
 %Prep
-%setup -n samba
+%setup
 #%patch0 -p1
 #%patch1 -p1
 #%patch2 -p1
@@ -246,11 +241,10 @@ done
 for i in htmldocs/DOMAIN_MEMBER.html htmldocs/Samba-HOWTO-Collection.html \
          htmldocs/samba-pdc-faq.html htmldocs/samba-pdc-howto.html \
          htmldocs/smbclient.1.html htmldocs/smbd.8.html \
-         docbook/projdoc/DOMAIN_MEMBER.sgml docbook/howto/DOMAIN_MEMBER.sgml \
+         docbook/projdoc/DOMAIN_MEMBER.sgml htmldocs/DOMAIN_MEMBER.html \
          docbook/faq/samba-pdc-faq.sgml docbook/howto/samba-pdc-howto.sgml \
          docbook/manpages/smbclient.1.sgml docbook/manpages/smbd.8.sgml \
-	 docbook/projdoc/ENCRYPTION.sgml textdocs/samba-pdc-faq.txt \
-	 textdocs/samba-pdc-howto.txt manpages/smbclient.1 manpages/smbd.8 ; do
+	 docbook/projdoc/ENCRYPTION.sgml manpages/smbclient.1 manpages/smbd.8 ; do
 %{fixUP} -vT docs/$i -e '
     s:/usr/local/samba/private/FOREST.SLEEPY.SID:/var/lock/samba.d/FOREST.SLEEPY.SID: +
     s:/usr/local/samba/private:/usr/bin:g +
@@ -263,9 +257,6 @@ done
 '
 %{fixUP} -vT docs/htmldocs/samba-pdc-faq.html -e '
   s:/usr/local/src:/usr/src:g ;
-'
-%{fixUP} -vT docs/textdocs/PRINTER_DRIVER.txt -e '
-  s:/usr/local/samba/printer:/var/spool/samba:g ;
 '
 # End of DirtyHack(TM)
 
@@ -287,6 +278,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--without-smbwrapper \
 	--with-smbmount \
 	--with-pam \
+       --with-pam_smbpass \
 	--with-netatalk \
 	--with-quotas \
 	--with-syslog \
@@ -294,8 +286,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 
 make LOGFILEBASE=/var/log/samba.d all
 make LOGFILEBASE=/var/log/samba.d nsswitch
-# debug package:
-make LOGFILEBASE=/var/log/samba.d smbfilter debug2html 
+make LOGFILEBASE=/var/log/samba.d smbfilter debug2html
 make LOGFILEBASE=/var/log/samba.d bin/smbspool
 
 
@@ -355,6 +346,9 @@ cp -p $VVS/samba.logrotate $DESTDIR/etc/logrotate.d/samba
 cp -p $VVS/README.home $DESTDIR/etc/skel/Samba/README.txt
 cp -p $VVS/README.Public $DESTDIR/%{LSBservedir}/Public/README.txt
 cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
+
+# Add PAM smbpass facility
+mv $DESTDIR/usr/bin/pam_smbpass.so $DESTDIR/lib/security
 
 for f in testparm testprns; do
   ln -s $f $DESTDIR/usr/bin/smb$f
@@ -486,4 +480,4 @@ lisa --inetd disable swat $1
 
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec.tmpl,v 1.1.6.15 2001/04/15 00:33:29 jht Exp $
+$Id: samba2.spec.tmpl,v 1.1.6.16 2001/05/17 07:47:09 jht Exp $
