@@ -14,13 +14,12 @@ if [ ! -d $BINDIR ]; then
 fi
 
 for p in $*; do
-  if [ ! -f $BINDIR/$p ]; then
-    echo $BINDIR/$p does not exist!
-  else
-    echo Removing $BINDIR/$p
-    rm -f $BINDIR/$p
-    if [ -f $BINDIR/$p ]; then
-      echo Cannot remove $BINDIR/$p... does $USER have privileges?
+  p2=`basename $p`
+  if [ -f $BINDIR/$p2 ]; then
+    echo Removing $BINDIR/$p2
+    rm -f $BINDIR/$p2
+    if [ -f $BINDIR/$p2 ]; then
+      echo Cannot remove $BINDIR/$p2 ... does $USER have privileges?
     fi
   fi
 done

@@ -76,7 +76,7 @@ PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus
 PROGS2 = bin/smbpasswd bin/make_smbcodepage
 PROGS = $(PROGS1) $(PROGS2) bin/nmblookup bin/make_printerdef 
 
-SCRIPTS = smbtar addtosmbpass
+SCRIPTS = script/smbtar script/addtosmbpass
 
 
 ######################################################################
@@ -264,50 +264,47 @@ smbtorture: torture.o getsmbpass.o $(UTILOBJ) $(CLIENTUTIL)
 install: installbin installman installscripts installcp installswat
 
 installbin: all
-	@$(SHELL) $(srcdir)/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
-	@$(SHELL) $(srcdir)/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
 
 installscripts:
-	@$(SHELL) $(srcdir)/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
 installcp:
-	@$(SHELL) $(srcdir)/installcp.sh $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
+	@$(SHELL) $(srcdir)/script/installcp.sh $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
 
 installswat:
-	@$(SHELL) $(srcdir)/installswat.sh $(SWATDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
 # revert to the previously installed version
 revert:
-	@$(SHELL) $(srcdir)/revert.sh $(SBINDIR) $(SPROGS) $(SCRIPTS)
-	@$(SHELL) $(srcdir)/revert.sh $(BINDIR) $(PROGS) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SPROGS) 
+	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(PROGS) $(SCRIPTS)
 
 installman:
-	@$(SHELL) $(srcdir)/installman.sh $(MANDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installman.sh $(MANDIR) $(srcdir)
 
 uninstall: uninstallman uninstallbin uninstallscripts uninstallcp
 
 uninstallman:
-	@$(SHELL) $(srcdir)/uninstallman.sh $(MANDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/uninstallman.sh $(MANDIR) $(srcdir)
 
 uninstallbin:
-	@$(SHELL) $(srcdir)/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
-	@$(SHELL) $(srcdir)/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
 
 uninstallscripts:
-	@$(SHELL) $(srcdir)/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
 uninstallcp:
-	@$(SHELL) $(srcdir)/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
+	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	@echo Cleaning up ...
-	@rm -f core *.o */*.o $(PROTOOBJ) lib/rpc/*/*.o *~ config.cache $(PROGS) $(SPROGS)
-
-cleandir:  clean
-	rm -f .depend tags
+	rm -f core */*.o */*~ *~ config.cache bin/*
 
 proto:
-	$(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | grep -v "ubiqx/"` > include/proto.h
+	@echo rebuilding include/proto.h
+	@$(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | grep -v "ubiqx/"` > include/proto.h
 
 etags:
 	etags `find . -name "*.[ch]"`

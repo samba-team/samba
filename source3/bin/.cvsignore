@@ -1,7 +1,12 @@
+make_printerdef
+make_smbcodepage
 nmbd
+nmblookup
 smbclient
 smbd
+smbpasswd
 smbrun
+smbstatus
 swat
 testparm
 testprns

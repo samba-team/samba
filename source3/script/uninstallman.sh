@@ -8,14 +8,12 @@ echo Uninstalling man pages from $MANDIR
 
 for sect in 1 5 7 8 ; do
   for m in $MANDIR/man$sect ; do
-    for s in $SRCDIR../docs/*$sect; do
+    for s in $SRCDIR/../docs/*$sect; do
       FNAME=$m/`basename $s`
       if test -f $FNAME; then
         echo Deleting $FNAME
         rm -f $FNAME 
         test -f $FNAME && echo Cannot remove $FNAME... does $USER have privileges?   
-      else
-        echo $FNAME does not exist! Check defines in the Makefile
       fi
     done
   done

@@ -1,4 +1,5 @@
 #!/bin/sh
+
 INSTALLPERMS=$1
 BASEDIR=$2
 BINDIR=$3
@@ -22,12 +23,13 @@ done
 
 
 for p in $*; do
- echo Installing $p as $BINDIR/$p
- if [ -f $BINDIR/$p ]; then
-   mv $BINDIR/$p $BINDIR/$p.old
+ p2=`basename $p`
+ echo Installing $p as $BINDIR/$p2
+ if [ -f $BINDIR/$p2 ]; then
+   mv $BINDIR/$p2 $BINDIR/$p2.old
  fi
- cp $p $BINDIR/$p
- chmod $INSTALLPERMS $BINDIR/$p
+ cp $p $BINDIR/
+ chmod $INSTALLPERMS $BINDIR/$p2
 done
 
 
