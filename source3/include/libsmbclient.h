@@ -173,6 +173,18 @@ struct smbc_dirent *smbc_readdir(unsigned int fd);
 
 int smbc_mkdir(const char *fname, mode_t mode);
 
+/*
+ * Remove a directory on a server
+ */
+
+int smbc_rmdir(const char *fname);
+
+/*
+ * Get the current directory offset
+ */
+
+off_t smbc_telldir(int fd);
+
 /* 
  * lseek on directories, rewind by smbc_lseekdir(fd, 0, SEEK_SET)
  */
