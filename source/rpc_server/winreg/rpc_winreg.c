@@ -240,6 +240,11 @@ static WERROR winreg_FlushKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 static WERROR winreg_GetKeySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_GetKeySecurity *r)
 {
+	struct dcesrv_handle *h;
+
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	DCESRV_CHECK_HANDLE(h);
+
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -341,7 +346,28 @@ static WERROR winreg_QueryInfoKey(struct dcesrv_call_state *dce_call, TALLOC_CTX
 static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_QueryValue *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct dcesrv_handle *h;
+	struct registry_key *key;
+	struct registry_value *val;
+	WERROR result;
+
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	DCESRV_CHECK_HANDLE(h);
+
+	key = h->data;
+	
+	result = reg_key_get_value_by_name(mem_ctx, key, r->in.value_name.name, &val);
+
+	if (!W_ERROR_IS_OK(result)) { 
+		return result;
+	}
+
+	r->out.type = &val->data_type;
+	r->out.size = r->in.size;
+	r->out.length = &val->data_len;
+	r->out.data = val->data_blk;
+
+	return WERR_OK;
 }
 
 

@@ -60,6 +60,36 @@ static BOOL test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_NotifyChangeKeyValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+									  struct policy_handle *handle)
+{
+	struct winreg_NotifyChangeKeyValue r;
+	NTSTATUS status;
+
+	printf("\ntesting NotifyChangeKeyValue\n");
+
+	r.in.handle = handle;
+	r.in.watch_subtree = 1;
+	r.in.notify_filter = 0;
+	r.in.unknown = r.in.unknown2 = 0;
+	init_winreg_String(&r.in.string1, NULL);
+	init_winreg_String(&r.in.string2, NULL);
+
+	status = dcerpc_winreg_NotifyChangeKeyValue(p, mem_ctx, &r);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("NotifyChangeKeyValue failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("NotifyChangeKeyValue failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *handle, const char *name, 
 			   const char *class)
@@ -609,6 +639,9 @@ static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 
+	if (!test_NotifyChangeKeyValue(p, mem_ctx, handle)) {
+	}
+	
 	if (!test_GetKeySecurity(p, mem_ctx, handle)) {
 	}
 
