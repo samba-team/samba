@@ -1,3 +1,8 @@
+2000-07-08  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/eai_to_heim_errno.c: convert getaddrinfo error codes to
+	something that can be passed to get_err_text
+
 2000-07-05  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/mit_dump.c: set initial master key version number to 0
