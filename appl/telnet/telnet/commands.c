@@ -1314,7 +1314,7 @@ togcrmod()
 }
 
 static int
-suspend()
+telnetsuspend()
 {
 #ifdef	SIGTSTP
     setcommandmode();
@@ -2426,7 +2426,7 @@ static Command cmdtab[] = {
 #if	defined(ENCRYPTION)
 	{ "encrypt",	encrypthelp,	encrypt_cmd,	0 },
 #endif
-	{ "z",		zhelp,		suspend,	0 },
+	{ "z",		zhelp,		telnetsuspend,	0 },
 	{ "!",		shellhelp,	shell,		0 },
 	{ "environ",	envhelp,	env_cmd,	0 },
 	{ "?",		helphelp,	help,		0 },
