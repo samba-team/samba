@@ -180,7 +180,7 @@
 
 		<image id="ch8-migration">
 			<imagedescription>Schematic Explaining the <command>net rpc vampire</command> Process</imagedescription>
-			<imagefile scale="80">ch8-migration</imagefile>
+			<imagefile scale="55">ch8-migration</imagefile>
 		</image>
 
 		<para>

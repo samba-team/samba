@@ -285,13 +285,13 @@
 		</para>
 
 		<image id="pktcap01">
-			<imagefile scale="53">WINREPRESSME-Capture</imagefile>
+			<imagefile scale="40">WINREPRESSME-Capture</imagefile>
 			<imagedescription>Windows Me &smbmdash; Broadcasts &smbmdash; The First 10 Minutes</imagedescription>
 		</image>
 
 		<image id="pktcap02">
 			<imagedescription>Windows Me &smbmdash; Later Broadcast Sample</imagedescription>
-			<imagefile scale="57">WINREPRESSME-Capture2</imagefile>
+			<imagefile scale="42">WINREPRESSME-Capture2</imagefile>
 		</image>
 
 	  <para><indexterm>
@@ -598,7 +598,7 @@
 
 		<image id="hostannounce">
 			<imagedescription>Typical Windows 9x/Me Host Announcement</imagedescription>
-			<imagefile scale="55">HostAnnouncment</imagefile>
+			<imagefile scale="41">HostAnnouncment</imagefile>
 		</image>
 
 	</sect2>
@@ -723,7 +723,7 @@
 		<image id="nullconnect">
 			<imagedescription>Typical Windows 9x/Me NULL SessionSetUp AndX Request</imagedescription>
 
-			<imagefile scale="65">NullConnect</imagefile>
+			<imagefile scale="41">NullConnect</imagefile>
 		</image>
 
 		<para>
@@ -740,7 +740,7 @@
 
 		<image id="userconnect">
 			<imagedescription>Typical Windows 9x/Me User SessionSetUp AndX Request</imagedescription>
-			<imagefile scale="65">UserConnect</imagefile>
+			<imagefile scale="41">UserConnect</imagefile>
 		</image>
 
 	 	<para>
@@ -895,12 +895,12 @@
 
 	<image id="XPCap01">
         <imagedescription>Typical Windows XP NULL Session Setup AndX Request</imagedescription>
-		<imagefile scale="70">WindowsXP-NullConnection</imagefile>
+		<imagefile scale="50">WindowsXP-NullConnection</imagefile>
 	</image>
 
 	<image id="XPCap02">
         <imagedescription>Typical Windows XP User Session Setup AndX Request</imagedescription>
-		<imagefile scale="70">WindowsXP-UserConnection</imagefile>
+		<imagefile scale="50">WindowsXP-UserConnection</imagefile>
 	</image>
 
 		<sect3>
