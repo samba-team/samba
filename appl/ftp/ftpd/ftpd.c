@@ -130,10 +130,6 @@ RCSID("$Id$");
 #include <kafs.h>
 #include "roken.h"
 
-#if defined(SKEY)
-#include <skey.h>
-#endif
-
 #include <otp.h>
 
 void yyparse();
@@ -183,8 +179,12 @@ char	hostname[MaxHostNameLen];
 char	remotehost[MaxHostNameLen];
 static char ttyline[20];
 
-/* Default level for security, 0 allow any kind of connection, 1 only
-   authorized and anonymous connections, 2 only authorized */
+/* Default level for security:
+ * 0 allow any kind of connection
+ * 1 only OTP, authorized and anonymous connections
+ * 2 only authorized and anonymous connections,
+ * 3 only authorized
+ */
 static int auth_level = 1;
 
 /*
@@ -498,10 +498,6 @@ sgetpwnam(char *name)
 static int login_attempts;	/* number of failed login attempts */
 static int askpasswd;		/* had user command, ask for passwd */
 static char curname[10];	/* current USER name */
-#ifdef SKEY
-static struct skey sk;
-static int permit_passwd;
-#endif /* SKEY */
 OtpContext otp_ctx;
 
 /*
@@ -580,24 +576,6 @@ user(char *name)
 	if(auth_ok())
 		ct->userok(name);
 	else {
-#if 0
-#ifdef SKEY
-		char ss[256];
-
-		permit_passwd = skeyaccess(k_getpwnam (name), NULL,
-					   remotehost, NULL);
-
-		if (skeychallenge (&sk, name, ss) == 0) {
-			reply (331, "Password [%s] for %s required.",
-			       ss, name);
-			askpasswd = 1;
-		} else if (permit_passwd)
-#endif
-		{
-			reply(331, "Password required for %s.", name);
-			askpasswd = 1;
-		}
-#endif
 		char ss[256];
 
 		if (otp_challenge(&otp_ctx, name, ss, sizeof(ss)) == 0) {
@@ -607,10 +585,15 @@ user(char *name)
 		} else if (auth_level == 0) {
 			reply(331, "Password required for %s.", name);
 			askpasswd = 1;
-		} else
+		} else {
+			char *s;
+
+			if (s = otp_error (&otp_ctx))
+				lreply(530, "OTP: %s", s);
 			reply(530,
 			      "Only authorized, anonymous and OTP "
 			      "login allowed.");
+		}
 
 	}
 	/*
@@ -761,20 +744,10 @@ pass(char *passwd)
 		return;
 	}
 	askpasswd = 0;
+	rval = 1;
 	if (!guest) {		/* "ftp" is only account allowed no password */
 		if (pw == NULL)
 			rval = 1;	/* failure below */
-#if 0
-#ifdef SKEY
-		if (skeyverify (&sk, passwd) == 0) {
-			rval = 0;
-			goto skip;
-		} else if(!permit_passwd) {
-			rval = 1;
-			goto skip;
-		}
-#endif
-#endif
 		else if (otp_verify_user (&otp_ctx, passwd) == 0) {
 			rval = 0;
 		} else if(auth_level == 0) {
@@ -784,6 +757,11 @@ pass(char *passwd)
 					       passwd, 1, NULL);
 		    if (rval != 0 )
 			    rval = unix_verify_user(pw->pw_name, passwd);
+		} else {
+			char *s;
+
+			if (s = otp_error(&otp_ctx))
+				lreply(530, "OTP: %s", s);
 		}
 		memset (passwd, 0, strlen(passwd));
 
@@ -1801,7 +1779,6 @@ gunique(char *local)
 void
 perror_reply(int code, char *string)
 {
-
 	reply(code, "%s: %s.", string, strerror(errno));
 }
 
@@ -1813,134 +1790,134 @@ static char *onefile[] = {
 void
 send_file_list(char *whichf)
 {
-	struct stat st;
-	DIR *dirp = NULL;
-	struct dirent *dir;
-	FILE *dout = NULL;
-	char **dirlist, *dirname;
-	int simple = 0;
-	int freeglob = 0;
-	glob_t gl;
+  struct stat st;
+  DIR *dirp = NULL;
+  struct dirent *dir;
+  FILE *dout = NULL;
+  char **dirlist, *dirname;
+  int simple = 0;
+  int freeglob = 0;
+  glob_t gl;
 
-	char buf[MaxPathLen];
+  char buf[MaxPathLen];
 
-	if (strpbrk(whichf, "~{[*?") != NULL) {
-		int flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE;
+  if (strpbrk(whichf, "~{[*?") != NULL) {
+    int flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE;
 
-		memset(&gl, 0, sizeof(gl));
-		freeglob = 1;
-		if (glob(whichf, flags, 0, &gl)) {
-			reply(550, "not found");
-			goto out;
-		} else if (gl.gl_pathc == 0) {
-			errno = ENOENT;
-			perror_reply(550, whichf);
-			goto out;
-		}
-		dirlist = gl.gl_pathv;
-	} else {
-		onefile[0] = whichf;
-		dirlist = onefile;
-		simple = 1;
-	}
+    memset(&gl, 0, sizeof(gl));
+    freeglob = 1;
+    if (glob(whichf, flags, 0, &gl)) {
+      reply(550, "not found");
+      goto out;
+    } else if (gl.gl_pathc == 0) {
+      errno = ENOENT;
+      perror_reply(550, whichf);
+      goto out;
+    }
+    dirlist = gl.gl_pathv;
+  } else {
+    onefile[0] = whichf;
+    dirlist = onefile;
+    simple = 1;
+  }
 
-	if (setjmp(urgcatch)) {
-		transflag = 0;
-		goto out;
-	}
-	while ((dirname = *dirlist++)) {
-		if (stat(dirname, &st) < 0) {
-			/*
-			 * If user typed "ls -l", etc, and the client
-			 * used NLST, do what the user meant.
-			 */
-			if (dirname[0] == '-' && *dirlist == NULL &&
-			    transflag == 0) {
-				retrieve("/bin/ls %s", dirname);
-				goto out;
-			}
-			perror_reply(550, whichf);
-			if (dout != NULL) {
-				(void) fclose(dout);
-				transflag = 0;
-				data = -1;
-				pdata = -1;
-			}
-			goto out;
-		}
-
-		if (S_ISREG(st.st_mode)) {
-			if (dout == NULL) {
-				dout = dataconn("file list", (off_t)-1, "w");
-				if (dout == NULL)
-					goto out;
-				transflag++;
-			}
-			sprintf(buf, "%s%s\n", dirname,
-				type == TYPE_A ? "\r" : "");
-			auth_write(fileno(dout), buf, strlen(buf));
-			byte_count += strlen(dirname) + 1;
-			continue;
-		} else if (!S_ISDIR(st.st_mode))
-			continue;
-
-		if ((dirp = opendir(dirname)) == NULL)
-			continue;
-
-		while ((dir = readdir(dirp)) != NULL) {
-			char nbuf[MaxPathLen];
-
-			if (!strcmp(dir->d_name, "."))
-				continue;
-			if (!strcmp(dir->d_name, ".."))
-				continue;
-
-			sprintf(nbuf, "%s/%s", dirname, dir->d_name);
-
-			/*
-			 * We have to do a stat to insure it's
-			 * not a directory or special file.
-			 */
-			if (simple || (stat(nbuf, &st) == 0 &&
-				       S_ISREG(st.st_mode))) {
-			    if (dout == NULL) {
-				dout = dataconn("file list", (off_t)-1, "w");
-				if (dout == NULL)
-				    goto out;
-				transflag++;
-			    }
-			    if(strncmp(nbuf, "./", 2) == 0)
-				sprintf(buf, "%s%s\n", nbuf +2,
-					type == TYPE_A ? "\r" : "");
-			    else
-				sprintf(buf, "%s%s\n", nbuf,
-					type == TYPE_A ? "\r" : "");
-			    auth_write(fileno(dout), buf, strlen(buf));
-			    byte_count += strlen(nbuf) + 1;
-			}
-		}
-		(void) closedir(dirp);
-	}
-	if (dout == NULL)
-		reply(550, "No files found.");
-	else if (ferror(dout) != 0)
-		perror_reply(550, "Data connection");
-	else
-		reply(226, "Transfer complete.");
-
+  if (setjmp(urgcatch)) {
+    transflag = 0;
+    goto out;
+  }
+  while ((dirname = *dirlist++)) {
+    if (stat(dirname, &st) < 0) {
+      /*
+       * If user typed "ls -l", etc, and the client
+       * used NLST, do what the user meant.
+       */
+      if (dirname[0] == '-' && *dirlist == NULL &&
+	  transflag == 0) {
+	retrieve("/bin/ls %s", dirname);
+	goto out;
+      }
+      perror_reply(550, whichf);
+      if (dout != NULL) {
+	(void) fclose(dout);
 	transflag = 0;
-	if (dout != NULL){
-	    auth_write(fileno(dout), buf, 0); /* XXX flush */
-	    
-	    (void) fclose(dout);
-	}
 	data = -1;
 	pdata = -1;
-out:
-	if (freeglob) {
-		freeglob = 0;
-		globfree(&gl);
+      }
+      goto out;
+    }
+
+    if (S_ISREG(st.st_mode)) {
+      if (dout == NULL) {
+	dout = dataconn("file list", (off_t)-1, "w");
+	if (dout == NULL)
+	  goto out;
+	transflag++;
+      }
+      sprintf(buf, "%s%s\n", dirname,
+	      type == TYPE_A ? "\r" : "");
+      auth_write(fileno(dout), buf, strlen(buf));
+      byte_count += strlen(dirname) + 1;
+      continue;
+    } else if (!S_ISDIR(st.st_mode))
+      continue;
+
+    if ((dirp = opendir(dirname)) == NULL)
+      continue;
+
+    while ((dir = readdir(dirp)) != NULL) {
+      char nbuf[MaxPathLen];
+
+      if (!strcmp(dir->d_name, "."))
+	continue;
+      if (!strcmp(dir->d_name, ".."))
+	continue;
+
+      sprintf(nbuf, "%s/%s", dirname, dir->d_name);
+
+      /*
+       * We have to do a stat to insure it's
+       * not a directory or special file.
+       */
+      if (simple || (stat(nbuf, &st) == 0 &&
+		     S_ISREG(st.st_mode))) {
+	if (dout == NULL) {
+	  dout = dataconn("file list", (off_t)-1, "w");
+	  if (dout == NULL)
+	    goto out;
+	  transflag++;
 	}
+	if(strncmp(nbuf, "./", 2) == 0)
+	  sprintf(buf, "%s%s\n", nbuf +2,
+		  type == TYPE_A ? "\r" : "");
+	else
+	  sprintf(buf, "%s%s\n", nbuf,
+		  type == TYPE_A ? "\r" : "");
+	auth_write(fileno(dout), buf, strlen(buf));
+	byte_count += strlen(nbuf) + 1;
+      }
+    }
+    (void) closedir(dirp);
+  }
+  if (dout == NULL)
+    reply(550, "No files found.");
+  else if (ferror(dout) != 0)
+    perror_reply(550, "Data connection");
+  else
+    reply(226, "Transfer complete.");
+
+  transflag = 0;
+  if (dout != NULL){
+    auth_write(fileno(dout), buf, 0); /* XXX flush */
+	    
+    (void) fclose(dout);
+  }
+  data = -1;
+  pdata = -1;
+out:
+  if (freeglob) {
+    freeglob = 0;
+    globfree(&gl);
+  }
 }
 
 
