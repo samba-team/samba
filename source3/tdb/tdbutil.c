@@ -35,6 +35,18 @@ static void gotalarm_sig(void)
 	gotalarm = 1;
 }
 
+/***************************************************************
+ Make a TDB_DATA and keep the const warning in one place
+****************************************************************/
+
+static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
+{
+	TDB_DATA ret;
+	ret.dptr = dptr;
+	ret.dsize = dsize;
+	return ret;
+}
+
 /****************************************************************************
  Lock a chain with timeout (in seconds).
 ****************************************************************************/
@@ -75,10 +87,7 @@ static int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned 
 
 int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout)
 {
-	TDB_DATA key;
-
-	key.dptr = keyval;
-	key.dsize = strlen(keyval)+1;
+	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
 	return tdb_chainlock_with_timeout(tdb, key, timeout, F_WRLCK);
 }
@@ -89,10 +98,7 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout
 
 void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
-	TDB_DATA key;
-
-	key.dptr = keyval;
-	key.dsize = strlen(keyval)+1;
+	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
 	tdb_chainunlock(tdb, key);
 }
@@ -103,10 +109,7 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 
 int tdb_read_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout)
 {
-	TDB_DATA key;
-
-	key.dptr = keyval;
-	key.dsize = strlen(keyval)+1;
+	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
 	return tdb_chainlock_with_timeout(tdb, key, timeout, F_RDLCK);
 }
@@ -117,10 +120,7 @@ int tdb_read_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, unsigned int ti
 
 void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
-	TDB_DATA key;
-
-	key.dptr = keyval;
-	key.dsize = strlen(keyval)+1;
+	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
 	tdb_chainunlock_read(tdb, key);
 }
@@ -133,11 +133,10 @@ void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 
 int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
 {
-	TDB_DATA key, data;
+	TDB_DATA key = make_tdb_data(keyval, len);
+	TDB_DATA data;
 	int32 ret;
 
-	key.dptr = keyval;
-	key.dsize = len;
 	data = tdb_fetch(tdb, key);
 	if (!data.dptr || data.dsize != sizeof(int32)) {
 		SAFE_FREE(data.dptr);
@@ -166,11 +165,10 @@ int32 tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
 
 int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int32 v)
 {
-	TDB_DATA key, data;
+	TDB_DATA key = make_tdb_data(keystr, len);
+	TDB_DATA data;
 	int32 v_store;
 
-	key.dptr = keystr;
-	key.dsize = len;
 	SIVAL(&v_store,0,v);
 	data.dptr = (void *)&v_store;
 	data.dsize = sizeof(int32);
@@ -195,10 +193,9 @@ int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32 v)
 
 BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, uint32 *value)
 {
-	TDB_DATA key, data;
+	TDB_DATA key = make_tdb_data(keyval, len);
+	TDB_DATA data;
 
-	key.dptr = keyval;
-	key.dsize = len;
 	data = tdb_fetch(tdb, key);
 	if (!data.dptr || data.dsize != sizeof(uint32)) {
 		SAFE_FREE(data.dptr);
@@ -227,12 +224,11 @@ BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
 
 BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, uint32 value)
 {
-	TDB_DATA key, data;
+	TDB_DATA key = make_tdb_data(keystr, len);
+	TDB_DATA data;
 	uint32 v_store;
 	BOOL ret = True;
 
-	key.dptr = keystr;
-	key.dsize = len;
 	SIVAL(&v_store, 0, value);
 	data.dptr = (void *)&v_store;
 	data.dsize = sizeof(uint32);
@@ -259,10 +255,7 @@ BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
 
 int tdb_store_by_string(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
 {
-    TDB_DATA key;
-
-    key.dptr = keystr;
-    key.dsize = strlen(keystr) + 1;
+	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
     return tdb_store(tdb, key, data, flags);
 }
@@ -274,10 +267,7 @@ int tdb_store_by_string(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int
 
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, const char *keystr)
 {
-    TDB_DATA key;
-
-    key.dptr = keystr;
-    key.dsize = strlen(keystr) + 1;
+	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
     return tdb_fetch(tdb, key);
 }
@@ -288,10 +278,7 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, const char *keystr)
 
 int tdb_delete_by_string(TDB_CONTEXT *tdb, const char *keystr)
 {
-    TDB_DATA key;
-
-    key.dptr = keystr;
-    key.dsize = strlen(keystr) + 1;
+	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
     return tdb_delete(tdb, key);
 }
