@@ -153,10 +153,10 @@ BOOL reg_io_r_open_hklm(char *desc, REG_R_OPEN_HKLM * r_r, prs_struct *ps,
 	if (!prs_align(ps))
 		return False;
 
-	if (!smb_io_pol_hnd("", &(r_r->pol), ps, depth))
+	if (!smb_io_pol_hnd("", &r_r->pol, ps, depth))
 		return False;
 
-	if (!prs_ntstatus("status", ps, depth, &(r_r->status)))
+	if (!prs_ntstatus("status", ps, depth, &r_r->status))
 		return False;
 
 	return True;
@@ -1618,7 +1618,7 @@ BOOL reg_io_r_shutdown(char *desc, REG_R_SHUTDOWN * r_s, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &(r_s->status)))
+	if(!prs_ntstatus("status", ps, depth, &r_s->status))
 		return False;
 
 	return True;
@@ -1673,7 +1673,7 @@ BOOL reg_io_r_abort_shutdown(char *desc, REG_R_ABORT_SHUTDOWN * r_s,
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_ntstatus("status", ps, depth, &(r_s->status)))
+	if (!prs_ntstatus("status", ps, depth, &r_s->status))
 		return False;
 
 	return True;
