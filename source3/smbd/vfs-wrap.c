@@ -486,13 +486,15 @@ static int strict_allocate_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 	SMB_STRUCT_STAT st;
 	SMB_OFF_T currpos = vfs_ops->lseek(fsp, fd, 0, SEEK_CUR);
 	unsigned char zero_space[4096];
-	SMB_OFF_T space_to_write = len - st.st_size;
+	SMB_OFF_T space_to_write;
 
 	if (currpos == -1)
 		return -1;
 
 	if (vfs_ops->fstat(fsp, fd, &st) == -1)
 		return -1;
+
+	space_to_write = len - st.st_size;
 
 #ifdef S_ISFIFO
 	if (S_ISFIFO(st.st_mode))
