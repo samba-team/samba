@@ -1599,17 +1599,40 @@ Inits a structure.
 void init_reg_q_shutdown(REG_Q_SHUTDOWN * q_s, const char *msg,
 			uint32 timeout, BOOL do_reboot, BOOL force)
 {
-	q_s->ptr_0 = 1;
-	q_s->ptr_1 = 1;
-	q_s->ptr_2 = 1;
+	q_s->server = TALLOC_P( get_talloc_ctx(), uint16 );
+	*q_s->server = 0x1;
 
-	init_unistr2(&q_s->uni_msg, msg, UNI_FLAGS_NONE);
-	init_uni_hdr(&q_s->hdr_msg, &q_s->uni_msg);
+	q_s->message = TALLOC_P( get_talloc_ctx(), UNISTR4 );
+	init_unistr4( q_s->message, msg, UNI_FLAGS_NONE );
 
 	q_s->timeout = timeout;
 
 	q_s->reboot = do_reboot ? 1 : 0;
 	q_s->force = force ? 1 : 0;
+}
+
+/*******************************************************************
+Inits a REG_Q_SHUTDOWN_EX structure.
+********************************************************************/
+
+void init_reg_q_shutdown_ex(REG_Q_SHUTDOWN_EX * q_u_ex, const char *msg,
+			uint32 timeout, BOOL do_reboot, BOOL force, uint32 reason)
+{
+	REG_Q_SHUTDOWN q_u;
+	
+	ZERO_STRUCT( q_u );
+	
+	init_reg_q_shutdown( &q_u, msg, timeout, do_reboot, force );
+	
+	/* steal memory */
+	
+	q_u_ex->server  = q_u.server;
+	q_u_ex->message = q_u.message;
+	
+	q_u_ex->reboot  = q_u.reboot;
+	q_u_ex->force   = q_u.force;
+	
+	q_u_ex->reason = reason;
 }
 
 /*******************************************************************
@@ -1628,26 +1651,23 @@ BOOL reg_io_q_shutdown(const char *desc, REG_Q_SHUTDOWN * q_s, prs_struct *ps,
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_uint32("ptr_0", ps, depth, &(q_s->ptr_0)))
-		return False;
-	if (!prs_uint32("ptr_1", ps, depth, &(q_s->ptr_1)))
-		return False;
-	if (!prs_uint32("ptr_2", ps, depth, &(q_s->ptr_2)))
+	if (!prs_uint16_p("server", ps, depth, &q_s->server))
 		return False;
 
-	if (!smb_io_unihdr("hdr_msg", &(q_s->hdr_msg), ps, depth))
+	if (!prs_unistr4_p("message", &q_s->message, ps, depth))
 		return False;
-	if (!smb_io_unistr2("uni_msg", &(q_s->uni_msg), q_s->hdr_msg.buffer, ps, depth))
-		return False;
+
 	if (!prs_align(ps))
 		return False;
 
 	if (!prs_uint32("timeout", ps, depth, &(q_s->timeout)))
 		return False;
+
 	if (!prs_uint8("force  ", ps, depth, &(q_s->force)))
 		return False;
 	if (!prs_uint8("reboot ", ps, depth, &(q_s->reboot)))
 		return False;
+
 
 	return True;
 }
@@ -1671,27 +1691,6 @@ BOOL reg_io_r_shutdown(const char *desc, REG_R_SHUTDOWN * r_s, prs_struct *ps,
 		return False;
 
 	return True;
-}
-
-/*******************************************************************
-Inits a REG_Q_SHUTDOWN_EX structure.
-********************************************************************/
-
-void init_reg_q_shutdown_ex(REG_Q_SHUTDOWN_EX * q_s, const char *msg,
-			uint32 timeout, BOOL do_reboot, BOOL force, uint32 reason)
-{
-	
-	q_s->server = TALLOC_P( get_talloc_ctx(), uint16 );
-	*q_s->server = 0x1;
-
-	q_s->message = TALLOC_P( get_talloc_ctx(), UNISTR4 );
-	init_unistr4( q_s->message, msg, UNI_FLAGS_NONE );
-
-	q_s->timeout = timeout;
-
-	q_s->reboot = do_reboot ? 1 : 0;
-	q_s->force = force ? 1 : 0;
-	q_s->reason = reason;
 }
 
 /*******************************************************************
