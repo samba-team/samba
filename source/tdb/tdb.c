@@ -74,6 +74,11 @@
 #define MAP_FAILED ((void *)-1)
 #endif
 
+/* free memory if the pointer is valid and zero the pointer */
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
+#endif
+
 #define BUCKET(hash) ((hash) % tdb->header.hash_size)
 TDB_DATA tdb_null;
 
