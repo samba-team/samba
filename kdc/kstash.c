@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -84,9 +84,12 @@ main(int argc, char **argv)
 
     ret = hdb_read_master_key(context, keyfile, &mkey);
     if(ret && ret != ENOENT)
-	krb5_err(context, 1, ret, "reading master key");
+	krb5_err(context, 1, ret, "reading master key from %s", keyfile);
 
-    if(!convert_flag) {
+    if (convert_flag) {
+	if (ret)
+	    krb5_err(context, 1, ret, "reading master key from %s", keyfile);
+    } else {
 	krb5_keyblock key;
 	krb5_salt salt;
 	salt.salttype = KRB5_PW_SALT;
