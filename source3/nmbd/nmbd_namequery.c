@@ -40,6 +40,8 @@ static void query_name_response( struct subnet_record   *subrec,
                            &rrec->packet->packet.nmb.question.question_name;
   struct in_addr answer_ip;
 
+  answer_ip.S_un.S_addr = 0; /* Fix from JEM...should always initialize. */
+
   /* Ensure we don't retry the query but leave the response record cleanup
      to the timeout code. We may get more answer responses in which case
      we should mark the name in conflict.. */
@@ -103,6 +105,7 @@ static void query_name_response( struct subnet_record   *subrec,
   {
     if( DEBUGLVL( 0 ) )
       {
+      putip( (char *)&answer_ip, &nmb->answers->rdata[2] );
       dbgtext( "query_name_response: " );
       dbgtext( "Multiple (%d) responses ", rrec->num_msgs );
       dbgtext( "received for a query on subnet %s ", subrec->subnet_name );
