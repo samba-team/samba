@@ -298,12 +298,15 @@ static BOOL reload_nmbd_services(BOOL test)
   }
 
   /* Do a sanity check for a misconfigured nmbd */
-  if( lp_wins_support() && *lp_wins_server() )
-  {
-    DEBUG(0,("ERROR: both 'wins support = true' and 'wins server = <server>' \
-cannot be set in the smb.conf file. nmbd aborting.\n"));
+  if( lp_wins_support() && wins_srv_count() )
+    {
+    if( DEBUGLVL(0) )
+      {
+      dbgtext( "ERROR: 'wins support = true' and 'wins server = <server>'\n" );
+      dbgtext( "are conflicting settings.  nmbd aborting.\n" );
+      }
     exit(10);
-  }
+    }
 
   return(ret);
 } /* reload_nmbd_services */
