@@ -209,6 +209,12 @@ typedef struct pipes_struct
 	BOOL fault_state;
 	
 	/*
+	 * Set to true when we should return fault PDU's for a bad handle.
+	 */
+	
+	BOOL bad_handle_fault_state;
+	
+	/*
 	 * Set to RPC_BIG_ENDIAN when dealing with big-endian PDU's
 	 */
 	
