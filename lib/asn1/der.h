@@ -36,6 +36,8 @@ struct krb5_data {
 
 typedef struct krb5_data krb5_data;
 
+void time2generalizedtime (time_t t, krb5_data *s);
+
 krb5_data string_make (char *);
 krb5_data string_make_n (int len, char *);
 void string_free (krb5_data);
@@ -69,5 +71,16 @@ int encode_integer (unsigned char *p, int len, unsigned *data);
 int encode_general_string (unsigned char *p, int len, char **data);
 int encode_octet_string (unsigned char *p, int len, krb5_data *k);
 int encode_generalized_time (unsigned char *p, int len, time_t *t);
+
+void free_integer (unsigned *num);
+void free_general_string (char **str);
+void free_octet_string (krb5_data *k);
+void free_generalized_time (time_t *t);
+
+size_t length_len (int len);
+size_t length_integer (unsigned *data);
+size_t length_general_string (char **data);
+size_t length_octet_string (krb5_data *k);
+size_t length_generalized_time (time_t *t);
 
 #endif /* DER_H */
