@@ -63,12 +63,17 @@ static void create_wks_info_100(WKS_INFO_100 *inf)
 
 uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO *r_u)
 {
-	WKS_INFO_100 wks100;
+	WKS_INFO_100 *wks100 = NULL;
 
 	DEBUG(5,("_wks_query_info: %d\n", __LINE__));
 
-	create_wks_info_100(&wks100);
-	init_wks_r_query_info(r_u, q_u->switch_value, &wks100, NT_STATUS_NOPROBLEMO);
+	wks100 = (WKS_INFO_100 *)talloc_zero(p->mem_ctx, sizeof(WKS_INFO_100));
+
+	if (!wks100)
+		return NT_STATUS_NO_MEMORY;
+
+	create_wks_info_100(wks100);
+	init_wks_r_query_info(r_u, q_u->switch_value, wks100, NT_STATUS_NOPROBLEMO);
 
 	DEBUG(5,("_wks_query_info: %d\n", __LINE__));
 
