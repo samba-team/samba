@@ -1048,7 +1048,9 @@ do_query:
 	/* and save it */
 	refresh_sequence_number(domain, False);
 	wcache_save_sid_to_name(domain, status, sid, *domain_name, *name, *type);
-	wcache_save_name_to_sid(domain, status, *domain_name, *name, sid, *type);
+
+	/* We can't save the name to sid mapping here, as with sid history a
+	 * later name2sid would give the wrong sid. */
 
 	return status;
 }
