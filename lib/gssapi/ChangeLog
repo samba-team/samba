@@ -1,5 +1,7 @@
 2003-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: remove stuff that sneaked in with last commit
+	
 	* acquire_cred.c (acquire_initiator_cred): if the requested name
 	isn't in the ccache, also check keytab.  Extact the krbtgt for the
 	default realm to check how long the credentials will last.
