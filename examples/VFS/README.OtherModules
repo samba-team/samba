@@ -41,23 +41,11 @@ Thanks for the great product and keep up the good work.
 ------------------------------------------------------------
 URL: http://www.openantivirus.org/
 
-samba-vscan is a proof-of-concept module for Samba, which 
-uses the VFS (virtual file system) features of Samba 2.2.x/3.0 
+"samba-vscan is a proof-of-concept module for Samba, which
+uses the VFS (virtual file system) features of Samba 2.2.x/3.0
 alphaX. Of couse, Samba has to be compiled with VFS support. 
-It currently works only with FRISK F-Prot Daemon, Kaspersky 
-AntiVirus, mks32, OpenAntiVirus ScannerDaemon, Sophos Sweep, 
-Symantec CarrierScan or Trend Micro. The latest release is 
-0.2.5e. samba-vscan is maintained by Rainer Link.
-
-NOTE: samba-vscan 0.2.5b works with Samba 2.2.5 - just use the 
-(default) settings as for Samba 2.2.4 (SAMBA_VERSION_MAJOR 2, 
-SAMBA_VERSION_MINOR 4)
-
-Pre-compiled module for F-Prot Daemon for RedHat and SuSE can be 
-found at F-Prot Page. Customers of the SuSE Linux Enterprise Server 
-7 can grab the samba-vscan RPM from SuSE's maintance web. Unofficial 
-samba-vscan RPMs for SuSE Linux 7.2-8.0 can be found at SuSE's 
-ftp-server (but read this README!).
+samba-vscan supports various virus scanners and is maintained 
+by Rainer Link".
 
 ------------------------------------------------------------
 
