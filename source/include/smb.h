@@ -644,7 +644,10 @@ typedef struct {
 	fstring domain; /* domain that the client specified */
 } userdom_struct;
 
-enum {LPQ_QUEUED,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING};
+/* Extra fields above "LPQ_PRINTING" are used to map extra NT status codes. */
+
+enum {LPQ_QUEUED=0,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING,LPQ_ERROR,LPQ_DELETING,
+      LPQ_OFFLINE,LPQ_PAPEROUT,LPQ_PRINTED,LPQ_DELETED,LPQ_BLOCKED,LPQ_USER_INTERVENTION};
 
 typedef struct _print_queue_struct
 {
