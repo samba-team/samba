@@ -501,7 +501,7 @@ int main(int argc, char ** argv)
 	ipaddr = parse_server(share_name);
 /*	if(share_name == NULL)
 		return 1; */
-	if (parse_options(strdup(orgoptions)))
+	if (orgoptions && parse_options(strdup(orgoptions)))
 		return 1;
 
 	if(got_user == 0)
