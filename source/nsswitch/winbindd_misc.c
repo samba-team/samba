@@ -203,6 +203,35 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
+enum winbindd_result winbindd_domain_info(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+
+	DEBUG(3, ("[%5lu]: domain_info [%s]\n", (unsigned long)state->pid,
+		  state->request.domain_name));
+
+	domain = find_domain_from_name(state->request.domain_name);
+
+	if (domain == NULL) {
+		DEBUG(3, ("Did not find domain [%s]\n",
+			  state->request.domain_name));
+		return WINBINDD_ERROR;
+	}
+
+	fstrcpy(state->response.data.domain_info.name, domain->name);
+	fstrcpy(state->response.data.domain_info.alt_name, domain->alt_name);
+	fstrcpy(state->response.data.domain_info.sid,
+		sid_string_static(&domain->sid));
+	
+	state->response.data.domain_info.native_mode = domain->native_mode;
+	state->response.data.domain_info.primary = domain->primary;
+
+	state->response.data.domain_info.sequence_number =
+		domain->sequence_number;
+
+	return WINBINDD_OK;
+}
+
 enum winbindd_result winbindd_ping(struct winbindd_cli_state
 						   *state)
 {

@@ -264,6 +264,7 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_INFO, winbindd_info, "INFO" },
 	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version, "INTERFACE_VERSION" },
 	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
+	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
 	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },
 	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir, "WINBINDD_PRIV_PIPE_DIR" },
 

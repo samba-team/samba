@@ -92,6 +92,9 @@ enum winbindd_cmd {
 	WINBINDD_INFO,              /* Various bit of info.  Currently just tidbits */
 	WINBINDD_DOMAIN_NAME,       /* The domain this winbind server is a member of (lp_workgroup()) */
 
+	WINBINDD_DOMAIN_INFO,	/* Most of what we know from
+				   struct winbindd_domain */
+
 	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
 
 	/* WINS commands */
@@ -264,6 +267,14 @@ struct winbindd_response {
 			char first_8_lm_hash[8];
 		} auth;
 		uint32 rid;	/* create user or group */
+		struct {
+			fstring name;
+			fstring alt_name;
+			fstring sid;
+			BOOL native_mode;
+			BOOL primary;
+			uint32 sequence_number;
+		} domain_info;
 	} data;
 
 	/* Variable length return data */

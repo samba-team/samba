@@ -141,7 +141,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 				 DATA_BLOB *secblob)
 {
 	DATA_BLOB ticket;
-	char *client, *p;
+	char *client, *p, *domain;
+	fstring netbios_domain_name;
 	const struct passwd *pw;
 	char *user;
 	int sess_vuid;
@@ -198,8 +199,45 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	/* this gives a fully qualified user name (ie. with full realm).
 	   that leads to very long usernames, but what else can we do? */
-	   
-	asprintf(&user, "%s%c%s", p+1, *lp_winbind_separator(), client);
+
+	domain = p+1;
+
+	{
+		/* If we have winbind running, we can (and must) shorten the
+		   username by using the short netbios name. Otherwise we will
+		   have inconsistent user names. With Kerberos, we get the
+		   fully qualified realm, with ntlmssp we get the short
+		   name. And even w2k3 does use ntlmssp if you for example
+		   connect to an ip address. */
+
+		struct winbindd_request wb_request;
+		struct winbindd_response wb_response;
+		NSS_STATUS wb_result;
+
+		ZERO_STRUCT(wb_request);
+		ZERO_STRUCT(wb_response);
+
+		DEBUG(10, ("Mapping [%s] to short name\n", domain));
+
+		fstrcpy(wb_request.domain_name, domain);
+
+		wb_result = winbindd_request(WINBINDD_DOMAIN_INFO,
+					     &wb_request, &wb_response);
+
+		if (wb_result == NSS_STATUS_SUCCESS) {
+
+			fstrcpy(netbios_domain_name,
+				wb_response.data.domain_info.name);
+			domain = netbios_domain_name;
+
+			DEBUG(10, ("Mapped to [%s]\n", domain));
+		} else {
+			DEBUG(3, ("Could not find short name -- winbind "
+				  "not running?\n"));
+		}
+	}
+
+	asprintf(&user, "%s%c%s", domain, *lp_winbind_separator(), client);
 	
 	pw = smb_getpwnam( user );
 	

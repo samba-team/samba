@@ -278,6 +278,42 @@ static BOOL wbinfo_show_sequence(const char *domain)
 	return True;
 }
 
+/* Show domain info */
+
+static BOOL wbinfo_domain_info(const char *domain_name)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.domain_name, domain_name);
+
+	/* Send request */
+
+	if (winbindd_request(WINBINDD_DOMAIN_INFO, &request, &response) !=
+	    NSS_STATUS_SUCCESS)
+		return False;
+
+	/* Display response */
+
+	d_printf("Name    : %s\n", response.data.domain_info.name);
+	d_printf("Alt_Name: %s\n", response.data.domain_info.alt_name);
+
+	d_printf("SID     : %s\n", response.data.domain_info.sid);
+
+	d_printf("Native  : %s\n",
+		 response.data.domain_info.native_mode ? "Yes" : "No");
+
+	d_printf("Primary : %s\n",
+		 response.data.domain_info.primary ? "Yes" : "No");
+
+	d_printf("Sequence: %d\n", response.data.domain_info.sequence_number);
+
+	return True;
+}
+
 /* Check trust account password */
 
 static BOOL wbinfo_check_secret(void)
@@ -954,6 +990,8 @@ int main(int argc, char **argv)
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
+		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D',
+		  "Show all most info we have about the domain" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
 		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
@@ -1078,6 +1116,12 @@ int main(int argc, char **argv)
 		case OPT_SEQUENCE:
 			if (!wbinfo_show_sequence(opt_domain_name)) {
 				d_printf("Could not show sequence numbers\n");
+				goto done;
+			}
+			break;
+		case 'D':
+			if (!wbinfo_domain_info(string_arg)) {
+				d_printf("Could not get domain info\n");
 				goto done;
 			}
 			break;
