@@ -44,9 +44,9 @@ int net_ads_usage(int argc, const char **argv)
 "\n\tdump the machine account details to stdout\n"
 "\nnet ads lookup"\
 "\n\tperform a CLDAP search on the server\n"
-"\nnet ads password <username@realm> -Uadmin_username@realm%%admin_pass"\
+"\nnet ads password <username@realm> <password> -Uadmin_username@realm%%admin_pass"\
 "\n\tchange a user's password using an admin account"\
-"\n\t(note: use realm in UPPERCASE)\n"\
+"\n\t(note: use realm in UPPERCASE, prompts if password is obmitted)\n"\
 "\nnet ads changetrustpw"\
 "\n\tchange the trust account password of this machine in the AD tree\n"\
 "\nnet ads printer [info | publish | remove] <printername> <servername>"\
@@ -1016,7 +1016,7 @@ static int net_ads_password(int argc, const char **argv)
     }
 
     
-    if (argc != 1) {
+    if (argc < 1) {
 	    d_printf("ERROR: You must say which username to change password for\n");
 	    return -1;
     }
@@ -1048,22 +1048,24 @@ static int net_ads_password(int argc, const char **argv)
 	    return -1;
     }
 
-    asprintf(&prompt, "Enter new password for %s:", user);
-
-    new_password = getpass(prompt);
+    if (argv[1]) {
+	   new_password = (char *)argv[1];
+    } else {
+	   asprintf(&prompt, "Enter new password for %s:", user);
+	   new_password = getpass(prompt);
+	   free(prompt);
+    }
 
     ret = kerberos_set_password(ads->auth.kdc_server, auth_principal, 
 				auth_password, user, new_password, ads->auth.time_offset);
     if (!ADS_ERR_OK(ret)) {
 	d_printf("Password change failed :-( ...\n");
 	ads_destroy(&ads);
-	free(prompt);
 	return -1;
     }
 
     d_printf("Password change for %s completed.\n", user);
     ads_destroy(&ads);
-    free(prompt);
 
     return 0;
 }
