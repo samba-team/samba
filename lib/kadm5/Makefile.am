@@ -3,8 +3,8 @@
 include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libkadm5srv.la libkadm5clnt.la
-libkadm5srv_la_LDFLAGS = -version-info 7:4:0
-libkadm5clnt_la_LDFLAGS = -version-info 6:2:2
+libkadm5srv_la_LDFLAGS = -version-info 7:5:0
+libkadm5clnt_la_LDFLAGS = -version-info 6:3:2
 sbin_PROGRAMS = dump_log replay_log truncate_log
 
 libkadm5srv_la_LIBADD = ../krb5/libkrb5.la ../hdb/libhdb.la ../roken/libroken.la
