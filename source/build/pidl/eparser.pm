@@ -173,25 +173,36 @@ sub NeededTypedef($)
 	if ($t->{DATA}->{TYPE} eq "STRUCT") {
 
 	    for my $e (@{$t->{DATA}->{ELEMENTS}}) {
+
 		$e->{PARENT} = $t->{DATA};
+
 		if ($needed{"pull_$t->{NAME}"}) {
 		    $needed{"pull_$e->{TYPE}"} = 1;
 		}
 	    
 		if (util::is_scalar_type($e->{TYPE})) {
+
+		    if (defined($e->{ARRAY_LEN}) or 
+			util::has_property($e, "size_is")) {
+
+			$needed{"ett_$e->{NAME}"} = 1;
+
+		    } else {
 		
-		    $needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
-			'name' => field2name($e->{NAME}),
-			'type' => $e->{TYPE},
-			'ft'   => type2ft($e->{TYPE}),
-			'base' => elementbase($e)
-			};
-		    
-		    $e->{PARENT} = $t->{DATA};
-		    
-		    if ($needed{"pull_$t->{NAME}"}) {
-			$needed{"pull_$e->{TYPE}"} = 1;
+			$needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
+			    'name' => field2name($e->{NAME}),
+			    'type' => $e->{TYPE},
+			    'ft'   => type2ft($e->{TYPE}),
+			    'base' => elementbase($e)
+			    };
+			
+			$e->{PARENT} = $t->{DATA};
+			
+			if ($needed{"pull_$t->{NAME}"}) {
+			    $needed{"pull_$e->{TYPE}"} = 1;
+			}
 		    }
+
 		} else {
 		    
 		    $needed{"ett_$e->{TYPE}"} = 1;
@@ -420,8 +431,10 @@ sub RewriteC($$$)
 
 	# Add tree argument to ndr_pull_array()
 
-	s/(ndr_pull_array([^\(]*?)\(ndr, (NDR_[^,]*?), ([^\)].*?)\);)/ndr_pull_array$2( ndr, $3, tree, $4);/smg;
+	s/(ndr_pull_array([^\(_]*?)\(ndr, (NDR_[^,]*?), ([^\)].*?)\);)/ndr_pull_array$2( ndr, $3, tree, $4);/smg;
 
+	s/(ndr_pull_array_([^\(]*?)\(ndr, (NDR_[^,]*?), (r->((in|out).)?([^,]*?)), (.*?)\);)/ndr_pull_array_$2( ndr, $3, get_subtree(tree, \"$7\", ndr, ett_$7), $4, $8);/smg;
+ 
 	# Save ndr_pull_relative[12]() calls from being wrapped by the
 	# proceeding regexp.
 
