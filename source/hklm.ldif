@@ -1,3 +1,6 @@
+dn: @INDEXLIST
+@IDXATTR: key
+
 dn: key=control,key=currentcontrolset,key=system,hive=
 key: control
 
@@ -6,7 +9,7 @@ key: services
 
 dn: value=ProductType,key=productoptions,key=control,key=currentcontrolset,key=system,hive=
 value: ProductType
-data: WinNT
+data: LanmanNT
 type: 1
 
 dn: key=productoptions,key=control,key=currentcontrolset,key=system,hive=
