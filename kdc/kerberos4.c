@@ -223,7 +223,6 @@ do_version4(krb5_context context,
 	int8_t kvno;
 	int8_t ticket_len;
 	int8_t req_len;
-	int32_t time_ws;
 	KTEXT_ST auth;
 	AUTH_DAT ad;
 	size_t pos;
@@ -291,7 +290,9 @@ do_version4(krb5_context context,
 	    }
 	}
 	
-	RCHECK(krb5_ret_int32(sp, &time_ws), out2);
+	RCHECK(krb5_ret_int32(sp, &req_time), out2);
+	if(lsb)
+	    req_time = swap(req_time);
 	RCHECK(krb5_ret_int8(sp, &life), out2);
 	RCHECK(krb5_ret_stringz(sp, &sname), out2);
 	RCHECK(krb5_ret_stringz(sp, &sinst), out2);
