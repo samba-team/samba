@@ -1936,3 +1936,128 @@ BOOL torture_ntdenytest2(void)
 
 	return ret;
 }
+
+
+#define CHECK_STATUS(status, correct) do { \
+	if (!NT_STATUS_EQUAL(status, correct)) { \
+		printf("(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct)); \
+		ret = False; \
+		goto done; \
+	}} while (0)
+
+#define CHECK_VAL(v, correct) do { \
+	if ((v) != (correct)) { \
+		printf("(%s) wrong value for %s  0x%x - should be 0x%x\n", \
+		       __location__, #v, (int)(v), (int)correct); \
+		ret = False; \
+	}} while (0)
+
+/*
+  test sharing of handles with DENY_DOS on a single connection
+*/
+BOOL torture_denydos_sharing(void)
+{
+	struct smbcli_state *cli;
+	union smb_open io;
+	union smb_fileinfo finfo;
+	const char *fname = "\\torture_denydos.txt";
+	NTSTATUS status;
+	int fnum1, fnum2;
+	BOOL ret = True;
+	union smb_setfileinfo sfinfo;
+	TALLOC_CTX *mem_ctx;
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	mem_ctx = talloc(cli, 0);
+
+	printf("Checking DENY_DOS shared handle semantics\n");
+	smbcli_unlink(cli->tree, fname);
+
+	io.openx.level = RAW_OPEN_OPENX;
+	io.openx.in.fname = fname;
+	io.openx.in.flags = OPENX_FLAGS_ADDITIONAL_INFO;
+	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPENX_MODE_DENY_DOS;
+	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE;
+	io.openx.in.search_attrs = 0;
+	io.openx.in.file_attrs = 0;
+	io.openx.in.write_time = 0;
+	io.openx.in.size = 0;
+	io.openx.in.timeout = 0;
+
+	printf("openx twice with RDWR/DENY_DOS\n");
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.openx.out.fnum;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.openx.out.fnum;
+
+	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
+
+	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
+	sfinfo.position_information.file.fnum = fnum1;
+	sfinfo.position_information.in.position = 1000;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("two handles should be same file handle\n");
+	finfo.position_information.level = RAW_FILEINFO_POSITION_INFORMATION;
+	finfo.position_information.in.fnum = fnum1;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(finfo.position_information.out.position, 1000);
+
+	finfo.position_information.in.fnum = fnum2;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(finfo.position_information.out.position, 1000);
+
+
+	smbcli_close(cli->tree, fnum1);
+	smbcli_close(cli->tree, fnum2);
+
+	printf("openx twice with RDWR/DENY_NONE\n");
+	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPENX_MODE_DENY_NONE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.openx.out.fnum;
+
+	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.openx.out.fnum;
+
+	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
+
+	printf("two handles should be separate\n");
+	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
+	sfinfo.position_information.file.fnum = fnum1;
+	sfinfo.position_information.in.position = 1000;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	finfo.position_information.level = RAW_FILEINFO_POSITION_INFORMATION;
+	finfo.position_information.in.fnum = fnum1;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(finfo.position_information.out.position, 1000);
+
+	finfo.position_information.in.fnum = fnum2;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(finfo.position_information.out.position, 0);
+
+done:
+	smbcli_close(cli->tree, fnum1);
+	smbcli_close(cli->tree, fnum2);
+	smbcli_unlink(cli->tree, fname);
+
+	return ret;
+}
+
+
