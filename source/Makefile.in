@@ -732,7 +732,7 @@ ctags:
 
 realclean: clean
 	-rm -f config.log $(PROGS) $(SPROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS) bin/.dummy
-	-rm -f bin/debug2html bin/smbfilter bin/smbtorture
+	-rm -f bin/*
 	-rmdir bin
 
 distclean: realclean
