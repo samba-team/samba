@@ -21,7 +21,7 @@ def ResizeBufferCall(fn, pipe, r):
 
 def test_OpenPrinterEx(pipe, printer):
 
-    print 'testing spoolss_OpenPrinterEx(%s)' % printer
+    print 'spoolss_OpenPrinterEx(%s)' % printer
 
     printername = '\\\\%s' % dcerpc.dcerpc_server_name(pipe)
     
@@ -66,7 +66,7 @@ def test_GetPrinter(pipe, handle):
 
     for level in [0, 1, 2, 3, 4, 5, 6, 7]:
 
-        print 'test_GetPrinter(level = %d)' % level
+        print 'spoolss_GetPrinter(level = %d)' % level
 
         r['level'] = level
         r['buffer'] = None
@@ -77,7 +77,7 @@ def test_GetPrinter(pipe, handle):
 
 def test_EnumForms(pipe, handle):
 
-    print 'testing spoolss_EnumForms'
+    print 'spoolss_EnumForms()'
 
     r = {}
     r['handle'] = handle
@@ -102,7 +102,7 @@ def test_EnumForms(pipe, handle):
 
 def test_EnumPorts(pipe, handle):
 
-    print 'testing spoolss_EnumPorts'
+    print 'spoolss_EnumPorts()'
 
     r = {}
     r['handle'] = handle
@@ -136,7 +136,7 @@ def test_GetForm(pipe, handle, formname):
 
 def test_SetForm(pipe, handle, form):
 
-    print 'testing spoolss_SetForm'
+    print 'spoolss_SetForm()'
 
     r = {}
     r['handle'] = handle
@@ -156,7 +156,7 @@ def test_SetForm(pipe, handle, form):
 
 def test_AddForm(pipe, handle):
 
-    print 'testing spoolss_AddForm'
+    print 'spoolss_AddForm()'
 
     formname = '__testform__'
 
@@ -197,7 +197,7 @@ def test_AddForm(pipe, handle):
 
 def test_EnumJobs(pipe, handle):
 
-    print 'testing spoolss_EnumJobs'
+    print 'spoolss_EnumJobs()'
 
     r = {}
     r['handle'] = handle
@@ -232,7 +232,7 @@ def test_EnumJobs(pipe, handle):
 
 def test_EnumPrinterData(pipe, handle):
 
-    print 'test_EnumPrinterData'
+    print 'test_EnumPrinterData()'
 
     enum_index = 0
 
@@ -268,9 +268,42 @@ def test_EnumPrinterData(pipe, handle):
         enum_index += 1
 
 
+def test_SetPrinterDataEx(pipe, handle):
+
+    valuename = '__printerdataextest__'
+    data = '12345'
+
+    r = {}
+    r['handle'] = handle
+    r['key_name'] = 'DsSpooler'
+    r['value_name'] = valuename
+    r['type'] = 3
+    r['buffer'] = data
+    r['buf_size'] = len(data)
+    
+    result = dcerpc.spoolss_SetPrinterDataEx(pipe, r)
+
+
+def test_EnumPrinterDataEx(pipe, handle):
+
+    r = {}
+    r['handle'] = handle
+    r['key_name'] = 'DsSpooler'
+    r['buf_size'] = 0
+
+    result = dcerpc.spoolss_EnumPrinterDataEx(pipe, r)
+
+    if result['result'] == dcerpc.WERR_MORE_DATA:
+        r['buf_size'] = result['buf_size']
+
+        result = dcerpc.spoolss_EnumPrinterDataEx(pipe, r)
+
+    # TODO: test spoolss_GetPrinterDataEx()
+
+
 def test_SetPrinterData(pipe, handle):
 
-    print 'testing spoolss_SetPrinterData'
+    print 'testing spoolss_SetPrinterData()'
 
     valuename = '__printerdatatest__'
     data = '12345'
@@ -299,7 +332,7 @@ def test_SetPrinterData(pipe, handle):
 
 def test_EnumPrinters(pipe):
 
-    print 'testing spoolss_EnumPrinters'
+    print 'testing spoolss_EnumPrinters()'
 
     printer_names = None
 
@@ -348,8 +381,29 @@ def test_EnumPrinters(pipe):
         test_AddForm(pipe, handle)
         test_EnumJobs(pipe, handle)
         test_EnumPrinterData(pipe, handle)
+        test_EnumPrinterDataEx(pipe, handle)
         test_SetPrinterData(pipe, handle)
+#       test_SetPrinterDataEx(pipe, handle)
         test_ClosePrinter(pipe, handle)
+
+
+def test_EnumPrinterDrivers(pipe):
+
+    print 'test spoolss_EnumPrinterDrivers()'
+
+    for level in [1, 2, 3]:
+
+        r = {}
+        r['server'] = None
+        r['environment'] = None
+        r['level'] = level
+
+        result = ResizeBufferCall(dcerpc.spoolss_EnumPrinterDrivers, pipe, r)
+
+        for driver in dcerpc.unmarshall_spoolss_DriverInfo_array(
+            result['buffer'], r['level'], result['count']):
+
+            print driver
 
 
 def test_PrintServer(pipe):
@@ -370,4 +424,5 @@ def runtests(binding, domain, username, password):
             domain, username, password)
 
     test_EnumPrinters(pipe)
+    test_EnumPrinterDrivers(pipe)
     test_PrintServer(pipe)
