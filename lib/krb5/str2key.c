@@ -384,22 +384,18 @@ string_to_key_internal (const unsigned char *str,
     unsigned char *s = NULL;
     krb5_error_code ret;
 
-    switch(ktype){
+    switch(ktype & KEYTYPE_KEYTYPE_MASK){
     case KEYTYPE_DES:{
 	des_cblock tmpkey;
-	s = get_str(str, str_len, salt->data, salt->length, &len);
-	if(s == NULL)
-	    return ENOMEM;
-	DES_string_to_key(s, len, &tmpkey);
+	if(ktype & KEYTYPE_USE_AFS3_SALT)
+	    AFS3_string_to_key(str, str_len, salt->data, salt->length, &tmpkey);
+	else{
+	    s = get_str(str, str_len, salt->data, salt->length, &len);
+	    if(s == NULL)
+		return ENOMEM;
+	    DES_string_to_key(s, len, &tmpkey);
+	}
 	ret = krb5_data_copy(&key->keyvalue, tmpkey, sizeof(des_cblock));
-	memset(&tmpkey, 0, sizeof(tmpkey));
-	break;
-    }
-    case KEYTYPE_DES_AFS3:{
-	des_cblock tmpkey;
-	AFS3_string_to_key(str, str_len, salt->data, salt->length, &tmpkey);
-	ret = krb5_data_copy(&key->keyvalue, tmpkey, sizeof(des_cblock));
-	key->keytype = KEYTYPE_DES;
 	memset(&tmpkey, 0, sizeof(tmpkey));
 	break;
     }
@@ -423,7 +419,7 @@ string_to_key_internal (const unsigned char *str,
     }
     if(ret)
 	return ret;
-    key->keytype = ktype;
+    key->keytype = ktype & KEYTYPE_KEYTYPE_MASK;
     return 0;
 }
 
