@@ -459,6 +459,7 @@ Added user jackb.
 <smbconfoption><name>force user</name><value>maryo</value></smbconfoption>
 <smbconfoption><name>force group</name><value>users</value></smbconfoption>
 <smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
 <smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
