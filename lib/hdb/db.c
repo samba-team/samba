@@ -36,7 +36,6 @@ DB_fetch(krb5_context context, HDB *db, hdb_entry *entry)
     data.length = value.size;
     
     hdb_value2entry(context, &data, entry);
-    krb5_data_free(&data);
     return 0;
 }
 
