@@ -1,8 +1,6 @@
 <chapter id="Browsing-Quick">
 <chapterinfo>
-	<author>
-		<firstname>John H</firstname><surname>Terpstra</surname>
-	</author>
+	&author.jht;
 	<pubdate>July 5, 1998</pubdate>
 	<pubdate>Updated: March 15, 2003</pubdate>
 </chapterinfo>
@@ -17,10 +15,10 @@ of NetBIOS names to IP addesses. WINS is NOT involved in browse list handling
 except by way of name to address mapping.
 </para>
 
-<para>
-Note: MS Windows 2000 and later can be configured to operate with NO NetBIOS 
+<note><para>
+MS Windows 2000 and later can be configured to operate with NO NetBIOS 
 over TCP/IP. Samba-3 and later also supports this mode of operation.
-</para>
+</para></note>
 
 
 <sect1>

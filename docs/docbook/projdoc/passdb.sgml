@@ -1,42 +1,14 @@
 <chapter id="passdb">
 <chapterinfo>
-	<author>
-		<firstname>Jelmer</firstname><surname>Vernooij</surname>
-		<affiliation>
-			<orgname>The Samba Team</orgname>
-			<address><email>jelmer@samba.org</email></address>
-		</affiliation>
-	</author>
-	<author>
-		<firstname>Gerald (Jerry)</firstname><surname>Carter</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>jerry@samba.org</email></address>
-		</affiliation>
-	</author>
+	&author.jelmer;
+	&author.jerry;
+	&author.jeremy;
+	&author.jht;
 	<author>
 		<firstname>Olivier (lem)</firstname><surname>Lemaire</surname>
 		<affiliation>
 			<orgname>IDEALX</orgname>
 			<address><email>olem@IDEALX.org</email></address>
-		</affiliation>
-	</author>
-	<author>
-		<firstname>Jeremy</firstname><surname>Allison</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address>
-				<email>jra@samba.org</email>
-			</address>
-		</affiliation>
-	</author>
-	<author>
-		<firstname>John H</firstname><surname>Terpstra</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address>
-				<email>jht@samba.org</email>
-			</address>
 		</affiliation>
 	</author>
 	
@@ -137,13 +109,9 @@
 
 		<simplelist>
 			<member>Windows NT 3.5x</member>
-
 			<member>Windows NT 4.0</member>
-			
 			<member>Windows 2000 Professional</member>
-
 			<member>Windows 200x Server/Advanced Server</member>
-
 			<member>Windows XP Professional</member>
 		</simplelist>
 		
@@ -393,6 +361,8 @@ the details of configuring these packages are beyond the scope of this document.
 <sect2>
 <title>Supported LDAP Servers</title>
 
+<!-- FIXME: This is outdated for 3.0 -->
+
 <para>
 The LDAP samdb code in 2.2.3 (and later) has been developed and tested
 using the OpenLDAP 2.0 server and client libraries. 
@@ -400,8 +370,8 @@ The same code should be able to work with Netscape's Directory Server
 and client SDK. However, due to lack of testing so far, there are bound
 to be compile errors and bugs.  These should not be hard to fix.
 If you are so inclined, please be sure to forward all patches to
-<ulink url="samba-patches@samba.org">samba-patches@samba.org</ulink> and
-<ulink url="jerry@samba.org">jerry@samba.org</ulink>.
+<ulink url="mailto:samba-patches@samba.org">samba-patches@samba.org</ulink> and
+<ulink url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
 </para>
 
 </sect2>
@@ -430,7 +400,7 @@ The samba.schema file has been formatted for OpenLDAP 2.0.  The OID's are
 owned by the Samba Team and as such is legal to be openly published.
 If you translate the schema to be used with Netscape DS, please
 submit the modified schema file as a patch to <ulink
-url="jerry@samba.org">jerry@samba.org</ulink>
+url="mailto:jerry@samba.org">jerry@samba.org</ulink>
 </para>
 
 <para>
@@ -470,7 +440,7 @@ server, first copy the samba.schema file to slapd's configuration directory.
 </para>
 
 <para>
-<prompt>root# </prompt><command>cp samba.schema /etc/openldap/schema/</command>
+<prompt>root# </prompt><userinput>cp samba.schema /etc/openldap/schema/</userinput>
 </para>
 
 <para>
@@ -525,7 +495,6 @@ index rid           eq
 
 <sect3>
 <title>Configuring Samba</title>
-<!--lem: <title>smb.conf LDAP parameters</title> -->
 
 <para>
 The following parameters are available in smb.conf only with <parameter>--with-ldapsam</parameter>
@@ -972,14 +941,14 @@ Or, set 'identifier:workstations column' to :
 
 <para>The usage of pdb_xml is pretty straightforward. To export data, use:
 
-<command>pdbedit -e xml:filename</command>
+<userinput>pdbedit -e xml:filename</userinput>
 
 (where filename is the name of the file to put the data in)
 </para>
 
 <para>
 To import data, use:
-<command>pdbedit -i xml:filename -e current-pdb</command>
+<userinput>pdbedit -i xml:filename -e current-pdb</userinput>
 
 Where filename is the name to read the data from and current-pdb to put it in.
 </para>

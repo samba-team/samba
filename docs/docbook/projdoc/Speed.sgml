@@ -2,18 +2,13 @@
 
 <chapterinfo>
 	<author>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>samba@samba.org</email></address>
-		</affiliation>
-	</author>
-	<author>
 		<firstname>Paul</firstname><surname>Cochrane</surname>
 		<affiliation>
 			<orgname>Dundee Limb Fitting Centre</orgname>
 			<address><email>paulc@dth.scot.nhs.uk</email></address>
 		</affiliation>
 	</author>
+	&author.jelmer;
 </chapterinfo>
 
 <title>Samba performance issues</title>

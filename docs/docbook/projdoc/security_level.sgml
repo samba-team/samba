@@ -1,12 +1,7 @@
 <chapter id="securitylevels">
 <chapterinfo>
-	<author>
-		<firstname>Andrew</firstname><surname>Tridgell</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>samba@samba.org</email></address>
-		</affiliation>
-	</author>
+	&author.tridge;
+	&author.jelmer;
 </chapterinfo>
 <title>Samba as Stand-Alone Server</title
 

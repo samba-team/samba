@@ -1,8 +1,6 @@
 <chapter id="Portability">
 <chapterinfo>
-	<author>
-		<firstname>Jelmer</firstname><surname>Vernooij</surname>
-	</author>
+	&author.jelmer;
 </chapterinfo>
 
 <title>Portability</title>

@@ -1,9 +1,7 @@
 <chapter id="ADS">
 
 <chapterinfo>
-	<author>
-		<firstname>Andrew</firstname><surname>Tridgell</surname>
-	</author>
+	&author.tridge;
 	<pubdate>2002</pubdate>
 </chapterinfo>
 
@@ -33,11 +31,12 @@ In case samba can't figure out your ads server using your realm name, use the
 </programlisting>
 </para>
 
-<para>You do *not* need a smbpasswd file, and older clients will
-  be authenticated as if "security = domain", although it won't do any harm
+<note><para>You do *not* need a smbpasswd file, and older clients will
+  be authenticated as if <command>security = domain</command>,
+  although it won't do any harm
   and allows you to have local users not in the domain.
   I expect that the above required options will change soon when we get better
-  active directory integration.</para>
+  active directory integration.</para></note>
 
 </sect1>
   
@@ -56,7 +55,7 @@ In case samba can't figure out your ads server using your realm name, use the
 <para>Test your config by doing a "kinit USERNAME@REALM" and making sure that
   your password is accepted by the Win2000 KDC. </para>
 
-<para>NOTE: The realm must be uppercase. </para>
+<note><para>The realm must be uppercase. </para></note>
 
 <para>
 You also must ensure that you can do a reverse DNS lookup on the IP
@@ -87,7 +86,7 @@ support for smbd and winbindd.
 <para>
 As a user that has write permission on the Samba private directory
 (usually root) run:
-<command>net ads join</command>
+<userinput>net ads join</userinput>
 </para>
 
 <sect2>

@@ -1,19 +1,7 @@
 <chapter id="diagnosis">
 <chapterinfo>
-	<author>
-		<firstname>Andrew</firstname><surname>Tridgell</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>tridge@samba.org</email></address>
-		</affiliation>
-	</author>
-	<author>
-		<firstname>Jelmer</firstname><surname>Vernooij</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>jelmer@samba.org</email></address>
-		</affiliation>
-	</author>
+	&author.tridge;
+	&author.jelmer;
 	<pubdate>Wed Jan 15</pubdate>
 </chapterinfo>
 
@@ -92,10 +80,11 @@ best way to check this is with "testparm smb.conf"
 </sect1>
 
 <sect1>
-<title>Tests</title>
+<title>The tests</title>
+<procedure>
+<title>Diagnosing your samba server</title>
 
-<sect2>
-<title>Test 1</title>
+<step performance="required">
 <para>
 In the directory in which you store your smb.conf file, run the command
 "testparm smb.conf". If it reports any errors then your smb.conf
@@ -106,11 +95,9 @@ configuration file is faulty.
 Note:	Your smb.conf file may be located in: <filename>/etc/samba</filename>
 	Or in:   <filename>/usr/local/samba/lib</filename>
 </para>
-</sect2>
+</step>
 
-<sect2>
-<title>Test 2</title>
-
+<step performance="required">
 <para>
 Run the command "ping BIGSERVER" from the PC and "ping ACLIENT" from
 the unix box. If you don't get a valid response then your TCP/IP
@@ -135,11 +122,9 @@ software. You will need to relax the rules to let in the workstation
 in question, perhaps by allowing access from another subnet (on Linux
 this is done via the ipfwadm program.)
 </para>
-</sect2>
+</step>
 
-<sect2>
-<title>Test 3</title>
-
+<step performance="required">
 <para>
 Run the command "smbclient -L BIGSERVER" on the unix box. You
 should get a list of available shares back. 
@@ -218,10 +203,9 @@ network interface IP Address / Broadcast Address / Subnet Mask settings are
 correct and that Samba has correctly noted these in the log.nmb file.
 </para>
 
-</sect2>
+</step>
 
-<sect2>
-<title>Test 4</title>
+<step performance="required">
 
 <para>
 Run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
@@ -241,10 +225,9 @@ one-line script that contains the right parameters and run that from
 inetd.
 </para>
 
-</sect2>
+</step>
 
-<sect2>
-<title>Test 5</title>
+<step performance="required">
 
 <para>run the command <command>nmblookup -B ACLIENT '*'</command></para>
 
@@ -259,10 +242,9 @@ If ACLIENT doesn't resolve via DNS then use the IP address of the
 client in the above test.
 </para>
 
-</sect2>
+</step>
 
-<sect2>
-<title>Test 6</title>
+<step performance="required">
 
 <para>
 Run the command <command>nmblookup -d 2 '*'</command>
@@ -296,10 +278,9 @@ This test will probably fail if your subnet mask and broadcast address are
 not correct. (Refer to TEST 3 notes above).
 </para>
 
-</sect2>
+</step>
 
-<sect2>
-<title>Test 7</title>
+<step performance="required">
 
 <para>
 Run the command <command>smbclient //BIGSERVER/TMP</command>. You should 
@@ -369,10 +350,9 @@ especially check that the amount of free disk space shown is correct
 when you type <command>dir</command>.
 </para>
 
-</sect2>
+</step>
 
-<sect2>
-<title>Test 8</title>
+<step performance="required">
 
 <para>
 On the PC type the command <command>net view \\BIGSERVER</command>. You will 
@@ -429,10 +409,9 @@ Check to see if the host is running tcp wrappers, and if so add an entry in
 the hosts.allow file for your client (or subnet, etc.)
 </para>
 
-</sect2>
+</step>
 
-<sect2>
-<title>Test 9</title>
+<step performance="required">
 
 <para>
 Run the command <command>net use x: \\BIGSERVER\TMP</command>. You should 
@@ -456,10 +435,9 @@ and you have <command>encrypt passwords = no</command> in <filename>smb.conf</fi
 Turn it back on to fix.
 </para>
 
-</sect2>
+</step>
 
-<sect2>
-<title>Test 10</title>
+<step performance="required">
 
 <para>
 Run the command <command>nmblookup -M TESTGROUP</command> where 
@@ -476,10 +454,9 @@ sure you have <command>preferred master = yes</command> to ensure that
 an election is held at startup.
 </para>
 
-</sect2>
+</step>
 
-<sect2>
-<title>Test 11</title>
+<step performance="required">
 
 <para>
 From file manager try to browse the server. Your samba server should
@@ -495,7 +472,8 @@ smb.conf file, or enable encrypted passwords AFTER compiling in support
 for encrypted passwords (refer to the Makefile).
 </para>
 
-</sect2>
+</step>
+</procedure>
 </sect1>
 
 <sect1>
@@ -507,7 +485,7 @@ sniff the problem. The official samba mailing list can be reached at
 <ulink url="mailto:samba@samba.org">samba@samba.org</ulink>. To find 
 out more about samba and how to subscribe to the mailing list check 
 out the samba web page at 
-<ulink url="http://samba.org/samba">http://samba.org/samba</ulink>
+<ulink url="http://samba.org/samba">http://samba.org/samba/</ulink>
 </para>
 
 <para>

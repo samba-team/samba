@@ -1,18 +1,7 @@
 <chapter id="integrate-ms-networks">
  
- 
 <chapterinfo>
-        <author>
-		<firstname>John</firstname><surname>Terpstra</surname>
-                <affiliation>
-                        <orgname>Samba Team</orgname>
-			<address>
-			<email>jht@samba.org</email>
-			</address>
-                </affiliation>
-        </author>
- 
- 
+	&author.jht;
         <pubdate> (Jan 01 2001) </pubdate>
 </chapterinfo>
  

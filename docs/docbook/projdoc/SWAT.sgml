@@ -1,8 +1,6 @@
 <chapter id="SWAT">
 <chapterinfo>
-	<author>
-		<firstname>John H</firstname><surname>Terpstra</surname>
-	</author>
+	&author.jht;
 	<pubdate>April 3, 2003</pubdate>
 </chapterinfo>
 
