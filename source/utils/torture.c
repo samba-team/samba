@@ -28,6 +28,8 @@ static int max_protocol = PROTOCOL_NT1;
 static char *sockops="TCP_NODELAY";
 static int nprocs=1, numops=100;
 
+static double create_procs(void (*fn)(void));
+
 
 static struct timeval tp1,tp2;
 
@@ -225,9 +227,10 @@ static void run_torture(void)
 	}
 }
 
+static int nbsize1, nbsize2, nbprob1;
 
 /* run a test that simulates an approximate netbench client load */
-static void run_netbench(int size1, int size2, int prob1)
+static void run_netbench(void)
 {
 	struct cli_state cli;
 	int fnum, i;
@@ -262,10 +265,10 @@ static void run_netbench(int size1, int size2, int prob1)
 		size = 0;
 		while (size < 256*1024) {
 			int s;
-			if (((unsigned)random()) % 100 > prob1) {
-				s = size2;
+			if (((unsigned)random()) % 100 > nbprob1) {
+				s = nbsize2;
 			} else {
-				s = size1;
+				s = nbsize1;
 			}
 
 			if (cli_smbwrite(&cli, fnum, buf, size, s) != s) {
@@ -288,13 +291,23 @@ static void run_netbench(int size1, int size2, int prob1)
 /* run a test that simulates an approximate netbench w9X client load */
 static void run_nbw95(void)
 {
-	run_netbench(4096, 0, 100);
+	double t;
+	nbsize1 = 4096;
+	nbsize2 = 0;
+	nbprob1 = 100;
+	t = create_procs(run_netbench);
+	printf("Throughput %g MB/sec\n", nprocs*numops*256.0/(t*1024));
 }
 
 /* run a test that simulates an approximate netbench wNT client load */
 static void run_nbwnt(void)
 {
-	run_netbench(4296, 0, 67);
+	double t;
+	nbsize1 = 4296;
+	nbsize2 = 0;
+	nbprob1 = 67;
+	t = create_procs(run_netbench);
+	printf("Throughput %g MB/sec\n", nprocs*numops*256.0/(t*1024));
 }
 
 
@@ -1001,9 +1014,11 @@ static void run_trans2test(void)
 }
 
 
-static void create_procs(void (*fn)(void))
+static double create_procs(void (*fn)(void))
 {
 	int i, status;
+
+	start_timer();
 
 	for (i=0;i<nprocs;i++) {
 		if (fork() == 0) {
@@ -1016,6 +1031,7 @@ static void create_procs(void (*fn)(void))
 
 	for (i=0;i<nprocs;i++)
 		waitpid(0, &status, 0);
+	return end_timer();
 }
 
 
@@ -1037,8 +1053,8 @@ static struct {
 	{"MAXFID", run_maxfidtest, FLAG_MULTIPROC},
 	{"TORTURE",run_torture,    FLAG_MULTIPROC},
 	{"RANDOMIPC", run_randomipc, 0},
-	{"NBW95",  run_nbw95, FLAG_MULTIPROC},
-	{"NBWNT",  run_nbwnt, FLAG_MULTIPROC},
+	{"NBW95",  run_nbw95, 0},
+	{"NBWNT",  run_nbwnt, 0},
 	{NULL, NULL, 0}};
 
 
