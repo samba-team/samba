@@ -2888,6 +2888,13 @@ connect_again:
       return -1;
   }
 
+#ifdef EISCONN
+  if (ret < 0 && errno == EISCONN) {
+    errno = 0;
+    ret = 0;
+  }
+#endif
+
   if (ret < 0) {
     DEBUG(2,("error connecting to %s:%d (%s)\n",
 	     inet_ntoa(*addr),port,strerror(errno)));
