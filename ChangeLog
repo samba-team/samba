@@ -1,5 +1,26 @@
 2004-04-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/Makefile.am: define BUILD_KRB5_LIB when building
+	libkrb5.la, add KRB5_LIB_FUNCTION proto
+
+	* lib/krb5/add_et_list.c: add KRB5_LIB_FUNCTION
+	
+	* configure.in: export KRB5_LIB_FUNCTION when building with
+	BUILD_KRB5_LIB
+
+	* lib/krb5/ticket.c (krb5_ticket_get_authorization_data_type): add
+	error strings
+
+	* lib/krb5/prompter_posix.c (krb5_prompter_posix): if some thing
+	is printed on stderr, fflush it
+
+	* lib/krb5/krb5_keyblock.3: free functions also zeros out the key
+	
+	* lib/krb5/krb5_get_init_creds.3: some text about
+	krb5_prompter_posix
+
+	* lib/krb5/krb5.conf.5: document hdb-ldap-structural-object
+	
 	* lib/krb5/cache.c: add krb5_cc_get_prefix_ops
 	
 	* lib/krb5/krb5_ccache.3: add krb5_cc_get_prefix_ops

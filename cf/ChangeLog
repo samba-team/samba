@@ -1,5 +1,8 @@
 2004-04-13  Love  <lha@stacken.kth.se>
 
+	* make-proto.pl: if -E, add windows standard calling conv to
+	headerfile if needed
+
 	* win32.m4: add rk_WIN32_EXPORT
 	
 2004-02-12  Love  <lha@stacken.kth.se>
