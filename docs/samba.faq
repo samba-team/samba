@@ -5,7 +5,7 @@
 
                                    SAMBA Suite
 
-                  (FAQ version 1.9.02, Samba version 1.09.02)
+                  (FAQ version 1.9.15, Samba version 1.09.15)
 
 -------------------------------------------------------------------------------
 
@@ -85,7 +85,7 @@ written by Karl Auer.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * 2: What is the current version of Samba?
 
-At time of writing, the current version was 1.9.12. If you want to be sure
+At time of writing, the current version was 1.9.15. If you want to be sure
 check the bottom of the change-log file. 
 (nimbus.anu.edu.au/pub/tridge/samba/change-log)
 
@@ -154,7 +154,8 @@ At time of writing, the Makefile claimed support for:
 
 There are two mailing lists devoted to discussion of Samba-related matters.
 There is also the newsgroup, comp.protocols.smb, which has a great deal of
-discussion on Samba.
+discussion on Samba. There is also a WWW site 'SAMBA Web Pages' at
+http://samba.canberra.edu.au/pub/samba/samba.html
 
 Send email to listproc@anu.edu.au. Make sure the subject line is blank, and
 include the following two lines in the body of the message:
@@ -176,6 +177,9 @@ following two lines in the body of the message:
 
       unsubscribe samba
       unsubscribe samba-announce
+
+The From: line in your message MUST be the same address you used when you
+subscribed.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * 6: Something's gone wrong - what should I do?
@@ -211,7 +215,7 @@ SECTION THREE: Common client problems
 * 1: I can't see the Samba server in any browse lists!
 
 *** Until the FAQ can be updated, please check the file:
-*** ftp://nimbus.anu.adu.au/pub/tridge/samba/BROWSING.txt
+*** ftp://nimbus.anu.edu.au/pub/tridge/samba/BROWSING.txt
 *** for more information on browsing. 
 
 If your GUI client does not permit you to select non-browsable servers, you may
@@ -225,7 +229,7 @@ client - check your client's documentation.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * 2: Some files that I KNOW are on the server doesn't show up when I view the
-directories from my client!
+     directories from my client!
 
 If you check what files are not showing up, you will note that they are files
 which contain upper case letters or which are otherwise not DOS-compatible (ie,
@@ -351,6 +355,26 @@ In earlier Samba versions there were some difficulties with the very latest
 Microsoft products, particularly Excel 5 and Word for Windows 6. These should
 have all been solved. If not then please let Andrew Tridgell know.
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 9: My "server string" doesn't seem to be recognized, my client reports the
+     default setting, eg. "Samba 1.9.15p4", instead of what I have changed it
+     to in the smb.conf file.
+ 
+You need to use the -C option in nmbd. The "server string" affects
+what smbd puts out and -C affects what nmbd puts out. In a future
+version these will probably be combined and -C will be removed, but
+for now use -C
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 10: When I attempt to get a listing of available resources from the Samba
+      server, my client reports
+      "This server is not configured to list shared resources".
+
+Your guest account is probably invalid for some reason. Samba uses
+the guest account for browsing in smbd.  Check that your guest account is
+valid.
+
+See also 'guest account' in smb.conf man page.
 
 ===============================================================================
 SECTION FOUR: Specific client problems
@@ -381,11 +405,71 @@ but we're not done yet.
 
 Rob
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 2: I am getting a "Session request failed (131,130)" error when I try to
+     connect to my Win95 PC with smbclient. I am able to connect from the PC
+     to the Samba server without problems. What gives?
+
+The following answer is provided by John E. Miller:
+
+I'll assume that you're able to ping back and forth between the machines by
+IP address and name, and that you're using some security model where you're
+confident that you've got user IDs and passwords right.  The logging options
+(-d3 or greater) can help a lot with that.  DNS and WINS configuration can
+also impact connectivity as well.
+
+Now, on to 'scope id's.  Somewhere in your Win95 TCP/IP network configuration
+(I'm too much of an NT bigot to know where it's located in the Win95 setup,
+but I'll have to learn someday since I teach for a Microsoft Solution Provider
+Authorized Tech Education Center - what an acronym...) [Note: It's under
+Control Panel | Network | TCP/IP | WINS Configuration] there's a little text
+entry field called something like 'Scope ID'. 
+
+This field essentially creates 'invisible' sub-workgroups on the same wire.
+Boxes can only see other boxes whose Scope IDs are set to the exact same
+value - it's sometimes used by OEMs to configure their boxes to browse only
+other boxes from the same vendor and, in most environments, this field should
+be left blank.  If you, in fact, have something in this box that EXACT value
+(case-sensitive!) needs to be provided to smbclient and nmbd as the -i 
+(lowercase) parameter. So, if your Scope ID is configured as the string
+'SomeStr' in Win95 then you'd have to use smbclient -iSomeStr <otherparms>
+in connecting to it.  
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 3: How do I synchronize my PC's clock with my Samba server? 
+
+To syncronize your PC's clock with your Samba server:
+
+* Copy timesync.pif to your windows directory
+  * timesync.pif can be found at:
+    http://samba.canberra.edu.au/pub/samba/binaries/miscellaneous/timesync.pif
+* Add timesync.pif to your 'Start Up' group/folder
+* Open the properties dialog box for the program/icon
+  * Make sure the 'Run Minimized' option is set in program 'Properties' 
+  * Change the command line section that reads \\sambahost to reflect the name
+    of your server.
+* Close the properties dialog box by choosing 'OK'
+
+Each time you start your computer (or login for Win95) your PC will
+synchronize it's clock with your Samba server.
 
 ===============================================================================
 SECTION FIVE: Specific client application problems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 1: MS Office Setup reports "Cannot change properties of the file named:
+                                      X:\MSOFFICE\SETUP.INI"
 
+When installing MS Office on a Samba drive for which you have admin user
+permissions, ie. admin users = <username>, you will find the setup program
+unable to complete the installation.
+
+To get around this problem, do the installation without admin user permissions
+The problem is that MS Office Setup checks that a file is rdonly by trying to
+open it for writing.
+
+Admin users can always open a file for writing, as they run as root. 
+You just have to install as a non-admin user and then use "chown -R" to fix
+the owner.
 
 ===============================================================================
 SECTION SIX: Miscellaneous
@@ -394,5 +478,3 @@ SECTION SIX: Miscellaneous
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Maintained By Paul Blackman, Email:ictinus@lake.canberra.edu.au
-
-
