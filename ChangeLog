@@ -1,3 +1,7 @@
+1999-12-13  Assar Westerlund  <assar@sics.se>
+
+	* configure.in (VERISON): bump to 0.2g-pre
+
 1999-12-12  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/principal.c (krb5_425_conv_principal_ext): be more
