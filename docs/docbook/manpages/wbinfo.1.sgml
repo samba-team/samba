@@ -25,6 +25,9 @@
 		<arg choice="opt">-Y sid</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-m</arg>
+		<arg choice="opt">-r user</arg>
+		<arg choice="opt">-a user%password</arg>
+		<arg choice="opt">-A user%password</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -138,6 +141,34 @@
 		Windows NT server <command>winbindd(8)</command> contacts 
 		when resolving names.  This list does not include the Windows 
 		NT domain the server is a Primary Domain Controller for.
+		</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>-r username</term>
+		<listitem><para>Try to obtain the list of UNIX group ids
+		to which the user belongs.  This only works for users
+		defined on a Domain Controller.
+		</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>-a username%password</term>
+		<listitem><para>Attempt to authenticate a user via winbindd. 
+                This checks both authenticaion methods and reports its results.
+		</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>-A username%password</term>
+		<listitem><para>Store username and password used by winbindd 
+		during session setup to a domain controller.  This enables
+		winbindd to operate in a Windows 2000 domain with Restrict
+		Anonymous turned on (a.k.a. Permissions compatiable with
+		Windows 2000 servers only).
 		</para></listitem>
 		</varlistentry>
 	</variablelist>
