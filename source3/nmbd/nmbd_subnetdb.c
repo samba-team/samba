@@ -73,6 +73,17 @@ static void add_subnet(struct subnet_record *subrec)
   subrec->prev = subrec2;
 }
 
+/* CRH!!! */
+/* ************************************************************************** ** * This will go away when we move to a "real" database back-end.
+ * ************************************************************************** ** */
+int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
+  {
+  struct name_record *NR = (struct name_record *)Node;
+
+  return( memcmp( Item, &(NR->name), sizeof(struct nmb_name) ) );
+  } /* namelist_entry_compare */
+/* CRH!!! */   
+
 /****************************************************************************
   Create a subnet entry.
   ****************************************************************************/
@@ -131,8 +142,11 @@ for port %d. Error was %s\n", inet_ntoa(myip), DGRAM_PORT, strerror(errno)));
     return(NULL);
   }
   
-  bzero((char *)subrec,sizeof(*subrec));
-  
+  bzero( (char *)subrec, sizeof(*subrec) );
+  (void)ubi_trInitTree( subrec->namelist,
+                        namelist_entry_compare,
+                        ubi_trOVERWRITE );
+
   if((subrec->subnet_name = strdup(name)) == NULL)
   {
     DEBUG(0,("make_subnet: malloc fail for subnet name !\n"));

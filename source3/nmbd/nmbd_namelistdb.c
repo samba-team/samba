@@ -32,215 +32,233 @@ extern char **my_netbios_names;
 uint16 samba_nb_type = 0; /* samba's NetBIOS name type */
 
 
-/****************************************************************************
-  Set Samba's NetBIOS name type.
-  ****************************************************************************/
-
+/* ************************************************************************** **
+ * Set Samba's NetBIOS name type.
+ * ************************************************************************** **
+ */
 void set_samba_nb_type(void)
-{
-  if( lp_wins_support() || (*lp_wins_server()) )
-    samba_nb_type = NB_MFLAG; /* samba is a 'hybrid' node type */
-  else
-    samba_nb_type = NB_BFLAG; /* samba is broadcast-only node type */
-}
-
-/****************************************************************************
-  Returns True if the netbios name is ^1^2__MSBROWSE__^2^1.
-
-  Note: This name is registered if as a master browser or backup browser
-  you are responsible for a workgroup (when you announce a domain by
-  broadcasting on your local subnet, you announce it as coming from this
-  name: see announce_host()).
-
-  **************************************************************************/
-
-BOOL ms_browser_name( char *name, int type )
-{
-  return( strequal( name, MSBROWSE ) && (type == 0x01) );
-}
-
-/****************************************************************************
-  Add a netbios name into a namelist.
-  **************************************************************************/
-
-static void add_name_to_namelist(struct subnet_record *subrec, 
-                                 struct name_record *namerec)
-{
-  struct name_record *namerec2;
-
-  if (!subrec->namelist)
   {
-    subrec->namelist = namerec;
-    namerec->prev = NULL;
-    namerec->next = NULL;
-    return;
-  }
+  if( lp_wins_support() || (*lp_wins_server()) )
+    samba_nb_type = NB_MFLAG;               /* samba is a 'hybrid' node type. */
+  else
+    samba_nb_type = NB_BFLAG;           /* samba is broadcast-only node type. */
+  } /* set_samba_nb_type */
 
-  for( namerec2 = subrec->namelist; namerec2->next; namerec2 = namerec2->next )
-    ;
+/* ************************************************************************** **
+ * Returns True if the netbios name is ^1^2__MSBROWSE__^2^1.
+ *
+ * Note: This name is registered if as a master browser or backup browser
+ * you are responsible for a workgroup (when you announce a domain by
+ * broadcasting on your local subnet, you announce it as coming from this
+ * name: see announce_host()).
+ *
+ * ************************************************************************** **
+ */
+BOOL ms_browser_name( char *name, int type )
+  {
+  return( strequal( name, MSBROWSE ) && (type == 0x01) );
+  } /* ms_browser_name */
 
-  namerec2->next = namerec;
-  namerec->next = NULL;
-  namerec->prev = namerec2;
-  namerec->subnet = subrec;
+/* ************************************************************************** **
+ * Convert a NetBIOS name to upper case.
+ * ************************************************************************** **
+ */
+static void upcase_name( struct nmb_name *target, struct nmb_name *source )
+  {
+  int i;
 
-  subrec->namelist_changed = True;
-}
+  if( NULL != source )
+    (void)memcpy( target, source, sizeof( struct nmb_name ) );
 
-/****************************************************************************
-  Remove a name from the namelist.
-  **************************************************************************/
+  strupper( target->name );
+  strupper( target->scope );
 
+  /* fudge... We're using a byte-by-byte compare, so we must be sure that
+   * unused space doesn't have garbage in it.
+   */
+  for( i = strlen( target->name ); i < sizeof( target->name ); i++ )
+    target->name[i] = '\0';
+  for( i = strlen( target->scope ); i < sizeof( target->scope ); i++ )
+    target->scope[i] = '\0';
+  } /* upcase_name */
+
+/* ************************************************************************** **
+ * Add a new or overwrite an existing namelist entry.
+ * ************************************************************************** **
+ */
+void update_name_in_namelist( struct subnet_record *subrec,
+                              struct name_record   *namerec )
+  {
+  struct name_record *oldrec = NULL;
+
+  (void)ubi_trInsert( subrec->namelist, namerec, &(namerec->name), &oldrec );
+  if( oldrec )
+    {
+    if( oldrec->data.ip )
+      free( oldrec->data.ip );
+    free( oldrec );
+    }
+  } /* update_name_in_namelist */
+
+/* ************************************************************************** **
+ * Remove a name from the namelist.
+ * ************************************************************************** **
+ */
 void remove_name_from_namelist( struct subnet_record *subrec, 
-                                struct name_record *namerec )
-{
-  if (namerec->next)
-    namerec->next->prev = namerec->prev;
-  if (namerec->prev)
-    namerec->prev->next = namerec->next;
-
-  if(namerec == subrec->namelist)
-    subrec->namelist = namerec->next;
+                                struct name_record   *namerec )
+  {
+  (void)ubi_trRemove( subrec->namelist, namerec );
 
   if(namerec->data.ip != NULL)
     free((char *)namerec->data.ip);
   free((char *)namerec);
 
   subrec->namelist_changed = True;
-}
+  } /* remove_name_from_namelist */
 
-
-/****************************************************************************
-  Find a name in a subnet.
-  **************************************************************************/
-
-struct name_record *find_name_on_subnet(struct subnet_record *subrec,
-                                      struct nmb_name *nmbname, BOOL self_only)
-{
-  struct name_record *namerec = subrec->namelist;
-  struct name_record *name_ret;
-  
-  for (name_ret = namerec; name_ret; name_ret = name_ret->next)
+/* ************************************************************************** **
+ * Find a name in a subnet.
+ * ************************************************************************** **
+ */
+struct name_record *find_name_on_subnet( struct subnet_record *subrec,
+                                         struct nmb_name      *nmbname,
+                                         BOOL                  self_only )
   {
-    if (nmb_name_equal(&name_ret->name, nmbname))
+  struct nmb_name     uc_name[1];
+  struct name_record *name_ret;
+
+  upcase_name( uc_name, nmbname );
+  name_ret = (struct name_record *)ubi_trFind( subrec->namelist, uc_name );
+  if( name_ret )
     {
-      /* Self names only - these include permanent names. */
-      if (self_only && (name_ret->data.source != SELF_NAME) && 
-              (name_ret->data.source != PERMANENT_NAME) )
+    /* Self names only - these include permanent names. */
+    if( self_only
+     && (name_ret->data.source != SELF_NAME)
+     && (name_ret->data.source != PERMANENT_NAME) )
       {
-        continue;
+      DEBUG( 9, 
+             ( "find_name_on_subnet: on subnet %s - self name %s NOT FOUND\n",
+               subrec->subnet_name, namestr(nmbname) ) );
+      return( NULL );
       }
-      DEBUG(9,("find_name_on_subnet: on subnet %s - found name %s source=%d\n", 
-                subrec->subnet_name, namestr(nmbname), name_ret->data.source));
-      return name_ret;
+    DEBUG( 9, ("find_name_on_subnet: on subnet %s - found name %s source=%d\n",
+               subrec->subnet_name, namestr(nmbname), name_ret->data.source) );
+    return( name_ret );
     }
-  }
-  DEBUG(9,("find_name_on_subnet: on subnet %s - name %s NOT FOUND\n", 
-            subrec->subnet_name, namestr(nmbname)));
-  return NULL;
-}
+  DEBUG( 9, 
+         ( "find_name_on_subnet: on subnet %s - name %s NOT FOUND\n",
+           subrec->subnet_name, namestr(nmbname) ) );
+  return( NULL );
+  } /* find_name_on_subnet */
 
-/****************************************************************************
-  Find a name over all known broadcast subnets.
-**************************************************************************/
-
-struct name_record *find_name_for_remote_broadcast_subnet( struct nmb_name *nmbname,
-                                                           BOOL self_only )
-{
+/* ************************************************************************** **
+ * Find a name over all known broadcast subnets.
+ * ************************************************************************** **
+ */
+struct name_record *find_name_for_remote_broadcast_subnet(
+                                                   struct nmb_name *nmbname,
+                                                   BOOL             self_only )
+  {
   struct subnet_record *subrec;
-  struct name_record *namerec = NULL;
+  struct name_record   *namerec = NULL;
 
   for( subrec = FIRST_SUBNET;
        subrec;
        subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec) )
-  {
+    {
     if( NULL != (namerec = find_name_on_subnet(subrec, nmbname, self_only)) )
       break;
-  }
+    }
 
-  return namerec;
-}    
+  return( namerec );
+  } /* find_name_for_remote_broadcast_subnet */
   
-/****************************************************************************
-  Update the ttl of an entry in a subnet name list.
-  ****************************************************************************/
-
+/* ************************************************************************** **
+ * Update the ttl of an entry in a subnet name list.
+ * ************************************************************************** **
+ */
 void update_name_ttl( struct name_record *namerec, int ttl )
 {
   time_t time_now = time(NULL);
 
-  if(namerec->data.death_time != PERMANENT_TTL)
+  if( namerec->data.death_time != PERMANENT_TTL )
     namerec->data.death_time = time_now + ttl;
 
   namerec->data.refresh_time = time_now + (ttl/2);
 
   namerec->subnet->namelist_changed = True;
-} 
+} /* update_name_ttl */
 
-/****************************************************************************
-  Add an entry to a subnet name list.
-  ****************************************************************************/
-
-struct name_record *add_name_to_subnet(struct subnet_record *subrec,
-		char *name, int type, uint16 nb_flags, int ttl, 
-                enum name_source source, int num_ips, struct in_addr *iplist)
+/* ************************************************************************** **
+ * Add an entry to a subnet name list.
+ * ************************************************************************** **
+ */
+struct name_record *add_name_to_subnet( struct subnet_record *subrec,
+                                        char                 *name,
+                                        int                   type,
+                                        uint16                nb_flags,
+                                        int                   ttl,
+                                        enum name_source      source,
+                                        int                   num_ips,
+                                        struct in_addr       *iplist)
 {
   struct name_record *namerec;
   time_t time_now = time(NULL);
 
-  if((namerec = (struct name_record *)malloc(sizeof(*namerec))) == NULL)
+  namerec = (struct name_record *)malloc( sizeof(*namerec) );
+  if( NULL == namerec )
   {
-    DEBUG(0,("add_name_to_subnet: malloc fail.\n"));
-    return NULL;
+    DEBUG( 0, ( "add_name_to_subnet: malloc fail.\n" ) );
+    return( NULL );
   }
 
-  bzero((char *)namerec,sizeof(*namerec));
-
-  namerec->subnet = subrec;
-
-  namerec->data.num_ips = num_ips;
+  bzero( (char *)namerec, sizeof(*namerec) );
   namerec->data.ip = (struct in_addr *)malloc( sizeof(struct in_addr) 
-                                               * namerec->data.num_ips );
-  if (!namerec->data.ip)
+                                               * num_ips );
+  if( NULL == namerec->data.ip )
   {
-     DEBUG(0,("add_name_to_subnet: malloc fail when creating ip_flgs.\n"));
-     free((char *)namerec);
+     DEBUG( 0, ( "add_name_to_subnet: malloc fail when creating ip_flgs.\n" ) );
+     free( (char *)namerec );
      return NULL;
   }
 
-  bzero( (char *)namerec->data.ip,
-         sizeof(struct in_addr) * namerec->data.num_ips );
-
-  memcpy( &namerec->data.ip[0], iplist, num_ips * sizeof(struct in_addr) );
+  namerec->subnet = subrec;
 
   make_nmb_name( &namerec->name, name, type, scope );
+  upcase_name( &namerec->name, NULL );
+
+  /* Enter the name as active. */
+  namerec->data.nb_flags = nb_flags | NB_ACTIVE;
+
+  /* If it's our primary name, flag it as so. */
+  if( strequal( my_netbios_names[0], name ) )
+    namerec->data.nb_flags |= NB_PERM;
+
+  /* Copy the IPs. */
+  namerec->data.num_ips = num_ips;
+  memcpy( (namerec->data.ip), iplist, num_ips * sizeof(struct in_addr) );
+
+  /* Data source. */
+  namerec->data.source = source;
 
   /* Setup the death_time and refresh_time. */
-  if(ttl == PERMANENT_TTL)
+  if( ttl == PERMANENT_TTL )
     namerec->data.death_time = PERMANENT_TTL;
   else
     namerec->data.death_time = time_now + ttl;
 
   namerec->data.refresh_time = time_now + (ttl/2);
 
-  /* Enter the name as active. */
-  namerec->data.nb_flags = nb_flags | NB_ACTIVE;
-
-  /* If it's our primary name, flag it as so. */
-  if(strequal(my_netbios_names[0],name))
-    namerec->data.nb_flags |= NB_PERM;
-
-  namerec->data.source = source;
-  
-  add_name_to_namelist(subrec,namerec);
+  /* Now add the record to the name list. */    
+  update_name_in_namelist( subrec, namerec );
 
   DEBUG( 3, ( "add_name_to_subnet: Added netbios name %s with first IP %s \
 ttl=%d nb_flags=%2x to subnet %s\n",
-	    namestr(&namerec->name),
-            inet_ntoa(*iplist),
+	    namestr( &namerec->name ),
+            inet_ntoa( *iplist ),
             ttl,
             (unsigned int)nb_flags,
-            subrec->subnet_name) );
+            subrec->subnet_name ) );
 
   subrec->namelist_changed = True;
 
@@ -324,12 +342,12 @@ BOOL find_ip_in_name_record( struct name_record *namerec, struct in_addr ip )
  Utility function to add an IP address to a name record.
  ******************************************************************/
 
-void add_ip_to_name_record(struct name_record *namerec, struct in_addr new_ip)
+void add_ip_to_name_record( struct name_record *namerec, struct in_addr new_ip )
 {
   struct in_addr *new_list;
 
   /* Don't add one we already have. */
-  if(find_ip_in_name_record( namerec, new_ip))
+  if( find_ip_in_name_record( namerec, new_ip ) )
     return;
   
   new_list = (struct in_addr *)malloc( (namerec->data.num_ips + 1)
@@ -422,13 +440,15 @@ void expire_names_on_subnet(struct subnet_record *subrec, time_t t)
   struct name_record *namerec;
   struct name_record *next_namerec;
 
-  for (namerec = subrec->namelist; namerec; namerec = next_namerec)
+  for( namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+       namerec;
+       namerec = next_namerec )
   {
-    next_namerec = namerec->next;
+    next_namerec = (struct name_record *)ubi_trNext( namerec );
     if( (namerec->data.death_time != PERMANENT_TTL)
      && (namerec->data.death_time < t) )
     {
-      if (namerec->data.source == SELF_NAME)
+      if( namerec->data.source == SELF_NAME )
       {
         DEBUG( 3, ( "expire_names_on_subnet: Subnet %s not expiring SELF \
 name %s\n", 
@@ -440,7 +460,7 @@ name %s\n",
       DEBUG(3,("expire_names_on_subnet: Subnet %s - removing expired name %s\n",
                  subrec->subnet_name, namestr(&namerec->name)));
   
-      remove_name_from_namelist(subrec, namerec);
+      remove_name_from_namelist( subrec, namerec );
     }
   }
 }
@@ -477,8 +497,9 @@ void add_samba_names_to_subnet( struct subnet_record *subrec )
   /* These names are added permanently (ttl of zero) and will NOT be
      refreshed.  */
 
-  if((subrec == unicast_subnet) || (subrec == wins_server_subnet) ||
-     (subrec == remote_broadcast_subnet) )
+  if( (subrec == unicast_subnet)
+   || (subrec == wins_server_subnet)
+   || (subrec == remote_broadcast_subnet) )
   {
     struct subnet_record *bcast_subrecs;
     int i;
@@ -499,14 +520,14 @@ void add_samba_names_to_subnet( struct subnet_record *subrec )
 
   }
 
-  add_name_to_subnet(subrec,"*",0x0,samba_nb_type, PERMANENT_TTL,
-                     PERMANENT_NAME, num_ips, iplist);
-  add_name_to_subnet(subrec,"*",0x20,samba_nb_type,PERMANENT_TTL,
-                     PERMANENT_NAME, num_ips, iplist);
-  add_name_to_subnet(subrec,"__SAMBA__",0x20,samba_nb_type,PERMANENT_TTL,
-                   PERMANENT_NAME, num_ips, iplist);
-  add_name_to_subnet(subrec,"__SAMBA__",0x00,samba_nb_type,PERMANENT_TTL,
-                   PERMANENT_NAME, num_ips, iplist);
+  (void)add_name_to_subnet(subrec,"*",0x0,samba_nb_type, PERMANENT_TTL,
+                           PERMANENT_NAME, num_ips, iplist);
+  (void)add_name_to_subnet(subrec,"*",0x20,samba_nb_type,PERMANENT_TTL,
+                           PERMANENT_NAME, num_ips, iplist);
+  (void)add_name_to_subnet(subrec,"__SAMBA__",0x20,samba_nb_type,PERMANENT_TTL,
+                           PERMANENT_NAME, num_ips, iplist);
+  (void)add_name_to_subnet(subrec,"__SAMBA__",0x00,samba_nb_type,PERMANENT_TTL,
+                           PERMANENT_NAME, num_ips, iplist);
 
   if(iplist != &subrec->myip)
     free((char *)iplist);
@@ -525,7 +546,9 @@ static void dump_subnet_namelist( struct subnet_record *subrec, FILE *fp)
   int i;
 
   fprintf(fp, "Subnet %s\n----------------------\n", subrec->subnet_name);
-  for (namerec = subrec->namelist; namerec; namerec = namerec->next)
+  for( namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+       namerec;
+       namerec = (struct name_record *)ubi_trNext( namerec ) )
   {
     fprintf(fp,"\tName = %s\t", namestr(&namerec->name));
     switch(namerec->data.source)
@@ -609,15 +632,15 @@ void dump_all_namelists(void)
   for( subrec = FIRST_SUBNET;
        subrec;
        subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec) )
-    dump_subnet_namelist( subrec, fp);
+    dump_subnet_namelist( subrec, fp );
 
-  if(!we_are_a_wins_client())
-    dump_subnet_namelist(unicast_subnet, fp);
+  if( !we_are_a_wins_client() )
+    dump_subnet_namelist( unicast_subnet, fp );
 
-  if(remote_broadcast_subnet->namelist != NULL)
-    dump_subnet_namelist(remote_broadcast_subnet, fp);
+  if( remote_broadcast_subnet->namelist != NULL )
+    dump_subnet_namelist( remote_broadcast_subnet, fp );
 
-  if(wins_server_subnet != NULL)
-    dump_subnet_namelist( wins_server_subnet, fp);
-  fclose(fp);
+  if( wins_server_subnet != NULL )
+    dump_subnet_namelist( wins_server_subnet, fp );
+  fclose( fp );
 }
