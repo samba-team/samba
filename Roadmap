@@ -11,6 +11,8 @@ Version	/ Codename	Notes
 1.9.18 			This version will feature two main areas of improvement
 "Perf-Lock Release"	- introduction of OpLock support
 			- introduction of new browse list and WINS methods
+			- introduction of experimental NT Domain Authentication
+			  as a compile-time option only.
 
 1.9.19			An authentication update release to offer improved
 "Auth Code Release"	security and password synchronisation capabilities
