@@ -205,6 +205,7 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
 
 /****************************************************************************
  Atomic integer change. Returns old value. To create, set initial value in *oldval. 
+ Deprecated. Use int32 version. JRA.
 ****************************************************************************/
 
 int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val)
@@ -227,6 +228,40 @@ int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int chang
 	}
 		
 	if (tdb_store_int(tdb, keystr, val) == -1)
+		goto err_out;
+
+	ret = 0;
+
+  err_out:
+
+	tdb_unlock_bystring(tdb, keystr);
+	return ret;
+}
+
+/****************************************************************************
+ Atomic integer change. Returns old value. To create, set initial value in *oldval. 
+****************************************************************************/
+
+int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int32 change_val)
+{
+	int32 val;
+	int32 ret = -1;
+
+	if (tdb_lock_bystring(tdb, keystr) == -1)
+		return -1;
+
+	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
+		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
+			goto err_out;
+
+		val = *oldval;
+
+	} else {
+		*oldval = val;
+		val += change_val;
+	}
+		
+	if (tdb_store_int32(tdb, keystr, val) == -1)
 		goto err_out;
 
 	ret = 0;
