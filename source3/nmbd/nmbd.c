@@ -186,7 +186,7 @@ static void expire_names_and_servers(time_t t)
 /************************************************************************** **
 reload the list of network interfaces
  ************************************************************************** */
-static void reload_interfaces(time_t t)
+static BOOL reload_interfaces(time_t t)
 {
 	static time_t lastt;
 	int n;
@@ -194,10 +194,10 @@ static void reload_interfaces(time_t t)
 	extern BOOL rescan_listen_set;
 	extern struct in_addr loopback_ip;
 
-	if (t && ((t - lastt) < NMBD_INTERFACES_RELOAD)) return;
+	if (t && ((t - lastt) < NMBD_INTERFACES_RELOAD)) return False;
 	lastt = t;
 
-	if (!interfaces_changed()) return;
+	if (!interfaces_changed()) return False;
 
 	/* the list of probed interfaces has changed, we may need to add/remove
 	   some subnets */
@@ -253,6 +253,13 @@ static void reload_interfaces(time_t t)
 	}
 	
 	rescan_listen_set = True;
+
+	/* We need to shutdown if there are no subnets... */
+	if (FIRST_SUBNET == NULL) {
+		DEBUG(0,("reload_interfaces: No subnets to listen to. Shutting down...\n"));
+		return True;
+	}
+	return False;
 }
 
 
@@ -484,12 +491,14 @@ static void process(void)
     if(reload_after_sighup) {
 	    reload_nmbd_services( True );
 	    reopen_logs();
-	    reload_interfaces(0);
+	    if(reload_interfaces(0))
+			return;
 	    reload_after_sighup = False;
     }
 
     /* check for new network interfaces */
-    reload_interfaces(t);
+    if(reload_interfaces(t))
+		return;
 
     /* free up temp memory */
     lp_talloc_free();
@@ -683,6 +692,11 @@ static void usage(char *pname)
 #if defined(SIGFPE)
   /* we are never interested in SIGFPE */
   BlockSignals(True,SIGFPE);
+#endif
+
+  /* We no longer use USR2... */
+#if defined(SIGUSR2)
+  BlockSignals(True, SIGUSR2);
 #endif
 
   while( EOF != 
