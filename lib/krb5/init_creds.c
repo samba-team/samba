@@ -110,13 +110,13 @@ krb5_get_init_creds_opt_set_default_flags(krb5_context context,
     krb5_appdefault_boolean(context, appname, realm, "proxiable", b, &b);
     krb5_get_init_creds_opt_set_proxiable (opt, b);
 
-    krb5_appdefault_time(context, appname, realm, "ticket_life", 0, &t);
+    krb5_appdefault_time(context, appname, realm, "ticket_lifetime", 0, &t);
     if (t == 0)
 	t = get_config_time (context, realm, "ticket_lifetime", 0);
     if(t != 0)
 	krb5_get_init_creds_opt_set_tkt_life(opt, t);
     
-    krb5_appdefault_time(context, appname, realm, "renewable_life", 0, &t);
+    krb5_appdefault_time(context, appname, realm, "renew_lifetime", 0, &t);
     if (t == 0)
 	t = get_config_time (context, realm, "renew_lifetime", 0);
     if(t != 0)
