@@ -59,6 +59,8 @@ See the cvs log for SAMBA_2_2 for more details
     attributes
 25) Enforce wide links = no on files as well as directories
 26) Include shared library checks for Stratus VOS
+27) Include support for CUPS printer classes and logging the remote 
+    client name
 
 
 Changes since 2.2.7
