@@ -51,7 +51,7 @@
 </p></dd><dt><span class="term">-H &lt;filename&gt;</span></dt><dd><p>NetBIOS lmhosts file.  The lmhosts 
 		file is a list of NetBIOS names to IP addresses that 
 		is loaded by the nmbd server and used via the name 
-		resolution mechanism <a class="indexterm" name="id2797065"></a><a href="#"><i class="parameter"><tt>name resolve order</tt></i></a> described in <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> to resolve any 
+		resolution mechanism <a class="indexterm" name="id2796624"></a><i class="parameter"><tt>name resolve order</tt></i> described in <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> to resolve any 
 		NetBIOS name queries needed by the server. Note 
 		that the contents of this file are <span class="emphasis"><em>NOT</em></span> 
 		used by <b class="command">nmbd</b> to answer any name queries. 
@@ -60,8 +60,8 @@
 		Samba as part of the build process. Common defaults 
 		are <tt class="filename">/usr/local/samba/lib/lmhosts</tt>,
 		<tt class="filename">/usr/samba/lib/lmhosts</tt> or
-		<tt class="filename">/etc/samba/lmhosts</tt>. See the <a href="lmhosts.5.html"><span class="citerefentry"><span class="refentrytitle">lmhosts</span>(5)</span></a> man page for details on the contents of this file.</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the version number for 
-<b class="command">smbd</b>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
+		<tt class="filename">/etc/samba/lmhosts</tt>. See the <a href="lmhosts.5.html"><span class="citerefentry"><span class="refentrytitle">lmhosts</span>(5)</span></a> man page for details on the contents of this file.</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the program version number.
+</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
 information such as what printcap file to use, as well 
@@ -74,13 +74,13 @@ not specified is zero.</p><p>The higher this value, the more detail will be
 logged to the log files about the activities of the 
 server. At level 0, only critical errors and serious 
 warnings will be logged. Level 1 is a reasonable level for
-day to day running - it generates a small amount of 
+day-to-day running - it generates a small amount of 
 information about operations carried out.</p><p>Levels above 1 will generate considerable 
 amounts of log data, and should only be used when 
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2797372"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
+override the <a class="indexterm" name="id2799060"></a><i class="parameter"><tt>log level</tt></i> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
 <tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
@@ -104,13 +104,13 @@ never removed by the client.
 		configuration file. Other common places that systems
 		install this file are <tt class="filename">/usr/samba/lib/smb.conf</tt>
 		and <tt class="filename">/etc/samba/smb.conf</tt>.</p><p>When run as a WINS server (see the
-			<a class="indexterm" name="id2797588"></a><a href="#"><i class="parameter"><tt>wins support</tt></i></a>
+			<a class="indexterm" name="id2799269"></a><i class="parameter"><tt>wins support</tt></i>
 		parameter in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> man page),
 		<b class="command">nmbd</b>
 		will store the WINS database in the file <tt class="filename">wins.dat</tt>
 		in the <tt class="filename">var/locks</tt> directory configured under
 		wherever Samba was configured to install itself.</p><p>If <b class="command">nmbd</b> is acting as a <span class="emphasis"><em>
-				browse master</em></span> (see the <a class="indexterm" name="id2797657"></a><a href="#"><i class="parameter"><tt>local master</tt></i></a>
+				browse master</em></span> (see the <a class="indexterm" name="id2799331"></a><i class="parameter"><tt>local master</tt></i>
 		parameter in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> man page, <b class="command">nmbd</b>
 		will store the browsing database in the file <tt class="filename">browse.dat
 		</tt> in the <tt class="filename">var/locks</tt> directory
@@ -134,14 +134,14 @@ never removed by the client.
 	<a href="inetd.8.html"><span class="citerefentry"><span class="refentrytitle">inetd</span>(8)</span></a>, <a href="smbd.8.html"><span class="citerefentry"><span class="refentrytitle">smbd</span>(8)</span></a>, <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>, <a href="smbclient.1.html"><span class="citerefentry"><span class="refentrytitle">smbclient</span>(1)</span></a>, <a href="testparm.1.html"><span class="citerefentry"><span class="refentrytitle">testparm</span>(1)</span></a>, <a href="testprns.1.html"><span class="citerefentry"><span class="refentrytitle">testprns</span>(1)</span></a>, and the Internet 
 	RFC's <tt class="filename">rfc1001.txt</tt>, <tt class="filename">rfc1002.txt</tt>. 
 	In addition the CIFS (formerly SMB) specification is available 
-	as a link from the Web page <a href="http://samba.org/cifs/" target="_top"> 
-	http://samba.org/cifs/</a>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
+	as a link from the Web page <ulink url="http://samba.org/cifs/"> 
+	http://samba.org/cifs/</ulink>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">
-	ftp://ftp.icce.rug.nl/pub/unix/</a>) and updated for the Samba 2.0 
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
 	XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</p></div></div></body></html>
