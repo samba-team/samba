@@ -445,11 +445,76 @@ static PyObject *py_auth_crap(PyObject *self, PyObject *args)
 	return PyInt_FromLong(response.data.auth.nt_status);
 }
 
+/* Get user info from name */
+
+static PyObject *py_getpwnam(PyObject *self, PyObject *args)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	char *username;
+	PyObject *result;
+
+	if (!PyArg_ParseTuple(args, "s", &username))
+		return NULL;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.username, username);
+
+	if (winbindd_request(WINBINDD_GETPWNAM, &request, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+	
+	if (!py_from_winbind_passwd(&result, &response)) {
+		result = Py_None;
+		Py_INCREF(result);
+	}
+
+	return result;
+}
+
+/* Get user info from uid */
+
+static PyObject *py_getpwuid(PyObject *self, PyObject *args)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	uid_t uid;
+	PyObject *result;
+
+	if (!PyArg_ParseTuple(args, "i", &uid))
+		return NULL;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.data.uid = uid;
+
+	if (winbindd_request(WINBINDD_GETPWUID, &request, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+	
+	if (!py_from_winbind_passwd(&result, &response)) {
+		result = Py_None;
+		Py_INCREF(result);
+	}
+
+	return result;
+}
+
 /*
  * Method dispatch table
  */
 
 static PyMethodDef winbind_methods[] = {
+
+	{ "getpwnam", py_getpwnam, METH_VARARGS, "getpwnam(3)" },
+	{ "getpwuid", py_getpwuid, METH_VARARGS, "getpwuid(3)" },
 
 	/* Name <-> SID conversion */
 

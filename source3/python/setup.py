@@ -130,6 +130,8 @@ setup(
 
     Extension(name = "winbind",
               sources = [samba_srcdir + "python/py_winbind.c",
+                         samba_srcdir + "python/py_winbind_conv.c",
+                         samba_srcdir + "python/py_conv.c",
                          samba_srcdir + "python/py_common.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
