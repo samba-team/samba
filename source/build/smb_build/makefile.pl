@@ -350,6 +350,7 @@ bin/$ctx->{MODULE}: \$(MODULE_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$(MODULE_$ctx->{NAME}_LINK_FLAGS) \\
 		\$(MODULE_$ctx->{NAME}_LINK_LIST)
+module_$ctx->{MODULE}: basics bin/$ctx->{MODULE}
 # Module $ctx->{MODULE}
 ###################################
 ";
@@ -462,7 +463,7 @@ bin/$ctx->{SHARED_LIBRARY_NAME}: bin/$ctx->{SHARED_LIBRARY_SONAME} bin/.dummy
 	}
 
 	$output .= "
-$ctx->{NAME}: $tmprules
+library_$ctx->{NAME}: basics $tmprules
 # End Library $ctx->{NAME}
 ###################################
 ";
@@ -530,6 +531,7 @@ bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST)
 	\@\$(LD) \$(LD_FLAGS) -o \$\@ \\
 		\$(BINARY_$ctx->{NAME}_LINK_FLAGS) \\
 		\$(BINARY_$ctx->{NAME}_LINK_LIST)
+binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
 # End Binary $ctx->{BINARY}
 ###################################
 ";
