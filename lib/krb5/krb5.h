@@ -420,6 +420,9 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 #define KRB5_SENDAUTH_VERSION "KRB5_SENDAUTH_V1.0"
 
+#define KRB5_TGS_NAME_SIZE (6)
+#define KRB5_TGS_NAME ("krbtgt")
+
 /* variables */
 
 extern const char krb5_config_file[];
