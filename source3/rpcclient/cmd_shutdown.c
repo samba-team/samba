@@ -24,6 +24,9 @@
 #include "includes.h"
 #include "rpcclient.h"
 
+#if 0	/* don't uncomment this unless you remove the getopt() calls */
+	/* use net rpc shutdown instead */
+
 /****************************************************************************
 nt shutdown init
 ****************************************************************************/
@@ -96,6 +99,7 @@ static NTSTATUS cmd_shutdown_abort(struct cli_state *cli,
 
 	return result;
 }
+#endif
 
 
 /* List of commands exported by this module */
@@ -103,10 +107,12 @@ struct cmd_set shutdown_commands[] = {
 
 	{ "SHUTDOWN"  },
 
+#if 0
 	{ "shutdowninit", RPC_RTYPE_NTSTATUS, cmd_shutdown_init, NULL, PI_SHUTDOWN, "Remote Shutdown (over shutdown pipe)",
 				"syntax: shutdown [-m message] [-t timeout] [-r] [-h] [-f] (-r == reboot, -h == halt, -f == force)" },
 				
 	{ "shutdownabort", RPC_RTYPE_NTSTATUS, cmd_shutdown_abort, NULL, PI_SHUTDOWN, "Abort Shutdown (over shutdown pipe)",
 				"syntax: shutdownabort" },
+#endif
 	{ NULL }
 };

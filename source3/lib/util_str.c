@@ -799,7 +799,7 @@ DATA_BLOB strhex_to_data_blob(const char *strhex)
 {
 	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
 
-	ret_blob.length = strhex_to_str(ret_blob.data, 	
+	ret_blob.length = strhex_to_str((char*)ret_blob.data, 	
 					strlen(strhex), 
 					strhex);
 
