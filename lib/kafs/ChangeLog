@@ -1,3 +1,7 @@
+2005-02-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: bump version to 4:1:4
+
 2005-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kafs.h: de-__P

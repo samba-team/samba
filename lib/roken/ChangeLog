@@ -1,3 +1,12 @@
+2005-02-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: bump version to 17:0:1
+
+2005-01-19  Dave Love  <d.love@dl.ac.uk>
+
+	* getusershell.c: Include ctype.h, cast argument to isspace to
+	unsigned char.
+
 2004-10-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* parse_time.3, parse_units.c: Change the behavior of the

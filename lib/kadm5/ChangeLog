@@ -1,5 +1,7 @@
 2004-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: bump version to 7:7:0 and 6:5:2
+	
 	* default_keys.c (parse_file): use hdb_generate_key_set
 	
 	* keys.c,set_keys.c: Move keyset parsing and password based keyset
