@@ -467,7 +467,7 @@ do_login(struct passwd *pwd, char *tty, char *ttyn)
     /* all kinds of different magic */
 
 #ifdef HAVE_SHADOW_H
-    check_shadow(pwd,sp);
+    check_shadow(pwd, sp);
 #endif
 
     if(do_osfc2_magic(pwd->pw_uid))
@@ -637,7 +637,7 @@ main(int argc, char **argv)
 
     if(*argv){
 	if(strchr(*argv, '=') == NULL && strcmp(*argv, "-") != 0){
-	    strcpy_truncate (username, *argv, sizeof(username));
+	    strlcpy (username, *argv, sizeof(username));
 	    ask = 0;
 	}
     }

@@ -318,13 +318,13 @@ display_tokens(int do_verbose)
 	cell = r;
 
 	gettimeofday (&tv, NULL);
-	strcpy_truncate (buf1, printable_time(ct.BeginTimestamp),
+	strlcpy (buf1, printable_time(ct.BeginTimestamp),
 			 sizeof(buf1));
 	if (do_verbose || tv.tv_sec < ct.EndTimestamp)
-	    strcpy_truncate (buf2, printable_time(ct.EndTimestamp),
+	    strlcpy (buf2, printable_time(ct.EndTimestamp),
 			     sizeof(buf2));
 	else
-	    strcpy_truncate (buf2, ">>> Expired <<<", sizeof(buf2));
+	    strlcpy (buf2, ">>> Expired <<<", sizeof(buf2));
 
 	printf("%s  %s  ", buf1, buf2);
 

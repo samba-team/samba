@@ -279,7 +279,7 @@ proto (int sock, const char *service)
         goto out;
 
     }
-    strcpy_truncate(krb5_tkfile,ccname,sizeof(krb5_tkfile));
+    strlcpy(krb5_tkfile,ccname,sizeof(krb5_tkfile));
     syslog_and_cont("%s forwarded ticket to %s,%s",
 		    name,
 		    (char *)(remotename.data),ccname);

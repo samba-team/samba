@@ -74,7 +74,7 @@ random_password(char *pw, size_t len)
 		      "abcdefghijklmnopqrstuvwxyz", 7, 
 		      "ABCDEFGHIJKLMNOPQRSTUVWXYZ", 2, 
 		      "@$%&*()-+=:,/<>1234567890", 1);
-    strcpy_truncate(pw, pass, len);
+    strlcpy(pw, pass, len);
     memset(pass, 0, strlen(pass));
     free(pass);
 #endif

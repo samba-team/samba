@@ -309,8 +309,8 @@ ipv6_print_addr (const krb5_address *addr, char *str, size_t len)
 	    for(i = 0; i < addr->address.length; i++) {
 		snprintf(buf2, sizeof(buf2), "%02x", p[i]);
 		if(i > 0 && (i & 1) == 0)
-		    strcat_truncate(buf, ":", sizeof(buf));
-		strcat_truncate(buf, buf2, sizeof(buf));
+		    strlcat(buf, ":", sizeof(buf));
+		strlcat(buf, buf2, sizeof(buf));
 	    }
 	}
     return snprintf(str, len, "IPv6:%s", buf);

@@ -368,7 +368,7 @@ recv_krb5_auth (int s, u_char *buf,
 	    if (inet_ntop (thataddr->sa_family,
 			   socket_get_address (thataddr),
 			   addr_str, sizeof(addr_str)) == NULL)
-		strcpy_truncate (addr_str, "unknown address",
+		strlcpy (addr_str, "unknown address",
 				 sizeof(addr_str));
 
 	    syslog(LOG_INFO|LOG_AUTH,

@@ -262,7 +262,7 @@ main(int argc, char **argv)
 		      socket_get_address (sa),
 		      addr_name,
 		      sizeof(addr_name)) == NULL)
-	    strcpy_truncate (addr_name, "unknown address",
+	    strlcpy (addr_name, "unknown address",
 			     sizeof(addr_name));
 
 	krb5_log(context, fac, 0, "Connection from %s", addr_name);

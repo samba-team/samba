@@ -85,12 +85,12 @@ ret_vals(krb5_storage *sp, Kadm_vals *vals)
 	    switch(field) {
 	    case KADM_NAME:
 		krb5_ret_stringz(sp, &tmp_string);
-		strcpy_truncate(vals->name, tmp_string, sizeof(vals->name));
+		strlcpy(vals->name, tmp_string, sizeof(vals->name));
 		free(tmp_string);
 		break;
 	    case KADM_INST:
 		krb5_ret_stringz(sp, &tmp_string);
-		strcpy_truncate(vals->instance, tmp_string, 
+		strlcpy(vals->instance, tmp_string, 
 				sizeof(vals->instance));
 		free(tmp_string);
 		break;
@@ -113,13 +113,13 @@ ret_vals(krb5_storage *sp, Kadm_vals *vals)
 		break;
 	    case KADM_MODNAME:
 		krb5_ret_stringz(sp, &tmp_string);
-		strcpy_truncate(vals->mod_name, tmp_string, 
+		strlcpy(vals->mod_name, tmp_string, 
 				sizeof(vals->mod_name));
 		free(tmp_string);
 		break;
 	    case KADM_MODINST:
 		krb5_ret_stringz(sp, &tmp_string);
-		strcpy_truncate(vals->mod_instance, tmp_string, 
+		strlcpy(vals->mod_instance, tmp_string, 
 				sizeof(vals->mod_instance));
 		free(tmp_string);
 		break;

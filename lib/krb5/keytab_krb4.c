@@ -70,7 +70,7 @@ krb4_kt_get_name (krb5_context context,
 {
     struct krb4_kt_data *d = id->data;
 
-    strcpy_truncate (name, d->filename, name_sz);
+    strlcpy (name, d->filename, name_sz);
     return 0;
 }
 

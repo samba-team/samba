@@ -251,7 +251,7 @@ fkt_get_name(krb5_context context,
 {
     /* This function is XXX */
     struct fkt_data *d = id->data;
-    strcpy_truncate(name, d->filename, namesize);
+    strlcpy(name, d->filename, namesize);
     return 0;
 }
 

@@ -124,12 +124,12 @@ hdb_entry2string(krb5_context context, hdb_entry *ent, char **str)
     ret = krb5_unparse_name(context, ent->principal, &p);
     if(ret)
 	return ret;
-    strcat_truncate(buf, p, sizeof(buf));
-    strcat_truncate(buf, " ", sizeof(buf));
+    strlcat(buf, p, sizeof(buf));
+    strlcat(buf, " ", sizeof(buf));
     free(p);
     /* --- kvno */
     asprintf(&p, "%d", ent->kvno);
-    strcat_truncate(buf, p, sizeof(buf));
+    strlcat(buf, p, sizeof(buf));
     free(p);
     /* --- keys */
     for(i = 0; i < ent->keys.len; i++){
@@ -141,75 +141,75 @@ hdb_entry2string(krb5_context context, hdb_entry *ent, char **str)
 	else
 	    asprintf(&p, "::%d:", 
 		     ent->keys.val[i].key.keytype);
-	strcat_truncate(buf, p, sizeof(buf));
+	strlcat(buf, p, sizeof(buf));
 	free(p);
 	/* --- keydata */
 	append_hex(buf, &ent->keys.val[i].key.keyvalue);
-	strcat_truncate(buf, ":", sizeof(buf));
+	strlcat(buf, ":", sizeof(buf));
 	/* --- salt */
 	if(ent->keys.val[i].salt){
 	    asprintf(&p, "%u/", ent->keys.val[i].salt->type);
-	    strcat_truncate(buf, p, sizeof(buf));
+	    strlcat(buf, p, sizeof(buf));
 	    free(p);
 	    append_hex(buf, &ent->keys.val[i].salt->salt);
 	}else
-	    strcat_truncate(buf, "-", sizeof(buf));
+	    strlcat(buf, "-", sizeof(buf));
     }
-    strcat_truncate(buf, " ", sizeof(buf));
+    strlcat(buf, " ", sizeof(buf));
     /* --- created by */
     event2string(context, &ent->created_by, &p);
-    strcat_truncate(buf, p, sizeof(buf));
-    strcat_truncate(buf, " ", sizeof(buf));
+    strlcat(buf, p, sizeof(buf));
+    strlcat(buf, " ", sizeof(buf));
     free(p);
     /* --- modified by */
     event2string(context, ent->modified_by, &p);
-    strcat_truncate(buf, p, sizeof(buf));
-    strcat_truncate(buf, " ", sizeof(buf));
+    strlcat(buf, p, sizeof(buf));
+    strlcat(buf, " ", sizeof(buf));
     free(p);
 
     /* --- valid start */
     if(ent->valid_start)
-	strcat_truncate(buf, time2str(*ent->valid_start), sizeof(buf));
+	strlcat(buf, time2str(*ent->valid_start), sizeof(buf));
     else
-	strcat_truncate(buf, "-", sizeof(buf));
-    strcat_truncate(buf, " ", sizeof(buf));
+	strlcat(buf, "-", sizeof(buf));
+    strlcat(buf, " ", sizeof(buf));
 
     /* --- valid end */
     if(ent->valid_end)
-	strcat_truncate(buf, time2str(*ent->valid_end), sizeof(buf));
+	strlcat(buf, time2str(*ent->valid_end), sizeof(buf));
     else
-	strcat_truncate(buf, "-", sizeof(buf));
-    strcat_truncate(buf, " ", sizeof(buf));
+	strlcat(buf, "-", sizeof(buf));
+    strlcat(buf, " ", sizeof(buf));
     
     /* --- password ends */
     if(ent->pw_end)
-	strcat_truncate(buf, time2str(*ent->pw_end), sizeof(buf));
+	strlcat(buf, time2str(*ent->pw_end), sizeof(buf));
     else
-	strcat_truncate(buf, "-", sizeof(buf));
-    strcat_truncate(buf, " ", sizeof(buf));
+	strlcat(buf, "-", sizeof(buf));
+    strlcat(buf, " ", sizeof(buf));
 
     /* --- max life */
     if(ent->max_life){
 	asprintf(&p, "%d", *ent->max_life);
-	strcat_truncate(buf, p, sizeof(buf));
+	strlcat(buf, p, sizeof(buf));
 	free(p);
     }else
-	strcat_truncate(buf, "-", sizeof(buf));
-    strcat_truncate(buf, " ", sizeof(buf));
+	strlcat(buf, "-", sizeof(buf));
+    strlcat(buf, " ", sizeof(buf));
 
     /* --- max renewable life */
     if(ent->max_renew){
 	asprintf(&p, "%d", *ent->max_renew);
-	strcat_truncate(buf, p, sizeof(buf));
+	strlcat(buf, p, sizeof(buf));
 	free(p);
     }else
-	strcat_truncate(buf, "-", sizeof(buf));
+	strlcat(buf, "-", sizeof(buf));
     
-    strcat_truncate(buf, " ", sizeof(buf));
+    strlcat(buf, " ", sizeof(buf));
 
     /* --- flags */
     asprintf(&p, "%d", HDBFlags2int(ent->flags));
-    strcat_truncate(buf, p, sizeof(buf));
+    strlcat(buf, p, sizeof(buf));
     free(p);
 
     *str = strdup(buf);

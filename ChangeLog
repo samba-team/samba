@@ -1,3 +1,7 @@
+1999-09-16  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: test for strlcpy, strlcat
+
 1999-09-14  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password): return

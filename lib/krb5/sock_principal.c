@@ -70,7 +70,7 @@ krb5_sock_to_principal (krb5_context context,
 
     if (hostent == NULL)
 	return h_errno;
-    strcpy_truncate(hname, hostent->h_name, sizeof(hname));
+    strlcpy(hname, hostent->h_name, sizeof(hname));
     return krb5_sname_to_principal (context,
 				    hname,
 				    sname,
