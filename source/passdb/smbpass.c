@@ -116,14 +116,14 @@ static void *startsmbfilepwent_internal(const char *pfile, enum pwf_access_type 
         DEBUG(0, ("startsmbfilepwent_internal: unable to stat file %s. Error was %s\n", pfile, strerror(errno)));
         pw_file_unlock(fileno(fp), lock_depth);
         fclose(fp);
-        return False;
+        return NULL;
       }
 
       if (sys_fstat(fileno(fp),&sbuf2) != 0) {
         DEBUG(0, ("startsmbfilepwent_internal: unable to fstat file %s. Error was %s\n", pfile, strerror(errno)));
         pw_file_unlock(fileno(fp), lock_depth);
         fclose(fp);
-        return False;
+        return NULL;
       }
 
       if( sbuf1.st_ino == sbuf2.st_ino) {
@@ -149,7 +149,13 @@ static void *startsmbfilepwent_internal(const char *pfile, enum pwf_access_type 
   setvbuf(fp, (char *)NULL, _IOFBF, 1024);
 
   /* Make sure it is only rw by the owner */
-  chmod(pfile, 0600);
+  if(fchmod(fileno(fp), S_IRUSR|S_IWUSR) == -1) {
+    DEBUG(0, ("startsmbfilepwent_internal: failed to set 0600 permissions on password file %s. \
+Error was %s\n.", pfile, strerror(errno) ));
+    pw_file_unlock(fileno(fp), lock_depth);
+    fclose(fp);
+    return NULL;
+  }
 
   /* We have a lock on the file. */
   return (void *)fp;
