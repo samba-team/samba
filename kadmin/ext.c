@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -71,6 +71,7 @@ do_ext_keytab(krb5_principal principal, void *data)
 	key.keyblock.keytype = k->key_data_type[0];
 	key.keyblock.keyvalue.length = k->key_data_length[0];
 	key.keyblock.keyvalue.data = k->key_data_contents[0];
+	key.timestamp = time(NULL);
 	ret = krb5_kt_add_entry(context, e->keytab, &key);
 	if(ret)
 	    krb5_warn(context, ret, "krb5_kt_add_entry");
