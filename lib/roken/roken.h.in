@@ -94,6 +94,9 @@
 #if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
 #include <sys/ioctl.h>
 #endif
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
 #include <time.h>
@@ -185,13 +188,6 @@ char * strupr(char *);
 
 #ifndef HAVE_GETDTABLESIZE
 int getdtablesize(void);
-#endif
-
-#if IRIX != 4 /* fix for compiler bug */
-#ifdef RETSIGTYPE
-typedef RETSIGTYPE (*SigAction)(/* int??? */);
-SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
-#endif
 #endif
 
 #if !defined(HAVE_STRERROR) && !defined(strerror)
