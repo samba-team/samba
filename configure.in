@@ -62,6 +62,14 @@ rk_TEST_PACKAGE(openldap,
 #include <ldap.h>],
 [-lldap -llber],,,OPENLDAP)
 
+AC_ARG_ENABLE(hdb-openldap-module, 
+	AC_HELP_STRING([--hdb-openldap-module],
+		[if you want support to build openldap hdb as shared object]))
+if test "$enable_hdb_openldap_module" = yes -a "$with_openldap" = yes; then
+    AC_DEFINE(OPENLDAP_MODULE, 1, [Define if you want support for hdb ldap module])
+fi
+AM_CONDITIONAL(OPENLDAP_MODULE, test "$enable_hdb_openldap_module" = yes -a "$with_openldap" = yes)
+
 rk_TEST_PACKAGE(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena, KRB4, krb4-config)
 
 LIB_kdb=
