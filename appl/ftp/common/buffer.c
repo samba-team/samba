@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -49,7 +49,7 @@ alloc_buffer (void *oldbuf, size_t *sz, struct stat *st)
     size_t new_sz;
 
     new_sz = BUFSIZ;
-#ifdef HAVE_ST_BLKSIZE
+#ifdef HAVE_STRUCT_STAT_ST_BLKSIZE
     if (st)
 	new_sz = max(BUFSIZ, st->st_blksize);
 #endif
