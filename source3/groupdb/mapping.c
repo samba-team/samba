@@ -180,6 +180,8 @@ BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 	int len;
 	int i;
 	PRIVILEGE_SET *set;
+
+	init_group_mapping();
 	
 	sid_to_string(string_sid, &map->sid);
 
@@ -489,6 +491,8 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 	int i;
 	PRIVILEGE_SET *set;
 	
+	init_group_mapping();
+
 	/* the key is the SID, retrieving is direct */
 
 	sid_to_string(string_sid, &sid);
@@ -542,6 +546,8 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 	int ret;
 	int i;
 	PRIVILEGE_SET *set;
+
+	init_group_mapping();
 
 	/* we need to enumerate the TDB to find the GID */
 
@@ -600,6 +606,8 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map)
 	int i;
 	PRIVILEGE_SET *set;
 
+	init_group_mapping();
+
 	/* we need to enumerate the TDB to find the name */
 
 	for (kbuf = tdb_firstkey(tdb); 
@@ -655,6 +663,8 @@ BOOL group_map_remove(DOM_SID sid)
 	pstring key;
 	fstring string_sid;
 	
+	init_group_mapping();
+
 	/* the key is the SID, retrieving is direct */
 
 	sid_to_string(string_sid, &sid);
@@ -690,6 +700,8 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 	int entries=0;
 	int i;
 	PRIVILEGE_SET *set;
+
+	init_group_mapping();
 
 	*num_entries=0;
 	*rmap=NULL;
