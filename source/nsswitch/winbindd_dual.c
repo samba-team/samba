@@ -524,17 +524,19 @@ static NTSTATUS winbindd_samr_enumusers(struct winbindd_single_daemon *d,
 					 &num_users);
 
 	if (NT_STATUS_IS_OK(result)) {
-		client->response = strdup("DONE\n");
+		asprintf(&client->response, "DONE %d\n", num_users);
 	} else if (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
-		asprintf(&client->response, "RESUME %d\n", resume);
+		asprintf(&client->response, "RESUME %d %d\n", resume,
+			 num_users);
 	} else {
 		return result;
 	}
 
 	for (i=0; i<num_users; i++) {
 		char *tmp = client->response;
-		asprintf(&client->response, "%s%d %s\n", client->response,
-			 rids[i], users[i]);
+		asprintf(&client->response, "%s%s-%d %s\n", client->response,
+			 sid_string_static(&d->conn.sam_sid), rids[i],
+			 users[i]);
 		free(tmp);
 	}
 
@@ -1062,27 +1064,6 @@ static BOOL new_samr_child(TALLOC_CTX *mem_ctx,
 	return restart_child(mem_ctx, child);
 }
 
-static void add_ourself(struct wb_client_state *state,
-			TALLOC_CTX *mem_ctx, int *num_domains,
-			char ***domain_names, DOM_SID **sids)
-{
-	char *my_name;
-	DOM_SID my_sid;
-
-	if (!wb_dominfo(state, mem_ctx, &my_name, &my_sid))
-		return;
-
-	*domain_names = talloc_realloc(mem_ctx, (*domain_names),
-				       ((*num_domains)+1) *
-				       sizeof(**domain_names));
-	*sids =         talloc_realloc(mem_ctx, (*sids),
-				       ((*num_domains)+1) * sizeof(**sids));
-
-	(*domain_names)[*num_domains] = my_name;
-	sid_copy(&((*sids)[*num_domains]), &my_sid);
-	*num_domains += 1;
-}
-
 void check_children(void)
 {
 	TALLOC_CTX *mem_ctx;
@@ -1128,7 +1109,7 @@ void check_children(void)
 		goto done;
 	}
 
-	add_ourself(&state, mem_ctx, &num_domains, &domain_names, &sids);
+	wb_add_ourself(&state, mem_ctx, &num_domains, &domain_names, &sids);
 
 	for (i=0; i<num_domains; i++) {
 

@@ -908,15 +908,38 @@ void wb_init_client_state(struct wb_client_state *state)
 {
 	state->lsa_socket = -1;
 	state->idmap_socket = -1;
+	state->num_sam_sockets = 0;
+	state->sam_sockets = NULL;
+	state->sam_socket_sids = NULL;
+	state->domains_ctx = NULL;
+	state->users_ctx = NULL;
+	state->num_users = 0;
+	state->current_user = 0;
 }
 
 void wb_destroy_client_state(struct wb_client_state *state)
 {
+	int i;
+
 	if (state->lsa_socket > 0)
 		close(state->lsa_socket);
 
 	if (state->idmap_socket > 0)
 		close(state->idmap_socket);
+
+	if (state->domains_ctx != NULL)
+		talloc_destroy(state->domains_ctx);
+
+	if (state->users_ctx != NULL)
+		talloc_destroy(state->users_ctx);
+
+	for (i=0; i<state->num_sam_sockets; i++) {
+		if (state->sam_sockets[i] != -1)
+			close(state->sam_sockets[i]);
+	}
+
+	SAFE_FREE(state->sam_sockets);
+	SAFE_FREE(state->sam_socket_sids);
 }
 
 static BOOL wb_lsa_request(struct wb_client_state *state,
@@ -1024,6 +1047,28 @@ BOOL wb_enumtrust(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+BOOL wb_add_ourself(struct wb_client_state *state,
+		    TALLOC_CTX *mem_ctx, int *num_domains,
+		    char ***domain_names, DOM_SID **sids)
+{
+	char *my_name;
+	DOM_SID my_sid;
+
+	if (!wb_dominfo(state, mem_ctx, &my_name, &my_sid))
+		return False;
+
+	*domain_names = talloc_realloc(mem_ctx, (*domain_names),
+				       ((*num_domains)+1) *
+				       sizeof(**domain_names));
+	*sids =         talloc_realloc(mem_ctx, (*sids),
+				       ((*num_domains)+1) * sizeof(**sids));
+
+	(*domain_names)[*num_domains] = my_name;
+	sid_copy(&((*sids)[*num_domains]), &my_sid);
+	*num_domains += 1;
+	return True;
+}
+
 BOOL wb_dominfo(struct wb_client_state *state,
 		TALLOC_CTX *mem_ctx, char **name, DOM_SID *sid)
 {
@@ -1048,4 +1093,182 @@ BOOL wb_dominfo(struct wb_client_state *state,
 		return False;
 
 	return True;
+}
+
+static int sam_socket_num(struct wb_client_state *state, const DOM_SID *sid)
+{
+	int i;
+
+	for (i=0; i<state->num_sam_sockets; i++) {
+		if (sid_compare(&state->sam_socket_sids[i], sid) == 0)
+			return i;
+	}
+
+	add_sid_to_array(sid, &state->sam_socket_sids,
+			 &state->num_sam_sockets);
+
+	state->sam_sockets = Realloc(state->sam_sockets,
+				     state->num_sam_sockets *
+				     sizeof(*state->sam_sockets));
+
+	state->sam_sockets[state->num_sam_sockets-1] = -1;
+
+	return state->num_sam_sockets-1;
+}
+
+static BOOL wb_sam_request(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
+			   const DOM_SID *sam_sid, const char *request,
+			   char **response)
+{
+	fstring socket_name;
+	int socket_index = sam_socket_num(state, sam_sid);
+
+	fstr_sprintf(socket_name, "samr-%s", sid_string_static(sam_sid));
+
+	return wb_single_request(mem_ctx, &state->sam_sockets[socket_index],
+				 socket_name, 4, request, response);
+}
+
+static BOOL wb_enumusers(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
+			 const DOM_SID *sam_sid, uint32 *resume_key,
+			 DOM_SID **sids, char ***names, int *num_users)
+{
+	fstring request;
+	char *response, *p;
+	int i;
+
+	fstr_sprintf(request, "enumusers %d\n", *resume_key);
+
+	if (!wb_sam_request(state, mem_ctx, sam_sid, request, &response))
+		return False;
+
+	if (strncmp(response, "RESUME ", strlen("RESUME ")) == 0) {
+		p = strchr(response, ' ');
+		if (p == NULL)
+			return False;
+		p += 1;
+		*resume_key = strtol(p, NULL, 10);
+		p = strchr(p, ' ');
+	} else if (strncmp(response, "DONE ", strlen("DONE ")) == 0) {
+		*resume_key = -1;
+		p = strchr(response, ' ');
+	} else {
+		return False;
+	}
+
+	if (p == NULL)
+		return False;
+
+	p += 1;
+
+	*num_users = strtol(p, NULL, 10);
+
+	p = strchr(p, '\n');
+	if (p == NULL)
+		return False;
+	p += 1;
+
+	*sids = talloc(mem_ctx, (*num_users) * sizeof(**sids));
+	*names = talloc(mem_ctx, (*num_users) * sizeof(**names));
+
+	for (i=0; i<*num_users; i++) {
+		char *q;
+
+		q = strchr(p, ' ');
+		if (q == NULL)
+			return False;
+		*q = '\0';
+		q += 1;
+
+		if (!string_to_sid(&(*sids)[i], p))
+			return False;
+
+		p = strchr(q, '\n');
+		if (p == NULL)
+			return False;
+		*p = '\0';
+		(*names)[i] = q;
+		p += 1;
+	}
+
+	return True;
+
+	
+}
+
+void wb_setpwent(struct wb_client_state *state)
+{
+
+	if (state->domains_ctx != NULL)
+		talloc_destroy(state->domains_ctx);
+
+	state->domains_ctx = talloc_init("wb_getpwent");
+
+	if ( (!wb_enumtrust(state, state->domains_ctx, &state->num_domains,
+			    &state->domain_names, &state->domain_sids)) ||
+	     (!wb_add_ourself(state, state->domains_ctx, &state->num_domains,
+			      &state->domain_names, &state->domain_sids)) ) {
+		state->num_domains = 0;
+		state->current_domain = 0;
+		talloc_destroy(state->domains_ctx);
+		state->domains_ctx = NULL;
+		return;
+	}
+	state->current_domain = -1;
+	state->resume_key = -1;
+}
+
+BOOL wb_getpwent(struct wb_client_state *state, TALLOC_CTX *mem_ctx,
+		 char **domain, char **name, DOM_SID *sid)
+{
+	if (state->current_user >= state->num_users) {
+
+		if (state->resume_key == -1) {
+			state->current_domain += 1;
+
+			if (state->current_domain >= state->num_domains)
+				return False;
+
+			state->resume_key = 0;
+			state->num_users = 0;
+			state->current_user = 0;
+		}
+
+		if (state->users_ctx != NULL)
+			talloc_destroy(state->users_ctx);
+
+		state->users_ctx = talloc_init("wb_getpwent");
+
+		if (!wb_enumusers(state, state->users_ctx,
+				  &state->domain_sids[state->current_domain],
+				  &state->resume_key, &state->user_sids,
+				  &state->user_names, &state->num_users))
+			return False;
+
+		state->current_user = 0;
+	}
+
+	*domain = talloc_strdup(mem_ctx,
+				state->domain_names[state->current_domain]);
+	*name = talloc_strdup(mem_ctx, state->user_names[state->current_user]);
+	sid_copy(sid, &state->user_sids[state->current_user]);
+
+	state->current_user += 1;
+
+	return True;
+}
+
+void wb_endpwent(struct wb_client_state *state)
+{
+	if (state->domains_ctx != NULL)
+		talloc_destroy(state->domains_ctx);
+	state->num_domains = 0;
+	state->current_domain = 0;
+
+	if (state->users_ctx != NULL)
+		talloc_destroy(state->users_ctx);
+	state->num_users = 0;
+	state->current_user = 0;
+
+	return;
 }
