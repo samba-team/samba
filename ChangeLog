@@ -1,3 +1,10 @@
+Thu Sep  4 04:45:49 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/roken/roken.h: fallback definition of `O_ACCMODE'
+
+	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): be more careful when
+ 	checking for a v4 reply
+
 Wed Sep  3 18:20:14 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/hprop.c: Add `--decrypt' and `--encrypt' flags.
