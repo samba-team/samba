@@ -230,8 +230,8 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 
 	/* the read request starts from where the SMBtrans2 left off. */
 	data_pos = p->file_offset - p->hdr_offsets;
-	this_pdu_data_pos = data_pos - p->prev_pdu_file_offset;
 	pdu_data_sent = p->file_offset - p->prev_pdu_file_offset;
+	this_pdu_data_pos = (pdu_data_sent == 0) ? 0 : (pdu_data_sent - 0x18);
 
 	if (!IS_BITS_SET_ALL(p->hdr.flags, RPC_FLG_LAST))
 	{
@@ -255,7 +255,7 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	}
 	
 	pdu_len = mem_buf_len(p->rhdr.data);
-	num = pdu_len - (int)this_pdu_data_pos;
+	num = pdu_len - this_pdu_data_pos;
 	
 	DEBUG(6,("read_pipe: pdu_len: %d num: %d n: %d\n", pdu_len, num, n));
 	
