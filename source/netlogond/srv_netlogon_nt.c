@@ -52,7 +52,15 @@ static uint32 direct_samr_userinfo(const UNISTR2 * uni_user,
 	uint32 status_pwd = NT_STATUS_NOPROBLEMO;
 	uint32 status_grp = NT_STATUS_NOPROBLEMO;
 
-	ZERO_STRUCTP(ctr);
+	if (ctr == NULL)
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!set)
+	{
+		ZERO_STRUCTP(ctr);
+	}
 
 	status_sam = _samr_connect(NULL, 0x02000000, &sam_pol);
 	if (status_sam == NT_STATUS_NOPROBLEMO)
@@ -82,7 +90,7 @@ static uint32 direct_samr_userinfo(const UNISTR2 * uni_user,
 	}
 	if (status_usr == NT_STATUS_NOPROBLEMO)
 	{
-		if (set && gids != NULL && num_grps != NULL)
+		if (!set && gids != NULL && num_grps != NULL)
 		{
 			status_grp = _samr_query_usergroups(&usr_pol,
 							    num_grps, gids);
@@ -93,8 +101,7 @@ static uint32 direct_samr_userinfo(const UNISTR2 * uni_user,
 		}
 		else
 		{
-			status_pwd =
-				_samr_query_userinfo(&usr_pol, level, ctr);
+			status_pwd = _samr_query_userinfo(&usr_pol, level, ctr);
 		}
 	}
 	if (status_usr == NT_STATUS_NOPROBLEMO)
@@ -107,6 +114,11 @@ static uint32 direct_samr_userinfo(const UNISTR2 * uni_user,
 	if (status_pwd != NT_STATUS_NOPROBLEMO)
 	{
 		return status_pwd;
+	}
+
+	if (status_usr != NT_STATUS_NOPROBLEMO)
+	{
+		return status_usr;
 	}
 
 	if (status_grp != NT_STATUS_NOPROBLEMO)
@@ -694,6 +706,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 	unsigned char hash3_pwd[16];
 	uint32 status_pwd;
 
+	const UNISTR2 *uni_trust_name;
 	fstring trust_name;
 	struct dcinfo dc;
 	const UNISTR2 *uni_samusr;
@@ -702,8 +715,8 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 
 	ZERO_STRUCT(dc);
 
-	uni_samusr = &(clnt_id->login.uni_comp_name);
-	unistr2_to_ascii(trust_name, uni_samusr, sizeof(trust_name) - 1);
+	uni_trust_name = &(clnt_id->login.uni_comp_name);
+	unistr2_to_ascii(trust_name, uni_trust_name, sizeof(trust_name) - 1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -720,15 +733,23 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 
 	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
 
-	unistr2_to_ascii(trust_acct, &(clnt_id->login.uni_acct_name),
-			 sizeof(trust_acct) - 1);
+	uni_samusr = &(clnt_id->login.uni_acct_name);
+	unistr2_to_ascii(trust_acct, uni_samusr, sizeof(trust_acct) - 1);
 
 	DEBUG(3, ("Server Password Set Wksta:[%s]\n", trust_acct));
 
+	/* get info for trust account */
+	ZERO_STRUCT(ctr);
 	become_root(True);
 	status_pwd = direct_samr_userinfo(uni_samusr, 0x12, &ctr,
 					  NULL, NULL, False);
 	unbecome_root(True);
+
+	if (status_pwd != NT_STATUS_NOPROBLEMO)
+	{
+		free_samr_userinfo_ctr(&ctr);
+		return status_pwd;
+	}
 
 	acb_info = ctr.info.id12->acb_info;
 
@@ -768,12 +789,6 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 		{
 			return NT_STATUS_ACCESS_DENIED;
 		}
-	}
-
-	if (status_pwd != NT_STATUS_NOPROBLEMO)
-	{
-		free_samr_userinfo_ctr(&ctr);
-		return status_pwd;
 	}
 
 	/* Some debug output, needed an iterater variable */
