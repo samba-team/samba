@@ -48,6 +48,8 @@
  *
  */
 
+struct gss_msg_order;
+
 typedef struct gss_ctx_id_t_desc_struct {
   struct krb5_auth_context_data *auth_context;
   gss_name_t source, target;
@@ -57,6 +59,7 @@ typedef struct gss_ctx_id_t_desc_struct {
   struct krb5_ticket *ticket;
   time_t lifetime;
   HEIMDAL_MUTEX ctx_id_mutex;
+  struct gss_msg_order *order;
 } gss_ctx_id_t_desc;
 
 typedef struct gss_cred_id_t_desc_struct {
@@ -184,8 +187,6 @@ gssapi_lifetime_left(OM_uint32 *, OM_uint32, OM_uint32 *);
 
 /* sequence */
 
-struct gss_msg_order;
-
 OM_uint32
 gssapi_msg_order_create(OM_uint32 *, struct gss_msg_order **, 
 			OM_uint32, OM_uint32, OM_uint32);
@@ -194,5 +195,16 @@ gssapi_msg_order_destroy(struct gss_msg_order **);
 
 OM_uint32
 gssapi_msg_order_check(struct gss_msg_order *, OM_uint32);
+
+OM_uint32
+gssapi_msg_order_f(OM_uint32);
+
+/* 8003 */
+
+krb5_error_code
+gssapi_encode_om_uint32(OM_uint32, u_char *);
+
+krb5_error_code
+gssapi_decode_om_uint32(u_char *, OM_uint32 *);
 
 #endif
