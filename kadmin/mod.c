@@ -128,7 +128,7 @@ mod_entry(int argc, char **argv)
 				  KADM5_PRINC_EXPIRE_TIME |
 				  KADM5_PW_EXPIRATION);
 	if (ret) {
-	    printf ("no such principal: %s\n", argv[1]);
+	    printf ("no such principal: %s\n", argv[0]);
 	    krb5_free_principal (context, princ_ent);
 	    return 0;
 	}
