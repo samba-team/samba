@@ -30,13 +30,6 @@ struct samdb_context {
 	struct samdb_context **static_ptr;
 };
 
-
-#define ALLOC_CHECK(ptr) do {\
-	if (!(ptr)) {\
-		return NT_STATUS_NO_MEMORY;\
-	}\
-} while(0)
-
 #define VALID_DN_SYNTAX(dn,i) do {\
 	if (!(dn)) {\
 		return NT_STATUS_NO_MEMORY;\
@@ -65,10 +58,10 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	const char *errstr = NULL;
 
 	local_ctx = talloc_named(call, 0, "sldb_Search local memory context");
-	ALLOC_CHECK(local_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	samdb = samdb_connect(local_ctx);
-	ALLOC_CHECK(samdb);
+	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	basedn = ldap_parse_dn(local_ctx, r->basedn);
 	VALID_DN_SYNTAX(basedn,0);
@@ -93,7 +86,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 
 	if (r->num_attributes >= 1) {
 		attrs = talloc_array_p(samdb, const char *, r->num_attributes+1);
-		ALLOC_CHECK(attrs);
+		NT_STATUS_HAVE_NO_MEMORY(attrs);
 
 		for (i=0; i < r->num_attributes; i++) {
 			DEBUG(10,("sldb_Search: attrs: [%s]\n",r->attributes[i]));
@@ -107,7 +100,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 
 	for (i=0; i < count; i++) {
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
-		ALLOC_CHECK(ent_r);
+		NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
 		ent = &ent_r->msg.r.SearchResultEntry;
 		ent->dn = talloc_steal(ent_r, res[i]->dn);
@@ -118,7 +111,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		}
 		ent->num_attributes = res[i]->num_elements;
 		ent->attributes = talloc_array_p(ent_r, struct ldap_attribute, ent->num_attributes);
-		ALLOC_CHECK(ent->attributes);
+		NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
 		for (j=0; j < ent->num_attributes; j++) {
 			ent->attributes[j].name = talloc_steal(ent->attributes, res[i]->elements[j].name);
 			ent->attributes[j].num_values = 0;
@@ -129,7 +122,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 			ent->attributes[j].num_values = res[i]->elements[j].num_values;
 			ent->attributes[j].values = talloc_array_p(ent->attributes,
 							DATA_BLOB, ent->attributes[j].num_values);
-			ALLOC_CHECK(ent->attributes[j].values);
+			NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
 			for (y=0; y < ent->attributes[j].num_values; y++) {
 				ent->attributes[j].values[y].length = res[i]->elements[j].values[y].length;
 				ent->attributes[j].values[y].data = talloc_steal(ent->attributes[j].values,
@@ -145,7 +138,7 @@ queue_reply:
 
 reply:
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
-	ALLOC_CHECK(done_r);
+	NT_STATUS_HAVE_NO_MEMORY(done_r);
 
 	if (result == LDAP_SUCCESS) {
 		if (count > 0) {
@@ -189,10 +182,10 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	int i,j;
 
 	local_ctx = talloc_named(call, 0, "sldb_Add local memory context");
-	ALLOC_CHECK(local_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	samdb = samdb_connect(local_ctx);
-	ALLOC_CHECK(samdb);
+	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
 	VALID_DN_SYNTAX(dn,1);
@@ -200,7 +193,7 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	DEBUG(10, ("sldb_add: dn: [%s]\n", dn->dn));
 
 	msg = talloc_p(local_ctx, struct ldb_message);
-	ALLOC_CHECK(msg);
+	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	msg->dn = dn->dn;
 	msg->private_data = NULL;
@@ -210,7 +203,7 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	if (r->num_attributes > 0) {
 		msg->num_elements = r->num_attributes;
 		msg->elements = talloc_array_p(msg, struct ldb_message_element, msg->num_elements);
-		ALLOC_CHECK(msg->elements);
+		NT_STATUS_HAVE_NO_MEMORY(msg->elements);
 
 		for (i=0; i < msg->num_elements; i++) {
 			msg->elements[i].name = discard_const_p(char, r->attributes[i].name);
@@ -221,7 +214,7 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 			if (r->attributes[i].num_values > 0) {
 				msg->elements[i].num_values = r->attributes[i].num_values;
 				msg->elements[i].values = talloc_array_p(msg, struct ldb_val, msg->elements[i].num_values);
-				ALLOC_CHECK(msg->elements[i].values);
+				NT_STATUS_HAVE_NO_MEMORY(msg->elements[i].values);
 
 				for (j=0; j < msg->elements[i].num_values; j++) {
 					if (!(r->attributes[i].values[j].length > 0)) {
@@ -246,7 +239,7 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 
 reply:
 	add_reply = ldapsrv_init_reply(call, LDAP_TAG_AddResponse);
-	ALLOC_CHECK(add_reply);
+	NT_STATUS_HAVE_NO_MEMORY(add_reply);
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_add(samdb->ldb, msg);
@@ -286,10 +279,10 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	int result = LDAP_SUCCESS;
 
 	local_ctx = talloc_named(call, 0, "sldb_Del local memory context");
-	ALLOC_CHECK(local_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	samdb = samdb_connect(local_ctx);
-	ALLOC_CHECK(samdb);
+	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
 	VALID_DN_SYNTAX(dn,1);
@@ -298,7 +291,7 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 
 reply:
 	del_reply = ldapsrv_init_reply(call, LDAP_TAG_DelResponse);
-	ALLOC_CHECK(del_reply);
+	NT_STATUS_HAVE_NO_MEMORY(del_reply);
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_delete(samdb->ldb, dn->dn);
@@ -340,10 +333,10 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	int i,j;
 
 	local_ctx = talloc_named(call, 0, "sldb_Modify local memory context");
-	ALLOC_CHECK(local_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	samdb = samdb_connect(local_ctx);
-	ALLOC_CHECK(samdb);
+	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
 	VALID_DN_SYNTAX(dn,1);
@@ -351,7 +344,7 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	DEBUG(10, ("sldb_modify: dn: [%s]\n", dn->dn));
 
 	msg = talloc_p(local_ctx, struct ldb_message);
-	ALLOC_CHECK(msg);
+	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	msg->dn = dn->dn;
 	msg->private_data = NULL;
@@ -361,7 +354,7 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	if (r->num_mods > 0) {
 		msg->num_elements = r->num_mods;
 		msg->elements = talloc_array_p(msg, struct ldb_message_element, r->num_mods);
-		ALLOC_CHECK(msg->elements);
+		NT_STATUS_HAVE_NO_MEMORY(msg->elements);
 
 		for (i=0; i < msg->num_elements; i++) {
 			msg->elements[i].name = discard_const_p(char, r->mods[i].attrib.name);
@@ -387,7 +380,7 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 			msg->elements[i].num_values = r->mods[i].attrib.num_values;
 			if (msg->elements[i].num_values > 0) {
 				msg->elements[i].values = talloc_array_p(msg, struct ldb_val, msg->elements[i].num_values);
-				ALLOC_CHECK(msg->elements[i].values);
+				NT_STATUS_HAVE_NO_MEMORY(msg->elements[i].values);
 
 				for (j=0; j < msg->elements[i].num_values; j++) {
 					if (!(r->mods[i].attrib.values[j].length > 0)) {
@@ -408,7 +401,7 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 
 reply:
 	modify_reply = ldapsrv_init_reply(call, LDAP_TAG_ModifyResponse);
-	ALLOC_CHECK(modify_reply);
+	NT_STATUS_HAVE_NO_MEMORY(modify_reply);
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_modify(samdb->ldb, msg);
@@ -451,17 +444,17 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	int count;
 
 	local_ctx = talloc_named(call, 0, "sldb_Compare local_memory_context");
-	ALLOC_CHECK(local_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	samdb = samdb_connect(local_ctx);
-	ALLOC_CHECK(samdb);
+	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
 	VALID_DN_SYNTAX(dn,1);
 
 	DEBUG(10, ("sldb_Compare: dn: [%s]\n", dn->dn));
 	filter = talloc_asprintf(local_ctx, "(%s=%*s)", r->attribute, r->value.length, r->value.data);
-	ALLOC_CHECK(filter);
+	NT_STATUS_HAVE_NO_MEMORY(filter);
 
 	DEBUGADD(10, ("sldb_Compare: attribute: [%s]\n", filter));
 
@@ -469,7 +462,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 
 reply:
 	compare_r = ldapsrv_init_reply(call, LDAP_TAG_CompareResponse);
-	ALLOC_CHECK(compare_r);
+	NT_STATUS_HAVE_NO_MEMORY(compare_r);
 
 	if (result == LDAP_SUCCESS) {
 		count = ldb_search(samdb->ldb, dn->dn, LDB_SCOPE_BASE, filter, attrs, &res);
@@ -518,10 +511,10 @@ static NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsr
 	char *parentdn = NULL;
 
 	local_ctx = talloc_named(call, 0, "sldb_ModifyDN local memory context");
-	ALLOC_CHECK(local_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	samdb = samdb_connect(local_ctx);
-	ALLOC_CHECK(samdb);
+	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	olddn = ldap_parse_dn(local_ctx, r->dn);
 	VALID_DN_SYNTAX(olddn,2);
@@ -561,20 +554,20 @@ static NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsr
 	if (!parentdn) {
 		int i;
 		parentdn = talloc_strdup(local_ctx, olddn->components[1]->component);
-		ALLOC_CHECK(parentdn);
+		NT_STATUS_HAVE_NO_MEMORY(parentdn);
 		for(i=2; i < olddn->comp_num; i++) {
 			char *old = parentdn;
 			parentdn = talloc_asprintf(local_ctx, "%s,%s", old, olddn->components[i]->component);
-			ALLOC_CHECK(parentdn);
+			NT_STATUS_HAVE_NO_MEMORY(parentdn);
 			talloc_free(old);
 		}
 	}
 	newdn = talloc_asprintf(local_ctx, "%s,%s", newrdn->dn, parentdn);
-	ALLOC_CHECK(newdn);
+	NT_STATUS_HAVE_NO_MEMORY(newdn);
 
 reply:
 	modifydn_r = ldapsrv_init_reply(call, LDAP_TAG_ModifyDNResponse);
-	ALLOC_CHECK(modifydn_r);
+	NT_STATUS_HAVE_NO_MEMORY(modifydn_r);
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_rename(samdb->ldb, olddn->dn, newdn);
