@@ -1,6 +1,10 @@
 mailto(samba-bugs@samba.anu.edu.au)
 manpage(samba)(7)(23 Oct 1998)(Samba)()
+
+label(NAME)
 manpagename(Samba)(A Windows fileserver for UNIX)
+
+label(SYNOPSIS)
 manpagesynopsis()
 bf(Samba)
 

@@ -2,12 +2,15 @@ mailto(samba-bugs@samba.anu.edu.au)
 
 manpage(make_smbcodepage)(1)(23 Oct 1998)(Samba)(SAMBA)
 
+label(NAME)
 manpagename(make_codepage)(Construct a codepage file for Samba)
 
+label(SYNOPSIS)
 manpagesynopsis() 
 
 bf(make_smbcodepage) [c|d] codepage inputfile outputfile
 
+label(DESCRIPTION)
 manpagedescription()
 
 This program is part of the bf(Samba) suite.
@@ -15,6 +18,7 @@ This program is part of the bf(Samba) suite.
 bf(make_smbcodepage) compiles or de-compiles codepage files for use
 with the internationalization features of Samba 2.0
 
+label(OPTIONS)
 manpageoptions()
 
 startdit()
@@ -35,6 +39,7 @@ dit(outputfile) This is the output file to produce.
 
 endit()
 
+label(Samba Codepage files)
 manpagesection(Samba Codepage files)
 
 A text Samba codepage definition file is a description that tells
@@ -64,6 +69,7 @@ them to email(samba-bugs@samba.anu.edu.au). All codepage files in the
 Samba em(source/codepages) directory are compiled and installed when a
 em('make install') command is issued there.
 
+label(FILES)
 manpagefiles()
 
 bf(codepage_def.<codepage>)
@@ -98,6 +104,7 @@ bf(codepage.<codepage>) These are the output (binary) codepage files
 produced and placed in the Samba destination em(lib/codepage)
 directory.
 
+label(INSTALLATION)
 manpagesection(INSTALLATION)
 
 The location of the server and its support files is a matter for
@@ -109,6 +116,7 @@ under the em(/usr/local/samba) hierarchy, in a directory readable by
 all, writeable only by root. The program itself should be executable
 by all.  The program should NOT be setuid or setgid!
 
+label(VERSION)
 manpagesection(VERSION)
 
 This man page is correct for version 2.0 of the Samba
@@ -118,10 +126,12 @@ that your version of the program has extensions or parameter semantics
 that differ from or are not covered by this man page. Please notify
 these to the address below for rectification.
 
+label(SEEALSO)
 manpageseealso()
 
-bf(smb.conf(5)), bf(smbd (8))
+url(bf(smb.conf(5)))(smb.conf.5.html), url(bf(smbd (8)))(smbd.8.html)
 
+label(AUTHOR)
 manpageauthor() 
 
 The bf(make_smbcodepage) program was written by Jeremy Allison (email

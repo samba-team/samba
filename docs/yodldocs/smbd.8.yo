@@ -2,13 +2,16 @@ mailto(samba-bugs@samba.anu.edu.au)
 
 manpage(smbd)(8)(23 Oct 1998)(Samba)(SAMBA)
 
+label(NAME)
 manpagename(smbd)(server to provide SMB/CIFS services to clients)
 
+label(SYNOPSIS)
 manpagesynopsis()
 
 bf(smbd) [-D] [-a] [-o] [-d debuglevel] [-l log file] [-p port number]
 [-O socket options] [-s configuration file] [-i scope] [-P] [-h]
 
+label(DESCRIPTION)
 manpagedescription()
 
 This program is part of the bf(Samba) suite.
@@ -43,6 +46,7 @@ file will not affect connections to any service that is already
 established.  Either the user will have to disconnect from the
 service, or smbd killed and restarted.
 
+label(OPTIONS)
 manpageoptions()
 
 startdit()
@@ -128,6 +132,7 @@ out. Used for debugging by the developers only.
 
 endit()
 
+label(FILES)
 manpagefiles()
 
 bf(/etc/inetd.conf)
@@ -160,6 +165,7 @@ em(/usr/samba/lib/smb.conf) and em(/etc/smb.conf).
 This file describes all the services the server is to make available
 to clients. See bf(smb.conf (5)) for more information.
 
+label(LIMITATIONS)
 manpagesection(LIMITATIONS)
 
 On some systems bf(smbd) cannot change uid back to root after a
@@ -168,6 +174,7 @@ have such a system, you will be unable to connect from a client (such
 as a PC) as two different users at once. Attempts to connect the
 second user will result in "access denied" or similar.
 
+label(ENVIRONMENTVARIABLES)
 manpagesection(ENVIRONMENT VARIABLES)
 
 bf(PRINTER)
@@ -177,7 +184,7 @@ will use the value of this variable (or "lp" if this variable is not
 defined) as the name of the printer to use. This is not specific to
 the server, however.
 
-
+label(INSTALLATION)
 manpagesection(INSTALLATION)
 
  The location of the server and its support files is a matter for
@@ -234,6 +241,7 @@ as a daemon.
 When you've decided, continue with either em(RUNNING THE SERVER AS A
 DAEMON) or em(RUNNING THE SERVER ON REQUEST).
 
+label(RUNNINGTHESERVERASADAEMON)
 manpagesection(RUNNING THE SERVER AS A DAEMON)
 
 To run the server as a daemon from the command line, simply put the
@@ -265,6 +273,7 @@ If the options used at compile time are appropriate for your system,
 all parameters except the desired debug level and bf(-D) may be
 omitted. See the section em(OPTIONS) above.
 
+label(RUNNINGTHESERVERONREQUEST)
 manpagesection(RUNNING THE SERVER ON REQUEST)
 
  If your system uses a meta-daemon such as inetd, you can arrange to
@@ -323,6 +332,7 @@ tt(
 This will allow you to connect to your home directory and print to any
 printer supported by the host (user privileges permitting).
 
+label(TESTINGTHEINSTALLATION)
 manpagesection(TESTING THE INSTALLATION)
 
 If running the server as a daemon, execute it before proceeding. If
@@ -338,6 +348,7 @@ the smbclient program (see bf(smbclient (1))) and also going through
 the steps outlined in the file em(DIAGNOSIS.txt) in the em(docs/)
 directory of your Samba installation.
 
+label(VERSION)
 manpagesection(VERSION)
 
 This man page is (mostly) correct for version 2.0 of the Samba suite,
@@ -347,6 +358,7 @@ version of the server has extensions or parameter semantics that
 differ from or are not covered by this man page. Please notify these
 to the address below for rectification.
 
+label(DIAGNOSTICS)
 manpagesection(DIAGNOSTICS)
 
 Most diagnostics issued by the server are logged in a specified log
@@ -363,6 +375,7 @@ in the source code to warrant describing each and every diagnostic. At
 this stage your best bet is still to grep the source code and inspect
 the conditions that gave rise to the diagnostics you are seeing.
 
+label(SIGNALS)
 manpagesection(SIGNALS)
 
 Sending the smbd a SIGHUP will cause it to re-load its smb.conf
@@ -387,15 +400,18 @@ make the signal handlers safe by un-blocking the signals before the
 select call and re-blocking them after, however this would affect
 performance.
 
+label(SEEALSO)
 manpageseealso()
 
-bf(hosts_access (5)), bf(inetd (8)), bf(nmbd (8)), bf(smb.conf (5)),
-bf(smbclient (1)), bf(testparm (1)), bf(testprns (1)), and the
-Internet RFC's bf(rfc1001.txt), bf(rfc1002.txt). In addition the
-CIFS (formerly SMB) specification is available as a link from the
-Web page :
+bf(hosts_access (5)), bf(inetd (8)), url(bf(nmbd (8)))(nmbd.8.html),
+url(bf(smb.conf (5)))(smb.conf.html), url(bf(smbclient
+(1)))(smbclient.1.html), url(bf(testparm (1)))(testparm.1.html),
+url(bf(testprns (1)))(testprns.1.html), and the Internet RFC's
+bf(rfc1001.txt), bf(rfc1002.txt). In addition the CIFS (formerly SMB)
+specification is available as a link from the Web page :
 url(http://samba.anu.edu.au/cifs/)(http://samba.anu.edu.au/cifs/).
 
+label(AUTHOR)
 manpageauthor()
 
 The original Samba software and related utilities were created by
