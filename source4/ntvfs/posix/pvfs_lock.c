@@ -45,7 +45,8 @@ NTSTATUS pvfs_check_lock(struct pvfs_state *pvfs,
 }
 
 /* this state structure holds information about a lock we are waiting on */
-struct pending_state {
+struct pvfs_pending_lock {
+	struct pvfs_pending_lock *next, *prev;
 	struct pvfs_state *pvfs;
 	union smb_lock *lck;
 	struct pvfs_file *f;
@@ -54,7 +55,6 @@ struct pending_state {
 	void *wait_handle;
 	time_t end_time;
 };
-
 
 /*
   a secondary attempt to setup a lock has failed - back out
@@ -89,7 +89,7 @@ static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
 */
 static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
 {
-	struct pending_state *pending = private;
+	struct pvfs_pending_lock *pending = private;
 	struct pvfs_state *pvfs = pending->pvfs;
 	struct pvfs_file *f = pending->f;
 	struct smbsrv_request *req = pending->req;
@@ -106,6 +106,8 @@ static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
 	} else {
 		rw = WRITE_LOCK;
 	}
+
+	DLIST_REMOVE(f->pending_list, pending);
 
 	status = brl_lock(pvfs->brl_context,
 			  &f->locking_key,
@@ -130,8 +132,10 @@ static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
 		if (timed_out) {
 			/* no more chances */
 			pvfs_lock_async_failed(pvfs, req, f, locks, pending->pending_lock, status);
+		} else {
+			/* we can try again */
+			DLIST_ADD(f->pending_list, pending);
 		}
-		/* we can try again */
 		return;
 	}
 
@@ -170,6 +174,8 @@ static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
 									 pending);
 				if (pending->wait_handle == NULL) {
 					pvfs_lock_async_failed(pvfs, req, f, locks, i, NT_STATUS_NO_MEMORY);
+				} else {
+					DLIST_ADD(f->pending_list, pending);
 				}
 				return;
 			}
@@ -192,6 +198,42 @@ static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
 
 
 /*
+  cancel a set of locks
+*/
+static NTSTATUS pvfs_lock_cancel(struct pvfs_state *pvfs, struct smbsrv_request *req, union smb_lock *lck,
+				 struct pvfs_file *f)
+{
+	struct pvfs_pending_lock *p;
+
+	for (p=f->pending_list;p;p=p->next) {
+		/* check if the lock request matches exactly - you can only cancel with exact matches */
+		if (p->lck->lockx.in.ulock_cnt == lck->lockx.in.ulock_cnt &&
+		    p->lck->lockx.in.lock_cnt  == lck->lockx.in.lock_cnt &&
+		    p->lck->lockx.in.fnum      == lck->lockx.in.fnum &&
+		    p->lck->lockx.in.mode      == (lck->lockx.in.mode & ~LOCKING_ANDX_CANCEL_LOCK)) {
+			int i;
+
+			for (i=0;i<lck->lockx.in.ulock_cnt + lck->lockx.in.lock_cnt;i++) {
+				if (p->lck->lockx.in.locks[i].pid != lck->lockx.in.locks[i].pid ||
+				    p->lck->lockx.in.locks[i].offset != lck->lockx.in.locks[i].offset ||
+				    p->lck->lockx.in.locks[i].count != lck->lockx.in.locks[i].count) {
+					break;
+				}
+			}
+			if (i < lck->lockx.in.ulock_cnt) continue;
+
+			/* an exact match! we can cancel it, which is equivalent
+			   to triggering the timeout early */
+			pvfs_pending_lock_continue(p ,True);
+			return NT_STATUS_OK;
+		}
+	}
+
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+
+/*
   lock or unlock a byte range
 */
 NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
@@ -202,7 +244,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	struct smb_lock_entry *locks;
 	int i;
 	enum brl_type rw;
-	struct pending_state *pending = NULL;
+	struct pvfs_pending_lock *pending = NULL;
 
 	f = pvfs_find_fd(pvfs, req, lck->generic.in.fnum);
 	if (!f) {
@@ -237,7 +279,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 
 	/* now the lockingX case, most common and also most complex */
 	if (lck->lockx.in.timeout != 0) {
-		pending = talloc_p(req, struct pending_state);
+		pending = talloc_p(req, struct pvfs_pending_lock);
 		if (pending == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -255,6 +297,10 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		rw = pending? PENDING_READ_LOCK : READ_LOCK;
 	} else {
 		rw = pending? PENDING_WRITE_LOCK : WRITE_LOCK;
+	}
+
+	if (lck->lockx.in.mode & LOCKING_ANDX_CANCEL_LOCK) {
+		return pvfs_lock_cancel(pvfs, req, lck, f);
 	}
 
 	if (lck->lockx.in.mode & 
@@ -309,6 +355,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 				if (pending->wait_handle == NULL) {
 					return NT_STATUS_NO_MEMORY;
 				}
+				DLIST_ADD(f->pending_list, pending);
 				return NT_STATUS_OK;
 			}
 			/* undo the locks we just did */
