@@ -2916,7 +2916,7 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 	;;
 
 	*solaris*)
-		LIBS="$LIBS -lsendfile"
+		AC_CHECK_LIB(sendfile,sendfilev)
 		AC_CACHE_CHECK([for solaris sendfilev64 support],samba_cv_HAVE_SENDFILEV64,[
 		AC_TRY_LINK([\
 #include <sys/sendfile.h>],
