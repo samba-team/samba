@@ -153,7 +153,7 @@
 ;   public = yes
 
 ;; A publicly accessible directory, but read only, except for people in
-;; the staff group
+;; the users group
 ;[public]
 ;   comment = Public Stuff
 ;   path = /home/samba
