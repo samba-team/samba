@@ -27,13 +27,14 @@
 /*
   return filesystem space info
 */
-NTSTATUS pvfs_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
+NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
+		     struct smbsrv_request *req, union smb_fsinfo *fs)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct stat st;
 
 	if (fs->generic.level != RAW_QFS_GENERIC) {
-		return ntvfs_map_fsinfo(req, fs, pvfs->ops);
+		return ntvfs_map_fsinfo(req, fs, ntvfs);
 	}
 
 	if (sys_fsusage(pvfs->base_directory, 

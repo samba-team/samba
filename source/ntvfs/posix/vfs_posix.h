@@ -49,8 +49,6 @@ struct pvfs_state {
 	} search;
 
 	struct pvfs_file *open_files;
-
-	const struct ntvfs_ops *ops;
 };
 
 

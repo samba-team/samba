@@ -27,15 +27,16 @@
 /*
   write to a file
 */
-NTSTATUS pvfs_write(struct smbsrv_request *req, union smb_write *wr)
+NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
+		    struct smbsrv_request *req, union smb_write *wr)
 {
-	NTVFS_GET_PRIVATE(pvfs_state, pvfs, req);
+	struct pvfs_state *pvfs = ntvfs->private_data;
 	ssize_t ret;
 	struct pvfs_file *f;
 
 	switch (wr->generic.level) {
 	case RAW_WRITE_WRITEX:
-		f = pvfs_find_fd(req, wr->writex.in.fnum);
+		f = pvfs_find_fd(pvfs, req, wr->writex.in.fnum);
 		if (!f) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
@@ -53,7 +54,7 @@ NTSTATUS pvfs_write(struct smbsrv_request *req, union smb_write *wr)
 		return NT_STATUS_OK;
 
 	case RAW_WRITE_WRITE:
-		f = pvfs_find_fd(req, wr->write.in.fnum);
+		f = pvfs_find_fd(pvfs, req, wr->write.in.fnum);
 		if (!f) {
 			return NT_STATUS_INVALID_HANDLE;
 		}

@@ -29,7 +29,8 @@
   in. For printing shares this should check that the spool directory
   is available
 */
-static NTSTATUS print_connect(struct smbsrv_request *req, const char *sharename, int depth)
+static NTSTATUS print_connect(struct ntvfs_module_context *ntvfs,
+			      struct smbsrv_request *req, const char *sharename)
 {
 	return NT_STATUS_OK;
 }
@@ -37,7 +38,8 @@ static NTSTATUS print_connect(struct smbsrv_request *req, const char *sharename,
 /*
   disconnect from a share
 */
-static NTSTATUS print_disconnect(struct smbsrv_tcon *tcon, int depth)
+static NTSTATUS print_disconnect(struct ntvfs_module_context *ntvfs,
+				 struct smbsrv_tcon *tcon)
 {
 	return NT_STATUS_OK;
 }
@@ -45,7 +47,8 @@ static NTSTATUS print_disconnect(struct smbsrv_tcon *tcon, int depth)
 /*
   lots of operations are not allowed on printing shares - mostly return NT_STATUS_ACCESS_DENIED
 */
-static NTSTATUS print_unlink(struct smbsrv_request *req, struct smb_unlink *unl)
+static NTSTATUS print_unlink(struct ntvfs_module_context *ntvfs,
+			     struct smbsrv_request *req, struct smb_unlink *unl)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -54,7 +57,8 @@ static NTSTATUS print_unlink(struct smbsrv_request *req, struct smb_unlink *unl)
 /*
   ioctl - used for job query
 */
-static NTSTATUS print_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
+static NTSTATUS print_ioctl(struct ntvfs_module_context *ntvfs,
+			    struct smbsrv_request *req, union smb_ioctl *io)
 {
 	char *p;
 

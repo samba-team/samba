@@ -46,15 +46,9 @@ struct smbsrv_session {
 	struct auth_session_info *session_info;
 };
 
-
-/* each backend has to be one one of the following 3 basic types. In
- * earlier versions of Samba backends needed to handle all types, now
- * we implement them separately. */
-enum ntvfs_type {NTVFS_DISK, NTVFS_PRINT, NTVFS_IPC};
-
 /* we need a forward declaration of the ntvfs_ops strucutre to prevent
    include recursion */
-struct ntvfs_ops;
+struct ntvfs_context;
 
 struct smbsrv_tcon {
 	struct smbsrv_tcon *next, *prev;
@@ -62,17 +56,13 @@ struct smbsrv_tcon {
 	/* the server context that this was created on */
 	struct smbsrv_connection *smb_conn;
 
-	/* an array of private structures used by the active NTVFS backends */
-	void **ntvfs_private_list;
-
 	uint16_t cnum; /* an index passed over the wire (the TID) */
 	int service;
-	enum ntvfs_type type;
 	BOOL read_only;
 	BOOL admin_user;
 
-	/* the NTVFS operations - see source/ntvfs/ and include/ntvfs.h for details */
-	const struct ntvfs_ops *ntvfs_ops;
+	/* the NTVFS context - see source/ntvfs/ for details */
+	struct ntvfs_context *ntvfs_ctx;
 
 	/* the reported filesystem type */
 	char *fs_type;
@@ -92,9 +82,6 @@ struct smbsrv_request {
 
 	/* the session context is derived from the vuid */
 	struct smbsrv_session *session;
-
-	/* the ntvfs chaining depth */
-	int ntvfs_depth;
 
 	/* a set of flags to control usage of the request. See REQ_CONTROL_* */
 	unsigned control_flags;

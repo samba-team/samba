@@ -94,7 +94,7 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	nttrans_setup_reply(req, trans, 0, 0, 1);
 	trans->out.setup[0] = 0;
 	
-	return req->tcon->ntvfs_ops->ioctl(req, &nt);
+	return ntvfs_ioctl(req, &nt);
 }
 
 /*

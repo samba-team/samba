@@ -29,9 +29,10 @@
 /*
   convert a windows path to a unix path - don't do any manging or case sensitive handling
 */
-char *svfs_unix_path(struct smbsrv_request *req, const char *name)
+char *svfs_unix_path(struct ntvfs_module_context *ntvfs,
+		     struct smbsrv_request *req, const char *name)
 {
-	NTVFS_GET_PRIVATE(svfs_private, private, req);
+	struct svfs_private *private = ntvfs->private_data;
 	char *ret;
 
 	if (*name != '\\') {
@@ -135,14 +136,15 @@ struct svfs_dir *svfs_list_unix(TALLOC_CTX *mem_ctx, struct smbsrv_request *req,
   returned names are separate unix and DOS names. The returned names
   are relative to the directory
 */
-struct svfs_dir *svfs_list(TALLOC_CTX *mem_ctx, struct smbsrv_request *req, const char *pattern)
+struct svfs_dir *svfs_list(struct ntvfs_module_context *ntvfs, struct smbsrv_request *req, const char *pattern)
 {
+	struct svfs_private *private = ntvfs->private_data;
 	char *unix_path;
 
-	unix_path = svfs_unix_path(req, pattern);
+	unix_path = svfs_unix_path(ntvfs, req, pattern);
 	if (!unix_path) { return NULL; }
 
-	return svfs_list_unix(mem_ctx, req, unix_path);
+	return svfs_list_unix(private, req, unix_path);
 }
 
 
