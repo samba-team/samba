@@ -132,10 +132,17 @@ manpageseealso()
 url(bf(smb.conf(5)))(smb.conf.5.html), url(bf(smbd (8)))(smbd.8.html)
 
 label(AUTHOR)
-manpageauthor() 
+manpageauthor()
 
-The bf(make_smbcodepage) program was written by Jeremy Allison (email
-email(samba-bugs@samba.anu.edu.au)) as part of the
-internationalization effort of the Samba software package.
+The original Samba software and related utilities were created by
+Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed.
 
-Please send bug reports to email(samba-bugs@samba.anu.edu.au).
+The original Samba man pages were written by Karl Auer. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2.0 release by Jeremy
+Allison.
+
+See url(bf(samba (7)))(samba.7.html) to find out how to get a full list of contributors
+and details on how to submit bug reports, comments etc.
