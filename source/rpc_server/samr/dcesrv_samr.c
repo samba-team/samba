@@ -3160,7 +3160,64 @@ static NTSTATUS samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 static NTSTATUS samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_RemoveMemberFromForeignDomain *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_domain_state *d_state;
+	struct dom_sid *domain_sid;
+	const char *membersid, *memberdn;
+	struct ldb_message **res;
+	const char * const attrs[3] = { "dn", "objectSid", NULL };
+	int i, count;
+
+	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+
+	domain_sid = dom_sid_parse_talloc(mem_ctx, d_state->domain_sid);
+	membersid = dom_sid_string(mem_ctx, r->in.sid);
+	if ((domain_sid == NULL) || (membersid == NULL))
+		return NT_STATUS_NO_MEMORY;
+
+	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
+				       "dn", "(objectSid=%s)", membersid);
+	if (memberdn == NULL)
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	/* TODO: Does this call only remove alias members, or does it do this
+	 * for domain groups as well? */
+
+	count = samdb_search_domain(d_state->sam_ctx, mem_ctx,
+				    d_state->domain_dn, &res, attrs,
+				    domain_sid,
+				    "(&(member=%s)(objectClass=group)"
+				    "(|(groupType=%s)(groupType=%s)))",
+				    memberdn,
+				    ldb_hexstr(mem_ctx,
+					       GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
+				    ldb_hexstr(mem_ctx,
+					       GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+
+	if (count < 0)
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+	for (i=0; i<count; i++) {
+		struct ldb_message mod;
+		ZERO_STRUCT(mod);
+
+		mod.dn = talloc_reference(mem_ctx,
+					  samdb_result_string(res[i], "dn",
+							      NULL));
+		if (mod.dn == NULL)
+			continue;
+
+		if (samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, &mod,
+					 "member", memberdn) != 0)
+			return NT_STATUS_NO_MEMORY;
+
+		if (samdb_modify(d_state->sam_ctx, mem_ctx, &mod) != 0)
+			return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
