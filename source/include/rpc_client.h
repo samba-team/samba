@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB parameters and setup
-   Copyright (C) Elrond                            2000
+   Copyright (C) Gerald (Jerry) Carter         2005.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,8 +21,21 @@
 #ifndef _RPC_CLIENT_H
 #define _RPC_CLIENT_H
 
-#if 0	/* JERRY */
-#include "rpc_client_proto.h"
-#endif 
+/* macro to expand cookie-cutter code in cli_xxx() */
+		   
+#define CLI_DO_RPC( pcli, ctx, pipe_num, opnum, q_in, r_out, q_ps, r_ps, q_io_fn, r_io_fn, default_error) \
+{	r_out.status = default_error;\
+	prs_init( &q_ps, MAX_PDU_FRAG_LEN, ctx, MARSHALL ); \
+	prs_init( &r_ps, 0, ctx, UNMARSHALL );\
+	if ( q_io_fn("", &q_in, &q_ps, 0) ) {\
+		if ( rpc_api_pipe_req(pcli, pipe_num, opnum, &q_ps, &r_ps) ) {\
+			if (!r_io_fn("", &r_out, &r_ps, 0)) {\
+				r_out.status = default_error;\
+			}\
+		}\
+	}\
+	prs_mem_free( &q_ps );\
+	prs_mem_free( &r_ps );\
+}
 
 #endif /* _RPC_CLIENT_H */

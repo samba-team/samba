@@ -1360,8 +1360,6 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 	fstring username;
 	fstring machine;
 	BOOL not_root = False;
-	/* SE_PRIV se_diskop = SE_DISK_OPERATOR; / * Is disk op appropriate here ? JRA. * /
-	BOOL is_disk_op = False;                 / * No. SSS. :) */
 
 	rpcstr_pull_unistr2_fstring(username, &q_u->uni_user_name);
 	rpcstr_pull_unistr2_fstring(machine, &q_u->uni_cli_name);
@@ -1375,13 +1373,12 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 
 	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
 
-	/* is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop ); */
-	
 	r_u->status = WERR_ACCESS_DENIED;
 
 	get_current_user(&user, p);
-	/* fail out now if you are not root */
-	/* or at least domain admins */
+
+	/* fail out now if you are not root or not a domain admin */
+
 	if ((user.uid != sec_initial_uid()) && 
 		( ! nt_token_check_domain_rid(p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS))) {
 
@@ -1397,14 +1394,12 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 				not_root = True;
 				become_root();
 			}
-			if ((ret = message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False))) {
+
+			if ((ret = message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False))) 
 				r_u->status = WERR_OK;
-			} else {
-				r_u->status = WERR_ACCESS_DENIED;
-			}
-			if (not_root) {
+
+			if (not_root) 
 				unbecome_root();
-			}
 		}
 	}
 

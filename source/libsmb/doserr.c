@@ -31,6 +31,7 @@ typedef const struct
 werror_code_struct dos_errs[] =
 {
 	{ "WERR_OK", WERR_OK },
+	{ "WERR_GENERAL_FAILURE", WERR_GENERAL_FAILURE },
 	{ "WERR_BADFILE", WERR_BADFILE },
 	{ "WERR_ACCESS_DENIED", WERR_ACCESS_DENIED },
 	{ "WERR_BADFID", WERR_BADFID },
