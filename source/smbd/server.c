@@ -441,8 +441,20 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
     return(True);
   }      
 
+#if 0
+  /* 
+   * This code I believe is incorrect - and commenting it out
+   * is the correct fix for the bug mentioned below in the
+   * comment 'name2 here was changed to dname - since 1.9.16p2 - not sure of reason (jra)'.
+   * The incoming name can be mangled, and if we de-mangle it
+   * here it will not compare correctly against the filename (name2)
+   * read from the directory and then mangled by the name_map_mangle()
+   * call. We need to mangle both names or neither.
+   * (JRA).
+   */
   if (mangled)
     check_mangled_stack(name);
+#endif
 
   /* open the directory */
   if (!(cur_dir = OpenDir(cnum, path, True))) 
