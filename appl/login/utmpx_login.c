@@ -16,7 +16,7 @@ utmpx_update(struct utmpx *ut, char *line, char *user, char *host)
 {
     struct timeval tmp;
 
-    strncpy(ut->ut_line, line, sizeof(ut->ut_line));
+    strncpy(ut->ut_line, clean_ttyname(line), sizeof(ut->ut_line));
     strncpy(ut->ut_user, user, sizeof(ut->ut_user));
     strncpy(ut->ut_host, host, sizeof(ut->ut_host));
 #ifdef HAVE_UT_SYSLEN
@@ -31,6 +31,17 @@ utmpx_update(struct utmpx *ut, char *line, char *user, char *host)
     pututxline(ut);
 #ifdef WTMPX_FILE
     updwtmpx(WTMPX_FILE, ut);
+#elif defined(WTMP_FILE)
+    {
+	struct utmp utmp;
+	int fd;
+
+	prepare_utmp (&utmp, line, user, host);
+	if ((fd = open(_PATH_WTMP, O_WRONLY|O_APPEND, 0)) >= 0) {
+	    write(fd, &utmp, sizeof(struct utmp));
+	    close(fd);
+	}
+    }
 #endif
 }
 
@@ -65,7 +76,6 @@ utmpx_login(char *line, char *user, char *host)
         struct utmpx newut;
 	memset(&newut, 0, sizeof(newut));
 	newut.ut_pid = mypid;
-	snprintf(newut.ut_id, sizeof(newut.ut_id), "lo%04x", (unsigned)mypid);
         utmpx_update(&newut, line, user, host);
 	ret = 0;
     }
