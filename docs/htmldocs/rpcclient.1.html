@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >rpcclient</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="RPCCLIENT"
-></A
->rpcclient</H1
+NAME="RPCCLIENT">rpcclient</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -30,15 +29,13 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >rpcclient</B
->  [-A authfile] [-c &lt;command string&gt;] [-d debuglevel] [-h] [-l logfile] [-N] [-s &lt;smb config file&gt;] [-U username[%password]] [-W workgroup] [-N] [-I destinationIP] {server}</P
+> [-A authfile] [-c &#60;command string&#62;] [-d debuglevel] [-h] [-l logfile] [-N] [-s &#60;smb config file&#62;] [-U username[%password]] [-W workgroup] [-N] [-I destinationIP] {server}</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -105,12 +102,21 @@ CLASS="FILENAME"
 		password used in the connection.  The format of the file is 
 		</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->		username = &lt;value&gt; 
-		password = &lt;value&gt;
-		domain   = &lt;value&gt;
+>		username = &#60;value&#62; 
+		password = &#60;value&#62;
+		domain   = &#60;value&#62;
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Make certain that the permissions on the file restrict 
@@ -122,25 +128,6 @@ CLASS="PROGRAMLISTING"
 ><P
 >execute semicolon separated commands (listed 
 		below)) </P
-></DD
-><DT
->-d|--debug=debuglevel</DT
-><DD
-><P
->set the debuglevel. Debug level 0 is the lowest 
-		and 100 being the highest. This should be set to 100 if you are
-		planning on submitting a bug report to the Samba team (see <TT
-CLASS="FILENAME"
->BUGS.txt</TT
->). 
-		</P
-></DD
-><DT
->-h|--help</DT
-><DD
-><P
->Print a summary of command line options.
-		</P
 ></DD
 ><DT
 >-I IP-address</DT
@@ -275,17 +262,14 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN101"
+NAME="AEN92"
 ></A
 ><H2
 >COMMANDS</H2
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >LSARPC</I
-></SPAN
 ></P
 ><P
 ></P
@@ -326,12 +310,9 @@ CLASS="COMMAND"
 ><P
 > </P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >SAMR</I
-></SPAN
 ></P
 ><P
 ></P
@@ -396,12 +377,9 @@ CLASS="COMMAND"
 ><P
 > </P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >SPOOLSS</I
-></SPAN
 ></P
 ><P
 ></P
@@ -410,7 +388,7 @@ CLASS="EMPHASIS"
 ><P
 ><B
 CLASS="COMMAND"
->adddriver &lt;arch&gt; &lt;config&gt;</B
+>adddriver &#60;arch&#62; &#60;config&#62;</B
 > 
 		- Execute an AddPrinterDriver() RPC to install the printer driver 
 		information on the server.  Note that the driver files should 
@@ -437,6 +415,12 @@ CLASS="PARAMETER"
 > parameter is defined as 
 		follows: </P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		Long Printer Name:\
@@ -448,6 +432,9 @@ CLASS="PROGRAMLISTING"
 		Default Data Type:\
 		Comma Separated list of Files
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Any empty fields should be enter as the string "NULL". </P
@@ -463,8 +450,8 @@ CLASS="PROGRAMLISTING"
 ><P
 ><B
 CLASS="COMMAND"
->addprinter &lt;printername&gt; 
-		&lt;sharename&gt; &lt;drivername&gt; &lt;port&gt;</B
+>addprinter &#60;printername&#62; 
+		&#60;sharename&#62; &#60;drivername&#62; &#60;port&#62;</B
 > 
 		- Add a printer on the remote server.  This printer 
  		will be automatically shared.  Be aware that the printer driver 
@@ -510,7 +497,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->enumjobs &lt;printer&gt;</B
+>enumjobs &#60;printer&#62;</B
 > 
 		- List the jobs and status of a given printer. 
 		This command corresponds to the MS Platform SDK EnumJobs() 
@@ -552,7 +539,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->getdata &lt;printername&gt;</B
+>getdata &#60;printername&#62;</B
 > 
 		- Retrieve the data for a given printer setting.  See 
 		the  <B
@@ -566,7 +553,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->getdriver &lt;printername&gt;</B
+>getdriver &#60;printername&#62;</B
 > 
 		- Retrieve the printer driver information (such as driver file, 
 		config file, dependent files, etc...) for 
@@ -578,7 +565,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->getdriverdir &lt;arch&gt;</B
+>getdriverdir &#60;arch&#62;</B
 > 
 		- Execute a GetPrinterDriverDirectory()
 		RPC to retrieve the SMB share name and subdirectory for 
@@ -596,7 +583,7 @@ CLASS="PARAMETER"
 ><P
 ><B
 CLASS="COMMAND"
->getprinter &lt;printername&gt;</B
+>getprinter &#60;printername&#62;</B
 > 
 		- Retrieve the current printer information.  This command 
 		corresponds to the GetPrinter() MS Platform SDK function. 
@@ -606,7 +593,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->openprinter &lt;printername&gt;</B
+>openprinter &#60;printername&#62;</B
 > 
 		- Execute an OpenPrinterEx() and ClosePrinter() RPC 
 		against a given printer. </P
@@ -615,8 +602,8 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->setdriver &lt;printername&gt;
-		&lt;drivername&gt;</B
+>setdriver &#60;printername&#62;
+		&#60;drivername&#62;</B
 >
 		- Execute a SetPrinter() command to update the printer driver
 		associated with an installed printer.  The printer driver must
@@ -634,12 +621,9 @@ CLASS="COMMAND"
 ></LI
 ></UL
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >GENERAL OPTIONS</I
-></SPAN
 ></P
 ><P
 ></P
@@ -677,7 +661,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN221"
+NAME="AEN212"
 ></A
 ><H2
 >BUGS</H2
@@ -692,12 +676,9 @@ CLASS="COMMAND"
 ><P
 >From Luke Leighton's original rpcclient man page:</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >"WARNING!</I
-></SPAN
 > The MSRPC over SMB code has 
 	been developed from examining  Network traces. No documentation is 
 	available from the original creators  (Microsoft) on how MSRPC over 
@@ -722,7 +703,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN231"
+NAME="AEN222"
 ></A
 ><H2
 >VERSION</H2
@@ -733,7 +714,7 @@ NAME="AEN231"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN234"
+NAME="AEN225"
 ></A
 ><H2
 >AUTHOR</H2

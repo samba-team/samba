@@ -278,7 +278,7 @@
 		<listitem><para>Display an account policy</para>
 		<para>Valid policies are: minimum password age, reset count minutes, disconnect time,
 		user must logon to change password, password history, lockout duration, min password length,
-		maximum password age and bad lockout attempt.
+		maximum password age and bad lockout attempt.</para>
 
 		<para>Example: <command>pdbedit -P "bad lockout attempt"</command></para>
 		<para><programlisting>
@@ -293,6 +293,7 @@
 		<listitem><para>Sets an account policy to a specified value. 
 		This option may only be used in conjunction
 		with the <parameter>-P</parameter> option.
+		</para>
 
 		<para>Example: <command>pdbedit -P "bad lockout attempt" -V 3</command></para>
 		<para><programlisting>

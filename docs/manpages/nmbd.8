@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "01 October 2002" "" ""
+.TH "NMBD" "8" "26 November 2002" "" ""
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
 .SH SYNOPSIS
 
-\fBnmbd\fR [ \fB-D\fR ] [ \fB-a\fR ] [ \fB-i\fR ] [ \fB-o\fR ] [ \fB-P\fR ] [ \fB-h\fR ] [ \fB-V\fR ] [ \fB-d <debug level>\fR ] [ \fB-H <lmhosts file>\fR ] [ \fB-l <log directory>\fR ] [ \fB-n <primary netbios name>\fR ] [ \fB-p <port number>\fR ] [ \fB-s <configuration file>\fR ]
+\fBnmbd\fR [ \fB-D\fR ] [ \fB-a\fR ] [ \fB-i\fR ] [ \fB-o\fR ] [ \fB-h\fR ] [ \fB-V\fR ] [ \fB-d <debug level>\fR ] [ \fB-H <lmhosts file>\fR ] [ \fB-l <log directory>\fR ] [ \fB-n <primary netbios name>\fR ] [ \fB-p <port number>\fR ] [ \fB-s <configuration file>\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -17,7 +17,7 @@ This program is part of the Samba suite.
 \fBnmbd\fR is a server that understands 
 and can reply to NetBIOS over IP name service requests, like 
 those produced by SMB/CIFS clients such as Windows 95/98/ME, 
-Windows NT, Windows 2000, and LanManager clients. It also
+Windows NT, Windows 2000, Windows XP and LanManager clients. It also
 participates in the browsing protocols which make up the 
 Windows "Network Neighborhood" view.
 .PP
@@ -226,7 +226,7 @@ to allow transient problems to be diagnosed, whilst still running
 at a normally low log level.
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
+This man page is correct for version 3.0 of 
 the Samba suite.
 .SH "SEE ALSO"
 .PP

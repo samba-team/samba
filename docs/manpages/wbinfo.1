@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WBINFO" "1" "01 October 2002" "" ""
+.TH "WBINFO" "1" "26 November 2002" "" ""
 .SH NAME
 wbinfo \- Query information from winbind daemon
 .SH SYNOPSIS
 
-\fBwbinfo\fR [ \fB-u\fR ] [ \fB-g\fR ] [ \fB-h name\fR ] [ \fB-i ip\fR ] [ \fB-n name\fR ] [ \fB-s sid\fR ] [ \fB-U uid\fR ] [ \fB-G gid\fR ] [ \fB-S sid\fR ] [ \fB-Y sid\fR ] [ \fB-t\fR ] [ \fB-m\fR ] [ \fB-r user\fR ] [ \fB-a user%password\fR ] [ \fB-A user%password\fR ]
+\fBwbinfo\fR [ \fB-u\fR ] [ \fB-g\fR ] [ \fB-i ip\fR ] [ \fB-N netbios-name\fR ] [ \fB-n name\fR ] [ \fB-s sid\fR ] [ \fB-U uid\fR ] [ \fB-G gid\fR ] [ \fB-S sid\fR ] [ \fB-Y sid\fR ] [ \fB-t\fR ] [ \fB-m\fR ] [ \fB-r user\fR ] [ \fB-a user%password\fR ] [ \fB-A user%password\fR ] [ \fB-p\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -38,14 +38,14 @@ will also be listed.  Note that this operation does not assign
 group ids to any groups that have not already been seen by
 \fBwinbindd(8)\fR. 
 .TP
-\fB-h name\fR
-The \fI-h\fR option 
+\fB-N name\fR
+The \fI-N\fR option 
 queries \fBwinbindd(8)\fR to query the WINS
 server for the IP address associated with the NetBIOS name
 specified by the \fIname\fR parameter.
 .TP
-\fB-i ip\fR
-The \fI-i\fR option 
+\fB-I ip\fR
+The \fI-I\fR option 
 queries \fBwinbindd(8)\fR to send a node status
 request to get the NetBIOS name associated with the IP address
 specified by the \fIip\fR parameter.
@@ -119,7 +119,7 @@ succeeded, or 1 if the operation failed.  If the \fBwinbindd(8)
 failure. 
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
+This man page is correct for version 3.0 of 
 the Samba suite.
 .SH "SEE ALSO"
 .PP

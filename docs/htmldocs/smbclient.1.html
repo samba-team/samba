@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbclient</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBCLIENT"
-></A
->smbclient</H1
+NAME="SMBCLIENT">smbclient</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -30,15 +29,13 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >smbclient</B
->  {servicename} [password] [-b &lt;buffer size&gt;] [-d debuglevel] [-D Directory] [-U username] [-W workgroup] [-M &lt;netbios name&gt;] [-m maxprotocol] [-A authfile] [-N] [-l logfile] [-L &lt;netbios name&gt;] [-I destinationIP] [-E &lt;terminal code&gt;] [-c &lt;command string&gt;] [-i scope] [-O &lt;socket options&gt;] [-p port] [-R &lt;name resolve order&gt;] [-s &lt;smb config file&gt;] [-T&lt;c|x&gt;IXFqgbNan]</P
+> {servicename} [password] [-b &#60;buffer size&#62;] [-d debuglevel] [-D Directory] [-U username] [-W workgroup] [-M &#60;netbios name&#62;] [-m maxprotocol] [-A authfile] [-N] [-l logfile] [-L &#60;netbios name&#62;] [-I destinationIP] [-E] [-c &#60;command string&#62;] [-i scope] [-O &#60;socket options&#62;] [-p port] [-R &#60;name resolve order&#62;] [-s &#60;smb config file&#62;] [-T&#60;c|x&#62;IXFqgbNan]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -196,7 +193,7 @@ CLASS="FILENAME"
 		options. </P
 ></DD
 ><DT
->-R &lt;name resolve order&gt;</DT
+>-R &#60;name resolve order&#62;</DT
 ><DD
 ><P
 >This option is used by the programs in the Samba 
@@ -349,12 +346,9 @@ CLASS="FILENAME"
 > for a description of how to handle incoming 
 		WinPopup messages in Samba. </P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 >: Copy WinPopup into the startup group 
 		on your WfWg PCs if you want them to always be able to receive 
 		messages. </P
@@ -373,12 +367,9 @@ CLASS="FILENAME"
 CLASS="FILENAME"
 >rfc1002.txt</TT
 >.
-		NetBIOS scopes are <SPAN
-CLASS="emphasis"
-><I
+		NetBIOS scopes are <I
 CLASS="EMPHASIS"
 >very</I
-></SPAN
 > rarely used, only set 
 		this parameter if you are the system administrator in charge of all 
 		the NetBIOS systems you communicate with. </P
@@ -435,20 +426,14 @@ CLASS="REPLACEABLE"
 ><I
 >debuglevel</I
 ></TT
-> is set to the letter 'A', then <SPAN
-CLASS="emphasis"
-><I
+> is set to the letter 'A', then <I
 CLASS="EMPHASIS"
 >all
 		</I
-></SPAN
 >  debug messages will be printed. This setting
-		is for developers only (and people who <SPAN
-CLASS="emphasis"
-><I
+		is for developers only (and people who <I
 CLASS="EMPHASIS"
 >really</I
-></SPAN
 > want 
 		to know how the code works internally). </P
 ><P
@@ -610,12 +595,21 @@ CLASS="COMMAND"
 		password used in the connection.  The format of the file is 
 		</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->username = &lt;value&gt; 
-password = &lt;value&gt;
-domain = &lt;value&gt;
+>username = &#60;value&#62; 
+password = &#60;value&#62;
+domain = &#60;value&#62;
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >If the domain parameter is missing the current workgroup name
@@ -651,18 +645,12 @@ CLASS="COMMAND"
 > how to interpret 
 		filenames coming from the remote server. Usually Asian language 
 		multibyte UNIX implementations use different character sets than 
-		SMB/CIFS servers (<SPAN
-CLASS="emphasis"
-><I
+		SMB/CIFS servers (<I
 CLASS="EMPHASIS"
 >EUC</I
-></SPAN
-> instead of <SPAN
-CLASS="emphasis"
-><I
+> instead of <I
 CLASS="EMPHASIS"
 >		SJIS</I
-></SPAN
 > for example). Setting this parameter will let 
 		<B
 CLASS="COMMAND"
@@ -876,12 +864,9 @@ CLASS="PARAMETER"
 ></LI
 ></UL
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Tar Long File Names</I
-></SPAN
 ></P
 ><P
 ><B
@@ -897,24 +882,18 @@ CLASS="COMMAND"
 		files in the archive with relative names, not absolute names. 
 		</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Tar Filenames</I
-></SPAN
 ></P
 ><P
 >All file names can be given as DOS path names (with '\' 
 		as the component separator) or as UNIX path names (with '/' as 
 		the component separator). </P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Examples</I
-></SPAN
 ></P
 ><P
 >Restore from tar file <TT
@@ -1016,7 +995,7 @@ NAME="AEN310"
 ><P
 ><TT
 CLASS="PROMPT"
->smb:\&gt; </TT
+>smb:\&#62; </TT
 ></P
 ><P
 >The backslash ("\") indicates the current working directory 
@@ -1036,7 +1015,7 @@ CLASS="PROMPT"
 ><P
 >Parameters shown in square brackets (e.g., "[parameter]") are 
 	optional.  If not given, the command will use suitable defaults. Parameters 
-	shown in angle brackets (e.g., "&lt;parameter&gt;") are required.
+	shown in angle brackets (e.g., "&#60;parameter&#62;") are required.
 	</P
 ><P
 >Note that all commands operating on the server are actually 
@@ -1127,7 +1106,7 @@ CLASS="REPLACEABLE"
 		directory on the server will be reported. </P
 ></DD
 ><DT
->del &lt;mask&gt;</DT
+>del &#60;mask&#62;</DT
 ><DD
 ><P
 >The client will request that the server attempt 
@@ -1140,7 +1119,7 @@ CLASS="REPLACEABLE"
 		directory on the server. </P
 ></DD
 ><DT
->dir &lt;mask&gt;</DT
+>dir &#60;mask&#62;</DT
 ><DD
 ><P
 >A list of the files matching <TT
@@ -1160,7 +1139,7 @@ CLASS="REPLACEABLE"
 		from the program. </P
 ></DD
 ><DT
->get &lt;remote file name&gt; [local file name]</DT
+>get &#60;remote file name&#62; [local file name]</DT
 ><DD
 ><P
 >Copy the file called <TT
@@ -1225,13 +1204,13 @@ CLASS="REPLACEABLE"
 		lowercase filenames are the norm on UNIX systems. </P
 ></DD
 ><DT
->ls &lt;mask&gt;</DT
+>ls &#60;mask&#62;</DT
 ><DD
 ><P
 >See the dir command above. </P
 ></DD
 ><DT
->mask &lt;mask&gt;</DT
+>mask &#60;mask&#62;</DT
 ><DD
 ><P
 >This command allows the user to set up a mask 
@@ -1257,13 +1236,13 @@ CLASS="REPLACEABLE"
 		mask back to "*" after using the mget or mput commands. </P
 ></DD
 ><DT
->md &lt;directory name&gt;</DT
+>md &#60;directory name&#62;</DT
 ><DD
 ><P
 >See the mkdir command. </P
 ></DD
 ><DT
->mget &lt;mask&gt;</DT
+>mget &#60;mask&#62;</DT
 ><DD
 ><P
 >Copy all files matching <TT
@@ -1288,14 +1267,14 @@ CLASS="COMMAND"
 > are binary. See also the lowercase command. </P
 ></DD
 ><DT
->mkdir &lt;directory name&gt;</DT
+>mkdir &#60;directory name&#62;</DT
 ><DD
 ><P
 >Create a new directory on the server (user access 
 		privileges permitting) with the specified name. </P
 ></DD
 ><DT
->mput &lt;mask&gt;</DT
+>mput &#60;mask&#62;</DT
 ><DD
 ><P
 >Copy all files matching <TT
@@ -1321,7 +1300,7 @@ CLASS="COMMAND"
 		are binary. </P
 ></DD
 ><DT
->print &lt;file name&gt;</DT
+>print &#60;file name&#62;</DT
 ><DD
 ><P
 >Print the specified file from the local machine 
@@ -1330,7 +1309,7 @@ CLASS="COMMAND"
 >See also the printmode command.</P
 ></DD
 ><DT
->printmode &lt;graphics or text&gt;</DT
+>printmode &#60;graphics or text&#62;</DT
 ><DD
 ><P
 >Set the print mode to suit either binary data 
@@ -1350,7 +1329,7 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->put &lt;local file name&gt; [remote file name]</DT
+>put &#60;local file name&#62; [remote file name]</DT
 ><DD
 ><P
 >Copy the file called <TT
@@ -1382,7 +1361,7 @@ CLASS="COMMAND"
 >See the exit command. </P
 ></DD
 ><DT
->rd &lt;directory name&gt;</DT
+>rd &#60;directory name&#62;</DT
 ><DD
 ><P
 >See the rmdir command. </P
@@ -1407,7 +1386,7 @@ CLASS="COMMAND"
 		using the mask command will be ignored. </P
 ></DD
 ><DT
->rm &lt;mask&gt;</DT
+>rm &#60;mask&#62;</DT
 ><DD
 ><P
 >Remove all files matching <TT
@@ -1419,14 +1398,14 @@ CLASS="REPLACEABLE"
 		working directory on the server. </P
 ></DD
 ><DT
->rmdir &lt;directory name&gt;</DT
+>rmdir &#60;directory name&#62;</DT
 ><DD
 ><P
 >Remove the specified directory (user access 
 		privileges permitting) from the server. </P
 ></DD
 ><DT
->setmode &lt;filename&gt; &lt;perm=[+|\-]rsha&gt;</DT
+>setmode &#60;filename&#62; &#60;perm=[+|\-]rsha&#62;</DT
 ><DD
 ><P
 >A version of the DOS attrib command to set 
@@ -1451,7 +1430,7 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->tar &lt;c|x&gt;[IXbgNa]</DT
+>tar &#60;c|x&#62;[IXbgNa]</DT
 ><DD
 ><P
 >Performs a tar operation - see the <TT
@@ -1467,7 +1446,7 @@ CLASS="PARAMETER"
 		</P
 ></DD
 ><DT
->blocksize &lt;blocksize&gt;</DT
+>blocksize &#60;blocksize&#62;</DT
 ><DD
 ><P
 >Blocksize. Must be followed by a valid (greater 
@@ -1480,7 +1459,7 @@ CLASS="REPLACEABLE"
 >*TBLOCK (usually 512 byte) blocks. </P
 ></DD
 ><DT
->tarmode &lt;full|inc|reset|noreset&gt;</DT
+>tarmode &#60;full|inc|reset|noreset&#62;</DT
 ><DD
 ><P
 >Changes tar's behavior with regard to archive 
@@ -1568,12 +1547,9 @@ CLASS="FILENAME"
 >	/usr/samba/bin/</TT
 > directory, this directory readable 
 	by all, writeable only by root. The client program itself should 
-	be executable by all. The client should <SPAN
-CLASS="emphasis"
-><I
+	be executable by all. The client should <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > be 
 	setuid or setgid! </P
 ><P
