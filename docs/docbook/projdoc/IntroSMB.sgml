@@ -1,37 +1,43 @@
 <chapter id="IntroSMB">
 <chapterinfo>
 	&author.dlechnyr;
-	<pubdate>April 13, 2003</pubdate>
+	<pubdate>April 14, 2003</pubdate>
 </chapterinfo>
 
 <title>Introduction to Samba</title>
 
+<para><emphasis>
+"If you understand what you're doing, you're not learning anything." 
+-- Anonymous
+</emphasis></para>
+
 <para>
-Samba provides MS Windows file and print services over TCP/IP and provides compatible support for
-all SMB/CIFS enabled clients. Samba can be used to provide seemless interoperability between unix
-/ Linux systems and MS Windows clients and servers. A global team of about 30 active programmers
-is responsible for the development of Samba, a marvelous tool that was originally developed by
-Andrew Tridgell. That team of developers is known as the Samba-Team.
+Samba is a file and print server for Windows-based clients using TCP/IP as the underlying
+transport protocol. In fact, it can support any SMB/CIFS-enabled client. One of Samba's big
+strengths is that you can use it to blend your mix of Windows and Linux machines together
+without requiring a separate Windows NT/2000/2003 Server.  Samba is actively being developed
+by a global team of about 30 active programmers and was originally developed by Andrew Tridgell.
 </para>
 
 <sect1>
 <title>Background</title>
 
 <para>
-Once long ago, there was a buzzword referred to as DCE/RPC. This stood for Distributed Computing
-Environment/Remote Procedure Calls and conceptually was a good idea. It was originally developed
-by Apollo/HP as NCA 1.0 (Network Computing Architecture) and only ran over UDP.  When there was
-a need to run it over TCP so that it would be compatible with DECnet 3.0, it was redesigned,
-submitted to The Open Group, and officially became known as DCE/RPC. Microsoft came along and
-decided, rather than pay $20 per seat to license this technology, to reimplement DCE/RPC
-themselves as MSRPC. From this, the concept continued in the form of SMB (Server Message Block,
-or the "what") using the NetBIOS (Network Basic Input/Output System, or the "how") compatibility
-layer. You can run SMB (i.e., transport) over several different protocols; many different
-implementations arose as a result, including NBIPX (NetBIOS over IPX, NwLnkNb, or NWNBLink) and
-NBT (NetBIOS over TCP/IP, or NetBT). As the years passed, NBT became the most common form of
-implementation until the advance of "Direct-Hosted TCP" -- the Microsoft marketing term for
-eliminating NetBIOS entirely and running SMB by itself across TCP port 445 only. As of yet,
-direct-hosted TCP has yet to catch on. And so the story goes.
+Once long ago, there was a buzzword referred to as DCE/RPC. This stood for Distributed
+Computing Environment/Remote Procedure Calls and conceptually was a good idea. It was
+originally developed by Apollo/HP as NCA 1.0 (Network Computing Architecture) and only
+ran over UDP. When there was a need to run it over TCP so that it would be compatible
+with DECnet 3.0, it was redesigned, submitted to The Open Group, and officially became
+known as DCE/RPC. Microsoft came along and decided, rather than pay $20 per seat to
+license this technology, to reimplement DCE/RPC themselves as MSRPC. From this, the
+concept continued in the form of SMB (Server Message Block, or the "what") using the
+NetBIOS (Network Basic Input/Output System, or the "how") compatibility layer. You can
+run SMB (i.e., transport) over several different protocols; many different implementations
+arose as a result, including NBIPX (NetBIOS over IPX, NwLnkNb, or NWNBLink) and NBT
+(NetBIOS over TCP/IP, or NetBT). As the years passed, NBT became the most common form
+of implementation until the advance of "Direct-Hosted TCP" -- the Microsoft marketing
+term for eliminating NetBIOS entirely and running SMB by itself across TCP port 445
+only. As of yet, direct-hosted TCP has yet to catch on.
 </para>
 
 <para>
@@ -48,28 +54,29 @@ littered with occurrences of clapping hand to forehead and muttering 'crikey, wh
 thinking?
 </emphasis></para>
 
-<sect2>
+</sect1>
+
+<sect1>
 <title>Terminology</title>
 
 <itemizedlist>
 
 	<listitem><para>
-	SMB: Acronym for "Server Message Block". This is a Microsoft's file and printer
-	sharing protocol.
+	SMB: Acronym for "Server Message Block". This is Microsoft's file and printer sharing protocol.
 	</para></listitem>
 
 	<listitem><para>
-	CIFS: Acronym for the "Common Internet File System". Around 1996, Microsoft apparently
+	CIFS: Acronym for "Common Internet File System". Around 1996, Microsoft apparently
 	decided that SMB needed the word "Internet" in it, so they changed it to CIFS.  
 	</para></listitem>
 
 	<listitem><para>
 	Direct-Hosted: A method of providing file/printer sharing services over port 445/tcp
-	only, using DNS for name resolution instead of WINS.
+	only using DNS for name resolution instead of WINS.
 	</para></listitem>
 
 	<listitem><para>
-	IPC: Acronym for "Inter-process Communication". A method to communicate specific
+	IPC: Acronym for "Inter-Process Communication". A method to communicate specific
 	information between programs.
 	</para></listitem>
 
@@ -83,8 +90,8 @@ thinking?
 	NetBIOS: Acronym for "Network Basic Input/Output System". This is not a protocol;
 	it is a method of communication across an existing protocol. This is a standard which
 	was originally developed for IBM by Sytek in 1983. To exaggerate the analogy a bit,
-	it can help to think of this in comparison your computer's BIOS -- it controlls the
-	essential functions of your input/output hardware -- whereas NetBIOS controlls the
+	it can help to think of this in comparison your computer's BIOS -- it controls the
+	essential functions of your input/output hardware -- whereas NetBIOS controls the
 	essential functions of your input/output traffic via the network. Again, this is a bit
 	of an exaggeration but it should help that paradigm shift. What is important to realize
 	is that NetBIOS is a transport standard, not a protocol. Unfortunately, even technically
@@ -104,8 +111,8 @@ thinking?
 
 	<listitem><para>
 	NBT: Acronym for "NetBIOS over TCP"; also known as "NetBT". Allows the continued use
-	of NetBIOS traffic proxied over TCP/IP. As a result, NetBIOS names are made equivilant
-	to IP addresses and NetBIOS name types are conceptually equivilant to TCP/IP ports.
+	of NetBIOS traffic proxied over TCP/IP. As a result, NetBIOS names are made 
+	to IP addresses and NetBIOS name types are conceptually equivalent to TCP/IP ports.
 	This is how file and printer sharing are accomplished in Windows 95/98/ME. They 
 	traditionally rely on three ports: NetBIOS Name Service (nbname) via UDP port 137, 
 	NetBIOS Datagram Service (nbdatagram) via UDP port 138, and NetBIOS Session Service 
@@ -124,10 +131,14 @@ thinking?
 
 </itemizedlist>
 
-</sect2>
+<para>If you plan on getting help, make sure to subscribe to the Samba Mailing List (available at 
+http://www.samba.org).  Optionally, you could just search mailing.unix.samba at http://groups.google.com
+</para>
 
-<sect2>
-<title>Related Projects>
+</sect1>
+
+<sect1>
+<title>Related Projects</title>
 
 <para>
 Currently, there are two projects that are directly related to Samba: SMBFS and CIFS network
@@ -138,20 +149,18 @@ client file systems for Linux, both available in the Linux kernel itself.
 
 	<listitem><para>
 	SMBFS (Server Message Block File System) allows you to mount SMB shares (the protocol
-	Windows 95/98/ME, Windows NT/2000/XP and OS/2 Lan Manager use to share files and printers 
+	that Microsoft Windows and OS/2 Lan Manager use to share files and printers 
 	over local networks) and access them just like any other Unix directory. This is useful 
 	if you just want to mount such filesystems without being a SMBFS server.
 	</para></listitem>
 
 	<listitem><para>
 	CIFS (Common Internet File System) is the successor to SMB, and is actively being worked
-	on in the upcoming version of the Linux kernel (2.5/2.6). The intent of this module is to 
+	on in the upcoming version of the Linux kernel. The intent of this module is to 
 	provide advanced network file system functionality including support for dfs (heirarchical 
 	name space), secure per-user session establishment, safe distributed caching (oplock), 
 	optional packet signing, Unicode and other internationalization improvements, and optional 
-	Winbind (nsswitch) integration. If you enable CONFIG_CIFS in the Linux kernel, be aware 
-	that it is currently in an early development stage and may not be as stable as the existing 
-	CONFIG_SMB_FS option.
+	Winbind (nsswitch) integration.
 	</para></listitem>
 
 </itemizedlist>
@@ -161,15 +170,186 @@ Again, it's important to note that these are implementations for client filesyst
 nothing to do with acting as a file and print server for SMB/CIFS clients.
 </para>
 
-</sect2>
+</sect1>
 
-<sect2>
+
+<sect1>
+<title>SMB Methodology</title>
+
+<para>
+Traditionally, SMB uses UDP port 137 (NetBIOS name service, or netbios-ns),
+UDP port 138 (NetBIOS datagram service, or netbios-dgm), and TCP port 139 (NetBIOS
+session service, or netbios-ssn). Anyone looking at their network with a good
+packet sniffer will be amazed at the amount of traffic generated by just opening
+up a single file. In general, SMB sessions are established in the following order:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	"TCP Connection" - establish 3-way handshake (connection) to port 139/tcp
+    or 445/tcp.
+	</para></listitem>
+
+	<listitem><para>
+	"NetBIOS Session Request" - using the following "Calling Names": The local
+    machine's NetBIOS name plus the 16th character 0x00; The server's NetBIOS
+    name plus the 16th character 0x20
+	</para></listitem>
+
+	<listitem><para>
+	"SMB Negotiate Protocol" - determine the protocol dialect to use, which will
+    be one of the following: PC Network Program 1.0 (Core) - share level security
+    mode only; Microsoft Networks 1.03 (Core Plus) - share level security
+    mode only; Lanman1.0 (LAN Manager 1.0) - uses Challenge/Response
+    Authentication; Lanman2.1 (LAN Manager 2.1) - uses Challenge/Response
+    Authentication; NT LM 0.12 (NT LM 0.12) - uses Challenge/Response
+    Authentication
+	</para></listitem>
+
+	<listitem><para>
+	SMB Session Startup. Passwords are encrypted (or not) according to one of
+    the following methods: Null (no encryption); Cleartext (no encryption); LM
+    and NTLM; NTLM; NTLMv2
+	</para></listitem>
+
+	<listitem><para>
+	SMB Tree Connect: Connect to a share name (e.g., \\servername\share); Connect
+    to a service type (e.g., IPC$ named pipe)
+	</para></listitem>
+
+</itemizedlist>
+
+<para>
+A good way to examine this process in depth is to try out SecurityFriday's SWB program
+at http://www.securityfriday.com/ToolDownload/SWB/swb_doc.html.  It allows you to
+walk through the establishment of a SMB/CIFS session step by step.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Additional Resources</title>
+
+<itemizedlist>
+
+	<listitem><para>
+	<emphasis>CIFS: Common Insecurities Fail Scrutiny</emphasis> by "Hobbit", 
+	http://hr.uoregon.edu/davidrl/cifs.txt
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>Doing the Samba on Windows</emphasis> by Financial Review,
+	http://afr.com/it/2002/10/01/FFXDF43AP6D.html
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>Implementing CIFS</emphasis> by Christopher R. Hertel,
+	http://ubiqx.org/cifs/
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>Just What Is SMB?</emphasis> by Richard Sharpe,
+	http://samba.anu.edu.au/cifs/docs/what-is-smb.html
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>Opening Windows Everywhere</emphasis> by Mike Warfield,
+	http://www.linux-mag.com/1999-05/samba_01.html
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>SMB HOWTO</emphasis> by David Wood,
+	http://www.tldp.org/HOWTO/SMB-HOWTO.html
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>SMB/CIFS by The Root</emphasis> by "ledin",
+	http://www.phrack.org/phrack/60/p60-0x0b.txt
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>The Story of Samba</emphasis> by Christopher R. Hertel,
+	http://www.linux-mag.com/1999-09/samba_01.html
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>The Unofficial Samba HOWTO</emphasis> by David Lechnyr,
+	http://hr.uoregon.edu/davidrl/samba/
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>Understanding the Network Neighborhood</emphasis> by Christopher R. Hertel,
+	http://www.linux-mag.com/2001-05/smb_01.html
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>Using Samba as a PDC</emphasis> by Andrew Bartlett,
+	http://www.linux-mag.com/2002-02/samba_01.html
+	</para></listitem>
+
+</itemizedlist>
+
+</sect1>
+
+<sect1>
+<title>Epilogue</title>
+
+<para><emphasis>
+"What's fundamentally wrong is that nobody ever had any taste when they
+did it. Microsoft has been very much into making the user interface look good,
+but internally it's just a complete mess. And even people who program for Microsoft
+and who have had years of experience, just don't know how it works internally.
+Worse, nobody dares change it. Nobody dares to fix bugs because it's such a
+mess that fixing one bug might just break a hundred programs that depend on
+that bug. And Microsoft isn't interested in anyone fixing bugs -- they're interested
+in making money. They don't have anybody who takes pride in Windows 95 as an
+operating system.
+</emphasis></para>
+
+<para><emphasis>
+People inside Microsoft know it's a bad operating system and they still
+continue obviously working on it because they want to get the next version out
+because they want to have all these new features to sell more copies of the
+system.
+</emphasis></para>
+
+<para><emphasis>
+The problem with that is that over time, when you have this kind of approach,
+and because nobody understands it, because nobody REALLY fixes bugs (other than
+when they're really obvious), the end result is really messy. You can't trust
+it because under certain circumstances it just spontaneously reboots or just
+halts in the middle of something that shouldn't be strange. Normally it works
+fine and then once in a blue moon for some completely unknown reason, it's dead,
+and nobody knows why. Not Microsoft, not the experienced user and certainly
+not the completely clueless user who probably sits there shivering thinking
+"What did I do wrong?" when they didn't do anything wrong at all.
+</emphasis></para>
+
+<para><emphasis>
+That's what's really irritating to me."
+</emphasis></para>
+
+<para>
+-- Linus Torvalds, from an interview with BOOT Magazine, Sept 1998
+(http://hr.uoregon.edu/davidrl/boot.txt)
+</para>
+
+</sect1>
+
+<sect1>
 <title>Miscellaneous</title>
 
 <para>
-This chapter is Copyright © 2003 David Lechnyr. Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.2 or any later version published by the Free Software Foundation. A copy of the license is available at http://www.gnu.org/licenses/fdl.txt.
+This chapter was lovingly handcrafted on a Dell Latitude C400 laptop running Slackware Linux 9.0,
+in case anyone asks.
 </para>
 
-</sect2>
+<para>
+This chapter is Copyright © 2003 David Lechnyr (david at lechnyr dot com).
+Permission is granted to copy, distribute and/or modify this document under the terms
+of the GNU Free Documentation License, Version 1.2 or any later version published by the Free
+Software Foundation. A copy of the license is available at http://www.gnu.org/licenses/fdl.txt.
+</para>
+
 </sect1>
 </chapter>
