@@ -111,11 +111,12 @@ ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
 {
 	ADS_STATUS status;
 	char *exp;
+	const char *attrs[] = {"*", "nTSecurityDescriptor", NULL};
 
 	/* the easiest way to find a machine account anywhere in the tree
 	   is to look for hostname$ */
 	asprintf(&exp, "(samAccountName=%s$)", host);
-	status = ads_search(ads, res, exp, NULL);
+	status = ads_search(ads, res, exp, attrs);
 	free(exp);
 	return status;
 }
@@ -264,6 +265,7 @@ void ads_dump(ADS_STRUCT *ads, void *res)
 		void (*handler)(const char *, struct berval **);
 	} handlers[] = {
 		{"objectGUID", dump_binary},
+		{"nTSecurityDescriptor", dump_binary},
 		{"objectSid", dump_sid},
 		{NULL, NULL}
 	};
