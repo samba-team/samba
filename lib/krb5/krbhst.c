@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -57,6 +57,11 @@ add_string(char ***res, int *count, const char *string)
     (*count)++;
     return 0;
 }
+
+/*
+ * do a SRV lookup for `realm, proto, service' returning the result
+ * in `res, count'
+ */
 
 static krb5_error_code
 srv_find_realm(krb5_context context, char ***res, int *count, 
@@ -131,7 +136,7 @@ get_krbhst (krb5_context context,
 				  "realms", *realm, conf_string, NULL);
     for(r = res, count = 0; r && *r; r++, count++);
 
-    if(context->srv_lookup) {
+    if(count == 0 && context->srv_lookup) {
 	char *s[] = { "udp", "tcp", "http" }, **q;
 	for(q = s; q < s + sizeof(s) / sizeof(s[0]); q++) {
 	    ret = srv_find_realm(context, &res, &count, *realm, *q,
@@ -157,6 +162,10 @@ get_krbhst (krb5_context context,
     return 0;
 }
 
+/*
+ * set `hostlist' to a malloced list of kadmin servers.
+ */
+
 krb5_error_code
 krb5_get_krb_admin_hst (krb5_context context,
 			const krb5_realm *realm,
@@ -165,6 +174,10 @@ krb5_get_krb_admin_hst (krb5_context context,
     return get_krbhst (context, realm, "admin_server", "kerberos-adm",
 		       hostlist);
 }
+
+/*
+ * set `hostlist' to a malloced list of changepw servers.
+ */
 
 krb5_error_code
 krb5_get_krb_changepw_hst (krb5_context context,
@@ -175,6 +188,10 @@ krb5_get_krb_changepw_hst (krb5_context context,
 		       hostlist);
 }
 
+/*
+ * set `hostlist' to a malloced list of kerberos servers.
+ */
+
 krb5_error_code
 krb5_get_krbhst (krb5_context context,
 		 const krb5_realm *realm,
@@ -182,6 +199,10 @@ krb5_get_krbhst (krb5_context context,
 {
     return get_krbhst (context, realm, "kdc", "kerberos", hostlist);
 }
+
+/*
+ * free all memory associated with `hostlist'
+ */
 
 krb5_error_code
 krb5_free_krbhst (krb5_context context,
