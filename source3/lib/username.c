@@ -25,6 +25,16 @@
 static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (const char *), int N);
 static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (const char *), int N);
 
+/*****************************************************************
+ Check if a user or group name is local (this is a *local* name for
+ *local* people, there's nothing for you here...).
+*****************************************************************/
+
+BOOL name_is_local(const char *name)
+{
+	return !strchr_m(name, *lp_winbind_separator());
+}
+
 /****************************************************************************
  Get a users home directory.
 ****************************************************************************/
