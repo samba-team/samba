@@ -258,7 +258,7 @@ BOOL push_sec_ctx(void)
 
 	ctx_p->token = dup_nt_token(sec_ctx_stack[sec_ctx_stack_ndx-1].token);
 	if (! ctx_p->token) {
-		DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
+		DEBUG(0, ("Out of memory on dup_nt_token() in push_sec_ctx()\n"));
 		return False;
 	}
 
@@ -266,7 +266,7 @@ BOOL push_sec_ctx(void)
 
 	if (ctx_p->ngroups != 0) {
 		if (!(ctx_p->groups = malloc(ctx_p->ngroups * sizeof(gid_t)))) {
-			DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
+			DEBUG(0, ("Out of memory on malloc() in push_sec_ctx()\n"));
 			delete_nt_token(&ctx_p->token);
 			return False;
 		}
@@ -278,7 +278,7 @@ BOOL push_sec_ctx(void)
 
 	init_privilege(&ctx_p->privs);
 	if (! NT_STATUS_IS_OK(dup_priv_set(ctx_p->privs, sec_ctx_stack[sec_ctx_stack_ndx-1].privs))) {
-		DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
+		DEBUG(0, ("Out of memory on dup_priv_set() in push_sec_ctx()\n"));
 		delete_nt_token(&ctx_p->token);
 		destroy_privilege(&ctx_p->privs);
 		return False;

@@ -1892,6 +1892,8 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 done:
 
+	SAFE_FREE(lm_pw_ptr);
+	SAFE_FREE(nt_pw_ptr);
 	SAFE_FREE(username);
 	SAFE_FREE(domain);
 	SAFE_FREE(nt_username);

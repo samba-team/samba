@@ -372,7 +372,7 @@ NTSTATUS dup_priv_set(PRIVILEGE_SET *new_priv_set, PRIVILEGE_SET *priv_set)
 	LUID_ATTR *old_set;
 	int i;
 
-	if (!new_priv_set || !priv_set)
+	if (new_priv_set == NULL || priv_set == NULL)
 		return NT_STATUS_INVALID_PARAMETER;
 
 	/* special case if there are no privileges in the list */
