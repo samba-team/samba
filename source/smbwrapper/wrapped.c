@@ -509,3 +509,25 @@ __asm__(".globl __write; __write = write");
 
 	return real_symlink(topath, frompath);
 }
+
+ int dup(int fd)
+{
+	if (smbw_fd(fd)) {
+		return smbw_dup(fd);
+	}
+
+	return real_dup(fd);
+}
+
+ int dup2(int oldfd, int newfd)
+{
+	if (smbw_fd(newfd)) {
+		close(newfd);
+	}
+
+	if (smbw_fd(oldfd)) {
+		return smbw_dup2(oldfd, newfd);
+	}
+
+	return real_dup2(oldfd, newfd);
+}
