@@ -130,6 +130,7 @@ typedef struct
 	char *szRealm;
 	char *szAfsUsernameMap;
 	int iAfsTokenLifetime;
+ 	char *szLogNtTokenCommand;
 	char *szUsernameMap;
 	char *szLogonScript;
 	char *szLogonPath;
@@ -1135,6 +1136,7 @@ static struct parm_struct parm_table[] = {
 	{"homedir map", P_STRING, P_GLOBAL, &Globals.szNISHomeMapName, NULL, NULL, FLAG_ADVANCED}, 
 	{"afs username map", P_STRING, P_GLOBAL, &Globals.szAfsUsernameMap, NULL, NULL, FLAG_ADVANCED}, 
 	{"afs token lifetime", P_INTEGER, P_GLOBAL, &Globals.iAfsTokenLifetime, NULL, NULL, FLAG_ADVANCED},
+	{"log nt token command", P_STRING, P_GLOBAL, &Globals.szLogNtTokenCommand, NULL, NULL, FLAG_ADVANCED},
 	{"time offset", P_INTEGER, P_GLOBAL, &extra_time_offset, NULL, NULL, FLAG_ADVANCED}, 
 	{"NIS homedir", P_BOOL, P_GLOBAL, &Globals.bNISHomeMap, NULL, NULL, FLAG_ADVANCED}, 
 	{"-valid", P_BOOL, P_LOCAL, &sDefault.valid, NULL, NULL, FLAG_HIDE}, 
@@ -1675,6 +1677,7 @@ FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
 FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
 FN_GLOBAL_INTEGER(lp_afs_token_lifetime, &Globals.iAfsTokenLifetime)
+FN_GLOBAL_STRING(lp_log_nt_token_command, &Globals.szLogNtTokenCommand)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
