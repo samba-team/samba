@@ -66,7 +66,7 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
  Tries local lookup first - for local sids, then tries winbind.
 *****************************************************************/  
 
-BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type)
+BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type)
 {
 	if (!name_type)
 		return False;
