@@ -1959,6 +1959,7 @@ int print_queue_status(int snum,
 	TDB_DATA data, key;
 	const char *printername;
 	struct tdb_print_db *pdb;
+	int max_reported_jobs = lp_max_reported_jobs(snum);
 
 	/* make sure the database is up to date */
 
@@ -2033,6 +2034,10 @@ int print_queue_status(int snum,
 	      QSORT_CAST(printjob_comp));
 
 	*queue = tstruct.queue;
+
+	if (max_reported_jobs && tstruct.qcount > max_reported_jobs)
+		tstruct.qcount = max_reported_jobs;
+
 	return tstruct.qcount;
 }
 
