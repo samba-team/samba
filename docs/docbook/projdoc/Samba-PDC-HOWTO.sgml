@@ -330,7 +330,7 @@ for this including:
 	</para></listitem>
 </itemizedlist>
 
-<para>Read the chapter about the <link linkend="passdb backend">User Database</link> 
+<para>Read the chapter about the <link linkend="passdb">User Database</link> 
 for details.</para>
 
 <note><para>

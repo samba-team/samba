@@ -3,8 +3,8 @@
 <chapterinfo>
 	<author>
 		<firstname>Jean François</firstname><surname>Micouleau</surname>
-		&person.jerry;
 	</author>
+	&author.jerry;
 </chapterinfo>
 
 <title>Configuring Group Mapping</title>
