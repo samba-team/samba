@@ -115,7 +115,7 @@ uint32 cli_nt_error(struct cli_state *cli)
                    came back does not contain one.  What do we return 
                    here? */
 
-                DEBUG(1, ("ERROR: cli_error() called to read a status code "
+                DEBUG(1, ("ERROR: cli_nt_error() called to read a status code "
                           "from a packet that does not contain one!\n"));
 
                 return NT_STATUS_UNSUCCESSFUL;
@@ -152,8 +152,8 @@ void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
                    came back does not contain one.  What do we return 
                    here? */
 
-                DEBUG(1, ("ERROR: cli_error() called to read a dos error code "
-                          "from a packet that does not contain one!\n"));
+                DEBUG(1, ("ERROR: cli_dos_error() called to read a dos error "
+                          "code from a packet that does not contain one!\n"));
 
                 return;
         }
