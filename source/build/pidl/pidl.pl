@@ -11,12 +11,14 @@ use Getopt::Long;
 use Data::Dumper;
 use Parse::RecDescent;
 use dump;
+use header;
 use util;
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
 my($opt_dump) = 0;
 my($opt_diff) = 0;
+my($opt_header) = 0;
 
 #####################################################################
 # parse an IDL file returning a structure containing all the data
@@ -52,8 +54,9 @@ sub ShowHelp()
              --help                this help page
              --parse               parse a idl file to a .pidl file
              --dump                dump a pidl file back to idl
+             --header              dump a C header file
              --diff                run diff on the idl and dumped output
-           ";
+           \n";
     exit(0);
 }
 
@@ -62,17 +65,19 @@ GetOptions (
 	    'help|h|?' => \$opt_help, 
 	    'parse' => \$opt_parse,
 	    'dump' => \$opt_dump,
+	    'header' => \$opt_header,
 	    'diff' => \$opt_diff
 	    );
+
+if ($opt_help) {
+    ShowHelp();
+    exit(0);
+}
 
 my($idl_file) = shift;
 die "ERROR: You must specify an idl file to process" unless ($idl_file);
 
 my($pidl_file) = util::ChangeExtension($idl_file, "pidl");
-
-if ($opt_help) {
-    ShowHelp();
-}
 
 if ($opt_parse) {
     print "Parsing $idl_file\n";
@@ -84,6 +89,12 @@ if ($opt_parse) {
 if ($opt_dump) {
     my($idl) = util::LoadStructure($pidl_file);
     print IdlDump::Dump($idl);
+}
+
+if ($opt_header) {
+    my($idl) = util::LoadStructure($pidl_file);
+    my($header) = util::ChangeExtension($idl_file, "h");
+    util::FileSave($header, IdlHeader::Dump($idl));
 }
 
 if ($opt_diff) {
