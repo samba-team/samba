@@ -1341,5 +1341,7 @@ check: check-programs
 	PATH="`pwd`/bin:$$PATH" \
 	python stf/standardcheck.py
 
-# These are called by the test suite
-check-programs: bin/t_strcmp bin/t_push_ucs2
+# These are called by the test suite and need to be built before
+# running it.  For the time being we don't build all of BIN_PROGS,
+# because they're not all needed.
+check-programs: bin/t_strcmp bin/t_push_ucs2 bin/smbcontrol
