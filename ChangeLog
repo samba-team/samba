@@ -69,6 +69,14 @@ Sun Dec 21 09:44:05 1997  Assar Westerlund  <assar@sics.se>
 	* lib/krb5/build_auth.c (krb5_build_authenticator): use
  	krb5_{free,copy}_keyblock instead of the _contents versions
 
+Fri Dec 12 14:20:58 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/{mk,rd}_priv.c: fix check for local/remote subkey
+
+Mon Dec  8 08:48:09 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/context.c: don't look at KRB5_CONFIG if running setuid
+
 Sat Dec  6 10:09:40 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/keyblock.c (krb5_free_keyblock): check for NULL
