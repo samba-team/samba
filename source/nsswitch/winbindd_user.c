@@ -171,7 +171,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	unistr2_to_ascii(gecos_name, &user_info.info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
 	
-	free_samr_userinfo_ctr(&user_info);
+	wb_free_samr_userinfo_ctr(&user_info);
 	
 	/* Now take all this information and fill in a passwd structure */
 	
@@ -261,7 +261,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	unistr2_to_ascii(gecos_name, &user_info.info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
 
-	free_samr_userinfo_ctr(&user_info);
+	wb_free_samr_userinfo_ctr(&user_info);
 
 	/* Resolve gid number */
 

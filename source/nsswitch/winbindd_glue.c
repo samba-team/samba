@@ -27,7 +27,7 @@
 /****************************************************************************
 do a LSA Open Policy
 ****************************************************************************/
-BOOL lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
+BOOL wb_lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
 		     CLI_POLICY_HND *pol)
 {
 	struct nmb_name calling, called;
@@ -86,8 +86,8 @@ BOOL lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
 /****************************************************************************
 do a LSA Enumerate Trusted Domain 
 ****************************************************************************/
-BOOL lsa_enum_trust_dom(CLI_POLICY_HND *hnd, uint32 *enum_ctx,
-			uint32 * num_doms, char ***names, DOM_SID **sids)
+BOOL wb_lsa_enum_trust_dom(CLI_POLICY_HND *hnd, uint32 *enum_ctx,
+			   uint32 * num_doms, char ***names, DOM_SID **sids)
 {
 	uint32 ret;
 
@@ -100,8 +100,8 @@ BOOL lsa_enum_trust_dom(CLI_POLICY_HND *hnd, uint32 *enum_ctx,
 /****************************************************************************
 do a LSA Query Info Policy
 ****************************************************************************/
-BOOL lsa_query_info_pol(CLI_POLICY_HND *hnd, uint16 info_class,
-			fstring domain_name, DOM_SID *domain_sid)
+BOOL wb_lsa_query_info_pol(CLI_POLICY_HND *hnd, uint16 info_class,
+			   fstring domain_name, DOM_SID *domain_sid)
 {
 	uint32 ret;
 
@@ -114,8 +114,8 @@ BOOL lsa_query_info_pol(CLI_POLICY_HND *hnd, uint16 info_class,
 /****************************************************************************
 do a LSA Lookup Names
 ****************************************************************************/
-BOOL lsa_lookup_names(CLI_POLICY_HND *hnd, int num_names, char **names,
-		      DOM_SID **sids, uint32 **types, int *num_sids)
+BOOL wb_lsa_lookup_names(CLI_POLICY_HND *hnd, int num_names, char **names,
+			 DOM_SID **sids, uint32 **types, int *num_sids)
 {
 	uint32 ret;
 
@@ -128,8 +128,8 @@ BOOL lsa_lookup_names(CLI_POLICY_HND *hnd, int num_names, char **names,
 /****************************************************************************
 do a LSA Lookup SIDS
 ****************************************************************************/
-BOOL lsa_lookup_sids(CLI_POLICY_HND *hnd, int num_sids, DOM_SID *sids,
-		     char ***names, uint32 **types, int *num_names)
+BOOL wb_lsa_lookup_sids(CLI_POLICY_HND *hnd, int num_sids, DOM_SID *sids,
+			char ***names, uint32 **types, int *num_names)
 {
 	uint32 ret;
 
@@ -142,7 +142,7 @@ BOOL lsa_lookup_sids(CLI_POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 /****************************************************************************
 lsa_close glue
 ****************************************************************************/
-BOOL lsa_close(CLI_POLICY_HND *hnd)
+BOOL wb_lsa_close(CLI_POLICY_HND *hnd)
 {
 	uint32 ret;
 
@@ -155,7 +155,7 @@ BOOL lsa_close(CLI_POLICY_HND *hnd)
 /****************************************************************************
 samr_close glue
 ****************************************************************************/
-BOOL samr_close(CLI_POLICY_HND *hnd)
+BOOL wb_samr_close(CLI_POLICY_HND *hnd)
 {
 	uint32 ret;
 
@@ -168,7 +168,7 @@ BOOL samr_close(CLI_POLICY_HND *hnd)
 /****************************************************************************
 samr_connect glue
 ****************************************************************************/
-BOOL samr_connect(char *srv_name, uint32 access_mask, 
+BOOL wb_samr_connect(char *srv_name, uint32 access_mask, 
 		  CLI_POLICY_HND *connect_pol)
 {
 	uint32 ret;
@@ -184,10 +184,8 @@ BOOL samr_connect(char *srv_name, uint32 access_mask,
 /****************************************************************************
 samr_open_domain glue
 ****************************************************************************/
-BOOL samr_open_domain(CLI_POLICY_HND *connect_pol,
-		       uint32 ace_perms,
-		       DOM_SID *sid,
-		       CLI_POLICY_HND *domain_pol)
+BOOL wb_samr_open_domain(CLI_POLICY_HND *connect_pol, uint32 ace_perms,
+			 DOM_SID *sid, CLI_POLICY_HND *domain_pol)
 {
 	uint32 ret;
 
@@ -209,7 +207,7 @@ BOOL samr_open_domain(CLI_POLICY_HND *connect_pol,
 /*******************************************************************
 frees a structure.
 ********************************************************************/
-void free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr)
+void wb_free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr)
 {
 	if (ctr == NULL)
 		return;
@@ -220,10 +218,9 @@ void free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr)
 /****************************************************************************
 do a SAMR enumerate groups
 ****************************************************************************/
-uint32 samr_enum_dom_groups(CLI_POLICY_HND *pol,
-				uint32 *start_idx, uint32 size,
-				struct acct_info **sam,
-				uint32 *num_sam_groups)
+uint32 wb_samr_enum_dom_groups(CLI_POLICY_HND *pol, uint32 *start_idx, 
+			       uint32 size, struct acct_info **sam,
+			       uint32 *num_sam_groups)
 {
 	DEBUG(0,("unimplemented samr_enum_dom_groups\n"));
 	return -1;
@@ -232,8 +229,8 @@ uint32 samr_enum_dom_groups(CLI_POLICY_HND *pol,
 /****************************************************************************
 do a SAMR enumerate groups
 ****************************************************************************/
-BOOL get_samr_query_userinfo(CLI_POLICY_HND *pol, uint32 info_level,
-			    uint32 user_rid, SAM_USERINFO_CTR *ctr)
+BOOL wb_get_samr_query_userinfo(CLI_POLICY_HND *pol, uint32 info_level,
+				uint32 user_rid, SAM_USERINFO_CTR *ctr)
 {
 	POLICY_HND user_pol;
 	BOOL got_user_pol = False;
@@ -261,8 +258,8 @@ BOOL get_samr_query_userinfo(CLI_POLICY_HND *pol, uint32 info_level,
 /****************************************************************************
 do a SAMR enumerate groups
 ****************************************************************************/
-BOOL samr_open_user(CLI_POLICY_HND *pol, uint32 access_mask, uint32 rid,
-		    POLICY_HND *user_pol)
+BOOL wb_samr_open_user(CLI_POLICY_HND *pol, uint32 access_mask, uint32 rid,
+		       POLICY_HND *user_pol)
 {
 	uint32 ret;
 
@@ -272,8 +269,8 @@ BOOL samr_open_user(CLI_POLICY_HND *pol, uint32 access_mask, uint32 rid,
 	return (ret == NT_STATUS_NOPROBLEMO);
 }
 
-BOOL samr_query_usergroups(CLI_POLICY_HND *pol, uint32 *num_groups,
-			   DOM_GID **gid)
+BOOL wb_samr_query_usergroups(CLI_POLICY_HND *pol, uint32 *num_groups,
+			      DOM_GID **gid)
 {
 	uint32 ret;
 
@@ -283,7 +280,7 @@ BOOL samr_query_usergroups(CLI_POLICY_HND *pol, uint32 *num_groups,
 	return (ret == NT_STATUS_NOPROBLEMO);
 }
 
-BOOL get_samr_query_groupinfo(CLI_POLICY_HND *pol, uint32 info_level,
+BOOL wb_get_samr_query_groupinfo(CLI_POLICY_HND *pol, uint32 info_level,
 			      uint32 group_rid, GROUP_INFO_CTR *ctr)
 {
 	POLICY_HND group_pol;
@@ -309,9 +306,9 @@ BOOL get_samr_query_groupinfo(CLI_POLICY_HND *pol, uint32 info_level,
 	return (result == NT_STATUS_NOPROBLEMO);
 }
 
-BOOL sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
-			uint32 *num_names, uint32 **rid_mem, char ***names,
-			uint32 **name_types)
+BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
+			   uint32 *num_names, uint32 **rid_mem, 
+			   char ***names, uint32 **name_types)
 {
 	BOOL got_group_pol = False;
 	POLICY_HND group_pol;
@@ -339,8 +336,8 @@ BOOL sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
 	return (result == NT_STATUS_NOPROBLEMO);	
 }
 
-BOOL samr_query_dom_info(CLI_POLICY_HND *pol, uint16 switch_value,
-			 SAM_UNK_CTR *ctr)
+BOOL wb_samr_query_dom_info(CLI_POLICY_HND *pol, uint16 switch_value,
+			    SAM_UNK_CTR *ctr)
 {
 	uint32 ret;
 
@@ -350,9 +347,9 @@ BOOL samr_query_dom_info(CLI_POLICY_HND *pol, uint16 switch_value,
 	return (ret == NT_STATUS_NOPROBLEMO);
 }
 
-BOOL samr_query_dispinfo(CLI_POLICY_HND *pol, uint32 *start_ndx, 
-			 uint16 info_level, uint32 *num_entries,
-			 SAM_DISPINFO_CTR *ctr)
+BOOL wb_samr_query_dispinfo(CLI_POLICY_HND *pol, uint32 *start_ndx, 
+			    uint16 info_level, uint32 *num_entries,
+			    SAM_DISPINFO_CTR *ctr)
 {
 	uint32 ret;
 

@@ -101,8 +101,8 @@ static BOOL get_trusted_domains(void)
 	}
 	
 	/* Enumerate list of trusted domains */	
-	result = lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
-				    &num_doms, &domains, &sids);
+	result = wb_lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
+				       &num_doms, &domains, &sids);
 	
 	if (!result || !domains) return False;
 	
@@ -132,31 +132,31 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 	/* Shut down existing sam handles */
 
 	if (domain->sam_dom_handle_open) {
-		samr_close(&domain->sam_dom_handle);
+		wb_samr_close(&domain->sam_dom_handle);
 		domain->sam_dom_handle_open = False;
 	}
 
 	if (domain->sam_handle_open) {
-		samr_close(&domain->sam_handle);
+		wb_samr_close(&domain->sam_handle);
 		domain->sam_handle_open = False;
 	}
 
 	/* Open sam handle */
 
 	domain->sam_handle_open = 
-		samr_connect(domain->controller, 
-			     SEC_RIGHTS_MAXIMUM_ALLOWED, 
-			     &domain->sam_handle);
+		wb_samr_connect(domain->controller, 
+				SEC_RIGHTS_MAXIMUM_ALLOWED, 
+				&domain->sam_handle);
 
 	if (!domain->sam_handle_open) return False;
 
 	/* Open sam domain handle */
 
 	domain->sam_dom_handle_open =
-		samr_open_domain(&domain->sam_handle, 
-				 SEC_RIGHTS_MAXIMUM_ALLOWED, 
-				 &domain->sid, 
-				 &domain->sam_dom_handle);
+		wb_samr_open_domain(&domain->sam_handle, 
+				    SEC_RIGHTS_MAXIMUM_ALLOWED, 
+				    &domain->sid, 
+				    &domain->sam_dom_handle);
 
 	if (!domain->sam_dom_handle_open) return False;
 	
@@ -253,7 +253,7 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 	if (is_server) {
 		server_state.pwdb_initialised = False;
 		server_state.lsa_handle_open = False;
-		lsa_close(&server_state.lsa_handle);
+		wb_lsa_close(&server_state.lsa_handle);
 	}
 	
 	/* Close domain sam handles but don't free them as this
@@ -261,12 +261,12 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 	   will be reopened later. */
 
 	if (domain->sam_dom_handle_open) {
-		samr_close(&domain->sam_dom_handle);
+		wb_samr_close(&domain->sam_dom_handle);
 		domain->sam_dom_handle_open = False;
 	}
 	
 	if (domain->sam_handle_open) {
-		samr_close(&domain->sam_handle);
+		wb_samr_close(&domain->sam_handle);
 		domain->sam_handle_open = False;
 	}
 
@@ -383,9 +383,9 @@ void establish_connections(BOOL force_reestablish)
 	if (!server_state.lsa_handle_open) {
 		
 		server_state.lsa_handle_open =
-			lsa_open_policy(server_state.controller, 
-					False, SEC_RIGHTS_MAXIMUM_ALLOWED,
-					&server_state.lsa_handle);
+			wb_lsa_open_policy(server_state.controller, 
+					   False, SEC_RIGHTS_MAXIMUM_ALLOWED,
+					   &server_state.lsa_handle);
 
 		if (!server_state.lsa_handle_open) return;
 
@@ -425,14 +425,14 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 
     if (strequal(domain->controller, server_state.controller)) {
 	    /* Do a level 5 query info policy */
-	    return lsa_query_info_pol(&server_state.lsa_handle, 0x05, 
-				      level5_dom, &domain->sid);
+	    return wb_lsa_query_info_pol(&server_state.lsa_handle, 0x05, 
+					 level5_dom, &domain->sid);
     } 
 
     /* Use lsaenumdomains to get sid for this domain */
     
-    res = lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
-			     &num_doms, &domains, &sids);
+    res = wb_lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
+				&num_doms, &domains, &sids);
     
     /* Look for domain name */
     
@@ -502,8 +502,8 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
 
     /* Lookup name */
 
-    res = lsa_lookup_names(&server_state.lsa_handle, num_names, (char **)&name,
-			   &sids, &types, &num_sids);
+    res = wb_lsa_lookup_names(&server_state.lsa_handle, num_names, 
+			      (char **)&name, &sids, &types, &num_sids);
 
     /* Return rid and type if lookup successful */
 
@@ -542,8 +542,8 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 
     /* Lookup name */
 
-    res = lsa_lookup_sids(&server_state.lsa_handle, num_sids, sid, 
-			  &names, &types, &num_names);
+    res = wb_lsa_lookup_sids(&server_state.lsa_handle, num_sids, sid, 
+			     &names, &types, &num_names);
 
     /* Return name and type if successful */
 
@@ -575,8 +575,8 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
                               uint32 user_rid, SAM_USERINFO_CTR *user_info)
 {
-	return get_samr_query_userinfo(&domain->sam_dom_handle, 0x15, 
-				       user_rid, user_info);
+	return wb_get_samr_query_userinfo(&domain->sam_dom_handle, 0x15, 
+					  user_rid, user_info);
 }                                   
 
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
@@ -588,9 +588,9 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 	POLICY_HND user_pol;
 	BOOL result;
 
-        if (!samr_open_user(&domain->sam_dom_handle, 
-			    SEC_RIGHTS_MAXIMUM_ALLOWED,
-			    user_rid, &user_pol)) {
+        if (!wb_samr_open_user(&domain->sam_dom_handle, 
+			       SEC_RIGHTS_MAXIMUM_ALLOWED,
+			       user_rid, &user_pol)) {
 		return False;
 	}
 
@@ -616,8 +616,8 @@ done:
 BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
                               uint32 group_rid, GROUP_INFO_CTR *info)
 {
-	return get_samr_query_groupinfo(&domain->sam_dom_handle, 1, 
-					group_rid, info);
+	return wb_get_samr_query_groupinfo(&domain->sam_dom_handle, 1, 
+					   group_rid, info);
 }
 
 /* Lookup group membership given a rid */
@@ -627,8 +627,8 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
                               uint32 **rid_mem, char ***names, 
                               enum SID_NAME_USE **name_types)
 {
-	return sam_query_groupmem(&domain->sam_dom_handle, group_rid, 
-				  num_names, rid_mem, names, name_types);
+	return wb_sam_query_groupmem(&domain->sam_dom_handle, group_rid, 
+				     num_names, rid_mem, names, name_types);
 }
 
 /* Globals for domain list stuff */
@@ -849,7 +849,7 @@ uint32 domain_sequence_number(char *domain_name)
 	domain = find_domain_from_name(domain_name);
 	if (!domain) return DOM_SEQUENCE_NONE;
 
-	if (!samr_query_dom_info(&domain->sam_dom_handle, 2, &ctr)) {
+	if (!wb_samr_query_dom_info(&domain->sam_dom_handle, 2, &ctr)) {
 
 		/* If this fails, something bad has gone wrong */
 
@@ -875,8 +875,8 @@ uint32 winbindd_query_dispinfo(struct winbindd_domain *domain,
 {
 	uint32 status;
 
-	status = samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
-				     info_level, num_entries, ctr);
+	status = wb_samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
+					info_level, num_entries, ctr);
 
 	return status;
 }
