@@ -4,6 +4,10 @@ $Id$
 
 * configure
 
+use more careful checking before starting to use berkeley db.  it only
+makes sense to do so if we have the appropriate library and the header
+file.
+
 * appl
 
 more programs here
