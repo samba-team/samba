@@ -9,6 +9,7 @@ top_builddir		= ../../..
 SHELL		= /bin/sh
 
 CC = @CC@
+LINK = @LINK@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@ -DBINDIR='"$(bindir)"'
@@ -51,7 +52,7 @@ all: $(PROGS)
 	$(CC) -c $(DEFS) -I../../../include -I.. -I$(srcdir)/.. -I. -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $<
 
 telnetd$(EXECSUFFIX): $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../libtelnet -ltelnet $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ $(LIBROKEN)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../libtelnet -ltelnet $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ $(LIBROKEN)
 
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libexecdir)

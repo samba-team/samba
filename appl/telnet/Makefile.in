@@ -9,6 +9,7 @@ SHELL		= /bin/sh
 @SET_MAKE@
 
 CC = @CC@
+LINK = @LINK@
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@

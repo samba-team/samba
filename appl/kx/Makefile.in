@@ -9,6 +9,7 @@ XINCS = @X_CFLAGS@
 XLIBS = @X_LIBS@ @LIB_XauReadAuth@ @X_PRE_LIBS@ @X_EXTRA_LIBS@
 
 CC = @CC@
+LINK = @LINK@
 AR = ar
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
@@ -99,10 +100,10 @@ encdata.c:
 	$(LN_S) $(srcdir)/../kauth/encdata.c .
 
 kx$(EXECSUFFIX): $(OBJECTS_KX)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KX) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KX) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 kxd$(EXECSUFFIX): $(OBJECTS_KXD)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 rxterm: rxterm.in
 	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/rxterm.in > $@

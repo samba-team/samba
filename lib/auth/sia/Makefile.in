@@ -8,6 +8,7 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
+LINK = @LINK@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@

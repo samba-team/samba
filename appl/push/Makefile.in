@@ -7,6 +7,7 @@ top_srcdir = @top_srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
+LINK = @LINK@
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
@@ -73,7 +74,7 @@ KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
 
 push$(EXECSUFFIX): $(push_OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(push_OBJECTS) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(push_OBJECTS) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../include/config.h
 

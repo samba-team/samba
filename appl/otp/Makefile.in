@@ -7,6 +7,7 @@ top_srcdir = @top_srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
+LINK = @LINK@
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
@@ -80,10 +81,10 @@ OLIB=-L../../lib/otp -lotp -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
 
 otp$(EXECSUFFIX): $(OBJECTS_OTP)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTP) $(OLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTP) $(OLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
 
 otpprint$(EXECSUFFIX): $(OBJECTS_OTPPRINT)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTPPRINT) $(OLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTPPRINT) $(OLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../include/config.h
 

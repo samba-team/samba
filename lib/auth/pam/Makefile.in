@@ -8,6 +8,7 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
+LINK = @LINK@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
@@ -82,6 +83,6 @@ $(OBJECTS): ../../../include/config.h
 $(LIB): $(OBJECTS)
 	rm -f $@
 	$(LDSHARED) -o $@ $(OBJECTS) $(LD_FLAGS) $(LIB_DEPS)
-#	$(CC) -shared -Wl,-x -o $(LIB) $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a
+#	$(LINK) -shared -Wl,-x -o $(LIB) $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a
 
 .PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist

@@ -10,6 +10,7 @@ VPATH = @srcdir@
 top_builddir=../..
 
 CC = @CC@
+LINK = @LINK@
 AR = ar
 RANLIB = @RANLIB@
 LN_S = @LN_S@
@@ -113,7 +114,7 @@ $(OBJECTS): ../../include/config.h
 $(mk_cmds_OBJECTS): parse.h
 
 mk_cmds$(EXECSUFFIX): $(mk_cmds_OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $(mk_cmds_OBJECTS) -L../roken -lroken
+	$(LINK) $(CFLAGS) -o $@ $(mk_cmds_OBJECTS) -L../roken -lroken
 
 parse.c: parse.h
 parse.h: $(srcdir)/parse.y

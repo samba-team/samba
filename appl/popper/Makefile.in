@@ -8,6 +8,7 @@ VPATH = @srcdir@
 top_builddir = ../..
 
 CC = @CC@
+LINK = @LINK@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
@@ -102,10 +103,10 @@ LIBROKEN=-L../../lib/roken -lroken
 OTPLIB=@LIB_otp@
 
 popper$(EXECSUFFIX): $(POPPER_OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(POPPER_OBJECTS) $(OTPLIB) $(KLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
+	$(LINK $(LD_FLAGS) $(LDFLAGS) -o $@ $(POPPER_OBJECTS) $(OTPLIB) $(KLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
 
 pop_debug$(EXECSUFFIX): $(POP_DEBUG_OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(POP_DEBUG_OBJECTS) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(POP_DEBUG_OBJECTS) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../include/config.h
 

@@ -8,6 +8,7 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
+LINK = @LINK@
 AR = ar
 RANLIB = @RANLIB@
 LN_S = @LN_S@
@@ -97,7 +98,7 @@ realclean: distclean
 	rm -f TAGS $(EXTRA_LIB_SOURCES)
 
 otptest$(EXECSUFFIX): $(OTPTEST_OBJECTS) $(LIB)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OTPTEST_OBJECTS) -L. -lotp -L../des -ldes $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OTPTEST_OBJECTS) -L. -lotp -L../des -ldes $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
 
 $(LIBNAME).a: $(LIB_OBJECTS) $(LIBADD)
 	rm -f $@

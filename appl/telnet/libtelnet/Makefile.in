@@ -7,6 +7,7 @@ VPATH		= @srcdir@
 SHELL		= /bin/sh
 
 CC = @CC@
+LINK = @LINK@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@

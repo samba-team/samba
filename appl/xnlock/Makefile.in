@@ -11,6 +11,7 @@ XINCS = @X_CFLAGS@
 XLIBS = @X_LIBS@ -lXt @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@
 
 CC = @CC@
+LINK = @LINK@
 RANLIB = @RANLIB@
 DEFS = @DEFS@ -DBINDIR='"$(bindir)"'
 CFLAGS = $(XINCS) @CFLAGS@
@@ -96,7 +97,7 @@ KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
 
 xnlock$(EXECSUFFIX): xnlock.o
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ xnlock.o @KRB_KAFS_LIB@ $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ xnlock.o @KRB_KAFS_LIB@ $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../include/config.h
 

@@ -7,6 +7,7 @@ VPATH		= @srcdir@
 SHELL		= /bin/sh
 
 CC = @CC@
+LINK = @LINK@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
@@ -48,7 +49,7 @@ all: $(PROGS)
 	$(CC) -c $(DEFS) -I../../../include -I.. -I$(srcdir)/.. $(CFLAGS) $(CPPFLAGS) $<
 
 telnet$(EXECSUFFIX): $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../libtelnet -ltelnet $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ $(LIBROKEN)
+	$(LINK) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../libtelnet -ltelnet $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ $(LIBROKEN)
 
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
