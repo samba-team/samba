@@ -1,3 +1,7 @@
+2001-08-30  Assar Westerlund  <assar@sics.se>
+
+	* db.m4: check for ndbm functions in db3 library too
+
 2001-08-29  Jacques Vidrine  <n@nectar.com>
 
 	* check-compile-et.m4: Check for already-installed com_err.
