@@ -47,8 +47,10 @@ fi
 
 AC_TEST_PACKAGE(krb4,krb.h,libkrb.a,-lkrb,/usr/athena)
 
+LIB_kdb=
 if test "$with_krb4"; then
 	LIB_krb4="$KRB4LIB -ldes"
+	LIB_kdb=-lkdb
 	INCLUDE_krb4="$KRB4INCLUDE"
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
@@ -69,6 +71,7 @@ fi
 AM_CONDITIONAL(KRB4, test "$with_krb4")dnl
 AM_CONDITIONAL(KRB5, true)dnl
 AC_SUBST(LIB_krb4)dnl
+AC_SUBST(LIB_kdb)dnl
 AC_SUBST(INCLUDE_krb4)dnl
 AM_CONDITIONAL(AIX, test "`uname`" = AIX)dnl
 AM_CONDITIONAL(AIX4, test "`uname`" = AIX -a "`uname -v`" = 4)
@@ -255,14 +258,9 @@ AC_CHECK_HEADERS(sys/termio.h sys/tty.h sys/types.h sys/uio.h sys/un.h)
 AC_CHECK_HEADERS(sys/utsname.h sys/wait.h syslog.h termio.h)
 AC_CHECK_HEADERS(termios.h time.h tmpdir.h unistd.h util.h utmp.h utmpx.h)
 
-if test "$ac_cv_header_err_h" = no; then
-	EXTRA_HDRS="$EXTRA_HDRS err.h"
-	AC_SUBST(EXTRA_HDRS)
-fi
-if test "$ac_cv_header_fnmatch_h" = no; then
-	NOINST_HDRS="$NOINST_HDRS fnmatch.h"
-	AC_SUBST(NOINST_HDRS)
-fi
+AM_CONDITIONAL(have_err_h, test "$ac_cv_header_err_h" = yes)
+AM_CONDITIONAL(have_fnmatch_h, test "$ac_cv_header_fnmatch_h" = yes)
+
 
 dnl Checks for libraries.
 
@@ -320,10 +318,9 @@ AC_BROKEN_VSNPRINTF
 AC_BROKEN_GLOB
 
 if test "$ac_cv_func_glob_working" != yes; then
-	NOINST_HDRS="$NOINST_HDRS glob.h"
-	AC_SUBST(NOINST_HDRS)
 	LIBOBJS="$LIBOBJS glob.o"
 fi
+AM_CONDITIONAL(have_glob_h, test "$ac_cv_func_glob_working" = yes)
 
 dnl these should happen after tests for *snprintf
 
