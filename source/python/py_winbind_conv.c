@@ -18,8 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "Python.h"
+#include "python/py_common.h"
 #include "python/py_conv.h"
 
 /* Convert a struct passwd to a dictionary */

@@ -21,10 +21,7 @@
 #ifndef _PY_SMB_H
 #define _PY_SMB_H
 
-#include "includes.h"
-#include "Python.h"
-
-#include "python/py_common_proto.h"
+#include "python/py_common.h"
 
 /* cli_state handle object */
 
