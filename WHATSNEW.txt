@@ -1,4 +1,4 @@
-          WHATS NEW IN 1.9.18p3 - February 17th 1998.
+          WHATS NEW IN 1.9.18p3 - February 18th 1998.
           ===========================================
 
 This is the latest stable release of Samba. This is the
