@@ -1,3 +1,8 @@
+Sat Mar 27 12:37:55 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: link print_version with -ldes to avoid unresolved
+ 	references if -lkrb is shared
+
 Sat Mar 20 03:42:30 1999  Assar Westerlund  <assar@sics.se>
 
 	* roken-common.h (eread, ewrite): add
