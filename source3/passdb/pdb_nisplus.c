@@ -56,7 +56,7 @@ struct nisp_enum_info
 };
 
 static struct nisp_enum_info global_nisp_ent;
-static VOLATILE sig_atomic_t gotalarm;
+static SIG_ATOMIC_T gotalarm;
 
 /***************************************************************
 

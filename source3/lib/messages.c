@@ -453,7 +453,7 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 	return True;
 }
 
-static VOLATILE sig_atomic_t gotalarm;
+static SIG_ATOMIC_T gotalarm;
 
 /***************************************************************
  Signal function to tell us we timed out.
