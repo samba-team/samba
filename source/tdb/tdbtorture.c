@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 		if ((pids[i+1]=fork()) == 0) break;
 	}
 
-	db = tdb_open("test.tdb", 0, TDB_CLEAR_IF_FIRST, 
+	db = tdb_open("torture.tdb", 0, TDB_CLEAR_IF_FIRST, 
 		      O_RDWR | O_CREAT, 0600);
 	if (!db) {
 		fatal("db open failed");
