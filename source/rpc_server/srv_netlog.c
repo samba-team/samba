@@ -417,7 +417,7 @@ static void api_net_req_chal( rpcsrv_struct *p,
 		status = 0xC0000000 | NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
 	}
 
-	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -452,7 +452,7 @@ static void api_net_auth( rpcsrv_struct *p,
 	unistr2_to_ascii(trust_name, &q_a.clnt_id.uni_comp_name,
 	                             sizeof(trust_name)-1);
 
-	if (!cred_get(global_sam_name, trust_name, &dc))
+	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -474,7 +474,7 @@ static void api_net_auth( rpcsrv_struct *p,
 		status = NT_STATUS_ACCESS_DENIED | 0xC0000000;
 	}
 
-	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -506,7 +506,7 @@ static void api_net_auth_2( rpcsrv_struct *p,
 	unistr2_to_ascii(trust_name, &q_a.clnt_id.uni_comp_name,
 	                             sizeof(trust_name)-1);
 
-	if (!cred_get(global_sam_name, trust_name, &dc))
+	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -531,7 +531,7 @@ static void api_net_auth_2( rpcsrv_struct *p,
 		}
 	}
 
-	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -562,7 +562,7 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 	unistr2_to_ascii(trust_name, &q_a.clnt_id.login.uni_comp_name,
 	                             sizeof(trust_name)-1);
 
-	if (!cred_get(global_sam_name, trust_name, &dc))
+	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -626,7 +626,7 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 		status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -661,7 +661,7 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	unistr2_to_ascii(trust_name, &q_l.sam_id.client.login.uni_comp_name,
 	                             sizeof(trust_name)-1);
 
-	if (!cred_get(global_sam_name, trust_name, &dc))
+	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -671,7 +671,7 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	                &(q_l.sam_id.client.cred), &srv_cred);
 	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
 
-	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -699,7 +699,7 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 	unistr2_to_ascii(trust_name, &q_s.uni_cli_name,
 	                             sizeof(trust_name)-1);
 
-	if (!cred_get(global_sam_name, trust_name, &dc))
+	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -719,7 +719,7 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 		}
 	}
 
-	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -898,7 +898,8 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 /*************************************************************************
  api_net_sam_logon:
  *************************************************************************/
-static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
+static uint32 reply_net_sam_logon(uint32 remote_pid,
+				NET_Q_SAM_LOGON *q_l,
 				DOM_CRED *srv_cred, NET_USER_INFO_3 *usr_info)
 {
 	struct sam_passwd *sam_pass = NULL;
@@ -937,7 +938,7 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 	unistr2_to_ascii(trust_name, &q_l->sam_id.client.login.uni_comp_name,
 	                             sizeof(trust_name)-1);
 
-	if (!cred_get(global_sam_name, trust_name, &dc))
+	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
 		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -1152,7 +1153,7 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 		free((char *)gids);
 	}
 
-	if (!cred_store(global_sam_name, trust_name, &dc))
+	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
 		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -1176,7 +1177,7 @@ static void api_net_sam_logon( rpcsrv_struct *p,
 	q_l.sam_id.ctr = &ctr;
 	net_io_q_sam_logon("", &q_l, data, 0);
 
-	status = reply_net_sam_logon(&q_l, &srv_cred, &usr_info);
+	status = reply_net_sam_logon(p->remote_pid, &q_l, &srv_cred, &usr_info);
 	net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status);
 }
 

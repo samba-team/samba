@@ -168,32 +168,6 @@ static BOOL api_netsec_create_pdu(rpcsrv_struct *l, uint32 data_start,
 	return ret;
 }
 
-#if 0
-static BOOL api_netsec_bind_auth_resp(rpcsrv_struct *l)
-{
-	RPC_HDR_AUTHA autha_info;
-	RPC_AUTH_VERIFIER auth_verifier;
-
-	DEBUG(5,("api_pipe_bind_auth_resp: decode request. %d\n", __LINE__));
-
-	if (l->hdr.auth_len == 0) return False;
-
-	/* decode the authentication verifier response */
-	smb_io_rpc_hdr_autha("", &autha_info, &l->data_i, 0);
-	if (l->data_i.offset == 0) return False;
-
-	smb_io_rpc_auth_verifier("", &auth_verifier, &l->data_i, 0);
-	if (l->data_i.offset == 0) return False;
-
-	if (!rpc_auth_verifier_chk(&auth_verifier, "NETSEC", NETSEC_AUTH))
-	{
-		return False;
-	}
-	
-	return api_netsec(l, auth_verifier.msg_type);
-}
-#endif
-
 static BOOL api_netsec_verify(rpcsrv_struct *l)
 {
 	netsec_auth_struct *a = (netsec_auth_struct *)l->auth_info;
@@ -204,7 +178,8 @@ static BOOL api_netsec_verify(rpcsrv_struct *l)
 	/*
 	 * obtain the session key
 	 */
-	if (!cred_get(a->netsec_neg.domain, a->netsec_neg.myname, &dc))
+	if (!cred_get(l->remote_pid,
+	              a->netsec_neg.domain, a->netsec_neg.myname, &dc))
 	{
 		return False;
 	}

@@ -99,7 +99,7 @@ uint32 cli_nt_setup_creds( const char* srv_name,
 		struct cli_connection *con = NULL;
 		struct netsec_creds creds;
 
-#if 1
+#if 0
 		if (!cli_connection_getsrv(srv_name, PIPE_NETLOGON, &con))
 		{
 			return NT_STATUS_ACCESS_DENIED | 0xC0000000;

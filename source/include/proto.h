@@ -287,9 +287,10 @@ void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
 void msrpc_close_socket(struct msrpc_state *msrpc);
 void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
+				uint32 pid,
 				const char* pipename,
 				const struct user_creds *usr);
-struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc);
+struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc, uint32 pid);
 void msrpc_shutdown(struct msrpc_state *msrpc);
 BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 		const char *pipe_name);
@@ -299,6 +300,7 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 void init_msrpc_use(void);
 void free_msrpc_use(void);
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
+				uint32 pid,
 				const struct user_creds *usr_creds,
 				BOOL redir);
 BOOL msrpc_use_del(const char* pipe_name,
@@ -467,8 +469,6 @@ char *Atoic(char *p, int *n, char *c);
 uint32 *add_num_to_list(uint32 **num, int *count, int val);
 char *get_numlist(char *p, uint32 **num, int *count);
 void putip(void *dest,void *src);
-char *dns_to_netbios_name(char *dns_name);
-int name_mangle( char *In, char *Out, char name_type );
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
 int file_rename(char *from, char *to);
 time_t file_modtime(char *fname);
@@ -491,8 +491,6 @@ void close_low_fds(void);
 int set_blocking(int fd, BOOL set);
 int TvalDiff(struct timeval *tvalold,struct timeval *tvalnew);
 SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align);
-int name_extract(char *buf,int ofs,char *name);
-int name_len(char *s1);
 void msleep(int t);
 BOOL get_file_match(const char* dirname, const char* regexp,
 				uint32 *total, char ***list);
@@ -525,7 +523,6 @@ char *readdirname(DIR *p);
 BOOL is_in_path(char *name, name_compare_entry *namelist);
 void set_namearray(name_compare_entry **ppname_array, char *namelist);
 void free_namearray(name_compare_entry *name_array);
-BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
@@ -598,6 +595,7 @@ JOB_INFO_2 *add_job2_to_array(uint32 *len, JOB_INFO_2 ***array,
 BOOL do_file_lock(int fd, int waitsecs, int type);
 BOOL file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL file_unlock(int fd, int *plock_depth);
+BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 void *startfileent(char *pfile, char *s_readbuf, int bufsize,
 				int *file_lock_depth, BOOL update);
 void endfileent(void *vp, int *file_lock_depth);
@@ -955,6 +953,10 @@ struct packet_struct *receive_packet(int fd,enum packet_type type,int t);
 void sort_query_replies(char *data, int n, struct in_addr ip);
 BOOL read_nmb_sock(int c, struct nmb_state *con);
 int get_nmb_sock(void);
+char *dns_to_netbios_name(char *dns_name);
+int name_mangle( char *In, char *Out, char name_type );
+int name_extract(char *buf,int ofs,char *name);
+int name_len(char *s1);
 
 /*The following definitions come from  libsmb/nterr.c  */
 
@@ -1092,7 +1094,7 @@ void exit_server(char *reason);
 
 /*The following definitions come from  msrpc/msrpcd_process.c  */
 
-BOOL get_user_creds(int c, struct user_creds *usr);
+BOOL get_user_creds(int c, struct user_creds *usr, uint32 *pid);
 void close_srv_auth_array(rpcsrv_struct *l);
 void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn);
 BOOL msrpcd_init(int c, msrpc_pipes_struct *p);
@@ -1100,8 +1102,8 @@ void msrpcd_process(msrpc_service_fns *fn, int c, msrpc_pipes_struct *p);
 
 /*The following definitions come from  netlogond/creds_db.c  */
 
-BOOL cred_get(const char *domain, const char* wks, struct dcinfo *dc);
-BOOL cred_store(const char *domain, const char* wks, struct dcinfo *dc);
+BOOL cred_get(uint32 pid, const char *domain, const char* wks, struct dcinfo *dc);
+BOOL cred_store(uint32 pid, const char *domain, const char* wks, struct dcinfo *dc);
 BOOL cred_init_db(void);
 
 /*The following definitions come from  netlogond/netlogond.c  */
@@ -2630,11 +2632,13 @@ BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth);
 BOOL create_ntuser_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
+				uint32 pid,
 				const struct ntuser_creds *ntu,
 				BOOL reuse);
 BOOL create_user_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
+				uint32 pid,
 				const struct user_creds *usr);
 
 /*The following definitions come from  rpc_parse/parse_eventlog.c  */

@@ -140,7 +140,9 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		become_root(False);
 		con->type = MSRPC_LOCAL;
 		con->usr_creds.reuse = False;
-		con->msrpc.local = msrpc_use_add(&pipe_name[6], &con->usr_creds, False);
+		con->msrpc.local = msrpc_use_add(&pipe_name[6], getpid(),
+		                                  &con->usr_creds,
+		                                  False);
 		unbecome_root(False);
 	}
 	else

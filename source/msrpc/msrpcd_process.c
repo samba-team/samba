@@ -210,7 +210,7 @@ static void process_msrpc(msrpc_pipes_struct *p, int c)
 /****************************************************************************
  reads user credentials from the socket
 ****************************************************************************/
-BOOL get_user_creds(int c, struct user_creds *usr)
+BOOL get_user_creds(int c, struct user_creds *usr, uint32 *pid)
 {
 	pstring buf;
 	int rl;
@@ -291,6 +291,9 @@ BOOL get_user_creds(int c, struct user_creds *usr)
 		}
 	}
 
+	/* obtain the remote process id */
+	*pid = cmd.pid;
+
 	status = new_con ? 0x0 : 0x1;
 
 	if (write(c, &status, sizeof(status)) !=
@@ -334,8 +337,9 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 	gid_t *groups = NULL;
 	char *user;
 	uint16 vuid;
+	uint32 remote_pid;
 
-	if (!get_user_creds(c, &usr))
+	if (!get_user_creds(c, &usr, &remote_pid))
 	{
 		DEBUG(0,("authentication failed\n"));
 		free_user_creds(&usr);
@@ -385,6 +389,7 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 	ZERO_STRUCTP(p->l);
 
 	p->l->vuid = vuid;
+	p->l->remote_pid = remote_pid;
 
 	if (!usr.uxc.guest)
 	{

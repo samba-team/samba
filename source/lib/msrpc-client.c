@@ -215,7 +215,8 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 
 	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
 
-	if (!create_user_creds(&ps, msrpc->pipe_name, 0x0, command, usr))
+	if (!create_user_creds(&ps, msrpc->pipe_name, 0x0, command,
+	                        msrpc->pid, usr))
 	{
 		DEBUG(0,("could not parse credentials\n"));
 		close(sock);
@@ -294,11 +295,12 @@ static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
 }
 
 BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
+				uint32 pid,
 				const char* pipename,
 				const struct user_creds *usr)
 {
 	ZERO_STRUCTP(msrpc);
-	if (!msrpc_initialise(msrpc))
+	if (!msrpc_initialise(msrpc, pid))
 	{
 		DEBUG(0,("unable to initialise msrpcent connection.\n"));
 		return False;
@@ -318,7 +320,7 @@ BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
 /****************************************************************************
 initialise a msrpcent structure
 ****************************************************************************/
-struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc)
+struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc, uint32 pid)
 {
 	if (!msrpc) {
 		msrpc = (struct msrpc_state *)malloc(sizeof(*msrpc));
@@ -343,6 +345,7 @@ struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc)
 
 	msrpc->initialised = 1;
 	msrpc_init_creds(msrpc, NULL);
+	msrpc->pid = pid;
 
 	return msrpc;
 }

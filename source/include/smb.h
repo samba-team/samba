@@ -1810,10 +1810,14 @@ struct msrpc_state
 	BOOL initialised;
 	char *inbuf;
 	char *outbuf;
+
+	uint32 pid;
 };
 
 typedef struct netsec_creds
 {
+	uint32 pid;
+
 	fstring domain;
 	fstring myname;
 

@@ -3004,7 +3004,9 @@ static BOOL cli_init_redirect(struct cli_state *cli,
 
 	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
 
-	if (!create_ntuser_creds(&ps, srv_name, 0x0, command, usr, cli->reuse))
+	if (!create_ntuser_creds(&ps, srv_name, 0x0, command,
+	                         getpid(), usr,
+	                         cli->reuse))
 	{
 		DEBUG(0,("could not parse credentials\n"));
 		close(sock);

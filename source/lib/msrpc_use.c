@@ -122,8 +122,8 @@ static struct msrpc_use *msrpc_find(const char* pipe_name,
 		
 	DEBUG(10,("msrpc_find: %s %s %s\n",
 			pipe_name,
-			usr_creds->ntc.user_name,
-			usr_creds->ntc.domain));
+			usr_creds != NULL ? usr_creds->ntc.user_name : "null",
+			usr_creds != NULL ? usr_creds->ntc.domain : "null"));
 
 	for (i = 0; i < num_msrpcs; i++)
 	{
@@ -170,6 +170,7 @@ static struct msrpc_use *msrpc_find(const char* pipe_name,
 create a new client state from user credentials
 ****************************************************************************/
 static struct msrpc_use *msrpc_use_get(const char* pipe_name,
+				uint32 pid,
 				const struct user_creds *usr_creds)
 {
 	struct msrpc_use *cli = (struct msrpc_use*)malloc(sizeof(*cli));
@@ -181,7 +182,7 @@ static struct msrpc_use *msrpc_use_get(const char* pipe_name,
 
 	memset(cli, 0, sizeof(*cli));
 
-	cli->cli = msrpc_initialise(NULL);
+	cli->cli = msrpc_initialise(NULL, pid);
 
 	if (cli->cli == NULL)
 	{
@@ -197,6 +198,7 @@ static struct msrpc_use *msrpc_use_get(const char* pipe_name,
 init client state
 ****************************************************************************/
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
+				uint32 pid,
 				const struct user_creds *usr_creds,
 				BOOL redir)
 {
@@ -222,7 +224,7 @@ struct msrpc_state *msrpc_use_add(const char* pipe_name,
 	 * allocate
 	 */
 
-	cli = msrpc_use_get(pipe_name, usr_creds);
+	cli = msrpc_use_get(pipe_name, pid, usr_creds);
 	cli->cli->redirect = redir;
 
 	if (!msrpc_establish_connection(cli->cli, pipe_name))

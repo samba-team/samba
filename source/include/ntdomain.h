@@ -135,6 +135,7 @@ typedef struct rpcsrv_struct
 	RPC_HDR_REQ   hdr_req;
 
 	uint16 vuid;
+	uint16 remote_pid;
 
 } rpcsrv_struct;
 

@@ -330,6 +330,7 @@ BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	prs_uint32("reuse", ps, depth, &(r_u->reuse));
+
 	prs_uint32("ptr_ntc", ps, depth, &(r_u->ptr_ntc));
 	prs_uint32("ptr_uxc", ps, depth, &(r_u->ptr_uxc));
 	prs_uint32("ptr_nts", ps, depth, &(r_u->ptr_nts));
@@ -464,11 +465,15 @@ void copy_user_creds(struct user_creds *to,
 		to->reuse = False;
 		return;
 	}
+
+	to->reuse = from->reuse;
+
 	to->ptr_nts = from->ptr_nts;
 	to->ptr_uxs = from->ptr_uxs;
 	to->ptr_ntc = from->ptr_ntc;
 	to->ptr_uxc = from->ptr_uxc;
 	to->ptr_ssk = from->ptr_ssk;
+
 	if (to->ptr_ntc != 0)
 	{
 		copy_nt_creds(&to->ntc, &from->ntc);
@@ -490,7 +495,6 @@ void copy_user_creds(struct user_creds *to,
 		memcpy(to->usr_sess_key, from->usr_sess_key,
 		        sizeof(to->usr_sess_key));
 	}
-	to->reuse = from->reuse;
 };
 
 void free_user_creds(struct user_creds *creds)
@@ -515,6 +519,7 @@ BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth)
 
 	prs_uint16("version", ps, depth, &(r_u->version));
 	prs_uint16("command", ps, depth, &(r_u->command));
+	prs_uint32("pid    ", ps, depth, &(r_u->pid    ));
 
 	prs_string("name   ", ps, depth,   r_u->name, strlen(r_u->name), sizeof(r_u->name));
 	prs_align(ps);
@@ -536,6 +541,7 @@ BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth)
 BOOL create_ntuser_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
+				uint32 pid,
 				const struct ntuser_creds *ntu,
 				BOOL reuse)
 {
@@ -553,6 +559,7 @@ BOOL create_ntuser_creds( prs_struct *ps,
 	fstrcpy(cmd.name, name);
 	cmd.version = version;
 	cmd.command = command;
+	cmd.pid   = pid  ;
 	cmd.ptr_creds = ntu != NULL ? 1 : 0;
 	cmd.cred = &usr;
 
@@ -575,6 +582,7 @@ BOOL create_ntuser_creds( prs_struct *ps,
 BOOL create_user_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
+				uint32 pid,
 				const struct user_creds *usr)
 {
 	CREDS_CMD cmd;
@@ -587,6 +595,7 @@ BOOL create_user_creds( prs_struct *ps,
 	fstrcpy(cmd.name, name);
 	cmd.version = version;
 	cmd.command = command;
+	cmd.pid     = pid  ;
 	cmd.ptr_creds = usr != NULL ? 1 : 0;
 	cmd.cred = usr;
 

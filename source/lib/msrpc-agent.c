@@ -127,7 +127,7 @@ static struct msrpc_state *init_client_connection(int c)
 	if (new_con)
 	{
 		uint32 status = 0;
-		n = msrpc_use_add(pipe_name, &usr, False);
+		n = msrpc_use_add(pipe_name, cmd.pid, &usr, False);
 
 		if (n == NULL)
 		{
