@@ -2,6 +2,7 @@
 
 #define STATUS_BUFFER_OVERFLOW            (5)
 #define STATUS_MORE_ENTRIES           (0x105)
+#define ERROR_ALREADY_EXISTS		 (80)
 #define ERROR_INVALID_PARAMETER		 (87)
 #define ERROR_INSUFFICIENT_BUFFER	(122)
 #define STATUS_1804	               (1804)

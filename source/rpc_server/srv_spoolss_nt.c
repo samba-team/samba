@@ -6124,7 +6124,7 @@ uint32 _spoolss_addform( pipes_struct *p, POLICY_HND *handle,
 
 	/* can't add if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		result = ERROR_INVALID_PARAMETER;
+		result = ERROR_ALREADY_EXISTS;
 		goto done;
 	}
 
