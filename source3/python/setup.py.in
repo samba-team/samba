@@ -87,6 +87,7 @@ setup(
               sources = [samba_srcdir + "python/py_spoolss.c",
                          samba_srcdir + "python/py_common.c",
                          samba_srcdir + "python/py_conv.c",
+                         samba_srcdir + "python/py_ntsec.c",
                          samba_srcdir + "python/py_spoolss_forms.c",
                          samba_srcdir + "python/py_spoolss_forms_conv.c",
                          samba_srcdir + "python/py_spoolss_drivers.c",
@@ -104,7 +105,8 @@ setup(
 
     Extension(name = "lsa",
               sources = [samba_srcdir + "python/py_lsa.c",
-                         samba_srcdir + "python/py_common.c"],
+                         samba_srcdir + "python/py_common.c",
+                         samba_srcdir + "python/py_ntsec.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
               extra_objects = obj_list),
