@@ -5,7 +5,7 @@ Release: PRELEASE
 Copyright: GNU GPL version 2
 Group: Networking
 Source: ftp://samba.org/pub/samba/samba-PVERSION.tar.gz
-Patch: makefile-path.patch
+#Patch: makefile-path.patch
 Patch1: smbw.patch
 Requires: pam >= 0.64 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
@@ -75,6 +75,9 @@ server. Please use it with care. If you do not need it then do NOT
 install.
 
 %changelog
+* Tue Mar 27 2001 John H Terpstra <jht@samba.org>
+- Fixes to make 2.2 compile
+
 * Sat Nov 04 2000 John H Terpstra <jht@samba.org>
 - Put Symlink for libnss_wins.so back into main install section
 
@@ -182,7 +185,7 @@ install.
 
 %prep
 %setup
-%patch -p1
+#%patch -p1
 %patch1 -p1
 
 
