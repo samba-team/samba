@@ -754,6 +754,7 @@ int sys_unlink(char *fname);
 int sys_open(char *fname,int flags,int mode);
 DIR *sys_opendir(char *dname);
 int sys_stat(char *fname,struct stat *sbuf);
+int sys_waitpid(pid_t pid,int *status,int options);
 int sys_lstat(char *fname,struct stat *sbuf);
 int sys_mkdir(char *dname,int mode);
 int sys_rmdir(char *dname);

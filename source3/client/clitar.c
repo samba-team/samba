@@ -823,7 +823,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	  datalen = 0;
 	}
 
-      DEBUG(2,("getting file %s of size %d bytes as a tar file %s",
+      DEBUG(1,("getting file %s of size %d bytes as a tar file %s",
 	       finfo.name,
 	       finfo.size,
 	       lname));
@@ -1079,7 +1079,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       get_total_size += finfo.size;
 
       /* Thanks to Carel-Jan Engel (ease@mail.wirehub.nl) for this one */
-      DEBUG(2,("(%g kb/s) (average %g kb/s)\n",
+      DEBUG(1,("(%g kb/s) (average %g kb/s)\n",
 	       finfo.size / MAX(0.001, (1.024*this_time)),
 	       get_total_size / MAX(0.001, (1.024*get_total_time_ms))));
     }
@@ -1406,7 +1406,7 @@ void cmd_block(void)
     }
 
   blocksize=block;
-  DEBUG(2,("blocksize is now %d\n", blocksize));
+  DEBUG(1,("blocksize is now %d\n", blocksize));
 }
 
 /****************************************************************************
@@ -1483,7 +1483,7 @@ void cmd_setmode(void)
       return;
     }
 
-  DEBUG(2, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
+  DEBUG(1, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
   (void) do_setrattr(fname, attra[ATTRSET], ATTRSET);
   (void) do_setrattr(fname, attra[ATTRRESET], ATTRRESET);
 }

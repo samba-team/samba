@@ -36,7 +36,7 @@ pstring desthost="";
 extern pstring myname;
 pstring password = "";
 pstring username="";
-pstring workgroup=WORKGROUP;
+pstring workgroup="";
 char *cmdstr="";
 BOOL got_pass = False;
 BOOL connect_as_printer = False;
@@ -4502,6 +4502,9 @@ static void usage(char *pname)
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
     return (-1);
   }
+
+  if (*workgroup == 0)
+    strcpy(workgroup,lp_workgroup());
 
   load_interfaces();
   get_myname(*myname?NULL:myname,NULL);  
