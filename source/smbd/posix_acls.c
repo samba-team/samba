@@ -1428,9 +1428,6 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 	canon_ace *list_head = NULL;
 	canon_ace *ace = NULL;
 	canon_ace *next_ace = NULL;
-	canon_ace *owner_ace = NULL;
-	canon_ace *group_ace = NULL;
-	canon_ace *other_ace = NULL;
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
 	size_t ace_count;
@@ -1522,17 +1519,6 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 		ace->sid = sid;
 		ace->unix_ug = unix_ug;
 		ace->owner_type = owner_type;
-
-		/*
-		 * Remember the user/group/other ACE entries.
-		 */
-
-		if (tagtype == SMB_ACL_USER_OBJ)
-			owner_ace = ace;
-		else if (tagtype == SMB_ACL_GROUP_OBJ)
-			group_ace = ace;
-		else if (tagtype == SMB_ACL_OTHER)
-			other_ace = ace;
 
 		DLIST_ADD(list_head, ace);
 	}
