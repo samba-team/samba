@@ -152,7 +152,7 @@ mkt_remove_entry(krb5_context context,
     return 0;
 }
 
-krb5_kt_ops krb5_mkt_ops = {
+const krb5_kt_ops krb5_mkt_ops = {
     "MEMORY",
     mkt_resolve,
     mkt_get_name,
