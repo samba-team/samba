@@ -459,7 +459,7 @@ is one of our interfaces.\n", work->work_group, inet_ntoa(nr->ip_flgs[0].ip) ));
 for workgroup %s\n", name, type, inet_ntoa(nr->ip_flgs[0].ip), work->work_group ));
 
       queue_netbios_packet(wins_client_subnet, ClientNMB,
-               NMB_QUERY,NAME_STATUS_DOM_SRV_CHK,
+               NMB_STATUS,NAME_STATUS_DOM_SRV_CHK,
                name, type, 0,0,0,
                work->work_group,NULL,
                False, False, nr->ip_flgs[0].ip, nr->ip_flgs[0].ip, 0);
