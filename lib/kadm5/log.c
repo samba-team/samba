@@ -167,7 +167,7 @@ kadm5_log_flush (kadm5_log_context *log_context,
      * Try to send a signal to any running `ipropd-master'
      */
     sendto (log_context->socket_fd,
-	    &log_context->version,
+	    (void *)&log_context->version,
 	    sizeof(log_context->version),
 	    0,
 	    (struct sockaddr *)&log_context->socket_name,
