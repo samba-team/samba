@@ -20,6 +20,12 @@ extern krb5_context gssapi_krb5_context;
 
 void gssapi_krb5_init (void);
 
+krb5_error_code
+gssapi_krb5_create_8003_checksum (
+		      const gss_channel_bindings_t input_chan_bindings,
+		      OM_uint32 flags,
+		      Checksum *result);
+
 OM_uint32
 gssapi_krb5_encapsulate(
 			krb5_data *in_data,
