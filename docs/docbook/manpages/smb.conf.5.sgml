@@ -891,7 +891,7 @@
 		<varlistentry>
 		<term><anchor id="ABORTSHUTDOWNSCRIPT">abort shutdown script (G) - ONLY IN HEAD</term>
 		<listitem><para>This a full path name to a script called by
-		<ulink url="smbd.8.html"><command>smbd.8</command></ulink> that
+		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>  that
 		should stop a shutdown procedure issued by the <link linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link>.</para>
 		
 		<para>This command will be run as user.</para>
@@ -6582,7 +6582,7 @@
 		<varlistentry>
 		<term><anchor id="SHUTDOWNSCRIPT">shutdown script (G) - ONLY IN HEAD</term>
 		<listitem><para>This a full path name to a script called by
-		<ulink url="smbd.8.html"><command>smbd.8</command></ulink> that
+		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink> that
 		should start a shutdown procedure.</para>
 
 		<para>This command will be run as the user connected to the
@@ -6617,7 +6617,7 @@
 		Shutdown does not return so we need to launch it in background.
 		</para>
 
-		<para>See also <link linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link>.</para>
+		<para>See also <link linkend="ABORTSHUTDOWNSCRIPT"><parameter>abort shutdown script</parameter></link>.</para>
 		</listitem>
 		</varlistentry>
 
