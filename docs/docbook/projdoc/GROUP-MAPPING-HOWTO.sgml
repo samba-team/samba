@@ -11,12 +11,12 @@
 <para> 
 Starting with Samba 3.0 alpha 2, a new group mapping function is available. The
 current method (likely to change) to manage the groups is a new command called
-<command>smbgroupedit</command>.
+&smbgroupedit;.
 </para>
 
 <para>
 The first immediate reason to use the group mapping on a PDC, is that
-the <command>domain admin group</command> of <filename>smb.conf</filename> is 
+the <command>domain admin group</command> of &smb.conf; is 
 now gone. This parameter was used to give the listed users local admin rights 
 on their workstations. It was some magic stuff that simply worked but didn't
 scale very well for complex setups.
@@ -71,7 +71,7 @@ give access to a certain directory to some users who are member of a group on
 your samba PDC. Flag that group as a domain group by running:
 </para>
 
-<para><command>smbgroupedit -a unixgroup -td</command></para>
+<para><userinput>smbgroupedit -a unixgroup -td</userinput></para>
 
 <para>You can list the various groups in the mapping database like this</para>
 <para><userinput>smbgroupedit -v</userinput></para>

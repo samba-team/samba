@@ -12,7 +12,7 @@
 <para>You might experience problems with special characters 
 when communicating with old DOS clients. Codepage 
 support has changed in samba 3.0. Read the chapter
-Unicode support for details.
+<link linkend="unicode">Unicode support</link> for details.
 </para>
 
 </sect1>

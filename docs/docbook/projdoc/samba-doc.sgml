@@ -47,13 +47,13 @@
 	<editor>&person.jelmer;</editor>
 	<editor>&person.jerry;</editor>
 
-	<pubdate>Friday 4 April</pubdate>
+	<pubdate>Sunday 6 April</pubdate>
 
 <abstract>
 <para>
 This book is a collection of HOWTOs added to Samba documentation over the years.
-I try to ensure that all are current, but sometimes the is a larger job
-than one person can maintain.  The most recent version of this document
+Samba is always under development, and so is it's documentation.
+The most recent version of this document
 can be found at <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
 on the "Documentation" page.  Please send updates to <ulink 
 url="mailto:jerry@samba.org">jerry@samba.org</ulink> or 
@@ -107,8 +107,7 @@ for various environments.
 <title>Advanced Configuration</title>
 <partintro>
 <title>Introduction</title>
-<para>Samba has several features that you might want or might not want to use. The chapters in this 
-part each cover one specific feature.</para>
+<para>Samba has several features that you might want or might not want to use. The chapters in this part each cover one specific feature.</para>
 </partintro>
 &NT-Security;
 &GROUP-MAPPING-HOWTO;
