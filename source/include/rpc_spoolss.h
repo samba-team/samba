@@ -4,7 +4,8 @@
    SMB parameters and setup
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
-   Copyright (C) Jean Francois Micouleau      1998-2000.
+   Copyright (C) Jean Francois Micouleau      1998-2000,
+   Copyright (C) Tim Potter		      2001.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,7 +31,6 @@
 /* spoolss pipe: this are the calls which are not implemented ...
 #define SPOOLSS_OPENPRINTER				0x01
 #define SPOOLSS_GETPRINTERDRIVER			0x0b
-#define SPOOLSS_GETPRINTPROCESSORDIRECTORY		0x10
 #define SPOOLSS_READPRINTER				0x16
 #define SPOOLSS_WAITFORPRINTERCHANGE			0x1c
 #define SPOOLSS_ADDPORT					0x25
@@ -77,6 +77,7 @@
 #define SPOOLSS_DELETEPRINTERDRIVER			0x0d
 #define SPOOLSS_ADDPRINTPROCESSOR			0x0e
 #define SPOOLSS_ENUMPRINTPROCESSORS			0x0f
+#define SPOOLSS_GETPRINTPROCESSORDIRECTORY		0x10
 #define SPOOLSS_STARTDOCPRINTER				0x11
 #define SPOOLSS_STARTPAGEPRINTER			0x12
 #define SPOOLSS_WRITEPRINTER				0x13
@@ -1955,7 +1956,29 @@ typedef struct spool_r_enumprinterdataex
 }
 SPOOL_R_ENUMPRINTERDATAEX;
 
+typedef struct printprocessor_directory_1
+{
+	UNISTR name;
+}
+PRINTPROCESSOR_DIRECTORY_1;
 
+typedef struct spool_q_getprintprocessordirectory
+{
+	UNISTR2 name;
+	UNISTR2 environment;
+	uint32 level;
+	NEW_BUFFER *buffer;
+	uint32 offered;
+}
+SPOOL_Q_GETPRINTPROCESSORDIRECTORY;
+
+typedef struct spool_r_getprintprocessordirectory
+{
+	NEW_BUFFER *buffer;
+	uint32 needed;
+	WERROR status;
+}
+SPOOL_R_GETPRINTPROCESSORDIRECTORY;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"

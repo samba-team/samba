@@ -7,6 +7,7 @@
  *  Copyright (C) Jean François Micouleau      1998-2000.
  *  Copyright (C) Jeremy Allison		    2001.
  *  Copyright (C) Gerald Carter		       2000-2001.
+ *  Copyright (C) Tim Potter		            2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -7073,4 +7074,89 @@ done:
 	return result;
 }
 
+/****************************************************************************
+****************************************************************************/
 
+/* Disabled because it doesn't fix the bug I am looking at but it would be
+   a shame to throw away the code. -tpot */
+
+#if 0
+
+static void fill_printprocessordirectory_1(PRINTPROCESSOR_DIRECTORY_1 *info, char *name)
+{
+	init_unistr(&info->name, name);
+}
+
+static WERROR getprintprocessordirectory_level_1(UNISTR2 *name, 
+						 UNISTR2 *environment, 
+						 NEW_BUFFER *buffer, 
+						 uint32 offered, 
+						 uint32 *needed)
+{
+	pstring path;
+	pstring long_archi;
+	pstring short_archi;
+	PRINTPROCESSOR_DIRECTORY_1 *info=NULL;
+
+	unistr2_to_ascii(long_archi, environment, sizeof(long_archi)-1);
+
+	if (get_short_archi(short_archi, long_archi)==FALSE)
+		return WERR_INVALID_ENVIRONMENT;
+
+	if((info=(PRINTPROCESSOR_DIRECTORY_1 *)malloc(sizeof(PRINTPROCESSOR_DIRECTORY_1))) == NULL)
+		return WERR_NOMEM;
+
+	/* Not sure what to return here - are UNC names valid here?.
+	   Windows returns the string: C:\WINNT\System32\spool\PRTPROCS\W32X86
+	   which is pretty bogus for a RPC. */
+
+	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", global_myname, short_archi);
+
+	DEBUG(4,("print processor directory: [%s]\n", path));
+
+	fill_printprocessordirectory_1(info, path);
+	
+	*needed += spoolss_size_printprocessordirectory_info_1(info);
+
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(info);
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	smb_io_printprocessordirectory_1("", buffer, info, 0);
+
+	safe_free(info);
+	
+	if (*needed > offered)
+		return WERR_INSUFFICIENT_BUFFER;
+	else
+		return WERR_OK;
+}
+
+WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, SPOOL_R_GETPRINTPROCESSORDIRECTORY *r_u)
+{
+	uint32 level = q_u->level;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+
+	/* that's an [in out] buffer */
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
+
+ 	DEBUG(5,("_spoolss_getprintprocessordirectory\n"));
+	
+	*needed=0;
+
+	switch(level) {
+	case 1:
+		return getprintprocessordirectory_level_1
+		  (&q_u->name, &q_u->environment, buffer, offered, needed);
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	return WERR_ACCESS_DENIED;
+}
+
+#endif
