@@ -131,25 +131,30 @@ struct cli_state {
 	 * Only used in NT domain calls.
 	 */
 
+	int pipe_idx;                      /* Index (into list of known pipes) 
+					      of the pipe we're talking to, 
+					      if any */
+
 	uint16 nt_pipe_fnum;               /* Pipe handle. */
+
+	/* Secure pipe parameters */
+	int pipe_auth_flags;
 
 	uint16 saved_netlogon_pipe_fnum;   /* The "first" pipe to get
                                               the session key for the
                                               schannel. */
 	struct netsec_auth_struct auth_info;
 
+	NTLMSSP_CLIENT_STATE *ntlmssp_pipe_state;
+
 	unsigned char sess_key[16];        /* Current session key. */
-	unsigned char ntlmssp_hash[258];   /* ntlmssp data. */
-	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */
-	uint32 ntlmssp_srv_flgs;           /* ntlmssp server flags */
-	uint32 ntlmssp_seq_num;            /* ntlmssp sequence number */
 	DOM_CRED clnt_cred;                /* Client credential. */
 	fstring mach_acct;                 /* MYNAME$. */
 	fstring srv_name_slash;            /* \\remote server. */
 	fstring clnt_name_slash;           /* \\local client. */
 	uint16 max_xmit_frag;
 	uint16 max_recv_frag;
-	uint32 ntlmssp_flags;
+
 	BOOL use_kerberos;
 	BOOL use_spnego;
 

@@ -51,16 +51,31 @@ enum RPC_PKT_TYPE
 /* NTLMSSP signature version */
 #define NTLMSSP_SIGN_VERSION 0x01
 
-/* NTLMSSP auth type and level. */
+/* NTLMSSP auth type */
 #define NTLMSSP_AUTH_TYPE 0xa
-#define NTLMSSP_AUTH_LEVEL 0x6
+
+/* DCE-RPC standard identifiers to indicate 
+   signing or sealing of an RPC pipe */
+#define RPC_PIPE_AUTH_SIGN_LEVEL 0x5
+#define RPC_PIPE_AUTH_SEAL_LEVEL 0x6
 
 /* Netlogon schannel auth type and level */
 #define NETSEC_AUTH_TYPE 0x44
-#define NETSEC_AUTH_LEVEL 0x6
 #define NETSEC_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
 #define RPC_AUTH_NETSEC_CHK_LEN 0x20
 #define NETLOGON_NEG_SCHANNEL    0x40000000
+
+enum netsec_direction
+{
+	SENDER_IS_INITIATOR,
+	SENDER_IS_ACCEPTOR
+};
+
+/* Internal Flags to indicate what type of authentication on the pipe */
+#define AUTH_PIPE_SIGN    0x0001
+#define AUTH_PIPE_SEAL    0x0002
+#define AUTH_PIPE_NTLMSSP 0x0004
+#define AUTH_PIPE_NETSEC  0x0008
 
 /* Maximum PDU fragment size. */
 #define MAX_PDU_FRAG_LEN 0x1630
@@ -222,8 +237,8 @@ typedef struct rpc_auth_netsec_neg_info
 typedef struct rpc_auth_netsec_chk_info
 {
 	uint8 sig  [8]; /* 77 00 7a 00 ff ff 00 00 */
-	uint8 data1[8];
-	uint8 data3[8]; /* verifier, seq num */
+	uint8 packet_digest[8]; /* checksum over the packet, MD5'ed with session key */
+	uint8 seq_num[8]; /* verifier, seq num */
 	uint8 data8[8]; /* random 8-byte nonce */
 } RPC_AUTH_NETSEC_CHK;
 
@@ -349,6 +364,5 @@ typedef struct rpc_auth_ntlmssp_chk_info
 } RPC_AUTH_NTLMSSP_CHK;
 
 #define RPC_AUTH_NTLMSSP_CHK_LEN 16
-
 
 #endif /* _DCE_RPC_H */
