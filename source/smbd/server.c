@@ -3603,7 +3603,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   {
     pstring s;
     pstrcpy(s,lp_pathname(snum));
-    standard_sub(cnum,s);
+    standard_sub(cnum,s,vuid);
     string_set(&pcon->connectpath,s);
     DEBUG(3,("Connect path is %s\n",s));
   }
@@ -3623,14 +3623,14 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       /* check number of connections */
       if (!claim_connection(cnum,
 			    lp_servicename(SNUM(cnum)),
-			    lp_max_connections(SNUM(cnum)),False))
+			    lp_max_connections(SNUM(cnum)),False,vuid))
 	{
 	  DEBUG(1,("too many connections - rejected\n"));
 	  return(-8);
 	}  
 
       if (lp_status(SNUM(cnum)))
-	claim_connection(cnum,"STATUS.",MAXSTATUS,first_connection);
+	claim_connection(cnum,"STATUS.",MAXSTATUS,first_connection,vuid);
 
       first_connection = False;
     } /* IS_IPC */
@@ -3642,7 +3642,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     {
       pstring cmd;
       pstrcpy(cmd,lp_rootpreexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
+      standard_sub(cnum,cmd,vuid);
       DEBUG(5,("cmd=%s\n",cmd));
       smbrun(cmd,NULL,False);
     }
@@ -3654,8 +3654,8 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       if (!IS_IPC(cnum)) {
 	yield_connection(cnum,
 			 lp_servicename(SNUM(cnum)),
-			 lp_max_connections(SNUM(cnum)));
-	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
+			 lp_max_connections(SNUM(cnum)), vuid);
+	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS, vuid);
       }
       return(-1);
     }
@@ -3669,8 +3669,8 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       if (!IS_IPC(cnum)) {
 	yield_connection(cnum,
 			 lp_servicename(SNUM(cnum)),
-			 lp_max_connections(SNUM(cnum)));
-	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
+			 lp_max_connections(SNUM(cnum)), vuid);
+	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS, vuid);
       }
       return(-5);      
     }
@@ -3696,7 +3696,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     {
       pstring cmd;
       pstrcpy(cmd,lp_preexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
+      standard_sub(cnum,cmd,vuid);
       smbrun(cmd,NULL,False);
     }
   
@@ -4275,10 +4275,10 @@ void close_cnum(int cnum, uint16 vuid)
 
   yield_connection(cnum,
 		   lp_servicename(SNUM(cnum)),
-		   lp_max_connections(SNUM(cnum)));
+		   lp_max_connections(SNUM(cnum)), vuid);
 
   if (lp_status(SNUM(cnum)))
-    yield_connection(cnum,"STATUS.",MAXSTATUS);
+    yield_connection(cnum,"STATUS.",MAXSTATUS, vuid);
 
   close_open_files(cnum);
   dptr_closecnum(cnum);
@@ -4288,7 +4288,7 @@ void close_cnum(int cnum, uint16 vuid)
     {
       pstring cmd;
       strcpy(cmd,lp_postexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
+      standard_sub(cnum,cmd,vuid);
       smbrun(cmd,NULL,False);
       unbecome_user();
     }
@@ -4299,7 +4299,7 @@ void close_cnum(int cnum, uint16 vuid)
     {
       pstring cmd;
       strcpy(cmd,lp_rootpostexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
+      standard_sub(cnum,cmd,vuid);
       smbrun(cmd,NULL,False);
     }
 
@@ -4328,7 +4328,7 @@ void close_cnum(int cnum, uint16 vuid)
 /****************************************************************************
 simple routines to do connection counting
 ****************************************************************************/
-BOOL yield_connection(int cnum,char *name,int max_connections)
+BOOL yield_connection(int cnum,char *name,int max_connections, uint16 vuid)
 {
   struct connect_record crec;
   pstring fname;
@@ -4344,7 +4344,7 @@ BOOL yield_connection(int cnum,char *name,int max_connections)
   bzero(&crec,sizeof(crec));
 
   pstrcpy(fname,lp_lockdir());
-  standard_sub(cnum,fname);
+  standard_sub(cnum,fname,vuid);
   trim_string(fname,"","/");
 
   strcat(fname,"/");
@@ -4401,7 +4401,7 @@ BOOL yield_connection(int cnum,char *name,int max_connections)
 /****************************************************************************
 simple routines to do connection counting
 ****************************************************************************/
-BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
+BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear, uint16 vuid)
 {
   struct connect_record crec;
   pstring fname;
@@ -4416,7 +4416,7 @@ BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
   DEBUG(5,("trying claim %s %s %d\n",lp_lockdir(),name,max_connections));
 
   pstrcpy(fname,lp_lockdir());
-  standard_sub(cnum,fname);
+  standard_sub(cnum,fname,vuid);
   trim_string(fname,"","/");
 
   if (!directory_exist(fname,NULL))
@@ -4581,8 +4581,10 @@ void exit_server(char *reason)
 /****************************************************************************
 do some standard substitutions in a string
 ****************************************************************************/
-void standard_sub(int cnum,char *str)
+void standard_sub(int cnum,char *str,uint16 vuid)
 {
+  user_struct *vuser = get_valid_user_struct(vuid);
+
   if (VALID_CNUM(cnum)) {
     char *p, *s, *home;
 
@@ -4611,6 +4613,9 @@ void standard_sub(int cnum,char *str)
       }
     }
   }
+  if(vuser != NULL)
+    pstrcpy( sesssetup_user, vuser->requested_name);
+
   standard_sub_basic(str);
 }
 

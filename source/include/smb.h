@@ -465,7 +465,8 @@ typedef struct
   int uid; /* uid of a validated user */
   int gid; /* gid of a validated user */
 
-  fstring name; /* name of a validated user */
+  fstring requested_name; /* user name from the client */
+  fstring name; /* unix user name of a validated user */
   fstring real_name;   /* to store real name from password file - simeon */
   BOOL guest;
 

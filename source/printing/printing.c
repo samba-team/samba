@@ -103,7 +103,7 @@ static char *build_print_command(int cnum, char *command, char *syscmd, char *fi
   
   string_sub(syscmd, "%p", tstr);
   
-  standard_sub(cnum,syscmd);
+  standard_sub(cnum,syscmd,UID_FIELD_INVALID);
   
   return (syscmd);
 }
@@ -1056,7 +1056,7 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
   pstrcpy(syscmd,lpq_command);
   string_sub(syscmd,"%p",printername);
 
-  standard_sub(cnum,syscmd);
+  standard_sub(cnum,syscmd,UID_FIELD_INVALID);
 
   sprintf(outfile,"%s/lpq.%08x",tmpdir(),str_checksum(syscmd));
   
@@ -1147,7 +1147,7 @@ void del_printqueue(int cnum,int snum,int jobid)
   pstrcpy(syscmd,lprm_command);
   string_sub(syscmd,"%p",printername);
   string_sub(syscmd,"%j",jobstr);
-  standard_sub(cnum,syscmd);
+  standard_sub(cnum,syscmd,UID_FIELD_INVALID);
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));  
@@ -1185,7 +1185,7 @@ void status_printjob(int cnum,int snum,int jobid,int status)
   pstrcpy(syscmd,lpstatus_command);
   string_sub(syscmd,"%p",printername);
   string_sub(syscmd,"%j",jobstr);
-  standard_sub(cnum,syscmd);
+  standard_sub(cnum,syscmd,UID_FIELD_INVALID);
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));  

@@ -84,7 +84,7 @@ static int CopyExpanded(int cnum, int snum, char** dst, char* src, int* n)
 
   StrnCpy(buf,src,sizeof(buf)/2);
   string_sub(buf,"%S",lp_servicename(snum));
-  standard_sub(cnum,buf);
+  standard_sub(cnum,buf,UID_FIELD_INVALID);
   StrnCpy(*dst,buf,*n);
   l = strlen(*dst) + 1;
   (*dst) += l;
@@ -109,7 +109,7 @@ static int StrlenExpanded(int cnum, int snum, char* s)
   if (!s) return(0);
   StrnCpy(buf,s,sizeof(buf)/2);
   string_sub(buf,"%S",lp_servicename(snum));
-  standard_sub(cnum,buf);
+  standard_sub(cnum,buf,UID_FIELD_INVALID);
   return strlen(buf) + 1;
 }
 
@@ -119,7 +119,7 @@ static char* Expand(int cnum, int snum, char* s)
   if (!s) return(NULL);
   StrnCpy(buf,s,sizeof(buf)/2);
   string_sub(buf,"%S",lp_servicename(snum));
-  standard_sub(cnum,buf);
+  standard_sub(cnum,buf,UID_FIELD_INVALID);
   return &buf[0];
 }
 
@@ -1974,7 +1974,7 @@ static BOOL api_RNetServerGetInfo(int cnum,uint16 vuid, char *param,char *data,
 	SIVAL(p,6,0);
       } else {
 	SIVAL(p,6,PTR_DIFF(p2,*rdata));
-	standard_sub(cnum,comment);
+	standard_sub(cnum,comment,vuid);
 	StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
 	p2 = skip_string(p2,1);
       }
@@ -2500,7 +2500,7 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
 /* JHT - By calling lp_logon_script() and standard_sub() we have */
 /* made sure all macros are fully substituted and available */
     logon_script = lp_logon_script();
-    standard_sub( cnum, logon_script );
+    standard_sub( cnum, logon_script, vuid );
     PACKS(&desc,"z", logon_script);		/* script path */
 /* End of JHT mods */
 
