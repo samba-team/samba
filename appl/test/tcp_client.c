@@ -18,6 +18,9 @@ proto (int sock, const char *hostname, const char *service)
     krb5_auth_context auth_context;
     krb5_error_code status;
     krb5_principal server;
+    krb5_data data;
+    krb5_data packet;
+    u_int32_t len, net_len;
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -86,6 +89,49 @@ proto (int sock, const char *hostname, const char *service)
 	errx (1, "krb5_sendauth: %s",
 	      krb5_get_err_text(context, status));
 
+    data.data   = "hej";
+    data.length = 3;
+
+    krb5_data_zero (&packet);
+
+    status = krb5_mk_safe (context,
+			   auth_context,
+			   &data,
+			   &packet,
+			   NULL);
+    if (status)
+	errx (1, "krb5_mk_safe: %s",
+	      krb5_get_err_text(context, status));
+
+    len = packet.length;
+    net_len = htonl(len);
+
+    if (krb5_net_write (context, sock, &net_len, 4) != 4)
+	err (1, "krb5_net_write");
+    if (krb5_net_write (context, sock, packet.data, len) != len)
+	err (1, "krb5_net_write");
+
+    data.data   = "hemligt";
+    data.length = 7;
+
+    krb5_data_free (&packet);
+
+    status = krb5_mk_priv (context,
+			   auth_context,
+			   &data,
+			   &packet,
+			   NULL);
+    if (status)
+	errx (1, "krb5_mk_priv: %s",
+	      krb5_get_err_text(context, status));
+
+    len = packet.length;
+    net_len = htonl(len);
+
+    if (krb5_net_write (context, sock, &net_len, 4) != 4)
+	err (1, "krb5_net_write");
+    if (krb5_net_write (context, sock, packet.data, len) != len)
+	err (1, "krb5_net_write");
 }
 
 static int
