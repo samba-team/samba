@@ -40,7 +40,7 @@ static BOOL read_target_host(const char *mapfile, pstring targethost)
 {
 	XFILE *f;
 	pstring buf;
-	char *s, *space = buf;
+	char *space = buf;
 	BOOL found = False;
 	
 	f = x_fopen(mapfile, O_RDONLY, 0);
@@ -53,7 +53,7 @@ static BOOL read_target_host(const char *mapfile, pstring targethost)
 
 	DEBUG(10, ("Scanning mapfile [%s]\n", mapfile));
 
-	while ((s=x_fgets(buf, sizeof(buf), f)) != NULL) {
+	while (x_fgets(buf, sizeof(buf), f) != NULL) {
 
 		if ((strlen(buf) > 0) && (buf[strlen(buf)-1] == '\n'))
 			buf[strlen(buf)-1] = '\0';
