@@ -3075,7 +3075,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n);
 void delete_write_cache(files_struct *fsp);
 void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size);
 ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason);
-void sys_fsync_file(connection_struct *conn, files_struct *fsp);
+void sync_file(connection_struct *conn, files_struct *fsp);
 
 /*The following definitions come from  smbd/filename.c  */
 
