@@ -31,6 +31,7 @@ includedir = @includedir@
 LIB_DEPS = @LIB_readline@ -lc
 build_symlink_command   = @build_symlink_command@
 install_symlink_command = @install_symlink_command@
+install_symlink_command2 = @install_symlink_command2@
 
 PICFLAGS = @PICFLAGS@
 EXECSUFFIX = @EXECSUFFIX@
@@ -40,7 +41,8 @@ SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
 LIBNAME = $(LIBPREFIX)sl
 sl_LIB = $(LIBNAME).$(LIBEXT)
-ss_LIB = $(LIBPREFIX)ss.$(LIBEXT)
+LIBNAME2 = $(LIBPREFIX)ss
+ss_LIB = $(LIBNAME2).$(LIBEXT)
 LDSHARED = @LDSHARED@
 PROGS = mk_cmds$(EXECSUFFIX)
 
@@ -69,6 +71,7 @@ install: all
 	$(INSTALL) -m 555 $(sl_LIB) $(DESTDIR)$(libdir)/$(sl_LIB)
 	$(INSTALL) -m 555 $(sl_LIB) $(DESTDIR)$(libdir)/$(ss_LIB)
 	@install_symlink_command@
+	@install_symlink_command2@
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0555 $(PROGS) $(DESTDIR)$(bindir)/$(PROGS)
 
