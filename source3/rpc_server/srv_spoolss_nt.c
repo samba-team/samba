@@ -5084,7 +5084,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	if (info->info_2->devmode_ptr != 0) {
+	if (devmode) {
 		/* we have a valid devmode
 		   convert it and link it*/
 
