@@ -6813,7 +6813,6 @@ WERROR _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_
 
 WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u, SPOOL_R_ADDPRINTERDRIVER *r_u)
 {
-/*	UNISTR2 *server_name = &q_u->server_name; - notused. */
 	uint32 level = q_u->level;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL *info = &q_u->info;
 	WERROR err = WERR_OK;
@@ -6891,7 +6890,9 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 		version = driver.info_6->version;
 	else
 		version = -1;
-	switch (version) {
+		
+	switch (version) 
+	{
 		/*
 		 * 9x printer driver - never delete init data
 		*/
@@ -6962,12 +6963,14 @@ WERROR _spoolss_addprinterdriverex(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVEREX *
 		return WERR_ACCESS_DENIED;
 	
 	/* just pass the information off to _spoolss_addprinterdriver() */
+	
 	ZERO_STRUCT(q_u_local);
 	ZERO_STRUCT(r_u_local);
 
 	q_u_local.server_name_ptr = q_u->server_name_ptr;
 	copy_unistr2(&q_u_local.server_name, &q_u->server_name);
 	q_u_local.level = q_u->level;
+	
 	memcpy( &q_u_local.info, &q_u->info, sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL) );
 	
 	return _spoolss_addprinterdriver( p, &q_u_local, &r_u_local );
