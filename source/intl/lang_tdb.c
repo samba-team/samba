@@ -176,15 +176,46 @@ BOOL lang_tdb_init(const char *lang)
 const char *lang_msg(const char *msgid)
 {
 	TDB_DATA key, data;
+	char *p, *q, *msgid_quoted;
+	int count;
 
 	lang_tdb_init(NULL);
 
 	if (!tdb) return msgid;
 
-	key.dptr = (char *)msgid;
-	key.dsize = strlen(msgid)+1;
+	/* Due to the way quotes in msgids are escaped in the msg file we
+	   must replace " with \" before doing a lookup in the tdb. */
+
+	count = 0;
+
+	for(p = msgid; *p; p++) {
+		if (*p == '\"')
+			count++;
+	}
+
+	if (!(msgid_quoted = malloc(strlen(msgid) + count + 1)))
+		return msgid;
+
+	/* string_sub() is unsuitable here as it replaces some punctuation
+	   chars with underscores. */
+
+	for(p = msgid, q = msgid_quoted; *p; p++) {
+		if (*p == '\"') {
+			*q = '\\';
+			q++;
+		}
+		*q = *p;
+		q++;
+	}
+
+	*q = 0;
+
+	key.dptr = (char *)msgid_quoted;
+	key.dsize = strlen(msgid_quoted)+1;
 	
 	data = tdb_fetch(tdb, key);
+
+	free(msgid_quoted);
 
 	/* if the message isn't found then we still need to return a pointer
 	   that can be freed. Pity. */
