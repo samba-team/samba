@@ -151,7 +151,8 @@ kadm5_s_get_principal(void *server_handle,
 		sp = &salt;
 	    kd->key_data_length[1] = sp->length;
 	    kd->key_data_contents[1] = malloc(kd->key_data_length[1]);
-	    if(kd->key_data_contents[1] == NULL){
+	    if(kd->key_data_length[1] != 0
+	       && kd->key_data_contents[1] == NULL) {
 		memset(kd->key_data_contents[0], 0, kd->key_data_length[0]);
 		ret = ENOMEM;
 		break;
