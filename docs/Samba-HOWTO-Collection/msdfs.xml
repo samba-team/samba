@@ -64,11 +64,11 @@
 <para>
 <smbconfexample id="dfscfg">
 <title>smb.conf with DFS configured</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="netbios name">&example.server.samba;</smbconfoption>
 <smbconfoption name="host msdfs  ">yes</smbconfoption>
 
-<smbconfsection>[dfs]</smbconfsection>
+<smbconfsection name="[dfs]"/>
 <smbconfoption name="path">/export/dfsroot</smbconfoption>
 <smbconfoption name="msdfs root">yes</smbconfoption>
 </smbconfexample>

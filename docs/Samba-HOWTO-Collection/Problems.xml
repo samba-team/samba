@@ -232,7 +232,7 @@ If you do post a message to one of the lists, please observe the following guide
 
 	<listitem><para>Always mention what version of Samba you are using and what 
 	operating system it's running under. You should list the relevant sections of
-	your &smb.conf; file, at least the options in <smbconfsection>[global]</smbconfsection>
+	your &smb.conf; file, at least the options in <smbconfsection name="[global]"/>
 	that affect PDC support.
 	</para></listitem>
 

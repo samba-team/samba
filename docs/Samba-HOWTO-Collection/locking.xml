@@ -600,7 +600,7 @@ You can disable oplocks on a per-share basis with the following:
 
 <para>
 <smbconfblock>
-<smbconfsection>[acctdata]</smbconfsection>
+<smbconfsection name="[acctdata]"/>
 <smbconfoption name="oplocks">False</smbconfoption>
 <smbconfoption name="level2 oplocks">False</smbconfoption>
 </smbconfblock>
@@ -669,10 +669,10 @@ enabled on a per-share basis, or globally for the entire server, in the
 <para>
 <smbconfexample id="far1">
 <title>Share with some files oplocked</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="veto oplock files">/filename.htm/*.txt/</smbconfoption>
 
-<smbconfsection>[share_name]</smbconfsection>
+<smbconfsection name="[share_name]"/>
 <smbconfoption name="veto oplock files">/*.exe/filename.ext/</smbconfoption>
 </smbconfexample>
 </para>
@@ -702,10 +702,10 @@ the entire server, in the &smb.conf; file as shown in <link linkend="far3"/>.
 <para>
 <smbconfexample id="far3">
 	<title>Configuration with oplock break contention limit</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="oplock break contention limit"> 2 (default)</smbconfoption>
 
-<smbconfsection>[share_name]</smbconfsection>
+<smbconfsection name="[share_name]"/>
 <smbconfoption name="oplock break contention limit"> 2 (default)</smbconfoption>
 </smbconfexample>
 </para>

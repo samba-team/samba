@@ -375,14 +375,12 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 			</para>
 
 <smbconfexample><title>VFS CAP</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfcomment>the locale name "CP932" may be different</smbconfcomment>
 <smbconfoption name="dos charset">CP932</smbconfoption>
 <smbconfoption name="unix charset">CP932</smbconfoption>
 
-<member>...</member>
-
-<smbconfsection>[cap-share]</smbconfsection>
+<smbconfsection name="[cap-share]"/>
 <smbconfoption name="vfs option">cap</smbconfoption>
 </smbconfexample>
 

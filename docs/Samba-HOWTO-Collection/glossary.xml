@@ -81,8 +81,10 @@
 		<glossterm>Extended Meta-file Format</glossterm>
 		<acronym>EMF</acronym>
 		<glossdef>
+			<para>
 			An intermediate file format used by Microsoft <?latex \linebreak ?>Windows-based servers and clients. EMF files may be
-		rendered into a page description language by a print processor.
+			rendered into a page description language by a print processor.
+		</para>
 		</glossdef>
 	</glossentry>
 
@@ -176,9 +178,11 @@
 		<glossterm>Portable Document Format</glossterm>
 		<acronym>PDF</acronym>
 		<glossdef>
+		<para>
 		A highly compressed document format, based on postscript, used as a document distribution format
 		that is supported by Web browsers as well as many applications. Adobe also distribute an application
 		called <quote>acrobat</quote> which is a PDF reader.
+		</para>
 		</glossdef>
 	</glossentry>
 

@@ -247,7 +247,7 @@ in this manner because reconfiguration of Samba requires changes to the &smb.con
 <para>
 Beginning with Version 2.2, Samba officially supports domain logons for all current Windows clients,
 including Windows NT4, 2003 and XP Professional. For Samba to be enabled as a PDC, some
-parameters in the <smbconfsection>[global]</smbconfsection>-section of the &smb.conf; have to be set.
+parameters in the <smbconfsection name="[global]"/>-section of the &smb.conf; have to be set.
 Refer to <link linkend="minimalPDC">following configuration</link> for an example of the minimum required settings.
 </para>
 
@@ -260,8 +260,8 @@ Refer to <link linkend="minimalPDC">following configuration</link> for an exampl
 </smbconfexample></para>
 
 <para>
-Several other things like a <smbconfsection>[homes]</smbconfsection> and a
-<smbconfsection>[netlogon]</smbconfsection> share also need to be set along with
+Several other things like a <smbconfsection name="[homes]"/> and a
+<smbconfsection name="[netlogon]"/> share also need to be set along with
 settings for the profile path, the user's home drive, and so on. This is not covered in this
 chapter; for more information please refer to <link linkend="samba-pdc">Domain Control</link>.
 </para>
@@ -519,7 +519,7 @@ done by setting Samba as shown in <link linkend="minim-bdc">the next example</li
 </smbconfexample></para>
 
 <para>
-In the <smbconfsection>[global]</smbconfsection>-section of the &smb.conf; of the BDC. This makes the BDC
+In the <smbconfsection name="[global]"/>-section of the &smb.conf; of the BDC. This makes the BDC
 only register the name MIDEARTH&lt;#1c&gt; with the WINS server. This is no
 problem as the name MIDEARTH&lt;#1c&gt; is a NetBIOS group name that is meant to
 be registered by more than one machine. The parameter

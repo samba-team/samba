@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 
 <chapter id="DomApps">
   <title>Integrating Additional Services</title>
@@ -697,7 +697,7 @@ password: XXXXXXXX
 
 <smbconfexample id="ch10-smbconf">
 <title>Samba Configuration &smbmdash; File: <filename>/etc/samba/smb.conf</filename></title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">LONDON</smbconfoption>
 <smbconfoption name="netbios name">W2K3S</smbconfoption>
 <smbconfoption name="realm">LONDON.ABMAS.BIZ</smbconfoption>

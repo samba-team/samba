@@ -103,7 +103,7 @@ For more info on these packages, Samba, and Linux (and other UNIX-based systems)
 	<sect2>
 		<title>Printer Driver Download for OS/2 Clients</title>
 
-		<para>Create a share called <smbconfsection>[PRINTDRV]</smbconfsection> that is 
+		<para>Create a share called <smbconfsection name="[PRINTDRV]"/> that is 
 		world-readable. Copy your OS/2 driver files there. The <filename>.EA_</filename>
 		files must still be separate, so you will need to use the original install files
 		and not copy an installed driver from an OS/2 system.</para>
@@ -220,7 +220,7 @@ It is presumably a Windows for Workgroups bug.</para>
 
 <para>
 	Note that some people have found that setting <parameter>DefaultRcvWindow</parameter> in
-the <smbconfsection>[MSTCP]</smbconfsection> section of the 
+the <smbconfsection name="[MSTCP]"/> section of the 
 <filename>SYSTEM.INI</filename> file under Windows for Workgroups to 3072 gives a
 big improvement.
 </para>
@@ -310,7 +310,7 @@ releases prior to Samba 2.2.2.
 
 <para><smbconfexample id="minimalprofile">
 <title>Minimal profile share</title>
-<smbconfsection>[profile]</smbconfsection>
+<smbconfsection name="[profile]"/>
 <smbconfoption name="path">/export/profile</smbconfoption>
 <smbconfoption name="create mask">0600</smbconfoption>
 <smbconfoption name="directory mask">0700</smbconfoption>

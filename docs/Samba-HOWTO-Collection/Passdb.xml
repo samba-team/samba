@@ -422,7 +422,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
 <smbconfexample id="idmapbackendexample">
 <title>Example configuration with the LDAP idmap backend</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="idmap backend">ldap:ldap://ldap-server.quenya.org:636</smbconfoption>
 <smbconfcomment>Alternately, this could be specified as:</smbconfcomment>
 <smbconfoption name="idmap backend">ldap:ldaps://ldap-server.quenya.org</smbconfoption>
@@ -660,8 +660,7 @@ backends of the same type. For example, to use two different tdbsam databases:
 
 <para>
 <smbconfblock>
-	<smbconfoption name="passdb backend">tdbsam:/etc/samba/passdb.tdb \</smbconfoption>
-	<member><parameter>tdbsam:/etc/samba/old-passdb.tdb</parameter></member>
+	<smbconfoption name="passdb backend">tdbsam:/etc/samba/passdb.tdb tdbsam:/etc/samba/old-passdb.tdb</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -1102,7 +1101,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <para>
 <smbconfexample id="confldapex">
 <title>Configuration with LDAP</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="security">user</smbconfoption>
 <smbconfoption name="encrypt passwords">yes</smbconfoption>
 <smbconfoption name="netbios name">MORIA</smbconfoption>
@@ -1502,7 +1501,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 			</para>
 
 			<para>
-			Additional options can be given through the &smb.conf; file in the <smbconfsection>[global]</smbconfsection> section.
+			Additional options can be given through the &smb.conf; file in the <smbconfsection name="[global]"/> section.
 			Refer to <link linkend="mysqlpbe">the following table</link>.
 			</para>
 
@@ -1591,7 +1590,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 
 			<smbconfexample id="mysqlsam">
 				<title>Example configuration for the MySQL passdb backend</title>
-			<smbconfsection>[global]</smbconfsection>
+			<smbconfsection name="[global]"/>
 			<smbconfoption name="passdb backend">mysql:foo</smbconfoption>
 			<smbconfoption name="foo:mysql user">samba</smbconfoption>
 			<smbconfoption name="foo:mysql password">abmas</smbconfoption>
@@ -1701,7 +1700,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 
 	<para>
 	<smbconfblock>
-	<smbconfsection>[global]</smbconfsection>
+	<smbconfsection name="[global]"/>
 	<member>...</member>
 	<smbconfoption name="passdb backend">smbpasswd, tdbsam</smbconfoption>
 	<member>...</member>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="secure">
   <title>Secure Office Networking</title>
 
@@ -862,7 +862,7 @@ echo -e "\nNAT firewall done.\n"
 <smbconfexample id="promisnet">
 <title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; [globals] Section</title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">PROMISES</smbconfoption>
 <smbconfoption name="netbios name">DIAMOND</smbconfoption>
 <smbconfoption name="interfaces">eth1, eth2, lo</smbconfoption>
@@ -907,18 +907,18 @@ echo -e "\nNAT firewall done.\n"
 
 <smbconfexample id="promisnetsvca">
 <title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; Services Section Part A</title>
-<smbconfsection>[IPC$]</smbconfsection>
+<smbconfsection name="[IPC$]"/>
 <smbconfoption name="path">/tmp</smbconfoption>
 <smbconfoption name="hosts allow">192.168.1.0/24, 192.168.2.0/24, 127.0.0.1</smbconfoption>
 <smbconfoption name="hosts deny">0.0.0.0/0</smbconfoption>
 
-<smbconfsection>[homes]</smbconfsection>
+<smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[printers]</smbconfsection>
+<smbconfsection name="[printers]"/>
 <smbconfoption name="comment">SMB Print Spool</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
@@ -927,7 +927,7 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="default devmode">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[netlogon]</smbconfsection>
+<smbconfsection name="[netlogon]"/>
 <smbconfoption name="comment">Network Logon Service</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
@@ -936,23 +936,23 @@ echo -e "\nNAT firewall done.\n"
 
 <smbconfexample id="promisnetsvcb">
 <title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; Services Section Part B</title>
-<smbconfsection>[profiles]</smbconfsection>
+<smbconfsection name="[profiles]"/>
 <smbconfoption name="comment">Profile Share</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="profile acls">Yes</smbconfoption>
 
-<smbconfsection>[accounts]</smbconfsection>
+<smbconfsection name="[accounts]"/>
 <smbconfoption name="comment">Accounting Files</smbconfoption>
 <smbconfoption name="path">/data/accounts</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[service]</smbconfsection>
+<smbconfsection name="[service]"/>
 <smbconfoption name="comment">Financial Services Files</smbconfoption>
 <smbconfoption name="path">/data/service</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[apps]</smbconfsection>
+<smbconfsection name="[apps]"/>
 <smbconfoption name="comment">Application Files</smbconfoption>
 <smbconfoption name="path">/apps</smbconfoption>
 <smbconfoption name="read only">Yes</smbconfoption>
