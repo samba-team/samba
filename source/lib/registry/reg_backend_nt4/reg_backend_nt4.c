@@ -881,7 +881,7 @@ static KEY_SEC_DESC *process_sk(REG_HANDLE *regf, SK_HDR *sk_hdr, int sk_off, in
 /*
  * Process a VK header and return a value
  */
-static REG_VAL *vk_to_val(REG_KEY *parent, VK_HDR *vk_hdr, int size)
+static WERROR vk_to_val(REG_KEY *parent, VK_HDR *vk_hdr, int size, REG_VAL **value)
 {
 	char val_name[1024];
 	REGF *regf = parent->handle->backend_data;
@@ -889,12 +889,12 @@ static REG_VAL *vk_to_val(REG_KEY *parent, VK_HDR *vk_hdr, int size)
 	const char *val_type;
 	REG_VAL *tmp = NULL; 
 
-	if (!vk_hdr) return NULL;
+	if (!vk_hdr) return WERR_INVALID_PARAM;
 
 	if ((vk_id = SVAL(&vk_hdr->VK_ID,0)) != str_to_dword("vk")) {
 		DEBUG(0, ("Unrecognized VK header ID: %0X, block: %0X, %s\n",
 				  vk_id, (int)vk_hdr, parent->handle->location));
-		return NULL;
+		return WERR_GENERAL_FAILURE;
 	}
 
 	nam_len = SVAL(&vk_hdr->nam_len,0);
@@ -943,7 +943,8 @@ static REG_VAL *vk_to_val(REG_KEY *parent, VK_HDR *vk_hdr, int size)
 		tmp->data_len = dat_len;
 	}
 
-	return tmp;
+	*value = tmp;
+	return WERR_OK;
 }
 
 static BOOL vl_verify(VL_TYPE vl, int count, int size)
@@ -956,63 +957,67 @@ static BOOL vl_verify(VL_TYPE vl, int count, int size)
 	return True;
 }
 
-static BOOL lf_verify(REG_HANDLE *h, LF_HDR *lf_hdr, int size)
+static WERROR lf_verify(REG_HANDLE *h, LF_HDR *lf_hdr, int size)
 {
 	int lf_id;
 	if ((lf_id = SVAL(&lf_hdr->LF_ID,0)) != str_to_dword("lf")) {
 		DEBUG(0, ("Unrecognized LF Header format: %0X, Block: %0X, %s.\n",
 				  lf_id, (int)lf_hdr, h->location));
-		return False;
+		return WERR_INVALID_PARAM;
 	}
-	return True;
+	return WERR_OK;
 }
 
-static int lf_num_entries(REG_HANDLE *h, LF_HDR *lf_hdr, int size)
+static WERROR lf_num_entries(REG_HANDLE *h, LF_HDR *lf_hdr, int size, int *count)
 {
-	int count;
+	WERROR error;
 
-	if(!lf_verify(h, lf_hdr, size)) return 0;
+	error = lf_verify(h, lf_hdr, size);
+	if(!W_ERROR_IS_OK(error)) return error;
 
 	SMB_REG_ASSERT(size < 0);
 
-	count = SVAL(&lf_hdr->key_count,0);
-	DEBUG(2, ("Key Count: %u\n", count));
-	if (count <= 0) return 0;
+	*count = SVAL(&lf_hdr->key_count,0);
+	DEBUG(2, ("Key Count: %u\n", *count));
+	if (*count <= 0) return WERR_INVALID_PARAM;
 
-	return count;
+	return WERR_OK;
 }
 
 
-static REG_KEY *nk_to_key(REG_HANDLE *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent);
+static WERROR nk_to_key(REG_HANDLE *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent, REG_KEY **);
 
 
 
 /*
  * Process an LF Header and return a list of sub-keys
  */
-static REG_KEY *lf_get_entry(REG_KEY *parent, LF_HDR *lf_hdr, int size, int n)
+static WERROR lf_get_entry(REG_KEY *parent, LF_HDR *lf_hdr, int size, int n, REG_KEY **key)
 {
 	REGF *regf = parent->handle->backend_data;
 	int count, nk_off;
 	NK_HDR *nk_hdr;
+	WERROR error;
 
-	if (!lf_hdr) return NULL;
+	if (!lf_hdr) return WERR_INVALID_PARAM;
 
-	if(!lf_verify(parent->handle, lf_hdr, size)) return NULL;
+	error = lf_verify(parent->handle, lf_hdr, size);
+	if(!W_ERROR_IS_OK(error)) return error;
 
 	SMB_REG_ASSERT(size < 0);
 
 	count = SVAL(&lf_hdr->key_count,0);
 	DEBUG(2, ("Key Count: %u\n", count));
-	if (count <= 0 || n > count) return NULL;
+	if (count <= 0) return WERR_GENERAL_FAILURE;
+	if (n >= count) return WERR_NO_MORE_ITEMS;
 
 	nk_off = IVAL(&lf_hdr->hr[n].nk_off,0);
 	DEBUG(2, ("NK Offset: %0X\n", nk_off));
 	nk_hdr = (NK_HDR *)LOCN(regf->base, nk_off);
-	return nk_to_key(parent->handle, nk_hdr, BLK_SIZE(nk_hdr), parent);
+	return nk_to_key(parent->handle, nk_hdr, BLK_SIZE(nk_hdr), parent, key);
 }
 
-static REG_KEY *nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent)
+static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent, REG_KEY **key)
 {
 	REGF *regf = h->backend_data;
 	REG_KEY *tmp = NULL, *own;
@@ -1022,12 +1027,12 @@ static REG_KEY *nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *pare
 	int type;
 	char key_name[1024], cls_name[1024];
 
-	if (!nk_hdr) return NULL;
+	if (!nk_hdr) return WERR_INVALID_PARAM;
 
 	if ((nk_id = SVAL(&nk_hdr->NK_ID,0)) != str_to_dword("nk")) {
 		DEBUG(0, ("Unrecognized NK Header format: %08X, Block: %0X. %s\n", 
 				  nk_id, (int)nk_hdr, parent->handle->location));
-		return NULL;
+		return WERR_INVALID_PARAM;
 	}
 
 	SMB_REG_ASSERT(size < 0);
@@ -1047,7 +1052,7 @@ static REG_KEY *nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *pare
 		DEBUG(0, ("Incorrect NK_HDR size: %d, %0X\n", -size, (int)nk_hdr));
 		DEBUG(0, ("Sizeof NK_HDR: %d, name_len %d, clsname_len %d\n",
 				  sizeof(NK_HDR), name_len, clsname_len));
-		/*return NULL;*/
+		return WERR_GENERAL_FAILURE;
 	}
 
 	DEBUG(2, ("NK HDR: Name len: %d, class name len: %d\n", name_len, clsname_len));
@@ -1062,7 +1067,7 @@ static REG_KEY *nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *pare
 	type = (SVAL(&nk_hdr->type,0)==0x2C?REG_ROOT_KEY:REG_SUB_KEY);
 	if(type == REG_ROOT_KEY && parent) {
 		DEBUG(0,("Root key encountered below root level!\n"));
-		return NULL;
+		return WERR_GENERAL_FAILURE;
 	}
 
 	if(type == REG_ROOT_KEY) tmp = reg_key_new_abs(key_name, h, nk_hdr);
@@ -1121,7 +1126,8 @@ static REG_KEY *nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *pare
 
 	} 
 
-	return tmp;
+	*key = tmp;
+	return WERR_OK;
 }
 
 /*
@@ -1559,7 +1565,7 @@ error:
 	return NULL;
 }
 
-static BOOL nt_close_registry (REG_HANDLE *h) 
+static WERROR nt_close_registry (REG_HANDLE *h) 
 {
 	REGF *regf = h->backend_data;
 	if (regf->base) munmap(regf->base, regf->sbuf.st_size);
@@ -1570,10 +1576,10 @@ static BOOL nt_close_registry (REG_HANDLE *h)
 	regf->sk_count = regf->sk_map_size = 0;
 
 	free(regf);
-	return False;
+	return WERR_OK;
 }
 
-static BOOL nt_open_registry (REG_HANDLE *h, const char *location, BOOL try_load) 
+static WERROR nt_open_registry (REG_HANDLE *h, const char *location, const char *credentials) 
 {
 	REGF *regf = (REGF *)malloc(sizeof(REGF));
 	REGF_HDR *regf_hdr;
@@ -1582,7 +1588,7 @@ static BOOL nt_open_registry (REG_HANDLE *h, const char *location, BOOL try_load
 
 	memset(regf, 0, sizeof(REGF));
 	regf->mem_ctx = talloc_init("regf");
-	regf->owner_sid_str = def_owner_sid_str;
+	regf->owner_sid_str = credentials;
 	h->backend_data = regf;
 
 	DEBUG(5, ("Attempting to load registry file\n"));
@@ -1591,7 +1597,7 @@ static BOOL nt_open_registry (REG_HANDLE *h, const char *location, BOOL try_load
 
 	if ((regf_hdr = nt_get_regf_hdr(h)) == NULL) {
 		DEBUG(0, ("Unable to get header\n"));
-		return False;
+		return WERR_GENERAL_FAILURE;
 	}
 
 	/* Now process that header and start to read the rest in */
@@ -1599,7 +1605,7 @@ static BOOL nt_open_registry (REG_HANDLE *h, const char *location, BOOL try_load
 	if ((regf_id = IVAL(&regf_hdr->REGF_ID,0)) != str_to_dword("regf")) {
 		DEBUG(0, ("Unrecognized NT registry header id: %0X, %s\n",
 				  regf_id, h->location));
-		return False;
+		return WERR_GENERAL_FAILURE;
 	}
 
 	/*
@@ -1608,7 +1614,7 @@ static BOOL nt_open_registry (REG_HANDLE *h, const char *location, BOOL try_load
 	if (!valid_regf_hdr(regf_hdr)) {
 		DEBUG(0, ("Registry file header does not validate: %s\n",
 				  h->location));
-		return False;
+		return WERR_GENERAL_FAILURE;
 	}
 
 	/* Update the last mod date, and then go get the first NK record and on */
@@ -1625,7 +1631,7 @@ static BOOL nt_open_registry (REG_HANDLE *h, const char *location, BOOL try_load
 	if ((hbin_id = IVAL(&hbin_hdr->HBIN_ID,0)) != str_to_dword("hbin")) {
 		DEBUG(0, ("Unrecognized registry hbin hdr ID: %0X, %s\n", 
 				  hbin_id, h->location));
-		return False;
+		return WERR_GENERAL_FAILURE;
 	} 
 
 	/*
@@ -1655,15 +1661,15 @@ static BOOL nt_open_registry (REG_HANDLE *h, const char *location, BOOL try_load
 
 	h->backend_data = regf;
 
-	return True;
+	return WERR_OK;
 }
 
-static REG_KEY *nt_get_root_key(REG_HANDLE *h) 
+static WERROR nt_get_root_key(REG_HANDLE *h, REG_KEY **key) 
 { 
-	return nk_to_key(h, ((REGF *)h->backend_data)->first_key, BLK_SIZE(((REGF *)h->backend_data)->first_key), NULL);
+	return nk_to_key(h, ((REGF *)h->backend_data)->first_key, BLK_SIZE(((REGF *)h->backend_data)->first_key), NULL, key);
 }
 
-static int nt_num_subkeys(REG_KEY *k) 
+static WERROR nt_num_subkeys(REG_KEY *k, int *num) 
 {
 	REGF *regf = k->handle->backend_data;
 	LF_HDR *lf_hdr;
@@ -1671,19 +1677,23 @@ static int nt_num_subkeys(REG_KEY *k)
 	NK_HDR *nk_hdr = k->backend_data;
 	lf_off = IVAL(&nk_hdr->lf_off,0);
 	DEBUG(2, ("SubKey list offset: %0X\n", lf_off));
-	if(lf_off == -1) return 0;
+	if(lf_off == -1) {
+		*num = 0;
+		return WERR_OK;
+	}
 	lf_hdr = (LF_HDR *)LOCN(regf->base, lf_off);
 
-	return lf_num_entries(k->handle, lf_hdr, BLK_SIZE(lf_hdr));
+	return lf_num_entries(k->handle, lf_hdr, BLK_SIZE(lf_hdr), num);
 }
 
-static int nt_num_values(REG_KEY *k)
+static WERROR nt_num_values(REG_KEY *k, int *count)
 {
 	NK_HDR *nk_hdr = k->backend_data;
-	return IVAL(&nk_hdr->val_cnt,0);
+	*count = IVAL(&nk_hdr->val_cnt,0);
+	return WERR_OK;
 }
 
-static REG_VAL *nt_value_by_index(REG_KEY *k, int n)
+static WERROR nt_value_by_index(REG_KEY *k, int n, REG_VAL **value)
 {
 	VL_TYPE *vl;
 	int val_off, vk_off;
@@ -1696,10 +1706,10 @@ static REG_VAL *nt_value_by_index(REG_KEY *k, int n)
 
 	vk_off = IVAL(&vl[n],0);
 	vk_hdr = (VK_HDR *)LOCN(regf->base, vk_off);
-	return vk_to_val(k, vk_hdr, BLK_SIZE(vk_hdr));
+	return vk_to_val(k, vk_hdr, BLK_SIZE(vk_hdr), value);
 }
 
-static REG_KEY *nt_key_by_index(REG_KEY *k, int n)
+static WERROR nt_key_by_index(REG_KEY *k, int n, REG_KEY **subkey)
 {
 	REGF *regf = k->handle->backend_data;
 	int lf_off;
@@ -1714,13 +1724,13 @@ static REG_KEY *nt_key_by_index(REG_KEY *k, int n)
 
 	if (lf_off != -1) {
 		lf_hdr = (LF_HDR *)LOCN(regf->base, lf_off);
-		return lf_get_entry(k, lf_hdr, BLK_SIZE(lf_hdr), n);
+		return lf_get_entry(k, lf_hdr, BLK_SIZE(lf_hdr), n, subkey);
 	}
 
-	return NULL;
+	return WERR_NO_MORE_ITEMS;
 }
 
-static REG_OPS reg_backend_nt4 = {
+static struct registry_ops reg_backend_nt4 = {
 	.name = "nt4",
 	.open_registry = nt_open_registry,
 	.close_registry = nt_close_registry,

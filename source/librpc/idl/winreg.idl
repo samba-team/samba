@@ -72,11 +72,11 @@
 		[in,out,ref] policy_handle *handle,
 		[in] winreg_String key,
 		[in] winreg_String class,
-		[in,out] uint32 reserved,
+		[in] uint32 reserved,
+		[out] uint32 *unknown,
 		[in] uint32 access_mask,
-		[in] uint32 sec_info,
-		[in] sec_desc_buf *sec_desc,
-		[in] uint32 reserved2
+		[in,ref] uint32 *sec_info,
+		[in] sec_desc_buf *sec_desc
 	);
 
 	/******************/
@@ -150,6 +150,14 @@
 	/******************/
 	/* Function: 0x0c */
 	WERROR winreg_GetKeySecurity(
+		[in,ref] policy_handle *handle,
+		[in] uint32 sec_info,
+		[in] uint32 *len1,
+		[in] uint32 empty,
+		[in] uint32 len2,
+		[in] uint32 unknown1,
+		[in] uint32 unknown2,
+		[out] sec_desc_buf *data
 	);
 
 	/******************/
@@ -211,11 +219,24 @@
 	/******************/
 	/* Function: 0x15 */
 	WERROR winreg_SetKeySecurity(
+		[in,ref] policy_handle *handle,
+		[in] uint32 sec_info,
+		[in] sec_desc_buf *sec_desc
 	);
+
+	typedef struct {
+		uint32 max_len;
+		[length_is(buf_max_len)] uint8 *buffer;
+		uint32 len;
+	} winreg_Value;
 
 	/******************/
 	/* Function: 0x16 */
 	WERROR winreg_SetValue(
+		[in,ref] policy_handle *handle,
+		[in] winreg_String name,
+		[in] uint32 type,
+		[in] winreg_Value value
 	);
 
 	/******************/
@@ -226,11 +247,15 @@
 	/******************/
 	/* Function: 0x18 */
 	WERROR winreg_InitiateSystemShutdown(
+		[in]	winreg_String message,
+		[in]	uint32 timeout,
+		[in]	uint16 flags
 	);
 
 	/******************/
 	/* Function: 0x19 */
 	WERROR winreg_AbortSystemShutdown(
+		[in,ref]	uint16 *server
 	);
 
 	/******************/
@@ -264,7 +289,7 @@
 	/******************/
 	/* Function: 0x1e */
 	WERROR winreg_InitiateSystemShutdownEx(
-	);
+		);
 
 	/******************/
 	/* Function: 0x1f */

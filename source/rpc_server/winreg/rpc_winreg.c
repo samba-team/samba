@@ -22,6 +22,18 @@
 
 #include "includes.h"
 
+/**
+ * General notes for the current implementation:
+ * 
+ * - All hives are currently openened as subkeys of one single registry file 
+ *   (e.g. HKCR from \HKEY_CURRENT_USER, etc). This might be changed in 
+ *   the future and we might want to make it possible to configure 
+ *   what registries are behind which hives (e.g. 
+ *   	\HKEY_CURRENT_USER -> gconf,
+ *   	\HKEY_LOCAL_MACHINE -> tdb,
+ *   	etc
+ */
+
 enum handle_types { HTYPE_REGKEY, HTYPE_REGVAL };
 
 struct _privatedata {
@@ -39,9 +51,10 @@ static void winreg_unbind(struct dcesrv_connection *dc, const struct dcesrv_inte
 static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_interface *di) 
 {
 	struct _privatedata *data;
-	data = talloc(dc->mem_ctx, sizeof(struct _privatedata));
-	data->registry = reg_open(lp_parm_string(-1,"winreg","subsystem"),lp_parm_string(-1,"winreg", "file"), False);
-	if(!data->registry) return NT_STATUS_UNSUCCESSFUL;
+	WERROR error;
+	data = talloc(dc->conn->mem_ctx, sizeof(struct _privatedata));
+	error = reg_open("dir", "/tmp/reg", "", &data->registry);
+	if(!W_ERROR_IS_OK(error)) return werror_to_ntstatus(error);
 	dc->conn->private = data;
 	return NT_STATUS_OK;
 }
@@ -49,70 +62,34 @@ static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_in
 #define DCESRV_INTERFACE_WINREG_BIND winreg_bind
 #define DCESRV_INTERFACE_WINREG_UNBIND winreg_unbind
 
-/* 
-  winreg_OpenHKCR 
-*/
-static NTSTATUS winreg_OpenHKCR(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_OpenHKCR *r)
-{
-	
-	return NT_STATUS_NOT_IMPLEMENTED;
+#define func_winreg_OpenHive(k,n) static NTSTATUS winreg_Open ## k (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct winreg_Open ## k *r) \
+{ \
+	struct _privatedata *data = dce_call->conn->private; \
+	REG_KEY *root/* = reg_get_root(data->registry)*/; \
+	REG_KEY *k/* = reg_open_key(root, n)*/; \
+\
+	if(!k) { \
+		r->out.result = WERR_BADFILE; \
+	} else { \
+		struct dcesrv_handle *h = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY); \
+		h->data = k; \
+		r->out.handle = &h->wire_handle; \
+	} \
+\
+	r->out.result = WERR_OK; \
+\
+	return NT_STATUS_OK; \
 }
 
-
-/* 
-  winreg_OpenHKCU 
-*/
-static NTSTATUS winreg_OpenHKCU(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_OpenHKCU *r)
-{
-	struct _privatedata *data = dce_call->conn->private;
-	REG_KEY *root = reg_get_root(data->registry);
-	REG_KEY *k = reg_open_key(root, "\\HKEY_CURRENT_USER");
-
-	if(!k) {
-		r->out.result = WERR_BADFILE;
-	} else {
-		struct dcesrv_handle *h = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY);
-		h->data = k;
-		r->out.handle = &h->wire_handle;
-	}
-
-	r->out.result = WERR_OK;
-
-	return NT_STATUS_OK;
-}
-
-
-/* 
-  winreg_OpenHKLM 
-*/
-static NTSTATUS winreg_OpenHKLM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_OpenHKLM *r)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-/* 
-  winreg_OpenHKPD 
-*/
-static NTSTATUS winreg_OpenHKPD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_OpenHKPD *r)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-/* 
-  winreg_OpenHKU 
-*/
-static NTSTATUS winreg_OpenHKU(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_OpenHKU *r)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
+func_winreg_OpenHive(HKCR,"\\HKEY_CLASSES_ROOT")
+func_winreg_OpenHive(HKCU,"\\HKEY_CURRENT_USER")
+func_winreg_OpenHive(HKLM,"\\HKEY_LOCAL_MACHINE")
+func_winreg_OpenHive(HKPD,"\\HKEY_PERFORMANCE_DATA")
+func_winreg_OpenHive(HKU,"\\HKEY_USERS")
+func_winreg_OpenHive(HKCC,"\\HKEY_CC")
+func_winreg_OpenHive(HKDD,"\\HKEY_DD")
+func_winreg_OpenHive(HKPT,"\\HKEY_PT")
+func_winreg_OpenHive(HKPN,"\\HKEY_PN")
 
 /* 
   winreg_CloseKey 
@@ -120,7 +97,15 @@ static NTSTATUS winreg_OpenHKU(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 static NTSTATUS winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_CloseKey *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	if(!h) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	reg_key_free((REG_KEY *)h->data);
+	dcesrv_handle_destroy(dce_call->conn, h);
+
+	return NT_STATUS_OK;
 }
 
 
@@ -130,7 +115,25 @@ static NTSTATUS winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static NTSTATUS winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_CreateKey *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	WERROR error;
+	REG_KEY *parent;
+	if(!h) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	parent = h->data;
+	error = reg_key_add_name_recursive(parent, r->in.key.name);
+	if(W_ERROR_IS_OK(error)) {
+		struct dcesrv_handle *newh = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY);
+		error = reg_open_key(parent, r->in.key.name, (REG_KEY **)&newh->data);
+		if(W_ERROR_IS_OK(error)) r->out.handle = &newh->wire_handle;
+		else dcesrv_handle_destroy(dce_call->conn, newh);
+	}
+
+	r->out.result = error;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -140,7 +143,19 @@ static NTSTATUS winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 static NTSTATUS winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_DeleteKey *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	REG_KEY *parent, *key;
+	WERROR error;
+	if(!h) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	parent = h->data;
+	r->out.result = reg_open_key(parent, r->in.key.name, &key);
+	if(W_ERROR_IS_OK(r->out.result)) {
+		r->out.result = reg_key_del(key);
+	}
+	return NT_STATUS_OK;
 }
 
 
@@ -160,6 +175,14 @@ static NTSTATUS winreg_DeleteValue(struct dcesrv_call_state *dce_call, TALLOC_CT
 static NTSTATUS winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_EnumKey *r)
 {
+	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	REG_KEY *key;
+	if(!h) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	key = h->data;
+	
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -221,11 +244,22 @@ static NTSTATUS winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		       struct winreg_OpenKey *r)
 {
 	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
+	REG_KEY *k, *subkey;
 	if(!h) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	k = h->data;
+
+
+	r->out.result = reg_open_key(k, r->in.keyname.name, &subkey);
+	if(W_ERROR_IS_OK(r->out.result)) {
+		struct dcesrv_handle *newh = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY); 
+		h->data = subkey; 
+		r->out.handle = &h->wire_handle; 
+	}
 	
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return NT_STATUS_OK;
 }
 
 
@@ -340,26 +374,6 @@ static NTSTATUS winreg_GetVersion(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 
 /* 
-  winreg_OpenHKCC 
-*/
-static NTSTATUS winreg_OpenHKCC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_OpenHKCC *r)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-/* 
-  winreg_OpenHKDD 
-*/
-static NTSTATUS winreg_OpenHKDD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_OpenHKDD *r)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-/* 
   winreg_QueryMultipleValues 
 */
 static NTSTATUS winreg_QueryMultipleValues(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -384,26 +398,6 @@ static NTSTATUS winreg_InitiateSystemShutdownEx(struct dcesrv_call_state *dce_ca
 */
 static NTSTATUS winreg_SaveKeyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_SaveKeyEx *r)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-/* 
-  winreg_OpenHKPT 
-*/
-static NTSTATUS winreg_OpenHKPT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_OpenHKPT *r)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-/* 
-  winreg_OpenHKPN 
-*/
-static NTSTATUS winreg_OpenHKPN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_OpenHKPN *r)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

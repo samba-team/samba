@@ -96,22 +96,26 @@ BOOL reg_val_set_string(REG_VAL *val, char *str)
 	return False;
 }
 
-REG_VAL *reg_key_get_subkey_val(REG_KEY *key, const char *subname, const char *valname)
+WERROR reg_key_get_subkey_val(REG_KEY *key, const char *subname, const char *valname, REG_VAL **val)
 {
-	REG_KEY *k = reg_key_get_subkey_by_name(key, subname);
-	if(!k) return NULL;
+	REG_KEY *k;
+	WERROR error = reg_key_get_subkey_by_name(key, subname, &k);
+	if(!W_ERROR_IS_OK(error)) return error;
 	
-	return reg_key_get_value_by_name(k, valname);
+	return reg_key_get_value_by_name(k, valname, val);
 }
 
-BOOL reg_key_set_subkey_val(REG_KEY *key, const char *subname, const char *valname, uint32 type, uint8 *data, int real_len)
+WERROR reg_key_set_subkey_val(REG_KEY *key, const char *subname, const char *valname, uint32 type, uint8 *data, int real_len)
 {
-	REG_KEY *k = reg_key_get_subkey_by_name(key, subname);
+	REG_KEY *k;
 	REG_VAL *v;
-	if(!k) return False;
+	WERROR error;
 
-	v = reg_key_get_value_by_name(k, valname);
-	if(!v) return False;
+	error = reg_key_get_subkey_by_name(key, subname, &k);
+	if(!W_ERROR_IS_OK(error)) return error;
+
+	error = reg_key_get_value_by_name(k, valname, &v);
+	if(!W_ERROR_IS_OK(error)) return error;
 	
 	return reg_val_update(v, type, data, real_len);
 }

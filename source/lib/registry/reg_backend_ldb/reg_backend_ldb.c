@@ -20,51 +20,96 @@
 
 #include "includes.h"
 #include "lib/registry/common/registry.h"
+#include "lib/ldb/include/ldb.h"
+
+char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path)
+{
+	char *ret = talloc_strdup(mem_ctx, "(dn=");
+	char *begin = (char *)path;
+	char *end = NULL;
+
+	while(begin) {
+		end = strchr(begin, '\\');
+		if(end)end = '\0';
+		if(end - begin != 0) ret = talloc_asprintf_append(mem_ctx, ret, "key=%s,", begin);
+			
+		if(end) {
+			*end = '\\';
+			begin = end+1;
+		} else begin = NULL;
+	}
+
+	ret[strlen(ret)-1] = ')';
+	return ret;
+}
 
 /* 
  * Saves the dn as private_data for every key/val
  */
 
-static BOOL ldb_open_registry(REG_HANDLE *handle, const char *location, BOOL try_full_load)
+static WERROR ldb_open_registry(REG_HANDLE *handle, const char *location, const char *credentials)
 {
 	struct ldb_context *c;
 	c = ldb_connect(location, 0, NULL);
 
-	if(!c) return False;
+	if(!c) return WERR_FOOBAR;
 
 	handle->backend_data = c;
 	
-	return True;
+	return WERR_OK;
 }
 
-static BOOL ldb_close_registry(REG_HANDLE *h) 
+static WERROR ldb_close_registry(REG_HANDLE *h) 
 {
-	ldb_close(h);
-	return True;
+	ldb_close((struct ldb_context *)h->backend_data);
+	return WERR_OK;
 }
 
-static BOOL ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
+static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
 {
-	ldb_search();
+	struct ldb_context *c = k->handle->backend_data;
+	char *path;
+	struct ldb_message **msg;
+	char *ldap_path;
+	TALLOC_CTX *mem_ctx = talloc_init("ldb_path");
+	REG_KEY *key = NULL;
+	ldap_path = reg_path_to_ldb(mem_ctx, reg_key_get_path(k));
+	
+	if(ldb_search(c, NULL, LDB_SCOPE_ONELEVEL, ldap_path, NULL,&msg) > 0) {
+		key = reg_key_new_abs(reg_key_get_path(k), k->handle, ldap_path);
+		talloc_steal(mem_ctx, key->mem_ctx, ldap_path);
+		/* FIXME */
+	}
+
+	ldap_search_free(c, msg);
+	talloc_destroy(mem_ctx);
+	return WERR_OK;
 }
 
-static REG_KEY *ldb_open_key(REG_HANDLE *h, const char *name)
+
+
+static WERROR ldb_open_key(REG_HANDLE *h, const char *name, REG_KEY **key)
 {
 	struct ldb_context *c = h->backend_data;
 	char *path;
 	struct ldb_message **msg;
-	REG_KEY *key = NULL;
-	(dn=key=Systems,
-	if(ldb_search(c, NULL, LDP_SCOPE_BASE, "", NULL,&msg) > 0) {
-		key = reg_key_new_abs(name, h, base);
+	char *ldap_path;
+	TALLOC_CTX *mem_ctx = talloc_init("ldb_path");
+	ldap_path = reg_path_to_ldb(mem_ctx, name);
+	
+	if(ldb_search(c, NULL, LDB_SCOPE_BASE, ldap_path, NULL,&msg) > 0) {
+		*key = reg_key_new_abs(name, h, ldap_path);
+		talloc_steal(mem_ctx, (*key)->mem_ctx, ldap_path);
+		/* FIXME */
 	}
 
 	ldap_search_free(c, msg);
+	talloc_destroy(mem_ctx);
 
-	return key;
+	return WERR_OK;;
 }
 
-static REG_OPS reg_backend_ldb = {
+static struct registry_ops reg_backend_ldb = {
 	.name = "ldb",
 	.open_registry = ldb_open_registry,
 	.close_registry = ldb_close_registry,
