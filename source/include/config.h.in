@@ -136,6 +136,81 @@
 /* The number of bytes in a short.  */
 #undef SIZEOF_SHORT
 
+/* Define if you have the __closedir function.  */
+#undef HAVE___CLOSEDIR
+
+/* Define if you have the __dup function.  */
+#undef HAVE___DUP
+
+/* Define if you have the __dup2 function.  */
+#undef HAVE___DUP2
+
+/* Define if you have the __fstat function.  */
+#undef HAVE___FSTAT
+
+/* Define if you have the __fxstat function.  */
+#undef HAVE___FXSTAT
+
+/* Define if you have the __getcwd function.  */
+#undef HAVE___GETCWD
+
+/* Define if you have the __lstat function.  */
+#undef HAVE___LSTAT
+
+/* Define if you have the __lxstat function.  */
+#undef HAVE___LXSTAT
+
+/* Define if you have the __opendir function.  */
+#undef HAVE___OPENDIR
+
+/* Define if you have the __readdir function.  */
+#undef HAVE___READDIR
+
+/* Define if you have the __seekdir function.  */
+#undef HAVE___SEEKDIR
+
+/* Define if you have the __stat function.  */
+#undef HAVE___STAT
+
+/* Define if you have the __telldir function.  */
+#undef HAVE___TELLDIR
+
+/* Define if you have the __xstat function.  */
+#undef HAVE___XSTAT
+
+/* Define if you have the _closedir function.  */
+#undef HAVE__CLOSEDIR
+
+/* Define if you have the _dup function.  */
+#undef HAVE__DUP
+
+/* Define if you have the _dup2 function.  */
+#undef HAVE__DUP2
+
+/* Define if you have the _fstat function.  */
+#undef HAVE__FSTAT
+
+/* Define if you have the _getcwd function.  */
+#undef HAVE__GETCWD
+
+/* Define if you have the _lstat function.  */
+#undef HAVE__LSTAT
+
+/* Define if you have the _opendir function.  */
+#undef HAVE__OPENDIR
+
+/* Define if you have the _readdir function.  */
+#undef HAVE__READDIR
+
+/* Define if you have the _seekdir function.  */
+#undef HAVE__SEEKDIR
+
+/* Define if you have the _stat function.  */
+#undef HAVE__STAT
+
+/* Define if you have the _telldir function.  */
+#undef HAVE__TELLDIR
+
 /* Define if you have the atexit function.  */
 #undef HAVE_ATEXIT
 
@@ -472,6 +547,9 @@
 /* Define if you have the <sys/statvfs.h> header file.  */
 #undef HAVE_SYS_STATVFS_H
 
+/* Define if you have the <sys/syscall.h> header file.  */
+#undef HAVE_SYS_SYSCALL_H
+
 /* Define if you have the <sys/time.h> header file.  */
 #undef HAVE_SYS_TIME_H
 
@@ -483,6 +561,9 @@
 
 /* Define if you have the <sys/wait.h> header file.  */
 #undef HAVE_SYS_WAIT_H
+
+/* Define if you have the <sysacll.h> header file.  */
+#undef HAVE_SYSACLL_H
 
 /* Define if you have the <termios.h> header file.  */
 #undef HAVE_TERMIOS_H

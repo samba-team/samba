@@ -1,24 +1,28 @@
 #!/bin/sh
 
-LIBDIR=/samba/cvs/source/smbwrapper
+LIBDIR=/home/tridge/samba/source/smbwrapper
 
 # a simple launcher for the smbwrapper.so preloadde library
 
 if [ x$SMBW_USER = x ]; then
     echo username?
     read user
-    export SMBW_USER=$user
+    SMBW_USER=$user
+    export SMBW_USER
 fi
 
 # this doesn't hide the password - we need a proper launch app for that
 if [ x$SMBW_PASSWORD = x ]; then
     echo password?
     read pass
-    export SMBW_PASSWORD=$pass
+    SMBW_PASSWORD=$pass
+    export 
 fi
 
-export LD_PRELOAD=$LIBDIR/smbwrapper.so
+LD_PRELOAD=$LIBDIR/smbwrapper.so
+export LD_PRELOAD
 
 export PWD
-export PS1='smbsh$ '
+PS1='smbsh$ '
+export PS1
 bash

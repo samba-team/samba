@@ -41,7 +41,7 @@ AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h)
 AC_CHECK_HEADERS(sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(shadow.h netinet/tcp.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
-AC_CHECK_HEADERS(readline/history.h sys/capability.h)
+AC_CHECK_HEADERS(readline/history.h sys/capability.h sysacll.h sys/syscall.h)
 
 AC_CHECK_SIZEOF(int,cross)
 AC_CHECK_SIZEOF(long,cross)
@@ -163,6 +163,12 @@ AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64)
 AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2 lseek64 ftruncate64)
 AC_CHECK_FUNCS(fseek64 ftell64 bigcrypt getprpwnam setluid yp_get_default_domain getpwanam)
 AC_CHECK_FUNCS(srandom random srand rand)
+
+AC_CHECK_FUNCS(_dup _dup2 _opendir _readdir _seekdir _telldir _closedir)
+AC_CHECK_FUNCS(__dup __dup2 __opendir __readdir __seekdir __telldir __closedir)
+AC_CHECK_FUNCS(__getcwd _getcwd)
+AC_CHECK_FUNCS(__xstat __fxstat __lxstat)
+AC_CHECK_FUNCS(_stat _lstat _fstat __stat __lstat __fstat)
 
 AC_CACHE_CHECK([for long long],samba_cv_have_longlong,[
 AC_TRY_RUN([#include <stdio.h>
