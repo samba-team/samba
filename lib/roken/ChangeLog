@@ -1,3 +1,7 @@
+1999-08-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* getcap.c: getcap from NetBSD
+
 1999-08-06  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in (sockaddr_storage): cater for those that have

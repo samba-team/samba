@@ -1,3 +1,10 @@
+1999-08-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* login.c: add support for starting extra processes at login and
+	logout; always preserve TERM and TZ
+
+	* conf.c: add configuration file support
+
 1999-08-07  Assar Westerlund  <assar@sics.se>
 
 	* shadow.c (check_shadow): check for a NULL sp
