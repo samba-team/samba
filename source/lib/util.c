@@ -1398,9 +1398,23 @@ gid_t nametogid(const char *name)
 
 void smb_panic(const char *why)
 {
-	char *cmd = lp_panic_action();
+	char *cmd;
 	int result;
 
+#ifdef DEVELOPER
+	{
+		extern char *global_clobber_region_function;
+		extern unsigned int global_clobber_region_line;
+		
+		if (global_clobber_region_function) {
+			DEBUG(0,("smb_panic: clobber_region() last called from [%s(%u)]\n",
+				 global_clobber_region_function,
+				 global_clobber_region_line));
+		} 
+	}
+#endif
+	
+	cmd = lp_panic_action();
 	if (cmd && *cmd) {
 		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));
 		result = system(cmd);
