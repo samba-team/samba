@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 CLEANFILES = roken.h make-roken.c print_version.h
 
 lib_LTLIBRARIES = libroken.la
-libroken_la_LDFLAGS = -version-info 4:3:0
+libroken_la_LDFLAGS = -version-info 5:0:0
 
 noinst_PROGRAMS = make-roken make-print-version
 
@@ -52,6 +52,7 @@ libroken_la_SOURCES =		\
 	simple_exec.c		\
 	snprintf.c		\
 	socket.c		\
+	timeval.c		\
 	tm2time.c		\
 	verify.c		\
 	warnerr.c		\
@@ -139,7 +140,7 @@ $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h
 
 include_HEADERS = $(err_h) base64.h getarg.h \
 	parse_bytes.h parse_time.h parse_units.h \
-	resolve.h roken.h roken-common.h
+	resolve.h roken.h roken-common.h timeval.h
 
 build_HEADERZ = $(err_h) $(fnmatch_h) $(glob_h) xdbm.h
 
