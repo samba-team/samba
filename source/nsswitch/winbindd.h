@@ -51,8 +51,7 @@ struct getent_state {
 	struct getent_state *prev, *next;
 	void *sam_entries;
 	uint32 sam_entry_index, num_sam_entries;
-	uint32 grp_query_start_ndx;
-	BOOL got_all_grp_entries, got_sam_entries;
+	BOOL got_sam_entries;
 	struct winbindd_domain *domain;
 };
 
@@ -99,7 +98,7 @@ struct winbindd_methods {
 	/* get a list of groups */
 	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    uint32 *start_ndx, uint32 *num_entries, 
+				    uint32 *num_entries, 
 				    struct acct_info **info);
 
 	/* convert one user or group name to a sid */
