@@ -351,7 +351,7 @@ int lp_minor_announce_version(void);
 BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset);
 BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
 BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
-BOOL locking_init(void);
+BOOL locking_init(int read_only);
 BOOL locking_end(void);
 BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, int *ptok);
 BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, int token);
@@ -365,11 +365,11 @@ void share_status(FILE *f);
 
 /*The following definitions come from  locking_shm.c  */
 
-struct share_ops *locking_shm_init(void);
+struct share_ops *locking_shm_init(int ronly);
 
 /*The following definitions come from  locking_slow.c  */
 
-struct share_ops *locking_slow_init(void);
+struct share_ops *locking_slow_init(int ronly);
 
 /*The following definitions come from  lsaparse.c  */
 
@@ -869,7 +869,7 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
 
-BOOL smb_shm_open(char *file_name, int size);
+BOOL smb_shm_open(char *file_name, int size, int ronly);
 BOOL smb_shm_close( void );
 int smb_shm_alloc(int size);
 BOOL smb_shm_free(int offset);

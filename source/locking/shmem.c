@@ -34,6 +34,13 @@ extern int DEBUGLEVEL;
 
 #define SMB_SHM_VERSION 2
 
+/* we need world read for smbstatus to function correctly */
+#ifdef SECURE_SHARE_MODES
+#define SHM_FILE_MODE 0600
+#else
+#define SHM_FILE_MODE 0644
+#endif
+
 /* WARNING : offsets are used because mmap() does not guarantee that all processes have the 
    shared memory mapped to the same address */
 
@@ -75,6 +82,8 @@ static int smb_shm_times_locked = 0;
 
 static BOOL smb_shm_initialize_called = False;
 
+static int read_only;
+
 static BOOL smb_shm_global_lock(void)
 {
    if (smb_shm_fd < 0)
@@ -90,6 +99,9 @@ static BOOL smb_shm_global_lock(void)
       DEBUG(5,("smb_shm_global_lock : locked %d times\n",smb_shm_times_locked));
       return True;
    }
+
+   if (read_only)
+	   return True;
    
    /* Do an exclusive wait lock on the first byte of the file */
    if (fcntl_lock(smb_shm_fd, F_SETLKW, 0, 1, F_WRLCK) == False)
@@ -124,6 +136,9 @@ static BOOL smb_shm_global_unlock(void)
       DEBUG(5,("smb_shm_global_unlock : still locked %d times\n",smb_shm_times_locked));
       return True;
    }
+
+   if (read_only)
+	   return True;
    
    /* Do a wait unlock on the first byte of the file */
    if (fcntl_lock(smb_shm_fd, F_SETLKW, 0, 1, F_UNLCK) == False)
@@ -170,11 +185,10 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
    int free_slot = -1;
    int erased_slot;   
    
-#ifndef SECURE_SHARE_MODES
-   smb_shm_processes_fd = open(processreg_file, O_RDWR | O_CREAT, 0666);
-#else /* SECURE_SHARE_MODES */
-   smb_shm_processes_fd = open(processreg_file, O_RDWR | O_CREAT, 0600);
-#endif /* SECURE_SHARE_MODES */
+   smb_shm_processes_fd = open(processreg_file, 
+			       read_only?O_RDONLY:(O_RDWR|O_CREAT), 
+			       SHM_FILE_MODE);
+
    if ( smb_shm_processes_fd < 0 )
    {
       DEBUG(0,("ERROR smb_shm_register_process : processreg_file open failed with code %s\n",strerror(errno)));
@@ -231,7 +245,6 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
 
 static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
 {
-   int old_umask;
    int smb_shm_processes_fd = -1;
    int nb_read;
    pid_t other_pid;
@@ -240,9 +253,7 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    BOOL found = False;
    
    
-   old_umask = umask(0);
    smb_shm_processes_fd = open(processreg_file, O_RDWR);
-   umask(old_umask);
    if ( smb_shm_processes_fd < 0 )
    {
       DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file open failed with code %s\n",strerror(errno)));
@@ -380,22 +391,19 @@ static void smb_shm_solve_neighbors(struct SmbShmBlockDesc *head_p )
 
 
 
-BOOL smb_shm_open(char *file_name, int size)
+BOOL smb_shm_open(char *file_name, int size, int ronly)
 {
    int filesize;
    BOOL created_new = False;
    BOOL other_processes = True;
-   int old_umask;
+
+   read_only = ronly;
    
    DEBUG(5,("smb_shm_open : using shmem file %s to be of size %d\n",file_name,size));
 
-   old_umask = umask(0);
-#ifndef SECURE_SHARE_MODES
-   smb_shm_fd = open(file_name, O_RDWR | O_CREAT, 0666);
-#else /* SECURE_SHARE_MODES */
-   smb_shm_fd = open(file_name, O_RDWR | O_CREAT, 0600);
-#endif /* SECURE_SHARE_MODE */
-   umask(old_umask);
+   smb_shm_fd = open(file_name, read_only?O_RDONLY:(O_RDWR|O_CREAT),
+		     SHM_FILE_MODE);
+
    if ( smb_shm_fd < 0 )
    {
       DEBUG(0,("ERROR smb_shm_open : open failed with code %s\n",strerror(errno)));
@@ -433,14 +441,15 @@ BOOL smb_shm_open(char *file_name, int size)
    strcpy(smb_shm_processreg_name, file_name);
    strcat(smb_shm_processreg_name, ".processes");
 
-   if (! smb_shm_register_process(smb_shm_processreg_name, getpid(), &other_processes))
+   if (!read_only && 
+       !smb_shm_register_process(smb_shm_processreg_name, getpid(), &other_processes))
    {
       smb_shm_global_unlock();
       close(smb_shm_fd);
       return False;
    }
 
-   if (created_new || !other_processes)
+   if (!read_only && (created_new || !other_processes))
    {
       /* we just created a new one, or are the first opener, lets set it size */
       if( ftruncate(smb_shm_fd, size) <0)
@@ -466,7 +475,11 @@ BOOL smb_shm_open(char *file_name, int size)
       size = filesize;
    }
    
-   smb_shm_header_p = (struct SmbShmHeader *)mmap( NULL, size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, smb_shm_fd, 0);
+   smb_shm_header_p = (struct SmbShmHeader *)mmap(NULL, size, 
+						  read_only?PROT_READ:
+						  (PROT_READ | PROT_WRITE), 
+						  MAP_FILE | MAP_SHARED, 
+						  smb_shm_fd, 0);
    /* WARNING, smb_shm_header_p can be different for different processes mapping the same file ! */
    if (smb_shm_header_p  == (struct SmbShmHeader *)(-1))
    {
@@ -478,7 +491,7 @@ BOOL smb_shm_open(char *file_name, int size)
    }      
    
       
-   if (created_new || !other_processes)
+   if (!read_only && (created_new || !other_processes))
    {
       smb_shm_initialize(size);
       /* Create the hash buckets for the share file entries. */
