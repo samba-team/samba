@@ -290,8 +290,5 @@ vstrcollect(va_list *ap);
 char **
 strcollect(char *first, ...);
 
-int
-roken_getaddrinfo_hostspec(const char *, int, struct addrinfo **);
-
 
 #endif /* __ROKEN_COMMON_H__ */
