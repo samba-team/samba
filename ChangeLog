@@ -1,3 +1,8 @@
+1999-05-08  Assar Westerlund  <assar@sics.se>
+
+	* acconfig.h (_GNU_SOURCE): define this to enable (used)
+ 	extensions on glibc-based systems such as linux
+
 1999-05-03  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_cred.c (get_cred_from_kdc_flags): allocate and free
