@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+/** \defgroup rpc_client RPC Client routines
+ */
+
 /* Opens a SMB connection to a named pipe */
 
 struct cli_state *cli_pipe_initialise(struct cli_state *cli, char *system_name,
