@@ -1,3 +1,7 @@
+2000-12-05  Johan Danielsson  <joda@pdc.kth.se>
+
+	* getifaddrs.c: free some memory
+
 2000-12-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ifaddrs.h: getifaddrs implementation using SIOCGIFCONFIG etc
