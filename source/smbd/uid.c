@@ -360,7 +360,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	return True;
 }
 
-BOOL unbecome_user()
+BOOL unbecome_user(void)
 {
 	pop_sec_ctx();
 	pop_conn_ctx();

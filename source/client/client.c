@@ -971,6 +971,8 @@ static int cmd_quit(void)
 {
 	cli_shutdown(cli);
 	exit(0);
+	/* NOTREACHED */
+	return 0;
 }
 
 
