@@ -61,13 +61,7 @@ key_proc (krb5_context context,
 	  des_read_pw_string (buf, sizeof(buf), "Password: ", 0);
 	  password = buf;
      }
-     if(salt == NULL){
-	 (*key)->keyvalue.length = 8;
-	 (*key)->keyvalue.data = malloc((*key)->keyvalue.length);
-	 des_string_to_key(password, (*key)->keyvalue.data);
-	 ret = 0;
-     }else
-	 ret = krb5_string_to_key (password, salt, *key);
+     ret = krb5_string_to_key (password, salt, *key);
      memset (buf, 0, sizeof(buf));
      return ret;
 }
