@@ -1137,8 +1137,6 @@ _krb5_pk_verify_sign(krb5_context context,
 
 static krb5_error_code
 get_reply_key(krb5_context context,
-	      int win2k_compat,
-	      const heim_oid *eContentType,
 	      const krb5_data *eContent,
 	      unsigned nonce,
 	      krb5_keyblock **key)
@@ -1146,18 +1144,6 @@ get_reply_key(krb5_context context,
     ReplyKeyPack key_pack;
     krb5_error_code ret;
     size_t size;
-
-    if (win2k_compat) {
-	if (heim_oid_cmp(eContentType, &pkcs7_data_oid) != 0) {
-	    krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
-	    return KRB5KRB_AP_ERR_MSG_TYPE;
-	}
-    } else {
-	if (heim_oid_cmp(eContentType, &heim_pkrkeydata_oid) != 0) {
-	    krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
-	    return KRB5KRB_AP_ERR_MSG_TYPE;
-	}
-    }
 
     ret = decode_ReplyKeyPack(eContent->data,
 			      eContent->length,
@@ -1444,8 +1430,21 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
     }
 
-    ret = get_reply_key(context, win2k_compat,
-			&eContentType, &eContent, nonce, key);
+    if (win2k_compat) {
+	if (heim_oid_cmp(&eContentType, &pkcs7_data_oid) != 0) {
+	    krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
+	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
+	    goto out;
+	}
+    } else {
+	if (heim_oid_cmp(&eContentType, &heim_pkrkeydata_oid) != 0) {
+	    krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
+	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
+	    goto out;
+	}
+    }
+
+    ret = get_reply_key(context, &eContent, nonce, key);
     if (ret)
 	goto out;
 
