@@ -259,6 +259,12 @@ do_afslog(const char *cell)
     return 0;
 }
 
+static void
+log_func(void *ctx, const char *str, int ret)
+{
+    fprintf(stderr, "%s\n", str);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -295,6 +301,10 @@ main(int argc, char **argv)
 	if(krb5_cc_default(context, &id) != 0)
 	    id = NULL;
 #endif
+
+    if (verbose)
+	kafs_set_verbose(log_func, NULL);
+
     num = 0;
     for(i = 0; i < files.num_strings; i++){
 	afslog_file(files.strings[i]);
