@@ -53,3 +53,19 @@ Description:
    This allows the account domain to change, and/or the user name to change.
 
 
+Next Note:
+----------
+You can identify the SID by using GetSID.exe from the Windows NT Server 4.0
+Resource Kit.
+
+Windows NT 4.0 stores the local profile information in the registry under
+the following key:
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList
+
+Under the ProfileList key, there will be subkeys named with the SIDs of the
+users who have logged on to this computer. (To find the profile information
+for the user whose locally cached profile you want to move, find the SID for
+the user with the GetSID.exe utility.) Inside of the appropriate user's
+subkey, you will see a string value named ProfileImagePath.
+
+
