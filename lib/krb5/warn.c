@@ -43,13 +43,10 @@ RCSID("$Id$");
 
 
 krb5_error_code
-krb5_warn(krb5_context context, krb5_error_code code, const char *fmt, ...)
+krb5_vwarn(krb5_context context, krb5_error_code code, const char *fmt, va_list ap)
 {
     char *msg;
-    va_list ap;
-    va_start(ap, fmt);
     vasprintf(&msg, fmt, ap);
-    va_end(ap);
     if(msg == NULL)
 	return ENOMEM;
     if(context->warn_dest)
@@ -62,16 +59,35 @@ krb5_warn(krb5_context context, krb5_error_code code, const char *fmt, ...)
 }
 
 krb5_error_code
-krb5_warnx(krb5_context context, const char *fmt, ...)
+krb5_warn(krb5_context context, krb5_error_code code, const char *fmt, ...)
 {
+    krb5_error_code ret;
     va_list ap;
     va_start(ap, fmt);
+    ret = krb5_vwarn(context, code, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+krb5_error_code
+krb5_vwarnx(krb5_context context, const char *fmt, va_list ap)
+{
     if(context->warn_dest)
 	krb5_vlog(context, context->warn_dest, 0, fmt, ap);
     else
 	vwarnx(fmt, ap);
-    va_end(ap);
     return 0;
+}
+
+krb5_error_code
+krb5_warnx(krb5_context context, const char *fmt, ...)
+{
+    krb5_error_code ret;
+    va_list ap;
+    va_start(ap, fmt);
+    ret = krb5_vwarnx(context, fmt, ap);
+    va_end(ap);
+    return ret;
 }
 
 krb5_error_code
