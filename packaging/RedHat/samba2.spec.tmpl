@@ -4,46 +4,35 @@ Version: PVERSION
 Release: PRELEASE
 Copyright: GNU GPL version 2
 Group: Networking
-Source: ftp://samba.org/pub/samba/samba-%{version}.tar.gz
-Packager: John H Terpstra [Samba-Team] <jht@samba.org>
+Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.gz
+Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
-Provides: samba = %{version}, samba-common = %{version}, samba-client = %{version}, samba-swat = %{version}
+Provides: samba = %{version}
+Obsoletes: samba-common, samba-client, samba-swat
 BuildRoot: /var/tmp/samba
 Prefix: /usr
 
 %description
-Samba provides an SMB server which can be used to provide
-network services to SMB (sometimes called "Lan Manager")
-clients, including various versions of MS Windows, OS/2,
-and other Linux machines. Samba also provides some SMB
-clients, which complement the built-in SMB filesystem
-in Linux. Samba uses NetBIOS over TCP/IP (NetBT) protocols
-and does NOT need NetBEUI (Microsoft Raw NetBIOS frame)
-protocol.
-
-Samba-2.2 features working NT Domain Control capability and 
-includes the SWAT (Samba Web Administration Tool) that 
-allows samba's smb.conf file to be remotely managed using your 
-favourite web browser. For the time being this is being
-enabled on TCP port 901 via inetd.
-
 Users are advised to use Samba-2.2 as a Windows NT4
-Domain Controller only on networks that do NOT have a Windows
-NT Domain Controller. This release does NOT as yet have
-Backup Domain control ability.
+Samba provides an SMB/CIFS server which can be used to provide
+network file and print services to SMB/CIFS clients, including 
+various versions of MS Windows, OS/2, and other Linux machines. 
+Samba also provides some SMB clients, which complement the 
+built-in SMB filesystem in Linux. Samba uses NetBIOS over TCP/IP 
+(NetBT) protocols and does NOT need NetBEUI (Microsoft Raw NetBIOS 
+frame) protocol.
 
 Please refer to the WHATSNEW.txt document for fixup information.
-This binary release includes encrypted password support.
-
-Please read the smb.conf file and ENCRYPTION.txt in the
-docs directory for implementation details.
-
-NOTE: Red Hat Linux uses PAM which has integrated support
-for Shadow passwords and quotas. Do NOT recompile with the
-SHADOW_PWD option enabled
 
 %changelog
+* Thu Jun 6 2002 Gerald Carter <jerry@samba.org>
+  - add separate winbindd init script
+  - build and install libsmbclient
+
+* Sun Jun 2 2002 Gerald Carter <jerry@samba.org>
+  - include audit and recycle VFS modules in /usr/lib/samba
+
 * Mon May 6 2002 Gerald Carter <jerry@samba.org>
   - moved findsmb to a standard component in samba's 
     "make install".  Removed from specfile.
@@ -150,6 +139,7 @@ SHADOW_PWD option enabled
 %setup
 
 %build
+## Build main Samba source
 cd source
 
 %ifarch ia64
@@ -169,14 +159,24 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-msdfs \
 	--with-smbmount \
 	--with-pam \
+	--with-pam_smbpass \
 	--with-syslog \
 	--with-utmp \
 	--with-sambabook=%{prefix}/share/swat/using_samba \
-	--with-swatdir=%{prefix}/share/swat
+	--with-swatdir=%{prefix}/share/swat \
+	--with-libsmbclient 
 make -j${NUMCPU} proto
 make -j${NUMCPU} all nsswitch/libnss_wins.so
 make -j${NUMCPU} debug2html
 make -j${NUMCPU} bin/smbspool
+
+## Build VFS modules
+cd ../examples/VFS
+CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
+        --prefix=%{prefix} \
+        --localstatedir=/var
+make
+
 
 
 %install
@@ -194,22 +194,25 @@ mkdir -p $RPM_BUILD_ROOT/var/cache/samba
 mkdir -p $RPM_BUILD_ROOT/var/{log,run}/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/lib/security
+mkdir -p $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-      make_printerdef rpcclient smbspool smbcacls smbcontrol wbinfo
+      rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt
 do
-install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
+	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
-for i in mksmbpasswd.sh smbtar 
+
+for i in mksmbpasswd.sh smbtar findsmb
 do
-install -m755 source/script/$i $RPM_BUILD_ROOT%{prefix}/bin
+	install -m755 source/script/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbumount smbmnt debug2html winbindd
+for i in smbd nmbd swat smbmount smbumount debug2html winbindd
 do
-install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/sbin
+	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/sbin
 done
 
 # we need a symlink for mount to recognise the smb and smbfs filesystem types
@@ -221,6 +224,7 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 cd source
 make BASEDIR=$RPM_BUILD_ROOT/usr \
 	LIBDIR=$RPM_BUILD_ROOT/etc/samba \
+	VARDIR=$RPM_BUILD_ROOT/var \
 	SBINDIR=$RPM_BUILD_ROOT%{prefix}/sbin \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
@@ -229,7 +233,7 @@ make BASEDIR=$RPM_BUILD_ROOT/usr \
 	installman installcp installswat
 cd ..
 
-# Install the nsswitch library extension file
+# Install the nsswitch wins library
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 
 # Make link for wins resolver
@@ -239,24 +243,43 @@ install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
 install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 
+# Install pam_smbpass.so
+install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
+
+# Install the VFS modules
+install -m755 examples/VFS/recycle/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m644 examples/VFS/recycle/recycle.conf $RPM_BUILD_ROOT/etc/samba/
+install -m755 examples/VFS/block/block.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m644 examples/VFS/block/samba-block.conf $RPM_BUILD_ROOT/etc/samba/
+install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+
+# clean out VFS directory since it will get installed as documentation later
+(cd examples/VFS; make clean)
+
+# libsmbclient
+install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
+install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{prefix}/lib/
+install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
+
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
 do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/help
+	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/help
 done
 for i in swat/images/*.gif
 do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/images
+	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/images
 done
 for i in swat/include/*.html
 do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/include
+	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/include
 done
 
 # Install the miscellany
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
+install -m755 packaging/RedHat/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
@@ -271,7 +294,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/chkconfig --add smb
+/sbin/chkconfig --add winbind
 /sbin/chkconfig smb off
+/sbin/chkconfig winbind off
 
 echo "Looking for old /etc/smb.conf..."
 if [ -f /etc/smb.conf -a ! -f /etc/samba/smb.conf ]; then
@@ -465,7 +490,7 @@ fi
 %{prefix}/sbin/smbd
 %{prefix}/sbin/nmbd
 %{prefix}/sbin/swat
-%{prefix}/sbin/smbmnt
+%{prefix}/bin/smbmnt
 %{prefix}/sbin/smbmount
 %{prefix}/sbin/smbumount
 %{prefix}/sbin/winbindd
@@ -490,6 +515,10 @@ fi
 %{prefix}/bin/smbcacls
 %{prefix}/bin/wbinfo
 %attr(755,root,root) /lib/libnss_wins.s*
+%attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
+%{prefix}/include/libsmbclient.h
+%{prefix}/lib/libsmbclient.a
+%{prefix}/lib/libsmbclient.so
 %{prefix}/share/swat/help/*
 %{prefix}/share/swat/images/*
 %{prefix}/share/swat/include/header.html
@@ -497,10 +526,13 @@ fi
 %{prefix}/share/swat/using_samba/*
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
+%config(noreplace) /etc/samba/recycle.conf
+%config(noreplace) /etc/samba/samba-block.conf
 %config(noreplace) /etc/samba/smbusers
 /etc/samba/samba.stack
 /etc/samba/samba.xinetd
 /etc/rc.d/init.d/smb
+/etc/rc.d/init.d/winbind
 /etc/logrotate.d/samba
 %config(noreplace) /etc/pam.d/samba
 MANDIR_MACRO/man1/*
@@ -514,3 +546,4 @@ MANDIR_MACRO/man8/*
 %attr(1777,root,root) %dir /var/spool/samba
 %attr(-,root,root) /lib/libnss_winbind.so
 %attr(-,root,root) /lib/security/pam_winbind.so
+%attr(-,root,root) /lib/security/pam_smbpass.so
