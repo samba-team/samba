@@ -66,7 +66,7 @@ static void usage(void)
 	printf("     -m                it is a machine trust\n");
 	printf("  -x                   delete this user\n");
 	printf("  -i file              import account from file (smbpasswd style)\n");
-	printf("  -b                   read password from STDIN\n");
+	printf("  -t                   read password from STDIN\n");
 	exit(1);
 }
 
