@@ -108,4 +108,5 @@ struct gensec_critical_sizes {
 };
 
 
-       
+/* pre-declare schannel structure for schannel backend */       
+struct schannel_state;

@@ -316,7 +316,6 @@ static NTSTATUS dcerpc_schannel_client_start(struct gensec_security *gensec_secu
 		return status;
 	}
 
-	dump_data_pw("session key:\n", dce_schan_state->schannel_state->session_key, 16);
 	return NT_STATUS_OK;
 }
 
