@@ -102,7 +102,8 @@ hdb_free_key(Key *key)
 krb5_error_code
 hdb_lock(int fd, int operation)
 {
-    int i, code;
+    int i, code = 0;
+
     for(i = 0; i < 3; i++){
 	code = flock(fd, (operation == HDB_RLOCK ? LOCK_SH : LOCK_EX) | LOCK_NB);
 	if(code == 0 || errno != EWOULDBLOCK)
