@@ -182,7 +182,8 @@ configure(int argc, char **argv)
 
     if(port_str == NULL){
 	p = krb5_config_get_string(context, cf, "kdc", "ports", NULL);
-	port_str = strdup(p);
+	if (p != NULL)
+	    port_str = strdup(p);
     }
     if(enable_http == -1)
 	enable_http = krb5_config_get_bool(context, cf, "kdc", 
