@@ -1,3 +1,19 @@
+2003-05-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kpasswd/kpasswd.c: use krb5_set_password
+	
+	* lib/krb5/krb5_set_password.3: document krb5_change_password and
+	krb5_set_password
+
+	* lib/krb5/changepw.c: implement rfc3244, partly from
+	shadow@dementia.org
+
+	* lib/asn1/Makefile.am (gen_files): asn1_ChangePasswdDataMS.x for
+	RFC3244
+
+	* lib/asn1/k5.asn1: add ChangePasswdDataMS, for
+	RFC3244
+
 2003-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* kuser/kdestroy.c: destroy tokens even if there isn't v4 support
