@@ -483,8 +483,10 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	pdb_set_acct_desc(sampass, acct_desc);
 	pdb_set_workstations(sampass, workstations);
 	pdb_set_munged_dial(sampass, munged_dial);
-	pdb_set_nt_passwd(sampass, smbntpwd);
-	pdb_set_lanman_passwd(sampass, smblmpwd);
+	if (!pdb_set_nt_passwd(sampass, smbntpwd))
+		return False;
+	if (!pdb_set_lanman_passwd(sampass, smblmpwd))
+		return False;
 
 	/* pdb_set_unknown_3(sampass, unknown3); */
 	/* pdb_set_unknown_5(sampass, unknown5); */

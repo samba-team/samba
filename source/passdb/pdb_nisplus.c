@@ -352,7 +352,8 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
 
   /* Check the lanman password column. */
   ptr = (char *)ENTRY_VAL(obj, NPF_LMPWD);
-  pdb_set_lanman_passwd(pw_buf, NULL);
+  if (!pdb_set_lanman_passwd(pw_buf, NULL))
+	return False;
 
   if (!strncasecmp(ptr, "NO PASSWORD", 11)) {
     pdb_set_acct_ctrl(pw_buf, pdb_get_acct_ctrl(pw_buf) | ACB_PWNOTREQ);
@@ -368,7 +369,8 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   
   /* Check the NT password column. */
   ptr = ENTRY_VAL(obj, NPF_NTPWD);
-  pdb_set_nt_passwd(pw_buf, NULL);
+  if (!pdb_set_nt_passwd(pw_buf, NULL))
+	return False;
   
   if (!(pdb_get_acct_ctrl(pw_buf) & ACB_PWNOTREQ) &&
       strncasecmp(ptr, "NO PASSWORD", 11)) {
