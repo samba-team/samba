@@ -49,6 +49,10 @@ struct passdb_ops {
 	BOOL (*update_sam_account) (SAM_ACCOUNT* sampass, BOOL override);
 	BOOL (*delete_sam_account) (char* username);
 	BOOL (*add_sam_account) (SAM_ACCOUNT* sampass);
+
+	/* authenticate a user */
+	SAM_ACCOUNT* (*logon_user) (char* username, char* domain, char* lm_pw,
+		int lm_pw_len, char* nt_pw, int nt_pw_len, char* clear_pass);
 };
 
 
