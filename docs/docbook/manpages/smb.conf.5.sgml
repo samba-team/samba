@@ -702,6 +702,7 @@
 		<listitem><para><link linkend="PRINTCAP"><parameter>printcap</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTCAPNAME"><parameter>printcap name</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTERDRIVERFILE"><parameter>printer driver file</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRIVATEDIR"><parameter>private dir</parameter></link></para></listitem>
 		<listitem><para><link linkend="PROTOCOL"><parameter>protocol</parameter></link></para></listitem>
 		<listitem><para><link linkend="READBMPX"><parameter>read bmpx</parameter></link></para></listitem>
 		<listitem><para><link linkend="READRAW"><parameter>read raw</parameter></link></para></listitem>
@@ -5116,6 +5117,7 @@
                         </listitem>
 			
 		</itemizedlist>
+		</para>
 
 		<para>Default: <command>passdb backend = smbpasswd</command></para>
 		<para>Example: <command>passdb backend = tdbsam:/etc/samba/private/passdb.tdb</command></para>
@@ -5908,10 +5910,24 @@
 		[printers]</link> section.</para>
 		</listitem>
 		</varlistentry>
+
+
+
 		
+		<varlistentry>
+		<term><anchor id="PRIVATEDIR">private dir (G)</term>
+		<listitem><para>This parameters defines the directory
+		smbd will use for storing such files as <filename>smbpasswd</filename>
+		and <filename>secrets.tdb</filename>.
+		</para>
 				
+		<para>Default :<command>private dir = ${prefix}/private</command></para>
+		</listitem>
+		</varlistentry>
 		
 		
+		
+
 		<varlistentry>
 		<term><anchor id="PROTOCOL">protocol (G)</term>
 		<listitem><para>Synonym for <link linkend="MAXPROTOCOL">
