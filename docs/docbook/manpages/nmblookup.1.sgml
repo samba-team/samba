@@ -28,6 +28,7 @@
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-i &lt;NetBIOS scope&gt;</arg>
 		<arg choice="opt">-T</arg>
+		<arg choice="opt">-f</arg>
 		<arg choice="req">name</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -182,6 +183,15 @@
 		<para> pair that is the normal output.</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>-f</term>
+		<listitem><para>
+		Show which flags apply to the name that has been looked up. Possible 
+		answers are zero or more of: Response, Authoritative, 
+		Truncated, Recursion_Desired, Recursion_Available, Broadcast.
+		</para></listitem>
+		</varlistentry>
+
 
 		<varlistentry>
 		<term>name</term>
@@ -217,7 +227,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
+	<para>This man page is correct for version 3.0 of 
 	the Samba suite.</para>
 </refsect1>
 

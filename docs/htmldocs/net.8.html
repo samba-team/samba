@@ -1,10 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >net</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,8 +16,8 @@ ALINK="#0000FF"
 ><H1
 ><A
 NAME="NET"
->net</A
-></H1
+></A
+>net</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -37,12 +38,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >net</B
->  {&#60;ads|rap|rpc&#62;}</P
+>  {&lt;ads|rap|rpc&gt;} [-h] [-w workgroup] [-W myworkgroup] [-U user] [-I ip-address] [-p port] [-n myname] [-s conffile] [-S server] [-C comment] [-M maxusers] [-F flags] [-j jobid] [-l] [-r] [-f] [-t timeout] [-P] [-D debuglevel]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN12"
+NAME="AEN31"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -52,31 +53,327 @@ HREF="samba.7.html"
 TARGET="_top"
 >	Samba</A
 > suite.</P
+><P
+>The samba net utility is meant to work just like the net utility 
+	available for windows and DOS.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN16"
+NAME="AEN36"
 ></A
 ><H2
 >OPTIONS</H2
 ><P
 ></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-h</DT
+><DD
+><P
+>		Display summary of all available options.
+		
+		</P
+></DD
+><DT
+>-w target-workgroup</DT
+><DD
+><P
+>		Sets target workgroup or domain. You have to specify either this option or the IP address or the name of a server.
+		</P
+></DD
+><DT
+>-W workgroup</DT
+><DD
+><P
+>		Sets client workgroup or domain
+		</P
+></DD
+><DT
+>-U user</DT
+><DD
+><P
+>		User name to use
+		</P
+></DD
+><DT
+>-I ip-address</DT
+><DD
+><P
+>		IP address of target server to use. You have to specify either this option or a target workgroup or a target server.
+		</P
+></DD
+><DT
+>-p port</DT
+><DD
+><P
+>		Port on the target server to connect to.
+		</P
+></DD
+><DT
+>-n myname</DT
+><DD
+><P
+>		Sets name of the client.
+		</P
+></DD
+><DT
+>-s conffile</DT
+><DD
+><P
+>		Specify alternative configuration file that should be loaded.
+		</P
+></DD
+><DT
+>-S server</DT
+><DD
+><P
+>		Name of target server. You should specify either this option or a target workgroup or a target IP address.
+		</P
+></DD
+><DT
+>-C comment</DT
+><DD
+><P
+>		FIXME
+		</P
+></DD
+><DT
+>-M maxusers</DT
+><DD
+><P
+>		FIXME
+		</P
+></DD
+><DT
+>-F flags</DT
+><DD
+><P
+>		FIXME
+		</P
+></DD
+><DT
+>-j jobid</DT
+><DD
+><P
+>		FIXME
+		</P
+></DD
+><DT
+>-l</DT
+><DD
+><P
+>		FIXME
+		</P
+></DD
+><DT
+>-r</DT
+><DD
+><P
+>		FIXME
+		</P
+></DD
+><DT
+>-f</DT
+><DD
+><P
+>		FIXME
+		</P
+></DD
+><DT
+>-t timeout</DT
+><DD
+><P
+>		FIXME
+		</P
+></DD
+><DT
+>-P</DT
+><DD
+><P
+>		Make queries to the external server using the machine account of the local server.
+		</P
+></DD
+><DT
+>-D debuglevel</DT
+><DD
+><P
+>set the debuglevel. Debug level 0 is the lowest
+		and 100 being the highest. This should be set to 100 if you are
+		planning on submitting a bug report to the Samba team (see
+		<TT
+CLASS="FILENAME"
+>BUGS.txt</TT
+>).
+		</P
+></DD
+></DL
+></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN19"
+NAME="AEN116"
 ></A
 ><H2
->COMMANDS</H2
+>TIME</H2
+><P
+>The <B
+CLASS="COMMAND"
+>NET TIME</B
+> command allows you to view the time on a remote server
+	or synchronise the time on the local server with the time on the remote server.</P
 ><P
 ></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+></DT
+><DD
+><P
+>		Without any options, the <B
+CLASS="COMMAND"
+>NET TIME</B
+> command 
+		displays the time on the remote server.
+		</P
+></DD
+><DT
+>SYSTEM</DT
+><DD
+><P
+>		Displays the time on the remote server in a format ready for /bin/date
+		</P
+></DD
+><DT
+>SET</DT
+><DD
+><P
+>		Tries to set the date and time of the local server to that on 
+		the remote server using /bin/date.
+		</P
+></DD
+><DT
+>ZONE</DT
+><DD
+><P
+>		Displays the timezone in hours from GMT on the remote computer.
+		</P
+></DD
+></DL
+></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN22"
+NAME="AEN138"
+></A
+><H2
+>RPC</H2
+><P
+>The <B
+CLASS="COMMAND"
+>NET RPC</B
+> command allows you to do various 
+	NT4 operations.</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>JOIN -U username[%password] [options]</DT
+><DD
+><P
+>		Join a domain with specified username and password. Password 
+		will be prompted if none is specified.</P
+></DD
+><DT
+>JOIN [options except -U]</DT
+><DD
+><P
+>		to join a domain created in server manager
+		</P
+></DD
+><DT
+>USER [misc. options] [targets]</DT
+><DD
+><P
+>		List users
+		</P
+></DD
+><DT
+>USER DELETE &lt;name&gt; [misc options]</DT
+><DD
+><P
+>		delete specified user
+		</P
+></DD
+><DT
+>USER INFO &lt;name&gt; [misc options]</DT
+><DD
+><P
+>		list the domain groups of the specified user
+		</P
+></DD
+><DT
+>USER ADD &lt;name&gt; [password] [-F user flags] [misc. options</DT
+><DD
+><P
+>		Add specified user
+		</P
+></DD
+><DT
+>GROUP [misc options] [targets]</DT
+><DD
+><P
+>		List user groups
+		</P
+></DD
+><DT
+>GROUP DELETE &lt;name&gt; [misc. options] [targets]</DT
+><DD
+><P
+>		Delete specified group
+		</P
+></DD
+><DT
+>GROUP ADD &lt;name&gt; [-C comment]</DT
+><DD
+><P
+>		Create specified group
+		</P
+></DD
+><DT
+>SHARE [misc. options] [targets]</DT
+><DD
+><P
+>		enumerates all exported resources (network shares) on target server
+		</P
+></DD
+><DT
+>SHARE ADD &lt;name=serverpath&gt; [misc. options] [targets]</DT
+><DD
+><P
+>		Adds a share from a server (makes the export active)
+		</P
+></DD
+><DT
+>SHARE DELETE &lt;sharenam</DT
+><DD
+><P
+></P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN191"
 ></A
 ><H2
 >VERSION</H2
@@ -87,7 +384,7 @@ NAME="AEN22"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN25"
+NAME="AEN194"
 ></A
 ><H2
 >AUTHOR</H2

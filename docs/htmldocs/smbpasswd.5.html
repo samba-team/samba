@@ -1,10 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbpasswd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,8 +16,8 @@ ALINK="#0000FF"
 ><H1
 ><A
 NAME="SMBPASSWD"
->smbpasswd</A
-></H1
+></A
+>smbpasswd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -118,17 +119,29 @@ CLASS="CONSTANT"
 > and the user will not be able to 
 		log onto the Samba server. </P
 ><P
-><EM
->WARNING !!</EM
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>WARNING !!</I
+></SPAN
 > Note that, due to 
 		the challenge-response nature of the SMB/CIFS authentication
 		protocol, anyone with a knowledge of this password hash will 
 		be able to impersonate the user on the network. For this
-		reason these hashes are known as <EM
+		reason these hashes are known as <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
 >plain text 
-		equivalents</EM
-> and must <EM
->NOT</EM
+		equivalents</I
+></SPAN
+> and must <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>NOT</I
+></SPAN
 > be made 
 		available to anyone but the root user. To protect these passwords 
 		the smbpasswd file is placed in a directory with read and 
@@ -153,17 +166,29 @@ CLASS="CONSTANT"
 		password this entry will be identical (i.e. the password is 
 		not "salted" as the UNIX password is). </P
 ><P
-><EM
->WARNING !!</EM
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>WARNING !!</I
+></SPAN
 >. Note that, due to 
 		the challenge-response nature of the SMB/CIFS authentication
 		protocol, anyone with a knowledge of this password hash will 
 		be able to impersonate the user on the network. For this
-		reason these hashes are known as <EM
+		reason these hashes are known as <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
 >plain text 
-		equivalents</EM
-> and must <EM
->NOT</EM
+		equivalents</I
+></SPAN
+> and must <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>NOT</I
+></SPAN
 > be made 
 		available to anyone but the root user. To protect these passwords 
 		the smbpasswd file is placed in a directory with read and 
@@ -186,8 +211,12 @@ CLASS="CONSTANT"
 ><UL
 ><LI
 ><P
-><EM
->U</EM
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>U</I
+></SPAN
 > - This means 
 			this is a "User" account, i.e. an ordinary user. Only User 
 			and Workstation Trust accounts are currently supported 
@@ -195,8 +224,12 @@ CLASS="CONSTANT"
 ></LI
 ><LI
 ><P
-><EM
->N</EM
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>N</I
+></SPAN
 > - This means the
 			account has no password (the passwords in the fields LANMAN 
 			Password Hash and NT Password Hash are ignored). Note that this 
@@ -217,16 +250,24 @@ CLASS="FILENAME"
 ></LI
 ><LI
 ><P
-><EM
->D</EM
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>D</I
+></SPAN
 > - This means the account 
 			is disabled and no SMB/CIFS logins  will be	allowed for 
 			this user. </P
 ></LI
 ><LI
 ><P
-><EM
->W</EM
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>W</I
+></SPAN
 > - This means this account 
 			is a "Workstation Trust" account. This kind of account is used 
 			in the Samba PDC code stream to allow Windows NT Workstations 

@@ -10,9 +10,10 @@
 <!ENTITY cifsntdomain SYSTEM "cifsntdomain.sgml">
 <!ENTITY printing SYSTEM "printing.sgml">
 <!ENTITY wins SYSTEM "wins.sgml">
+<!ENTITY sam SYSTEM "sam.sgml">
 ]>
 
-<book id="Samba-Developer-Documentation">
+<book id="Samba-Developers-Guide">
 
 <title>SAMBA Developers Guide</title>
 
@@ -62,5 +63,6 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &cifsntdomain;
 &printing;
 &wins;
+&sam;
 
 </book>

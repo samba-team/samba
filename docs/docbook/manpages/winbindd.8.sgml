@@ -17,8 +17,10 @@
 	<cmdsynopsis>
 		<command>winbindd</command>
 		<arg choice="opt">-i</arg>
+		<arg choice="opt">-B</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
+		<arg choice="opt">-n</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -117,6 +119,33 @@ group:          files winbind
 		become a daemon and detach from the current terminal. This 
 		option is used by developers when interactive debugging 
 		of <command>winbindd</command> is required. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-n</term>
+		<listitem><para>Disable caching. This means winbindd will 
+		always have to wait for a response from the domain controller 
+		before it can respond to a client and this thus makes things 
+		slower. The results will however be more accurate, since 
+		results from the cache might not be up-to-date. This 
+		might also temporarily hang winbindd if the DC doesn't respond.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-B</term>
+		<listitem><para>Dual daemon mode. This means winbindd will run 
+		as 2 threads. The first will answer all requests from the cache, 
+		thus making responses to clients faster. The other will 
+		update the cache for the query that the first has just responded. 
+		Advantage of this is that responses are accurate and fast.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-s|--conf=smb.conf</term>
+		<listitem><para>Specifies the location of the all-important
+		<filename>smb.conf</filename> file. </para></listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
@@ -368,7 +397,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of
+	<para>This man page is correct for version 3.0 of
         the Samba suite.</para>
 </refsect1>
 

@@ -1,10 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >samba</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,8 +16,8 @@ ALINK="#0000FF"
 ><H1
 ><A
 NAME="SAMBA"
->samba</A
-></H1
+></A
+>samba</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -49,8 +50,13 @@ NAME="AEN11"
 >The Samba software suite is a collection of programs 
 	that implements the Server Message Block (commonly abbreviated 
 	as SMB) protocol for UNIX systems. This protocol is sometimes 
-	also referred to as the Common Internet File System (CIFS), 
-	LanManager or NetBIOS protocol.</P
+	also referred to as the Common Internet File System (CIFS). For a
+	more thorough description, see <A
+HREF="http://www.ubiqx.org/cifs/"
+TARGET="_top"
+>	http://www.ubiqx.org/cifs/</A
+>. Samba also implements the NetBIOS
+	protocol in nmbd.</P
 ><P
 ></P
 ><DIV
@@ -87,7 +93,7 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nmbd</B
 >
-		daemon provides NetBIOS nameserving and browsing
+		daemon provides NetBIOS nameservice and browsing
 		support. The configuration file for this daemon 
 		is described in <TT
 CLASS="FILENAME"
@@ -142,7 +148,7 @@ CLASS="COMMAND"
 		utility supports testing printer names defined 
 		in your <TT
 CLASS="FILENAME"
->printcap&#62;</TT
+>printcap</TT
 > file used 
 		by Samba.</P
 ></DD
@@ -214,7 +220,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN75"
+NAME="AEN76"
 ></A
 ><H2
 >COMPONENTS</H2
@@ -223,17 +229,27 @@ NAME="AEN75"
 	component is described in a separate manual page. It is strongly 
 	recommended that you read the documentation that comes with Samba 
 	and the manual pages of those components that you use. If the 
-	manual pages aren't clear enough then please send a patch or 
-	bug report to <A
-HREF="mailto:samba@samba.org"
+	manual pages and documents aren't clear enough then please visit
+	<A
+HREF="http://devel.samba.org/"
 TARGET="_top"
->	samba@samba.org</A
-></P
+>http://devel.samba.org</A
+>
+	for information on how to file a bug report or submit a patch.</P
+><P
+>If you require help, visit the Samba webpage at
+	<A
+HREF="http://samba.org/"
+TARGET="_top"
+>http://www.samba.org/</A
+> and
+	explore the many option available to you.
+	</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN79"
+NAME="AEN82"
 ></A
 ><H2
 >AVAILABILITY</H2
@@ -270,7 +286,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN87"
+NAME="AEN90"
 ></A
 ><H2
 >VERSION</H2
@@ -281,7 +297,7 @@ NAME="AEN87"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN90"
+NAME="AEN93"
 ></A
 ><H2
 >CONTRIBUTIONS</H2
@@ -295,11 +311,14 @@ TARGET="_top"
 >.
 	</P
 ><P
->If you have patches to submit or bugs to report 
-	then you may mail them directly to samba-patches@samba.org.
-	Note, however, that due to the enormous popularity of this 
-	package the Samba Team may take some time to respond to mail. We 
-	prefer patches in <B
+>If you have patches to submit, visit
+	<A
+HREF="http://devel.samba.org/"
+TARGET="_top"
+>http://devel.samba.org/</A
+>
+	for information on how to do it properly. We prefer patches in
+	<B
 CLASS="COMMAND"
 >diff -u</B
 > format.</P
@@ -307,7 +326,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN96"
+NAME="AEN100"
 ></A
 ><H2
 >CONTRIBUTORS</H2
@@ -339,7 +358,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN103"
+NAME="AEN107"
 ></A
 ><H2
 >AUTHOR</H2

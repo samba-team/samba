@@ -1,3 +1,4 @@
+2Q
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
 <refentry id="nmbd">
 
@@ -20,7 +21,6 @@
 		<arg choice="opt">-a</arg>
 		<arg choice="opt">-i</arg>
 		<arg choice="opt">-o</arg>
-		<arg choice="opt">-P</arg>
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-V</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
@@ -39,7 +39,7 @@
 	<para><command>nmbd</command> is a server that understands 
 	and can reply to NetBIOS over IP name service requests, like 
 	those produced by SMB/CIFS clients such as Windows 95/98/ME, 
-	Windows NT, Windows 2000, and LanManager clients. It also
+	Windows NT, Windows 2000, Windows XP and LanManager clients. It also
 	participates in the browsing protocols which make up the 
 	Windows "Network Neighborhood" view.</para>
 
