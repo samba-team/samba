@@ -1937,15 +1937,26 @@ static BOOL net_io_sam_domain_info(const char *desc, SAM_DOMAIN_INFO * info,
                 return False;
 	if (!smb_io_time("creation_time", &info->creation_time, ps, depth))
                 return False;
-
-	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
-                return False;
-	if (!smb_io_unihdr("hdr_unknown", &info->hdr_unknown, ps, depth))
-                return False;
-
-	if (ps->data_offset + 40 > ps->buffer_size)
-                return False;
-        ps->data_offset += 40;
+	if (!prs_uint32("security_information", ps, depth, &info->security_information))
+		return False;
+	if (!smb_io_bufhdr4("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
+		return False;
+	if (!smb_io_lockout_string_hdr("hdr_account_lockout_string", &info->hdr_account_lockout, ps, depth))
+		return False;
+	if (!smb_io_unihdr("hdr_unknown2", &info->hdr_unknown2, ps, depth))
+		return False;
+	if (!smb_io_unihdr("hdr_unknown3", &info->hdr_unknown3, ps, depth))
+		return False;
+	if (!smb_io_unihdr("hdr_unknown4", &info->hdr_unknown4, ps, depth))
+		return False;
+	if (!prs_uint32("logon_chgpass", ps, depth, &info->logon_chgpass))
+		return False;
+	if (!prs_uint32("unknown6", ps, depth, &info->unknown6))
+		return False;
+	if (!prs_uint32("unknown7", ps, depth, &info->unknown7))
+		return False;
+	if (!prs_uint32("unknown8", ps, depth, &info->unknown8))
+		return False;
 
 	if (!smb_io_unistr2("uni_dom_name", &info->uni_dom_name,
                             info->hdr_dom_name.buffer, ps, depth))
@@ -1957,9 +1968,20 @@ static BOOL net_io_sam_domain_info(const char *desc, SAM_DOMAIN_INFO * info,
 	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
                             info->hdr_sec_desc.buffer, ps, depth))
                 return False;
-	if (!smb_io_unistr2("buf_unknown", &info->buf_unknown,
-                            info->hdr_unknown.buffer, ps, depth))
-                return False;
+
+	if (!smb_io_account_lockout_str("account_lockout", &info->account_lockout, 
+					info->hdr_account_lockout.buffer, ps, depth))
+		return False;
+
+	if (!smb_io_unistr2("buf_unknown2", &info->buf_unknown2, 
+			    info->hdr_unknown2.buffer, ps, depth))
+		return False;
+	if (!smb_io_unistr2("buf_unknown3", &info->buf_unknown3, 
+			    info->hdr_unknown3.buffer, ps, depth))
+		return False;
+	if (!smb_io_unistr2("buf_unknown4", &info->buf_unknown4, 
+			    info->hdr_unknown4.buffer, ps, depth))
+		return False;
 
 	return True;
 }
