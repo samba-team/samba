@@ -217,8 +217,10 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 
 	/* now do an in-place conversion of '\' to '/', checking
 	   for legal characters */
-	for (;*p;p++) {
-		switch (*p) {
+	while (*p) {
+		size_t c_size;
+		codepoint_t c = next_codepoint(p, &c_size);
+		switch (c) {
 		case '\\':
 			if (name->has_wildcard) {
 				/* wildcards are only allowed in the last part
@@ -251,6 +253,8 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 		case '|':
 			return NT_STATUS_ILLEGAL_CHARACTER;
 		}
+
+		p += c_size;
 	}
 
 	name->full_name = ret;
