@@ -14,7 +14,6 @@ krb5_mk_safe(krb5_context context,
   struct timeval tv;
   unsigned usec;
   krb5_addresses addr;
-  Checksum c;
   u_char buf[1024];
   int len;
 
@@ -22,7 +21,7 @@ krb5_mk_safe(krb5_context context,
 			    CKSUMTYPE_RSA_MD4,
 			    userdata->data,
 			    userdata->length,
-			    &c);
+			    &s.cksum);
   if (r)
     return r;
 
