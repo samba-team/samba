@@ -3758,7 +3758,7 @@ static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
 	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
 	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", werror_str(status)));
 
-if 0	/* JERRY */
+#if 0	/* JERRY */
 
 	/* 
 	 * I put this code in during testing.  Helpful when commenting out the 

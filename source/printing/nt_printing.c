@@ -2552,7 +2552,7 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	 * See the HP Deskjet 990c Win2k drivers for an example.
 	 */
 
-#if 0 /* JRA - NO NOT CHANGE ! */
+#if 1 /* JRA - NO NOT CHANGE ! */
 	info.devmode = NULL;
 #else
 	/*
@@ -2641,7 +2641,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	fstrcpy(info.printername, printername);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
-#if 1
+#if 0
 	/*
 	 * Some client drivers freak out if there is a NULL devmode
 	 * (probably the driver is not checking before accessing 
@@ -3149,6 +3149,10 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 		DEBUG(10,("save_driver_init_2: error setting DEVMODE on printer [%s]\n",
 				  printer->info_2->printername));
 	}
+	
+#if 0	/* JERRY */
+	srv_spoolss_sendnotify(p, handle);
+#endif
 
   done:
 	talloc_destroy(ctx);
