@@ -86,10 +86,10 @@ typedef struct {
 } ADS_STATUS;
 
 /* macros to simplify error returning */
-#define ADS_ERROR(rc) ads_build_error(ADS_ERROR_LDAP, rc, 0);
-#define ADS_ERROR_SYSTEM(rc) ads_build_error(ADS_ERROR_SYSTEM, rc, 0);
-#define ADS_ERROR_KRB5(rc) ads_build_error(ADS_ERROR_KRB5, rc, 0);
-#define ADS_ERROR_GSS(rc, minor) ads_build_error(ADS_ERROR_GSS, rc, minor);
+#define ADS_ERROR(rc) ads_build_error(ADS_ERROR_LDAP, rc, 0)
+#define ADS_ERROR_SYSTEM(rc) ads_build_error(ADS_ERROR_SYSTEM, rc, 0)
+#define ADS_ERROR_KRB5(rc) ads_build_error(ADS_ERROR_KRB5, rc, 0)
+#define ADS_ERROR_GSS(rc, minor) ads_build_error(ADS_ERROR_GSS, rc, minor)
 
 #define ADS_ERR_OK(status) ((status).rc == 0)
 #define ADS_SUCCESS ADS_ERROR(0)
