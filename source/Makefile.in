@@ -63,10 +63,10 @@ SAM_DIR = $(BASEDIR)/sam
 SMB_PASSWD_PROGRAM = $(BINDIR)/smbpasswd
 
 # This is where SWAT images and help files go
-SWATDIR = $(BASEDIR)/swat
+SWATDIR = @swatdir@
 
 # the directory where lock files go
-LOCKDIR = @LOCKDIR@
+LOCKDIR = @lockdir@
 
 # The directory where code page definition files go
 CODEPAGEDIR = $(LIBDIR)/codepages
