@@ -1,5 +1,12 @@
+2004-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cfx.c: s/CTXAcceptorSubkey/CFXAcceptorSubkey/
+	
 2004-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi.h: add GSS_C_EXPECTING_MECH_LIST_MIC_FLAG From: Luke
+	Howard <lukeh@padl.com>
+	
 	* init_sec_context.c (spnego_reply): use
 	_gss_spnego_require_mechlist_mic to figure out if we need to check
 	MechListMIC; From: Luke Howard <lukeh@padl.com>
