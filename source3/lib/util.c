@@ -2270,10 +2270,11 @@ int read_smb_length(int fd,char *inbuf,int timeout)
 
 
 /****************************************************************************
-  read an smb from a fd.
+  read an smb from a fd. Note that the buffer *MUST* be of size
+  BUFFER_SIZE+SAFETY_MARGIN.
 The timeout is in milli seconds
 ****************************************************************************/
-BOOL receive_smb(int fd,char *buffer,int timeout)
+BOOL receive_smb(int fd,char *buffer, int timeout)
 {
   int len,ret;
 
@@ -2302,7 +2303,132 @@ BOOL receive_smb(int fd,char *buffer,int timeout)
 
 #ifdef USE_OPLOCKS
 /****************************************************************************
+  read a message from a udp fd.
+The timeout is in milli seconds
+****************************************************************************/
+BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout)
+{
+  struct sockaddr_in from;
+  int fromlen = sizeof(from);
+  int32 msg_len = 0;
+
+  if(timeout != 0)
+  {
+    struct timeval to;
+    fd_set fds;
+    int selrtn;
+
+    FD_ZERO(&fds);
+    FD_SET(fd,&fds);
+
+    to.tv_sec = timeout / 1000;
+    to.tv_usec = (timeout % 1000) * 1000;
+
+    selrtn = sys_select(&fds,&to);
+
+    /* Check if error */
+    if(selrtn == -1) 
+    {
+      /* something is wrong. Maybe the socket is dead? */
+      smb_read_error = READ_ERROR;
+      return False;
+    } 
+    
+    /* Did we timeout ? */
+    if (selrtn == 0) 
+    {
+      smb_read_error = READ_TIMEOUT;
+      return False;
+    }
+  }
+
+  /*
+   * Read a loopback udp message.
+   */
+  msg_len = recvfrom(fd, &buffer[UDP_CMD_HEADER_LEN], 
+                     buffer_len - UDP_CMD_HEADER_LEN, 0,
+                     (struct sockaddr *)&from, &fromlen);
+
+  if(msg_len < 0)
+  {
+    DEBUG(0,("receive_local_message. Error in recvfrom. (%s).\n",strerror(errno)));
+    return False;
+  }
+
+  /* Validate message length. */
+  if(msg_len > (buffer_len - UDP_CMD_HEADER_LEN))
+  {
+    DEBUG(0,("receive_local_message: invalid msg_len (%d) max can be %d\n",
+              msg_len, 
+              buffer_len  - UDP_CMD_HEADER_LEN));
+    return False;
+  }
+
+  /* Validate message from address (must be localhost). */
+  if(from.sin_addr.s_addr != htonl(INADDR_LOOPBACK))
+  {
+    DEBUG(0,("receive_local_message: invalid 'from' address \
+(was %x should be 127.0.0.1\n", from.sin_addr.s_addr));
+   return False;
+  }
+
+  /* Setup the message header */
+  SIVAL(buffer,UDP_CMD_LEN_OFFSET,msg_len);
+  SSVAL(buffer,UDP_CMD_PORT_OFFSET,ntohs(from.sin_port));
+
+  return True;
+}
+
+/****************************************************************************
+ structure to hold a linked list of local udp messages.
+ for processing.
+****************************************************************************/
+
+typedef struct _udp_message_list {
+   struct _udp_message_list *msg_next;
+   char *msg_buf;
+   int msg_len;
+} udp_message_list;
+
+static udp_message_list *udp_msg_head = NULL;
+
+/****************************************************************************
+ Function to push a linked list of local udp messages ready
+ for processing.
+****************************************************************************/
+BOOL push_local_message(char *buf, int msg_len)
+{
+  udp_message_list *msg = (udp_message_list *)malloc(sizeof(udp_message_list));
+
+  if(msg == NULL)
+  {
+    DEBUG(0,("push_local_message: malloc fail (1)\n"));
+    return False;
+  }
+
+  msg->msg_buf = (char *)malloc(msg_len);
+  if(msg->msg_buf == NULL)
+  {
+    DEBUG(0,("push_local_message: malloc fail (2)\n"));
+    free((char *)msg);
+    return False;
+  }
+
+  memcpy(msg->msg_buf, buf, msg_len);
+  msg->msg_len = msg_len;
+
+  msg->msg_next = udp_msg_head;
+  udp_msg_head = msg;
+
+  return True;
+}
+
+/****************************************************************************
   Do a select on an two fd's - with timeout. 
+
+  If a local udp message has been pushed onto the
+  queue (this can only happen during oplock break
+  processing) return this first.
 
   If the first smbfd is ready then read an smb from it.
   if the second (loopback UDP) fd is ready then read a message
@@ -2322,7 +2448,24 @@ BOOL receive_message_or_smb(int smbfd, int oplock_fd,
   struct timeval to;
 
   *got_smb = False;
- 
+
+  /*
+   * Check to see if we already have a message on the udp queue.
+   * If so - copy and return it.
+   */
+
+  if(udp_msg_head)
+  {
+    udp_message_list *msg = udp_msg_head;
+    memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
+    udp_msg_head = msg->msg_next;
+
+    /* Free the message we just copied. */
+    free((char *)msg->msg_buf);
+    free((char *)msg);
+    return True;
+  }
+
   FD_ZERO(&fds);
   FD_SET(smbfd,&fds);
   FD_SET(oplock_fd,&fds);
@@ -2352,34 +2495,8 @@ BOOL receive_message_or_smb(int smbfd, int oplock_fd,
   }
   else
   {
-    /*
-     * Read a udp message.
-     */
-    struct sockaddr_in from;
-    int fromlen = sizeof(from);
-    int32 msg_len = 0;
-    uint16 port = 0;
-
-    msg_len = recvfrom(oplock_fd, &buffer[6+sizeof(struct in_addr)],
-              buffer_len - (6 + sizeof(struct in_addr)), 0,
-              (struct sockaddr *)&from, &fromlen);
-
-    if(msg_len < 0)
-    {
-      DEBUG(0,("Invalid loopback packet ! (%s).\n",strerror(errno)));
-      return False;
-    }
-
-    port = ntohs(from.sin_port);
-
-    /* Setup the message header */
-    SIVAL(buffer,0,msg_len);
-    SSVAL(buffer,4,port);
-    memcpy(&buffer[6],(char *)&from.sin_addr,sizeof(struct in_addr));
-
+    return receive_local_message(oplock_fd, buffer, buffer_len, 0);
   }
-
-  return True;
 }
 #endif /* USE_OPLOCKS */
 
@@ -3713,10 +3830,10 @@ char *readdirname(void *p)
   return(dname);
 }
 
-/*
- * Utility function used to decide if the last component 
- * of a path matches a (possibly wildcarded) entry in a namelist.
- */
+/*******************************************************************
+ Utility function used to decide if the last component 
+ of a path matches a (possibly wildcarded) entry in a namelist.
+********************************************************************/
 
 BOOL is_in_path(char *name, name_compare_entry *namelist)
 {
@@ -3763,19 +3880,19 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
   return False;
 }
 
-/*
- * Strip a '/' separated list into an array of 
- * name_compare_enties structures suitable for 
- * passing to is_in_path(). We do this for
- * speed so we can pre-parse all the names in the list 
- * and don't do it for each call to is_in_path().
- * namelist is modified here and is assumed to be 
- * a copy owned by the caller.
- * We also check if the entry contains a wildcard to
- * remove a potentially expensive call to mask_match
- * if possible.
-   */
-
+/*******************************************************************
+ Strip a '/' separated list into an array of 
+ name_compare_enties structures suitable for 
+ passing to is_in_path(). We do this for
+ speed so we can pre-parse all the names in the list 
+ and don't do it for each call to is_in_path().
+ namelist is modified here and is assumed to be 
+ a copy owned by the caller.
+ We also check if the entry contains a wildcard to
+ remove a potentially expensive call to mask_match
+ if possible.
+********************************************************************/
+ 
 void set_namearray(name_compare_entry **ppname_array, char *namelist)
 {
   char *name_end;
