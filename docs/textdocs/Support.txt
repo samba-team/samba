@@ -922,3 +922,19 @@ support Samba and have done so since 1994.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+LAS VEGAS, NEVADA - USA
+
+DPN, Inc. Las Vegas NV 
+
+(702) 873-3282 Ph. 
+(702) 873-3913 Fax 
+Email duane@dpn.com
+
+Can provide commercial support for samba running on any version of
+SCO above 3.0 and for Linux. We currently have installed and are 
+supporting several versions of samba on over 25 client sites across
+the US, in addition to our 6 in-house samba servers. Our largest client
+site has approx. 100 users. 
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
