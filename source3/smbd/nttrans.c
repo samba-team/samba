@@ -941,9 +941,9 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 security
 	BOOL ret;
 
 	if (sd_len == 0) {
-		*pdef_class = ERRDOS;
-		*pdef_code = ERRbadaccess;
-		return False;
+		*pdef_class = 0;
+		*pdef_code = 0;
+		return True;
 	}
 
 	/*
@@ -1256,7 +1256,7 @@ static int call_nt_transact_create(connection_struct *conn,
 	 * Now try and apply the desired SD.
 	 */
 
-	if (!set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION, &error_class, &error_code)) {
+	if (sd_len && !set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION, &error_class, &error_code)) {
 		close_file(fsp,False);
 		restore_case_semantics(file_attributes);
 		return ERROR_DOS(error_class, error_code);
@@ -1590,6 +1590,9 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 
 	DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n", fsp->fsp_name,
 		(unsigned int)security_info_sent ));
+
+	if (total_data_count == 0)
+		return ERROR_DOS(ERRDOS, ERRbadaccess);
 
 	if (!set_sd( fsp, data, total_data_count, security_info_sent, &error_class, &error_code))
 		return ERROR_DOS(error_class, error_code);
