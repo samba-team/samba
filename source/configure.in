@@ -4215,7 +4215,7 @@ AC_SUBST(WINBIND_NSS_LDSHFLAGS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 
-# Check the setting of --with-winbindd
+# Check the setting of --with-winbind
 
 AC_ARG_WITH(winbind,
 [  --with-winbind          Build winbind (default, if supported by OS)],
