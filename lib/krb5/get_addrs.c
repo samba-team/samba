@@ -197,6 +197,10 @@ find_all_addresses (krb5_addresses *res, int loop,
 
 	     sin6 = &((struct sockaddr_in6 *)(&ifr->ifr_addr))->sin6_addr;
 
+#ifndef IN6_IS_ADDR_LOOPBACK
+#define IN6_IS_ADDR_LOOPBACK(x) IN6_IS_LOOPBACK(*x)
+#endif
+
 	     if (IN6_IS_ADDR_LOOPBACK(sin6)
 		 || IN6_IS_ADDR_LINKLOCAL(sin6)
 		 || IN6_IS_ADDR_V4COMPAT(sin6)) {

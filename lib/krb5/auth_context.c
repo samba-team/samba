@@ -152,6 +152,10 @@ sockaddr2krb5_address (struct sockaddr *sa,
 	if (IN6_IS_ADDR_V4MAPPED(&sin6->sin6_addr)) {
 	    ka->addr_type      = AF_INET;
 	    ka->address.length = sizeof(struct in_addr);
+#ifndef IN6_ADDR_V6_TO_V4
+#define IN6_ADDR_V6_TO_V4(x) (&IN6_EXTRACT_V4ADDR(x))
+#endif
+
 	    ka->address.data   = IN6_ADDR_V6_TO_V4(&sin6->sin6_addr);
 	} else {
 	    ka->addr_type = AF_INET6;
