@@ -76,6 +76,7 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
      int s;
      u_char b;
      char tmp[16];
+     char **p;
 
      hostent = gethostbyname (host);
      if (hostent == NULL) {
@@ -86,18 +87,35 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
      memset (&thataddr, 0, sizeof(thataddr));
      thataddr.sin_family = AF_INET;
      thataddr.sin_port   = k_getportbyname ("kx", "tcp", htons(KX_PORT));
-     memcpy (&thataddr.sin_addr, hostent->h_addr, sizeof(thataddr.sin_addr));
+     for(p = hostent->h_addr_list; *p; ++p) {
+	 int one = 1;
 
-     s = socket (AF_INET, SOCK_STREAM, 0);
-     if (s < 0) {
-	  fprintf (stderr, "%s: socket failed: %s\n", prog, strerror(errno));
-	  return -1;
+	 memcpy (&thataddr.sin_addr, *p, hostent->h_length);
+
+	 s = socket (AF_INET, SOCK_STREAM, 0);
+	 if (s < 0) {
+	     fprintf (stderr, "%s: socket failed: %s\n",
+		      prog,
+		      strerror(errno));
+	     return -1;
+	 }
+
+#ifdef TCP_NODELAY
+	 setsockopt (s, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+#endif
+
+	 if (connect (s, (struct sockaddr *)&thataddr, sizeof(thataddr)) < 0) {
+	     fprintf (stderr, "%s: connect(%s) failed: %s\n", prog, host,
+		      strerror(errno));
+	     close (s);
+	     continue;
+	 } else {
+	     break;
+	 }
      }
-     if (connect (s, (struct sockaddr *)&thataddr, sizeof(thataddr)) < 0) {
-	  fprintf (stderr, "%s: connect(%s) failed: %s\n", prog, host,
-		   strerror(errno));
-	  return -1;
-     }
+     if (*p == NULL)
+	 return -1;
+
      addrlen = sizeof(thisaddr);
      if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0 ||
 	 addrlen != sizeof(thisaddr)) {
@@ -263,45 +281,45 @@ passive (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
  */
 
 static int
-doit (char *host, int passivep, int debugp)
+doit (char *host, int passivep, int debugp, int tcpp)
 {
      des_key_schedule schedule;
      des_cblock key;
-     int rendez_vous;
+     int rendez_vous1 = 0, rendez_vous2 = 0;
      int (*fn)(int fd, char *host, des_cblock *iv,
 	       des_key_schedule schedule);
+     pid_t pid;
 
      if (passivep) {
 	  struct sockaddr_in newaddr;
 	  int addrlen;
 	  u_char b = passivep;
 	  int otherside;
-	  pid_t pid;
 
 	  otherside = connect_host (host, &key, schedule, passivep);
 	  if (otherside < 0)
 	       return 1;
 
-	  rendez_vous = socket (AF_INET, SOCK_STREAM, 0);
-	  if (rendez_vous < 0) {
+	  rendez_vous1 = socket (AF_INET, SOCK_STREAM, 0);
+	  if (rendez_vous1 < 0) {
 	       fprintf (stderr, "%s: socket failed: %s\n", prog,
 			strerror(errno));
 	       return 1;
 	  }
 	  memset (&newaddr, 0, sizeof(newaddr));
-	  if (bind (rendez_vous, (struct sockaddr *)&newaddr,
+	  if (bind (rendez_vous1, (struct sockaddr *)&newaddr,
 		    sizeof(newaddr)) < 0) {
 	       fprintf (stderr, "%s: bind: %s\n", prog, strerror(errno));
 	       return 1;
 	  }
 	  addrlen = sizeof(newaddr);
-	  if (getsockname (rendez_vous, (struct sockaddr *)&newaddr,
+	  if (getsockname (rendez_vous1, (struct sockaddr *)&newaddr,
 			   &addrlen) < 0) {
 	       fprintf (stderr, "%s: getsockname: %s\n", prog,
 			strerror(errno));
 	       return 1;
 	  }
-	  if (listen (rendez_vous, SOMAXCONN) < 0) {
+	  if (listen (rendez_vous1, SOMAXCONN) < 0) {
 	       fprintf (stderr, "%s: listen: %s\n", prog, strerror(errno));
 	       return 1;
 	  }
@@ -317,32 +335,53 @@ doit (char *host, int passivep, int debugp)
 	  }
 	  /* close (otherside); */
 	  fn = passive;
-	  if(debugp)
-	       printf ("%d\t%d\t%s\n", getpid(), display_num, xauthfile);
-	  else {
-	      pid = fork();
-	      if (pid < 0) {
-		  fprintf (stderr, "%s: fork: %s\n", prog, strerror(errno));
-		  return 1;
-	      } else if (pid > 0) {
-		  printf ("%d\t%d\t%s\n", pid, display_num, xauthfile);
-		  exit (0);
-	      } else {
-		  fclose(stdout);
-	      }
-	  }
      } else {
-	  display_num = get_xsockets (&rendez_vous, NULL);
+	  display_num = get_xsockets (&rendez_vous1,
+				      tcpp ? &rendez_vous2 : NULL);
 	  if (display_num < 0)
 	       return 1;
+	  strncpy(xauthfile, tempnam("/tmp", NULL), sizeof(xauthfile));
+	  if (create_and_write_cookie (xauthfile, cookie, cookie_len))
+	      return 1;
+
 	  fn = active;
      }
+     if(debugp)
+	 printf ("%d\t%d\t%s\n", getpid(), display_num, xauthfile);
+     else {
+	 pid = fork();
+	 if (pid < 0) {
+	     fprintf (stderr, "%s: fork: %s\n", prog, strerror(errno));
+	     return 1;
+	 } else if (pid > 0) {
+	     printf ("%d\t%d\t%s\n", pid, display_num, xauthfile);
+	     exit (0);
+	 } else {
+	     fclose(stdout);
+	 }
+     }
      for (;;) {
+	  fd_set fdset;
 	  pid_t child;
-	  int fd;
+	  int fd, thisfd;
 	  int zero = 0;
+	  int one = 1;
 
-	  fd = accept (rendez_vous, NULL, &zero);
+	  FD_ZERO(&fdset);
+	  if (rendez_vous1)
+	      FD_SET(rendez_vous1, &fdset);
+	  if (rendez_vous2)
+	      FD_SET(rendez_vous2, &fdset);
+	  if (select(FD_SETSIZE, &fdset, NULL, NULL, NULL) <= 0)
+	      continue;
+	  if (rendez_vous1 && FD_ISSET(rendez_vous1, &fdset))
+	      thisfd = rendez_vous1;
+	  else if (rendez_vous2 && FD_ISSET(rendez_vous2, &fdset))
+	      thisfd = rendez_vous2;
+	  else
+	      continue;
+
+	  fd = accept (thisfd, NULL, &zero);
 	  if (fd < 0)
 	       if (errno == EINTR)
 		    continue;
@@ -351,6 +390,9 @@ doit (char *host, int passivep, int debugp)
 			     strerror(errno));
 		    return 1;
 	       }
+#ifdef TCP_NODELAY
+	  setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+#endif
 	  ++nchild;
 	  child = fork ();
 	  if (child < 0) {
@@ -358,7 +400,10 @@ doit (char *host, int passivep, int debugp)
 			strerror(errno));
 	       continue;
 	  } else if (child == 0) {
-	       close (rendez_vous);
+	       if (rendez_vous1)
+		   close (rendez_vous1);
+	       if (rendez_vous2)
+		   close (rendez_vous2);
 	       return (*fn)(fd, host, &key, schedule);
 	  } else {
 	       close (fd);
@@ -369,7 +414,7 @@ doit (char *host, int passivep, int debugp)
 static void
 usage(void)
 {
-    fprintf (stderr, "Usage: %s [-d] host\n", prog);
+    fprintf (stderr, "Usage: %s [-d] [-t] host\n", prog);
     exit (1);
 }
 
@@ -384,14 +429,17 @@ main(int argc, char **argv)
 {
      int passivep;
      char *disp;
-     int debugp = 0;
+     int debugp = 0, tcpp = 0;
      int c;
 
      prog = argv[0];
-     while((c = getopt(argc, argv, "d")) != EOF) {
+     while((c = getopt(argc, argv, "td")) != EOF) {
 	 switch(c) {
 	 case 'd' :
 	     debugp = 1;
+	     break;
+	 case 't' :
+	     tcpp = 1;
 	     break;
 	 case '?':
 	 default:
@@ -407,12 +455,8 @@ main(int argc, char **argv)
      disp = getenv("DISPLAY");
      passivep = disp != NULL && 
        (*disp == ':' || strncmp(disp, "unix", 4) == 0);
-     /* non passive mode has not been tested and I'm not sure it works
-      *	at all, so better disable it.
-      */
-     passivep = 1;
      signal (SIGCHLD, childhandler);
      signal (SIGUSR1, usr1handler);
      signal (SIGUSR2, usr2handler);
-     return doit (argv[0], passivep, debugp);
+     return doit (argv[0], passivep, debugp, tcpp);
 }
