@@ -208,6 +208,19 @@ init_descr(struct descr *d)
 }
 
 /*
+ * re-intialize all `n' ->sa in `d'.
+ */
+
+static void
+reinit_descrs (struct descr *d, int n)
+{
+    int i;
+
+    for (i = 0; i < n; ++i)
+	d[i].sa = (struct sockaddr *)&d[i].__ss;
+}
+
+/*
  * Create the socket (family, type, port) in `d'
  */
 
@@ -318,6 +331,7 @@ init_sockets(struct descr **desc)
     d = realloc(d, num * sizeof(*d));
     if (d == NULL && num != 0)
 	krb5_errx(context, 1, "realloc(%u) failed", num * sizeof(*d));
+    reinit_descrs (d, num);
     *desc = d;
     return num;
 }
@@ -561,7 +575,7 @@ handle_vanilla_tcp (struct descr *d)
     krb5_ret_int32(sp, &len);
     krb5_storage_free(sp);
     if(d->len - 4 >= len) {
-	memcpy(d->buf, d->buf + 4, d->len - 4);
+	memmove(d->buf, d->buf + 4, d->len - 4);
 	return 1;
     }
     return 0;
@@ -735,8 +749,9 @@ loop(void)
 	    tmp = realloc(d, (ndescr + 4) * sizeof(*d));
 	    if(tmp == NULL)
 		krb5_warnx(context, "No memory");
-	    else{
+	    else {
 		d = tmp;
+		reinit_descrs (d, ndescr);
 		memset(d + ndescr, 0, 4 * sizeof(*d));
 		for(i = ndescr; i < ndescr + 4; i++)
 		    init_descr (&d[i]);
