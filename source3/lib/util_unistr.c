@@ -891,3 +891,17 @@ smb_ucs2_t *wstrtok(smb_ucs2_t *s1, const smb_ucs2_t *s2)
 
 	return NULL;
 }
+
+/*******************************************************************
+ Duplicate a ucs2 string.
+********************************************************************/
+
+smb_ucs2_t *wstrdup(const smb_ucs2_t *s)
+{
+	size_t newlen = (wstrlen(s)*sizeof(smb_ucs2_t)) + 1;
+	smb_ucs2_t *newstr = (smb_ucs2_t *)malloc(newlen);
+    if (newstr == NULL)
+        return NULL;
+    safe_wstrcpy(newstr, s, newlen);
+    return newstr;
+}

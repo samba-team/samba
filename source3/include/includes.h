@@ -651,12 +651,10 @@ extern int errno;
 
 /*
  * Type for wide character dirent structure.
+ * Only d_name is defined by POSIX.
  */
 
 typedef struct smb_wdirent {
-	SMB_INO_T       d_ino;
-	SMB_OFF_T       d_off;
-	unsigned short  d_reclen;
 	wpstring        d_name;
 } SMB_STRUCT_WDIRENT;
 
