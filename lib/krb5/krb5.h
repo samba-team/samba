@@ -634,10 +634,10 @@ extern const krb5_kt_ops krb5_srvtab_fkt_ops;
 extern const krb5_kt_ops krb5_any_ops;
 
 #define KRB5_KPASSWD_SUCCESS	0
-#define KRB5_KPASSWD_MALFORMED	0
-#define KRB5_KPASSWD_HARDERROR	0
-#define KRB5_KPASSWD_AUTHERROR	0
-#define KRB5_KPASSWD_SOFTERROR	0
+#define KRB5_KPASSWD_MALFORMED	1
+#define KRB5_KPASSWD_HARDERROR	2
+#define KRB5_KPASSWD_AUTHERROR	3
+#define KRB5_KPASSWD_SOFTERROR	4
 
 #define KPASSWD_PORT 464
 
