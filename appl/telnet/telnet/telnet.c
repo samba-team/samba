@@ -2112,7 +2112,7 @@ my_telnet(char *user)
 	    telnet_spin();
 	}
 	if (printed_encrypt) {
-		printf("done.\n");
+		printf("Encryption negotiated.\n");
 		intr_waiting = 0;
 		setconnmode(0);
 	}
