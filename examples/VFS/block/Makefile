@@ -12,7 +12,7 @@ SAMBA_SRC = ../../../source
 SAMBA_INCL = ${SAMBA_SRC}/include
 UBIQX_SRC = ${SAMBA_SRC}/ubiqx
 SMBWR_SRC = ${SAMBA_SRC}/smbwrapper
-CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -g -D_GNU_SOURCE -fno-builtin  
+CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -g
  
 
 VFS_OBJS = block.so
