@@ -2431,7 +2431,7 @@ static void run_opentest(int dummy)
         return;
     }
 
-	/* This will fail - but the error should be ERRnoaccess, not ERRshare. */
+	/* This will fail - but the error should be ERRnoaccess, not ERRbadshare. */
     fnum2 = cli_open(&cli1, fname, O_RDWR, DENY_ALL);
 
 	cli_error( &cli1, &eclass, &errnum, NULL);
@@ -2444,14 +2444,37 @@ static void run_opentest(int dummy)
 	}
 
 	
+    printf("finished open test 1\n");
+
 	cli_close(&cli1, fnum1);
 
+	/* Now try not readonly and ensure ERRbadshare is returned. */
+
 	cli_setatr(&cli1, fname, 0, 0);
+
+    fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_WRITE);
+    if (fnum1 == -1) {
+        printf("open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+        return;
+    }
+
+	/* This will fail - but the error should be ERRshare. */
+    fnum2 = cli_open(&cli1, fname, O_RDWR, DENY_ALL);
+
+	cli_error( &cli1, &eclass, &errnum, NULL);
+
+	if (eclass != ERRDOS || errnum != ERRbadshare) {
+		printf("wrong error code (%x,%x) = %s\n", (unsigned int)eclass,
+				(unsigned int)errnum, cli_errstr(&cli1) );
+	} else {
+		printf("correct error code ERRDOS/ERRbadshare returned\n");
+	}
+
 	cli_unlink(&cli1, fname);
 
     close_connection(&cli1);
 
-    printf("finished open test 1\n");
+    printf("finished open test 2\n");
 }
 
 static void list_fn(file_info *finfo, const char *name, void *state)
