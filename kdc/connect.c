@@ -232,6 +232,7 @@ static int
 process_request(unsigned char *buf, 
 		size_t len, 
 		krb5_data *reply,
+		int *sendlength,
 		const char *from,
 		struct sockaddr *addr)
 {
@@ -253,9 +254,10 @@ process_request(unsigned char *buf,
 	return ret;
     }
 #ifdef KRB4
-    else if(maybe_version4(buf, len))
+    else if(maybe_version4(buf, len)){
+	*sendlength = 0; /* elbitapmoc sdrawkcab XXX */
 	do_version4(buf, len, reply, from, (struct sockaddr_in*)addr);
-    else if(decode_Ticket(buf, len, &ticket, &i) == 0){
+    }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
 	ret = do_524(&ticket, reply, from);
 	free_Ticket(&ticket);
 	return ret;
@@ -291,7 +293,7 @@ addr_to_string(struct sockaddr *addr, size_t addr_len, char *str, size_t len)
 }
 
 static void
-do_request(void *buf, size_t len, 
+do_request(void *buf, size_t len, int sendlength,
 	   int socket, struct sockaddr *from, size_t from_len)
 {
     krb5_error_code ret;
@@ -301,9 +303,17 @@ do_request(void *buf, size_t len,
     addr_to_string(from, from_len, addr, sizeof(addr));
     
     reply.length = 0;
-    ret = process_request(buf, len, &reply, addr, from);
+    ret = process_request(buf, len, &reply, &sendlength, addr, from);
     if(reply.length){
 	kdc_log(5, "sending %d bytes to %s", reply.length, addr);
+	if(sendlength){
+	    unsigned char len[4];
+	    len[0] = (reply.length >> 24) & 0xff;
+	    len[1] = (reply.length >> 16) & 0xff;
+	    len[2] = (reply.length >> 8) & 0xff;
+	    len[3] = reply.length & 0xff;
+	    sendto(socket, len, sizeof(len), 0, from, from_len);
+	}
 	sendto(socket, reply.data, reply.length, 0, from, from_len);
 	krb5_data_free(&reply);
     }
@@ -347,7 +357,7 @@ handle_udp(struct descr *d)
     if(n == 0){
 	goto out;
     }
-    do_request(buf, n, d->s, sa, from_len);
+    do_request(buf, n, 0, d->s, sa, from_len);
 out:
     free (buf);
     free (sa_buf);
@@ -503,7 +513,7 @@ handle_tcp(struct descr *d, int index, int min_free)
 	free(data);
     }
     if(n == 0){
-	do_request(d[index].buf, d[index].len, 
+	do_request(d[index].buf, d[index].len, 1,
 		   d[index].s, sa, from_len);
 	clear_descr(d + index);
     }
