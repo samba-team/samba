@@ -622,4 +622,28 @@ NTSTATUS _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_A
 	return status;
 }
 
+/*******************************************************************
+ REG_SAVE_KEY (0x14)
+ ********************************************************************/
+
+NTSTATUS _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
+{
+	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	
+	DEBUG(5,("_reg_save_key: Enter\n"));
+	
+	/* 
+	 * basically this is a no op function which just gverifies 
+	 * that the client gave us a valid registry key handle 
+	 */
+	 
+	if ( !regkey )
+		return NT_STATUS_INVALID_HANDLE;	
+
+	DEBUG(8,("_reg_save_key: berifying backup of key [%s]\n", regkey->name));
+	
+
+	return NT_STATUS_OK;
+}
+
 
