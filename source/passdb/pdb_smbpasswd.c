@@ -1566,8 +1566,7 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 	return NT_STATUS_OK;
 }
 
-int pdb_smbpasswd_init(void) 
+NTSTATUS pdb_smbpasswd_init(void) 
 {
-	smb_register_passdb(PASSDB_INTERFACE_VERSION, "smbpasswd", pdb_init_smbpasswd);
-	return True;
+	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "smbpasswd", pdb_init_smbpasswd);
 }
