@@ -1,7 +1,7 @@
 To enable PAM in dtlogin and /bin/login under SunOS 5.6 apply this patch:
 
---- /etc/pam.conf.DIST	Tue Dec  9 17:53:37 1997
-+++ /etc/pam.conf	Mon Oct 25 12:20:14 1999
+--- /etc/pam.conf.DIST	Mon Jul 20 15:37:46 1998
++++ /etc/pam.conf	Tue Nov 30 18:47:22 1999
 @@ -4,12 +4,14 @@
  #
  # Authentication management
@@ -17,6 +17,15 @@ To enable PAM in dtlogin and /bin/login under SunOS 5.6 apply this patch:
  dtlogin	auth required 	/usr/lib/security/pam_unix.so.1 
  #
  rsh	auth required	/usr/lib/security/pam_rhosts_auth.so.1
+@@ -24,6 +26,8 @@
+ #
+ # Session management
+ #
++dtlogin	session	required	/usr/athena/lib/pam_krb4.so
++login	session	required	/usr/athena/lib/pam_krb4.so
+ other	session required	/usr/lib/security/pam_unix.so.1 
+ #
+ # Password management
 ---------------------------------------------------------------------------
 To enable PAM in /bin/login and xdm under Red Hat 6.1 apply these patches:
 
