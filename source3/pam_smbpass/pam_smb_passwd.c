@@ -1,18 +1,22 @@
-/* Unix NT password database implementation, version 0.7.5.
- *
- * This program is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 2 of the License, or (at your option)
- * any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 675
- * Mass Ave, Cambridge, MA 02139, USA.
+/*
+   Unix SMB/CIFS implementation.
+   Use PAM to update user passwords in the local SAM
+   Copyright (C) Steve Langasek		1998-2003
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
 */
 
 /* indicate the following groups are defined */
@@ -20,12 +24,13 @@
 
 #include "includes.h"
 
+/* This is only used in the Sun implementation.  FIXME: we really
+   want a define here that distinguishes between the Solaris PAM
+   and others (including FreeBSD). */
+
 #ifndef LINUX
-
-/* This is only used in the Sun implementation. */
 #include <security/pam_appl.h>
-
-#endif  /* LINUX */
+#endif
 
 #include <security/pam_modules.h>
 
@@ -35,34 +40,34 @@
 
 int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user,  const char *pass_new )
 {
- int		retval;
- pstring	err_str;
- pstring	msg_str;
+	int retval;
+	pstring err_str;
+	pstring msg_str;
 
-    err_str[0] = '\0';
-    msg_str[0] = '\0';
+	err_str[0] = '\0';
+	msg_str[0] = '\0';
 
-    retval = local_password_change( user, 0, pass_new, err_str, sizeof(err_str),
-			            msg_str, sizeof(msg_str) );
+	retval = local_password_change( user, LOCAL_SET_PASSWORD, pass_new,
+	                                err_str, sizeof(err_str),
+	                                msg_str, sizeof(msg_str) );
 
-    if (!retval) {
-        if (*err_str) {
-            err_str[PSTRING_LEN-1] = '\0';
-            make_remark( pamh, ctrl, PAM_ERROR_MSG, err_str );
-        }
+	if (!retval) {
+		if (*err_str) {
+			err_str[PSTRING_LEN-1] = '\0';
+			make_remark( pamh, ctrl, PAM_ERROR_MSG, err_str );
+		}
 
-        /* FIXME: what value is appropriate here? */
-        retval = PAM_AUTHTOK_ERR;
-    } else {
-        if (*msg_str) {
-            msg_str[PSTRING_LEN-1] = '\0';
-            make_remark( pamh, ctrl, PAM_TEXT_INFO, msg_str );
-        }
-        retval = PAM_SUCCESS;
-    }
+		/* FIXME: what value is appropriate here? */
+		retval = PAM_AUTHTOK_ERR;
+	} else {
+		if (*msg_str) {
+			msg_str[PSTRING_LEN-1] = '\0';
+			make_remark( pamh, ctrl, PAM_TEXT_INFO, msg_str );
+		}
+		retval = PAM_SUCCESS;
+	}
 
-    return retval;      
-
+	return retval;      
 }
 
 
@@ -92,6 +97,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     extern BOOL in_client;
 
     SAM_ACCOUNT *sampass = NULL;
+    void (*oldsig_handler)(int);
     const char *user;
     char *pass_old;
     char *pass_new;
@@ -120,18 +126,25 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         _log_err( LOG_DEBUG, "username [%s] obtained", user );
     }
 
+    /* Getting into places that might use LDAP -- protect the app
+       from a SIGPIPE it's not expecting */
+    oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
+
     if (!initialize_password_db(True)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
+        CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_AUTHINFO_UNAVAIL;
     }
 
     /* obtain user record */
     if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sampass))) {
-	    return nt_status_to_pam(nt_status);
+        CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
+        return nt_status_to_pam(nt_status);
     }
 
     if (!pdb_getsampwnam(sampass,user)) {
         _log_err( LOG_ALERT, "Failed to find entry for user %s.", user );
+        CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_USER_UNKNOWN;
     }
 
@@ -146,6 +159,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         if (_smb_blankpasswd( ctrl, sampass )) {
 
             pdb_free_sam(&sampass);
+            CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
             return PAM_SUCCESS;
         }
 
@@ -159,6 +173,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             if (Announce == NULL) {
                 _log_err(LOG_CRIT, "password: out of memory");
                 pdb_free_sam(&sampass);
+                CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
                 return PAM_BUF_ERR;
             }
             strncpy( Announce, greeting, sizeof(greeting) );
@@ -174,6 +189,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
                 _log_err( LOG_NOTICE
                           , "password - (old) token not obtained" );
                 pdb_free_sam(&sampass);
+                CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
                 return retval;
             }
 
@@ -188,19 +204,11 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
         pass_old = NULL;
         pdb_free_sam(&sampass);
+        CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return retval;
 
     } else if (flags & PAM_UPDATE_AUTHTOK) {
 
-#if 0
-        /* We used to return when this flag was set, but that breaks
-           password synchronization when /other/ tokens are expired.  For
-           now, we change the password whenever we're asked. SRL */
-        if (flags & PAM_CHANGE_EXPIRED_AUTHTOK) {
-            pdb_free_sam(&sampass);
-            return PAM_SUCCESS;
-        }
-#endif
         /*
          * obtain the proposed password
          */
@@ -226,6 +234,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         if (retval != PAM_SUCCESS) {
             _log_err( LOG_NOTICE, "password: user not authenticated" );
             pdb_free_sam(&sampass);
+            CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
             return retval;
         }
 
@@ -253,6 +262,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             }
             pass_old = NULL;                               /* tidy up */
             pdb_free_sam(&sampass);
+            CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
             return retval;
         }
 
@@ -272,6 +282,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             _log_err(LOG_NOTICE, "new password not acceptable");
             pass_new = pass_old = NULL;               /* tidy up */
             pdb_free_sam(&sampass);
+            CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
             return retval;
         }
 
@@ -312,6 +323,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     }
 
     pdb_free_sam(&sampass);
+    CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
     return retval;
 }
 
