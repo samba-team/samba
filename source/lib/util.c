@@ -1317,6 +1317,21 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   pstrcpy(t_pattern,regexp);
   pstrcpy(t_filename,str);
 
+  if(trans2) {
+
+    /* a special case for 16 bit apps */
+    if (strequal(t_pattern,"????????.???"))
+      pstrcpy(t_pattern,"*");
+
+#if 0
+    /*
+     * Handle broken clients that send us old 8.3 format.
+     */
+    string_sub(t_pattern,"????????","*");
+    string_sub(t_pattern,".???",".*");
+#endif
+  }
+
 #if 0
   /* 
    * Not sure if this is a good idea. JRA.
@@ -1413,19 +1428,21 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
      */
     if (strequal (t_filename, ".")) {
       /*
-       *  Patterns:  *.*  *. ?. ?  are valid
-       *
+       *  Patterns:  *.*  *. ?. ? ????????.??? are valid.
+       * 
        */
       if(strequal(t_pattern, "*.*") || strequal(t_pattern, "*.") ||
-         strequal(t_pattern, "?.") || strequal(t_pattern, "?"))
+         strequal(t_pattern, "????????.???") ||
+         strequal(t_pattern, "?.") || strequal(t_pattern, "?")) 
         matched = True;
     } else if (strequal (t_filename, "..")) {
       /*
-       *  Patterns:  *.*  *. ?. ? *.? are valid
+       *  Patterns:  *.*  *. ?. ? *.? ????????.??? are valid.
        *
        */
       if(strequal(t_pattern, "*.*") || strequal(t_pattern, "*.") ||
          strequal(t_pattern, "?.") || strequal(t_pattern, "?") ||
+         strequal(t_pattern, "????????.???") ||
          strequal(t_pattern, "*.?") || strequal(t_pattern, "?.*"))
         matched = True;
     } else {

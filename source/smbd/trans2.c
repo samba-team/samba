@@ -340,6 +340,8 @@ static int get_lanman2_dir_entry(connection_struct *conn,
 
   while (!found)
   {
+    BOOL got_match;
+
     /* Needed if we run out of space */
     prev_dirpos = TellDir(conn->dirptr);
     dname = ReadDirName(conn->dirptr);
@@ -361,7 +363,24 @@ static int get_lanman2_dir_entry(connection_struct *conn,
 
     pstrcpy(fname,dname);      
 
-    if(mask_match(fname, mask, case_sensitive, True))
+    got_match = mask_match(fname, mask, case_sensitive, True);
+
+    if(!got_match && !is_8_3(fname, False)) {
+
+      /*
+       * It turns out that NT matches wildcards against
+       * both long *and* short names. This may explain some
+       * of the wildcard wierdness from old DOS clients
+       * that some people have been seeing.... JRA.
+       */
+
+      pstring newname;
+      pstrcpy( newname, fname);
+      name_map_mangle( newname, True, SNUM(conn));
+      got_match = mask_match(newname, mask, case_sensitive, False);
+    }
+
+    if(got_match)
     {
       BOOL isdots = (strequal(fname,"..") || strequal(fname,"."));
       if (dont_descend && !isdots)
@@ -711,21 +730,6 @@ static int call_trans2findfirst(connection_struct *conn,
 
   /* Convert the formatted mask. */
   mask_convert(mask);
-
-#if 0 /* JRA */
-  /*
-   * Now we have a working mask_match in util.c, I believe
-   * we no longer need these hacks (in fact they break
-   * things). JRA. 
-   */
-
-  /* a special case for 16 bit apps */
-  if (strequal(mask,"????????.???")) pstrcpy(mask,"*");
-
-  /* handle broken clients that send us old 8.3 format */
-  string_sub(mask,"????????","*");
-  string_sub(mask,".???",".*");
-#endif /* JRA */
 
   /* Save the wildcard match and attribs we are using on this directory - 
      needed as lanman2 assumes these are being saved between calls */
