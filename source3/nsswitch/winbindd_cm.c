@@ -419,7 +419,7 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	NTSTATUS 		result;
 	struct winbindd_cm_conn	conn;
 	DS_DOMINFO_CTR		ctr;
-	TALLOC_CTX              *mem_ctx;
+	TALLOC_CTX              *mem_ctx = NULL;
 	
 	ZERO_STRUCT( conn );
 	ZERO_STRUCT( ctr );
