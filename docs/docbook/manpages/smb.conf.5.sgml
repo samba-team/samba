@@ -656,6 +656,7 @@ alias|alias|alias|alias...
 		<listitem><para><link linkend="LARGEREADWRITE"><parameter>large readwrite</parameter></link></para></listitem>
 		
 		<listitem><para><link linkend="LDAPADMINDN"><parameter>ldap admin dn</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPDELETEDN"><parameter>ldap delete dn</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPDELONLYSAMATTR"><parameter>ldap del only sam attr</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPFILTER"><parameter>ldap filter</parameter></link></para></listitem>
                 <listitem><para><link linkend="LDAPPORT"><parameter>ldap port</parameter></link></para></listitem>
@@ -3437,13 +3438,22 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		</para>
 	
 		<varlistentry>
-		<term><anchor id="LDAPDELONLYSAMATTR"/>ldap del only sam attr (G)</term>
+		<term><anchor id="LDAPDELETEDN"/>ldap del only sam attr (G)</term>
 		<listitem><para> This parameter specifies whether a delete
-		operation in the ldapsam deletes only the Samba-specific
-		attributes or the complete LDAP entry.
+		operation in the ldapsam deletes the complete entry or only the attributes
+		specific to Samba.
 		</para>
 	
-		<para>Default : <emphasis>ldap del only sam attr = yes</emphasis></para>
+		<para>Default : <emphasis>ldap delete dn = no</emphasis></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="LDAPDELONLYSAMATTR"/>ldap del only sam attr (G)</term>
+		<listitem><para> Inverted synonym for <link linked="LDAPDELETEDN"><parameter>
+		ldap delete dn</parameter></link>.</para>
+		</para>
 		</listitem>
 		</varlistentry>
 

@@ -848,7 +848,7 @@ static void make_a_mod (LDAPMod *** modlist, int modop, const char *attribute, c
 
 /*******************************************************************
  Delete complete object or objectclass and attrs from
- object found in search_result depending on lp_ldap_del_only_sam
+ object found in search_result depending on lp_ldap_delete_dn
 ******************************************************************/
 static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 				     LDAPMessage *result,
@@ -871,7 +871,7 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 	entry = ldap_first_entry(ldap_state->ldap_struct, result);
 	dn    = ldap_get_dn(ldap_state->ldap_struct, entry);
 
-	if (!lp_ldap_del_only_sam()) {
+	if (lp_ldap_delete_dn()) {
 		NTSTATUS ret = NT_STATUS_OK;
 		rc = ldapsam_delete(ldap_state, dn);
 
