@@ -561,8 +561,7 @@ typedef struct sam_unknown_info_5_inf
 
 typedef struct sam_unknown_info_2_inf
 {
-	uint32 unknown_0; /* 0x0000 0000 */
-	uint32 unknown_1; /* 0x8000 0000 */
+	NTTIME logout; /* whether users are forcibly disconnected when logon hours expire */
 	UNIHDR hdr_comment; /* comment according to samba4 idl */
 	UNIHDR hdr_domain; /* domain name unicode header */
 	UNIHDR hdr_server; /* server name unicode header */
