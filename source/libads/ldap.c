@@ -71,7 +71,7 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 
 	rc = ldap_search_ext_s(ads->ld, 
 			       bind_path, scope,
-			       exp, attrs, 0, NULL, NULL, 
+			       exp, (char **) attrs, 0, NULL, NULL, 
 			       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
 	return ADS_ERROR(rc);
 }
@@ -187,10 +187,11 @@ static ADS_STATUS ads_modlist_add(void **mods, int mod_op, char *name, char **va
 	LDAPMod **modlist = (LDAPMod **) mods;
 
 	/* find the first empty slot */
-	for (curmod=0; modlist[curmod] > 0; curmod++);
+	for (curmod=0; modlist[curmod] && modlist[curmod] != (LDAPMod *) -1;
+	     curmod++);
 	if (modlist[curmod] == (LDAPMod *) -1)
 		return ADS_ERROR(LDAP_NO_MEMORY);
-
+		
 	if (!(modlist[curmod] = malloc(sizeof(LDAPMod))))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	modlist[curmod]->mod_type = name;
@@ -313,21 +314,17 @@ void ads_free_mods(void **mods)
 ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, void **mods)
 {
 	int ret,i;
-	LDAPControl control;
-	LDAPControl *controls[2];
-	char bv_val = (char) 1;
-
 	/* 
-	   this control seems to be necessary to have any modify
-	   that contains a currently non-existent attribute (but
-	   allowable for the object) to run
+	   this control is needed to modify that contains a currently 
+	   non-existent attribute (but allowable for the object) to run
 	*/
-	control.ldctl_oid = "1.2.840.113556.1.4.1413";
-	control.ldctl_value.bv_len = 1;
-	control.ldctl_value.bv_val = &bv_val;
-	control.ldctl_iscritical = (char) 0;
-	controls[0] = &control;
-	controls[1] = NULL;
+	LDAPControl PermitModify = {
+		"1.2.840.113556.1.4.1413",
+		{0, NULL},
+		(char) 1};
+	LDAPControl *controls[2] = {
+		&PermitModify,
+		NULL };
 
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;mods[i]>0;i++);
