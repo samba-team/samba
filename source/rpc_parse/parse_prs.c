@@ -867,7 +867,7 @@ BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset)
 {
 	*offset = ps->data_offset;
-	if (UNMARSHALLING(ps)) {
+	if (UNMARSHALLING(ps) && (data32 != NULL)) {
 		/* reading. */
 		return prs_uint32(name, ps, depth, data32);
 	} else {

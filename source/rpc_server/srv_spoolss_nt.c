@@ -28,6 +28,10 @@
 extern int DEBUGLEVEL;
 extern pstring global_myname;
 
+#ifndef SAMBA_PRINTER_PORT_NAME
+#define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
+#endif
+
 #ifndef MAX_OPEN_PRINTER_EXS
 #define MAX_OPEN_PRINTER_EXS 50
 #endif
@@ -215,6 +219,45 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 	if (del_a_printer(Printer->dev.handlename) != 0) {
 		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
 		return False;
+	}
+
+	if (*lp_deleteprinter_cmd()) {
+
+		pid_t local_pid = sys_getpid();
+		char *cmd = lp_deleteprinter_cmd();
+		char *path;
+		pstring tmp_file;
+		pstring command;
+		int ret;
+		int i;
+
+		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
+			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
+		else
+			path = tmpdir();
+		
+		/* Printer->dev.handlename equals portname equals sharename */
+		slprintf(command, sizeof(command), "%s \"%s\"", cmd,
+					Printer->dev.handlename);
+		slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
+
+		unlink(tmp_file);
+		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
+		ret = smbrun(command, tmp_file, False);
+		if (ret != 0) {
+			unlink(tmp_file);
+			return False;
+		}
+		DEBUGADD(10,("returned [%d]\n", ret));
+		DEBUGADD(10,("Unlinking output file [%s]\n", tmp_file));
+		unlink(tmp_file);
+
+		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
+			lp_remove_service( i );
+			lp_killservice( i );
+			return True;
+		} else
+			return False;
 	}
 
 	return True;
@@ -3204,7 +3247,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 	 */
 
 	if (!check_printer_ok(printer->info_2, snum)) {
-		result = ERROR_ACCESS_DENIED;
+		result = ERROR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -3914,46 +3957,71 @@ static void fill_port_2(PORT_INFO_2 *port, char *name)
 ****************************************************************************/
 static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
-	int n_services=lp_numservices();
-	int snum;
-	int i=0;
-	
 	PORT_INFO_1 *ports=NULL;
+	int i=0;
 
-	for (snum=0; snum<n_services; snum++)
-		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-			(*returned)++;
+	if (*lp_enumports_cmd()) {
+		pid_t local_pid = sys_getpid();
+		char *cmd = lp_enumports_cmd();
+		char *path;
+		char **qlines;
+		pstring tmp_file;
+		pstring command;
+		int numlines;
+		int ret;
 
-	if((ports=(PORT_INFO_1 *)malloc( (*returned+1) * sizeof(PORT_INFO_1) )) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
-	
-	for (snum=0; snum<n_services; snum++) {
-		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
-			/*
-			 * Ensure this port name is unique.
-			 */
-			int j;
+		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
+			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
+		else
+			path = tmpdir();
 
-			DEBUG(10,("enumports_level_1: port name %s\n", PRINTERNAME(snum)));
+		slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
+		slprintf(command, sizeof(command), "%s \"%d\"", cmd, 1);
 
-			for(j = 0; j < i; j++) {
-				fstring port_name;
-				unistr_to_dos(port_name, (const char *)&ports[j].port_name.buffer[0], sizeof(port_name));
+		unlink(tmp_file);
+		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
+		ret = smbrun(command, tmp_file, False);
+		DEBUG(10,("Returned [%d]\n", ret));
+		if (ret != 0) {
+			unlink(tmp_file);
+			// Is this the best error to return here?
+			return ERROR_ACCESS_DENIED;
+		}
 
-				if (strequal(port_name, PRINTERNAME(snum)))
-					break;
+		numlines = 0;
+		qlines = file_lines_load(tmp_file, &numlines);
+		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
+		DEBUGADD(10,("Line[0] = [%s]\n", qlines[0]));
+		DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
+		unlink(tmp_file);
+
+		if(numlines) {
+			if((ports=(PORT_INFO_1 *)malloc( numlines * sizeof(PORT_INFO_1) )) == NULL) {
+				DEBUG(10,("Returning ERROR_NOT_ENOUGH_MEMORY [%x]\n", ERROR_NOT_ENOUGH_MEMORY));
+				file_lines_free(qlines);
+				return ERROR_NOT_ENOUGH_MEMORY;
 			}
 
-			if (j < i)
-				continue;
+			for (i=0; i<numlines; i++) {
+				DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
+				fill_port_1(&ports[i], qlines[i]);
+			}
 
-			DEBUGADD(6,("Filling port number [%d]\n", i));
-			fill_port_1(&ports[i], PRINTERNAME(snum));
-			i++;
+			file_lines_free(qlines);
 		}
-	}
 
-	*returned = i;
+		*returned = numlines;
+
+	} else {
+		*returned = 1; /* Sole Samba port returned. */
+
+		if((ports=(PORT_INFO_1 *)malloc( sizeof(PORT_INFO_1) )) == NULL)
+			return ERROR_NOT_ENOUGH_MEMORY;
+	
+		DEBUG(10,("enumports_level_1: port name %s\n", SAMBA_PRINTER_PORT_NAME));
+
+		fill_port_1(&ports[0], SAMBA_PRINTER_PORT_NAME);
+	}
 
 	/* check the required size. */
 	for (i=0; i<*returned; i++) {
@@ -3988,46 +4056,72 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
-	int n_services=lp_numservices();
-	int snum;
-	int i=0;
-	
 	PORT_INFO_2 *ports=NULL;
+	int i=0;
 
-	for (snum=0; snum<n_services; snum++)
-		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-			(*returned)++;
+	if (*lp_enumports_cmd()) {
+		pid_t local_pid = sys_getpid();
+		char *cmd = lp_enumports_cmd();
+		char *path;
+		char **qlines;
+		pstring tmp_file;
+		pstring command;
+		int numlines;
+		int ret;
 
-	if((ports=(PORT_INFO_2 *)malloc( (*returned+1) * sizeof(PORT_INFO_2) )) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
-	
-	for (snum=0; snum<n_services; snum++) {
-		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
-			/*
-			 * Ensure this port name is unique.
-			 */
-			int j;
+		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
+			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
+		else
+			path = tmpdir();
 
-			DEBUG(10,("enumports_level_2: port name %s\n", PRINTERNAME(snum)));
+		slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
+		slprintf(command, sizeof(command), "%s \"%d\"", cmd, 2);
 
-			for(j = 0; j < i; j++) {
-				fstring port_name;
-				unistr_to_dos(port_name, (const char *)&ports[j].port_name.buffer[0], sizeof(port_name));
+		unlink(tmp_file);
+		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
+		ret = smbrun(command, tmp_file, False);
+		DEBUGADD(10,("returned [%d]\n", ret));
+		if (ret != 0) {
+			unlink(tmp_file);
+			// Is this the best error to return here?
+			return ERROR_ACCESS_DENIED;
+		}
 
-				if (strequal(port_name, PRINTERNAME(snum)))
-					break;
+		numlines = 0;
+		qlines = file_lines_load(tmp_file, &numlines);
+		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
+		DEBUGADD(10,("Line[0] = [%s]\n", qlines[0]));
+		DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
+		unlink(tmp_file);
+
+		if(numlines) {
+			if((ports=(PORT_INFO_2 *)malloc( numlines * sizeof(PORT_INFO_2) )) == NULL) {
+				DEBUG(10,("Returning ERROR_NOT_ENOUGH_MEMORY [%x]\n", ERROR_NOT_ENOUGH_MEMORY));
+				file_lines_free(qlines);
+				return ERROR_NOT_ENOUGH_MEMORY;
 			}
 
-			if (j < i)
-				continue;
+			for (i=0; i<numlines; i++) {
+				DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
+				fill_port_2(&(ports[i]), qlines[i]);
+			}
 
-			DEBUGADD(6,("Filling port number [%d]\n", i));
-			fill_port_2(&ports[i], PRINTERNAME(snum));
-			i++;
+			file_lines_free(qlines);
 		}
-	}
 
-	*returned = i;
+		*returned = numlines;
+
+	} else {
+
+		*returned = 1;
+
+		if((ports=(PORT_INFO_2 *)malloc( sizeof(PORT_INFO_2) )) == NULL)
+			return ERROR_NOT_ENOUGH_MEMORY;
+	
+		DEBUG(10,("enumports_level_2: port name %s\n", SAMBA_PRINTER_PORT_NAME));
+
+		fill_port_2(&ports[0], SAMBA_PRINTER_PORT_NAME);
+	}
 
 	/* check the required size. */
 	for (i=0; i<*returned; i++) {
@@ -4083,6 +4177,68 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 
 /****************************************************************************
 ****************************************************************************/
+static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
+{
+	pid_t local_pid = sys_getpid();
+	char *cmd = lp_addprinter_cmd();
+	char *path;
+	char **qlines;
+	pstring tmp_file;
+	pstring command;
+	pstring driverlocation;
+	int numlines;
+	int ret;
+
+	if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
+		path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
+	else
+		path = tmpdir();
+
+	/* build driver path... only 9X architecture is needed for legacy reasons */
+	slprintf(driverlocation, sizeof(driverlocation)-1, "\\\\%s\\print$\\WIN40\\0",
+			global_myname);
+	/* change \ to \\ for the shell */
+	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
+	
+	slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
+	slprintf(command, sizeof(command), "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
+			cmd, printer->info_2->printername, printer->info_2->sharename,
+			printer->info_2->portname, printer->info_2->drivername,
+			printer->info_2->location, driverlocation);
+
+	unlink(tmp_file);
+	DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
+	ret = smbrun(command, tmp_file, False);
+	DEBUGADD(10,("returned [%d]\n", ret));
+
+	if ( ret != 0 ) {
+		unlink(tmp_file);
+		free_a_printer(&printer,2);
+		return False;
+	}
+
+	numlines = 0;
+	qlines = file_lines_load(tmp_file, &numlines);
+	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
+	DEBUGADD(10,("Line[0] = [%s]\n", qlines[0]));
+	DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
+	unlink(tmp_file);
+
+	if(numlines) {
+		// Set the portname to what the script says the portname should be
+		strncpy(printer->info_2->portname, qlines[0], sizeof(printer->info_2->portname));
+
+		// Send SIGHUP to process group... is there a better way?
+		kill(0, SIGHUP);
+		add_all_printers();
+	}
+
+	file_lines_free(qlines);
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
 static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
 				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
@@ -4091,7 +4247,6 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	fstring name;
-	fstring share_name;
 	int snum;
 
 	if ((printer = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL))) == NULL) {
@@ -4104,11 +4259,14 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
 	convert_printer_info(info, printer, 2);
 
-	unistr2_to_ascii(share_name, &info->info_2->sharename, sizeof(share_name)-1);
+	if (*lp_addprinter_cmd() )
+		if ( !add_printer_hook(printer) )
+			return ERROR_ACCESS_DENIED;
 	
-	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname, share_name);
+	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname,
+             printer->info_2->sharename);
 
-	if ((snum = print_queue_snum(share_name)) == -1) {
+	if ((snum = print_queue_snum(printer->info_2->sharename)) == -1) {
 		free_a_printer(&printer,2);
 		return ERROR_ACCESS_DENIED;
 	}
@@ -4119,7 +4277,7 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 
 	if (!check_printer_ok(printer->info_2, snum)) {
 		free_a_printer(&printer,2);
-		return ERROR_ACCESS_DENIED;
+		return ERROR_INVALID_PARAMETER;
 	}
 
 	/* write the ASCII on disk */
@@ -4130,7 +4288,7 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 
 	if (!open_printer_hnd(handle, name)) {
 		/* Handle open failed - remove addition. */
-		del_a_printer(share_name);
+		del_a_printer(printer->info_2->sharename);
 		free_a_printer(&printer,2);
 		return ERROR_ACCESS_DENIED;
 	}

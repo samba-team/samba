@@ -136,6 +136,14 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 				SIVAL(buf, 0, d);
 			}
 			break;
+		case 'P':
+			s = va_arg(ap,char *);
+			w = strlen(s);
+			len = w + 1;
+			if (bufsize >= len) {
+				memcpy(buf, s, len);
+			}
+			break;
 		case 'f':
 			s = va_arg(ap,char *);
 			w = strlen(s);
@@ -210,6 +218,12 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 			p = va_arg(ap, void **);
 			if (bufsize < len) goto no_space;
 			*p = (void *)IVAL(buf, 0);
+			break;
+		case 'P':
+			s = va_arg(ap,char *);
+			len = strlen(buf) + 1;
+			if (bufsize < len || len > sizeof(pstring)) goto no_space;
+			memcpy(s, buf, len);
 			break;
 		case 'f':
 			s = va_arg(ap,char *);
