@@ -9,8 +9,8 @@ AC_DEFUN(rk_ROKEN, [
 AC_REQUIRE([rk_CONFIG_HEADER])
 
 DIR_roken=roken
-LIB_roken='$(top_builddir)/lib/roken/libroken.la'
-CPPFLAGS_roken='-I$(top_builddir)/lib/roken -I$(top_srcdir)/lib/roken'
+LIB_roken='$(top_builddir)/$1/libroken.la'
+CPPFLAGS_roken='-I$(top_builddir)/$1 -I$(top_srcdir)/$1'
 
 dnl Checks for programs
 AC_REQUIRE([AC_PROG_CC])
