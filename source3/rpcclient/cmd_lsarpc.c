@@ -132,7 +132,7 @@ void cmd_lsa_lookup_names(struct client_info *info)
 	fstring srv_name;
 	int num_names = 0;
 	const char *names[10];
-	DOM_SID *sids;
+	DOM_SID *sids = NULL;
 	int num_sids = 0;
 #if 0
 	DOM_SID sid[10];
