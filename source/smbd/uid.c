@@ -190,6 +190,12 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 
 	snum = SNUM(conn);
 
+	if ((vuser) && !check_user_ok(conn, vuser, snum)) {
+		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) not permitted access to share %s.\n",
+			vuser->user.smb_name, vuser->user.unix_name, vuid, lp_servicename(snum)));
+		return False;
+	}
+
 	if (conn->force_user) /* security = share sets this too */ {
 		uid = conn->uid;
 		gid = conn->gid;
@@ -197,7 +203,7 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		current_user.ngroups = conn->ngroups;
 		token = conn->nt_user_token;
 		privs = conn->privs;
-	} else if ((vuser) && check_user_ok(conn, vuser, snum)) {
+	} else if (vuser) {
 		uid = conn->admin_user ? 0 : vuser->uid;
 		gid = vuser->gid;
 		current_user.ngroups = vuser->n_groups;
@@ -205,7 +211,7 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		token = vuser->nt_user_token;
 		privs = vuser->privs;
 	} else {
-		DEBUG(2,("change_to_user: Invalid vuid used %d or vuid not permitted access to share.\n",vuid));
+		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing share %s.\n",vuid, lp_servicename(snum) ));
 		return False;
 	}
 
