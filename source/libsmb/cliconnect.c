@@ -732,14 +732,27 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
 	extern struct in_addr ipzero;
 	extern pstring user_socket_options;
+	int name_type = 0x20;
+	char *p;
+
+	/* reasonable default hostname */
+	if (!host)
+		host = "*SMBSERVER";
 
 	fstrcpy(cli->desthost, host);
 	
+	/* allow hostnames of the form NAME#xx and do a netbios lookup */
+	if ((p = strchr(cli->desthost, '#'))) {
+		name_type = strtol(p+1, NULL, 16);		
+		*p = 0;
+	}
+	
 	if (!ip || ip_equal(*ip, ipzero)) {
-                if (!resolve_name( cli->desthost, &cli->dest_ip, 0x20)) {
-                        return False;
-                }
-		if (ip) *ip = cli->dest_ip;
+		if (!resolve_name(cli->desthost, &cli->dest_ip, name_type)) {
+			return False;
+		}
+		if (ip)
+			*ip = cli->dest_ip;
 	} else {
 		cli->dest_ip = *ip;
 	}
