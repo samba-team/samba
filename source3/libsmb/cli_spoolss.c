@@ -1742,7 +1742,8 @@ WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Startpageprinter */
+/* Startpageprinter.  Sent to notify the spooler when a page is about to be
+   sent to a printer. */ 
 
 WERROR cli_spoolss_startpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *hnd)
@@ -1786,7 +1787,8 @@ WERROR cli_spoolss_startpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Endpageprinter */
+/* Endpageprinter.  Sent to notify the spooler when a page has finished
+   being sent to a printer. */
 
 WERROR cli_spoolss_endpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd)
@@ -1817,6 +1819,103 @@ WERROR cli_spoolss_endpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Unmarshall response */
 
 	if (!spoolss_io_r_endpageprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Startdocprinter.  Sent to notify the spooler that a document is about
+   to be spooled for printing. */
+
+WERROR cli_spoolss_startdocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   POLICY_HND *hnd, char *docname, 
+				   char *outputfile, char *datatype, 
+				   uint32 *jobid)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_STARTDOCPRINTER q;
+	SPOOL_R_STARTDOCPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+	uint32 level = 1;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_startdocprinter(&q, hnd, level, docname, outputfile, 
+				       datatype);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_startdocprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_STARTDOCPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_startdocprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+	
+	if (W_ERROR_IS_OK(result))
+		*jobid = r.jobid;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Enddocprinter.  Sent to notify the spooler that a document has finished
+   being spooled. */
+
+WERROR cli_spoolss_enddocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  POLICY_HND *hnd)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENDDOCPRINTER q;
+	SPOOL_R_ENDDOCPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enddocprinter(&q, hnd);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enddocprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENDDOCPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enddocprinter("", &r, &rbuf, 0))
 		goto done;
 
 	/* Return output parameters */
