@@ -35,8 +35,7 @@
 
 int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user,  char *pass_new )
 {
- char		c;
- int		retval, i;
+ int		retval;
  pstring	err_str;
  pstring	msg_str;
 

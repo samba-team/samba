@@ -303,7 +303,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
     uchar hash_pass[16];
     uchar lm_pw[16];
     uchar nt_pw[16];
-    int retval;
+    int retval = PAM_AUTH_ERR;
     char *data_name;
     const char *name;
 

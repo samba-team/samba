@@ -363,7 +363,7 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		lib/util_unistr.o lib/signal.o lib/talloc.o lib/ms_fnmatch.o \
 		lib/util_sock.o lib/smbrun.o lib/util_sec.o lib/snprintf.o \
 		ubiqx/ubi_sLinkList.o libsmb/smbencrypt.o libsmb/smbdes.o \
-		$(PARAM_OBJ) $(TDB_OBJ) $(PASSDB_OBJ)
+		lib/interfaces.o $(PARAM_OBJ) $(TDB_OBJ) $(PASSDB_OBJ)
 
 PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
 LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.po)
