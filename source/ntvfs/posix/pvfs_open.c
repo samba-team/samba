@@ -104,7 +104,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	uint32_t create_action;
 
 	if (name->stream_name) {
-		return NT_STATUS_OBJECT_NAME_INVALID;
+		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
 	/* if the client says it must be a directory, and it isn't,
@@ -163,7 +163,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->pvfs           = pvfs;
 	f->handle->name           = talloc_steal(f->handle, name);
 	f->handle->fd             = -1;
-	f->handle->locking_key    = data_blob(NULL, 0);
+	f->handle->odb_locking_key    = data_blob(NULL, 0);
+	f->handle->brl_locking_key    = data_blob(NULL, 0);
 	f->handle->create_options = io->generic.in.create_options;
 	f->handle->seek_offset    = 0;
 	f->handle->position       = 0;
@@ -243,7 +244,7 @@ static int pvfs_handle_destructor(void *p)
 		struct odb_lock *lck;
 		NTSTATUS status;
 
-		lck = odb_lock(h, h->pvfs->odb_context, &h->locking_key);
+		lck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
 		if (lck == NULL) {
 			DEBUG(0,("Unable to lock opendb for close\n"));
 			return 0;
@@ -278,9 +279,8 @@ static int pvfs_fnum_destructor(void *p)
 
 
 /*
-  form the lock context used for byte range locking and opendb
-  locking. Note that we must zero here to take account of
-  possible padding on some architectures
+  form the lock context used for opendb locking. Note that we must
+  zero here to take account of possible padding on some architectures
 */
 static NTSTATUS pvfs_locking_key(struct pvfs_filename *name, 
 				 TALLOC_CTX *mem_ctx, DATA_BLOB *key)
@@ -299,6 +299,37 @@ static NTSTATUS pvfs_locking_key(struct pvfs_filename *name,
 		return NT_STATUS_NO_MEMORY;
 	}
 	
+	return NT_STATUS_OK;
+}
+
+/*
+  form the lock context used for byte range locking. This is separate
+  from the locking key used for opendb locking as it needs to take
+  account of file streams (each stream is a separate byte range
+  locking space)
+*/
+static NTSTATUS pvfs_brl_locking_key(struct pvfs_filename *name, 
+				     TALLOC_CTX *mem_ctx, DATA_BLOB *key)
+{
+	DATA_BLOB odb_key;
+	NTSTATUS status;
+	status = pvfs_locking_key(name, mem_ctx, &odb_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (name->stream_name == NULL) {
+		*key = odb_key;
+		return NT_STATUS_OK;
+	}
+	*key = data_blob_talloc(mem_ctx, NULL, 
+				odb_key.length + strlen(name->stream_name) + 1);
+	if (key->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	memcpy(key->data, odb_key.data, odb_key.length);
+	memcpy(key->data + odb_key.length, 
+	       name->stream_name, strlen(name->stream_name)+1);
+	data_blob_free(&odb_key);
 	return NT_STATUS_OK;
 }
 
@@ -361,6 +392,16 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return pvfs_map_errno(pvfs, errno);
 	}
 
+	/* if this was a stream create then create the stream as well */
+	if (name->stream_name) {
+		status = pvfs_stream_create(pvfs, name, fd);
+		if (!NT_STATUS_IS_OK(status)) {
+			idr_remove(pvfs->idtree_fnum, fnum);
+			close(fd);
+			return status;
+		}
+	}
+
 	/* re-resolve the open fd */
 	status = pvfs_resolve_name_fd(pvfs, fd, name);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -379,7 +420,14 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 
 	/* form the lock context used for byte range locking and
 	   opendb locking */
-	status = pvfs_locking_key(name, f->handle, &f->handle->locking_key);
+	status = pvfs_locking_key(name, f->handle, &f->handle->odb_locking_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(pvfs->idtree_fnum, fnum);
+		close(fd);
+		return status;
+	}
+
+	status = pvfs_brl_locking_key(name, f->handle, &f->handle->brl_locking_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(pvfs->idtree_fnum, fnum);
 		close(fd);
@@ -387,7 +435,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 	/* grab a lock on the open file record */
-	lck = odb_lock(req, pvfs->odb_context, &f->handle->locking_key);
+	lck = odb_lock(req, pvfs->odb_context, &f->handle->odb_locking_key);
 	if (lck == NULL) {
 		DEBUG(0,("pvfs_open: failed to lock file '%s' in opendb\n",
 			 name->full_name));
@@ -398,7 +446,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = odb_open_file(lck, f->handle, 
+	status = odb_open_file(lck, f->handle, name->stream_id,
 			       share_access, create_options, access_mask);
 	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -463,7 +511,7 @@ struct pvfs_open_retry {
 	struct smbsrv_request *req;
 	union smb_open *io;
 	void *wait_handle;
-	DATA_BLOB locking_key;
+	DATA_BLOB odb_locking_key;
 };
 
 /* destroy a pending open request */
@@ -471,9 +519,9 @@ static int pvfs_retry_destructor(void *ptr)
 {
 	struct pvfs_open_retry *r = ptr;
 	struct pvfs_state *pvfs = r->ntvfs->private_data;
-	if (r->locking_key.data) {
+	if (r->odb_locking_key.data) {
 		struct odb_lock *lck;
-		lck = odb_lock(r->req, pvfs->odb_context, &r->locking_key);
+		lck = odb_lock(r->req, pvfs->odb_context, &r->odb_locking_key);
 		if (lck != NULL) {
 			odb_remove_pending(lck, r);
 		}
@@ -512,7 +560,7 @@ static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
 
 	/* the pending odb entry is already removed. We use a null locking
 	   key to indicate this */
-	data_blob_free(&r->locking_key);
+	data_blob_free(&r->odb_locking_key);
 	talloc_free(r);
 
 	/* try the open again, which could trigger another retry setup
@@ -649,9 +697,9 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 	r->ntvfs = ntvfs;
 	r->req = req;
 	r->io = io;
-	r->locking_key = data_blob_talloc(r, 
-					  f->handle->locking_key.data, 
-					  f->handle->locking_key.length);
+	r->odb_locking_key = data_blob_talloc(r, 
+					      f->handle->odb_locking_key.data, 
+					      f->handle->odb_locking_key.length);
 
 	end_time = timeval_add(&req->request_time, 0, pvfs->sharing_violation_delay);
 
@@ -693,14 +741,14 @@ static NTSTATUS pvfs_open_t2open(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (io->t2open.in.open_func & OPENX_OPEN_FUNC_CREATE) {
-		if (!name->exists) return NT_STATUS_ACCESS_DENIED;
+		if (!name->stream_exists) return NT_STATUS_ACCESS_DENIED;
 	}
 	if (io->t2open.in.open_func & OPENX_OPEN_FUNC_TRUNC) {
-		if (name->exists) return NT_STATUS_ACCESS_DENIED;
+		if (name->stream_exists) return NT_STATUS_ACCESS_DENIED;
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 	if ((io->t2open.in.open_func & 0xF) == OPENX_OPEN_FUNC_FAIL) {
-		if (!name->exists) return NT_STATUS_ACCESS_DENIED;
+		if (!name->stream_exists) return NT_STATUS_ACCESS_DENIED;
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
@@ -725,6 +773,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	uint32_t create_options;
 	uint32_t share_access;
 	uint32_t access_mask;
+	BOOL stream_existed;
 
 	if (io->generic.level == RAW_OPEN_T2OPEN) {
 		return pvfs_open_t2open(ntvfs, req, io);
@@ -777,21 +826,21 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case NTCREATEX_DISP_OPEN:
-		if (!name->exists) {
+		if (!name->stream_exists) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 		flags = 0;
 		break;
 
 	case NTCREATEX_DISP_OVERWRITE:
-		if (!name->exists) {
+		if (!name->stream_exists) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 		flags = O_TRUNC;
 		break;
 
 	case NTCREATEX_DISP_CREATE:
-		if (name->exists) {
+		if (name->stream_exists) {
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 		flags = 0;
@@ -876,14 +925,20 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* form the lock context used for byte range locking and
 	   opendb locking */
-	status = pvfs_locking_key(name, f->handle, &f->handle->locking_key);
+	status = pvfs_locking_key(name, f->handle, &f->handle->odb_locking_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(pvfs->idtree_fnum, f->fnum);
+		return status;
+	}
+
+	status = pvfs_brl_locking_key(name, f->handle, &f->handle->brl_locking_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(pvfs->idtree_fnum, f->fnum);
 		return status;
 	}
 
 	/* get a lock on this file before the actual open */
-	lck = odb_lock(req, pvfs->odb_context, &f->handle->locking_key);
+	lck = odb_lock(req, pvfs->odb_context, &f->handle->odb_locking_key);
 	if (lck == NULL) {
 		DEBUG(0,("pvfs_open: failed to lock file '%s' in opendb\n",
 			 name->full_name));
@@ -902,7 +957,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 
 	/* see if we are allowed to open at the same time as existing opens */
-	status = odb_open_file(lck, f->handle, 
+	status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
 			       share_access, create_options, access_mask);
 
 	/* on a sharing violation we need to retry when the file is closed by 
@@ -928,6 +983,17 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	f->handle->fd = fd;
 
+	stream_existed = name->stream_exists;
+
+	/* if this was a stream create then create the stream as well */
+	if (!name->stream_exists) {
+		status = pvfs_stream_create(pvfs, f->handle->name, fd);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(lck);
+			return status;
+		}
+	}
+
 	/* re-resolve the open fd */
 	status = pvfs_resolve_name_fd(f->pvfs, fd, f->handle->name);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -935,8 +1001,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	if (io->generic.in.open_disposition == NTCREATEX_DISP_OVERWRITE ||
-	    io->generic.in.open_disposition == NTCREATEX_DISP_OVERWRITE_IF) {
+	if (f->handle->name->stream_id == 0 &&
+	    (io->generic.in.open_disposition == NTCREATEX_DISP_OVERWRITE ||
+	     io->generic.in.open_disposition == NTCREATEX_DISP_OVERWRITE_IF)) {
 		/* for overwrite we need to replace file permissions */
 		uint32_t attrib = io->ntcreatex.in.file_attr | FILE_ATTRIBUTE_ARCHIVE;
 		mode_t mode = pvfs_fileperms(pvfs, attrib);
@@ -956,7 +1023,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	io->generic.out.oplock_level  = NO_OPLOCK;
 	io->generic.out.fnum	      = f->fnum;
-	io->generic.out.create_action = NTCREATEX_ACTION_EXISTED;
+	io->generic.out.create_action = stream_existed?
+		NTCREATEX_ACTION_EXISTED:NTCREATEX_ACTION_CREATED;
 	io->generic.out.create_time   = name->dos.create_time;
 	io->generic.out.access_time   = name->dos.access_time;
 	io->generic.out.write_time    = name->dos.write_time;
@@ -1069,7 +1137,7 @@ NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
 		return NT_STATUS_CANNOT_DELETE;
 	}
 
-	lck = odb_lock(req, pvfs->odb_context, &f->handle->locking_key);
+	lck = odb_lock(req, pvfs->odb_context, &f->handle->odb_locking_key);
 	if (lck == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

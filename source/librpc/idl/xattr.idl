@@ -56,10 +56,14 @@ interface xattr
 
 	const int XATTR_STREAM_FLAG_INTERNAL = 0x00000001;
 
+	/* stream data is stored in attributes with the given prefix */
+	const string XATTR_DOSSTREAM_PREFIX = "user.DosStream.";
+
 	typedef struct {
-		utf8string name;
-		uint64     size;
 		uint32     flags;
+		uint64     size;
+		uint64     alloc_size;
+		utf8string name;
 	} xattr_DosStream;
 
 	typedef [public] struct {

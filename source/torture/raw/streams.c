@@ -108,12 +108,10 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.access_mask = SA_RIGHT_FILE_WRITE_DATA;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_READ | 
-		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.share_access = 0;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
@@ -131,6 +129,13 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	ret &= check_stream(cli, mem_ctx, fname, "Stream One", NULL);
 
+	printf("check that open of base file is allowed\n");
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.fname = fname;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.ntcreatex.out.fnum);
+
 	printf("writing to stream\n");
 	retsize = smbcli_write(cli->tree, fnum, 0, "test data", 0, 9);
 	CHECK_VALUE(retsize, 9);
@@ -140,6 +145,7 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ret &= check_stream(cli, mem_ctx, fname, "Stream One", "test data");
 
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.fname = sname1;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.fnum;

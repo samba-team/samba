@@ -160,3 +160,30 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 
 	return NT_STATUS_OK;
 }
+
+
+/* 
+   hash a string of the specified length. The string does not need to be
+   null terminated 
+
+   hash alghorithm changed to FNV1 by idra@samba.org (Simo Sorce).
+   see http://www.isthe.com/chongo/tech/comp/fnv/index.html for a
+   discussion on Fowler / Noll / Vo (FNV) Hash by one of it's authors
+*/
+uint32_t pvfs_name_hash(const char *key, size_t length)
+{
+	const uint32_t fnv1_prime = 0x01000193;
+	const uint32_t fnv1_init = 0xa6b93095;
+	uint32_t value = fnv1_init;
+
+	while (*key && length--) {
+		size_t c_size;
+		codepoint_t c = next_codepoint(key, &c_size);
+		c = toupper_w(c);
+                value *= fnv1_prime;
+                value ^= (uint32_t)c;
+		key += c_size;
+        }
+
+	return value;
+}

@@ -54,6 +54,7 @@ struct odb_context {
 struct odb_entry {
 	servid_t server;
 	void     *file_handle;
+	uint32_t stream_id;
 	uint32_t share_access;
 	uint32_t create_options;
 	uint32_t access_mask;
@@ -167,14 +168,20 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 		return False;
 	}
 
-	/* check the basic share access */
+	/* data IO access masks. This is skipped if the two open handles
+	   are on different streams (as in that case the masks don't
+	   interact) */
+	if (e1->stream_id != e2->stream_id) {
+		return False;
+	}
+
 	CHECK_MASK(e1->access_mask, e2->share_access, 
 		   SA_RIGHT_FILE_WRITE_APPEND, 
 		   NTCREATEX_SHARE_ACCESS_WRITE);
 	CHECK_MASK(e2->access_mask, e1->share_access, 
 		   SA_RIGHT_FILE_WRITE_APPEND, 
 		   NTCREATEX_SHARE_ACCESS_WRITE);
-
+	
 	CHECK_MASK(e1->access_mask, e2->share_access, 
 		   SA_RIGHT_FILE_READ_EXEC, 
 		   NTCREATEX_SHARE_ACCESS_READ);
@@ -203,6 +210,7 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
   rules
 */
 NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
+		       uint32_t stream_id,
 		       uint32_t share_access, uint32_t create_options,
 		       uint32_t access_mask)
 {
@@ -217,6 +225,7 @@ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 
 	e.server         = odb->server;
 	e.file_handle    = file_handle;
+	e.stream_id      = stream_id;
 	e.share_access   = share_access;
 	e.create_options = create_options;
 	e.access_mask    = access_mask;
@@ -273,6 +282,7 @@ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 
 	e.server         = odb->server;
 	e.file_handle    = NULL;
+	e.stream_id      = 0;
 	e.share_access   = 0;
 	e.create_options = 0;
 	e.access_mask    = 0;
@@ -496,6 +506,7 @@ NTSTATUS odb_can_open(struct odb_context *odb, DATA_BLOB *key,
 
 	e.server         = odb->server;
 	e.file_handle    = NULL;
+	e.stream_id      = 0;
 	e.share_access   = share_access;
 	e.create_options = create_options;
 	e.access_mask    = access_mask;

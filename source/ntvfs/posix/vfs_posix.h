@@ -76,9 +76,11 @@ struct pvfs_dos_fileinfo {
 struct pvfs_filename {
 	const char *original_name;
 	char *full_name;
-	const char *stream_name;
+	const char *stream_name; /* does not include :$DATA suffix */
+	uint32_t stream_id;      /* this uses a hash, so is probabilistic */
 	BOOL has_wildcard;
-	BOOL exists;
+	BOOL exists;          /* true if the base filename exists */
+	BOOL stream_exists;   /* true if the stream exists */
 	struct stat st;
 	struct pvfs_dos_fileinfo dos;
 };
@@ -96,8 +98,11 @@ struct pvfs_file_handle {
 
 	struct pvfs_filename *name;
 
-	/* a unique file key to be used for file locking */
-	DATA_BLOB locking_key;
+	/* a unique file key to be used for open file locking */
+	DATA_BLOB odb_locking_key;
+
+	/* a unique file key to be used for byte range locking */
+	DATA_BLOB brl_locking_key;
 
 	uint32_t create_options;
 

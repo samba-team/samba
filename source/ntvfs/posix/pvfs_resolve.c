@@ -181,6 +181,37 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 	return NT_STATUS_OK;
 }
 
+/*
+  parse a alternate data stream name
+*/
+static NTSTATUS parse_stream_name(struct pvfs_filename *name, const char *s)
+{
+	char *p;
+	name->stream_name = talloc_strdup(name, s+1);
+	if (name->stream_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	p = strchr_m(name->stream_name, ':');
+	if (p == NULL) {
+		name->stream_id = pvfs_name_hash(name->stream_name, 
+						 strlen(name->stream_name));
+		return NT_STATUS_OK;
+	}
+	if (StrCaseCmp(p, ":$DATA") != 0) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+	*p = 0;
+	if (strcmp(name->stream_name, "") == 0) {
+		name->stream_name = NULL;
+		name->stream_id = 0;
+	} else {
+		name->stream_id = pvfs_name_hash(name->stream_name, 
+						 strlen(name->stream_name));
+	}
+						 
+	return NT_STATUS_OK;	
+}
+
 
 /*
   convert a CIFS pathname to a unix pathname. Note that this does NOT
@@ -194,9 +225,11 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			       uint_t flags, struct pvfs_filename *name)
 {
 	char *ret, *p, *p_start;
+	NTSTATUS status;
 
 	name->original_name = talloc_strdup(name, cifs_name);
 	name->stream_name = NULL;
+	name->stream_id = 0;
 	name->has_wildcard = False;
 
 	while (*cifs_name == '\\') {
@@ -242,9 +275,12 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			if (!(flags & PVFS_RESOLVE_STREAMS)) {
 				return NT_STATUS_ILLEGAL_CHARACTER;
 			}
-			name->stream_name = talloc_strdup(name, p+1);
-			if (name->stream_name == NULL) {
-				return NT_STATUS_NO_MEMORY;
+			if (name->has_wildcard) {
+				return NT_STATUS_ILLEGAL_CHARACTER;
+			}
+			status = parse_stream_name(name, p);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
 			*p-- = 0;
 			break;
@@ -420,6 +456,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	}
 
 	(*name)->exists = False;
+	(*name)->stream_exists = False;
 
 	/* do the basic conversion to a unix formatted path,
 	   also checking for allowable characters */
@@ -485,9 +522,11 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	}
 
 	(*name)->exists = True;
+	(*name)->stream_exists = True;
 	(*name)->has_wildcard = False;
 	(*name)->original_name = talloc_strdup(*name, fname);
 	(*name)->stream_name = NULL;
+	(*name)->stream_id = 0;
 
 	status = pvfs_fill_dos_info(pvfs, *name, -1);
 

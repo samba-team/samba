@@ -317,14 +317,20 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, ren->ntrename.in.old_name, 0, &name1);
+	status = pvfs_resolve_name(pvfs, req, ren->ntrename.in.old_name, 
+				   PVFS_RESOLVE_WILDCARD, &name1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = pvfs_resolve_name(pvfs, req, ren->ntrename.in.new_name, 0, &name2);
+	status = pvfs_resolve_name(pvfs, req, ren->ntrename.in.new_name, 
+				   PVFS_RESOLVE_WILDCARD, &name2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (name1->has_wildcard || name2->has_wildcard) {
+		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 	}
 
 	if (!name1->exists) {

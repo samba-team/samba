@@ -60,10 +60,18 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 	
-	ret = pwrite(f->handle->fd, 
-		     wr->writex.in.data, 
-		     wr->writex.in.count,
-		     wr->writex.in.offset);
+	if (f->handle->name->stream_name) {
+		ret = pvfs_stream_write(pvfs,
+					f->handle,
+					wr->writex.in.data, 
+					wr->writex.in.count,
+					wr->writex.in.offset);
+	} else {
+		ret = pwrite(f->handle->fd, 
+			     wr->writex.in.data, 
+			     wr->writex.in.count,
+			     wr->writex.in.offset);
+	}
 	if (ret == -1) {
 		if (errno == EFBIG) {
 			return NT_STATUS_INVALID_PARAMETER;
