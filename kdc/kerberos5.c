@@ -333,6 +333,9 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
     memset(pa.val, 0, pa.len * sizeof(*pa.val));
 
     for(j = 0; j < etypes_len; j++) {
+	for (i = 0; i < n; i++)
+	    if (pa.val[i].etype == etypes[j])
+		goto skip1;
 	for(i = 0; i < client->keys.len; i++) {
 	    if(client->keys.val[i].key.keytype == etypes[j]) {
  		if (krb5_enctype_is_disabled(context, etypes[j]))
@@ -344,11 +347,12 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
 		}
 	    }
 	}
+    skip1:;
     }
     for(i = 0; i < client->keys.len; i++) {
 	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j])
-		goto skip;
+		goto skip2;
 	}
 	if (krb5_enctype_is_disabled(context, client->keys.val[i].key.keytype))
 	    continue;
@@ -357,7 +361,7 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
 	    free_ETYPE_INFO(&pa);
 	    return ret;
 	}
-      skip:;
+    skip2:;
     }
     
     if(n != pa.len) {
@@ -369,7 +373,7 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
 		name, n, pa.len);
 	if (ret == 0)
 	    free(name);
-	pa.len = n;
+ 	pa.len = n;
     }
 
     ASN1_MALLOC_ENCODE(ETYPE_INFO, buf, len, &pa, &len, ret);
@@ -481,6 +485,9 @@ get_pa_etype_info2(METHOD_DATA *md, hdb_entry *client,
     memset(pa.val, 0, pa.len * sizeof(*pa.val));
 
     for(j = 0; j < etypes_len; j++) {
+	for (i = 0; i < n; i++)
+	    if (pa.val[i].etype == etypes[j])
+		goto skip1;
 	for(i = 0; i < client->keys.len; i++) {
 	    if(client->keys.val[i].key.keytype == etypes[j]) {
 		if (krb5_enctype_is_disabled(context, etypes[j]))
@@ -492,11 +499,12 @@ get_pa_etype_info2(METHOD_DATA *md, hdb_entry *client,
 		}
 	    }
 	}
+    skip1:;
     }
     for(i = 0; i < client->keys.len; i++) {
 	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j])
-		goto skip;
+		goto skip2;
 	}
 	if (krb5_enctype_is_disabled(context, client->keys.val[i].key.keytype))
 	    continue;
@@ -505,7 +513,7 @@ get_pa_etype_info2(METHOD_DATA *md, hdb_entry *client,
 	    free_ETYPE_INFO2(&pa);
 	    return ret;
 	}
-      skip:;
+      skip2:;
     }
     
     if(n != pa.len) {
@@ -513,11 +521,11 @@ get_pa_etype_info2(METHOD_DATA *md, hdb_entry *client,
 	ret = krb5_unparse_name(context, client->principal, &name);
 	if (ret)
 	    name = "<unparse_name failed>";
-	kdc_log(0, "internal error in get_pa_etype_info(%s): %d != %d", 
+	kdc_log(0, "internal error in get_pa_etype_info2(%s): %d != %d", 
 		name, n, pa.len);
 	if (ret == 0)
 	    free(name);
-	pa.len = n;
+ 	pa.len = n;
     }
 
     ASN1_MALLOC_ENCODE(ETYPE_INFO2, buf, len, &pa, &len, ret);
