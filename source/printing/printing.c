@@ -879,7 +879,7 @@ BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 
 	/* Send a printer notify message */
 
-	notify_job_status(snum, jobid, JOB_STATUS_PRINTING);
+	notify_job_status(snum, jobid, JOB_STATUS_OK);
 
 	return True;
 }
