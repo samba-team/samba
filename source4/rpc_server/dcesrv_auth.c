@@ -51,11 +51,16 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return False;
 	}
 
-	status = dcesrv_crypto_startup(dce_conn, &dce_conn->auth_state);
+	status = dcesrv_crypto_select_type(dce_conn, &dce_conn->auth_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
-	
+
+	status = dcesrv_crypto_start(&dce_conn->auth_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
 	return True;
 }
 
@@ -67,7 +72,7 @@ BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
-	if (!call->conn->auth_state.crypto_state) {
+	if (!call->conn->auth_state.crypto_ctx.ops) {
 		return True;
 	}
 
@@ -98,7 +103,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	NTSTATUS status;
 
 	if (!dce_conn->auth_state.auth_info ||
-	    !dce_conn->auth_state.crypto_state ||
+	    !dce_conn->auth_state.crypto_ctx.ops ||
 	    pkt->u.auth.auth_info.length == 0) {
 		return False;
 	}
@@ -138,7 +143,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 	NTSTATUS status;
 
 	if (!dce_conn->auth_state.auth_info ||
-	    !dce_conn->auth_state.crypto_state) {
+	    !dce_conn->auth_state.crypto_ctx.ops) {
 		return True;
 	}
 
@@ -213,7 +218,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	struct ndr_push *ndr;
 
 	/* non-signed packets are simple */
-	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.crypto_state) {
+	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.crypto_ctx.ops) {
 		status = dcerpc_push_auth(blob, call->mem_ctx, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 	}
