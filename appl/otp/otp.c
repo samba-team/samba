@@ -46,17 +46,15 @@ static void
 usage (void)
 {
   fprintf(stderr,
-	  "Usage: %s [-r] [-f alg] num seed\n",
+	  "Usage: %s [-r] [-f alg] [-u user] num seed\n",
 	  prog);
   exit (1);
 }
 
 static int
-renew (int argc, char **argv, OtpAlgorithm *alg)
+renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
 {
-  struct passwd *pwd;
   OtpContext oldctx, newctx, *ctx;
-  char *user;
   char prompt[128];
   char pw[64];
   void *dbm;
@@ -65,12 +63,6 @@ renew (int argc, char **argv, OtpAlgorithm *alg)
   if (argc != 2)
     usage();
 
-  pwd = k_getpwuid (getuid ());
-  if (pwd == NULL) {
-    fprintf(stderr, "%s: You don't exist\n", prog);
-    return 1;
-  }
-  user = pwd->pw_name;
   ctx = &oldctx;
   if(otp_challenge (ctx, user, prompt, sizeof(prompt)))
     return 1;
@@ -96,21 +88,18 @@ renew (int argc, char **argv, OtpAlgorithm *alg)
   dbm = otp_db_open ();
   if (dbm == NULL) {
     fprintf (stderr, "%s: otp_db_open failed\n", prog);
-    free (user);
     return 1;
   }
   otp_put (dbm, ctx);
   otp_db_close (dbm);
-  free (user);
   return ret;
 }
 
 static int
-set (int argc, char **argv, OtpAlgorithm *alg)
+set (int argc, char **argv, OtpAlgorithm *alg, char *user)
 {
   void *db;
   OtpContext ctx;
-  struct passwd *pwd;
   char pw[OTP_MAX_PASSPHRASE + 1];
   int ret;
   int i;
@@ -118,14 +107,8 @@ set (int argc, char **argv, OtpAlgorithm *alg)
   if (argc != 2)
     usage();
 
-  pwd = k_getpwuid (getuid ());
-  if (pwd == NULL) {
-    fprintf(stderr, "%s: You don't exist\n", prog);
-    return 1;
-  }
-
   ctx.alg = alg;
-  ctx.user = strdup (pwd->pw_name);
+  ctx.user = strdup (user);
   if (ctx.user == NULL) {
     fprintf (stderr, "%s: Out of memory\n", prog);
     return 1;
@@ -162,10 +145,12 @@ main (int argc, char **argv)
   int c;
   int renewp = 0;
   OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
+  char *user = NULL;
+  struct passwd *pwd;
 
   prog = argv[0];
 
-  while ((c = getopt (argc, argv, "rshf:")) != EOF)
+  while ((c = getopt (argc, argv, "rf:u:")) != EOF)
     switch (c) {
     case 'r' :
       renewp = 1;
@@ -177,6 +162,14 @@ main (int argc, char **argv)
 	return 1;
       }
       break;
+    case 'u' :
+      if (geteuid () != 0) {
+	fprintf (stderr, "%s: Only root can change OTPs for other users\n",
+		 prog);
+	return 1;
+      }
+      user = optarg;
+      break;
     default :
       usage ();
       break;
@@ -184,8 +177,19 @@ main (int argc, char **argv)
   argc -= optind;
   argv += optind;
 
+  if (user == NULL) {
+    struct passwd *pwd;
+
+    pwd = k_getpwuid(getuid());
+    if (pwd == NULL) {
+      fprintf (stderr, "%s: You don't exist\n", prog);
+      return 1;
+    }
+    user = pwd->pw_name;
+  }
+
   if (renewp)
-    return renew (argc, argv, alg);
+    return renew (argc, argv, alg, user);
   else
-    return set (argc, argv, alg);
+    return set (argc, argv, alg, user);
 }
