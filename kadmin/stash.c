@@ -52,9 +52,10 @@ stash(struct stash_options *opt, int argc, char **argv)
     }
 
     ret = krb5_string_to_enctype(context, opt->enctype_string, &enctype);
-    if(ret)
+    if(ret) {
 	krb5_warn(context, ret, "%s", opt->enctype_string);
-    return 0;
+	return 0;
+    }
 
     if(opt->key_file_string == NULL)
 	opt->key_file_string = HDB_DB_DIR "/m-key";
