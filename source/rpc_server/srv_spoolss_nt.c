@@ -4104,7 +4104,7 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 		new_smb_io_job_info_2("", buffer, &info[i], 0);	
 
 	/* clear memory */
-	safe_free(info);
+	free_job_info_2(info);
 
 	if (*needed > offered) {
 		*returned=0;
@@ -5692,8 +5692,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 	new_smb_io_job_info_2("", buffer, info_2, 0);
 
-	free_dev_mode(info_2->devmode);
-	safe_free(info_2);
+	free_job_info_2(info_2);
 
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
