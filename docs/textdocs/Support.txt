@@ -27,7 +27,7 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                31
+    AMERICA - USA                                32
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
@@ -382,6 +382,32 @@ We have been working with SAMBA since 1995 and support it in a number of
 large organizations.  We are available to Companies in the Central
 Florida area.  We are well familiar in the integration of SAMBA and NT
 and in SAMBA configuration on AIX, SCO, Linux And SUN Solaris.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+FLORIDA - USA
+
+The PC Doctor
+Tampa Bay Interactive   
+1314 Tampa Rd STE 120
+Palm Harbor, FL  34683
+
+ph 813.781-2209
+fx 813.571-3805
+
+Contacts: Jared Hall:         jhall@tbi.net
+          System Operations:  support@tbi.net
+          
+Tampa Bay Interactive provides complete Internet solutions for the Small 
+Office and Home Office.  Specializing in Intel-Based UNIX systems; Linux,
+BSD/OS, FreeBSD, SCO.  Proxy Server specialists.  
+
+~~ Jared Hall ~~~~~~~ Tampa Bay Interactive
+~~~~~~~~~~~~~~~~~~~~~ 1314 Tampa Rd, #120
+~~ jhall@tbi.net ~~~~ Palm Harbor, FL 34683
+~~ (813) 781-2209 ~~~ (http://www.tbi.net)
+
+Telecom Corner - http://www.tbi.net/~jhall
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
