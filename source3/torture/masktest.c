@@ -253,7 +253,7 @@ struct cli_state *connect_one(char *share)
 }
 
 static char *resultp;
-static file_info *finfo;
+static file_info *f_info;
 
 void listfn(file_info *f, const char *s, void *state)
 {
@@ -264,7 +264,7 @@ void listfn(file_info *f, const char *s, void *state)
 	} else {
 		resultp[2] = '+';
 	}
-	finfo = f;
+	f_info = f;
 }
 
 static void get_real_name(struct cli_state *cli, 
@@ -277,10 +277,10 @@ static void get_real_name(struct cli_state *cli,
 	} else {
 		cli_list_new(cli, "\\masktest\\*", aHIDDEN | aDIR, listfn, NULL);
 	}
-	if (finfo) {
-		fstrcpy(short_name, finfo->short_name);
+	if (f_info) {
+		fstrcpy(short_name, f_info->short_name);
 		strlower(short_name);
-		pstrcpy(long_name, finfo->name);
+		pstrcpy(long_name, f_info->name);
 		strlower(long_name);
 	}
 
@@ -317,9 +317,9 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 
 	resultp = res1;
 	fstrcpy(short_name, "");
-	finfo = NULL;
+	f_info = NULL;
 	get_real_name(cli, long_name, short_name);
-	finfo = NULL;
+	f_info = NULL;
 	fstrcpy(res1, "---");
 	cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
 
