@@ -384,6 +384,7 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 {
 	prs_struct *ps;
 	uint32 extra_space;
+	uint32 old_offset;
 	
 	ps=&(buffer->prs);
 
@@ -392,9 +393,18 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 		extra_space=0;
 	else	
 		extra_space = buffer_size - prs_data_size(ps);
+
+	/* 
+	 * save the offset and move to the end of the buffer
+	 * prs_grow() checks the extra_space against the offset 
+	 */
+	old_offset=prs_offset(ps);	
+	prs_set_offset(ps, prs_data_size(ps));
 	
 	if (!prs_grow(ps, extra_space))
 		return False;
+
+	prs_set_offset(ps, old_offset);
 
 	buffer->string_at_end=prs_data_size(ps);
 
@@ -412,7 +422,6 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				 POLICY_HND *handle)
 {
 	fstring name;
-	fstring datatype;
 	
 	clear_handle(handle);
 	
@@ -962,9 +971,7 @@ static void spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 	print_status_struct status;
 
 	memset(&status, 0, sizeof(status));
-
 	count=get_printqueue(snum, NULL, &q, &status);
-
 	data->notify_data.value[0]=(uint32) status.status;
 	if (q) free(q);
 }
@@ -978,7 +985,6 @@ static void spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_q
 	print_status_struct status;
 
 	memset(&status, 0, sizeof(status));
-
 	data->notify_data.value[0]=get_printqueue(snum, NULL, &q, &status);
 	if (q) free(q);
 }
@@ -1869,6 +1875,8 @@ static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 
 	for (i=0; i<*returned; i++)
 		(*needed) += spoolss_size_printer_info_2(printers[i]);
 
+	DEBUG(4,("we need [%d] bytes\n", *needed));
+
 	if (!alloc_buffer_size(buffer, *needed))
 		return ERROR_INSUFFICIENT_BUFFER;
 
@@ -1906,7 +1914,7 @@ static uint32 enumprinters_level1( uint32 flags, fstring name,
 	if (flags && PRINTER_ENUM_REMOTE)
 		return enum_all_printers_info_1(buffer, offered, needed, returned);
 
-
+	return NT_STATUS_INVALID_LEVEL;
 }
 
 /********************************************************************
@@ -2675,7 +2683,6 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 	int snum;
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_DEVICEMODE *nt_devmode;
-	uint32 status = 0x0;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	nt_devmode=NULL;
