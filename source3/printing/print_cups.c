@@ -73,9 +73,9 @@ cups_passwd_cb(const char *prompt)	/* I - Prompt */
  *                       system.
  */
 
-void
-cups_printer_fn(void (*fn)(char *, char *))	/* I - Function to call */
+void cups_printer_fn(void (*fn)(char *, char *))
 {
+	/* I - Function to call */
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
 			*response;	/* IPP Response */
