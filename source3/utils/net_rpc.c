@@ -1193,7 +1193,8 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 						 &start_idx, 3, &num_entries,
 						 max_entries, max_size, &ctr);
 
-		if (!NT_STATUS_IS_OK(result))
+		if (!NT_STATUS_IS_OK(result) &&
+		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
 						 
 		for (i = 0; i < num_entries; i++) {
@@ -1219,7 +1220,8 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
 
-		if (!NT_STATUS_IS_OK(result))
+		if (!NT_STATUS_IS_OK(result) &&
+		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
 						 
 		for (i = 0; i < num_entries; i++) {
@@ -1273,7 +1275,8 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
 						 
-		if (!NT_STATUS_IS_OK(result))
+		if (!NT_STATUS_IS_OK(result) &&
+		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
 						 
 		for (i = 0; i < num_entries; i++) {
