@@ -262,9 +262,36 @@ uint_t samdb_result_uint(struct ldb_message *msg, const char *attr, uint_t defau
 /*
   pull a string from a result set. 
 */
-const char *samdb_result_string(struct ldb_message *msg, const char *attr, char *default_value)
+const char *samdb_result_string(struct ldb_message *msg, const char *attr, 
+				const char *default_value)
 {
 	return ldb_msg_find_string(msg, attr, default_value);
+}
+
+/*
+  pull a rid from a objectSid in a result set. 
+*/
+uint32 samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+				 const char *attr, uint32 default_value)
+{
+	struct dom_sid *sid;
+	const char *sidstr = ldb_msg_find_string(msg, attr, NULL);
+	if (!sidstr) return default_value;
+
+	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+	if (!sid) return default_value;
+
+	return sid->sub_auths[sid->num_auths-1];
+}
+
+/*
+  pull a rid from a objectSid in a result set. 
+*/
+NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, 
+			   const char *default_value)
+{
+	const char *str = ldb_msg_find_string(msg, attr, default_value);
+	return nttime_from_string(str);
 }
 
 
@@ -424,6 +451,16 @@ int samdb_msg_add_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 }
 
 /*
+  add a uint_t element to a message
+*/
+int samdb_msg_add_uint(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+		       const char *attr_name, uint_t v)
+{
+	const char *s = talloc_asprintf(mem_ctx, "%u", v);
+	return samdb_msg_add_string(ctx, mem_ctx, msg, attr_name, s);
+}
+
+/*
   set a string element in a message
 */
 int samdb_msg_set_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
@@ -474,4 +511,15 @@ int samdb_delete(void *ctx, TALLOC_CTX *mem_ctx, const char *dn)
 
 	ldb_set_alloc(sam_ctx->ldb, samdb_alloc, mem_ctx);
 	return ldb_delete(sam_ctx->ldb, dn);
+}
+
+/*
+  modify a record
+*/
+int samdb_modify(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
+{
+	struct samdb_context *sam_ctx = ctx;
+
+	ldb_set_alloc(sam_ctx->ldb, samdb_alloc, mem_ctx);
+	return ldb_modify(sam_ctx->ldb, msg);
 }

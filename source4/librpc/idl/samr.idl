@@ -262,6 +262,10 @@
 
 	/************************/
 	/* Function    0x0d     */
+
+	/* w2k3 treats max_size as max_users*54 and sets the
+	   resume_handle as the rid of the last user sent
+	*/
 	NTSTATUS samr_EnumDomainUsers(
 		[in,ref]      policy_handle *handle,
 		[in,out,ref]  uint32 *resume_handle,
