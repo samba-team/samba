@@ -139,35 +139,17 @@ struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *t
   way. This interface is used before a session is setup.
 */
 struct smbcli_request *smbcli_request_setup_session(struct smbcli_session *session,
-					      uint8_t command, uint_t wct, uint_t buflen)
+						    uint8_t command, uint_t wct, uint_t buflen)
 {
 	struct smbcli_request *req;
-	uint16_t flags2;
-	uint32_t capabilities;
 
 	req = smbcli_request_setup_transport(session->transport, command, wct, buflen);
 
 	if (!req) return NULL;
 
 	req->session = session;
-	
-	flags2 = FLAGS2_LONG_PATH_COMPONENTS;
-	capabilities = session->transport->negotiate.capabilities;
 
-	if (capabilities & CAP_UNICODE) {
-		flags2 |= FLAGS2_UNICODE_STRINGS;
-	}
-	if (capabilities & CAP_STATUS32) {
-		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-	}
-	if (capabilities & CAP_EXTENDED_SECURITY) {
-		flags2 |= FLAGS2_EXTENDED_SECURITY;
-	}
-	if (session->transport->negotiate.sign_info.doing_signing) {
-		flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
-	}
-
-	SSVAL(req->out.hdr, HDR_FLG2, flags2);
+	SSVAL(req->out.hdr, HDR_FLG2, session->flags2);
 	SSVAL(req->out.hdr, HDR_PID, session->pid & 0xFFFF);
 	SSVAL(req->out.hdr, HDR_PIDHIGH, session->pid >> 16);
 	SSVAL(req->out.hdr, HDR_UID, session->vuid);
