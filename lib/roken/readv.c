@@ -61,7 +61,7 @@ readv(int d, const struct iovec *iov, int iovcnt)
     nb = ret = read (d, buf, tot);
     p = buf;
     while (nb > 0) {
-	ssize_t cnt = min(ret, iov->iov_len);
+	ssize_t cnt = min(nb, iov->iov_len);
 
 	memcpy (iov->iov_base, p, cnt);
 	p += cnt;
