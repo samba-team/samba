@@ -10,6 +10,19 @@ backend.   This is the latest stable release of Samba. This
 is the version that all production Samba servers should be 
 running for all current bug-fixes.  
 
+******************* Attention! Achtung! Kree! *********************
+
+Beginning with Samba 3.0.2, passwords for accounts with a last 
+change time (LCT-XXX in smbpasswd, sambaPwdLastSet attribute in
+ldapsam, etc...) of zero (0) will be regarded as uninitialized 
+strings.  This will cause authentication to fail for such
+accounts.  If you have valid passwords that meet this criteria, 
+you must update the last change time to a non-zero value.  If you 
+do not, then  'pdbedit --force-initialized-passwords' will disable 
+these accounts and reset the password hashes to a string of X's.
+
+******************* Attention! Achtung! Kree! *********************
+
 
 ######################################################################
 Changes
