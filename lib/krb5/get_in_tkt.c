@@ -347,14 +347,14 @@ add_padata(krb5_context context,
 	   krb5_principal client,
 	   krb5_key_proc key_proc,
 	   krb5_const_pointer keyseed,
-	   krb5_enctype *enctypes, 
+	   int *enctypes, 
 	   unsigned netypes,
 	   krb5_salt *salt)
 {
     krb5_error_code ret;
     PA_DATA *pa2;
     krb5_salt salt2;
-    krb5_enctype *ep;
+    int *ep;
     int i;
     
     if(salt == NULL) {
@@ -363,7 +363,7 @@ add_padata(krb5_context context,
 	salt = &salt2;
     }
     if (!enctypes) {
-	enctypes = context->etypes; /* XXX */
+	enctypes = (int *)context->etypes; /* XXX */
 	netypes = 0;
 	for (ep = enctypes; *ep != ETYPE_NULL; ep++)
 	    netypes++;
@@ -622,7 +622,7 @@ krb5_get_in_cred(krb5_context context,
     krb5_kdc_flags opts;
     PA_DATA *pa;
     krb5_enctype etype;
-    const krb5_preauthdata *my_preauth = NULL;
+    krb5_preauthdata *my_preauth = NULL;
     unsigned nonce;
     int done;
 
