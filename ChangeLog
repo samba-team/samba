@@ -9,6 +9,13 @@ Wed Jul  9 02:30:06 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 Wed Jul  9 01:15:38 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_host_realm.c: implemented
+
+	* lib/krb5/config_file.c: Redid part.  New functions:
+ 	krb5_config_v?get_next
+
+	* kuser/kdestroy.c: new program
+
 	* kuser/kinit.c: new flag `-f'
 
 	* lib/asn1/k5.asn1: Made HostAddresses = SEQUENCE OF HostAddress
