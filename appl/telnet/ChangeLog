@@ -1,3 +1,13 @@
+1999-09-05  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/utility.c (ttloop): make it return 1 if interrupted by a
+ 	signal, which must have been what was meant from the beginning
+
+	* telnetd/ext.h (ttloop): update prototype
+
+	* telnetd/authenc.c (telnet_spin): actually return the value from
+ 	ttloop (otherwise it's kind of bogus)
+
 1999-08-05  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/sys_term.c (rmut): free utxp
