@@ -33,7 +33,7 @@ AC_REQUIRE([rk_DB])
 dnl C types
 
 AC_REQUIRE([AC_TYPE_SIZE_T])
-AC_CHECK_TYPE_EXTRA(ssize_t, int, [#include <unistd.h>])
+AC_HAVE_TYPE([ssize_t],[#include <unistd.h>])
 AC_REQUIRE([AC_TYPE_PID_T])
 AC_REQUIRE([AC_TYPE_UID_T])
 AC_HAVE_TYPE([long long])
