@@ -115,7 +115,7 @@ static BOOL must_free_cliplist = False;
 
 extern file_info def_finfo;
 extern BOOL lowercase;
-extern int cnum;
+extern uint16 cnum;
 extern BOOL readbraw_supported;
 extern int max_xmit;
 extern pstring cur_dir;
