@@ -177,7 +177,7 @@ verify_krb5(struct passwd *pwd,
 			    NULL);
 	ret = krb5_cc_retrieve_cred(context, ccache, 0, &mcred, &cred);
 	if(ret == 0) {
-	    ret = krb524_convert_creds_kdc(context, &cred, &c);
+	    ret = krb524_convert_creds_kdc(context, ccache, &cred, &c);
 	    if(ret)
 		krb5_warn(context, ret, "converting creds");
 	    else {
