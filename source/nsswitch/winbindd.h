@@ -30,11 +30,6 @@
 extern int DEBUGLEVEL;
 extern pstring debugf;
 
-/* uid/gid/rid translation */
-
-#define WINBINDD_UID_BASE 1000       /* All rid user mappings >= this */
-#define WINBINDD_GID_BASE 1000       /* All rid group mappings >= this */
-
 /* Socket commands */
 
 enum winbindd_cmd {
@@ -88,15 +83,6 @@ struct winbindd_response {
     } data;
 };
 
-/* Well known rids */
-
-struct wkrid_map
-{
-    uint32 rid;
-    char *name;
-    enum SID_NAME_USE type;
-};
-
-extern struct wkrid_map wkrid_namemap[];
+#include "winbindd_proto.h"
 
 #endif /* _WINBINDD_H */

@@ -20,8 +20,8 @@
 */
 
 #include "includes.h"
-#include "sids.h"
 #include "winbindd.h"
+#include "sids.h"
 
 /****************************************************************************
 exit thy server
@@ -50,36 +50,6 @@ void exit_server(char *reason)
 #endif
 	exit(0);
 }
-
-/* Mapping table for well known database*/
-
-struct wkrid_map wkrid_namemap[] =
-{
-    /* Well known users */
-
-    { DOMAIN_USER_RID_ADMIN, "nt-admin", SID_NAME_USER },
-    { DOMAIN_USER_RID_GUEST, "nt-guest", SID_NAME_USER },
-
-    /* Well known groups */
-
-    { DOMAIN_GROUP_RID_ADMINS, "nt-admins", SID_NAME_DOM_GRP },
-    { DOMAIN_GROUP_RID_USERS,  "nt-users", SID_NAME_DOM_GRP }, 
-    { DOMAIN_GROUP_RID_GUESTS, "nt-guests", SID_NAME_DOM_GRP },
-
-    /* Well known aliases */
-
-    { BUILTIN_ALIAS_RID_ADMINS,      "nt-localadmins", SID_NAME_ALIAS },
-    { BUILTIN_ALIAS_RID_USERS,       "nt-localusers", SID_NAME_ALIAS },
-    { BUILTIN_ALIAS_RID_GUESTS,      "nt-localguests", SID_NAME_ALIAS },
-    { BUILTIN_ALIAS_RID_POWER_USERS, "nt-localpower", SID_NAME_ALIAS },
-    { BUILTIN_ALIAS_RID_ACCOUNT_OPS, "nt-localacct", SID_NAME_ALIAS }, 
-    { BUILTIN_ALIAS_RID_SYSTEM_OPS,  "nt-localsys", SID_NAME_ALIAS },
-    { BUILTIN_ALIAS_RID_PRINT_OPS,   "nt-localprn", SID_NAME_ALIAS },
-    { BUILTIN_ALIAS_RID_BACKUP_OPS,  "nt-localbkp", SID_NAME_ALIAS },
-    { BUILTIN_ALIAS_RID_REPLICATOR,  "nt-localrepl", SID_NAME_ALIAS },
-
-    { 0, NULL, 0 }
-};
 
 /* Connect to a domain controller and return domain sid */
 
@@ -114,42 +84,36 @@ int winbind_get_domain_sid(char *system_name, fstring domain_name,
     return res;
 }
 
-/* Return a rid and type within a domain given a username */
+/* Return a sid and type within a domain given a username */
 
 int winbind_lookup_by_name(char *system_name, DOM_SID *level5_sid,
-                           fstring name, uint32 *rid,
+                           fstring name, DOM_SID *sid,
                            enum SID_NAME_USE *type)
 {
-    POLICY_HND sam_handle, sam_dom_handle;
+    POLICY_HND lsa_handle;
     BOOL res = True;
-    uint32 num_rids, *rids = NULL, *types = NULL;
-    int num_names;
+    DOM_SID *sids = NULL;
+    int num_sids = 0, num_names = 1;
+    uint32 *types = NULL;
 
     if (name == NULL) {
         return 0;
     }
 
-    num_names = 1;
-
-    res = res ? samr_connect(system_name, 0x02000000, &sam_handle) : False;
-
-    res = res ? samr_open_domain(&sam_handle, 0x02000000, level5_sid,
-                                 &sam_dom_handle) : False;
+    res = res ? lsa_open_policy(system_name, &lsa_handle, True,
+                                0x02000000) : False;
     
-    res = res ? samr_query_lookup_names(&sam_dom_handle, 0x000003e8,
-                                        num_names, (const char **)&name,
-                                        &num_rids, &rids, &types) : False;
+    res = res ? lsa_lookup_names(&lsa_handle, num_names, (char **)&name,
+                                 &sids, &types, &num_sids) : False;
 
-    res = res ? samr_close(&sam_dom_handle) : False;
-    
-    res = res ? samr_close(&sam_handle) : False;
-    
+    res = res ? lsa_close(&lsa_handle) : False;
+
     /* Return rid and type if lookup successful */
 
     if (res) {
 
-        if ((rid != NULL) && (rids != NULL)) {
-            *rid = rids[0];
+        if ((sid != NULL) && (sids != NULL)) {
+            sid_copy(sid, &sids[0]);
         }
 
         if ((type != NULL) && (types != NULL)) {
@@ -160,59 +124,47 @@ int winbind_lookup_by_name(char *system_name, DOM_SID *level5_sid,
     return res;
 }
 
-/* Return a username and type within a domain given a rid */
-
-int winbind_lookup_by_rid(char *system_name, DOM_SID *level5_sid,
-                          uint32 rid, char *user_name,
+/* Return a name and type within a domain given a rid */
+int winbind_lookup_by_sid(char *system_name, DOM_SID *level5_sid,
+                          DOM_SID *sid, char *name,
                           enum SID_NAME_USE *type)
 {
-    POLICY_HND sam_handle, sam_dom_handle;
-    BOOL res = True, res1 = False;
+    POLICY_HND lsa_handle;
+    int num_sids = 1, num_names = 0;
+    uint32 *types = NULL;
+    char **names;
+    BOOL res = True;
 
-    /* Open connection to SAM pipe and SAM domain */
 
-    res = res ? samr_connect(system_name, 0x02000000, &sam_handle) : False;
+    res = res ? lsa_open_policy(system_name, &lsa_handle, True,
+                                0x02000000) : False;
 
-    res = res ? samr_open_domain(&sam_handle, 0x02000000, level5_sid, 
-                                 &sam_dom_handle) : False;
+    res = res ? lsa_lookup_sids(&lsa_handle, num_sids, (DOM_SID **)&sid,
+                                &names, &types, &num_names) : False;
+
+    res = res ? lsa_close(&lsa_handle) : False;
+
+    /* Return name and type if successful */
+
     if (res) {
-        uint32 num_rids = 1;
-        int num_names = 0;
-        char **names = NULL;
-        uint32 *types = NULL;
-        
-        /* Lookup name */
-
-        res1 = samr_query_lookup_rids(&sam_dom_handle, 0x000003e8, num_rids, 
-                                      &rid, &num_names, &names, &types);
-
-        /* Return username and type if successful */
-
-        if (res1) {
-
-            if ((names != NULL) && (user_name != NULL)) {
-                fstrcpy(user_name, names[0]);
-            }
-
-            if ((type != NULL) && (types != NULL)) {
-                *type = types[0];
-            }
+        if ((names != NULL) && (name != NULL)) {
+            fstrcpy(name, names[0]);
         }
 
-        res = res ? samr_close(&sam_dom_handle) : False;
-        res = res ? samr_close(&sam_handle) : False;
+        if ((type != NULL) && (types != NULL)) {
+            *type = types[0];
+        }
     }
 
-    return res1;
+    return res;
 }
 
 /* Lookup user information from rid */
 
 int winbind_lookup_userinfo(char *system_name, DOM_SID *level5_sid,
-                            uint32 user_rid, SAM_USER_INFO_21 *info)
+                            uint32 user_rid, SAM_USERINFO_CTR *info)
 {
     POLICY_HND sam_handle, sam_dom_handle;
-    SAM_USERINFO_CTR userinfo;
     BOOL res = True;
 
     /* Open connection to SAM pipe and SAM domain */
@@ -221,24 +173,43 @@ int winbind_lookup_userinfo(char *system_name, DOM_SID *level5_sid,
 
     res = res ? samr_open_domain(&sam_handle, 0x02000000, level5_sid, 
                                  &sam_dom_handle) : False;
-    /* Qeury user info */
+    /* Query user info */
 
     res = res ? get_samr_query_userinfo(&sam_dom_handle, 0x15, user_rid,
-                                        &userinfo) : False;
+                                        info) : False;
+    /* Close up shop */
 
-    /* Return SAM_USER_INFO_21 structure */
+    res = res ? samr_close(&sam_dom_handle) : False;
 
-    if (res && (info != NULL)) {
-        memcpy(info, userinfo.info.id21, sizeof(*info));
-    }
+    res = res ? samr_close(&sam_handle) : False;
 
     return res;
 }                                   
 
 int winbind_lookup_groupinfo(char *system_name, DOM_SID *level5_sid,
-                             uint32 group_rid, SAM_USER_INFO_21 *info)
+                             uint32 group_rid, GROUP_INFO_CTR *info)
 {
-    return 0;
+    POLICY_HND sam_handle, sam_dom_handle;
+    BOOL res = True;
+
+    /* Open connection to SAM pipe and SAM domain */
+
+    res = res ? samr_connect(system_name, 0x02000000, &sam_handle) : False;
+
+    res = res ? samr_open_domain(&sam_handle, 0x02000000, level5_sid, 
+                                 &sam_dom_handle) : False;
+    /* Query group info */
+
+    res = res ? get_samr_query_groupinfo(&sam_dom_handle, 1,
+                                         group_rid, info) : False;
+
+    /* Close up shop */
+
+    res = res ? samr_close(&sam_dom_handle) : False;
+
+    res = res ? samr_close(&sam_handle) : False;
+
+    return res;
 }
 
 /* Create ipc socket */
@@ -362,24 +333,24 @@ int main(int argc, char **argv)
             /* User functions */
 
         case WINBINDD_GETPWNAM_FROM_USER: 
-            DEBUG(3, ("getpwnam from user '%s'\n", request.data.username));
+            DEBUG(1, ("getpwnam from user '%s'\n", request.data.username));
             winbindd_getpwnam_from_user(&domain_sid, &request, &response);
             break;
 
         case WINBINDD_GETPWNAM_FROM_UID:
-            DEBUG(3, ("getpwnam from uid %d\n", request.data.uid));
+            DEBUG(1, ("getpwnam from uid %d\n", request.data.uid));
             winbindd_getpwnam_from_uid(&domain_sid, &request, &response);
             break;
 
             /* Group functions */
 
         case WINBINDD_GETGRNAM_FROM_GROUP:
-            DEBUG(3, ("getgrnam from group '%s'\n", request.data.groupname));
+            DEBUG(1, ("getgrnam from group '%s'\n", request.data.groupname));
             winbindd_getgrnam_from_group(&domain_sid, &request, &response);
             break;
 
         case WINBINDD_GETGRNAM_FROM_GID:
-            DEBUG(3, ("getgrnam from gid %d\n", request.data.gid));
+            DEBUG(1, ("getgrnam from gid %d\n", request.data.gid));
             winbindd_getgrnam_from_gid(&domain_sid, &request, &response);
             break;
 
