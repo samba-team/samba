@@ -451,12 +451,12 @@ NTSTATUS dcerpc_LOOKUPPRIVVALUE(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, stru
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_LOOKUPPRIVNAME(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct LOOKUPPRIVNAME *r)
+NTSTATUS dcerpc_lsa_LookupPrivName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct lsa_LookupPrivName *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_LOOKUPPRIVNAME, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_LOOKUPPRIVNAME,
-				    (ndr_pull_fn_t) ndr_pull_LOOKUPPRIVNAME,
+	status = dcerpc_ndr_request(p, DCERPC_LSA_LOOKUPPRIVNAME, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_lsa_LookupPrivName,
+				    (ndr_pull_fn_t) ndr_pull_lsa_LookupPrivName,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
