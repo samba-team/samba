@@ -158,7 +158,7 @@ mandoc_template(struct getargs *args,
 	    print_arg(buf, sizeof(buf), 1, 0, args + i);
 	    printf("%s", buf);
 	    if(args[i].long_name)
-		printf(" Ns ,");
+		printf(" ,");
 	    printf("\n");
 	}
 	if(args[i].long_name){
