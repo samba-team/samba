@@ -1,12 +1,16 @@
 #!/bin/sh
 # $Id$
 #
-usage="Usage: $0 [-l username] [-k] host [port]"
+usage="Usage: $0 [-l username] [-k] [-v] [-h | --help] [--version] host [port]"
 while true
 do
   case $1 in
   -l) kx_args="${kx_args} -l $2"; shift 2;;
   -k) kx_args="${kx_args} -k"; shift;;
+  --version) echo "$0: %PACKAGE% %VERSION%"; exit 0;;
+  -h) echo $usage; exit 0;;
+  --help) echo $usage; exit 0;;
+  -v) set -x; shift;;
   -*) echo "$0: Bad option $1"; echo $usage; exit 1;;
   *) break;;
   esac
