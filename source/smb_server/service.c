@@ -172,16 +172,6 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 		}
 	}
 
-	/* check number of connections */
-	if (!claim_connection(tcon,
-			      lp_servicename(SNUM(tcon)),
-			      lp_max_connections(SNUM(tcon)),
-			      False,0)) {
-		DEBUG(1,("too many connections - rejected\n"));
-		conn_free(req->smb_conn, tcon);
-		return NT_STATUS_INSUFFICIENT_RESOURCES;
-	}  
-
 	/* init ntvfs function pointers */
 	status = ntvfs_init_connection(req);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -260,8 +250,6 @@ void close_cnum(struct smbsrv_tcon *tcon)
 {
 	DEBUG(3,("%s closed connection to service %s\n",
 		 tcon->smb_conn->connection->socket->client_addr, lp_servicename(SNUM(tcon))));
-
-	yield_connection(tcon, lp_servicename(SNUM(tcon)));
 
 	/* tell the ntvfs backend that we are disconnecting */
 	tcon->ntvfs_ops->disconnect(tcon);
