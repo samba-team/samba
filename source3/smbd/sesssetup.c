@@ -502,11 +502,16 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	ZERO_STRUCT(plaintext_password);
 
 	DEBUG(3,("wct=%d flg2=0x%x\n", CVAL(inbuf, smb_wct), SVAL(inbuf, smb_flg2)));
-	
+
 	/* a SPNEGO session setup has 12 command words, whereas a normal
 	   NT1 session setup has 13. See the cifs spec. */
 	if (CVAL(inbuf, smb_wct) == 12 &&
 	    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
+		if (!global_spnego_negotiated) {
+			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at SPNEGO session setup when it was not negoitiated.\n"));
+			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+		}
+
 		return reply_sesssetup_and_X_spnego(conn, inbuf, outbuf, length, bufsize);
 	}
 
