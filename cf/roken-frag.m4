@@ -49,16 +49,12 @@ AC_CHECK_HEADERS([\
 	arpa/nameser.h				\
 	config.h				\
 	crypt.h					\
-	dbm.h					\
-	db.h					\
 	dirent.h				\
 	errno.h					\
 	err.h					\
 	fcntl.h					\
-	gdbm/ndbm.h				\
 	grp.h					\
 	ifaddrs.h				\
-	ndbm.h					\
 	net/if.h				\
 	netdb.h					\
 	netinet/in.h				\
@@ -69,7 +65,6 @@ AC_CHECK_HEADERS([\
 	paths.h					\
 	pwd.h					\
 	resolv.h				\
-	rpcsvc/dbm.h				\
 	rpcsvc/ypclnt.h				\
 	shadow.h				\
 	sys/bswap.h				\
