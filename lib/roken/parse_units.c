@@ -192,9 +192,8 @@ parse_flags (const char *s, const struct units *units,
 
 static int
 unparse_something (int num, const struct units *units, char *s, size_t len,
-		   int (*print) (char *s, size_t len, int div,
-				const char *name, int rem),
-		   int (*update) (int in, unsigned mult),
+		   int (*print) (char *, size_t, int, const char *, int),
+		   int (*update) (int, unsigned),
 		   const char *zero_string)
 {
     const struct units *u;
@@ -204,12 +203,12 @@ unparse_something (int num, const struct units *units, char *s, size_t len,
 	return snprintf (s, len, "%s", zero_string);
 
     for (u = units; num > 0 && u->name; ++u) {
-	int div;
+	int divisor;
 
-	div = num / u->mult;
+	divisor = num / u->mult;
 	if (div) {
 	    num = (*update) (num, u->mult);
-	    tmp = (*print) (s, len, div, u->name, num);
+	    tmp = (*print) (s, len, divisor, u->name, num);
 	    if (tmp < 0)
 		return tmp;
 	    if (tmp > len) {
@@ -226,11 +225,11 @@ unparse_something (int num, const struct units *units, char *s, size_t len,
 }
 
 static int
-print_unit (char *s, size_t len, int div, const char *name, int rem)
+print_unit (char *s, size_t len, int divisor, const char *name, int rem)
 {
     return snprintf (s, len, "%u %s%s%s",
-		     div, name,
-		     div == 1 ? "" : "s",
+		     divisor, name,
+		     divisor == 1 ? "" : "s",
 		     rem > 0 ? " " : "");
 }
 
@@ -301,7 +300,7 @@ print_units_table (const struct units *units, FILE *f)
 }
 
 static int
-print_flag (char *s, size_t len, int div, const char *name, int rem)
+print_flag (char *s, size_t len, int divisor, const char *name, int rem)
 {
     return snprintf (s, len, "%s%s", name, rem > 0 ? ", " : "");
 }
