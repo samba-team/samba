@@ -296,7 +296,7 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(samr_ntstatus,
-				"unable to initialise talloc context\n");
+				"unable to init talloc context\n");
 		goto done;
 	}
 
