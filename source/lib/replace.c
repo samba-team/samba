@@ -281,7 +281,7 @@ duplicate a string
 #ifdef REPLACE_INET_NTOA
 char *rep_inet_ntoa(struct in_addr ip)
 {
-	unsigned char *p = (unsigned char *)ip.s_addr;
+	unsigned char *p = (unsigned char *)&ip.s_addr;
 	static char buf[18];
 #if WORDS_BIGENDIAN
 	slprintf(buf, 17, "%d.%d.%d.%d", 
