@@ -361,6 +361,9 @@
 /* Define to 1 if you have the `security' library (-lsecurity). */
 #undef HAVE_LIBSECURITY
 
+/* Define to 1 if you have the `sendfile' library (-lsendfile). */
+#undef HAVE_LIBSENDFILE
+
 /* Define to 1 if you have the `socket' library (-lsocket). */
 #undef HAVE_LIBSOCKET
 
