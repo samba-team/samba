@@ -54,9 +54,6 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user,
 		return False;
 	}
 
-	/* Lanman2 cannot use SMB signing. */
-	cli->sign_info.use_smb_signing = False;
-
 	/* if in share level security then don't send a password now */
 	if (!(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		passlen = 0;
@@ -209,12 +206,11 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 	SSVAL(cli->outbuf,smb_vwv3,2);
 	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
 	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-	SSVAL(cli->outbuf,smb_vwv7,passlen);
 	SSVAL(cli->outbuf,smb_vwv8,0);
 	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
 	p = smb_buf(cli->outbuf);
-	memcpy(p, pword, passlen);
-	p += passlen;
+	p += clistr_push(cli, p, pword, -1, STR_TERMINATE); /* password */
+	SSVAL(cli->outbuf,smb_vwv7,PTR_DIFF(p, smb_buf(cli->outbuf)));
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE); /* username */
 	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE); /* workgroup */
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
@@ -257,11 +253,12 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 				  char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
-	fstring pword, ntpword;
+	uchar pword[24];
+	uchar ntpword[24];
 	char *p;
 	BOOL tried_signing = False;
 
-	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
+	if (passlen > sizeof(pword) || ntpasslen > sizeof(ntpword)) {
 		return False;
 	}
 
@@ -269,15 +266,21 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		/* non encrypted password supplied. Ignore ntpass. */
 		passlen = 24;
 		ntpasslen = 24;
-		SMBencrypt((uchar *)pass,cli->secblob.data,(uchar *)pword);
-		SMBNTencrypt((uchar *)pass,cli->secblob.data,(uchar *)ntpword);
+		SMBencrypt(pass,cli->secblob.data,pword);
+		SMBNTencrypt(pass,cli->secblob.data,ntpword);
 		if (!cli->sign_info.use_smb_signing && cli->sign_info.negotiated_smb_signing) {
-			cli_calculate_mac_key(cli, (uchar *)pass, (uchar *)ntpword);
+			cli_calculate_mac_key(cli, pass, ntpword);
 			tried_signing = True;
 		}
 	} else {
-		memcpy(pword, pass, passlen);
-		memcpy(ntpword, ntpass, ntpasslen);
+		/* pre-encrypted password supplied.  Only used for security=server, can't do
+		   signing becouse we don't have oringial key */
+		memcpy(pword, pass, 24);
+		if (ntpasslen == 24) {
+			memcpy(ntpword, ntpass, 24);
+		} else {
+			ZERO_STRUCT(ntpword);
+		}
 	}
 
 	/* send a session setup command */
@@ -305,8 +308,13 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
+	if (!cli_receive_smb(cli)) {
+		if (tried_signing) {
+			/* We only use it if we have a successful non-guest connect */
+			cli->sign_info.use_smb_signing = False;
+		}
 		return False;
+	}
 
 	show_msg(cli->inbuf);
 
@@ -482,8 +490,8 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 
 	/* encrypt the password with the challenge */
 	memcpy(challenge, chal1.data + 24, 8);
-	SMBencrypt((unsigned char *)pass, challenge,lmhash);
-	SMBNTencrypt((unsigned char *)pass, challenge,nthash);
+	SMBencrypt(pass, challenge,lmhash);
+	SMBNTencrypt(pass, challenge,nthash);
 
 #if 0
 	file_save("nthash.dat", nthash, 24);
@@ -1062,7 +1070,7 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 	}
 	if (cli->fd == -1) {
 		DEBUG(1,("Error connecting to %s (%s)\n",
-			 inet_ntoa(*ip),strerror(errno)));
+			 ip?inet_ntoa(*ip):host,strerror(errno)));
 		return False;
 	}
 
@@ -1182,9 +1190,8 @@ again:
 	if (!cli_session_setup(cli, user, password, strlen(password)+1, 
 			       password, strlen(password)+1, 
 			       domain)) {
-		if (!(flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK) 
-		    || cli_session_setup(cli, "", "", 0, 
-					 "", 0, domain)) {
+		if ((flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK)
+		    && cli_session_setup(cli, "", "", 0, "", 0, domain)) {
 		} else {
 			nt_status = cli_nt_error(cli);
 			DEBUG(1,("failed session setup with %s\n", nt_errstr(nt_status)));

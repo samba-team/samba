@@ -100,7 +100,7 @@ char *tmpdir(void)
  Determine whether we are in the specified group.
 ****************************************************************************/
 
-BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
+BOOL in_group(gid_t group, gid_t current_gid, int ngroups, const gid_t *groups)
 {
 	int i;
 
@@ -503,27 +503,32 @@ void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,ti
 /*******************************************************************
 close the low 3 fd's and open dev/null in their place
 ********************************************************************/
-void close_low_fds(void)
+void close_low_fds(BOOL stderr_too)
 {
   int fd;
   int i;
   close(0); close(1); 
-#ifndef __INSURE__
-  close(2);
-#endif
+
+  if (stderr_too) {
+	  close(2);
+  }
+
   /* try and use up these file descriptors, so silly
      library routines writing to stdout etc won't cause havoc */
   for (i=0;i<3;i++) {
-    fd = sys_open("/dev/null",O_RDWR,0);
-    if (fd < 0) fd = sys_open("/dev/null",O_WRONLY,0);
-    if (fd < 0) {
-      DEBUG(0,("Can't open /dev/null\n"));
-      return;
-    }
-    if (fd != i) {
-      DEBUG(0,("Didn't get file descriptor %d\n",i));
-      return;
-    }
+	  if (i == 2 && !stderr_too)
+		  continue;
+
+	  fd = sys_open("/dev/null",O_RDWR,0);
+	  if (fd < 0) fd = sys_open("/dev/null",O_WRONLY,0);
+	  if (fd < 0) {
+		  DEBUG(0,("Can't open /dev/null\n"));
+		  return;
+	  }
+	  if (fd != i) {
+		  DEBUG(0,("Didn't get file descriptor %d\n",i));
+		  return;
+	  }
   }
 }
 
@@ -678,7 +683,8 @@ void become_daemon(void)
 #endif /* HAVE_SETSID */
 
 	/* Close fd's 0,1,2. Needed if started by rsh */
-	close_low_fds();
+	close_low_fds(False);  /* Don't close stderr, let the debug system
+				  attach it to the logfile */
 }
 
 

@@ -25,7 +25,7 @@
 
 /* List of all connected clients */
 
-struct winbindd_cli_state *client_list;
+static struct winbindd_cli_state *client_list;
 static int num_clients;
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = False;
@@ -375,6 +375,9 @@ void winbind_process_packet(struct winbindd_cli_state *state)
 {
 	/* Process request */
 	
+	/* Ensure null termination of entire request */
+	state->request.domain[sizeof(state->request.domain)-1]='\0';
+
 	state->pid = state->request.pid;
 	
 	process_request(state);
@@ -687,6 +690,8 @@ int winbind_setup_common(void)
 		return 1;
 
 	}
+
+	namecache_enable();	/* Enable netbios namecache */
 
 	/* Get list of domains we look up requests for.  This includes the
 	   domain which we are a member of as well as any trusted

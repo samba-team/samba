@@ -174,14 +174,27 @@ typedef struct nt_printer_driver_info_level
 	NT_PRINTER_DRIVER_INFO_LEVEL_6 *info_6;
 } NT_PRINTER_DRIVER_INFO_LEVEL;
 
-typedef struct nt_printer_param
-{
-	fstring value;
-	uint32 type;
-	uint8 *data;
-	int data_len;
-	struct nt_printer_param *next;
-} NT_PRINTER_PARAM;
+/* predefined registry key names for printer data */
+
+#define SPOOL_PRINTERDATA_KEY		"PrinterDriverData"
+#define SPOOL_DSSPOOLER_KEY		"DsSpooler"
+#define SPOOL_DSDRIVER_KEY		"DsDriver"
+#define SPOOL_DSUSER_KEY		"DsUser"
+#define SPOOL_PNPDATA_KEY		"PnPData"
+
+/* container for a single registry key */
+
+typedef struct {
+	char		*name;
+	REGVAL_CTR 	values;
+} NT_PRINTER_KEY;
+
+/* container for all printer data */
+
+typedef struct {
+	int		num_keys;
+	NT_PRINTER_KEY	*keys;
+} NT_PRINTER_DATA;
 
 typedef struct ntdevicemode
 {
@@ -246,9 +259,8 @@ typedef struct nt_printer_info_level_2
 	fstring printprocessor;
 	fstring datatype;
 	fstring parameters;
-	NT_PRINTER_PARAM *specific;
+	NT_PRINTER_DATA data;
 	SEC_DESC_BUF *secdesc_buf;
-	/* not used but ... and how ??? */
 	uint32 changeid;
 	uint32 c_setprinter;
 	uint32 setuptime;	

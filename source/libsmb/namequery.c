@@ -170,6 +170,11 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	int sock;
 	BOOL result = False;
 
+	if (lp_disable_netbios()) {
+		DEBUG(5,("name_status_find(%s#%02x): netbios is disabled\n", q_name, q_type));
+		return False;
+	}
+
 	DEBUG(10, ("name_status_find: looking up %s#%02x at %s\n", q_name, 
 		   q_type, inet_ntoa(to_ip)));
 
@@ -191,7 +196,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	if (i == count)
 		goto done;
 
-	pull_ascii(name, status[i].name, 15, -1, STR_TERMINATE);
+	pull_ascii(name, status[i].name, 16, 15, STR_TERMINATE);
 	result = True;
 
  done:
@@ -211,7 +216,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 /*
   comparison function used by sort_ip_list
 */
-static int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
+int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
 {
 	int max_bits1=0, max_bits2=0;
 	int num_interfaces = iface_count();
@@ -272,6 +277,11 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
 	struct in_addr *ip_list = NULL;
+
+	if (lp_disable_netbios()) {
+		DEBUG(5,("name_query(%s#%02x): netbios is disabled\n", name, name_type));
+		return NULL;
+	}
 
 	if (timed_out) {
 		*timed_out = False;
@@ -556,6 +566,11 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 	int sock, i;
 	int num_interfaces = iface_count();
 
+	if (lp_disable_netbios()) {
+		DEBUG(5,("name_resolve_bcast(%s#%02x): netbios is disabled\n", name, name_type));
+		return False;
+	}
+
 	*return_ip_list = NULL;
 	*return_count = 0;
 	
@@ -601,6 +616,11 @@ BOOL resolve_wins(const char *name, int name_type,
 	int sock, t, i;
 	char **wins_tags;
 	struct in_addr src_ip;
+
+	if (lp_disable_netbios()) {
+		DEBUG(5,("resolve_wins(%s#%02x): netbios is disabled\n", name, name_type));
+		return False;
+	}
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -763,7 +783,7 @@ static BOOL resolve_hosts(const char *name,
 *********************************************************/
 
 static BOOL internal_resolve_name(const char *name, int name_type,
-                         		struct in_addr **return_iplist, int *return_count)
+				  struct in_addr **return_iplist, int *return_count)
 {
   pstring name_resolve_list;
   fstring tok;
@@ -796,6 +816,15 @@ static BOOL internal_resolve_name(const char *name, int name_type,
     return True;
   }
   
+  /* Check netbios name cache */
+
+  if (namecache_fetch(name, name_type, return_iplist, return_count)) {
+
+	  /* This could be a negative response */
+
+	  return (*return_count > 0);
+  }
+
   pstrcpy(name_resolve_list, lp_name_resolve_order());
   ptr = name_resolve_list;
   if (!ptr || !*ptr)
@@ -803,9 +832,16 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 
   while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
 	  if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-		  if (name_type == 0x20 && resolve_hosts(name, return_iplist, return_count)) {
-		    result = True;
-		    goto done;
+		  if (name_type == 0x20) {
+			  if (resolve_hosts(name, return_iplist, return_count)) {
+				  result = True;
+				  goto done;
+			  } else {
+
+				  /* Store negative lookup result */
+
+				  namecache_store(name, name_type, 0, NULL);
+			  }
 		  }
 	  } else if(strequal( tok, "lmhosts")) {
 		  if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
@@ -877,6 +913,10 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 	  *return_iplist = nodupes_iplist;
 	  *return_count = nodupes_count;
   }
+ 
+  /* Save in name cache */
+
+  namecache_store(name, name_type, *return_count, *return_iplist);
 
   /* Display some debugging info */
 
@@ -930,10 +970,15 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
  Find the IP address of the master browser or DMB for a workgroup.
 *********************************************************/
 
-BOOL find_master_ip(char *group, struct in_addr *master_ip)
+BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 {
 	struct in_addr *ip_list = NULL;
 	int count = 0;
+
+	if (lp_disable_netbios()) {
+		DEBUG(5,("find_master_ip(%s): netbios is disabled\n", group));
+		return False;
+	}
 
 	if (internal_resolve_name(group, 0x1D, &ip_list, &count)) {
 		*master_ip = ip_list[0];
@@ -957,10 +1002,14 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 BOOL lookup_dc_name(const char *srcname, const char *domain, 
 		    struct in_addr *dc_ip, char *ret_name)
 {
-#if !defined(I_HATE_WINDOWS_REPLY_CODE)
-	
+#if !defined(I_HATE_WINDOWS_REPLY_CODE)	
 	fstring dc_name;
 	BOOL ret;
+
+	if (lp_disable_netbios()) {
+		DEBUG(5,("lookup_dc_name(%s): netbios is disabled\n", domain));
+		return False;
+	}
 	
 	/*
 	 * Due to the fact win WinNT *sucks* we must do a node status

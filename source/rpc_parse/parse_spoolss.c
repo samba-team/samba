@@ -322,7 +322,7 @@ reads or writes an NOTIFY INFO DATA structure.
 
 static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=0xADDE0FF0;
+	uint32 useless_ptr=0x0FF0ADDE;
 
 	prs_debug(ps, depth, desc, "smb_io_notify_info_data");
 	depth++;
@@ -376,6 +376,14 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 		if(!prs_uint32("pointer", ps, depth, &useless_ptr))
 			return False;
 
+		break;
+
+	case NOTIFY_SECDESC:
+		if( !prs_uint32( "sd size", ps, depth, &data->notify_data.sd.size ) )
+			return False;
+		if( !prs_uint32( "pointer", ps, depth, &useless_ptr ) )
+			return False;
+		
 		break;
 
 	default:
@@ -449,6 +457,13 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 		if(!prs_uint8s(True,"buffer",ps,depth,(uint8*)data->notify_data.data.string,data->notify_data.data.length))
 			return False;
 
+		break;
+
+	case NOTIFY_SECDESC:	
+		if( !prs_uint32("secdesc size ", ps, depth, &data->notify_data.sd.size ) )
+			return False;
+		if ( !sec_io_desc( "sec_desc", &data->notify_data.sd.desc, ps, depth ) )
+			return False;
 		break;
 
 	default:
@@ -675,9 +690,11 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 	   Let the size determine that */
 	   
 	switch (devmode->specversion) {
+		/* list of observed spec version's */
 		case 0x0320:
 		case 0x0400:
 		case 0x0401:
+		case 0x040d:
 			break;
 			
 		default:
@@ -5183,7 +5200,7 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 	*ar = NULL;
 
 	while (src < ((char *)buf5->buffer) + buf5->buf_len*2) {
-		rpcstr_pull(f, src, sizeof(f)-1, -1, 0);
+		rpcstr_pull(f, src, sizeof(f)-1, -1, STR_TERMINATE);
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
 		tar = (fstring *)Realloc(*ar, sizeof(fstring)*(n+2));
 		if (!tar)
@@ -6171,42 +6188,6 @@ BOOL spoolss_io_r_resetprinter(char *desc, SPOOL_R_RESETPRINTER *r_u, prs_struct
 
 /*******************************************************************
 ********************************************************************/  
-BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
-				uint32 type, const uint8 *data, uint32 len)
-{
-	DEBUG(5,("converting a specific param struct\n"));
-
-	if (*param == NULL)
-	{
-		*param=(NT_PRINTER_PARAM *)malloc(sizeof(NT_PRINTER_PARAM));
-		if(*param == NULL)
-			return False;
-		memset((char *)*param, '\0', sizeof(NT_PRINTER_PARAM));
-		DEBUGADD(6,("Allocated a new PARAM struct\n"));
-	}
-	unistr2_to_ascii((*param)->value, value, sizeof((*param)->value)-1);
-	(*param)->type = type;
-	
-	/* le champ data n'est pas NULL termine */
-	/* on stocke donc la longueur */
-	
-	(*param)->data_len=len;
-	
-	if (len) {
-		(*param)->data=(uint8 *)malloc(len * sizeof(uint8));
-		if((*param)->data == NULL)
-			return False;
-		memcpy((*param)->data, data, len);
-	}
-		
-	DEBUGADD(6,("\tvalue:[%s], len:[%d]\n",(*param)->value, (*param)->data_len));
-	dump_data(10, (char *)(*param)->data, (*param)->data_len);
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
 
 static BOOL spoolss_io_addform(char *desc, FORM *f, uint32 ptr, prs_struct *ps, int depth)
 {
@@ -6750,7 +6731,7 @@ BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
 	q_u->unknown0=0x0;
 	q_u->unknown1=0x0;
 
-	q_u->info_ptr=0xaddee11e;
+	q_u->info_ptr=0x0FF0ADDE;
 
 	q_u->info.version=2;
 	
@@ -7525,6 +7506,34 @@ BOOL make_spoolss_q_deleteprinterdata(SPOOL_Q_DELETEPRINTERDATA *q_u,
 {
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, POLICY_HND *handle,
+			     uint32 flags, uint32 options, char *localmachine,
+			     uint32 printerlocal, SPOOL_NOTIFY_OPTION *option)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+
+	q_u->flags = flags;
+	q_u->options = options;
+
+	q_u->localmachine_ptr = 1;
+
+	init_unistr2(&q_u->localmachine, localmachine, 
+		     strlen(localmachine) + 1);
+
+	q_u->printerlocal = printerlocal;
+
+	if (option)
+		q_u->option_ptr = 1;
+
+	q_u->option = option;
 
 	return True;
 }

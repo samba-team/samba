@@ -1335,7 +1335,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 ********************************************************************/
 
 BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
-			      int depth, uint16 validation_level)
+		       int depth, uint16 validation_level)
 {
 	int i;
 

@@ -110,16 +110,8 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	char *s;
 	int ret;
 
-	if (!ads->user_name) {
-		/* by default use the machine account */
-		extern pstring global_myname;
-		fstring myname;
-		fstrcpy(myname, global_myname);
-		strlower(myname);
-		asprintf(&ads->user_name, "HOST/%s", global_myname);
-	}
-	asprintf(&s, "%s@%s", ads->user_name, ads->realm);
-	ret = kerberos_kinit_password(s, ads->password);
+	asprintf(&s, "%s@%s", ads->auth.user_name, ads->auth.realm);
+	ret = kerberos_kinit_password(s, ads->auth.password);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 

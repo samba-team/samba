@@ -128,6 +128,47 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	return True;
 }
 
+BOOL secrets_store_domain_guid(char *domain, GUID *guid)
+{
+	fstring key;
+
+	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
+	strupper(key);
+	return secrets_store(key, guid, sizeof(GUID));
+}
+
+BOOL secrets_fetch_domain_guid(char *domain, GUID *guid)
+{
+	GUID *dyn_guid;
+	fstring key;
+	size_t size;
+	GUID new_guid;
+
+	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
+	strupper(key);
+	dyn_guid = (GUID *)secrets_fetch(key, &size);
+
+	DEBUG(6,("key is %s, guid is at %x, size is %d\n", key, dyn_guid, size));
+
+	if ((NULL == dyn_guid) && (ROLE_DOMAIN_PDC == lp_server_role())) {
+		uuid_generate_random(&new_guid);
+		if (!secrets_store_domain_guid(domain, &new_guid))
+			return False;
+		dyn_guid = (GUID *)secrets_fetch(key, &size);
+		if (dyn_guid == NULL)
+			return False;
+	}
+
+	if (size != sizeof(GUID))
+	{ 
+		SAFE_FREE(dyn_guid);
+		return False;
+	}
+
+	*guid = *dyn_guid;
+	SAFE_FREE(dyn_guid);
+	return True;
+}
 
 /**
  * Form a key for fetching the machine trust account password
@@ -178,7 +219,7 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 	if (plaintext) {
 		/* we have an ADS password - use that */
 		DEBUG(4,("Using ADS machine password\n"));
-		E_md4hash((uchar *)plaintext, ret_pwd);
+		E_md4hash(plaintext, ret_pwd);
 		SAFE_FREE(plaintext);
 		return True;
 	}
@@ -388,7 +429,9 @@ BOOL secrets_store_ldap_pw(const char* dn, char* pw)
 
 
 /**
- * The linked list is allocated on the supplied talloc context, caller gets to destory
+ * Get trusted domains info from secrets.tdb.
+ *
+ * The linked list is allocated on the supplied talloc context, caller gets to destroy
  * when done.
  *
  * @param ctx Allocation context
@@ -409,10 +452,11 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 	int start_idx;
 	uint32 idx = 0;
 	size_t size;
+	fstring dom_name;
 	struct trusted_dom_pass *pass;
 	NTSTATUS status;
 
-	secrets_init();
+	if (!secrets_init()) return NT_STATUS_ACCESS_DENIED;
 
 	*num_domains = 0;
 	start_idx = *enum_ctx;
@@ -455,6 +499,10 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 			SAFE_FREE(pass);
 			continue;
 		}
+		
+		pull_ucs2_fstring(dom_name, pass->uni_name);
+		DEBUG(18, ("Fetched secret record num %d.\nDomain name: %s, SID: %s\n",
+			   idx, dom_name, sid_string_static(&pass->domain_sid)));
 
 		SAFE_FREE(secrets_key);
 
@@ -475,6 +523,10 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 			dom->name = talloc_strdup_w(ctx, pass->uni_name);
 			
 			(*domains)[idx - start_idx] = dom;
+			
+			DEBUG(18, ("Secret record is in required range.\n \
+				   start_idx = %d, max_num_domains = %d. Added to returned array.\n",
+				   start_idx, max_num_domains));
 
 			*enum_ctx = idx + 1;
 			(*num_domains)++;
@@ -487,6 +539,10 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num
 				/* this is the last entry in the whole enumeration */
 				status = NT_STATUS_OK;
 			}
+		} else {
+			DEBUG(18, ("Secret is outside the required range.\n \
+				   start_idx = %d, max_num_domains = %d. Not added to returned array\n",
+				   start_idx, max_num_domains));
 		}
 		
 		idx++;

@@ -5,18 +5,34 @@
 */
 
 typedef struct {
-	void *ld;
-	char *realm;
-	char *workgroup;
-	char *ldap_server;
-	char *ldap_server_name;
-	char *kdc_server;
+	void *ld; /* the active ldap structure */
+	struct in_addr ldap_ip; /* the ip of the active connection, if any */
+	time_t last_attempt; /* last attempt to reconnect */
 	int ldap_port;
-	char *bind_path;
-	time_t last_attempt;
-	char *password;
-	char *user_name;
-	char *server_realm;
+	
+	/* info needed to find the server */
+	struct {
+		char *realm;
+		char *workgroup;
+		char *ldap_server;
+		int foreign; /* set to 1 if connecting to a foreign realm */
+	} server;
+
+	/* info needed to authenticate */
+	struct {
+		char *realm;
+		char *password;
+		char *user_name;
+		char *kdc_server;
+		int no_bind;
+	} auth;
+
+	/* info derived from the servers config */
+	struct {
+		char *realm;
+		char *bind_path;
+		char *ldap_server_name;
+	} config;
 } ADS_STRUCT;
 
 typedef struct {
@@ -94,7 +110,7 @@ typedef void **ADS_MODLIST;
 
 /* macros to simplify error returning */
 #define ADS_ERROR(rc) ads_build_error(ADS_ERROR_LDAP, rc, 0)
-#define ADS_ERROR_SYSTEM(rc) ads_build_error(ADS_ERROR_SYSTEM, rc, 0)
+#define ADS_ERROR_SYSTEM(rc) ads_build_error(ADS_ERROR_SYSTEM, rc?rc:EINVAL, 0)
 #define ADS_ERROR_KRB5(rc) ads_build_error(ADS_ERROR_KRB5, rc, 0)
 #define ADS_ERROR_GSS(rc, minor) ads_build_error(ADS_ERROR_GSS, rc, minor)
 
@@ -129,3 +145,25 @@ typedef void **ADS_MODLIST;
 /* account types */
 #define ATYPE_GROUP               0x10000000
 #define ATYPE_USER                0x30000000
+
+/* Mailslot or cldap getdcname response flags */
+#define ADS_PDC            0x00000001  /* DC is PDC */
+#define ADS_GC             0x00000004  /* DC is a GC of forest */
+#define ADS_LDAP           0x00000008  /* DC is an LDAP server */
+#define ADS_DS             0x00000010  /* DC supports DS */
+#define ADS_KDC            0x00000020  /* DC is running KDC */
+#define ADS_TIMESERV       0x00000040  /* DC is running time services */
+#define ADS_CLOSEST        0x00000080  /* DC is closest to client */
+#define ADS_WRITABLE       0x00000100  /* DC has writable DS */
+#define ADS_GOOD_TIMESERV  0x00000200  /* DC has hardware clock
+	  				 (and running time) */
+#define ADS_NDNC           0x00000400  /* DomainName is non-domain NC serviced
+	  				 by LDAP server */
+#define ADS_PINGS          0x0000FFFF  /* Ping response */
+#define ADS_DNS_CONTROLLER 0x20000000  /* DomainControllerName is a DNS name*/
+#define ADS_DNS_DOMAIN     0x40000000  /* DomainName is a DNS name */
+#define ADS_DNS_FOREST     0x80000000  /* DnsForestName is a DNS name */
+
+/* DomainCntrollerAddressType */
+#define ADS_INET_ADDRESS      0x00000001
+#define ADS_NETBIOS_ADDRESS   0x00000002

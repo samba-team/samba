@@ -171,7 +171,7 @@ int x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 	   flush a bit more than necessary, but that is harmless */
 	if (f->buftype == X_IOLBF && f->bufused) {
 		int i;
-		for (i=size-1; i>=0; i--) {
+		for (i=(size*nmemb)-1; i>=0; i--) {
 			if (*(i+(const char *)p) == '\n') {
 				x_fflush(f);
 				break;

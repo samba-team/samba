@@ -705,14 +705,33 @@ struct response_record *queue_query_name( struct subnet_record *subrec,
 {
   struct packet_struct *p;
   struct response_record *rrec;
+  struct in_addr to_ip;
 
   if(assert_check_subnet(subrec))
     return NULL;
 
+  to_ip = subrec->bcast_ip;
+  
+  /* queries to the WINS server turn up here as queries to IP 0.0.0.0 
+     These need to be handled a bit differently */
+  if (subrec->type == UNICAST_SUBNET && is_zero_ip(to_ip)) {
+	  /* what we really need to do is loop over each of our wins
+	   * servers and wins server tags here, but that just doesn't
+	   * fit our architecture at the moment (userdata may already
+	   * be used when we get here). For now we just query the first
+	   * active wins server on the first tag. */
+	  char **tags = wins_srv_tags();
+	  if (!tags) {
+		  return NULL;
+	  }
+	  to_ip = wins_srv_ip_tag(tags[0], to_ip);
+	  wins_srv_tags_free(tags);
+  }
+
   if(( p = create_and_init_netbios_packet(nmbname, 
 					  (subrec != unicast_subnet), 
 					  (subrec == unicast_subnet), 
-					  subrec->bcast_ip)) == NULL)
+					  to_ip)) == NULL)
     return NULL;
 
   if(lp_bind_interfaces_only()) {
@@ -1670,7 +1689,7 @@ void retransmit_or_expire_response_records(time_t t)
 to IP %s on subnet %s\n", rrec->response_id, inet_ntoa(rrec->packet->ip), 
                           subrec->subnet_name));
           }
-          rrec->repeat_time += rrec->repeat_interval;
+          rrec->repeat_time = t + rrec->repeat_interval;
           rrec->repeat_count--;
         }
         else
@@ -1950,7 +1969,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   /* Setup the smb part. */
   ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
   memcpy(tmp,ptr,4);
-  set_message(ptr,17,17 + len,True);
+  set_message(ptr,17,23 + len,True);
   memcpy(ptr,tmp,4);
 
   SCVAL(ptr,smb_com,SMBtrans);

@@ -395,33 +395,33 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		{
 		case SEC_DOMAIN:
 			DEBUG(5,("Making default auth method list for security=domain\n"));
-			auth_method_list = str_list_make("guest sam ntdomain");
+			auth_method_list = str_list_make("guest sam winbind ntdomain", NULL);
 			break;
 		case SEC_SERVER:
 			DEBUG(5,("Making default auth method list for security=server\n"));
-			auth_method_list = str_list_make("guest sam smbserver");
+			auth_method_list = str_list_make("guest sam smbserver", NULL);
 			break;
 		case SEC_USER:
 			if (lp_encrypted_passwords()) {	
 				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = yes\n"));
-				auth_method_list = str_list_make("guest sam");
+				auth_method_list = str_list_make("guest sam", NULL);
 			} else {
 				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = no\n"));
-				auth_method_list = str_list_make("guest unix");
+				auth_method_list = str_list_make("guest unix", NULL);
 			}
 			break;
 		case SEC_SHARE:
 			if (lp_encrypted_passwords()) {
 				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = yes\n"));
-				auth_method_list = str_list_make("guest sam");
+				auth_method_list = str_list_make("guest sam", NULL);
 			} else {
 				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = no\n"));
-				auth_method_list = str_list_make("guest unix");
+				auth_method_list = str_list_make("guest unix", NULL);
 			}
 			break;
 		case SEC_ADS:
 			DEBUG(5,("Making default auth method list for security=ADS\n"));
-			auth_method_list = str_list_make("guest sam ads ntdomain");
+			auth_method_list = str_list_make("guest sam ads winbind ntdomain", NULL);
 			break;
 		default:
 			DEBUG(5,("Unknown auth method!\n"));

@@ -1,11 +1,12 @@
 /* 
    Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
-   Copyright (C) Gerald Carter 2001
-   Copyright (C) Shahms King 2001
-   Copyright (C) Jean François Micouleau 1998
-   Copyright (C) Andrew Bartlett 2002
-   
+   Copyright (C) Jean François Micouleau       1998
+   Copyright (C) Gerald Carter                         2001
+   Copyright (C) Shahms King                   2001
+   Copyright (C) Andrew Bartlett               2002
+   Copyright (C) Stefan (metze) Metzmacher     2002
+    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -70,7 +71,13 @@ struct ldapsam_privates {
 	
 	uint32 low_nua_rid; 
 	uint32 high_nua_rid; 
+
+	char *bind_dn;
+	char *bind_secret;
 };
+
+
+static struct ldapsam_privates *static_ldap_state;
 
 static uint32 ldapsam_get_next_available_nua_rid(struct ldapsam_privates *ldap_state);
 
@@ -153,11 +160,13 @@ static const char *attr[] = {"uid", "pwdLastSet", "logonTime",
 static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP ** ldap_struct)
 {
 
+	int version;
+
 	if (geteuid() != 0) {
 		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not root..\n"));
 		return False;
 	}
-	
+
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 	DEBUG(10, ("ldapsam_open_connection: %s\n", ldap_state->uri));
 	
@@ -165,6 +174,16 @@ static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP *
 		DEBUG(0, ("ldap_initialize: %s\n", strerror(errno)));
 		return (False);
 	}
+	
+	if (ldap_get_option(*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS)
+	{
+		if (version != LDAP_VERSION3)
+		{
+			version = LDAP_VERSION3;
+			ldap_set_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
+		}
+	}
+
 #else 
 
 	/* Parse the string manually */
@@ -173,7 +192,6 @@ static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP *
 		int rc;
 		int tls = LDAP_OPT_X_TLS_HARD;
 		int port = 0;
-		int version;
 		fstring protocol;
 		fstring host;
 		const char *p = ldap_state->uri; 
@@ -252,41 +270,90 @@ static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP *
 
 
 /*******************************************************************
+ a rebind function for authenticated referrals
+ This version takes a void* that we can shove useful stuff in :-)
+******************************************************************/
+
+static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp, 
+				   int *methodp, int freeit, void *arg)
+{
+	struct ldapsam_privates *ldap_state = arg;
+	
+	/** @TODO Should we be doing something to check what servers we rebind to?
+	    Could we get a referral to a machine that we don't want to give our
+	    username and password to? */
+	
+	if (freeit) {
+		SAFE_FREE(*whop);
+		memset(*credp, '\0', strlen(*credp));
+		SAFE_FREE(*credp);
+	} else {
+		DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n", 
+			  ldap_state->bind_dn));
+
+		*whop = strdup(ldap_state->bind_dn);
+		if (!*whop) {
+			return LDAP_NO_MEMORY;
+		}
+		*credp = strdup(ldap_state->bind_secret);
+		if (!*credp) {
+			SAFE_FREE(*whop);
+			return LDAP_NO_MEMORY;
+		}
+		*methodp = LDAP_AUTH_SIMPLE;
+	}
+	return 0;
+}
+
+/*******************************************************************
+ a rebind function for authenticated referrals
+ This version takes a void* that we can shove useful stuff in :-)
+ and actually does the connection.
+******************************************************************/
+
+static int rebindproc_connect_with_state (LDAP *ldap_struct, 
+					  LDAP_CONST char *url, 
+					  ber_tag_t request,
+					  ber_int_t msgid, void *arg)
+{
+	struct ldapsam_privates *ldap_state = arg;
+	int rc;
+	DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n", 
+		 ldap_state->bind_dn));
+	
+	/** @TODO Should we be doing something to check what servers we rebind to?
+	    Could we get a referral to a machine that we don't want to give our
+	    username and password to? */
+
+	rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
+	
+	return rc;
+}
+
+/*******************************************************************
  Add a rebind function for authenticated referrals
 ******************************************************************/
 
 static int rebindproc (LDAP *ldap_struct, char **whop, char **credp,
 		       int *method, int freeit )
 {
-	int rc;
-	char *ldap_dn;
-	char *ldap_secret;
+	return rebindproc_with_state(ldap_struct, whop, credp,
+				   method, freeit, static_ldap_state);
 	
-	/** @TODO Should we be doing something to check what servers we rebind to?
-	    Could we get a referral to a machine that we don't want to give our
-	    username and password to? */
-	
-	if (freeit != 0)
-	{
-		
-		if (!fetch_ldapsam_pw(&ldap_dn, &ldap_secret)) 
-		{
-			DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
-			return LDAP_OPERATIONS_ERROR;  /* No idea what to return */
-		}
-		
-		DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n", 
-			  ldap_dn));
-
-		rc = ldap_simple_bind_s(ldap_struct, ldap_dn, ldap_secret);
-		
-		SAFE_FREE(ldap_dn);
-		SAFE_FREE(ldap_secret);
-
-		return rc;
-	}
-	return 0;
 }
+
+/*******************************************************************
+ a rebind function for authenticated referrals
+ this also does the connection, but no void*.
+******************************************************************/
+
+static int rebindproc_connect (LDAP * ld, LDAP_CONST char *url, int request,
+			       ber_int_t msgid)
+{
+	return rebindproc_connect_with_state(ld, url, (ber_tag_t)request, msgid, 
+					     static_ldap_state);
+}
+
 
 /*******************************************************************
  connect to the ldap server under system privilege.
@@ -297,6 +364,10 @@ static BOOL ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * l
 	char *ldap_dn;
 	char *ldap_secret;
 
+	/* The rebind proc needs this *HACK*.  We are not multithreaded, so
+	   this will work, but it's not nice. */
+	static_ldap_state = ldap_state;
+
 	/* get the password */
 	if (!fetch_ldapsam_pw(&ldap_dn, &ldap_secret))
 	{
@@ -304,18 +375,31 @@ static BOOL ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * l
 		return False;
 	}
 
+	ldap_state->bind_dn = ldap_dn;
+	ldap_state->bind_secret = ldap_secret;
+
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
 	   (OpenLDAP) doesnt' seem to support it */
 	   
 	DEBUG(10,("ldap_connect_system: Binding to ldap server as \"%s\"\n",
 		ldap_dn));
-	
-	ldap_set_rebind_proc(ldap_struct, (LDAP_REBIND_PROC *)(&rebindproc));	
 
+#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
+# if LDAP_SET_REBIND_PROC_ARGS == 2	
+	ldap_set_rebind_proc(ldap_struct, &rebindproc_connect);	
+# endif
+# if LDAP_SET_REBIND_PROC_ARGS == 3	
+	ldap_set_rebind_proc(ldap_struct, &rebindproc_connect_with_state, (void *)ldap_state);	
+# endif
+#else
+# if LDAP_SET_REBIND_PROC_ARGS == 2	
+	ldap_set_rebind_proc(ldap_struct, &rebindproc);	
+# endif
+# if LDAP_SET_REBIND_PROC_ARGS == 3	
+	ldap_set_rebind_proc(ldap_struct, &rebindproc_with_state, (void *)ldap_state);	
+# endif
+#endif
 	rc = ldap_simple_bind_s(ldap_struct, ldap_dn, ldap_secret);
-
-	SAFE_FREE(ldap_dn);
-	SAFE_FREE(ldap_secret);
 
 	if (rc != LDAP_SUCCESS)
 	{
@@ -756,18 +840,20 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		/* leave as default */
 	} else {
 		pdb_gethexpwd(temp, smblmpwd);
-		memset((char *)temp, '\0', sizeof(temp));
+		memset((char *)temp, '\0', strlen(temp)+1);
 		if (!pdb_set_lanman_passwd(sampass, smblmpwd))
 			return False;
+		ZERO_STRUCT(smblmpwd);
 	}
 
 	if (!get_single_attribute (ldap_struct, entry, "ntPassword", temp)) {
 		/* leave as default */
 	} else {
 		pdb_gethexpwd(temp, smbntpwd);
-		memset((char *)temp, '\0', sizeof(temp));
+		memset((char *)temp, '\0', strlen(temp)+1);
 		if (!pdb_set_nt_passwd(sampass, smbntpwd))
 			return False;
+		ZERO_STRUCT(smbntpwd);
 	}
 
 	if (!get_single_attribute (ldap_struct, entry, "acctFlags", temp)) {
@@ -880,7 +966,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		make_a_mod(mods, ldap_op, "smbHome", pdb_get_homedir(sampass));
 		
 	if (IS_SAM_SET(sampass, FLAG_SAM_DRIVE))
-		make_a_mod(mods, ldap_op, "homeDrive", pdb_get_dirdrive(sampass));
+		make_a_mod(mods, ldap_op, "homeDrive", pdb_get_dir_drive(sampass));
 	
 	if (IS_SAM_SET(sampass, FLAG_SAM_LOGONSCRIPT))
 		make_a_mod(mods, ldap_op, "scriptPath", pdb_get_logon_script(sampass));
@@ -1153,6 +1239,10 @@ static BOOL ldapsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	BOOL ret = False;
 
+	/* The rebind proc needs this *HACK*.  We are not multithreaded, so
+	   this will work, but it's not nice. */
+	static_ldap_state = ldap_state;
+
 	while (!ret) {
 		if (!ldap_state->entry)
 			return False;
@@ -1203,7 +1293,7 @@ static BOOL ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	if (entry)
 	{
 		if (!init_sam_from_ldap(ldap_state, user, ldap_struct, entry)) {
-			DEBUG(0,("ldapsam_getsampwnam: init_sam_from_ldap failed!\n"));
+			DEBUG(1,("ldapsam_getsampwnam: init_sam_from_ldap failed for user '%s'!\n", sname));
 			ldap_msgfree(result);
 			ldap_unbind(ldap_struct);
 			return False;
@@ -1247,7 +1337,7 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 
 	if (ldap_count_entries(ldap_struct, result) < 1)
 	{
-		DEBUG(0,
+		DEBUG(4,
 		      ("We don't find this rid [%i] count=%d\n", rid,
 		       ldap_count_entries(ldap_struct, result)));
 		ldap_unbind(ldap_struct);
@@ -1258,7 +1348,7 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	if (entry)
 	{
 		if (!init_sam_from_ldap(ldap_state, user, ldap_struct, entry)) {
-			DEBUG(0,("ldapsam_getsampwrid: init_sam_from_ldap failed!\n"));
+			DEBUG(1,("ldapsam_getsampwrid: init_sam_from_ldap failed!\n"));
 			ldap_msgfree(result);
 			ldap_unbind(ldap_struct);
 			return False;
@@ -1275,7 +1365,7 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	}
 }
 
-static BOOL ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+static BOOL ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
@@ -1529,6 +1619,13 @@ static void free_private_data(void **vp)
 	if ((*ldap_state)->ldap_struct) {
 		ldap_unbind((*ldap_state)->ldap_struct);
 	}
+
+	if ((*ldap_state)->bind_secret) {
+		memset((*ldap_state)->bind_secret, '\0', strlen((*ldap_state)->bind_secret));
+	}
+
+	SAFE_FREE((*ldap_state)->bind_dn);
+	SAFE_FREE((*ldap_state)->bind_secret);
 
 	*ldap_state = NULL;
 

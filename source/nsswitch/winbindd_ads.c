@@ -61,8 +61,8 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 
 		if (*res) ads_msgfree(ads, *res);
 		*res = NULL;
-		DEBUG(3,("Reopening ads connection to %s after error %s\n", 
-			 ads->ldap_server, ads_errstr(status)));
+		DEBUG(3,("Reopening ads connection to realm '%s' after error %s\n", 
+			 ads->config.realm, ads_errstr(status)));
 		if (ads->ld) {
 			ldap_unbind(ads->ld); 
 		}
@@ -87,7 +87,7 @@ ADS_STATUS ads_search_retry(ADS_STRUCT *ads, void **res,
 			    const char *exp, 
 			    const char **attrs)
 {
-	return ads_do_search_retry(ads, ads->bind_path, LDAP_SCOPE_SUBTREE,
+	return ads_do_search_retry(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE,
 				   exp, attrs, res);
 }
 
@@ -108,8 +108,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	char *ccache;
-	struct in_addr server_ip;
-	char *sname;
 
 	if (domain->private) {
 		return (ADS_STRUCT *)domain->private;
@@ -120,30 +118,23 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	SETENV("KRB5CCNAME", ccache, 1);
 	unlink(ccache);
 
-	if (resolve_name(domain->name, &server_ip, 0x1b)) {
-		sname = inet_ntoa(server_ip);
-	} else if (resolve_name(domain->name, &server_ip, 0x1c)) {
-		sname = inet_ntoa(server_ip);
-	} else {
-		if (strcasecmp(domain->name, lp_workgroup()) != 0) {
-			DEBUG(1,("can't find domain controller for %s\n", domain->name));
-			return NULL;
-		}
-		sname = NULL;
-	}
-
-	ads = ads_init(primary_realm, domain->name, NULL, NULL, NULL);
+	ads = ads_init(domain->alt_name, domain->name, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init for domain %s failed\n", domain->name));
 		return NULL;
 	}
 
 	/* the machine acct password might have change - fetch it every time */
-	SAFE_FREE(ads->password);
-	ads->password = secrets_fetch_machine_password();
+	SAFE_FREE(ads->auth.password);
+	ads->auth.password = secrets_fetch_machine_password();
+
+	if (primary_realm) {
+		SAFE_FREE(ads->auth.realm);
+		ads->auth.realm = strdup(primary_realm);
+	}
 
 	status = ads_connect(ads);
-	if (!ADS_ERR_OK(status) || !ads->realm) {
+	if (!ADS_ERR_OK(status) || !ads->config.realm) {
 		extern struct winbindd_methods msrpc_methods;
 		DEBUG(1,("ads_connect for domain %s failed: %s\n", 
 			 domain->name, ads_errstr(status)));
@@ -161,10 +152,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	/* remember our primary realm for trusted domain support */
 	if (!primary_realm) {
-		primary_realm = strdup(ads->realm);
+		primary_realm = strdup(ads->config.realm);
 	}
-
-	fstrcpy(domain->full_name, ads->server_realm);
 
 	domain->private = (void *)ads;
 	return ads;
@@ -405,7 +394,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 	/* accept either the win2000 or the pre-win2000 username */
 	asprintf(&exp, "(|(sAMAccountName=%s)(userPrincipalName=%s@%s))", 
-		 name, name, ads->realm);
+		 name, name, ads->config.realm);
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
 	if (!ADS_ERR_OK(rc)) {
@@ -534,49 +523,6 @@ failed:
 	if (res) ads_msgfree(ads, res);
 	return False;
 }
-
-
-/* convert a sid to a distnguished name */
-static NTSTATUS sid_to_distinguished_name(struct winbindd_domain *domain,
-					  TALLOC_CTX *mem_ctx,
-					  DOM_SID *sid,
-					  char **dn)
-{
-	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"distinguishedName", NULL};
-	ADS_STATUS rc;
-	void *msg = NULL;
-	char *exp;
-	char *sidstr;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(3,("ads: sid_to_distinguished_name\n"));
-
-	ads = ads_cached_connection(domain);
-	if (!ads) goto done;
-
-	sidstr = sid_binstring(sid);
-	asprintf(&exp, "(objectSid=%s)", sidstr);
-	rc = ads_search_retry(ads, &msg, exp, attrs);
-	free(exp);
-	free(sidstr);
-	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1,("sid_to_distinguished_name ads_search: %s\n", ads_errstr(rc)));
-		goto done;
-	}
-
-	*dn = ads_pull_string(ads, mem_ctx, msg, "distinguishedName");
-
-	status = NT_STATUS_OK;
-
-	DEBUG(3,("ads sid_to_distinguished_name mapped %s\n", *dn));
-
-done:
-	if (msg) ads_msgfree(ads, msg);
-
-	return status;
-}
-
 
 /* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
@@ -831,6 +777,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_domains,
 				char ***names,
+				char ***alt_names,
 				DOM_SID **dom_sids)
 {
 	ADS_STRUCT *ads;
@@ -842,7 +789,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) return NT_STATUS_UNSUCCESSFUL;
 
-	rc = ads_trusted_domains(ads, mem_ctx, num_domains, names, dom_sids);
+	rc = ads_trusted_domains(ads, mem_ctx, num_domains, names, alt_names, dom_sids);
 
 	return ads_ntstatus(rc);
 }
@@ -867,6 +814,37 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 	return ads_ntstatus(rc);
 }
 
+
+/* find alternate names list for the domain - for ADS this is the
+   netbios name */
+static NTSTATUS alternate_name(struct winbindd_domain *domain)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	TALLOC_CTX *ctx;
+	char *workgroup;
+
+	ads = ads_cached_connection(domain);
+	if (!ads) return NT_STATUS_UNSUCCESSFUL;
+
+	if (!(ctx = talloc_init_named("alternate_name"))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rc = ads_workgroup_name(ads, ctx, &workgroup);
+
+	if (ADS_ERR_OK(rc)) {
+		fstrcpy(domain->name, workgroup);
+		fstrcpy(domain->alt_name, ads->config.realm);
+		strupper(domain->alt_name);
+		strupper(domain->name);
+	}
+
+	talloc_destroy(ctx);
+
+	return ads_ntstatus(rc);	
+}
+
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
 	True,
@@ -879,7 +857,8 @@ struct winbindd_methods ads_methods = {
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
-	domain_sid
+	domain_sid,
+	alternate_name
 };
 
 #endif

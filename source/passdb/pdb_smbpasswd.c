@@ -1149,7 +1149,7 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 		uid = pdb_get_uid(sampass);
 
 		/* If the user specified a RID, make sure its able to be both stored and retreived */
-		if (rid && uid != fallback_pdb_user_rid_to_uid(rid)) {
+		if (rid && rid != DOMAIN_USER_RID_GUEST && uid != fallback_pdb_user_rid_to_uid(rid)) {
 			DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
 			return False;
 		}
@@ -1417,7 +1417,7 @@ static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 	return True;
 }
 
-static BOOL smbpasswd_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+static BOOL smbpasswd_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))

@@ -708,7 +708,7 @@ int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL reb
 
 	/* now we've got a socket - we need to bind it */
 	if( bind( res, (struct sockaddr *)&sock, sizeof(sock) ) == -1 ) {
-		if( DEBUGLVL(dlevel) && (port == SMB_PORT || port == NMB_PORT) ) {
+		if( DEBUGLVL(dlevel) && (port == SMB_PORT1 || port == SMB_PORT2 || port == NMB_PORT) ) {
 			dbgtext( "bind failed on port %d ", port );
 			dbgtext( "socket_addr = %s.\n", inet_ntoa( sock.sin_addr ) );
 			dbgtext( "Error = %s\n", strerror(errno) );

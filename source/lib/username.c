@@ -163,7 +163,7 @@ BOOL map_username(char *user)
 			}
 		}
 
-		dosuserlist = str_list_make(dosname);
+		dosuserlist = str_list_make(dosname, NULL);
 		if (!dosuserlist) {
 			DEBUG(0,("Unable to build user list\n"));
 			return False;

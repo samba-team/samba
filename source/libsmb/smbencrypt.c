@@ -28,7 +28,7 @@
    This implements the X/Open SMB password encryption
    It takes a password ('unix' string), a 8 byte "crypt key" 
    and puts 24 bytes of encrypted password into p24 */
-void SMBencrypt(const char *passwd, const uchar *c8, uchar *p24)
+void SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
 {
 	uchar p21[21];
 
@@ -66,9 +66,9 @@ void E_md4hash(const char *passwd, uchar p16[16])
 }
 
 /**
- * Creates the MD4 Hash of the users password in NT UNICODE.
+ * Creates the DES forward-only Hash of the users password in DOS ASCII charset
  * @param passwd password in 'unix' charset.
- * @param p16 return password hashed with md4, caller allocated 16 byte buffer
+ * @param p16 return password hashed with DES, caller allocated 16 byte buffer
  */
  
 void E_deshash(const char *passwd, uchar p16[16])
@@ -77,7 +77,7 @@ void E_deshash(const char *passwd, uchar p16[16])
 	ZERO_STRUCT(dospwd);
 	ZERO_STRUCTP(p16);
 	
-	/* Password must be converted to DOS charset - null terminated. */
+	/* Password must be converted to DOS charset - null terminated, uppercase. */
 	push_ascii(dospwd, (const char *)passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
 
 	E_P16(dospwd, p16);
@@ -175,7 +175,7 @@ void NTLMSSPOWFencrypt(const uchar passwd[8], const uchar *ntlmchalresp, uchar p
 
 /* Does the NT MD4 hash then des encryption. */
  
-void SMBNTencrypt(const uchar *passwd, uchar *c8, uchar *p24)
+void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24)
 {
 	uchar p21[21];
  
@@ -226,14 +226,14 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 void SMBOWFencrypt_ntv2(const uchar kr[16],
 			const DATA_BLOB srv_chal,
 			const DATA_BLOB cli_chal,
-			char resp_buf[16])
+			uchar resp_buf[16])
 {
 	HMACMD5Context ctx;
 
 	hmac_md5_init_limK_to_64(kr, 16, &ctx);
 	hmac_md5_update(srv_chal.data, srv_chal.length, &ctx);
 	hmac_md5_update(cli_chal.data, cli_chal.length, &ctx);
-	hmac_md5_final((unsigned char *)resp_buf, &ctx);
+	hmac_md5_final(resp_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, cli_chal, resp_buf\n"));
@@ -337,7 +337,7 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
  SMB signing - setup the MAC key.
 ************************************************************/
 
-void cli_calculate_mac_key(struct cli_state *cli, const unsigned char *ntpasswd, const uchar resp[24])
+void cli_calculate_mac_key(struct cli_state *cli, const char *ntpasswd, const uchar resp[24])
 {
 	/* Get first 16 bytes. */
 	E_md4hash(ntpasswd,&cli->sign_info.mac_key[0]);

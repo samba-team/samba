@@ -38,7 +38,9 @@
 
 #define NMB_PORT 137
 #define DGRAM_PORT 138
-#define SMB_PORT 139
+#define SMB_PORT1 445
+#define SMB_PORT2 139
+#define SMB_PORTS "445 139"
 
 #define False (0)
 #define True (1)
@@ -383,7 +385,7 @@ typedef struct files_struct
 	int fnum;
 	struct connection_struct *conn;
 	int fd;
-	int print_jobid;
+	uint32 print_jobid;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	BOOL delete_on_close;
@@ -444,6 +446,15 @@ typedef struct
 #include "smb_acls.h"
 #include "vfs.h"
 
+typedef struct smb_vfs_handle_struct
+{
+    void *data;
+    /* Handle on dlopen() call */
+    void *handle;
+    struct smb_vfs_handle_struct  *next, *prev;
+    
+} smb_vfs_handle_struct;
+
 typedef struct connection_struct
 {
 	struct connection_struct *next, *prev;
@@ -461,9 +472,7 @@ typedef struct connection_struct
 	char *origpath;
 
 	struct vfs_ops vfs_ops;                   /* Filesystem operations */
-	/* Handle on dlopen() call */
-	void *dl_handle;
-	void *vfs_private;
+	struct smb_vfs_handle_struct *vfs_private;
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */
@@ -1594,8 +1603,8 @@ typedef struct user_struct
 
 	uint8 session_key[16];
 
-	int session_id; /* used by utmp and pam session code */
-	
+	char *session_keystr; /* used by utmp and pam session code.  
+				 TDB key string */
 	int homes_snum;
 
 } user_struct;
@@ -1666,5 +1675,9 @@ typedef struct {
    exceed NT4's max password length */
 
 #define DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH 14
+
+/* Common popt structures */
+
+extern struct poptOption popt_common_debug[];
 
 #endif /* _SMB_H */

@@ -79,7 +79,7 @@ static int converse(pam_handle_t *pamh, int nargs,
 }
 
 
-int _make_remark(pam_handle_t * pamh, int type, const char *text)
+static int _make_remark(pam_handle_t * pamh, int type, const char *text)
 {
 	int retval = PAM_SUCCESS;
 
@@ -163,6 +163,10 @@ static int winbind_auth_request(const char *user, const char *pass, int ctrl)
 		/* password expired */
 		_pam_log(LOG_WARNING, "user `%s' password expired", user);
 		return retval;
+	case PAM_NEW_AUTHTOK_REQD:
+		/* password expired */
+		_pam_log(LOG_WARNING, "user `%s' new password required", user);
+		return retval;
 	case PAM_USER_UNKNOWN:
 		/* the user does not exist */
 		if (ctrl & WINBIND_DEBUG_ARG)
@@ -241,12 +245,12 @@ static char *_pam_delete(register char *xx)
  * obtain a password from the user
  */
 
-int _winbind_read_password(pam_handle_t * pamh
-			,unsigned int ctrl
-			,const char *comment
-			,const char *prompt1
-			,const char *prompt2
-			,const char **pass)
+static int _winbind_read_password(pam_handle_t * pamh
+				  ,unsigned int ctrl
+				  ,const char *comment
+				  ,const char *prompt1
+				  ,const char *prompt2
+				  ,const char **pass)
 {
 	int authtok_flag;
 	int retval;

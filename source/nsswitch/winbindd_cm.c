@@ -90,12 +90,122 @@ struct get_dc_name_cache {
 	struct get_dc_name_cache *prev, *next;
 };
 
+
+/*
+  find the DC for a domain using methods appropriate for a ADS domain
+*/
+static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring srv_name)
+{
+	ADS_STRUCT *ads;
+	const char *realm = domain;
+
+	if (strcasecmp(realm, lp_workgroup()) == 0) {
+		realm = lp_realm();
+	}
+
+	ads = ads_init(realm, domain, NULL);
+	if (!ads) {
+		return False;
+	}
+
+	/* we don't need to bind, just connect */
+	ads->auth.no_bind = 1;
+
+	DEBUG(4,("cm_ads_find_dc: domain=%s\n", domain));
+
+#ifdef HAVE_ADS
+	/* a full ads_connect() is actually overkill, as we don't srictly need
+	   to do the SASL auth in order to get the info we need, but libads
+	   doesn't offer a better way right now */
+	ads_connect(ads);
+#endif
+
+	if (!ads->config.realm) {
+		return False;
+	}
+
+	fstrcpy(srv_name, ads->config.ldap_server_name);
+	strupper(srv_name);
+	*dc_ip = ads->ldap_ip;
+	ads_destroy(&ads);
+	
+	DEBUG(4,("cm_ads_find_dc: using server='%s' IP=%s\n",
+		 srv_name, inet_ntoa(*dc_ip)));
+	
+	return True;
+}
+
+/*
+  find the DC for a domain using methods appropriate for a RPC domain
+*/
+static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring srv_name)
+{
+	struct in_addr *ip_list = NULL;
+	int count, i;
+
+	/* Lookup domain controller name. Try the real PDC first to avoid
+	   SAM sync delays */
+	if (!get_dc_list(True, domain, &ip_list, &count)) {
+		if (!get_dc_list(False, domain, &ip_list, &count)) {
+			DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
+			return False;
+		}
+	}
+
+	/* Pick a nice close server */
+	/* Look for DC on local net */
+	for (i = 0; i < count; i++) {
+		if (!is_local_net(ip_list[i]))
+			continue;
+		
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
+			*dc_ip = ip_list[i];
+			SAFE_FREE(ip_list);
+			return True;
+		}
+		zero_ip(&ip_list[i]);
+	}
+
+	/*
+	 * Secondly try and contact a random PDC/BDC.
+	 */
+
+	i = (sys_random() % count);
+
+	if (!is_zero_ip(ip_list[i]) &&
+	    name_status_find(domain, 0x1c, 0x20,
+			     ip_list[i], srv_name)) {
+		*dc_ip = ip_list[i];
+		SAFE_FREE(ip_list);
+		return True;
+	}
+	zero_ip(&ip_list[i]); /* Tried and failed. */
+
+	/* Finally return first DC that we can contact using a node
+	   status */
+	for (i = 0; i < count; i++) {
+		if (is_zero_ip(ip_list[i]))
+			continue;
+
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
+			*dc_ip = ip_list[i];
+			SAFE_FREE(ip_list);
+			return True;
+		}
+	}
+
+	SAFE_FREE(ip_list);
+
+	return False;
+}
+
+
 static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 {
 	static struct get_dc_name_cache *get_dc_name_cache;
 	struct get_dc_name_cache *dcc;
-	struct in_addr *ip_list, dc_ip;
-	int count, i;
+	struct in_addr dc_ip;
+	BOOL ret;
 
 	/* Check the cache for previous lookups */
 
@@ -144,74 +254,28 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 
 	DLIST_ADD(get_dc_name_cache, dcc);
 
-	/* Lookup domain controller name. Try the real PDC first to avoid
-	   SAM sync delays */
-	if (!get_dc_list(True, domain, &ip_list, &count)) {
-		if (!get_dc_list(False, domain, &ip_list, &count)) {
-			DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
-			return False;
-		}
+	zero_ip(&dc_ip);
+
+	ret = False;
+	if (lp_security() == SEC_ADS) {
+		ret = cm_ads_find_dc(domain, &dc_ip, srv_name);
+	}
+	if (!ret) {
+		/* fall back on rpc methods if the ADS methods fail */
+		ret = cm_rpc_find_dc(domain, &dc_ip, srv_name);
 	}
 
-	/* Pick a nice close server */
-	/* Look for DC on local net */
-
-	for (i = 0; i < count; i++) {
-		if (!is_local_net(ip_list[i]))
-			continue;
-		
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
-			dc_ip = ip_list[i];
-			goto done;
-		}
-		zero_ip(&ip_list[i]);
+	if (!ret) {
+		return False;
 	}
-
-	/*
-	 * Secondly try and contact a random PDC/BDC.
-	 */
-
-	i = (sys_random() % count);
-
-	if (!is_zero_ip(ip_list[i]) &&
-	    name_status_find(domain, 0x1c, 0x20,
-			     ip_list[i], srv_name)) {
-		dc_ip = ip_list[i];
-		goto done;
-	}
-	zero_ip(&ip_list[i]); /* Tried and failed. */
-
-	/* Finally return first DC that we can contact */
-
-	for (i = 0; i < count; i++) {
-		if (is_zero_ip(ip_list[i]))
-			continue;
-
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
-			dc_ip = ip_list[i];
-			goto done;
-		}
-	}
-
-	/* No-one to talk to )-: */
-	return False;		/* Boo-hoo */
-	
- done:
-	/* We have the netbios name and IP address of a domain controller.
-	   Ideally we should sent a SAMLOGON request to determine whether
-	   the DC is alive and kicking.  If we can catch a dead DC before
-	   performing a cli_connect() we can avoid a 30-second timeout. */
 
 	/* We have a name so make the cache entry positive now */
-
 	fstrcpy(dcc->srv_name, srv_name);
 
 	DEBUG(3, ("cm_get_dc_name: Returning DC %s (%s) for domain %s\n", srv_name,
 		  inet_ntoa(dc_ip), domain));
 
 	*ip_out = dc_ip;
-
-	SAFE_FREE(ip_list);
 
 	return True;
 }
@@ -262,10 +326,22 @@ static struct failed_connection_cache *failed_connection_cache;
 
 /* Add an entry to the failed conneciton cache */
 
-static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn, NTSTATUS result) {
+static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn, 
+					NTSTATUS result) 
+{
 	struct failed_connection_cache *fcc;
 
 	SMB_ASSERT(!NT_STATUS_IS_OK(result));
+
+	/* Check we already aren't in the cache */
+
+	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
+		if (strequal(fcc->domain_name, new_conn->domain)) {
+			DEBUG(10, ("domain %s already tried and failed\n",
+				   fcc->domain_name));
+			return;
+		}
+	}
 
 	/* Create negative lookup cache entry for this domain and controller */
 
@@ -794,7 +870,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 		return result;
 	}
 	
-	result = new_cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+	result = cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
 					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -808,7 +884,7 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 			}
 			
 			/* Try again */
-			result = new_cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+			result = cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
 							SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
 		}
 		

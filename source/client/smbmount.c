@@ -29,7 +29,6 @@
 extern BOOL in_client;
 extern pstring user_socket_options;
 extern BOOL append_log;
-extern fstring remote_machine;
 
 static pstring credentials;
 static pstring my_netbios_name;
@@ -377,7 +376,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 			}
 
 			/* here we are no longer interactive */
-			pstrcpy(remote_machine, "smbmount");	/* sneaky ... */
+			set_remote_machine_name("smbmount");	/* sneaky ... */
 			setup_logging("mount.smbfs", False);
 			append_log = True;
 			reopen_logs();
