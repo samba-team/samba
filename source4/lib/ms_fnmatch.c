@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    filename matching routine
-   Copyright (C) Andrew Tridgell 1992-1998 
+   Copyright (C) Andrew Tridgell 1992-2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,214 +15,181 @@
    
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+*/
 
 /*
    This module was originally based on fnmatch.c copyright by the Free
-   Software Foundation. It bears little resemblence to that code now 
+   Software Foundation. It bears little (if any) resemblence to that
+   code now
 */  
 
 
-#if FNMATCH_TEST
-#include <stdio.h>
-#include <stdlib.h>
-#else
 #include "includes.h"
-#endif
 
-/* 
-   bugger. we need a separate wildcard routine for older versions
-   of the protocol. This is not yet perfect, but its a lot
-   better than what we had */
-static int ms_fnmatch_lanman_core(const smb_ucs2_t *pattern, 
-				  const smb_ucs2_t *string)
+static int null_match(const smb_ucs2_t *p)
 {
-	const smb_ucs2_t *p = pattern, *n = string;
-	smb_ucs2_t c;
-
-	if (strcmp_wa(p, "?")==0 && strcmp_wa(n, ".")) goto match;
-
-	while ((c = *p++)) {
-		switch (c) {
-		case UCS2_CHAR('.'):
-			if (! *n) goto next;
-			if (*n != UCS2_CHAR('.')) goto nomatch;
-			n++;
-			break;
-
-		case UCS2_CHAR('?'):
-			if (! *n) goto next;
-			if ((*n == UCS2_CHAR('.') && 
-			     n[1] != UCS2_CHAR('.')) || ! *n) 
-				goto next;
-			n++;
-			break;
-
-		case UCS2_CHAR('>'):
-			if (! *n) goto next;
-			if (n[0] == UCS2_CHAR('.')) {
-				if (! n[1] && ms_fnmatch_lanman_core(p, n+1) == 0) goto match;
-				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
-				goto nomatch;
-			}
-			n++;
-			break;
-
-		case UCS2_CHAR('*'):
-			if (! *n) goto next;
-			if (! *p) goto match;
-			for (; *n; n++) {
-				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
-			}
-			break;
-
-		case UCS2_CHAR('<'):
-			for (; *n; n++) {
-				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
-				if (*n == UCS2_CHAR('.') && 
-				    !strchr_w(n+1,UCS2_CHAR('.'))) {
-					n++;
-					break;
-				}
-			}
-			break;
-
-		case UCS2_CHAR('"'):
-			if (*n == 0 && ms_fnmatch_lanman_core(p, n) == 0) goto match;
-			if (*n != UCS2_CHAR('.')) goto nomatch;
-			n++;
-			break;
-
-		default:
-			if (c != *n &&
-			    toupper_w(c) != toupper_w(*n)) goto nomatch;
-			n++;
-		}
+	for (;*p;p++) {
+		if (*p != UCS2_CHAR('*') &&
+		    *p != UCS2_CHAR('<') &&
+		    *p != UCS2_CHAR('"') &&
+		    *p != UCS2_CHAR('>')) return -1;
 	}
-	
-	if (! *n) goto match;
-	
- nomatch:
-	/*
-	if (verbose) printf("NOMATCH pattern=[%s] string=[%s]\n", pattern, string);
-	*/
-	return -1;
-
-next:
-	if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
-        goto nomatch;
-
- match:
-	/*
-	if (verbose) printf("MATCH   pattern=[%s] string=[%s]\n", pattern, string);
-	*/
 	return 0;
 }
 
-static int ms_fnmatch_lanman1(const smb_ucs2_t *pattern, const smb_ucs2_t *string)
-{
-	if (!strpbrk_wa(pattern, "?*<>\"")) {
-		smb_ucs2_t s[] = {UCS2_CHAR('.'), 0};
-		if (strcmp_wa(string,"..") == 0) string = s;
-		return strcasecmp_w(pattern, string);
-	}
-
-	if (strcmp_wa(string,"..") == 0 || strcmp_wa(string,".") == 0) {
-		smb_ucs2_t dot[] = {UCS2_CHAR('.'), 0};
-		smb_ucs2_t dotdot[] = {UCS2_CHAR('.'), UCS2_CHAR('.'), 0};
-		return ms_fnmatch_lanman_core(pattern, dotdot) &&
-			ms_fnmatch_lanman_core(pattern, dot);
-	}
-
-	return ms_fnmatch_lanman_core(pattern, string);
-}
-
-
-/* the following function was derived using the masktest utility -
-   after years of effort we finally have a perfect MS wildcard
-   matching routine! 
-
-   NOTE: this matches only filenames with no directory component
-
-   Returns 0 on match, -1 on fail.
+/*
+  the max_n structure is purely for efficiency, it doesn't contribute
+  to the matching algorithm except by ensuring that the algorithm does
+  not grow exponentially
 */
-static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string, 
-			enum protocol_types protocol)
-{
-	const smb_ucs2_t *p = pattern, *n = string;
-	smb_ucs2_t c;
+struct max_n {
+	const smb_ucs2_t *predot;
+	const smb_ucs2_t *postdot;
+};
 
-	if (protocol <= PROTOCOL_LANMAN2) {
-		return ms_fnmatch_lanman1(pattern, string);
-	}
+
+/*
+  p and n are the pattern and string being matched. The max_n array is
+  an optimisation only. The ldot pointer is NULL if the string does
+  not contain a '.', otherwise it points at the last dot in 'n'.
+*/
+static int ms_fnmatch_core(const smb_ucs2_t *p, const smb_ucs2_t *n, 
+			   struct max_n *max_n, const smb_ucs2_t *ldot)
+{
+	smb_ucs2_t c;
+	int i;
 
 	while ((c = *p++)) {
 		switch (c) {
-		case UCS2_CHAR('?'):
-			if (! *n) return -1;
-			n++;
-			break;
-
-		case UCS2_CHAR('>'):
-			if (n[0] == UCS2_CHAR('.')) {
-				if (! n[1] && ms_fnmatch_w(p, n+1, protocol) == 0) return 0;
-				if (ms_fnmatch_w(p, n, protocol) == 0) return 0;
-				return -1;
-			}
-			if (! *n) return ms_fnmatch_w(p, n, protocol);
-			n++;
-			break;
-
+			/* a '*' matches zero or more characters of any type */
 		case UCS2_CHAR('*'):
-			while (*p == UCS2_CHAR('*')) {
-				p++;
+			if (max_n->predot && max_n->predot <= n) {
+				return null_match(p);
 			}
-			for (; *n; n++) {
-				if (ms_fnmatch_w(p, n, protocol) == 0) return 0;
-			}
-			break;
-
-		case UCS2_CHAR('<'):
-			for (; *n; n++) {
-				if (ms_fnmatch_w(p, n, protocol) == 0) return 0;
-				if (*n == UCS2_CHAR('.') && !strchr_wa(n+1,'.')) {
-					n++;
-					break;
+			for (i=0; n[i]; i++) {
+				if (ms_fnmatch_core(p, n+i, max_n+1, ldot) == 0) {
+					return 0;
 				}
 			}
+			if (!max_n->predot || max_n->predot > n) max_n->predot = n;
+			return null_match(p);
+
+			/* a '<' matches zero or more characters of
+			   any type, but stops matching at the last
+			   '.' in the string. */
+		case UCS2_CHAR('<'):
+			if (max_n->predot && max_n->predot <= n) {
+				return null_match(p);
+			}
+			if (max_n->postdot && max_n->postdot <= n && n <= ldot) {
+				return -1;
+			}
+			for (i=0; n[i]; i++) {
+				if (ms_fnmatch_core(p, n+i, max_n+1, ldot) == 0) return 0;
+				if (n+i == ldot) {
+					if (ms_fnmatch_core(p, n+i+1, max_n+1, ldot) == 0) return 0;
+					if (!max_n->postdot || max_n->postdot > n) max_n->postdot = n;
+					return -1;
+				}
+			}
+			if (!max_n->predot || max_n->predot > n) max_n->predot = n;
+			return null_match(p);
+
+			/* a '?' matches any single character */
+		case UCS2_CHAR('?'):
+			if (! *n) {
+				return -1;
+			}
+			n++;
+			break;
+
+			/* a '?' matches any single character */
+		case UCS2_CHAR('>'):
+			if (n[0] == UCS2_CHAR('.')) {
+				if (! n[1] && null_match(p) == 0) {
+					return 0;
+				}
+				break;
+			}
+			if (! *n) return null_match(p);
+			n++;
 			break;
 
 		case UCS2_CHAR('"'):
-			if (*n == 0 && ms_fnmatch_w(p, n, protocol) == 0) return 0;
+			if (*n == 0 && null_match(p) == 0) {
+				return 0;
+			}
 			if (*n != UCS2_CHAR('.')) return -1;
 			n++;
 			break;
 
 		default:
-			if (c != *n &&
-			    toupper_w(c) != toupper_w(*n)) return -1;
+			if (c != *n && toupper_w(c) != toupper_w(*n)) {
+				return -1;
+			}
 			n++;
+			break;
 		}
 	}
 	
-	if (! *n) return 0;
+	if (! *n) {
+		return 0;
+	}
 	
 	return -1;
 }
 
-
 int ms_fnmatch(const char *pattern, const char *string, enum protocol_types protocol)
 {
 	wpstring p, s;
-	int ret;
+	int ret, count, i;
+	struct max_n *max_n = NULL;
+
+	if (strcmp(string, "..") == 0) {
+		string = ".";
+	}
 
 	pstrcpy_wa(p, pattern);
 	pstrcpy_wa(s, string);
 
-	ret = ms_fnmatch_w(p, s, protocol);
-/* 	DEBUG(0,("ms_fnmatch(%s,%s) -> %d\n", pattern, string, ret)); */
+	if (protocol <= PROTOCOL_LANMAN2) {
+		/*
+		  for older negotiated protocols it is possible to
+		  translate the pattern to produce a "new style"
+		  pattern that exactly matches w2k behaviour
+		*/
+		for (i=0;p[i];i++) {
+			if (p[i] == UCS2_CHAR('?')) {
+				p[i] = UCS2_CHAR('>');
+			} else if (p[i] == UCS2_CHAR('.') && 
+				   (p[i+1] == UCS2_CHAR('?') || 
+				    p[i+1] == UCS2_CHAR('*') ||
+				    p[i+1] == 0)) {
+				p[i] = UCS2_CHAR('"');
+			} else if (p[i] == UCS2_CHAR('*') && p[i+1] == UCS2_CHAR('.')) {
+				p[i] = UCS2_CHAR('<');
+			}
+		}
+	}
+
+	for (count=i=0;p[i];i++) {
+		if (p[i] == UCS2_CHAR('*') || p[i] == UCS2_CHAR('<')) count++;
+	}
+
+	max_n = talloc_array_p(NULL, struct max_n, count);
+	if (!max_n) {
+		return -1;
+	}
+	memset(max_n, 0, sizeof(struct max_n) * count);
+
+	ret = ms_fnmatch_core(p, s, max_n, strrchr_w(s, UCS2_CHAR('.')));
+
+	talloc_free(max_n);
+
 	return ret;
 }
+
 
 /* a generic fnmatch function - uses for non-CIFS pattern matching */
 int gen_fnmatch(const char *pattern, const char *string)
