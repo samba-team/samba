@@ -517,8 +517,12 @@ static void init_structs(void)
 	strupper( global_myname );
 
 	conn_init();
+
 	file_init();
-	init_rpc_pipe_hnd(); /* for RPC pipes */
+
+	/* for RPC pipes */
+	init_rpc_pipe_hnd();
+
 	init_dptrs();
 }
 

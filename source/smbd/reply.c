@@ -244,7 +244,7 @@ int reply_tcon(connection_struct * conn,
 	map_nt_and_unix_username(global_myworkgroup, user, user, NULL);
 
 	conn = make_connection(service, user, global_myworkgroup, password,
-				pwlen, dev, vuid, &ecode);
+			       pwlen, dev, vuid, &ecode);
 
 	if (!conn)
 	{
@@ -337,7 +337,7 @@ int reply_tcon_and_X(connection_struct * conn, char *inbuf, char *outbuf,
 	map_nt_and_unix_username(global_myworkgroup, user, user, NULL);
 
 	conn = make_connection(service, user, global_myworkgroup, password,
-				passlen, devicename, vuid, &ecode);
+			       passlen, devicename, vuid, &ecode);
 
 	if (!conn)
 		return (connection_error(inbuf, outbuf, ecode));
@@ -693,9 +693,25 @@ user %s attempted down-level SMB connection\n",
 	    && (smb_ntpasslen == 24))
 	{
 		return session_trust_account(conn, inbuf, outbuf, user,
-					     domain, smb_apasswd,
-					     smb_apasslen, smb_ntpasswd,
-					     smb_ntpasslen);
+					     smb_apasswd, smb_apasslen,
+					     smb_ntpasswd, smb_ntpasslen);
+	}
+
+	if (done_sesssetup && lp_restrict_anonymous())
+	{
+		/* tests show that even if browsing is done over already validated connections
+		 * without a username and password the domain is still provided, which it
+		 * wouldn't be if it was a purely anonymous connection.  So, in order to
+		 * restrict anonymous, we only deny connections that have no session
+		 * information.  If a domain has been provided, then it's not a purely
+		 * anonymous connection. AAB
+		 */
+		if (!*user && !*smb_apasswd && !*domain)
+		{
+			DEBUG(0,
+			      ("restrict anonymous is True and anonymous connection attempted. Denying access.\n"));
+			return (ERROR(ERRDOS, ERRnoaccess));
+		}
 	}
 
 	/* If no username is sent use the guest account */
@@ -820,6 +836,7 @@ user %s attempted down-level SMB connection\n",
 			lp_add_home(user, homes, home_dir);
 		}
 	}
+
 
 	/* it's ok - setup a reply */
 	if (Protocol < PROTOCOL_NT1)
@@ -1448,24 +1465,20 @@ int reply_open(connection_struct * conn, char *inbuf, char *outbuf,
 
 	unix_convert(fname, conn, 0, &bad_path, NULL);
 
-	fsp = file_new();
-	if (!fsp)
-		return (ERROR(ERRSRV, ERRnofids));
-
 	unixmode = unix_mode(conn, aARCH, fname);
 
-	open_file_shared(fsp, conn, fname, share_mode,
+	fsp =
+		open_file_shared(conn, fname, share_mode,
 			 (FILE_FAIL_IF_NOT_EXIST | FILE_EXISTS_OPEN),
 			 unixmode, oplock_request, &rmode, NULL);
 
-	if (!fsp->open)
+	if (!fsp)
 	{
 		if ((errno == ENOENT) && bad_path)
 		{
 			unix_ERR_class = ERRDOS;
 			unix_ERR_code = ERRbadpath;
 		}
-		file_free(fsp);
 		return (UNIXERROR(ERRDOS, ERRnoaccess));
 	}
 
@@ -1548,23 +1561,18 @@ int reply_open_and_X(connection_struct * conn, char *inbuf, char *outbuf,
 
 	unix_convert(fname, conn, 0, &bad_path, NULL);
 
-	fsp = file_new();
-	if (!fsp)
-		return (ERROR(ERRSRV, ERRnofids));
-
 	unixmode = unix_mode(conn, smb_attr | aARCH, fname);
 
-	open_file_shared(fsp, conn, fname, smb_mode, smb_ofun, unixmode,
+	fsp = open_file_shared(conn, fname, smb_mode, smb_ofun, unixmode,
 			 oplock_request, &rmode, &smb_action);
 
-	if (!fsp->open)
+	if (!fsp)
 	{
 		if ((errno == ENOENT) && bad_path)
 		{
 			unix_ERR_class = ERRDOS;
 			unix_ERR_code = ERRbadpath;
 		}
-		file_free(fsp);
 		return (UNIXERROR(ERRDOS, ERRnoaccess));
 	}
 
@@ -1698,10 +1706,6 @@ int reply_mknew(connection_struct * conn, char *inbuf, char *outbuf,
 
 	unixmode = unix_mode(conn, createmode, fname);
 
-	fsp = file_new();
-	if (!fsp)
-		return (ERROR(ERRSRV, ERRnofids));
-
 	if (com == SMBmknew)
 	{
 		/* We should fail if file exists. */
@@ -1714,19 +1718,19 @@ int reply_mknew(connection_struct * conn, char *inbuf, char *outbuf,
 	}
 
 	/* Open file in dos compatibility share mode. */
-	open_file_shared(fsp, conn, fname,
+	fsp =
+		open_file_shared(conn, fname,
 			 SET_DENY_MODE(DENY_FCB) |
 			 SET_OPEN_MODE(DOS_OPEN_FCB), ofun, unixmode,
 			 oplock_request, NULL, NULL);
 
-	if (!fsp->open)
+	if (!fsp)
 	{
 		if ((errno == ENOENT) && bad_path)
 		{
 			unix_ERR_class = ERRDOS;
 			unix_ERR_code = ERRbadpath;
 		}
-		file_free(fsp);
 		return (UNIXERROR(ERRDOS, ERRnoaccess));
 	}
 
@@ -1774,28 +1778,25 @@ int reply_ctemp(connection_struct * conn, char *inbuf, char *outbuf,
 
 	unixmode = unix_mode(conn, createmode, fname);
 
-	fsp = file_new();
-	if (fsp)
-		return (ERROR(ERRSRV, ERRnofids));
-
 	pstrcpy(fname2, (char *)smbd_mktemp(fname));
 
 	/* Open file in dos compatibility share mode. */
 	/* We should fail if file exists. */
-	open_file_shared(fsp, conn, fname2,
+	fsp =
+		open_file_shared(conn, fname2,
 			 SET_DENY_MODE(DENY_FCB) |
 			 SET_OPEN_MODE(DOS_OPEN_FCB),
-			 (FILE_CREATE_IF_NOT_EXIST | FILE_EXISTS_FAIL),
-			 unixmode, oplock_request, NULL, NULL);
+				 (FILE_CREATE_IF_NOT_EXIST |
+				  FILE_EXISTS_FAIL), unixmode, oplock_request,
+				 NULL, NULL);
 
-	if (!fsp->open)
+	if (!fsp)
 	{
 		if ((errno == ENOENT) && bad_path)
 		{
 			unix_ERR_class = ERRDOS;
 			unix_ERR_code = ERRbadpath;
 		}
-		file_free(fsp);
 		return (UNIXERROR(ERRDOS, ERRnoaccess));
 	}
 
@@ -1952,7 +1953,7 @@ int reply_unlink(connection_struct * conn, char *inbuf, char *outbuf,
 					continue;
 				if (!conn->vfs_ops.
 				    unlink(dos_to_unix(fname, False)))
-						count++;
+					count++;
 				DEBUG(3,
 				      ("reply_unlink : doing unlink on %s\n",
 				       fname));
@@ -3103,16 +3104,11 @@ int reply_printopen(connection_struct * conn,
 	if (!CAN_PRINT(conn))
 		return (ERROR(ERRDOS, ERRnoaccess));
 
-	fsp = file_new();
-	if (!fsp)
-		return (ERROR(ERRSRV, ERRnofids));
-
 	/* Open for exclusive use, write only. */
-	print_fsp_open(fsp, conn, "dos.prn");
+	fsp = print_fsp_open(conn, "dos.prn");
 
-	if (!fsp->open)
+	if (!fsp)
 	{
-		file_free(fsp);
 		return (UNIXERROR(ERRDOS, ERRnoaccess));
 	}
 
@@ -3796,6 +3792,7 @@ int rename_internals(connection_struct * conn,
 			while ((dname = ReadDirName(dirptr)))
 			{
 				pstring fname;
+
 				pstrcpy(fname, dname);
 
 				if (!mask_match
@@ -3917,40 +3914,30 @@ static BOOL copy_file(char *src, char *dest1, connection_struct * conn,
 	if (!vfs_file_exist(conn, src, &st))
 		return (False);
 
-	fsp1 = file_new();
+	fsp1 =
+		open_file_shared(conn, src,
+				 SET_DENY_MODE(DENY_NONE) |
+				 SET_OPEN_MODE(DOS_OPEN_RDONLY),
+				 (FILE_FAIL_IF_NOT_EXIST | FILE_EXISTS_OPEN),
+				 0, 0, &Access, &action);
+
 	if (!fsp1)
-		return (False);
-
-	open_file_shared(fsp1, conn, src,
-			 SET_DENY_MODE(DENY_NONE) |
-			 SET_OPEN_MODE(DOS_OPEN_RDONLY),
-			 (FILE_FAIL_IF_NOT_EXIST | FILE_EXISTS_OPEN), 0, 0,
-			 &Access, &action);
-
-	if (!fsp1->open)
 	{
-		file_free(fsp1);
 		return (False);
 	}
 
 	if (!target_is_directory && count)
 		ofun = 1;
 
-	fsp2 = file_new();
+	fsp2 =
+		open_file_shared(conn, dest,
+				 SET_DENY_MODE(DENY_NONE) |
+				 SET_OPEN_MODE(DOS_OPEN_WRONLY), ofun,
+				 st.st_mode, 0, &Access, &action);
+
 	if (!fsp2)
 	{
 		close_file(fsp1, False);
-		return (False);
-	}
-	open_file_shared(fsp2, conn, dest,
-			 SET_DENY_MODE(DENY_NONE) |
-			 SET_OPEN_MODE(DOS_OPEN_WRONLY), ofun, st.st_mode, 0,
-			 &Access, &action);
-
-	if (!fsp2->open)
-	{
-		close_file(fsp1, False);
-		file_free(fsp2);
 		return (False);
 	}
 

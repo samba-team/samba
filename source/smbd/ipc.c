@@ -202,10 +202,10 @@ static BOOL api_WNPHS(char *outbuf, pipes_struct * p, char *param, int mdrcnt)
 {
 	uint16 priority;
 
-	if (!param)
+	if (!param || param_len < 2)
 		return False;
 
-	priority = param[0] + (param[1] << 8);
+	priority = SVAL(param,0);
 	DEBUG(4, ("WaitNamedPipeHandleState priority %x\n", priority));
 
 	if (wait_rpc_pipe_hnd_state(p, priority))
@@ -226,10 +226,10 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct * p, char *param, int mdrcnt)
 {
 	uint16 id;
 
-	if (!param)
+	if (!param || param_len < 2)
 		return False;
 
-	id = param[0] + (param[1] << 8);
+	id = SVAL(param,0);
 	DEBUG(4, ("SetNamedPipeHandleState to code %x\n", id));
 
 	if (set_rpc_pipe_hnd_state(p, id))
@@ -353,23 +353,21 @@ static int api_fd_reply(connection_struct * conn, uint16 vuid, char *outbuf,
 /****************************************************************************
   handle named pipe commands
   ****************************************************************************/
-static int named_pipe(connection_struct * conn, uint16 vuid, char *outbuf,
-		      char *name, uint16 *setup, char *data, char *params,
-		      int suwcnt, int tdscnt, int tpscnt, int msrcnt,
-		      int mdrcnt, int mprcnt)
+static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *name,
+		      uint16 *setup,char *data,char *params,
+		      int suwcnt,int tdscnt,int tpscnt,
+		      int msrcnt,int mdrcnt,int mprcnt)
 {
 	DEBUG(3, ("named pipe command on <%s> name\n", name));
 
 	if (strequal(name, "LANMAN"))
-	{
-		return api_reply(conn, vuid, outbuf, data, params, tdscnt,
-				 tpscnt, mdrcnt, mprcnt);
-	}
+		return api_reply(conn,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
 
 	if (strequal(name, "WKSSVC") ||
 	    strequal(name, "SRVSVC") ||
 	    strequal(name, "WINREG") ||
-	    strequal(name, "SAMR") || strequal(name, "LSARPC"))
+	    strequal(name,"SAMR") ||
+	    strequal(name,"LSARPC"))
 	{
 		DEBUG(4, ("named pipe command from Win95 (wow!)\n"));
 		return api_fd_reply(conn, vuid, outbuf, setup, data, params,
@@ -394,10 +392,10 @@ static int named_pipe(connection_struct * conn, uint16 vuid, char *outbuf,
 
 
 /****************************************************************************
-  reply to a SMBtrans
+ Reply to a SMBtrans.
   ****************************************************************************/
-int reply_trans(connection_struct * conn, char *inbuf, char *outbuf, int size,
-		int bufsize)
+
+int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize)
 {
 	fstring name;
 	int name_offset = 0;
@@ -418,47 +416,33 @@ int reply_trans(connection_struct * conn, char *inbuf, char *outbuf, int size,
 	int dsoff = SVAL(inbuf, smb_vwv12);
 	int suwcnt = CVAL(inbuf, smb_vwv13);
 
-	ZERO_STRUCT(name);
+	memset(name, '\0',sizeof(name));
 	fstrcpy(name, smb_buf(inbuf));
 
-	if (dscnt > tdscnt || pscnt > tpscnt)
-	{
+	if (dscnt > tdscnt || pscnt > tpscnt) {
 		exit_server("invalid trans parameters\n");
 	}
 
-	if (tdscnt)
-	{
-		if ((data = (char *)malloc(tdscnt)) == NULL)
-		{
-			DEBUG(0,
-			      ("reply_trans: data malloc fail for %d bytes !\n",
-			       tdscnt));
+	if (tdscnt)  {
+		if((data = (char *)malloc(tdscnt)) == NULL) {
+			DEBUG(0,("reply_trans: data malloc fail for %d bytes !\n", tdscnt));
 			return (ERROR(ERRDOS, ERRnomem));
 		}
 		memcpy(data, smb_base(inbuf) + dsoff, dscnt);
 	}
 
-	if (tpscnt)
-	{
-		if ((params = (char *)malloc(tpscnt)) == NULL)
-		{
-			DEBUG(0,
-			      ("reply_trans: param malloc fail for %d bytes !\n",
-			       tpscnt));
+	if (tpscnt) {
+		if((params = (char *)malloc(tpscnt)) == NULL) {
+			DEBUG(0,("reply_trans: param malloc fail for %d bytes !\n", tpscnt));
 			return (ERROR(ERRDOS, ERRnomem));
 		}
 		memcpy(params, smb_base(inbuf) + psoff, pscnt);
 	}
 
-	if (suwcnt)
-	{
+	if (suwcnt) {
 		int i;
-		if ((setup = (uint16 *)malloc(suwcnt * sizeof(uint16))) ==
-		    NULL)
-		{
-			DEBUG(0,
-			      ("reply_trans: setup malloc fail for %d bytes !\n",
-			       suwcnt * sizeof(uint16)));
+		if((setup = (uint16 *)malloc(suwcnt*sizeof(uint16))) == NULL) {
+          DEBUG(0,("reply_trans: setup malloc fail for %d bytes !\n", (int)(suwcnt * sizeof(uint16))));
 			return (ERROR(ERRDOS, ERRnomem));
 		}
 		for (i = 0; i < suwcnt; i++)
@@ -466,8 +450,7 @@ int reply_trans(connection_struct * conn, char *inbuf, char *outbuf, int size,
 	}
 
 
-	if (pscnt < tpscnt || dscnt < tdscnt)
-	{
+	if (pscnt < tpscnt || dscnt < tdscnt) {
 		/* We need to send an interim response then receive the rest
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf, 0, 0, True);
@@ -476,8 +459,7 @@ int reply_trans(connection_struct * conn, char *inbuf, char *outbuf, int size,
 	}
 
 	/* receive the rest of the trans packet */
-	while (pscnt < tpscnt || dscnt < tdscnt)
-	{
+	while (pscnt < tpscnt || dscnt < tdscnt) {
 		BOOL ret;
 		int pcnt, poff, dcnt, doff, pdisp, ddisp;
 
@@ -523,8 +505,7 @@ int reply_trans(connection_struct * conn, char *inbuf, char *outbuf, int size,
 		pscnt += pcnt;
 		dscnt += dcnt;
 
-		if (dscnt > tdscnt || pscnt > tpscnt)
-		{
+		if (dscnt > tdscnt || pscnt > tpscnt) {
 			exit_server("invalid trans parameters\n");
 		}
 
@@ -542,22 +523,16 @@ int reply_trans(connection_struct * conn, char *inbuf, char *outbuf, int size,
 	 * WinCE wierdness....
 	 */
 
-	if (name[0] == '\\' && (StrnCaseCmp(&name[1], local_machine,
-					    strlen(local_machine)) == 0))
-	{
+	if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine, strlen(local_machine)) == 0) &&
+			(name[strlen(local_machine)+1] == '\\'))
 		name_offset = strlen(local_machine) + 1;
-	}
 
-	if (strncmp(&name[name_offset], "\\PIPE\\", strlen("\\PIPE\\")) == 0)
-	{
+	if (strncmp(&name[name_offset],"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
 		DEBUG(5, ("calling named_pipe\n"));
 		outsize = named_pipe(conn, vuid, outbuf,
-				     name + name_offset + strlen("\\PIPE\\"),
-				     setup, data, params, suwcnt, tdscnt,
-				     tpscnt, msrcnt, mdrcnt, mprcnt);
-	}
-	else
-	{
+				     name+name_offset+strlen("\\PIPE\\"),setup,data,params,
+				     suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
+	} else {
 		DEBUG(3, ("invalid pipe name\n"));
 		outsize = 0;
 	}

@@ -2675,6 +2675,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
 	job = SVAL(p, 0);
+  snum = print_job_snum(job);
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 

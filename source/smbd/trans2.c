@@ -221,10 +221,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 
   unix_convert(fname,conn,0,&bad_path,NULL);
     
-  fsp = file_new();
-  if (!fsp)
-    return(ERROR(ERRSRV,ERRnofids));
-
   if (!check_name(fname,conn))
   {
     if((errno == ENOENT) && bad_path)
@@ -232,23 +228,21 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   unixmode = unix_mode(conn,open_attr | aARCH, fname);
       
-  open_file_shared(fsp,conn,fname,open_mode,open_ofun,unixmode,
+  fsp = open_file_shared(conn,fname,open_mode,open_ofun,unixmode,
 		   oplock_request, &rmode,&smb_action);
       
-  if (!fsp->open)
+  if (!fsp)
   {
     if((errno == ENOENT) && bad_path)
     {
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1794,8 +1788,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
            * the share mode contained ALLOW_SHARE_DELETE
            */
 
-          if(lp_share_modes(SNUM(conn)))
-          {
             if(!GET_ALLOW_SHARE_DELETE(fsp->share_mode))
               return(ERROR(ERRDOS,ERRnoaccess));
 
@@ -1900,7 +1892,6 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
                    delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
 
             } /* end if(delete_on_close && !GET_DELETE_ON_CLOSE_FLAG(fsp->share_mode)) */
-          } /* end if lp_share_modes() */
         } /* end if is_directory. */
       } else
         return(ERROR(ERRDOS,ERRunknownlevel));

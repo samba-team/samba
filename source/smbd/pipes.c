@@ -138,19 +138,16 @@ int reply_pipe_write(char *inbuf, char *outbuf, int length, int bufsize)
 	}
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0))
-	{
-		DEBUG(3, ("reply_write_pipe: nwritten: %d numtowrite:%d\n",
-			  nwritten, numtowrite));
 		return (UNIXERROR(ERRDOS, ERRnoaccess));
-	}
 
 	outsize = set_message(outbuf, 1, 0, True);
 
 	SSVAL(outbuf, smb_vwv0, nwritten);
 
-	DEBUG(3, ("write-IPC pnum=%04x nwritten=%d\n", p->pnum, nwritten));
+	DEBUG(3,("write-IPC pnum=%04x nwritten=%d\n",
+		 p->pnum, nwritten));
 
-	return outsize;
+	return(outsize);
 }
 
 /****************************************************************************
