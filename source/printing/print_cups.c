@@ -905,8 +905,8 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 			         LPQ_PRINTING;
 		temp->priority = job_priority;
 		temp->time     = job_time;
-		strncpy(temp->user, user_name, sizeof(temp->user) - 1);
-		strncpy(temp->file, job_name, sizeof(temp->file) - 1);
+		strncpy(temp->fs_user, user_name, sizeof(temp->fs_user) - 1);
+		strncpy(temp->fs_file, job_name, sizeof(temp->fs_file) - 1);
 
 		qcount ++;
 
