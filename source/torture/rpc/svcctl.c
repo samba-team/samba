@@ -23,7 +23,7 @@
 
 static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *h)
 {
-	struct svcctl_EnumServicesStatus r;
+	struct svcctl_EnumServicesStatusW r;
 	int i;
 	NTSTATUS status;
 	uint32 resume_handle = 0;
@@ -40,7 +40,7 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 	r.out.services_returned = 0;
 	r.out.bytes_needed = 0;
 
-	status = dcerpc_svcctl_EnumServicesStatus(p, mem_ctx, &r);
+	status = dcerpc_svcctl_EnumServicesStatusW(p, mem_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ËnumServicesStatus failed!\n");
@@ -51,7 +51,7 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		r.in.buf_size = r.out.bytes_needed;
 		r.out.service = talloc(mem_ctx, r.out.bytes_needed);
 		
-		status = dcerpc_svcctl_EnumServicesStatus(p, mem_ctx, &r);
+		status = dcerpc_svcctl_EnumServicesStatusW(p, mem_ctx, &r);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("ËnumServicesStatus failed!\n");
@@ -74,7 +74,7 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 
 static BOOL test_OpenSCManager(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *h)
 {
-	struct svcctl_OpenSCManager r;
+	struct svcctl_OpenSCManagerW r;
 	NTSTATUS status;
 	
 	r.in.MachineName = NULL;
@@ -82,7 +82,7 @@ static BOOL test_OpenSCManager(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struc
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.handle = h;
 	
-	status = dcerpc_svcctl_OpenSCManager(p, mem_ctx, &r);
+	status = dcerpc_svcctl_OpenSCManagerW(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenSCManager failed!\n");
 		return False;
