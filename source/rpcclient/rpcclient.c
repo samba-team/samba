@@ -363,34 +363,19 @@ static NTSTATUS setup_schannel(struct cli_state *cli, int pipe_auth_flags,
 	uchar trust_password[16];
 	uint32 sec_channel_type;
 	if (argc == 2) {
-		strhex_to_str((char *)cli->pipes[cli->pipe_idx].auth_info.sess_key,
-			      strlen(argv[1]), 
-			      argv[1]);
-		memcpy(cli->sess_key, cli->pipes[cli->pipe_idx].auth_info.sess_key, sizeof(cli->sess_key));
-
+		strhex_to_str(cli->sess_key, strlen(argv[1]), argv[1]);
 		cli->pipe_auth_flags = pipe_auth_flags;
 		return NT_STATUS_OK;
 	}
 
 	/* Cleanup */
 
-	if ((memcmp(cli->pipes[cli->pipe_idx].auth_info.sess_key, zeros, sizeof(cli->pipes[cli->pipe_idx].auth_info.sess_key)) != 0)) {
-		if (cli->pipes[cli->pipe_idx].pipe_auth_flags == pipe_auth_flags) {
-			/* already in this mode nothing to do */
-			return NT_STATUS_OK;
-		} else {
-			/* schannel is setup, just need to use it again with new flags */
-			cli->pipes[cli->pipe_idx].pipe_auth_flags = pipe_auth_flags;
-
-			if (cli->pipes[cli->pipe_idx].fnum != 0)
-				cli_nt_session_close(cli);
-			return NT_STATUS_OK;
-		}
+	if ((memcmp(cli->sess_key, zeros, sizeof(cli->sess_key)) != 0) &&
+	    (cli->pipe_auth_flags == pipe_auth_flags)) {
+		/* already in this mode nothing to do */
+		return NT_STATUS_OK;
 	}
 	
-	if (cli->pipes[cli->pipe_idx].fnum != 0)
-		cli_nt_session_close(cli);
-
 	if (!secrets_fetch_trust_account_password(lp_workgroup(),
 						  trust_password,
 						  NULL, &sec_channel_type)) {

@@ -1492,6 +1492,8 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 	cli_pipe->pipe_idx = pipe_idx;
 	cli_pipe->cli = cli;
 	cli_pipe->pipe_auth_flags = cli->pipe_auth_flags;
+	memcpy(&cli_pipe->auth_info.sess_key,
+	       cli->sess_key, sizeof(cli->sess_key));
 
 	/******************* bind request on pipe *****************/
 
@@ -1622,12 +1624,13 @@ NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan, int auth_flags
 		return result;
 	}
 
-	cli->netlogon_pipe = cli->pipes[PI_NETLOGON];
-	ZERO_STRUCT(cli->pipes[PI_NETLOGON]);
-
 	memcpy(cli->pipes[PI_NETLOGON].auth_info.sess_key, cli->sess_key,
 	       sizeof(cli->pipes[PI_NETLOGON].auth_info.sess_key));
 
+	cli_close(cli, cli->pipes[PI_NETLOGON].fnum);
+	cli->pipes[PI_NETLOGON].fnum = 0;
+	cli->pipe_idx = -1;
+	
 	/* doing schannel, not per-user auth */
 	cli->pipe_auth_flags = auth_flags;
 
