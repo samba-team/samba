@@ -451,6 +451,8 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
 
   pstrcpy(name_resolve_list, lp_name_resolve_order());
   ptr = name_resolve_list;
+  if (!ptr || !*ptr) ptr = "host";
+
   while (next_token(&ptr, tok, LIST_SEP)) {
     if(strequal(tok, "host") || strequal(tok, "hosts")) {
 
