@@ -476,8 +476,8 @@ static int net_afskey(int argc, const char **argv)
 	int fd;
 	struct afs_keyfile keyfile;
 
-	if (argc != 1) {
-		d_printf("usage: 'net afskey <keyfile>'\n");
+	if (argc != 2) {
+		d_printf("usage: 'net afskey <keyfile> cell'\n");
 		return -1;
 	}
 
@@ -496,7 +496,7 @@ static int net_afskey(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!secrets_store_afs_keyfile(afs_cell(), &keyfile)) {
+	if (!secrets_store_afs_keyfile(argv[1], &keyfile)) {
 		d_printf("Could not write keyfile to secrets.tdb\n");
 		return -1;
 	}
