@@ -1139,7 +1139,7 @@
 		
 		<varlistentry>
 		<term><anchor id="ALGORITHMICRIDBASE">algorithmic rid base (G)</term>
-		<listitem><para>This determines if Samba how will use its
+		<listitem><para>This determines how Samba will use its
                 algorithmic mapping from uids/gid to the RIDs needed to construct
                 NT Security Identifiers.</para>
 
