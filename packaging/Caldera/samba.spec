@@ -1,7 +1,7 @@
 Summary: SMB client and server
 Name: samba
-Version: 1.9.18p4
-Release: Caldera.1
+Version: 1.9.18p5
+Release: Caldera.2
 Copyright: GPL
 Group: Networking
 Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.18p4.tar.gz
@@ -60,7 +60,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/rc.d/rc5.d
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/rc6.d
 mkdir -p $RPM_BUILD_ROOT/home/samba
 mkdir -p $RPM_BUILD_ROOT/usr/bin
-mkdir -p $RPM_BUILD_ROOT/usr/doc/samba-1.9.18p3-Caldera.1
+mkdir -p $RPM_BUILD_ROOT/usr/doc/samba-1.9.18p5-Caldera.2
 mkdir -p $RPM_BUILD_ROOT/usr/sbin
 mkdir -p $RPM_BUILD_ROOT/usr/man/man1
 mkdir -p $RPM_BUILD_ROOT/usr/man/man5
@@ -90,7 +90,7 @@ do
 install -m644 docs/$i $RPM_BUILD_ROOT/usr/man/man1
 done
 
-for i in 437 850 852 866 932 949 950
+for i in 437 850 852 866 932 949 950 936
 do
 install -m644 source/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/src
 done
@@ -118,14 +118,14 @@ ln -sf /etc/rc.d/init.d/smb $RPM_BUILD_ROOT/etc/rc.d/rc6.d/K35smb
 
 for i in README COPYING Manifest Read-Manifest-Now WHATSNEW.txt Roadmap docs examples
 do
-cp -avf $i $RPM_BUILD_ROOT/usr/doc/samba-1.9.18p3-Caldera.1
+cp -avf $i $RPM_BUILD_ROOT/usr/doc/samba-1.9.18p5-Caldera.2
 done
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post
-for i in 437 850 852 866 932 949 950
+for i in 437 850 852 866 932 949 950 936
 do
 /usr/bin/make_smbcodepage c $i /etc/codepages/src/codepage_def.$i /etc/codepages/codepage.$i
 done
@@ -183,6 +183,7 @@ fi
 %attr(-,root,root) %config /etc/codepages/src/codepage_def.852
 %attr(-,root,root) %config /etc/codepages/src/codepage_def.866
 %attr(-,root,root) %config /etc/codepages/src/codepage_def.932
+%attr(-,root,root) %config /etc/codepages/src/codepage_def.936
 %attr(-,root,root) %config /etc/codepages/src/codepage_def.949
 %attr(-,root,root) %config /etc/codepages/src/codepage_def.950
 %attr(-,root,root) /usr/man/man1/smbstatus.1

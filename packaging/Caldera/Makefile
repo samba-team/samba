@@ -60,7 +60,7 @@ LOCKDIR = /var/lock/samba
 # The directory where code page definition files go
 CODEPAGEDIR = $(LIBDIR)/codepages
 # The current codepage definition list.
-CODEPAGELIST= 437 850 852 932 866 949 950
+CODEPAGELIST= 437 850 852 932 866 949 950 936
 
 # set this to the default group you want your machine to appear in
 # for browsing. This can also be set in nmbd (see nmbd(8))
@@ -149,6 +149,7 @@ AWK = awk
 # The following are additional flags that may apply
 #   -DNETGROUP if your machine supports yp netgroups
 #   -DAUTOMOUNT to ask for yp auto.home for users' home directories
+#   -DNISPLUS add this to ask nis+ instead of yp for users' home directories
 #   -DSHADOW_PWD if you are using shadow passwords
 #   -DGETPWANAM if you wish to use getpwanam() call
 #   -DPWDAUTH if you have and want to use the pwdauth() call
@@ -377,22 +378,28 @@ LIBSM =
 # LIBSM = -lrpc -lsocket -lPW -lnsl -lseq -lsec
 
 
-# This is for HP-UX. Note that some systems don't like the -Aa switch.
+# This is for HP-UX 9.x. Note that some systems don't like the -Aa switch.
 # contributed by Pasi.Kaara@atk.tpo.fi
 # You will need -DREPLACE_GETPASS if you use smb encryption
-# Add -DHPUX10 if compiling on HPUX 10.x
 # FLAGSM = -DHPUX -Aa -D_HPUX_SOURCE -D_POSIX_SOURCE
 # LIBSM = 
 
+# This is for HP-UX 10.x. Note that some systems don't like the -Aa switch.
+# contributed by Pasi.Kaara@atk.tpo.fi
+# You will need -DREPLACE_GETPASS if you use smb encryption
+# FLAGSM = -DHPUX -Aa -D_HPUX_SOURCE -D_POSIX_SOURCE -DHPUX10 -DFAST_SHARE_MODES
+# LIBSM = 
+
+
 # This is for HP-UX with DCE/DFS
 # contributed by Jim Doyle <doyle@oec.com>
-# Add -DHPUX10 if compiling on HPUX 10.x
+# Add -DHPUX10 -DFAST_SHARE_MODES if compiling on HPUX 10.x
 # FLAGSM = -DHPUX -Aa -D_HPUX_SOURCE -D_POSIX_SOURCE -DDFS_AUTH -D_REENTRANT -I/usr/include/reentrant
 # LIBSM = -ldce -lM -lc_r
 
 # HP-UX 10.x Trusted System
 # Contributed by David-Michael Lincke (dlincke@sgcl1.unisg.ch)
-# FLAGSM = +O3 -Ae -DHPUX -DHPUX10 -DHPUX_10_TRUSTED
+# FLAGSM = +O3 -Ae -DHPUX -DHPUX10 -DHPUX_10_TRUSTED -DFAST_SHARE_MODES
 # LIBSM = -lsec
 
 
@@ -725,7 +732,7 @@ LOOKUP_OBJ = nmblookup.o $(UTILOBJ)
 
 
 # object files to be auto-prototyped
-PROTOOBJ = $(UTILOBJ) $(SMBDOBJ) $(NMBDOBJ) $(LOCKOBJ) $(CLIENT_OBJ) $(NMBDOBJ) $(STATUS_OBJ) cgi.o namequery.o
+PROTOOBJ = $(UTILOBJ) $(SMBDOBJ) $(NMBDOBJ) $(LOCKOBJ) $(CLIENT_OBJ) $(STATUS_OBJ) cgi.o namequery.o
 
 
 ######################################################################
