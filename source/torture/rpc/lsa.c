@@ -635,6 +635,66 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_LookupPrivDisplayName(struct dcerpc_pipe *p,
+				TALLOC_CTX *mem_ctx,
+				struct policy_handle *handle,
+				struct lsa_Name *priv_name)
+{
+	struct lsa_LookupPrivDisplayName r;
+	struct lsa_Name disp_name;
+	NTSTATUS status;
+
+	ZERO_STRUCT(disp_name);
+	
+	printf("testing LookupPrivDisplayName(%s)\n", priv_name->name);
+	
+	r.in.handle = handle;
+	r.in.name = priv_name;
+	r.in.unknown = 0;
+	r.in.unknown2 = 0;
+	r.out.disp_name = &disp_name;
+
+	status = dcerpc_lsa_LookupPrivDisplayName(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LookupPrivDisplayName failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_EnumAccountsWithUserRight(struct dcerpc_pipe *p, 
+				TALLOC_CTX *mem_ctx,
+				struct policy_handle *handle,
+				struct lsa_Name *priv_name)
+{
+	struct lsa_EnumAccountsWithUserRight r;
+	struct lsa_SidArray sids;
+	NTSTATUS status;
+
+	ZERO_STRUCT(sids);
+	
+	printf("testing EnumAccountsWithUserRight(%s)\n", priv_name->name);
+	
+	r.in.handle = handle;
+	r.in.name = priv_name;
+	r.out.sids = &sids;
+
+	status = dcerpc_lsa_EnumAccountsWithUserRight(p, mem_ctx, &r);
+
+	/* NT_STATUS_NO_MORE_ENTRIES means noone has this privilege */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
+		return True;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumAccountsWithUserRight failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	
+	return True;
+}
+
 
 static BOOL test_EnumPrivs(struct dcerpc_pipe *p, 
 			   TALLOC_CTX *mem_ctx, 
@@ -644,6 +704,8 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 	struct lsa_EnumPrivs r;
 	struct lsa_PrivArray privs1;
 	uint32_t resume_handle = 0;
+	int i;
+	BOOL ret = True;
 
 	printf("\ntesting EnumPrivs\n");
 
@@ -660,7 +722,14 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	return True;
+	for (i = 0; i< privs1.count; i++) {
+		test_LookupPrivDisplayName(p, mem_ctx, handle, &privs1.privs[i].name);
+		if (!test_EnumAccountsWithUserRight(p, mem_ctx, handle, &privs1.privs[i].name)) {
+			ret = False;
+		}
+	}
+
+	return ret;
 }
 
 
