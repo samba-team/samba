@@ -128,12 +128,23 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 {
 	int ret;
 	fd_set *readfds2, readfds_buf, *writefds2, writefds_buf, *errorfds2, errorfds_buf;
-	struct timeval tval2, *ptval;
+	struct timeval tval2, *ptval, end_time;
 
 	readfds2 = (readfds ? &readfds_buf : NULL);
 	writefds2 = (writefds ? &writefds_buf : NULL);
 	errorfds2 = (errorfds ? &errorfds_buf : NULL);
-	ptval = (tval ? &tval2 : NULL);
+	if (tval) {
+		GetTimeOfDay(&end_time);
+		end_time.tv_sec += tval->tv_sec;
+		end_time.tv_usec += tval->tv_usec;
+		end_time.tv_sec += end_time.tv_usec / 1000000;
+		end_time.tv_usec %= 1000000;
+		errno = 0;
+		tval2 = *tval;
+		ptval = &tval2;
+	} else {
+		ptval = NULL;
+	}
 
 	do {
 		if (readfds)
@@ -142,8 +153,19 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 			writefds_buf = *writefds;
 		if (errorfds)
 			errorfds_buf = *errorfds;
-		if (tval)
-			tval2 = *tval;
+		if (ptval && (errno == EINTR)) {
+			struct timeval now_time;
+			SMB_BIG_INT tdif;
+
+			GetTimeOfDay(&now_time);
+			tdif = usec_time_diff(&end_time, &now_time);
+			if (tdif <= 0) {
+				ret = 0; /* time expired. */
+				break;
+			}
+			ptval->tv_sec = tdif / 1000000;
+			ptval->tv_usec = tdif % 1000000;
+		}
 
 		ret = sys_select(maxfd, readfds2, writefds2, errorfds2, ptval);
 	} while (ret == -1 && errno == EINTR);
