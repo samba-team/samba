@@ -140,11 +140,15 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 }
 
 /*
- * Rotate rightmost "rrc" bytes to the front.
+ * Rotate "rrc" bytes to the front or back
  */
-static krb5_error_code rrc_rotate(void *data, size_t len, u_int16_t rrc)
+static krb5_error_code rrc_rotate(void *data,
+				  size_t len,
+				  u_int16_t rrc,
+				  krb5_boolean unrotate)
 {
     u_char *tmp;
+    size_t left;
 
     if (rrc == 0) {
 	return 0;
@@ -154,14 +158,22 @@ static krb5_error_code rrc_rotate(void *data, size_t len, u_int16_t rrc)
 	return ERANGE;
     }
 
+    left = len - rrc;
+
     tmp = malloc(rrc);
     if (tmp == NULL) {
 	return ENOMEM;
     }
-
-    memcpy(tmp, (u_char *)data + len - rrc, rrc);
-    memmove((u_char *)data + rrc, data, len - rrc);
-    memcpy(data, tmp, rrc);
+ 
+    if (unrotate) {
+	memcpy(tmp, data, rrc);
+	memmove(data, (u_char *)data + rrc, left);
+	memcpy((u_char *)data + left, tmp, rrc);
+    } else {
+	memcpy(tmp, (u_char *)data + left, rrc);
+	memmove((u_char *)data + rrc, data, left);
+	memcpy(data, tmp, rrc);
+    }
 
     free(tmp);
 
@@ -221,9 +233,10 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 
     p = output_message_buffer->value;
     token = (gss_cfx_wrap_token)p;
-    token->TOK_ID[0] = 0x05;
-    token->TOK_ID[1] = 0x04;
-    token->Flags = 0;
+    token->TOK_ID[0] = 0x04;
+    token->TOK_ID[1] = 0x05;
+    token->Flags     = 0;
+    token->Filler    = 0xFF;
     if ((context_handle->more_flags & LOCAL) == 0)
 	token->Flags |= SentByAcceptor;
     if (conf_req_flag) {
@@ -318,7 +331,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	token->RRC[0] = (rrc >> 0) & 0xFF;  
 	token->RRC[1] = (rrc >> 8) & 0xFF;
 
-	ret = rrc_rotate(cipher.data, cipher.length, rrc);
+	ret = rrc_rotate(cipher.data, cipher.length, rrc, FALSE);
 	if (ret != 0) {
 	    gssapi_krb5_set_error_string();
 	    *minor_status = ret;
@@ -370,7 +383,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	       cksum.checksum.data, cksum.checksum.length);
 
 	ret = rrc_rotate(p,
-	    input_message_buffer->length + cksum.checksum.length, rrc);
+	    input_message_buffer->length + cksum.checksum.length, rrc, FALSE);
 	if (ret != 0) {
 	    gssapi_krb5_set_error_string();
 	    *minor_status = ret;
@@ -420,7 +433,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 
     token = (gss_cfx_wrap_token)p;
 
-    if (token->TOK_ID[0] != 0x05 || token->TOK_ID[1] != 0x04) {
+    if (token->TOK_ID[0] != 0x04 || token->TOK_ID[1] != 0x05) {
 	return GSS_S_DEFECTIVE_TOKEN;
     }
 
@@ -432,6 +445,10 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     if (token->Flags & SentByAcceptor) {
 	if ((context_handle->more_flags & LOCAL) == 0)
 	    return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    if (token->Filler != 0xFF) {
+	return GSS_S_DEFECTIVE_TOKEN;
     }
 
     if (conf_state != NULL) {
@@ -483,7 +500,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     len -= (p - (u_char *)input_message_buffer->value);
 
     /* Rotate by RRC; bogus to do this in-place XXX */
-    *minor_status = rrc_rotate(p, len, rrc);
+    *minor_status = rrc_rotate(p, len, rrc, TRUE);
     if (*minor_status != 0) {
 	krb5_crypto_destroy(gssapi_krb5_context, crypto);
 	return GSS_S_FAILURE;
