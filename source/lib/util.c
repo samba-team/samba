@@ -49,7 +49,7 @@
 #endif /* WITH_NISPLUS_HOME */
 #endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
-int Protocol = PROTOCOL_COREPLUS;
+enum protocol_types Protocol = PROTOCOL_COREPLUS;
 
 /* a default finfo structure to ensure all fields are sensible */
 file_info def_finfo = {-1,0,0,0,0,0,0,"",""};

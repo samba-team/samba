@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-extern int Protocol;
+extern enum protocol_types Protocol;
 extern int smb_read_error;
 extern int global_oplock_break;
 extern struct current_user current_user;

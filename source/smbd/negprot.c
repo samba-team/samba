@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-extern int Protocol;
+extern enum protocol_types Protocol;
 extern int max_recv;
 BOOL global_encrypted_passwords_negotiated = False;
 BOOL global_spnego_negotiated = False;

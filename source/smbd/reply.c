@@ -27,7 +27,7 @@
 #include "includes.h"
 
 /* look in server.c for some explanation of these variables */
-extern int Protocol;
+extern enum protocol_types Protocol;
 extern int max_send;
 extern int max_recv;
 extern char magic_char;
