@@ -1454,7 +1454,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name
 	psp4 = talloc_asprintf(ctx, "HOST/%s", my_fqdn);
 	strlower_m(&psp4[5]);
 	for (i = 0; i < next_spn; i++) {
-		if (strequal(servicePrincipalName[i], psp3))
+		if (strequal(servicePrincipalName[i], psp4))
 			break;
 	}
 	if (i == next_spn) {
