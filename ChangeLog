@@ -1,3 +1,14 @@
+Fri Aug 29 00:08:18 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/roken/parse_units.c: generalised `parse_units' and
+ 	`unparse_units' and added new functions `parse_flags' and
+ 	`unparse_flags' that use these
+
+	* lib/krb5/krb5_locl.h: moved krb5_data* functions to krb5.h
+
+	* admin/util.c: Use {un,}parse_flags for printing and parsing
+ 	hdbflags.
+
 Thu Aug 28 03:26:12 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_addrs.c: restructured
