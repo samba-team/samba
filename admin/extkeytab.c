@@ -78,11 +78,12 @@ ext_keytab(int argc, char **argv)
 
     krb5_copy_principal (context, ent.principal, &key_entry.principal);
     key_entry.vno = ent.kvno;
-    key_entry.keyblock.keytype = ent.keyblock.keytype;
+    /* XXX XXX XXX XXX */
+    key_entry.keyblock.keytype = ent.keys.val[0].key.keytype;
     key_entry.keyblock.keyvalue.length = 0;
     krb5_data_copy(&key_entry.keyblock.keyvalue,
-		   ent.keyblock.keyvalue.data,
-		   ent.keyblock.keyvalue.length);
+		   ent.keys.val[0].key.keyvalue.data,
+		   ent.keys.val[0].key.keyvalue.length);
 
     ret = krb5_kt_default (context, &kid);
     if (ret) {
