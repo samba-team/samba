@@ -441,7 +441,6 @@ static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 	switch (sub_size) {
 	case 0: {
 		uint32_t size = ndr->data_size - ndr->offset;
-		if (size == 0) return NT_STATUS_OK;
 		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
 		break;
 	}
@@ -449,7 +448,6 @@ static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 	case 2: {
 		uint16_t size;
 		NDR_CHECK(ndr_pull_uint16(ndr, &size));
-		if (size == 0) return NT_STATUS_OK;
 		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
 		break;
 	}
@@ -457,7 +455,6 @@ static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 	case 4: {
 		uint32_t size;
 		NDR_CHECK(ndr_pull_uint32(ndr, &size));
-		if (size == 0) return NT_STATUS_OK;
 		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
 		break;
 	}

@@ -49,6 +49,7 @@ static void nbtd_task_init(struct task_server *task)
 {
 	struct nbt_server *nbtsrv;
 	struct nbt_interface *iface;
+	NTSTATUS status;
 
 	nbtsrv = talloc(task, struct nbt_server);
 	if (nbtsrv == NULL) {
@@ -59,8 +60,14 @@ static void nbtd_task_init(struct task_server *task)
 	nbtsrv->task = task;
 	nbtsrv->interfaces = NULL;
 
-	nbt_startup_interfaces(nbtsrv);
+	/* start listening on the configured network interfaces */
+	status = nbt_startup_interfaces(nbtsrv);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_terminate(task, "nbtd failed to setup interfaces");
+		return;
+	}
 
+	/* setup the incoming request handler for all our interfaces */
 	for (iface=nbtsrv->interfaces;iface;iface=iface->next) {
 		nbt_set_incoming_handler(iface->nbtsock, nbt_request_handler, iface);
 	}
