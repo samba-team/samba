@@ -90,8 +90,12 @@ gssapi_krb5_verify_header(u_char **str,
 			  char *type);
 
 OM_uint32
-gss_krb5_getsomekey(const gss_ctx_id_t context_handle,
-		    krb5_keyblock **key);
+gss_krb5_get_remotekey(const gss_ctx_id_t context_handle,
+		       krb5_keyblock **key);
+
+OM_uint32
+gss_krb5_get_localkey(const gss_ctx_id_t context_handle,
+		      krb5_keyblock **key);
 
 krb5_error_code
 gss_address_to_krb5addr(OM_uint32 gss_addr_type,
