@@ -49,7 +49,7 @@ static void do_search(struct ldb_context *ldb,
 		      const char *basedn,
 		      int scope,
 		      const char *expression,
-		      const char * const *attrs)
+		      char * const *attrs)
 {
 	int ret, i;
 	struct ldb_message **msgs;
@@ -84,7 +84,7 @@ static void do_search(struct ldb_context *ldb,
  int main(int argc, char * const argv[])
 {
 	struct ldb_context *ldb;
-	const char * const * attrs = NULL;
+	char * const * attrs = NULL;
 	const char *ldb_url;
 	const char *basedn = NULL;
 	int opt;

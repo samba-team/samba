@@ -44,20 +44,42 @@ static int ltdb_baseinfo_init(struct ldb_context *ldb)
 	struct ldb_message msg;
 	struct ldb_message_element el;
 	struct ldb_val val;
+	int ret;
 
 	ltdb->sequence_number = 0;
 
 	msg.num_elements = 1;
 	msg.elements = &el;
-	msg.dn = LTDB_BASEINFO;
-	el.name = LTDB_SEQUENCE_NUMBER;
+	msg.dn = strdup(LTDB_BASEINFO);
+	if (!msg.dn) {
+		errno = ENOMEM;
+		return -1;
+	}
+	el.name = strdup(LTDB_SEQUENCE_NUMBER);
+	if (!el.name) {
+		free(msg.dn);
+		errno = ENOMEM;
+		return -1;
+	}
 	el.values = &val;
 	el.num_values = 1;
 	el.flags = 0;
-	val.data = "0";
+	val.data = strdup("0");
+	if (!val.data) {
+		free(el.name);
+		free(msg.dn);
+		errno = ENOMEM;
+		return -1;
+	}
 	val.length = 1;
 	
-	return ltdb_store(ldb, &msg, TDB_INSERT);
+	ret = ltdb_store(ldb, &msg, TDB_INSERT);
+
+	free(msg.dn);
+	free(el.name);
+	free(val.data);
+
+	return ret;
 }
 
 /*
@@ -150,8 +172,8 @@ int ltdb_increase_sequence_number(struct ldb_context *ldb)
 
 	msg.num_elements = 1;
 	msg.elements = &el;
-	msg.dn = LTDB_BASEINFO;
-	el.name = LTDB_SEQUENCE_NUMBER;
+	msg.dn = strdup(LTDB_BASEINFO);
+	el.name = strdup(LTDB_SEQUENCE_NUMBER);
 	el.values = &val;
 	el.num_values = 1;
 	el.flags = LDB_FLAG_MOD_REPLACE;
@@ -161,6 +183,8 @@ int ltdb_increase_sequence_number(struct ldb_context *ldb)
 	ret = ltdb_modify_internal(ldb, &msg);
 
 	free(s);
+	free(msg.dn);
+	free(el.name);
 
 	if (ret == 0) {
 		ltdb->sequence_number += 1;

@@ -5,7 +5,11 @@ export PATH=/usr/sbin:$PATH
 rm -rf tests/tmp/db
 mkdir -p tests/tmp/db
 
-killall slapd
+if pidof slapd > /dev/null; then
+    killall slapd
+fi
 sleep 2
-killall -9 slapd
+if pidof slapd > /dev/null; then
+    killall -9 slapd
+fi
 slapadd -f tests/slapd.conf < tests/init.ldif || exit 1
