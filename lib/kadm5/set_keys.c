@@ -183,17 +183,22 @@ make_keys(krb5_context context, krb5_principal principal, const char *password,
 		}
 		strlwr(salt.saltvalue.data);
 		salt.saltvalue.length = strlen(*realm);
+		salt_set = 1;
 	    }
 	}
 	memset(&key, 0, sizeof(key));
 	for(i = 0; i < num_etypes; i++) {
 	    Key *k;
-	    for(k = keys; k < keys + num_keyts; k++) {
+	    for(k = keys; k < keys + num_keys; k++) {
 		if(k->key.keytype == etypes[i] &&
-		   k->salt.salttype == salt.salttype &&
-		   k->salt.saltvalue.length == salt.saltvalue.length &&
-		   memcmp(k->salt.saltvalue.data, salt.saltvalue.data, 
-			  salt.saltvalue.length) == 0)
+		   ((k->salt != NULL && 
+		     k->salt->type == salt.salttype &&
+		     k->salt->salt.length == salt.saltvalue.length &&
+		     memcmp(k->salt->salt.data, salt.saltvalue.data, 
+			    salt.saltvalue.length) == 0) ||
+		    (k->salt == NULL && 
+		     salt.salttype == KRB5_PW_SALT && 
+		     !salt_set)))
 		    goto next_etype;
 	    }
 		       
