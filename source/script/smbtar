@@ -64,7 +64,7 @@ Options:         (Description)                 (Default)
   exit $ex
 }
 
-echo Params count: $#
+# echo Params count: $#
 
 # DEC OSF AKA Digital UNIX does not seem to return a value in OPTIND if 
 # there are no command line params, so protect us against that ...
