@@ -116,10 +116,6 @@
 		uint32 unknown;
 	} lsa_AuditLogInfo;
 
-
-	typedef struct {
-	} lsa_AuditSettings;
-
 	typedef struct {
 		uint32 auditing_mode;
 		[size_is(count)] uint32 *settings;

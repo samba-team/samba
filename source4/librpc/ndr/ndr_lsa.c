@@ -1966,13 +1966,6 @@ void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name, struct 
 	ndr->depth--;
 }
 
-void ndr_print_lsa_AuditSettings(struct ndr_print *ndr, const char *name, struct lsa_AuditSettings *r)
-{
-	ndr_print_struct(ndr, name, "lsa_AuditSettings");
-	ndr->depth++;
-	ndr->depth--;
-}
-
 void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *name, struct lsa_AuditEventsInfo *r)
 {
 	ndr_print_struct(ndr, name, "lsa_AuditEventsInfo");
