@@ -197,6 +197,15 @@ static void register_name_timeout_response(struct subnet_record *subrec,
       DEBUG(2,("register_name_timeout_response: WINS server at address %s is not \
 responding.\n", inet_ntoa(rrec->packet->ip)));
 
+      /* mark it temporarily dead */
+      wins_srv_died(rrec->packet->ip);
+
+      /* and try the next wins server in our failover list */
+      rrec->packet->ip = wins_srv_ip();
+
+      /* also update the UNICODE subnet IPs */
+      subrec->bcast_ip = subrec->mask_ip = subrec->myip = rrec->packet->ip;
+
       /* Keep trying to contact the WINS server periodically. This allows
          us to work correctly if the WINS server is down temporarily when
          we come up. */

@@ -264,11 +264,19 @@ static BOOL create_and_init_additional_record(struct packet_struct *packet,
   /* Set the address for the name we are registering. */
   putip(&nmb->additional->rdata[2], register_ip);
 
-  /* Ensure that we send out the file descriptor to give us the
-     the specific source address we are registering as our
-     IP source address. */
+#if 0
+  /* I removed this forced source IP as it breaks wins failover. The
+     problem is that our 2nd interface IP may not be routable to the
+     wins server, in which case all these nice packets we are senidng
+     out will never get a response and we end up marking a perfectly good wins server dead. 
 
+     In general I can't see any reason why we should force the source
+     ip on a packet anyway. We should just let the kernels routin
+     table take care of it, as that is the only place which really
+     knows what is routable and what isn't. (tridge)
+  */
   packet->fd = find_subnet_fd_for_address( *register_ip );
+#endif
 
   return True;
 }
