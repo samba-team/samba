@@ -211,6 +211,7 @@ static int net_ads_join(int argc, const char **argv)
 	char *dn;
 	void *res;
 	DOM_SID dom_sid;
+	char *ou_str;
 
 	if (argc > 0) org_unit = argv[0];
 
@@ -224,16 +225,19 @@ static int net_ads_join(int argc, const char **argv)
 
 	if (!(ads = ads_startup())) return -1;
 
-	asprintf(&dn, "cn=%s,%s", org_unit, ads->bind_path);
+	ou_str = ads_ou_string(org_unit);
+	asprintf(&dn, "%s,%s", ou_str, ads->bind_path);
+	free(ou_str);
 
 	rc = ads_search_dn(ads, &res, dn, NULL);
-	free(dn);
 	ads_msgfree(ads, res);
 
 	if (rc.error_type == ADS_ERROR_LDAP && rc.rc == LDAP_NO_SUCH_OBJECT) {
-		d_printf("ads_join_realm: organisational unit %s does not exist\n", org_unit);
+		d_printf("ads_join_realm: organisational unit %s does not exist (dn:%s)\n", 
+			 org_unit, dn);
 		return -1;
 	}
+	free(dn);
 
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
