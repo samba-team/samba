@@ -412,9 +412,6 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 
 PAM_SMBPASS_PICOOBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
 
-NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
-NSS_OBJ = $(NSS_OBJ_0:.o=.po)
-
 WINBINDD_OBJ1 = \
 		nsswitch/winbindd.o       \
 		nsswitch/winbindd_user.o  \
