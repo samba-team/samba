@@ -52,6 +52,7 @@ libroken_la_SOURCES =		\
 	simple_exec.c		\
 	snprintf.c		\
 	socket.c		\
+	strcollect.c		\
 	tm2time.c		\
 	verify.c		\
 	warnerr.c		\
