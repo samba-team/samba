@@ -499,7 +499,7 @@ static BOOL api_pipe_request(pipes_struct *p, prs_struct *pd)
 
 	if (p->ntlmssp_auth && p->ntlmssp_validated)
 	{
-		if (!api_pipe_auth_process(p)) return False;
+		if (!api_pipe_auth_process(p, pd)) return False;
 
 		DEBUG(0,("api_pipe_request: **** MUST CALL become_user() HERE **** \n"));
 #if 0
