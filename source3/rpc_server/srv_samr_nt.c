@@ -2113,10 +2113,15 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			}
 			num_groups=info->disp_info.num_group_account;
 			free_samr_db(info);
-			
+
+			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			u_logout = account_policy_temp;
+
+			unix_to_nt_time_abs(&nt_logout, u_logout);
+
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
 			init_unk_info2(&ctr->info.inf2, "", lp_workgroup(), global_myname(), (uint32) time(NULL), 
-				       num_users, num_groups, num_aliases);
+				       num_users, num_groups, num_aliases, nt_logout);
 			break;
 		case 0x03:
 			account_policy_get(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
@@ -4360,9 +4365,14 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			num_groups=info->disp_info.num_group_account;
 			free_samr_db(info);
 
+			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			u_logout = account_policy_temp;
+
+			unix_to_nt_time_abs(&nt_logout, u_logout);
+
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
 			init_unk_info2(&ctr->info.inf2, "", lp_workgroup(), global_myname(), (uint32) time(NULL), 
-				       num_users, num_groups, num_aliases);
+				       num_users, num_groups, num_aliases, nt_logout);
 			break;
 		case 0x03:
 			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
