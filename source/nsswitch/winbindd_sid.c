@@ -76,8 +76,11 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	char *name_domain, *name_user;
 	DOM_SID sid;
 	struct winbindd_domain *domain;
-	DEBUG(3, ("[%5d]: lookupname [%s]\\[%s]\n", state->pid,
-		  state->request.data.name.dom_name, state->request.data.name.name));
+
+	DEBUG(3, ("[%5d]: lookupname %s%s%s\n", state->pid,
+		  state->request.data.name.dom_name, 
+		  lp_winbind_separator(),
+		  state->request.data.name.name));
 
 	name_domain = state->request.data.name.dom_name;
 	name_user = state->request.data.name.name;
