@@ -130,6 +130,24 @@ typedef struct lsa_r_open_pol2_info
 
 } LSA_R_OPEN_POL2;
 
+/* LSA_Q_QUERY_SEC_OBJ - LSA query security */
+typedef struct lsa_query_sec_obj_info
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 sec_info;
+
+} LSA_Q_QUERY_SEC_OBJ;
+
+/* LSA_R_QUERY_SEC_OBJ - probably an open */
+typedef struct r_lsa_query_sec_obj_info
+{
+	uint32 ptr;
+	SEC_DESC_BUF *buf;
+
+	uint32 status;         /* return status */
+
+} LSA_R_QUERY_SEC_OBJ;
+
 /* LSA_Q_QUERY_INFO - LSA query info policy */
 typedef struct lsa_query_info
 {
@@ -234,7 +252,7 @@ typedef struct dom_ref_info
 /* LSA_TRANS_NAME - translated name */
 typedef struct lsa_trans_name_info
 {
-	uint32 sid_name_use; /* value is 5 for a well-known group; 2 for a domain group; 1 for a user... */
+	uint16 sid_name_use; /* value is 5 for a well-known group; 2 for a domain group; 1 for a user... */
 	UNIHDR hdr_name; 
 	uint32 domain_idx; /* index into DOM_R_REF array of SIDs */
 
@@ -324,4 +342,3 @@ typedef struct lsa_r_lookup_names
 } LSA_R_LOOKUP_NAMES;
 
 #endif /* _RPC_LSA_H */
-

@@ -32,7 +32,7 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct 
 ********************************************************************/
 
 void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
-			uint32 sid_name_use, char *name, uint32 idx)
+			uint16 sid_name_use, char *name, uint32 idx)
 {
 	int len_name = strlen(name);
 
@@ -60,8 +60,11 @@ static BOOL lsa_io_trans_name(char *desc, LSA_TRANS_NAME *trn, prs_struct *ps, i
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("sid_name_use", ps, depth, &trn->sid_name_use))
+	if(!prs_uint16("sid_name_use", ps, depth, &trn->sid_name_use))
 		return False;
+	if(!prs_align(ps))
+		return False;
+	
 	if(!smb_io_unihdr ("hdr_name", &trn->hdr_name, ps, depth))
 		return False;
 	if(!prs_uint32("domain_idx  ", ps, depth, &trn->domain_idx))
@@ -76,7 +79,7 @@ static BOOL lsa_io_trans_name(char *desc, LSA_TRANS_NAME *trn, prs_struct *ps, i
 
 static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF *r_r, prs_struct *ps, int depth)
 {
-	int i, s, n;
+	int i;
 
 	prs_debug(ps, depth, desc, "lsa_io_dom_r_ref");
 	depth++;
@@ -97,6 +100,7 @@ static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF *r_r, prs_struct *ps, int dep
 	SMB_ASSERT_ARRAY(r_r->hdr_ref_dom, r_r->num_ref_doms_1);
 
 	if (r_r->ptr_ref_dom != 0) {
+
 		if(!prs_uint32("num_ref_doms_2", ps, depth, &r_r->num_ref_doms_2)) /* 4 - num referenced domains? */
 			return False;
 
@@ -114,21 +118,21 @@ static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF *r_r, prs_struct *ps, int dep
 				return False;
 		}
 
-		for (i = 0, n = 0, s = 0; i < r_r->num_ref_doms_2; i++) {
+		for (i = 0; i < r_r->num_ref_doms_2; i++) {
 			fstring t;
 
 			if (r_r->hdr_ref_dom[i].hdr_dom_name.buffer != 0) {
 				slprintf(t, sizeof(t) - 1, "dom_ref[%d] ", i);
-				if(!smb_io_unistr2(t, &r_r->ref_dom[n].uni_dom_name, True, ps, depth)) /* domain name unicode string */
+				if(!smb_io_unistr2(t, &r_r->ref_dom[i].uni_dom_name, True, ps, depth)) /* domain name unicode string */
 					return False;
-				n++;
+				if(!prs_align(ps))
+					return False;
 			}
 
 			if (r_r->hdr_ref_dom[i].ptr_dom_sid != 0) {
 				slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
-				if(!smb_io_dom_sid2("", &r_r->ref_dom[s].ref_dom, ps, depth)) /* referenced domain SIDs */
+				if(!smb_io_dom_sid2(t, &r_r->ref_dom[i].ref_dom, ps, depth)) /* referenced domain SIDs */
 					return False;
-				s++;
 			}
 		}
 	}
@@ -188,6 +192,7 @@ static BOOL lsa_io_sec_qos(char *desc,  LSA_SEC_QOS *qos, prs_struct *ps, int de
 	if (qos->len != prs_offset(ps) - start) {
 		DEBUG(3,("lsa_io_sec_qos: length %x does not match size %x\n",
 		         qos->len, prs_offset(ps) - start));
+		return False;
 	}
 
 	return True;
@@ -255,6 +260,7 @@ static BOOL lsa_io_obj_attr(char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps, int 
 	if (attr->len != prs_offset(ps) - start) {
 		DEBUG(3,("lsa_io_obj_attr: length %x does not match size %x\n",
 		         attr->len, prs_offset(ps) - start));
+		return False;
 	}
 
 	if (attr->ptr_sec_qos != 0 && attr->sec_qos != NULL) {
@@ -404,6 +410,72 @@ BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int de
 		return False;
 
 	return True;
+}
+
+/*******************************************************************
+makes an LSA_Q_QUERY_SEC_OBJ structure.
+********************************************************************/
+
+void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *q_q, const POLICY_HND *hnd, uint32 sec_info)
+{
+	if (q_q == NULL || hnd == NULL)
+		return;
+
+	DEBUG(5, ("init_q_query_sec_obj\n"));
+
+	q_q->pol = *hnd;
+	q_q->sec_info = sec_info;
+
+	return;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_Q_QUERY_SEC_OBJ structure.
+********************************************************************/
+
+BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ *q_q, prs_struct *ps, int depth)
+{
+	if (q_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_query_sec_obj");
+	depth++;
+
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
+
+	if (!prs_uint32("sec_info", ps, depth, &q_q->sec_info))
+		return False;
+
+    return True;
+} 
+
+/*******************************************************************
+ Reads or writes a LSA_R_QUERY_SEC_OBJ structure.
+********************************************************************/
+
+BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_query_sec_obj");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr", ps, depth, &r_u->ptr))
+		return False;
+
+	if (r_u->ptr != 0) {
+		if (!sec_io_desc_buf("sec", &r_u->buf, ps, depth))
+			return False;
+    }
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+
+    return True;
 }
 
 /*******************************************************************
