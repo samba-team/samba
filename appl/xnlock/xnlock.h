@@ -9,6 +9,8 @@
 #include <X11/keysym.h>
 #include <X11/Xos.h>
 
+char *crypt(const char *key, const char *salt);
+
 /* The program should be something that outputs a small amount of text */
 #define DEFAULT_PROGRAM "fortune -s"
 
@@ -24,7 +26,7 @@ XtIntervalId timeout_id;
 #ifndef MAXPATHLEN
 #define MAXPATHLEN BUFSIZ
 #endif /* MAXPATHLEN */
-char *ProgName, *words, *get_words();
+char *ProgName, *words;
 
 int x, y;
 extern int getwordsfrom;
@@ -33,5 +35,3 @@ Pixel Black, White;
 XFontStruct *font;
 extern Pixmap
     left0, left1, right0, right1, left_front, right_front, front, down;
-
-extern void move();

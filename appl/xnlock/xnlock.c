@@ -7,8 +7,8 @@
  * Original sunview version written by Dan Heller 1985 (not included here).
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
-#include "protos.h"
+#include <config.h>
+#include <protos.h>
 #define KERBEROS
 RCSID("$Id$");
 #endif
@@ -23,6 +23,7 @@ RCSID("$Id$");
 #include <X11/Xos.h>
 #include <ctype.h>
 #include <pwd.h>
+#include <xnlock.h>
 
 #ifdef KERBEROS
 #include <krb.h>
@@ -307,7 +308,7 @@ walk(int dir)
 	/* note that maybe neither UP nor DOWN is set! */
 	if (dir & UP && y > Y_INCR)
 	    y -= Y_INCR;
-	else if (dir & DOWN && y < Height - 64)
+	else if (dir & DOWN && y < (int)Height - 64)
 	    y += Y_INCR;
     }
     /* Explicit up/down movement only (no left/right) */
@@ -383,28 +384,28 @@ move(XtPointer _p, XtIntervalId *_id)
 		    if (x - X_INCR*length >= 5)
 			dir = LEFT;
 		case 1:
-		    if (x + X_INCR*length <= Width - 70)
+		    if (x + X_INCR*length <= (int)Width - 70)
 			dir = RIGHT;
 		case 2:
 		    if (y - (Y_INCR*length) >= 5)
 			dir = UP, interval = 40;
 		case 3:
-		    if (y + Y_INCR*length <= Height - 70)
+		    if (y + Y_INCR*length <= (int)Height - 70)
 			dir = DOWN, interval = 20;
 		case 4:
 		    if (x - X_INCR*length >= 5 && y - (Y_INCR*length) >= 5)
 			dir = (LEFT|UP);
 		case 5:
-		    if (x + X_INCR * length <= Width - 70 &&
+		    if (x + X_INCR * length <= (int)Width - 70 &&
 			y-Y_INCR * length >= 5)
 			dir = (RIGHT|UP);
 		case 6:
 		    if (x - X_INCR * length >= 5 &&
-			y + Y_INCR * length <= Height - 70)
+			y + Y_INCR * length <= (int)Height - 70)
 			dir = (LEFT|DOWN);
 		case 7:
-		    if (x + X_INCR*length <= Width - 70 &&
-			y + Y_INCR*length <= Height - 70)
+		    if (x + X_INCR*length <= (int)Width - 70 &&
+			y + Y_INCR*length <= (int)Height - 70)
 			dir = (RIGHT|DOWN);
 	    }
 	} while (!dir);
@@ -495,11 +496,9 @@ Visibility(Widget w, XtPointer client_data, XEvent *event, Boolean *_b)
 }
 
 static void
-countdown(_t, _d)
-    int* _t;
-    XtIntervalId *_d;
+countdown(XtPointer _t, XtIntervalId *_d)
 {
-    int *timeout = _t;
+    int *timeout = (int *)_t;
     char buf[16];
     time_t seconds;
 
@@ -524,6 +523,7 @@ countdown(_t, _d)
     XDrawImageString(dpy, XtWindow(widget), gc,
 	time_x, time_y, buf, strlen(buf));
     XtAppAddTimeOut(app, 1000L, countdown, timeout);
+    return;
 }
 
 static void
@@ -549,7 +549,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	post_prompt_box(XtWindow(w));
 	cnt = 0;
 	time_left = 30;
-	countdown(&time_left, 0);
+	countdown((XtPointer)&time_left, 0);
 	return;
     }
     if (event->type == KeyRelease) {
@@ -668,7 +668,7 @@ init_images(void)
 	&left0, &left1, &right0, &right1,
 	&left_front, &right_front, &front, &down 
     };
-    static char *bits[] = {
+    static unsigned char *bits[] = {
 	nose_0_left_bits, nose_1_left_bits, nose_0_right_bits,
 	nose_1_right_bits, nose_left_front_bits, nose_right_front_bits,
 	nose_front_bits, nose_down_bits
@@ -707,7 +707,9 @@ talk(int force_erase)
 	}
 	talking = 0;
 	if (!force_erase)
-	    timeout_id = XtAppAddTimeOut(app, 40L, move, NULL);
+	    timeout_id = XtAppAddTimeOut(app, 40L,
+					 (XtTimerCallbackProc)move,
+					 NULL);
 	return;
     }
     talking = 1;
@@ -728,7 +730,7 @@ talk(int force_erase)
 	/* give us a nice 5 pixel margin */
 	if (X < 5)
 	    X = 5;
-	else if (X + w + 15 > Width + 5)
+	else if (X + w + 15 > (int)Width + 5)
 	    X = Width - w - 5;
 	if (Y < 5)
 	    Y = y + 64 + 5 + font_height(font);
@@ -766,7 +768,7 @@ talk(int force_erase)
 	s_rect.x = 5;
     else
 	if ((s_rect.x = x+32-(s_rect.width+15)/2)
-					 + s_rect.width+15 > Width-5)
+					 + s_rect.width+15 > (int)Width-5)
 	    s_rect.x = Width - 15 - s_rect.width;
     if (y - s_rect.height - 10 < 5)
 	s_rect.y = y + 64 + 5;
