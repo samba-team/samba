@@ -1,3 +1,15 @@
+Wed Mar 12 12:30:13 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5_mk_req_ext.c: new file
+
+	* lib/asn1/gen.c: optimize the case with a simple type
+
+	* lib/krb5/get_cred.c (krb5_get_credentials): Use
+ 	`mk_req_extended' and remove old code.
+
+	* lib/krb5/get_in_tkt.c (decrypt_tkt): First try with an
+ 	EncASRepPart, then with an EncTGSRepPart.
+
 Tue Mar 11 20:22:17 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/krb5.h: Add EncTicketPart to krb5_ticket.
