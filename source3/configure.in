@@ -18,7 +18,7 @@ AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
-AC_SUBST(BLDSHARED)
+AC_SUBST(LIBSMBCLIENT_SHARED)
 
 # compile with optimisation and without debugging by default
 CFLAGS="-O ${CFLAGS}"
@@ -738,6 +738,13 @@ case "$host_os" in
 			LDSHFLAGS="-G"
 			;;
 esac
+
+# this updates our target list if we can build shared libs
+if test $BLDSHARED = true; then
+   LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
+else
+   LIBSMBCLIENT_SHARED=
+fi
 
 ################
 
