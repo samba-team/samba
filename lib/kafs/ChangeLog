@@ -1,3 +1,8 @@
+2004-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afssys.c: support the linux /proc/fs/mumel/afs_ioctl afs
+	"syscall" interface
+
 2004-01-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* common.c: search paths for AFS configuration files for the
