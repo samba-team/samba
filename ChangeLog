@@ -1,3 +1,9 @@
+Fri May 29 00:09:02 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/init_creds_pw.c (get_init_creds_common): if the
+ 	forwardable or proxiable flags are set in options, set the
+ 	kdc-flags to the value specified, and not always to one
+
 Thu May 28 21:28:06 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos5.c: Optionally compare client address to addresses
