@@ -51,7 +51,7 @@ static void update_map(char * str) {
     }
 }
 
-static void initiso() {
+static void init_iso8859_1() {
 
     int i;
     if (!mapsinited) initmaps();
@@ -77,6 +77,25 @@ update_map("\350\212\351\202\352\210\353\211\354\215\355\241\356\214\357\213");
 update_map("\360\320\361\244\362\225\363\242\364\223\365\344\366\224\367\366");
 update_map("\370\233\371\227\372\243\373\226\374\201\375\354\376\347\377\230");
 
+}
+
+/* Init for eastern european languages. May need more work ? */
+
+static void init_iso8859_2() {
+
+    int i;
+    if (!mapsinited) initmaps();
+
+    /* Do not map undefined characters to some accidental code */
+    for (i = 128; i < 256; i++) 
+    {
+       unix2dos[i] = CTRLZ;
+       dos2unix[i] = CTRLZ;
+    }
+
+update_map("\241\244\306\217\312\250\243\235\321\343\323\340\246\227\254\215");
+update_map("\257\275\261\245\346\206\352\251\263\210\361\344\363\242\266\230");
+update_map("\274\253\277\276");
 }
 
 /*
@@ -125,8 +144,9 @@ int interpret_character_set(char *str, int def)
 {
 
     if (strequal (str, "iso8859-1")) {
-        initiso();
-        return def;
+        init_iso8859_1();
+    } else if (strequal (str, "iso8859-2")) {
+        init_iso8859_2();
     } else {
         DEBUG(0,("unrecognized character set\n"));
     }

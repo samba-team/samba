@@ -35,6 +35,15 @@
 #include "includes.h"
 
 struct connect_record crec;
+
+struct session_record{
+  int pid;
+  int uid;
+  char machine[31];
+  time_t start;
+  struct session_record *next;
+} *srecs;
+
 extern int DEBUGLEVEL;
 extern FILE *dbf;
 extern pstring myhostname;
@@ -51,7 +60,7 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
   int uid, c;
   static pstring servicesf = CONFIGFILE;
   extern char *optarg;
-  int verbose = 0;
+  int verbose = 0, brief =0;
   BOOL firstopen=True;
   BOOL processes_only=False;
   int last_pid=0;
@@ -65,6 +74,7 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
   void *dir;
   char *s;
 #endif
+  struct session_record *ptr;
 
 
   TimeInit();
@@ -80,8 +90,11 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
     return(1);
   }
 
-  while ((c = getopt(argc, argv, "pds:u:")) != EOF) {
+  while ((c = getopt(argc, argv, "pds:u:b")) != EOF) {
     switch (c) {
+    case 'b':
+      brief = 1;
+      break;
     case 'd':
       verbose = 1;
       break;
@@ -133,8 +146,16 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
   if (!processes_only) {
     printf("\nSamba version %s\n",VERSION);
 
-    printf("Service      uid      gid      pid     machine\n");
-    printf("----------------------------------------------\n");
+    if (brief)
+    {
+      printf("PID     Username  Machine                       Time logged in\n");
+      printf("-------------------------------------------------------------------\n");
+    }
+    else
+    {
+      printf("Service      uid      gid      pid     machine\n");
+      printf("----------------------------------------------\n");
+    }
   }
 
   while (!feof(f))
@@ -145,23 +166,63 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
            && Ucrit_checkUsername(uidtoname(crec.uid))                      /* added by OH */
          )
       {
-        Ucrit_addPid(crec.pid);                                             /* added by OH */
-	if (processes_only) {
-	  if (last_pid != crec.pid)
-	    printf("%d\n",crec.pid);
-	  last_pid = crec.pid; /* XXXX we can still get repeats, have to
-				  add a sort at some time */
-	}
-	else	  
-	  printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
-		 crec.name,uidtoname(crec.uid),gidtoname(crec.gid),crec.pid,
-		 crec.machine,crec.addr,
-		 asctime(LocalTime(&crec.start)));
+        if (brief)
+        {
+	  ptr=srecs;
+	  while (ptr!=NULL)
+	  {
+	    if ((ptr->pid==crec.pid)&&(strncmp(ptr->machine,crec.machine,30)==0)) 
+	    {
+	      if (ptr->start > crec.start)
+		ptr->start=crec.start;
+	      break;
+	    }
+	    ptr=ptr->next;
+	  }
+	  if (ptr==NULL)
+	  {
+	    ptr=(struct session_record *) malloc(sizeof(struct session_record));
+	    ptr->uid=crec.uid;
+	    ptr->pid=crec.pid;
+	    ptr->start=crec.start;
+	    strncpy(ptr->machine,crec.machine,30);
+	    ptr->machine[30]='\0';
+	    ptr->next=srecs;
+	    srecs=ptr;
+	  }
+        }
+        else
+        {
+	  Ucrit_addPid(crec.pid);                                             /* added by OH */
+	  if (processes_only) {
+	    if (last_pid != crec.pid)
+	      printf("%d\n",crec.pid);
+	    last_pid = crec.pid; /* XXXX we can still get repeats, have to
+				    add a sort at some time */
+	  }
+	  else	  
+	    printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
+		   crec.name,uidtoname(crec.uid),gidtoname(crec.gid),crec.pid,
+		   crec.machine,crec.addr,
+		   asctime(LocalTime(&crec.start)));
+        }
       }
     }
   fclose(f);
 
   if (processes_only) exit(0);
+  
+  if (brief)
+  {
+    ptr=srecs;
+    while (ptr!=NULL)
+    {
+      printf("%-8d%-10.10s%-30.30s%s",ptr->pid,uidtoname(ptr->uid),ptr->machine,asctime(LocalTime(&(ptr->start))));
+    ptr=ptr->next;
+    }
+    printf("\n");
+    exit(0);
+  }
 
   printf("\n");
 

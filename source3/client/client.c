@@ -4291,8 +4291,6 @@ static void usage(char *pname)
   DEBUG(0,("\n"));
 }
 
-
-
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -4349,6 +4347,8 @@ static void usage(char *pname)
     {
 
       strcpy(service,argv[1]);  
+      /* Convert any '/' characters in the service name to '\' characters */
+      string_replace( service, '/','\\');
       argc--;
       argv++;
 
