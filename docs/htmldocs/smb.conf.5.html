@@ -2040,7 +2040,9 @@ to shared executables (and also to test the code :-).
 <p><br>For more discussions on level2 oplocks see the CIFS spec.
 <p><br>Currently, if <a href="smb.conf.5.html#kerneloplocks"><strong>"kernel oplocks"</strong></a> are supported
 then level2 oplocks are not granted (even if this parameter is set
-to <code>"true"</code>).
+to <code>"true"</code>). Note also, the <a href="smb.conf.5.html#oplocks"><strong>"oplocks"</strong></a> parameter must
+be set to "true" on this share in order for this parameter to have any
+effect.
 <p><br>See also the <a href="smb.conf.5.html#oplocks"><strong>"oplocks"</strong></a> and <a href="smb.conf.5.html#kerneloplocks"><strong>"kernel oplocks"</strong></a> parameters.
 <p><br><strong>Default:</strong>
 <code> level2 oplocks = False</code>

@@ -45,13 +45,13 @@ directory security mask
 force directory mode
 level2 oplocks
 
-The first 4 parameters used to control the UNIX permissions bits
+The first 4 parameters are used to control the UNIX permissions bits
 that an NT client is allowed to modify. These parameters are now
 used instead of the older "create" parameters that were used in
 2.0.4 to allow an administrator to separate the two functions.
 
-Use of these new parameters is described in smb.conf, and also
-in the documents :
+Use of these new parameters is described in the smb.conf man page,
+and also in the documents :
 
 docs/textdocs/NT_Security.txt
 docs/htmldocs/NT_Security.html

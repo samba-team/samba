@@ -3050,7 +3050,9 @@ For more discussions on level2 oplocks see the CIFS spec\&.
 .IP 
 Currently, if \fB"kernel oplocks"\fP are supported
 then level2 oplocks are not granted (even if this parameter is set
-to \f(CW"true"\fP)\&.
+to \f(CW"true"\fP)\&. Note also, the \fB"oplocks"\fP parameter must
+be set to "true" on this share in order for this parameter to have any
+effect\&.
 .IP 
 See also the \fB"oplocks"\fP and \fB"kernel oplocks"\fP parameters\&.
 .IP 

@@ -2843,7 +2843,9 @@ For more discussions on level2 oplocks see the CIFS spec.
 
 Currently, if link(bf("kernel oplocks"))(kerneloplocks) are supported
 then level2 oplocks are not granted (even if this parameter is set
-to tt("true")).
+to tt("true")). Note also, the link(bf("oplocks"))(oplocks) parameter must
+be set to "true" on this share in order for this parameter to have any
+effect.
 
 See also the link(bf("oplocks"))(oplocks) and link(bf("kernel oplocks"))(kerneloplocks) parameters.
 
