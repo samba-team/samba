@@ -296,14 +296,14 @@ static BOOL wbinfo_auth(char *username)
         return result == WINBINDD_OK;
 }
 
-/* Authenticate a user with a hashed password */
+/* Authenticate a user with a challenge/response */
 
-static BOOL wbinfo_auth_ntlm(char *username)
+static BOOL wbinfo_auth_crap(char *username)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
         enum winbindd_result result;
-        fstring password;
+        fstring pass;
         char *p;
 
 	/* Send off request */
@@ -315,20 +315,28 @@ static BOOL wbinfo_auth_ntlm(char *username)
 
         if (p) {
                 *p = 0;
-                fstrcpy(password, p + 1);
-        }
+                fstrcpy(request.data.auth_crap.user, username);
+                fstrcpy(pass, p + 1);
+                *p = '%';
+        } else
+                fstrcpy(request.data.auth_crap.user, username);
 
-	fstrcpy(request.data.auth_ntlm.user, username);
+	generate_random_buffer(request.data.auth_crap.chal, 8, False);
+        
+        SMBencrypt(pass, request.data.auth_crap.chal, 
+                   request.data.auth_crap.lm_resp);
+        SMBNTencrypt(pass, request.data.auth_crap.chal,
+                     request.data.auth_crap.nt_resp);
 
-	nt_lm_owf_gen(password, request.data.auth_ntlm.nt_hash,
-                      request.data.auth_ntlm.lm_hash);
+        request.data.auth_crap.lm_resp_len = 24;
+        request.data.auth_crap.nt_resp_len = 24;
 
-	result = winbindd_request(WINBINDD_PAM_AUTH_NTLM, &request, &response);
+	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
 
 	/* Display response */
 
-        printf("hashed password authentication %s\n", (result == WINBINDD_OK) ?
-               "succeeded" : "failed");
+        printf("challenge/response password authentication %s\n", 
+               (result == WINBINDD_OK) ? "succeeded" : "failed");
 
         return result == WINBINDD_OK;
 }
@@ -530,9 +538,9 @@ int main(int argc, char **argv)
                                        "plaintext password\n", optarg);
                                 got_error = True;
                         }
-                        if (!wbinfo_auth_ntlm(optarg)) {
+                        if (!wbinfo_auth_crap(optarg)) {
                                 printf("Could not authenticate user %s with "
-                                       "hashed password\n", optarg);
+                                       "challenge/response\n", optarg);
                                 got_error = True;
                         }
 

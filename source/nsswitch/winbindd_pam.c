@@ -99,9 +99,9 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
-/* Authenticate a user with a hashed password */
+/* Authenticate a user from a challenge/response */
 
-enum winbindd_result winbindd_pam_auth_ntlm(struct winbindd_cli_state *state) 
+enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
 {
 	NET_USER_INFO_3 info3;
 	uchar trust_passwd[16];
@@ -110,12 +110,12 @@ enum winbindd_result winbindd_pam_auth_ntlm(struct winbindd_cli_state *state)
 	fstring name_domain, name_user;
 	extern pstring global_myname;
 
-	DEBUG(3, ("[%5d]: pam auth ntlm %s\n", state->pid,
-		  state->request.data.auth_ntlm.user));
+	DEBUG(3, ("[%5d]: pam auth crap%s\n", state->pid,
+		  state->request.data.auth_crap.user));
 
 	/* Parse domain and username */
-	parse_domain_user(state->request.data.auth_ntlm.user, name_domain, 
-                          name_user);
+	parse_domain_user(state->request.data.auth_crap.user, 
+                          name_domain, name_user);
 
 	/* don't allow the null domain */
 	if (strcmp(name_domain,"") == 0) return WINBINDD_ERROR;
@@ -131,15 +131,17 @@ enum winbindd_result winbindd_pam_auth_ntlm(struct winbindd_cli_state *state)
 	slprintf(server, sizeof(server), "\\\\%s", server_state.controller);
 
 	status = domain_client_validate_backend
-                (server, name_user, name_domain, global_myname, SEC_CHAN_WKSTA,
-                 trust_passwd, NULL, 
-                 state->request.data.auth_ntlm.lm_hash,
-                 sizeof(state->request.data.auth_ntlm.lm_hash),
-                 state->request.data.auth_ntlm.nt_hash,
-                 sizeof(state->request.data.auth_ntlm.nt_hash),
-                 &info3);
+          (server, name_user, name_domain, global_myname, SEC_CHAN_WKSTA,
+           trust_passwd, state->request.data.auth_crap.chal,
+           state->request.data.auth_crap.lm_resp, 24,
+           state->request.data.auth_crap.nt_resp, 24,
+           &info3);
 
-	if (status != NT_STATUS_NOPROBLEMO) return WINBINDD_ERROR;
+	if (status != NT_STATUS_NOPROBLEMO) {
+                DEBUG(3, ("winbindd_pam_auth() failed with status 0x%08x\n",
+                          status));
+                return WINBINDD_ERROR;
+        }
 
 	return WINBINDD_OK;
 }
