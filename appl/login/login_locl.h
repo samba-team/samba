@@ -122,33 +122,10 @@
 #define _PATH_LOGACCESS "/etc/login.access"
 #endif /* _PATH_LOGACCESS */
 
-/* osf2.c */
+#ifndef _PATH_LOGIN_CONF
+#define _PATH_LOGIN_CONF "/etc/login.conf"
+#endif /* _PATH_LOGIN_CONF */
 
-int   do_osfc2_magic(uid_t);
-
-/* tty.c */
-
-char *clean_ttyname (char*);
-char *make_id (char*);
-
-/* utmp_login.c */
-
-void  prepare_utmp (struct utmp*, char*, const char*, const char*);
-int   read_string (const char*, char*, size_t, int);
-void  stty_default (void);
-void  utmp_login (char*, const char*, const char*);
-
-/* utmpx_login.c */
-
-int   utmpx_login (char*, const char*, const char*);
-
-/* login_access.c */
-
-int login_access(struct passwd *user, char *from);
-
-/* shadow.c */
-
-void 
-check_shadow(struct passwd *pw, struct spwd *sp);
+#include "login_protos.h"
 
 #endif /* __LOGIN_LOCL_H__ */
