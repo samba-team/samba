@@ -474,9 +474,11 @@ krb5_425_conv_principal(krb5_context context,
 	name = p;
 	p = krb5_config_get_string(context->cf, "realms", realm, 
 				   "v4_instance_convert", instance, NULL);
-	if(p)
+	if(p){
+	    instance = p;
 	    goto done;
-	if(krb5_config_get_string(context->cf, "lib_defaults", 
+	}
+	if(krb5_config_get_string(context->cf, "libdefaults", 
 				  "v4_instance_resolve", NULL)){
 	    struct hostent *hp = gethostbyname(instance);
 	    if(hp){
@@ -485,7 +487,7 @@ krb5_425_conv_principal(krb5_context context,
 	    }
 	}
 	p = krb5_config_get_string(context->cf, "realms", realm, 
-				   "default_domain", instance, NULL);
+				   "default_domain", NULL);
 	if(p == NULL){
 	    /* should this be an error or should it silently
 	       succeed? */
