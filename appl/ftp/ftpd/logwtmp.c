@@ -74,7 +74,7 @@ RCSID("$Id$");
 #endif
 
 void
-logwtmp(char *line, char *name, char *host)
+ftpd_logwtmp(char *line, char *name, char *host)
 {
     static int init = 0;
     static int fd;
