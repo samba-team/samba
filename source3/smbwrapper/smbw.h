@@ -55,3 +55,4 @@ struct smbw_dir {
 	struct file_info *list;
 	char *path;
 };
+

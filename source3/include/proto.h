@@ -389,7 +389,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 BOOL cli_getatr(struct cli_state *cli, char *fname, 
 		uint32 *attr, size_t *size, time_t *t);
 BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t);
-BOOL cli_qpathinfo(struct cli_state *cli, char *fname, 
+BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   size_t *size, uint32 *mode);
 BOOL cli_qpathinfo2(struct cli_state *cli, char *fname, 
@@ -2268,6 +2268,60 @@ BOOL become_user(connection_struct *conn, uint16 vuid);
 BOOL unbecome_user(void );
 void become_root(BOOL save_dir) ;
 void unbecome_root(BOOL restore_dir);
+
+/*The following definitions come from  smbwrapper/smbw.c  */
+
+void smbw_init(void);
+int smbw_fd(int fd);
+ino_t smbw_inode(const char *name);
+void clean_fname(char *name);
+char *smbw_parse_path(const char *fname, char *server, char *share, char *path);
+int smbw_path(const char *path);
+int smbw_errno(struct cli_state *c);
+struct smbw_server *smbw_server(char *server, char *share);
+struct smbw_file *smbw_file(int fd);
+int smbw_open(const char *fname, int flags, mode_t mode);
+ssize_t smbw_read(int fd, void *buf, size_t count);
+ssize_t smbw_write(int fd, void *buf, size_t count);
+int smbw_close(int fd);
+int smbw_fcntl(int fd, int cmd, long arg);
+int smbw_access(const char *name, int mode);
+int smbw_readlink(const char *path, char *buf, size_t bufsize);
+int smbw_unlink(const char *fname);
+int smbw_rename(const char *oldname, const char *newname);
+int smbw_utime(const char *fname, void *buf);
+int smbw_chown(const char *fname, uid_t owner, gid_t group);
+int smbw_chmod(const char *fname, mode_t newmode);
+off_t smbw_lseek(int fd, off_t offset, int whence);
+
+/*The following definitions come from  smbwrapper/smbw_dir.c  */
+
+struct smbw_dir *smbw_dir(int fd);
+int smbw_dirp(DIR *dirp);
+int smbw_dir_open(const char *fname);
+int smbw_dir_fstat(int fd, struct stat *st);
+int smbw_dir_close(int fd);
+int smbw_getdents(unsigned int fd, struct dirent *dirp, int count);
+int smbw_chdir(const char *name);
+off_t smbw_dir_lseek(int fd, off_t offset, int whence);
+int smbw_mkdir(const char *fname, mode_t mode);
+int smbw_rmdir(const char *fname);
+char *smbw_getcwd(char *buf, size_t size);
+int smbw_fchdir(unsigned int fd);
+DIR *smbw_opendir(const char *fname);
+struct dirent *smbw_readdir(DIR *dirp);
+int smbw_closedir(DIR *dirp);
+void smbw_seekdir(DIR *dirp, off_t offset);
+off_t smbw_telldir(DIR *dirp);
+
+/*The following definitions come from  smbwrapper/smbw_stat.c  */
+
+void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode);
+BOOL smbw_getatr(struct smbw_server *srv, char *path, 
+		 uint32 *mode, size_t *size, 
+		 time_t *c_time, time_t *a_time, time_t *m_time);
+int smbw_fstat(int fd, struct stat *st);
+int smbw_stat(const char *fname, struct stat *st);
 
 /*The following definitions come from  web/cgi.c  */
 
