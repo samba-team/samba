@@ -194,6 +194,20 @@ sub HeaderFunctionInOut($$)
     }
 }
 
+#####################################################################
+# determine if we need an "in" or "out" section
+sub HeaderFunctionInOut_needed($$)
+{
+    my($fn) = shift;
+    my($prop) = shift;
+    foreach my $e (@{$fn->{DATA}}) {
+	    if (util::has_property($e, $prop)) {
+		    return 1;
+	    }
+    }
+    return undef;
+}
+
 
 #####################################################################
 # parse a function
@@ -202,24 +216,40 @@ sub HeaderFunction($)
     my($fn) = shift;
     $res .= "\nstruct $fn->{NAME} {\n";
     $tab_depth++;
-    tabs();
-    $res .= "struct {\n";
-    $tab_depth++;
-    HeaderFunctionInOut($fn, "in");
-    $tab_depth--;
-    tabs();
-    $res .= "} in;\n\n";
-    tabs();
-    $res .= "struct {\n";
-    $tab_depth++;
-    HeaderFunctionInOut($fn, "out");
-    if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
+    my $needed = 0;
+
+    if (HeaderFunctionInOut_needed($fn, "in")) {
 	    tabs();
-	    $res .= "$fn->{RETURN_TYPE} result;\n";
+	    $res .= "struct {\n";
+	    $tab_depth++;
+	    HeaderFunctionInOut($fn, "in");
+	    $tab_depth--;
+	    tabs();
+	    $res .= "} in;\n\n";
+	    $needed++;
     }
-    $tab_depth--;
-    tabs();
-    $res .= "} out;\n\n";
+
+    if (HeaderFunctionInOut_needed($fn, "out")) {
+	    tabs();
+	    $res .= "struct {\n";
+	    $tab_depth++;
+	    HeaderFunctionInOut($fn, "out");
+	    if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
+		    tabs();
+		    $res .= "$fn->{RETURN_TYPE} result;\n";
+	    }
+	    $tab_depth--;
+	    tabs();
+	    $res .= "} out;\n\n";
+	    $needed++;
+    }
+
+    if (! $needed) {
+	    # sigh - some compilers don't like empty structures
+	    tabs();
+	    $res .= "int _dummy_element;\n";
+    }
+
     $tab_depth--;
     $res .= "};\n\n";
 }
