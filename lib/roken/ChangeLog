@@ -1,3 +1,12 @@
+2001-09-04  Assar Westerlund  <assar@sics.se>
+
+	* parse_bytes-test.c, parse_bytes.c, parse_bytes.h, parse_units.c,
+	parse_units.h: use int instead of size_t as return values to be
+	compatible with snprintf
+
+	* strftime.c (strftime): check for return values from snprintf() <
+	0
+
 2001-09-03  Johan Danielsson  <joda@pdc.kth.se>
 
 	* socket.c: restrict is a keyword
