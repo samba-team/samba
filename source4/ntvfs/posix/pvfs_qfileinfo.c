@@ -283,7 +283,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:
-		info->access_information.out.access_flags = h->access_mask;
+		info->access_information.out.access_flags = f->access_mask;
 		break;
 
 	case RAW_FILEINFO_MODE_INFORMATION:

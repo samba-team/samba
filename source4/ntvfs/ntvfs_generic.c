@@ -117,7 +117,7 @@ static NTSTATUS ntvfs_map_async_finish(struct smbsrv_request *req, NTSTATUS stat
   see if a filename ends in EXE COM DLL or SYM. This is needed for the
   DENY_DOS mapping for OpenX
 */
-static BOOL is_exe_file(const char *fname)
+BOOL is_exe_filename(const char *fname)
 {
 	char *p;
 	p = strrchr(fname, '.');
@@ -315,7 +315,9 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 			break;
 		case OPENX_MODE_DENY_DOS:
 			/* DENY_DOS is quite strange - it depends on the filename! */
-			if (is_exe_file(io->openx.in.fname)) {
+			io2->generic.in.create_options |= 
+				NTCREATEX_OPTIONS_PRIVATE_DENY_DOS;
+			if (is_exe_filename(io->openx.in.fname)) {
 				io2->generic.in.share_access = 
 					NTCREATEX_SHARE_ACCESS_READ | 
 					NTCREATEX_SHARE_ACCESS_WRITE;
@@ -329,6 +331,8 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 			}
 			break;
 		case OPENX_MODE_DENY_FCB:
+			io2->generic.in.create_options |= 
+				NTCREATEX_OPTIONS_PRIVATE_DENY_FCB;
 			io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 			break;
 		default:
@@ -400,7 +404,7 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		switch (io->openold.in.flags & OPEN_FLAGS_DENY_MASK) {
 		case OPEN_FLAGS_DENY_DOS:
 				/* DENY_DOS is quite strange - it depends on the filename! */
-				if (is_exe_file(io->openold.in.fname)) {
+				if (is_exe_filename(io->openold.in.fname)) {
 					io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
 				} else {
 					if ((io->openold.in.flags & OPEN_FLAGS_MODE_MASK) == 
