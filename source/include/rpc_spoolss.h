@@ -57,7 +57,6 @@
 #define SPOOLSS_SPOOLERINIT				0x3f
 #define SPOOLSS_RESETPRINTEREX				0x40
 #define SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION	0x42
-#define SPOOLSS_GETPRINTERDATAEX			0x4e
 */
 
 /* those are implemented */
@@ -109,6 +108,8 @@
 #define SPOOLSS_ADDPRINTEREX				0x46
 #define SPOOLSS_ENUMPRINTERDATA				0x48
 #define SPOOLSS_DELETEPRINTERDATA			0x49
+#define SPOOLSS_GETPRINTERDATAEX			0x4e
+#define SPOOLSS_SETPRINTERDATAEX			0xff /* unknown */
 
 #define PRINTER_CONTROL_UNPAUSE		0x00000000
 #define PRINTER_CONTROL_PAUSE		0x00000001
@@ -1856,6 +1857,44 @@ typedef struct spool_r_rrpcn
 	WERROR status;
 }
 SPOOL_R_REPLY_RRPCN;
+
+typedef struct spool_q_getprinterdataex
+{
+	POLICY_HND handle;
+	UNISTR2 keyname;
+        UNISTR2 valuename;
+	uint32 size;
+}
+SPOOL_Q_GETPRINTERDATAEX;
+
+typedef struct spool_r_getprinterdataex
+{
+	uint32 type;
+	uint32 size;
+	uint8 *data;
+	uint32 needed;
+	WERROR status;
+}
+SPOOL_R_GETPRINTERDATAEX;
+
+typedef struct spool_q_setprinterdataex
+{
+	POLICY_HND handle;
+	UNISTR2 key;
+	UNISTR2 value;
+	uint32 type;
+	uint32 max_len;
+	uint8 *data;
+	uint32 real_len;
+	uint32 numeric_data;
+}
+SPOOL_Q_SETPRINTERDATAEX;
+
+typedef struct spool_r_setprinterdataex
+{
+	WERROR status;
+}
+SPOOL_R_SETPRINTERDATAEX;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
