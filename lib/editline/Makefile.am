@@ -11,9 +11,14 @@ else
 noinst_LIBRARIES =
 endif
 
+noinst_PROGRAMS = testit
+testit_LDADD = libeditline.a $(LIB_tgetent) \
+	$(top_builddir)/lib/roken/libroken.la
+
 include_HEADERS = editline.h
 
-libeditline_a_SOURCES = complete.c editline.c sysunix.c editline.h roken_rename.h unix.h
+libeditline_a_SOURCES = complete.c editline.c sysunix.c \
+	editline.h roken_rename.h unix.h
 libel_compat_a_SOURCES = edit_compat.c
 
-EXTRA_DIST = $(man_MANS) testit.c
+EXTRA_DIST = $(man_MANS)
