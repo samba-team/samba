@@ -372,7 +372,7 @@ size_t convert_string(charset_t from, charset_t to,
 		unsigned char *q = (unsigned char *)dest;
 		size_t slen = srclen;
 		size_t dlen = destlen;
-		unsigned char lastp;
+		unsigned char lastp = '\0';
 		size_t retval = 0;
 
 		/* If all characters are ascii, fast path here. */
@@ -408,7 +408,7 @@ size_t convert_string(charset_t from, charset_t to,
 		size_t retval = 0;
 		size_t slen = srclen;
 		size_t dlen = destlen;
-		unsigned char lastp;
+		unsigned char lastp = '\0';
 
 		/* If all characters are ascii, fast path here. */
 		while (((slen == (size_t)-1) || (slen >= 2)) && dlen) {
@@ -444,7 +444,7 @@ size_t convert_string(charset_t from, charset_t to,
 		size_t retval = 0;
 		size_t slen = srclen;
 		size_t dlen = destlen;
-		unsigned char lastp;
+		unsigned char lastp = '\0';
 
 		/* If all characters are ascii, fast path here. */
 		while (slen && (dlen >= 2)) {
