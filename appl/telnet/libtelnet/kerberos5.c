@@ -187,14 +187,14 @@ kerberos5_send(char *name, Authenticator *ap)
 	return(0);
     }
 
-    krb5_auth_setenctype (context, auth_context, ETYPE_DES_CBC_MD5);
+    krb5_auth_setkeytype (context, auth_context, KEYTYPE_DES);
 
     foo[0] = ap->type;
     foo[1] = ap->way;
 
     cksum_data.length = sizeof(foo);
     cksum_data.data   = foo;
-    ret = krb5_mk_req(context, &auth_context, ap_opts, 
+    ret = krb5_mk_req(context, &auth_context, ap_opts,
 		      "host", RemoteHostName, 
 		      &cksum_data, ccache, &auth);
 
