@@ -564,10 +564,10 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(IDMAP_OBJ) $(RPC_ECHO_OBJ) 
 
-NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) \
-	    $(LIB_OBJ) $(NSSWINS_OBJ)
+WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) \
+	$(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 
-NSS_OBJ = $(NSS_OBJ_0:.o=.po)
+WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.po)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.po)
@@ -651,9 +651,10 @@ smbfilter : SHOWFLAGS bin/smbfilter@EXEEXT@
 
 talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
 
-nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/@WINBIND_NSS@ nsswitch/pam_winbind.@SHLIBEXT@
+nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
+	@WINBIND_WINS_NSS@ nsswitch/pam_winbind.@SHLIBEXT@
 
-wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
+wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
 modules: SHOWFLAGS proto_exists $(MODULES)
 
@@ -951,19 +952,19 @@ bin/librpc_echo.@SHLIBEXT@: $(RPC_ECHO_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_ECHO_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(NSS_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
-
 bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo "Linking $@"
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS) @LDAP_LIBS@
 
-nsswitch/@WINBIND_NSS@: $(WINBIND_NSS_PICOBJS)
+@WINBIND_NSS@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
 	@$(SHLD) $(WINBIND_NSS_LDSHFLAGS) -o $@ $(WINBIND_NSS_PICOBJS) \
 		@WINBIND_NSS_EXTRA_LIBS@ @SONAMEFLAG@`basename $@`
+
+@WINBIND_WINS_NSS@: $(WINBIND_WINS_NSS_PICOBJS)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_WINS_NSS_PICOBJS) -lc \
+		@SONAMEFLAG@`basename $@`
 
 nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo "Linking $@"
