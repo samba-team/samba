@@ -67,8 +67,8 @@ gsskrb5_register_acceptor_identity (const char *identity)
     return GSS_S_COMPLETE;
 }
 
-OM_uint32
-gss_accept_sec_context
+static OM_uint32
+gsskrb5_accept_sec_context
            (OM_uint32 * minor_status,
             gss_ctx_id_t * context_handle,
             const gss_cred_id_t acceptor_cred_handle,
@@ -465,5 +465,410 @@ gss_accept_sec_context
 	*src_name = NULL;
     }
     *context_handle = GSS_C_NO_CONTEXT;
+    return ret;
+}
+
+static OM_uint32
+code_MechTypeList(OM_uint32 *minor_status,
+		  const MechTypeList *mechlist,
+		  gss_buffer_t out,
+		  u_char **ret_buf)
+{
+    OM_uint32 ret;
+    u_char *buf;
+    size_t buf_size, buf_len;
+
+    buf_size = 1024;
+    buf = malloc(buf_size);
+    if (buf == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    do {
+	ret = encode_MechTypeList(buf + buf_size -1,
+				  buf_size,
+				  mechlist, &buf_len);
+	if (ret) {
+	    if (ret == ASN1_OVERFLOW) {
+		u_char *tmp;
+
+		buf_size *= 2;
+		tmp = realloc (buf, buf_size);
+		if (tmp == NULL) {
+		    *minor_status = ENOMEM;
+		    free(buf);
+		    return GSS_S_FAILURE;
+		}
+		buf = tmp;
+	    } else {
+		*minor_status = ret;
+		free(buf);
+		return GSS_S_FAILURE;
+	    }
+	}
+    } while (ret == ASN1_OVERFLOW);
+
+    out->value  = buf + buf_size - buf_len;
+    out->length = buf_len;
+    *ret_buf    = buf;
+    return GSS_S_COMPLETE;
+}
+
+static OM_uint32
+code_NegTokenArg(OM_uint32 *minor_status,
+		 const NegTokenTarg *targ,
+		 krb5_data *data,
+		 u_char **ret_buf)
+{
+    OM_uint32 ret;
+    u_char *buf;
+    size_t buf_size, buf_len;
+
+    buf_size = 1024;
+    buf = malloc(buf_size);
+    if (buf == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    do {
+	ret = encode_NegTokenTarg(buf + buf_size - 1,
+				  buf_size,
+				  targ, &buf_len);
+	if (ret == 0) {
+	    size_t tmp;
+
+	    ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
+					 buf_size - buf_len,
+					 buf_len,
+					 CONTEXT,
+					 CONS,
+					 1,
+					 &tmp);
+	    if (ret == 0)
+		buf_len += tmp;
+	}
+	if (ret) {
+	    if (ret == ASN1_OVERFLOW) {
+		u_char *tmp;
+
+		buf_size *= 2;
+		tmp = realloc (buf, buf_size);
+		if (tmp == NULL) {
+		    *minor_status = ENOMEM;
+		    free(buf);
+		    return GSS_S_FAILURE;
+		}
+		buf = tmp;
+	    } else {
+		*minor_status = ret;
+		free(buf);
+		return GSS_S_FAILURE;
+	    }
+	}
+    } while (ret == ASN1_OVERFLOW);
+
+    data->data   = buf + buf_size - buf_len;
+    data->length = buf_len;
+    *ret_buf     = buf;
+    return GSS_S_COMPLETE;
+}
+
+static OM_uint32
+send_reject (OM_uint32 *minor_status,
+	     gss_buffer_t output_token)
+{
+    NegTokenTarg targ;
+    krb5_data data;
+    u_char *buf;
+    OM_uint32 ret;
+
+    ALLOC(targ.negResult, 1);
+    if (targ.negResult == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+    *(targ.negResult) = reject;
+    targ.supportedMech = NULL;
+    targ.responseToken = NULL;
+    targ.mechListMIC   = NULL;
+    
+    ret = code_NegTokenArg (minor_status, &targ, &data, &buf);
+    free_NegTokenTarg(&targ);
+    if (ret)
+	return ret;
+
+    ret = _gssapi_encapsulate(minor_status,
+			      &data,
+			      output_token,
+			      GSS_SPNEGO_MECHANISM);
+    free(buf);
+    if (ret)
+	return ret;
+    return GSS_S_BAD_MECH;
+}
+
+static OM_uint32
+send_accept (OM_uint32 *minor_status,
+	     OM_uint32 major_status,
+	     gss_buffer_t output_token,
+	     gss_buffer_t mech_token,
+	     gss_ctx_id_t context_handle,
+	     const MechTypeList *mechtypelist)
+{
+    NegTokenTarg targ;
+    krb5_data data;
+    u_char *buf;
+    OM_uint32 ret;
+    gss_buffer_desc mech_buf, mech_mic_buf;
+    u_char *mech_begbuf;
+
+    memset(&targ, 0, sizeof(targ));
+    ALLOC(targ.negResult, 1);
+    if (targ.negResult == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+    *(targ.negResult) = accept_completed;
+
+    ALLOC(targ.supportedMech, 1);
+    if (targ.supportedMech == NULL) {
+	free_NegTokenTarg(&targ);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    ret = der_get_oid(GSS_KRB5_MECHANISM->elements,
+		      GSS_KRB5_MECHANISM->length,
+		      targ.supportedMech,
+		      NULL);
+    if (ret) {
+	free_NegTokenTarg(&targ);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    if (mech_token != NULL && mech_token->length != 0) {
+	ALLOC(targ.responseToken, 1);
+	if (targ.responseToken == NULL) {
+	    free_NegTokenTarg(&targ);
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+	}
+	targ.responseToken->length = mech_token->length;
+	targ.responseToken->data   = mech_token->value;
+	mech_token->length = 0;
+	mech_token->value  = NULL;
+    } else {
+	targ.responseToken = NULL;
+    }
+
+    if (major_status == GSS_S_COMPLETE) {
+	ALLOC(targ.mechListMIC, 1);
+	if (targ.mechListMIC == NULL) {
+	    free_NegTokenTarg(&targ);
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+	}
+	
+	ret = code_MechTypeList (minor_status, mechtypelist,
+				 &mech_buf, &mech_begbuf);
+	if (ret) {
+	    free_NegTokenTarg(&targ);
+	    return ret;
+	}
+	
+	ret = gss_get_mic(minor_status, context_handle, 0, &mech_buf,
+			  &mech_mic_buf);
+	free (mech_begbuf);
+	if (ret) {
+	    free_NegTokenTarg(&targ);
+	    return ret;
+	}
+
+	targ.mechListMIC->length = mech_mic_buf.length;
+	targ.mechListMIC->data   = mech_mic_buf.value;
+    } else
+	targ.mechListMIC = NULL;
+
+    ret = code_NegTokenArg (minor_status, &targ, &data, &buf);
+    free_NegTokenTarg(&targ);
+    if (ret)
+	return ret;
+
+    ret = _gssapi_encapsulate(minor_status,
+			      &data,
+			      output_token,
+			      GSS_SPNEGO_MECHANISM);
+    free(buf);
+    if (ret)
+	return ret;
+    return GSS_S_COMPLETE;
+}
+
+static OM_uint32
+spnego_accept_sec_context
+           (OM_uint32 * minor_status,
+            gss_ctx_id_t * context_handle,
+            const gss_cred_id_t acceptor_cred_handle,
+            const gss_buffer_t input_token_buffer,
+            const gss_channel_bindings_t input_chan_bindings,
+            gss_name_t * src_name,
+            gss_OID * mech_type,
+            gss_buffer_t output_token,
+            OM_uint32 * ret_flags,
+            OM_uint32 * time_rec,
+            gss_cred_id_t * delegated_cred_handle
+           )
+{
+    OM_uint32 ret, ret2;
+    NegTokenInit ni;
+    size_t ni_len;
+    int i;
+    int found = 0;
+    krb5_data data;
+    size_t len, taglen;
+
+    output_token->length = 0;
+    output_token->value  = NULL;
+
+    ret = _gssapi_decapsulate (minor_status,
+			       input_token_buffer,
+			       &data,
+			       GSS_SPNEGO_MECHANISM);
+    if (ret)
+	return ret;
+
+    ret = der_match_tag_and_length(data.data, data.length,
+				   CONTEXT, CONS, 0, &len, &taglen);
+    if (ret)
+	return ret;
+
+    ret = decode_NegTokenInit((const char *)data.data + taglen, len,
+			      &ni, &ni_len);
+    if (ret)
+	return GSS_S_DEFECTIVE_TOKEN;
+
+    if (ni.mechTypes == NULL) {
+	free_NegTokenInit(&ni);
+	return send_reject (minor_status, output_token);
+    }
+
+    for (i = 0; !found && i < ni.mechTypes->len; ++i) {
+	char mechbuf[17];
+	size_t mech_len;
+
+	ret = der_put_oid (mechbuf + sizeof(mechbuf) - 1,
+			   sizeof(mechbuf),
+			   &ni.mechTypes->val[i],
+			   &mech_len);
+	if (ret) {
+	    free_NegTokenInit(&ni);
+	    return GSS_S_DEFECTIVE_TOKEN;
+	}
+	if (mech_len == GSS_KRB5_MECHANISM->length
+	    && memcmp(GSS_KRB5_MECHANISM->elements,
+		      mechbuf + sizeof(mechbuf) - mech_len,
+		      mech_len) == 0)
+	    found = 1;
+    }
+    if (found) {
+	gss_buffer_desc ibuf, obuf;
+	gss_buffer_t ot = NULL;
+	OM_uint32 minor;
+
+	if (ni.mechToken != NULL) {
+	    ibuf.length = ni.mechToken->length;
+	    ibuf.value  = ni.mechToken->data;
+
+	    ret = gsskrb5_accept_sec_context(&minor,
+					     context_handle,
+					     acceptor_cred_handle,
+					     &ibuf,
+					     input_chan_bindings,
+					     src_name,
+					     mech_type,
+					     &obuf,
+					     ret_flags,
+					     time_rec,
+					     delegated_cred_handle);
+	    if (ret == GSS_S_COMPLETE || ret == GSS_S_CONTINUE_NEEDED) {
+		ot = &obuf;
+	    } else {
+		free_NegTokenInit(&ni);
+		send_reject (minor_status, output_token);
+		return ret;
+	    }
+	}
+	ret2 = send_accept (minor_status, ret, output_token, ot,
+			   *context_handle, ni.mechTypes);
+	if (ret2 != GSS_S_COMPLETE)
+	    ret = ret2;
+	if (ot != NULL)
+	    gss_release_buffer(&minor, ot);
+	free_NegTokenInit(&ni);
+	return ret;
+    } else {
+	free_NegTokenInit(&ni);
+	return send_reject (minor_status, output_token);
+    }
+}
+
+OM_uint32
+gss_accept_sec_context
+           (OM_uint32 * minor_status,
+            gss_ctx_id_t * context_handle,
+            const gss_cred_id_t acceptor_cred_handle,
+            const gss_buffer_t input_token_buffer,
+            const gss_channel_bindings_t input_chan_bindings,
+            gss_name_t * src_name,
+            gss_OID * mech_type,
+            gss_buffer_t output_token,
+            OM_uint32 * ret_flags,
+            OM_uint32 * time_rec,
+            gss_cred_id_t * delegated_cred_handle
+           )
+{
+    OM_uint32 ret;
+    ssize_t mech_len;
+    const u_char *p;
+
+    *minor_status = 0;
+
+    mech_len = gssapi_krb5_get_mech (input_token_buffer->value,
+				     input_token_buffer->length,
+				     &p);
+    if (mech_len < 0)
+	return GSS_S_DEFECTIVE_TOKEN;
+    if (mech_len == GSS_KRB5_MECHANISM->length
+	&& memcmp(p, GSS_KRB5_MECHANISM->elements, mech_len) == 0)
+	ret = gsskrb5_accept_sec_context(minor_status,
+					 context_handle,
+					 acceptor_cred_handle,
+					 input_token_buffer,
+					 input_chan_bindings,
+					 src_name,
+					 mech_type,
+					 output_token,
+					 ret_flags,
+					 time_rec,
+					 delegated_cred_handle);
+    else if (mech_len == GSS_SPNEGO_MECHANISM->length
+	     && memcmp(p, GSS_SPNEGO_MECHANISM->elements, mech_len) == 0)
+	ret = spnego_accept_sec_context(minor_status,
+					context_handle,
+					acceptor_cred_handle,
+					input_token_buffer,
+					input_chan_bindings,
+					src_name,
+					mech_type,
+					output_token,
+					ret_flags,
+					time_rec,
+					delegated_cred_handle);
+    else
+	return GSS_S_BAD_MECH;
+
     return ret;
 }
