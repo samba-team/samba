@@ -1,3 +1,15 @@
+2003-12-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/error_string.c: protect error_string with mutex
+	
+	* lib/krb5/context.c: allocate and destroy mutex in krb5_context
+	
+	* lib/krb5/krb5.h (krb5_context_data): add mutex for error_string
+	
+2003-12-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.c: make -9 work again
+	
 2003-12-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/init_creds_pw.c: try handle ts preauth better, still
