@@ -119,7 +119,6 @@ typedef struct
 	char *szSMBPasswdFile;
 	char *szPasswordServer;
 	char *szSocketOptions;
-	char *szValidChars;
 	char *szWorkGroup;
 	char *szDomainAdminGroup;
 	char *szDomainGuestGroup;
@@ -189,7 +188,6 @@ typedef struct
 	int lm_announce;
 	int lm_interval;
 	int shmem_size;
-	int client_code_page;
 	int announce_as;	/* This is initialised in init_globals */
 	int machine_password_timeout;
 	int change_notify_timeout;
@@ -500,12 +498,8 @@ static int default_server_announce;
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static BOOL handle_valid_chars(char *pszParmValue, char **ptr);
 static BOOL handle_include(char *pszParmValue, char **ptr);
 static BOOL handle_copy(char *pszParmValue, char **ptr);
-static BOOL handle_character_set(char *pszParmValue, char **ptr);
-static BOOL handle_coding_system(char *pszParmValue, char **ptr);
-static BOOL handle_client_code_page(char *pszParmValue, char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
 static BOOL handle_source_env(char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
@@ -615,8 +609,6 @@ static struct enum_list enum_ssl_version[] = {
 static struct parm_struct parm_table[] = {
 	{"Base Options", P_SEP, P_SEPARATOR},
 	
-	{"coding system", P_STRING, P_GLOBAL, &Globals.szCodingSystem, handle_coding_system, NULL, 0},
-	{"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page, handle_client_code_page, NULL, 0},
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_DOS_STRING},
@@ -803,7 +795,6 @@ static struct parm_struct parm_table[] = {
 	{"Filename Handling", P_SEP, P_SEPARATOR},
 	{"strip dot", P_BOOL, P_GLOBAL, &Globals.bStripDot, NULL, NULL, 0},
 	
-	{"character set", P_STRING, P_GLOBAL, &Globals.szCharacterSet, handle_character_set, NULL, 0},
 	{"mangled stack", P_INTEGER, P_GLOBAL, &Globals.mangled_stack, NULL, NULL, 0},
 	{"default case", P_ENUM, P_LOCAL, &sDefault.iDefaultCase, NULL, enum_case, FLAG_SHARE},
 	{"case sensitive", P_BOOL, P_LOCAL, &sDefault.bCaseSensitive, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
@@ -916,7 +907,6 @@ static struct parm_struct parm_table[] = {
 	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, 0},
 	{"message command", P_STRING, P_GLOBAL, &Globals.szMsgCommand, NULL, NULL, 0},
 	{"dfree command", P_STRING, P_GLOBAL, &Globals.szDfree, NULL, NULL, 0},
-	{"valid chars", P_STRING, P_GLOBAL, &Globals.szValidChars, handle_valid_chars, NULL, 0},
 	{"remote announce", P_STRING, P_GLOBAL, &Globals.szRemoteAnnounce, NULL, NULL, 0},
 	{"remote browse sync", P_STRING, P_GLOBAL, &Globals.szRemoteBrowseSync, NULL, NULL, 0},
 	{"socket address", P_STRING, P_GLOBAL, &Globals.szSocketAddress, NULL, NULL, 0},
@@ -1083,7 +1073,6 @@ static void init_globals(void)
 	string_set(&Globals.szNISHomeMapName, "auto.home");
 #endif
 #endif
-	Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
 	Globals.bTimeServer = False;
 	Globals.bBindInterfacesOnly = False;
 	Globals.bUnixPasswdSync = False;
@@ -1153,12 +1142,6 @@ static void init_globals(void)
 	string_set(&Globals.szWinbindSeparator, "\\");
 	Globals.winbind_cache_time = 15;
 
-	/*
-	 * This must be done last as it checks the value in 
-	 * client_code_page.
-	 */
-
-	interpret_coding_system(KANJI);
 }
 
 /***************************************************************************
@@ -1444,7 +1427,6 @@ FN_GLOBAL_INTEGER(lp_security, &Globals.security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_syslog, &Globals.syslog)
-FN_GLOBAL_INTEGER(lp_client_code_page, &Globals.client_code_page)
 static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval, &Globals.lm_interval)
@@ -1660,7 +1642,6 @@ static int add_a_service(service * pservice, char *name)
 	if (name)
 	{
 		string_set(&iSERVICE(i).szService, name);
-		unix_to_dos(iSERVICE(i).szService, True);
 	}
 	return (i);
 }
@@ -2084,7 +2065,6 @@ static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
 	 * Convert from UNIX to DOS string - the UNIX to DOS converter
 	 * isn't called on the special handlers.
 	 */
-	unix_to_dos(netbios_name, True);
 	pstrcpy(global_myname, netbios_name);
 
 	DEBUG(4,
@@ -2212,66 +2192,6 @@ static BOOL handle_vfs_object(char *pszParmValue, char **ptr)
 	return True;
 }
 
-/***************************************************************************
-  handle the interpretation of the coding system parameter
-  *************************************************************************/
-static BOOL handle_coding_system(char *pszParmValue, char **ptr)
-{
-	string_set(ptr, pszParmValue);
-	interpret_coding_system(pszParmValue);
-	return (True);
-}
-
-/***************************************************************************
- Handle the interpretation of the character set system parameter.
-***************************************************************************/
-
-static char *saved_character_set = NULL;
-
-static BOOL handle_character_set(char *pszParmValue, char **ptr)
-{
-	/* A dependency here is that the parameter client code page should be
-	   set before this is called.
-	 */
-	string_set(ptr, pszParmValue);
-	strupper(*ptr);
-	saved_character_set = strdup(*ptr);
-	interpret_character_set(*ptr, lp_client_code_page());
-	return (True);
-}
-
-/***************************************************************************
- Handle the interpretation of the client code page parameter.
- We handle this separately so that we can reset the character set
- parameter in case this came before 'client code page' in the smb.conf.
-***************************************************************************/
-
-static BOOL handle_client_code_page(char *pszParmValue, char **ptr)
-{
-	Globals.client_code_page = atoi(pszParmValue);
-	if (saved_character_set != NULL)
-		interpret_character_set(saved_character_set,
-					lp_client_code_page());
-	return (True);
-}
-
-/***************************************************************************
-handle the valid chars lines
-***************************************************************************/
-
-static BOOL handle_valid_chars(char *pszParmValue, char **ptr)
-{
-	string_set(ptr, pszParmValue);
-
-	/* A dependency here is that the parameter client code page must be
-	   set before this is called - as calling codepage_initialise()
-	   would overwrite the valid char lines.
-	 */
-	codepage_initialise(lp_client_code_page());
-
-	add_char_string(pszParmValue);
-	return (True);
-}
 
 /***************************************************************************
 handle the include operation
@@ -2493,26 +2413,22 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 		case P_STRING:
 			string_set(parm_ptr, pszParmValue);
 			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos(*(char **)parm_ptr, True);
 			break;
 
 		case P_USTRING:
 			string_set(parm_ptr, pszParmValue);
 			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos(*(char **)parm_ptr, True);
 			strupper(*(char **)parm_ptr);
 			break;
 
 		case P_GSTRING:
 			pstrcpy((char *)parm_ptr, pszParmValue);
 			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos((char *)parm_ptr, True);
 			break;
 
 		case P_UGSTRING:
 			pstrcpy((char *)parm_ptr, pszParmValue);
 			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos((char *)parm_ptr, True);
 			strupper((char *)parm_ptr);
 			break;
 
@@ -2915,58 +2831,6 @@ BOOL lp_snum_ok(int iService)
 
 
 /***************************************************************************
-auto-load some home services
-***************************************************************************/
-static void lp_add_auto_services(char *str)
-{
-	char *s;
-	char *p;
-	int homes;
-
-	if (!str)
-		return;
-
-	s = strdup(str);
-	if (!s)
-		return;
-
-	homes = lp_servicenumber(HOMES_NAME);
-
-	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP))
-	{
-		char *home = get_user_home_dir(p);
-
-		if (lp_servicenumber(p) >= 0)
-			continue;
-
-		if (home && homes >= 0)
-		{
-			lp_add_home(p, homes, home);
-		}
-	}
-	free(s);
-}
-
-/***************************************************************************
-auto-load one printer
-***************************************************************************/
-void lp_add_one_printer(char *name, char *comment)
-{
-	int printers = lp_servicenumber(PRINTERS_NAME);
-	int i;
-
-	if (lp_servicenumber(name) < 0)
-	{
-		lp_add_printer(name, printers);
-		if ((i = lp_servicenumber(name)) >= 0)
-		{
-			string_set(&iSERVICE(i).comment, comment);
-			iSERVICE(i).autoloaded = True;
-		}
-	}
-}
-
-/***************************************************************************
 have we loaded a services file yet?
 ***************************************************************************/
 BOOL lp_loaded(void)
@@ -3124,8 +2988,6 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	if (bRetval)
 		if (iServiceIndex >= 0)
 			bRetval = service_ok(iServiceIndex);
-
-	lp_add_auto_services(lp_auto_services());
 
 	if (add_ipc)
 		lp_add_ipc();

@@ -203,7 +203,6 @@ static int Continuation( char *line, int pos )
   /* we should recognize if `\` is part of a multibyte character or not. */
   while(pos2 <= pos) {
     size_t skip = 0;
-    skip = get_character_len(line[pos2]);
     if (skip) {
         pos2 += skip;
     } else if (pos == pos2) {
