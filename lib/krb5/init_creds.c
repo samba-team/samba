@@ -104,7 +104,7 @@ krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
     if (opt->private->refcount < 1) /* abort ? */
 	return;
     if (--opt->private->refcount == 0) {
-	krb5_get_init_creds_opt_free_pkinit(opt);
+	_krb5_get_init_creds_opt_free_pkinit(opt);
 	free(opt->private);
     }
     memset(opt, 0, sizeof(*opt));

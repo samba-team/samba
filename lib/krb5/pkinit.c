@@ -2234,7 +2234,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
 #endif /* PKINIT */
 
 void KRB5_LIB_FUNCTION
-krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
+_krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 {
 #ifdef PKINIT
     krb5_pk_init_ctx ctx;
@@ -2316,25 +2316,25 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 
 	dh = DH_new();
 	if (dh == NULL) {
-	    krb5_get_init_creds_opt_free_pkinit(opt);
+	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	opt->private->pk_init_ctx->dh = dh;
 	if (!BN_hex2bn(&dh->p, P)) {
-	    krb5_get_init_creds_opt_free_pkinit(opt);
+	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	if (!BN_hex2bn(&dh->g, G)) {
-	    krb5_get_init_creds_opt_free_pkinit(opt);
+	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	if (!BN_hex2bn(&dh->q, Q)) {
-	    krb5_get_init_creds_opt_free_pkinit(opt);
+	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	/* XXX generate a new key for each request ? */
 	if (DH_generate_key(dh) != 1) {
-	    krb5_get_init_creds_opt_free_pkinit(opt);
+	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
     }
