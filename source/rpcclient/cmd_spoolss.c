@@ -140,11 +140,9 @@ static void display_print_info_0(PRINTER_INFO_0 *i0)
 	if (!i0)
 		return;
 
-	if (i0->printername.buffer)
-		rpcstr_pull(name, i0->printername.buffer, sizeof(name), -1, STR_TERMINATE);
+	rpcstr_pull(name, i0->printername.buffer, sizeof(name), -1, STR_TERMINATE);
 
-	if (i0->servername.buffer)
-		rpcstr_pull(servername, i0->servername.buffer, sizeof(servername), -1,STR_TERMINATE);
+	rpcstr_pull(servername, i0->servername.buffer, sizeof(servername), -1,STR_TERMINATE);
   
 	printf("\tprintername:[%s]\n", name);
 	printf("\tservername:[%s]\n", servername);
@@ -198,17 +196,11 @@ static void display_print_info_1(PRINTER_INFO_1 *i1)
 	fstring name = "";
 	fstring comm = "";
 
-	if (i1->description.buffer)
-		rpcstr_pull(desc, i1->description.buffer, sizeof(desc), -1,
-			    STR_TERMINATE);
+	rpcstr_pull(desc, i1->description.buffer, sizeof(desc), -1,
+		    STR_TERMINATE);
 
-	if (i1->name.buffer)
-		rpcstr_pull(name, i1->name.buffer, sizeof(name), -1, 
-			    STR_TERMINATE);
-
-	if (i1->comment.buffer)
-		rpcstr_pull(comm, i1->comment.buffer, sizeof(comm), -1, 
-			    STR_TERMINATE);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), -1, STR_TERMINATE);
+	rpcstr_pull(comm, i1->comment.buffer, sizeof(comm), -1, STR_TERMINATE);
 
 	printf("\tflags:[0x%x]\n", i1->flags);
 	printf("\tname:[%s]\n", name);
@@ -235,38 +227,27 @@ static void display_print_info_2(PRINTER_INFO_2 *i2)
 	fstring datatype = "";
 	fstring parameters = "";
 	
-	if (i2->servername.buffer)
-		rpcstr_pull(servername, i2->servername.buffer,sizeof(servername), -1, STR_TERMINATE);
+	rpcstr_pull(servername, i2->servername.buffer,sizeof(servername), -1, STR_TERMINATE);
 
-	if (i2->printername.buffer)
-		rpcstr_pull(printername, i2->printername.buffer,sizeof(printername), -1, STR_TERMINATE);
+	rpcstr_pull(printername, i2->printername.buffer,sizeof(printername), -1, STR_TERMINATE);
 
-	if (i2->sharename.buffer)
-		rpcstr_pull(sharename, i2->sharename.buffer,sizeof(sharename), -1, STR_TERMINATE);
+	rpcstr_pull(sharename, i2->sharename.buffer,sizeof(sharename), -1, STR_TERMINATE);
 
-	if (i2->portname.buffer)
-		rpcstr_pull(portname, i2->portname.buffer,sizeof(portname), -1, STR_TERMINATE);
+	rpcstr_pull(portname, i2->portname.buffer,sizeof(portname), -1, STR_TERMINATE);
 
-	if (i2->drivername.buffer)
-		rpcstr_pull(drivername, i2->drivername.buffer,sizeof(drivername), -1, STR_TERMINATE);
+	rpcstr_pull(drivername, i2->drivername.buffer,sizeof(drivername), -1, STR_TERMINATE);
 
-	if (i2->comment.buffer)
-		rpcstr_pull(comment, i2->comment.buffer,sizeof(comment), -1, STR_TERMINATE);
+	rpcstr_pull(comment, i2->comment.buffer,sizeof(comment), -1, STR_TERMINATE);
 
-	if (i2->location.buffer)
-		rpcstr_pull(location, i2->location.buffer,sizeof(location), -1, STR_TERMINATE);
+	rpcstr_pull(location, i2->location.buffer,sizeof(location), -1, STR_TERMINATE);
 
-	if (i2->sepfile.buffer)
-		rpcstr_pull(sepfile, i2->sepfile.buffer,sizeof(sepfile), -1, STR_TERMINATE);
+	rpcstr_pull(sepfile, i2->sepfile.buffer,sizeof(sepfile), -1, STR_TERMINATE);
 
-	if (i2->printprocessor.buffer) 
-		rpcstr_pull(printprocessor, i2->printprocessor.buffer,sizeof(printprocessor), -1, STR_TERMINATE);
+	rpcstr_pull(printprocessor, i2->printprocessor.buffer,sizeof(printprocessor), -1, STR_TERMINATE);
 
-	if (i2->datatype.buffer)
-		rpcstr_pull(datatype, i2->datatype.buffer,sizeof(datatype), -1, STR_TERMINATE);
+	rpcstr_pull(datatype, i2->datatype.buffer,sizeof(datatype), -1, STR_TERMINATE);
 
-	if (i2->parameters.buffer)
-		rpcstr_pull(parameters, i2->parameters.buffer,sizeof(parameters), -1, STR_TERMINATE);
+	rpcstr_pull(parameters, i2->parameters.buffer,sizeof(parameters), -1, STR_TERMINATE);
 
 	printf("\tservername:[%s]\n", servername);
 	printf("\tprintername:[%s]\n", printername);
@@ -849,15 +830,15 @@ printer info level 2 display function
 ****************************************************************************/
 static void display_print_driver_3(DRIVER_INFO_3 *i1)
 {
-	fstring name;
-	fstring architecture;
-	fstring driverpath;
-	fstring datafile;
-	fstring configfile;
-	fstring helpfile;
-	fstring dependentfiles;
-	fstring monitorname;
-	fstring defaultdatatype;
+	fstring name = "";
+	fstring architecture = "";
+	fstring driverpath = "";
+	fstring datafile = "";
+	fstring configfile = "";
+	fstring helpfile = "";
+	fstring dependentfiles = "";
+	fstring monitorname = "";
+	fstring defaultdatatype = "";
 	
 	int length=0;
 	BOOL valid = True;
@@ -1886,17 +1867,14 @@ static void display_job_info_1(JOB_INFO_1 *job)
 {
 	fstring username = "", document = "", text_status = "";
 
-	if (job->username.buffer)
-		rpcstr_pull(username, job->username.buffer,
-			   sizeof(username), -1, STR_TERMINATE);
+	rpcstr_pull(username, job->username.buffer,
+		    sizeof(username), -1, STR_TERMINATE);
 
-	if (job->document.buffer)
-		rpcstr_pull(document, job->document.buffer,
-			   sizeof(document), -1, STR_TERMINATE);
+	rpcstr_pull(document, job->document.buffer,
+		    sizeof(document), -1, STR_TERMINATE);
 
-	if (job->text_status.buffer)
-		rpcstr_pull(text_status, job->text_status.buffer,
-			   sizeof(text_status), -1, STR_TERMINATE);
+	rpcstr_pull(text_status, job->text_status.buffer,
+		    sizeof(text_status), -1, STR_TERMINATE);
 
 	printf("%d: jobid[%d]: %s %s %s %d/%d pages\n", job->position, job->jobid,
 	       username, document, text_status, job->pagesprinted,
@@ -1907,17 +1885,14 @@ static void display_job_info_2(JOB_INFO_2 *job)
 {
 	fstring username = "", document = "", text_status = "";
 
-	if (job->username.buffer)
-		rpcstr_pull(username, job->username.buffer,
-			   sizeof(username), -1, STR_TERMINATE);
+	rpcstr_pull(username, job->username.buffer,
+		    sizeof(username), -1, STR_TERMINATE);
 
-	if (job->document.buffer)
-		rpcstr_pull(document, job->document.buffer,
-			   sizeof(document), -1, STR_TERMINATE);
+	rpcstr_pull(document, job->document.buffer,
+		    sizeof(document), -1, STR_TERMINATE);
 
-	if (job->text_status.buffer)
-		rpcstr_pull(text_status, job->text_status.buffer,
-			   sizeof(text_status), -1, STR_TERMINATE);
+	rpcstr_pull(text_status, job->text_status.buffer,
+		    sizeof(text_status), -1, STR_TERMINATE);
 
 	printf("%d: jobid[%d]: %s %s %s %d/%d pages, %d bytes\n", job->position, job->jobid,
 	       username, document, text_status, job->pagesprinted,
