@@ -245,7 +245,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	int c;
 	static pstring servicesf = CONFIGFILE;
 	extern char *optarg;
-	int profile_only = 0;
+	int profile_only = 0, new_debuglevel = -1;
 	TDB_CONTEXT *tdb;
 	struct session_record *ptr;
 
@@ -262,7 +262,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		return(1);
 	}
 	
-	while ((c = getopt(argc, argv, "pdLSs:u:bPB")) != EOF) {
+	while ((c = getopt(argc, argv, "pvLSs:u:bPBd:")) != EOF) {
 		switch (c) {
 		case 'b':
 			brief = 1;
@@ -271,6 +271,10 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 			show_brl = 1;
 			break;
 		case 'd':
+			new_debuglevel = atoi(optarg);
+			break;
+			
+		case 'v':
 			verbose = 1;
 			break;
 		case 'L':
@@ -292,7 +296,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 			Ucrit_addUsername(optarg);             
 			break;
 		default:
-			fprintf(stderr, "Usage: %s [-P] [-d] [-L] [-p] [-S] [-s configfile] [-u username]\n", *argv);
+			fprintf(stderr, "Usage: %s [-P] [-v] [-L] [-p] [-S] [-s configfile] [-u username] [-d debuglevel]\n", *argv);
 			return (-1);
 		}
 	}
@@ -302,6 +306,10 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		return (-1);
 	}
 	
+	if (new_debuglevel != -1) {
+		DEBUGLEVEL = new_debuglevel;
+	}
+
 	if (verbose) {
 		printf("using configfile = %s\n", servicesf);
 	}
