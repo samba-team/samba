@@ -854,14 +854,15 @@ retrieve(char *cmd, char *name)
 		st.st_size = 0;
 		if(fin == NULL){
 		    struct cmds {
-			char *ext;
-			char *cmd;
+			const char *ext;
+			const char *cmd;
+		        const char *rev_cmd;
 		    } cmds[] = {
-			{".tar", "/bin/gtar cPf - %s"},
-			{".tar.gz", "/bin/gtar zcPf - %s"},
-			{".tar.Z", "/bin/gtar ZcPf - %s"},
-			{".gz", "/bin/gzip -c %s"},
-			{".Z", "/bin/compress -c %s"},
+			{".tar", "/bin/gtar cPf - %s", NULL},
+			{".tar.gz", "/bin/gtar zcPf - %s", NULL},
+			{".tar.Z", "/bin/gtar ZcPf - %s", NULL},
+			{".gz", "/bin/gzip -c %s", "/bin/gzip -c -d %s"},
+			{".Z", "/bin/compress -c %s", "/bin/uncompress -c -d %s"},
 			{NULL, NULL}
 		    };
 		    struct cmds *p;
@@ -877,6 +878,21 @@ retrieve(char *cmd, char *name)
 			    break;
 			}
 			*tail = c;
+			if (p->rev_cmd != NULL) {
+			    char *ext;
+
+			    asprintf(&ext, "%s%s", name, p->ext);
+			    if (ext != NULL) { 
+  			        if (access(ext, R_OK) == 0) {
+				    snprintf (line, sizeof(line),
+					      p->rev_cmd, ext);
+				    free(ext);
+				    break;
+				}
+			        free(ext);
+			    }
+			}
+			
 		    }
 		    if(p->ext){
 			fin = ftpd_popen(line, "r", 0, 0);
