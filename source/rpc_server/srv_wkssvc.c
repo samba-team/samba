@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -22,13 +21,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
-#include "nterr.h"
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;
-
 
 /*******************************************************************
  create_wks_info_100
@@ -80,8 +76,7 @@ static void wks_reply_query_info(WKS_Q_QUERY_INFO *q_u,
 /*******************************************************************
  api_wks_query_info
  ********************************************************************/
-static BOOL api_wks_query_info( uint16 vuid, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_wks_query_info(prs_struct *data, prs_struct *rdata)
 {
 	WKS_Q_QUERY_INFO q_u;
 
@@ -111,4 +106,3 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds, data);
 }
-

@@ -22,14 +22,13 @@
  */
 
 #include "includes.h"
-#include "nterr.h"
 
 extern int DEBUGLEVEL;
 
 /********************************************************************
  * api_spoolss_open_printer_ex
  ********************************************************************/
-static BOOL api_spoolss_open_printer_ex(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_open_printer_ex(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_OPEN_PRINTER_EX q_u;
 	SPOOL_R_OPEN_PRINTER_EX r_u;
@@ -64,7 +63,7 @@ static BOOL api_spoolss_open_printer_ex(uint16 vuid, prs_struct *data, prs_struc
  *
  * called from the spoolss dispatcher
  ********************************************************************/
-static BOOL api_spoolss_getprinterdata(uint16 vuid, prs_struct *data, prs_struct *rdata) 
+static BOOL api_spoolss_getprinterdata(prs_struct *data, prs_struct *rdata) 
 {
 	SPOOL_Q_GETPRINTERDATA q_u;
 	SPOOL_R_GETPRINTERDATA r_u;
@@ -97,7 +96,7 @@ static BOOL api_spoolss_getprinterdata(uint16 vuid, prs_struct *data, prs_struct
  *
  * called from the spoolss dispatcher
  ********************************************************************/
-static BOOL api_spoolss_closeprinter(uint16 vuid, prs_struct *data, prs_struct *rdata) 
+static BOOL api_spoolss_closeprinter(prs_struct *data, prs_struct *rdata) 
 {
 	SPOOL_Q_CLOSEPRINTER q_u;
 	SPOOL_R_CLOSEPRINTER r_u;
@@ -125,7 +124,7 @@ static BOOL api_spoolss_closeprinter(uint16 vuid, prs_struct *data, prs_struct *
  * api_spoolss_rffpcnex
  * ReplyFindFirstPrinterChangeNotifyEx
  ********************************************************************/
-static BOOL api_spoolss_rffpcnex(uint16 vuid, prs_struct *data, prs_struct *rdata) 
+static BOOL api_spoolss_rffpcnex(prs_struct *data, prs_struct *rdata) 
 {
 	SPOOL_Q_RFFPCNEX q_u;
 	SPOOL_R_RFFPCNEX r_u;
@@ -157,7 +156,7 @@ static BOOL api_spoolss_rffpcnex(uint16 vuid, prs_struct *data, prs_struct *rdat
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static BOOL api_spoolss_rfnpcnex(uint16 vuid, prs_struct *data, prs_struct *rdata) 
+static BOOL api_spoolss_rfnpcnex(prs_struct *data, prs_struct *rdata) 
 {
 	SPOOL_Q_RFNPCNEX q_u;
 	SPOOL_R_RFNPCNEX r_u;
@@ -192,7 +191,7 @@ static BOOL api_spoolss_rfnpcnex(uint16 vuid, prs_struct *data, prs_struct *rdat
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static BOOL api_spoolss_enumprinters(uint16 vuid, prs_struct *data, prs_struct *rdata) 
+static BOOL api_spoolss_enumprinters(prs_struct *data, prs_struct *rdata) 
 {
 	SPOOL_Q_ENUMPRINTERS q_u;
 	SPOOL_R_ENUMPRINTERS r_u;
@@ -230,7 +229,7 @@ static BOOL api_spoolss_enumprinters(uint16 vuid, prs_struct *data, prs_struct *
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static BOOL api_spoolss_getprinter(uint16 vuid, prs_struct *data, prs_struct *rdata) 
+static BOOL api_spoolss_getprinter(prs_struct *data, prs_struct *rdata) 
 {
 	SPOOL_Q_GETPRINTER q_u;
 	SPOOL_R_GETPRINTER r_u;
@@ -268,7 +267,7 @@ static BOOL api_spoolss_getprinter(uint16 vuid, prs_struct *data, prs_struct *rd
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static BOOL api_spoolss_getprinterdriver2(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_getprinterdriver2(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_GETPRINTERDRIVER2 q_u;
 	SPOOL_R_GETPRINTERDRIVER2 r_u;
@@ -306,7 +305,7 @@ static BOOL api_spoolss_getprinterdriver2(uint16 vuid, prs_struct *data, prs_str
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static BOOL api_spoolss_startpageprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_startpageprinter(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_STARTPAGEPRINTER q_u;
 	SPOOL_R_STARTPAGEPRINTER r_u;
@@ -335,7 +334,7 @@ static BOOL api_spoolss_startpageprinter(uint16 vuid, prs_struct *data, prs_stru
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static BOOL api_spoolss_endpageprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_endpageprinter(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENDPAGEPRINTER q_u;
 	SPOOL_R_ENDPAGEPRINTER r_u;
@@ -360,7 +359,7 @@ static BOOL api_spoolss_endpageprinter(uint16 vuid, prs_struct *data, prs_struct
 
 /********************************************************************
 ********************************************************************/
-static BOOL api_spoolss_startdocprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_startdocprinter(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_STARTDOCPRINTER q_u;
 	SPOOL_R_STARTDOCPRINTER r_u;
@@ -389,7 +388,7 @@ static BOOL api_spoolss_startdocprinter(uint16 vuid, prs_struct *data, prs_struc
 
 /********************************************************************
 ********************************************************************/
-static BOOL api_spoolss_enddocprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_enddocprinter(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENDDOCPRINTER q_u;
 	SPOOL_R_ENDDOCPRINTER r_u;
@@ -415,7 +414,7 @@ static BOOL api_spoolss_enddocprinter(uint16 vuid, prs_struct *data, prs_struct 
 
 /********************************************************************
 ********************************************************************/
-static BOOL api_spoolss_writeprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_writeprinter(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_WRITEPRINTER q_u;
 	SPOOL_R_WRITEPRINTER r_u;
@@ -446,7 +445,7 @@ static BOOL api_spoolss_writeprinter(uint16 vuid, prs_struct *data, prs_struct *
 /****************************************************************************
 
 ****************************************************************************/
-static BOOL api_spoolss_setprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_setprinter(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_SETPRINTER q_u;
 	SPOOL_R_SETPRINTER r_u;
@@ -479,7 +478,7 @@ static BOOL api_spoolss_setprinter(uint16 vuid, prs_struct *data, prs_struct *rd
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_fcpn(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_fcpn(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_FCPN q_u;
 	SPOOL_R_FCPN r_u;
@@ -505,7 +504,7 @@ static BOOL api_spoolss_fcpn(uint16 vuid, prs_struct *data, prs_struct *rdata)
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_addjob(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_addjob(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ADDJOB q_u;
 	SPOOL_R_ADDJOB r_u;
@@ -539,7 +538,7 @@ static BOOL api_spoolss_addjob(uint16 vuid, prs_struct *data, prs_struct *rdata)
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_enumjobs(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_enumjobs(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENUMJOBS q_u;
 	SPOOL_R_ENUMJOBS r_u;
@@ -575,7 +574,7 @@ static BOOL api_spoolss_enumjobs(uint16 vuid, prs_struct *data, prs_struct *rdat
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_schedulejob(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_schedulejob(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_SCHEDULEJOB q_u;
 	SPOOL_R_SCHEDULEJOB r_u;
@@ -600,7 +599,7 @@ static BOOL api_spoolss_schedulejob(uint16 vuid, prs_struct *data, prs_struct *r
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_setjob(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_setjob(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_SETJOB q_u;
 	SPOOL_R_SETJOB r_u;
@@ -627,7 +626,7 @@ static BOOL api_spoolss_setjob(uint16 vuid, prs_struct *data, prs_struct *rdata)
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL api_spoolss_enumprinterdrivers(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_enumprinterdrivers(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTERDRIVERS q_u;
 	SPOOL_R_ENUMPRINTERDRIVERS r_u;
@@ -663,7 +662,7 @@ static BOOL api_spoolss_enumprinterdrivers(uint16 vuid, prs_struct *data, prs_st
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_enumforms(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_enumforms(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENUMFORMS q_u;
 	SPOOL_R_ENUMFORMS r_u;
@@ -699,7 +698,7 @@ static BOOL api_spoolss_enumforms(uint16 vuid, prs_struct *data, prs_struct *rda
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_enumports(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_enumports(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPORTS q_u;
 	SPOOL_R_ENUMPORTS r_u;
@@ -735,7 +734,7 @@ static BOOL api_spoolss_enumports(uint16 vuid, prs_struct *data, prs_struct *rda
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_addprinterex(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_addprinterex(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ADDPRINTEREX q_u;
 	SPOOL_R_ADDPRINTEREX r_u;
@@ -775,7 +774,7 @@ static BOOL api_spoolss_addprinterex(uint16 vuid, prs_struct *data, prs_struct *
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_addprinterdriver(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_addprinterdriver(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ADDPRINTERDRIVER q_u;
 	SPOOL_R_ADDPRINTERDRIVER r_u;
@@ -800,7 +799,7 @@ static BOOL api_spoolss_addprinterdriver(uint16 vuid, prs_struct *data, prs_stru
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_getprinterdriverdirectory(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_getprinterdriverdirectory(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_GETPRINTERDRIVERDIR q_u;
 	SPOOL_R_GETPRINTERDRIVERDIR r_u;
@@ -835,7 +834,7 @@ static BOOL api_spoolss_getprinterdriverdirectory(uint16 vuid, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_enumprinterdata(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_enumprinterdata(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTERDATA q_u;
 	SPOOL_R_ENUMPRINTERDATA r_u;
@@ -868,7 +867,7 @@ static BOOL api_spoolss_enumprinterdata(uint16 vuid, prs_struct *data, prs_struc
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_setprinterdata(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_setprinterdata(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_SETPRINTERDATA q_u;
 	SPOOL_R_SETPRINTERDATA r_u;	
@@ -895,7 +894,7 @@ static BOOL api_spoolss_setprinterdata(uint16 vuid, prs_struct *data, prs_struct
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_addform(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_addform(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ADDFORM q_u;
 	SPOOL_R_ADDFORM r_u;
@@ -920,7 +919,7 @@ static BOOL api_spoolss_addform(uint16 vuid, prs_struct *data, prs_struct *rdata
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_setform(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_setform(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_SETFORM q_u;
 	SPOOL_R_SETFORM r_u;
@@ -945,7 +944,7 @@ static BOOL api_spoolss_setform(uint16 vuid, prs_struct *data, prs_struct *rdata
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_enumprintprocessors(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_enumprintprocessors(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTPROCESSORS q_u;
 	SPOOL_R_ENUMPRINTPROCESSORS r_u;
@@ -980,7 +979,7 @@ static BOOL api_spoolss_enumprintprocessors(uint16 vuid, prs_struct *data, prs_s
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_enumprintprocdatatypes(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_enumprintprocdatatypes(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTPROCDATATYPES q_u;
 	SPOOL_R_ENUMPRINTPROCDATATYPES r_u;
@@ -1015,7 +1014,7 @@ static BOOL api_spoolss_enumprintprocdatatypes(uint16 vuid, prs_struct *data, pr
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_enumprintmonitors(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_enumprintmonitors(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTMONITORS q_u;
 	SPOOL_R_ENUMPRINTMONITORS r_u;
@@ -1050,7 +1049,7 @@ static BOOL api_spoolss_enumprintmonitors(uint16 vuid, prs_struct *data, prs_str
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL api_spoolss_getjob(uint16 vuid, prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_getjob(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_GETJOB q_u;
 	SPOOL_R_GETJOB r_u;
@@ -1127,4 +1126,3 @@ BOOL api_spoolss_rpc(pipes_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_spoolss_rpc", api_spoolss_cmds, data);
 }
-

@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -23,9 +22,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
-#include "nterr.h"
 
 extern int DEBUGLEVEL;
 extern DOM_SID global_sam_sid;
@@ -432,8 +429,7 @@ static BOOL lsa_reply_lookup_names(prs_struct *rdata,
  api_lsa_open_policy2
  ***************************************************************************/
 
-static BOOL api_lsa_open_policy2( uint16 vuid, prs_struct *data,
-                             prs_struct *rdata )
+static BOOL api_lsa_open_policy2(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_OPEN_POL2 q_o;
 
@@ -457,8 +453,7 @@ static BOOL api_lsa_open_policy2( uint16 vuid, prs_struct *data,
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static BOOL api_lsa_open_policy( uint16 vuid, prs_struct *data,
-                             prs_struct *rdata )
+static BOOL api_lsa_open_policy(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_OPEN_POL q_o;
 
@@ -482,8 +477,7 @@ static BOOL api_lsa_open_policy( uint16 vuid, prs_struct *data,
 /***************************************************************************
 api_lsa_enum_trust_dom
  ***************************************************************************/
-static BOOL api_lsa_enum_trust_dom( uint16 vuid, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_lsa_enum_trust_dom(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_ENUM_TRUST_DOM q_e;
 
@@ -501,8 +495,7 @@ static BOOL api_lsa_enum_trust_dom( uint16 vuid, prs_struct *data,
 /***************************************************************************
 api_lsa_query_info
  ***************************************************************************/
-static BOOL api_lsa_query_info( uint16 vuid, prs_struct *data,
-                                prs_struct *rdata )
+static BOOL api_lsa_query_info(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_QUERY_INFO q_i;
 	fstring name;
@@ -542,7 +535,7 @@ static BOOL api_lsa_query_info( uint16 vuid, prs_struct *data,
  api_lsa_lookup_sids
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_sids( uint16 vuid, prs_struct *data, prs_struct *rdata )
+static BOOL api_lsa_lookup_sids(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_LOOKUP_SIDS q_l;
 	ZERO_STRUCT(q_l);
@@ -564,7 +557,7 @@ static BOOL api_lsa_lookup_sids( uint16 vuid, prs_struct *data, prs_struct *rdat
  api_lsa_lookup_names
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_names( uint16 vuid, prs_struct *data, prs_struct *rdata )
+static BOOL api_lsa_lookup_names(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_LOOKUP_NAMES q_l;
 	ZERO_STRUCT(q_l);
@@ -583,8 +576,7 @@ static BOOL api_lsa_lookup_names( uint16 vuid, prs_struct *data, prs_struct *rda
 /***************************************************************************
  api_lsa_close
  ***************************************************************************/
-static BOOL api_lsa_close( uint16 vuid, prs_struct *data,
-                                  prs_struct *rdata)
+static BOOL api_lsa_close(prs_struct *data, prs_struct *rdata)
 {
 	LSA_R_CLOSE r_c;
 
@@ -602,8 +594,7 @@ static BOOL api_lsa_close( uint16 vuid, prs_struct *data,
 /***************************************************************************
  api_lsa_open_secret
  ***************************************************************************/
-static BOOL api_lsa_open_secret( uint16 vuid, prs_struct *data,
-                                  prs_struct *rdata)
+static BOOL api_lsa_open_secret(prs_struct *data, prs_struct *rdata)
 {
 	/* XXXX this is NOT good */
 	size_t i;
