@@ -461,7 +461,7 @@ krb5_425_conv_principal(krb5_context context,
     if(instance == NULL)
 	goto no_host;
     if(instance[0] == 0){
-	instance == NULL;
+	instance = NULL;
 	goto no_host;
     }
     p = krb5_config_get_string(context->cf, "realms", realm,
