@@ -754,17 +754,29 @@ replace_cookie(int xserver, int fd, char *filename, int cookiesp) /* XXX */
  */
 
 int
-suspicious_address (int sock, struct sockaddr_in addr)
+suspicious_address (int sock, struct sockaddr_storage *addr)
 {
     char data[40];
     socklen_t len = sizeof(data);
 
-    return addr.sin_addr.s_addr != htonl(INADDR_LOOPBACK)
+    switch (addr->ss_family) {
+    case AF_INET:
+	return ((struct sockaddr_in *)addr)->sin_addr.s_addr != 
+	    htonl(INADDR_LOOPBACK)
 #if defined(IP_OPTIONS) && defined(HAVE_GETSOCKOPT)
-	|| getsockopt (sock, IPPROTO_IP, IP_OPTIONS, data, &len) < 0
-	|| len != 0
+	    || getsockopt (sock, IPPROTO_IP, IP_OPTIONS, data, &len) < 0
+	    || len != 0
 #endif
-    ;
+	    ;
+	break;
+#ifdef HAVE_IPV6
+    case AF_INET6:
+	/* XXX check route headers */
+	return !IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6*)addr)->sin6_addr);
+#endif
+    default:
+	return 1;
+    }
 }
 
 /*

@@ -114,7 +114,6 @@ recv_conn (int sock, kx_context *kc,
      char user[256];
      socklen_t addrlen;
      struct passwd *passwd;
-     struct sockaddr_in thisaddr, thataddr;
      char remotehost[MaxHostNameLen];
      char remoteaddr[INET6_ADDRSTRLEN];
      int ret = 1;
@@ -122,23 +121,21 @@ recv_conn (int sock, kx_context *kc,
      int len;
      u_int32_t tmp32;
 
-     addrlen = sizeof(thisaddr);
-     if (getsockname (sock, (struct sockaddr *)&thisaddr, &addrlen) < 0 ||
-	 addrlen != sizeof(thisaddr)) {
+     addrlen = sizeof(kc->thisaddr);
+     if (getsockname (sock, (struct sockaddr *)&kc->thisaddr, &addrlen) < 0) {
 	 syslog (LOG_ERR, "getsockname: %m");
 	 exit (1);
      }
-     addrlen = sizeof(thataddr);
-     if (getpeername (sock, (struct sockaddr *)&thataddr, &addrlen) < 0 ||
-	 addrlen != sizeof(thataddr)) {
+     kc->thisaddr_len = addrlen;
+     addrlen = sizeof(kc->thataddr);
+     if (getpeername (sock, (struct sockaddr *)&kc->thataddr, &addrlen) < 0) {
 	 syslog (LOG_ERR, "getpeername: %m");
 	 exit (1);
      }
+     kc->thataddr_len = addrlen;
 
-     kc->thisaddr = thisaddr;
-     kc->thataddr = thataddr;
-
-     getnameinfo_verified ((struct sockaddr *)&thataddr, addrlen,
+     getnameinfo_verified ((struct sockaddr *)&kc->thataddr, 
+			   kc->thataddr_len,
 			   remotehost, sizeof(remotehost),
 			   NULL, 0, 0);
 
@@ -226,8 +223,12 @@ recv_conn (int sock, kx_context *kc,
 	 syslog(LOG_ERR, "setting uid/groups: %m");
 	 fatal (kc, sock, "cannot set uid");
      }
-     inet_ntop (thataddr.sin_family,
-		&thataddr.sin_addr, remoteaddr, sizeof(remoteaddr));
+
+     ret = getnameinfo((struct sockaddr *)&kc->thataddr, kc->thataddr_len,
+		       remoteaddr, sizeof(remoteaddr), 
+		       NULL, 0, NI_NUMERICHOST);
+     if (ret != 0)
+	 fatal (kc, sock, "getnameinfo failed");
 
      syslog (LOG_INFO, "from %s(%s): %s -> %s",
 	     remotehost, remoteaddr,
@@ -292,13 +293,13 @@ static int
 doit_conn (kx_context *kc,
 	   int fd, int meta_sock, int flags, int cookiesp)
 {
-    int sock, sock2;
-    struct sockaddr_in addr;
-    struct sockaddr_in thisaddr;
+    int sock, sock2, port;
+    struct sockaddr_storage addr;
+    struct sockaddr_storage thisaddr;
     socklen_t addrlen;
     u_char msg[1024], *p;
 
-    sock = socket (AF_INET, SOCK_STREAM, 0);
+    sock = socket (kc->thisaddr.ss_family, SOCK_STREAM, 0);
     if (sock < 0) {
 	syslog (LOG_ERR, "socket: %m");
 	return 1;
@@ -318,8 +319,12 @@ doit_conn (kx_context *kc,
      }
 #endif
     memset (&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    if (bind (sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    addr.ss_family = kc->thisaddr.ss_family;
+    if (kc->thisaddr_len > sizeof(addr)) {
+	syslog(LOG_ERR, "error in af");
+	return 1;
+    }
+    if (bind (sock, (struct sockaddr *)&addr, kc->thisaddr_len) < 0) {
 	syslog (LOG_ERR, "bind: %m");
 	return 1;
     }
@@ -332,9 +337,11 @@ doit_conn (kx_context *kc,
 	syslog (LOG_ERR, "listen: %m");
 	return 1;
     }
+    port = socket_get_port((struct sockaddr *)&addr);
+
     p = msg;
     *p++ = NEW_CONN;
-    p += KRB_PUT_INT (ntohs(addr.sin_port), p, 4, 4);
+    p += KRB_PUT_INT (ntohs(port), p, 4, 4);
 
     if (kx_write (kc, meta_sock, msg, p - msg) < 0) {
 	syslog (LOG_ERR, "write: %m");
@@ -520,7 +527,7 @@ doit_passive (kx_context *kc,
 	    for (i = 0; i < nsockets; ++i) {
 		if (FD_ISSET(sockets[i].fd, &fds)) {
 		    if (sockets[i].flags == TCP) {
-			struct sockaddr_in peer;
+			struct sockaddr_storage peer;
 			socklen_t len = sizeof(peer);
 
 			fd = accept (sockets[i].fd,
@@ -530,7 +537,7 @@ doit_passive (kx_context *kc,
 			    syslog (LOG_ERR, "accept: %m");
 
 			/* XXX */
-			if (fd >= 0 && suspicious_address (fd, peer)) {
+			if (fd >= 0 && suspicious_address (fd, &peer)) {
 			    close (fd);
 			    fd = -1;
 			    errno = EINTR;

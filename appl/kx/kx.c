@@ -137,7 +137,9 @@ connect_host (kx_context *kc)
 	addrlen != a->ai_addrlen)
 	err(1, "getsockname(%s)", kc->host);
     memcpy (&kc->thisaddr, thisaddr, sizeof(kc->thisaddr));
+    kc->thisaddr_len = addrlen;
     memcpy (&kc->thataddr, a->ai_addr, sizeof(kc->thataddr));
+    kc->thataddr_len = a->ai_addrlen;
     freeaddrinfo (ai);
     if ((*kc->authenticate)(kc, s))
 	return -1;
@@ -284,15 +286,16 @@ doit_passive (kx_context *kc)
 	     warn("fork");
 	     continue;
 	 } else if (child == 0) {
-	     struct sockaddr_in addr;
+	     struct sockaddr *addr;
 	     int fd;
 	     int xserver;
 
-	     addr = kc->thataddr;
+	     addr = (struct sockaddr *)&kc->thataddr;
 	     close (otherside);
 
-	     addr.sin_port = htons(tmp);
-	     fd = socket (AF_INET, SOCK_STREAM, 0);
+	     socket_set_port(addr, htons(tmp));
+		 
+	     fd = socket (addr->sa_family, SOCK_STREAM, 0);
 	     if (fd < 0)
 		 err(1, "socket");
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
@@ -312,7 +315,7 @@ doit_passive (kx_context *kc)
 	     }
 #endif
 
-	     if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+	     if (connect (fd, addr, kc->thataddr_len) < 0)
 		 err(1, "connect(%s)", host);
 	     {
 		 int d = 0;
@@ -496,16 +499,17 @@ doit_active (kx_context *kc)
 	    continue;
 	} else if (child == 0) {
 	    int s;
-	    struct sockaddr_in addr;
+	    struct sockaddr *addr;
 
 	    for (i = 0; i < nsockets; ++i)
 		close (sockets[i].fd);
 
-	    addr = kc->thataddr;
+	    addr = (struct sockaddr *)&kc->thataddr;
 	    close (otherside);
 
-	    addr.sin_port = htons(other_port);
-	    s = socket (AF_INET, SOCK_STREAM, 0);
+	    socket_set_port(addr, htons(tmp));
+
+	    s = socket (addr->sa_family, SOCK_STREAM, 0);
 	    if (s < 0)
 		err(1, "socket");
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
@@ -525,7 +529,7 @@ doit_active (kx_context *kc)
 	    }
 #endif
 
-	    if (connect (s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+	    if (connect (s, addr, kc->thataddr_len) < 0)
 		err(1, "connect");
 
 	    return active_session (fd, s, kc);
