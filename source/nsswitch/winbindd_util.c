@@ -534,53 +534,53 @@ BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
                               TALLOC_CTX *mem_ctx, uint32 user_rid, 
                               SAM_USERINFO_CTR **user_info)
 {
-        CLI_POLICY_HND *hnd;
-        uint16 info_level = 0x15;
-        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-        POLICY_HND dom_pol, user_pol;
-        BOOL got_dom_pol = False, got_user_pol = False;
+	CLI_POLICY_HND *hnd;
+	uint16 info_level = 0x15;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	POLICY_HND dom_pol, user_pol;
+	BOOL got_dom_pol = False, got_user_pol = False;
 
-        /* Get sam handle */
+	/* Get sam handle */
 
-        if (!(hnd = cm_get_sam_handle(domain->name)))
-                goto done;
+	if (!(hnd = cm_get_sam_handle(domain->name)))
+		goto done;
 
-        /* Get domain handle */
+	/* Get domain handle */
 
-        result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
-                                      des_access, &domain->sid, &dom_pol);
+	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+					des_access, &domain->sid, &dom_pol);
 
-        if (!NT_STATUS_IS_OK(result))
-                goto done;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
-        got_dom_pol = True;
+	got_dom_pol = True;
 
-        /* Get user handle */
+	/* Get user handle */
 
-        result = cli_samr_open_user(hnd->cli, mem_ctx, &dom_pol,
-                                    des_access, user_rid, &user_pol);
+	result = cli_samr_open_user(hnd->cli, mem_ctx, &dom_pol,
+					des_access, user_rid, &user_pol);
 
-        if (!NT_STATUS_IS_OK(result))
-                goto done;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
-        /* Get user info */
+	/* Get user info */
 
-        result = cli_samr_query_userinfo(hnd->cli, mem_ctx, &user_pol, 
-                                         info_level, user_info);
+	result = cli_samr_query_userinfo(hnd->cli, mem_ctx, &user_pol, 
+					info_level, user_info);
 
-        cli_samr_close(hnd->cli, mem_ctx, &user_pol);
+	cli_samr_close(hnd->cli, mem_ctx, &user_pol);
 
  done:
-        /* Clean up policy handles */
+	/* Clean up policy handles */
 
-        if (got_user_pol)
-                cli_samr_close(hnd->cli, mem_ctx, &user_pol);
+	if (got_user_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &user_pol);
 
-        if (got_dom_pol)
-                cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+	if (got_dom_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
 
-        return NT_STATUS_IS_OK(result);
+	return NT_STATUS_IS_OK(result);
 }                                   
 
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
@@ -592,50 +592,51 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 {
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        POLICY_HND dom_pol, user_pol;
-        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-        BOOL got_dom_pol = False, got_user_pol = False;
+	POLICY_HND dom_pol, user_pol;
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	BOOL got_dom_pol = False, got_user_pol = False;
 
-        /* Get sam handle */
+	/* Get sam handle */
 
-        if (!(hnd = cm_get_sam_handle(domain->name)))
-                goto done;
+	if (!(hnd = cm_get_sam_handle(domain->name)))
+		goto done;
 
-        /* Get domain handle */
+	/* Get domain handle */
 
-        result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
-                                      des_access, &domain->sid, &dom_pol);
+	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+					des_access, &domain->sid, &dom_pol);
 
-        if (!NT_STATUS_IS_OK(result))
-                goto done;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
-        got_dom_pol = True;
+	got_dom_pol = True;
 
-        /* Get user handle */
+	/* Get user handle */
 
-        result = cli_samr_open_user(hnd->cli, mem_ctx, &dom_pol,
-                                    des_access, user_rid, &user_pol);
+	result = cli_samr_open_user(hnd->cli, mem_ctx, &dom_pol,
+					des_access, user_rid, &user_pol);
 
-        if (!NT_STATUS_IS_OK(result))
-                goto done;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
-        got_user_pol = True;
+	got_user_pol = True;
 
-        /* Query user rids */
+	/* Query user rids */
 
-        result = cli_samr_query_usergroups(hnd->cli, mem_ctx, &user_pol, 
-                                           num_groups, user_groups);
+	result = cli_samr_query_usergroups(hnd->cli, mem_ctx, &user_pol, 
+					num_groups, user_groups);
 
  done:
-        /* Clean up policy handles */
 
-        if (got_user_pol)
-                cli_samr_close(hnd->cli, mem_ctx, &user_pol);
+	/* Clean up policy handles */
 
-        if (got_dom_pol)
-                cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+	if (got_user_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &user_pol);
 
-        return NT_STATUS_IS_OK(result);
+	if (got_dom_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+
+	return NT_STATUS_IS_OK(result);
 }
 
 /* Lookup group membership given a rid.   */
@@ -792,38 +793,39 @@ NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
 				 uint32 *start_ndx, uint16 info_level, 
 				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
-        CLI_POLICY_HND *hnd;
-        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        POLICY_HND dom_pol;
-        BOOL got_dom_pol = False;
-        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	POLICY_HND dom_pol;
+	BOOL got_dom_pol = False;
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 
-        /* Get sam handle */
+	/* Get sam handle */
 
-        if (!(hnd = cm_get_sam_handle(domain->name)))
-                goto done;
+	if (!(hnd = cm_get_sam_handle(domain->name)))
+		goto done;
 
-        /* Get domain handle */
+	/* Get domain handle */
 
-        result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
-                                      des_access, &domain->sid, &dom_pol);
+	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+					des_access, &domain->sid, &dom_pol);
 
-        if (!NT_STATUS_IS_OK(result))
-                goto done;
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
 
-        got_dom_pol = True;
+	got_dom_pol = True;
 
-        /* Query display info */
+	/* Query display info */
 
-        result = cli_samr_query_dispinfo(hnd->cli, mem_ctx,
-                                         &dom_pol, start_ndx, info_level,
-                                         num_entries, 0xffff, ctr);
+	result = cli_samr_query_dispinfo(hnd->cli, mem_ctx,
+					&dom_pol, start_ndx, info_level,
+					num_entries, 0xffff, ctr);
 
  done:
-        if (got_dom_pol)
-                cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
 
-        return result;
+	if (got_dom_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+
+	return result;
 }
 
 /* Check if a domain is present in a comma-separated list of domains */
@@ -849,12 +851,12 @@ void parse_domain_user(char *domuser, fstring domain, fstring user)
 	char *sep = lp_winbind_separator();
 
 	if (!sep) 
-                sep = "\\";
+		sep = "\\";
 
 	p = strchr(domuser,*sep);
 
 	if (!p) 
-                p = strchr(domuser,'\\');
+		p = strchr(domuser,'\\');
 
 	if (!p) {
 		fstrcpy(domain,"");
