@@ -407,7 +407,7 @@ union smb_fileinfo {
 		} out;
 	} getattr;
 
-	/* SMBgetattrE interface */
+	/* SMBgetattrE and  RAW_FILEINFO_STANDARD interface */
 	struct {
 		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
@@ -420,22 +420,7 @@ union smb_fileinfo {
 			uint32_t alloc_size;
 			uint16_t attrib;
 		} out;
-	} getattre;
-
-	/* trans2 RAW_FILEINFO_STANDARD interface */
-	struct {
-		enum smb_fileinfo_level level;
-		union smb_fileinfo_in in;
-
-		struct {
-			time_t create_time;
-			time_t access_time;
-			time_t write_time;
-			uint32_t size;
-			uint32_t alloc_size;
-			uint16_t attrib;
-		} out;
-	} standard;
+	} getattre, standard;
 
 	/* trans2 RAW_FILEINFO_EA_SIZE interface */
 	struct {
