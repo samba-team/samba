@@ -514,7 +514,6 @@ static int std_event_loop_wait(struct event_context *ev)
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 							   struct std_event_context);
 	std_ev->exit_code = 0;
-	std_ev->maxfd = EVENT_INVALID_MAXFD;
 
 	while (std_ev->fd_events && std_ev->exit_code == 0) {
 		if (std_event_loop_once(ev) != 0) {
