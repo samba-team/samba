@@ -178,10 +178,15 @@ static BOOL send_netbios_packet(struct packet_struct *p)
 
 /***************************************************************************
  Sets up the common elements of an outgoing NetBIOS packet.
+
+ Note: do not attempt to rationalise whether rec_des should be set or not
+ in a particular situation. Just follow rfc_1002 or look at examples from WinXX.
+ It does NOT follow the rule that requests to the wins server always have
+ rec_des true. See for example name releases and refreshes
 **************************************************************************/
 
 static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmbname,
-                                                            BOOL bcast,
+                                                            BOOL bcast, BOOL rec_des,
                                                             struct in_addr to_ip)
 {
   struct packet_struct *packet = NULL;
@@ -200,7 +205,7 @@ static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmb
 
   nmb->header.name_trn_id = generate_name_trn_id();
   nmb->header.response = False;
-  nmb->header.nm_flags.recursion_desired = False;
+  nmb->header.nm_flags.recursion_desired = rec_des;
   nmb->header.nm_flags.recursion_available = False;
   nmb->header.nm_flags.trunc = False;
   nmb->header.nm_flags.authoritative = False;
@@ -472,13 +477,14 @@ struct response_record *queue_register_name( struct subnet_record *subrec,
 {
   struct packet_struct *p;
   struct response_record *rrec;
-  BOOL bcast = (subrec == unicast_subnet) ? False : True;
 
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(nmbname, bcast, 
-                     subrec->bcast_ip)) == NULL)
+  /* note that all name registration requests have RD set (rfc1002 -
+     section 4.2.2 */
+  if ((p = create_and_init_netbios_packet(nmbname, (subrec != unicast_subnet), True,
+					  subrec->bcast_ip)) == NULL)
     return NULL;
 
   if(initiate_name_register_packet( p, nb_flags, 
@@ -521,7 +527,6 @@ struct response_record *queue_register_multihomed_name( struct subnet_record *su
 {
   struct packet_struct *p;
   struct response_record *rrec;
-  BOOL bcast = False;
   BOOL ret;
      
   /* Sanity check. */
@@ -535,8 +540,8 @@ unicast subnet. subnet is %s\n.", subrec->subnet_name ));
   if(assert_check_subnet(subrec))
     return NULL;
      
-  if(( p = create_and_init_netbios_packet(nmbname, bcast,
-                             subrec->bcast_ip)) == NULL)
+  if(( p = create_and_init_netbios_packet(nmbname, False, True,
+					  subrec->bcast_ip)) == NULL)
     return NULL;
 
   if (nb_flags & NB_GROUP)
@@ -581,14 +586,13 @@ struct response_record *queue_release_name( struct subnet_record *subrec,
                           uint16 nb_flags,
                           struct in_addr release_ip)
 {
-  BOOL bcast = (subrec == unicast_subnet) ? False : True;
   struct packet_struct *p;
   struct response_record *rrec;
 
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(nmbname, bcast, 
+  if(( p = create_and_init_netbios_packet(nmbname, (subrec != unicast_subnet), False,
                      subrec->bcast_ip)) == NULL)
     return NULL;
 
@@ -639,14 +643,13 @@ struct response_record *queue_refresh_name( struct subnet_record *subrec,
                           struct name_record *namerec,
                           struct in_addr refresh_ip)
 {
-  BOOL bcast = (subrec == unicast_subnet) ? False : True;
   struct packet_struct *p;
   struct response_record *rrec;
 
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(&namerec->name, bcast,
+  if(( p = create_and_init_netbios_packet(&namerec->name, (subrec != unicast_subnet), False,
                      subrec->bcast_ip)) == NULL)
     return NULL;
 
@@ -687,16 +690,14 @@ struct response_record *queue_query_name( struct subnet_record *subrec,
 {
   struct packet_struct *p;
   struct response_record *rrec;
-  BOOL bcast = True;
 
-  if ((subrec == unicast_subnet) || (subrec == wins_server_subnet))
-    bcast = False;
- 
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(nmbname, bcast,
-                     subrec->bcast_ip)) == NULL)
+  if(( p = create_and_init_netbios_packet(nmbname, 
+					  (subrec != unicast_subnet), 
+					  (subrec == unicast_subnet), 
+					  subrec->bcast_ip)) == NULL)
     return NULL;
 
   if(initiate_name_query_packet( p ) == False)
@@ -736,9 +737,8 @@ struct response_record *queue_query_name_from_wins_server( struct in_addr to_ip,
 {
   struct packet_struct *p;
   struct response_record *rrec;
-  BOOL bcast = False;
 
-  if(( p = create_and_init_netbios_packet(nmbname, bcast, to_ip)) == NULL)
+  if ((p = create_and_init_netbios_packet(nmbname, False, False, to_ip)) == NULL)
     return NULL;
 
   if(initiate_name_query_packet_from_wins_server( p ) == False)
@@ -779,7 +779,6 @@ struct response_record *queue_node_status( struct subnet_record *subrec,
 {
   struct packet_struct *p;
   struct response_record *rrec;
-  BOOL bcast = False;
 
   /* Sanity check. */
   if(subrec != unicast_subnet)
@@ -792,8 +791,8 @@ unicast subnet. subnet is %s\n.", subrec->subnet_name ));
   if(assert_check_subnet(subrec))
     return NULL;
 
-  if(( p = create_and_init_netbios_packet(nmbname, bcast,
-                             send_ip)) == NULL)
+  if(( p = create_and_init_netbios_packet(nmbname, False, False,
+					  send_ip)) == NULL)
     return NULL;
 
   if(initiate_node_status_packet(p) == False)
