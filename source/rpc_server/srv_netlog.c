@@ -300,17 +300,17 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 	return False;
 }
 
-extern struct current_user current_user; /* To pick up vuid */
-
 /*************************************************************************
  api_net_req_chal:
  *************************************************************************/
 
-static BOOL api_net_req_chal(prs_struct *data, prs_struct *rdata)
+static BOOL api_net_req_chal(pipes_struct *p)
 {
 	NET_Q_REQ_CHAL q_r;
 	uint32 status = 0x0;
-        uint16 vuid = current_user.vuid;
+        uint16 vuid = p->vuid;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	fstring mach_acct;
 	fstring mach_name;
@@ -368,11 +368,13 @@ static BOOL api_net_req_chal(prs_struct *data, prs_struct *rdata)
  api_net_auth_2:
  *************************************************************************/
 
-static BOOL api_net_auth_2(prs_struct *data, prs_struct *rdata)
+static BOOL api_net_auth_2(pipes_struct *p)
 {
-        uint16 vuid = current_user.vuid;
+        uint16 vuid = p->vuid;
 	NET_Q_AUTH_2 q_a;
 	uint32 status = 0x0;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
@@ -416,9 +418,9 @@ static BOOL api_net_auth_2(prs_struct *data, prs_struct *rdata)
  api_net_srv_pwset:
  *************************************************************************/
 
-static BOOL api_net_srv_pwset(prs_struct *data, prs_struct *rdata)
+static BOOL api_net_srv_pwset(pipes_struct *p)
 {
-        uint16 vuid = current_user.vuid;
+        uint16 vuid = p->vuid;
 	NET_Q_SRV_PWSET q_a;
 	uint32 status = NT_STATUS_WRONG_PASSWORD|0xC0000000;
 	DOM_CRED srv_cred;
@@ -426,6 +428,8 @@ static BOOL api_net_srv_pwset(prs_struct *data, prs_struct *rdata)
 	struct smb_passwd *smb_pass;
 	BOOL ret;
 	user_struct *vuser;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	if ((vuser = get_valid_user_struct(vuid)) == NULL)
 		return False;
@@ -498,13 +502,14 @@ static BOOL api_net_srv_pwset(prs_struct *data, prs_struct *rdata)
  api_net_sam_logoff:
  *************************************************************************/
 
-static BOOL api_net_sam_logoff(prs_struct *data, prs_struct *rdata)
+static BOOL api_net_sam_logoff(pipes_struct *p)
 {
-        uint16 vuid = current_user.vuid;
+        uint16 vuid = p->vuid;
 	NET_Q_SAM_LOGOFF q_l;
 	NET_ID_INFO_CTR ctr;	
-
 	DOM_CRED srv_cred;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	user_struct *vuser;
 
@@ -633,9 +638,9 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
  api_net_sam_logon:
  *************************************************************************/
 
-static BOOL api_net_sam_logon(prs_struct *data, prs_struct *rdata)
+static BOOL api_net_sam_logon(pipes_struct *p)
 {
-    uint16 vuid = current_user.vuid;
+    uint16 vuid = p->vuid;
     NET_Q_SAM_LOGON q_l;
     NET_ID_INFO_CTR ctr;	
     NET_USER_INFO_3 usr_info;
@@ -645,6 +650,8 @@ static BOOL api_net_sam_logon(prs_struct *data, prs_struct *rdata)
     UNISTR2 *uni_samlogon_user = NULL;
     fstring nt_username;
     struct passwd *pw;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
     
     user_struct *vuser = NULL;
     
@@ -862,9 +869,11 @@ static BOOL api_net_sam_logon(prs_struct *data, prs_struct *rdata)
  api_net_trust_dom_list:
  *************************************************************************/
 
-static BOOL api_net_trust_dom_list(prs_struct *data, prs_struct *rdata)
+static BOOL api_net_trust_dom_list(pipes_struct *p)
 {
 	NET_Q_TRUST_DOM_LIST q_t;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	char *trusted_domain = "test_domain";
 
@@ -896,9 +905,11 @@ static BOOL api_net_trust_dom_list(prs_struct *data, prs_struct *rdata)
  api_net_logon_ctrl2:
  *************************************************************************/
 
-static BOOL api_net_logon_ctrl2(prs_struct *data, prs_struct *rdata)
+static BOOL api_net_logon_ctrl2(pipes_struct *p)
 {
 	NET_Q_LOGON_CTRL2 q_l;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* lkclXXXX - guess what - absolutely no idea what these are! */
 	uint32 flags = 0x0;
@@ -938,15 +949,15 @@ static struct api_struct api_net_cmds [] =
 	{ "NET_SAMLOGOFF"     , NET_SAMLOGOFF     , api_net_sam_logoff     }, 
 	{ "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
 	{ "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
-    {  NULL               , 0                 , NULL                   }
+	{  NULL               , 0                 , NULL                   }
 };
 
 /*******************************************************************
  receives a netlogon pipe and responds.
  ********************************************************************/
 
-BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_netlog_rpc(pipes_struct *p)
 {
-	return api_rpcTNP(p, "api_netlog_rpc", api_net_cmds, data);
+	return api_rpcTNP(p, "api_netlog_rpc", api_net_cmds);
 }
 #undef OLD_NTDOMAIN
