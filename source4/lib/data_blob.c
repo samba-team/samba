@@ -35,9 +35,13 @@ DATA_BLOB data_blob(const void *p, size_t length)
 	}
 
 	if (p) {
-		ret.data = smb_xmemdup(p, length);
+		ret.data = talloc_memdup(NULL, p, length);
 	} else {
-		ret.data = smb_xmalloc(length);
+		ret.data = talloc(NULL, length);
+	}
+	if (ret.data == NULL) {
+		ret.length = 0;
+		return ret;
 	}
 	ret.length = length;
 	return ret;
@@ -48,29 +52,11 @@ DATA_BLOB data_blob(const void *p, size_t length)
 *******************************************************************/
 DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 {
-	DATA_BLOB ret;
+	DATA_BLOB ret = data_blob(p, length);
 
-	if (length == 0) {
-		ZERO_STRUCT(ret);
-		return ret;
+	if (ret.data) {
+		ret.data = talloc_steal(mem_ctx, ret.data);
 	}
-
-	if (p == NULL) {
-		/* note that we do NOT zero memory in this case */
-		ret.data = talloc(mem_ctx, length);
-		if (ret.data == NULL) {
-			smb_panic("data_blob_talloc: talloc_memdup failed.\n");
-		}
-		ret.length = length;
-		return ret;
-	}
-
-	ret.data = talloc_memdup(mem_ctx, p, length);
-	if (ret.data == NULL) {
-		smb_panic("data_blob_talloc: talloc_memdup failed.\n");
-	}
-
-	ret.length = length;
 	return ret;
 }
 
@@ -86,29 +72,13 @@ DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t length)
 	return blob;
 }
 
-/**
- * Steal a talloc'ed DATA_BLOB from one context to another
- */
-
-DATA_BLOB data_blob_talloc_steal(TALLOC_CTX *old_ctx, TALLOC_CTX *new_ctx, 
-				 DATA_BLOB *old) 
-{
-	DATA_BLOB new;
-	new = *old;
-	new.data = talloc_steal(new_ctx, old->data);
-	if (new.data == NULL) {
-		smb_panic("data_blob_talloc_steal: talloc_steal failed.\n");
-	}
-	return new;
-}
-
 /*******************************************************************
 free a data blob
 *******************************************************************/
 void data_blob_free(DATA_BLOB *d)
 {
 	if (d) {
-		free(d->data);
+		talloc_free(d->data);
 		d->data = NULL;
 		d->length = 0;
 	}
