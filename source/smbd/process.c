@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-//SIG_ATOMIC_T reload_after_sighup = 0;
-//SIG_ATOMIC_T got_sig_term = 0;
 
 /*
   send an oplock break request to a client
