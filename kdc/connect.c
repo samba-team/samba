@@ -282,7 +282,7 @@ addr_to_string(struct sockaddr *addr, size_t addr_len, char *str, size_t len)
     case AF_INET:
 	strncpy(str, inet_ntoa(((struct sockaddr_in*)addr)->sin_addr), len);
 	break;
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6) && defined(HAVE_INET_NTOP)
     case AF_INET6 :
 	inet_ntop(AF_INET6, &((struct sockaddr_in6*)addr)->sin6_addr,
 		  str, len);
