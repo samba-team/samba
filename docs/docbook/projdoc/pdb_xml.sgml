@@ -36,7 +36,7 @@ the directory <filename>source/</filename>. </para>
 To import data, use:
 <command>pdbedit -i plugin:/usr/lib/samba/pdb_xml.so:filename -e current-pdb</command>
 
-Where filename is the name to read the data from and <current-pdb> to put it in.
+Where filename is the name to read the data from and current-pdb to put it in.
 </para>
 </sect1>
 </chapter>
