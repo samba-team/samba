@@ -1345,7 +1345,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
   lock a file
 ****************************************************************************/
 BOOL cli_lock(struct cli_state *cli, int fnum, 
-	      uint32 offset, uint32 len, int timeout, enum lock_type lock_type)
+	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type)
 {
 	char *p;
         int saved_timeout = cli->timeout;

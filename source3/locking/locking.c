@@ -58,7 +58,7 @@ void locking_close_file(files_struct *fsp)
 ****************************************************************************/
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_OFF_T count,SMB_OFF_T offset, 
-	       enum lock_type lock_type)
+	       enum brl_type lock_type)
 {
 	int snum = SNUM(conn);
 	
@@ -78,7 +78,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
-             SMB_OFF_T count,SMB_OFF_T offset,enum lock_type lock_type,
+             SMB_OFF_T count,SMB_OFF_T offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode)
 {
 	BOOL ok = False;

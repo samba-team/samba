@@ -906,7 +906,7 @@ typedef enum
 } parm_class;
 
 /* passed to br lock code */
-enum lock_type {READ_LOCK, WRITE_LOCK};
+enum brl_type {READ_LOCK, WRITE_LOCK};
 
 struct enum_list {
 	int value;
