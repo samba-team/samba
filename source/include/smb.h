@@ -561,18 +561,6 @@ struct uid_cache
 	uid_t list[UID_CACHE_SIZE];
 };
 
-/*
- * Structure used when splitting a lock range
- * into a POSIX lock range. Doubly linked list.
- */
-
-struct unlock_list {
-	struct unlock_list *next;
-	struct unlock_list *prev;
-	SMB_BIG_UINT start;
-	SMB_BIG_UINT size;
-};
-
 typedef struct
 {
 	char *name;

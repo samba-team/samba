@@ -245,7 +245,7 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_eventlog.o \
 		rpc_client/cli_dfs.o
 
-LOCKING_OBJ = lib/hash.o locking/locking.o locking/brlock.o
+LOCKING_OBJ = lib/hash.o locking/locking.o locking/brlock.o locking/posix.o
 
 GROUPDB_OBJ = groupdb/groupdb.o groupdb/aliasdb.o groupdb/builtindb.o \
 		groupdb/groupfile.o groupdb/aliasfile.o \

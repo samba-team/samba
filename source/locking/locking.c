@@ -2,7 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 3.0
    Locking functions
-   Copyright (C) Andrew Tridgell 1992-1999
+   Copyright (C) Andrew Tridgell 1992-2000
+   Copyright (C) Jeremy Allison 1992-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,15 +31,16 @@
    support.
 
    rewrtten completely to use new tdb code. Tridge, Dec '99
+
+   Added POSIX locking support. Jeremy Allison (jeremy@valinux.com), Apr. 2000.
 */
 
 #include "includes.h"
 extern int DEBUGLEVEL;
+int global_smbpid;
 
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
-
-int global_smbpid;
 
 /****************************************************************************
  Debugging aid :-).
@@ -47,337 +49,6 @@ int global_smbpid;
 static const char *lock_type_name(enum brl_type lock_type)
 {
 	return (lock_type == READ_LOCK) ? "READ" : "WRITE";
-}
-
-/****************************************************************************
- Utility function to map a lock type correctly depending on the open
- mode of a file.
-****************************************************************************/
-
-static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
-{
-	if((lock_type == WRITE_LOCK) && !fsp->can_write) {
-		/*
-		 * Many UNIX's cannot get a write lock on a file opened read-only.
-		 * Win32 locking semantics allow this.
-		 * Do the best we can and attempt a read-only lock.
-		 */
-		DEBUG(10,("map_posix_lock_type: Downgrading write lock to read due to read-only file.\n"));
-		return F_RDLCK;
-	} else if((lock_type == READ_LOCK) && !fsp->can_read) {
-		/*
-		 * Ditto for read locks on write only files.
-		 */
-		DEBUG(10,("map_posix_lock_type: Changing read lock to write due to write-only file.\n"));
-		return F_WRLCK;
-	}
-
-  /*
-   * This return should be the most normal, as we attempt
-   * to always open files read/write.
-   */
-
-  return (lock_type == READ_LOCK) ? F_RDLCK : F_WRLCK;
-}
-
-/****************************************************************************
- Check to see if the given unsigned lock range is within the possible POSIX
- range. Modifies the given args to be in range if possible, just returns
- False if not.
-****************************************************************************/
-
-static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
-								SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
-{
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
-
-#if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
-
-    SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
-    SMB_OFF_T mask = (mask2<<1);
-    SMB_OFF_T neg_mask = ~mask;
-
-	/*
-	 * In this case SMB_OFF_T is 64 bits,
-	 * and the underlying system can handle 64 bit signed locks.
-	 * Cast to signed type.
-	 */
-
-	offset = (SMB_OFF_T)u_offset;
-	count = (SMB_OFF_T)u_count;
-
-	/*
-	 * Deal with a very common case of count of all ones.
-	 * (lock entire file).
-	 */
-
-	if(count == (SMB_OFF_T)-1)
-		count &= ~mask;
-
-	/*
-	 * POSIX lock ranges cannot be negative.
-	 * Fail if any combination becomes negative.
-	 */
-
-	if(offset < 0 || count < 0 || (offset + count < 0)) {
-		DEBUG(10,("posix_lock_in_range: negative range: offset = %.0f, count = %.0f. Ignoring lock.\n",
-				(double)offset, (double)count ));
-		return False;
-	}
-
-	/*
-	 * In this case SMB_OFF_T is 64 bits, the offset and count
-	 * fit within the positive range, and the underlying
-	 * system can handle 64 bit locks. Just return as the
-	 * cast values are ok.
-	 */
-
-#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
-
-	/*
-	 * In this case either SMB_OFF_T is 32 bits,
-	 * or the underlying system cannot handle 64 bit signed locks.
-	 * Either way we have to try and mangle to fit within 31 bits.
-	 * This is difficult.
-	 */
-
-#if defined(HAVE_BROKEN_FCNTL64_LOCKS)
-
-	/*
-	 * SMB_OFF_T is 64 bits, but we need to use 31 bits due to
-	 * broken large locking.
-	 */
-
-	/*
-	 * Deal with a very common case of count of all ones.
-	 * (lock entire file).
-	 */
-
-	if(u_count == (SMB_BIG_UINT)-1)
-		count = 0x7FFFFFFF;
-
-	if(((u_offset >> 32) & 0xFFFFFFFF) || ((u_count >> 32) & 0xFFFFFFFF)) {
-		DEBUG(10,("posix_lock_in_range: top 32 bits not zero. offset = %.0f, count = %.0f. Ignoring lock.\n",
-				(double)u_offset, (double)u_count ));
-		/* Top 32 bits of offset or count were not zero. */
-		return False;
-	}
-
-	/* Cast from 64 bits unsigned to 64 bits signed. */
-	offset = (SMB_OFF_T)u_offset;
-	count = (SMB_OFF_T)u_count;
-
-	/*
-	 * Check if we are within the 2^31 range.
-	 */
-
-	{
-		int32 low_offset = (int32)offset;
-		int32 low_count = (int32)count;
-
-		if(low_offset < 0 || low_count < 0 || (low_offset + low_count < 0)) {
-			DEBUG(10,("posix_lock_in_range: not within 2^31 range. low_offset = %d, low_count = %d. Ignoring lock.\n",
-					low_offset, low_count ));
-			return False;
-		}
-	}
-
-	/*
-	 * Ok - we can map from a 64 bit number to a 31 bit lock.
-	 */
-
-#else /* HAVE_BROKEN_FCNTL64_LOCKS */
-
-	/*
-	 * SMB_OFF_T is 32 bits.
-	 */
-
-#if defined(HAVE_LONGLONG)
-
-	/*
-	 * SMB_BIG_UINT is 64 bits, we can do a 32 bit shift.
-	 */
-
-	/*
-	 * Deal with a very common case of count of all ones.
-	 * (lock entire file).
-	 */
-
-	if(u_count == (SMB_BIG_UINT)-1)
-		count = 0x7FFFFFFF;
-
-	if(((u_offset >> 32) & 0xFFFFFFFF) || ((u_count >> 32) & 0xFFFFFFFF)) {
-		DEBUG(10,("posix_lock_in_range: top 32 bits not zero. u_offset = %.0f, u_count = %.0f. Ignoring lock.\n",
-				(double)u_offset, (double)u_count ));
-		return False;
-	}
-
-	/* Cast from 64 bits unsigned to 32 bits signed. */
-	offset = (SMB_OFF_T)u_offset;
-	count = (SMB_OFF_T)u_count;
-
-	/*
-	 * Check if we are within the 2^31 range.
-	 */
-
-	if(offset < 0 || count < 0 || (offset + count < 0)) {
-		DEBUG(10,("posix_lock_in_range: not within 2^31 range. offset = %d, count = %d. Ignoring lock.\n",
-				(int)offset, (int)count ));
-		return False;
-	}
-
-#else /* HAVE_LONGLONG */
-
-	/*
-	 * SMB_BIG_UINT and SMB_OFF_T are both 32 bits,
-	 * just cast.
-	 */
-
-	/*
-	 * Deal with a very common case of count of all ones.
-	 * (lock entire file).
-	 */
-
-	if(u_count == (SMB_BIG_UINT)-1)
-		count = 0x7FFFFFFF;
-
-	/* Cast from 32 bits unsigned to 32 bits signed. */
-	offset = (SMB_OFF_T)u_offset;
-	count = (SMB_OFF_T)u_count;
-
-	/*
-	 * Check if we are within the 2^31 range.
-	 */
-
-	if(offset < 0 || count < 0 || (offset + count < 0)) {
-		DEBUG(10,("posix_lock_in_range: not within 2^31 range. offset = %d, count = %d. Ignoring lock.\n",
-				(int)offset, (int)count ));
-		return False;
-	}
-
-#endif /* HAVE_LONGLONG */
-#endif /* LARGE_SMB_OFF_T */
-#endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
-
-	/*
-	 * The mapping was successful.
-	 */
-
-	DEBUG(10,("posix_lock_in_range: offset_out = %.0f, count_out = %.0f\n",
-			(double)offset, (double)count ));
-
-	*offset_out = offset;
-	*count_out = count;
-	
-	return True;
-}
-
-/****************************************************************************
- POSIX function to see if a file region is locked. Returns True if the
- region is locked, False otherwise.
-****************************************************************************/
-
-static BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
-{
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
-
-	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, type = %s\n",
-			fsp->fsp_name, (double)offset, (double)count, lock_type_name(lock_type) ));
-
-	/*
-	 * If the requested lock won't fit in the POSIX range, we will
-	 * never set it, so presume it is not locked.
-	 */
-
-	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
-		return False;
-
-	/*
-	 * Note that most UNIX's can *test* for a write lock on
-	 * a read-only fd, just not *set* a write lock on a read-only
-	 * fd. So we don't need to use map_lock_type here.
-	 */ 
-
-	return fcntl_lock(fsp->fd,SMB_F_GETLK,offset,count,lock_type);
-}
-
-/****************************************************************************
- POSIX function to acquire a lock. Returns True if the
- lock could be granted, False if not.
-****************************************************************************/
-
-static BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
-{
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
-	BOOL ret = True;
-
-	DEBUG(5,("set_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
-			fsp->fsp_name, (double)offset, (double)count, lock_type_name(lock_type) ));
-
-	/*
-	 * If the requested lock won't fit in the POSIX range, we will
-	 * pretend it was successful.
-	 */
-
-	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
-		return True;
-
-	/*
-	 * Note that setting multiple overlapping read locks on different
-	 * file descriptors will not be held separately by the kernel (POSIX
-	 * braindamage), but will be merged into one continuous read lock
-	 * range. We cope with this case in the release_posix_lock code
-	 * below. JRA.
-	 */
-
-    ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,map_posix_lock_type(fsp,lock_type)); 
-
-	return ret;
-}
-
-/****************************************************************************
- POSIX function to release a lock. Returns True if the
- lock could be released, False if not.
-****************************************************************************/
-
-static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
-{
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
-	BOOL ret = True;
-
-	DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
-			fsp->fsp_name, (double)offset, (double)count ));
-
-	if(u_count == 0) {
-
-		/*
-		 * This lock must overlap with an existing read-only lock
-		 * help by another fd. Just decrement the count but don't
-		 * do any POSIX call.
-		 */
-
-		fsp->num_posix_locks--;
-		return True;
-	}
-
-	/*
-	 * If the requested lock won't fit in the POSIX range, we will
-	 * pretend it was successful.
-	 */
-
-	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
-		return True;
-
-	ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,F_UNLCK);
-
-	if(ret)
-		fsp->num_posix_locks--;
-
-	return True;
 }
 
 /****************************************************************************
@@ -440,7 +111,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 			      offset, count, 
 			      lock_type);
 
-		if(ok && lp_posix_locking(SNUM(conn))) {
+		if (ok && lp_posix_locking(SNUM(conn))) {
 
 			/*
 			 * Try and get a POSIX lock on this range.
@@ -448,9 +119,9 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 			 * overlapping on a different fd. JRA.
 			 */
 
-			if((ok = set_posix_lock(fsp, offset, count, lock_type)) == True)
-				fsp->num_posix_locks++;
-			else {
+			ok = set_posix_lock(fsp, offset, count, lock_type);
+
+			if (!ok) {
 				/*
 				 * We failed to map - we must now remove the brl
 				 * lock entry.
@@ -479,10 +150,6 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	       int *eclass,uint32 *ecode)
 {
 	BOOL ok = False;
-	TALLOC_CTX *ul_ctx = NULL;
-	struct unlock_list *ulist = NULL;
-	struct unlock_list *ul = NULL;
-	pid_t pid;
 	
 	if (!lp_locking(SNUM(conn)))
 		return(True);
@@ -502,12 +169,11 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	 * match then don't bother looking to remove POSIX locks.
 	 */
 
-	pid = getpid();
-
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			global_smbpid, pid, conn->cnum, offset, count);
+			global_smbpid, getpid(), conn->cnum, offset, count);
    
 	if (!ok) {
+		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		*eclass = ERRDOS;
 		*ecode = ERRlock;
 		return False;
@@ -516,54 +182,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	if (!lp_posix_locking(SNUM(conn)))
 		return True;
 
-	if ((ul_ctx = talloc_init()) == NULL) {
-		DEBUG(0,("do_unlock: unable to init talloc context.\n"));
-		return True; /* Not a fatal error. */
-	}
-
-	if ((ul = (struct unlock_list *)talloc(ul_ctx, sizeof(struct unlock_list))) == NULL) {
-		DEBUG(0,("do_unlock: unable to talloc unlock list.\n"));
-		talloc_destroy(ul_ctx);
-		return True; /* Not a fatal error. */
-	}
-
-	/*
-	 * Create the initial list entry containing the
-	 * lock we want to remove.
-	 */
-
-	ZERO_STRUCTP(ul);
-	ul->start = offset;
-	ul->size = count;
-
-	DLIST_ADD(ulist, ul);
-
-	/*
-	 * The following call calculates if there are any
-	 * overlapping read locks held by this process on
-	 * other fd's open on the same file and creates a
-	 * list of unlock ranges that will allow other
-	 * POSIX lock ranges to remain on the file whilst the
-	 * unlocks are performed.
-	 */
-
-	ulist = brl_unlock_list(ul_ctx, ulist, pid, fsp->dev, fsp->inode);
-
-	/*
-	 * Release the POSIX locks on the list of ranges returned.
-	 */
-
-	for(; ulist; ulist = ulist->next)
-		(void)release_posix_lock(fsp, ulist->start, ulist->size);
-
-	talloc_destroy(ul_ctx);
-
-	/*
-	 * We treat this as one unlock request for POSIX accounting purposes even
-	 * if it may have been split into multiple smaller POSIX unlock ranges.
-	 */
-
-	fsp->num_posix_locks--;
+	(void)release_posix_lock(fsp, offset, count);
 
 	return True; /* Did unlock */
 }
@@ -579,42 +198,19 @@ void locking_close_file(files_struct *fsp)
 	if (!lp_locking(SNUM(fsp->conn)))
 		return;
 
+	/*
+	 * Just release all the brl locks, no need to release individually.
+	 */
+
+	brl_close(fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
+
 	if(lp_posix_locking(SNUM(fsp->conn))) {
 
-		TALLOC_CTX *ul_ctx = NULL;
-		struct unlock_list *ul = NULL;
-		int eclass;
-		uint32 ecode;
-
-		if ((ul_ctx = talloc_init()) == NULL) {
-			DEBUG(0,("locking_close_file: unable to init talloc context.\n"));
-			return;
-		}
-
-		/*
-		 * We need to release all POSIX locks we have on this
-		 * fd. Get all our existing locks from the tdb locking database.
+	 	/* 
+		 * Release all the POSIX locks.
 		 */
+		posix_locking_close_file(fsp);
 
-		ul = brl_getlocklist(ul_ctx, fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
-
-		/*
-		 * Now unlock all of them. This will remove the brl entry also
-		 * for each lock.
-		 */
-
-		for(; ul; ul = ul->next)
-			do_unlock(fsp,fsp->conn,ul->size,ul->start,&eclass,&ecode);
-		
-		talloc_destroy(ul_ctx);
-
-	} else {
-
-		/*
-		 * Just release all the tdb locks, no need to release individually.
-		 */
-
-		brl_close(fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
 	}
 }
 
@@ -637,6 +233,9 @@ BOOL locking_init(int read_only)
 		return False;
 	}
 	
+	if (!posix_locking_init())
+		return False;
+
 	return True;
 }
 

@@ -50,126 +50,12 @@ static int fd_open(struct connection_struct *conn, char *fname,
 }
 
 /****************************************************************************
-  Take care of moving any POSIX pending close fd's to another fsp.
-****************************************************************************/
-
-static BOOL fd_close_posix_locks(files_struct *fsp)
-{
-	files_struct *other_fsp;
-
-	DEBUG(10,("fd_close_posix_locks: file %s: fsp->num_posix_pending_closes = %u.\n", fsp->fsp_name,
-				(unsigned int)fsp->num_posix_pending_closes ));
-
-	for(other_fsp = file_find_di_first(fsp->dev, fsp->inode); other_fsp;
-					other_fsp = file_find_di_next(other_fsp)) {
-
-		if ((other_fsp->fd != -1) && other_fsp->num_posix_locks) {
-
-			/*
-			 * POSIX locks pending on another fsp held open, transfer
-			 * the fd in this fsp and all the pending fd's in this fsp pending close array
-			 * to the other_fsp pending close array.
-			 */
-
-			unsigned int extra_fds = fsp->num_posix_pending_closes + 1;
-
-			DEBUG(10,("fd_close_posix_locks: file %s: Transferring to \
-file %s, other_fsp->num_posix_pending_closes = %u.\n",
-				fsp->fsp_name, other_fsp->fsp_name, (unsigned int)other_fsp->num_posix_pending_closes ));
-
-			other_fsp->posix_pending_close_fds = (int *)Realloc(other_fsp->posix_pending_close_fds,
-																(other_fsp->num_posix_pending_closes +
-																	extra_fds)*sizeof(int));
-
-			if(other_fsp->posix_pending_close_fds == NULL) {
-				DEBUG(0,("fd_close_posix_locks: Unable to increase posix_pending_close_fds array size !\n"));
-				return False;
-			}
-
-			/*
-			 * Copy over any fd's in the existing fsp's pending array.
-			 */
-
-			if(fsp->posix_pending_close_fds) {
-				memcpy(&other_fsp->posix_pending_close_fds[other_fsp->num_posix_pending_closes],
-					&fsp->posix_pending_close_fds[0], fsp->num_posix_pending_closes * sizeof(int) );
-
-				free((char *)fsp->posix_pending_close_fds);
-				fsp->posix_pending_close_fds = NULL;
-				fsp->num_posix_pending_closes = 0;
-			}			
-
-			other_fsp->posix_pending_close_fds[other_fsp->num_posix_pending_closes+extra_fds-1] = fsp->fd;
-			other_fsp->num_posix_pending_closes += extra_fds;
-
-			fsp->fd = -1; /* We have moved this fd to other_fsp's pending close array.... */
-
-			break;
-		}
-	}
-
-	return True;
-}
-
-/****************************************************************************
  Close the file associated with a fsp.
-
- This is where we must deal with POSIX "first close drops all locks"
- locking braindamage. We do this by searching for any other fsp open
- on the same dev/inode with open POSIX locks, and then transferring this
- fd (and all pending fd's attached to this fsp) to the posix_pending_close_fds
- array in that fsp.
-
- If there are no open fsp's on the same dev/inode then we close all the
- fd's in the posix_pending_close_fds array and then close the fd.
-
 ****************************************************************************/
 
 int fd_close(struct connection_struct *conn, files_struct *fsp)
 {
-	int ret = 0;
-	int saved_errno = 0;
-	unsigned int i;
-
-	/*
-	 * Deal with transferring any pending fd's if there
-	 * are POSIX locks outstanding.
-	 */
-
-	if(!fd_close_posix_locks(fsp))
-		return -1;
-
-	/*
-	 * Close and free any pending closes given to use from
-	 * other fsp's.
-	 */
-
-	if (fsp->posix_pending_close_fds) {
-
-		for(i = 0; i < fsp->num_posix_pending_closes; i++) {
-			if (fsp->posix_pending_close_fds[i] != -1) {
-				if (conn->vfs_ops.close(fsp->posix_pending_close_fds[i]) == -1) {
-					saved_errno = errno;
-				}
-			}
-		}
-
-		free((char *)fsp->posix_pending_close_fds);
-		fsp->posix_pending_close_fds = NULL;
-		fsp->num_posix_pending_closes = 0;
-	}
-
-	if(fsp->fd != -1)
-		ret = conn->vfs_ops.close(fsp->fd);
-
-	fsp->fd = -1;
-
-	if (saved_errno != 0) {
-		errno = saved_errno;
-		ret = -1;
-	}
-
-	return ret;
+	return fd_close_posix(conn, fsp);
 }
 
 
@@ -274,9 +160,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->num_posix_locks = 0;
-	fsp->num_posix_pending_closes = 0;
-	fsp->posix_pending_close_fds = NULL;
 	fsp->is_directory = False;
 	fsp->stat_open = False;
 	fsp->directory_delete_on_close = False;
@@ -309,20 +192,19 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 static int truncate_unless_locked(struct connection_struct *conn, files_struct *fsp)
 {
 	SMB_BIG_UINT mask = (SMB_BIG_UINT)-1;
-		
+
 	if (!fsp->can_write)
 		return -1;
 
 	if (is_locked(fsp,fsp->conn,mask,0,WRITE_LOCK)){
-			errno = EACCES;
-			unix_ERR_class = ERRDOS;
-		  unix_ERR_code = ERRlock;
+		errno = EACCES;
+		unix_ERR_class = ERRDOS;
+		unix_ERR_code = ERRlock;
 		return -1;
-		} else {
+	} else {
 		return conn->vfs_ops.ftruncate(fsp->fd,0); 
 	}
 }
-
 
 /*******************************************************************
 return True if the filename is one of the special executable types
@@ -442,50 +324,50 @@ check if we can open a file with a share mode
 static int check_share_mode( share_mode_entry *share, int deny_mode, 
 			     const char *fname, BOOL fcbopen, int *flags)
 {
-  int old_open_mode = GET_OPEN_MODE(share->share_mode);
-  int old_deny_mode = GET_DENY_MODE(share->share_mode);
+	int old_open_mode = GET_OPEN_MODE(share->share_mode);
+	int old_deny_mode = GET_DENY_MODE(share->share_mode);
 
-  /*
-   * Don't allow any open once the delete on close flag has been
-   * set.
-   */
+	/*
+	 * Don't allow any open once the delete on close flag has been
+	 * set.
+	 */
 
 	if(GET_DELETE_ON_CLOSE_FLAG(share->share_mode)) {
-    DEBUG(5,("check_share_mode: Failing open on file %s as delete on close flag is set.\n",
-          fname ));
-    unix_ERR_class = ERRDOS;
-    unix_ERR_code = ERRnoaccess;
-    return False;
-  }
+		DEBUG(5,("check_share_mode: Failing open on file %s as delete on close flag is set.\n",
+			fname ));
+		unix_ERR_class = ERRDOS;
+		unix_ERR_code = ERRnoaccess;
+		return False;
+	}
 
-  {
-    int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-				      (share->pid == getpid()),is_executable(fname));
+	{
+		int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
+										(share->pid == getpid()),is_executable(fname));
 
-    if ((access_allowed == AFAIL) ||
-        (!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
-        (access_allowed == AREAD && *flags != O_RDONLY) ||
+		if ((access_allowed == AFAIL) ||
+			(!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
+			(access_allowed == AREAD && *flags != O_RDONLY) ||
 			(access_allowed == AWRITE && *flags != O_WRONLY)) {
 
-      DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s,fcbopen = %d, flags = %d) = %d\n",
-                deny_mode,old_deny_mode,old_open_mode,
-                (int)share->pid,fname, fcbopen, *flags, access_allowed));
+			DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s,fcbopen = %d, flags = %d) = %d\n",
+				deny_mode,old_deny_mode,old_open_mode,
+				(int)share->pid,fname, fcbopen, *flags, access_allowed));
 
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadshare;
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadshare;
 
-      return False;
-    }
+			return False;
+		}
 
-    if (access_allowed == AREAD)
-      *flags = O_RDONLY;
+		if (access_allowed == AREAD)
+			*flags = O_RDONLY;
 
-    if (access_allowed == AWRITE)
-      *flags = O_WRONLY;
+		if (access_allowed == AWRITE)
+			*flags = O_WRONLY;
 
-  }
+	}
 
-  return True;
+	return True;
 }
 
 /****************************************************************************
@@ -610,29 +492,29 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action)
 {
-  int flags=0;
-  int flags2=0;
-  int deny_mode = GET_DENY_MODE(share_mode);
-  BOOL allow_share_delete = GET_ALLOW_SHARE_DELETE(share_mode);
-  SMB_STRUCT_STAT sbuf;
-  BOOL file_existed = vfs_file_exist(conn, fname, &sbuf);
-  BOOL fcbopen = False;
-  SMB_DEV_T dev = 0;
-  SMB_INO_T inode = 0;
-  int num_share_modes = 0;
-  BOOL all_current_opens_are_level_II = False;
+	int flags=0;
+	int flags2=0;
+	int deny_mode = GET_DENY_MODE(share_mode);
+	BOOL allow_share_delete = GET_ALLOW_SHARE_DELETE(share_mode);
+	SMB_STRUCT_STAT sbuf;
+	BOOL file_existed = vfs_file_exist(conn, fname, &sbuf);
+	BOOL fcbopen = False;
+	SMB_DEV_T dev = 0;
+	SMB_INO_T inode = 0;
+	int num_share_modes = 0;
+	BOOL all_current_opens_are_level_II = False;
 	BOOL fsp_open = False;
 	files_struct *fsp = NULL;
 	int open_mode=0;
 	uint16 port = 0;
 
-  if (conn->printer) {
-	  /* printers are handled completely differently. Most of the passed parameters are
-	     ignored */
-	  *Access = DOS_OPEN_WRONLY;
-	  *action = FILE_WAS_CREATED;
+	if (conn->printer) {
+		/* printers are handled completely differently. Most of the passed parameters are
+			ignored */
+		*Access = DOS_OPEN_WRONLY;
+		*action = FILE_WAS_CREATED;
 		return print_fsp_open(conn, fname);
-  }
+	}
 
 	fsp = file_new();
 	if(!fsp)
@@ -640,100 +522,100 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 
 	fsp->fd = -1;
 
-  DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
-        fname, share_mode, ofun, (int)mode,  oplock_request ));
+	DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
+		fname, share_mode, ofun, (int)mode,  oplock_request ));
 
-  if (!check_name(fname,conn)) {
+	if (!check_name(fname,conn)) {
 		file_free(fsp);
 		return NULL;
-  } 
+	} 
 
-  /* ignore any oplock requests if oplocks are disabled */
-  if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break) {
-	  oplock_request = 0;
-  }
+	/* ignore any oplock requests if oplocks are disabled */
+	if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break) {
+		oplock_request = 0;
+	}
 
-  /* this is for OS/2 EAs - try and say we don't support them */
+	/* this is for OS/2 EAs - try and say we don't support them */
 	if (strstr(fname,".+,;=[].")) {
-    unix_ERR_class = ERRDOS;
-    /* OS/2 Workplace shell fix may be main code stream in a later release. */ 
+		unix_ERR_class = ERRDOS;
+		/* OS/2 Workplace shell fix may be main code stream in a later release. */ 
 #if 1 /* OS2_WPS_FIX - Recent versions of OS/2 need this. */
-    unix_ERR_code = ERRcannotopen;
+		unix_ERR_code = ERRcannotopen;
 #else /* OS2_WPS_FIX */
-    unix_ERR_code = ERROR_EAS_NOT_SUPPORTED;
+		unix_ERR_code = ERROR_EAS_NOT_SUPPORTED;
 #endif /* OS2_WPS_FIX */
 
-    DEBUG(5,("open_file_shared: OS/2 EA's are not supported.\n"));
+		DEBUG(5,("open_file_shared: OS/2 EA's are not supported.\n"));
 		file_free(fsp);
 		return NULL;
-  }
+	}
 
 	if ((GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_FAIL) && file_existed)  {
-    DEBUG(5,("open_file_shared: create new requested for file %s and file already exists.\n",
-          fname ));
+		DEBUG(5,("open_file_shared: create new requested for file %s and file already exists.\n",
+			fname ));
 		file_free(fsp);
-    errno = EEXIST;
+		errno = EEXIST;
 		return NULL;
-  }
+	}
       
-  if (GET_FILE_CREATE_DISPOSITION(ofun) == FILE_CREATE_IF_NOT_EXIST)
-    flags2 |= O_CREAT;
+	if (GET_FILE_CREATE_DISPOSITION(ofun) == FILE_CREATE_IF_NOT_EXIST)
+		flags2 |= O_CREAT;
 
-  if (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)
-    flags2 |= O_TRUNC;
+	if (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)
+		flags2 |= O_TRUNC;
 
-  if (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_FAIL)
-    flags2 |= O_EXCL;
+	if (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_FAIL)
+		flags2 |= O_EXCL;
 
-  /* note that we ignore the append flag as 
-     append does not mean the same thing under dos and unix */
+	/* note that we ignore the append flag as 
+		append does not mean the same thing under dos and unix */
 
 	switch (GET_OPEN_MODE(share_mode)) {
-    case DOS_OPEN_WRONLY: 
-      flags = O_WRONLY; 
-      break;
-    case DOS_OPEN_FCB: 
-      fcbopen = True;
-      flags = O_RDWR; 
-      break;
-    case DOS_OPEN_RDWR: 
-      flags = O_RDWR; 
-      break;
-    default:
-      flags = O_RDONLY;
-      break;
-  }
+		case DOS_OPEN_WRONLY: 
+			flags = O_WRONLY; 
+			break;
+		case DOS_OPEN_FCB: 
+			fcbopen = True;
+			flags = O_RDWR; 
+			break;
+		case DOS_OPEN_RDWR: 
+			flags = O_RDWR; 
+			break;
+		default:
+			flags = O_RDONLY;
+			break;
+	}
 
 #if defined(O_SYNC)
-  if (GET_FILE_SYNC_OPENMODE(share_mode)) {
-	  flags2 |= O_SYNC;
-  }
+	if (GET_FILE_SYNC_OPENMODE(share_mode)) {
+		flags2 |= O_SYNC;
+	}
 #endif /* O_SYNC */
   
-  if (flags != O_RDONLY && file_existed && 
+	if (flags != O_RDONLY && file_existed && 
 			(!CAN_WRITE(conn) || IS_DOS_READONLY(dos_mode(conn,fname,&sbuf)))) {
 		if (!fcbopen) {
-      DEBUG(5,("open_file_shared: read/write access requested for file %s on read only %s\n",
-            fname, !CAN_WRITE(conn) ? "share" : "file" ));
+			DEBUG(5,("open_file_shared: read/write access requested for file %s on read only %s\n",
+				fname, !CAN_WRITE(conn) ? "share" : "file" ));
 			file_free(fsp);
-      errno = EACCES;
+			errno = EACCES;
 			return NULL;
-    }
-    flags = O_RDONLY;
-  }
+		}
+		flags = O_RDONLY;
+	}
 
 	if (deny_mode > DENY_NONE && deny_mode!=DENY_FCB) {
-    DEBUG(2,("Invalid deny mode %d on file %s\n",deny_mode,fname));
+		DEBUG(2,("Invalid deny mode %d on file %s\n",deny_mode,fname));
 		file_free(fsp);
-    errno = EINVAL;
+		errno = EINVAL;
 		return NULL;
-  }
+	}
 
 	if (file_existed) {
-      dev = sbuf.st_dev;
-      inode = sbuf.st_ino;
+		dev = sbuf.st_dev;
+		inode = sbuf.st_ino;
 
-      lock_share_entry(conn, dev, inode);
+		lock_share_entry(conn, dev, inode);
 
 		num_share_modes = open_mode_check(conn, fname, dev, inode, share_mode,
 								&flags, &oplock_request, &all_current_opens_are_level_II);
@@ -741,11 +623,11 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 			unlock_share_entry(conn, dev, inode);
 			file_free(fsp);
 			return NULL;
-    }
+		}
 
-    /*
+		/*
 		 * We exit this block with the share entry *locked*.....
-     */
+		 */
 	}
 
 	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
@@ -765,12 +647,12 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 		return NULL;
 	}
 
-          /* 
+	/*
 	 * Deal with the race condition where two smbd's detect the file doesn't
 	 * exist and do the create at the same time. One of them will win and
 	 * set a share mode, the other (ie. this one) should check if the
 	 * requested share mode for this create is allowed.
-           */
+	 */
 
 	if (!file_existed) { 
 
@@ -784,12 +666,12 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 			fd_close(conn,fsp);
 			file_free(fsp);
 			return NULL;
-  }
+		}
 
-  /*
+		/*
 		 * We exit this block with the share entry *locked*.....
-   */
-  }
+		 */
+	}
 
 	/*
 	 * At this point onwards, we can guarentee that the share entry
@@ -806,26 +688,26 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 		fd_close(conn,fsp);
 		file_free(fsp);
 		return NULL;
-    }
+	}
 
 	switch (flags) {
-      case O_RDONLY:
-        open_mode = DOS_OPEN_RDONLY;
-        break;
-      case O_RDWR:
-        open_mode = DOS_OPEN_RDWR;
-        break;
-      case O_WRONLY:
-        open_mode = DOS_OPEN_WRONLY;
-        break;
-    }
+		case O_RDONLY:
+			open_mode = DOS_OPEN_RDONLY;
+			break;
+		case O_RDWR:
+			open_mode = DOS_OPEN_RDWR;
+			break;
+		case O_WRONLY:
+			open_mode = DOS_OPEN_WRONLY;
+			break;
+	}
 
-    fsp->share_mode = SET_DENY_MODE(deny_mode) | 
-                      SET_OPEN_MODE(open_mode) | 
-                      SET_ALLOW_SHARE_DELETE(allow_share_delete);
+	fsp->share_mode = SET_DENY_MODE(deny_mode) | 
+						SET_OPEN_MODE(open_mode) | 
+						SET_ALLOW_SHARE_DELETE(allow_share_delete);
 
-    if (Access)
-      (*Access) = open_mode;
+	if (Access)
+		(*Access) = open_mode;
 
 	if (action) {
 		if (file_existed && !(flags2 & O_TRUNC))
@@ -834,28 +716,28 @@ files_struct *open_file_shared(connection_struct *conn,char *fname,int share_mod
 			*action = FILE_WAS_CREATED;
 		if (file_existed && (flags2 & O_TRUNC))
 			*action = FILE_WAS_OVERWRITTEN;
-    }
+	}
 
-      /* 
-       * Setup the oplock info in both the shared memory and
-       * file structs.
-       */
+	/* 
+	 * Setup the oplock info in both the shared memory and
+	 * file structs.
+	 */
 
-      if(oplock_request && (num_share_modes == 0) && 
-	      !IS_VETO_OPLOCK_PATH(conn,fname) && set_file_oplock(fsp, oplock_request) ) {
-        port = global_oplock_port;
-      } else if (oplock_request && all_current_opens_are_level_II) {
-        port = global_oplock_port;
-        oplock_request = LEVEL_II_OPLOCK;
-        set_file_oplock(fsp, oplock_request);
-      } else {
-        port = 0;
-        oplock_request = 0;
-      }
+	if(oplock_request && (num_share_modes == 0) && 
+			!IS_VETO_OPLOCK_PATH(conn,fname) && set_file_oplock(fsp, oplock_request) ) {
+		port = global_oplock_port;
+	} else if (oplock_request && all_current_opens_are_level_II) {
+		port = global_oplock_port;
+		oplock_request = LEVEL_II_OPLOCK;
+		set_file_oplock(fsp, oplock_request);
+	} else {
+		port = 0;
+		oplock_request = 0;
+	}
 
-      set_share_mode(fsp, port, oplock_request);
+	set_share_mode(fsp, port, oplock_request);
 
-    unlock_share_entry_fsp(fsp);
+	unlock_share_entry_fsp(fsp);
 
 	conn->num_files_open++;
 
@@ -911,9 +793,6 @@ files_struct *open_file_stat(connection_struct *conn,
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->num_posix_locks = 0;
-	fsp->num_posix_pending_closes = 0;
-	fsp->posix_pending_close_fds = NULL;
 	fsp->is_directory = False;
 	fsp->stat_open = True;
 	fsp->directory_delete_on_close = False;
@@ -1037,9 +916,6 @@ files_struct *open_directory(connection_struct *conn,
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->num_posix_locks = 0;
-	fsp->num_posix_pending_closes = 0;
-	fsp->posix_pending_close_fds = NULL;
 	fsp->is_directory = True;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
