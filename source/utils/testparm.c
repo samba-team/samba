@@ -180,15 +180,12 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	return ret;
 }   
 
-int main(int argc, const char *argv[])
+ int main(int argc, const char *argv[])
 {
-	extern char *optarg;
-	extern int optind;
 	const char *config_file = dyn_CONFIGFILE;
 	int s;
 	static BOOL silent_mode = False;
 	int ret = 0;
-	int opt;
 	poptContext pc;
 	static const char *term_code = "";
 	static char *new_local_machine = NULL;
@@ -202,15 +199,15 @@ int main(int argc, const char *argv[])
 		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
 		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
 		{"encoding", 't', POPT_ARG_STRING, &term_code, 0, "Print parameters with encoding"},
-		{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
-		{0,0,0,0}
+		POPT_COMMON_VERSION
+		POPT_TABLEEND
 	};
 
 	pc = poptGetContext(NULL, argc, argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "[OPTION...] <config-file> [host-name] [host-ip]");
 
-	while((opt = poptGetNextOpt(pc)) != -1);
+	while(poptGetNextOpt(pc) != -1);
 
 	setup_logging(poptGetArg(pc), True);
 

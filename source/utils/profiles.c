@@ -1,6 +1,7 @@
 /* 
    Samba Unix/Linux SMB client utility profiles.c 
    Copyright (C) 2002 Richard Sharpe, rsharpe@richardsharpe.com
+   Copyright (C) 2003 Jelmer Vernooij (conversion to popt)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,7 +35,7 @@ times...
 the "regf"-Block
 ================
  
-"regf" is obviosly the abbreviation for "Registry file". "regf" is the
+"regf" is obviously the abbreviation for "Registry file". "regf" is the
 signature of the header-block which is always 4kb in size, although only
 the first 64 bytes seem to be used and a checksum is calculated over
 the first 0x200 bytes only!
@@ -391,14 +392,14 @@ typedef struct acl_struct {
 
 #define OFF(f) (0x1000 + (f) + 4) 
 
-void print_sid(DOM_SID *sid);
+static void print_sid(DOM_SID *sid);
 
 int verbose = 1;
 DOM_SID old_sid, new_sid;
 int change = 0, new = 0;
 
 /* Compare two SIDs for equality */
-int my_sid_equal(DOM_SID *s1, DOM_SID *s2)
+static int my_sid_equal(DOM_SID *s1, DOM_SID *s2)
 {
   int sa1, sa2;
 
@@ -417,7 +418,7 @@ int my_sid_equal(DOM_SID *s1, DOM_SID *s2)
  * Quick and dirty to read a SID in S-1-5-21-x-y-z-rid format and 
  * construct a DOM_SID
  */
-int get_sid(DOM_SID *sid, char *sid_str)
+static int get_sid(DOM_SID *sid, char *sid_str)
 {
   int i = 0, auth;
   char *lstr; 
@@ -460,7 +461,7 @@ int get_sid(DOM_SID *sid, char *sid_str)
  * This routine does not need to deal with endianism as 
  * long as the incoming SIDs are both in the same (LE) format.
  */
-void change_sid(DOM_SID *s1, DOM_SID *s2)
+static void change_sid(DOM_SID *s1, DOM_SID *s2)
 {
   int i;
   
@@ -469,7 +470,7 @@ void change_sid(DOM_SID *s1, DOM_SID *s2)
   }
 }
 
-void print_sid(DOM_SID *sid)
+static void print_sid(DOM_SID *sid)
 {
   int i, comps = sid->num_auths;
   fprintf(stdout, "S-%u-%u", sid->sid_rev_num, sid->id_auth[5]);
@@ -482,7 +483,7 @@ void print_sid(DOM_SID *sid)
   fprintf(stdout, "\n");
 }
 
-void process_sid(DOM_SID *sid, DOM_SID *o_sid, DOM_SID *n_sid) 
+static void process_sid(DOM_SID *sid, DOM_SID *o_sid, DOM_SID *n_sid) 
 {
   int i;
   if (my_sid_equal(sid, o_sid)) {
@@ -496,7 +497,7 @@ void process_sid(DOM_SID *sid, DOM_SID *o_sid, DOM_SID *n_sid)
 
 }
 
-void process_acl(ACL *acl, const char *prefix)
+static void process_acl(ACL *acl, const char *prefix)
 {
   int ace_cnt, i;
   ACE *ace;
@@ -514,21 +515,8 @@ void process_acl(ACL *acl, const char *prefix)
   }
 } 
 
-void usage(void)
-{
-  fprintf(stderr, "usage: profiles [-c <OLD-SID> -n <NEW-SID>] <profilefile>\n");
-  fprintf(stderr, "Version: %s\n", VERSION);
-  fprintf(stderr, "\n\t-v\t sets verbose mode");
-  fprintf(stderr, "\n\t-c S-1-5-21-z-y-x-oldrid - provides SID to change");
-  fprintf(stderr, "\n\t-n S-1-5-21-a-b-c-newrid - provides SID to change to");
-  fprintf(stderr, "\n\t\tBoth must be present if the other is.");
-  fprintf(stderr, "\n\t\tIf neither present, just report the SIDs found\n");
-}
-
 int main(int argc, char *argv[])
 {
-  extern char *optarg;
-  extern int optind;
   int opt;
   int fd, start = 0;
   char *base;
@@ -540,63 +528,75 @@ int main(int argc, char *argv[])
   DWORD first_sk_off, sk_off;
   MY_SEC_DESC *sec_desc;
   int *ptr;
+  struct poptOption long_options[] = {
+	  POPT_AUTOHELP
+	  { "verbose", 'v', POPT_ARG_NONE, NULL, 'v', "Sets verbose mode" },
+	  { "change-sid", 'c', POPT_ARG_STRING, NULL, 'c', "Provides SID to change" },
+	  { "new-sid", 'n', POPT_ARG_STRING, NULL, 'n', "Provides SID to change to" },
+	  { 0, 0, 0, 0 }
+  };
 
-  if (argc < 2) {
-    usage();
-    exit(1);
-  }
+  poptContext pc;
+
+  pc = poptGetContext("profiles", argc, (const char **)argv, long_options, 
+					  POPT_CONTEXT_KEEP_FIRST);
+
+  poptSetOtherOptionHelp(pc, "<profilefile>");
 
   /*
    * Now, process the arguments
    */
 
-  while ((opt = getopt(argc, argv, "c:n:v")) != EOF) {
+  while ((opt = poptGetNextOpt(pc)) != -1) {
     switch (opt) {
-    case 'c':
-      change = 1;
-      if (!get_sid(&old_sid, optarg)) {
-	fprintf(stderr, "Argument to -c should be a SID in form of S-1-5-...\n");
-	usage();
-	exit(254);
-      }
-      break;
+	case 'c':
+		change = 1;
+		if (!get_sid(&old_sid, poptGetOptArg(pc))) {
+			fprintf(stderr, "Argument to -c should be a SID in form of S-1-5-...\n");
+			poptPrintUsage(pc, stderr, 0);
+			exit(254);
+		}
+		break;
 
-    case 'n':
-      new = 1;
-      if (!get_sid(&new_sid, optarg)) {
-	fprintf(stderr, "Argument to -n should be a SID in form of S-1-5-...\n");
-	usage();
-	exit(253);
-      }
+	case 'n':
+		new = 1;
+		if (!get_sid(&new_sid, poptGetOptArg(pc))) {
+			fprintf(stderr, "Argument to -n should be a SID in form of S-1-5-...\n");
+			poptPrintUsage(pc, stderr, 0);
+			exit(253);
+		}
 
-      break;
+		break;
 
-    case 'v':
-      verbose++;
-      break;
+	case 'v':
+		verbose++;
+		break;
+	}
+  }
 
-    default:
-      usage();
-      exit(255);
-    }
+  if (!poptPeekArg(pc)) {
+	  poptPrintUsage(pc, stderr, 0);
+	  exit(1);
   }
 
   if ((!change & new) || (change & !new)) {
-    fprintf(stderr, "You must specify both -c and -n if one or the other is set!\n");
-    usage();
-    exit(252);
+	  fprintf(stderr, "You must specify both -c and -n if one or the other is set!\n");
+	  poptPrintUsage(pc, stderr, 0);
+	  exit(252);
   }
 
-  fd = open(argv[optind], O_RDWR, 0000);
+  poptGetArg(pc); /* To get argv[0] */
+
+  fd = open(poptPeekArg(pc), O_RDWR, 0000);
 
   if (fd < 0) {
-    fprintf(stderr, "Could not open %s: %s\n", argv[optind], 
+    fprintf(stderr, "Could not open %s: %s\n", poptPeekArg(pc), 
 	strerror(errno));
     exit(2);
   }
 
   if (fstat(fd, &sbuf) < 0) {
-    fprintf(stderr, "Could not stat file %s, %s\n", argv[optind],
+    fprintf(stderr, "Could not stat file %s, %s\n", poptPeekArg(pc),
 	strerror(errno));
     exit(3);
   }
@@ -609,7 +609,7 @@ int main(int argc, char *argv[])
   base = mmap(&start, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
   if ((int)base == -1) {
-    fprintf(stderr, "Could not mmap file: %s, %s\n", argv[optind],
+    fprintf(stderr, "Could not mmap file: %s, %s\n", poptPeekArg(pc),
 	strerror(errno));
     exit(4);
   }
@@ -640,7 +640,7 @@ int main(int argc, char *argv[])
   if (verbose) fprintf(stdout, "Registry file size: %u\n", (unsigned int)sbuf.st_size);
 
   if (IVAL(&regf_hdr->REGF_ID, 0) != REG_REGF_ID) {
-    fprintf(stderr, "Incorrect Registry file (doesn't have header ID): %s\n", argv[optind]);
+    fprintf(stderr, "Incorrect Registry file (doesn't have header ID): %s\n", poptPeekArg(pc));
     exit(5);
   }
 
@@ -655,7 +655,7 @@ int main(int argc, char *argv[])
    */
 
   if (IVAL(&hbin_hdr->HBIN_ID, 0) != REG_HBIN_ID) {
-    fprintf(stderr, "Incorrect hbin hdr: %s\n", argv[optind]);
+    fprintf(stderr, "Incorrect hbin hdr: %s\n", poptPeekArg(pc));
     exit(6);
   } 
 
@@ -666,7 +666,7 @@ int main(int argc, char *argv[])
   nk_hdr = (NK_HDR *)(base + 0x1000 + IVAL(&regf_hdr->first_key, 0) + 4);
 
   if (SVAL(&nk_hdr->NK_ID, 0) != REG_NK_ID) {
-    fprintf(stderr, "Incorrect NK Header: %s\n", argv[optind]);
+    fprintf(stderr, "Incorrect NK Header: %s\n", poptPeekArg(pc));
     exit(7);
   }
 
@@ -723,6 +723,8 @@ int main(int argc, char *argv[])
   } while (sk_off != first_sk_off);
 
   munmap(base, sbuf.st_size); 
+
+  poptFreeContext(pc);
 
   close(fd);
   return 0;
