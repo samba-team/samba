@@ -129,23 +129,19 @@ static BOOL check_user_equiv(const char *user, const char *remote, const char *e
   return False;
 }
 
-
 /****************************************************************************
 check for a possible hosts equiv or rhosts entry for the user
 ****************************************************************************/
 
-static BOOL check_hosts_equiv(struct passwd *pass)
+static BOOL check_hosts_equiv(SAM_ACCOUNT *account)
 {
   char *fname = NULL;
-
-  if (!pass) 
-    return(False);
 
   fname = lp_hosts_equiv();
 
   /* note: don't allow hosts.equiv on root */
-  if (fname && *fname && (pass->pw_uid != 0)) {
-	  if (check_user_equiv(pass->pw_name,client_name(),fname))
+  if (IS_SAM_UNIX_USER(account) && fname && *fname && (pdb_get_uid(account) != 0)) {
+	  if (check_user_equiv(pdb_get_username(account),client_name(),fname))
 		  return(True);
   }
   
@@ -164,15 +160,15 @@ static NTSTATUS check_hostsequiv_security(const struct auth_context *auth_contex
 					  auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
-	
-	if (pass) {
-		if (check_hosts_equiv(pass)) {
-			nt_status = NT_STATUS_OK;
-			make_server_info_pw(server_info, pass);
-		}
-	} else {
-		nt_status = NT_STATUS_NO_SUCH_USER;
+	SAM_ACCOUNT *account = NULL;
+	if (!NT_STATUS_IS_OK(nt_status = 
+			     auth_get_sam_account(user_info->internal_username.str, 
+						  &account))) {
+		return nt_status;
+	}
+
+	if (check_hosts_equiv(account)) {
+		nt_status = make_server_info_sam(server_info, account);
 	}
 
 	return nt_status;
@@ -186,6 +182,7 @@ NTSTATUS auth_init_hostsequiv(struct auth_context *auth_context, const char* par
 	}
 
 	(*auth_method)->auth = check_hostsequiv_security;
+	(*auth_method)->name = "hostsequiv";
 	return NT_STATUS_OK;
 }
 
@@ -201,23 +198,25 @@ static NTSTATUS check_rhosts_security(const struct auth_context *auth_context,
 				      auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
+	SAM_ACCOUNT *account = NULL;
+	
+	if (!NT_STATUS_IS_OK(nt_status = 
+			     auth_get_sam_account(user_info->internal_username.str, 
+						  &account))) {
+		return nt_status;
+	}
+
 	pstring rhostsfile;
 	
-	if (pass) {
-		char *home = pass->pw_dir;
-		if (home) {
-			slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
-			become_root();
-			if (check_user_equiv(pass->pw_name,client_name(),rhostsfile)) {
-				nt_status = NT_STATUS_OK;
-				make_server_info_pw(server_info, pass);
-			}
-			unbecome_root();
-		} 
-	} else {
-		nt_status = NT_STATUS_NO_SUCH_USER;
-	}
+	char *home = pdb_get_unix_homedir(account);
+	if (home) {
+		slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
+		become_root();
+		if (check_user_equiv(pdb_get_username(account),client_name(),rhostsfile)) {
+			nt_status = make_server_info_sam(server_info, account);
+		}
+		unbecome_root();
+	} 
 
 	return nt_status;
 }
@@ -230,5 +229,6 @@ NTSTATUS auth_init_rhosts(struct auth_context *auth_context, const char *param, 
 	}
 
 	(*auth_method)->auth = check_rhosts_security;
+	(*auth_method)->name = "rhosts";
 	return NT_STATUS_OK;
 }
