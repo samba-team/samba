@@ -1273,66 +1273,66 @@ BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags)
 	return False;
 }
 
-BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t time)
+BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
 	if (sampass)
 	{
-		sampass->logon_time = time;
+		sampass->logon_time = mytime;
 		return True;
 	}
 	
 	return False;
 }
 
-BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t time)
+BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
 	if (sampass)
 	{
-		sampass->logoff_time = time;
+		sampass->logoff_time = mytime;
 		return True;
 	}
 	
 	return False;
 }
 
-BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t time)
+BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
 	if (sampass)
 	{
-		sampass->kickoff_time = time;
+		sampass->kickoff_time = mytime;
 		return True;
 	}
 	
 	return False;
 }
 
-BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t time)
+BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
 	if (sampass)
 	{
-		sampass->pass_can_change_time = time;
+		sampass->pass_can_change_time = mytime;
 		return True;
 	}
 	
 	return False;
 }
 
-BOOL pdb_set_pass_must_change_time (SAM_ACCOUNT *sampass, time_t time)
+BOOL pdb_set_pass_must_change_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
 	if (sampass)
 	{
-		sampass->pass_must_change_time = time;
+		sampass->pass_must_change_time = mytime;
 		return True;
 	}
 	
 	return False;
 }
 
-BOOL pdb_set_pass_last_set_time (SAM_ACCOUNT *sampass, time_t time)
+BOOL pdb_set_pass_last_set_time (SAM_ACCOUNT *sampass, time_t mytime)
 {
 	if (sampass)
 	{
-		sampass->pass_last_set_time = time;
+		sampass->pass_last_set_time = mytime;
 		return True;
 	}
 	
