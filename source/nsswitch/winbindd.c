@@ -30,7 +30,7 @@ BOOL opt_dual_daemon = True;
 
 /* Reload configuration */
 
-static BOOL reload_services_file(BOOL test)
+static BOOL reload_services_file(void)
 {
 	BOOL ret;
 
@@ -40,7 +40,6 @@ static BOOL reload_services_file(BOOL test)
 		pstrcpy(fname,lp_configfile());
 		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
 			pstrcpy(dyn_CONFIGFILE,fname);
-			test = False;
 		}
 	}
 
@@ -194,7 +193,7 @@ static void msg_reload_services(int msg_type, pid_t src, void *buf, size_t len)
 {
         /* Flush various caches */
 	flush_caches();
-	reload_services_file(True);
+	reload_services_file();
 }
 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
@@ -843,7 +842,7 @@ int main(int argc, char **argv)
 	DEBUG(1, ("winbindd version %s started.\n", SAMBA_VERSION_STRING) );
 	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2004\n" ) );
 
-	if (!reload_services_file(False)) {
+	if (!reload_services_file()) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}
