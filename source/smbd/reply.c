@@ -73,7 +73,6 @@ int reply_special(char *inbuf,char *outbuf)
 	pstring name1,name2;
 	extern fstring remote_machine;
 	extern fstring local_machine;
-	char *p;
 	int len;
 	char name_type = 0;
 	
@@ -96,21 +95,18 @@ int reply_special(char *inbuf,char *outbuf)
 			 name1,name2));      
 
 		fstrcpy(remote_machine,name2);
+		remote_machine[15] = 0;
 		trim_string(remote_machine," "," ");
-		p = strchr(remote_machine,' ');
 		strlower(remote_machine);
-		if (p) *p = 0;
 
 		fstrcpy(local_machine,name1);
-		trim_string(local_machine," "," ");
 		len = strlen(local_machine);
 		if (len == 16) {
 			name_type = local_machine[15];
 			local_machine[15] = 0;
 		}
-		p = strchr(local_machine,' ');
+		trim_string(local_machine," "," ");
 		strlower(local_machine);
-		if (p) *p = 0;
 
 		if (name_type == 'R') {
 			/* We are being asked for a pathworks session --- 
