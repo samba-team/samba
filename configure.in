@@ -204,7 +204,7 @@ AC_TEST_PACKAGE_NEW(readline,
 
 AC_TEST_PACKAGE_NEW(hesiod,[#include <hesiod.h>],-lhesiod)
 
-AC_C_BIGENDIAN
+KRB_C_BIGENDIAN
 AC_C_INLINE
 
 KRB_CHECK_X
