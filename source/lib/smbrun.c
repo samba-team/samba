@@ -84,12 +84,11 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	pid_t pid;
 	uid_t uid = current_user.uid;
 	gid_t gid = current_user.gid;
-
-    /*
-     * Lose any kernel oplock capabilities we may have.
-     */
-    set_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
-    set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
+	
+	/*
+	 * Lose any kernel oplock capabilities we may have.
+	 */
+	oplock_set_capability(False, False);
 
 #ifndef HAVE_EXECL
 	{

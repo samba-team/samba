@@ -409,9 +409,7 @@ static BOOL chat_with_program(char *passwordprogram, const char *name,
 		/*
 		 * Lose any oplock capabilities.
 		 */
-		set_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
-		set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,
-						 False);
+		oplock_set_capability(False, False);
 
 		/* make sure it doesn't freeze */
 		alarm(20);
@@ -443,7 +441,7 @@ static BOOL chat_with_program(char *passwordprogram, const char *name,
 }
 
 
-BOOL chgpasswd(const char *_name, char *oldpass, char *newpass, BOOL as_root)
+static BOOL chgpasswd(const char *_name, char *oldpass, char *newpass, BOOL as_root)
 {
 	pstring passwordprogram;
 	pstring chatsequence;
@@ -531,7 +529,7 @@ BOOL chgpasswd(const char *_name, char *oldpass, char *newpass, BOOL as_root)
 }
 
 #else /* ALLOW_CHANGE_PASSWORD */
-BOOL chgpasswd(const char *name, char *oldpass, char *newpass, BOOL as_root)
+static BOOL chgpasswd(const char *name, char *oldpass, char *newpass, BOOL as_root)
 {
 	DEBUG(0, ("Password changing not compiled in (user=%s)\n", name));
 	return (False);
