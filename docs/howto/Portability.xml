@@ -240,8 +240,7 @@ and rebuild Samba.
 <title>Winbind on Solaris 9</title>
 <para>
 Nsswitch on Solaris 9 refuses to use the Winbind NSS module. This behavior
-is fixed by Sun in patch 113476-05, which as of March 2003, is not in any
-roll-up packages.
+is fixed by Sun in patch <ulink url="http://sunsolve.sun.com/pub-cgi/findPatch.pl?patchId=112960;rev=14">112960-14</ulink>.
 </para>
 </sect2>
 </sect1>
