@@ -92,22 +92,10 @@ krb5_build_authenticator (krb5_context context,
     auth_context->authenticator->cusec = auth->cusec;
   }
 
-  buf_size = length_Authenticator(auth);
-  buf = malloc (buf_size);
-  if (buf == NULL) {
-      krb5_set_error_string(context, "malloc: out of memory");
-      ret = ENOMEM;
-      goto fail;
-  }
+  ASN1_MALLOC_ENCODE(Authenticator, buf, buf_size, auth, &len, ret);
 
-  ret = krb5_encode_Authenticator (context,
-				   buf + buf_size - 1,
-				   buf_size,
-				   auth, &len);
-  if (ret) {
-      krb5_set_error_string(context, "internal error in ASN.1 encoder");
+  if (ret)
       goto fail;
-  }
 
   ret = krb5_crypto_init(context, &cred->session, enctype, &crypto);
   if (ret)

@@ -162,7 +162,8 @@ krb5_get_forwarded_creds (krb5_context	    context,
     KrbCredInfo *krb_cred_info;
     EncKrbCredPart enc_krb_cred_part;
     size_t len;
-    u_char buf[1024];
+    unsigned char *buf;
+    size_t buf_size;
     int32_t sec, usec;
     krb5_kdc_flags kdc_flags;
     krb5_crypto crypto;
@@ -320,14 +321,15 @@ krb5_get_forwarded_creds (krb5_context	    context,
 
     /* encode EncKrbCredPart */
 
-    ret = krb5_encode_EncKrbCredPart (context,
-				      buf + sizeof(buf) - 1, sizeof(buf),
-				      &enc_krb_cred_part, &len);
+    ASN1_MALLOC_ENCODE(EncKrbCredPart, buf, buf_size, 
+		       &enc_krb_cred_part, &len, ret);
     free_EncKrbCredPart (&enc_krb_cred_part);
     if (ret) {
 	free_KRB_CRED(&cred);
 	return ret;
-    }    
+    }
+    if(buf_size != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
 
     if (auth_context->local_subkey)
 	key = auth_context->local_subkey;
@@ -338,34 +340,32 @@ krb5_get_forwarded_creds (krb5_context	    context,
 
     ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret) {
+	free(buf);
 	free_KRB_CRED(&cred);
 	return ret;
     }
     ret = krb5_encrypt_EncryptedData (context,
 				      crypto,
 				      KRB5_KU_KRB_CRED,
-				      buf + sizeof(buf) - len,
+				      buf,
 				      len,
 				      0,
 				      &cred.enc_part);
+    free(buf);
     krb5_crypto_destroy(context, crypto);
     if (ret) {
 	free_KRB_CRED(&cred);
 	return ret;
     }
 
-    ret = encode_KRB_CRED (buf + sizeof(buf) - 1, sizeof(buf),
-			   &cred, &len);
+    ASN1_MALLOC_ENCODE(KRB_CRED, buf, buf_size, &cred, &len, ret);
     free_KRB_CRED (&cred);
     if (ret)
 	return ret;
+    if(buf_size != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
     out_data->length = len;
-    out_data->data   = malloc(len);
-    if (out_data->data == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-    memcpy (out_data->data, buf + sizeof(buf) - len, len);
+    out_data->data   = buf;
     return 0;
 out4:
     free_EncKrbCredPart(&enc_krb_cred_part);
