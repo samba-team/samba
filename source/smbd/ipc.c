@@ -1692,11 +1692,7 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
 				int *rdata_len,int *rparam_len)
 {
   fstring user;
-  fstring new_passwd;
-  struct smb_passwd *sampw = NULL;
   char *p = param + 2;
-  int ret = True;
-
   *rparam_len = 2;
   *rparam = REALLOC(*rparam,*rparam_len);
 
@@ -1736,24 +1732,8 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
    */
   (void)Get_Pwnam( user, True);
 
-  if(check_oem_password( user, (unsigned char *)data, &sampw, 
-                         new_passwd, (int)sizeof(new_passwd)) == False) {
-    return True;
-  }
-
-  /* 
-   * At this point we have the new case-sensitive plaintext
-   * password in the fstring new_passwd. If we wanted to synchronise
-   * with UNIX passwords we would call a UNIX password changing 
-   * function here. However it would have to be done as root
-   * as the plaintext of the old users password is not 
-   * available. JRA.
-   */
-
-  if(lp_unix_password_sync())
-    ret = chgpasswd(user,"", new_passwd, True);
- 
-  if(ret && change_oem_password( sampw, new_passwd, False)) {
+  if (pass_oem_change(user, (uchar*) data, &data[516], NULL, NULL))
+  {
     SSVAL(*rparam,0,NERR_Success);
   }
 

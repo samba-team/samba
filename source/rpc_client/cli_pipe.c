@@ -142,7 +142,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 	RPC_AUTH_NTLMSSP_CHK chk;
 	uint32 crc32;
 	int data_len = len - 0x18 - auth_len - 8;
-	char *reply_data = (uchar*)mem_data(&rdata->data, 0x18);
+	char *reply_data = mem_data(&rdata->data, 0x18);
 
 	BOOL auth_verify = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SIGN);
 	BOOL auth_seal   = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SEAL);
@@ -150,13 +150,8 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 	DEBUG(5,("rpc_auth_pipe: len: %d auth_len: %d verify %s seal %s\n",
 	          len, auth_len, BOOLSTR(auth_verify), BOOLSTR(auth_seal)));
 
-/*	RPC_HDR_AUTH         rhdr_auth; 
-	prs_struct auth_req;
-	prs_init(&auth_req , 0x10, 4, 0, True);
-	smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &hdr_auth, 0);
-	prs_mem_free(&auth_req);
+	if (reply_data == NULL) return False;
 
-*/
 	if (auth_seal)
 	{
 		DEBUG(10,("rpc_auth_pipe: seal\n"));
@@ -165,14 +160,32 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 		dump_data(100, reply_data, data_len);
 	}
 
+	if (auth_verify || auth_seal)
+	{
+		RPC_HDR_AUTH         rhdr_auth; 
+		prs_struct auth_req;
+		char *data = mem_data(&rdata->data, len - auth_len - 8);
+		prs_init(&auth_req , 0x08, 4, 0, True);
+		memcpy(auth_req.data->data, data, 8);
+		smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &auth_req, 0);
+		prs_mem_free(&auth_req);
+
+		if (!rpc_hdr_auth_chk(&rhdr_auth))
+		{
+			return False;
+		}
+	}
+
 	if (auth_verify)
 	{
 		prs_struct auth_verf;
 		char *data = (uchar*)mem_data(&rdata->data, len - auth_len);
-		prs_init(&auth_verf, 0x08, 4, 0, True);
+		if (data == NULL) return False;
+
 		DEBUG(10,("rpc_auth_pipe: verify\n"));
 		dump_data(100, data, auth_len);
-		NTLMSSPcalc(cli->ntlmssp_hash, data + 4, auth_len - 4);
+		NTLMSSPcalc(cli->ntlmssp_hash, (uchar*)(data+4), auth_len - 4);
+		prs_init(&auth_verf, 0x08, 4, 0, True);
 		memcpy(auth_verf.data->data, data, 16);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &auth_verf, 0);
 		dump_data(100, data, auth_len);
@@ -182,14 +195,8 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 	if (auth_verify)
 	{
 		crc32 = crc32_calc_buffer(data_len, reply_data);
-		if (chk.crc32 != crc32 ||
-		    chk.ver   != NTLMSSP_SIGN_VERSION ||
-		    chk.seq_num != cli->ntlmssp_seq_num++)
+		if (!rpc_auth_ntlmssp_chk(&chk, crc32 , &cli->ntlmssp_seq_num))
 		{
-			DEBUG(5,("rpc_auth_pipe: verify failed - crc %x ver %x seq %d\n",
-				crc32, NTLMSSP_SIGN_VERSION, cli->ntlmssp_seq_num));
-			DEBUG(5,("rpc_auth_pipe: verify expect - crc %x ver %x seq %d\n",
-				chk.crc32, chk.ver, chk.seq_num));
 			return False;
 		}
 	}
@@ -585,7 +592,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	BOOL ret;
 	BOOL auth_verify;
 	BOOL auth_seal;
-	uint32 crc32 = 0;
+	uint32 crc32;
 
 	auth_verify = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SIGN);
 	auth_seal   = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SEAL);
@@ -915,8 +922,8 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 			pwd_get_lm_nt_owf(&cli->pwd, lm_owf, NULL);
 			pwd_get_lm_nt_16(&cli->pwd, lm_hash, NULL);
 			NTLMSSPOWFencrypt(lm_hash, lm_owf, p24);
-			bzero(lm_hash, sizeof(lm_hash));
 			NTLMSSPhash(cli->ntlmssp_hash, p24);
+			bzero(lm_hash, sizeof(lm_hash));
 
 			/* this is a hack due to limitations in rpc_api_pipe */
 			prs_init(&dataa, mem_buf_len(hdra.data), 4, 0x0, False);

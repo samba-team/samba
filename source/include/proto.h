@@ -390,7 +390,7 @@ BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
-size_t cli_write(struct cli_state *cli,
+ssize_t cli_write(struct cli_state *cli,
 				int fnum, uint16 write_mode,
 				char *buf, off_t offset, size_t size);
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
@@ -510,7 +510,7 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16]);
 void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
-BOOL make_oem_passwd_hash(char data[516], char *passwd, char old_pw_hash[16], BOOL unicode);
+BOOL make_oem_passwd_hash(char data[516], char *passwd, uchar old_pw_hash[16], BOOL unicode);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
@@ -1569,11 +1569,14 @@ void make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
 				uint8 auth_type, uint8 auth_level,
 				uint8 stub_type_len);
 void smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int depth);
+BOOL rpc_hdr_auth_chk(RPC_HDR_AUTH *rai);
 void make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
 				uint8 stub_type_len,
 				uint32 ptr);
 void smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth);
+BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER *rav,
+				char *signature, uint32 msg_type);
 void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
 				char *signature, uint32 msg_type);
 void smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
@@ -1590,6 +1593,7 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 				char *domain, char *user, char *wks,
 				uint32 neg_flags);
 void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_struct *ps, int depth);
+BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 *seq_num);
 void make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk,
 				uint32 ver, uint32 crc32, uint32 seq_num);
 void smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_struct *ps, int depth);
@@ -1846,6 +1850,7 @@ void wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int
 
 /*The following definitions come from  rpc_server/srv_ldap_helpers.c  */
 
+void ldap_helper_dummy(void);
 
 /*The following definitions come from  rpc_server/srv_lsa.c  */
 
@@ -2011,10 +2016,15 @@ void process_blocking_lock_queue(time_t t);
 
 BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
 BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
-BOOL check_lanman_password(char *user, unsigned char *pass1, 
-                           unsigned char *pass2, struct smb_passwd **psmbpw);
-BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsigned char *pass2);
-BOOL check_oem_password(char *user, unsigned char *data,
+BOOL check_lanman_password(char *user, uchar *pass1, 
+                           uchar *pass2, struct smb_passwd **psmbpw);
+BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2);
+BOOL pass_oem_change(char *user,
+			uchar *lmdata, uchar *lmhash,
+			uchar *ntdata, uchar *nthash);
+BOOL check_oem_password(char *user,
+			uchar *lmdata, uchar *lmhash,
+			uchar *ntdata, uchar *nthash,
                         struct smb_passwd **psmbpw, char *new_passwd,
                         int new_passwd_size);
 BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override);
@@ -2195,10 +2205,10 @@ int setup_groups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_gro
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
-BOOL smb_password_ok(struct smb_passwd *smb_pass,
+BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
                      uchar lm_pass[24], uchar nt_pass[24]);
 BOOL pass_check_smb(char *user, char *domain,
-		char *challenge, char *lm_pwd, char *nt_pwd,
+		uchar *chal, char *lm_pwd, char *nt_pwd,
 		struct passwd *pwd);
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd);
 BOOL user_ok(char *user,int snum);

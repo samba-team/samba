@@ -83,10 +83,12 @@ typedef struct pipes_struct
 	RPC_AUTH_NTLMSSP_NEG  ntlmssp_neg;
 	RPC_AUTH_NTLMSSP_CHAL ntlmssp_chal;
 	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
+	RPC_AUTH_NTLMSSP_CHK  ntlmssp_chk;
 
 	BOOL ntlmssp_auth;
 	BOOL ntlmssp_validated;
 	unsigned char ntlmssp_hash[258];
+	uint32 ntlmssp_seq_num;
 	fstring user_name;
 	fstring domain;
 	fstring wks;

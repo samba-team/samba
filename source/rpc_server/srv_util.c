@@ -212,6 +212,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 {
 	uchar lm_owf[24];
 	uchar nt_owf[24];
+	struct smb_passwd *smb_pass = NULL;
 	
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
@@ -244,14 +245,28 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 	memcpy(nt_owf, p->ntlmssp_resp.nt_resp, sizeof(nt_owf));
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("lm, nt owfs:\n"));
+	DEBUG(100,("lm, nt owfs, chal\n"));
 	dump_data(100, lm_owf, sizeof(lm_owf));
 	dump_data(100, nt_owf, sizeof(nt_owf));
+	dump_data(100, p->ntlmssp_chal.challenge, 8);
 #endif
 	become_root(True);
 	p->ntlmssp_validated = pass_check_smb(p->user_name, p->domain,
-	                      p->ntlmssp_chal.challenge, lm_owf, nt_owf, NULL);
+	                      p->ntlmssp_chal.challenge, (uchar*)lm_owf, (uchar*)nt_owf, NULL);
+	smb_pass = getsmbpwnam(p->user_name);
 	unbecome_root(True);
+
+	if (p->ntlmssp_validated && smb_pass != NULL && smb_pass->smb_passwd)
+	{
+		uchar p24[24];
+		NTLMSSPOWFencrypt(smb_pass->smb_passwd, lm_owf, p24);
+		NTLMSSPhash(p->ntlmssp_hash, p24);
+		p->ntlmssp_seq_num = 0;
+	}
+	else
+	{
+		p->ntlmssp_validated = False;
+	}
 
 	return p->ntlmssp_validated;
 }
@@ -307,33 +322,22 @@ static struct api_cmd api_fd_commands[] =
 
 static BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *pd)
 {
-	p->ntlmssp_auth = False;
-
 	DEBUG(5,("api_pipe_bind_auth_resp: decode request. %d\n", __LINE__));
 
-	if (p->hdr.auth_len != 0)
-	{
-		/* decode the authentication verifier response */
-		smb_io_rpc_hdr_autha("", &p->autha_info, pd, 0);
-		if (pd->offset == 0) return False;
+	if (p->hdr.auth_len == 0) return False;
 
-		p->ntlmssp_auth = p->auth_info.auth_type = 0x0a;
+	/* decode the authentication verifier response */
+	smb_io_rpc_hdr_autha("", &p->autha_info, pd, 0);
+	if (pd->offset == 0) return False;
 
-		if (p->ntlmssp_auth)
-		{
-			smb_io_rpc_auth_verifier("", &p->auth_verifier, pd, 0);
-			if (pd->offset == 0) return False;
+	if (!rpc_hdr_auth_chk(&(p->auth_info))) return False;
 
-			p->ntlmssp_auth = strequal(p->auth_verifier.signature, "NTLMSSP");
-		}
+	smb_io_rpc_auth_verifier("", &p->auth_verifier, pd, 0);
+	if (pd->offset == 0) return False;
 
-		if (p->ntlmssp_auth)
-		{
-			if (!api_pipe_ntlmssp(p, pd)) return False;
-		}
-	}
-
-	return p->ntlmssp_auth;
+	if (!rpc_auth_verifier_chk(&(p->auth_verifier), "NTLMSSP", NTLMSSP_AUTH)) return False;
+	
+	return api_pipe_ntlmssp(p, pd);
 }
 
 static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
@@ -490,6 +494,58 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 
 static BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *pd)
 {
+	BOOL auth_verify = IS_BITS_SET_ALL(p->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_SIGN);
+	BOOL auth_seal   = IS_BITS_SET_ALL(p->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_SEAL);
+	int data_len;
+	int auth_len;
+	uint32 old_offset;
+	uint32 crc32;
+
+	auth_len = p->hdr.auth_len;
+
+	if (auth_len != 16 && auth_verify)
+	{
+		return False;
+	}
+
+	data_len = p->hdr.frag_len - auth_len - (auth_verify ? 8 : 0) - 0x18;
+	
+	DEBUG(5,("api_pipe_auth_process: sign: %s seal: %s data %d auth %d\n",
+	         BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len, auth_len));
+
+	if (auth_seal)
+	{
+		char *data = (uchar*)mem_data(&pd->data, pd->offset);
+		DEBUG(5,("api_pipe_auth_process: data %d\n", pd->offset));
+		NTLMSSPcalc(p->ntlmssp_hash, data, data_len);
+		crc32 = crc32_calc_buffer(data_len, data);
+	}
+
+	/*** skip the data, record the offset so we can restore it again */
+	old_offset = pd->offset;
+
+	if (auth_seal || auth_verify)
+	{
+		pd->offset += data_len;
+		smb_io_rpc_hdr_auth("hdr_auth", &p->auth_info, pd, 0);
+	}
+
+	if (auth_verify)
+	{
+		char *req_data = (uchar*)mem_data(&pd->data, pd->offset + 4);
+		DEBUG(5,("api_pipe_auth_process: auth %d\n", pd->offset + 4));
+		NTLMSSPcalc(p->ntlmssp_hash, req_data, 12);
+		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(p->ntlmssp_chk), pd, 0);
+
+		if (!rpc_auth_ntlmssp_chk(&(p->ntlmssp_chk), crc32,
+		                          &(p->ntlmssp_seq_num)))
+		{
+			return False;
+		}
+	}
+
+	pd->offset = old_offset;
+
 	return True;
 }
 
@@ -538,16 +594,33 @@ BOOL rpc_command(pipes_struct *p, prs_struct *pd)
 		}
 		case RPC_REQUEST:
 		{
-			reply = api_pipe_request (p, pd);
+			if (p->ntlmssp_auth && !p->ntlmssp_validated)
+			{
+				/* authentication _was_ requested
+				   and it failed.  sorry, no deal!
+				 */
+				reply = False;
+			}
+			else
+			{
+				/* read the rpc header */
+				smb_io_rpc_hdr_req("req", &(p->hdr_req), pd, 0);
+				reply = api_pipe_request(p, pd);
+			}
 			break;
 		}
 		case RPC_BINDRESP: /* not the real name! */
 		{
 			reply = api_pipe_bind_auth_resp(p, pd);
+			p->ntlmssp_auth = reply;
 			break;
 		}
 	}
 
+	if (!reply)
+	{
+		DEBUG(3,("rpc_command: DCE/RPC fault should be sent here\n"));
+	}
 
 	return reply;
 }
@@ -617,9 +690,6 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 		DEBUG(2,("%s: NULL data received\n", rpc_name));
 		return False;
 	}
-
-	/* read the rpc header */
-	smb_io_rpc_hdr_req("req", &(p->hdr_req), data, 0);
 
 	/* interpret the command */
 	if (!api_rpc_command(p, rpc_name, api_rpc_cmds, data))

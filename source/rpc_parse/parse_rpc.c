@@ -458,6 +458,14 @@ void smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int de
 }
 
 /*******************************************************************
+checks an RPC_HDR_AUTH structure.
+********************************************************************/
+BOOL rpc_hdr_auth_chk(RPC_HDR_AUTH *rai)
+{
+	return (rai->auth_type == 0x0a && rai->auth_level == 0x06);
+}
+
+/*******************************************************************
 creates an RPC_HDR_AUTH structure.
 ********************************************************************/
 void make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
@@ -491,6 +499,15 @@ void smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int dept
 	prs_uint8 ("padding      ", ps, depth, &(rai->padding      ));
 
 	prs_uint32("unknown      ", ps, depth, &(rai->unknown      )); /* 0x0014a0c0 */
+}
+
+/*******************************************************************
+checks an RPC_AUTH_VERIFIER structure.
+********************************************************************/
+BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER *rav,
+				char *signature, uint32 msg_type)
+{
+	return (strequal(rav->signature, signature) && rav->msg_type == msg_type);
 }
 
 /*******************************************************************
@@ -781,6 +798,30 @@ void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 		prs_uint8s(False, "nt_resp ", ps, depth, (uint8*)rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
 		prs_uint8s(False, "sess_key", ps, depth, (uint8*)rsp->sess_key, MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))); 
 	}
+}
+
+/*******************************************************************
+checks an RPC_AUTH_NTLMSSP_CHK structure.
+********************************************************************/
+BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 *seq_num)
+{
+	if (chk == NULL || seq_num == NULL)
+	{
+		return False;
+	}
+
+	if (chk->crc32 != crc32 ||
+	    chk->ver   != NTLMSSP_SIGN_VERSION ||
+	    chk->seq_num != (*seq_num))
+	{
+		DEBUG(5,("verify failed - crc %x ver %x seq %d\n",
+			crc32, NTLMSSP_SIGN_VERSION, (*seq_num)-1));
+		DEBUG(5,("verify expect - crc %x ver %x seq %d\n",
+			chk->crc32, chk->ver, chk->seq_num));
+		return False;
+	}
+	(*seq_num)++;
+	return True;
 }
 
 /*******************************************************************

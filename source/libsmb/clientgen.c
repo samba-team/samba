@@ -1195,7 +1195,6 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 	SSVAL(p, 0, cli->pid);
 	SIVAL(p, 2, offset);
 	SIVAL(p, 6, len);
-
 	cli_send_smb(cli);
 
         cli->timeout = (timeout == -1) ? 0x7FFFFFFF : timeout;
@@ -1395,7 +1394,7 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
               0x0004 use raw named pipe protocol
               0x0008 start of message mode named pipe protocol
 ****************************************************************************/
-size_t cli_write(struct cli_state *cli,
+ssize_t cli_write(struct cli_state *cli,
 				int fnum, uint16 write_mode,
 				char *buf, off_t offset, size_t size)
 {
