@@ -41,7 +41,7 @@
 #ifndef __KAFS_H
 #define __KAFS_H
 
-#include <krb5-types.h>
+/* XXX must include krb5.h or krb.h */
 
 /* sys/ioctl.h must be included manually before kafs.h */
 
