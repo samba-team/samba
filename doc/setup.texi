@@ -19,7 +19,6 @@
 * Transit policy::
 * Setting up DNS::
 * Using LDAP to store the database::
-* Using Samba LDAP password database::
 * Providing Kerberos credentials to servers and programs::
 @end menu
 
@@ -708,7 +707,7 @@ _kerberos.srv		TXT     "EXAMPLE.COM"
 
 @end example
 
-@node Using LDAP to store the database, Using Samba LDAP password database, Setting up DNS, Setting up a realm
+@node Using LDAP to store the database, Providing Kerberos credentials to servers and programs, Setting up DNS, Setting up a realm
 @section Using LDAP to store the database
 @cindex Using the LDAP backend
 
@@ -743,18 +742,24 @@ local transport. (A patch to support SASL EXTERNAL authentication is
 necessary in order to use OpenLDAP 2.1.x.)
 
 @item
-The KDC LDAP schema, which is distributed with OpenLDAP
+Add the hdb schema to the LDAP server, its included in the source-tree
+in @file{lib/hdb/hdb.schema}. Example from slapd.conf:
 
+@example
+include /usr/local/etc/openldap/schema/hdb.schema
+@end example
+
+@item
 Configure the LDAP server ACLs to accept writes from clients over the
 local transport. For example:
 
 @example
 access to *
-        by dn.exact="uid=heimdal,dc=services,dc=padl,dc=com" write
+        by dn.exact="uid=heimdal,dc=services,dc=example,dc=com" write
         ...
 
 sasl-regexp "uidNumber=0\\\+gidNumber=.*,cn=peercred,cn=external,cn=auth"
-	"uid=heimdal,dc=services,dc=padl,dc=com"
+	"uid=heimdal,dc=services,dc=example,dc=com"
 
 @end example
 
@@ -766,22 +771,17 @@ krb5Principal aux object with krb5PrincipalName set so that the
 Another option is to create an admins group and add the dn to that
 group.
 
-You also needs to make sure it is possible for the KDC to connect
-without encryption, the connection is already secure---its done over a
-UNIX domain socket. Comment out ``sasl-secprops minssf'' in the
-configuration file.
+Since Heimdal talkes to the LDAP server over a UNIX domain socket, and
+uses external sasl authentication, its not possible to require
+security layer quality (ssf in cyrus-sasl lingo). So that requirement
+has to be turned off in OpenLDAP @command{slapd} configuration file
+@file{slapd.conf}.
 
 @example
-#sasl-secprops minssf=128
+sasl-secprops minssf=0
 @end example
 
 @item
-
-Make sure you include the schema:
-
-@example
-include /usr/local/etc/openldap/schema/hdb.schema
-@end example
 
 Start @command{slapd} with the local listener (as well as the default TCP/IP
 listener on port 389) as follows:
@@ -801,7 +801,7 @@ principals will be stored in @file{krb5.conf}:
 @example
 [kdc]
         database = @{
-                dbname = ldap:ou=KerberosPrincipals,dc=padl,dc=com
+                dbname = ldap:ou=KerberosPrincipals,dc=example,dc=com
                 mkey_file = /path/to/mkey
         @}
 @end example
@@ -817,7 +817,7 @@ stashing a master key are as per any Heimdal installation.
 
 @example
 kdc# kadmin -l
-kadmin> init PADL.COM
+kadmin> init EXAMPLE.COM
 Realm max ticket life [unlimited]:
 Realm max renewable ticket life [unlimited]:
 kadmin> ank lukeh
@@ -826,8 +826,8 @@ Max renewable life [1 week]:
 Principal expiration time [never]:
 Password expiration time [never]:
 Attributes []:
-lukeh@@PADL.COM's Password:
-Verifying password - lukeh@@PADL.COM's Password:
+lukeh@@EXAMPLE.COM's Password:
+Verifying password - lukeh@@EXAMPLE.COM's Password:
 kadmin> exit
 @end example
 
@@ -836,12 +836,21 @@ directory with the following command:
 
 @example
 kdc# ldapsearch -L -h localhost -D cn=manager \
- -w secret -b ou=KerberosPrincipals,dc=padl,dc=com \
+ -w secret -b ou=KerberosPrincipals,dc=example,dc=com \
  'objectclass=krb5KDCEntry' 
 @end example
 
 @item
-Now consider adding indexes to the database to speed up the access.
+Now consider adding indexes to the database to speed up the access, at
+least theses should be added to slapd.conf.
+
+@example
+index	objectClass		eq
+index	cn			eq,sub,pres
+index	uid			eq,sub,pres
+index	displayName		eq,sub,pres
+index	krb5PrincipalName	eq
+@end example
 
 @end itemize
 
@@ -850,17 +859,24 @@ Now consider adding indexes to the database to speed up the access.
 @url{https://sec.miljovern.no/bin/view/Info/TroubleshootingGuide}
 
 
-@node Using Samba LDAP password database, Providing Kerberos credentials to servers and programs, Using LDAP to store the database, Setting up a realm
-@section Using Samba LDAP password database
+@subsection Using Samba LDAP password database
 @cindex Samba
 
-Write text here.
+@c @node Using Samba LDAP password database, Providing Kerberos credentials to servers and programs, Using LDAP to store the database, Setting up a realm
+@c @section Using Samba LDAP password database
 
-Note that the Samba domain and the Kerberos realm can have diffrent names
-since arcfour's string to key function principal/realm independent.
+Samba domain and the Kerberos realm can have diffrent names since
+arcfour's string to key function principal/realm independent.  So now
+will be your first and only chance name your Kerberos without needing
+to deal with old configuration files.
 
+First you should set up Samba and get that working with LDAP backend.
 
-@node Providing Kerberos credentials to servers and programs, , Using Samba LDAP password database, Setting up a realm
+Now you can proceed as in @xref{Using LDAP to store the database},
+Heimdal will pick up the Samba LDAP entries if they are in the same
+search space as the Kerberos entries.
+
+@node Providing Kerberos credentials to servers and programs, , Using LDAP to store the database, Setting up a realm
 @section Providing Kerberos credentials to servers and programs
 
 Some service require Kerberos credentials when they start to make
