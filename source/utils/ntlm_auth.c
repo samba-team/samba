@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "../utils/ntlm_auth.h"
+#include "utils/ntlm_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

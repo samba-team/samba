@@ -24,7 +24,7 @@
 
 #include "includes.h"
 
-#include "../include/libsmb_internal.h"
+#include "include/libsmb_internal.h"
 
 /*
  * Internal flags for extended attributes

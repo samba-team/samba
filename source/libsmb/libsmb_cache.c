@@ -27,7 +27,7 @@
  * Define this to get the real SMBCFILE and SMBCSRV structures 
  */
 #define _SMBC_INTERNAL
-#include "../include/libsmbclient.h"
+#include "include/libsmbclient.h"
 
 /*
  * Structure we use if internal caching mechanism is used 
