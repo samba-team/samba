@@ -39,6 +39,7 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 	struct smbsrv_tcon *tcon = req->tcon;
 	struct pvfs_state *pvfs;
 	struct stat st;
+	char *base_directory;
 
 	DEBUG(0,("WARNING: the posix vfs handler is incomplete - you probably want \"ntvfs handler = simple\"\n"));
 
@@ -46,8 +47,13 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 	if (pvfs == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	ZERO_STRUCTP(pvfs);
 
-	pvfs->base_directory = talloc_strdup(pvfs, lp_pathname(tcon->service));
+	/* for simplicity of path construction, remove any trailing slash now */
+	base_directory = talloc_strdup(pvfs, lp_pathname(tcon->service));
+	trim_string(base_directory, NULL, "/");
+
+	pvfs->base_directory = base_directory;
 
 	/* the directory must exist. Note that we deliberately don't
 	   check that it is readable */
@@ -59,6 +65,7 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 
 	tcon->fs_type = talloc_strdup(tcon, "NTFS");
 	tcon->dev_type = talloc_strdup(tcon, "A:");
+	tcon->ntvfs_private = pvfs;
 
 	return NT_STATUS_OK;
 }
@@ -72,20 +79,11 @@ static NTSTATUS pvfs_disconnect(struct smbsrv_tcon *tcon)
 }
 
 /*
-  delete a file - the dirtype specifies the file types to include in the search. 
-  The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
-*/
-static NTSTATUS pvfs_unlink(struct smbsrv_request *req, struct smb_unlink *unl)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-/*
   ioctl interface - we don't do any
 */
 static NTSTATUS pvfs_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 {
+	DEBUG(0,("pvfs_ioctl not implemented\n"));
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
@@ -94,7 +92,25 @@ static NTSTATUS pvfs_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 */
 static NTSTATUS pvfs_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	struct pvfs_filename *name;
+	NTSTATUS status;
+
+	/* resolve the cifs name to a posix name */
+	status = pvfs_resolve_name(pvfs, req, cp->in.path, 0, &name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!name->exists) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (!S_ISDIR(name->st.st_mode)) {
+		return NT_STATUS_NOT_A_DIRECTORY;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -102,6 +118,7 @@ static NTSTATUS pvfs_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
 */
 static NTSTATUS pvfs_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
+	DEBUG(0,("pvfs_qpathinfo not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -110,6 +127,7 @@ static NTSTATUS pvfs_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *i
 */
 static NTSTATUS pvfs_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
+	DEBUG(0,("pvfs_qfileinfo not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -119,6 +137,7 @@ static NTSTATUS pvfs_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *i
 */
 static NTSTATUS pvfs_open(struct smbsrv_request *req, union smb_open *io)
 {
+	DEBUG(0,("pvfs_open not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -127,6 +146,7 @@ static NTSTATUS pvfs_open(struct smbsrv_request *req, union smb_open *io)
 */
 static NTSTATUS pvfs_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
 {
+	DEBUG(0,("pvfs_mkdir not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -135,6 +155,7 @@ static NTSTATUS pvfs_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
 */
 static NTSTATUS pvfs_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
 {
+	DEBUG(0,("pvfs_rmdir not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -143,6 +164,7 @@ static NTSTATUS pvfs_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
 */
 static NTSTATUS pvfs_rename(struct smbsrv_request *req, union smb_rename *ren)
 {
+	DEBUG(0,("pvfs_rename not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -151,6 +173,7 @@ static NTSTATUS pvfs_rename(struct smbsrv_request *req, union smb_rename *ren)
 */
 static NTSTATUS pvfs_copy(struct smbsrv_request *req, struct smb_copy *cp)
 {
+	DEBUG(0,("pvfs_copy not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
@@ -159,6 +182,7 @@ static NTSTATUS pvfs_copy(struct smbsrv_request *req, struct smb_copy *cp)
 */
 static NTSTATUS pvfs_read(struct smbsrv_request *req, union smb_read *rd)
 {
+	DEBUG(0,("pvfs_read not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -167,6 +191,7 @@ static NTSTATUS pvfs_read(struct smbsrv_request *req, union smb_read *rd)
 */
 static NTSTATUS pvfs_write(struct smbsrv_request *req, union smb_write *wr)
 {
+	DEBUG(0,("pvfs_write not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -175,6 +200,7 @@ static NTSTATUS pvfs_write(struct smbsrv_request *req, union smb_write *wr)
 */
 static NTSTATUS pvfs_seek(struct smbsrv_request *req, struct smb_seek *io)
 {
+	DEBUG(0,("pvfs_seek not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
@@ -183,6 +209,7 @@ static NTSTATUS pvfs_seek(struct smbsrv_request *req, struct smb_seek *io)
 */
 static NTSTATUS pvfs_flush(struct smbsrv_request *req, struct smb_flush *io)
 {
+	DEBUG(0,("pvfs_flush not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -191,6 +218,7 @@ static NTSTATUS pvfs_flush(struct smbsrv_request *req, struct smb_flush *io)
 */
 static NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
 {
+	DEBUG(0,("pvfs_close not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -199,6 +227,7 @@ static NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
 */
 static NTSTATUS pvfs_exit(struct smbsrv_request *req)
 {
+	DEBUG(0,("pvfs_exit not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
@@ -207,6 +236,7 @@ static NTSTATUS pvfs_exit(struct smbsrv_request *req)
 */
 static NTSTATUS pvfs_lock(struct smbsrv_request *req, union smb_lock *lck)
 {
+	DEBUG(0,("pvfs_lock not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -215,6 +245,7 @@ static NTSTATUS pvfs_lock(struct smbsrv_request *req, union smb_lock *lck)
 */
 static NTSTATUS pvfs_setpathinfo(struct smbsrv_request *req, union smb_setfileinfo *st)
 {
+	DEBUG(0,("pvfs_setpathinfo not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
@@ -224,6 +255,7 @@ static NTSTATUS pvfs_setpathinfo(struct smbsrv_request *req, union smb_setfilein
 static NTSTATUS pvfs_setfileinfo(struct smbsrv_request *req, 
 				 union smb_setfileinfo *info)
 {
+	DEBUG(0,("pvfs_setfileinfo not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -233,6 +265,7 @@ static NTSTATUS pvfs_setfileinfo(struct smbsrv_request *req,
 */
 static NTSTATUS pvfs_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
 {
+	DEBUG(0,("pvfs_fsinfo not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -242,30 +275,6 @@ static NTSTATUS pvfs_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
 static NTSTATUS pvfs_lpq(struct smbsrv_request *req, union smb_lpq *lpq)
 {
 	return NT_STATUS_NOT_SUPPORTED;
-}
-
-/* 
-   list files in a directory matching a wildcard pattern
-*/
-static NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *io, 
-				  void *search_private, 
-				  BOOL (*callback)(void *, union smb_search_data *))
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/* continue a search */
-static NTSTATUS pvfs_search_next(struct smbsrv_request *req, union smb_search_next *io, 
-				 void *search_private, 
-				 BOOL (*callback)(void *, union smb_search_data *))
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/* close a search */
-static NTSTATUS pvfs_search_close(struct smbsrv_request *req, union smb_search_close *io)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /* SMBtrans - not used on file shares */

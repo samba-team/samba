@@ -676,6 +676,11 @@ extern int errno;
 #include "libnet/libnet.h"
 #include "utils/net/net.h"
 
+/* hmm, this really is getting ugly isn't it .... we probably need to
+   have some way to have subsystem includes without including it
+   globally */
+#include "ntvfs/posix/vfs_posix.h"
+
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)

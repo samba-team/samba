@@ -44,6 +44,14 @@ INIT_OBJ_FILES = \
 [MODULE::ntvfs_posix]
 INIT_OBJ_FILES = \
 		ntvfs/posix/vfs_posix.o
+ADD_OBJ_FILES = \
+		ntvfs/posix/pvfs_util.o \
+		ntvfs/posix/pvfs_search.o \
+		ntvfs/posix/pvfs_dirlist.o \
+		ntvfs/posix/pvfs_fileinfo.o \
+		ntvfs/posix/pvfs_unlink.o \
+		ntvfs/posix/pvfs_resolve.o \
+		ntvfs/posix/pvfs_shortname.o
 # End MODULE ntvfs_posix
 ################################################
 
