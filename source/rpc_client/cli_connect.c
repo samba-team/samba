@@ -363,11 +363,46 @@ BOOL cli_connection_getsrv(const char *srv_name, const char *pipe_name,
 		    strequal(con_list[i]->pipe_name, pipe_name))
 		{
 			extern cli_auth_fns cli_noauth_fns;
-			(*con) = con_list[i];
+			(*con) = con_list[i];			
 			/* authenticated connections take priority. HACK! */
 			if ((*con)->auth != &cli_noauth_fns)
 			{
 				auth_con = (*con);
+			}
+			
+			/* Check for an invalid fd */
+			
+			if (((*con)->type == MSRPC_SMB) 
+				&& (*con)->msrpc.smb
+				&& (*con)->msrpc.smb->smb
+				&& (*con)->msrpc.smb->smb->fd == -1)
+			{
+				struct cli_state *cli = (*con)->msrpc.smb->smb;
+				int j;
+
+				/* remove this connection and force us to reestablish */
+				DEBUG(3,("cli_connection_getsrv: fd == -1 ! Closing cli_connection to [%s:%s]!\n",
+					(*con)->srv_name, (*con)->pipe_name));
+				con_list[i] = NULL;
+				cli_connection_free(*con);
+				*con = NULL;
+				
+				/* Sanity check for dangling pointers */
+
+				for (j = 0; j < num_cons; j++) 
+				{
+					if (con_list[j] 
+						&& (con_list[j]->type == MSRPC_SMB)
+						&& (con_list[j]->msrpc.smb) 
+						&& (con_list[j]->msrpc.smb->smb == cli)) 
+					{
+						DEBUG(3,("cli_connection_getsrv: cli_state pointer reused on [%s:%s]!\n",
+							con_list[j]->srv_name, con_list[j]->pipe_name));
+						con_list[j]->msrpc.smb->smb = NULL;
+					}
+				}
+
+				return False;
 			}
 		}
 	}
@@ -798,7 +833,8 @@ BOOL rpc_con_ok(struct cli_connection *con)
 				struct cli_state *cli;
 				if (!con->msrpc.smb) return False;
 				cli = con->msrpc.smb->smb;
-				if (cli->fd == -1) return False;
+				/* check for NULL pointers or invalid sockets */
+				if (!cli || cli->fd == -1) return False;
 				return True;
 			}
 			break;
