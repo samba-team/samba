@@ -838,7 +838,7 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
 
   if( namerec != NULL )
   {
-    char ud[sizeof(struct userdata_struct) + sizeof(struct packet_struct *)];
+    long *ud[(sizeof(struct userdata_struct) + sizeof(struct packet_struct *))/sizeof(long *) + 1];
     struct userdata_struct *userdata = (struct userdata_struct *)ud;
 
     /*
@@ -1146,7 +1146,7 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
 
   if(namerec != NULL)
   {
-    char ud[sizeof(struct userdata_struct) + sizeof(struct packet_struct *)];
+    long *ud[(sizeof(struct userdata_struct) + sizeof(struct packet_struct *))/sizeof(long *) + 1];
     struct userdata_struct *userdata = (struct userdata_struct *)ud;
 
     /*
