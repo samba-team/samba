@@ -211,6 +211,7 @@ typedef struct
   BOOL bDomainLogons;
   BOOL bEncryptPasswords;
   BOOL bUpdateEncrypt;
+  BOOL bServerNTLMv2;
   BOOL bStripDot;
   BOOL bNullPasswords;
   BOOL bLoadPrinters;
@@ -529,6 +530,7 @@ static struct parm_struct parm_table[] =
   {"security",         P_ENUM,    P_GLOBAL, &Globals.security,          NULL,   enum_security, FLAG_BASIC},
   {"encrypt passwords",P_BOOL,    P_GLOBAL, &Globals.bEncryptPasswords, NULL,   NULL,  FLAG_BASIC},
   {"update encrypted", P_BOOL,    P_GLOBAL, &Globals.bUpdateEncrypt,    NULL,   NULL,  FLAG_BASIC},
+  {"server ntlmv2",    P_BOOL,    P_GLOBAL, &Globals.bServerNTLMv2,     NULL,   enum_bool_auto,  FLAG_BASIC},
   {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
   {"map to guest",     P_ENUM,    P_GLOBAL, &Globals.map_to_guest,      NULL,   enum_map_to_guest, 0},
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL,  0},
@@ -970,6 +972,10 @@ static void init_globals(void)
   Globals.sslCompatibility = False;
 #endif        /* WITH_SSL */
 
+/* NTLMv2 */
+
+  Globals.bServerNTLMv2 = False; 
+
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
 
@@ -1244,6 +1250,7 @@ FN_GLOBAL_BOOL(lp_null_passwords,&Globals.bNullPasswords)
 FN_GLOBAL_BOOL(lp_strip_dot,&Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords,&Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_update_encrypted,&Globals.bUpdateEncrypt)
+FN_GLOBAL_BOOL(lp_server_ntlmv2,&Globals.bUpdateEncrypt)
 FN_GLOBAL_BOOL(lp_syslog_only,&Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_timestamp_logs,&Globals.bTimestampLogs)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
@@ -2927,7 +2934,9 @@ int lp_server_role(void)
 BOOL lp_domain_master(void)
 {
 	if (Globals.bDomainMaster == Auto)
-		return (server_role == ROLE_DOMAIN_PDC);
+	{
+		return (lp_server_role() == ROLE_DOMAIN_PDC);
+	}
 
 	return Globals.bDomainMaster;
 }
@@ -2939,7 +2948,9 @@ BOOL lp_domain_master(void)
 BOOL lp_preferred_master(void)
 {
 	if (Globals.bPreferredMaster == Auto)
+	{
 		return (lp_local_master() && lp_domain_master());
+	}
 
 	return Globals.bPreferredMaster;
 }
