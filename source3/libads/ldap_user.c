@@ -77,4 +77,37 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 	talloc_destroy(ctx);
 	return status;
 }
+
+ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group, 
+			      const char *comment)
+{
+	TALLOC_CTX *ctx;
+	ADS_MODLIST mods;
+	ADS_STATUS status;
+	char *new_dn;
+
+	if (!(ctx = talloc_init_named("ads_add_group_acct")))
+		return ADS_ERROR(LDAP_NO_MEMORY);
+
+	status = ADS_ERROR(LDAP_NO_MEMORY);
+
+	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,cn=Users,%s", group, 
+				       ads->bind_path)))
+		goto done;
+	if (!(mods = ads_init_mods(ctx)))
+		goto done;
+
+	ads_mod_add(ctx, &mods, "cn", group);
+	ads_mod_add_var(ctx, &mods, LDAP_MOD_ADD, "objectClass", "top",
+			"group", NULL);
+	ads_mod_add(ctx, &mods, "name", group);
+	if (comment)
+		ads_mod_add(ctx, &mods, "description", comment);
+	ads_mod_add(ctx, &mods, "sAMAccountName", group);
+	status = ads_gen_add(ads, new_dn, mods);
+
+ done:
+	talloc_destroy(ctx);
+	return status;
+}
 #endif
