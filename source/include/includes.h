@@ -161,9 +161,6 @@
 
 #include <signal.h>
 
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
@@ -521,8 +518,6 @@ extern int errno;
 #include "registry.h"
 #include "rap.h"
 #include "ldap_server/ldap_server.h"
-#include "gtk/common/gtk-smb.h"
-#include "gtk/common/select.h"
 
 #include "libnet/libnet.h"
 #include "utils/net/net.h"

@@ -20,7 +20,8 @@
 */
 
 #include "includes.h"
-#include "gtk-smb.h"
+#include "gtk/common/select.h"
+#include "gtk/common/gtk-smb.h"
 
 void gtk_show_werror(GtkWidget *win, WERROR err) 
 {

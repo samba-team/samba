@@ -18,15 +18,6 @@
 
 #include <errno.h>
 
-static int sys_waitpid(pid_t pid,int *status,int options)
-{
-#ifdef HAVE_WAITPID
-  return waitpid(pid,status,options);
-#else /* USE_WAITPID */
-  return wait4(pid, status, options, NULL);
-#endif /* USE_WAITPID */
-}
-
 #define DATA "conftest.fcntl64"
 
 /* lock a byte range in a open file */

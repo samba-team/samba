@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
+#include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 
 /* 
@@ -278,7 +279,7 @@ static GtkWidget* create_mainwindow (void)
 
   gtk_tree_view_append_column(GTK_TREE_VIEW(tree_eps), curcol);
 
-  store_eps = gtk_tree_store_new(2, GTK_TYPE_STRING, GTK_TYPE_STRING);
+  store_eps = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
   gtk_tree_view_set_model(GTK_TREE_VIEW(tree_eps), GTK_TREE_MODEL(store_eps));
   g_object_unref(store_eps);
   
