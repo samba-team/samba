@@ -39,7 +39,7 @@ REQUIRED_LIBRARIES = GDBM
 OBJ_FILES= \
 		lib/tdb/tools/tdbtool.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC CONFIG LIBCMDLINE LIBTDB
+		LIBTDB
 # End BINARY tdbtool
 ################################################
 
@@ -69,6 +69,6 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES= \
 		lib/tdb/tools/tdbbackup.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC CONFIG LIBCMDLINE LIBTDB
+		LIBTDB
 # End BINARY tdbbackup
 ################################################
