@@ -198,7 +198,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 		   BOOL bcast, 
 		   struct in_addr to_ip, int *count)
 {
-  int i, retries = 3, retry = bcast?250:2000;
+  int retries = 3;
   struct timeval tval;
   struct packet_struct p;
   struct packet_struct *p2;
@@ -274,12 +274,8 @@ BOOL name_register(int fd, const char *name, int name_type,
   retries--;
 
   if ((p2 = receive_nmb_packet(fd, 10, nmb->header.name_trn_id))) {
-    struct nmb_packet *nmb2 = &p2->packet.nmb;
     debug_nmb_packet(p2);
-
-
     free(p2);  /* No memory leaks ... */
-
   }
 
   return True;
