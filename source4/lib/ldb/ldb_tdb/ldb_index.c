@@ -731,7 +731,7 @@ int ltdb_index_del(struct ldb_context *ldb, const struct ldb_message *msg)
 */
 static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
-	if (strncmp(key.dptr, "@INDEX:", 7) == 0) {
+	if (strncmp(key.dptr, "DN=@INDEX:", 10) == 0) {
 		return tdb_delete(tdb, key);
 	}
 	return 0;
