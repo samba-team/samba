@@ -438,22 +438,23 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 	   the old value, should it exist. */
 
 	if ((newval != NULL) && (strlen(newval) > 0)) {
+		if (existed) {
+		        /* There has been no value before, so don't delete it.
+			 * Here's a possible race: We might end up with
+			 * duplicate attributes */
+			/* By deleting exactly the value we found in the entry this
+			 * should be race-free in the sense that the LDAP-Server will
+			 * deny the complete operation if somebody changed the
+			 * attribute behind our back. */
+			/* This will also allow modifying single valued attributes 
+			 * in Novell NDS. In NDS you have to first remove attribute and then
+			 * you could add new value */
+
+	                 smbldap_set_mod(mods, LDAP_MOD_DELETE, attribute, oldval);
+	        }
+
 		smbldap_set_mod(mods, LDAP_MOD_ADD, attribute, newval);
 	}
-
-	if (!existed) {
-		/* There has been no value before, so don't delete it.
-		   Here's a possible race: We might end up with
-		   duplicate attributes */
-		return;
-	}
-
-	/* By deleting exactly the value we found in the entry this
-	   should be race-free in the sense that the LDAP-Server will
-	   deny the complete operation if somebody changed the
-	   attribute behind our back. */
-
-	smbldap_set_mod(mods, LDAP_MOD_DELETE, attribute, oldval);
 }
 
 /**********************************************************************
