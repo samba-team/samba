@@ -529,8 +529,12 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 }
 
 /* Get printer info */
-uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
-			      uint32 level, PRINTER_INFO_CTR *ctr)
+uint32 cli_spoolss_getprinter(
+	struct cli_state *cli, 
+	POLICY_HND *pol,
+	uint32 level, 
+	PRINTER_INFO_CTR *ctr
+)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTER q;
@@ -550,14 +554,12 @@ uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
 		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
-		make_spoolss_q_getprinter(&q, pol, level, &buffer, 
-					  needed);
+		make_spoolss_q_getprinter(&q, pol, level, &buffer, needed);
 
 		/* Marshall data and send request */
-
 		if (!spoolss_io_q_getprinter("", &q, &qbuf, 0) ||
-		    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTER, &qbuf,
-				      &rbuf)) {
+		    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTER, &qbuf, &rbuf)) 
+		{
 			result = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
@@ -568,25 +570,20 @@ uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
 		}
 		
 		/* Return output parameters */
-
 		if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
 
 			switch (level) {
 			case 0:
-				decode_printer_info_0(r.buffer, 1, 
-						      &ctr->printers_0);
+				decode_printer_info_0(r.buffer, 1, &ctr->printers_0);
 				break;
 			case 1:
-				decode_printer_info_1(r.buffer, 1, 
-						      &ctr->printers_1);
+				decode_printer_info_1(r.buffer, 1, &ctr->printers_1);
 				break;
 			case 2:
-				decode_printer_info_2(r.buffer, 1,
-						      &ctr->printers_2);
+				decode_printer_info_2(r.buffer, 1, &ctr->printers_2);
 				break;
 			case 3:
-				decode_printer_info_3(r.buffer, 1,
-						      &ctr->printers_3);
+				decode_printer_info_3(r.buffer, 1, &ctr->printers_3);
 				break;
 			}			
 		}
@@ -596,6 +593,57 @@ uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
 		prs_mem_free(&rbuf);
 
 	} while (result == ERROR_INSUFFICIENT_BUFFER);
+
+	return result;	
+}
+
+/**********************************************************************
+ * Set printer info 
+ */
+uint32 cli_spoolss_setprinter(
+	struct cli_state *cli, 
+	POLICY_HND *pol,
+	uint32 level, 
+	PRINTER_INFO_CTR *ctr,
+	uint32 command
+)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETPRINTER q;
+	SPOOL_R_SETPRINTER r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise input parameters */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+		
+	make_spoolss_q_setprinter(&q, pol, level, ctr, command);
+
+	/* Marshall data and send request */
+	result = NT_STATUS_UNSUCCESSFUL;
+	if (!spoolss_io_q_setprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTER, &qbuf, &rbuf)) 
+	{
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+	result = NT_STATUS_UNSUCCESSFUL;
+	if (!spoolss_io_r_setprinter("", &r, &rbuf, 0)) 
+	{
+		goto done;
+	}
+	
+	result = r.status;
+		
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
 
 	return result;	
 }
@@ -860,21 +908,27 @@ uint32 cli_spoolss_addprinterdriver (
 	make_spoolss_q_addprinterdriver (&q, server, level, ctr);
 
 	/* Marshall data and send request */
+	result = NT_STATUS_UNSUCCESSFUL;
 	if (!spoolss_io_q_addprinterdriver ("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTERDRIVER, &qbuf, &rbuf)) 
 	{
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 		
 	/* Unmarshall response */
+	result = NT_STATUS_UNSUCCESSFUL;
 	if (!spoolss_io_r_addprinterdriver ("", &r, &rbuf, 0))
 	{
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 		
 	/* Return output parameters */
 	result = r.status;
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 
 	return result;	
 }
@@ -915,21 +969,27 @@ uint32 cli_spoolss_addprinterex (
 	make_spoolss_q_addprinterex (&q, server, client, user, level, ctr);
 
 	/* Marshall data and send request */
+	result = NT_STATUS_UNSUCCESSFUL;
 	if (!spoolss_io_q_addprinterex ("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTEREX, &qbuf, &rbuf)) 
 	{
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 		
 	/* Unmarshall response */
+	result = NT_STATUS_UNSUCCESSFUL;
 	if (!spoolss_io_r_addprinterex ("", &r, &rbuf, 0))
 	{
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 		
 	/* Return output parameters */
 	result = r.status;
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 
 	return result;	
 }

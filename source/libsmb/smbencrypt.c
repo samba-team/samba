@@ -231,11 +231,18 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 /***********************************************************
  decode a password buffer
 ************************************************************/
-BOOL decode_pw_buffer(char buffer[516], char *new_pwrd,
-		      int new_pwrd_size, uint32 *new_pw_len)
+BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
+		      int new_pwrd_size, uint32 *new_pw_len,
+		      uchar nt_p16[16], uchar p16[16])
 {
-	int uni_pw_len=0;
 	char *pw;
+
+	int uni_pw_len=0;
+	int byte_len=0;
+	char unicode_passwd[514];
+	char lm_ascii_passwd[514];
+	char passwd[514];
+
 	/*
 	  Warning !!! : This function is called from some rpc call.
 	  The password IN the buffer is a UNICODE string.
@@ -243,33 +250,72 @@ BOOL decode_pw_buffer(char buffer[516], char *new_pwrd,
 	  If you reuse that code somewhere else check first.
 	*/
 
-	ZERO_STRUCTP(new_pwrd);
+	ZERO_STRUCT(unicode_passwd);
+	ZERO_STRUCT(lm_ascii_passwd);
+	ZERO_STRUCT(passwd);
 
-	/*
-	 * The length of the new password is in the last 4 bytes of
-	 * the data buffer.
-	 */
+	memset(nt_p16, '\0', 16);
+	memset(p16, '\0', 16);
 
-	*new_pw_len = IVAL(buffer, 512);
+	/* The length of the new password is in the last 4 bytes of the data buffer. */
+
+	byte_len = IVAL(in_buffer, 512);
 
 #ifdef DEBUG_PASSWORD
-	dump_data(100, buffer, 516);
+	dump_data(100, in_buffer, 516);
 #endif
 
-	if (((int)*new_pw_len) < 0 || (*new_pw_len) > new_pwrd_size - 1) {
-		DEBUG(0, ("decode_pw_buffer: incorrect password length (%d).\n", (*new_pw_len)));
+	/* Password cannot be longer than 128 characters */
+	if ( (byte_len < 0) || (byte_len > new_pwrd_size - 1)) {
+		DEBUG(0, ("decode_pw_buffer: incorrect password length (%d).\n", byte_len));
 		return False;
 	}
-
-	uni_pw_len = *new_pw_len;
-	*new_pw_len /= 2;
-	pw = dos_unistrn2((uint16 *)(&buffer[512 - uni_pw_len]), uni_pw_len);
-	memcpy(new_pwrd, pw, *new_pw_len);
+	
+	uni_pw_len = byte_len/2;
+	pw = dos_unistrn2((uint16 *)(&in_buffer[512 - byte_len]), byte_len);
+	memcpy(passwd, pw, uni_pw_len);
 
 #ifdef DEBUG_PASSWORD
-	dump_data(100, new_pwrd, (*new_pw_len));
+	DEBUG(100,("nt_lm_owf_gen: passwd: "));
+	dump_data(100, (char *)passwd, uni_pw_len);
+	DEBUG(100,("len:%d\n", uni_pw_len));
+#endif
+	memcpy(unicode_passwd, &in_buffer[512 - byte_len], byte_len);
+		
+	mdfour(nt_p16, (unsigned char *)unicode_passwd, byte_len);
+	
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("nt_lm_owf_gen: nt#:"));
+	dump_data(100, (char *)nt_p16, 16);
+	DEBUG(100,("\n"));
+#endif
+	
+	/* Mangle the passwords into Lanman format */
+	memcpy(lm_ascii_passwd, passwd, uni_pw_len);
+	lm_ascii_passwd[14] = '\0';
+	strupper(lm_ascii_passwd);
+
+	/* Calculate the SMB (lanman) hash functions of the password */
+	E_P16((uchar *) lm_ascii_passwd, (uchar *)p16);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("nt_lm_owf_gen: lm#:"));
+	dump_data(100, (char *)p16, 16);
+	DEBUG(100,("\n"));
 #endif
 
+	/* copy the password and it's length to the return buffer */	
+	*new_pw_len=uni_pw_len;
+	memcpy(new_pwrd, passwd, uni_pw_len);
+	new_pwrd[uni_pw_len]='\0';
+	
+	
+	/* clear out local copy of user's password (just being paranoid). */
+	ZERO_STRUCT(unicode_passwd);
+	ZERO_STRUCT(lm_ascii_passwd);
+	ZERO_STRUCT(passwd);
+	
 	return True;
+
 }
 

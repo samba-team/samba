@@ -510,10 +510,8 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 
 	p = smb_buf(cli->outbuf);
 	SIVAL(p, 0, cli->pid);
-	SIVAL(p, 4, (offset>>32));
-	SIVAL(p, 8, (offset&0xffffffff));
-	SIVAL(p, 12, (len>>32));
-	SIVAL(p, 16, (len&0xffffffff));
+	SOFF_T_R(p, 4, offset);
+	SOFF_T_R(p, 12, len);
 	p += 20;
 
 	cli_setup_bcc(cli, p);
@@ -560,10 +558,8 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 
 	p = smb_buf(cli->outbuf);
 	SIVAL(p, 0, cli->pid);
-	SIVAL(p, 4, (offset>>32));
-	SIVAL(p, 8, (offset&0xffffffff));
-	SIVAL(p, 12, (len>>32));
-	SIVAL(p, 16, (len&0xffffffff));
+	SOFF_T_R(p, 4, offset);
+	SOFF_T_R(p, 12, len);
 	p += 20;
 	cli_setup_bcc(cli, p);
 	cli_send_smb(cli);
@@ -779,3 +775,44 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	return True;
 }
 
+
+/****************************************************************************
+create and open a temporary file
+****************************************************************************/
+int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
+{
+	char *p;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,1,strlen(path)+2,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBctemp;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,0);
+
+	p = smb_buf(cli->outbuf);
+	*p++ = 4;
+	p += clistr_push(cli, p, path, -1, STR_TERMINATE | STR_CONVERT);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return -1;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return -1;
+	}
+
+	if (tmp_path) {
+		pstring path2;
+		clistr_pull(cli, path2, smb_buf(cli->inbuf)+1, 
+			    sizeof(path2), -1, STR_TERMINATE | STR_CONVERT);
+		*tmp_path = strdup(path2);
+	}
+
+	return SVAL(cli->inbuf,smb_vwv0);
+}
