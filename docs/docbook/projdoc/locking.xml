@@ -62,7 +62,7 @@ that are specified when a file is open.
 </para>
 
 <para>
-Record locking semantics under Unix is very different from record locking under
+Record locking semantics under Unix are very different from record locking under
 Windows. Versions of Samba before 2.2 have tried to use the native fcntl() unix
 system call to implement proper record locking between different Samba clients.
 This can not be fully correct due to several reasons. The simplest is the fact
@@ -90,7 +90,7 @@ will make lock checking calls on every read and write.
 </para>
 
 <para>
-You can also disable by range locking completely using <parameter>locking = no</parameter>.
+You can also disable byte range locking completely using <parameter>locking = no</parameter>.
 This is useful for those shares that don't support locking or don't need it
 (such as cdroms). In this case Samba fakes the return codes of locking calls to
 tell clients that everything is OK.
