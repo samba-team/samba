@@ -2,25 +2,34 @@ This is a prelodable shared library that provides SMB client services
 for existing executables. Using this you can simulate a smb
 filesystem.
 
-Currently this code only works on Linux with glibc2. Eventually I hope
-to make it portable to lots of OSes but at the moment if you don't
-have Linux then don't even try to use it.
+Currently this code only works on Linux with glibc2 (tested on
+RH5.1). Eventually I hope to make it portable to lots of OSes but at
+the moment if you don't have Linux then don't even try to use it.
 
 To use it you need to do this:
 
-export SMBW_USER=username
-export SMBW_PASSWORD=username
-export LD_PRELOAD=full_path_to_smbwrapper.so
+1) build smbwrapper.so using the command "make smbwrapper/smbwrapper.so"
+2) edit smbsh and set the LIBDIR line to point to the smbwrapper directory
+3) run smbsh
 
-then try to access /smb/SERVER/SHARE/ and see what happens.
+then try to access /smb/SERVER for some SMB server name and see what
+happens.
 
 For debugging you can set SMBW_DEBUG to an integer debug level.
 
-This is code under development. Lots of things don't work yet. Quite a
-few things do though, for example I've successfully run tar, less, ls,
-bash, cmp, cat, du and a bunch of other utilities on files accessed
-via this library.
+This is code under development. Lots of things don't work yet.
+
+Things that I have tried and do seem to work include:
+
+  emacs, tar, ls, cmp, cp, rsync, du, cat, rm, mv, less, more, wc, head,
+  tail, bash, tcsh
+
+things that I know don't work:
+ 
+ vi (I don't know why this is)
+ anything executing from the share
+ anything that uses mmap
+
 
 If you want to help with the development of this code then join the
 samba-technical mailing list.
-

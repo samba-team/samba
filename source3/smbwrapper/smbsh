@@ -1,5 +1,7 @@
 #!/bin/sh
 
+LIBDIR=/samba/cvs/source/smbwrapper
+
 # a simple launcher for the smbwrapper.so preloadde library
 
 if [ x$SMBW_USER = x ]; then
@@ -15,7 +17,7 @@ if [ x$SMBW_PASSWORD = x ]; then
     export SMBW_PASSWORD=$pass
 fi
 
-export LD_PRELOAD=$PWD/smbwrapper/smbwrapper.so
+export LD_PRELOAD=$LIBDIR/smbwrapper.so
 
 export PWD
 export PS1='smbsh$ '
