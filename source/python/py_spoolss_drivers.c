@@ -30,28 +30,30 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	PRINTER_DRIVER_CTR ctr;
 	int level = 1, i;
 	uint32 needed, num_drivers;
-	char *arch = "Windows NT x86", *server_name;
+	char *arch = "Windows NT x86", *server, *errstr;
 	static char *kwlist[] = {"server", "creds", "level", "arch", NULL};
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|O!is", kwlist, 
-					 &server_name, &PyDict_Type, &creds,
-					 &level, &arch))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "s|O!is", kwlist, &server, &PyDict_Type,
+		    &creds, &level, &arch))
 		return NULL;
 	
 	/* Call rpc function */
 	
 	if (!(cli = open_pipe_creds(
-		      server_name, creds, cli_spoolss_initialise))) {
-		fprintf(stderr, "could not initialise cli state\n");
+		      server, creds, cli_spoolss_initialise, &errstr))) {
+		PyErr_SetString(spoolss_error, errstr);
+		free(errstr);
 		goto done;
 	}
 
 	if (!(mem_ctx = talloc_init())) {
-		fprintf(stderr, "unable to initialise talloc context\n");
+		PyErr_SetString(
+			spoolss_error, "unable to initialise talloc context\n");
 		goto done;
 	}	
 
@@ -181,8 +183,8 @@ PyObject *spoolss_hnd_getprinterdriver(PyObject *self, PyObject *args,
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "|is", kwlist, 
-					 &level, &arch))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "|is", kwlist, &level, &arch))
 		return NULL;
 
 	/* Call rpc function */
@@ -230,28 +232,30 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 	PyObject *result = Py_None, *creds = NULL;
 	DRIVER_DIRECTORY_CTR ctr;
 	uint32 needed, level;
-	char *arch = "Windows NT x86", *server_name;
+	char *arch = "Windows NT x86", *server, *errstr;
 	static char *kwlist[] = {"server", "level", "arch", "creds", NULL};
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|isO!", kwlist, 
-					 &server_name, &level, &arch,
-					 &PyDict_Type, &creds))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "s|isO!", kwlist, &server, &level,
+		    &arch, &PyDict_Type, &creds))
 		return NULL;
 
 	/* Call rpc function */
 
 	if (!(cli = open_pipe_creds(
-		      server_name, creds, cli_spoolss_initialise))) {
-		fprintf(stderr, "could not initialise cli state\n");
+		      server, creds, cli_spoolss_initialise, &errstr))) {
+		PyErr_SetString(spoolss_error, errstr);
+		free(errstr);
 		goto done;
 	}
 	
 	if (!(mem_ctx = talloc_init())) {
-		fprintf(stderr, "unable to initialise talloc context\n");
+		PyErr_SetString(
+			spoolss_error, "unable to initialise talloc context\n");
 		goto done;
 	}	
 
@@ -290,7 +294,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 				   PyObject *kw)
 {
 	static char *kwlist[] = { "server", "info", "creds", NULL };
-	char *server;
+	char *server, *errstr;
 	uint32 level;
 	PyObject *info, *result = NULL, *creds = NULL, *level_obj;
 	WERROR werror;
@@ -309,10 +313,18 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 	if (server[0] == '\\' && server[1] == '\\')
 		server += 2;
 
-	mem_ctx = talloc_init();
+	if (!(mem_ctx = talloc_init())) {
+		PyErr_SetString(
+			spoolss_error, "unable to initialise talloc context\n");
+		return NULL;
+	}
 
-	if (!(cli = open_pipe_creds(server, creds, cli_spoolss_initialise)))
+	if (!(cli = open_pipe_creds(
+		      server, creds, cli_spoolss_initialise, &errstr))) {
+		PyErr_SetString(spoolss_error, errstr);
+		free(errstr);
 		goto done;
+	}
 
 	if ((level_obj = PyDict_GetItemString(info, "level"))) {
 

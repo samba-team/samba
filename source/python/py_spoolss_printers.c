@@ -24,7 +24,7 @@
 
 PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
-	char *full_name, *computer_name = NULL;
+	char *unc_name, *server = NULL, *errstr;
 	TALLOC_CTX *mem_ctx;
 	POLICY_HND hnd;
 	WERROR werror;
@@ -34,25 +34,26 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 	struct cli_state *cli;
 
 	if (!PyArg_ParseTupleAndKeywords(
-		args, kw, "s|O!i", kwlist, &full_name, &PyDict_Type, &creds,
-		&desired_access)) {
-
+		    args, kw, "s|O!i", kwlist, &unc_name, &PyDict_Type, &creds,
+		    &desired_access))
 		goto done;
-	}
 
 	/* FIXME: Return name format exception for names without a UNC
 	   prefix */ 
 
-	computer_name = strdup(full_name + 2);
+	server = strdup(unc_name + 2);
 
-	if (strchr(computer_name, '\\')) {
-		char *c = strchr(computer_name, '\\');
+	if (strchr(server, '\\')) {
+		char *c = strchr(server, '\\');
 		*c = 0;
 	}
 
 	if (!(cli = open_pipe_creds(
-		      computer_name, creds, cli_spoolss_initialise)))
+		      server, creds, cli_spoolss_initialise, &errstr))) {
+		PyErr_SetString(spoolss_error, errstr);
+		free(errstr);
 		goto done;
+	}
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(spoolss_error, 
@@ -61,7 +62,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 	}
 
 	werror = cli_spoolss_open_printer_ex(
-		cli, mem_ctx, full_name, "", desired_access, computer_name, 
+		cli, mem_ctx, unc_name, "", desired_access, server, 
 		"", &hnd);
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -74,7 +75,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 	result = new_spoolss_policy_hnd_object(cli, mem_ctx, &hnd);
 
  done:
-	SAFE_FREE(computer_name);
+	SAFE_FREE(server);
 
 	return result;
 }
@@ -187,8 +188,8 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!", kwlist, 
-					 &PyDict_Type, &info))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "O!", kwlist, &PyDict_Type, &info))
 		return NULL;
 	
 	/* Check dictionary contains a level */
@@ -277,20 +278,30 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 				 "creds", NULL};
 	TALLOC_CTX *mem_ctx;
 	struct cli_state *cli;
-	char *server, *name = NULL;
+	char *server, *errstr;
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|siiO!", kwlist, 
-					 &server, &name, &level, &flags, 
-					 &PyDict_Type, &creds))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "s|iiO!", kwlist, &server, &level, &flags, 
+		    &PyDict_Type, &creds))
 		return NULL;
 	
 	if (server[0] == '\\' && server[1] == '\\')
 		server += 2;
 
-	mem_ctx = talloc_init();
-	cli = open_pipe_creds(server, creds, cli_spoolss_initialise);
+	if (!(cli = open_pipe_creds(
+		      server, creds, cli_spoolss_initialise, &errstr))) {
+		PyErr_SetString(spoolss_error, errstr);
+		free(errstr);
+		return NULL;
+	}
+
+	if (!(mem_ctx = talloc_init())) {
+		PyErr_SetString(
+			spoolss_error, "unable to initialise talloc context\n");
+		return NULL;
+	}
 
 	/* Call rpc function */
 	
@@ -369,7 +380,7 @@ PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
 {
 	static char *kwlist[] = { "server", "printername", "info", "creds", 
 				  NULL};
-	char *printername, *server;
+	char *printername, *server, *errstr;
 	PyObject *info, *result = NULL, *creds = NULL;
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -383,13 +394,17 @@ PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 
 	if (!(cli = open_pipe_creds(
-		      server, creds, cli_spoolss_initialise)))
+		      server, creds, cli_spoolss_initialise, &errstr))) {
+		PyErr_SetString(spoolss_error, errstr);
+		free(errstr);
 		goto done;
+	}
 
-	mem_ctx = talloc_init();
-
-	if (!(cli = open_pipe_creds(server, creds, cli_spoolss_initialise)))
-		goto done;
+	if (!(mem_ctx = talloc_init())) {
+		PyErr_SetString(
+			spoolss_error, "unable to initialise talloc context\n");
+		return NULL;
+	}
 
 	if (!py_to_PRINTER_INFO_2(&info2, info, mem_ctx)) {
 		PyErr_SetString(spoolss_error,

@@ -31,21 +31,31 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 	static char *kwlist[] = {"server", "level", "creds", NULL};
 	TALLOC_CTX *mem_ctx = NULL;
 	struct cli_state *cli = NULL;
-	char *server;
+	char *server, *errstr;
 	PORT_INFO_CTR ctr;
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|iO!", kwlist, 
-					 &server, &creds, &level, 
-					 &PyDict_Type))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "s|iO!", kwlist, &server, &creds, &level,
+		    &PyDict_Type))
 		return NULL;
 	
 	if (server[0] == '\\' && server[1] == '\\')
 		server += 2;
 
-	mem_ctx = talloc_init();
-	cli = open_pipe_creds(server, creds, cli_spoolss_initialise);
+	if (!(cli = open_pipe_creds(
+		      server, creds, cli_spoolss_initialise, &errstr))) {
+		PyErr_SetString(spoolss_error, errstr);
+		free(errstr);
+		return NULL;
+	}
+
+	if (!(mem_ctx = talloc_init())) {
+		PyErr_SetString(
+			spoolss_error, "unable to initialise talloc context\n");
+		return NULL;
+	}
 
 	/* Call rpc function */
 	
