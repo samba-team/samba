@@ -260,6 +260,7 @@ typedef struct
 	BOOL bUnixExtensions;
 	BOOL bDisableNetbios;
 	int restrict_anonymous;
+	int name_cache_timeout;
 }
 global;
 
@@ -838,6 +839,8 @@ static struct parm_struct parm_table[] = {
 	{"hostname lookups", P_BOOL, P_GLOBAL, &Globals.bHostnameLookups, NULL, NULL, 0},
 	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_SHARE},
 
+	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, 0},
+
 	{"Printing Options", P_SEP, P_SEPARATOR},
 	
 	{"total print jobs", P_INTEGER, P_GLOBAL, &Globals.iTotalPrintJobs, NULL, NULL, FLAG_PRINT},
@@ -1375,6 +1378,8 @@ static void init_globals(void)
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
 
+	Globals.name_cache_timeout = 660; /* In seconds */
+
 	Globals.bUseSpnego = True;
 
 	string_set(&Globals.smb_ports, SMB_PORTS);
@@ -1740,6 +1745,7 @@ FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
 FN_GLOBAL_BOOL(lp_algorithmic_rid_base, &Globals.bAlgorithmicRidBase)
+FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 
 typedef struct _param_opt_struct param_opt_struct;
 struct _param_opt_struct {

@@ -783,7 +783,7 @@ static BOOL resolve_hosts(const char *name,
 *********************************************************/
 
 static BOOL internal_resolve_name(const char *name, int name_type,
-                         		struct in_addr **return_iplist, int *return_count)
+				  struct in_addr **return_iplist, int *return_count)
 {
   pstring name_resolve_list;
   fstring tok;
@@ -816,6 +816,15 @@ static BOOL internal_resolve_name(const char *name, int name_type,
     return True;
   }
   
+  /* Check netbios name cache */
+
+  if (namecache_fetch(name, name_type, return_iplist, return_count)) {
+
+	  /* This could be a negative response */
+
+	  return (*return_count > 0);
+  }
+
   pstrcpy(name_resolve_list, lp_name_resolve_order());
   ptr = name_resolve_list;
   if (!ptr || !*ptr)
@@ -823,9 +832,16 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 
   while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
 	  if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-		  if (name_type == 0x20 && resolve_hosts(name, return_iplist, return_count)) {
-		    result = True;
-		    goto done;
+		  if (name_type == 0x20) {
+			  if (resolve_hosts(name, return_iplist, return_count)) {
+				  result = True;
+				  goto done;
+			  } else {
+
+				  /* Store negative lookup result */
+
+				  namecache_store(name, name_type, 0, NULL);
+			  }
 		  }
 	  } else if(strequal( tok, "lmhosts")) {
 		  if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
@@ -897,6 +913,10 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 	  *return_iplist = nodupes_iplist;
 	  *return_count = nodupes_count;
   }
+ 
+  /* Save in name cache */
+
+  namecache_store(name, name_type, *return_count, *return_iplist);
 
   /* Display some debugging info */
 
