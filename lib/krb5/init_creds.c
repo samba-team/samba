@@ -306,7 +306,7 @@ krb5_get_init_creds_opt_set_pa_password(krb5_context context,
 }
 
 krb5_error_code
-krb5_get_init_creds_opt_set_paq_request(krb5_context context,
+krb5_get_init_creds_opt_set_pac_request(krb5_context context,
 					krb5_get_init_creds_opt *opt,
 					krb5_boolean req_pac)
 {

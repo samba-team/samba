@@ -459,7 +459,7 @@ get_new_tickets(krb5_context context,
     if(anonymous_flag != -1)
 	krb5_get_init_creds_opt_set_anonymous (opt, anonymous_flag);
     if (pac_flag != -1)
-	krb5_get_init_creds_opt_set_paq_request(context, opt, 
+	krb5_get_init_creds_opt_set_pac_request(context, opt, 
 						pac_flag ? TRUE : FALSE);
     if (pk_cert_file || pk_key_file) {
 	int flags = 0;
