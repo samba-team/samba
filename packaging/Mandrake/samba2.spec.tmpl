@@ -274,9 +274,9 @@ fi
 %attr(-,root,root) %{prefix}/share/swat/images/*
 %attr(-,root,root) %{prefix}/share/swat/include/*
 %attr(-,root,root) %{prefix}/share/swat/using_samba/*
-%attr(-,root,root) %config(noreplace) /etc/lmhosts
-%attr(-,root,root) %config(noreplace) /etc/smb.conf
-%attr(-,root,root) %config(noreplace) /etc/smbusers
+%attr(-,root,root) %config(noreplace) /etc/samba/lmhosts
+%attr(-,root,root) %config(noreplace) /etc/samba/smb.conf
+%attr(-,root,root) %config(noreplace) /etc/samba/smbusers
 %attr(-,root,root) /etc/rc.d/init.d/smb
 %attr(-,root,root) /etc/logrotate.d/samba
 %attr(-,root,root) %config(noreplace) /etc/pam.d/samba
