@@ -239,31 +239,94 @@ BOOL allow_access(char *deny_list,char *allow_list,
 	return (True);
 }
 
+/* return true if the char* contains ip addrs only.  Used to avoid 
+gethostbyaddr() calls */
+static BOOL only_ipaddrs_in_list(const char* list)
+{
+	BOOL 		only_ip = True;
+	char		*listcopy,
+			*tok;
+			
+	listcopy = strdup(list);
+
+	for (tok = strtok(listcopy, sep); tok ; tok = strtok(NULL, sep)) 
+	{
+		/* factor out the special strings */
+		if (!strcasecmp(tok, "ALL") || !strcasecmp(tok, "FAIL") || 
+		    !strcasecmp(tok, "EXCEPT"))
+		{
+			continue;
+		}
+		
+		if (!is_ipaddress(tok))
+		{
+			char *p;
+			/* 
+			 * if we failed, make surethat it was not because the token
+			 * was a network/netmask pair.  Only network/netmask pairs
+			 * have a '/' in them
+			 */
+			if ((p=strtok(tok, "/")) == NULL)
+			{
+				only_ip = False;
+				DEBUG(3,("only_ipaddrs_in_list: list [%s] has non-ip address %s\n", list, p));
+				break;
+			}
+		}
+	}
+	
+	if (listcopy) 
+		free (listcopy);
+	
+	return only_ip;
+}
+
 /* return true if access should be allowed to a service for a socket */
 BOOL check_access(int sock, char *allow_list, char *deny_list)
 {
 	BOOL ret = False;
+	BOOL only_ip = False;
 	
 	if (deny_list) deny_list = strdup(deny_list);
 	if (allow_list) allow_list = strdup(allow_list);
 
-	if ((!deny_list || *deny_list==0) && (!allow_list || *allow_list==0)) {
+	if ((!deny_list || *deny_list==0) && (!allow_list || *allow_list==0)) 
+	{
 		ret = True;
 	}
 
-	if (!ret) {
-		if (allow_access(deny_list,allow_list,
-				 get_socket_name(sock),get_socket_addr(sock))) {
+	if (!ret) 
+	{
+		/* bypass gethostbyaddr() calls if the lists only contain IP addrs */
+		if (only_ipaddrs_in_list(allow_list) && only_ipaddrs_in_list(deny_list))
+		{
+			only_ip = True;
+			DEBUG (3, ("check_access: no hostnames in host allow/deny list.\n"));
+			ret = allow_access(deny_list,allow_list, NULL, get_socket_addr(sock));
+		}
+		else
+		{
+			DEBUG (3, ("check_access: hostnames in host allow/deny list.\n"));
+			ret = allow_access(deny_list,allow_list, get_socket_name(sock),
+					   get_socket_addr(sock));
+		}
+		
+		if (ret) 
+		{
 			DEBUG(2,("Allowed connection from %s (%s)\n",
-				 get_socket_name(sock),get_socket_addr(sock)));
-			ret = True;
-		} else {
+				 only_ip ? "" : get_socket_name(sock),
+				 get_socket_addr(sock)));
+		} 
+		else 
+		{
 			DEBUG(0,("Denied connection from %s (%s)\n",
-				 get_socket_name(sock),get_socket_addr(sock)));
+				 only_ip ? "" : get_socket_name(sock),
+				 get_socket_addr(sock)));
 		}
 	}
 
 	if (deny_list) free(deny_list);
 	if (allow_list) free(allow_list);
+	
 	return(ret);
 }
