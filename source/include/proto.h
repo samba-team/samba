@@ -4281,16 +4281,16 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 					uint32 *data_size,
 					uint32 *num_entries,
 					SAM_DISPINFO_CTR *ctr);
-uint32 _samr_lookup_names(const POLICY_HND *pol,
+uint32 _samr_lookup_names(const POLICY_HND *dom_pol,
 				
-			uint32 num_names1,
+			uint32 num_names,
 			uint32 flags,
 			uint32 ptr,
 			const UNISTR2 *uni_name,
 
-			uint32 *num_rids1,
+			uint32 *num_rids,
 			uint32 rid[MAX_SAM_ENTRIES],
-			uint32 *num_types1,
+			uint32 *num_types,
 			uint32 type[MAX_SAM_ENTRIES]);
 uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
 				uint32 num_rids, uint32 flags,
@@ -5053,16 +5053,12 @@ uint32 _spoolss_getjob( const POLICY_HND *handle,
 /*The following definitions come from  srvsvcd/srv_srvsvc_nt.c  */
 
 uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod );
-BOOL make_r_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, char *name,
-                                uint32 ver_major, uint32 ver_minor,
-                                uint32 srv_type, char *comment);
-BOOL make_r_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id, char *name,
-                      char *comment, uint32 ver_major, uint32 ver_minor,
-                      uint32 srv_type, uint32 users, uint32 disc, uint32 hidden,
-                      uint32 announce, uint32 ann_delta, uint32 licenses,
-                      char *usr_path);
 uint32 _srv_net_srv_get_info( UNISTR2 *srv_name, uint32 switch_value,
                                 SRV_INFO_CTR *ctr);
+uint32 _srv_net_srv_share_enum( const UNISTR2 *srv_name, 
+				uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
+				uint32 preferred_len, ENUM_HND *enum_hnd,
+				uint32 *total_entries, uint32 share_level );
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 

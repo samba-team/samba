@@ -394,7 +394,7 @@ static uint32 make_srv_r_net_share_enum( uint32 resume_hnd,
 /*******************************************************************
 net share enum
 ********************************************************************/
-uint32 _srv_net_srv_share_enum( UNISTR2 *srv_name, 
+uint32 _srv_net_srv_share_enum( const UNISTR2 *srv_name, 
 				uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 				uint32 preferred_len, ENUM_HND *enum_hnd,
 				uint32 *total_entries, uint32 share_level )

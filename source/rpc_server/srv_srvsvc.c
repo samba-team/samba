@@ -768,7 +768,7 @@ static void api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
 
 	r_n.status = _srv_net_srv_share_enum( &q_n.uni_srv_name, 
 				ctr.switch_value, &ctr,
-				q_n.preferred_len, q_n.enum_hnd,
+				q_n.preferred_len, &q_n.enum_hnd,
 				&(r_n.total_entries),
 				q_n.share_level );
 

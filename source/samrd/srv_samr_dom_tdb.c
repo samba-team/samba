@@ -28,83 +28,66 @@
 
 extern int DEBUGLEVEL;
 
+typedef struct sam_data21_info
+{
+	SAM_USER_INFO_21 *usr;
+	uint32 num_sam_entries;
+	uint32 start_idx;
+	uint32 current_idx;;
+
+} SAM_DATA_21;
+
+/******************************************************************
+makes a SAMR_R_ENUM_USERS structure.
+********************************************************************/
+static int tdb_user21_traverse(TDB_CONTEXT *tdb,
+				TDB_DATA kbuf,
+				TDB_DATA dbuf,
+				void *state)
+{
+	prs_struct ps;
+	SAM_USER_INFO_21 *usr;
+	SAM_DATA_21 *data = (SAM_DATA_21*)state;
+	uint32 num_sam_entries = data->num_sam_entries + 1;
+
+	DEBUG(5,("tdb_user_traverse: idx: %d %d\n",
+					data->current_idx,
+					num_sam_entries));
+
+	dump_data_pw("usr:\n", dbuf.dptr, dbuf.dsize);
+	dump_data_pw("rid:\n", kbuf.dptr, kbuf.dsize);
+
+	/* skip first requested items */
+	if (data->current_idx < data->start_idx)
+	{
+		data->current_idx++;
+		return 0x0;
+	}
+
+	data->usr = (SAM_USER_INFO_21*)Realloc(data->usr,
+	                    num_sam_entries * sizeof(data->usr[0]));
+
+	if (data->usr == NULL)
+	{
+		DEBUG(0,("NULL pointers in tdb_user21_traverse\n"));
+		return -1;
+	}
+
+	prs_create(&ps, dbuf.dptr, dbuf.dsize, 4, True);
+
+	usr = &data->usr[data->num_sam_entries];
+	if (sam_io_user_info21("usr", usr, &ps, 0))
+	{
+		data->num_sam_entries++;
+	}
+
+	return 0x0;
+}
+
 /*******************************************************************
   This next function should be replaced with something that
   dynamically returns the correct user info..... JRA.
  ********************************************************************/
-
-static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
-				int start_idx,
-                                int *total_entries, int *num_entries,
-                                int max_num_entries,
-                                uint16 acb_mask)
-{
-	void *vp = NULL;
-	struct sam_passwd *pwd = NULL;
-
-	(*num_entries) = 0;
-	(*total_entries) = 0;
-
-	if (pw_buf == NULL) return False;
-
-	vp = startsmbpwent(False);
-	if (!vp)
-	{
-		DEBUG(0, ("get_sampwd_entries: Unable to open SMB password database.\n"));
-		return False;
-	}
-
-	while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries)
-	{
-		int user_name_len;
-
-		if (start_idx > 0)
-		{
-			/* skip the requested number of entries.
-			   not very efficient, but hey...
-			 */
-			if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
-			{
-				start_idx--;
-			}
-			continue;
-		}
-
-		user_name_len = strlen(pwd->nt_name);
-		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->nt_name, user_name_len);
-		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len);
-		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
-		bzero( pw_buf[(*num_entries)].nt_pwd , 16);
-
-		/* Now check if the NT compatible password is available. */
-		if (pwd->smb_nt_passwd != NULL)
-		{
-			memcpy( pw_buf[(*num_entries)].nt_pwd , pwd->smb_nt_passwd, 16);
-		}
-
-		pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
-
-		DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
-		          (*num_entries), pwd->nt_name,
-		          pwd->user_rid, pwd->acct_ctrl));
-
-		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
-		{
-			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
-			(*num_entries)++;
-		}
-		else
-		{
-			DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
-		}
-
-		(*total_entries)++;
-	}
-
-	endsmbpwent(vp);
-
-	return (*num_entries) > 0;
-}
 
 /*******************************************************************
  samr_reply_open_domain
@@ -231,7 +214,7 @@ static int tdb_user_traverse(TDB_CONTEXT *tdb,
 	SAM_ENTRY *sam;
 	UNISTR2 *str;
 
-	DEBUG(5,("tdb_user_traverse: idx: %d %d\n",
+	DEBUG(5,("tdb_user21_traverse: idx: %d %d\n",
 					data->current_idx,
 					num_sam_entries));
 
@@ -505,12 +488,21 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 					uint32 *num_entries,
 					SAM_DISPINFO_CTR *ctr)
 {
-	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
+	SAM_USER_INFO_21 *pass = NULL;
 	DOMAIN_GRP *grps = NULL;
 	DOMAIN_GRP *sam_grps = NULL;
 	uint16 acb_mask = ACB_NORMAL;
 	int num_sam_entries = 0;
 	int total_entries;
+
+	TDB_CONTEXT *sam_tdb = NULL;
+
+	/* find the domain sid associated with the policy handle */
+	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol, &sam_tdb,
+					NULL, NULL, NULL))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
 
@@ -535,17 +527,18 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 		case 0x1:
 		case 0x4:
 		{
-			BOOL ret;
+			SAM_DATA_21 state;
+			ZERO_STRUCT(state);
 
-			become_root(True);
-			ret = get_sampwd_entries(pass, start_idx,
-				      &total_entries, &num_sam_entries,
-				      MAX_SAM_ENTRIES, acb_mask);
-			unbecome_root(True);
-			if (!ret)
-			{
-				return NT_STATUS_ACCESS_DENIED;
-			}
+			state.start_idx = start_idx;
+			total_entries = tdb_traverse(sam_tdb,
+			                             tdb_user21_traverse,
+			                             (void*)&state);
+
+			pass = state.usr;
+			start_idx += state.num_sam_entries;
+			num_sam_entries = state.num_sam_entries;
+
 			break;
 		}
 		case 0x3:
@@ -571,19 +564,11 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 		}
 	}
 
-
 	(*num_entries) = num_sam_entries;
 
 	if ((*num_entries) > max_entries)
 	{
 		(*num_entries) = max_entries;
-	}
-
-	if ((*num_entries) > MAX_SAM_ENTRIES)
-	{
-		(*num_entries) = MAX_SAM_ENTRIES;
-		DEBUG(5,("limiting number of entries to %d\n", 
-			 (*num_entries)));
 	}
 
 	(*data_size) = max_size;
@@ -636,6 +621,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 			ctr->sam.info = NULL;
 			safe_free(sam_grps);
 			safe_free(grps);
+			safe_free(pass);
 			return NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
@@ -644,6 +630,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 
 	safe_free(sam_grps);
 	safe_free(grps);
+	safe_free(pass);
 
 	if ((*num_entries) < num_sam_entries)
 	{
