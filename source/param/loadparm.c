@@ -227,6 +227,9 @@ typedef struct
 	char *sslClientCert;
 	char *sslClientPrivKey;
 	char *sslCiphers;
+	char *sslEgdSocket;
+	char *sslEntropyFile;
+	int  sslEntropyBytes;
 	BOOL sslEnabled;
 	BOOL sslReqClientCert;
 	BOOL sslReqServerCert;
@@ -773,6 +776,9 @@ static struct parm_struct parm_table[] = {
 	{"ssl key", P_STRING, P_GLOBAL, &Globals.sslPrivKey, NULL, NULL, 0},
 	{"ssl client cert", P_STRING, P_GLOBAL, &Globals.sslClientCert, NULL, NULL, 0},
 	{"ssl client key", P_STRING, P_GLOBAL, &Globals.sslClientPrivKey, NULL, NULL, 0},
+	{"ssl egd socket", P_STRING, P_GLOBAL, &Globals.sslEgdSocket, NULL, NULL, 0},
+	{"ssl entropy file", P_STRING, P_GLOBAL, &Globals.sslEntropyFile, NULL, NULL, 0},
+	{"ssl entropy bytes", P_INTEGER, P_GLOBAL, &Globals.sslEntropyBytes, NULL, NULL, 0},
 	{"ssl require clientcert", P_BOOL, P_GLOBAL, &Globals.sslReqClientCert, NULL, NULL, 0},
 	{"ssl require servercert", P_BOOL, P_GLOBAL, &Globals.sslReqServerCert, NULL, NULL, 0},
 	{"ssl ciphers", P_STRING, P_GLOBAL, &Globals.sslCiphers, NULL, NULL, 0},
@@ -1323,6 +1329,9 @@ static void init_globals(void)
 	string_set(&Globals.sslClientCert, "");
 	string_set(&Globals.sslClientPrivKey, "");
 	string_set(&Globals.sslCiphers, "");
+	string_set(&Globals.sslEgdSocket, "");
+	string_set(&Globals.sslEntropyFile, "");
+	Globals.sslEntropyBytes = 256;
 	Globals.sslEnabled = False;
 	Globals.sslReqClientCert = False;
 	Globals.sslReqServerCert = False;
@@ -1532,6 +1541,9 @@ FN_GLOBAL_STRING(lp_ssl_privkey, &Globals.sslPrivKey)
 FN_GLOBAL_STRING(lp_ssl_client_cert, &Globals.sslClientCert)
 FN_GLOBAL_STRING(lp_ssl_client_privkey, &Globals.sslClientPrivKey)
 FN_GLOBAL_STRING(lp_ssl_ciphers, &Globals.sslCiphers)
+FN_GLOBAL_STRING(lp_ssl_egdsocket, &Globals.sslEgdSocket)
+FN_GLOBAL_STRING(lp_ssl_entropyfile, &Globals.sslEntropyFile)
+FN_GLOBAL_INTEGER(lp_ssl_entropybytes, &Globals.sslEntropyBytes)
 FN_GLOBAL_BOOL(lp_ssl_enabled, &Globals.sslEnabled)
 FN_GLOBAL_BOOL(lp_ssl_reqClientCert, &Globals.sslReqClientCert)
 FN_GLOBAL_BOOL(lp_ssl_reqServerCert, &Globals.sslReqServerCert)
@@ -1851,7 +1863,15 @@ from service ifrom. homename must be in DOS codepage.
 ***************************************************************************/
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
 {
-	int i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
+	int i;
+	SMB_STRUCT_STAT buf;
+	
+	/* if the user's home directory doesn't exist, then don't 
+	   add it to the list of available shares */
+	if (sys_stat(pszHomedir, &buf))
+		return False;
+	
+	i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
 	if (i < 0)
 		return (False);
