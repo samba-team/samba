@@ -568,7 +568,6 @@ int msrpc_sam_enum_users( const char* srv_name,
 	BOOL res1 = True;
 	BOOL res2 = True;
 	uint32 start_idx = 0x0;
-	uint16 unk_0 = 0x0;
 	uint16 acb_mask = 0;
 	uint16 unk_1 = 0x0;
 	uint32 ace_perms = 0x304; /* access control permissions */
@@ -582,8 +581,8 @@ int msrpc_sam_enum_users( const char* srv_name,
 
 	string_to_sid(&sid_1_5_20, "S-1-5-32");
 
-	DEBUG(5,("Number of entries:%d unk_0:%04x acb_mask:%04x unk_1:%04x\n",
-	          start_idx, unk_0, acb_mask, unk_1));
+	DEBUG(5,("Number of entries:%d :%04x unk_1:%04x\n",
+	          start_idx, acb_mask, unk_1));
 
 	/* establish a connection. */
 	res = res ? samr_connect( srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,

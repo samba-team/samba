@@ -532,7 +532,6 @@ BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
 				int max_send_pdu)
 {
 	int len;
-	uint16 cmd = 0x0026;
 	cli_auth_fns *auth = cli_conn_get_authfns(con);
 
 	BOOL first = True;
@@ -540,7 +539,7 @@ BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
 	RPC_HDR rhdr;
 	size_t data_len = data->data_size;
 	int max_data_len = MAX(data_len, 2048);
-	DEBUG(5, ("cli_send_and_rcv_pdu_trans: cmd:%x fnum:%x\n", cmd, fnum));
+	DEBUG(5, ("cli_send_and_rcv_pdu_trans: fnum:%x\n", fnum));
 
 	DEBUG(10, ("cli_send_and_rcv_pdu_trans: len: %d\n", data_len));
 
@@ -614,7 +613,6 @@ BOOL cli_send_and_rcv_pdu_rw(struct cli_connection *con,
 {
 	int len;
 	int data_offset = 0;
-	uint16 cmd = 0x0026;
 	cli_auth_fns *auth = cli_conn_get_authfns(con);
 
 	BOOL first = True;
@@ -625,7 +623,7 @@ BOOL cli_send_and_rcv_pdu_rw(struct cli_connection *con,
 	char *d = NULL;
 	size_t data_left = data->data_size;
 	size_t data_len = data->data_size;
-	DEBUG(5, ("cli_send_and_rcv_pdu_rw: cmd:%x fnum:%x\n", cmd, fnum));
+	DEBUG(5, ("cli_send_and_rcv_pdu_rw: fnum:%x\n", fnum));
 
 	while (data_offset < data_len)
 	{

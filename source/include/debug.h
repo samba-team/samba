@@ -84,6 +84,17 @@ BOOL dbgtext();
  *               Usage:
  *                 DEBUGADD( 2, ("Some additional text.\n") );
  */
+
+#ifdef NO_DEBUG_REPORTING
+
+#define DEBUGLVL( level ) (True)
+
+#define DEBUG( level , body ) (void)(False)
+
+#define DEBUGADD( level , body ) (void)(False)
+
+#else
+
 #define DEBUGLVL( level ) \
   ( (DEBUGLEVEL >= (level)) \
    && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
@@ -95,6 +106,8 @@ BOOL dbgtext();
 
 #define DEBUGADD( level, body ) \
   (void)( (DEBUGLEVEL >= (level)) && (dbgtext body) )
+
+#endif
 
 /* -------------------------------------------------------------------------- **
  * These are the tokens returned by dbg_char2token().
