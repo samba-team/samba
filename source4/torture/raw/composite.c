@@ -121,9 +121,10 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	char *data;
 	int i;
 	size_t len = random() % 10000;
-	const int num_ops = 10;
+	extern int torture_numops;
 	struct event_context *event_ctx;
 	int *count = talloc_zero(mem_ctx, int);
+	BOOL ret = True;
 
 	data = talloc_array(mem_ctx, uint8_t, len);
 
@@ -152,12 +153,12 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io2.in.password = lp_parm_string(-1, "torture", "password");
 	io2.in.filename = fname;
 
-	printf("testing parallel fetchfile with %d ops\n", num_ops);
+	printf("testing parallel fetchfile with %d ops\n", torture_numops);
 
 	event_ctx = event_context_init(mem_ctx);
-	c = talloc_array(mem_ctx, struct smbcli_composite *, num_ops);
+	c = talloc_array(mem_ctx, struct smbcli_composite *, torture_numops);
 
-	for (i=0; i<num_ops; i++) {
+	for (i=0; i<torture_numops; i++) {
 		c[i] = smb_composite_fetchfile_send(&io2, event_ctx);
 		c[i]->async.fn = loadfile_complete;
 		c[i]->async.private = count;
@@ -165,45 +166,38 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("waiting for completion\n");
 
-	while (*count != num_ops) {
+	while (*count != torture_numops) {
 		event_loop_once(event_ctx);
-#if 0
-		/* Attempt to kill the event ... To fix -- vl */
-		for (i=0; i<num_ops; i++) {
-			if (!c[i]) continue;
-			if (c[i]->state == SMBCLI_REQUEST_ERROR) {
-				printf("error in %d\n", i); msleep(1000);
-				talloc_free(c[i]); c[i]=NULL;
-			}
-		}
-#endif
 		printf("count=%d\r", *count);
 		fflush(stdout);
 	}
 	printf("count=%d\n", *count);
 
-	for (i=0;i<num_ops;i++) {
+	for (i=0;i<torture_numops;i++) {
 		status = smb_composite_fetchfile_recv(c[i], mem_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("loadfile[%d] failed - %s\n", i,
 			       nt_errstr(status));
-			return False;
+			ret = False;
+			continue;
 		}
 
 		if (io2.out.size != len) {
 			printf("wrong length in returned data - %d "
 			       "should be %d\n",
 			       io2.out.size, len);
-			return False;
+			ret = False;
+			continue;
 		}
 		
 		if (memcmp(io2.out.data, data, len) != 0) {
 			printf("wrong data in loadfile!\n");
-			return False;
+			ret = False;
+			continue;
 		}
 	}
 
-	return NT_STATUS_IS_OK(status);
+	return ret;
 }
 
 /* 
