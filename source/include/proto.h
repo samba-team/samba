@@ -867,7 +867,7 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
-BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
+BOOL decode_pw_buffer(char buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32 *new_pw_len);
 
 /*The following definitions come from  libsmb/smberr.c  */
@@ -2384,6 +2384,7 @@ BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uin
 BOOL prs_append_data(prs_struct *dst, char *src, uint32 len);
 void prs_set_bigendian_data(prs_struct *ps);
 BOOL prs_align(prs_struct *ps);
+BOOL prs_align_needed(prs_struct *ps, uint32 needed);
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
 void prs_switch_type(prs_struct *ps, BOOL io);
 void prs_force_dynamic(prs_struct *ps);

@@ -88,7 +88,7 @@ Init dom_query
 
 static void init_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 {
-	int domlen = (dom_name != NULL) ? strlen(dom_name) : 0;
+	int domlen = (dom_name != NULL) ? strlen(dom_name)+1 : 0;
 
 	d_q->uni_dom_max_len = domlen * 2;
 	d_q->uni_dom_str_len = domlen * 2;
@@ -183,7 +183,7 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 	ref->max_entries = MAX_REF_DOMAINS;
 	ref->num_ref_doms_2 = num+1;
 
-	len = (dom_name != NULL) ? strlen(dom_name) : 0;
+	len = (dom_name != NULL) ? strlen(dom_name)+1 : 0;
 	if(dom_name != NULL && len == 0)
 		len = 1;
 

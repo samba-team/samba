@@ -71,7 +71,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 			continue;
 		}
 
-		user_name_len = strlen(pwd->smb_name);
+		user_name_len = strlen(pwd->smb_name)+1;
 		init_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len);
 		init_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len);
 		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
@@ -688,7 +688,7 @@ static BOOL samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 	got_grps = True;
 	num_entries = 1;
 	ZERO_STRUCTP(&pass[0]);
-	init_unistr2(&(pass[0].uni_user_name), dummy_group, strlen(dummy_group));
+	init_unistr2(&(pass[0].uni_user_name), dummy_group, strlen(dummy_group)+1);
 	pass[0].user_rid = DOMAIN_GROUP_RID_ADMINS;
 
 	if (r_e.status == 0 && got_grps)
@@ -758,7 +758,7 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		char *name;
 		while (num_entries < MAX_SAM_ENTRIES && ((name = builtin_alias_rids[num_entries].name) != NULL))
 		{
-			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name));
+			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
 			pass[num_entries].user_rid = builtin_alias_rids[num_entries].rid;
 			num_entries++;
 		}
@@ -786,7 +786,7 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 				continue;
 			}
 
-			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name));
+			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
 			pass[num_entries].user_rid = pdb_gid_to_group_rid(grp->gr_gid);
 			num_entries++;
 		}
@@ -2121,7 +2121,7 @@ static BOOL api_samr_enum_domains(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	fstrcpy(dom[0],global_myname);
+	fstrcpy(dom[0],global_myworkgroup);
 	fstrcpy(dom[1],"Builtin");
 
 	if(!samr_io_q_enum_domains("", &q_u, data, 0)) {
@@ -2376,9 +2376,12 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
 	pdb_init_sam(&new_pwd);
 	copy_sam_passwd(&new_pwd, pwd);
 
+	memset(buf, 0, sizeof(buf));
+
 	if (!decode_pw_buffer((const char *)id24->pass, buf, 256, &len))
 		return False;
 
+DEBUG(0,("set_user_info_24:nt_lm_owf_gen\n"));
 	nt_lm_owf_gen(buf, nt_hash, lm_hash);
 
 	new_pwd.smb_passwd = lm_hash;
@@ -2390,6 +2393,7 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
 			return False;
 
 	memset(buf, 0, sizeof(buf));
+DEBUG(0,("set_user_info_24:mod_sam21pwd_entry\n"));
 
 	/* update the SAMBA password */
 	if(!mod_sam21pwd_entry(&new_pwd, True))

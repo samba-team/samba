@@ -411,6 +411,18 @@ BOOL prs_align(prs_struct *ps)
 }
 
 /*******************************************************************
+ Align only if required (for the unistr2 string mainly)
+ ********************************************************************/
+
+BOOL prs_align_needed(prs_struct *ps, uint32 needed)
+{
+	if (needed==0)
+		return True;
+	else
+		return prs_align(ps);
+}
+
+/*******************************************************************
  Ensure we can read/write to a given offset.
  ********************************************************************/
 
