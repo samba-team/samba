@@ -1,3 +1,7 @@
+1999-05-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/connect.c (handle_tcp): remove %-escapes in request
+
 1999-05-14  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.1g
@@ -21,6 +25,10 @@ Tue May 11 14:09:33 1999  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/mcache.c: fix paste-o
 	
+1999-05-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: don't use uname
+
 1999-05-10  Assar Westerlund  <assar@sics.se>
 
 	* acconfig.h (KRB_PUT_INT): if we don't have KRB4 use four
