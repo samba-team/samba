@@ -1,5 +1,4 @@
 #include <krb5_locl.h>
-#include "md4.h"
 
 RCSID("$Id$");
 
@@ -16,7 +15,7 @@ krb5_mk_safe(krb5_context context,
   unsigned usec;
   krb5_addresses addr;
   u_char buf[1024];
-  int len;
+  size_t len;
 
   r = krb5_create_checksum (context,
 			    CKSUMTYPE_RSA_MD4,

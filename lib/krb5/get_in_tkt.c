@@ -15,6 +15,7 @@ decrypt_tkt (krb5_context context,
     ret = krb5_decrypt (context,
 			dec_rep->part1.enc_part.cipher.data,
 			dec_rep->part1.enc_part.cipher.length,
+			dec_rep->part1.enc_part.etype,
 			key,
 			&data);
     if (ret)
@@ -52,7 +53,7 @@ extract_ticket(krb5_context context,
     /*     krb5_principal_free (rep.part1.cname);*/
     {
 	char buf[1024];
-	int len;
+	size_t len;
 	encode_Ticket(buf + sizeof(buf) - 1, sizeof(buf), 
 			    &rep->part1.ticket, &len);
 	creds->ticket.data = malloc(len);
@@ -250,6 +251,7 @@ krb5_get_in_tkt(krb5_context context,
 	ret = krb5_encrypt (context,
 			    buf + sizeof(buf) - len,
 			    len,
+			    encdata.etype,
 			    key,
 			    &encdata.cipher);
 	if (ret)

@@ -10,10 +10,9 @@ krb5_rd_rep(krb5_context context,
 {
   krb5_error_code ret;
   AP_REP ap_rep;
-  int len;
+  size_t len;
   des_key_schedule schedule;
   char *buf;
-  int i;
   krb5_data data;
 
   ret = decode_AP_REP(inbuf->data, inbuf->length, &ap_rep, &len);
@@ -27,6 +26,7 @@ krb5_rd_rep(krb5_context context,
   ret = krb5_decrypt (context,
 		      ap_rep.enc_part.cipher.data,
 		      ap_rep.enc_part.cipher.length,
+		      ap_rep.enc_part.etype,
 		      &auth_context->key,
 		      &data);
   if (ret)
@@ -38,7 +38,7 @@ krb5_rd_rep(krb5_context context,
   ret = decode_EncAPRepPart(data.data,
 			    data.length,
 			    *repl, 
-			    &i);
+			    &len);
   if (ret)
       return ret;
   if ((*repl)->ctime != auth_context->authenticator->ctime ||

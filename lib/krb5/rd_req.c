@@ -10,9 +10,13 @@ decrypt_tkt_enc_part (krb5_context context,
 {
     krb5_error_code ret;
     krb5_data plain;
-    int len;
+    size_t len;
 
-    ret = krb5_decrypt (context, enc_part->cipher.data, enc_part->cipher.length, key, &plain);
+    ret = krb5_decrypt (context,
+			enc_part->cipher.data,
+			enc_part->cipher.length,
+			enc_part->etype,
+			key, &plain);
     if (ret)
 	return ret;
 
@@ -33,7 +37,11 @@ decrypt_authenticator (krb5_context context,
     krb5_data plain;
     size_t len;
 
-    ret = krb5_decrypt (context, enc_part->cipher.data, enc_part->cipher.length, key, &plain);
+    ret = krb5_decrypt (context,
+			enc_part->cipher.data,
+			enc_part->cipher.length,
+			enc_part->etype,
+			key, &plain);
     if (ret)
 	return ret;
 
@@ -55,7 +63,7 @@ krb5_rd_req_with_keyblock(krb5_context context,
 {
   krb5_error_code ret;
   AP_REQ ap_req;
-  int len;
+  size_t len;
   struct timeval now;
 
   if (*auth_context == NULL) {
