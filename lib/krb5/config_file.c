@@ -584,7 +584,7 @@ krb5_config_free_strings(char **strings)
 {
     char **s = strings;
     while(s && *s){
-	free(s);
+	free(*s);
 	s++;
     }
     free(strings);
