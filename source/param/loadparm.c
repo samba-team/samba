@@ -278,6 +278,7 @@ typedef struct
   BOOL *copymap;
   BOOL bDeleteReadonly;
   BOOL bFakeOplocks;
+  BOOL bOnline;
   BOOL bDeleteVetoFiles;
   BOOL bDosFiletimes;
   char dummy[3]; /* for alignment */
@@ -362,6 +363,7 @@ static service sDefault =
   NULL,  /* copymap */
   False, /* bDeleteReadonly */
   False, /* bFakeOplocks */
+  True,  /* bOnline */
   False, /* bDeleteVetoFiles */
   False, /* bDosFiletimes */
   ""     /* dummy */
@@ -594,6 +596,7 @@ struct parm_struct
   {"magic output",     P_STRING,  P_LOCAL,  &sDefault.szMagicOutput,    NULL},
   {"mangled map",      P_STRING,  P_LOCAL,  &sDefault.szMangledMap,     NULL},
   {"delete readonly",  P_BOOL,    P_LOCAL,  &sDefault.bDeleteReadonly,  NULL},
+  {"online",           P_BOOL,    P_LOCAL,  &sDefault.bOnline,          NULL},
   {"dos filetimes",    P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimes,    NULL},
 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL}
@@ -772,57 +775,108 @@ static void init_locals(void)
 }
 
 
-/******************************************************************* a
-convenience routine to grab string parameters into a rotating buffer,
-and run standard_sub_basic on them. The buffers can be written to by
-callers without affecting the source string.
-********************************************************************/
-char *lp_string(char *s)
+
+/* chomp() strips off trailing linefeed- and carriage-return-characters */
+char	*chomp(char *s)
 {
-  static char *bufs[10];
-  static int buflen[10];
-  static int next = -1;  
-  char *ret;
-  int i;
-  int len = s?strlen(s):0;
+	if(!s || s == NULL)
+return(NULL);
 
-  if (next == -1) {
-    /* initialisation */
-    for (i=0;i<10;i++) {
-      bufs[i] = NULL;
-      buflen[i] = 0;
-    }
-    next = 0;
-  }
+	while(strlen(s) > 0) {
+		int	i = strlen(s) - 1;
 
-  len = MAX(len+100,sizeof(pstring)); /* the +100 is for some
-					 substitution room */
+		if(s [i] == '\n' || s [i] == '\r')
+			s [i] = '\0';
+		else
+			break;
+	}
 
-  if (buflen[next] != len) {
-    buflen[next] = len;
-    if (bufs[next]) free(bufs[next]);
-    bufs[next] = (char *)malloc(len);
-    if (!bufs[next]) {
-      DEBUG(0,("out of memory in lp_string()"));
-      exit(1);
-    }
-  } 
-
-  ret = &bufs[next][0];
-  next = (next+1)%10;
-
-  if (!s) 
-    *ret = 0;
-  else
-    StrCpy(ret,s);
-
-  trim_string(ret, "\"", "\"");
-
-  standard_sub_basic(ret);
-  return(ret);
+	return(s);
 }
 
 
+/*
+read_string_external(fname): depending on the first character in fname either
+reads the first line of a file or of the output of a command. If the second
+character is a '$' execute standard-substitutions on the string to be returned.
+
+examples: read_string_external("</etc/HOSTNAME"); returns the hostname
+          read_string_external("|hostname");      returns the hostname too
+          read_string_external("<$/usr/local/samba/lib/your_hostname");
+                                                  returns the client-hostname, if
+                                                  /.../your_hostname contains "%M"
+*/
+char	*read_string_external(char *fname)
+{
+	char *ret = NULL;
+	pstring str;
+	FILE *in = NULL;
+	int	mode = 0, do_subst = 0, offset = 1;
+
+	*str = '\0';
+
+	switch(*fname) {
+	case '<':	mode = 0; break;
+	case '|':	mode = 1; break;
+	default:	return(NULL); break;
+	}
+
+	if(*(fname + 1) == '$') {
+		do_subst = 1;
+		offset = 2;
+	}
+
+	switch(mode) {
+	case 0:	in = fopen(fname + offset, "r"); break;
+	case 1:	in = popen(fname + offset, "r"); break;
+	}
+
+	if(in != NULL) {
+		if(fgets(str, sizeof(str), in) == NULL)
+			*str = '\0';
+		else
+			chomp(str);
+
+		switch(mode) {
+		case 0:	fclose(in); break;
+		case 1:	pclose(in); break;
+		}
+	}
+
+	if((ret = string_buffer(strlen(str))))
+    {
+		StrCpy(ret, str);
+
+		if(do_subst)
+        {
+			standard_sub_basic(ret);
+        }
+	}
+
+	return(ret);
+}
+
+
+char *lp_string(char *s)
+{
+  int len = s?strlen(s):0;
+  char *ret = NULL;
+
+    if (!s) 
+      *ret = 0;
+  else {
+    ret = string_buffer(len);
+      StrCpy(ret,s);
+  
+    standard_sub_basic(ret);
+
+    if(*ret == '<' || *ret == '|')
+      ret = read_string_external(ret);
+  }
+
+    return(ret);
+}
+  
 /*
    In this section all the functions that are used to access the 
    parameters from the rest of the program are defined 
@@ -997,6 +1051,7 @@ FN_LOCAL_BOOL(lp_syncalways,bSyncAlways)
 FN_LOCAL_BOOL(lp_map_system,bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly,bDeleteReadonly)
 FN_LOCAL_BOOL(lp_fake_oplocks,bFakeOplocks)
+FN_LOCAL_BOOL(lp_online,bOnline)
 FN_LOCAL_BOOL(lp_recursive_veto_delete,bDeleteVetoFiles)
 FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 
@@ -2268,9 +2323,24 @@ int lp_servicenumber(char *pszServiceName)
   ******************************************************************/
 char *volume_label(int snum)
 {
+  static char lbl [13];
   char *ret = lp_volume(snum);
-  if (!*ret) return(lp_servicename(snum));
-  return(ret);
+  int i = 0, j = 0;
+
+  if (!*ret)
+    ret = lp_servicename(snum);
+
+  lbl [0] = '\0';
+
+  while(*(ret + i) && j < sizeof(lbl) - 1) {
+    if(i == 8)
+    	lbl [j++] = '.';
+
+   	lbl [j++] = *(ret + i++);
+    lbl [j] = '\0';
+   }
+
+  return(lbl);
 }
 
 #if 0
