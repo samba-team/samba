@@ -89,7 +89,9 @@ RCSID("$Id$");
 #include <kafs.h>
 #include "roken.h"
 
-#undef SKEY
+#if defined(SKEY)
+#include <skey.h>
+#endif
 
 void yyparse();
 
@@ -485,6 +487,10 @@ sgetpwnam(char *name)
 static int login_attempts;	/* number of failed login attempts */
 static int askpasswd;		/* had user command, ask for passwd */
 static char curname[10];	/* current USER name */
+#ifdef SKEY
+static struct skey sk;
+static int permit_passwd;
+#endif /* SKEY */
 
 /*
  * USER command.
@@ -558,21 +564,26 @@ user(char *name)
 	}
 	if (logging)
 		strncpy(curname, name, sizeof(curname)-1);
+	if(auth_ok())
+		ct->userok(name);
+	else {
 #ifdef SKEY
-	if (!skey_haskey(name)) {
-		char *myskey, *skey_keyinfo (char *name);
+		char ss[256];
 
-		myskey = skey_keyinfo(name);
-		reply(331, "Password [%s] for %s required.",
-		    myskey ? myskey : "error getting challenge", name);
-	} else
+		permit_passwd = skeyaccess(k_getpwnam (name), NULL,
+					   remotehost, NULL);
+
+		if (skeychallenge (&sk, name, ss) == 0) {
+			reply (331, "Password [%s] for %s required.",
+			       ss, name);
+			askpasswd = 1;
+		} else if (permit_passwd)
 #endif
-	     if(auth_ok())
-		  ct->userok(name);
-	     else{
-		  reply(331, "Password required for %s.", name);
-		  askpasswd = 1;
-	     }
+		{
+			reply(331, "Password required for %s.", name);
+			askpasswd = 1;
+		}
+	}
 	/*
 	 * Delay before reading passwd after first failed
 	 * attempt to slow down passwd-guessing programs.
@@ -727,11 +738,13 @@ pass(char *passwd)
 		}
 		rval = klogin(pw->pw_name, passwd);
 		if (rval == 0)
-		    goto skip;
+			goto skip;
 #ifdef SKEY
-		if (skey_haskey(pw->pw_name) == 0 &&
-		   (skey_passcheck(pw->pw_name, passwd) != -1)) {
+		if (skeyverify (&sk, passwd) == 0) {
 			rval = 0;
+			goto skip;
+		} else if(!permit_passwd) {
+			rval = 1;
 			goto skip;
 		}
 #endif
