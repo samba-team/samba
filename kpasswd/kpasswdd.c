@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -37,8 +37,12 @@
  */
 
 #include "kpasswd_locl.h"
-#include <kadm5/admin.h>
 RCSID("$Id$");
+
+#include <kadm5/admin.h>
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
 
 static krb5_context context;
 static void *kadm5_handle;
@@ -191,13 +195,65 @@ reply_priv (krb5_auth_context auth_context,
     krb5_data_free (&krb_priv_data);
 }
 
-static char *
-passwd_quality_check (krb5_data *pwd)
+static const char *
+simple_passwd_quality_check (krb5_context context,
+			     krb5_principal principal,
+			     krb5_data *pwd)
 {
     if (pwd->length < 6)
 	return "Password too short";
     else
 	return NULL;
+}
+
+static const char* (*passwd_quality_check)(krb5_context, 
+					   krb5_principal, 
+					   krb5_data*);
+
+extern char *check_library;
+extern char *check_function;
+
+#define PASSWD_VERSION 0
+
+static void
+setup_passwd_quality_check(krb5_context context)
+{
+#ifdef HAVE_DLOPEN
+    void *handle;
+    void *sym;
+    int *version;
+    handle = dlopen(check_library, RTLD_NOW);
+    if(handle == NULL) {
+	krb5_warnx(context, "failed to open `%s'", check_library);
+	goto out;
+    }
+    version = dlsym(handle, "version");
+    if(version == NULL) {
+	krb5_warnx(context,
+		   "didn't find `version' symbol in `%s'", check_library);
+	dlclose(handle);
+	goto out;
+    }
+    if(*version != PASSWD_VERSION) {
+	krb5_warnx(context,
+		   "version of loaded library is %d (expected %d)",
+		   *version, PASSWD_VERSION);
+	dlclose(handle);
+	goto out;
+    }
+    sym = dlsym(handle, check_function);
+    if(sym == NULL) {
+	krb5_warnx(context, 
+		   "didn't find `%s' symbol in `%s'", 
+		   check_function, check_library);
+	dlclose(handle);
+	goto out;
+    }
+    passwd_quality_check = sym;
+    return;
+out:
+#endif
+    passwd_quality_check = simple_passwd_quality_check;
 }
 
 static void
@@ -214,7 +270,7 @@ change (krb5_auth_context auth_context,
     krb5_key_data *kd;
     krb5_salt salt;
     krb5_keyblock new_keyblock;
-    char *pwd_reason;
+    const char *pwd_reason;
     int unchanged;
 
     krb5_unparse_name (context, principal, &c);
@@ -222,9 +278,9 @@ change (krb5_auth_context auth_context,
     krb5_warnx (context, "Changing password for %s", c);
     free (c);
 
-    pwd_reason = passwd_quality_check (pwd_data);
+    pwd_reason = (*passwd_quality_check) (context, principal, pwd_data);
     if (pwd_reason != NULL ) {
-	krb5_warnx (context, pwd_reason);
+	krb5_warnx (context, "%s", pwd_reason);
 	reply_priv (auth_context, s, sa, sa_size, 4, pwd_reason);
 	return;
     }
@@ -319,7 +375,8 @@ verify (krb5_auth_context *auth_context,
     pkt_ver = (msg[2] << 8) | (msg[3]);
     ap_req_len = (msg[4] << 8) | (msg[5]);
     if (pkt_len != len) {
-	krb5_warnx (context, "Strange len: %d != %d", pkt_len, len);
+	krb5_warnx (context, "Strange len: %ld != %ld", 
+		    (long)pkt_len, (long)len);
 	reply_error (server, s, sa, sa_size, 0, 1, "bad length");
 	return 1;
     }
@@ -535,9 +592,20 @@ sigterm(int sig)
     exit_flag = 1;
 }
 
+#define DEFAULT_FUNC_NAME "passwd_quality"
+
+char *check_library = DEFAULT_FUNC_NAME;
+char *check_function = LIBDIR "/" DEFAULT_FUNC_NAME ".so";
 int version_flag;
 int help_flag;
+
 struct getargs args[] = {
+#ifdef HAVE_DLOPEN
+    { "check-library", 0, arg_string, &check_library, 
+      "library to load password check function from", "library" },
+    { "check-function", 0, arg_string, &check_function,
+      "password check function to load", "function" },
+#endif
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -563,6 +631,7 @@ main (int argc, char **argv)
     krb5_openlog (context, "kpasswdd", &log_facility);
     krb5_set_warn_dest(context, log_facility);
 
+    setup_passwd_quality_check(context);
     memset (&conf, 0, sizeof(conf));
     
     ret = kadm5_init_with_password_ctx(context, 
