@@ -2160,7 +2160,7 @@ static int unpack_specifics(NT_PRINTER_PARAM **list, char *buf, int buflen)
 /****************************************************************************
 get a default printer info 2 struct
 ****************************************************************************/
-static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharename)
+static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, char *sharename)
 {
 	extern pstring global_myname;
 	int snum;
@@ -2233,7 +2233,7 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharename)
+static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, char *sharename)
 {
 	pstring key;
 	NT_PRINTER_INFO_LEVEL_2 info;
@@ -2456,7 +2456,7 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
  Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.
 ****************************************************************************/
 
-uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring sharename)
+uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, char *sharename)
 {
 	uint32 result;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
