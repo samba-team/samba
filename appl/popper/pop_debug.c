@@ -74,7 +74,7 @@ get_socket (char *host, int port)
     struct hostent *hp;
     int s;
 
-    hp = gethostbyname(host);
+    hp = roken_gethostbyname(host);
     if(hp == NULL)
 	err(1, "%s", host);
     s = socket(AF_INET, SOCK_STREAM, 0);
@@ -233,7 +233,7 @@ main(int argc, char **argv)
 	usage (1);
 
     if (port_str) {
-	struct servent *s = getservbyname (port_str, "tcp");
+	struct servent *s = roken_getservbyname (port_str, "tcp");
 
 	if (s)
 	    port = s->s_port;
