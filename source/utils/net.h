@@ -35,6 +35,8 @@
 /* We want an anonymous connection */
 #define NET_FLAGS_ANONYMOUS 16 
 
+/* don't open an RPC pipe */
+#define NET_FLAGS_NO_PIPE 32
 
 extern int opt_maxusers;
 extern const char *opt_comment;
