@@ -33,10 +33,34 @@ decrypt_tkt (krb5_context context,
 	     krb5_const_pointer decrypt_arg,
 	     krb5_kdc_rep *dec_rep)
 {
-    des_key_schedule sched;
-    char *buf;
-    int i;
-    int len = dec_rep->part1.enc_part.cipher.length;
+    krb5_error_code ret;
+    krb5_data data;
+
+    ret = krb5_decrypt (context,
+			dec_rep->part1.enc_part.cipher.data,
+			dec_rep->part1.enc_part.cipher.length,
+			key,
+			&data);
+    if (ret)
+      return ret;
+
+    ret = decode_EncTGSRepPart(data.data,
+			       data.length,
+			       &dec_rep->part2);
+    krb5_data_free (&data);
+    if (ret < 0)
+      return ASN1_PARSE_ERROR;
+    return 0;
+}
+#if 0
+
+(unsigned char*)buf + 12, len - 12, &dec_rep->part2);
+    free (buf);
+    if (i < 0)
+	return ASN1_PARSE_ERROR;
+    return 0;
+
+
 
     des_set_key (key->contents.data, sched);
     buf = malloc (len);
@@ -56,6 +80,7 @@ decrypt_tkt (krb5_context context,
 	return ASN1_PARSE_ERROR;
     return 0;
 }
+#endif
 
 /*
  *
