@@ -856,6 +856,9 @@ doit (void)
 	if (dup2 (errsock, STDERR_FILENO) < 0)
 	    fatal (s, "dup2", "Cannot dup stderr.");
 	close (errsock);
+    } else {
+	if (dup2 (STDOUT_FILENO, STDERR_FILENO) < 0)
+	    fatal (s, "dup2", "Cannot dup stderr.");
     }
 
     setup_environment (&env, pwd);
