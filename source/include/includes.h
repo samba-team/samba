@@ -774,6 +774,14 @@ int crypt(const char *key, const char *salt);
 #define getpass(prompt) getsmbpass((prompt))
 #endif
 
+/*
+ * Some older systems seem not to have MAXHOSTNAMELEN
+ * defined.
+ */
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 254
+#endif
+
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
 

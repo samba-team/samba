@@ -306,6 +306,15 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 }
 
 /****************************************************************************
+  load the smb.conf file into loadparm.
+****************************************************************************/
+static BOOL load_config(BOOL save_def)
+{
+	lp_resetnumservices();
+	return lp_load(servicesf,False,save_def,False);
+}
+
+/****************************************************************************
   write a config file 
 ****************************************************************************/
 static void write_config(FILE *f, BOOL show_defaults)
@@ -387,15 +396,6 @@ static void commit_parameters(int snum)
 			commit_parameter(snum, parm, v); 
 		}
 	}
-}
-
-/****************************************************************************
-  load the smb.conf file into loadparm.
-****************************************************************************/
-static BOOL load_config(BOOL save_def)
-{
-	lp_resetnumservices();
-	return lp_load(servicesf,False,save_def,False);
 }
 
 /****************************************************************************
