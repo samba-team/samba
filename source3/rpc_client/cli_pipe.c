@@ -95,7 +95,7 @@ static BOOL rpc_read(struct cli_state *cli,
     file_offset  += num_read;
     data         += num_read;
 
-    cli_error(cli, &errclass, &err);
+    cli_error(cli, (int *)&errclass, (int *)&err);
     if (errclass != 0)
       return False;
 
@@ -264,7 +264,7 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
 
     prs_mem_free(&hps);
 
-    cli_error(cli, &errclass, &err);
+    cli_error(cli, (int *)&errclass, (int *)&err);
     if (errclass != 0)
       return False;
 
@@ -492,10 +492,10 @@ static BOOL valid_pipe_name(char *pipe_name, RPC_IFACE *abstract, RPC_IFACE *tra
     if (strequal(pipe_name, pipe_names[pipe_idx].client_pipe ))
     {
       DEBUG(5,("Bind Abstract Syntax: "));	
-      dump_data(5, (uchar*)&(pipe_names[pipe_idx].abstr_syntax), 
+      dump_data(5, (char*)&(pipe_names[pipe_idx].abstr_syntax), 
                  sizeof(pipe_names[pipe_idx].abstr_syntax));
       DEBUG(5,("Bind Transfer Syntax: "));
-      dump_data(5, (uchar*)&(pipe_names[pipe_idx].trans_syntax),
+      dump_data(5, (char*)&(pipe_names[pipe_idx].trans_syntax),
                  sizeof(pipe_names[pipe_idx].trans_syntax));
 
       /* copy the required syntaxes out so we can do the right bind */

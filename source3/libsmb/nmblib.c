@@ -294,9 +294,9 @@ char *namestr(struct nmb_name *n)
   char *p = ret[i];
 
   if (!n->scope[0])
-    sprintf(p,"%s<%02x>",n->name,n->name_type);
+    slprintf(p,sizeof(fstring)-1, "%s<%02x>",n->name,n->name_type);
   else
-    sprintf(p,"%s<%02x>.%s",n->name,n->name_type,n->scope);
+    slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",n->name,n->name_type,n->scope);
 
   i = (i+1)%4;
   return(p);

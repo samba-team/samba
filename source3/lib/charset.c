@@ -203,7 +203,9 @@ static codepage_p load_client_codepage( int client_codepage )
   strcpy(codepage_file_name, CODEPAGEDIR);
   strcat(codepage_file_name, "/");
   strcat(codepage_file_name, "codepage.");
-  sprintf( &codepage_file_name[strlen(codepage_file_name)], "%03d",
+  slprintf(&codepage_file_name[strlen(codepage_file_name)], 
+	   sizeof(pstring)-(strlen(codepage_file_name)+1),
+	   "%03d",
            client_codepage);
 
   if(!file_exist(codepage_file_name,&st))

@@ -174,7 +174,7 @@ static int join_domain( char *domain, char *remote)
   fstrcpy(remote_machine, remote ? remote : "");
   fstrcpy(machine_passwd, global_myname);
   strlower(machine_passwd);
-  E_md4hash( machine_passwd, machine_passwd_hash);
+  E_md4hash((uchar *)machine_passwd, machine_passwd_hash);
 
   generate_random_buffer( new_machine_passwd_hash, 16, True);
 

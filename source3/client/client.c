@@ -1496,9 +1496,11 @@ static void do_mget(file_info *finfo)
     }
 
   if (finfo->mode & aDIR)
-    sprintf(quest,"Get directory %s? ",CNV_LANG(finfo->name));
+    slprintf(quest,sizeof(pstring)-1,
+	     "Get directory %s? ",CNV_LANG(finfo->name));
   else
-    sprintf(quest,"Get file %s? ",CNV_LANG(finfo->name));
+    slprintf(quest,sizeof(pstring)-1,
+	     "Get file %s? ",CNV_LANG(finfo->name));
 
   if (prompt && !yesno(quest)) return;
 
@@ -1572,7 +1574,9 @@ static void cmd_more(char *dum_in, char *dum_out)
 
   strcpy(rname,cur_dir);
   strcat(rname,"\\");
-  sprintf(tmpname,"%s/smbmore.%d",tmpdir(),(int)getpid());
+  slprintf(tmpname,
+	   sizeof(fstring)-1,
+	   "%s/smbmore.%d",tmpdir(),(int)getpid());
   strcpy(lname,tmpname);
 
   if (!next_token(NULL,rname+strlen(rname),NULL)) {
@@ -1584,7 +1588,9 @@ static void cmd_more(char *dum_in, char *dum_out)
   do_get(rname,lname,NULL);
 
   pager=getenv("PAGER");
-  sprintf(pager_cmd,"%s %s",(pager? pager:PAGER), tmpname);
+
+  slprintf(pager_cmd,sizeof(pager_cmd)-1,
+	   "%s %s",(pager? pager:PAGER), tmpname);
   system(pager_cmd);
   unlink(tmpname);
 }
@@ -2046,11 +2052,14 @@ static void cmd_mput(char *dum_in, char *dum_out)
       pstring tmpname;
       FILE *f;
       
-      sprintf(tmpname,"%s/ls.smb.%d",tmpdir(),(int)getpid());
+      slprintf(tmpname,sizeof(pstring)-1,
+	       "%s/ls.smb.%d",tmpdir(),(int)getpid());
       if (recurse)
-	sprintf(cmd,"find . -name \"%s\" -print > %s",p,tmpname);
+	slprintf(cmd,sizeof(pstring)-1,
+		"find . -name \"%s\" -print > %s",p,tmpname);
       else
-	sprintf(cmd,"/bin/ls %s > %s",p,tmpname);
+	slprintf(cmd,sizeof(pstring)-1,
+		 "/bin/ls %s > %s",p,tmpname);
       system(cmd);
 
       f = fopen(tmpname,"r");
@@ -2069,7 +2078,8 @@ static void cmd_mput(char *dum_in, char *dum_out)
 	  if (directory_exist(lname,&st))
 	    {
 	      if (!recurse) continue;
-	      sprintf(quest,"Put directory %s? ",lname);
+	      slprintf(quest,sizeof(pstring)-1,
+		       "Put directory %s? ",lname);
 	      if (prompt && !yesno(quest)) 
 		{
 		  strcat(lname,"/");
@@ -2091,7 +2101,8 @@ static void cmd_mput(char *dum_in, char *dum_out)
 	    }
 	  else
 	    {
-	      sprintf(quest,"Put file %s? ",lname);
+	      slprintf(quest,sizeof(quest)-1,
+		       "Put file %s? ",lname);
 	      if (prompt && !yesno(quest)) continue;
 
 	      strcpy(rname,cur_dir);
@@ -3721,7 +3732,7 @@ static void usage(char *pname)
 	  save_debuglevel = DEBUGLEVEL = atoi(optarg);
 	break;
       case 'l':
-	sprintf(debugf,"%s.client",optarg);
+	slprintf(debugf,sizeof(debugf)-1, "%s.client",optarg);
 	break;
       case 'p':
 	port = atoi(optarg);
@@ -3814,7 +3825,8 @@ static void usage(char *pname)
   if (*query_host && !nt_domain_logon)
     {
       int ret = 0;
-      sprintf(service,"\\\\%s\\IPC$",query_host);
+      slprintf(service,sizeof(service)-1,
+	       "\\\\%s\\IPC$",query_host);
       strupper(service);
       connect_as_ipc = True;
       if (cli_open_sockets(port))

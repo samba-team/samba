@@ -1044,7 +1044,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass,
        use it (ie. does it exist in the smbpasswd file).
      */
     DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
-    if (smb_password_check(nt_pass, (uchar *)smb_pass->smb_nt_passwd, challenge))
+    if (smb_password_check((char *)nt_pass, (uchar *)smb_pass->smb_nt_passwd, challenge))
     {
       DEBUG(4,("smb_password_ok: NT MD4 password check succeeded\n"));
       return(True);
@@ -1063,7 +1063,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass,
     return True;
   }
 
-  if((smb_pass->smb_passwd != NULL) && smb_password_check(lm_pass, (uchar *)smb_pass->smb_passwd, challenge))
+  if((smb_pass->smb_passwd != NULL) && smb_password_check((char *)lm_pass, (uchar *)smb_pass->smb_passwd, challenge))
   {
     DEBUG(4,("smb_password_ok: LM MD4 password check succeeded\n"));
     return(True);
@@ -1153,7 +1153,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 	  return(False);
 	}
 
-      if(smb_password_ok( smb_pass, password, password))
+      if(smb_password_ok( smb_pass, (unsigned char *)password,(uchar *)password))
         {
           update_protected_database(user,True);
           return(True);
@@ -1704,7 +1704,7 @@ BOOL check_hosts_equiv(char *user)
       char *home = get_home_dir(user);
       if (home) {
 	      extern int Client;
-	      sprintf(rhostsfile, "%s/.rhosts", home);
+	      slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
 	      if (check_user_equiv(user,client_name(Client),rhostsfile))
 		      return(True);
       }
@@ -1953,8 +1953,8 @@ BOOL domain_client_validate( char *user, char *domain,
 
     DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
     generate_random_buffer( local_challenge, 8, False);
-    SMBencrypt( smb_apasswd, local_challenge, local_lm_response);
-    SMBNTencrypt( smb_ntpasswd, local_challenge, local_nt_reponse);
+    SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
+    SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_reponse);
     smb_apasslen = 24;
     smb_ntpasslen = 24;
     smb_apasswd = (char *)local_lm_response;
@@ -2127,7 +2127,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
   /* We really don't care what LUID we give the user. */
   generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
-  if(cli_nt_login_network(&cli, domain, user, smb_uid_low, local_challenge,
+  if(cli_nt_login_network(&cli, domain, user, smb_uid_low, (char *)local_challenge,
                           smb_apasswd, smb_ntpasswd, &ctr, &info3) == False) {
     DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));

@@ -281,7 +281,7 @@ static void api_net_req_chal( int uid,
 
 	strcat(mach_acct, "$");
 
-	if (get_md4pw(vuser->dc.md4pw, mach_name, mach_acct))
+	if (get_md4pw((char *)vuser->dc.md4pw, mach_name, mach_acct))
 	{
 		/* copy the client credentials */
 		memcpy(vuser->dc.clnt_chal.data          , q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
@@ -297,7 +297,7 @@ static void api_net_req_chal( int uid,
 
 		/* from client / server challenges and md4 password, generate sess key */
 		cred_session_key(&(vuser->dc.clnt_chal), &(vuser->dc.srv_chal),
-						   vuser->dc.md4pw, vuser->dc.sess_key);
+				 (char *)vuser->dc.md4pw, vuser->dc.sess_key);
 	}
 	else
 	{
@@ -489,8 +489,8 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	memcpy(lm_pwd, id1->lm_owf.data, 16);
 	memcpy(nt_pwd, id1->nt_owf.data, 16);
 
-	SamOEMhash(lm_pwd, key, False);
-	SamOEMhash(nt_pwd, key, False);
+	SamOEMhash((uchar *)lm_pwd, key, False);
+	SamOEMhash((uchar *)nt_pwd, key, False);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));
@@ -526,7 +526,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	if (id2->hdr_nt_chal_resp.str_str_len == 24 && 
 		smb_pass->smb_nt_passwd != NULL)
 	{
-		if(smb_password_check(id2->nt_chal_resp.buffer,
+		if(smb_password_check((char *)id2->nt_chal_resp.buffer,
 		                   smb_pass->smb_nt_passwd,
                            id2->lm_chal)) 
                   return 0x0;
@@ -543,7 +543,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	 */
 
 	if (id2->hdr_lm_chal_resp.str_str_len == 24 &&
-		smb_password_check(id2->lm_chal_resp.buffer,
+		smb_password_check((char *)id2->lm_chal_resp.buffer,
 		                   smb_pass->smb_passwd,
 		                   id2->lm_chal))
 	{

@@ -619,7 +619,7 @@ int main(int argc,char *argv[])
           strupper(global_myname);
           break;
         case 'l':
-          sprintf(debugf,"%s.nmb",optarg);
+          slprintf(debugf,sizeof(debugf)-1, "%s.nmb",optarg);
           break;
         case 'i':
           pstrcpy(scope,optarg);

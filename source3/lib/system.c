@@ -411,7 +411,7 @@ struct hostent *sys_gethostbyname(char *name)
   if((strlen(name) + strlen(domain)) >= sizeof(query))
     return(gethostbyname(name));
 
-  sprintf(query, "%s%s", name, domain);
+  slprintf(query, sizeof(query)-1, "%s%s", name, domain);
   return(gethostbyname(query));
 #else /* REDUCE_ROOT_DNS_LOOKUPS */
   return(gethostbyname(name));

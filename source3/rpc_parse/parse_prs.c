@@ -242,7 +242,7 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 
 	ps->offset += i*2;
 
-	dump_data(5+depth, start, ps->offset);
+	dump_data(5+depth, (char *)start, ps->offset);
 
 	return True;
 }
@@ -283,7 +283,7 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len)
 
 	ps->offset += i+1;
 
-	dump_data(5+depth, start, ps->offset);
+	dump_data(5+depth, (char *)start, ps->offset);
 
 	return True;
 }

@@ -563,7 +563,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
 	{
 	  char *s;
 	  fstring name2;
-	  sprintf(name2,"%.6s.XXXXXX",remote_machine);
+	  slprintf(name2,sizeof(name2)-1,"%.6s.XXXXXX",remote_machine);
 	  /* sanitise the name */
 	  for (s=name2 ; *s ; s++)
 	    if (!issafe(*s)) *s = '_';
@@ -754,8 +754,8 @@ int disk_free(char *path,int *bsize,int *dfree,int *dsize)
       pstring syscmd;
       pstring outfile;
 	  
-      sprintf(outfile,"%s/dfree.smb.%d",tmpdir(),(int)getpid());
-      sprintf(syscmd,"%s %s",df_command,path);
+      slprintf(outfile,sizeof(outfile)-1, "%s/dfree.smb.%d",tmpdir(),(int)getpid());
+      slprintf(syscmd,sizeof(syscmd)-1,"%s %s",df_command,path);
       standard_sub_basic(syscmd);
 
       ret = smbrun(syscmd,outfile,False);
@@ -1439,7 +1439,7 @@ static void check_magic(int fnum,int cnum)
     if (*lp_magicoutput(SNUM(cnum)))
       pstrcpy(magic_output,lp_magicoutput(SNUM(cnum)));
     else
-      sprintf(magic_output,"%s.out",fname);
+      slprintf(magic_output,sizeof(fname)-1, "%s.out",fname);
 
     chmod(fname,0755);
     ret = smbrun(fname,magic_output,False);

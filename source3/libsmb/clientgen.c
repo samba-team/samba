@@ -343,8 +343,8 @@ BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                  data, data_count, max_data_count);
 
   return (cli_receive_trans(cli, SMBtrans, 
-                            rparam, rparam_count,
-                            rdata, rdata_count));
+                            rparam, (int *)rparam_count,
+                            rdata, (int *)rdata_count));
 }
 
 /****************************************************************************
@@ -714,7 +714,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		memcpy(pword, pass, passlen);
 	}
 
-	sprintf(fullshare, "\\\\%s\\%s", cli->desthost, share);
+	slprintf(fullshare, sizeof(fullshare)-1,
+		 "\\\\%s\\%s", cli->desthost, share);
 
 	set_message(cli->outbuf,4,
 		    2 + strlen(fullshare) + passlen + strlen(dev),True);

@@ -270,7 +270,7 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
 
   /* store the parameters */
   make_q_srv_pwset(&q_s, cli->srv_name_slash, cli->mach_acct, sec_chan_type,
-                   global_myname, &new_clnt_cred, hashed_mach_pwd);
+                   global_myname, &new_clnt_cred, (char *)hashed_mach_pwd);
 
   /* turn parameters into data stream */
   net_io_q_srv_pwset("", &q_s,  &buf, 0);

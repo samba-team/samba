@@ -418,7 +418,7 @@ struct smb_passwd *getsmbpwent(void *vp)
         p++;
       if(*p == ':') {
         p++;
-        if(*p && StrnCaseCmp( p, "LCT-", 4)) {
+        if(*p && StrnCaseCmp((char *)p, "LCT-", 4)) {
           int i;
           p += 4;
           for(i = 0; i < 8; i++) {
@@ -431,7 +431,7 @@ struct smb_passwd *getsmbpwent(void *vp)
              * read into a time_t as the seconds since
              * 1970 that the password was last changed.
              */
-            pw_buf.pass_last_set_time = (time_t)strtol(p, NULL, 16);
+            pw_buf.pass_last_set_time = (time_t)strtol((char *)p, NULL, 16);
           }
         }
       }
@@ -650,9 +650,9 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
   } else {
     i=0;
     if(newpwd->acct_ctrl & ACB_PWNOTREQ)
-      sprintf(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+      sprintf((char *)p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
     else
-      sprintf(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+      sprintf((char *)p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   }
   
   p += 32;
@@ -665,9 +665,9 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
     }
   } else {
     if(newpwd->acct_ctrl & ACB_PWNOTREQ)
-      sprintf(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+      sprintf((char *)p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
     else
-      sprintf(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+      sprintf((char *)p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   }
 
   p += 32;
@@ -946,7 +946,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
       p++;
 
       /* We should be pointing at the TLC entry. */
-      if((linebuf_len > (PTR_DIFF(p, linebuf) + 13)) && StrnCaseCmp( p, "LCT-", 4)) {
+      if((linebuf_len > (PTR_DIFF(p, linebuf) + 13)) && StrnCaseCmp((char *)p, "LCT-", 4)) {
 
         p += 4;
         for(i = 0; i < 8; i++) {
@@ -1032,7 +1032,9 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
   pwd->pass_last_set_time = time(NULL);
 
   if(got_pass_last_set_time) {
-    sprintf(&ascii_p16[strlen(ascii_p16)], ":[%s]:TLC-%08X:", 
+    slprintf(&ascii_p16[strlen(ascii_p16)], 
+	     sizeof(ascii_p16)-(strlen(ascii_p16)+1),
+	     ":[%s]:TLC-%08X:", 
                      encode_bits, (uint32)pwd->pass_last_set_time );
     wr_len = strlen(ascii_p16);
   }
@@ -1073,7 +1075,7 @@ static void get_machine_account_file_name( char *domain, char *name, char *mac_f
 
   mac_file_len = strlen(mac_file);
 
-  if (sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6 < 0)
+  if ((int)(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) < 0)
   {
     DEBUG(0,("machine_password_lock: path %s too long to add machine details.\n",
               mac_file));

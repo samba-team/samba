@@ -226,7 +226,7 @@ static void check_log_size(void)
     if (dbf && file_size(debugf) > maxlog) {
       pstring name;
       fclose(dbf); dbf = NULL;
-      sprintf(name,"%s.old",debugf);
+      slprintf(name,sizeof(name)-1,"%s.old",debugf);
       sys_rename(debugf,name);
       reopen_logs();
     }
@@ -313,7 +313,7 @@ va_dcl
       va_start(ap);
       format_str = va_arg(ap,char *);
 #endif
-      vsprintf(msgbuf, format_str, ap);
+      vslprintf(msgbuf, sizeof(msgbuf)-1,format_str, ap);
       va_end(ap);
       
       msgbuf[255] = '\0';
@@ -3839,7 +3839,7 @@ static char *automount_lookup(char *user_name)
  
   if (strcmp(user_name, last_key))
   {
-    sprintf(buffer, "[%s=%s]%s.%s", "key", user_name, nis_map, nis_domain);
+    slprintf(buffer, sizeof(buffer)-1, "[%s=%s]%s.%s", "key", user_name, nis_map, nis_domain);
     DEBUG(5, ("NIS+ querystring: %s\n", buffer));
  
     if (result = nis_list(buffer, RETURN_RESULT, NULL, NULL))

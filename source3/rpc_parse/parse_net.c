@@ -742,8 +742,8 @@ void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 	make_unistr2(&(id->uni_user_name  ), user_name  , len_user_name  );
 	make_unistr2(&(id->uni_wksta_name ), wksta_name , len_wksta_name );
 
-	make_string2(&(id->nt_chal_resp ), nt_chal_resp , nt_chal_resp != NULL ? 24 : 0);
-	make_string2(&(id->lm_chal_resp ), lm_chal_resp , lm_chal_resp != NULL ? 24 : 0);
+	make_string2(&(id->nt_chal_resp ), (char *)nt_chal_resp , nt_chal_resp != NULL ? 24 : 0);
+	make_string2(&(id->lm_chal_resp ), (char *)lm_chal_resp , lm_chal_resp != NULL ? 24 : 0);
 }
 
 /*******************************************************************

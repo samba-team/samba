@@ -115,7 +115,7 @@ BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
 			memcpy(&(Policy[i].pol_hnd), hnd, sizeof(*hnd));
 
 			DEBUG(4,("Opened policy hnd[%x] ", i));
-			dump_data(4, hnd->data, sizeof(hnd->data));
+			dump_data(4, (char *)hnd->data, sizeof(hnd->data));
 
 			return True;
 		}
@@ -143,14 +143,14 @@ int find_lsa_policy_by_hnd(POLICY_HND *hnd)
 		if (memcmp(&(Policy[i].pol_hnd), hnd, sizeof(*hnd)) == 0)
 		{
 			DEBUG(4,("Found policy hnd[%x] ", i));
-			dump_data(4, hnd->data, sizeof(hnd->data));
+			dump_data(4, (char *)hnd->data, sizeof(hnd->data));
 
 			return i;
 		}
 	}
 
 	DEBUG(4,("Policy not found: "));
-	dump_data(4, hnd->data, sizeof(hnd->data));
+	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
 
 	return -1;
 }

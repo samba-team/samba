@@ -365,10 +365,10 @@ void write_browse_list(time_t t, BOOL force_write)
     return;
   }
 
-  sprintf(tmp, "\"%s\"", work->work_group);
+  slprintf(tmp,sizeof(tmp)-1, "\"%s\"", work->work_group);
   fprintf(fp, "%-25s ", tmp);
   fprintf(fp, "%08x ", SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT|SV_TYPE_LOCAL_LIST_ONLY);
-  sprintf(tmp, "\"%s\" ", work->local_master_browser_name);
+  slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", work->local_master_browser_name);
   fprintf(fp, "%-30s", tmp);
   fprintf(fp, "\"%s\"\n", work->work_group);
 
@@ -394,10 +394,10 @@ void write_browse_list(time_t t, BOOL force_write)
     }
 
     /* Output server details, plus what workgroup they're in. */
-    sprintf(tmp, "\"%s\"", my_netbios_names[i]);
+    slprintf(tmp, sizeof(tmp)-1, "\"%s\"", my_netbios_names[i]);
     fprintf(fp, "%-25s ", tmp);
     fprintf(fp, "%08x ", stype);
-    sprintf(tmp, "\"%s\" ", lp_serverstring());
+    slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", lp_serverstring());
     fprintf(fp, "%-30s", tmp);
     fprintf(fp, "\"%s\"\n", global_myworkgroup);
   }
@@ -413,11 +413,11 @@ void write_browse_list(time_t t, BOOL force_write)
 
       if(wg_type)
       {
-        sprintf(tmp, "\"%s\"", work->work_group);
+        slprintf(tmp, sizeof(tmp)-1, "\"%s\"", work->work_group);
         fprintf(fp, "%-25s ", tmp);
 
         fprintf(fp, "%08x ", wg_type);
-        sprintf(tmp, "\"%s\" ", work->local_master_browser_name);
+        slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", work->local_master_browser_name);
         fprintf(fp, "%-30s", tmp);
         fprintf(fp, "\"%s\"\n", work->work_group);
       }
@@ -437,10 +437,10 @@ void write_browse_list(time_t t, BOOL force_write)
         if(serv_type)
         {
           /* Output server details, plus what workgroup they're in. */
-          sprintf(tmp, "\"%s\"", servrec->serv.name);
+          slprintf(tmp, sizeof(tmp)-1, "\"%s\"", servrec->serv.name);
           fprintf(fp, "%-25s ", tmp);
           fprintf(fp, "%08x ", serv_type);
-          sprintf(tmp, "\"%s\" ", servrec->serv.comment);
+          slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", servrec->serv.comment);
           fprintf(fp, "%-30s", tmp);
           fprintf(fp, "\"%s\"\n", work->work_group);
         }

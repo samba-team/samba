@@ -1252,7 +1252,8 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
   if (!(*(iSERVICE(i).comment)))
     {
       pstring comment;
-      sprintf(comment,"Home directory of %s",pszHomename);
+      slprintf(comment,sizeof(comment),
+	       "Home directory of %s",pszHomename);
       string_set(&iSERVICE(i).comment,comment);
     }
   iSERVICE(i).bAvailable = sDefault.bAvailable;
@@ -1283,7 +1284,8 @@ static BOOL lp_add_ipc(void)
   if (i < 0)
     return(False);
 
-  sprintf(comment,"IPC Service (%s)", Globals.szServerString );
+  slprintf(comment,sizeof(comment),
+	   "IPC Service (%s)", Globals.szServerString );
 
   string_set(&iSERVICE(i).szPath,tmpdir());
   string_set(&iSERVICE(i).szUsername,"");
