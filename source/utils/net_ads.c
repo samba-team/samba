@@ -75,8 +75,12 @@ static ADS_STRUCT *ads_startup(void)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
+	BOOL need_password = False;
+	BOOL second_time = False;
 	extern char *opt_password;
 	extern char *opt_user_name;
+	extern BOOL opt_user_specified;
+
 
 	ads = ads_init(NULL, NULL, NULL, NULL);
 
@@ -84,19 +88,30 @@ static ADS_STRUCT *ads_startup(void)
 		opt_user_name = "administrator";
 	}
 
-	if (!opt_password) {
+	if (opt_user_specified)
+		need_password = True;
+
+retry:
+	if (!opt_password && need_password) {
 		char *prompt;
 		asprintf(&prompt,"%s password: ", opt_user_name);
 		opt_password = getpass(prompt);
 		free(prompt);
+		ads->password = strdup(opt_password);
 	}
-	ads->password = strdup(opt_password);
+
 	ads->user_name = strdup(opt_user_name);
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status)) {
-		d_printf("ads_connect: %s\n", ads_errstr(status));
-		return NULL;
+		if (!need_password && !second_time) {
+			need_password = True;
+			second_time = True;
+			goto retry;
+		} else {
+			d_printf("ads_connect: %s\n", ads_errstr(status));
+			return NULL;
+		}
 	}
 	return ads;
 }

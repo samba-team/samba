@@ -31,6 +31,7 @@
 ADS_STATUS ads_connect(ADS_STRUCT *ads)
 {
 	int version = LDAP_VERSION3;
+	int code;
 	ADS_STATUS status;
 
 	ads->last_attempt = time(NULL);
@@ -48,7 +49,8 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
 	if (ads->password) {
-		ads_kinit_password(ads);
+		if ((code = ads_kinit_password(ads)))
+			return ADS_ERROR_KRB5(code);
 	}
 
 	return ads_sasl_bind(ads);
