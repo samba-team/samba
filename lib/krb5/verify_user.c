@@ -40,35 +40,18 @@
 
 RCSID("$Id$");
 
-krb5_error_code
-krb5_verify_user(krb5_context context, 
-		 krb5_principal principal,
-		 krb5_ccache ccache,
-		 const char *password,
-		 krb5_boolean secure,
-		 const char *service)
+static krb5_error_code
+verify_common (krb5_context context,
+	       krb5_principal principal,
+	       krb5_ccache ccache,
+	       krb5_boolean secure,
+	       const char *service,
+	       krb5_creds cred)
 {
-
     krb5_error_code ret;
-    krb5_creds cred;
     krb5_principal server;
-    krb5_get_init_creds_opt opt;
     krb5_verify_init_creds_opt vopt;
     krb5_ccache id;
-    
-    krb5_get_init_creds_opt_init (&opt);
-
-    ret = krb5_get_init_creds_password (context,
-					&cred,
-					principal,
-					(char*)password,
-					krb5_prompter_posix,
-					NULL,
-					0,
-					NULL,
-					&opt);
-    
-    if(ret) return ret;
 
     ret = krb5_sname_to_principal (context, NULL, service, KRB5_NT_SRV_HST,
 				   &server);
@@ -99,4 +82,94 @@ krb5_verify_user(krb5_context context,
     }
     krb5_free_creds_contents(context, &cred);
     return ret;
+}
+
+/*
+ * Verify user `principal' with `password'.
+ *
+ * If `secure', also verify against local service key for `service'.
+ *
+ * As a side effect, fresh tickets are obtained and stored in `ccache'.
+ */
+
+krb5_error_code
+krb5_verify_user(krb5_context context, 
+		 krb5_principal principal,
+		 krb5_ccache ccache,
+		 const char *password,
+		 krb5_boolean secure,
+		 const char *service)
+{
+
+    krb5_error_code ret;
+    krb5_get_init_creds_opt opt;
+    krb5_creds cred;
+    
+    krb5_get_init_creds_opt_init (&opt);
+
+    ret = krb5_get_init_creds_password (context,
+					&cred,
+					principal,
+					(char*)password,
+					krb5_prompter_posix,
+					NULL,
+					0,
+					NULL,
+					&opt);
+    
+    if(ret)
+	return ret;
+    return verify_common (context, principal, ccache, secure, service, cred);
+}
+
+/*
+ * A variant of `krb5_verify_user'.  The realm of `principal' is
+ * ignored and all the local realms are tried.
+ */
+
+krb5_error_code
+krb5_verify_user_lrealm(krb5_context context, 
+			krb5_principal principal,
+			krb5_ccache ccache,
+			const char *password,
+			krb5_boolean secure,
+			const char *service)
+{
+    krb5_error_code ret;
+    krb5_get_init_creds_opt opt;
+    krb5_realm *realms, *r;
+    krb5_creds cred;
+    
+    krb5_get_init_creds_opt_init (&opt);
+
+    ret = krb5_get_default_realms (context, &realms);
+    if (ret)
+	return ret;
+    ret = KRB5_CONFIG_NODEFREALM;
+
+    for (r = realms; *r != NULL && ret != 0; ++r) {
+	char *tmp = strdup (*r);
+
+	if (tmp == NULL) {
+	    krb5_free_host_realm (context, realms);
+	    return ENOMEM;
+	}
+	free (krb5_princ_realm (context, principal));
+	krb5_princ_set_realm (context, principal, &tmp);
+
+	ret = krb5_get_init_creds_password (context,
+					    &cred,
+					    principal,
+					    (char*)password,
+					    krb5_prompter_posix,
+					    NULL,
+					    0,
+					    NULL,
+					    &opt);
+    }
+    krb5_free_host_realm (context, realms);
+    if(ret)
+	return ret;
+
+    return verify_common (context, principal, ccache, secure, service, cred);
 }
