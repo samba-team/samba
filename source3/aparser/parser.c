@@ -167,12 +167,47 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
  zeros.
  ********************************************************************/
 
+BOOL io_align2(prs_struct *ps, int offset)
+{
+	uint32 mod = (ps->data_offset + offset) & (2-1);
+
+	if (mod != 0) {
+		uint32 extra_space = (2 - mod);
+		if(!prs_grow(ps, extra_space))
+			return False;
+		memset(&ps->data_p[ps->data_offset], '\0', (size_t)extra_space);
+		ps->data_offset += extra_space;
+	}
+
+	return True;
+}
+
+BOOL io_align4(prs_struct *ps, int offset)
+{
+	uint32 mod = (ps->data_offset + offset) & (4-1);
+
+	if (mod != 0) {
+		uint32 extra_space = (4 - mod);
+		if(!prs_grow(ps, extra_space))
+			return False;
+		memset(&ps->data_p[ps->data_offset], '\0', (size_t)extra_space);
+		ps->data_offset += extra_space;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ Align a the data_len to a multiple of align bytes - filling with
+ zeros.
+ ********************************************************************/
+
 BOOL prs_align(prs_struct *ps, int align)
 {
 	uint32 mod = ps->data_offset & (align-1);
 
-	return True;
-
+	return True; /* HACK! */
+	
 	if (align != 0 && mod != 0) {
 		uint32 extra_space = (align - mod);
 		if(!prs_grow(ps, extra_space))
@@ -331,6 +366,7 @@ BOOL io_string(char *name, prs_struct *ps, int depth, char **str, unsigned flags
 	uint8 *start;
 	int i;
 	size_t len;
+	int start_offset = ps->data_offset;
 
 	if (!(flags & PARSE_SCALARS)) return True;
 	
@@ -364,7 +400,8 @@ BOOL io_string(char *name, prs_struct *ps, int depth, char **str, unsigned flags
 		ps->data_offset++;
 	}
 
-	DEBUG(5,("%s %s: %s\n", tab_depth(depth), name, *str));
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth),
+				start_offset, name, *str));
 	return True;
 }
 
@@ -412,7 +449,7 @@ BOOL io_wstring(char *name, prs_struct *ps, int depth, uint16 *data16s, int len,
 	q = prs_mem_get(ps, len * sizeof(uint16));
 	if (q == NULL) return False;
 
-	DBG_RW_PSVAL(True, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data16s, len)
+	DBG_RW_PSVAL(False, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data16s, len)
 	ps->data_offset += (len * sizeof(uint16));
 
 	return True;

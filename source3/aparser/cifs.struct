@@ -2,6 +2,7 @@ module cifs
 
 #define BOOL uint32
 #define UCHAR uint8
+#define WCHAR uint16
 #define USHORT uint16
 #define LONG uint32
 #define ULONG uint32
@@ -66,9 +67,6 @@ typedef struct {
 	UCHAR Challenge[ChallengeLength];            /* The challenge */
 	string PrimaryDomain;       /* The server's primary domain */
 
-	uint16 bcount;
-	uint8 chal[8];
-	string domain;
 } R_NEGPROT_12;
 
 typedef struct {
@@ -331,7 +329,7 @@ typedef struct {
 
 typedef struct {
 	USHORT Pid;       /* PID of process "owning" lock */
-	USHORT Pad;       /* Pad to DWORD align (mbz) */
+	.align4 0;
 	ULONG OffsetHigh; /* Offset to bytes to [un]lock (high) */
 	ULONG OffsetLow;  /* Offset to bytes to [un]lock (low) */
 	ULONG LengthHigh; /* Number of bytes to [un]lock (high) */
@@ -573,9 +571,9 @@ typedef struct _Q_NTTRANS_19 {
 	UCHAR Buffer[1];
 	USHORT Setup[SetupCount];     /* Setup words */
 	USHORT ByteCount;             /* Count of data bytes */
-	UCHAR Pad1;                   /* Pad to LONG */
+	.align4 0;
 	UCHAR Parameters[ParameterCount];/* Parameter bytes */
-	UCHAR Pad2;                   /* Pad to LONG */
+	.align4 0;
 	UCHAR Data[DataCount];        /* Data bytes */
 
 } Q_NTTRANS_19;
@@ -607,9 +605,9 @@ typedef struct _R_NTTRANS_18 {
 	UCHAR SetupCount;       /* Count of setup words */
 	USHORT Setup[SetupCount]; /* Setup words */
 	USHORT ByteCount;       /* Count of data bytes */
-	UCHAR Pad1;           /* Pad to LONG */
+	.align4 0;
 	UCHAR Parameters[ParameterCount]; /* Parameter bytes */
-	UCHAR Pad2;           /* Pad to SHORT or LONG */
+	.align4 0;
 	UCHAR Data[DataCount];  /* Data bytes */
 } R_NTTRANS_18;
 
@@ -618,7 +616,95 @@ typedef struct _R_NTTRANS {
 	union ctr[wcount] {
 		case 18 R_NTTRANS_18 q18;
 	}
+	.align4 2;
 } R_NTTRANS;
+
+/*Setup[0] Transaction2           Value Description */
+/*Subcommand Code */
+/*=============================== ===== ============================= */
+
+#define TRANS2_OPEN2                    0x00  /* Create file with extended attributes */
+#define TRANS2_FIND_FIRST2              0x01  /* Begin search for files */
+#define TRANS2_FIND_NEXT2               0x02  /* Resume search for files */
+#define TRANS2_QUERY_FS_INFO     0x03  /* Get file system information
+#define TRANS2_RESERVED4                0x04  /* Reserved */
+#define TRANS2_QUERY_PATH_INFO   0x05  /* Get information about a named file or directory */
+#define TRANS2_SET_PATH_INFO     0x06  /* Set information about a named file or directory */
+#define TRANS2_QUERY_FILE_INFO   0x07  /* Get information about a handle */
+#define TRANS2_SET_FILE_INFO     0x08  /* Set information by handle */
+#define TRANS2_FSCTL                    0x09  /* Not implemented by NT server */
+#define TRANS2_IOCTL2                   0x0A  /* Not implemented by NT server */
+#define TRANS2_FIND_NOTIFY_FIRST        0x0B  /* Not implemented by NT server */
+#define TRANS2_FIND_NOTIFY_NEXT         0x0C  /* Not implemented by NT server */
+#define TRANS2_CREATE_DIRECTORY         0x0D  /* Create directory with extended attributes */
+#define TRANS2_SESSION_SETUP            0x0E  /* Session setup with extended security information */
+#define TRANS2_GET_DFS_REFERRAL         0x10  /* Get a DFS referral */
+#define TRANS2_REPORT_DFS_INCONSISTENCY 0x11  /* Report a DFS knowledge inconsistency */
+
+typedef struct {
+	USHORT InformationLevel;   /* Level of information requested */
+} TRANS2_QUERY_FS_INFO_STRUCT;
+
+#define SMB_INFO_STANDARD                1
+#define SMB_INFO_QUERY_EA_SIZE           2
+#define SMB_SET_FILE_BASIC_INFO          0x101
+#define SMB_SET_FILE_DISPOSITION_INFO    0x102
+#define SMB_SET_FILE_ALLOCATION_INFO     0x103
+#define SMB_SET_FILE_END_OF_FILE_INFO    0x104
+
+
+typedef struct {
+	hyper CreationTime;
+	hyper LastAccessTime;
+	hyper LastWriteTime;
+	hyper ChangeTime;
+	USHORT Attributes;
+	.align4 0;
+} SMB_QUERY_FILE_BASIC_INFO_STRUCT;
+
+
+typedef struct {
+	ULONG fs_atr;
+	LONG max_len_filename;
+	ULONG length;
+	uint8 fs[length];
+	.align4 2;
+} SMB_QUERY_FS_ATTRIBUTE_INFO_STRUCT;
+
+#define FILE_CASE_SENSITIVE_SEARCH   0x00000001
+#define FILE_CASE_PRESERVED_NAMES    0x00000002
+#define FILE_PRSISTENT_ACLS          0x00000004
+#define FILE_FILE_COMPRESSION        0x00000008
+#define FILE_VOLUME_QUOTAS           0x00000010
+#define FILE_DEVICE_IS_MOUNTED       0x00000020
+#define FILE_VOLUME_IS_COMPRESSED    0x00008000
+
+typedef struct {
+	USHORT Fid;
+	USHORT InformationLevel;
+	USHORT Reserved;
+	.align4 0;
+
+	union ctr[InformationLevel] {
+		case 0x101 SMB_QUERY_FILE_BASIC_INFO_STRUCT t101;
+	}
+
+} TRANS2_SET_FILE_INFO_STRUCT;
+
+typedef struct {
+	USHORT InformationLevel;   /* Level of information requested */
+	ULONG Reserved;            /* Must be zero */
+	string FileName;           /* File or directory name */
+} TRANS2_QUERY_PATH_INFO_STRUCT;
+
+typedef struct {
+	USHORT SearchAttributes;
+	USHORT SearchCount;          
+	USHORT Flags;                
+	USHORT InformationLevel;      
+	ULONG SearchStorageType;
+	string FileName;              
+} TRANS2_FIND_FIRST2_STRUCT;
 
 typedef struct _Q_TRANS2_15 {
 	USHORT TotalParameterCount;      /* Total parameter bytes being sent */
@@ -640,11 +726,13 @@ typedef struct _Q_TRANS2_15 {
 	UCHAR Reserved3;                 /* Reserved (pad above to word) */
 	USHORT Setup[SetupCount];        /* Setup words (# = SetupWordCount) */
 	USHORT ByteCount;                /* Count of data bytes */
-	string Name;                    /* Must be NULL */
-	UCHAR Pad[];                     /* Pad to SHORT or LONG */
-	UCHAR Parameters[ParameterCount];/* Parameter bytes (# = ParameterCount) */ 
-	UCHAR Pad1[];                    /* Pad to SHORT or LONG */
-	UCHAR Data[DataCount];           /* Data bytes (# = DataCount) */
+	.align4 0;
+	union ctr[Setup[0]] {
+		case 1 TRANS2_FIND_FIRST2_STRUCT t1;
+		case 3 TRANS2_QUERY_FS_INFO_STRUCT t3;
+		case 5 TRANS2_QUERY_PATH_INFO_STRUCT t5;
+		case 8 TRANS2_SET_FILE_INFO_STRUCT t8;
+	}
 
 } Q_TRANS2_15;
 
@@ -654,6 +742,100 @@ typedef struct _Q_TRANS2 {
 		case 15 Q_TRANS2_15 q15;
 	}
 } Q_TRANS2;
+
+typedef struct {
+	ULONG NextEntryOffset;
+	ULONG FileIndex;
+	hyper CreationTime;
+	hyper LastAccessTime;
+	hyper LastWriteTime;
+	hyper ChangeTime;
+	hyper EndOfFile;
+	hyper AllocationSize;
+	ULONG ExtFileAttributes;
+	ULONG FileNameLength;
+	ULONG EaSize;
+	UCHAR ShortNameLength;
+	UCHAR Reserved;
+	uint8 ShortName[24];
+	UCHAR FileName[FileNameLength];
+	.align4 2;
+} SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
+
+typedef struct {
+	.align2 0;
+} R_TRANS2_D0;
+
+typedef struct {
+	.align4 2;
+} R_TRANS2_P0;
+
+typedef struct {
+	USHORT Reserved;
+} R_TRANS2_P2;
+
+typedef struct {
+	USHORT Sid;            /* Search handle */
+	USHORT SearchCount;    /* Number of entries returned */
+	USHORT EndOfSearch;    /* Was last entry returned? */
+	USHORT EaErrorOffset;  /* Offset into EA list if EA error */
+	USHORT LastNameOffset; /* Offset into data to file name of last */
+			/*  entry, if server needs it to resume */
+			/*  search; else 0 */
+	.align4 2;
+	SMB_FIND_FILE_BOTH_DIRECTORY_INFO i104[SearchCount];
+} R_TRANS2_FIND_FIRST2_STRUCT;
+
+typedef struct {
+	SMB_QUERY_FILE_BASIC_INFO_STRUCT i101;
+	.align4 2;
+} R_TRANS2_FILE_BASIC_STRUCT;
+
+typedef struct _R_TRANS2_10 {
+	USHORT TotalParameterCount;/* Total parameter bytes being sent */
+	USHORT TotalDataCount;     /* Total data bytes being sent */
+	USHORT Reserved2;
+	USHORT ParameterCount;     /* Parameter bytes sent this buffer */
+	USHORT ParameterOffset;    /* Offset (from header start) to */
+				  /* Parameters */
+	USHORT ParameterDisplacement; /* Specifies the offset from the start */
+				  /* of the overall parameter block to */
+				  /* the parameter bytes that are */
+				  /* contained in this message */
+	USHORT DataCount;          /* Data bytes sent this buffer */
+	USHORT DataOffset;         /* Offset (from header start) to data */
+	USHORT DataDisplacement;   /* Specifies the offset from the start */
+				  /* of the overall data block to the */
+				  /* data bytes that are contained in */
+				  /* this message. */
+	UCHAR SetupCount;         /* Count of setup words */
+	UCHAR Reserved3;                 /* Reserved (pad above to word) */
+	USHORT Setup[SetupCount]; /* Setup words */
+	USHORT ByteCount;         /* Count of data bytes */
+	.align4 2;
+	union pctr[ParameterCount] {
+		case 0 R_TRANS2_P0 p0;
+		case 2 R_TRANS2_P2 p2;
+		case 10 R_TRANS2_FIND_FIRST2_STRUCT r10;
+	}
+	union dctr[DataCount] {
+		case 0 R_TRANS2_D0 d0;
+		case 0x24 R_TRANS2_FILE_BASIC_STRUCT r24;
+		case 0x14 SMB_QUERY_FS_ATTRIBUTE_INFO_STRUCT r14;
+	}
+} R_TRANS2_10;
+
+typedef struct {
+	USHORT ByteCount;         /* Count of data bytes */
+} R_TRANS2_0;
+
+typedef struct _R_TRANS2 {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 0 R_TRANS2_0 q0;
+		case 10 R_TRANS2_10 q10;
+	}
+} R_TRANS2;
 
 typedef struct _Q_TRANS_16 {
 	USHORT TotalParameterCount;      /* Total parameter bytes being sent */
@@ -676,9 +858,9 @@ typedef struct _Q_TRANS_16 {
 	USHORT Setup[SetupCount];        /* Setup words (# = SetupWordCount) */
 	USHORT ByteCount;                /* Count of data bytes */
 	string Name;                    /* Must be NULL */
-	UCHAR Pad[];                     /* Pad to SHORT or LONG */
+	.align4 0;
 	UCHAR Parameters[ParameterCount];/* Parameter bytes (# = ParameterCount) */ 
-	UCHAR Pad1[];                    /* Pad to SHORT or LONG */
+	.align4 0;
 	UCHAR Data[DataCount];           /* Data bytes (# = DataCount) */
 
 } Q_TRANS_16;
@@ -711,9 +893,9 @@ typedef struct _R_TRANS_10 {
 	UCHAR Reserved3;                 /* Reserved (pad above to word) */
 	USHORT Setup[SetupCount]; /* Setup words */
 	USHORT ByteCount;         /* Count of data bytes */
-	UCHAR Pad1;               /* Pad to LONG */
+	.align4 0;
 	UCHAR Parameters[ParameterCount];/* Parameter bytes */
-	/*UCHAR Pad2;               Pad to SHORT or LONG */
+	.align4 0;
 	UCHAR Data[DataCount];    /* Data bytes */
 } R_TRANS_10;
 
@@ -807,6 +989,7 @@ typedef struct _R_SMB {
 		case 45  R_OPEN_ANDX r45;
 		case 46  R_READ_ANDX r46;
 		case 47  R_WRITE_ANDX r47;
+		case 50  R_TRANS2 q50;
 		case 113 R_TDIS    r113;
 		case 114 R_NEGPROT r114;
 		case 115 R_SESSION_SETUP_ANDX r115;
