@@ -486,7 +486,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   pstring smb_apasswd;
   int   smb_ntpasslen = 0;   
   pstring smb_ntpasswd;
-  BOOL valid_password = False;
   pstring user;
   pstring orig_user;
   fstring domain;
@@ -719,57 +718,34 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   add_session_user(user);
 
   if (!guest) {
-	  valid_password = NT_STATUS_IS_OK(pass_check_smb(orig_user, user, 
-                                                          domain, 
-							  (unsigned char *)smb_apasswd, 
-							  smb_apasslen, 
-							  (unsigned char *)smb_ntpasswd,
-							  smb_ntpasslen));
+	  NTSTATUS nt_status;
+	  nt_status = pass_check_smb(orig_user, user, 
+				     domain, 
+				     (unsigned char *)smb_apasswd, 
+				     smb_apasslen, 
+				     (unsigned char *)smb_ntpasswd,
+				     smb_ntpasslen);
+	  
+	  if NT_STATUS_IS_OK(nt_status) {
 
-    /* The true branch will be executed if 
-       (1) the NT password failed (or was not tried), and 
-       (2) LanMan authentication failed (or was disabled) 
-     */
-    if (!valid_password)
-    {
-      if (lp_security() >= SEC_USER) 
-      {
-        if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
-        {
-		DEBUG(1,("Rejecting user '%s': authentication failed\n", user));
-		END_PROFILE(SMBsesssetupX);
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-        }
+	  } else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)
+		     && lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) {
+		  DEBUG(3,("No such user %s [%s] - using guest account\n",user, domain));
+		  pstrcpy(user,lp_guestaccount(-1));
+		  guest = True;
 
-        if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER)
-        {
-          if (smb_getpwnam(user,True))
-          {
-            DEBUG(1,("Rejecting user '%s': bad password\n", user));
-	    	END_PROFILE(SMBsesssetupX);
-            return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-          }
-        }
+	  } else if ((NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) 
+		      || NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER))
+		     &&  (lp_map_to_guest() ==  MAP_TO_GUEST_ON_BAD_PASSWORD)) {
+		  pstrcpy(user,lp_guestaccount(-1));
+		  DEBUG(3,("Registered username %s for guest access\n",user));
+		  guest = True;
 
-        /*
-         * ..else if lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD
-         * Then always map to guest account - as done below.
-         */
-      }
-
-      if (*smb_apasswd || !smb_getpwnam(user,True))
-         pstrcpy(user,lp_guestaccount(-1));
-      DEBUG(3,("Registered username %s for guest access\n",user));
-      guest = True;
-    }
+	  } else {
+		  return ERROR_NT(nt_status);
+	  }  
   }
-
-  if (!smb_getpwnam(user,True)) {
-    DEBUG(3,("No such user %s [%s] - using guest account\n",user, domain));
-    pstrcpy(user,lp_guestaccount(-1));
-    guest = True;
-  }
-
+  
   if (!strequal(user,lp_guestaccount(-1)) &&
       lp_servicenumber(user) < 0)      
   {

@@ -235,6 +235,7 @@ typedef uint32 WERROR;
 
 #define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
 #define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
+#define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
 #define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
 
 
