@@ -172,3 +172,5 @@ struct stream_server_ops;
 
 struct nbtd_server;
 struct nbtd_interface;
+
+struct mutex_ops;

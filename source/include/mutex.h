@@ -21,16 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* To add a new mutex, add it to enum mutex_id
- */
-enum mutex_id { MUTEX_SMBD, 		/* global smbd lock */
-		MUTEX_TALLOC, 		/* global talloc.c lock */
-		MUTEX_DEBUG,		/* global debug.c lock */
-		MUTEX_TANK,		/* vfs_tank lock */
-
-		MUTEX_MAX /* this MUST be kept last */
-};
-
 /* To add a new read/write lock, add it to enum rwlock_id
  */
 enum rwlock_id { RWLOCK_SMBD, 		/* global smbd lock */
@@ -55,7 +45,7 @@ enum rwlock_id { RWLOCK_SMBD, 		/* global smbd lock */
 
 /* this null typedef ensures we get the types right and avoids the
    pitfalls of void* */
-typedef struct {
+typedef struct smb_mutex {
 	void *mutex;
 } smb_mutex_t;
 typedef struct {
