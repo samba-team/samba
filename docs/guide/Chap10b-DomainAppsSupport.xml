@@ -676,12 +676,12 @@ password: XXXXXXXX
 		whole process. Remember to issue the following command (for Red Hat Linux):
 <screen>
 &rootprompt; chgrp squid /var/cache/samba/winbindd_privileged
-&rootprompt; chmod 755 /var/cache/samba/winbindd_privileged
+&rootprompt; chmod 750 /var/cache/samba/winbindd_privileged
 </screen>
 		For SUSE Linux 9, execute the following:
 <screen>
 &rootprompt; chgrp squid /var/lib/samba/winbindd_privileged
-&rootprompt; chmod 755 /var/lib/samba/winbindd_privileged
+&rootprompt; chmod 750 /var/lib/samba/winbindd_privileged
 </screen>
 		</para></step>
 
