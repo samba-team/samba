@@ -160,7 +160,8 @@ static int reply_nt1(char *outbuf)
   /* dual names + lock_and_read + nt SMBs + remote API calls */
   int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_LEVEL_II_OPLOCKS|
                      (lp_nt_smb_support() ? CAP_NT_SMBS | CAP_RPC_REMOTE_APIS : 0) |
-					 CAP_LARGE_READX | CAP_LARGE_WRITEX |
+					 ((lp_large_readwrite() && (SMB_OFF_T_BITS == 64)) ?
+							CAP_LARGE_READX | CAP_LARGE_WRITEX | CAP_W2K_SMBS : 0) |
                      (SMB_OFF_T_BITS == 64 ? CAP_LARGE_FILES : 0);
 
 

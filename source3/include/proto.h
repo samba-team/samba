@@ -509,7 +509,6 @@ void out_ascii(FILE *f, unsigned char *buf,int len);
 void out_data(FILE *f,char *buf1,int len, int per_line);
 void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
-void dump_datac(int class, int level, char *buf1, int len);
 char *tab_depth(int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
@@ -636,7 +635,6 @@ BOOL send_smb(int fd,char *buffer);
 BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
 int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind);
 int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
-void reset_globals_after_fork(void);
 void client_setfd(int fd);
 char *client_name(void);
 char *client_addr(void);
@@ -1272,8 +1270,6 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
-BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
-		      int new_pw_len, BOOL nt_pass_set);
 BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32 *new_pw_len,
 		      uchar nt_p16[16], uchar p16[16]);
@@ -1863,6 +1859,7 @@ BOOL lp_use_rhosts(void);
 BOOL lp_readprediction(void);
 BOOL lp_readbmpx(void);
 BOOL lp_readraw(void);
+BOOL lp_large_readwrite(void);
 BOOL lp_writeraw(void);
 BOOL lp_null_passwords(void);
 BOOL lp_obey_pam_restrictions(void);
@@ -2204,6 +2201,7 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time);
 BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16]);
 BOOL trust_password_delete(char *domain);
+void reset_globals_after_fork(void);
 
 /* The following definitions come from passdb/smbpassfile.c  */
 
