@@ -1349,6 +1349,49 @@ WERROR _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_S
 }
 
 /*******************************************************************
+net sess del
+********************************************************************/
+
+WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SESS_DEL *r_u)
+{
+	struct sessionid *session_list;
+	int num_sessions, snum, ret;
+	fstring username;
+	fstring machine;
+
+	rpcstr_pull_unistr2_fstring(username, &q_u->uni_user_name);
+	rpcstr_pull_unistr2_fstring(machine, &q_u->uni_cli_name);
+
+	/* strip leading backslashes if any */
+	while (machine[0] == '\\') {
+		memmove(machine, &machine[1], strlen(machine));
+	}
+
+	num_sessions = list_sessions(&session_list);
+
+	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
+
+	r_u->status = WERR_ACCESS_DENIED;
+
+	for (snum = 0; snum < num_sessions; snum++) {
+
+		if ((StrCaseCmp(session_list[snum].username, username) == 0 || username[0] == '\0' ) &&
+		    StrCaseCmp(session_list[snum].remote_machine, machine) == 0) {
+		
+			if ((ret = message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False))) {
+				r_u->status = WERR_OK;
+			} else {
+				r_u->status = WERR_ACCESS_DENIED;
+			}
+		}
+	}
+
+	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/*******************************************************************
  Net share enum all.
 ********************************************************************/
 
