@@ -1891,7 +1891,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
   data = smb_buf(outbuf) + 3;
   
   if(!do_lock( fsp, conn, numtoread, startpos, F_RDLCK, &eclass, &ecode)) {
-    if(ecode == ERRlock) {
+    if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
       /*
        * A blocking lock was requested. Package up
        * this smb into a queued request and push it
@@ -2485,7 +2485,7 @@ int reply_lock(connection_struct *conn,
 		 fsp->fd_ptr->fd, fsp->fnum, offset, count));
 
 	if (!do_lock(fsp, conn, count, offset, F_WRLCK, &eclass, &ecode)) {
-      if(ecode == ERRlock) {
+      if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
         /*
          * A blocking lock was requested. Package up
          * this smb into a queued request and push it
@@ -3618,7 +3618,7 @@ dev = %x, inode = %lx\n", fsp->fnum, (unsigned int)dev, (unsigned long)inode));
           (int)offset, (int)count, fsp->fsp_name ));
     if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
                 &eclass, &ecode)) {
-      if((ecode == ERRlock) && (lock_timeout != 0)) {
+      if((ecode == ERRlock) && (lock_timeout != 0) && lp_blocking_locks(SNUM(conn))) {
         /*
          * A blocking lock was requested. Package up
          * this smb into a queued request and push it

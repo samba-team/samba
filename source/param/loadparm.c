@@ -126,7 +126,9 @@ typedef struct
   char *szDomainHostsallow; 
   char *szDomainHostsdeny;
   char *szUsernameMap;
+#ifdef USING_GROUPNAME_MAP
   char *szGroupnameMap;
+#endif /* USING_GROUPNAME_MAP */
   char *szCharacterSet;
   char *szLogonScript;
   char *szLogonPath;
@@ -324,6 +326,7 @@ typedef struct
   BOOL bDosFiletimes;
   BOOL bDosFiletimeResolution;
   BOOL bFakeDirCreateTimes;
+  BOOL bBlockingLocks;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -415,6 +418,7 @@ static service sDefault =
   False, /* bDosFiletimes */
   False, /* bDosFiletimeResolution */
   False, /* bFakeDirCreateTimes */
+  True,  /* bBlockingLocks */
   ""     /* dummy */
 };
 
@@ -582,6 +586,7 @@ static struct parm_struct parm_table[] =
   {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL,   NULL,  0},
 
   {"Tuning Options", P_SEP, P_SEPARATOR},
+  {"blocking locks",   P_BOOL,    P_LOCAL,  &sDefault.bBlockingLocks,    NULL,   NULL,  0},
   {"change notify timeout", P_INTEGER, P_GLOBAL, &Globals.change_notify_timeout, NULL,   NULL,  0},
   {"deadtime",         P_INTEGER, P_GLOBAL, &Globals.deadtime,          NULL,   NULL,  0},
   {"getwd cache",      P_BOOL,    P_GLOBAL, &use_getwd_cache,           NULL,   NULL,  0},
@@ -654,6 +659,9 @@ static struct parm_struct parm_table[] =
   {"domain guest group",P_STRING, P_GLOBAL, &Globals.szDomainGuestGroup, NULL,   NULL,  0},
   {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL,   NULL,  0},
   {"domain guest users",P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL,   NULL,  0},
+#ifdef USING_GROUPNAME_MAP
+  {"groupname map",     P_STRING, P_GLOBAL, &Globals.szGroupnameMap,     NULL,   NULL,  0},
+#endif /* USING_GROUPNAME_MAP */
   {"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout,  NULL,   NULL,  0},
 
   {"Logon Options", P_SEP, P_SEPARATOR},
@@ -1060,6 +1068,9 @@ FN_GLOBAL_STRING(lp_passwordserver,&Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order,&Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_workgroup,&Globals.szWorkGroup)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
+#ifdef USING_GROUPNAME_MAP
+FN_GLOBAL_STRING(lp_groupname_map,&Globals.szGroupnameMap)
+#endif /* USING_GROUPNAME_MAP */
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 
 FN_GLOBAL_STRING(lp_logon_drive,&Globals.szLogonDrive) 
@@ -1239,6 +1250,7 @@ FN_LOCAL_BOOL(lp_recursive_veto_delete,bDeleteVetoFiles)
 FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution,bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times,bFakeDirCreateTimes)
+FN_LOCAL_BOOL(lp_blocking_locks,bBlockingLocks)
 
 FN_LOCAL_INTEGER(lp_create_mode,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
