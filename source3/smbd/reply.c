@@ -910,7 +910,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		if (ok) {
 			if ((dirtype&0x1F) == aVOLID) {	  
 				memcpy(p,status,21);
-				make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0,conn->case_sensitive);
+				make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0);
 				dptr_fill(p+12,dptr_num);
 				if (dptr_zero(p+12) && (status_len==0))
 					numentries = 1;
@@ -930,7 +930,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 					finished = !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
 					if (!finished) {
 						memcpy(p,status,21);
-						make_dir_struct(p,mask,fname,size,mode,date,conn->case_sensitive);
+						make_dir_struct(p,mask,fname,size,mode,date);
 						dptr_fill(p+12,dptr_num);
 						numentries++;
 						p += DIR_STRUCT_SIZE;
