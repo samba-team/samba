@@ -6755,3 +6755,41 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 		return WERR_UNKNOWN_LEVEL;
 	}
 }
+
+/********************************************************************
+ * spoolss_getprinterdataex
+ ********************************************************************/
+
+WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u, SPOOL_R_GETPRINTERDATAEX *r_u)
+{
+        fstring key;
+
+        /* From MSDN documentation of GetPrinterDataEx: pass request to
+           GetPrinterData if key is "PrinterDriverData" */
+
+        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
+
+        if (strcmp(key, "PrinterDriverData") == 0)
+                DEBUG(10, ("pass me to getprinterdata\n"));
+        
+        return WERR_INVALID_PARAM;
+}
+
+/********************************************************************
+ * spoolss_setprinterdata
+ ********************************************************************/
+
+WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u, SPOOL_R_SETPRINTERDATAEX *r_u)
+{
+        fstring key;
+
+        /* From MSDN documentation of SetPrinterDataEx: pass request to
+           SetPrinterData if key is "PrinterDriverData" */
+
+        unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+
+        if (strcmp(key, "PrinterDriverData") == 0)
+                DEBUG(10, ("pass me to setprinterdata\n"));
+
+        return WERR_INVALID_PARAM;
+}
