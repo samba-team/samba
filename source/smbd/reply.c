@@ -5176,7 +5176,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 		SIVAL(outbuf,smb_vwv6,0);
 		SIVAL(outbuf,smb_vwv8,0);
 	} else {
-		uint32 allocation_size = get_allocation_size(fsp, &sbuf);
+		uint32 allocation_size = get_allocation_size(conn,fsp, &sbuf);
 		SIVAL(outbuf,smb_vwv6,(uint32)sbuf.st_size);
 		SIVAL(outbuf,smb_vwv8,allocation_size);
 	}
