@@ -741,7 +741,8 @@ struct shmem_ops {
  * to support the following operations.
  */
 
-struct passdb_ops {
+struct smb_passdb_ops
+{
 	/*
 	 * Password database operations.
 	 */

@@ -687,7 +687,7 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
 	pw_buf.acct_ctrl          = user->acct_ctrl;
 		
-	pass = hashed_getpwnam(unix_name);
+	pass = getpwnam(unix_name);
 	if (pass != NULL)
 	{
 		pstrcpy(unix_gecos, pass->pw_gecos);
@@ -798,7 +798,7 @@ struct sam_passwd *pwdb_sam_map_names(struct sam_passwd *sam)
 
 	if (sam->unix_gid == (gid_t)-1 && sam->group_rid == 0xffffffff)
 	{
-		struct passwd *pass = hashed_getpwnam(unix_name);
+		struct passwd *pass = getpwnam(unix_name);
 		if (pass != NULL)
 		{
 			sam->unix_gid = pass->pw_gid;
