@@ -33,9 +33,6 @@ static void nbt_request_handler(struct nbt_name_socket *nbtsock,
 				struct nbt_name_packet *packet, 
 				const char *src_address, int src_port)
 {
-	struct nbt_interface *iface = talloc_get_type(nbtsock->incoming.private, 
-						      struct nbt_interface);
-
 	switch (packet->operation & NBT_OPCODE) {
 	case NBT_OPCODE_QUERY:
 		nbt_request_query(nbtsock, packet, src_address, src_port);
