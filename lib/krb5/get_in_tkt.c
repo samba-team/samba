@@ -50,6 +50,7 @@ krb5_init_etype (krb5_context context,
     krb5_error_code ret;
     krb5_enctype *tmp;
 
+    ret = 0;
     if (etypes)
 	tmp = (krb5_enctype*)etypes;
     else {
@@ -63,12 +64,17 @@ krb5_init_etype (krb5_context context,
 	;
     *len = i;
     *val = malloc(i * sizeof(unsigned));
+    if (*val == NULL) {
+	ret = ENOMEM;
+	goto cleanup;
+    }
     memmove (*val,
 	     tmp,
 	     i * sizeof(*tmp));
+cleanup:
     if (etypes == NULL)
 	free (tmp);
-    return 0;
+    return ret;
 }
 
 
@@ -111,17 +117,31 @@ extract_ticket(krb5_context context,
 	       krb5_creds *creds,		
 	       krb5_keyblock *key,
 	       krb5_const_pointer keyseed,
-	       krb5_addresses *addr,
+	       krb5_addresses *addrs,
+	       unsigned nonce,
 	       krb5_decrypt_proc decrypt_proc,
 	       krb5_const_pointer decryptarg)
 {
     krb5_error_code err;
+    krb5_principal tmp_principal;
+    int tmp;
+    time_t tmp_time;
 
-#if 0 /* XXX - Only check they're the same */
-    principalname2krb5_principal(&creds->client, 
-				 rep->part1.cname, 
-				 rep->part1.crealm);
-#endif
+    /* compare client */
+
+    err = principalname2krb5_principal (&tmp_principal,
+					rep->part1.cname,
+					rep->part1.crealm);
+    if (err)
+	goto out;
+    tmp = krb5_principal_compare (context, tmp_principal, creds->client);
+    krb5_free_principal (context, tmp_principal);
+    if (!tmp) {
+	err = KRB5KRB_AP_ERR_MODIFIED;
+	goto out;
+    }
+    
+    /* extract ticket */
     {
 	char buf[1024];
 	size_t len;
@@ -134,52 +154,104 @@ extract_ticket(krb5_context context,
 	creds->second_ticket.data   = NULL;
     }
 
+    /* compare server */
+
+    err = principalname2krb5_principal (&tmp_principal,
+					rep->part1.ticket.sname,
+					rep->part1.ticket.realm);
+    if (err)
+	goto out;
+    tmp = krb5_principal_compare (context, tmp_principal, creds->server);
+    krb5_free_principal (context, tmp_principal);
+    if (!tmp) {
+	err = KRB5KRB_AP_ERR_MODIFIED;
+	goto out;
+    }
+    
+    /* decrypt */
+
     if (decrypt_proc == NULL)
 	decrypt_proc = decrypt_tkt;
     
     err = (*decrypt_proc)(context, key, decryptarg, rep);
     if (err)
-	return err;
+	goto out;
 
-#if 0 /* XXX - see above */
-    principalname2krb5_principal(&creds->server, 
-				 rep->part1.ticket.sname, 
-				 rep->part1.ticket.realm);
-#endif
+    /* compare nonces */
+
+    if (nonce != rep->part2.nonce) {
+	err = KRB5KRB_AP_ERR_MODIFIED;
+	goto out;
+    }
+
+    /* check all times */
 
     if (rep->part2.starttime) {
-	creds->times.starttime = *rep->part2.starttime;
+	tmp_time = *rep->part2.starttime;
     } else
-	creds->times.starttime = rep->part2.authtime;
+	tmp_time = rep->part2.authtime;
+
+    if (creds->times.starttime == 0
+	&& abs(tmp_time - time(NULL)) > context->max_skew) {
+	err = KRB5KRB_AP_ERR_MODIFIED;
+	goto out;
+    }
+
+#if 0 /* XXX - This check fails */
+    if (creds->times.starttime != 0
+	&& tmp_time != creds->times.starttime) {
+	err = KRB5KRB_AP_ERR_MODIFIED;
+	goto out;
+    }
+#endif
+
+    creds->times.starttime = tmp_time;
+
     if (rep->part2.renew_till) {
-	creds->times.renew_till = *rep->part2.renew_till;
+	tmp_time = *rep->part2.renew_till;
     } else
-	creds->times.renew_till = 0;
+	tmp_time = 0;
+
+    if (creds->times.renew_till != 0
+	&& tmp_time > creds->times.renew_till) {
+	err = KRB5KRB_AP_ERR_MODIFIED;
+	goto out;
+    }
+
+    creds->times.renew_till = tmp_time;
+
     creds->times.authtime = rep->part2.authtime;
+
+    if (creds->times.endtime != 0
+	&& rep->part2.endtime > creds->times.endtime) {
+	err = KRB5KRB_AP_ERR_MODIFIED;
+	goto out;
+    }
+
     creds->times.endtime  = rep->part2.endtime;
+
     if(rep->part2.caddr)
-	copy_HostAddresses(rep->part2.caddr, &creds->addresses);
+	krb5_copy_addresses (context, rep->part2.caddr, &creds->addresses);
+    else if(addrs)
+	krb5_copy_addresses (context, addrs, &creds->addresses);
     else {
-	if(addr)
-	    copy_HostAddresses(addr, &creds->addresses);
-	else{
-	    creds->addresses.len = 0;
-	    creds->addresses.val = NULL;
-	}
+	creds->addresses.len = 0;
+	creds->addresses.val = NULL;
     }
     creds->flags.b = rep->part2.flags;
 	  
+    creds->authdata.length = 0;
+    creds->authdata.data = NULL;
     creds->session.keyvalue.length = 0;
     creds->session.keyvalue.data   = NULL;
     creds->session.keytype = rep->part2.key.keytype;
     err = krb5_data_copy (&creds->session.keyvalue,
 			  rep->part2.key.keyvalue.data,
 			  rep->part2.key.keyvalue.length);
+
+out:
     memset (rep->part2.key.keyvalue.data, 0,
 	    rep->part2.key.keyvalue.length);
-    creds->authdata.length = 0;
-    creds->authdata.data = NULL;
-
     return err;
 }
 
@@ -233,6 +305,148 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, krb5_keyblock *key)
     return 0;
 }
 
+static krb5_error_code
+init_as_req (krb5_context context,
+	     krb5_kdc_flags opts,
+	     krb5_creds *creds,
+	     const krb5_addresses *addrs,
+	     const krb5_enctype *etypes,
+	     const krb5_preauthtype *ptypes,
+	     krb5_key_proc key_proc,
+	     krb5_const_pointer keyseed,
+	     unsigned nonce,
+	     AS_REQ *a)
+{
+    krb5_error_code ret;
+    krb5_data salt;
+    krb5_keyblock *key;
+    krb5_enctype etype;
+
+    memset(a, 0, sizeof(*a));
+
+    a->pvno = 5;
+    a->msg_type = krb_as_req;
+    a->req_body.kdc_options = opts.b;
+    a->req_body.cname = malloc(sizeof(*a->req_body.cname));
+    if (a->req_body.cname == NULL) {
+	ret = ENOMEM;
+	goto fail;
+    }
+    a->req_body.sname = malloc(sizeof(*a->req_body.sname));
+    if (a->req_body.sname == NULL) {
+	ret = ENOMEM;
+	goto fail;
+    }
+    ret = krb5_principal2principalname (a->req_body.cname, creds->client);
+    if (ret)
+	goto fail;
+    ret = krb5_principal2principalname (a->req_body.sname, creds->server);
+    if (ret)
+	goto fail;
+    ret = copy_Realm(&creds->client->realm, &a->req_body.realm);
+    if (ret)
+	goto fail;
+
+    if(creds->times.starttime) {
+	a->req_body.from = malloc(sizeof(*a->req_body.from));
+	if (a->req_body.from == NULL) {
+	    ret = ENOMEM;
+	    goto fail;
+	}
+	*a->req_body.from = creds->times.starttime;
+    }
+    a->req_body.till = creds->times.endtime;
+    if(creds->times.renew_till){
+	a->req_body.rtime = malloc(sizeof(*a->req_body.rtime));
+	if (a->req_body.rtime == NULL) {
+	    ret = ENOMEM;
+	    goto fail;
+	}
+	*a->req_body.rtime = creds->times.renew_till;
+    }
+    a->req_body.nonce = nonce;
+    ret = krb5_init_etype (context,
+			   &a->req_body.etype.len,
+			   &a->req_body.etype.val,
+			   etypes);
+    if (ret)
+	goto fail;
+
+    etype = a->req_body.etype.val[0]; /* XXX */
+
+    a->req_body.addresses = malloc(sizeof(*a->req_body.addresses));
+    if (a->req_body.addresses == NULL) {
+	ret = ENOMEM;
+	goto fail;
+    }
+
+    if (addrs)
+	ret = krb5_copy_addresses(context, addrs, a->req_body.addresses);
+    else
+	ret = krb5_get_all_client_addrs (a->req_body.addresses);
+    if (ret)
+	return ret;
+
+    a->req_body.enc_authorization_data = NULL;
+    a->req_body.additional_tickets = NULL;
+
+    /* not sure this is the way to use `ptypes' */
+    if (ptypes == NULL || *ptypes == KRB5_PADATA_NONE)
+	a->padata = NULL;
+    else if (*ptypes ==  KRB5_PADATA_ENC_TIMESTAMP) {
+	a->padata = malloc(sizeof(*a->padata));
+	if (a->padata == NULL) {
+	    ret = ENOMEM;
+	    goto fail;
+	}
+	    
+	a->padata->len = 2;
+	a->padata->val = calloc(a->padata->len, sizeof(*a->padata->val));
+	if (a->padata->val == NULL) {
+	    ret = ENOMEM;
+	    goto fail;
+	}
+	
+	/* make a v5 salted pa-data */
+	salt.length = 0;
+	salt.data = NULL;
+	ret = krb5_get_salt (creds->client, &salt);
+	
+	if (ret)
+	    goto fail;
+	
+	ret = (*key_proc)(context, etype, &salt,
+			  keyseed, &key);
+	krb5_data_free (&salt);
+	if (ret)
+	    goto fail;
+	ret = make_pa_enc_timestamp(context, &a->padata->val[0], key);
+	krb5_free_keyblock (context, key);
+	free (key);
+	if (ret)
+	    goto fail;
+	/* make a v4 salted pa-data */
+	salt.length = 0;
+	salt.data = NULL;
+	ret = (*key_proc)(context, etype, &salt,
+			  keyseed, &key);
+	if (ret)
+	    goto fail;
+	ret = make_pa_enc_timestamp(context, &a->padata->val[1], key);
+	krb5_free_keyblock (context, key);
+	free (key);
+	if (ret)
+	    goto fail;
+    } else {
+	ret = KRB5_PREAUTH_BAD_TYPE;
+	goto fail;
+    }
+    return 0;
+fail:
+    free_AS_REQ(a);
+    return ret;
+}
+
 krb5_error_code
 krb5_get_in_cred(krb5_context context,
 		 krb5_flags options,
@@ -250,94 +464,33 @@ krb5_get_in_cred(krb5_context context,
     AS_REQ a;
     krb5_kdc_rep rep;
     krb5_data req, resp;
-    struct timeval tv;
     char buf[BUFSIZ];
     krb5_data salt;
     krb5_keyblock *key;
     size_t size;
     krb5_kdc_flags opts;
     PA_DATA *pa;
-    unsigned etype;
+    krb5_enctype etype;
+    unsigned nonce;
 
     opts.i = options;
 
-    memset(&a, 0, sizeof(a));
+    krb5_generate_random_block (&nonce, sizeof(nonce));
 
-    a.pvno = 5;
-    a.msg_type = krb_as_req;
-    a.req_body.kdc_options = opts.b;
-    a.req_body.cname = malloc(sizeof(*a.req_body.cname));
-    a.req_body.sname = malloc(sizeof(*a.req_body.sname));
-    krb5_principal2principalname (a.req_body.cname, creds->client);
-    krb5_principal2principalname (a.req_body.sname, creds->server);
-    copy_Realm(&creds->client->realm, &a.req_body.realm);
-
-    /* XXX */
-    if(creds->times.starttime){
-	a.req_body.from = malloc(sizeof(*a.req_body.from));
-	*a.req_body.from = creds->times.starttime;
-    }
-    a.req_body.till = creds->times.endtime;
-    if(creds->times.renew_till){
-	a.req_body.rtime = malloc(sizeof(*a.req_body.rtime));
-	*a.req_body.rtime = creds->times.renew_till;
-    }
-    krb5_generate_random_block (&a.req_body.nonce, sizeof(a.req_body.nonce));
-    krb5_init_etype (context,
-		     &a.req_body.etype.len,
-		     &a.req_body.etype.val,
-		     etypes);
-
-    etype = a.req_body.etype.val[0]; /* XXX */
-
-    a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
-
-    if (addrs)
-	ret = krb5_copy_addresses(context, addrs, a.req_body.addresses);
-    else
-	ret = krb5_get_all_client_addrs (a.req_body.addresses);
+    ret = init_as_req (context,
+		       opts,
+		       creds,
+		       addrs,
+		       etypes,
+		       ptypes,
+		       key_proc,
+		       keyseed,
+		       nonce,
+		       &a);
     if (ret)
 	return ret;
 
-    a.req_body.enc_authorization_data = NULL;
-    a.req_body.additional_tickets = NULL;
-
-    /* not sure this is the way to use `ptypes' */
-    if (ptypes == NULL || *ptypes == KRB5_PADATA_NONE)
-	a.padata = NULL;
-    else if (*ptypes ==  KRB5_PADATA_ENC_TIMESTAMP) {
-	a.padata = malloc(sizeof(*a.padata));
-	a.padata->len = 2;
-	a.padata->val = calloc(a.padata->len, sizeof(*a.padata->val));
-	
-	/* make a v5 salted pa-data */
-	salt.length = 0;
-	salt.data = NULL;
-	ret = krb5_get_salt (creds->client, &salt);
-	
-	if (ret)
-	    return ret;
-	
-	ret = (*key_proc)(context, etype, &salt,
-			  keyseed, &key);
-	krb5_data_free (&salt);
-	if (ret)
-	    return ret;
-	make_pa_enc_timestamp(context, &a.padata->val[0], key);
-	krb5_free_keyblock (context, key);
-	free (key);
-	/* make a v4 salted pa-data */
-	salt.length = 0;
-	salt.data = NULL;
-	ret = (*key_proc)(context, etype, &salt,
-			  keyseed, &key);
-	if (ret)
-	    return ret;
-	make_pa_enc_timestamp(context, &a.padata->val[1], key);
-	krb5_free_keyblock (context, key);
-	free (key);
-    } else
-	return KRB5_PREAUTH_BAD_TYPE;
+    etype = a.req_body.etype.val[0]; /* XXX */
 
     ret = encode_AS_REQ ((unsigned char*)buf + sizeof(buf) - 1,
 			 sizeof(buf),
@@ -353,6 +506,7 @@ krb5_get_in_cred(krb5_context context,
     if (ret)
 	return ret;
 
+    memset (&rep, 0, sizeof(rep));
     if((ret = decode_AS_REP(resp.data, resp.length, &rep.part1, &size))){
 	/* let's try to parse it as a KRB-ERROR */
 	KRB_ERROR error;
@@ -378,10 +532,10 @@ krb5_get_in_cred(krb5_context context,
 	pa = krb5_find_padata(rep.part1.padata->val, rep.part1.padata->len, 
 			      pa_pw_salt, &index);
     }
-    if(pa)
+    if(pa) {
 	ret = (*key_proc)(context, etype, 
 			  &pa->padata_value, keyseed, &key);
-    else{
+    } else {
 	/* make a v5 salted pa-data */
 	salt.length = 0;
 	salt.data = NULL;
@@ -392,21 +546,21 @@ krb5_get_in_cred(krb5_context context,
 	ret = (*key_proc)(context, etype, &salt,
 			  keyseed, &key);
 	krb5_data_free (&salt);
-	if (ret)
-	    return ret;
     }
+    if (ret)
+	return ret;
 	
     ret = extract_ticket(context, &rep, creds, key, keyseed, 
-			 NULL, decrypt_proc, decryptarg);
+			 NULL, nonce, decrypt_proc, decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
     krb5_free_keyblock (context, key);
     free (key);
 
-    if (ret_as_reply)
+    if (ret == 0 && ret_as_reply)
 	*ret_as_reply = rep;
     else
 	krb5_free_kdc_rep (context, &rep);
-    return 0;
+    return ret;
 }
 
 krb5_error_code
