@@ -327,11 +327,11 @@ Common restrictions that are frequently used includes:
 
 <para>
 <itemizedlist>
-	<listitem>Logon Hours</listitem>
-	<listitem>Password Aging</listitem>
-	<listitem>Permitted Logon from certain machines only</listitem>
-	<listitem>Account type (Local or Global)</listitem>
-	<listitem>User Rights</listitem>
+	<listitem><para>Logon Hours</para></listitem>
+	<listitem><para>Password Aging</para></listitem>
+	<listitem><para>Permitted Logon from certain machines only</para></listitem>
+	<listitem><para>Account type (Local or Global)</para></listitem>
+	<listitem><para>User Rights</para></listitem>
 </itemizedlist>
 </para>
 
@@ -416,10 +416,10 @@ reboot and as part of the user logon:
 	An ordered list of User GPOs is obtained. The list contents depends on what is configured in respect of:
 
 <itemizedlist>
-	<listitem>Is user a domain member, thus subject to particular policies</listitem>
-	<listitem>Loopback enablement, and the state of the loopback policy (Merge or Replace)</listitem>
-	<listitem>Location of the Active Directory itself</listitem>
-	<listitem>Has the list of GPOs changed. No processing is needed if not changed.</listitem>
+	<listitem><para>Is user a domain member, thus subject to particular policies</para></listitem>
+	<listitem><para>Loopback enablement, and the state of the loopback policy (Merge or Replace)</para></listitem>
+	<listitem><para>Location of the Active Directory itself</para></listitem>
+	<listitem><para>Has the list of GPOs changed. No processing is needed if not changed.</para></listitem>
 </itemizedlist>
 	</para></listitem>
 

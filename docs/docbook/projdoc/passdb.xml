@@ -262,10 +262,10 @@ Samba-3 introduces the following new password backend capabilities:
 		</para>
 
 		<itemizedlist>
-			<listitem>MS DOS Network client 3.0 with the basic network redirector installed</listitem>
-			<listitem>Windows 95 with the network redirector update installed</listitem>
-			<listitem>Windows 98 [se]</listitem>
-			<listitem>Windows Me</listitem>
+			<listitem><para>MS DOS Network client 3.0 with the basic network redirector installed</para></listitem>
+			<listitem><para>Windows 95 with the network redirector update installed</para></listitem>
+			<listitem><para>Windows 98 [se]</para></listitem>
+			<listitem><para>Windows Me</para></listitem>
 		</itemizedlist>
 
 		<note>
@@ -280,11 +280,11 @@ Samba-3 introduces the following new password backend capabilities:
 		</para>
 
 		<itemizedlist>
-			<listitem>Windows NT 3.5x</listitem>
-			<listitem>Windows NT 4.0</listitem>
-			<listitem>Windows 2000 Professional</listitem>
-			<listitem>Windows 200x Server/Advanced Server</listitem>
-			<listitem>Windows XP Professional</listitem>
+			<listitem><para>Windows NT 3.5x</para></listitem>
+			<listitem><para>Windows NT 4.0</para></listitem>
+			<listitem><para>Windows 2000 Professional</para></listitem>
+			<listitem><para>Windows 200x Server/Advanced Server</para></listitem>
+			<listitem><para>Windows XP Professional</para></listitem>
 		</itemizedlist>
 			
 		<para>
@@ -438,12 +438,12 @@ be announced in time for the Samba-3.0.1 release.
 		</para>
 		
 		<itemizedlist>
-			<listitem><emphasis>add</emphasis> user or machine accounts</listitem>
-			<listitem><emphasis>delete</emphasis> user or machine accounts</listitem>
-			<listitem><emphasis>enable</emphasis> user or machine accounts</listitem>
-			<listitem><emphasis>disable</emphasis> user or machine accounts</listitem>
-			<listitem><emphasis>set to NULL</emphasis> user passwords</listitem>
-			<listitem><emphasis>manage interdomain trust accounts</emphasis></listitem>
+			<listitem><para><emphasis>add</emphasis> user or machine accounts</para></listitem>
+			<listitem><para><emphasis>delete</emphasis> user or machine accounts</para></listitem>
+			<listitem><para><emphasis>enable</emphasis> user or machine accounts</para></listitem>
+			<listitem><para><emphasis>disable</emphasis> user or machine accounts</para></listitem>
+			<listitem><para><emphasis>set to NULL</emphasis> user passwords</para></listitem>
+			<listitem><para><emphasis>manage interdomain trust accounts</emphasis></para></listitem>
 		</itemizedlist>
 		
 		<para>
@@ -502,9 +502,9 @@ be announced in time for the Samba-3.0.1 release.
 		</para>
 
 		<itemizedlist>
-			<listitem>add, remove or modify user accounts</listitem>
-			<listitem>listing user accounts</listitem>
-			<listitem>migrate user accounts</listitem>
+			<listitem><para>add, remove or modify user accounts</para></listitem>
+			<listitem><para>listing user accounts</para></listitem>
+			<listitem><para>migrate user accounts</para></listitem>
 		</itemizedlist>
 
 		<para>
@@ -1207,10 +1207,10 @@ Refer to the <command>logon home</command> parameter in the &smb.conf; man page 
 			</para>
 
 			<itemizedlist>
-				<listitem>sambaHomePath</listitem>
-				<listitem>sambaLogonScript</listitem>
-				<listitem>sambaProfilePath</listitem>
-				<listitem>sambaHomeDrive</listitem>
+				<listitem><para>sambaHomePath</para></listitem>
+				<listitem><para>sambaLogonScript</para></listitem>
+				<listitem><para>sambaProfilePath</para></listitem>
+				<listitem><para>sambaHomeDrive</para></listitem>
 			</itemizedlist>
 
 			<para>
