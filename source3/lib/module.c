@@ -80,7 +80,12 @@ NTSTATUS smb_probe_module(const char *subsystem, const char *module)
 	pstring full_path;
 	
 	/* Check for absolute path */
-	if(module[0] == '/')return smb_load_module(module);
+
+	/* if we make any 'samba multibyte string' 
+	   calls here, we break 
+	   for loading string modules */
+	if (module[0] == '/')
+		return smb_load_module(module);
 	
 	pstrcpy(full_path, lib_path(subsystem));
 	pstrcat(full_path, "/");
@@ -97,19 +102,19 @@ NTSTATUS smb_probe_module(const char *subsystem, const char *module)
 
 NTSTATUS smb_load_module(const char *module_name)
 {
-	DEBUG(0,("This samba executable has not been built with plugin support"));
+	DEBUG(0,("This samba executable has not been built with plugin support\n"));
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
 int smb_load_modules(const char **modules)
 {
-	DEBUG(0,("This samba executable has not been built with plugin support"));
+	DEBUG(0,("This samba executable has not been built with plugin support\n"));
 	return -1;
 }
 
 NTSTATUS smb_probe_module(const char *subsystem, const char *module)
 {
-	DEBUG(0,("This samba executable has not been built with plugin support, not probing")); 
+	DEBUG(0,("This samba executable has not been built with plugin support, not probing\n")); 
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
