@@ -171,7 +171,7 @@ int reply_tcon(connection_struct *conn,
 	int outsize = 0;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int pwlen=0;
-	NTSTATUS ecode;
+	NTSTATUS nt_status;
 	char *p;
 
 	START_PROFILE(SMBtcon);
@@ -188,11 +188,11 @@ int reply_tcon(connection_struct *conn,
 		pstrcpy(service, p+1);
 	}
 
-	conn = make_connection(service,password,pwlen,dev,vuid,&ecode);
+	conn = make_connection(service,password,pwlen,dev,vuid,&nt_status);
   
 	if (!conn) {
 		END_PROFILE(SMBtcon);
-		return ERROR_NT(ecode);
+		return ERROR_NT(nt_status);
 	}
   
 	outsize = set_message(outbuf,2,0,True);
@@ -216,7 +216,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	fstring service;
 	pstring password;
 	pstring devicename;
-	NTSTATUS ecode;
+	NTSTATUS nt_status;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int passlen = SVAL(inbuf,smb_vwv3);
 	pstring path;
@@ -266,11 +266,11 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	DEBUG(4,("Got device type %s\n",devicename));
 
-	conn = make_connection(service,password,passlen,devicename,vuid,&ecode);
+	conn = make_connection(service,password,passlen,devicename,vuid,&nt_status);
 	
 	if (!conn) {
 		END_PROFILE(SMBtconX);
-		return ERROR_NT(ecode);
+		return ERROR_NT(nt_status);
 	}
 
 	if (Protocol < PROTOCOL_NT1) {
