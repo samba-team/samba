@@ -45,6 +45,11 @@ Typical usage is like this: nl()
 tt(rpcclient -I 192.168.32.1 -S "*SMBSERVER" -U fred%secret -l log)
 nl()
 
+bf(rpcclient) is em(not) suitable for usage on single-user systems
+such as Windows 9X, as Windows 9X does not support MSRPC services.
+Therefore, if you have problems using bf(rpcclient) with Windows 9X,
+we don't want to hear about it.
+
 label(OPTIONS)
 manpageoptions()
 
