@@ -163,6 +163,8 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,
 BOOL lsa_close(POLICY_HND *hnd);
 BOOL lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 		    uint32 *count, LSA_PRIV_ENTRY **entries);
+BOOL lsa_enum_privs2(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
+		     uint32 *count, LSA_PRIV_ENTRY **entries);
 uint32 lsa_priv_get_dispname(const POLICY_HND *hnd, const UNISTR2 *name,
 			     uint16 req_lang_id,
 			     UNISTR2 **desc, uint16 *got_lang_id);
@@ -458,6 +460,9 @@ BOOL svc_change_svc_cfg(POLICY_HND *hnd,
 			char *dependencies, char *service_start_name,
 			char *password, char *disp_name);
 BOOL svc_unknown_3(const POLICY_HND *scman_hnd, POLICY_HND *hnd);
+uint32 svc_get_svc_sec(const POLICY_HND *hnd, uint32 sec_info,
+		       /* [in,out] */ uint32 *buf_size,
+		       SEC_DESC **sec_desc);
 
 /*The following definitions come from  rpc_client/cli_use.c  */
 

@@ -23,6 +23,7 @@
  */
 
 #include "includes.h"
+#include "nterr.h"
 #include "rpc_parse.h"
 #include "rpc_client.h"
 
@@ -655,4 +656,72 @@ BOOL svc_unknown_3(const POLICY_HND *scman_hnd, POLICY_HND *hnd)
 	prs_free_data(&buf );
 
 	return valid_req;
+}
+
+/****************************************************************************
+do a SVC Stop Service
+****************************************************************************/
+uint32 svc_get_svc_sec(const POLICY_HND *hnd, uint32 sec_info,
+		       /* [in,out] */ uint32 *buf_size,
+		       SEC_DESC **sec_desc)
+{
+	prs_struct rbuf;
+	prs_struct buf;
+	SVC_Q_GET_SVC_SEC q;
+	BOOL status = NT_STATUS_INVALID_PARAMETER;
+
+	if (hnd == NULL || buf_size == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	/* create and send a MSRPC command with api SVC_STOP_SERVICE */
+
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
+
+	DEBUG(4, ("SVC Stop Service\n"));
+
+	/* store the parameters */
+	q.hnd = *hnd;
+	q.sec_info = sec_info;
+	q.buf_size = *buf_size;
+
+	/* turn parameters into data stream */
+	if (svc_io_q_get_svc_sec("", &q, &buf, 0)
+	    && rpc_hnd_pipe_req(hnd, SVC_GET_SVC_SEC, &buf, &rbuf))
+	{
+		SVC_R_GET_SVC_SEC r;
+		ZERO_STRUCT(r);
+
+		if(svc_io_r_get_svc_sec("", &r, &rbuf, 0)
+		   && rbuf.offset != 0)
+		{
+			status = r.status;
+			if(status != NT_STATUS_NOPROBLEMO)
+				DEBUG(1, ("SVC_GET_SVC_SEC: %s\n",
+					  get_nt_error_msg(status)));
+			*buf_size = r.buf_size;
+			if(sec_desc)
+			{
+				*sec_desc = r.sd;
+			}
+			else
+			{
+				if(r.sd)
+				{
+					free_sec_desc(r.sd);
+					free(r.sd);
+				}
+			}
+		}
+		else
+		{
+			if(sec_desc)
+				*sec_desc = NULL;
+		}
+	}
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
+
+	return status;
 }

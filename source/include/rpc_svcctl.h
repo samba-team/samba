@@ -29,13 +29,16 @@
 #define SVC_CLOSE             0x00
 #define SVC_STOP_SERVICE      0x01
 #define SVC_UNKNOWN_3         0x03
-#define SVC_OPEN_SC_MAN       0x0f
-#define SVC_ENUM_SVCS_STATUS  0x0e
-#define SVC_QUERY_SVC_CONFIG  0x11
-#define SVC_QUERY_DISP_NAME   0x14
+#define SVC_GET_SVC_SEC       0x04
 #define SVC_CHANGE_SVC_CONFIG 0x0b
+#define SVC_ENUM_SVCS_STATUS  0x0e
+#define SVC_OPEN_SC_MAN       0x0f
 #define SVC_OPEN_SERVICE      0x10
+#define SVC_QUERY_SVC_CONFIG  0x11
 #define SVC_START_SERVICE     0x13
+#define SVC_QUERY_DISP_NAME   0x14
+#define SVC_OPEN_SC_MAN_A     0x1b
+#define SVC_OPEN_SERVICE_A    0x1c
 
 /* SVC_Q_START_SERVICE */
 #define MAX_SVC_ARGS 		10
@@ -298,6 +301,23 @@ typedef struct _svc_r_unknown_3
 	uint32 status; /* 0x5 seems to mean access denied... */
 } SVC_R_UNKNOWN_3;
 
+
+/* SVC_Q_GET_SVC_SEC */
+typedef struct _svc_q_get_svc_sec
+{
+	POLICY_HND hnd;
+	uint32 sec_info;
+	uint32 buf_size;
+} SVC_Q_GET_SVC_SEC;
+
+typedef struct _svc_r_get_svc_sec
+{
+	uint32 real_buf_size;
+	SEC_DESC *sd;
+	/* pad to real_buf_size ... */
+	uint32 buf_size;
+	uint32 status;
+} SVC_R_GET_SVC_SEC;
 
 
 #endif /* _RPC_SVCCTL_H */

@@ -515,6 +515,7 @@ SVCCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/svcctrl.o \
 		rpcclient/svcctrl_cmds.o \
 		rpcclient/display_svc.o \
+		rpcclient/display_sec.o \
 		rpcclient/cmd_svcctl.o \
 		$(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)

@@ -81,45 +81,52 @@ static const struct command_set svc_commands[] = {
 	 */
 
 	{
-	 "svcenum",
-	 cmd_svc_enum,
-	 "[-i] Lists Services Manager",
-	 {NULL, NULL}
-	 },
+		"svcenum",
+		cmd_svc_enum,
+		"[-i] Lists Services Manager",
+		{NULL, NULL}
+	},
 
 	{
-	 "svcinfo",
-	 cmd_svc_info,
-	 "<service> Service Information",
-	 {complete_svcenum, NULL}
-	 },
+		"svcinfo",
+		cmd_svc_info,
+		"<service> Service Information",
+		{complete_svcenum, NULL}
+	},
 
 	{
-	 "svcstart",
-	 cmd_svc_start,
-	 "<service> [arg 0] [arg 1] ... Start Service",
-	 {complete_svcenum, NULL}
-	 },
+		"svcstart",
+		cmd_svc_start,
+		"<service> [arg 0] [arg 1] ... Start Service",
+		{complete_svcenum, NULL}
+	},
 
 	{
-	 "svcset",
-	 cmd_svc_set,
-	 "<service> Test Set Service",
-	 {complete_svcenum, NULL}
-	 },
+		"svcset",
+		cmd_svc_set,
+		"<service> Test Set Service",
+		{complete_svcenum, NULL}
+	},
 
 	{
-	 "svcstop",
-	 cmd_svc_stop,
-	 "<service> Stop Service",
-	 {complete_svcenum, NULL}
-	 },
+		"svcstop",
+		cmd_svc_stop,
+		"<service> Stop Service",
+		{complete_svcenum, NULL}
+	},
 
 	{
 		"svcunk3",
 		cmd_svc_unk3,
 		"do some unknown stuff",
 		{NULL, NULL}
+	},
+
+	{
+		"svcgetsec",
+		cmd_svc_get_sec,
+		"<service> get security descriptor",
+		{complete_svcenum, NULL}
 	},
 
 	/*

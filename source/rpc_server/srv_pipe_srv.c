@@ -691,25 +691,32 @@ static BOOL api_rpc_command(rpcsrv_struct * l, const char *rpc_name,
 			    const struct api_struct *api_rpc_cmds)
 {
 	int fn_num;
-	DEBUG(4,
-	      ("api_rpc_command: %s op 0x%x - ", rpc_name, l->hdr_req.opnum));
+	DEBUG(3, ("api_rpc_command: "));
+	DEBUGADD(4, ("%s op 0x%x - ", rpc_name, l->hdr_req.opnum));
 
 	for (fn_num = 0; api_rpc_cmds[fn_num].name; fn_num++)
 	{
-		if (api_rpc_cmds[fn_num].opnum == l->hdr_req.opnum
-		    && api_rpc_cmds[fn_num].fn != NULL)
+		if (api_rpc_cmds[fn_num].opnum == l->hdr_req.opnum)
 		{
-			DEBUG(3,
-			      ("api_rpc_command: %s\n",
-			       api_rpc_cmds[fn_num].name));
+			DEBUGADD(3, ("%s", api_rpc_cmds[fn_num].name));
 			break;
 		}
 	}
 
 	if (api_rpc_cmds[fn_num].name == NULL)
 	{
-		DEBUG(4, ("unknown\n"));
+		DEBUGADD(3, ("unknown\n"));
 		return False;
+	}
+
+	if (api_rpc_cmds[fn_num].fn == NULL)
+	{
+		DEBUGADD(3, (" (not implemented)\n"));
+		return False;
+	}
+	else
+	{
+		DEBUGADD(3, ("\n"));
 	}
 
 	prs_init(&l->rdata, 0, 4, False);

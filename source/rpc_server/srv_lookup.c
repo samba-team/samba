@@ -532,18 +532,14 @@ static uint32 lookup_grp_name(const char *name, const char *domain,
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 
-	status =
-		(status != 0x0) ? lookup_wk_group_name(name, domain, sid,
-						       type) : status;
-	status =
-		(status != 0x0) ? lookup_builtin_alias_name(name, domain, sid,
-							    type) : status;
-	status =
-		(status != 0x0) ? lookup_added_group_name(name, domain, sid,
-							  type) : status;
-	status =
-		(status != 0x0) ? lookup_added_alias_name(name, domain, sid,
-							  type) : status;
+	if (status != 0x0)
+		status = lookup_wk_group_name(name, domain, sid, type);
+	if (status != 0x0)
+		status = lookup_builtin_alias_name(name, domain, sid, type);
+	if (status != 0x0)
+		status = lookup_added_group_name(name, domain, sid, type);
+	if (status != 0x0)
+		status = lookup_added_alias_name(name, domain, sid, type);
 
 	return status;
 }
@@ -556,12 +552,10 @@ static uint32 lookup_user_name(const char *name, const char *domain,
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 
-	status =
-		(status != 0x0) ? lookup_wk_user_name(name, domain, sid,
-						      type) : status;
-	status =
-		(status != 0x0) ? lookup_added_user_name(name, domain, sid,
-							 type) : status;
+	if (status != 0x0)
+		status = lookup_wk_user_name(name, domain, sid, type);
+	if (status != 0x0)
+		status = lookup_added_user_name(name, domain, sid, type);
 
 	return status;
 }
@@ -577,16 +571,13 @@ uint32 lookup_name(const char *name, DOM_SID *sid, uint32 *type)
 
 	split_domain_name(name, domain, user);
 
-	status =
-		(status != 0x0) ? lookup_user_name(user, domain, sid,
-						   type) : status;
-	status =
-		(status != 0x0) ? lookup_grp_name(user, domain, sid,
-						  type) : status;
+	if (status != 0x0)
+		status = lookup_user_name(user, domain, sid, type);
+	if (status != 0x0)
+		status = lookup_grp_name(user, domain, sid, type);
 #if 0
-	status =
-		(status != 0x0) ? lookup_domain_name(domain, sid,
-						     type) : status;
+	if (status != 0x0)
+		status = lookup_domain_name(domain, sid, type) : status;
 #endif
 
 	return status;

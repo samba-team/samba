@@ -1018,3 +1018,59 @@ BOOL svc_io_r_unknown_3(char *desc, SVC_R_UNKNOWN_3 * r_u,
 
 	return True;
 }
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL svc_io_q_get_svc_sec(char *desc, SVC_Q_GET_SVC_SEC *q,
+			  prs_struct *ps, int depth)
+{
+	if (q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svc_io_q_get_svc_sec");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("", &(q->hnd), ps, depth);
+	prs_uint32("sec_info", ps, depth, &(q->sec_info));
+	prs_uint32("buf_size", ps, depth, &(q->buf_size));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL svc_io_r_get_svc_sec(char *desc, SVC_R_GET_SVC_SEC *r,
+			  prs_struct *ps, int depth)
+{
+	if (r == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svc_io_r_get_svc_sec");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("real_buf_size", ps, depth, &(r->real_buf_size));
+	if(r->real_buf_size)
+	{
+		uint32 old_offset = prs_offset(ps);
+
+		if(UNMARSHALLING(ps))
+			r->sd = g_new(SEC_DESC, 1);
+
+		if(!sec_io_desc("sd", r->sd, ps, depth))
+			return False;
+
+		if(!prs_set_offset(ps, old_offset + r->real_buf_size))
+			return False;
+	}
+
+	prs_uint32("buf_size", ps, depth, &(r->buf_size));
+	prs_uint32("status", ps, depth, &(r->status));
+
+	return True;
+}

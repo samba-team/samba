@@ -31,8 +31,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  api_svc_close
  ********************************************************************/
-static BOOL api_svc_close(prs_struct *data,
-			  prs_struct *rdata)
+static BOOL api_svc_close(prs_struct *data, prs_struct *rdata)
 {
 	SVC_Q_CLOSE q_r;
 	SVC_R_CLOSE r_u;
@@ -55,8 +54,7 @@ static BOOL api_svc_close(prs_struct *data,
 /*******************************************************************
  api_svc_open_service
  ********************************************************************/
-static BOOL api_svc_open_service(prs_struct *data,
-				 prs_struct *rdata)
+static BOOL api_svc_open_service(prs_struct *data, prs_struct *rdata)
 {
 	SVC_Q_OPEN_SERVICE q_u;
 	SVC_R_OPEN_SERVICE r_u;
@@ -80,8 +78,7 @@ static BOOL api_svc_open_service(prs_struct *data,
 /*******************************************************************
  api_svc_stop_service
  ********************************************************************/
-static BOOL api_svc_stop_service(prs_struct *data,
-				 prs_struct *rdata)
+static BOOL api_svc_stop_service(prs_struct *data, prs_struct *rdata)
 {
 	SVC_Q_STOP_SERVICE q_u;
 	SVC_R_STOP_SERVICE r_s;
@@ -110,8 +107,7 @@ static BOOL api_svc_stop_service(prs_struct *data,
 /*******************************************************************
  api_svc_start_service
  ********************************************************************/
-static BOOL api_svc_start_service(prs_struct *data,
-				  prs_struct *rdata)
+static BOOL api_svc_start_service(prs_struct *data, prs_struct *rdata)
 {
 	SVC_Q_START_SERVICE q_u;
 	SVC_R_START_SERVICE r_s;
@@ -134,8 +130,7 @@ static BOOL api_svc_start_service(prs_struct *data,
 /*******************************************************************
  api_svc_open_sc_man
  ********************************************************************/
-static BOOL api_svc_open_sc_man(prs_struct *data,
-				prs_struct *rdata)
+static BOOL api_svc_open_sc_man(prs_struct *data, prs_struct *rdata)
 {
 	SVC_Q_OPEN_SC_MAN q_u;
 	SVC_R_OPEN_SC_MAN r_u;
@@ -159,8 +154,7 @@ static BOOL api_svc_open_sc_man(prs_struct *data,
 /*******************************************************************
  api_svc_enum_svcs_status
  ********************************************************************/
-static BOOL api_svc_enum_svcs_status(prs_struct *data,
-				     prs_struct *rdata)
+static BOOL api_svc_enum_svcs_status(prs_struct *data, prs_struct *rdata)
 {
 	SVC_Q_ENUM_SVCS_STATUS q_u;
 	SVC_R_ENUM_SVCS_STATUS r_u;
@@ -197,8 +191,7 @@ static BOOL api_svc_enum_svcs_status(prs_struct *data,
 /*******************************************************************
  api_svc_query_disp_name
  ********************************************************************/
-static BOOL api_svc_query_disp_name(prs_struct *data,
-				    prs_struct *rdata)
+static BOOL api_svc_query_disp_name(prs_struct *data, prs_struct *rdata)
 {
 	SVC_Q_QUERY_DISP_NAME q_u;
 	SVC_R_QUERY_DISP_NAME r_u;
@@ -223,8 +216,7 @@ static BOOL api_svc_query_disp_name(prs_struct *data,
 /*******************************************************************
  api_svc_unknown_3
  ********************************************************************/
-static BOOL api_svc_unknown_3(prs_struct *data,
-			      prs_struct *rdata)
+static BOOL api_svc_unknown_3(prs_struct *data, prs_struct *rdata)
 {
 	SVC_Q_UNKNOWN_3 q_u;
 	SVC_R_UNKNOWN_3 r_u;
@@ -244,6 +236,21 @@ static BOOL api_svc_unknown_3(prs_struct *data,
 }
 
 /*******************************************************************
+ api_svc_get_svc_sec
+ ********************************************************************/
+static BOOL api_svc_get_svc_sec(prs_struct *data, prs_struct *rdata)
+{
+	SVC_Q_GET_SVC_SEC q;
+
+	ZERO_STRUCT(q);
+
+	if (!svc_io_q_get_svc_sec("", &q, data, 0))
+		return False;
+
+	return False;
+}
+
+/*******************************************************************
  array of \PIPE\svcctl operations
  ********************************************************************/
 static const struct api_struct api_svc_cmds[] = {
@@ -257,6 +264,9 @@ static const struct api_struct api_svc_cmds[] = {
 	{"SVC_START_SERVICE", SVC_START_SERVICE, api_svc_start_service},
 	{"SVC_STOP_SERVICE", SVC_STOP_SERVICE, api_svc_stop_service},
 	{"SVC_UNKNOWN_3", SVC_UNKNOWN_3, api_svc_unknown_3},
+	{"SVC_GET_SVC_SEC", SVC_GET_SVC_SEC, api_svc_get_svc_sec},
+	{"SVC_OPEN_SC_MAN_A", SVC_OPEN_SC_MAN_A, NULL},
+	{"SVC_OPEN_SERVICE_A", SVC_OPEN_SERVICE_A, NULL},
 	{NULL, 0, NULL}
 };
 

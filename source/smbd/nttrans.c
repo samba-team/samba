@@ -41,6 +41,7 @@ static char *known_nt_pipes[] = {
   "\\NETLOGON",
   "\\ntlsa",
   "\\ntsvcs",
+  "\\svcctl",
   "\\lsass",
   "\\lsarpc",
   "\\winreg",
@@ -505,7 +506,10 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 			break;
     
 	if ( known_nt_pipes[i] == NULL )
+	{
+		DEBUG(2, ("nt_open_pipe: Pipe %s not found.\n", fname));
 		return(ERROR(ERRSRV,ERRaccess));
+	}
     
 	/* Strip \\ off the name. */
 	fname++;

@@ -3109,17 +3109,18 @@ void svc_display_query_svc_cfg(const QUERY_SERVICE_CONFIG *cfg);
 BOOL svc_query_service( POLICY_HND *pol_scm,
 				const char *svc_name,
 				SVC_QUERY_FN(svc_query_fn));
-void cmd_svc_info(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_svc_info(struct client_info *info, int argc, char *argv[]);
 BOOL msrpc_svc_enum(const char* srv_name,
 				ENUM_SRVC_STATUS **svcs,
 				uint32 *num_svcs,
 				SVC_INFO_FN(info_fn),
 				SVC_QUERY_FN(query_fn));
-void cmd_svc_enum(struct client_info *info, int argc, char *argv[]);
-void cmd_svc_stop(struct client_info *info, int argc, char *argv[]);
-void cmd_svc_start(struct client_info *info, int argc, char *argv[]);
-void cmd_svc_set(struct client_info *info, int argc, char *argv[]);
-void cmd_svc_unk3(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_svc_enum(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_svc_stop(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_svc_start(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_svc_set(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_svc_unk3(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_svc_get_sec(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_wkssvc.c  */
 

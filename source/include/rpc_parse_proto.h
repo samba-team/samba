@@ -1217,6 +1217,10 @@ BOOL svc_io_q_unknown_3(char *desc, SVC_Q_UNKNOWN_3 * q_u,
 			prs_struct *ps, int depth);
 BOOL svc_io_r_unknown_3(char *desc, SVC_R_UNKNOWN_3 * r_u,
 			prs_struct *ps, int depth);
+BOOL svc_io_q_get_svc_sec(char *desc, SVC_Q_GET_SVC_SEC *q,
+			  prs_struct *ps, int depth);
+BOOL svc_io_r_get_svc_sec(char *desc, SVC_R_GET_SVC_SEC *r,
+			  prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_wks.c  */
 

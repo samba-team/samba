@@ -65,7 +65,7 @@ BOOL svc_query_service( POLICY_HND *pol_scm,
 /****************************************************************************
 nt service info
 ****************************************************************************/
-void cmd_svc_info(struct client_info *info, int argc, char *argv[])
+uint32 cmd_svc_info(struct client_info *info, int argc, char *argv[])
 {
 	BOOL res = True;
 	BOOL res1 = True;
@@ -84,7 +84,7 @@ void cmd_svc_info(struct client_info *info, int argc, char *argv[])
 	if (argc < 2)
 	{
 		report(out_hnd,"svcinfo <service name>\n");
-		return;
+		return NT_STATUS_NOPROBLEMO;
 	}
 
 	svc_name = argv[1];
@@ -106,6 +106,7 @@ void cmd_svc_info(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5,("cmd_svc_info: query failed\n"));
 	}
+	return NT_STATUS_NOPROBLEMO;
 }
 
 static void svc_display_svc_info(const ENUM_SRVC_STATUS *svc)
@@ -185,7 +186,7 @@ BOOL msrpc_svc_enum(const char* srv_name,
 /****************************************************************************
 nt service enum
 ****************************************************************************/
-void cmd_svc_enum(struct client_info *info, int argc, char *argv[])
+uint32 cmd_svc_enum(struct client_info *info, int argc, char *argv[])
 {
 	ENUM_SRVC_STATUS *svcs = NULL;
 	uint32 num_svcs = 0;
@@ -220,12 +221,13 @@ void cmd_svc_enum(struct client_info *info, int argc, char *argv[])
 	{
 		free(svcs);
 	}
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
 nt stop service 
 ****************************************************************************/
-void cmd_svc_stop(struct client_info *info, int argc, char *argv[])
+uint32 cmd_svc_stop(struct client_info *info, int argc, char *argv[])
 {
 	BOOL res = True;
 	BOOL res1 = True;
@@ -245,7 +247,7 @@ void cmd_svc_stop(struct client_info *info, int argc, char *argv[])
 	if (argc < 2)
 	{
 		report(out_hnd,"svcstop <service name>\n");
-		return;
+		return NT_STATUS_NOPROBLEMO;
 	}
 
 	svc_name = argv[1];
@@ -272,12 +274,13 @@ void cmd_svc_stop(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5,("cmd_svc_stop: failed\n"));
 	}
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
 nt start service 
 ****************************************************************************/
-void cmd_svc_start(struct client_info *info, int argc, char *argv[])
+uint32 cmd_svc_start(struct client_info *info, int argc, char *argv[])
 {
 	BOOL res = True;
 	BOOL res1 = True;
@@ -297,7 +300,7 @@ void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 	if (argc < 2)
 	{
 		report(out_hnd,"svcstart <service name> [arg 0] [arg 1]...]\n");
-		return;
+		return NT_STATUS_NOPROBLEMO;
 	}
 
 	argv++;
@@ -330,12 +333,13 @@ void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5,("cmd_svc_start: failed\n"));
 	}
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
 nt service set
 ****************************************************************************/
-void cmd_svc_set(struct client_info *info, int argc, char *argv[])
+uint32 cmd_svc_set(struct client_info *info, int argc, char *argv[])
 {
 	BOOL res = True;
 	BOOL res2 = True;
@@ -359,7 +363,7 @@ void cmd_svc_set(struct client_info *info, int argc, char *argv[])
 	if (argc < 2)
 	{
 		report(out_hnd,"svcset <service name>\n");
-		return;
+		return NT_STATUS_NOPROBLEMO;
 	}
 
 	svc_name = argv[1];
@@ -399,12 +403,13 @@ void cmd_svc_set(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5,("cmd_svc_set: change failed\n"));
 	}
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
 nt stop service 
 ****************************************************************************/
-void cmd_svc_unk3(struct client_info *info, int argc, char *argv[])
+uint32 cmd_svc_unk3(struct client_info *info, int argc, char *argv[])
 {
 	BOOL res = True;
 	BOOL res1 = True;
@@ -432,4 +437,62 @@ void cmd_svc_unk3(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5,("cmd_svc_unk3: succeeded\n"));
 	}
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/****************************************************************************
+nt get service security
+****************************************************************************/
+uint32 cmd_svc_get_sec(struct client_info *info, int argc, char *argv[])
+{
+	BOOL res = True;
+	BOOL res1 = True;
+	BOOL res2 = True;
+	char *svc_name;
+	uint32 buf_size = 512; /* 512 Byte should be enough */
+	SEC_DESC *sd;
+	POLICY_HND pol_svc;
+	POLICY_HND pol_scm;
+	
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	DEBUG(4,("cmd_svc_get_sec: server:%s\n", srv_name));
+
+	if (argc < 2)
+	{
+		report(out_hnd,"svcgetsec <service name>\n");
+		return NT_STATUS_NOPROBLEMO;
+	}
+
+	svc_name = argv[1];
+
+	/* open service control manager receive a policy handle */
+	res = res ? svc_open_sc_man(srv_name, NULL, 0x80000000,
+				    &pol_scm) : False;
+
+	res1 = res ? svc_open_service(&pol_scm,
+				      svc_name, 0x00020000,
+				      &pol_svc) : False;
+	res2 = res1 ? (svc_get_svc_sec(&pol_svc, 0x7, &buf_size, &sd)==0) : False;
+
+	res1 = res1 ? svc_close(&pol_svc) : False;
+	res  = res  ? svc_close(&pol_scm) : False;
+
+	if (res2)
+	{
+		display_sec_desc(out_hnd, ACTION_HEADER, sd);
+		display_sec_desc(out_hnd, ACTION_ENUMERATE, sd);
+		display_sec_desc(out_hnd, ACTION_FOOTER, sd);
+		DEBUG(5,("cmd_svc_stop: succeeded\n"));
+	}
+	else
+	{
+		report(out_hnd,"Failed Service Stopped (%s)\n", svc_name);
+		DEBUG(5,("cmd_svc_stop: failed\n"));
+	}
+	return NT_STATUS_NOPROBLEMO;
 }
