@@ -876,7 +876,8 @@ char *alpha_strcpy(char *dest, const char *src, size_t maxlength)
 		len = maxlength - 1;
 
 	for(i = 0; i < len; i++) {
-		if(isupper(src[i]) ||islower(src[i]) || isdigit(src[i]))
+		int val = (src[i] & 0xff);
+		if(isupper(val) ||islower(val) || isdigit(val))
 			dest[i] = src[i];
 		else
 			dest[i] = '_';
