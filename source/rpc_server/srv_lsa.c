@@ -511,6 +511,7 @@ static BOOL api_lsa_query_info(pipes_struct *p)
 {
 	LSA_Q_QUERY_INFO q_i;
 	DOM_SID domain_sid;
+	fstring dos_domain;
 	char *name = NULL;
 	DOM_SID *sid = NULL;
 	uint32 status_code = 0;
@@ -525,28 +526,31 @@ static BOOL api_lsa_query_info(pipes_struct *p)
 		return False;
 	}
 
+	fstrcpy(dos_domain, global_myworkgroup);
+	unix_to_dos(dos_domain, True);
+
 	switch (q_i.info_class) {
 	case 0x03:
 		switch (lp_server_role())
 		{
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				name = global_myworkgroup;
+				name = dos_domain;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				if (secrets_fetch_domain_sid(global_myworkgroup,
-					&domain_sid))
-				{
-					name = global_myworkgroup;
+				if (secrets_fetch_domain_sid(dos_domain,
+							     &domain_sid)) {
+					name = dos_domain;
 					sid = &domain_sid;
-				}
+				} else
+					DEBUG(0, ("api_lsa_query_info(): unable to fetch domain sid for domain %s\n", dos_domain));
 			default:
 				break;
 		}
 		break;
 	case 0x05:
-		name = global_myname;
+		name = dos_domain;
 		sid = &global_sam_sid;
 		break;
 	default:
