@@ -41,42 +41,6 @@ static TDB_CONTEXT *tdb;
 int global_smbpid;
 
 /****************************************************************************
- Remove any locks on this fd.
-****************************************************************************/
-
-void locking_close_file(files_struct *fsp)
-{
-	if (!lp_locking(SNUM(fsp->conn)))
-		return;
-
-	if(lp_posix_locking(SNUM(fsp->conn))) {
-		/*
-		 * We need to release all POSIX locks we have on this
-		 * fd.
-		 */
-	}
-
-	/*
-	 * Now release all the tdb locks.
-	 */
-
-	/* Placeholder for code here.... */
-#if 0
-	brl_close(fsp->dev, fsp->inode, getpid(), fsp->conn->cnum, fsp->fnum);
-
-	/*
-	 * We now need to search our open file list for any other
-	 * fd open on this file with outstanding POSIX locks. If we
-	 * don't find one, great, just return. If we do find one then
-	 * we have to add this file descriptor to the 'pending close'
-	 * list of that fd, to stop the POSIX problem where the locks
-	 * on *that* fd will get lost when we close this one. POSIX
-	 * braindamage... JRA.
-	 */
-#endif
-}
-
-/****************************************************************************
  Debugging aid :-).
 ****************************************************************************/
 
@@ -515,49 +479,143 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	       int *eclass,uint32 *ecode)
 {
 	BOOL ok = False;
+	TALLOC_CTX *ul_ctx = NULL;
+	struct unlock_list *ulist = NULL;
+	struct unlock_list *ul = NULL;
+	pid_t pid;
 	
 	if (!lp_locking(SNUM(conn)))
 		return(True);
 	
+	if (!OPEN_FSP(fsp) || !fsp->can_lock || (fsp->conn != conn)) {
+		*eclass = ERRDOS;
+		*ecode = ERRlock;
+		return False;
+	}
+	
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for file %s\n",
 		  (double)offset, (double)count, fsp->fsp_name ));
-	
-	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
 
-		if(lp_posix_locking(SNUM(conn))) {
+	/*
+	 * Remove the existing lock record from the tdb lockdb
+	 * before looking at POSIX locks. If this record doesn't
+	 * match then don't bother looking to remove POSIX locks.
+	 */
 
-#if 0
-			/*
-			 * The following call calculates if there are any
-			 * overlapping read locks held by this process on
-			 * other fd's open on the same file and truncates
-			 * any overlapping range and returns the value in
-			 * the non_overlap_XXX variables. Thus the POSIX
-			 * unlock may not be done on the same region as
-			 * the brl_lock. JRA.
-			 */
+	pid = getpid();
 
-			brl_unlock_list(fsp->dev, fsp->inode, fsp->fnum,
-#endif
-
-			/*
-			 * Release the POSIX lock on this range.
-			 */
-
-			(void)release_posix_lock(fsp, offset, count);
-			fsp->num_posix_locks--;
-		}
-
-		ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-				global_smbpid, getpid(), conn->cnum, offset, count);
-	}
+	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
+			global_smbpid, pid, conn->cnum, offset, count);
    
 	if (!ok) {
 		*eclass = ERRDOS;
 		*ecode = ERRlock;
 		return False;
 	}
+
+	if (!lp_posix_locking(SNUM(conn)))
+		return True;
+
+	if ((ul_ctx = talloc_init()) == NULL) {
+		DEBUG(0,("do_unlock: unable to init talloc context.\n"));
+		return True; /* Not a fatal error. */
+	}
+
+	if ((ul = (struct unlock_list *)talloc(ul_ctx, sizeof(struct unlock_list))) == NULL) {
+		DEBUG(0,("do_unlock: unable to talloc unlock list.\n"));
+		talloc_destroy(ul_ctx);
+		return True; /* Not a fatal error. */
+	}
+
+	/*
+	 * Create the initial list entry containing the
+	 * lock we want to remove.
+	 */
+
+	ZERO_STRUCTP(ul);
+	ul->start = offset;
+	ul->size = count;
+
+	DLIST_ADD(ulist, ul);
+
+	/*
+	 * The following call calculates if there are any
+	 * overlapping read locks held by this process on
+	 * other fd's open on the same file and creates a
+	 * list of unlock ranges that will allow other
+	 * POSIX lock ranges to remain on the file whilst the
+	 * unlocks are performed.
+	 */
+
+	ulist = brl_unlock_list(ul_ctx, ulist, pid, fsp->dev, fsp->inode);
+
+	/*
+	 * Release the POSIX locks on the list of ranges returned.
+	 */
+
+	for(; ulist; ulist = ulist->next)
+		(void)release_posix_lock(fsp, ulist->start, ulist->size);
+
+	talloc_destroy(ul_ctx);
+
+	/*
+	 * We treat this as one unlock request for POSIX accounting purposes even
+	 * if it may have been split into multiple smaller POSIX unlock ranges.
+	 */
+
+	fsp->num_posix_locks--;
+
 	return True; /* Did unlock */
+}
+
+/****************************************************************************
+ Remove any locks on this fd. Called from file_close().
+****************************************************************************/
+
+void locking_close_file(files_struct *fsp)
+{
+	pid_t pid = getpid();
+
+	if (!lp_locking(SNUM(fsp->conn)))
+		return;
+
+	if(lp_posix_locking(SNUM(fsp->conn))) {
+
+		TALLOC_CTX *ul_ctx = NULL;
+		struct unlock_list *ul = NULL;
+		int eclass;
+		uint32 ecode;
+
+		if ((ul_ctx = talloc_init()) == NULL) {
+			DEBUG(0,("locking_close_file: unable to init talloc context.\n"));
+			return;
+		}
+
+		/*
+		 * We need to release all POSIX locks we have on this
+		 * fd. Get all our existing locks from the tdb locking database.
+		 */
+
+		ul = brl_getlocklist(ul_ctx, fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
+
+		/*
+		 * Now unlock all of them. This will remove the brl entry also
+		 * for each lock.
+		 */
+
+		for(; ul; ul = ul->next)
+			do_unlock(fsp,fsp->conn,ul->size,ul->start,&eclass,&ecode);
+		
+		talloc_destroy(ul_ctx);
+
+	} else {
+
+		/*
+		 * Just release all the tdb locks, no need to release individually.
+		 */
+
+		brl_close(fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
+	}
 }
 
 /****************************************************************************
