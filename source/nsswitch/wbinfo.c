@@ -259,9 +259,21 @@ static BOOL wbinfo_check_secret(void)
 
                 if (response.data.auth.nt_status == 0)
                         printf("Secret is good\n");
-                else
+                else {
+
+			/* winbindd returns NT_STATUS_DOMAIN_CONTROLLER
+                           NOT_FOUND as an extended error if there was
+                           no-one useful to talk to.  Don't return
+                           secret is bad but rather the 'Could not
+                           check secret' message. */
+
+			if (response.data.auth.nt_status ==
+			    NT_STATUS_V(NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND))
+				return False;
+
                         printf("Secret is bad\n0x%08x\n", 
 			       response.data.auth.nt_status);
+		}
 
                 return True;
         }
@@ -518,6 +530,72 @@ static BOOL wbinfo_auth_crap(char *username)
 
 #endif	/* WITH_WINBIND_AUTH_CRAP */
 
+/* Authenticate a user with a challenge/response */
+
+static BOOL wbinfo_smbd_auth_crap(char *username)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+        fstring name_user;
+        fstring name_domain;
+        fstring pass;
+        char *p;
+	uchar trust_passwd[16];
+
+	secrets_init();
+
+	if (!secrets_fetch_trust_account_password(
+		    lp_workgroup_unix(), trust_passwd, NULL)) {
+		printf("Unable to fetch trust account password\n");
+		return False;
+	}
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+        p = strchr(username, '%');
+
+        if (p) {
+                *p = 0;
+                fstrcpy(pass, p + 1);
+	}
+		
+	parse_wbinfo_domain_user(username, name_domain, name_user);
+
+	fstrcpy(request.data.smbd_auth_crap.user, name_user);
+
+	fstrcpy(request.data.smbd_auth_crap.domain, name_domain);
+
+	generate_random_buffer(request.data.smbd_auth_crap.chal, 8, False);
+        
+        SMBencrypt((uchar *)unix_to_dos_static(pass), request.data.smbd_auth_crap.chal, 
+                   (uchar *)request.data.smbd_auth_crap.lm_resp);
+        SMBNTencrypt((uchar *)unix_to_dos_static(pass), request.data.smbd_auth_crap.chal,
+                     (uchar *)request.data.smbd_auth_crap.nt_resp);
+
+        request.data.smbd_auth_crap.lm_resp_len = 24;
+        request.data.smbd_auth_crap.nt_resp_len = 24;
+
+	memcpy(request.data.smbd_auth_crap.proof, trust_passwd, 16);
+
+	result = winbindd_request(WINBINDD_SMBD_AUTH_CRAP, &request, &response);
+
+	/* Display response */
+
+        printf("challenge/response password authentication %s\n", 
+               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
+
+	if (response.data.auth.nt_status)
+		printf("error code was %s (0x%x)\n", 
+		       response.data.auth.nt_status_string, 
+		       response.data.auth.nt_status);
+
+        return result == NSS_STATUS_SUCCESS;
+}
+
 /* Print domain users */
 
 static BOOL print_domain_users(void)
@@ -718,7 +796,10 @@ static void usage(void)
 enum {
 	OPT_SET_AUTH_USER = 1000,
 	OPT_GET_AUTH_USER,
-	OPT_SEQUENCE
+	OPT_SEQUENCE,
+	OPT_AUTH_PLAINTEXT,
+	OPT_AUTH_CRAP,
+	OPT_AUTH_SMBD
 };
 
 int main(int argc, char **argv)
@@ -752,6 +833,9 @@ int main(int argc, char **argv)
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
+ 		{ "auth-plaintext", 0, POPT_ARG_STRING, &string_arg, OPT_AUTH_PLAINTEXT },
+ 		{ "auth-crap", 0, POPT_ARG_STRING, &string_arg, OPT_AUTH_CRAP },
+ 		{ "auth-smbd", 0, POPT_ARG_STRING, &string_arg, OPT_AUTH_SMBD },
 		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
 		{ "get-auth-user", 'A', POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p' },
@@ -903,6 +987,7 @@ int main(int argc, char **argv)
 				goto done;
 			}
 			break;
+		case OPT_AUTH_PLAINTEXT:
                 case 'a': {
                         BOOL got_error = False;
 
@@ -922,6 +1007,25 @@ int main(int argc, char **argv)
                                 goto done;
                         break;
 		}
+
+#ifdef WITH_WINBIND_AUTH_CRAP
+		case OPT_AUTH_CRAP:
+                        if (!wbinfo_auth_crap(string_arg)) {
+                                printf("Could not authenticate user %s with "
+                                       "challenge/response\n", string_arg);
+                                goto done;
+                        }
+
+			break;
+#endif
+		case OPT_AUTH_SMBD:
+			if (!wbinfo_smbd_auth_crap(string_arg)) {
+				printf("Could not authenticate user %s with "
+				       "smbd challenge/response\n", string_arg);
+				goto done;
+			}
+
+			break;
                 case 'p': {
 
                         if (!wbinfo_ping()) {
