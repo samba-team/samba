@@ -2873,6 +2873,7 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 			break;
 	}
 
+
 	return (True);
 }
 
