@@ -19,9 +19,9 @@
 */
 
 /* 
-   NOTE: Since tdb is licensed under the gdb, any program that uses these
-   bindings must also be licensed under the GPL. See the following URL for
-   details: 
+   NOTE: Since tdb is licensed under the GPL, any program that uses these
+   bindings must also be licensed under the GPL or a GPL compatible
+   license. See the following URL for details:
 
      http://www.gnu.org/licenses/gpl-faq.html#IfInterpreterIsGPL 
 */
