@@ -89,7 +89,7 @@ install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/src
 done
 
 # Install SWAT helper files
-for i in swat/help/*.html
+for i in swat/help/*.html docs/htmldocs/*.html
 do
 install -m644 $i $RPM_BUILD_ROOT/usr/share/swat/help
 done
