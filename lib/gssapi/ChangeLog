@@ -1,3 +1,11 @@
+2003-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* arcfour.h: remove depenency on gss_arcfour_mic_token and
+	gss_arcfour_warp_token
+
+	* arcfour.c: remove depenency on gss_arcfour_mic_token and
+	gss_arcfour_warp_token
+
 2003-09-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* 8003.c: remove #if 0'ed code
