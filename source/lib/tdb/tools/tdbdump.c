@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef STANDALONE
+#ifndef _SAMBA_BUILD_
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>

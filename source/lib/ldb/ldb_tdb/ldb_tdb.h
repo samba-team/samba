@@ -1,5 +1,5 @@
 
-#ifdef STANDALONE
+#ifndef _SAMBA_BUILD_
 #include "tdb.h"
 #endif
 

@@ -1,6 +1,6 @@
 /* a test program for tdb - the trivial database */
 
-#ifdef STANDALONE
+#ifndef _SAMBA_BUILD_
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>

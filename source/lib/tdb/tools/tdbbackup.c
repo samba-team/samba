@@ -41,7 +41,7 @@
 
  */
 
-#ifdef STANDALONE
+#ifndef _SAMBA_BUILD_
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -2,7 +2,7 @@
    writers - that stresses the locking code. Build with TDB_DEBUG=1
    for best effect */
 
-#ifdef STANDALONE
+#ifndef _SAMBA_BUILD_
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>

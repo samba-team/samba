@@ -11,7 +11,7 @@ endif
 
 TDBDIR=../tdb
 
-CFLAGS=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. -I$(TDBDIR)/include -DSTANDALONE=1 -DUSE_MMAP=1 $(LDAP_FLAGS)
+CFLAGS=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. -I$(TDBDIR)/include -DUSE_MMAP=1 $(LDAP_FLAGS)
 LIB_FLAGS=-Llib -lldb $(LDAP_LIBS)
 
 TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/spinlock.o
@@ -21,7 +21,7 @@ LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
 	ldb_tdb/ldb_cache.o
 
 
-COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o \
+COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o  common/talloc.o \
 	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
 	   common/ldb_alloc.o common/ldb_debug.o common/ldb_modules.o
 

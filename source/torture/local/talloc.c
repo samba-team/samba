@@ -20,7 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef _STANDALONE_
+#ifdef _SAMBA_BUILD_
+#include "includes.h"
+#else
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,12 +30,10 @@
 #include <sys/time.h>
 #include <time.h>
 #include "talloc.h"
-#else
-#include "includes.h"
 #endif
 
 /* the test suite can be built standalone, or as part of Samba */
-#ifdef _STANDALONE_
+#ifndef _SAMBA_BUILD_
 typedef enum {False=0,True=1} BOOL;
 
 static struct timeval current_time(void)
@@ -49,7 +49,7 @@ static double elapsed_time(struct timeval *tv)
 	return (tv2.tv_sec - tv->tv_sec) + 
 	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
 }
-#endif /* _STANDALONE_ */
+#endif /* _SAMBA_BUILD_ */
 
 
 #define CHECK_SIZE(ptr, tsize) do { \
@@ -712,7 +712,7 @@ BOOL torture_local_talloc(void)
 
 
 
-#ifdef _STANDALONE_
+#ifndef _SAMBA_BUILD_
 int main(void)
 {
 	if (!torture_local_talloc(0)) {
@@ -722,4 +722,3 @@ int main(void)
 	return 0;
 }
 #endif
-
