@@ -215,15 +215,15 @@ NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user
 	if (kickoff_time != (time_t)-1) {
 		if (time(NULL) > kickoff_time) {
 			DEBUG(1,("Account for user '%s' has expried.\n", sampass->username));
-			DEBUG(3,("Account expired at '%d' unix time.\n", kickoff_time));
+			DEBUG(3,("Account expired at '%ld' unix time.\n", (long)kickoff_time));
 			return NT_STATUS_ACCOUNT_EXPIRED;
 		}
 	}
-		
+
 	/* Test workstation. Workstation list is comma separated. */
-	
+
 	workstation_list = strdup(pdb_get_workstations(sampass));
-	
+
 	if (workstation_list) {
 		if (*workstation_list) {
 			BOOL invalid_ws = True;
@@ -259,9 +259,24 @@ NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user
 
 		if (must_change_time != (time_t)-1 && must_change_time < time(NULL)) {
 			DEBUG(1,("Account for user '%s' password expired!.\n", sampass->username));
-			DEBUG(1,("Password expired at '%d' unix time.\n", must_change_time));
+			DEBUG(1,("Password expired at '%ld' unix time.\n", (long)must_change_time));
 			return NT_STATUS_PASSWORD_EXPIRED;
 		}
+	}
+
+	if (acct_ctrl & ACB_DOMTRUST) {
+		DEBUG(0,("session_trust_account: Domain trust account %s denied by server\n", sampass->username));
+		return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
+	}
+	
+	if (acct_ctrl & ACB_SVRTRUST) {
+		DEBUG(0,("session_trust_account: Server trust account %s denied by server\n", sampass->username));
+		return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
+	}
+	
+	if (acct_ctrl & ACB_WSTRUST) {
+		DEBUG(4,("session_trust_account: Wksta trust account %s denied by server\n", sampass->username));
+		return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
 	}
 	
 	return NT_STATUS_OK;
