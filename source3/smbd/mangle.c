@@ -90,8 +90,6 @@ BOOL is_8_3(char *fname)
   if (slash_pos) fname = slash_pos+1;
   len = strlen(fname);
 
-  dot_pos = strchr(fname,'.');
-
   DEBUG(5,("checking %s for 8.3\n",fname));
 
   if (case_mangle)
@@ -121,6 +119,8 @@ BOOL is_8_3(char *fname)
 
   /* %%% A nice improvment to name mangling would be to translate
      filename to ANSI charset on the smb server host */
+
+  dot_pos = strchr(fname,'.');
 
   {
     char *p = fname;
