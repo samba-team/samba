@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,7 +42,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
-#include <asn1.h>
+#include <krb5_asn1.h>
 #include <der.h>
 #include "hdb_asn1.h"
 #include <asn1_err.h>
