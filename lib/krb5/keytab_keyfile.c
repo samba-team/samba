@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -200,7 +200,6 @@ akf_next_entry(krb5_context context,
 	       krb5_keytab_entry *entry, 
 	       krb5_kt_cursor *cursor)
 {
-    krb5_error_code error;
     struct akf_data *d = id->data;
     int32_t kvno;
     off_t pos;
