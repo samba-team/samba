@@ -67,7 +67,11 @@ int main(int argc, char *argv[])
 
 	lock.l_type = F_WRLCK;
 	lock.l_whence = SEEK_SET;
+#if defined(COMPILER_SUPPORTS_LL)
+	lock.l_start = 0x100000000LL;
+#else
 	lock.l_start = 0x100000000;
+#endif
 	lock.l_len = 4;
 	lock.l_pid = getpid();
 
