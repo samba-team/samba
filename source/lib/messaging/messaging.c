@@ -125,6 +125,7 @@ static void messaging_recv_handler(struct event_context *ev, struct fd_event *fd
 	if (rec->ndone < sizeof(rec->header)) {
 		/* receive the header */
 		DATA_BLOB blob;
+		blob.length = 0;
 		status = socket_recv(rec->sock, rec, 
 				     &blob, sizeof(rec->header) - rec->ndone, 0);
 		if (NT_STATUS_IS_ERR(status)) {
@@ -159,6 +160,7 @@ static void messaging_recv_handler(struct event_context *ev, struct fd_event *fd
 	    rec->ndone < sizeof(rec->header) + rec->header.length) {
 		/* receive the body, if any */
 		DATA_BLOB blob;
+		blob.length = 0;
 		status = socket_recv(rec->sock, rec, 
 				     &blob, sizeof(rec->header) + rec->header.length - rec->ndone, 0);
 		if (NT_STATUS_IS_ERR(status)) {
