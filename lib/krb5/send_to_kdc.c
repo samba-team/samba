@@ -237,7 +237,8 @@ send_via_proxy (krb5_context context,
 		const krb5_data *send,
 		krb5_data *receive)
 {
-    char *proxy = strdup(context->http_proxy);
+    char *proxy2 = strdup(context->http_proxy);
+    char *proxy  = proxy2;
     char *prefix;
     char *colon;
     struct addrinfo hints;
@@ -246,6 +247,11 @@ send_via_proxy (krb5_context context,
     int s;
     char portstr[NI_MAXSERV];
 		 
+    if (proxy == NULL)
+	return ENOMEM;
+    if (strncmp (proxy, "http://", 7) == 0)
+	proxy += 7;
+
     colon = strchr(proxy, ':');
     if(colon != NULL)
 	*colon++ = '\0';
@@ -254,8 +260,8 @@ send_via_proxy (krb5_context context,
     hints.ai_socktype = SOCK_STREAM;
     snprintf (portstr, sizeof(portstr), "%d",
 	      ntohs(init_port (colon, htons(80))));
-    ret = getaddrinfo (proxy, portstr, NULL, &ai);
-    free (proxy);
+    ret = getaddrinfo (proxy, portstr, &hints, &ai);
+    free (proxy2);
     if (ret)
 	return krb5_eai_to_heim_errno(ret);
 
@@ -301,7 +307,7 @@ krb5_sendto (krb5_context context,
 	     int port,
 	     krb5_data *receive)
 {
-     krb5_error_code ret;
+     krb5_error_code ret = 0;
      char **hp, *p;
      int fd;
      int i;
