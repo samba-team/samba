@@ -1690,7 +1690,8 @@ makes a NET_Q_SAM_SYNC structure.
 ********************************************************************/
 BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
                          const char *cli_name, DOM_CRED *cli_creds, 
-                         DOM_CRED *ret_creds, uint32 database_id)
+                         DOM_CRED *ret_creds, uint32 database_id, 
+			 uint32 next_rid)
 {
 	DEBUG(5, ("init_q_sam_sync\n"));
 
@@ -1706,8 +1707,8 @@ BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
 		memset(&q_s->ret_creds, 0, sizeof(q_s->ret_creds));
 
 	q_s->database_id = database_id;
-	q_s->restart_state = 0;
-	q_s->sync_context = 0;
+	q_s->restart_state = 4;
+	q_s->sync_context = next_rid;
 	q_s->max_size = 0xffff;
 
 	return True;
@@ -2784,6 +2785,8 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
                 return False;
 	if (!prs_uint32("sync_context", ps, depth, &r_s->sync_context))
                 return False;
+
+	d_printf("Got sync context %u\n", r_s->sync_context);
 
 	if (!prs_uint32("ptr_deltas", ps, depth, &r_s->ptr_deltas))
                 return False;

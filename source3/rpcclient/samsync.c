@@ -394,7 +394,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 
         /* Do sam synchronisation on the SAM database*/
 
-	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 0, 
+	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 0, 0,
 				       &num_deltas_0, &hdr_deltas_0, 
 				       &deltas_0);
         
@@ -415,7 +415,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 #if 1
         /* Do sam synchronisation on the LSA database */
 
-	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 2, &num_deltas_2, &hdr_deltas_2, &deltas_2);
+	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 2, 0, &num_deltas_2, &hdr_deltas_2, &deltas_2);
         
         if (!NT_STATUS_IS_OK(result))
 		goto done;

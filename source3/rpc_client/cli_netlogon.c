@@ -257,24 +257,23 @@ file.  They should be combined at some stage.  )-:
 
 static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
 {
-  /*
-   * Create the new client credentials.
-   */
+	/*
+	 * Create the new client credentials.
+	 */
+	
+	cli->clnt_cred.timestamp.time = time(NULL);
+	
+	memcpy(new_clnt_cred, &cli->clnt_cred, sizeof(*new_clnt_cred));
 
-  cli->clnt_cred.timestamp.time = time(NULL);
-
-  memcpy(new_clnt_cred, &cli->clnt_cred, sizeof(*new_clnt_cred));
-
-  /* Calculate the new credentials. */
-  cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
-              new_clnt_cred->timestamp, &(new_clnt_cred->challenge));
-
+	/* Calculate the new credentials. */
+	cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
+		    new_clnt_cred->timestamp, &(new_clnt_cred->challenge));
 }
 
 /* Sam synchronisation */
 
 NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx, DOM_CRED *ret_creds,
-                               uint32 database_id, uint32 *num_deltas,
+                               uint32 database_id, uint32 next_rid, uint32 *num_deltas,
                                SAM_DELTA_HDR **hdr_deltas, 
                                SAM_DELTA_CTR **deltas)
 {
@@ -297,7 +296,7 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx, DOM_C
         gen_next_creds(cli, &clnt_creds);
 
 	init_net_q_sam_sync(&q, cli->srv_name_slash, cli->clnt_name_slash + 2,
-                            &clnt_creds, ret_creds, database_id);
+                            &clnt_creds, ret_creds, database_id, next_rid);
 
 	/* Marshall data and send request */
 
