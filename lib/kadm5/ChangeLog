@@ -1,3 +1,8 @@
+2003-12-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_c.c (_kadm5_c_init_context): catch errors from strdup and
+	other krb5_ functions
+
 2003-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rename_s.c (kadm5_s_rename_principal): allow principal to change
