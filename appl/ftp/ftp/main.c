@@ -56,7 +56,7 @@ main(int argc, char **argv)
 	autologin = 1;
 	passivemode = 0; /* passive mode not active */
 
-	while ((ch = getopt(argc, argv, "dginptv")) != EOF) {
+	while ((ch = getopt(argc, argv, "dginptv")) != -1) {
 		switch (ch) {
 		case 'd':
 			options |= SO_DEBUG;
