@@ -553,6 +553,16 @@ static BOOL do_drvupgrade(const pid_t pid, const int argc, const char **argv)
 		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
 }
 
+static BOOL do_reload_config(const pid_t pid, const int argc, const char **argv)
+{
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol <dest> reload-config\n");
+		return False;
+	}
+
+	return send_message(pid, MSG_SMB_CONF_UPDATED, NULL, 0, False);
+}
+
 /* A list of message type supported */
 
 static const struct {
@@ -576,6 +586,7 @@ static const struct {
 	{ "dmalloc-log-changed", do_dmalloc_changed, "" },
 	{ "shutdown", do_shutdown, "Shut down daemon" },
 	{ "drvupgrade", do_drvupgrade, "Notify a printer driver has changed" },
+	{ "reload-config", do_reload_config, "Force smbd or winbindd to reload config file"},
 	{ "noop", do_noop, "Do nothing" },
 	{ NULL }
 };

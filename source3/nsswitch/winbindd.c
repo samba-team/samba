@@ -66,6 +66,7 @@ static BOOL reload_services_file(BOOL test)
 	return(ret);
 }
 
+
 #if DUMP_CORE
 
 /**************************************************************************** **
@@ -199,6 +200,20 @@ static void sighup_handler(int signum)
 {
 	do_sighup = True;
 	sys_select_signal();
+}
+
+/* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
+static void msg_reload_services(int msg_type, pid_t src, void *buf, size_t len)
+{
+        /* Flush various caches */
+	flush_caches();
+	reload_services_file(True);
+}
+
+/* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
+static void msg_shutdown(int msg_type, pid_t src, void *buf, size_t len)
+{
+	terminate();
 }
 
 struct dispatch_table {
@@ -746,11 +761,8 @@ static void process_loop(void)
 		if (do_sighup) {
 
 			DEBUG(3, ("got SIGHUP\n"));
- 
-                        /* Flush various caches */
 
-			flush_caches();
-			reload_services_file(True);
+			msg_reload_services(MSG_SMB_CONF_UPDATED, (pid_t) 0, NULL, 0);
 			do_sighup = False;
 		}
 
@@ -919,6 +931,12 @@ int main(int argc, char **argv)
 		DEBUG(0, ("unable to initialise messaging system\n"));
 		exit(1);
 	}
+	
+	/* React on 'smbcontrol winbindd reload-config' in the same way
+	   as to SIGHUP signal */
+	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
+	message_register(MSG_SHUTDOWN, msg_shutdown);
+	
 	poptFreeContext(pc);
 
 	netsamlogon_cache_init(); /* Non-critical */
