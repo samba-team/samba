@@ -2474,6 +2474,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
 		pstrcpy(p2, lp_logon_home());
+		standard_sub_conn(conn, p2);
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
@@ -2510,6 +2511,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
 		pstrcpy(p2,lp_logon_home());
+		standard_sub_conn(conn, p2);
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;

@@ -24,8 +24,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring sesssetup_user;
-
 fstring local_machine="";
 fstring remote_arch="UNKNOWN";
 pstring sesssetup_user="";
@@ -176,7 +174,6 @@ void standard_sub_basic(char *str)
 		case 'M' : string_sub(p,"%M", client_name(),l); break;
 		case 'R' : string_sub(p,"%R", remote_proto,l); break;
 		case 'T' : string_sub(p,"%T", timestring(False),l); break;
-		case 'U' : string_sub(p,"%U", sesssetup_user,l); break;
 		case 'a' : string_sub(p,"%a", remote_arch,l); break;
 		case 'd' :
 			slprintf(pidstr,sizeof(pidstr), "%d",(int)sys_getpid());
