@@ -21,6 +21,34 @@ pop_net_read(POP *p, int fd, void *buf, size_t len)
 }
 #endif
 
+static char *addr_log;
+
+static void
+pop_write_addr(POP *p, struct sockaddr *addr)
+{
+    char ts[32];
+    char as[128];
+    time_t t;
+    FILE *f;
+    if(addr_log == NULL)
+	return;
+    t = time(NULL);
+    strftime(ts, sizeof(ts), "%Y%m%d%H%M%S", localtime(&t));
+    if(inet_ntop (addr->sa_family, socket_get_address(addr), 
+		  as, sizeof(as)) == NULL) {
+        pop_log(p, POP_FAILURE, "failed to print address");
+	return;
+    }
+    
+    f = fopen(addr_log, "a");
+    if(f == NULL) {
+        pop_log(p, POP_FAILURE, "failed to open address log (%s)", addr_log);
+	return;
+    }
+    fprintf(f, "%s %s\n", as, ts);
+    fclose(f);
+}
+
 #ifdef KRB4
 static int
 krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
@@ -135,12 +163,14 @@ krb_authenticate(POP *p, struct sockaddr *addr)
     }
 #ifdef KRB4
     if (krb4_authenticate (p, 0, buf, addr) == 0){
+	pop_write_addr(p, addr);
 	p->version = 4;
 	return POP_SUCCESS;
     }
 #endif
 #ifdef KRB5
     if (krb5_authenticate (p, 0, buf, addr) == 0){
+	pop_write_addr(p, addr);
 	p->version = 5;
 	return POP_SUCCESS;
     }
@@ -178,6 +208,7 @@ static struct getargs args[] = {
     { "port", 'p', arg_string, &port_str, "port to listen to", "port" },
     { "trace-file", 't', arg_string, &trace_file, "trace all command to file", "file" },
     { "timeout", 'T', arg_integer, &timeout, "timeout", "seconds" },
+    { "address-log", 0, arg_string, &addr_log, "enable address log", "file" },
     { "help", 'h', arg_flag, &help_flag },
     { "version", 'v', arg_flag, &version_flag }
 };
