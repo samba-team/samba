@@ -451,7 +451,7 @@ int main(int argc, char **argv)
      * values for a machine account (it doesn't
      * exist in /etc/passwd).
      */
-      if((pwd = getpwnam(user_name)) == NULL) {
+      if((pwd = Get_Pwnam(user_name, True)) == NULL) {
         fprintf(stderr, "%s: User \"%s\" was not found in system password file.\n", 
                     prog_name, user_name);
         exit(1);
