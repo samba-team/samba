@@ -517,7 +517,7 @@ interface netlogon
 		netr_String unknown2;
 		netr_String unknown3;
 		netr_String unknown4;
-		uint32 flags;
+		uint32 posix_offset;
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
