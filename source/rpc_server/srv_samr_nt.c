@@ -1200,6 +1200,11 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	switch (q_u->switch_level) {
+	case 1:
+		r_u->ptr = 1;
+		r_u->ctr.switch_value1 = 1;
+		init_samr_alias_info1(&r_u->ctr.alias.info1, map.nt_name, 1, map.comment);
+		break;
 	case 3:
 		r_u->ptr = 1;
 		r_u->ctr.switch_value1 = 3;
