@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003-2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd October 17, 2002
+.Dd August 19, 2004
 .Dt KRB5_KUSEROK 3
 .Os HEIMDAL
 .Sh NAME
@@ -45,47 +45,39 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fo krb5_kuserok
 .Fa "krb5_context context"
 .Fa "krb5_principal principal"
-.Fa "const char *name"
+.Fa "const char *user"
 .Fc
 .Sh DESCRIPTION
-This function takes a local user
-.Fa name
-and verifies if
+This function takes the name of a local
+.Fa user
+and checks if
 .Fa principal
 is allowed to log in as that user.
 .Pp
-First
-.Nm
-check if there is a local account name
-.Fa username .
-If there isn't,
-.Nm
-returns
-.Dv FALSE .
-.Pp
-Then
-.Nm
-checks if principal is the same as user@realm in any of the default
-realms. If that is the case,
-.Nm
-returns
-.Dv TRUE .
-.Pp
-After that it reads the file
-.Pa .k5login
-(if it exists) in the users home directory and checks if
-.Fa principal
-is in the file.
-If it does exists,
-.Dv TRUE
-is returned.
-If neither of the above turns out to be true,
-.DV FALSE
-is returned.
+The
+.Fa user
+may have a
+.Pa ~/.k5login
+file listing principals that are allowed to login as that user. If
+that file does not exist, all principals with a first component
+identical to the username, and a realm considered local, are allowed
+access.
 .Pp
 The
 .Pa .k5login
-should contain one principal per line.
+file must contain one principal per line, be owned by
+.Fa user ,
+and not be writable by group or other.
+.Pp
+Note that if the file exists, no implicit access rights are given to
+.Fa user Ns @ Ns Aq localrealm .
+.Sh RETURN VALUES
+.Nm
+returns
+.Dv TRUE
+if access should be granted,
+.Dv FALSE
+otherwise.
 .Sh SEE ALSO
 .Xr krb5_get_default_realms 3 ,
 .Xr krb5_verify_user 3 ,
