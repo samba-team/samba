@@ -85,12 +85,20 @@ _krb5_xlock(krb5_context context, int fd, krb5_boolean exclusive,
 	ret = errno;
     if(ret == EACCES) /* fcntl can return EACCES instead of EAGAIN */
 	ret = EAGAIN;
-    if(ret == EAGAIN)
+
+    switch (ret) {
+    case EINVAL: /* filesystem doesn't support locking, let the user have it */
+	ret = 0; 
+	break;
+    case EAGAIN:
 	krb5_set_error_string(context, "timed out locking cache file %s", 
 			      filename);
-    else if(ret != 0)
+	break;
+    default:
 	krb5_set_error_string(context, "error locking cache file %s: %s",
 			      filename, strerror(ret));
+	break;
+    }
     return ret;
 }
 
