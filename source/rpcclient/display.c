@@ -1903,6 +1903,94 @@ void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTL
 	}
 }
 
+/****************************************************************************
+ display sam sync structure
+ ****************************************************************************/
+void display_sam_sync_ctr(FILE *out_hnd, enum action_type action,
+				SAM_DELTA_HDR *delta,
+				SAM_DELTA_CTR *ctr)
+{
+	fstring name;
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			switch (delta->type)
+			{
+				case 1:
+				{
+					unistr2_to_ascii(name, &(ctr->domain_info.uni_dom_name), sizeof(name)-1); 
+					fprintf(out_hnd, "Domain: %s\n", name);
+					break;
+				}
+				case 2:
+				{
+					unistr2_to_ascii(name, &(ctr->group_info.uni_grp_name), sizeof(name)-1); 
+					fprintf(out_hnd, "Group: %s\n", name);
+					break;
+				}
+				case 5:
+				{
+					unistr2_to_ascii(name, &(ctr->account_info.uni_acct_name), sizeof(name)-1); 
+					fprintf(out_hnd, "Account: %s\n", name);
+
+					out_struct(out_hnd,
+						ctr->account_info.pass.buf_lm_pwd, 16, 8);
+					out_struct(out_hnd,
+						ctr->account_info.pass.buf_nt_pwd, 16, 8);
+						
+				}
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display sam sync structure
+ ****************************************************************************/
+void display_sam_sync(FILE *out_hnd, enum action_type action,
+				SAM_DELTA_HDR *deltas,
+				SAM_DELTA_CTR *ctr,
+				uint32 num)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\tSAM Database Sync\n"); 
+			fprintf(out_hnd, "\t-----------------\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+			for (i = 0; i < num; i++)
+			{
+				display_sam_sync_ctr(out_hnd, ACTION_HEADER   , &deltas[i], &ctr[i]);
+				display_sam_sync_ctr(out_hnd, ACTION_ENUMERATE, &deltas[i], &ctr[i]);
+				display_sam_sync_ctr(out_hnd, ACTION_FOOTER   , &deltas[i], &ctr[i]);
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
 
 #if COPY_THIS_TEMPLATE
 /****************************************************************************

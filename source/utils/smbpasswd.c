@@ -89,6 +89,8 @@ static int join_domain(char *domain, char *remote)
 	BOOL ret;
 	uint16 sec_chan;
 
+	DEBUG(5,("join_domain: domain %s remote %s\n", domain, remote));
+
 	pstrcpy(remote_machine, remote ? remote : "");
 	fstrcpy(trust_passwd, global_myname);
 	strlower(trust_passwd);
@@ -97,19 +99,28 @@ static int join_domain(char *domain, char *remote)
 	switch (lp_server_role())
 	{
 		case ROLE_DOMAIN_PDC:
+		{
 			DEBUG(0, ("Cannot join domain - we are PDC!\n"));
-			return;
+			return 1;
+		}
 		case ROLE_DOMAIN_BDC:
+		{
+			DEBUG(0, ("Joining Domain as BDC\n"));
 			sec_chan = SEC_CHAN_BDC;
 			break;
+		}
 		default:
+		{
+			DEBUG(0, ("Joining Domain as Workstation\n"));
 			sec_chan = SEC_CHAN_WKSTA;
+		}
 	}
 
 	/*
 	 * Create the machine account password file.
 	 */
-	if(!trust_password_lock( domain, global_myname, True)) {
+	if(!trust_password_lock( domain, global_myname, True))
+	{
 		fprintf(stderr, "unable to open the machine account password file for \
 machine %s in domain %s.\n", global_myname, domain); 
 		return 1;
@@ -119,7 +130,8 @@ machine %s in domain %s.\n", global_myname, domain);
 	 * Write the old machine account password.
 	 */
 	
-	if(!set_trust_account_password( orig_trust_passwd_hash)) {              
+	if(!set_trust_account_password( orig_trust_passwd_hash))
+	{              
 		fprintf(stderr, "unable to write the machine account password for \
 machine %s in domain %s.\n", global_myname, domain);
 		trust_password_unlock();
@@ -130,7 +142,8 @@ machine %s in domain %s.\n", global_myname, domain);
 	 * If we are given a remote machine assume this is the PDC.
 	 */
 	
-	if(remote == NULL) {
+	if(remote == NULL)
+	{
 		pstrcpy(remote_machine, lp_passwordserver());
 	}
 
@@ -145,12 +158,15 @@ unable to join domain.\n");
 	trust_password_unlock();
 	
 	if(!ret) {
-		trust_password_delete( domain, global_myname);
 		fprintf(stderr,"Unable to join domain %s.\n",domain);
 	} else {
 		printf("Joined domain %s.\n",domain);
 	}
 	
+#if 0
+	trust_password_delete( domain, global_myname);
+#endif
+
 	return (int)ret;
 }
 

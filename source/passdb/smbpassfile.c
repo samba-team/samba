@@ -52,6 +52,8 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
   pstrcat(mac_file, ".");
   pstrcat(mac_file, name);
   pstrcat(mac_file, ".mac");
+
+  DEBUG(5,("trust_account_file_name: %s\n", mac_file));
 }
  
 /************************************************************************

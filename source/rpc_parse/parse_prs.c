@@ -129,6 +129,27 @@ BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
 }
 
 /*******************************************************************
+ hash a stream.
+ ********************************************************************/
+BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
+{
+	char *q = mem_data(&(ps->data), offset);
+	if (q == NULL) return False;
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("prs_hash1\n"));
+	dump_data(100, sess_key, 16);
+	dump_data(100, q, 68);
+#endif
+	SamOEMhash(q, sess_key, 2);
+#ifdef DEBUG_PASSWORD
+	dump_data(100, q, 68);
+#endif
+
+	return True;
+}
+
+/*******************************************************************
  stream a uint32
  ********************************************************************/
 BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)

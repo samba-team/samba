@@ -2931,6 +2931,33 @@ void out_ascii(FILE *f, unsigned char *buf,int len)
 	}
 }
 
+void out_struct(FILE *f,char *buf1,int len, int per_line)
+{
+	unsigned char *buf = (unsigned char *)buf1;
+	int i;
+
+	if (len<=0)
+	{
+		return;
+	}
+
+	fprintf(f, "{\n\t");
+	for (i=0;i<len;)
+	{
+		fprintf(f, "0x%02X",(int)buf[i]);
+		i++;
+		if (i != len)
+		{
+			fprintf(f, ", ");
+		}
+		if (i%per_line == 0 && i != len)
+		{      
+			fprintf(f, "\n\t");
+		}
+	}
+	fprintf(f, "\n};\n");    
+}
+
 void out_data(FILE *f,char *buf1,int len, int per_line)
 {
 	unsigned char *buf = (unsigned char *)buf1;

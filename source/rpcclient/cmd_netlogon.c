@@ -179,5 +179,14 @@ experimental SAM synchronisation.
 ****************************************************************************/
 void cmd_sam_sync(struct client_info *info)
 {
-	do_sam_sync(smb_cli);
+	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
+	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
+	uint32 num;
+
+	if (do_sam_sync(smb_cli, hdr_deltas, deltas, &num))
+	{
+		display_sam_sync(out_hnd, ACTION_HEADER   , hdr_deltas, deltas, num);
+		display_sam_sync(out_hnd, ACTION_ENUMERATE, hdr_deltas, deltas, num);
+		display_sam_sync(out_hnd, ACTION_FOOTER   , hdr_deltas, deltas, num);
+	}
 }
