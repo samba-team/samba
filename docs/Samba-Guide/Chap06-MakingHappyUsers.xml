@@ -3271,8 +3271,9 @@ structuralObjectClass: organizationalUnit
 		rights and privileges:
 <screen>
 &rootprompt; net -S MASSIVE  -U root%not24get rpc rights grant \
-        "MEGANET2\Domain Admins" SeMachineAccountPrivilege SePrintOperatorPrivilege \
-         SeAddUsersPrivilege SeDiskOperatorPrivilege SeRemoteShutdownPrivilege
+        "MEGANET2\Domain Admins" SeMachineAccountPrivilege \
+	SePrintOperatorPrivilege SeAddUsersPrivilege \
+	SeDiskOperatorPrivilege SeRemoteShutdownPrivilege
 Successfully granted rights.
 </screen>
 		Repeat this step on each domain controller in each case substituting the name of the server
@@ -3285,7 +3286,7 @@ Successfully granted rights.
 		BDCs or on DMS machines because machine accounts are only ever added by the PDC:
 <screen>
 &rootprompt; net -S MASSIVE  -U root%not24get rpc rights grant \
-                            "MEGANET2\bobj" SeMachineAccountPrivilege
+             "MEGANET2\bobj" SeMachineAccountPrivilege
 Successfully granted rights.
 </screen>
 		</para></step>
