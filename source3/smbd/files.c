@@ -223,9 +223,9 @@ void file_init(void)
 	{
 		struct rlimit rlp;
 		getrlimit(RLIMIT_NOFILE, &rlp);
-		/* Set the fd limit to be MAX_OPEN_FILES + 10 to
-		 * account for the extra fd we need to read
-		 * directories, as well as the log files and standard
+		/* Set the fd limit to be MAX_FNUMS + 10 to
+		 * account for the extra fd we need 
+		 * as well as the log files and standard
 		 * handles etc.  */
 		rlp.rlim_cur = (MAX_FNUMS+10>rlp.rlim_max)? 
 			rlp.rlim_max:MAX_FNUMS+10;

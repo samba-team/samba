@@ -833,20 +833,19 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  if (uLevel==52)
-  {
-    count = get_printerdrivernumber(snum);
-    DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
+  if (uLevel==52) {
+	  count = get_printerdrivernumber(snum);
+	  DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
   } else {
-    count = get_printqueue(SNUM(conn), conn,&queue,&status);
+	  count = get_printqueue(snum, conn,&queue,&status);
   }
 
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   desc.base = *rdata;
   desc.buflen = mdrcnt;
   if (init_package(&desc,1,count)) {
-    desc.subcount = count;
-    fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
+	  desc.subcount = count;
+	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
   }
 
   *rdata_len = desc.usedlen;
