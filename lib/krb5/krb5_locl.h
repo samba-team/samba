@@ -87,7 +87,7 @@ krb5_error_code
 krb5_decrypt (krb5_context context,
 	      void *ptr,
 	      size_t len,
-	      krb5_keyblock *keyblock,
+	      const krb5_keyblock *keyblock,
 	      krb5_data *result);
 
 krb5_error_code
