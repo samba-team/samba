@@ -114,7 +114,7 @@ static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 	struct connections_data crec;
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
-	if (crec.cnum != -1 || !process_exists(crec.pid)) return 0;
+	if (crec.cnum == -1 || !process_exists(crec.pid)) return 0;
 
 	printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>\n",
 	       crec.name,uidtoname(crec.uid),
@@ -260,7 +260,7 @@ void status_page(void)
 	locking_end();
 	printf("</table>\n");
 
-	tdb_close(tdb);
+	if (tdb) tdb_close(tdb);
 
 	printf("</FORM>\n");
 
