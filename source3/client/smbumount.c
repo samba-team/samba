@@ -35,7 +35,7 @@ static int
 umount_ok(const char *mount_point)
 {
         int fid = open(mount_point, O_RDONLY, 0);
-        uid_t mount_uid;
+        __kernel_uid_t mount_uid;
 
         if (fid == -1) {
                 fprintf(stderr, "Could not open %s: %s\n",
