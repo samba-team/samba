@@ -457,8 +457,6 @@ static BOOL resolve_bcast(const char *name, int name_type,
 				struct in_addr **return_ip_list, int *return_count)
 {
 	int sock, i;
-	struct in_addr *iplist = NULL;
-	int count;
 	int num_interfaces = iface_count();
 
 	*return_ip_list = NULL;
@@ -533,7 +531,6 @@ static BOOL resolve_wins(const char *name, int name_type,
 							interpret_addr(lp_socket_address()), True );
 	      
 		if (sock != -1) {
-			struct in_addr *iplist = NULL;
 			*return_iplist = name_query(sock, name, name_type, False, 
 								True, wins_ip, return_count, NULL);
 			if(*return_iplist != NULL) {
@@ -633,7 +630,6 @@ static BOOL resolve_hosts(const char *name,
 static BOOL internal_resolve_name(const char *name, int name_type,
                          		struct in_addr **return_iplist, int *return_count)
 {
-  int i;
   pstring name_resolve_list;
   fstring tok;
   char *ptr;
