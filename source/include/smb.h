@@ -612,7 +612,7 @@ typedef struct {
 	((pdb_get_init_flag(x) & FLAG_SAM_UID) \
 	 && (pdb_get_init_flag(x) & FLAG_SAM_GID))
 
-#define IS_SAM_SET(x, flag)	((x)->init_flag & (flag))
+#define IS_SAM_SET(x, flag)	((x)->private.init_flag & (flag))
 		
 typedef struct sam_passwd
 {
