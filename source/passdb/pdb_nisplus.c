@@ -343,7 +343,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
     get_single_attribute(obj, NPF_LOGON_SCRIPT, logon_script,
 			 sizeof(pstring));
     if( !(logon_script && *logon_script) ) {
-      pstrcpy(logon_script, lp_logon_script(), False);
+      pstrcpy(logon_script, lp_logon_script());
     }
     else
       pdb_set_logon_script(pw_buf, logon_script, True);
