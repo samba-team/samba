@@ -1110,7 +1110,8 @@ make_id (char *tty)
 
 /* ARGSUSED */
 void
-startslave(char *host, int autologin, char *autoname)
+startslave(const char *host, const char *utmp_host,
+	   int autologin, char *autoname)
 {
     int i;
 
@@ -1158,7 +1159,7 @@ startslave(char *host, int autologin, char *autoname)
 	wtmp.ut_type = LOGIN_PROCESS;
 	wtmp.ut_pid = pid;
 	strncpy(wtmp.ut_user,  "LOGIN", sizeof(wtmp.ut_user));
-	strncpy(wtmp.ut_host,  host, sizeof(wtmp.ut_host));
+	strncpy(wtmp.ut_host,  utmp_host, sizeof(wtmp.ut_host));
 	strncpy(wtmp.ut_line,  clean_ttyname(line), sizeof(wtmp.ut_line));
 #ifdef HAVE_STRUCT_UTMP_UT_ID
 	strncpy(wtmp.ut_id, wtmp.ut_line + 3, sizeof(wtmp.ut_id));
@@ -1192,7 +1193,6 @@ extern char **environ;
 void
 init_env(void)
 {
-    extern char *getenv(const char *);
     char **envp;
 
     envp = envinit;
@@ -1262,7 +1262,7 @@ struct arg_val {
     char **argv;
 };
 
-static void addarg(struct arg_val*, char*);
+static void addarg(struct arg_val*, const char*);
 
 /*
  * start_login(host)
@@ -1272,7 +1272,7 @@ static void addarg(struct arg_val*, char*);
  */
 
 void
-start_login(char *host, int autologin, char *name)
+start_login(const char *host, int autologin, char *name)
 {
     struct arg_val argv;
     char *user;
@@ -1378,7 +1378,7 @@ start_login(char *host, int autologin, char *name)
 }
 
 static void
-addarg(struct arg_val *argv, char *val)
+addarg(struct arg_val *argv, const char *val)
 {
     if(argv->size <= argv->argc+1) {
 	argv->argv = realloc(argv->argv, sizeof(char*) * (argv->size + 10));
