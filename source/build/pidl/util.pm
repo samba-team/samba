@@ -186,6 +186,8 @@ sub is_scalar_type($)
     return 0;
 }
 
+# this is used to determine if the ndr push/pull functions will need
+# a ndr_flags field to split by buffers/scalars
 sub is_builtin_type($)
 {
     my($type) = shift;
@@ -200,6 +202,109 @@ sub is_builtin_type($)
     return 0;
 }
 
+# determine if an element needs a reference pointer on the wire
+# in its NDR representation
+sub need_wire_pointer($)
+{
+	my $e = shift;
+	if ($e->{POINTERS} && 
+	    !has_property($e, "ref")) {
+		return $e->{POINTERS};
+	}
+	return undef;
+}
+
+
+# determine if an element is a pass-by-reference structure
+sub is_ref_struct($)
+{
+	my $e = shift;
+	if (!is_scalar_type($e->{TYPE}) &&
+	    has_property($e, "ref")) {
+		return 1;
+	}
+	return 0;
+}
+
+# determine if an element is a pure scalar. pure scalars do not
+# have a "buffers" section in NDR
+sub is_pure_scalar($)
+{
+	my $e = shift;
+	if (has_property($e, "ref")) {
+		return 1;
+	}
+	if (is_scalar_type($e->{TYPE}) && !$e->{POINTERS}) {
+		return 1;
+	}
+	return 0;
+}
+
+# determine the array size (size_is() or ARRAY_LEN)
+sub array_size($)
+{
+	my $e = shift;
+	my $size = has_property($e, "size_is");
+	if ($size) {
+		return $size;
+	}
+	$size = $e->{ARRAY_LEN};
+	if ($size) {
+		return $size;
+	}
+	return undef;
+}
+
+# see if a variable needs to be allocated by the NDR subsystem on pull
+sub need_alloc($)
+{
+	my $e = shift;
+
+	if (has_property($e, "ref")) {
+		return 0;
+	}
+
+	if ($e->{POINTERS} || array_size($e)) {
+		return 1;
+	}
+
+	return 0;
+}
+
+# determine the C prefix used to refer to a variable when passing to a push
+# function. This will be '*' for pointers to scalar types, '' for scalar
+# types and normal pointers and '&' for pass-by-reference structures
+sub c_push_prefix($)
+{
+	my $e = shift;
+	if (is_scalar_type($e->{TYPE}) &&
+	    $e->{POINTERS}) {
+		return "*";
+	}
+	if (!is_scalar_type($e->{TYPE}) &&
+	    !$e->{POINTERS} &&
+	    !array_size($e)) {
+		return "&";
+	}
+	return "";
+}
+
+# determine the C prefix used to refer to a variable when passing to a pull
+# return '&' or ''
+sub c_pull_prefix($)
+{
+	my $e = shift;
+
+	if (!$e->{POINTERS} && !array_size($e)) {
+		return "&";
+	}
+
+	if ($e->{TYPE} =~ "unistr.*") {
+		return "&";
+	}
+
+	return "";
+}
 
 1;
 

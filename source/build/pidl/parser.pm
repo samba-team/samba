@@ -32,7 +32,7 @@ sub find_size_var($)
 {
 	my($e) = shift;
 	my($fn) = $e->{PARENT};
-	my($size) = util::has_property($e, "size_is");
+	my($size) = util::array_size($e);
 	
 	if ($fn->{TYPE} ne "FUNCTION") {
 		return "r->$size";
@@ -75,7 +75,7 @@ sub ParseArrayPull($$)
 	my $var_prefix = shift;
 	my $size = find_size_var($e);
 
-	if (!util::has_property($e, "ref")) {
+	if (util::need_alloc($e)) {
 		$res .= "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $size, sizeof($var_prefix$e->{NAME}\[0]));\n";
 	}
 	if (util::is_scalar_type($e->{TYPE})) {
@@ -93,26 +93,16 @@ sub ParseElementPushScalar($$$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
+	my $cprefix = util::c_push_prefix($e);
 
 	if (defined $e->{VALUE}) {
 		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $e->{VALUE}));\n";
-	} elsif ($e->{POINTERS} && 
-		 !util::has_property($e, "ref")) {
+	} elsif (util::need_wire_pointer($e)) {
 		$res .= "\tNDR_CHECK(ndr_push_ptr(ndr, $var_prefix$e->{NAME}));\n";
 	} elsif (util::is_builtin_type($e->{TYPE})) {
-		if (util::is_scalar_type($e->{TYPE}) &&
-		    util::has_property($e, "ref")) {
-			$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, *$var_prefix$e->{NAME}));\n";
-		} else {
-			$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $var_prefix$e->{NAME}));\n";
-		}
+		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
-		if (util::is_scalar_type($e->{TYPE}) ||
-		    $e->{POINTERS}) {
-			$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}));\n";
-		} else {
-			$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, &$var_prefix$e->{NAME}));\n";
-		}
+		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
 }
 
@@ -123,34 +113,23 @@ sub ParseElementPullScalar($$$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
+	my $cprefix = util::c_pull_prefix($e);
 
 	if (defined $e->{VALUE}) {
 		$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $e->{VALUE}));\n";
-	} elsif ($e->{POINTERS} && 
-		 !util::has_property($e, "ref")) {
+	} elsif (util::need_wire_pointer($e)) {
 		$res .= "\tNDR_CHECK(ndr_pull_uint32(ndr, &_ptr_$e->{NAME}));\n";
 		$res .= "\tif (_ptr_$e->{NAME}) {\n";
 		$res .= "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
 		$res .= "\t} else {\n";
 		$res .= "\t\t$var_prefix$e->{NAME} = NULL;\n";
 		$res .= "\t}\n";
-	} elsif (!util::is_scalar_type($e->{TYPE}) &&
-		 util::has_property($e, "ref")) {
-		if (util::is_builtin_type($e->{TYPE})) {
-			$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $var_prefix$e->{NAME}));\n";
-		} else {
-			$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}));\n";
-		}
+	} elsif (util::need_alloc($e)) {
+		# no scalar component
+	} elsif (util::is_builtin_type($e->{TYPE})) {
+		$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
-		if (util::is_builtin_type($e->{TYPE})) {
-			if (!util::has_property($e, "ref")) {
-				$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, &$var_prefix$e->{NAME}));\n";
-			} else {
-				$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $var_prefix$e->{NAME}));\n";
-			}
-		} else {
-			$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, &$var_prefix$e->{NAME}));\n";
-		}
+		$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
 }
 
@@ -160,34 +139,25 @@ sub ParseElementPushBuffer($$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
+	my $cprefix = util::c_push_prefix($e);
 
-	if (util::has_property($e, "ref")) {
+	if (util::is_pure_scalar($e)) {
 		return;
 	}
 
-	if (util::is_scalar_type($e->{TYPE}) && !$e->{POINTERS}) {
-		return;
-	}
-
-	if ($e->{POINTERS}) {
+	if (util::need_wire_pointer($e)) {
 		$res .= "\tif ($var_prefix$e->{NAME}) {\n";
 	}
 	    
-	if (util::has_property($e, "size_is")) {
+	if (util::array_size($e)) {
 		ParseArrayPush($e, "r->");
+	} elsif (util::is_builtin_type($e->{TYPE})) {
+		$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
-		if (util::is_scalar_type($e->{TYPE})) {
-			$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, *$var_prefix$e->{NAME}));\n";
-		} elsif (!$e->{POINTERS}) {
-			$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, ndr_flags, &$var_prefix$e->{NAME}));\n";
-		} elsif (util::is_builtin_type($e->{TYPE})) {
-			$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $var_prefix$e->{NAME}));\n";
-		} else {
-			$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, ndr_flags, $var_prefix$e->{NAME}));\n";
-		}
+		$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
 
-	if ($e->{POINTERS}) {
+	if (util::need_wire_pointer($e)) {
 		$res .= "\t}\n";
 	}	
 }
@@ -200,37 +170,25 @@ sub ParseElementPullBuffer($$$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
+	my $cprefix = util::c_pull_prefix($e);
 
-	if (util::has_property($e, "ref")) {
+	if (util::is_pure_scalar($e)) {
 		return;
 	}
 
-	if (util::is_scalar_type($e->{TYPE}) && !$e->{POINTERS}) {
-		return;
-	}
-
-	if ($e->{POINTERS}) {
+	if (util::need_wire_pointer($e)) {
 		$res .= "\tif ($var_prefix$e->{NAME}) {\n";
 	}
 	    
-	if (util::has_property($e, "size_is")) {
+	if (util::array_size($e)) {
 		ParseArrayPull($e, "r->");
+	} elsif (util::is_builtin_type($e->{TYPE})) {
+		$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
-		if (!$e->{POINTERS} ||
-		    $e->{TYPE} =~ "unistr.*") {
-			if (util::is_builtin_type($e->{TYPE})) {
-				$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, &$var_prefix$e->{NAME}));\n";
-			} else {
-				$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, &$var_prefix$e->{NAME}));\n";
-			}
-		} elsif (util::is_builtin_type($e->{TYPE})) {
-			$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $var_prefix$e->{NAME}));\n";
-		} else {
-			$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}));\n";
-		}
+		$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
 
-	if ($e->{POINTERS}) {
+	if (util::need_wire_pointer($e)) {
 		$res .= "\t}\n";
 	}	
 }
@@ -301,8 +259,7 @@ sub ParseStructPull($)
 	# declare any internal pointers we need
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		$e->{PARENT} = $struct;
-		if ($e->{POINTERS} && 
-		    !util::has_property($e, "ref")) {
+		if (util::need_wire_pointer($e)) {
 			$res .= "\tuint32 _ptr_$e->{NAME};\n";
 		}
 	}
@@ -440,7 +397,7 @@ sub ParseFunctionPush($)
 	foreach my $e (@{$function->{DATA}}) {
 		if (util::has_property($e, "in")) {
 			$e->{PARENT} = $function;
-			if (util::has_property($e, "size_is")) {
+			if (util::array_size($e)) {
 				$res .= "\tif (r->in.$e->{NAME}) {\n";
 				if (!util::is_scalar_type($e->{TYPE})) {
 					$res .= "\t\tint ndr_flags = NDR_SCALARS|NDR_BUFFERS;\n";
@@ -468,18 +425,17 @@ sub ParseFunctionPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
-		if (util::has_property($e, "out") &&
-		    $e->{POINTERS} && 
-		    !util::is_scalar_type($e->{TYPE}) &&
-		    !util::has_property($e, "ref")) {
-			$res .= "\tuint32 _ptr_$e->{NAME};\n";
+		if (util::has_property($e, "out")) {
+			if (util::need_wire_pointer($e)) {
+				$res .= "\tuint32 _ptr_$e->{NAME};\n";
+			}
 		}
 	}
 
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "out")) {
 			$e->{PARENT} = $fn;
-			if (util::has_property($e, "size_is")) {
+			if (util::array_size($e)) {
 				$res .= "\tif (r->out.$e->{NAME}) {\n";
 				if (!util::is_scalar_type($e->{TYPE})) {
 					$res .= "\t\tint ndr_flags = NDR_SCALARS|NDR_BUFFERS;\n";
@@ -487,10 +443,6 @@ sub ParseFunctionPull($)
 				ParseArrayPull($e, "r->out.");
 				$res .= "\t}\n";
 			} else {
-				if ($e->{POINTERS} &&
-				    !util::has_property($e, "ref")) {
-					$res .= "\tNDR_ALLOC(ndr, r->out.$e->{NAME});\n";
-				}
 				ParseElementPullScalar($e, "r->out.", "NDR_SCALARS|NDR_BUFFERS");
 				ParseElementPullBuffer($e, "r->out.", "NDR_SCALARS|NDR_BUFFERS");
 			}

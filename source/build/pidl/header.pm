@@ -59,8 +59,15 @@ sub DumpElement($)
 		    $res .= "*";
 	    }
     }
+    if (defined $element->{ARRAY_LEN} &&
+	$element->{ARRAY_LEN} eq "*") {
+	    $res .= "*";
+    }
     $res .= "$element->{NAME}";
-    (defined $element->{ARRAY_LEN}) && ($res .= "[$element->{ARRAY_LEN}]");
+    if (defined $element->{ARRAY_LEN} &&
+	$element->{ARRAY_LEN} ne "*") {
+	    $res .= "[$element->{ARRAY_LEN}]";
+    }
     $res .= ";\n";
 }
 
