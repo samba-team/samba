@@ -769,6 +769,30 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   return(outsize);
 }
 
+/****************************************************************************
+  Keep track of the number of running smbd's. This functionality is used to
+  'hard' limit Samba overhead on resource constrained systems. 
+****************************************************************************/
+static BOOL smbd_process_limit()
+{
+	int  total_smbds;
+	
+	if (lp_max_smbd_processes()) {
+
+		/* Always add one to the smbd process count, as exit_server() always
+		 * subtracts one.
+		 */
+		tdb_lock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
+		total_smbds = tdb_fetch_int(conn_tdb_ctx(), "INFO/total_smbds");
+		total_smbds = total_smbds < 0 ? 1 : total_smbds + 1;
+		tdb_store_int(conn_tdb_ctx(), "INFO/total_smbds", total_smbds);
+		tdb_unlock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
+		
+		return total_smbds > lp_max_smbd_processes();
+	}
+	else
+		return False;
+}
 
 /****************************************************************************
   process an smb from the client - split out from the process() code so
@@ -788,11 +812,13 @@ void process_smb(char *inbuf, char *outbuf)
   DO_PROFILE_INC(smb_count);
 
   if (trans_num == 0) {
-	  /* on the first packet, check the global hosts allow/ hosts
+	  /* on the first packet, check if the max number of smbd's 
+	     has been reached, and check the global hosts allow/ hosts
 	     deny parameters before doing any parsing of the packet
 	     passed to us by the client.  This prevents attacks on our
 	     parsing code from hosts not in the hosts allow list */
-	  if (!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
+	  if (smbd_process_limit() ||
+		  !check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
 		  /* send a negative session response "not listining on calling
 		   name" */
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};

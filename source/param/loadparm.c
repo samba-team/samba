@@ -191,6 +191,7 @@ typedef struct
 	int security;
 	int maxdisksize;
 	int lpqcachetime;
+	int iMaxSmbdProcesses;
 	int iTotalPrintJobs;
 	int syslog;
 	int os_level;
@@ -800,6 +801,7 @@ static struct parm_struct parm_table[] = {
 	{"keepalive", P_INTEGER, P_GLOBAL, &keepalive, NULL, NULL, 0},
 	
 	{"lpq cache time", P_INTEGER, P_GLOBAL, &Globals.lpqcachetime, NULL, NULL, 0},
+	{"max smbd processes", P_INTEGER, P_GLOBAL, &Globals.iMaxSmbdProcesses, NULL, NULL, 0},
 	{"max connections", P_INTEGER, P_LOCAL, &sDefault.iMaxConnections, NULL, NULL, FLAG_SHARE},
 	{"max disk size", P_INTEGER, P_GLOBAL, &Globals.maxdisksize, NULL, NULL, 0},
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, 0},
@@ -1203,6 +1205,7 @@ static void init_globals(void)
 	Globals.max_xmit = 65535;
 	Globals.max_mux = 50;	/* This is *needed* for profile support. */
 	Globals.lpqcachetime = 10;
+	Globals.iMaxSmbdProcesses = 0;/* no limit specified */
 	Globals.iTotalPrintJobs = 0;  /* no limit specified */
 	Globals.pwordlevel = 0;
 	Globals.unamelevel = 0;
@@ -1530,6 +1533,7 @@ FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_security, &Globals.security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
+FN_GLOBAL_INTEGER(lp_max_smbd_processes, &Globals.iMaxSmbdProcesses)
 FN_GLOBAL_INTEGER(lp_totalprintjobs, &Globals.iTotalPrintJobs)
 FN_GLOBAL_INTEGER(lp_syslog, &Globals.syslog)
 FN_GLOBAL_INTEGER(lp_client_code_page, &Globals.client_code_page)

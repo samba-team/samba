@@ -410,6 +410,22 @@ static BOOL dump_core(void)
 #endif
 
 /****************************************************************************
+update the current smbd process count
+****************************************************************************/
+static void decrement_smbd_process_count()
+{
+	int total_smbds;
+
+	if (lp_max_smbd_processes()) {
+		tdb_lock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
+		if ((total_smbds = tdb_fetch_int(conn_tdb_ctx(), "INFO/total_smbds")) > 0)
+			tdb_store_int(conn_tdb_ctx(), "INFO/total_smbds", total_smbds - 1);
+		
+		tdb_unlock_bystring(conn_tdb_ctx(), "INFO/total_smbds");
+	}
+}
+
+/****************************************************************************
 exit the server
 ****************************************************************************/
 void exit_server(char *reason)
@@ -432,6 +448,7 @@ void exit_server(char *reason)
 	}
 
     respond_to_all_remaining_local_messages();
+	decrement_smbd_process_count();
 
 #ifdef WITH_DFS
 	if (dcelogin_atmost_once) {
