@@ -202,7 +202,7 @@ daemonize(void)
 
 	signal( SIGTERM, exit_parent );
 
-	if ((child_pid = fork()) < 0)
+	if ((child_pid = sys_fork()) < 0)
 	{
 		DEBUG(0, ("could not fork\n"));
 	}
@@ -786,7 +786,7 @@ static void usage(char *pname)
   TimeInit();
   charset_initialise();
 
-  pid = (uint16)getpid();
+  pid = (uint16)sys_getpid();
   vuid = (uint16)getuid();
   mid = pid + 100;
   myumask = umask(0);

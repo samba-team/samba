@@ -42,7 +42,7 @@ static void sigsegv(int sig)
 	char line[200];
 	printf("segv at line %d\n", line_count);
 	slprintf(line, sizeof(line), "/usr/X11R6/bin/xterm -e gdb /proc/%d/exe %d", 
-		(int)getpid(), (int)getpid());
+		(int)sys_getpid(), (int)sys_getpid());
 	system(line);
 	exit(1);
 }

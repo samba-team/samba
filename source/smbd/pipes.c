@@ -80,7 +80,7 @@ int reply_open_pipe_and_X(connection_struct * conn,
 	DEBUG(3, ("Known pipe %s opening.\n", fname));
 	smb_ofun |= FILE_CREATE_IF_NOT_EXIST;
 
-	key.pid = getpid();
+	key.pid = sys_getpid();
 	key.vuid = vuid;
 	p = open_rpc_pipe_p(fname, &key, NULL);
 	if (!p)

@@ -1068,8 +1068,8 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 
 /******************************************************************
    allow or disallow automatic connections.  rpctorture, because it
-   does not reestablish connections after fork(), fails unless the
-   connection is established AFTER the fork()
+   does not reestablish connections after sys_fork(), fails unless the
+   connection is established AFTER the sys_fork()
  ******************************************************************/
 static BOOL auto_connect = True;
 void cmd_set_no_autoconnect(void)

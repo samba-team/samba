@@ -64,8 +64,7 @@ struct
 	int option;
 	int value;
 	int opttype;
-}
-socket_options[] =
+} socket_options[] =
 {
 	{
 	"SO_KEEPALIVE", SOL_SOCKET, SO_KEEPALIVE, 0, OPT_BOOL}
@@ -183,10 +182,10 @@ void set_socket_options(int fd, char *options)
 					int on = socket_options[i].value;
 					ret =
 						setsockopt(fd,
-							   socket_options[i].
-							   level,
-							   socket_options[i].
-							   option,
+							   socket_options
+							   [i].level,
+							   socket_options
+							   [i].option,
 							   (char *)&on,
 							   sizeof(int));
 				}
@@ -761,13 +760,7 @@ BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 
 	smb_read_error = 0;
 
-	if (buffer == NULL)
-	{
-		DEBUG(1, ("receive_smb: buffer==NULL\n"));
-		return False;
-	}
-
-	memset(buffer, 0, smb_size + 100);
+	memset(buffer, '\0', smb_size + 100);
 
 	len = read_smb_length_return_keepalive(fd, buffer, timeout);
 	if (len < 0)
@@ -1294,8 +1287,7 @@ int open_pipe_sock(char *path)
 
 	if (connect(sock, (struct sockaddr *)&sa, sizeof(sa)) < 0)
 	{
-		DEBUG(2, ("socket connect to %s failed: %s\n",
-			  sa.sun_path, strerror(errno)));
+		DEBUG(0, ("socket connect to %s failed\n", sa.sun_path));
 		close(sock);
 		return -1;
 	}
@@ -1308,7 +1300,7 @@ int create_pipe_socket(char *dir, int dir_perms, char *path, int path_perms)
 	int s;
 	struct sockaddr_un sa;
 
-	DEBUG(0, ("create_pipe_socket: %s perms=%d %s perms=%d\n",
+	DEBUG(0, ("create_pipe_socket: %s %d %s %d\n",
 		  dir, dir_perms, path, path_perms));
 
 	DEBUG(0,

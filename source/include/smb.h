@@ -292,8 +292,7 @@ typedef struct nttime_info
 	uint32 low;
 	uint32 high;
 
-}
-NTTIME;
+} NTTIME;
 
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001	/* 1 = User account disabled */
@@ -390,8 +389,7 @@ typedef struct sid_info
 	 */
 	uint32 sub_auths[MAXSUBAUTHS];	/* pointer to sub-authorities. */
 
-}
-DOM_SID;
+} DOM_SID;
 
 
 typedef struct group_name_info
@@ -425,8 +423,7 @@ typedef struct local_grp_member_info
 	uint8 sid_use;		/* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
 	fstring name;		/* matches with sid: must be of the form "DOMAIN\account" */
 
-}
-LOCAL_GRP_MEMBER;
+} LOCAL_GRP_MEMBER;
 
 /* enumerate these to get list of local groups */
 
@@ -437,8 +434,7 @@ typedef struct local_grp_info
 	fstring comment;
 	uint32 rid;		/* alias rid */
 
-}
-LOCAL_GRP;
+} LOCAL_GRP;
 
 /*** query a domain group, get a list of these: shows who is in that group ***/
 
@@ -468,23 +464,20 @@ typedef struct domain_grp_info
 typedef struct chal_info
 {
 	uchar data[8];		/* credentials */
-}
-DOM_CHAL;
+} DOM_CHAL;
 
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
 typedef struct time_info
 {
 	uint32 time;
-}
-UTIME;
+} UTIME;
 
 /* DOM_CREDs - timestamped client or server credentials */
 typedef struct cred_info
 {
 	DOM_CHAL challenge;	/* credentials */
 	UTIME timestamp;	/* credential time-stamp */
-}
-DOM_CRED;
+} DOM_CRED;
 
 /* Structure used when SMBwritebmpx is active */
 typedef struct
@@ -495,8 +488,7 @@ typedef struct
 	int32 wr_error;		/* Cached errors */
 	BOOL wr_mode;		/* write through mode) */
 	BOOL wr_discard;	/* discard all further data */
-}
-write_bmpx_struct;
+} write_bmpx_struct;
 
 typedef struct write_cache
 {
@@ -505,8 +497,7 @@ typedef struct write_cache
 	size_t alloc_size;
 	size_t data_size;
 	char *data;
-}
-write_cache;
+} write_cache;
 
 typedef struct files_struct
 {
@@ -538,8 +529,7 @@ typedef struct files_struct
 	BOOL directory_delete_on_close;
 	BOOL stat_open;
 	char *fsp_name;
-}
-files_struct;
+} files_struct;
 
 /*
  * Structure used to keep directory state information around.
@@ -550,11 +540,9 @@ typedef struct
 {
 	time_t modify_time;
 	time_t status_time;
-}
-dir_status_struct;
+} dir_status_struct;
 
-struct uid_cache
-{
+struct uid_cache {
 	int entries;
 	uid_t list[UID_CACHE_SIZE];
 };
@@ -563,8 +551,7 @@ typedef struct
 {
 	char *name;
 	BOOL is_wild;
-}
-name_compare_entry;
+} name_compare_entry;
 
 /* Include VFS stuff */
 
@@ -662,8 +649,7 @@ struct dcinfo
 	uchar md4pw[16];	/* md4(machine password) */
 };
 
-enum
-{ LPQ_QUEUED, LPQ_PAUSED, LPQ_SPOOLING, LPQ_PRINTING };
+enum {LPQ_QUEUED,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING};
 
 typedef struct _print_queue_struct
 {
@@ -674,18 +660,15 @@ typedef struct _print_queue_struct
 	time_t time;
 	fstring user;
 	fstring file;
-}
-print_queue_struct;
+} print_queue_struct;
 
-enum
-{ LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR };
+enum {LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR};
 
 typedef struct
 {
 	fstring message;
 	int status;
-}
-print_status_struct;
+}  print_status_struct;
 
 /* used for server information: client, nameserv and ipc */
 struct server_info_struct
@@ -715,8 +698,7 @@ typedef struct
 	uint16 op_type;
 	int share_mode;
 	struct timeval time;
-}
-share_mode_entry;
+} share_mode_entry;
 
 
 #define SHAREMODE_FN_CAST() \
@@ -727,26 +709,21 @@ share_mode_entry;
 
 /* each implementation of the share mode code needs
    to support the following operations */
-struct share_ops
-{
+struct share_ops {
 	BOOL (*stop_mgmt) (void);
 	BOOL (*lock_entry) (connection_struct *, SMB_DEV_T, SMB_INO_T, int *);
 	BOOL (*unlock_entry) (connection_struct *, SMB_DEV_T, SMB_INO_T, int);
-	int (*get_entries) (connection_struct *, int, SMB_DEV_T, SMB_INO_T,
-			    share_mode_entry **);
+	int (*get_entries)(connection_struct *, int , SMB_DEV_T , SMB_INO_T , share_mode_entry **);
 	void (*del_entry) (int, files_struct *);
 	BOOL (*set_entry) (int, files_struct *, uint16, uint16);
-	BOOL (*mod_entry) (int, files_struct *,
-			   void (*)(share_mode_entry *, SMB_DEV_T, SMB_INO_T,
-				    void *), void *);
+    BOOL (*mod_entry)(int, files_struct *, void (*)(share_mode_entry *, SMB_DEV_T, SMB_INO_T, void *), void *);
 	int (*forall) (void (*)(share_mode_entry *, char *));
 	void (*status) (FILE *);
 };
 
 /* each implementation of the shared memory code needs
    to support the following operations */
-struct shmem_ops
-{
+struct shmem_ops {
 	BOOL (*shm_close) (void);
 	int (*shm_alloc) (int);
 	BOOL (*shm_free) (int);
@@ -764,8 +741,7 @@ struct shmem_ops
  * to support the following operations.
  */
 
-struct smb_passdb_ops
-{
+struct passdb_ops {
 	/*
 	 * Password database operations.
 	 */
@@ -986,15 +962,13 @@ struct connect_record
 };
 
 /* key and data in the connections database - used in smbstatus and smbd */
-struct connections_key
-{
+struct connections_key {
 	pid_t pid;
 	int cnum;
 	fstring name;
 };
 
-struct connections_data
-{
+struct connections_data {
 	int magic;
 	pid_t pid;
 	int cnum;
@@ -1008,14 +982,12 @@ struct connections_data
 
 
 /* key and data records in the tdb locking database */
-struct locking_key
-{
+struct locking_key {
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 };
 
-struct locking_data
-{
+struct locking_data {
 	int num_share_mode_entries;
 	/* the following two entries are implicit 
 	   share_mode_entry modes[num_share_mode_entries];
@@ -1028,21 +1000,17 @@ typedef enum
 {
 	P_BOOL, P_BOOLREV, P_CHAR, P_INTEGER, P_OCTAL,
 	P_STRING, P_USTRING, P_GSTRING, P_UGSTRING, P_ENUM, P_SEP
-}
-parm_type;
+} parm_type;
 
 typedef enum
 {
 	P_LOCAL, P_GLOBAL, P_SEPARATOR, P_NONE
-}
-parm_class;
+} parm_class;
 
 /* passed to br lock code */
-enum brl_type
-{ READ_LOCK, WRITE_LOCK };
+enum brl_type {READ_LOCK, WRITE_LOCK};
 
-struct enum_list
-{
+struct enum_list {
 	int value;
 	char *name;
 };
@@ -1065,18 +1033,15 @@ struct parm_struct
 	BOOL (*special) (char *, char **);
 	struct enum_list *enum_list;
 	unsigned flags;
-	union
-	{
+	union {
 		BOOL bvalue;
 		int ivalue;
 		char *svalue;
 		char cvalue;
-	}
-	def;
+	} def;
 };
 
-struct bitmap
-{
+struct bitmap {
 	uint32 *b;
 	int n;
 };
@@ -1661,14 +1626,10 @@ char *strdup(char *s);
 
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets */
-enum protocol_types
-{ PROTOCOL_NONE, PROTOCOL_CORE, PROTOCOL_COREPLUS, PROTOCOL_LANMAN1,
-	PROTOCOL_LANMAN2, PROTOCOL_NT1
-};
+enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANMAN1,PROTOCOL_LANMAN2,PROTOCOL_NT1};
 
 /* security levels */
-enum security_types
-{ SEC_SHARE, SEC_USER, SEC_SERVER, SEC_DOMAIN };
+enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN};
 
 /* server roles */
 enum server_types
@@ -1680,23 +1641,18 @@ enum server_types
 };
 
 /* printing types */
-enum printing_types
-{ PRINT_BSD, PRINT_SYSV, PRINT_AIX, PRINT_HPUX,
-	PRINT_QNX, PRINT_PLP, PRINT_LPRNG, PRINT_SOFTQ, PRINT_CUPS
-};
+enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
+		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG,PRINT_SOFTQ,PRINT_CUPS};
 
 /* Remote architectures we know about. */
-enum remote_arch_types
-{ RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_SAMBA };
+enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_SAMBA};
 
 /* case handling */
-enum case_handling
-{ CASE_LOWER, CASE_UPPER };
+enum case_handling {CASE_LOWER,CASE_UPPER};
 
 #ifdef WITH_SSL
 /* SSL version options */
-enum ssl_version_enum
-{ SMB_SSL_V2, SMB_SSL_V3, SMB_SSL_V23, SMB_SSL_TLS1 };
+enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
 #endif /* WITH_SSL */
 
 /*
@@ -1873,8 +1829,7 @@ struct use_info
 };
 
 /* A netbios name structure. */
-struct nmb_name
-{
+struct nmb_name {
 	char name[17];
 	char scope[64];
 	unsigned int name_type;

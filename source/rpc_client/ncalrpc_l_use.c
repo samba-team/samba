@@ -115,7 +115,7 @@ static struct ncalrpc_use *ncalrpc_l_find(const char *pipe_name,
 	if (key == NULL)
 	{
 		key = &null_usr;
-		null_usr.pid = getpid();
+		null_usr.pid = sys_getpid();
 		null_usr.vuid = UID_FIELD_INVALID;
 	}
 

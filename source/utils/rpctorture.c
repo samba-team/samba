@@ -472,9 +472,9 @@ static void create_procs(
 
 	for (i=0;i<nprocs;i++)
 	{
-		if (fork() == 0)
+		if (sys_fork() == 0)
 		{
-			int mypid = getpid();
+			int mypid = sys_getpid();
 			sys_srandom(mypid ^ time(NULL));
 			fn(info, argc, argv);
 			dbgflush();

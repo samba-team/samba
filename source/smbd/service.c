@@ -209,7 +209,7 @@ connection_struct *make_connection(char *service,char *user,
 	int ret;
 	vuser_key key;
 
-	key.pid = getpid();
+	key.pid = sys_getpid();
 	key.vuid = vuid;
 
 	strlower(service);
@@ -635,7 +635,7 @@ connection_struct *make_connection(char *service,char *user,
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
 		dbgtext( "as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
-		dbgtext( "(pid %d)\n", (int)getpid() );
+		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}
 	
 	/* we've finished with the sensitive stuff */

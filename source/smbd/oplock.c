@@ -111,7 +111,7 @@ address %lx. Error was %s\n", (long)htonl(INADDR_LOOPBACK), strerror(errno)));
     return False;
 
   DEBUG(3,("open_oplock ipc: pid = %d, global_oplock_port = %u\n", 
-            (int)getpid(), global_oplock_port));
+            (int)sys_getpid(), global_oplock_port));
 
   return True;
 }
@@ -1088,7 +1088,7 @@ BOOL request_oplock_break(share_mode_entry *share_entry,
 {
   char op_break_msg[OPLOCK_BREAK_MSG_LEN];
   struct sockaddr_in addr_out;
-  pid_t pid = getpid();
+  pid_t pid = sys_getpid();
   time_t start_time;
   int time_left;
   long usec;
@@ -1342,7 +1342,7 @@ void check_kernel_oplocks(void)
     set_process_capability(KERNEL_OPLOCK_CAPABILITY,True);
     set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,True);
 
-	slprintf(tmpname,sizeof(tmpname)-1, "%s/koplock.%d", lp_lockdir(), (int)getpid());
+	slprintf(tmpname,sizeof(tmpname)-1, "%s/koplock.%d", lp_lockdir(), (int)sys_getpid());
 
     if(pipe(pfd) != 0) {
       DEBUG(0,("check_kernel_oplocks: Unable to create pipe. Error was %s\n",

@@ -368,7 +368,7 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 	}
 	else
 	{
-		cli->cli->smb->nt.key.pid = getpid();
+		cli->cli->smb->nt.key.pid = sys_getpid();
 		cli->cli->smb->nt.key.vuid = UID_FIELD_INVALID;
 #if 0
 		NET_USER_INFO_3 usr;
@@ -378,7 +378,7 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 
 		ZERO_STRUCT(usr);
 
-		cli->cli->smb->nt.key.pid = getpid();
+		cli->cli->smb->nt.key.pid = sys_getpid();
 		cli->cli->smb->nt.key.vuid =
 			register_vuid(cli->cli->smb->nt.key.pid, uid, gid,
 				      name, name, False, &usr);

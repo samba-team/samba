@@ -283,7 +283,7 @@ struct msrpc_local *ncalrpc_l_initialise(struct msrpc_local *msrpc,
 
 		ZERO_STRUCT(usr);
 
-		msrpc->nt.key.pid = getpid();
+		msrpc->nt.key.pid = sys_getpid();
 		msrpc->nt.key.vuid = register_vuid(msrpc->nt.key.pid,
 						   uid, gid,
 						   name, name, False, &usr);

@@ -159,11 +159,10 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/genrand.o lib/username.o \
 		lib/access.o lib/smbrun.o \
 		lib/bitmap.o lib/util_sid.o lib/snprintf.o \
-		lib/util_str.o lib/util_unistr.o lib/util_wunistr.o \
+		lib/util_str.o lib/util_unistr.o \
 		lib/util_file.o \
 		lib/util_sock.o lib/util_sec.o lib/util_array.o \
 		lib/talloc.o \
-		lib/fnmatch.o \
 		lib/ms_fnmatch.o \
 		lib/interfaces.o \
 		tdb/tdb.o tdb/tdbutil.o

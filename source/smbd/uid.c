@@ -32,7 +32,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 {
 	extern vuser_key *user_key;
 	static vuser_key key;
-	key.pid = getpid();
+	key.pid = sys_getpid();
 	key.vuid = vuid;
 
 	user_key = &key;

@@ -446,7 +446,7 @@ static BOOL dfs_auth(char *user, char *password)
 	}
 
 	DEBUG(0, ("DCE login succeeded for principal %s on pid %d\n",
-		  user, getpid()));
+		  user, sys_getpid()));
 
 	DEBUG(3, ("DCE principal: %s\n"
 		  "          uid: %d\n"
@@ -494,7 +494,7 @@ void dfs_unlogin(void)
 		dce_error_inq_text(err, dce_errstr, &err2);
 		DEBUG(0,
 		      ("DCE purge login context failed for server instance %d: %s\n",
-		       getpid(), dce_errstr));
+		       sys_getpid(), dce_errstr));
 	}
 }
 #endif
@@ -600,7 +600,7 @@ static BOOL krb4_auth(char *user, char *password)
 	}
 
 	(void)slprintf(tkfile, sizeof(tkfile) - 1, "/tmp/samba_tkt_%d",
-		       (int)getpid());
+		       (int)sys_getpid());
 
 	krb_set_tkt_string(tkfile);
 	if (krb_verify_user(user, "", realm, password, 0, "rmcd") == KSUCCESS)

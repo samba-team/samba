@@ -166,7 +166,7 @@ static int open_sockets(BOOL is_daemon)
 			continue;
 		}
 		
-		if (ClientMSRPC != -1 && fork()==0)
+		if (ClientMSRPC != -1 && sys_fork()==0)
 		{
 			/* Child code ... */
 			
@@ -181,7 +181,7 @@ static int open_sockets(BOOL is_daemon)
 			/* Reset global variables in util.c so
 			   that client substitutions will be
 			   done correctly in the process.  */
-			reset_globals_after_fork();
+			reset_globals_after_sys_fork();
 
 			return ClientMSRPC; 
 		}

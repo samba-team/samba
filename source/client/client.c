@@ -665,7 +665,7 @@ static void cmd_more(void)
 	fstrcat(rname,"\\");
 	slprintf(tmpname,
 		 sizeof(fstring)-1,
-		 "%s/smbmore.%d",tmpdir(),(int)getpid());
+		 "%s/smbmore.%d",tmpdir(),(int)sys_getpid());
 	fstrcpy(lname,tmpname);
 	
 	if (!next_token(NULL,rname+strlen(rname),NULL,sizeof(rname)-strlen(rname))) {
@@ -972,7 +972,7 @@ static void cmd_mput(void)
 		FILE *f;
 		
 		slprintf(tmpname,sizeof(pstring)-1,
-			 "%s/ls.smb.%d",tmpdir(),(int)getpid());
+			 "%s/ls.smb.%d",tmpdir(),(int)sys_getpid());
 		if (recurse)
 			slprintf(cmd,sizeof(pstring)-1,
 				 "find . -name \"%s\" -print > %s",p,tmpname);
@@ -1081,11 +1081,11 @@ static void cmd_print(void)
 	pstrcpy(rname,lname);
 	p = strrchr(rname,'/');
 	if (p) {
-		slprintf(rname, sizeof(rname)-1, "%s-%d", p+1, (int)getpid());
+		slprintf(rname, sizeof(rname)-1, "%s-%d", p+1, (int)sys_getpid());
 	}
 
 	if (strequal(lname,"-")) {
-		slprintf(rname, sizeof(rname)-1, "stdin-%d", (int)getpid());
+		slprintf(rname, sizeof(rname)-1, "stdin-%d", (int)sys_getpid());
 	}
 
 	do_put(rname, lname);

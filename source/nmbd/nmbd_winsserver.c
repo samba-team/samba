@@ -1592,14 +1592,14 @@ void wins_write_database(BOOL background)
      doesn't block while this is done */
   if (background) {
 	  CatchChild();
-	  if (fork()) {
+	  if (sys_fork()) {
 		  return;
 	  }
   }
 
   slprintf(fname,sizeof(fname),"%s/%s", lp_lockdir(), WINS_LIST);
   all_string_sub(fname,"//", "/", 0);
-  slprintf(fnamenew,sizeof(fnamenew),"%s.%u", fname, (unsigned int)getpid());
+  slprintf(fnamenew,sizeof(fnamenew),"%s.%u", fname, (unsigned int)sys_getpid());
 
   if((fp = sys_fopen(fnamenew,"w")) == NULL)
   {

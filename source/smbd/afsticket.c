@@ -81,7 +81,7 @@ pid_t get_renewed_ticket(connection_struct* conn)
 
 	sleep_time = get_afs_ticket_from_srvtab();
 
-	if ((child = fork()) == 0)
+	if ((child = sys_fork()) == 0)
 	{
 		/* Forking needed in order to use alarm */
 	  for (;;){

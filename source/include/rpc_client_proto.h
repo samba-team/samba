@@ -188,21 +188,21 @@ BOOL cli_net_sam_sync(const char *srv_name, const char *cli_hostname,
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
-BOOL create_rpc_request(prs_struct * rhdr, uint16 vuid,
+BOOL create_rpc_request(prs_struct *rhdr, uint16 vuid,
 			uint8 op_num, uint8 flags, int data_len, int auth_len);
 BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
-		      prs_struct * data, prs_struct * rdata);
+		      prs_struct *data, prs_struct *rdata);
 BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
-				struct cli_state *cli, uint16 fnum,
-				prs_struct * data, prs_struct * rdata,
-				int max_send_pdu);
+				struct cli_state *cli,
+				uint16 fnum, prs_struct *data,
+				prs_struct *rdata, int max_send_pdu);
 BOOL cli_send_and_rcv_pdu_rw(struct cli_connection *con,
-			     struct cli_state *cli, uint16 fnum,
-			     prs_struct * data, prs_struct * rdata,
-			     int max_send_pdu);
+			     struct cli_state *cli,
+			     uint16 fnum, prs_struct *data,
+			     prs_struct *rdata, int max_send_pdu);
 BOOL cli_send_and_rcv_pdu(struct cli_connection *con,
 			  struct cli_state *cli, uint16 fnum,
-			  prs_struct * data, prs_struct * rdata,
+			  prs_struct *data, prs_struct *rdata,
 			  int max_send_pdu);
 BOOL cli_rcv_pdu(struct cli_connection *con,
 		 struct cli_state *cli, uint16 fnum, prs_struct *rdata);
@@ -210,8 +210,8 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 		   const char *pipe_name,
 		   RPC_IFACE * abstract, RPC_IFACE * transfer);
 void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
-BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name,
-			 uint16 * fnum);
+BOOL cli_nt_session_open(struct cli_state *cli,
+			 const char *pipe_name, uint16 *fnum);
 void cli_nt_session_close(struct cli_state *cli, uint16 fnum);
 
 /*The following definitions come from  rpc_client/cli_pipe_netsec.c  */

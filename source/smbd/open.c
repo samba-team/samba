@@ -342,7 +342,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
 
 	{
 		int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-										(share->pid == getpid()),is_executable(fname));
+										(share->pid == sys_getpid()),is_executable(fname));
 
 		if ((access_allowed == AFAIL) ||
 			(!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
@@ -946,7 +946,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   share_mode_entry *old_shares = 0;
   int num_share_modes;
   SMB_STRUCT_STAT sbuf;
-  pid_t pid = getpid();
+  pid_t pid = sys_getpid();
   SMB_DEV_T dev;
   SMB_INO_T inode;
 
@@ -1074,7 +1074,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
      deleting/renaming? */
   /* 
    * If we got here then either there were no share modes or
-   * all share modes were DENY_DOS and the pid == getpid() or
+   * all share modes were DENY_DOS and the pid == sys_getpid() or
    * delete access was requested and all share modes had the
    * ALLOW_SHARE_DELETE bit set (takes precedence over other
    * share modes).

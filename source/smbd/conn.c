@@ -110,7 +110,7 @@ connection_struct *conn_new(void)
 
 	ZERO_STRUCTP(conn);
 	conn->cnum = i;
-	conn->smbd_pid = getpid();
+	conn->smbd_pid = sys_getpid();
 
 	bitmap_set(bmap, i);
 

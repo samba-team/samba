@@ -697,5 +697,5 @@
 
  int fork(void)
 {
-	return smbw_fork();
+	return smbw_sys_fork();
 }

@@ -162,7 +162,7 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 	fstring fname;
 	int fnum;
 	int fnum2;
-	int pid2, pid = getpid();
+	int pid2, pid = sys_getpid();
 	int i, j;
 	char buf[1024];
 
@@ -262,7 +262,7 @@ static void run_torture(int numops)
 	{
 		cli_sockopt(&cli, sockops);
 
-		DEBUG(0,("pid %d OK\n", getpid()));
+		DEBUG(0,("pid %d OK\n", sys_getpid()));
 
 		rw_torture(&cli, numops);
 
@@ -270,7 +270,7 @@ static void run_torture(int numops)
 	}
 	else
 	{
-		DEBUG(0,("pid %d failed\n", getpid()));
+		DEBUG(0,("pid %d failed\n", sys_getpid()));
 	}
 
 }
@@ -695,7 +695,7 @@ static void run_maxfidtest(int n)
 	int fnum;
 	int retries=4;
 
-	srandom(getpid());
+	srandom(sys_getpid());
 
 	while (open_connection(&cli) != 0 && retries--) msleep(random() % 2000);
 
@@ -710,7 +710,7 @@ static void run_maxfidtest(int n)
 
 	fnum = 0;
 	while (1) {
-		slprintf(fname,sizeof(fname)-1,template, fnum,getpid());
+		slprintf(fname,sizeof(fname)-1,template, fnum,sys_getpid());
 		if (cli_open(&cli, fname, 
 			     O_RDWR|O_CREAT|O_TRUNC, DENY_NONE) ==
 		    -1) {
@@ -725,7 +725,7 @@ static void run_maxfidtest(int n)
 	DEBUG(0,("cleaning up\n"));
 	while (fnum > n) {
 		fnum--;
-		slprintf(fname,sizeof(fname)-1,template, fnum,getpid());
+		slprintf(fname,sizeof(fname)-1,template, fnum,sys_getpid());
 		if (cli_unlink(&cli, fname)) {
 			DEBUG(0,("unlink of %s failed (%s)\n", 
 			       fname, cli_errstr(&cli)));
@@ -1095,9 +1095,9 @@ static void create_procs(int nprocs, int numops, void (*fn)(int ))
 
 	for (i=0;i<nprocs;i++)
 	{
-		if (fork() == 0)
+		if (sys_fork() == 0)
 		{
-			int mypid = getpid();
+			int mypid = sys_getpid();
 			sys_srandom(mypid ^ time(NULL));
 
 			if (!dbg_interactive())

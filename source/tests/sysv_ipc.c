@@ -50,7 +50,7 @@ main()
 		if (shmctl(id, IPC_RMID, 0) != 0) exit(1);
 	}
 
-	if (fork() == 0) {
+	if (sys_fork() == 0) {
 		/* uggh - need locking */
 		sleep(2);
 

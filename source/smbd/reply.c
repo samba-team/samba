@@ -537,6 +537,11 @@ int reply_sesssetup_and_X(connection_struct * conn, char *inbuf, char *outbuf,
 		memcpy(smb_apasswd, smb_buf(inbuf), smb_apasslen);
 		smb_apasswd[smb_apasslen] = 0;
 		pstrcpy(user, smb_buf(inbuf) + smb_apasslen);
+		/*
+		 * Incoming user is in DOS codepage format. Convert
+		 * to UNIX.
+		 */
+		dos_to_unix(user, True);
 
 		if (!doencrypt && (lp_security() != SEC_SERVER))
 		{
@@ -755,12 +760,6 @@ user %s attempted down-level SMB connection\n",
 	strlower(user);
 
 	/*
-	 * map from DOS codepage format to Unix
-	 */
-
-	dos_to_unix(user, True);
-
-	/*
 	 * In share level security, only overwrite sesssetup_use if
 	 * it's a non null-session share. Helps keep %U and %G
 	 * working.
@@ -911,7 +910,7 @@ user %s attempted down-level SMB connection\n",
 	/* register the name and uid as being validated, so further connections
 	   to a uid can get through without a password, on the same VC */
 	sess_vuid =
-		register_vuid(getpid(), uid, gid, user, sesssetup_user, guest,
+		register_vuid(sys_getpid(), uid, gid, user, sesssetup_user, guest,
 			      &info3);
 
 	SSVAL(outbuf, smb_uid, sess_vuid);
@@ -1618,7 +1617,7 @@ int reply_ulogoffX(connection_struct * conn, char *inbuf, char *outbuf,
 	uint16 vuid = SVAL(inbuf, smb_uid);
 	vuser_key key;
 	user_struct *vuser = NULL;
-	key.pid = conn != NULL ? conn->smbd_pid : getpid();
+	key.pid = conn != NULL ? conn->smbd_pid : sys_getpid();
 	key.vuid = vuid;
 	vuser = get_valid_user_struct(&key);
 

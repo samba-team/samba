@@ -847,7 +847,7 @@ static BOOL del_smbfilepwd_entry(uint32 user_rid)
 
   DEBUG(0, ("del_smbfilepwd_entry: user: %s\n", name));
 
-  slprintf(pfile2, sizeof(pfile2)-1, "%s.%u", pfile, (unsigned)getpid() );
+  slprintf(pfile2, sizeof(pfile2)-1, "%s.%u", pfile, (unsigned)sys_getpid() );
 
   /*
    * Open the smbpassword file - for update. It needs to be update

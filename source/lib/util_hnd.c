@@ -80,7 +80,7 @@ static void create_pol_hnd(POLICY_HND *hnd)
 	hnd->uuid.time_low = ntt.low;
 	hnd->uuid.time_mid = (ntt.high & 0xffff);
 	hnd->uuid.time_hi_and_version = ((ntt.high >> 16) & 0xffff);
-	SIVAL(hnd->uuid.remaining, 0, getpid());
+	SIVAL(hnd->uuid.remaining, 0, sys_getpid());
 	SIVAL(hnd->uuid.remaining, 4, pol_hnd_low);
 }
 
@@ -255,7 +255,7 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 	else
 	{
 		p->key.vuid = UID_FIELD_INVALID;
-		p->key.pid = getpid();
+		p->key.pid = sys_getpid();
 	}
 
 

@@ -205,7 +205,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
 
   if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
     share_mode_entry *share_list = NULL;
-    pid_t pid = getpid();
+    pid_t pid = sys_getpid();
     int token = -1;
     int num_share_modes = 0;
     int i;

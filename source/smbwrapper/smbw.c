@@ -97,7 +97,7 @@ void smbw_init(void)
 		DEBUG(2,("SMBW_PREFIX is %s\n", smbw_prefix));
 	}
 
-	slprintf(line,sizeof(line)-1,"PWD_%d", getpid());
+	slprintf(line,sizeof(line)-1,"PWD_%d", sys_getpid());
 	
 	p = smbw_getshared(line);
 	if (!p) {
@@ -1358,9 +1358,9 @@ int smbw_fork(void)
 	struct smbw_file *file, *next_file;
 	struct smbw_server *srv, *next_srv;
 
-	if (pipe(p)) return real_fork();
+	if (pipe(p)) return real_sys_fork();
 
-	child = real_fork();
+	child = real_sys_fork();
 
 	if (child) {
 		/* block the parent for a moment until the sockets are
@@ -1385,7 +1385,7 @@ int smbw_fork(void)
 		smbw_srv_close(srv);
 	}
 
-	slprintf(line,sizeof(line)-1,"PWD_%d", getpid());
+	slprintf(line,sizeof(line)-1,"PWD_%d", sys_getpid());
 	smbw_setshared(line,smbw_cwd);
 
 	/* unblock the parent */

@@ -317,7 +317,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 
 	if (assoc_gid == 0)
 	{
-		assoc_gid = getpid();
+		assoc_gid = sys_getpid();
 	}
 
 	if (l->auth != NULL)

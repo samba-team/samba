@@ -237,7 +237,7 @@ void start_msrpc_agent(char *pipe_name)
 		0
 	};
 
-	if (fork() == 0)
+	if (sys_fork() == 0)
 	{
 		/* child */
 		va.id = pipe_name;

@@ -32,7 +32,7 @@ void start_smbd(void)
 
 	if (geteuid() != 0) return;
 
-	if (fork()) {
+	if (sys_fork()) {
 		sleep(SLEEP_TIME);
 		return;
 	}
@@ -53,7 +53,7 @@ void start_nmbd(void)
 
 	if (geteuid() != 0) return;
 
-	if (fork()) {
+	if (sys_fork()) {
 		sleep(SLEEP_TIME);
 		return;
 	}

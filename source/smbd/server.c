@@ -270,7 +270,7 @@ max can be %d\n",
 				continue;
 			}
 			
-			if (smbd_server_fd() != -1 && fork()==0) {
+			if (smbd_server_fd() != -1 && sys_fork()==0) {
 				/* Child code ... */
 				
 				/* close the listening socket(s) */
@@ -288,7 +288,7 @@ max can be %d\n",
 				/* Reset global variables in util.c so
 				   that client substitutions will be
 				   done correctly in the process.  */
-				reset_globals_after_fork();
+				reset_globals_after_sys_fork();
 
                 /*
                  * Ensure this child has kernel oplock
@@ -768,7 +768,7 @@ static void usage(char *pname)
 		exit(1);
 
 	/*
-	 * Note that this call should be done after the fork() call
+	 * Note that this call should be done after the sys_fork() call
 	 * in open_sockets(), as some versions of the locking shared
 	 * memory code register openers in a flat file.
 	 */ 
@@ -776,12 +776,12 @@ static void usage(char *pname)
 	if (!locking_init(0))
 		exit(1);
 
-	if(!pwdb_initialise(True))
-		exit(1);
-
 	if (!print_backend_init()) {
 		exit(1);
 	}
+
+	if(!pwdb_initialise(True))
+		exit(1);
 
 	/* possibly reload the services file. */
 	reload_services(True);

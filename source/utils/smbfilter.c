@@ -188,7 +188,7 @@ static void start_filter(char *desthost)
 		if (num > 0) {
 			c = accept(s, &addr, &in_addrlen);
 			if (c != -1) {
-				if (fork() == 0) {
+				if (sys_fork() == 0) {
 					close(s);
 					filter_child(c, dest_ip);
 					exit(0);

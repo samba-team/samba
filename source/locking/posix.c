@@ -612,6 +612,124 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 }
 
 /****************************************************************************
+ Pathetically try and map a 64 bit lock offset into 31 bits. I hate Windows :-).
+****************************************************************************/
+
+static uint32 map_lock_offset(uint32 high, uint32 low)
+{
+	unsigned int i;
+	uint32 mask = 0;
+	uint32 highcopy = high;
+
+	/*
+	 * Try and find out how many significant bits there are in high.
+	 */
+
+	for(i = 0; highcopy; i++)
+		highcopy >>= 1;
+
+	/*
+	 * We use 31 bits not 32 here as POSIX
+	 * lock offsets may not be negative.
+	 */
+
+	mask = (~0) << (31 - i);
+
+	if(low & mask)
+		return 0; /* Fail. */
+
+	high <<= (31 - i);
+
+	return (high|low);
+}
+
+/****************************************************************************
+ Actual function that does POSIX locks. Copes with 64 -> 32 bit cruft and
+ broken NFS implementations.
+****************************************************************************/
+
+static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+{
+	int ret;
+	struct connection_struct *conn = fsp->conn;
+
+#if defined(LARGE_SMB_OFF_T)
+	/*
+	 * In the 64 bit locking case we store the original
+	 * values in case we have to map to a 32 bit lock on
+	 * a filesystem that doesn't support 64 bit locks.
+	 */
+	SMB_OFF_T orig_offset = offset;
+	SMB_OFF_T orig_count = count;
+#endif /* LARGE_SMB_OFF_T */
+
+	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fd,op,(double)offset,(double)count,type));
+
+	ret = conn->vfs_ops.lock(fsp->fd,op,offset,count,type);
+
+	if (!ret && (errno == EFBIG)) {
+		if( DEBUGLVL( 0 )) {
+			dbgtext("posix_fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n", (double)offset,(double)count);
+			dbgtext("a 'file too large' error. This can happen when using 64 bit lock offsets\n");
+			dbgtext("on 32 bit NFS mounted file systems. Retrying with 32 bit truncated length.\n");
+		}
+		/* 32 bit NFS file system, retry with smaller offset */
+		errno = 0;
+		count &= 0x7fffffff;
+		ret = conn->vfs_ops.lock(fsp->fd,op,offset,count,type);
+	}
+
+	/* A lock query - just return. */
+	if (op == SMB_F_GETLK)
+		return ret;
+
+	/* A lock set or unset. */
+	if (!ret) {
+		DEBUG(3,("posix_fcntl_lock: lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
+				(double)offset,(double)count,op,type,strerror(errno)));
+
+		/* Perhaps it doesn't support this sort of locking ? */
+		if (errno == EINVAL) {
+#if defined(LARGE_SMB_OFF_T)
+			{
+				/*
+				 * Ok - if we get here then we have a 64 bit lock request
+				 * that has returned EINVAL. Try and map to 31 bits for offset
+				 * and length and try again. This may happen if a filesystem
+				 * doesn't support 64 bit offsets (efs/ufs) although the underlying
+				 * OS does.
+				 */
+				uint32 off_low = (orig_offset & 0xFFFFFFFF);
+				uint32 off_high = ((orig_offset >> 32) & 0xFFFFFFFF);
+
+				count = (orig_count & 0x7FFFFFFF);
+				offset = (SMB_OFF_T)map_lock_offset(off_high, off_low);
+				ret = conn->vfs_ops.lock(fsp->fd,op,offset,count,type);
+				if (!ret) {
+					if (errno == EINVAL) {
+						DEBUG(3,("posix_fcntl_lock: locking not supported? returning True\n"));
+						return(True);
+					}
+					return False;
+				}
+				DEBUG(3,("posix_fcntl_lock: 64 -> 32 bit modified lock call successful\n"));
+				return True;
+			}
+#else /* LARGE_SMB_OFF_T */
+			DEBUG(3,("locking not supported? returning True\n"));
+			return(True);
+#endif /* LARGE_SMB_OFF_T */
+		}
+
+		return(False);
+	}
+
+	DEBUG(8,("posix_fcntl_lock: Lock call successful\n"));
+
+	return(True);
+}
+
+/****************************************************************************
  POSIX function to see if a file region is locked. Returns True if the
  region is locked, False otherwise.
 ****************************************************************************/
@@ -639,7 +757,7 @@ BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_co
 	 * fd. So we don't need to use map_lock_type here.
 	 */ 
 
-	return fcntl_lock(fsp->fd,SMB_F_GETLK,offset,count,posix_lock_type);
+	return posix_fcntl_lock(fsp,SMB_F_GETLK,offset,count,posix_lock_type);
 }
 
 /****************************************************************************
@@ -673,7 +791,7 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 	 * below. JRA.
 	 */
 
-    ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,posix_lock_type);
+    ret = posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type);
 
 	if (ret)
 		add_posix_lock_entry(fsp,offset,count,posix_lock_type);
@@ -992,7 +1110,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 		DEBUG(5,("release_posix_lock: Real unlock: offset = %.0f, count = %.0f\n",
 			(double)offset, (double)count ));
 
-		if (!fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,F_UNLCK))
+		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_UNLCK))
 			ret = False;
 	}
 
@@ -1085,14 +1203,14 @@ BOOL posix_locking_init(void)
 		return True;
 
 	if (!posix_lock_tdb)
-		posix_lock_tdb = tdb_open(NULL, 0, TDB_CLEAR_IF_FIRST,
-   	            O_RDWR|O_CREAT, 0644);
+		posix_lock_tdb = tdb_open(NULL, 0, TDB_INTERNAL,
+					  O_RDWR|O_CREAT, 0644);
     if (!posix_lock_tdb) {
         DEBUG(0,("Failed to open POSIX byte range locking database.\n"));
 		return False;
     }
 	if (!posix_pending_close_tdb)
-		posix_pending_close_tdb = tdb_open(NULL, 0, TDB_CLEAR_IF_FIRST,
+		posix_pending_close_tdb = tdb_open(NULL, 0, TDB_INTERNAL,
    	            O_RDWR|O_CREAT, 0644);
     if (!posix_pending_close_tdb) {
         DEBUG(0,("Failed to open POSIX pending close database.\n"));

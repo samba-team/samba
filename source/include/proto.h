@@ -257,10 +257,6 @@ char *dos_GetWd(char *path);
 
 void fault_setup(void (*fn)(void *));
 
-/*The following definitions come from  lib/fnmatch.c  */
-
-int fnmatch (const char *pattern, const char *string, int flags);
-
 /*The following definitions come from  lib/fsusage.c  */
 
 int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
@@ -491,6 +487,8 @@ DIR *wsys_opendir(const smb_ucs2_t *wfname);
 smb_ucs2_t *wsys_getwd(smb_ucs2_t *s);
 int wsys_chown(const smb_ucs2_t *wfname, uid_t uid, gid_t gid);
 int wsys_chroot(const smb_ucs2_t *wfname);
+pid_t sys_fork(void);
+pid_t sys_getpid(void);
 int sys_popen(const char *command);
 int sys_pclose(int fd);
 
@@ -528,7 +526,6 @@ char *ufc_crypt(char *key,char *salt);
 
 /*The following definitions come from  lib/username.c  */
 
-struct passwd *hashed_getpwnam(const char *name);
 char *uidtoname(uid_t uid);
 int get_unixgroups(const char *user, uid_t uid, gid_t gid, int *p_ngroups,
 		   gid_t ** p_groups);
@@ -589,7 +586,6 @@ char *readdirname(DIR * p);
 BOOL is_in_path(char *name, name_compare_entry * namelist);
 void set_namearray(name_compare_entry ** ppname_array, char *namelist);
 void free_namearray(name_compare_entry * name_array);
-uint32 map_lock_offset(uint32 high, uint32 low);
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
@@ -864,79 +860,6 @@ UNISTR2 *unistr2_dup(const UNISTR2 *name);
 void unistr2_free(UNISTR2 *name);
 int StrCaseCmpW(const UNISTR2 *ws, const UNISTR2 *wt);
 BOOL unistr2equal(const UNISTR2 *s1, const UNISTR2 *s2);
-
-/*The following definitions come from  lib/util_wunistr.c  */
-
-int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate);
-char *dos_unistrn2(uint16 *src, int len);
-char *dos_unistr2(uint16 *src);
-char *dos_unistr2_to_str(UNISTR2 *str);
-char *dos_buffer2_to_str(BUFFER2 *str);
-char *dos_buffer2_to_multistr(BUFFER2 *str);
-size_t dos_struni2(char *dst, const char *src, size_t max_len);
-char *dos_unistr(char *buf);
-void default_unicode_map(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
-BOOL load_unicode_map(const char *codepage, smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
-BOOL load_dos_unicode_map(int codepage);
-BOOL load_unix_unicode_map(const char *unix_char_set);
-smb_ucs2_t *multibyte_to_unicode(smb_ucs2_t *dst, const char *src,
-                                 size_t dst_len, smb_ucs2_t *cp_to_ucs2);
-char *unicode_to_unix(char *dst, const smb_ucs2_t *src, size_t dst_len);
-smb_ucs2_t *unix_to_unicode(smb_ucs2_t *dst, const char *src, size_t dst_len);
-char *unicode_to_dos(char *dst, const smb_ucs2_t *src, size_t dst_len);
-smb_ucs2_t *dos_to_unicode(smb_ucs2_t *dst, const char *src, size_t dst_len);
-size_t strlen_w(const smb_ucs2_t *src);
-smb_ucs2_t *safe_strcpy_w(smb_ucs2_t *dest,const smb_ucs2_t *src, size_t maxlength);
-smb_ucs2_t *safe_strcat_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxlength);
-int strcmp_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2);
-int strncmp_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2, size_t len);
-smb_ucs2_t *strstr_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2);
-smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c);
-smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c);
-smb_ucs2_t *strtok_w(smb_ucs2_t *s1, const smb_ucs2_t *s2);
-smb_ucs2_t *strdup_w(const smb_ucs2_t *s);
-int isupper_w( smb_ucs2_t val);
-int islower_w( smb_ucs2_t val);
-int isdigit_w( smb_ucs2_t val);
-int isxdigit_w( smb_ucs2_t val);
-int isspace_w( smb_ucs2_t val);
-smb_ucs2_t toupper_w( smb_ucs2_t val );
-smb_ucs2_t tolower_w( smb_ucs2_t val );
-void set_first_token_w(smb_ucs2_t *ptr);
-BOOL next_token_w(smb_ucs2_t **ptr, smb_ucs2_t *buff, smb_ucs2_t *sep, size_t bufsize);
-smb_ucs2_t **toktocliplist_w(int *ctok, smb_ucs2_t *sep);
-int StrCaseCmp_w(const smb_ucs2_t *s, const smb_ucs2_t *t);
-int StrnCaseCmp_w(const smb_ucs2_t *s, const smb_ucs2_t *t, size_t n);
-BOOL strequal_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2);
-BOOL strnequal_w(const smb_ucs2_t *s1,const smb_ucs2_t *s2,size_t n);
-BOOL strcsequal_w(const smb_ucs2_t *s1,const smb_ucs2_t *s2);
-void strlower_w(smb_ucs2_t *s);
-void strupper_w(smb_ucs2_t *s);
-void strnorm_w(smb_ucs2_t *s);
-BOOL strisnormal_w(smb_ucs2_t *s);
-void string_replace_w(smb_ucs2_t *s, smb_ucs2_t oldc, smb_ucs2_t newc);
-smb_ucs2_t *skip_string_w(smb_ucs2_t *buf,size_t n);
-size_t str_charnum_w(const smb_ucs2_t *s);
-BOOL trim_string_w(smb_ucs2_t *s,const smb_ucs2_t *front,const smb_ucs2_t *back);
-BOOL strhasupper_w(const smb_ucs2_t *s);
-BOOL strhaslower_w(const smb_ucs2_t *s);
-size_t count_chars_w(const smb_ucs2_t *s,smb_ucs2_t c);
-BOOL str_is_all_w(const smb_ucs2_t *s,smb_ucs2_t c);
-smb_ucs2_t *alpha_strcpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, size_t maxlength);
-smb_ucs2_t *StrnCpy_w(smb_ucs2_t *dest,const smb_ucs2_t *src,size_t n);
-smb_ucs2_t *strncpyn_w(smb_ucs2_t *dest, const smb_ucs2_t *src,size_t n, smb_ucs2_t c);
-size_t strhex_to_str_w(char *p, size_t len, const smb_ucs2_t *strhex);
-BOOL in_list_w(smb_ucs2_t *s,smb_ucs2_t *list,BOOL casesensitive);
-BOOL string_init_w(smb_ucs2_t **dest,const smb_ucs2_t *src);
-void string_free_w(smb_ucs2_t **s);
-BOOL string_set_w(smb_ucs2_t **dest,const smb_ucs2_t *src);
-void string_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,const smb_ucs2_t *insert, size_t len);
-void fstring_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,const smb_ucs2_t *insert);
-void pstring_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,smb_ucs2_t *insert);
-void all_string_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,const smb_ucs2_t *insert, size_t len);
-void split_at_last_component_w(smb_ucs2_t *path, smb_ucs2_t *front, smb_ucs2_t sep, smb_ucs2_t *back);
-smb_ucs2_t *octal_string_w(int i);
-smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length);
 
 /*The following definitions come from  lib/vuser.c  */
 

@@ -323,7 +323,7 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct * l,
 	if (l->auth_validated)
 	{
 		become_root(False);
-		l->key.pid = getpid();
+		l->key.pid = sys_getpid();
 		l->key.vuid =
 			register_vuid(l->key.pid, pw->pw_uid, pw->pw_gid,
 				      unix_user, nt_user, guest, &info3);
