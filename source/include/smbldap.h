@@ -19,6 +19,8 @@
    
 */
 
+#ifdef HAVE_LDAP
+
 #ifndef _SMBLDAP_H
 #define _SMBLDAP_H
 
@@ -100,4 +102,16 @@ extern ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[];
 extern ATTRIB_MAP_ENTRY idpool_attr_list[];
 extern ATTRIB_MAP_ENTRY sidmap_attr_list[];
 
+/* Function declarations -- not included in proto.h so we don't
+   have to worry about LDAP structure types */
+
+const char* get_attr_key2string( ATTRIB_MAP_ENTRY table[], int key );
+char** get_attr_list( ATTRIB_MAP_ENTRY table[] );
+void free_attr_list( char **list );
+BOOL fetch_ldap_pw(char **dn, char** pw);
+void ldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
+
+
 #endif	/* _SMBLDAP_H */
+
+#endif 	/* HAVE_LDAP */
