@@ -116,8 +116,9 @@ gss_wrap_size_limit (
       break;
   default :
 #ifdef HAVE_GSSAPI_CFX
-      ret = wrap_size_cfx(minor_status, context_handle, conf_req_flag,
-			  qop_req, req_output_size, max_input_size, key);
+      ret = _gssapi_wrap_size_cfx(minor_status, context_handle, 
+				  conf_req_flag, qop_req, 
+				  req_output_size, max_input_size, key);
 #else
       *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
       ret = GSS_S_FAILURE;
