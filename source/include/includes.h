@@ -46,6 +46,10 @@
 #endif
 
 
+#if defined(HAVE_RPC_RPC_H)
+#include <rpc/rpc.h>
+#endif
+
 #include <sys/types.h>
 
 #ifdef TIME_WITH_SYS_TIME
@@ -294,22 +298,9 @@
 #include <sys/capability.h>
 #endif
 
-#if defined(HAVE_RPC_RPC_H)
-#include <rpc/rpc.h>
-#endif
-
 #if defined(HAVE_YP_GET_DEFAULT_DOMAIN) && defined(HAVE_SETNETGRENT) && defined(HAVE_ENDNETGRENT) && defined(HAVE_GETNETGRENT)
 #define HAVE_NETGROUP 1
 #endif
-
-#if defined (HAVE_NETGROUP)
-#if defined(HAVE_RPCSVC_YP_PROT_H)
-#include <rpcsvc/yp_prot.h>
-#endif
-#if defined(HAVE_RPCSVC_YPCLNT_H)
-#include <rpcsvc/ypclnt.h>
-#endif
-#endif /* HAVE_NETGROUP */
 
 #ifndef uchar
 #define uchar unsigned char
