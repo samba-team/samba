@@ -107,15 +107,23 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	return True;
 }
 
+static void push_int_littleendian(ASN1_DATA *data, int i)
+{
+	uint8_t lowest = i & 0xFF;
+
+	i = i >> 8;
+	if (i != 0)
+		push_int_littleendian(data, i);
+
+	asn1_write_uint8(data, lowest);
+}
+
 
 /* write an integer */
 BOOL asn1_write_Integer(ASN1_DATA *data, int i)
 {
 	if (!asn1_push_tag(data, ASN1_INTEGER)) return False;
-	do {
-		asn1_write_uint8(data, i);
-		i = i >> 8;
-	} while (i);
+	push_int_littleendian(data, i);
 	return asn1_pop_tag(data);
 }
 
