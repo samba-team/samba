@@ -526,6 +526,24 @@ typedef struct
   char *name;
 } files_struct;
 
+struct mem_buffer
+{
+	char *data;
+	int data_size;
+	int data_used;
+
+	int margin; /* safety margin when reallocing */
+
+	int align; /* alignment of data structures */
+	int data_ptr; /* use this like you would a file pointer */
+};
+
+struct api_struct
+{
+  char *name;
+  uint8 opnum;
+  void (*fn) (int uid, struct mem_buffer*, struct mem_buffer*);
+};
 
 struct uid_cache {
   int entries;

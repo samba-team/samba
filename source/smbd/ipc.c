@@ -27,6 +27,7 @@
    */
 
 #include "includes.h"
+#include "nterr.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES
@@ -134,15 +135,18 @@ static BOOL prefix_ok(char *str,char *prefix)
   send a trans reply
   ****************************************************************************/
 static void send_trans_reply(char *outbuf,char *data,char *param,uint16 *setup,
-			     int ldata,int lparam,int lsetup)
+			     int ldata,int lparam,int lsetup, int max_data_ret)
 {
   int i;
   int this_ldata,this_lparam;
   int tot_data=0,tot_param=0;
   int align;
+  BOOL buffer_too_large = max_data_ret ? ldata > max_data_ret : False;
+
+  if (buffer_too_large) ldata = max_data_ret;
 
   this_lparam = MIN(lparam,max_send - (500+lsetup*SIZEOFWORD)); /* hack */
-  this_ldata = MIN(ldata,max_send - (500+lsetup*SIZEOFWORD+this_lparam));
+  this_ldata  = MIN(ldata,max_send - (500+lsetup*SIZEOFWORD+this_lparam));
 
 #ifdef CONFUSE_NETMONITOR_MSRPC_DECODING
   /* if you don't want Net Monitor to decode your packets, do this!!! */
@@ -152,10 +156,15 @@ static void send_trans_reply(char *outbuf,char *data,char *param,uint16 *setup,
 #endif
 
   set_message(outbuf,10+lsetup,align+this_ldata+this_lparam,True);
-  if (this_lparam)
-    memcpy(smb_buf(outbuf),param,this_lparam);
-  if (this_ldata)
-    memcpy(smb_buf(outbuf)+this_lparam+align,data,this_ldata);
+
+  if (buffer_too_large)
+  {
+    /* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
+    SIVAL(outbuf, smb_rcls, 0x80000000 | NT_STATUS_BUFFER_TOO_SMALL);
+  }
+
+  if (this_lparam) memcpy(smb_buf(outbuf),param,this_lparam);
+  if (this_ldata ) memcpy(smb_buf(outbuf)+this_lparam+align,data,this_ldata);
 
   SSVAL(outbuf,smb_vwv0,lparam);
   SSVAL(outbuf,smb_vwv1,ldata);
@@ -2866,22 +2875,21 @@ static BOOL api_WPrintPortEnum(int cnum,uint16 vuid, char *param,char *data,
 
 static struct
 {
-  char * name;
   char * pipe_clnt_name;
   char * pipe_srv_name;
   int subcommand;
-  BOOL (*fn) ();
+  BOOL (*fn) (int, int, struct mem_buffer*, struct mem_buffer*);
 }
 api_fd_commands [] =
 {
-    { "ntLsarpcTNP" , "lsarpc",   "lsass",   0x26, api_ntLsarpcTNP },
-    { "samrTNP"     , "samr",     "lsass",   0x26, api_samrTNP },
-    { "srvsvcTNP"   , "srvsvc",   "lsass",   0x26, api_srvsvcTNP },
-    { "wkssvcTNP"   , "wkssvc",   "ntsvcs",  0x26, api_wkssvcTNP },
-    { "netlogrpcTNP", "NETLOGON", "lsass",   0x26, api_netlogrpcTNP },
-    { "winregTNP"   , "winreg",   "winreg",  0x26, api_regTNP },
-    { NULL,		      NULL,       NULL,      -1,   (BOOL (*)())api_Unsupported }
-  };
+    { "lsarpc",   "lsass",   0x26, api_ntlsa_rpc },
+    { "samr",     "lsass",   0x26, api_samr_rpc },
+    { "srvsvc",   "lsass",   0x26, api_srvsvc_rpc },
+    { "wkssvc",   "ntsvcs",  0x26, api_wkssvc_rpc },
+    { "NETLOGON", "lsass",   0x26, api_netlog_rpc },
+    { "winreg",   "winreg",  0x26, api_reg_rpc },
+    { NULL,       NULL,      -1,   NULL }
+};
 
 /****************************************************************************
   handle remote api calls delivered to a named pipe already opened.
@@ -2890,138 +2898,177 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 		 	uint16 *setup,char *data,char *params,
 		 	int suwcnt,int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
-  char *rdata = NULL;
-  char *rparam = NULL;
-  int rdata_len = 0;
-  int rparam_len = 0;
+	struct mem_buffer rdata;
+	struct mem_buffer data_buf;
+	char *rparam = NULL;
+	int rparam_len = 0;
 
-  BOOL reply    = False;
-  BOOL bind_req = False;
-  BOOL set_nphs = False;
+	BOOL reply    = False;
+	BOOL bind_req = False;
+	BOOL set_nphs = False;
 
-  int i;
-  int fd;
-  int subcommand;
-  char *pipe_name;
-  
-  DEBUG(5,("api_fd_reply\n"));
-  /* First find out the name of this file. */
-  if (suwcnt != 2)
-    {
-      DEBUG(0,("Unexpected named pipe transaction.\n"));
-      return(-1);
-    }
-  
-  /* Get the file handle and hence the file name. */
-  fd = setup[1];
-  subcommand = setup[0];
-  pipe_name = get_rpc_pipe_hnd_name(fd);
+	int i;
+	int pnum;
+	int subcommand;
+	char *pipe_name;
 
-  if (pipe_name == NULL)
-  {
-    DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", fd));
-  }
+	DEBUG(5,("api_fd_reply\n"));
 
-  DEBUG(3,("Got API command %d on pipe %s (fd %x)",
-            subcommand, pipe_name, fd));
-  DEBUG(3,("(tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d,cnum=%d,vuid=%d)\n",
-	   tdscnt,tpscnt,mdrcnt,mprcnt,cnum,vuid));
-  
-  for (i = 0; api_fd_commands[i].name; i++)
-  {
-    if (strequal(api_fd_commands[i].pipe_clnt_name, pipe_name) &&
-	    api_fd_commands[i].subcommand == subcommand &&
-	    api_fd_commands[i].fn)
-    {
-	  DEBUG(3,("Doing %s\n", api_fd_commands[i].name));
-	  break;
-    }
-  }
-  
-  rdata  = (char *)malloc(1024); if (rdata ) bzero(rdata ,1024);
-  rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
-  
-  /* RPC Pipe command 0x26. */
-  if (data != NULL && api_fd_commands[i].subcommand == 0x26)
-  {
-    RPC_HDR hdr;
+	/* First find out the name of this file. */
+	if (suwcnt != 2)
+	{
+		DEBUG(0,("Unexpected named pipe transaction.\n"));
+		return(-1);
+	}
 
-    /* process the rpc header */
-    char *q = smb_io_rpc_hdr(True, &hdr, data, data, 4, 0);
-    
-	/* bind request received */
-    if ((bind_req = ((q != NULL) && (hdr.pkt_type == RPC_BIND))))
-    {
-      RPC_HDR_RB hdr_rb;
+	/* Get the file handle and hence the file name. */
+	pnum = setup[1];
+	subcommand = setup[0];
+	pipe_name = get_rpc_pipe_hnd_name(pnum);
 
-      /* decode the bind request */
-      char *p = smb_io_rpc_hdr_rb(True, &hdr_rb, q, data, 4, 0);
+	if (pipe_name == NULL)
+	{
+		DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
+	}
 
-      if ((bind_req = (p != NULL)))
-      {
-        RPC_HDR_BA hdr_ba;
-        fstring ack_pipe_name;
+	DEBUG(3,("Got API command %d on pipe %s (pnum %x)",
+	          subcommand, pipe_name, pnum));
+	DEBUG(3,("(tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d,cnum=%d,vuid=%d)\n",
+	          tdscnt,tpscnt,mdrcnt,mprcnt,cnum,vuid));
 
-        /* name has to be \PIPE\xxxxx */
-        strcpy(ack_pipe_name, "\\PIPE\\");
-        strcat(ack_pipe_name, api_fd_commands[i].pipe_srv_name);
+	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++)
+	{
+		if (strequal(api_fd_commands[i].pipe_clnt_name, pipe_name) &&
+		    api_fd_commands[i].subcommand == subcommand &&
+		    api_fd_commands[i].fn != NULL)
+		{
+			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i].pipe_clnt_name));
+			break;
+		}
+	}
 
-        /* make a bind acknowledgement */
-        make_rpc_hdr_ba(&hdr_ba,
-               hdr_rb.bba.max_tsize, hdr_rb.bba.max_rsize, hdr_rb.bba.assoc_gid,
-               ack_pipe_name,
-               0x1, 0x0, 0x0,
-               &(hdr_rb.transfer));
+	buf_create(&data_buf, data, tdscnt, 4, 0);
 
-        p = smb_io_rpc_hdr_ba(False, &hdr_ba, rdata + 0x10, rdata, 4, 0);
+	buf_init(&rdata, 4, SAFETY_MARGIN);
+	buf_alloc(&rdata, 1024);
 
-		rdata_len = PTR_DIFF(p, rdata);
+	rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
 
-        make_rpc_hdr(&hdr, RPC_BINDACK, 0x0, hdr.call_id, rdata_len);
+	/* RPC Pipe command 0x26. */
+	if (data != NULL && api_fd_commands[i].subcommand == 0x26)
+	{
+		RPC_HDR hdr;
 
-        p = smb_io_rpc_hdr(False, &hdr, rdata, rdata, 4, 0);
-        
-        reply = (p != NULL);
-      }
-    }
-  }
+		/* process the rpc header */
+		data_buf.data_ptr = 0;
+		smb_io_rpc_hdr("", True, &hdr, &data_buf, 0);
 
-  /* Set Named Pipe Handle state */
-  if (subcommand == 0x1)
-  {
-    set_nphs = True;
-    reply = api_LsarpcSNPHS(fd, cnum, params);
-  }
+		/* bind request received */
+		if ((bind_req = ((data_buf.data_ptr != 0) && (hdr.pkt_type == RPC_BIND))))
+		{
+			RPC_HDR_RB hdr_rb;
 
-  if (!bind_req && !set_nphs)
-  {
-    DEBUG(10,("calling api_fd_command\n"));
+			/* decode the bind request */
+			smb_io_rpc_hdr_rb("", True, &hdr_rb, &data_buf, 0);
 
-    reply = api_fd_commands[i].fn(cnum,vuid,params,data,mdrcnt,mprcnt,
-			        &rdata,&rparam,&rdata_len,&rparam_len);
-    DEBUG(10,("called api_fd_command\n"));
-  }
+			if ((bind_req = (data_buf.data_ptr != 0)))
+			{
+				int rdata_len = 0;
+				RPC_HDR_BA hdr_ba;
+				fstring ack_pipe_name;
 
-  if (rdata_len > mdrcnt || rparam_len > mprcnt)
-  {
-    reply = api_TooSmall(cnum,vuid,params,data,mdrcnt,mprcnt,
-			   &rdata,&rparam,&rdata_len,&rparam_len);
-  }
-  
-  /* if we get False back then it's actually unsupported */
-  if (!reply)
-  {
-    api_Unsupported(cnum,vuid,params,data,mdrcnt,mprcnt,
-		    &rdata,&rparam,&rdata_len,&rparam_len);
-  }
-  
-  /* now send the reply */
-  send_trans_reply(outbuf,rdata,rparam,NULL,rdata_len,rparam_len,0);
-  
-  if (rdata ) free(rdata );
-  if (rparam) free(rparam);
-  
-  return(-1);
+				/* name has to be \PIPE\xxxxx */
+				strcpy(ack_pipe_name, "\\PIPE\\");
+				strcat(ack_pipe_name, api_fd_commands[i].pipe_srv_name);
+
+				/* make a bind acknowledgement */
+				make_rpc_hdr_ba(&hdr_ba,
+				                hdr_rb.bba.max_tsize, hdr_rb.bba.max_rsize, hdr_rb.bba.assoc_gid,
+				                ack_pipe_name,
+				                0x1, 0x0, 0x0,
+				                &(hdr_rb.transfer));
+
+				/* write out the bind ack first */
+				rdata.data_ptr = 0x10;
+				smb_io_rpc_hdr_ba("", False, &hdr_ba, &rdata, 0);
+
+				rdata_len = rdata.data_ptr;
+
+				/* then do the header, now we know the length */
+				make_rpc_hdr(&hdr, RPC_BINDACK, 0x0, hdr.call_id, rdata_len);
+
+				rdata.data_ptr = 0x0;
+				smb_io_rpc_hdr("", False, &hdr, &rdata, 0);
+
+				reply = True;
+			}
+		}
+	}
+
+	/* Set Named Pipe Handle state */
+	if (subcommand == 0x1)
+	{
+		set_nphs = True;
+		reply = api_LsarpcSNPHS(pnum, cnum, params);
+	}
+
+	if (!bind_req && !set_nphs)
+	{
+		DEBUG(10,("calling api_fd_command\n"));
+
+		/* reset the data pointer because it gets re-processed unnecessarily */
+		data_buf.data_ptr = 0x0;
+
+		if (api_fd_commands[i].fn == NULL)
+		{
+			reply = api_Unsupported(cnum,vuid,params,data,mdrcnt,mprcnt,
+		                       &(rdata.data    ), &rparam,
+		                       &(rdata.data_ptr), &rparam_len);
+		}
+		else
+		{
+			reply = api_fd_commands[i].fn(cnum,vuid, &data_buf, &rdata);
+		}
+
+		DEBUG(10,("called api_fd_command\n"));
+	}
+
+	if (rdata.data_used > mdrcnt)
+	{
+		/* data is too large.  keep it in case we get an SMBreadX on the pipe */
+		write_pipe(pnum, &rdata);
+	}
+	else
+	{
+		write_pipe(pnum, NULL);
+	}
+
+	if (rparam_len > mprcnt)
+	{
+		reply = api_TooSmall(cnum,vuid,params,data,mdrcnt,mprcnt,
+		                       &(rdata.data    ), &rparam,
+		                       &(rdata.data_ptr), &rparam_len);
+	}
+
+	/* if we get False back then it's actually unsupported */
+	if (!reply)
+	{
+		api_Unsupported(cnum,vuid,params,data,mdrcnt,mprcnt,
+		                       &(rdata.data    ), &rparam,
+		                       &(rdata.data_ptr), &rparam_len);
+	}
+
+	/* now send the reply */
+	send_trans_reply(outbuf, rdata.data, rparam, NULL, rdata.data_ptr, rparam_len, 0, mdrcnt);
+
+	if (rdata.data_used <= mdrcnt)
+	{
+		buf_free(&rdata);
+	}
+
+	if (rparam) free(rparam);
+
+	return(-1);
 }
 
 
@@ -3154,7 +3201,7 @@ static int api_reply(int cnum,uint16 vuid,char *outbuf,char *data,char *params,
       
 
   /* now send the reply */
-  send_trans_reply(outbuf,rdata,rparam,NULL,rdata_len,rparam_len,0);
+  send_trans_reply(outbuf,rdata,rparam,NULL,rdata_len,rparam_len,0, 0);
 
   if (rdata)
     free(rdata);

@@ -145,8 +145,12 @@ SamrTestPrivateFunctionsUser
 #define NET_TRUST_DOM_LIST     0x13
 
 /* srvsvc pipe */
-#define NETSERVERGETINFO 0x15
-#define NETSHAREENUM     0x0f
+#define SRV_NETSERVERGETINFO 0x15
+#define SRV_NETSHAREENUM     0x0f
+
+/* wkssvc pipe */
+#define WKS_UNKNOWN_0    0x00
+
 
 /* well-known RIDs - Relative IDs */
 
@@ -215,6 +219,15 @@ typedef struct sid_info
 
 } DOM_SID;
 
+/* DOM_SID2 - security id */
+typedef struct sid_info_2
+{
+	uint32 num_auths; /* length, bytes, including length of len :-) */
+
+	DOM_SID sid;
+
+} DOM_SID2;
+
 /* DOM_SID3 example:
    0x14 0x035b 0x0002 S-1-1
    0x18 0x07ff 0x000f S-1-5-20-DOMAIN_ALIAS_RID_ADMINS
@@ -231,7 +244,7 @@ typedef struct sid_info
 /* DOM_SID3 - security id */
 typedef struct sid_info_3
 {
-	uint16 len; /* length, bytes, including length of len :-) */
+	uint32 len; /* length, bytes, including length of len :-) */
 	uint16 unknown_0;
 	uint16 unknown_1;
 
@@ -288,7 +301,8 @@ typedef struct unistr2_info
 
 } UNISTR2;
 
-/* DOM_SID2 - domain SID structure - SIDs stored in unicode */
+
+/* DOM_STR_SID - domain SID structure - SIDs stored in unicode */
 typedef struct domsid2_info
 {
   uint32 type; /* value is 5 */
@@ -297,7 +311,7 @@ typedef struct domsid2_info
   UNIHDR2 hdr; /* XXXX conflict between hdr and str for length */
   UNISTR  str; /* XXXX conflict between hdr and str for length */
 
-} DOM_SID2;
+} DOM_STR_SID;
 
 /* DOM_RID2 - domain RID structure for ntlsa pipe */
 typedef struct domrid2_info
@@ -474,7 +488,7 @@ typedef struct user_info_15
 
 	uint32 unknown_3; /* 0x00ff ffff */
 
-	uint32 logon_divs; /* 0x0000 00a8 which is 168 which is num hrs in a week */
+	uint16 logon_divs; /* 0x0000 00a8 which is 168 which is num hrs in a week */
 	/* uint8 pad[2] */
 	uint32 ptr_logon_hrs; /* unknown pointer */
 
@@ -599,8 +613,8 @@ typedef struct user_info_3
 	UNISTR2 uni_logon_srv; /* logon server unicode string */
 	UNISTR2 uni_logon_dom; /* logon domain unicode string */
 
-	DOM_SID dom_sid;           /* domain SID */
-	DOM_SID other_sids[LSA_MAX_SIDS]; /* undocumented - domain SIDs */
+	DOM_SID2 dom_sid;           /* domain SID */
+	DOM_SID2 other_sids[LSA_MAX_SIDS]; /* undocumented - domain SIDs */
 
 } USER_INFO_3;
 
@@ -642,7 +656,7 @@ typedef struct rpc_hdr_rr_info
   RPC_HDR hdr;
 
   uint32 alloc_hint;   /* allocation hint - data size (bytes) minus header and tail. */
-  uint16 context_id;   /* 0 - presentation context identifier */
+  uint8  context_id;   /* 0 - presentation context identifier */
   uint8  cancel_count; /* 0 - cancel count */
   uint8  opnum;        /* opnum */
   uint8  reserved;     /* 0 - reserved. */
@@ -721,7 +735,7 @@ typedef struct dom_query_info
   uint32 buffer_dom_name; /* undocumented domain name string buffer pointer */
   uint32 buffer_dom_sid; /* undocumented domain SID string buffer pointer */
   UNISTR2 uni_domain_name; /* domain name (unicode string) */
-  DOM_SID dom_sid; /* domain SID */
+  DOM_SID2 dom_sid; /* domain SID */
 
 } DOM_QUERY;
 
@@ -910,7 +924,7 @@ typedef struct lsa_r_enum_trust_dom_info
 		uint32 num_domains2; /* number of domains */
 		UNIHDR2 hdr_domain_name;
 		UNISTR2 uni_domain_name;
-		DOM_SID other_domain_sid;
+		DOM_SID2 other_domain_sid;
 
     uint32 status; /* return code */
 
@@ -948,7 +962,7 @@ typedef struct dom_ref_info
     UNIHDR2 hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domain unicode string headers */
 
     UNISTR uni_dom_name; /* domain name unicode string */
-    DOM_SID ref_dom[MAX_REF_DOMAINS]; /* referenced domain SIDs */
+    DOM_SID2 ref_dom[MAX_REF_DOMAINS]; /* referenced domain SIDs */
 
 } DOM_R_REF;
 
@@ -962,7 +976,7 @@ typedef struct lsa_q_lookup_sids
     uint32 buffer_dom_sid; /* undocumented domain SID buffer pointer */
     uint32 buffer_dom_name; /* undocumented domain name buffer pointer */
     uint32 buffer_lookup_sids[MAX_LOOKUP_SIDS]; /* undocumented domain SID pointers to be looked up. */
-    DOM_SID dom_sids[MAX_LOOKUP_SIDS]; /* domain SIDs to be looked up. */
+    DOM_SID2 dom_sids[MAX_LOOKUP_SIDS]; /* domain SIDs to be looked up. */
     uint8 undoc[16]; /* completely undocumented 16 bytes */
 
 } LSA_Q_LOOKUP_SIDS;
@@ -976,7 +990,7 @@ typedef struct lsa_r_lookup_sids
     uint32 undoc_buffer; /* undocumented buffer pointer */
     uint32 num_entries2; 
 
-    DOM_SID2 dom_sid[MAX_LOOKUP_SIDS]; /* domain SIDs being looked up */
+    DOM_STR_SID str_sid[MAX_LOOKUP_SIDS]; /* domain SIDs being looked up */
 
     uint32 num_entries3; 
 
@@ -1290,9 +1304,9 @@ SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
 /* SAMR_Q_OPEN_DOMAIN - probably an open secret */
 typedef struct q_samr_open_domain_info
 {
-    POLICY_HND pol;          /* policy handle */
+    POLICY_HND pol;           /* policy handle */
 	uint32 rid;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - a RID? */
-	DOM_SID dom_sid;          /* domain SID */
+	DOM_SID2 dom_sid;         /* domain SID */
 
 } SAMR_Q_OPEN_DOMAIN;
 
@@ -1300,7 +1314,7 @@ typedef struct q_samr_open_domain_info
 /* SAMR_R_OPEN_DOMAIN - probably an open */
 typedef struct r_samr_open_domain_info
 {
-    POLICY_HND pol;       /* policy handle associated with the SID */
+    POLICY_HND pol;        /* policy handle associated with the SID */
 	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_DOMAIN;

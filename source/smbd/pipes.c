@@ -123,6 +123,53 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 
 /****************************************************************************
+  reply to a read and X
+
+  This code is basically stolen from reply_read_and_X with some
+  wrinkles to handle pipes.
+****************************************************************************/
+int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
+{
+  int pnum = get_rpc_pipe_num(inbuf,smb_vwv0);
+  uint32 smb_offs = IVAL(inbuf,smb_vwv3);
+  int smb_maxcnt = SVAL(inbuf,smb_vwv5);
+  int smb_mincnt = SVAL(inbuf,smb_vwv6);
+  int cnum;
+  int nread = -1;
+  char *data;
+  BOOL ok = False;
+
+  cnum = SVAL(inbuf,smb_tid);
+
+/*
+  CHECK_FNUM(fnum,cnum);
+  CHECK_READ(fnum);
+  CHECK_ERROR(fnum);
+*/
+
+  set_message(outbuf,12,0,True);
+  data = smb_buf(outbuf);
+
+  nread = read_pipe(pnum, data, smb_offs, smb_maxcnt);
+
+  ok = True;
+  
+  if (nread < 0)
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  
+  SSVAL(outbuf,smb_vwv5,nread);
+  SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
+  SSVAL(smb_buf(outbuf),-2,nread);
+  
+  DEBUG(3,("%s readX pnum=%04x cnum=%d min=%d max=%d nread=%d\n",
+	timestring(),pnum,cnum,
+	smb_mincnt,smb_maxcnt,nread));
+
+  set_chain_pnum(pnum);
+
+  return chain_reply(inbuf,outbuf,length,bufsize);
+}
+/****************************************************************************
   reply to a close
 ****************************************************************************/
 int reply_pipe_close(char *inbuf,char *outbuf)

@@ -168,6 +168,16 @@ it also defines lots of intermediate macros, just ignore those :-)
 #endif
 
 
+/* now the reverse routines - these are used in nmb packets (mostly) */
+#define SREV(x) ((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
+#define IREV(x) ((SREV(x)<<16) | (SREV((x)>>16)))
+
+#define RSVAL(buf,pos) SREV(SVAL(buf,pos))
+#define RIVAL(buf,pos) IREV(IVAL(buf,pos))
+#define RSSVAL(buf,pos,val) SSVAL(buf,pos,SREV(val))
+#define RSIVAL(buf,pos,val) SIVAL(buf,pos,IREV(val))
+
+
 /* macros for reading / writing arrays */
 
 #define SMBMACRO(macro,buf,pos,val,len,size) \
@@ -192,15 +202,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define PSSVALS(buf,pos,val,len) SSMBMACRO(SSVALS,buf,pos,val,len,2)
 #define PSIVALS(buf,pos,val,len) SSMBMACRO(SIVALS,buf,pos,val,len,4)
 
-
-/* now the reverse routines - these are used in nmb packets (mostly) */
-#define SREV(x) ((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
-#define IREV(x) ((SREV(x)<<16) | (SREV((x)>>16)))
-
-#define RSVAL(buf,pos) SREV(SVAL(buf,pos))
-#define RIVAL(buf,pos) IREV(IVAL(buf,pos))
-#define RSSVAL(buf,pos,val) SSVAL(buf,pos,SREV(val))
-#define RSIVAL(buf,pos,val) SIVAL(buf,pos,IREV(val))
+/* macros for debug printing and reading / writing of data / arrays */
 
 #define DBG_RW_PCVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
 	RW_PCVAL(read,inbuf,outbuf,len) \
