@@ -1746,6 +1746,10 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
 
+	/* if its a win95 server then fail this - win95 totally screws it
+	   up */
+	if (cli->win95) return False;
+
 	param_len = 4;
 
 	memset(param, 0, param_len);
@@ -1768,7 +1772,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		return False;
 	}
 
-	if (!rdata || data_len < 22) {
+	if (!rdata || data_len < 68) {
 		return False;
 	}
 
