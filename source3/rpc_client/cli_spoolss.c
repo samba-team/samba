@@ -1552,11 +1552,11 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	switch(level) {
 	case 1:
 		decode_jobs_1(mem_ctx, r.buffer, r.returned,
-				ctr->job.job_info_1);
+			      &ctr->job.job_info_1);
 		break;
 	case 2:
 		decode_jobs_2(mem_ctx, r.buffer, r.returned,
-				ctr->job.job_info_2);
+			      &ctr->job.job_info_2);
 		break;
 	default:
 		DEBUG(3, ("unsupported info level %d", level));
@@ -1665,10 +1665,10 @@ WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	switch(level) {
 	case 1:
-		decode_jobs_1(mem_ctx, r.buffer, 1, ctr->job.job_info_1);
+		decode_jobs_1(mem_ctx, r.buffer, 1, &ctr->job.job_info_1);
 		break;
 	case 2:
-		decode_jobs_2(mem_ctx, r.buffer, 1, ctr->job.job_info_2);
+		decode_jobs_2(mem_ctx, r.buffer, 1, &ctr->job.job_info_2);
 		break;
 	default:
 		DEBUG(3, ("unsupported info level %d", level));
@@ -2312,6 +2312,49 @@ WERROR cli_spoolss_deleteprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Unmarshall response */
 
 	if (!spoolss_io_r_deleteprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+WERROR cli_spoolss_deleteprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				       POLICY_HND *hnd, char *key, char *value)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_DELETEPRINTERDATAEX q;
+	SPOOL_R_DELETEPRINTERDATAEX r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_deleteprinterdataex(&q, hnd, key, value);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_deleteprinterdataex("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEPRINTERDATAEX, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_deleteprinterdataex("", &r, &rbuf, 0))
 		goto done;
 	
 	result = r.status;
