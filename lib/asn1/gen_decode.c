@@ -65,7 +65,7 @@ decode_type (const char *name, const Type *t)
 	    char *s;
 	    asprintf(&s, "(int*)%s", name);
 	    if(s == NULL)
-		return ENOMEM;
+		errx (1, "out of memory");
 	    decode_primitive ("integer", s);
 	    free(s);
 	}
