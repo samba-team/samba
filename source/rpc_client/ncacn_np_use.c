@@ -267,25 +267,6 @@ struct ncacn_np *ncacn_np_initialise(struct ncacn_np *msrpc,
 	msrpc->fnum = -1;
 	msrpc->initialised = 1;
 
-	if (key != NULL)
-	{
-		msrpc->smb->nt.key = *key;
-	}
-	else
-	{
-		NET_USER_INFO_3 usr;
-		uid_t uid = getuid();
-		gid_t gid = getgid();
-		char *name = uidtoname(uid);
-
-		ZERO_STRUCT(usr);
-
-		msrpc->smb->nt.key.pid = getpid();
-		msrpc->smb->nt.key.vuid = register_vuid(msrpc->smb->nt.key.pid,
-						   uid, gid,
-						   name, name, False, &usr);
-	}
-
 	return msrpc;
 }
 
@@ -339,7 +320,7 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 	}
 
 	/* reuse an existing connection requested, and one was not found */
-	if (redir)
+	if (reuse)
 	{
 		DEBUG(0,
 		      ("ncacn_np_use_add: reuse requested, but one not found\n"));
@@ -361,6 +342,25 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 		cli->cli = NULL;
 		ncacn_np_use_free(cli);
 		return NULL;
+	}
+
+	if (key != NULL)
+	{
+		cli->cli->smb->nt.key = *key;
+	}
+	else
+	{
+		NET_USER_INFO_3 usr;
+		uid_t uid = getuid();
+		gid_t gid = getgid();
+		char *name = uidtoname(uid);
+
+		ZERO_STRUCT(usr);
+
+		cli->cli->smb->nt.key.pid = getpid();
+		cli->cli->smb->nt.key.vuid =
+			register_vuid(cli->cli->smb->nt.key.pid, uid, gid,
+				      name, name, False, &usr);
 	}
 
 	add_ncacn_np_to_array(&num_msrpcs, &msrpcs, cli);
