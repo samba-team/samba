@@ -375,7 +375,7 @@ void cli_close_connection(struct cli_state *cli)
 	 * later.  This tree disconnect forces the peer to clean up, since the
 	 * connection will be going away.
 	 */
-	if ( cli->cnum != -1 )
+	if ( cli->cnum != (uint16)-1 )
 		cli_tdis(cli);
         
 	cli_nt_session_close(cli);
