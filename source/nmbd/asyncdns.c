@@ -162,13 +162,16 @@ void run_dns_queue(void)
 {
 	struct query_record r;
 	struct packet_struct *p, *p2;
+	int size;
 
 	if (fd_in == -1)
 		return;
 
-	if (read_data(fd_in, (char *)&r, sizeof(r)) != sizeof(r)) {
-		DEBUG(0,("Incomplete DNS answer from child!\n"));
-		fd_in = -1;
+	if ((size=read_data(fd_in, (char *)&r, sizeof(r))) != sizeof(r)) {
+		if (size) {
+			DEBUG(0,("Incomplete DNS answer from child!\n"));
+			fd_in = -1;
+		}
 		return;
 	}
 
