@@ -1849,8 +1849,7 @@ BOOL listen_for_packets(BOOL run_election)
 					  DEBUG(7,("discarding nmb packet sent to broadcast socket from %s:%d\n",
 						   inet_ntoa(packet->ip),packet->port));	  
 					  free_packet(packet);
-				  } else if ((ip_equal(loopback_ip, packet->ip) || 
-					      ismyip(packet->ip)) && packet->port == global_nmb_port) {
+				  } else if (ip_equal(loopback_ip, packet->ip) && packet->port == global_nmb_port) {
 					  DEBUG(7,("discarding own packet from %s:%d\n",
 						   inet_ntoa(packet->ip),packet->port));	  
 					  free_packet(packet);
