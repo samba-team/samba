@@ -1265,21 +1265,21 @@ an error packet of type %x\n",
   len = SVAL(buf,smb_vwv11);
   buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
 
+  if (len <= 0)
+    return;
+
+  if (buf2 + len > buf + sizeof(dgram->data)) {
+    DEBUG(2,("process_dgram: datagram from %s to %s IP %s for %s %d len=%d too long.\n",
+		nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
+		inet_ntoa(p->ip), smb_buf(buf),len));
+	len = (buf + sizeof(dgram->data)) - buf;
+  }
+
   DEBUG(4,("process_dgram: datagram from %s to %s IP %s for %s of type %d len=%d\n",
 	   nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
 	   inet_ntoa(p->ip), smb_buf(buf),CVAL(buf2,0),len));
 
  
-  if (len <= 0)
-    return;
-
-  if (buf2 + len > buf + sizeof(dgram->data)) {
-    DEBUG(2,("process_dgram: datagram from %s to %s IP %s for %s of type %d len=%d too long.\n",
-		nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
-		inet_ntoa(p->ip), smb_buf(buf),CVAL(buf2,0),len));
-	len = (buf + sizeof(dgram->data)) - buf;
-  }
-
   /* Datagram packet received for the browser mailslot */
   if (strequal(smb_buf(buf),BROWSE_MAILSLOT))
   {
