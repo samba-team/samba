@@ -136,7 +136,7 @@ ftpd_popen(char *program, char *type, int do_stderr, int no_glob)
 
 	gargv[0] = (char*)ftp_rooted(argv[0]);
 	/* glob each piece */
-	for (gargc = argc = 1; argv[argc] && garc < MAXGLOBS - 1; argc++) {
+	for (gargc = argc = 1; argv[argc] && gargc < MAXGLOBS - 1; argc++) {
 		glob_t gl;
 		int flags = GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE;
 
