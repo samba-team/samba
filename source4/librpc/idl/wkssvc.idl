@@ -85,6 +85,7 @@
 		[case(101)] wkssvc_NetWkstaInfo101 *info101;
 		[case(102)] wkssvc_NetWkstaInfo102 *info102;
 		[case(502)] wkssvc_NetWkstaInfo502 *info502;
+		[default] ;
 	} wkssvc_NetWkstaInfo;
 
 	WERROR wkssvc_NetWkstaGetInfo(
