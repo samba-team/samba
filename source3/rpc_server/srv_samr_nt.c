@@ -2098,16 +2098,27 @@ NTSTATUS _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u
 
 NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_LOOKUP_DOMAIN *r_u)
 {
-    r_u->status = NT_STATUS_OK;
+	fstring domain_name;
+	DOM_SID sid;
 
-    if (!find_policy_by_hnd(p, &q_u->connect_pol, NULL))
-        return NT_STATUS_INVALID_HANDLE;
+	r_u->status = NT_STATUS_OK;
 
-    /* assume the domain name sent is our global_myname and
-       send global_sam_sid */
-    init_samr_r_lookup_domain(r_u, &global_sam_sid, r_u->status);
+	if (!find_policy_by_hnd(p, &q_u->connect_pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
 
-    return r_u->status;
+	rpcstr_pull(domain_name, q_u->uni_domain.buffer, sizeof(domain_name), q_u->uni_domain.uni_str_len*2, 0);
+
+	ZERO_STRUCT(sid);
+
+	if (!secrets_fetch_domain_sid(domain_name, &sid)) {
+		r_u->status = NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	DEBUG(2,("Returning domain sid for domain %s -> %s\n", domain_name, sid_string_static(&sid)));
+
+	init_samr_r_lookup_domain(r_u, &sid, r_u->status);
+
+	return r_u->status;
 }
 
 /******************************************************************
@@ -2156,10 +2167,21 @@ NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_EN
 {
 	uint32 num_entries = 2;
 	fstring dom[2];
+	char *name;
 
 	r_u->status = NT_STATUS_OK;
 
-	fstrcpy(dom[0],global_myworkgroup);
+	switch (lp_server_role()) {
+	case ROLE_DOMAIN_PDC:
+	case ROLE_DOMAIN_BDC:
+		name = global_myworkgroup;
+		break;
+	default:
+		name = global_myname;
+	}
+
+	fstrcpy(dom[0],name);
+	strupper(dom[0]);
 	fstrcpy(dom[1],"Builtin");
 
 	if (!make_enum_domains(p->mem_ctx, &r_u->sam, &r_u->uni_dom_name, num_entries, dom))
