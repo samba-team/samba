@@ -179,6 +179,8 @@ LIBSAMBA_OBJ = $(PARAM_OBJ) $(LIB_OBJ)
 LIBNMB_OBJ = libsmb/namequery.o libsmb/nmblib.o libsmb/unexpected.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/clidomain.o \
+	libsmb/clifile.o libsmb/cliprint.o libsmb/clierror.o \
+	libsmb/climessage.o libsmb/cliconnect.o \
 	libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
 	libsmb/smberr.o libsmb/credentials.o \
 	libsmb/pwd_cache.o  lib/util_hnd.o \
@@ -686,8 +688,7 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(LIBSMB_OBJ) $(SMBWRAPPER_OBJ) \
 		$(GROUPDB_OBJ) $(PASSDB_OBJ) $(SAMPASSDB_OBJ) \
 		$(SMBPASSWD_OBJ) $(SIDDB_OBJ) \
-		$(RPC_SRVUTIL_OBJ) \
-		$(RPC_PARSE_OBJ2)
+		$(RPC_SRVUTIL_OBJ)
 
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)

@@ -29,6 +29,8 @@
  * Debugging code.  See also debug.c
  */
 
+extern int DEBUGLEVEL;
+
 /* mkproto.awk has trouble with ifdef'd function definitions (it ignores
  * the #ifdef directive and will read both definitions, thus creating two
  * diffferent prototype declarations), so we must do these by hand.

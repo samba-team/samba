@@ -333,17 +333,6 @@ void MD5Update(struct MD5Context *ctx, uchar const *buf, unsigned len);
 void MD5Final(uchar digest[16], struct MD5Context *ctx);
 void MD5Transform(uint32 buf[4], const uchar inext[64]);
 
-/*The following definitions come from  lib/msrpc-client.c  */
-
-BOOL receive_msrpc(int fd, prs_struct * data, unsigned int timeout);
-BOOL msrpc_send(int fd, prs_struct * ps);
-BOOL msrpc_receive(int fd, prs_struct * ps);
-struct msrpc_local *ncalrpc_l_initialise(struct msrpc_local *msrpc,
-					 const vuser_key * key);
-void ncalrpc_l_shutdown(struct msrpc_local *msrpc);
-BOOL ncalrpc_l_establish_connection(struct msrpc_local *msrpc,
-				    const char *pipe_name);
-
 /*The following definitions come from  lib/passcheck.c  */
 
 BOOL smb_password_ok(uint16 acct_ctrl,
@@ -976,6 +965,33 @@ BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
 BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
 BOOL vuid_init_db(void);
 
+/*The following definitions come from  libsmb/cliconnect.c  */
+
+BOOL cli_session_setup_x(struct cli_state *cli, 
+				char *user, 
+				char *pass, int passlen,
+				char *ntpass, int ntpasslen,
+				char *user_domain);
+BOOL cli_session_setup(struct cli_state *cli, 
+				char *user,
+				char *pass, int passlen,
+				char *ntpass, int ntpasslen,
+				char *user_domain);
+BOOL cli_ulogoff(struct cli_state *cli);
+BOOL cli_send_tconX(struct cli_state *cli, 
+		    char *share, char *dev, char *pass, int passlen);
+BOOL cli_tdis(struct cli_state *cli);
+BOOL cli_negprot(struct cli_state *cli);
+BOOL cli_session_request(struct cli_state *cli,
+			 struct nmb_name *calling, struct nmb_name *called);
+BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
+BOOL cli_reestablish_connection(struct cli_state *cli);
+BOOL cli_establish_connection(struct cli_state *cli, 
+				const char *dest_host, struct in_addr *dest_ip,
+				struct nmb_name *calling, struct nmb_name *called,
+				char *service, char *service_type,
+				BOOL do_shutdown, BOOL do_tcon);
+
 /*The following definitions come from  libsmb/clidomain.c  */
 
 char *get_trusted_serverlist(const char *domain);
@@ -988,9 +1004,10 @@ BOOL get_any_dc_name(const char *domain, char *srv_name);
 /*The following definitions come from  libsmb/clientgen.c  */
 
 int cli_set_port(struct cli_state *cli, int port);
-char *cli_errstr(struct cli_state *cli);
+BOOL cli_receive_smb(struct cli_state *cli);
+BOOL cli_send_smb(struct cli_state *cli);
+void cli_setup_packet(struct cli_state *cli);
 void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
-BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen);
 void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen);
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
                            char *name, int pipe_name_len, 
@@ -1013,24 +1030,6 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
 int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(const char *, uint32, const char *));
-BOOL cli_session_setup_x(struct cli_state *cli, 
-				char *user, 
-				char *pass, int passlen,
-				char *ntpass, int ntpasslen,
-				char *user_domain);
-BOOL cli_session_setup(struct cli_state *cli, 
-				char *user,
-				char *pass, int passlen,
-				char *ntpass, int ntpasslen,
-				char *user_domain);
-BOOL cli_ulogoff(struct cli_state *cli);
-BOOL cli_send_tconX(struct cli_state *cli, 
-		    char *share, char *dev, char *pass, int passlen);
-BOOL cli_tdis(struct cli_state *cli);
-BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
-BOOL cli_unlink(struct cli_state *cli, char *fname);
-BOOL cli_mkdir(struct cli_state *cli, char *dname);
-BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_nt_create(struct cli_state *cli, const char *fname);
 int cli_open(struct cli_state *cli, const char *fname,
 				int flags, int share_mode);
@@ -1064,31 +1063,40 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	     void (*fn)(file_info *, const char *));
 BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
                              const char *old_password);
-BOOL cli_negprot(struct cli_state *cli);
-BOOL cli_session_request(struct cli_state *cli,
-			 struct nmb_name *calling, struct nmb_name *called);
-BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
+void cli_close_socket(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
-int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
-BOOL cli_reestablish_connection(struct cli_state *cli);
-BOOL cli_establish_connection(struct cli_state *cli, 
-				const char *dest_host, struct in_addr *dest_ip,
-				struct nmb_name *calling, struct nmb_name *called,
-				char *service, char *service_type,
-				BOOL do_shutdown, BOOL do_tcon);
-int cli_printjob_del(struct cli_state *cli, int job);
-int cli_print_queue(struct cli_state *cli, 
-		    void (*fn)(struct print_job_info *));
 BOOL cli_chkpath(struct cli_state *cli, char *path);
+BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+
+/*The following definitions come from  libsmb/clierror.c  */
+
+BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen);
+char *cli_errstr(struct cli_state *cli);
+int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
+
+/*The following definitions come from  libsmb/clifile.c  */
+
+BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
+BOOL cli_unlink(struct cli_state *cli, char *fname);
+BOOL cli_mkdir(struct cli_state *cli, char *dname);
+BOOL cli_rmdir(struct cli_state *cli, char *dname);
+
+/*The following definitions come from  libsmb/climessage.c  */
+
 BOOL cli_message_start(struct cli_state *cli, char *host, char *username, 
 			      int *grp);
 BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
-BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+
+/*The following definitions come from  libsmb/cliprint.c  */
+
+int cli_print_queue(struct cli_state *cli, 
+		    void (*fn)(struct print_job_info *));
+int cli_printjob_del(struct cli_state *cli, int job);
 
 /*The following definitions come from  libsmb/credentials.c  */
 
@@ -2689,28 +2697,6 @@ BOOL make_r_sam_sync(NET_R_SAM_SYNC * r_s,
 BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 		       NET_R_SAM_SYNC * r_s, prs_struct *ps, int depth);
 
-/*The following definitions come from  rpc_parse/parse_netsec.c  */
-
-BOOL rpc_hdr_netsec_auth_chk(RPC_HDR_AUTH * rai);
-BOOL make_rpc_auth_netsec_neg(RPC_AUTH_NETSEC_NEG * neg,
-			      fstring domain, fstring myname);
-BOOL smb_io_rpc_auth_netsec_neg(char *desc, RPC_AUTH_NETSEC_NEG * neg,
-				prs_struct *ps, int depth);
-BOOL make_rpc_auth_netsec_resp(RPC_AUTH_NETSEC_RESP * rsp, uint32 flags);
-BOOL smb_io_rpc_auth_netsec_resp(char *desc, RPC_AUTH_NETSEC_RESP * rsp,
-				 prs_struct *ps, int depth);
-BOOL rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk);
-BOOL make_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk,
-			      const uchar sig[8],
-			      const uchar data1[8],
-			      const uchar data3[8], const uchar data8[8]);
-BOOL smb_io_rpc_auth_netsec_chk(char *desc, RPC_AUTH_NETSEC_CHK * chk,
-				prs_struct *ps, int depth);
-BOOL netsec_encode(struct netsec_auth_struct *a,
-		   RPC_AUTH_NETSEC_CHK * verf, char *data, size_t data_len);
-BOOL netsec_decode(struct netsec_auth_struct *a,
-		   RPC_AUTH_NETSEC_CHK * verf, char *data, size_t data_len);
-
 /*The following definitions come from  rpc_parse/parse_ntlmssp.c  */
 
 BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH * rai);
@@ -2854,26 +2840,6 @@ BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER * rav,
 			      prs_struct * ps, int depth);
 BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER * rav,
 			   char *signature, uint32 msg_type);
-
-/*The following definitions come from  rpc_parse/parse_sec.c  */
-
-BOOL make_sec_access(SEC_ACCESS * t, uint32 mask);
-BOOL sec_io_access(char *desc, SEC_ACCESS * t, prs_struct *ps, int depth);
-BOOL make_sec_ace(SEC_ACE * t, const DOM_SID *sid, uint8 type,
-		  SEC_ACCESS mask, uint8 flag);
-BOOL sec_io_ace(char *desc, SEC_ACE * t, prs_struct *ps, int depth);
-BOOL make_sec_acl(SEC_ACL * t, uint16 revision, int num_aces, SEC_ACE * ace);
-void free_sec_acl(SEC_ACL * t);
-BOOL sec_io_acl(char *desc, SEC_ACL * t, prs_struct *ps, int depth);
-int make_sec_desc(SEC_DESC * t, uint16 revision, uint16 type,
-		  DOM_SID *owner_sid, DOM_SID *grp_sid,
-		  SEC_ACL * sacl, SEC_ACL * dacl);
-void free_sec_desc(SEC_DESC * t);
-BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth);
-BOOL make_sec_desc_buf(SEC_DESC_BUF * buf, int len, SEC_DESC * data);
-void free_sec_desc_buf(SEC_DESC_BUF * buf);
-BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF * sec, prs_struct *ps,
-		     int depth);
 
 /*The following definitions come from  rpc_parse/parse_vuid.c  */
 

@@ -3,6 +3,7 @@
    Version 3.0
    client error handling routines
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,13 +20,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+
 #define NO_SYSLOG
 
 #include "includes.h"
-
-
-extern int DEBUGLEVEL;
-
+#include "nterr.h"
 
 /*****************************************************
  RAP error codes - a small start but will be extended.
@@ -45,22 +44,27 @@ static struct
   {2244, "This password cannot be used now (password history conflict)." },
   {2245, "The password is shorter than required." },
   {2246, "The password of this user is too recent to change."},
-
-  /* these really shouldn't be here ... */
-  {0x80, "Not listening on called name"},
-  {0x81, "Not listening for calling name"},
-  {0x82, "Called name not present"},
-  {0x83, "Called name present, but insufficient resources"},
-
   {0, NULL}
 };  
 
 /****************************************************************************
-  return a description of an SMB error
+  return a description of a RAP error
 ****************************************************************************/
-static char *cli_smb_errstr(struct cli_state *cli)
+BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen)
 {
-	return smb_errstr(cli->inbuf);
+	int i;
+
+	slprintf(err_msg, msglen - 1, "RAP code %d", rap_error);
+
+	for (i = 0; rap_errmap[i].message != NULL; i++)
+	{
+		if (rap_errmap[i].err == rap_error)
+		{
+			safe_strcpy( err_msg, rap_errmap[i].message, msglen);
+			return True;
+		}
+	} 
+	return False;
 }
 
 /******************************************************
@@ -71,63 +75,9 @@ static char *cli_smb_errstr(struct cli_state *cli)
 char *cli_errstr(struct cli_state *cli)
 {   
 	static fstring error_message;
-	uint8 errclass;
-	uint32 errnum;
-	uint32 nt_rpc_error;
-	int i;      
-
-	/*  
-	 * Errors are of three kinds - smb errors,
-	 * dealt with by cli_smb_errstr, NT errors,
-	 * whose code is in cli.nt_error, and rap
-	 * errors, whose error code is in cli.rap_error.
-	 */ 
-
-	cli_error(cli, &errclass, &errnum, &nt_rpc_error);
-
-	if (errclass != 0)
-	{
-		return cli_smb_errstr(cli);
-	}
-
-	/*
-	 * Was it an NT error ?
-	 */
-
-	if (nt_rpc_error)
-	{
-		char *nt_msg = get_nt_error_msg(nt_rpc_error);
-
-		if (nt_msg == NULL)
-		{
-			slprintf(error_message, sizeof(fstring) - 1, "NT code %d", nt_rpc_error);
-		}
-		else
-		{
-			fstrcpy(error_message, nt_msg);
-		}
-
-		return error_message;
-	}
-
-	/*
-	 * Must have been a rap error.
-	 */
-
-	slprintf(error_message, sizeof(error_message) - 1, "code %d", cli->rap_error);
-
-	for (i = 0; rap_errmap[i].message != NULL; i++)
-	{
-		if (rap_errmap[i].err == cli->rap_error)
-		{
-			fstrcpy( error_message, rap_errmap[i].message);
-			break;
-		}
-	} 
-
+	cli_safe_errstr(cli, error_message, sizeof(error_message));
 	return error_message;
 }
-
 
 /****************************************************************************
   return error codes for the last packet
@@ -137,43 +87,43 @@ char *cli_errstr(struct cli_state *cli)
   for 32 bit "warnings", a return code of 0 is expected.
 
 ****************************************************************************/
-int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_error)
+int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 {
 	int  flgs2;
 	char rcls;
 	int code;
 
-	if (eclass) *eclass = 0;
-	if (num   ) *num = 0;
-	if (nt_rpc_error) *nt_rpc_error = 0;
-
-	if(!cli->initialised)
+	if (!cli->initialised)
+	{
+		DEBUG(0,("cli_error: client state uninitialised!\n"));
 		return EINVAL;
-
-	if(!cli->inbuf)
-		return ENOMEM;
+	}
 
 	flgs2 = SVAL(cli->inbuf,smb_flg2);
-	if (nt_rpc_error) *nt_rpc_error = cli->nt_error;
 
-	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
+	if (eclass) *eclass = 0;
+	if (num   ) *num = 0;
+
+	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES)
+	{
 		/* 32 bit error codes detected */
 		uint32 nt_err = IVAL(cli->inbuf,smb_rcls);
 		if (num) *num = nt_err;
 		DEBUG(10,("cli_error: 32 bit codes: code=%08x\n", nt_err));
 		if (!IS_BITS_SET_ALL(nt_err, 0xc0000000)) return 0;
 
-		switch (nt_err & 0xFFFFFF) {
-		case NT_STATUS_ACCESS_VIOLATION: return EACCES;
-		case NT_STATUS_NO_SUCH_FILE: return ENOENT;
-		case NT_STATUS_NO_SUCH_DEVICE: return ENODEV;
-		case NT_STATUS_INVALID_HANDLE: return EBADF;
-		case NT_STATUS_NO_MEMORY: return ENOMEM;
-		case NT_STATUS_ACCESS_DENIED: return EACCES;
-		case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
-		case NT_STATUS_SHARING_VIOLATION: return EBUSY;
-		case NT_STATUS_OBJECT_PATH_INVALID: return ENOTDIR;
-		case NT_STATUS_OBJECT_NAME_COLLISION: return EEXIST;
+		switch (nt_err & 0xFFFFFF)
+		{
+			case NT_STATUS_ACCESS_VIOLATION     : return EACCES;
+			case NT_STATUS_NO_SUCH_FILE         : return ENOENT;
+			case NT_STATUS_NO_SUCH_DEVICE       : return ENODEV;
+			case NT_STATUS_INVALID_HANDLE       : return EBADF;
+			case NT_STATUS_NO_MEMORY            : return ENOMEM;
+			case NT_STATUS_ACCESS_DENIED        : return EACCES;
+			case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
+			case NT_STATUS_SHARING_VIOLATION    : return EBUSY;
+			case NT_STATUS_OBJECT_PATH_INVALID  : return ENOTDIR;
+			case NT_STATUS_OBJECT_NAME_COLLISION: return EEXIST;
 		}
 
 		/* for all other cases - a default code */
@@ -196,6 +146,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_
 		case ERRrename: return EEXIST;
 		case ERRbadshare: return EBUSY;
 		case ERRlock: return EBUSY;
+		case ERRmoredata: return 0; /* Informational only */
 		}
 	}
 	if (rcls == ERRSRV) {

@@ -3,6 +3,7 @@
    Version 3.0
    client message handling routines
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,10 +20,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+
 #define NO_SYSLOG
 
 #include "includes.h"
-
 
 /****************************************************************************
 start a message sequence
@@ -57,13 +58,12 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL)) return False;
 
 	*grp = SVAL(cli->inbuf,smb_vwv0);
 
 	return True;
 }
-
 
 /****************************************************************************
 send a message 
@@ -90,7 +90,7 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL)) return False;
 
 	return True;
 }      
@@ -115,8 +115,7 @@ BOOL cli_message_end(struct cli_state *cli, int grp)
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL)) return False;
 
 	return True;
 }      
-
