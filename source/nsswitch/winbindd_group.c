@@ -803,7 +803,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 				return WINBINDD_ERROR;
 			
 			num_domain_entries += groups.num_sam_entries;
-			memcpy (sam_entries+offset, groups.sam_entries, 
+			memcpy (((char *)sam_entries)+offset, groups.sam_entries, 
 				sizeof(struct acct_info) * groups.num_sam_entries);
 
 			free(groups.sam_entries);

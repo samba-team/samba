@@ -84,10 +84,13 @@ static void do_flush_caches(void)
 
 /* Handle the signal by unlinking socket and exiting */
 
-static void termination_handler(int signum)
+static void terminate(void)
 {
 	pstring path;
 	
+	/* Close idmap. */
+	winbindd_idmap_close();
+
 	/* Remove socket file */
 	
 	snprintf(path, sizeof(path), "%s/%s", 
@@ -95,6 +98,13 @@ static void termination_handler(int signum)
 	unlink(path);
 	
 	exit(0);
+}
+
+static BOOL do_sigterm;
+ 
+static void termination_handler(int signum)
+{
+	do_sigterm = True;
 }
 
 static BOOL print_winbindd_status;
@@ -571,6 +581,9 @@ static void process_loop(int accept_sock)
 		}
 
 		/* Check signal handling things */
+
+		if (do_sigterm)
+			terminate();
 
 		if (do_sighup) {
 
