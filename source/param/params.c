@@ -490,17 +490,19 @@ static FILE *OpenConfFile( char *FileName )
   {
   FILE *OpenedFile;
   char *func = "params.c:OpenConfFile() -";
+  extern BOOL in_client;
+  int lvl = in_client?1:0;
 
   if( NULL == FileName || 0 == *FileName )
     {
-    DEBUG( 0, ("%s No configuration filename specified.\n", func) );
+    DEBUG( lvl, ("%s No configuration filename specified.\n", func) );
     return( NULL );
     }
 
   OpenedFile = fopen( FileName, "r" );
   if( NULL == OpenedFile )
     {
-    DEBUG( 0,
+    DEBUG( lvl,
       ("%s Unable to open configuration file \"%s\":\n\t%s\n",
       func, FileName, strerror(errno)) );
     }
