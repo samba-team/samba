@@ -22,7 +22,7 @@
 
 /** List of various built-in passdb modules */
 
-const struct pdb_init_function builtin_pdb_init_functions[] = {
+const struct pdb_init_function_entry builtin_pdb_init_functions[] = {
 	{ "smbpasswd", pdb_init_smbpasswd },
 	{ "smbpasswd_nua", pdb_init_smbpasswd_nua },
 	{ "tdbsam", pdb_init_tdbsam },
@@ -32,6 +32,7 @@ const struct pdb_init_function builtin_pdb_init_functions[] = {
 	{ "nisplus", pdb_init_nisplus },	
 	{ "unix", pdb_init_unix },
 #endif
+	{ "plugin", pdb_init_plugin },
 	{ NULL, NULL}
 };
 
@@ -198,7 +199,7 @@ NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selecte
 		return nt_status;
 	}
 	
-	DEBUG(5,("Attempting to find an passdb backend to match %s\n", selected));
+	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", selected, module_name));
 	for (i = 0; builtin_pdb_init_functions[i].name; i++)
 	{
 		if (strequal(builtin_pdb_init_functions[i].name, module_name))
@@ -214,7 +215,7 @@ NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selecte
 			break;
 		}
 	}
-	
+    
 	if (!(*context)->pdb_selected) {
 		DEBUG(0,("failed to select passdb backed!\n"));
 		talloc_destroy((*context)->mem_ctx);

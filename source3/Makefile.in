@@ -16,6 +16,7 @@ CPPFLAGS=@CPPFLAGS@
 LDFLAGS=@LDFLAGS@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
 AWK=@AWK@
+DYNEXP=@DYNEXP@
 
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
@@ -188,7 +189,7 @@ LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
 PASSDB_OBJ = passdb/passdb.o passdb/pdb_interface.o passdb/pdb_get_set.o \
 		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
-		passdb/pdb_tdb.o passdb/pdb_ldap.o \
+		passdb/pdb_tdb.o passdb/pdb_ldap.o passdb/pdb_plugin.o \
 		passdb/pdb_nisplus.o
 
 GROUPDB_OBJ = groupdb/mapping.o
@@ -556,7 +557,7 @@ bin/.dummy:
 
 bin/smbd: $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) 
 
 bin/nmbd: $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -568,15 +569,15 @@ bin/wrepld: $(WREPL_OBJ) bin/.dummy
 
 bin/swat: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) 
 
 bin/rpcclient: $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS)
 
 bin/samsync: $(SAMSYNC_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMSYNC_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMSYNC_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
 
 bin/smbclient: $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -584,7 +585,7 @@ bin/smbclient: $(CLIENT_OBJ) bin/.dummy
 
 bin/net: $(NET_OBJ) bin/.dummy @BUILD_POPT@
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/smbspool: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
@@ -624,11 +625,11 @@ bin/smbtree: $(SMBTREE_OBJ) bin/.dummy
 
 bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
 bin/pdbedit: $(PDBEDIT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
 bin/smbgroupedit: $(SMBGROUPEDIT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -660,7 +661,7 @@ bin/msgtest: $(MSGTEST_OBJ) bin/.dummy
 
 bin/smbcacls: $(SMBCACLS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
 
 bin/locktest: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
@@ -676,7 +677,7 @@ bin/locktest2: $(LOCKTEST2_OBJ) bin/.dummy
 
 bin/rpctorture: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
 
 bin/debug2html: $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
@@ -719,7 +720,7 @@ nsswitch/libnss_wins.so: $(NSS_OBJ)
 
 bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS)
 
 nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
@@ -737,7 +738,7 @@ bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
-	$(SHLD) $(LDSHFLAGS) -symbolic -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(LIBS) -lc
+	$(SHLD) $(LDSHFLAGS) -symbolic -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(DYNEXP) $(LIBS) -lc
 
 bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 	-$(AR) -rc $@ $(LIBMSRPC_PICOBJ) 
