@@ -2560,6 +2560,12 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
      follows what WfWg does */
   END_PROFILE(SMBwritebraw);
   if (!write_through && total_written==tcount) {
+    /*
+     * Fix for "rabbit pellet" mode, trigger an early TCP ack by
+     * sending a SMBkeepalive. Thanks to DaveCB at Sun for this. JRA.
+     */
+    if (!send_keepalive(smbd_server_fd()))
+      exit_server("reply_writebraw: send of keepalive failed");
     return(-1);
   }
 
