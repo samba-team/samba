@@ -85,7 +85,7 @@ void cmd_dfs_remove(struct client_info *info, int argc, char *argv[])
     }
 }
 
-void display_dfs_enum_1(FILE *out_hnd, DFS_INFO_CTR *ctr)
+void display_dfs_enum_1(FILE *hnd, DFS_INFO_CTR *ctr)
 {
   int i=0;
   for(i=0;i<ctr->num_entries;i++)
@@ -93,12 +93,12 @@ void display_dfs_enum_1(FILE *out_hnd, DFS_INFO_CTR *ctr)
       fstring path;
       UNISTR2 *unipath = &(ctr->dfs.info1[i].entrypath);
       unistr2_to_ascii(path, unipath, sizeof(path)-1);
-      report(out_hnd, "Path: %s\n",path);
+      report(hnd, "Path: %s\n",path);
     }
   free(ctr->dfs.info1);
 }
 
-void display_dfs_enum_2(FILE *out_hnd, DFS_INFO_CTR *ctr)
+void display_dfs_enum_2(FILE *hnd, DFS_INFO_CTR *ctr)
 {
   int i=0;
   for(i=0;i<ctr->num_entries;i++)
@@ -110,9 +110,9 @@ void display_dfs_enum_2(FILE *out_hnd, DFS_INFO_CTR *ctr)
       unistr2_to_ascii(path, unipath, sizeof(path)-1);
       unistr2_to_ascii(comment, unicomment, sizeof(comment)-1);
       
-      report(out_hnd, "Path: %s\n",path);
+      report(hnd, "Path: %s\n",path);
       if(*comment)
-	report(out_hnd, "Comment: [%s]\n",comment);
+	report(hnd, "Comment: [%s]\n",comment);
 	
       switch(ctr->dfs.info2[i].state)
 	{
@@ -122,13 +122,13 @@ void display_dfs_enum_2(FILE *out_hnd, DFS_INFO_CTR *ctr)
 	case 4: fstrcpy(state, "ONLINE"); break;
 	default: fstrcpy(state, "UNKNOWN"); break;
 	}
-      report(out_hnd, "State: %s Number of storages: %u\n\n",state,
+      report(hnd, "State: %s Number of storages: %u\n\n",state,
 	     ctr->dfs.info2[i].num_storages);
     }
   free(ctr->dfs.info2);
 }
 
-void display_dfs_enum_3_storages(FILE *out_hnd, DFS_INFO_3 *info3)
+void display_dfs_enum_3_storages(FILE *hnd, DFS_INFO_3 *info3)
 {
   int i=0;
   if((info3 == NULL) || (info3->storages==NULL))
@@ -145,11 +145,11 @@ void display_dfs_enum_3_storages(FILE *out_hnd, DFS_INFO_3 *info3)
       fstrcat(storagepath,"\\");
       fstrcat(storagepath,sharename);
       
-      report(out_hnd, "     Storage %1u: %-33s[%s] \n",i+1, storagepath,
+      report(hnd, "     Storage %1u: %-33s[%s] \n",i+1, storagepath,
 	     (stor->state==2?"ONLINE":"OFFLINE"));
     }
 }
-void display_dfs_enum_3(FILE *out_hnd, DFS_INFO_CTR *ctr)
+void display_dfs_enum_3(FILE *hnd, DFS_INFO_CTR *ctr)
 {
   int i=0;
 
@@ -171,35 +171,35 @@ void display_dfs_enum_3(FILE *out_hnd, DFS_INFO_CTR *ctr)
 	default: fstrcpy(state, "UNKNOWN"); break;
 	}
 
-      report(out_hnd, "Dfs path:%-40sState: %s\n",path,state);
+      report(hnd, "Dfs path:%-40sState: %s\n",path,state);
       if(*comment)
-	report(out_hnd, "Comment: [%s]\n",comment);
+	report(hnd, "Comment: [%s]\n",comment);
 
-      display_dfs_enum_3_storages(out_hnd, &(ctr->dfs.info3[i]));
-      report(out_hnd,"\n");
+      display_dfs_enum_3_storages(hnd, &(ctr->dfs.info3[i]));
+      report(hnd,"\n");
     }
   free(ctr->dfs.info3);
 }
-void display_dfs_enum(FILE *out_hnd, char *srv_name, DFS_INFO_CTR *ctr)
+void display_dfs_enum(FILE *hnd, char *srv_name, DFS_INFO_CTR *ctr)
 {
   /* print header */
-  report(out_hnd, "\tDfs Namespace at %s [Info level %u]\n\n",srv_name, 
+  report(hnd, "\tDfs Namespace at %s [Info level %u]\n\n",srv_name, 
 	 ctr->switch_value);
   switch(ctr->switch_value)
     {
     case 1:
-      display_dfs_enum_1(out_hnd, ctr);
+      display_dfs_enum_1(hnd, ctr);
       break;
     case 2:
-      display_dfs_enum_2(out_hnd, ctr);
+      display_dfs_enum_2(hnd, ctr);
       break;
     case 3:
-      display_dfs_enum_3(out_hnd, ctr);
+      display_dfs_enum_3(hnd, ctr);
       break;
     default:
-      report(out_hnd, "\tUnknown info level [%u]\n",ctr->switch_value);
+      report(hnd, "\tUnknown info level [%u]\n",ctr->switch_value);
     }
-  report(out_hnd, "\n");
+  report(hnd, "\n");
 }
 
 /****************************************************************************

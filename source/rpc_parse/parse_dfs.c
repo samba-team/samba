@@ -32,6 +32,7 @@ BOOL make_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, char *entrypath,
   make_unistr2(&(q_d->ServerName),   servername, strlen(servername)+1);
   make_unistr2(&(q_d->ShareName),    sharename,  strlen(sharename)+1);
   q_d->ptr_ServerName = q_d->ptr_ShareName = 1;
+  return True;
 }
 
 /******************************************************************* 
@@ -99,6 +100,7 @@ BOOL make_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, char *entrypath, char *servername,
     }
 
   q_d->Flags = flags;
+  return True;
 }
 
 /************************************************************
@@ -163,6 +165,7 @@ BOOL make_dfs_q_dfs_enum(DFS_Q_DFS_ENUM *q_d, uint32 level, DFS_INFO_CTR *ctr)
   q_d->num_entries2 = 0;
   q_d->reshnd.ptr_hnd = 1;
   q_d->reshnd.handle = 0;
+  return True;
 }
   
 /************************************************************
@@ -307,6 +310,7 @@ BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int dept
 
   smb_io_enum_hnd("resume_hnd", &(q_d->reshnd), ps, depth);
   prs_uint32("status", ps, depth, &(q_d->status));
+  return True;
 }
 
 BOOL smb_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,

@@ -13,9 +13,7 @@ static BOOL _dfs_exist(struct cli_connection *con)
 {
   prs_struct buf;
   prs_struct rbuf;
-  prs_struct *ps = &rbuf;
   DFS_R_DFS_EXIST q_d;
-  uint32 dfs_exist_flag = 0;
   
   prs_init(&buf, 0, 4, False);
   prs_init(&rbuf, 0 ,4, True);
