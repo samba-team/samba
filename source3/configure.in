@@ -1414,7 +1414,7 @@ AC_ARG_WITH(netatalk,
 
 #################################################
 # check for experimental disk-quotas support
-QUOTAOBJS=noquotas.o
+QUOTAOBJS=smbd/noquotas.o
 
 AC_MSG_CHECKING(whether to support disk-quotas)
 AC_ARG_WITH(quotas,
@@ -1423,7 +1423,7 @@ AC_ARG_WITH(quotas,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    QUOTAOBJS=quotas.o
+    QUOTAOBJS=smbd/quotas.o
     ;;
   *)
     AC_MSG_RESULT(no)
