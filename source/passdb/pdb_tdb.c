@@ -990,5 +990,6 @@ int pdb_tdbsam_init(void)
 {
     smb_register_passdb("tdbsam", pdb_init_tdbsam, PASSDB_INTERFACE_VERSION);
     smb_register_passdb("tdbsam_nua", pdb_init_tdbsam_nua, PASSDB_INTERFACE_VERSION);
+	return True;
 }
 
