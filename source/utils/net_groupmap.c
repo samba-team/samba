@@ -419,11 +419,3 @@ int net_groupmap_delete(int argc, const char **argv)
 	return 0;
 }
 
-#if 0 
-/*********************************************************
- Change a group.
-**********************************************************/
-static int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type, char *ntgroup, char *groupdesc, char *privilege)
-{
-}
-#endif
