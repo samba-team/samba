@@ -1,5 +1,8 @@
 Sun Jan 19 06:17:39 1997  Assar Westerlund  <assar@pdc.kth.se>
 
+	* lib/krb5/get_cred.c (krb5_get_credentials): Check for creds in
+ 	cc before getting new ones.
+
 	* lib/krb5/krb5.h (krb5_free_keyblock): Fix prototype.
 
 	* lib/krb5/build_auth.c (krb5_build_authenticator): It seems the
