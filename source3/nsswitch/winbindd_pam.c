@@ -283,7 +283,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	}
 	
 	if (NT_STATUS_IS_OK(result)) {
-		netsamlogon_cache_store( cli->mem_ctx, &info3 );
+		netsamlogon_cache_store( cli->mem_ctx, name_user, &info3 );
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
 
 		/* Check if the user is in the right group */
@@ -538,7 +538,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
-		netsamlogon_cache_store( cli->mem_ctx, &info3 );
+		netsamlogon_cache_store( cli->mem_ctx, name_user, &info3 );
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
 		
 		if (!NT_STATUS_IS_OK(result = check_info3_in_group(mem_ctx, &info3, state->request.data.auth_crap.required_membership_sid))) {
