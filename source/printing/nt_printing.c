@@ -3003,9 +3003,9 @@ void map_printer_permissions(SEC_DESC *sd)
 }
 
 /****************************************************************************
- Check a user has permissions to perform the given operation.  We use some
- constants defined in include/rpc_spoolss.h that look relevant to check
- the various actions we perform when checking printer access.
+ Check a user has permissions to perform the given operation.  We use the
+ permission constants defined in include/rpc_spoolss.h to check the various
+ actions we perform when checking printer access.
 
    PRINTER_ACCESS_ADMINISTER:
        print_queue_pause, print_queue_resume, update_printer_sec,
@@ -3015,7 +3015,7 @@ void map_printer_permissions(SEC_DESC *sd)
    PRINTER_ACCESS_USE:
        print_job_start
 
-   PRINTER_ACCESS_ADMINISTER (should really be JOB_ACCESS_ADMINISTER):
+   JOB_ACCESS_ADMINISTER:
        print_job_delete, print_job_pause, print_job_resume,
        print_queue_purge
 
@@ -3051,14 +3051,34 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	/* Get printer security descriptor */
 
 	nt_printing_getsec(pname, &secdesc);
+
+	if (access_type == JOB_ACCESS_ADMINISTER) {
+		SEC_DESC_BUF *parent_secdesc = secdesc;
+
+		/* Create a child security descriptor to check permissions
+		   against.  This is because print jobs are child objects
+		   objects of a printer. */
+
+		secdesc = se_create_child_secdesc(parent_secdesc->sec, False);
+
+		free_sec_desc_buf(&parent_secdesc);
+
+		/* Now this is the bit that really confuses me.  The access
+		   type needs to be changed from JOB_ACCESS_ADMINISTER to
+		   PRINTER_ACCESS_ADMINISTER for this to work.  Something
+		   to do with the child (job) object becoming like a
+		   printer??  -tpot */
+
+		access_type = PRINTER_ACCESS_ADMINISTER;
+	}
+	
+	/* Check access */
 	
 	map_printer_permissions(secdesc->sec);
 
 	result = se_access_check(secdesc->sec, user, access_type,
 				 &access_granted, &status);
 
-	/* Check access */
-	
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
 	
 	/* Free mallocated memory */

@@ -1905,7 +1905,7 @@ fi
 # If we don't have all of these then disable large
 # file support.
 #
-echo "checking if large file support can be enabled"
+AC_MSG_CHECKING(checking if large file support can be enabled)
 AC_TRY_COMPILE([
 #if defined(HAVE_LONGLONG) && (defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8)))
 #include <sys/types.h>
