@@ -1,0 +1,29 @@
+#include "idl_types.h"
+
+[
+  uuid("38578646-4566-4564-2244-275796345667"),
+  version(0.0),
+  helpstring("Active Directory Replication LDAP Blobs")
+]
+interface drsblobs {
+	typedef struct {
+		uint32 attribute_id;
+		uint32 version;
+		NTTIME_1sec orginating_time;
+		GUID orginating_dsa;
+		uint64 orginating_usn;
+		uint64 local_usn;
+	} replPropertyMetaData;
+
+	typedef struct {
+		uint32 unknown1; /* version ? */
+		uint32 unknown2;
+		uint32 count;
+		uint32 unknown3;
+		replPropertyMetaData array[count];
+	} replPropertyMetaDataCtr;
+
+	void decode_replPropertyMetaData(
+		[in] replPropertyMetaDataCtr ctr
+		);
+}
