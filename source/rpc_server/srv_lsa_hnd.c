@@ -307,4 +307,3 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd)
 
 	return True;
 }
-

@@ -757,60 +757,92 @@ static BOOL api_samr_lookup_ids( uint16 vuid, prs_struct *data, prs_struct *rdat
 /*******************************************************************
  samr_reply_lookup_names
  ********************************************************************/
-static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
+
+static BOOL samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 				prs_struct *rdata)
 {
 	uint32 rid[MAX_SAM_ENTRIES];
-	uint32 status     = 0;
+	uint8  type[MAX_SAM_ENTRIES];
+	uint32 status = 0;
 	int i;
-	int num_rids = q_u->num_rids1;
+	int num_rids = q_u->num_names1;
+	DOM_SID pol_sid;
 
 	SAMR_R_LOOKUP_NAMES r_u;
 
 	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
 
-	if (num_rids > MAX_SAM_ENTRIES)
-	{
+	memset(&rid, '\0', sizeof(rid));
+	memset(&type, '\0', sizeof(type));
+
+	if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid)) {
+        status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;
+		init_samr_r_lookup_names(&r_u, 0, rid, type, status);
+		if(!samr_io_r_lookup_names("", &r_u, rdata, 0)) {
+			DEBUG(0,("samr_reply_lookup_names: failed to marshall SAMR_R_LOOKUP_NAMES.\n"));
+        	return False;
+		}
+		return True;
+    }
+
+	if (num_rids > MAX_SAM_ENTRIES) {
 		num_rids = MAX_SAM_ENTRIES;
 		DEBUG(5,("samr_lookup_names: truncating entries to %d\n", num_rids));
 	}
 
-	SMB_ASSERT_ARRAY(q_u->uni_user_name, num_rids);
+	SMB_ASSERT_ARRAY(q_u->uni_name, num_rids);
 
-	for (i = 0; i < num_rids && status == 0; i++)
-	{
+	for (i = 0; i < num_rids; i++) {
 		fstring name;
 
 		status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 
-		fstrcpy(name, unistrn2(q_u->uni_user_name[i].buffer, q_u->uni_user_name[i].uni_str_len));
+		rid [i] = 0xffffffff;
+		type[i] = SID_NAME_UNKNOWN;
 
-		status = (status != 0x0) ? lookup_user_rid (name, &(rid[i])) : status;
-		status = (status != 0x0) ? lookup_group_rid(name, &(rid[i])) : status;
-		status = (status != 0x0) ? lookup_alias_rid(name, &(rid[i])) : status;
+		fstrcpy(name, unistrn2(q_u->uni_name[i].buffer,
+				q_u->uni_name[i].uni_str_len));
+
+		if(sid_equal(&pol_sid, &global_sam_sid)) {
+			DOM_SID sid;
+
+			if(lookup_local_name(global_myname, name, &sid, &type[i])) {
+				sid_split_rid( &sid, &rid[i]);
+				status = 0;
+			}
+		}
 	}
 
-	init_samr_r_lookup_names(&r_u, num_rids, rid, status);
+	init_samr_r_lookup_names(&r_u, num_rids, rid, type, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_lookup_names("", &r_u, rdata, 0);
+	if(!samr_io_r_lookup_names("", &r_u, rdata, 0)) {
+		DEBUG(0,("samr_reply_lookup_names: failed to marshall SAMR_R_LOOKUP_NAMES.\n"));
+		return False;
+	}
 
 	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
  api_samr_lookup_names
  ********************************************************************/
+
 static BOOL api_samr_lookup_names( uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_LOOKUP_NAMES q_u;
 
 	/* grab the samr lookup names */
-	samr_io_q_lookup_names("", &q_u, data, 0);
+	if(!samr_io_q_lookup_names("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_lookup_names: failed to unmarshall SAMR_Q_LOOKUP_NAMES.\n"));
+		return False;
+	}
 
 	/* construct reply.  always indicate success */
-	samr_reply_lookup_names(&q_u, rdata);
+	if(!samr_reply_lookup_names(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -1098,7 +1130,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 	dummy_time.low  = 0xffffffff;
 	dummy_time.high = 0x7fffffff;
 
-	DEBUG(0,("get_user_info_21 - TODO: convert unix times to NTTIMEs\n"));
+	DEBUG(5,("get_user_info_21 - TODO: convert unix times to NTTIMEs\n"));
 
 	/* create a LOGON_HRS structure */
 	hrs.len = sam_pass->hours_len;

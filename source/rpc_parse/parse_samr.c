@@ -2008,36 +2008,32 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 	prs_debug(ps, depth, desc, "samr_io_q_lookup_names");
 	depth++;
 
-	if(!prs_align(ps))
-		return False;
+	prs_align(ps);
 
 	if(!smb_io_pol_hnd("pol", &q_u->pol, ps, depth))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("num_rids1", ps, depth, &q_u->num_rids1))
+	if(!prs_uint32("num_names1", ps, depth, &q_u->num_names1))
 		return False;
-	if(!prs_uint32("rid      ", ps, depth, &q_u->rid))
+	if(!prs_uint32("flags     ", ps, depth, &q_u->flags))
 		return False;
 	if(!prs_uint32("ptr      ", ps, depth, &q_u->ptr))
 		return False;
-	if(!prs_uint32("num_rids2", ps, depth, &q_u->num_rids2))
+	if(!prs_uint32("num_names2", ps, depth, &q_u->num_names2))
 		return False;
 
-	SMB_ASSERT_ARRAY(q_u->hdr_user_name, q_u->num_rids2);
+	SMB_ASSERT_ARRAY(q_u->hdr_name, q_u->num_names2);
 
-	for (i = 0; i < q_u->num_rids2; i++) {
-		if(!smb_io_unihdr ("", &q_u->hdr_user_name[i], ps, depth))
+	for (i = 0; i < q_u->num_names2; i++) {
+		if(!smb_io_unihdr ("", &q_u->hdr_name[i], ps, depth))
 			return False;
 	}
-	for (i = 0; i < q_u->num_rids2; i++) {
-		if(!smb_io_unistr2("", &q_u->uni_user_name[i], q_u->hdr_user_name[i].buffer, ps, depth))
+	for (i = 0; i < q_u->num_names2; i++) {
+		if(!smb_io_unistr2("", &q_u->uni_name[i], q_u->hdr_name[i].buffer, ps, depth))
 			return False;
 	}
-
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }
@@ -2048,29 +2044,35 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 ********************************************************************/
 
 void init_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
-		uint32 num_rids, uint32 *rid, uint32 status)
+			uint32 num_rids, uint32 *rid, uint8 *type, uint32 status)
 {
 	int i;
 
 	DEBUG(5,("init_samr_r_lookup_names\n"));
 
 	if (status == 0x0) {
-		r_u->num_entries  = num_rids;
-		r_u->undoc_buffer = 1;
-		r_u->num_entries2 = num_rids;
+		r_u->num_types1 = num_rids;
+		r_u->ptr_types  = 1;
+		r_u->num_types2 = num_rids;
 
-		SMB_ASSERT_ARRAY(r_u->dom_rid, num_rids);
+		r_u->num_rids1 = num_rids;
+		r_u->ptr_rids  = 1;
+		r_u->num_rids2 = num_rids;
+
+		SMB_ASSERT_ARRAY(r_u->rid, num_rids);
 
 		for (i = 0; i < num_rids; i++) {
-			init_dom_rid3(&r_u->dom_rid[i], rid[i], 0x01);
+			r_u->rid [i] = rid [i];
+			r_u->type[i] = type[i];
 		}
-
-		r_u->num_entries3 = num_rids;
 	} else {
-		r_u->num_entries  = 0;
-		r_u->undoc_buffer = 0;
-		r_u->num_entries2 = 0;
-		r_u->num_entries3 = 0;
+		r_u->num_types1 = 0;
+		r_u->ptr_types  = 0;
+		r_u->num_types2 = 0;
+
+		r_u->num_rids1 = 0;
+		r_u->ptr_rids  = 0;
+		r_u->num_rids2 = 0;
 	}
 
 	r_u->status = status;
@@ -2083,6 +2085,7 @@ void init_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth)
 {
 	int i;
+	fstring tmp;
 
 	if (r_u == NULL)
 		return False;
@@ -2091,27 +2094,49 @@ BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 	depth++;
 
 	if(!prs_align(ps))
-	return False;
-
-	if(!prs_uint32("num_entries ", ps, depth, &r_u->num_entries ))
-		return False;
-	if(!prs_uint32("undoc_buffer", ps, depth, &r_u->undoc_buffer))
-		return False;
-	if(!prs_uint32("num_entries2", ps, depth, &r_u->num_entries2))
 		return False;
 
-	if (r_u->num_entries != 0) {
-		SMB_ASSERT_ARRAY(r_u->dom_rid, r_u->num_entries2);
+	if(!prs_uint32("num_rids1", ps, depth, &r_u->num_rids1))
+		return False;
+	if(!prs_uint32("ptr_rids ", ps, depth, &r_u->ptr_rids ))
+		return False;
 
-		for (i = 0; i < r_u->num_entries2; i++) {
-			if(!smb_io_dom_rid3("", &r_u->dom_rid[i], ps, depth))
-				return False;
+	if (r_u->ptr_rids != 0) {
+		if(!prs_uint32("num_rids2", ps, depth, &r_u->num_rids2))
+			return False;
+
+		if (r_u->num_rids2 != r_u->num_rids1) {
+			/* RPC fault */
+			return False;
 		}
 
+		for (i = 0; i < r_u->num_rids2; i++) {
+			slprintf(tmp, sizeof(tmp) - 1, "rid[%02d]  ", i);
+			if(!prs_uint32(tmp, ps, depth, &r_u->rid[i]))
+				return False;
+		}
 	}
 
-	if(!prs_uint32("num_entries3", ps, depth, &r_u->num_entries3))
+	if(!prs_uint32("num_types1", ps, depth, &r_u->num_types1))
 		return False;
+	if(!prs_uint32("ptr_types ", ps, depth, &r_u->ptr_types))
+		return False;
+
+	if (r_u->ptr_types != 0) {
+		if(!prs_uint32("num_types2", ps, depth, &r_u->num_types2))
+			return False;
+
+		if (r_u->num_types2 != r_u->num_types1) {
+			/* RPC fault */
+			return False;
+		}
+
+		for (i = 0; i < r_u->num_types2; i++) {
+			slprintf(tmp, sizeof(tmp) - 1, "type[%02d]  ", i);
+			if(!prs_uint32(tmp, ps, depth, &r_u->type[i]))
+				return False;
+		}
+	}
 
 	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
@@ -2484,9 +2509,6 @@ BOOL samr_io_q_query_userinfo(char *desc,  SAMR_Q_QUERY_USERINFO *q_u, prs_struc
 		return False;
 
 	if(!prs_uint16("switch_value", ps, depth, &q_u->switch_value)) /* 0x0015 or 0x0011 */
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;

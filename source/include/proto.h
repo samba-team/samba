@@ -1881,7 +1881,7 @@ void init_samr_r_lookup_ids(SAMR_R_LOOKUP_IDS *r_u,
 BOOL samr_io_r_lookup_ids(char *desc,  SAMR_R_LOOKUP_IDS *r_u, prs_struct *ps, int depth);
 BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
 void init_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
-		uint32 num_rids, uint32 *rid, uint32 status);
+			uint32 num_rids, uint32 *rid, uint8 *type, uint32 status);
 BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth);
 BOOL samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, int depth);
 void init_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
