@@ -39,10 +39,13 @@ RCSID("$Id$");
 
 /* verify krb5.conf */
 
+static int dumpconfig_flag = 0;
 static int version_flag = 0;
 static int help_flag	= 0;
 
 static struct getargs args[] = {
+    {"dumpconfig", 0,      arg_flag,       &dumpconfig_flag, 
+     "show the parsed config files", NULL },
     {"version",	0,	arg_flag,	&version_flag,
      "print version", NULL },
     {"help",	0,	arg_flag,	&help_flag,
@@ -447,7 +450,7 @@ check_section(krb5_context context, const char *path, krb5_config_section *cf,
 
 
 static void
-dump_config(int level, krb5_config_section *top)
+dumpconfig(int level, krb5_config_section *top)
 {
     krb5_config_section *x;
     for(x = top; x; x = x->next) {
@@ -458,9 +461,9 @@ dump_config(int level, krb5_config_section *top)
 	    } else {
 		printf("%*s%s = {\n", 4 * level, " ", x->name);
 	    }
-	    dump_config(level + 1, x->u.list);
+	    dumpconfig(level + 1, x->u.list);
 	    if(level > 0)
-		printf("%*s}\n", 4 * level);
+		printf("%*s}\n", 4 * level, " ");
 	    break;
 	case krb5_config_string:
 	    printf("%*s%s = %s\n", 4 * level, " ", x->name, x->u.string);
@@ -473,11 +476,10 @@ int
 main(int argc, char **argv)
 {
     krb5_context context;
-    const char *config_file = NULL;
     krb5_error_code ret;
     krb5_config_section *tmp_cf;
     int optind = 0;
-    int dump_config_file = 1;
+    int i;
 
     setprogname (argv[0]);
 
@@ -499,24 +501,21 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-    if (argc == 0) {
-	config_file = getenv("KRB5_CONFIG");
-	if (config_file == NULL)
-	    config_file = krb5_config_file;
-    } else if (argc == 1) {
-	config_file = argv[0];
-    } else {
-	usage (1);
+    tmp_cf = NULL;
+    if(argc == 0)
+	krb5_get_default_config_files(&argv);
+
+    while(*argv) {
+	ret = krb5_config_parse_file_multi(context, *argv, &tmp_cf);
+	if (ret != 0) {
+	    krb5_warn (context, ret, "krb5_config_parse_file");
+	    return 1;
+	}
+	argv++;
     }
+
+    if(dumpconfig_flag)
+	dumpconfig(0, tmp_cf);
     
-    ret = krb5_config_parse_file (context, config_file, &tmp_cf);
-    if (ret != 0) {
-	krb5_warn (context, ret, "krb5_config_parse_file");
-	return 1;
-    }
-
-    if(dump_config_file)
-	dump_config(0, tmp_cf);
-
     return check_section(context, "", tmp_cf, toplevel_sections);
 }
