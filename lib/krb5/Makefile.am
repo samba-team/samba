@@ -152,6 +152,7 @@ man_MANS =					\
 	krb5_appdefault.3			\
 	krb5_auth_context.3			\
 	krb5_build_principal.3			\
+	krb5_ccache.3				\
 	krb5_config.3				\
 	krb5_context.3				\
 	krb5_create_checksum.3			\
