@@ -485,3 +485,159 @@ AC_DEFUN(LIB_REMOVE_USR_LIB,[
   done
   $1=[$]ac_new_flags
 ])
+
+dnl From Bruno Haible.
+
+AC_DEFUN(jm_ICONV,
+[
+  dnl Some systems have iconv in libc, some have it in libiconv (OSF/1 and
+  dnl those with the standalone portable libiconv installed).
+  AC_MSG_CHECKING(for iconv in $1)
+    jm_cv_func_iconv="no"
+    jm_cv_lib_iconv=no
+    jm_cv_giconv=no
+    AC_TRY_LINK([#include <stdlib.h>
+#include <giconv.h>],
+      [iconv_t cd = iconv_open("","");
+       iconv(cd,NULL,NULL,NULL,NULL);
+       iconv_close(cd);],
+      jm_cv_func_iconv=yes
+      jm_cv_giconv=yes)
+
+    if test "$jm_cv_func_iconv" != yes; then
+      AC_TRY_LINK([#include <stdlib.h>
+#include <iconv.h>],
+        [iconv_t cd = iconv_open("","");
+         iconv(cd,NULL,NULL,NULL,NULL);
+         iconv_close(cd);],
+        jm_cv_func_iconv=yes)
+
+        if test "$jm_cv_lib_iconv" != yes; then
+          jm_save_LIBS="$LIBS"
+          LIBS="$LIBS -lgiconv"
+          AC_TRY_LINK([#include <stdlib.h>
+#include <giconv.h>],
+            [iconv_t cd = iconv_open("","");
+             iconv(cd,NULL,NULL,NULL,NULL);
+             iconv_close(cd);],
+            jm_cv_lib_iconv=yes
+            jm_cv_func_iconv=yes
+            jm_cv_giconv=yes)
+          LIBS="$jm_save_LIBS"
+
+      if test "$jm_cv_func_iconv" != yes; then
+        jm_save_LIBS="$LIBS"
+        LIBS="$LIBS -liconv"
+        AC_TRY_LINK([#include <stdlib.h>
+#include <iconv.h>],
+          [iconv_t cd = iconv_open("","");
+           iconv(cd,NULL,NULL,NULL,NULL);
+           iconv_close(cd);],
+          jm_cv_lib_iconv=yes
+          jm_cv_func_iconv=yes)
+        LIBS="$jm_save_LIBS"
+        fi
+      fi
+    fi
+
+  if test "$jm_cv_func_iconv" = yes; then
+    if test "$jm_cv_giconv" = yes; then
+      AC_DEFINE(HAVE_GICONV, 1, [What header to include for iconv() function: giconv.h])
+      AC_MSG_RESULT(yes)
+      ICONV_FOUND=yes
+    else
+      AC_DEFINE(HAVE_ICONV, 1, [What header to include for iconv() function: iconv.h])
+      AC_MSG_RESULT(yes)
+      ICONV_FOUND=yes
+    fi
+  else
+    AC_MSG_RESULT(no)
+  fi
+  if test "$jm_cv_lib_iconv" = yes; then
+    if test "$jm_cv_giconv" = yes; then
+      LIBS="$LIBS -lgiconv"
+    else
+      LIBS="$LIBS -liconv"
+    fi
+  fi
+])
+
+dnl CFLAGS_ADD_DIR(CFLAGS, $INCDIR)
+dnl This function doesn't add -I/usr/include into CFLAGS
+AC_DEFUN(CFLAGS_ADD_DIR,[
+if test "$2" != "/usr/include" ; then
+    $1="$$1 -I$2"
+fi
+])
+
+dnl LIB_ADD_DIR(LDFLAGS, $LIBDIR)
+dnl This function doesn't add -L/usr/lib into LDFLAGS
+AC_DEFUN(LIB_ADD_DIR,[
+if test "$2" != "/usr/lib" ; then
+    $1="$$1 -L$2"
+fi
+])
+
+dnl AC_ENABLE_SHARED - implement the --enable-shared flag
+dnl Usage: AC_ENABLE_SHARED[(DEFAULT)]
+dnl   Where DEFAULT is either `yes' or `no'.  If omitted, it defaults to
+dnl   `yes'.
+AC_DEFUN([AC_ENABLE_SHARED],
+[define([AC_ENABLE_SHARED_DEFAULT], ifelse($1, no, no, yes))dnl
+AC_ARG_ENABLE(shared,
+changequote(<<, >>)dnl
+<<  --enable-shared[=PKGS]    build shared libraries [default=>>AC_ENABLE_SHARED_DEFAULT],
+changequote([, ])dnl
+[p=${PACKAGE-default}
+case $enableval in
+yes) enable_shared=yes ;;
+no) enable_shared=no ;;
+*)
+  enable_shared=no
+  # Look at the argument we got.  We use all the common list separators.
+  IFS="${IFS=   }"; ac_save_ifs="$IFS"; IFS="${IFS}:,"
+  for pkg in $enableval; do
+    if test "X$pkg" = "X$p"; then
+      enable_shared=yes
+    fi
+
+  done
+  IFS="$ac_save_ifs"
+  ;;
+esac],
+enable_shared=AC_ENABLE_SHARED_DEFAULT)dnl
+])
+
+dnl AC_ENABLE_STATIC - implement the --enable-static flag
+dnl Usage: AC_ENABLE_STATIC[(DEFAULT)]
+dnl   Where DEFAULT is either `yes' or `no'.  If omitted, it defaults to
+dnl   `yes'.
+AC_DEFUN([AC_ENABLE_STATIC],
+[define([AC_ENABLE_STATIC_DEFAULT], ifelse($1, no, no, yes))dnl
+AC_ARG_ENABLE(static,
+changequote(<<, >>)dnl
+<<  --enable-static[=PKGS]    build static libraries [default=>>AC_ENABLE_STATIC_DEFAULT],
+changequote([, ])dnl
+[p=${PACKAGE-default}
+case $enableval in
+yes) enable_static=yes ;;
+no) enable_static=no ;;
+*)
+  enable_static=no
+  # Look at the argument we got.  We use all the common list separators.
+  IFS="${IFS=   }"; ac_save_ifs="$IFS"; IFS="${IFS}:,"
+  for pkg in $enableval; do
+    if test "X$pkg" = "X$p"; then
+      enable_static=yes
+    fi
+  done
+  IFS="$ac_save_ifs"
+  ;;
+esac],
+enable_static=AC_ENABLE_STATIC_DEFAULT)dnl
+])
+
+dnl AC_DISABLE_STATIC - set the default static flag to --disable-static
+AC_DEFUN([AC_DISABLE_STATIC],
+[AC_BEFORE([$0],[AC_LIBTOOL_SETUP])dnl
+AC_ENABLE_STATIC(no)])
