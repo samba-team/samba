@@ -764,6 +764,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	fstrcpy(cli->share, share);
 
+	/* in user level security don't send a password now */
 	if (cli->sec_mode & 1) {
 		passlen = 1;
 		pass = "";
