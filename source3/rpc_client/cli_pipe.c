@@ -174,7 +174,8 @@ static void NTLMSSPcalc_ap( struct cli_state *cli, unsigned char *data, uint32 l
  Never on bind requests/responses.
  ****************************************************************************/
 
-static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int auth_len)
+static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
+		uint32 fragment_start, int len, int auth_len, int *pauth_padding_len)
 {
 	/*
 	 * The following is that length of the data we must sign or seal.
@@ -187,11 +188,13 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 	/*
 	 * The start of the data to sign/seal is just after the RPC headers.
 	 */
-	char *reply_data = prs_data_p(rdata) + RPC_HEADER_LEN + RPC_HDR_REQ_LEN;
+	char *reply_data = prs_data_p(rdata) + fragment_start + RPC_HEADER_LEN + RPC_HDR_REQ_LEN;
 
 	BOOL auth_verify = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SIGN) != 0);
 	BOOL auth_seal = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SEAL) != 0);
 	BOOL auth_schannel = (cli->saved_netlogon_pipe_fnum != 0);
+
+	*pauth_padding_len = 0;
 
 	DEBUG(5,("rpc_auth_pipe: len: %d auth_len: %d verify %s seal %s schannel %s\n",
 	          len, auth_len, BOOLSTR(auth_verify), BOOLSTR(auth_seal), BOOLSTR(auth_schannel)));
@@ -297,8 +300,10 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 
 	if (auth_schannel) {
 		RPC_AUTH_NETSEC_CHK chk;
-		char data[RPC_AUTH_NETSEC_CHK_LEN];
-		char *dp = prs_data_p(rdata) + len - auth_len;
+		RPC_HDR_AUTH rhdr_auth;
+		char data[RPC_HDR_AUTH_LEN+RPC_AUTH_NETSEC_CHK_LEN];
+		char *dp = prs_data_p(rdata) + fragment_start + len -
+					RPC_HDR_AUTH_LEN - RPC_AUTH_NETSEC_CHK_LEN;
 		prs_struct auth_verf;
 
 		if (auth_len != RPC_AUTH_NETSEC_CHK_LEN) {
@@ -322,7 +327,19 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 		/* The endinness must be preserved. JRA. */
 		prs_set_endian_data( &auth_verf, rdata->bigendian_data);
 
-		prs_give_memory(&auth_verf, data, RPC_AUTH_NETSEC_CHK_LEN, False);
+		prs_give_memory(&auth_verf, data, sizeof(data), False);
+
+		if (!smb_io_rpc_hdr_auth("auth_hdr", &rhdr_auth, &auth_verf, 0)) {
+			DEBUG(0, ("rpc_auth_pipe: Could not parse schannel auth header\n"));
+			return False;
+		}
+
+		if ((rhdr_auth.auth_type != NETSEC_AUTH_TYPE) ||
+				(rhdr_auth.auth_level != NETSEC_AUTH_LEVEL)) {
+			DEBUG(0, ("rpc_auth_pipe: Got wrong schannel auth type/level: %d/%d\n",
+				rhdr_auth.auth_type, rhdr_auth.auth_level));
+			return False;
+		}
 
 		if (!smb_io_rpc_auth_netsec_chk("schannel_auth_sign", &chk, &auth_verf, 0)) {
 			DEBUG(0, ("rpc_auth_pipe: schannel unmarshalling "
@@ -336,6 +353,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 			DEBUG(0, ("rpc_auth_pipe: Could not decode schannel\n"));
 			return False;
 		}
+		*pauth_padding_len = rhdr_auth.padding;
 	}
 	return True;
 }
@@ -379,6 +397,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, prs_struct *data, prs_struct *rd
 	char *prdata = NULL;
 	uint32 rdata_len = 0;
 	uint32 current_offset = 0;
+	uint32 fragment_start = 0;
 	uint32 max_data = cli->max_xmit_frag ? cli->max_xmit_frag : 1024;
 
 	/* Create setup parameters - must be in native byte order. */
@@ -469,7 +488,10 @@ static BOOL rpc_api_pipe(struct cli_state *cli, prs_struct *data, prs_struct *rd
 	 */
 
 	if (rhdr.auth_len != 0) {
-		if(!rpc_auth_pipe(cli, rdata, rhdr.frag_len, rhdr.auth_len))
+		int auth_padding_len = 0;
+
+		if(!rpc_auth_pipe(cli, rdata, fragment_start, rhdr.frag_len,
+					rhdr.auth_len, &auth_padding_len))
 			return False;
 		/*
 		 * Drop the auth footers from the current offset.
@@ -477,7 +499,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, prs_struct *data, prs_struct *rd
 		 * The auth footers consist of the auth_data and the
 		 * preceeding 8 byte auth_header.
 		 */
-		current_offset -= (rhdr.auth_len + RPC_HDR_AUTH_LEN);
+		current_offset -= (auth_padding_len + RPC_HDR_AUTH_LEN + rhdr.auth_len);
 	}
 	
 	/* 
@@ -557,12 +579,17 @@ static BOOL rpc_api_pipe(struct cli_state *cli, prs_struct *data, prs_struct *rd
 		if (!rpc_read(cli, rdata, len, &current_offset))
 			return False;
 
+		fragment_start = current_offset - len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
+
 		/*
 		 * Verify any authentication footer.
 		 */
 
 		if (rhdr.auth_len != 0 ) {
-			if(!rpc_auth_pipe(cli, rdata, rhdr.frag_len, rhdr.auth_len))
+			int auth_padding_len = 0;
+
+			if(!rpc_auth_pipe(cli, rdata, fragment_start, rhdr.frag_len,
+						rhdr.auth_len, &auth_padding_len))
 				return False;
 			/*
 			 * Drop the auth footers from the current offset.
@@ -570,7 +597,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, prs_struct *data, prs_struct *rd
 			 * preceeding 8 byte auth_header.
 			 * We need this if there are more fragments.
 			 */
-			current_offset -= (rhdr.auth_len + RPC_HDR_AUTH_LEN);
+			current_offset -= (auth_padding_len + RPC_HDR_AUTH_LEN + rhdr.auth_len);
 		}
 	}
 
