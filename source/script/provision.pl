@@ -20,6 +20,7 @@ my $dnsname;
 my $basedn;
 my $defaultsite = "Default-First-Site-Name";
 my $joinpass = randpass();
+my $usn = 1;
 
 # return the current NTTIME as an integer
 sub nttime()
@@ -122,6 +123,10 @@ sub substitute($)
 		return randguid();
 	}
 
+	if ($var eq "NEWSCHEMAGUID") {
+		return randguid();
+	}
+
 	if ($var eq "DOMAINGUID") {
 		return $opt_domainguid;
 	}
@@ -164,6 +169,12 @@ sub substitute($)
 
 	if ($var eq "USERS") {
 		return $opt_users;
+	}
+
+	if ($var eq "USN") {
+		my $ret = $usn;
+		$usn = $ret + 1;
+		return $ret;
 	}
 
 	die "ERROR: Uknown substitution variable $var\n";
