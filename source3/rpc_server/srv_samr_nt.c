@@ -1664,10 +1664,10 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 }
 
 /*******************************************************************
- _api_samr_open_user. Safe - gives out no passwd info.
+ _samr_open_user. Safe - gives out no passwd info.
  ********************************************************************/
 
-NTSTATUS _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USER *r_u)
+NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USER *r_u)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	DOM_SID sid;
@@ -2186,12 +2186,12 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 }
 
 /*******************************************************************
- _api_samr_create_user
+ _samr_create_user
  Create an account, can be either a normal user or a machine.
  This funcion will need to be updated for bdc/domain trusts.
  ********************************************************************/
 
-NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREATE_USER *r_u)
+NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREATE_USER *r_u)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
 	fstring account;
@@ -2305,12 +2305,12 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
   			int add_ret;
   			all_string_sub(add_script, "%u", account, sizeof(account));
   			add_ret = smbrun(add_script,NULL);
- 			DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
+ 			DEBUG(3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   		}
 		else	/* no add user script -- ask winbindd to do it */
 		{
 			if ( !winbind_create_user( account, &new_rid ) ) {
-				DEBUG(3,("_api_samr_create_user: winbind_create_user(%s) failed\n", 
+				DEBUG(3,("_samr_create_user: winbind_create_user(%s) failed\n", 
 					account));
 			}
 		}
@@ -2620,7 +2620,7 @@ NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_EN
  api_samr_open_alias
  ********************************************************************/
 
-NTSTATUS _api_samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_ALIAS *r_u)
+NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_ALIAS *r_u)
 {
 	DOM_SID sid;
 	POLICY_HND domain_pol = q_u->dom_pol;
