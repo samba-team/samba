@@ -102,7 +102,7 @@ static int interpret_long_filename(struct cli_state *cli,
 			finfo->ctime = interpret_long_date(p); p += 8;
 			finfo->atime = interpret_long_date(p); p += 8;
 			finfo->mtime = interpret_long_date(p); p += 8; p += 8;
-			finfo->size = IVAL(p,0); p += 8;
+			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0); p += 8;
 			p += 8; /* alloc size */
 			finfo->mode = CVAL(p,0); p += 4;
 			namelen = IVAL(p,0); p += 4;
@@ -335,6 +335,7 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
   this uses the old SMBsearch interface. It is needed for testing Samba,
   but should otherwise not be used
   ****************************************************************************/
+
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(file_info *, const char *, void *), void *state)
 {
