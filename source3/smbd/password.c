@@ -586,6 +586,11 @@ return True if the password is correct, False otherwise
 ****************************************************************************/
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 {
+	if ((pwlen == 0) && !lp_null_passwords()) {
+		DEBUG(4,("Null passwords not allowed.\n"));
+		return False;
+	}
+
 	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords()))
 	{
 		/* if 24 bytes long assume it is an encrypted password */
