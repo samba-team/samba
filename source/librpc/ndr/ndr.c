@@ -644,12 +644,12 @@ NTSTATUS ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length)
 /*
   store a switch value
  */
-NTSTATUS ndr_push_set_switch_value(struct ndr_push *ndr, void *p, uint32_t val)
+NTSTATUS ndr_push_set_switch_value(struct ndr_push *ndr, const void *p, uint32_t val)
 {
 	return ndr_token_store(ndr, &ndr->switch_list, p, val);
 }
 
-NTSTATUS ndr_pull_set_switch_value(struct ndr_pull *ndr, void *p, uint32_t val)
+NTSTATUS ndr_pull_set_switch_value(struct ndr_pull *ndr, const void *p, uint32_t val)
 {
 	return ndr_token_store(ndr, &ndr->switch_list, p, val);
 }
@@ -657,12 +657,12 @@ NTSTATUS ndr_pull_set_switch_value(struct ndr_pull *ndr, void *p, uint32_t val)
 /*
   retrieve a switch value
  */
-uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, void *p)
+uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, const void *p)
 {
 	return ndr_token_peek(&ndr->switch_list, p);
 }
 
-uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, void *p)
+uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p)
 {
 	return ndr_token_peek(&ndr->switch_list, p);
 }
@@ -729,21 +729,6 @@ NTSTATUS ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
 	return NT_STATUS_OK;
 }
 
-
-/*
-  pull a union from a blob using NDR
-*/
-NTSTATUS ndr_pull_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32_t level, void *p,
-			     ndr_pull_union_fn_t fn)
-{
-	struct ndr_pull *ndr;
-	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return fn(ndr, NDR_SCALARS|NDR_BUFFERS, level, p);
-}
-
 /*
   pull a struct from a blob using NDR
 */
@@ -807,7 +792,7 @@ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push)
 /*
   generic ndr_size_*() handler for unions
 */
-size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_union_fn_t push)
+size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push)
 {
 	struct ndr_push *ndr;
 	NTSTATUS status;
@@ -819,7 +804,8 @@ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_union_f
 	ndr = ndr_push_init_ctx(NULL);
 	if (!ndr) return 0;
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
-	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, level, discard_const(p));
+	ndr_push_set_switch_value(ndr, p, level);
+	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, discard_const(p));
 	if (!NT_STATUS_IS_OK(status)) {
 		return 0;
 	}

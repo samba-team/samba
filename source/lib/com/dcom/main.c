@@ -119,7 +119,14 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 
 struct dcom_object_exporter *object_exporter_by_oxid(struct com_context *ctx, uint64_t oxid)
 {
-	return NULL; /* FIXME */
+	struct dcom_object_exporter *ox;
+	for (ox = ctx->dcom->object_exporters; ox; ox = ox->next) {
+		if (ox->oxid == oxid) {
+			return ox;
+		}
+	}
+
+	return NULL; 
 }
 
 struct dcom_object_exporter *object_exporter_by_ip(struct com_context *ctx, struct IUnknown *ip)

@@ -183,6 +183,7 @@ struct composite_context* rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 	
 failure:
 	talloc_free(c);
+	return NULL;
 }
 
 
