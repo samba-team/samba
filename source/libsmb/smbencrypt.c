@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "md4.h"
 
 extern int DEBUGLEVEL;
 
@@ -105,28 +104,20 @@ static int _my_mbstowcs(int16 *dst, uchar *src, int len)
  
 void E_md4hash(uchar *passwd, uchar *p16)
 {
-	int i, len;
+	int len;
 	int16 wpwd[129];
-	MDstruct MD;
- 
+	
 	/* Password cannot be longer than 128 characters */
 	len = strlen((char *)passwd);
 	if(len > 128)
 		len = 128;
 	/* Password must be converted to NT unicode */
-	_my_mbstowcs( wpwd, passwd, len);
+	_my_mbstowcs(wpwd, passwd, len);
 	wpwd[len] = 0; /* Ensure string is null terminated */
 	/* Calculate length in bytes */
 	len = _my_wcslen(wpwd) * sizeof(int16);
- 
-	MDbegin(&MD);
-	for(i = 0; i + 64 <= len; i += 64)
-		MDupdate(&MD,wpwd + (i/2), 512);
-	MDupdate(&MD,wpwd + (i/2),(len-i)*8);
-	SIVAL(p16,0,MD.buffer[0]);
-	SIVAL(p16,4,MD.buffer[1]);
-	SIVAL(p16,8,MD.buffer[2]);
-	SIVAL(p16,12,MD.buffer[3]);
+
+	mdfour(p16, (unsigned char *)wpwd, len);
 }
 
 /* Does the NT MD4 hash then des encryption. */
