@@ -145,16 +145,12 @@ extract_ticket(krb5_context context,
 				 rep->part1.ticket.sname, 
 				 rep->part1.ticket.realm);
 
-    if (rep->part2.key_expiration)
-	free (rep->part2.key_expiration);
     if (rep->part2.starttime) {
 	creds->times.starttime = *rep->part2.starttime;
-	free (rep->part2.starttime);
     } else
 	creds->times.starttime = rep->part2.authtime;
     if (rep->part2.renew_till) {
 	creds->times.renew_till = *rep->part2.renew_till;
-	free (rep->part2.renew_till);
     } else
 	creds->times.renew_till = 0;
     creds->times.authtime = rep->part2.authtime;
