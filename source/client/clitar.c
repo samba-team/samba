@@ -118,8 +118,8 @@ extern uint16 cnum;
 extern BOOL readbraw_supported;
 extern int max_xmit;
 extern pstring cur_dir;
-extern int get_total_time_ms;
-extern int get_total_size;
+extern unsigned int get_total_time_ms;
+extern off_t get_total_size;
 extern int Protocol;
 
 int blocksize=20;
@@ -175,7 +175,7 @@ static void writetarheader(int f,  char *aname, SMB_BIG_UINT size, time_t mtime,
   int i, chk, l;
   char *jp;
 
-  DEBUG(5, ("WriteTarHdr, Type = %c, Size= %.0f, Name = %s\n", ftype, (double)size, aname));
+  DEBUG(5, ("WriteTarHdr, Type = %c, Size = %.0f, Name = %s\n", ftype, (double)size, aname));
 
   memset(hb.dummy, 0, sizeof(hb.dummy));
   
@@ -758,7 +758,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
       /* pad tar file with zero's if we couldn't get entire file */
       if (nread < finfo.size) {
-	      DEBUG(0, ("Didn't get entire file. size=%.0f, nread=%d\n", (double)finfo.size, (int)nread));
+	      DEBUG(0, ("Didn't get entire file. size=%.0f, nread=%.0f\n", (double)finfo.size, (double)nread));
 	      if (padit(data, sizeof(data), finfo.size - nread))
 		      DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
       }
