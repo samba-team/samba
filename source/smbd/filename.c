@@ -278,7 +278,6 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
        * Check if the name exists up to this point.
        */
 
-      ZERO_STRUCT(st);
       if (vfs_stat(conn,name, &st) == 0) {
         /*
          * It exists. it must either be a directory or this must be
@@ -296,6 +295,8 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
       } else {
         pstring rest;
 
+		/* Stat failed - ensure we don't use it. */
+        ZERO_STRUCT(st);
         *rest = 0;
 
         /*
