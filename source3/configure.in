@@ -3394,6 +3394,7 @@ SMB_MODULE($MODULE_rpc_netlog, rpc_net, \$(RPC_NETLOG_OBJ), bin/librpc_netlog.so
 SMB_MODULE($MODULE_rpc_dfs, rpc_dfs, \$(RPC_DFS_OBJ), bin/librpc_dfs.so, RPC)
 SMB_MODULE($MODULE_rpc_srv, rpc_srv, \$(RPC_SVC_OBJ), bin/librpc_srvsvc.so, RPC)
 SMB_MODULE($MODULE_rpc_spoolss, rpc_spoolss, \$(RPC_SPOOLSS_OBJ), bin/librpc_spoolss.so, RPC)
+SMB_MODULE($MODULE_rpc_samr, rpc_samr, \$(RPC_SAMR_OBJ), bin/librpc_samr.so, RPC)
 SMB_SUBSYSTEM(RPC)
 
 #################################################
