@@ -57,12 +57,55 @@ static NTSTATUS echo_SourceData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, s
 
 static NTSTATUS echo_TestCall(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct TestCall *r)
 {
-	return NT_STATUS_BAD_NETWORK_NAME;
+	r->out.s2 = "this is a test string";
+	
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS echo_TestCall2(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct TestCall2 *r)
 {
-	return NT_STATUS_BAD_NETWORK_NAME;
+	r->out.info = talloc(mem_ctx, sizeof(*r->out.info));
+	if (!r->out.info) {
+		r->out.result = NT_STATUS_NO_MEMORY;
+		return NT_STATUS_OK;
+	}
+
+	r->out.result = NT_STATUS_OK;
+
+	switch (r->in.level) {
+	case 1:
+		r->out.info->info1.v = 10;
+		break;
+	case 2:
+		r->out.info->info2.v = 20;
+		break;
+	case 3:
+		r->out.info->info3.v = 30;
+		break;
+	case 4:
+		r->out.info->info4.v.low = 40;
+		r->out.info->info4.v.high = 0;
+		break;
+	case 5:
+		r->out.info->info5.v1 = 50;
+		r->out.info->info5.v2.low = 60;
+		r->out.info->info5.v2.high = 0;
+		break;
+	case 6:
+		r->out.info->info6.v1 = 70;
+		r->out.info->info6.info1.v= 80;
+		break;
+	case 7:
+		r->out.info->info7.v1 = 80;
+		r->out.info->info7.info4.v.low = 90;
+		r->out.info->info7.info4.v.high = 0;
+		break;
+	default:
+		r->out.result = NT_STATUS_INVALID_LEVEL;
+		break;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
