@@ -54,7 +54,7 @@ static void parse_domain_user(char *domuser, fstring domain, fstring user)
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
-	BOOL result;
+	uint32 result;
 	fstring name_domain, name_user;
 	int passlen;
 	unsigned char trust_passwd[16];
@@ -131,18 +131,18 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	   for each authentication performed.  This can theoretically
 	   be optimised to use an already open IPC$ connection. */
 
-	result = (domain_client_validate(&user_info, &server_info,
-					 server_state.controller, trust_passwd,
-					 last_change_time) == NT_STATUS_NOPROBLEMO);
+	result = domain_client_validate(&user_info, &server_info,
+                                        server_state.controller, trust_passwd,
+                                        last_change_time);
 
-	return result ? WINBINDD_OK : WINBINDD_ERROR;
+	return (result == NT_STATUS_NOPROBLEMO) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
 /* Challenge Response Authentication Protocol */
 
 enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
 {
-	BOOL result;
+	uint32 result;
 	fstring name_domain, name_user;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
@@ -202,11 +202,11 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	   for each authentication performed.  This can theoretically
 	   be optimised to use an already open IPC$ connection. */
 
-	result = (domain_client_validate(&user_info, &server_info,
-					 server_state.controller, trust_passwd,
-					 last_change_time) == NT_STATUS_NOPROBLEMO);
+	result = domain_client_validate(&user_info, &server_info,
+                                        server_state.controller, trust_passwd,
+                                        last_change_time);
 
-	return result ? WINBINDD_OK : WINBINDD_ERROR;
+	return (result == NT_STATUS_NOPROBLEMO) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
 /* Change a user password */
