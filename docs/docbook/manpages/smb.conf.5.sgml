@@ -699,7 +699,6 @@
 		<listitem><para><link linkend="SERVERSTRING"><parameter>server string</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHOWADDPRINTERWIZARD"><parameter>show add printer wizard</parameter></link></para></listitem>
 		<listitem><para><link linkend="SMBPASSWDFILE"><parameter>smb passwd file</parameter></link></para></listitem>
-		<listitem><para><link linkend="SMBRUN"><parameter>smbrun</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETADDRESS"><parameter>socket address</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETOPTIONS"><parameter>socket options</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOURCEENVIRONMENT"><parameter>source environment</parameter></link></para></listitem>
@@ -6345,27 +6344,6 @@
 		</listitem>
 		</varlistentry>
 
-
-
-		<varlistentry>
-		<term><anchor id="SMBRUN">smbrun (G)</term>
-		<listitem><para>This sets the full path to the <command>smbrun
-		</command> binary. This defaults to the value in the <filename>
-		Makefile</filename>.</para>
-
-		<para>You must get this path right for many services 
-		to work correctly.</para>
-
-		<para>You should not need to change this parameter so 
-		long as Samba is installed correctly.</para>
-
-		<para>Default: <command>smbrun = ${prefix}/private/bin/smbrun
-		</command></para>
-
-		<para>Example: <command>smbrun = /usr/local/samba/bin/smbrun
-		</command></para>
-		</listitem>
-		</varlistentry>
 
 
 

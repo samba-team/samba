@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "12 April 2001" "" ""
+.TH "SMB.CONF" "5" "14 April 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -840,9 +840,6 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIsmb passwd file\fR
-.TP 0.2i
-\(bu
-\fIsmbrun\fR
 .TP 0.2i
 \(bu
 \fIsocket address\fR
@@ -5690,20 +5687,6 @@ is compiled into Samba.
 Default: \fBsmb passwd file = ${prefix}/private/smbpasswd
 \fR
 Example: \fBsmb passwd file = /etc/samba/smbpasswd
-\fR.TP
-\fBsmbrun (G)\fR
-This sets the full path to the \fBsmbrun
-\fRbinary. This defaults to the value in the \fI Makefile\fR.
-
-You must get this path right for many services 
-to work correctly.
-
-You should not need to change this parameter so 
-long as Samba is installed correctly.
-
-Default: \fBsmbrun = ${prefix}/private/bin/smbrun
-\fR
-Example: \fBsmbrun = /usr/local/samba/bin/smbrun
 \fR.TP
 \fBsocket address (G)\fR
 This option allows you to control what 
