@@ -1513,6 +1513,7 @@ SPOOL_PRINTER_DRIVER_INFO_LEVEL_3;
 
 /* SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 structure */
 typedef struct {
+	uint32 unknown;
 	uint32 version;
 	uint32 name_ptr;
 	uint32 environment_ptr;
