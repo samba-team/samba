@@ -94,13 +94,13 @@ as_rep(krb5_context context,
     }
 
     if (client->valid_start && *client->valid_start > kdc_time) {
-	kdc_log(0, "Client not yet valid -- %s", client_name);
+	kdc_log(context, 0, "Client not yet valid -- %s", client_name);
 	ret = KRB5KDC_ERR_CLIENT_NOTYET;
 	goto out;
     }
 
     if (client->valid_end && *client->valid_end < kdc_time) {
-	kdc_log(0, "Client expired -- %s", client_name);
+	kdc_log(context, 0, "Client expired -- %s", client_name);
 	ret = KRB5KDC_ERR_NAME_EXP;
 	goto out;
     }
@@ -114,13 +114,13 @@ as_rep(krb5_context context,
     }
 
     if (server->valid_start && *server->valid_start > kdc_time) {
-	kdc_log(0, "Server not yet valid -- %s", server_name);
+	kdc_log(context, 0, "Server not yet valid -- %s", server_name);
 	ret = KRB5KDC_ERR_SERVICE_NOTYET;
 	goto out;
     }
 
     if (server->valid_end && *server->valid_end < kdc_time) {
-	kdc_log(0, "Server expired -- %s", server_name);
+	kdc_log(context, 0, "Server expired -- %s", server_name);
 	ret = KRB5KDC_ERR_SERVICE_EXP;
 	goto out;
     }
@@ -141,7 +141,7 @@ as_rep(krb5_context context,
     if (client->pw_end && *client->pw_end < kdc_time
 	&& !server->flags.change_pw) {
 	ret = KRB5KDC_ERR_KEY_EXPIRED;
-	kdc_log(0, "Client (%s)'s key has expired", client_name);
+	kdc_log(context, 0, "Client (%s)'s key has expired", client_name);
 	goto out;
     }
 
