@@ -273,7 +273,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	unsigned sec_layer;
 	ADS_STATUS status;
 	krb5_principal principal;
-	krb5_context ctx;
+	krb5_context ctx = NULL;
 	krb5_enctype enc_types[] = {
 #ifdef ENCTYPE_ARCFOUR_HMAC
 			ENCTYPE_ARCFOUR_HMAC,
