@@ -464,12 +464,11 @@ int DSTDiff(time_t t)
 
     table_size++;
 
-    dst_table[i].is_dst = is_dst = (localtime(&t)->tm_isdst?True:False);;
+    dst_table[i].is_dst = is_dst = (localtime(&t)->tm_isdst?True:False);
     dst_table[i].start = dst_table[i].end = t;
     
     /* no entry will cover more than 6 months */
     low = t - 3*30*24*60*60;
-    high = t + 3*30*24*60*60;
 
     /* widen the new entry using two bisection searches */
     while (low+60*60 < dst_table[i].start) {
@@ -480,8 +479,9 @@ int DSTDiff(time_t t)
 	low = t;
     }
 
+    high = low + 3*30*24*60*60;
     while (high-60*60 > dst_table[i].end) {
-      t = high + (high-dst_table[i].end)/2;
+      t = high - (high-dst_table[i].end)/2;
       if ((localtime(&t)->tm_isdst?True:False) == is_dst)
 	dst_table[i].end = t;
       else
