@@ -59,7 +59,7 @@ strcpy_truncate (char *dst, const char *src, size_t dst_sz)
     if (*src == '\0')
 	return n;
     else
-	return dst_sz;
+	return n + strlen (src);
 }
 
 #endif
