@@ -73,6 +73,7 @@ DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 		}
 		ret.length = length;
 		memset(ret.data, 0, ret.length);
+		ret.free = NULL;
 		return ret;
 	}
 
@@ -91,8 +92,6 @@ free a data blob
 *******************************************************************/
 void data_blob_free(DATA_BLOB *d)
 {
-	return;
-
 	if (d) {
 		if (d->free) {
 			(d->free)(d);
@@ -124,7 +123,7 @@ void data_blob_clear_free(DATA_BLOB *d)
 /*******************************************************************
 check if two data blobs are equal
 *******************************************************************/
-BOOL data_blob_equal(DATA_BLOB *d1, DATA_BLOB *d2)
+BOOL data_blob_equal(const DATA_BLOB *d1, const DATA_BLOB *d2)
 {
 	if (d1->length != d2->length) {
 		return False;

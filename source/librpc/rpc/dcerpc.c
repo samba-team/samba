@@ -53,6 +53,9 @@ void dcerpc_pipe_close(struct dcerpc_pipe *p)
 	if (!p) return;
 	p->reference_count--;
 	if (p->reference_count <= 0) {
+		if (p->ntlmssp_state) {
+			ntlmssp_end(&p->ntlmssp_state);
+		}
 		p->transport.shutdown_pipe(p);
 		talloc_destroy(p->mem_ctx);
 	}
@@ -237,6 +240,8 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	/* fill in the fragment length and auth_length */
 	SSVAL(blob->data,  8, blob->length);
 	SSVAL(blob->data, 10, p->auth_info->credentials.length);
+
+	data_blob_free(&p->auth_info->credentials);
 
 	return NT_STATUS_OK;
 }
