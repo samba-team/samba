@@ -120,6 +120,10 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
 #define X_UNIX_PATH "/tmp/.X11-unix/X"
 #endif
 
+#ifndef INADDR_LOOPBACK
+#define INADDR_LOOPBACK 0x7f000001
+#endif
+
 /*
  * Allocate and listen on a local X server socket and a TCP socket.
  * Return the display number.
@@ -133,7 +137,6 @@ get_xsockets (int *unix_socket, int *tcp_socket)
      struct sockaddr_in tcpaddr;
      int dpy;
      int oldmask;
-     struct hostent *h;
      struct in_addr local;
      char *dir, *p;
 
@@ -148,11 +151,7 @@ get_xsockets (int *unix_socket, int *tcp_socket)
      umask (oldmask);
      free (dir);
 
-     h = gethostbyname ("localhost");
-     if (h)
-	 memcpy (&local, h->h_addr, sizeof(local));
-     else
-	 local.s_addr = INADDR_LOOPBACK;
+     local.s_addr = htonl(INADDR_LOOPBACK);
 
      for(dpy = 4; dpy < 256; ++dpy) {
 	 unixfd = socket (AF_UNIX, SOCK_STREAM, 0);
@@ -250,10 +249,6 @@ connect_local_xsocket (unsigned dnr)
      }
      return fd;
 }
-
-#ifndef INADDR_LOOPBACK
-#define INADDR_LOOPBACK 0x7f000001
-#endif
 
 int
 create_and_write_cookie (char *xauthfile,
