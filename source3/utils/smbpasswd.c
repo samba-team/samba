@@ -70,7 +70,10 @@ static void usage(void)
 		printf("  -n                   set no password\n");
 		printf("  -m                   workstation trust account\n");
 		printf("  -i                   inter-domain trust account\n");
+		printf("  -p                   user cannot change password\n");
+		printf("  -x                   user can change password\n");
 	}
+	
 	exit(1);
 }
 
@@ -286,13 +289,15 @@ static int process_root(int argc, char *argv[])
 	BOOL enable_user = False;
 	BOOL set_no_password = False;
 	BOOL stdin_passwd_get = False;
+	BOOL lock_password = False;
+	BOOL unlock_password = False;
 	char *user_name = NULL;
 	char *new_domain = NULL;
 	char *new_passwd = NULL;
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
 
-	while ((ch = getopt(argc, argv, "adehimnj:r:sR:D:U:")) != EOF)
+	while ((ch = getopt(argc, argv, "adehimnpxj:r:sR:D:U:")) != EOF)
 	{
 		switch(ch)
 		{
@@ -360,6 +365,16 @@ static int process_root(int argc, char *argv[])
 			case 'U':
 			{
 				user_name = optarg;
+				break;
+			}
+			case 'p':
+			{
+				lock_password = True;
+				break;
+			}
+			case 'x':
+			{
+				unlock_password = True;
 				break;
 			}
 			default:
@@ -497,6 +512,18 @@ static int process_root(int argc, char *argv[])
 		acb_info |= ACB_PWNOTREQ;
 	}
 
+	if (lock_password)
+	{
+		acb_mask |= ACB_PWLOCK;
+		acb_info |= ACB_PWLOCK;
+	}
+
+	if (unlock_password)
+	{
+		acb_mask |= ACB_PWLOCK;
+		acb_info &= ~ACB_PWLOCK;
+	}
+	
 	if (wks_trust_account)
 	{
 		acb_mask |= ACB_WSTRUST;
@@ -552,7 +579,7 @@ static int process_nonroot(int argc, char *argv[])
 	char *remote_machine = NULL;
 	char *user_name = NULL;
 	char *new_passwd = NULL;
-
+	
 	while ((ch = getopt(argc, argv, "hD:r:sU:")) != EOF)
 	{
 		switch(ch)
@@ -606,7 +633,6 @@ static int process_nonroot(int argc, char *argv[])
 	if (remote_machine == NULL) {
 		remote_machine = "127.0.0.1";
 	}
-
 
 	if (remote_machine != NULL) {
 		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);

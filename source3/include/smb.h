@@ -372,6 +372,7 @@ typedef struct nttime_info
 #define ACB_SVRTRUST   0x0100  /* 1 = Server trust account */
 #define ACB_PWNOEXP    0x0200  /* 1 = User password does not expire */
 #define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
+#define ACB_PWLOCK     0x0800  /* 1 = Password is locked and connot be changed remotely */
  
 #define MAX_HOURS_LEN 32
 

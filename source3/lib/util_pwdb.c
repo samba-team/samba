@@ -225,6 +225,7 @@ char *pwdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
 	if (acct_ctrl & ACB_AUTOLOCK ) acct_str[i++] = 'L';
 	if (acct_ctrl & ACB_PWNOEXP  ) acct_str[i++] = 'X';
 	if (acct_ctrl & ACB_DOMTRUST ) acct_str[i++] = 'I';
+	if (acct_ctrl & ACB_PWLOCK   ) acct_str[i++] = 'P';
 
 	for ( ; i < length - 2 ; i++ )
 	{
@@ -273,6 +274,7 @@ uint16 pwdb_decode_acct_ctrl(const char *p)
 			case 'L': { acct_ctrl |= ACB_AUTOLOCK ; break; /* 'L'ocked account. */ } 
 			case 'X': { acct_ctrl |= ACB_PWNOEXP  ; break; /* No 'X'piry on password */ } 
 			case 'I': { acct_ctrl |= ACB_DOMTRUST ; break; /* 'I'nterdomain trust account. */ }
+			case 'P': { acct_ctrl |= ACB_PWLOCK   ; break; /* 'P'assword cannot be changed remotely */ } 
 			case ' ': { break; }
 			case ':':
 			case '\n':

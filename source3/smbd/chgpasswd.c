@@ -571,6 +571,14 @@ BOOL pass_oem_change(char *user,
 	                               &sampw, 
 	                               new_passwd, sizeof(new_passwd));
 
+	/* now we check to see if we are actually allowed to change the
+	   password. */
+	   
+	if (ret && (sampw->acct_ctrl & ACB_PWLOCK))
+	{
+		ret = False;
+	}
+	
 	/* 
 	 * At this point we have the new case-sensitive plaintext
 	 * password in the fstring new_passwd. If we wanted to synchronise
