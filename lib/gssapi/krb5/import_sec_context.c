@@ -204,6 +204,7 @@ gss_import_sec_context (
     if (ret)
 	goto failure;
 
+    krb5_storage_free (sp);
     return GSS_S_COMPLETE;
 
 failure:
@@ -220,6 +221,7 @@ failure:
     if((*context_handle)->order)
 	gssapi_msg_order_destroy(&(*context_handle)->order);
     HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
+    krb5_storage_free (sp);
     free (*context_handle);
     *context_handle = GSS_C_NO_CONTEXT;
     return ret;
