@@ -211,7 +211,7 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 	
 	/* Extract credentials from the python dictionary */
 
-	if (!py_parse_creds(creds, &username, &password, &domain, errstr))
+	if (!py_parse_creds(creds, &username, &domain, &password, errstr))
 		return NULL;
 
 	/* Now try to connect */
