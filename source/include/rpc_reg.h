@@ -33,6 +33,7 @@
 #define	_REG_UNK_12		0x12
 #define _REG_UNK_13		0x13
 #define	_REG_UNK_17		0x17
+
 */
 
 /* Implemented */
@@ -57,6 +58,7 @@
 #define REG_SHUTDOWN		0x18
 #define REG_ABORT_SHUTDOWN	0x19
 #define REG_GETVERSION		0x1a
+#define REG_SHUTDOWN_EX		0x1e
 
 
 #define HKEY_CLASSES_ROOT	0x80000000
@@ -557,40 +559,43 @@ typedef struct r_reg_open_entry_info
 
 } REG_R_OPEN_ENTRY;
 
-/* REG_Q_SHUTDOWN */
-typedef struct q_reg_shutdown_info
-{
-	uint32 ptr_0;
-	uint32 ptr_1;
-	uint32 ptr_2;
-	UNIHDR hdr_msg;		/* shutdown message */
-	UNISTR2 uni_msg;	/* seconds */
-	uint32 timeout;		/* seconds */
+/***********************************************/
+ 
+typedef struct {
+	uint16 *server;
+	UNISTR4 *message; 	
+	uint32 timeout;		/* in seconds */
 	uint8 force;		/* boolean: force shutdown */
-	uint8 reboot;		/* boolean: reboot on shutdown */
-		
+	uint8 reboot;		/* boolean: reboot on shutdown */		
 } REG_Q_SHUTDOWN;
 
-/* REG_R_SHUTDOWN */
-typedef struct r_reg_shutdown_info
-{
+typedef struct {
 	WERROR status;		/* return status */
-
 } REG_R_SHUTDOWN;
 
-/* REG_Q_ABORT_SHUTDOWN */
-typedef struct q_reg_abort_shutdown_info
-{
-	uint32 ptr_server;
-	uint16 server;
+/***********************************************/
+ 
+typedef struct {
+	uint16 *server;
+	UNISTR4 *message; 	
+	uint32 timeout;		/* in seconds */
+	uint8 force;		/* boolean: force shutdown */
+	uint8 reboot;		/* boolean: reboot on shutdown */
+	uint32 reason;		/* reason - must be defined code */
+} REG_Q_SHUTDOWN_EX;
 
+typedef struct {
+	WERROR status;
+} REG_R_SHUTDOWN_EX;
+
+/***********************************************/
+
+typedef struct {
+	uint16 *server;
 } REG_Q_ABORT_SHUTDOWN;
 
-/* REG_R_ABORT_SHUTDOWN */
-typedef struct r_reg_abort_shutdown_info
-{ 
-	WERROR status; /* return status */
-
+typedef struct { 
+	WERROR status; 
 } REG_R_ABORT_SHUTDOWN;
 
 

@@ -933,6 +933,18 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 		str->uni_max_len++;
 }
 
+/*******************************************************************
+ Inits a UNISTR4 structure.
+********************************************************************/
+
+void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags)
+{
+	init_unistr2( uni4->string, buf, flags );
+	uni4->length = 2 * (uni4->string->uni_str_len);
+	uni4->size   = 2 * (uni4->string->uni_max_len);
+}
+
+
 /** 
  *  Inits a UNISTR2 structure.
  *  @param  ctx talloc context to allocate string on
@@ -1120,10 +1132,59 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 	return True;
 }
 
+/*******************************************************************
+ now read/write UNISTR4
+********************************************************************/
 
-/*
+BOOL prs_unistr4(const char *desc, UNISTR4 *uni4, prs_struct *ps, int depth)
+{
+
+	if ( !prs_uint16("length", ps, depth, &uni4->length ))
+		return False;
+	if ( !prs_uint16("size", ps, depth, &uni4->size ))
+		return False;
+		
+	if ( !prs_io_unistr2_p( desc, &uni4->string, ps, depth ) )
+		return False;
+	if ( !prs_io_unistr2( desc, uni4->string, ps, depth ) )
+		return False;
+		
+	return True;
+}
+
+
+/*******************************************************************
+ Read/Write a UNISTR4*
+********************************************************************/
+
+BOOL prs_unistr4_p(const char *desc, UNISTR4 **uni4, prs_struct *ps, int depth)
+{
+	uint32 data_p;
+
+	/* caputure the pointer value to stream */
+
+	data_p = (uint32) *uni4;
+
+	if ( !prs_uint32("ptr", ps, depth, &data_p ))
+		return False;
+
+	/* we're done if there is no data */
+
+	if ( !data_p )
+		return True;
+
+	if (UNMARSHALLING(ps)) {
+		if ( !(*uni4 = PRS_ALLOC_MEM(ps, UNISTR4, 1)) )
+			return False;
+	}
+
+	return prs_unistr4( desc, *uni4, ps, depth );
+}
+
+/********************************************************************
   initialise a UNISTR_ARRAY from a char**
-*/
+********************************************************************/
+
 BOOL init_unistr2_array(UNISTR2_ARRAY *array, 
 		       uint32 count, const char **strings)
 {

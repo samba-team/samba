@@ -1674,12 +1674,99 @@ BOOL reg_io_r_shutdown(const char *desc, REG_R_SHUTDOWN * r_s, prs_struct *ps,
 }
 
 /*******************************************************************
+Inits a REG_Q_SHUTDOWN_EX structure.
+********************************************************************/
+
+void init_reg_q_shutdown_ex(REG_Q_SHUTDOWN_EX * q_s, const char *msg,
+			uint32 timeout, BOOL do_reboot, BOOL force, uint32 reason)
+{
+	
+	q_s->server = TALLOC_P( get_talloc_ctx(), uint16 );
+	*q_s->server = 0x1;
+
+	q_s->message = TALLOC_P( get_talloc_ctx(), UNISTR4 );
+	init_unistr4( q_s->message, msg, UNI_FLAGS_NONE );
+
+	q_s->timeout = timeout;
+
+	q_s->reboot = do_reboot ? 1 : 0;
+	q_s->force = force ? 1 : 0;
+	q_s->reason = reason;
+}
+
+/*******************************************************************
+reads or writes a REG_Q_SHUTDOWN_EX structure.
+********************************************************************/
+
+BOOL reg_io_q_shutdown_ex(const char *desc, REG_Q_SHUTDOWN_EX * q_s, prs_struct *ps,
+		       int depth)
+{
+	if (q_s == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_q_shutdown_ex");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint16_p("server", ps, depth, &q_s->server))
+		return False;
+
+	if (!prs_unistr4_p("message", &q_s->message, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("timeout", ps, depth, &(q_s->timeout)))
+		return False;
+
+	if (!prs_uint8("force  ", ps, depth, &(q_s->force)))
+		return False;
+	if (!prs_uint8("reboot ", ps, depth, &(q_s->reboot)))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+	if (!prs_uint32("reason", ps, depth, &(q_s->reason)))
+		return False;
+
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a REG_R_SHUTDOWN_EX structure.
+********************************************************************/
+BOOL reg_io_r_shutdown_ex(const char *desc, REG_R_SHUTDOWN_EX * r_s, prs_struct *ps,
+		       int depth)
+{
+	if (r_s == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_r_shutdown_ex");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_s->status))
+		return False;
+
+	return True;
+}
+
+
+
+/*******************************************************************
 Inits a structure.
 ********************************************************************/
 void init_reg_q_abort_shutdown(REG_Q_ABORT_SHUTDOWN * q_s)
 {
 
-	q_s->ptr_server = 0;
+	q_s->server = TALLOC_P( get_talloc_ctx(), uint16 );
+	*q_s->server = 0x1;
 
 }
 
@@ -1698,11 +1785,8 @@ BOOL reg_io_q_abort_shutdown(const char *desc, REG_Q_ABORT_SHUTDOWN * q_s,
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_uint32("ptr_server", ps, depth, &(q_s->ptr_server)))
+	if (!prs_uint16_p("server", ps, depth, &q_s->server))
 		return False;
-	if (q_s->ptr_server != 0)
-		if (!prs_uint16("server", ps, depth, &(q_s->server)))
-			return False;
 
 	return True;
 }

@@ -5,7 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton  1996-1997.
  *  Copyright (C) Paul Ashton                        1997.
  *  Copyright (C) Jeremy Allison                     2001.
- *  Copyright (C) Gerald Carter                      2002.
+ *  Copyright (C) Gerald Carter                      2002-2005.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -593,51 +593,97 @@ done:
 
 WERROR _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
 {
-	WERROR status = WERR_OK;
+	REG_Q_SHUTDOWN_EX q_u_ex;
+	REG_R_SHUTDOWN_EX r_u_ex;
+	
+	/* copy fields (including stealing memory) */
+	
+	q_u_ex.server  = q_u->server;
+	q_u_ex.message = q_u->message;
+	q_u_ex.timeout = q_u->timeout;
+	q_u_ex.force   = q_u->force;
+	q_u_ex.reboot  = q_u->reboot;
+	q_u_ex.reason  = 0x0; 	/* don't care for now */
+	
+	/* thunk down to _reg_shutdown_ex() (just returns a status) */
+	
+	return _reg_shutdown_ex( p, &q_u_ex, &r_u_ex );
+}
+
+/*******************************************************************
+ reg_shutdown_ex
+ ********************************************************************/
+
+#define SHUTDOWN_R_STRING "-r"
+#define SHUTDOWN_F_STRING "-f"
+
+
+WERROR _reg_shutdown_ex(pipes_struct *p, REG_Q_SHUTDOWN_EX *q_u, REG_R_SHUTDOWN_EX *r_u)
+{
 	pstring shutdown_script;
-	UNISTR2 unimsg = q_u->uni_msg;
 	pstring message;
 	pstring chkmsg;
 	fstring timeout;
+	fstring reason;
 	fstring r;
 	fstring f;
+	int ret;
+	BOOL can_shutdown;
 	
-	/* message */
-	rpcstr_pull (message, unimsg.buffer, sizeof(message), unimsg.uni_str_len*2,0);
-	/* security check */
-	alpha_strcpy (chkmsg, message, NULL, sizeof(message));
-	/* timeout */
-	fstr_sprintf(timeout, "%d", q_u->timeout);
-	/* reboot */
-	fstr_sprintf(r, (q_u->reboot) ? SHUTDOWN_R_STRING : "");
-	/* force */
-	fstr_sprintf(f, (q_u->force) ? SHUTDOWN_F_STRING : "");
 
-	pstrcpy(shutdown_script, lp_shutdown_script());
+ 	pstrcpy(shutdown_script, lp_shutdown_script());
+	
+	if ( !*shutdown_script )
+		return WERR_ACCESS_DENIED;
 
-	if(*shutdown_script) {
-		int shutdown_ret;
-		SE_PRIV se_shutdown = SE_REMOTE_SHUTDOWN;
-		BOOL can_shutdown;
+	/* pull the message string and perform necessary sanity checks on it */
+
+	pstrcpy( message, "" );
+	if ( q_u->message ) {
+		UNISTR2 *msg_string = q_u->message->string;
 		
-		can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_shutdown );
-		
-		/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
-		if ( can_shutdown )
-			become_root();
-		all_string_sub(shutdown_script, "%m", chkmsg, sizeof(shutdown_script));
-		all_string_sub(shutdown_script, "%t", timeout, sizeof(shutdown_script));
-		all_string_sub(shutdown_script, "%r", r, sizeof(shutdown_script));
-		all_string_sub(shutdown_script, "%f", f, sizeof(shutdown_script));
-		shutdown_ret = smbrun(shutdown_script,NULL);
-		DEBUG(3,("_reg_shutdown: Running the command `%s' gave %d\n",shutdown_script,shutdown_ret));
-		if ( can_shutdown )
-			unbecome_root();
-		/********** END SeRemoteShutdownPrivilege BLOCK **********/
+		rpcstr_pull( message, msg_string->buffer, sizeof(message), msg_string->uni_str_len*2, 0 );
 	}
+	alpha_strcpy (chkmsg, message, NULL, sizeof(message));
+		
+	fstr_sprintf( timeout, "%d", q_u->timeout );
+	fstr_sprintf( r, (q_u->reboot) ? SHUTDOWN_R_STRING : "" );
+	fstr_sprintf( f, (q_u->force) ? SHUTDOWN_F_STRING : "" );
+	fstr_sprintf( reason, "%d", q_u->reason );
 
-	return status;
+	all_string_sub( shutdown_script, "%z", chkmsg, sizeof(shutdown_script) );
+	all_string_sub( shutdown_script, "%t", timeout, sizeof(shutdown_script) );
+	all_string_sub( shutdown_script, "%r", r, sizeof(shutdown_script) );
+	all_string_sub( shutdown_script, "%f", f, sizeof(shutdown_script) );
+	all_string_sub( shutdown_script, "%x", reason, sizeof(shutdown_script) );
+
+	can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_remote_shutdown );
+		
+	/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
+	
+	/* IF someone has privs, run the shutdown script as root. OTHERWISE run it as not root
+	   Take the error return from the script and provide it as the Windows return code. */
+	   
+	if ( can_shutdown ) {
+	        DEBUG(3,("_reg_shutdown_ex: Privilege Check is OK for shutdown \n"));
+		become_root();
+	} 
+
+	ret = smbrun( shutdown_script, NULL );
+		
+	DEBUG(3,("_reg_shutdown_ex: Running the command `%s' gave %d\n",
+		shutdown_script, ret));
+		
+	if ( can_shutdown )
+		unbecome_root();
+
+	/********** END SeRemoteShutdownPrivilege BLOCK **********/
+	
+	return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
 }
+
+
+
 
 /*******************************************************************
  reg_abort_shutdwon
@@ -645,30 +691,33 @@ WERROR _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
 
 WERROR _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_ABORT_SHUTDOWN *r_u)
 {
-	WERROR status = WERR_OK;
 	pstring abort_shutdown_script;
+	int ret;
+	BOOL can_shutdown;
 
 	pstrcpy(abort_shutdown_script, lp_abort_shutdown_script());
 
-	if(*abort_shutdown_script) {
-		int abort_shutdown_ret;
-		SE_PRIV se_shutdown = SE_REMOTE_SHUTDOWN;
-		BOOL can_shutdown;
+	if ( !*abort_shutdown_script )
+		return WERR_ACCESS_DENIED;
 		
-		can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_shutdown );
+	can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_remote_shutdown );
 		
-		/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
-		if ( can_shutdown )
-			become_root();
-		abort_shutdown_ret = smbrun(abort_shutdown_script,NULL);
-		DEBUG(3,("_reg_abort_shutdown: Running the command `%s' gave %d\n",abort_shutdown_script,abort_shutdown_ret));
-		if ( can_shutdown )
-			unbecome_root();
-		/********** END SeRemoteShutdownPrivilege BLOCK **********/
+	/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
+	
+	if ( can_shutdown )
+		become_root();
 		
-	}
+	ret = smbrun( abort_shutdown_script, NULL );
+	
+	DEBUG(3,("_reg_abort_shutdown: Running the command `%s' gave %d\n",
+		abort_shutdown_script, ret));
+		
+	if ( can_shutdown )
+		unbecome_root();
+		
+	/********** END SeRemoteShutdownPrivilege BLOCK **********/
 
-	return status;
+	return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
 }
 
 /*******************************************************************

@@ -177,6 +177,13 @@ typedef struct unistr2_info
 	uint16 *buffer;
 } UNISTR2;
 
+/* UNIHDR + UNISTR2* */
+typedef struct {
+	uint16 length;	/* number of bytes not counting NULL terminatation */
+	uint16 size;	/* number of bytes including NULL terminatation */
+	UNISTR2 *string;
+} UNISTR4;
+
 /* STRING2 - string size (in uint8 chars) and buffer */
 typedef struct string2_info
 {

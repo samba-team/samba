@@ -216,6 +216,32 @@ static BOOL api_reg_shutdown(pipes_struct *p)
 }
 
 /*******************************************************************
+ api_reg_shutdown_ex
+ ********************************************************************/
+
+static BOOL api_reg_shutdown_ex(pipes_struct *p)
+{
+	REG_Q_SHUTDOWN_EX q_u;
+	REG_R_SHUTDOWN_EX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the reg shutdown ex */
+	if(!reg_io_q_shutdown_ex("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _reg_shutdown_ex(p, &q_u, &r_u);
+
+	if(!reg_io_r_shutdown_ex("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  api_reg_abort_shutdown
  ********************************************************************/
 
@@ -383,6 +409,7 @@ static struct api_struct api_reg_cmds[] =
       { "REG_QUERY_KEY"          , REG_QUERY_KEY          , api_reg_query_key        },
       { "REG_INFO"               , REG_INFO               , api_reg_info             },
       { "REG_SHUTDOWN"           , REG_SHUTDOWN           , api_reg_shutdown         },
+      { "REG_SHUTDOWN_EX"        , REG_SHUTDOWN_EX        , api_reg_shutdown_ex      },
       { "REG_ABORT_SHUTDOWN"     , REG_ABORT_SHUTDOWN     , api_reg_abort_shutdown   },
       { "REG_GETVERSION"         , REG_GETVERSION         , api_reg_getversion       },
       { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         }

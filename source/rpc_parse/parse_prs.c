@@ -598,12 +598,12 @@ BOOL prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
 	if (q == NULL)
 		return False;
 
-    if (UNMARSHALLING(ps)) {
+	if (UNMARSHALLING(ps)) {
 		if (ps->bigendian_data)
 			*data16 = RSVAL(q,0);
 		else
 			*data16 = SVAL(q,0);
-    } else {
+	} else {
 		if (ps->bigendian_data)
 			RSSVAL(q,0,*data16);
 		else
@@ -615,6 +615,34 @@ BOOL prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
 	ps->data_offset += sizeof(uint16);
 
 	return True;
+}
+
+/*******************************************************************
+ Stream a uint16* (allocate memory if unmarshalling)
+ ********************************************************************/
+
+BOOL prs_uint16_p(const char *name, prs_struct *ps, int depth, uint16 **data16)
+{
+	uint32 data_p;
+
+	/* caputure the pointer value to stream */
+
+	data_p = (uint32) *data16;
+
+	if ( !prs_uint32("ptr", ps, depth, &data_p ))
+		return False;
+
+	/* we're done if there is no data */
+
+	if ( !data_p )
+		return True;
+
+	if (UNMARSHALLING(ps)) {
+		if ( !(*data16 = PRS_ALLOC_MEM(ps, uint16, 1)) )
+			return False;
+	}
+
+	return prs_uint16(name, ps, depth, *data16);
 }
 
 /*******************************************************************
