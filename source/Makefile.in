@@ -321,9 +321,6 @@ SWAT_OBJ = $(SWAT_OBJ1) $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
-                      $(UBIQX_OBJ) $(LIB_OBJ)
-
 STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
@@ -549,7 +546,7 @@ nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
-everything: all libsmbclient debug2html smbfilter talloctort bin/make_printerdef
+everything: all libsmbclient debug2html smbfilter talloctort 
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
@@ -703,10 +700,6 @@ bin/smbgroupedit: $(SMBGROUPEDIT_OBJ) bin/.dummy
 bin/nmblookup: $(NMBLOOKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MAKE_PRINTERDEF_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
