@@ -442,7 +442,7 @@ is called <command>nmblookup</command>.
 <para>
 <indexterm><primary>LMHOSTS</primary></indexterm>
 This file is usually located in MS Windows NT 4.0 or Windows 200x/XP in the directory
-<filename>C:\WINNT\SYSTEM32\DRIVERS\ETC</filename> and contains the IP Address
+<filename>%SystemRoot%\SYSTEM32\DRIVERS\ETC</filename> and contains the IP Address
 and the machine name in matched pairs. The <filename>LMHOSTS</filename> file
 performs NetBIOS name to IP address mapping.
 </para>
@@ -538,7 +538,7 @@ It typically looks like this:
 
 <para>
 This file is usually located in MS Windows NT 4.0 or Windows 200x/XP in 
-the directory <filename>C:\WINNT\SYSTEM32\DRIVERS\ETC</filename> and contains 
+the directory <filename>%SystemRoot%\SYSTEM32\DRIVERS\ETC</filename> and contains 
 the IP Address and the IP hostname in matched pairs. It can be 
 used by the name resolution infrastructure in MS Windows, depending 
 on how the TCP/IP environment is configured. This file is in 
