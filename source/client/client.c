@@ -1751,6 +1751,9 @@ static void browse_fn(const char *name, uint32 m,
           case STYPE_IPC:
             fstrcpy(typestr,"IPC"); break;
         }
+	/* FIXME: If the remote machine returns non-ascii characters
+	   in any of these fields, they can corrupt the output.  We
+	   should remove them. */
 	d_printf("\t%-15.15s%-10.10s%s\n",
                name,typestr,comment);
 }
