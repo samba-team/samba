@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbmnt">
+<refentry id="smbmnt.8">
 
 <refmeta>
 	<refentrytitle>smbmnt</refentrytitle>
@@ -38,8 +38,8 @@
 	by the user, and that the user has write permission on.</para>
 
 	<para>The <command>smbmnt</command> program is normally invoked 
-	by <ulink url="smbmount.8.html"><command>smbmount(8)</command>
-	</ulink>. It should not be invoked directly by users. </para>
+	by <citerefentry><refentrytitle>smbmount</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>. It should not be invoked directly by users. </para>
 
 	<para>smbmount searches the normal PATH for smbmnt. You must ensure
 	that the smbmnt version in your path matches the smbmount used.</para>
@@ -107,7 +107,8 @@
 	</para>
 	
 	<para>The conversion of this manpage for Samba 2.2 was performed 
-	by Gerald Carter</para>
+	by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
+	was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="testparm">
+<refentry id="testparm.1">
 
 <refmeta>
 	<refentrytitle>testparm</refentrytitle>
@@ -29,11 +29,12 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>testparm</command> is a very simple test program 
-	to check an <command>smbd</command> configuration file for 
+	to check an <citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> configuration file for 
 	internal correctness. If this program reports no problems, you 
 	can use the configuration file with confidence that <command>smbd
 	</command> will successfully load the configuration file.</para>
@@ -82,9 +83,9 @@
 		<varlistentry>
 		<term>-v</term>
 		<listitem><para>If this option is specified, testparm 
-		will also output all options that were not used in 
-		<filename>smb.conf</filename> and are thus set to
-		their defaults.</para></listitem>
+		will also output all options that were not used in <citerefentry>
+		<refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
+		</citerefentry> and are thus set to their defaults.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -98,7 +99,8 @@
 		<term>configfilename</term>
 		<listitem><para>This is the name of the configuration file 
 		to check. If this parameter is not present then the 
-		default <filename>smb.conf</filename> file will be checked. 	
+		default <citerefentry><refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
+		</citerefentry> file will be checked. 	
 		</para></listitem>
 		</varlistentry>
 
@@ -108,7 +110,9 @@
 		<listitem><para>If this parameter and the following are 
 		specified, then <command>testparm</command> will examine the <parameter>hosts
 		allow</parameter> and <parameter>hosts deny</parameter> 
-		parameters in the <filename>smb.conf</filename> file to 
+		parameters in the <citerefentry>
+		<refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
+		</citerefentry> file to 
 		determine if the hostname with this IP address would be
 		allowed access to the <command>smbd</command> server.  If 
 		this parameter is supplied, the hostIP parameter must also
@@ -130,9 +134,11 @@
 
 	<variablelist>
 		<varlistentry>
-		<term><filename>smb.conf</filename></term>
+		<term><citerefentry><refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
+		</citerefentry></term>
 		<listitem><para>This is usually the name of the configuration 
-		file used by <command>smbd</command>. 
+		file used by <citerefentry><refentrytitle>smbd</refentrytitle><manvolnum>8</manvolnum>
+		</citerefentry>. 
 		</para></listitem>
 		</varlistentry>
 	</variablelist>
@@ -158,9 +164,11 @@
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para><ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename></ulink>, 
-	<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>
-	</para>
+	<para><citerefentry>
+		<refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
+		</citerefentry>, <citerefentry>
+		<refentrytitle>smbd</refentrytitle><manvolnum>8</manvolnum>
+		</citerefentry></para>
 </refsect1>
 
 <refsect1>
@@ -173,11 +181,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

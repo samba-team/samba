@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="net">
+<refentry id="net.8">
 
 <refmeta>
 	<refentrytitle>net</refentrytitle>
@@ -42,8 +42,8 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para>The samba net utility is meant to work just like the net utility 
 	available for windows and DOS.</para>
@@ -65,7 +65,8 @@
 		<varlistentry>
 		<term>-w target-workgroup</term>
 		<listitem><para>
-		Sets target workgroup or domain. You have to specify either this option or the IP address or the name of a server.
+		Sets target workgroup or domain. You have to specify 
+		either this option or the IP address or the name of a server.
 		</para></listitem>
 		</varlistentry>
 
@@ -86,7 +87,8 @@
 		<varlistentry>
 		<term>-I ip-address</term>
 		<listitem><para>
-		IP address of target server to use. You have to specify either this option or a target workgroup or a target server.
+		IP address of target server to use. You have to
+		specify either this option or a target workgroup or a target server.
 		</para></listitem>
 		</varlistentry>
 
@@ -114,7 +116,8 @@
 		<varlistentry>
 		<term>-S server</term>
 		<listitem><para>
-		Name of target server. You should specify either this option or a target workgroup or a target IP address.
+		Name of target server. You should specify either 
+		this option or a target workgroup or a target IP address.
 		</para></listitem>
 		</varlistentry>
 
@@ -211,7 +214,7 @@
 		<varlistentry>
 		<term>SYSTEM</term>
 		<listitem><para>
-		Displays the time on the remote server in a format ready for /bin/date
+		Displays the time on the remote server in a format ready for <command>/bin/date</command>
 		</para></listitem>
 		</varlistentry>
 
@@ -219,7 +222,7 @@
 		<term>SET</term>
 		<listitem><para>
 		Tries to set the date and time of the local server to that on 
-		the remote server using /bin/date.
+		the remote server using <command>/bin/date</command>.
 		</para></listitem>
 		</varlistentry>
 
@@ -276,7 +279,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>USER ADD &lt;name&gt; [password] [-F user flags] [misc. options</term>
+		<term>USER ADD &lt;name&gt; [password] [-F user flags] [misc. options]</term>
 		<listitem><para>
 		Add specified user
 		</para></listitem>

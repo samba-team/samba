@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbclient">
+<refentry id="smbclient.1">
 
 <refmeta>
 	<refentrytitle>smbclient</refentrytitle>
@@ -44,12 +44,13 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>smbclient</command> is a client that can 
 	'talk' to an SMB/CIFS server. It offers an interface
-	similar to that of the ftp program (see <command>ftp(1)</command>).  
+	similar to that of the ftp program (see <citerefentry><refentrytitle>ftp</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>).  
 	Operations include things like getting files from the server 
 	to the local machine, putting files from the local machine to 
 	the server, retrieving directory information from the server 
@@ -81,7 +82,9 @@
 
 		<para>The server name is looked up according to either 
 		the <parameter>-R</parameter> parameter to <command>smbclient</command> or 
-		using the name resolve order parameter in the <filename>smb.conf</filename> file, 
+		using the name resolve order parameter in 
+		the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file, 
 		allowing an administrator to change the order and methods 
 		by which server names are looked up. </para></listitem>
 		</varlistentry>
@@ -113,15 +116,17 @@
 		
 		<varlistentry>
 		<term>-s smb.conf</term>
-		<listitem><para>Specifies the location of the all important 
-		<filename>smb.conf</filename> file. </para></listitem>
+		<listitem><para>Specifies the location of the all 
+		important <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file. </para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
 		<term>-O socket options</term>
 		<listitem><para>TCP socket options to set on the client 
-		socket. See the socket options parameter in the <filename>
-		smb.conf (5)</filename> manpage for the list of valid 
+		socket. See the socket options parameter in 
+		the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> manual page for the list of valid 
 		options. </para></listitem>
 		</varlistentry>
 
@@ -134,44 +139,51 @@
 		string of different name resolution options.</para>
 
 		<para>The options are :"lmhosts", "host", "wins" and "bcast". They 
-		cause names to be resolved as follows :</para>
+		cause names to be resolved as follows:</para>
 
 		<itemizedlist>
-			<listitem><para><constant>lmhosts</constant> : Lookup an IP 
+			<listitem><para><constant>lmhosts</constant>: Lookup an IP 
 			address in the Samba lmhosts file. If the line in lmhosts has 
-			no name type attached to the NetBIOS name (see the <ulink 
-			url="lmhosts.5.html">lmhosts(5)</ulink> for details) then
-			any name type matches for lookup.</para></listitem>
-
-			<listitem><para><constant>host</constant> : Do a standard host 
+			no name type attached to the NetBIOS name (see 
+			the <citerefentry><refentrytitle>lmhosts</refentrytitle>
+			<manvolnum>5</manvolnum></citerefentry> for details) then
+			any name type matches for lookup.</para>
+			</listitem>
+			
+			<listitem><para><constant>host</constant>: Do a standard host 
 			name to IP address resolution, using the system <filename>/etc/hosts
 			</filename>, NIS, or DNS lookups. This method of name resolution 
 			is operating system dependent, for instance on IRIX or Solaris this 
 			may be controlled by the <filename>/etc/nsswitch.conf</filename> 
 			file).  Note that this method is only used if the NetBIOS name 
 			type being queried is the 0x20 (server) name type, otherwise 
-			it is ignored.</para></listitem>
-
-			<listitem><para><constant>wins</constant> : Query a name with 
+			it is ignored.</para>
+			</listitem>
+			
+			<listitem><para><constant>wins</constant>: Query a name with 
 			the IP address listed in the <parameter>wins server</parameter>
 			parameter.  If no WINS server has
-			been specified this method will be ignored.</para></listitem>
-
-			<listitem><para><constant>bcast</constant> : Do a broadcast on 
+			been specified this method will be ignored.</para>
+			</listitem>
+			
+			<listitem><para><constant>bcast</constant>: Do a broadcast on 
 			each of the known local interfaces listed in the 
 			<parameter>interfaces</parameter>
 			parameter. This is the least reliable of the name resolution 
 			methods as it depends on the target host being on a locally 
-			connected subnet.</para></listitem>
+			connected subnet.</para>
+			</listitem>
 		</itemizedlist>
 
 		<para>If this parameter is not set then the name resolve order 
-		defined in the <filename>smb.conf</filename> file parameter  
+		defined in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file parameter  
 		(name resolve order) will be used. </para>
 
 		<para>The default order is lmhosts, host, wins, bcast and without 
 		this parameter or any entry in the <parameter>name resolve order
-		</parameter> parameter of the <filename>smb.conf</filename> file the name resolution
+		</parameter> parameter of the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file the name resolution
 		methods will be attempted in this order. </para></listitem>
 		</varlistentry>
 		
@@ -202,8 +214,8 @@
 		<parameter>-I</parameter> options useful, as they allow you to 
 		control the FROM and TO parts of the message. </para>
 
-		<para>See the message command parameter in the <filename>
-		smb.conf(5)</filename> for a description of how to handle incoming 
+		<para>See the <parameter>message command</parameter> parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> for a description of how to handle incoming 
 		WinPopup messages in Samba. </para>
 
 		<para><emphasis>Note</emphasis>: Copy WinPopup into the startup group 
@@ -379,11 +391,11 @@
 		password used in the connection.  The format of the file is 
 		</para>
 		
-		<para><programlisting>
+<para><programlisting>
 username = &lt;value&gt; 
 password = &lt;value&gt;
 domain = &lt;value&gt;
-		</programlisting></para>
+</programlisting></para>
 	
 
 		<para>If the domain parameter is missing the current workgroup name
@@ -435,9 +447,9 @@ domain = &lt;value&gt;
 		<varlistentry>
 		<term>-W WORKGROUP</term>
 		<listitem><para>Override the default workgroup (domain) specified
-		in the workgroup parameter of the <filename>smb.conf</filename>
-		file for this connection. This may be needed to connect to some
-		servers. </para></listitem>
+		in the workgroup parameter of the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry>	file for this connection. This may be 
+		needed to connect to some servers. </para></listitem>
 		</varlistentry>
 		
 		
@@ -519,7 +531,7 @@ domain = &lt;value&gt;
 			
 		<para><emphasis>Tar Filenames</emphasis></para>
 			
-		<para>All file names can be given as DOS path names (with '\' 
+		<para>All file names can be given as DOS path names (with '\\' 
 		as the component separator) or as UNIX path names (with '/' as 
 		the component separator). </para>
 			
@@ -587,7 +599,7 @@ domain = &lt;value&gt;
 
 	<para><prompt>smb:\&gt; </prompt></para>
 
-	<para>The backslash ("\") indicates the current working directory 
+	<para>The backslash ("\\") indicates the current working directory 
 	on the server, and will change if the current working directory 
 	is changed. </para>
 
@@ -1040,8 +1052,8 @@ domain = &lt;value&gt;
 	and writeable only by the user. </para>
 
 	<para>To test the client, you will need to know the name of a 
-	running SMB/CIFS server. It is possible to run <command>smbd(8)
-	</command> as an ordinary user - running that server as a daemon 
+	running SMB/CIFS server. It is possible to run <citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> as an ordinary user - running that server as a daemon 
 	on a user-accessible port (typically any port number over 1024)
 	would provide a suitable test server. </para>
 </refsect1>
@@ -1063,8 +1075,7 @@ domain = &lt;value&gt;
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
-	the Samba suite.</para>
+	<para>This man page is correct for version 2.2 of the Samba suite.</para>
 </refsect1>
 
 
@@ -1078,11 +1089,11 @@ domain = &lt;value&gt;
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
+	was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

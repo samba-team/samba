@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbpasswd">
+<refentry id="smbpasswd.8">
 
 <refmeta>
 	<refentrytitle>smbpasswd</refentrytitle>
@@ -37,25 +37,27 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 	
 	<para>The smbpasswd program has several different 
-	functions, depending on whether it is run by the <emphasis>root</emphasis> 
-	user or not. When run as a normal user it allows the user to change 
+	functions, depending on whether it is run by the <emphasis>root</emphasis> user 
+	or not. When run as a normal user it allows the user to change 
 	the password used for their SMB sessions on any machines that store 
 	SMB passwords. </para>
 
 	<para>By default (when run with no arguments) it will attempt to 
 	change the current user's SMB password on the local machine. This is 
-	similar to the way the <command>passwd(1)</command> program works. 
-	<command>smbpasswd</command> differs from how the passwd program works 
+	similar to the way the <command>passwd(1)</command> program works. <command>
+	smbpasswd</command> differs from how the passwd program works 
 	however in that it is not <emphasis>setuid root</emphasis> but works in 
-	a client-server mode and communicates with a locally running
-	<command>smbd(8)</command>. As a consequence in order for this to 
+	a client-server mode and communicates with a 
+	locally running <citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>. As a consequence in order for this to 
 	succeed the smbd daemon must be running on the local machine. On a 
 	UNIX machine the encrypted SMB passwords are usually stored in 
-	the <filename>smbpasswd(5)</filename> file. </para>
+	the <citerefentry><refentrytitle>smbpasswd</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> file. </para>
 
 	<para>When run by an ordinary user with no options, smbpasswd 
 	will prompt them for their old SMB password and then ask them 
@@ -67,12 +69,13 @@
 
 	<para>smbpasswd can also be used by a normal user to change their
 	SMB password on remote machines, such as Windows NT Primary Domain 
-	Controllers.   See the (-r) and -U options below. </para>
+	Controllers.   See the (<parameter>-r</parameter>) and <parameter>-U</parameter> options 
+	below. </para>
 
 	<para>When run by root, smbpasswd allows new users to be added 
 	and deleted in the smbpasswd file, as well as allows changes to 
-	the attributes of the user in this file to be made. When run by root, 
-	<command>smbpasswd</command> accesses the local smbpasswd file 
+	the attributes of the user in this file to be made. When run by root, <command>
+	smbpasswd</command> accesses the local smbpasswd file 
 	directly, thus enabling changes to be made even if smbd is not 
 	running. </para>
 </refsect1>
@@ -121,8 +124,8 @@
 		
 		<para>If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
 		format) there is no space in the user's password entry to write
-		this information and the command will FAIL. See <command>smbpasswd(5)
-		</command> for details on the 'old' and new password file formats.
+		this information and the command will FAIL. See <citerefentry><refentrytitle>smbpasswd</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> for details on the 'old' and new password file formats.
 		</para>
 
 		<para>This option is only available when running smbpasswd as 
@@ -140,7 +143,8 @@
 		
 		<para>If the smbpasswd file is in the 'old' format, then <command>
 		smbpasswd</command> will FAIL to enable the account.  
-                See <command>smbpasswd (5)</command> for 
+                See <citerefentry><refentrytitle>smbpasswd</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> for 
 		details on the 'old' and new password file formats. </para>
 
 		<para>This option is only available when running smbpasswd as root. 
@@ -226,15 +230,15 @@
 		name of the host being connected to. </para>
 
 		<para>The options are :"lmhosts", "host", "wins" and "bcast". They
-		 cause names to be resolved as follows : </para>
+		 cause names to be resolved as follows: </para>
 			<itemizedlist>
-				<listitem><para><constant>lmhosts</constant> : Lookup an IP 
+				<listitem><para><constant>lmhosts</constant>: Lookup an IP 
             address in the Samba lmhosts file. If the line in lmhosts has 
-            no name type attached to the NetBIOS name (see the <ulink 
-            url="lmhosts.5.html">lmhosts(5)</ulink> for details) then
+            no name type attached to the NetBIOS name (see the <citerefentry><refentrytitle>lmhosts</refentrytitle>
+	    <manvolnum>5</manvolnum></citerefentry> for details) then
             any name type matches for lookup.</para></listitem>
 
-            <listitem><para><constant>host</constant> : Do a standard host 
+            <listitem><para><constant>host</constant>: Do a standard host 
             name to IP address resolution, using the system <filename>/etc/hosts
             </filename>, NIS, or DNS lookups. This method of name resolution 
             is operating system depended for instance on IRIX or Solaris this 
@@ -243,12 +247,12 @@
             type being queried is the 0x20 (server) name type, otherwise 
             it is ignored.</para></listitem>
 
-            <listitem><para><constant>wins</constant> : Query a name with 
+            <listitem><para><constant>wins</constant>: Query a name with 
             the IP address listed in the <parameter>wins server</parameter> 
 	    parameter.  If no WINS server has been specified this method 
 	    will be ignored.</para></listitem>
 
-            <listitem><para><constant>bcast</constant> : Do a broadcast on 
+            <listitem><para><constant>bcast</constant>: Do a broadcast on 
             each of the known local interfaces listed in the
             <parameter>interfaces</parameter> parameter. This is the least 
 	    reliable of the name resolution methods as it depends on the 
@@ -256,8 +260,8 @@
 		</itemizedlist>
 		
 		<para>The default order is <command>lmhosts, host, wins, bcast</command> 
-		and without this parameter or any entry in the 
-		<filename>smb.conf</filename> file the name resolution methods will 
+		and without this parameter or any entry in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file the name resolution methods will 
 		be attempted in this order. </para></listitem>
 		</varlistentry>
 		
@@ -292,7 +296,6 @@
 		</varlistentry>
 		
 		
-		
 		<varlistentry>
 		<term>-s</term>
 		<listitem><para>This option causes smbpasswd to be silent (i.e. 
@@ -312,7 +315,7 @@
 		switch is used to specify the password to be used with the 
 		<ulink url="smb.conf.5.html#LDAPADMINDN"><parameter>ldap admin 
 		dn</parameter></ulink>.  Note that the password is stored in
-		the <filename>private/secrets.tdb</filename> and is keyed off 
+		the <filename>secrets.tdb</filename> and is keyed off 
 		of the admin's DN.  This means that if the value of <parameter>ldap
 		admin dn</parameter> ever changes, the password will need to be 
 		manually updated as well.
@@ -355,14 +358,15 @@
 	mode communicating  with a local smbd for a non-root user then 
 	the smbd daemon must be running for this to work. A common problem 
 	is to add a restriction to the hosts that may access the <command>
-	smbd</command> running on the local machine by specifying a 
-	<parameter>allow hosts</parameter> or <parameter>deny hosts</parameter> 
-	entry in the <filename>smb.conf</filename> file and neglecting to 
+	smbd</command> running on the local machine by specifying either <parameter>allow
+	hosts</parameter> or <parameter>deny hosts</parameter> entry in 
+	the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> file and neglecting to 
 	allow "localhost" access to the smbd. </para>
 
 	<para>In addition, the smbpasswd command is only useful if Samba
-	has been set up to use encrypted passwords. See the file 
-	<filename>ENCRYPTION.txt</filename> in the docs directory for details 
+	has been set up to use encrypted passwords. See the document <ulink url="pwencrypt.html">
+	"LanMan and NT Password Encryption in Samba"</ulink> in the docs directory for details 
 	on how to do this. </para>
 </refsect1>
 
@@ -370,15 +374,14 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 3.0 of 
-	the Samba suite.</para>
+	<para>This man page is correct for version 3.0 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para><ulink url="smbpasswd.5.html"><filename>smbpasswd(5)</filename></ulink>, 
-	<ulink url="samba.7.html">samba(7)</ulink>
-	</para>
+	<para><citerefentry><refentrytitle>smbpasswd</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>, <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry>.</para>
 </refsect1>
 
 <refsect1>
@@ -391,11 +394,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

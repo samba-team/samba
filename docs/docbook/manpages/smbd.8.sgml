@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbd">
+<refentry id="smbd.8">
 
 <refmeta>
 	<refentrytitle>smbd</refentrytitle>
@@ -32,7 +32,8 @@
 
 <refsect1>
 	<title>DESCRIPTION</title>
-	<para>This program is part of the Samba suite.</para>
+	<para>This program is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>smbd</command> is the server daemon that 
 	provides filesharing and printing services to Windows clients. 
@@ -46,15 +47,14 @@
 	<para>An extensive description of the services that the 
 	server can provide is given in the man page for the 
 	configuration file controlling the attributes of those 
-	services (see <ulink url="smb.conf.5.html"><filename>smb.conf(5)
-	</filename></ulink>.  This man page will not describe the 
+	services (see <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>.  This man page will not describe the 
 	services, but will concentrate on the administrative aspects 
 	of running the server.</para>
 
 	<para>Please note that there are significant security 
-	implications to running this server, and the <ulink
-	url="smb.conf.5.html"><filename>smb.conf(5)</filename></ulink> 
-	manpage should be regarded as mandatory reading before 
+	implications to running this server, and the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> manual page should be regarded as mandatory reading before 
 	proceeding with installation.</para>
 
 	<para>A session is created whenever a client requests one. 
@@ -160,9 +160,9 @@
 		data, most of which is extremely cryptic.</para>
 
 		<para>Note that specifying this parameter here will 
-		override the <ulink url="smb.conf.5.html#loglevel">log
-		level</ulink> parameter in the <ulink url="smb.conf.5.html">
-		<filename>smb.conf(5)</filename></ulink> file.</para>
+		override the <ulink url="smb.conf.5.html#loglevel"><parameter>log
+		level</parameter></ulink> parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file.</para>
 		</listitem>
 		</varlistentry>
 		
@@ -175,9 +175,9 @@
 		messages from the running server. The log 
 		file generated is never removed by the server although 
 		its size may be controlled by the <ulink 
-		url="smb.conf.5.html#maxlogsize">max log size</ulink>
-		option in the <ulink url="smb.conf.5.html"><filename>
-		smb.conf(5)</filename></ulink> file. <emphasis>Beware:</emphasis>
+		url="smb.conf.5.html#maxlogsize"><parameter>max log size</parameter></ulink>
+		option in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file. <emphasis>Beware:</emphasis>
 		If the directory specified does not exist, <command>smbd</command>
 		will log to the default debug log location defined at compile time.
 		</para>
@@ -189,9 +189,9 @@
 		<varlistentry>
 		<term>-O &lt;socket options&gt;</term>
 		<listitem><para>See the <ulink 
-		url="smb.conf.5.html#socketoptions">socket options</ulink> 
-		parameter in the <ulink url="smb.conf.5.html"><filename>smb.conf(5)
-		</filename></ulink> file for details.</para></listitem>
+		url="smb.conf.5.html#socketoptions"><parameter>socket options</parameter></ulink> 
+		parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file for details.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -226,8 +226,8 @@
 		information in this file includes server-specific
 		information such as what printcap file to use, as well 
 		as descriptions of all the services that the server is 
-		to provide. See <ulink url="smb.conf.5.html"><filename>
-		smb.conf(5)</filename></ulink> for more information.
+		to provide. See <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> for more information.
 		The default configuration file name is determined at 
 		compile time.</para></listitem>
 		</varlistentry>
@@ -243,7 +243,7 @@
 		<listitem><para>If the server is to be run by the 
 		<command>inetd</command> meta-daemon, this file 
 		must contain suitable startup information for the 
-		meta-daemon. See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		meta-daemon. See the <ulink url="install.html">"How to Install and Test SAMBA"</ulink>
 		document for details.
 		</para></listitem>
 		</varlistentry>
@@ -255,7 +255,7 @@
 
 		<para>If running the server as a daemon at startup, 
 		this file will need to contain an appropriate startup 
-		sequence for the server. See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		sequence for the server. See the <ulink url="install.html">"How to Install and Test SAMBA"</ulink>
 		document for details.</para></listitem>
 		</varlistentry>
 		
@@ -265,21 +265,20 @@
 		meta-daemon <command>inetd</command>, this file 
 		must contain a mapping of service name (e.g., netbios-ssn) 
 		to service port (e.g., 139) and protocol type (e.g., tcp). 
-		See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		See the <ulink url="install.html">"How to Install and Test SAMBA"</ulink>
 		document for details.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
 		<term><filename>/usr/local/samba/lib/smb.conf</filename></term>
-		<listitem><para>This is the default location of the 
-		<ulink url="smb.conf.5.html"><filename>smb.conf</filename></ulink>
-		server configuration file. Other common places that systems 
+		<listitem><para>This is the default location of the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> server configuration file. Other common places that systems 
 		install this file are <filename>/usr/samba/lib/smb.conf</filename> 
-		and <filename>/etc/smb.conf</filename>.</para>
+		and <filename>/etc/samba/smb.conf</filename>.</para>
 		
 		<para>This file describes all the services the server 
-		is to make available to clients. See <ulink url="smb.conf.5.html">
-		<filename>smb.conf(5)</filename></ulink>  for more information.</para>
+		is to make available to clients. See <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> for more information.</para>
 		</listitem>
 		</varlistentry>
 	</variablelist>
@@ -317,9 +316,9 @@
 	<para>Samba uses PAM for authentication (when presented with a plaintext 
 	password), for account checking (is this account disabled?) and for
 	session management.  The degree too which samba supports PAM is restricted
-	by the limitations of the SMB protocol and the 
-	<ulink url="smb.conf.5.html#OBEYPAMRESRICTIONS">obey pam restricions</ulink>
-	smb.conf paramater.  When this is set, the following restrictions apply:
+	by the limitations of the SMB protocol and the <ulink url="smb.conf.5.html#OBEYPAMRESRICTIONS"><parameter>obey 
+	pam restricions</parameter></ulink> <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> paramater.  When this is set, the following restrictions apply:
 	</para>
 
 	<itemizedlist>
@@ -379,9 +378,9 @@
 	it to die on its own.</para>
 
 	<para>The debug log level of <command>smbd</command> may be raised
-	or lowered using <ulink url="smbcontrol.1.html"><command>smbcontrol(1)
-	</command></ulink> program (SIGUSR[1|2] signals are no longer used in
-	Samba 2.2). This is to allow transient problems to be diagnosed, 
+	or lowered using <citerefentry><refentrytitle>smbcontrol</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry> program (SIGUSR[1|2] signals are no longer 
+	used since Samba 2.2). This is to allow transient problems to be diagnosed, 
 	whilst still running at a normally low log level.</para>
 
 	<para>Note that as the signal handlers send a debug write, 
@@ -394,14 +393,15 @@
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para>hosts_access(5), <command>inetd(8)</command>, 
-	<ulink url="nmbd.8.html"><command>nmbd(8)</command></ulink>, 
-	<ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename>
-	</ulink>, <ulink url="smbclient.1.html"><command>smbclient(1)
-	</command></ulink>, <ulink url="testparm.1.html"><command>
-	testparm(1)</command></ulink>, <ulink url="testprns.1.html">
-	<command>testprns(1)</command></ulink>, and the Internet RFC's
-	<filename>rfc1001.txt</filename>, <filename>rfc1002.txt</filename>. 
+	<para><citerefentry><refentrytitle>hosts_access</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>, <citerefentry><refentrytitle>inetd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>nmbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbclient</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>testparm</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>testprns</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>, and the 
+	Internet RFC's	<filename>rfc1001.txt</filename>, <filename>rfc1002.txt</filename>. 
 	In addition the CIFS (formerly SMB) specification is available 
 	as a link from the Web page <ulink url="http://samba.org/cifs/"> 
 	http://samba.org/cifs/</ulink>.</para>
@@ -417,11 +417,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+	Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

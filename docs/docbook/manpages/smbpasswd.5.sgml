@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbpasswd">
+<refentry id="smbpasswd.5">
 
 <refmeta>
 	<refentrytitle>smbpasswd</refentrytitle>
@@ -19,8 +19,8 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para>smbpasswd is the Samba encrypted password file. It contains 
 	the username, Unix user id and the SMB hashed passwords of the 
@@ -122,7 +122,7 @@
 		the attributes of the users account. In the Samba 2.2 release 
 		this field is bracketed by '[' and ']' characters and is always 
 		13 characters in length (including the '[' and ']' characters).
-		The contents of this field may be any of the characters.
+		The contents of this field may be any of the following characters:
 		</para>
 		
 		<itemizedlist>
@@ -136,12 +136,11 @@
 			Password Hash and NT Password Hash are ignored). Note that this 
 			will only allow users to log on with no password if the <parameter>
 			null passwords</parameter> parameter is set in the <ulink
-			url="smb.conf.5.html#NULLPASSWORDS"><filename>smb.conf(5)
-			</filename></ulink> config file. </para></listitem>
+			url="smb.conf.5.html#NULLPASSWORDS"><citerefentry><refentrytitle>smb.conf</refentrytitle>
+			<manvolnum>5</manvolnum></citerefentry></ulink> config file. </para></listitem>
 				
 			<listitem><para><emphasis>D</emphasis> - This means the account 
-			is disabled and no SMB/CIFS logins  will be	allowed for 
-			this user. </para></listitem>
+			is disabled and no SMB/CIFS logins  will be allowed for this user. </para></listitem>
 			
 			<listitem><para><emphasis>W</emphasis> - This means this account 
 			is a "Workstation Trust" account. This kind of account is used 
@@ -178,8 +177,9 @@
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para><ulink url="smbpasswd.8.html"><command>smbpasswd(8)</command></ulink>, 
-	<ulink url="samba.7.html">samba(7)</ulink>, and
+	<para><citerefentry><refentrytitle>smbpasswd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry>, and
 	the Internet RFC1321 for details on the MD4 algorithm.
 	</para>
 </refsect1>
@@ -194,11 +194,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>
