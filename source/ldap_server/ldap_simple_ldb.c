@@ -34,43 +34,59 @@ struct samdb_context {
 } while(0)
 
 
-static const char *sldb_trim_dn(TALLOC_CTX *mem_ctx, const char *dn)
+/*
+   fix the DN removing unneded non-significative spaces
+   this function ASSUME the string is talloced
+ */
+static char *sldb_fix_dn(const char *dn)
 {
-	char *new_dn;
-	char *w;
-	int i,s = -1;
-	int before = 1;
+	char *new_dn, *n, *current;
+	int i, j, k;
 
-	new_dn = talloc_strdup(mem_ctx, dn);
+	/* alloc enough room to host the whole dn as multibyte string */
+	new_dn = talloc(dn, strlen(dn) + 1);
 	if (!new_dn) {
-		return dn;
+		DEBUG(0, ("sldb_fix_dn: Out of memory!"));
+		return NULL;
 	}
 
-	w = new_dn;
-	for (i=0; dn[i]; i++) {
+	i = j = 0;
+	while (dn[i] != '\0') {
+		/* it is legal to check for ascii chars in utf-8 as it is
+		 * guaranted to never contain ascii chars (up to 0x7F) as part
+		 * of a multibyte sequence */
 
-		if (dn[i] == ' ') {
-			if (s == -1) s = i;
+		new_dn[j] = dn[i];
+
+		if (dn[i] == ',' || dn[i] == '=') {
+			/* skip spaces after ',' or '=' */
+			for (++i; dn[i] == ' '; i++) ;
+			j++;
 			continue;
 		}
-
-		if (before && dn[i] != ',' && s != -1) {
-			i=s;
+		if (dn[i] == ' ') {
+			/* check if there's a ',' after these spaces */
+			for (k = i; dn[k] == ' '; k++) ;
+			if (dn[k] == ',') {
+				/* skip spaces */
+				i = k;
+				continue;
+			} else {
+				/* fill the dest buffer with the spaces */
+				for (; dn[i] == ' '; i++, j++) {
+					new_dn[j] = ' ';
+				}
+				continue;
+			}
 		}
-		if (dn[i] == ',') {
-			before = 0;
-		} else {
-			before = 1;
-		}
-		*w = dn[i];
-		w++;
-		s = -1;
+		i++;
+		j++;
 	}
-
-	*w = '\0';
+	new_dn[j] = '\0';
 
 	return new_dn;
 }
+
 
 static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_SearchRequest *r)
@@ -91,7 +107,10 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
-	basedn = sldb_trim_dn(samdb, r->basedn);
+	basedn = sldb_fix_dn(r->basedn);
+	if (basedn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DEBUG(10, ("sldb_Search: basedn: [%s]\n", basedn));
 	DEBUG(10, ("sldb_Search: filter: [%s]\n", r->filter));
@@ -207,7 +226,10 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
-	dn = sldb_trim_dn(samdb, r->dn);
+	dn = sldb_fix_dn(r->dn);
+	if (dn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DEBUG(10, ("sldb_add: dn: [%s]\n", dn));
 
@@ -301,7 +323,10 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
-	dn = sldb_trim_dn(samdb, r->dn);
+	dn = sldb_fix_dn(r->dn);
+	if (dn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DEBUG(10, ("sldb_Del: dn: [%s]\n", dn));
 
@@ -352,7 +377,10 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
-	dn = sldb_trim_dn(samdb, r->dn);
+	dn = sldb_fix_dn(r->dn);
+	if (dn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DEBUG(10, ("sldb_modify: dn: [%s]\n", dn));
 
@@ -465,7 +493,10 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
-	dn = sldb_trim_dn(samdb, r->dn);
+	dn = sldb_fix_dn(r->dn);
+	if (dn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DEBUG(10, ("sldb_Compare: dn: [%s]\n", dn));
 	filter = talloc_asprintf(samdb, "(%s=%*s)", r->attribute, r->value.length, r->value.data);
