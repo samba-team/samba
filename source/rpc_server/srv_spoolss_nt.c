@@ -993,7 +993,6 @@ Can't find printer handle we created for printer %s\n", name ));
 		/* map an empty access mask to the minimum access mask */
 		if (printer_default->access_required == 0x0)
 			printer_default->access_required = PRINTER_ACCESS_USE;
-		
 
 		/*
 		 * If we are not serving the printer driver for this printer,
@@ -1009,6 +1008,12 @@ Can't find printer handle we created for printer %s\n", name ));
 
 		if (!print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
+			close_printer_handle(p, handle);
+			return WERR_ACCESS_DENIED;
+		}
+
+		if ((printer_default->access_required & SPECIFIC_RIGHTS_MASK)& ~(PRINTER_ACCESS_ADMINISTER|PRINTER_ACCESS_USE)) {
+			DEBUG(3, ("access DENIED for printer open - unknown bits\n"));
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;
 		}
