@@ -241,6 +241,7 @@ BOOL reset_stat_cache( void )
 {
 	static BOOL initialised;
 	if (!lp_stat_cache()) return True;
+
 	if (!initialised) {
 		initialised = True;
 		return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));

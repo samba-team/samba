@@ -768,7 +768,7 @@ static void usage(char *pname)
 		exit(1);
 
 	/*
-	 * Note that this call should be done after the sys_fork() call
+	 * Note that this call should be done after the fork() call
 	 * in open_sockets(), as some versions of the locking shared
 	 * memory code register openers in a flat file.
 	 */ 

@@ -1788,3 +1788,54 @@ smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length)
 
 	return s;
 }
+
+/*******************************************************************
+ Convert a single UNICODE character to DOS codepage. Returns the
+ number of bytes in the DOS codepage character.
+********************************************************************/ 
+
+size_t unicode_to_dos_char(char *dst, const smb_ucs2_t src)
+{
+	smb_ucs2_t val = ucs2_to_doscp[src];
+	if(val < 256) {
+		*dst = (char)val;
+		return (size_t)1;
+	}
+	/*
+	 * A 2 byte value is always written as
+	 * high/low into the buffer stream.
+	 */
+
+	dst[0] = (char)((val >> 8) & 0xff);
+	dst[1] = (char)(val & 0xff);
+	return (size_t)2;
+}
+
+/*******************************************************************
+ Pull a DOS codepage string out of a UNICODE array. len is in bytes.
+********************************************************************/
+
+void unistr_to_dos(char *dest, char *src, size_t len)
+{
+	char *destend = dest + len;
+
+	while (dest < destend) {
+		uint16 ucs2_val = SVAL(src,0);
+		uint16 cp_val = ucs2_to_doscp[ucs2_val];
+
+		src += 2;
+
+		if (ucs2_val == 0)
+			break;
+
+		if (cp_val < 256)
+			*dest++ = (char)cp_val;
+		else {
+			*dest++ = (cp_val >> 8) & 0xff;
+			*dest++ = (cp_val & 0xff);
+		}
+	}
+
+	*dest = 0;
+}
+

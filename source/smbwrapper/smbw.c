@@ -93,11 +93,11 @@ void smbw_init(void)
 
 	if ((p=smbw_getshared("PREFIX"))) {
 		slprintf(smbw_prefix,sizeof(fstring)-1, "/%s/", p);
-		string_sub(smbw_prefix,"//", "/", 0);
+		all_string_sub(smbw_prefix,"//", "/", 0);
 		DEBUG(2,("SMBW_PREFIX is %s\n", smbw_prefix));
 	}
 
-	slprintf(line,sizeof(line)-1,"PWD_%d", sys_getpid());
+	slprintf(line,sizeof(line)-1,"PWD_%d", (int)getpid());
 	
 	p = smbw_getshared(line);
 	if (!p) {
@@ -320,7 +320,7 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 
 	pstrcpy(path,p);
 
-	string_sub(path, "/", "\\");
+	all_string_sub(path, "/", "\\", 0);
 
  ok:
 	DEBUG(4,("parsed path name=%s cwd=%s [%s] [%s] [%s]\n", 
@@ -340,6 +340,9 @@ int smbw_path(const char *path)
 	pstring s;
 	char *cwd;
 	int len;
+
+	if(!path)
+		return 0;
 
 	/* this is needed to prevent recursion with the BSD malloc which
 	   opens /etc/malloc.conf on the first call */
@@ -1358,9 +1361,9 @@ int smbw_fork(void)
 	struct smbw_file *file, *next_file;
 	struct smbw_server *srv, *next_srv;
 
-	if (pipe(p)) return real_sys_fork();
+	if (pipe(p)) return real_fork();
 
-	child = real_sys_fork();
+	child = real_fork();
 
 	if (child) {
 		/* block the parent for a moment until the sockets are
@@ -1385,7 +1388,7 @@ int smbw_fork(void)
 		smbw_srv_close(srv);
 	}
 
-	slprintf(line,sizeof(line)-1,"PWD_%d", sys_getpid());
+	slprintf(line,sizeof(line)-1,"PWD_%d", (int)getpid());
 	smbw_setshared(line,smbw_cwd);
 
 	/* unblock the parent */

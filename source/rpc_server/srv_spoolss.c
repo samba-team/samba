@@ -54,6 +54,9 @@ static BOOL api_spoolss_open_printer_ex(prs_struct *data, prs_struct *rdata)
 					      q_u.user_switch, q_u.user_ctr,
 					      &r_u.handle);
 
+	/* we _really_ need to switch to talloc() */
+	safe_free(q_u.printer_default.devmode_cont.devmode);
+
 	if (!spoolss_io_r_open_printer_ex("", &r_u, rdata, 0))
 	{
 		DEBUG(0,
@@ -139,7 +142,7 @@ static BOOL api_spoolss_closeprinter(prs_struct *data, prs_struct *rdata)
  *
  * called from the spoolss dispatcher
  ********************************************************************/
-static BOOL api_spoolss_deleteprinter(prs_struct *data, prs_struct *rdata) 
+static BOOL api_spoolss_deleteprinter(prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_DELETEPRINTER q_u;
 	SPOOL_R_DELETEPRINTER r_u;
@@ -147,16 +150,20 @@ static BOOL api_spoolss_deleteprinter(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if (!spoolss_io_q_deleteprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteprinter: unable to unmarshall SPOOL_Q_DELETEPRINTER.\n"));
+	if (!spoolss_io_q_deleteprinter("", &q_u, data, 0))
+	{
+		DEBUG(0,
+		      ("spoolss_io_q_deleteprinter: unable to unmarshall SPOOL_Q_DELETEPRINTER.\n"));
 		return False;
 	}
 
 	r_u.status = _spoolss_deleteprinter(&q_u.handle);
 	memcpy(&r_u.handle, &q_u.handle, sizeof(r_u.handle));
 
-	if (!spoolss_io_r_deleteprinter("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_deleteprinter: unable to marshall SPOOL_R_DELETEPRINTER.\n"));
+	if (!spoolss_io_r_deleteprinter("", &r_u, rdata, 0))
+	{
+		DEBUG(0,
+		      ("spoolss_io_r_deleteprinter: unable to marshall SPOOL_R_DELETEPRINTER.\n"));
 		return False;
 	}
 
@@ -221,6 +228,8 @@ static BOOL api_spoolss_rfnpcnex(prs_struct *data, prs_struct *rdata)
 	r_u.status = _spoolss_rfnpcnex(&q_u.handle, q_u.change,
 				       q_u.option, &r_u.info);
 
+	safe_free(q_u.option);
+
 	/* we always have a NOTIFY_INFO struct */
 	r_u.info_ptr = 0x1;
 
@@ -250,7 +259,8 @@ static BOOL api_spoolss_enumprinters(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumprinters("", &q_u, data, 0))
 	{
@@ -293,7 +303,8 @@ static BOOL api_spoolss_getprinter(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_getprinter("", &q_u, data, 0))
 	{
@@ -327,7 +338,8 @@ static BOOL api_spoolss_getprinter(prs_struct *data, prs_struct *rdata)
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static BOOL api_spoolss_getprinterdriver2(prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_getprinterdriver2(prs_struct * data,
+					  prs_struct * rdata)
 {
 	SPOOL_Q_GETPRINTERDRIVER2 q_u;
 	SPOOL_R_GETPRINTERDRIVER2 r_u;
@@ -335,7 +347,8 @@ static BOOL api_spoolss_getprinterdriver2(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_getprinterdriver2("", &q_u, data, 0))
 	{
@@ -372,7 +385,8 @@ static BOOL api_spoolss_getprinterdriver2(prs_struct *data, prs_struct *rdata)
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static BOOL api_spoolss_startpageprinter(prs_struct *data, prs_struct *rdata)
+static BOOL api_spoolss_startpageprinter(prs_struct * data,
+					 prs_struct * rdata)
 {
 	SPOOL_Q_STARTPAGEPRINTER q_u;
 	SPOOL_R_STARTPAGEPRINTER r_u;
@@ -613,7 +627,8 @@ static BOOL api_spoolss_addjob(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_addjob("", &q_u, data, 0))
 	{
@@ -651,7 +666,8 @@ static BOOL api_spoolss_enumjobs(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumjobs("", &q_u, data, 0))
 	{
@@ -753,7 +769,8 @@ static BOOL api_spoolss_enumprinterdrivers(prs_struct *data,
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumprinterdrivers("", &q_u, data, 0))
 	{
@@ -795,7 +812,8 @@ static BOOL api_spoolss_enumforms(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumforms("", &q_u, data, 0))
 	{
@@ -835,7 +853,8 @@ static BOOL api_spoolss_enumports(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumports("", &q_u, data, 0))
 	{
@@ -953,7 +972,8 @@ static BOOL api_spoolss_getprinterdriverdirectory(prs_struct *data,
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_getprinterdriverdir("", &q_u, data, 0))
 	{
@@ -1127,7 +1147,8 @@ static BOOL api_spoolss_enumprintprocessors(prs_struct *data,
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumprintprocessors("", &q_u, data, 0))
 	{
@@ -1169,7 +1190,8 @@ static BOOL api_spoolss_enumprintprocdatatypes(prs_struct *data,
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumprintprocdatatypes("", &q_u, data, 0))
 	{
@@ -1210,7 +1232,8 @@ static BOOL api_spoolss_enumprintmonitors(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumprintmonitors("", &q_u, data, 0))
 	{
@@ -1246,7 +1269,8 @@ static BOOL api_spoolss_getjob(prs_struct *data, prs_struct *rdata)
 	SPOOL_Q_GETJOB q_u;
 	SPOOL_R_GETJOB r_u;
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if (!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_getjob("", &q_u, data, 0))
 	{
@@ -1276,20 +1300,23 @@ static BOOL api_spoolss_getjob(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
-struct api_struct api_spoolss_cmds[] =
-{
+struct api_struct api_spoolss_cmds[] = {
 	{"SPOOLSS_OPENPRINTEREX", SPOOLSS_OPENPRINTEREX,
 	 api_spoolss_open_printer_ex},
 	{"SPOOLSS_GETPRINTERDATA", SPOOLSS_GETPRINTERDATA,
 	 api_spoolss_getprinterdata},
 	{"SPOOLSS_CLOSEPRINTER", SPOOLSS_CLOSEPRINTER,
 	 api_spoolss_closeprinter},
+	{"SPOOLSS_DELETEPRINTER", SPOOLSS_DELETEPRINTER,
+	 api_spoolss_deleteprinter},
 	{"SPOOLSS_RFFPCNEX", SPOOLSS_RFFPCNEX, api_spoolss_rffpcnex},
 	{"SPOOLSS_RFNPCNEX", SPOOLSS_RFNPCNEX, api_spoolss_rfnpcnex},
-		{"SPOOLSS_ENUMPRINTERS", SPOOLSS_ENUMPRINTERS,
+	
+	{"SPOOLSS_ENUMPRINTERS", SPOOLSS_ENUMPRINTERS,
 	 api_spoolss_enumprinters},
 	{"SPOOLSS_GETPRINTER", SPOOLSS_GETPRINTER, api_spoolss_getprinter},
-		{"SPOOLSS_GETPRINTERDRIVER2", SPOOLSS_GETPRINTERDRIVER2,
+	
+	{"SPOOLSS_GETPRINTERDRIVER2", SPOOLSS_GETPRINTERDRIVER2,
 	 api_spoolss_getprinterdriver2},
 	{"SPOOLSS_STARTPAGEPRINTER", SPOOLSS_STARTPAGEPRINTER,
 	 api_spoolss_startpageprinter},
@@ -1297,8 +1324,6 @@ struct api_struct api_spoolss_cmds[] =
 	 api_spoolss_endpageprinter},
 	{"SPOOLSS_STARTDOCPRINTER", SPOOLSS_STARTDOCPRINTER,
 	 api_spoolss_startdocprinter},
-	{"SPOOLSS_DELETEPRINTER", SPOOLSS_DELETEPRINTER,
-	 api_spoolss_deleteprinter},
 	{"SPOOLSS_ENDDOCPRINTER", SPOOLSS_ENDDOCPRINTER,
 	 api_spoolss_enddocprinter},
 	{"SPOOLSS_WRITEPRINTER", SPOOLSS_WRITEPRINTER,
@@ -1311,8 +1336,8 @@ struct api_struct api_spoolss_cmds[] =
 	{"SPOOLSS_SETJOB", SPOOLSS_SETJOB, api_spoolss_setjob},
 	{"SPOOLSS_ENUMFORMS", SPOOLSS_ENUMFORMS, api_spoolss_enumforms},
 	{"SPOOLSS_ENUMPORTS", SPOOLSS_ENUMPORTS, api_spoolss_enumports},
-	
-		{"SPOOLSS_ENUMPRINTERDRIVERS", SPOOLSS_ENUMPRINTERDRIVERS,
+
+	{"SPOOLSS_ENUMPRINTERDRIVERS", SPOOLSS_ENUMPRINTERDRIVERS,
 	 api_spoolss_enumprinterdrivers},
 	{"SPOOLSS_ADDPRINTEREX", SPOOLSS_ADDPRINTEREX,
 	 api_spoolss_addprinterex},
@@ -1327,14 +1352,14 @@ struct api_struct api_spoolss_cmds[] =
 	 api_spoolss_setprinterdata},
 	{"SPOOLSS_ADDFORM", SPOOLSS_ADDFORM, api_spoolss_addform},
 	{"SPOOLSS_SETFORM", SPOOLSS_SETFORM, api_spoolss_setform},
-	
-		{"SPOOLSS_ENUMPRINTPROCESSORS", SPOOLSS_ENUMPRINTPROCESSORS,
+
+	{"SPOOLSS_ENUMPRINTPROCESSORS", SPOOLSS_ENUMPRINTPROCESSORS,
 	 api_spoolss_enumprintprocessors},
 	{"SPOOLSS_ENUMMONITORS", SPOOLSS_ENUMMONITORS,
 	 api_spoolss_enumprintmonitors},
 	{"SPOOLSS_GETJOB", SPOOLSS_GETJOB, api_spoolss_getjob},
-	
-		{"SPOOLSS_ENUMPRINTPROCDATATYPES",
+
+	{"SPOOLSS_ENUMPRINTPROCDATATYPES",
 	 SPOOLSS_ENUMPRINTPROCDATATYPES, api_spoolss_enumprintprocdatatypes},
 	{NULL, 0, NULL}
 };

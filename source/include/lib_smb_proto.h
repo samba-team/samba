@@ -410,6 +410,7 @@ BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
 BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
 BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
+BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64);
 
 /*The following definitions come from  rpc_parse/parse_net.c  */
 
@@ -682,6 +683,7 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK * chk,
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
+void prs_dump(char *name, int level, prs_struct *ps);
 void prs_debug(prs_struct *ps, int depth, const char *desc,
 	       const char *fn_name);
 void prs_debug_out(const prs_struct *ps, char *msg, int level);

@@ -656,8 +656,7 @@ static void usage(char *pname)
 
   TimeInit();
 
-  pstrcpy( debugf, NMBLOGFILE );
-
+  slprintf(debugf, sizeof(debugf), "%s/log.nmbd", LOGFILEBASE);
   setup_logging( argv[0], False );
 
   charset_initialise();

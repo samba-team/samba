@@ -941,6 +941,8 @@ void all_string_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,const smb_ucs2_t *
 void split_at_last_component_w(smb_ucs2_t *path, smb_ucs2_t *front, smb_ucs2_t sep, smb_ucs2_t *back);
 smb_ucs2_t *octal_string_w(int i);
 smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length);
+size_t unicode_to_dos_char(char *dst, const smb_ucs2_t src);
+void unistr_to_dos(char *dest, char *src, size_t len);
 
 /*The following definitions come from  lib/vuser.c  */
 
@@ -1373,7 +1375,6 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
 int dfs_path_error(char* inbuf, char* outbuf);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 		       char** ppdata);
-void unistr_to_dos(char* dst,char* src)	       ;
 
 /*The following definitions come from  msdfs/msdfs_tdb.c  */
 
@@ -2509,6 +2510,7 @@ BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
 BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
 BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
+BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64);
 
 /*The following definitions come from  rpc_parse/parse_net.c  */
 
@@ -2781,6 +2783,7 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK * chk,
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
+void prs_dump(char *name, int level, prs_struct *ps);
 void prs_debug(prs_struct *ps, int depth, const char *desc,
 	       const char *fn_name);
 void prs_debug_out(const prs_struct *ps, char *msg, int level);
@@ -4490,8 +4493,8 @@ int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 
 /*The following definitions come from  tdb/tdbutil.c  */
 
-int tdb_get_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
-int tdb_get_int(TDB_CONTEXT *tdb, char *keystr);
+int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
+int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr);
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);

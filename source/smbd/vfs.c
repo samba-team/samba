@@ -211,7 +211,7 @@ BOOL vfs_init_custom(connection_struct *conn)
     }
     
     if (conn->vfs_ops.ftruncate == NULL) {
-	conn->vfs_ops.ftruncate= default_vfs_ops.ftruncate;
+	conn->vfs_ops.ftruncate = default_vfs_ops.ftruncate;
     }
     
     if (conn->vfs_ops.lock == NULL) {

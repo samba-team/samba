@@ -2,8 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Samba memory buffer functions
-   Copyright (C) Andrew Tridgell              1992-1999
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
+   Copyright (C) Andrew Tridgell              1992-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,6 +24,25 @@ extern int DEBUGLEVEL;
 
 #include "includes.h"
 
+
+/*******************************************************************
+dump a prs to a file
+ ********************************************************************/
+void prs_dump(char *name, int level, prs_struct *ps)
+{
+	int fd;
+	int len = prs_buf_len(ps);
+	char *data = prs_data(ps, ps->offset);
+	pstring fname;
+	if (DEBUGLEVEL < 50) return;
+	slprintf(fname,sizeof(fname), "%s/%s_%d.prs", tmpdir(), name, level);
+	fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
+	if (fd != -1) {
+		write(fd, data, len - ps->offset);
+		close(fd);
+		DEBUG(0,("created %s\n", fname));
+	}
+}
 
 /*******************************************************************
  debug output for parsing info.

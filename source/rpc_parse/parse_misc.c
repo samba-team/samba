@@ -1047,3 +1047,14 @@ BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth)
 	return True;
 }
 
+/*******************************************************************
+ Stream a uint64_struct
+ ********************************************************************/
+BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64)
+{
+	prs_uint32(name, ps, depth+1, &data64->low);
+	prs_uint32(name, ps, depth+1, &data64->high);
+	return True;
+}
+
+
