@@ -184,7 +184,7 @@ AC_CHECK_FUNCS(_stat64 __stat64 _fstat64 __fstat64 _lstat64 __lstat64)
 AC_CHECK_FUNCS(llseek _llseek __llseek readdir64 _readdir64 __readdir64)
 AC_CHECK_FUNCS(pread _pread __pread pread64 _pread64 __pread64)
 AC_CHECK_FUNCS(pwrite _pwrite __pwrite pwrite64 _pwrite64 __pwrite64)
-AC_CHECK_FUNCS(open64 _open64 __open64)
+AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
 
 AC_CACHE_CHECK([for long long],samba_cv_have_longlong,[
 AC_TRY_RUN([#include <stdio.h>

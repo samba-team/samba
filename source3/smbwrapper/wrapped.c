@@ -803,12 +803,12 @@
 }
 #endif
 
-#ifndef LINUX
  int creat(const char *path, mode_t mode)
 {
 	return open(path, O_WRONLY|O_CREAT|O_TRUNC, mode);
 }
 
+#ifdef HAVE_CREAT64
  int creat64(const char *path, mode_t mode)
 {
 	return open64(path, O_WRONLY|O_CREAT|O_TRUNC, mode);
