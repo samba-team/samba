@@ -1,5 +1,5 @@
-              WHATS NEW IN Samba 2.2.1:  9th July 2001
-              ========================================
+              WHATS NEW IN Samba 2.2.1:  10th July 2001
+              =========================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
