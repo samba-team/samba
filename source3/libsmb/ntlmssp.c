@@ -551,7 +551,9 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (ntlmssp_state->use_ntlmv2) {
+	if (!ntlmssp_state->password) {
+		/* do nothing - blobs are zero length */
+	} else if (ntlmssp_state->use_ntlmv2) {
 
 		if (!struct_blob.length) {
 			/* be lazy, match win2k - we can't do NTLMv2 without it */
@@ -749,9 +751,13 @@ NTSTATUS ntlmssp_set_username(NTLMSSP_CLIENT_STATE *ntlmssp_state, const char *u
 
 NTSTATUS ntlmssp_set_password(NTLMSSP_CLIENT_STATE *ntlmssp_state, const char *password) 
 {
-	ntlmssp_state->password = talloc_strdup(ntlmssp_state->mem_ctx, password);
-	if (!ntlmssp_state->password) {
-		return NT_STATUS_NO_MEMORY;
+	if (!password) {
+		ntlmssp_state->password = NULL;
+	} else {
+		ntlmssp_state->password = talloc_strdup(ntlmssp_state->mem_ctx, password);
+		if (!ntlmssp_state->password) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	return NT_STATUS_OK;
 }

@@ -119,6 +119,7 @@ struct poptOption popt_common_connection[] = {
 	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
 	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
 	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
+
 	POPT_TABLEEND
 };
 
@@ -259,6 +260,7 @@ static void get_credentials_file(const char *file, struct user_auth_info *info)
  *		-k,--use-kerberos
  *		-N,--no-pass
  *		-S,--signing
+ *              -P --machine-pass
  */
 
 
@@ -346,6 +348,33 @@ static void popt_common_credentials_callback(poptContext con,
 			}
 		}
 		break;
+	case 'P':
+	        {
+			char *opt_password = NULL;
+			/* it is very useful to be able to make ads queries as the
+			   machine account for testing purposes and for domain leave */
+			
+			if (!secrets_init()) {
+				d_printf("ERROR: Unable to open secrets database\n");
+				exit(1);
+			}
+			
+			opt_password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
+			
+			if (!opt_password) {
+				d_printf("ERROR: Unable to fetch machine password\n");
+				exit(1);
+			}
+			pstr_sprintf(cmdline_auth_info.username, "%s$", 
+				     global_myname());
+			pstrcpy(cmdline_auth_info.password,opt_password);
+			SAFE_FREE(opt_password);
+
+			/* machine accounts only work with kerberos */
+			cmdline_auth_info.use_kerberos = True;
+			cmdline_auth_info.got_pass = True;
+		}
+		break;
 	}
 }
 
@@ -358,5 +387,6 @@ struct poptOption popt_common_credentials[] = {
 	{ "kerberos", 'k', POPT_ARG_NONE, &cmdline_auth_info.use_kerberos, 'k', "Use kerberos (active directory) authentication" },
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
 	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
+	{"machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password" },
 	POPT_TABLEEND
 };

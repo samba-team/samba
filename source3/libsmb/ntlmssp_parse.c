@@ -153,7 +153,8 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			memcpy(blob->data+data_ofs, b, n);
+			if (n && b) /* don't follow null pointers... */
+				memcpy(blob->data+data_ofs, b, n);
 			data_ofs += n;
 			break;
 		case 'd':

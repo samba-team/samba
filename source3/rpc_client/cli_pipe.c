@@ -1586,7 +1586,7 @@ NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan,
 			     const uchar trust_password[16])
 {
 	NTSTATUS result;	
-	uint32 neg_flags = 0x000001ff;
+	uint32 neg_flags = 0x000701ff;
 	cli->pipe_auth_flags = 0;
 
 	if (lp_client_schannel() == False) {

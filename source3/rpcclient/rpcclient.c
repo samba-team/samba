@@ -725,8 +725,10 @@ out_free:
 	nt_status = cli_full_connection(&cli, global_myname(), server, 
 					opt_ipaddr ? &server_ip : NULL, 0,
 					"IPC$", "IPC",  
-					cmdline_auth_info.username, lp_workgroup(),
-					cmdline_auth_info.password, 0,
+					cmdline_auth_info.username, 
+					lp_workgroup(),
+					cmdline_auth_info.password, 
+					cmdline_auth_info.use_kerberos ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
 					cmdline_auth_info.signing_state,NULL);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
