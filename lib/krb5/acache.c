@@ -53,7 +53,7 @@ typedef struct krb5_acc {
 
 #define ACACHE(X) ((krb5_acc *)(X)->data.data)
 
-const char *default_acc_name = "Initial default cache";
+static const char *default_acc_name = "Initial default cache";
 
 static const struct {
     cc_int32 error;
