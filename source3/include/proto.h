@@ -235,8 +235,8 @@ DIR *wsys_opendir(const smb_ucs2_t *wfname);
 smb_ucs2_t *wsys_getwd(smb_ucs2_t *s);
 int wsys_chown(const smb_ucs2_t *wfname, uid_t uid, gid_t gid);
 int wsys_chroot(const smb_ucs2_t *wfname);
-FILE *sys_popen(const char *command, const char *mode, BOOL paranoid);
-int sys_pclose( FILE *fp);
+int sys_popen(const char *command);
+int sys_pclose(int fd);
 
 /*The following definitions come from  lib/talloc.c  */
 
@@ -378,7 +378,10 @@ SMB_BIG_UINT getfilepwpos(void *vp);
 BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok);
 int getfileline(void *vp, char *linebuf, int linebuf_size);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
+char *file_pload(char *syscmd, size_t *size);
+char *file_load(char *fname, size_t *size);
 char **file_lines_load(char *fname, int *numlines);
+char **file_lines_pload(char *syscmd, int *numlines);
 void file_lines_free(char **lines);
 
 /*The following definitions come from  lib/util_sec.c  */

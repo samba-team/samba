@@ -952,37 +952,29 @@ static char **extract_args(const char *command)
 /**************************************************************************
  Wrapper for popen. Safer as it doesn't search a path.
  Modified from the glibc sources.
+ modified by tridge to return a file descriptor. We must kick our FILE* habit
 ****************************************************************************/
-
 typedef struct _popen_list
 {
-	FILE *fp;
+	int fd;
 	pid_t child_pid;
 	struct _popen_list *next;
 } popen_list;
 
 static popen_list *popen_chain;
 
-FILE *sys_popen(const char *command, const char *mode, BOOL paranoid)
+int sys_popen(const char *command)
 {
 	int parent_end, child_end;
 	int pipe_fds[2];
-    popen_list *entry = NULL;
+	popen_list *entry = NULL;
 	char **argl = NULL;
 
 	if (pipe(pipe_fds) < 0)
-		return NULL;
+		return -1;
 
-	if (mode[0] == 'r' && mode[1] == '\0') {
-		parent_end = pipe_fds[0];
-		child_end = pipe_fds[1];
-    } else if (mode[0] == 'w' && mode[1] == '\0') {
-		parent_end = pipe_fds[1];
-		child_end = pipe_fds[0];
-    } else {
-		errno = EINVAL;
-		goto err_exit;
-    }
+	parent_end = pipe_fds[0];
+	child_end = pipe_fds[1];
 
 	if (!*command) {
 		errno = EINVAL;
@@ -999,69 +991,9 @@ FILE *sys_popen(const char *command, const char *mode, BOOL paranoid)
 	if(!(argl = extract_args(command)))
 		goto err_exit;
 
-	if(paranoid) {
-		/*
-		 * Do some basic paranioa checks. Do a stat on the parent
-		 * directory and ensure it's not world writable. Do a stat
-		 * on the file itself and ensure it's owned by root and not
-		 * world writable. Note this does *not* prevent symlink races,
-		 * but is a generic "don't let the admin screw themselves"
-		 * check.
-		 */
-
-		SMB_STRUCT_STAT st;
-		pstring dir_name;
-		char *ptr = strrchr(argl[0], '/');
-	
-		if(sys_stat(argl[0], &st) != 0)
-			goto err_exit;
-
-		if((st.st_uid != (uid_t)0) || (st.st_mode & S_IWOTH)) {
-			errno = EACCES;
-			goto err_exit;
-		}
-		
-		if(!ptr) {
-			/*
-			 * No '/' in name - use current directory.
-			 */
-			pstrcpy(dir_name, ".");
-		} else {
-
-			/*
-			 * Copy into a pstring and do the checks
-			 * again (in case we were length tuncated).
-			 */
-
-			pstrcpy(dir_name, argl[0]);
-			ptr = strrchr(dir_name, '/');
-			if(!ptr) {
-				errno = EINVAL;
-				goto err_exit;
-			}
-			if(strcmp(dir_name, "/") != 0)
-				*ptr = '\0';
-			if(!dir_name[0])
-				pstrcpy(dir_name, ".");
-		}
-
-		if(sys_stat(argl[0], &st) != 0)
-			goto err_exit;
-
-		if(!S_ISDIR(st.st_mode) || (st.st_mode & S_IWOTH)) {
-			errno = EACCES;
-			goto err_exit;
-		}
-	}
-
 	entry->child_pid = fork();
 
 	if (entry->child_pid == -1) {
-
-		/*
-		 * Error !
-		 */
-
 		goto err_exit;
 	}
 
@@ -1071,7 +1003,7 @@ FILE *sys_popen(const char *command, const char *mode, BOOL paranoid)
 		 * Child !
 		 */
 
-		int child_std_end = (mode[0] == 'r') ? STDOUT_FILENO : STDIN_FILENO;
+		int child_std_end = STDOUT_FILENO;
 		popen_list *p;
 
 		close(parent_end);
@@ -1087,7 +1019,7 @@ FILE *sys_popen(const char *command, const char *mode, BOOL paranoid)
 		 */
 
 		for (p = popen_chain; p; p = p->next)
-			close(fileno(p->fp));
+			close(p->fd);
 
 		execv(argl[0], argl);
 		_exit (127);
@@ -1100,16 +1032,11 @@ FILE *sys_popen(const char *command, const char *mode, BOOL paranoid)
 	close (child_end);
 	free((char *)argl);
 
-	/*
-	 * Create the FILE * representing this fd.
-	 */
-    entry->fp = fdopen(parent_end, mode);
-
 	/* Link into popen_chain. */
 	entry->next = popen_chain;
 	popen_chain = entry;
 
-	return entry->fp;
+	return entry->fd;
 
 err_exit:
 
@@ -1119,14 +1046,13 @@ err_exit:
 		free((char *)argl);
 	close(pipe_fds[0]);
 	close(pipe_fds[1]);
-	return NULL;
+	return -1;
 }
 
 /**************************************************************************
  Wrapper for pclose. Modified from the glibc sources.
 ****************************************************************************/
-
-int sys_pclose( FILE *fp)
+int sys_pclose(int fd)
 {
 	int wstatus;
 	popen_list **ptr = &popen_chain;
@@ -1136,7 +1062,7 @@ int sys_pclose( FILE *fp)
 
 	/* Unlink from popen_chain. */
 	for ( ; *ptr != NULL; ptr = &(*ptr)->next) {
-		if ((*ptr)->fp == fp) {
+		if ((*ptr)->fd == fd) {
 			entry = *ptr;
 			*ptr = (*ptr)->next;
 			status = 0;
@@ -1144,7 +1070,7 @@ int sys_pclose( FILE *fp)
 		}
 	}
 
-	if (status < 0 || close(fileno(entry->fp)) < 0)
+	if (status < 0 || close(entry->fd) < 0)
 		return -1;
 
 	/*
