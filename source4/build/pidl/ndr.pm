@@ -89,9 +89,7 @@ sub is_fixed_array($)
 {
 	my $e = shift;
 	my $len = $e->{"ARRAY_LEN"};
-	if (defined $len && util::is_constant($len)) {
-		return 1;
-	}
+	return 1 if (defined $len && util::is_constant($len));
 	return 0;
 }
 
@@ -159,6 +157,7 @@ sub need_wire_pointer($)
 	my $n = $e->{POINTERS};
 	my $pt = pointer_type($e);
 
+	# Top level "ref" pointers do not have a referrent identifier
 	if (	defined($pt) 
 		and $pt eq "ref" 
 		and $e->{PARENT}->{TYPE} eq "FUNCTION") 
@@ -192,6 +191,7 @@ sub need_alloc($)
 	return 0;
 }
 
+# Prefix to get the actual value of a variable
 sub c_ptr_prefix($)
 {
 	my $e = shift;
@@ -255,33 +255,14 @@ sub pidl($)
 	$res .="\n";
 }
 
-sub indent
+sub indent()
 {
 	$tabs .= "\t";
 }
 
-sub deindent
+sub deindent()
 {
 	$tabs = substr($tabs, 0, -1);
-}
-
-###################################
-# find a sibling var in a structure
-sub find_sibling($$)
-{
-	my($e) = shift;
-	my($name) = shift;
-	my($fn) = $e->{PARENT};
-
-	if ($name =~ /\*(.*)/) {
-		$name = $1;
-	}
-
-	for my $e2 (@{$fn->{ELEMENTS}}) {
-		return $e2 if ($e2->{NAME} eq $name);
-	}
-
-	die "invalid sibling '$name'";
 }
 
 ####################################################################
@@ -309,7 +290,7 @@ sub ParseExpr($$$)
 		return $prefix . "r->$size";
 	}
 
-	my $e2 = find_sibling($e, $size);
+	my $e2 = util::find_sibling($e, $size);
 
 	if (util::has_property($e2, "in") && util::has_property($e2, "out")) {
 		return $prefix . "$var_prefix$size";
@@ -354,17 +335,12 @@ sub check_null_pointer_void($)
 sub fn_prefix($)
 {
 	my $fn = shift;
-	if ($fn->{TYPE} eq "TYPEDEF") {
-		if (util::has_property($fn, "public")) {
-			return "";
-		}
+
+	if ($fn->{TYPE} eq "TYPEDEF" or 
+	    $fn->{TYPE} eq "FUNCTION") {
+		return "" if (util::has_property($fn, "public"));
 	}
 
-	if ($fn->{TYPE} eq "FUNCTION") {
-		if (util::has_property($fn, "public")) {
-			return "";
-		}
-	}
 	return "static ";
 }
 
@@ -457,6 +433,7 @@ sub ParseArrayPush($$$)
 
 	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 
+	# See whether the array size has been pushed yet
 	if (!is_surrounding_array($e)) {
 		ParseArrayPushPreceding($e, $var_prefix, $ndr_flags);
 	}
@@ -616,9 +593,7 @@ sub ParseElementPushScalar($$$)
 		pidl "$cprefix$var_prefix$e->{NAME} = $value;";
 	}
 
-	if (util::has_property($e, "relative")) {
-		pidl "NDR_CHECK(ndr_push_relative_ptr1(ndr, $ptr_prefix$var_prefix$e->{NAME}));";
-	} elsif (need_wire_pointer($e)) {
+	if (need_wire_pointer($e)) {
 		ParseElementPushPtr($e, $ptr_prefix.$var_prefix);
 	} elsif (is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS");
@@ -642,7 +617,11 @@ sub ParseElementPushPtr($$)
 	my $e = shift;
 	my $var_prefix = shift;
 
-	pidl "NDR_CHECK(ndr_push_unique_ptr(ndr, $var_prefix$e->{NAME}));";
+	if (util::has_property($e, "relative")) {
+		pidl "NDR_CHECK(ndr_push_relative_ptr1(ndr, $var_prefix$e->{NAME}));";
+	} else {
+		pidl "NDR_CHECK(ndr_push_unique_ptr(ndr, $var_prefix$e->{NAME}));";
+	}
 }
 
 #####################################################################
@@ -658,9 +637,7 @@ sub ParseElementPrint($$)
 
 	if (my $value = util::has_property($e, "value")) {
 		pidl "if (ndr->flags & LIBNDR_PRINT_SET_VALUES) {";
-		indent;
-		pidl "$cprefix$var_prefix$e->{NAME} = $value;";
-		deindent;
+		pidl "\t$cprefix$var_prefix$e->{NAME} = $value;";
 		pidl "}";
 	}
 
@@ -714,7 +691,7 @@ sub ParseElementPullSwitch($$$$)
 
 	if (!defined $utype ||
 	    !util::has_property($utype, "nodiscriminant")) {
-		my $e2 = find_sibling($e, $switch);
+		my $e2 = util::find_sibling($e, $switch);
 		my $type_decl = typelist::mapType($e2);
 		pidl "if (($ndr_flags) & NDR_SCALARS) {";
 		indent;
@@ -741,15 +718,11 @@ sub ParseElementPullSwitch($$$$)
 	my $sub_size = util::has_property($e, "subcontext");
 	if (defined $sub_size) {
 		pidl "if (($ndr_flags) & NDR_SCALARS) {";
-		indent;
-		pidl "NDR_CHECK(ndr_pull_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE}));";
-		deindent;
+		pidl "\tNDR_CHECK(ndr_pull_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE}));";
 		pidl "}";
 	} else {
 		pidl "NDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));";
 	}
-
-
 }
 
 #####################################################################
@@ -768,20 +741,16 @@ sub ParseElementPushSwitch($$$$)
 	my $utype = typelist::getType($e->{TYPE});
 	if (!defined $utype ||
 	    !util::has_property($utype, "nodiscriminant")) {
-		my $e2 = find_sibling($e, $switch);
+		my $e2 = util::find_sibling($e, $switch);
 		pidl "if (($ndr_flags) & NDR_SCALARS) {";
-		indent;
-		pidl "NDR_CHECK(ndr_push_$e2->{TYPE}(ndr, NDR_SCALARS, $switch_var));";
-		deindent;
+		pidl "\tNDR_CHECK(ndr_push_$e2->{TYPE}(ndr, NDR_SCALARS, $switch_var));";
 		pidl "}";
 	}
 
 	my $sub_size = util::has_property($e, "subcontext");
 	if (defined $sub_size) {
 		pidl "if(($ndr_flags) & NDR_SCALARS) {";
-		indent;
-		pidl "NDR_CHECK(ndr_push_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_push_union_fn_t) ndr_push_$e->{TYPE}));";
-		deindent;
+		pidl "\tNDR_CHECK(ndr_push_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_push_union_fn_t) ndr_push_$e->{TYPE}));";
 		pidl "}";
 	} else {
 		pidl "NDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));";
@@ -804,7 +773,7 @@ sub ParseElementPullScalar($$$)
 	if (is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS");
 	} elsif (need_wire_pointer($e)) {
-		ParseElementPullPtr($e, $ptr_prefix.$var_prefix, "NDR_SCALARS");
+		ParseElementPullPtr($e, $ptr_prefix.$var_prefix);
 	} elsif (is_surrounding_array($e)) {
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
@@ -826,11 +795,10 @@ sub ParseElementPullScalar($$$)
 
 #####################################################################
 # parse a pointer in a struct element or function
-sub ParseElementPullPtr($$$)
+sub ParseElementPullPtr($$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
-	my($ndr_flags) = shift;
 
 	pidl "NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_$e->{NAME}));";
 	pidl "if (_ptr_$e->{NAME}) {";
@@ -914,7 +882,7 @@ sub ParseElementPullBuffer($$)
  	my $pointers = c_ptr_prefix($e);
  	for my $i (1..need_wire_pointer($e)) {
  		if ($i > 1) {
- 			ParseElementPullPtr($e,$pointers.$var_prefix,"NDR_SCALARS");
+ 			ParseElementPullPtr($e,$pointers.$var_prefix);
  		}
  		pidl "if ($pointers$var_prefix$e->{NAME}) {";
  		indent;
@@ -948,6 +916,7 @@ sub ParseElementPullBuffer($$)
 	if (util::has_property($e, "relative")) {
 		pidl "ndr_pull_restore(ndr, &_relative_save);";
 	}
+
 	for my $i (1..need_wire_pointer($e)) {
 		deindent;
 		pidl "}";

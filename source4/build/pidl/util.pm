@@ -246,4 +246,23 @@ sub make_str($)
 	return "\"" . $str . "\"";
 }
 
+###################################
+# find a sibling var in a structure
+sub find_sibling($$)
+{
+	my($e) = shift;
+	my($name) = shift;
+	my($fn) = $e->{PARENT};
+
+	if ($name =~ /\*(.*)/) {
+		$name = $1;
+	}
+
+	for my $e2 (@{$fn->{ELEMENTS}}) {
+		return $e2 if ($e2->{NAME} eq $name);
+	}
+
+	die "invalid sibling '$name'";
+}
+
 1;
