@@ -297,7 +297,7 @@ interface epmapper
 	/**********************/
 	/* Function 0x05      */
 	error_status_t epm_InqObject(
-		[out]           GUID        *epm_object
+		[in,ref]    GUID        *epm_object
 		);
     
 
