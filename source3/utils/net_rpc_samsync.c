@@ -410,7 +410,9 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	GROUP_MAP map;
 	struct group *grp;
 	DOM_SID sid;
-	BOOL try_add = False;
+	struct passwd *passwd;
+	unid_t id;
+	int u_type;
 
 	fstrcpy(account, unistr2_static(&delta->uni_acct_name));
 	d_printf("Creating account: %s\n", account);
@@ -418,7 +420,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	if (!NT_STATUS_IS_OK(nt_ret = pdb_init_sam(&sam_account)))
 		return nt_ret;
 
-	if (!pdb_getsampwnam(sam_account, account)) {
+	if (!(passwd = Get_Pwnam(account))) {
 		/* Create appropriate user */
 		if (delta->acb_info & ACB_NORMAL) {
 			pstrcpy(add_script, lp_adduser_script());
@@ -429,8 +431,6 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		} else {
 			DEBUG(1, ("Unknown user type: %s\n",
 				  smbpasswd_encode_acb_info(delta->acb_info)));
-			pdb_free_sam(&sam_account);
-			return NT_STATUS_NO_SUCH_USER;
 		}
 		if (*add_script) {
 			int add_ret;
@@ -439,22 +439,22 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			add_ret = smbrun(add_script,NULL);
 			DEBUG(1,("fetch_account: Running the command `%s' "
 				 "gave %d\n", add_script, add_ret));
-		}
 
-		try_add = True;
+			/* try and find the possible unix account again */
+			passwd = Get_Pwnam(account);
+		}
 	}
 
 	sam_account_from_delta(sam_account, delta);
-
-	if (try_add) { 
-		if (!pdb_add_sam_account(sam_account)) {
-			DEBUG(1, ("SAM Account for %s failed to be added to the passdb!\n",
-				  account));
-		}
-	} else {
+	if (!pdb_add_sam_account(sam_account)) {
+		DEBUG(1, ("SAM Account for %s failed to be added to the passdb!\n",
+			  account));
 		if (!pdb_update_sam_account(sam_account)) {
 			DEBUG(1, ("SAM Account for %s failed to be updated in the passdb!\n",
 				  account));
+			pdb_free_sam(&sam_account);
+			return NT_STATUS_OK;
+/*			return NT_STATUS_ACCESS_DENIED; */
 		}
 	}
 
@@ -466,18 +466,37 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
-
-	if (!(grp = getgrgid(map.gid))) {
-		DEBUG(0, ("Could not find unix group %d for user %s (group SID=%s)\n", 
-			  map.gid, pdb_get_username(sam_account), sid_string_static(&sid)));
+	
+	if (!passwd) {
+		/* if no unix user, changing the mapping won't help */
 		pdb_free_sam(&sam_account);
-		return NT_STATUS_NO_SUCH_GROUP;
+		return NT_STATUS_OK;
+	}
+		
+	if (map.gid != passwd->pw_gid) {
+		if (!(grp = getgrgid(map.gid))) {
+			DEBUG(0, ("Could not find unix group %d for user %s (group SID=%s)\n", 
+				  map.gid, pdb_get_username(sam_account), sid_string_static(&sid)));
+			pdb_free_sam(&sam_account);
+			return NT_STATUS_NO_SUCH_GROUP;
+		}
+		
+		smb_set_primary_group(grp->gr_name, pdb_get_username(sam_account));
+	}
+	
+	nt_ret = idmap_get_id_from_sid(&id, &u_type, pdb_get_user_sid(sam_account));
+	if (!NT_STATUS_IS_OK(nt_ret)) {
+		pdb_free_sam(&sam_account);
+		return nt_ret;
 	}
 
-	smb_set_primary_group(grp->gr_name, pdb_get_username(sam_account));
+	if ((u_type != ID_USERID) || (id.uid != passwd->pw_uid)) {
+		id.uid = passwd->pw_uid;
+		nt_ret = idmap_set_mapping(pdb_get_user_sid(sam_account), id, ID_USERID);
+	}
 
 	pdb_free_sam(&sam_account);
-	return NT_STATUS_OK;
+	return nt_ret;
 }
 
 static NTSTATUS
