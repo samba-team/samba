@@ -22,6 +22,7 @@ PNMTOPNG = @PNMTOPNG@
 PNMTOPS = @PNMTOPS@
 HTML2TEXT = @HTML2TEXT@
 PLUCKERBUILD = @PLUCKERBUILD@
+THUMBPDF = @THUMBPDF@
 PDFLATEX = TEXINPUTS=xslt/latex:.: @PDFLATEX@
 LATEX = TEXINPUTS=xslt/latex:.: @LATEX@
 RM = @RM@
@@ -177,21 +178,25 @@ gpl.tex:
 	$(WGET) http://www.gnu.org/licenses/gpl.tex
 
 latexfigures: $(LATEX_FIGURES)
+
+%.aux: %.tex
+	-$(PDFLATEX) $<
 	
+%.idx: %.aux
+	$(MAKEINDEX) `echo $< | sed -e 's/.aux//'`
+
 # Adobe PDF files
-$(PDFDIR)/%.pdf: %.tex latexfigures gpl.tex
+$(PDFDIR)/%.pdf: %.tex %.aux %.idx latexfigures gpl.tex
 	-$(PDFLATEX) $<
-	$(MAKEINDEX) `echo $< | sed -e 's/.tex//'`
 	-$(PDFLATEX) $<
+	$(THUMBPDF) $(patsubst %.tex,%.pdf,$<)
 	-$(PDFLATEX) $<
 	mv $(patsubst %.tex,%.pdf,$<) $@
 
 epsimages: $(HOWTODIR_IMAGES_EPS)
 
 # DVI files
-$(DVIDIR)/%.dvi: %.tex epsimages gpl.tex
-	-$(LATEX) $<
-	$(MAKEINDEX) `echo $< | sed -e 's/.tex//'`
+$(DVIDIR)/%.dvi: %.tex %.aux %.idx epsimages gpl.tex
 	-$(LATEX) $< 
 	-$(LATEX) $< 
 	mv $(patsubst %.tex,%.dvi,$<) $@
