@@ -1,3 +1,16 @@
+Thu Aug 21 20:36:13 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/kafs/afskrb5.c: Don't check ticket file for afs ticket.
+
+	* kdc/kerberos4.c: Check database when converting v4 principals.
+
+	* kdc/kerberos5.c: Include kvno in Ticket.
+
+	* lib/krb5/encrypt.c: Add kvno parameter to encrypt_EncryptedData.
+
+	* kuser/klist.c: Print version number of ticket, include more
+ 	flags.
+
 Wed Aug 20 21:26:58 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/kafs/afskrb5.c (get_cred): Check cached afs tickets for
