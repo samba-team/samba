@@ -105,6 +105,9 @@ static NTSTATUS ipv6_tcp_connect(struct socket_context *sock,
 	}
 
 	srv_ip = interpret_addr6(srv_address);
+	if (memcmp(&srv_ip, &in6addr_any, sizeof(srv_ip)) == 0) {
+		return NT_STATUS_BAD_NETWORK_NAME;
+	}
 
 	ZERO_STRUCT(srv_addr);
 	srv_addr.sin6_addr	= srv_ip;
