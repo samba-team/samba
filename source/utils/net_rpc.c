@@ -317,6 +317,8 @@ int net_rpc_join(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
+		if (opt_user_specified)
+			return net_rpc_join_newstyle(argc, argv);
 		if ((net_rpc_join_oldstyle(argc, argv) == 0))
 			return 0;
 		
