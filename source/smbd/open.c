@@ -1146,7 +1146,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	 * selected.
 	 */
 
-	if (!file_existed && !def_acl && (conn->vfs.ops.fchmod_acl != NULL)) {
+	if (!file_existed && !def_acl) {
 
 		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
 
@@ -1159,7 +1159,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 		/* Attributes need changing. File already existed. */
 
-		if (conn->vfs.ops.fchmod_acl != NULL) {
+		{
 			int saved_errno = errno; /* We might get ENOSYS in the next call.. */
 			ret = VFS_FCHMOD_ACL(fsp, fsp->fd, new_mode);
 
