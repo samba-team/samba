@@ -727,6 +727,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		uint8 *pwhist = NULL;
 		int i;
 
+		/* We can only store (sizeof(pstring)-1)/64 password history entries. */
+		pwHistLen = MIN(pwHistLen, ((sizeof(temp)-1)/64));
+
 		if ((pwhist = malloc(pwHistLen * PW_HISTORY_ENTRY_LEN)) == NULL){
 			DEBUG(0, ("init_sam_from_ldap: malloc failed!\n"));
 			return False;
