@@ -1,0 +1,276 @@
+<chapter id="problems">
+
+<chapterinfo>
+	&author.jerry;
+	&author.jelmer;
+	<author>
+		<firstname>David</firstname><surname>Bannon</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address><email>dbannon@samba.org</email></address>
+		</affiliation>
+	</author>
+	<pubdate>8 Apr 2003</pubdate>
+</chapterinfo>
+
+<title>Analysing and solving samba problems</title>
+
+<para>
+There are many sources of information available in the form 
+of mailing lists, RFC's and documentation.  The docs that come 
+with the samba distribution contain very good explanations of 
+general SMB topics such as browsing.</para> 
+	
+<sect1>
+<title>Diagnostics tools</title>
+
+  <para>
+One of the best diagnostic tools for debugging problems is Samba itself.  
+You can use the -d option for both smbd and nmbd to specify what 
+'debug level' at which to run.  See the man pages on smbd, nmbd  and 
+smb.conf for more information on debugging options.  The debug 
+level can range from 1 (the default) to 10 (100 for debugging passwords).
+</para>
+	
+<para>
+Another helpful method of debugging is to compile samba using the 
+<command>gcc -g </command> flag.   This will include debug 
+information in the binaries and allow you to attach gdb to the 
+running smbd / nmbd process.  In order to attach gdb to an smbd 
+process for an NT workstation, first get the workstation to make the 
+connection. Pressing ctrl-alt-delete and going down to the domain box 
+is sufficient (at least, on the first time you join the domain) to 
+generate a 'LsaEnumTrustedDomains'. Thereafter, the workstation 
+maintains an open connection, and therefore there will be an smbd 
+process running (assuming that you haven't set a really short smbd 
+idle timeout)  So, in between pressing ctrl alt delete, and actually 
+typing in your password, you can gdb attach and continue.
+</para>
+
+<para>
+Some useful samba commands worth investigating:
+</para>
+	
+<itemizedlist>
+	<listitem><para>testparam | more</para></listitem>
+	<listitem><para>smbclient -L //{netbios name of server}</para></listitem>
+</itemizedlist>
+   
+<para>
+An SMB enabled version of tcpdump is available from 
+<ulink url="http://www.tcpdump.org/">http://www.tcpdup.org/</ulink>.
+Ethereal, another good packet sniffer for Unix and Win32
+hosts, can be downloaded from <ulink 
+url="http://www.ethereal.com/">http://www.ethereal.com</ulink>.
+</para>
+	
+<para>
+For tracing things on the Microsoft Windows NT, Network Monitor 
+(aka. netmon) is available on the Microsoft Developer Network CD's, 
+the Windows NT Server install CD and the SMS CD's.  The version of 
+netmon that ships with SMS allows for dumping packets between any two 
+computers (i.e. placing the network interface in promiscuous mode).  
+The version on the NT Server install CD will only allow monitoring 
+of network traffic directed to the local NT box and broadcasts on the 
+local subnet.  Be aware that Ethereal can read and write netmon 
+formatted files.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Installing 'Network Monitor' on an NT Workstation or a Windows 9x box</title>
+
+<para>
+Installing netmon on an NT workstation requires a couple 
+of steps.  The following are for installing Netmon V4.00.349, which comes 
+with Microsoft Windows NT Server 4.0, on Microsoft Windows NT 
+Workstation 4.0.  The process should be similar for other version of 
+Windows NT / Netmon.  You will need both the Microsoft Windows 
+NT Server 4.0 Install CD and the Workstation 4.0 Install CD.
+</para> 
+
+<para>
+Initially you will need to install 'Network Monitor Tools and Agent' 
+on the NT Server.  To do this 
+</para>
+
+<itemizedlist>
+	<listitem><para>Goto Start - Settings - Control Panel - 
+	Network - Services - Add </para></listitem>
+	
+	<listitem><para>Select the 'Network Monitor Tools and Agent' and 
+	click on 'OK'.</para></listitem> 
+	
+	<listitem><para>Click 'OK' on the Network Control Panel.
+	</para></listitem> 
+	
+	<listitem><para>Insert the Windows NT Server 4.0 install CD 
+	when prompted.</para></listitem> 
+</itemizedlist>
+
+<para>
+At this point the Netmon files should exist in 
+<filename>%SYSTEMROOT%\System32\netmon\*.*</filename>.    
+Two subdirectories exist as well, <filename>parsers\</filename> 
+which contains the necessary DLL's for parsing the netmon packet 
+dump, and <filename>captures\</filename>.
+</para>
+
+<para>
+In order to install the Netmon tools on an NT Workstation, you will 
+first need to install the 'Network  Monitor Agent' from the Workstation 
+install CD.
+</para>
+
+<itemizedlist>
+	<listitem><para>Goto Start - Settings - Control Panel - 
+	Network - Services - Add</para></listitem> 
+
+	<listitem><para>Select the 'Network Monitor Agent' and click 
+	on 'OK'.</para></listitem> 
+	
+	<listitem><para>Click 'OK' on the Network Control Panel.
+	</para></listitem> 
+	
+	<listitem><para>Insert the Windows NT Workstation 4.0 install 
+	CD when prompted.</para></listitem> 
+</itemizedlist>
+
+<para>
+Now copy the files from the NT Server in %SYSTEMROOT%\System32\netmon\*.* 
+to %SYSTEMROOT%\System32\netmon\*.* on the Workstation and set 
+permissions as  you deem appropriate for your site. You will need 
+administrative rights on the NT box to run netmon.
+</para>
+
+<para>
+To install Netmon on a Windows 9x box install the network monitor agent 
+from the Windows 9x CD (\admin\nettools\netmon).  There is a readme 
+file located with the netmon driver files on the CD if you need 
+information on how to do this.  Copy the files from a working 
+Netmon installation.
+</para> 
+
+</sect1>
+
+<sect1>
+<title>Useful URL's</title>
+<itemizedlist>
+
+<listitem><para>Home of Samba site <ulink url="http://samba.org">
+      http://samba.org</ulink>. We have a mirror near you !</para></listitem>
+
+<listitem><para> The <emphasis>Development</emphasis> document 
+on the Samba mirrors might mention your problem. If so,
+it might mean that the developers are working on it.</para></listitem>
+
+<listitem><para>See how Scott Merrill simulates a BDC behavior at 
+       <ulink url="http://www.skippy.net/linux/smb-howto.html">
+       http://www.skippy.net/linux/smb-howto.html</ulink>. </para></listitem>
+
+<listitem><para>Although 2.0.7 has almost had its day as a PDC, David Bannon will
+       keep the 2.0.7 PDC pages at <ulink url="http://bioserve.latrobe.edu.au/samba">
+       http://bioserve.latrobe.edu.au/samba</ulink> going for a while yet.</para></listitem>
+
+<listitem><para>Misc links to CIFS information 
+       <ulink url="http://samba.org/cifs/">http://samba.org/cifs/</ulink></para></listitem>
+
+<listitem><para>NT Domains for Unix <ulink url="http://mailhost.cb1.com/~lkcl/ntdom/">
+       http://mailhost.cb1.com/~lkcl/ntdom/</ulink></para></listitem>
+
+<listitem><para>FTP site for older SMB specs: 
+       <ulink url="ftp://ftp.microsoft.com/developr/drg/CIFS/">
+       ftp://ftp.microsoft.com/developr/drg/CIFS/</ulink></para></listitem>
+
+</itemizedlist>
+
+</sect1>
+
+<sect1>
+<title>Getting help from the mailing lists</title>
+
+<para>
+There are a number of Samba related mailing lists. Go to <ulink 
+url="http://samba.org">http://samba.org</ulink>, click on your nearest mirror
+and then click on <command>Support</command> and then click on <command>
+Samba related mailing lists</command>.
+</para>
+
+<para>
+For questions relating to Samba TNG go to
+<ulink url="http://www.samba-tng.org/">http://www.samba-tng.org/</ulink> 
+It has been requested that you don't post questions about Samba-TNG to the
+main stream Samba lists.</para>
+ 
+<para>
+If you post a message to one of the lists please observe the following guide lines :
+</para>
+
+<itemizedlist>
+
+<listitem><para> Always remember that the developers are volunteers, they are 
+not paid and they never guarantee to produce a particular feature at 
+a particular time. Any time lines are 'best guess' and nothing more.
+</para></listitem>
+
+<listitem><para> Always mention what version of samba you are using and what 
+operating system its running under. You should probably list the
+relevant sections of your &smb.conf; file, at least the options 
+in [global] that affect PDC support.</para></listitem>
+
+<listitem><para>In addition to the version, if you obtained Samba via
+CVS mention the date when you last checked it out.</para></listitem>
+
+<listitem><para> Try and make your question clear and brief, lots of long, 
+convoluted questions get deleted before	they are completely read ! 
+Don't post html encoded messages (if you can select colour or font 
+size its html).</para></listitem>
+
+<listitem><para> If you run one of those nifty 'I'm on holidays' things when 
+you are away, make sure its configured	to not answer mailing lists.
+</para></listitem> 
+
+<listitem><para> Don't cross post. Work out which is the best list to post to 
+and see what happens, i.e. don't post to both samba-ntdom and samba-technical.
+Many people active on the lists subscribe to more 
+than one list and get annoyed to see the same message two or more times. 
+Often someone will see a message and thinking it would be better dealt 
+with on another, will forward it on for you.</para></listitem>
+
+<listitem><para>You might include <emphasis>partial</emphasis>
+log files written at a debug level set to as much as 20.  
+Please don't send the entire log but enough to give the context of the 
+error messages.</para></listitem>
+
+<listitem><para>(Possibly) If you have a complete netmon trace ( from the opening of 
+the pipe to the error ) you can send the *.CAP file as well.</para></listitem> 
+    
+<listitem><para>Please think carefully before attaching a document to an email.
+Consider pasting the relevant parts into the body of the message. The samba
+mailing lists go to a huge number of people, do they all need a copy of your 
+smb.conf in their attach directory?</para></listitem>
+
+</itemizedlist>
+
+</sect1>
+
+<sect1>
+<title>How to get off the mailinglists</title>
+
+<para>To have your name removed from a samba mailing list, go to the
+same place you went to to get on it. Go to <ulink 
+url="http://lists.samba.org/">http://lists.samba.org</ulink>, 
+click on your nearest mirror and then click on <command>Support</command> and 
+then click on <command> Samba related mailing lists</command>. Or perhaps see 
+<ulink url="http://lists.samba.org/mailman/roster/samba-ntdom">here</ulink>
+</para>
+
+<para>
+Please don't post messages to the list asking to be removed, you will just
+be referred to the above address (unless that process failed in some way...)
+</para>
+
+</sect1>
+
+</chapter>
