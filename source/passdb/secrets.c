@@ -275,17 +275,63 @@ BOOL fetch_ldap_pw(char *dn, char* pw, int len)
   lock the secrets tdb based on a string - this is used as a primitive form of mutex
   between smbd instances. 
 */
+
+static SIG_ATOMIC_T gotalarm;
+
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
+
+static unsigned long mutex_hash_offset(const char *v)
+{
+	const char *p;
+	unsigned long h=0;
+	for(p = v; *p != '\0'; p += 1) {
+		h = ( h << 5 ) - h + *p;
+	}
+	return (h % 0x1FFFFFFFL) + 0x1FFFFFFFL;
+}
+
 BOOL secrets_named_mutex(const char *name, unsigned int timeout)
 {
 	int ret;
+	struct flock fl;
+	unsigned long offset = mutex_hash_offset(name);
 
-	if (!message_init())
-		return False;
+	gotalarm = 0;
+	fl.l_type = F_WRLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = offset;
+	fl.l_len = 1;
+	fl.l_pid = 0;
 
-	ret = tdb_lock_bystring(tdb, name, timeout);
+	if (timeout) {
+		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+		alarm(timeout);
+	}
+
+	do {
+		ret = fcntl(tdb->fd,F_SETLKW,&fl);
+		if (ret == -1 && errno == EINTR && timeout)
+			break;
+	} while (ret == -1 && errno == EINTR);
+
+	if (timeout) {
+		alarm(0);
+		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+		if (gotalarm) {
+			DEBUG(0,("secrets_named_mutex: Timeout after %u seconds \
+getting mutex at offset %lu for server %s\n", timeout, offset, name ));
+			return False;
+		}
+	}
+
 	if (ret == 0)
 		DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
-
+	else
+		DEBUG(0,("secrets_named_mutex: Error in acquiring mutex for %s (%s)\n",
+			name, strerror(errno) ));
 	return (ret == 0);
 }
 
@@ -294,6 +340,17 @@ BOOL secrets_named_mutex(const char *name, unsigned int timeout)
 */
 void secrets_named_mutex_release(char *name)
 {
-	tdb_unlock_bystring(tdb, name);
-	DEBUG(10,("secrets_named_mutex: released mutex for %s\n", name ));
+	struct flock fl;
+
+	fl.l_type = F_UNLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = mutex_hash_offset(name);
+	fl.l_len = 1;
+	fl.l_pid = 0;
+
+	if (fcntl(tdb->fd,F_SETLKW,&fl) == -1) {
+		DEBUG(0,("secrets_named_mutex_release: Error in releasing mutex for %s (%s)\n",
+			name, strerror(errno) ));
+	}
+	DEBUG(10,("secrets_named_mutex_release: released mutex for %s\n", name ));
 }

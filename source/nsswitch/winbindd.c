@@ -27,6 +27,7 @@
 struct winbindd_cli_state *client_list;
 static int num_clients;
 BOOL opt_nocache;
+BOOL opt_dual_daemon;
 
 pstring servicesf = CONFIGFILE;
 
@@ -382,7 +383,7 @@ static void remove_client(struct winbindd_cli_state *state)
 
 /* Process a complete received packet from a client */
 
-static void process_packet(struct winbindd_cli_state *state)
+void winbind_process_packet(struct winbindd_cli_state *state)
 {
 	/* Process request */
 	
@@ -394,23 +395,23 @@ static void process_packet(struct winbindd_cli_state *state)
 	
 	state->read_buf_len = 0;
 	state->write_buf_len = sizeof(struct winbindd_response);
+
+	/* We might need to send it to the dual daemon. */
+	if (opt_dual_daemon)
+		dual_send_request(state);
 }
 
 /* Read some data from a client connection */
 
-static void client_read(struct winbindd_cli_state *state)
+void winbind_client_read(struct winbindd_cli_state *state)
 {
 	int n;
     
 	/* Read data */
 
-	do {
-
-		n = read(state->sock, state->read_buf_len + 
+	n = sys_read(state->sock, state->read_buf_len + 
 			 (char *)&state->request, 
 			 sizeof(state->request) - state->read_buf_len);
-
-	} while (n == -1 && errno == EINTR);
 	
 	if (n == -1 || n == 0) {
 		/* Read failed, kill client */
@@ -431,7 +432,7 @@ static void client_read(struct winbindd_cli_state *state)
 
 /* Write some data to a client connection */
 
-static void client_write(struct winbindd_cli_state *state)
+static void winbind_client_write(struct winbindd_cli_state *state)
 {
 	char *data;
 	int num_written;
@@ -455,9 +456,7 @@ static void client_write(struct winbindd_cli_state *state)
 			state->write_buf_len;
 	}
 	
-	do {
-		num_written = write(state->sock, data, state->write_buf_len);
-	} while (num_written == -1 && errno == EINTR);
+	num_written = sys_write(state->sock, data, state->write_buf_len);
 	
 	DEBUG(10,("client_write: wrote %d bytes.\n", num_written ));
 
@@ -543,6 +542,9 @@ static void process_loop(int accept_sock)
 		timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 		timeout.tv_usec = 0;
 
+		if (opt_dual_daemon)
+			maxfd = dual_select_setup(&w_fds, maxfd);
+
 		/* Set up client readers and writers */
 
 		state = client_list;
@@ -597,6 +599,9 @@ static void process_loop(int accept_sock)
 
 		if (selret > 0) {
 
+			if (opt_dual_daemon)
+				dual_select(&w_fds);
+
 			if (FD_ISSET(accept_sock, &r_fds))
 				new_connection(accept_sock);
             
@@ -610,7 +615,7 @@ static void process_loop(int accept_sock)
                     
 					/* Read data */
                     
-					client_read(state);
+					winbind_client_read(state);
 
 					/* 
 					 * If we have the start of a
@@ -634,14 +639,14 @@ static void process_loop(int accept_sock)
                     
 					if (state->read_buf_len == 
 					    sizeof(state->request)) {
-						process_packet(state);
+						winbind_process_packet(state);
 					}
 				}
                 
 				/* Data available for writing */
                 
 				if (FD_ISSET(state->sock, &w_fds))
-					client_write(state);
+					winbind_client_write(state);
 			}
 		}
 
@@ -671,6 +676,63 @@ static void process_loop(int accept_sock)
 			do_sigusr2 = False;
 		}
 	}
+}
+
+/****************************************************************************
+ These are split out from the main winbindd for use by the background daemon.
+*****************************************************************************/
+
+int winbind_setup_common(void)
+{
+	load_interfaces();
+
+	if (!secrets_init()) {
+
+		DEBUG(0,("Could not initialize domain trust account secrets. Giving up\n"));
+		return 1;
+
+	}
+
+	namecache_enable();	/* Enable netbios namecache */
+
+	/* Get list of domains we look up requests for.  This includes the
+	   domain which we are a member of as well as any trusted
+	   domains. */ 
+
+	init_domain_list();
+
+	ZERO_STRUCT(server_state);
+
+	/* Winbind daemon initialisation */
+
+	if (!winbindd_param_init())
+		return 1;
+
+	if (!winbindd_idmap_init())
+		return 1;
+
+	/* Unblock all signals we are interested in as they may have been
+	   blocked by the parent process. */
+
+	BlockSignals(False, SIGINT);
+	BlockSignals(False, SIGQUIT);
+	BlockSignals(False, SIGTERM);
+	BlockSignals(False, SIGUSR1);
+	BlockSignals(False, SIGUSR2);
+	BlockSignals(False, SIGHUP);
+
+	/* Setup signal handlers */
+	
+	CatchSignal(SIGINT, termination_handler);      /* Exit on these sigs */
+	CatchSignal(SIGQUIT, termination_handler);
+	CatchSignal(SIGTERM, termination_handler);
+
+	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
+
+	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
+	CatchSignal(SIGHUP, sighup_handler);
+
+	return 0;
 }
 
 /* Main function */
@@ -728,6 +790,11 @@ int main(int argc, char **argv)
 			/* Don't become a daemon */
 		case 'i':
 			interactive = True;
+			break;
+
+			/* dual daemon system */
+		case 'B':
+			opt_dual_daemon = True;
 			break;
 
 			/* disable cacheing */
@@ -808,53 +875,11 @@ int main(int argc, char **argv)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
-	load_interfaces();
+	if (opt_dual_daemon)
+		do_dual_daemon();
 
-	if (!secrets_init()) {
-
-		DEBUG(0,("Could not initialize domain trust account secrets. Giving up\n"));
+	if (winbind_setup_common() != 0)
 		return 1;
-
-	}
-
-	namecache_enable();	/* Enable netbios namecache */
-
-	/* Get list of domains we look up requests for.  This includes the
-	   domain which we are a member of as well as any trusted
-	   domains. */ 
-
-	init_domain_list();
-
-	ZERO_STRUCT(server_state);
-
-	/* Winbind daemon initialisation */
-
-	if (!winbindd_param_init())
-		return 1;
-
-	if (!winbindd_idmap_init())
-		return 1;
-
-	/* Unblock all signals we are interested in as they may have been
-	   blocked by the parent process. */
-
-	BlockSignals(False, SIGINT);
-	BlockSignals(False, SIGQUIT);
-	BlockSignals(False, SIGTERM);
-	BlockSignals(False, SIGUSR1);
-	BlockSignals(False, SIGUSR2);
-	BlockSignals(False, SIGHUP);
-
-	/* Setup signal handlers */
-	
-	CatchSignal(SIGINT, termination_handler);      /* Exit on these sigs */
-	CatchSignal(SIGQUIT, termination_handler);
-	CatchSignal(SIGTERM, termination_handler);
-
-	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
-
-	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
-	CatchSignal(SIGHUP, sighup_handler);
 
 	/* Initialise messaging system */
 

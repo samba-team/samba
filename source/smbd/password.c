@@ -1198,7 +1198,7 @@ static BOOL grab_server_mutex(const char *name)
 		return False;
 	}
 	if (!secrets_named_mutex(name, 10)) {
-		DEBUG(10,("grab_server_mutex: failed for %s\n", name));
+		DEBUG(0,("grab_server_mutex: failed for %s\n", name));
 		SAFE_FREE(mutex_server_name);
 		return False;
 	}
@@ -1220,18 +1220,21 @@ static void release_server_mutex(void)
 ************************************************************************/
 
 static BOOL connect_to_domain_password_server(struct cli_state **ppcli, 
-						char *server, unsigned char *trust_passwd)
+						char *server, unsigned char *trust_passwd, BOOL *retry)
 {
 	struct in_addr dest_ip;
 	fstring remote_machine;
 	struct cli_state *pcli = NULL;
 
+	*retry = False;
 	*ppcli = NULL;
 
 	if(!(pcli = cli_initialise(NULL))) {
 		DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
 		return False;
 	}
+
+	cli_set_timeout(pcli, 10000); /* 10 seconds only. */
 
 	if (is_ipaddress(server)) {
 		struct in_addr to_ip;
@@ -1272,6 +1275,8 @@ static BOOL connect_to_domain_password_server(struct cli_state **ppcli,
 		two connections where one hasn't completed a negprot yet it will send a
 		TCP reset to the first connection (tridge) */
 
+	*retry = True;
+
 	if (!grab_server_mutex(server)) {
 		cli_shutdown(pcli);
 		return False;
@@ -1282,6 +1287,7 @@ static BOOL connect_to_domain_password_server(struct cli_state **ppcli,
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
 		cli_shutdown(pcli);
 		release_server_mutex();
+		*retry = False;
 		return False;
 	}
   
@@ -1308,6 +1314,7 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
 			remote_machine));
 		cli_shutdown(pcli);
 		release_server_mutex();
+		*retry = False;
 		return False;
 	}
 
@@ -1328,6 +1335,7 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
 			remote_machine));
 		cli_shutdown(pcli);
 		release_server_mutex();
+		*retry = False;
 		return False;
 	}
 
@@ -1374,6 +1382,8 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
 
 	*ppcli = pcli;
 
+	*retry = False;
+
 	/* We exit here with the mutex *locked*. JRA */
 	return True;
 }
@@ -1385,6 +1395,9 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
 static BOOL attempt_connect_to_dc(struct cli_state **ppcli, struct in_addr *ip, unsigned char *trust_passwd)
 {
 	fstring dc_name;
+	int i;
+	BOOL retry = True;
+	BOOL ret = False;
 
 	/*
 	 * Ignore addresses we have already tried.
@@ -1396,7 +1409,9 @@ static BOOL attempt_connect_to_dc(struct cli_state **ppcli, struct in_addr *ip, 
 	if (!lookup_dc_name(global_myname, lp_workgroup(), ip, dc_name))
 		return False;
 
-	return connect_to_domain_password_server(ppcli, dc_name, trust_passwd);
+	for (i = 0; (ret == False) && retry && (i < 3); i++)
+		ret = connect_to_domain_password_server(ppcli, dc_name, trust_passwd, &retry);
+	return ret;
 }
 
 /***********************************************************************
@@ -1589,7 +1604,11 @@ Last change time = (%u) %s. Machine password timeout = %u seconds\n",
 		if(strequal(remote_machine, "*")) {
 			connected_ok = find_connect_pdc(&pcli, trust_passwd, last_change_time);
 		} else {
-			connected_ok = connect_to_domain_password_server(&pcli, remote_machine, trust_passwd);
+			int i;
+			BOOL retry = False;
+			for (i = 0; !connected_ok && retry && (i < 3); i++)
+				connected_ok = connect_to_domain_password_server(&pcli,
+						remote_machine, trust_passwd, &retry);
 		}
 	}
 

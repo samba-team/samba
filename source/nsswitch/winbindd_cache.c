@@ -307,8 +307,15 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	centry->sequence_number = centry_uint32(centry);
 
 	if (centry_expired(domain, centry)) {
-		centry_free(centry);
-		return NULL;
+		extern BOOL opt_dual_daemon;
+
+		if (opt_dual_daemon) {
+			extern BOOL background_process;
+			background_process = True;
+		} else {
+			centry_free(centry);
+			return NULL;
+		}
 	}
 
 	return centry;

@@ -965,10 +965,8 @@ again:
 	if (!(cli = cli_initialise(NULL)))
 		return NT_STATUS_NO_MEMORY;
 	
-	if (cli_set_port(cli, port) != port) {
-		cli_shutdown(cli);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	cli_set_port(cli, port);
+	cli_set_timeout(cli, 10000); /* 10 seconds. */
 
 	ip = *dest_ip;
 	
