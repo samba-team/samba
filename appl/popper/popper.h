@@ -253,6 +253,7 @@ typedef struct  {                               /*  POP parameter block */
 #endif
     krb5_context	context;
     krb5_principal	principal;              /*  principal auth as */
+    krb5_log_facility*  logf;
     int			version;                /*  4 or 5? */
     int			auth_level;		/*  Dont allow cleartext */
     OtpContext		otp_ctx;		/*  OTP context */
