@@ -2288,6 +2288,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		DEBUG(4,
 		      ("Unable to locate SID [%s] count=%d\n", sid_to_string(sid_string, sid),
 		       count));
+		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_USER;
 	}  
 	else if (count > 1) 
@@ -2295,6 +2296,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		DEBUG(1,
 		      ("More than one user with SID [%s]. Failing. count=%d\n", sid_to_string(sid_string, sid),
 		       count));
+		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -2306,11 +2308,9 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 			ldap_msgfree(result);
 			return NT_STATUS_NO_SUCH_USER;
 		}
-		ldap_msgfree(result);
 		ret = NT_STATUS_OK;
-	} else {
-		ldap_msgfree(result);
 	}
+	ldap_msgfree(result);
 	return ret;
 }	
 
