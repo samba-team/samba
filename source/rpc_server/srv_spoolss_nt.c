@@ -3711,7 +3711,7 @@ uint32 _spoolss_enddocprinter(POLICY_HND *handle)
 	}
 	
 	Printer->document_started=False;
-	print_job_end(Printer->jobid);
+	print_job_end(Printer->jobid,True);
 	/* error codes unhandled so far ... */
 
 	return 0x0;

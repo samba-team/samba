@@ -950,9 +950,11 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 
 /****************************************************************************
  Print a file - called on closing the file. This spools the job.
+ If normal close is false then we're tearing down the jobs - treat as an
+ error.
 ****************************************************************************/
 
-BOOL print_job_end(int jobid)
+BOOL print_job_end(int jobid, BOOL normal_close)
 {
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret;
@@ -970,12 +972,17 @@ BOOL print_job_end(int jobid)
 
 	snum = print_job_snum(jobid);
 
-	if (sys_fstat(pjob->fd, &sbuf) == 0) {
+	if (normal_close && (sys_fstat(pjob->fd, &sbuf) == 0)) {
 		pjob->size = sbuf.st_size;
 		close(pjob->fd);
 		pjob->fd = -1;
 	} else {
-		/* Couldn't stat the job file, so something has gone wrong. Cleanup */
+
+		/* 
+		 * Not a normal close or we couldn't stat the job file,
+		 * so something has gone wrong. Cleanup.
+		 */
+
 		unlink(pjob->filename);
 		tdb_delete(tdb, print_key(jobid));
 		return False;

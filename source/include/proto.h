@@ -1820,7 +1820,7 @@ int cups_printername_ok(char *name);
 
 #if OLD_NTDOMAIN
 files_struct *print_fsp_open(connection_struct *conn,char *jobname);
-void print_fsp_end(files_struct *fsp);
+void print_fsp_end(files_struct *fsp, BOOL normal_close);
 #endif
 
 /*The following definitions come from  printing/printing.c  */
@@ -1838,7 +1838,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode);
 BOOL print_job_resume(struct current_user *user, int jobid, int *errcode);
 int print_job_write(int jobid, const char *buf, int size);
 int print_job_start(struct current_user *user, int snum, char *jobname);
-BOOL print_job_end(int jobid);
+BOOL print_job_end(int jobid, BOOL normal_close);
 int print_queue_status(int snum, 
 		       print_queue_struct **queue,
 		       print_status_struct *status);

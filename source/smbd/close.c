@@ -116,8 +116,8 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	if (close_filestruct(fsp) == -1)
 		err1 = -1;
 
-	if (normal_close && fsp->print_file) {
-		print_fsp_end(fsp);
+	if (fsp->print_file) {
+		print_fsp_end(fsp, normal_close);
 		file_free(fsp);
 		return 0;
 	}
