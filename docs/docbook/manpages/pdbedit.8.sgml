@@ -31,6 +31,8 @@
 		<arg choice="opt">-e passdb-backend</arg>   
 		<arg choice="opt">-b passdb-backend</arg>
 		<arg choice="opt">-D debuglevel</arg>
+		<arg choice="opt">-P account-policy</arg>
+		<arg choice="opt">-V value</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -268,6 +270,36 @@
 		<para>Example: <command>pdbedit -b xml:/root/pdb-backup.xml -l</command></para>
 		</listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>-P account-policy</term>
+		<listitem><para>Display an account policy</para>
+		<para>Valid policies are: minimum password age, reset count minutes, disconnect time,
+		user must logon to change password, password history, lockout duration, min password length,
+		maximum password age and bad lockout attempt.
+
+		<para>Example: <command>pdbedit -P "bad lockout attempt"</command></para>
+		<para><programlisting>
+		account policy value for bad lockout attempt is 0
+		</programlisting></para>
+
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-V account-policy-value</term>
+		<listitem><para>Sets an account policy to a specified value. 
+		This option may only be used in conjunction
+		with the <parameter>-P</parameter> option.
+
+		<para>Example: <command>pdbedit -P "bad lockout attempt" -V 3</command></para>
+		<para><programlisting>
+		account policy value for bad lockout attempt was 0
+		account policy value for bad lockout attempt is now 3
+		</programlisting></para>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
