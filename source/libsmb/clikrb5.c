@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    simple kerberos5 routines for active directory
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Luke Howard 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +22,34 @@
 #include "includes.h"
 
 #ifdef HAVE_KRB5
+
+#ifndef KRB5_SET_REAL_TIME
+/*
+ * This function is not in the Heimdal mainline.
+ */
+krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds)
+{
+	krb5_error_code ret;
+	int32_t sec, usec;
+
+	ret = krb5_us_timeofday(context, &sec, &usec);
+	if (ret)
+		return ret;
+
+	context->kdc_sec_offset = seconds - sec;
+	context->kdc_usec_offset = microseconds - usec;
+
+	return 0;
+}
+#endif
+
+#if defined(HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES) && !defined(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES)
+krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc)
+{
+	return krb5_set_default_in_tkt_etypes(ctx, enc);
+}
+#endif
+
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
