@@ -227,7 +227,7 @@ if test x"$with_ldap_support" = x"yes"; then
   fi
 fi
 
- check for a PAM clear-text auth, accounts, password and session support
+# check for a PAM clear-text auth, accounts, password and session support
 with_pam_for_crypt=no
 AC_MSG_CHECKING(whether to use PAM)
 AC_ARG_WITH(pam,
