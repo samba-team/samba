@@ -65,19 +65,18 @@ int reply_special(char *inbuf,char *outbuf)
 
   smb_setlen(outbuf,0);
 
-  switch (msg_type)
-    {
+	switch (msg_type) {
     case 0x81: /* session request */
       CVAL(outbuf,0) = 0x82;
       CVAL(outbuf,3) = 0;
-      if (name_len(inbuf+4) > 50)
-	{
+		if (name_len(inbuf+4) > 50) {
 	  DEBUG(0,("Invalid name length in session request\n"));
 	  return(0);
 	}
       name_extract(inbuf,4,name1);
       name_extract(inbuf,4 + name_len(inbuf + 4),name2);
-      DEBUG(2,("netbios connect: name1=%s name2=%s\n",name1,name2));      
+		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
+			 name1,name2));      
 
       strcpy(remote_machine,name2);
       trim_string(remote_machine," "," ");
@@ -97,12 +96,26 @@ int reply_special(char *inbuf,char *outbuf)
       reopen_logs();
 
       break;
+		
+	case 0x89: /* session keepalive request 
+		      (some old clients produce this?) */
+		CVAL(outbuf,0) = 0x85;
+		CVAL(outbuf,3) = 0;
+		break;
+		
+	case 0x82: /* positive session response */
+	case 0x83: /* negative session response */
+	case 0x84: /* retarget session response */
+		DEBUG(0,("Unexpected session response\n"));
+		break;
+		
     case 0x85: /* session keepalive */
     default:
       return(0);
     }
   
-  DEBUG(5,("%s init msg_type=0x%x msg_flags=0x%x\n",timestring(),msg_type,msg_flags));
+	DEBUG(5,("%s init msg_type=0x%x msg_flags=0x%x\n",
+		 timestring(),msg_type,msg_flags));
   
   return(outsize);
 }
@@ -3532,11 +3545,31 @@ int reply_setattrE(char *inbuf,char *outbuf)
   unix_times.actime = make_unix_date2(inbuf+smb_vwv3);
   unix_times.modtime = make_unix_date2(inbuf+smb_vwv5);
   
+  /* 
+   * Patch from Ray Frush <frush@engr.colostate.edu>
+   * Sometimes times are sent as zero - ignore them.
+   */
+
+  if ((unix_times.actime == 0) && (unix_times.modtime == 0)) 
+  {
+    /* Ignore request */
+    DEBUG(3,("%s reply_setattrE fnum=%d cnum=%d ignoring zero request - \
+not setting timestamps of 0\n",
+          timestring(), fnum,cnum,unix_times.actime,unix_times.modtime));
+    return(outsize);
+  }
+  else if ((unix_times.actime != 0) && (unix_times.modtime == 0)) 
+  {
+    /* set modify time = to access time if modify time was 0 */
+    unix_times.modtime = unix_times.actime;
+  }
+
   /* Set the date on this file */
   if(sys_utime(Files[fnum].name, &unix_times))
     return(ERROR(ERRDOS,ERRnoaccess));
   
-  DEBUG(3,("%s reply_setattrE fnum=%d cnum=%d\n",timestring(),fnum,cnum));
+  DEBUG(3,("%s reply_setattrE fnum=%d cnum=%d actime=%d modtime=%d\n",
+    timestring(), fnum,cnum,unix_times.actime,unix_times.modtime));
 
   return(outsize);
 }

@@ -373,22 +373,34 @@ try to get the disk space from disk quotas - OFS1 version
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 {
   uid_t user_id, euser_id;
-  int r;
+  int r, save_errno;
   struct dqblk D;
   struct stat S;
 
   euser_id = geteuid();
   user_id = getuid();
 
-  setreuid(euser_id, euser_id);
+  setreuid(euser_id, -1);
   r= quotactl(path,QCMD(Q_GETQUOTA, USRQUOTA),euser_id,(char *) &D);
-  if (setreuid(user_id, euser_id) == -1)
+  if (r)
+     save_errno = errno;
+
+  if (setreuid(user_id, -1) == -1)
     DEBUG(5,("Unable to reset uid to %d\n", user_id));
 
   *bsize = DEV_BSIZE;
 
   if (r)
-      return(False);
+  {
+      if (save_errno == EDQUOT)   // disk quota exceeded
+      {
+         *dfree = 0;
+         *dsize = D.dqb_curblocks;
+         return (True);
+      }
+      else
+         return (False);  
+  }
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
 
