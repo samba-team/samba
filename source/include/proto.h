@@ -311,7 +311,6 @@ BOOL is_ipaddress(const char *str);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
-BOOL matchname(char *remotehost,struct in_addr  addr);
 void standard_sub_basic(char *str);
 void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str);
 void standard_sub(connection_struct *conn, char *str);
@@ -413,7 +412,6 @@ BOOL create_new_sid(DOM_SID *sid);
 
 BOOL is_a_socket(int fd);
 void set_socket_options(int fd, char *options);
-void close_sockets(void );
 ssize_t read_udp_socket(int fd,char *buf,size_t len);
 ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out);
 BOOL send_keepalive(int client);
@@ -430,8 +428,11 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
 int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind);
 int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
 void reset_globals_after_fork(void);
-char *client_name(int fd);
-char *client_addr(int fd);
+void client_setfd(int fd);
+char *client_name(void);
+char *client_addr(void);
+char *get_socket_name(int fd);
+char *get_socket_addr(int fd);
 int open_pipe_sock(char *path);
 int create_pipe_socket(char *dir, int dir_perms,
 				char *path, int path_perms);
@@ -480,6 +481,7 @@ char *string_truncate(char *s, int length);
 int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate);
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
 void unistr_to_ascii(char *dest, const uint16 *src, int len);
+char *skip_unibuf(char *src, int len);
 char *skip_unicode_string(char *buf,int n);
 char *dos_unistrn2(uint16 *src, int len);
 char *dos_unistr2(uint16 *src);
@@ -3204,6 +3206,8 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 
 /*The following definitions come from  smbd/server.c  */
 
+int smbd_server_fd(void);
+void smbd_set_server_fd(int fd);
 BOOL reload_services(BOOL test);
 void exit_server(char *reason);
 
