@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,6 +42,7 @@ int validate_flag	= 0;
 int version_flag	= 0;
 int help_flag		= 0;
 int addrs_flag		= 1;
+struct getarg_strings extra_addresses;
 int anonymous_flag	= 0;
 char *lifetime 		= NULL;
 char *renew_life	= NULL;
@@ -113,6 +114,9 @@ static struct getargs args[] = {
 
     { "addresses",	0,   arg_negative_flag,	&addrs_flag,
       "request a ticket with no addresses" },
+
+    { "extra-addresses",'a', arg_strings,	&extra_addresses,
+      "include these extra addresses", "addresses" },
 
     { "anonymous",	0,   arg_flag,	&anonymous_flag,
       "request an anonymous ticket" },
@@ -627,6 +631,24 @@ main (int argc, char **argv)
 				krb5_principal_get_realm(context, principal), 
 				"afslog", TRUE, &do_afslog);
 #endif
+
+    if(!addrs_flag && extra_addresses.num_strings > 0)
+	krb5_errx(context, 1, "specifying both extra addresses and "
+		  "no addresses makes no sense");
+    {
+	int i;
+	krb5_addresses addresses;
+	memset(&addresses, 0, sizeof(addresses));
+	for(i = 0; i < extra_addresses.num_strings; i++) {
+	    ret = krb5_parse_address(context, extra_addresses.strings[i], 
+				     &addresses);
+	    if (ret == 0) {
+		krb5_add_extra_addresses(context, &addresses);
+		krb5_free_addresses(context, &addresses);
+	    }
+	}
+	free_getarg_strings(&extra_addresses);
+    }
 
     
     if(renew_flag || validate_flag) {
