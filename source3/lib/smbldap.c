@@ -873,8 +873,9 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 *********************************************************************/
 static int smbldap_open(struct smbldap_state *ldap_state)
 {
-	int rc;
+	int rc, opt_rc;
 	SMB_ASSERT(ldap_state);
+	BOOL reopen = False;
 		
 #ifndef NO_LDAP_SECURITY
 	if (geteuid() != 0) {
@@ -883,12 +884,21 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 	}
 #endif
 
-       	if ((ldap_state->ldap_struct != NULL) && ((ldap_state->last_ping + SMBLDAP_DONT_PING_TIME) < time(NULL))) {
+	if ((ldap_state->ldap_struct != NULL) && ((ldap_state->last_ping + SMBLDAP_DONT_PING_TIME) < time(NULL))) {
+
 		struct sockaddr_un addr;
 		socklen_t len = sizeof(addr);
 		int sd;
-		if (ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_DESC, &sd) == 0 &&
-		    ((getpeername(sd, (struct sockaddr *) &addr, &len) < 0) || addr.sun_family == AF_LOCAL)) {
+
+		opt_rc = ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_DESC, &sd);
+		if (opt_rc == 0 && (getpeername(sd, (struct sockaddr *) &addr, &len)) < 0 )
+			reopen = True;
+
+#ifdef HAVE_UNIXSOCKET
+		if (opt_rc == 0 && addr.sun_family == AF_UNIX)
+			reopen = True;
+#endif
+		if (reopen) {
 		    	/* the other end has died. reopen. */
 		    	ldap_unbind_ext(ldap_state->ldap_struct, NULL, NULL);
 		    	ldap_state->ldap_struct = NULL;
