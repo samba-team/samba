@@ -908,7 +908,7 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 	unsigned hash;
 	tdb_off offset, rec_ptr, last_ptr;
 	struct list_struct rec, lastrec;
-	char *data;
+	char *data = NULL;
 
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
@@ -1004,9 +1004,9 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 {
 	struct list_struct rec;
-	char *data = NULL;
 	unsigned hash;
 	tdb_off rec_ptr, offset;
+	char *p = NULL;
 
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
@@ -1053,10 +1053,18 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	rec.full_hash = hash;
 	rec.magic = TDB_MAGIC;
 
-	/* write the new record */
-	if (rec_write(tdb, rec_ptr, &rec) == -1) goto fail;
-	if (tdb_write(tdb, rec_ptr + sizeof(rec), key.dptr, key.dsize) == -1) goto fail;
-	if (tdb_write(tdb, rec_ptr + sizeof(rec) + key.dsize, dbuf.dptr, dbuf.dsize) == -1) goto fail;
+	p = (char *)malloc(sizeof(rec) + key.dsize + dbuf.dsize);
+	if (!p) goto fail;
+
+	memcpy(p, &rec, sizeof(rec));
+	memcpy(p+sizeof(rec), key.dptr, key.dsize);
+	memcpy(p+sizeof(rec)+key.dsize, dbuf.dptr, dbuf.dsize);
+
+	if (tdb_write(tdb, rec_ptr, p, sizeof(rec)+key.dsize+dbuf.dsize) == -1)
+		goto fail;
+
+	free(p); 
+	p = NULL;
 
 	/* and point the top of the hash chain at it */
 	if (ofs_write(tdb, offset, &rec_ptr) == -1) goto fail;
@@ -1068,7 +1076,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 #if TDB_DEBUG
 	printf("store failed for hash 0x%08x in bucket %u\n", hash, BUCKET(hash));
 #endif
-	if (data) free(data);
+	if (p) free(p);
 	tdb_unlock(tdb, BUCKET(hash));
 	return -1;
 }
