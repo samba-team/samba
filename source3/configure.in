@@ -472,7 +472,7 @@ AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/i
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
-AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h ldap.h lber.h dlfcn.h)
+AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 
 # In valgrind 1.0.x, it's just valgrind.h.  In 1.9.x+ there's a
@@ -2247,7 +2247,7 @@ if test x"$with_ldap_support" = x"yes"; then
   if test x$have_ldap != xyes; then
   AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LIBS="$LIBS -lldap";
 	AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])])
-     default_modules="$default_modules pdb_ldap"
+	AC_CHECK_HEADERS([ldap.h lber.h], [default_modules="$default_modules pdb_ldap"])
 
 	########################################################
 	# If we have LDAP, does it's rebind procedure take 2 or 3 arguments?
