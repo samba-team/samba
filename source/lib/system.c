@@ -537,7 +537,8 @@ int sys_getgroups(int setlen, gid_t *gidset)
     return -1;
   } 
 
-  if (setlen == 0) setlen = 1;
+  if (setlen == 0)
+    setlen = 1;
 
   if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
     DEBUG(0,("sys_getgroups: Malloc fail.\n"));
@@ -558,3 +559,59 @@ int sys_getgroups(int setlen, gid_t *gidset)
   return ngroups;
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
+
+#ifdef HAVE_SETGROUPS
+
+/**************************************************************************
+ Wrapper for setgroups. Deals with broken (int) case. Automatically used
+ if we have broken getgroups.
+****************************************************************************/
+
+int sys_setgroups(int setlen, gid_t *gidset)
+{
+#if !defined(HAVE_BROKEN_GETGROUPS)
+  return setgroups(setlen, gidset);
+#else
+
+  GID_T *group_list;
+  int i ; 
+
+  if (setlen == 0)
+    return 0 ;
+
+#ifdef NGROUPS_MAX
+  if (setlen > NGROUPS_MAX) {
+    errno = EINVAL; 
+    return -1;   
+  }
+#endif
+
+  /*
+   * Broken case. We need to allocate a
+   * GID_T array of size setlen.
+   */
+
+  if (setlen == 0)
+    setlen = 1;
+
+  if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
+    DEBUG(0,("sys_setgroups: Malloc fail.\n"));
+    return -1;    
+  }
+ 
+  for(i = 0; i < setlen; i++) 
+    group_list[i] = (GID_T) gidset[i]; 
+
+  if(setgroups(setlen, group_list) != 0) {
+    int saved_errno = errno;
+    free((char *)group_list);
+    errno = saved_errno;
+    return -1;
+  }
+ 
+  free((char *)group_list);
+  return 0 ;
+#endif /* HAVE_BROKEN_GETGROUPS */
+}
+
+#endif /* HAVE_SETGROUPS */

@@ -187,7 +187,7 @@ Corrections by richard.kettlewell@kewill.com
 		}
 	}
 	endgrent();
-	return(setgroups(i,grouplst));
+	return(sys_setgroups(i,grouplst));
 #endif /* HAVE_SETGROUPS */
 }
 #endif /* HAVE_INITGROUPS */
