@@ -576,6 +576,111 @@ encryption_test(krb5_context context, char *key, int keylen,
 
 #endif /* ENABLE_AES */
 
+
+static int
+krb_enc(krb5_context context,
+	krb5_crypto crypto, 
+	unsigned usage,
+	krb5_data *cipher, 
+	krb5_data *clear)
+{
+    krb5_data decrypt;
+    krb5_error_code ret;
+
+    krb5_data_zero(&decrypt);
+
+    ret = krb5_decrypt(context,
+		       crypto,
+		       usage,
+		       cipher->data,
+		       cipher->length,
+		       &decrypt);
+
+    if (ret) {
+	krb5_warn(context, ret, "krb5_decrypt");
+	return ret;
+    }
+
+    if (decrypt.length != clear->length ||
+	memcmp(decrypt.data, clear->data, decrypt.length) != 0) {
+	krb5_warnx(context, "clear text not same");
+	return EINVAL;
+    }
+
+    krb5_data_free(&decrypt);
+
+    return 0;
+}
+
+struct {
+    krb5_enctype enctype;
+    unsigned usage;
+    size_t keylen;
+    void *key;
+    size_t elen;
+    void* edata;
+    size_t plen;
+    void *pdata;
+} krbencs[] =  {
+#ifdef ENABLE_AES
+    { 
+	ETYPE_AES256_CTS_HMAC_SHA1_96,
+	7,
+	32,   
+	"\x47\x75\x69\x64\x65\x6c\x69\x6e\x65\x73\x20\x74\x6f\x20\x41\x75"
+	"\x74\x68\x6f\x72\x73\x20\x6f\x66\x20\x49\x6e\x74\x65\x72\x6e\x65",
+	44,
+	"\xcf\x79\x8f\x0d\x76\xf3\xe0\xbe\x8e\x66\x94\x70\xfa\xcc\x9e\x91"
+	"\xa9\xec\x1c\x5c\x21\xfb\x6e\xef\x1a\x7a\xc8\xc1\xcc\x5a\x95\x24"
+	"\x6f\x9f\xf4\xd5\xbe\x5d\x59\x97\x44\xd8\x47\xcd",
+	16,
+	"\x54\x68\x69\x73\x20\x69\x73\x20\x61\x20\x74\x65\x73\x74\x2e\x0a"
+    }
+#endif
+};
+
+
+static int
+krb_enc_test(krb5_context context)
+{
+    krb5_error_code ret;
+    krb5_crypto crypto;
+    krb5_keyblock kb;
+    krb5_data cipher, plain;
+    int i, failed = 0;
+
+    for (i = 0; i < sizeof(krbencs)/sizeof(krbencs[0]); i++) {
+
+	ret = krb5_enctype_to_keytype(context, 
+				      krbencs[i].enctype,
+				      (krb5_keytype *)&kb.keytype);
+	if (ret)
+	    return ret;
+
+	kb.keyvalue.length = krbencs[i].keylen;
+	kb.keyvalue.data = krbencs[i].key;
+
+	ret = krb5_crypto_init(context, &kb, krbencs[i].enctype, &crypto);
+
+	cipher.length = krbencs[i].elen;
+	cipher.data = krbencs[i].edata;
+	plain.length = krbencs[i].plen;
+	plain.data = krbencs[i].pdata;
+	
+	ret = krb_enc(context, crypto, krbencs[i].usage, &cipher, &plain);
+		       
+	if (ret) {
+	    failed = 1;
+	    printf("failed with %d\n", ret);
+	}
+	krb5_crypto_destroy(context, crypto);
+    }
+
+    return failed;
+}
+
+
+
 int
 main(int argc, char **argv)
 {
@@ -595,6 +700,7 @@ main(int argc, char **argv)
     val |= encryption_test(context, aes_key2, 256, 
 			   encs2, sizeof(encs2)/sizeof(encs2[0]));
 #endif
+    val |= krb_enc_test(context);
 
     if (verbose && val == 0)
 	printf("all ok\n");
