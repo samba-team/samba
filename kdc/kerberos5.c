@@ -805,11 +805,10 @@ tgs_rep2(krb5_context context,
 			  0,
 			  reply);
 		      
-	free_EncTicketPart(tgt);
-	krb5_free_principal(context, ticket->client);
+	krb5_free_ticket(context, ticket);
 	free(ticket);
 	
-	krb5_free_principal(context, sp);
+	free_AP_REQ(&ap_req);
 	free(spn);
 	krb5_free_principal(context, cp);
 	free(cpn);
