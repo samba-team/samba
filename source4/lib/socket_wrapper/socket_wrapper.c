@@ -321,7 +321,7 @@ int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
-		return real_getpeername(s, name, addrlen);
+		return real_getsockname(s, name, addrlen);
 	}
 
 	memcpy(name, si->myname, si->myname_len);
