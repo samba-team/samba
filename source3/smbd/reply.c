@@ -1099,6 +1099,8 @@ int reply_open(char *inbuf,char *outbuf)
   int rmode=0;
   struct stat sbuf;
   BOOL bad_path = False;
+  files_struct *fsp;
+  int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
  
   cnum = SVAL(inbuf,smb_tid);
 
@@ -1123,9 +1125,12 @@ int reply_open(char *inbuf,char *outbuf)
  
   unixmode = unix_mode(cnum,aARCH);
       
-  open_file_shared(fnum,cnum,fname,share_mode,3,unixmode,&rmode,NULL);
+  open_file_shared(fnum,cnum,fname,share_mode,3,unixmode,
+                   oplock_request,&rmode,NULL);
 
-  if (!Files[fnum].open)
+  fsp = &Files[fnum];
+
+  if (!fsp->open)
   {
     if((errno == ENOENT) && bad_path)
     {
@@ -1135,7 +1140,7 @@ int reply_open(char *inbuf,char *outbuf)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
+  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1157,10 +1162,12 @@ int reply_open(char *inbuf,char *outbuf)
   SIVAL(outbuf,smb_vwv4,size);
   SSVAL(outbuf,smb_vwv6,rmode);
 
-  if (lp_fake_oplocks(SNUM(cnum))) {
-    CVAL(outbuf,smb_flg) |= (CVAL(inbuf,smb_flg) & (1<<5));
+  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+    fsp->granted_oplock = True;
   }
     
+  if(fsp->granted_oplock)
+    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   return(outsize);
 }
 
@@ -1175,7 +1182,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int fnum = -1;
   int smb_mode = SVAL(inbuf,smb_vwv3);
   int smb_attr = SVAL(inbuf,smb_vwv5);
-  BOOL oplock_request = BITSETW(inbuf+smb_vwv2,1);
+  BOOL oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
 #if 0
   int open_flags = SVAL(inbuf,smb_vwv2);
   int smb_sattr = SVAL(inbuf,smb_vwv4); 
@@ -1187,6 +1194,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   struct stat sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
+  files_struct *fsp;
 
   /* If it's an IPC, pass off the pipe handler. */
   if (IS_IPC(cnum))
@@ -1214,9 +1222,11 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   unixmode = unix_mode(cnum,smb_attr | aARCH);
       
   open_file_shared(fnum,cnum,fname,smb_mode,smb_ofun,unixmode,
-		   &rmode,&smb_action);
+		   oplock_request, &rmode,&smb_action);
       
-  if (!Files[fnum].open)
+  fsp = &Files[fnum];
+
+  if (!fsp->open)
   {
     if((errno == ENOENT) && bad_path)
     {
@@ -1226,7 +1236,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
+  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1240,8 +1250,11 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   }
 
   if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    smb_action |= (1<<15);
+    fsp->granted_oplock = True;
   }
+
+  if(fsp->granted_oplock)
+    smb_action |= EXTENDED_OPLOCK_GRANTED;
 
   set_message(outbuf,15,0,True);
   SSVAL(outbuf,smb_vwv2,fnum);
@@ -1302,6 +1315,8 @@ int reply_mknew(char *inbuf,char *outbuf)
   mode_t unixmode;
   int ofun = 0;
   BOOL bad_path = False;
+  files_struct *fsp;
+  int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
  
   com = SVAL(inbuf,smb_com);
   cnum = SVAL(inbuf,smb_tid);
@@ -1343,9 +1358,12 @@ int reply_mknew(char *inbuf,char *outbuf)
   }
 
   /* Open file in dos compatibility share mode. */
-  open_file_shared(fnum,cnum,fname,(DENY_FCB<<4)|0xF, ofun, unixmode, NULL, NULL);
+  open_file_shared(fnum,cnum,fname,(DENY_FCB<<4)|0xF, ofun, unixmode, 
+                   oplock_request, NULL, NULL);
   
-  if (!Files[fnum].open)
+  fsp = &Files[fnum];
+
+  if (!fsp->open)
   {
     if((errno == ENOENT) && bad_path) 
     {
@@ -1358,10 +1376,13 @@ int reply_mknew(char *inbuf,char *outbuf)
   outsize = set_message(outbuf,1,0,True);
   SSVAL(outbuf,smb_vwv0,fnum);
 
-  if (lp_fake_oplocks(SNUM(cnum))) {
-    CVAL(outbuf,smb_flg) |= (CVAL(inbuf,smb_flg) & (1<<5));
+  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+    fsp->granted_oplock = True;
   }
-  
+ 
+  if(fsp->granted_oplock)
+    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+ 
   DEBUG(2,("new file %s\n",fname));
   DEBUG(3,("%s mknew %s fd=%d fnum=%d cnum=%d dmode=%d umode=%o\n",timestring(),fname,Files[fnum].fd_ptr->fd,fnum,cnum,createmode,unixmode));
   
@@ -1382,6 +1403,8 @@ int reply_ctemp(char *inbuf,char *outbuf)
   int createmode;
   mode_t unixmode;
   BOOL bad_path = False;
+  files_struct *fsp;
+  int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
  
   cnum = SVAL(inbuf,smb_tid);
   createmode = SVAL(inbuf,smb_vwv0);
@@ -1409,9 +1432,12 @@ int reply_ctemp(char *inbuf,char *outbuf)
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
-  open_file_shared(fnum,cnum,fname2,(DENY_FCB<<4)|0xF, 0x10, unixmode, NULL, NULL);
+  open_file_shared(fnum,cnum,fname2,(DENY_FCB<<4)|0xF, 0x10, unixmode, 
+                   oplock_request, NULL, NULL);
 
-  if (!Files[fnum].open)
+  fsp = &Files[fnum];
+
+  if (!fsp->open)
   {
     if((errno == ENOENT) && bad_path)
     {
@@ -1426,10 +1452,13 @@ int reply_ctemp(char *inbuf,char *outbuf)
   CVAL(smb_buf(outbuf),0) = 4;
   strcpy(smb_buf(outbuf) + 1,fname2);
 
-  if (lp_fake_oplocks(SNUM(cnum))) {
-    CVAL(outbuf,smb_flg) |= (CVAL(inbuf,smb_flg) & (1<<5));
+  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+    fsp->granted_oplock = True;
   }
   
+  if(fsp->granted_oplock)
+    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+
   DEBUG(2,("created temp file %s\n",fname2));
   DEBUG(3,("%s ctemp %s fd=%d fnum=%d cnum=%d dmode=%d umode=%o\n",timestring(),fname2,Files[fnum].fd_ptr->fd,fnum,cnum,createmode,unixmode));
   
@@ -2432,7 +2461,8 @@ int reply_printopen(char *inbuf,char *outbuf)
     return(ERROR(ERRDOS,ERRnoaccess));
 
   /* Open for exclusive use, write only. */
-  open_file_shared(fnum,cnum,fname2,(DENY_ALL<<4)|1, 0x12, unix_mode(cnum,0), NULL, NULL);
+  open_file_shared(fnum,cnum,fname2,(DENY_ALL<<4)|1, 0x12, unix_mode(cnum,0), 
+                   0, NULL, NULL);
 
   if (!Files[fnum].open)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -3094,7 +3124,7 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
   fnum1 = find_free_file();
   if (fnum1<0) return(False);
   open_file_shared(fnum1,cnum,src,(DENY_NONE<<4),
-		   1,0,&Access,&action);
+		   1,0,0,&Access,&action);
 
   if (!Files[fnum1].open) return(False);
 
@@ -3107,7 +3137,7 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
     return(False);
   }
   open_file_shared(fnum2,cnum,dest,(DENY_NONE<<4)|1,
-		   ofun,st.st_mode,&Access,&action);
+		   ofun,st.st_mode,0,&Access,&action);
 
   if (!Files[fnum2].open) {
     close_file(fnum1);
@@ -3713,8 +3743,3 @@ int reply_getattrE(char *inbuf,char *outbuf)
   
   return(outsize);
 }
-
-
-
-
-

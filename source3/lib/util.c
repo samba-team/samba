@@ -4061,53 +4061,52 @@ enum remote_arch_types get_remote_arch()
   return ra_type;
 }
 
-
 /*******************************************************************
 safe string copy into a fstring
 ********************************************************************/
 void fstrcpy(char *dest, char *src)
 {
-	int maxlength = sizeof(fstring) - 1;
-	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in fstrcpy\n"));
-		return;
-	}
+    int maxlength = sizeof(fstring) - 1;
+    if (!dest) {
+        DEBUG(0,("ERROR: NULL dest in fstrcpy\n"));
+        return;
+    }
 
-	if (!src) {
-		*dest = 0;
-		return;
-	}
-
-	while (maxlength-- && *src)
-		*dest++ = *src++;
-	*dest = 0;
-	if (*src) {
-		DEBUG(0,("ERROR: string overflow by %d in fstrcpy\n",
-			 strlen(src)));
-	}
-}
+    if (!src) {
+        *dest = 0;
+        return;
+    }  
+      
+    while (maxlength-- && *src)
+        *dest++ = *src++;
+    *dest = 0;
+    if (*src) {
+        DEBUG(0,("ERROR: string overflow by %d in fstrcpy\n",
+             strlen(src)));
+    }    
+}   
 
 /*******************************************************************
 safe string copy into a pstring
 ********************************************************************/
 void pstrcpy(char *dest, char *src)
 {
-	int maxlength = sizeof(pstring) - 1; 
-	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in pstrcpy\n"));
-		return;
-	}
-
-	if (!src) {
-		*dest = 0;
-		return;
-	}
-
-	while (maxlength-- && *src)
-		*dest++ = *src++;
-	*dest = 0;
-	if (*src) {
-		DEBUG(0,("ERROR: string overflow by %d in pstrcpy\n",
-			 strlen(src)));
-	}
-}
+    int maxlength = sizeof(pstring) - 1;
+    if (!dest) {
+        DEBUG(0,("ERROR: NULL dest in pstrcpy\n"));
+        return;
+    }
+   
+    if (!src) {
+        *dest = 0;
+        return;
+    }
+   
+    while (maxlength-- && *src)
+        *dest++ = *src++;
+    *dest = 0;
+    if (*src) {
+        DEBUG(0,("ERROR: string overflow by %d in pstrcpy\n",
+             strlen(src)));
+    }
+}  

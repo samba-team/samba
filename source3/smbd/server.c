@@ -88,6 +88,8 @@ static int num_connections_open = 0;
 /* Oplock ipc UDP socket. */
 int oplock_sock = -1;
 uint16 oplock_port = 0;
+/* Current number of oplocks we have outstanding. */
+uint32 oplocks_open = 0;
 #endif /* USE_OPLOCKS */
 
 extern fstring remote_machine;
@@ -1052,9 +1054,10 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
   pstring fname;
   struct stat statbuf;
   file_fd_struct *fd_ptr;
+  files_struct *fsp = &Files[fnum];
 
-  Files[fnum].open = False;
-  Files[fnum].fd_ptr = 0;
+  fsp->open = False;
+  fsp->fd_ptr = 0;
   errno = EPERM;
 
   pstrcpy(fname,fname1);
@@ -1192,7 +1195,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
     if (sys_disk_free(dname,&dum1,&dum2,&dum3) < 
 	lp_minprintspace(SNUM(cnum))) {
       fd_attempt_close(fd_ptr);
-      Files[fnum].fd_ptr = 0;
+      fsp->fd_ptr = 0;
       if(fd_ptr->ref_count == 0)
         sys_unlink(fname);
       errno = ENOSPC;
@@ -1228,25 +1231,26 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
       fd_ptr->dev = (uint32)sbuf->st_dev;
       fd_ptr->inode = (uint32)sbuf->st_ino;
 
-      Files[fnum].fd_ptr = fd_ptr;
+      fsp->fd_ptr = fd_ptr;
       Connections[cnum].num_files_open++;
-      Files[fnum].mode = sbuf->st_mode;
-      GetTimeOfDay(&Files[fnum].open_time);
-      Files[fnum].uid = current_user.id;
-      Files[fnum].size = 0;
-      Files[fnum].pos = -1;
-      Files[fnum].open = True;
-      Files[fnum].mmap_ptr = NULL;
-      Files[fnum].mmap_size = 0;
-      Files[fnum].can_lock = True;
-      Files[fnum].can_read = ((flags & O_WRONLY)==0);
-      Files[fnum].can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
-      Files[fnum].share_mode = 0;
-      Files[fnum].print_file = Connections[cnum].printer;
-      Files[fnum].modified = False;
-      Files[fnum].cnum = cnum;
-      string_set(&Files[fnum].name,dos_to_unix(fname,False));
-      Files[fnum].wbmpx_ptr = NULL;      
+      fsp->mode = sbuf->st_mode;
+      GetTimeOfDay(&fsp->open_time);
+      fsp->uid = current_user.id;
+      fsp->size = 0;
+      fsp->pos = -1;
+      fsp->open = True;
+      fsp->mmap_ptr = NULL;
+      fsp->mmap_size = 0;
+      fsp->can_lock = True;
+      fsp->can_read = ((flags & O_WRONLY)==0);
+      fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
+      fsp->share_mode = 0;
+      fsp->print_file = Connections[cnum].printer;
+      fsp->modified = False;
+      fsp->granted_oplock = False;
+      fsp->cnum = cnum;
+      string_set(&fsp->name,dos_to_unix(fname,False));
+      fsp->wbmpx_ptr = NULL;      
 
       /*
        * If the printer is marked as postscript output a leading
@@ -1255,8 +1259,8 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
        * This has a similar effect as CtrlD=0 in WIN.INI file.
        * tim@fsg.com 09/06/94
        */
-      if (Files[fnum].print_file && POSTSCRIPT(cnum) && 
-	  Files[fnum].can_write) 
+      if (fsp->print_file && POSTSCRIPT(cnum) && 
+	  fsp->can_write) 
 	{
 	  DEBUG(3,("Writing postscript line\n"));
 	  write_file(fnum,"%!\n",3);
@@ -1264,23 +1268,23 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
       
       DEBUG(2,("%s %s opened file %s read=%s write=%s (numopen=%d fnum=%d)\n",
 	       timestring(),Connections[cnum].user,fname,
-	       BOOLSTR(Files[fnum].can_read),BOOLSTR(Files[fnum].can_write),
+	       BOOLSTR(fsp->can_read),BOOLSTR(fsp->can_write),
 	       Connections[cnum].num_files_open,fnum));
 
     }
 
 #if USE_MMAP
   /* mmap it if read-only */
-  if (!Files[fnum].can_write)
+  if (!fsp->can_write)
     {
-      Files[fnum].mmap_size = file_size(fname);
-      Files[fnum].mmap_ptr = (char *)mmap(NULL,Files[fnum].mmap_size,
-					  PROT_READ,MAP_SHARED,Files[fnum].fd_ptr->fd,0);
+      fsp->mmap_size = file_size(fname);
+      fsp->mmap_ptr = (char *)mmap(NULL,fsp->mmap_size,
+					  PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,0);
 
-      if (Files[fnum].mmap_ptr == (char *)-1 || !Files[fnum].mmap_ptr)
+      if (fsp->mmap_ptr == (char *)-1 || !fsp->mmap_ptr)
 	{
 	  DEBUG(3,("Failed to mmap() %s - %s\n",fname,strerror(errno)));
-	  Files[fnum].mmap_ptr = NULL;
+	  fsp->mmap_ptr = NULL;
 	}
     }
 #endif
@@ -1512,12 +1516,52 @@ static void truncate_unless_locked(int fnum, int cnum, share_lock_token token,
   }
 }
 
+/****************************************************************************
+check if we can open a file with a share mode
+****************************************************************************/
+int check_share_mode( min_share_mode_entry *share, int deny_mode, char *fname,
+                      BOOL fcbopen, int *flags)
+{
+  int old_open_mode = share->share_mode &0xF;
+  int old_deny_mode = (share->share_mode >>4)&7;
+
+  if (old_deny_mode > 4 || old_open_mode > 2)
+  {
+    DEBUG(0,("Invalid share mode found (%d,%d,%d) on file %s\n",
+               deny_mode,old_deny_mode,old_open_mode,fname));
+    return False;
+  }
+
+  {
+    int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
+                                share->pid,fname);
+
+    if ((access_allowed == AFAIL) ||
+        (!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
+        (access_allowed == AREAD && *flags == O_WRONLY) ||
+        (access_allowed == AWRITE && *flags == O_RDONLY))
+    {
+      DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s) = %d\n",
+                deny_mode,old_deny_mode,old_open_mode,
+                share->pid,fname, access_allowed));
+      return False;
+    }
+
+    if (access_allowed == AREAD)
+      *flags = O_RDONLY;
+
+    if (access_allowed == AWRITE)
+      *flags = O_WRONLY;
+
+  }
+  return True;
+}
 
 /****************************************************************************
 open a file with a share mode
 ****************************************************************************/
 void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
-		      int mode,int *Access,int *action)
+		      int mode,int oplock_request, int *Access,int *action)
 {
   files_struct *fs_p = &Files[fnum];
   int flags=0;
@@ -1605,7 +1649,6 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
     int i;
     min_share_mode_entry *old_shares = 0;
 
-
     if (file_existed)
     {
       dev = (uint32)sbuf.st_dev;
@@ -1615,55 +1658,61 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
       num_shares = get_share_modes(cnum, token, dev, inode, &old_shares);
     }
 
-    for(i = 0; i < num_shares; i++)
+    /*
+     * Check if the share modes will give us access.
+     */
+
+    if(share_locked && (num_shares != 0))
     {
-      /* someone else has a share lock on it, check to see 
-	 if we can too */
-      int old_open_mode = old_shares[i].share_mode &0xF;
-      int old_deny_mode = (old_shares[i].share_mode >>4)&7;
+      BOOL broke_oplock;
 
-      if (old_deny_mode > 4 || old_open_mode > 2) 
+      do
       {
-	DEBUG(0,("Invalid share mode found (%d,%d,%d) on file %s\n",
-		 deny_mode,old_deny_mode,old_open_mode,fname));
-        free((char *)old_shares);
-        if(share_locked)
-          unlock_share_entry(cnum, dev, inode, token);
-	errno = EACCES;
-	unix_ERR_class = ERRDOS;
-	unix_ERR_code = ERRbadshare;
-	return;
-      }
-
-      {
-	int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-					  old_shares[i].pid,fname);
-
-	if ((access_allowed == AFAIL) ||
-	    (!fcbopen && (access_allowed == AREAD && flags == O_RDWR)) ||
-	    (access_allowed == AREAD && flags == O_WRONLY) ||
-	    (access_allowed == AWRITE && flags == O_RDONLY)) 
+        broke_oplock = False;
+        for(i = 0; i < num_shares; i++)
         {
-	  DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s) = %d\n",
-		   deny_mode,old_deny_mode,old_open_mode,
-		   old_shares[i].pid,fname,
-		   access_allowed));
-          free((char *)old_shares);
-          if(share_locked)
+          /* someone else has a share lock on it, check to see 
+             if we can too */
+          if(check_share_mode(&old_shares[i], deny_mode, fname, fcbopen, &flags) == False)
+          {
+            free((char *)old_shares);
             unlock_share_entry(cnum, dev, inode, token);
-	  errno = EACCES;
-	  unix_ERR_class = ERRDOS;
-	  unix_ERR_code = ERRbadshare;
-	  return;
+            errno = EACCES;
+            unix_ERR_class = ERRDOS;
+            unix_ERR_code = ERRbadshare;
+            return;
+          }
+#ifdef USE_OPLOCKS
+          /* 
+           * The share modes would give us access. Check if someone
+           * has an oplock on this file. If so we must break it before
+           * continuing. 
+           */
+          if(old_shares[i].op_type != 0)
+          {
+            /* Oplock break.... */
+            unlock_share_entry(cnum, dev, inode, token);
+#if 0 /* Work in progress..... */
+            if(break_oplock())
+            {
+              free((char *)old_shares);
+              /* Error condition here... */
+            }
+            lock_share_entry(cnum, dev, inode, &token);
+            broke_oplock = True;
+            break;
+#endif
+          }
+#endif /* USE_OPLOCKS */
         }
-	
-	if (access_allowed == AREAD)
-	  flags = O_RDONLY;
-	
-	if (access_allowed == AWRITE)
-	  flags = O_WRONLY;
-      }
+        if(broke_oplock)
+        {
+          free((char *)old_shares);
+          num_shares = get_share_modes(cnum, token, dev, inode, &old_shares);
+        }
+      } while(broke_oplock);
     }
+
     if(old_shares != 0)
       free((char *)old_shares);
   }
@@ -1720,7 +1769,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
        file (which expects the share_mode_entry to be there).
      */
     if (lp_share_modes(SNUM(cnum)))
-      set_share_mode(token, fnum, 0);
+      set_share_mode(token, fnum, 0, 0);
 
     if ((flags2&O_TRUNC) && file_existed)
       truncate_unless_locked(fnum,cnum,token,&share_locked);
@@ -2279,7 +2328,8 @@ static BOOL open_oplock_ipc()
   if (oplock_sock == -1)
   {
     DEBUG(0,("open_oplock_ipc: Failed to get local UDP socket for \
-address %x. Error was %s\n", INADDR_LOOPBACK, strerror(errno)));
+address %x. Error was %s\n", htonl(INADDR_LOOPBACK), strerror(errno)));
+    oplock_port = 0;
     return(False);
   }
 
@@ -2290,6 +2340,7 @@ address %x. Error was %s\n", INADDR_LOOPBACK, strerror(errno)));
             strerror(errno)));
     close(oplock_sock);
     oplock_sock = -1;
+    oplock_port = 0;
     return False;
   }
   oplock_port = ntohs(sock_name.sin_port);
@@ -2324,7 +2375,7 @@ static BOOL process_local_message(int oplock_sock, char *buffer, int buf_size)
   /* Validate message from address (must be localhost). */
   if(from_addr.s_addr != htonl(INADDR_LOOPBACK))
   {
-    DEBUG(0,("process_local_message: invalid from address \
+    DEBUG(0,("process_local_message: invalid 'from' address \
 (was %x should be 127.0.0.1\n", from_addr.s_addr));
    return False;
   }
@@ -4010,20 +4061,20 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   it can be used by the oplock break code.
 ****************************************************************************/
 
-static void process_smb(char *InBuffer, char *OutBuffer)
+static void process_smb(char *inbuf, char *outbuf)
 {
   extern int Client;
   static int trans_num = 0;
 
-  int msg_type = CVAL(InBuffer,0);
-  int32 len = smb_len(InBuffer);
+  int msg_type = CVAL(inbuf,0);
+  int32 len = smb_len(outbuf);
   int nread = len + 4;
 
   DEBUG(6,("got message type 0x%x of len 0x%x\n",msg_type,len));
   DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));
 
 #ifdef WITH_VTP
-  if(trans_num == 1 && VT_Check(InBuffer)) 
+  if(trans_num == 1 && VT_Check(inbuf)) 
   {
     VT_Process();
     return;
@@ -4031,22 +4082,22 @@ static void process_smb(char *InBuffer, char *OutBuffer)
 #endif
 
   if (msg_type == 0)
-    show_msg(InBuffer);
+    show_msg(inbuf);
 
-  nread = construct_reply(InBuffer,OutBuffer,nread,max_send);
+  nread = construct_reply(inbuf,outbuf,nread,max_send);
       
   if(nread > 0) 
   {
-    if (CVAL(OutBuffer,0) == 0)
-      show_msg(OutBuffer);
+    if (CVAL(outbuf,0) == 0)
+      show_msg(outbuf);
 	
-    if (nread != smb_len(OutBuffer) + 4) 
+    if (nread != smb_len(outbuf) + 4) 
     {
       DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
-                 nread, smb_len(OutBuffer)));
+                 nread, smb_len(outbuf)));
     }
     else
-      send_smb(Client,OutBuffer);
+      send_smb(Client,outbuf);
   }
   trans_num++;
 }

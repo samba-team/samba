@@ -330,6 +330,7 @@ typedef struct
   BOOL share_mode;
   BOOL print_file;
   BOOL modified;
+  BOOL granted_oplock;
   char *name;
 } files_struct;
 
@@ -454,6 +455,7 @@ typedef struct
   int pid;
 #ifdef USE_OPLOCKS
   uint16 op_port;
+  uint16 op_type;
 #endif /* USE_OPLOCKS */
   int share_mode;
   struct timeval time;
@@ -465,6 +467,7 @@ typedef struct
   int pid;
 #ifdef USE_OPLOCKS
   uint16 op_port;
+  uint16 op_type;
 #endif /* USE_OPLOCKS */
   int share_mode;
   struct timeval time;
@@ -514,7 +517,7 @@ struct connect_record
 #ifdef USE_OPLOCKS
 #define SMF_ENTRY_LENGTH 16
 #else /* USE_OPLOCKS */
-#define SMF_ENTRY_LENGTH 18
+#define SMF_ENTRY_LENGTH 20
 #endif /* USE_OPLOCKS */
 
 /*
@@ -528,6 +531,7 @@ struct connect_record
 
 #ifdef USE_OPLOCKS
 #define SME_PORT_OFFSET 16
+#define SME_OPLOCK_TYPE_OFFSET 18
 #endif /* USE_OPLOCKS */
 
 #endif /* FAST_SHARE_MODES */
@@ -971,16 +975,52 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #define KANJI_CODEPAGE 932
 
 #ifdef KANJI
-/* Default client code page - Japanese */
+/* 
+ * Default client code page - Japanese 
+ */
 #define DEFAULT_CLIENT_CODE_PAGE KANJI_CODEPAGE
 #else /* KANJI */
-/* Default client code page - 850 - Western European */
+/* 
+ * Default client code page - 850 - Western European 
+ */
 #define DEFAULT_CLIENT_CODE_PAGE 850
 #endif /* KANJI */
-/* Size of buffer to use when moving files across filesystems. */
+
+/* 
+ * Size of buffer to use when moving files across filesystems. 
+ */
 #define COPYBUF_SIZE (8*1024)
 
-/* Integers used to override error codes. */
+/* 
+ * Integers used to override error codes. 
+ */
 extern int unix_ERR_class;
 extern int unix_ERR_code;
+
+/*
+ * Map the Core and Extended Oplock requesst bits down
+ * to common bits (EXCLUSIVE_OPLOCK & BATCH_OPLOCK).
+ */
+
+/*
+ * Core protocol.
+ */
+#define CORE_OPLOCK_REQUEST(inbuf) (((CVAL(inbuf,smb_flg)|(1<<5))>>5) | \
+                                    ((CVAL(inbuf,smb_flg)|(1<<6))>>5))
+
+/*
+ * Extended protocol.
+ */
+#define EXTENDED_OPLOCK_REQUEST(inbuf) (((SVAL(inbuf,smb_vwv2)|(1<<1))>>1) | \
+                                        ((SVAL(inbuf,smb_vwv2)|(1<<2))>>1))
+
+/*
+ * Bits we test with.
+ */
+#define EXCLUSIVE_OPLOCK 1
+#define BATCH_OPLOCK 2
+
+#define CORE_OPLOCK_GRANTED (1<<5)
+#define EXTENDED_OPLOCK_GRANTED (1<<15)
+
 /* _SMB_H */
