@@ -1,3 +1,8 @@
+Thu Jul 16 01:27:19 1998  Assar Westerlund  <assar@sics.se>
+
+	* afssys.c: reorganize order of definitions.
+	(try_one, try_two): conditionalize
+
 Wed Jul  8 01:39:44 1998  Assar Westerlund  <assar@sics.se>
 
 	* afssys.c (map_syscall_name_to_number): new function for finding
