@@ -67,14 +67,14 @@ sub ParseArray($)
 
     $res .= "\tfor (i = 0; i < count; i++) {\n";
     if (is_scalar_type($elt)) {
-	$res .= "\t\tprs_$elt->{NAME}(tvb, offset, pinfo, tree, \"$elt->{NAME});\n";
+	$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME});\n";
 	$res .= "\t}\n\n";
     } else {
-	$res .= "\t\tprs_$elt->{NAME}(tvb, offset, pinfo, tree, \"PARSE_SCALARS\", \"$elt->{NAME}\");\n";
+	$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"PARSE_SCALARS\", \"$elt->{NAME}\");\n";
 	$res .= "\t}\n\n";
 
 	$res .= "\tfor (i = 0; i < count; i++) {\n";
-	$res .= "\t\tprs_$elt->{NAME}(tvb, offset, pinfo, tree, \"PARSE_BUFFERS\", \"$elt->{NAME}\");\n";
+	$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"PARSE_BUFFERS\", \"$elt->{NAME}\");\n";
 	$res .= "\t}\n\n";
     }
 }
@@ -100,13 +100,13 @@ sub ParseElement($$)
 	# Pointers are scalars
 
 	if ($elt->{POINTERS}) {
-	    $res .= "\t\tptr_$elt->{NAME} = prs_ptr(tvb, offset, pinfo, tree, \"$elt->{NAME}\");\n";
+	    $res .= "\t\toffset = prs_ptr(tvb, offset, pinfo, tree, &ptr_$elt->{NAME}, \"$elt->{NAME}\");\n";
 	} else {
 
 	    # Simple type are scalars too
 
 	    if (is_scalar_type($elt->{TYPE})) {
-		$res .= "\t\tprs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME}}\");\n\n";
+		$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME}}\");\n\n";
 	    }
 	}
 
@@ -127,7 +127,7 @@ sub ParseElement($$)
 	    if (has_property($elt->{PROPERTIES}, "size_is")) {
 		ParseArray($elt);
 	    } else {
-		$res .= "\t\tprs_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
+		$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
 	    }
 
 	    if ($elt->{POINTERS}) {
@@ -252,7 +252,7 @@ sub ParseFunction($)
 	ParseFunctionArg($arg, "in");
     }
     
-    $res .= "\n\treturn 0;\n}\n\n";
+    $res .= "\n\treturn offset;\n}\n\n";
     
     # Output function
 
@@ -265,7 +265,7 @@ sub ParseFunction($)
 
     $res .= "\n\toffset = prs_ntstatus(tvb, offset, pinfo, tree);\n";
 
-    $res .= "\n\treturn 0;\n}\n\n";
+    $res .= "\n\treturn offset;\n}\n\n";
 
 }
 
