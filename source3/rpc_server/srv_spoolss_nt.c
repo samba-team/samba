@@ -34,6 +34,13 @@ extern pstring global_myname;
 #define PRINTER_HANDLE_IS_PRINTER	0
 #define PRINTER_HANDLE_IS_PRINTSERVER	1
 
+struct table_node {
+	char    *long_archi;
+	char    *short_archi;
+	int     version;
+};
+
+
 /* structure to store the printer handles */
 /* and a reference to what it's pointing to */
 /* and the notify info asked about */
@@ -1057,6 +1064,81 @@ uint32 _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 		
 	return result;
 }
+
+/*******************************************************************
+ * static function to lookup the version id corresponding to an
+ * long architecture string
+ ******************************************************************/
+static int get_version_id (char * arch)
+{
+	int i;
+	struct table_node archi_table[]= {
+ 
+	        {"Windows 4.0",          "WIN40",       0 },
+	        {"Windows NT x86",       "W32X86",      2 },
+	        {"Windows NT R4000",     "W32MIPS",     2 },	
+	        {"Windows NT Alpha_AXP", "W32ALPHA",    2 },
+	        {"Windows NT PowerPC",   "W32PPC",      2 },
+	        {NULL,                   "",            -1 }
+	};
+ 
+	for (i=0; archi_table[i].long_archi != NULL; i++)
+	{
+		if (strcmp(arch, archi_table[i].long_archi) == 0)
+			return (archi_table[i].version);
+        }
+	
+	return -1;
+}
+
+/********************************************************************
+ * _spoolss_deleteprinterdriver
+ *
+ * We currently delete the driver for the architecture only.
+ * This can leave the driver for other archtectures.  However,
+ * since every printer associates a "Windows NT x86" driver name
+ * and we cannot delete that one while it is in use, **and** since
+ * it is impossible to assign a driver to a Samba printer without
+ * having the "Windows NT x86" driver installed,...
+ * 
+ * ....we should not get into trouble here.  
+ *
+ *                                                      --jerry
+ ********************************************************************/
+
+uint32 _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
+				    SPOOL_R_DELETEPRINTERDRIVER *r_u)
+{
+	fstring				driver;
+	fstring				arch;
+	NT_PRINTER_DRIVER_INFO_LEVEL	info;
+	int				version;
+	 
+	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
+	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
+	
+	/* check that we have a valid driver name first */
+	if ((version=get_version_id(arch)) == -1) {
+		/* this is what NT returns */
+		return ERROR_INVALID_ENVIRONMENT;
+	}
+		
+	ZERO_STRUCT(info);
+	if (get_a_printer_driver (&info, 3, driver, arch, version) != 0) {
+		/* this is what NT returns */
+		return ERROR_UNKNOWN_PRINTER_DRIVER;
+	}
+	
+
+	if (printer_driver_in_use(arch, driver))
+	{
+		/* this is what NT returns */
+		return ERROR_PRINTER_DRIVER_IN_USE;
+	}
+
+	return delete_printer_driver(info.info_3);	 
+}
+
 
 /********************************************************************
  GetPrinterData on a printer server Handle.

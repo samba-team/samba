@@ -1315,11 +1315,12 @@ static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **
 	uint32 			result = NT_STATUS_UNSUCCESSFUL;
 	fstring			servername;
 	TALLOC_CTX		*mem_ctx = NULL;
+	int			i;
 	
 	/* parse the command arguements */
-	if (argc != 3)
+	if (argc != 2)
 	{
-		printf ("Usage: %s <arch> <driver>\n", argv[0]);
+		printf ("Usage: %s <driver>\n", argv[0]);
 		return NT_STATUS_NOPROBLEMO;
         }
 
@@ -1339,13 +1340,19 @@ static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* make the call to remove the driver */
-	if ((result = cli_spoolss_deleteprinterdriver(cli, mem_ctx, argv[1], argv[2])) != NT_STATUS_NO_PROBLEMO)
+	/* delete the driver for all architectures */
+	for (i=0; archi_table[i].long_archi; i++)
 	{
-		printf ("Failed to remove %s driver %s!\n", argv[1], argv[2]);
-		goto done;;
+		/* make the call to remove the driver */
+		if ((result = cli_spoolss_deleteprinterdriver(cli, mem_ctx, 
+			archi_table[i].long_archi, argv[1])) != NT_STATUS_NO_PROBLEMO)
+		{
+			printf ("Failed to remove driver %s for arch [%s] - error %s!\n", 
+				argv[1], archi_table[i].long_archi, get_nt_error_msg(result));
+		}
+		else
+			printf ("Driver %s removed for arch [%s].\n", argv[1], archi_table[i].long_archi);
 	}
-	printf ("%s driver %s removed.\n", argv[1], argv[2]);
 		
 
 done:
@@ -1353,7 +1360,7 @@ done:
 	cli_nt_session_close (cli);
 	talloc_destroy(mem_ctx);
 	
-	return result;		
+	return NT_STATUS_NO_PROBLEMO;		
 }
 
 

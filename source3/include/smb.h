@@ -205,6 +205,7 @@ implemented */
 #define ERROR_INVALID_PRINTER_NAME     (1801)
 #define ERROR_INVALID_DATATYPE	       (1804)
 #define ERROR_INVALID_ENVIRONMENT      (1805)
+#define ERROR_PRINTER_DRIVER_IN_USE    (3001)
 
 /* here's a special one from observing NT */
 #define ERRnoipc 66 /* don't support ipc */
