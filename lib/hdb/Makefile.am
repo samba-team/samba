@@ -45,8 +45,8 @@ $(srcdir)/hdb-private.h:
 
 $(foo) hdb_asn1.h: asn1_files
 
-asn1_files: ../asn1/asn1_compile $(srcdir)/hdb.asn1
-	../asn1/asn1_compile $(srcdir)/hdb.asn1 hdb_asn1
+asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/hdb.asn1
+	../asn1/asn1_compile$(EXEEXT) $(srcdir)/hdb.asn1 hdb_asn1
 
 $(libhdb_la_OBJECTS): hdb_asn1.h hdb_err.h
 
