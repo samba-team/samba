@@ -573,6 +573,11 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
   /* Look for backup browsers in this workgroup. */
 
+#if 0
+  /* we don't currently send become_backup requests so we should never
+     send any other servers names out as backups for our
+     workgroup. That's why this is commented out (tridge) */
+
   /*
    * NB. Note that the struct work_record here is not neccessarily
    * attached to the subnet *subrec.
@@ -602,6 +607,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
     p = skip_string(p,1);
   }
+#endif
 
   SCVAL(countptr, 0, count);
 
