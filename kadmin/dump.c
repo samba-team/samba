@@ -94,9 +94,12 @@ hdb_entry2string(hdb_entry *ent, char **str)
 	free(p);
 	append_hex(buf, &ent->keys.val[i].key.keyvalue);
 	strcat(buf, ":");
-	if(ent->keys.val[i].salt)
-	    append_hex(buf, ent->keys.val[i].salt);
-	else
+	if(ent->keys.val[i].salt){
+	    asprintf(&p, "%u/", ent->keys.val[i].salt->type);
+	    strcat(buf, p);
+	    free(p);
+	    append_hex(buf, &ent->keys.val[i].salt->salt);
+	}else
 	    strcat(buf, "-");
     }
     strcat(buf, " ");

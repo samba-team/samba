@@ -509,8 +509,9 @@ as_rep(KDC_REQ *req,
 	    ALLOC(rep.padata);
 	    rep.padata->len = 1;
 	    rep.padata->val = calloc(1, sizeof(*rep.padata->val));
-	    rep.padata->val->padata_type = pa_pw_salt;
-	    copy_octet_string(ckey->salt, &rep.padata->val->padata_value);
+	    rep.padata->val->padata_type = ckey->salt->type;
+	    copy_octet_string(&ckey->salt->salt,
+			      &rep.padata->val->padata_value);
 	}
 	
 	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);

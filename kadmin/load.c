@@ -129,25 +129,30 @@ parse_keys(hdb_entry *ent, char *str)
 	    ((u_char*)key->key.keyvalue.data)[i / 2] = tmp;
 	}
 	p = strsep(&str, ":");
-	if (p == NULL) {
-	    key->salt = malloc(sizeof(*key->salt));
-	    krb5_data_zero (key->salt);
-	} else {
-	    if(strcmp(p, "-") != 0){
-		size_t p_len = strlen(p);
-
-		key->salt = malloc(sizeof(*key->salt));
-		if (p_len) {
-		    krb5_data_alloc(key->salt, (p_len - 1) / 2 + 1);
-		    for(i = 0; i < p_len; i += 2){
-			sscanf(p + i, "%02x", &tmp);
-			((u_char*)key->salt->data)[i / 2] = tmp;
-		    }
-		} else
-		    krb5_data_zero (key->salt);
+	if(strcmp(p, "-") != 0){
+	    unsigned type;
+	    size_t p_len;
+	    if(sscanf(p, "%u/", &type) != 1){
+		
 	    }
-	    p = strsep(&str, ":");
+	    p = strchr(p, '/');
+	    if(p == NULL);
+	    p++;
+	    p_len = strlen(p);
+
+	    key->salt = malloc(sizeof(*key->salt));
+	    key->salt->type = type;
+		
+	    if (p_len) {
+		krb5_data_alloc(&key->salt->salt, (p_len - 1) / 2 + 1);
+		for(i = 0; i < p_len; i += 2){
+		    sscanf(p + i, "%02x", &tmp);
+		    ((u_char*)key->salt->salt.data)[i / 2] = tmp;
+		}
+	    } else
+		krb5_data_zero (&key->salt->salt);
 	}
+	p = strsep(&str, ":");
     }
 }
 

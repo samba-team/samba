@@ -182,7 +182,7 @@ do_version4(unsigned char *buf,
 #if 0
 	/* this is not necessary with the new code in libkrb */
 	/* find a properly salted key */
-	while(ckey->salt == NULL || ckey->salt->length != 0)
+	while(ckey->salt == NULL || ckey->salt->salt.length != 0)
 	    ret = hdb_next_keytype2key(context, client, KEYTYPE_DES, &ckey);
 	if(ret){
 	    kdc_log(0, "No version-4 salted key in database -- %s.%s@%s", 

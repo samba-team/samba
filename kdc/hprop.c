@@ -121,6 +121,7 @@ conv_db(void *arg, Principal *p)
     ALLOC(ent.keys.val);
     ent.keys.val[0].mkvno = p->kdc_key_ver;
     ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
+    ent.keys.val[0].salt->type = pa_pw_salt;
     ent.kvno = p->key_version;
     ent.keys.val[0].key.keytype = KEYTYPE_DES;
     krb5_data_alloc(&ent.keys.val[0].key.keyvalue, sizeof(des_cblock));
