@@ -23,5 +23,5 @@ else
 hprop_LDADD = $(LDADD)
 endif
 
-LDADD = -L$(top_builddir)/lib/hdb -lhdb -L$(top_builddir)/lib/krb5 -lkrb5 -L$(top_builddir)/lib/des -ldes $(LIB_krb4) -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/roken -lroken
+LDADD = ../lib/hdb/libhdb.a ../lib/krb5/libkrb5.a ../lib/asn1/libasn1.a ../lib/des/libdes.a $(LIB_krb4) ../lib/roken/libroken.a 
 

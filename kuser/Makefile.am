@@ -10,4 +10,5 @@ bin_PROGRAMS = kinit klist kdestroy
 
 noinst_PROGRAMS = kfoo krenew kverify
 
-LDADD = -L$(top_builddir)/lib/krb5  -lkrb5 -L$(top_builddir)/lib/des -ldes -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/roken -lroken
+LDADD = ../lib/krb5/libkrb5.a ../lib/asn1/libasn1.a \
+	../lib/des/libdes.a ../lib/roken/libroken.a 
