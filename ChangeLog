@@ -1,4 +1,12 @@
+2002-05-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c: don't free encrypted padata until we're really
+	done with it
+
 2002-05-07  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c: when decrypting pa-data, try all keys matching
+	enctype
 
 	* kuser/kinit.1: document -a
 
