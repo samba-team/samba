@@ -31,10 +31,10 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 		    const char *pipe_name, 
 		    int fid, int flags,
 		    uint16 *setup, unsigned int lsetup, unsigned int msetup,
-		    char *param, unsigned int lparam, unsigned int mparam,
-		    char *data, unsigned int ldata, unsigned int mdata)
+		    const char *param, unsigned int lparam, unsigned int mparam,
+		    const char *data, unsigned int ldata, unsigned int mdata)
 {
-	int i;
+	unsigned int i;
 	unsigned int this_ldata,this_lparam;
 	unsigned int tot_data=0,tot_param=0;
 	char *outdata,*outparam;
