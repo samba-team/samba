@@ -19,7 +19,8 @@ check_PROGRAMS = 				\
 		parse_bytes-test		\
 		parse_reply-test		\
 		snprintf-test			\
-		strpftime-test
+		strpftime-test			\
+		resolve-test
 
 TESTS = $(check_PROGRAMS)
 
@@ -38,6 +39,8 @@ strpftime_test_LDADD = libtest.la $(LDADD)
 snprintf_test_SOURCES	= snprintf-test.c
 snprintf_test_LDADD = libtest.la $(LDADD)
 snprintf_test_CFLAGS	= -DTEST_SNPRINTF
+
+resolve_test_SOURCES = resolve-test.c
 
 libroken_la_SOURCES =		\
 	base64.c		\
