@@ -516,6 +516,13 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 					!strequal(driver->dependentfiles[i], driver->datafile) &&
 					!strequal(driver->dependentfiles[i], driver->configfile) &&
 					!strequal(driver->dependentfiles[i], driver->helpfile)) {
+				int j;
+				for (j=0; j < i; j++) {
+					if (strequal(driver->dependentfiles[i], driver->dependentfiles[j])) {
+						goto NextDriver;
+					}
+				}
+
 				slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->dependentfiles[i]);	
 				slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->dependentfiles[i]);	
 				if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
@@ -526,6 +533,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 					return False;
 				}
 			}
+		NextDriver:
 		}
 	}
 
