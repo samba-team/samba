@@ -58,6 +58,8 @@ libkrb5_la_SOURCES = \
 	init_creds_pw.c \
 	keyblock.c \
 	keytab.c \
+	keytab_file.c \
+	keytab_memory.c \
 	krbhst.c \
 	kuserok.c \
 	log.c \
