@@ -419,7 +419,7 @@ TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
 # now the rules...
 ######################################################################
 
-all : CHECK $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
+all : CHECK include/proto.h $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 # The following "everything" is NOT needed except by Samba developers - so do not use this!
 everything : CHECK $(SPROGS) $(PROGS) $(SHLIBS) nsswitch smbwrapper smbtorture debug2html smbfilter nsswitch/libnss_wins.so
@@ -750,9 +750,11 @@ winbindd_proto:
 		-h _WINBINDD_PROTO_H_ $(builddir)/nsswitch/winbindd_proto.h \
 		$(WINBINDD_OBJ1)
 
-proto: 
+include/proto.h: 
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > $(builddir)/include/proto.h
+
+proto: include/proto.h
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
