@@ -32,7 +32,7 @@ BOOL smbcli_socket_connect(struct smbcli_state *cli, const char *server)
 {
 	struct smbcli_socket *sock;
 
-	sock = smbcli_sock_init(cli);
+	sock = smbcli_sock_init(cli, NULL);
 	if (!sock) return False;
 
 	if (!smbcli_sock_connect_byname(sock, server, 0)) {

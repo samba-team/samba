@@ -330,7 +330,8 @@ static void composite_handler(struct smbcli_composite *req)
 /*
   a function to establish a smbcli_tree from scratch
 */
-struct smbcli_composite *smb_composite_connect_send(struct smb_composite_connect *io)
+struct smbcli_composite *smb_composite_connect_send(struct smb_composite_connect *io,
+						    struct event_context *event_ctx)
 {
 	struct smbcli_composite *c;
 	struct connect_state *state;
@@ -342,14 +343,14 @@ struct smbcli_composite *smb_composite_connect_send(struct smb_composite_connect
 	state = talloc(c, struct connect_state);
 	if (state == NULL) goto failed;
 
-	state->sock = smbcli_sock_init(state);
+	state->sock = smbcli_sock_init(state, event_ctx);
 	if (state->sock == NULL) goto failed;
 
 	state->io = io;
 	state->stage = CONNECT_RESOLVE;
 
 	c->state = SMBCLI_REQUEST_SEND;
-	c->event_ctx = state->sock->event.ctx;
+	c->event_ctx = talloc_reference(c, state->sock->event.ctx);
 	c->private = state;
 
 	name.name = io->in.dest_host;
@@ -391,6 +392,6 @@ NTSTATUS smb_composite_connect_recv(struct smbcli_composite *c, TALLOC_CTX *mem_
 */
 NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_composite *c = smb_composite_connect_send(io);
+	struct smbcli_composite *c = smb_composite_connect_send(io, NULL);
 	return smb_composite_connect_recv(c, mem_ctx);
 }

@@ -43,7 +43,7 @@ static NTSTATUS after_negprot(struct smbcli_transport **dst_transport,
 	struct smbcli_transport *transport;
 	NTSTATUS status;
 
-	sock = smbcli_sock_init(NULL);
+	sock = smbcli_sock_init(NULL, NULL);
 	if (sock == NULL)
 		return NT_STATUS_NO_MEMORY;
 

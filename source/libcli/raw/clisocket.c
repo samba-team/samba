@@ -49,8 +49,10 @@ static int smbcli_sock_destructor(void *ptr)
 
 /*
   create a smbcli_socket context
+  The event_ctx is optional - if not supplied one will be created
 */
-struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx)
+struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx, 
+				       struct event_context *event_ctx)
 {
 	struct smbcli_socket *sock;
 
@@ -59,7 +61,11 @@ struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	sock->event.ctx = event_context_init(sock);
+	if (event_ctx) {
+		sock->event.ctx = talloc_reference(sock, event_ctx);
+	} else {
+		sock->event.ctx = event_context_init(sock);
+	}
 	if (sock->event.ctx == NULL) {
 		talloc_free(sock);
 		return NULL;
