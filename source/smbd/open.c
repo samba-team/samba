@@ -990,6 +990,13 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			if (fsp_open)
 				fd_close(conn, fsp);
 			file_free(fsp);
+			/*
+			 * We have detected a sharing violation here
+			 * so return the correct error code
+			 */
+                        unix_ERR_class = ERRDOS;
+                        unix_ERR_code = ERRbadshare;
+                        unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 			return NULL;
 		}
 
@@ -1057,6 +1064,13 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
+			/*
+			 * We have detected a sharing violation here, so
+			 * return the correct code.
+			 */
+                        unix_ERR_class = ERRDOS;
+                        unix_ERR_code = ERRbadshare;
+                        unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 			return NULL;
 		}
 
