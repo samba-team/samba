@@ -144,9 +144,15 @@ int k_afs_cell_of_file __P((const char *path, char *cell, int len));
 #define KRB5_H_INCLUDED
 #endif
 
+int kafs_settoken_rxkad __P((const char *, struct ClearToken *,
+			     void *ticket, size_t ticket_len));
 #ifdef KRB_H_INCLUDED
 int kafs_settoken __P((const char*, uid_t, CREDENTIALS*));
 #endif
+#ifdef KRB5_H_INCLUDED
+int kafs_settoken5 __P((const char*, uid_t, krb5_creds*));
+#endif
+
 
 #ifdef KRB5_H_INCLUDED
 krb5_error_code krb5_afslog_uid __P((krb5_context context,
