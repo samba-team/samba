@@ -68,11 +68,14 @@ sub ValidStruct($)
 	my($struct) = shift;
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
+		if (util::has_property($e, "ref")) {
+			fatal(el_name($e) . " : embedded ref pointers are not supported yet\n");
+		}
+	
 		$e->{PARENT} = $struct;
 		ValidElement($e);
 	}
 }
-
 
 #####################################################################
 # parse a union
@@ -91,6 +94,11 @@ sub ValidUnion($)
 				defined ($e->{PROPERTIES}->{case})) {
 			fatal "Union member $e->{NAME} must have default or case property\n";
 		}
+
+		if (util::has_property($e, "ref")) {
+			fatal(el_name($e) . " : embedded ref pointers are not supported yet\n");
+		}
+
 
 		ValidElement($e);
 	}

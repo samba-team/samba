@@ -84,6 +84,7 @@ sub pointer_type($)
 	return "ptr" if (util::has_property($e, "ptr"));
 	return "unique" if (util::has_property($e, "unique"));
 	return "relative" if (util::has_property($e, "relative"));
+	return "ignore" if (util::has_property($e, "ignore"));
 
 	return undef;
 }
