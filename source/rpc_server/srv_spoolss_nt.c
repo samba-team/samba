@@ -362,7 +362,7 @@ static uint32 delete_printer_handle(POLICY_HND *hnd)
 		return ERROR_ACCESS_DENIED;
 	}
 
-        return delete_printer_hook(Printer->dev.handlename);
+	return delete_printer_hook(Printer->dev.handlename);
 }	
 
 /****************************************************************************
@@ -6602,6 +6602,10 @@ uint32 _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 			enumkeys[i] = (uint16)(*ptr);
 			ptr++;
 		}
+
+		/* tag of with 2 '\0's */
+		enumkeys[i++] = '\0';
+		enumkeys[i] = '\0';
 	
 		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, ENUMERATED_KEY_SIZE, enumkeys))
 			return ERRbadfile;
