@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "lib/socket/socket.h"
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \

@@ -22,6 +22,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "lib/socket/socket.h"
+
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
  * with a comment and maybe update struct process_model_critical_sizes.

@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "process_model.h"
 #include "lib/events/events.h"
+#include "lib/socket/socket.h"
 #include "smbd/service_stream.h"
 
 /* the range of ports to try for dcerpc over tcp endpoints */

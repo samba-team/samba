@@ -22,6 +22,8 @@
 */
 
 #include "includes.h"
+#include "lib/socket/socket.h"
+#include "lib/socket/socket.h"
 #include "system/network.h"
 #include "system/filesys.h"
 

@@ -25,6 +25,7 @@
 #include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "lib/socket/socket.h"
 
 /*
   this private structure is used during async connection handling
