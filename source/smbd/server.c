@@ -517,6 +517,16 @@ static void usage(char *pname)
 	setluid(0);
 #endif
 
+	/*
+	 * gain_root_privilege uses an assert than will cause a core
+	 * dump if euid != 0. Ensure this is the case.
+	 */
+
+	if(geteuid() != (uid_t)0) {
+		fprintf(stderr, "%s: Version %s : Must have effective user id of zero to run.\n", argv[0], VERSION);
+		exit(1);
+	}
+
 	append_log = True;
 
 	TimeInit();
@@ -528,16 +538,6 @@ static void usage(char *pname)
 	setup_logging(argv[0],False);
 
 	charset_initialise();
-
-	/*
-	 * gain_root_privilege uses an assert than will cause a core
-	 * dump if euid != 0. Ensure this is the case.
-	 */
-
-	if(geteuid() != (uid_t)0) {
-		DEBUG(0,("%s: Must have effective user id of zero to run.\n", argv[0]));
-		exit(1);
-	}
 
 	/* make absolutely sure we run as root - to handle cases where people
 	   are crazy enough to have it setuid */
