@@ -1,0 +1,114 @@
+.TH "wbinfo " "1" "13 Jun 2000" "Samba" "SAMBA" 
+.PP 
+.SH "NAME" 
+wbinfo \- Query information from winbind daemon
+.PP 
+.SH "SYNOPSIS" 
+.PP 
+\fBwbinfo\fP -u [-g] [-n name]
+[-s sid] [-U uid] [-G gid]
+[-S sid] [-Y sid] [-t]
+[-m]
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+This program is part of the \fBSamba\fP suite version 3\&.0 and describes
+functionality not yet implemented in the main version of Samba\&.
+.PP 
+The \fBwbinfo\fP program queries and returns information created and used by
+the \fBwinbindd(8)\fP daemon\&.
+.PP 
+The \fBwinbindd(8)\fP daemon must be configured and
+running for the \fBwbinfo\fP program to be able to return information\&.
+.PP 
+.SH "OPTIONS" 
+.PP 
+The following options are available to the \fBwbinfo\fP program:
+.PP 
+.IP 
+.IP "\fB-u\fP" 
+.IP 
+This option will list all users available in the Windows NT domain for
+which the \fBwinbindd(8)\fP daemon is operating in\&.
+Users in all trusted domains will also be listed\&.  Note that this operation
+does not assign user ids to any users that have not already been seen by
+\fBwinbindd(8)\fP\&.
+.IP 
+.IP "\fB-g\fP" 
+.IP 
+This option will list all groups available in the Windows NT domain for
+which the \fBwinbindd(8)\fP daemon is operating in\&.
+Groups in all trusted domains will also be listed\&.  Note that this
+operation does not assign group ids to any groups that have not already
+been seen by \fBwinbindd(8)\fP\&.
+.IP 
+.IP "\fB-n name\fP" 
+.IP 
+The \fB-n\fP option queries \fBwinbindd(8)\fP for the SID
+associated with the name specified\&.  Domain names can be specified before
+the user name by using the winbind separator character\&.  For example
+\f(CWDOM1/Administrator\fP refers to the \f(CWAdministrator\fP user in the domain
+\f(CWDOM1\fP\&.  If no domain is specified then the domain used is the one
+specified in the \fBsmb\&.conf\fP \fBworkgroup\fP parameter\&.
+.IP 
+.IP "\fB-s sid\fP" 
+.IP 
+Use \fB-s\fP to resolve a SID to a name\&.  This is the inverse of the \fB-n\fP
+option above\&.  SIDs must be specified as ASCII strings in the traditional
+Microsoft format\&. For example
+\f(CWS-1-5-21-1455342024-3071081365-2475485837-500\fP\&.
+.IP 
+.IP "\fB-U uid\fP" 
+.IP 
+Try to convert a UNIX user id to a Windows NT SID\&.  If the uid specified
+does not refer to one within the \fBwinbind uid range\fP then the operation
+will fail\&.
+.IP 
+.IP "\fB-G gid\fP" 
+.IP 
+Try to convert a UNIX group id to a Windows NT SID\&.  If the gid specified
+does not refer to one within the \fBwinbind gid range\fP then the operation
+will fail\&.
+.IP 
+.IP "\fB-S sid\fP" 
+.IP 
+Convert a SID to a UNIX user id\&.  If the SID does not correspond to a UNIX
+user mapped by \fBwinbindd(8)\fP then the operation
+will fail\&.
+.IP 
+.IP "\fB-Y sid\fP" 
+.IP 
+Convert a SID to a UNIX group id\&.  If the SID does not correspond to a UNIX
+group mapped by \fBwinbindd(8)\fP then the operation
+will fail\&.
+.IP 
+.IP "\fB-t\fP" 
+.IP 
+Verify that the workstation trust account created when the Samba server is
+added to the Windows NT domain is working\&.
+.IP 
+.IP "\fB-m\fP" 
+.IP 
+Produce a list of domains trusted by the Windows NT server
+\fBwinbindd(8)\fP contacts when resolving names\&.  This
+list does not include the Windows NT domain the server is a Primary Domain
+Controller for\&.
+.IP 
+.PP 
+.SH "EXIT STATUS" 
+.PP 
+The \fBwbinfo\fP program returns 0 if the operation succeeded, or 1 if
+the operation failed\&.  If the \fBwinbindd(8)\fP daemon
+is not working \fBwbinfo\fP will always return failure\&.
+.PP 
+.SH "SEE ALSO" 
+.PP 
+\fBwinbindd(8)\fP
+.PP 
+.SH "AUTHOR" 
+.PP 
+The original Samba software and related utilities were created by
+Andrew Tridgell\&. Samba is now developed by the Samba Team as an Open
+Source project\&.
+.PP 
+\fBwbinfo\fP was written by Tim Potter\&.
