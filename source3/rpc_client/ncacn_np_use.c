@@ -25,7 +25,6 @@
 
 #include "includes.h"
 #include "rpc_parse.h"
-#include "rpc_client.h"
 #include "trans2.h"
 
 extern int DEBUGLEVEL;
