@@ -3,8 +3,15 @@
                  advanced="1" developer="1"
                  xmlns:samba="http://samba.org/common">
 <listitem>
-    <para>This is a integer parameter, and mirrors as much as possible the functinality the
-    <constant>RestrictAnonymous</constant> registry key does on NT/Win2k.
+    <para>The setting of this parameter determines whether user and
+    group list information is returned for an anonymous connection.
+    and mirrors the effects of the
+    <constant>HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\LSA\RestrictAnonymous</constant> registry key in Windows
+    2000 and Windows NT.  When set to 0, user and group list
+    information is returned to anyone who asks.  When set
+    to 1, only an authenticated user can retrive user and
+    group list information.  The value 2, supported by
+    Windows 2000 and higher, is not supported by Samba.
     </para>
 
     <para>Default: <command moreinfo="none">restrict anonymous = 0</command></para>
