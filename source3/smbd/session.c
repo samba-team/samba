@@ -98,7 +98,7 @@ BOOL session_claim(user_struct *vuser)
 	}
 
 	/* If 'hostname lookup' == yes, then do the DNS lookup.  This is
-           needed becouse utmp and PAM both expect DNS names 
+           needed because utmp and PAM both expect DNS names 
 	   
 	   client_name() handles this case internally.
 	*/
