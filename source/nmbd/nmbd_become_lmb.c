@@ -207,7 +207,7 @@ static void release_1d_name( struct subnet_record *subrec, char *workgroup_name,
   if((namerec = find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME))!=NULL)
   {
     struct userdata_struct *userdata;
-    int size = sizeof(struct userdata_struct) + sizeof(BOOL);
+    size_t size = sizeof(struct userdata_struct) + sizeof(BOOL);
 
     if((userdata = (struct userdata_struct *)malloc(size)) == NULL)
     {
@@ -518,7 +518,7 @@ workgroup %s on subnet %s. Couldn't register name %s.\n",
 void become_local_master_browser(struct subnet_record *subrec, struct work_record *work)
 {
   struct userdata_struct *userdata;
-  int size = sizeof(struct userdata_struct) + sizeof(fstring) + 1;
+  size_t size = sizeof(struct userdata_struct) + sizeof(fstring) + 1;
 
   /* Sanity check. */
   if (!lp_local_master())
@@ -563,7 +563,7 @@ in workgroup %s on subnet %s\n",
   userdata->copy_fn = NULL;
   userdata->free_fn = NULL;
   userdata->userdata_len = strlen(work->work_group)+1;
-  fstrcpy(userdata->data, work->work_group);
+  safe_strcpy(userdata->data, work->work_group, size - sizeof(*userdata) - 1);
 
   /* Register the special browser group name. */
   register_name(subrec, MSBROWSE, 0x01, samba_nb_type|NB_GROUP,
