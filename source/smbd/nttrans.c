@@ -40,6 +40,7 @@ static char *known_nt_pipes[] = {
   "\\svcctl",
   "\\samr",
   "\\wkssvc",
+  "\\browser",
   "\\NETLOGON",
   "\\ntlsa",
   "\\ntsvcs",
