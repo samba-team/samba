@@ -36,6 +36,10 @@ close IGNORES;
 # get the names of all the binary files to be installed
 open(MAKEFILE,"$SRCDIR/source/Makefile") || die "Unable to open Makefile\n";
 @makefile = <MAKEFILE>;
+@winbind_progs = grep(/^WINBIND_PROGS /,@makefile);
+@winbind_sprogs = grep(/^WINBIND_SPROGS /,@makefile);
+@winbind_lprogs = grep(/^WINBIND_LPROGS /,@makefile);
+@winbind_pam_progs = grep(/^WINBIND_PAM_PROGS /,@makefile);
 @sprogs = grep(/^SPROGS /,@makefile);
 @progs1 = grep(/^PROGS1 /,@makefile);
 @progs2 = grep(/^PROGS2 /,@makefile);
@@ -45,8 +49,25 @@ open(MAKEFILE,"$SRCDIR/source/Makefile") || die "Unable to open Makefile\n";
 @codepagelist = grep(/^CODEPAGELIST/,@makefile);
 close MAKEFILE;
 
+if (@winbind_progs) {
+  @winbind_progs[0] =~ s/^.*\=//;
+  @winbind_progs = split(' ',@winbind_progs[0]);
+}
+if (@winbind_sprogs) {
+  @winbind_sprogs[0] =~ s/^.*\=//;
+  @winbind_sprogs = split(' ',@winbind_sprogs[0]);
+}
+if (@winbind_lprogs) {
+  @winbind_lprogs[0] =~ s/^.*\=//;
+  @winbind_lprogs = split(' ',@winbind_lprogs[0]);
+}
+if (@winbind_pam_progs) {
+  @winbind_pam_progs[0] =~ s/^.*\=//;
+  @winbind_pam_progs = split(' ',@winbind_pam_progs[0]);
+}
 if (@sprogs) {
   @sprogs[0] =~ s/^.*\=//;
+  @sprogs[0] =~ s/\$\(\S+\)\s//g;
   @sprogs = split(' ',@sprogs[0]);
 }
 if (@progs) {
@@ -90,7 +111,8 @@ system("cp -f ../swat/README ../packaging/SGI/swat");
 chdir $curdir;
 
 # add my local files to the list of binaries to install
-@bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,("/findsmb","/sambalp","/smbprint"));
+@bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,@winbind_progs,@winbind_sprogs,("/findsmb","/sambalp","/smbprint"));
+@nsswitch = sort byfilename (@winbind_lprogs,@winbind_pam_progs);
 
 # get a complete list of all files in the tree
 chdir "$SRCDIR/";
@@ -158,6 +180,7 @@ while(@bins) {
     }
     elsif ($filename eq "smbd") {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename.noquota $SRCPFX/source/$nextfile.noquota $PKG.sw.base \n";
       print IDB "f 0755 root sys usr/samba/bin/$filename.profile $SRCPFX/source/$nextfile.profile $PKG.sw.base \n";
     }
     elsif ($filename eq "nmbd") {
@@ -192,6 +215,15 @@ while (@codepage) {
   print IDB "f 0644 root sys usr/samba/lib/codepages/$nextpage $SRCPFX/packaging/SGI/codepages/$nextpage $PKG.sw.base nostrip \n";
 }
 print IDB "f 0644 root sys usr/samba/lib/smb.conf $SRCPFX/packaging/SGI/smb.conf $PKG.sw.base config(suggest)\n";
+
+if (@nsswitch) {
+  print IDB "d 0644 root sys usr/samba/nsswitch $SRCPFX/packaging/SGI $PKG.sw.base\n";
+  while(@nsswitch) {
+    $nextfile = shift @nsswitch;
+    ($filename = $nextfile) =~ s/^.*\///;;
+    print IDB "f 0755 root sys usr/samba/nsswitch/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
+  }
+}
 
 print IDB "d 0644 root sys usr/samba/private $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "f 0600 root sys usr/samba/private/smbpasswd $SRCPFX/packaging/SGI/smbpasswd $PKG.sw.base config(suggest)\n";

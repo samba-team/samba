@@ -3,6 +3,11 @@
 VERSION=$1
 RELEASE=$2
 
+if [ $# -ne 2 ]; then
+    echo Usage: update-pkginfo VERSION RELEASE
+    exit 1
+fi
+
 for f in */*/*.tmpl; do
 	f2=`echo $f | sed s/.tmpl//g`
 	echo $f2
