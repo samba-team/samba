@@ -181,7 +181,7 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 	   mechinism, we should call it here.  
 	   
 	   We can't just set this to 0 or allow it only to be filled
-	   in when added to the backend, becouse the user's SID 
+	   in when added to the backend, because the user's SID 
 	   may already be in security descriptors etc.
 	   
 	   -- abartlet 11-May-02
@@ -627,7 +627,7 @@ uint32 pdb_gid_to_group_rid(gid_t gid)
 
 static BOOL pdb_rid_is_well_known(uint32 rid)
 {
-	/* Not using rid_offset here, becouse this is the actual
+	/* Not using rid_offset here, because this is the actual
 	   NT fixed value (1000) */
 
 	return (rid < BASE_RID);

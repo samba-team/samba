@@ -286,7 +286,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
-		   signing becouse we don't have oringial key */
+		   signing because we don't have original key */
 
 		lm_response = data_blob(pass, passlen);
 		nt_response = data_blob(ntpass, ntpasslen);

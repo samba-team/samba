@@ -644,7 +644,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	if (*user) {
 		if (global_spnego_negotiated) {
 			
-			/* This has to be here, becouse this is a perfectly valid behaviour for guest logons :-( */
+			/* This has to be here, because this is a perfectly valid behaviour for guest logons :-( */
 			
 			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
 			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
