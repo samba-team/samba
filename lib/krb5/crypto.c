@@ -2056,9 +2056,9 @@ krb5_checksum_is_disabled(krb5_context context,
 	if (context)
 	    krb5_set_error_string (context, "checksum type %d not supported",
 				   type);
-	return KRB5_PROG_SUMTYPE_NOSUPP;
+	return TRUE;
     }
-    return ct->flags & F_DISABLED;
+    return (ct->flags & F_DISABLED) ? TRUE : FALSE;
 }
 
 krb5_error_code
@@ -2818,14 +2818,36 @@ krb5_error_code
 krb5_enctype_valid(krb5_context context, 
 		 krb5_enctype etype)
 {
-    return _find_enctype(etype) != NULL;
+    struct encryption_type *e = _find_enctype(etype);
+    if(e == NULL) {
+	krb5_set_error_string (context, "encryption type %d not supported",
+			       etype);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    if (e->flags & F_DISABLED) {
+	krb5_set_error_string (context, "encryption type %s is disabled",
+			       e->name);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    return 0;
 }
 
 krb5_error_code
 krb5_cksumtype_valid(krb5_context context, 
 		     krb5_cksumtype ctype)
 {
-    return _find_checksum(ctype) != NULL;
+    struct checksum_type *c = _find_checksum(ctype);
+    if (c == NULL) {
+	krb5_set_error_string (context, "checksum type %d not supported",
+			       ctype);
+	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
+    if (c->flags & F_DISABLED) {
+	krb5_set_error_string (context, "checksum type %s is disabled",
+			       c->name);
+	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
+    return 0;
 }
 
 
@@ -3717,9 +3739,9 @@ krb5_enctype_is_disabled(krb5_context context,
 	if (context)
 	    krb5_set_error_string (context, "encryption type %d not supported",
 				   enctype);
-	return KRB5_PROG_ETYPE_NOSUPP;
+	return TRUE;
     }
-    return et->flags & F_DISABLED;
+    return (et->flags & F_DISABLED) ? TRUE : FALSE;
 }
 
 krb5_error_code
