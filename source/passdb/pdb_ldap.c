@@ -711,40 +711,6 @@ static int ldapsam_search_one_user_by_name (struct ldapsam_privates *ldap_state,
 }
 
 /*******************************************************************
- run the search by uid.
-******************************************************************/
-static int ldapsam_search_one_user_by_uid(struct ldapsam_privates *ldap_state, 
-					  int uid,
-					  LDAPMessage ** result)
-{
-	struct passwd *user;
-	pstring filter;
-	char *escape_user;
-
-	/* Get the username from the system and look that up in the LDAP */
-	
-	if ((user = getpwuid_alloc(uid)) == NULL) {
-		DEBUG(3,("ldapsam_search_one_user_by_uid: Failed to locate uid [%d]\n", uid));
-		return LDAP_NO_SUCH_OBJECT;
-	}
-	
-	pstrcpy(filter, lp_ldap_filter());
-	
-	escape_user = escape_ldap_string_alloc(user->pw_name);
-	if (!escape_user) {
-		passwd_free(&user);
-		return LDAP_NO_MEMORY;
-	}
-
-	all_string_sub(filter, "%u", escape_user, sizeof(pstring));
-
-	passwd_free(&user);
-	SAFE_FREE(escape_user);
-
-	return ldapsam_search_one_user(ldap_state, filter, result);
-}
-
-/*******************************************************************
  run the search by rid.
 ******************************************************************/
 static int ldapsam_search_one_user_by_rid (struct ldapsam_privates *ldap_state, 
@@ -759,11 +725,6 @@ static int ldapsam_search_one_user_by_rid (struct ldapsam_privates *ldap_state,
 	snprintf(filter, sizeof(filter) - 1, "rid=%i", rid);
 	rc = ldapsam_search_one_user(ldap_state, filter, result);
 	
-	if (rc != LDAP_SUCCESS)
-		rc = ldapsam_search_one_user_by_uid(ldap_state,
-						    fallback_pdb_user_rid_to_uid(rid), 
-						    result);
-
 	return rc;
 }
 
@@ -1300,21 +1261,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 }
 
 /**********************************************************************
-  An LDAP modification is needed in two cases:
-  * If we are updating the record AND the attribute is CHANGED.
-  * If we are adding   the record AND it is SET or CHANGED (ie not default)
-*********************************************************************/
-#ifdef LDAP_EXOP_X_MODIFY_PASSWD
-static BOOL need_ldap_mod(BOOL pdb_add, const SAM_ACCOUNT * sampass, enum pdb_elements element) {
-	if (pdb_add) {
-		return (!IS_SAM_DEFAULT(sampass, element));
-	} else {
-		return IS_SAM_CHANGED(sampass, element);
-	}
-}
-#endif
-
-/**********************************************************************
   Set attribute to newval in LDAP, regardless of what value the
   attribute had in LDAP before.
 *********************************************************************/
@@ -1414,13 +1360,18 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			ldap_mods_free(*mods, 1);
 			return False;
 		}
-	}
 
-	slprintf(temp, sizeof(temp) - 1, "%i", rid);
-
-	if (need_update(sampass, PDB_USERSID))
+		slprintf(temp, sizeof(temp) - 1, "%i", rid);
+		
 		make_ldap_mod(ldap_state->ldap_struct, existing, mods,
 			      "rid", temp);
+	} else {
+		slprintf(temp, sizeof(temp) - 1, "%i", rid);
+
+		if (need_update(sampass, PDB_USERSID))
+			make_ldap_mod(ldap_state->ldap_struct, existing, mods,
+				      "rid", temp);
+	}
 
 
 	rid = pdb_get_group_rid(sampass);
@@ -1867,7 +1818,9 @@ it it set.
 
 static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods, 
 				     SAM_ACCOUNT *newpwd, char *dn,
-				     LDAPMod **mods, int ldap_op, BOOL pdb_add)
+				     LDAPMod **mods, int ldap_op, 
+				     BOOL (*need_update)(const SAM_ACCOUNT *,
+							 enum pdb_elements))
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
@@ -1909,9 +1862,9 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 	}
 	
 #ifdef LDAP_EXOP_X_MODIFY_PASSWD
-	if (!(pdb_get_acct_ctrl(newpwd)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST))&&
-		(lp_ldap_passwd_sync()!=LDAP_PASSWD_SYNC_OFF)&&
-		need_ldap_mod(pdb_add, newpwd, PDB_PLAINTEXT_PW)&&
+	if (!(pdb_get_acct_ctrl(newpwd)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)) &&
+		(lp_ldap_passwd_sync() != LDAP_PASSWD_SYNC_OFF) &&
+		need_update(newpwd, PDB_PLAINTEXT_PW) &&
 		(pdb_get_plaintext_passwd(newpwd)!=NULL)) {
 		BerElement *ber;
 		struct berval *bv;
@@ -1940,7 +1893,9 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 				pdb_get_username(newpwd),ldap_err2string(rc)));
 		} else {
 			DEBUG(3,("LDAP Password changed for user %s\n",pdb_get_username(newpwd)));
-    
+#ifdef DEBUG_PASSWORD
+			DEBUG(100,("LDAP Password changed to %s\n",pdb_get_plaintext_passwd(newpwd)));
+#endif    
 			ber_bvfree(retdata);
 			ber_memfree(retoid);
 		}
@@ -2041,7 +1996,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 		return NT_STATUS_OK;
 	}
 	
-	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,LDAP_MOD_REPLACE, False);
+	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,LDAP_MOD_REPLACE, element_is_changed);
 	ldap_mods_free(mods,1);
 
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -2156,7 +2111,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	
 	make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", "sambaAccount");
 
-	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,ldap_op, True);
+	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,ldap_op, element_is_set_or_changed);
 	if (NT_STATUS_IS_ERR(ret)) {
 		DEBUG(0,("failed to modify/add user with uid = %s (dn = %s)\n",
 			 pdb_get_username(newpwd),dn));
