@@ -120,9 +120,8 @@ _krb_time_to_life(time_t start, time_t end)
 
 /* Convert the v5 credentials in `in_cred' to v4-dito in `v4creds'.
  * This is done by sending them to the 524 function in the KDC.  If
- * `in_cred' doesn't contain a DES session key (or actually, a session
- * key of length 8...), then a new one is gotten from the KDC and
- * stored in the cred cache `ccache'.
+ * `in_cred' doesn't contain a DES session key, then a new one is
+ * gotten from the KDC and stored in the cred cache `ccache'.
  */
 
 krb5_error_code
@@ -138,10 +137,14 @@ krb524_convert_creds_kdc(krb5_context context,
     krb5_data ticket;
     char realm[REALM_SZ];
     krb5_creds *v5_creds = in_cred;
+    krb5_keytype keytype;
 
-    /* XXX */
+    ret = krb5_enctype_to_keytype (context, v5_creds->session.keytype,
+				   &keytype);
+    if (ret)
+	return ret;
 
-    if (v5_creds->session.keyvalue.length != 8) {
+    if (keytype != KEYTYPE_DES) {
 	krb5_creds template;
 
 	memset (&template, 0, sizeof(template));
