@@ -529,6 +529,11 @@ size_t push_ascii_pstring(void *dest, const char *src)
 	return push_ascii(dest, src, sizeof(pstring), STR_TERMINATE);
 }
 
+size_t push_ascii_nstring(void *dest, const char *src)
+{
+	return push_ascii(dest, src, sizeof(nstring), STR_TERMINATE);
+}
+
 /**
  * Copy a string from a dos codepage source to a unix char* destination.
  *
@@ -580,6 +585,11 @@ size_t pull_ascii_pstring(char *dest, const void *src)
 size_t pull_ascii_fstring(char *dest, const void *src)
 {
 	return pull_ascii(dest, src, sizeof(fstring), -1, STR_TERMINATE);
+}
+
+size_t pull_ascii_nstring(char *dest, const void *src)
+{
+	return pull_ascii(dest, src, sizeof(nstring), sizeof(nstring), STR_TERMINATE);
 }
 
 /**

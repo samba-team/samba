@@ -80,8 +80,8 @@ void update_browser_death_time( struct browse_cache_record *browc )
  *
  * ************************************************************************** **
  */
-struct browse_cache_record *create_browser_in_lmb_cache( char *work_name, 
-                                                         char *browser_name, 
+struct browse_cache_record *create_browser_in_lmb_cache( const char *work_name, 
+                                                         const char *browser_name, 
                                                          struct in_addr ip )
 {
 	struct browse_cache_record *browc;
@@ -134,7 +134,7 @@ struct browse_cache_record *create_browser_in_lmb_cache( char *work_name,
  *
  * ************************************************************************** **
  */
-struct browse_cache_record *find_browser_in_lmb_cache( char *browser_name )
+struct browse_cache_record *find_browser_in_lmb_cache( const char *browser_name )
 {
 	struct browse_cache_record *browc;
 

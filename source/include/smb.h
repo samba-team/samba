@@ -1484,9 +1484,11 @@ struct cnotify_fns {
 
 #include "smb_macros.h"
 
+typedef char nstring[16];
+
 /* A netbios name structure. */
 struct nmb_name {
-	char         name[16];
+	nstring      name;
 	char         scope[64];
 	unsigned int name_type;
 };
@@ -1494,7 +1496,7 @@ struct nmb_name {
 
 /* A netbios node status array element. */
 struct node_status {
-	char name[16];
+	nstring name;
 	unsigned char type;
 	unsigned char flags;
 };
