@@ -159,6 +159,7 @@ static smb_unicode_table_t map_table2[] = {
 
 static unsigned char map_table_flags(smb_ucs2_t v)
 {
+	v = SVAL(&v,0);
 	if (v < TABLE1_BOUNDARY) return map_table1[v].flags;
 	if (v >= TABLE2_BOUNDARY) return map_table2[v - TABLE2_BOUNDARY].flags;
 	return 0;
@@ -166,6 +167,7 @@ static unsigned char map_table_flags(smb_ucs2_t v)
 
 static smb_ucs2_t map_table_lower(smb_ucs2_t v)
 {
+	v = SVAL(&v,0);
 	if (v < TABLE1_BOUNDARY) return map_table1[v].lower;
 	if (v >= TABLE2_BOUNDARY) return map_table2[v - TABLE2_BOUNDARY].lower;
 	return v;
@@ -173,6 +175,7 @@ static smb_ucs2_t map_table_lower(smb_ucs2_t v)
 
 static smb_ucs2_t map_table_upper(smb_ucs2_t v)
 {
+	v = SVAL(&v,0);
 	if (v < TABLE1_BOUNDARY) return map_table1[v].upper;
 	if (v >= TABLE2_BOUNDARY) return map_table2[v - TABLE2_BOUNDARY].upper;
 	return v;
@@ -202,7 +205,9 @@ int islower_w( smb_ucs2_t val)
 
 smb_ucs2_t toupper_w( smb_ucs2_t val )
 {
-	return map_table_upper(val);
+	val = map_table_upper(val);
+	val = SVAL(&val,0);
+	return val;
 }
 
 /*******************************************************************
@@ -211,7 +216,9 @@ smb_ucs2_t toupper_w( smb_ucs2_t val )
 
 smb_ucs2_t tolower_w( smb_ucs2_t val )
 {
-	return map_table_lower(val);
+	val = map_table_lower(val);
+	val = SVAL(&val,0);
+	return val;
 }
 
 /*******************************************************************
