@@ -1545,6 +1545,7 @@ renamecmd(char *from, char *to)
 static void
 dolog(struct sockaddr_in *sin)
 {
+#if 0
 	struct hostent *hp = gethostbyaddr((char *)&sin->sin_addr,
 		sizeof(struct in_addr), AF_INET);
 
@@ -1553,6 +1554,8 @@ dolog(struct sockaddr_in *sin)
 	else
 		(void) strncpy(remotehost, inet_ntoa(sin->sin_addr),
 		    sizeof(remotehost));
+#endif
+	inaddr2str (sin->sin_addr, remotehost, sizeof(remotehost));
 #ifdef HAVE_SETPROCTITLE
 	sprintf(proctitle, "%s: connected", remotehost);
 	setproctitle(proctitle);
