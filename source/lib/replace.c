@@ -65,9 +65,6 @@ ftruncate for operating systems that don't have it
 	size_t len2 = strlen(s);
 	size_t ret = len1 + len2;
 
-	if (len1 >= bufsize) {
-		return 0;
-	}
 	if (len1+len2 >= bufsize) {
 		len2 = bufsize - (len1+1);
 	}
@@ -326,6 +323,8 @@ duplicate a string
 }
 #endif /* HAVE_STRDUP */
 
+#ifndef WITH_PTHREADS
+/* REWRITE: not thread safe */
 #ifdef REPLACE_INET_NTOA
 char *rep_inet_ntoa(struct in_addr ip)
 {
@@ -336,6 +335,7 @@ char *rep_inet_ntoa(struct in_addr ip)
 	return buf;
 }
 #endif /* REPLACE_INET_NTOA */
+#endif
 
 #ifndef HAVE_STRTOUL
 #ifndef ULONG_MAX
@@ -450,3 +450,26 @@ char *rep_inet_ntoa(struct in_addr ip)
 	return t;
 }
 #endif
+
+#ifndef HAVE_SETENV
+ int setenv(const char *name, const char *value, int overwrite) 
+{
+	char *p = NULL;
+	int ret = -1;
+
+	asprintf(&p, "%s=%s", name, value);
+
+	if (overwrite || getenv(name)) {
+		if (p) ret = putenv(p);
+	} else {
+		ret = 0;
+	}
+
+	return ret;	
+}
+#endif
+
+const char *global_myname(void)
+{
+	return lp_netbios_name();
+}

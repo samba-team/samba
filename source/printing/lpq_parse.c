@@ -145,8 +145,8 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
   buf->size = atoi(tok[TOTALTOK]);
   buf->status = strequal(tok[RANKTOK],"active")?LPQ_PRINTING:LPQ_QUEUED;
   buf->time = time(NULL);
-  fstrcpy(buf->fs_user,tok[USERTOK]);
-  fstrcpy(buf->fs_file,tok[FILETOK]);
+  StrnCpy(buf->fs_user,tok[USERTOK],sizeof(buf->fs_user)-1);
+  StrnCpy(buf->fs_file,tok[FILETOK],sizeof(buf->fs_file)-1);
 
   if ((FILETOK + 1) != TOTALTOK) {
     int i;
@@ -266,7 +266,7 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
 
   buf->time = LPRng_time(tokarr[LPRNG_TIMETOK]);
 
-  fstrcpy(buf->fs_user,tokarr[LPRNG_USERTOK]);
+  StrnCpy(buf->fs_user,tokarr[LPRNG_USERTOK],sizeof(buf->fs_user)-1);
 
   /* The '@hostname' prevents windows from displaying the printing icon
    * for the current user on the taskbar.  Plop in a null.
@@ -276,7 +276,7 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
     *ptr = '\0';
   }
 
-  fstrcpy(buf->fs_file,tokarr[LPRNG_FILETOK]);
+  StrnCpy(buf->fs_file,tokarr[LPRNG_FILETOK],sizeof(buf->fs_file)-1);
 
   if ((LPRNG_FILETOK + 1) != LPRNG_TOTALTOK) {
     int i;
@@ -353,8 +353,8 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
           buf->status = strequal(tok[0],"HELD")?LPQ_PAUSED:LPQ_QUEUED;
 	  buf->priority = 0;
           buf->time = time(NULL);
-          fstrcpy(buf->fs_user,tok[3]);
-	  fstrcpy(buf->fs_file,tok[2]);
+          StrnCpy(buf->fs_user,tok[3],sizeof(buf->fs_user)-1);
+          StrnCpy(buf->fs_file,tok[2],sizeof(buf->fs_file)-1);
       }
       else
       {
@@ -387,8 +387,8 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
       buf->status = strequal(tok[2],"RUNNING")?LPQ_PRINTING:LPQ_QUEUED;
       buf->priority = 0;
       buf->time = time(NULL);
-      fstrcpy(buf->fs_user,tok[5]);
-      fstrcpy(buf->fs_file,tok[4]);
+      StrnCpy(buf->fs_user,tok[5],sizeof(buf->fs_user)-1);
+      StrnCpy(buf->fs_file,tok[4],sizeof(buf->fs_file)-1);
   }
 
 
@@ -449,14 +449,14 @@ static BOOL parse_lpq_hpux(char *line, print_queue_struct *buf, BOOL first)
       fstrcpy(tok[0],"STDIN");
     
     buf->size = atoi(tok[1]);
-    fstrcpy(buf->fs_file,tok[0]);
+    StrnCpy(buf->fs_file,tok[0],sizeof(buf->fs_file)-1);
     
     /* fill things from header line */
     buf->time = jobtime;
     buf->job = jobid;
     buf->status = jobstat;
     buf->priority = jobprio;
-    fstrcpy(buf->fs_user,jobuser);
+    StrnCpy(buf->fs_user,jobuser,sizeof(buf->fs_user)-1);
     
     return(True);
   }
@@ -482,7 +482,7 @@ static BOOL parse_lpq_hpux(char *line, print_queue_struct *buf, BOOL first)
     /* the 2nd, 5th & 7th column must be integer */
     if (!isdigit((int)*tok[1]) || !isdigit((int)*tok[4]) || !isdigit((int)*tok[6])) return(False);
     jobid = atoi(tok[1]);
-    fstrcpy(jobuser,tok[2]);
+    StrnCpy(jobuser,tok[2],sizeof(buf->fs_user)-1);
     jobprio = atoi(tok[4]);
     
     /* process time */
@@ -573,8 +573,8 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
     buf->status = LPQ_QUEUED;
   buf->priority = 0;
   buf->time = EntryTime(tok, 4, count, 7);
-  fstrcpy(buf->fs_user,tok[2]);
-  fstrcpy(buf->fs_file,tok[2]);
+  StrnCpy(buf->fs_user,tok[2],sizeof(buf->fs_user)-1);
+  StrnCpy(buf->fs_file,tok[2],sizeof(buf->fs_file)-1);
   return(True);
 }
 
@@ -592,7 +592,7 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
 {
   fstring tok[7];
   int count=0;
-  const char *cline = line;
+  const char *cline;
 
   DEBUG(4,("antes [%s]\n", line));
 
@@ -633,8 +633,8 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
   buf->status = strequal(tok[3],"active")?LPQ_PRINTING:LPQ_QUEUED;
   buf->priority = 0;
   buf->time = time(NULL);
-  fstrcpy(buf->fs_user,tok[1]);
-  fstrcpy(buf->fs_file,tok[6]);
+  StrnCpy(buf->fs_user,tok[1],sizeof(buf->fs_user)-1);
+  StrnCpy(buf->fs_file,tok[6],sizeof(buf->fs_file)-1);
   return(True);
 }
 
@@ -704,8 +704,88 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
   buf->status = strequal(tok[0],"active")?LPQ_PRINTING:LPQ_QUEUED;
   buf->priority = 0;
   buf->time = time(NULL);
-  fstrcpy(buf->fs_user,tok[1]);
-  fstrcpy(buf->fs_file,tok[6]);
+  StrnCpy(buf->fs_user,tok[1],sizeof(buf->fs_user)-1);
+  StrnCpy(buf->fs_file,tok[6],sizeof(buf->fs_file)-1);
+  return(True);
+}
+
+/****************************************************************************
+parse a qstat line
+
+here is an example of "qstat -l -d qms" output under softq
+
+Queue qms: 2 jobs; daemon active (313); enabled; accepting;
+ job-ID   submission-time     pri     size owner      title 
+205980: H 98/03/09 13:04:05     0    15733 stephenf   chap1.ps
+206086:>  98/03/12 17:24:40     0      659 chris      -
+206087:   98/03/12 17:24:45     0     4876 chris      -
+Total:      21268 bytes in queue
+
+
+****************************************************************************/
+static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
+{
+  fstring tok[10];
+  int count=0;
+  const char *cline = line;
+
+  /* mung all the ":"s to spaces*/
+  string_sub(line,":"," ",0);
+  
+  for (count=0; count<10 && next_token(&cline,tok[count],NULL,sizeof(tok[count])); count++) ;
+
+  /* we must get 9 tokens */
+  if (count < 9)
+    return(False);
+
+  /* the 1st and 7th columns must be integer */
+  if (!isdigit((int)*tok[0]) || !isdigit((int)*tok[6]))  return(False);
+  /* if the 2nd column is either '>' or 'H' then the 7th and 8th must be
+   * integer, else it's the 6th and 7th that must be
+   */
+  if (*tok[1] == 'H' || *tok[1] == '>')
+    {
+      if (!isdigit((int)*tok[7]))
+        return(False);
+      buf->status = *tok[1] == '>' ? LPQ_PRINTING : LPQ_PAUSED;
+      count = 1;
+    }
+  else
+    {
+      if (!isdigit((int)*tok[5]))
+        return(False);
+      buf->status = LPQ_QUEUED;
+      count = 0;
+    }
+	
+
+  buf->job = atoi(tok[0]);
+  buf->size = atoi(tok[count+6]);
+  buf->priority = atoi(tok[count+5]);
+  StrnCpy(buf->fs_user,tok[count+7],sizeof(buf->fs_user)-1);
+  StrnCpy(buf->fs_file,tok[count+8],sizeof(buf->fs_file)-1);
+  buf->time = time(NULL);		/* default case: take current time */
+  {
+    time_t jobtime;
+    struct tm *t;
+
+    t = localtime(&buf->time);
+    t->tm_mday = atoi(tok[count+2]+6);
+    t->tm_mon  = atoi(tok[count+2]+3);
+    switch (*tok[count+2])
+    {
+    case 7: case 8: case 9: t->tm_year = atoi(tok[count+2]); break;
+    default:                t->tm_year = atoi(tok[count+2]); break;
+    }
+
+    t->tm_hour = atoi(tok[count+3]);
+    t->tm_min = atoi(tok[count+4]);
+    t->tm_sec = atoi(tok[count+5]);
+    jobtime = mktime(t);
+    if (jobtime != (time_t)-1)
+      buf->time = jobtime; 
+  }
+
   return(True);
 }
 
@@ -766,21 +846,21 @@ static BOOL parse_lpq_nt(char *line,print_queue_struct *buf,BOOL first)
 
   /* Make sure the status is valid */
   parse_line.space2 = '\0';
-  trim_char(parse_line.status, '\0', ' ');
+  trim_string(parse_line.status, NULL, " ");
   if (!strequal(parse_line.status, LPRNT_PRINTING) &&
       !strequal(parse_line.status, LPRNT_PAUSED) &&
       !strequal(parse_line.status, LPRNT_WAITING))
     return(False);
   
   parse_line.space3 = '\0';
-  trim_char(parse_line.jobname, '\0', ' ');
+  trim_string(parse_line.jobname, NULL, " ");
 
   buf->job = atoi(parse_line.jobid);
   buf->priority = 0;
   buf->size = atoi(parse_line.size);
   buf->time = time(NULL);
-  fstrcpy(buf->fs_user, parse_line.owner);
-  fstrcpy(buf->fs_file, parse_line.jobname);
+  StrnCpy(buf->fs_user, parse_line.owner, sizeof(buf->fs_user)-1);
+  StrnCpy(buf->fs_file, parse_line.jobname, sizeof(buf->fs_file)-1);
   if (strequal(parse_line.status, LPRNT_PRINTING))
     buf->status = LPQ_PRINTING;
   else if (strequal(parse_line.status, LPRNT_PAUSED))
@@ -837,8 +917,8 @@ static BOOL parse_lpq_os2(char *line,print_queue_struct *buf,BOOL first)
 
   /* Get the job name */
   parse_line.space2[0] = '\0';
-  trim_char(parse_line.jobname, '\0', ' ');
-  fstrcpy(buf->fs_file, parse_line.jobname);
+  trim_string(parse_line.jobname, NULL, " ");
+  StrnCpy(buf->fs_file, parse_line.jobname, sizeof(buf->fs_file)-1);
 
   buf->priority = 0;
   buf->size = atoi(parse_line.size);
@@ -850,13 +930,13 @@ static BOOL parse_lpq_os2(char *line,print_queue_struct *buf,BOOL first)
 
   /* Make sure we have a valid status */
   parse_line.space4[0] = '\0';
-  trim_char(parse_line.status, '\0', ' ');
+  trim_string(parse_line.status, NULL, " ");
   if (!strequal(parse_line.status, LPROS2_PRINTING) &&
       !strequal(parse_line.status, LPROS2_PAUSED) &&
       !strequal(parse_line.status, LPROS2_WAITING))
     return(False);
 
-  fstrcpy(buf->fs_user, parse_line.owner);
+  StrnCpy(buf->fs_user, parse_line.owner, sizeof(buf->fs_user)-1);
   if (strequal(parse_line.status, LPROS2_PRINTING))
     buf->status = LPQ_PRINTING;
   else if (strequal(parse_line.status, LPROS2_PAUSED))
@@ -947,6 +1027,9 @@ BOOL parse_lpq_entry(int snum,char *line,
     case PRINT_PLP:
       ret = parse_lpq_plp(line,buf,first);
       break;
+    case PRINT_SOFTQ:
+      ret = parse_lpq_softq(line,buf,first);
+      break;
     case PRINT_LPRNT:
       ret = parse_lpq_nt(line,buf,first);
       break;
@@ -984,29 +1067,29 @@ BOOL parse_lpq_entry(int snum,char *line,
          printer status line: 
 	 handle them so that most severe condition is shown */
       int i;
-      strlower_m(line);
+      strlower(line);
       
       switch (status->status) {
       case LPSTAT_OK:
 	for (i=0; stat0_strings[i]; i++)
-	  if (strstr_m(line,stat0_strings[i])) {
-		  fstrcpy(status->message,line);
-		  status->status=LPSTAT_OK;
-		  return ret;
+	  if (strstr(line,stat0_strings[i])) {
+	    StrnCpy(status->message,line,sizeof(status->message)-1);
+	    status->status=LPSTAT_OK;
+	    return ret;
 	  }
       case LPSTAT_STOPPED:
 	for (i=0; stat1_strings[i]; i++)
-	  if (strstr_m(line,stat1_strings[i])) {
-		  fstrcpy(status->message,line);
-		  status->status=LPSTAT_STOPPED;
-		  return ret;
+	  if (strstr(line,stat1_strings[i])) {
+	    StrnCpy(status->message,line,sizeof(status->message)-1);
+	    status->status=LPSTAT_STOPPED;
+	    return ret;
 	  }
       case LPSTAT_ERROR:
 	for (i=0; stat2_strings[i]; i++)
-	  if (strstr_m(line,stat2_strings[i])) {
-		  fstrcpy(status->message,line);
-		  status->status=LPSTAT_ERROR;
-		  return ret;
+	  if (strstr(line,stat2_strings[i])) {
+	    StrnCpy(status->message,line,sizeof(status->message)-1);
+	    status->status=LPSTAT_ERROR;
+	    return ret;
 	  }
 	break;
       }

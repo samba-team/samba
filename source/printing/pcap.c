@@ -208,7 +208,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		  	   /* probably a good printer ???		*/
 		  	   free (line);
 		  	   SAFE_FREE(pName);
-		  	   x_fclose(pfile);
+		  	   fclose(pfile);
 		  	   return(True);
 		  	  }
 		  	
@@ -222,7 +222,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		  		/* it's a good virtual printer */
 		  		free (line);
 		  		SAFE_FREE(pName);
-		  		x_fclose(pfile);
+		  		fclose(pfile);
 		  		return(True);
 		  	  }
 		  	  break;
@@ -384,7 +384,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
 
 	  if (strlen(p)>strlen(comment) && has_punctuation)
 	    {
-	      pstrcpy(comment,p);
+	      StrnCpy(comment,p,sizeof(comment)-1);
 	      continue;
 	    }
 
@@ -398,8 +398,8 @@ void pcap_printer_fn(void (*fn)(char *, char *))
 	  if (!strchr_m(comment,' ') && 
 	      strlen(p) > strlen(comment))
 	    {
-		    pstrcpy(comment,p);
-		    continue;
+	      StrnCpy(comment,p,sizeof(comment)-1);
+	      continue;
 	    }
 	}
 

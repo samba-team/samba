@@ -1,0 +1,10 @@
+[ 
+  uuid(6bffd098-a112-3610-9833-012892020162),
+  version(0.0)
+] 
+interface browser
+{
+	/******************/
+	/* Function  0x00 */
+	NTSTATUS browser_Unknown0();
+}

@@ -96,11 +96,19 @@ static void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 
 BOOL message_init(void)
 {
+	TALLOC_CTX *mem_ctx;
+	
 	if (tdb) return True;
 
-	tdb = tdb_open_log(lock_path("messages.tdb"), 
+	mem_ctx = talloc_init("message_init");
+	if (!mem_ctx) {
+		DEBUG(0,("ERROR: No memory to initialise messages database\n"));
+		return False;
+	}
+	tdb = tdb_open_log(lock_path(mem_ctx, "messages.tdb"), 
 		       0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
 		       O_RDWR|O_CREAT,0600);
+	talloc_destroy(mem_ctx);
 
 	if (!tdb) {
 		DEBUG(0,("ERROR: Failed to initialise messages database\n"));
@@ -110,11 +118,6 @@ BOOL message_init(void)
 	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
 
 	message_register(MSG_PING, ping_message);
-
-	/* Register some debugging related messages */
-
-	register_msg_pool_usage();
-	register_dmalloc_msgs();
 
 	return True;
 }
@@ -185,7 +188,7 @@ static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, 
 	rec.msg_version = MESSAGE_VERSION;
 	rec.msg_type = msg_type;
 	rec.dest = pid;
-	rec.src = sys_getpid();
+	rec.src = getpid();
 	rec.len = len;
 
 	kbuf = message_key_pid(pid);
@@ -304,37 +307,6 @@ BOOL message_send_pid_with_timeout(pid_t pid, int msg_type, const void *buf, siz
 }
 
 /****************************************************************************
- Count the messages pending for a particular pid. Expensive....
-****************************************************************************/
-
-unsigned int messages_pending_for_pid(pid_t pid)
-{
-	TDB_DATA kbuf;
-	TDB_DATA dbuf;
-	char *buf;
-	unsigned int message_count = 0;
-
-	kbuf = message_key_pid(sys_getpid());
-
-	dbuf = tdb_fetch(tdb, kbuf);
-	if (dbuf.dptr == NULL || dbuf.dsize == 0) {
-		SAFE_FREE(dbuf.dptr);
-		return 0;
-	}
-
-	for (buf = dbuf.dptr; dbuf.dsize > sizeof(struct message_rec);) {
-		struct message_rec rec;
-		memcpy(&rec, buf, sizeof(rec));
-		buf += (sizeof(rec) + rec.len);
-		dbuf.dsize -= (sizeof(rec) + rec.len);
-		message_count++;
-	}
-
-	SAFE_FREE(dbuf.dptr);
-	return message_count;
-}
-
-/****************************************************************************
  Retrieve all messages for the current process.
 ****************************************************************************/
 
@@ -349,11 +321,9 @@ static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
 	*msgs_buf = NULL;
 	*total_len = 0;
 
-	kbuf = message_key_pid(sys_getpid());
+	kbuf = message_key_pid(getpid());
 
-	if (tdb_chainlock(tdb, kbuf) == -1)
-		return False;
-
+	tdb_chainlock(tdb, kbuf);
 	dbuf = tdb_fetch(tdb, kbuf);
 	/*
 	 * Replace with an empty record to keep the allocated
@@ -451,7 +421,7 @@ void message_dispatch(void)
 		if (!n_handled) {
 			DEBUG(5,("message_dispatch: warning: no handlers registed for "
 				 "msg_type %d in pid %u\n",
-				 msg_type, (unsigned int)sys_getpid()));
+				 msg_type, (unsigned int)getpid()));
 		}
 	}
 	SAFE_FREE(msgs_buf);

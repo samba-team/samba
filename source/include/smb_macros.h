@@ -44,7 +44,7 @@
  * @note You are explicitly allowed to pass NULL pointers -- they will
  * always be ignored.
  **/
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
 #endif
 
 /* zero a structure */
@@ -67,42 +67,11 @@
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
 /* assert macros */
-#define SMB_ASSERT(b) ((b)?(void)0: \
-        (DEBUG(0,("PANIC: assert failed at %s(%d)\n", \
-		 __FILE__, __LINE__)), smb_panic("assert failed")))
+#define SMB_ASSERT(b) do { if (!(b)) { \
+	DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__)); \
+	smb_panic("assert failed"); }} while (0)
+
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
-
-/* these are useful macros for checking validity of handles */
-#define OPEN_FSP(fsp)    ((fsp) && !(fsp)->is_directory)
-#define OPEN_CONN(conn)    ((conn) && (conn)->open)
-#define IS_IPC(conn)       ((conn) && (conn)->ipc)
-#define IS_PRINT(conn)       ((conn) && (conn)->printer)
-#define FSP_BELONGS_CONN(fsp,conn) do {\
-			extern struct current_user current_user;\
-			if (!((fsp) && (conn) && ((conn)==(fsp)->conn) && (current_user.vuid==(fsp)->vuid))) \
-				return(ERROR_DOS(ERRDOS,ERRbadfid));\
-			} while(0)
-
-#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
-
-#define CHECK_FSP(fsp,conn) do {\
-			extern struct current_user current_user;\
-			if (!FNUM_OK(fsp,conn)) \
-				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
-			else if((fsp)->fd == -1) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess));\
-			} while(0)
-
-#define CHECK_READ(fsp) if (!(fsp)->can_read) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess))
-#define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess))
-
-#define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
-				return(CACHED_ERROR(fsp))
-
-#define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
-				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )
 
 /* the service number for the [globals] defaults */ 
 #define GLOBAL_SECTION_SNUM	(-1)
@@ -112,19 +81,10 @@
 
 /* access various service details */
 #define SERVICE(snum)      (lp_servicename(snum))
-#define PRINTERNAME(snum)  (lp_printername(snum))
+#define PRINTERNAME_NOTUSED(snum)  (lp_printername(snum))
 #define CAN_WRITE(conn)    (!conn->read_only)
 #define VALID_SNUM(snum)   (lp_snum_ok(snum))
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))
-#define GUEST_ONLY(snum)   (VALID_SNUM(snum) && lp_guest_only(snum))
-#define CAN_SETDIR(snum)   (!lp_no_set_dir(snum))
-#define CAN_PRINT(conn)    ((conn) && lp_print_ok((conn)->service))
-#define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden((conn)->service))
-#define MAP_SYSTEM(conn)   ((conn) && lp_map_system((conn)->service))
-#define MAP_ARCHIVE(conn)   ((conn) && lp_map_archive((conn)->service))
-#define IS_HIDDEN_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->hide_list))
-#define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list))
-#define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list))
 
 /* 
  * Used by the stat cache code to check if a returned
@@ -145,29 +105,6 @@
 #define ABS(a) ((a)>0?(a):(-(a)))
 #endif
 
-/* Macros to get at offsets within smb_lkrng and smb_unlkrng
-   structures. We cannot define these as actual structures
-   due to possible differences in structure packing
-   on different machines/compilers. */
-
-#define SMB_LPID_OFFSET(indx) (10 * (indx))
-#define SMB_LKOFF_OFFSET(indx) ( 2 + (10 * (indx)))
-#define SMB_LKLEN_OFFSET(indx) ( 6 + (10 * (indx)))
-#define SMB_LARGE_LPID_OFFSET(indx) (20 * (indx))
-#define SMB_LARGE_LKOFF_OFFSET_HIGH(indx) (4 + (20 * (indx)))
-#define SMB_LARGE_LKOFF_OFFSET_LOW(indx) (8 + (20 * (indx)))
-#define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
-#define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
-
-/* Macro to cache an error in a write_bmpx_struct */
-#define CACHE_ERROR(w,c,e) ((w)->wr_errclass = (c), (w)->wr_error = (e), \
-                w->wr_discard = True, -1)
-/* Macro to test if an error has been cached for this fnum */
-#define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
-                (fsp)->wbmpx_ptr->wr_discard)
-/* Macro to turn the cached error into an error packet */
-#define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
-
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
@@ -178,21 +115,16 @@
 /* this is how errors are generated */
 #define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
 
-#define SMB_ROUNDUP(x,r) ( ((x)%(r)) ? ( (((x)+(r))/(r))*(r) ) : (x))
-
-/* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
-#define smb_buf(buf) (((char *)(buf)) + smb_size + CVAL(buf,smb_wct)*2)
-#define smb_buflen(buf) (SVAL(buf,smb_vwv0 + (int)CVAL(buf, smb_wct)*2))
+/* REWRITE TODO: remove these smb_xxx macros */
+#define smb_buf(buf) (((char *)(buf)) + MIN_SMB_SIZE + CVAL(buf,HDR_WCT+4)*2)
 
 /* the remaining number of bytes in smb buffer 'buf' from pointer 'p'. */
 #define smb_bufrem(buf, p) (smb_buflen(buf)-PTR_DIFF(p, smb_buf(buf)))
 
-/* Note that chain_size must be available as an extern int to this macro. */
-#define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)
 
-#define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|((PVAL(buf,1)&1)<<16))
-#define _smb_setlen(buf,len) do { buf[0] = 0; buf[1] = (len&0x10000)>>16; \
-        buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF; } while (0)
+#define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|(PVAL(buf,1)<<16))
+#define _smb_setlen(buf,len) do {(buf)[0] = 0; (buf)[1] = ((len)&0x10000)>>16; \
+        (buf)[2] = ((len)&0xFF00)>>8; (buf)[3] = (len)&0xFF;} while (0)
 
 /*******************************************************************
 find the difference in milliseconds between two struct timeval
@@ -208,7 +140,6 @@ true if two IP addresses are equal
 ****************************************************************************/
 
 #define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
-#define ip_service_equal(ip1,ip2) ( ((ip1).ip.s_addr == (ip2).ip.s_addr) && ((ip1).port == (ip2).port) )
 
 /*****************************************************************
  splits out the last subkey of a key
@@ -239,13 +170,12 @@ copy an IP address from one buffer to another
  Return True if a server has CIFS UNIX capabilities.
 ********************************************************************/
 
-#define SERVER_HAS_UNIX_CIFS(c) ((c)->capabilities & CAP_UNIX)
+#define SERVER_HAS_UNIX_CIFS(c) (cli_state_has_unix_cifs(c))
 
 /****************************************************************************
  Make a filename into unix format.
 ****************************************************************************/
 
-#define IS_DIRECTORY_SEP(c) ((c) == '\\' || (c) == '/')
 #define unix_format(fname) string_replace(fname,'\\','/')
 #define unix_format_w(fname) string_replace_w(fname, UCS2_CHAR('\\'), UCS2_CHAR('/'))
 
@@ -254,11 +184,5 @@ copy an IP address from one buffer to another
 ****************************************************************************/
 
 #define dos_format(fname) string_replace(fname,'/','\\')
-
-/*****************************************************************************
- Check to see if we are a DO for this domain
-*****************************************************************************/
-
-#define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC) 
 
 #endif /* _SMB_MACROS_H */

@@ -1,10 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    Samba utility functions
-   
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Simo Sorce      2001-2002
-   Copyright (C) Martin Pool     2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,11 +22,6 @@
 #include "includes.h"
 
 /**
- * @file
- * @brief String utilities.
- **/
-
-/**
  * Get the next token from a string, return False if none found.
  * Handles double-quotes.
  * 
@@ -37,15 +30,14 @@
  **/
 BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
-	char *s;
-	char *pbuf;
+	const char *s;
 	BOOL quoted;
 	size_t len=1;
 
 	if (!ptr)
 		return(False);
 
-	s = (char *)*ptr;
+	s = *ptr;
 
 	/* default to simple separators */
 	if (!sep)
@@ -60,18 +52,17 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 		return(False);
 	
 	/* copy over the token */
-	pbuf = buff;
 	for (quoted = False; len < bufsize && *s && (quoted || !strchr_m(sep,*s)); s++) {
-		if (*s == '\"' || *s == '\'') {
+		if (*s == '\"') {
 			quoted = !quoted;
 		} else {
 			len++;
-			*pbuf++ = *s;
+			*buff++ = *s;
 		}
 	}
 	
 	*ptr = (*s) ? s+1 : s;  
-	*pbuf = 0;
+	*buff = 0;
 	
 	return(True);
 }
@@ -82,13 +73,13 @@ parameter so you can pass NULL. This is useful for user interface code
 but beware the fact that it is not re-entrant!
 **/
 
-static const char *last_ptr=NULL;
+static char *last_ptr=NULL;
 
-BOOL next_token_nr(const char **ptr,char *buff, const char *sep, size_t bufsize)
+BOOL next_token_nr(const char **ptr, char *buff, const char *sep, size_t bufsize)
 {
 	BOOL ret;
 	if (!ptr)
-		ptr = &last_ptr;
+		ptr = (const char **)&last_ptr;
 
 	ret = next_token(ptr, buff, sep, bufsize);
 	last_ptr = *ptr;
@@ -109,7 +100,7 @@ void set_first_token(char *ptr)
 
 char **toktocliplist(int *ctok, const char *sep)
 {
-	char *s=(char *)last_ptr;
+	char *s=last_ptr;
 	int ictok=0;
 	char **ret, **iret;
 
@@ -132,7 +123,7 @@ char **toktocliplist(int *ctok, const char *sep)
 	} while(*s);
 	
 	*ctok=ictok;
-	s=(char *)last_ptr;
+	s=last_ptr;
 	
 	if (!(ret=iret=malloc(ictok*sizeof(char *))))
 		return NULL;
@@ -149,90 +140,21 @@ char **toktocliplist(int *ctok, const char *sep)
 }
 
 /**
- * Case insensitive string compararison.
- *
- * iconv does not directly give us a way to compare strings in
- * arbitrary unix character sets -- all we can is convert and then
- * compare.  This is expensive.
- *
- * As an optimization, we do a first pass that considers only the
- * prefix of the strings that is entirely 7-bit.  Within this, we
- * check whether they have the same value.
- *
- * Hopefully this will often give the answer without needing to copy.
- * In particular it should speed comparisons to literal ascii strings
- * or comparisons of strings that are "obviously" different.
- *
- * If we find a non-ascii character we fall back to converting via
- * iconv.
- *
- * This should never be slower than convering the whole thing, and
- * often faster.
- *
- * A different optimization would be to compare for bitwise equality
- * in the binary encoding.  (It would be possible thought hairy to do
- * both simultaneously.)  But in that case if they turn out to be
- * different, we'd need to restart the whole thing.
- *
- * Even better is to implement strcasecmp for each encoding and use a
- * function pointer. 
- **/
+ Case insensitive string compararison.
+**/
+
 int StrCaseCmp(const char *s, const char *t)
 {
-
-	const char * ps, * pt;
-	size_t size;
-	smb_ucs2_t *buffer_s, *buffer_t;
-	int ret;
-
-	for (ps = s, pt = t; ; ps++, pt++) {
-		char us, ut;
-
-		if (!*ps && !*pt)
-			return 0; /* both ended */
- 		else if (!*ps)
-			return -1; /* s is a prefix */
-		else if (!*pt)
-			return +1; /* t is a prefix */
-		else if ((*ps & 0x80) || (*pt & 0x80))
-			/* not ascii anymore, do it the hard way from here on in */
-			break;
-
-		us = toupper(*ps);
-		ut = toupper(*pt);
-		if (us == ut)
-			continue;
-		else if (us < ut)
-			return -1;
-		else if (us > ut)
-			return +1;
-	}
-
-	size = push_ucs2_allocate(&buffer_s, s);
-	if (size == (size_t)-1) {
-		return strcmp(s, t); 
-		/* Not quite the right answer, but finding the right one
-		   under this failure case is expensive, and it's pretty close */
-	}
-	
-	size = push_ucs2_allocate(&buffer_t, t);
-	if (size == (size_t)-1) {
-		SAFE_FREE(buffer_s);
-		return strcmp(s, t); 
-		/* Not quite the right answer, but finding the right one
-		   under this failure case is expensive, and it's pretty close */
-	}
-	
-	ret = strcasecmp_w(buffer_s, buffer_t);
-	SAFE_FREE(buffer_s);
-	SAFE_FREE(buffer_t);
-	return ret;
+	pstring buf1, buf2;
+	unix_strupper(s, strlen(s)+1, buf1, sizeof(buf1));
+	unix_strupper(t, strlen(t)+1, buf2, sizeof(buf2));
+	return strcmp(buf1,buf2);
 }
-
 
 /**
  Case insensitive string compararison, length limited.
 **/
+
 int StrnCaseCmp(const char *s, const char *t, size_t n)
 {
 	pstring buf1, buf2;
@@ -315,45 +237,18 @@ int strwicmp(const char *psz1, const char *psz2)
 	return (*psz1 - *psz2);
 }
 
-
 /**
  Convert a string to upper case, but don't modify it.
 **/
 
-char *strupper_static(const char *s)
+char *strupper_talloc(TALLOC_CTX *mem_ctx, const char *s)
 {
-	static pstring str;
+	char *str;
 
-	pstrcpy(str, s);
-	strupper_m(str);
+	str = talloc_strdup(mem_ctx, s);
+	strupper(str);
 
 	return str;
-}
-
-/**
- Convert a string to "normal" form.
-**/
-
-void strnorm(char *s)
-{
-	extern int case_default;
-	if (case_default == CASE_UPPER)
-		strupper_m(s);
-	else
-		strlower_m(s);
-}
-
-/**
- Check if a string is in "normal" case.
-**/
-
-BOOL strisnormal(const char *s)
-{
-	extern int case_default;
-	if (case_default == CASE_UPPER)
-		return(!strhaslower(s));
-	
-	return(!strhasupper(s));
 }
 
 
@@ -362,33 +257,13 @@ BOOL strisnormal(const char *s)
  NOTE: oldc and newc must be 7 bit characters
 **/
 
-void string_replace(pstring s,char oldc,char newc)
+void string_replace(char *s,char oldc,char newc)
 {
-	unsigned char *p;
-
-	/* this is quite a common operation, so we want it to be
-	   fast. We optimise for the ascii case, knowing that all our
-	   supported multi-byte character sets are ascii-compatible
-	   (ie. they match for the first 128 chars) */
-
-	for (p = (unsigned char *)s; *p; p++) {
-		if (*p & 0x80) /* mb string - slow path. */
-			break;
-		if (*p == oldc)
-			*p = newc;
+	if (strchr(s, oldc)) {
+		push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+		string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
+		pull_ucs2(NULL, s, tmpbuf, strlen(s)+1, sizeof(tmpbuf), STR_TERMINATE);
 	}
-
-	if (!*p)
-		return;
-
-	/* Slow (mb) path. */
-#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
-	/* With compose characters we must restart from the beginning. JRA. */
-	p = s;
-#endif
-	push_ucs2(NULL, tmpbuf, p, sizeof(tmpbuf), STR_TERMINATE);
-	string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
-	pull_ucs2(NULL, p, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
 }
 
 /**
@@ -428,59 +303,6 @@ size_t str_ascii_charnum(const char *s)
 	return strlen(tmpbuf2);
 }
 
-BOOL trim_char(char *s,char cfront,char cback)
-{
-	BOOL ret = False;
-	char *ep;
-	char *fp = s;
-
-	/* Ignore null or empty strings. */
-	if (!s || (s[0] == '\0'))
-		return False;
-
-	if (cfront) {
-		while (*fp && *fp == cfront)
-			fp++;
-		if (!*fp) {
-			/* We ate the string. */
-			s[0] = '\0';
-			return True;
-		}
-		if (fp != s)
-			ret = True;
-	}
-
-	ep = fp + strlen(fp) - 1;
-	if (cback) {
-		/* Attempt ascii only. Bail for mb strings. */
-		while ((ep >= fp) && (*ep == cback)) {
-			ret = True;
-			if ((ep > fp) && (((unsigned char)ep[-1]) & 0x80)) {
-				/* Could be mb... bail back to tim_string. */
-				char fs[2], bs[2];
-				if (cfront) {
-					fs[0] = cfront;
-					fs[1] = '\0';
-				}
-				bs[0] = cback;
-				bs[1] = '\0';
-				return trim_string(s, cfront ? fs : NULL, bs);
-			} else {
-				ep--;
-			}
-		}
-		if (ep < fp) {
-			/* We ate the string. */
-			s[0] = '\0';
-			return True;
-		}
-	}
-
-	ep[1] = '\0';
-	memmove(s, fp, ep-fp+2);
-	return ret;
-}
-
 /**
  Trim the specified elements off the front and back of a string.
 **/
@@ -503,9 +325,7 @@ BOOL trim_string(char *s,const char *front,const char *back)
 
 	if (front_len) {
 		while (len && strncmp(s, front, front_len)==0) {
-			/* Must use memmove here as src & dest can
-			 * easily overlap. Found by valgrind. JRA. */
-			memmove(s, s+front_len, (len-front_len)+1);
+			memcpy(s, s+front_len, (len-front_len)+1);
 			len -= front_len;
 			ret=True;
 		}
@@ -557,18 +377,32 @@ size_t count_chars(const char *s,char c)
 {
 	smb_ucs2_t *ptr;
 	int count;
-	smb_ucs2_t *alloc_tmpbuf = NULL;
-
-	if (push_ucs2_allocate(&alloc_tmpbuf, s) == (size_t)-1) {
-		return 0;
-	}
-
-	for(count=0,ptr=alloc_tmpbuf;*ptr;ptr++)
+	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+	for(count=0,ptr=tmpbuf;*ptr;ptr++)
 		if(*ptr==UCS2_CHAR(c))
 			count++;
-
-	SAFE_FREE(alloc_tmpbuf);
 	return(count);
+}
+
+/**
+Return True if a string consists only of one particular character.
+**/
+
+BOOL str_is_all(const char *s,char c)
+{
+	smb_ucs2_t *ptr;
+
+	if(s == NULL)
+		return False;
+	if(!*s)
+		return False;
+  
+	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+	for(ptr=tmpbuf;*ptr;ptr++)
+		if(*ptr!=UCS2_CHAR(c))
+			return False;
+
+	return True;
 }
 
 /**
@@ -576,17 +410,24 @@ size_t count_chars(const char *s,char c)
  include the terminating zero.
 **/
 
-char *safe_strcpy_fn(const char *fn, int line, char *dest,const char *src, size_t maxlength)
+char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 {
 	size_t len;
 
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in safe_strcpy, called from [%s][%d]\n", fn, line));
+		DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
 		return NULL;
 	}
 
 #ifdef DEVELOPER
-	clobber_region(fn,line,dest, maxlength+1);
+	/* We intentionally write out at the extremity of the destination
+	 * string.  If the destination is too short (e.g. pstrcpy into mallocd
+	 * or fstring) then this should cause an error under a memory
+	 * checker. */
+	dest[maxlength] = '\0';
+	if (PTR_DIFF(&len, dest) > 0) {  /* check if destination is on the stack, ok if so */
+		log_suspicious_usage("safe_strcpy", src);
+	}
 #endif
 
 	if (!src) {
@@ -594,12 +435,11 @@ char *safe_strcpy_fn(const char *fn, int line, char *dest,const char *src, size_
 		return dest;
 	}  
 
-	len = strnlen(src, maxlength+1);
+	len = strlen(src);
 
 	if (len > maxlength) {
-		DEBUG(0,("ERROR: string overflow by %lu (%lu - %lu) in safe_strcpy [%.50s]\n",
-			 (unsigned long)(len-maxlength), (unsigned long)len, 
-			 (unsigned long)maxlength, src));
+		DEBUG(0,("ERROR: string overflow by %u (%u - %u) in safe_strcpy [%.50s]\n",
+			 (unsigned int)(len-maxlength), len, maxlength, src));
 		len = maxlength;
 	}
       
@@ -612,24 +452,26 @@ char *safe_strcpy_fn(const char *fn, int line, char *dest,const char *src, size_
  Safe string cat into a string. maxlength does not
  include the terminating zero.
 **/
-char *safe_strcat_fn(const char *fn, int line, char *dest, const char *src, size_t maxlength)
+
+char *safe_strcat(char *dest, const char *src, size_t maxlength)
 {
 	size_t src_len, dest_len;
 
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in safe_strcat, called from [%s][%d]\n", fn, line));
+		DEBUG(0,("ERROR: NULL dest in safe_strcat\n"));
 		return NULL;
 	}
 
 	if (!src)
 		return dest;
 	
-	src_len = strnlen(src, maxlength + 1);
-	dest_len = strnlen(dest, maxlength + 1);
-
 #ifdef DEVELOPER
-	clobber_region(fn, line, dest + dest_len, maxlength + 1 - dest_len);
+	if (PTR_DIFF(&src_len, dest) > 0) {  /* check if destination is on the stack, ok if so */
+		log_suspicious_usage("safe_strcat", src);
+	}
 #endif
+	src_len = strlen(src);
+	dest_len = strlen(dest);
 
 	if (src_len + dest_len > maxlength) {
 		DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
@@ -640,7 +482,7 @@ char *safe_strcat_fn(const char *fn, int line, char *dest, const char *src, size
 		dest[maxlength] = 0;
 		return NULL;
 	}
-
+	
 	memcpy(&dest[dest_len], src, src_len);
 	dest[dest_len + src_len] = 0;
 	return dest;
@@ -652,16 +494,18 @@ char *safe_strcat_fn(const char *fn, int line, char *dest, const char *src, size
  and replaces with '_'. Deliberately does *NOT* check for multibyte
  characters. Don't change it !
 **/
-char *alpha_strcpy_fn(const char *fn, int line, char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
+
+char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
 {
 	size_t len, i;
 
-#ifdef DEVELOPER
-	clobber_region(fn, line, dest, maxlength);
-#endif
+	if (maxlength == 0) {
+		/* can't fit any bytes at all! */
+		return NULL;
+	}
 
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in alpha_strcpy, called from [%s][%d]\n", fn, line));
+		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
 		return NULL;
 	}
 
@@ -694,47 +538,32 @@ char *alpha_strcpy_fn(const char *fn, int line, char *dest, const char *src, con
  Like strncpy but always null terminates. Make sure there is room!
  The variable n should always be one less than the available size.
 **/
-char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n)
+
+char *StrnCpy(char *dest,const char *src,size_t n)
 {
 	char *d = dest;
-
-#ifdef DEVELOPER
-	clobber_region(fn, line, dest, n+1);
-#endif
-
-	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in StrnCpy, called from [%s][%d]\n", fn, line));
+	if (!dest)
 		return(NULL);
-	}
-
 	if (!src) {
 		*dest = 0;
 		return(dest);
 	}
-	
-	while (n-- && (*d = *src)) {
-		d++;
-		src++;
-	}
-
+	while (n-- && (*d++ = *src++))
+		;
 	*d = 0;
 	return(dest);
 }
 
-#if 0
 /**
  Like strncpy but copies up to the character marker.  always null terminates.
  returns a pointer to the character marker in the source string (src).
 **/
 
-static char *strncpyn(char *dest, const char *src, size_t n, char c)
+char *strncpyn(char *dest, const char *src, size_t n, char c)
 {
 	char *p;
 	size_t str_len;
 
-#ifdef DEVELOPER
-	clobber_region(dest, n+1);
-#endif
 	p = strchr_m(src, c);
 	if (p == NULL) {
 		DEBUG(5, ("strncpyn: separator character (%c) not found\n", c));
@@ -747,7 +576,6 @@ static char *strncpyn(char *dest, const char *src, size_t n, char c)
 
 	return p;
 }
-#endif
 
 /**
  Routine to get hex characters and turn them into a 16 byte array.
@@ -795,26 +623,10 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 }
 
 /**
- * Routine to print a buffer as HEX digits, into an allocated string.
- */
-
-void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
-{
-	int i;
-	char *hex_buffer;
-
-	*out_hex_buffer = smb_xmalloc((len*2)+1);
-	hex_buffer = *out_hex_buffer;
-
-	for (i = 0; i < len; i++)
-		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
-}
-
-/**
  Check if a string is part of a list.
 **/
 
-BOOL in_list(char *s,char *list,BOOL casesensitive)
+BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 {
 	pstring tok;
 	const char *p=list;
@@ -834,62 +646,37 @@ BOOL in_list(char *s,char *list,BOOL casesensitive)
 	return(False);
 }
 
-/* this is used to prevent lots of mallocs of size 1 */
-static char *null_string = NULL;
-
 /**
  Set a string value, allocing the space for the string
 **/
-
 static BOOL string_init(char **dest,const char *src)
 {
-	size_t l;
-	if (!src)     
-		src = "";
+	if (!src) src = "";
 
-	l = strlen(src);
-
-	if (l == 0) {
-		if (!null_string) {
-			if((null_string = (char *)malloc(1)) == NULL) {
-				DEBUG(0,("string_init: malloc fail for null_string.\n"));
-				return False;
-			}
-			*null_string = 0;
-		}
-		*dest = null_string;
-	} else {
-		(*dest) = strdup(src);
-		if ((*dest) == NULL) {
-			DEBUG(0,("Out of memory in string_init\n"));
-			return False;
-		}
+	(*dest) = strdup(src);
+	if ((*dest) == NULL) {
+		DEBUG(0,("Out of memory in string_init\n"));
+		return False;
 	}
-	return(True);
+	return True;
 }
 
 /**
  Free a string value.
 **/
-
 void string_free(char **s)
 {
-	if (!s || !(*s))
-		return;
-	if (*s == null_string)
-		*s = NULL;
-	SAFE_FREE(*s);
+	if (s) SAFE_FREE(*s);
 }
 
 /**
  Set a string value, deallocating any existing space, and allocing the space
  for the string
 **/
-
-BOOL string_set(char **dest,const char *src)
+BOOL string_set(char **dest, const char *src)
 {
 	string_free(dest);
-	return(string_init(dest,src));
+	return string_init(dest,src);
 }
 
 /**
@@ -919,7 +706,7 @@ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 	if (len == 0)
 		len = ls + 1; /* len is number of *bytes* */
 
-	while (lp <= ls && (p = strstr_m(s,pattern))) {
+	while (lp <= ls && (p = strstr(s,pattern))) {
 		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
@@ -948,11 +735,6 @@ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 		s = p + li;
 		ls += (li-lp);
 	}
-}
-
-void fstring_sub(char *s,const char *pattern,const char *insert)
-{
-	string_sub(s, pattern, insert, sizeof(fstring));
 }
 
 void pstring_sub(char *s,const char *pattern,const char *insert)
@@ -1004,9 +786,8 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 		}
 	}
 	
-	while ((p = strstr_m(s,pattern))) {
+	while ((p = strstr(s,pattern))) {
 		if (ld > 0) {
-			int offset = PTR_DIFF(s,string);
 			char *t = Realloc(string, ls + ld + 1);
 			if (!t) {
 				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
@@ -1014,7 +795,7 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 				return NULL;
 			}
 			string = t;
-			p = t + offset + (p - s);
+			p = t + (p - s);
 		}
 		if (li != lp) {
 			memmove(p+li,p+lp,strlen(p+lp)+1);
@@ -1052,7 +833,7 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 	if (len == 0)
 		len = ls + 1; /* len is number of *bytes* */
 	
-	while (lp <= ls && (p = strstr_m(s,pattern))) {
+	while (lp <= ls && (p = strstr(s,pattern))) {
 		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in all_string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
@@ -1069,76 +850,10 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 }
 
 /**
- Similar to all_string_sub but for unicode strings.
- Return a new allocated unicode string.
- similar to string_sub() but allows for any character to be substituted.
- Use with caution!
-**/
-
-static smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s, const smb_ucs2_t *pattern,
-				const smb_ucs2_t *insert)
-{
-	smb_ucs2_t *r, *rp;
-	const smb_ucs2_t *sp;
-	size_t	lr, lp, li, lt;
-
-	if (!insert || !pattern || !*pattern || !s)
-		return NULL;
-
-	lt = (size_t)strlen_w(s);
-	lp = (size_t)strlen_w(pattern);
-	li = (size_t)strlen_w(insert);
-
-	if (li > lp) {
-		const smb_ucs2_t *st = s;
-		int ld = li - lp;
-		while ((sp = strstr_w(st, pattern))) {
-			st = sp + lp;
-			lt += ld;
-		}
-	}
-
-	r = rp = (smb_ucs2_t *)malloc((lt + 1)*(sizeof(smb_ucs2_t)));
-	if (!r) {
-		DEBUG(0, ("all_string_sub_w: out of memory!\n"));
-		return NULL;
-	}
-
-	while ((sp = strstr_w(s, pattern))) {
-		memcpy(rp, s, (sp - s));
-		rp += ((sp - s) / sizeof(smb_ucs2_t));
-		memcpy(rp, insert, (li * sizeof(smb_ucs2_t)));
-		s = sp + lp;
-		rp += li;
-	}
-	lr = ((rp - r) / sizeof(smb_ucs2_t));
-	if (lr < lt) {
-		memcpy(rp, s, ((lt - lr) * sizeof(smb_ucs2_t)));
-		rp += (lt - lr);
-	}
-	*rp = 0;
-
-	return r;
-}
-
-smb_ucs2_t *all_string_sub_wa(smb_ucs2_t *s, const char *pattern,
-					     const char *insert)
-{
-	wpstring p, i;
-
-	if (!insert || !pattern || !s)
-		return NULL;
-	push_ucs2(NULL, p, pattern, sizeof(wpstring) - 1, STR_TERMINATE);
-	push_ucs2(NULL, i, insert, sizeof(wpstring) - 1, STR_TERMINATE);
-	return all_string_sub_w(s, p, i);
-}
-
-#if 0
-/**
  Splits out the front and back at a separator.
 **/
 
-static void split_at_last_component(char *path, char *front, char sep, char *back)
+void split_at_last_component(char *path, char *front, char sep, char *back)
 {
 	char *p = strrchr_m(path, sep);
 
@@ -1157,7 +872,6 @@ static void split_at_last_component(char *path, char *front, char sep, char *bac
 			back[0] = 0;
 	}
 }
-#endif
 
 /**
  Write an octal as a string.
@@ -1177,7 +891,7 @@ const char *octal_string(int i)
  Truncate a string at a specified length.
 **/
 
-char *string_truncate(char *s, unsigned int length)
+char *string_truncate(char *s, int length)
 {
 	if (s && strlen(s) > length)
 		s[length] = 0;
@@ -1189,30 +903,11 @@ char *string_truncate(char *s, unsigned int length)
  We convert via ucs2 for now.
 **/
 
-char *strchr_m(const char *src, char c)
+char *strchr_m(const char *s, char c)
 {
 	wpstring ws;
 	pstring s2;
 	smb_ucs2_t *p;
-	const char *s;
-
-	/* this is quite a common operation, so we want it to be
-	   fast. We optimise for the ascii case, knowing that all our
-	   supported multi-byte character sets are ascii-compatible
-	   (ie. they match for the first 128 chars) */
-
-	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
-		if (*s == c)
-			return (char *)s;
-	}
-
-	if (!*s)
-		return NULL;
-
-#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
-	/* With compose characters we must restart from the beginning. JRA. */
-	s = src;
-#endif
 
 	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
 	p = strchr_w(ws, UCS2_CHAR(c));
@@ -1225,154 +920,17 @@ char *strchr_m(const char *src, char c)
 
 char *strrchr_m(const char *s, char c)
 {
-	/* this is quite a common operation, so we want it to be
-	   fast. We optimise for the ascii case, knowing that all our
-	   supported multi-byte character sets are ascii-compatible
-	   (ie. they match for the first 128 chars). Also, in Samba
-	   we only search for ascii characters in 'c' and that
-	   in all mb character sets with a compound character
-	   containing c, if 'c' is not a match at position
-	   p, then p[-1] > 0x7f. JRA. */
-
-	{
-		size_t len = strlen(s);
-		const char *cp = s;
-		BOOL got_mb = False;
-
-		if (len == 0)
-			return NULL;
-		cp += (len - 1);
-		do {
-			if (c == *cp) {
-				/* Could be a match. Part of a multibyte ? */
-			       	if ((cp > s) && (((unsigned char)cp[-1]) & 0x80)) {
-					/* Yep - go slow :-( */
-					got_mb = True;
-					break;
-				}
-				/* No - we have a match ! */
-			       	return (char *)cp;
-			}
-		} while (cp-- != s);
-		if (!got_mb)
-			return NULL;
-	}
-
-	/* String contained a non-ascii char. Slow path. */
-	{
-		wpstring ws;
-		pstring s2;
-		smb_ucs2_t *p;
-
-		push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
-		p = strrchr_w(ws, UCS2_CHAR(c));
-		if (!p)
-			return NULL;
-		*p = 0;
-		pull_ucs2_pstring(s2, ws);
-		return (char *)(s+strlen(s2));
-	}
-}
-
-/***********************************************************************
- Return the equivalent of doing strrchr 'n' times - always going
- backwards.
-***********************************************************************/
-
-char *strnrchr_m(const char *s, char c, unsigned int n)
-{
 	wpstring ws;
 	pstring s2;
 	smb_ucs2_t *p;
 
 	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
-	p = strnrchr_w(ws, UCS2_CHAR(c), n);
+	p = strrchr_w(ws, UCS2_CHAR(c));
 	if (!p)
 		return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
 	return (char *)(s+strlen(s2));
-}
-
-/***********************************************************************
- strstr_m - We convert via ucs2 for now.
-***********************************************************************/
-
-char *strstr_m(const char *src, const char *findstr)
-{
-	smb_ucs2_t *p;
-	smb_ucs2_t *src_w, *find_w;
-	const char *s;
-	char *s2;
-	char *retp;
-
-	size_t findstr_len = 0;
-
-	/* for correctness */
-	if (!findstr[0]) {
-		return src;
-	}
-
-	/* Samba does single character findstr calls a *lot*. */
-	if (findstr[1] == '\0')
-		return strchr_m(src, *findstr);
-
-	/* We optimise for the ascii case, knowing that all our
-	   supported multi-byte character sets are ascii-compatible
-	   (ie. they match for the first 128 chars) */
-
-	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
-		if (*s == *findstr) {
-			if (!findstr_len) 
-				findstr_len = strlen(findstr);
-
-			if (strncmp(s, findstr, findstr_len) == 0) {
-				return (char *)s;
-			}
-		}
-	}
-
-	if (!*s)
-		return NULL;
-
-#if 1 /* def BROKEN_UNICODE_COMPOSE_CHARACTERS */
-	/* 'make check' fails unless we do this */
-
-	/* With compose characters we must restart from the beginning. JRA. */
-	s = src;
-#endif
-
-	if (push_ucs2_allocate(&src_w, src) == (size_t)-1) {
-		DEBUG(0,("strstr_m: src malloc fail\n"));
-		return NULL;
-	}
-	
-	if (push_ucs2_allocate(&find_w, findstr) == (size_t)-1) {
-		SAFE_FREE(src_w);
-		DEBUG(0,("strstr_m: find malloc fail\n"));
-		return NULL;
-	}
-
-	p = strstr_w(src_w, find_w);
-
-	if (!p) {
-		SAFE_FREE(src_w);
-		SAFE_FREE(find_w);
-		return NULL;
-	}
-	
-	*p = 0;
-	if (pull_ucs2_allocate(&s2, src_w) == (size_t)-1) {
-		SAFE_FREE(src_w);
-		SAFE_FREE(find_w);
-		DEBUG(0,("strstr_m: dest malloc fail\n"));
-		return NULL;
-	}
-	retp = (char *)(s+strlen(s2));
-	SAFE_FREE(src_w);
-	SAFE_FREE(find_w);
-	SAFE_FREE(s2);
-	return retp;
 }
 
 /**
@@ -1381,14 +939,12 @@ char *strstr_m(const char *src, const char *findstr)
 
 void strlower_m(char *s)
 {
-	size_t len;
-
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (*s && !(((unsigned char)s[0]) & 0x80)) {
+	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
 		*s = tolower((unsigned char)*s);
 		s++;
 	}
@@ -1398,12 +954,22 @@ void strlower_m(char *s)
 
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in UTF-8 encoding. (VIV) */
-	len = strlen(s) + 1;
-	errno = 0;
-	unix_strlower(s,len,s,len);	
-	/* Catch mb conversion errors that may not terminate. */
-	if (errno)
-		s[len-1] = '\0';
+	unix_strlower(s,strlen(s)+1,s,strlen(s)+1);	
+}
+
+/**
+ Duplicate convert a string to lower case.
+**/
+
+char *strdup_lower(const char *s)
+{
+	char *t = strdup(s);
+	if (t == NULL) {
+		DEBUG(0, ("strdup_lower: Out of memory!\n"));
+		return NULL;
+	}
+	strlower_m(t);
+	return t;
 }
 
 /**
@@ -1412,14 +978,12 @@ void strlower_m(char *s)
 
 void strupper_m(char *s)
 {
-	size_t len;
-
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (*s && !(((unsigned char)s[0]) & 0x80)) {
+	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
 		*s = toupper((unsigned char)*s);
 		s++;
 	}
@@ -1429,12 +993,60 @@ void strupper_m(char *s)
 
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
-	len = strlen(s) + 1;
-	errno = 0;
-	unix_strupper(s,len,s,len);	
-	/* Catch mb conversion errors that may not terminate. */
-	if (errno)
-		s[len-1] = '\0';
+	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
+}
+
+
+/**
+   work out the number of multibyte chars in a string
+**/
+size_t strlen_m(const char *s)
+{
+	size_t count = 0;
+
+	if (!s) {
+		return 0;
+	}
+
+	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
+		s++;
+		count++;
+	}
+
+	if (!*s) {
+		return count;
+	}
+
+	push_ucs2(NULL,tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+	return count + strlen_w(tmpbuf);
+}
+
+/**
+   Work out the number of multibyte chars in a string, including the NULL
+   terminator.
+**/
+size_t strlen_m_term(const char *s)
+{
+	if (!s) {
+		return 0;
+	}
+
+	return strlen_m(s) + 1;
+}
+
+/**
+ Convert a string to upper case.
+**/
+
+char *strdup_upper(const char *s)
+{
+	char *t = strdup(s);
+	if (t == NULL) {
+		DEBUG(0, ("strdup_upper: Out of memory!\n"));
+		return NULL;
+	}
+	strupper_m(t);
+	return t;
 }
 
 /**
@@ -1476,28 +1088,10 @@ char *binary_string(char *buf, int len)
 	return ret;
 }
 
-
-/**
- Just a typesafety wrapper for snprintf into a fstring.
-**/
-
-int fstr_sprintf(fstring s, const char *fmt, ...)
-{
-	va_list ap;
-	int ret;
-
-	va_start(ap, fmt);
-	ret = vsnprintf(s, FSTRING_LEN, fmt, ap);
-	va_end(ap);
-	return ret;
-}
-
-
 #ifndef HAVE_STRNDUP
 /**
  Some platforms don't have strndup.
 **/
-
  char *strndup(const char *s, size_t n)
 {
 	char *ret;
@@ -1517,7 +1111,6 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 /**
  Some platforms don't have strnlen
 **/
-
  size_t strnlen(const char *s, size_t n)
 {
 	int i;
@@ -1656,35 +1249,6 @@ void str_list_free(char ***list)
 	SAFE_FREE(*list);
 }
 
-/******************************************************************************
- version of standard_sub_basic() for string lists; uses alloc_sub_basic() 
- for the work
- *****************************************************************************/
- 
-BOOL str_list_sub_basic( char **list, const char *smb_name )
-{
-	char *s, *tmpstr;
-	
-	while ( *list ) {
-		s = *list;
-		tmpstr = alloc_sub_basic(smb_name, s);
-		if ( !tmpstr ) {
-			DEBUG(0,("str_list_sub_basic: alloc_sub_basic() return NULL!\n"));
-			return False;
-		}
-
-		*list = tmpstr;
-			
-		list++;
-	}
-
-	return True;
-}
-
-/******************************************************************************
- substritute a specific pattern in a string list
- *****************************************************************************/
- 
 BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 {
 	char *p, *s, *t;
@@ -1705,7 +1269,7 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 		s = *list;
 		ls = (ssize_t)strlen(s);
 
-		while ((p = strstr_m(s, pattern))) {
+		while ((p = strstr(s, pattern))) {
 			t = *list;
 			d = p -t;
 			if (ld) {
@@ -1740,7 +1304,6 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 			}	
 		}
 		
-		
 		list++;
 	}
 	
@@ -1749,7 +1312,6 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 
 
 #define IPSTR_LIST_SEP	","
-#define IPSTR_LIST_CHAR	','
 
 /**
  * Add ip string representation to ipstr list. Used also
@@ -1764,20 +1326,19 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
  *         reallocated to new length
  **/
 
-char* ipstr_list_add(char** ipstr_list, const struct ip_service *service)
+char* ipstr_list_add(char** ipstr_list, const struct in_addr *ip)
 {
 	char* new_ipstr = NULL;
 	
 	/* arguments checking */
-	if (!ipstr_list || !service) return NULL;
+	if (!ipstr_list || !ip) return NULL;
 
 	/* attempt to convert ip to a string and append colon separator to it */
 	if (*ipstr_list) {
-		asprintf(&new_ipstr, "%s%s%s:%d", *ipstr_list, IPSTR_LIST_SEP,
-			inet_ntoa(service->ip), service->port);
+		asprintf(&new_ipstr, "%s%s%s", *ipstr_list, IPSTR_LIST_SEP,inet_ntoa(*ip));
 		SAFE_FREE(*ipstr_list);
 	} else {
-		asprintf(&new_ipstr, "%s:%d", inet_ntoa(service->ip), service->port);
+		asprintf(&new_ipstr, "%s", inet_ntoa(*ip));
 	}
 	*ipstr_list = new_ipstr;
 	return *ipstr_list;
@@ -1794,7 +1355,7 @@ char* ipstr_list_add(char** ipstr_list, const struct ip_service *service)
  * @return pointer to allocated ip string
  **/
  
-char* ipstr_list_make(char** ipstr_list, const struct ip_service* ip_list, int ip_count)
+char* ipstr_list_make(char** ipstr_list, const struct in_addr* ip_list, int ip_count)
 {
 	int i;
 	
@@ -1813,8 +1374,7 @@ char* ipstr_list_make(char** ipstr_list, const struct ip_service* ip_list, int i
 
 /**
  * Parse given ip string list into array of ip addresses
- * (as ip_service structures)  
- *    e.g. 192.168.1.100:389,192.168.1.78, ...
+ * (as in_addr structures)
  *
  * @param ipstr ip string list to be parsed 
  * @param ip_list pointer to array of ip addresses which is
@@ -1822,40 +1382,28 @@ char* ipstr_list_make(char** ipstr_list, const struct ip_service* ip_list, int i
  * @return number of succesfully parsed addresses
  **/
  
-int ipstr_list_parse(const char* ipstr_list, struct ip_service **ip_list)
+int ipstr_list_parse(const char* ipstr_list, struct in_addr** ip_list)
 {
 	fstring token_str;
-	size_t count;
-	int i;
+	int count;
 
-	if (!ipstr_list || !ip_list) 
-		return 0;
+	if (!ipstr_list || !ip_list) return 0;
 	
-	count = count_chars(ipstr_list, IPSTR_LIST_CHAR) + 1;
-	if ( (*ip_list = (struct ip_service*)malloc(count * sizeof(struct ip_service))) == NULL ) {
-		DEBUG(0,("ipstr_list_parse: malloc failed for %lu entries\n", (unsigned long)count));
-		return 0;
-	}
-	
-	for ( i=0; 
-		next_token(&ipstr_list, token_str, IPSTR_LIST_SEP, FSTRING_LEN) && i<count; 
-		i++ ) 
-	{
+	for (*ip_list = NULL, count = 0;
+	     next_token(&ipstr_list, token_str, IPSTR_LIST_SEP, FSTRING_LEN);
+	     count++) {
+	     
 		struct in_addr addr;
-		unsigned port = 0;	
-		char *p = strchr(token_str, ':');
-		
-		if (p) {
-			*p = 0;
-			port = atoi(p+1);
-		}
 
 		/* convert single token to ip address */
 		if ( (addr.s_addr = inet_addr(token_str)) == INADDR_NONE )
 			break;
-				
-		(*ip_list)[i].ip = addr;
-		(*ip_list)[i].port = port;
+		
+		/* prepare place for another in_addr structure */
+		*ip_list = Realloc(*ip_list, (count + 1) * sizeof(struct in_addr));
+		if (!*ip_list) return -1;
+		
+		(*ip_list)[count] = addr;
 	}
 	
 	return count;
@@ -1881,6 +1429,11 @@ void ipstr_list_free(char* ipstr_list)
 void rfc1738_unescape(char *buf)
 {
 	char *p=buf;
+
+	while ((p=strchr_m(p,'+')))
+		*p = ' ';
+
+	p = buf;
 
 	while (p && *p && (p=strchr_m(p,'%'))) {
 		int c1 = p[1];
@@ -1940,8 +1493,6 @@ DATA_BLOB base64_decode_data_blob(const char *s)
 		s++; i++;
 	}
 
-	if (*s == '=') n -= 1;
-
 	/* fix up length */
 	decoded.length = n;
 	return decoded;
@@ -1954,10 +1505,10 @@ void base64_decode_inplace(char *s)
 {
 	DATA_BLOB decoded = base64_decode_data_blob(s);
 	memcpy(s, decoded.data, decoded.length);
+	data_blob_free(&decoded);
+
 	/* null terminate */
 	s[decoded.length] = '\0';
-
-	data_blob_free(&decoded);
 }
 
 /**
@@ -2005,43 +1556,12 @@ char * base64_encode_data_blob(DATA_BLOB data)
     return result;
 }
 
-/* read a SMB_BIG_UINT from a string */
-SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
+#ifdef VALGRIND
+size_t valgrind_strlen(const char *s)
 {
-
-	SMB_BIG_UINT val = -1;
-	const char *p = nptr;
-	
-	while (p && *p && isspace(*p))
-		p++;
-#ifdef LARGE_SMB_OFF_T
-	sscanf(p,"%llu",&val);	
-#else /* LARGE_SMB_OFF_T */
-	sscanf(p,"%lu",&val);
-#endif /* LARGE_SMB_OFF_T */
-	if (entptr) {
-		while (p && *p && isdigit(*p))
-			p++;
-		*entptr = p;
-	}
-
-	return val;
+	size_t count;
+	for(count = 0; *s++; count++)
+		;
+	return count;
 }
-
-void string_append(char **left, const char *right)
-{
-	int new_len = strlen(right) + 1;
-
-	if (*left == NULL) {
-		*left = malloc(new_len);
-		*left[0] = '\0';
-	} else {
-		new_len += strlen(*left);
-		*left = Realloc(*left, new_len);
-	}
-
-	if (*left == NULL)
-		return;
-
-	safe_strcat(*left, right, new_len-1);
-}
+#endif

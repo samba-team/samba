@@ -72,14 +72,10 @@ static const known_sid_users builtin_groups[] = {
 	{ BUILTIN_ALIAS_RID_ADMINS, SID_NAME_ALIAS, "Administrators" },
 	{ BUILTIN_ALIAS_RID_USERS, SID_NAME_ALIAS, "Users" },
 	{ BUILTIN_ALIAS_RID_GUESTS, SID_NAME_ALIAS, "Guests" },
-	{ BUILTIN_ALIAS_RID_POWER_USERS, SID_NAME_ALIAS, "Power Users" },
 	{ BUILTIN_ALIAS_RID_ACCOUNT_OPS, SID_NAME_ALIAS, "Account Operators" },
 	{ BUILTIN_ALIAS_RID_SYSTEM_OPS, SID_NAME_ALIAS, "Server Operators" },
 	{ BUILTIN_ALIAS_RID_PRINT_OPS, SID_NAME_ALIAS, "Print Operators" },
 	{ BUILTIN_ALIAS_RID_BACKUP_OPS, SID_NAME_ALIAS, "Backup Operators" },
-	{ BUILTIN_ALIAS_RID_REPLICATOR, SID_NAME_ALIAS, "Replicator" },
-	{ BUILTIN_ALIAS_RID_RAS_SERVERS, SID_NAME_ALIAS, "RAS Servers" },
-	{ BUILTIN_ALIAS_RID_PRE_2K_ACCESS, SID_NAME_ALIAS, "Pre-Windows 2000 Compatible Access" },
 	{  0, (enum SID_NAME_USE)0, NULL}};
 
 /**************************************************************************
@@ -103,12 +99,12 @@ static void init_sid_name_map (void)
 		sid_name_map[i].known_users = NULL;
 		i++;
 		sid_name_map[i].sid = get_global_sam_sid();
-		sid_name_map[i].name = strdup(global_myname());
+		sid_name_map[i].name = strdup(lp_netbios_name());
 		sid_name_map[i].known_users = NULL;
 		i++;
 	} else {
 		sid_name_map[i].sid = get_global_sam_sid();
-		sid_name_map[i].name = strdup(global_myname());
+		sid_name_map[i].name = strdup(lp_netbios_name());
 		sid_name_map[i].known_users = NULL;
 		i++;
 	}
@@ -225,7 +221,7 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
 	}
 
 	if (nt_domain[0] == 0) {
-		fstrcpy(nt_domain, global_myname());
+		fstrcpy(nt_domain, lp_netbios_name());
 		DEBUG(5,("map_domain_name_to_sid: overriding blank name to %s\n", nt_domain));
 		sid_copy(sid, get_global_sam_sid());
 		return True;
@@ -294,7 +290,7 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 			continue;
 
 		for (j=0; users[j].known_user_name != NULL; j++) {
-			if ( strequal(users[j].known_user_name, name) ) {
+			if (strequal(users[j].known_user_name, name) == 0) {
 				sid_copy(sid, sid_name_map[i].sid);
 				sid_append_rid(sid, users[j].rid);
 				*use = users[j].sid_name_use;
@@ -304,29 +300,4 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 	}
 
 	return False;
-}
-
-void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
-{
-	*sids = Realloc(*sids, ((*num)+1) * sizeof(DOM_SID));
-
-	if (*sids == NULL)
-		return;
-
-	sid_copy(&((*sids)[*num]), sid);
-	*num += 1;
-
-	return;
-}
-
-void add_sid_to_array_unique(const DOM_SID *sid, DOM_SID **sids, int *num)
-{
-	int i;
-
-	for (i=0; i<*num; i++) {
-		if (sid_compare(sid, &(*sids)[i]) == 0)
-			return;
-	}
-
-	add_sid_to_array(sid, sids, num);
 }

@@ -24,37 +24,42 @@
 
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal)
 {
-    char *tmp_password;
-    char *password;
-    char *new_password;
-    char *service_principal;
-    ADS_STATUS ret;
-    uint32 sec_channel_type;
-    
-    if ((password = secrets_fetch_machine_password(lp_workgroup(), NULL, &sec_channel_type)) == NULL) {
-	DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));
-	return ADS_ERROR_SYSTEM(ENOENT);
-    }
+	char *tmp_password;
+	char *password;
+	char *new_password;
+	char *service_principal = NULL;
+	ADS_STATUS ret;
+	uint32 sec_channel_type;
 
-    tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
-    new_password = strdup(tmp_password);
-    
-    asprintf(&service_principal, "HOST/%s", host_principal);
+	if ((password = secrets_fetch_machine_password(lp_workgroup(), NULL, &sec_channel_type)) == NULL) {
+		DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));
+		return ADS_ERROR_SYSTEM(ENOENT);
+	}
 
-    ret = kerberos_set_password(ads->auth.kdc_server, service_principal, password, service_principal, new_password, ads->auth.time_offset);
+	tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+	new_password = strdup(tmp_password);
 
-    if (!ADS_ERR_OK(ret)) goto failed;
+	asprintf(&service_principal, "HOST/%s", host_principal);
 
-    if (!secrets_store_machine_password(new_password, lp_workgroup(), sec_channel_type)) {
-	    DEBUG(1,("Failed to save machine password\n"));
-	    return ADS_ERROR_SYSTEM(EACCES);
-    }
+	if (!service_principal) {
+		DEBUG(1,("asprintf() failed principal %s\n", host_principal));
+		return ADS_ERROR_SYSTEM(ENOMEM);
+	}
+
+	ret = kerberos_set_password(ads->auth.kdc_server, service_principal, password, service_principal, new_password, ads->auth.time_offset);
+
+	if (!ADS_ERR_OK(ret)) goto failed;
+
+	if (!secrets_store_machine_password(new_password, lp_workgroup(), sec_channel_type)) {
+		DEBUG(1,("Failed to save machine password\n"));
+		return ADS_ERROR_SYSTEM(EACCES);
+	}
 
 failed:
-    SAFE_FREE(service_principal);
-    SAFE_FREE(new_password);
+	SAFE_FREE(service_principal);
+	SAFE_FREE(new_password);
 
-    return ret;
+	return ret;
 }
 
 

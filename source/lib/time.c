@@ -250,7 +250,7 @@ static int TimeZoneFaster(time_t t)
   **************************************************************************/
 int TimeDiff(time_t t)
 {
-  return TimeZoneFaster(t) + 60*extra_time_offset;
+  return TimeZoneFaster(t) + 60 * lp_time_offset();
 }
 
 
@@ -263,12 +263,12 @@ int TimeDiff(time_t t)
   +**************************************************************************/
 static int LocTimeDiff(time_t lte)
 {
-  time_t lt = lte - 60*extra_time_offset;
+  time_t lt = lte - 60 * lp_time_offset();
   int d = TimeZoneFaster(lt);
   time_t t = lt + d;
 
   /* if overflow occurred, ignore all the adjustments so far */
-  if (((lte < lt) ^ (extra_time_offset < 0))  |  ((t < lt) ^ (d < 0)))
+  if (((lte < lt) ^ (lp_time_offset() < 0))  |  ((t < lt) ^ (d < 0)))
     t = lte;
 
   /* now t should be close enough to the true UTC to yield the right answer */
@@ -299,7 +299,7 @@ its the GMT you get by taking a localtime and adding the
 serverzone. This is NOT the same as GMT in some cases. This routine
 converts this to real GMT.
 ****************************************************************************/
-time_t nt_time_to_unix(NTTIME *nt)
+time_t nt_time_to_unix(const NTTIME *nt)
 {
   double d;
   time_t ret;
@@ -308,8 +308,7 @@ time_t nt_time_to_unix(NTTIME *nt)
   time_t l_time_min = TIME_T_MIN;
   time_t l_time_max = TIME_T_MAX;
 
-  if (nt->high == 0 || (nt->high == 0xffffffff && nt->low == 0xffffffff))
-	  return(0);
+  if (nt->high == 0) return(0);
 
   d = ((double)nt->high)*4.0*(double)(1<<30);
   d += (nt->low&0xFFF00000);
@@ -318,11 +317,8 @@ time_t nt_time_to_unix(NTTIME *nt)
   /* now adjust by 369 years to make the secs since 1970 */
   d -= TIME_FIXUP_CONSTANT;
 
-  if (d <= l_time_min)
-	  return (l_time_min);
-
-  if (d >= l_time_max)
-	  return (l_time_max);
+  if (!(l_time_min <= d && d <= l_time_max))
+    return(0);
 
   ret = (time_t)(d+0.5);
 
@@ -375,17 +371,6 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 }
 
 /****************************************************************************
-interprets an nt time into a unix time_t
-****************************************************************************/
-time_t interpret_long_date(char *p)
-{
-	NTTIME nt;
-	nt.low = IVAL(p,0);
-	nt.high = IVAL(p,4);
-	return nt_time_to_unix(&nt);
-}
-
-/****************************************************************************
 put a 8 byte filetime from a time_t
 This takes real GMT as input and converts to kludge-GMT
 ****************************************************************************/
@@ -393,20 +378,17 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 {
 	double d;
 
-	if (t==0)
-	{
+	if (t==0) {
 		nt->low = 0;
 		nt->high = 0;
 		return;
 	}
-	if (t == TIME_T_MAX)
-	{
+	if (t == TIME_T_MAX) {
 		nt->low = 0xffffffff;
 		nt->high = 0x7fffffff;
 		return;
 	}		
-	if (t == -1)
-	{
+	if (t == -1) {
 		nt->low = 0xffffffff;
 		nt->high = 0xffffffff;
 		return;
@@ -465,9 +447,10 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 	nt->low=~nt->low;
 }
 
+
 /****************************************************************************
-take a Unix time and convert to an NTTIME structure and place in buffer 
-pointed to by p.
+take an NTTIME structure, containing high / low time.  convert to unix time.
+lkclXXXX this may need 2 SIVALs not a memcpy.  we'll see...
 ****************************************************************************/
 void put_long_date(char *p,time_t t)
 {
@@ -482,9 +465,9 @@ check if it's a null mtime
 ****************************************************************************/
 BOOL null_mtime(time_t mtime)
 {
-  if (mtime == 0 || mtime == (time_t)0xFFFFFFFF || mtime == (time_t)-1)
-    return(True);
-  return(False);
+	if (mtime == 0 || mtime == (time_t)0xFFFFFFFF || mtime == (time_t)-1)
+		return True;
+	return False;
 }
 
 /*******************************************************************
@@ -492,10 +475,10 @@ BOOL null_mtime(time_t mtime)
 ********************************************************************/
 static uint16 make_dos_date1(struct tm *t)
 {
-  uint16 ret=0;
-  ret = (((unsigned)(t->tm_mon+1)) >> 3) | ((t->tm_year-80) << 1);
-  ret = ((ret&0xFF)<<8) | (t->tm_mday | (((t->tm_mon+1) & 0x7) << 5));
-  return(ret);
+	uint16 ret=0;
+	ret = (((unsigned)(t->tm_mon+1)) >> 3) | ((t->tm_year-80) << 1);
+	ret = ((ret&0xFF)<<8) | (t->tm_mday | (((t->tm_mon+1) & 0x7) << 5));
+	return ret;
 }
 
 /*******************************************************************
@@ -503,10 +486,10 @@ static uint16 make_dos_date1(struct tm *t)
 ********************************************************************/
 static uint16 make_dos_time1(struct tm *t)
 {
-  uint16 ret=0;
-  ret = ((((unsigned)t->tm_min >> 3)&0x7) | (((unsigned)t->tm_hour) << 3));
-  ret = ((ret&0xFF)<<8) | ((t->tm_sec/2) | ((t->tm_min & 0x7) << 5));
-  return(ret);
+	uint16 ret=0;
+	ret = ((((unsigned)t->tm_min >> 3)&0x7) | (((unsigned)t->tm_hour) << 3));
+	ret = ((ret&0xFF)<<8) | ((t->tm_sec/2) | ((t->tm_min & 0x7) << 5));
+	return ret;
 }
 
 /*******************************************************************
@@ -515,17 +498,22 @@ static uint16 make_dos_time1(struct tm *t)
 ********************************************************************/
 static uint32 make_dos_date(time_t unixdate)
 {
-  struct tm *t;
-  uint32 ret=0;
+	struct tm *t;
+	uint32 ret=0;
 
-  t = LocalTime(&unixdate);
-  if (!t)
-    return 0xFFFFFFFF;
+	if (unixdate == 0) {
+		return 0;
+	}
 
-  ret = make_dos_date1(t);
-  ret = ((ret&0xFFFF)<<16) | make_dos_time1(t);
+	t = LocalTime(&unixdate);
+	if (!t) {
+		return 0xFFFFFFFF;
+	}
 
-  return(ret);
+	ret = make_dos_date1(t);
+	ret = ((ret&0xFFFF)<<16) | make_dos_time1(t);
+
+	return ret;
 }
 
 /*******************************************************************
@@ -534,8 +522,8 @@ This takes GMT time and puts local time in the buffer
 ********************************************************************/
 void put_dos_date(char *buf,int offset,time_t unixdate)
 {
-  uint32 x = make_dos_date(unixdate);
-  SIVAL(buf,offset,x);
+	uint32 x = make_dos_date(unixdate);
+	SIVAL(buf,offset,x);
 }
 
 /*******************************************************************
@@ -544,9 +532,10 @@ This takes GMT time and puts local time in the buffer
 ********************************************************************/
 void put_dos_date2(char *buf,int offset,time_t unixdate)
 {
-  uint32 x = make_dos_date(unixdate);
-  x = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
-  SIVAL(buf,offset,x);
+	uint32 x;
+	x = make_dos_date(unixdate);
+	x = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
+	SIVAL(buf,offset,x);
 }
 
 /*******************************************************************
@@ -556,9 +545,9 @@ localtime for this sort of date)
 ********************************************************************/
 void put_dos_date3(char *buf,int offset,time_t unixdate)
 {
-  if (!null_mtime(unixdate))
-    unixdate -= TimeDiff(unixdate);
-  SIVAL(buf,offset,unixdate);
+	if (!null_mtime(unixdate))
+		unixdate -= TimeDiff(unixdate);
+	SIVAL(buf,offset,unixdate);
 }
 
 /*******************************************************************
@@ -585,22 +574,22 @@ static void interpret_dos_date(uint32 date,int *year,int *month,int *day,int *ho
 ********************************************************************/
 time_t make_unix_date(void *date_ptr)
 {
-  uint32 dos_date=0;
-  struct tm t;
-  time_t ret;
+	uint32 dos_date=0;
+	struct tm t;
+	time_t ret;
 
-  dos_date = IVAL(date_ptr,0);
+	dos_date = IVAL(date_ptr,0);
 
-  if (dos_date == 0) return(0);
+	if (dos_date == 0) return (time_t)0;
   
-  interpret_dos_date(dos_date,&t.tm_year,&t.tm_mon,
-		     &t.tm_mday,&t.tm_hour,&t.tm_min,&t.tm_sec);
-  t.tm_isdst = -1;
+	interpret_dos_date(dos_date,&t.tm_year,&t.tm_mon,
+			   &t.tm_mday,&t.tm_hour,&t.tm_min,&t.tm_sec);
+	t.tm_isdst = -1;
   
-  /* mktime() also does the local to GMT time conversion for us */
-  ret = mktime(&t);
+	/* mktime() also does the local to GMT time conversion for us */
+	ret = mktime(&t);
 
-  return(ret);
+	return(ret);
 }
 
 /*******************************************************************
@@ -608,13 +597,13 @@ like make_unix_date() but the words are reversed
 ********************************************************************/
 time_t make_unix_date2(void *date_ptr)
 {
-  uint32 x,x2;
+	uint32 x,x2;
 
-  x = IVAL(date_ptr,0);
-  x2 = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
-  SIVAL(&x,0,x2);
+	x = IVAL(date_ptr,0);
+	x2 = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
+	SIVAL(&x,0,x2);
 
-  return(make_unix_date((void *)&x));
+	return make_unix_date((void *)&x);
 }
 
 /*******************************************************************
@@ -623,30 +612,32 @@ time_t make_unix_date2(void *date_ptr)
   ******************************************************************/
 time_t make_unix_date3(void *date_ptr)
 {
-  time_t t = (time_t)IVAL(date_ptr,0);
-  if (!null_mtime(t))
-    t += LocTimeDiff(t);
-  return(t);
+	time_t t = (time_t)IVAL(date_ptr,0);
+	if (!null_mtime(t))
+		t += LocTimeDiff(t);
+	return t;
 }
 
 
 /***************************************************************************
 return a HTTP/1.0 time string
   ***************************************************************************/
-char *http_timestring(time_t t)
+char *http_timestring(TALLOC_CTX *mem_ctx, time_t t)
 {
-  static fstring buf;
+  char *buf;
+  fstring tempTime;
   struct tm *tm = LocalTime(&t);
 
   if (!tm)
-    slprintf(buf,sizeof(buf)-1,"%ld seconds since the Epoch",(long)t);
+    buf = talloc_asprintf(mem_ctx,"%ld seconds since the Epoch",(long)t);
   else
 #ifndef HAVE_STRFTIME
-  fstrcpy(buf, asctime(tm));
+  buf = talloc_strdup(mem_ctx, asctime(tm));
   if(buf[strlen(buf)-1] == '\n')
     buf[strlen(buf)-1] = 0;
 #else /* !HAVE_STRFTIME */
-  strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
+	strftime(tempTime, sizeof(tempTime)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
+  buf = talloc_strdup(mem_ctx, tempTime);
 #endif /* !HAVE_STRFTIME */
   return buf;
 }
@@ -657,9 +648,10 @@ char *http_timestring(time_t t)
  Return the date and time as a string
 ****************************************************************************/
 
-char *timestring(BOOL hires)
+char *timestring(TALLOC_CTX *mem_ctx, BOOL hires)
 {
-	static fstring TimeBuf;
+	char *TimeBuf;
+	fstring tempTime;
 	struct timeval tp;
 	time_t t;
 	struct tm *tm;
@@ -673,37 +665,33 @@ char *timestring(BOOL hires)
 	tm = LocalTime(&t);
 	if (!tm) {
 		if (hires) {
-			slprintf(TimeBuf,
-				 sizeof(TimeBuf)-1,
+			TimeBuf = talloc_asprintf(mem_ctx,
 				 "%ld.%06ld seconds since the Epoch",
 				 (long)tp.tv_sec, 
 				 (long)tp.tv_usec);
 		} else {
-			slprintf(TimeBuf,
-				 sizeof(TimeBuf)-1,
+			TimeBuf = talloc_asprintf(mem_ctx,
 				 "%ld seconds since the Epoch",
 				 (long)t);
 		}
 	} else {
 #ifdef HAVE_STRFTIME
 		if (hires) {
-			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
-			slprintf(TimeBuf+strlen(TimeBuf),
-				 sizeof(TimeBuf)-1 - strlen(TimeBuf), 
-				 ".%06ld", 
-				 (long)tp.tv_usec);
+			strftime(tempTime,sizeof(tempTime)-1,"%Y/%m/%d %H:%M:%S",tm);
+			TimeBuf = talloc_asprintf(mem_ctx, "%s.%06ld", 
+				 tempTime, (long)tp.tv_usec);
 		} else {
-			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
+			strftime(tempTime,100,"%Y/%m/%d %H:%M:%S",tm);
+			TimeBuf = talloc_strdup(mem_ctx, tempTime);
 		}
 #else
 		if (hires) {
-			slprintf(TimeBuf, 
-				 sizeof(TimeBuf)-1, 
+			TimeBuf = talloc_asprintf(mem_ctx,
 				 "%s.%06ld", 
 				 asctime(tm), 
 				 (long)tp.tv_usec);
 		} else {
-			fstrcpy(TimeBuf, asctime(tm));
+			TimeBuf = talloc_strdup(mem_ctx, asctime(tm));
 		}
 #endif
 	}
@@ -754,3 +742,13 @@ BOOL nt_time_is_zero(NTTIME *nt)
 		return True;
 	return False;
 }
+
+/*
+  return a talloced string representing a NTTIME for human consumption
+*/
+const char *nt_time_string(TALLOC_CTX *mem_ctx, const NTTIME *nt)
+{
+	time_t t = nt_time_to_unix(nt);
+	return talloc_strdup(mem_ctx, http_timestring(mem_ctx, t));
+}
+

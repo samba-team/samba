@@ -1,12 +1,10 @@
 #!/bin/sh
 
 INSTALLPERMS=$1
-DESTDIR=$2
-BASEDIR=`echo $3 | sed 's/\/\//\//g'`
-BINDIR=`echo $4 | sed 's/\/\//\//g'`
-LIBDIR=`echo $5 | sed 's/\/\//\//g'`
-VARDIR=`echo $6 | sed 's/\/\//\//g'`
-shift
+BASEDIR=$2
+BINDIR=$3
+LIBDIR=$4
+VARDIR=$5
 shift
 shift
 shift
@@ -25,10 +23,7 @@ for p in $*; do
 
  # this is a special case, mount needs this in a specific location
  if [ $p2 = smbmount ]; then
-   if [ ! -d $DESTDIR/sbin ]; then
-      mkdir $DESTDIR/sbin
-   fi 
-   ln -sf $BINDIR/$p2 $DESTDIR/sbin/mount.smbfs
+   ln -sf $BINDIR/$p2 /sbin/mount.smbfs
  fi
 done
 

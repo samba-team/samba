@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "../web/swat_proto.h"
 
 /*
   during a file download we first check to see if there is a language
@@ -99,7 +98,7 @@ void web_set_lang(const char *lang_string)
 	}
 	str_list_free(&lang_list);
 
-	qsort(pl, lang_num, sizeof(struct pri_list), &qsort_cmp_list);
+	qsort(pl, lang_num, sizeof(struct pri_list), QSORT_CAST qsort_cmp_list);
 
 	/* it's not an error to not initialise - we just fall back to 
 	   the default */

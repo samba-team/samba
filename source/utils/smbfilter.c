@@ -47,7 +47,7 @@ static void save_file(const char *fname, void *packet, size_t length)
 		return;
 	}
 	close(fd);
-	printf("Wrote %ld bytes to %s\n", (unsigned long)length, fname);
+	printf("Wrote %d bytes to %s\n", length, fname);
 }
 
 static void filter_reply(char *buf)
@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
 	char *desthost;
 	pstring configfile;
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
   
 	pstrcpy(configfile,dyn_CONFIGFILE);
  

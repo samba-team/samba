@@ -20,7 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
 #include "printing.h"
 
 static struct tdb_print_db *print_db_head;
@@ -96,8 +95,7 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 		done_become_root = True;
 	}
 
-	p->tdb = tdb_open_ex(printdb_path, 5000, TDB_DEFAULT, O_RDWR|O_CREAT, 
-		0600, smbd_tdb_log);
+	p->tdb = tdb_open_log(printdb_path, 5000, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (done_become_root)
 		unbecome_root();
@@ -156,7 +154,7 @@ TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *printer_name,
 
 	ZERO_STRUCT(data);
 
-	data = tdb_fetch_bystring( tdb, NOTIFY_PID_LIST_KEY );
+	data = tdb_fetch_by_string( tdb, NOTIFY_PID_LIST_KEY );
 
 	if (!data.dptr) {
 		ZERO_STRUCT(data);
@@ -165,7 +163,7 @@ TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *printer_name,
 
 	if (data.dsize % 8) {
 		DEBUG(0,("get_printer_notify_pid_list: Size of record for printer %s not a multiple of 8 !\n", printer_name ));
-		tdb_delete_bystring(tdb, NOTIFY_PID_LIST_KEY );
+		tdb_delete_by_string(tdb, NOTIFY_PID_LIST_KEY );
 		SAFE_FREE(data.dptr);
 		ZERO_STRUCT(data);
 		return data;

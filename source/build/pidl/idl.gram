@@ -1,0 +1,183 @@
+{
+	use util;
+}
+
+idl: idl_interface(s)
+     {{ util::FlattenArray($item[1]) }}
+  | <error>
+
+idl_interface: module_header interface
+   { [$item{module_header}, $item{interface}] }
+   | <error>
+
+module_header: '[' <commit> module_param(s? /,/) ']' 
+          {{ 
+              "TYPE" => "MODULEHEADER", 
+              "PROPERTIES" => util::FlattenHash($item[3])
+          }}
+	      | <error?>
+
+module_param: identifier '(' <commit> text ')'
+          {{ "$item{identifier}" => "$item{text}" }}
+          | <error>
+
+interface: 'interface' <commit> identifier '{' definition(s?) '}' 
+          {{
+                       "TYPE" => "INTERFACE", 
+		       "NAME" => $item{identifier},
+		       "DATA" => $item[5]
+          }}
+          | <error?>
+
+definition : typedef { $item[1] }
+             | function { $item[1] }
+             | const { $item[1] }
+
+const : 'const' <commit> identifier identifier '=' anytext ';' 
+        {{
+                     "TYPE"  => "CONST", 
+		     "DTYPE"  => $item[3],
+		     "NAME"  => $item[4],
+		     "VALUE" => $item{anytext}
+        }}
+        | <error?>
+
+typedef : 'typedef' <commit> type identifier array_len(?) ';' 
+        {{
+                     "TYPE" => "TYPEDEF", 
+		     "NAME" => $item{identifier},
+		     "DATA" => $item{type},
+		     "ARRAY_LEN" => $item[5][0]
+        }}
+        | <error?>
+
+enum: 'enum' <commit> '{' enum_element(s? /,/) '}' 
+        {{
+                     "TYPE" => "ENUM", 
+		     "ELEMENTS" => $item[4]
+        }}
+      | <error?>
+
+enum_element: /[\w\s=]+/
+
+struct: property_list(s?) 'struct' <commit> '{' element_list1(?) '}' 
+        {{
+                     "TYPE" => "STRUCT", 
+		     "PROPERTIES" => util::FlattenArray($item[1]),
+		     "ELEMENTS" => util::FlattenArray2($item[5])
+        }}
+      | <error?>
+
+union: property_list(s?) 'union' <commit> '{' union_element(s?) '}' 
+	 {{
+		"TYPE" => "UNION",
+		"PROPERTIES" => util::FlattenArray($item[1]),
+		"DATA" => $item[5]
+	 }}
+	 | <error?>
+
+union_element: 
+         '[' 'case' '(' identifier ')' ']' base_element ';'
+	 {{
+		"TYPE" => "UNION_ELEMENT",
+		"CASE" => $item{identifier},
+		"DATA" => $item{base_element}
+	 }}
+         | '[' 'case' '(' identifier ')' ']' ';'
+	 {{
+		"TYPE" => "EMPTY",
+		"CASE" => $item{identifier},
+	 }}
+         | '[' 'default' ']' base_element ';'
+	 {{
+		"TYPE" => "UNION_ELEMENT",
+		"CASE" => "default",
+		"DATA" => $item{base_element}
+	 }}
+         | '[' 'default' ']' ';'
+	 {{
+		"TYPE" => "EMPTY",
+		"CASE" => "default",
+	 }}
+
+base_element: property_list(s?) type pointer(s?) identifier array_len(?) 
+	      {{
+			   "NAME" => $item{identifier},
+			   "TYPE" => $item{type},
+			   "PROPERTIES" => util::FlattenArray($item[1]),
+			   "POINTERS" => $#{$item[3]}==-1?undef:$#{$item[3]}+1,
+			   "ARRAY_LEN" => $item[5][0]
+              }}
+            | <error>
+
+array_len: 
+	 '[' ']'
+	 { "*" }
+	 | '[' '*' ']'
+	 { "*" }
+	 | '[' <commit> anytext ']' 
+         { "$item{anytext}" }
+         | <error?>
+
+element_list1: base_element(s? /;/) ';' 
+	       { $item[1] }
+
+element_list2: 'void' 
+         | base_element(s? /,/)
+         { $item[1] }
+
+pointer: '*'
+
+property_list: '[' <commit> property(s /,/) ']' 
+	      { $item[3] }
+             | <error?>
+
+property: 'unique' 
+	  | 'in'
+	  | 'out'
+	  | 'ref'
+	  | 'public'
+	  | 'noprint'
+	  | 'relative'	  
+	  | 'nodiscriminant'
+          | 'subcontext' '(' constant ')' {{ "$item[1]" => "$item{constant}" }}
+          | 'flag' '(' anytext ')' {{ "$item[1]" => "$item{anytext}" }}
+          | 'size_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
+          | 'length_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
+          | 'switch_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
+          | 'value' '(' anytext ')' {{ "$item[1]" => "$item{anytext}" }}
+
+identifier: /[\w?]+/
+
+expression: /[\w.?\/+*-_]+/
+
+function : property_list(s?) type identifier '(' <commit> element_list2 ');' 
+	 {{
+		"TYPE" => "FUNCTION",
+		"NAME" => $item{identifier},
+		"RETURN_TYPE" => $item{type},
+		"PROPERTIES" => util::FlattenArray($item[1]),
+		"DATA" => $item{element_list2}
+	 }}
+         | <error?>
+
+type : 
+       struct    { $item[1] }
+     | union     { $item[1] }
+     | enum      { $item[1] }
+     | identifier { $item[1] }
+     | <error>
+
+text: /[\w\s\..?-]*/
+
+text2: /[\|\w\s,\*&\>"\/\..?-]*/
+
+anytext: text2 '(' <commit> anytext ')' anytext
+	 {{ "$item[1]($item[4])$item[6]" }}
+	 | text2 '+' anytext 
+	 {{ "$item[1]+$item[3]" }}
+	 | text2
+
+constant: /-?[\dx]+/
+	  | '*'
+

@@ -20,11 +20,6 @@
 
 #include "includes.h"
 
-#ifndef MAP_FAILED
-#define MAP_FAILED ((void *)-1)
-#endif
-
-
 static int gotalarm;
 
 /***************************************************************
@@ -114,76 +109,6 @@ BOOL file_unlock(int fd, int *plock_depth)
   return ret;
 }
 
-/***************************************************************
- locks a file for enumeration / modification.
- update to be set = True if modification is required.
-****************************************************************/
-
-void *startfilepwent(char *pfile, char *s_readbuf, int bufsize,
-				int *file_lock_depth, BOOL update)
-{
-  FILE *fp = NULL;
-
-  if (!*pfile)
- {
-    DEBUG(0, ("startfilepwent: No file set\n"));
-    return (NULL);
-  }
-  DEBUG(10, ("startfilepwent: opening file %s\n", pfile));
-
-  fp = sys_fopen(pfile, update ? "r+b" : "rb");
-
-  if (fp == NULL) {
-    DEBUG(0, ("startfilepwent: unable to open file %s\n", pfile));
-    return NULL;
-  }
-
-  /* Set a buffer to do more efficient reads */
-  setvbuf(fp, s_readbuf, _IOFBF, bufsize);
-
-  if (!file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 5, file_lock_depth))
-  {
-    DEBUG(0, ("startfilepwent: unable to lock file %s\n", pfile));
-    fclose(fp);
-    return NULL;
-  }
-
-  /* Make sure it is only rw by the owner */
-  chmod(pfile, 0600);
-
-  /* We have a lock on the file. */
-  return (void *)fp;
-}
-
-/***************************************************************
- End enumeration of the file.
-****************************************************************/
-void endfilepwent(void *vp, int *file_lock_depth)
-{
-  FILE *fp = (FILE *)vp;
-
-  file_unlock(fileno(fp), file_lock_depth);
-  fclose(fp);
-  DEBUG(7, ("endfilepwent: closed file.\n"));
-}
-
-/*************************************************************************
- Return the current position in the file list as an SMB_BIG_UINT.
- This must be treated as an opaque token.
-*************************************************************************/
-SMB_BIG_UINT getfilepwpos(void *vp)
-{
-  return (SMB_BIG_UINT)sys_ftell((FILE *)vp);
-}
-
-/*************************************************************************
- Set the current position in the file list from an SMB_BIG_UINT.
- This must be treated as an opaque token.
-*************************************************************************/
-BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok)
-{
-  return !sys_fseek((FILE *)vp, (SMB_OFF_T)tok, SEEK_SET);
-}
 
 /*************************************************************************
  gets a line out of a file.
@@ -460,8 +385,8 @@ void *map_file(char *fname, size_t size)
 		p = file_load(fname, &s2);
 		if (!p) return NULL;
 		if (s2 != size) {
-			DEBUG(1,("incorrect size for %s - got %lu expected %lu\n",
-				 fname, (unsigned long)s2, (unsigned long)size));
+			DEBUG(1,("incorrect size for %s - got %d expected %d\n",
+				 fname, s2, size));
 			if (p) free(p);
 			return NULL;
 		}

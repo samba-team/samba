@@ -41,7 +41,6 @@ struct user_auth_info {
 	pstring password;
 	BOOL got_pass;
 	BOOL use_kerberos;
-	int signing_state;
 };
 
 extern struct user_auth_info cmdline_auth_info;

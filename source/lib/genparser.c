@@ -22,17 +22,6 @@
 
 #include "includes.h"
 
-/* see if a range of memory is all zero. Used to prevent dumping of zero elements */
-static int all_zero(const char *ptr, unsigned size)
-{
-	int i;
-	if (!ptr) return 1;
-	for (i=0;i<size;i++) {
-		if (ptr[i]) return 0;
-	}
-	return 1;
-}
-
 /* encode a buffer of bytes into a escaped string */
 static char *encode_bytes(TALLOC_CTX *mem_ctx, const char *ptr, unsigned len)
 {
@@ -46,7 +35,7 @@ static char *encode_bytes(TALLOC_CTX *mem_ctx, const char *ptr, unsigned len)
 		    (ispunct(ptr[i]) && !strchr("\\{}", ptr[i]))) {
 			*p++ = ptr[i];
 		} else {
-			unsigned char c = *(unsigned char *)(ptr+i);
+			unsigned char c = *(const unsigned char *)(ptr+i);
 			if (c == 0 && all_zero(ptr+i, len-i)) break;
 			p[0] = '\\';
 			p[1] = hexdig[c>>4];
@@ -202,7 +191,7 @@ int gen_dump_enum(TALLOC_CTX *mem_ctx,
 		  const char *ptr,
 		  unsigned indent)
 {
-	unsigned v = *(unsigned *)ptr;
+	unsigned v = *(const unsigned *)ptr;
 	int i;
 	for (i=0;einfo[i].name;i++) {
 		if (v == einfo[i].value) {
@@ -256,6 +245,7 @@ static int gen_dump_array(TALLOC_CTX *mem_ctx,
 		    addstr(mem_ctx, p, "}\n")) {
 			return -1;
 		}
+		free(s);
 		return 0;
 	}
 
@@ -320,9 +310,9 @@ static int find_var(const struct parse_struct *pinfo,
 
 	switch (pinfo[i].size) {
 	case sizeof(int):
-		return *(int *)ptr;
+		return *(const int *)ptr;
 	case sizeof(char):
-		return *(char *)ptr;
+		return *(const char *)ptr;
 	}
 
 	return -1;
@@ -351,7 +341,7 @@ static int gen_dump_string(TALLOC_CTX *mem_ctx,
 			   const char *data, 
 			   unsigned indent)
 {
-	const char *ptr = *(char **)data;
+	const char *ptr = *(const char **)data;
 	char *s = encode_bytes(mem_ctx, ptr, strlen(ptr));
 	if (addtabbed(mem_ctx, p, pinfo->name, indent) ||
 	    addstr(mem_ctx, p, " = ") ||
@@ -432,13 +422,13 @@ char *gen_dump(TALLOC_CTX *mem_ctx,
 			}
 			if (len > 0) {
 				if (pinfo[i].flags & FLAG_NULLTERM) {
-					len = len_nullterm(*(char **)ptr, 
+					len = len_nullterm(*(const char **)ptr, 
 							   pinfo[i].size, len);
 				}
 				p2.ptr_count--;
 				p2.dynamic_len = NULL;
 				if (gen_dump_array(mem_ctx, &p, &p2,
-						   *(char **)ptr, 
+						   *(const char **)ptr, 
 						   len, indent) != 0) {
 					goto failed;
 				}
@@ -672,7 +662,7 @@ int gen_parse(TALLOC_CTX *mem_ctx, const struct parse_struct *pinfo, char *data,
 {
 	char *str, *s0;
 	
-	s0 = talloc_strdup(mem_ctx, s);
+	s0 = strdup(s);
 	str = s0;
 
 	while (*str) {
@@ -705,10 +695,12 @@ int gen_parse(TALLOC_CTX *mem_ctx, const struct parse_struct *pinfo, char *data,
 		*str++ = 0;
 		
 		if (gen_parse_one(mem_ctx, pinfo, name, data, value) != 0) {
+			free(s0);
 			return -1;
 		}
 	}
 
+	free(s0);
 	return 0;
 }
 

@@ -59,7 +59,8 @@ NTSTATUS check_plaintext_password(const char *smb_name, DATA_BLOB plaintext_pass
 	return nt_status;
 }
 
-static NTSTATUS pass_check_smb(const char *smb_name,
+static NTSTATUS pass_check_smb(struct server_context *smb,
+			       const char *smb_name,
 			       const char *domain, 
 			       DATA_BLOB lm_pwd,
 			       DATA_BLOB nt_pwd,
@@ -68,7 +69,6 @@ static NTSTATUS pass_check_smb(const char *smb_name,
 
 {
 	NTSTATUS nt_status;
-	extern struct auth_context *negprot_global_auth_context;
 	auth_serversupplied_info *server_info = NULL;
 	if (encrypted) {		
 		auth_usersupplied_info *user_info = NULL;
@@ -76,7 +76,7 @@ static NTSTATUS pass_check_smb(const char *smb_name,
 					     domain,
 					     lm_pwd, 
 					     nt_pwd);
-		nt_status = negprot_global_auth_context->check_ntlm_password(negprot_global_auth_context, 
+		nt_status = smb->negotiate.auth_context->check_ntlm_password(smb->negotiate.auth_context, 
 									     user_info, &server_info);
 		free_user_info(&user_info);
 	} else {
@@ -90,33 +90,33 @@ static NTSTATUS pass_check_smb(const char *smb_name,
 check if a username/password pair is ok via the auth subsystem.
 return True if the password is correct, False otherwise
 ****************************************************************************/
-BOOL password_ok(char *smb_name, DATA_BLOB password_blob)
+BOOL password_ok(struct server_context *smb, const char *smb_name, DATA_BLOB password_blob)
 {
 
 	DATA_BLOB null_password = data_blob(NULL, 0);
-	extern BOOL global_encrypted_passwords_negotiated;
-	BOOL encrypted = (global_encrypted_passwords_negotiated && password_blob.length == 24);
-	
+	BOOL encrypted = (smb->negotiate.encrypted_passwords && password_blob.length == 24);
+	NTSTATUS status;
+
 	if (encrypted) {
 		/* 
 		 * The password could be either NTLM or plain LM.  Try NTLM first, 
 		 * but fall-through as required.
 		 * NTLMv2 makes no sense here.
 		 */
-		if (NT_STATUS_IS_OK(pass_check_smb(smb_name, lp_workgroup(), null_password, password_blob, null_password, encrypted))) {
+		status = pass_check_smb(smb, smb_name, lp_workgroup(), null_password, 
+					password_blob, null_password, encrypted);
+		if (NT_STATUS_IS_OK(status)) {
 			return True;
 		}
 		
-		if (NT_STATUS_IS_OK(pass_check_smb(smb_name, lp_workgroup(), password_blob, null_password, null_password, encrypted))) {
-			return True;
-		}
+		status = pass_check_smb(smb, smb_name, lp_workgroup(), password_blob, 
+					null_password, null_password, encrypted);
 	} else {
-		if (NT_STATUS_IS_OK(pass_check_smb(smb_name, lp_workgroup(), null_password, null_password, password_blob, encrypted))) {
-			return True;
-		}
+		status = pass_check_smb(smb, smb_name, lp_workgroup(), null_password, 
+					null_password, password_blob, encrypted);
 	}
 
-	return False;
+	return NT_STATUS_IS_OK(status);
 }
 
 

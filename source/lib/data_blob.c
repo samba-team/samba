@@ -61,24 +61,42 @@ DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 {
 	DATA_BLOB ret;
 
-	if (!length) {
+	if (length == 0) {
 		ZERO_STRUCT(ret);
 		return ret;
 	}
 
-	if (p) {
-		ret.data = talloc_memdup(mem_ctx, p, length);
-		if (ret.data == NULL)
-			smb_panic("data_blob_talloc: talloc_memdup failed.\n");
-	} else {
+	if (p == NULL) {
+		/* note that we do NOT zero memory in this case */
 		ret.data = talloc(mem_ctx, length);
-		if (ret.data == NULL)
-			smb_panic("data_blob_talloc: talloc failed.\n");
+		if (ret.data == NULL) {
+			smb_panic("data_blob_talloc: talloc_memdup failed.\n");
+		}
+		ret.length = length;
+		ret.free = NULL;
+		return ret;
+	}
+
+	ret.data = talloc_memdup(mem_ctx, p, length);
+	if (ret.data == NULL) {
+		smb_panic("data_blob_talloc: talloc_memdup failed.\n");
 	}
 
 	ret.length = length;
 	ret.free = NULL;
 	return ret;
+}
+
+/*******************************************************************
+ construct a zero data blob, using supplied TALLOC_CTX. 
+ use this sparingly as it initialises data - better to initialise
+ yourself if you want specific data in the blob
+*******************************************************************/
+DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t length)
+{
+	DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, length);
+	data_blob_clear(&blob);
+	return blob;
 }
 
 /*******************************************************************
@@ -97,7 +115,7 @@ void data_blob_free(DATA_BLOB *d)
 /*******************************************************************
 clear a DATA_BLOB's contents
 *******************************************************************/
-static void data_blob_clear(DATA_BLOB *d)
+void data_blob_clear(DATA_BLOB *d)
 {
 	if (d->data) {
 		memset(d->data, 0, d->length);
@@ -111,5 +129,26 @@ void data_blob_clear_free(DATA_BLOB *d)
 {
 	data_blob_clear(d);
 	data_blob_free(d);
+}
+
+
+/*******************************************************************
+check if two data blobs are equal
+*******************************************************************/
+BOOL data_blob_equal(const DATA_BLOB *d1, const DATA_BLOB *d2)
+{
+	if (d1->length != d2->length) {
+		return False;
+	}
+	if (d1->data == d2->data) {
+		return True;
+	}
+	if (d1->data == NULL || d2->data == NULL) {
+		return False;
+	}
+	if (memcmp(d1->data, d2->data, d1->length) == 0) {
+		return True;
+	}
+	return False;
 }
 

@@ -17,8 +17,8 @@
 #      SAMBA_VERSION_RELEASE=0                         #
 #  ->  "3.0.0"                                         #
 ########################################################
-SAMBA_VERSION_MAJOR=3
-SAMBA_VERSION_MINOR=1
+SAMBA_VERSION_MAJOR=4
+SAMBA_VERSION_MINOR=0
 SAMBA_VERSION_RELEASE=0
 
 ########################################################
@@ -71,7 +71,7 @@ SAMBA_VERSION_BETA_RELEASE=
 # e.g. SAMBA_VERSION_ALPHA_RELEASE=1                   #
 #  ->  "4.0.0alpha1"                                   #
 ########################################################
-SAMBA_VERSION_ALPHA_RELEASE=1
+SAMBA_VERSION_ALPHA_RELEASE=
 
 ########################################################
 # For 'test' releases the version will be              #
@@ -81,7 +81,7 @@ SAMBA_VERSION_ALPHA_RELEASE=1
 # e.g. SAMBA_VERSION_TEST_RELEASE=1                    #
 #  ->  "4.0.0test1"                                    #
 ########################################################
-SAMBA_VERSION_TEST_RELEASE=
+SAMBA_VERSION_TEST_RELEASE=1
 
 ########################################################
 # To mark CVS snapshots this should be set to 'yes'    #

@@ -26,9 +26,7 @@
 */
 #define SECRETS_MACHINE_ACCT_PASS "SECRETS/$MACHINE.ACC"
 #define SECRETS_MACHINE_PASSWORD "SECRETS/MACHINE_PASSWORD"
-#define SECRETS_MACHINE_LAST_CHANGE_TIME "SECRETS/MACHINE_LAST_CHANGE_TIME"
-#define SECRETS_MACHINE_SEC_CHANNEL_TYPE "SECRETS/MACHINE_SEC_CHANNEL_TYPE"
-#define SECRETS_MACHINE_TRUST_ACCOUNT_NAME "SECRETS/SECRETS_MACHINE_TRUST_ACCOUNT_NAME"
+
 /* this one is for storing trusted domain account password */
 #define SECRETS_DOMTRUST_ACCT_PASS "SECRETS/$DOMTRUST.ACC"
 
@@ -49,13 +47,6 @@
 #define SECRETS_AUTH_DOMAIN      "SECRETS/AUTH_DOMAIN"
 #define SECRETS_AUTH_PASSWORD  "SECRETS/AUTH_PASSWORD"
 
-/* Trust password type flags */
-#define PASS_MACHINE_TRUST_NT       0x0001
-#define PASS_SERVER_TRUST_NT        0x0002
-#define PASS_DOMAIN_TRUST_NT        0x0004
-#define PASS_MACHINE_TRUST_ADS      0x0008
-#define PASS_DOMAIN_TRUST_ADS       0x0010
-
 /* structure for storing machine account password
    (ie. when samba server is member of a domain */
 struct machine_acct_pass {
@@ -66,14 +57,14 @@ struct machine_acct_pass {
 /*
  * storage structure for trusted domain
  */
-typedef struct trusted_dom_pass {
+struct trusted_dom_pass {
 	size_t uni_name_len;
 	smb_ucs2_t uni_name[32]; /* unicode domain name */
 	size_t pass_len;
 	fstring pass;		/* trust relationship's password */
 	time_t mod_time;
 	DOM_SID domain_sid;	/* remote domain's sid */
-} TRUSTED_DOM_PASS;
+};
 
 /*
  * trusted domain entry/entries returned by secrets_get_trusted_domains
@@ -84,22 +75,5 @@ typedef struct trustdom {
 	DOM_SID sid;
 } TRUSTDOM;
 
-/*
- * Format of an OpenAFS keyfile
- */
-
-#define SECRETS_AFS_MAXKEYS 8
-
-struct afs_key {
-	uint32 kvno;
-	char key[8];
-};
-
-struct afs_keyfile {
-	uint32 nkeys;
-	struct afs_key entry[SECRETS_AFS_MAXKEYS];
-};
-
-#define SECRETS_AFS_KEYFILE "SECRETS/AFS_KEYFILE"
 
 #endif /* _SECRETS_H */

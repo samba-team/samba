@@ -18,8 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 static fstring password;
@@ -173,11 +171,11 @@ static struct cli_state *connect_one(char *share)
 		}
 	}
 
-	slprintf(myname,sizeof(myname), "lock-%lu-%u", (unsigned long)getpid(), count++);
+	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), count++);
 
 	nt_status = cli_full_connection(&c, myname, server_n, NULL, 0, share, "?????", 
 					username, lp_workgroup(), password, 0,
-					Undefined, NULL);
+					NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("cli_full_connection failed with error %s\n", nt_errstr(nt_status)));
@@ -495,7 +493,7 @@ static void usage(void)
 	all_string_sub(share1,"/","\\",0);
 	all_string_sub(share2,"/","\\",0);
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	argc -= 4;
 	argv += 4;

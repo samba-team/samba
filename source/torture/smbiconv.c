@@ -23,8 +23,7 @@
 
 #include "includes.h"
 
-static int
-process_block (smb_iconv_t cd, const char *addr, size_t len, FILE *output)
+static int process_block (smb_iconv_t cd, const char *addr, size_t len, FILE *output)
 {
 #define OUTBUF_SIZE	32768
   const char *start = addr;
@@ -85,8 +84,7 @@ incomplete character or shift sequence at end of buffer"));
 }
 
 
-static int
-process_fd (iconv_t cd, int fd, FILE *output)
+static int process_fd (iconv_t cd, int fd, FILE *output)
 {
   /* we have a problem with reading from a descriptor since we must not
      provide the iconv() function an incomplete character or shift
@@ -185,7 +183,6 @@ int main(int argc, char *argv[])
 		{ "to-code", 't', POPT_ARG_STRING, &to, 0, "Encoding for output" },
 		{ "output", 'o', POPT_ARG_STRING, &output, 0, "Write output to this file" },
 		{ "preload-modules", 'p', POPT_ARG_STRING, &preload_modules[0], 0, "Modules to load" },
-		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
 

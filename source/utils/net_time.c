@@ -38,7 +38,7 @@ static time_t cli_servertime(const char *host, struct in_addr *ip, int *zone)
 		goto done;
 	}
 
-	make_nmb_name(&calling, global_myname(), 0x0);
+	make_nmb_name(&calling, lp_netbios_name(), 0x0);
 	if (host) {
 		make_nmb_name(&called, host, 0x20);
 	} else {
@@ -71,12 +71,12 @@ static time_t nettime(int *zone)
 /* return a time as a string ready to be passed to /bin/date */
 static char *systime(time_t t)
 {
-	static fstring s;
+	static char s[100];
 	struct tm *tm;
 
 	tm = localtime(&t);
 	
-	fstr_sprintf(s, "%02d%02d%02d%02d%04d.%02d", 
+	snprintf(s, sizeof(s), "%02d%02d%02d%02d%04d.%02d", 
 		 tm->tm_mon+1, tm->tm_mday, tm->tm_hour, 
 		 tm->tm_min, tm->tm_year + 1900, tm->tm_sec);
 	return s;

@@ -31,8 +31,8 @@
 
 struct sync_record {
 	struct sync_record *next, *prev;
-	unstring workgroup;
-	unstring server;
+	fstring workgroup;
+	fstring server;
 	pstring fname;
 	struct in_addr ip;
 	pid_t pid;
@@ -47,7 +47,6 @@ static XFILE *fp;
   This is the NetServerEnum callback.
   Note sname and comment are in UNIX codepage format.
   ******************************************************************/
-
 static void callback(const char *sname, uint32 stype, 
                      const char *comment, void *state)
 {
@@ -59,7 +58,6 @@ static void callback(const char *sname, uint32 stype,
   Log in on the remote server's SMB port to their IPC$ service,
   do a NetServerEnum and record the results in fname
 ******************************************************************/
-
 static void sync_child(char *name, int nm_type, 
 		       char *workgroup,
 		       struct in_addr ip, BOOL local, BOOL servers,
@@ -80,9 +78,10 @@ static void sync_child(char *name, int nm_type,
 	}
 
 	make_nmb_name(&calling, local_machine, 0x0);
-	make_nmb_name(&called , name, nm_type);
+	make_nmb_name(&called , name         , nm_type);
 
-	if (!cli_session_request(&cli, &calling, &called)) {
+	if (!cli_session_request(&cli, &calling, &called))
+	{
 		cli_shutdown(&cli);
 		return;
 	}
@@ -121,12 +120,12 @@ static void sync_child(char *name, int nm_type,
 	cli_shutdown(&cli);
 }
 
+
 /*******************************************************************
   initialise a browse sync with another browse server.  Log in on the
   remote server's SMB port to their IPC$ service, do a NetServerEnum
   and record the results
 ******************************************************************/
-
 void sync_browse_lists(struct work_record *work,
 		       char *name, int nm_type, 
 		       struct in_addr ip, BOOL local, BOOL servers)
@@ -148,8 +147,8 @@ done:
 
 	ZERO_STRUCTP(s);
 	
-	unstrcpy(s->workgroup, work->work_group);
-	unstrcpy(s->server, name);
+	fstrcpy(s->workgroup, work->work_group);
+	fstrcpy(s->server, name);
 	s->ip = ip;
 
 	slprintf(s->fname, sizeof(pstring)-1,
@@ -183,9 +182,8 @@ done:
 }
 
 /**********************************************************************
- Handle one line from a completed sync file.
+handle one line from a completed sync file
  **********************************************************************/
-
 static void complete_one(struct sync_record *s, 
 			 char *sname, uint32 stype, char *comment)
 {
@@ -206,7 +204,8 @@ static void complete_one(struct sync_record *s,
 							  sname, lp_max_ttl());
 			if (work) {
 				/* remember who the master is */
-				unstrcpy(work->local_master_browser_name, comment);
+				fstrcpy(work->local_master_browser_name, 
+					comment);
 			}
 		}
 		return;
@@ -236,14 +235,14 @@ static void complete_one(struct sync_record *s,
 	create_server_on_workgroup(work, sname,stype, lp_max_ttl(), comment);
 }
 		
-/**********************************************************************
- Read the completed sync info.
-**********************************************************************/
 
+/**********************************************************************
+read the completed sync info
+ **********************************************************************/
 static void complete_sync(struct sync_record *s)
 {
 	XFILE *f;
-	unstring server, type_str;
+	fstring server, type_str;
 	unsigned type;
 	pstring comment;
 	pstring line;
@@ -252,13 +251,11 @@ static void complete_sync(struct sync_record *s)
 
 	f = x_fopen(s->fname,O_RDONLY, 0);
 
-	if (!f)
-		return;
+	if (!f) return;
 	
 	while (!x_feof(f)) {
 		
-		if (!fgets_slash(line,sizeof(pstring),f))
-			continue;
+		if (!fgets_slash(line,sizeof(pstring),f)) continue;
 		
 		ptr = line;
 
@@ -284,9 +281,8 @@ static void complete_sync(struct sync_record *s)
 }
 
 /**********************************************************************
- Check for completion of any of the child processes.
-**********************************************************************/
-
+check for completion of any of the child processes
+ **********************************************************************/
 void sync_check_completion(void)
 {
 	struct sync_record *s, *next;

@@ -172,7 +172,7 @@ static int do_reseed(BOOL use_fd, int fd)
 	 */
 
 	GetTimeOfDay(&tval);
-	mypid = sys_getpid();
+	mypid = getpid();
 	v1 = (counter++) + mypid + tval.tv_sec;
 	v2 = (counter++) * mypid + tval.tv_usec;
 

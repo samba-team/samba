@@ -168,4 +168,8 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define ALIGN4(p,base) ((p) + ((4 - (PTR_DIFF((p), (base)) & 3)) & 3))
 #define ALIGN2(p,base) ((p) + ((2 - (PTR_DIFF((p), (base)) & 1)) & 1))
 
+
+/* macros for accessing SMB protocol elements */
+#define VWV(vwv) ((vwv)*2)
+
 #endif /* _BYTEORDER_H */

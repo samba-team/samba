@@ -36,44 +36,93 @@ if test $ac_cv_dirent_d_off = yes; then
 fi
 ])
 
+dnl Specify the default build method of this module 
+dnl SMB_MODULE_DEFAULT(1:name,2:default_build)
+AC_DEFUN(SMB_MODULE_DEFAULT,
+[
+	dnl Fall back to static if dlopen() is not available
+	[MODULE_DEFAULT_][$1]=$2
+
+	if test x"$[MODULE_DEFAULT_][$1]" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
+		[MODULE_DEFAULT_][$1]=STATIC
+	fi
+])
+
 dnl Mark specified module as shared
-dnl SMB_MODULE(name,static_files,shared_files,subsystem,whatif-static,whatif-shared)
+dnl SMB_MODULE(1:name,2:subsystem,3:default_build,4:object_files,5:private_proto_file,6:libs,7:whatif-static,8:whatif-shared,9:whatif-not)
 AC_DEFUN(SMB_MODULE,
 [
 	AC_MSG_CHECKING([how to build $1])
+	if test -z "$[MODULE_DEFAULT_][$1]"; then
+		[MODULE_DEFAULT_][$1]=$3
+
+		if test x"$[MODULE_DEFAULT_][$1]" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
+			[MODULE_DEFAULT_][$1]=STATIC
+		fi
+	fi
+
 	if test "$[MODULE_][$1]"; then
 		DEST=$[MODULE_][$1]
-	elif test "$[MODULE_]translit([$4], [A-Z], [a-z])" -a "$[MODULE_DEFAULT_][$1]"; then
-		DEST=$[MODULE_]translit([$4], [A-Z], [a-z])
+	elif test "$[MODULE_]translit([$2], [A-Z], [a-z])" -a x"$[MODULE_DEFAULT_][$1]" != xNOT; then
+		DEST=$[MODULE_]translit([$2], [A-Z], [a-z])
 	else
 		DEST=$[MODULE_DEFAULT_][$1]
 	fi
-	
+
 	if test x"$DEST" = xSHARED; then
 		AC_DEFINE([$1][_init], [init_module], [Whether to build $1 as shared module])
-		$4_MODULES="$$4_MODULES $3"
+		$2_MODULES="$$2_MODULES bin/$1.$SHLIBEXT"
+		[MODULE_][$1][_PROTO]="$5"
+		[MODULE_][$1][_LIBS]="$6"
 		AC_MSG_RESULT([shared])
-		[$6]
+		[$8]
 		string_shared_modules="$string_shared_modules $1"
 	elif test x"$DEST" = xSTATIC; then
-		[init_static_modules_]translit([$4], [A-Z], [a-z])="$[init_static_modules_]translit([$4], [A-Z], [a-z]) $1_init();"
+		[init_static_modules_]translit([$2], [A-Z], [a-z])="$[init_static_modules_]translit([$2], [A-Z], [a-z]) $1_init();"
 		string_static_modules="$string_static_modules $1"
-		$4_STATIC="$$4_STATIC $2"
-		AC_SUBST($4_STATIC)
-		[$5]
+		[MODULE_][$1][_PROTO]="$5"
+		$2_STATIC="$$2_STATIC $4"
+		$2_LIBS="$$2_LIBS $6"
+		[$7]
 		AC_MSG_RESULT([static])
 	else
-	    string_ignored_modules="$string_ignored_modules $1"
+	    	string_ignored_modules="$string_ignored_modules $1"
+	    	[$9]
 		AC_MSG_RESULT([not])
 	fi
 ])
 
+dnl SMB_SUBSYSTEM(1:name,2:init_objectfile,3:extra_objectfiles,4:public_proto_header,5:private_proto_header,6:libs)
 AC_DEFUN(SMB_SUBSYSTEM,
 [
+	dnl the core object files of the subsystem
+	$1_BASE="$2 $3"
+	AC_SUBST($1_BASE)
+
+	dnl the staticly linked modules of the subsystem
 	AC_SUBST($1_STATIC)
+
+	dnl all object files of the subsystem
+	$1_OBJS="$$1_BASE $$1_STATIC"
+	AC_SUBST($1_OBJS)
+
+	dnl the libs required by the subsystem
+	$1_LIBS="$6 $$1_LIBS"
+	AC_SUBST($1_LIBS)
+
+	dnl the shared objects modules of the subsystem
 	AC_SUBST($1_MODULES)
+
+	dnl the public_prototype_header file
+	$1_PUBLIC_HEADER="$4"
+	AC_SUBST($1_PUBLIC_PROTO)
+
+	dnl the private_prototype_header file
+	$1_PRIVATE_HEADER="$5"
+	AC_SUBST($1_PRIVATE_PROTO)
+
 	AC_DEFINE_UNQUOTED([static_init_]translit([$1], [A-Z], [a-z]), [{$init_static_modules_]translit([$1], [A-Z], [a-z])[}], [Static init functions])
-    	ifelse([$2], , :, [rm -f $2])
+	ifelse([$2], , :, [rm -f $2])
 ])
 
 dnl AC_PROG_CC_FLAG(flag)
@@ -484,51 +533,6 @@ AC_ARG_WITH(mysql-exec-prefix,[  --with-mysql-exec-prefix=PFX Exec prefix where 
   AC_SUBST(MYSQL_LIBS)
 ])
 
-# =========================================================================
-# AM_PATH_PGSQL : pgSQL library
-
-dnl AM_PATH_PGSQL([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
-dnl Test for PGSQL, and define PGSQL_CFLAGS and PGSQL_LIBS
-dnl
-AC_DEFUN(AM_PATH_PGSQL,
-[dnl
-dnl Get the cflags and libraries from the pg_config script
-dnl
-AC_ARG_WITH(pgsql-prefix,[  --with-pgsql-prefix=PFX   Prefix where PostgreSQL is installed (optional)],
-            pgsql_prefix="$withval", pgsql_prefix="")
-AC_ARG_WITH(pgsql-exec-prefix,[  --with-pgsql-exec-prefix=PFX Exec prefix where PostgreSQL is installed (optional)],
-            pgsql_exec_prefix="$withval", pgsql_exec_prefix="")
-
-  if test x$pgsql_exec_prefix != x ; then
-     if test x${PGSQL_CONFIG+set} != xset ; then
-        PGSQL_CONFIG=$pgsql_exec_prefix/bin/pg_config
-     fi
-  fi
-  if test x$pgsql_prefix != x ; then
-     if test x${PGSQL_CONFIG+set} != xset ; then
-        PGSQL_CONFIG=$pgsql_prefix/bin/pg_config
-     fi
-  fi
-
-  AC_REQUIRE([AC_CANONICAL_TARGET])
-  AC_PATH_PROG(PGSQL_CONFIG, pg_config, no, [$PATH:/usr/lib/postgresql/bin])
-  AC_MSG_CHECKING(for PGSQL)
-  no_pgsql=""
-  if test "$PGSQL_CONFIG" = "no" ; then
-    PGSQL_CFLAGS=""
-    PGSQL_LIBS=""
-    AC_MSG_RESULT(no)
-     ifelse([$2], , :, [$2])
-  else
-    PGSQL_CFLAGS=-I`$PGSQL_CONFIG --includedir`
-    PGSQL_LIBS="-lpq -L`$PGSQL_CONFIG --libdir`"
-    AC_MSG_RESULT(yes)
-    ifelse([$1], , :, [$1])
-  fi
-  AC_SUBST(PGSQL_CFLAGS)
-  AC_SUBST(PGSQL_LIBS)
-])
-
 dnl Removes -I/usr/include/? from given variable
 AC_DEFUN(CFLAGS_REMOVE_USR_INCLUDE,[
   ac_new_flags=""
@@ -561,111 +565,72 @@ AC_DEFUN(jm_ICONV,
   dnl those with the standalone portable libiconv installed).
   AC_MSG_CHECKING(for iconv in $1)
     jm_cv_func_iconv="no"
-    jm_cv_lib_iconv=""
+    jm_cv_lib_iconv=no
     jm_cv_giconv=no
-    jm_save_LIBS="$LIBS"
-    LIBS="$LIBS -lbiconv"
     AC_TRY_LINK([#include <stdlib.h>
-#include <biconv.h>],
-        [iconv_t cd = iconv_open("","");
-         iconv(cd,NULL,NULL,NULL,NULL);
-         iconv_close(cd);],
-      jm_cv_func_iconv=yes
-      jm_cv_biconv=yes
-      jm_cv_include="biconv.h"
-      jm_cv_lib_iconv="biconv")
-      LIBS="$jm_save_LIBS"
-
-    dnl Check for include in funny place but no lib needed
-    if test "$jm_cv_func_iconv" != yes; then 
-      AC_TRY_LINK([#include <stdlib.h>
 #include <giconv.h>],
+      [iconv_t cd = iconv_open("","");
+       iconv(cd,NULL,NULL,NULL,NULL);
+       iconv_close(cd);],
+      jm_cv_func_iconv=yes
+      jm_cv_giconv=yes)
+
+    if test "$jm_cv_func_iconv" != yes; then
+      AC_TRY_LINK([#include <stdlib.h>
+#include <iconv.h>],
         [iconv_t cd = iconv_open("","");
          iconv(cd,NULL,NULL,NULL,NULL);
          iconv_close(cd);],
-         jm_cv_func_iconv=yes
-         jm_cv_include="giconv.h"
-         jm_cv_giconv="yes"
-         jm_cv_lib_iconv="")
+        jm_cv_func_iconv=yes)
 
-      dnl Standard iconv.h include, lib in glibc or libc ...
+        if test "$jm_cv_lib_iconv" != yes; then
+          jm_save_LIBS="$LIBS"
+          LIBS="$LIBS -lgiconv"
+          AC_TRY_LINK([#include <stdlib.h>
+#include <giconv.h>],
+            [iconv_t cd = iconv_open("","");
+             iconv(cd,NULL,NULL,NULL,NULL);
+             iconv_close(cd);],
+            jm_cv_lib_iconv=yes
+            jm_cv_func_iconv=yes
+            jm_cv_giconv=yes)
+          LIBS="$jm_save_LIBS"
+
       if test "$jm_cv_func_iconv" != yes; then
+        jm_save_LIBS="$LIBS"
+        LIBS="$LIBS -liconv"
         AC_TRY_LINK([#include <stdlib.h>
 #include <iconv.h>],
           [iconv_t cd = iconv_open("","");
            iconv(cd,NULL,NULL,NULL,NULL);
            iconv_close(cd);],
-           jm_cv_include="iconv.h"
-           jm_cv_func_iconv=yes
-           jm_cv_lib_iconv="")
-
-          if test "$jm_cv_lib_iconv" != yes; then
-            jm_save_LIBS="$LIBS"
-            LIBS="$LIBS -lgiconv"
-            AC_TRY_LINK([#include <stdlib.h>
-#include <giconv.h>],
-              [iconv_t cd = iconv_open("","");
-               iconv(cd,NULL,NULL,NULL,NULL);
-               iconv_close(cd);],
-              jm_cv_lib_iconv=yes
-              jm_cv_func_iconv=yes
-              jm_cv_include="giconv.h"
-              jm_cv_giconv=yes
-              jm_cv_lib_iconv="giconv")
-
-           LIBS="$jm_save_LIBS"
-
-        if test "$jm_cv_func_iconv" != yes; then
-          jm_save_LIBS="$LIBS"
-          LIBS="$LIBS -liconv"
-          AC_TRY_LINK([#include <stdlib.h>
-#include <iconv.h>],
-            [iconv_t cd = iconv_open("","");
-             iconv(cd,NULL,NULL,NULL,NULL);
-             iconv_close(cd);],
-            jm_cv_include="iconv.h"
-            jm_cv_func_iconv=yes
-            jm_cv_lib_iconv="iconv")
-          LIBS="$jm_save_LIBS"
+          jm_cv_lib_iconv=yes
+          jm_cv_func_iconv=yes)
+        LIBS="$jm_save_LIBS"
         fi
       fi
     fi
-  fi
+
   if test "$jm_cv_func_iconv" = yes; then
     if test "$jm_cv_giconv" = yes; then
       AC_DEFINE(HAVE_GICONV, 1, [What header to include for iconv() function: giconv.h])
       AC_MSG_RESULT(yes)
       ICONV_FOUND=yes
     else
-      if test "$jm_cv_biconv" = yes; then
-        AC_DEFINE(HAVE_BICONV, 1, [What header to include for iconv() function: biconv.h])
-        AC_MSG_RESULT(yes)
-        ICONV_FOUND=yes
-      else 
-        AC_DEFINE(HAVE_ICONV, 1, [What header to include for iconv() function: iconv.h])
-        AC_MSG_RESULT(yes)
-        ICONV_FOUND=yes
-      fi
+      AC_DEFINE(HAVE_ICONV, 1, [What header to include for iconv() function: iconv.h])
+      AC_MSG_RESULT(yes)
+      ICONV_FOUND=yes
     fi
   else
     AC_MSG_RESULT(no)
   fi
-])
-
-AC_DEFUN(rjs_CHARSET,[
-  dnl Find out if we can convert from $1 to UCS2-LE
-  AC_MSG_CHECKING([can we convert from $1 to UCS2-LE?])
-  AC_TRY_RUN([
-#include <$jm_cv_include>
-main(){
-    iconv_t cd = iconv_open("$1", "UCS-2LE");
-    if (cd == 0 || cd == (iconv_t)-1) {
-	return -1;
-    }
-    return 0;
-}
-  ],ICONV_CHARSET=$1,ICONV_CHARSET=no,ICONV_CHARSET=cross)
-  AC_MSG_RESULT($ICONV_CHARSET)
+  if test "$jm_cv_lib_iconv" = yes; then
+    if test "$jm_cv_giconv" = yes; then
+      LIBS="$LIBS -lgiconv"
+    else
+      LIBS="$LIBS -liconv"
+    fi
+  fi
 ])
 
 dnl CFLAGS_ADD_DIR(CFLAGS, $INCDIR)
@@ -747,29 +712,3 @@ dnl AC_DISABLE_STATIC - set the default static flag to --disable-static
 AC_DEFUN([AC_DISABLE_STATIC],
 [AC_BEFORE([$0],[AC_LIBTOOL_SETUP])dnl
 AC_ENABLE_STATIC(no)])
-
-dnl AC_TRY_RUN_STRICT(PROGRAM,CFLAGS,CPPFLAGS,LDFLAGS,
-dnl		[ACTION-IF-TRUE],[ACTION-IF-FALSE],
-dnl		[ACTION-IF-CROSS-COMPILING = RUNTIME-ERROR])
-AC_DEFUN( [AC_TRY_RUN_STRICT],
-[
-	old_CFLAGS="$CFLAGS";
-	CFLAGS="$2";
-	export CFLAGS;
-	old_CPPFLAGS="$CPPFLAGS";
-	CPPFLAGS="$3";
-	export CPPFLAGS;
-	old_LDFLAGS="$LDFLAGS";
-	LDFLAGS="$4";
-	export LDFLAGS;
-	AC_TRY_RUN([$1],[$5],[$6],[$7]);
-	CFLAGS="$old_CFLAGS";
-	old_CFLAGS="";
-	export CFLAGS;
-	CPPFLAGS="$old_CPPFLAGS";
-	old_CPPFLAGS="";
-	export CPPFLAGS;
-	LDFLAGS="$old_LDFLAGS";
-	old_LDFLAGS="";
-	export LDFLAGS;
-])

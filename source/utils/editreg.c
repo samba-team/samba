@@ -1,4 +1,4 @@
-/*
+/* 
    Samba Unix/Linux SMB client utility editreg.c 
    Copyright (C) 2002 Richard Sharpe, rsharpe@richardsharpe.com
 
@@ -91,15 +91,10 @@ multiple of 8. Nigel
 If the size field is negative (bit 31 set), the corresponding block
 is free and has a size of -blocksize!
 
-That does not seem to be true. All block lengths seem to be negative! 
-(Richard Sharpe) 
+That does not seem to be true. All block lengths seem to be negative! (Richard Sharpe) 
 
 The data is stored as one record per block. Block size is a multiple
 of 4 and the last block reaches the next hbin-block, leaving no room.
-
-(That also seems incorrect, in that the block size if a multiple of 8.
-That is, the block, including the 4 byte header, is always a multiple of
-8 bytes. Richard Sharpe.)
 
 Records in the hbin-blocks
 ==========================
@@ -211,7 +206,7 @@ key-name you have to change the hash-value too!
 The "sk"-block
 ==============
 (due to the complexity of the SAM-info, not clear jet)
-(This is just a self-relative security descriptor in the data. R Sharpe.) 
+(This is just a security descriptor in the data. R Sharpe.) 
 
 
 Offset      Size      Contents
@@ -313,40 +308,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 #include <string.h>
 #include <fcntl.h>
 
-#define False 0
-#define True 1
-#define REG_KEY_LIST_SIZE 10
-
-/*
- * Structures for dealing with the on-disk format of the registry
- */
-
-#define IVAL(buf) ((unsigned int) \
-                   (unsigned int)*((unsigned char *)(buf)+3)<<24| \
-                   (unsigned int)*((unsigned char *)(buf)+2)<<16| \
-                   (unsigned int)*((unsigned char *)(buf)+1)<<8| \
-                   (unsigned int)*((unsigned char *)(buf)+0)) 
-
-#define SVAL(buf) ((unsigned short) \
-                   (unsigned short)*((unsigned char *)(buf)+1)<<8| \
-                   (unsigned short)*((unsigned char *)(buf)+0)) 
-
-#define CVAL(buf) ((unsigned char)*((unsigned char *)(buf)))
-
-#define SIVAL(buf, val) \
-            ((((unsigned char *)(buf))[0])=(unsigned char)((val)&0xFF),\
-             (((unsigned char *)(buf))[1])=(unsigned char)(((val)>>8)&0xFF),\
-             (((unsigned char *)(buf))[2])=(unsigned char)(((val)>>16)&0xFF),\
-             (((unsigned char *)(buf))[3])=(unsigned char)((val)>>24))
-
-#define SSVAL(buf, val) \
-            ((((unsigned char *)(buf))[0])=(unsigned char)((val)&0xFF),\
-             (((unsigned char *)(buf))[1])=(unsigned char)((val)>>8))
-
 static int verbose = 0;
-static int print_security = 0;
-static int full_print = 0;
-static const char *def_owner_sid_str = NULL;
 
 /* 
  * These definitions are for the in-memory registry structure.
@@ -370,8 +332,6 @@ typedef struct date_time_s {
 #define REG_SUB_KEY  2
 #define REG_SYM_LINK 3
 
-typedef struct key_sec_desc_s KEY_SEC_DESC;
-
 typedef struct reg_key_s {
   char *name;         /* Name of the key                    */
   char *class_name;
@@ -380,8 +340,7 @@ typedef struct reg_key_s {
   struct reg_key_s *owner;
   struct key_list_s *sub_keys;
   struct val_list_s *values;
-  KEY_SEC_DESC *security;
-  unsigned int offset;  /* Offset of the record in the file */
+  struct key_sec_desc_s *security;
 } REG_KEY;
 
 /*
@@ -390,7 +349,6 @@ typedef struct reg_key_s {
 
 typedef struct key_list_s {
   int key_count;
-  int max_keys;
   REG_KEY *keys[1];
 } KEY_LIST;
 
@@ -404,7 +362,6 @@ typedef struct val_key_s {
 
 typedef struct val_list_s {
   int val_count;
-  int max_vals;
   VAL_KEY *vals[1];
 } VAL_LIST;
 
@@ -412,16 +369,16 @@ typedef struct val_list_s {
 #define MAXSUBAUTHS 15
 #endif
 
-typedef struct sid_s {
+typedef struct dom_sid_s {
   unsigned char ver, auths;
   unsigned char auth[6];
   unsigned int sub_auths[MAXSUBAUTHS];
-} sid_t;
+} DOM_SID;
 
 typedef struct ace_struct_s {
   unsigned char type, flags;
   unsigned int perms;   /* Perhaps a better def is in order */
-  sid_t *trustee;
+  DOM_SID *trustee;
 } ACE; 
 
 typedef struct acl_struct_s {
@@ -432,26 +389,382 @@ typedef struct acl_struct_s {
 
 typedef struct sec_desc_s {
   unsigned int rev, type;
-  sid_t *owner, *group;
+  DOM_SID *owner, *group;
   ACL *sacl, *dacl;
 } SEC_DESC;
 
 #define SEC_DESC_NON 0
 #define SEC_DESC_RES 1
 #define SEC_DESC_OCU 2
-#define SEC_DESC_NBK 3
-typedef struct sk_struct SK_HDR;
-struct key_sec_desc_s {
+
+typedef struct key_sec_desc_s {
   struct key_sec_desc_s *prev, *next;
   int ref_cnt;
   int state;
-  int offset;
-  SK_HDR *sk_hdr;     /* This means we must keep the registry in memory */
   SEC_DESC *sec_desc;
-}; 
+} KEY_SEC_DESC; 
+
+
+/*
+ * An API for accessing/creating/destroying items above
+ */
+
+/*
+ * Iterate over the keys, depth first, calling a function for each key
+ * and indicating if it is terminal or non-terminal and if it has values.
+ *
+ * In addition, for each value in the list, call a value list function
+ */
+
+/*
+ * There should eventually be one to deal with security keys as well
+ */
+
+typedef int (*key_print_f)(const char *path, char *key_name, char *class_name, 
+			   int root, int terminal, int values);
+
+typedef int (*val_print_f)(const char *path, char *val_name, int val_type, 
+			   int data_len, void *data_blk, int terminal,
+			   int first, int last);
+
+typedef int (*sec_print_f)(SEC_DESC *sec_desc);
+
+typedef struct regf_struct_s REGF;
+
+int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, const char *path, 
+		    key_print_f key_print, sec_print_f sec_print,
+		    val_print_f val_print);
+
+int nt_val_list_iterator(REGF *regf, VAL_LIST *val_list, int bf, char *path,
+			 int terminal, val_print_f val_print)
+{
+  int i;
+
+  if (!val_list) return 1;
+
+  if (!val_print) return 1;
+
+  for (i=0; i<val_list->val_count; i++) {
+    if (!val_print(path, val_list->vals[i]->name, val_list->vals[i]->data_type,
+		   val_list->vals[i]->data_len, val_list->vals[i]->data_blk,
+		   terminal,
+		   (i == 0),
+		   (i == val_list->val_count))) {
+
+      return 0;
+
+    }
+  }
+
+  return 1;
+}
+
+int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, 
+			 const char *path,
+			 key_print_f key_print, sec_print_f sec_print, 
+			 val_print_f val_print)
+{
+  int i;
+
+  if (!key_list) return 1;
+
+  for (i=0; i< key_list->key_count; i++) {
+    if (!nt_key_iterator(regf, key_list->keys[i], bf, path, key_print, 
+			 sec_print, val_print)) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, const char *path,
+		    key_print_f key_print, sec_print_f sec_print,
+		    val_print_f val_print)
+{
+  int path_len = strlen(path);
+  char *new_path;
+
+  if (!regf || !key_tree)
+    return -1;
+
+  /* List the key first, then the values, then the sub-keys */
+
+  if (key_print) {
+
+    if (!(*key_print)(path, key_tree->name, 
+		      key_tree->class_name, 
+		      (key_tree->type == REG_ROOT_KEY),
+		      (key_tree->sub_keys == NULL),
+		      (key_tree->values?(key_tree->values->val_count):0)))
+      return 0;
+  }
+
+  /*
+   * If we have a security print routine, call it
+   * If the security print routine returns false, stop.
+   */
+  if (sec_print) {
+    if (key_tree->security && !(*sec_print)(key_tree->security->sec_desc))
+      return 0;
+  }
+
+  new_path = (char *)malloc(path_len + 1 + strlen(key_tree->name) + 1);
+  if (!new_path) return 0; /* Errors? */
+  new_path[0] = '\0';
+  strcat(new_path, path);
+  strcat(new_path, "\\");
+  strcat(new_path, key_tree->name);
+
+  /*
+   * Now, iterate through the values in the val_list 
+   */
+
+  if (key_tree->values &&
+      !nt_val_list_iterator(regf, key_tree->values, bf, new_path, 
+			    (key_tree->values!=NULL),
+			    val_print)) {
+
+    free(new_path);
+    return 0;
+  } 
+
+  /* 
+   * Now, iterate through the keys in the key list
+   */
+
+  if (key_tree->sub_keys && 
+      !nt_key_list_iterator(regf, key_tree->sub_keys, bf, new_path, key_print, 
+			    sec_print, val_print)) {
+    free(new_path);
+    return 0;
+  } 
+
+  free(new_path);
+  return 1;
+}
+
+/* Make, delete keys */
+
+int nt_delete_val_key(VAL_KEY *val_key)
+{
+
+  if (val_key) {
+    if (val_key->data_blk) free(val_key->data_blk);
+    free(val_key);
+  };
+  return 1;
+}
+
+int nt_delete_val_list(VAL_LIST *vl)
+{
+  int i;
+
+  if (vl) {
+    for (i=0; i<vl->val_count; i++)
+      nt_delete_val_key(vl->vals[i]);
+    free(vl);
+  }
+  return 1;
+}
+
+int nt_delete_reg_key(REG_KEY *key);
+int nt_delete_key_list(KEY_LIST *key_list)
+{
+  int i;
+
+  if (key_list) {
+    for (i=0; i<key_list->key_count; i++) 
+      nt_delete_reg_key(key_list->keys[i]);
+    free(key_list);
+  }
+  return 1;
+}
+
+int nt_delete_sid(DOM_SID *sid)
+{
+
+  if (sid) free(sid);
+  return 1;
+
+}
+
+int nt_delete_ace(ACE *ace)
+{
+
+  if (ace) {
+    nt_delete_sid(ace->trustee);
+    free(ace);
+  }
+  return 1;
+
+}
+
+int nt_delete_acl(ACL *acl)
+{
+
+  if (acl) {
+    int i;
+
+    for (i=0; i<acl->num_aces; i++)
+      nt_delete_ace(acl->aces[i]);
+
+    free(acl);
+  }
+  return 1;
+}
+
+int nt_delete_sec_desc(SEC_DESC *sec_desc)
+{
+
+  if (sec_desc) {
+
+    nt_delete_sid(sec_desc->owner);
+    nt_delete_sid(sec_desc->group);
+    nt_delete_acl(sec_desc->sacl);
+    nt_delete_acl(sec_desc->dacl);
+    free(sec_desc);
+
+  }
+  return 1;
+}
+
+int nt_delete_key_sec_desc(KEY_SEC_DESC *key_sec_desc)
+{
+
+  if (key_sec_desc) {
+    key_sec_desc->ref_cnt--;
+    if (key_sec_desc->ref_cnt<=0) {
+      /*
+       * There should always be a next and prev, even if they point to us 
+       */
+      key_sec_desc->next->prev = key_sec_desc->prev;
+      key_sec_desc->prev->next = key_sec_desc->next;
+      nt_delete_sec_desc(key_sec_desc->sec_desc);
+    }
+  }
+  return 1;
+}
+
+int nt_delete_reg_key(REG_KEY *key)
+{
+
+  if (key) {
+    if (key->name) free(key->name);
+    if (key->class_name) free(key->class_name);
+
+    /*
+     * Do not delete the owner ...
+     */
+
+    if (key->sub_keys) nt_delete_key_list(key->sub_keys);
+    if (key->values) nt_delete_val_list(key->values);
+    if (key->security) nt_delete_key_sec_desc(key->security);
+    free(key);
+  }
+  return 1;
+}
 
 /* 
- * All of the structures below actually have a four-byte length before them
+ * Create/delete key lists and add delete keys to/from a list, count the keys 
+ */
+
+
+/*
+ * Create/delete value lists, add/delete values, count them
+ */
+
+
+/*
+ * Create/delete security descriptors, add/delete SIDS, count SIDS, etc.
+ * We reference count the security descriptors. Any new reference increments 
+ * the ref count. If we modify an SD, we copy the old one, dec the ref count
+ * and make the change. We also want to be able to check for equality so
+ * we can reduce the number of SDs in use.
+ */
+
+/*
+ * Code to parse registry specification from command line or files
+ *
+ * Format:
+ * [cmd:]key:type:value
+ *
+ * cmd = a|d|c|add|delete|change|as|ds|cs
+ *
+ */
+
+
+/*
+ * Load and unload a registry file.
+ *
+ * Load, loads it into memory as a tree, while unload sealizes/flattens it
+ */
+
+/*
+ * Get the starting record for NT Registry file 
+ */
+
+/* A map of sk offsets in the regf to KEY_SEC_DESCs for quick lookup etc */
+typedef struct sk_map_s {
+  int sk_off;
+  KEY_SEC_DESC *key_sec_desc;
+} SK_MAP;
+
+/* 
+ * Where we keep all the regf stuff for one registry.
+ * This is the structure that we use to tie the in memory tree etc 
+ * together. By keeping separate structs, we can operate on different
+ * registries at the same time.
+ * Currently, the SK_MAP is an array of mapping structure.
+ * Since we only need this on input and output, we fill in the structure
+ * as we go on input. On output, we know how many SK items we have, so
+ * we can allocate the structure as we need to.
+ * If you add stuff here that is dynamically allocated, add the 
+ * appropriate free statements below.
+ */
+
+#define REGF_REGTYPE_NONE 0
+#define REGF_REGTYPE_NT   1
+#define REGF_REGTYPE_W9X  2
+
+#define TTTONTTIME(r, t1, t2) (r)->last_mod_time.low = (t1); \
+                              (r)->last_mod_time.high = (t2);
+
+#define REGF_HDR_BLKSIZ 0x1000 
+
+struct regf_struct_s {
+  int reg_type;
+  char *regfile_name, *outfile_name;
+  int fd;
+  struct stat sbuf;
+  char *base;
+  int modified;
+  NTTIME last_mod_time;
+  REG_KEY *root;  /* Root of the tree for this file */
+  int sk_count, sk_map_size;
+  SK_MAP *sk_map;
+};
+
+/*
+ * Structures for dealing with the on-disk format of the registry
+ */
+
+#define IVAL(buf) ((unsigned int) \
+                   (unsigned int)*((unsigned char *)(buf)+3)<<24| \
+                   (unsigned int)*((unsigned char *)(buf)+2)<<16| \
+                   (unsigned int)*((unsigned char *)(buf)+1)<<8| \
+                   (unsigned int)*((unsigned char *)(buf)+0)) 
+
+#define SVAL(buf) ((unsigned short) \
+                   (unsigned short)*((unsigned char *)(buf)+1)<<8| \
+                   (unsigned short)*((unsigned char *)(buf)+0)) 
+
+#define CVAL(buf) ((unsigned char)*((unsigned char *)(buf)))
+
+#define OFF(f) ((f) + REGF_HDR_BLKSIZ + 4) 
+#define LOCN(base, f) ((base) + OFF(f))
+
+/* 
+ * All of the structures below actually have a four-byte lenght before them
  * which always seems to be negative. The following macro retrieves that
  * size as an integer
  */
@@ -487,8 +800,8 @@ typedef struct hbin_sub_struct {
 
 typedef struct hbin_struct {
   DWORD HBIN_ID; /* hbin */
-  DWORD off_from_first;
-  DWORD off_to_next;
+  DWORD next_off;
+  DWORD prev_off;
   DWORD uk1;
   DWORD uk2;
   DWORD uk3;
@@ -522,7 +835,7 @@ typedef struct nk_struct {
 
 #define REG_SK_ID 0x6B73
 
-struct sk_struct {
+typedef struct sk_struct {
   WORD SK_ID;
   WORD uk1;
   DWORD prev_off;
@@ -530,14 +843,14 @@ struct sk_struct {
   DWORD ref_cnt;
   DWORD rec_size;
   char sec_desc[1];
-};
+} SK_HDR;
 
 typedef struct ace_struct {
     unsigned char type;
     unsigned char flags;
     unsigned short length;
     unsigned int perms;
-    sid_t trustee;
+    DOM_SID trustee;
 } REG_ACE;
 
 typedef struct acl_struct {
@@ -584,8 +897,6 @@ typedef struct vk_struct {
   char dat_name[1]; /* Name starts here ... */
 } VK_HDR;
 
-#define REG_TYPE_DELETE    -1
-#define REG_TYPE_NONE      0
 #define REG_TYPE_REGSZ     1
 #define REG_TYPE_EXPANDSZ  2
 #define REG_TYPE_BIN       3  
@@ -597,950 +908,15 @@ typedef struct _val_str {
   const char * str;
 } VAL_STR;
 
-/* A map of sk offsets in the regf to KEY_SEC_DESCs for quick lookup etc */
-typedef struct sk_map_s {
-  int sk_off;
-  KEY_SEC_DESC *key_sec_desc;
-} SK_MAP;
-
-/*
- * This structure keeps track of the output format of the registry
- */
-#define REG_OUTBLK_HDR 1
-#define REG_OUTBLK_HBIN 2
-
-typedef struct hbin_blk_s {
-  int type, size;
-  struct hbin_blk_s *next;
-  char *data;                /* The data block                */
-  unsigned int file_offset;  /* Offset in file                */
-  unsigned int free_space;   /* Amount of free space in block */
-  unsigned int fsp_off;      /* Start of free space in block  */
-  int complete, stored;
-} HBIN_BLK;
-
-/*
- * This structure keeps all the registry stuff in one place
- */
-typedef struct regf_struct_s {
-  int reg_type;
-  char *regfile_name, *outfile_name;
-  int fd;
-  struct stat sbuf;
-  char *base;
-  int modified;
-  NTTIME last_mod_time;
-  REG_KEY *root;  /* Root of the tree for this file */
-  int sk_count, sk_map_size;
-  SK_MAP *sk_map;
-  const char *owner_sid_str;
-  SEC_DESC *def_sec_desc;
-  /*
-   * These next pointers point to the blocks used to contain the 
-   * keys when we are preparing to write them to a file
-   */
-  HBIN_BLK *blk_head, *blk_tail, *free_space;
-} REGF;
-
-/*
- * An API for accessing/creating/destroying items above
- */
-
-/*
- * Iterate over the keys, depth first, calling a function for each key
- * and indicating if it is terminal or non-terminal and if it has values.
- *
- * In addition, for each value in the list, call a value list function
- */
-
-typedef int (*key_print_f)(const char *path, char *key_name, char *class_name, 
-			   int root, int terminal, int values);
-
-typedef int (*val_print_f)(const char *path, char *val_name, int val_type, 
-			   int data_len, void *data_blk, int terminal,
-			   int first, int last);
-
-typedef int (*sec_print_f)(SEC_DESC *sec_desc);
-
-static
-int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, const char *path, 
-		    key_print_f key_print, sec_print_f sec_print,
-		    val_print_f val_print);
-
-static
-int nt_val_list_iterator(REGF *regf, VAL_LIST *val_list, int bf, char *path,
-			 int terminal, val_print_f val_print)
-{
-  int i;
-
-  if (!val_list) return 1;
-
-  if (!val_print) return 1;
-
-  for (i=0; i<val_list->val_count; i++) {
-    if (!val_print(path, val_list->vals[i]->name, val_list->vals[i]->data_type,
-		   val_list->vals[i]->data_len, val_list->vals[i]->data_blk,
-		   terminal,
-		   (i == 0),
-		   (i == val_list->val_count))) {
-
-      return 0;
-
-    }
-  }
-
-  return 1;
-}
-
-static
-int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, 
-			 const char *path,
-			 key_print_f key_print, sec_print_f sec_print, 
-			 val_print_f val_print)
-{
-  int i;
-
-  if (!key_list) return 1;
-
-  for (i=0; i< key_list->key_count; i++) {
-    if (!nt_key_iterator(regf, key_list->keys[i], bf, path, key_print, 
-			 sec_print, val_print)) {
-      return 0;
-    }
-  }
-  return 1;
-}
-
-static
-int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, const char *path,
-		    key_print_f key_print, sec_print_f sec_print,
-		    val_print_f val_print)
-{
-  int path_len = strlen(path);
-  char *new_path;
-
-  if (!regf || !key_tree)
-    return -1;
-
-  /* List the key first, then the values, then the sub-keys */
-
-  if (key_print) {
-
-    if (!(*key_print)(path, key_tree->name, 
-		      key_tree->class_name, 
-		      (key_tree->type == REG_ROOT_KEY),
-		      (key_tree->sub_keys == NULL),
-		      (key_tree->values?(key_tree->values->val_count):0)))
-      return 0;
-  }
-
-  /*
-   * If we have a security print routine, call it
-   * If the security print routine returns false, stop.
-   */
-  if (sec_print) {
-    if (key_tree->security && !(*sec_print)(key_tree->security->sec_desc))
-      return 0;
-  }
-
-  new_path = (char *)malloc(path_len + 1 + strlen(key_tree->name) + 1);
-  if (!new_path) return 0; /* Errors? */
-  new_path[0] = '\0';
-  strcat(new_path, path);
-  strcat(new_path, key_tree->name);
-  strcat(new_path, "\\");
-
-  /*
-   * Now, iterate through the values in the val_list 
-   */
-
-  if (key_tree->values &&
-      !nt_val_list_iterator(regf, key_tree->values, bf, new_path, 
-			    (key_tree->values!=NULL),
-			    val_print)) {
-
-    free(new_path);
-    return 0;
-  } 
-
-  /* 
-   * Now, iterate through the keys in the key list
-   */
-
-  if (key_tree->sub_keys && 
-      !nt_key_list_iterator(regf, key_tree->sub_keys, bf, new_path, key_print, 
-			    sec_print, val_print)) {
-    free(new_path);
-    return 0;
-  } 
-
-  free(new_path);
-  return 1;
-}
-
-static
-REG_KEY *nt_find_key_by_name(REG_KEY *tree, char *key);
-
-/*
- * Find key by name in a list ...
- * Take the first component and search for that in the list
- */
-static
-REG_KEY *nt_find_key_in_list_by_name(KEY_LIST *list, char *key)
-{
-  int i;
-  REG_KEY *res = NULL;
-
-  if (!list || !key || !*key) return NULL;
-
-  for (i = 0; i < list->key_count; i++)
-    if ((res = nt_find_key_by_name(list->keys[i], key)))
-      return res;
-  
-  return NULL;
-}
-
-/* 
- * Find key by name in a tree ... We will assume absolute names here, but we
- * need the root of the tree ...
- */
-static
-REG_KEY *nt_find_key_by_name(REG_KEY *tree, char *key)
-{
-  char *lname = NULL, *c1, *c2;
-  REG_KEY *tmp;
-
-  if (!tree || !key || !*key) return NULL;
-
-  lname = strdup(key);
-  if (!lname) return NULL;
-
-  /*
-   * Make sure that the first component is correct ...
-   */
-  c1 = lname;
-  c2 = strchr(c1, '\\');
-  if (c2) { /* Split here ... */
-    *c2 = 0;
-    c2++;
-  }
-  if (strcmp(c1, tree->name) != 0) goto error; 
-
-  if (c2) {
-    tmp = nt_find_key_in_list_by_name(tree->sub_keys, c2);
-    free(lname);
-    return tmp;
-  }
-  else {
-    if (lname) free(lname);
-    return tree;
-  }
- error:
-  if (lname) free(lname);
-  return NULL;
-}
-
-/* Make, delete keys */
-static
-int nt_delete_val_key(VAL_KEY *val_key)
-{
-
-  if (val_key) {
-    if (val_key->name) free(val_key->name);
-    if (val_key->data_blk) free(val_key->data_blk);
-    free(val_key);
-  };
-  return 1;
-}
-
-static
-int nt_delete_val_list(VAL_LIST *vl)
-{
-  int i;
-
-  if (vl) {
-    for (i=0; i<vl->val_count; i++)
-      nt_delete_val_key(vl->vals[i]);
-    free(vl);
-  }
-  return 1;
-}
-
-static
-int nt_delete_reg_key(REG_KEY *key, int delete_name);
-
-static
-int nt_delete_key_list(KEY_LIST *key_list, int delete_name)
-{
-  int i;
-
-  if (key_list) {
-    for (i=0; i<key_list->key_count; i++) 
-      nt_delete_reg_key(key_list->keys[i], False);
-    free(key_list);
-  }
-  return 1;
-}
-
-/*
- * Find the key, and if it exists, delete it ...
- */
-static
-int nt_delete_key_by_name(REGF *regf, char *name)
-{
-  REG_KEY *key;
-
-  if (!name || !*name) return 0;
-
-  key = nt_find_key_by_name(regf->root, name);
-
-  if (key) {
-    if (key == regf->root) regf->root = NULL;
-    return nt_delete_reg_key(key, True);
-  }
-
-  return 0;
-
-}
-
-static
-int nt_delete_sid(sid_t *sid)
-{
-
-  if (sid) free(sid);
-  return 1;
-
-}
-
-static
-int nt_delete_ace(ACE *ace)
-{
-
-  if (ace) {
-    nt_delete_sid(ace->trustee);
-    free(ace);
-  }
-  return 1;
-
-}
-
-static
-int nt_delete_acl(ACL *acl)
-{
-
-  if (acl) {
-    int i;
-
-    for (i=0; i<acl->num_aces; i++)
-      nt_delete_ace(acl->aces[i]);
-
-    free(acl);
-  }
-  return 1;
-}
-
-static
-int nt_delete_sec_desc(SEC_DESC *sec_desc)
-{
-
-  if (sec_desc) {
-
-    nt_delete_sid(sec_desc->owner);
-    nt_delete_sid(sec_desc->group);
-    nt_delete_acl(sec_desc->sacl);
-    nt_delete_acl(sec_desc->dacl);
-    free(sec_desc);
-
-  }
-  return 1;
-}
-
-static
-int nt_delete_key_sec_desc(KEY_SEC_DESC *key_sec_desc)
-{
-
-  if (key_sec_desc) {
-    key_sec_desc->ref_cnt--;
-    if (key_sec_desc->ref_cnt<=0) {
-      /*
-       * There should always be a next and prev, even if they point to us 
-       */
-      key_sec_desc->next->prev = key_sec_desc->prev;
-      key_sec_desc->prev->next = key_sec_desc->next;
-      nt_delete_sec_desc(key_sec_desc->sec_desc);
-    }
-  }
-  return 1;
-}
-
-static
-int nt_delete_reg_key(REG_KEY *key, int delete_name)
-{
-
-  if (key) {
-    if (key->name) free(key->name);
-    if (key->class_name) free(key->class_name);
-
-    /*
-     * We will delete the owner if we are not the root and told to ...
-     */
-
-    if (key->owner && key->owner->sub_keys && delete_name) {
-      REG_KEY *own;
-      KEY_LIST *kl;
-      int i;
-      /* Find our owner, look in keylist for us and shuffle up */
-      /* Perhaps should be a function                          */
-
-      own = key->owner;
-      kl = own->sub_keys;
-
-      for (i=0; i < kl->key_count && kl->keys[i] != key ; i++) {
-	/* Just find the entry ... */
-      }
-
-      if (i == kl->key_count) {
-	fprintf(stderr, "Bad data structure. Key not found in key list of owner\n");
-      }
-      else {
-	int j;
-
-	/*
-	 * Shuffle up. Works for the last one also 
-	 */
-	for (j = i + 1; j < kl->key_count; j++) {
-	  kl->keys[j - 1] = kl->keys[j];
-	}
-
-	kl->key_count--;
-      }
-    }
-
-    if (key->sub_keys) nt_delete_key_list(key->sub_keys, False);
-    if (key->values) nt_delete_val_list(key->values);
-    if (key->security) nt_delete_key_sec_desc(key->security);
-    free(key);
-  }
-  return 1;
-}
-
-/*
- * Convert a string to a value ...
- * FIXME: Error handling and convert this at command parse time ... 
- */
-static
-void *str_to_val(int type, char *val, int *len)
-{
-  unsigned int *dwordp = NULL;
-
-  if (!len || !val) return NULL;
-
-  switch (type) {
-  case REG_TYPE_REGSZ:
-    *len = strlen(val);
-    return (void *)val;
-
-  case REG_TYPE_DWORD:
-    dwordp = (unsigned int *)malloc(sizeof(unsigned int));
-    if (!dwordp) return NULL;
-    /* Allow for ddddd and 0xhhhhh and 0ooooo */
-    if (strncmp(val, "0x", 2) == 0 || strncmp(val, "0X", 2) == 0) {
-      sscanf(&val[2], "%X", dwordp);
-    }
-    else if (*val == '0') {
-      sscanf(&val[1], "%o", dwordp);
-    }
-    else { 
-      sscanf(val, "%d", dwordp);
-    }
-    *len = sizeof(unsigned int);
-    return (void *)dwordp;
-
-    /* FIXME: Implement more of these */
-
-  default:
-    return NULL;
-  }
-
-  return NULL;
-}
-
-/*
- * Add a value to the key specified ... We have to parse the value some more
- * based on the type to get it in the correct internal form
- * An empty name will be converted to "<No Name>" before here
- * Hmmm, maybe not. has_name is for that
- */
-static
-VAL_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
-{
-  int i;
-  VAL_KEY *tmp = NULL;
-
-  if (!key || !key->values || !name || !*name) return NULL;
-
-  assert(type != REG_TYPE_DELETE); /* We never process deletes here */
-
-  for (i = 0; i < key->values->val_count; i++) {
-    if ((!key->values->vals[i]->has_name && !*name) || 
-	(key->values->vals[i]->has_name &&
-	 strcmp(name, key->values->vals[i]->name) == 0)){ /* Change the value */
-      free(key->values->vals[i]->data_blk);
-      key->values->vals[i]->data_blk = str_to_val(type, value, &
-						  key->values->vals[i]->data_len);
-      return key->values->vals[i];
-    }
-  }
-
-  /* 
-   * If we get here, the name was not found, so insert it 
-   */
-
-  tmp = (VAL_KEY *)malloc(sizeof(VAL_KEY));
-  if (!tmp) goto error;
-
-  memset(tmp, 0, sizeof(VAL_KEY));
-  tmp->name = strdup(name);
-  tmp->has_name = True;
-  if (!tmp->name) goto error;
-  tmp->data_type = type;
-  tmp->data_blk = str_to_val(type, value, &tmp->data_len);
-
-  /* Now, add to val list */
-
-  if (key->values->val_count >= key->values->max_vals) {
-    /*
-     * Allocate some more space 
-     */
-
-    if ((key->values = (VAL_LIST *)realloc(key->values, sizeof(VAL_LIST) + 
-					   key->values->val_count - 1 +
-					   REG_KEY_LIST_SIZE))) {
-      key->values->max_vals += REG_KEY_LIST_SIZE;
-    }
-    else goto error;
-  }
-
-  i = key->values->val_count;
-  key->values->val_count++;
-  key->values->vals[i] = tmp;
-  return tmp;
-
- error:
-  if (tmp) nt_delete_val_key(tmp);
-  return NULL;
-}
-
-/*
- * Delete a value. We return the value and let the caller deal with it. 
- */
-static
-VAL_KEY *nt_delete_reg_value(REG_KEY *key, char *name)
-{
-  int i, j;
-
-  if (!key || !key->values || !name || !*name) return NULL;
-
-  /* FIXME: Allow empty value name */
-  for (i = 0; i< key->values->val_count; i++) {
-    if ((!key->values->vals[i]->has_name && !*name) || 
-	(key->values->vals[i]->has_name &&
-	 strcmp(name, key->values->vals[i]->name) == 0)) {
-      VAL_KEY *val;
-
-      val = key->values->vals[i];
-
-      /* Shuffle down */
-      for (j = i + 1; j < key->values->val_count; j++)
-	key->values->vals[j - 1] = key->values->vals[j];
-
-      key->values->val_count--;
-
-      return val;
-    }
-  }
-  return NULL;
-}
-
-/* 
- * Add a key to the tree ... We walk down the components matching until
- * we don't find any. There must be a match on the first component ...
- * We return the key structure for the final component as that is 
- * often where we want to add values ...
- */
-
-/*
- * Convert a string of the form S-1-5-x[-y-z-r] to a SID
- */
-static
-int sid_string_to_sid(sid_t **sid, const char *sid_str)
-{
-  int i = 0, auth;
-  const char *lstr; 
-
-  *sid = (sid_t *)malloc(sizeof(sid_t));
-  if (!*sid) return 0;
-
-  memset(*sid, 0, sizeof(sid_t));
-
-  if (strncmp(sid_str, "S-1-5", 5)) {
-    fprintf(stderr, "Does not conform to S-1-5...: %s\n", sid_str);
-    return 0;
-  }
-
-  /* We only allow strings of form S-1-5... */
-
-  (*sid)->ver = 1;
-  (*sid)->auth[5] = 5;
-
-  lstr = sid_str + 5;
-
-  while (1) {
-    if (!lstr || !lstr[0] || sscanf(lstr, "-%u", &auth) == 0) {
-      if (i < 1) {
-	fprintf(stderr, "Not of form -d-d...: %s, %u\n", lstr, i);
-	return 0;
-      }
-      (*sid)->auths=i;
-      return 1;
-    }
-
-    (*sid)->sub_auths[i] = auth;
-    i++;
-    lstr = strchr(lstr + 1, '-'); 
-  }
-
-  /*return 1; */ /* Not Reached ... */
-}
-
-/*
- * Create an ACE
- */
-static
-ACE *nt_create_ace(int type, int flags, unsigned int perms, const char *sid)
-{
-  ACE *ace;
-
-  ace = (ACE *)malloc(sizeof(ACE));
-  if (!ace) goto error;
-  ace->type = type;
-  ace->flags = flags;
-  ace->perms = perms;
-  if (!sid_string_to_sid(&ace->trustee, sid))
-    goto error;
-  return ace;
-
- error:
-  if (ace) nt_delete_ace(ace);
-  return NULL;
-}
-
-/*
- * Create a default ACL
- */
-static
-ACL *nt_create_default_acl(REGF *regf)
-{
-  ACL *acl;
-
-  acl = (ACL *)malloc(sizeof(ACL) + 7*sizeof(ACE *));
-  if (!acl) goto error;
-
-  acl->rev = 2;
-  acl->refcnt = 1;
-  acl->num_aces = 8;
-
-  acl->aces[0] = nt_create_ace(0x00, 0x0, 0xF003F, regf->owner_sid_str);
-  if (!acl->aces[0]) goto error;
-  acl->aces[1] = nt_create_ace(0x00, 0x0, 0xF003F, "S-1-5-18");
-  if (!acl->aces[1]) goto error;
-  acl->aces[2] = nt_create_ace(0x00, 0x0, 0xF003F, "S-1-5-32-544");
-  if (!acl->aces[2]) goto error;
-  acl->aces[3] = nt_create_ace(0x00, 0x0, 0x20019, "S-1-5-12");
-  if (!acl->aces[3]) goto error;
-  acl->aces[4] = nt_create_ace(0x00, 0x0B, 0x10000000, regf->owner_sid_str);
-  if (!acl->aces[4]) goto error;
-  acl->aces[5] = nt_create_ace(0x00, 0x0B, 0x10000000, "S-1-5-18");
-  if (!acl->aces[5]) goto error;
-  acl->aces[6] = nt_create_ace(0x00, 0x0B, 0x10000000, "S-1-5-32-544");
-  if (!acl->aces[6]) goto error;
-  acl->aces[7] = nt_create_ace(0x00, 0x0B, 0x80000000, "S-1-5-12");
-  if (!acl->aces[7]) goto error;
-  return acl;
-
- error:
-  if (acl) nt_delete_acl(acl);
-  return NULL;
-}
-
-/*
- * Create a default security descriptor. We pull in things from env
- * if need be 
- */
-static
-SEC_DESC *nt_create_def_sec_desc(REGF *regf)
-{
-  SEC_DESC *tmp;
-
-  tmp = (SEC_DESC *)malloc(sizeof(SEC_DESC));
-  if (!tmp) return NULL;
-
-  tmp->rev = 1;
-  tmp->type = 0x8004;
-  if (!sid_string_to_sid(&tmp->owner, "S-1-5-32-544")) goto error;
-  if (!sid_string_to_sid(&tmp->group, "S-1-5-18")) goto error;
-  tmp->sacl = NULL;
-  tmp->dacl = nt_create_default_acl(regf);
-
-  return tmp;
-
- error:
-  if (tmp) nt_delete_sec_desc(tmp);
-  return NULL;
-}
-
-/*
- * We will implement inheritence that is based on what the parent's SEC_DESC
- * says, but the Owner and Group SIDs can be overwridden from the command line
- * and additional ACEs can be applied from the command line etc.
- */
-static
-KEY_SEC_DESC *nt_inherit_security(REG_KEY *key)
-{
-
-  if (!key) return NULL;
-  return key->security;
-}
-
-/*
- * Create an initial security descriptor and init other structures, if needed
- * We assume that the initial security stuff is empty ...
- */
-static
-KEY_SEC_DESC *nt_create_init_sec(REGF *regf)
-{
-  KEY_SEC_DESC *tsec = NULL;
-  
-  tsec = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
-  if (!tsec) return NULL;
-
-  tsec->ref_cnt = 1;
-  tsec->state = SEC_DESC_NBK;
-  tsec->offset = 0;
-
-  tsec->sec_desc = regf->def_sec_desc;
-
-  return tsec;
-}
-
-/*
- * Add a sub-key 
- */
-static
-REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
-{
-  int i;
-  REG_KEY *ret = NULL, *tmp = NULL;
-  KEY_LIST *list;
-  char *lname, *c1, *c2;
-
-  if (!key || !name || !*name) return NULL;
-  
-  list = key->sub_keys;
-  if (!list) { /* Create an empty list */
-
-    list = (KEY_LIST *)malloc(sizeof(KEY_LIST) + (REG_KEY_LIST_SIZE - 1) * sizeof(REG_KEY *));
-    list->key_count = 0;
-    list->max_keys = REG_KEY_LIST_SIZE;
-
-  }
-
-  lname = strdup(name);
-  if (!lname) return NULL;
-
-  c1 = lname;
-  c2 = strchr(c1, '\\');
-  if (c2) { /* Split here ... */
-    *c2 = 0;
-    c2++;
-  }
-
-  for (i = 0; i < list->key_count; i++) {
-    if (strcmp(list->keys[i]->name, c1) == 0) {
-      ret = nt_add_reg_key_list(regf, list->keys[i], c2, create);
-      free(lname);
-      return ret;
-    }
-  }
-
-  /*
-   * If we reach here we could not find the the first component
-   * so create it ...
-   */
-
-  if (list->key_count < list->max_keys){
-    list->key_count++;
-  }
-  else { /* Create more space in the list ... */
-    if (!(list = (KEY_LIST *)realloc(list, sizeof(KEY_LIST) + 
-				     (list->max_keys + REG_KEY_LIST_SIZE - 1) 
-				     * sizeof(REG_KEY *))))
-      goto error;
-
-    list->max_keys += REG_KEY_LIST_SIZE;
-    list->key_count++;
-  }
-
-  /*
-   * add the new key at the new slot 
-   * FIXME: Sort the list someday
-   */
-
-  /*
-   * We want to create the key, and then do the rest
-   */
-
-  tmp = (REG_KEY *)malloc(sizeof(REG_KEY)); 
-
-  memset(tmp, 0, sizeof(REG_KEY));
-
-  tmp->name = strdup(c1);
-  if (!tmp->name) goto error;
-  tmp->owner = key;
-  tmp->type = REG_SUB_KEY;
-  /*
-   * Next, pull security from the parent, but override with
-   * anything passed in on the command line
-   */
-  tmp->security = nt_inherit_security(key);
-
-  list->keys[list->key_count - 1] = tmp;
-
-  if (c2) {
-    ret = nt_add_reg_key_list(regf, key, c2, True);
-  }
-
-  if (lname) free(lname);
-
-  return ret;
-
- error:
-  if (tmp) free(tmp);
-  if (lname) free(lname);
-  return NULL;
-}
-
-/*
- * This routine only adds a key from the root down.
- * It calls helper functions to handle sub-key lists and sub-keys
- */
-static
-REG_KEY *nt_add_reg_key(REGF *regf, char *name, int create)
-{
-  char *lname = NULL, *c1, *c2;
-  REG_KEY * tmp = NULL;
-
-  /*
-   * Look until we hit the first component that does not exist, and
-   * then add from there. However, if the first component does not 
-   * match and the path we are given is the root, then it must match
-   */
-  if (!regf || !name || !*name) return NULL;
-
-  lname = strdup(name);
-  if (!lname) return NULL;
-
-  c1 = lname;
-  c2 = strchr(c1, '\\');
-  if (c2) { /* Split here ... */
-    *c2 = 0;
-    c2++;
-  }
-
-  /*
-   * If the root does not exist, create it and make it equal to the
-   * first component ...
-   */
-
-  if (!regf->root) {
-    
-    tmp = (REG_KEY *)malloc(sizeof(REG_KEY));
-    if (!tmp) goto error;
-    memset(tmp, 0, sizeof(REG_KEY));
-    tmp->name = strdup(c1);
-    if (!tmp->name) goto error;
-    tmp->security = nt_create_init_sec(regf);
-    if (!tmp->security) goto error;
-    regf->root = tmp;
-
-  }
-  else {
-    /*
-     * If we don't match, then we have to return error ...
-     * If we do match on this component, check the next one in the
-     * list, and if not found, add it ... short circuit, add all the
-     * way down
-     */
-
-    if (strcmp(c1, regf->root->name) != 0)
-      goto error;
-  }
-
-  tmp = nt_add_reg_key_list(regf, regf->root, c2, True);
-  free(lname);
-  return tmp;
-  
- error:
-  if (tmp) free(tmp);
-  if (lname) free(lname);
-  return NULL;
-}
-
-/*
- * Load and unload a registry file.
- *
- * Load, loads it into memory as a tree, while unload sealizes/flattens it
- */
-
-/*
- * Get the starting record for NT Registry file 
- */
-
-/* 
- * Where we keep all the regf stuff for one registry.
- * This is the structure that we use to tie the in memory tree etc 
- * together. By keeping separate structs, we can operate on different
- * registries at the same time.
- * Currently, the SK_MAP is an array of mapping structure.
- * Since we only need this on input and output, we fill in the structure
- * as we go on input. On output, we know how many SK items we have, so
- * we can allocate the structure as we need to.
- * If you add stuff here that is dynamically allocated, add the 
- * appropriate free statements below.
- */
-
-#define REGF_REGTYPE_NONE 0
-#define REGF_REGTYPE_NT   1
-#define REGF_REGTYPE_W9X  2
-
-#define TTTONTTIME(r, t1, t2) (r)->last_mod_time.low = (t1); \
-                              (r)->last_mod_time.high = (t2);
-
-#define REGF_HDR_BLKSIZ 0x1000 
-
-#define OFF(f) ((f) + REGF_HDR_BLKSIZ + 4) 
-#define LOCN(base, f) ((base) + OFF(f))
-
 const VAL_STR reg_type_names[] = {
-   { REG_TYPE_REGSZ,    "REG_SZ" },
-   { REG_TYPE_EXPANDSZ, "REG_EXPAND_SZ" },
-   { REG_TYPE_BIN,      "REG_BIN" },
-   { REG_TYPE_DWORD,    "REG_DWORD" },
-   { REG_TYPE_MULTISZ,  "REG_MULTI_SZ" },
+   { 1, "REG_SZ" },
+   { 2, "REG_EXPAND_SZ" },
+   { 3, "REG_BIN" },
+   { 4, "REG_DWORD" },
+   { 7, "REG_MULTI_SZ" },
    { 0, NULL },
 };
 
-static
 const char *val_to_str(unsigned int val, const VAL_STR *val_array)
 {
   int i = 0;
@@ -1562,7 +938,6 @@ const char *val_to_str(unsigned int val, const VAL_STR *val_array)
  * Convert from UniCode to Ascii ... Does not take into account other lang
  * Restrict by ascii_max if > 0
  */
-static
 int uni_to_ascii(unsigned char *uni, unsigned char *ascii, int ascii_max, 
 		 int uni_max)
 {
@@ -1583,7 +958,6 @@ int uni_to_ascii(unsigned char *uni, unsigned char *ascii, int ascii_max,
 /*
  * Convert a data value to a string for display
  */
-static
 int data_to_ascii(unsigned char *datap, int len, int type, char *ascii, int ascii_max)
 { 
   unsigned char *asciip;
@@ -1591,10 +965,9 @@ int data_to_ascii(unsigned char *datap, int len, int type, char *ascii, int asci
 
   switch (type) {
   case REG_TYPE_REGSZ:
-    if (verbose) fprintf(stderr, "Len: %d\n", len);
-    /* FIXME. This has to be fixed. It has to be UNICODE */ 
+    fprintf(stderr, "Len: %d\n", len);
     return uni_to_ascii(datap, ascii, len, ascii_max);
-    break; /*NOTREACHED*/
+    break;
 
   case REG_TYPE_EXPANDSZ:
     return uni_to_ascii(datap, ascii, len, ascii_max);
@@ -1632,16 +1005,13 @@ int data_to_ascii(unsigned char *datap, int len, int type, char *ascii, int asci
 
 }
 
-static
-REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent);
+REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size);
 
-static
 int nt_set_regf_input_file(REGF *regf, char *filename)
 {
   return ((regf->regfile_name = strdup(filename)) != NULL); 
 }
 
-static
 int nt_set_regf_output_file(REGF *regf, char *filename)
 {
   return ((regf->outfile_name = strdup(filename)) != NULL); 
@@ -1649,19 +1019,16 @@ int nt_set_regf_output_file(REGF *regf, char *filename)
 
 /* Create a regf structure and init it */
 
-static
 REGF *nt_create_regf(void)
 {
   REGF *tmp = (REGF *)malloc(sizeof(REGF));
   if (!tmp) return tmp;
-  memset(tmp, 0, sizeof(REGF));
-  tmp->owner_sid_str = def_owner_sid_str;
+  bzero(tmp, sizeof(REGF));
   return tmp;
 } 
 
 /* Free all the bits and pieces ... Assumes regf was malloc'd */
 /* If you add stuff to REGF, add the relevant free bits here  */
-static
 int nt_free_regf(REGF *regf)
 {
   if (!regf) return 0;
@@ -1669,7 +1036,13 @@ int nt_free_regf(REGF *regf)
   if (regf->regfile_name) free(regf->regfile_name);
   if (regf->outfile_name) free(regf->outfile_name);
 
-  nt_delete_reg_key(regf->root, False); /* Free the tree */
+  /* Free the mmap'd area */
+
+  if (regf->base) munmap(regf->base, regf->sbuf.st_size);
+  regf->base = NULL;
+  close(regf->fd);    /* Ignore the error :-) */
+
+  nt_delete_reg_key(regf->root); /* Free the tree */
   free(regf->sk_map);
   regf->sk_count = regf->sk_map_size = 0;
 
@@ -1681,7 +1054,6 @@ int nt_free_regf(REGF *regf)
 /* Get the header of the registry. Return a pointer to the structure 
  * If the mmap'd area has not been allocated, then mmap the input file
  */
-static
 REGF_HDR *nt_get_regf_hdr(REGF *regf)
 {
   if (!regf)
@@ -1723,7 +1095,6 @@ REGF_HDR *nt_get_regf_hdr(REGF *regf)
  * Validate a regf header
  * For now, do nothing, but we should check the checksum
  */
-static
 int valid_regf_hdr(REGF_HDR *regf_hdr)
 {
   if (!regf_hdr) return 0;
@@ -1742,7 +1113,7 @@ int valid_regf_hdr(REGF_HDR *regf_hdr)
 /*
  * Create a new entry in the map, and increase the size of the map if needed
  */
-static
+
 SK_MAP *alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
 {
  if (!regf->sk_map) { /* Allocate a block of 10 */
@@ -1778,10 +1149,10 @@ SK_MAP *alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
 }
 
 /*
- * Search for a KEY_SEC_DESC in the sk_map, but don't create one if not
+ * Search for a KEY_SEC_DESC in the sk_map, but dont create one if not
  * found
  */
-static
+
 KEY_SEC_DESC *lookup_sec_key(SK_MAP *sk_map, int count, int sk_off)
 {
   int i;
@@ -1802,7 +1173,7 @@ KEY_SEC_DESC *lookup_sec_key(SK_MAP *sk_map, int count, int sk_off)
 /*
  * Allocate a KEY_SEC_DESC if we can't find one in the map
  */
-static
+
 KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
 {
   KEY_SEC_DESC *tmp = lookup_sec_key(regf->sk_map, regf->sk_count, sk_off);
@@ -1815,7 +1186,6 @@ KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
     if (!tmp) {
       return NULL;
     }
-    memset(tmp, 0, sizeof(KEY_SEC_DESC)); /* Neatly sets offset to 0 */
     tmp->state = SEC_DESC_RES;
     if (!alloc_sk_map_entry(regf, tmp, sk_off)) {
       return NULL;
@@ -1828,10 +1198,9 @@ KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
  * Allocate storage and duplicate a SID 
  * We could allocate the SID to be only the size needed, but I am too lazy. 
  */
-static
-sid_t *dup_sid(sid_t *sid)
+DOM_SID *dup_sid(DOM_SID *sid)
 {
-  sid_t *tmp = (sid_t *)malloc(sizeof(sid_t));
+  DOM_SID *tmp = (DOM_SID *)malloc(sizeof(DOM_SID));
   int i;
   
   if (!tmp) return NULL;
@@ -1849,7 +1218,6 @@ sid_t *dup_sid(sid_t *sid)
 /*
  * Allocate space for an ACE and duplicate the registry encoded one passed in
  */
-static
 ACE *dup_ace(REG_ACE *ace)
 {
   ACE *tmp = NULL; 
@@ -1868,7 +1236,6 @@ ACE *dup_ace(REG_ACE *ace)
 /*
  * Allocate space for an ACL and duplicate the registry encoded one passed in 
  */
-static
 ACL *dup_acl(REG_ACL *acl)
 {
   ACL *tmp = NULL;
@@ -1883,8 +1250,6 @@ ACL *dup_acl(REG_ACL *acl)
   tmp->num_aces = num_aces;
   tmp->refcnt = 1;
   tmp->rev = SVAL(&acl->rev);
-  if (verbose) fprintf(stdout, "ACL: refcnt: %u, rev: %u\n", tmp->refcnt, 
-		       tmp->rev);
   ace = (REG_ACE *)&acl->aces;
   for (i=0; i<num_aces; i++) {
     tmp->aces[i] = dup_ace(ace);
@@ -1895,7 +1260,6 @@ ACL *dup_acl(REG_ACL *acl)
   return tmp;
 }
 
-static
 SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
 {
   SEC_DESC *tmp = NULL;
@@ -1908,20 +1272,12 @@ SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
   
   tmp->rev = SVAL(&sec_desc->rev);
   tmp->type = SVAL(&sec_desc->type);
-  if (verbose) fprintf(stdout, "SEC_DESC Rev: %0X, Type: %0X\n", 
-		       tmp->rev, tmp->type);
-  if (verbose) fprintf(stdout, "SEC_DESC Owner Off: %0X\n",
-		       IVAL(&sec_desc->owner_off));
-  if (verbose) fprintf(stdout, "SEC_DESC Group Off: %0X\n",
-		       IVAL(&sec_desc->group_off));
-  if (verbose) fprintf(stdout, "SEC_DESC DACL Off: %0X\n",
-		       IVAL(&sec_desc->dacl_off));
-  tmp->owner = dup_sid((sid_t *)((char *)sec_desc + IVAL(&sec_desc->owner_off)));
+  tmp->owner = dup_sid((DOM_SID *)((char *)sec_desc + IVAL(&sec_desc->owner_off)));
   if (!tmp->owner) {
     free(tmp);
     return NULL;
   }
-  tmp->group = dup_sid((sid_t *)((char *)sec_desc + IVAL(&sec_desc->group_off)));
+  tmp->group = dup_sid((DOM_SID *)((char *)sec_desc + IVAL(&sec_desc->group_off)));
   if (!tmp->group) {
     free(tmp);
     return NULL;
@@ -1942,7 +1298,6 @@ SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
   return tmp;
 }
 
-static
 KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
 {
   KEY_SEC_DESC *tmp = NULL;
@@ -1983,15 +1338,15 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
   /*
    * Now, allocate a KEY_SEC_DESC, and parse the structure here, and add the
    * new KEY_SEC_DESC to the mapping structure, since the offset supplied is 
-   * the actual offset of structure. The same offset will be used by
+   * the actual offset of structure. The same offset will be used by all
    * all future references to this structure
-   * We could put all this unpleasantness in a function.
+   * We chould put all this unpleasantness in a function.
    */
 
   if (!tmp) {
     tmp = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
     if (!tmp) return NULL;
-    memset(tmp, 0, sizeof(KEY_SEC_DESC));
+    bzero(tmp, sizeof(KEY_SEC_DESC));
     
     /*
      * Allocate an entry in the SK_MAP ...
@@ -2032,7 +1387,6 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
 /*
  * Process a VK header and return a value
  */
-static
 VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
 {
   char val_name[1024];
@@ -2059,7 +1413,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
   if (!tmp) {
     goto error;
   }
-  memset(tmp, 0, sizeof(VAL_KEY));
+  bzero(tmp, sizeof(VAL_KEY));
   tmp->has_name = flag;
   tmp->data_type = dat_type;
 
@@ -2091,13 +1445,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
       char *dat_ptr = LOCN(regf->base, dat_off);
       bcopy(dat_ptr, dtmp, dat_len);
     }
-    else { /* The data is in the offset or type */
-      /*
-       * FIXME.
-       * Some registry files seem to have wierd fields. If top bit is set,
-       * but len is 0, the type seems to be the value ...
-       * Not sure how to handle this last type for the moment ...
-       */
+    else { /* The data is in the offset */
       dat_len = dat_len & 0x7FFFFFFF;
       bcopy(&dat_off, dtmp, dat_len);
     }
@@ -2116,7 +1464,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
   return tmp;
 
  error:
-  if (tmp) nt_delete_val_key(tmp);
+  /* XXX: FIXME, free the partially allocated struct */
   return NULL;
 
 }
@@ -2124,7 +1472,6 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
 /*
  * Process a VL Header and return a list of values
  */
-static
 VAL_LIST *process_vl(REGF *regf, VL_TYPE vl, int count, int size)
 {
   int i, vk_off;
@@ -2153,7 +1500,6 @@ VAL_LIST *process_vl(REGF *regf, VL_TYPE vl, int count, int size)
   }
 
   tmp->val_count = count;
-  tmp->max_vals = count;
 
   return tmp;
 
@@ -2165,8 +1511,7 @@ VAL_LIST *process_vl(REGF *regf, VL_TYPE vl, int count, int size)
 /*
  * Process an LF Header and return a list of sub-keys
  */
-static
-KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size, REG_KEY *parent)
+KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size)
 {
   int count, i, nk_off;
   unsigned int lf_id;
@@ -2183,7 +1528,7 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size, REG_KEY *parent)
   assert(size < 0);
 
   count = SVAL(&lf_hdr->key_count);
-  if (verbose) fprintf(stdout, "Key Count: %u\n", count);
+
   if (count <= 0) return NULL;
 
   /* Now, we should allocate a KEY_LIST struct and fill it in ... */
@@ -2194,15 +1539,13 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size, REG_KEY *parent)
   }
 
   tmp->key_count = count;
-  tmp->max_keys = count;
 
   for (i=0; i<count; i++) {
     NK_HDR *nk_hdr;
 
     nk_off = IVAL(&lf_hdr->hr[i].nk_off);
-    if (verbose) fprintf(stdout, "NK Offset: %0X\n", nk_off);
     nk_hdr = (NK_HDR *)LOCN(regf->base, nk_off);
-    tmp->keys[i] = nt_get_key_tree(regf, nk_hdr, BLK_SIZE(nk_hdr), parent);
+    tmp->keys[i] = nt_get_key_tree(regf, nk_hdr, BLK_SIZE(nk_hdr));
     if (!tmp->keys[i]) {
       goto error;
     }
@@ -2211,19 +1554,18 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size, REG_KEY *parent)
   return tmp;
 
  error:
-  if (tmp) nt_delete_key_list(tmp, False);
+  /* XXX: FIXME, free the partially allocated structure */
   return NULL;
 }
 
 /*
- * This routine is passed an NK_HDR pointer and retrieves the entire tree
- * from there down. It returns a REG_KEY *.
+ * This routine is passed a NK_HDR pointer and retrieves the entire tree
+ * from there down. It return a REG_KEY *.
  */
-static
-REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
+REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 {
-  REG_KEY *tmp = NULL, *own;
-  int name_len, clsname_len, lf_off, val_off, val_count, sk_off, own_off;
+  REG_KEY *tmp = NULL;
+  int name_len, clsname_len, lf_off, val_off, val_count, sk_off;
   unsigned int nk_id;
   LF_HDR *lf_hdr;
   VL_TYPE *vl;
@@ -2268,7 +1610,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
   /* Allocate the key struct now */
   tmp = (REG_KEY *)malloc(sizeof(REG_KEY));
   if (!tmp) return tmp;
-  memset(tmp, 0, sizeof(REG_KEY));
+  bzero(tmp, sizeof(REG_KEY));
 
   tmp->type = (SVAL(&nk_hdr->type)==0x2C?REG_ROOT_KEY:REG_SUB_KEY);
   
@@ -2293,15 +1635,13 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
 
     clsnam_off = IVAL(&nk_hdr->clsnam_off);
     clsnamep = LOCN(regf->base, clsnam_off);
-    if (verbose) fprintf(stdout, "Class Name Offset: %0X\n", clsnam_off);
  
-    memset(cls_name, 0, clsname_len);
+    bzero(cls_name, clsname_len);
     uni_to_ascii(clsnamep, cls_name, sizeof(cls_name), clsname_len);
     
     /*
      * I am keeping class name as an ascii string for the moment.
      * That means it needs to be converted on output.
-     * It will also piss off people who need Unicode/UTF-8 strings. Sorry. 
      * XXX: FIXME
      */
 
@@ -2315,34 +1655,15 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
   }
 
   /*
-   * Process the owner offset ...
-   */
-
-  own_off = IVAL(&nk_hdr->own_off);
-  own = (REG_KEY *)LOCN(regf->base, own_off);
-  if (verbose) fprintf(stdout, "Owner Offset: %0X\n", own_off);
-
-  if (verbose) fprintf(stdout, "  Owner locn: %0X, Our locn: %0X\n", 
-		       (unsigned int)own, (unsigned int)nk_hdr);
-
-  /* 
-   * We should verify that the owner field is correct ...
-   * for now, we don't worry ...
-   */
-
-  tmp->owner = parent;
-
-  /*
    * If there are any values, process them here
    */
 
   val_count = IVAL(&nk_hdr->val_cnt);
-  if (verbose) fprintf(stdout, "Val Count: %d\n", val_count);
+
   if (val_count) {
 
     val_off = IVAL(&nk_hdr->val_off);
     vl = (VL_TYPE *)LOCN(regf->base, val_off);
-    if (verbose) fprintf(stdout, "Val List Offset: %0X\n", val_off);
 
     tmp->values = process_vl(regf, *vl, val_count, BLK_SIZE(vl));
     if (!tmp->values) {
@@ -2357,7 +1678,6 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
 
   sk_off = IVAL(&nk_hdr->sk_off);
   sk_hdr = (SK_HDR *)LOCN(regf->base, sk_off);
-  if (verbose) fprintf(stdout, "SK Offset: %0X\n", sk_off);
 
   if (sk_off != -1) {
 
@@ -2366,7 +1686,6 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
   } 
 
   lf_off = IVAL(&nk_hdr->lf_off);
-  if (verbose) fprintf(stdout, "SubKey list offset: %0X\n", lf_off);
 
   /*
    * No more subkeys if lf_off == -1
@@ -2376,7 +1695,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
 
     lf_hdr = (LF_HDR *)LOCN(regf->base, lf_off);
     
-    tmp->sub_keys = process_lf(regf, lf_hdr, BLK_SIZE(lf_hdr), tmp);
+    tmp->sub_keys = process_lf(regf, lf_hdr, BLK_SIZE(lf_hdr));
     if (!tmp->sub_keys){
       goto error;
     }
@@ -2386,11 +1705,10 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
   return tmp;
 
  error:
-  if (tmp) nt_delete_reg_key(tmp, False);
+  if (tmp) nt_delete_reg_key(tmp);
   return NULL;
 }
 
-static
 int nt_load_registry(REGF *regf)
 {
   REGF_HDR *regf_hdr;
@@ -2442,608 +1760,15 @@ int nt_load_registry(REGF *regf)
    * Get a pointer to the first key from the hreg_hdr
    */
 
-  if (verbose) fprintf(stdout, "First Key: %0X\n",
-		       IVAL(&regf_hdr->first_key));
-
   first_key = (NK_HDR *)LOCN(regf->base, IVAL(&regf_hdr->first_key));
-  if (verbose) fprintf(stdout, "First Key Offset: %0X\n", 
-		       IVAL(&regf_hdr->first_key));
-
-  if (verbose) fprintf(stdout, "Data Block Size: %d\n",
-		       IVAL(&regf_hdr->dblk_size));
-
-  if (verbose) fprintf(stdout, "Offset to next hbin block: %0X\n",
-		       IVAL(&hbin_hdr->off_to_next));
-
-  if (verbose) fprintf(stdout, "HBIN block size: %0X\n",
-		       IVAL(&hbin_hdr->blk_size));
 
   /*
    * Now, get the registry tree by processing that NK recursively
    */
 
-  regf->root = nt_get_key_tree(regf, first_key, BLK_SIZE(first_key), NULL);
+  regf->root = nt_get_key_tree(regf, first_key, BLK_SIZE(first_key));
 
   assert(regf->root != NULL);
-
-  /*
-   * Unmap the registry file, as we might want to read in another
-   * tree etc.
-   */
-
-  if (regf->base) munmap(regf->base, regf->sbuf.st_size);
-  regf->base = NULL;
-  close(regf->fd);    /* Ignore the error :-) */
-
-  return 1;
-}
-
-/*
- * Allocate a new hbin block, set up the header for the block etc 
- */
-static
-HBIN_BLK *nt_create_hbin_blk(REGF *regf, int size)
-{
-  HBIN_BLK *tmp;
-  HBIN_HDR *hdr;
-
-  if (!regf || !size) return NULL;
-
-  /* Round size up to multiple of REGF_HDR_BLKSIZ */
-
-  size = (size + (REGF_HDR_BLKSIZ - 1)) & ~(REGF_HDR_BLKSIZ - 1);
-
-  tmp = (HBIN_BLK *)malloc(sizeof(HBIN_BLK));
-  memset(tmp, 0, sizeof(HBIN_BLK));
-
-  tmp->data = malloc(size);
-  if (!tmp->data) goto error;
-
-  memset(tmp->data, 0, size);  /* Make it pristine */
-
-  tmp->size = size;
-  tmp->file_offset = regf->blk_tail->file_offset + regf->blk_tail->size;
-
-  tmp->free_space = size - (sizeof(HBIN_HDR) - sizeof(HBIN_SUB_HDR));
-  tmp->fsp_off = size - tmp->free_space;
-
-  /* 
-   * Now, build the header in the data block 
-   */
-  hdr = (HBIN_HDR *)tmp->data;
-  hdr->HBIN_ID = REG_HBIN_ID;
-  hdr->off_from_first = tmp->file_offset - REGF_HDR_BLKSIZ;
-  hdr->off_to_next = tmp->size;
-  hdr->blk_size = tmp->size;
-
-  /*
-   * Now link it in
-   */
-
-  regf->blk_tail->next = tmp;
-  regf->blk_tail = tmp;
-  if (!regf->free_space) regf->free_space = tmp;
-
-  return tmp;
- error:
-  if (tmp) free(tmp);
-  return NULL;
-}
-
-/*
- * Allocate a unit of space ... and return a pointer as function param
- * and the block's offset as a side effect
- */
-static
-void *nt_alloc_regf_space(REGF *regf, int size, unsigned int *off)
-{
-  int tmp = 0;
-  void *ret = NULL;
-  HBIN_BLK *blk;
-  
-  if (!regf || !size || !off) return NULL;
-
-  assert(regf->blk_head != NULL);
-
-  /*
-   * round up size to include header and then to 8-byte boundary
-   */
-  size = (size + 4 + 7) & ~7;
-
-  /*
-   * Check if there is space, if none, grab a block
-   */
-  if (!regf->free_space) {
-    if (!nt_create_hbin_blk(regf, REGF_HDR_BLKSIZ))
-      return NULL;
-  }
-
-  /*
-   * Now, chain down the list of blocks looking for free space
-   */
-
-  for (blk = regf->free_space; blk != NULL; blk = blk->next) {
-    if (blk->free_space <= size) {
-      tmp = blk->file_offset + blk->fsp_off - REGF_HDR_BLKSIZ;
-      ret = blk->data + blk->fsp_off;
-      blk->free_space -= size;
-      blk->fsp_off += size;
-
-      /* Insert the header */
-      ((HBIN_SUB_HDR *)ret)->dblocksize = -size;
-
-      /*
-       * Fix up the free space ptr
-       * If it is NULL, we fix it up next time
-       */
-
-      if (!blk->free_space) 
-	regf->free_space = blk->next;
-
-      *off = tmp;
-      return (((char *)ret)+4);/* The pointer needs to be to the data struct */
-    }
-  }
-
-  /*
-   * If we got here, we need to add another block, which might be 
-   * larger than one block -- deal with that later
-   */
-  if (nt_create_hbin_blk(regf, REGF_HDR_BLKSIZ)) {
-    blk = regf->free_space;
-    tmp = blk->file_offset + blk->fsp_off - REGF_HDR_BLKSIZ;
-    ret = blk->data + blk->fsp_off;
-    blk->free_space -= size;
-    blk->fsp_off += size;
-
-    /* Insert the header */
-    ((HBIN_SUB_HDR *)ret)->dblocksize = -size;
-
-    /*
-     * Fix up the free space ptr
-     * If it is NULL, we fix it up next time
-     */
-    
-    if (!blk->free_space) 
-      regf->free_space = blk->next;
-
-    *off = tmp;
-    return (((char *)ret) + 4);/* The pointer needs to be to the data struct */
-  }
-
-  return NULL;
-}
-
-/*
- * Compute the size of a SID stored ...
- */
-static
-unsigned int sid_size(sid_t *sid)
-{
-  unsigned int size;
-
-  if (!sid) return 0;
-
-  size = 8 + (sid->auths * sizeof(unsigned int));
-
-  return size;
-}
-
-/*
- * Compute the size of an ACE on disk from its components
- */
-static
-unsigned int ace_size(ACE *ace)
-{
-  unsigned int size;
-
-  if (!ace) return 0;
-
-  size = 8 + sid_size(ace->trustee);
-
-  return size;
-}     
-
-/* 
- * Compute the size of an ACL from its components ...
- */
-static
-unsigned int acl_size(ACL *acl)
-{
-  unsigned int size;
-  int i;
-
-  if (!acl) return 0;
-
-  size = 8; 
-  for (i = 0; i < acl->num_aces; i++)
-    size += ace_size(acl->aces[i]);
-
-  return size;
-}
-
-/*
- * Compute the size of the sec desc as a self-relative SD
- */
-static
-unsigned int sec_desc_size(SEC_DESC *sd)
-{
-  unsigned int size;
-  
-  if (!sd) return 0;
-
-  size = 20;
-
-  if (sd->owner) size += sid_size(sd->owner);
-  if (sd->group) size += sid_size(sd->group);
-  if (sd->sacl) size += acl_size(sd->sacl);
-  if (sd->dacl) size += acl_size(sd->dacl);
-
-  return size;
-}
-
-/*
- * Store a SID at the location provided
- */
-static
-int nt_store_SID(REGF *regf, sid_t *sid, unsigned char *locn)
-{
-  int i;
-  unsigned char *p = locn;
-
-  if (!regf || !sid || !locn) return 0;
-
-  *p = sid->ver; p++;
-  *p = sid->auths; p++;
-  
-  for (i=0; i < 6; i++) {
-    *p = sid->auth[i]; p++;
-  }
-
-  for (i=0; i < sid->auths; i++) {
-    SIVAL(p, sid->sub_auths[i]); p+=4;
-  }
-
-  return p - locn;
-  
-}
-
-static
-int nt_store_ace(REGF *regf, ACE *ace, unsigned char *locn)
-{
-  int size = 0;
-  REG_ACE *reg_ace = (REG_ACE *)locn;
-  unsigned char *p;
-
-  if (!regf || !ace || !locn) return 0;
-
-  reg_ace->type = ace->type;
-  reg_ace->flags = ace->flags;
-
-  /* Deal with the length when we have stored the SID */
-
-  p = (unsigned char *)&reg_ace->perms;
-
-  SIVAL(p, ace->perms); p += 4;
-
-  size = nt_store_SID(regf, ace->trustee, p);
-
-  size += 8; /* Size of the fixed header */
-
-  p = (unsigned char *)&reg_ace->length;
-
-  SSVAL(p, size);
-
-  return size;
-}
-
-/*
- * Store an ACL at the location provided
- */
-static
-int nt_store_acl(REGF *regf, ACL *acl, unsigned char *locn)
-{
-  int size = 0, i;
-  unsigned char *p = locn, *s;
-
-  if (!regf || !acl || !locn) return 0;
-
-  /*
-   * Now store the header and then the ACEs ...
-   */
-
-  SSVAL(p, acl->rev);
-
-  p += 2; s = p; /* Save this for the size field */
-
-  p += 2;
-
-  SIVAL(p, acl->num_aces);
-
-  p += 4;
-
-  for (i = 0; i < acl->num_aces; i++) {
-    size = nt_store_ace(regf, acl->aces[i], p);
-    p += size;
-  }
-
-  size = s - locn;
-  SSVAL(s, size);
-  return size;
-}
-
-/*
- * Flatten and store the Sec Desc 
- * Windows lays out the DACL first, but since there is no SACL, it might be
- * that first, then the owner, then the group SID. So, we do it that way
- * too.
- */
-static
-unsigned int nt_store_sec_desc(REGF *regf, SEC_DESC *sd, char *locn)
-{
-  REG_SEC_DESC *rsd = (REG_SEC_DESC *)locn;
-  unsigned int size = 0, off = 0;
-
-  if (!regf || !sd || !locn) return 0;
-
-  /* 
-   * Now, fill in the first two fields, then lay out the various fields
-   * as needed
-   */
-
-  rsd->rev = 0x01;
-  /* Self relative, DACL pres, owner and group not defaulted */
-  rsd->type = 0x8004;  
-
-  off = 4 * sizeof(DWORD) + 4;
-
-  if (sd->sacl){
-    size = nt_store_acl(regf, sd->sacl, (char *)(locn + off));
-    rsd->sacl_off = off;
-  }
-  else
-    rsd->sacl_off = 0;
-
-  off += size;
-
-  if (sd->dacl) {
-    rsd->dacl_off = off;
-    size = nt_store_acl(regf, sd->dacl, (char *)(locn + off));
-  }
-  else {
-    rsd->dacl_off = 0;
-  }
-
-  off += size;
-
-  /* Now the owner and group SIDs */
-
-  if (sd->owner) {
-    rsd->owner_off = off;
-    size = nt_store_SID(regf, sd->owner, (char *)(locn + off));
-  }
-  else {
-    rsd->owner_off = 0;
-  }
-
-  off += size;
-
-  if (sd->group) {
-    rsd->group_off = off;
-    size = nt_store_SID(regf, sd->group, (char *)(locn + off));
-  }
-  else {
-    rsd->group_off = 0;
-  }
-
-  off += size;
-
-  return size;
-}
-
-/*
- * Store the security information
- *
- * If it has already been stored, just get its offset from record
- * otherwise, store it and record its offset
- */
-static
-unsigned int nt_store_security(REGF *regf, KEY_SEC_DESC *sec)
-{
-  int size = 0;
-  unsigned int sk_off;
-  SK_HDR *sk_hdr;
-  
-  if (sec->offset) return sec->offset;
-
-  /*
-   * OK, we don't have this one in the file yet. We must compute the 
-   * size taken by the security descriptor as a self-relative SD, which
-   * means making one pass over each structure and figuring it out
-   */
-
-  size = sec_desc_size(sec->sec_desc);
-
-  /* Allocate that much space */
-
-  sk_hdr = nt_alloc_regf_space(regf, size, &sk_off);
-  sec->sk_hdr = sk_hdr;
-
-  if (!sk_hdr) return 0;
-
-  /* Now, lay out the sec_desc in the space provided */
-
-  sk_hdr->SK_ID = REG_SK_ID;
-  
-  /* 
-   * We can't deal with the next and prev offset in the SK_HDRs until the
-   * whole tree has been stored, then we can go and deal with them
-   */
-
-  sk_hdr->ref_cnt = sec->ref_cnt;
-  sk_hdr->rec_size = size;       /* Is this correct */
-
-  /* Now, lay out the sec_desc */
-
-  if (!nt_store_sec_desc(regf, sec->sec_desc, (char *)&sk_hdr->sec_desc))
-    return 0;
-
-  return sk_off;
-
-}
-
-/*
- * Store a VAL LIST
- */
-static
-int nt_store_val_list(REGF *regf, VAL_LIST * values)
-{
-
-  return 0;
-}
-
-/*
- * Store a KEY in the file ...
- *
- * We store this depth first, and defer storing the lf struct until
- * all the sub-keys have been stored.
- * 
- * We store the NK hdr, any SK header, class name, and VK structure, then
- * recurse down the LF structures ... 
- * 
- * We return the offset of the NK struct
- * FIXME, FIXME, FIXME: Convert to using SIVAL and SSVAL ...
- */
-static
-int nt_store_reg_key(REGF *regf, REG_KEY *key)
-{
-  NK_HDR *nk_hdr; 
-  unsigned int nk_off, sk_off, size;
-
-  if (!regf || !key) return 0;
-
-  size = sizeof(NK_HDR) + strlen(key->name) - 1;
-  nk_hdr = nt_alloc_regf_space(regf, size, &nk_off);
-  if (!nk_hdr) goto error;
-
-  key->offset = nk_off;  /* We will need this later */
-
-  /*
-   * Now fill in each field etc ...
-   */
-
-  nk_hdr->NK_ID = REG_NK_ID; 
-  if (key->type == REG_ROOT_KEY)
-    nk_hdr->type = 0x2C;
-  else
-    nk_hdr->type = 0x20;
-
-  /* FIXME: Fill in the time of last update */
-
-  if (key->type != REG_ROOT_KEY)
-    nk_hdr->own_off = key->owner->offset;
-
-  if (key->sub_keys)
-    nk_hdr->subk_num = key->sub_keys->key_count;
-
-  /*
-   * Now, process the Sec Desc and then store its offset
-   */
-
-  sk_off = nt_store_security(regf, key->security);
-  nk_hdr->sk_off = sk_off;
-
-  /*
-   * Then, store the val list and store its offset
-   */
-  if (key->values) {
-    nk_hdr->val_cnt = key->values->val_count;
-    nk_hdr->val_off = nt_store_val_list(regf, key->values);
-  }
-  else {
-    nk_hdr->val_off = -1;
-    nk_hdr->val_cnt = 0;
-  }
-
-  /*
-   * Finally, store the subkeys, and their offsets
-   */
-
- error:
-  return 0;
-}
-
-/*
- * Store the registry header ...
- * We actually create the registry header block and link it to the chain
- * of output blocks.
- */
-static
-REGF_HDR *nt_get_reg_header(REGF *regf)
-{
-  HBIN_BLK *tmp = NULL;
-  
-  tmp = (HBIN_BLK *)malloc(sizeof(HBIN_BLK));
-  if (!tmp) return 0;
-
-  memset(tmp, 0, sizeof(HBIN_BLK));
-  tmp->type = REG_OUTBLK_HDR;
-  tmp->size = REGF_HDR_BLKSIZ;
-  tmp->data = malloc(REGF_HDR_BLKSIZ);
-  if (!tmp->data) goto error;
-
-  memset(tmp->data, 0, REGF_HDR_BLKSIZ);  /* Make it pristine, unlike Windows */
-  regf->blk_head = regf->blk_tail = tmp;
-
-  return (REGF_HDR *)tmp->data;
-
- error:
-  if (tmp) free(tmp);
-  return NULL;
-}
-
-/*
- * Store the registry in the output file
- * We write out the header and then each of the keys etc into the file
- * We have to flatten the data structure ...
- *
- * The structures are stored in a depth-first fashion, with all records
- * aligned on 8-byte boundaries, with sub-keys and values layed down before
- * the lists that contain them. SK records are layed down first, however.
- * The lf fields are layed down after all sub-keys have been layed down, it
- * seems, including the whole tree associated with each sub-key.
- */
-static
-int nt_store_registry(REGF *regf)
-{
-  REGF_HDR *reg;
-  int fkey, fd;
-
-  /*
-   * Get a header ... and partially fill it in ...
-   */
-  reg = nt_get_reg_header(regf);
-
-  /*
-   * Store the first key, which will store the whole thing
-   */
-  fkey = nt_store_reg_key(regf, regf->root);
-
-  /*
-   * At this point we have the registry as a series of blocks, so
-   * run down that series of blocks and save them ...
-   */
-
-  if (!regf->outfile_name) {
-    fprintf(stderr, "Cannot write file without a name!\n");
-    return 0;
-  }
-
-  if ((fd = open(regf->outfile_name, O_WRONLY, 0666)) < 0) {
-    fprintf(stderr, "Unable to create file %s: %s\n", regf->outfile_name,
-	    strerror(errno));
-    return 0;
-  }
 
   return 1;
 }
@@ -3057,11 +1782,6 @@ int nt_store_registry(REGF *regf)
  * \[[-]key-path\]\n
  * <value-spec>*
  *
- * Format:
- * [cmd:]name=type:value
- *
- * cmd = a|d|c|add|delete|change|as|ds|cs
- *
  * There can be more than one key-path and value-spec.
  *
  * Since we want to support more than one type of file format, we
@@ -3072,607 +1792,57 @@ int nt_store_registry(REGF *regf)
 #define FMT_REGEDIT4 0
 #define FMT_EDITREG1_1 1
 
-#define FMT_STRING_REGEDIT4 "REGEDIT4"
-#define FMT_STRING_EDITREG1_0 "EDITREG1.0"
-
-#define CMD_NONE     0
-#define CMD_ADD_KEY  1
-#define CMD_DEL_KEY  2
-
-#define CMD_KEY 1
-#define CMD_VAL 2
-
-typedef struct val_spec_list {
-  struct val_spec_list *next;
-  char *name;
-  int type;
-  char *val;    /* Kept as a char string, really? */
-} VAL_SPEC_LIST;
-
 typedef struct command_s {
   int cmd;
   char *key;
-  int val_count;
-  VAL_SPEC_LIST *val_spec_list, *val_spec_last;
+  void *val_spec_list;
 } CMD;
-
-typedef struct cmd_line {
-  int len, line_len;
-  char *line;
-} CMD_LINE;
-
-static
-void free_val_spec_list(VAL_SPEC_LIST *vl)
-{
-  if (!vl) return;
-  if (vl->name) free(vl->name);
-  if (vl->val) free(vl->val);
-  free(vl);
-
-}
-
-/* 
- * Some routines to handle lines of info in the command files
- */
-static
-void skip_to_eol(int fd)
-{
-  int rc;
-  char ch = 0;
-
-  while ((rc = read(fd, &ch, 1)) == 1) {
-    if (ch == 0x0A) return;
-  }
-  if (rc < 0) {
-    fprintf(stderr, "Could not read file descriptor: %d, %s\n",
-	    fd, strerror(errno));
-    exit(1);
-  }
-}
-
-static
-void free_cmd(CMD *cmd)
-{
-  if (!cmd) return;
-
-  while (cmd->val_spec_list) {
-    VAL_SPEC_LIST *tmp;
-
-    tmp = cmd->val_spec_list;
-    cmd->val_spec_list = tmp->next;
-    free(tmp);
-  }
-
-  free(cmd);
-
-}
-
-static
-void free_cmd_line(CMD_LINE *cmd_line)
-{
-  if (cmd_line) {
-    if (cmd_line->line) free(cmd_line->line);
-    free(cmd_line);
-  }
-}
-
-static
-void print_line(struct cmd_line *cl)
-{
-  char *pl;
-
-  if (!cl) return;
-
-  if ((pl = malloc(cl->line_len + 1)) == NULL) {
-    fprintf(stderr, "Unable to allocate space to print line: %s\n",
-	    strerror(errno));
-    exit(1);
-  }
-
-  strncpy(pl, cl->line, cl->line_len);
-  pl[cl->line_len] = 0;
-
-  fprintf(stdout, "%s\n", pl);
-  free(pl);
-}
-
-#define INIT_ALLOC 10 
-
-/*
- * Read a line from the input file.
- * NULL returned when EOF and no chars read
- * Otherwise we return a cmd_line *
- * Exit if other errors
- */
-static
-struct cmd_line *get_cmd_line(int fd)
-{
-  struct cmd_line *cl = (CMD_LINE *)malloc(sizeof(CMD_LINE));
-  int i = 0, rc;
-  unsigned char ch;
-
-  if (!cl) {
-    fprintf(stderr, "Unable to allocate structure for command line: %s\n",
-	    strerror(errno));
-    exit(1);
-  }
-
-  cl->len = INIT_ALLOC;
-
-  /*
-   * Allocate some space for the line. We extend later if needed.
-   */
-
-  if ((cl->line = (char *)malloc(INIT_ALLOC)) == NULL) {
-    fprintf(stderr, "Unable to allocate initial space for line: %s\n",
-	    strerror(errno));
-    exit(1);
-  }
-
-  /*
-   * Now read in the chars to EOL. Don't store the EOL in the 
-   * line. What about CR?
-   */
-
-  while ((rc = read(fd, &ch, 1)) == 1 && ch != '\n') {
-    if (ch == '\r') continue; /* skip CR */
-    if (i == cl->len) {
-      /*
-       * Allocate some more memory
-       */
-      if ((cl->line = realloc(cl->line, cl->len + INIT_ALLOC)) == NULL) {
-	fprintf(stderr, "Unable to realloc space for line: %s\n",
-		strerror(errno));
-	exit(1);
-      }
-      cl->len += INIT_ALLOC;
-    }
-    cl->line[i] = ch;
-    i++;
-  }
-
-  /* read 0 and we were at loc'n 0, return NULL */
-  if (rc == 0 && i == 0) {
-    free_cmd_line(cl);
-    return NULL;
-  }
-
-  cl->line_len = i;
-
-  return cl;
-
-}
-
-/*
- * parse_value: parse out a value. We pull it apart as:
- *
- * <value> ::= <value-name>=<type>:<value-string>
- *
- * <value-name> ::= char-string-without-spaces | '"' char-string '"'
- *
- * If it parsed OK, return the <value-name> as a string, and the
- * value type and value-string in parameters.
- *
- * The value name can be empty. There can only be one empty name in 
- * a list of values. A value of - removes the value entirely.  
- */
-static
-char *dup_str(char *s, int len) 
-{ 
-  char *nstr; 
-  nstr = (char *)malloc(len + 1);
-  if (nstr) {
-    memcpy(nstr, s, len);
-    nstr[len] = 0;
-  }
-  return nstr;
-}
-
-static
-char *parse_name(char *nstr)
-{
-  int len = 0, start = 0;
-  if (!nstr) return NULL;
-
-  len = strlen(nstr);
-
-  while (len && nstr[len - 1] == ' ') len--;
-
-  nstr[len] = 0; /* Trim any spaces ... if there were none, doesn't matter */
-
-  /*
-   * Beginning and end should be '"' or neither should be so
-   */
-  if ((nstr[0] == '"' && nstr[len - 1] != '"') ||
-      (nstr[0] != '"' && nstr[len - 1] == '"'))
-    return NULL;
-
-  if (nstr[0] == '"') {
-    start = 1;
-    len -= 2;
-  }
-
-  return dup_str(&nstr[start], len);
-}
-
-static
-int parse_value_type(char *tstr)
-{
-  int len = strlen(tstr);
-  
-  while (len && tstr[len - 1] == ' ') len--;
-  tstr[len] = 0;
-
-  if (strcmp(tstr, "REG_DWORD") == 0)
-    return REG_TYPE_DWORD;
-  else if (strcmp(tstr, "dword") == 0)
-    return REG_TYPE_DWORD;
-  else if (strcmp(tstr, "REG_EXPAND_SZ") == 0)
-    return REG_TYPE_EXPANDSZ;
-  else if (strcmp(tstr, "REG_BIN") == 0)
-    return REG_TYPE_BIN;
-  else if (strcmp(tstr, "REG_SZ") == 0)
-    return REG_TYPE_REGSZ;
-  else if (strcmp(tstr, "REG_MULTI_SZ") == 0)
-    return REG_TYPE_MULTISZ;
-  else if (strcmp(tstr, "-") == 0)
-    return REG_TYPE_DELETE;
-
-  return 0;
-}
-
-static
-char *parse_val_str(char *vstr)
-{
-  
-  return dup_str(vstr, strlen(vstr));
-
-}
-
-static
-char *parse_value(struct cmd_line *cl, int *vtype, char **val)
-{
-  char *p1 = NULL, *p2 = NULL, *nstr = NULL, *tstr = NULL, *vstr = NULL;
-  
-  if (!cl || !vtype || !val) return NULL;
-  if (!cl->line_len) return NULL;
-
-  p1 = dup_str(cl->line, cl->line_len);
-  /* FIXME: Better return codes etc ... */
-  if (!p1) return NULL;
-  p2 = strchr(p1, '=');
-  if (!p2) return NULL;
-
-  *p2 = 0; p2++; /* Split into two strings at p2 */
-
-  /* Now, parse the name ... */
-
-  nstr = parse_name(p1);
-  if (!nstr) goto error;
-
-  /* Now, split the remainder and parse on type and val ... */
-
-  tstr = p2;
-  while (*tstr == ' ') tstr++; /* Skip leading white space */
-  p2 = strchr(p2, ':');
-
-  if (p2) {
-    *p2 = 0; p2++; /* split on the : */
-  }
-
-  *vtype = parse_value_type(tstr);
-
-  if (!vtype) goto error;
-
-  if (!p2 || !*p2) return nstr;
-
-  /* Now, parse the value string. It should return a newly malloc'd string */
-  
-  while (*p2 == ' ') p2++; /* Skip leading space */
-  vstr = parse_val_str(p2);
-
-  if (!vstr) goto error;
-
-  *val = vstr;
-
-  return nstr;
-
- error:
-  if (p1) free(p1);
-  if (nstr) free(nstr);
-  if (vstr) free(vstr);
-  return NULL;
-}
-
-/*
- * Parse out a key. Look for a correctly formatted key [...] 
- * and whether it is a delete or add? A delete is signalled 
- * by a - in front of the key.
- * Assumes that there are no leading and trailing spaces
- */
-
-static
-char *parse_key(struct cmd_line *cl, int *cmd)
-{
-  int start = 1;
-  char *tmp;
-
-  if (cl->line[0] != '[' ||
-      cl->line[cl->line_len - 1] != ']') return NULL;
-  if (cl->line_len == 2) return NULL;
-  *cmd = CMD_ADD_KEY;
-  if (cl->line[1] == '-') {
-    if (cl->line_len == 3) return NULL;
-    start = 2;
-    *cmd = CMD_DEL_KEY;
-  }
-  tmp = malloc(cl->line_len - 1 - start + 1);
-  if (!tmp) return tmp; /* Bail out on no mem ... FIXME */
-  strncpy(tmp, &cl->line[start], cl->line_len - 1 - start);
-  tmp[cl->line_len - 1 - start] = 0;
-  return tmp;
-}
-
-/*
- * Parse a line to determine if we have a key or a value
- * We only check for key or val ...
- */
-
-static
-int parse_line(struct cmd_line *cl)
-{
-
-  if (!cl || cl->len == 0) return 0;
-
-  if (cl->line[0] == '[')  /* No further checking for now */
-    return CMD_KEY;
-  else 
-    return CMD_VAL;
-}
 
 /*
  * We seek to offset 0, read in the required number of bytes, 
  * and compare to the correct value.
  * We then seek back to the original location
  */
-static
 int regedit4_file_type(int fd)
 {
   int cur_ofs = 0;
-  char desc[9];
 
   cur_ofs = lseek(fd, 0, SEEK_CUR); /* Get current offset */
   if (cur_ofs < 0) {
     fprintf(stderr, "Unable to get current offset: %s\n", strerror(errno));
-    exit(1);  /* FIXME */
+    exit(1);
   }
 
   if (cur_ofs) {
     lseek(fd, 0, SEEK_SET);
   }
 
-  if (read(fd, desc, 8) < 8) {
-    fprintf(stderr, "Unable to read command file format\n"); 
-    exit(2);  /* FIXME */
-  }
-
-  desc[8] = 0;
-
-  if (strcmp(desc, FMT_STRING_REGEDIT4) == 0) {
-    if (cur_ofs) {
-      lseek(fd, cur_ofs, SEEK_SET);
-    }
-    else {
-      skip_to_eol(fd);
-    }
-    return FMT_REGEDIT4;
-  }
-
   return FMT_UNREC;
 }
 
-/*
- * Run though the data in the line and strip anything after a comment
- * char.
- */
-static
-void strip_comment(struct cmd_line *cl)
-{
-  int i;
-
-  if (!cl) return;
-
-  for (i = 0; i < cl->line_len; i++) {
-    if (cl->line[i] == ';') {
-      cl->line_len = i;
-      return;
-    }
-  }
-}
-
-/* 
- * trim leading space
- */
-
-static
-void trim_leading_spaces(struct cmd_line *cl)
-{
-  int i;
-
-  if (!cl) return;
-
-  for (i = 0; i < cl->line_len; i++) {
-    if (cl->line[i] != ' '){
-      if (i) memcpy(cl->line, &cl->line[i], cl->line_len - i);
-      return;
-    }
-  }
-}
-
-/* 
- * trim trailing spaces
- */
-static
-void trim_trailing_spaces(struct cmd_line *cl)
-{
-  int i;
-
-  if (!cl) return;
-
-  for (i = cl->line_len; i == 0; i--) {
-    if (cl->line[i-1] != ' ' &&
-	cl->line[i-1] != '\t') {
-      cl->line_len = i;
-    }
-  }
-}
-
-/* 
- * Get a command ... This consists of possibly multiple lines:
- * [key]
- * values*
- * possibly Empty line
- *
- * value ::= <value-name>=<value-type>':'<value-string>
- * <value-name> is some path, possibly enclosed in quotes ...
- * We alctually look for the next key to terminate a previous key
- * if <value-type> == '-', then it is a delete type.
- */
-static
 CMD *regedit4_get_cmd(int fd)
 {
-  struct command_s *cmd = NULL;
-  struct cmd_line *cl = NULL;
-  struct val_spec_list *vl = NULL;
-
-  if ((cmd = (struct command_s *)malloc(sizeof(struct command_s))) == NULL) {
-    fprintf(stderr, "Unable to malloc space for command: %s\n",
-	    strerror(errno));
-    exit(1);
-  }
-
-  cmd->cmd = CMD_NONE;
-  cmd->key = NULL;
-  cmd->val_count = 0;
-  cmd->val_spec_list = cmd->val_spec_last = NULL;
-  while ((cl = get_cmd_line(fd))) {
-
-    /*
-     * If it is an empty command line, and we already have a key
-     * then exit from here ... FIXME: Clean up the parser
-     */
-
-    if (cl->line_len == 0 && cmd->key) {
-      free_cmd_line(cl);
-      break;
-    } 
-
-    strip_comment(cl);     /* remove anything beyond a comment char */
-    trim_trailing_spaces(cl);
-    trim_leading_spaces(cl);
-
-    if (cl->line_len == 0) {    /* An empty line */
-      free_cmd_line(cl);
-    }
-    else {                 /* Else, non-empty ... */
-      /* 
-       * Parse out the bits ... 
-       */
-      switch (parse_line(cl)) {
-      case CMD_KEY:
-	if ((cmd->key = parse_key(cl, &cmd->cmd)) == NULL) {
-	  fprintf(stderr, "Error parsing key from line: ");
-	  print_line(cl);
-	  fprintf(stderr, "\n");
-	}
-	break;
-
-      case CMD_VAL:
-	/*
-	 * We need to add the value stuff to the list
-	 * There could be a \ on the end which we need to 
-	 * handle at some time
-	 */
-	vl = (struct val_spec_list *)malloc(sizeof(struct val_spec_list));
-	if (!vl) goto error;
-	vl->next = NULL;
-	vl->val = NULL;
-	vl->name = parse_value(cl, &vl->type, &vl->val);
-	if (!vl->name) goto error;
-	if (cmd->val_spec_list == NULL) {
-	  cmd->val_spec_list = cmd->val_spec_last = vl;
-	}
-	else {
-	  cmd->val_spec_last->next = vl;
-	  cmd->val_spec_last = vl;
-	}
-	cmd->val_count++;
-	break;
-
-      default:
-	fprintf(stderr, "Unrecognized line in command file: \n");
-	print_line(cl);
-	break;
-      }
-    }
-
-  }
-  if (!cmd->cmd) goto error; /* End of file ... */
-
-  return cmd;
-
- error:
-  if (vl) free(vl);
-  if (cmd) free_cmd(cmd);
   return NULL;
 }
 
-static
 int regedit4_exec_cmd(CMD *cmd)
 {
 
   return 0;
 }
 
-static
-int editreg_1_0_file_type(int fd)
+int editreg_1_1_file_type(int fd)
 {
-  int cur_ofs = 0;
-  char desc[11];
-
-  cur_ofs = lseek(fd, 0, SEEK_CUR); /* Get current offset */
-  if (cur_ofs < 0) {
-    fprintf(stderr, "Unable to get current offset: %s\n", strerror(errno));
-    exit(1);  /* FIXME */
-  }
-
-  if (cur_ofs) {
-    lseek(fd, 0, SEEK_SET);
-  }
-
-  if (read(fd, desc, 10) < 10) {
-    fprintf(stderr, "Unable to read command file format\n"); 
-    exit(2);  /* FIXME */
-  }
-
-  desc[10] = 0;
-
-  if (strcmp(desc, FMT_STRING_EDITREG1_0) == 0) {
-    lseek(fd, cur_ofs, SEEK_SET);
-    return FMT_REGEDIT4;
-  }
 
   return FMT_UNREC;
 }
 
-static
-CMD *editreg_1_0_get_cmd(int fd)
+CMD *editreg_1_1_get_cmd(int fd)
 {
   return NULL;
 }
 
-static
-int editreg_1_0_exec_cmd(CMD *cmd)
+int editreg_1_1_exec_cmd(CMD *cmd)
 {
 
   return -1;
@@ -3687,7 +1857,7 @@ typedef struct command_ops_s {
 
 CMD_OPS default_cmd_ops[] = {
   {0, regedit4_file_type, regedit4_get_cmd, regedit4_exec_cmd},
-  {1, editreg_1_0_file_type, editreg_1_0_get_cmd, editreg_1_0_exec_cmd},
+  {1, editreg_1_1_file_type, editreg_1_1_get_cmd, editreg_1_1_exec_cmd},
   {-1,  NULL, NULL, NULL}
 }; 
 
@@ -3701,7 +1871,6 @@ typedef struct command_file_s {
  * Create a new command file structure
  */
 
-static
 CMD_FILE *cmd_file_create(char *file)
 {
   CMD_FILE *tmp;
@@ -3769,12 +1938,11 @@ CMD_FILE *cmd_file_create(char *file)
  * key print function here ...
  */
 
-static
 int print_key(const char *path, char *name, char *class_name, int root, 
 	      int terminal, int vals)
 {
 
-  if (full_print || terminal) fprintf(stdout, "[%s%s]\n", path, name);
+  if (terminal) fprintf(stdout, "%s\\%s\n", path, name);
 
   return 1;
 }
@@ -3783,88 +1951,7 @@ int print_key(const char *path, char *name, char *class_name, int root,
  * Sec Desc print functions 
  */
 
-static
-void print_type(unsigned char type)
-{
-  switch (type) {
-  case 0x00:
-    fprintf(stdout, "    ALLOW");
-    break;
-  case 0x01:
-    fprintf(stdout, "     DENY");
-    break;
-  case 0x02:
-    fprintf(stdout, "    AUDIT");
-    break;
-  case 0x03:
-    fprintf(stdout, "    ALARM");
-    break;
-  case 0x04:
-    fprintf(stdout, "ALLOW CPD");
-    break;
-  case 0x05:
-    fprintf(stdout, "OBJ ALLOW");
-    break;
-  case 0x06:
-    fprintf(stdout, " OBJ DENY");
-  default:
-    fprintf(stdout, "  UNKNOWN");
-    break;
-  }
-}
-
-static
-void print_flags(unsigned char flags)
-{
-  char flg_output[21];
-  int some = 0;
-
-  flg_output[0] = 0;
-  if (!flags) {
-    fprintf(stdout, "         ");
-    return;
-  }
-  if (flags & 0x01) {
-    if (some) strcat(flg_output, ",");
-    some = 1;
-    strcat(flg_output, "OI");
-  }
-  if (flags & 0x02) {
-    if (some) strcat(flg_output, ",");
-    some = 1;
-    strcat(flg_output, "CI");
-  }
-  if (flags & 0x04) {
-    if (some) strcat(flg_output, ",");
-    some = 1;
-    strcat(flg_output, "NP");
-  }
-  if (flags & 0x08) {
-    if (some) strcat(flg_output, ",");
-    some = 1;
-    strcat(flg_output, "IO");
-  }
-  if (flags & 0x10) {
-    if (some) strcat(flg_output, ",");
-    some = 1;
-    strcat(flg_output, "IA");
-  }
-  if (flags == 0xF) {
-    if (some) strcat(flg_output, ",");
-    some = 1;
-    strcat(flg_output, "VI");
-  }
-  fprintf(stdout, " %s", flg_output);
-}
-
-static
-void print_perms(int perms)
-{
-  fprintf(stdout, " %8X", perms);
-}
-
-static
-void print_sid(sid_t *sid)
+void print_sid(DOM_SID *sid)
 {
   int i, comps = sid->auths;
   fprintf(stdout, "S-%u-%u", sid->ver, sid->auth[5]);
@@ -3877,69 +1964,40 @@ void print_sid(sid_t *sid)
   fprintf(stdout, "\n");
 }
 
-static
-void print_acl(ACL *acl, const char *prefix)
-{
-  int i;
-
-  for (i = 0; i < acl->num_aces; i++) {
-    fprintf(stdout, ";;%s", prefix);
-    print_type(acl->aces[i]->type);
-    print_flags(acl->aces[i]->flags);
-    print_perms(acl->aces[i]->perms);
-    fprintf(stdout, " ");
-    print_sid(acl->aces[i]->trustee);
-  }
-}
-
-static
 int print_sec(SEC_DESC *sec_desc)
 {
-  if (!print_security) return 1;
-  fprintf(stdout, ";;  SECURITY\n");
-  fprintf(stdout, ";;   Owner: ");
+
+  fprintf(stdout, "  SECURITY\n");
+  fprintf(stdout, "    Owner: ");
   print_sid(sec_desc->owner);
-  fprintf(stdout, ";;   Group: ");
+  fprintf(stdout, "    Group: ");
   print_sid(sec_desc->group);
-  if (sec_desc->sacl) {
-    fprintf(stdout, ";;    SACL:\n");
-    print_acl(sec_desc->sacl, " ");
-  }
-  if (sec_desc->dacl) {
-    fprintf(stdout, ";;    DACL:\n");
-    print_acl(sec_desc->dacl, " ");
-  }
   return 1;
 }
 
 /*
  * Value print function here ...
  */
-static
 int print_val(const char *path, char *val_name, int val_type, int data_len, 
 	      void *data_blk, int terminal, int first, int last)
 {
   char data_asc[1024];
 
-  memset(data_asc, 0, sizeof(data_asc));
+  bzero(data_asc, sizeof(data_asc));
   if (!terminal && first)
     fprintf(stdout, "%s\n", path);
   data_to_ascii((unsigned char *)data_blk, data_len, val_type, data_asc, 
 		sizeof(data_asc) - 1);
-  fprintf(stdout, "  %s = %s : %s\n", (val_name?val_name:"<No Name>"), 
+  fprintf(stdout, "  %s : %s : %s\n", (val_name?val_name:"<No Name>"), 
 		   val_to_str(val_type, reg_type_names), data_asc);
   return 1;
 }
 
-static
 void usage(void)
 {
-  fprintf(stderr, "Usage: editreg [-f] [-v] [-p] [-k] [-s] [-c <command-file>] <registryfile>\n");
+  fprintf(stderr, "Usage: editreg [-v] [-k] [-c <command-file>] <registryfile>\n");
   fprintf(stderr, "Version: 0.1\n\n");
   fprintf(stderr, "\n\t-v\t sets verbose mode");
-  fprintf(stderr, "\n\t-f\t sets full print mode where non-terminals are printed");
-  fprintf(stderr, "\n\t-p\t prints the registry");
-  fprintf(stderr, "\n\t-s\t prints security descriptors");
   fprintf(stderr, "\n\t-c <command-file>\t specifies a command file");
   fprintf(stderr, "\n");
 }
@@ -3949,13 +2007,9 @@ int main(int argc, char *argv[])
   REGF *regf;
   extern char *optarg;
   extern int optind;
-  int opt, print_keys = 0;
-  int regf_opt = 1; /* Command name */
-  int commands = 0, modified = 0;
-  char *cmd_file_name = NULL;
-  char *out_file_name = NULL;
-  CMD_FILE *cmd_file = NULL;
-  sid_t *lsid;
+  int opt;
+  int commands = 0;
+  char *cmd_file = NULL;
 
   if (argc < 2) {
     usage();
@@ -3966,55 +2020,18 @@ int main(int argc, char *argv[])
    * Now, process the arguments
    */
 
-  while ((opt = getopt(argc, argv, "fspvko:O:c:")) != EOF) {
+  while ((opt = getopt(argc, argv, "vkc:")) != EOF) {
     switch (opt) {
     case 'c':
       commands = 1;
-      cmd_file_name = optarg;
-      regf_opt += 2;
-      break;
-
-    case 'f':
-      full_print = 1;
-      regf_opt++;
-      break;
-
-    case 'o':
-      out_file_name = optarg;
-      regf_opt += 2;
-      break;
-
-    case 'O':
-      def_owner_sid_str = strdup(optarg);
-      regf_opt += 2;
-      if (!sid_string_to_sid(&lsid, def_owner_sid_str)) {
-	fprintf(stderr, "Default Owner SID: %s is incorrectly formatted\n",
-		def_owner_sid_str);
-	free(&def_owner_sid_str[0]);
-	def_owner_sid_str = NULL;
-      }
-      else 
-	nt_delete_sid(lsid);
-      break;
-
-    case 'p':
-      print_keys++;
-      regf_opt++;
-      break;
-
-    case 's':
-      print_security++;
-      full_print++;
-      regf_opt++;
+      cmd_file = optarg;
       break;
 
     case 'v':
       verbose++;
-      regf_opt++;
       break;
 
     case 'k':
-      regf_opt++;
       break;
 
     default:
@@ -4024,104 +2041,22 @@ int main(int argc, char *argv[])
     }
   }
 
-  /*
-   * We only want to complain about the lack of a default owner SID if
-   * we need one. This approximates that need 
-   */
-  if (!def_owner_sid_str) {
-    def_owner_sid_str = "S-1-5-21-1-2-3-4";
-    if (out_file_name || verbose)
-      fprintf(stderr, "Warning, default owner SID not set. Setting to %s\n",
-	      def_owner_sid_str);
-  }
-
   if ((regf = nt_create_regf()) == NULL) {
     fprintf(stderr, "Could not create registry object: %s\n", strerror(errno));
     exit(2);
   }
 
-  if (regf_opt < argc) { /* We have a registry file */
-    if (!nt_set_regf_input_file(regf, argv[regf_opt])) {
-      fprintf(stderr, "Could not set name of registry file: %s, %s\n", 
-	      argv[regf_opt], strerror(errno));
-      exit(3);
-    }
-
-    /* Now, open it, and bring it into memory :-) */
-
-    if (nt_load_registry(regf) < 0) {
-      fprintf(stderr, "Could not load registry: %s\n", argv[1]);
-      exit(4);
-    }
+  if (!nt_set_regf_input_file(regf, argv[optind])) {
+    fprintf(stderr, "Could not set name of registry file: %s, %s\n", 
+	    argv[1], strerror(errno));
+    exit(3);
   }
 
-  if (out_file_name) {
-    if (!nt_set_regf_output_file(regf, out_file_name)) {
-      fprintf(stderr, "Could not set name of output registry file: %s, %s\n", 
-	      out_file_name, strerror(errno));
-      exit(3);
-    }
+  /* Now, open it, and bring it into memory :-) */
 
-  }
-
-  if (commands) {
-    CMD *cmd;
-
-    cmd_file = cmd_file_create(cmd_file_name);
-
-    while ((cmd = cmd_file->cmd_ops.get_cmd(cmd_file->fd)) != NULL) {
-
-      /*
-       * Now, apply the requests to the tree ...
-       */
-      switch (cmd->cmd) {
-      case CMD_ADD_KEY: {
-	REG_KEY *tmp = NULL;
-
-	tmp = nt_find_key_by_name(regf->root, cmd->key);
-
-	/* If we found it, apply the other bits, else create such a key */
-
-	if (!tmp) {
-	  tmp = nt_add_reg_key(regf, cmd->key, True);
-	  modified = 1;
-	}
-
-	while (cmd->val_count) {
-	  VAL_SPEC_LIST *val = cmd->val_spec_list;
-	  VAL_KEY *reg_val = NULL;
-	  
-	  if (val->type == REG_TYPE_DELETE) {
-	    reg_val = nt_delete_reg_value(tmp, val -> name);
-	    if (reg_val) nt_delete_val_key(reg_val);
-	    modified = 1;
-	  }
-	  else {
-	    reg_val = nt_add_reg_value(tmp, val->name, val->type, 
-				       val->val);
-	    modified = 1;
-	  }
-
-	  cmd->val_spec_list = val->next;
-	  free_val_spec_list(val);
-	  cmd->val_count--;
-	}
-
-	break;
-      }
-      
-      case CMD_DEL_KEY:
-	/* 
-	 * Any value does not matter ...
-	 * Find the key if it exists, and delete it ...
-	 */
-	
-	nt_delete_key_by_name(regf, cmd->key);
-	modified = 1;
-	break;
-      }
-    }
-    free_cmd(cmd);
+  if (nt_load_registry(regf) < 0) {
+    fprintf(stderr, "Could not load registry: %s\n", argv[1]);
+    exit(4);
   }
 
   /*
@@ -4129,17 +2064,6 @@ int main(int argc, char *argv[])
    * to iterate over it.
    */
 
-  if (print_keys) {
-    nt_key_iterator(regf, regf->root, 0, "", print_key, print_sec, print_val);
-  }
-
-  /*
-   * If there was an out_file_name and the tree was modified, print it
-   */
-  if (modified && out_file_name) 
-    if (!nt_store_registry(regf)) {
-      fprintf(stdout, "Error storing registry\n");
-    }
-
+  nt_key_iterator(regf, regf->root, 0, "", print_key, print_sec, print_val);
   return 0;
 }

@@ -1005,10 +1005,10 @@ static BOOL hpux_acl_call_presence(void)
 	shl_t handle = NULL;
 	void *value;
 	int ret_val=0;
-	static BOOL already_checked=0;
-
-	if(already_checked)
-		return True;
+	//static BOOL already_checked=0;
+	// REWRITE: add this back in??
+	//if(already_checked)
+	//	return True;
 
 
 	ret_val = shl_findsym(&handle, "acl", TYPE_PROCEDURE, &value);

@@ -70,23 +70,13 @@
 
 static char *wins_srv_keystr(struct in_addr wins_ip, struct in_addr src_ip)
 {
-	char *keystr = NULL, *wins_ip_addr = NULL, *src_ip_addr = NULL;
+	char *keystr;
 
-	wins_ip_addr = strdup(inet_ntoa(wins_ip));
-	src_ip_addr = strdup(inet_ntoa(src_ip));
-
-	if ( !wins_ip_addr || !src_ip_addr ) {
-		DEBUG(0,("wins_srv_keystr: malloc error\n"));
-		goto done;
+	if (asprintf(&keystr, WINS_SRV_FMT, inet_ntoa(wins_ip),
+		     inet_ntoa(src_ip)) == -1) {
+		DEBUG(0, ("wins_srv_is_dead: malloc error\n"));
+		return NULL;
 	}
-
-	if (asprintf(&keystr, WINS_SRV_FMT, wins_ip_addr, src_ip_addr) == -1) {
-		DEBUG(0, (": ns_srv_keystr: malloc error for key string\n"));
-	}
-
-done:
-	SAFE_FREE(wins_ip_addr);
-	SAFE_FREE(src_ip_addr);
 
 	return keystr;
 }
@@ -179,16 +169,16 @@ struct tagged_ip {
   and the ip in in_addr format. If there is no tag then
   use the tag '*'
 */
-static void parse_ip(struct tagged_ip *ip, const char *str)
+static void parse_ip(TALLOC_CTX *mem_ctx, struct tagged_ip *ip, const char *str)
 {
 	char *s = strchr(str, ':');
 	if (!s) {
 		fstrcpy(ip->tag, "*");
-		ip->ip = *interpret_addr2(str);
+		ip->ip = *interpret_addr2(mem_ctx, str);
 		return;
 	} 
 
-	ip->ip = *interpret_addr2(s+1);
+	ip->ip = *interpret_addr2(mem_ctx, s+1);
 	fstrcpy(ip->tag, str);
 	s = strchr(ip->tag, ':');
 	if (s) *s = 0;
@@ -208,6 +198,7 @@ char **wins_srv_tags(void)
 	char **ret = NULL;
 	int count=0, i, j;
 	const char **list;
+	TALLOC_CTX *mem_ctx;
 
 	if (lp_wins_support()) {
 		/* give the caller something to chew on. This makes
@@ -223,11 +214,15 @@ char **wins_srv_tags(void)
 	if (!list)
 		return NULL;
 
+	mem_ctx = talloc_init("wins_ssrv_tags");
+	if (!mem_ctx) {
+		return NULL;
+	}
 	/* yes, this is O(n^2) but n is very small */
 	for (i=0;list[i];i++) {
 		struct tagged_ip t_ip;
 		
-		parse_ip(&t_ip, list[i]);
+		parse_ip(mem_ctx, &t_ip, list[i]);
 
 		/* see if we already have it */
 		for (j=0;j<count;j++) {
@@ -277,6 +272,7 @@ struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 	const char **list;
 	int i;
 	struct tagged_ip t_ip;
+	TALLOC_CTX *mem_ctx;
 
 	/* if we are a wins server then we always just talk to ourselves */
 	if (lp_wins_support()) {
@@ -291,35 +287,38 @@ struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 		return ip;
 	}
 
+	mem_ctx = talloc_init("wins_srv_ip_tag");
 	/* find the first live one for this tag */
 	for (i=0; list[i]; i++) {
-		parse_ip(&t_ip, list[i]);
+		parse_ip(mem_ctx, &t_ip, list[i]);
 		if (strcmp(tag, t_ip.tag) != 0) {
 			/* not for the right tag. Move along */
 			continue;
 		}
 		if (!wins_srv_is_dead(t_ip.ip, src_ip)) {
-			fstring src_name;
-			fstrcpy(src_name, inet_ntoa(src_ip));
+			char *src_name;
+			src_name = talloc_strdup(mem_ctx, inet_ntoa(src_ip));
 			DEBUG(6,("Current wins server for tag '%s' with source %s is %s\n", 
 				 tag, 
 				 src_name,
 				 inet_ntoa(t_ip.ip)));
-			return t_ip.ip;
+			goto exit;
 		}
 	}
 	
 	/* they're all dead - try the first one until they revive */
 	for (i=0; list[i]; i++) {
-		parse_ip(&t_ip, list[i]);
+		parse_ip(mem_ctx, &t_ip, list[i]);
 		if (strcmp(tag, t_ip.tag) != 0) {
 			continue;
 		}
-		return t_ip.ip;
+		goto exit;
 	}
 
 	/* this can't happen?? */
 	zero_ip(&t_ip.ip);
+exit:
+	talloc_destroy(mem_ctx);
 	return t_ip.ip;
 }
 
@@ -332,6 +331,7 @@ unsigned wins_srv_count_tag(const char *tag)
 {
 	const char **list;
 	int i, count=0;
+	TALLOC_CTX *mem_ctx;
 
 	/* if we are a wins server then we always just talk to ourselves */
 	if (lp_wins_support()) {
@@ -344,13 +344,18 @@ unsigned wins_srv_count_tag(const char *tag)
 	}
 
 	/* find the first live one for this tag */
+	mem_ctx = talloc_init("wins_srv_count_tag");
+	if (!mem_ctx) {
+		return 0;
+	}
 	for (i=0; list[i]; i++) {
 		struct tagged_ip t_ip;
-		parse_ip(&t_ip, list[i]);
+		parse_ip(mem_ctx, &t_ip, list[i]);
 		if (strcmp(tag, t_ip.tag) == 0) {
 			count++;
 		}
 	}
+	talloc_destroy(mem_ctx);
 
 	return count;
 }

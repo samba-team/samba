@@ -21,8 +21,6 @@
   test code for internal messaging
  */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 static int pong_count;
@@ -41,7 +39,7 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 	int i, n;
 	char buf[12];
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 	
 	lp_load(dyn_CONFIGFILE,False,False,False);
 
@@ -63,7 +61,7 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 
 	while (pong_count < i) {
 		message_dispatch();
-		smb_msleep(1);
+		msleep(1);
 	}
 
 	/* Now test that the duplicate filtering code works. */
@@ -78,7 +76,7 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 
 	for (i=0;i<n;i++) {
 		message_dispatch();
-		smb_msleep(1);
+		msleep(1);
 	}
 
 	if (pong_count != 2) {

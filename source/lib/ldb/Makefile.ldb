@@ -1,0 +1,56 @@
+OPENLDAP=/home/tridge/samba/openldap/prefix
+TDBDIR=../tdb
+
+CFLAGS=-Wall -g -Iinclude -I. -I.. -DSTANDALONE=1 -DUSE_MMAP=1
+
+LIB_FLAGS=-Llib -lldb -L$(OPENLDAP)/lib -lldap 
+
+TDB_OBJ=$(TDBDIR)/tdb.o $(TDBDIR)/spinlock.o
+
+LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
+	ldb_tdb/ldb_pack.o ldb_tdb/ldb_search.o ldb_tdb/ldb_index.o
+
+LDB_LDAP_OBJ=ldb_ldap/ldb_ldap.o
+
+COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o common/ldb_parse.o
+
+OBJS =  $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(LDB_LDAP_OBJ)
+
+LDB_LIB = lib/libldb.a
+
+BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify
+
+LIBS = $(LDB_LIB)($(OBJS))
+
+DIRS = lib bin
+
+all: $(DIRS) $(BINS) $(LIBS)
+
+lib:
+	mkdir -p lib
+
+bin:
+	mkdir -p bin
+
+lib/libldb.a: $(OBJS)
+
+bin/ldbadd: tools/ldbadd.o $(LIBS)
+	$(CC) -o bin/ldbadd tools/ldbadd.o $(LIB_FLAGS)
+
+bin/ldbsearch: tools/ldbsearch.o $(LIBS)
+	$(CC) -o bin/ldbsearch tools/ldbsearch.o $(LIB_FLAGS)
+
+bin/ldbdel: tools/ldbdel.o $(LIBS)
+	$(CC) -o bin/ldbdel tools/ldbdel.o $(LIB_FLAGS)
+
+bin/ldbmodify: tools/ldbmodify.o $(LIBS)
+	$(CC) -o bin/ldbmodify tools/ldbmodify.o $(LIB_FLAGS)
+
+clean:
+	rm -f */*.o *~ */*~ $(BINS) $(LDB_LIB)
+
+proto:
+	mkproto.pl */*.c > include/proto.h
+
+etags:
+	etags */*.[ch]

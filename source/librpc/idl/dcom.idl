@@ -1,0 +1,43 @@
+/*
+  this is just a placeholder until we start to support DCOM calls
+*/
+
+[
+  uuid(99fcfec4-5260-101b-bbcb-00aa0021347a),
+  version(0.0)
+]
+interface IOXIDResolver
+{
+
+	/*****************/
+	/* Function 0x00 */
+	WERROR ResolveOxid();
+}
+
+
+[
+  uuid(4d9f4ab8-7d1c-11cf-861e-0020af6e7c57),
+  version(0.0)
+]
+interface IRemoteActivation
+{
+
+	/*****************/
+	/* Function 0x00 */
+	NTSTATUS RemoteActivation();
+}
+
+
+
+[
+	uuid(000001a0-0000-0000-c000-000000000046),
+	version(0.0)
+]
+interface ISystemActivator
+{
+
+	/*****************/
+	/* Function 0x00 */
+	NTSTATUS isa_Unknown0();
+
+}

@@ -2,8 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB transaction2 handling
    Copyright (C) Jeremy Allison 1994-2002.
-
-   Extensively modified by Andrew Tridgell, 1995
+   Copyright (C) Andrew Tridgell 1995-2003.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,224 +22,270 @@
 #ifndef _TRANS2_H_
 #define _TRANS2_H_
 
-/* Define the structures needed for the trans2 calls. */
-
-/*******************************************************
- For DosFindFirst/DosFindNext - level 1
-
-MAXFILENAMELEN = 255;
-FDATE == uint16
-FTIME == uint16
-ULONG == uint32
-USHORT == uint16
-
-typedef struct _FILEFINDBUF {
-Byte offset   Type     name                description
--------------+-------+-------------------+--------------
-0             FDATE    fdateCreation;
-2             FTIME    ftimeCreation;
-4             FDATE    fdateLastAccess;
-6             FTIME    ftimeLastAccess;
-8             FDATE    fdateLastWrite;
-10            FTIME    ftimeLastWrite;
-12            ULONG    cbFile               file length in bytes
-16            ULONG    cbFileAlloc          size of file allocation unit
-20            USHORT   attrFile
-22            UCHAR    cchName              length of name to follow (not including zero)
-23            UCHAR    achName[MAXFILENAMELEN]; Null terminated name
-} FILEFINDBUF;
-*********************************************************/
-
-#define l1_fdateCreation 0
-#define l1_fdateLastAccess 4
-#define l1_fdateLastWrite 8
-#define l1_cbFile 12
-#define l1_cbFileAlloc 16
-#define l1_attrFile 20
-#define l1_cchName 22
-#define l1_achName 23
-
-/**********************************************************
-For DosFindFirst/DosFindNext - level 2
-
-typedef struct _FILEFINDBUF2 {
-Byte offset   Type     name                description
--------------+-------+-------------------+--------------
-0             FDATE    fdateCreation;
-2             FTIME    ftimeCreation;
-4             FDATE    fdateLastAccess;
-6             FTIME    ftimeLastAccess;
-8             FDATE    fdateLastWrite;
-10            FTIME    ftimeLastWrite;
-12            ULONG    cbFile               file length in bytes
-16            ULONG    cbFileAlloc          size of file allocation unit
-20            USHORT   attrFile
-22            ULONG    cbList               Extended attribute list (always 0)
-26            UCHAR    cchName              length of name to follow (not including zero)
-27            UCHAR    achName[MAXFILENAMELEN]; Null terminated name
-} FILEFINDBUF2;
-*************************************************************/
-
-#define l2_fdateCreation 0
-#define l2_fdateLastAccess 4
-#define l2_fdateLastWrite 8
-#define l2_cbFile 12
-#define l2_cbFileAlloc 16
-#define l2_attrFile 20
-#define l2_cbList 22
-#define l2_cchName 26
-#define l2_achName 27
+/* These are the TRANS2 sub commands */
+#define TRANSACT2_OPEN                        0
+#define TRANSACT2_FINDFIRST                   1
+#define TRANSACT2_FINDNEXT                    2
+#define TRANSACT2_QFSINFO                     3
+#define TRANSACT2_SETFSINFO                   4
+#define TRANSACT2_QPATHINFO                   5
+#define TRANSACT2_SETPATHINFO                 6
+#define TRANSACT2_QFILEINFO                   7
+#define TRANSACT2_SETFILEINFO                 8
+#define TRANSACT2_FSCTL                       9
+#define TRANSACT2_IOCTL                     0xA
+#define TRANSACT2_FINDNOTIFYFIRST           0xB
+#define TRANSACT2_FINDNOTIFYNEXT            0xC
+#define TRANSACT2_MKDIR                     0xD
+#define TRANSACT2_SESSION_SETUP             0xE
+#define TRANSACT2_GET_DFS_REFERRAL         0x10
+#define TRANSACT2_REPORT_DFS_INCONSISTANCY 0x11
 
 
-/**********************************************************
-For DosFindFirst/DosFindNext - level 260
-
-typedef struct _FILEFINDBUF260 {
-Byte offset   Type     name                description
--------------+-------+-------------------+--------------
-0              ULONG  NextEntryOffset;
-4              ULONG  FileIndex;
-8              LARGE_INTEGER CreationTime;
-16             LARGE_INTEGER LastAccessTime;
-24             LARGE_INTEGER LastWriteTime;
-32             LARGE_INTEGER ChangeTime;
-40             LARGE_INTEGER EndOfFile;
-48             LARGE_INTEGER AllocationSize;
-56             ULONG FileAttributes;
-60             ULONG FileNameLength;
-64             ULONG EaSize;
-68             CHAR ShortNameLength;
-70             UNICODE ShortName[12];
-94             UNICODE FileName[];
-*************************************************************/
-
-#define l260_achName 94
-
-
-/**********************************************************
-For DosQueryPathInfo/DosQueryFileInfo/DosSetPathInfo/
-DosSetFileInfo - level 1
-
-typedef struct _FILESTATUS {
-Byte offset   Type     name                description
--------------+-------+-------------------+--------------
-0             FDATE    fdateCreation;
-2             FTIME    ftimeCreation;
-4             FDATE    fdateLastAccess;
-6             FTIME    ftimeLastAccess;
-8             FDATE    fdateLastWrite;
-10            FTIME    ftimeLastWrite;
-12            ULONG    cbFile               file length in bytes
-16            ULONG    cbFileAlloc          size of file allocation unit
-20            USHORT   attrFile
-} FILESTATUS;
-*************************************************************/
-
-/* Use the l1_ defines from DosFindFirst */
-
-/**********************************************************
-For DosQueryPathInfo/DosQueryFileInfo/DosSetPathInfo/
-DosSetFileInfo - level 2
-
-typedef struct _FILESTATUS2 {
-Byte offset   Type     name                description
--------------+-------+-------------------+--------------
-0             FDATE    fdateCreation;
-2             FTIME    ftimeCreation;
-4             FDATE    fdateLastAccess;
-6             FTIME    ftimeLastAccess;
-8             FDATE    fdateLastWrite;
-10            FTIME    ftimeLastWrite;
-12            ULONG    cbFile               file length in bytes
-16            ULONG    cbFileAlloc          size of file allocation unit
-20            USHORT   attrFile
-22            ULONG    cbList               Length of EA's (0)
-} FILESTATUS2;
-*************************************************************/
-
-/* Use the l2_ #defines from DosFindFirst */
-
-/**********************************************************
-For DosQFSInfo/DosSetFSInfo - level 1
-
-typedef struct _FSALLOCATE {
-Byte offset   Type     name                description
--------------+-------+-------------------+--------------
-0             ULONG    idFileSystem       id of file system
-4             ULONG    cSectorUnit        number of sectors per allocation unit
-8             ULONG    cUnit              number of allocation units
-12            ULONG    cUnitAvail         Available allocation units
-16            USHORT   cbSector           bytes per sector
-} FSALLOCATE;
-*************************************************************/
-
-#define l1_idFileSystem 0
-#define l1_cSectorUnit 4
-#define l1_cUnit 8
-#define l1_cUnitAvail 12
-#define l1_cbSector 16
-
-/**********************************************************
-For DosQFSInfo/DosSetFSInfo - level 2
-
-typedef struct _FSINFO {
-Byte offset   Type     name                description
--------------+-------+-------------------+--------------
-0             FDATE   vol_fdateCreation
-2             FTIME   vol_ftimeCreation
-4             UCHAR   vol_cch             length of volume name (excluding NULL)
-5             UCHAR   vol_szVolLabel[12]  volume name
-} FSINFO;
-*************************************************************/
-
-#define SMB_INFO_STANDARD               1  /* FILESTATUS3 struct */
-#define SMB_INFO_SET_EA                 2  /* EAOP2 struct, only valid on set not query */
-#define SMB_INFO_QUERY_EA_SIZE          2  /* FILESTATUS4 struct, only valid on query not set */
-#define SMB_INFO_QUERY_EAS_FROM_LIST    3  /* only valid on query not set */
-#define SMB_INFO_QUERY_ALL_EAS          4  /* only valid on query not set */
-#define SMB_INFO_IS_NAME_VALID          6
-#define SMB_INFO_STANDARD_LONG          11  /* similar to level 1, ie struct FileStatus3 */
-#define SMB_QUERY_EA_SIZE_LONG          12  /* similar to level 2, ie struct FileStatus4 */
-#define SMB_QUERY_FS_LABEL_INFO         0x101
-#define SMB_QUERY_FS_VOLUME_INFO        0x102
-#define SMB_QUERY_FS_SIZE_INFO          0x103
-#define SMB_QUERY_FS_DEVICE_INFO        0x104
-#define SMB_QUERY_FS_ATTRIBUTE_INFO     0x105
-#if 0
-#define SMB_QUERY_FS_QUOTA_INFO		
-#endif
-
-#define l2_vol_fdateCreation 0
-#define l2_vol_cch 4
-#define l2_vol_szVolLabel 5
+/* trans2 Query FS info levels */
+/*
+w2k3 TRANS2ALIASES:
+Checking for QFSINFO aliases
+        Found level    1 (0x001) of size 18 (0x12)
+        Found level    2 (0x002) of size 12 (0x0c)
+        Found level  258 (0x102) of size 26 (0x1a)
+        Found level  259 (0x103) of size 24 (0x18)
+        Found level  260 (0x104) of size  8 (0x08)
+        Found level  261 (0x105) of size 20 (0x14)
+        Found level 1001 (0x3e9) of size 26 (0x1a)
+        Found level 1003 (0x3eb) of size 24 (0x18)
+        Found level 1004 (0x3ec) of size  8 (0x08)
+        Found level 1005 (0x3ed) of size 20 (0x14)
+        Found level 1006 (0x3ee) of size 48 (0x30)
+        Found level 1007 (0x3ef) of size 32 (0x20)
+        Found level 1008 (0x3f0) of size 64 (0x40)
+Found 13 levels with success status
+        Level 261 (0x105) and level 1005 (0x3ed) are possible aliases
+        Level 260 (0x104) and level 1004 (0x3ec) are possible aliases
+        Level 259 (0x103) and level 1003 (0x3eb) are possible aliases
+        Level 258 (0x102) and level 1001 (0x3e9) are possible aliases
+Found 4 aliased levels
+*/
+#define SMB_QFS_ALLOCATION		                   1
+#define SMB_QFS_VOLUME			                   2
+#define SMB_QFS_VOLUME_INFO                            0x102
+#define SMB_QFS_SIZE_INFO                              0x103
+#define SMB_QFS_DEVICE_INFO                            0x104
+#define SMB_QFS_ATTRIBUTE_INFO                         0x105
+#define SMB_QFS_UNIX_INFO                              0x200
+#define SMB_QFS_VOLUME_INFORMATION			1001
+#define SMB_QFS_SIZE_INFORMATION			1003
+#define SMB_QFS_DEVICE_INFORMATION			1004
+#define SMB_QFS_ATTRIBUTE_INFORMATION			1005
+#define SMB_QFS_QUOTA_INFORMATION			1006
+#define SMB_QFS_FULL_SIZE_INFORMATION			1007
+#define SMB_QFS_OBJECTID_INFORMATION			1008
 
 
-#define SMB_QUERY_FILE_BASIC_INFO	0x101
-#define SMB_QUERY_FILE_STANDARD_INFO	0x102
-#define SMB_QUERY_FILE_EA_INFO		0x103
-#define SMB_QUERY_FILE_NAME_INFO	0x104
-#define SMB_QUERY_FILE_ALLOCATION_INFO	0x105
-#define SMB_QUERY_FILE_END_OF_FILEINFO	0x106
-#define SMB_QUERY_FILE_ALL_INFO		0x107
-#define SMB_QUERY_FILE_ALT_NAME_INFO	0x108
-#define SMB_QUERY_FILE_STREAM_INFO	0x109
-#define SMB_QUERY_COMPRESSION_INFO	0x10b
+/* trans2 qfileinfo/qpathinfo */
+/* w2k3 TRANS2ALIASES:
+Checking for QPATHINFO aliases
+setting up complex file \qpathinfo_aliases.txt
+        Found level    1 (0x001) of size  22 (0x16)
+        Found level    2 (0x002) of size  26 (0x1a)
+        Found level    4 (0x004) of size  41 (0x29)
+        Found level    6 (0x006) of size   0 (0x00)
+        Found level  257 (0x101) of size  40 (0x28)
+        Found level  258 (0x102) of size  24 (0x18)
+        Found level  259 (0x103) of size   4 (0x04)
+        Found level  260 (0x104) of size  48 (0x30)
+        Found level  263 (0x107) of size 126 (0x7e)
+        Found level  264 (0x108) of size  28 (0x1c)
+        Found level  265 (0x109) of size  38 (0x26)
+        Found level  267 (0x10b) of size  16 (0x10)
+        Found level 1004 (0x3ec) of size  40 (0x28)
+        Found level 1005 (0x3ed) of size  24 (0x18)
+        Found level 1006 (0x3ee) of size   8 (0x08)
+        Found level 1007 (0x3ef) of size   4 (0x04)
+        Found level 1008 (0x3f0) of size   4 (0x04)
+        Found level 1009 (0x3f1) of size  48 (0x30)
+        Found level 1014 (0x3f6) of size   8 (0x08)
+        Found level 1016 (0x3f8) of size   4 (0x04)
+        Found level 1017 (0x3f9) of size   4 (0x04)
+        Found level 1018 (0x3fa) of size 126 (0x7e)
+        Found level 1021 (0x3fd) of size  28 (0x1c)
+        Found level 1022 (0x3fe) of size  38 (0x26)
+        Found level 1028 (0x404) of size  16 (0x10)
+        Found level 1034 (0x40a) of size  56 (0x38)
+        Found level 1035 (0x40b) of size   8 (0x08)
+Found 27 levels with success status
+        Level 267 (0x10b) and level 1028 (0x404) are possible aliases
+        Level 265 (0x109) and level 1022 (0x3fe) are possible aliases
+        Level 264 (0x108) and level 1021 (0x3fd) are possible aliases
+        Level 263 (0x107) and level 1018 (0x3fa) are possible aliases
+        Level 260 (0x104) and level 1009 (0x3f1) are possible aliases
+        Level 259 (0x103) and level 1007 (0x3ef) are possible aliases
+        Level 258 (0x102) and level 1005 (0x3ed) are possible aliases
+        Level 257 (0x101) and level 1004 (0x3ec) are possible aliases
+Found 8 aliased levels
+*/
+#define SMB_QFILEINFO_STANDARD                             1
+#define SMB_QFILEINFO_EA_SIZE                              2
+#define SMB_QFILEINFO_ALL_EAS                              4
+#define SMB_QFILEINFO_IS_NAME_VALID                        6  /* only for QPATHINFO */
+#define SMB_QFILEINFO_BASIC_INFO	               0x101
+#define SMB_QFILEINFO_STANDARD_INFO	               0x102
+#define SMB_QFILEINFO_EA_INFO		               0x103
+#define SMB_QFILEINFO_NAME_INFO	                       0x104
+#define SMB_QFILEINFO_ALL_INFO		               0x107
+#define SMB_QFILEINFO_ALT_NAME_INFO	               0x108
+#define SMB_QFILEINFO_STREAM_INFO	               0x109
+#define SMB_QFILEINFO_COMPRESSION_INFO                 0x10b
+#define SMB_QFILEINFO_UNIX_BASIC                       0x200
+#define SMB_QFILEINFO_UNIX_LINK                        0x201
+#define SMB_QFILEINFO_BASIC_INFORMATION			1004
+#define SMB_QFILEINFO_STANDARD_INFORMATION		1005
+#define SMB_QFILEINFO_INTERNAL_INFORMATION		1006
+#define SMB_QFILEINFO_EA_INFORMATION			1007
+#define SMB_QFILEINFO_ACCESS_INFORMATION		1008
+#define SMB_QFILEINFO_NAME_INFORMATION			1009
+#define SMB_QFILEINFO_POSITION_INFORMATION		1014
+#define SMB_QFILEINFO_MODE_INFORMATION			1016
+#define SMB_QFILEINFO_ALIGNMENT_INFORMATION		1017
+#define SMB_QFILEINFO_ALL_INFORMATION			1018
+#define SMB_QFILEINFO_ALT_NAME_INFORMATION	        1021
+#define SMB_QFILEINFO_STREAM_INFORMATION		1022
+#define SMB_QFILEINFO_COMPRESSION_INFORMATION		1028
+#define SMB_QFILEINFO_NETWORK_OPEN_INFORMATION		1034
+#define SMB_QFILEINFO_ATTRIBUTE_TAG_INFORMATION		1035
 
-#define SMB_FIND_FILE_DIRECTORY_INFO		0x101
-#define SMB_FIND_FILE_FULL_DIRECTORY_INFO	0x102
-#define SMB_FIND_FILE_NAMES_INFO		0x103
-#define SMB_FIND_FILE_BOTH_DIRECTORY_INFO	0x104
-#define SMB_FIND_FILE_LEVEL_261			0x105
-#define SMB_FIND_FILE_LEVEL_262			0x106
 
-#define SMB_SET_FILE_BASIC_INFO		0x101
-#define SMB_SET_FILE_DISPOSITION_INFO	0x102
-#define SMB_SET_FILE_ALLOCATION_INFO	0x103
-#define SMB_SET_FILE_END_OF_FILE_INFO	0x104
 
-/* Query FS info. */
-#define SMB_INFO_ALLOCATION		1
-#define SMB_INFO_VOLUME			2
+/* trans2 setfileinfo/setpathinfo levels */
+/*
+w2k3 TRANS2ALIASES
+Checking for SETFILEINFO aliases
+setting up complex file \setfileinfo_aliases.txt
+        Found level    1 (0x001) of size   2 (0x02)
+        Found level    2 (0x002) of size   2 (0x02)
+        Found level  257 (0x101) of size  40 (0x28)
+        Found level  258 (0x102) of size   2 (0x02)
+        Found level  259 (0x103) of size   8 (0x08)
+        Found level  260 (0x104) of size   8 (0x08)
+        Found level 1004 (0x3ec) of size  40 (0x28)
+        Found level 1010 (0x3f2) of size   2 (0x02)
+        Found level 1013 (0x3f5) of size   2 (0x02)
+        Found level 1014 (0x3f6) of size   8 (0x08)
+        Found level 1016 (0x3f8) of size   4 (0x04)
+        Found level 1019 (0x3fb) of size   8 (0x08)
+        Found level 1020 (0x3fc) of size   8 (0x08)
+        Found level 1023 (0x3ff) of size   8 (0x08)
+        Found level 1025 (0x401) of size  16 (0x10)
+        Found level 1029 (0x405) of size  72 (0x48)
+        Found level 1032 (0x408) of size  56 (0x38)
+        Found level 1039 (0x40f) of size   8 (0x08)
+        Found level 1040 (0x410) of size   8 (0x08)
+Found 19 valid levels
+
+Checking for SETPATHINFO aliases
+        Found level 1004 (0x3ec) of size  40 (0x28)
+        Found level 1010 (0x3f2) of size   2 (0x02)
+        Found level 1013 (0x3f5) of size   2 (0x02)
+        Found level 1014 (0x3f6) of size   8 (0x08)
+        Found level 1016 (0x3f8) of size   4 (0x04)
+        Found level 1019 (0x3fb) of size   8 (0x08)
+        Found level 1020 (0x3fc) of size   8 (0x08)
+        Found level 1023 (0x3ff) of size   8 (0x08)
+        Found level 1025 (0x401) of size  16 (0x10)
+        Found level 1029 (0x405) of size  72 (0x48)
+        Found level 1032 (0x408) of size  56 (0x38)
+        Found level 1039 (0x40f) of size   8 (0x08)
+        Found level 1040 (0x410) of size   8 (0x08)
+Found 13 valid levels
+*/
+#define SMB_SFILEINFO_STANDARD                             1
+#define SMB_SFILEINFO_EA_SET                               2
+#define SMB_SFILEINFO_BASIC_INFO	               0x101
+#define SMB_SFILEINFO_DISPOSITION_INFO		       0x102
+#define SMB_SFILEINFO_ALLOCATION_INFO                  0x103
+#define SMB_SFILEINFO_END_OF_FILE_INFO                 0x104
+#define SMB_SFILEINFO_UNIX_BASIC                       0x200
+#define SMB_SFILEINFO_UNIX_LINK                        0x201
+#define SMB_SFILEINFO_BASIC_INFORMATION			1004
+#define SMB_SFILEINFO_RENAME_INFORMATION		1010
+#define SMB_SFILEINFO_DISPOSITION_INFORMATION		1013
+#define SMB_SFILEINFO_POSITION_INFORMATION		1014
+#define SMB_SFILEINFO_MODE_INFORMATION			1016
+#define SMB_SFILEINFO_ALLOCATION_INFORMATION		1019
+#define SMB_SFILEINFO_END_OF_FILE_INFORMATION		1020
+
+/* filemon shows FilePipeInformation */
+#define SMB_SFILEINFO_1023				1023
+
+/* filemon shows FilePipeRemoteInformation */
+#define SMB_SFILEINFO_1025				1025
+
+/* filemon shows CopyOnWriteInformation */
+#define SMB_SFILEINFO_1029				1029
+
+/* filemon shows OleClassIdInformation */
+#define SMB_SFILEINFO_1032				1032
+
+/* seems to be the file size - perhaps valid data size? 
+   filemon shows 'InheritContentIndexInfo'
+*/
+#define SMB_SFILEINFO_1039				1039
+
+/* OLE_INFORMATION? */
+#define SMB_SFILEINFO_1040				1040
+
+
+/* trans2 findfirst levels */
+/*
+w2k3 TRANS2ALIASES:
+Checking for FINDFIRST aliases
+        Found level    1 (0x001) of size  68 (0x44)
+        Found level    2 (0x002) of size  70 (0x46)
+        Found level  257 (0x101) of size 108 (0x6c)
+        Found level  258 (0x102) of size 116 (0x74)
+        Found level  259 (0x103) of size  60 (0x3c)
+        Found level  260 (0x104) of size 140 (0x8c)
+        Found level  261 (0x105) of size 124 (0x7c)
+        Found level  262 (0x106) of size 148 (0x94)
+Found 8 levels with success status
+Found 0 aliased levels
+*/
+#define SMB_FIND_STANDARD		    1
+#define SMB_FIND_EA_SIZE		    2
+#define SMB_FIND_DIRECTORY_INFO		0x101
+#define SMB_FIND_FULL_DIRECTORY_INFO	0x102
+#define SMB_FIND_NAME_INFO		0x103
+#define SMB_FIND_BOTH_DIRECTORY_INFO	0x104
+#define SMB_FIND_ID_FULL_DIRECTORY_INFO	0x105
+#define SMB_FIND_ID_BOTH_DIRECTORY_INFO 0x106
+#define SMB_FIND_UNIX_INFO              0x200
+
+/* flags on trans2 findfirst/findnext that control search */
+#define FLAG_TRANS2_FIND_CLOSE          0x1
+#define FLAG_TRANS2_FIND_CLOSE_IF_END   0x2
+#define FLAG_TRANS2_FIND_REQUIRE_RESUME 0x4
+#define FLAG_TRANS2_FIND_CONTINUE       0x8
+#define FLAG_TRANS2_FIND_BACKUP_INTENT  0x10
+
+/*
+ * DeviceType and Characteristics returned in a
+ * SMB_QFS_DEVICE_INFO call.
+ */
+#define QFS_DEVICETYPE_CD_ROM		        0x2
+#define QFS_DEVICETYPE_CD_ROM_FILE_SYSTEM	0x3
+#define QFS_DEVICETYPE_DISK			0x7
+#define QFS_DEVICETYPE_DISK_FILE_SYSTEM	        0x8
+#define QFS_DEVICETYPE_FILE_SYSTEM		0x9
+
+/* Characteristics. */
+#define QFS_TYPE_REMOVABLE_MEDIA		0x1
+#define QFS_TYPE_READ_ONLY_DEVICE		0x2
+#define QFS_TYPE_FLOPPY			        0x4
+#define QFS_TYPE_WORM			        0x8
+#define QFS_TYPE_REMOTE			        0x10
+#define QFS_TYPE_MOUNTED			0x20
+#define QFS_TYPE_VIRTUAL			0x40
+
 
 /*
  * Thursby MAC extensions....
@@ -251,83 +296,11 @@ Byte offset   Type     name                description
  * Supposedly Microsoft have agreed to this.
  */
 
-#define MIN_MAC_INFO_LEVEL 0x300
-#define MAX_MAC_INFO_LEVEL 0x3FF
+#define MIN_MAC_INFO_LEVEL                      0x300
+#define MAX_MAC_INFO_LEVEL                      0x3FF
+#define SMB_QFS_MAC_FS_INFO                     0x301
 
-#define SMB_MAC_QUERY_FS_INFO           0x301
 
-#define DIRLEN_GUESS (45+MAX(l1_achName,l2_achName))
-
-/*
- * DeviceType and Characteristics returned in a
- * SMB_QUERY_FS_DEVICE_INFO call.
- */
-
-#define DEVICETYPE_CD_ROM		0x2
-#define DEVICETYPE_CD_ROM_FILE_SYSTEM	0x3
-#define DEVICETYPE_DISK			0x7
-#define DEVICETYPE_DISK_FILE_SYSTEM	0x8
-#define DEVICETYPE_FILE_SYSTEM		0x9
-
-/* Characteristics. */
-#define TYPE_REMOVABLE_MEDIA		0x1
-#define TYPE_READ_ONLY_DEVICE		0x2
-#define TYPE_FLOPPY			0x4
-#define TYPE_WORM			0x8
-#define TYPE_REMOTE			0x10
-#define TYPE_MOUNTED			0x20
-#define TYPE_VIRTUAL			0x40
-
-/* NT passthrough levels... */
-
-#define SMB_FILE_DIRECTORY_INFORMATION			1001
-#define SMB_FILE_FULL_DIRECTORY_INFORMATION		1002
-#define SMB_FILE_BOTH_DIRECTORY_INFORMATION		1003
-#define SMB_FILE_BASIC_INFORMATION			1004
-#define SMB_FILE_STANDARD_INFORMATION			1005
-#define SMB_FILE_INTERNAL_INFORMATION			1006
-#define SMB_FILE_EA_INFORMATION				1007
-#define SMB_FILE_ACCESS_INFORMATION			1008
-#define SMB_FILE_NAME_INFORMATION			1009
-#define SMB_FILE_RENAME_INFORMATION			1010
-#define SMB_FILE_LINK_INFORMATION			1011
-#define SMB_FILE_NAMES_INFORMATION			1012
-#define SMB_FILE_DISPOSITION_INFORMATION		1013
-#define SMB_FILE_POSITION_INFORMATION			1014
-#define SMB_FILE_FULL_EA_INFORMATION			1015
-#define SMB_FILE_MODE_INFORMATION			1016
-#define SMB_FILE_ALIGNMENT_INFORMATION			1017
-#define SMB_FILE_ALL_INFORMATION			1018
-#define SMB_FILE_ALLOCATION_INFORMATION			1019
-#define SMB_FILE_END_OF_FILE_INFORMATION		1020
-#define SMB_FILE_ALTERNATE_NAME_INFORMATION		1021
-#define SMB_FILE_STREAM_INFORMATION			1022
-#define SMB_FILE_PIPE_INFORMATION			1023
-#define SMB_FILE_PIPE_LOCAL_INFORMATION			1024
-#define SMB_FILE_PIPE_REMOTE_INFORMATION		1025
-#define SMB_FILE_MAILSLOT_QUERY_INFORMATION		1026
-#define SMB_FILE_MAILSLOT_SET_INFORMATION		1027
-#define SMB_FILE_COMPRESSION_INFORMATION		1028
-#define SMB_FILE_OBJECTID_INFORMATION			1029
-#define SMB_FILE_COMPLETION_INFORMATION			1030
-#define SMB_FILE_MOVE_CLUSTER_INFORMATION		1031
-#define SMB_FILE_QUOTA_INFORMATION			1032
-#define SMB_FILE_REPARSEPOINT_INFORMATION		1033
-#define SMB_FILE_NETWORK_OPEN_INFORMATION		1034
-#define SMB_FILE_ATTRIBUTE_TAG_INFORMATION		1035
-#define SMB_FILE_TRACKING_INFORMATION			1036
-#define SMB_FILE_MAXIMUM_INFORMATION			1037
-
-/* NT passthough levels for qfsinfo. */
-
-#define SMB_FS_VOLUME_INFORMATION			1001
-#define SMB_FS_LABEL_INFORMATION			1002
-#define SMB_FS_SIZE_INFORMATION				1003
-#define SMB_FS_DEVICE_INFORMATION			1004
-#define SMB_FS_ATTRIBUTE_INFORMATION			1005
-#define SMB_FS_QUOTA_INFORMATION			1006
-#define SMB_FS_FULL_SIZE_INFORMATION			1007
-#define SMB_FS_OBJECTID_INFORMATION			1008
 
 /* UNIX CIFS Extensions - created by HP */
 /*
@@ -340,8 +313,8 @@ Byte offset   Type     name                description
 
 #define INFO_LEVEL_IS_UNIX(level) (((level) >= MIN_UNIX_INFO_LEVEL) && ((level) <= MAX_UNIX_INFO_LEVEL))
 
-#define SMB_QUERY_FILE_UNIX_BASIC      0x200   /* UNIX File Info*/
-#define SMB_SET_FILE_UNIX_BASIC        0x200
+#define SMB_QFILEINFO_UNIX_BASIC       0x200   /* UNIX File Info*/
+#define SMB_SFILEINFO_UNIX_BASIC        0x200
 
 #define SMB_MODE_NO_CHANGE                 0xFFFFFFFF     /* file mode value which */
                                               /* means "don't change it" */
@@ -386,14 +359,14 @@ Offset Size         Name
 
 /* UNIX filetype mappings. */
 
-#define UNIX_TYPE_FILE 0
-#define UNIX_TYPE_DIR 1
-#define UNIX_TYPE_SYMLINK 2
-#define UNIX_TYPE_CHARDEV 3
-#define UNIX_TYPE_BLKDEV 4
-#define UNIX_TYPE_FIFO 5
-#define UNIX_TYPE_SOCKET 6
-#define UNIX_TYPE_UNKNOWN 0xFFFFFFFF
+#define UNIX_TYPE_FILE      0
+#define UNIX_TYPE_DIR       1
+#define UNIX_TYPE_SYMLINK   2
+#define UNIX_TYPE_CHARDEV   3
+#define UNIX_TYPE_BLKDEV    4
+#define UNIX_TYPE_FIFO      5
+#define UNIX_TYPE_SOCKET    6
+#define UNIX_TYPE_UNKNOWN   0xFFFFFFFF
 
 /*
  * Oh this is fun. "Standard UNIX permissions" has no
@@ -423,11 +396,11 @@ Offset Size         Name
 #define UNIX_EXTRA_MASK                 0007000
 #define UNIX_ALL_MASK                   0007777
 
-#define SMB_QUERY_FILE_UNIX_LINK       0x201
-#define SMB_SET_FILE_UNIX_LINK         0x201
-#define SMB_SET_FILE_UNIX_HLINK        0x203
+#define SMB_QFILEINFO_UNIX_LINK         0x201
+#define SMB_SFILEINFO_UNIX_LINK         0x201
+#define SMB_SFILEINFO_UNIX_HLINK        0x203
 
-#define SMB_FIND_FILE_UNIX             0x202
+#define SMB_FIND_FILE_UNIX              0x202
 
 /*
  Info level for QVOLINFO - returns version of CIFS UNIX extensions, plus

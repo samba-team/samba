@@ -36,8 +36,6 @@
 
 #define AUTH_RETURN						\
 do {								\
-	/* Restore application signal handler */		\
-	CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);	\
 	if(ret_data) {						\
 		*ret_data = retval;				\
 		pam_set_data( pamh, "smb_setcred_return"	\
@@ -67,7 +65,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     SAM_ACCOUNT *sampass = NULL;
     extern BOOL in_client;
     const char *name;
-    void (*oldsig_handler)(int);
     BOOL found;
 
     /* Points to memory managed by the PAM library. Do not free. */
@@ -75,7 +72,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 
     /* Samba initialization. */
-    setup_logging("pam_smbpass",False);
+    setup_logging("pam_smbpass",DEBUG_FILE);
     in_client = True;
 
     ctrl = set_ctrl(flags, argc, argv);
@@ -95,10 +92,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     if (on( SMB_DEBUG, ctrl )) {
         _log_err( LOG_DEBUG, "username [%s] obtained", name );
     }
-
-    /* Getting into places that might use LDAP -- protect the app
-       from a SIGPIPE it's not expecting */
-    oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
 
     if (!initialize_password_db(True)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
@@ -198,7 +191,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 
     /* Add the user to the db if they aren't already there. */
    if (!exist) {
-	retval = local_password_change( name, LOCAL_ADD_USER|LOCAL_SET_PASSWORD,
+	retval = local_password_change( name, LOCAL_ADD_USER,
 	                                 pass, err_str,
 	                                 sizeof(err_str),
 	                                 msg_str, sizeof(msg_str) );

@@ -18,6 +18,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#error SAMBA4 clean up
+#error this file should be (re)moved 
+#error and all unused stuff should go
+
 #include "includes.h"
 
 #define NCTX 10
@@ -51,9 +55,9 @@ int main(void)
 	}
 
 	for (i = 0; i < NCTX; i++) {
-		printf("talloc@%p %-40s %ldkB\n", ctx[i],
+		printf("talloc@%p %-40s %dkB\n", ctx[i],
 		       talloc_pool_name(ctx[i]),
-		       (unsigned long)talloc_pool_size(ctx[i]) >> 10);
+		       talloc_pool_size(ctx[i]) >> 10);
 	}
 
 	printf("%s", talloc_describe_all(ctx[0]));

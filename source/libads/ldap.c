@@ -1106,14 +1106,20 @@ static void dump_binary(const char *field, struct berval **values)
 	}
 }
 
+struct uuid {
+        uint32   i1;
+        uint16   i2;
+        uint16   i3;
+        uint8    s[8];
+};
+
 static void dump_guid(const char *field, struct berval **values)
 {
 	int i;
-	UUID_FLAT guid;
+	GUID guid;
 	for (i=0; values[i]; i++) {
 		memcpy(guid.info, values[i]->bv_val, sizeof(guid.info));
-		printf("%s: %s\n", field, 
-		       smb_uuid_string_static(smb_uuid_unpack_static(guid)));
+		printf("%s: %s\n", field, smb_uuid_string_static(guid));
 	}
 }
 
@@ -1655,7 +1661,7 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 	}
 	if (!attr) {
 		ber_free(ptr, 0);
-		/* nothing here - this field is just empty */
+		/* nothing here - this feild is just empty */
 		*more_strings = False;
 		return NULL;
 	}
@@ -1714,8 +1720,7 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 
 	if (*more_strings) {
 		*next_attribute = talloc_asprintf(mem_ctx,
-						  "%s;range=%d-*", 
-						  field,
+						  "member;range=%d-*", 
 						  *num_strings);
 		
 		if (!*next_attribute) {
@@ -1765,18 +1770,16 @@ BOOL ads_pull_uint32(ADS_STRUCT *ads,
  * @return boolean indicating success
  **/
 BOOL ads_pull_guid(ADS_STRUCT *ads,
-		   void *msg, struct uuid *guid)
+		   void *msg, GUID *guid)
 {
 	char **values;
-	UUID_FLAT flat_guid;
 
 	values = ldap_get_values(ads->ld, msg, "objectGUID");
 	if (!values)
 		return False;
 	
 	if (values[0]) {
-		memcpy(&flat_guid.info, values[0], sizeof(UUID_FLAT));
-		smb_uuid_unpack(flat_guid, guid);
+		memcpy(guid, values[0], sizeof(GUID));
 		ldap_value_free(values);
 		return True;
 	}

@@ -21,46 +21,15 @@
 
 #include "includes.h"
 
-/* the last IP received from */
-struct in_addr lastip;
-
-/* the last port received from */
-int lastport=0;
-
-int smb_read_error = 0;
-
-static char *get_socket_addr(int fd)
-{
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	int     length = sizeof(sa);
-	static fstring addr_buf;
-
-	fstrcpy(addr_buf,"0.0.0.0");
-
-	if (fd == -1) {
-		return addr_buf;
-	}
-	
-	if (getsockname(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
-		return addr_buf;
-	}
-	
-	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
-	
-	return addr_buf;
-}
 
 /****************************************************************************
  Determine if a file descriptor is in fact a socket.
 ****************************************************************************/
-
 BOOL is_a_socket(int fd)
 {
 	int v,l;
 	l = sizeof(int);
-	return(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0);
+	return getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0;
 }
 
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
@@ -118,15 +87,11 @@ static void print_socket_options(int s)
 	int value, vlen = 4;
 	const smb_socket_option *p = &socket_options[0];
 
-	/* wrapped in if statement to prevent streams leak in SCO Openserver 5.0 */
-	/* reported on samba-technical  --jerry */
-	if ( DEBUGLEVEL >= 5 ) {
 	for (; p->name != NULL; p++) {
 		if (getsockopt(s, p->level, p->option, (void *)&value, &vlen) == -1) {
 			DEBUG(5,("Could not test socket option %s.\n", p->name));
 		} else {
 			DEBUG(5,("socket option %s = %d\n",p->name,value));
-			}
 		}
 	}
  }
@@ -190,150 +155,44 @@ void set_socket_options(int fd, const char *options)
  Read from a socket.
 ****************************************************************************/
 
-ssize_t read_udp_socket(int fd,char *buf,size_t len)
+ssize_t read_udp_socket(int fd, char *buf, size_t len, 
+			struct in_addr *from_addr, int *from_port)
 {
 	ssize_t ret;
 	struct sockaddr_in sock;
 	socklen_t socklen = sizeof(sock);
 
-	memset((char *)&sock,'\0',socklen);
-	memset((char *)&lastip,'\0',sizeof(lastip));
-	ret = (ssize_t)sys_recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
+	ret = (ssize_t)sys_recvfrom(fd,buf,len, 0, (struct sockaddr *)&sock, &socklen);
 	if (ret <= 0) {
 		DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
-		return(0);
+		return 0;
 	}
 
-	lastip = sock.sin_addr;
-	lastport = ntohs(sock.sin_port);
+	if (from_addr) {
+		*from_addr = sock.sin_addr;
+	}
+	if (from_port) {
+		*from_port = ntohs(sock.sin_port);
+	}
 
-	DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %lu\n",
-			inet_ntoa(lastip), lastport, (unsigned long)ret));
-
-	return(ret);
+	return ret;
 }
 
-/****************************************************************************
- Read data from a socket with a timout in msec.
- mincount = if timeout, minimum to read before returning
- maxcount = number to be read.
- time_out = timeout in milliseconds
-****************************************************************************/
-
-ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out)
-{
-	fd_set fds;
-	int selrtn;
-	ssize_t readret;
-	size_t nread = 0;
-	struct timeval timeout;
-	
-	/* just checking .... */
-	if (maxcnt <= 0)
-		return(0);
-	
-	smb_read_error = 0;
-	
-	/* Blocking read */
-	if (time_out <= 0) {
-		if (mincnt == 0) mincnt = maxcnt;
-		
-		while (nread < mincnt) {
-			readret = sys_read(fd, buf + nread, maxcnt - nread);
-			
-			if (readret == 0) {
-				DEBUG(5,("read_socket_with_timeout: blocking read. EOF from client.\n"));
-				smb_read_error = READ_EOF;
-				return -1;
-			}
-			
-			if (readret == -1) {
-				DEBUG(0,("read_socket_with_timeout: read error = %s.\n", strerror(errno) ));
-				smb_read_error = READ_ERROR;
-				return -1;
-			}
-			nread += readret;
-		}
-		return((ssize_t)nread);
-	}
-	
-	/* Most difficult - timeout read */
-	/* If this is ever called on a disk file and 
-	   mincnt is greater then the filesize then
-	   system performance will suffer severely as 
-	   select always returns true on disk files */
-	
-	/* Set initial timeout */
-	timeout.tv_sec = (time_t)(time_out / 1000);
-	timeout.tv_usec = (long)(1000 * (time_out % 1000));
-	
-	for (nread=0; nread < mincnt; ) {      
-		FD_ZERO(&fds);
-		FD_SET(fd,&fds);
-		
-		selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
-		
-		/* Check if error */
-		if (selrtn == -1) {
-			/* something is wrong. Maybe the socket is dead? */
-			DEBUG(0,("read_socket_with_timeout: timeout read. select error = %s.\n", strerror(errno) ));
-			smb_read_error = READ_ERROR;
-			return -1;
-		}
-		
-		/* Did we timeout ? */
-		if (selrtn == 0) {
-			DEBUG(10,("read_socket_with_timeout: timeout read. select timed out.\n"));
-			smb_read_error = READ_TIMEOUT;
-			return -1;
-		}
-		
-		readret = sys_read(fd, buf+nread, maxcnt-nread);
-		
-		if (readret == 0) {
-			/* we got EOF on the file descriptor */
-			DEBUG(5,("read_socket_with_timeout: timeout read. EOF from client.\n"));
-			smb_read_error = READ_EOF;
-			return -1;
-		}
-		
-		if (readret == -1) {
-			/* the descriptor is probably dead */
-			DEBUG(0,("read_socket_with_timeout: timeout read. read error = %s.\n", strerror(errno) ));
-			smb_read_error = READ_ERROR;
-			return -1;
-		}
-		
-		nread += readret;
-	}
-	
-	/* Return the number we got */
-	return (ssize_t)nread;
-}
 
 /****************************************************************************
- Read data from the client, reading exactly N bytes. 
+  read data from the client, reading exactly N bytes. 
 ****************************************************************************/
-
-ssize_t read_data(int fd,char *buffer,size_t N)
+ssize_t read_data(int fd, char *buffer, size_t N)
 {
 	ssize_t ret;
 	size_t total=0;  
  
-	smb_read_error = 0;
-
 	while (total < N) {
 		ret = sys_read(fd,buffer + total,N - total);
-
 		if (ret == 0) {
-			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-			smb_read_error = READ_EOF;
 			return 0;
 		}
-
 		if (ret == -1) {
-			DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-			smb_read_error = READ_ERROR;
 			return -1;
 		}
 		total += ret;
@@ -341,50 +200,18 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 	return (ssize_t)total;
 }
 
-/****************************************************************************
- Read data from a socket, reading exactly N bytes. 
-****************************************************************************/
-
-static ssize_t read_socket_data(int fd,char *buffer,size_t N)
-{
-	ssize_t ret;
-	size_t total=0;  
- 
-	smb_read_error = 0;
-
-	while (total < N) {
-		ret = sys_read(fd,buffer + total,N - total);
-
-		if (ret == 0) {
-			DEBUG(10,("read_socket_data: recv of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-			smb_read_error = READ_EOF;
-			return 0;
-		}
-
-		if (ret == -1) {
-			DEBUG(0,("read_socket_data: recv failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-			smb_read_error = READ_ERROR;
-			return -1;
-		}
-		total += ret;
-	}
-	return (ssize_t)total;
-}
 
 /****************************************************************************
  Write data to a fd.
 ****************************************************************************/
-
-ssize_t write_data(int fd,char *buffer,size_t N)
+ssize_t write_data(int fd, const char *buffer, size_t N)
 {
 	size_t total=0;
 	ssize_t ret;
 
 	while (total < N) {
-		ret = sys_write(fd,buffer + total,N - total);
-
+		ret = sys_write(fd, buffer + total, N - total);
 		if (ret == -1) {
-			DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
 			return -1;
 		}
 		if (ret == 0)
@@ -395,249 +222,24 @@ ssize_t write_data(int fd,char *buffer,size_t N)
 	return (ssize_t)total;
 }
 
-/****************************************************************************
- Write data to a socket - use send rather than write.
-****************************************************************************/
-
-static ssize_t write_socket_data(int fd,char *buffer,size_t N)
-{
-	size_t total=0;
-	ssize_t ret;
-
-	while (total < N) {
-		ret = sys_send(fd,buffer + total,N - total,0);
-
-		if (ret == -1) {
-			DEBUG(0,("write_socket_data: write failure. Error = %s\n", strerror(errno) ));
-			return -1;
-		}
-		if (ret == 0)
-			return total;
-
-		total += ret;
-	}
-	return (ssize_t)total;
-}
 
 /****************************************************************************
- Write to a socket.
+send a keepalive packet (rfc1002)
 ****************************************************************************/
-
-ssize_t write_socket(int fd,char *buf,size_t len)
-{
-	ssize_t ret=0;
-
-	DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
-	ret = write_socket_data(fd,buf,len);
-      
-	DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
-	if(ret <= 0)
-		DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n", 
-			(int)len, fd, strerror(errno) ));
-
-	return(ret);
-}
-
-/****************************************************************************
- Send a keepalive packet (rfc1002).
-****************************************************************************/
-
-BOOL send_keepalive(int client)
+BOOL send_nbt_keepalive(int sock_fd)
 {
 	unsigned char buf[4];
 
 	buf[0] = SMBkeepalive;
 	buf[1] = buf[2] = buf[3] = 0;
 
-	return(write_socket_data(client,(char *)buf,4) == 4);
+	return write_data(sock_fd,(char *)buf,4) == 4;
 }
 
-
-/****************************************************************************
- Read 4 bytes of a smb packet and return the smb length of the packet.
- Store the result in the buffer.
- This version of the function will return a length of zero on receiving
- a keepalive packet.
- Timeout is in milliseconds.
-****************************************************************************/
-
-static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int timeout)
-{
-	ssize_t len=0;
-	int msg_type;
-	BOOL ok = False;
-
-	while (!ok) {
-		if (timeout > 0)
-			ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout) == 4);
-		else 
-			ok = (read_socket_data(fd,inbuf,4) == 4);
-
-		if (!ok)
-			return(-1);
-
-		len = smb_len(inbuf);
-		msg_type = CVAL(inbuf,0);
-
-		if (msg_type == SMBkeepalive) 
-			DEBUG(5,("Got keepalive packet\n"));
-	}
-
-	DEBUG(10,("got smb length of %lu\n",(unsigned long)len));
-
-	return(len);
-}
-
-/****************************************************************************
- Read 4 bytes of a smb packet and return the smb length of the packet.
- Store the result in the buffer. This version of the function will
- never return a session keepalive (length of zero).
- Timeout is in milliseconds.
-****************************************************************************/
-
-ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
-{
-	ssize_t len;
-
-	for(;;) {
-		len = read_smb_length_return_keepalive(fd, inbuf, timeout);
-
-		if(len < 0)
-			return len;
-
-		/* Ignore session keepalives. */
-		if(CVAL(inbuf,0) != SMBkeepalive)
-			break;
-	}
-
-	DEBUG(10,("read_smb_length: got smb length of %lu\n",
-		  (unsigned long)len));
-
-	return len;
-}
-
-/****************************************************************************
- Read an smb from a fd. Note that the buffer *MUST* be of size
- BUFFER_SIZE+SAFETY_MARGIN.
- The timeout is in milliseconds. 
- This function will return on receipt of a session keepalive packet.
- Doesn't check the MAC on signed packets.
-****************************************************************************/
-
-BOOL receive_smb_raw(int fd,char *buffer, unsigned int timeout)
-{
-	ssize_t len,ret;
-
-	smb_read_error = 0;
-
-	memset(buffer,'\0',smb_size + 100);
-
-	len = read_smb_length_return_keepalive(fd,buffer,timeout);
-	if (len < 0) {
-		DEBUG(10,("receive_smb_raw: length < 0!\n"));
-
-		/*
-		 * Correct fix. smb_read_error may have already been
-		 * set. Only set it here if not already set. Global
-		 * variables still suck :-). JRA.
-		 */
-
-		if (smb_read_error == 0)
-			smb_read_error = READ_ERROR;
-		return False;
-	}
-
-	/*
-	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
-	 * of header. Don't print the error if this fits.... JRA.
-	 */
-
-	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
-		DEBUG(0,("Invalid packet length! (%lu bytes).\n",(unsigned long)len));
-		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
-
-			/*
-			 * Correct fix. smb_read_error may have already been
-			 * set. Only set it here if not already set. Global
-			 * variables still suck :-). JRA.
-			 */
-
-			if (smb_read_error == 0)
-				smb_read_error = READ_ERROR;
-			return False;
-		}
-	}
-
-	if(len > 0) {
-		ret = read_socket_data(fd,buffer+4,len);
-		if (ret != len) {
-			if (smb_read_error == 0)
-				smb_read_error = READ_ERROR;
-			return False;
-		}
-		
-		/* not all of samba3 properly checks for packet-termination of strings. This
-		   ensures that we don't run off into empty space. */
-		SSVAL(buffer+4,len, 0);
-	}
-
-	return True;
-}
-
-/****************************************************************************
- Wrapper for receive_smb_raw().
- Checks the MAC on signed packets.
-****************************************************************************/
-
-BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
-{
-	if (!receive_smb_raw(fd, buffer, timeout)) {
-		return False;
-	}
-
-	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(buffer, True)) {
-		DEBUG(0, ("receive_smb: SMB Signature verification failed on incoming packet!\n"));
-		if (smb_read_error == 0)
-			smb_read_error = READ_BAD_SIG;
-		return False;
-	};
-
-	return(True);
-}
-
-/****************************************************************************
- Send an smb to a fd.
-****************************************************************************/
-
-BOOL send_smb(int fd,char *buffer)
-{
-	size_t len;
-	size_t nwritten=0;
-	ssize_t ret;
-
-	/* Sign the outgoing packet if required. */
-	srv_calculate_sign_mac(buffer);
-
-	len = smb_len(buffer) + 4;
-
-	while (nwritten < len) {
-		ret = write_socket(fd,buffer+nwritten,len - nwritten);
-		if (ret <= 0) {
-			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
-				(int)len,(int)ret, strerror(errno) ));
-			return False;
-		}
-		nwritten += ret;
-	}
-
-	return True;
-}
 
 /****************************************************************************
  Open a socket of the specified type, port, and address for incoming data.
 ****************************************************************************/
-
 int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL rebind )
 {
 	struct sockaddr_in sock;
@@ -654,43 +256,22 @@ int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL reb
 
 	res = socket( AF_INET, type, 0 );
 	if( res == -1 ) {
-		if( DEBUGLVL(0) ) {
-			dbgtext( "open_socket_in(): socket() call failed: " );
-			dbgtext( "%s\n", strerror( errno ) );
-		}
+		DEBUG(0,("open_socket_in(): socket() call failed: %s\n", strerror(errno)));
 		return -1;
 	}
 
 	/* This block sets/clears the SO_REUSEADDR and possibly SO_REUSEPORT. */
 	{
 		int val = rebind ? 1 : 0;
-		if( setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) == -1 ) {
-			if( DEBUGLVL( dlevel ) ) {
-				dbgtext( "open_socket_in(): setsockopt: " );
-				dbgtext( "SO_REUSEADDR = %s ", val?"True":"False" );
-				dbgtext( "on port %d failed ", port );
-				dbgtext( "with error = %s\n", strerror(errno) );
-			}
-		}
+		setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val));
 #ifdef SO_REUSEPORT
-		if( setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1 ) {
-			if( DEBUGLVL( dlevel ) ) {
-				dbgtext( "open_socket_in(): setsockopt: ");
-				dbgtext( "SO_REUSEPORT = %s ", val?"True":"False" );
-				dbgtext( "on port %d failed ", port );
-				dbgtext( "with error = %s\n", strerror(errno) );
-			}
-		}
-#endif /* SO_REUSEPORT */
+		setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val));
+#endif
 	}
 
 	/* now we've got a socket - we need to bind it */
 	if( bind( res, (struct sockaddr *)&sock, sizeof(sock) ) == -1 ) {
-		if( DEBUGLVL(dlevel) && (port == SMB_PORT1 || port == SMB_PORT2 || port == NMB_PORT) ) {
-			dbgtext( "bind failed on port %d ", port );
-			dbgtext( "socket_addr = %s.\n", inet_ntoa( sock.sin_addr ) );
-			dbgtext( "Error = %s\n", strerror(errno) );
-		}
+		DEBUG(0,("bind failed on port %d - %s\n", port, strerror(errno)));
 		close( res ); 
 		return( -1 ); 
 	}
@@ -700,95 +281,89 @@ int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL reb
 	return( res );
  }
 
-/****************************************************************************
- Create an outgoing socket. timeout is in milliseconds.
-**************************************************************************/
 
-int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
+/****************************************************************************
+  create an outgoing socket. timeout is in milliseconds.
+  **************************************************************************/
+int open_socket_out(int type, struct in_addr *addr, int port, int timeout)
 {
 	struct sockaddr_in sock_out;
 	int res,ret;
-	int connect_loop = 10;
-	int increment = 10;
+	int connect_loop = 250; /* 250 milliseconds */
+	int loops = (timeout) / connect_loop;
 
 	/* create a socket to write to */
 	res = socket(PF_INET, type, 0);
-	if (res == -1) {
-                DEBUG(0,("socket error (%s)\n", strerror(errno)));
-		return -1;
-	}
-
-	if (type != SOCK_STREAM)
-		return(res);
-  
+	if (res == -1) 
+	{ DEBUG(0,("socket error\n")); return -1; }
+	
+	if (type != SOCK_STREAM) return(res);
+	
 	memset((char *)&sock_out,'\0',sizeof(sock_out));
 	putip((char *)&sock_out.sin_addr,(char *)addr);
-  
+	
 	sock_out.sin_port = htons( port );
 	sock_out.sin_family = PF_INET;
-
+	
 	/* set it non-blocking */
 	set_blocking(res,False);
-
+	
 	DEBUG(3,("Connecting to %s at port %d\n",inet_ntoa(*addr),port));
-  
+	
 	/* and connect it to the destination */
-  connect_again:
-
+connect_again:
 	ret = connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out));
-
+	
 	/* Some systems return EAGAIN when they mean EINPROGRESS */
 	if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
-			errno == EAGAIN) && (connect_loop < timeout) ) {
-		smb_msleep(connect_loop);
-		connect_loop += increment;
-		if (increment < 250) {
-			/* After 8 rounds we end up at a max of 255 msec */
-			increment *= 1.5;
-		}
+			errno == EAGAIN) && loops--) {
+		msleep(connect_loop);
 		goto connect_again;
 	}
-
+	
 	if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
 			errno == EAGAIN)) {
 		DEBUG(1,("timeout connecting to %s:%d\n",inet_ntoa(*addr),port));
 		close(res);
 		return -1;
 	}
-
+	
 #ifdef EISCONN
-
 	if (ret < 0 && errno == EISCONN) {
 		errno = 0;
 		ret = 0;
 	}
 #endif
-
+	
 	if (ret < 0) {
 		DEBUG(2,("error connecting to %s:%d (%s)\n",
-				inet_ntoa(*addr),port,strerror(errno)));
+			 inet_ntoa(*addr),port,strerror(errno)));
 		close(res);
 		return -1;
 	}
-
+	
 	/* set it blocking again */
 	set_blocking(res,True);
-
+	
 	return res;
 }
 
-/****************************************************************************
- Open a connected UDP socket to host on port
-**************************************************************************/
-
+/*
+  open a connected UDP socket to host on port
+*/
 int open_udp_socket(const char *host, int port)
 {
 	int type = SOCK_DGRAM;
 	struct sockaddr_in sock_out;
 	int res;
 	struct in_addr *addr;
+	TALLOC_CTX *mem_ctx;
 
-	addr = interpret_addr2(host);
+	mem_ctx = talloc_init("open_udp_socket");
+	if (!mem_ctx) {
+		return -1;
+	}
+	addr = interpret_addr2(mem_ctx, host);
 
 	res = socket(PF_INET, type, 0);
 	if (res == -1) {
@@ -799,6 +374,8 @@ int open_udp_socket(const char *host, int port)
 	putip((char *)&sock_out.sin_addr,(char *)addr);
 	sock_out.sin_port = htons(port);
 	sock_out.sin_family = PF_INET;
+	
+	talloc_destroy(mem_ctx);
 
 	if (connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out))) {
 		close(res);
@@ -809,50 +386,11 @@ int open_udp_socket(const char *host, int port)
 }
 
 
-/* the following 3 client_*() functions are nasty ways of allowing
-   some generic functions to get info that really should be hidden in
-   particular modules */
-static int client_fd = -1;
-
-void client_setfd(int fd)
-{
-	client_fd = fd;
-}
-
-char *client_name(void)
-{
-	return get_peer_name(client_fd,False);
-}
-
-char *client_addr(void)
-{
-	return get_peer_addr(client_fd);
-}
-
-char *client_socket_addr(void)
-{
-	return get_socket_addr(client_fd);
-}
-
-struct in_addr *client_inaddr(struct sockaddr *sa)
-{
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (sa);
-	int     length = sizeof(*sa);
-	
-	if (getpeername(client_fd, sa, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
-		return NULL;
-	}
-	
-	return &sockin->sin_addr;
-}
-
 /*******************************************************************
- Matchname - determine if host name matches IP address. Used to
- confirm a hostname lookup to prevent spoof attacks.
-******************************************************************/
-
-static BOOL matchname(char *remotehost,struct in_addr  addr)
+ matchname - determine if host name matches IP address. Used to
+ confirm a hostname lookup to prevent spoof attacks
+ ******************************************************************/
+static BOOL matchname(char *remotehost, struct in_addr addr)
 {
 	struct hostent *hp;
 	int     i;
@@ -870,8 +408,8 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	 * DNS is perverted). We always check the address list, though.
 	 */
 	
-	if (!strequal(remotehost, hp->h_name)
-	    && !strequal(remotehost, "localhost")) {
+	if (strcasecmp(remotehost, hp->h_name)
+	    && strcasecmp(remotehost, "localhost")) {
 		DEBUG(0,("host name/name mismatch: %s != %s\n",
 			 remotehost, hp->h_name));
 		return False;
@@ -894,15 +432,13 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	return False;
 }
 
+ 
 /*******************************************************************
- Return the DNS name of the remote end of a socket.
-******************************************************************/
-
-char *get_peer_name(int fd, BOOL force_lookup)
+ return the DNS name of the remote end of a socket
+ ******************************************************************/
+char *get_socket_name(TALLOC_CTX *mem_ctx, int fd, BOOL force_lookup)
 {
-	static pstring name_buf;
-	pstring tmp_name;
-	static fstring addr_buf;
+	char *name_buf;
 	struct hostent *hp;
 	struct in_addr addr;
 	char *p;
@@ -912,167 +448,171 @@ char *get_peer_name(int fd, BOOL force_lookup)
 	   with dns. To avoid the delay we avoid the lookup if
 	   possible */
 	if (!lp_hostname_lookups() && (force_lookup == False)) {
-		return get_peer_addr(fd);
+		return get_socket_addr(mem_ctx, fd);
 	}
 	
-	p = get_peer_addr(fd);
+	p = get_socket_addr(mem_ctx, fd);
 
-	/* it might be the same as the last one - save some DNS work */
-	if (strcmp(p, addr_buf) == 0) 
-		return name_buf;
+	name_buf = talloc_strdup(mem_ctx, "UNKNOWN");
+	if (fd == -1) return name_buf;
 
-	pstrcpy(name_buf,"UNKNOWN");
-	if (fd == -1) 
-		return name_buf;
-
-	fstrcpy(addr_buf, p);
-
-	addr = *interpret_addr2(p);
+	addr = *interpret_addr2(mem_ctx, p);
 	
 	/* Look up the remote host name. */
 	if ((hp = gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr), AF_INET)) == 0) {
 		DEBUG(1,("Gethostbyaddr failed for %s\n",p));
-		pstrcpy(name_buf, p);
+		name_buf = talloc_strdup(mem_ctx, p);
 	} else {
-		pstrcpy(name_buf,(char *)hp->h_name);
+		name_buf = talloc_strdup(mem_ctx, (char *)hp->h_name);
 		if (!matchname(name_buf, addr)) {
 			DEBUG(0,("Matchname failed on %s %s\n",name_buf,p));
-			pstrcpy(name_buf,"UNKNOWN");
+			name_buf = talloc_strdup(mem_ctx, "UNKNOWN");
 		}
 	}
 
-	/* can't pass the same source and dest strings in when you 
-	   use --enable-developer or the clobber_region() call will 
-	   get you */
-	
-	pstrcpy( tmp_name, name_buf );
-	alpha_strcpy(name_buf, tmp_name, "_-.", sizeof(name_buf));
+	alpha_strcpy(name_buf, name_buf, "_-.", strlen(name_buf)+1);
 	if (strstr(name_buf,"..")) {
-		pstrcpy(name_buf, "UNKNOWN");
+		name_buf = talloc_strdup(mem_ctx, "UNKNOWN");
 	}
 
 	return name_buf;
 }
 
 /*******************************************************************
- Return the IP addr of the remote end of a socket as a string.
+ return the IP addr of the remote end of a socket as a string 
  ******************************************************************/
-
-char *get_peer_addr(int fd)
+char *get_socket_addr(TALLOC_CTX *mem_ctx, int fd)
 {
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
 	int     length = sizeof(sa);
-	static fstring addr_buf;
 
-	fstrcpy(addr_buf,"0.0.0.0");
-
-	if (fd == -1) {
-		return addr_buf;
+	if (fd == -1 || getpeername(fd, &sa, &length) == -1) {
+		return talloc_strdup(mem_ctx, "0.0.0.0");
 	}
 	
-	if (getpeername(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
-		return addr_buf;
-	}
-	
-	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
-	
-	return addr_buf;
+	return talloc_strdup(mem_ctx, (char *)inet_ntoa(sockin->sin_addr));
 }
 
+
+
 /*******************************************************************
- Create protected unix domain socket.
-
- Some unixes cannot set permissions on a ux-dom-sock, so we
- have to make sure that the directory contains the protection
- permissions instead.
+this is like socketpair but uses tcp. It is used by the Samba
+regression test code
+The function guarantees that nobody else can attach to the socket,
+or if they do that this function fails and the socket gets closed
+returns 0 on success, -1 on failure
+the resulting file descriptors are symmetrical
  ******************************************************************/
-
-int create_pipe_sock(const char *socket_dir,
-		     const char *socket_name,
-		     mode_t dir_perms)
+static int socketpair_tcp(int fd[2])
 {
-#ifdef HAVE_UNIXSOCKET
-	struct sockaddr_un sunaddr;
-	struct stat st;
-	int sock;
-	mode_t old_umask;
-	pstring path;
-        
-	old_umask = umask(0);
-        
-	/* Create the socket directory or reuse the existing one */
-        
-	if (lstat(socket_dir, &st) == -1) {
-		if (errno == ENOENT) {
-			/* Create directory */
-			if (mkdir(socket_dir, dir_perms) == -1) {
-				DEBUG(0, ("error creating socket directory "
-					"%s: %s\n", socket_dir, 
-					strerror(errno)));
-				goto out_umask;
-			}
-		} else {
-			DEBUG(0, ("lstat failed on socket directory %s: %s\n",
-				socket_dir, strerror(errno)));
-			goto out_umask;
-		}
+	int listener;
+	struct sockaddr_in sock;
+	struct sockaddr_in sock2;
+	socklen_t socklen = sizeof(sock);
+	int connect_done = 0;
+	
+	fd[0] = fd[1] = listener = -1;
+
+	memset(&sock, 0, sizeof(sock));
+	
+	if ((listener = socket(PF_INET, SOCK_STREAM, 0)) == -1) goto failed;
+
+        memset(&sock2, 0, sizeof(sock2));
+#ifdef HAVE_SOCK_SIN_LEN
+        sock2.sin_len = sizeof(sock2);
+#endif
+        sock2.sin_family = PF_INET;
+
+        bind(listener, (struct sockaddr *)&sock2, sizeof(sock2));
+
+	if (listen(listener, 1) != 0) goto failed;
+
+	if (getsockname(listener, (struct sockaddr *)&sock, &socklen) != 0) goto failed;
+
+	if ((fd[1] = socket(PF_INET, SOCK_STREAM, 0)) == -1) goto failed;
+
+	set_blocking(fd[1], 0);
+
+	sock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+	if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) == -1) {
+		if (errno != EINPROGRESS) goto failed;
 	} else {
-		/* Check ownership and permission on existing directory */
-		if (!S_ISDIR(st.st_mode)) {
-			DEBUG(0, ("socket directory %s isn't a directory\n",
-				socket_dir));
-			goto out_umask;
-		}
-		if ((st.st_uid != sec_initial_uid()) || 
-				((st.st_mode & 0777) != dir_perms)) {
-			DEBUG(0, ("invalid permissions on socket directory "
-				"%s\n", socket_dir));
-			goto out_umask;
-		}
+		connect_done = 1;
 	}
-        
-	/* Create the socket file */
-        
-	sock = socket(AF_UNIX, SOCK_STREAM, 0);
-        
-	if (sock == -1) {
-		perror("socket");
-                goto out_umask;
-	}
-        
-	pstr_sprintf(path, "%s/%s", socket_dir, socket_name);
-        
-	unlink(path);
-	memset(&sunaddr, 0, sizeof(sunaddr));
-	sunaddr.sun_family = AF_UNIX;
-	safe_strcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
-        
-	if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
-		DEBUG(0, ("bind failed on pipe socket %s: %s\n", path,
-			strerror(errno)));
-		goto out_close;
-	}
-        
-	if (listen(sock, 5) == -1) {
-		DEBUG(0, ("listen failed on pipe socket %s: %s\n", path,
-			strerror(errno)));
-		goto out_close;
-	}
-        
-	umask(old_umask);
-	return sock;
 
-out_close:
-	close(sock);
+	if ((fd[0] = accept(listener, (struct sockaddr *)&sock, &socklen)) == -1) goto failed;
 
-out_umask:
-	umask(old_umask);
+	close(listener);
+	if (connect_done == 0) {
+		if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) != 0
+		    && errno != EISCONN) goto failed;
+	}
+
+	set_blocking(fd[1], 1);
+
+	/* all OK! */
+	return 0;
+
+ failed:
+	if (fd[0] != -1) close(fd[0]);
+	if (fd[1] != -1) close(fd[1]);
+	if (listener != -1) close(listener);
 	return -1;
+}
 
-#else
-        DEBUG(0, ("create_pipe_sock: No Unix sockets on this system\n"));
-        return -1;
-#endif /* HAVE_UNIXSOCKET */
+
+/*******************************************************************
+run a program on a local tcp socket, this is used to launch smbd
+when regression testing
+the return value is a socket which is attached to a subprocess
+running "prog". stdin and stdout are attached. stderr is left
+attached to the original stderr
+ ******************************************************************/
+int sock_exec(const char *prog)
+{
+	int fd[2];
+	if (socketpair_tcp(fd) != 0) {
+		DEBUG(0,("socketpair_tcp failed (%s)\n", strerror(errno)));
+		return -1;
+	}
+	if (fork() == 0) {
+		close(fd[0]);
+		close(0);
+		close(1);
+		dup(fd[1]);
+		dup(fd[1]);
+		exit(system(prog));
+	}
+	close(fd[1]);
+	return fd[0];
+}
+
+
+/*
+  determine if a packet is pending for receive on a socket
+*/
+BOOL socket_pending(int fd)
+{
+	fd_set fds;
+	int selrtn;
+	struct timeval timeout;
+
+	FD_ZERO(&fds);
+	FD_SET(fd,&fds);
+	
+	/* immediate timeout */
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
+
+	/* yes, this is supposed to be a normal select not a sys_select() */
+	selrtn = select(fd+1,&fds,NULL,NULL,&timeout);
+		
+	if (selrtn == 1) {
+		/* the fd is readable */
+		return True;
+	}
+
+	return False;
 }

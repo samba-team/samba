@@ -6,8 +6,8 @@
 #define _LOCAL_H
 
 /* The default workgroup - usually overridden in smb.conf */
-#ifndef WORKGROUP
-#define WORKGROUP "WORKGROUP"
+#ifndef DEFAULT_WORKGROUP
+#define DEFAULT_WORKGROUP "WORKGROUP"
 #endif
 
 /* the maximum debug level to compile into the code. This assumes a good 
@@ -224,10 +224,11 @@
 /* Max number of simultaneous winbindd socket connections. */
 #define WINBINDD_MAX_SIMULTANEOUS_CLIENTS 200
 
-/* Buffer size to use when printing backtraces */
-#define BACKTRACE_STACK_SIZE 64
-
 /* size of listen() backlog in smbd */
-#define SMBD_LISTEN_BACKLOG 50
+#define SMBD_LISTEN_BACKLOG 10
+
+/* the range of ports to try for decrpc over tcp endpoints */
+#define DCERPC_TCP_LOW_PORT  1024
+#define DCERPC_TCP_HIGH_PORT 1300
 
 #endif

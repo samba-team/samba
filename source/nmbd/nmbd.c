@@ -3,7 +3,7 @@
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Jeremy Allison 1997-2002
-   Copyright (C) Jelmer Vernooij 2002,2003 (Conversion to popt)
+   Copyright (C) Jelmer Vernooij 2002 (Conversion to popt)
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,13 +30,13 @@ int global_nmb_port = -1;
 extern BOOL global_in_nmbd;
 
 /* are we running as a daemon ? */
-static BOOL is_daemon;
+static BOOL is_daemon = False;
 
 /* fork or run in foreground ? */
 static BOOL Fork = True;
 
 /* log to standard output ? */
-static BOOL log_stdout;
+static BOOL log_stdout = False;
 
 /* have we found LanMan clients yet? */
 BOOL found_lm_clients = False;
@@ -81,7 +81,7 @@ static void nmbd_terminate(int msg_type, pid_t src, void *buf, size_t len)
  Catch a SIGTERM signal.
  **************************************************************************** */
 
-static SIG_ATOMIC_T got_sig_term;
+static sig_atomic_t got_sig_term;
 
 static void sig_term(int sig)
 {
@@ -93,12 +93,31 @@ static void sig_term(int sig)
  Catch a SIGHUP signal.
  **************************************************************************** */
 
-static SIG_ATOMIC_T reload_after_sighup;
+static sig_atomic_t reload_after_sighup;
 
 static void sig_hup(int sig)
 {
 	reload_after_sighup = 1;
 	sys_select_signal();
+}
+
+/*******************************************************************
+ Print out all talloc memory info.
+********************************************************************/
+
+void return_all_talloc_info(int msg_type, pid_t src_pid, void *buf, size_t len)
+{
+	TALLOC_CTX *ctx = talloc_init("info context");
+	char *info = NULL;
+
+	if (!ctx)
+		return;
+
+	info = talloc_describe_all(ctx);
+	if (info)
+		DEBUG(10,(info));
+	message_send_pid(src_pid, MSG_TALLOC_USAGE, info, info ? strlen(info) + 1 : 0, True);
+	talloc_destroy(ctx);
 }
 
 #if DUMP_CORE
@@ -231,8 +250,7 @@ static BOOL reload_interfaces(time_t t)
 			DEBUG(2,("Found new interface %s\n", 
 				 inet_ntoa(iface->ip)));
 			subrec = make_normal_subnet(iface);
-			if (subrec)
-				register_my_workgroup_one_subnet(subrec);
+			if (subrec) register_my_workgroup_one_subnet(subrec);
 		}
 	}
 
@@ -274,7 +292,7 @@ static BOOL reload_nmbd_services(BOOL test)
 {
 	BOOL ret;
 
-	set_remote_machine_name("nmbd", False);
+	set_remote_machine_name("nmbd");
 
 	if ( lp_loaded() ) {
 		pstring fname;
@@ -300,36 +318,12 @@ static BOOL reload_nmbd_services(BOOL test)
 }
 
 /**************************************************************************** **
- * React on 'smbcontrol nmbd reload-config' in the same way as to SIGHUP
- * We use buf here to return BOOL result to process() when reload_interfaces()
- * detects that there are no subnets.
- **************************************************************************** */
-
-static void msg_reload_nmbd_services(int msg_type, pid_t src, void *buf, size_t len)
-{
-	write_browse_list( 0, True );
-	dump_all_namelists();
-	reload_nmbd_services( True );
-	reopen_logs();
-	
-	if(buf) {
-		/* We were called from process() */
-		/* If reload_interfaces() returned True */
-		/* we need to shutdown if there are no subnets... */
-		/* pass this info back to process() */
-		*((BOOL*)buf) = reload_interfaces(0);  
-	}
-}
-
-
-/**************************************************************************** **
  The main select loop.
  **************************************************************************** */
 
 static void process(void)
 {
 	BOOL run_election;
-	BOOL no_subnets;
 
 	while( True ) {
 		time_t t = time(NULL);
@@ -538,8 +532,11 @@ static void process(void)
 
 		if(reload_after_sighup) {
 			DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
-			msg_reload_nmbd_services(MSG_SMB_CONF_UPDATED, (pid_t) 0, (void*) &no_subnets, 0);
-			if(no_subnets)
+			write_browse_list( 0, True );
+			dump_all_namelists();
+			reload_nmbd_services( True );
+			reopen_logs();
+			if(reload_interfaces(0))
 				return;
 			reload_after_sighup = 0;
 		}
@@ -569,9 +566,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	 */
 
 	if ( isdaemon )
-		ClientNMB = open_socket_in(SOCK_DGRAM, port,
-					   0, interpret_addr(lp_socket_address()),
-					   True);
+		ClientNMB = open_socket_in(SOCK_DGRAM, port,0,0,True);
 	else
 		ClientNMB = 0;
   
@@ -595,10 +590,8 @@ static BOOL open_sockets(BOOL isdaemon, int port)
  **************************************************************************** */
  int main(int argc, const char *argv[])
 {
-	pstring logfile;
-	static BOOL opt_interactive;
+	static BOOL opt_interactive = False;
 	poptContext pc;
-	int opt;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
@@ -607,165 +600,179 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"hosts", 'H', POPT_ARG_STRING, dyn_LMHOSTSFILE, 'H', "Load a netbios hosts file"},
 	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
-	POPT_COMMON_SAMBA
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_netbios_name },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_log_base },
 	{ NULL }
 	};
+	int opt;
+	pstring logfile;
 
-	global_nmb_port = NMB_PORT;
+  global_nmb_port = NMB_PORT;
+  global_in_nmbd = True;
 
-	pc = poptGetContext("nmbd", argc, argv, long_options, 0);
-	while ((opt = poptGetNextOpt(pc)) != -1) ;
-	poptFreeContext(pc);
+  StartupTime = time(NULL);
 
-	global_in_nmbd = True;
-	
-	StartupTime = time(NULL);
-	
-	sys_srandom(time(NULL) ^ sys_getpid());
-	
-	slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
-	
-	fault_setup((void (*)(void *))fault_continue );
-	
-	/* POSIX demands that signals are inherited. If the invoking process has
-	 * these signals masked, we will have problems, as we won't receive them. */
-	BlockSignals(False, SIGHUP);
-	BlockSignals(False, SIGUSR1);
-	BlockSignals(False, SIGTERM);
-	
-	CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
-	CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
-	
+  sys_srandom(time(NULL) ^ sys_getpid());
+
+  slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
+  lp_set_logfile(logfile);
+
+  fault_setup((void (*)(void *))fault_continue );
+
+  /* POSIX demands that signals are inherited. If the invoking process has
+   * these signals masked, we will have problems, as we won't recieve them. */
+  BlockSignals(False, SIGHUP);
+  BlockSignals(False, SIGUSR1);
+  BlockSignals(False, SIGTERM);
+
+  CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
+  CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
+
 #if defined(SIGFPE)
-	/* we are never interested in SIGFPE */
-	BlockSignals(True,SIGFPE);
+  /* we are never interested in SIGFPE */
+  BlockSignals(True,SIGFPE);
 #endif
 
-	/* We no longer use USR2... */
+  /* We no longer use USR2... */
 #if defined(SIGUSR2)
-	BlockSignals(True, SIGUSR2);
+  BlockSignals(True, SIGUSR2);
 #endif
-
-	if ( opt_interactive ) {
-		Fork = False;
-		log_stdout = True;
-	}
-
-	if ( log_stdout && Fork ) {
-		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
-		exit(1);
-	}
-
-	setup_logging( argv[0], log_stdout );
-
-	reopen_logs();
-
-	DEBUG( 0, ( "Netbios nameserver version %s started.\n", SAMBA_VERSION_STRING) );
-	DEBUGADD( 0, ( "Copyright Andrew Tridgell and the Samba Team 1994-2004\n" ) );
-
-	if ( !reload_nmbd_services(False) )
-		return(-1);
-
-	if(!init_names())
-		return -1;
-
-	reload_nmbd_services( True );
-
-	if (strequal(lp_workgroup(),"*")) {
-		DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
-		exit(1);
-	}
-
-	set_samba_nb_type();
-
-	if (!is_daemon && !is_a_socket(0)) {
-		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
-		is_daemon = True;
-	}
+  pc = poptGetContext("nmbd", argc, argv, long_options, 0);
   
-	if (is_daemon && !opt_interactive) {
-		DEBUG( 2, ( "Becoming a daemon.\n" ) );
-		become_daemon(Fork);
-	}
+  while((opt = poptGetNextOpt(pc)) != -1)
+    { }
+
+  poptFreeContext(pc);
+
+  if ( opt_interactive ) {
+    Fork = False;
+    log_stdout = True;
+  }
+
+  if ( log_stdout && Fork ) {
+    DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
+    exit(1);
+  }
+
+  setup_logging( argv[0], log_stdout?DEBUG_STDOUT : DEBUG_FILE );
+
+  reopen_logs();
+
+  DEBUG( 0, ( "Netbios nameserver version %s started.\n", VERSION ) );
+  DEBUGADD( 0, ( "Copyright Andrew Tridgell and the Samba Team 1994-2002\n" ) );
+
+  if ( !reload_nmbd_services(False) )
+    return(-1);
+
+  if(!init_names())
+    return -1;
+
+  reload_nmbd_services( True );
+
+  if (strequal(lp_workgroup(),"*"))
+  {
+    DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
+    exit(1);
+  }
+
+  set_samba_nb_type();
+
+  if (!is_daemon && !is_a_socket(0))
+  {
+    DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+    is_daemon = True;
+  }
+  
+  if (is_daemon && !opt_interactive)
+  {
+    DEBUG( 2, ( "Becoming a daemon.\n" ) );
+    become_daemon(Fork);
+  }
 
 #if HAVE_SETPGID
-	/*
-	 * If we're interactive we want to set our own process group for 
-	 * signal management.
-	 */
-	if (opt_interactive)
-		setpgid( (pid_t)0, (pid_t)0 );
+  /*
+   * If we're interactive we want to set our own process group for 
+   * signal management.
+   */
+  if (opt_interactive)
+    setpgid( (pid_t)0, (pid_t)0 );
 #endif
 
 #ifndef SYNC_DNS
-	/* Setup the async dns. We do it here so it doesn't have all the other
-		stuff initialised and thus chewing memory and sockets */
-	if(lp_we_are_a_wins_server() && lp_dns_proxy()) {
-		start_async_dns();
-	}
+  /* Setup the async dns. We do it here so it doesn't have all the other
+     stuff initialised and thus chewing memory and sockets */
+  if(lp_we_are_a_wins_server() && lp_dns_proxy()) {
+	  start_async_dns();
+  }
 #endif
 
-	if (!directory_exist(lp_lockdir(), NULL)) {
-		mkdir(lp_lockdir(), 0755);
-	}
+  if (!directory_exist(lp_lockdir(), NULL)) {
+	  mkdir(lp_lockdir(), 0755);
+  }
 
-	pidfile_create("nmbd");
-	message_init();
-	message_register(MSG_FORCE_ELECTION, nmbd_message_election);
-	message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
-	message_register(MSG_SHUTDOWN, nmbd_terminate);
-	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
+  pidfile_create("nmbd");
+  message_init();
+  message_register(MSG_FORCE_ELECTION, nmbd_message_election);
+  message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
+  message_register(MSG_SHUTDOWN, nmbd_terminate);
+  message_register(MSG_REQ_TALLOC_USAGE, return_all_talloc_info);
 
-	DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
+  DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 
-	if ( !open_sockets( is_daemon, global_nmb_port ) ) {
-		kill_async_dns_child();
-		return 1;
-	}
+  if ( !open_sockets( is_daemon, global_nmb_port ) ) {
+    kill_async_dns_child();
+    return 1;
+  }
 
-	/* Determine all the IP addresses we have. */
-	load_interfaces();
+  /* Determine all the IP addresses we have. */
+  load_interfaces();
 
-	/* Create an nmbd subnet record for each of the above. */
-	if( False == create_subnets() ) {
-		DEBUG(0,("ERROR: Failed when creating subnet lists. Exiting.\n"));
-		kill_async_dns_child();
-		exit(1);
-	}
+  /* Create an nmbd subnet record for each of the above. */
+  if( False == create_subnets() )
+  {
+    DEBUG(0,("ERROR: Failed when creating subnet lists. Exiting.\n"));
+    kill_async_dns_child();
+    exit(1);
+  }
 
-	/* Load in any static local names. */ 
-	load_lmhosts_file(dyn_LMHOSTSFILE);
-	DEBUG(3,("Loaded hosts file %s\n", dyn_LMHOSTSFILE));
+  /* Load in any static local names. */ 
+  load_lmhosts_file(dyn_LMHOSTSFILE);
+  DEBUG(3,("Loaded hosts file %s\n", dyn_LMHOSTSFILE));
 
-	/* If we are acting as a WINS server, initialise data structures. */
-	if( !initialise_wins() ) {
-		DEBUG( 0, ( "nmbd: Failed when initialising WINS server.\n" ) );
-		kill_async_dns_child();
-		exit(1);
-	}
+  /* If we are acting as a WINS server, initialise data structures. */
+  if( !initialise_wins() )
+  {
+    DEBUG( 0, ( "nmbd: Failed when initialising WINS server.\n" ) );
+    kill_async_dns_child();
+    exit(1);
+  }
 
-	/* 
-	 * Register nmbd primary workgroup and nmbd names on all
-	 * the broadcast subnets, and on the WINS server (if specified).
-	 * Also initiate the startup of our primary workgroup (start
-	 * elections if we are setup as being able to be a local
-	 * master browser.
-	 */
+  /* 
+   * Register nmbd primary workgroup and nmbd names on all
+   * the broadcast subnets, and on the WINS server (if specified).
+   * Also initiate the startup of our primary workgroup (start
+   * elections if we are setup as being able to be a local
+   * master browser.
+   */
 
-	if( False == register_my_workgroup_and_names() ) {
-		DEBUG(0,("ERROR: Failed when creating my my workgroup. Exiting.\n"));
-		kill_async_dns_child();
-		exit(1);
-	}
+  if( False == register_my_workgroup_and_names() )
+  {
+    DEBUG(0,("ERROR: Failed when creating my my workgroup. Exiting.\n"));
+    kill_async_dns_child();
+    exit(1);
+  }
 
-	/* We can only take signals in the select. */
-	BlockSignals( True, SIGTERM );
+  /* We can only take signals in the select. */
+  BlockSignals( True, SIGTERM );
 
-	process();
+  process();
 
-	if (dbf)
-		x_fclose(dbf);
-	kill_async_dns_child();
-	return(0);
+  if (dbf)
+    x_fclose(dbf);
+  kill_async_dns_child();
+  return(0);
 }

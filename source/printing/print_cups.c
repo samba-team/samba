@@ -18,7 +18,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "includes.h"
 #include "printing.h"
 
 #ifdef HAVE_CUPS
@@ -681,8 +680,7 @@ cups_job_submit(int snum, struct printjob *pjob)
 			*response;	/* IPP Response */
 	cups_lang_t	*language;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-	char 		*clientname; 	/* hostname of client for job-originating-host attribute */
-	pstring		new_jobname;
+
 
 	DEBUG(5,("cups_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -736,20 +734,12 @@ cups_job_submit(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
         	     NULL, pjob->user);
 
-	clientname = client_name();
-	if (strcmp(clientname, "UNKNOWN") == 0) {
-		clientname = client_addr();
-	}
-
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
 	             "job-originating-host-name", NULL,
-		      clientname);
-
-        pstr_sprintf(new_jobname,"%s%.8u %s", PRINT_SPOOL_PREFIX, 
-		(unsigned int)pjob->smbjob, pjob->jobname);
+		     get_remote_machine_name());
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
-        	     new_jobname);
+        	     pjob->jobname);
 
        /*
 	* Do the request and get back a response...

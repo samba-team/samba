@@ -5,7 +5,6 @@
 
    Copyright (C) by Tim Potter 2000-2002
    Copyright (C) Andrew Tridgell 2002
-   Copyright (C) Jelmer Vernooij 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,17 +21,17 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
 #include "winbindd.h"
 
 BOOL opt_nocache = False;
-BOOL opt_dual_daemon = True;
+BOOL opt_dual_daemon = False;
 
 /* Reload configuration */
 
-static BOOL reload_services_file(void)
+static BOOL reload_services_file(BOOL test)
 {
 	BOOL ret;
+	pstring logfile;
 
 	if (lp_loaded()) {
 		pstring fname;
@@ -40,11 +39,18 @@ static BOOL reload_services_file(void)
 		pstrcpy(fname,lp_configfile());
 		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
 			pstrcpy(dyn_CONFIGFILE,fname);
+			test = False;
 		}
 	}
 
+	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
+
 	reopen_logs();
 	ret = lp_load(dyn_CONFIGFILE,False,False,True);
+
+	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
 
 	reopen_logs();
 	load_interfaces();
@@ -52,6 +58,24 @@ static BOOL reload_services_file(void)
 	return(ret);
 }
 
+/*******************************************************************
+ Print out all talloc memory info.
+********************************************************************/
+
+void return_all_talloc_info(int msg_type, pid_t src_pid, void *buf, size_t len)
+{
+	TALLOC_CTX *ctx = talloc_init("info context");
+	char *info = NULL;
+
+	if (!ctx)
+		return;
+
+	info = talloc_describe_all(ctx);
+	if (info)
+		DEBUG(10,(info));
+	message_send_pid(src_pid, MSG_TALLOC_USAGE, info, info ? strlen(info) + 1: 0, True);
+	talloc_destroy(ctx);
+}
 
 #if DUMP_CORE
 
@@ -117,8 +141,8 @@ static void winbindd_status(void)
 	if (DEBUGLEVEL >= 2 && winbindd_num_clients()) {
 		DEBUG(2, ("\tclient list:\n"));
 		for(tmp = winbindd_client_list(); tmp; tmp = tmp->next) {
-			DEBUG(2, ("\t\tpid %lu, sock %d, rbl %d, wbl %d\n",
-				  (unsigned long)tmp->pid, tmp->sock, tmp->read_buf_len, 
+			DEBUG(2, ("\t\tpid %d, sock %d, rbl %d, wbl %d\n",
+				  tmp->pid, tmp->sock, tmp->read_buf_len, 
 				  tmp->write_buf_len));
 		}
 	}
@@ -129,6 +153,7 @@ static void winbindd_status(void)
 static void print_winbindd_status(void)
 {
 	winbindd_status();
+	winbindd_idmap_status();
 	winbindd_cm_status();
 }
 
@@ -136,17 +161,8 @@ static void print_winbindd_status(void)
 
 static void flush_caches(void)
 {
-#if 0
 	/* Clear cached user and group enumation info */	
-	if (!opt_dual_daemon) /* Until we have coherent cache flush. */
-		wcache_flush_cache();
-#endif
-
-	/* We need to invalidate cached user list entries on a SIGHUP 
-           otherwise cached access denied errors due to restrict anonymous
-           hang around until the sequence number changes. */
-
-	wcache_invalidate_cache();
+	wcache_flush_cache();
 }
 
 /* Handle the signal by unlinking socket and exiting */
@@ -155,10 +171,10 @@ static void terminate(void)
 {
 	pstring path;
 
-	idmap_close();
+	winbindd_idmap_close();
 	
 	/* Remove socket file */
-	pstr_sprintf(path, "%s/%s", 
+	snprintf(path, sizeof(path), "%s/%s", 
 		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
 	unlink(path);
 	exit(0);
@@ -188,20 +204,6 @@ static void sighup_handler(int signum)
 	sys_select_signal();
 }
 
-/* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
-static void msg_reload_services(int msg_type, pid_t src, void *buf, size_t len)
-{
-        /* Flush various caches */
-	flush_caches();
-	reload_services_file();
-}
-
-/* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
-static void msg_shutdown(int msg_type, pid_t src, void *buf, size_t len)
-{
-	terminate();
-}
-
 struct dispatch_table {
 	enum winbindd_cmd cmd;
 	enum winbindd_result (*fn)(struct winbindd_cli_state *state);
@@ -220,7 +222,6 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
 
 	{ WINBINDD_GETGROUPS, winbindd_getgroups, "GETGROUPS" },
-	{ WINBINDD_GETUSERSIDS, winbindd_getusersids, "GETUSERSIDS" },
 
 	/* Group functions */
 
@@ -255,7 +256,6 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
-	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid, "ALLOCATE_RID" },
 
 	/* Miscellaneous */
 
@@ -264,24 +264,13 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_INFO, winbindd_info, "INFO" },
 	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version, "INTERFACE_VERSION" },
 	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
-	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
 	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },
-	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir, "WINBINDD_PRIV_PIPE_DIR" },
 
 	/* WINS functions */
 
 	{ WINBINDD_WINS_BYNAME, winbindd_wins_byname, "WINS_BYNAME" },
 	{ WINBINDD_WINS_BYIP, winbindd_wins_byip, "WINS_BYIP" },
-	
-	/* UNIX account management functions */
-	{ WINBINDD_CREATE_USER, 		winbindd_create_user, 		"CREATE_USER" 		},
-	{ WINBINDD_CREATE_GROUP,		winbindd_create_group, 		"CREATE_GROUP" 		},
-	{ WINBINDD_ADD_USER_TO_GROUP, 		winbindd_add_user_to_group, 	"ADD_USER_TO_GROUP" 	},
-	{ WINBINDD_REMOVE_USER_FROM_GROUP, 	winbindd_remove_user_from_group,"REMOVE_USER_FROM_GROUP"},
-	{ WINBINDD_SET_USER_PRIMARY_GROUP, 	winbindd_set_user_primary_group,"SET_USER_PRIMARY_GROUP"},
-	{ WINBINDD_DELETE_USER,	 		winbindd_delete_user,		"DELETE_USER"		},
-	{ WINBINDD_DELETE_GROUP, 		winbindd_delete_group,		"DELETE_GROUP"		},
-	
+
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
@@ -322,7 +311,7 @@ static void process_request(struct winbindd_cli_state *state)
 
 /* Process a new connection by adding it to the client connection list */
 
-static void new_connection(int listen_sock, BOOL privileged)
+static void new_connection(int listen_sock)
 {
 	struct sockaddr_un sunaddr;
 	struct winbindd_cli_state *state;
@@ -352,8 +341,6 @@ static void new_connection(int listen_sock, BOOL privileged)
 	state->sock = sock;
 
 	state->last_access = time(NULL);	
-
-	state->privileged = privileged;
 
 	/* Add to connection list */
 	
@@ -455,13 +442,13 @@ void winbind_client_read(struct winbindd_cli_state *state)
 		 (char *)&state->request, 
 		 sizeof(state->request) - state->read_buf_len);
 	
-	DEBUG(10,("client_read: read %d bytes. Need %ld more for a full request.\n", n, (unsigned long)(sizeof(state->request) - n - state->read_buf_len) ));
+	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n, sizeof(state->request) - n - state->read_buf_len ));
 
 	/* Read failed, kill client */
 	
 	if (n == -1 || n == 0) {
-		DEBUG(5,("read failed on sock %d, pid %lu: %s\n",
-			 state->sock, (unsigned long)state->pid, 
+		DEBUG(5,("read failed on sock %d, pid %d: %s\n",
+			 state->sock, state->pid, 
 			 (n == -1) ? strerror(errno) : "EOF"));
 		
 		state->finished = True;
@@ -482,13 +469,6 @@ static void client_write(struct winbindd_cli_state *state)
 	int num_written;
 	
 	/* Write some data */
-	/*
-	 * The fancy calculation of data below allows us to handle the 
-	 * case where write (sys_write) does not write all the data we 
-	 * gave it. In that case, we will come back through here again
-	 * because of the loop above us, and we want to pick up where
-	 * we left off.
-	 */
 	
 	if (!state->write_extra_data) {
 
@@ -515,8 +495,8 @@ static void client_write(struct winbindd_cli_state *state)
 	
 	if (num_written == -1 || num_written == 0) {
 		
-		DEBUG(3,("write failed on sock %d, pid %lu: %s\n",
-			 state->sock, (unsigned long)state->pid, 
+		DEBUG(3,("write failed on sock %d, pid %d: %s\n",
+			 state->sock, state->pid, 
 			 (num_written == -1) ? strerror(errno) : "EOF"));
 		
 		state->finished = True;
@@ -573,16 +553,16 @@ static void process_loop(void)
 	while (1) {
 		struct winbindd_cli_state *state;
 		fd_set r_fds, w_fds;
-		int maxfd, listen_sock, listen_priv_sock, selret;
+		int maxfd, listen_sock, selret;
 		struct timeval timeout;
 
 		/* Handle messages */
 
 		message_dispatch();
 
-		/* refresh the trusted domain cache */
-		   
-		rescan_trusted_domains();
+		/* rescan the trusted domains list. This must be done
+		   regularly to cope with transitive trusts */
+		rescan_trusted_domains(False);
 
 		/* Free up temporary memory */
 
@@ -592,19 +572,17 @@ static void process_loop(void)
 		/* Initialise fd lists for select() */
 
 		listen_sock = open_winbindd_socket();
-		listen_priv_sock = open_winbindd_priv_socket();
 
-		if (listen_sock == -1 || listen_priv_sock == -1) {
+		if (listen_sock == -1) {
 			perror("open_winbind_socket");
 			exit(1);
 		}
 
-		maxfd = MAX(listen_sock, listen_priv_sock);
+		maxfd = listen_sock;
 
 		FD_ZERO(&r_fds);
 		FD_ZERO(&w_fds);
 		FD_SET(listen_sock, &r_fds);
-		FD_SET(listen_priv_sock, &r_fds);
 
 		timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 		timeout.tv_usec = 0;
@@ -681,22 +659,7 @@ static void process_loop(void)
 						break;
 					}
 				}
-				/* new, non-privileged connection */
-				new_connection(listen_sock, False);
-			}
-            
-			if (FD_ISSET(listen_priv_sock, &r_fds)) {
-				while (winbindd_num_clients() > WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
-					DEBUG(5,("winbindd: Exceeding %d client connections, removing idle connection.\n",
-						WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
-					if (!remove_idle_client()) {
-						DEBUG(0,("winbindd: Exceeding %d client connections, no idle connection found\n",
-							WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
-						break;
-					}
-				}
-				/* new, privileged connection */
-				new_connection(listen_priv_sock, True);
+				new_connection(listen_sock);
 			}
             
 			/* Process activity on client connections */
@@ -722,9 +685,8 @@ static void process_loop(void)
 
 					if (state->read_buf_len >= sizeof(uint32)
 					    && *(uint32 *) &state->request != sizeof(state->request)) {
-						DEBUG(0,("process_loop: Invalid request size from pid %lu: %d bytes sent, should be %ld\n",
-								(unsigned long)state->request.pid, *(uint32 *) &state->request, (unsigned long)sizeof(state->request)));
-						DEBUGADD(0, ("This usually means that you are running old wbinfo, pam_winbind or libnss_winbind clients\n"));
+						DEBUG(0,("process_loop: Invalid request size from pid %d: %d bytes sent, should be %d\n",
+								state->request.pid, *(uint32 *) &state->request, sizeof(state->request)));
 
 						remove_client(state);
 						break;
@@ -758,8 +720,11 @@ static void process_loop(void)
 		if (do_sighup) {
 
 			DEBUG(3, ("got SIGHUP\n"));
+ 
+                        /* Flush various caches */
 
-			msg_reload_services(MSG_SMB_CONF_UPDATED, (pid_t) 0, NULL, 0);
+			flush_caches();
+			reload_services_file(True);
 			do_sighup = False;
 		}
 
@@ -770,89 +735,12 @@ static void process_loop(void)
 	}
 }
 
-/* Main function */
 
-struct winbindd_state server_state;   /* Server state information */
-
-int main(int argc, char **argv)
+/*
+  these are split out from the main winbindd for use by the background daemon
+ */
+BOOL winbind_setup_common(void)
 {
-	pstring logfile;
-	static BOOL interactive = False;
-	static BOOL Fork = True;
-	static BOOL log_stdout = False;
-	struct poptOption long_options[] = {
-		POPT_AUTOHELP
-		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
-		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
-		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
-		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
-		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
-		POPT_COMMON_SAMBA
-		POPT_TABLEEND
-	};
-	poptContext pc;
-	int opt;
-
-	/* glibc (?) likes to print "User defined signal 1" and exit if a
-	   SIGUSR[12] is received before a handler is installed */
-
- 	CatchSignal(SIGUSR1, SIG_IGN);
- 	CatchSignal(SIGUSR2, SIG_IGN);
-
-	fault_setup((void (*)(void *))fault_quit );
-
-	/* Initialise for running in non-root mode */
-
-	sec_init();
-
-	set_remote_machine_name("winbindd", False);
-
-	/* Set environment variable so we don't recursively call ourselves.
-	   This may also be useful interactively. */
-
-	setenv(WINBINDD_DONT_ENV, "1", 1);
-
-	/* Initialise samba/rpc client stuff */
-
-	pc = poptGetContext("winbindd", argc, (const char **)argv, long_options,
-						POPT_CONTEXT_KEEP_FIRST);
-
-	while ((opt = poptGetNextOpt(pc)) != -1) {
-		switch (opt) {
-			/* Don't become a daemon */
-		case 'i':
-			interactive = True;
-			log_stdout = True;
-			Fork = False;
-			break;
-		}
-	}
-
-
-	if (log_stdout && Fork) {
-		printf("Can't log to stdout (-S) unless daemon is in foreground +(-F) or interactive (-i)\n");
-		poptPrintUsage(pc, stderr, 0);
-		exit(1);
-	}
-
-	pstr_sprintf(logfile, "%s/log.winbindd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
-	setup_logging("winbindd", log_stdout);
-	reopen_logs();
-
-	DEBUG(1, ("winbindd version %s started.\n", SAMBA_VERSION_STRING) );
-	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2004\n" ) );
-
-	if (!reload_services_file()) {
-		DEBUG(0, ("error opening config file\n"));
-		exit(1);
-	}
-
-	/* Setup names. */
-
-	if (!init_names())
-		exit(1);
-
   	load_interfaces();
 
 	if (!secrets_init()) {
@@ -861,24 +749,19 @@ int main(int argc, char **argv)
 		return False;
 	}
 
-	/* Enable netbios namecache */
-
-	namecache_enable();
+	namecache_enable();	/* Enable netbios namecache */
 
 	/* Check winbindd parameters are valid */
 
 	ZERO_STRUCT(server_state);
 
 	if (!winbindd_param_init())
-		return 1;
+		return False;
 
 	/* Winbind daemon initialisation */
 
-	if (!winbindd_upgrade_idmap())
-		return 1;
-
-	if (!idmap_init(lp_idmap_backend()))
-		return 1;
+	if (!winbindd_idmap_init())
+		return False;
 
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
@@ -901,10 +784,135 @@ int main(int argc, char **argv)
 	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
 	CatchSignal(SIGHUP, sighup_handler);
 
-	if (!interactive)
-		become_daemon(Fork);
+	return True;
+}
 
-	pidfile_create("winbindd");
+
+/* Main function */
+
+struct winbindd_state server_state;   /* Server state information */
+
+
+static void usage(void)
+{
+	printf("Usage: winbindd [options]\n");
+        printf("\t-F                daemon in foreground mode\n");
+        printf("\t-S                log to stdout\n");
+	printf("\t-i                interactive mode\n");
+	printf("\t-B                dual daemon mode\n");
+	printf("\t-n                disable cacheing\n");
+	printf("\t-d level          set debug level\n");
+	printf("\t-s configfile     choose smb.conf location\n");
+	printf("\t-h                show this help message\n");
+}
+
+ int main(int argc, char **argv)
+{
+	extern BOOL AllowDebugChange;
+	pstring logfile;
+	BOOL interactive = False;
+	BOOL Fork = True;
+	BOOL log_stdout = False;
+	int opt;
+
+	/* glibc (?) likes to print "User defined signal 1" and exit if a
+	   SIGUSR[12] is received before a handler is installed */
+
+ 	CatchSignal(SIGUSR1, SIG_IGN);
+ 	CatchSignal(SIGUSR2, SIG_IGN);
+
+	fault_setup((void (*)(void *))fault_quit );
+
+	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
+
+	/* Initialise for running in non-root mode */
+
+	sec_init();
+
+	/* Set environment variable so we don't recursively call ourselves.
+	   This may also be useful interactively. */
+
+	setenv(WINBINDD_DONT_ENV, "1", 1);
+
+	/* Initialise samba/rpc client stuff */
+
+	while ((opt = getopt(argc, argv, "FSid:s:nhB")) != EOF) {
+		switch (opt) {
+
+		case 'F':
+			Fork = False;
+			break;
+		case 'S':
+			log_stdout = True;
+			break;
+			/* Don't become a daemon */
+		case 'i':
+			interactive = True;
+			log_stdout = True;
+			Fork = False;
+			break;
+
+			/* dual daemon system */
+		case 'B':
+			opt_dual_daemon = True;
+			break;
+
+			/* disable cacheing */
+		case 'n':
+			opt_nocache = True;
+			break;
+
+			/* Run with specified debug level */
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
+			AllowDebugChange = False;
+			break;
+
+			/* Load a different smb.conf file */
+		case 's':
+			pstrcpy(dyn_CONFIGFILE,optarg);
+			break;
+
+		case 'h':
+			usage();
+			exit(0);
+
+		default:
+			printf("Unknown option %c\n", (char)opt);
+			exit(1);
+		}
+	}
+
+	if (log_stdout && Fork) {
+		printf("Can't log to stdout (-S) unless daemon is in foreground +(-F) or interactive (-i)\n");
+		usage();
+		exit(1);
+	}
+
+	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
+	setup_logging("winbindd", log_stdout?DEBUG_STDOUT:DEBUG_FILE);
+	reopen_logs();
+
+	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
+	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2001\n" ) );
+
+	if (!reload_services_file(False)) {
+		DEBUG(0, ("error opening config file\n"));
+		exit(1);
+	}
+
+	/* Setup names. */
+
+	if (!init_names())
+		exit(1);
+
+	if (!interactive) {
+		become_daemon(Fork);
+		pidfile_create("winbindd");
+	}
+
 
 #if HAVE_SETPGID
 	/*
@@ -914,6 +922,10 @@ int main(int argc, char **argv)
 	if (interactive)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
+
+	if (!winbind_setup_common()) {
+		return 1;
+	}
 
 	if (opt_dual_daemon) {
 		do_dual_daemon();
@@ -925,23 +937,15 @@ int main(int argc, char **argv)
 		DEBUG(0, ("unable to initialise messaging system\n"));
 		exit(1);
 	}
-	
-	/* React on 'smbcontrol winbindd reload-config' in the same way
-	   as to SIGHUP signal */
-	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
-	message_register(MSG_SHUTDOWN, msg_shutdown);
-	
-	poptFreeContext(pc);
 
-	netsamlogon_cache_init(); /* Non-critical */
-	
-	init_domain_list();
+	register_msg_pool_usage();
+	message_register(MSG_REQ_TALLOC_USAGE, return_all_talloc_info);
 
 	/* Loop waiting for requests */
 
 	process_loop();
 
 	trustdom_cache_shutdown();
-
+	uni_group_cache_shutdown();
 	return 0;
 }

@@ -38,7 +38,7 @@ help(void)
 {
         printf("\n");
         printf("Usage: smbmnt mount-point [options]\n");
-	printf("Version %s\n\n",SAMBA_VERSION_STRING);
+	printf("Version %s\n\n",VERSION);
         printf("-s share       share name on server\n"
                "-r             mount read-only\n"
                "-u uid         mount as uid\n"
@@ -94,9 +94,9 @@ parse_args(int argc, char *argv[], struct smb_mount_data *data, char **share)
 static char *
 fullpath(const char *p)
 {
-        char path[PATH_MAX+1];
+        char path[MAXPATHLEN];
 
-	if (strlen(p) > PATH_MAX) {
+	if (strlen(p) > MAXPATHLEN-1) {
 		return NULL;
 	}
 
@@ -240,7 +240,7 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
                         data.dir_mode |= S_IXOTH;
         }
 
-	flags = MS_MGC_VAL | MS_NOSUID | MS_NODEV;
+	flags = MS_MGC_VAL;
 
 	if (mount_ro) flags |= MS_RDONLY;
 

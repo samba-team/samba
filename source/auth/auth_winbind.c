@@ -29,14 +29,14 @@
 static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, NET_USER_INFO_3 *info3)
 {
 	uint8 *info3_ndr;
-	size_t len = response->length - sizeof(struct winbindd_response);
+	size_t len = response->length - sizeof(response);
 	prs_struct ps;
 	if (len > 0) {
 		info3_ndr = response->extra_data;
 		if (!prs_init(&ps, len, mem_ctx, UNMARSHALL)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		prs_copy_data_in(&ps, (char *)info3_ndr, len);
+		prs_copy_data_in(&ps, info3_ndr, len);
 		prs_set_offset(&ps,0);
 		if (!net_io_user_info3("", info3, &ps, 1, 3)) {
 			DEBUG(2, ("get_info3_from_ndr: could not parse info3 struct!\n"));
@@ -72,21 +72,15 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	if (!auth_context) {
 		DEBUG(3,("Password for user %s cannot be checked because we have no auth_info to get the challenge from.\n", 
 			 user_info->internal_username.str));		
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_UNSUCCESSFUL;
 	}		
-
-	if (strequal(user_info->domain.str, get_global_sam_name())) {
-		DEBUG(3,("check_winbind_security: Not using winbind, requested domain [%s] was for this SAM.\n",
-			user_info->domain.str));
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
 
 	/* Send off request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	request.flags = WBFLAG_PAM_INFO3_NDR;
+	request.data.auth_crap.flags = WINBIND_PAM_INFO3_NDR;
 
 	push_utf8_fstring(request.data.auth_crap.user, 
 			  user_info->smb_name.str);
@@ -106,66 +100,37 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	       request.data.auth_crap.lm_resp_len);
 	memcpy(request.data.auth_crap.nt_resp, user_info->nt_resp.data, 
 	       request.data.auth_crap.nt_resp_len);
-
-	/* we are contacting the privileged pipe */
-	become_root();
+	
 	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
-	unbecome_root();
-
-	if ( result == NSS_STATUS_UNAVAIL )  {
-		struct auth_methods *auth_method = my_private_data;
-
-		if ( auth_method )
-			return auth_method->auth(auth_context, auth_method->private_data, 
-				mem_ctx, user_info, server_info);
-		else
-			/* log an error since this should not happen */
-			DEBUG(0,("check_winbind_security: ERROR!  my_private_data == NULL!\n"));
-	}
 
 	nt_status = NT_STATUS(response.data.auth.nt_status);
 
 	if (result == NSS_STATUS_SUCCESS && response.extra_data) {
 		if (NT_STATUS_IS_OK(nt_status)) {
-		
-			if (NT_STATUS_IS_OK(nt_status = get_info3_from_ndr(mem_ctx, &response, &info3))) 
-			{ 
-				nt_status = make_server_info_info3(mem_ctx, 
-					user_info->internal_username.str, 
-					user_info->smb_name.str, user_info->domain.str, 
-					server_info, &info3); 
+			if (NT_STATUS_IS_OK(nt_status = get_info3_from_ndr(mem_ctx, &response, &info3))) { 
+				nt_status = 
+					make_server_info_info3(mem_ctx, 
+							       user_info->internal_username.str, 
+							       user_info->smb_name.str, 
+							       user_info->domain.str, 
+							       server_info, 
+							       &info3); 
 			}
-			
 		}
 	} else if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = NT_STATUS_NO_LOGON_SERVERS;
+		nt_status = NT_STATUS_UNSUCCESSFUL;
 	}
 
         return nt_status;
 }
 
 /* module initialisation */
-static NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
-	}
 
 	(*auth_method)->name = "winbind";
 	(*auth_method)->auth = check_winbind_security;
-
-	if (param && *param) {
-		/* we load the 'fallback' module - if winbind isn't here, call this
-		   module */
-		if (!load_auth_module(auth_context, param, (auth_methods **)&(*auth_method)->private_data)) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		
-	}
 	return NT_STATUS_OK;
-}
-
-NTSTATUS auth_winbind_init(void)
-{
-	return smb_register_auth(AUTH_INTERFACE_VERSION, "winbind", auth_init_winbind);
 }

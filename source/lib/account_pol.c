@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  account policy storage
- *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Jean Franï¿½ois Micouleau      1998-2001.
  *  Copyright (C) Andrew Bartlett              2002
  *  
  *  This program is free software; you can redistribute it and/or modify
@@ -33,16 +33,23 @@ BOOL init_account_policy(void)
 	static pid_t local_pid;
 	const char *vstring = "INFO/version";
 	uint32 version;
+	TALLOC_CTX *mem_ctx;
 
-	if (tdb && local_pid == sys_getpid())
+	if (tdb && local_pid == getpid())
 		return True;
-	tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	mem_ctx = talloc_init("init_account_policy");
+	if (!mem_ctx) {
+		DEBUG(0,("No memory to open account policy database\n"));
+		return False;
+	}
+	tdb = tdb_open_log(lock_path(mem_ctx, "account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	talloc_destroy(mem_ctx);
 	if (!tdb) {
 		DEBUG(0,("Failed to open account policy database\n"));
 		return False;
 	}
 
-	local_pid = sys_getpid();
+	local_pid = getpid();
 
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb, vstring,0);
@@ -53,10 +60,10 @@ BOOL init_account_policy(void)
 		account_policy_set(AP_MIN_PASSWORD_LEN, MINPASSWDLENGTH);   /* 5 chars minimum             */
 		account_policy_set(AP_PASSWORD_HISTORY, 0);		    /* don't keep any old password */
 		account_policy_set(AP_USER_MUST_LOGON_TO_CHG_PASS, 0);	    /* don't force user to logon   */
-		account_policy_set(AP_MAX_PASSWORD_AGE, (uint32)-1);        /* don't expire		   */
+		account_policy_set(AP_MAX_PASSWORD_AGE, MAX_PASSWORD_AGE);  /* 21 days                     */
 		account_policy_set(AP_MIN_PASSWORD_AGE, 0);		    /* 0 days                      */
-		account_policy_set(AP_LOCK_ACCOUNT_DURATION, 30);	    /* lockout for 30 minutes      */
-		account_policy_set(AP_RESET_COUNT_TIME, 30);		    /* reset after 30 minutes      */
+		account_policy_set(AP_LOCK_ACCOUNT_DURATION, 0);	    /* lockout for 0 minutes       */
+		account_policy_set(AP_RESET_COUNT_TIME, 0);		    /* reset immediatly            */
 		account_policy_set(AP_BAD_ATTEMPT_LOCKOUT, 0);		    /* don't lockout               */
 		account_policy_set(AP_TIME_TO_LOGOUT, -1);		    /* don't force logout          */
 	}
@@ -118,7 +125,7 @@ BOOL account_policy_get(int field, uint32 *value)
 {
 	fstring name;
 
-	if(!init_account_policy())return False;
+	init_account_policy();
 
 	*value = 0;
 
@@ -142,7 +149,7 @@ BOOL account_policy_set(int field, uint32 value)
 {
 	fstring name;
 
-	if(!init_account_policy())return False;
+	init_account_policy();
 
 	fstrcpy(name, decode_account_policy_name(field));
 	if (!*name) {

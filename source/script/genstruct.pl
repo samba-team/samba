@@ -131,13 +131,12 @@ sub parse_elements($$)
 		print ", $name";
 	}
 
-	print OFILE "int gen_dump_struct_$name(TALLOC_CTX *mem_ctx, struct parse_string *, const char *, unsigned);\n";
-	print OFILE "int gen_parse_struct_$name(TALLOC_CTX *mem_ctx, char *, const char *);\n";
+	print OFILE "int gen_dump_struct_$name(struct parse_string *, const char *, unsigned);\n";
+	print OFILE "int gen_parse_struct_$name(char *, const char *);\n";
 
 	print OFILE "static const struct parse_struct pinfo_" . $name . "[] = {\n";
 
-
-	while ($elements =~ /^.*?([a-z].*?);\s*?(\S*?)\s*?$(.*)/msi) {
+	while ($elements =~ /^.*?([a-z].*?);\s*?(\S*?)\s*?\$(.*)/msi) {
 		my($element) = $1;
 		my($flags) = $2;
 		$elements = $3;
@@ -147,11 +146,11 @@ sub parse_elements($$)
 	print OFILE "{NULL, 0, 0, 0, 0, NULL, 0, NULL, NULL}};\n";
 
 	print OFILE "
-int gen_dump_struct_$name(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, unsigned indent) {
-	return gen_dump_struct(mem_ctx, pinfo_$name, p, ptr, indent);
+int gen_dump_struct_$name(struct parse_string *p, const char *ptr, unsigned indent) {
+	return gen_dump_struct(pinfo_$name, p, ptr, indent);
 }
-int gen_parse_struct_$name(TALLOC_CTX *mem_ctx, char *ptr, const char *str) {
-	return gen_parse_struct(mem_ctx, pinfo_$name, ptr, str);
+int gen_parse_struct_$name(char *ptr, const char *str) {
+	return gen_parse_struct(pinfo_$name, ptr, str);
 }
 
 ";

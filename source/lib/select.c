@@ -59,7 +59,7 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 	int ret, saved_errno;
 	fd_set *readfds2, readfds_buf;
 
-	if (initialised != sys_getpid()) {
+	if (initialised != getpid()) {
 		pipe(select_pipe);
 
 		/*
@@ -76,7 +76,7 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 		if(set_blocking(select_pipe[1],0)==-1)
 			smb_panic("select_pipe[1]: O_NONBLOCK failed.\n");
 
-		initialised = sys_getpid();
+		initialised = getpid();
 	}
 
 	maxfd = MAX(select_pipe[0]+1, maxfd);

@@ -16,6 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#error SAMBA4 clean up
+#error this file should be (re)moved 
+#error and all unused stuff should go
+
 #ifndef _GENPARSER_SAMBA_H
 #define _GENPARSER_SAMBA_H
 
@@ -53,11 +57,6 @@ const struct parse_struct pinfo_security_descriptor_info[] = {
 const struct parse_struct pinfo_luid_attr_info[] = {
 {"attr", 0, sizeof(uint32), offsetof(struct LUID_ATTR, attr), 0, NULL, 0, gen_dump_uint32, gen_parse_uint32},
 {"luid", 1, sizeof(LUID), offsetof(struct LUID_ATTR, luid), 0, NULL, 0, gen_dump_LUID, gen_parse_LUID},
-{NULL, 0, 0, 0, 0, NULL, 0, NULL, NULL}};
-
-const struct parse_struct pinfo_data_blob_info[] = {
-{"length", 0, sizeof(int), offsetof(DATA_BLOB, length), 0, NULL, 0, gen_dump_int, gen_parse_int},
-{"data", 1, sizeof(char), offsetof(DATA_BLOB, data), 0, "length", 0, gen_dump_char, gen_parse_char},
 {NULL, 0, 0, 0, 0, NULL, 0, NULL, NULL}};
 
 #endif /* _GENPARSER_SAMBA_H */

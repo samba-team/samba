@@ -35,7 +35,6 @@
 */
 
 #include "includes.h"
-uint16 global_smbpid;
 
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
@@ -56,7 +55,7 @@ static const char *lock_type_name(enum brl_type lock_type)
  with the same locking context are not made.
 ****************************************************************************/
 
-BOOL is_locked(files_struct *fsp,connection_struct *conn,
+BOOL is_locked(files_struct *fsp,struct tcon_context *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       enum brl_type lock_type, BOOL check_self)
 {
@@ -70,8 +69,8 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 		return(False);
 
 	ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
-			     global_smbpid, sys_getpid(), conn->cnum, 
-			     offset, count, lock_type, check_self);
+			    global_smbpid, sys_getpid(), conn->cnum, 
+			    offset, count, lock_type, check_self);
 
 	DEBUG(10,("is_locked: brl start=%.0f len=%.0f %s for file %s\n",
 			(double)offset, (double)count, ret ? "locked" : "unlocked",
@@ -97,8 +96,8 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 
-static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type, BOOL *my_lock_ctx)
+static NTSTATUS do_lock(files_struct *fsp,struct tcon_context *conn, uint16 lock_pid,
+		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
 {
 	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
@@ -114,7 +113,7 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
 		status = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
 				  lock_pid, sys_getpid(), conn->cnum, 
 				  offset, count, 
-				  lock_type, my_lock_ctx);
+				  lock_type);
 
 		if (NT_STATUS_IS_OK(status) && lp_posix_locking(SNUM(conn))) {
 
@@ -125,19 +124,14 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
 			 */
 
 			if (!set_posix_lock(fsp, offset, count, lock_type)) {
-				if (errno == EACCES || errno == EAGAIN)
-					status = NT_STATUS_FILE_LOCK_CONFLICT;
-				else
-					status = map_nt_error_from_unix(errno);
-
+				status = NT_STATUS_LOCK_NOT_GRANTED;
 				/*
 				 * We failed to map - we must now remove the brl
 				 * lock entry.
 				 */
 				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
 								lock_pid, sys_getpid(), conn->cnum, 
-								offset, count, False,
-								NULL, NULL);
+								offset, count, False);
 			}
 		}
 	}
@@ -152,8 +146,8 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
  it, we need this. JRA.
 ****************************************************************************/
 
-NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type, BOOL *my_lock_ctx)
+NTSTATUS do_lock_spin(files_struct *fsp,struct tcon_context *conn, uint16 lock_pid,
+		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
 {
 	int j, maxj = lp_lock_spin_count();
 	int sleeptime = lp_lock_sleep_time();
@@ -165,7 +159,7 @@ NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid
 	ret = NT_STATUS_OK; /* to keep dumb compilers happy */
 
 	for (j = 0; j < maxj; j++) {
-		status = do_lock(fsp, conn, lock_pid, count, offset, lock_type, my_lock_ctx);
+		status = do_lock(fsp, conn, lock_pid, count, offset, lock_type);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
 			return status;
@@ -173,9 +167,6 @@ NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid
 		/* if we do fail then return the first error code we got */
 		if (j == 0) {
 			ret = status;
-			/* Don't spin if we blocked ourselves. */
-			if (*my_lock_ctx)
-				return ret;
 		}
 		if (sleeptime)
 			sys_usleep(sleeptime);
@@ -183,34 +174,14 @@ NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid
 	return ret;
 }
 
-/* Struct passed to brl_unlock. */
-struct posix_unlock_data_struct {
-	files_struct *fsp;
-	SMB_BIG_UINT offset;
-	SMB_BIG_UINT count;
-};
-
-/****************************************************************************
- Function passed to brl_unlock to allow POSIX unlock to be done first.
-****************************************************************************/
-
-static void posix_unlock(void *pre_data)
-{
-	struct posix_unlock_data_struct *pdata = (struct posix_unlock_data_struct *)pre_data;
-
-	if (lp_posix_locking(SNUM(pdata->fsp->conn)))
-		release_posix_lock(pdata->fsp, pdata->offset, pdata->count);
-}
-
 /****************************************************************************
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+NTSTATUS do_unlock(files_struct *fsp,struct tcon_context *conn, uint16 lock_pid,
 		   SMB_BIG_UINT count,SMB_BIG_UINT offset)
 {
 	BOOL ok = False;
-	struct posix_unlock_data_struct posix_data;
 	
 	if (!lp_locking(SNUM(conn)))
 		return NT_STATUS_OK;
@@ -228,18 +199,19 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 	 * match then don't bother looking to remove POSIX locks.
 	 */
 
-	posix_data.fsp = fsp;
-	posix_data.offset = offset;
-	posix_data.count = count;
-
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			lock_pid, sys_getpid(), conn->cnum, offset, count,
-			False, posix_unlock, (void *)&posix_data);
+			lock_pid, sys_getpid(), conn->cnum, offset, count, False);
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
+
+	if (!lp_posix_locking(SNUM(conn)))
+		return NT_STATUS_OK;
+
+	(void)release_posix_lock(fsp, offset, count);
+
 	return NT_STATUS_OK;
 }
 
@@ -283,10 +255,10 @@ BOOL locking_init(int read_only)
 	if (tdb)
 		return True;
 
-	tdb = tdb_open_ex(lock_path("locking.tdb"), 
+	tdb = tdb_open_log(lock_path("locking.tdb"), 
 		       0, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
 		       read_only?O_RDONLY:O_RDWR|O_CREAT,
-		       0644, smbd_tdb_log);
+		       0644);
 
 	if (!tdb) {
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
@@ -344,7 +316,7 @@ static TDB_DATA locking_key_fsp(files_struct *fsp)
  Lock a hash bucket entry.
 ******************************************************************/
 
-BOOL lock_share_entry(connection_struct *conn,
+BOOL lock_share_entry(struct tcon_context *conn,
 		      SMB_DEV_T dev, SMB_INO_T inode)
 {
 	return tdb_chainlock(tdb, locking_key(dev, inode)) == 0;
@@ -354,7 +326,7 @@ BOOL lock_share_entry(connection_struct *conn,
  Unlock a hash bucket entry.
 ******************************************************************/
 
-void unlock_share_entry(connection_struct *conn,
+void unlock_share_entry(struct tcon_context *conn,
 			SMB_DEV_T dev, SMB_INO_T inode)
 {
 	tdb_chainunlock(tdb, locking_key(dev, inode));
@@ -382,13 +354,13 @@ void unlock_share_entry_fsp(files_struct *fsp)
  Print out a share mode.
 ********************************************************************/
 
-char *share_mode_str(int num, share_mode_entry *e)
+static char *share_mode_str(int num, share_mode_entry *e)
 {
 	static pstring share_str;
 
 	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: \
-pid = %lu, share_mode = 0x%x, desired_access = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, dev = 0x%x, inode = %.0f",
-	num, (unsigned long)e->pid, e->share_mode, (unsigned int)e->desired_access, e->op_port, e->op_type, e->share_file_id,
+pid = %u, share_mode = 0x%x, desired_access = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, dev = 0x%x, inode = %.0f",
+	num, e->pid, e->share_mode, (unsigned int)e->desired_access, e->op_port, e->op_type, e->share_file_id,
 	(unsigned int)e->dev, (double)e->inode );
 
 	return share_str;
@@ -414,7 +386,7 @@ static void print_share_mode_table(struct locking_data *data)
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
-int get_share_modes(connection_struct *conn, 
+int get_share_modes(struct tcon_context *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **pp_shares)
 {
@@ -422,10 +394,10 @@ int get_share_modes(connection_struct *conn,
 	struct locking_data *data;
 	int num_share_modes;
 	share_mode_entry *shares = NULL;
-	TDB_DATA key = locking_key(dev, inode);
+
 	*pp_shares = NULL;
 
-	dbuf = tdb_fetch(tdb, key);
+	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
 	if (!dbuf.dptr)
 		return 0;
 
@@ -472,7 +444,7 @@ int get_share_modes(connection_struct *conn,
 			/* The record has shrunk a bit */
 			dbuf.dsize -= del_count * sizeof(share_mode_entry);
 
-			if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1) {
+			if (tdb_store(tdb, locking_key(dev, inode), dbuf, TDB_REPLACE) == -1) {
 				SAFE_FREE(shares);
 				SAFE_FREE(dbuf.dptr);
 				return 0;
@@ -547,13 +519,12 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 	int i, del_count=0;
 	share_mode_entry *shares;
 	ssize_t count = 0;
-	TDB_DATA key = locking_key(dev, inode);
 
 	if (ppse)
 		*ppse = NULL;
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, key);
+	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
 	if (!dbuf.dptr)
 		return -1;
 
@@ -594,10 +565,10 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 
 		/* store it back in the database */
 		if (data->u.num_share_mode_entries == 0) {
-			if (tdb_delete(tdb, key) == -1)
+			if (tdb_delete(tdb, locking_key(dev, inode)) == -1)
 				count = -1;
 		} else {
-			if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
+			if (tdb_store(tdb, locking_key(dev, inode), dbuf, TDB_REPLACE) == -1)
 				count = -1;
 		}
 	}
@@ -634,11 +605,10 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	struct locking_data *data;
 	char *p=NULL;
 	int size;
-	TDB_DATA key = locking_key_fsp(fsp);
 	BOOL ret = True;
 		
 	/* read in the existing share modes if any */
-	dbuf = tdb_fetch(tdb, key);
+	dbuf = tdb_fetch(tdb, locking_key_fsp(fsp));
 	if (!dbuf.dptr) {
 		size_t offset;
 		/* we'll need to create a new record */
@@ -663,7 +633,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 		dbuf.dptr = p;
 		dbuf.dsize = size;
-		if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
+		if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
 			ret = False;
 
 		print_share_mode_table((struct locking_data *)p);
@@ -693,7 +663,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	SAFE_FREE(dbuf.dptr);
 	dbuf.dptr = p;
 	dbuf.dsize = size;
-	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
+	if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
 		ret = False;
 	print_share_mode_table((struct locking_data *)p);
 	SAFE_FREE(p);
@@ -714,10 +684,9 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 	share_mode_entry *shares;
 	BOOL need_store=False;
 	BOOL ret = True;
-	TDB_DATA key = locking_key(dev, inode);
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, key);
+	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
 	if (!dbuf.dptr)
 		return False;
 
@@ -735,10 +704,10 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 	/* if the mod fn was called then store it back */
 	if (need_store) {
 		if (data->u.num_share_mode_entries == 0) {
-			if (tdb_delete(tdb, key) == -1)
+			if (tdb_delete(tdb, locking_key(dev, inode)) == -1)
 				ret = False;
 		} else {
-			if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
+			if (tdb_store(tdb, locking_key(dev, inode), dbuf, TDB_REPLACE) == -1)
 				ret = False;
 		}
 	}
@@ -814,10 +783,9 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 	struct locking_data *data;
 	int i;
 	share_mode_entry *shares;
-	TDB_DATA key = locking_key(dev, inode);
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, key);
+	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
 	if (!dbuf.dptr)
 		return False;
 
@@ -833,7 +801,7 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 
 	/* store it back */
 	if (data->u.num_share_mode_entries) {
-		if (tdb_store(tdb, key, dbuf, TDB_REPLACE)==-1) {
+		if (tdb_store(tdb, locking_key(dev,inode), dbuf, TDB_REPLACE)==-1) {
 			SAFE_FREE(dbuf.dptr);
 			return False;
 		}

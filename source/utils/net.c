@@ -68,41 +68,17 @@ int opt_force = 0;
 int opt_port = 0;
 int opt_maxusers = -1;
 const char *opt_comment = "";
-const char *opt_container = "cn=Users";
+char *opt_container = "cn=Users";
 int opt_flags = -1;
+int opt_jobid = 0;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;
-int opt_machine_pass = 0;
-BOOL opt_localgroup = False;
-BOOL opt_domaingroup = False;
-const char *opt_newntname = "";
-int opt_rid = 0;
+static int opt_machine_pass = 0;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
 extern BOOL AllowDebugChange;
-
-uint32 get_sec_channel_type(const char *param) 
-{
-	if (!(param && *param)) {
-		return get_default_sec_channel();
-	} else {
-		if (strequal(param, "PDC")) {
-			return SEC_CHAN_BDC;
-		} else if (strequal(param, "BDC")) {
-			return SEC_CHAN_BDC;
-		} else if (strequal(param, "MEMBER")) {
-			return SEC_CHAN_WKSTA;
-#if 0			
-		} else if (strequal(param, "DOMAIN")) {
-			return SEC_CHAN_DOMAIN;
-#endif
-		} else {
-			return get_default_sec_channel();
-		}
-	}
-}
 
 /*
   run a function from a function table. If not found then
@@ -134,7 +110,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 {
 	NTSTATUS nt_status;
 
-	if (!opt_password && !opt_machine_pass) {
+	if (!opt_password) {
 		char *pass = getpass("Password:");
 		if (pass) {
 			opt_password = strdup(pass);
@@ -145,26 +121,19 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					opt_user_name, opt_workgroup,
-					opt_password, 0, Undefined, NULL);
+					opt_password, 0, NULL);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
-		d_printf("Could not connect to server %s\n", server_name);
+		DEBUG(1,("Cannot connect to server.  Error was %s\n", 
+			 nt_errstr(nt_status)));
 
 		/* Display a nicer message depending on the result */
 
 		if (NT_STATUS_V(nt_status) == 
 		    NT_STATUS_V(NT_STATUS_LOGON_FAILURE))
 			d_printf("The username or password was not correct.\n");
-
-		if (NT_STATUS_V(nt_status) == 
-		    NT_STATUS_V(NT_STATUS_ACCOUNT_LOCKED_OUT))
-			d_printf("The account was locked out.\n");
-
-		if (NT_STATUS_V(nt_status) == 
-		    NT_STATUS_V(NT_STATUS_ACCOUNT_DISABLED))
-			d_printf("The account was disabled.\n");
 
 		return nt_status;
 	}
@@ -182,7 +151,7 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					"", "",
-					"", 0, Undefined, NULL);
+					"", 0, NULL);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -190,27 +159,6 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 		DEBUG(1,("Cannot connect to server (anonymously).  Error was %s\n", nt_errstr(nt_status)));
 		return nt_status;
 	}
-}
-
-/****************************************************************************
- Use the local machine's password for this session
-****************************************************************************/
-int net_use_machine_password(void) 
-{
-	char *user_name = NULL;
-
-	if (!secrets_init()) {
-		d_printf("ERROR: Unable to open secrets database\n");
-		exit(1);
-	}
-
-	user_name = NULL;
-	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
-	if (asprintf(&user_name, "%s$@%s", global_myname(), lp_realm()) == -1) {
-		return -1;
-	}
-	opt_user_name = user_name;
-	return 0;
 }
 
 BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_name)
@@ -240,7 +188,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 			if (is_zero_ip(pdc_ip))
 				return False;
 			
-			if ( !name_status_find(opt_target_workgroup, 0x1b, 0x20, pdc_ip, dc_name) )
+			if (!lookup_dc_name(lp_netbios_name(), opt_target_workgroup, &pdc_ip, dc_name))
 				return False;
 				
 			*server_name = strdup(dc_name);
@@ -282,18 +230,20 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 }
 
 
-BOOL net_find_pdc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
+BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
 {
 	if (get_pdc_ip(domain_name, server_ip)) {
+		fstring dc_name;
+			
 		if (is_zero_ip(*server_ip))
 			return False;
 		
-		if (!name_status_find(domain_name, 0x1b, 0x20, *server_ip, server_name))
+		if (!lookup_dc_name(lp_netbios_name(), domain_name, server_ip, dc_name))
 			return False;
 			
-		return True;	
-	} 
-	else
+		safe_strcpy(server_name, dc_name, FSTRING_LEN);
+		return True;
+	} else
 		return False;
 }
 
@@ -353,42 +303,9 @@ static int net_join(int argc, const char **argv)
 		if (net_ads_join(argc, argv) == 0)
 			return 0;
 		else
-			d_printf("ADS join did not work, falling back to RPC...\n");
+			d_printf("ADS join did not work, trying RPC...\n");
 	}
 	return net_rpc_join(argc, argv);
-}
-
-static int net_changetrustpw(int argc, const char **argv)
-{
-	if (net_ads_check() == 0)
-		return net_ads_changetrustpw(argc, argv);
-
-	return net_rpc_changetrustpw(argc, argv);
-}
-
-static int net_changesecretpw(int argc, const char **argv)
-{
-        char *trust_pw;
-        uint32 sec_channel_type = SEC_CHAN_WKSTA;
-
-	if(opt_force) {
-		trust_pw = getpass("Enter machine password: ");
-
-		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
-			    d_printf("Unable to write the machine account password in the secrets database");
-			    return 1;
-		}
-		else {
-		    d_printf("Modified trust account password in secrets database\n");
-		}
-	}
-	else {
-		d_printf("Machine account password change requires the -f flag.\n");
-		d_printf("Do NOT use this function unless you know what it does!\n");
-		d_printf("This function will change the ADS Domain member machine account password in the secrets.tdb file!\n");
-	}
-
-        return 0;
 }
 
 static int net_share(int argc, const char **argv)
@@ -418,16 +335,8 @@ static int net_getlocalsid(int argc, const char **argv)
 		name = argv[0];
         }
 	else {
-		name = global_myname();
+		name = lp_netbios_name();
 	}
-
-	if(!initialize_password_db(False)) {
-		DEBUG(0, ("WARNING: Could not open passdb - local sid may not reflect passdb\n"
-			  "backend knowlege (such as the sid stored in LDAP)\n"));
-	}
-
-	/* Generate one, if it doesn't exist */
-	get_global_sam_sid();
 
 	if (!secrets_fetch_domain_sid(name, &sid)) {
 		DEBUG(0, ("Can't fetch domain SID for name: %s\n", name));	
@@ -450,7 +359,7 @@ static int net_setlocalsid(int argc, const char **argv)
 		return 1;
 	}
 
-	if (!secrets_store_domain_sid(global_myname(), &sid)) {
+	if (!secrets_store_domain_sid(lp_netbios_name(), &sid)) {
 		DEBUG(0,("Can't store domain SID as a pdc/bdc.\n"));
 		return 1;
 	}
@@ -463,75 +372,23 @@ static int net_getdomainsid(int argc, const char **argv)
 	DOM_SID domain_sid;
 	fstring sid_str;
 
-	if(!initialize_password_db(False)) {
-		DEBUG(0, ("WARNING: Could not open passdb - domain sid may not reflect passdb\n"
-			  "backend knowlege (such as the sid stored in LDAP)\n"));
-	}
-
-	/* Generate one, if it doesn't exist */
-	get_global_sam_sid();
-
-	if (!secrets_fetch_domain_sid(global_myname(), &domain_sid)) {
+	if (!secrets_fetch_domain_sid(lp_netbios_name(), &domain_sid)) {
 		d_printf("Could not fetch local SID\n");
 		return 1;
 	}
 	sid_to_string(sid_str, &domain_sid);
-	d_printf("SID for domain %s is: %s\n", global_myname(), sid_str);
+	d_printf("SID for domain %s is: %s\n", lp_netbios_name(), sid_str);
 
-	if (!secrets_fetch_domain_sid(opt_workgroup, &domain_sid)) {
+	if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
 		d_printf("Could not fetch domain SID\n");
 		return 1;
 	}
 
 	sid_to_string(sid_str, &domain_sid);
-	d_printf("SID for domain %s is: %s\n", opt_workgroup, sid_str);
+	d_printf("SID for domain %s is: %s\n", lp_workgroup(), sid_str);
 
 	return 0;
 }
-
-#ifdef WITH_FAKE_KASERVER
-
-int net_afskey_usage(int argc, const char **argv)
-{
-	d_printf("  net afskey filename\n"
-		 "\tImports a OpenAFS KeyFile into our secrets.tdb\n\n");
-	return -1;
-}
-
-static int net_afskey(int argc, const char **argv)
-{
-	int fd;
-	struct afs_keyfile keyfile;
-
-	if (argc != 2) {
-		d_printf("usage: 'net afskey <keyfile> cell'\n");
-		return -1;
-	}
-
-	if (!secrets_init()) {
-		d_printf("Could not open secrets.tdb\n");
-		return -1;
-	}
-
-	if ((fd = open(argv[0], O_RDONLY, 0)) < 0) {
-		d_printf("Could not open %s\n", argv[0]);
-		return -1;
-	}
-
-	if (read(fd, &keyfile, sizeof(keyfile)) != sizeof(keyfile)) {
-		d_printf("Could not read keyfile\n");
-		return -1;
-	}
-
-	if (!secrets_store_afs_keyfile(argv[1], &keyfile)) {
-		d_printf("Could not write keyfile to secrets.tdb\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-#endif /* WITH_FAKE_KASERVER */
 
 static uint32 get_maxrid(void)
 {
@@ -568,7 +425,7 @@ static uint32 get_maxrid(void)
 	pdb_free_sam(&pwd);
 
 	if (!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries,
-				    ENUM_ONLY_MAPPED))
+				    ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
 		return max_rid;
 
 	for (i = 0; i < num_entries; i++) {
@@ -597,7 +454,7 @@ static int net_maxrid(int argc, const char **argv)
 	uint32 rid;
 
 	if (argc != 0) {
-	        DEBUG(0, ("usage: net maxrid\n"));
+	        DEBUG(0, ("usage: net initrid\n"));
 		return 1;
 	}
 
@@ -626,14 +483,11 @@ static struct functable net_func[] = {
 	{"PRINTQ", net_rap_printq},
 	{"USER", net_user},
 	{"GROUP", net_group},
-	{"GROUPMAP", net_groupmap},
 	{"VALIDATE", net_rap_validate},
 	{"GROUPMEMBER", net_rap_groupmember},
 	{"ADMIN", net_rap_admin},
 	{"SERVICE", net_rap_service},	
 	{"PASSWORD", net_rap_password},
-	{"CHANGETRUSTPW", net_changetrustpw},
-	{"CHANGESECRETPW", net_changesecretpw},
 	{"TIME", net_time},
 	{"LOOKUP", net_lookup},
 	{"JOIN", net_join},
@@ -642,12 +496,6 @@ static struct functable net_func[] = {
 	{"SETLOCALSID", net_setlocalsid},
 	{"GETDOMAINSID", net_getdomainsid},
 	{"MAXRID", net_maxrid},
-	{"IDMAP", net_idmap},
-	{"STATUS", net_status},
-#ifdef WITH_FAKE_KASERVER
-	{"AFSKEY", net_afskey},
-#endif
-	{"PRIV", net_priv},
 
 	{"HELP", net_help},
 	{NULL, NULL}
@@ -665,40 +513,36 @@ static struct functable net_func[] = {
 	int argc_new = 0;
 	const char ** argv_new;
 	poptContext pc;
+	static char *servicesf = dyn_CONFIGFILE;
+	static char *debuglevel = NULL;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
 		{"workgroup",	'w', POPT_ARG_STRING, &opt_target_workgroup},
+		{"myworkgroup",	'W', POPT_ARG_STRING, &opt_workgroup},
 		{"user",	'U', POPT_ARG_STRING, &opt_user_name, 'U'},
 		{"ipaddress",	'I', POPT_ARG_STRING, 0,'I'},
 		{"port",	'p', POPT_ARG_INT,    &opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &opt_requester_name},
+		{"conf",	's', POPT_ARG_STRING, &servicesf},
 		{"server",	'S', POPT_ARG_STRING, &opt_host},
 		{"container",	'c', POPT_ARG_STRING, &opt_container},
 		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &opt_maxusers},
 		{"flags",	'F', POPT_ARG_INT,    &opt_flags},
+		{"jobid",	'j', POPT_ARG_INT,    &opt_jobid},
 		{"long",	'l', POPT_ARG_NONE,   &opt_long_list_entries},
 		{"reboot",	'r', POPT_ARG_NONE,   &opt_reboot},
 		{"force",	'f', POPT_ARG_NONE,   &opt_force},
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
-		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
-
-		/* Options for 'net groupmap set' */
-		{"local",       'L', POPT_ARG_NONE,   &opt_localgroup},
-		{"domain",      'D', POPT_ARG_NONE,   &opt_domaingroup},
-		{"ntname",      'N', POPT_ARG_STRING, &opt_newntname},
-		{"rid",         'R', POPT_ARG_INT,    &opt_rid},
-
-		POPT_COMMON_SAMBA
+		{"debuglevel",  'd', POPT_ARG_STRING, &debuglevel},
+		{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ 0, 0, 0, 0}
 	};
 
 	zero_ip(&opt_dest_ip);
 
-	/* set default debug level to 0 regardless of what smb.conf sets */
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
 	dbf = x_stderr;
 	
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
@@ -733,15 +577,15 @@ static struct functable net_func[] = {
 			exit(1);
 		}
 	}
-	
-	/*
-	 * Don't load debug level from smb.conf. It should be
-	 * set by cmdline arg or remain default (0)
-	 */
-	AllowDebugChange = False;
-	lp_load(dyn_CONFIGFILE,True,False,False);
-	
- 	argv_new = (const char **)poptGetArgs(pc);
+
+	if (debuglevel) {
+		debug_parse_levels(debuglevel);
+		AllowDebugChange = False;
+	}
+
+	lp_load(servicesf,True,False,False);       
+
+	argv_new = (const char **)poptGetArgs(pc);
 
 	argc_new = argc;
 	for (i=0; i<argc; i++) {
@@ -752,9 +596,7 @@ static struct functable net_func[] = {
 	}
 
 	if (!opt_requester_name) {
-		static fstring myname;
-		get_myname(myname);
-		opt_requester_name = myname;
+		opt_requester_name = get_myname();
 	}
 
 	if (!opt_user_name && getenv("LOGNAME")) {
@@ -762,31 +604,35 @@ static struct functable net_func[] = {
 	}
 
 	if (!opt_workgroup) {
-		opt_workgroup = smb_xstrdup(lp_workgroup());
+		opt_workgroup = lp_workgroup();
 	}
 	
 	if (!opt_target_workgroup) {
-		opt_target_workgroup = smb_xstrdup(lp_workgroup());
+		opt_target_workgroup = strdup(lp_workgroup());
 	}
 	
 	if (!init_names())
 		exit(1);
 
 	load_interfaces();
-	
-	/* this makes sure that when we do things like call scripts, 
-	   that it won't assert becouse we are not root */
-	sec_init();
 
 	if (opt_machine_pass) {
+		char *user;
 		/* it is very useful to be able to make ads queries as the
 		   machine account for testing purposes and for domain leave */
 
-		net_use_machine_password();
-	}
+		if (!secrets_init()) {
+			d_printf("ERROR: Unable to open secrets database\n");
+			exit(1);
+		}
 
-	if (!opt_password) {
-		opt_password = getenv("PASSWD");
+		asprintf(&user,"%s$", lp_netbios_name());
+		opt_user_name = user;
+		opt_password = secrets_fetch_machine_password();
+		if (!opt_password) {
+			d_printf("ERROR: Unable to fetch machine password\n");
+			exit(1);
+		}
 	}
   	 
 	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_help);

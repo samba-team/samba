@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Simo Sorce 2001-2002
    Copyright (C) Jelmer Vernooij 2003
+   Copyright (C) James J Myers   2003 <myersjj@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,10 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
-#include "../client/client_proto.h"
 #ifndef REGISTER
 #define REGISTER 0
 #endif
@@ -39,15 +37,13 @@ static pstring username;
 static pstring password;
 static BOOL use_kerberos;
 static BOOL got_pass;
-static BOOL grepable=False;
 static char *cmdstr = NULL;
 
 static int io_bufsize = 64512;
 
 static int name_type = 0x20;
-static int max_protocol = PROTOCOL_NT1;
 
-static int process_tok(pstring tok);
+static int process_tok(fstring tok);
 static int cmd_help(void);
 
 /* 30 second timeout on most commands */
@@ -102,11 +98,41 @@ static double dir_total;
 /* some forward declarations */
 static struct cli_state *do_connect(const char *server, const char *share);
 
-/****************************************************************************
- Write to a local file with CR/LF->LF translation if appropriate. Return the 
- number taken from the buffer. This may not equal the number written.
-****************************************************************************/
 
+/*******************************************************************
+ Reduce a file name, removing .. elements.
+********************************************************************/
+void dos_clean_name(char *s)
+{
+	char *p=NULL;
+
+	DEBUG(3,("dos_clean_name [%s]\n",s));
+
+	/* remove any double slashes */
+	all_string_sub(s, "\\\\", "\\", 0);
+
+	while ((p = strstr(s,"\\..\\")) != NULL) {
+		pstring s1;
+
+		*p = 0;
+		pstrcpy(s1,p+3);
+
+		if ((p=strrchr_m(s,'\\')) != NULL)
+			*p = 0;
+		else
+			*s = 0;
+		pstrcat(s,s1);
+	}  
+
+	trim_string(s,NULL,"\\..");
+
+	all_string_sub(s, "\\.\\", "\\", 0);
+}
+
+/****************************************************************************
+write to a local file with CR/LF->LF translation if appropriate. return the 
+number taken from the buffer. This may not equal the number written.
+****************************************************************************/
 static int writefile(int f, char *b, int n)
 {
 	int i;
@@ -131,10 +157,9 @@ static int writefile(int f, char *b, int n)
 }
 
 /****************************************************************************
- Read from a file with LF->CR/LF translation if appropriate. Return the 
- number read. read approx n bytes.
+  read from a file with LF->CR/LF translation if appropriate. return the 
+  number read. read approx n bytes.
 ****************************************************************************/
-
 static int readfile(char *b, int n, XFILE *f)
 {
 	int i;
@@ -144,7 +169,7 @@ static int readfile(char *b, int n, XFILE *f)
 		return x_fread(b,1,n,f);
   
 	i = 0;
-	while (i < (n - 1) && (i < BUFFER_SIZE)) {
+	while (i < (n - 1) && (i < CLI_BUFFER_SIZE)) {
 		if ((c = x_getc(f)) == EOF) {
 			break;
 		}
@@ -159,17 +184,17 @@ static int readfile(char *b, int n, XFILE *f)
 	return(i);
 }
  
-/****************************************************************************
- Send a message.
-****************************************************************************/
 
+/****************************************************************************
+send a message
+****************************************************************************/
 static void send_message(void)
 {
 	int total_len = 0;
 	int grp_id;
 
-	if (!cli_message_start(cli, desthost, username, &grp_id)) {
-		d_printf("message start: %s\n", cli_errstr(cli));
+	if (!cli_message_start(cli->tree, desthost, username, &grp_id)) {
+		d_printf("message start: %s\n", cli_errstr(cli->tree));
 		return;
 	}
 
@@ -190,8 +215,8 @@ static void send_message(void)
 			msg[l] = c;   
 		}
 
-		if (!cli_message_text(cli, msg, l, grp_id)) {
-			d_printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
+		if (!cli_message_text(cli->tree, msg, l, grp_id)) {
+			d_printf("SMBsendtxt failed (%s)\n",cli_errstr(cli->tree));
 			return;
 		}      
 		
@@ -203,22 +228,23 @@ static void send_message(void)
 	else
 		d_printf("sent %d bytes\n",total_len);
 
-	if (!cli_message_end(cli, grp_id)) {
-		d_printf("SMBsendend failed (%s)\n",cli_errstr(cli));
+	if (!cli_message_end(cli->tree, grp_id)) {
+		d_printf("SMBsendend failed (%s)\n",cli_errstr(cli->tree));
 		return;
 	}      
 }
 
-/****************************************************************************
- Check the space on a device.
-****************************************************************************/
 
+
+/****************************************************************************
+check the space on a device
+****************************************************************************/
 static int do_dskattr(void)
 {
 	int total, bsize, avail;
 
-	if (!cli_dskattr(cli, &bsize, &total, &avail)) {
-		d_printf("Error in dskattr: %s\n",cli_errstr(cli)); 
+	if (NT_STATUS_IS_ERR(cli_dskattr(cli->tree, &bsize, &total, &avail))) {
+		d_printf("Error in dskattr: %s\n",cli_errstr(cli->tree)); 
 		return 1;
 	}
 
@@ -229,9 +255,8 @@ static int do_dskattr(void)
 }
 
 /****************************************************************************
- Show cd/pwd.
+show cd/pwd
 ****************************************************************************/
-
 static int cmd_pwd(void)
 {
 	d_printf("Current directory is %s",service);
@@ -239,10 +264,10 @@ static int cmd_pwd(void)
 	return 0;
 }
 
-/****************************************************************************
- Change directory - inner section.
-****************************************************************************/
 
+/****************************************************************************
+change directory - inner section
+****************************************************************************/
 static int do_cd(char *newdir)
 {
 	char *p = newdir;
@@ -267,8 +292,8 @@ static int do_cd(char *newdir)
 	dos_clean_name(cur_dir);
 	
 	if (!strequal(cur_dir,"\\")) {
-		if (!cli_chkpath(cli, dname)) {
-			d_printf("cd %s: %s\n", dname, cli_errstr(cli));
+		if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, dname))) {
+			d_printf("cd %s: %s\n", dname, cli_errstr(cli->tree));
 			pstrcpy(cur_dir,saved_dir);
 		}
 	}
@@ -279,12 +304,11 @@ static int do_cd(char *newdir)
 }
 
 /****************************************************************************
- Change directory.
+change directory
 ****************************************************************************/
-
 static int cmd_cd(void)
 {
-	pstring buf;
+	fstring buf;
 	int rc = 0;
 
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
@@ -295,17 +319,16 @@ static int cmd_cd(void)
 	return rc;
 }
 
-/*******************************************************************
- Decide if a file should be operated on.
-********************************************************************/
 
+/*******************************************************************
+  decide if a file should be operated on
+  ********************************************************************/
 static BOOL do_this_one(file_info *finfo)
 {
-	if (finfo->mode & aDIR)
-		return(True);
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) return(True);
 
 	if (*fileselection && 
-	    !mask_match(finfo->name,fileselection,False)) {
+	    !mask_match(cli, finfo->name,fileselection,False)) {
 		DEBUG(3,("mask_match %s failed\n", finfo->name));
 		return False;
 	}
@@ -315,7 +338,7 @@ static BOOL do_this_one(file_info *finfo)
 		return(False);
 	}
 
-	if ((archive_level==1 || archive_level==2) && !(finfo->mode & aARCH)) {
+	if ((archive_level==1 || archive_level==2) && !(finfo->mode & FILE_ATTRIBUTE_ARCHIVE)) {
 		DEBUG(3,("archive %s failed\n", finfo->name));
 		return(False);
 	}
@@ -323,10 +346,47 @@ static BOOL do_this_one(file_info *finfo)
 	return(True);
 }
 
-/****************************************************************************
- Display info about a file.
-****************************************************************************/
+/*******************************************************************
+ Return a string representing an attribute for a file.
+********************************************************************/
+static const char *attrib_string(uint16 mode)
+{
+	static fstring attrstr;
+	int i, len;
+	const struct {
+		char c;
+		uint16 attr;
+	} attr_strs[] = {
+		{'V', FILE_ATTRIBUTE_VOLUME},
+		{'D', FILE_ATTRIBUTE_DIRECTORY},
+		{'A', FILE_ATTRIBUTE_ARCHIVE},
+		{'H', FILE_ATTRIBUTE_HIDDEN},
+		{'S', FILE_ATTRIBUTE_SYSTEM},
+		{'R', FILE_ATTRIBUTE_READONLY},
+		{'d', FILE_ATTRIBUTE_DEVICE},
+		{'t', FILE_ATTRIBUTE_TEMPORARY},
+		{'s', FILE_ATTRIBUTE_SPARSE},
+		{'r', FILE_ATTRIBUTE_REPARSE_POINT},
+		{'c', FILE_ATTRIBUTE_COMPRESSED},
+		{'o', FILE_ATTRIBUTE_OFFLINE},
+		{'n', FILE_ATTRIBUTE_NONINDEXED},
+		{'e', FILE_ATTRIBUTE_ENCRYPTED}
+	};
 
+	for (len=i=0; i<ARRAY_SIZE(attr_strs); i++) {
+		if (mode & attr_strs[i].attr) {
+			attrstr[len++] = attr_strs[i].c;
+		}
+	}
+
+	attrstr[len] = 0;
+
+	return(attrstr);
+}
+
+/****************************************************************************
+  display info about a file
+  ****************************************************************************/
 static void display_finfo(file_info *finfo)
 {
 	if (do_this_one(finfo)) {
@@ -340,10 +400,10 @@ static void display_finfo(file_info *finfo)
 	}
 }
 
-/****************************************************************************
- Accumulate size of a file.
-****************************************************************************/
 
+/****************************************************************************
+   accumulate size of a file
+  ****************************************************************************/
 static void do_du(file_info *finfo)
 {
 	if (do_this_one(finfo)) {
@@ -360,8 +420,8 @@ static long do_list_queue_end = 0;
 static void (*do_list_fn)(file_info *);
 
 /****************************************************************************
- Functions for do_list_queue.
-****************************************************************************/
+functions for do_list_queue
+  ****************************************************************************/
 
 /*
  * The do_list_queue is a NUL-separated list of strings stored in a
@@ -374,7 +434,6 @@ static void (*do_list_fn)(file_info *);
  * Functions check to ensure that do_list_queue is non-NULL before
  * accessing it.
  */
-
 static void reset_do_list_queue(void)
 {
 	SAFE_FREE(do_list_queue);
@@ -403,11 +462,14 @@ static void adjust_do_list_queue(void)
 	 * If the starting point of the queue is more than half way through,
 	 * move everything toward the beginning.
 	 */
-	if (do_list_queue && (do_list_queue_start == do_list_queue_end)) {
+	if (do_list_queue && (do_list_queue_start == do_list_queue_end))
+	{
 		DEBUG(4,("do_list_queue is empty\n"));
 		do_list_queue_start = do_list_queue_end = 0;
 		*do_list_queue = '\0';
-	} else if (do_list_queue_start > (do_list_queue_size / 2)) {
+	}
+	else if (do_list_queue_start > (do_list_queue_size / 2))
+	{
 		DEBUG(4,("sliding do_list_queue backward\n"));
 		memmove(do_list_queue,
 			do_list_queue + do_list_queue_start,
@@ -415,13 +477,15 @@ static void adjust_do_list_queue(void)
 		do_list_queue_end -= do_list_queue_start;
 		do_list_queue_start = 0;
 	}
+	   
 }
 
 static void add_to_do_list_queue(const char* entry)
 {
 	char *dlq;
 	long new_end = do_list_queue_end + ((long)strlen(entry)) + 1;
-	while (new_end > do_list_queue_size) {
+	while (new_end > do_list_queue_size)
+	{
 		do_list_queue_size *= 2;
 		DEBUG(4,("enlarging do_list_queue to %d\n",
 			 (int)do_list_queue_size));
@@ -430,15 +494,18 @@ static void add_to_do_list_queue(const char* entry)
 			d_printf("failure enlarging do_list_queue to %d bytes\n",
 				 (int)do_list_queue_size);
 			reset_do_list_queue();
-		} else {
+		}
+		else
+		{
 			do_list_queue = dlq;
 			memset(do_list_queue + do_list_queue_size / 2,
 			       0, do_list_queue_size / 2);
 		}
 	}
-	if (do_list_queue) {
-		safe_strcpy_base(do_list_queue + do_list_queue_end, 
-				 entry, do_list_queue, do_list_queue_size);
+	if (do_list_queue)
+	{
+		safe_strcpy(do_list_queue + do_list_queue_end, entry, 
+			    do_list_queue_size - do_list_queue_end - 1);
 		do_list_queue_end = new_end;
 		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",
 			 entry, (int)do_list_queue_start, (int)do_list_queue_end));
@@ -452,7 +519,8 @@ static char *do_list_queue_head(void)
 
 static void remove_do_list_queue_head(void)
 {
-	if (do_list_queue_end > do_list_queue_start) {
+	if (do_list_queue_end > do_list_queue_start)
+	{
 		do_list_queue_start += strlen(do_list_queue_head()) + 1;
 		adjust_do_list_queue();
 		DEBUG(4,("removed head of do_list_queue (start=%d, end=%d)\n",
@@ -466,12 +534,11 @@ static int do_list_queue_empty(void)
 }
 
 /****************************************************************************
- A helper for do_list.
-****************************************************************************/
-
+a helper for do_list
+  ****************************************************************************/
 static void do_list_helper(file_info *f, const char *mask, void *state)
 {
-	if (f->mode & aDIR) {
+	if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		if (do_list_dirs && do_this_one(f)) {
 			do_list_fn(f);
 		}
@@ -481,15 +548,9 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 			pstring mask2;
 			char *p;
 
-			if (!f->name[0]) {
-				d_printf("Empty dir name returned. Possible server misconfiguration.\n");
-				return;
-			}
-
 			pstrcpy(mask2, mask);
 			p = strrchr_m(mask2,'\\');
-			if (!p)
-				return;
+			if (!p) return;
 			p[1] = 0;
 			pstrcat(mask2, f->name);
 			pstrcat(mask2,"\\*");
@@ -503,15 +564,16 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 	}
 }
 
-/****************************************************************************
- A wrapper around cli_list that adds recursion.
-****************************************************************************/
 
+/****************************************************************************
+a wrapper around cli_list that adds recursion
+  ****************************************************************************/
 void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
 {
 	static int in_do_list = 0;
 
-	if (in_do_list && rec) {
+	if (in_do_list && rec)
+	{
 		fprintf(stderr, "INTERNAL ERROR: do_list called recursively when the recursive flag is true\n");
 		exit(1);
 	}
@@ -522,11 +584,13 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 	do_list_dirs = dirs;
 	do_list_fn = fn;
 
-	if (rec) {
+	if (rec)
+	{
 		init_do_list_queue();
 		add_to_do_list_queue(mask);
 		
-		while (! do_list_queue_empty()) {
+		while (! do_list_queue_empty())
+		{
 			/*
 			 * Need to copy head so that it doesn't become
 			 * invalid inside the call to cli_list.  This
@@ -536,27 +600,33 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			 */
 			pstring head;
 			pstrcpy(head, do_list_queue_head());
-			cli_list(cli, head, attribute, do_list_helper, NULL);
+			cli_list(cli->tree, head, attribute, do_list_helper, NULL);
 			remove_do_list_queue_head();
-			if ((! do_list_queue_empty()) && (fn == display_finfo)) {
+			if ((! do_list_queue_empty()) && (fn == display_finfo))
+			{
 				char* next_file = do_list_queue_head();
 				char* save_ch = 0;
 				if ((strlen(next_file) >= 2) &&
 				    (next_file[strlen(next_file) - 1] == '*') &&
-				    (next_file[strlen(next_file) - 2] == '\\')) {
+				    (next_file[strlen(next_file) - 2] == '\\'))
+				{
 					save_ch = next_file +
 						strlen(next_file) - 2;
 					*save_ch = '\0';
 				}
 				d_printf("\n%s\n",next_file);
-				if (save_ch) {
+				if (save_ch)
+				{
 					*save_ch = '\\';
 				}
 			}
 		}
-	} else {
-		if (cli_list(cli, mask, attribute, do_list_helper, NULL) == -1) {
-			d_printf("%s listing %s\n", cli_errstr(cli), mask);
+	}
+	else
+	{
+		if (cli_list(cli->tree, mask, attribute, do_list_helper, NULL) == -1)
+		{
+			d_printf("%s listing %s\n", cli_errstr(cli->tree), mask);
 		}
 	}
 
@@ -565,25 +635,20 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 }
 
 /****************************************************************************
- Get a directory listing.
-****************************************************************************/
-
+  get a directory listing
+  ****************************************************************************/
 static int cmd_dir(void)
 {
-	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
+	uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	pstring mask;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
 	int rc;
 	
 	dir_total = 0;
-	if (strcmp(cur_dir, "\\") != 0) {
-		pstrcpy(mask,cur_dir);
-		if(mask[strlen(mask)-1]!='\\')
-			pstrcat(mask,"\\");
-	} else {
-		*mask = '\0';
-	}
+	pstrcpy(mask,cur_dir);
+	if(mask[strlen(mask)-1]!='\\')
+		pstrcat(mask,"\\");
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
@@ -591,7 +656,8 @@ static int cmd_dir(void)
 			pstrcpy(mask,p);
 		else
 			pstrcat(mask,p);
-	} else {
+	}
+	else {
 		pstrcat(mask,"*");
 	}
 
@@ -604,15 +670,15 @@ static int cmd_dir(void)
 	return rc;
 }
 
-/****************************************************************************
- Get a directory listing.
-****************************************************************************/
 
+/****************************************************************************
+  get a directory listing
+  ****************************************************************************/
 static int cmd_du(void)
 {
-	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
+	uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	pstring mask;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
 	int rc;
 	
@@ -640,11 +706,11 @@ static int cmd_du(void)
 	return rc;
 }
 
-/****************************************************************************
- Get a file from rname to lname
-****************************************************************************/
 
-static int do_get(char *rname, char *lname, BOOL reget)
+/****************************************************************************
+  get a file from rname to lname
+  ****************************************************************************/
+static int do_get(char *rname, const char *lname, BOOL reget)
 {  
 	int handle = 0, fnum;
 	BOOL newhandle = False;
@@ -660,13 +726,13 @@ static int do_get(char *rname, char *lname, BOOL reget)
 	GetTimeOfDay(&tp_start);
 
 	if (lowercase) {
-		strlower_m(lname);
+		strlower(lname);
 	}
 
-	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
+	fnum = cli_open(cli->tree, rname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
-		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
+		d_printf("%s opening remote file %s\n",cli_errstr(cli->tree),rname);
 		return 1;
 	}
 
@@ -693,11 +759,11 @@ static int do_get(char *rname, char *lname, BOOL reget)
 	}
 
 
-	if (!cli_qfileinfo(cli, fnum, 
-			   &attr, &size, NULL, NULL, NULL, NULL, NULL) &&
-	    !cli_getattrE(cli, fnum, 
-			  &attr, &size, NULL, NULL, NULL)) {
-		d_printf("getattrib: %s\n",cli_errstr(cli));
+	if (NT_STATUS_IS_ERR(cli_qfileinfo(cli->tree, fnum, 
+			   &attr, &size, NULL, NULL, NULL, NULL, NULL)) &&
+	    NT_STATUS_IS_ERR(cli_getattrE(cli->tree, fnum, 
+			  &attr, &size, NULL, NULL, NULL))) {
+		d_printf("getattrib: %s\n",cli_errstr(cli->tree));
 		return 1;
 	}
 
@@ -706,15 +772,14 @@ static int do_get(char *rname, char *lname, BOOL reget)
 
 	if(!(data = (char *)malloc(read_size))) { 
 		d_printf("malloc fail for size %d\n", read_size);
-		cli_close(cli, fnum);
+		cli_close(cli->tree, fnum);
 		return 1;
 	}
 
 	while (1) {
-		int n = cli_read(cli, fnum, data, nread + start, read_size);
+		int n = cli_read(cli->tree, fnum, data, nread + start, read_size);
 
-		if (n <= 0)
-			break;
+		if (n <= 0) break;
  
 		if (writefile(handle,data, n) != n) {
 			d_printf("Error writing local file\n");
@@ -734,8 +799,8 @@ static int do_get(char *rname, char *lname, BOOL reget)
 
 	SAFE_FREE(data);
 	
-	if (!cli_close(cli, fnum)) {
-		d_printf("Error %s closing remote file\n",cli_errstr(cli));
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
+		d_printf("Error %s closing remote file\n",cli_errstr(cli->tree));
 		rc = 1;
 	}
 
@@ -743,8 +808,8 @@ static int do_get(char *rname, char *lname, BOOL reget)
 		close(handle);
 	}
 
-	if (archive_level >= 2 && (attr & aARCH)) {
-		cli_setatr(cli, rname, attr & ~(uint16)aARCH, 0);
+	if (archive_level >= 2 && (attr & FILE_ATTRIBUTE_ARCHIVE)) {
+		cli_setatr(cli->tree, rname, attr & ~(uint16)FILE_ATTRIBUTE_ARCHIVE, 0);
 	}
 
 	{
@@ -766,10 +831,10 @@ static int do_get(char *rname, char *lname, BOOL reget)
 	return rc;
 }
 
-/****************************************************************************
- Get a file.
-****************************************************************************/
 
+/****************************************************************************
+  get a file
+  ****************************************************************************/
 static int cmd_get(void)
 {
 	pstring lname;
@@ -793,10 +858,10 @@ static int cmd_get(void)
 	return do_get(rname, lname, False);
 }
 
-/****************************************************************************
- Do an mget operation on one file.
-****************************************************************************/
 
+/****************************************************************************
+  do a mget operation on one file
+  ****************************************************************************/
 static void do_mget(file_info *finfo)
 {
 	pstring rname;
@@ -812,17 +877,16 @@ static void do_mget(file_info *finfo)
 		return;
 	}
 
-	if (finfo->mode & aDIR)
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY)
 		slprintf(quest,sizeof(pstring)-1,
 			 "Get directory %s? ",finfo->name);
 	else
 		slprintf(quest,sizeof(pstring)-1,
 			 "Get file %s? ",finfo->name);
 
-	if (prompt && !yesno(quest))
-		return;
+	if (prompt && !yesno(quest)) return;
 
-	if (!(finfo->mode & aDIR)) {
+	if (!(finfo->mode & FILE_ATTRIBUTE_DIRECTORY)) {
 		pstrcpy(rname,cur_dir);
 		pstrcat(rname,finfo->name);
 		do_get(rname, finfo->name, False);
@@ -837,7 +901,7 @@ static void do_mget(file_info *finfo)
 
 	unix_format(finfo->name);
 	if (lowercase)
-		strlower_m(finfo->name);
+		strlower(finfo->name);
 	
 	if (!directory_exist(finfo->name,NULL) && 
 	    mkdir(finfo->name,0777) != 0) {
@@ -855,24 +919,24 @@ static void do_mget(file_info *finfo)
 	pstrcpy(mget_mask,cur_dir);
 	pstrcat(mget_mask,"*");
 	
-	do_list(mget_mask, aSYSTEM | aHIDDEN | aDIR,do_mget,False, True);
+	do_list(mget_mask, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,do_mget,False, True);
 	chdir("..");
 	pstrcpy(cur_dir,saved_curdir);
 }
 
-/****************************************************************************
- View the file using the pager.
-****************************************************************************/
 
+/****************************************************************************
+view the file using the pager
+****************************************************************************/
 static int cmd_more(void)
 {
-	pstring rname,lname,pager_cmd;
+	fstring rname,lname,pager_cmd;
 	char *pager;
 	int fd;
 	int rc = 0;
 
-	pstrcpy(rname,cur_dir);
-	pstrcat(rname,"\\");
+	fstrcpy(rname,cur_dir);
+	fstrcat(rname,"\\");
 	
 	slprintf(lname,sizeof(lname)-1, "%s/smbmore.XXXXXX",tmpdir());
 	fd = smb_mkstemp(lname);
@@ -901,21 +965,22 @@ static int cmd_more(void)
 	return rc;
 }
 
-/****************************************************************************
- Do a mget command.
-****************************************************************************/
 
+
+/****************************************************************************
+do a mget command
+****************************************************************************/
 static int cmd_mget(void)
 {
-	uint16 attribute = aSYSTEM | aHIDDEN;
+	uint16 attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	pstring mget_mask;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
 
 	*mget_mask = 0;
 
 	if (recurse)
-		attribute |= aDIR;
+		attribute |= FILE_ATTRIBUTE_DIRECTORY;
 	
 	abort_mget = False;
 
@@ -942,31 +1007,32 @@ static int cmd_mget(void)
 	return 0;
 }
 
-/****************************************************************************
- Make a directory of name "name".
-****************************************************************************/
 
-static BOOL do_mkdir(char *name)
+/****************************************************************************
+make a directory of name "name"
+****************************************************************************/
+static NTSTATUS do_mkdir(char *name)
 {
-	if (!cli_mkdir(cli, name)) {
+	NTSTATUS status;
+
+	if (NT_STATUS_IS_ERR(status = cli_mkdir(cli->tree, name))) {
 		d_printf("%s making remote directory %s\n",
-			 cli_errstr(cli),name);
-		return(False);
+			 cli_errstr(cli->tree),name);
+		return status;
 	}
 
-	return(True);
+	return status;
 }
 
 /****************************************************************************
- Show 8.3 name of a file.
+show 8.3 name of a file
 ****************************************************************************/
-
 static BOOL do_altname(char *name)
 {
-	pstring altname;
-	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
+	const char *altname;
+	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli->tree, name, &altname))) {
 		d_printf("%s getting alt name for %s\n",
-			 cli_errstr(cli),name);
+			 cli_errstr(cli->tree),name);
 		return(False);
 	}
 	d_printf("%s\n", altname);
@@ -974,10 +1040,10 @@ static BOOL do_altname(char *name)
 	return(True);
 }
 
+
 /****************************************************************************
  Exit client.
 ****************************************************************************/
-
 static int cmd_quit(void)
 {
 	cli_shutdown(cli);
@@ -986,14 +1052,14 @@ static int cmd_quit(void)
 	return 0;
 }
 
-/****************************************************************************
- Make a directory.
-****************************************************************************/
 
+/****************************************************************************
+  make a directory
+  ****************************************************************************/
 static int cmd_mkdir(void)
 {
 	pstring mask;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
   
 	pstrcpy(mask,cur_dir);
@@ -1011,11 +1077,11 @@ static int cmd_mkdir(void)
 		*ddir2 = 0;
 		
 		pstrcpy(ddir,mask);
-		trim_char(ddir,'.','\0');
+		trim_string(ddir,".",NULL);
 		p = strtok(ddir,"/\\");
 		while (p) {
 			pstrcat(ddir2,p);
-			if (!cli_chkpath(cli, ddir2)) { 
+			if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, ddir2))) { 
 				do_mkdir(ddir2);
 			}
 			pstrcat(ddir2,"\\");
@@ -1028,14 +1094,14 @@ static int cmd_mkdir(void)
 	return 0;
 }
 
-/****************************************************************************
- Show alt name.
-****************************************************************************/
 
+/****************************************************************************
+  show alt name
+  ****************************************************************************/
 static int cmd_altname(void)
 {
 	pstring name;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
   
 	pstrcpy(name,cur_dir);
@@ -1051,10 +1117,10 @@ static int cmd_altname(void)
 	return 0;
 }
 
-/****************************************************************************
- Put a single file.
-****************************************************************************/
 
+/****************************************************************************
+  put a single file
+  ****************************************************************************/
 static int do_put(char *rname, char *lname, BOOL reput)
 {
 	int fnum;
@@ -1069,20 +1135,21 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	GetTimeOfDay(&tp_start);
 
 	if (reput) {
-		fnum = cli_open(cli, rname, O_RDWR|O_CREAT, DENY_NONE);
+		fnum = cli_open(cli->tree, rname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum >= 0) {
-			if (!cli_qfileinfo(cli, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
-			    !cli_getattrE(cli, fnum, NULL, &start, NULL, NULL, NULL)) {
-				d_printf("getattrib: %s\n",cli_errstr(cli));
+			if (NT_STATUS_IS_ERR(cli_qfileinfo(cli->tree, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL)) &&
+			    NT_STATUS_IS_ERR(cli_getattrE(cli->tree, fnum, NULL, &start, NULL, NULL, NULL))) {
+				d_printf("getattrib: %s\n",cli_errstr(cli->tree));
 				return 1;
 			}
 		}
 	} else {
-		fnum = cli_open(cli, rname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+		fnum = cli_open(cli->tree, rname, O_RDWR|O_CREAT|O_TRUNC, 
+				DENY_NONE);
 	}
   
 	if (fnum == -1) {
-		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
+		d_printf("%s opening remote file %s\n",cli_errstr(cli->tree),rname);
 		return 1;
 	}
 
@@ -1108,6 +1175,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 		d_printf("Error opening local file %s\n",lname);
 		return 1;
 	}
+
   
 	DEBUG(1,("putting file %s as %s ",lname,
 		 rname));
@@ -1130,10 +1198,10 @@ static int do_put(char *rname, char *lname, BOOL reput)
 			break;
 		}
 
-		ret = cli_write(cli, fnum, 0, buf, nread + start, n);
+		ret = cli_write(cli->tree, fnum, 0, buf, nread + start, n);
 
 		if (n != ret) {
-			d_printf("Error writing file: %s\n", cli_errstr(cli));
+			d_printf("Error writing file: %s\n", cli_errstr(cli->tree));
 			rc = 1;
 			break;
 		} 
@@ -1141,8 +1209,8 @@ static int do_put(char *rname, char *lname, BOOL reput)
 		nread += n;
 	}
 
-	if (!cli_close(cli, fnum)) {
-		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
+		d_printf("%s closing remote file %s\n",cli_errstr(cli->tree),rname);
 		x_fclose(f);
 		SAFE_FREE(buf);
 		return 1;
@@ -1179,15 +1247,16 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	return rc;
 }
 
-/****************************************************************************
- Put a file.
-****************************************************************************/
+ 
 
+/****************************************************************************
+  put a file
+  ****************************************************************************/
 static int cmd_put(void)
 {
 	pstring lname;
 	pstring rname;
-	pstring buf;
+	fstring buf;
 	char *p=buf;
 	
 	pstrcpy(rname,cur_dir);
@@ -1221,7 +1290,7 @@ static int cmd_put(void)
 }
 
 /*************************************
- File list structure.
+  File list structure
 *************************************/
 
 static struct file_list {
@@ -1231,14 +1300,15 @@ static struct file_list {
 } *file_list;
 
 /****************************************************************************
- Free a file_list structure.
+  Free a file_list structure
 ****************************************************************************/
 
 static void free_file_list (struct file_list * list)
 {
 	struct file_list *tmp;
 	
-	while (list) {
+	while (list)
+	{
 		tmp = list;
 		DLIST_REMOVE(list, list);
 		SAFE_FREE(tmp->file_path);
@@ -1247,10 +1317,9 @@ static void free_file_list (struct file_list * list)
 }
 
 /****************************************************************************
- Seek in a directory/file list until you get something that doesn't start with
- the specified name.
-****************************************************************************/
-
+  seek in a directory/file list until you get something that doesn't start with
+  the specified name
+  ****************************************************************************/
 static BOOL seek_list(struct file_list *list, char *name)
 {
 	while (list) {
@@ -1265,9 +1334,8 @@ static BOOL seek_list(struct file_list *list, char *name)
 }
 
 /****************************************************************************
- Set the file selection mask.
-****************************************************************************/
-
+  set the file selection mask
+  ****************************************************************************/
 static int cmd_select(void)
 {
 	pstrcpy(fileselection,"");
@@ -1280,7 +1348,6 @@ static int cmd_select(void)
   Recursive file matching function act as find
   match must be always set to True when calling this function
 ****************************************************************************/
-
 static int file_find(struct file_list **list, const char *directory, 
 		      const char *expression, BOOL match)
 {
@@ -1293,14 +1360,11 @@ static int file_find(struct file_list **list, const char *directory,
 	const char *dname;
 
         dir = opendir(directory);
-	if (!dir)
-		return -1;
+	if (!dir) return -1;
 	
         while ((dname = readdirname(dir))) {
-		if (!strcmp("..", dname))
-			continue;
-		if (!strcmp(".", dname))
-			continue;
+		if (!strcmp("..", dname)) continue;
+		if (!strcmp(".", dname)) continue;
 		
 		if (asprintf(&path, "%s/%s", directory, dname) <= 0) {
 			continue;
@@ -1344,12 +1408,11 @@ static int file_find(struct file_list **list, const char *directory,
 }
 
 /****************************************************************************
- mput some files.
-****************************************************************************/
-
+  mput some files
+  ****************************************************************************/
 static int cmd_mput(void)
 {
-	pstring buf;
+	fstring buf;
 	char *p=buf;
 	
 	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
@@ -1392,8 +1455,8 @@ static int cmd_mput(void)
 	      				SAFE_FREE(rname);
 					if(asprintf(&rname, "%s%s", cur_dir, lname) < 0) break;
 					dos_format(rname);
-					if (!cli_chkpath(cli, rname) && 
-					    !do_mkdir(rname)) {
+					if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, rname)) && 
+					    NT_STATUS_IS_ERR(do_mkdir(rname))) {
 						DEBUG (0, ("Unable to make dir, skipping..."));
 						/* Skip the directory */
 						lname[strlen(lname)-1] = '/';
@@ -1426,28 +1489,23 @@ static int cmd_mput(void)
 	return 0;
 }
 
-/****************************************************************************
- Cancel a print job.
-****************************************************************************/
 
+/****************************************************************************
+  cancel a print job
+  ****************************************************************************/
 static int do_cancel(int job)
 {
-	if (cli_printjob_del(cli, job)) {
-		d_printf("Job %d cancelled\n",job);
-		return 0;
-	} else {
-		d_printf("Error cancelling job %d : %s\n",job,cli_errstr(cli));
-		return 1;
-	}
+	d_printf("REWRITE: print job cancel not implemented\n");
+	return 1;
 }
 
-/****************************************************************************
- Cancel a print job.
-****************************************************************************/
 
+/****************************************************************************
+  cancel a print job
+  ****************************************************************************/
 static int cmd_cancel(void)
 {
-	pstring buf;
+	fstring buf;
 	int job; 
 
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
@@ -1462,10 +1520,10 @@ static int cmd_cancel(void)
 	return 0;
 }
 
-/****************************************************************************
- Print a file.
-****************************************************************************/
 
+/****************************************************************************
+  print a file
+  ****************************************************************************/
 static int cmd_print(void)
 {
 	pstring lname;
@@ -1480,40 +1538,30 @@ static int cmd_print(void)
 	pstrcpy(rname,lname);
 	p = strrchr_m(rname,'/');
 	if (p) {
-		slprintf(rname, sizeof(rname)-1, "%s-%d", p+1, (int)sys_getpid());
+		slprintf(rname, sizeof(rname)-1, "%s-%d", p+1, (int)getpid());
 	}
 
 	if (strequal(lname,"-")) {
-		slprintf(rname, sizeof(rname)-1, "stdin-%d", (int)sys_getpid());
+		slprintf(rname, sizeof(rname)-1, "stdin-%d", (int)getpid());
 	}
 
 	return do_put(rname, lname, False);
 }
 
-/****************************************************************************
- Show a print queue entry.
-****************************************************************************/
-
-static void queue_fn(struct print_job_info *p)
-{
-	d_printf("%-6d   %-9d    %s\n", (int)p->id, (int)p->size, p->name);
-}
 
 /****************************************************************************
- Show a print queue.
+ show a print queue
 ****************************************************************************/
-
 static int cmd_queue(void)
 {
-	cli_print_queue(cli, queue_fn);
+	d_printf("REWRITE: print job queue not implemented\n");
 	
 	return 0;
 }
 
 /****************************************************************************
- Delete some files.
+delete some files
 ****************************************************************************/
-
 static void do_del(file_info *finfo)
 {
 	pstring mask;
@@ -1521,26 +1569,25 @@ static void do_del(file_info *finfo)
 	pstrcpy(mask,cur_dir);
 	pstrcat(mask,finfo->name);
 
-	if (finfo->mode & aDIR) 
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) 
 		return;
 
-	if (!cli_unlink(cli, mask)) {
-		d_printf("%s deleting remote file %s\n",cli_errstr(cli),mask);
+	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, mask))) {
+		d_printf("%s deleting remote file %s\n",cli_errstr(cli->tree),mask);
 	}
 }
 
 /****************************************************************************
- Delete some files.
+delete some files
 ****************************************************************************/
-
 static int cmd_del(void)
 {
 	pstring mask;
-	pstring buf;
-	uint16 attribute = aSYSTEM | aHIDDEN;
+	fstring buf;
+	uint16 attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
 	if (recurse)
-		attribute |= aDIR;
+		attribute |= FILE_ATTRIBUTE_DIRECTORY;
 	
 	pstrcpy(mask,cur_dir);
 	
@@ -1555,13 +1602,197 @@ static int cmd_del(void)
 	return 0;
 }
 
+
+/****************************************************************************
+delete a whole directory tree
+****************************************************************************/
+static int cmd_deltree(void)
+{
+	pstring dname;
+	fstring buf;
+	int ret;
+
+	pstrcpy(dname,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("deltree <dirname>\n");
+		return 1;
+	}
+	pstrcat(dname,buf);
+
+	ret = cli_deltree(cli->tree, dname);
+
+	if (ret == -1) {
+		printf("Failed to delete tree %s - %s\n", dname, cli_errstr(cli->tree));
+		return -1;
+	}
+
+	printf("Deleted %d files in %s\n", ret, dname);
+	
+	return 0;
+}
+
+
+/****************************************************************************
+show as much information as possible about a file
+****************************************************************************/
+static int cmd_allinfo(void)
+{
+	pstring fname;
+	fstring buf;
+	int ret = 0;
+	TALLOC_CTX *mem_ctx;
+	union smb_fileinfo finfo;
+	NTSTATUS status;
+
+	pstrcpy(fname,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("allinfo <filename>\n");
+		return 1;
+	}
+	pstrcat(fname,buf);
+
+	mem_ctx = talloc_init(fname);
+
+	/* first a ALL_INFO QPATHINFO */
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.fname = fname;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s - %s\n", fname, nt_errstr(status));
+		ret = 1;
+		goto done;
+	}
+
+	d_printf("\tcreate_time:    %s\n", nt_time_string(mem_ctx, &finfo.all_info.out.create_time));
+	d_printf("\taccess_time:    %s\n", nt_time_string(mem_ctx, &finfo.all_info.out.access_time));
+	d_printf("\twrite_time:     %s\n", nt_time_string(mem_ctx, &finfo.all_info.out.write_time));
+	d_printf("\tchange_time:    %s\n", nt_time_string(mem_ctx, &finfo.all_info.out.change_time));
+	d_printf("\tattrib:         0x%x\n", finfo.all_info.out.attrib);
+	d_printf("\talloc_size:     %lu\n", (unsigned long)finfo.all_info.out.alloc_size);
+	d_printf("\tsize:           %lu\n", (unsigned long)finfo.all_info.out.size);
+	d_printf("\tnlink:          %u\n", finfo.all_info.out.nlink);
+	d_printf("\tdelete_pending: %u\n", finfo.all_info.out.delete_pending);
+	d_printf("\tdirectory:      %u\n", finfo.all_info.out.directory);
+	d_printf("\tea_size:        %u\n", finfo.all_info.out.ea_size);
+	d_printf("\tfname:          '%s'\n", finfo.all_info.out.fname.s);
+
+	/* 8.3 name if any */
+	finfo.generic.level = RAW_FILEINFO_ALT_NAME_INFO;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	if (NT_STATUS_IS_OK(status)) {
+		d_printf("\talt_name:       %s\n", finfo.alt_name_info.out.fname.s);
+	}
+
+	/* file_id if available */
+	finfo.generic.level = RAW_FILEINFO_INTERNAL_INFORMATION;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	if (NT_STATUS_IS_OK(status)) {
+		d_printf("\tfile_id         %.0f\n", 
+			 (double)finfo.internal_information.out.file_id);
+	}
+
+	/* the EAs, if any */
+	finfo.generic.level = RAW_FILEINFO_ALL_EAS;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	if (NT_STATUS_IS_OK(status)) {
+		int i;
+		for (i=0;i<finfo.all_eas.out.num_eas;i++) {
+			d_printf("\tEA[%d] flags=%d %s=%*.*s\n", i,
+				 finfo.all_eas.out.eas[i].flags,
+				 finfo.all_eas.out.eas[i].name.s,
+				 finfo.all_eas.out.eas[i].value.length,
+				 finfo.all_eas.out.eas[i].value.length,
+				 finfo.all_eas.out.eas[i].value.data);
+		}
+	}
+
+	/* streams, if available */
+	finfo.generic.level = RAW_FILEINFO_STREAM_INFO;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	if (NT_STATUS_IS_OK(status)) {
+		int i;
+		for (i=0;i<finfo.stream_info.out.num_streams;i++) {
+			d_printf("\tstream %d:\n", i);
+			d_printf("\t\tsize       %ld\n", 
+				 (long)finfo.stream_info.out.streams[i].size);
+			d_printf("\t\talloc size %ld\n", 
+				 (long)finfo.stream_info.out.streams[i].alloc_size);
+			d_printf("\t\tname       %s\n", finfo.stream_info.out.streams[i].stream_name.s);
+		}
+	}	
+
+	/* dev/inode if available */
+	finfo.generic.level = RAW_FILEINFO_COMPRESSION_INFORMATION;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	if (NT_STATUS_IS_OK(status)) {
+		d_printf("\tcompressed size %ld\n", (long)finfo.compression_info.out.compressed_size);
+		d_printf("\tformat          %ld\n", (long)finfo.compression_info.out.format);
+		d_printf("\tunit_shift      %ld\n", (long)finfo.compression_info.out.unit_shift);
+		d_printf("\tchunk_shift     %ld\n", (long)finfo.compression_info.out.chunk_shift);
+		d_printf("\tcluster_shift   %ld\n", (long)finfo.compression_info.out.cluster_shift);
+	}
+
+	talloc_destroy(mem_ctx);
+
+done:
+	return ret;
+}
+
+
+/****************************************************************************
+show any ACL on a file
+****************************************************************************/
+static int cmd_acl(void)
+{
+	pstring fname;
+	fstring buf;
+	int ret = 0;
+	TALLOC_CTX *mem_ctx;
+	struct smb_query_secdesc query;
+	NTSTATUS status;
+	int fnum;
+
+	pstrcpy(fname,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("acl <filename>\n");
+		return 1;
+	}
+	pstrcat(fname,buf);
+
+	fnum = cli_open(cli->tree, fname, O_RDONLY, DENY_NONE);
+	if (fnum == -1) {
+		d_printf("%s - %s\n", fname, cli_errstr(cli->tree));
+		return -1;
+	}
+
+	mem_ctx = talloc_init(fname);
+
+	query.in.fnum = fnum;
+	query.in.secinfo_flags = 0x7;
+
+	status = smb_raw_query_secdesc(cli->tree, mem_ctx, &query);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s - %s\n", fname, nt_errstr(status));
+		ret = 1;
+		goto done;
+	}
+
+	talloc_destroy(mem_ctx);
+
+done:
+	return ret;
+}
+
+
 /****************************************************************************
 ****************************************************************************/
-
 static int cmd_open(void)
 {
 	pstring mask;
-	pstring buf;
+	fstring buf;
 	
 	pstrcpy(mask,cur_dir);
 	
@@ -1571,20 +1802,19 @@ static int cmd_open(void)
 	}
 	pstrcat(mask,buf);
 
-	cli_open(cli, mask, O_RDWR, DENY_ALL);
+	cli_open(cli->tree, mask, O_RDWR, DENY_ALL);
 
 	return 0;
 }
 
 
 /****************************************************************************
- Remove a directory.
+remove a directory
 ****************************************************************************/
-
 static int cmd_rmdir(void)
 {
 	pstring mask;
-	pstring buf;
+	fstring buf;
   
 	pstrcpy(mask,cur_dir);
 	
@@ -1594,9 +1824,9 @@ static int cmd_rmdir(void)
 	}
 	pstrcat(mask,buf);
 
-	if (!cli_rmdir(cli, mask)) {
+	if (NT_STATUS_IS_ERR(cli_rmdir(cli->tree, mask))) {
 		d_printf("%s removing remote directory file %s\n",
-			 cli_errstr(cli),mask);
+			 cli_errstr(cli->tree),mask);
 	}
 	
 	return 0;
@@ -1605,13 +1835,12 @@ static int cmd_rmdir(void)
 /****************************************************************************
  UNIX hardlink.
 ****************************************************************************/
-
 static int cmd_link(void)
 {
 	pstring src,dest;
-	pstring buf,buf2;
+	fstring buf,buf2;
   
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+	if (!(cli->transport->negotiate.capabilities & CAP_UNIX)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
 		return 1;
 	}
@@ -1619,8 +1848,8 @@ static int cmd_link(void)
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
   
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
 		d_printf("link <src> <dest>\n");
 		return 1;
 	}
@@ -1628,8 +1857,8 @@ static int cmd_link(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_unix_hardlink(cli, src, dest)) {
-		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli), src, dest);
+	if (NT_STATUS_IS_ERR(cli_unix_hardlink(cli->tree, src, dest))) {
+		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli->tree), src, dest);
 		return 1;
 	}  
 
@@ -1643,9 +1872,9 @@ static int cmd_link(void)
 static int cmd_symlink(void)
 {
 	pstring src,dest;
-	pstring buf,buf2;
+	fstring buf,buf2;
   
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+	if (!(cli->transport->negotiate.capabilities & CAP_UNIX)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
 		return 1;
 	}
@@ -1653,8 +1882,8 @@ static int cmd_symlink(void)
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
 		d_printf("symlink <src> <dest>\n");
 		return 1;
 	}
@@ -1662,9 +1891,9 @@ static int cmd_symlink(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_unix_symlink(cli, src, dest)) {
+	if (NT_STATUS_IS_ERR(cli_unix_symlink(cli->tree, src, dest))) {
 		d_printf("%s symlinking files (%s -> %s)\n",
-			cli_errstr(cli), src, dest);
+			cli_errstr(cli->tree), src, dest);
 		return 1;
 	} 
 
@@ -1679,17 +1908,17 @@ static int cmd_chmod(void)
 {
 	pstring src;
 	mode_t mode;
-	pstring buf, buf2;
+	fstring buf, buf2;
   
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+	if (!(cli->transport->negotiate.capabilities & CAP_UNIX)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
 		return 1;
 	}
 
 	pstrcpy(src,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
 		d_printf("chmod mode file\n");
 		return 1;
 	}
@@ -1697,9 +1926,9 @@ static int cmd_chmod(void)
 	mode = (mode_t)strtol(buf, NULL, 8);
 	pstrcat(src,buf2);
 
-	if (!cli_unix_chmod(cli, src, mode)) {
+	if (NT_STATUS_IS_ERR(cli_unix_chmod(cli->tree, src, mode))) {
 		d_printf("%s chmod file %s 0%o\n",
-			cli_errstr(cli), src, (unsigned int)mode);
+			cli_errstr(cli->tree), src, (unsigned int)mode);
 		return 1;
 	} 
 
@@ -1715,18 +1944,18 @@ static int cmd_chown(void)
 	pstring src;
 	uid_t uid;
 	gid_t gid;
-	pstring buf, buf2, buf3;
+	fstring buf, buf2, buf3;
   
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+	if (!(cli->transport->negotiate.capabilities & CAP_UNIX)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
 		return 1;
 	}
 
 	pstrcpy(src,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2)) ||
-	    !next_token_nr(NULL,buf3,NULL, sizeof(buf3))) {
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2)) ||
+	    !next_token(NULL,buf3,NULL, sizeof(buf3))) {
 		d_printf("chown uid gid file\n");
 		return 1;
 	}
@@ -1735,9 +1964,9 @@ static int cmd_chown(void)
 	gid = (gid_t)atoi(buf2);
 	pstrcat(src,buf3);
 
-	if (!cli_unix_chown(cli, src, uid, gid)) {
+	if (NT_STATUS_IS_ERR(cli_unix_chown(cli->tree, src, uid, gid))) {
 		d_printf("%s chown file %s uid=%d, gid=%d\n",
-			cli_errstr(cli), src, (int)uid, (int)gid);
+			cli_errstr(cli->tree), src, (int)uid, (int)gid);
 		return 1;
 	} 
 
@@ -1745,13 +1974,12 @@ static int cmd_chown(void)
 }
 
 /****************************************************************************
- Rename some file.
+rename some files
 ****************************************************************************/
-
 static int cmd_rename(void)
 {
 	pstring src,dest;
-	pstring buf,buf2;
+	fstring buf,buf2;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
@@ -1765,47 +1993,18 @@ static int cmd_rename(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_rename(cli, src, dest)) {
-		d_printf("%s renaming files\n",cli_errstr(cli));
+	if (NT_STATUS_IS_ERR(cli_rename(cli->tree, src, dest))) {
+		d_printf("%s renaming files\n",cli_errstr(cli->tree));
 		return 1;
 	}
 	
 	return 0;
 }
 
-/****************************************************************************
- Hard link files using the NT call.
-****************************************************************************/
-
-static int cmd_hardlink(void)
-{
-	pstring src,dest;
-	pstring buf,buf2;
-  
-	pstrcpy(src,cur_dir);
-	pstrcpy(dest,cur_dir);
-	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
-		d_printf("hardlink <src> <dest>\n");
-		return 1;
-	}
-
-	pstrcat(src,buf);
-	pstrcat(dest,buf2);
-
-	if (!cli_nt_hardlink(cli, src, dest)) {
-		d_printf("%s doing an NT hard link of files\n",cli_errstr(cli));
-		return 1;
-	}
-	
-	return 0;
-}
 
 /****************************************************************************
- Toggle the prompt flag.
+toggle the prompt flag
 ****************************************************************************/
-
 static int cmd_prompt(void)
 {
 	prompt = !prompt;
@@ -1814,13 +2013,13 @@ static int cmd_prompt(void)
 	return 1;
 }
 
-/****************************************************************************
- Set the newer than time.
-****************************************************************************/
 
+/****************************************************************************
+set the newer than time
+****************************************************************************/
 static int cmd_newer(void)
 {
-	pstring buf;
+	fstring buf;
 	BOOL ok;
 	SMB_STRUCT_STAT sbuf;
 
@@ -1842,12 +2041,11 @@ static int cmd_newer(void)
 }
 
 /****************************************************************************
- Set the archive level.
+set the archive level
 ****************************************************************************/
-
 static int cmd_archive(void)
 {
-	pstring buf;
+	fstring buf;
 
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		archive_level = atoi(buf);
@@ -1858,9 +2056,8 @@ static int cmd_archive(void)
 }
 
 /****************************************************************************
- Toggle the lowercaseflag.
+toggle the lowercaseflag
 ****************************************************************************/
-
 static int cmd_lowercase(void)
 {
 	lowercase = !lowercase;
@@ -1869,10 +2066,12 @@ static int cmd_lowercase(void)
 	return 0;
 }
 
-/****************************************************************************
- Toggle the recurse flag.
-****************************************************************************/
 
+
+
+/****************************************************************************
+toggle the recurse flag
+****************************************************************************/
 static int cmd_recurse(void)
 {
 	recurse = !recurse;
@@ -1882,9 +2081,8 @@ static int cmd_recurse(void)
 }
 
 /****************************************************************************
- Toggle the translate flag.
+toggle the translate flag
 ****************************************************************************/
-
 static int cmd_translate(void)
 {
 	translation = !translation;
@@ -1894,10 +2092,10 @@ static int cmd_translate(void)
 	return 0;
 }
 
-/****************************************************************************
- Do a printmode command.
-****************************************************************************/
 
+/****************************************************************************
+do a printmode command
+****************************************************************************/
 static int cmd_printmode(void)
 {
 	fstring buf;
@@ -1914,7 +2112,8 @@ static int cmd_printmode(void)
 		}
 	}
 
-	switch(printmode) {
+	switch(printmode)
+		{
 		case 0: 
 			fstrcpy(mode,"text");
 			break;
@@ -1924,7 +2123,7 @@ static int cmd_printmode(void)
 		default: 
 			slprintf(mode,sizeof(mode)-1,"%d",printmode);
 			break;
-	}
+		}
 	
 	DEBUG(2,("the printmode is now %s\n",mode));
 
@@ -1932,12 +2131,11 @@ static int cmd_printmode(void)
 }
 
 /****************************************************************************
- Do the lcd command.
+ do the lcd command
  ****************************************************************************/
-
 static int cmd_lcd(void)
 {
-	pstring buf;
+	fstring buf;
 	pstring d;
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
@@ -1948,9 +2146,8 @@ static int cmd_lcd(void)
 }
 
 /****************************************************************************
- Get a file restarting at end of local file.
+ get a file restarting at end of local file
  ****************************************************************************/
-
 static int cmd_reget(void)
 {
 	pstring local_name;
@@ -1975,14 +2172,13 @@ static int cmd_reget(void)
 }
 
 /****************************************************************************
- Put a file restarting at end of local file.
+ put a file restarting at end of local file
  ****************************************************************************/
-
 static int cmd_reput(void)
 {
 	pstring local_name;
 	pstring remote_name;
-	pstring buf;
+	fstring buf;
 	char *p = buf;
 	SMB_STRUCT_STAT st;
 	
@@ -2010,151 +2206,24 @@ static int cmd_reput(void)
 	return do_put(remote_name, local_name, True);
 }
 
-/****************************************************************************
- List a share name.
- ****************************************************************************/
-
-static void browse_fn(const char *name, uint32 m, 
-                      const char *comment, void *state)
-{
-        fstring typestr;
-
-        *typestr=0;
-
-        switch (m)
-        {
-          case STYPE_DISKTREE:
-            fstrcpy(typestr,"Disk"); break;
-          case STYPE_PRINTQ:
-            fstrcpy(typestr,"Printer"); break;
-          case STYPE_DEVICE:
-            fstrcpy(typestr,"Device"); break;
-          case STYPE_IPC:
-            fstrcpy(typestr,"IPC"); break;
-        }
-	/* FIXME: If the remote machine returns non-ascii characters
-	   in any of these fields, they can corrupt the output.  We
-	   should remove them. */
-	if (!grepable) {
-		d_printf("\t%-15s %-10.10s%s\n",
-               		name,typestr,comment);
-	} else {
-		d_printf ("%s|%s|%s\n",typestr,name,comment);
-	}
-}
 
 /****************************************************************************
- Try and browse available connections on a host.
+try and browse available connections on a host
 ****************************************************************************/
-
 static BOOL browse_host(BOOL sort)
 {
-	int ret;
-	if (!grepable) {
-	        d_printf("\n\tSharename       Type      Comment\n");
-	        d_printf("\t---------       ----      -------\n");
-	}
+	d_printf("REWRITE: host browsing not implemented\n");
 
-	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1)
-		d_printf("Error returning browse list: %s\n", cli_errstr(cli));
-
-	return (ret != -1);
+	return False;
 }
 
 /****************************************************************************
- List a server name.
+try and browse available connections on a host
 ****************************************************************************/
-
-static void server_fn(const char *name, uint32 m, 
-                      const char *comment, void *state)
+static BOOL list_servers(char *wk_grp)
 {
-	
-	if (!grepable){
-		d_printf("\t%-16s     %s\n", name, comment);
-	} else {
-		d_printf("%s|%s|%s\n",(char *)state, name, comment);
-	}
-}
-
-/****************************************************************************
- Try and browse available connections on a host.
-****************************************************************************/
-
-static BOOL list_servers(const char *wk_grp)
-{
-	if (!cli->server_domain)
-		return False;
-
-	if (!grepable) {
-        	d_printf("\n\tServer               Comment\n");
-        	d_printf("\t---------            -------\n");
-	};
-	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn,
-			  "Server");
-
-	if (!grepable) {
-	        d_printf("\n\tWorkgroup            Master\n");
-	        d_printf("\t---------            -------\n");
-	}; 
-
-	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM,
-			  server_fn, "Workgroup");
-	return True;
-}
-
-/****************************************************************************
- Print or set current VUID
-****************************************************************************/
-
-static int cmd_vuid(void)
-{
-	fstring buf;
-	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("Current VUID is %d\n", cli->vuid);
-		return 0;
-	}
-
-	cli->vuid = atoi(buf);
-	return 0;
-}
-
-/****************************************************************************
- Setup a new VUID, by issuing a session setup
-****************************************************************************/
-
-static int cmd_logon(void)
-{
-	pstring l_username, l_password;
-	pstring buf,buf2;
-  
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		d_printf("logon <username> [<password>]\n");
-		return 0;
-	}
-
-	pstrcpy(l_username, buf);
-
-	if (!next_token_nr(NULL,buf2,NULL,sizeof(buf))) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			pstrcpy(l_password, pass);
-			got_pass = 1;
-		}
-	} else {
-		pstrcpy(l_password, buf2);
-	}
-
-	if (!cli_session_setup(cli, l_username, 
-			       l_password, strlen(l_password),
-			       l_password, strlen(l_password),
-			       lp_workgroup())) {
-		d_printf("session setup failed: %s\n", cli_errstr(cli));
-		return -1;
-	}
-
-	d_printf("Current VUID is %d\n", cli->vuid);
-	return 0;
+	d_printf("REWRITE: list servers not implemented\n");
+	return False;
 }
 
 /* Some constants for completing filename arguments */
@@ -2174,9 +2243,12 @@ static struct
   int (*fn)(void);
   const char *description;
   char compl_args[2];      /* Completion argument info */
-} commands[] = {
+} commands[] = 
+{
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
+  {"acl",cmd_acl,"<file> show file ACL",{COMPL_NONE,COMPL_NONE}},
+  {"allinfo",cmd_allinfo,"<file> show all possible info about a file",{COMPL_NONE,COMPL_NONE}},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
   {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
   {"cancel",cmd_cancel,"<jobid> cancel a print queue entry",{COMPL_NONE,COMPL_NONE}},
@@ -2184,11 +2256,11 @@ static struct
   {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
   {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_REMOTE}},
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"deltree",cmd_deltree,"<dir> delete a whole directory tree",{COMPL_REMOTE,COMPL_NONE}},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
-  {"hardlink",cmd_hardlink,"<src> <dest> create a Windows hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
@@ -2223,20 +2295,18 @@ static struct
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
-  {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
-  {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
   
   /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
   {NULL,NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
 
-/*******************************************************************
- Lookup a command string in the list of commands, including 
- abbreviations.
-******************************************************************/
 
-static int process_tok(pstring tok)
+/*******************************************************************
+  lookup a command string in the list of commands, including 
+  abbreviations
+  ******************************************************************/
+static int process_tok(fstring tok)
 {
 	int i = 0, matches = 0;
 	int cmd=0;
@@ -2263,13 +2333,12 @@ static int process_tok(pstring tok)
 }
 
 /****************************************************************************
- Help.
+help
 ****************************************************************************/
-
 static int cmd_help(void)
 {
 	int i=0,j;
-	pstring buf;
+	fstring buf;
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		if ((i = process_tok(buf)) >= 0)
@@ -2287,9 +2356,8 @@ static int cmd_help(void)
 }
 
 /****************************************************************************
- Process a -c command string.
+process a -c command string
 ****************************************************************************/
-
 static int process_command_string(char *cmd)
 {
 	pstring line;
@@ -2306,7 +2374,7 @@ static int process_command_string(char *cmd)
 	
 	while (cmd[0] != '\0')    {
 		char *p;
-		pstring tok;
+		fstring tok;
 		int i;
 		
 		if ((p = strchr_m(cmd, ';')) == 0) {
@@ -2314,8 +2382,7 @@ static int process_command_string(char *cmd)
 			line[1000] = '\0';
 			cmd += strlen(cmd);
 		} else {
-			if (p - cmd > 999)
-				p = cmd + 999;
+			if (p - cmd > 999) p = cmd + 999;
 			strncpy(line, cmd, p - cmd);
 			line[p - cmd] = '\0';
 			cmd = p + 1;
@@ -2352,7 +2419,7 @@ static void completion_remote_filter(file_info *f, const char *mask, void *state
 	completion_remote_t *info = (completion_remote_t *)state;
 
 	if ((info->count < MAX_COMPLETIONS - 1) && (strncmp(info->text, f->name, info->len) == 0) && (strcmp(f->name, ".") != 0) && (strcmp(f->name, "..") != 0)) {
-		if ((info->dirmask[0] == 0) && !(f->mode & aDIR))
+		if ((info->dirmask[0] == 0) && !(f->mode & FILE_ATTRIBUTE_DIRECTORY))
 			info->matches[info->count] = strdup(f->name);
 		else {
 			pstring tmp;
@@ -2362,13 +2429,13 @@ static void completion_remote_filter(file_info *f, const char *mask, void *state
 			else
 				tmp[0] = 0;
 			pstrcat(tmp, f->name);
-			if (f->mode & aDIR)
+			if (f->mode & FILE_ATTRIBUTE_DIRECTORY)
 				pstrcat(tmp, "/");
 			info->matches[info->count] = strdup(tmp);
 		}
 		if (info->matches[info->count] == NULL)
 			return;
-		if (f->mode & aDIR)
+		if (f->mode & FILE_ATTRIBUTE_DIRECTORY)
 			smb_readline_ca_char(0);
 
 		if (info->count == 1)
@@ -2386,12 +2453,10 @@ static char **remote_completion(const char *text, int len)
 	int i;
 	completion_remote_t info = { "", NULL, 1, 0, NULL, 0 };
 
-	/* can't have non-static intialisation on Sun CC, so do it
-	   at run time here */
 	info.samelen = len;
 	info.text = text;
 	info.len = len;
-		
+ 
 	if (len >= PATH_MAX)
 		return(NULL);
 
@@ -2408,11 +2473,13 @@ static char **remote_completion(const char *text, int len)
 	if (i > 0) {
 		strncpy(info.dirmask, text, i+1);
 		info.dirmask[i+1] = 0;
-		pstr_sprintf(dirmask, "%s%*s*", cur_dir, i-1, text);
+		snprintf(dirmask, sizeof(dirmask), "%s%*s*", cur_dir, i-1, text);
 	} else
-		pstr_sprintf(dirmask, "%s*", cur_dir);
+		snprintf(dirmask, sizeof(dirmask), "%s*", cur_dir);
 
-	if (cli_list(cli, dirmask, aDIR | aSYSTEM | aHIDDEN, completion_remote_filter, &info) < 0)
+	if (cli_list(cli->tree, dirmask, 
+		     FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN, 
+		     completion_remote_filter, &info) < 0)
 		goto cleanup;
 
 	if (info.count == 2)
@@ -2510,18 +2577,18 @@ static char **completion_fn(const char *text, int start, int end)
 		return matches;
 
 cleanup:
-		for (i = 0; i < count; i++)
+		while (i >= 0) {
 			free(matches[i]);
-
+			i--;
+		}
 		free(matches);
 		return NULL;
 	}
 }
 
 /****************************************************************************
- Make sure we swallow keepalives during idle time.
+make sure we swallow keepalives during idle time
 ****************************************************************************/
-
 static void readline_callback(void)
 {
 	fd_set fds;
@@ -2531,46 +2598,49 @@ static void readline_callback(void)
 
 	t = time(NULL);
 
-	if (t - last_t < 5)
-		return;
+	if (t - last_t < 5) return;
 
 	last_t = t;
 
  again:
-
-	if (cli->fd == -1)
+	if (cli->transport->socket->fd == -1)
 		return;
 
 	FD_ZERO(&fds);
-	FD_SET(cli->fd,&fds);
+	FD_SET(cli->transport->socket->fd, &fds);
 
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
-	sys_select_intr(cli->fd+1,&fds,NULL,NULL,&timeout);
+	sys_select_intr(cli->transport->socket->fd+1,&fds,NULL,NULL,&timeout);
       		
-	/* We deliberately use receive_smb instead of
+	/* We deliberately use cli_swallow_keepalives instead of
 	   client_receive_smb as we want to receive
 	   session keepalives and then drop them here.
 	*/
-	if (FD_ISSET(cli->fd,&fds)) {
-		receive_smb(cli->fd,cli->inbuf,0);
+	if (FD_ISSET(cli->transport->socket->fd, &fds)) {
+		if (!cli_request_receive_next(cli->transport)) {
+			d_printf("Lost connection to server\n");
+			exit(1);
+		}
 		goto again;
 	}
-      
-	cli_chkpath(cli, "\\");
+
+	if (cli->tree) {
+		cli_chkpath(cli->tree, "\\");
+	}
 }
 
-/****************************************************************************
- Process commands on stdin.
-****************************************************************************/
 
+/****************************************************************************
+process commands on stdin
+****************************************************************************/
 static void process_stdin(void)
 {
 	const char *ptr;
 
 	while (1) {
-		pstring tok;
-		pstring the_prompt;
+		fstring tok;
+		fstring the_prompt;
 		char *cline;
 		pstring line;
 		int i;
@@ -2603,21 +2673,21 @@ static void process_stdin(void)
 	}
 }
 
-/***************************************************** 
- Return a connection to a server.
-*******************************************************/
 
+/***************************************************** 
+return a connection to a server
+*******************************************************/
 static struct cli_state *do_connect(const char *server, const char *share)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
 	const char *server_n;
 	struct in_addr ip;
-	pstring servicename;
+	fstring servicename;
 	char *sharename;
 	
 	/* make a copy so we don't modify the global string 'service' */
-	pstrcpy(servicename, share);
+	fstrcpy(servicename, share);
 	sharename = servicename;
 	if (*sharename == '\\') {
 		server = sharename+2;
@@ -2627,11 +2697,13 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		sharename++;
 	}
 
+	asprintf(&sharename, "\\\\%s\\%s", server, sharename);
+
 	server_n = server;
 	
 	zero_ip(&ip);
 
-	make_nmb_name(&calling, global_myname(), 0x0);
+	make_nmb_name(&calling, lp_netbios_name(), 0x0);
 	make_nmb_name(&called , server, name_type);
 
  again:
@@ -2639,21 +2711,15 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) != port) ||
-	    !cli_connect(c, server_n, &ip)) {
+	if (!(c=cli_state_init()) || !cli_socket_connect(c, server_n, &ip)) {
 		d_printf("Connection to %s failed\n", server_n);
 		return NULL;
 	}
 
-	c->protocol = max_protocol;
-	c->use_kerberos = use_kerberos;
-	cli_setup_signing_state(c, cmdline_auth_info.signing_state);
-		
-
-	if (!cli_session_request(c, &calling, &called)) {
+	if (!cli_transport_establish(c, &calling, &called)) {
 		char *p;
 		d_printf("session request to %s failed (%s)\n", 
-			 called.name, cli_errstr(c));
+			 called.name, cli_errstr(c->tree));
 		cli_shutdown(c);
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
@@ -2668,49 +2734,35 @@ static struct cli_state *do_connect(const char *server, const char *share)
 
 	DEBUG(4,(" session request ok\n"));
 
-	if (!cli_negprot(c)) {
+	if (NT_STATUS_IS_ERR(cli_negprot(c))) {
 		d_printf("protocol negotiation failed\n");
 		cli_shutdown(c);
 		return NULL;
 	}
 
 	if (!got_pass) {
-		char *pass = getpass("Password: ");
+		const char *pass = getpass("Password: ");
 		if (pass) {
 			pstrcpy(password, pass);
-			got_pass = 1;
 		}
 	}
 
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       lp_workgroup())) {
+	if (NT_STATUS_IS_ERR(cli_session_setup(c, username, password, 
+					       lp_workgroup()))) {
 		/* if a password was not supplied then try again with a null username */
 		if (password[0] || !username[0] || use_kerberos ||
-		    !cli_session_setup(c, "", "", 0, "", 0, lp_workgroup())) { 
-			d_printf("session setup failed: %s\n", cli_errstr(c));
-			if (NT_STATUS_V(cli_nt_error(c)) == 
-			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
-				d_printf("did you forget to run kinit?\n");
+		    NT_STATUS_IS_ERR(cli_session_setup(c, "", "", lp_workgroup()))) { 
+			d_printf("session setup failed: %s\n", cli_errstr(c->tree));
 			cli_shutdown(c);
 			return NULL;
 		}
 		d_printf("Anonymous login successful\n");
 	}
 
-	if (*c->server_domain) {
-		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			c->server_domain,c->server_os,c->server_type));
-	} else if (*c->server_os || *c->server_type){
-		DEBUG(1,("OS=[%s] Server=[%s]\n",
-			 c->server_os,c->server_type));
-	}		
 	DEBUG(4,(" session setup ok\n"));
 
-	if (!cli_send_tconX(c, sharename, "?????",
-			    password, strlen(password)+1)) {
-		d_printf("tree connect failed: %s\n", cli_errstr(c));
+	if (NT_STATUS_IS_ERR(cli_send_tconX(c, sharename, "?????", password))) {
+		d_printf("tree connect failed: %s\n", cli_errstr(c->tree));
 		cli_shutdown(c);
 		return NULL;
 	}
@@ -2720,10 +2772,10 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	return c;
 }
 
-/****************************************************************************
- Process commands from the client.
-****************************************************************************/
 
+/****************************************************************************
+  process commands from the client
+****************************************************************************/
 static int process(char *base_directory)
 {
 	int rc = 0;
@@ -2746,9 +2798,8 @@ static int process(char *base_directory)
 }
 
 /****************************************************************************
- Handle a -L query.
+handle a -L query
 ****************************************************************************/
-
 static int do_host_query(char *query_host)
 {
 	cli = do_connect(query_host, "IPC$");
@@ -2756,22 +2807,6 @@ static int do_host_query(char *query_host)
 		return 1;
 
 	browse_host(True);
-
-	if (port != 139) {
-
-		/* Workgroups simply don't make sense over anything
-		   else but port 139... */
-
-		cli_shutdown(cli);
-		port = 139;
-		cli = do_connect(query_host, "IPC$");
-	}
-
-	if (cli == NULL) {
-		d_printf("NetBIOS over TCP disabled -- no workgroup available\n");
-		return 1;
-	}
-
 	list_servers(lp_workgroup());
 
 	cli_shutdown(cli);
@@ -2781,9 +2816,8 @@ static int do_host_query(char *query_host)
 
 
 /****************************************************************************
- Handle a tar operation.
+handle a tar operation
 ****************************************************************************/
-
 static int do_tar_op(char *base_directory)
 {
 	int ret;
@@ -2807,9 +2841,8 @@ static int do_tar_op(char *base_directory)
 }
 
 /****************************************************************************
- Handle a message operation.
+handle a message operation
 ****************************************************************************/
-
 static int do_message_op(void)
 {
 	struct in_addr ip;
@@ -2817,23 +2850,22 @@ static int do_message_op(void)
 	fstring server_name;
 	char name_type_hex[10];
 
-	make_nmb_name(&calling, global_myname(), 0x0);
+	make_nmb_name(&calling, lp_netbios_name(), 0x0);
 	make_nmb_name(&called , desthost, name_type);
 
 	fstrcpy(server_name, desthost);
 	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
 	fstrcat(server_name, name_type_hex);
 
-        zero_ip(&ip);
+	zero_ip(&ip);
 	if (have_ip) ip = dest_ip;
 
-	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) != port) ||
-	    !cli_connect(cli, server_name, &ip)) {
+	if (!(cli=cli_state_init()) || !cli_socket_connect(cli, server_name, &ip)) {
 		d_printf("Connection to %s failed\n", desthost);
 		return 1;
 	}
 
-	if (!cli_session_request(cli, &calling, &called)) {
+	if (!cli_transport_establish(cli, &calling, &called)) {
 		d_printf("session request failed\n");
 		cli_shutdown(cli);
 		return 1;
@@ -2846,29 +2878,46 @@ static int do_message_op(void)
 }
 
 
+/**
+ * Process "-L hostname" option.
+ *
+ * We don't actually do anything yet -- we just stash the name in a
+ * global variable and do the query when all options have been read.
+ **/
+static void remember_query_host(const char *arg,
+				pstring query_host)
+{
+	char *slash;
+	
+	while (*arg == '\\' || *arg == '/')
+		arg++;
+	pstrcpy(query_host, arg);
+	if ((slash = strchr(query_host, '/'))
+	    || (slash = strchr(query_host, '\\'))) {
+		*slash = 0;
+	}
+}
+
+
 /****************************************************************************
   main program
 ****************************************************************************/
-
  int main(int argc,char *argv[])
 {
-	extern BOOL AllowDebugChange;
-	extern BOOL override_logfile;
-	pstring base_directory;
+	fstring base_directory;
 	int opt;
 	pstring query_host;
 	BOOL message = False;
 	extern char tar_type;
 	pstring term_code;
-	static const char *new_name_resolve_order = NULL;
 	poptContext pc;
 	char *p;
 	int rc = 0;
-	fstring new_workgroup;
+	TALLOC_CTX *mem_ctx;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 
-		{ "name-resolve", 'R', POPT_ARG_STRING, &new_name_resolve_order, 'R', "Use these name resolution services only", "NAME-RESOLVE-ORDER" },
+		{ "name-resolve", 'R', POPT_ARG_STRING, NULL, 'R', "Use these name resolution services only", "NAME-RESOLVE-ORDER" },
 		{ "message", 'M', POPT_ARG_STRING, NULL, 'M', "Send message", "HOST" },
 		{ "ip-address", 'I', POPT_ARG_STRING, NULL, 'I', "Use this IP to connect to", "IP" },
 		{ "stderr", 'E', POPT_ARG_NONE, NULL, 'E', "Write messages to stderr instead of stdout" },
@@ -2878,9 +2927,8 @@ static int do_message_op(void)
 		{ "tar", 'T', POPT_ARG_STRING, NULL, 'T', "Command line tar", "<c|x>IXFqgbNan" },
 		{ "directory", 'D', POPT_ARG_STRING, NULL, 'D', "Start from directory", "DIR" },
 		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
-		{ "send-buffer", 'b', POPT_ARG_INT, &io_bufsize, 'b', "Changes the transmit/send buffer", "BYTES" },
+		{ "send-buffer", 'b', POPT_ARG_INT, NULL, 'b', "Changes the transmit/send buffer", "BYTES" },
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
-		{ "grepable", 'g', POPT_ARG_NONE, NULL, 'g', "Produce grepable output" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -2896,18 +2944,19 @@ static int do_message_op(void)
 
 	*query_host = 0;
 	*base_directory = 0;
+
+	setup_logging(argv[0],DEBUG_STDOUT);
+	mem_ctx = talloc_init("client.c/main");
+	if (!mem_ctx) {
+		d_printf("\nclient.c: Not enough memory\n");
+		exit(1);
+	}
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
+			argv[0], dyn_CONFIGFILE);
+	}
 	
-	/* initialize the workgroup name so we can determine whether or 
-	   not it was set by a command line option */
-	   
-	set_global_myworkgroup( "" );
-
-        /* set default debug level to 0 regardless of what smb.conf sets */
-	setup_logging( "smbclient", True );
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
-	dbf = x_stderr;
-	x_setbuf( x_stderr, NULL );
-
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 
 				POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "service <password>");
@@ -2923,91 +2972,51 @@ static int do_message_op(void)
 			 */
 			name_type = 0x03; 
 			pstrcpy(desthost,poptGetOptArg(pc));
-			if( 0 == port )
-				port = 139;
+			if( 0 == port ) port = 139;
  			message = True;
  			break;
 		case 'I':
 			{
-				dest_ip = *interpret_addr2(poptGetOptArg(pc));
+				dest_ip = *interpret_addr2(mem_ctx, poptGetOptArg(pc));
 				if (is_zero_ip(dest_ip))
 					exit(1);
 				have_ip = True;
 			}
 			break;
 		case 'E':
-			dbf = x_stderr;
-			display_set_stderr();
+			setup_logging("client", DEBUG_STDERR);
 			break;
 
 		case 'L':
-			pstrcpy(query_host, poptGetOptArg(pc));
+			remember_query_host(poptGetOptArg(pc), query_host);
 			break;
 		case 't':
 			pstrcpy(term_code, poptGetOptArg(pc));
 			break;
 		case 'm':
-			max_protocol = interpret_protocol(poptGetOptArg(pc), max_protocol);
+			lp_set_cmdline("max protocol", poptGetOptArg(pc));
+			break;
+		case 'R':
+			lp_set_cmdline("name resolve order", poptGetOptArg(pc));
 			break;
 		case 'T':
-			/* We must use old option processing for this. Find the
-			 * position of the -T option in the raw argv[]. */
-			{
-				int i, optnum;
-				for (i = 1; i < argc; i++) {
-					if (strncmp("-T", argv[i],2)==0)
-						break;
-				}
-				i++;
-				if (!(optnum = tar_parseargs(argc, argv, poptGetOptArg(pc), i))) {
-					poptPrintUsage(pc, stderr, 0);
-					exit(1);
-				}
-				/* Now we must eat (optnum - i) options - they have
-				 * been processed by tar_parseargs().
-				 */
-				optnum -= i;
-				for (i = 0; i < optnum; i++)
-					poptGetOptArg(pc);
+			if (!tar_parseargs(argc, argv, poptGetOptArg(pc), optind)) {
+				poptPrintUsage(pc, stderr, 0);
+				exit(1);
 			}
 			break;
 		case 'D':
-			pstrcpy(base_directory,poptGetOptArg(pc));
+			fstrcpy(base_directory,poptGetOptArg(pc));
 			break;
-		case 'g':
-			grepable=True;
+		case 'b':
+			io_bufsize = MAX(1, atoi(poptGetOptArg(pc)));
 			break;
 		}
 	}
 
 	poptGetArg(pc);
 	
-	/*
-	 * Don't load debug level from smb.conf. It should be
-	 * set by cmdline arg or remain default (0)
-	 */
-	AllowDebugChange = False;
-	
-	/* save the workgroup...
-	
-	   FIXME!! do we need to do this for other options as well 
-	   (or maybe a generic way to keep lp_load() from overwriting 
-	   everything)?  */
-	
-	fstrcpy( new_workgroup, lp_workgroup() );
-	
-	if ( override_logfile )
-		setup_logging( lp_logfile(), False );
-	
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
-			argv[0], dyn_CONFIGFILE);
-	}
-	
 	load_interfaces();
-	
-	if ( strlen(new_workgroup) != 0 )
-		set_global_myworkgroup( new_workgroup );
 
 	if(poptPeekArg(pc)) {
 		pstrcpy(service,poptGetArg(pc));  
@@ -3021,15 +3030,12 @@ static int do_message_op(void)
 		}
 	}
 
-	if (poptPeekArg(pc) && !cmdline_auth_info.got_pass) { 
+	if (poptPeekArg(pc)) { 
 		cmdline_auth_info.got_pass = True;
 		pstrcpy(cmdline_auth_info.password,poptGetArg(pc));  
 	}
 
-	init_names();
-
-	if(new_name_resolve_order)
-		lp_set_name_resolve_order(new_name_resolve_order);
+	/*init_names(); */
 
 	if (!tar_type && !*query_host && !*service && !message) {
 		poptPrintUsage(pc, stderr, 0);
@@ -3040,37 +3046,26 @@ static int do_message_op(void)
 
 	pstrcpy(username, cmdline_auth_info.username);
 	pstrcpy(password, cmdline_auth_info.password);
-
 	use_kerberos = cmdline_auth_info.use_kerberos;
 	got_pass = cmdline_auth_info.got_pass;
 
-	DEBUG(3,("Client started (version %s).\n", SAMBA_VERSION_STRING));
+	DEBUG( 3, ( "Client started (version %s).\n", SAMBA_VERSION_STRING ) );
 
+	talloc_destroy(mem_ctx);
 	if (tar_type) {
 		if (cmdstr)
 			process_command_string(cmdstr);
 		return do_tar_op(base_directory);
 	}
 
-	if (*query_host) {
-		char *qhost = query_host;
-		char *slash;
-
-		while (*qhost == '\\' || *qhost == '/')
-			qhost++;
-
-		if ((slash = strchr_m(qhost, '/'))
-		    || (slash = strchr_m(qhost, '\\'))) {
-			*slash = 0;
-		}
-
-		if ((p=strchr_m(qhost, '#'))) {
-			*p = 0;
-			p++;
-			sscanf(p, "%x", &name_type);
-		}
+	if ((p=strchr_m(query_host,'#'))) {
+		*p = 0;
+		p++;
+		sscanf(p, "%x", &name_type);
+	}
   
-		return do_host_query(qhost);
+	if (*query_host) {
+		return do_host_query(query_host);
 	}
 
 	if (message) {

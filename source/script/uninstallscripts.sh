@@ -2,7 +2,7 @@
 # 5 July 96 Dan.Shearer@UniSA.Edu.Au  - almost identical to uninstallbin.sh
 
 INSTALLPERMS=$1
-BINDIR=`echo $2 | sed 's/\/\//\//g'`
+BINDIR=$2
 
 shift
 shift

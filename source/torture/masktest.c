@@ -18,13 +18,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 static fstring password;
 static fstring username;
-static int got_pass;
 static int max_protocol = PROTOCOL_NT1;
 static BOOL showall = False;
 static BOOL old_list = False;
@@ -33,10 +30,9 @@ static const char *filechars = "abcdefghijklm.";
 static int verbose;
 static int die_on_error;
 static int NumLoops = 0;
-static int ignore_dot_errors = 0;
 
 /* a test fn for LANMAN mask support */
-int ms_fnmatch_lanman_core(const char *pattern, const char *string)
+static int ms_fnmatch_lanman_core(const char *pattern, const char *string)
 {
 	const char *p = pattern, *n = string;
 	char c;
@@ -110,7 +106,7 @@ next:
 	return 0;
 }
 
-int ms_fnmatch_lanman(const char *pattern, const char *string)
+static int ms_fnmatch_lanman(const char *pattern, const char *string)
 {
 	if (!strpbrk(pattern, "?*<>\"")) {
 		if (strcmp(string,"..") == 0) 
@@ -140,7 +136,7 @@ static BOOL reg_match_one(struct cli_state *cli, const char *pattern, const char
 
 	if (strcmp(file,"..") == 0) file = ".";
 
-	return ms_fnmatch(pattern, file, cli->protocol, False /* not case sensitive */)==0;
+	return ms_fnmatch(pattern, file, cli->transport->negotiate.protocol)==0;
 }
 
 static char *reg_test(struct cli_state *cli, char *pattern, char *long_name, char *short_name)
@@ -161,99 +157,38 @@ static char *reg_test(struct cli_state *cli, char *pattern, char *long_name, cha
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *connect_one(char *share)
+static struct cli_state *connect_one(char *share)
 {
 	struct cli_state *c;
-	struct nmb_name called, calling;
-	char *server_n;
-	char *server;
-	struct in_addr ip;
+	fstring server;
+	uint_t flags = 0;
+	NTSTATUS status;
 
-	server = share+2;
+	fstrcpy(server,share+2);
 	share = strchr_m(server,'\\');
 	if (!share) return NULL;
 	*share = 0;
 	share++;
 
-	server_n = server;
-	
-        zero_ip(&ip);
+	status = cli_full_connection(&c, "masktest",
+				     server, NULL, 
+				     share, "?????", 
+				     username, lp_workgroup(), 
+				     password, flags, NULL);
 
-	make_nmb_name(&calling, "masktest", 0x0);
-	make_nmb_name(&called , server, 0x20);
-
- again:
-        zero_ip(&ip);
-
-	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server_n, &ip)) {
-		DEBUG(0,("Connection to %s failed\n", server_n));
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-
-	c->protocol = max_protocol;
-
-	if (!cli_session_request(c, &calling, &called)) {
-		DEBUG(0,("session request to %s failed\n", called.name));
-		cli_shutdown(c);
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
-
-	DEBUG(4,(" session request ok\n"));
-
-	if (!cli_negprot(c)) {
-		DEBUG(0,("protocol negotiation failed\n"));
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	if (!got_pass) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			fstrcpy(password, pass);
-		}
-	}
-
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       lp_workgroup())) {
-		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
-		return NULL;
-	}
-
-	/*
-	 * These next two lines are needed to emulate
-	 * old client behaviour for people who have
-	 * scripts based on client output.
-	 * QUESTION ? Do we want to have a 'client compatibility
-	 * mode to turn these on/off ? JRA.
-	 */
-
-	if (*c->server_domain || *c->server_os || *c->server_type)
-		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			c->server_domain,c->server_os,c->server_type));
-	
-	DEBUG(4,(" session setup ok\n"));
-
-	if (!cli_send_tconX(c, share, "?????",
-			    password, strlen(password)+1)) {
-		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	DEBUG(4,(" tconx ok\n"));
 
 	return c;
 }
 
 static char *resultp;
-static file_info *f_info;
+static struct {
+	pstring long_name;
+	pstring short_name;
+} last_hit;
+static BOOL f_info_hit;
 
 static void listfn(file_info *f, const char *s, void *state)
 {
@@ -264,35 +199,37 @@ static void listfn(file_info *f, const char *s, void *state)
 	} else {
 		resultp[2] = '+';
 	}
-	f_info = f;
+	pstrcpy(last_hit.long_name, f->name);
+	pstrcpy(last_hit.short_name, f->short_name);
+	f_info_hit = True;
 }
 
 static void get_real_name(struct cli_state *cli, 
 			  pstring long_name, fstring short_name)
 {
-	/* nasty hack to force level 260 listings - tridge */
-	cli->capabilities |= CAP_NT_SMBS;
+	const char *mask;
 	if (max_protocol <= PROTOCOL_LANMAN1) {
-		cli_list_new(cli, "\\masktest\\*.*", aHIDDEN | aDIR, listfn, NULL);
+		mask = "\\masktest\\*.*";
 	} else {
-		cli_list_new(cli, "\\masktest\\*", aHIDDEN | aDIR, listfn, NULL);
+		mask = "\\masktest\\*";
 	}
-	if (f_info) {
-		fstrcpy(short_name, f_info->short_name);
-		strlower_m(short_name);
-		pstrcpy(long_name, f_info->name);
-		strlower_m(long_name);
+
+	f_info_hit = False;
+
+	cli_list_new(cli->tree, mask, 
+		     FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
+		     listfn, NULL);
+
+	if (f_info_hit) {
+		fstrcpy(short_name, last_hit.short_name);
+		strlower(short_name);
+		pstrcpy(long_name, last_hit.long_name);
+		strlower(long_name);
 	}
 
 	if (*short_name == 0) {
 		fstrcpy(short_name, long_name);
 	}
-
-#if 0
-	if (!strchr_m(short_name,'.')) {
-		fstrcat(short_name,".");
-	}
-#endif
 }
 
 static void testpair(struct cli_state *cli, char *mask, char *file)
@@ -308,32 +245,30 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 
 	fstrcpy(res1, "---");
 
-	fnum = cli_open(cli, file, O_CREAT|O_TRUNC|O_RDWR, 0);
+	fnum = cli_open(cli->tree, file, O_CREAT|O_TRUNC|O_RDWR, 0);
 	if (fnum == -1) {
 		DEBUG(0,("Can't create %s\n", file));
 		return;
 	}
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 
 	resultp = res1;
 	fstrcpy(short_name, "");
-	f_info = NULL;
 	get_real_name(cli, long_name, short_name);
-	f_info = NULL;
 	fstrcpy(res1, "---");
-	cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
+	cli_list(cli->tree, mask, 
+		 FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
+		 listfn, NULL);
 
 	res2 = reg_test(cli, mask, long_name, short_name);
 
-	if (showall || 
-	    ((strcmp(res1, res2) && !ignore_dot_errors) ||
-	     (strcmp(res1+2, res2+2) && ignore_dot_errors))) {
-		DEBUG(0,("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",
-			 res1, res2, count, mask, file, long_name, short_name));
+	if (showall || strcmp(res1, res2)) {
+		d_printf("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",
+			 res1, res2, count, mask, file, long_name, short_name);
 		if (die_on_error) exit(1);
 	}
 
-	cli_unlink(cli, file);
+	cli_unlink(cli->tree, file);
 
 	if (count % 100 == 0) DEBUG(0,("%d\n", count));
 }
@@ -346,9 +281,9 @@ static void test_mask(int argc, char *argv[],
 	int mc_len = strlen(maskchars);
 	int fc_len = strlen(filechars);
 
-	cli_mkdir(cli, "\\masktest");
+	cli_mkdir(cli->tree, "\\masktest");
 
-	cli_unlink(cli, "\\masktest\\*");
+	cli_unlink(cli->tree, "\\masktest\\*");
 
 	if (argc >= 2) {
 		while (argc >= 2) {
@@ -391,7 +326,7 @@ static void test_mask(int argc, char *argv[],
 	}
 
  finished:
-	cli_rmdir(cli, "\\masktest");
+	cli_rmdir(cli->tree, "\\masktest");
 }
 
 
@@ -412,7 +347,6 @@ static void usage(void)
 	-v                             verbose mode\n\
 	-E                             die on error\n\
         -a                             show all tests\n\
-        -i                             ignore . and .. errors\n\
 \n\
   This program tests wildcard matching between two servers. It generates\n\
   random pairs of filenames/masks and tests that they match in the same\n\
@@ -428,19 +362,15 @@ static void usage(void)
 {
 	char *share;
 	struct cli_state *cli;	
-	extern char *optarg;
-	extern int optind;
-	extern BOOL AllowDebugChange;
 	int opt;
 	char *p;
 	int seed;
 
 	setlinebuf(stdout);
 
-	dbf = x_stderr;
+	setup_logging("masktest", DEBUG_STDOUT);
 
-	DEBUGLEVEL = 0;
-	AllowDebugChange = False;
+	lp_set_cmdline("log level", "0");
 
 	if (argc < 2 || argv[1][0] == '-') {
 		usage();
@@ -451,7 +381,7 @@ static void usage(void)
 
 	all_string_sub(share,"/","\\",0);
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	argc -= 1;
 	argv += 1;
@@ -465,7 +395,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vEi")) != EOF) {
+	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vE")) != EOF) {
 		switch (opt) {
 		case 'n':
 			NumLoops = atoi(optarg);
@@ -475,9 +405,6 @@ static void usage(void)
 			break;
 		case 'E':
 			die_on_error = 1;
-			break;
-		case 'i':
-			ignore_dot_errors = 1;
 			break;
 		case 'v':
 			verbose++;
@@ -491,7 +418,6 @@ static void usage(void)
 			if (p) {
 				*p = 0;
 				fstrcpy(password, p+1);
-				got_pass = 1;
 			}
 			break;
 		case 's':

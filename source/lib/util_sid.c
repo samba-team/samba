@@ -91,9 +91,8 @@ static const struct {
 	{SID_NAME_DELETED, "Deleted Account"},
 	{SID_NAME_INVALID, "Invalid Account"},
 	{SID_NAME_UNKNOWN, "UNKNOWN"},
-	{SID_NAME_COMPUTER, "Computer"},
 
- 	{(enum SID_NAME_USE)0, NULL}
+ 	{SID_NAME_USE_NONE, NULL}
 };
 
 const char *sid_type_lookup(uint32 sid_type) 
@@ -176,7 +175,7 @@ NT_USER_TOKEN *get_system_token(void)
 
 /**************************************************************************
  Splits a name of format \DOMAIN\name or name into its two components.
- Sets the DOMAIN name to global_myname() if it has not been specified.
+ Sets the DOMAIN name to lp_netbios_name() if it has not been specified.
 ***************************************************************************/
 
 void split_domain_name(const char *fullname, char *domain, char *name)
@@ -201,7 +200,7 @@ void split_domain_name(const char *fullname, char *domain, char *name)
 		fstrcpy(domain, full_name);
 		fstrcpy(name, p+1);
 	} else {
-		fstrcpy(domain, global_myname());
+		fstrcpy(domain, lp_netbios_name());
 		fstrcpy(name, full_name);
 	}
 
@@ -265,11 +264,11 @@ char *sid_to_string(fstring sidstr_out, const DOM_SID *sid)
  Useful function for debug lines.
 *****************************************************************/  
 
-const char *sid_string_static(const DOM_SID *sid)
+const char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 {
-	static fstring sid_str;
-	sid_to_string(sid_str, sid);
-	return sid_str;
+	fstring tempSid;
+	sid_to_string(tempSid, sid);
+	return talloc_strdup(mem_ctx, tempSid);
 }
 
 /*****************************************************************
@@ -391,9 +390,6 @@ BOOL sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *
 	if (!exp_dom_sid || !sid || !rid)
 		return False;
 			
-	if (sid->num_auths != (exp_dom_sid->num_auths+1)) {
-		return False;
-	}
 
 	if (sid_compare_domain(exp_dom_sid, sid)!=0){
 		*rid=(-1);
@@ -618,19 +614,15 @@ char *sid_binstring(const DOM_SID *sid)
 }
 
 /*******************************************************************
- Tallocs a duplicate SID. 
-********************************************************************/ 
-
-DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
+ Check if ACE has OBJECT type.
+********************************************************************/
+BOOL sec_ace_object(uint8 type)
 {
-	DOM_SID *dst;
-	
-	if(!src)
-		return NULL;
-	
-	if((dst = talloc_zero(ctx, sizeof(DOM_SID))) != NULL) {
-		sid_copy( dst, src);
+	if (type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
+            type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
+            type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
+            type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
+		return True;
 	}
-	
-	return dst;
+	return False;
 }

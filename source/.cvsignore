@@ -1,3 +1,4 @@
+libsmb
 *.po
 *.po32
 .headers.stamp
@@ -28,4 +29,6 @@ testtmp
 trace.out
 typescript*
 configure
-smbadduser
+config.jjm
+config.stfs
+*.dat

@@ -1,0 +1,168 @@
+#include "idl_types.h"
+
+/*
+  endpoint mapper interface
+*/
+
+[
+ uuid(e1af8308-5d1f-11c9-91a4-08002b14a0fa), 
+ version(3.0), 
+ endpoints(epmapper, TCP-135),
+ pointer_default(unique)
+]
+interface epmapper
+{
+
+	/*
+	  note that the following IDL won't work in MIDL, and in fact
+	  that the full towers/floors representation of epm cannot be
+	  represented in MIDL at all. I decided to represent it using
+	  the extended IDL syntax in pidl to make it easier to work
+	  with.
+	*/
+
+	const int EPMAPPER_STATUS_NO_MORE_ENTRIES = 0x16c9a0d6;
+
+
+	/* this guid indicates NDR encoding in a protocol tower */
+	const string NDR_GUID = "8a885d04-1ceb-11c9-9fe8-08002b104860";
+	const string NDR_GUID_VERSION = 2;
+
+	const uint32 EPMAPPER_PORT = 135;
+
+	typedef struct {
+		GUID uuid;
+		uint16 version;
+	} epm_prot_uuid;
+
+	typedef enum {
+		EPM_PROTOCOL_TCP     = 0x07,
+		EPM_PROTOCOL_IP      = 0x09,
+		EPM_PROTOCOL_PIPE    = 0x10,
+		EPM_PROTOCOL_NETBIOS = 0x11,
+		EPM_PROTOCOL_RPC_C   = 0x0b,
+		EPM_PROTOCOL_UUID    = 0x0d,
+		EPM_PROTOCOL_SMB     = 0x0f,
+		EPM_PROTOCOL_HTTP    = 0x1f
+	} epm_protocols;
+
+	typedef [nodiscriminant] union {
+		[case(13)] epm_prot_uuid uuid;
+		[default]  [flag(NDR_REMAINING)] DATA_BLOB lhs_data;
+	} epm_protocol_info;
+
+	typedef struct {
+		uint8  protocol;
+		[switch_is(protocol)] epm_protocol_info info;
+	} epm_lhs;
+
+	typedef struct {
+		[flag(NDR_REMAINING)] DATA_BLOB rhs_data;
+	} epm_rhs;
+
+	typedef struct {
+		[subcontext(2)] epm_lhs lhs;
+		[subcontext(2)] epm_rhs rhs;
+	} epm_floor;
+
+	/* note that the NDR_NOALIGN flag is inherited by all nested
+	   structures. All of the towers/floors stuff is
+	   non-aligned. I wonder what sort of wicked substance these
+	   guys were smoking?
+	*/
+	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN)] struct {
+		uint16 num_floors;
+		epm_floor floors[num_floors];
+	} epm_towers;
+
+	typedef struct {
+		[value(ndr_size_epm_towers(&r->towers))] uint32  tower_length;
+		[subcontext(4)] epm_towers towers;
+	} epm_twr_t;
+
+	typedef struct {
+		GUID        object;
+		epm_twr_t   *tower;
+		ascstr2     annotation;
+	} epm_entry_t;
+
+	typedef struct {
+		GUID                uuid;
+		uint16              vers_major;
+		uint16              vers_minor;
+	} rpc_if_id_t;
+    
+	/**********************/
+	/* Function 0x0       */
+	void epm_Insert(
+		[in]    uint32          num_ents,
+		[in,size_is(num_ents)]  epm_entry_t         entries[],
+		[in]    uint32    replace,
+		[out]   error_status_t  status
+		);
+    
+	/**********************/
+	/* Function 0x1       */
+	void epm_Delete(
+		[in]     uint32          num_ents,
+		[in, size_is(num_ents)]  epm_entry_t entries[],
+		[out]    error_status_t  status
+		);
+    
+	/**********************/
+	/* Function 0x02      */
+	void epm_Lookup(
+		[in]            uint32          inquiry_type,
+		[in]            GUID            *object,
+		[in]            rpc_if_id_t     *interface_id,
+		[in]            uint32          vers_option,
+		[in,out,ref]    policy_handle   *entry_handle,
+		[in]            uint32          max_ents,
+		[out]           uint32          num_ents,
+		[out, length_is(num_ents), size_is(max_ents)]  epm_entry_t entries[],
+		[out]           error_status_t  status
+		);
+
+
+	/**********************/
+	/* Function 0x03      */
+
+	typedef struct {
+		epm_twr_t *twr;
+	} epm_twr_p_t;
+
+	void epm_Map(
+		[in]            GUID            *object,
+		[in]            epm_twr_t       *map_tower,
+		[in,out,ref]    policy_handle   *entry_handle,
+		[in]            uint32          max_towers,
+		[out]           uint32          num_towers,
+		[out, length_is(num_towers), size_is(max_towers)]  epm_twr_p_t towers[],
+		[out]           error_status_t  status
+		);
+    
+
+	/**********************/
+	/* Function 0x04      */
+	void epm_LookupHandleFree(
+		[in,out,ref]    policy_handle *entry_handle,
+		[out]           error_status_t status
+		);
+    
+	/**********************/
+	/* Function 0x05      */
+	void epm_InqObject(
+		[out]           GUID        *epm_object,
+		[out]           error_status_t   status
+		);
+    
+
+	/**********************/
+	/* Function 0x05      */
+	void epm_MgmtDelete(
+		[in]            uint32   object_speced,
+		[in]            GUID     *object,
+		[in]            epm_twr_t    *tower,
+		[out]           error_status_t   status
+		);
+}

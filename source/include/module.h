@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
    Handling of idle/exit events
-   Copyright (C) Stefan (metze) Metzmacher	2003
+   Copyright (C) Jelmer Vernooij 2003
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,17 +22,9 @@
 #define _MODULE_H
 
 /* Module support */
-typedef NTSTATUS (init_module_function) (void);
+typedef NTSTATUS (*init_module_function) (void);
 
-
-typedef int smb_event_id_t;
-#define SMB_EVENT_ID_INVALID	(-1)
-
-#define SMB_IDLE_EVENT_DEFAULT_INTERVAL	180
-#define SMB_IDLE_EVENT_MIN_INTERVAL	30
-
-typedef void (smb_idle_event_fn)(void **data,time_t *interval,time_t now);
-
-typedef void (smb_exit_event_fn)(void **data);
+/* Module that registers a backend for a certain subsystem */
+typedef NTSTATUS (*register_backend_function) (void *data);
 
 #endif /* _MODULE_H */

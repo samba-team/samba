@@ -4,8 +4,8 @@
 
 ## insert all possible names (only works with 
 ## autoconf 2.x
-TESTAUTOHEADER="autoheader autoheader-2.53"
-TESTAUTOCONF="autoconf autoconf-2.53"
+TESTAUTOHEADER="autoheader autoheader-2.53 autoheader2.50"
+TESTAUTOCONF="autoconf autoconf-2.53 autoconf2.50"
 
 AUTOHEADERFOUND="0"
 AUTOCONFFOUND="0"
@@ -47,16 +47,14 @@ if [ "$AUTOCONFFOUND" = "0" -o "$AUTOHEADERFOUND" = "0" ]; then
 	exit 1
 fi
 
-
+echo "$0: running script/mkversion.sh"
+./script/mkversion.sh || exit 1
 
 echo "$0: running $AUTOHEADER"
 $AUTOHEADER || exit 1
 
 echo "$0: running $AUTOCONF"
 $AUTOCONF || exit 1
-
-echo "$0: running script/mkversion.sh"
-./script/mkversion.sh || exit 1
 
 rm -rf autom4te.cache autom4te-2.53.cache
 

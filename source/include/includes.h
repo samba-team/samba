@@ -45,6 +45,13 @@
 #undef HAVE_TERMIOS_H
 #endif
 
+#ifndef DEFAULT_PRINTING
+#define DEFAULT_PRINTING PRINT_BSD
+#endif
+#ifndef PRINTCAP_NAME
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
+
 #ifdef __GNUC__
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
@@ -324,23 +331,18 @@
 #define PASSWORD_LENGTH 16
 #endif  /* HAVE_SYS_SECURITY_H */
 
+#ifdef HAVE_COMPAT_H
+#include <compat.h>
+#endif
+
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
 #endif
 
-#ifdef HAVE_POLL_H
-#include <poll.h>
-#endif
-
-#ifdef HAVE_EXECINFO_H
-#include <execinfo.h>
-#endif
-
 #ifdef HAVE_SYS_CAPABILITY_H
 
-#if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H) && !defined(_PPC_STATFS_H)
+#if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H)
 #define _I386_STATFS_H
-#define _PPC_STATFS_H
 #define BROKEN_REDHAT_7_STATFS_WORKAROUND
 #endif
 
@@ -348,34 +350,10 @@
 
 #ifdef BROKEN_REDHAT_7_STATFS_WORKAROUND
 #undef _I386_STATFS_H
-#undef _PPC_STATFS_H
 #undef BROKEN_REDHAT_7_STATFS_WORKAROUND
 #endif
 
 #endif
-
-#if defined(HAVE_RPC_RPC_H)
-/*
- * Check for AUTH_ERROR define conflict with rpc/rpc.h in prot.h.
- */
-#if defined(HAVE_SYS_SECURITY_H) && defined(HAVE_RPC_AUTH_ERROR_CONFLICT)
-#undef AUTH_ERROR
-#endif
-#include <rpc/rpc.h>
-#endif
-
-#if defined(HAVE_YP_GET_DEFAULT_DOMAIN) && defined(HAVE_SETNETGRENT) && defined(HAVE_ENDNETGRENT) && defined(HAVE_GETNETGRENT)
-#define HAVE_NETGROUP 1
-#endif
-
-#if defined (HAVE_NETGROUP)
-#if defined(HAVE_RPCSVC_YP_PROT_H)
-#include <rpcsvc/yp_prot.h>
-#endif
-#if defined(HAVE_RPCSVC_YPCLNT_H)
-#include <rpcsvc/ypclnt.h>
-#endif
-#endif /* HAVE_NETGROUP */
 
 #if defined(HAVE_SYS_IPC_H)
 #include <sys/ipc.h>
@@ -391,9 +369,6 @@
 #endif
 #ifdef HAVE_GICONV
 #include <giconv.h>
-#endif
-#ifdef HAVE_BICONV
-#include <biconv.h>
 #endif
 #endif
 
@@ -429,42 +404,6 @@
 #include <com_err.h>
 #endif
 
-#if HAVE_SYS_ATTRIBUTES_H
-#include <sys/attributes.h>
-#endif
-
-/* mutually exclusive (SuSE 8.2) */
-#if HAVE_ATTR_XATTR_H
-#include <attr/xattr.h>
-#elif HAVE_SYS_XATTR_H
-#include <sys/xattr.h>
-#endif
-
-#if HAVE_LOCALE_H
-#include <locale.h>
-#endif
-
-#if HAVE_LANGINFO_H
-#include <langinfo.h>
-#endif
-
-/* Special macros that are no-ops except when run under Valgrind on
- * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
-#if HAVE_VALGRIND_MEMCHECK_H
-        /* memcheck.h includes valgrind.h */
-#include <valgrind/memcheck.h>
-#elif HAVE_VALGRIND_H
-#include <valgrind.h>
-#endif
-
-/* If we have --enable-developer and the valgrind header is present,
- * then we're OK to use it.  Set a macro so this logic can be done only
- * once. */
-#if defined(DEVELOPER) && (HAVE_VALGRIND_H || HAVE_VALGRIND_VALGRIND_H)
-#define VALGRIND
-#endif
-
-
 /* we support ADS if we want it and have krb5 and ldap libs */
 #if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
@@ -483,12 +422,8 @@
 /*
  * Define additional missing types
  */
-#if defined(HAVE_SIG_ATOMIC_T_TYPE) && defined(AIX)
-typedef sig_atomic_t SIG_ATOMIC_T;
-#elif defined(HAVE_SIG_ATOMIC_T_TYPE) && !defined(AIX)
-typedef sig_atomic_t VOLATILE SIG_ATOMIC_T;
-#else
-typedef int VOLATILE SIG_ATOMIC_T;
+#ifndef HAVE_SIG_ATOMIC_T_TYPE
+typedef int sig_atomic_t;
 #endif
 
 #ifndef HAVE_SOCKLEN_T_TYPE
@@ -519,7 +454,7 @@ typedef int socklen_t;
 #define uint8 unsigned char
 #endif
 
-#if !defined(int16) && !defined(HAVE_INT16_FROM_RPC_RPC_H)
+#if !defined(int16)
 #if (SIZEOF_SHORT == 4)
 #define int16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
 #else /* SIZEOF_SHORT != 4 */
@@ -527,12 +462,8 @@ typedef int socklen_t;
 #endif /* SIZEOF_SHORT != 4 */
 #endif
 
-/*
- * Note we duplicate the size tests in the unsigned 
- * case as int16 may be a typedef from rpc/rpc.h
- */
 
-#if !defined(uint16) && !defined(HAVE_UINT16_FROM_RPC_RPC_H)
+#if !defined(uint16)
 #if (SIZEOF_SHORT == 4)
 #define uint16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
 #else /* SIZEOF_SHORT != 4 */
@@ -540,7 +471,7 @@ typedef int socklen_t;
 #endif /* SIZEOF_SHORT != 4 */
 #endif
 
-#if !defined(int32) && !defined(HAVE_INT32_FROM_RPC_RPC_H)
+#if !defined(int32)
 #if (SIZEOF_INT == 4)
 #define int32 int
 #elif (SIZEOF_LONG == 4)
@@ -553,12 +484,8 @@ typedef int socklen_t;
 #endif
 #endif
 
-/*
- * Note we duplicate the size tests in the unsigned 
- * case as int32 may be a typedef from rpc/rpc.h
- */
 
-#if !defined(uint32) && !defined(HAVE_UINT32_FROM_RPC_RPC_H)
+#if !defined(uint32)
 #if (SIZEOF_INT == 4)
 #define uint32 unsigned int
 #elif (SIZEOF_LONG == 4)
@@ -615,18 +542,6 @@ typedef int socklen_t;
 #  endif
 #endif
 
-#if defined(HAVE_LONGLONG)
-#define SMB_BIG_UINT unsigned long long
-#define SMB_BIG_INT long long
-#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
-#else
-#define SMB_BIG_UINT unsigned long
-#define SMB_BIG_INT long
-#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
-#endif
-
-#define SMB_BIG_UINT_BITS (sizeof(SMB_BIG_UINT)*8)
-
 /* this should really be a 64 bit type if possible */
 #define br_off SMB_BIG_UINT
 
@@ -675,9 +590,9 @@ typedef int socklen_t;
 
 #ifndef SMB_STRUCT_DIRENT
 #  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_DIRENT64)
-#    define SMB_STRUCT_DIRENT struct dirent64
+#    define smb_dirent dirent64
 #  else
-#    define SMB_STRUCT_DIRENT struct dirent
+#    define smb_dirent dirent
 #  endif
 #endif
 
@@ -717,6 +632,20 @@ typedef int socklen_t;
 #  endif
 #endif
 
+#if defined(HAVE_LONGLONG)
+#define SMB_BIG_UINT unsigned long long
+#define SMB_BIG_INT long long
+#define SBVAL(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#define BVAL(p, ofs) (IVAL(p,ofs) | (((SMB_BIG_UINT)IVAL(p,(ofs)+4)) << 32))
+#else
+#define SMB_BIG_UINT unsigned long
+#define SMB_BIG_INT long
+#define SBVAL(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
+#define BVAL(p, ofs) IVAL(p,ofs)
+#endif
+
+#define SMB_BIG_UINT_BITS (sizeof(SMB_BIG_UINT)*8)
+
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
@@ -749,84 +678,42 @@ extern int errno;
 
 /* Lists, trees, caching, database... */
 #include "xfile.h"
-#include "intl.h"
-#include "ubi_sLinkList.h"
-#include "ubi_dLinkList.h"
 #include "dlinklist.h"
-#include "../tdb/tdb.h"
-#include "../tdb/spinlock.h"
-#include "../tdb/tdbutil.h"
+#include "lib/tdb/tdb.h"
+#include "lib/tdb/spinlock.h"
+#include "lib/tdb/tdbutil.h"
 #include "talloc.h"
 #include "nt_status.h"
-#include "ads.h"
 #include "interfaces.h"
-#include "hash.h"
 #include "trans2.h"
+#include "ioctl.h"
 #include "nterr.h"
-#include "ntioctl.h"
 #include "messages.h"
 #include "charset.h"
 #include "dynconfig.h"
-#include "adt_tree.h"
 
 #include "util_getent.h"
 
-#ifndef UBI_BINTREE_H
-#include "ubi_Cache.h"
-#endif /* UBI_BINTREE_H */
-
-#include "debugparse.h"
-
 #include "version.h"
-
-#include "privileges.h"
-
 #include "smb.h"
-
+#include "ads.h"
 #include "nameserv.h"
-
 #include "secrets.h"
 
 #include "byteorder.h"
 
-#include "rpc_creds.h"
-
-#include "mapping.h"
-
-#include "passdb.h"
-
-#include "ntdomain.h"
-
-#include "rpc_misc.h"
-
-#include "rpc_secdes.h"
-
-#include "genparser.h"
-
-#include "gums.h"
-
-#include "nt_printing.h"
-
 #include "msdfs.h"
-
-#include "smbprofile.h"
-
-#include "rap.h"
 
 #include "md5.h"
 #include "hmacmd5.h"
 
-#include "ntlmssp.h"
+#include "libcli/auth/ntlmssp.h"
+#include "libcli/auth/schannel.h"
 
-#include "auth.h"
+#include "auth/auth.h"
+#include "passdb/passdb.h"
 
-#include "idmap.h"
-
-#include "client.h"
-
-#include "smbw.h"
-
-#include "session.h"
+#include "module.h"
 
 #include "asn_1.h"
 
@@ -834,34 +721,17 @@ extern int errno;
 
 #include "mangle.h"
 
-#include "module.h"
-
 #include "nsswitch/winbind_client.h"
 
-#include "spnego.h"
+#include "mutex.h"
 
-/*
- * Type for wide character dirent structure.
- * Only d_name is defined by POSIX.
- */
+#include "librpc/rpc/dcerpc.h"
 
-typedef struct smb_wdirent {
-	wpstring        d_name;
-} SMB_STRUCT_WDIRENT;
+#include "rpc_server/dcerpc_server.h"
+#include "context.h"
+#include "ntvfs/ntvfs.h"
+#include "cli_context.h"
 
-/*
- * Type for wide character passwd structure.
- */
-
-typedef struct smb_wpasswd {
-	wfstring       pw_name;
-	char           *pw_passwd;
-	uid_t          pw_uid;
-	gid_t          pw_gid;
-	wpstring       pw_gecos;
-	wpstring       pw_dir;
-	wpstring       pw_shell;
-} SMB_STRUCT_WPASSWD;
 
 /* used in net.c */
 struct functable {
@@ -870,35 +740,13 @@ struct functable {
 };
 
 
-/* Defines for wisXXX functions. */
-#define UNI_UPPER    0x1
-#define UNI_LOWER    0x2
-#define UNI_DIGIT    0x4
-#define UNI_XDIGIT   0x8
-#define UNI_SPACE    0x10
-
-#include "nsswitch/winbind_nss.h"
-
-/* forward declaration from printing.h to get around 
-   header file dependencies */
-
-struct printjob;
-
-struct smb_ldap_privates;
-
-/* forward declarations from smbldap.c */
-
-#include "smbldap.h"
-#include "modconf.h"
+#include "nsswitch/nss.h"
 
 /***** automatically generated prototypes *****/
-#ifndef NO_PROTO_H
 #include "proto.h"
-#endif
 
 /* String routines */
 
-#include "srvstr.h"
 #include "safe_string.h"
 
 #ifdef __COMPAR_FN_T
@@ -909,33 +757,16 @@ struct smb_ldap_privates;
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
-#ifndef DEFAULT_PRINTING
-#ifdef HAVE_CUPS
-#define DEFAULT_PRINTING PRINT_CUPS
-#define PRINTCAP_NAME "cups"
-#elif defined(SYSV)
-#define DEFAULT_PRINTING PRINT_SYSV
-#define PRINTCAP_NAME "lpstat"
-#else
-#define DEFAULT_PRINTING PRINT_BSD
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-#endif
-
-#ifndef PRINTCAP_NAME
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-
 #ifndef SIGCLD
 #define SIGCLD SIGCHLD
 #endif
 
-#ifndef SIGRTMIN
-#define SIGRTMIN 32
-#endif
-
 #ifndef MAP_FILE
 #define MAP_FILE 0
+#endif
+
+#if (!defined(WITH_LDAP) && !defined(WITH_TDB_SAM))
+#define USE_SMBPASS_DB 1
 #endif
 
 #if defined(HAVE_PUTPRPWNAM) && defined(AUTH_CLEARTEXT_SEG_CHARS)
@@ -960,6 +791,10 @@ struct smb_ldap_privates;
 
 #ifndef HAVE_PIPE
 #define SYNC_DNS 1
+#endif
+
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 256
 #endif
 
 #ifndef SEEK_SET
@@ -988,10 +823,6 @@ struct smb_ldap_privates;
 
 #ifndef HAVE_STRDUP
 char *strdup(const char *s);
-#endif
-
-#ifndef HAVE_STRNDUP
-char *strndup(const char *s, size_t size);
 #endif
 
 #ifndef HAVE_MEMMOVE
@@ -1047,6 +878,10 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
 #ifndef HAVE_VASPRINTF_DECL
 int vasprintf(char **ptr, const char *format, va_list ap);
+#endif
+
+#if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
+#define bzero(a,b) memset((a),'\0',(b))
 #endif
 
 #ifdef REPLACE_GETPASS
@@ -1238,14 +1073,6 @@ int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
-/* Fix prototype problem with non-C99 compliant snprintf implementations, esp
-   HPUX 11.  Don't change the sense of this #if statement.  Read the comments
-   in lib/snprint.c if you think you need to.  See also bugzilla bug 174. */
-
-#if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
-#define snprintf smb_snprintf
-#endif
-
 void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
 
 int pstr_sprintf(pstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
@@ -1263,17 +1090,17 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 
 /* we need to use __va_copy() on some platforms */
 #ifdef HAVE_VA_COPY
-#define VA_COPY(dest, src) va_copy(dest, src)
-#else
-#ifdef HAVE___VA_COPY
 #define VA_COPY(dest, src) __va_copy(dest, src)
 #else
 #define VA_COPY(dest, src) (dest) = (src)
 #endif
-#endif
 
 #ifndef HAVE_TIMEGM
 time_t timegm(struct tm *tm);
+#endif
+
+#if defined(VALGRIND)
+#define strlen(x) valgrind_strlen(x)
 #endif
 
 /*
@@ -1284,50 +1111,5 @@ time_t timegm(struct tm *tm);
 #define VXFS_QUOTA
 #endif
 
-#if defined(HAVE_KRB5)
-
-#ifndef HAVE_KRB5_SET_REAL_TIME
-krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
-#endif
-
-#ifndef HAVE_KRB5_SET_DEFAULT_TGS_KTYPES
-krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc);
-#endif
-
-#if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
-krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_context auth_context, krb5_keyblock *keyblock);
-#endif
-
-/* Samba wrapper function for krb5 functionality. */
-void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
-int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
-void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt);
-krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
-krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
-krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
-void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
-BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote);
-#endif /* HAVE_KRB5 */
-
-/* TRUE and FALSE are part of the C99 standard and gcc, but
-   unfortunately many vendor compilers don't support them.  Use True
-   and False instead. */
-
-#ifdef TRUE
-#undef TRUE
-#endif
-#define TRUE __ERROR__XX__DONT_USE_TRUE
-
-#ifdef FALSE
-#undef FALSE
-#endif
-#define FALSE __ERROR__XX__DONT_USE_FALSE
-
-/* If we have blacklisted mmap() try to avoid using it accidentally by
-   undefining the HAVE_MMAP symbol. */
-
-#ifdef MMAP_BLACKLIST
-#undef HAVE_MMAP
-#endif
-
 #endif /* _INCLUDES_H */
+

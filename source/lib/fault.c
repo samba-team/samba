@@ -22,22 +22,27 @@
 
 static void (*cont_fn)(void *);
 
+/* the registered fault handler */
+static struct {
+	const char *name;
+	void (*fault_handler)(int sig);
+} fault_handlers;
+
+
 /*******************************************************************
 report a fault
 ********************************************************************/
 static void fault_report(int sig)
 {
 	static int counter;
-
+	
 	if (counter) _exit(1);
 
-	counter++;
+	DEBUG(0,("===============================================================\n"));
+	DEBUG(0,("INTERNAL ERROR: Signal %d in pid %d (%s)",sig,(int)getpid(),SAMBA_VERSION_STRING));
+	DEBUG(0,("\nPlease read the file BUGS.txt in the distribution\n"));
+	DEBUG(0,("===============================================================\n"));
 
-	DEBUG(0,("===============================================================\n"));
-	DEBUG(0,("INTERNAL ERROR: Signal %d in pid %d (%s)",sig,(int)sys_getpid(),SAMBA_VERSION_STRING));
-	DEBUG(0,("\nPlease read the appendix Bugs of the Samba HOWTO collection\n"));
-	DEBUG(0,("===============================================================\n"));
-  
 	smb_panic("internal error");
 
 	if (cont_fn) {
@@ -47,9 +52,6 @@ static void fault_report(int sig)
 #endif
 #ifdef SIGBUS
 		CatchSignal(SIGBUS,SIGNAL_CAST SIG_DFL);
-#endif
-#ifdef SIGABRT
-		CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
 #endif
 		return; /* this should cause a core dump */
 	}
@@ -61,6 +63,11 @@ catch serious errors
 ****************************************************************************/
 static void sig_fault(int sig)
 {
+	if (fault_handlers.fault_handler) {
+		/* we have a fault handler, call it. It may not return. */
+		fault_handlers.fault_handler(sig);
+	}
+	/* If it returns or doean't exist, use regular reporter */
 	fault_report(sig);
 }
 
@@ -77,7 +84,24 @@ void fault_setup(void (*fn)(void *))
 #ifdef SIGBUS
 	CatchSignal(SIGBUS,SIGNAL_CAST sig_fault);
 #endif
-#ifdef SIGABRT
-	CatchSignal(SIGABRT,SIGNAL_CAST sig_fault);
-#endif
+}
+
+/*
+  register a fault handler. 
+  Should only be called once in the execution of smbd.
+*/
+BOOL register_fault_handler(const char *name, void (*fault_handler)(int sig))
+{
+	if (fault_handlers.name != NULL) {
+		/* it's already registered! */
+		DEBUG(2,("fault handler '%s' already registered - failed '%s'\n", 
+			 fault_handlers.name, name));
+		return False;
+	}
+
+	fault_handlers.name = name;
+	fault_handlers.fault_handler = fault_handler;
+
+	DEBUG(2,("fault handler '%s' registered\n", name));
+	return True;
 }

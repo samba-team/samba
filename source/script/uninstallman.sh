@@ -6,7 +6,7 @@
 #   by Japanese edition's approach)
 
 
-MANDIR=`echo $1 | sed 's/\/\//\//g'`
+MANDIR=$1
 SRCDIR=$2
 langs=$3
 

@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   Generic authentication types
+   Generic authenticaion types
    Copyright (C) Andrew Bartlett         2001-2002
    Copyright (C) Jelmer Vernooij              2002
    
@@ -38,8 +38,7 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 				     const auth_usersupplied_info *user_info, 
 				     auth_serversupplied_info **server_info)
 {
-	/* mark this as 'not for me' */
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 
 	if (!(user_info->internal_username.str 
 	      && *user_info->internal_username.str)) {
@@ -61,7 +60,6 @@ static NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *o
 	return NT_STATUS_OK;
 }
 
-#ifdef DEVELOPER
 /** 
  * Return an error based on username
  *
@@ -86,12 +84,12 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 	long error_num;
 	fstrcpy(user, user_info->smb_name.str);
 	
-	if (strnequal("NT_STATUS", user, strlen("NT_STATUS"))) {
-		strupper_m(user);
+	if (strncasecmp("NT_STATUS", user, strlen("NT_STATUS")) == 0) {
+		strupper(user);
 		return nt_status_string_to_code(user);
 	}
 
-	strlower_m(user);
+	strlower(user);
 	error_num = strtoul(user, NULL, 16);
 	
 	DEBUG(5,("check_name_to_ntstatus_security: Error for user %s was %lx\n", user, error_num));
@@ -101,7 +99,7 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 	return nt_status;
 }
 
-/** Module initialisation function */
+/** Module initailisation function */
 
 static NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
@@ -114,7 +112,7 @@ static NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, co
 }
 
 /** 
- * Return a 'fixed' challenge instead of a variable one.
+ * Return a 'fixed' challenge instead of a varaible one.
  *
  * The idea of this function is to make packet snifs consistant
  * with a fixed challenge, so as to aid debugging.
@@ -134,7 +132,7 @@ static NTSTATUS check_fixed_challenge_security(const struct auth_context *auth_c
 					       const auth_usersupplied_info *user_info, 
 					       auth_serversupplied_info **server_info)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
@@ -162,14 +160,39 @@ static NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, con
 	(*auth_method)->name = "fixed_challenge";
 	return NT_STATUS_OK;
 }
-#endif /* DEVELOPER */
 
 NTSTATUS auth_builtin_init(void)
 {
-	smb_register_auth(AUTH_INTERFACE_VERSION, "guest", auth_init_guest);
+	NTSTATUS ret;
+	struct auth_operations ops;
+
+	ops.name = "guest";
+	ops.init = auth_init_guest;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
+	}
+
 #ifdef DEVELOPER
-	smb_register_auth(AUTH_INTERFACE_VERSION, "fixed_challenge", auth_init_fixed_challenge);
-	smb_register_auth(AUTH_INTERFACE_VERSION, "name_to_ntstatus", auth_init_name_to_ntstatus);
-#endif
-	return NT_STATUS_OK;
+	ops.name = "name_to_ntstatus";
+	ops.init = auth_init_name_to_ntstatus;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	ops.name = "fixed_challenge";
+	ops.init = auth_init_fixed_challenge;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
+	}
+#endif /* DEVELOPER */
+	return ret;
 }

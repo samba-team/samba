@@ -55,7 +55,7 @@ void smbw_init(void)
 	smbw_busy++;
 
 	DEBUGLEVEL = 0;
-	setup_logging("smbsh",True);
+	setup_logging("smbsh", DEBUG_STDOUT);
 
 	dbf = x_stderr;
 
@@ -461,7 +461,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
-	make_nmb_name(&calling, global_myname(), 0x0);
+	make_nmb_name(&calling, lp_netbios_name(), 0x0);
 	make_nmb_name(&called , server, 0x20);
 
 	DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
@@ -1480,12 +1480,8 @@ say no to acls
 	st64->st_atime = st->st_atime;
 	st64->st_mtime = st->st_mtime;
 	st64->st_ctime = st->st_ctime;
-#ifdef HAVE_STAT_ST_BLKSIZE
 	st64->st_blksize = st->st_blksize;
-#endif
-#ifdef HAVE_STAT_ST_BLOCKS
 	st64->st_blocks = st->st_blocks;
-#endif
 }
 #endif
 
@@ -1516,11 +1512,11 @@ struct kernel_stat {
 	unsigned long int st_size;
 	unsigned long int st_blksize;
 	unsigned long int st_blocks;
-	unsigned long int st_atime_;
+	unsigned long int st_atime;
 	unsigned long int __unused1;
-	unsigned long int st_mtime_;
+	unsigned long int st_mtime;
 	unsigned long int __unused2;
-	unsigned long int st_ctime_;
+	unsigned long int st_ctime;
 	unsigned long int __unused3;
 	unsigned long int __unused4;
 	unsigned long int __unused5;
@@ -1549,14 +1545,10 @@ struct kernel_stat {
 	st->st_gid = kbuf->st_gid;
 	st->st_rdev = kbuf->st_rdev;
 	st->st_size = kbuf->st_size;
-#ifdef HAVE_STAT_ST_BLKSIZE
 	st->st_blksize = kbuf->st_blksize;
-#endif
-#ifdef HAVE_STAT_ST_BLOCKS
 	st->st_blocks = kbuf->st_blocks;
-#endif
-	st->st_atime = kbuf->st_atime_;
-	st->st_mtime = kbuf->st_mtime_;
-	st->st_ctime = kbuf->st_ctime_;
+	st->st_atime = kbuf->st_atime;
+	st->st_mtime = kbuf->st_mtime;
+	st->st_ctime = kbuf->st_ctime;
 }
 #endif

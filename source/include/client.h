@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998
    Copyright (C) Jeremy Allison 1998
+   Copyright (C) James Myers 2003 <myersjj@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,6 +28,10 @@
    overlap on the wire. This size gives us a nice read/write size, which
    will be a multiple of the page size on almost any system */
 #define CLI_BUFFER_SIZE (0xFFFF)
+#define CLI_DFS_MAX_REFERRAL_LEVEL 3
+
+#define SAFETY_MARGIN 1024
+#define LARGE_WRITEX_HDR_SIZE 65
 
 
 /*
@@ -43,7 +48,7 @@ typedef struct file_info
 	time_t mtime;
 	time_t atime;
 	time_t ctime;
-	pstring name;
+	const char *name;
 	char short_name[13*3]; /* the *3 is to cope with multi-byte */
 } file_info;
 
@@ -57,113 +62,56 @@ struct print_job_info
 	time_t t;
 };
 
-struct cli_state {
-	int port;
-	int fd;
-	int smb_rw_error; /* Copy of last read or write error. */
-	uint16 cnum;
-	uint16 pid;
-	uint16 mid;
-	uint16 vuid;
-	int protocol;
-	int sec_mode;
-	int rap_error;
-	int privileges;
+typedef struct referral_info
+{
+	int server_type;
+	int referral_flags;
+	int proximity;
+	int ttl;
+	int pathOffset;
+	int altPathOffset;
+	int nodeOffset;
+	char *path;
+	char *altPath;
+	char *node;
+	char *host;
+	char *share;
+} referral_info;
 
-	fstring desthost;
-	fstring user_name;
-	fstring domain;
+typedef struct dfs_info
+{
+	int path_consumed;
+	int referral_flags;
+	int selected_referral;
+	int number_referrals;
+	referral_info referrals[10];
+} dfs_info;
 
-	/*
-	 * The following strings are the
-	 * ones returned by the server if
-	 * the protocol > NT1.
-	 */
-	fstring server_type;
-	fstring server_os;
-	fstring server_domain;
+/* Internal client error codes for cli_request_context.internal_error_code */
+#define CLI_ERR_INVALID_TRANS_RESPONSE		100
 
-	fstring share;
-	fstring dev;
-	struct nmb_name called;
-	struct nmb_name calling;
-	fstring full_dest_host_name;
-	struct in_addr dest_ip;
-
-	struct pwd_info pwd;
-	DATA_BLOB secblob; /* cryptkey or negTokenInit */
-	uint32 sesskey;
-	int serverzone;
-	uint32 servertime;
-	int readbraw_supported;
-	int writebraw_supported;
-	int timeout; /* in milliseconds. */
-	size_t max_xmit;
-	size_t max_mux;
-	char *outbuf;
-	char *inbuf;
-	unsigned int bufsize;
-	int initialised;
-	int win95;
-	uint32 capabilities;
-
+#define DFS_MAX_CLUSTER_SIZE 8
+/* client_context: used by cliraw callers to maintain Dfs
+ * state across multiple Dfs servers
+ */
+struct cli_client
+{
+	const char* sockops;
+	char* username;
+	char* password;
+	char* workgroup;
 	TALLOC_CTX *mem_ctx;
-
-	smb_sign_info sign_info;
-
-	/* the session key for this CLI, outside 
-	   any per-pipe authenticaion */
-	DATA_BLOB user_session_key;
-
-	/*
-	 * Only used in NT domain calls.
-	 */
-
-	int pipe_idx;                      /* Index (into list of known pipes) 
-					      of the pipe we're talking to, 
-					      if any */
-
-	uint16 nt_pipe_fnum;               /* Pipe handle. */
-
-	/* Secure pipe parameters */
-	int pipe_auth_flags;
-
-	uint16 saved_netlogon_pipe_fnum;   /* The "first" pipe to get
-                                              the session key for the
-                                              schannel. */
-	struct netsec_auth_struct auth_info;
-
-	NTLMSSP_STATE *ntlmssp_pipe_state;
-
-	unsigned char sess_key[16];        /* Current session key. */
-	DOM_CRED clnt_cred;                /* Client credential. */
-	fstring mach_acct;                 /* MYNAME$. */
-	fstring srv_name_slash;            /* \\remote server. */
-	fstring clnt_name_slash;           /* \\local client. */
+	int number_members;
+	BOOL use_dfs;				/* True if client should support Dfs */
+	int connection_flags;		/* see CLI_FULL_CONN.. below */
 	uint16 max_xmit_frag;
 	uint16 max_recv_frag;
-
-	BOOL use_kerberos;
-	BOOL use_spnego;
-
-	BOOL use_oplocks; /* should we use oplocks? */
-	BOOL use_level_II_oplocks; /* should we use level II oplocks? */
-
-	/* a oplock break request handler */
-	BOOL (*oplock_handler)(struct cli_state *cli, int fnum, unsigned char level);
-
-	BOOL force_dos_errors;
-
-	/* was this structure allocated by cli_initialise? If so, then
-           free in cli_shutdown() */
-	BOOL allocated;
-
-	/* Name of the pipe we're talking to, if any */
-	fstring pipe_name;
+	struct cli_state *cli[DFS_MAX_CLUSTER_SIZE];
 };
 
 #define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
 #define CLI_FULL_CONNECTION_USE_KERBEROS 0x0002
 #define CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK 0x0004
+#define CLI_FULL_CONNECTION_USE_DFS 0x0008
 
 #endif /* _CLIENT_H */

@@ -172,8 +172,7 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
 	}
 
 	if (lck1->start >= (lck2->start + lck2->size) ||
-	    lck2->start >= (lck1->start + lck1->size))
-		return False;
+	    lck2->start >= (lck1->start + lck1->size)) return False;
 	    
 	return True;
 } 
@@ -246,8 +245,8 @@ void brl_init(int read_only)
 {
 	if (tdb)
 		return;
-	tdb = tdb_open_ex(lock_path("brlock.tdb"), 0,  TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST),
-		       read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644, smbd_tdb_log);
+	tdb = tdb_open_log(lock_path("brlock.tdb"), 0,  TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST),
+		       read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
 	if (!tdb) {
 		DEBUG(0,("Failed to open byte range locking database\n"));
 		return;
@@ -306,7 +305,7 @@ static int lock_compare(struct lock_struct *lck1,
 NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
-		  enum brl_type lock_type, BOOL *my_lock_ctx)
+		  enum brl_type lock_type)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i;
@@ -316,7 +315,6 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	static int last_failed = -1;
 	static br_off last_failed_start;
 
-	*my_lock_ctx = False;
 	kbuf = locking_key(dev,ino);
 
 	dbuf.dptr = NULL;
@@ -345,9 +343,6 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		for (i=0; i<count; i++) {
 			if (brl_conflict(&locks[i], &lock)) {
 				status = NT_STATUS_LOCK_NOT_GRANTED;
-				/* Did we block ourselves ? */
-				if (brl_same_context(&locks[i].context, &lock.context))
-					*my_lock_ctx = True;
 				goto fail;
 			}
 #if ZERO_ZERO
@@ -372,7 +367,7 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 #if ZERO_ZERO
 	/* sort the lock list */
-	qsort(dbuf.dptr, dbuf.dsize/sizeof(lock), sizeof(lock), lock_compare);
+	qsort(dbuf.dptr, dbuf.dsize/sizeof(lock), sizeof(lock), QSORT_CAST lock_compare);
 #endif
 
 	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
@@ -419,9 +414,7 @@ static BOOL brl_pending_overlap(struct lock_struct *lock, struct lock_struct *pe
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
 		br_off start, br_off size,
-		BOOL remove_pending_locks_only,
-		void (*pre_unlock_fn)(void *),
-		void *pre_unlock_data)
+		BOOL remove_pending_locks_only)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i, j;
@@ -457,10 +450,6 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		    lock->fnum == fnum &&
 		    lock->start == start &&
 		    lock->size == size) {
-
-			if (pre_unlock_fn)
-				(*pre_unlock_fn)(pre_unlock_data);
-
 			/* found it - delete it */
 			if (count == 1) {
 				tdb_delete(tdb, kbuf);
@@ -494,11 +483,6 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 				continue;
 
 			if (lock->lock_type != PENDING_LOCK) {
-
-				/* Do any POSIX unlocks needed. */
-				if (pre_unlock_fn)
-					(*pre_unlock_fn)(pre_unlock_data);
-
 				/* Send unlock messages to any pending waiters that overlap. */
 				for (j=0; j<count; j++) {
 					struct lock_struct *pend_lock = &locks[j];

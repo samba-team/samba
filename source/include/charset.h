@@ -20,108 +20,21 @@
 */
 
 /* this defines the charset types used in samba */
-typedef enum {CH_UCS2=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4} charset_t;
+typedef enum {CH_UCS2=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4, CH_UCS2BE=5} charset_t;
 
-#define NUM_CHARSETS 5
+#define NUM_CHARSETS 6
 
-/* 
- *   for each charset we have a function that pushes from that charset to a ucs2
- *   buffer, and a function that pulls from ucs2 buffer to that  charset.
+/*
+ *   for each charset we have a function that pulls from that charset to
+ *     a ucs2 buffer, and a function that pushes to a ucs2 buffer
  *     */
 
 struct charset_functions {
 	const char *name;
-	size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
+	size_t (*pull)(void *, const char **inbuf, size_t *inbytesleft,
 				   char **outbuf, size_t *outbytesleft);
-	size_t (*push)(void *, char **inbuf, size_t *inbytesleft,
+	size_t (*push)(void *, const char **inbuf, size_t *inbytesleft,
 				   char **outbuf, size_t *outbytesleft);
 	struct charset_functions *prev, *next;
 };
-
-/*
- * This is auxiliary struct used by source/script/gen-8-bit-gap.sh script
- * during generation of an encoding table for charset module
- *     */
-
-struct charset_gap_table {
-  uint16 start;
-  uint16 end;
-  int32 idx;
-};
-
-/*
- *   Define stub for charset module which implements 8-bit encoding with gaps.
- *   Encoding tables for such module should be produced from glibc's CHARMAPs
- *   using script source/script/gen-8bit-gap.sh
- *   CHARSETNAME is CAPITALIZED charset name
- *
- *     */
-#define SMB_GENERATE_CHARSET_MODULE_8_BIT_GAP(CHARSETNAME) 					\
-static size_t CHARSETNAME ## _push(void *cd, char **inbuf, size_t *inbytesleft,			\
-			 char **outbuf, size_t *outbytesleft) 					\
-{ 												\
-	while (*inbytesleft >= 2 && *outbytesleft >= 1) { 					\
-		int i; 										\
-		int done = 0; 									\
-												\
-		uint16 ch = SVAL(*inbuf,0); 							\
-												\
-		for (i=0; from_idx[i].start != 0xffff; i++) {					\
-			if ((from_idx[i].start <= ch) && (from_idx[i].end >= ch)) {		\
-				((unsigned char*)(*outbuf))[0] = from_ucs2[from_idx[i].idx+ch];	\
-				(*inbytesleft) -= 2;						\
-				(*outbytesleft) -= 1;						\
-				(*inbuf)  += 2;							\
-				(*outbuf) += 1;							\
-				done = 1;							\
-				break;								\
-			}									\
-		}										\
-		if (!done) {									\
-			errno = EINVAL;								\
-			return -1;								\
-		}										\
-												\
-	}											\
-												\
-	if (*inbytesleft == 1) {								\
-		errno = EINVAL;									\
-		return -1;									\
-	}											\
-												\
-	if (*inbytesleft > 1) {									\
-		errno = E2BIG;									\
-		return -1;									\
-	}											\
-												\
-	return 0;										\
-}												\
-												\
-static size_t CHARSETNAME ## _pull(void *cd, char **inbuf, size_t *inbytesleft,				\
-			 char **outbuf, size_t *outbytesleft)					\
-{												\
-	while (*inbytesleft >= 1 && *outbytesleft >= 2) {					\
-		*(uint16*)(*outbuf) = to_ucs2[((unsigned char*)(*inbuf))[0]];			\
-		(*inbytesleft)  -= 1;								\
-		(*outbytesleft) -= 2;								\
-		(*inbuf)  += 1;									\
-		(*outbuf) += 2;									\
-	}											\
-												\
-	if (*inbytesleft > 0) {									\
-		errno = E2BIG;									\
-		return -1;									\
-	}											\
-												\
-	return 0;										\
-}												\
-												\
-struct charset_functions CHARSETNAME ## _functions = 						\
-		{#CHARSETNAME, CHARSETNAME ## _pull, CHARSETNAME ## _push};			\
-												\
-NTSTATUS charset_ ## CHARSETNAME ## _init(void)							\
-{												\
-	return smb_register_charset(& CHARSETNAME ## _functions);				\
-}												\
-
 

@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "../web/swat_proto.h"
 
 #ifdef WITH_WINBIND
 
@@ -31,7 +30,11 @@ NSS_STATUS winbindd_request(int req_type,
 
 BOOL winbindd_running(void)
 {
-	return winbind_ping();
+
+	if (winbindd_request(WINBINDD_PING, NULL, NULL))
+		return False;
+
+	return True;
 }	
 #endif
 
@@ -69,7 +72,7 @@ BOOL smbd_running(void)
 	if (!cli_initialise(&cli))
 		return False;
 
-	if (!cli_connect(&cli, global_myname(), &loopback_ip)) {
+	if (!cli_connect(&cli, lp_netbios_name(), &loopback_ip)) {
 		cli_shutdown(&cli);
 		return False;
 	}

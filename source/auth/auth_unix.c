@@ -108,7 +108,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		if (pass) {
-			make_server_info_pw(server_info, pass->pw_name, pass);
+			make_server_info_pw(server_info, pass);
 		} else {
 			/* we need to do somthing more useful here */
 			nt_status = NT_STATUS_NO_SUCH_USER;
@@ -132,5 +132,17 @@ static NTSTATUS auth_init_unix(struct auth_context *auth_context, const char* pa
 
 NTSTATUS auth_unix_init(void)
 {
-	return smb_register_auth(AUTH_INTERFACE_VERSION, "unix", auth_init_unix);
+	NTSTATUS ret;
+	struct auth_operations ops;
+
+	ops.name = "unix";
+	ops.init = auth_init_unix;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
+	}
+
+	return ret;
 }

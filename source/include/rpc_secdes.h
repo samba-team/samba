@@ -131,8 +131,8 @@ typedef struct security_ace_info
 
 	/* this stuff may be present when type is XXXX_TYPE_XXXX_OBJECT */
 	uint32  obj_flags; /* xxxx_ACE_OBJECT_xxxx e.g present/inherited present etc */
-	struct uuid obj_guid;  /* object GUID */
-	struct uuid inh_guid;  /* inherited object GUID */		
+	struct GUID    obj_guid;  /* object GUID */
+	struct GUID    inh_guid;  /* inherited object GUID */		
         /* eof object stuff */
 
 	DOM_SID trustee;
@@ -296,6 +296,14 @@ typedef struct standard_mapping {
 		(STANDARD_RIGHTS_EXECUTE_ACCESS	| \
 		SA_RIGHT_FILE_READ_ATTRIBUTES	| \
 		SA_RIGHT_FILE_EXECUTE)            
+
+
+/* directory specific access rights */
+#define SA_RIGHT_DIR_LIST              0x0001
+#define SA_RIGHT_DIR_ADD_FILE          0x0002
+#define SA_RIGHT_DIR_ADD_SUBDIRECTORY  0x0004
+#define SA_RIGHT_DIR_TRAVERSE          0x0020
+#define SA_RIGHT_DIR_DELETE_CHILD      0x0040
 
 		
 /* SAM server specific access rights */

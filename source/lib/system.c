@@ -100,47 +100,6 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 	return ret;
 }
 
-
-/*******************************************************************
-A pread wrapper that will deal with EINTR and 64-bit file offsets.
-********************************************************************/
-
-#if defined(HAVE_PREAD) || defined(HAVE_PREAD64)
-ssize_t sys_pread(int fd, void *buf, size_t count, SMB_OFF_T off)
-{
-	ssize_t ret;
-
-	do {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_PREAD64)
-		ret = pread64(fd, buf, count, off);
-#else
-		ret = pread(fd, buf, count, off);
-#endif
-	} while (ret == -1 && errno == EINTR);
-	return ret;
-}
-#endif
-
-/*******************************************************************
-A write wrapper that will deal with EINTR and 64-bit file offsets.
-********************************************************************/
-
-#if defined(HAVE_PWRITE) || defined(HAVE_PWRITE64)
-ssize_t sys_pwrite(int fd, const void *buf, size_t count, SMB_OFF_T off)
-{
-	ssize_t ret;
-
-	do {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_PWRITE64)
-		ret = pwrite64(fd, buf, count, off);
-#else
-		ret = pwrite(fd, buf, count, off);
-#endif
-	} while (ret == -1 && errno == EINTR);
-	return ret;
-}
-#endif
-
 /*******************************************************************
 A send wrapper that will deal with EINTR.
 ********************************************************************/
@@ -365,46 +324,12 @@ FILE *sys_fopen(const char *path, const char *type)
  A readdir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp)
+struct smb_dirent *sys_readdir(DIR *dirp)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_READDIR64)
 	return readdir64(dirp);
 #else
 	return readdir(dirp);
-#endif
-}
-
-/*******************************************************************
- An mknod() wrapper that will deal with 64 bit filesizes.
-********************************************************************/
-
-int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev)
-{
-#if defined(HAVE_MKNOD) || defined(HAVE_MKNOD64)
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_MKNOD64) && defined(HAVE_DEV64_T)
-	return mknod64(path, mode, dev);
-#else
-	return mknod(path, mode, dev);
-#endif
-#else
-	/* No mknod system call. */
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-/*******************************************************************
- Wrapper for realpath.
-********************************************************************/
-
-char *sys_realpath(const char *path, char *resolved_path)
-{
-#if defined(HAVE_REALPATH)
-	return realpath(path, resolved_path);
-#else
-	/* As realpath is not a system call we can't return ENOSYS. */
-	errno = EINVAL;
-	return NULL;
 #endif
 }
 
@@ -437,34 +362,6 @@ char *sys_getwd(char *s)
 }
 
 /*******************************************************************
-system wrapper for symlink
-********************************************************************/
-
-int sys_symlink(const char *oldpath, const char *newpath)
-{
-#ifndef HAVE_SYMLINK
-	errno = ENOSYS;
-	return -1;
-#else
-	return symlink(oldpath, newpath);
-#endif
-}
-
-/*******************************************************************
-system wrapper for readlink
-********************************************************************/
-
-int sys_readlink(const char *path, char *buf, size_t bufsiz)
-{
-#ifndef HAVE_READLINK
-	errno = ENOSYS;
-	return -1;
-#else
-	return readlink(path, buf, bufsiz);
-#endif
-}
-
-/*******************************************************************
 system wrapper for link
 ********************************************************************/
 
@@ -475,25 +372,6 @@ int sys_link(const char *oldpath, const char *newpath)
 	return -1;
 #else
 	return link(oldpath, newpath);
-#endif
-}
-
-/*******************************************************************
-chown isn't used much but OS/2 doesn't have it
-********************************************************************/
-
-int sys_chown(const char *fname,uid_t uid,gid_t gid)
-{
-#ifndef HAVE_CHOWN
-	static int done;
-	if (!done) {
-		DEBUG(1,("WARNING: no chown!\n"));
-		done=1;
-	}
-	errno = ENOSYS;
-	return -1;
-#else
-	return(chown(fname,uid,gid));
 #endif
 }
 
@@ -736,6 +614,7 @@ int sys_getgroups(int setlen, gid_t *gidset)
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
 
+#ifdef HAVE_SETGROUPS
 
 /**************************************************************************
  Wrapper for setgroups. Deals with broken (int) case. Automatically used
@@ -744,11 +623,6 @@ int sys_getgroups(int setlen, gid_t *gidset)
 
 int sys_setgroups(int setlen, gid_t *gidset)
 {
-#if !defined(HAVE_SETGROUPS)
-	errno = ENOSYS;
-	return -1;
-#endif /* HAVE_SETGROUPS */
-
 #if !defined(HAVE_BROKEN_GETGROUPS)
 	return setgroups(setlen, gidset);
 #else
@@ -789,14 +663,7 @@ int sys_setgroups(int setlen, gid_t *gidset)
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
 
-/**************************************************************************
- Wrappers for setpwent(), getpwent() and endpwent()
-****************************************************************************/
-
-void sys_setpwent(void)
-{
-	setpwent();
-}
+#endif /* HAVE_SETGROUPS */
 
 struct passwd *sys_getpwent(void)
 {
@@ -832,177 +699,6 @@ struct group *sys_getgrgid(gid_t gid)
 	return getgrgid(gid);
 }
 
-#if 0 /* NOT CURRENTLY USED - JRA */
-/**************************************************************************
- The following are the UNICODE versions of *all* system interface functions
- called within Samba. Ok, ok, the exceptions are the gethostbyXX calls,
- which currently are left as ascii as they are not used other than in name
- resolution.
-****************************************************************************/
-
-/**************************************************************************
- Wide stat. Just narrow and call sys_xxx.
-****************************************************************************/
-
-int wsys_stat(const smb_ucs2_t *wfname,SMB_STRUCT_STAT *sbuf)
-{
-	pstring fname;
-	return sys_stat(unicode_to_unix(fname,wfname,sizeof(fname)), sbuf);
-}
-
-/**************************************************************************
- Wide lstat. Just narrow and call sys_xxx.
-****************************************************************************/
-
-int wsys_lstat(const smb_ucs2_t *wfname,SMB_STRUCT_STAT *sbuf)
-{
-	pstring fname;
-	return sys_lstat(unicode_to_unix(fname,wfname,sizeof(fname)), sbuf);
-}
-
-/**************************************************************************
- Wide creat. Just narrow and call sys_xxx.
-****************************************************************************/
-
-int wsys_creat(const smb_ucs2_t *wfname, mode_t mode)
-{
-	pstring fname;
-	return sys_creat(unicode_to_unix(fname,wfname,sizeof(fname)), mode);
-}
-
-/**************************************************************************
- Wide open. Just narrow and call sys_xxx.
-****************************************************************************/
-
-int wsys_open(const smb_ucs2_t *wfname, int oflag, mode_t mode)
-{
-	pstring fname;
-	return sys_open(unicode_to_unix(fname,wfname,sizeof(fname)), oflag, mode);
-}
-
-/**************************************************************************
- Wide fopen. Just narrow and call sys_xxx.
-****************************************************************************/
-
-FILE *wsys_fopen(const smb_ucs2_t *wfname, const char *type)
-{
-	pstring fname;
-	return sys_fopen(unicode_to_unix(fname,wfname,sizeof(fname)), type);
-}
-
-/**************************************************************************
- Wide opendir. Just narrow and call sys_xxx.
-****************************************************************************/
-
-DIR *wsys_opendir(const smb_ucs2_t *wfname)
-{
-	pstring fname;
-	return opendir(unicode_to_unix(fname,wfname,sizeof(fname)));
-}
-
-/**************************************************************************
- Wide readdir. Return a structure pointer containing a wide filename.
-****************************************************************************/
-
-SMB_STRUCT_WDIRENT *wsys_readdir(DIR *dirp)
-{
-	static SMB_STRUCT_WDIRENT retval;
-	SMB_STRUCT_DIRENT *dirval = sys_readdir(dirp);
-
-	if(!dirval)
-		return NULL;
-
-	/*
-	 * The only POSIX defined member of this struct is d_name.
-	 */
-
-	unix_to_unicode(retval.d_name,dirval->d_name,sizeof(retval.d_name));
-
-	return &retval;
-}
-
-/**************************************************************************
- Wide getwd. Call sys_xxx and widen. Assumes s points to a wpstring.
-****************************************************************************/
-
-smb_ucs2_t *wsys_getwd(smb_ucs2_t *s)
-{
-	pstring fname;
-	char *p = sys_getwd(fname);
-
-	if(!p)
-		return NULL;
-
-	return unix_to_unicode(s, p, sizeof(wpstring));
-}
-
-/**************************************************************************
- Wide chown. Just narrow and call sys_xxx.
-****************************************************************************/
-
-int wsys_chown(const smb_ucs2_t *wfname, uid_t uid, gid_t gid)
-{
-	pstring fname;
-	return chown(unicode_to_unix(fname,wfname,sizeof(fname)), uid, gid);
-}
-
-/**************************************************************************
- Wide chroot. Just narrow and call sys_xxx.
-****************************************************************************/
-
-int wsys_chroot(const smb_ucs2_t *wfname)
-{
-	pstring fname;
-	return chroot(unicode_to_unix(fname,wfname,sizeof(fname)));
-}
-
-/**************************************************************************
- Wide getpwnam. Return a structure pointer containing wide names.
-****************************************************************************/
-
-SMB_STRUCT_WPASSWD *wsys_getpwnam(const smb_ucs2_t *wname)
-{
-	static SMB_STRUCT_WPASSWD retval;
-	fstring name;
-	struct passwd *pwret = sys_getpwnam(unicode_to_unix(name,wname,sizeof(name)));
-
-	if(!pwret)
-		return NULL;
-
-	unix_to_unicode(retval.pw_name, pwret->pw_name, sizeof(retval.pw_name));
-	retval.pw_passwd = pwret->pw_passwd;
-	retval.pw_uid = pwret->pw_uid;
-	retval.pw_gid = pwret->pw_gid;
-	unix_to_unicode(retval.pw_gecos, pwret->pw_gecos, sizeof(retval.pw_gecos));
-	unix_to_unicode(retval.pw_dir, pwret->pw_dir, sizeof(retval.pw_dir));
-	unix_to_unicode(retval.pw_shell, pwret->pw_shell, sizeof(retval.pw_shell));
-
-	return &retval;
-}
-
-/**************************************************************************
- Wide getpwuid. Return a structure pointer containing wide names.
-****************************************************************************/
-
-SMB_STRUCT_WPASSWD *wsys_getpwuid(uid_t uid)
-{
-	static SMB_STRUCT_WPASSWD retval;
-	struct passwd *pwret = sys_getpwuid(uid);
-
-	if(!pwret)
-		return NULL;
-
-	unix_to_unicode(retval.pw_name, pwret->pw_name, sizeof(retval.pw_name));
-	retval.pw_passwd = pwret->pw_passwd;
-	retval.pw_uid = pwret->pw_uid;
-	retval.pw_gid = pwret->pw_gid;
-	unix_to_unicode(retval.pw_gecos, pwret->pw_gecos, sizeof(retval.pw_gecos));
-	unix_to_unicode(retval.pw_dir, pwret->pw_dir, sizeof(retval.pw_dir));
-	unix_to_unicode(retval.pw_shell, pwret->pw_shell, sizeof(retval.pw_shell));
-
-	return &retval;
-}
-#endif /* NOT CURRENTLY USED - JRA */
 
 /**************************************************************************
  Extract a command into an arg list. Uses a static pstring for storage.
@@ -1052,35 +748,6 @@ static char **extract_args(const char *command)
 }
 
 /**************************************************************************
- Wrapper for fork. Ensures that mypid is reset. Used so we can write
- a sys_getpid() that only does a system call *once*.
-****************************************************************************/
-
-static pid_t mypid = (pid_t)-1;
-
-pid_t sys_fork(void)
-{
-	pid_t forkret = fork();
-
-	if (forkret == (pid_t)0) /* Child - reset mypid so sys_getpid does a system call. */
-		mypid = (pid_t) -1;
-
-	return forkret;
-}
-
-/**************************************************************************
- Wrapper for getpid. Ensures we only do a system call *once*.
-****************************************************************************/
-
-pid_t sys_getpid(void)
-{
-	if (mypid == (pid_t)-1)
-		mypid = getpid();
-
-	return mypid;
-}
-
-/**************************************************************************
  Wrapper for popen. Safer as it doesn't search a path.
  Modified from the glibc sources.
  modified by tridge to return a file descriptor. We must kick our FILE* habit
@@ -1125,7 +792,7 @@ int sys_popen(const char *command)
 	if(!(argl = extract_args(command)))
 		goto err_exit;
 
-	entry->child_pid = sys_fork();
+	entry->child_pid = fork();
 
 	if (entry->child_pid == -1) {
 		goto err_exit;
@@ -1274,309 +941,3 @@ int sys_dup2(int oldfd, int newfd)
 #endif
 }
 
-/**************************************************************************
- Wrapper for Admin Logs.
-****************************************************************************/
-
- void sys_adminlog(int priority, const char *format_str, ...) 
-{
-	va_list ap;
-	int ret;
-	char *msgbuf = NULL;
-
-	va_start( ap, format_str );
-	ret = vasprintf( &msgbuf, format_str, ap );
-	va_end( ap );
-
-	if (ret == -1)
-		return;
-
-#if defined(HAVE_SYSLOG)
-	syslog( priority, "%s", msgbuf );
-#else
-	DEBUG(0,("%s", msgbuf ));
-#endif
-	SAFE_FREE(msgbuf);
-}
-
-/**************************************************************************
- Wrappers for extented attribute calls. Based on the Linux package with
- support for IRIX also. Expand as other systems have them.
-****************************************************************************/
-
-ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size)
-{
-#if defined(HAVE_GETXATTR)
-	return getxattr(path, name, value, size);
-#elif defined(HAVE_ATTR_GET)
-	int retval, flags = 0;
-	int valuelength = (int)size;
-	char *attrname = strchr(name,'.') +1;
-	
-	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
-
-	retval = attr_get(path, attrname, (char *)value, &valuelength, flags);
-
-	return retval ? retval : valuelength;
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t size)
-{
-#if defined(HAVE_LGETXATTR)
-	return lgetxattr(path, name, value, size);
-#elif defined(HAVE_ATTR_GET)
-	int retval, flags = ATTR_DONTFOLLOW;
-	int valuelength = (int)size;
-	char *attrname = strchr(name,'.') +1;
-	
-	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
-
-	retval = attr_get(path, attrname, (char *)value, &valuelength, flags);
-
-	return retval ? retval : valuelength;
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
-{
-#if defined(HAVE_FGETXATTR)
-	return fgetxattr(filedes, name, value, size);
-#elif defined(HAVE_ATTR_GETF)
-	int retval, flags = 0;
-	int valuelength = (int)size;
-	char *attrname = strchr(name,'.') +1;
-	
-	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
-
-	retval = attr_getf(filedes, attrname, (char *)value, &valuelength, flags);
-
-	return retval ? retval : valuelength;
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-#if defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
-static char attr_buffer[ATTR_MAX_VALUELEN];
-
-static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t size, int flags)
-{
-	int retval = 0, index;
-	attrlist_cursor_t *cursor = 0;
-	int total_size = 0;
-	attrlist_t * al = (attrlist_t *)attr_buffer;
-	attrlist_ent_t *ae;
-	size_t ent_size, left = size;
-	char *bp = list;
-
-	while (True) {
-	    if (filedes)
-		retval = attr_listf(filedes, attr_buffer, ATTR_MAX_VALUELEN, flags, cursor);
-	    else
-		retval = attr_list(path, attr_buffer, ATTR_MAX_VALUELEN, flags, cursor);
-	    if (retval) break;
-	    for (index = 0; index < al->al_count; index++) {
-		ae = ATTR_ENTRY(attr_buffer, index);
-		ent_size = strlen(ae->a_name) + sizeof("user.");
-		if (left >= ent_size) {
-		    strncpy(bp, "user.", sizeof("user."));
-		    strncat(bp, ae->a_name, ent_size - sizeof("user."));
-		    bp += ent_size;
-		    left -= ent_size;
-		} else if (size) {
-		    errno = ERANGE;
-		    retval = -1;
-		    break;
-		}
-		total_size += ent_size;
-	    }
-	    if (al->al_more == 0) break;
-	}
-	if (retval == 0) {
-	    flags |= ATTR_ROOT;
-	    cursor = 0;
-	    while (True) {
-		if (filedes)
-		    retval = attr_listf(filedes, attr_buffer, ATTR_MAX_VALUELEN, flags, cursor);
-		else
-		    retval = attr_list(path, attr_buffer, ATTR_MAX_VALUELEN, flags, cursor);
-		if (retval) break;
-		for (index = 0; index < al->al_count; index++) {
-		    ae = ATTR_ENTRY(attr_buffer, index);
-		    ent_size = strlen(ae->a_name) + sizeof("system.");
-		    if (left >= ent_size) {
-			strncpy(bp, "system.", sizeof("system."));
-			strncat(bp, ae->a_name, ent_size - sizeof("system."));
-			bp += ent_size;
-			left -= ent_size;
-		    } else if (size) {
-			errno = ERANGE;
-			retval = -1;
-			break;
-		    }
-		    total_size += ent_size;
-		}
-		if (al->al_more == 0) break;
-	    }
-	}
-	return (ssize_t)(retval ? retval : total_size);
-}
-
-#endif
-
-ssize_t sys_listxattr (const char *path, char *list, size_t size)
-{
-#if defined(HAVE_LISTXATTR)
-	return listxattr(path, list, size);
-#elif defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
-	return irix_attr_list(path, 0, list, size, 0);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-ssize_t sys_llistxattr (const char *path, char *list, size_t size)
-{
-#if defined(HAVE_LLISTXATTR)
-	return llistxattr(path, list, size);
-#elif defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
-	return irix_attr_list(path, 0, list, size, ATTR_DONTFOLLOW);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-ssize_t sys_flistxattr (int filedes, char *list, size_t size)
-{
-#if defined(HAVE_FLISTXATTR)
-	return flistxattr(filedes, list, size);
-#elif defined(HAVE_ATTR_LISTF)
-	return irix_attr_list(NULL, filedes, list, size, 0);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-int sys_removexattr (const char *path, const char *name)
-{
-#if defined(HAVE_REMOVEXATTR)
-	return removexattr(path, name);
-#elif defined(HAVE_ATTR_REMOVE)
-	int flags = 0;
-	char *attrname = strchr(name,'.') +1;
-	
-	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
-
-	return attr_remove(path, attrname, flags);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-int sys_lremovexattr (const char *path, const char *name)
-{
-#if defined(HAVE_LREMOVEXATTR)
-	return lremovexattr(path, name);
-#elif defined(HAVE_ATTR_REMOVE)
-	int flags = ATTR_DONTFOLLOW;
-	char *attrname = strchr(name,'.') +1;
-	
-	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
-
-	return attr_remove(path, attrname, flags);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-int sys_fremovexattr (int filedes, const char *name)
-{
-#if defined(HAVE_FREMOVEXATTR)
-	return fremovexattr(filedes, name);
-#elif defined(HAVE_ATTR_REMOVEF)
-	int flags = 0;
-	char *attrname = strchr(name,'.') +1;
-	
-	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
-
-	return attr_removef(filedes, attrname, flags);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-#if !defined(HAVE_SETXATTR)
-#define XATTR_CREATE  0x1       /* set value, fail if attr already exists */
-#define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
-#endif
-
-int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags)
-{
-#if defined(HAVE_SETXATTR)
-	return setxattr(path, name, value, size, flags);
-#elif defined(HAVE_ATTR_SET)
-	int myflags = 0;
-	char *attrname = strchr(name,'.') +1;
-	
-	if (strncmp(name, "system", 6) == 0) myflags |= ATTR_ROOT;
-	if (flags & XATTR_CREATE) myflags |= ATTR_CREATE;
-	if (flags & XATTR_REPLACE) myflags |= ATTR_REPLACE;
-
-	return attr_set(path, attrname, (const char *)value, size, myflags);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-int sys_lsetxattr (const char *path, const char *name, const void *value, size_t size, int flags)
-{
-#if defined(HAVE_LSETXATTR)
-	return lsetxattr(path, name, value, size, flags);
-#elif defined(HAVE_ATTR_SET)
-	int myflags = ATTR_DONTFOLLOW;
-	char *attrname = strchr(name,'.') +1;
-	
-	if (strncmp(name, "system", 6) == 0) myflags |= ATTR_ROOT;
-	if (flags & XATTR_CREATE) myflags |= ATTR_CREATE;
-	if (flags & XATTR_REPLACE) myflags |= ATTR_REPLACE;
-
-	return attr_set(path, attrname, (const char *)value, size, myflags);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags)
-{
-#if defined(HAVE_FSETXATTR)
-	return fsetxattr(filedes, name, value, size, flags);
-#elif defined(HAVE_ATTR_SETF)
-	int myflags = 0;
-	char *attrname = strchr(name,'.') +1;
-	
-	if (strncmp(name, "system", 6) == 0) myflags |= ATTR_ROOT;
-	if (flags & XATTR_CREATE) myflags |= ATTR_CREATE;
-	if (flags & XATTR_REPLACE) myflags |= ATTR_REPLACE;
-
-	return attr_setf(filedes, attrname, (const char *)value, size, myflags);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}

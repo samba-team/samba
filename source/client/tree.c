@@ -36,7 +36,7 @@ struct tree_data {
 
 };
 
-static void tree_error_message(gchar *message) {
+void error_message(gchar *message) {
 
   GtkWidget *dialog, *label, *okay_button;
      
@@ -69,7 +69,7 @@ static void tree_error_message(gchar *message) {
  * workgroup type and return a path from there
  */
 
-static pstring path_string;
+static char path_string[1024];
 
 char *get_path(GtkWidget *item)
 {
@@ -112,7 +112,7 @@ char *get_path(GtkWidget *item)
    * Now, build the path
    */
 
-  pstrcpy( path_string, "smb:/" );
+  snprintf(path_string, sizeof(path_string), "smb:/");
 
   for (j = i - 1; j >= 0; j--) {
 
@@ -151,7 +151,7 @@ static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
   char dirbuf[512];
   struct smbc_dirent *dirp;
   struct stat st1;
-  pstring path, path1;
+  char path[1024], path1[1024];
 
   g_print ("select_child called for root tree %p, subtree %p, child %p\n",
 	   root_tree, subtree, child);
@@ -344,7 +344,7 @@ static void cb_itemsignal( GtkWidget *item,
 
       slprintf(errmsg, sizeof(errmsg), "cb_itemsignal: Could not open dir %s, %s\n", get_path(item), strerror(errno));
 
-      tree_error_message(errmsg);
+      error_message(errmsg);
 
       /*      gtk_main_quit();*/
 
@@ -363,7 +363,7 @@ static void cb_itemsignal( GtkWidget *item,
 
 	slprintf(errmsg, sizeof(errmsg), "cb_itemsignal: Could not read dir smbc://, %s\n", strerror(errno));
 
-	tree_error_message(errmsg);
+	error_message(errmsg);
 
 	/*	gtk_main_quit();*/
 

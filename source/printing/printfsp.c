@@ -26,7 +26,7 @@ open a print file and setup a fsp for it. This is a wrapper around
 print_job_start().
 ***************************************************************************/
 
-files_struct *print_fsp_open(connection_struct *conn, char *fname)
+files_struct *print_fsp_open(struct tcon_context *conn, char *fname)
 {
 	int jobid;
 	SMB_STRUCT_STAT sbuf;
@@ -80,7 +80,7 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	string_set(&fsp->fsp_name,print_job_fname(SNUM(conn),jobid));
 	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
-	SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf);
+	conn->vfs_ops.fstat(fsp,fsp->fd, &sbuf);
 	fsp->mode = sbuf.st_mode;
 	fsp->inode = sbuf.st_ino;
 	fsp->dev = sbuf.st_dev;

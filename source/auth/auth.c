@@ -23,53 +23,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-static struct auth_init_function_entry *backends = NULL;
-
-static struct auth_init_function_entry *auth_find_backend_entry(const char *name);
-
-NTSTATUS smb_register_auth(int version, const char *name, auth_init_function init)
-{
-	struct auth_init_function_entry *entry = backends;
-
-	if (version != AUTH_INTERFACE_VERSION) {
-		DEBUG(0,("Can't register auth_method!\n"
-			 "You tried to register an auth module with AUTH_INTERFACE_VERSION %d, while this version of samba uses %d\n",
-			 version,AUTH_INTERFACE_VERSION));
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-	}
-
-	if (!name || !init) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	DEBUG(5,("Attempting to register auth backend %s\n", name));
-
-	if (auth_find_backend_entry(name)) {
-		DEBUG(0,("There already is an auth method registered with the name %s!\n", name));
-		return NT_STATUS_OBJECT_NAME_COLLISION;
-	}
-	
-	entry = smb_xmalloc(sizeof(struct auth_init_function_entry));
-	entry->name = smb_xstrdup(name);
-	entry->init = init;
-
-	DLIST_ADD(backends, entry);
-	DEBUG(5,("Successfully added auth method '%s'\n", name));
-	return NT_STATUS_OK;
-}
-
-static struct auth_init_function_entry *auth_find_backend_entry(const char *name)
-{
-	struct auth_init_function_entry *entry = backends;
-
-	while(entry) {
-		if (strcmp(entry->name, name)==0) return entry;
-		entry = entry->next;
-	}
-	
-	return NULL;
-}
-
 /****************************************************************************
  Try to get a challenge out of the various authentication modules.
  Returns a const char of length 8 bytes.
@@ -87,8 +40,6 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 			  auth_context->challenge_set_by));
 		return auth_context->challenge.data;
 	}
-
-	auth_context->challenge_may_be_modified = False;
 
 	for (auth_method = auth_context->auth_method_list; auth_method; auth_method = auth_method->next) {
 		if (auth_method->get_chal == NULL) {
@@ -129,12 +80,11 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 							   chal, sizeof(chal));
 		
 		challenge_set_by = "random";
-		auth_context->challenge_may_be_modified = True;
 	} 
 	
 	DEBUG(5, ("auth_context challenge created by %s\n", challenge_set_by));
 	DEBUG(5, ("challenge is: \n"));
-	dump_data(5, (const char *)auth_context->challenge.data, auth_context->challenge.length);
+	dump_data(5, (const char*)auth_context->challenge.data, auth_context->challenge.length);
 	
 	SMB_ASSERT(auth_context->challenge.length == 8);
 
@@ -206,9 +156,9 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 				    const struct auth_usersupplied_info *user_info, 
 				    struct auth_serversupplied_info **server_info)
 {
-	/* if all the modules say 'not for me' this is reasonable */
-	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
-	const char *unix_username;
+	
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	const char *pdb_username;
 	auth_methods *auth_method;
 	TALLOC_CTX *mem_ctx;
 
@@ -231,7 +181,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 					auth_context->challenge_set_by));
 
 	DEBUG(10, ("challenge is: \n"));
-	dump_data(5, (const char *)auth_context->challenge.data, auth_context->challenge.length);
+	dump_data(5, (const char*)auth_context->challenge.data, auth_context->challenge.length);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("user_info has passwords of length %d and %d\n", 
@@ -247,24 +197,12 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
-		NTSTATUS result;
-		
 		mem_ctx = talloc_init("%s authentication for user %s\\%s", auth_method->name, 
 					    user_info->domain.str, user_info->smb_name.str);
 
-		result = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
-
-		/* check if the module did anything */
-		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ) {
-			DEBUG(10,("check_ntlm_password: %s had nothing to say\n", auth_method->name));
-			talloc_destroy(mem_ctx);
-			continue;
-		}
-
-		nt_status = result;
-
+		nt_status = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] succeeded\n", 
+			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] suceeded\n", 
 				  auth_method->name, user_info->smb_name.str));
 		} else {
 			DEBUG(5, ("check_ntlm_password: %s authentication for user [%s] FAILED with error %s\n", 
@@ -273,36 +211,40 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 		talloc_destroy(mem_ctx);
 
-		if ( NT_STATUS_IS_OK(nt_status))
-		{
-				break;			
-		}
+		if (NT_STATUS_IS_OK(nt_status))
+			break;
 	}
 
+	/* This is one of the few places the *relies* (rather than just sets defaults
+	   on the value of lp_security().  This needs to change.  A new paramater 
+	   perhaps? */
+	if (lp_security() >= SEC_SERVER)
+		smb_user_control(user_info, *server_info, nt_status);
+
 	if (NT_STATUS_IS_OK(nt_status)) {
-		unix_username = (*server_info)->unix_name;
+		pdb_username = pdb_get_username((*server_info)->sam_account);
 		if (!(*server_info)->guest) {
 			/* We might not be root if we are an RPC call */
 			become_root();
-			nt_status = smb_pam_accountcheck(unix_username);
+			nt_status = smb_pam_accountcheck(pdb_username);
 			unbecome_root();
 			
 			if (NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(5, ("check_ntlm_password:  PAM Account for user [%s] succeeded\n", 
-					  unix_username));
+				DEBUG(5, ("check_ntlm_password:  PAM Account for user [%s] suceeded\n", 
+					  pdb_username));
 			} else {
 				DEBUG(3, ("check_ntlm_password:  PAM Account for user [%s] FAILED with error %s\n", 
-					  unix_username, nt_errstr(nt_status)));
+					  pdb_username, nt_errstr(nt_status)));
 			} 
 		}
 		
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG((*server_info)->guest ? 5 : 2, 
-			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] succeeded\n", 
+			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] suceeded\n", 
 			       (*server_info)->guest ? "guest " : "", 
 			       user_info->smb_name.str, 
 			       user_info->internal_username.str, 
-			       unix_username));
+			       pdb_username));
 		}
 	}
 
@@ -321,20 +263,9 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 static void free_auth_context(struct auth_context **auth_context)
 {
-	auth_methods *auth_method;
-
-	if (*auth_context) {
-		/* Free private data of context's authentication methods */
-		for (auth_method = (*auth_context)->auth_method_list; auth_method; auth_method = auth_method->next) {
-			if (auth_method->free_private_data) {
-				auth_method->free_private_data (&auth_method->private_data);
-				auth_method->private_data = NULL;
-			}
-		}
-
+	if (*auth_context != NULL)
 		talloc_destroy((*auth_context)->mem_ctx);
-		*auth_context = NULL;
-	}
+	*auth_context = NULL;
 }
 
 /***************************************************************************
@@ -363,60 +294,6 @@ static NTSTATUS make_auth_context(struct auth_context **auth_context)
 	return NT_STATUS_OK;
 }
 
-BOOL load_auth_module(struct auth_context *auth_context, 
-		      const char *module, auth_methods **ret) 
-{
-	static BOOL initialised_static_modules = False;
-
-	struct auth_init_function_entry *entry;
-	char *module_name = smb_xstrdup(module);
-	char *module_params = NULL;
-	char *p;
-	BOOL good = False;
-
-	/* Initialise static modules if not done so yet */
-	if(!initialised_static_modules) {
-		static_init_auth;
-		initialised_static_modules = True;
-	}
-	
-	DEBUG(5,("load_auth_module: Attempting to find an auth method to match %s\n",
-		 module));
-	
-	p = strchr(module_name, ':');
-	if (p) {
-		*p = 0;
-		module_params = p+1;
-		trim_char(module_params, ' ', ' ');
-	}
-	
-	trim_char(module_name, ' ', ' ');
-	
-	entry = auth_find_backend_entry(module_name);
-	
-	if (entry == NULL) {
-		if (NT_STATUS_IS_OK(smb_probe_module("auth", module_name))) {
-			entry = auth_find_backend_entry(module_name);
-		}
-	}
-
-	if (entry != NULL) {
-		if (!NT_STATUS_IS_OK(entry->init(auth_context, module_params, ret))) {
-			DEBUG(0,("load_auth_module: auth method %s did not correctly init\n",
-				 module_name));
-		} else {
-			DEBUG(5,("load_auth_module: auth method %s has a valid init\n",
-				 module_name));
-			good = True;
-		}
-	} else {
-		DEBUG(0,("load_auth_module: can't find auth method %s!\n", module_name));
-	}
-
-	SAFE_FREE(module_name);
-	return good;
-}
-
 /***************************************************************************
  Make a auth_info struct for the auth subsystem
 ***************************************************************************/
@@ -425,7 +302,7 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 {
 	auth_methods *list = NULL;
 	auth_methods *t = NULL;
-	auth_methods *tmp;
+	int i;
 	NTSTATUS nt_status;
 
 	if (!text_list) {
@@ -435,11 +312,41 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 	
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context(auth_context)))
 		return nt_status;
+	
+	for (;*text_list; text_list++) {
+		char *module_name = smb_xstrdup(*text_list);
+		char *module_params = NULL;
+		char *p;
+		const struct auth_operations *ops;
 
-	for (;*text_list; text_list++) { 
-		if (load_auth_module(*auth_context, *text_list, &t)) {
-		    DLIST_ADD_END(list, t, tmp);
+		DEBUG(5,("make_auth_context_text_list: Attempting to find an auth method to match %s\n",
+					*text_list));
+
+		p = strchr(module_name, ':');
+		if (p) {
+			*p = 0;
+			module_params = p+1;
+			trim_string(module_params, " ", " ");
 		}
+
+		trim_string(module_name, " ", " ");
+
+		ops = auth_backend_byname(module_name);
+		if (!ops) {
+			DEBUG(5,("make_auth_context_text_list: Found auth method %s (at pos %d)\n", *text_list, i));
+			SAFE_FREE(module_name);
+			break;
+		}
+
+		if (NT_STATUS_IS_OK(ops->init(*auth_context, module_params, &t))) {
+			DEBUG(5,("make_auth_context_text_list: auth method %s has a valid init\n",
+						*text_list));
+			DLIST_ADD_END(list, t, auth_methods *);
+		} else {
+			DEBUG(0,("make_auth_context_text_list: auth method %s did not correctly init\n",
+						*text_list));
+		}
+		SAFE_FREE(module_name);
 	}
 	
 	(*auth_context)->auth_method_list = list;
@@ -465,7 +372,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		{
 		case SEC_DOMAIN:
 			DEBUG(5,("Making default auth method list for security=domain\n"));
-			auth_method_list = str_list_make("guest sam winbind:ntdomain", NULL);
+			auth_method_list = str_list_make("guest sam winbind ntdomain", NULL);
 			break;
 		case SEC_SERVER:
 			DEBUG(5,("Making default auth method list for security=server\n"));
@@ -473,13 +380,8 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 			break;
 		case SEC_USER:
 			if (lp_encrypted_passwords()) {	
-				if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
-					DEBUG(5,("Making default auth method list for DC, security=user, encrypt passwords = yes\n"));
-					auth_method_list = str_list_make("guest sam winbind:trustdomain", NULL);
-				} else {
-					DEBUG(5,("Making default auth method list for standalone security=user, encrypt passwords = yes\n"));
-					auth_method_list = str_list_make("guest sam", NULL);
-				}
+				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = yes\n"));
+				auth_method_list = str_list_make("guest sam", NULL);
 			} else {
 				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = no\n"));
 				auth_method_list = str_list_make("guest unix", NULL);
@@ -496,7 +398,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 			break;
 		case SEC_ADS:
 			DEBUG(5,("Making default auth method list for security=ADS\n"));
-			auth_method_list = str_list_make("guest sam winbind:ntdomain", NULL);
+			auth_method_list = str_list_make("guest sam ads winbind ntdomain", NULL);
 			break;
 		default:
 			DEBUG(5,("Unknown auth method!\n"));
@@ -526,9 +428,106 @@ NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[
 		return nt_status;
 	}
 	
-	(*auth_context)->challenge = data_blob_talloc((*auth_context)->mem_ctx, chal, 8);
+	(*auth_context)->challenge = data_blob(chal, 8);
 	(*auth_context)->challenge_set_by = "fixed";
 	return nt_status;
 }
 
+/* the list of currently registered AUTH backends */
+static struct {
+	const struct auth_operations *ops;
+} *backends = NULL;
+static int num_backends;
 
+/*
+  register a AUTH backend. 
+
+  The 'name' can be later used by other backends to find the operations
+  structure for this backend.
+*/
+static NTSTATUS auth_register(void *_ops)
+{
+	const struct auth_operations *ops = _ops;
+	struct auth_operations *new_ops;
+	
+	if (auth_backend_byname(ops->name) != NULL) {
+		/* its already registered! */
+		DEBUG(0,("AUTH backend '%s' already registered\n", 
+			 ops->name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	backends = Realloc(backends, sizeof(backends[0]) * (num_backends+1));
+	if (!backends) {
+		smb_panic("out of memory in auth_register");
+	}
+
+	new_ops = smb_xmemdup(ops, sizeof(*ops));
+	new_ops->name = smb_xstrdup(ops->name);
+
+	backends[num_backends].ops = new_ops;
+
+	num_backends++;
+
+	DEBUG(3,("AUTH backend '%s' registered\n", 
+		 ops->name));
+
+	return NT_STATUS_OK;
+}
+
+/*
+  return the operations structure for a named backend of the specified type
+*/
+const struct auth_operations *auth_backend_byname(const char *name)
+{
+	int i;
+
+	for (i=0;i<num_backends;i++) {
+		if (strcmp(backends[i].ops->name, name) == 0) {
+			return backends[i].ops;
+		}
+	}
+
+	return NULL;
+}
+
+/*
+  return the AUTH interface version, and the size of some critical types
+  This can be used by backends to either detect compilation errors, or provide
+  multiple implementations for different smbd compilation options in one module
+*/
+const struct auth_critical_sizes *auth_interface_version(void)
+{
+	static const struct auth_critical_sizes critical_sizes = {
+		AUTH_INTERFACE_VERSION,
+		sizeof(struct auth_operations),
+		sizeof(struct auth_methods),
+		sizeof(struct auth_context),
+		sizeof(struct auth_ntlmssp_state),
+		sizeof(struct auth_usersupplied_info),
+		sizeof(struct auth_serversupplied_info),
+		sizeof(struct auth_str),
+		sizeof(struct auth_unistr)
+	};
+
+	return &critical_sizes;
+}
+
+/*
+  initialise the AUTH subsystem
+*/
+BOOL auth_init(void)
+{
+	NTSTATUS status;
+
+	status = register_subsystem("auth", auth_register); 
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	/* FIXME: Perhaps panic if a basic backend, such as SAM, fails to initialise? */
+	static_init_auth;
+
+	DEBUG(3,("AUTH subsystem version %d initialised\n", AUTH_INTERFACE_VERSION));
+	return True;
+}

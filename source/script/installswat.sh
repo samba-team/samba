@@ -1,7 +1,7 @@
 #!/bin/sh
-#first version March 1998, Andrew Tridgell
+#fist version March 1998, Andrew Tridgell
 
-SWATDIR=`echo $1 | sed 's/\/\//\//g'`
+SWATDIR=$1
 SRCDIR=$2/
 BOOKDIR=$SWATDIR/using_samba
 
@@ -28,22 +28,16 @@ done
 # Install images
 for ln in $LANGS; do
 
-  for f in $SRCDIR../swat/$ln/images/*.gif; do
-      if [ ! -f $f ] ; then
-	continue
-      fi
+for f in $SRCDIR../swat/$ln/images/*.gif; do
       FNAME=$SWATDIR/$ln/images/`basename $f`
       echo $FNAME
       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
       chmod 0644 $FNAME
-  done
+done
 
-  # Install html help
+# Install html help
 
-  for f in $SRCDIR../swat/$ln/help/*.html; do
-      if [ ! -f $f ] ; then
-	continue
-      fi
+for f in $SRCDIR../swat/$ln/help/*.html; do
       FNAME=$SWATDIR/$ln/help/`basename $f`
       echo $FNAME
       if [ "x$BOOKDIR" = "x" ]; then
@@ -55,57 +49,35 @@ for ln in $LANGS; do
       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
       rm -f $f
       chmod 0644 $FNAME
-  done
+done
 
-  # Install "server-side" includes
+# Install html documentation
 
-  for f in $SRCDIR../swat/$ln/include/*.html; do
-      if [ ! -f $f ] ; then
-	continue
-      fi
+for f in $SRCDIR../docs/htmldocs/*.html; do
+      FNAME=$SWATDIR/help/`basename $f`
+      echo $FNAME
+      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+      chmod 0644 $FNAME
+done
+
+# Install "server-side" includes
+
+for f in $SRCDIR../swat/$ln/include/*.html; do
       FNAME=$SWATDIR/$ln/include/`basename $f`
       echo $FNAME
       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
       chmod 0644 $FNAME
-  done
+done
 
 done
 
-# Install html documentation (if html documentation tree is here)
+# Install Using Samba book
 
-if [ -d $SRCDIR../docs/htmldocs/ ]; then
-
-    for f in $SRCDIR../docs/htmldocs/*.html; do
-	FNAME=$SWATDIR/help/`basename $f`
-	echo $FNAME
-	cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-	chmod 0644 $FNAME
-    done
-
-    if [ -d $SRCDIR../docs/htmldocs/images/ ]; then
-        if [ ! -d $SWATDIR/help/images/ ]; then
-            mkdir $SWATDIR/help/images
-            if [ ! -d $SWATDIR/help/images/ ]; then
-                echo Failed to make directory $SWATDIR/help/images, does $USER have privileges?
-                exit 1
-            fi
-        fi
-        for f in $SRCDIR../docs/htmldocs/images/*.png; do
-            FNAME=$SWATDIR/help/images/`basename $f`
-            echo $FNAME
-            cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-            chmod 0644 $FNAME
-        done
-    fi
-fi
-
-# Install Using Samba book (but only if it is there)
-
-if [ "x$BOOKDIR" != "x" -a -f $SRCDIR../docs/htmldocs/using_samba/toc.html ]; then
+if [ "x$BOOKDIR" != "x" ]; then
 
     # Create directories
 
-    for d in $BOOKDIR $BOOKDIR/figs ; do
+    for d in $BOOKDIR $BOOKDIR/figs $BOOKDIR/gifs; do
         if [ ! -d $d ]; then
             mkdir $d
             if [ ! -d $d ]; then
@@ -124,17 +96,19 @@ if [ "x$BOOKDIR" != "x" -a -f $SRCDIR../docs/htmldocs/using_samba/toc.html ]; th
         chmod 0644 $FNAME
     done
 
-    for f in $SRCDIR../docs/htmldocs/using_samba/*.gif; do
-        FNAME=$BOOKDIR/`basename $f`
+    # Figures
+
+    for f in $SRCDIR../docs/htmldocs/using_samba/figs/*.gif; do
+        FNAME=$BOOKDIR/figs/`basename $f`
         echo $FNAME
         cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
         chmod 0644 $FNAME
     done
 
-    # Figures
+    # Gifs
 
-    for f in $SRCDIR../docs/htmldocs/using_samba/figs/*.gif; do
-        FNAME=$BOOKDIR/figs/`basename $f`
+    for f in $SRCDIR../docs/htmldocs/using_samba/gifs/*.gif; do
+        FNAME=$BOOKDIR/gifs/`basename $f`
         echo $FNAME
         cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
         chmod 0644 $FNAME

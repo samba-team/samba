@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Copyright (C) 2001 by Martin Pool <mbp@samba.org>
-   Copyright (C) 2003 by Jim McDonough <jmcd@us.ibm.com>
+   Copyright (C) 2003 by Anthony Liguori <aliguor@us.ibm.com>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,11 +25,11 @@
  **/
 
 extern char const *dyn_SBINDIR,
-	*dyn_BINDIR,
-	*dyn_SWATDIR;
+	*dyn_BINDIR;
 
 extern pstring dyn_CONFIGFILE;
-extern pstring dyn_LOGFILEBASE, dyn_LMHOSTSFILE;
+extern const char *dyn_LOGFILEBASE;
+extern pstring dyn_LMHOSTSFILE;
 extern pstring dyn_LIBDIR;
 extern const fstring dyn_SHLIBEXT;
 extern const pstring dyn_LOCKDIR; 

@@ -50,7 +50,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
         while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
 		standard_sub_basic(current_user_info.smb_name, desthost, sizeof(desthost));
-		strupper_m(desthost);
+		strupper(desthost);
 
 		if(!resolve_name( desthost, &dest_ip, 0x20)) {
 			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
@@ -85,7 +85,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 	
-	if (!attempt_netbios_session_request(cli, global_myname(), 
+	if (!attempt_netbios_session_request(cli, lp_netbios_name(), 
 					     desthost, &dest_ip)) {
 		release_server_mutex();
 		DEBUG(1,("password server fails session request\n"));
@@ -93,7 +93,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 	
-	if (strequal(desthost,myhostname())) {
+	if (strequal(desthost,myhostname(mem_ctx))) {
 		exit_server("Password server loop!");
 	}
 	
@@ -143,10 +143,8 @@ static void free_server_private_data(void **private_data_pointer)
 {
 	struct cli_state **cli = (struct cli_state **)private_data_pointer;
 	if (*cli && (*cli)->initialised) {
-		DEBUG(10, ("Shutting down smbserver connection\n"));
 		cli_shutdown(*cli);
 	}
-	*private_data_pointer = NULL;
 }
 
 /****************************************************************************
@@ -155,16 +153,14 @@ static void free_server_private_data(void **private_data_pointer)
 
 static void send_server_keepalive(void **private_data_pointer) 
 {
+	struct cli_state **cli = (struct cli_state **)private_data_pointer;
+	
 	/* also send a keepalive to the password server if its still
 	   connected */
-	if (private_data_pointer) {
-		struct cli_state *cli = (struct cli_state *)(*private_data_pointer);
-		if (cli && cli->initialised) {
-			if (!send_keepalive(cli->fd)) {
-				DEBUG( 2, ( "send_server_keepalive: password server keepalive failed.\n"));
-				cli_shutdown(cli);
-				*private_data_pointer = NULL;
-			}
+	if (cli && *cli && (*cli)->initialised) {
+		if (!send_nbt_keepalive((*cli)->fd)) {
+			DEBUG( 2, ( "password server keepalive failed.\n"));
+			cli_shutdown(*cli);
 		}
 	}
 }
@@ -226,7 +222,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	static fstring baduser; 
 	static BOOL tested_password_server = False;
 	static BOOL bad_password_server = False;
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	BOOL locally_made_cli = False;
 
 	/* 
@@ -237,7 +233,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 
 	if(is_myname(user_info->domain.str)) {
 		DEBUG(3,("check_smbserver_security: Requested domain was for this machine.\n"));
-		return nt_status;
+		return NT_STATUS_LOGON_FAILURE;
 	}
 
 	cli = my_private_data;
@@ -279,7 +275,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 
 	if(baduser[0] == 0) {
 		fstrcpy(baduser, INVALID_USER_PREFIX);
-		fstrcat(baduser, global_myname());
+		fstrcat(baduser, lp_netbios_name());
 	}
 
 	/*
@@ -376,17 +372,11 @@ use this machine as the password server.\n"));
 
 	cli_ulogoff(cli);
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		fstring real_username;
-		struct passwd *pass;
-
-		if ( (pass = smb_getpwnam( user_info->internal_username.str, 
-			real_username, True )) != NULL ) 
-		{
-			nt_status = make_server_info_pw(server_info, pass->pw_name, pass);
-		}
-		else
-		{
+	if NT_STATUS_IS_OK(nt_status) {
+		struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
+		if (pass) {
+			nt_status = make_server_info_pw(server_info, pass);
+		} else {
 			nt_status = NT_STATUS_NO_SUCH_USER;
 		}
 	}
@@ -398,7 +388,7 @@ use this machine as the password server.\n"));
 	return(nt_status);
 }
 
-static NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
+NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
@@ -409,9 +399,4 @@ static NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const cha
 	(*auth_method)->send_keepalive = send_server_keepalive;
 	(*auth_method)->free_private_data = free_server_private_data;
 	return NT_STATUS_OK;
-}
-
-NTSTATUS auth_server_init(void)
-{
-	return smb_register_auth(AUTH_INTERFACE_VERSION, "smbserver", auth_init_smbserver);
 }

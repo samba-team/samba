@@ -52,6 +52,7 @@ BOOL pdb_set_user_sid_from_rid (SAM_ACCOUNT *sampass, uint32 rid, enum pdb_value
 {
 	DOM_SID u_sid;
 	const DOM_SID *global_sam_sid;
+	TALLOC_CTX *mem_ctx;
 	
 	if (!sampass)
 		return False;
@@ -68,10 +69,14 @@ BOOL pdb_set_user_sid_from_rid (SAM_ACCOUNT *sampass, uint32 rid, enum pdb_value
 
 	if (!pdb_set_user_sid(sampass, &u_sid, flag))
 		return False;
-
+	mem_ctx = talloc_init("pdb_set_user_sid_from_rid");
+	if (!mem_ctx) {
+		DEBUG(1, ("pdb_set_user_sid_from_rid: No memory\n"));
+		return False;
+	}
 	DEBUG(10, ("pdb_set_user_sid_from_rid:\n\tsetting user sid %s from rid %d\n", 
-		    sid_string_static(&u_sid),rid));
-
+		    sid_string_talloc(mem_ctx, &u_sid),rid));
+	talloc_destroy(mem_ctx);
 	return True;
 }
 
@@ -79,6 +84,7 @@ BOOL pdb_set_group_sid_from_rid (SAM_ACCOUNT *sampass, uint32 grid, enum pdb_val
 {
 	DOM_SID g_sid;
 	const DOM_SID *global_sam_sid;
+	TALLOC_CTX *mem_ctx;
 
 	if (!sampass)
 		return False;
@@ -96,9 +102,14 @@ BOOL pdb_set_group_sid_from_rid (SAM_ACCOUNT *sampass, uint32 grid, enum pdb_val
 	if (!pdb_set_group_sid(sampass, &g_sid, flag))
 		return False;
 
+	mem_ctx = talloc_init("pdb_set_user_sid_from_rid");
+	if (!mem_ctx) {
+		DEBUG(1, ("pdb_set_user_sid_from_rid: No memory\n"));
+		return False;
+	}
 	DEBUG(10, ("pdb_set_group_sid_from_rid:\n\tsetting group sid %s from rid %d\n", 
-		    sid_string_static(&g_sid), grid));
-
+		    sid_string_talloc(mem_ctx, &g_sid), grid));
+	talloc_destroy(mem_ctx);
 	return True;
 }
 

@@ -121,11 +121,10 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 	keybuf.dsize = strlen(keystr)+1;
 	databuf.dptr = strdup(valstr);
 	databuf.dsize = strlen(valstr)+1;
-	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
-	           " %s (%d seconds %s)\n", keybuf.dptr, value,ctime(&timeout),
-		   (int)(timeout - time(NULL)), 
-		   timeout > time(NULL) ? "ahead" : "in the past"));
-
+	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout \
+	           = %s (%d seconds %s)\n", keybuf.dptr, value, ctime(&timeout),
+	           (int)(timeout - time(NULL)), timeout > time(NULL) ? "ahead" : "in the past"));
+		
 	ret = tdb_store(cache, keybuf, databuf, 0);
 	SAFE_FREE(valstr);
 	SAFE_FREE(keybuf.dptr);
@@ -357,9 +356,6 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 
 int gencache_lock_entry( const char *key )
 {
-	if (!gencache_init())
-		return -1;
-	
 	return tdb_lock_bystring(cache, key, 0);
 }
 
@@ -369,9 +365,6 @@ int gencache_lock_entry( const char *key )
 
 void gencache_unlock_entry( const char *key )
 {
-	if (!gencache_init())
-		return;
-	
 	tdb_unlock_bystring(cache, key);
 	return;
 }

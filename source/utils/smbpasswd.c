@@ -37,7 +37,6 @@ static const char *remote_machine = NULL;
 
 static fstring ldap_secret;
 
-
 /*********************************************************
  Print command usage on stderr and die.
 **********************************************************/
@@ -64,7 +63,7 @@ static void usage(void)
 	printf("  -i                   interdomain trust account\n");
 	printf("  -m                   machine trust account\n");
 	printf("  -n                   set no password\n");
-	printf("  -w PASSWORD          ldap admin password\n");
+	printf("  -w                   ldap admin password\n");
 	printf("  -x                   delete user\n");
 	printf("  -R ORDER             name resolve order\n");
 
@@ -341,22 +340,14 @@ static int process_root(int local_flags)
 	int result = 0;
 	char *old_passwd = NULL;
 
-	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW) {
+	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW)
+	{
 		printf("Setting stored password for \"%s\" in secrets.tdb\n", 
 			lp_ldap_admin_dn());
 		if (!store_ldap_admin_pw(ldap_secret))
 			DEBUG(0,("ERROR: Failed to store the ldap admin password!\n"));
 		goto done;
 	}
-
-	/* Ensure passdb startup(). */
-	if(!initialize_password_db(False)) {
-		DEBUG(0, ("Failed to open passdb!\n"));
-		exit(1);
-	}
-		
-	/* Ensure we have a SAM sid. */
-	get_global_sam_sid();
 
 	/*
 	 * Ensure both add/delete user are not set
@@ -401,7 +392,7 @@ static int process_root(int local_flags)
 		if (local_flags & LOCAL_ADD_USER) {
 		        SAFE_FREE(new_passwd);
 			new_passwd = smb_xstrdup(user_name);
-			strlower_m(new_passwd);
+			strlower(new_passwd);
 		}
 
 		/*
@@ -414,7 +405,7 @@ static int process_root(int local_flags)
 	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
 		static fstring buf;
 
-		if ((local_flags & LOCAL_ADD_USER) && (new_passwd == NULL)) {
+		if (local_flags & LOCAL_ADD_USER) {
 			/*
 			 * Prompt for trusting domain's account password
 			 */
@@ -459,7 +450,7 @@ static int process_root(int local_flags)
 			}
 		}
 		
-		if((local_flags & LOCAL_SET_PASSWORD) && (new_passwd == NULL)) {
+		if(local_flags & LOCAL_SET_PASSWORD) {
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
 			
 			if(!new_passwd) {
@@ -589,7 +580,7 @@ int main(int argc, char **argv)
 
 	local_flags = process_options(argc, argv, local_flags);
 
-	setup_logging("smbpasswd", True);
+	setup_logging("smbpasswd", DEBUG_STDOUT);
 	
 	/*
 	 * Set the machine NETBIOS name if not already

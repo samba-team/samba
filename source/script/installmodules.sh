@@ -1,8 +1,8 @@
 #!/bin/sh
 
 INSTALLPERMS=$1
-BASEDIR=`echo $2 | sed 's/\/\//\//g'`
-LIBDIR=`echo $3 | sed 's/\/\//\//g'`
+BASEDIR=$2
+LIBDIR=$3
 shift
 shift
 shift
@@ -23,5 +23,14 @@ for p in $*; do
  cp -f $p $LIBDIR/
  chmod $INSTALLPERMS $LIBDIR/$p2
 done
+
+
+cat << EOF
+======================================================================
+The modules are installed.  You may uninstall the modules using the 
+command "make uninstallmodules" or "make uninstall" to uninstall
+binaries, man pages, shell scripts and modules.
+======================================================================
+EOF
 
 exit 0

@@ -20,8 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 /*
@@ -184,7 +182,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   * Setup the SAMBA server state...
   */
 
-  setup_logging("smbspool", True);
+  setup_logging("smbspool", DEBUG_STDOUT);
 
   in_client = True;   /* Make sure that we tell lp_load we are */
 
@@ -272,18 +270,19 @@ smb_connect(const char *workgroup,		/* I - Workgroup */
             const char *password)		/* I - Password */
 {
   struct cli_state	*c;		/* New connection */
-  pstring		myname;		/* Client name */
+  char *myname;		/* Client name */
   NTSTATUS nt_status;
 
  /*
   * Get the names and addresses of the client and server...
   */
 
-  get_myname(myname);  
+  myname = get_myname();  
   	
   nt_status = cli_full_connection(&c, myname, server, NULL, 0, share, "?????", 
-				  username, workgroup, password, 0, Undefined, NULL);
+				  username, workgroup, password, 0, NULL);
   
+  free(myname);
   if (!NT_STATUS_IS_OK(nt_status)) {
 	  fprintf(stderr, "ERROR:  Connection failed with error %s\n", nt_errstr(nt_status));
 	  return NULL;

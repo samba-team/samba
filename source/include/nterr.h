@@ -561,4 +561,9 @@
 #define NT_STATUS_NOT_A_REPARSE_POINT NT_STATUS(0xC0000000 | 0x0275)
 #define NT_STATUS_NO_SUCH_JOB NT_STATUS(0xC0000000 | 0xEDE) /* scheduler */
 
+
+/* I use NT_STATUS_FOOBAR when I have no idea what error code to use -
+ * this means we need a torture test */
+#define NT_STATUS_FOOBAR NT_STATUS_UNSUCCESSFUL
+
 #endif /* _NTERR_H */

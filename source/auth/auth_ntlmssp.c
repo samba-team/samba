@@ -93,16 +93,15 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 		auth_flags |= AUTH_FLAG_NTLMv2_RESP;
 	}
 
+#if 0
 	/* the client has given us its machine name (which we otherwise would not get on port 445).
 	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
-
 	set_remote_machine_name(auth_ntlmssp_state->ntlmssp_state->workstation, True);
-
 	/* setup the string used by %U */
 	/* sub_set_smb_name checks for weird internally */
 	sub_set_smb_name(auth_ntlmssp_state->ntlmssp_state->user);
-
 	reload_services(True);
+#endif
 
 	nt_status = make_user_info_map(&user_info, 
 				       auth_ntlmssp_state->ntlmssp_state->user, 
@@ -126,16 +125,18 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 		return nt_status;
 	}
 	if (auth_ntlmssp_state->server_info->nt_session_key.length) {
-		DEBUG(10, ("Got NT session key of length %u\n", auth_ntlmssp_state->server_info->nt_session_key.length));
+		DEBUG(5, ("Got NT session key of length %u\n", auth_ntlmssp_state->server_info->nt_session_key.length));
 		*nt_session_key = data_blob_talloc(auth_ntlmssp_state->mem_ctx, 
 						   auth_ntlmssp_state->server_info->nt_session_key.data,
 						   auth_ntlmssp_state->server_info->nt_session_key.length);
-	}
-	if (auth_ntlmssp_state->server_info->lm_session_key.length) {
-		DEBUG(10, ("Got LM session key of length %u\n", auth_ntlmssp_state->server_info->lm_session_key.length));
+	} else if (auth_ntlmssp_state->server_info->lm_session_key.length) {
+		DEBUG(5, ("Got LM session key of length %u\n", auth_ntlmssp_state->server_info->lm_session_key.length));
 		*lm_session_key = data_blob_talloc(auth_ntlmssp_state->mem_ctx, 
 						   auth_ntlmssp_state->server_info->lm_session_key.data,
 						   auth_ntlmssp_state->server_info->lm_session_key.length);
+	} else {
+		*nt_session_key = data_blob_talloc(auth_ntlmssp_state->mem_ctx, 
+						   auth_ntlmssp_state->server_info->session_key, 16);
 	}
 	return nt_status;
 }

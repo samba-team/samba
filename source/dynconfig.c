@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Copyright (C) 2001 by Martin Pool <mbp@samba.org>
-   Copyright (C) 2003 by Jim McDonough <jmcd@us.ibm.com>
+   Copyright (C) 2003 by Anthony Liguori <aliguor@us.ibm.com>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,13 +41,12 @@
  **/
 
 char const *dyn_SBINDIR = SBINDIR,
-	*dyn_BINDIR = BINDIR,
-	*dyn_SWATDIR = SWATDIR;
+	*dyn_BINDIR = BINDIR;
 
 pstring dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/
 
 /** Log file directory. **/
-pstring dyn_LOGFILEBASE = LOGFILEBASE;
+const char *dyn_LOGFILEBASE = LOGFILEBASE;
 
 /** Statically configured LanMan hosts. **/
 pstring dyn_LMHOSTSFILE = LMHOSTSFILE;

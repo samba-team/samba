@@ -21,8 +21,6 @@
 #include "includes.h"
 #include "wins_repl.h"
 
-extern pstring user_socket_options;
-
 extern WINS_OWNER *global_wins_table;
 extern int partner_count;
 
@@ -160,6 +158,32 @@ void exit_server(const char *reason)
 }
 
 /****************************************************************************
+ Usage of the program.
+****************************************************************************/
+
+static void usage(char *pname)
+{
+
+	d_printf("Usage: %s [-DFSaioPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
+	d_printf("       [-O socket options] [-s services file]\n");
+	d_printf("\t-D                    Become a daemon (default)\n");
+	d_printf("\t-F                    Run daemon in foreground (for daemontools, etc)\n");
+	d_printf("\t-S                    Log to stdout\n");
+	d_printf("\t-a                    Append to log file (default)\n");
+	d_printf("\t-i                    Run interactive (not a daemon)\n" );
+	d_printf("\t-o                    Overwrite log file, don't append\n");
+	d_printf("\t-h                    Print usage\n");
+	d_printf("\t-?                    Print usage\n");
+	d_printf("\t-V                    Print version\n");
+	d_printf("\t-d debuglevel         Set the debuglevel\n");
+	d_printf("\t-l log basename.      Basename for log/debug files\n");
+	d_printf("\t-p port               Listen on the specified port\n");
+	d_printf("\t-O socket options     Socket options\n");
+	d_printf("\t-s services file.     Filename of services file\n");
+	d_printf("\n");
+}
+
+/****************************************************************************
   Create an fd_set containing all the sockets in the subnet structures,
   plus the broadcast sockets.
 ***************************************************************************/
@@ -212,7 +236,7 @@ static BOOL create_listen_fdset(void)
 
 			/* ready to listen */
 			set_socket_options(s,"SO_KEEPALIVE"); 
-			set_socket_options(s,user_socket_options);
+			set_socket_options(s,lp_socket_options());
       
 			if (listen(s, 5) == -1) {
 				DEBUG(5,("listen: %s\n",strerror(errno)));
@@ -233,7 +257,7 @@ static BOOL create_listen_fdset(void)
 		
 		/* ready to listen */
 		set_socket_options(s,"SO_KEEPALIVE"); 
-		set_socket_options(s,user_socket_options);
+		set_socket_options(s, lp_socket_options());
 
 		if (listen(s, 5) == -1) {
 			DEBUG(0,("create_listen_fdset: listen: %s\n", strerror(errno)));
@@ -394,7 +418,7 @@ static BOOL listen_for_wins_packets(void)
 				DEBUG(5,("listen_for_wins_packets: new connection, old: %d, new : %d\n", s, new_s));
 				
 				set_socket_options(new_s, "SO_KEEPALIVE");
-				set_socket_options(new_s, user_socket_options);
+				set_socket_options(new_s, lp_socket_options());
 				FD_SET(new_s, listen_set);
 				add_fd_to_sock_array(new_s);
 			}
@@ -494,45 +518,87 @@ static void process(void)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
+	extern char *optarg;
 	/* shall I run as a daemon */
-	static BOOL is_daemon = False;
-	static BOOL interactive = False;
-	static BOOL Fork = True;
-	static BOOL log_stdout = False;
-	struct poptOption long_options[] = {
-		POPT_AUTOHELP
-		{ "daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
-		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools, etc)" },
-		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
-		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Run interactive (not a daemon)" },
-		{ "port", 'p', POPT_ARG_INT, &wins_port, 'p', "Listen on the specified port" },
-		POPT_COMMON_SAMBA
-		POPT_TABLEEND
-	};
+	BOOL is_daemon = False;
+	BOOL interactive = False;
+	BOOL specified_logfile = False;
+	BOOL Fork = True;
+	BOOL log_stdout = False;
 	int opt;
-	poptContext pc;
+	pstring logfile;
 
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif
 
-	pc = poptGetContext("wrepld", argc, (const char **)argv, long_options, 
-						POPT_CONTEXT_KEEP_FIRST);
+	/* this is for people who can't start the program correctly */
+	while (argc > 1 && (*argv[1] != '-')) {
+		argv++;
+		argc--;
+	}
 
-	while ((opt = poptGetNextOpt(pc)) != -1) {
+	while ( EOF != (opt = getopt(argc, argv, "FSO:l:s:d:Dp:h?Vaiof:")) )
 		switch (opt)  {
+		case 'F':
+			Fork = False;
+			break;
+		case 'S':
+			log_stdout = True;
+			break;
+		case 'O':
+			lp_set_cmdline("socket options", optarg);
+			break;
+
+		case 's':
+			pstrcpy(dyn_CONFIGFILE,optarg);
+			break;
+
+		case 'l':
+			specified_logfile = True;
+			slprintf(logfile, sizeof(logfile)-1, "%s/log.wrepld", optarg);
+			lp_set_logfile(logfile);
+			break;
+
 		case 'i':
 			interactive = True;
 			Fork = False;
 			log_stdout = True;
 			break;
+
+		case 'D':
+			is_daemon = True;
+			break;
+
+		case 'd':
+			if (*optarg == 'A')
+				DEBUGLEVEL = 10000;
+			else
+				DEBUGLEVEL = atoi(optarg);
+			break;
+
+		case 'p':
+			wins_port = atoi(optarg);
+			break;
+
+		case 'h':
+		case '?':
+			usage(argv[0]);
+			exit(0);
+			break;
+
+		case 'V':
+			d_printf("Version %s\n",VERSION);
+			exit(0);
+			break;
+		default:
+			DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
+			usage(argv[0]);
+			exit(1);
 		}
-	}
-
-
 	if (log_stdout && Fork) {
 		d_printf("Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n");
-		poptPrintUsage(pc, stderr, 0);
+		usage(argv[0]);
 		exit(1);
 	}
 
@@ -545,9 +611,15 @@ static void process(void)
 
 	load_case_tables();
 
-	set_remote_machine_name("wrepld", False);
+	if(!specified_logfile) {
+		slprintf(logfile, sizeof(logfile)-1, "%s/log.wrepld",
+			 dyn_LOGFILEBASE);
+		lp_set_logfile(logfile);
+	}
 
-	setup_logging(argv[0],log_stdout);
+	set_remote_machine_name("wrepld");
+
+	setup_logging(argv[0],log_stdout?DEBUG_STDOUT:DEBUG_FILE);
 
 	/* we want to re-seed early to prevent time delays causing
            client problems at a later date. (tridge) */
@@ -586,8 +658,8 @@ static void process(void)
 
 	reopen_logs();
 
-	DEBUG(1,( "wrepld version %s started.\n", SAMBA_VERSION_STRING));
-	DEBUGADD(1,( "Copyright Andrew Tridgell and the Samba Team 1992-2004\n"));
+	DEBUG(1,( "wrepld version %s started.\n", VERSION));
+	DEBUGADD(1,( "Copyright Andrew Tridgell and the Samba Team 1992-2002\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
@@ -660,7 +732,6 @@ static void process(void)
 
 	process();
 
-	poptFreeContext(pc);
 	exit_server("normal exit");
 	return(0);
 }

@@ -18,6 +18,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#error SAMBA4 clean up
+#error this file should be (re)moved 
+#error and all unused stuff should go
+
 #ifndef _SMB_ACLS_H
 #define _SMB_ACLS_H
 #if defined(HAVE_POSIX_ACLS)

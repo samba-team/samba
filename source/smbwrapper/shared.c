@@ -179,8 +179,8 @@ void smbw_setshared(const char *name, const char *val)
 	SSVAL(&variables[shared_size], 0, l1);
 	SSVAL(&variables[shared_size], 2, l2);
 
-	safe_strcpy(&variables[shared_size] + 4, name, l1-1);
-	safe_strcpy(&variables[shared_size] + 4 + l1, val, l2-1);
+	pstrcpy(&variables[shared_size] + 4, name);
+	pstrcpy(&variables[shared_size] + 4 + l1, val);
 
 	shared_size += l1+l2+4;
 

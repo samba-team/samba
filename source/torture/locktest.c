@@ -18,8 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 static fstring password[2];
@@ -101,51 +99,15 @@ static struct record preset[] = {
 
 static struct record *recorded;
 
-static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
-		      enum brl_type lock_type,
-		      br_off start, br_off size)
-{
-#if NASTY_POSIX_LOCK_HACK
-	{
-		pstring cmd;
-		static SMB_INO_T lastino;
-
-		if (lastino != ino) {
-			slprintf(cmd, sizeof(cmd), 
-				 "egrep POSIX.*%u /proc/locks", (int)ino);
-			system(cmd);
-		}
-		lastino = ino;
-	}
-#endif
-
-	printf("%6d   %05x:%05x    %s  %.0f:%.0f(%.0f)\n", 
-	       (int)pid, (int)dev, (int)ino, 
-	       lock_type==READ_LOCK?"R":"W",
-	       (double)start, (double)start+size-1,(double)size);
-
-}
-
-
-static void show_locks(void)
-{
-	brl_forall(print_brl);
-	/* system("cat /proc/locks"); */
-}
-
-
 /***************************************************** 
 return a connection to a server
 *******************************************************/
 static struct cli_state *connect_one(char *share, int snum)
 {
 	struct cli_state *c;
-	struct nmb_name called, calling;
-	char *server_n;
-	fstring server;
-	struct in_addr ip;
-	fstring myname;
-	static int count;
+	fstring server, myname;
+	uint_t flags = 0;
+	NTSTATUS status;
 
 	fstrcpy(server,share+2);
 	share = strchr_m(server,'\\');
@@ -153,89 +115,20 @@ static struct cli_state *connect_one(char *share, int snum)
 	*share = 0;
 	share++;
 
-	server_n = server;
+	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), snum);
+
+	if (use_kerberos)
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
 	
-        zero_ip(&ip);
+	status = cli_full_connection(&c, myname,
+				     server, NULL,  
+				     share, "?????", 
+				     username[snum], lp_workgroup(), 
+				     password[snum], flags, NULL);
 
-	slprintf(myname,sizeof(myname), "lock-%lu-%u", (unsigned long)getpid(), count++);
-
-	make_nmb_name(&calling, myname, 0x0);
-	make_nmb_name(&called , server, 0x20);
-
- again:
-        zero_ip(&ip);
-
-	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server_n, &ip)) {
-		DEBUG(0,("Connection to %s failed\n", server_n));
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-
-	c->use_kerberos = use_kerberos;
-
-	if (!cli_session_request(c, &calling, &called)) {
-		DEBUG(0,("session request to %s failed\n", called.name));
-		cli_shutdown(c);
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
-
-	DEBUG(4,(" session request ok\n"));
-
-	if (!cli_negprot(c)) {
-		DEBUG(0,("protocol negotiation failed\n"));
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	if (!got_pass) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			fstrcpy(password[0], pass);
-			fstrcpy(password[1], pass);
-		}
-	}
-
-	if (got_pass == 1) {
-		fstrcpy(password[1], password[0]);
-		fstrcpy(username[1], username[0]);
-	}
-
-	if (!cli_session_setup(c, username[snum], 
-			       password[snum], strlen(password[snum]),
-			       password[snum], strlen(password[snum]),
-			       lp_workgroup())) {
-		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
-		return NULL;
-	}
-
-	/*
-	 * These next two lines are needed to emulate
-	 * old client behaviour for people who have
-	 * scripts based on client output.
-	 * QUESTION ? Do we want to have a 'client compatibility
-	 * mode to turn these on/off ? JRA.
-	 */
-
-	if (*c->server_domain || *c->server_os || *c->server_type)
-		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			c->server_domain,c->server_os,c->server_type));
-	
-	DEBUG(4,(" session setup ok\n"));
-
-	if (!cli_send_tconX(c, share, "?????",
-			    password[snum], strlen(password[snum])+1)) {
-		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	DEBUG(4,(" tconx ok\n"));
-
-	c->use_oplocks = use_oplocks;
 
 	return c;
 }
@@ -251,11 +144,10 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NS
 		if (cli[server][conn]) {
 			for (f=0;f<NFILES;f++) {
 				if (fnum[server][conn][f] != -1) {
-					cli_close(cli[server][conn], fnum[server][conn][f]);
+					cli_close(cli[server][conn]->tree, fnum[server][conn][f]);
 					fnum[server][conn][f] = -1;
 				}
 			}
-			cli_ulogoff(cli[server][conn]);
 			cli_shutdown(cli[server][conn]);
 		}
 		cli[server][conn] = connect_one(share[server], server);
@@ -285,10 +177,10 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_LOCK:
 		/* set a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = cli_lock64(cli[server][conn], 
+			ret[server] = NT_STATUS_IS_OK(cli_lock64(cli[server][conn]->tree, 
 						 fnum[server][conn][f],
-						 start, len, LOCK_TIMEOUT, op);
-			status[server] = cli_nt_error(cli[server][conn]);
+						 start, len, LOCK_TIMEOUT, op));
+			status[server] = cli_nt_error(cli[server][conn]->tree);
 			if (!exact_error_codes && 
 			    NT_STATUS_EQUAL(status[server], 
 					    NT_STATUS_FILE_LOCK_CONFLICT)) {
@@ -302,17 +194,16 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
 			       nt_errstr(status[0]), nt_errstr(status[1]));
 		}
-		if (showall || !NT_STATUS_EQUAL(status[0],status[1])) show_locks();
 		if (!NT_STATUS_EQUAL(status[0],status[1])) return False;
 		break;
 		
 	case OP_UNLOCK:
 		/* unset a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = cli_unlock64(cli[server][conn], 
+			ret[server] = NT_STATUS_IS_OK(cli_unlock64(cli[server][conn]->tree, 
 						   fnum[server][conn][f],
-						   start, len);
-			status[server] = cli_nt_error(cli[server][conn]);
+						   start, len));
+			status[server] = cli_nt_error(cli[server][conn]->tree);
 		}
 		if (showall || 
 		    (!hide_unlock_fails && !NT_STATUS_EQUAL(status[0],status[1]))) {
@@ -321,7 +212,6 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			       (double)start, (double)len,
 			       nt_errstr(status[0]), nt_errstr(status[1]));
 		}
-		if (showall || !NT_STATUS_EQUAL(status[0],status[1])) show_locks();
 		if (!hide_unlock_fails && !NT_STATUS_EQUAL(status[0],status[1])) 
 			return False;
 		break;
@@ -329,11 +219,11 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_REOPEN:
 		/* reopen the file */
 		for (server=0;server<NSERVERS;server++) {
-			cli_close(cli[server][conn], fnum[server][conn][f]);
+			cli_close(cli[server][conn]->tree, fnum[server][conn][f]);
 			fnum[server][conn][f] = -1;
 		}
 		for (server=0;server<NSERVERS;server++) {
-			fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
+			fnum[server][conn][f] = cli_open(cli[server][conn]->tree, FILENAME,
 							 O_RDWR|O_CREAT,
 							 DENY_NONE);
 			if (fnum[server][conn][f] == -1) {
@@ -344,7 +234,6 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		if (showall) {
 			printf("reopen conn=%u f=%u\n",
 			       conn, f);
-			show_locks();
 		}
 		break;
 	}
@@ -361,12 +250,12 @@ static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	for (conn=0;conn<NCONNECTIONS;conn++)
 	for (f=0;f<NFILES;f++) {
 		if (fnum[server][conn][f] != -1) {
-			cli_close(cli[server][conn], fnum[server][conn][f]);
+			cli_close(cli[server][conn]->tree, fnum[server][conn][f]);
 			fnum[server][conn][f] = -1;
 		}
 	}
 	for (server=0;server<NSERVERS;server++) {
-		cli_unlink(cli[server][0], FILENAME);
+		cli_unlink(cli[server][0]->tree, FILENAME);
 	}
 }
 
@@ -378,7 +267,7 @@ static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	for (server=0;server<NSERVERS;server++)
 	for (conn=0;conn<NCONNECTIONS;conn++)
 	for (f=0;f<NFILES;f++) {
-		fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
+		fnum[server][conn][f] = cli_open(cli[server][conn]->tree, FILENAME,
 						 O_RDWR|O_CREAT,
 						 DENY_NONE);
 		if (fnum[server][conn][f] == -1) {
@@ -563,22 +452,20 @@ static void usage(void)
  int main(int argc,char *argv[])
 {
 	char *share[NSERVERS];
-	extern char *optarg;
-	extern int optind;
 	int opt;
 	char *p;
 	int seed, server;
 
 	setlinebuf(stdout);
 
-	dbf = x_stderr;
+	setup_logging("locktest", DEBUG_STDOUT);
 
 	if (argc < 3 || argv[1][0] == '-') {
 		usage();
 		exit(1);
 	}
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	for (server=0;server<NSERVERS;server++) {
 		share[server] = argv[1+server];
@@ -669,7 +556,8 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
-	DEBUG(0,("seed=%u\n", seed));
+	DEBUG(0,("seed=%u base=%d range=%d min_length=%d\n", 
+		 seed, lock_base, lock_range, min_length));
 	srandom(seed);
 
 	test_locks(share);

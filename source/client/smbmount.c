@@ -18,8 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 #include <mntent.h>
@@ -27,7 +25,6 @@
 #include <linux/smb_fs.h>
 
 extern BOOL in_client;
-extern pstring user_socket_options;
 
 static pstring credentials;
 static pstring my_netbios_name;
@@ -51,8 +48,6 @@ static unsigned mount_dmask;
 static BOOL use_kerberos;
 /* TODO: Add code to detect smbfs version in kernel */
 static BOOL status32_smbfs = False;
-static BOOL smbfs_has_unicode = False;
-static BOOL smbfs_has_lfs = False;
 
 static void usage(void);
 
@@ -203,14 +198,15 @@ static struct cli_state *do_connection(char *the_service)
 
 	/* This should be right for current smbfs. Future versions will support
 	  large files as well as unicode and oplocks. */
-  	c->capabilities &= ~(CAP_NT_SMBS | CAP_NT_FIND | CAP_LEVEL_II_OPLOCKS);
-  	if (!smbfs_has_lfs)
-  		c->capabilities &= ~CAP_LARGE_FILES;
-  	if (!smbfs_has_unicode)
-  		c->capabilities &= ~CAP_UNICODE;
-	if (!status32_smbfs) {
-  		c->capabilities &= ~CAP_STATUS32;
-		c->force_dos_errors = True;
+	if (status32_smbfs) {
+	    c->capabilities &= ~(CAP_UNICODE | CAP_LARGE_FILES | CAP_NT_SMBS |
+                                 CAP_NT_FIND | CAP_LEVEL_II_OPLOCKS);
+	}
+	else {
+	    c->capabilities &= ~(CAP_UNICODE | CAP_LARGE_FILES | CAP_NT_SMBS |
+				 CAP_NT_FIND | CAP_STATUS32 |
+				 CAP_LEVEL_II_OPLOCKS);
+	    c->force_dos_errors = True;
 	}
 
 	if (!cli_session_setup(c, username, 
@@ -399,8 +395,8 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 			}
 
 			/* here we are no longer interactive */
-			set_remote_machine_name("smbmount", False);	/* sneaky ... */
-			setup_logging("mount.smbfs", False);
+			set_remote_machine_name("smbmount");	/* sneaky ... */
+			setup_logging("mount.smbfs", DEBUG_STDERR);
 			reopen_logs();
 			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", the_service, sys_getpid()));
 
@@ -428,7 +424,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
  **/
 static void init_mount(void)
 {
-	char mount_point[PATH_MAX+1];
+	char mount_point[MAXPATHLEN+1];
 	pstring tmp;
 	pstring svc2;
 	struct cli_state *c;
@@ -663,7 +659,7 @@ static void usage(void)
 {
 	printf("Usage: mount.smbfs service mountpoint [-o options,...]\n");
 
-	printf("Version %s\n\n",SAMBA_VERSION_STRING);
+	printf("Version %s\n\n",VERSION);
 
 	printf(
 "Options:\n\
@@ -684,8 +680,6 @@ static void usage(void)
       scope=<arg>                     NetBIOS scope\n\
       iocharset=<arg>                 Linux charset (iso8859-1, utf8)\n\
       codepage=<arg>                  server codepage (cp850)\n\
-      unicode                         use unicode when communicating with server\n\
-      lfs                             large file system support\n\
       ttl=<arg>                       dircache time to live\n\
       guest                           don't prompt for a password\n\
       ro                              mount read-only\n\
@@ -802,9 +796,9 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "workgroup")) {
 				pstrcpy(workgroup,opteq+1);
 			} else if(!strcmp(opts, "sockopt")) {
-				pstrcpy(user_socket_options,opteq+1);
+				lp_set_cmdline("socket options", opteq+1);
 			} else if(!strcmp(opts, "scope")) {
-				set_global_scope(opteq+1);
+				lp_set_cmdline("netbios scope", opteq+1);
 			} else {
 				slprintf(p, sizeof(pstring) - (p - options) - 1, "%s=%s,", opts, opteq+1);
 				p += strlen(p);
@@ -831,10 +825,6 @@ static void parse_mount_smb(int argc, char **argv)
 				mount_ro = 0;
 			} else if(!strcmp(opts, "ro")) {
 				mount_ro = 1;
-			} else if(!strcmp(opts, "unicode")) {
-				smbfs_has_unicode = True;
-			} else if(!strcmp(opts, "lfs")) {
-				smbfs_has_lfs = True;
 			} else {
 				strncpy(p, opts, sizeof(pstring) - (p - options) - 1);
 				p += strlen(opts);
@@ -867,7 +857,7 @@ static void parse_mount_smb(int argc, char **argv)
 	DEBUGLEVEL = 1;
 
 	/* here we are interactive, even if run from autofs */
-	setup_logging("mount.smbfs",True);
+	setup_logging("mount.smbfs",DEBUG_STDERR);
 
 #if 0 /* JRA - Urban says not needed ? */
 	/* CLI_FORCE_ASCII=false makes smbmount negotiate unicode. The default
@@ -891,7 +881,7 @@ static void parse_mount_smb(int argc, char **argv)
 			got_pass = True;
 			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
 		}
-		strupper_m(username);
+		strupper(username);
 	}
 
 	if (getenv("PASSWD")) {
@@ -923,7 +913,7 @@ static void parse_mount_smb(int argc, char **argv)
 		read_credentials_file(credentials);
 	}
 
-	DEBUG(3,("mount.smbfs started (version %s)\n", SAMBA_VERSION_STRING));
+	DEBUG(3,("mount.smbfs started (version %s)\n", VERSION));
 
 	if (*workgroup == 0) {
 		pstrcpy(workgroup,lp_workgroup());
@@ -933,7 +923,7 @@ static void parse_mount_smb(int argc, char **argv)
 	if (!*my_netbios_name) {
 		pstrcpy(my_netbios_name, myhostname());
 	}
-	strupper_m(my_netbios_name);
+	strupper(my_netbios_name);
 
 	init_mount();
 	return 0;

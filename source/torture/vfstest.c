@@ -4,7 +4,7 @@
 
    Copyright (C) Simo Sorce 2002
    Copyright (C) Eric Lorimer 2002
-   Copyright (C) Jelmer Vernooij 2002,2003
+   Copyright (C) Jelmer Vernooij 2002
 
    Most of this code was ripped off of rpcclient.
    Copyright (C) Tim Potter 2000-2001
@@ -32,8 +32,6 @@ static struct cmd_list {
 	struct cmd_list *prev, *next;
 	struct cmd_set *cmd_set;
 } *cmd_list;
-
-extern pstring user_socket_options;
 
 /****************************************************************************
 handle completion of commands for readline
@@ -106,7 +104,7 @@ static char* next_command(char** cmdstr)
 
 /* Load specified configuration file */
 static NTSTATUS cmd_conf(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
-			int argc, const char **argv)
+			int argc, char **argv)
 {
 	if (argc != 2) {
 		printf("Usage: %s <smb.conf>\n", argv[0]);
@@ -181,7 +179,7 @@ static NTSTATUS cmd_help(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 }
 
 /* Change the debug level */
-static NTSTATUS cmd_debuglevel(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
+static NTSTATUS cmd_debuglevel(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	if (argc > 2) {
 		printf("Usage: %s [debuglevel]\n", argv[0]);
@@ -197,7 +195,7 @@ static NTSTATUS cmd_debuglevel(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
+static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	/* Cleanup */
 	talloc_destroy(mem_ctx);
@@ -207,7 +205,7 @@ static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_quit(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
+static NTSTATUS cmd_quit(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	/* Cleanup */
 	talloc_destroy(mem_ctx);
@@ -261,8 +259,7 @@ static void add_command_set(struct cmd_set *cmd_set)
 
 static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *cmd)
 {
-	const char *p = cmd;
-	char **argv = NULL;
+	char *p = cmd, **argv = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	pstring buf;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -312,7 +309,7 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
 		}
 
 		/* Run command */
-		result = cmd_entry->fn(vfs, mem_ctx, argc, (const char **)argv);
+		result = cmd_entry->fn(vfs, mem_ctx, argc, argv);
 
 	} else {
 		fprintf (stderr, "Invalid command\n");
@@ -339,7 +336,7 @@ static NTSTATUS process_cmd(struct vfs_state *vfs, char *cmd)
 	struct cmd_list *temp_list;
 	BOOL found = False;
 	pstring buf;
-	const char *p = cmd;
+	char *p = cmd;
 	NTSTATUS result = NT_STATUS_OK;
 	int len = 0;
 
@@ -455,11 +452,9 @@ BOOL reload_services(BOOL test)
 
 	load_interfaces();
 
-	{
-		if (smbd_server_fd() != -1) {      
-			set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-			set_socket_options(smbd_server_fd(), user_socket_options);
-		}
+	if (smbd_server_fd() != -1) {      
+		set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
+		set_socket_options(smbd_server_fd(), lp_socket_options());
 	}
 
 	mangle_reset_cache();
@@ -475,11 +470,17 @@ BOOL reload_services(BOOL test)
 
 int main(int argc, char *argv[])
 {
-	static char		*cmdstr = NULL;
+	BOOL 			interactive = True;
+	int 			opt;
+	static char		*cmdstr = "";
+	static char		*opt_logfile=NULL;
+	static int		opt_debuglevel;
+	pstring 		logfile;
 	struct cmd_set 		**cmd_set;
+	extern BOOL 		AllowDebugChange;
 	static struct vfs_state vfs;
 	int i;
-	static char		*filename = NULL;
+	static const char	*filename = "";
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -488,17 +489,35 @@ int main(int argc, char *argv[])
 		POPT_AUTOHELP
 		{"file",	'f', POPT_ARG_STRING,	&filename, 0, },
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 0, "Execute specified list of commands" },
-		POPT_COMMON_SAMBA
-		POPT_TABLEEND
+		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Write output to specified logfile" },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
+		{ 0, 0, 0, 0}
 	};
 
 
 	setlinebuf(stdout);
 
+	DEBUGLEVEL = 1;
+	AllowDebugChange = False;
+
 	pc = poptGetContext("vfstest", argc, (const char **) argv,
 			    long_options, 0);
 	
-	while(poptGetNextOpt(pc) != -1);
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case 'l':
+			slprintf(logfile, sizeof(logfile) - 1, "%s.client", 
+				 opt_logfile);
+			lp_set_logfile(logfile);
+			interactive = False;
+			break;
+			
+		case 'd':
+			DEBUGLEVEL = opt_debuglevel;
+			break;
+		}
+	}
 
 
 	poptFreeContext(pc);
@@ -508,7 +527,9 @@ int main(int argc, char *argv[])
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
-	setup_logging("vfstest", True);
+	setup_logging("vfstest", interactive);
+	if (!interactive) 
+		reopen_logs();
 	
 	/* Load command lists */
 
@@ -521,10 +542,9 @@ int main(int argc, char *argv[])
 	}
 
 	/* some basic initialization stuff */
-	sec_init();
 	conn_init();
 	vfs.conn = conn_new();
-	string_set(&vfs.conn->user,"vfstest");
+	vfs.conn->user = "vfstest";
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;
 
@@ -532,13 +552,13 @@ int main(int argc, char *argv[])
 	smbd_vfs_init(vfs.conn);
 
 	/* Do we have a file input? */
-	if (filename && filename[0]) {
+	if (filename[0]) {
 		process_file(&vfs, filename);
 		return 0;
 	}
 
 	/* Do anything specified with -c */
-	if (cmdstr && cmdstr[0]) {
+	if (cmdstr[0]) {
 		char    *cmd;
 		char    *p = cmdstr;
  

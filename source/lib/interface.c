@@ -23,7 +23,7 @@
 static struct iface_struct *probed_ifaces;
 static int total_probed;
 
-struct in_addr allones_ip;
+static struct in_addr allones_ip;
 struct in_addr loopback_ip;
 
 static struct interface *local_interfaces;
@@ -94,14 +94,14 @@ This handles the following different forms:
 4) ip/mask
 5) bcast/mask
 ****************************************************************************/
-static void interpret_interface(const char *token)
+static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 {
 	struct in_addr ip, nmask;
 	char *p;
 	int i, added=0;
 
-        zero_ip(&ip);
-        zero_ip(&nmask);
+    zero_ip(&ip);
+    zero_ip(&nmask);
 	
 	/* first check if it is an interface name */
 	for (i=0;i<total_probed;i++) {
@@ -116,7 +116,7 @@ static void interpret_interface(const char *token)
 	/* maybe it is a DNS name */
 	p = strchr_m(token,'/');
 	if (!p) {
-		ip = *interpret_addr2(token);
+		ip = *interpret_addr2(mem_ctx, token);
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
 			    !ip_equal(allones_ip, probed_ifaces[i].netmask)) {
@@ -132,10 +132,10 @@ static void interpret_interface(const char *token)
 	/* parse it into an IP address/netmasklength pair */
 	*p++ = 0;
 
-	ip = *interpret_addr2(token);
+	ip = *interpret_addr2(mem_ctx, token);
 
 	if (strlen(p) > 2) {
-		nmask = *interpret_addr2(p);
+		nmask = *interpret_addr2(mem_ctx, p);
 	} else {
 		nmask.s_addr = htonl(((ALLONES >> atoi(p)) ^ ALLONES));
 	}
@@ -165,11 +165,17 @@ void load_interfaces(void)
 	const char **ptr;
 	int i;
 	struct iface_struct ifaces[MAX_INTERFACES];
+	TALLOC_CTX *mem_ctx;
 
 	ptr = lp_interfaces();
+	mem_ctx = talloc_init("load_interfaces");
+    if (!mem_ctx) {
+    	DEBUG(2,("no memory to load interfaces \n"));
+		return;
+    }
 
-	allones_ip = *interpret_addr2("255.255.255.255");
-	loopback_ip = *interpret_addr2("127.0.0.1");
+	allones_ip = *interpret_addr2(mem_ctx, "255.255.255.255");
+	loopback_ip = *interpret_addr2(mem_ctx, "127.0.0.1");
 
 	SAFE_FREE(probed_ifaces);
 
@@ -202,12 +208,12 @@ void load_interfaces(void)
 					      probed_ifaces[i].netmask);
 			}
 		}
-		return;
+		goto exit;
 	}
 
 	if (ptr) {
 		while (*ptr) {
-			interpret_interface(*ptr);
+			interpret_interface(mem_ctx, *ptr);
 			ptr++;
 		}
 	}
@@ -215,6 +221,9 @@ void load_interfaces(void)
 	if (!local_interfaces) {
 		DEBUG(0,("WARNING: no network interfaces found\n"));
 	}
+	
+exit:
+	talloc_destroy(mem_ctx);
 }
 
 
@@ -273,20 +282,6 @@ int iface_count(void)
 	for (i=local_interfaces;i;i=i->next)
 		ret++;
 	return ret;
-}
-
-/****************************************************************************
-  return the Nth interface
-  **************************************************************************/
-struct interface *get_interface(int n)
-{ 
-	struct interface *i;
-  
-	for (i=local_interfaces;i && n;i=i->next)
-		n--;
-
-	if (i) return i;
-	return NULL;
 }
 
 /****************************************************************************

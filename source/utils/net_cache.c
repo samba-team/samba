@@ -64,7 +64,7 @@ static void delete_cache_entry(const char* keystr, const char* datastr,
                                const time_t timeout, void* dptr)
 {
 	if (!gencache_del(keystr))
-		d_printf("Couldn't delete entry! key = %s\n", keystr);
+		d_printf("Couldn't delete entry! key = %s", keystr);
 }
 
 
@@ -214,7 +214,7 @@ static int net_cache_del(int argc, const char **argv)
 	const char *keystr = argv[0];
 	
 	if (argc < 1) {
-		d_printf("\nUsage: net cache del <key string>\n");
+		d_printf("\nUsage: net cache add <key string>\n");
 		return -1;
 	}
 	
