@@ -1,3 +1,11 @@
+1999-09-13  Assar Westerlund  <assar@sics.se>
+
+	* chpass_c.c (kadm5_c_chpass_principal): new _kadm5_client_recv
+
+	* send_recv.c (_kadm5_client_recv): return result in a `krb5_data'
+ 	so that we avoid copying it and don't need to dimension in
+ 	advance.  change all callers.
+
 1999-09-10  Assar Westerlund  <assar@sics.se>
 
 	* password_quality.c: new file
