@@ -53,55 +53,6 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/*******************************************************************
- wrapper around retrieving the trust account password
-*******************************************************************/
-
-static BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
-                          time_t *pass_last_set_time, uint32 *channel)
-{
-	DOM_SID sid;
-	char *pwd;
-
-	/* if we are a DC and this is not our domain, then lookup an account
-	   for the domain trust */
-	   
-	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) 
-	{
-		if ( !secrets_fetch_trusted_domain_password(domain, &pwd, &sid, 
-			pass_last_set_time) ) 
-		{
-			DEBUG(0, ("get_trust_pw: could not fetch trust account "
-				  "password for trusted domain %s\n", domain));
-			return False;
-		}
-		
-		*channel = SEC_CHAN_DOMAIN;
-		E_md4hash(pwd, ret_pwd);
-		SAFE_FREE(pwd);
-
-		return True;
-	}
-	else 	/* just get the account for our domain (covers 
-		   ROLE_DOMAIN_MEMBER as well */
-	{
-		/* get the machine trust account for our domain */
-
-		if ( !secrets_fetch_trust_account_password (lp_workgroup(), ret_pwd,
-			pass_last_set_time, channel) ) 
-		{
-			DEBUG(0, ("get_trust_pw: could not fetch trust account "
-				  "password for my domain %s\n", domain));
-			return False;
-		}
-		
-		return True;
-	}
-	
-	/* Failure */
-	return False;
-}
-
 /**********************************************************************
  Authenticate a user with a clear test password
 **********************************************************************/

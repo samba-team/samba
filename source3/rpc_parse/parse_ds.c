@@ -266,6 +266,9 @@ BOOL ds_io_q_enum_domain_trusts( const char *desc, prs_struct *ps, int depth, DS
 	if ( !smb_io_unistr2("server", &q_u->server, q_u->server_ptr, ps, depth) )
 			return False;
 	
+	if ( !prs_align(ps) )
+		return False;
+	
 	if ( !prs_uint32( "flags", ps, depth, &q_u->flags ) )
 		return False;
 	

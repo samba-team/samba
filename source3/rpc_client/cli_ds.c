@@ -115,11 +115,16 @@ NTSTATUS cli_ds_enum_domain_trusts(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	result = r.status;
 	
 	if ( NT_STATUS_IS_OK(result) ) {
+		int i;
 	
 		*num_domains = r.num_domains;
 		*trusts = (DS_DOMAIN_TRUSTS*)smb_xmalloc(r.num_domains*sizeof(DS_DOMAIN_TRUSTS));
 		
 		memcpy( *trusts, r.domains.trusts, r.num_domains*sizeof(DS_DOMAIN_TRUSTS) );
+		for ( i=0; i<r.num_domains; i++ ) {
+			copy_unistr2( &(*trusts)[i].netbios_domain, &r.domains.trusts[i].netbios_domain );
+			copy_unistr2( &(*trusts)[i].dns_domain,     &r.domains.trusts[i].dns_domain );
+		}
 	}
 	
 done:

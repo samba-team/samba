@@ -54,10 +54,9 @@ typedef struct
 	GUID		domain_guid;
 	
 	UNISTR2	netbios_domain;
-	/* these 2 might be reversed in order.  I can't tell from 
-	   my tests as both values are the same --jerry */
-	UNISTR2	dns_domain;
-	UNISTR2	forest_domain;
+
+	UNISTR2	dns_domain;	/* our dns domain */
+	UNISTR2	forest_domain;	/* root domain of the forest to which we belong */
 } DSROLE_PRIMARY_DOMAIN_INFO_BASIC;
 
 typedef struct
@@ -113,6 +112,15 @@ typedef struct {
 	DS_DOMAIN_TRUSTS 	*trusts;
 	
 } DS_DOMAIN_TRUSTS_CTR;
+
+#define DS_DOMAIN_IN_FOREST           0x0001 	/* domains in the forest to which 
+						   we belong; even different domain trees */
+#define DS_DOMAIN_DIRECT_OUTBOUND     0x0002  	/* trusted domains */
+#define DS_DOMAIN_TREE_ROOT           0x0004  	/* root of our forest; also available in
+						   DsRoleGetPrimaryDomainInfo() */
+#define DS_DOMAIN_PRIMARY             0x0008  	/* our domain */
+#define DS_DOMAIN_NATIVE_MODE         0x0010  	/* native mode AD servers */
+#define DS_DOMAIN_DIRECT_INBOUND      0x0020 	/* trusting domains */
 
 /* DS_Q_ENUM_DOM_TRUSTS - DsEnumerateDomainTrusts() request */
 typedef struct 
