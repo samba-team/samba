@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Manage connections_struct structures
    Copyright (C) Andrew Tridgell 1998
+   Copyright (C) Alexander Bokovoy 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -162,11 +163,25 @@ BOOL conn_idle_all(time_t t, int deadtime)
 
 void conn_free(connection_struct *conn)
 {
+ 	smb_vfs_handle_struct *handle, *thandle;
+ 	void (*done_fptr)(connection_struct *conn);
+
 	/* Free vfs_connection_struct */
-	    
-	if (conn->dl_handle != NULL) {
-		/* Close dlopen() handle */
-		sys_dlclose(conn->dl_handle);
+	handle = conn->vfs_private;
+	while(handle) {
+ 		/* Close dlopen() handle */
+ 		done_fptr = (void (*)(connection_struct *))sys_dlsym(handle->handle, "vfs_done");
+ 
+ 		if (done_fptr == NULL) {
+ 			DEBUG(3, ("No vfs_done() symbol found in module with handle %p, ignoring\n", handle->handle));
+ 		} else {
+ 			done_fptr(conn);
+ 		}
+     		sys_dlclose(handle->handle);
+		DLIST_REMOVE(conn->vfs_private, handle);
+		thandle = handle->next;
+		SAFE_FREE(handle);
+		handle = thandle;
 	}
 
 	DLIST_REMOVE(Connections, conn);

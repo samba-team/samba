@@ -3,6 +3,7 @@
  * calls to disk functions.
  *
  * Copyright (C) Tim Potter, 1999-2000
+ * Copyright (C) Alexander Bokovoy, 2002
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,8 +39,8 @@
 #include <includes.h>
 #include <vfs.h>
 
-extern struct vfs_ops default_vfs_ops;   /* For passthrough operation */
-extern struct vfs_ops skel_ops;
+static struct vfs_ops default_vfs_ops;   /* For passthrough operation */
+static struct smb_vfs_handle_struct *skel_handle; /* use skel_handle->data for storing per-instance private data */
 
 static int skel_connect(struct connection_struct *conn, const char *service, const char *user)    
 {
@@ -349,172 +350,110 @@ static int skel_sys_acl_free_qualifier(struct connection_struct *conn, void *qua
 	return default_vfs_ops.sys_acl_free_qualifier(conn, qualifier, tagtype);
 }
 
-/* VFS initialisation - return vfs_ops function pointer structure */
-
-struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
-{
-	struct vfs_ops tmp_ops;
-
-	DEBUG(3, ("Initialising default vfs hooks\n"));
-
-	*vfs_version = SMB_VFS_INTERFACE_VERSION;
-	memcpy(&tmp_ops, def_vfs_ops, sizeof(struct vfs_ops));
-
-	tmp_ops.connect = skel_connect;
-	tmp_ops.disconnect = skel_disconnect;
-	tmp_ops.disk_free = skel_disk_free;
-
-	/* Directory operations */
-
-	tmp_ops.opendir = skel_opendir;
-	tmp_ops.readdir = skel_readdir;
-	tmp_ops.mkdir = skel_mkdir;
-	tmp_ops.rmdir = skel_rmdir;
-	tmp_ops.closedir = skel_closedir;
-
-	/* File operations */
-
-	tmp_ops.open = skel_open;
-	tmp_ops.close = skel_close;
-	tmp_ops.read = skel_read;
-	tmp_ops.write = skel_write;
-	tmp_ops.lseek = skel_lseek;
-	tmp_ops.rename = skel_rename;
-	tmp_ops.fsync = skel_fsync;
-	tmp_ops.stat = skel_stat;
-	tmp_ops.fstat = skel_fstat;
-	tmp_ops.lstat = skel_lstat;
-	tmp_ops.unlink = skel_unlink;
-	tmp_ops.chmod = skel_chmod;
-	tmp_ops.fchmod = skel_fchmod;
-	tmp_ops.chown = skel_chown;
-	tmp_ops.fchown = skel_fchown;
-	tmp_ops.chdir = skel_chdir;
-	tmp_ops.getwd = skel_getwd;
-	tmp_ops.utime = skel_utime;
-	tmp_ops.ftruncate = skel_ftruncate;
-	tmp_ops.lock = skel_lock;
-	tmp_ops.symlink = skel_symlink;
-	tmp_ops.readlink = skel_readlink;
-	tmp_ops.link = skel_link;
-	tmp_ops.mknod = skel_mknod;
-	tmp_ops.realpath = skel_realpath;
-
-	tmp_ops.fget_nt_acl = skel_fget_nt_acl;
-	tmp_ops.get_nt_acl = skel_get_nt_acl;
-	tmp_ops.fset_nt_acl = skel_fset_nt_acl;
-	tmp_ops.set_nt_acl = skel_set_nt_acl;
-
-	/* POSIX ACL operations. */
-
-	tmp_ops.chmod_acl = skel_chmod_acl;
-	tmp_ops.fchmod_acl = skel_fchmod_acl;
-	tmp_ops.sys_acl_get_entry = skel_sys_acl_get_entry;
-	tmp_ops.sys_acl_get_tag_type = skel_sys_acl_get_tag_type;
-	tmp_ops.sys_acl_get_permset = skel_sys_acl_get_permset;
-	tmp_ops.sys_acl_get_qualifier = skel_sys_acl_get_qualifier;
-	tmp_ops.sys_acl_get_file = skel_sys_acl_get_file;
-	tmp_ops.sys_acl_get_fd = skel_sys_acl_get_fd;
-	tmp_ops.sys_acl_clear_perms = skel_sys_acl_clear_perms;
-	tmp_ops.sys_acl_add_perm = skel_sys_acl_add_perm;
-	tmp_ops.sys_acl_to_text = skel_sys_acl_to_text;
-	tmp_ops.sys_acl_init = skel_sys_acl_init;
-	tmp_ops.sys_acl_create_entry = skel_sys_acl_create_entry;
-	tmp_ops.sys_acl_set_tag_type = skel_sys_acl_set_tag_type;
-	tmp_ops.sys_acl_set_qualifier = skel_sys_acl_set_qualifier;
-	tmp_ops.sys_acl_set_permset = skel_sys_acl_set_permset;
-	tmp_ops.sys_acl_valid = skel_sys_acl_valid;
-	tmp_ops.sys_acl_set_file = skel_sys_acl_set_file;
-	tmp_ops.sys_acl_set_fd = skel_sys_acl_set_fd;
-	tmp_ops.sys_acl_delete_def_file = skel_sys_acl_delete_def_file;
-	tmp_ops.sys_acl_get_perm = skel_sys_acl_get_perm;
-	tmp_ops.sys_acl_free_text = skel_sys_acl_free_text;
-	tmp_ops.sys_acl_free_acl = skel_sys_acl_free_acl;
-	tmp_ops.sys_acl_free_qualifier = skel_sys_acl_free_qualifier;
-
-	memcpy(&skel_ops, &tmp_ops, sizeof(struct vfs_ops));
-
-	return &skel_ops;
-}
 
 /* VFS operations structure */
 
-struct vfs_ops skel_ops = {
+static vfs_op_tuple skel_ops[] = {
 
 	/* Disk operations */
 
-	skel_connect,
-	skel_disconnect,
-	skel_disk_free,
+	{skel_connect,			SMB_VFS_OP_CONNECT, 		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_disconnect,		SMB_VFS_OP_DISCONNECT,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_disk_free,		SMB_VFS_OP_DISK_FREE,		SMB_VFS_LAYER_TRANSPARENT},
 	
 	/* Directory operations */
 
-	skel_opendir,
-	skel_readdir,
-	skel_mkdir,
-	skel_rmdir,
-	skel_closedir,
+	{skel_opendir,			SMB_VFS_OP_OPENDIR,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_readdir,			SMB_VFS_OP_READDIR,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_mkdir,			SMB_VFS_OP_MKDIR,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_rmdir,			SMB_VFS_OP_RMDIR,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_closedir,			SMB_VFS_OP_CLOSEDIR,		SMB_VFS_LAYER_TRANSPARENT},
 
 	/* File operations */
 
-	skel_open,
-	skel_close,
-	skel_read,
-	skel_write,
-	skel_lseek,
-	skel_rename,
-	skel_fsync,
-	skel_stat,
-	skel_fstat,
-	skel_lstat,
-	skel_unlink,
-	skel_chmod,
-	skel_fchmod,
-	skel_chown,
-	skel_fchown,
-	skel_chdir,
-	skel_getwd,
-	skel_utime,
-	skel_ftruncate,
-	skel_lock,
-	skel_symlink,
-	skel_readlink,
-	skel_link,
-	skel_mknod,
-	skel_realpath,
+	{skel_open,			SMB_VFS_OP_OPEN,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_close,			SMB_VFS_OP_CLOSE,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_read,			SMB_VFS_OP_READ,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_write,			SMB_VFS_OP_WRITE,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_lseek,			SMB_VFS_OP_LSEEK,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_rename,			SMB_VFS_OP_RENAME,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_fsync,			SMB_VFS_OP_FSYNC,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_stat,			SMB_VFS_OP_STAT,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_fstat,			SMB_VFS_OP_FSTAT,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_lstat,			SMB_VFS_OP_LSTAT,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_unlink,			SMB_VFS_OP_UNLINK,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_chmod,			SMB_VFS_OP_CHMOD,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_fchmod,			SMB_VFS_OP_FCHMOD,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_chown,			SMB_VFS_OP_CHOWN,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_fchown,			SMB_VFS_OP_FCHOWN,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_chdir,			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_getwd,			SMB_VFS_OP_GETWD,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_utime,			SMB_VFS_OP_UTIME,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_ftruncate,		SMB_VFS_OP_FTRUNCATE,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_lock,			SMB_VFS_OP_LOCK,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_symlink,			SMB_VFS_OP_SYMLINK,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_readlink,			SMB_VFS_OP_READLINK,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_link,			SMB_VFS_OP_LINK,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_mknod,			SMB_VFS_OP_MKNOD,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_realpath,			SMB_VFS_OP_REALPATH,		SMB_VFS_LAYER_TRANSPARENT},
 
 	/* NT File ACL operations */
 
-	skel_fget_nt_acl,
-	skel_get_nt_acl,
-	skel_fset_nt_acl,
-	skel_set_nt_acl,
+	{skel_fget_nt_acl,		SMB_VFS_OP_FGET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_get_nt_acl,		SMB_VFS_OP_GET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_fset_nt_acl,		SMB_VFS_OP_FSET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_set_nt_acl,		SMB_VFS_OP_SET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 
 	/* POSIX ACL operations */
 
-	skel_chmod_acl,
-	skel_fchmod_acl,
+	{skel_chmod_acl,		SMB_VFS_OP_CHMOD_ACL,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_fchmod_acl,		SMB_VFS_OP_FCHMOD_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 
-	skel_sys_acl_get_entry,
-	skel_sys_acl_get_tag_type,
-	skel_sys_acl_get_permset,
-	skel_sys_acl_get_qualifier,
-	skel_sys_acl_get_file,
-	skel_sys_acl_get_fd,
-	skel_sys_acl_clear_perms,
-	skel_sys_acl_add_perm,
-	skel_sys_acl_to_text,
-	skel_sys_acl_init,
-	skel_sys_acl_create_entry,
-	skel_sys_acl_set_tag_type,
-	skel_sys_acl_set_qualifier,
-	skel_sys_acl_set_permset,
-	skel_sys_acl_valid,
-	skel_sys_acl_set_file,
-	skel_sys_acl_set_fd,
-	skel_sys_acl_delete_def_file,
-	skel_sys_acl_get_perm,
-	skel_sys_acl_free_text,
-	skel_sys_acl_free_acl,
-	skel_sys_acl_free_qualifier
+	{skel_sys_acl_get_entry,	SMB_VFS_OP_SYS_ACL_GET_ENTRY,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_get_tag_type,	SMB_VFS_OP_SYS_ACL_GET_TAG_TYPE,	SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_get_permset,	SMB_VFS_OP_SYS_ACL_GET_PERMSET,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_get_qualifier,	SMB_VFS_OP_SYS_ACL_GET_QUALIFIER,	SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_get_file,		SMB_VFS_OP_SYS_ACL_GET_FILE,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_get_fd,		SMB_VFS_OP_SYS_ACL_GET_FD,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_clear_perms,	SMB_VFS_OP_SYS_ACL_CLEAR_PERMS,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_add_perm,		SMB_VFS_OP_SYS_ACL_ADD_PERM,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_to_text,		SMB_VFS_OP_SYS_ACL_TO_TEXT,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_init,		SMB_VFS_OP_SYS_ACL_INIT,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_create_entry,	SMB_VFS_OP_SYS_ACL_CREATE_ENTRY,	SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_set_tag_type,	SMB_VFS_OP_SYS_ACL_SET_TAG_TYPE,	SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_set_qualifier,	SMB_VFS_OP_SYS_ACL_SET_QUALIFIER,	SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_set_permset,	SMB_VFS_OP_SYS_ACL_SET_PERMSET,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_valid,		SMB_VFS_OP_SYS_ACL_VALID,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_set_file,		SMB_VFS_OP_SYS_ACL_SET_FILE,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_set_fd,		SMB_VFS_OP_SYS_ACL_SET_FD,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_delete_def_file,	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,	SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_get_perm,		SMB_VFS_OP_SYS_ACL_GET_PERM,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_free_text,	SMB_VFS_OP_SYS_ACL_FREE_TEXT,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_free_acl,		SMB_VFS_OP_SYS_ACL_FREE_ACL,		SMB_VFS_LAYER_TRANSPARENT},
+	{skel_sys_acl_free_qualifier,	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,	SMB_VFS_LAYER_TRANSPARENT},
+	
+	{NULL,	SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
 };
+
+/* VFS initialisation - return initialized vfs_op_tuple array back to Samba */
+
+vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
+			struct smb_vfs_handle_struct *vfs_handle)
+{
+	DEBUG(3, ("Initialising default vfs hooks\n"));
+
+	*vfs_version = SMB_VFS_INTERFACE_VERSION;
+	memcpy(&default_vfs_ops, def_vfs_ops, sizeof(struct vfs_ops));
+	
+	/* Remember vfs_handle for further allocation and referencing of private
+	   information in vfs_handle->data
+	*/
+	skel_handle = vfs_handle;
+	return skel_ops;
+}
+
+/* VFS finalization function */
+void vfs_done(connection_struct *conn)
+{
+	DEBUG(3, ("Finalizing default vfs hooks\n"));
+}
