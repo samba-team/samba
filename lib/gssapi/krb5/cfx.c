@@ -253,9 +253,13 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	 * In Wrap tokens without confidentiality, the EC field is
 	 * used to encode the size (in bytes) of the trailing
 	 * checksum.
+	 *
+	 * This is not used in the checksum calcuation itself,
+	 * because the checksum length could potentially vary
+	 * depending on the data length.
 	 */
-	token->EC[0] = (cksumsize >> 0) & 0xFF;
-	token->EC[1] = (cksumsize >> 8) & 0xFF;
+	token->EC[0] = 0;
+	token->EC[1] = 0;
     }
     token->RRC[0] = (rrc >> 0) & 0xFF;
     token->RRC[1] = (rrc >> 8) & 0xFF;
@@ -354,6 +358,10 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	}
 
 	free(buf);
+
+	assert(cksum.checksum.length == cksumsize);
+	token->EC[0] = (cksum.checksum.length >> 0) & 0xFF;
+	token->EC[1] = (cksum.checksum.length >> 8) & 0xFF;
 
 	p += sizeof(*token);
 	memcpy(p, input_message_buffer->value, input_message_buffer->length);
@@ -554,6 +562,12 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	memcpy(output_message_buffer->value, p, len);
 	memcpy((u_char *)output_message_buffer->value + len, 
 	       token, sizeof(*token));
+
+	/* EC is not included in checksum calculation */
+	token = (gss_cfx_wrap_token)((u_char *)output_message_buffer->value +
+				     len);
+	token->EC[0] = 0;
+	token->EC[1] = 0;
 
 	ret = krb5_verify_checksum(gssapi_krb5_context, crypto,
 				   usage,
