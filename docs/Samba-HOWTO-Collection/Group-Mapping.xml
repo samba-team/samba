@@ -168,7 +168,7 @@
 
 		<para>
 	<screen>
-	&rootprompt;<userinput>net groupmap add ntgroup=<quote>Domain Admins</quote> unixgroup=domadm</userinput>
+	&rootprompt;<userinput>net groupmap add ntgroup="Domain Admins" unixgroup=domadm</userinput>
 	</screen>
 	</para>
 		
