@@ -187,14 +187,7 @@ fi
 AC_SUBST(dpagaix_CFLAGS)
 AC_SUBST(dpagaix_LDADD)
 
-AC_ARG_ENABLE(otp,
-	AC_HELP_STRING([--disable-otp],[if you don't want OTP support]))
-if test "$enable_otp" != no; then
-	AC_DEFINE(OTP, 1, [Define if you want OTP support in applications.])
-	LIB_otp='$(top_builddir)/lib/otp/libotp.la'
-fi
-AC_SUBST(LIB_otp)
-AM_CONDITIONAL(OTP, test "$enable_otp" ! no)dnl
+rk_OTP
 
 AC_CHECK_OSFC2
 
@@ -238,43 +231,24 @@ AC_HEADER_STDC
 
 AC_CHECK_HEADERS([\
 	arpa/ftp.h				\
-	arpa/inet.h				\
-	arpa/nameser.h				\
 	arpa/telnet.h				\
 	bind/bitypes.h				\
 	bsdsetjmp.h				\
-	crypt.h					\
 	curses.h				\
-	dirent.h				\
 	dlfcn.h					\
-	err.h					\
-	errno.h					\
-	fcntl.h					\
 	fnmatch.h				\
-	grp.h					\
 	inttypes.h				\
 	io.h					\
 	libutil.h				\
 	limits.h				\
 	maillock.h				\
-	net/if.h				\
-	netdb.h					\
-	netinet/in.h				\
-	netinet/in6.h				\
 	netinet/in6_machtypes.h			\
-	netinet/in6_var.h			\
-	netinet/in_systm.h			\
-	netinet6/in6.h				\
 	netinfo/ni.h				\
-	paths.h					\
 	pthread.h				\
 	pty.h					\
-	pwd.h					\
-	resolv.h				\
 	sac.h					\
 	security/pam_modules.h			\
 	sgtty.h					\
-	shadow.h				\
 	siad.h					\
 	signal.h				\
 	stropts.h				\
@@ -283,50 +257,28 @@ AC_CHECK_HEADERS([\
 	sys/file.h				\
 	sys/filio.h				\
 	sys/ioccom.h				\
-	sys/ioctl.h				\
-	sys/param.h				\
-	sys/proc.h				\
 	sys/pty.h				\
 	sys/ptyio.h				\
 	sys/ptyvar.h				\
-	sys/resource.h				\
 	sys/select.h				\
-	sys/socket.h				\
-	sys/sockio.h				\
-	sys/stat.h				\
 	sys/str_tty.h				\
 	sys/stream.h				\
 	sys/stropts.h				\
 	sys/strtty.h				\
 	sys/syscall.h				\
-	sys/sysctl.h				\
 	sys/termio.h				\
-	sys/time.h				\
 	sys/timeb.h				\
 	sys/times.h				\
-	sys/tty.h				\
-	sys/types.h				\
-	sys/uio.h				\
 	sys/un.h				\
-	sys/utsname.h				\
-	sys/wait.h				\
-	syslog.h				\
 	term.h					\
 	termcap.h				\
 	termio.h				\
-	termios.h				\
 	time.h					\
 	tmpdir.h				\
 	udb.h					\
-	unistd.h				\
-	userconf.h				\
-	usersec.h				\
-	util.h					\
 	utmp.h					\
 	utmpx.h					\
 ])
-
-CHECK_NETINET_IP_AND_TCP
 
 AC_ARG_ENABLE(netinfo,
 	AC_HELP_STRING([--enable-netinfo],[enable netinfo for configuration lookup]))
@@ -336,75 +288,23 @@ if test "$ac_cv_header_netinfo_ni_h" = yes -a "$enable_netinfo" = yes; then
                [Define if you want to use Netinfo instead of krb5.conf.])
 fi
 
-AM_CONDITIONAL(have_err_h, test "$ac_cv_header_err_h" = yes)
-AM_CONDITIONAL(have_fnmatch_h, test "$ac_cv_header_fnmatch_h" = yes)
-
 dnl Checks for libraries.
-
-AC_FIND_FUNC(socket, socket)
-AC_FIND_FUNC(gethostbyname, nsl)
-AC_FIND_FUNC(syslog, syslog)
-
-AC_KRB_IPV6
 
 AC_FIND_FUNC_NO_LIBS(logwtmp, util)
 AC_FIND_FUNC_NO_LIBS(logout, util)
 AC_FIND_FUNC_NO_LIBS(openpty, util)
 AC_FIND_FUNC_NO_LIBS(tgetent, termcap ncurses curses)
-AC_FIND_FUNC(gethostbyname2, inet6 ip6)
-
-AC_FIND_FUNC(res_search, resolv,
-[
-#include <stdio.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_NAMESER_H
-#include <arpa/nameser.h>
-#endif
-#ifdef HAVE_RESOLV_H
-#include <resolv.h>
-#endif
-],
-[0,0,0,0,0])
-
-AC_FIND_FUNC(dn_expand, resolv,
-[
-#include <stdio.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_NAMESER_H
-#include <arpa/nameser.h>
-#endif
-#ifdef HAVE_RESOLV_H
-#include <resolv.h>
-#endif
-],
-[0,0,0,0,0])
 
 dnl Checks for library functions.
-
-AC_BROKEN_SNPRINTF
-AC_BROKEN_VSNPRINTF
 
 AC_CHECK_FUNCS([				\
 	_getpty					\
 	_scrsize				\
 	fcntl					\
-	gettimeofday				\
-	getuid					\
 	grantpt					\
 	mktime					\
 	ptsname					\
 	rand					\
-	random					\
 	revoke					\
 	select					\
 	setitimer				\
@@ -432,23 +332,6 @@ KRB_CAPABILITIES
 
 AC_CHECK_GETPWNAM_R_POSIX
 
-AC_FIND_FUNC_NO_LIBS(getsockopt,,
-[#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif],
-[0,0,0,0,0])
-AC_FIND_FUNC_NO_LIBS(setsockopt,,
-[#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif],
-[0,0,0,0,0])
-
 dnl Cray stuff
 AC_CHECK_FUNCS(getudbnam setlim)
 
@@ -466,49 +349,6 @@ AC_HAVE_STRUCT_FIELD(struct utmp, ut_type, [#include <utmp.h>])
 AC_HAVE_STRUCT_FIELD(struct utmp, ut_user, [#include <utmp.h>])
 AC_HAVE_STRUCT_FIELD(struct utmpx, ut_exit, [#include <utmpx.h>])
 AC_HAVE_STRUCT_FIELD(struct utmpx, ut_syslen, [#include <utmpx.h>])
-
-dnl
-dnl Check for fields in struct tm
-dnl
-
-AC_HAVE_STRUCT_FIELD(struct tm, tm_gmtoff, [#include <time.h>])
-AC_HAVE_STRUCT_FIELD(struct tm, tm_zone, [#include <time.h>])
-
-dnl
-dnl or do we have a variable `timezone' ?
-dnl
-
-rk_CHECK_VAR(timezone, [#include <time.h>])
-
-AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
-
-AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
-
-AC_HAVE_TYPE([struct sockaddr], [#include <sys/socket.h>])
-
-AC_HAVE_TYPE([struct sockaddr_storage], [#include <sys/socket.h>])
-
-AC_HAVE_TYPE([struct addrinfo], [#include <netdb.h>])
-
-dnl
-dnl Check for struct winsize
-dnl
-
-AC_KRB_STRUCT_WINSIZE
-
-dnl
-dnl Check for struct spwd
-dnl
-
-AC_KRB_STRUCT_SPWD
-
-dnl
-dnl Check for sa_len in struct sockaddr
-dnl
-
-AC_HAVE_STRUCT_FIELD(struct sockaddr, sa_len, [#include <sys/types.h>
-#include <sys/socket.h>])
-
 
 AC_CHECK_TYPES([int8_t, int16_t, int32_t, int64_t, 
 	u_int8_t, u_int16_t, u_int32_t, u_int64_t,
