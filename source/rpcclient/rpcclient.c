@@ -648,10 +648,7 @@ static void usage(char *pname)
 		fstring cmd;
 		char 	*p = cmdstr;
 
-		DEBUG(0, ("cmdstr = '%s'\n", cmdstr));
-
 		while(next_token(&p, cmd, ";", sizeof(fstring))) {
-			DEBUG(0, ("cmd = '%s'\n", cmd));
 			process_cmd(&cli, cmd);
 		}
 
