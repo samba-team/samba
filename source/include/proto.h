@@ -929,6 +929,7 @@ int interpret_security(char *str,int def);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
+void reset_globals_after_fork();
 char *client_name(void);
 char *client_addr(void);
 void standard_sub_basic(char *s);

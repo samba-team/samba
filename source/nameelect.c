@@ -82,7 +82,7 @@ void check_master_browser(time_t t)
              becoming a master browser, hence the log message.
            */
 
-          DEBUG(0,("%s potential master for %s %s - force election\n",
+          DEBUG(2,("%s potential master for %s %s - force election\n",
                    timestring(), work->work_group,
                    inet_ntoa(d->bcast_ip)));
 

@@ -2065,6 +2065,7 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 #else
 	  if (Client != -1 && fork()==0)
 	    {
+              /* Child code ... */
 #ifndef NO_SIGNAL_TEST
 	      signal(SIGPIPE, SIGNAL_CAST sig_pipe);
 	      signal(SIGCLD, SIGNAL_CAST SIG_DFL);
@@ -2079,6 +2080,11 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 	      set_socket_options(Client,"SO_KEEPALIVE");
 	      set_socket_options(Client,user_socket_options);
 
+              /* Reset global variables in util.c so that
+                 client substitutions will be done correctly
+                 in the process.
+               */
+              reset_globals_after_fork();
 	      return True; 
 	    }
           close(Client); /* The parent doesn't need this socket */
@@ -3119,7 +3125,7 @@ BOOL yield_connection(int cnum,char *name,int max_connections)
   f = fopen(fname,"r+");
   if (!f)
     {
-      DEBUG(2,("Coudn't open lock file %s (%s)\n",fname,strerror(errno)));
+      DEBUG(2,("Couldn't open lock file %s (%s)\n",fname,strerror(errno)));
       return(False);
     }
 

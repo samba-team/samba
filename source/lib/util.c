@@ -3036,7 +3036,9 @@ BOOL zero_ip(struct in_addr ip)
 }
 
 
-/* matchname - determine if host name matches IP address */
+/*******************************************************************
+ matchname - determine if host name matches IP address 
+ ******************************************************************/
 static BOOL matchname(char *remotehost,struct in_addr  addr)
 {
   struct hostent *hp;
@@ -3079,7 +3081,24 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
   return False;
 }
 
-/* return the DNS name of the client */
+/*******************************************************************
+ Reset the 'done' variables so after a client process is created
+ from a fork call these calls will be re-done. This should be
+ expanded if more variables need reseting.
+ ******************************************************************/
+
+static BOOL global_client_name_done = False;
+static BOOL global_client_addr_done = False;
+
+void reset_globals_after_fork()
+{
+  global_client_name_done = False;
+  global_client_addr_done = False;
+}
+ 
+/*******************************************************************
+ return the DNS name of the client 
+ ******************************************************************/
 char *client_name(void)
 {
   extern int Client;
@@ -3087,10 +3106,9 @@ char *client_name(void)
   struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
   int     length = sizeof(sa);
   static pstring name_buf;
-  static BOOL done = False;
   struct hostent *hp;
 
-  if (done) 
+  if (global_client_name_done) 
     return name_buf;
 
   strcpy(name_buf,"UNKNOWN");
@@ -3113,11 +3131,13 @@ char *client_name(void)
       strcpy(name_buf,"UNKNOWN");
     }
   }
-  done = True;
+  global_client_name_done = True;
   return name_buf;
 }
 
-/* return the IP addr of the client as a string */
+/*******************************************************************
+ return the IP addr of the client as a string 
+ ******************************************************************/
 char *client_addr(void)
 {
   extern int Client;
@@ -3125,9 +3145,8 @@ char *client_addr(void)
   struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
   int     length = sizeof(sa);
   static fstring addr_buf;
-  static BOOL done = False;
 
-  if (done) 
+  if (global_client_addr_done) 
     return addr_buf;
 
   strcpy(addr_buf,"0.0.0.0");
@@ -3139,7 +3158,7 @@ char *client_addr(void)
 
   strcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
 
-  done = True;
+  global_client_addr_done = True;
   return addr_buf;
 }
 
