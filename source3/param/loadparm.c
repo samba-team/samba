@@ -1144,10 +1144,7 @@ static void init_globals(void)
 
 	Globals.bDNSproxy = True;
 
-	/*
-	 * smbd will check at runtime to see if this value
-	 * will really be used or not.
-	 */
+	/* this just means to use them if they exist */
 	Globals.bKernelOplocks = True;
 
 	Globals.bAllowTrustedDomains = True;
@@ -2550,7 +2547,7 @@ static BOOL do_parameter(char *pszParmName, char *pszParmValue)
 	if (!bInGlobalSection && bGlobalOnly)
 		return (True);
 
-	DEBUGADD(3, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
+	DEBUGADD(4, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
 
 	return (lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
 				pszParmName, pszParmValue));
@@ -3124,7 +3121,7 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	bRetval = pm_process(n2, do_section, do_parameter);
 
 	/* finish up the last section */
-	DEBUG(3, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
+	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
 	if (bRetval)
 		if (iServiceIndex >= 0)
 			bRetval = service_ok(iServiceIndex);

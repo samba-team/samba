@@ -1021,22 +1021,9 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
     reply_msg_start = &op_break_reply[OPBRK_CMD_HEADER_LEN];
 
 
-#if HAVE_KERNEL_OPLOCKS_IRIX
-    if((reply_msg_len != OPLOCK_BREAK_MSG_LEN) && (reply_msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN))
-#else
-    if(reply_msg_len != OPLOCK_BREAK_MSG_LEN)
-#endif
-    {
-      /* Ignore it. */
-      DEBUG( 0, ( "request_oplock_break: invalid message length (%d) received.", reply_msg_len ) );
-      DEBUGADD( 0, ( "  Ignoring.\n" ) );
-      continue;
-    }
-
     /*
      * Test to see if this is the reply we are awaiting.
      */
-
     if((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & CMD_REPLY) &&
        ((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & ~CMD_REPLY) == OPLOCK_BREAK_CMD) &&
        (reply_from_port == share_entry->op_port) && 
