@@ -804,6 +804,8 @@ static void init_globals(void)
   slprintf(s,sizeof(s)-1, "%d.%d", DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION);
   string_set(&Globals.szAnnounceVersion,s);
 
+  pstrcpy(user_socket_options, DEFAULT_SOCKET_OPTIONS);
+
   string_set(&Globals.szLogonDrive, "");
   /* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
   string_set(&Globals.szLogonHome, "\\\\%N\\%U");
