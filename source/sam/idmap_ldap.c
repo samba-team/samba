@@ -234,6 +234,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 
 			next_rid = *rid+1;
 			if (next_rid >= alg_rid_base) {
+				ldap_msgfree(domain_result);
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			
@@ -382,7 +383,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	pstring id_str, new_id_str;
 	LDAPMod **mods = NULL;
 	const char *type;
-	char *dn;
+	char *dn = NULL;
 	char **attr_list;
 	pstring filter;
 	uid_t	luid, huid;
@@ -455,12 +456,15 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 		 
 	smbldap_set_mod( &mods, LDAP_MOD_DELETE, type, id_str );		 
 	smbldap_set_mod( &mods, LDAP_MOD_ADD, type, new_id_str );
-	
+
+	if (mods == NULL) {
+		DEBUG(0,("ldap_allocate_id: smbldap_set_mod() failed.\n"));
+		goto out;		
+	}
+
 	rc = smbldap_modify(ldap_state.smbldap_state, dn, mods);
 
-	SAFE_FREE(dn);
 	ldap_mods_free( mods, True );
-	
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0,("ldap_allocate_id: Failed to allocate new %s.  ldap_modify() failed.\n",
 			type));
@@ -469,6 +473,10 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	
 	ret = NT_STATUS_OK;
 out:
+	SAFE_FREE(dn);
+	if (result != NULL)
+		ldap_msgfree(result);
+
 	return ret;
 }
 
@@ -682,6 +690,8 @@ static NTSTATUS verify_idpool( void )
 		return NT_STATUS_UNSUCCESSFUL;
 
 	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
+
+	ldap_msgfree(result);
 
 	if ( count > 1 ) {
 		DEBUG(0,("ldap_idmap_init: multiple entries returned from %s (base == %s)\n",
