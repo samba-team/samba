@@ -24,6 +24,7 @@ int torture_nprocs=4;
 int torture_numops=100;
 int torture_entries=1000;
 int torture_failures=1;
+int torture_seed=0;
 static int procnum; /* records process count number when forking */
 static struct smbcli_state *current_cli;
 static BOOL use_oplocks;
@@ -359,7 +360,6 @@ static BOOL rw_torture3(struct smbcli_state *c, const char *lockfname)
 	ssize_t sent = 0;
 	BOOL correct = True;
 
-	srandom(1);
 	for (i = 0; i < sizeof(buf); i += sizeof(uint32_t))
 	{
 		SIVAL(buf, i, sys_random());
@@ -2419,6 +2419,8 @@ static struct {
 	{"BASE-DENY1",  torture_denytest1, 0},
 	{"BASE-DENY2",  torture_denytest2, 0},
 	{"BASE-DENY3",  torture_denytest3, 0},
+	{"BASE-NTDENY1",  NULL, torture_ntdenytest1},
+	{"BASE-NTDENY2",  torture_ntdenytest2, 0},
 	{"BASE-TCON",  run_tcon_test, 0},
 	{"BASE-TCONDEV",  run_tcon_devtype_test, 0},
 	{"BASE-VUID", run_vuidtest, 0},
@@ -2655,7 +2657,7 @@ static BOOL is_binding_string(const char *binding_string)
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"smb-ports",	'p', POPT_ARG_STRING, NULL, 		0,	"SMB ports", 	NULL},
-		{"seed",	  0, POPT_ARG_STRING, NULL, 		0,	"seed", 	NULL},
+		{"seed",	  0, POPT_ARG_INT,  &torture_seed, 	0,	"seed", 	NULL},
 		{"num-progs",	  0, POPT_ARG_INT,  &torture_nprocs, 	0,	"num progs",	NULL},
 		{"num-ops",	  0, POPT_ARG_INT,  &torture_numops, 	0, 	"num ops",	NULL},
 		{"entries",	  0, POPT_ARG_INT,  &torture_entries, 	0,	"entries",	NULL},
@@ -2712,7 +2714,11 @@ static BOOL is_binding_string(const char *binding_string)
 
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
-	srandom(time(NULL));
+	if (torture_seed == 0) {
+		torture_seed = time(NULL);
+	} 
+	printf("Using seed %d\n", torture_seed);
+	srandom(torture_seed);
 
 	argv_new = discard_const_p(char *, poptGetArgs(pc));
 
