@@ -1476,7 +1476,7 @@ int process_tar(void)
     } else {
       pstring mask;
       safe_strcpy(mask,cur_dir, sizeof(pstring));
-      DEBUG(5, ("process_tar, do_list with mask: %s\n", mask));
+      DEBUG(5, ("process_tar, do_list with mask: $s\n", mask));
       safe_strcat(mask,"\\*", sizeof(pstring));
       do_list(mask,attribute,do_tar,False, True);
     }
