@@ -33,7 +33,7 @@ PRIVS privs[] = {
 	{SE_ASSIGN_PRIMARY_TOKEN,	"SeAssignPrimaryTokenPrivilege",	"Assign Primary Token"},
 	{SE_LOCK_MEMORY,		"SeLockMemoryPrivilege",		"Lock Memory"},
 	{SE_INCREASE_QUOTA,		"SeIncreaseQuotaPrivilege",		"Increase Quota"},
-	{SE_UNSOLICITED_INPUT,		"eUnsolicitedInputPrivilege",		"Unsolicited Input"},
+	{SE_UNSOLICITED_INPUT,		"SeUnsolicitedInputPrivilege",		"Unsolicited Input"},
 	{SE_MACHINE_ACCOUNT,		"SeMachineAccountPrivilege",		"Can add Machine Accounts to the Domain"},
 	{SE_TCB,			"SeTcbPrivilege",			"TCB"},
 	{SE_SECURITY,			"SeSecurityPrivilege",			"Security Privilege"},
