@@ -257,7 +257,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
 	       rpc_client/cli_wkssvc.o rpc_client/cli_dfs.o \
-	       rpc_client/cli_reg.o$(RPC_CLIENT_OBJ) \
+	       rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
 	       rpc_client/cli_ds.o rpc_client/cli_echo.o \
 	       rpc_client/cli_shutdown.o
