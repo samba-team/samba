@@ -798,7 +798,7 @@ static void passwd_page(void)
 	printf("<tr><td> Re-type New Password : </td>\n");
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW2_PSWD);
 	printf("<tr><td> Remote Machine : </td>\n");
-	printf("<td><input type=password size=30 name=%s></td></tr>\n",RHOST);
+	printf("<td><input type=text size=30 name=%s></td></tr>\n",RHOST);
 
 	printf("</table>");
 
