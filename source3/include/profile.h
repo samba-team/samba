@@ -319,6 +319,7 @@ extern struct profile_struct *profile_p;
 extern struct timeval profile_starttime;
 extern struct timeval profile_endtime;
 extern BOOL do_profile_flag;
+extern BOOL do_profile_times;
 
 /* these are helper macros - do not call them directly in the code
  * use the DO_PROFILE_* START_PROFILE and END_PROFILE ones
@@ -349,17 +350,19 @@ extern BOOL do_profile_flag;
 	}
 #define START_PROFILE(x) \
 	if (do_profile_flag) { \
-		GetTimeOfDay(&profile_starttime); \
+		if (do_profile_times) \
+			GetTimeOfDay(&profile_starttime); \
 		INC_PROFILE_COUNT(x##_count); \
 	}
 #define START_PROFILE_BYTES(x,n) \
 	if (do_profile_flag) { \
-		GetTimeOfDay(&profile_starttime); \
+		if (do_profile_times) \
+			GetTimeOfDay(&profile_starttime); \
 		INC_PROFILE_COUNT(x##_count); \
 		ADD_PROFILE_COUNT(x##_bytes,n); \
 	}
 #define END_PROFILE(x) \
-	if (do_profile_flag) { \
+	if (do_profile_times) { \
 		GetTimeOfDay(&profile_endtime); \
 		ADD_PROFILE_COUNT(x##_time,PROFILE_TIME); \
 	}

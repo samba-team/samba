@@ -23,9 +23,12 @@
 #define _MESSAGES_H_
 
 /* general messages */
-#define MSG_DEBUG 1
-#define MSG_PING  2
-#define MSG_PONG  3
+#define MSG_DEBUG		1
+#define MSG_PING		2
+#define MSG_PONG		3
+#define MSG_PROFILE		4
+#define MSG_REQ_DEBUGLEVEL	5
+#define MSG_DEBUGLEVEL		6
 
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001
