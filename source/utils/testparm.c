@@ -132,7 +132,8 @@ parameter.\n" );
 cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
 					ret = 1;
 				}
-			}
+
+             }
 
 #ifdef WITH_PAM
 		}
@@ -141,6 +142,11 @@ cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
 		if(lp_passwd_chat() == NULL) {
 			fprintf(stderr, "ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd chat' \
 parameter.\n");
+			ret = 1;
+		} else 
+		/* check if there's a %u parameter present */
+		if(strstr_m(lp_passwd_chat(), "%u") == NULL) {
+			fprintf(stderr, "ERROR: the 'passwd program' (%s) requires a '%%u' parameter.\n", lp_passwd_program());
 			ret = 1;
 		}
 
@@ -365,3 +371,4 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	}
 	return(ret);
 }
+
