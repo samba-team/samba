@@ -94,8 +94,7 @@ struct pvfs_search_state {
 	struct pvfs_dir *dir;
 };
 
-/* open file state - this is a temporary implementation
-   to allow some tests to work */
+/* open file state */
 struct pvfs_file {
 	struct pvfs_file *next, *prev;
 	int fd;
