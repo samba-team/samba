@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB client socket context management functions
-   Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Andrew Tridgell 1994-2003
    Copyright (C) James Myers 2003 <myersjj@samba.org>
    
    This program is free software; you can redistribute it and/or modify
