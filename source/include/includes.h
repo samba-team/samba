@@ -453,6 +453,7 @@ typedef int socklen_t;
 /* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
 #define uint32 unsigned
 #endif
+#endif
 
 /*
  * Types for devices, inodes and offsets.
