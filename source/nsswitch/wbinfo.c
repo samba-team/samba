@@ -389,7 +389,7 @@ static BOOL wbinfo_auth(char *username)
         printf("plaintext password authentication %s\n", 
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
-	printf("error code was %s (HEX: %x)\n", response.data.auth.nt_status_string, response.data.auth.nt_status);
+	printf("error code was %s (0x%x)\n", response.data.auth.nt_status_string, response.data.auth.nt_status);
 
         return result == NSS_STATUS_SUCCESS;
 }
@@ -441,7 +441,7 @@ static BOOL wbinfo_auth_crap(char *username)
         printf("challenge/response password authentication %s\n", 
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
-	printf("error code was %s (HEX: %x)\n", 
+	printf("error code was %s (0x%x)\n", 
 	       response.data.auth.nt_status_string, 
 	       response.data.auth.nt_status);
 
