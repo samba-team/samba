@@ -21,10 +21,7 @@
 #ifndef _PY_LSA_H
 #define _PY_LSA_H
 
-#include "includes.h"
-#include "Python.h"
-
-#include "python/py_common_proto.h"
+#include "python/py_common.h"
 
 /* LSA policy handle object */
 
@@ -40,7 +37,5 @@ typedef struct {
 extern PyTypeObject lsa_policy_hnd_type;
 
 extern PyObject *lsa_error;
-
-#include "python/py_lsa_proto.h"
 
 #endif /* _PY_LSA_H */

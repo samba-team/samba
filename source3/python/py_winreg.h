@@ -24,6 +24,6 @@
 #include "includes.h"
 #include "Python.h"
 
-#include "python/py_common_proto.h"
+#include "python/py_common.h"
 
 #endif /* _PY_WINREG_H */

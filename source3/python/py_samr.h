@@ -21,10 +21,7 @@
 #ifndef _PY_SAMR_H
 #define _PY_SAMR_H
 
-#include "includes.h"
-#include "Python.h"
-
-#include "python/py_common_proto.h"
+#include "python/py_common.h"
 
 /* SAMR connect policy handle object */
 
@@ -78,6 +75,7 @@ extern PyTypeObject samr_connect_hnd_type, samr_domain_hnd_type,
 
 extern PyObject *samr_error;
 
-/* #include "python/py_samr_proto.h" */
+/* The following definitions are from py_samr_conv.c */
 
+BOOL py_from_acct_info(PyObject **array, struct acct_info *info, int num_accts);
 #endif /* _PY_SAMR_H */
