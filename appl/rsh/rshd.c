@@ -185,6 +185,8 @@ recv_krb4_auth (int s, u_char *buf,
 	   server_username,
 	   cmd);
 
+    memcpy (iv, auth.session, sizeof(iv));
+
     return 0;
 }
 
