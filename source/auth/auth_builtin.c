@@ -49,11 +49,11 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 }
 
 /* Guest modules initialisation */
+
 NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *options, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
-	}
 
 	(*auth_method)->auth = check_guest_security;
 	(*auth_method)->name = "guest";
@@ -92,7 +92,7 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 	strlower(user);
 	error_num = strtoul(user, NULL, 16);
 	
-	DEBUG(5,("Error for user %s was %lx\n", user, error_num));
+	DEBUG(5,("check_name_to_ntstatus_security: Error for user %s was %lx\n", user, error_num));
 
 	nt_status = NT_STATUS(error_num);
 	
@@ -100,11 +100,11 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 }
 
 /** Module initailisation function */
+
 NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
-	}
 
 	(*auth_method)->auth = check_name_to_ntstatus_security;
 	(*auth_method)->name = "name_to_ntstatus";
@@ -149,11 +149,11 @@ static DATA_BLOB auth_get_fixed_challenge(const struct auth_context *auth_contex
 
 
 /** Module initailisation function */
+
 NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
-	}
 
 	(*auth_method)->auth = check_fixed_challenge_security;
 	(*auth_method)->get_chal = auth_get_fixed_challenge;
@@ -168,6 +168,7 @@ NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char
  **/
 
 /* Plugin modules initialisation */
+
 NTSTATUS auth_init_plugin(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	void * dl_handle;
@@ -175,7 +176,7 @@ NTSTATUS auth_init_plugin(struct auth_context *auth_context, const char *param, 
 	auth_init_function plugin_init;
 
 	if (param == NULL) {
-		DEBUG(0, ("The plugin module needs an argument!\n"));
+		DEBUG(0, ("auth_init_plugin: The plugin module needs an argument!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -189,21 +190,21 @@ NTSTATUS auth_init_plugin(struct auth_context *auth_context, const char *param, 
 
 	trim_string(plugin_name, " ", " ");
 
-	DEBUG(5, ("Trying to load auth plugin %s\n", plugin_name));
+	DEBUG(5, ("auth_init_plugin: Trying to load auth plugin %s\n", plugin_name));
 	dl_handle = sys_dlopen(plugin_name, RTLD_NOW );
 	if (!dl_handle) {
-		DEBUG(0, ("Failed to load auth plugin %s using sys_dlopen (%s)\n", plugin_name, sys_dlerror()));
+		DEBUG(0, ("auth_init_plugin: Failed to load auth plugin %s using sys_dlopen (%s)\n",
+					plugin_name, sys_dlerror()));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
     
 	plugin_init = sys_dlsym(dl_handle, "auth_init");
 	if (!plugin_init){
-		DEBUG(0, ("Failed to find function 'pdb_init' using sys_dlsym in sam plugin %s (%s)\n", plugin_name, sys_dlerror()));	    
+		DEBUG(0, ("Failed to find function 'auth_init' using sys_dlsym in sam plugin %s (%s)\n",
+					plugin_name, sys_dlerror()));	    
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	DEBUG(5, ("Starting sam plugin %s with paramater %s\n", plugin_name, plugin_param?plugin_param:"(null)"));
 	return plugin_init(auth_context, plugin_param, auth_method);
 }
-
-
