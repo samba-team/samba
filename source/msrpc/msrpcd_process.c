@@ -73,6 +73,8 @@ static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 	struct timeval to;
 	int maxfd;
 
+	DEBUG(10,("receive_message_or_msrpc: timeout %d fd %d\n", timeout, c));
+
 	smb_read_error = 0;
 
 	*got_msrpc = False;
@@ -102,6 +104,7 @@ static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 	{
 		/* something is wrong. Maybe the socket is dead? */
 		smb_read_error = READ_ERROR;
+		DEBUG(2,("read error on loop-back socket\n"));
 		return False;
 	}
 
@@ -109,6 +112,7 @@ static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
 	if (selrtn == 0)
 	{
 		smb_read_error = READ_TIMEOUT;
+		DEBUG(2,("timeout on loop-back socket\n"));
 		return False;
 	}
 

@@ -124,6 +124,7 @@ BOOL msrpc_receive(int fd, prs_struct * ps)
 
 	if (!receive_msrpc(fd, ps, 0))
 	{
+		DEBUG(1,("msrpc_receive: failed\n"));
 		return False;
 	}
 
@@ -131,6 +132,7 @@ BOOL msrpc_receive(int fd, prs_struct * ps)
 
 	if (ps->data == NULL || len <= 0)
 	{
+		DEBUG(10, ("ncalrpc_l_receive: no data\n"));
 		return False;
 	}
 

@@ -49,6 +49,7 @@ BOOL become_vuser(const vuser_key *k)
 
 	if (!check_vuser_ok(&vcache, vuser, -1))
 	{
+		DEBUG(2,("become_vuser: check_vuser rejected access\n"));
 		vuid_free_user_struct(vuser);
 		return False;
 	}
