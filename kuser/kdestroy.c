@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -120,11 +120,11 @@ main (int argc, char **argv)
 #if KRB4
     if(dest_tkt_flag && dest_tkt ())
 	exit_val = 1;
+#endif
     if (unlog_flag && k_hasafs ()) {
 	if (k_unlog ())
 	    exit_val = 1;
     }
-#endif
 
     return exit_val;
 }
