@@ -1,3 +1,10 @@
+2001-08-05  Assar Westerlund  <assar@chicken.stacken.kth.se>
+
+	* ftpd/ftpcmd.y: add some (unsigned char) casts to is*
+	* ftp/cmds.c: add some (unsigned char) casts to is*
+	* ftpd/gss_userok.c (gss_userok): make argument to printf type
+	correct
+
 2001-08-05  Assar Westerlund  <assar@sics.se>
 
 	* ftp/cmds.c (setpeer): __NetBSD__ is also a unix-like OS
