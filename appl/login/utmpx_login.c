@@ -25,8 +25,10 @@ utmpx_login(char *line, char *user, char *host)
      */
 
     while ((ut = getutxent())) {
-	if (ut->ut_pid == mypid && (ut->ut_type == INIT_PROCESS
-	  || ut->ut_type == LOGIN_PROCESS || ut->ut_type == USER_PROCESS)) {
+	if (ut->ut_pid == mypid
+	    && (   ut->ut_type == INIT_PROCESS
+		|| ut->ut_type == LOGIN_PROCESS
+		|| ut->ut_type == USER_PROCESS)) {
 	    strncpy(ut->ut_line, line, sizeof(ut->ut_line));
 	    strncpy(ut->ut_user, user, sizeof(ut->ut_user));
 	    strncpy(ut->ut_host, host, sizeof(ut->ut_host));
