@@ -38,10 +38,9 @@ RCSID("$Id$");
 int
 copy_general_string (const general_string *from, general_string *to)
 {
-    *to = malloc(strlen(*from) + 1);
+    *to = strdup(*from);
     if(*to == NULL)
 	return ENOMEM;
-    strcpy(*to, *from);
     return 0;
 }
 
