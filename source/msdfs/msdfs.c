@@ -439,6 +439,8 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 		if (consumedcntp)
 			*consumedcntp = strlen(pathname);
 	}
+	
+	ret = True;
 out:
 	talloc_destroy( conn->mem_ctx );
 	
