@@ -80,6 +80,7 @@ struct vfs_connection_struct {
     pstring dirpath;
     pstring connectpath;
     pstring origpath;
+    pstring service;
     
     /* Information on user who *opened* this connection */
 
@@ -132,6 +133,14 @@ struct vfs_ops {
     int (*unlink)(char *path);
     int (*chmod)(char *path, mode_t mode);
     int (*utime)(char *path, struct utimbuf *times);
+};
+
+/* VFS options for configuration file */
+
+struct vfs_options {
+    struct vfs_options *prev, *next;
+    char *name;
+    char *value;
 };
 
 #endif /* _VFS_H */
