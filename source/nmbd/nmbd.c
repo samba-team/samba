@@ -614,7 +614,7 @@ static BOOL init_structs(void)
       if (nodup)
         my_netbios_names[namecount++] = nbname;
       else
-        free(nbname);
+        SAFE_FREE(nbname);
 
       ptr++;
     }

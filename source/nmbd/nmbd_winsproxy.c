@@ -83,7 +83,7 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
                                 WINS_PROXY_NAME, num_ips, iplist );
 
   if(iplist != &ip)
-    free((char *)iplist);
+    SAFE_FREE(iplist);
 
   /*
    * Check that none of the IP addresses we are returning is on the
@@ -161,7 +161,7 @@ static struct userdata_struct *wins_proxy_userdata_copy_fn(struct userdata_struc
   /* Do a deep copy of the packet. */
   if((copy_of_p = copy_packet(p)) == NULL)
   {
-    free((char *)new_userdata);
+    SAFE_FREE(new_userdata);
     return NULL;
   }
 
@@ -192,7 +192,7 @@ static void wins_proxy_userdata_free_fn(struct userdata_struct *userdata)
 
   free_packet(p);
   ZERO_STRUCTP(userdata);
-  free((char *)userdata);
+  SAFE_FREE(userdata);
 }
 
 /****************************************************************************

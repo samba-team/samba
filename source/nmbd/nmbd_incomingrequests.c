@@ -581,8 +581,8 @@ on the same subnet (%s) as the requestor. Not replying.\n",
 
   if (!success && bcast)
   {
-    if((prdata != rdata) && (prdata != NULL))
-      free(prdata);
+    if(prdata != rdata)
+      SAFE_FREE(prdata);
     return; /* Never reply with a negative response to broadcasts. */
   }
 
@@ -594,8 +594,8 @@ on the same subnet (%s) as the requestor. Not replying.\n",
 
   if(!success && !bcast && nmb->header.nm_flags.recursion_desired)
   {
-    if((prdata != rdata) && (prdata != NULL))
-      free(prdata);
+    if(prdata != rdata)
+      SAFE_FREE(prdata);
     return;
   }
 
@@ -620,6 +620,6 @@ on the same subnet (%s) as the requestor. Not replying.\n",
                        prdata,                         /* data to send. */
                        reply_data_len);                /* data length. */
 
-  if((prdata != rdata) && (prdata != NULL))
-    free(prdata);
+  if(prdata != rdata)
+    SAFE_FREE(prdata);
 }
