@@ -319,6 +319,7 @@ VFS_NETATALK_OBJ = modules/vfs_netatalk.o
 VFS_DEFAULT_QUOTA_OBJ = modules/vfs_default_quota.o
 VFS_READONLY_OBJ = modules/vfs_readonly.o modules/getdate.o
 VFS_CAP_OBJ = modules/vfs_cap.o
+VFS_EXPAND_MSDFS_OBJ = modules/vfs_expand_msdfs.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -1169,6 +1170,11 @@ bin/readonly.@SHLIBEXT@: $(VFS_READONLY_OBJ:.o=.@PICSUFFIX@)
 bin/cap.@SHLIBEXT@: $(VFS_CAP_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CAP_OBJ:.o=.@PICSUFFIX@) \
+		@SONAMEFLAG@`basename $@`
+
+bin/expand_msdfs.@SHLIBEXT@: $(VFS_EXPAND_MSDFS_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXPAND_MSDFS_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
