@@ -31,13 +31,21 @@
 
 struct dcerpc_pipe {
 	TALLOC_CTX *mem_ctx;
-	uint16 fnum;
 	int reference_count;
 	uint32 call_id;
 	uint32 srv_max_xmit_frag;
 	uint32 srv_max_recv_frag;
-	struct cli_tree *tree;
 	unsigned flags;
+
+	struct dcerpc_transport {
+		void *private;
+		NTSTATUS (*full_request)(struct dcerpc_pipe *, 
+					 TALLOC_CTX *, DATA_BLOB *, DATA_BLOB *);
+		NTSTATUS (*secondary_request)(struct dcerpc_pipe *, TALLOC_CTX *, DATA_BLOB *);
+		NTSTATUS (*initial_request)(struct dcerpc_pipe *, TALLOC_CTX *, DATA_BLOB *);
+		NTSTATUS (*shutdown_pipe)(struct dcerpc_pipe *);
+		const char *(*peer_name)(struct dcerpc_pipe *);
+	} transport;
 };
 
 /* dcerpc pipe flags */

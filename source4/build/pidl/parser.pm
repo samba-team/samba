@@ -1176,10 +1176,10 @@ sub ParseFunctionElementPull($$)
 		if (util::need_wire_pointer($e)) {
 			pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, &_ptr_$e->{NAME}));\n";
 			pidl "\tif (_ptr_$e->{NAME}) {\n";
-		} elsif ($inout eq "in" && util::has_property($e, "ref")) {
-			pidl "\t{\n";
-		} else {
+		} elsif ($inout eq "out" && util::has_property($e, "ref")) {
 			pidl "\tif (r->$inout.$e->{NAME}) {\n";
+		} else {
+			pidl "\t{\n";
 		}
 		ParseArrayPull($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		pidl "\t}\n";
