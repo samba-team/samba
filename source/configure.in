@@ -2713,7 +2713,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CACHE_CHECK([for key in krb5_keytab_entry],
                  samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEY,[
     AC_TRY_COMPILE([#include <krb5.h>],
-      [krb5_keytab_entry entry; entry.key = NULL;],
+      [krb5_keytab_entry entry; krb5_keyblock e; entry.key = e;],
       samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEY=yes,
       samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEY=no)])
 
