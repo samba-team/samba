@@ -728,7 +728,17 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 	for (i = 0; i < num_entries; i++) {
 		pwd = &disp_user_info[i+start_idx];
 		temp_name = pdb_get_username(pwd);
-		init_unistr2(&uni_temp_name, temp_name, UNI_STR_TERMINATE);
+
+		/*
+		 * usrmgr expects a non-NULL terminated string with
+		 * trust relationships
+		 */
+		if (pdb_get_acct_ctrl(pwd) & ACB_DOMTRUST) {
+			init_unistr2(&uni_temp_name, temp_name, UNI_FLAGS_NONE);
+		} else {
+			init_unistr2(&uni_temp_name, temp_name, UNI_STR_TERMINATE);
+		}
+
 		user_sid = pdb_get_user_sid(pwd);
 
 		if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
@@ -2240,7 +2250,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 
 		if (*add_script) {
   			int add_ret;
-  			all_string_sub(add_script, "%u", account, sizeof(account));
+  			all_string_sub(add_script, "%u", account, sizeof(add_script));
   			add_ret = smbrun(add_script,NULL);
  			DEBUG(3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   		}
@@ -3626,7 +3636,7 @@ static int smb_delete_user(const char *unix_user)
 	pstrcpy(del_script, lp_deluser_script());
 	if (! *del_script)
 		return -1;
-	all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
+	all_string_sub(del_script, "%u", unix_user, sizeof(del_script));
 	ret = smbrun(del_script,NULL);
 	DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
 
@@ -3665,7 +3675,14 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	/* delete the unix side */
+	/* First delete the samba side */
+	if (!pdb_delete_sam_account(sam_pass)) {
+		DEBUG(5,("_samr_delete_dom_user:Failed to delete entry for user %s.\n", pdb_get_username(sam_pass)));
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_CANNOT_DELETE;
+	}
+
+	/* Now delete the unix side */
 	/*
 	 * note: we don't check if the delete really happened
 	 * as the script is not necessary present
@@ -3673,13 +3690,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	 */
 	smb_delete_user(pdb_get_username(sam_pass));
 
-	/* and delete the samba side */
-	if (!pdb_delete_sam_account(sam_pass)) {
-		DEBUG(5,("_samr_delete_dom_user:Failed to delete entry for user %s.\n", pdb_get_username(sam_pass)));
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_CANNOT_DELETE;
-	}
-	
+
 	pdb_free_sam(&sam_pass);
 
 	if (!close_policy_hnd(p, &q_u->user_pol))

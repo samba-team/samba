@@ -236,8 +236,9 @@ static int do_quota(struct cli_state *cli, enum SMB_QUOTA_TYPE qtype, uint16 cmd
 	}
 
 	if (!cli_get_quota_handle(cli, &quota_fnum)) {
-		d_printf("Failed to open \\%s  %s.\n",
-			FAKE_FILE_NAME_QUOTA,cli_errstr(cli));
+		d_printf("Quotas are not enabled on this share.\n");
+		d_printf("Failed to open %s  %s.\n",
+			FAKE_FILE_NAME_QUOTA_WIN32,cli_errstr(cli));
 		return -1;
 	}
 
@@ -419,14 +420,15 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 
 	ZERO_STRUCT(qt);
 
+	/* set default debug level to 1 regardless of what smb.conf sets */
+	setup_logging( "smbcquotas", True );
+	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
+	dbf = x_stderr;
+	x_setbuf( x_stderr, NULL );
+
 	setlinebuf(stdout);
 
-	dbf = x_stderr;
-
 	fault_setup(NULL);
-
-	setup_logging(argv[0],True);
-
 
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();

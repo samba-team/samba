@@ -1,4 +1,4 @@
-This is a development version  of Samba, the free SMB and CIFS client and
+This is a development version of Samba, the free SMB and CIFS client and
 server for UNIX and other operating systems. Samba is maintained by
 the Samba Team, who support the original author, Andrew Tridgell.
 
@@ -6,7 +6,7 @@ the Samba Team, who support the original author, Andrew Tridgell.
 >>>> about the configuration and use of Samba.
 
 NOTE: Installation instructions may be found in 
-      docs/htmldocs/install.html
+      docs/htmldocs/Samba-HOWTO-Collection/install.html
 
 This software is freely distributable under the GNU public license, a
 copy of which you should have received with this software (in a file
@@ -102,16 +102,16 @@ for more details) and are always glad to receive feedback or
 suggestions to the address samba@lists.samba.org.  More information
 on the various Samba mailing lists can be found at http://lists.samba.org/.
 
-You can also get the Samba sourcecode straight from the CVS tree - see
-http://samba.org/cvs.html.
+You can also get the Samba sourcecode straight from the Subversion tree - see
+http://samba.org/samba/subversion.html.
 
 You could also send hardware/software/money/jewelry or pre-paid pizza
 vouchers directly to Andrew. The pizza vouchers would be especially
 welcome, in fact there is a special field in the survey for people who
 have paid up their pizza :-)
 
-If you like a particular feature then look through the CVS change-log
-(on the web at http://samba.org/cgi-bin/cvsweb/samba) and see
+If you like a particular feature then look through the Subversion change-log
+(on the web at http://websvn.samba.org/cgi-bin/viewcvs.cgi) and see
 who added it, then send them an email.
 
 Remember that free software of this kind lives or dies by the response

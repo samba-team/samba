@@ -148,6 +148,27 @@ static char** get_userattr_list( int schema_ver )
 	return NULL;
 }
 
+/**************************************************************************
+ Return the list of attribute names to delete given a user schema version.
+**************************************************************************/
+
+static char** get_userattr_delete_list( int schema_ver )
+{
+	switch ( schema_ver ) {
+		case SCHEMAVER_SAMBAACCOUNT:
+			return get_attr_list( attrib_map_to_delete_v22 );
+			
+		case SCHEMAVER_SAMBASAMACCOUNT:
+			return get_attr_list( attrib_map_to_delete_v30 );
+		default:
+			DEBUG(0,("get_userattr_list: unknown schema version specified!\n"));
+			break;
+	}
+	
+	return NULL;
+}
+
+
 /*******************************************************************
  Generate the LDAP search filter for the objectclass based on the 
  version of the schema we are using.
@@ -299,11 +320,16 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 		   really exist. */
 
 		for (attrib = attrs; *attrib != NULL; attrib++) {
-			if ((StrCaseCmp(*attrib, name) == 0) &&
-					!(StrCaseCmp(*attrib,
-						get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_MOD_TIMESTAMP)))) {
-				DEBUG(10, ("ldapsam_delete_entry: deleting attribute %s\n", name));
-				smbldap_set_mod(&mods, LDAP_MOD_DELETE, name, NULL);
+			/* Don't delete LDAP_ATTR_MOD_TIMESTAMP attribute. */
+			if (strequal(*attrib, get_userattr_key2string(ldap_state->schema_ver,
+						LDAP_ATTR_MOD_TIMESTAMP))) {
+				continue;
+			}
+			if (strequal(*attrib, name)) {
+				DEBUG(10, ("ldapsam_delete_entry: deleting "
+					   "attribute %s\n", name));
+				smbldap_set_mod(&mods, LDAP_MOD_DELETE, name,
+						NULL);
 			}
 		}
 
@@ -1229,8 +1255,13 @@ static void append_attr(char ***attr_list, const char *new_attr)
 {
 	int i;
 
-	for (i=0; (*attr_list)[i] != NULL; i++)
+	if (new_attr == NULL) {
+		return;
+	}
+
+	for (i=0; (*attr_list)[i] != NULL; i++) {
 		;
+	}
 
 	(*attr_list) = Realloc((*attr_list), sizeof(**attr_list) * (i+2));
 	SMB_ASSERT((*attr_list) != NULL);
@@ -1515,7 +1546,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 
 	DEBUG (3, ("ldapsam_delete_sam_account: Deleting user %s from LDAP.\n", sname));
 
-	attr_list= get_userattr_list( ldap_state->schema_ver );
+	attr_list= get_userattr_delete_list( ldap_state->schema_ver );
 	rc = ldapsam_search_suffix_by_name(ldap_state, sname, &result, attr_list);
 
 	if (rc != LDAP_SUCCESS)  {

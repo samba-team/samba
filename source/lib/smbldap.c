@@ -66,6 +66,29 @@ ATTRIB_MAP_ENTRY attrib_map_v22[] = {
 	{ LDAP_ATTR_DOMAIN,		"domain"	},
 	{ LDAP_ATTR_OBJCLASS,		"objectClass"	},
 	{ LDAP_ATTR_ACB_INFO,		"acctFlags"	},
+	{ LDAP_ATTR_MOD_TIMESTAMP,	"modifyTimestamp"	},
+	{ LDAP_ATTR_LIST_END,		NULL 		}
+};
+
+ATTRIB_MAP_ENTRY attrib_map_to_delete_v22[] = {
+	{ LDAP_ATTR_PWD_LAST_SET,	"pwdLastSet"	},
+	{ LDAP_ATTR_PWD_CAN_CHANGE,	"pwdCanChange"	},
+	{ LDAP_ATTR_PWD_MUST_CHANGE,	"pwdMustChange"	},
+	{ LDAP_ATTR_LOGON_TIME,		"logonTime" 	},
+	{ LDAP_ATTR_LOGOFF_TIME,	"logoffTime"	},
+	{ LDAP_ATTR_KICKOFF_TIME,	"kickoffTime"	},
+	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"	},
+	{ LDAP_ATTR_HOME_PATH,		"smbHome"	},
+	{ LDAP_ATTR_HOME_DRIVE,		"homeDrives"	},
+	{ LDAP_ATTR_LOGON_SCRIPT,	"scriptPath"	},
+	{ LDAP_ATTR_PROFILE_PATH,	"profilePath"	},
+	{ LDAP_ATTR_USER_WKS,		"userWorkstations"},
+	{ LDAP_ATTR_USER_RID,		"rid"		},
+	{ LDAP_ATTR_PRIMARY_GROUP_RID,	"primaryGroupID"},
+	{ LDAP_ATTR_LMPW,		"lmPassword"	},
+	{ LDAP_ATTR_NTPW,		"ntPassword"	},
+	{ LDAP_ATTR_DOMAIN,		"domain"	},
+	{ LDAP_ATTR_ACB_INFO,		"acctFlags"	},
 	{ LDAP_ATTR_LIST_END,		NULL 		}
 };
 
@@ -102,6 +125,32 @@ ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 	{ LDAP_ATTR_BAD_PASSWORD_TIME,	"sambaBadPasswordTime" 	},
 	{ LDAP_ATTR_PWD_HISTORY,	"sambaPasswordHistory"  },
 	{ LDAP_ATTR_MOD_TIMESTAMP,	"modifyTimestamp"	},
+	{ LDAP_ATTR_LOGON_HOURS,	"sambaLogonHours"	},
+	{ LDAP_ATTR_LIST_END,		NULL 			}
+};
+
+ATTRIB_MAP_ENTRY attrib_map_to_delete_v30[] = {
+	{ LDAP_ATTR_PWD_LAST_SET,	"sambaPwdLastSet"	},
+	{ LDAP_ATTR_PWD_CAN_CHANGE,	"sambaPwdCanChange"	},
+	{ LDAP_ATTR_PWD_MUST_CHANGE,	"sambaPwdMustChange"	},
+	{ LDAP_ATTR_LOGON_TIME,		"sambaLogonTime" 	},
+	{ LDAP_ATTR_LOGOFF_TIME,	"sambaLogoffTime"	},
+	{ LDAP_ATTR_KICKOFF_TIME,	"sambaKickoffTime"	},
+	{ LDAP_ATTR_HOME_DRIVE,		"sambaHomeDrive"	},
+	{ LDAP_ATTR_HOME_PATH,		"sambaHomePath"		},
+	{ LDAP_ATTR_LOGON_SCRIPT,	"sambaLogonScript"	},
+	{ LDAP_ATTR_PROFILE_PATH,	"sambaProfilePath"	},
+	{ LDAP_ATTR_USER_WKS,		"sambaUserWorkstations"	},
+	{ LDAP_ATTR_USER_SID,		LDAP_ATTRIBUTE_SID	},
+	{ LDAP_ATTR_PRIMARY_GROUP_SID,	"sambaPrimaryGroupSID"	},
+	{ LDAP_ATTR_LMPW,		"sambaLMPassword"	},
+	{ LDAP_ATTR_NTPW,		"sambaNTPassword"	},
+	{ LDAP_ATTR_DOMAIN,		"sambaDomainName"	},
+	{ LDAP_ATTR_ACB_INFO,		"sambaAcctFlags"	},
+	{ LDAP_ATTR_MUNGED_DIAL,	"sambaMungedDial"	},
+	{ LDAP_ATTR_BAD_PASSWORD_COUNT,	"sambaBadPasswordCount" },
+	{ LDAP_ATTR_BAD_PASSWORD_TIME,	"sambaBadPasswordTime" 	},
+	{ LDAP_ATTR_PWD_HISTORY,	"sambaPasswordHistory"  },
 	{ LDAP_ATTR_LOGON_HOURS,	"sambaLogonHours"	},
 	{ LDAP_ATTR_LIST_END,		NULL 			}
 };
@@ -427,6 +476,12 @@ static BOOL fetch_ldap_pw(char **dn, char** pw)
 {
 	char oldval[2048]; /* current largest allowed value is mungeddial */
 	BOOL existed;
+
+	if (attribute == NULL) {
+		/* This can actually happen for ldapsam_compat where we for
+		 * example don't have a password history */
+		return;
+	}
 
 	if (existing != NULL) {
 		existed = smbldap_get_single_attribute(ldap_struct, existing, attribute, oldval, sizeof(oldval));

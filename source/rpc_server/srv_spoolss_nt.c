@@ -64,14 +64,14 @@ struct table_node {
 static Printer_entry *printers_list;
 
 typedef struct _counter_printer_0 {
-	ubi_dlNode Next;
-	ubi_dlNode Prev;
+	struct _counter_printer_0 *next;
+	struct _counter_printer_0 *prev;
 	
 	int snum;
 	uint32 counter;
 } counter_printer_0;
 
-static ubi_dlList counter_list;
+static counter_printer_0 *counter_list;
 
 static struct cli_state notify_cli; /* print notify back-channel */
 static uint32 smb_connections=0;
@@ -1982,6 +1982,7 @@ static int get_version_id (char * arch)
 	        {"Windows NT R4000",     "W32MIPS",     2 },	
 	        {"Windows NT Alpha_AXP", "W32ALPHA",    2 },
 	        {"Windows NT PowerPC",   "W32PPC",      2 },
+		{"Windows IA64",         "IA64",        3 },
 	        {NULL,                   "",            -1 }
 	};
  
@@ -3948,9 +3949,7 @@ static BOOL construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *p
 	count = print_queue_length(snum, &status);
 
 	/* check if we already have a counter for this printer */	
-	session_counter = (counter_printer_0 *)ubi_dlFirst(&counter_list);
-
-	for(; session_counter; session_counter = (counter_printer_0 *)ubi_dlNext(session_counter)) {
+	for(session_counter = counter_list; session_counter; session_counter = session_counter->next) {
 		if (session_counter->snum == snum)
 			break;
 	}
@@ -3964,7 +3963,7 @@ static BOOL construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *p
 		ZERO_STRUCTP(session_counter);
 		session_counter->snum=snum;
 		session_counter->counter=0;
-		ubi_dlAddHead( &counter_list, (ubi_dlNode *)session_counter);
+		DLIST_ADD(counter_list, session_counter);
 	}
 	
 	/* increment it */
@@ -6238,6 +6237,7 @@ WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 	DEVMODE_CTR devmode_ctr = q_u->devmode_ctr;
 	SEC_DESC_BUF *secdesc_ctr = q_u->secdesc_ctr;
 	uint32 command = q_u->command;
+	WERROR result;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	
@@ -6251,7 +6251,12 @@ WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 		case 0:
 			return control_printer(handle, command, p);
 		case 2:
-			return update_printer(p, handle, level, info, devmode_ctr.devmode);
+			result = update_printer(p, handle, level, info, devmode_ctr.devmode);
+			if (!W_ERROR_IS_OK(result)) 
+				return result;
+			if (secdesc_ctr)
+				result = update_printer_sec(handle, level, info, p, secdesc_ctr);
+			return result;
 		case 3:
 			return update_printer_sec(handle, level, info, p,
 						  secdesc_ctr);

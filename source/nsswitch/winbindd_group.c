@@ -495,8 +495,6 @@ enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
    The dispinfo_ndx field is incremented to the index of the next group to 
    fetch. Return True if some groups were returned, False otherwise. */
 
-#define MAX_FETCH_SAM_ENTRIES 100
-
 static BOOL get_sam_group_entries(struct getent_state *ent)
 {
 	NTSTATUS status;
@@ -925,14 +923,11 @@ static void add_gid_to_array_unique(gid_t gid, gid_t **gids, int *num)
 {
 	int i;
 
-	if ((*num) >= groups_max())
-		return;
-
 	for (i=0; i<*num; i++) {
 		if ((*gids)[i] == gid)
 			return;
 	}
-	
+
 	*gids = Realloc(*gids, (*num+1) * sizeof(gid_t));
 
 	if (*gids == NULL)

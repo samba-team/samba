@@ -31,6 +31,17 @@
 extern "C" {
 #endif
 
+#ifndef PRINTF_ATTRIBUTE
+/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
+ * the parameter containing the format, and a2 the index of the first
+ * argument. Note that some gcc 2.x versions don't handle this
+ * properly **/
+#if (__GNUC__ >= 3)
+#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#else
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+#endif
 
 /* flags to tdb_store() */
 #define TDB_REPLACE 1
@@ -101,18 +112,21 @@ typedef struct tdb_context {
 	struct tdb_context *next; /* all tdbs to avoid multiple opens */
 	dev_t device;	/* uniquely identifies this tdb */
 	ino_t inode;	/* uniquely identifies this tdb */
-	void (*log_fn)(struct tdb_context *tdb, int level, const char *, ...); /* logging function */
+	void (*log_fn)(struct tdb_context *tdb, int level, const char *, ...) PRINTF_ATTRIBUTE(3,4); /* logging function */
+	u32 (*hash_fn)(TDB_DATA *key);
 	int open_flags; /* flags used in the open - needed by reopen */
 } TDB_CONTEXT;
 
 typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *);
 typedef void (*tdb_log_func)(TDB_CONTEXT *, int , const char *, ...);
+typedef u32 (*tdb_hash_func)(TDB_DATA *key);
 
 TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
 TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
-			 tdb_log_func log_fn);
+			 tdb_log_func log_fn,
+			 tdb_hash_func hash_fn);
 
 int tdb_reopen(TDB_CONTEXT *tdb);
 int tdb_reopen_all(void);

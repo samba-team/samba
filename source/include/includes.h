@@ -45,10 +45,11 @@
 #undef HAVE_TERMIOS_H
 #endif
 
-#ifdef __GNUC__
+#if (__GNUC__ >= 3)
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
- * argument.  **/
+ * argument. Note that some gcc 2.x versions don't handle this
+ * properly **/
 #define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
 #else
 #define PRINTF_ATTRIBUTE(a1, a2)
@@ -309,6 +310,19 @@
 #endif
 
 #ifdef HAVE_SHADOW_H
+/*
+ * HP-UX 11.X has TCP_NODELAY and TCP_MAXSEG defined in <netinet/tcp.h> which
+ * was included above.  However <rpc/rpc.h> includes <sys/xti.h> which defines
+ * them again without checking if they already exsist.  This generates
+ * two "Redefinition of macro" warnings for every single .c file that is
+ * compiled.
+ */
+#if defined(HPUX) && defined(TCP_NODELAY)
+#undef TCP_NODELAY
+#endif
+#if defined(HPUX) && defined(TCP_MAXSEG)
+#undef TCP_MAXSEG
+#endif
 #include <shadow.h>
 #endif
 
@@ -361,6 +375,19 @@
 #if defined(HAVE_SYS_SECURITY_H) && defined(HAVE_RPC_AUTH_ERROR_CONFLICT)
 #undef AUTH_ERROR
 #endif
+/*
+ * HP-UX 11.X has TCP_NODELAY and TCP_MAXSEG defined in <netinet/tcp.h> which
+ * was included above.  However <rpc/rpc.h> includes <sys/xti.h> which defines
+ * them again without checking if they already exsist.  This generates
+ * two "Redefinition of macro" warnings for every single .c file that is
+ * compiled.
+ */
+#if defined(HPUX) && defined(TCP_NODELAY)
+#undef TCP_NODELAY
+#endif
+#if defined(HPUX) && defined(TCP_MAXSEG)
+#undef TCP_MAXSEG
+#endif
 #include <rpc/rpc.h>
 #endif
 
@@ -369,11 +396,24 @@
 #endif
 
 #if defined (HAVE_NETGROUP)
+#if defined(HAVE_RPCSVC_YP_PROT_H)
+/*
+ * HP-UX 11.X has TCP_NODELAY and TCP_MAXSEG defined in <netinet/tcp.h> which
+ * was included above.  However <rpc/rpc.h> includes <sys/xti.h> which defines
+ * them again without checking if they already exsist.  This generates
+ * two "Redefinition of macro" warnings for every single .c file that is
+ * compiled.
+ */
+#if defined(HPUX) && defined(TCP_NODELAY)
+#undef TCP_NODELAY
+#endif
+#if defined(HPUX) && defined(TCP_MAXSEG)
+#undef TCP_MAXSEG
+#endif
+#include <rpcsvc/yp_prot.h>
+#endif
 #if defined(HAVE_RPCSVC_YPCLNT_H)
 #include <rpcsvc/ypclnt.h>
-#endif
-#if defined(HAVE_RPCSVC_YP_PROT_H)
-#include <rpcsvc/yp_prot.h>
 #endif
 #endif /* HAVE_NETGROUP */
 
@@ -760,7 +800,6 @@ extern int errno;
 #include "nt_status.h"
 #include "ads.h"
 #include "interfaces.h"
-#include "hash.h"
 #include "trans2.h"
 #include "nterr.h"
 #include "ntioctl.h"

@@ -22,13 +22,13 @@
 
 BOOL cli_get_quota_handle(struct cli_state *cli, int *quota_fnum)
 {
-	*quota_fnum = cli_nt_create_full(cli, FAKE_FILE_NAME_QUOTA,
+	*quota_fnum = cli_nt_create_full(cli, FAKE_FILE_NAME_QUOTA_WIN32,
 		 0x00000016, DESIRED_ACCESS_PIPE,
 		 0x00000000, FILE_SHARE_READ|FILE_SHARE_WRITE,
 		 FILE_OPEN, 0x00000000, 0x03);
 		 
 	if (*quota_fnum == (-1)) {
-		return False;	
+		return False;
 	}
 
 	return True;

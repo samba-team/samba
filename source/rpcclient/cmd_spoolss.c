@@ -39,6 +39,7 @@ static const struct table_node archi_table[]= {
 	{"Windows NT R4000",     "W32MIPS",	2 },
 	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
 	{"Windows NT PowerPC",   "W32PPC",	2 },
+	{"Windows IA64",         "IA64",        3 },
 	{NULL,                   "",		-1 }
 };
 
@@ -295,6 +296,18 @@ static void display_print_info_3(PRINTER_INFO_3 *i3)
 
 	printf("\n");
 }
+
+/****************************************************************************
+printer info level 7 display function
+****************************************************************************/
+static void display_print_info_7(PRINTER_INFO_7 *i7)
+{
+	fstring guid = "";
+	rpcstr_pull(guid, i7->guid.buffer,sizeof(guid), -1, STR_TERMINATE);
+	printf("\tguid:[%s]\n", guid);
+	printf("\taction:[0x%x]\n", i7->action);
+}
+
 
 /* Enumerate printers */
 
@@ -685,6 +698,9 @@ static WERROR cmd_spoolss_getprinter(struct cli_state *cli,
 		break;
 	case 3:
 		display_print_info_3(ctr.printers_3);
+		break;
+	case 7:
+		display_print_info_7(ctr.printers_7);
 		break;
 	default:
 		printf("unknown info level %d\n", info_level);
@@ -1125,6 +1141,13 @@ static WERROR cmd_spoolss_enum_drivers(struct cli_state *cli,
 			werror = cli_spoolss_enumprinterdrivers(
 				cli, mem_ctx, needed, NULL, info_level, 
 				archi_table[i].long_archi, &returned, &ctr);
+
+		if (W_ERROR_V(werror) == W_ERROR_V(WERR_INVALID_ENVIRONMENT)) {
+			printf ("Server does not support environment [%s]\n", 
+				archi_table[i].long_archi);
+			werror = WERR_OK;
+			continue;
+		}
 
 		if (returned == 0)
 			continue;

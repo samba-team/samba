@@ -804,7 +804,8 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 
 	/* Handle non-Dfs clients attempting connections to msdfs proxy */
 	if (lp_host_msdfs() && (*lp_msdfs_proxy(snum) != '\0'))  {
-		DEBUG(3, ("refusing connection to dfs proxy '%s'\n", service));
+		DEBUG(3, ("refusing connection to dfs proxy share '%s' (pointing to %s)\n", 
+			service, lp_msdfs_proxy(snum)));
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
@@ -821,8 +822,6 @@ close a cnum
 ****************************************************************************/
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
-	DirCacheFlush(SNUM(conn));
-
 	if (IS_IPC(conn)) {
 		pipe_close_conn(conn);
 	} else {

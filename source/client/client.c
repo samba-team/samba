@@ -592,7 +592,7 @@ static int cmd_dir(void)
 		else
 			pstrcat(mask,p);
 	} else {
-		pstrcat(mask,"*");
+		pstrcat(mask,"\\*");
 	}
 
 	do_list(mask, attribute, display_finfo, recurse, True);

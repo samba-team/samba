@@ -983,6 +983,47 @@ BOOL cli_getatr(struct cli_state *cli, const char *fname,
 }
 
 /****************************************************************************
+ Do a SMBsetattrE call.
+****************************************************************************/
+
+BOOL cli_setattrE(struct cli_state *cli, int fd,
+		  time_t c_time, time_t a_time, time_t m_time)
+
+{
+	char *p;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,7,0,True);
+
+	SCVAL(cli->outbuf,smb_com,SMBsetattrE);
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0, fd);
+	put_dos_date3(cli->outbuf,smb_vwv1, c_time);
+	put_dos_date3(cli->outbuf,smb_vwv3, a_time);
+	put_dos_date3(cli->outbuf,smb_vwv5, m_time);
+
+	p = smb_buf(cli->outbuf);
+	*p++ = 4;
+
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return False;
+	}
+	
+	if (cli_is_error(cli)) {
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
  Do a SMBsetatr call.
 ****************************************************************************/
 

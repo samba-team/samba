@@ -762,16 +762,21 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	set_posix_case_semantics(conn, file_attributes);
 		
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
-	if (bad_path) {
-		restore_case_semantics(conn, file_attributes);
-		END_PROFILE(SMBntcreateX);
-		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
-	}
-	/* All file access must go through check_name() */
-	if (!check_name(fname,conn)) {
-		restore_case_semantics(conn, file_attributes);
-		END_PROFILE(SMBntcreateX);
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+
+	/* FAKE_FILE is a special case */
+	if (fake_file_type == FAKE_FILE_TYPE_NONE) {
+		/* Normal file. */
+		if (bad_path) {
+			restore_case_semantics(conn, file_attributes);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		}
+		/* All file access must go through check_name() */
+		if (!check_name(fname,conn)) {
+			restore_case_semantics(conn, file_attributes);
+			END_PROFILE(SMBntcreateX);
+			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+		}
 	}
 
 	/* 
@@ -1075,7 +1080,7 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 	TALLOC_CTX *mem_ctx;
 	BOOL ret;
 	
-	if (sd_len == 0) {
+	if (sd_len == 0 || !lp_nt_acl_support(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
 	}
 
@@ -1409,7 +1414,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * Now try and apply the desired SD.
 	 */
 
-	if (sd_len && !NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
+	if (lp_nt_acl_support(SNUM(conn)) && sd_len &&
+			!NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
 		close_file(fsp,False);
 		restore_case_semantics(conn, file_attributes);
 		return ERROR_NT(status);
