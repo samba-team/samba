@@ -33,7 +33,8 @@ extern file_info def_finfo;
 
 static pstring cd_path="";
 
-struct cli_state smb_cli;
+static struct cli_state smbcli;
+struct cli_state *smb_cli = &smbcli;
 int smb_tidx = -1;
 
 #define CNV_LANG(s) dos2unix_format(s,False)
@@ -51,10 +52,10 @@ void client_check_connection(void)
 	if (delay > 100000)
 	{
 	  delay = 0;
-	  cli_chkpath(&smb_cli, smb_tidx, "\\");
+	  cli_chkpath(smb_cli, smb_tidx, "\\");
 	}
 #else
-      cli_chkpath(&smb_cli, smb_tidx, "\\");
+      cli_chkpath(smb_cli, smb_tidx, "\\");
 #endif
 }
 
@@ -123,7 +124,7 @@ void cmd_send_message(struct client_info *info)
 		DEBUG(0,("message <username/workgroup>\n"));
 	}
 
-	client_send_message(&smb_cli, smb_tidx, username, info->dest_host);
+	client_send_message(smb_cli, smb_tidx, username, info->dest_host);
 }
 
 
@@ -190,7 +191,7 @@ void cmd_cd(struct client_info*info)
   fstring buf;
 
   if (next_token(NULL,buf,NULL))
-    do_cd(&smb_cli, smb_tidx, info, buf);
+    do_cd(smb_cli, smb_tidx, info, buf);
   else
     DEBUG(0,("Current directory is %s\n", CNV_LANG(info->cur_dir)));
 }
@@ -223,9 +224,9 @@ void cmd_dir(struct client_info*info)
     strcat(mask,"*");
   }
 
-  cli_do_dir(&smb_cli, smb_tidx, info, mask, attribute, info->recurse_dir, NULL);
+  cli_do_dir(smb_cli, smb_tidx, info, mask, attribute, info->recurse_dir, NULL);
 
-  do_dskattr(&smb_cli, smb_tidx);
+  do_dskattr(smb_cli, smb_tidx);
 
   DEBUG(3, ("Total bytes listed: %d\n", info->dir_total));
 }
@@ -277,7 +278,7 @@ void cmd_get(struct client_info*info)
       return;
   }
 
-  cli_get(&smb_cli, smb_tidx, info, rname,lname, NULL, handle,
+  cli_get(smb_cli, smb_tidx, info, rname,lname, NULL, handle,
 		NULL, write_trans_file, NULL);
 
   if(newhandle)
@@ -396,7 +397,7 @@ void cmd_more(struct client_info*info)
 	  return;
   }
 
-  cli_get(&smb_cli, smb_tidx, info, rname,lname, NULL, handle,
+  cli_get(smb_cli, smb_tidx, info, rname,lname, NULL, handle,
 			NULL, write_trans_file, NULL);
 
   pager=getenv("PAGER");
@@ -434,7 +435,7 @@ void cmd_mget(struct client_info*info)
 	strcpy(mget_mask,p);
       else
 	strcat(mget_mask,p);
-      cli_do_dir(&smb_cli, smb_tidx, info, mget_mask, attribute, False, do_mget);
+      cli_do_dir(smb_cli, smb_tidx, info, mget_mask, attribute, False, do_mget);
     }
 
   if (! *mget_mask)
@@ -443,7 +444,7 @@ void cmd_mget(struct client_info*info)
       if(mget_mask[strlen(mget_mask)-1]!='\\')
 	strcat(mget_mask,"\\");
       strcat(mget_mask,"*");
-      cli_do_dir(&smb_cli, smb_tidx, info, mget_mask, attribute, False, do_mget);
+      cli_do_dir(smb_cli, smb_tidx, info, mget_mask, attribute, False, do_mget);
     }
 }
 
@@ -478,16 +479,16 @@ void cmd_mkdir(struct client_info*info)
       while (p)
 	{
 	  strcat(ddir2,p);
-	  if (!cli_chkpath(&smb_cli, smb_tidx, ddir2))
+	  if (!cli_chkpath(smb_cli, smb_tidx, ddir2))
 	    {		  
-	      cli_mkdir(&smb_cli, smb_tidx, ddir2);
+	      cli_mkdir(smb_cli, smb_tidx, ddir2);
 	    }
 	  strcat(ddir2,"\\");
 	  p = strtok(NULL,"/\\");
 	}	 
     }
   else
-    cli_mkdir(&smb_cli, smb_tidx, mask);
+    cli_mkdir(smb_cli, smb_tidx, mask);
 }
 
 
@@ -536,11 +537,11 @@ void cmd_put(struct client_info*info)
 
     GetTimeOfDay(&tp_start);
 
-  nread = cli_put(&smb_cli, smb_tidx, info, rname, lname, &finfo, read_trans_file);
+  nread = cli_put(smb_cli, smb_tidx, info, rname, lname, &finfo, read_trans_file);
 
   if (info->archive_level >= 2 && (finfo.mode & aARCH))
   {
-    if (!cli_setatr(&smb_cli, smb_tidx, rname, finfo.mode & ~(aARCH), 0)) return;
+    if (!cli_setatr(smb_cli, smb_tidx, rname, finfo.mode & ~(aARCH), 0)) return;
   }
 
   {
@@ -637,7 +638,7 @@ void cmd_mput(struct client_info*info)
 	      
 	      strcpy(rname,info->cur_dir);
 	      strcat(rname,lname);
-	      if (!cli_chkpath(&smb_cli, smb_tidx, rname) && !cli_mkdir(&smb_cli, smb_tidx, rname)) {
+	      if (!cli_chkpath(smb_cli, smb_tidx, rname) && !cli_mkdir(smb_cli, smb_tidx, rname)) {
 		strcat(lname,"/");
 		if (!seek_list(f,lname))
 		  break;
@@ -662,7 +663,7 @@ void cmd_mput(struct client_info*info)
 	  /* set the date on the file */
 	  finfo.mtime = st.st_mtime;
 
-	  cli_put(&smb_cli, smb_tidx, info, rname,lname,&finfo, read_trans_file);
+	  cli_put(smb_cli, smb_tidx, info, rname,lname,&finfo, read_trans_file);
 	}
       fclose(f);
       unlink(tmpname);
@@ -686,7 +687,7 @@ void cmd_stat(struct client_info*info)
 	strcpy(fname, info->cur_dir);
 	strcat(fname, buf);
 
-	cli_stat(&smb_cli, smb_tidx, fname);
+	cli_stat(smb_cli, smb_tidx, fname);
 }
 
 
@@ -730,7 +731,7 @@ void cmd_del(struct client_info*info)
     }
   strcat(mask,buf);
 
-  cli_do_dir(&smb_cli, smb_tidx, info, mask, attribute, info->recurse_dir, do_del);
+  cli_do_dir(smb_cli, smb_tidx, info, mask, attribute, info->recurse_dir, do_del);
 }
 
 
@@ -751,9 +752,9 @@ void cmd_rmdir(struct client_info*info)
 	}
 	strcat(mask,buf);
 
-	if (!cli_rmdir(&smb_cli, smb_tidx, mask))
+	if (!cli_rmdir(smb_cli, smb_tidx, mask))
     {
-		DEBUG(0,("%s removing remote directory file %s\n", cli_errstr(&smb_cli), CNV_LANG(mask)));
+		DEBUG(0,("%s removing remote directory file %s\n", cli_errstr(smb_cli), CNV_LANG(mask)));
 		return;
     }
 }
@@ -777,7 +778,7 @@ void cmd_rename(struct client_info*info)
   strcat(src,buf);
   strcat(dest,buf2);
 
-	cli_move(&smb_cli, smb_tidx, src, dest);
+	cli_move(smb_cli, smb_tidx, src, dest);
 }
 
 
@@ -787,7 +788,7 @@ show cd/pwd
 void cmd_pwd(struct client_info *info)
 {
   DEBUG(0,("Current directory for SMB connection %d is %s",
-		CNV_LANG(smb_cli.con[smb_tidx].full_share)));
+		CNV_LANG(smb_cli->con[smb_tidx].full_share)));
   DEBUG(0,("%s\n", CNV_LANG(info->cur_dir)));
 }
 
@@ -797,7 +798,7 @@ initialise smb client structure
 ****************************************************************************/
 void client_smb_init(void)
 {
-	bzero(&smb_cli, sizeof(smb_cli));
+	bzero(smb_cli, sizeof(smb_cli));
 }
 
 /****************************************************************************
@@ -809,7 +810,7 @@ void client_smb_connect(struct client_info *info,
 	BOOL anonymous = !username || username[0] == 0;
 	BOOL got_pass = password && password[0] != 0;
 
-	if (!cli_establish_connection(&smb_cli, &smb_tidx,
+	if (!cli_establish_connection(smb_cli, &smb_tidx,
 			info->dest_host, info->name_type, &info->dest_ip,
 		     info->myhostname,
 		   (got_pass || anonymous) ? NULL : "Enter Password:",
@@ -818,7 +819,7 @@ void client_smb_connect(struct client_info *info,
 	       False, True, !anonymous))
 	{
 		DEBUG(0,("client_smb_init: connection failed\n"));
-		cli_shutdown(&smb_cli);
+		cli_shutdown(smb_cli);
 	}
 }
 
@@ -827,5 +828,5 @@ stop the smb connection(s?)
 ****************************************************************************/
 void client_smb_stop(void)
 {
-	cli_shutdown(&smb_cli);
+	cli_shutdown(smb_cli);
 }

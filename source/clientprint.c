@@ -30,7 +30,7 @@ extern pstring debugf;
 extern int DEBUGLEVEL;
 
 
-extern struct cli_state smb_cli;
+extern struct cli_state *smb_cli;
 extern int smb_tidx;
 
 /****************************************************************************
@@ -41,7 +41,7 @@ void cmd_cancel(struct client_info*info)
   fstring buf;
   int job; 
 
-  if (!strequal(smb_cli.con[smb_tidx].dev,"LPT1:"))
+  if (!strequal(smb_cli->con[smb_tidx].dev,"LPT1:"))
     {
       DEBUG(0,("WARNING: You didn't use the -P option to smbclient.\n"));
       DEBUG(0,("Trying to cancel print jobs without -P may fail\n"));
@@ -57,7 +57,7 @@ void cmd_cancel(struct client_info*info)
   {
     uint16 cancelled_job;
     job = atoi(buf);
-    if (cli_cancel(&smb_cli, smb_tidx, (uint16)job, &cancelled_job))
+    if (cli_cancel(smb_cli, smb_tidx, (uint16)job, &cancelled_job))
     {
 	    DEBUG(0, ("Job %d cancelled\n", cancelled_job));
     }
@@ -80,7 +80,7 @@ void cmd_print(struct client_info*info)
   pstring rname;
   char *p;
 
-  if (!strequal(smb_cli.con[smb_tidx].dev,"LPT1:"))
+  if (!strequal(smb_cli->con[smb_tidx].dev,"LPT1:"))
     {
       DEBUG(0,("WARNING: You didn't use the -P option to smbclient.\n"));
       DEBUG(0,("Trying to print without -P may fail\n"));
@@ -112,7 +112,7 @@ void cmd_print(struct client_info*info)
   
   dos_clean_name(rname);
 
-  cli_print(&smb_cli, smb_tidx, info, f, lname, rname);
+  cli_print(smb_cli, smb_tidx, info, f, lname, rname);
 }
 
 
@@ -146,7 +146,7 @@ void cmd_queue(struct client_info*info)
 {
 	int count;
 
-	if (!strequal(smb_cli.con[smb_tidx].dev,"LPT1:"))
+	if (!strequal(smb_cli->con[smb_tidx].dev,"LPT1:"))
 	{
 		DEBUG(0,("WARNING: You didn't use the -P option to smbclient.\n"));
 		DEBUG(0,("Trying to print without -P may fail\n"));
@@ -154,7 +154,7 @@ void cmd_queue(struct client_info*info)
 
     DEBUG(0,("Job      Name              Size         Status\n"));
 
-	count = cli_queue(&smb_cli, smb_tidx, info, print_q);
+	count = cli_queue(smb_cli, smb_tidx, info, print_q);
 
 	if (count <= 0)
 	{
@@ -184,12 +184,12 @@ show information about a print queue
 ****************************************************************************/
 void cmd_p_queue_2(struct client_info*info)
 {
-	if (!strequal(smb_cli.con[smb_tidx].dev,"LPT1:"))
+	if (!strequal(smb_cli->con[smb_tidx].dev,"LPT1:"))
 	{
 		DEBUG(0,("WARNING: You didn't use the -P option to smbclient.\n"));
 		DEBUG(0,("Trying to print without -P may fail\n"));
 	}
-	cli_pqueue_2(&smb_cli, smb_tidx, info, print_q2);
+	cli_pqueue_2(smb_cli, smb_tidx, info, print_q2);
 }
 
 /****************************************************************************
@@ -203,7 +203,7 @@ void cmd_qinfo(struct client_info*info)
 	int driver_count;
 	char *driver_data;
 
-	if (!cli_printq_info(&smb_cli, smb_tidx, info,
+	if (!cli_printq_info(smb_cli, smb_tidx, info,
 	                    name, &priority,
 	                    &start_time, &until_time,
 	                    separator_file, print_processor,

@@ -29,7 +29,8 @@ extern pstring debugf;
 extern int DEBUGLEVEL;
 
 
-struct cli_state ipc_cli;
+static struct cli_state ipccli;
+struct cli_state *ipc_cli = &ipccli;
 int ipc_tidx = -1;
 
 
@@ -163,7 +164,7 @@ void cmd_list_shares(struct client_info *info)
 	printf("\n\tSharename      Type      Comment\n");
 	printf(  "\t---------      ----      -------\n");
 
-	count = cli_NetShareEnum(&ipc_cli, ipc_tidx, True, &long_share_name, print_share);
+	count = cli_NetShareEnum(ipc_cli, ipc_tidx, True, &long_share_name, print_share);
 
 	if (count == 0)
 	{
@@ -204,7 +205,7 @@ void cmd_list_wgps(struct client_info *info)
 	printf("\tServer         Type                 Comment\n");
 	printf("\t------         ----                 -------\n");
 
-	cli_NetServerEnum(&ipc_cli, ipc_tidx, workgroup, svc_type, print_server);
+	cli_NetServerEnum(ipc_cli, ipc_tidx, workgroup, svc_type, print_server);
 }
 
 
@@ -235,7 +236,7 @@ void cmd_list_servers(struct client_info *info)
 	printf("\tWorkgroup      Type                 Master\n");
 	printf("\t---------      ----                 ------\n");
 
-	cli_NetServerEnum(&ipc_cli, ipc_tidx, workgroup, svc_type, print_server);
+	cli_NetServerEnum(ipc_cli, ipc_tidx, workgroup, svc_type, print_server);
 }
 
 
@@ -244,7 +245,7 @@ initialise anon ipc client structure
 ****************************************************************************/
 void client_ipc_init(void)
 {
-	bzero(&ipc_cli, sizeof(ipc_cli));
+	bzero(ipc_cli, sizeof(*ipc_cli));
 }
 
 /****************************************************************************
@@ -256,7 +257,9 @@ void client_ipc_connect(struct client_info *info,
 	BOOL anonymous = !username || username[0] == 0;
 	BOOL got_pass = password && password[0] != 0;
 
-	if (!cli_establish_connection(&ipc_cli, &ipc_tidx,
+	DEBUG(5,("client_ipc_init: %d\n", __LINE__));
+
+	if (!cli_establish_connection(ipc_cli, &ipc_tidx,
 			info->dest_host, 0x20, &info->dest_ip,
 		     info->myhostname,
 		   (got_pass || anonymous) ? NULL : "Enter Password:",
@@ -265,8 +268,10 @@ void client_ipc_connect(struct client_info *info,
 	       False, True, !anonymous))
 	{
 		DEBUG(0,("client_ipc_init: connection failed\n"));
-		cli_shutdown(&ipc_cli);
+		cli_shutdown(ipc_cli);
 	}
+
+	DEBUG(5,("client_ipc_init: t_idx=%d\n", ipc_tidx));
 }
 
 /****************************************************************************
@@ -274,5 +279,5 @@ stop the ipc client connection
 ****************************************************************************/
 void client_ipc_stop(void)
 {
-	cli_shutdown(&ipc_cli);
+	cli_shutdown(ipc_cli);
 }

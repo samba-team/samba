@@ -55,6 +55,12 @@ setup basics in a outgoing packet
 static void cli_set_smb_cmd(struct cli_state *cli, int t_idx,
 				uint8 cmd, int num_wds, int num_bytes, BOOL zero)
 {
+	if (!cli->inbuf || !cli->outbuf)
+	{
+		DEBUG(0,("cli_set_smb_cmd: buffers not allocated\n"));
+		return;
+	}
+
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf ,smb_size);
 
@@ -253,7 +259,6 @@ BOOL cli_receive_trans(struct cli_state *cli, int t_idx,
 	return(True);
 }
 
-#ifdef NTDOMAIN
 /****************************************************************************
 call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
 
@@ -286,7 +291,6 @@ BOOL cli_api_pipe(struct cli_state *cli, int t_idx,
                                  rdrcnt,rprcnt,
                                  rdata,rparam));
 }
-#endif
 
 /****************************************************************************
 call a remote api on the LANMAN pipe.  only takes param and data buffers
@@ -296,23 +300,12 @@ static BOOL cli_api(struct cli_state *cli, int t_idx,
 		    int *rdrcnt, char *param,char *data, 
 		    char **rparam, char **rdata)
 {
-#ifdef NTDOMAIN
 	return cli_api_pipe(cli, t_idx,  "\\PIPE\\LANMAN", 0,
 				prcnt, drcnt, 0,
 				mprcnt, mdrcnt,
 				rprcnt, rdrcnt,
 				param, data, NULL,
 				rparam, rdata);
-#else
-  cli_send_trans(cli, t_idx, SMBtrans,"\\PIPE\\LANMAN",0,0,0,
-		 data,param,NULL,
-		 drcnt,prcnt,0,
-		 mdrcnt,mprcnt,0);
-
-  return (cli_receive_trans(cli, t_idx, SMBtrans,
-				     rdrcnt,rprcnt,
-				     rdata,rparam));
-#endif
 }
 
 
@@ -1503,7 +1496,7 @@ int cli_pqueue_2(struct cli_state *cli, int t_idx, struct client_info *info,
 	}
 	else                  /* cli_call_api() failed */
 	{
-		printf("Failed, error = %d\n", result_code);
+		DEBUG(1, ("Failed, error = %d\n", result_code));
 	}
 
 	/* If any parameters or data were returned, free the storage. */
@@ -2596,6 +2589,8 @@ uint16 cli_open(struct cli_state *cli, int t_idx, char *fname, int flags, int sh
 	unsigned accessmode=0;
 	uint16 fnum;
 
+	DEBUG(5,("cli_open: cli fd:%d t_idx:%d fname:%s\n", cli->fd, t_idx, fname));
+
 	if (flags & O_CREAT)
 		openfn |= (1<<4);
 
@@ -3037,6 +3032,9 @@ initialise a client structure
 BOOL cli_initialise(struct cli_state *cli)
 {
 	int i;
+
+	DEBUG(5,("cli_initialise\n"));
+
 	if (cli->initialised) cli_shutdown(cli);
 
 	memset(cli, 0, sizeof(*cli));
@@ -3056,9 +3054,18 @@ BOOL cli_initialise(struct cli_state *cli)
 	cli->bufsize = 0x10000;
 	cli->max_xmit = cli->bufsize - 4;
 	cli->outbuf = (char *)malloc(cli->bufsize);
-	cli->inbuf = (char *)malloc(cli->bufsize);
-	if (!cli->outbuf || !cli->inbuf) return False;
+	cli->inbuf  = (char *)malloc(cli->bufsize);
+
+	if (!cli->outbuf || !cli->inbuf)
+	{
+		DEBUG(5,("cli_initialise: buffer allocation failed\n"));
+		return False;
+	}
+
 	cli->initialised = 1;
+
+	DEBUG(5,("cli_initialise: ok\n"));
+
 	return True;
 }
 
@@ -3067,6 +3074,8 @@ shutdown a client structure
 ****************************************************************************/
 void cli_shutdown(struct cli_state *cli)
 {
+	DEBUG(5,("cli_shutdown\n"));
+
 	if (cli->outbuf) free(cli->outbuf);
 	if (cli->inbuf) free(cli->inbuf);
 	if (cli->fd != -1) close(cli->fd);
@@ -3155,6 +3164,10 @@ BOOL cli_establish_connection(struct cli_state *cli, int *t_idx,
 	fstring passwd;
 	int pass_len = 0;
 
+	DEBUG(5,("cli_establish_connection: %s<%02x> (%s) - %s [%s]\n",
+		          dest_host, name_type, inet_ntoa(*dest_ip),
+	              username, workgroup));
+
 	if (passwd_report != NULL && (user_pass == NULL || user_pass[0] == 0))
 	{
 		/* grab a password */
@@ -3182,7 +3195,8 @@ BOOL cli_establish_connection(struct cli_state *cli, int *t_idx,
 
 	if (!cli_connect(cli, dest_host, dest_ip))
 	{
-		DEBUG(1,("failed to connect to %s (%s)\n", dest_host, inet_ntoa(*dest_ip)));
+		DEBUG(1,("failed to connect to %s<%02x> (%s)\n",
+		          dest_host, name_type, inet_ntoa(*dest_ip)));
 		return False;
 	}
 

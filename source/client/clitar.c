@@ -33,7 +33,7 @@ extern int DEBUGLEVEL;
 
 extern file_info def_finfo;
 
-extern struct cli_state smb_cli;
+extern struct cli_state *smb_cli;
 extern int smb_tidx;
 
 
@@ -300,8 +300,7 @@ static void write_tar_hdr(struct client_info *info,
 /****************************************************************************
 Read a tar header into a hblock structure, and validate
 ***************************************************************************/
-static long read_tar_hdr(struct cli_state *cli, int smb_tidx, struct client_info *info,
-				union hblock *hb, file_info *finfo, char *prefix)
+static long read_tar_hdr(union hblock *hb, file_info *finfo, char *prefix)
 {
   long chk, fchk;
   int i;
@@ -708,7 +707,7 @@ static void do_tarput(struct cli_state *cli, int t_idx, struct client_info *info
     do {
       if (!fsize)
 	{
-	  switch (read_tar_hdr(cli, t_idx, info, (union hblock *) bufferp, &finfo, info->cur_dir))
+	  switch (read_tar_hdr((union hblock *) bufferp, &finfo, info->cur_dir))
 	    {
 	    case -2:             /* something dodgy but not fatal about this */
 	      DEBUG(0, ("skipping %s...\n", finfo.name));
@@ -873,8 +872,8 @@ void cmd_setmode(struct client_info *info)
     }
 
   DEBUG(1, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
-  do_setrattr(&smb_cli, smb_tidx, info, fname, attra[ATTRSET], ATTRSET);
-  do_setrattr(&smb_cli, smb_tidx, info, fname, attra[ATTRRESET], ATTRRESET);
+  do_setrattr(smb_cli, smb_tidx, info, fname, attra[ATTRSET], ATTRSET);
+  do_setrattr(smb_cli, smb_tidx, info, fname, attra[ATTRRESET], ATTRRESET);
 }
 
 /****************************************************************************
@@ -914,7 +913,7 @@ int process_tar(struct client_info *info)
 	{
 		case 'x':
 		{
-			do_tarput(&smb_cli, smb_tidx, info);
+			do_tarput(smb_cli, smb_tidx, info);
 			free(info->tar.buf);
 			close(info->tar.handle);
 			break;
@@ -956,14 +955,14 @@ int process_tar(struct client_info *info)
 						strcpy(info->cur_dir, tarmac);
 						*(strrchr(info->cur_dir, '\\')+1)='\0';
 
-						cli_dir(&smb_cli, smb_tidx, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
+						cli_dir(smb_cli, smb_tidx, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
 						strcpy(info->cur_dir,saved_dir);
 					}
 					else
 					{
 						strcpy(tarmac, info->cur_dir);
 						strcat(tarmac, info->tar.cliplist[i]);
-						cli_dir(&smb_cli, smb_tidx, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
+						cli_dir(smb_cli, smb_tidx, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
 					}
 				}
 			}
@@ -972,7 +971,7 @@ int process_tar(struct client_info *info)
 				pstring mask;
 				strcpy(mask,info->cur_dir);
 				strcat(mask,"\\*");
-				cli_dir(&smb_cli, smb_tidx, info, mask, info->tar.attrib, info->recurse_dir, do_tar);
+				cli_dir(smb_cli, smb_tidx, info, mask, info->tar.attrib, info->recurse_dir, do_tar);
 			}
 
 			if (info->tar.num_files)

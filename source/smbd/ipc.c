@@ -2868,15 +2868,12 @@ static struct
 {
   char * name;
   char * pipe_clnt_name;
-#ifdef NTDOMAIN
   char * pipe_srv_name;
-#endif
   int subcommand;
   BOOL (*fn) ();
 }
 api_fd_commands [] =
 {
-#ifdef NTDOMAIN
     { "ntLsarpcTNP" , "lsarpc",   "lsass",   0x26, api_ntLsarpcTNP },
     { "samrTNP"     , "samr",     "lsass",   0x26, api_samrTNP },
     { "srvsvcTNP"   , "srvsvc",   "lsass",   0x26, api_srvsvcTNP },
@@ -2884,10 +2881,6 @@ api_fd_commands [] =
     { "netlogrpcTNP", "NETLOGON", "lsass",   0x26, api_netlogrpcTNP },
     { "winregTNP"   , "winreg",   "winreg",  0x26, api_regTNP },
     { NULL,		      NULL,       NULL,      -1,   (BOOL (*)())api_Unsupported }
-#else
-    { "TransactNmPipe"  ,	"lsarpc",	0x26,	api_LsarpcTNP },
-    { NULL,		NULL,		-1,	(BOOL (*)())api_Unsupported }
-#endif
   };
 
 /****************************************************************************
@@ -2948,7 +2941,6 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   rdata  = (char *)malloc(1024); if (rdata ) bzero(rdata ,1024);
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
   
-#ifdef NTDOMAIN
   /* RPC Pipe command 0x26. */
   if (data != NULL && api_fd_commands[i].subcommand == 0x26)
   {
@@ -2993,7 +2985,6 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
       }
     }
   }
-#endif
 
   /* Set Named Pipe Handle state */
   if (subcommand == 0x1)

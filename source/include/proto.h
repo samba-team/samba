@@ -748,10 +748,6 @@ void cmd_lsa_query_info(struct client_info *info);
 void cmd_sam_query_users(struct client_info *info);
 void cmd_nt_login_test(struct client_info *info);
 void cmd_nltest(struct client_info *info);
-void client_nt_init(void);
-void client_nt_connect(struct client_info *info,
-				char *username, char *password, char *workgroup);
-void client_nt_stop(void);
 
 /*The following definitions come from  nterr.c  */
 
@@ -1051,7 +1047,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, int t_idx, char *pipe_name, uint16 fnu
 BOOL do_samr_session_open(struct cli_state *cli, int t_idx, struct client_info *info);
 void do_samr_session_close(struct cli_state *cli, int t_idx, struct client_info *info);
 BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum, 
-				LSA_POL_HND *pol, uint32 size,
+				LSA_POL_HND *pol, uint32 enum_ctx, uint32 unk_1, uint32 size,
 				struct acct_info sam[MAX_SAM_ENTRIES],
 				int *num_sam_users);
 BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum, 
@@ -1167,9 +1163,11 @@ void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
 				LSA_POL_HND *pol, uint32 rid, char *sid);
 char* samr_io_q_connect(BOOL io, SAMR_Q_CONNECT *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_connect(BOOL io, SAMR_R_CONNECT *r_u, char *q, char *base, int align, int depth);
-void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, LSA_POL_HND *pol, uint32 size);
+void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, LSA_POL_HND *pol,
+				uint32 enum_ctx, uint32 unk_1, uint32 size);
 char* samr_io_q_enum_dom_users(BOOL io, SAMR_Q_ENUM_DOM_USERS *q_e, char *q, char *base, int align, int depth);
 void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
+		uint32 enum_ctx,
 		uint32 num_sam_entries, struct smb_passwd pass[MAX_SAM_ENTRIES], uint32 status);
 char* samr_io_r_enum_dom_users(BOOL io, SAMR_R_ENUM_DOM_USERS *r_u, char *q, char *base, int align, int depth);
 void make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, LSA_POL_HND *pol, uint32 size);

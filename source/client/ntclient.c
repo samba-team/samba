@@ -32,13 +32,11 @@
 extern int DEBUGLEVEL;
 
 
-#ifdef NTDOMAIN
+extern struct cli_state *smb_cli;
+extern int smb_tidx;
 
-static struct cli_state nt_cli;
-static int nt_tidx;
-
-extern struct cli_state ipc_cli;
-static int ipc_tidx;
+extern struct cli_state *ipc_cli;
+extern int ipc_tidx;
 
 
 /****************************************************************************
@@ -69,31 +67,33 @@ void cmd_lsa_query_info(struct client_info *info)
 
 	DEBUG(4,("cmd_lsa_query_info: server:%s\n", srv_name));
 
+	DEBUG(5, ("cmd_lsa_query_info: ipc_cli->fd:%d\n", ipc_cli->fd));
+
 	/* open LSARPC session. */
-	res = res ? do_lsa_session_open(&ipc_cli, ipc_tidx, info) : False;
+	res = res ? do_lsa_session_open(ipc_cli, ipc_tidx, info) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? do_lsa_open_policy(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
+	res = res ? do_lsa_open_policy(ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 				srv_name,
 				&info->dom.lsa_info_pol) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
-	res = res ? do_lsa_query_info_pol(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
+	res = res ? do_lsa_query_info_pol(ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 	            &info->dom.lsa_info_pol, 0x03,
 				info->dom.level3_dom,
 	            info->dom.level3_sid) : False;
 
 	/* send client info query, level 5.  receive domain name and sid */
-	res = res ? do_lsa_query_info_pol(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
+	res = res ? do_lsa_query_info_pol(ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 	            &info->dom.lsa_info_pol, 0x05,
 				info->dom.level5_dom,
 	            info->dom.level5_sid) : False;
 
-	res = res ? do_lsa_close(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
+	res = res ? do_lsa_close(ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 				&info->dom.lsa_info_pol) : False;
 
 	/* close the session */
-	do_lsa_session_close(&ipc_cli, ipc_tidx, info);
+	do_lsa_session_close(ipc_cli, ipc_tidx, info);
 
 	if (res)
 	{
@@ -124,12 +124,15 @@ void cmd_sam_query_users(struct client_info *info)
 	fstring sid;
 	int user_idx;
 	BOOL res = True;
+	uint32 val1 = 0x0;
+	uint32 val2 = 0x0;
+	fstring tmp;
 
 	fstrcpy(sid, info->dom.level5_sid);
 
 	if (strlen(sid) == 0)
 	{
-		DEBUG(0,("cmd_sam_query_users: use 'lsaquery <domain server name>' first\n"));
+		DEBUG(0,("samquery: use 'samquery <domain server name>' first\n"));
 		return;
 	}
 
@@ -137,24 +140,35 @@ void cmd_sam_query_users(struct client_info *info)
 
 	if (!next_token(NULL, &(srv_name[2]), NULL))
 	{
-		DEBUG(0,("cmd_sam_lookup_rid: <domain server name>\n"));
+		DEBUG(0,("samquery: <domain server name>\n"));
 		return;
 	}
 
 	strupper(srv_name);
 
+	if (next_token(NULL, tmp, NULL))
+	{
+		val1 = strtoul(tmp, (char**)NULL, 16);
+	}
+
+	if (next_token(NULL, tmp, NULL))
+	{
+		val2 = strtoul(tmp, (char**)NULL, 16);
+	}
+
 	DEBUG(0,("Account Information for %s, SID: %s\n", srv_name, sid));
 
 	/* open SAMR session.  negotiate credentials */
-	res = res ? do_samr_session_open(&nt_cli, nt_tidx, info) : False;
+	res = res ? do_samr_session_open(smb_cli, smb_tidx, info) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? do_samr_open_domain(&nt_cli, nt_tidx, info->dom.samr_fnum,
-				srv_name, 0x00000020,
+	res = res ? do_samr_open_domain(smb_cli, smb_tidx, info->dom.samr_fnum,
+				srv_name, 0x20000000,
 				&info->dom.samr_pol_open) : False;
 
-	res = res ? do_samr_enum_dom_users(&nt_cli, nt_tidx, info->dom.samr_fnum,
-				&info->dom.samr_pol_open, 0xffff,
+	res = res ? do_samr_enum_dom_users(smb_cli, smb_tidx, info->dom.samr_fnum,
+				&info->dom.samr_pol_open,
+	            val1, val2, 0xffff,
 				info->dom.sam, &info->dom.num_sam_entries) : False;
 
 	if (res && info->dom.num_sam_entries == 0)
@@ -172,7 +186,7 @@ void cmd_sam_query_users(struct client_info *info)
 		          info->dom.sam[user_idx].acct_name));
 
 		/* send client open secret; receive a client policy handle */
-		res = res ? do_samr_connect(&nt_cli, nt_tidx, info->dom.samr_fnum,
+		res = res ? do_samr_connect(smb_cli, smb_tidx, info->dom.samr_fnum,
 					&info->dom.samr_pol_open,
 					info->dom.sam[user_idx].smb_userid, sid,
 					&(info->dom.sam[user_idx].acct_pol)) : False;
@@ -180,7 +194,7 @@ void cmd_sam_query_users(struct client_info *info)
 	}
 
 	/* close the session */
-	do_samr_session_close(&nt_cli, nt_tidx, info);
+	do_samr_session_close(smb_cli, smb_tidx, info);
 
 	if (res)
 	{
@@ -225,7 +239,7 @@ void cmd_nt_login_test(struct client_info *info)
 	                                info->mach_acct, new_mach_pwd) : False;
 #endif
 	/* open NETLOGON session.  negotiate credentials */
-	res = res ? do_nt_session_open(&ipc_cli, ipc_tidx, &info->dom.lsarpc_fnum,
+	res = res ? do_nt_session_open(ipc_cli, ipc_tidx, &info->dom.lsarpc_fnum,
 	                          info->dest_host, info->myhostname,
 	                          info->mach_acct,
 	                          username, info->workgroup,
@@ -234,7 +248,7 @@ void cmd_nt_login_test(struct client_info *info)
 	/* change the machine password? */
 	if (new_mach_pwd != NULL && new_mach_pwd[0] != 0)
 	{
-		res = res ? do_nt_srv_pwset(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
+		res = res ? do_nt_srv_pwset(ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 		                   info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
 		                   new_mach_pwd,
 		                   info->dest_host, info->mach_acct, info->myhostname) : False;
@@ -247,19 +261,19 @@ void cmd_nt_login_test(struct client_info *info)
 	                 getuid(), username);
 
 	/* do an NT login */
-	res = res ? do_nt_login(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
+	res = res ? do_nt_login(ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 	                        info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
 	                        &info->dom.id1, info->dest_host, info->myhostname, &info->dom.user_info1) : False;
 
 	/* ok!  you're logged in!  do anything you like, then... */
 	   
 	/* do an NT logout */
-	res = res ? do_nt_logoff(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
+	res = res ? do_nt_logoff(ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 	                         info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
 	                         &info->dom.id1, info->dest_host, info->myhostname) : False;
 
 	/* close the session */
-	do_nt_session_close(&ipc_cli, ipc_tidx, info->dom.lsarpc_fnum);
+	do_nt_session_close(ipc_cli, ipc_tidx, info->dom.lsarpc_fnum);
 
 	if (res)
 	{
@@ -290,7 +304,7 @@ void cmd_nltest(struct client_info *info)
 	DEBUG(5,("do_nltest: %d\n", __LINE__));
 
 	/* open NETLOGON session.  negotiate credentials */
-	res = res ? do_nt_session_open(&nt_cli, nt_tidx, &info->dom.lsarpc_fnum,
+	res = res ? do_nt_session_open(smb_cli, smb_tidx, &info->dom.lsarpc_fnum,
 	                          info->dest_host, info->myhostname,
 	                          info->mach_acct,
 	                          username, info->workgroup,
@@ -298,7 +312,7 @@ void cmd_nltest(struct client_info *info)
 	                          &info->dom.clnt_cred) : False;
 
 	/* close the session */
-	do_nt_session_close(&nt_cli, nt_tidx, info->dom.lsarpc_fnum);
+	do_nt_session_close(smb_cli, smb_tidx, info->dom.lsarpc_fnum);
 
 	if (res)
 	{
@@ -310,24 +324,25 @@ void cmd_nltest(struct client_info *info)
 	}
 }
 
+#if 0
 /****************************************************************************
 initialise nt client structure
 ****************************************************************************/
-void client_nt_init(void)
+ void client_nt_init(void)
 {
-	bzero(&nt_cli, sizeof(nt_cli));
+	bzero(smb_cli, sizeof(nt_cli));
 }
 
 /****************************************************************************
 make nt client connection 
 ****************************************************************************/
-void client_nt_connect(struct client_info *info,
+ void client_nt_connect(struct client_info *info,
 				char *username, char *password, char *workgroup)
 {
 	BOOL anonymous = !username || username[0] == 0;
 	BOOL got_pass = password && password[0] == 0;
 
-	if (!cli_establish_connection(&nt_cli, &nt_tidx,
+	if (!cli_establish_connection(smb_cli, &smb_tidx,
 			info->dest_host, 0x20, &info->dest_ip,
 		     info->myhostname,
 		   (got_pass || anonymous) ? NULL : "Enter Password:",
@@ -336,17 +351,16 @@ void client_nt_connect(struct client_info *info,
 	       False, True, !anonymous))
 	{
 		DEBUG(0,("client_nt_connect: connection failed\n"));
-		cli_shutdown(&nt_cli);
+		cli_shutdown(smb_cli);
 	}
 }
 
 /****************************************************************************
 stop the nt connection(s?)
 ****************************************************************************/
-void client_nt_stop(void)
+ void client_nt_stop(void)
 {
-	cli_shutdown(&nt_cli);
+	cli_shutdown(smb_cli);
 }
-
-#endif /* NTDOMAIN */
+#endif /* 0 */
 

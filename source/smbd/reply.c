@@ -380,7 +380,6 @@ static int session_trust_account(char *inbuf, char *outbuf, char *user,
 				char *smb_passwd, int smb_passlen,
 				char *smb_nt_passwd, int smb_nt_passlen)
 {
-#ifdef NTDOMAIN
 	struct smb_passwd *smb_trust_acct = NULL; /* check if trust account exists */
 	if (lp_security() == SEC_USER)
 	{
@@ -432,12 +431,6 @@ static int session_trust_account(char *inbuf, char *outbuf, char *user,
 	/* don't know what to do: indicate logon failure */
 	SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 	return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
-
-#else
-	/* deny access from (trust) accounts - ending in $ */
-	SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-	return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
-#endif
 }
 
 /****************************************************************************

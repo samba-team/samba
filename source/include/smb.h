@@ -356,7 +356,6 @@ typedef struct
 
 } file_info;
 
-
 /* Domain controller authentication protocol info */
 struct dcinfo
 {
@@ -414,6 +413,7 @@ struct nt_client_info
 	struct acct_info sam[MAX_SAM_ENTRIES];
 	int num_sam_entries;
 };
+
 
 struct tar_client_info
 {
@@ -591,10 +591,8 @@ typedef struct
   int n_sids;
   int *sids;
 
-#ifdef NTDOMAIN
   /* per-user authentication information on NT RPCs */
   struct dcinfo dc;
-#endif
 
 } user_struct;
 

@@ -50,11 +50,11 @@ static int process_tok(fstring tok);
 static void cmd_help(struct client_info *info);
 static void cmd_quit(struct client_info *info);
 
-struct cli_state smb_cli;
-int smb_tidx;
+extern struct cli_state *smb_cli;
+extern int smb_tidx;
 
-struct cli_state ipc_cli;
-int ipc_tidx;
+extern struct cli_state *ipc_cli;
+extern int ipc_tidx;
 
 static BOOL setup_term_code (char *code)
 {
@@ -80,12 +80,10 @@ struct
   char *description;
 } commands[] = 
 {
-#ifdef NTDOMAIN
   {"ntlogin",    cmd_nt_login_test,    "<username> NT Domain login test"},
   {"nltest",     cmd_nltest,           "<server> Net Logon Test"},
   {"lsaquery",   cmd_lsa_query_info,   "<server> Query Info Policy"},
   {"samrid",     cmd_sam_query_users,  "<server> SAM User Info lookup"},
-#endif
   {"message",    cmd_send_message,"<username/workgroup> Send a message"},
   {"shares",     cmd_list_shares, "List shares on a server"},
   {"servers",    cmd_list_servers,"[<workgroup>] [<type, hex>] List known browse servers"},
@@ -143,11 +141,9 @@ static void cmd_quit(struct client_info *info)
 {
 	client_smb_stop();
 	client_ipc_stop();
-
 #if 0
 	client_nt_stop();
 #endif
-
 	exit(0);
 }
 
@@ -320,8 +316,6 @@ static BOOL process( struct client_info *info, char *cmd_str)
       fstring tok;
       int i;
 
-      bzero(&smb_cli.outbuf,smb_size);
-
       /* display a prompt */
       DEBUG(0,("smb: %s> ", CNV_LANG(info->cur_dir)));
       fflush(dbf);
@@ -332,7 +326,7 @@ static BOOL process( struct client_info *info, char *cmd_str)
       if ( line[0] == EOF)
 	break;
 #else
-      wait_keyboard(&smb_cli, smb_tidx);
+      wait_keyboard(smb_cli, smb_tidx);
 #endif
   
       /* and get a response */
@@ -436,7 +430,9 @@ enum client_action
 
 	client_smb_init();
 	client_ipc_init();
+#if 0
 	client_nt_init();
+#endif
 
 #ifdef KANJI
 	strcpy(term_code, KANJI);
@@ -835,7 +831,11 @@ enum client_action
 
 	client_smb_connect(&cli_info, cli_info.username, password, cli_info.workgroup);
 	client_ipc_connect(&cli_info, NULL             , NULL    , cli_info.workgroup);
-	client_smb_connect(&cli_info, cli_info.username, password, cli_info.workgroup);
+#if 0
+	client_nt_connect (&cli_info, cli_info.username, password, cli_info.workgroup);
+#endif
+
+	DEBUG(5,("cli_ipc_connect: ipc_cli->fd:%d\n", ipc_cli->fd));
 
 	ret = 0;
 
@@ -843,12 +843,12 @@ enum client_action
 	{
 		case CLIENT_QUERY:
 		{
-			client_browse_host(&ipc_cli, ipc_tidx, cli_info.workgroup, True);
+			client_browse_host(ipc_cli, ipc_tidx, cli_info.workgroup, True);
 			break;
 		}
 		case CLIENT_MESSAGE:
 		{
-			client_send_message(&ipc_cli, ipc_tidx, cli_info.username, cli_info.dest_host);
+			client_send_message(ipc_cli, ipc_tidx, cli_info.username, cli_info.dest_host);
 			break;
 		}
 
@@ -858,7 +858,7 @@ enum client_action
 
 			if (*cli_info.base_dir)
 			{
-				do_cd(&smb_cli, smb_tidx, &cli_info, cli_info.base_dir);
+				do_cd(smb_cli, smb_tidx, &cli_info, cli_info.base_dir);
 			}
 
 			ret = process_tar(&cli_info);
@@ -871,7 +871,7 @@ enum client_action
 		{
 			if (*cli_info.base_dir)
 			{
-				do_cd(&smb_cli, smb_tidx, &cli_info, cli_info.base_dir);
+				do_cd(smb_cli, smb_tidx, &cli_info, cli_info.base_dir);
 			}
 			ret = process(&cli_info, cmd_str) ? 0 : 1;
 			break;
@@ -887,7 +887,8 @@ enum client_action
 
 	client_smb_stop();
 	client_ipc_stop();
+#if 0
 	client_nt_stop();
-
+#endif
 	return(0);
 }

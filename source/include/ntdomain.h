@@ -25,7 +25,6 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
-#ifdef NTDOMAIN
 
 /* RPC packet types */
 
@@ -1130,8 +1129,7 @@ typedef struct q_samr_enum_dom_users_info
 {
 	LSA_POL_HND pol;          /* policy handle */
 
-	/* these are possibly an enumeration context handle... */
-	uint32 unknown_0;         /* 0x0000 0000 */
+	uint32 enum_ctx;         /* 32 bit enumeration context */
 	uint32 unknown_1;         /* 0x0000 0000 */
 
 	uint32 max_size;              /* 0x0000 ffff */
@@ -1142,6 +1140,7 @@ typedef struct q_samr_enum_dom_users_info
 /* SAMR_R_ENUM_DOM_USERS - SAM rids and names */
 typedef struct r_samr_enum_dom_users_info
 {
+	uint32 enum_ctx;    /* same as enum context in request */
 	uint32 num_entries;
 	uint32 ptr_entries;
 
@@ -1649,7 +1648,6 @@ typedef struct r_wks_unknown_0_info
 
 } WKS_R_UNKNOWN_0;
 
-#endif /* NTDOMAIN */
 
 #endif /* _NT_DOMAIN_H */
 
