@@ -119,5 +119,6 @@ int str2attr(const char *str, krb5_flags *flags);
 void get_response(const char*, const char*, char*, size_t);
 int get_deltat(const char*, const char*, unsigned *);
 int edit_entry(kadm5_principal_ent_t ent, int *mask);
+int foreach_principal(const char *, int (*)(krb5_principal, void*), void *);
 
 #endif /* __ADMIN_LOCL_H__ */
