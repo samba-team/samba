@@ -324,20 +324,3 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 	return True;
 
 }
-
-/* Calculate the NT owfs of a user's password */
-void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16])
-{
-	char buf[512];
-	int i;
-
-	for (i = 0; i < MIN(pwd->uni_str_len, sizeof(buf) / 2); i++)
-	{
-		SIVAL(buf, i * 2, pwd->buffer[i]);
-	}
-	/* Calculate the MD4 hash (NT compatible) of the password */
-	mdfour(nt_p16, (const unsigned char *)buf, pwd->uni_str_len * 2);
-
-	/* clear out local copy of user's password (just being paranoid). */
-	ZERO_STRUCT(buf);
-}
