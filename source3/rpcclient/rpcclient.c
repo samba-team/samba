@@ -1362,6 +1362,7 @@ static void cmd_net(struct client_info *info, int argc, char *argv[])
 
 	pstrcpy(dest_host, cli_info.dest_host);
 	pstrcpy(u.user_name,optarg);
+	u.reuse = False;
 
 	if (argc <= 1)
 	{
@@ -1567,6 +1568,8 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	*term_code = 0;
 #endif /* KANJI */
 
+	usr.reuse = False;
+
 	if (argc > 1 && *argv[1] != '-')
 	{
 		if (argc > 1 && (*argv[1] != '-'))
@@ -1579,10 +1582,16 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	while ((opt = getopt(argc, argv, "s:B:O:M:S:i:N:n:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+	while ((opt = getopt(argc, argv, "Rs:B:O:M:S:i:N:n:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
 	{
 		switch (opt)
 		{
+			case 'R':
+			{
+				usr.reuse = True;
+				break;
+			}
+
 			case 'm':
 			{
 				/* FIXME ... max_protocol seems to be funny here */

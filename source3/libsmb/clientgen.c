@@ -40,6 +40,7 @@ void copy_user_creds(struct user_credentials *to,
 		to->user_name[0] = 0;
 		pwd_set_nullpwd(&to->pwd);
 		to->ntlmssp_flags = 0;
+		to->reuse = False;
 
 		return;
 	}
@@ -47,6 +48,7 @@ void copy_user_creds(struct user_credentials *to,
 	safe_strcpy(to->user_name, from->user_name, sizeof(from->user_name)-1);
 	memcpy(&to->pwd, &from->pwd, sizeof(from->pwd));
 	to->ntlmssp_flags = from->ntlmssp_flags;
+	to->reuse = from->reuse;
 };
 	
 int cli_set_port(struct cli_state *cli, int port)
@@ -785,6 +787,12 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 	char *p;
 	BOOL esec = cli->capabilities & CAP_EXTENDED_SECURITY;
 
+	if (cli->usr.reuse)
+	{
+		DEBUG(3,("cli_session_setup_x: reuse enabled, skipping SMBsesssetupX\n"));
+		return True;
+	}
+
 	DEBUG(100,("cli_session_setup.  extended security: %s\n",
 	            BOOLSTR(esec)));
 
@@ -1063,6 +1071,12 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 BOOL cli_ulogoff(struct cli_state *cli)
 {
+	if (cli->usr.reuse)
+	{
+		DEBUG(3,("cli_ulogoff: reuse enabled, skipping SMBulogoff\n"));
+		return True;
+	}
+
         bzero(cli->outbuf,smb_size);
         set_message(cli->outbuf,2,0,True);
         CVAL(cli->outbuf,smb_com) = SMBulogoffX;
@@ -2981,6 +2995,12 @@ static int cli_init_redirect(struct cli_state *cli,
 	ZERO_STRUCT(data);
 
 	p = &data[4];
+	SSVAL(p, 0, 0);
+	p += 2;
+
+	SSVAL(p, 0, usr->reuse ? AGENT_CMD_CON_REUSE : AGENT_CMD_CON);
+	p += 2;
+
 	safe_strcpy(p, srv_name, 16);
 	p = skip_string(p, 1);
 	safe_strcpy(p, usr != NULL ? usr->user_name : "", 16);

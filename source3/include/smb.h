@@ -1740,6 +1740,9 @@ struct field_info
 	char *str;
 };
 
+#define AGENT_CMD_CON       0
+#define AGENT_CMD_CON_REUSE 1
+
 #endif /* _SMB_H */
 
 /* _SMB_H */
