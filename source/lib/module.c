@@ -123,7 +123,7 @@ struct subsystem {
 	struct subsystem *prev, *next;
 };
 
-struct subsystem *subsystems = NULL;
+static struct subsystem *subsystems = NULL;
 
 void register_subsystem(const char *name, register_backend_function callback) 
 {
