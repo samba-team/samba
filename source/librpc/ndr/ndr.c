@@ -447,14 +447,14 @@ static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 
 	case 2: {
 		uint16_t size;
-		NDR_CHECK(ndr_pull_uint16(ndr, &size));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &size));
 		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
 		break;
 	}
 
 	case 4: {
 		uint32_t size;
-		NDR_CHECK(ndr_pull_uint32(ndr, &size));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &size));
 		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
 		break;
 	}
@@ -529,11 +529,11 @@ static NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr,
 		break;
 
 	case 2: 
-		NDR_CHECK(ndr_push_uint16(ndr, ndr2->offset));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ndr2->offset));
 		break;
 
 	case 4: 
-		NDR_CHECK(ndr_push_uint32(ndr, ndr2->offset));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr2->offset));
 		break;
 
 	default:
@@ -684,7 +684,7 @@ static uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
 NTSTATUS ndr_pull_array_size(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t size;
-	NDR_CHECK(ndr_pull_uint32(ndr, &size));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &size));
 	return ndr_token_store(ndr, &ndr->array_size_list, p, size);
 }
 
@@ -717,12 +717,12 @@ NTSTATUS ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t size)
 NTSTATUS ndr_pull_array_length(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t length, offset;
-	NDR_CHECK(ndr_pull_uint32(ndr, &offset));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &offset));
 	if (offset != 0) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
 				      "non-zero array offset %u\n", offset);
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, &length));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &length));
 	return ndr_token_store(ndr, &ndr->array_length_list, p, length);
 }
 
@@ -781,12 +781,12 @@ NTSTATUS ndr_pull_relative2(struct ndr_pull *ndr, const void *p)
 NTSTATUS ndr_push_relative1(struct ndr_push *ndr, const void *p)
 {
 	if (p == NULL) {
-		NDR_CHECK(ndr_push_uint32(ndr, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		return NT_STATUS_OK;
 	}
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_token_store(ndr, &ndr->relative_list, p, ndr->offset));
-	return ndr_push_uint32(ndr, 0xFFFFFFFF);
+	return ndr_push_uint32(ndr, NDR_SCALARS, 0xFFFFFFFF);
 }
 
 /*
@@ -803,9 +803,9 @@ NTSTATUS ndr_push_relative2(struct ndr_push *ndr, const void *p)
 	ndr_push_save(ndr, &save);
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ndr->offset));
 	if (ndr->flags & LIBNDR_FLAG_RELATIVE_CURRENT) {
-		NDR_CHECK(ndr_push_uint32(ndr, save.offset - ndr->offset));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset - ndr->offset));
 	} else {
-		NDR_CHECK(ndr_push_uint32(ndr, save.offset));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset));
 	}
 	ndr_push_restore(ndr, &save);
 	return NT_STATUS_OK;

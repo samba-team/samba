@@ -256,13 +256,13 @@ sub ParseArrayPush($$$)
 		# the conformant size has already been pushed
 	} elsif (!util::is_inline_array($e)) {
 		# we need to emit the array size
-		pidl "\t\tNDR_CHECK(ndr_push_uint32(ndr, $size));\n";
+		pidl "\t\tNDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));\n";
 	}
 
 	if (my $length = util::has_property($e, "length_is")) {
 		$length = find_size_var($e, $length, $var_prefix);
-		pidl "\t\tNDR_CHECK(ndr_push_uint32(ndr, 0));\n";
-		pidl "\t\tNDR_CHECK(ndr_push_uint32(ndr, $length));\n";
+		pidl "\t\tNDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));\n";
+		pidl "\t\tNDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $length));\n";
 		$size = $length;
 	}
 
@@ -405,13 +405,7 @@ sub ParseElementPushScalar($$$)
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPushSwitch($e, $var_prefix, $ndr_flags, $switch);
 	} elsif (defined $sub_size) {
-		if (util::is_builtin_type($e->{TYPE})) {
-			pidl "\tNDR_CHECK(ndr_push_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_fn_t) ndr_push_$e->{TYPE}));\n";
-		} else {
-			pidl "\tNDR_CHECK(ndr_push_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_flags_fn_t) ndr_push_$e->{TYPE}));\n";
-		}
-	} elsif (util::is_builtin_type($e->{TYPE})) {
-		pidl "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
+		pidl "\tNDR_CHECK(ndr_push_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_flags_fn_t) ndr_push_$e->{TYPE}));\n";
 	} else {
 		pidl "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
@@ -478,7 +472,7 @@ sub ParseElementPullSwitch($$$$)
 			$type_decl = util::bitmap_type_decl($e2);
 		}
 		pidl "\t\t$type_decl _level;\n";
-		pidl "\t\tNDR_CHECK(ndr_pull_$e2->{TYPE}(ndr, &_level));\n";
+		pidl "\t\tNDR_CHECK(ndr_pull_$e2->{TYPE}(ndr, NDR_SCALARS, &_level));\n";
 		if ($switch_var =~ /r->in/) {
 			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {\n";
 		} else {
@@ -522,7 +516,7 @@ sub ParseElementPushSwitch($$$$)
 	    !util::has_property($utype, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
-		pidl "\t\tNDR_CHECK(ndr_push_$e2->{TYPE}(ndr, $switch_var));\n";
+		pidl "\t\tNDR_CHECK(ndr_push_$e2->{TYPE}(ndr, NDR_SCALARS, $switch_var));\n";
 		pidl "\t}\n";
 	}
 
@@ -581,13 +575,7 @@ sub ParseElementPullScalar($$$)
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
 	} elsif (defined $sub_size) {
-		if (util::is_builtin_type($e->{TYPE})) {
-			pidl "\tNDR_CHECK(ndr_pull_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE}));\n";
-		} else {
-			pidl "\tNDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));\n";
-		}
-	} elsif (util::is_builtin_type($e->{TYPE})) {
-		pidl "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
+		pidl "\tNDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));\n";
 	} else {
 		pidl "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
@@ -635,14 +623,8 @@ sub ParseElementPushBuffer($$$)
 		}
 	} elsif (defined $sub_size) {
 		if ($e->{POINTERS}) {
-			if (util::is_builtin_type($e->{TYPE})) {
-				pidl "\tNDR_CHECK(ndr_push_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_fn_t) ndr_push_$e->{TYPE}));\n";
-			} else {
-				pidl "\tNDR_CHECK(ndr_push_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_flags_fn_t) ndr_push_$e->{TYPE}));\n";
-			}
+			pidl "\tNDR_CHECK(ndr_push_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_flags_fn_t) ndr_push_$e->{TYPE}));\n";
 		}
-	} elsif (util::is_builtin_type($e->{TYPE})) {
-		pidl "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} elsif ($e->{POINTERS}) {
 		pidl "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, NDR_SCALARS|NDR_BUFFERS, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
@@ -719,14 +701,8 @@ sub ParseElementPullBuffer($$$)
 		}
 	} elsif (defined $sub_size) {
 		if ($e->{POINTERS}) {
-			if (util::is_builtin_type($e->{TYPE})) {
-				pidl "\tNDR_CHECK(ndr_pull_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE}));\n";
-			} else {
-				pidl "\tNDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));\n";
-			}
+			pidl "\tNDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));\n";
 		}
-	} elsif (util::is_builtin_type($e->{TYPE})) {
-		pidl "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} elsif ($e->{POINTERS}) {
 		pidl "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, NDR_SCALARS|NDR_BUFFERS, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
@@ -765,12 +741,12 @@ sub ParseStructPush($)
 		my $size = find_size_var($e, util::array_size($e), "r->");
 		$e->{CONFORMANT_SIZE} = $size;
 		check_null_pointer($size);
-		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, $size));\n";
+		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));\n";
 	}
 
 	if (defined $e->{TYPE} && $e->{TYPE} eq "string" 
 	    &&  util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*")) {
-		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, ndr_string_array_size(ndr, r->$e->{NAME})));\n";
+		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_string_array_size(ndr, r->$e->{NAME})));\n";
 	}
 
 	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
@@ -807,7 +783,7 @@ sub ParseEnumPush($)
 
 	start_flags($enum);
 
-	pidl "\tNDR_CHECK(ndr_push_$type_fn(ndr, r));\n";
+	pidl "\tNDR_CHECK(ndr_push_$type_fn(ndr, NDR_SCALARS, r));\n";
 
 	end_flags($enum);
 }
@@ -822,7 +798,7 @@ sub ParseEnumPull($)
 
 	pidl "\t$type_v_decl v;\n";
 	start_flags($enum);
-	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, &v));\n";
+	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, NDR_SCALARS, &v));\n";
 	pidl "\t*r = v;\n";
 
 	end_flags($enum);
@@ -864,7 +840,7 @@ sub ParseBitmapPush($)
 
 	start_flags($bitmap);
 
-	pidl "\tNDR_CHECK(ndr_push_$type_fn(ndr, r));\n";
+	pidl "\tNDR_CHECK(ndr_push_$type_fn(ndr, NDR_SCALARS, r));\n";
 
 	end_flags($bitmap);
 }
@@ -879,7 +855,7 @@ sub ParseBitmapPull($)
 
 	pidl "\t$type_decl v;\n";
 	start_flags($bitmap);
-	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, &v));\n";
+	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, NDR_SCALARS, &v));\n";
 	pidl "\t*r = v;\n";
 
 	end_flags($bitmap);
@@ -993,7 +969,7 @@ sub ParseStructPull($)
 	pidl "\tNDR_CHECK(ndr_pull_struct_start(ndr));\n";
 
 	if (defined $conform_e) {
-		pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, &$conform_e->{CONFORMANT_SIZE}));\n";
+		pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &$conform_e->{CONFORMANT_SIZE}));\n";
 	}
 
 	my $align = struct_alignment($struct);
@@ -1292,7 +1268,7 @@ sub ParseTypedefPush($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, enum $e->{NAME} r)";
+		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, enum $e->{NAME} r)";
 		pidl "\n{\n";
 		ParseTypePush($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1301,7 +1277,7 @@ sub ParseTypedefPush($)
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
 		my $type_decl = util::bitmap_type_decl($e->{DATA});
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, $type_decl r)";
+		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, $type_decl r)";
 		pidl "\n{\n";
 		ParseTypePush($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1343,7 +1319,7 @@ sub ParseTypedefPull($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
-		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, enum $e->{NAME} *r)";
+		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, enum $e->{NAME} *r)";
 		pidl "\n{\n";
 		ParseTypePull($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1352,7 +1328,7 @@ sub ParseTypedefPull($)
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
 		my $type_decl = util::bitmap_type_decl($e->{DATA});
-		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, $type_decl *r)";
+		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, $type_decl *r)";
 		pidl "\n{\n";
 		ParseTypePull($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1454,11 +1430,9 @@ sub ParseFunctionPrint($)
 		}
 	}
 	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
-		if (util::is_scalar_type($fn->{RETURN_TYPE})) {
-			pidl "\tndr_print_$fn->{RETURN_TYPE}(ndr, \"result\", r->out.result);\n";
-		} else {
-			pidl "\tndr_print_$fn->{RETURN_TYPE}(ndr, \"result\", &r->out.result);\n";
-		}
+		my $cprefix = "&";
+		$cprefix = "" if (util::is_scalar_type($fn->{RETURN_TYPE})) ; # FIXME: Should really use util::c_push_prefix here
+		pidl "\tndr_print_$fn->{RETURN_TYPE}(ndr, \"result\", $cprefix"."r->out.result);\n";
 	}
 	pidl "\tndr->depth--;\n";
 	pidl "\t}\n";
@@ -1519,7 +1493,7 @@ sub ParseFunctionPush($)
 	}
 
 	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
-		pidl "\tNDR_CHECK(ndr_push_$fn->{RETURN_TYPE}(ndr, r->out.result));\n";
+		pidl "\tNDR_CHECK(ndr_push_$fn->{RETURN_TYPE}(ndr, NDR_SCALARS, r->out.result));\n";
 	}
     
 	pidl "\ndone:\n";
@@ -1660,7 +1634,7 @@ sub ParseFunctionPull($)
 	}
 
 	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
-		pidl "\tNDR_CHECK(ndr_pull_$fn->{RETURN_TYPE}(ndr, &r->out.result));\n";
+		pidl "\tNDR_CHECK(ndr_pull_$fn->{RETURN_TYPE}(ndr, NDR_SCALARS, &r->out.result));\n";
 	}
 
 	pidl "\ndone:\n";

@@ -276,10 +276,10 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, struct nbt_name 
 	/* push the components */
 	for (i=0;i<num_components;i++) {
 		uint8_t len = strlen(components[i]);
-		NDR_CHECK(ndr_push_uint8(ndr, len));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, len));
 		NDR_CHECK(ndr_push_bytes(ndr, components[i], len));
 	}
-	NDR_CHECK(ndr_push_uint8(ndr, 0));
+	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, 0));
 
 	return NT_STATUS_OK;
 }
