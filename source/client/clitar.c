@@ -1775,6 +1775,10 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 		if (tarhandle == 1)  {
 			dbf = x_stderr;
 		}
+		if (!argv[Optind]) {
+			DEBUG(0,("Must specify tar filename\n"));
+			return 0;
+		}
 		if (!strcmp(argv[Optind], "-")) {
 			newOptind++;
 		}
