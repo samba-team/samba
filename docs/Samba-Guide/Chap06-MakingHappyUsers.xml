@@ -1479,7 +1479,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
 	<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
 	<smbconfoption><name>add user script</name><value>/var/lib/samba/sbin/smbldap-useradd.pl -a -m '%u'</value></smbconfoption>
-	<smbconfoption><name>delete user script</name><value>/var/lib/samba/sbin/smbldap-userdel.pl %u</value></smbconfoption>
+	<smbconfoption><name>delete user script</name><value>/var/lib/samba/sbin/smbldap-userdel.pl '%u'</value></smbconfoption>
 	<smbconfoption><name>add group script</name><value>/var/lib/samba/sbin/smbldap-groupadd.pl -p '%g'</value></smbconfoption>
 	<smbconfoption><name>delete group script</name><value>/var/lib/samba/sbin/smbldap-groupdel.pl '%g'</value></smbconfoption>
 	<smbconfoption><name>add user to group script</name><value>/var/lib/samba/sbin/</value></smbconfoption>
@@ -3145,35 +3145,35 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		<tbody>
 			<row>
 				<entry>Cache</entry>
-				<entry>\\%LOGONSERVER%\profdata\%USERNAME%\InternetFiles</entry>
+				<entry>%LOGONSERVER%\profdata\%USERNAME%\InternetFiles</entry>
 			</row>
 			<row>
 				<entry>Cookies</entry>
-				<entry>\\%LOGONSERVER%\profdata\%USERNAME%\Cookies</entry>
+				<entry>%LOGONSERVER%\profdata\%USERNAME%\Cookies</entry>
 			</row>
 			<row>
 				<entry>History</entry>
-				<entry>\\%LOGONSERVER%\profdata\%USERNAME%\History</entry>
+				<entry>%LOGONSERVER%\profdata\%USERNAME%\History</entry>
 			</row>
 			<row>
 				<entry>Local AppData</entry>
-				<entry>\\%LOGONSERVER%\profdata\%USERNAME%\AppData</entry>
+				<entry>%LOGONSERVER%\profdata\%USERNAME%\AppData</entry>
 			</row>
 			<row>
 				<entry>Local Settings</entry>
-				<entry>\\%LOGONSERVER%\profdata\%USERNAME%\LocalSettings</entry>
+				<entry>%LOGONSERVER%\profdata\%USERNAME%\LocalSettings</entry>
 			</row>
 			<row>
 				<entry>My Pictures</entry>
-				<entry>\\%LOGONSERVER%\profdata\%USERNAME%\MyPictures</entry>
+				<entry>%LOGONSERVER%\profdata\%USERNAME%\MyPictures</entry>
 			</row>
 			<row>
 				<entry>Personal</entry>
-				<entry>\\%LOGONSERVER%\profdata\%USERNAME%\MyDocuments</entry>
+				<entry>%LOGONSERVER%\profdata\%USERNAME%\MyDocuments</entry>
 			</row>
 			<row>
 				<entry>Recent</entry>
-				<entry>\\%LOGONSERVER%\profdata\%USERNAME%\Recent</entry>
+				<entry>%LOGONSERVER%\profdata\%USERNAME%\Recent</entry>
 			</row>
 		</tbody>
 	</tgroup>
