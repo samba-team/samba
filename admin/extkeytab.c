@@ -49,6 +49,7 @@ ext_keytab(int argc, char **argv)
     krb5_keytab kid;
     krb5_keytab_entry key_entry;
     krb5_principal principal;
+    Key *k;
     
     if(argc < 2 || argc > 3){
 	krb5_warnx(context, "Usage: ext_keytab principal [file]");
@@ -81,11 +82,14 @@ ext_keytab(int argc, char **argv)
 #endif
     key_entry.vno = ent.kvno;
     /* XXX XXX XXX XXX */
-    key_entry.keyblock.keytype = ent.keys.val[0].key.keytype;
+    k = unseal_key(&ent.keys.val[0]);
+
+    key_entry.keyblock.keytype = k->key.keytype;
     key_entry.keyblock.keyvalue.length = 0;
     krb5_data_copy(&key_entry.keyblock.keyvalue,
-		   ent.keys.val[0].key.keyvalue.data,
-		   ent.keys.val[0].key.keyvalue.length);
+		   k->key.keyvalue.data,
+		   k->key.keyvalue.length);
+    hdb_free_key (k);
 
     { 
 	char ktname[128] = "FILE:";
