@@ -1,17 +1,101 @@
-              WHATS NEW IN Samba 2.0.2
+              WHATS NEW IN Samba 2.0.3
               ========================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
 
+New/Changed parameters in 2.0.3
+-------------------------------
+
+There are 2 new parameters and one enhanced parameter in
+the smb.conf file.
+
+The new parameters are :
+
+nt acl support
+--------------
+
+This is a global parameter that defaults to False (at the
+present time). If set to yes it allows UNIX file permissions
+to be reported via the Windows NT "cacls.exe" program. As some
+of the RPC calls that allow cacls to report the name of the
+owner of a file are not yet implemented in 2.0.3 this parameter
+is set to "no" by default. The default state of this parameter
+will change to "yes" in a future release.
+
+min passwd length
+-----------------
+
+This is an integer global parameter that tells Samba the minimum
+permissible UNIX password length (in characters) when Samba is
+set to synchronise the Windows and UNIX passwords. By default
+this is set to 5, and was previously hardcoded into Samba 2.0.x.
+
+The modified parameter is :
+
+announce as
+-----------
+
+Prior to 2.0.3 this parameter had only one setting for Windows
+NT compatibility, "NT", which was the default. This is still
+the default and this still tells Samba to announce itself in
+browse lists as an NT server, however this parameter may now
+be set to "NT workstation" which causes Samba to announce itself
+as an NT workstation instead of a server. 
+
+All of these new parameters and changes are documented in the
+smb.conf man pages and html pages.
+
+Bugfixes added since 2.0.2
+--------------------------
+
+1). --with-ssl configure now include ssl include directory. Fix
+from Richard Sharpe.
+2). Patch for configure for glibc2.1 support (large files etc.).
+3). Several bugfixes for smbclient tar mode from Bob Boehmer
+(boehmer@worldnet.att.net) to fix smbclient aborting problems
+when restoring tar files.
+4). Some automount fixes for smbmount.
+5). Attempt to fix the AIX 4.1.x/3.x problems where smbd runs as
+root. As no-one has given us root access to such a server this
+cannot be tested fully, but should work.
+6). Crash bug fix in debug code where *real* uid rather than 
+*effective* uid was being checked before attempting to rotate
+log files. This fix should help a *lot* of people who were
+reporting smbd aborting in the middle of a copy operation.
+7). SIGALRM bugfix to ensure infinate file locks time out.
+8). New code to implement NT ACL reporting for cacls.exe program.
+9). UDP lookback socket rebind fix for Solaris.
+10). Ensure all UNICODE strings are correctly in little-endian
+format.
+11). smbpasswd file locking fix.
+12). Fixes for strncpy problems with glibc2.1.
+13). Ensure smbd correctly reports major and minor version number
+and server type when queried via NT rpc calls.
+14). Bugfix for short mangled names not being pulled off the
+mangled stack correctly.
+15). Fix for mapping of rwx bits being incorrectly overwritten
+when doing ATTRIB.EXE
+16). Fix for returning multiple PDU packets in NT rpc code. Should
+allow multiple shares to be returned correctly).
+17). Improved mapping of NT open access requests into UNIX open
+modes.
+18). Fix for copying files from an NTFS volume that contain
+multiple data forks. Added 'magic' error code NT needs.
+19). Fixed crash bug when primary NT authentication server
+is down, rolls over to secondaries correctly now.
+20). Fixed timeout processing to be timer based. Now will
+always occur even if smbd is under load.
+21). Fixed signed/unsigned problem in quotas code.
+
+Bugfixes added since 2.0.1
+--------------------------
+
 Note that due to a critical signal handling bug in 2.0.1,
 this release has been removed and replaced immediately with 
 2.0.2. The Samba Team would like to apologise for any problem
 this may have caused.
-
-Bugfixes added since 2.0.1
---------------------------
 
 1). Fixed smbd looping on SIGCLD problem. This was
     caused by a missing break statement in a critical
