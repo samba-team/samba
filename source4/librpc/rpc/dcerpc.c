@@ -214,11 +214,14 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_unseal_packet(p->security_state.generic_state, 
 					      mem_ctx, 
-					      pkt->u.response.stub_and_verifier.data, 
+					      blob->data + DCERPC_REQUEST_LENGTH,
 					      pkt->u.response.stub_and_verifier.length, 
 					      blob->data,
 					      blob->length - auth.credentials.length,
 					      &auth.credentials);
+		memcpy(pkt->u.response.stub_and_verifier.data,
+		       blob->data + DCERPC_REQUEST_LENGTH,
+		       pkt->u.response.stub_and_verifier.length);
 		break;
 		
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -327,8 +330,8 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_seal_packet(p->security_state.generic_state, 
 					    mem_ctx, 
-					    ndr->data + DCERPC_REQUEST_LENGTH, 
-					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    blob->data + DCERPC_REQUEST_LENGTH, 
+					    pkt->u.request.stub_and_verifier.length+p->security_state.auth_info->auth_pad_length,
 					    blob->data,
 					    blob->length - 
 					    p->security_state.auth_info->credentials.length,
@@ -339,8 +342,8 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		status = gensec_sign_packet(p->security_state.generic_state, 
 					    mem_ctx, 
-					    ndr->data + DCERPC_REQUEST_LENGTH, 
-					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    blob->data + DCERPC_REQUEST_LENGTH, 
+					    pkt->u.request.stub_and_verifier.length,
 					    blob->data,
 					    blob->length - 
 					    p->security_state.auth_info->credentials.length,
