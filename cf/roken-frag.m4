@@ -390,6 +390,16 @@ AC_PROTO_COMPAT([
 getservbyname, struct servent *getservbyname(const char *, const char *))
 
 AC_PROTO_COMPAT([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+],
+getsockname, int getsockname(int, struct sockaddr*, socklen_t*))
+
+AC_PROTO_COMPAT([
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #endif
