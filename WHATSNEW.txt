@@ -145,6 +145,17 @@ rpc_pipe/, and a LGPL License issued specifically for code
 in this directory.  This is so that people can use this
 code in other projects.
 
+Missing feature.
+----------------
+
+One feature that we wanted to get into this release
+that was not possible due to the re-write of the nmbd
+code was the scalability features in the Samba WINS server.
+This feature is now tentatively scheduled for the next
+release (1.9.19). Apologies to anyone who was hoping
+for this feature to be included. The nmbd re-write
+will make it much easier to add such things in future.
+
 New parameters in smb.conf.
 ---------------------------
 
