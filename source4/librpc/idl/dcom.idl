@@ -88,8 +88,8 @@ interface IRemUnknown : IUnknown
 		[in] GUID *ripid, /* interface to QI on */
 		[in] uint32 cRefs, /* count of AddRefs requested */
 		[in] uint16 cIids, /* count of IIDs that follow */
-		[in, size_is(cIids)] GUID* iids, /* IIDs to QI for */
-		[out, size_is(cIids)] MInterfacePointer *ip
+		[in, size_is(cIids)] GUID *iids[], /* IIDs to QI for */
+		[out, size_is(cIids)] MInterfacePointer *ip[]
 		);
 
 	typedef struct 
@@ -102,7 +102,7 @@ interface IRemUnknown : IUnknown
 	[call_as(AddRef)] WERROR RemAddRef (
 		 [in] uint16 cInterfaceRefs,
 		 [in, size_is(cInterfaceRefs)] REMINTERFACEREF InterfaceRefs[],
-		 [out, size_is(cInterfaceRefs)] WERROR* pResults
+		 [out, size_is(cInterfaceRefs)] WERROR *pResults[]
 		);
 
 	[call_as(Release)] WERROR RemRelease (
@@ -181,9 +181,9 @@ interface IRemUnknown2 : IRemUnknown
 	[call_as(QueryInterface2)] WERROR RemQueryInterface2 (
 		 [in] GUID *ripid,
 		 [in] uint16 cIids,
-		 [in, size_is(cIids)] GUID*iids,
-		 [out, size_is(cIids)] WERROR *phr,
-		 [out, size_is(cIids)] MInterfacePointer *ppMIF
+		 [in, size_is(cIids)] GUID *iids[],
+		 [out, size_is(cIids)] WERROR *phr[],
+		 [out, size_is(cIids)] MInterfacePointer *ppMIF[]
 		);
 }
 
@@ -224,7 +224,7 @@ object,
 			/*FIXME[in,size_is(cNames)] OLESTR *rgszNames[], */
 			[in] uint16 cNames,
 			[in] uint32 lcid,
-			[out,size_is(cNames)] uint32 *rgDispId);
+			[out,size_is(cNames)] uint32 *rgDispId[]);
 
 	typedef struct {
 		uint16 vartype;
@@ -297,7 +297,7 @@ interface IStream : IUnknown
 				);
 
 	WERROR Write(
-				[in,size_is(num_requested)] uint8 *data,
+				[in,size_is(num_requested)] uint8 *data[],
 				 [in] uint32 num_requested,
 				 [out] uint32 num_written);
 }

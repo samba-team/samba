@@ -291,6 +291,8 @@ sub ParseExpr($$$)
 
 	my $e2 = util::find_sibling($e, $size);
 
+	die("Invalid sibling '$size'") unless defined($e2);
+
 	if (util::has_property($e2, "in") && util::has_property($e2, "out")) {
 		return $prefix . "$var_prefix$size";
 	}
@@ -460,6 +462,7 @@ sub ParseArrayPrint($$)
 	my $e = shift;
 	my $var_prefix = shift;
 	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
+	my $ptr_prefix = c_ptr_prefix($e);
 
 	if (is_varying_array($e)) {
 		$size = ParseExpr($e, util::has_property($e, "length_is"), $var_prefix);

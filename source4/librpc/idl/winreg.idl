@@ -136,7 +136,7 @@
 	typedef struct {
 		uint16 length;
 		uint16 size;
-		[size_is(size/2),length_is(length/2)] uint16 *name;
+		[size_is(size/2),length_is(length/2)] uint16 *name[];
 	} winreg_EnumValueString;
 
 	WERROR winreg_EnumValue(
@@ -145,7 +145,7 @@
 		[in]     winreg_EnumValueString name_in,
 		[out]    winreg_String name_out,
 		[in,out] uint32 *type,
-		[in,out,size_is(*size),length_is(*length)] uint8 *value,
+		[in,out,size_is(*size),length_is(*length)] uint8 *value[],
 		[in,out] uint32 *size,
 		[in,out] uint32 *length
 	);
@@ -157,7 +157,7 @@
 	);
 
 	typedef struct {
-		[size_is(size),length_is(len)] uint8 *data;
+		[size_is(size),length_is(len)] uint8 *data[];
 		uint32 size;
 		uint32 len;
 	} KeySecurityData;
@@ -222,7 +222,7 @@
 		[in,ref] policy_handle *handle,
 		[in] winreg_String value_name,
 		[in,out] uint32 *type,
-		[in,out,size_is(*size),length_is(*length)] uint8 *data,
+		[in,out,size_is(*size),length_is(*length)] uint8 *data[],
 		[in,out] uint32 *size,
 		[in,out] uint32 *length
 	);
@@ -256,7 +256,7 @@
 		[in,ref]           policy_handle *handle,
 		[in]               winreg_String name,
 		[in]               uint32 type,
-		[in,size_is(size)] uint8  *data,
+		[in,size_is(size)] uint8  *data[],
 		[in]               uint32 size
 	);
 
@@ -315,9 +315,9 @@
 	/* Function: 0x1d */
 	WERROR winreg_QueryMultipleValues(
 		[in,ref] policy_handle *key_handle, 
-		[in,out,size_is(num_values),length_is(num_values),ref] QueryMultipleValue *values,
+		[in,out,ref,size_is(num_values),length_is(num_values)] QueryMultipleValue *values[],
         [in] uint32 num_values,
-        [in,out,size_is(*buffer_size),length_is(*buffer_size)] uint8 *buffer,
+        [in,out,size_is(*buffer_size),length_is(*buffer_size)] uint8 *buffer[],
         [in,out,ref] uint32 *buffer_size
 	);
 

@@ -219,7 +219,7 @@ interface drsuapi
 		drsuapi_DsNameFormat format_offered;
 		drsuapi_DsNameFormat format_desired;
 		[range(1,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsNameString *names;
+		[size_is(count)] drsuapi_DsNameString *names[];
 	} drsuapi_DsNameRequest1;
 
 	typedef union {
@@ -234,7 +234,7 @@ interface drsuapi
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] drsuapi_DsNameInfo1 *array;
+		[size_is(count)] drsuapi_DsNameInfo1 *array[];
 	} drsuapi_DsNameCtr1;
 
 	typedef union {
@@ -261,7 +261,7 @@ interface drsuapi
 		uint32 unknown1;
 		unistr *object_dn;
 		[range(0,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsNameString *spn_names;
+		[size_is(count)] drsuapi_DsNameString *spn_names[];
 	} drsuapi_DsWriteAccountSpnRequest1;
 
 	typedef union {
@@ -314,7 +314,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsGetDCInfo1 *array;
+		[size_is(count)] drsuapi_DsGetDCInfo1 *array[];
 	} drsuapi_DsGetDCInfoCtr1;
 
 	typedef struct {
@@ -336,7 +336,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsGetDCInfo2 *array;
+		[size_is(count)] drsuapi_DsGetDCInfo2 *array[];
 	} drsuapi_DsGetDCInfoCtr2;
 
 	typedef struct {
@@ -351,7 +351,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsGetDCInfo01 *array;
+		[size_is(count)] drsuapi_DsGetDCInfo01 *array[];
 	} drsuapi_DsGetDCInfoCtr01;
 
 	typedef union {
@@ -509,7 +509,7 @@ interface drsuapi
 		unistr *attribute_name;
 		unistr *object_dn;
 		uint32 value_length;
-		[size_is(value_length)] uint8 *value;
+		[size_is(value_length)] uint8 *value[];
 		NTTIME deleted;
 		NTTIME created;
 		uint32 version;
@@ -570,7 +570,7 @@ interface drsuapi
 		unistr *attribute_name;
 		unistr *object_dn;
 		uint32 value_length;
-		[size_is(value_length)] uint8 *value;
+		[size_is(value_length)] uint8 *value[];
 		NTTIME deleted;
 		NTTIME created;
 		uint32 version;

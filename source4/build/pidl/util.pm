@@ -262,7 +262,7 @@ sub find_sibling($$)
 		return $e2 if ($e2->{NAME} eq $name);
 	}
 
-	die "invalid sibling '$name'";
+	return undef;
 }
 
 1;
