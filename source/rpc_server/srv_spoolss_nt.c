@@ -2339,7 +2339,6 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		return WERR_OK;
 	}
 
-#if 0	/* JERRY */	
 	/* REG_BINARY
 	 *  uint32 size	 	 = 0x114
 	 *  uint32 major	 = 5
@@ -2348,14 +2347,23 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	 *  extra unicode string = e.g. "Service Pack 3"
 	 */
 	if (!StrCaseCmp(value, "OSVersion")) {
-		*type = 0x4;
-		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+		*type = 0x3;
+		*needed = 0x114;
+
+		if((*data = (uint8 *)talloc(ctx, (*needed)*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
-		SIVAL(*data, 0, 2);
-		*needed = 0x4;
+		ZERO_STRUCTP( *data );
+		
+		SIVAL(*data, 0, *needed);	/* size */
+		SIVAL(*data, 4, 5);		/* Windows 2000 == 5.0 */
+		SIVAL(*data, 8, 0);
+		SIVAL(*data, 12, 2195);		/* build */
+		
+		/* leave extra string empty */
+		
 		return WERR_OK;
 	}
-#endif
+
 
    	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
 		fstring string;
