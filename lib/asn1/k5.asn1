@@ -57,7 +57,15 @@ PADATA-TYPE ::= INTEGER {
 	KRB5-PADATA-USE-SPECIFIED-KVNO(20),
 	KRB5-PADATA-SAM-REDIRECT(21), -- (sam/otp)
 	KRB5-PADATA-GET-FROM-TYPED-DATA(22),
-	KRB5-PADATA-SAM-ETYPE-INFO(23)
+	KRB5-PADATA-SAM-ETYPE-INFO(23),
+	KRB5-PADATA-TD-KRB-PRINCIPAL(102),	-- PrincipalName
+	KRB5-PADATA-TD-KRB-REALM(103),		-- Realm
+	KRB5-PADATA-PK-TD-TRUSTED-CERTIFIERS(104), -- PKINIT
+	KRB5-PADATA-PK-TD-CERTIFICATE-INDEX(105), -- PKINIT
+	KRB5-PADATA-TD-APP-DEFINED-ERROR(106),	-- application specific
+	KRB5-PADATA-TD-REQ-NONCE(107),		-- INTEGER
+	KRB5-PADATA-TD-REQ-SEQ(108),		-- INTEGER
+	KRB5-PADATA-PA-PAC-REQUEST(128)		-- jbrezak@exchange.microsoft.com
 }
 
 -- checksumtypes
@@ -324,6 +332,12 @@ TGS-REQ ::= [APPLICATION 12] KDC-REQ
 PA-ENC-TS-ENC ::= SEQUENCE {
 	patimestamp[0]		KerberosTime, -- client's time
 	pausec[1]		INTEGER OPTIONAL
+}
+
+-- draft-brezak-win2k-krb-authz-01
+PA-PAC-REQUEST ::= SEQUENCE {
+	include-pac[0]		BOOLEAN -- Indicates whether a PAC 
+					-- should be included or not
 }
 
 KDC-REP ::= SEQUENCE {
