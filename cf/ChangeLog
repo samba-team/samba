@@ -1,3 +1,10 @@
+2001-08-21  Assar Westerlund  <assar@sics.se>
+
+	* roken-frag.m4: remove all winsock.h
+	for now, it does more harm than good under cygwin and if it should be
+	used, the correct conditional needs to be found
+	from <tol@stacken.kth.se>
+
 2001-08-17  Johan Danielsson  <joda@pdc.kth.se>
 
 	* krb-ipv6.m4: add test for non-existant in6addr_loopback in AIX
@@ -9,6 +16,23 @@
 
 	* broken-getaddrinfo.m4: test for getaddrinfo's that doesn't like
 	numeric services
+
+2001-08-08  Assar Westerlund  <assar@sics.se>
+
+	* db.m4: do a separate test for gdbm/ndbm.h and -lgdbm
+
+2001-08-05  Assar Westerlund  <assar@sics.se>
+
+	* db.m4: ac_cv_funclib_\func can be yes
+	* db.m4: use AC_FIND_FUNC_NO_LIBS to test in libc
+	anset cache variables after first attempt at finding dbm_firstkey (how
+	should this be done?)
+	* db.m4: do not test for ndbm library when ndbm-db was found in libc
+	* db.m4: test for ndbm-compatability with db
+	* db.m4: add forgotten AC_SUBST
+	* db.m4: first steps towards a new db test
+
+	* roken-frag.m4: remove header files checked by rk_db
 
 2001-08-05  Assar Westerlund  <assar@sics.se>
 

@@ -1,3 +1,12 @@
+2001-08-21  Assar Westerlund  <assar@sics.se>
+
+	* glob.c: provide a fallback for ARG_MAX.  from <tol@stacken.kth.se>
+
+	* roken.h.in: remove all winsock.h
+	for now, it does more harm than good under cygwin and if it should be
+	used, the correct conditional needs to be found
+	from <tol@stacken.kth.se>
+
 2001-08-17  Johan Danielsson  <joda@pdc.kth.se>
 
 	* getaddrinfo.c: include a definition of in6addr_loopback if it
