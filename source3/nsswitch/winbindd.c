@@ -596,7 +596,7 @@ static void process_loop(int accept_sock)
             
 			/* Process activity on client connections */
             
-			for (state = client_list; state; ) {
+			for (state = client_list; state; state = state->next) {
                 
 				/* Data available for reading */
                 
@@ -637,8 +637,6 @@ static void process_loop(int accept_sock)
 					    sizeof(state->request)) {
 						process_packet(state);
 					}
-
-					state = state->next;
 				}
                 
 				/* Data available for writing */
