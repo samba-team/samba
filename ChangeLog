@@ -1,3 +1,7 @@
+2000-08-08  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/principal.c: krb5_principal_match
+
 2000-08-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/asn1/der_get.c: add comment on *why* DCE sometimes used BER
@@ -25,6 +29,11 @@
 
 	* lib/krb5/crc.c (_krb5_crc_update): const-ize (finally)
 
+2000-07-31  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: check for uint*_t
+	* include/bits.c: define uint*_t
+	
 2000-07-29  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kerberos5.c (check_tgs_flags): set endtime correctly when
@@ -48,6 +57,10 @@
 	Brashear <shadow@dementia.org>
 
 2000-07-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/hdb/Makefile.am: bump version to 6:0:0
+
+	* lib/asn1/Makefile.am: bump version to 3:0:1
 
 	* lib/krb5/Makefile.am: bump version to 12:0:1
 
