@@ -1394,7 +1394,9 @@ static int tdb_already_open(dev_t device,
    is advisory, use zero for a default value.
 
    Return is NULL on error, in which case errno is also set.  Don't 
-   try to call tdb_error or tdb_errname, just do strerror(errno).  */
+   try to call tdb_error or tdb_errname, just do strerror(errno).
+
+   @param name may be NULL for internal databases. */
 TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode)
 {
@@ -1423,11 +1425,6 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 	tdb->open_flags = open_flags;
 	tdb->log_fn = log_fn;
 	
-	if (!(tdb->name = (char *)strdup(name))) {
-		errno = ENOMEM;
-		goto fail;
-	}
-
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
 		TDB_LOG((tdb, 0, "tdb_open_ex: can't open tdb %s write-only\n",
 			 name));
@@ -1469,8 +1466,12 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 	if ((locked = (tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))
 	    && (tdb_flags & TDB_CLEAR_IF_FIRST)) {
 		open_flags |= O_CREAT;
-		if (ftruncate(tdb->fd, 0) == -1)
+		if (ftruncate(tdb->fd, 0) == -1) {
+			TDB_LOG((tdb, 0, "tdb_open_ex: "
+				 "failed to truncate %s: %s\n",
+				 name, strerror(errno)));
 			goto fail; /* errno set by ftruncate */
+		}
 	}
 
 	if (read(tdb->fd, &tdb->header, sizeof(tdb->header)) != sizeof(tdb->header)
@@ -1502,11 +1503,19 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		goto fail;
 	}
 
+	if (!(tdb->name = (char *)strdup(name))) {
+		errno = ENOMEM;
+		goto fail;
+	}
+
 	tdb->map_size = st.st_size;
 	tdb->device = st.st_dev;
 	tdb->inode = st.st_ino;
 	tdb->locked = calloc(tdb->header.hash_size+1, sizeof(tdb->locked[0]));
 	if (!tdb->locked) {
+		TDB_LOG((tdb, 2, "tdb_open_ex: "
+			 "failed to allocate lock structure for %s\n",
+			 name));
 		errno = ENOMEM;
 		goto fail;
 	}
@@ -1514,8 +1523,12 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 	if (locked) {
 		if (!tdb->read_only)
 			tdb_clear_spinlocks(tdb);
-		if (tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1)
+		if (tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1) {
+			TDB_LOG((tdb, 0, "tdb_open_ex: "
+				 "failed to take ACTIVE_LOCK on %s: %s\n",
+				 name, strerror(errno)));
 			goto fail;
+		}
 	}
 	/* leave this lock in place to indicate it's in use */
 	if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
