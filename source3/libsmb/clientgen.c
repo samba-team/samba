@@ -2440,11 +2440,17 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 		case ERRnoaccess: return EACCES;
 		case ERRfilexists: return EEXIST;
 		case ERRrename: return EEXIST;
+		case ERRbadshare: return EBUSY;
+		case ERRlock: return EBUSY;
 		}
 	}
 	if (rcls == ERRSRV) {
 		switch (code) {
 		case ERRbadpw: return EPERM;
+		case ERRaccess: return EACCES;
+		case ERRnoresource: return ENOMEM;
+		case ERRinvdevice: return ENODEV;
+		case ERRinvnetname: return ENODEV;
 		}
 	}
 	/* for other cases */
