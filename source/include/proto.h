@@ -3740,7 +3740,7 @@ uint32 _dfs_exist(pipes_struct *p, DFS_Q_DFS_EXIST *q_u, DFS_R_DFS_EXIST *r_u);
 WERROR _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u);
 WERROR _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, 
                    DFS_R_DFS_REMOVE *r_u);
-uint32 _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u);
+WERROR _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u);
 WERROR _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u, 
                      DFS_R_DFS_GET_INFO *r_u);
 

@@ -143,7 +143,7 @@ WERROR _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u,
 	   dfspath, servername, sharename));
 
   if(!get_referred_path(dfspath, &jn, NULL, NULL))
-	  return NERR_DfsNoSuchVolume;
+	  return WERR_DFS_NO_SUCH_VOL;
 
   /* if no server-share pair given, remove the msdfs link completely */
   if(!q_u->ptr_ServerName && !q_u->ptr_ShareName)
@@ -319,7 +319,7 @@ static WERROR init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level,
   return WERR_OK;
 }
       
-uint32 _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u)
+WERROR _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u)
 {
   uint32 level = q_u->level;
   struct junction_map jn[MAX_MSDFS_JUNCTIONS];
