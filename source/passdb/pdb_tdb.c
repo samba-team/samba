@@ -916,7 +916,7 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 {
 	NTSTATUS nt_status;
 	struct tdbsam_privates *tdb_state;
-	uint32 low_nua_uid, high_nua_uid;
+	uid_t low_nua_uid, high_nua_uid;
 
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
 		return nt_status;
