@@ -3128,7 +3128,7 @@ static BOOL run_deletetest(int dummy)
 				   FILE_OVERWRITE_IF, 0, 0);
 	
 	if (fnum1 == -1) {
-		printf("[8] open of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("[8] open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
@@ -3138,7 +3138,7 @@ static BOOL run_deletetest(int dummy)
 				   FILE_OPEN, 0, 0);
 	
 	if (fnum2 == -1) {
-		printf("[8] open of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("[8] open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		correct = False;
 		goto fail;
 	}
@@ -3205,6 +3205,49 @@ static BOOL run_deletetest(int dummy)
 		correct = False;
 	} else
 		printf("tenth delete on close test succeeded.\n");
+
+	cli_setatr(cli1, fname, 0, 0);
+	cli_unlink(cli1, fname);
+
+	/* What error do we get when attempting to open a read-only file with
+	   delete access ? */
+
+	/* Create a readonly file. */
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA,
+				   FILE_ATTRIBUTE_READONLY, FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
+	if (fnum1 == -1) {
+		printf("[11] open of %s failed (%s)\n", fname, cli_errstr(cli1));
+		correct = False;
+		goto fail;
+	}
+
+	if (!cli_close(cli1, fnum1)) {
+		printf("[11] close failed (%s)\n", cli_errstr(cli1));
+		correct = False;
+		goto fail;
+	}
+
+	/* Now try open for delete access. */
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_ATTRIBUTES|DELETE_ACCESS,
+				   0, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+				   FILE_OVERWRITE_IF, 0, 0);
+	
+	if (fnum1 != -1) {
+		printf("[11] open of %s succeeded should have been denied with ACCESS_DENIED!\n", fname);
+		cli_close(cli1, fnum1);
+		goto fail;
+		correct = False;
+	} else {
+		NTSTATUS nterr = cli_nt_error(cli1);
+		if (!NT_STATUS_EQUAL(nterr,NT_STATUS_ACCESS_DENIED)) {
+			printf("[11] open of %s should have been denied with ACCESS_DENIED! Got error %s\n", fname, nt_errstr(nterr));
+			goto fail;
+			correct = False;
+		} else {
+			printf("eleventh delete on close test succeeded.\n");
+		}
+	}
+	
 	printf("finished delete test\n");
 
   fail:
