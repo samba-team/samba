@@ -545,7 +545,7 @@ static void usage(char *pname)
 	   so set our umask to 0 */
 	umask(0);
 
-	GetWd(OriginalDir);
+	dos_GetWd(OriginalDir);
 
 	init_uid();
 

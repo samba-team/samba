@@ -632,7 +632,7 @@ static void do_mget(file_info *finfo)
 	if (lowercase)
 		strlower(finfo->name);
 	
-	if (!directory_exist(finfo->name,NULL) && 
+	if (!dos_directory_exist(finfo->name,NULL) && 
 	    dos_mkdir(finfo->name,0777) != 0) {
 		DEBUG(0,("failed to create directory %s\n",CNV_LANG(finfo->name)));
 		pstrcpy(cur_dir,saved_curdir);
@@ -1321,8 +1321,8 @@ static void cmd_lcd(void)
 	pstring d;
 	
 	if (next_token(NULL,buf,NULL,sizeof(buf)))
-		dos_chdir(buf);
-	DEBUG(2,("the local directory is now %s\n",GetWd(d)));
+		chdir(buf);
+	DEBUG(2,("the local directory is now %s\n",sys_getwd(d)));
 }
 
 /****************************************************************************

@@ -185,7 +185,7 @@ if test x"$ac_cv_func_connect" = x"no"; then
 fi
 
 
-AC_CHECK_FUNCS(waitpid getcwd strdup strerror chown chmod chroot)
+AC_CHECK_FUNCS(waitpid getcwd strdup strtoul strerror chown chmod chroot)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync execl bzero memset)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)

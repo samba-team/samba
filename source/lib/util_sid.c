@@ -39,11 +39,11 @@ char *sid_to_string(pstring sidstr_out, DOM_SID *sid)
               (sid->id_auth[3] << 16) +
               (sid->id_auth[2] << 24);
 
-  slprintf(sidstr_out, sizeof(pstring) - 1, "S-%d-%d", sid->sid_rev_num, ia);
+  slprintf(sidstr_out, sizeof(pstring) - 1, "S-%u-%u", sid->sid_rev_num, ia);
 
   for (i = 0; i < sid->num_auths; i++)
   {
-    slprintf(subauth, sizeof(subauth)-1, "-%d", sid->sub_auths[i]);
+    slprintf(subauth, sizeof(subauth)-1, "-%u", sid->sub_auths[i]);
     pstrcat(sidstr_out, subauth);
   }
 
@@ -76,7 +76,7 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
   }
 
   /* Get the revision number. */
-  sidout->sid_rev_num = atoi(tok);
+  sidout->sid_rev_num = (uint32)strtoul(tok, NULL, 10);
 
   if (!next_token(&p, tok, "-", sizeof(tok))) {
     DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
@@ -84,7 +84,7 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
   }
 
   /* identauth in decimal should be <  2^32 */
-  ia = atoi(tok);
+  ia = (uint32)strtoul(tok, NULL, 10);
 
   /* NOTE - the ia value is in big-endian format. */
   sidout->id_auth[0] = 0;
@@ -103,7 +103,7 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
      * NOTE - the subauths are in native machine-endian format. They
      * are converted to little-endian when linearized onto the wire.
      */
-	sid_append_rid(sidout, atoi(tok));
+	sid_append_rid(sidout, (uint32)strtoul(tok, NULL, 10));
   }
 
   DEBUG(7,("string_to_sid: converted SID %s ok\n", sidstr));

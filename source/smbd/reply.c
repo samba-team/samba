@@ -809,7 +809,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     if(VALID_STAT(st))
       ok = S_ISDIR(st.st_mode);
     else
-      ok = directory_exist(name,NULL);
+      ok = dos_directory_exist(name,NULL);
   }
 
   if (!ok)
@@ -944,7 +944,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   mode = SVAL(inbuf,smb_vwv0);
   mtime = make_unix_date3(inbuf+smb_vwv1);
   
-  if (VALID_STAT_OF_DIR(st) || directory_exist(fname,NULL))
+  if (VALID_STAT_OF_DIR(st) || dos_directory_exist(fname,NULL))
     mode |= aDIR;
   if (check_name(fname,conn))
     ok =  (file_chmod(conn,fname,mode,NULL) == 0);
@@ -1755,7 +1755,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     if (can_delete(directory,conn,dirtype) && !dos_unlink(directory))
       count++;
     if (!count)
-      exists = file_exist(directory,NULL);    
+      exists = dos_file_exist(directory,NULL);    
   } else {
     void *dirptr = NULL;
     char *dname;
@@ -3272,7 +3272,7 @@ int rename_internals(connection_struct *conn,
 			/*
 			 * NT SMB specific flag - rename can overwrite
 			 * file with the same name so don't check for
-			 * file_exist().
+			 * dos_file_exist().
 			 */
 			if(resolve_wildcards(directory,newname) &&
 			   can_rename(directory,conn) &&
@@ -3281,7 +3281,7 @@ int rename_internals(connection_struct *conn,
 		} else {
 			if (resolve_wildcards(directory,newname) && 
 			    can_rename(directory,conn) && 
-			    !file_exist(newname,NULL) &&
+			    !dos_file_exist(newname,NULL) &&
 			    !dos_rename(directory,newname))
 				count++;
 		}
@@ -3289,8 +3289,8 @@ int rename_internals(connection_struct *conn,
 		DEBUG(3,("rename_internals: %s doing rename on %s -> %s\n",(count != 0) ? "succeeded" : "failed",
                          directory,newname));
 		
-		if (!count) exists = file_exist(directory,NULL);
-		if (!count && exists && file_exist(newname,NULL)) {
+		if (!count) exists = dos_file_exist(directory,NULL);
+		if (!count && exists && dos_file_exist(newname,NULL)) {
 			exists = True;
 			error = ERRrename;
 		}
@@ -3331,8 +3331,8 @@ int rename_internals(connection_struct *conn,
 					continue;
 				}
 				
-				if (!replace_if_exists && file_exist(destname,NULL)) {
-					DEBUG(6,("file_exist %s\n", destname));
+				if (!replace_if_exists && dos_file_exist(destname,NULL)) {
+					DEBUG(6,("dos_file_exist %s\n", destname));
 					error = 183;
 					continue;
 				}
@@ -3406,7 +3406,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
     pstrcat(dest,p);
   }
 
-  if (!file_exist(src,&st))
+  if (!dos_file_exist(src,&st))
     return(False);
 
   fsp1 = file_new();
@@ -3499,7 +3499,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   unix_convert(name,conn,0,&bad_path1,NULL);
   unix_convert(newname,conn,0,&bad_path2,NULL);
 
-  target_is_directory = directory_exist(newname,NULL);
+  target_is_directory = dos_directory_exist(newname,NULL);
 
   if ((flags&1) && target_is_directory) {
     return(ERROR(ERRDOS,ERRbadfile));
@@ -3509,7 +3509,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(ERROR(ERRDOS,ERRbadpath));
   }
 
-  if ((flags&(1<<5)) && directory_exist(name,NULL)) {
+  if ((flags&(1<<5)) && dos_directory_exist(name,NULL)) {
     /* wants a tree copy! XXXX */
     DEBUG(3,("Rejecting tree copy\n"));
     return(ERROR(ERRSRV,ERRerror));    
@@ -3536,7 +3536,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     if (resolve_wildcards(directory,newname) && 
 	copy_file(directory,newname,conn,ofun,
 		  count,target_is_directory)) count++;
-    if (!count) exists = file_exist(directory,NULL);
+    if (!count) exists = dos_file_exist(directory,NULL);
   } else {
     void *dirptr = NULL;
     char *dname;
@@ -3611,7 +3611,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   if (strlen(newdir) == 0) {
 	  ok = True;
   } else {
-	  ok = directory_exist(newdir,NULL);
+	  ok = dos_directory_exist(newdir,NULL);
 	  if (ok) {
 		  string_set(&conn->connectpath,newdir);
 	  }

@@ -3493,7 +3493,7 @@ EOF
 fi
 
 
-for ac_func in waitpid getcwd strdup strerror chown chmod chroot
+for ac_func in waitpid getcwd strdup strtoul strerror chown chmod chroot
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:3500: checking for $ac_func" >&5

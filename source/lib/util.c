@@ -100,30 +100,6 @@ char *tmpdir(void)
   return "/tmp";
 }
 
-
-
-/****************************************************************************
-prompte a dptr (to make it recently used)
-****************************************************************************/
-static void array_promote(char *array,int elsize,int element)
-{
-  char *p;
-  if (element == 0)
-    return;
-
-  p = (char *)malloc(elsize);
-
-  if (!p)
-    {
-      DEBUG(5,("Ahh! Can't malloc\n"));
-      return;
-    }
-  memcpy(p,array + element * elsize, elsize);
-  memmove(array + elsize,array,elsize*element);
-  memcpy(array,p,elsize);
-  free(p);
-}
-
 /****************************************************************************
 determine whether we are in the specified group
 ****************************************************************************/
@@ -354,7 +330,7 @@ BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
   SMB_STRUCT_STAT st;
   if (!sbuf) sbuf = &st;
   
-  if (dos_stat(fname,sbuf) != 0) 
+  if (sys_stat(fname,sbuf) != 0) 
     return(False);
 
   return(S_ISREG(sbuf->st_mode));
@@ -367,7 +343,7 @@ time_t file_modtime(char *fname)
 {
   SMB_STRUCT_STAT st;
   
-  if (dos_stat(fname,&st) != 0) 
+  if (sys_stat(fname,&st) != 0) 
     return(0);
 
   return(st.st_mtime);
@@ -383,7 +359,7 @@ BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
 
   if (!st) st = &st2;
 
-  if (dos_stat(dname,st) != 0) 
+  if (sys_stat(dname,st) != 0) 
     return(False);
 
   ret = S_ISDIR(st->st_mode);
@@ -399,7 +375,8 @@ SMB_OFF_T file_size(char *file_name)
 {
   SMB_STRUCT_STAT buf;
   buf.st_size = 0;
-  dos_stat(file_name,&buf);
+  if(sys_stat(file_name,&buf) != 0)
+    return (SMB_OFF_T)-1;
   return(buf.st_size);
 }
 
@@ -569,8 +546,6 @@ int smb_offset(char *p,char *buf)
   return(PTR_DIFF(p,buf+4) + chain_size);
 }
 
-
-
 /*******************************************************************
 reduce a file name, removing .. elements.
 ********************************************************************/
@@ -638,148 +613,14 @@ void unix_clean_name(char *s)
   trim_string(s,NULL,"/..");
 }
 
-
-/*******************************************************************
-a wrapper for the normal chdir() function
-********************************************************************/
-int ChDir(char *path)
-{
-  int res;
-  static pstring LastDir="";
-
-  if (strcsequal(path,".")) return(0);
-
-  if (*path == '/' && strcsequal(LastDir,path)) return(0);
-  DEBUG(3,("chdir to %s\n",path));
-  res = dos_chdir(path);
-  if (!res)
-    pstrcpy(LastDir,path);
-  return(res);
-}
-
-/* number of list structures for a caching GetWd function. */
-#define MAX_GETWDCACHE (50)
-
-struct
-{
-  SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
-  SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
-  char *text; /* The pathname in DOS format. */
-  BOOL valid;
-} ino_list[MAX_GETWDCACHE];
-
-BOOL use_getwd_cache=True;
-
-/*******************************************************************
-  return the absolute current directory path - given a UNIX pathname.
-  Note that this path is returned in DOS format, not UNIX
-  format.
-********************************************************************/
-char *GetWd(char *str)
-{
-  pstring s;
-  static BOOL getwd_cache_init = False;
-  SMB_STRUCT_STAT st, st2;
-  int i;
-
-  *s = 0;
-
-  if (!use_getwd_cache)
-    return(dos_getwd(str));
-
-  /* init the cache */
-  if (!getwd_cache_init)
-  {
-    getwd_cache_init = True;
-    for (i=0;i<MAX_GETWDCACHE;i++)
-    {
-      string_init(&ino_list[i].text,"");
-      ino_list[i].valid = False;
-    }
-  }
-
-  /*  Get the inode of the current directory, if this doesn't work we're
-      in trouble :-) */
-
-  if (dos_stat(".",&st) == -1) 
-  {
-    DEBUG(0,("Very strange, couldn't stat \".\"\n"));
-    return(dos_getwd(str));
-  }
-
-
-  for (i=0; i<MAX_GETWDCACHE; i++)
-    if (ino_list[i].valid)
-    {
-
-      /*  If we have found an entry with a matching inode and dev number
-          then find the inode number for the directory in the cached string.
-          If this agrees with that returned by the stat for the current
-          directory then all is o.k. (but make sure it is a directory all
-          the same...) */
-      
-      if (st.st_ino == ino_list[i].inode &&
-          st.st_dev == ino_list[i].dev)
-      {
-        if (dos_stat(ino_list[i].text,&st2) == 0)
-        {
-          if (st.st_ino == st2.st_ino &&
-              st.st_dev == st2.st_dev &&
-              (st2.st_mode & S_IFMT) == S_IFDIR)
-          {
-            pstrcpy (str, ino_list[i].text);
-
-            /* promote it for future use */
-            array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-            return (str);
-          }
-          else
-          {
-            /*  If the inode is different then something's changed, 
-                scrub the entry and start from scratch. */
-            ino_list[i].valid = False;
-          }
-        }
-      }
-    }
-
-
-  /*  We don't have the information to hand so rely on traditional methods.
-      The very slow getcwd, which spawns a process on some systems, or the
-      not quite so bad getwd. */
-
-  if (!dos_getwd(s))
-  {
-    DEBUG(0,("Getwd failed, errno %s\n",strerror(errno)));
-    return (NULL);
-  }
-
-  pstrcpy(str,s);
-
-  DEBUG(5,("GetWd %s, inode %d, dev %x\n",s,(int)st.st_ino,(int)st.st_dev));
-
-  /* add it to the cache */
-  i = MAX_GETWDCACHE - 1;
-  string_set(&ino_list[i].text,s);
-  ino_list[i].dev = st.st_dev;
-  ino_list[i].inode = st.st_ino;
-  ino_list[i].valid = True;
-
-  /* put it at the top of the list */
-  array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-
-  return (str);
-}
-
-
-
 /*******************************************************************
 reduce a file name, removing .. elements and checking that 
-it is below dir in the heirachy. This uses GetWd() and so must be run
+it is below dir in the heirachy. This uses dos_GetWd() and so must be run
 on the system that has the referenced file system.
 
 widelinks are allowed if widelinks is true
 ********************************************************************/
+
 BOOL reduce_name(char *s,char *dir,BOOL widelinks)
 {
 #ifndef REDUCE_PATHS
@@ -795,20 +636,20 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
   *dir2 = *wd = *base_name = *newname = 0;
 
   if (widelinks)
+  {
+    unix_clean_name(s);
+    /* can't have a leading .. */
+    if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/'))
     {
-      unix_clean_name(s);
-      /* can't have a leading .. */
-      if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/'))
-	{
-	  DEBUG(3,("Illegal file name? (%s)\n",s));
-	  return(False);
-	}
-
-      if (strlen(s) == 0)
-        pstrcpy(s,"./");
-
-      return(True);
+      DEBUG(3,("Illegal file name? (%s)\n",s));
+      return(False);
     }
+
+    if (strlen(s) == 0)
+      pstrcpy(s,"./");
+
+    return(True);
+  }
   
   DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
 
@@ -821,79 +662,78 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
   if (!p)
     return(True);
 
-  if (!GetWd(wd))
-    {
-      DEBUG(0,("couldn't getwd for %s %s\n",s,dir));
-      return(False);
-    }
+  if (!dos_GetWd(wd))
+  {
+    DEBUG(0,("couldn't getwd for %s %s\n",s,dir));
+    return(False);
+  }
 
-  if (ChDir(dir) != 0)
-    {
-      DEBUG(0,("couldn't chdir to %s\n",dir));
-      return(False);
-    }
+  if (dos_ChDir(dir) != 0)
+  {
+    DEBUG(0,("couldn't chdir to %s\n",dir));
+    return(False);
+  }
 
-  if (!GetWd(dir2))
-    {
-      DEBUG(0,("couldn't getwd for %s\n",dir));
-      ChDir(wd);
-      return(False);
-    }
-
-
-    if (p && (p != base_name))
-      {
-	*p = 0;
-	if (strcmp(p+1,".")==0)
-	  p[1]=0;
-	if (strcmp(p+1,"..")==0)
-	  *p = '/';
-      }
-
-  if (ChDir(base_name) != 0)
-    {
-      ChDir(wd);
-      DEBUG(3,("couldn't chdir for %s %s basename=%s\n",s,dir,base_name));
-      return(False);
-    }
-
-  if (!GetWd(newname))
-    {
-      ChDir(wd);
-      DEBUG(2,("couldn't get wd for %s %s\n",s,dir2));
-      return(False);
-    }
+  if (!dos_GetWd(dir2))
+  {
+    DEBUG(0,("couldn't getwd for %s\n",dir));
+    dos_ChDir(wd);
+    return(False);
+  }
 
   if (p && (p != base_name))
-    {
-      pstrcat(newname,"/");
-      pstrcat(newname,p+1);
-    }
+  {
+    *p = 0;
+    if (strcmp(p+1,".")==0)
+      p[1]=0;
+    if (strcmp(p+1,"..")==0)
+      *p = '/';
+  }
+
+  if (dos_ChDir(base_name) != 0)
+  {
+    dos_ChDir(wd);
+    DEBUG(3,("couldn't chdir for %s %s basename=%s\n",s,dir,base_name));
+    return(False);
+  }
+
+  if (!dos_GetWd(newname))
+  {
+    dos_ChDir(wd);
+    DEBUG(2,("couldn't get wd for %s %s\n",s,dir2));
+    return(False);
+  }
+
+  if (p && (p != base_name))
+  {
+    pstrcat(newname,"/");
+    pstrcat(newname,p+1);
+  }
 
   {
-    int l = strlen(dir2);    
+    size_t l = strlen(dir2);    
     if (dir2[l-1] == '/')
       l--;
 
     if (strncmp(newname,dir2,l) != 0)
-      {
-	ChDir(wd);
-	DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,l));
-	return(False);
-      }
+    {
+      dos_ChDir(wd);
+      DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,l));
+      return(False);
+    }
 
     if (relative)
-      {
-	if (newname[l] == '/')
-	  pstrcpy(s,newname + l + 1);
-	else
-	  pstrcpy(s,newname+l);
-      }
+    {
+      if (newname[l] == '/')
+        pstrcpy(s,newname + l + 1);
+      else
+        pstrcpy(s,newname+l);
+    }
     else
       pstrcpy(s,newname);
   }
 
-  ChDir(wd);
+  dos_ChDir(wd);
 
   if (strlen(s) == 0)
     pstrcpy(s,"./");
