@@ -37,7 +37,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	private = talloc_p(dce_call->conn->mem_ctx, struct dcesrv_remote_private);
+	private = talloc_p(dce_call->conn, struct dcesrv_remote_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;	
 	}
