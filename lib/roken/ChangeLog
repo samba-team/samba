@@ -1,3 +1,7 @@
+Wed Mar 10 16:36:55 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* resolve.c: ugly fix for crays
+
 Mon Mar  8 11:52:20 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* roken.h.in: protos for {un,}setenv
