@@ -114,29 +114,30 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	DEBUG(5, ("unix_convert called on file \"%s\"\n", name));
 
 	/* 
-	 * Convert to basic unix format - removing \ chars and cleaning it up.
+	 * Conversion to basic unix format is already done in check_path_syntax().
 	 */
-
-	unix_format(name);
-	unix_clean_name(name);
 
 	/* 
-	 * Names must be relative to the root of the service - trim any leading /.
-	 * also trim trailing /'s.
+	 * Names must be relative to the root of the service - any leading /.
+	 * and trailing /'s should have been trimmed by check_path_syntax().
 	 */
 
-	trim_char(name,'/','/');
+#ifdef DEVELOPER
+	SMB_ASSERT(*name != '/');
+#endif
 
 	/*
 	 * If we trimmed down to a single '\0' character
 	 * then we should use the "." directory to avoid
 	 * searching the cache, but not if we are in a
 	 * printing share.
+	 * As we know this is valid we can return true here.
 	 */
 
 	if (!*name) {
 		name[0] = '.';
 		name[1] = '\0';
+		return(True);
 	}
 
 	/*
@@ -154,19 +155,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	if (!case_sensitive && (!case_preserve || (mangle_is_8_3(name, False) && !short_case_preserve)))
 		strnorm(name);
 
-	/*
-	 * If we trimmed down to a single '\0' character
-	 * then we will be using the "." directory.
-	 * As we know this is valid we can return true here.
-	 */
-
-	if(!*name)
-		return(True);
-
 	start = name;
-	while (start[0] == '.' && start[1] == '/')
-		start += 2;
-
 	pstrcpy(orig_path, name);
 
 	if(!case_sensitive && stat_cache_lookup(conn, name, dirpath, &start, &st)) {
