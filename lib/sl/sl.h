@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -59,6 +59,7 @@ int  sl_command_loop (SL_cmd *cmds, const char *prompt, void **data);
 int  sl_command (SL_cmd *cmds, int argc, char **argv);
 int sl_make_argv(char*, int*, char***);
 void sl_apropos (SL_cmd *cmd, const char *topic);
+SL_cmd *sl_match (SL_cmd *cmds, char *cmd, int exactp);
 
 #ifdef __cplusplus
 }
