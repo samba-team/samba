@@ -146,7 +146,7 @@ static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 	BOOL ret;
 	
 	pdb_init_sam(&sam_pwent);
-
+	errno = 0; /* testing --simo */
 	ret = pdb_setsampwent(False);
 	if (ret && errno == ENOENT) {
 		fprintf (stderr,"Password database not found!\n");
