@@ -51,7 +51,7 @@ set_etypes (krb5_context context,
 	    krb5_enctype **ret_enctypes)
 {
     char **etypes_str;
-    krb5_enctype *etypes;
+    krb5_enctype *etypes = NULL;
 
     etypes_str = krb5_config_get_strings(context, NULL, "libdefaults", 
 					 name, NULL);
@@ -70,8 +70,8 @@ set_etypes (krb5_context context,
 	}
 	etypes[k] = ETYPE_NULL;
 	krb5_config_free_strings(etypes_str);
-	*ret_enctypes = etypes;
-    }
+    } 
+    *ret_enctypes = etypes;
     return 0;
 }
 
@@ -91,7 +91,7 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, int, max_retries, 3, "max_retries");
 
     INIT_FIELD(context, string, http_proxy, NULL, "http_proxy");
-
+    
     ret = set_etypes (context, "default_etypes", &tmptypes);
     if(ret)
 	return ret;
@@ -248,10 +248,11 @@ krb5_set_config_files(krb5_context context, char **filenames)
     krb5_config_binding *tmp = NULL;
     while(filenames != NULL && *filenames != NULL && **filenames != '\0') {
 	ret = krb5_config_parse_file_multi(context, *filenames, &tmp);
-	if(ret != ENOENT) {
+	if(ret != 0 && ret != ENOENT) {
 	    krb5_config_file_free(context, tmp);
 	    return ret;
 	}
+	filenames++;
     }
     krb5_config_file_free(context, context->cf);
     context->cf = tmp;
