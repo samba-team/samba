@@ -50,7 +50,7 @@ void unexpected_packet(struct packet_struct *p)
 
 	if (!tdbd) {
 		tdbd = tdb_open_log(lock_path("unexpected.tdb"), 1, 
-			       TDB_CLEAR_IF_FIRST|USE_TDB_MMAP_FLAG,
+			       TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
 			       O_RDWR | O_CREAT, 0644);
 		if (!tdbd) {
 			DEBUG(0,("Failed to open unexpected.tdb\n"));

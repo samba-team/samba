@@ -130,7 +130,7 @@ BOOL init_group_mapping(void)
 	char *vstring = "INFO/version";
 
 	if (tdb && local_pid == sys_getpid()) return True;
-	tdb = tdb_open_log(lock_path("group_mapping.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_open_log(lock_path("group_mapping.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open group mapping database\n"));
 		return False;

@@ -780,7 +780,7 @@ request from %s IP %s state=0x%X\n",
   /* Request to stop browsing altogether. */
   if (state & 0x4)
     DEBUG(1,("process_reset_browser: ignoring request to stop being a browser.\n"));
-done:
+
   END_PROFILE(reset_browser);
 }
 

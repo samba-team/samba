@@ -349,10 +349,10 @@ BOOL pdb_setsampwent(BOOL update)
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	/* Open tdb passwd */
-	if (!(global_tdb_ent.passwd_tdb = tdb_open_log(tdbfile, 0, USE_TDB_MMAP_FLAG, update ? O_RDWR : O_RDONLY, 0600)))
+	if (!(global_tdb_ent.passwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, update ? O_RDWR : O_RDONLY, 0600)))
 	{
 		DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
-		if (!(global_tdb_ent.passwd_tdb = tdb_open_log(tdbfile, 0, USE_TDB_MMAP_FLAG, O_RDWR | O_CREAT | O_EXCL, 0600)))
+		if (!(global_tdb_ent.passwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL, 0600)))
 		{
 			DEBUG(0, ("Unable to create TDB passwd (passdb.tdb) !!!"));
 			return False;
@@ -481,7 +481,7 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 	key.dsize = strlen (keystr) + 1;
 
 	/* open the accounts TDB */
-	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, USE_TDB_MMAP_FLAG, O_RDONLY, 0600)))
+	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDONLY, 0600)))
 	{
 		DEBUG(0, ("pdb_getsampwnam: Unable to open TDB passwd!\n"));
 		return False;
@@ -582,7 +582,7 @@ BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid)
 	key.dsize = strlen (keystr) + 1;
 
 	/* open the accounts TDB */
-	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, USE_TDB_MMAP_FLAG, O_RDONLY, 0600)))
+	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDONLY, 0600)))
 	{
 		DEBUG(0, ("pdb_getsampwrid: Unable to open TDB rid database!\n"));
 		return False;
@@ -627,7 +627,7 @@ BOOL pdb_delete_sam_account(char *sname)
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 
 	/* open the TDB */
-	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, USE_TDB_MMAP_FLAG, O_RDWR, 0600)))
+	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR, 0600)))
 	{
 		DEBUG(0, ("Unable to open TDB passwd!"));
 		return False;
@@ -749,13 +749,13 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	}
 
  	/* open the account TDB passwd*/
-  	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, USE_TDB_MMAP_FLAG, O_RDWR, 0600)))
+  	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR, 0600)))
 	{
      		DEBUG(0, ("tdb_update_sam: Unable to open TDB passwd!\n"));
 		if (flag == TDB_INSERT)
 		{
 			DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
-			if (!(pwd_tdb = tdb_open_log(tdbfile, 0, USE_TDB_MMAP_FLAG, O_RDWR | O_CREAT | O_EXCL, 0600)))
+			if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL, 0600)))
 			{
 				DEBUG(0, ("Unable to create TDB passwd (passdb.tdb) !!!\n"));
 				return False;
