@@ -383,10 +383,22 @@ print "saving dns zone to newdns.zone ...\n";
 
 FileSave("$dnsdomain.zone", $res);
 
-print "done
+print "done\n";
+
+unlink("newhklm.ldb");
+
+print "creating newhklm.ldb ... \n";
+
+system("ldbadd -H newhklm.ldb hklm.ldif");
+
+print "done\n";
+
+print "
 
 Installation:
 - Please move newsam.ldb to sam.ldb in the private/ directory of your
   Samba4 installation
 - Please use $dnsdomain.zone to in BIND dns server
 ";
+
+
