@@ -11,12 +11,9 @@ if [ "$1" = "clean" ]; then
   shift
 fi
 
-echo Create SGI specific Makefile
-./makefile.pl $1		# create the Makefile for the specified OS ver
-
 if [ "$doclean" = "clean" ]; then
   cd ../../source
-  make -f ../packaging/SGI/Makefile clean
+  make clean
   cd ../packaging/SGI
   rm -rf bins catman html codepages swat samba.idb samba.spec
 fi
@@ -31,18 +28,26 @@ if [ $errstat -ne 0 ]; then
   exit $errstat;
 fi
 
-# build the sources
-#
-echo Making binaries
+cd ../../source
+echo Create SGI specific Makefile
+./configure --prefix=/usr --mandir=/usr/src/man
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat creating Makefile\n";
   exit $errstat;
 fi
 
-cd ../../source
-# make -f ../packaging/SGI/Makefile clean
-make -f ../packaging/SGI/Makefile all
+
+# build the sources
+#
+echo Making binaries
+
+if [ "$1" = "5" ]; then
+  make "CFLAGS=-O -g3" all
+else
+  make "CFLAGS=-O -g3 -n32" all
+fi
+
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";
@@ -73,5 +78,5 @@ if [ ! -d bins ]; then
 fi
 
 # do the packaging
-/usr/sbin/gendist -rbase / -sbase ../.. -idb samba.idb -spec samba.spec -dist ./bins -all
+/usr/sbin/gendist -rbase / -sbase ../.. -idb samba.idb -spec samba.spec -dist ./bins -nostrip -all
 

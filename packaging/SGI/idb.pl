@@ -166,6 +166,7 @@ while (@sorted) {
   }
 }
 
+print IDB "f 0755 root sys usr/samba/startswat.sh packaging/SGI/startswat.sh samba.sw.base\n";
 print IDB "d 0755 root sys usr/samba/swat/ packaging/SGI/swat samba.sw.base\n";
 while (@swatfiles) {
   $nextfile = shift @swatfiles;
