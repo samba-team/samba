@@ -305,7 +305,8 @@ BOOL cli_net_use_del(const char *srv_name,
 
 	DEBUG(10, ("cli_net_use_del: %s. %s. %s. force close: %s\n",
 		   srv_name,
-		   usr_creds->user_name, usr_creds->domain,
+		   usr_creds ? usr_creds->user_name : "",
+		   usr_creds ? usr_creds->domain : "",
 		   BOOLSTR(force_close)));
 
 	if (strnequal("\\\\", sv_name, 2))
@@ -341,9 +342,10 @@ BOOL cli_net_use_del(const char *srv_name,
 		if (!strequal(cli_name, sv_name))
 			continue;
 
-		if (strequal(usr_creds->user_name,
+		if (strequal(usr_creds ? usr_creds->user_name : "",
 			     clis[i]->cli->usr.user_name) &&
-		    strequal(usr_creds->domain, clis[i]->cli->usr.domain))
+		    strequal(usr_creds ? usr_creds->domain : "",
+			    clis[i]->cli->usr.domain))
 		{
 			/* decrement number of users */
 			clis[i]->num_users--;

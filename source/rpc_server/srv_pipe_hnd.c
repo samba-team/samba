@@ -123,7 +123,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name, const vuser_key * key,
 	{
 		BOOL is_new;
 		become_root(False);	/* to make pipe connection */
-		m = ncalrpc_l_use_add(pipe_name, key, True, &is_new);
+		m = ncalrpc_l_use_add(pipe_name, key, False, &is_new);
 		unbecome_root(False);
 		if (m == NULL)
 		{
