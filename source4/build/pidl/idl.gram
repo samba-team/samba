@@ -48,6 +48,15 @@ typedef : 'typedef' <commit> type identifier array_len(?) ';'
         }}
         | <error?>
 
+enum: 'enum' <commit> '{' enum_element(s? /,/) '}' 
+        {{
+                     "TYPE" => "ENUM", 
+		     "ELEMENTS" => $item[4]
+        }}
+      | <error?>
+
+enum_element: /[\w\s=]+/
+
 struct: property_list(s?) 'struct' <commit> '{' element_list1(?) '}' 
         {{
                      "TYPE" => "STRUCT", 
@@ -65,16 +74,16 @@ union: property_list(s?) 'union' <commit> '{' union_element(s?) '}'
 	 | <error?>
 
 union_element: 
-         '[' 'case' '(' constant ')' ']' base_element ';'
+         '[' 'case' '(' identifier ')' ']' base_element ';'
 	 {{
 		"TYPE" => "UNION_ELEMENT",
-		"CASE" => $item{constant},
+		"CASE" => $item{identifier},
 		"DATA" => $item{base_element}
 	 }}
-         | '[' 'case' '(' constant ')' ']' ';'
+         | '[' 'case' '(' identifier ')' ']' ';'
 	 {{
 		"TYPE" => "EMPTY",
-		"CASE" => $item{constant},
+		"CASE" => $item{identifier},
 	 }}
          | '[' 'default' ']' base_element ';'
 	 {{
@@ -124,20 +133,16 @@ property: 'unique'
 	  | 'in'
 	  | 'out'
 	  | 'ref'
-	  | 'context_handle'
-	  | 'string'
 	  | 'public'
 	  | 'noprint'
 	  | 'relative'	  
 	  | 'nodiscriminant'
           | 'subcontext' '(' constant ')' {{ "$item[1]" => "$item{constant}" }}
           | 'flag' '(' anytext ')' {{ "$item[1]" => "$item{anytext}" }}
-	  | 'byte_count_pointer' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'size_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'length_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'switch_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'value' '(' anytext ')' {{ "$item[1]" => "$item{anytext}" }}
-          | 'switch_type' '(' type ')' {{ "$item[1]" => $item{type} }}
 
 identifier: /[\w?]+/
 
@@ -153,12 +158,9 @@ function : type identifier '(' <commit> element_list2 ');'
          | <error?>
 
 type : 
-       'unsigned' type { "$item[1] $item[2]" }
-     | 'long'    { $item[1] }
-     | 'string'  { $item[1] }
-     | 'wchar_t' { $item[1] }
-     | struct    { $item[1] }
+       struct    { $item[1] }
      | union     { $item[1] }
+     | enum      { $item[1] }
      | identifier { $item[1] }
      | <error>
 
@@ -171,9 +173,6 @@ anytext: text2 '(' <commit> anytext ')' anytext
 	 | text2 '+' anytext 
 	 {{ "$item[1]+$item[3]" }}
 	 | text2
-
-call: expression '(' <commit> expression ')'
-	 {{ "$item[1]($item[4])" }}
 
 constant: /-?[\dx]+/
 	  | '*'

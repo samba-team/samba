@@ -86,6 +86,31 @@ sub HeaderStruct($$)
     $res .= "}";
 }
 
+#####################################################################
+# parse a struct
+sub HeaderEnum($$)
+{
+    my($enum) = shift;
+    my($name) = shift;
+    $res .= "\nenum $name {\n";
+    $tab_depth++;
+    my $els = \@{$enum->{ELEMENTS}};
+    foreach my $i (0 .. $#{$els}-1) {
+	    my $e = ${$els}[$i];
+	    tabs();
+	    chomp $e;
+	    $res .= "$e,\n";
+    }
+
+    my $e = ${$els}[$#{$els}];
+    tabs();
+    chomp $e;
+    $e =~ /^(.*?)\s*$/;
+    $res .= "$1\n";
+    $tab_depth--;
+    $res .= "}";
+}
+
 
 #####################################################################
 # parse a union element
@@ -105,7 +130,7 @@ sub HeaderUnion($$)
     my($union) = shift;
     my($name) = shift;
     (defined $union->{PROPERTIES}) && HeaderProperties($union->{PROPERTIES});
-    $res .= "union $name {\n";
+    $res .= "\nunion $name {\n";
     foreach my $e (@{$union->{DATA}}) {
 	HeaderUnionElement($e);
     }
@@ -120,6 +145,8 @@ sub HeaderType($$$)
 	my($data) = shift;
 	my($name) = shift;
 	if (ref($data) eq "HASH") {
+		($data->{TYPE} eq "ENUM") &&
+		    HeaderEnum($data, $name);
 		($data->{TYPE} eq "STRUCT") &&
 		    HeaderStruct($data, $name);
 		($data->{TYPE} eq "UNION") &&
