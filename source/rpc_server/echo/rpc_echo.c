@@ -117,7 +117,6 @@ static NTSTATUS echo_TestEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 struct echo_TestSleep_private {
 	struct dcesrv_call_state *dce_call;
 	struct echo_TestSleep *r;
-	struct timed_event *te;
 };
 
 static void echo_TestSleep_handler(struct event_context *ev, struct timed_event *te, struct timeval t)
@@ -159,10 +158,7 @@ static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 	te.private	= p;
 	te.next_event	= timeval_add(&dce_call->time, r->in.seconds, 0);
 
-	p->te = event_add_timed(dce_call->event_ctx, &te, p);
-	if (!p->te) {
-		return 0;
-	}
+	event_add_timed(dce_call->event_ctx, &te, p);
 
 	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
 	return 0;
