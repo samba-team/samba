@@ -350,7 +350,11 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode)
 {
-	TDB_CONTEXT *tdb = tdb_open(name, hash_size, tdb_flags, 
+	TDB_CONTEXT *tdb;
+
+	if (!lp_use_mmap()) tdb_flags |= TDB_NOMMAP;
+
+	tdb = tdb_open(name, hash_size, tdb_flags, 
 				    open_flags, mode);
 	if (!tdb) return NULL;
 
