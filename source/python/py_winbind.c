@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "Python.h"
 
-#include "py_common.h"
+#include "py_common_proto.h"
 
 /* 
  * Exceptions raised by this module 
