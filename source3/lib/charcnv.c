@@ -185,6 +185,7 @@ size_t convert_string_allocate(charset_t from, charset_t to,
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, return -1*/
+		DEBUG(3, ("convert_string_allocate: conversion not supported!\n"));
 		return -1;
 	}
 

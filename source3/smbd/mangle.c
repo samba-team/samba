@@ -421,7 +421,7 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 		p = acnv_dosu2(data.dptr);
 		if (!p)
 		{
-			DEBUG(0,("mangle: out of memory!\n"));
+			DEBUG(0,("mangle: internal error acnv_dosu2() failed!\n"));
 			goto done;
 		}
 	}
@@ -477,7 +477,7 @@ char *dos_mangle(const char *dos_unmangled)
 	in = acnv_dosu2(dos_unmangled);
 	if (!in)
 	{
-		DEBUG(0,("dos_mangle: out of memory!\n"));
+		DEBUG(0,("dos_mangle: internal error acnv_dosu2() failed!\n"));
 		return NULL;
 	}
 
@@ -491,7 +491,7 @@ char *dos_mangle(const char *dos_unmangled)
 	dos_mangled = acnv_u2dos(out);
 	if (!dos_mangled)
 	{
-		DEBUG(0,("dos_mangle: out of memory!\n"));
+		DEBUG(0,("dos_mangle: internal error acnv_u2dos() failed!\n"));
 		goto done;
 	}
 
@@ -511,7 +511,7 @@ char *dos_unmangle(const char *dos_mangled)
 	in = acnv_dosu2(dos_mangled);
 	if (!in)
 	{
-		DEBUG(0,("dos_unmangle: out of memory!\n"));
+		DEBUG(0,("dos_unmangle: internal error acnv_dosu2() failed!\n"));
 		return NULL;
 	}
 
@@ -525,7 +525,7 @@ char *dos_unmangle(const char *dos_mangled)
 	dos_unmangled = acnv_u2dos(out);
 	if (!dos_unmangled)
 	{
-		DEBUG(0,("dos_unmangle: out of memory!\n"));
+		DEBUG(0,("dos_unmangle: internal error acnv_u2dos failed!\n"));
 		goto done;
 	}
 
@@ -552,7 +552,7 @@ BOOL is_8_3(const char *fname, BOOL check_case)
 	ucs2name = acnv_uxu2(f);
 	if (!ucs2name)
 	{
-		DEBUG(0,("is_8_3: out of memory!\n"));
+		DEBUG(0,("is_8_3: internal error acnv_uxu2() failed!\n"));
 		goto done;
 	}
 
@@ -691,7 +691,7 @@ BOOL is_mangled(const char *s)
 	u2 = acnv_dosu2(s);
 	if (!u2)
 	{
-		DEBUG(0,("is_mangled: out of memory!\n"));
+		DEBUG(0,("is_mangled: internal error acnv_dosu2() failed!!\n"));
 		return ret;
 	}
 
@@ -794,7 +794,7 @@ void mangle_name_83(char *s)
 	u2 = acnv_dosu2(s);
 	if (!u2)
 	{
-		DEBUG(0,("mangle_name_83: out of memory!\n"));
+		DEBUG(0,("mangle_name_83: internal error acnv_dosu2() failed!\n"));
 		return;
 	}
 
