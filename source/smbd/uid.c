@@ -251,7 +251,11 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 			DEBUG(1, ("change_to_user: create_nt_token failed!\n"));
 			return False;
 		}
+
+		become_root();
 		pdb_get_privilege_set(token->user_sids, token->num_sids, privs);
+		unbecome_root();
+
 		must_free_token_priv = True;
 	}
 	

@@ -474,7 +474,10 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 						      guest);
 
 		init_privilege(&(conn->privs));
+
+		become_root();
 		pdb_get_privilege_set(conn->nt_user_token->user_sids, conn->nt_user_token->num_sids, conn->privs);
+		unbecome_root();
 	}
 
 	/*

@@ -1032,10 +1032,14 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVS
 
 	init_privilege(&priv);
 
+	become_root();
+
 	if (!NT_STATUS_IS_OK(ret = pdb_get_privilege_set(&info->sid, 1, priv))) {
 		/* This is probably wrong... */
+		unbecome_root();
 		return ret;
 	}
+	unbecome_root();
 
 	DEBUG(10,("_lsa_enum_privsaccount: %d privileges\n", priv->count));
 
