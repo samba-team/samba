@@ -14,7 +14,7 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>nmblookup</command>
+		<command>swat</command>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-a</arg>
 	</cmdsynopsis>
