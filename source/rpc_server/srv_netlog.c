@@ -322,7 +322,7 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
  ********************************************************************/
 
 #ifdef RPC_NETLOG_DYNAMIC
-int rpc_pipe_init(void)
+int init_module(void)
 #else
 int rpc_net_init(void)
 #endif

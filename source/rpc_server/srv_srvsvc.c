@@ -527,7 +527,7 @@ static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
 ********************************************************************/
 
 #ifdef RPC_SVC_DYNAMIC
-int rpc_pipe_init(void)
+int init_module(void)
 #else
 int rpc_srv_init(void)
 #endif

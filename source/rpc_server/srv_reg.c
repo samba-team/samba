@@ -374,7 +374,7 @@ static BOOL api_reg_save_key(pipes_struct *p)
  ********************************************************************/
 
 #ifdef RPC_REG_DYNAMIC
-int rpc_pipe_init(void)
+int init_module(void)
 #else
 int rpc_reg_init(void)
 #endif

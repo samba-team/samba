@@ -772,7 +772,7 @@ static BOOL api_lsa_remove_acct_rights(pipes_struct *p)
  ***************************************************************************/
 
 #ifdef RPC_LSA_DYNAMIC
-int rpc_pipe_init(void)
+int init_module(void)
 #else
 int rpc_lsa_init(void)
 #endif

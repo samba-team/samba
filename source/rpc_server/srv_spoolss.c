@@ -1581,7 +1581,7 @@ static BOOL api_spoolss_replycloseprinter(pipes_struct *p)
 ********************************************************************/
 
 #ifdef RPC_SPOOLSS_DYNAMIC
-int rpc_pipe_init(void)
+int init_module(void)
 #else
 int rpc_spoolss_init(void)
 #endif

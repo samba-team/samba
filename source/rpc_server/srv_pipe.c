@@ -794,42 +794,23 @@ int rpc_pipe_register_commands(const char *clnt, const char *srv, const struct a
 /*******************************************************************
  Register commands to an RPC pipe
 *******************************************************************/
-int rpc_load_module(const char *module)
+NTSTATUS rpc_load_module(const char *module)
 {
-#ifdef HAVE_DLOPEN
-        void *handle;
-        int (*module_init)(void);
         pstring full_path;
-        char *error;
+		NTSTATUS status;
         
         pstrcpy(full_path, lib_path("rpc"));
         pstrcat(full_path, "/librpc_");
         pstrcat(full_path, module);
         pstrcat(full_path, ".");
         pstrcat(full_path, shlib_ext());
-
-        handle = sys_dlopen(full_path, RTLD_LAZY);
-        if (!handle) {
+		
+		if (!NT_STATUS_IS_OK(status = smb_load_module(full_path)))  {
                 DEBUG(0, ("Could not load requested pipe %s as %s\n", 
                     module, full_path));
-                DEBUG(0, (" Error: %s\n", dlerror()));
-                return 0;
         }
         
-        DEBUG(3, ("Module '%s' loaded\n", full_path));
-        
-        module_init = sys_dlsym(handle, "rpc_pipe_init");
-        if ((error = sys_dlerror()) != NULL) {
-                DEBUG(0, ("Error trying to resolve symbol 'rpc_pipe_init' in %s: %s\n",
-                          full_path, error));
-                return 0;
-        }
-        
-        return module_init();
-#else
-        DEBUG(0,("Attempting to load a dynamic RPC pipe when dlopen isn't available\n"));
-        return 0;
-#endif
+		return status;
 }
 
 /*******************************************************************
@@ -877,7 +858,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
                        }
                 }
 
-                if (!api_fd_commands[i].name && !rpc_load_module(p->name)) {
+                if (!api_fd_commands[i].name && !NT_STATUS_IS_OK(rpc_load_module(p->name))) {
                        DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
                                 p->name ));
                        if(!setup_bind_nak(p))

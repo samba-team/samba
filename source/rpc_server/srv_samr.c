@@ -1444,7 +1444,7 @@ static BOOL api_samr_set_dom_info(pipes_struct *p)
  ********************************************************************/
 
 #ifdef RPC_SAMR_DYNAMIC
-int rpc_pipe_init(void)
+int init_module(void)
 #else
 int rpc_samr_init(void)
 #endif
