@@ -54,8 +54,10 @@
 #endif
 #endif
 
-/* use gcc attribute to check printf fns */
 #ifdef __GNUC__
+/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
+ * the parameter containing the format, and a2 the index of the first
+ * argument.  **/
 #define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
 #else
 #define PRINTF_ATTRIBUTE(a1, a2)
