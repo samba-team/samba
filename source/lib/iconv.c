@@ -541,8 +541,8 @@ static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	size_t in_left=*inbytesleft, out_left=*outbytesleft;
-	const uint8_t *c = (const uint8_t *)*inbuf;
-	uint8_t *uc = (uint8_t *)*outbuf;
+	const uint8 *c = (const uint8 *)*inbuf;
+	uint8 *uc = (uint8 *)*outbuf;
 
 	while (in_left >= 1 && out_left >= 2) {
 		if ((c[0] & 0x80) == 0) {
@@ -658,8 +658,8 @@ static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			char **outbuf, size_t *outbytesleft)
 {
 	size_t in_left=*inbytesleft, out_left=*outbytesleft;
-	uint8_t *c = (uint8_t *)*outbuf;
-	const uint8_t *uc = (const uint8_t *)*inbuf;
+	uint8 *c = (uint8 *)*outbuf;
+	const uint8 *uc = (const uint8 *)*inbuf;
 
 	while (in_left >= 2 && out_left >= 1) {
 		unsigned int codepoint;
