@@ -1571,28 +1571,223 @@ static void process_command_string(char *cmd)
 	}
 }	
 
+#ifdef HAVE_LIBREADLINE
+
+/****************************************************************************
+GNU readline completion functions
+****************************************************************************/
+
+/* Argh.  This is where it gets ugly.  We really need to be able to
+   pass back from the do_list() iterator function. */
+
+static int compl_state;
+static char *compl_text;
+static pstring result;
+
+/* Iterator function for do_list() */
+
+void complete_process_file(file_info *f)
+{
+    /* Do we have a partial match? */
+    
+    if ((compl_state >= 0) && (strncmp(compl_text, f->name, 
+				       strlen(compl_text)) == 0)) {
+	
+	/* Return filename if we have made enough matches */
+	
+	if (compl_state == 0) {
+	    pstrcpy(result, f->name);
+	    compl_state = -1;
+	    
+	    return;
+	}
+	compl_state--;
+    }
+}
+
+/* Complete a remote file */
+
+char *complete_remote_file(char *text, int state)
+{
+    int attribute = aDIR | aSYSTEM | aHIDDEN;
+    pstring mask;
+    
+    /* Create dir mask */
+    
+    pstrcpy(mask, cur_dir);
+    pstrcat(mask, "*");
+    
+    /* Initialise static vars for filename match */
+    
+    compl_text = text;
+    compl_state = state;
+    result[0] = '\0';
+    
+    /* Iterate over all files in directory */
+    
+    do_list(mask, attribute, complete_process_file, False, True);
+    
+    /* Return matched filename */
+    
+    if (result[0] != '\0') {
+	return strdup(result);      /* Readline will dispose of strings */
+    } else {
+	return NULL;
+    }
+}
+
+/* Complete a smbclient command */
+
+char *complete_cmd(char *text, int state)
+{
+    static int cmd_index;
+    char *name;
+    
+    /* Initialise */
+    
+    if (state == 0) {
+	cmd_index = 0;
+    }
+    
+    /* Return the next name which partially matches the list of commands */
+    
+    while (strlen(name = commands[cmd_index++].name) > 0) {
+	if (strncmp(name, text, strlen(text)) == 0) {
+	    return strdup(name);
+	}
+    }
+    
+    return NULL;
+}
+
+/* Main completion function for smbclient.  Work out which word we are
+   trying to complete and call the appropriate helper function -
+   complete_cmd() if we are completing smbclient commands,
+   comlete_remote_file() if we are completing a file on the remote end,
+   filename_completion_function() builtin to GNU readline for local 
+   files. */
+
+char **completion_fn(char *text, int start, int end)
+{
+  int i, num_words, cmd_index;
+  char lastch = ' ';
+
+  /* If we are at the start of a word, we are completing a smbclient
+     command. */
+
+  if (start == 0) {
+    return completion_matches(text, complete_cmd);
+  }
+
+  /* Count # of words in command */
+
+  num_words = 0;
+  for (i = 0; i <= end; i++) {
+    if ((rl_line_buffer[i] != ' ') && (lastch == ' '))
+      num_words++;
+    lastch = rl_line_buffer[i];
+  }
+
+  if (rl_line_buffer[end] == ' ')
+    num_words++;
+
+  /* Work out which command we are completing for */
+
+  for (cmd_index = 0; strcmp(commands[cmd_index].name, "") != 0; 
+       cmd_index++) {
+
+    /* Check each command in array */
+
+    if (strncmp(rl_line_buffer, commands[cmd_index].name,
+                strlen(commands[cmd_index].name)) == 0) {
+
+      /* Call appropriate completion function */
+
+      if ((num_words == 2) || (num_words == 3)) {
+        switch (commands[cmd_index].compl_args[num_words - 2]) {
+
+        case COMPL_REMOTE:
+          return completion_matches(text, complete_remote_file);
+          break;
+
+        case COMPL_LOCAL:
+          return completion_matches(text, filename_completion_function);
+          break;
+
+        default:
+            /* An invalid completion type */
+            break;
+        }
+      }
+
+      /* We're either completing an argument > 3 or found an invalid
+         completion type.  Either way do nothing about it. */
+
+      break;
+    }
+  }
+ 
+  return NULL;
+}
+
+/* To avoid filename completion being activated when no valid
+   completions are found, we assign this stub completion function
+   to the rl_completion_entry_function variable. */
+
+char *complete_cmd_null(char *text, int state)
+{
+    return NULL;
+}
+
+#endif /* HAVE_LIBREADLINE */
+
 /****************************************************************************
 process commands on stdin
 ****************************************************************************/
 static void process_stdin(void)
 {
 	pstring line;
+#ifdef HAVE_LIBREADLINE
+	pstring promptline;
+#endif
 	char *ptr;
 
 	while (!feof(stdin)) {
 		fstring tok;
 		int i;
 
+#ifndef HAVE_LIBREADLINE
+
 		/* display a prompt */
 		DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
 		dbgflush( );
-		
+
 		wait_keyboard();
 		
 		/* and get a response */
 		if (!fgets(line,1000,stdin))
 			break;
 
+#else /* !HAVE_LIBREADLINE */
+
+		/* Read input using GNU Readline */
+		
+		slprintf(promptline, sizeof(promptline) - 1, "smb: %s> ", 
+			 CNV_LANG(cur_dir));
+
+		if (!readline(promptline))
+		    break;
+		
+		/* Copy read line to samba buffer */
+		
+		pstrcpy(line, rl_line_buffer);
+		pstrcat(line, "\n");
+		
+		/* Add line to history */
+		
+		if (strlen(line) > 0)
+		    add_history(line);		
+#endif
 		/* input language code to internal one */
 		CNV_INPUT (line);
 		
@@ -2127,6 +2322,20 @@ static int do_message_op(void)
 		usage(pname);
 		exit(1);
 	}
+
+#ifdef HAVE_LIBREADLINE
+
+	/* Initialise GNU Readline */
+	
+	rl_readline_name = "smbclient";
+	rl_attempted_completion_function = completion_fn;
+	rl_completion_entry_function = (Function *)complete_cmd_null;
+	
+	/* Initialise history list */
+	
+	using_history();
+
+#endif /* HAVE_LIBREADLINE */
 
 	DEBUG( 3, ( "Client started (version %s).\n", VERSION ) );
 

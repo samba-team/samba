@@ -132,6 +132,7 @@
 #undef SIZEOF_OFF_T
 #undef STAT_STATVFS64
 #undef HAVE_LIBREADLINE
+#undef HAVE_READLINE_FCF_PROTO
 #undef HAVE_KERNEL_OPLOCKS
 #undef HAVE_IRIX_SPECIFIC_CAPABILITIES
 #undef HAVE_INT16_FROM_RPC_RPC_H
@@ -594,6 +595,9 @@
 
 /* Define if you have the syscall function.  */
 #undef HAVE_SYSCALL
+
+/* Define if you have the tputs function.  */
+#undef HAVE_TPUTS
 
 /* Define if you have the utime function.  */
 #undef HAVE_UTIME

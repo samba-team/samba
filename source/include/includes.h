@@ -717,6 +717,14 @@ union semun {
 #      undef HAVE_LIBREADLINE
 #    endif
 #  endif
+
+/* Some old versions of readline don't define a prototype for
+   filename_completion_function() */
+
+#  ifndef HAVE_READLINE_FCF_PROTO
+extern char *filename_completion_function ();
+#  endif
+
 #endif
 
 #ifndef HAVE_STRDUP
