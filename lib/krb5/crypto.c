@@ -1991,8 +1991,7 @@ krb5_crypto_get_checksum_type(krb5_context context,
     }
     
     if (ct == NULL) {
-	krb5_set_error_string (context, "checksum type %d not supported",
-			       type);
+	krb5_set_error_string (context, "checksum type not found");
         return KRB5_PROG_SUMTYPE_NOSUPP;
     }    
 
