@@ -788,7 +788,8 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 	} else if (strequal(sid_str, sam_sid_str) && !lp_hide_local_users()) {
 		char *name;
 		char *sep;
-		struct group *grp;
+		struct sys_grent *glist;
+		struct sys_grent *grp;
 
 		sep = lp_winbind_separator();
 
@@ -796,9 +797,15 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 		/* we return the UNIX groups here.  This seems to be the right */
 		/* thing to do, since NT member servers return their local     */
                 /* groups in the same situation.                               */
-		setgrent();
 
-		while (num_entries < max_entries && ((grp = getgrent()) != NULL)) {
+		/* use getgrent_list() to retrieve the list of groups to avoid
+		 * problems with getgrent possible infinite loop by internal
+		 * libc grent structures overwrites by called functions */
+		grp = glist = getgrent_list();
+		if (grp == NULL)
+			return False;
+
+		for (;(num_entries < max_entries) && (grp != NULL); grp = grp->next) {
 			int i;
 			uint32 trid;
 			name = grp->gr_name;
@@ -820,7 +827,8 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 
 			trid = pdb_gid_to_group_rid(grp->gr_gid);
 			for( i = 0; i < num_entries; i++)
-				if ( d_grp[i].rid == trid ) break;
+				if ( d_grp[i].rid == trid )
+					break;
 
 			if ( i < num_entries )
 				continue; /* rid was there, dup! */
@@ -840,7 +848,7 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 			num_entries++;
 		}
 
-		endgrent();
+		grent_free(glist);
 	}
 
 	*p_num_entries = num_entries;

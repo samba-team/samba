@@ -1074,7 +1074,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL_PROGRAM}'
 
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
-for ac_prog in mawk gawk nawk awk
+for ac_prog in gawk mawk nawk awk
 do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -1917,7 +1917,7 @@ fi
         echo $ac_n "checking for LFS support""... $ac_c" 1>&6
 echo "configure:1919: checking for LFS support" >&5
         old_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
        if test "$cross_compiling" = yes; then
   LINUX_LFS_SUPPORT=cross
 else
@@ -1974,7 +1974,7 @@ fi
 
         CPPFLAGS="$old_CPPFLAGS"
         if test x$LINUX_LFS_SUPPORT = xyes ; then
-          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
         fi
        echo "$ac_t""$LINUX_LFS_SUPPORT" 1>&6
 		;;
@@ -2033,7 +2033,7 @@ for ac_kw in inline __inline__ __inline; do
 #include "confdefs.h"
 
 int main() {
-} int $ac_kw foo() {
+} $ac_kw foo() {
 ; return 0; }
 EOF
 if { (eval echo configure:2040: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
@@ -3215,7 +3215,7 @@ else
 int main() {
 
 /* Ultrix mips cc rejects this.  */
-typedef int charset[2]; const charset x = {0,0};
+typedef int charset[2]; const charset x;
 /* SunOS 4.1.1 cc rejects this.  */
 char const *const *ccp;
 char **p;
@@ -3290,7 +3290,7 @@ for ac_kw in inline __inline__ __inline; do
 #include "confdefs.h"
 
 int main() {
-} int $ac_kw foo() {
+} $ac_kw foo() {
 ; return 0; }
 EOF
 if { (eval echo configure:3297: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
