@@ -160,7 +160,6 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 	mem_ctx = talloc_init("mem_ctx");
 
 	fullname = talloc_asprintf(mem_ctx, "%s%s%s", parent->path, parent->path[strlen(parent->path)-1] == '\\'?"":"\\", name);
-\
 
 	if(!parent->handle->functions->open_key) {
 		DEBUG(0, ("Registry backend doesn't have get_subkey_by_name nor open_key!\n"));
@@ -432,6 +431,7 @@ WERROR reg_key_add_name_recursive(REG_KEY *parent, const char *path)
 {
 	REG_KEY *cur, *prevcur = parent;
 	WERROR error;
+	/* FIXME: we should never write to a 'const char *' !!! --metze */
 	char *begin = (char *)path, *end;
 
 	while(1) { 
