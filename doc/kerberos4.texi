@@ -164,14 +164,14 @@ command to propagate the database to the machine called
 @samp{slave-server} (which should be running a @samp{hpropd}).
 
 @example
-hprop --source=krb4-db -E slave-server
+hprop --source=krb4-db --master-key=/.m slave-server
 @end example
 
 This command can also be to use for converting the v4 database on the
 server:
 
 @example
-hprop -n --source=krb4-db -d /var/kerberos/principal -E | hpropd -n
+hprop -n --source=krb4-db -d /var/kerberos/principal --master-key=/.m | hpropd -n
 @end example
 
 @section Version 4 Kadmin
