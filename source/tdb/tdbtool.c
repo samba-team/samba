@@ -311,7 +311,7 @@ static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 #else
 	printf("\nkey %d bytes\n", key.dsize);
 	print_asc(key.dptr, key.dsize);
-	printf("data %d bytes\n", dbuf.dsize);
+	printf("\ndata %d bytes\n", dbuf.dsize);
 	print_data(dbuf.dptr, dbuf.dsize);
 	return 0;
 #endif
