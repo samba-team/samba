@@ -22,6 +22,8 @@
 #define NO_SYSLOG
 
 #include "includes.h"
+#include <sys/ipc.h>
+#include <sys/shm.h>
 
 static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
