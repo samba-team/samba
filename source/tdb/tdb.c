@@ -4,6 +4,7 @@
    Samba database functions
    Copyright (C) Andrew Tridgell              1999-2000
    Copyright (C) Luke Kenneth Casson Leighton      2000
+   Copyright (C) Jeremy Allison					   2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -434,16 +435,7 @@ static int tdb_free(TDB_CONTEXT *tdb, tdb_off rec_offset, struct list_struct *re
 
 		curr_offset = curr_rec.next;
 
-		if (tdb_read(tdb, curr_offset, (char *)&curr_rec, sizeof(struct list_struct)) == -1) {
-			goto fail;
-		}
-
-		if (curr_rec.magic != TDB_FREE_MAGIC) {
-#if TDB_DEBUG
-			printf("bad magic in freelist 0x%08x at offset %d\n",
-			       curr_rec.magic, curr_offset);
-#endif
-			tdb->ecode = TDB_ERR_CORRUPT;
+		if (rec_free_read(tdb, curr_offset, &curr_rec) == -1) {
 			goto fail;
 		}
 	}
