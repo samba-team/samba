@@ -1995,6 +1995,7 @@ static int get_version_id (char * arch)
 	        {"Windows NT Alpha_AXP", "W32ALPHA",    2 },
 	        {"Windows NT PowerPC",   "W32PPC",      2 },
 		{"Windows IA64",         "IA64",        3 },
+		{"Windows x64",          "x64",         3 },
 	        {NULL,                   "",            -1 }
 	};
  
