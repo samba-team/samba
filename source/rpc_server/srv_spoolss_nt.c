@@ -3011,7 +3011,7 @@ static uint32 update_printer_sec(const POLICY_HND *handle, uint32 level,
 {
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	struct current_user user;
-	uint32 acc_granted, status;
+	uint32 acc_granted, status, result;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
