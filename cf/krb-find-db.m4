@@ -28,6 +28,8 @@ for i in $1; do
 #include <fcntl.h>
 #if defined(HAVE_NDBM_H)
 #include <ndbm.h>
+#elif defined(HAVE_GDBM_NDBM_H)
+#include <gdbm/ndbm.h>
 #elif defined(HAVE_DBM_H)
 #include <dbm.h>
 #elif defined(HAVE_RPCSVC_DBM_H)
