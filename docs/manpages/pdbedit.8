@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "PDBEDIT" "8" "20 August 2002" "" ""
+.TH "PDBEDIT" "8" "01 October 2002" "" ""
 .SH NAME
 pdbedit \- manage the SAM database
 .SH SYNOPSIS
@@ -12,14 +12,14 @@ pdbedit \- manage the SAM database
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Sambasuite.
+This tool is part of the  Samba suite.
 .PP
 The pdbedit program is used to manage the users accounts
-stored in the sam database and can be run only by root.
+stored in the sam database and can only be run by root.
 .PP
-The pdbedit tool use the passdb modular interface and is
+The pdbedit tool uses the passdb modular interface and is
 independent from the kind of users database used (currently there
-are smbpasswd, ldap, nis+ and tdb based and more can be addedd
+are smbpasswd, ldap, nis+ and tdb based and more can be added
 without changing the tool).
 .PP
 There are five main ways to use pdbedit: adding a user account,
@@ -28,7 +28,7 @@ accounts, importing users accounts.
 .SH "OPTIONS"
 .TP
 \fB-l\fR
-This option list all the user accounts
+This option lists all the user accounts
 present in the users database.
 This option prints a list of user/uid pairs separated by
 the ':' character.
@@ -43,8 +43,8 @@ Example: \fBpdbedit -l\fR
 .fi
 .TP
 \fB-v\fR
-This option sets the verbose listing format.
-It will make pdbedit list the users in the database printing
+This option enables the verbose listing format.
+It causes pdbedit to list the users in the database, printing
 out the account fields in a descriptive format.
 
 Example: \fBpdbedit -l -v\fR
@@ -74,9 +74,9 @@ Example: \fBpdbedit -l -v\fR
 .TP
 \fB-w\fR
 This option sets the "smbpasswd" listing format.
-It will make pdbedit list the users in the database printing
+It will make pdbedit list the users in the database, printing
 out the account fields in a format compatible with the
-\fIsmbpasswd\fR file format. (see the \fIsmbpasswd(5)\fRfor details)
+\fIsmbpasswd\fR file format. (see the \fIsmbpasswd(5)\fR for details)
 
 Example: \fBpdbedit -l -w\fR
 
@@ -88,8 +88,8 @@ Example: \fBpdbedit -l -w\fR
 .fi
 .TP
 \fB-u username\fR
-This option specifies that the username to be
-used for the operation requested (listing, adding, removing)
+This option specifies the username to be
+used for the operation requested (listing, adding, removing).
 It is \fBrequired\fR in add, remove and modify
 operations and \fBoptional\fR in list
 operations.
@@ -131,9 +131,9 @@ Example: \fB-p "\\\\\\\\BERSERKER\\\\netlogon"\fR
 .TP
 \fB-a\fR
 This option is used to add a user into the
-database. This command need the user name be specified with
-the -u switch. When adding a new user pdbedit will also
-ask for the password to be used
+database. This command needs a user name specified with
+the -u switch. When adding a new user, pdbedit will also
+ask for the password to be used.
 
 Example: \fBpdbedit -a -u sorce\fR
 
@@ -152,23 +152,28 @@ Example: \fBpdbedit -a -m -u w2k-wks\fR
 .TP
 \fB-x\fR
 This option causes pdbedit to delete an account
-from the database. It need the username be specified with the
+from the database. It needs a username specified with the
 -u switch.
 
 Example: \fBpdbedit -x -u bob\fR
 .TP
 \fB-i passdb-backend\fR
-Use a different passdb backend to retrieve users than the one specified in smb.conf. Can be used to import data into your 
-local user database.
+Use a different passdb backend to retrieve users
+than the one specified in smb.conf. Can be used to import data into
+your local user database.
 
-This option will ease migration from one passdb backend to another.
+This option will ease migration from one passdb backend to
+another.
 
-Example: \fBpdbedit -i smbpasswd:/etc/smbpasswd.old\fR
+Example: \fBpdbedit -i smbpasswd:/etc/smbpasswd.old
+\fR
 .TP
 \fB-e passdb-backend\fR
-Export all currently available users to the specified password database backend.
+Exports all currently available users to the
+specified password database backend.
 
-This option will ease migration from one passdb backend to another and will ease backupping
+This option will ease migration from one passdb backend to
+another and will ease backing up.
 
 Example: \fBpdbedit -e smbpasswd:/root/samba-users.backup\fR
 .TP
@@ -185,7 +190,7 @@ This man page is correct for version 2.2 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-smbpasswd(8), 
+smbpasswd(8) 
 samba(7)
 .SH "AUTHOR"
 .PP
@@ -197,6 +202,6 @@ to the way the Linux kernel is developed.
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
 excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/) and updated for the Samba 2.0 
+ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
 Samba 2.2 was done by Gerald Carter
