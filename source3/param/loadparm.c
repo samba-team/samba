@@ -539,6 +539,7 @@ static void init_globals(void)
 	  string_init(parm_table[i].ptr,"");
 
       string_set(&sDefault.szGuestaccount, GUEST_ACCOUNT);
+      string_set(&sDefault.szPrinterDriver, "NULL");
 
       done_init = True;
     }

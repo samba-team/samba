@@ -31,9 +31,8 @@ interpret a node status response
 ****************************************************************************/
 static void _interpret_node_status(char *p, char *master,char *rname)
 {
-  int level = (master||rname)?4:0;
   int numnames = CVAL(p,0);
-  DEBUG(level,("received %d names\n",numnames));
+  DEBUG(1,("received %d names\n",numnames));
 
   if (rname) *rname = 0;
   if (master) *master = 0;
@@ -73,10 +72,10 @@ static void _interpret_node_status(char *p, char *master,char *rname)
       for (i = strlen( qname) ; --i >= 0 ; ) {
 	if (!isprint(qname[i])) qname[i] = '.';
       }
-      DEBUG(level,("\t%-15s <%02x> - %s\n",qname,type,flags));
+      DEBUG(1,("\t%-15s <%02x> - %s\n",qname,type,flags));
       p+=2;
     }
-  DEBUG(level,("num_good_sends=%d num_good_receives=%d\n",
+  DEBUG(1,("num_good_sends=%d num_good_receives=%d\n",
 	       IVAL(p,20),IVAL(p,24)));
 }
 
