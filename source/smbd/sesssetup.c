@@ -620,8 +620,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			nt_resp = data_blob(p+passlen1, passlen2);
 		} else {
 			pstring pass;
+			BOOL unic;
+			unic=SVAL(inbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS;
 			srvstr_pull(inbuf, pass, smb_buf(inbuf), 
-				    sizeof(pass),  passlen1, STR_TERMINATE);
+				    sizeof(pass),  unic ? passlen2 : passlen1, 
+				    STR_TERMINATE);
 			plaintext_password = data_blob(pass, strlen(pass)+1);
 		}
 		

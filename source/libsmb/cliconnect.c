@@ -188,6 +188,9 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
+	fstring lanman;
+	
+	snprintf( lanman, sizeof(lanman), "Samba %s", VERSION );
 
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
@@ -201,12 +204,22 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	SSVAL(cli->outbuf,smb_vwv8,0);
 	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
 	p = smb_buf(cli->outbuf);
-	p += clistr_push(cli, p, pass, -1, STR_TERMINATE); /* password */
-	SSVAL(cli->outbuf,smb_vwv7,PTR_DIFF(p, smb_buf(cli->outbuf)));
+	
+	/* check wether to send the ASCII or UNICODE version of the password */
+	
+	if ( (capabilities & CAP_UNICODE) == 0 ) {
+		p += clistr_push(cli, p, pass, -1, STR_TERMINATE); /* password */
+		SSVAL(cli->outbuf,smb_vwv7,PTR_DIFF(p, smb_buf(cli->outbuf)));
+	}
+	else { 
+		p += clistr_push(cli, p, pass, -1, STR_UNICODE|STR_TERMINATE); /* unicode password */
+		SSVAL(cli->outbuf,smb_vwv8,PTR_DIFF(p, smb_buf(cli->outbuf)));	
+	}
+	
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE); /* username */
 	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE); /* workgroup */
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
-	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, lanman, -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
