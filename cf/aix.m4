@@ -19,4 +19,9 @@ if test "$aix" != no; then
 		AIX_EXTRA_KAFS=
 	fi
 fi
+
+AM_CONDITIONAL(HAVE_DLOPEN, test "$ac_cv_funclib_dlopen" != no)dnl
+AC_SUBST(AFS_EXTRA_LD)dnl
+AC_SUBST(AIX_EXTRA_KAFS)dnl
+
 ])
