@@ -178,3 +178,32 @@ gssapi_krb5_decapsulate(OM_uint32 *minor_status,
     out_data->data   = p;
     return GSS_S_COMPLETE;
 }
+
+/*
+ * Verify padding of a gss wrapped message and return its length.
+ */
+
+OM_uint32
+_gssapi_verify_pad(gss_buffer_t wrapped_token, 
+		   size_t datalen,
+		   size_t *padlen)
+{
+    u_char *pad;
+    size_t padlength;
+    int i;
+
+    pad = (u_char *)wrapped_token->value + wrapped_token->length - 1;
+    padlength = *pad;
+
+    if (padlength > datalen)
+	return GSS_S_BAD_MECH;
+
+    for (i = padlength; i > 0 && *pad == padlength; i--, pad--)
+	;
+    if (i != 0)
+	return GSS_S_BAD_MIC;
+
+    *padlen = padlength;
+
+    return 0;
+}
