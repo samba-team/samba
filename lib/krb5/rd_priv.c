@@ -26,6 +26,7 @@ krb5_rd_priv(krb5_context context,
   r = krb5_decrypt (context,
 		    priv.enc_part.cipher.data,
 		    priv.enc_part.cipher.length,
+		    priv.enc_part.etype,
 		    &auth_context->key,
 		    &plain);
   if (r) 

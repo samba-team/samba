@@ -47,7 +47,7 @@ krb5_mk_priv(krb5_context context,
   s.enc_part.kvno = NULL;
 
   r = krb5_encrypt (context, buf + sizeof(buf) - len, len,
-		    &auth_context->key, &s.enc_part.cipher);
+		    s.enc_part.etype, &auth_context->key, &s.enc_part.cipher);
   if (r)
     return r;
 
