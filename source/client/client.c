@@ -1760,7 +1760,7 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-  DEBUG(0,("Usage: %s service <password> ", pname));
+  DEBUG(0,("Usage: %s service <password> [options]", pname));
 
   DEBUG(0,("\nVersion %s\n",VERSION));
   DEBUG(0,("\t-s smb.conf           pathname to smb.conf file\n"));
