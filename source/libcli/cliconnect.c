@@ -36,8 +36,8 @@ BOOL smbcli_socket_connect(struct smbcli_state *cli, const char *server)
 	}
 	
 	cli->transport = smbcli_transport_init(sock);
+	talloc_free(sock);
 	if (!cli->transport) {
-		talloc_free(sock);
 		return False;
 	}
 
@@ -60,9 +60,9 @@ NTSTATUS smbcli_negprot(struct smbcli_state *cli)
 
 /* wrapper around smb_raw_session_setup() */
 NTSTATUS smbcli_session_setup(struct smbcli_state *cli, 
-			   const char *user, 
-			   const char *password, 
-			   const char *domain)
+			      const char *user, 
+			      const char *password, 
+			      const char *domain)
 {
 	union smb_sesssetup setup;
 	NTSTATUS status;
@@ -70,6 +70,7 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 
 	cli->session = smbcli_session_init(cli->transport);
 	if (!cli->session) return NT_STATUS_UNSUCCESSFUL;
+	talloc_free(cli->transport);
 
 	mem_ctx = talloc_init("smbcli_session_setup");
 	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
@@ -110,6 +111,7 @@ NTSTATUS smbcli_send_tconX(struct smbcli_state *cli, const char *sharename,
 	NTSTATUS status;
 
 	cli->tree = smbcli_tree_init(cli->session);
+	talloc_free(cli->session);
 	if (!cli->tree) return NT_STATUS_UNSUCCESSFUL;
 
 	mem_ctx = talloc_init("tcon");
@@ -183,7 +185,8 @@ NTSTATUS smbcli_full_connection(struct smbcli_state **ret_cli,
 
 	(*ret_cli) = smbcli_state_init();
 
-	(*ret_cli)->tree = tree;
+	(*ret_cli)->tree = talloc_reference(*ret_cli, tree);
+	talloc_free(tree);
 	(*ret_cli)->session = tree->session;
 	(*ret_cli)->transport = tree->session->transport;
 
@@ -221,7 +224,5 @@ struct smbcli_state *smbcli_state_init(void)
 ****************************************************************************/
 void smbcli_shutdown(struct smbcli_state *cli)
 {
-	if (!cli) return;
-	talloc_free(cli->tree);
 	talloc_free(cli);
 }

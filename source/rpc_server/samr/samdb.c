@@ -68,8 +68,7 @@ void *samdb_connect(TALLOC_CTX *mem_ctx)
 	  second open due to the broken nature of unix locking.
 	*/
 	if (ctx != NULL) {
-		talloc_increase_ref_count(ctx);
-		return ctx;
+		return talloc_reference(mem_ctx, ctx);
 	}
 
 	ctx = talloc_p(mem_ctx, struct samdb_context);

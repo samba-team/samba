@@ -27,16 +27,6 @@
 } while (0)
 
 
-/*
-  destroy a smbcli_session
-*/
-static int session_destroy(void *ptr)
-{
-	struct smbcli_session *session = ptr;
-	talloc_free(session->transport);
-	return 0;
-}
-
 /****************************************************************************
  Initialize the session context
 ****************************************************************************/
@@ -50,11 +40,9 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport)
 	}
 
 	ZERO_STRUCTP(session);
-	session->transport = transport;
+	session->transport = talloc_reference(session, transport);
 	session->pid = (uint16_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
-
-	talloc_set_destructor(session, session_destroy);
 
 	return session;
 }
