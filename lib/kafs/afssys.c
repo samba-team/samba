@@ -82,7 +82,7 @@ aix_setup(void)
     }
 #endif
 }
-#endif
+#endif /* _AIX */
 
 #define NO_ENTRY_POINT		0
 #define SINGLE_ENTRY_POINT	1
@@ -103,14 +103,18 @@ k_pioctl(char *a_path,
 {
 #ifndef NO_AFS
     switch(afs_entry_point){
+#if defined(AFS_SYSCALL) || defined(AFS_SYSCALL2) || defined(AFS_SYSCALL3)
     case SINGLE_ENTRY_POINT:
     case SINGLE_ENTRY_POINT2:
     case SINGLE_ENTRY_POINT3:
 	return syscall(afs_syscalls[0], AFSCALL_PIOCTL,
 		       a_path, o_opcode, a_paramsP, a_followSymlinks);
+#endif
+#if defined(AFS_PIOCTL)
     case MULTIPLE_ENTRY_POINT:
 	return syscall(afs_syscalls[0],
 		       a_path, o_opcode, a_paramsP, a_followSymlinks);
+#endif
 #ifdef _AIX
     case AIX_ENTRY_POINTS:
 	return Pioctl(a_path, o_opcode, a_paramsP, a_followSymlinks);
@@ -149,12 +153,16 @@ k_setpag(void)
 {
 #ifndef NO_AFS
     switch(afs_entry_point){
+#if defined(AFS_SYSCALL) || defined(AFS_SYSCALL2) || defined(AFS_SYSCALL3)
     case SINGLE_ENTRY_POINT:
     case SINGLE_ENTRY_POINT2:
     case SINGLE_ENTRY_POINT3:
 	return syscall(afs_syscalls[0], AFSCALL_SETPAG);
+#endif
+#if defined(AFS_PIOCTL)
     case MULTIPLE_ENTRY_POINT:
 	return syscall(afs_syscalls[1]);
+#endif
 #ifdef _AIX
     case AIX_ENTRY_POINTS:
 	return Setpag();
