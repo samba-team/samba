@@ -1,3 +1,7 @@
+2001-09-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* snprintf.c: va_{start,end} fixes; from Thomas Klausner
+
 2001-09-20  Assar Westerlund  <assar@sics.se>
 
 	* resolve.c (dns_srv_order): make sure of not reading after the

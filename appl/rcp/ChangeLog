@@ -1,3 +1,7 @@
+2001-09-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rcp.c: more va_* fixing; from Thomas Klausner
+
 2001-09-08  Assar Westerlund  <assar@sics.se>
 
 	* rcp.c (run_err): always match va_start and va_end
