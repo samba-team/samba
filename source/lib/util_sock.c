@@ -221,10 +221,10 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
       if(fd == sslFd){
         readret = SSL_read(ssl, buf + nread, maxcnt - nread);
       }else{
-        readret = recv(fd, buf + nread, maxcnt - nread, MSG_WAITALL);
+        readret = recv(fd, buf + nread, maxcnt - nread, 0);
       }
 #else /* WITH_SSL */
-      readret = recv(fd, buf + nread, maxcnt - nread, MSG_WAITALL);
+      readret = recv(fd, buf + nread, maxcnt - nread, 0);
 #endif /* WITH_SSL */
 
       if (readret == 0) {
@@ -278,10 +278,10 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
     if(fd == sslFd){
       readret = SSL_read(ssl, buf + nread, maxcnt - nread);
     }else{
-      readret = recv(fd, buf + nread, maxcnt - nread, MSG_WAITALL);
+      readret = recv(fd, buf + nread, maxcnt - nread, 0);
     }
 #else /* WITH_SSL */
-    readret = recv(fd, buf+nread, maxcnt-nread, MSG_WAITALL);
+    readret = recv(fd, buf+nread, maxcnt-nread, 0);
 #endif /* WITH_SSL */
 
     if (readret == 0) {
@@ -490,10 +490,10 @@ static ssize_t read_socket_data(int fd,char *buffer,size_t N)
     if(fd == sslFd){
       ret = SSL_read(ssl, buffer + total, N - total);
     }else{
-      ret = recv(fd,buffer + total,N - total, MSG_WAITALL);
+      ret = recv(fd,buffer + total,N - total, 0);
     }
 #else /* WITH_SSL */
-    ret = recv(fd,buffer + total,N - total, MSG_WAITALL);
+    ret = recv(fd,buffer + total,N - total, 0);
 #endif /* WITH_SSL */
 
     if (ret == 0)
