@@ -353,7 +353,7 @@ NTSTATUS pvfs_streams_save(struct pvfs_state *pvfs, struct pvfs_filename *name, 
   load the current ACL from extended attributes
 */
 NTSTATUS pvfs_acl_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd,
-		       struct xattr_DosAcl *acl)
+		       struct xattr_NTACL *acl)
 {
 	NTSTATUS status;
 	ZERO_STRUCTP(acl);
@@ -363,7 +363,7 @@ NTSTATUS pvfs_acl_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int 
 	status = pvfs_xattr_ndr_load(pvfs, acl, name->full_name, fd, 
 				     XATTR_DOSACL_NAME,
 				     acl, 
-				     (ndr_pull_flags_fn_t)ndr_pull_xattr_DosAcl);
+				     (ndr_pull_flags_fn_t)ndr_pull_xattr_NTACL);
 	return status;
 }
 
@@ -371,7 +371,7 @@ NTSTATUS pvfs_acl_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int 
   save the acl for a file into filesystem xattr
 */
 NTSTATUS pvfs_acl_save(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd,
-		       struct xattr_DosAcl *acl)
+		       struct xattr_NTACL *acl)
 {
 	NTSTATUS status;
 	void *privs;
@@ -386,7 +386,7 @@ NTSTATUS pvfs_acl_save(struct pvfs_state *pvfs, struct pvfs_filename *name, int 
 	status = pvfs_xattr_ndr_save(pvfs, name->full_name, fd, 
 				     XATTR_DOSACL_NAME, 
 				     acl, 
-				     (ndr_push_flags_fn_t)ndr_push_xattr_DosAcl);
+				     (ndr_push_flags_fn_t)ndr_push_xattr_NTACL);
 	talloc_free(privs);
 	return status;
 }
