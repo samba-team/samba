@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -1091,6 +1091,9 @@
 
 /* Define to turn on dmalloc debugging */
 #undef ENABLE_DMALLOC
+
+/* Define to check invariants around some common functions */
+#undef DMALLOC_FUNC_CHECK
 
 /* Do we have rl_completion_matches? */
 #undef HAVE_NEW_LIBREADLINE
