@@ -284,7 +284,7 @@ static NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_securi
 }
 
 static NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
-				    DATA_BLOB *session_key)
+					   DATA_BLOB *session_key)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 
@@ -294,7 +294,7 @@ static NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_securi
 /**
  * Next state function for the wrapped NTLMSSP state machine
  * 
- * @param gensec_ntlmssp_state NTLMSSP State
+ * @param gensec_security GENSEC state, initialised to NTLMSSP
  * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
  * @param in The request, as a DATA_BLOB
  * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
@@ -303,7 +303,7 @@ static NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_securi
  */
 
 static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
-			       const DATA_BLOB in, DATA_BLOB *out) 
+				      const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 
