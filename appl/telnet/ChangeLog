@@ -1,3 +1,13 @@
+2003-09-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnet/externs.h: export Scheduler and scheduler_lockout_tty
+	
+	* telnet/telnet.c (my_telnet): if telnet_spin returns failure,
+	complain that the server disconnected and exit
+	
+	* telnet/authenc.c (telnet_spin): if Scheduler() returns failure
+	(-1) propagate to higher level
+
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnetd/telnetd.c: use new DES_ api
