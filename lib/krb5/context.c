@@ -191,6 +191,13 @@ krb5_init_context(krb5_context *context)
     if(!p)
 	return ENOMEM;
 
+    p->mutex = malloc(sizeof(HEIMDAL_MUTEX));
+    if (p->mutex == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+    HEIMDAL_MUTEX_init(p->mutex);
+
     ret = krb5_get_default_config_files(&files);
     if(ret) 
 	goto out;
@@ -228,6 +235,10 @@ out:
 void
 krb5_free_context(krb5_context context)
 {
+    if (context->mutex) {
+	HEIMDAL_MUTEX_destroy(context->mutex);
+	free(context->mutex);
+    }
     if (context->default_cc_name)
 	free(context->default_cc_name);
     free(context->etypes);
