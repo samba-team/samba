@@ -184,67 +184,48 @@ BOOL register_my_workgroup_and_names(void)
 /****************************************************************************
   Remove all the names we registered.
 **************************************************************************/
-
-void release_my_names(void)
+void release_wins_names(void)
 {
-#if 0 /*JRR: do WINS server only, otherwise clients ignore us when we come back up*/
-  struct subnet_record *subrec;
+	struct subnet_record *subrec = unicast_subnet;
+	struct name_record *namerec, *nextnamerec;
 
-  for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
-#else
-  struct subnet_record *subrec = unicast_subnet;
-#endif
-  {
-    struct name_record *namerec, *nextnamerec;
-
-    for (namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
-         namerec;
-         namerec = nextnamerec)
-    {
-      nextnamerec = (struct name_record *)ubi_trNext( namerec );
-      if( (namerec->data.source == SELF_NAME)
-       && !NAME_IS_DEREGISTERING(namerec) )
-        release_name( subrec, namerec, standard_success_release,
-                      NULL, NULL);
-    }
-  }
+	for (namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+	     namerec;
+	     namerec = nextnamerec) {
+		nextnamerec = (struct name_record *)ubi_trNext( namerec );
+		if( (namerec->data.source == SELF_NAME)
+		    && !NAME_IS_DEREGISTERING(namerec) )
+			release_name( subrec, namerec, standard_success_release,
+				      NULL, NULL);
+	}
 }
 
 /*******************************************************************
-  Refresh our registered names.
+  Refresh our registered names with WINS
   ******************************************************************/
-
 void refresh_my_names(time_t t)
 {
-  struct subnet_record *subrec;
+	struct name_record *namerec;
 
-  for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
-  {
-    struct name_record *namerec;
-	  
-    /* B nodes don't send out name refresh requests, see RFC 1001, 15.5.1 */
-    if (subrec != unicast_subnet)
-      continue;
-          
-    for( namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
-         namerec;
-         namerec = (struct name_record *)ubi_trNext( namerec ) )
-    {
-      /* Each SELF name has an individual time to be refreshed. */
-      if( (namerec->data.source == SELF_NAME)
-       && (namerec->data.refresh_time < t)
-       && ( namerec->data.death_time != PERMANENT_TTL) )
-      {
-        /* We cheat here and pretend the refresh is going to be
-           successful & update the refresh times. This stops
-           multiple refresh calls being done. We actually
-           deal with refresh failure in the fail_fn.
-         */
-        if( !is_refresh_already_queued( subrec, namerec) )
-          refresh_name( subrec, namerec, NULL, NULL, NULL );
-        namerec->data.death_time = t + lp_max_ttl();
-        namerec->data.refresh_time = t + MIN(lp_max_ttl(), MAX_REFRESH_TIME);
-      }
-    }
-  }
+	if (wins_srv_count() < 1) return;
+
+	for (namerec = (struct name_record *)ubi_trFirst(unicast_subnet->namelist);
+	     namerec;
+	     namerec = (struct name_record *)ubi_trNext(namerec)) {
+		/* Each SELF name has an individual time to be refreshed. */
+		if ((namerec->data.source == SELF_NAME) &&
+		    (namerec->data.refresh_time < t) &&
+		    (namerec->data.death_time != PERMANENT_TTL)) {
+			/* We cheat here and pretend the refresh is going to be
+			   successful & update the refresh times. This stops
+			   multiple refresh calls being done. We actually
+			   deal with refresh failure in the fail_fn.
+			*/
+			if (!is_refresh_already_queued(unicast_subnet, namerec)) {
+				wins_refresh_name(namerec);
+			}
+			namerec->data.death_time = t + lp_max_ttl();
+			namerec->data.refresh_time = t + MIN(lp_max_ttl(), MAX_REFRESH_TIME);
+		}
+	}
 }
