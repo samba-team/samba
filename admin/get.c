@@ -48,15 +48,15 @@ get_entry(int argc, char **argv)
     hdb_entry ent;
     int i;
     
-    if(argc != 2){
-	fprintf(stderr, "Usage: get_entry principal\n");
+    if(argc != 2) {
+	krb5_warnx(context, "Usage: get_entry principal");
 	return 0;
     }
 	
     krb5_parse_name(context, argv[1], &ent.principal);
     
-    if((ret = hdb_open(context, &db, database, O_RDONLY, 0600))){
-	fprintf(stderr, "hdb_open: %s\n", krb5_get_err_text(context, ret));
+    if((ret = hdb_open(context, &db, database, O_RDONLY, 0600))) {
+	krb5_warn(context, ret, "hdb_open");
 	return 0;
     }
     
@@ -64,7 +64,7 @@ get_entry(int argc, char **argv)
     
     switch(ret){
     case HDB_ERR_NOENTRY:
-	fprintf(stderr, "Entry not found in database\n");
+	krb5_warnx(context, "Entry not found in database\n");
 	break;
     case 0: {
 	char buf[128];
@@ -74,12 +74,12 @@ get_entry(int argc, char **argv)
 	printf("Principal: %s\n", name);
 	free(name);
 	if (ent.max_life)
-	    puttime (*ent.max_life, buf, sizeof(buf));
+	    putlife (*ent.max_life, buf, sizeof(buf));
 	else
 	    strcpy (buf, "infinite");
 	printf("Max ticket life: %s\n", buf);
 	if (ent.max_renew)
-	    puttime (*ent.max_renew, buf, sizeof(buf));
+	    putlife (*ent.max_renew, buf, sizeof(buf));
 	else
 	    strcpy (buf, "infinite");
 	printf("Max renewable ticket life: %s\n", buf);
@@ -117,34 +117,13 @@ get_entry(int argc, char **argv)
 	    printf("type = %d, len = %d", ent.keys.val[i].key.keytype,
 		   ent.keys.val[i].key.keyvalue.length);
 	}
+	printf("\nFlags: ");
+	print_flags (stdout, &ent.flags);
 	printf("\n");
-	{
-	    int first_flag = 1;
-
-	    printf("Flags: ");
-#define PRINT_FLAG(f)				\
-if(ent.flags. f) { 				\
-    if(!first_flag)				\
-	printf(", ");				\
-    printf("%s", #f);				\
-    first_flag = 0;				\
-}
-	    PRINT_FLAG(initial);
-	    PRINT_FLAG(forwardable);
-	    PRINT_FLAG(proxiable);
-	    PRINT_FLAG(renewable);
-	    PRINT_FLAG(postdate);
-	    PRINT_FLAG(server);
-	    PRINT_FLAG(client);
-	    PRINT_FLAG(invalid);
-	    PRINT_FLAG(require_preauth);
-	    PRINT_FLAG(change_pw);
-	    printf("\n");
-	}
 	break;
     }
     default:
-	fprintf(stderr, "dbget: %s\n", krb5_get_err_text(context, ret));;
+	krb5_warn(context, ret, "db->fetch");
 	break;
     }
     memset(&ent, 0, sizeof(ent));
