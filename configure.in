@@ -123,6 +123,20 @@ if test "$with_krb4" != "no"; then
 	AC_FIND_FUNC(krb_enable_debug)
 	AC_FIND_FUNC(krb_disable_debug)
 	AC_FIND_FUNC(krb_get_our_ip_for_realm)
+	AC_CACHE_CHECK(for krb_mk_req with const arguments,
+		ac_cv_func_krb_mk_req_const,
+		[AC_TRY_COMPILE([#include <krb.h>],[
+		int krb_mk_req(KTEXT a, const char *s, const char *i,
+			       const char *r, int32_t checksum)
+		{ return 17; }],
+		ac_cv_func_krb_mk_req_const=yes,
+		ac_cv_func_krb_mk_req_const=no)
+	])
+	if test "$ac_cv_func_krb_mk_req_const" = "yes"; then
+		AC_DEFINE(KRB_MK_REQ_CONST, 1,
+			[Define if krb_mk_req takes cons char *])
+	fi
+
 	LIBS="$save_LIBS"
 	CFLAGS="$save_CFLAGS"
 	LIB_kdb="-lkdb -lkrb"
