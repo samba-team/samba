@@ -154,10 +154,12 @@ krb5_kt_get_entry(krb5_context context,
   if (r)
     return KRB5_KT_NOTFOUND; /* XXX i.e. file not found */
   while (krb5_kt_next_entry(context, id, entry, &cursor) == 0) {
-    if ((principal == NULL || krb5_principal_compare(context,
-						     principal,
-						     entry->principal)) &&
-	(kvno == 0 || kvno == entry->vno)) {
+    if ((principal == NULL
+	 || (krb5_principal_compare(context,
+				    principal,
+				    entry->principal)))
+	&& (kvno == 0 || kvno == entry->vno)
+	&& (keytype == 0 || keytype == entry->keyblock.keytype)) {
       krb5_kt_end_seq_get (context, id, &cursor);
       return 0;
     }
