@@ -21,7 +21,7 @@
  * krb5_dfs_pag()
  */
 
-#include "krb5_locl.h"
+#include <krb5.h>
 
 #ifdef DCE
 
