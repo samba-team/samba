@@ -340,7 +340,7 @@ char *getwd(char *);
 #define USE_WAITPID
 #endif
 
-#ifdef SGI
+#ifdef SGI4
 #include <netinet/tcp.h>
 #include <sys/statfs.h>
 #include <string.h>
@@ -355,7 +355,7 @@ char *getwd(char *);
 #define USE_SETSID
 #endif
 
-#ifdef SGI5
+#if defined(SGI5) || defined(SGI6)
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <netinet/in_systm.h>
