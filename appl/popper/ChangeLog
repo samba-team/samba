@@ -1,5 +1,8 @@
 Sat Apr  4 15:13:56 1998  Assar Westerlund  <assar@sics.se>
 
+	* pop_dropcopy.c (pop_dropcopy): first do mkstemp and then fdopen.
+  	Originally from <map@stacken.kth.se>
+
 	* popper.h: include <io.h>
 
 Mon Dec 29 16:37:26 1997  Assar Westerlund  <assar@sics.se>
