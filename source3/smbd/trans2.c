@@ -1665,53 +1665,56 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
          * the share mode contained ALLOW_SHARE_DELETE
          */
 
-        if(!GET_ALLOW_SHARE_DELETE(fsp->share_mode))
-          return(ERROR(ERRDOS,ERRnoaccess));
-
-        /*
-         * If the flag has changed from its previous value then
-         * modify the share mode entry for all files we have open
-         * on this device and inode to tell other smbds we have 
-         * changed the delete on close flag.
-         */
-
-        if(GET_DELETE_ON_CLOSE_FLAG(fsp->share_mode) != delete_on_close)
+        if(lp_share_modes(SNUM(conn)))
         {
-          int token;
-          files_struct *iterate_fsp;
-          SMB_DEV_T dev = fsp->fd_ptr->dev;
-          SMB_INO_T inode = fsp->fd_ptr->inode;
-
-          DEBUG(10,("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
-               delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
-
-          if(lock_share_entry(fsp->conn, dev, inode, &token) == False)
+          if(!GET_ALLOW_SHARE_DELETE(fsp->share_mode))
             return(ERROR(ERRDOS,ERRnoaccess));
 
           /*
-           * Go through all files we have open on the same device and
-           * inode (hanging off the same hash bucket) and set the DELETE_ON_CLOSE_FLAG.
+           * If the flag has changed from its previous value then
+           * modify the share mode entry for all files we have open
+           * on this device and inode to tell other smbds we have 
+           * changed the delete on close flag.
            */
 
-          for(iterate_fsp = file_find_di_first(dev, inode); iterate_fsp;
-                                iterate_fsp = file_find_di_next(iterate_fsp))
+          if(GET_DELETE_ON_CLOSE_FLAG(fsp->share_mode) != delete_on_close)
           {
-            int new_share_mode = (delete_on_close ? 
-                                  (iterate_fsp->share_mode | DELETE_ON_CLOSE_FLAG) :
-                                  (iterate_fsp->share_mode & ~DELETE_ON_CLOSE_FLAG) );
+            int token;
+            files_struct *iterate_fsp;
+            SMB_DEV_T dev = fsp->fd_ptr->dev;
+            SMB_INO_T inode = fsp->fd_ptr->inode;
 
-            DEBUG(10,("call_trans2setfilepathinfo: Changing share mode for fnum %d, file %s\
+            DEBUG(10,("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
+                 delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
+
+            if(lock_share_entry(fsp->conn, dev, inode, &token) == False)
+              return(ERROR(ERRDOS,ERRnoaccess));
+
+            /*
+             * Go through all files we have open on the same device and
+             * inode (hanging off the same hash bucket) and set the DELETE_ON_CLOSE_FLAG.
+             */
+
+            for(iterate_fsp = file_find_di_first(dev, inode); iterate_fsp;
+                                  iterate_fsp = file_find_di_next(iterate_fsp))
+            {
+              int new_share_mode = (delete_on_close ? 
+                                    (iterate_fsp->share_mode | DELETE_ON_CLOSE_FLAG) :
+                                    (iterate_fsp->share_mode & ~DELETE_ON_CLOSE_FLAG) );
+
+              DEBUG(10,("call_trans2setfilepathinfo: Changing share mode for fnum %d, file %s\
 dev = %x, inode = %.0f from %x to %x\n", 
-                    iterate_fsp->fnum, iterate_fsp->fsp_name, (unsigned int)dev, 
-                    (double)inode, iterate_fsp->share_mode, new_share_mode ));
+                      iterate_fsp->fnum, iterate_fsp->fsp_name, (unsigned int)dev, 
+                      (double)inode, iterate_fsp->share_mode, new_share_mode ));
 
-            if(modify_share_mode(token, iterate_fsp, new_share_mode)==False)
-              DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close for fnum %d, \
+              if(modify_share_mode(token, iterate_fsp, new_share_mode)==False)
+                DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close for fnum %d, \
 dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode));
-          }
+            }
 
-          unlock_share_entry(fsp->conn, dev, inode, token);
-        }
+            unlock_share_entry(fsp->conn, dev, inode, token);
+          }
+        } /* end if lp_share_modes() */
 
         /*
          * Set the delete on close flag in the reference
