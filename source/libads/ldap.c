@@ -66,6 +66,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	return ads_sasl_bind(ads);
 }
 
+
 /* Do a search with paged results.  cookie must be null on the first
    call, and then returned on each subsequent call.  It will be null
    again when the entire search is complete */
@@ -96,10 +97,10 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 
 	berelem = ber_alloc_t(LBER_USE_DER);
 	if (cookie && *cookie) {
-		ber_printf(berelem, "{iO}", (ber_int_t) 256, *cookie);
+		ber_printf(berelem, "{iO}", (ber_int_t) 1000, *cookie);
 		ber_bvfree(*cookie); /* don't need it from last time */
 	} else {
-		ber_printf(berelem, "{io}", (ber_int_t) 256, "", 0);
+		ber_printf(berelem, "{io}", (ber_int_t) 1000, "", 0);
 	}
 	ber_flatten(berelem, &berval);
 	PagedResults.ldctl_oid = ADS_PAGE_CTL_OID;
@@ -111,16 +112,32 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	controls[1] = NULL;
 
 	*res = NULL;
-	
+
+	/* we need to disable referrals as the openldap libs don't
+	   seem to handle them correctly. They result in the result
+	   record containing the server control being removed from the
+	   result list (tridge) */
+	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
+
 	rc = ldap_search_ext_s(ads->ld, bind_path, scope, exp, 
 			       (char **) attrs, 0, controls, NULL,
 			       NULL, LDAP_NO_LIMIT,
 			       (LDAPMessage **)res);
+
+	if (rc) {
+		DEBUG(3,("ldap_search_ext_s(%s) -> %s\n", exp, ldap_err2string(rc)));
+		return ADS_ERROR(rc);
+	}
+
 	ber_free(berelem, 1);
 	ber_bvfree(berval);
-	
+
 	rc = ldap_parse_result(ads->ld, *res, NULL, NULL, NULL,
 					NULL, &rcontrols,  0);
+
+	if (!rcontrols) {
+		return ADS_ERROR(rc);
+	}
 
 	for (cur_control=rcontrols[0]; cur_control; cur_control++) {
 		if (strcmp(ADS_PAGE_CTL_OID, cur_control->ldctl_oid) == 0) {
