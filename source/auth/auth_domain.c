@@ -24,7 +24,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-BOOL global_machine_password_needs_changing = False;
+extern BOOL global_machine_password_needs_changing;
 
 extern userdom_struct current_user_info;
 

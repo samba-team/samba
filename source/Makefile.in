@@ -295,9 +295,16 @@ PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
 UNIGRP_OBJ = libsmb/netlogon_unigrp.o 
 
-AUTH_OBJ = auth/auth.o auth/auth_sam.o auth/auth_server.o auth/auth_domain.o \
-	   auth/auth_rhosts.o auth/auth_unix.o auth/auth_util.o	auth/auth_winbind.o \
-	   auth/auth_builtin.o auth/auth_compat.o auth/auth_ntlmssp.o \
+AUTH_BUILTIN_OBJ = auth/auth_builtin.o
+AUTH_DOMAIN_OBJ = auth/auth_domain.o
+AUTH_SAM_OBJ = auth/auth_sam.o
+AUTH_RHOSTS_OBJ = auth/auth_rhosts.o
+AUTH_SERVER_OBJ = auth/auth_server.o
+AUTH_UNIX_OBJ = auth/auth_unix.o
+AUTH_WINBIND_OBJ = auth/auth_winbind.o
+
+AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
+		   auth/auth_ntlmssp.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
@@ -944,6 +951,34 @@ nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) \
 		@SONAMEFLAG@`basename $@` -lpam
+
+bin/rhosts.@SHLIBEXT@: $(AUTH_RHOSTS_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_RHOSTS_OBJ) @SONAMEFLAG@`basename $@`
+
+bin/builtin.@SHLIBEXT@: $(AUTH_BUILTIN_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_BUILTIN_OBJ) @SONAMEFLAG@`basename $@`
+
+bin/domain.@SHLIBEXT@: $(AUTH_DOMAIN_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_DOMAIN_OBJ) @SONAMEFLAG@`basename $@`
+
+bin/server.@SHLIBEXT@: $(AUTH_SERVER_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SERVER_OBJ) @SONAMEFLAG@`basename $@`
+
+bin/winbind.@SHLIBEXT@: $(AUTH_WINBIND_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_WINBIND_OBJ) @SONAMEFLAG@`basename $@`
+
+bin/unix.@SHLIBEXT@: $(AUTH_UNIX_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_UNIX_OBJ) @SONAMEFLAG@`basename $@`
+
+bin/sam.@SHLIBEXT@: $(AUTH_SAM_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SAM_OBJ) @SONAMEFLAG@`basename $@`
 
 bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ)
 	@echo "Building plugin $@"

@@ -1289,22 +1289,22 @@ void init_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid)
  Inits a DOM_CLNT_SRV structure.
 ********************************************************************/
 
-static void init_clnt_srv(DOM_CLNT_SRV *log, const char *logon_srv, const char *comp_name)
+static void init_clnt_srv(DOM_CLNT_SRV *dlog, const char *logon_srv, const char *comp_name)
 {
 	DEBUG(5,("init_clnt_srv: %d\n", __LINE__));
 
 	if (logon_srv != NULL) {
-		log->undoc_buffer = 1;
-		init_unistr2(&log->uni_logon_srv, logon_srv, strlen(logon_srv)+1);
+		dlog->undoc_buffer = 1;
+		init_unistr2(&dlog->uni_logon_srv, logon_srv, strlen(logon_srv)+1);
 	} else {
-		log->undoc_buffer = 0;
+		dlog->undoc_buffer = 0;
 	}
 
 	if (comp_name != NULL) {
-		log->undoc_buffer2 = 1;
-		init_unistr2(&log->uni_comp_name, comp_name, strlen(comp_name)+1);
+		dlog->undoc_buffer2 = 1;
+		init_unistr2(&dlog->uni_comp_name, comp_name, strlen(comp_name)+1);
 	} else {
-		log->undoc_buffer2 = 0;
+		dlog->undoc_buffer2 = 0;
 	}
 }
 
@@ -1312,9 +1312,9 @@ static void init_clnt_srv(DOM_CLNT_SRV *log, const char *logon_srv, const char *
  Inits or writes a DOM_CLNT_SRV structure.
 ********************************************************************/
 
-static BOOL smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *log, prs_struct *ps, int depth)
+static BOOL smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *dlog, prs_struct *ps, int depth)
 {
-	if (log == NULL)
+	if (dlog == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_clnt_srv");
@@ -1323,22 +1323,22 @@ static BOOL smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *log, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("undoc_buffer ", ps, depth, &log->undoc_buffer))
+	if(!prs_uint32("undoc_buffer ", ps, depth, &dlog->undoc_buffer))
 		return False;
 
-	if (log->undoc_buffer != 0) {
-		if(!smb_io_unistr2("unistr2", &log->uni_logon_srv, log->undoc_buffer, ps, depth))
+	if (dlog->undoc_buffer != 0) {
+		if(!smb_io_unistr2("unistr2", &dlog->uni_logon_srv, dlog->undoc_buffer, ps, depth))
 			return False;
 	}
 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("undoc_buffer2", ps, depth, &log->undoc_buffer2))
+	if(!prs_uint32("undoc_buffer2", ps, depth, &dlog->undoc_buffer2))
 		return False;
 
-	if (log->undoc_buffer2 != 0) {
-		if(!smb_io_unistr2("unistr2", &log->uni_comp_name, log->undoc_buffer2, ps, depth))
+	if (dlog->undoc_buffer2 != 0) {
+		if(!smb_io_unistr2("unistr2", &dlog->uni_comp_name, dlog->undoc_buffer2, ps, depth))
 			return False;
 	}
 
@@ -1349,28 +1349,28 @@ static BOOL smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *log, prs_struct *ps,
  Inits a DOM_LOG_INFO structure.
 ********************************************************************/
 
-void init_log_info(DOM_LOG_INFO *log, const char *logon_srv, const char *acct_name,
+void init_log_info(DOM_LOG_INFO *dlog, const char *logon_srv, const char *acct_name,
 		uint16 sec_chan, const char *comp_name)
 {
 	DEBUG(5,("make_log_info %d\n", __LINE__));
 
-	log->undoc_buffer = 1;
+	dlog->undoc_buffer = 1;
 
-	init_unistr2(&log->uni_logon_srv, logon_srv, strlen(logon_srv)+1);
-	init_unistr2(&log->uni_acct_name, acct_name, strlen(acct_name)+1);
+	init_unistr2(&dlog->uni_logon_srv, logon_srv, strlen(logon_srv)+1);
+	init_unistr2(&dlog->uni_acct_name, acct_name, strlen(acct_name)+1);
 
-	log->sec_chan = sec_chan;
+	dlog->sec_chan = sec_chan;
 
-	init_unistr2(&log->uni_comp_name, comp_name, strlen(comp_name)+1);
+	init_unistr2(&dlog->uni_comp_name, comp_name, strlen(comp_name)+1);
 }
 
 /*******************************************************************
  Reads or writes a DOM_LOG_INFO structure.
 ********************************************************************/
 
-BOOL smb_io_log_info(const char *desc, DOM_LOG_INFO *log, prs_struct *ps, int depth)
+BOOL smb_io_log_info(const char *desc, DOM_LOG_INFO *dlog, prs_struct *ps, int depth)
 {
-	if (log == NULL)
+	if (dlog == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_log_info");
@@ -1379,18 +1379,18 @@ BOOL smb_io_log_info(const char *desc, DOM_LOG_INFO *log, prs_struct *ps, int de
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("undoc_buffer", ps, depth, &log->undoc_buffer))
+	if(!prs_uint32("undoc_buffer", ps, depth, &dlog->undoc_buffer))
 		return False;
 
-	if(!smb_io_unistr2("unistr2", &log->uni_logon_srv, True, ps, depth))
+	if(!smb_io_unistr2("unistr2", &dlog->uni_logon_srv, True, ps, depth))
 		return False;
-	if(!smb_io_unistr2("unistr2", &log->uni_acct_name, True, ps, depth))
-		return False;
-
-	if(!prs_uint16("sec_chan", ps, depth, &log->sec_chan))
+	if(!smb_io_unistr2("unistr2", &dlog->uni_acct_name, True, ps, depth))
 		return False;
 
-	if(!smb_io_unistr2("unistr2", &log->uni_comp_name, True, ps, depth))
+	if(!prs_uint16("sec_chan", ps, depth, &dlog->sec_chan))
+		return False;
+
+	if(!smb_io_unistr2("unistr2", &dlog->uni_comp_name, True, ps, depth))
 		return False;
 
 	return True;
@@ -1529,21 +1529,21 @@ BOOL smb_io_clnt_info(const char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, in
  Inits a DOM_LOGON_ID structure.
 ********************************************************************/
 
-void init_logon_id(DOM_LOGON_ID *log, uint32 log_id_low, uint32 log_id_high)
+void init_logon_id(DOM_LOGON_ID *dlog, uint32 log_id_low, uint32 log_id_high)
 {
 	DEBUG(5,("make_logon_id: %d\n", __LINE__));
 
-	log->low  = log_id_low;
-	log->high = log_id_high;
+	dlog->low  = log_id_low;
+	dlog->high = log_id_high;
 }
 
 /*******************************************************************
  Reads or writes a DOM_LOGON_ID structure.
 ********************************************************************/
 
-BOOL smb_io_logon_id(const char *desc, DOM_LOGON_ID *log, prs_struct *ps, int depth)
+BOOL smb_io_logon_id(const char *desc, DOM_LOGON_ID *dlog, prs_struct *ps, int depth)
 {
-	if (log == NULL)
+	if (dlog == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_logon_id");
@@ -1552,9 +1552,9 @@ BOOL smb_io_logon_id(const char *desc, DOM_LOGON_ID *log, prs_struct *ps, int de
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("low ", ps, depth, &log->low ))
+	if(!prs_uint32("low ", ps, depth, &dlog->low ))
 		return False;
-	if(!prs_uint32("high", ps, depth, &log->high))
+	if(!prs_uint32("high", ps, depth, &dlog->high))
 		return False;
 
 	return True;
