@@ -17,7 +17,7 @@ and the "PROS and CONS" section.
 How does it work ?
 ------------------
 
-	LanManager encryption is somewhat similar to UNIX password
+LanManager encryption is somewhat similar to UNIX password
 encryption. The server uses a file containing a hashed value of a
 users password.  This is created by taking the users paintext
 password, capitalising it, and either truncating to 14 bytes (or
@@ -26,7 +26,7 @@ two 56 bit DES keys to encrypt a 'magic' eight byte value, forming a
 16 byte value which is stored by the server and client. Let this value
 be known as the *hashed password*.
 
-	Windows NT encryption is a higher quality mechanism, consisting
+Windows NT encryption is a higher quality mechanism, consisting
 of doing an MD4 hash on a Unicode version of the users password. This
 also produces a 16 byte hash value that is non-reversible.
 
@@ -129,7 +129,7 @@ details on how to do this.
 The smbpasswd file.
 -------------------
 
-	In order for Samba to participate in the above protocol it must
+In order for Samba to participate in the above protocol it must
 be able to look up the 16 byte hashed values given a user name.
 Unfortunately, as the UNIX password value is also a one way hash
 function (ie. it is impossible to retrieve the cleartext of the users
@@ -214,7 +214,7 @@ normal unix /etc/passwd file.
 The smbpasswd Command.
 ----------------------
 
-	The smbpasswd command maintains the two 32 byte password fields in
+The smbpasswd command maintains the two 32 byte password fields in
 the smbpasswd file. If you wish to make it similar to the unix passwd
 or yppasswd programs, install it in /usr/local/samba/bin (or your main
 Samba binary directory) and make it setuid root.
