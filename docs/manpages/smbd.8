@@ -292,26 +292,26 @@ You will probably want to set up the NetBIOS name server \fBnmbd\fP at
 the same time as \fBsmbd\fP\&. To do this refer to the man page for
 \fBnmbd (8)\fP\&.
 .PP 
-First, ensure that a port is configured in the file /etc/services\&. The
+First, ensure that a port is configured in the file \f(CW/etc/services\fP\&. The
 well-known port 139 should be used if possible, though any port may be
 used\&.
 .PP 
-Ensure that a line similar to the following is in /etc/services:
+Ensure that a line similar to the following is in \f(CW/etc/services\fP:
 .PP 
 \f(CWnetbios-ssn	139/tcp\fP
 .PP 
 Note for NIS/YP users - you may need to rebuild the NIS service maps
-rather than alter your local /etc/services file\&.
+rather than alter your local \f(CW/etc/services file\fP\&.
 .PP 
-Next, put a suitable line in the file /etc/inetd\&.conf (in the unlikely
+Next, put a suitable line in the file \f(CW/etc/inetd\&.conf\fP (in the unlikely
 event that you are using a meta-daemon other than inetd, you are on
 your own)\&. Note that the first item in this line matches the service
-name in /etc/services\&.  Substitute appropriate values for your system
+name in \f(CW/etc/services\fP\&.  Substitute appropriate values for your system
 in this line (see \fBinetd (8)\fP):
 .PP 
 \f(CWnetbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd -d1 -l/var/adm/smblogs/log -s/usr/local/samba/lib/smb\&.conf\fP
 .PP 
-(The above should appear in /etc/inetd\&.conf as a single
+(The above should appear in \f(CW/etc/inetd\&.conf\fP as a single
 line\&. Depending on your terminal characteristics, it may not appear
 that way in this man page\&.  If the above appears as more than one
 line, please treat any newlines or indentation as a single space or
