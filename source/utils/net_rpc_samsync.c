@@ -1021,7 +1021,10 @@ static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
 	if (!account_policy_set(AP_RESET_COUNT_TIME, (uint32)u_lockoutreset/60))
 		return nt_status;
 
-	if (!account_policy_set(AP_LOCK_ACCOUNT_DURATION, (uint32)u_lockouttime/60))
+	if (u_lockouttime != -1)
+		u_lockouttime /= 60;
+
+	if (!account_policy_set(AP_LOCK_ACCOUNT_DURATION, (uint32)u_lockouttime))
 		return nt_status;
 
 	if (!account_policy_set(AP_USER_MUST_LOGON_TO_CHG_PASS, delta->logon_chgpass))
