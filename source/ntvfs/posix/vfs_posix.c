@@ -35,11 +35,12 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 {
 	int snum = pvfs->tcon->service;
 
-	if (lp_map_hidden(snum)) pvfs->flags |= PVFS_FLAG_MAP_HIDDEN;
-	if (lp_map_archive(snum)) pvfs->flags |= PVFS_FLAG_MAP_ARCHIVE;
-	if (lp_map_system(snum)) pvfs->flags |= PVFS_FLAG_MAP_SYSTEM;
-	if (lp_readonly(snum)) pvfs->flags |= PVFS_FLAG_READONLY;
-	if (lp_strict_sync(snum)) pvfs->flags |= PVFS_FLAG_STRICT_SYNC;
+	if (lp_map_hidden(snum))     pvfs->flags |= PVFS_FLAG_MAP_HIDDEN;
+	if (lp_map_archive(snum))    pvfs->flags |= PVFS_FLAG_MAP_ARCHIVE;
+	if (lp_map_system(snum))     pvfs->flags |= PVFS_FLAG_MAP_SYSTEM;
+	if (lp_readonly(snum))       pvfs->flags |= PVFS_FLAG_READONLY;
+	if (lp_strict_sync(snum))    pvfs->flags |= PVFS_FLAG_STRICT_SYNC;
+	if (lp_strict_locking(snum)) pvfs->flags |= PVFS_FLAG_STRICT_LOCKING;
 
 	pvfs->share_name = talloc_strdup(pvfs, lp_servicename(snum));
 }
@@ -85,6 +86,13 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	tcon->dev_type = talloc_strdup(tcon, "A:");
 
 	ntvfs->private_data = pvfs;
+
+	pvfs->brl_context = brl_init(pvfs, 
+				     pvfs->tcon->smb_conn->connection->server_id,  
+				     pvfs->tcon->service);
+	if (pvfs->brl_context == NULL) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
 	status = pvfs_mangle_init(pvfs);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -159,16 +167,6 @@ static NTSTATUS pvfs_seek(struct ntvfs_module_context *ntvfs,
 {
 	DEBUG(0,("pvfs_seek not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
-}
-
-/*
-  lock a byte range
-*/
-static NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
-			  struct smbsrv_request *req, union smb_lock *lck)
-{
-	DEBUG(0,("pvfs_lock not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /*

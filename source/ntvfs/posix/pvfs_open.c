@@ -51,6 +51,9 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
 static int pvfs_fd_destructor(void *p)
 {
 	struct pvfs_file *f = p;
+
+	brl_close(f->pvfs->brl_context, &f->locking_key, f->fnum);
+
 	if (f->fd != -1) {
 		close(f->fd);
 		f->fd = -1;
@@ -71,6 +74,10 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	struct pvfs_filename *name;
 	struct pvfs_file *f;
 	NTSTATUS status;
+	struct {
+		dev_t device;
+		ino_t inode;
+	} lock_context;
 
 	if (io->generic.level != RAW_OPEN_GENERIC) {
 		return ntvfs_map_open(req, io, ntvfs);
@@ -161,6 +168,13 @@ do_open:
 	f->name = talloc_steal(f, name);
 	f->session = req->session;
 	f->smbpid = req->smbpid;
+	f->pvfs = pvfs;
+
+	/* we must zero here to take account of padding */
+	ZERO_STRUCT(lock_context);
+	lock_context.device = name->st.st_dev;
+	lock_context.inode = name->st.st_ino;
+	f->locking_key = data_blob_talloc(f, &lock_context, sizeof(lock_context));
 
 	/* setup a destructor to avoid file descriptor leaks on
 	   abnormal termination */
@@ -204,6 +218,11 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	status = brl_close(pvfs->brl_context, &f->locking_key, f->fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
 	if (close(f->fd) != 0) {
 		status = pvfs_map_errno(pvfs, errno);
 	} else {

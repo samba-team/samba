@@ -32,6 +32,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	ssize_t ret;
 	struct pvfs_file *f;
+	NTSTATUS status;
 
 	if (rd->generic.level != RAW_READ_READX) {
 		return NT_STATUS_NOT_SUPPORTED;
@@ -41,6 +42,14 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	f = pvfs_find_fd(pvfs, req, rd->readx.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status = pvfs_check_lock(pvfs, f, req->smbpid, 
+				 rd->readx.in.offset,
+				 rd->readx.in.maxcnt,
+				 READ_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	ret = pread(f->fd, 

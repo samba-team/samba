@@ -33,6 +33,7 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	ssize_t ret;
 	struct pvfs_file *f;
+	NTSTATUS status;
 
 	switch (wr->generic.level) {
 	case RAW_WRITE_WRITEX:
@@ -40,6 +41,14 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 		if (!f) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
+		status = pvfs_check_lock(pvfs, f, req->smbpid, 
+					 wr->writex.in.offset,
+					 wr->writex.in.count,
+					 WRITE_LOCK);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
 		ret = pwrite(f->fd, 
 			     wr->writex.in.data, 
 			     wr->writex.in.count,
@@ -62,6 +71,14 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 			/* a truncate! */
 			ret = ftruncate(f->fd, wr->write.in.offset);
 		} else {
+			status = pvfs_check_lock(pvfs, f, req->smbpid, 
+						 wr->write.in.offset,
+						 wr->write.in.count,
+						 WRITE_LOCK);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
 			ret = pwrite(f->fd,
 				     wr->write.in.data, 
 				     wr->write.in.count,

@@ -74,7 +74,7 @@ static void standard_accept_connection(struct event_context *ev, struct fd_event
 
 	set_need_random_reseed();
 
-	conn = server_setup_connection(ev, server_socket, sock, t);
+	conn = server_setup_connection(ev, server_socket, sock, t, getpid());
 	if (!conn) {
 		DEBUG(0,("server_setup_connection(ev, server_socket, sock, t) failed\n"));
 		return;

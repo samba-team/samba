@@ -611,6 +611,6 @@ typedef struct nt_user_token {
 #define REQ_CONTROL_ASYNC     (1<<2) /* the backend will answer this one later */
 
 /* passed to br lock code */
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
+enum brl_type {READ_LOCK, WRITE_LOCK};
 
 #endif /* _SMB_H */

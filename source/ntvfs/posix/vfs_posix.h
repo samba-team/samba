@@ -51,6 +51,8 @@ struct pvfs_state {
 	struct pvfs_file *open_files;
 
 	struct pvfs_mangle_context *mangle_ctx;
+
+	void *brl_context;
 };
 
 
@@ -115,6 +117,12 @@ struct pvfs_file {
 	/* we need to remember the client pid that 
 	   opened the file so SMBexit works */
 	uint16_t smbpid;
+
+	/* a unique file key to be used for file locking */
+	DATA_BLOB locking_key;
+
+	/* we need this hook back to our parent for lock destruction */
+	struct pvfs_state *pvfs;
 };
 
 struct pvfs_mangle_context {
@@ -147,11 +155,12 @@ struct pvfs_mangle_context {
 #define PVFS_RESOLVE_STREAMS     (1<<1)
 
 /* flags in pvfs->flags */
-#define PVFS_FLAG_CI_FILESYSTEM (1<<0) /* the filesystem is case insensitive */
-#define PVFS_FLAG_MAP_ARCHIVE   (1<<1)
-#define PVFS_FLAG_MAP_SYSTEM    (1<<2)
-#define PVFS_FLAG_MAP_HIDDEN    (1<<3)
-#define PVFS_FLAG_READONLY      (1<<4)
-#define PVFS_FLAG_STRICT_SYNC   (1<<5)
+#define PVFS_FLAG_CI_FILESYSTEM  (1<<0) /* the filesystem is case insensitive */
+#define PVFS_FLAG_MAP_ARCHIVE    (1<<1)
+#define PVFS_FLAG_MAP_SYSTEM     (1<<2)
+#define PVFS_FLAG_MAP_HIDDEN     (1<<3)
+#define PVFS_FLAG_READONLY       (1<<4)
+#define PVFS_FLAG_STRICT_SYNC    (1<<5)
+#define PVFS_FLAG_STRICT_LOCKING (1<<6)
 
 #endif /* _VFS_POSIX_H_ */

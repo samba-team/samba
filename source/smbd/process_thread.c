@@ -79,7 +79,7 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 		return; 
 	}
 
-	conn = server_setup_connection(ev, server_socket, sock, t);
+	conn = server_setup_connection(ev, server_socket, sock, t, pthread_self());
 	if (!conn) {
 		DEBUG(0,("server_setup_connection(ev, server_socket, sock, t) failed\n"));
 		event_context_destroy(ev);
