@@ -1,5 +1,7 @@
 2003-02-25  Love Hörquist Åstrand <lha@it.su.se>
 
+	* ftpd/ls.c: use readlink with bufsize - 1, From NetBSD
+
 	* ftp/ftp.1: s/utilizes/uses/ from NetBSD
 	
 	* ftpd/ftpd.8: s/utilize/use/ from NetBSD

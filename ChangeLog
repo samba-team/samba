@@ -1,13 +1,17 @@
-2003-02-18 Love Hörquist Åstrand <lha@it.su.se>
+2003-02-25  Love Hörquist Åstrand <lha@it.su.se>
+
+	* appl/kf/kf.1: s/securly/securely/ from NetBSD
+	
+2003-02-18  Love Hörquist Åstrand <lha@it.su.se>
 
 	* kdc/connect.c: s/intialize/initialize, from
 	<jmc@prioris.mini.pw.edu.pl>
 
-2003-02-17 Love Hörquist Åstrand <lha@it.su.se>
+2003-02-17  Love Hörquist Åstrand <lha@it.su.se>
 
 	* configure.in: add AM_MAINTAINER_MODE
 	
-2003-02-16 Love Hörquist Åstrand <lha@it.su.se>
+2003-02-16  Love Hörquist Åstrand <lha@it.su.se>
 
 	* **/*.[0-9]: add copyright/licenses on all manpages
 
@@ -17,7 +21,7 @@
 	PA-ENC-TIMESTAMP in the AS-REQ, using the first encryption
 	type specified by the KDC.
 
-2003-02-15 Love Hörquist Åstrand <lha@it.su.se>
+2003-02-15  Love Hörquist Åstrand <lha@it.su.se>
 
 	* fix-export: some autoconf put their version number in
 	autom4te.cache, so remove autom4te*.cache

@@ -1,3 +1,7 @@
+2003-02-25  Love Hörquist Åstrand <lha@it.su.se>
+
+	* otp.c: remove \n from errx, from NetBSD
+	
 2000-11-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* otpprint.1: sort parameters and close a list
