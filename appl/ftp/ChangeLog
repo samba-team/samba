@@ -1,3 +1,8 @@
+1999-11-30  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd.c (args): set correct variable when `-l' so that
+ 	logging actually works
+
 1999-11-29  Assar Westerlund  <assar@sics.se>
 
 	* ftp/security.c (sec_login): check return value from realloc
