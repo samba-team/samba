@@ -2921,7 +2921,7 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int poli
 
 search:		
 	rc = smbldap_search(ldap_state->smbldap_state, base,
-			    LDAP_SCOPE_ONE, filter, attrs, 0, &result);
+			    LDAP_SCOPE_ONELEVEL, filter, attrs, 0, &result);
 
 	if (rc != LDAP_SUCCESS) 
 		return ntstatus;
@@ -3033,7 +3033,7 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 		get_global_sam_name(), lp_ldap_suffix());
 		
 	rc = smbldap_search(ldap_state->smbldap_state, base,
-			    LDAP_SCOPE_ONE, filter, attrs, 0, &result);
+			    LDAP_SCOPE_ONELEVEL, filter, attrs, 0, &result);
 
 	if (rc != LDAP_SUCCESS) 
 		return ntstatus;
