@@ -2,7 +2,7 @@
                  context="G"
 				 type="boolean"
                  developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <synonym>timestamp logs</synonym>
 <description>
     <para>Samba debug log messages are timestamped 

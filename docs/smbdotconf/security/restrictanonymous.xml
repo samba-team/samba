@@ -2,7 +2,7 @@
 	type="integer"
                  context="G"
                  advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The setting of this parameter determines whether user and
     group list information is returned for an anonymous connection.

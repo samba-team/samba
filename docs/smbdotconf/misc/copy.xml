@@ -1,4 +1,4 @@
-<samba:parameter name="copy" context="S" hide="1" xmlns:samba="http://samba.org/common" type="string">
+<samba:parameter name="copy" context="S" hide="1" xmlns:samba="http://www.samba.org/samba/DTD/samba-doc" type="string">
 <description>
 	<para>This parameter allows you to &quot;clone&quot; service 
 	entries. The specified service is simply duplicated under the 

@@ -1,7 +1,7 @@
 <samba:parameter name="delete veto files"
 				 type="boolean"
                  context="S"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option is used when Samba is attempting to 
 	delete a directory that contains one or more vetoed directories 

@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 				 <description>
 	<para> The <parameter moreinfo="none">ldap admin dn</parameter>
 	defines the Distinguished  Name (DN) name used by Samba to

@@ -2,7 +2,7 @@
                  context="G"
                  developer="1"
 				 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This specifies the major and minor version numbers 
     that nmbd will use when announcing itself as a server. The default 

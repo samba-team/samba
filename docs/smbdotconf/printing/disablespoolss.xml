@@ -2,7 +2,7 @@
                  context="G"
 				 type="boolean"
 		 print="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>Enabling this parameter will disable Samba's support
     for the SPOOLSS set of MS-RPC's and will yield identical behavior

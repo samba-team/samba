@@ -1,7 +1,7 @@
 <samba:parameter name="-valid"
 		 context="S"
 		 type="boolean"
-		 xmlns:samba="http://samba.org/common">
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para> This parameter indicates whether a share is 
 	valid and thus can be used. When this parameter is set to false, 

@@ -2,7 +2,7 @@
                  context="G"
 				 type="boolean"
                  developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This variable controls controls whether samba will try 
     to use Simple and Protected NEGOciation (as specified by rfc2478) with 

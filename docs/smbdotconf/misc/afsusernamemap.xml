@@ -2,7 +2,7 @@
                  context="G"
 				 type="string"
                  advanced="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	<para>If you are using the fake kaserver AFS feature, you might
 	want to hand-craft the usernames you are creating tokens for.

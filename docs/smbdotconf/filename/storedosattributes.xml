@@ -1,7 +1,7 @@
 <samba:parameter name="store dos attributes"
                  context="S"
 		 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>If this parameter is set Samba no longer attempts to
 	map DOS attributes like SYSTEM, HIDDEN, ARCHIVE or READ-ONLY

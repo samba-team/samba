@@ -2,7 +2,7 @@
 	         context="G"
 			 type="string"
 		 advanced="1" developer="1"
-		 xmlns:samba="http://samba.org/common">
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	<para>If<link linkend="NISHOMEDIR"><parameter moreinfo="none">nis homedir
 	</parameter></link> is <constant>yes</constant>, and <citerefentry><refentrytitle>smbd</refentrytitle>

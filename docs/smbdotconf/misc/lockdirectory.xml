@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>lock dir</synonym>
 <description>
 	<para>This option specifies the directory where lock 

@@ -1,7 +1,7 @@
 <samba:parameter name="hide files"
 				 type="string"
                  context="S"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This is a list of files or directories that are not 
 	visible but are accessible.  The DOS 'hidden' attribute is applied 

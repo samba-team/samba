@@ -1,7 +1,7 @@
 <samba:parameter name="case sensitive"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>casesignames</synonym>
 <description>
 	<para>See the discussion in the section <link linkend="NAMEMANGLINGSECT">NAME MANGLING</link>.</para>

@@ -1,7 +1,7 @@
 <samba:parameter name="lock spin count"
                  context="G"
 				 type="integer"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter controls the number of times
 	that smbd should attempt to gain a byte range lock on the 

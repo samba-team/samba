@@ -2,7 +2,7 @@
                  context="G"
 				 type="boolean"
                  developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This global parameter determines if the tdb internals of Samba can
     depend on mmap working correctly on the running system. Samba requires a coherent

@@ -2,7 +2,7 @@
                  context="S"
 		 print="1"
 		 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <synonym>printer</synonym>
 <description>
     <para>This parameter specifies the name of the printer 

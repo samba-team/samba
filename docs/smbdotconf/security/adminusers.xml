@@ -1,7 +1,7 @@
 <samba:parameter name="admin users"
                  context="S"
 				 type="list"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This is a list of users who will be granted 
     administrative privileges on the share. This means that they 

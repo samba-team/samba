@@ -2,7 +2,7 @@
                  context="G"
 				 type="string"
                  advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies the home directory 
 	location when a Win95/98 or NT Workstation logs into a Samba PDC.  

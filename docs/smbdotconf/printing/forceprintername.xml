@@ -2,7 +2,7 @@
                  context="S"
 		 type="boolean"
 		 print="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>When printing from Windows NT (or later), 
     each printer in <filename>smb.conf</filename> has two 

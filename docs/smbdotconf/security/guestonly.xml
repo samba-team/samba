@@ -1,7 +1,7 @@
 <samba:parameter name="guest only"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>only guest</synonym>
 <description>
     <para>If this parameter is <constant>yes</constant> for 

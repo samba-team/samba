@@ -1,7 +1,7 @@
 <samba:parameter name="inherit permissions"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The permissions on new files and directories 
     are normally governed by <link linkend="CREATEMASK"><parameter moreinfo="none">

@@ -2,7 +2,7 @@
                  context="S"
 				 type="string"
 		 print="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>After a print job has finished spooling to 
     a service, this command will be used via a <command moreinfo="none">system()</command> 

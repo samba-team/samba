@@ -2,7 +2,7 @@
 		type="list"
 		 context="G"
 		 basic="1"
-		 xmlns:samba="http://samba.org/common">
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This is a list of paths to modules that should
 	be loaded into smbd before a client connects. This improves

@@ -2,7 +2,7 @@
                  context="S"
 				 type="boolean"
                  advanced="1" wizard="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This boolean parameter controls whether <citerefentry><refentrytitle>smbd</refentrytitle>                                       
     <manvolnum>8</manvolnum></citerefentry> will attempt to map the 'inherit' and 'protected'

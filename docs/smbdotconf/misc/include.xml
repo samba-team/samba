@@ -2,7 +2,7 @@
 	         context="G"
 			 type="string"
 		 hide="1"
-		 xmlns:samba="http://samba.org/common">
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This allows you to include one config file 
 	inside another.  The file is included literally, as though typed 

@@ -2,7 +2,7 @@
                  context="G"
 				 type="enum"
                  developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The value of the parameter (a string) is the highest 
     protocol level that will be supported by the server.</para>

@@ -1,7 +1,7 @@
 <samba:parameter name="oplock break wait time"
                  context="G"
 				 type="integer"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	<para>This is a tuning parameter added due to bugs in 
 	both Windows 9x and WinNT. If Samba responds to a client too 

@@ -1,7 +1,7 @@
 <samba:parameter name="ldap server"
                  context="G"
 				 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter is only available if Samba has been
 	configure to include the <command moreinfo="none">--with-ldapsam</command> 

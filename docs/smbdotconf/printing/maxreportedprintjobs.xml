@@ -2,7 +2,7 @@
                  context="S"
 				 type="integer"
 		 print="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter limits the maximum number of 
     jobs displayed in a port monitor for Samba printer queue at any given 

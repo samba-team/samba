@@ -1,7 +1,7 @@
 <samba:parameter name="read list"
                  context="S"
 				 type="list"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This is a list of users that are given read-only 
     access to a service. If the connecting user is in this list then 

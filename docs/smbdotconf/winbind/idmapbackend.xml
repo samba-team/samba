@@ -2,7 +2,7 @@
                  context="G"
 				 type="string"
                  advanced="1" developer="1" hide="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	The purpose of the idmap backend parameter is to allow idmap to NOT use the local idmap

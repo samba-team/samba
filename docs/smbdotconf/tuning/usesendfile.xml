@@ -1,7 +1,7 @@
 <samba:parameter name="use sendfile"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>If this parameter is <constant>yes</constant>, and the <constant>sendfile()</constant> system call is supported by the underlying operating system, then some SMB read calls (mainly ReadAndX
     and ReadRaw) will use the more efficient sendfile system call for files that

@@ -1,7 +1,7 @@
 <samba:parameter name="mangling char"
                  context="S"
 				 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	<para>This controls what character is used as 
 	the <emphasis>magic</emphasis> character in <link linkend="NAMEMANGLINGSECT">name mangling</link>. The 
