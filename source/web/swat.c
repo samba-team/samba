@@ -21,7 +21,7 @@
 */
 
 /**
- * @group swat SWAT
+ * @defgroup swat SWAT
  * @{ 
  * @file swat.c
  *
