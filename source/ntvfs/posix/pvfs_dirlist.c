@@ -282,5 +282,7 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 
 	pvfs_list_hibernate(dir);
 
-	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	/* it is not an error to give a bad name (it may have been deleted). Instead
+	   just continue from end of directory */
+	return NT_STATUS_OK;
 }
