@@ -2243,6 +2243,7 @@ static BOOL handle_client_code_page(char *pszParmValue, char **ptr)
 	if (saved_character_set != NULL)
 		interpret_character_set(saved_character_set,
 					lp_client_code_page());
+ 	codepage_initialise(lp_client_code_page());
 	return (True);
 }
 

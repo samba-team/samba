@@ -2014,8 +2014,7 @@ static int call_trans2mkdir(connection_struct *conn,
 
   unix_convert(directory,conn,0,&bad_path,NULL);
   if (check_name(directory,conn))
-    ret = conn->vfs_ops.mkdir(dos_to_unix(directory,False),
-			      unix_mode(conn,aDIR,directory));
+    ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
   
   if(ret < 0)
     {
