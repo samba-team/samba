@@ -1,9 +1,9 @@
-                  WHATS NEW IN Samba 3.0 alpha23
-                          30th March 2003
+                  WHATS NEW IN Samba 3.0 alpha24
+                          14th May 2003
                   ==============================
 
 This is a pre-release of Samba 3.0. This is NOT a stable release.
-Use at your own risk.
+Use at your own risk. 
 
 The purpose of this alpha release is to get wider testing of the major
 new pieces of code in the current Samba 3.0 development tree. We have
@@ -74,176 +74,90 @@ the problem then you will probably be ignored.
 Changes in alpha23:
 -------------------
 
-  LDAP Group Mapping
-  ------------------
-
-  pdbedit -i -e sets all SAM_ACCOUNT elements to CHANGED to
-  satisfy the new pdb_ldap.c handling.   pdbedit -g transfers group
-  mappings. I made this separate from the user database, as current
-  installations have to live with a split backend.  So, if you are
-  running 3_0 alphas with LDAP as a backend and upgrade to 3.0alpha23,
-  you must call
-
-    root# pdbedit -i tdbsam -e ldapsam -g
-
-  to transfer your group mapping database to LDAP.
-
-  All groups must be represented as posixGroup objects in
-  the directory and you must adapt your LDAP schema to support the
-  sambaGroupMapping before running this command.  Refer to
-  examples/LDAP/samba.schema for details on the objectclass.
-
-
+  LDAP Schema Changes
+  -------------------
+  A new objectclass (sambaSamAccount) has been introduced to replace the old
+  sambaAccount.  This change aids us in the renaming of attributes to prevent
+  clashes with attributes from other vendors.  There is a conversion script
+  (examples/LDAP/convertSambaAccount) to modify and LDIF file to the new schema.
+  
+  Example:
+  
+  	$ ldapsearch .... -b "ou=people,dc=..." > old.ldif
+	$ convertSambaAccount <DOM SID> old.ldif new.ldif
+	
+  The <DOM SID> can be obtained by running 'net getlocalsid <DOMAINNAME>' 
+  on the Samba PDC as root.
+  
+  The sambaDomain and sambaGroupMapping objects have also been modified
+  to use the new attribute naming conventions as well.  There are no 
+  conversion scripts for this data since the old schema was never published 
+  in a stable release.
+  
+  The old sambaAccount schema may still be used by specifying the 
+  "ldapsam_compat" passdb backend.
+  
   Parameters
   ----------
 
-  Modified Parameters (see smb.conf(5) for details):
+  Removed Parameters
 
-  * passdb backend
+  * total print jobs
 
-  Added Parameters
-
-  * ldap del only sam attr
-  * ldap delete dn
-
-
+  Known Issues
+  ------------
+  
+  The following are known issues with this release and will be corrected
+  in future versions:
+  
+  1) Automatically generating accounts for users and groups from 
+     trusted domains when Samba is acting as a PDC
+  2) Maintaining idmap ID's in a LDAP directory in order to implement 
+     a distributed winbind solution
+  
   ChangeLog
   ---------
 
   See cvs log for SAMBA_3_0 for complete details.  There are many
   smaller numerous changes that would clutter the release notes.
 
-0)  Include security fix from Samba 2.2.8
-1)  Fix interop bug in tconX on port 445 with Windows 2000
-2)  Interpret missing SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, or
-    SMB_ACL_OTHER as "preserve current value" instead of attempting
-    to build one ourself.
-3)  Rearrange set_nt_acl() such that chown is only done before
-    setting ACLs if there is either no change of owning user, or
-    change of owning user is towards the current user. Otherwise
-    chown is done after setting ACLs.
-4)  Continuing work on NTLMSSP-based SMB signing
-5)  When opening an existing TDB, don't require the hash_size
-    specified to the open call to be the same as that of the
-    existing tdb.  The specified hash_size is only used if the
-    tdb needs to be (re)created.
-6)  Add support for "WinXP" and "Win2K3" client architectures.
-7)  Fixed the unmarshalling of the queryaliasmem SAMR call
-8)  Windows 2000 can take much longer than the specified time to
-    respond to a lock - so to make the torture tests valid I give
-    it a grace time of 10 seconds instead of 2
-9)  Continued work on string handling paranoia
-10) Merge new statcache.c from HEAD
-11) Add new 'net ads dn' option
-12) Sync up SessionSetup code to HEAD, including Luke Howard's
-    session key and auth verifier patches
-13) Work on cleaning up winbindd's mutex locking
-14) Add support for LDAP based Windows group mapping
-15) Improve LDAP update routines
-16) Fix memory leaks found by Valgrind
-17) Add a 'privileged' mode to Winbindd
-18) Work around platforms that have broken getgrnam() implementations
-19) Merge real time signal fixes for kernel oplock code from HEAD
-20) Fix CIDR hosts allow/deny notation
-21) Fixup tcon&X server responses and error codes
-22) Set domain for users in passdb created by "net rpc vampire"
-23) More scalable printing updates
-
-
-                  ===============================
-
-Changes in older alpha releases follow:
-
----------------------------------------------------------------------
-
-Changes in alpha22:
--------------------
-
-  Added Parameters
-
-  * client NTLMv2 auth
-  * client lanman auth
-  * client signing
-  * client use spnego
-  * max reported print jobs
-  * msdfs proxy
-
-1)  remove the global_myname string and replace with wrapper function
-    global_myname()
-2)  create vfs/ and pdb/ subdirectories for library installs
-3)  Fixup of ordered cleanup of get_dc_list()
-4)  Added more autoconf tests for Stratus VOS
-5)  Fixed nasty bug where file writes with start offsets in the
-    range 0x80000000 -> 0xFFFFFFFF would fail as they were being cast
-    from IVAL (uint32) to SMB_OFF_T (off_t or off64_t, both *signed*
-    types).   The sign extension would cause the offset to be treated
-    as negative.
-6)  Add support to automatically retrieve the dns host name and domain
-    name of an AD server
-7)  Add support for PRINTER_INFO_7 and publishing printer attributes
-    in active directory
-8)  Fix for 64 bit issues with oplocks and allocation size
-9)  Remove assert(count ==1) for multi-homed PDCs when resolving
-    DOMAIN<0x1b>
-10) Ensure that change_trust_account_password() always talks to
-    the PDC
-11) Add some docs on CUPS printing
-12) Fix rpcclient querygroup command
-13) The _abs time functions should not be converting from/to GMT
-14) Fix broken incremental tar in smbclient
-15) Adding supporting code for better testing using Valgrind
-16) Fix for old DOS client when veto files is set to /.*/
-17) Add win32 utility to query driver capabilities to publish
-    (examples/printing/prtpub.c)
-18) Fix memory leak when constructing an driver_level_6 structure and
-    no dependent files
-19) Add some friendly versions of NT_STATUS codes
-20) Protect nmbd against malformed reply packets
-21) Removal of unpopular winbind client environment variable
-22) Add msdfs proxy functionality; a CIFS share can directly be a
-    stand-in for another share, and when clients connect to the first
-    share, they will be redirected to the proxied share
-23) Make Samba compile cleanly with -Wwrite-strings
-24) Add new timegm() that actually works on solaris
-25) Add support for running smbd, nmbd, & winbindd under the daemontools
-    package
-26) Move user password changes into the NTSTATUS era, and add support
-    for the 'min password age' and 'min passwd len' concepts
-27) Add new gencache based namecache code
-28) Add profiles utility support to Samba 3.0.x
-29) Fix open problem with changing attributes on an existing file
-30) Efficiency fixes for internal messaging system
-31) Make sure to update print queue cache during timeout_processing()
-    to send notify events
-32) Make -i flag work like it did in 2.2
-33) Merge some rpcclient and net functionality from HEAD
-34) Add support for compiling with Heimdal kerberos libraries
-35) Connect to the actual netbios name in smb.conf and not LOCALHOST
-36) Add support for CUPS-PRINTER_CLASS
-37) Add ntlm_auth tool and update NTLMSSP support
-38) require Autoconf 2.53 and remove configure from CVS
-39) Check for too many processes *before* the fork
-40) Fix delete on close semantics to match W2K.
-41) merge desired_access for open_printer_ex from HEAD, allowing
-    cupsaddsmb to work again!
-42) Add support for dynamic RPC modules
-43) wrap all cm_get_XX calls and their subsequent requests in a retry loop
-    in case we've temporarily lost connection to the DC. Makes winbindd
-    more reliable
-44) Optimize user_ok() and user_in_group() when verifying group membership
-45) Add NTLMv2 client code (that works) and some SMB signing fixes
-46) Add caching of PRINTER_INFO_2 structures to open printer handles
-47) Add 1/3 second delay in OpenPrinter() reply to trigger a LAN/WAN
-    optimization in Windows 2000 clients
-48) Add "WinXP" to the possible values of the %a variable
-49) Fix to allow blocking lock notification to be done rapidly (no wait for
-    smb -> smb lock release). Adds new PENDING_LOCK type to lockdb (does
-    not interfere with existing locks)
-50) Limit the unix domain sockets used by winbindd (also solves FD_SETSIZE
-    problem in winbindd to boot !). Adds a "last_access" field to winbindd
-    connections, and will close the oldest idle connection once the number
-    of open connections goes over WINBINDD_MAX_SIMULTANEOUS_CLIENTS (defined
-    in local.h as 200 currently)
-51) Limit the number of print jobs returned in EnumJobs()
-
-
+1)  Fix policy handle leak and crash bug in rpc printing code
+2)  Changed the order of checking whether a SID is a UID or a GID 
+    in posix acls
+3)  Merge of winbind nss cleanup from HEAD branch
+4)  Inclusion of idmap backend for mapping SIDs to uids/gids
+5)  Fix for very subtle POSIX lock interaction race condition
+6)  Re-fix close of delete semantics
+7)  Inclusion of schannel functionality (merged from SAMBA_TNG)
+8)  Remove unixsam passdb
+9)  Add debugging code to decode the Win2k PAC
+10) Very large amounts of documentation fixes (including the move from 
+    SGML->XML DocBook)
+11) Fix support for local_password_change() in pam_smbpass
+12) Ensure we have WinXP-like semantics for checking TIDs and FIDs
+13) More print job change notify fixes
+14) Handle deep referrals in MS-DFS code
+15) Add echo named pipe for testing purposes
+16) Workaround streams leak on SCO openserver 5.0.x
+17) Lots of popt changes to command line tools
+18) Use the new modules system for passdb (merge from HEAD)
+19) Inclusion of editreg.c for editing Windows NT+registry files off line
+20) Fix byte ordering when using CIDR notation in hosts allow/deny (again)
+21) Replace smbgroupedit tool with 'net groupmap'
+22) Merge SMB Signing, NTLMv2 and NTLMSSP fixes from HEAD branch
+23) Merge of trusted domain code from HEAD branch
+24) Fix up crashes in lanman printing code (e.g. disable spoolss = yes)
+25) Store the IP address in the utmp record when possible
+26) Fix bug in FindFirst code and OS/2 clients
+27) Fix local master browsing bug when synchronizing browse lists
+28) Fix browse synchronization when primary interface is no listed
+    in the interfaces list and "bind interfaces only" is enabled.
+29) removed ldapsam_nua and tdbsam_nua passdb backends (replaced by idmap)
+30) Include support for storing next rid value in LDAP using a 
+    sambaDomain object
+31) Removed "printing = SOFTQ" option
+32) Fix winbindd dual mode
+33) Revert from wins.tdb back to wins.dat (flat text file)
+34) More Trust relationship fixes
+35) More quota fixes (including server support for NT quota info levels)
+36) 
