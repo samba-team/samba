@@ -724,7 +724,15 @@ sec_login(char *host)
 		     are usually not very user friendly) */
     
     for(m = mechs; *m && (*m)->name; m++) {
-	app_data = realloc(app_data, (*m)->size);
+	void *tmp;
+
+	tmp = realloc(app_data, (*m)->size);
+	if (tmp == NULL) {
+	    warnx ("realloc %u failed", (*m)->size);
+	    return -1;
+	}
+	app_data = tmp;
+	    
 	if((*m)->init && (*(*m)->init)(app_data) != 0) {
 	    printf("Skipping %s...\n", (*m)->name);
 	    continue;
@@ -772,6 +780,7 @@ sec_end(void)
 	    (*mech->end)(app_data);
 	memset(app_data, 0, mech->size);
 	free(app_data);
+	app_data = NULL;
     }
     sec_complete = 0;
     data_prot = (enum protection_level)0;
