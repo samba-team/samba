@@ -98,16 +98,13 @@ static void smb_io_doc_info_1(char *desc, DOC_INFO_1 *info_1, prs_struct *ps, in
  
 	prs_align(ps);
 	
-	prs_uint32("p_docname", ps, depth, &(info_1->p_docname));
+	prs_uint32("p_docname",    ps, depth, &(info_1->p_docname));
 	prs_uint32("p_outputfile", ps, depth, &(info_1->p_outputfile));
-	prs_uint32("p_datatype", ps, depth, &(info_1->p_datatype));
+	prs_uint32("p_datatype",   ps, depth, &(info_1->p_datatype));
 
-	if (info_1->p_docname)
-		smb_io_unistr2("", &(info_1->docname),True,ps,depth);
-	if (info_1->p_outputfile)
-		smb_io_unistr2("", &(info_1->outputfile),True,ps,depth);
-	if (info_1->p_datatype)
-		smb_io_unistr2("", &(info_1->datatype),True,ps,depth);
+	smb_io_unistr2("", &(info_1->docname),    info_1->p_docname,    ps, depth);
+	smb_io_unistr2("", &(info_1->outputfile), info_1->p_outputfile, ps, depth);
+	smb_io_unistr2("", &(info_1->datatype),   info_1->p_datatype,   ps, depth);
 }
 
 /*******************************************************************
@@ -818,6 +815,35 @@ static void smb_io_relstr(char *desc, prs_struct *ps, int depth, UNISTR *buffer,
 	prs_uint32("offset", ps, depth, &(relative_offset));
 }
 
+
+/*******************************************************************
+ * write a array UNICODE strings and its relative pointer.
+ * used by 2 RPC structs
+ ********************************************************************/
+static void smb_io_relarraystr(char *desc, prs_struct *ps, int depth, UNISTR ***buffer,
+                   uint32 *start_offset, uint32 *end_offset)
+{
+	int i=0;
+	uint32 struct_offset;
+	uint32 relative_offset;
+	struct_offset=ps->offset;
+	
+	
+	while ( (*buffer)[i]!=0x0000 )
+	{
+		*end_offset-= 2*(str_len_uni((*buffer)[i])+1);	
+		ps->offset=*end_offset;
+		spoolss_smb_io_unistr(desc, (*buffer)[i], ps, depth);
+		
+		i++;
+	}
+
+	ps->offset=struct_offset;
+	relative_offset=*end_offset-*start_offset;
+
+	prs_uint32("offset", ps, depth, &(relative_offset));
+}
+
 /*******************************************************************
  * write a DEVICEMODE struct.
  * on reading allocate memory for the private member
@@ -1053,7 +1079,9 @@ static void smb_io_printer_driver_info_3(char *desc, DRIVER_INFO_3 *info,prs_str
 	smb_io_relstr("datafile",        ps, depth, &(info->datafile), start_offset, end_offset);
 	smb_io_relstr("configfile",      ps, depth, &(info->configfile), start_offset, end_offset);
 	smb_io_relstr("helpfile",        ps, depth, &(info->helpfile), start_offset, end_offset);
-	smb_io_relstr("dependentfiles",  ps, depth, &(info->dependentfiles), start_offset, end_offset);
+
+	smb_io_relarraystr("dependentfiles", ps, depth, &(info->dependentfiles), start_offset, end_offset);
+
 	smb_io_relstr("monitorname",     ps, depth, &(info->monitorname), start_offset, end_offset);
 	smb_io_relstr("defaultdatatype", ps, depth, &(info->defaultdatatype), start_offset, end_offset);
 }
@@ -1061,64 +1089,64 @@ static void smb_io_printer_driver_info_3(char *desc, DRIVER_INFO_3 *info,prs_str
 /*******************************************************************
 ********************************************************************/  
 static void smb_io_job_info_1(char *desc, JOB_INFO_1 *info, prs_struct *ps, int depth, 
-                                  uint32 *start_offset, uint32 *end_offset)
+                              uint32 *start_offset, uint32 *end_offset)
 {
 	prs_debug(ps, depth, desc, "smb_io_job_info_1");
 	depth++;	
 	*start_offset=ps->offset;
 	
-	prs_uint32("jobid", ps, depth, &(info->jobid));
-	smb_io_relstr("printername",ps, depth, &(info->printername), start_offset, end_offset);
-	smb_io_relstr("machinename",ps, depth, &(info->machinename), start_offset, end_offset);
-	smb_io_relstr("username",ps, depth, &(info->username), start_offset, end_offset);
-	smb_io_relstr("document",ps, depth, &(info->document), start_offset, end_offset);
-	smb_io_relstr("datatype",ps, depth, &(info->datatype), start_offset, end_offset);
-	smb_io_relstr("text_status",ps, depth, &(info->text_status), start_offset, end_offset);
-	prs_uint32("status", ps, depth, &(info->status));
-	prs_uint32("priority", ps, depth, &(info->priority));
-	prs_uint32("position", ps, depth, &(info->position));
-	prs_uint32("totalpages", ps, depth, &(info->totalpages));
-	prs_uint32("pagesprinted", ps, depth, &(info->pagesprinted));
+	prs_uint32("jobid",                 ps, depth, &(info->jobid));
+	smb_io_relstr("printername",        ps, depth, &(info->printername), start_offset, end_offset);
+	smb_io_relstr("machinename",        ps, depth, &(info->machinename), start_offset, end_offset);
+	smb_io_relstr("username",           ps, depth, &(info->username), start_offset, end_offset);
+	smb_io_relstr("document",           ps, depth, &(info->document), start_offset, end_offset);
+	smb_io_relstr("datatype",           ps, depth, &(info->datatype), start_offset, end_offset);
+	smb_io_relstr("text_status",        ps, depth, &(info->text_status), start_offset, end_offset);
+	prs_uint32("status",                ps, depth, &(info->status));
+	prs_uint32("priority",              ps, depth, &(info->priority));
+	prs_uint32("position",              ps, depth, &(info->position));
+	prs_uint32("totalpages",            ps, depth, &(info->totalpages));
+	prs_uint32("pagesprinted",          ps, depth, &(info->pagesprinted));
 	spoolss_io_system_time("submitted", ps, depth, &(info->submitted) );
 }
 
 /*******************************************************************
 ********************************************************************/  
 static void smb_io_job_info_2(char *desc, JOB_INFO_2 *info, prs_struct *ps, int depth, 
-                                  uint32 *start_offset, uint32 *end_offset)
+                              uint32 *start_offset, uint32 *end_offset)
 {	
 	int pipo=0;
 	prs_debug(ps, depth, desc, "smb_io_job_info_2");
 	depth++;	
 	*start_offset=ps->offset;
 	
-	prs_uint32("jobid", ps, depth, &(info->jobid));
-	smb_io_relstr("printername",ps, depth, &(info->printername), start_offset, end_offset);
-	smb_io_relstr("machinename",ps, depth, &(info->machinename), start_offset, end_offset);
-	smb_io_relstr("username",ps, depth, &(info->username), start_offset, end_offset);
-	smb_io_relstr("document",ps, depth, &(info->document), start_offset, end_offset);
-	smb_io_relstr("notifyname",ps, depth, &(info->notifyname), start_offset, end_offset);
-	smb_io_relstr("datatype",ps, depth, &(info->datatype), start_offset, end_offset);
+	prs_uint32("jobid",                 ps, depth, &(info->jobid));
+	smb_io_relstr("printername",        ps, depth, &(info->printername), start_offset, end_offset);
+	smb_io_relstr("machinename",        ps, depth, &(info->machinename), start_offset, end_offset);
+	smb_io_relstr("username",           ps, depth, &(info->username), start_offset, end_offset);
+	smb_io_relstr("document",           ps, depth, &(info->document), start_offset, end_offset);
+	smb_io_relstr("notifyname",         ps, depth, &(info->notifyname), start_offset, end_offset);
+	smb_io_relstr("datatype",           ps, depth, &(info->datatype), start_offset, end_offset);
 
-	smb_io_relstr("printprocessor",ps, depth, &(info->printprocessor), start_offset, end_offset);
-	smb_io_relstr("parameters",ps, depth, &(info->parameters), start_offset, end_offset);
-	smb_io_relstr("drivername",ps, depth, &(info->drivername), start_offset, end_offset);
-	smb_io_reldevmode("devmode",      ps, depth, &(info->devmode), start_offset, end_offset);
-	smb_io_relstr("text_status",ps, depth, &(info->text_status), start_offset, end_offset);
+	smb_io_relstr("printprocessor",     ps, depth, &(info->printprocessor), start_offset, end_offset);
+	smb_io_relstr("parameters",         ps, depth, &(info->parameters), start_offset, end_offset);
+	smb_io_relstr("drivername",         ps, depth, &(info->drivername), start_offset, end_offset);
+	smb_io_reldevmode("devmode",        ps, depth, info->devmode, start_offset, end_offset);
+	smb_io_relstr("text_status",        ps, depth, &(info->text_status), start_offset, end_offset);
 
 /*	SEC_DESC sec_desc;*/
 	prs_uint32("Hack! sec desc", ps, depth, &pipo);
 
-	prs_uint32("status", ps, depth, &(info->status));
-	prs_uint32("priority", ps, depth, &(info->priority));
-	prs_uint32("position", ps, depth, &(info->position));	
-	prs_uint32("starttime", ps, depth, &(info->starttime));
-	prs_uint32("untiltime", ps, depth, &(info->untiltime));	
-	prs_uint32("totalpages", ps, depth, &(info->totalpages));
-	prs_uint32("size", ps, depth, &(info->size));
+	prs_uint32("status",                ps, depth, &(info->status));
+	prs_uint32("priority",              ps, depth, &(info->priority));
+	prs_uint32("position",              ps, depth, &(info->position));	
+	prs_uint32("starttime",             ps, depth, &(info->starttime));
+	prs_uint32("untiltime",             ps, depth, &(info->untiltime));	
+	prs_uint32("totalpages",            ps, depth, &(info->totalpages));
+	prs_uint32("size",                  ps, depth, &(info->size));
 	spoolss_io_system_time("submitted", ps, depth, &(info->submitted) );
-	prs_uint32("timeelapsed", ps, depth, &(info->timeelapsed));
-	prs_uint32("pagesprinted", ps, depth, &(info->pagesprinted));
+	prs_uint32("timeelapsed",           ps, depth, &(info->timeelapsed));
+	prs_uint32("pagesprinted",          ps, depth, &(info->pagesprinted));
 }
 
 /*******************************************************************
@@ -1154,6 +1182,30 @@ static void smb_io_port_2(char *desc, PORT_INFO_2 *info, prs_struct *ps, int dep
 	smb_io_relstr("description",ps, depth, &(info->description), start_offset, end_offset);
 	prs_uint32("port_type", ps, depth, &(info->port_type));
 	prs_uint32("reserved", ps, depth, &(info->reserved));
+}
+
+/*******************************************************************
+********************************************************************/  
+static void smb_io_processor_info_1(char *desc, PRINTPROCESSOR_1 *info, prs_struct *ps, int depth, 
+                                    uint32 *start_offset, uint32 *end_offset)
+{
+	prs_debug(ps, depth, desc, "smb_io_processor_info_1");
+	depth++;	
+	*start_offset=ps->offset;
+
+	smb_io_relstr("name",ps, depth, &(info->name), start_offset, end_offset);
+}
+
+/*******************************************************************
+********************************************************************/  
+static void smb_io_monitor_info_1(char *desc, PRINTMONITOR_1 *info, prs_struct *ps, int depth, 
+                                  uint32 *start_offset, uint32 *end_offset)
+{
+	prs_debug(ps, depth, desc, "smb_io_monitor_info_1");
+	depth++;	
+	*start_offset=ps->offset;
+
+	smb_io_relstr("name",ps, depth, &(info->name), start_offset, end_offset);
 }
 
 /*******************************************************************
@@ -1255,6 +1307,9 @@ return the size required by a struct in the stream
 static uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
 {
 	int size=0;
+	UNISTR **string;
+	int i=0;
+
 	DEBUG(9,("Sizing driver info_3\n"));
 	size+=size_of_uint32( &(info->version) );	
 	size+=size_of_relative_string( &(info->name) );
@@ -1263,9 +1318,17 @@ static uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
 	size+=size_of_relative_string( &(info->datafile) );
 	size+=size_of_relative_string( &(info->configfile) );
 	size+=size_of_relative_string( &(info->helpfile) );
-	size+=size_of_relative_string( &(info->dependentfiles) );
 	size+=size_of_relative_string( &(info->monitorname) );
 	size+=size_of_relative_string( &(info->defaultdatatype) );
+	
+	string=info->dependentfiles;
+	
+	while ( (string)[i]!=0x0000 )
+	{
+		size+=2*(1+ str_len_uni( string[i] ) );
+		i++;
+	}
+	size+=4;
 
 	DEBUGADD(9,("size: [%d]\n", size));
 	return (size);
@@ -1312,7 +1375,7 @@ static uint32 spoolss_size_job_info_2(JOB_INFO_2 *info)
 	size+=size_of_relative_string( &(info->printprocessor) );
 	size+=size_of_relative_string( &(info->parameters) );
 	size+=size_of_relative_string( &(info->drivername) );
-	size+=size_of_device_mode( &(info->devmode) );
+	size+=size_of_device_mode( info->devmode );
 	size+=size_of_relative_string( &(info->text_status) );
 /*	SEC_DESC sec_desc;*/
 	size+=size_of_uint32( &(info->status) );
@@ -1360,6 +1423,28 @@ static uint32 spoolss_size_port_info_2(PORT_INFO_2 *info)
 
 	size+=size_of_uint32( &(info->port_type) );
 	size+=size_of_uint32( &(info->reserved) );
+
+	return (size);
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/  
+static uint32 spoolss_size_processor_info_1(PRINTPROCESSOR_1 *info)
+{
+	int size=0;
+	size+=size_of_relative_string( &(info->name) );
+
+	return (size);
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/  
+static uint32 spoolss_size_monitor_info_1(PRINTMONITOR_1 *info)
+{
+	int size=0;
+	size+=size_of_relative_string( &(info->name) );
 
 	return (size);
 }
@@ -3216,6 +3301,7 @@ void spoolss_io_r_enumprintprocessors(char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r
 	uint32 useless_ptr=0xADDE0FF0;
 	uint32 start_offset, end_offset, beginning;
 	uint32 bufsize_required=0;
+	int i;
 	
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprintprocessors");
 	depth++;
@@ -3228,12 +3314,12 @@ void spoolss_io_r_enumprintprocessors(char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r
 		{
 			PRINTPROCESSOR_1 *info_1;
 			info_1=r_u->info_1;
-/*			
+			
 			for (i=0; i<r_u->numofprintprocessors; i++)
 			{
-				bufsize_required += spoolss_size_port_info_2(&(info_1[i]));
+				bufsize_required += spoolss_size_processor_info_1(&(info_1[i]));
 			}
-*/			break;
+			break;
 		}
 	}
 	
@@ -3265,14 +3351,14 @@ void spoolss_io_r_enumprintprocessors(char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r
 		
 		switch (r_u->level)
 		{
-			case 2:
+			case 1:
 			{
-/*				PORT_INFO_2 *info;
-				for (i=0; i<r_u->numofports; i++)
+				PRINTPROCESSOR_1 *info_1;
+				for (i=0; i<r_u->numofprintprocessors; i++)
 				{
-					info = &(r_u->port.port_info_2[i]);
-					smb_io_port_2(desc, info, ps, depth, &start_offset, &end_offset);
-				}*/
+					info_1 = &(r_u->info_1[i]);
+					smb_io_processor_info_1(desc, info_1, ps, depth, &start_offset, &end_offset);
+				}
 				break;
 			}		
 		}		
@@ -3304,6 +3390,106 @@ void spoolss_io_q_enumprintprocessors(char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q
 	prs_align(ps);
 	prs_uint32("useless", ps, depth, &useless);
 	smb_io_unistr2("", &(q_u->environment),True,ps,depth);
+	prs_align(ps);
+	prs_uint32("level", ps, depth, &(q_u->level));
+	spoolss_io_read_buffer("", ps, depth, &(q_u->buffer));
+	prs_align(ps);
+	prs_uint32("buf_size", ps, depth, &(q_u->buf_size));
+}
+
+/*******************************************************************
+********************************************************************/  
+void spoolss_io_r_enumprintmonitors(char *desc, SPOOL_R_ENUMPRINTMONITORS *r_u, prs_struct *ps, int depth)
+{		
+	uint32 useless_ptr=0xADDE0FF0;
+	uint32 start_offset, end_offset, beginning;
+	uint32 bufsize_required=0;
+	int i;
+	
+	prs_debug(ps, depth, desc, "spoolss_io_r_enumprintmonitors");
+	depth++;
+
+	prs_align(ps);	
+	prs_uint32("pointer", ps, depth, &useless_ptr);
+	switch (r_u->level)
+	{
+		case 1:
+		{
+			PRINTMONITOR_1 *info_1;
+			info_1=r_u->info_1;
+			
+			for (i=0; i<r_u->numofprintmonitors; i++)
+			{
+				bufsize_required += spoolss_size_monitor_info_1(&(info_1[i]));
+			}
+			break;
+		}
+	}
+	
+	DEBUG(4,("size needed: %d\n",bufsize_required));
+	DEBUG(4,("size offered: %d\n",r_u->offered));
+
+	/* check if the buffer is big enough for the datas */
+	if (r_u->offered<bufsize_required)
+	{	
+
+		/* it's too small */
+		r_u->status=ERROR_INSUFFICIENT_BUFFER;	/* say so */
+		r_u->offered=0;				/* don't send back the buffer */
+		
+		DEBUG(4,("buffer too small\n"));
+
+		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
+	}
+	else
+	{	
+		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
+	
+		DEBUG(4,("buffer large enough\n"));
+	
+		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
+		beginning=ps->offset;
+		start_offset=ps->offset;
+		end_offset=start_offset+r_u->offered;
+		
+		switch (r_u->level)
+		{
+			case 1:
+			{
+				PRINTMONITOR_1 *info_1;
+				for (i=0; i<r_u->numofprintmonitors; i++)
+				{
+					info_1 = &(r_u->info_1[i]);
+					smb_io_monitor_info_1(desc, info_1, ps, depth, &start_offset, &end_offset);
+				}
+				break;
+			}		
+		}		
+		ps->offset=beginning+r_u->offered;
+		prs_align(ps);
+	}
+	
+	/*
+	 * if the buffer was too small, send the minimum required size
+	 * if it was too large, send the real needed size
+	 */
+	 	
+	prs_uint32("size of buffer needed", ps, depth, &(bufsize_required));
+	prs_uint32("numofprintmonitors", ps, depth, &(r_u->numofprintmonitors));	
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
+
+/*******************************************************************
+********************************************************************/  
+void spoolss_io_q_enumprintmonitors(char *desc, SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *ps, int depth)
+{
+	uint32 useless;
+	prs_debug(ps, depth, desc, "spoolss_io_q_enumprintmonitors");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("useless", ps, depth, &useless);
+	smb_io_unistr2("", &(q_u->name),True,ps,depth);
 	prs_align(ps);
 	prs_uint32("level", ps, depth, &(q_u->level));
 	spoolss_io_read_buffer("", ps, depth, &(q_u->buffer));
@@ -3504,3 +3690,114 @@ void spoolss_io_r_setform(char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int 
 	prs_uint32("status",	ps, depth, &(r_u->status));
 }
 
+/*******************************************************************
+********************************************************************/  
+void spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int depth)
+{		
+	uint32 useless_ptr=0xADDE0FF0;
+	uint32 start_offset, end_offset, beginning;
+	uint32 bufsize_required=0;
+	
+	prs_debug(ps, depth, desc, "spoolss_io_r_getjob");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("pointer", ps, depth, &useless_ptr);
+
+	switch (r_u->level)
+	{
+		case 1:
+		{
+			JOB_INFO_1 *info;
+			info=r_u->job.job_info_1;
+			
+			bufsize_required += spoolss_size_job_info_1(info);
+			break;
+		}
+		case 2:
+		{
+			JOB_INFO_2 *info;
+			info=r_u->job.job_info_2;
+			
+			bufsize_required += spoolss_size_job_info_2(info);
+			break;
+		}	
+	}
+	
+	DEBUG(4,("spoolss_io_r_getjob, size needed: %d\n",bufsize_required));
+	DEBUG(4,("spoolss_io_r_getjob, size offered: %d\n",r_u->offered));
+
+	/* check if the buffer is big enough for the datas */
+	if (r_u->offered<bufsize_required)
+	{	
+		/* it's too small */
+		r_u->status=ERROR_INSUFFICIENT_BUFFER;	/* say so */
+		r_u->offered=0;				/* don't send back the buffer */
+		
+		DEBUG(4,("spoolss_io_r_getjob, buffer too small\n"));
+
+		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
+	}
+	else
+	{	
+		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
+	
+		DEBUG(4,("spoolss_io_r_enumjobs, buffer large enough\n"));
+	
+		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
+		beginning=ps->offset;
+		start_offset=ps->offset;
+		end_offset=start_offset+r_u->offered;
+		
+		switch (r_u->level)
+		{
+			case 1:
+			{
+				JOB_INFO_1 *info;
+				info = r_u->job.job_info_1;
+				smb_io_job_info_1(desc, info, ps, depth, &start_offset, &end_offset);
+				break;
+			}
+			case 2:
+			{
+				JOB_INFO_2 *info;
+				info = r_u->job.job_info_2;
+				smb_io_job_info_2(desc, info, ps, depth, &start_offset, &end_offset);
+				break;
+			}
+		
+		}		
+		ps->offset=beginning+r_u->offered;
+		prs_align(ps);
+	}
+	
+	/*
+	 * if the buffer was too small, send the minimum required size
+	 * if it was too large, send the real needed size
+	 */
+	 	
+	prs_uint32("size of buffer needed", ps, depth, &(bufsize_required));
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
+
+/*******************************************************************
+********************************************************************/  
+void spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int depth)
+{
+
+	prs_debug(ps, depth, desc, "");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_prt_hnd("printer handle",&(q_u->handle),ps,depth);
+	prs_uint32("jobid", ps, depth, &(q_u->jobid));
+	prs_uint32("level", ps, depth, &(q_u->level));
+	
+	spoolss_io_read_buffer("", ps, depth, &(q_u->buffer));
+
+	prs_align(ps);
+	
+	prs_uint32("buf_size", ps, depth, &(q_u->buf_size));
+}

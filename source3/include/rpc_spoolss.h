@@ -29,7 +29,6 @@
 
 /* spoolss pipe: this are the calls which are not implemented ...
 #define SPOOLSS_OPENPRINTER				0x01
-#define SPOOLSS_GETJOB					0x03
 #define SPOOLSS_DELETEPRINTER				0x06
 #define SPOOLSS_GETPRINTERDRIVER			0x0b
 #define SPOOLSS_DELETEPRINTERDRIVER			0x0d
@@ -40,7 +39,6 @@
 #define SPOOLSS_WAITFORPRINTERCHANGE			0x1c
 #define SPOOLSS_DELETEFORM				0x1f
 #define SPOOLSS_GETFORM					0x20
-#define SPOOLSS_ENUMMONITORS				0x24
 #define SPOOLSS_ADDPORT					0x25
 #define SPOOLSS_CONFIGUREPORT				0x26
 #define SPOOLSS_DELETEPORT				0x27
@@ -73,6 +71,7 @@
 
 #define SPOOLSS_ENUMPRINTERS				0x00
 #define SPOOLSS_SETJOB					0x02
+#define SPOOLSS_GETJOB					0x03
 #define SPOOLSS_ENUMJOBS				0x04
 #define SPOOLSS_ADDPRINTER				0x05
 #define SPOOLSS_SETPRINTER				0x07
@@ -95,6 +94,7 @@
 #define SPOOLSS_SETFORM					0x21
 #define SPOOLSS_ENUMFORMS				0x22
 #define SPOOLSS_ENUMPORTS				0x23
+#define SPOOLSS_ENUMMONITORS				0x24
 #define SPOOLSS_ENUMPRINTPROCESSORDATATYPES		0x33
 #define SPOOLSS_GETPRINTERDRIVER2			0x35
 /* find close printer notification */
@@ -891,7 +891,7 @@ typedef struct driver_info_3
 	UNISTR datafile;
 	UNISTR configfile;
 	UNISTR helpfile;
-	UNISTR dependentfiles;
+	UNISTR **dependentfiles;
 	UNISTR monitorname;
 	UNISTR defaultdatatype;
 } DRIVER_INFO_3;
@@ -977,7 +977,7 @@ typedef struct s_job_info_2
 	UNISTR printprocessor;
 	UNISTR parameters;
 	UNISTR drivername;
-	DEVICEMODE devmode;
+	DEVICEMODE *devmode;
 	UNISTR text_status;
 /*	SEC_DESC sec_desc;*/
 	uint32 status;
@@ -1369,6 +1369,28 @@ typedef struct spool_r_enumprintprocessordatatypes
 	uint32 status;
 } SPOOL_R_ENUMPRINTPROCESSORDATATYPES;
 
+typedef struct spool_q_enumprintmonitors
+{
+	UNISTR2 name;
+	uint32 level;
+	BUFFER buffer;
+	uint32 buf_size;
+} SPOOL_Q_ENUMPRINTMONITORS;
+
+typedef struct printmonitor_1
+{
+	UNISTR name;
+} PRINTMONITOR_1;
+
+typedef struct spool_r_enumprintmonitors
+{
+	uint32 level;
+	PRINTMONITOR_1 *info_1;
+	uint32 offered;
+	uint32 numofprintmonitors;
+	uint32 status;
+} SPOOL_R_ENUMPRINTMONITORS;
+
 typedef struct spool_q_enumprinterdata
 {
 	PRINTER_HND handle;
@@ -1444,6 +1466,26 @@ typedef struct spool_r_setform
 {
 	uint32 status;
 } SPOOL_R_SETFORM;
+
+typedef struct spool_q_getjob
+{
+	PRINTER_HND handle;
+	uint32 jobid;
+	uint32 level;
+	BUFFER buffer;
+	uint32 buf_size;
+} SPOOL_Q_GETJOB;
+
+typedef struct spool_r_getjob
+{
+	uint32 level;
+	union {
+		JOB_INFO_1 *job_info_1;
+		JOB_INFO_2 *job_info_2;
+	} job;
+	uint32 offered;
+	uint32 status;
+} SPOOL_R_GETJOB;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
