@@ -7,7 +7,7 @@
 
 RCSID("$Id$");
 
-int snprintf(char *s, int n, char *fmt, ...)
+int snprintf(char *s, int n, const char *fmt, ...)
 {
   int ret;
   va_list ap;
