@@ -271,6 +271,8 @@ static void srv_io_srv_share_ctr(char *desc,  SRV_SHARE_INFO_CTR *ctr, prs_struc
 	prs_uint32("switch_value", ps, depth, &(ctr->switch_value));
 	prs_uint32("ptr_share_ctr", ps, depth, &(ctr->ptr_share_ctr));
 
+	return;
+
 	if (ctr->ptr_share_ctr != 0)
 	{
 		switch (ctr->switch_value)
@@ -628,6 +630,7 @@ reads or writes a structure.
 ********************************************************************/
 void make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
 				char *srv_name, char *qual_name,
+				char *user_name,
 				uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd)
@@ -640,6 +643,7 @@ void make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n,
 
 	make_buf_unistr2(&(q_n->uni_srv_name), &(q_n->ptr_srv_name), srv_name);
 	make_buf_unistr2(&(q_n->uni_qual_name), &(q_n->ptr_qual_name), qual_name);
+	make_buf_unistr2(&(q_n->uni_user_name), &(q_n->ptr_user_name), user_name);
 
 	q_n->sess_level    = sess_level;
 	q_n->preferred_len = preferred_len;
@@ -666,7 +670,10 @@ void srv_io_q_net_sess_enum(char *desc,  SRV_Q_NET_SESS_ENUM *q_n, prs_struct *p
 
 	prs_uint32("ptr_qual_name", ps, depth, &(q_n->ptr_qual_name));
 	smb_io_unistr2("", &(q_n->uni_qual_name), q_n->ptr_qual_name, ps, depth); 
+	prs_align(ps);
 
+	prs_uint32("ptr_user_name", ps, depth, &(q_n->ptr_user_name));
+	smb_io_unistr2("", &(q_n->uni_user_name), q_n->ptr_user_name, ps, depth); 
 	prs_align(ps);
 
 	prs_uint32("sess_level", ps, depth, &(q_n->sess_level  ));
@@ -1150,7 +1157,7 @@ static void srv_io_srv_file_ctr(char *desc,  SRV_FILE_INFO_CTR *ctr, prs_struct 
 reads or writes a structure.
 ********************************************************************/
 void make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
-				char *srv_name, char *qual_name,
+				char *srv_name, char *qual_name, uint32 file_id,
 				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd)
@@ -1164,6 +1171,7 @@ void make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n,
 	make_buf_unistr2(&(q_n->uni_srv_name), &(q_n->ptr_srv_name), srv_name);
 	make_buf_unistr2(&(q_n->uni_qual_name), &(q_n->ptr_qual_name), qual_name);
 
+	q_n->file_id       = file_id;
 	q_n->file_level    = file_level;
 	q_n->preferred_len = preferred_len;
 
@@ -1192,7 +1200,8 @@ void srv_io_q_net_file_enum(char *desc,  SRV_Q_NET_FILE_ENUM *q_n, prs_struct *p
 
 	prs_align(ps);
 
-	prs_uint32("file_level", ps, depth, &(q_n->file_level  ));
+	prs_uint32("file_id   ", ps, depth, &(q_n->file_id   ));
+	prs_uint32("file_level", ps, depth, &(q_n->file_level));
 
 	if (q_n->file_level != -1)
 	{

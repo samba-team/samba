@@ -256,7 +256,7 @@ void cmd_srv_enum_sess(struct client_info *info)
 
 	/* enumerate sessions on server */
 	res = res ? do_srv_net_srv_sess_enum(smb_cli, nt_pipe_fnum,
-				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
+				dest_srv, NULL, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, nt_pipe_fnum);
@@ -309,7 +309,7 @@ void cmd_srv_enum_files(struct client_info *info)
 
 	/* enumerate files on server */
 	res = res ? do_srv_net_srv_file_enum(smb_cli, nt_pipe_fnum,
-				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
+				dest_srv, NULL, 0, info_level, &ctr, 0x1000, &hnd) : False;
 
 	if (res)
 	{

@@ -1968,7 +1968,7 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli, uint16 fnum,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
 BOOL do_srv_net_srv_sess_enum(struct cli_state *cli, uint16 fnum,
-			char *server_name, char *qual_name,
+			char *server_name, char *qual_name, char *user_name,
 			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
@@ -1978,7 +1978,7 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli, uint16 fnum,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
 BOOL do_srv_net_srv_file_enum(struct cli_state *cli, uint16 fnum,
-			char *server_name, char *qual_name,
+			char *server_name, char *qual_name, uint32 file_id,
 			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
@@ -2036,7 +2036,7 @@ void at_io_r_query_job(char *desc, AT_R_QUERY_JOB *r_q, prs_struct *ps, int dept
 
 /*The following definitions come from  rpc_parse/parse_eventlog.c  */
 
-void make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, char *journal);
+void make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, char *journal, char *unk);
 void eventlog_io_q_open(char *desc, EVENTLOG_Q_OPEN *q_u, prs_struct *ps, int depth);
 void eventlog_io_r_open(char *desc, EVENTLOG_R_OPEN *r_u, prs_struct *ps, int depth);
 void make_eventlog_q_close(EVENTLOG_Q_CLOSE *q_u, POLICY_HND *pol);
@@ -2909,6 +2909,7 @@ void make_srv_sess_info1(SESS_INFO_1 *ss1,
 				uint32 user_flags);
 void make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
 				char *srv_name, char *qual_name,
+				char *user_name,
 				uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd);
@@ -2932,7 +2933,7 @@ void make_srv_file_info3(FILE_INFO_3 *fl3,
 				uint32 id, uint32 perms, uint32 num_locks,
 				char *path_name, char *user_name);
 void make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
-				char *srv_name, char *qual_name,
+				char *srv_name, char *qual_name, uint32 file_id,
 				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd);

@@ -121,6 +121,9 @@ typedef struct q_net_sess_enum_info
 	uint32 ptr_qual_name;         /* pointer (to qualifier name) */
 	UNISTR2 uni_qual_name;        /* qualifier name "\\qualifier" */
 
+	uint32 ptr_user_name;         /* pointer (to user name) */
+	UNISTR2 uni_user_name;        /* user name */
+
 	uint32 sess_level;          /* session level */
 
 	SRV_SESS_INFO_CTR *ctr;
@@ -418,6 +421,8 @@ typedef struct q_net_file_enum_info
 
 	uint32 ptr_qual_name;         /* pointer (to qualifier name) */
 	UNISTR2 uni_qual_name;        /* qualifier name "\\qualifier" */
+
+	uint32 file_id;             /* file id */
 
 	uint32 file_level;          /* file level */
 
