@@ -1992,7 +1992,7 @@ BOOL samr_query_aliasmem(  const POLICY_HND *alias_pol,
 			p = False;
 		}
 
-		if (p && r_o.ptr != 0)
+		if (p)
 		{
 			valid_query = True;
 			*num_mem = r_o.num_sids;
@@ -2052,7 +2052,7 @@ BOOL samr_query_useraliases(  const POLICY_HND *pol,
 			p = False;
 		}
 
-		if (p && r_o.ptr != 0)
+		if (p)
 		{
 			valid_query = True;
 			*num_aliases = r_o.num_entries;
@@ -2112,7 +2112,7 @@ BOOL samr_query_groupmem(  POLICY_HND *group_pol,
 			p = False;
 		}
 
-		if (p && r_o.ptr != 0 &&
+		if (p && 
 		    r_o.ptr_rids != 0 && r_o.ptr_attrs != 0 &&
 		    r_o.num_rids == r_o.num_attrs)
 		{
