@@ -882,6 +882,10 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 		talloc_free(p);
 		return status;
 	}
+
+	if (!(binding->flags & DCERPC_AUTH_OPTIONS)) {
+		username = NULL;
+	}
 	
 	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, domain, username, password);
 	if (!NT_STATUS_IS_OK(status)) {
