@@ -182,12 +182,14 @@ static int reply_nt1(char *outbuf)
 	  DEBUG(5,("attempting password server validation\n"));
 	  cli = server_cryptkey();
   } else {
-	  DEBUG(5,("attempting local password validation\n"));
+	  DEBUG(5,("not attempting password server validation\n"));
   }
 
   if (cli) {
 	  DEBUG(3,("using password server validation\n"));
 	  doencrypt = ((cli->sec_mode & 2) != 0);
+  } else {
+	  DEBUG(3,("not using password server validation\n"));
   }
 
   if (doencrypt) {
