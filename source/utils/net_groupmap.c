@@ -258,7 +258,7 @@ static int net_groupmap_add(int argc, const char **argv)
 	}
 	
 	if ( (gid = nametogid(unixgrp)) == (gid_t)-1 ) {
-		d_printf("Can't lookup UNIX group %s\n", ntgroup);
+		d_printf("Can't lookup UNIX group %s\n", unixgrp);
 		return -1;
 	}
 	
