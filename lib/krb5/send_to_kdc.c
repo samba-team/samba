@@ -227,6 +227,70 @@ init_port(const char *s, int fallback)
 	return fallback;
 }
 
+/*
+ * Return 0 if succesful, otherwise 1
+ */
+
+static int
+send_via_proxy (krb5_context context,
+		const char *hostname,
+		const krb5_data *send,
+		krb5_data *receive)
+{
+    char *proxy = strdup(context->http_proxy);
+    char *prefix;
+    char *colon;
+    struct addrinfo hints;
+    struct addrinfo *ai, *a;
+    int ret;
+    int s;
+    char portstr[NI_MAXSERV];
+		 
+    colon = strchr(proxy, ':');
+    if(colon != NULL)
+	*colon++ = '\0';
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_family   = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    snprintf (portstr, sizeof(portstr), "%d",
+	      ntohs(init_port (colon, htons(80))));
+    ret = getaddrinfo (proxy, portstr, NULL, &ai);
+    free (proxy);
+    if (ret)
+	return ret;
+
+    for (a = ai; a != NULL; a = a->ai_next) {
+	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+	if (s < 0)
+	    continue;
+	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
+	    close (s);
+	    continue;
+	}
+	break;
+    }
+    if (a == NULL)
+	return 1;
+
+    asprintf(&prefix, "http://%s/", hostname);
+    if(prefix == NULL) {
+	close(s);
+	return 1;
+    }
+    ret = send_and_recv_http(s, context->kdc_timeout,
+			     prefix, send, receive);
+    close (s);
+    free(prefix);
+    if(ret == 0 && receive->length != 0)
+	return 0;
+    return 1;
+}
+
+/*
+ * Send the data `send' to one KDC in `realm' and get back the reply
+ * in `receive'.
+ */
+
 krb5_error_code
 krb5_sendto_kdc (krb5_context context,
 		 const krb5_data *send,
@@ -235,12 +299,9 @@ krb5_sendto_kdc (krb5_context context,
 {
      krb5_error_code ret;
      char **hostlist, **hp, *p;
-     struct hostent *hostent;
      int fd;
      int port;
      int i;
-     struct sockaddr_storage __ss;
-     struct sockaddr *sa = (struct sockaddr *)&__ss;
 
      port = krb5_getportbyname (context, "kerberos", "udp", 88);
 
@@ -253,11 +314,12 @@ krb5_sendto_kdc (krb5_context context,
 
      for (i = 0; i < context->max_retries; ++i)
 	 for (hp = hostlist; (p = *hp); ++hp) {
-	     char **addr;
 	     char *colon;
 	     int http_flag = 0;
 	     int tcp_flag = 0;
-	     int sa_size;
+	     struct addrinfo *ai, *a;
+	     struct addrinfo hints;
+	     char portstr[NI_MAXSERV];
 
 	     if(strncmp(p, "http://", 7) == 0){
 		 p += 7;
@@ -274,106 +336,56 @@ krb5_sendto_kdc (krb5_context context,
 		 p += 4;
 	     }
 	     if(http_flag && context->http_proxy) {
-		 char *proxy = strdup(context->http_proxy);
-		 char *prefix;
-		 struct hostent *hp;
-		 
-		 colon = strchr(proxy, ':');
-		 if(colon) {
-		     *colon = '\0';
-		 }
-		 hp = roken_gethostbyname(proxy);
-		 if(colon)
-		     *colon++ = ':';
-		 if(hp == NULL) {
-		     free(proxy);
+		 if (send_via_proxy (context, p, send, receive))
 		     continue;
-		 }
-		 ret = krb5_h_addr2sockaddr (hp->h_addrtype,
-					     hp->h_addr,
-					     sa,
-					     &sa_size,
-					     init_port(colon, htons(80)));
-		 free(proxy);
-		 if(ret)
-		     continue;
-		 fd = socket(hp->h_addrtype, SOCK_STREAM, 0);
-		 if(fd < 0) 
-		     continue;
-		 if(connect(fd, sa, sa_size) < 0) {
-		     close(fd);
-		     continue;
-		 }
-		 asprintf(&prefix, "http://%s/", p);
-		 if(prefix == NULL) {
-		     close(fd);
-		     continue;
-		 }
-		 ret = send_and_recv_http(fd, context->kdc_timeout,
-					  prefix, send, receive);
-		 close (fd);
-		 free(prefix);
-		 if(ret == 0 && receive->length != 0)
+		 else
 		     goto out;
-		 continue;
 	     }
 	     colon = strchr (p, ':');
 	     if (colon)
 		 *colon = '\0';
-#ifdef HAVE_GETHOSTBYNAME2
-#ifdef HAVE_IPV6
-	     hostent = gethostbyname2 (p, AF_INET6);
-	     if (hostent == NULL)
-#endif
-		 hostent = gethostbyname2 (p, AF_INET);
-#else
-	     hostent = roken_gethostbyname (p);
-#endif
-	     if(hostent == NULL)
-		 continue;
+
+	     memset (&hints, 0, sizeof(hints));
+	     hints.ai_family = PF_UNSPEC;
+	     if (tcp_flag || http_flag)
+		 hints.ai_socktype = SOCK_STREAM;
+	     else
+		 hints.ai_socktype = SOCK_DGRAM;
+	     snprintf (portstr, sizeof(portstr), "%d",
+		       ntohs(init_port (colon, port)));
+	     ret = getaddrinfo (p, portstr, &hints, &ai);
 	     if (colon)
 		 *colon++ = ':';
-	     for (addr = hostent->h_addr_list;
-		  *addr;
-		  ++addr) {
-		 int family = hostent->h_addrtype;
-		    
-		 if(http_flag || tcp_flag)
-		     fd = socket(family, SOCK_STREAM, 0);
-		 else
-		     fd = socket(family, SOCK_DGRAM, 0);
-		    
-		 if(fd < 0) {
-		     ret = errno;
-		     goto out;
-		 }
-		 ret = krb5_h_addr2sockaddr (family,
-					     *addr,
-					     sa,
-					     &sa_size,
-					     init_port(colon, port));
-		 if (ret)
+	     if (ret)
+		 continue;
+	     for (a = ai; a != NULL; a = a->ai_next) {
+		 fd = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+		 if (fd < 0)
 		     continue;
-
-		 if(connect(fd, sa, sa_size) < 0) {
+		 if (connect (fd, a->ai_addr, a->ai_addrlen) < 0) {
 		     close (fd);
 		     continue;
 		 }
-		    
-		 if(http_flag)
-		     ret = send_and_recv_http(fd, context->kdc_timeout,
-					      "", send, receive);
-		 else if(tcp_flag)
-			
-		     ret = send_and_recv_tcp (fd, context->kdc_timeout,
-					      send, receive);
-		 else
-		     ret = send_and_recv_udp (fd, context->kdc_timeout,
-					      send, receive);
-		 close (fd);
-		 if(ret == 0 && receive->length != 0)
-		     goto out;
+		 break;
 	     }
+	     if (a == NULL) {
+		 freeaddrinfo (ai);
+		 continue;
+	     }
+	     freeaddrinfo (ai);
+
+	     if(http_flag)
+		 ret = send_and_recv_http(fd, context->kdc_timeout,
+					  "", send, receive);
+	     else if(tcp_flag)
+		 ret = send_and_recv_tcp (fd, context->kdc_timeout,
+					  send, receive);
+	     else
+		 ret = send_and_recv_udp (fd, context->kdc_timeout,
+					  send, receive);
+	     close (fd);
+	     if(ret == 0 && receive->length != 0)
+		 goto out;
 	 }
      ret = KRB5_KDC_UNREACH;
 out:
