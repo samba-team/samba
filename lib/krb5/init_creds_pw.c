@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -88,7 +88,7 @@ init_cred (krb5_context context,
     krb5_error_code ret;
     krb5_realm *client_realm;
     int tmp;
-    int32_t now;
+    krb5_timestamp now;
 
     krb5_timeofday (context, &now);
 
@@ -164,7 +164,7 @@ print_expire (krb5_context context,
 {
     int i;
     LastReq *lr = &rep->enc_part.last_req;
-    int32_t sec;
+    krb5_timestamp sec;
     time_t t;
 
     krb5_timeofday (context, &sec);

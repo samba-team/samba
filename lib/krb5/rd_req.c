@@ -128,7 +128,7 @@ krb5_decrypt_ticket(krb5_context context,
 	return ret;
     
     {
-	int32_t now;
+	krb5_timestamp now;
 	time_t start = t.authtime;
 
 	krb5_timeofday (context, &now);

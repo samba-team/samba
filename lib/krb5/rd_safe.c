@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -131,7 +131,7 @@ krb5_rd_safe(krb5_context context,
 
   /* check timestamp */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
-      int32_t sec;
+      krb5_timestamp sec;
 
       krb5_timeofday (context, &sec);
 

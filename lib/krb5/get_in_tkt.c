@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -131,7 +131,7 @@ _krb5_extract_ticket(krb5_context context,
     krb5_principal tmp_principal;
     int tmp;
     time_t tmp_time;
-    int32_t sec_now;
+    krb5_timestamp sec_now;
 
     /* compare client */
 
