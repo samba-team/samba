@@ -226,6 +226,7 @@ BOOL new_get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids
  	*pgids=gids;
 	*numgroups=cur_gid;
 	safe_free(map);
+	return True;
 }
 
 /*******************************************************************
