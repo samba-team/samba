@@ -292,11 +292,11 @@ alias|alias|alias|alias...
 		components (if there are more than one) are separated by vertical 
 		bar symbols ('|').</para>
 		
-		<para>NOTE: On SYSV systems which use lpstat to determine what 
+		<note><para>On SYSV systems which use lpstat to determine what 
 		printers are defined on the system you may be able to use
 		&quot;printcap name = lpstat&quot; to automatically obtain a list 
 		of printers. See the &quot;printcap name&quot; option 
-		for more details.</para>
+		for more details.</para></note>
 	</refsect2>
 </refsect1>
 

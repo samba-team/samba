@@ -36,10 +36,10 @@ print5|My Printer 5
 		that the second alias has a space in it gives a hint to Samba 
 		that it's a comment.</para>
 
-		<para><emphasis>NOTE</emphasis>: Under AIX the default printcap 
+		<note><para>Under AIX the default printcap 
 		name is <filename moreinfo="none">/etc/qconfig</filename>. Samba will assume the 
 		file is in AIX <filename moreinfo="none">qconfig</filename> format if the string
-		<filename moreinfo="none">qconfig</filename> appears in the printcap filename.</para>
+		<filename moreinfo="none">qconfig</filename> appears in the printcap filename.</para></note>
 
 		<para>Default: <command moreinfo="none">printcap name = /etc/printcap</command></para>
 		<para>Example: <command moreinfo="none">printcap name = /etc/myprintcap</command></para>

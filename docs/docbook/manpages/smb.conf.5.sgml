@@ -287,11 +287,11 @@ alias|alias|alias|alias...
 		components (if there are more than one) are separated by vertical 
 		bar symbols ('|').</para>
 		
-		<para>NOTE: On SYSV systems which use lpstat to determine what 
+		<note><para>On SYSV systems which use lpstat to determine what 
 		printers are defined on the system you may be able to use
 		"printcap name = lpstat" to automatically obtain a list 
 		of printers. See the "printcap name" option 
-		for more details.</para>
+		for more details.</para></note>
 	</refsect2>
 </refsect1>
 
@@ -3019,8 +3019,8 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		that copes with different map formats and also Amd (another 
 		automounter) maps.</para>
 		
-		<para><emphasis>NOTE :</emphasis>A working NIS client is required on 
-		the system for this option to work.</para>
+		<note><para>A working NIS client is required on 
+		the system for this option to work.</para></note>
 
 		<para>See also <link linkend="NISHOMEDIR"><parameter>nis homedir</parameter>
 		</link>, <link linkend="DOMAINLOGONS"><parameter>domain logons</parameter>
@@ -3163,14 +3163,14 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		hosts equiv</parameter> may be useful for NT clients which will 
 		not supply passwords to Samba.</para>
 
-		<para><emphasis>NOTE :</emphasis> The use of <parameter>hosts equiv
+		<note><para>The use of <parameter>hosts equiv
 		</parameter> can be a major security hole. This is because you are 
 		trusting the PC to supply the correct username. It is very easy to 
 		get a PC to supply a false username. I recommend that the 
 		<parameter>hosts equiv</parameter> option be only used if you really 
 		know what you are doing, or perhaps on a home network where you trust 
 		your spouse and kids. And only if you <emphasis>really</emphasis> trust 
-		them :-).</para>
+		them :-).</para></note>
 		
 		<para>Default: <emphasis>no host equivalences</emphasis></para>
 		<para>Example: <command>hosts equiv = /etc/hosts.equiv</command></para>
@@ -5102,10 +5102,10 @@ df $1 | tail -1 | awk '{print $2" "$4}'
                 This range of ids should have no existing local or NIS users within 
                 it as strange conflicts can occur otherwise.</para>
 
-                <para>NOTE: These userids never appear on the system and Samba will never
+                <note><para>These userids never appear on the system and Samba will never
                 'become' these users. They are used only to ensure that the algorithmic 
                 RID mapping does not conflict with normal users.
-		</para>
+		</para></note>
 
 		<para>Default: <command>non unix account range = &lt;empty string&gt;
 		</command></para>
@@ -5704,10 +5704,10 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 		user level security mode.</para>
 
-		<para><emphasis>NOTE:</emphasis> Using a password server 
+		<note><para>Using a password server 
 		means your UNIX box (running Samba) is only as secure as your 
 		password server. <emphasis>DO NOT CHOOSE A PASSWORD SERVER THAT 
-		YOU DON'T COMPLETELY TRUST</emphasis>.</para>
+		YOU DON'T COMPLETELY TRUST</emphasis>.</para></note>
 		
 		<para>Never point a Samba server at itself for password 
 		serving. This will cause a loop and could lock up your Samba 
@@ -6154,10 +6154,10 @@ print5|My Printer 5
 		that the second alias has a space in it gives a hint to Samba 
 		that it's a comment.</para>
 
-		<para><emphasis>NOTE</emphasis>: Under AIX the default printcap 
+		<note><para>Under AIX the default printcap 
 		name is <filename>/etc/qconfig</filename>. Samba will assume the 
 		file is in AIX <filename>qconfig</filename> format if the string
-		<filename>qconfig</filename> appears in the printcap filename.</para>
+		<filename>qconfig</filename> appears in the printcap filename.</para></note>
 
 		<para>Default: <command>printcap name = /etc/printcap</command></para>
 		<para>Example: <command>printcap name = /etc/myprintcap</command></para>
@@ -8294,12 +8294,11 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		<para>You should point this at your WINS server if you have a
 		multi-subnetted network.</para>
 
-		<para><emphasis>NOTE</emphasis>. You need to set up Samba to point 
+		<note><para>You need to set up Samba to point 
 		to a WINS server if you have multiple subnets and wish cross-subnet 
-		browsing to work correctly.</para>
+		browsing to work correctly.</para></note>
 
-		<para>See the documentation file <ulink url="improved-browsing.html">BROWSING</ulink> 
-		in the docs/ directory of your Samba source distribution.</para>
+		<para>See the documentation file <ulink url="improved-browsing.html">Browsing</ulink> in the samba howto collection.</para>
 
 		<para>Default: <emphasis>not enabled</emphasis></para>
 		<para>Example: <command>wins server = 192.9.200.1</command></para>
