@@ -677,7 +677,6 @@ dynconfig.o: dynconfig.c Makefile
 	@$(CC) $(FLAGS) $(PATH_FLAGS) -c $< -o $@ 
 
 dynconfig.po: dynconfig.c Makefile
-	@$(MAKE) modules_clean
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c with @PICFLAG@
