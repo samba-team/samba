@@ -35,6 +35,9 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 	fstring dc_name;
 	struct cli_state *cli;
 
+	DEBUG(5,("change_trust_account_password: Attempting to change trust account password in domain %s....\n",
+		domain));
+
 	if (remote_machine == NULL || !strcmp(remote_machine, "*")) {
 		/* Use the PDC *only* for this */
 	
@@ -92,6 +95,8 @@ failed:
 		DEBUG(0,("%s : change_trust_account_password: Failed to change password for domain %s.\n", 
 			timestring(False), domain));
 	}
+	else
+		DEBUG(5,("change_trust_account_password: sucess!\n"));
   
 	return nt_status;
 }
