@@ -23,198 +23,179 @@
 #include "includes.h"
 
 /****************************************************************************
-printer info level 0 display function
-****************************************************************************/
-void display_print_info_0(FILE *out_hnd, enum action_type action, 
-		PRINTER_INFO_0 *const i0)
-{
-	if (i0 == NULL)
-	{
-		return;
-	}
-
-	switch (action)
-	{
-		case ACTION_HEADER:
-		{
-			report(out_hnd, "Printer Info Level 0:\n");
-
-			break;
-		}
-		case ACTION_ENUMERATE:
-		{
-			fstring name;
-			fstring serv;
-
-			unistr_to_ascii(name, i0->printername.buffer, sizeof(name)-1);
-			unistr_to_ascii(serv, i0->servername .buffer, sizeof(serv)-1);
-
-			report(out_hnd, "\tprinter name:\t%s\n", name);
-			report(out_hnd, "\tserver name:\t%s\n", serv);
-			report(out_hnd, "\t[Other info not displayed]\n");
-
-			break;
-		}
-		case ACTION_FOOTER:
-		{
-			report(out_hnd, "\n");
-			break;
-		}
-	}
-
-}
-
-/****************************************************************************
 printer info level 1 display function
 ****************************************************************************/
-void display_print_info_1(FILE *out_hnd, enum action_type action, 
-		PRINTER_INFO_1 *const i1)
+static void display_print_info_1(FILE *out_hnd, PRINTER_INFO_1 *i1)
 {
+	fstring desc;
+	fstring name;
+	fstring comm;
 	if (i1 == NULL)
-	{
 		return;
-	}
 
-	switch (action)
-	{
-		case ACTION_HEADER:
-		{
-			report(out_hnd, "Printer Info Level 1:\n");
+	unistr_to_ascii(desc, i1->description.buffer, sizeof(desc)-1);
+	unistr_to_ascii(name, i1->name       .buffer, sizeof(name)-1);
+	unistr_to_ascii(comm, i1->comment    .buffer, sizeof(comm)-1);
 
-			break;
-		}
-		case ACTION_ENUMERATE:
-		{
-			fstring desc;
-			fstring name;
-			fstring comm;
-
-			unistr_to_ascii(desc, i1->description.buffer, sizeof(desc)-1);
-			unistr_to_ascii(name, i1->name       .buffer, sizeof(name)-1);
-			unistr_to_ascii(comm, i1->comment    .buffer, sizeof(comm)-1);
-
-			report(out_hnd, "\tflags:\t%d\n", i1->flags);
-			report(out_hnd, "\tname:\t%s\n", name);
-			report(out_hnd, "\tdescription:\t%s\n", desc);
-			report(out_hnd, "\tcomment:\t%s\n", comm);
-
-			break;
-		}
-		case ACTION_FOOTER:
-		{
-			report(out_hnd, "\n");
-			break;
-		}
-	}
-
+	report(out_hnd, "\tflags:[%x]\n", i1->flags);
+	report(out_hnd, "\tname:[%s]\n", name);
+	report(out_hnd, "\tdescription:[%s]\n", desc);
+	report(out_hnd, "\tcomment:[%s]\n\n", comm);
 }
 
 /****************************************************************************
-connection info level 0 container display function
+printer info level 2 display function
 ****************************************************************************/
-void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 count, PRINTER_INFO_0 *const *const ctr)
+static void display_print_info_2(FILE *out_hnd, PRINTER_INFO_2 *i1)
 {
-	if (ctr == NULL)
-	{
-		report(out_hnd, "display_printer_info_0_ctr: unavailable due to an internal error\n");
+	fstring servername;
+	fstring printername;
+	fstring sharename;
+	fstring portname;
+	fstring drivername;
+	fstring comment;
+	fstring location;
+	fstring sepfile;
+	fstring printprocessor;
+	fstring datatype;
+	fstring parameters;
+	
+	if (i1 == NULL)
 		return;
-	}
 
-	switch (action)
-	{
-		case ACTION_HEADER:
-		{
-			break;
-		}
-		case ACTION_ENUMERATE:
-		{
-			int i;
+	unistr_to_ascii(servername, i1->servername.buffer, sizeof(servername)-1);
+	unistr_to_ascii(printername, i1->printername.buffer, sizeof(printername)-1);
+	unistr_to_ascii(sharename, i1->sharename.buffer, sizeof(sharename)-1);
+	unistr_to_ascii(portname, i1->portname.buffer, sizeof(portname)-1);
+	unistr_to_ascii(drivername, i1->drivername.buffer, sizeof(drivername)-1);
+	unistr_to_ascii(comment, i1->comment.buffer, sizeof(comment)-1);
+	unistr_to_ascii(location, i1->location.buffer, sizeof(location)-1);
+	unistr_to_ascii(sepfile, i1->sepfile.buffer, sizeof(sepfile)-1);
+	unistr_to_ascii(printprocessor, i1->printprocessor.buffer, sizeof(printprocessor)-1);
+	unistr_to_ascii(datatype, i1->datatype.buffer, sizeof(datatype)-1);
+	unistr_to_ascii(parameters, i1->parameters.buffer, sizeof(parameters)-1);
 
-			for (i = 0; i < count; i++)
-			{
-				display_print_info_0(out_hnd, ACTION_HEADER   , ctr[i]);
-				display_print_info_0(out_hnd, ACTION_ENUMERATE, ctr[i]);
-				display_print_info_0(out_hnd, ACTION_FOOTER   , ctr[i]);
-			}
-			break;
-		}
-		case ACTION_FOOTER:
-		{
-			break;
-		}
-	}
+	report(out_hnd, "\tservername:[%s]\n", servername);
+	report(out_hnd, "\tprintername:[%s]\n", printername);
+	report(out_hnd, "\tsharename:[%s]\n", sharename);
+	report(out_hnd, "\tportname:[%s]\n", portname);
+	report(out_hnd, "\tdrivername:[%s]\n", drivername);
+	report(out_hnd, "\tcomment:[%s]\n", comment);
+	report(out_hnd, "\tlocation:[%s]\n", location);
+	report(out_hnd, "\tsepfile:[%s]\n", sepfile);
+	report(out_hnd, "\tprintprocessor:[%s]\n", printprocessor);
+	report(out_hnd, "\tdatatype:[%s]\n", datatype);
+	report(out_hnd, "\tparameters:[%s]\n", parameters);
+	report(out_hnd, "\tattributes:[%x]\n", i1->attributes);
+	report(out_hnd, "\tpriority:[%x]\n", i1->priority);
+	report(out_hnd, "\tdefaultpriority:[%x]\n", i1->defaultpriority);
+	report(out_hnd, "\tstarttime:[%x]\n", i1->starttime);
+	report(out_hnd, "\tuntiltime:[%x]\n", i1->untiltime);
+	report(out_hnd, "\tstatus:[%x]\n", i1->status);
+	report(out_hnd, "\tcjobs:[%x]\n", i1->cjobs);
+	report(out_hnd, "\taverageppm:[%x]\n\n", i1->averageppm);
 }
 
 /****************************************************************************
 connection info level 1 container display function
 ****************************************************************************/
-void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 count, PRINTER_INFO_1 *const *const ctr)
+static void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action, uint32 count,  PRINTER_INFO_CTR ctr)
 {
-	if (ctr == NULL)
-	{
-		report(out_hnd, "display_printer_info_1_ctr: unavailable due to an internal error\n");
-		return;
-	}
+	int i;
+	PRINTER_INFO_1 *in;
 
 	switch (action)
 	{
 		case ACTION_HEADER:
-		{
+			report(out_hnd, "Printer Info Level 1:\n");
 			break;
-		}
 		case ACTION_ENUMERATE:
-		{
-			int i;
-
-			for (i = 0; i < count; i++)
-			{
-				display_print_info_1(out_hnd, ACTION_HEADER   , ctr[i]);
-				display_print_info_1(out_hnd, ACTION_ENUMERATE, ctr[i]);
-				display_print_info_1(out_hnd, ACTION_FOOTER   , ctr[i]);
+			for (i = 0; i < count; i++) {
+				in=ctr.printers_1;
+				display_print_info_1(out_hnd, &(in[i]) );
 			}
 			break;
-		}
 		case ACTION_FOOTER:
-		{
+			report(out_hnd, "\n");
 			break;
-		}
+	}
+}
+
+/****************************************************************************
+connection info level 2 container display function
+****************************************************************************/
+static void display_printer_info_2_ctr(FILE *out_hnd, enum action_type action, uint32 count,  PRINTER_INFO_CTR ctr)
+{
+	int i;
+	PRINTER_INFO_2 *in;
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+			report(out_hnd, "Printer Info Level 2:\n");
+			break;
+		case ACTION_ENUMERATE:
+			for (i = 0; i < count; i++) {
+				in=ctr.printers_2;
+				display_print_info_2(out_hnd, &(in[i]) );
+			}
+			break;
+		case ACTION_FOOTER:
+			report(out_hnd, "\n");
+			break;
 	}
 }
 
 /****************************************************************************
 connection info container display function
 ****************************************************************************/
-void display_printer_info_ctr(FILE *out_hnd, enum action_type action, 
-				uint32 level, uint32 count,
-				void *const *const ctr)
+void display_printer_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
+				uint32 count, PRINTER_INFO_CTR ctr)
 {
-	if (ctr == NULL)
-	{
-		report(out_hnd, "display_printer_info_ctr: unavailable due to an internal error\n");
-		return;
-	}
-
-	switch (level)
-	{
-		case 0:
-		{
-			display_printer_info_0_ctr(out_hnd, action, 
-			                   count, (PRINTER_INFO_0*const*const)ctr);
-			break;
-		}
+	switch (level) {
 		case 1:
-		{
-			display_printer_info_1_ctr(out_hnd, action, 
-			                   count, (PRINTER_INFO_1*const*const)ctr);
+			display_printer_info_1_ctr(out_hnd, action, count, ctr);
 			break;
-		}
+		case 2:
+			display_printer_info_2_ctr(out_hnd, action, count, ctr);
+			break;
 		default:
-		{
 			report(out_hnd, "display_printer_info_ctr: Unknown Info Level\n");
 			break;
-		}
+	}
+}
+
+/****************************************************************************
+connection info container display function
+****************************************************************************/
+void display_printer_enumdata(FILE *out_hnd, enum action_type action, uint32 index, 
+				uint32 valuelen, uint16 *value, uint32 rvaluelen,
+				uint32 type, 
+				uint32 datalen, uint8 *data, uint32 rdatalen)
+{
+	fstring buffer;
+	
+	switch (action)
+	{
+		case ACTION_HEADER:
+			report(out_hnd, "Printer enum data:\n");
+			report(out_hnd, "\tindex\valuelen\tvalue\trvaluelen");
+			report(out_hnd, "\ttype\tdatalen\tdata\trdatalen\n");
+			break;
+		case ACTION_ENUMERATE:
+			report(out_hnd, "\t%d", index);
+			report(out_hnd, "\t%d", valuelen);
+			unistr_to_ascii(buffer, value, sizeof(buffer)-1);
+			report(out_hnd, "\t%s", buffer);
+			report(out_hnd, "\t%d", rvaluelen);
+			report(out_hnd, "\t%d", type);
+			report(out_hnd, "\t%d", datalen);
+			report(out_hnd, "\t%s", data);
+			report(out_hnd, "\t%d\n", rdatalen);
+			break;
+		case ACTION_FOOTER:
+			report(out_hnd, "\n");
+			break;
 	}
 }
 

@@ -134,7 +134,7 @@ interface/version dce/rpc pipe identification
 #define SYNT_SPOOLSS_V1                     \
 {                                           \
 	{                                   \
-		0x12345678, 0x1234, 0xabcb, \
+		0x12345678, 0x1234, 0xabcd, \
 		{ 0xef, 0x00, 0x01, 0x23,   \
 		0x45, 0x67, 0x89, 0xab }    \
 	}, 0x01                             \

@@ -13,6 +13,7 @@
    using a loop in smbclient then printing a netmon sniff to a file */
 
 #define NT_STATUS_NOPROBLEMO (0x0)
+#define NT_STATUS_NO_PROBLEMO (0x0)
 #define NT_STATUS_UNSUCCESSFUL (0xC0000000 | 1)
 #define NT_STATUS_NOT_IMPLEMENTED (0xC0000000 | 2)
 #define NT_STATUS_INVALID_INFO_CLASS (0xC0000000 | 3)

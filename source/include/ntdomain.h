@@ -46,7 +46,6 @@
 #include "rpc_svcctl.h"
 #include "rpc_wkssvc.h"
 #include "rpc_atsvc.h"
-#include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
 
 /* MS AD prototypes */
@@ -90,6 +89,18 @@ typedef struct parse_struct
 
 }
 prs_struct;
+
+/*
+ * Defines for io member of prs_struct.
+ */
+
+#define MARSHALL 0
+#define UNMARSHALL 1
+
+#define MARSHALLING(ps) (!(ps)->io)
+#define UNMARSHALLING(ps) ((ps)->io)
+
+#include "rpc_spoolss.h"
 
 typedef struct netsec_auth_struct
 {

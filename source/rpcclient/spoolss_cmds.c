@@ -27,50 +27,6 @@
 
 extern struct client_info cli_info;
 
-static char *complete_printersenum(char *text, int state)
-{
-	static uint32 i = 0;
-	static uint32 num = 0;
-	static PRINTER_INFO_1 **ctr = NULL;
-
-	if (state == 0)
-	{
-		fstring srv_name;
-		fstrcpy(srv_name, "\\\\");
-		fstrcat(srv_name, cli_info.dest_host);
-		strupper(srv_name);
-
-		free_print1_array(num, ctr);
-		ctr = NULL;
-		num = 0;
-
-		/* Iterate all users */
-		if (!msrpc_spoolss_enum_printers(srv_name,
-						 1, &num, (void ***)&ctr,
-						 NULL))
-		{
-			return NULL;
-		}
-
-		i = 0;
-	}
-
-	for (; i < num; i++)
-	{
-		fstring name;
-		unistr_to_ascii(name, ctr[i]->name.buffer, sizeof(name) - 1);
-
-		if (text == NULL || text[0] == 0 ||
-		    strnequal(text, name, strlen(text)))
-		{
-			char *copy = strdup(name);
-			i++;
-			return copy;
-		}
-	}
-
-	return NULL;
-}
 
 /****************************************************************************
  This defines the commands supported by this client
@@ -79,36 +35,14 @@ static const struct command_set spl_commands[] = {
 	/*
 	 * printer testing
 	 */
-
-	{
-	 "spoolenum",
-	 cmd_spoolss_enum_printers,
-	 "Enumerate Printers",
-	 {NULL, NULL}
-	 },
-	{
-	 "spooljobs",
-	 cmd_spoolss_enum_jobs,
-	 "<printer name> Enumerate Printer Jobs",
-	 {complete_printersenum, NULL}
-	 },
-	{
-	 "spoolopen",
-	 cmd_spoolss_open_printer_ex,
-	 "<printer name> Spool Printer Open Test",
-	 {complete_printersenum, NULL}
-	 },
-
+	{ "spoolenum", cmd_spoolss_enum_printers, "Enumerate Printers", {NULL, NULL} },
+	{ "spoolenumdatas", cmd_spoolss_enum_printerdata, "<printer name> Enumerate Printer datas", {NULL, NULL} },
+	{ "spooljobs", cmd_spoolss_enum_jobs, "<printer name> Enumerate Printer Jobs", {NULL, NULL} },
+	{ "spoolopen", cmd_spoolss_open_printer_ex, "<printer name> Spool Printer Open Test", {NULL, NULL} },
 	/*
 	 * oop!
 	 */
-
-	{
-	 "",
-	 NULL,
-	 NULL,
-	 {NULL, NULL}
-	 }
+	{ "", NULL, NULL, {NULL, NULL} }
 };
 
 void add_spl_commands(void)

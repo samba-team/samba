@@ -36,59 +36,147 @@ extern FILE* out_hnd;
 
 extern struct user_creds *usr_creds;
 
+static void init_buffer(NEW_BUFFER *buffer, uint32 size)
+{
+	buffer->ptr = (size!=0)? 1:0;
+	buffer->size=size;
+	buffer->string_at_end=size;
+	prs_init(&(buffer->prs), 0, 4, MARSHALL);
+	prs_grow(&(buffer->prs), size - buffer->prs.data_size);
+	buffer->prs.io=MARSHALL;
+	buffer->prs.offset=0;
+}
+
+static void decode_printer_info_1(NEW_BUFFER *buffer, uint32 returned, PRINTER_INFO_1 **info)
+{
+	uint32 i;
+	PRINTER_INFO_1	*inf;
+
+	inf=(PRINTER_INFO_1 *)malloc(returned*sizeof(PRINTER_INFO_1));
+
+	buffer->prs.offset=0;
+	
+	for (i=0; i<returned; i++) {
+		new_smb_io_printer_info_1("", buffer, &(inf[i]), 0);
+	}
+	
+	*info=inf;
+}
+
+static void decode_printer_info_2(NEW_BUFFER *buffer, uint32 returned, PRINTER_INFO_2 **info)
+{
+	uint32 i;
+	PRINTER_INFO_2	*inf;
+
+	inf=(PRINTER_INFO_2 *)malloc(returned*sizeof(PRINTER_INFO_2));
+
+	buffer->prs.offset=0;
+	
+	for (i=0; i<returned; i++) {
+		new_smb_io_printer_info_2("", buffer, &(inf[i]), 0);
+	}
+	
+	*info=inf;
+}
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
-BOOL msrpc_spoolss_enum_printers( const char* srv_name,
-				uint32 level,
-				uint32 *num,
-				void ***ctr,
-				PRINT_INFO_FN(fn))
+BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags, uint32 level, PRINTER_INFO_CTR ctr)
 {
-	BOOL res = True;
-
-	if (spoolss_enum_printers( 0x40, srv_name, level, num, ctr) &&
-	    fn != NULL)
-	{
-		fn(srv_name, level, *num, *ctr);
+	uint32 status;
+	NEW_BUFFER buffer;
+	uint32 needed;
+	uint32 returned;
+	
+	init_buffer(&buffer, 0);
+	
+	/* send a NULL buffer first */
+	status=spoolss_enum_printers(flags, srv_name, level, &buffer, 0, &needed, &returned);
+	
+	if (status==ERROR_INSUFFICIENT_BUFFER) {
+		init_buffer(&buffer, needed);
+		status=spoolss_enum_printers(flags, srv_name, level, &buffer, needed, &needed, &returned);
 	}
+	
+	report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
+	
+	if (status!=NT_STATUS_NO_PROBLEMO)
+		return False;
+		
+	switch (level) {
+	case 1:
+		decode_printer_info_1(&buffer, returned, &(ctr.printers_1));
+		break;
+	case 2:
+		decode_printer_info_2(&buffer, returned, &(ctr.printers_2));
+		break;
+	}		
 
-	return res;
+	display_printer_info_ctr(out_hnd, ACTION_HEADER   , level, returned, ctr);
+	display_printer_info_ctr(out_hnd, ACTION_ENUMERATE, level, returned, ctr);
+	display_printer_info_ctr(out_hnd, ACTION_FOOTER   , level, returned, ctr);
+	return True;
 }
 
-static void spool_print_info_ctr(const char* srv_name, uint32 level,
-				uint32 num, void *const *const ctr)
-{
-	display_printer_info_ctr(out_hnd, ACTION_HEADER   , level, num, ctr);
-	display_printer_info_ctr(out_hnd, ACTION_ENUMERATE, level, num, ctr);
-	display_printer_info_ctr(out_hnd, ACTION_FOOTER   , level, num, ctr);
-}
 
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
 void cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[])
 {
-	void **ctr = NULL;
-	uint32 num = 0;
+	PRINTER_INFO_CTR ctr;
+	
+	uint32 flags;
 	uint32 level = 1;
 
 	fstring srv_name;
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
+	
+	flags=PRINTER_ENUM_LOCAL;
 
-	if (msrpc_spoolss_enum_printers(srv_name, level, &num, &ctr,
-	                         spool_print_info_ctr))
-	{
+	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
-	}
 	else
-	{
 		report(out_hnd, "FAILED\n");
-	}
+		
+	flags=PRINTER_ENUM_NAME;
 
-	free_void_array(num, ctr, free);
+	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
+		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+
+	flags=PRINTER_ENUM_SHARED|PRINTER_ENUM_NAME;
+
+	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
+		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+		
+	flags=PRINTER_ENUM_CONNECTIONS;
+
+	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
+		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+		
+	flags=PRINTER_ENUM_NETWORK;
+
+	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
+		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+		
+	flags=PRINTER_ENUM_REMOTE;
+
+	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
+		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+		
+		
 }
 
 /****************************************************************************
@@ -125,14 +213,13 @@ void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[
 		fstrcat(srv_name, printer_name);
 		printer_name = srv_name;
 	}
-
+/*
 	DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
 		printer_name, station, usr_creds->ntc.user_name));
-
-	res = res ? spoolss_open_printer_ex( printer_name,
-	                        0, 0, 0,
-	                        station, usr_creds->ntc.user_name,
-	                        &hnd) : False;
+*/
+		
+	res = res ? spoolss_open_printer_ex( printer_name, "", PRINTER_ALL_ACCESS,
+	                        station, "Administrateur", &hnd) : False;
 
 	res = res ? spoolss_closeprinter(&hnd) : False;
 
@@ -153,49 +240,41 @@ nt spoolss query
 BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
 				const char* station, const char* user_name, 
 				uint32 level,
-				uint32 *num,
-				void ***ctr,
-				JOB_INFO_FN(fn))
+				void ***ctr, JOB_INFO_FN(fn))
 {
 	POLICY_HND hnd;
-	uint32 buf_size = 0x0;
-	uint32 status = 0x0;
-
-	BOOL res = True;
-	BOOL res1 = True;
+	uint32 status;
+	NEW_BUFFER buffer;
+	uint32 needed;
+	uint32 returned;
+	uint32 firstjob=0;
+	uint32 numofjobs=0xffff;
 
 	DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
 		printer_name, station, user_name));
 
-	res = res ? spoolss_open_printer_ex( printer_name,
-	                        0, 0, 0,
-	                        station, user_name,
-	                        &hnd) : False;
+	if(!spoolss_open_printer_ex( printer_name, 0, 0, station, user_name, &hnd))
+		return False;
 
-	if (status == 0x0)
-	{
-		status = spoolss_enum_jobs( &hnd,
-	                        0, 1000, level, &buf_size,
-	                        num, ctr);
-	}
+	init_buffer(&buffer, 0);
+	status = spoolss_enum_jobs(&hnd, firstjob, numofjobs, level, &buffer, 0, &needed, &returned);
 
 	if (status == ERROR_INSUFFICIENT_BUFFER)
 	{
-		status = spoolss_enum_jobs( &hnd,
-	                        0, 1000, level, &buf_size,
-	                        num, ctr);
+		init_buffer(&buffer, needed);
+		status = spoolss_enum_jobs( &hnd, firstjob, numofjobs, level, &buffer, needed, &needed, &returned);
 	}
 
-	res1 = (status == 0x0);
-
-	res = res ? spoolss_closeprinter(&hnd) : False;
-
-	if (res1 && fn != NULL)
-	{
-		fn(printer_name, station, level, *num, *ctr);
+	if (status!=NT_STATUS_NO_PROBLEMO) {
+		if (!spoolss_closeprinter(&hnd))
+			return False;
+		return False;
 	}
+	
+	if (fn != NULL)
+		fn(printer_name, station, level, returned, *ctr);
 
-	return res1;
+	return True;
 }
 
 static void spool_job_info_ctr( const char* printer_name,
@@ -221,8 +300,7 @@ void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
 	uint32 num = 0;
 	uint32 level = 1;
 
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		report(out_hnd, "spooljobs <printer name>\n");
 		return;
 	}
@@ -243,14 +321,13 @@ void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
 		fstrcat(srv_name, printer_name);
 		printer_name = srv_name;
 	}
-
-	DEBUG(4,("spoolopen - printer: %s station: %s user: %s\n",
-		printer_name, station, usr_creds->ntc.user_name));
-
+/*
+	DEBUG(4,("spoolopen - printer: %s station: %s user: %s\n", printer_name, station, usr_creds->ntc.user_name));
+*/
 	if (msrpc_spoolss_enum_jobs( printer_name, station,
-	                        usr_creds->ntc.user_name,
-				level, &num, &ctr,
-				spool_job_info_ctr))
+				"Administrateur",
+	                        /*usr_creds->ntc.user_name,*/
+				level, &ctr, spool_job_info_ctr))
 	{
 		DEBUG(5,("cmd_spoolss_enum_jobs: query succeeded\n"));
 	}
@@ -259,6 +336,94 @@ void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
 		report(out_hnd, "FAILED\n");
 	}
 
-	free_void_array(num, ctr, free);
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+BOOL msrpc_spoolss_enum_printerdata( const char* printer_name, const char* station, const char* user_name )
+{
+	POLICY_HND hnd;
+	uint32 status;
+	uint32 index;
+	uint32 valuelen;
+	uint16 *value;
+	uint32 rvaluelen;
+	uint32 type;
+	uint32 datalen;
+	uint8  *data;
+	uint32 rdatalen;
+
+	DEBUG(4,("spoolenum_printerdata - printer: %s\n", printer_name));
+
+	if(!spoolss_open_printer_ex( printer_name, 0, 0, station, user_name, &hnd))
+		return False;
+
+	status = spoolss_enum_printerdata(&hnd, 0, &valuelen, value, &rvaluelen, &type, &datalen, data, &rdatalen);
+
+	valuelen=rvaluelen;
+	datalen=rdatalen;
+
+	value=(uint16 *)malloc(valuelen*sizeof(uint16));
+	data=(uint8 *)malloc(datalen*sizeof(uint8));
+
+	display_printer_enumdata(out_hnd, ACTION_HEADER, index, valuelen, value, rvaluelen, type, datalen, data, rdatalen);
+	
+	do {
+		status = spoolss_enum_printerdata(&hnd, index, &valuelen, value, &rvaluelen, &type, &datalen, data, &rdatalen);
+		display_printer_enumdata(out_hnd, ACTION_ENUMERATE, index, valuelen, value, rvaluelen, type, datalen, data, rdatalen);
+		index++;
+	} while (status != 0x0103); /* NO_MORE_ITEMS */
+	display_printer_enumdata(out_hnd, ACTION_FOOTER, index, valuelen, value, rvaluelen, type, datalen, data, rdatalen);
+
+	
+	if (status!=NT_STATUS_NO_PROBLEMO) {
+		if (!spoolss_closeprinter(&hnd))
+			return False;
+		return False;
+	}
+	
+	return True;
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+void cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[])
+{
+	fstring srv_name;
+	fstring station;
+	char *printer_name;
+
+	if (argc < 2) {
+		report(out_hnd, "spoolenumdata <printer name>\n");
+		return;
+	}
+
+	printer_name = argv[1];
+
+	fstrcpy(station, "\\\\");
+	fstrcat(station, info->myhostname);
+	strupper(station);
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (!strnequal("\\\\", printer_name, 2))
+	{
+		fstrcat(srv_name, "\\");
+		fstrcat(srv_name, printer_name);
+		printer_name = srv_name;
+	}
+
+	DEBUG(4,("spoolopen - printer: %s station: %s user: %s\n", printer_name, station, usr_creds->ntc.user_name));
+
+	if (msrpc_spoolss_enum_printerdata( printer_name, station,
+	                        usr_creds->ntc.user_name))
+		DEBUG(5,("cmd_spoolss_enum_printerdata: query succeeded\n"));
+	else
+		report(out_hnd, "FAILED\n");
+
 }
 

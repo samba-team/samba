@@ -56,7 +56,7 @@ void prs_debug_out(const prs_struct * ps, char *msg, int level)
 /*******************************************************************
  initialise a parse structure
  ********************************************************************/
-void prs_init(prs_struct * ps, uint32 size, uint8 align, BOOL io)
+BOOL prs_init(prs_struct * ps, uint32 size, uint8 align, BOOL io)
 {
 	ps->struct_start = 0xfefefefe;
 	ps->io = io;
@@ -82,6 +82,7 @@ void prs_init(prs_struct * ps, uint32 size, uint8 align, BOOL io)
 	}
 
 	CHECK_STRUCT(ps);
+	return True;
 }
 
 /*******************************************************************
@@ -451,18 +452,19 @@ void prs_link(prs_struct * prev, prs_struct * ps, prs_struct * next)
  align a pointer to a multiple of align_offset bytes.  looks like it
  will work for offsets of 0, 2 and 4...
  ********************************************************************/
-void prs_align(prs_struct * ps)
+BOOL prs_align(prs_struct * ps)
 {
 	int mod;
 	CHECK_STRUCT(ps);
 	if (ps->error)
-		return;
+		return False;
 	mod = ps->offset & (ps->align - 1);
 	if (ps->align != 0 && mod != 0)
 	{
 		ps->offset += ps->align - mod;
 		prs_grow(ps, ps->offset);
 	}
+	return True;
 }
 
 /*******************************************************************
@@ -550,6 +552,94 @@ BOOL prs_add_data(prs_struct * ps, const char *data, int len)
 		return False;
 	}
 	memcpy(to, data, len);
+	return True;
+}
+
+/*******************************************************************
+ Change the struct type.
+ ********************************************************************/
+
+void prs_switch_type(prs_struct *ps, BOOL io)
+{
+	if ((ps->io ^ io) == True)
+		ps->io=io;
+}
+
+/*******************************************************************
+ Force a prs_struct to be dynamic even when it's size is 0.
+ ********************************************************************/
+
+void prs_force_dynamic(prs_struct *ps)
+{
+}
+
+/*******************************************************************
+ Fetch the current offset (external interface).
+ ********************************************************************/
+
+uint32 prs_offset(prs_struct *ps)
+{
+	return ps->offset;
+}
+
+/*******************************************************************
+ Set the current offset (external interface).
+ ********************************************************************/
+
+BOOL prs_set_offset(prs_struct *ps, uint32 offset)
+{
+	if(offset <= ps->offset) {
+		ps->offset = offset;
+		return True;
+	}
+
+	if(!prs_grow(ps, offset - ps->offset))
+		return False;
+
+	ps->offset = offset;
+	return True;
+}
+
+/*******************************************************************
+ Delete the memory in a parse structure - if we own it.
+ ********************************************************************/
+
+void prs_mem_free(prs_struct *ps)
+{
+	if (ps->data)
+		free(ps->data);
+	ps->data = NULL;
+	ps->offset = 0;
+}
+
+
+/*******************************************************************
+ Append some data from one parse_struct into another.
+ ********************************************************************/
+
+BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len)
+{	
+
+	/* 
+	 * JFM:
+	 * ok, it looks like shit. It smells like shit.
+	 * summary: it's shit.
+	 *
+	 * I'm not proud of that code. I mae that ugly hack to
+	 * a) not change luke's prs memory managment
+	 * b) not change the spoolss parsing code
+	 *
+	 * mail me, call me, hit me before changing that piece of code.
+	 */
+
+	if (start==0)
+		prs_add_data(dst, src->data, len);
+	else {
+		dst->data_size=0;
+		prs_add_data(dst, src->data+start, len);
+	}
+
+	dst->offset=dst->data_size;
 	return True;
 }
 
