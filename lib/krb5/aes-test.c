@@ -252,10 +252,10 @@ string_to_key_test(krb5_context context)
 	    }
 #endif
 	    
-	    ret = krb5_PKCS5_PBKDF2(context, CKSUMTYPE_SHA1, password, salt, 
-				    keys[i].iterations - 1,
-				    keys[i].enctype,
-				    &key);
+	    ret = _krb5_PKCS5_PBKDF2(context, CKSUMTYPE_SHA1, password, salt, 
+				     keys[i].iterations - 1,
+				     keys[i].enctype,
+				     &key);
 	    if (ret) {
 		krb5_warn(context, ret, "%d: krb5_PKCS5_PBKDF2", i);
 		val = 1;
