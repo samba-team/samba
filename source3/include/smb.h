@@ -1247,10 +1247,17 @@ struct bitmap {
 #define RENAME_REPLACE_IF_EXISTS 1
 
 /* Filesystem Attributes. */
-#define FILE_CASE_SENSITIVE_SEARCH 0x1
-#define FILE_CASE_PRESERVED_NAMES 0x2
-#define FILE_UNICODE_ON_DISK 0x4
-#define FILE_PERSISTENT_ACLS 0x8
+#define FILE_CASE_SENSITIVE_SEARCH 0x01
+#define FILE_CASE_PRESERVED_NAMES 0x02
+#define FILE_UNICODE_ON_DISK 0x04
+/* According to cifs9f, this is 4, not 8 */
+/* Acconding to testing, this actually sets the security attribute! */
+#define FILE_PERSISTENT_ACLS 0x08
+/* These entries added from cifs9f --tsb */
+#define FILE_FILE_COMPRESSION 0x08
+#define FILE_VOLUME_QUOTAS 0x10
+#define FILE_DEVICE_IS_MOUNTED 0x20
+#define FILE_VOLUME_IS_COMPRESSED 0x8000
 
 /* ChangeNotify flags. */
 #define FILE_NOTIFY_CHANGE_FILE_NAME   0x001
