@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 	hb = malloc(strlen(fn) + 5);
 	sprintf(hb, "__%s__", fn);
 	for(p = hb; *p; p++){
-	    if(!isalnum(*p))
+	    if(!isalnum((unsigned char)*p))
 		*p = '_';
 	}
 	f = fopen(argv[1], "w");
