@@ -3763,7 +3763,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 	volatile BOOL *child_status_out;
 	int synccount;
 	int tries = 8;
-	double start_time_limit = 10 + (nprocs * 0.5);
+	double start_time_limit = 10 + (nprocs * 1.5);
 
 	synccount = 0;
 
@@ -3808,7 +3808,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 
 			child_status[i] = getpid();
 
-			while (child_status[i] && end_timer() < start_time_limit) msleep(2);
+			while (child_status[i] && end_timer() < start_time_limit) msleep(100);
 
 			if (child_status[i]) {
 				printf("Child %d failed to start!\n", i);

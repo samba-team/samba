@@ -143,7 +143,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 
 #define CHECK_VALUE(call, stype, field, value) do { \
  	CHECK1(call); \
-	if (NT_STATUS_IS_OK(status) && finfo2.stype.out.field != value) { \
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && finfo2.stype.out.field != value) { \
 		printf("(%d) %s - %s/%s should be 0x%x - 0x%x\n", __LINE__, \
 		       call_name, #stype, #field, \
 		       (uint_t)value, (uint_t)finfo2.stype.out.field); \
@@ -152,7 +152,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 
 #define CHECK_TIME(call, stype, field, value) do { \
  	CHECK1(call); \
-	if (NT_STATUS_IS_OK(status) && nt_time_to_unix(&finfo2.stype.out.field) != value) { \
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && nt_time_to_unix(&finfo2.stype.out.field) != value) { \
 		printf("(%d) %s - %s/%s should be 0x%x - 0x%x\n", __LINE__, \
 		        call_name, #stype, #field, \
 		        (uint_t)value, \
@@ -164,7 +164,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 
 #define CHECK_STR(call, stype, field, value) do { \
  	CHECK1(call); \
-	if (NT_STATUS_IS_OK(status) && strcmp(finfo2.stype.out.field, value) != 0) { \
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && strcmp(finfo2.stype.out.field, value) != 0) { \
 		printf("(%d) %s - %s/%s should be '%s' - '%s'\n", __LINE__, \
 		        call_name, #stype, #field, \
 		        value, \
