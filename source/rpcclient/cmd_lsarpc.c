@@ -174,6 +174,7 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 	fstring srv_name;
 	int num_names = 0;
 	char **names;
+	uint8 *types = NULL;
 	DOM_SID *sids = NULL;
 	int num_sids = 0;
 #if 0
@@ -207,7 +208,7 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 	/* send lsa lookup sids call */
 	res = res ? lsa_lookup_names( &lsa_pol,
 	                               num_names, names,
-	                               &sids, NULL, &num_sids) : False;
+	                               &sids, &types, &num_sids) : False;
 
 	res = res ? lsa_close(&lsa_pol) : False;
 
@@ -226,7 +227,9 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 		for (i = 0; i < num_sids; i++)
 		{
 			sid_to_string(temp, &sids[i]);
-			report(out_hnd, "SID: %s -> %s\n", names[i], temp);
+			report(out_hnd, "SID: %s -> %s (%d: %s)\n",
+			       names[i], temp, types[i],
+			       get_sid_name_use_str(types[i]));
 #if 0
 			if (sids[i] != NULL)
 			{
@@ -235,6 +238,10 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 #endif
 		}
 		free(sids);
+	}
+	if (types)
+	{
+		free(types);
 	}
 }
 
@@ -250,6 +257,7 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 	DOM_SID **sids = NULL;
 	uint32 num_sids = 0;
 	char **names = NULL;
+	uint8 *types = NULL;
 	int num_names = 0;
 
 	BOOL res = True;
@@ -304,7 +312,7 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 	/* send lsa lookup sids call */
 	res = res ? lsa_lookup_sids( &lsa_pol,
 	                               num_sids, sids,
-	                               &names, NULL, &num_names) : False;
+	                               &names, &types, &num_names) : False;
 
 	res = res ? lsa_close(&lsa_pol) : False;
 
@@ -323,13 +331,20 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 		{
 			fstring temp;
 			sid_to_string(temp, sids[i]);
-			report(out_hnd, "SID: %s -> %s\n", temp, names[i]);
+			report(out_hnd, "SID: %s -> %s (%d: %s)\n",
+			       temp, names[i], types[i],
+			       get_sid_name_use_str(types[i]));
 			if (names[i] != NULL)
 			{
 				free(names[i]);
 			}
 		}
 		free(names);
+	}
+
+	if (types)
+	{
+		free(types);
 	}
 
 	free_sid_array(num_sids, sids);

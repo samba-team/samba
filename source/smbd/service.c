@@ -557,11 +557,8 @@ connection_struct *make_connection(char *service,char *user,
 	    vconn->uid = conn->uid;
 	    vconn->gid = conn->gid;
 	    vconn->ngroups = conn->ngroups;
-	    vconn->groups = (gid_t *)malloc(conn->ngroups * sizeof(gid_t));
-	    if (vconn->groups != NULL) {
-		memcpy(vconn->groups, conn->groups, 
-		       conn->ngroups * sizeof(gid_t));
-	    }
+	    vconn->groups = (gid_t *)memdup(conn->groups,
+					    conn->ngroups * sizeof(gid_t));
 
 	    /* Call connect hook */
 	    

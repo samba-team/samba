@@ -237,7 +237,6 @@ uint32 lookup_wk_group_name(const char *group_name, const char *domain,
 	char *grp_name;
 	int i = -1; /* start do loop at -1 */
 	uint32 rid;
-	(*type) = SID_NAME_DOM_GRP;
 
 	if (strequal(domain, global_sam_name))
 	{
@@ -263,6 +262,7 @@ uint32 lookup_wk_group_name(const char *group_name, const char *domain,
 		if (strequal(grp_name, group_name))
 		{
 			sid_append_rid(sid, rid);
+			(*type) = SID_NAME_DOM_GRP;
 
 			return 0x0;
 		}
@@ -280,7 +280,6 @@ uint32 lookup_wk_user_name(const char *user_name, const char *domain,
 {
 	char *usr_name;
 	int i = -1; /* start do loop at -1 */
-	(*type) = SID_NAME_USER;
 
 	if (strequal(domain, global_sam_name))
 	{
@@ -307,6 +306,7 @@ uint32 lookup_wk_user_name(const char *user_name, const char *domain,
 	if (usr_name != NULL)
 	{
 		sid_append_rid(sid, domain_user_rids[i].rid);
+		(*type) = SID_NAME_USER;
 		return 0;
 	}
 

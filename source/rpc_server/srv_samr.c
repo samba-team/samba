@@ -1630,12 +1630,7 @@ static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 		{
 			sid_split_rid(&sid, &rid[i]);
 		}
-		else
-		{
-			type[i] = SID_NAME_UNKNOWN;
-			rid [i] = 0xffffffff;
-		}
-		if (!sid_equal(&pol_sid, &sid))
+		if ((status != 0x0) || !sid_equal(&pol_sid, &sid))
 		{
 			rid [i] = 0xffffffff;
 			type[i] = SID_NAME_UNKNOWN;
@@ -1764,7 +1759,7 @@ static void samr_reply_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 				prs_struct *rdata)
 {
 	fstring group_names[MAX_SAM_ENTRIES];
-	uint8   group_attrs[MAX_SAM_ENTRIES];
+	uint8   types[MAX_SAM_ENTRIES];
 	uint32 status     = 0;
 	int num_rids = q_u->num_rids1;
 	DOM_SID pol_sid;
@@ -1799,11 +1794,13 @@ static void samr_reply_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 			DOM_SID sid;
 			sid_copy(&sid, &pol_sid);
 			sid_append_rid(&sid, q_u->rid[i]);
-			lookup_sid(&sid, group_names[i], &group_attrs[i]);
+			status = lookup_sid(&sid, group_names[i], &types[i]);
+			if (status != 0)
+				types[i] = SID_NAME_UNKNOWN;
 		}
 	}
 
-	make_samr_r_lookup_rids(&r_u, num_rids, group_names, group_attrs, status);
+	make_samr_r_lookup_rids(&r_u, num_rids, group_names, types, status);
 
 	/* store the response in the SMB stream */
 	samr_io_r_lookup_rids("", &r_u, rdata, 0);

@@ -138,9 +138,215 @@ int get_domain_user_groups(DOMAIN_GRP_MEMBER **grp_members, uint32 group_rid)
 
 
 /*******************************************************************
+ lookup_wk_group_sid
+ ********************************************************************/
+static uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
+{
+	uint32 rid;
+	DOM_SID tmp;
+	char	*mapped;
+
+	sid_copy(&tmp, sid);
+	sid_split_rid(&tmp, &rid);
+
+	if (!sid_equal(&global_sid_S_1_5_20, &tmp))
+	{
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+
+	DEBUG(5,("lookup_wk_group_sid: rid: %d", rid));
+
+	/* look up the well-known domain group rids first */
+	mapped = lookup_wk_group_rid(rid);
+	if(mapped == NULL)
+	{
+		DEBUG(5,(" none mapped\n"));
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+	fstrcpy(group_name, mapped);
+	(*type) = SID_NAME_DOM_GRP;
+	DEBUG(5,(" = %s\n", group_name));
+	return 0x0;
+}
+
+/*******************************************************************
+ lookup_group_sid
+ ********************************************************************/
+static uint32 lookup_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
+{
+	pstring sid_str;
+	uint32 rid;
+	DOM_SID tmp;
+	DOMAIN_GRP *grp = NULL;
+	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+
+	sid_to_string(sid_str, sid);
+	DEBUG(5,("lookup_group_sid: sid: %s", sid_str));
+
+	sid_copy(&tmp, sid);
+	sid_split_rid(&tmp, &rid);
+
+	if (!sid_equal(&global_sam_sid, &tmp))
+	{
+		DEBUG(5,("not our SID\n"));
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+
+	grp = getgrouprid(rid, NULL, NULL);
+
+	if (grp != NULL)
+	{
+		fstrcpy(group_name, grp->name);
+		(*type) = SID_NAME_DOM_GRP;
+		DEBUG(5,(" = %s\n", group_name));
+		return 0x0;
+	}
+
+	DEBUG(5,(" none mapped\n"));
+	return status;
+}
+
+/*******************************************************************
+ lookup_wk_alias_sid
+ ********************************************************************/
+static uint32 lookup_wk_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
+{
+	uint32 rid;
+	DOM_SID tmp;
+	char	*mapped;
+
+	sid_copy(&tmp, sid);
+	sid_split_rid(&tmp, &rid);
+
+	if (!sid_equal(&global_sid_S_1_5_20, &tmp))
+	{
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+
+	DEBUG(5,("lookup_wk_alias_sid: rid: %d", rid));
+
+	/* look up the well-known alias group rids first */
+	mapped = lookup_wk_alias_rid(rid);
+	if(mapped == NULL)
+	{
+		DEBUG(5,(" none mapped\n"));
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+	fstrcpy(alias_name, mapped);
+	(*type) = SID_NAME_ALIAS;
+	DEBUG(5,(" = %s\n", alias_name));
+	return 0x0;
+}
+
+/*******************************************************************
+ lookup_alias_sid
+ ********************************************************************/
+static uint32 lookup_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
+{
+	pstring sid_str;
+	uint32 rid;
+	DOM_SID tmp;
+	LOCAL_GRP *als = NULL;
+	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+
+	sid_to_string(sid_str, sid);
+	DEBUG(5,("lookup_alias_sid: sid: %s", sid_str));
+
+	sid_copy(&tmp, sid);
+	sid_split_rid(&tmp, &rid);
+
+	if (!sid_equal(&global_sam_sid, &tmp))
+	{
+		DEBUG(5,("not our SID\n"));
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+
+	als = getaliasrid(rid, NULL, NULL);
+
+	if (als != NULL)
+	{
+		fstrcpy(alias_name, als->name);
+		(*type) = SID_NAME_ALIAS;
+		DEBUG(5,(" = %s\n", alias_name));
+		return 0x0;
+	}
+
+	DEBUG(5,(" none mapped\n"));
+	return status;
+}
+
+/*******************************************************************
+ lookup well-known user name
+ ********************************************************************/
+static uint32 lookup_wk_user_sid(DOM_SID *sid, char *user_name, uint8 *type)
+{
+	uint32 rid;
+	DOM_SID tmp;
+	char	*mapped;
+
+	sid_copy(&tmp, sid);
+	sid_split_rid(&tmp, &rid);
+
+	if (!sid_equal(&global_sid_S_1_5_20, &tmp))
+	{
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+
+	DEBUG(5,("lookup_wk_user_sid: rid: %d", rid));
+
+	/* look up the well-known domain user rids first */
+	mapped = lookup_wk_user_rid(rid);
+	if(mapped == NULL)
+	{
+		DEBUG(5,(" none mapped\n"));
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+	fstrcpy(user_name, mapped);
+	(*type) = SID_NAME_USER;
+	DEBUG(5,(" = %s\n", user_name));
+	return 0x0;
+}
+
+/*******************************************************************
+ lookup user name
+ ********************************************************************/
+static uint32 lookup_user_sid(DOM_SID *sid, char *user_name, uint8 *type)
+{
+	struct sam_disp_info *disp_info;
+	uint32 rid;
+	DOM_SID tmp;
+
+	sid_copy(&tmp, sid);
+	sid_split_rid(&tmp, &rid);
+
+	if (sid_equal(&global_sam_sid, &tmp))
+	{
+		DEBUG(5,("lookup_user_sid in SAM %s: rid: %d",
+		          global_sam_name, rid));
+
+		/* find the user account */
+		become_root(True);
+		disp_info = getsamdisprid(rid);
+		unbecome_root(True);
+
+		if (disp_info != NULL)
+		{
+			fstrcpy(user_name, disp_info->nt_name);
+			(*type) = SID_NAME_USER;
+			DEBUG(5,(" = %s\n", user_name));
+			return 0x0;
+		}
+
+		DEBUG(5,(" none mapped\n"));
+	}
+
+	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+}
+
+/*******************************************************************
  lookup_builtin_sid
  ********************************************************************/
-uint32 lookup_builtin_sid(DOM_SID *sid, char *name, uint8 *type)
+static uint32 lookup_builtin_sid(DOM_SID *sid, char *name, uint8 *type)
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 
@@ -151,11 +357,10 @@ uint32 lookup_builtin_sid(DOM_SID *sid, char *name, uint8 *type)
 	return status;
 }
 
-
 /*******************************************************************
  lookup_added_sid - names that have been added to the SAM database by admins.
  ********************************************************************/
-uint32 lookup_added_sid(DOM_SID *sid, char *name, uint8 *type)
+static uint32 lookup_added_sid(DOM_SID *sid, char *name, uint8 *type)
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 
@@ -182,225 +387,13 @@ uint32 lookup_sid(DOM_SID *sid, char *name, uint8 *type)
 
 
 /*******************************************************************
- lookup_wk_group_sid
- ********************************************************************/
-uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
-{
-	uint32 rid;
-	DOM_SID tmp;
-	char	*mapped;
-
-	(*type) = SID_NAME_DOM_GRP;
-
-	sid_copy(&tmp, sid);
-	sid_split_rid(&tmp, &rid);
-
-	if (!sid_equal(&global_sid_S_1_5_20, &tmp))
-	{
-		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
-	}
-
-	DEBUG(5,("lookup_wk_group_sid: rid: %d", rid));
-
-	/* look up the well-known domain group rids first */
-	mapped = lookup_wk_group_rid(rid);
-	if(mapped == NULL)
-	{
-		DEBUG(5,(" none mapped\n"));
-		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
-	}
-	fstrcpy(group_name, mapped);
-	DEBUG(5,(" = %s\n", group_name));
-	return 0x0;
-}
-
-/*******************************************************************
- lookup_group_sid
- ********************************************************************/
-uint32 lookup_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
-{
-	pstring sid_str;
-	uint32 rid;
-	DOM_SID tmp;
-	DOMAIN_GRP *grp = NULL;
-	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
-
-	(*type) = SID_NAME_DOM_GRP;
-
-	sid_to_string(sid_str, sid);
-	DEBUG(5,("lookup_group_sid: sid: %s", sid_str));
-
-	sid_copy(&tmp, sid);
-	sid_split_rid(&tmp, &rid);
-
-	if (!sid_equal(&global_sam_sid, &tmp))
-	{
-		DEBUG(5,("not our SID\n"));
-		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
-	}
-
-	grp = getgrouprid(rid, NULL, NULL);
-
-	if (grp != NULL)
-	{
-		fstrcpy(group_name, grp->name);
-		DEBUG(5,(" = %s\n", group_name));
-		return 0x0;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	return status;
-}
-
-/*******************************************************************
- lookup_wk_alias_sid
- ********************************************************************/
-uint32 lookup_wk_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
-{
-	uint32 rid;
-	DOM_SID tmp;
-	char	*mapped;
-
-	(*type) = SID_NAME_ALIAS;
-
-	sid_copy(&tmp, sid);
-	sid_split_rid(&tmp, &rid);
-
-	if (!sid_equal(&global_sid_S_1_5_20, &tmp))
-	{
-		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
-	}
-
-	DEBUG(5,("lookup_wk_alias_sid: rid: %d", rid));
-
-	/* look up the well-known alias group rids first */
-	mapped = lookup_wk_alias_rid(rid);
-	if(mapped == NULL)
-	{
-		DEBUG(5,(" none mapped\n"));
-		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
-	}
-	fstrcpy(alias_name, mapped);
-	DEBUG(5,(" = %s\n", alias_name));
-	return 0x0;
-}
-
-/*******************************************************************
- lookup_alias_sid
- ********************************************************************/
-uint32 lookup_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
-{
-	pstring sid_str;
-	uint32 rid;
-	DOM_SID tmp;
-	LOCAL_GRP *als = NULL;
-	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
-
-	(*type) = SID_NAME_ALIAS;
-
-	sid_to_string(sid_str, sid);
-	DEBUG(5,("lookup_alias_sid: sid: %s", sid_str));
-
-	sid_copy(&tmp, sid);
-	sid_split_rid(&tmp, &rid);
-
-	if (!sid_equal(&global_sam_sid, &tmp))
-	{
-		DEBUG(5,("not our SID\n"));
-		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
-	}
-
-	als = getaliasrid(rid, NULL, NULL);
-
-	if (als != NULL)
-	{
-		fstrcpy(alias_name, als->name);
-		DEBUG(5,(" = %s\n", alias_name));
-		return 0x0;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	return status;
-}
-
-/*******************************************************************
- lookup well-known user name
- ********************************************************************/
-uint32 lookup_wk_user_sid(DOM_SID *sid, char *user_name, uint8 *type)
-{
-	uint32 rid;
-	DOM_SID tmp;
-	char	*mapped;
-
-	(*type) = SID_NAME_USER;
-
-	sid_copy(&tmp, sid);
-	sid_split_rid(&tmp, &rid);
-
-	if (!sid_equal(&global_sid_S_1_5_20, &tmp))
-	{
-		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
-	}
-
-	DEBUG(5,("lookup_wk_user_sid: rid: %d", rid));
-
-	/* look up the well-known domain user rids first */
-	mapped = lookup_wk_user_rid(rid);
-	if(mapped == NULL)
-	{
-		DEBUG(5,(" none mapped\n"));
-		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
-	}
-	fstrcpy(user_name, mapped);
-	DEBUG(5,(" = %s\n", user_name));
-	return 0x0;
-}
-
-/*******************************************************************
- lookup user name
- ********************************************************************/
-uint32 lookup_user_sid(DOM_SID *sid, char *user_name, uint8 *type)
-{
-	struct sam_disp_info *disp_info;
-	uint32 rid;
-	DOM_SID tmp;
-
-	(*type) = SID_NAME_USER;
-
-	sid_copy(&tmp, sid);
-	sid_split_rid(&tmp, &rid);
-
-	if (sid_equal(&global_sam_sid, &tmp))
-	{
-		DEBUG(5,("lookup_user_sid in SAM %s: rid: %d",
-		          global_sam_name, rid));
-
-		/* find the user account */
-		become_root(True);
-		disp_info = getsamdisprid(rid);
-		unbecome_root(True);
-
-		if (disp_info != NULL)
-		{
-			fstrcpy(user_name, disp_info->nt_name);
-			DEBUG(5,(" = %s\n", user_name));
-			return 0x0;
-		}
-
-		DEBUG(5,(" none mapped\n"));
-	}
-
-	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
-}
-
-/*******************************************************************
  lookup_group_rid
  ********************************************************************/
-uint32 lookup_added_group_name(const char *grp_name, const char *domain,
-				DOM_SID *sid, uint8 *type)
+static uint32 lookup_added_group_name(const char *grp_name,
+				      const char *domain,
+				      DOM_SID *sid, uint8 *type)
 {
 	DOMAIN_GRP *grp = NULL;
-	(*type) = SID_NAME_DOM_GRP;
 
 	DEBUG(5,("lookup_added_group_name: name: %s", grp_name));
 
@@ -416,6 +409,7 @@ uint32 lookup_added_group_name(const char *grp_name, const char *domain,
 	{
 		sid_copy(sid, &global_sam_sid);
 		sid_append_rid(sid, grp->rid);
+		(*type) = SID_NAME_DOM_GRP;
 
 		DEBUG(5,(" = 0x%x\n", grp->rid));
 		return 0x0;
@@ -428,11 +422,11 @@ uint32 lookup_added_group_name(const char *grp_name, const char *domain,
 /*******************************************************************
  lookup_added_alias_name
  ********************************************************************/
-uint32 lookup_added_alias_name(const char *als_name, const char *domain,
-				DOM_SID *sid, uint8 *type)
+static uint32 lookup_added_alias_name(const char *als_name,
+				      const char *domain,
+				      DOM_SID *sid, uint8 *type)
 {
 	LOCAL_GRP *als = NULL;
-	(*type) = SID_NAME_ALIAS;
 
 	DEBUG(5,("lookup_added_alias_name: name: %s\\%s", domain, als_name));
 
@@ -448,6 +442,7 @@ uint32 lookup_added_alias_name(const char *als_name, const char *domain,
 	{
 		sid_copy(sid, &global_sam_sid);
 		sid_append_rid(sid, als->rid);
+		(*type) = SID_NAME_ALIAS;
 
 		DEBUG(5,(" = 0x%x\n", als->rid));
 		return 0x0;
@@ -489,7 +484,6 @@ static uint32 lookup_added_user_name(const char *nt_name, const char *domain,
 				DOM_SID *sid, uint8 *type)
 {
 	struct sam_passwd *sam_pass;
-	(*type) = SID_NAME_USER;
 
 	if (!strequal(domain, global_sam_name))
 	{
@@ -507,6 +501,7 @@ static uint32 lookup_added_user_name(const char *nt_name, const char *domain,
 		           nt_name, sam_pass->user_rid));
 		sid_copy(sid, &global_sam_sid);
 		sid_append_rid(sid, sam_pass->user_rid);
+		(*type) = SID_NAME_USER;
 
 		return 0x0;
 	}
@@ -547,7 +542,7 @@ static uint32 lookup_user_name(const char *name, const char *domain,
 /*******************************************************************
  lookup_name
  ********************************************************************/
-uint32 lookup_name(char *name, DOM_SID *sid, uint8 *type)
+uint32 lookup_name(const char *name, DOM_SID *sid, uint8 *type)
 {
 	uint32 status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 	fstring domain;

@@ -3845,22 +3845,10 @@ BOOL api_brs_rpc(rpcsrv_struct *p);
 
 int make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids);
 int get_domain_user_groups(DOMAIN_GRP_MEMBER **grp_members, uint32 group_rid);
-uint32 lookup_builtin_sid(DOM_SID *sid, char *name, uint8 *type);
-uint32 lookup_added_sid(DOM_SID *sid, char *name, uint8 *type);
 uint32 lookup_sid(DOM_SID *sid, char *name, uint8 *type);
-uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint8 *type);
-uint32 lookup_group_sid(DOM_SID *sid, char *group_name, uint8 *type);
-uint32 lookup_wk_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type);
-uint32 lookup_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type);
-uint32 lookup_wk_user_sid(DOM_SID *sid, char *user_name, uint8 *type);
-uint32 lookup_user_sid(DOM_SID *sid, char *user_name, uint8 *type);
-uint32 lookup_added_group_name(const char *grp_name, const char *domain,
-				DOM_SID *sid, uint8 *type);
-uint32 lookup_added_alias_name(const char *als_name, const char *domain,
-				DOM_SID *sid, uint8 *type);
 uint32 lookup_added_user_rids(char *nt_name,
 		uint32 *usr_rid, uint32 *grp_rid);
-uint32 lookup_name(char *name, DOM_SID *sid, uint8 *type);
+uint32 lookup_name(const char *name, DOM_SID *sid, uint8 *type);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 
