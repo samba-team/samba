@@ -50,10 +50,6 @@ typedef struct pdb_context
 	
 	BOOL (*pdb_delete_sam_account)(struct pdb_context *, SAM_ACCOUNT *username);
 	
-	uid_t (*pdb_user_rid_to_uid)(struct pdb_context *, uint32 user_rid);
-
-	uint32 (*pdb_uid_to_user_rid)(struct pdb_context *, uid_t uid);
-	
 	void (*free_fn)(struct pdb_context **);
 	
 	TALLOC_CTX *mem_ctx;
@@ -79,10 +75,6 @@ typedef struct pdb_methods
 	BOOL (*update_sam_account)(struct pdb_context *, const SAM_ACCOUNT *sampass);
 	
 	BOOL (*delete_sam_account)(struct pdb_context *, const SAM_ACCOUNT *username);
-
-	uid_t (*user_rid_to_uid)(struct pdb_context *, uint32 user_rid);
-
-	uint32 (*uid_to_user_rid)(struct pdb_context *, uid_t uid);
 	
 	void *private_data;  /* Private data of some kind */
 	

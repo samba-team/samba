@@ -72,6 +72,24 @@ struct ldapsam_privates {
 static uint32 ldapsam_get_next_available_nua_rid(struct ldapsam_privates *ldap_state);
 
 /*******************************************************************
+ Converts NT user RID to a UNIX uid.
+ ********************************************************************/
+
+static uid_t pdb_user_rid_to_uid(uint32 user_rid)
+{
+	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
+}
+
+/*******************************************************************
+ converts UNIX uid to an NT User RID.
+ ********************************************************************/
+
+static uint32 pdb_uid_to_user_rid(uid_t uid)
+{
+	return (((((uint32)uid)*RID_MULTIPLIER) + 1000) | USER_RID_TYPE);
+}
+
+/*******************************************************************
  find the ldap password
 ******************************************************************/
 static BOOL fetch_ldapsam_pw(char *dn, char* pw, int len)
@@ -1498,4 +1516,3 @@ NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method
 
 
 #endif
-

@@ -32,8 +32,6 @@
 #define USERPREFIX		"USER_"
 #define RIDPREFIX		"RID_"
 
-#define BASE_RID	0x200
-
 struct tdbsam_privates {
 	TDB_CONTEXT 	*passwd_tdb;
 	TDB_DATA 	key;
@@ -43,8 +41,8 @@ struct tdbsam_privates {
 
 	BOOL permit_non_unix_accounts;
 
-	uint32 low_nua_rid; 
-	uint32 high_nua_rid; 
+/*	uint32 low_nua_rid; 
+	uint32 high_nua_rid; */
 };
 
 /**********************************************************************
@@ -81,7 +79,7 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		fullname_len, homedir_len, logon_script_len,
 		profile_path_len, acct_desc_len, workstations_len;
 		
-	uint32	/* uid, gid,*/ user_rid, group_rid, unknown_3, hours_len, unknown_5, unknown_6;
+	uint32	user_rid, group_rid, unknown_3, hours_len, unknown_5, unknown_6;
 	uint16	acct_ctrl, logon_divs;
 	uint8	*hours;
 	static uint8	*lm_pw_ptr, *nt_pw_ptr;
@@ -89,8 +87,10 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	uint32		lmpwlen, ntpwlen, hourslen;
 	BOOL ret = True;
 	BOOL setflag;
-	gid_t gid = -1; /* This is what standard sub advanced expects if no gid is known */
 	pstring sub_buffer;
+	struct passwd *pw;
+	uid_t uid;
+	gid_t gid = -1; /* This is what standard sub advanced expects if no gid is known */
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
@@ -134,22 +134,19 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		goto done;
 	}
 
-	if ((tdb_state->permit_non_unix_accounts) 
-	    && (user_rid >= tdb_state->low_nua_rid)
-	    && (user_rid <= tdb_state->high_nua_rid)) {
-		
-	} else {
-		struct passwd *pw;
-		uid_t uid;
-		/* validate the account and fill in UNIX uid and gid. Standard
-		 * getpwnam() is used instead of Get_Pwnam() as we do not need
-		 * to try case permutations
-		 */
-		if (!username || !(pw = getpwnam_alloc(username))) {
-			DEBUG(0,("tdbsam: getpwnam_alloc(%s) return NULL.  User does not exist!\n", username?username:"NULL"));
+	/* validate the account and fill in UNIX uid and gid. Standard
+	 * getpwnam() is used instead of Get_Pwnam() as we do not need
+	 * to try case permutations
+	 */
+	if (!username || !(pw = getpwnam_alloc(username))) {
+		if (!(tdb_state->permit_non_unix_accounts)) {
+			DEBUG(0,("tdbsam: getpwnam_alloc(%s) return NULL.  User does not exist!\n", username));
 			ret = False;
 			goto done;
 		}
+	}
+		
+	if (pw) {
 		uid = pw->pw_uid;
 		gid = pw->pw_gid;
 		
@@ -651,56 +648,6 @@ static BOOL tdbsam_getsampwrid (struct pdb_context *context, SAM_ACCOUNT *user, 
 }
 
 /***************************************************************************
- Search by rid and give back the uid!
- **************************************************************************/
-
-uid_t tdbsam_rid_to_uid (struct pdb_context *context, uint32 rid)
-{
-	uid_t ret;
-	SAM_ACCOUNT *sa;
-
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&sa))) return -1;
-	if (!tdbsam_getsampwrid (context, sa, rid)) {
-		ret = -1;
-		goto done;
-	}
-	else {
-		ret = pdb_get_uid(sa);
-	}
-done:
-	pdb_free_sam(&sa);
-	return ret;
-}
-
-/***************************************************************************
- Search by uid and give back the rid!
- **************************************************************************/
-
-uint32 tdbsam_uid_to_rid (struct pdb_context *context, uid_t uid)
-{
-	uint32 ret;
-	char *name;
-	struct passwd *pw;
-	SAM_ACCOUNT *sa;
-
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&sa))) return 0;
-	pw = getpwuid(uid);
-	if (!pw) return 0;
-	name = strdup(pw->pw_name);
-	if (!tdbsam_getsampwnam (context, sa, name)) {
-		ret = 0;
-		goto done;
-	}
-	else {
-		ret = pdb_get_user_rid(sa);
-	}
-done:
-	SAFE_FREE(name);
-	pdb_free_sam(&sa);
-	return ret;
-}
-
-/***************************************************************************
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
@@ -787,7 +734,7 @@ static BOOL tdb_update_sam(struct pdb_context *context, const SAM_ACCOUNT* newpw
 	}
 
 	/* if flag == TDB_INSERT then make up a new RID else throw an error. */
-	if (!pdb_get_user_rid(newpwd)) {
+	if (!(user_rid = pdb_get_user_rid(newpwd))) {
 		if (flag & TDB_INSERT) {
 			user_rid = BASE_RID;
 		        tdb_ret = tdb_change_int32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
@@ -919,8 +866,6 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	(*pdb_method)->add_sam_account = tdbsam_add_sam_account;
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
-	(*pdb_method)->uid_to_user_rid = tdbsam_uid_to_rid;
-	(*pdb_method)->user_rid_to_uid = tdbsam_rid_to_uid;
 
 	tdb_state = talloc_zero(pdb_context->mem_ctx, sizeof(struct tdbsam_privates));
 
@@ -967,10 +912,10 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
+/*	tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
 
 	tdb_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
-
+*/
 	return NT_STATUS_OK;
 }
 

@@ -2719,6 +2719,8 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 	fstring alias_sid_str;
 	DOM_SID temp_sid;
 
+	SAM_ACCOUNT *sam_user;
+	BOOL check;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid)) 
@@ -2751,8 +2753,40 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < num_uids; i++) {
+		struct passwd *pass;
+		uint32 rid;
+
 		sid_copy(&temp_sid, &global_sam_sid);
-		sid_append_rid(&temp_sid, pdb_uid_to_user_rid(uid[i]));
+
+		pass = getpwuid_alloc(uid[i]);
+		if (!pass) continue;
+
+		if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user))) {
+			passwd_free(&pass);
+			continue;
+		}
+
+		become_root();
+		check = pdb_getsampwnam(sam_user, pass->pw_name);
+		unbecome_root();
+	
+		if (check != True) {
+			pdb_free_sam(&sam_user);
+			passwd_free(&pass);
+			continue;
+		}
+	
+		rid = pdb_get_user_rid(sam_user);
+		if (rid == 0) {
+			pdb_free_sam(&sam_user);
+			passwd_free(&pass);
+			continue;
+		}
+
+		pdb_free_sam(&sam_user);
+		passwd_free(&pass);
+
+		sid_append_rid(&temp_sid, rid);
 		
 		init_dom_sid2(&sid[i], &temp_sid);
 	}
@@ -2780,6 +2814,9 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 
 	uint32 *rid=NULL;
 	uint32 *attr=NULL;
+
+	SAM_ACCOUNT *sam_user;
+	BOOL check;
 
 
 	/* find the policy handle.  open a policy on it. */
@@ -2812,7 +2849,38 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 		return NT_STATUS_NO_MEMORY;
 	
 	for (i=0; i<num_uids; i++) {
-		rid[i]=pdb_uid_to_user_rid(uid[i]);
+		struct passwd *pass;
+		uint32 urid;
+
+		pass = getpwuid_alloc(uid[i]);
+		if (!pass) continue;
+
+		if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user))) {
+			passwd_free(&pass);
+			continue;
+		}
+
+		become_root();
+		check = pdb_getsampwnam(sam_user, pass->pw_name);
+		unbecome_root();
+	
+		if (check != True) {
+			pdb_free_sam(&sam_user);
+			passwd_free(&pass);
+			continue;
+		}
+	
+		urid = pdb_get_user_rid(sam_user);
+		if (urid == 0) {
+			pdb_free_sam(&sam_user);
+			passwd_free(&pass);
+			continue;
+		}
+
+		pdb_free_sam(&sam_user);
+		passwd_free(&pass);
+
+		rid[i] = urid;
 		attr[i] = SID_NAME_USER;		
 	}
 
@@ -2867,16 +2935,18 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	if (NT_STATUS_IS_ERR(ret))
 		return ret;
 	
-	become_root();
 	check = pdb_getsampwrid(sam_user, rid);
-	unbecome_root();
 	
-	if (check != True)
+	if (check != True) {
+		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
+	}
 	
 	uid = pdb_get_uid(sam_user);
-	if (uid == -1)
+	if (uid == -1) {
+		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
+	}
 
 	pdb_free_sam(&sam_user);
 
@@ -3006,16 +3076,18 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	if (NT_STATUS_IS_ERR(ret))
 		return ret;
 	
-	become_root();
 	check = pdb_getsampwrid(sam_user, q_u->rid);
-	unbecome_root();
 	
-	if (check != True)
+	if (check != True) {
+		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
+	}
 	
 	uid = pdb_get_uid(sam_user);
-	if (uid == -1)
+	if (uid == -1) {
+		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
+	}
 
 	pdb_free_sam(&sam_user);
 

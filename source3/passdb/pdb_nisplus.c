@@ -114,6 +114,25 @@ static VOLATILE sig_atomic_t gotalarm;
 #define NPF_WORKSTATIONS  20
 #define NPF_HOURS         21
 
+
+/*******************************************************************
+ Converts NT user RID to a UNIX uid.
+ ********************************************************************/
+
+static uid_t pdb_user_rid_to_uid(uint32 user_rid)
+{
+	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
+}
+
+/*******************************************************************
+ converts UNIX uid to an NT User RID.
+ ********************************************************************/
+
+static uint32 pdb_uid_to_user_rid(uid_t uid)
+{
+	return (((((uint32)uid)*RID_MULTIPLIER) + 1000) | USER_RID_TYPE);
+}
+
 /***************************************************************
  Signal function to tell us we timed out.
 ****************************************************************/
