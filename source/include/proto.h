@@ -1487,6 +1487,11 @@ BOOL server_validate(char *user, char *domain,
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)());
 
+/*The following definitions come from  pidfile.c  */
+
+void pidfile_create(char *name);
+int pidfile_pid(char *name);
+
 /*The following definitions come from  pipes.c  */
 
 int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize);
@@ -1912,6 +1917,18 @@ void cgi_setup(char *rootdir, int auth_required);
 char *cgi_baseurl(void);
 char *cgi_rooturl(void);
 char *cgi_pathinfo(void);
+
+/*The following definitions come from  web/diagnose.c  */
+
+BOOL nmbd_running(void);
+BOOL smbd_running(void);
+
+/*The following definitions come from  web/startstop.c  */
+
+void start_smbd(void);
+void start_nmbd(void);
+void stop_smbd(void);
+void stop_nmbd(void);
 
 /*The following definitions come from  web/swat.c  */
 

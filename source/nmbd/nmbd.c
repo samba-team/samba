@@ -549,7 +549,6 @@ int main(int argc,char *argv[])
   int opt;
   extern FILE *dbf;
   extern char *optarg;
-  char pidFile[100] = { 0 };
 
   global_nmb_port = NMB_PORT;
   *host_file = 0;
@@ -599,9 +598,6 @@ int main(int argc,char *argv[])
     {
       switch (opt)
         {
-        case 'f':
-          strncpy(pidFile, optarg, sizeof(pidFile));
-          break;
         case 's':
           pstrcpy(servicesf,optarg);
           break;          
@@ -695,40 +691,11 @@ int main(int argc,char *argv[])
     become_daemon();
   }
 
-  if (!directory_exist(lp_lockdir(), NULL))
-  {
-    mkdir(lp_lockdir(), 0755);
+  if (!directory_exist(lp_lockdir(), NULL)) {
+	  mkdir(lp_lockdir(), 0755);
   }
 
-  if (*pidFile)
-  {
-    int     fd;
-    char    buf[20];
-
-#ifdef O_NONBLOCK
-    fd = open( pidFile, O_NONBLOCK | O_CREAT | O_WRONLY | O_TRUNC, 0644 );
-#else
-    fd = open( pidFile, O_CREAT | O_WRONLY | O_TRUNC, 0644 );
-#endif
-    if ( fd < 0 )
-    {
-      DEBUG(0,("ERROR: can't open %s: %s\n", pidFile, strerror(errno)));
-      exit(1);
-    }
-    if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==False)
-    {
-      DEBUG(0,("ERROR: nmbd is already running\n"));
-      exit(1);
-    }
-    sprintf(buf, "%u\n", (unsigned int) getpid());
-    if (write(fd, buf, strlen(buf)) < 0)
-    {
-      DEBUG(0,("ERROR: can't write to %s: %s\n", pidFile, strerror(errno)));
-      exit(1);
-    }
-      /* Leave pid file open & locked for the duration... */
-  }
-
+  pidfile_create("nmbd");
 
   DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 

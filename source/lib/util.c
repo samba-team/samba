@@ -3106,7 +3106,7 @@ void become_daemon(void)
 {
 #ifndef NO_FORK_DEBUG
   if (fork())
-    exit(0);
+    _exit(0);
 
   /* detach from the terminal */
 #ifdef USE_SETSID
