@@ -10,6 +10,6 @@ FILES="*.?"
 cd ../../docs/manpages
 for FILE in  $FILES ; do
    neqn $FILE | tbl | nroff -man > ../../packaging/SGI/catman/`basename $FILE`
-   compress -f ../../packaging/SGI/catman/`basename $FILE`
+   pack -f ../../packaging/SGI/catman/`basename $FILE`
 done
 cd ../../packaging/SGI
