@@ -1636,7 +1636,6 @@ dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
 	default_dos_charset=no
 	default_display_charset=no
 	default_unix_charset=no
-	echo
 
 	# check for default dos charset name
 	for j in CP850 IBM850 ; do
