@@ -16,7 +16,6 @@ krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
     char instance[INST_SZ];  
     char version[9];
     int auth;
-    u_char buf2[BUFSIZ];
   
     if (memcmp (buf, KRB_SENDAUTH_VERS, 4) != 0)
 	return -1;
@@ -138,6 +137,32 @@ plain_authenticate (POP *p, struct sockaddr_in *addr)
     return(POP_SUCCESS);
 }
 
+static int kerberos_flag;
+static char *auth_str;
+static int debug_flag;
+static interactive_flag;
+static char *port_str;
+static char *trace_file;
+static int timeout;
+static int help_flag;
+static int version_flag;
+
+static struct getargs args[] = {
+#ifdef KERBEROS
+    { "kerberos", 'k', arg_flag, &kerberos_flag, "use kerberos" },
+#endif
+    { "auth-mode", 'a', arg_string, &auth_str, "required authentication" },
+    { "debug", 'd', arg_flag, &debug_flag },
+    { "interactive", 'i', arg_flag, &interactive_flag, "create new socket" },
+    { "port", 'p', arg_string, &port_str, "port to listen to", "port" },
+    { "trace-file", 't', arg_string, &trace_file, "trace all command to file", "file" },
+    { "timeout", 'T', arg_integer, &timeout, "timeout", "seconds" },
+    { "help", 'h', arg_flag, &help_flag },
+    { "version", 'v', arg_flag, &version_flag }
+};
+
+static int num_args = sizeof(args) / sizeof(args[0]);
+
 /* 
  *  init:   Start a Post Office Protocol session
  */
@@ -148,101 +173,82 @@ pop_init(POP *p,int argcount,char **argmessage)
 
     struct sockaddr_in      cs;                 /*  Communication parameters */
     struct hostent      *   ch;                 /*  Client host information */
-    int                     errflag = 0;
-    int                     c;
     int                     len;
-    int                     options = 0;
     char                *   trace_file_name = "/tmp/popper-trace";
-    int			    inetd = 0;
     int			    portnum = 0;
+    int 		    optind = 0;
 
     /*  Initialize the POP parameter block */
     memset (p, 0, sizeof(POP));
 
+    set_progname(argmessage[0]);
+
     /*  Save my name in a global variable */
-    p->myname = argmessage[0];
+    p->myname = (char*)__progname;
 
     /*  Get the name of our host */
     gethostname(p->myhost,MaxHostNameLen);
 
+#ifdef KERBEROS
+    krb5_init_context (&p->context);
+
+    krb5_openlog(p->context, p->myname, &p->logf);
+    krb5_set_warn_dest(p->context, p->logf);
+#else
     /*  Open the log file */
     openlog(p->myname,POP_LOGOPTS,POP_FACILITY);
+#endif
 
     p->auth_level = AUTH_NONE;
 
-    /*  Process command line arguments */
-    while ((c = getopt(argcount,argmessage,
-#ifdef KERBEROS
-		       "k"
-#endif
-		       "a:dip:T:t:")) != EOF)
-        switch (c) {
-	    /*  Auth level */
-	    case 'a':
-		if (strcmp (optarg, "none") == 0)
-		    p->auth_level = AUTH_NONE;
-		else if(strcmp(optarg, "otp") == 0)
-		    p->auth_level = AUTH_OTP;
-		else
-		    warnx ("bad value for -a: %s", optarg);
-		break;
-            /*  Debugging requested */
-            case 'd':
-                p->debug++;
-                options |= SO_DEBUG;
-                break;
+    if(getarg(args, num_args, argcount, argmessage, &optind)){
+	arg_printusage(args, num_args, "");
+	exit(1);
+    }
+    if(help_flag){
+	arg_printusage(args, num_args, "");
+	exit(0);
+    }
+    if(version_flag)
+	krb5_errx(p->context, 0, "%s", heimdal_version);
 
-	    /*  Port number */
-	    case 'p':
-		portnum = htons(atoi(optarg));
-		break;
-            /*  Debugging trace file specified */
-            case 't':
-                p->debug++;
-                if ((p->trace = fopen(optarg,"a+")) == NULL) {
-                    pop_log(p,POP_PRIORITY,
-                        "Unable to open trace file \"%s\", err = %d",
-                            optarg,errno);
-                    exit (1);
-                }
-                trace_file_name = optarg;
-                break;
+    if(auth_str){
+	if (strcmp (auth_str, "none") == 0)
+	    p->auth_level = AUTH_NONE;
+	else if(strcmp(auth_str, "otp") == 0)
+	    p->auth_level = AUTH_OTP;
+	else
+	    warnx ("bad value for -a: %s", optarg);
+    }
+    /*  Debugging requested */
+    p->debug = debug_flag;
 
-#ifdef KERBEROS
-	    /* Use kerberos version of POP3 protocol */
-	    case 'k':
-		p->kerberosp = 1;
-		break;
-#endif
-
-            /*  Timeout value passed.  Default changed */
-            case 'T':
-                pop_timeout = atoi(optarg);
-                break;
-
-	    /*  Fake inetd */
-	    case 'i':
-		inetd = 1;
-		break;
-            /*  Unknown option received */
-            default:
-                errflag++;
-        }
-
-    /*  Exit if bad options specified */
-    if (errflag) {
-        fprintf(stderr,
-		"Usage: %s [-T timeout] [-a] [-d] [-k] [-i] [-t tracefile]\n",
-		argmessage[0]);
-        exit (1);
+    if(port_str)
+	portnum = htons(atoi(port_str));
+    if(trace_file){
+	p->debug++;
+	if ((p->trace = fopen(trace_file, "a+")) == NULL) {
+	    pop_log(p, POP_PRIORITY,
+		    "Unable to open trace file \"%s\", err = %d",
+		    optarg,errno);
+	    exit (1);
+	}
+	trace_file_name = trace_file;
     }
 
+#ifdef KERBEROS
+    p->kerberosp = kerberos_flag;
+#endif
+
+    if(timeout)
+	pop_timeout = timeout;
+    
     /* Fake inetd */
-    if (inetd) {
+    if (interactive_flag) {
 	if (portnum == 0)
 	    portnum = p->kerberosp ?
-		krb5_getportbyname("kpop", "tcp", htons(1109)) :
-	    krb5_getportbyname("pop", "tcp", htons(110));
+		krb5_getportbyname(p->context, "kpop", "tcp", 1109) :
+	    krb5_getportbyname(p->context, "pop", "tcp", 110);
 	mini_inetd (portnum);
     }
 
@@ -333,9 +339,6 @@ pop_init(POP *p,int argcount,char **argmessage)
         pop_log(p,POP_PRIORITY,"Debugging turned on");
 #endif /* DEBUG */
 
-#ifdef KERBEROS
-    krb5_init_context (&p->context);
-#endif
 
     return((p->kerberosp ? krb_authenticate : plain_authenticate)(p, &cs));
 }
