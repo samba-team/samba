@@ -20,39 +20,49 @@ MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
+bindir = @bindir@
+includedir = @includedir@
 
 PICFLAGS = @PICFLAGS@
  
-LIBNAME = $(LIBPREFIX)sl
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
+LIBNAME = $(LIBPREFIX)sl
+sl_LIB = $(LIBNAME).$(LIBEXT)
+ss_LIB = $(LIBPREFIX)ss.$(LIBEXT)
 LDSHARED = @LDSHARED@
-LIB = $(LIBNAME).$(LIBEXT)
-PROGS =
+PROGS = mk_cmds
 
-LIB_SOURCES = sl.c
+LIB_SOURCES = sl.c ss.c
 
 SOURCES = $(LIB_SOURCES)
 
-LIB_OBJECTS = sl.o
+LIB_OBJECTS = sl.o ss.o
 
-OBJECTS = $(LIB_OBJECTS)
+mk_cmds_OBJECTS = make_cmds.o parse.o lex.o
 
-all: $(LIB) $(PROGS)
+OBJECTS = $(LIB_OBJECTS) $(mk_cmds_OBJECTS)
+
+all: $(sl_LIB) $(PROGS)
 
 Wall:
 	make CFLAGS="-g -Wall -Wno-comment -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(DEFS) -I../../include -I$(srcdir) -I$(srcdir)/../des $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
+	$(CC) -c $(DEFS) -I../../include -I. -I$(srcdir) -I$(srcdir)/../des $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
 
 install: all
+	$(MKINSTALLDIRS) $(includedir)/ss
+	$(INSTALL_DATA) $(srcdir)/ss.h $(includedir)/ss
 	$(MKINSTALLDIRS) $(libdir)
-	$(INSTALL_DATA) -m 0555 $(LIB) $(libdir)
+	$(INSTALL) -m 555 $(sl_LIB) $(libdir)/$(sl_LIB)
+	$(INSTALL) -m 555 $(sl_LIB) $(libdir)/$(ss_LIB)
+	$(MKINSTALLDIRS) $(bindir)
+	$(INSTALL) -m 0555 $(PROGS) $(bindir)
 
 uninstall:
-	rm -f $(libdir)/$(LIB)
+	rm -f $(libdir)/$(sl_LIB) $(libdir)/$(ss_LIB)
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
@@ -60,7 +70,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(LIB) $(PROGS) *.o *.a
+	rm -f $(sl_LIB) $(PROGS) *.o *.a
 
 mostlyclean: clean
 
@@ -80,5 +90,19 @@ $(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
 	$(LDSHARED) -o $@ $(LIB_OBJECTS)
 
 $(OBJECTS): ../../include/config.h
+
+$(mk_cmds_OBJECTS): parse.h
+
+mk_cmds: $(mk_cmds_OBJECTS)
+	$(CC) -o mk_cmds $(mk_cmds_OBJECTS) -L../roken -lroken
+
+parse.c parse.h: $(srcdir)/parse.y
+	$(YACC) -d $(srcdir)/parse.y
+	mv -f y.tab.h parse.h
+	mv -f y.tab.c parse.c
+
+lex.c: $(srcdir)/lex.l
+	$(LEX) $(srcdir)/lex.l
+	mv -f lex.yy.c lex.c
 
 .PHONY: all install uninstall check clean mostlyclean distclean realclean
