@@ -186,4 +186,6 @@ krb5_init_etype (krb5_context context,
 		 unsigned **val,
 		 const krb5_enctype *etypes);
 
+PA_DATA *krb5_find_padata(PA_DATA*, unsigned, int, int*);
+
 #endif /* __KRB5_LOCL_H__ */
