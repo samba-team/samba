@@ -13,7 +13,8 @@ TESTS =						\
 	string-to-key-test			\
 	derived-key-test			\
 	store-test				\
-	parse-name-test
+	parse-name-test				\
+	name-45-test
 
 check_PROGRAMS = $(TESTS)
 
