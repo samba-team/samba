@@ -77,6 +77,9 @@ krb5_init_context(krb5_context *context)
     p->ktype_is_etype = krb5_config_get_bool(p, NULL, "libdefaults", 
 					     "ktype_is_etype", NULL);
 
+    p->http_proxy = krb5_config_get_string(p, NULL, "libdefaults", 
+					   "http_proxy", NULL);
+
     {
 	char **etypes;
 	etypes = krb5_config_get_strings(p, NULL, "libdefaults", 
