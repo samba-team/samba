@@ -31,6 +31,15 @@ static SE_PRIV se_priv_all  = SE_ALL_PRIVS;
 static SE_PRIV se_priv_end  = SE_END;
 static SE_PRIV se_priv_none = SE_NONE;
 
+/* Define variables for all privileges so we can use the
+   SE_PRIV* in the various se_priv_XXX() functions */
+
+const SE_PRIV se_machine_account = SE_MACHINE_ACCOUNT;
+const SE_PRIV se_print_operator  = SE_PRINT_OPERATOR;
+const SE_PRIV se_add_users       = SE_ADD_USERS;
+const SE_PRIV se_disk_operators  = SE_DISK_OPERATOR;
+const SE_PRIV se_remote_shutdown = SE_REMOTE_SHUTDOWN;
+
 PRIVS privs[] = {
 #if 0	/* usrmgr will display these twice if you include them.  We don't 
 	   use them but we'll keep the bitmasks reserved in privileges.h anyways */
@@ -56,7 +65,6 @@ PRIVS privs[] = {
 	{SE_LOCK_MEMORY,		"SeLockMemoryPrivilege",		"Lock Memory"},
 	{SE_INCREASE_QUOTA,		"SeIncreaseQuotaPrivilege",		"Increase Quota"},
 	{SE_UNSOLICITED_INPUT,		"SeUnsolicitedInputPrivilege",		"Unsolicited Input"},
-	{SE_MACHINE_ACCOUNT,		"SeMachineAccountPrivilege",		"Can add Machine Accounts to the Domain"},
 	{SE_TCB,			"SeTcbPrivilege",			"Act as part of the operating system"},
 	{SE_SECURITY,			"SeSecurityPrivilege",			"Security Privilege"},
 	{SE_TAKE_OWNERSHIP,		"SeTakeOwnershipPrivilege",		"Take Ownership Privilege"},
@@ -92,7 +100,7 @@ typedef struct priv_sid_list {
  copy an SE_PRIV structure
 ****************************************************************************/
 
-BOOL se_priv_copy( SE_PRIV *dst, SE_PRIV *src )
+BOOL se_priv_copy( SE_PRIV *dst, const SE_PRIV *src )
 {
 	if ( !dst || !src )
 		return False;
@@ -106,7 +114,7 @@ BOOL se_priv_copy( SE_PRIV *dst, SE_PRIV *src )
  combine 2 SE_PRIV structures and store the resulting set in mew_mask
 ****************************************************************************/
 
-static void se_priv_add( SE_PRIV *mask, SE_PRIV *addpriv )
+static void se_priv_add( SE_PRIV *mask, const SE_PRIV *addpriv )
 {
 	int i;
 
@@ -120,7 +128,7 @@ static void se_priv_add( SE_PRIV *mask, SE_PRIV *addpriv )
  in mew_mask
 ****************************************************************************/
 
-static void se_priv_remove( SE_PRIV *mask, SE_PRIV *removepriv )
+static void se_priv_remove( SE_PRIV *mask, const SE_PRIV *removepriv )
 {	
 	int i;
 
@@ -133,7 +141,7 @@ static void se_priv_remove( SE_PRIV *mask, SE_PRIV *removepriv )
  invert a given SE_PRIV and store the set in new_mask
 ****************************************************************************/
 
-static void se_priv_invert( SE_PRIV *new_mask, SE_PRIV *mask )
+static void se_priv_invert( SE_PRIV *new_mask, const SE_PRIV *mask )
 {	
 	SE_PRIV allprivs;
 	
@@ -146,7 +154,7 @@ static void se_priv_invert( SE_PRIV *new_mask, SE_PRIV *mask )
  check if 2 SE_PRIV structure are equal
 ****************************************************************************/
 
-static BOOL se_priv_equal( SE_PRIV *mask1, SE_PRIV *mask2 )
+static BOOL se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 )
 {	
 	return ( memcmp(mask1, mask2, sizeof(SE_PRIV)) == 0 );
 }
@@ -156,7 +164,7 @@ static BOOL se_priv_equal( SE_PRIV *mask1, SE_PRIV *mask2 )
  dump an SE_PRIV structure to the log files
 ****************************************************************************/
 
-void dump_se_priv( int dbg_cl, int dbg_lvl, SE_PRIV *mask )
+void dump_se_priv( int dbg_cl, int dbg_lvl, const SE_PRIV *mask )
 {
 	int i;
 	
@@ -624,6 +632,9 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_l
 
 BOOL user_has_privileges(NT_USER_TOKEN *token, SE_PRIV *privilege)
 {
+	if ( !token )
+		return False;
+
 	return is_privilege_assigned( &token->privileges, privilege );
 }
 
