@@ -107,57 +107,63 @@ hdb_read_master_key(krb5_context context, const char *filename,
     return ret;
 }
 
-Key *
-hdb_unseal_key(Key *key, krb5_data schedule)
-{
-    des_cblock iv;
-    int num = 0;
-    Key *new_key;
-
-    new_key = malloc(sizeof(*new_key));
-    copy_Key(key, new_key);
-    memset(&iv, 0, sizeof(iv));
-    des_cfb64_encrypt(key->key.keyvalue.data, 
-		      new_key->key.keyvalue.data, 
-		      key->key.keyvalue.length, 
-		      schedule.data, &iv, &num, 0);
-    return new_key;
-}
-
 void
-hdb_seal_key(Key *key, krb5_data schedule)
-{
-    des_cblock iv;
-    int num = 0;
-
-    memset(&iv, 0, sizeof(iv));
-    des_cfb64_encrypt(key->key.keyvalue.data, 
-		      key->key.keyvalue.data, 
-		      key->key.keyvalue.length, 
-		      schedule.data, &iv, &num, 1);
-}
-
-void
-hdb_unseal_keys(hdb_entry *ent, krb5_data schedule)
+_hdb_unseal_keys_int(hdb_entry *ent, int key_version, krb5_data schedule)
 {
     int i;
     for(i = 0; i < ent->keys.len; i++){
 	des_cblock iv;
 	int num = 0;
+	if(ent->keys.val[i].mkvno == NULL)
+	    continue;
+	if(*ent->keys.val[i].mkvno != key_version)
+	    ;
 	memset(&iv, 0, sizeof(iv));
+	
 	des_cfb64_encrypt(ent->keys.val[i].key.keyvalue.data, 
 			  ent->keys.val[i].key.keyvalue.data, 
 			  ent->keys.val[i].key.keyvalue.length, 
 			  schedule.data, &iv, &num, 0);
+	free(ent->keys.val[i].mkvno);
+	ent->keys.val[i].mkvno = NULL;
     }
 }
 
 void
-hdb_seal_keys(hdb_entry *ent, krb5_data schedule)
+hdb_unseal_keys(HDB *db, hdb_entry *ent)
+{
+    if (db->master_key_set == 0)
+	return;
+    _hdb_unseal_keys_int(ent, db->master_key_version, db->master_key);
+}
+
+void
+_hdb_seal_keys_int(hdb_entry *ent, int key_version, krb5_data schedule)
 {
     int i;
-    for(i = 0; i < ent->keys.len; i++)
-	hdb_seal_key(&ent->keys.val[i], schedule);
+    for(i = 0; i < ent->keys.len; i++){
+	des_cblock iv;
+	int num = 0;
+
+	if(ent->keys.val[i].mkvno != NULL)
+	    continue;
+	memset(&iv, 0, sizeof(iv));
+	des_cfb64_encrypt(ent->keys.val[i].key.keyvalue.data, 
+			  ent->keys.val[i].key.keyvalue.data, 
+			  ent->keys.val[i].key.keyvalue.length, 
+			  schedule.data, &iv, &num, 1);
+	ent->keys.val[i].mkvno = malloc(sizeof(*ent->keys.val[i].mkvno));
+	*ent->keys.val[i].mkvno = key_version;
+    }
+}
+
+void
+hdb_seal_keys(HDB *db, hdb_entry *ent)
+{
+    if (db->master_key_set == 0)
+	return;
+    
+    _hdb_seal_keys_int(ent, db->master_key_version, db->master_key);
 }
 
 void
@@ -214,17 +220,18 @@ hdb_free_entry(krb5_context context, hdb_entry *ent)
 krb5_error_code
 hdb_foreach(krb5_context context,
 	    HDB *db,
+	    unsigned flags,
 	    hdb_foreach_func_t func,
 	    void *data)
 {
     krb5_error_code ret;
     hdb_entry entry;
-    ret = db->firstkey(context, db, &entry);
+    ret = db->firstkey(context, db, flags, &entry);
     while(ret == 0){
 	ret = (*func)(context, db, &entry, data);
 	hdb_free_entry(context, &entry);
 	if(ret == 0)
-	    ret = db->nextkey(context, db, &entry);
+	    ret = db->nextkey(context, db, flags, &entry);
     }
     if(ret == HDB_ERR_NOENTRY)
 	ret = 0;
