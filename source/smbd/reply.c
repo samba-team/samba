@@ -1457,8 +1457,12 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				pstring fname;
 				pstrcpy(fname,dname);
 
-				if((strcmp(fname, ".") == 0) || (strcmp(fname, "..")==0))
-					continue;
+				/* Quick check for "." and ".." */
+				if (fname[0] == '.') {
+					if (!fname[1] || (fname[1] == '.' && !fname[2])) {
+						continue;
+					}
+				}
 
 				if(!mask_match(fname, mask, case_sensitive))
 					continue;
@@ -3357,6 +3361,13 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 	ZERO_STRUCT(sbuf);
 	unix_convert(newname,conn,newname_last_component,&bad_path,&sbuf);
 
+	/* Quick check for "." and ".." */
+	if (newname_last_component[0] == '.') {
+		if (!newname_last_component[1] || (newname_last_component[1] == '.' && !newname_last_component[2])) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
 	/* Ensure newname contains a '/' */
 	if(strrchr_m(newname,'/') == 0) {
 		pstring tmpstr;
@@ -3470,6 +3481,13 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 	rc = unix_convert(name,conn,0,&bad_path1,&sbuf1);
 	unix_convert(newname,conn,newname_last_component,&bad_path2,&sbuf2);
 
+	/* Quick check for "." and ".." */
+	if (newname_last_component[0] == '.') {
+		if (!newname_last_component[1] || (newname_last_component[1] == '.' && !newname_last_component[2])) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
 	/*
 	 * Split the old name into directory and last component
 	 * strings. Note that unix_convert may have stripped off a 
@@ -3478,7 +3496,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 	 * name and newname contain a / character or neither of them do
 	 * as this is checked in resolve_wildcards().
 	 */
-	
+
 	p = strrchr_m(name,'/');
 	if (!p) {
 		pstrcpy(directory,".");
@@ -3657,8 +3675,12 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 
 				pstrcpy(fname,dname);
 				
-				if((strcmp(fname, ".") == 0) || (strcmp(fname, "..")==0))
-					continue;
+				/* Quick check for "." and ".." */
+				if (fname[0] == '.') {
+					if (!fname[1] || (fname[1] == '.' && !fname[2])) {
+						continue;
+					}
+				}
 
 				if(!mask_match(fname, mask, case_sensitive))
 					continue;
