@@ -89,7 +89,7 @@ do_connect (char *host, int port, int nodelay)
     char **p;
     int s;
 
-    h = gethostbyname (host);
+    h = roken_gethostbyname (host);
     if (h == NULL)
 	errx (1, "gethostbyname: %s", hstrerror(h_errno));
     memset (&addr, 0, sizeof(addr));
@@ -550,7 +550,7 @@ main(int argc, char **argv)
 	usage (1);
 
     if (port_str) {
-	struct servent *s = getservbyname (port_str, "tcp");
+	struct servent *s = roken_getservbyname (port_str, "tcp");
 
 	if (s)
 	    port = s->s_port;
