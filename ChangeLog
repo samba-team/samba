@@ -1,3 +1,7 @@
+2003-10-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5.conf.5: document capaths section
+
 2003-10-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/kerberos5.c: make sure that the server realm and the krbtgt
