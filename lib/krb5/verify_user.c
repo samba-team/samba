@@ -40,7 +40,7 @@
 
 RCSID("$Id$");
 
-int
+krb5_error_code
 krb5_verify_user(krb5_context context, 
 		 krb5_principal principal,
 		 krb5_ccache ccache,
@@ -48,73 +48,59 @@ krb5_verify_user(krb5_context context,
 		 int secure,
 		 const char *service)
 {
+
     krb5_error_code ret;
-    krb5_creds creds;
-    char *realm;
-    krb5_enctype *etypes;
+    krb5_creds cred;
+    krb5_principal client, server;
+    krb5_get_init_creds_opt opt;
+    krb5_verify_init_creds_opt vopt;
+    krb5_ccache id;
     
-    memset(&creds, 0, sizeof(creds));
-    ret = krb5_copy_principal(context, principal, &creds.client);
-    if(ret){
-	return ret;
-    }
-    ret = krb5_get_default_realm(context, &realm);
-    if(ret){
-	return ret;
-    }
-    ret = krb5_build_principal(context, &creds.server,
-			       strlen(realm),
-			       realm,
-			       "krbtgt",
-			       realm,
-			       NULL);
-    if(ret){
-	return ret;
-    }
-    
-    ret = krb5_get_in_tkt_with_password(context,
+    krb5_get_init_creds_opt_init (&opt);
+
+    ret = krb5_get_init_creds_password (context,
+					&cred,
+					principal,
+					(char*)password,
+					NULL,
+					NULL,
 					0,
 					NULL,
-					NULL,
-					NULL,
-					password, 
-					ccache,
-					&creds,
-					NULL);
-    if(ret)
-	return ret;
+					&opt);
     
-    if(secure){
-	krb5_auth_context auth_context = NULL;
-	krb5_data req;
-	
-	ret = krb5_mk_req(context, &auth_context, 
-			  0, 
-			  (char*)service, 
-			  NULL,
-			  NULL, 
-			  ccache,
-			  &req);
-	if(ret){
-	    /* */
-	    return ret;
+    if(ret) return ret;
+
+    ret = krb5_sname_to_principal (context, NULL, service, KRB5_NT_SRV_HST,
+				   &server);
+    if(ret) return ret;
+
+    krb5_verify_init_creds_opt_init(&vopt);
+    krb5_verify_init_creds_opt_set_ap_req_nofail(&vopt, secure);
+
+    ret = krb5_verify_init_creds(context,
+				 &cred,
+				 server,
+				 NULL,
+				 NULL,
+				 &vopt);
+    krb5_free_principal(context, server);
+    if(ret) return ret;
+    if(ccache == NULL)
+	ret = krb5_cc_default (context, &id);
+    else
+	id = ccache;
+    if(ret == 0){
+	ret = krb5_cc_get_principal(context, id, &client);
+	if(ret == 0){
+	    ret = krb5_cc_initialize(context, id, client);
+	    if(ret == 0){
+		ret = krb5_cc_store_cred(context, id, &cred);
+	    }
+	    krb5_free_principal(context, client);
 	}
-	krb5_auth_con_free(context, auth_context);
-	auth_context = NULL;
-		    
-	ret = krb5_rd_req(context, 
-			  &auth_context,
-			  &req,
-			  NULL,
-			  NULL,
-			  NULL,
-			  NULL);
-	
-	if(ret){
-	    /* */
-	    return ret;
-	}
-	krb5_data_free(&req);
+	if(ccache == NULL)
+	    krb5_cc_close(context, id);
     }
-    return 0;
+    krb5_free_creds_contents(context, &cred);
+    return ret;
 }
