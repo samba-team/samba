@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
    Privileges handling functions
-   Copyright (C) Jean François Micouleau	1998-2001
+   Copyright (C) Jean FranÃ§ois Micouleau	1998-2001
    Copyright (C) Simo Sorce			2002-2003
    Copyright (C) Gerald (Jerry) Carter          2004
    
@@ -27,8 +27,8 @@
 
 #define GENERATE_LUID_LOW(x)	(x)+1;
 
-static SE_PRIV se_priv_all  = SE_ALL_PRIVS;
-static SE_PRIV se_priv_end  = SE_END;
+static const SE_PRIV se_priv_all  = SE_ALL_PRIVS;
+static const SE_PRIV se_priv_end  = SE_END;
 
 /* Define variables for all privileges so we can use the
    SE_PRIV* in the various se_priv_XXX() functions */
@@ -503,7 +503,7 @@ NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
  Add privilege to sid
 ****************************************************************************/
 
-BOOL grant_privilege(const DOM_SID *sid, SE_PRIV *priv_mask)
+BOOL grant_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
 {
 	SE_PRIV old_mask, new_mask;
 	
@@ -548,7 +548,7 @@ BOOL grant_privilege_by_name(DOM_SID *sid, const char *name)
  Remove privilege from sid
 ****************************************************************************/
 
-BOOL revoke_privilege(const DOM_SID *sid, SE_PRIV *priv_mask)
+BOOL revoke_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
 {
 	SE_PRIV mask;
 	
