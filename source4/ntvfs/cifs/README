@@ -3,3 +3,14 @@ backend that talks to a remote CIFS server. The primary aim of this
 backend is for debugging and development, although some poeple may
 find it useful as a CIFS gateway.
 
+
+Here is a typical config:
+
+[myshare]
+	ntvfs handler = cifs
+	cifs:server = myserver
+	cifs:user = tridge
+	cifs:password = mypass
+	cifs:domain = TESTDOM
+	cifs:share = test
+
