@@ -147,9 +147,10 @@ init(int argc, char **argv)
     db->close(context, db);
     for(i = optind; i < argc; i++){
 	krb5_principal princ;
+	const char *realm = argv[i];
 
 	/* Create `krbtgt/REALM' */
-	krb5_make_principal(context, &princ, argv[i], "krbtgt", argv[i], NULL);
+	krb5_make_principal(context, &princ, realm, "krbtgt", realm, NULL);
 	if (realm_max_life == NULL) {
 	    max_life = 0;
 	    edit_deltat ("Realm max ticket life", &max_life, NULL, 0);
@@ -161,8 +162,9 @@ init(int argc, char **argv)
 	}
 	create_random_entry(princ, max_life, max_rlife, 0);
 	krb5_free_principal(context, princ);
+
 	/* Create `kadmin/changepw' */
-	krb5_make_principal(context, &princ, argv[i], 
+	krb5_make_principal(context, &princ, realm, 
 			    "kadmin", "changepw", NULL);
 	create_random_entry(princ, 5*60, 5*60, 
 			    KRB5_KDB_DISALLOW_TGT_BASED|
@@ -173,11 +175,19 @@ init(int argc, char **argv)
 			    KRB5_KDB_DISALLOW_PROXIABLE|
 			    KRB5_KDB_REQUIRES_PRE_AUTH);
 	krb5_free_principal(context, princ);
+
 	/* Create `kadmin/admin' */
-	krb5_make_principal(context, &princ, argv[i], 
+	krb5_make_principal(context, &princ, realm, 
 			    "kadmin", "admin", NULL);
 	create_random_entry(princ, 60*60, 60*60, KRB5_KDB_REQUIRES_PRE_AUTH);
 	krb5_free_principal(context, princ);
+
+	/* Create `changepw/kerberos' (for v4 compat) */
+	krb5_make_principal(context, &princ, realm,
+			    "changepw", "kerberos", NULL);
+	create_random_entry(princ, 60*60, 60*60, 0);
+	krb5_free_principal(context, princ);
+
 	/* Create `default' */
 	{
 	    kadm5_principal_ent_rec ent;
@@ -185,7 +195,7 @@ init(int argc, char **argv)
 
 	    memset (&ent, 0, sizeof(ent));
 	    mask |= KADM5_PRINCIPAL;
-	    krb5_make_principal(context, &ent.principal, argv[i],
+	    krb5_make_principal(context, &ent.principal, realm,
 				"default", NULL);
 	    mask |= KADM5_MAX_LIFE;
 	    ent.max_life = 24 * 60 * 60;
