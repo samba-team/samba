@@ -187,14 +187,14 @@ static BOOL user_is_member(char *user_name, DOMAIN_GRP_MEMBER *mem, int num_mem)
  *************************************************************************/
 BOOL iterate_getusergroupsnam(char *user_name, DOMAIN_GRP **grps, int *num_grps)
 {
-	DOMAIN_GRP *grp;
+	DOMAIN_GRP *grp = NULL;
 	DOMAIN_GRP_MEMBER *mem = NULL;
 	int num_mem = 0;
 	void *fp = NULL;
 
 	DEBUG(10, ("search for usergroups by name: %s\n", user_name));
 
-	if (user_name == NULL || grp == NULL || num_grps == NULL)
+	if (user_name == NULL || grps == NULL || num_grps == NULL)
 	{
 		return False;
 	}
@@ -250,12 +250,12 @@ BOOL iterate_getusergroupsnam(char *user_name, DOMAIN_GRP **grps, int *num_grps)
  *************************************************************************/
 BOOL enumdomgroups(DOMAIN_GRP **grps, int *num_grps)
 {
-	DOMAIN_GRP *grp;
+	DOMAIN_GRP *grp = NULL;
 	void *fp = NULL;
 
 	DEBUG(10, ("enum user groups\n"));
 
-	if (grp == NULL || num_grps == NULL)
+	if (grps == NULL || num_grps == NULL)
 	{
 		return False;
 	}
