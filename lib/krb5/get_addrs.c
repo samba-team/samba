@@ -80,9 +80,16 @@ gethostname_fallback (krb5_addresses *res)
      return 0;
 }
 
+/*
+ *
+ * Try to figure out the addresses of all configured interfaces with a
+ * lot of magic ioctls.
+ * Include loopback (lo*) interfaces iff loop.
+ */
+
 #if defined(SIOCGIFCONF) && defined(SIOCGIFFLAGS) && defined(SIOCGIFADDR)
 static krb5_error_code
-find_all_addresses (krb5_addresses *res)
+find_all_addresses (krb5_addresses *res, int loop)
 {
      krb5_error_code err;
      int fd;
@@ -120,7 +127,8 @@ find_all_addresses (krb5_addresses *res)
 	  if(ifr->ifr_addr.sa_len)
 	      sz = sizeof(ifr->ifr_name) + ifr->ifr_addr.sa_len;
 #endif
-	  if(strncmp(ifreq.ifr_name, ifr->ifr_name, sizeof(ifr->ifr_name))) {
+	  if(strncmp(ifreq.ifr_name, ifr->ifr_name, sizeof(ifr->ifr_name))
+	     && (loop || strncmp (ifr->ifr_name, "lo", 2))) {
 	       if(ioctl(fd, SIOCGIFFLAGS, ifr) < 0) {
 		    close (fd);
 		    free (res->val);
@@ -201,6 +209,9 @@ find_all_addresses (krb5_addresses *res)
 /*
  * Try to get all addresses, but return the one corresponding to
  * `hostname' if we fail.
+ *
+ * Don't include any loopback addresses (interfaces of name lo*).
+ *
  */
 
 krb5_error_code
@@ -209,12 +220,12 @@ krb5_get_all_client_addrs (krb5_addresses *res)
 #if !defined(SIOCGIFCONF) || !defined(SIOCGIFFLAGS) || !defined(SIOCGIFADDR)
     return gethostname_fallback (res);
 #else
-    return find_all_addresses (res);
+    return find_all_addresses (res, 0);
 #endif /* SIOCGIFCONF */
 }
 
 /*
- * Same as above, but with the fall-back to INADDR_ANY.
+ * XXX
  */
 
 #if 0
