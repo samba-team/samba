@@ -102,6 +102,7 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
   struct packet_struct *p2;
   struct nmb_packet *nmb = &p.packet.nmb;
 	int packet_type = NMB_PACKET;
+	BOOL first_time = True;
 
 	if (fd == -1)
 	{
@@ -147,27 +148,19 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 
   GetTimeOfDay(&tval);
 
-  if (!send_packet(&p)) 
-	{
-		if (packet_type == NMB_SOCK_PACKET) close(fd);
-    return(False);
-	}
-
-  retries--;
-
   while (1)
     {
       struct timeval tval2;
       GetTimeOfDay(&tval2);
-      if (TvalDiff(&tval,&tval2) > retry_time) {
-	if (!retries) break;
+      if (first_time || TvalDiff(&tval,&tval2) > retry_time)
+	{
+		first_time = False;
 	if (!found && !send_packet(&p))
 	{
 		if (packet_type == NMB_SOCK_PACKET) close(fd);
 	  return False;
 	}
 	GetTimeOfDay(&tval);
-	retries--;
       }
 
       if ((p2=receive_packet(fd,packet_type,90)))
@@ -196,6 +189,8 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 	    continue;
 	  }
 
+	retries--;
+
 	  _interpret_node_status(&nmb2->answers->rdata[0], master,rname);
 	  free_packet(p2);
 		if (packet_type == NMB_SOCK_PACKET) close(fd);
@@ -221,17 +216,18 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
 {
   BOOL found=False;
   int i, retries = 3;
-  int retry_time = bcast?250:2000;
+  int retry_time = bcast?2000:2000;
   struct timeval tval;
   struct packet_struct p;
   struct packet_struct *p2;
   struct nmb_packet *nmb = &p.packet.nmb;
   struct in_addr *ip_list = NULL;
 	BOOL packet_type = NMB_PACKET;
+	BOOL first_send = True;
 
 	if (fd == -1)
 	{
-		retries = 0;
+		retries = 1;
 		packet_type = NMB_SOCK_PACKET;
 		fd = get_nmb_sock();
 
@@ -273,15 +269,16 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
   p.timestamp = time(NULL);
   p.packet_type = packet_type;
 
-	ZERO_STRUCT(tval);
+     GetTimeOfDay(&tval);
 
   while (retries >= 0)
   {
     struct timeval tval2;
 
     GetTimeOfDay(&tval2);
-    if (TvalDiff(&tval,&tval2) > retry_time) 
+    if (first_send ) /* || TvalDiff(&tval,&tval2) > retry_time) */
     {
+	first_send = False;
       if (!found && !send_packet(&p))
 	{
 		if (packet_type == NMB_SOCK_PACKET) close(fd);
@@ -308,6 +305,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
           fn(p2);
         else
           free_packet(p2);
+
         continue;
       }
 	  
