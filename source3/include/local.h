@@ -227,4 +227,7 @@
 /* Buffer size to use when printing backtraces */
 #define BACKTRACE_STACK_SIZE 64
 
+/* size of listen() backlog in smbd */
+#define SMBD_LISTEN_BACKLOG 50
+
 #endif
