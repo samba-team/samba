@@ -163,17 +163,15 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	update=False;
 	
 	unistr2_to_ascii(form_name, &form->name, sizeof(form_name)-1);
-	for (n=0; n<*count && update==False; n++)
-	{
-		if (!strncmp((*list)[n].name, form_name, strlen(form_name)))
-		{
+	for (n=0; n<*count; n++) {
+		if (!strncmp((*list)[n].name, form_name, strlen(form_name))) {
 			DEBUG(103, ("NT workaround, [%s] already exists\n", form_name));
 			update=True;
+			break;
 		}
 	}
 
-	if (update==False)
-	{
+	if (update==False) {
 		if((*list=Realloc(*list, (n+1)*sizeof(nt_forms_struct))) == NULL)
 			return False;
 		unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name)-1);
