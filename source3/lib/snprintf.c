@@ -803,6 +803,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 	va_list ap;
 	int ret;
 	
+	*ptr = NULL;
 	va_start(ap, format);
 	ret = vasprintf(ptr, format, ap);
 	va_end(ap);

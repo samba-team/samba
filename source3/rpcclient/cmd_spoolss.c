@@ -1183,11 +1183,15 @@ static NTSTATUS cmd_spoolss_getprintprocdir(struct cli_state *cli,
 		return NT_STATUS_OK;
         }
 
-	asprintf(&servername, "\\\\%s", cli->desthost);
+	if (asprintf(&servername, "\\\\%s", cli->desthost) < 0)
+		return NT_STATUS_NO_MEMORY;
 	strupper(servername);
 
-	asprintf(&environment, "%s", (argc == 3) ? argv[2] : 
-		 PRINTER_DRIVER_ARCHITECTURE);
+	if (asprintf(&environment, "%s", (argc == 3) ? argv[2] : 
+		 			PRINTER_DRIVER_ARCHITECTURE) < 0) {
+		SAFE_FREE(servername);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	result = cli_spoolss_getprintprocessordirectory(
 		cli, mem_ctx, servername, environment, procdir);
