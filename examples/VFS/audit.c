@@ -56,7 +56,7 @@ static int audit_connect(struct connection_struct *conn, const char *svc,
 	syslog(SYSLOG_PRIORITY, "connect to service %s by user %s\n", 
 	       svc, user);
 
-	return global_vfs_ops->connect(conn, svc, user);
+	return 0;               /* Success */
 }
 
 static void audit_disconnect(struct connection_struct *conn)
