@@ -205,6 +205,37 @@ void smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+creates a STRHDR2 structure.
+********************************************************************/
+void make_strhdr2(STRHDR2 *hdr, uint32 max_len, uint32 len, uint32 buffer)
+{
+	hdr->str_max_len = max_len;
+	hdr->str_str_len = len;
+	hdr->buffer      = buffer;
+}
+
+/*******************************************************************
+reads or writes a STRHDR2 structure.
+********************************************************************/
+void smb_io_strhdr2(char *desc, STRHDR2 *hdr, prs_struct *ps, int depth)
+{
+	if (hdr == NULL) return;
+
+	prs_debug(ps, depth, desc, "smb_io_strhdr");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("str_str_len", ps, depth, &(hdr->str_str_len));
+	prs_uint32("str_max_len", ps, depth, &(hdr->str_max_len));
+	prs_uint32("buffer     ", ps, depth, &(hdr->buffer     ));
+
+	/* oops! XXXX maybe issue a warning that this is happening... */
+	if (hdr->str_max_len > MAX_STRINGLEN) hdr->str_max_len = MAX_STRINGLEN;
+	if (hdr->str_str_len > MAX_STRINGLEN) hdr->str_str_len = MAX_STRINGLEN;
+}
+
+/*******************************************************************
 creates a UNIHDR structure.
 ********************************************************************/
 void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint32 buffer)

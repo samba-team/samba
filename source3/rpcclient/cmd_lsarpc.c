@@ -309,3 +309,72 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 	}
 }
 
+/****************************************************************************
+nt lsa query
+****************************************************************************/
+void cmd_lsa_query_secret(struct client_info *info)
+{
+	uint16 nt_pipe_fnum;
+	fstring srv_name;
+	BOOL res = True;
+	BOOL res1;
+	int i;
+
+	POLICY_HND hnd_secret;
+	fstring secret_name;
+	unsigned char enc_secret[24];
+	NTTIME last_update;
+
+	if (!next_token(NULL, secret_name, NULL, sizeof(secret_name)))
+	{
+		fprintf(out_hnd, "querysecret <secret name>\n");
+		return;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->myhostname);
+	strupper(srv_name);
+
+	DEBUG(4,("cmd_lsa_query_info: server:%s\n", srv_name));
+
+	/* open LSARPC session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &nt_pipe_fnum) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_policy(smb_cli, nt_pipe_fnum,
+				srv_name,
+				&info->dom.lsa_info_pol, False) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_secret(smb_cli, nt_pipe_fnum,
+				&info->dom.lsa_info_pol,
+				secret_name, 0x20003, &hnd_secret) : False;
+
+	res1 = res ? lsa_query_secret(smb_cli, nt_pipe_fnum,
+				&hnd_secret, enc_secret, &last_update) : False;
+
+	res = res ? lsa_close(smb_cli, nt_pipe_fnum, &hnd_secret) : False;
+
+	res = res ? lsa_close(smb_cli, nt_pipe_fnum, &info->dom.lsa_info_pol) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+
+	if (res1)
+	{
+		fprintf(out_hnd, "\tValue (encrypted): ");
+		for (i = 0; i < 24; i++)
+		{
+			fprintf(out_hnd, "%02X", enc_secret[i]);
+		}
+
+		fprintf(out_hnd, "\n\tLast Updated     : %s\n\n",
+			http_timestring(nt_time_to_unix(&last_update)));
+	}
+	else
+	{
+		fprintf(out_hnd, "LSA Query Secret: failed\n");
+	}
+}
+
+

@@ -96,6 +96,15 @@ typedef struct header_info
 
 } STRHDR;
 
+/* STRHDR2 - string header, 32-bit lengths */
+typedef struct header2_info
+{
+  uint32 str_str_len;
+  uint32 str_max_len;
+  uint32 buffer;
+
+} STRHDR2;
+
 /* UNIHDR - unicode string header */
 typedef struct unihdr_info
 {

@@ -140,6 +140,7 @@ struct
   {"enumaliases",cmd_sam_enum_aliases, "SAM Aliases Database Query (experimental!)"},
   {"enumgroups", cmd_sam_enum_groups,  "SAM Group Database Query (experimental!)"},
   {"samgroups",  cmd_sam_query_dominfo, "SAM Query Domain Info(experimental!)"},
+  {"querysecret", cmd_lsa_query_secret, "LSA Query Secret (developer use)"},
   {"quit",       cmd_quit,        "logoff the server"},
   {"q",          cmd_quit,        "logoff the server"},
   {"exit",       cmd_quit,        "logoff the server"},

@@ -99,6 +99,121 @@ BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
 }
 
 /****************************************************************************
+do a LSA Open Secret
+****************************************************************************/
+BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
+		     POLICY_HND *hnd_pol, char *secret_name, uint32 des_access,
+		     POLICY_HND *hnd_secret)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	LSA_Q_OPEN_SECRET q_o;
+	BOOL valid_pol;
+
+	if (hnd_pol == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api LSA_OPENSECRET */
+
+	DEBUG(4,("LSA Open Secret\n"));
+
+	make_q_open_secret(&q_o, hnd_pol, secret_name, des_access);
+
+	/* turn parameters into data stream */
+	lsa_io_q_open_secret("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, LSA_OPENSECRET, &buf, &rbuf))
+	{
+		LSA_R_OPEN_SECRET r_o;
+		BOOL p;
+
+		lsa_io_r_open_secret("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_OPENSECRET: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			memcpy(hnd_secret, r_o.pol.data, sizeof(hnd_secret->data));
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a LSA Query Secret
+****************************************************************************/
+BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
+		      POLICY_HND *pol, unsigned char secret[24],
+		      NTTIME *lastupdate)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	LSA_Q_QUERY_SECRET q_q;
+	BOOL valid_info = False;
+
+	if (pol == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api LSA_QUERYSECRET */
+
+	DEBUG(4,("LSA Query Secret\n"));
+
+	make_q_query_secret(&q_q, pol);
+
+	/* turn parameters into data stream */
+	lsa_io_q_query_secret("", &q_q, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, LSA_QUERYSECRET, &buf, &rbuf))
+	{
+		LSA_R_QUERY_SECRET r_q;
+		BOOL p;
+
+		lsa_io_r_query_secret("", &r_q, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_q.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_QUERYSECRET: %s\n", get_nt_error_msg(r_q.status)));
+			p = False;
+		}
+
+		if (p && (r_q.info.ptr_value != 0) &&
+		    (r_q.info.value.ptr_secret != 0) &&
+		    (r_q.info.ptr_update != 0))
+		{
+			memcpy(secret, r_q.info.value.secret.buffer, 24);
+			memcpy(lastupdate, &(r_q.info.last_update), sizeof(NTTIME));
+			valid_info = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_info;
+}
+
+
+/****************************************************************************
 do a LSA Lookup Names
 ****************************************************************************/
 BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
