@@ -115,7 +115,9 @@ sub struct_alignment
 			if ($structs{$e->{TYPE}}->{DATA}->{TYPE} eq "STRUCT") {
 				$a = struct_alignment($structs{$e->{TYPE}}->{DATA});
 			} elsif ($structs{$e->{TYPE}}->{DATA}->{TYPE} eq "UNION") {
-				$a = union_alignment($structs{$e->{TYPE}}->{DATA});
+				if (defined $structs{$e->{TYPE}}->{DATA}) {
+					$a = union_alignment($structs{$e->{TYPE}}->{DATA});
+				}
 			}
 		} else {
 			$a = util::type_align($e);
@@ -139,6 +141,10 @@ sub union_alignment
 
 	foreach my $e (@{$u->{DATA}}) {
 		my $a = 1;
+
+		if ($e->{TYPE} eq "EMPTY") {
+			next;
+		}
 
 		if (!util::need_wire_pointer($e)
 		    && defined $structs{$e->{DATA}->{TYPE}}) {
