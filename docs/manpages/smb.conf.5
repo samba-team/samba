@@ -1419,6 +1419,28 @@ software. Use this option to set it to whatever you prefer.
 .B Example:
  	mangling char = ^
 
+.SS max disk size (G)
+This option allows you to put an upper limit on the apparent size of
+disks. If you set this option to 100 then all shares will appear to be
+not larger than 100 MB in size.
+
+Note that this option does not limit the amount of data you can put on
+the disk. In the above case you could still store much more than 100
+MB on the disk, but if a client ever asks for the amount of free disk
+space or the total disk size then the result will be bounded by the
+amount specified in "max disk size".
+
+This option is primarily useful to work around bugs in some pieces of
+software that can't handle very large disks, particularly disks over
+1GB in size.
+
+A "max disk size" of 0 means no limit.
+
+.B Default:
+	max disk size = 0
+
+.B Example:
+	max disk size = 1000
 .SS max log size (G)
 
 This option (an integer in kilobytes) specifies the max size the log
