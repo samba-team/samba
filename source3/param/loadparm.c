@@ -1251,7 +1251,7 @@ static void init_globals(void)
 	Globals.pwordlevel = 0;
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
-	Globals.bLargeReadwrite = False;
+	Globals.bLargeReadwrite = True;
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = MAX_OPEN_FILES;
 	Globals.maxprotocol = PROTOCOL_NT1;
