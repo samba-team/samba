@@ -305,7 +305,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       else {
 	GUID domain_guid;
 	pstring domain;
-	char *component, *dc;
+	char *component, *dc, *q1;
 	uint8 size;
 
 	safe_strcpy(domain, lp_realm(), sizeof(domain));
