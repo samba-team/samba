@@ -1,3 +1,8 @@
+2002-07-31  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/principal.c: actually lower case the lower case
+	instance name (spotted by Derrick Brashear)
+
 2002-07-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* fix-export: if DATEDVERSION is set, change the version to
@@ -5,6 +10,14 @@
 
 	* configure.in: don't use AC_PROG_RANLIB, and use magic foo to set
 	LTLIBOBJS
+
+2002-07-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/connect.c: add some cache-control-foo to the http responses
+	(from Gombas Gabor)
+
+	* lib/krb5/addr_families.c (krb5_print_address): don't copy size
+	if ret_len == NULL
 
 2002-06-28  Johan Danielsson  <joda@pdc.kth.se>
 
