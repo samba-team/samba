@@ -1,3 +1,8 @@
+2001-07-19  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (krb5_principal_get_type): add
+	(default_v4_name_convert): add "smtp"
+
 2001-07-13  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: remove make-print-version from LIBOBJS, it's no
