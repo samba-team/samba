@@ -331,6 +331,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   int saved_errno;
   BOOL component_was_mangled = False;
   BOOL name_has_wildcard = False;
+  extern char magic_char;
 
   *dirpath = 0;
   *bad_path = False;
@@ -432,6 +433,10 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   if(strchr(start,'?') || strchr(start,'*'))
     name_has_wildcard = True;
 
+  /* this is an extremely conservative test for mangled names. */
+  if (strchr(start,magic_char))
+    component_was_mangled = True;
+
   /* 
    * Now we need to recursively match the name against the real 
    * directory structure.
@@ -528,7 +533,6 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
            */
 
           if (is_mangled(start)) {
-            component_was_mangled = True;
             check_mangled_cache( start );
           }
 
