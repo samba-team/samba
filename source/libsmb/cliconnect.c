@@ -630,19 +630,19 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	/* If password is set we reauthenticate to kerberos server
 	 * and do not store results */
 
-	if (*pass) {
-		int ret;
-
-		use_in_memory_ccache();
-		ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */);
-
-		if (ret){
-	  		DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
-			return False;
-		}
-	}
-
 	if (got_kerberos_mechanism && cli->use_kerberos) {
+		if (*pass) {
+			int ret;
+			
+			use_in_memory_ccache();
+			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */);
+			
+			if (ret){
+				DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
+				return False;
+			}
+		}
+		
 		return cli_session_setup_kerberos(cli, principal, workgroup);
 	}
 #endif
