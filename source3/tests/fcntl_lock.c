@@ -43,6 +43,10 @@ int main(int argc, char *argv[])
 	struct flock lock;
 	int fd, ret, status=1;
 	pid_t pid;
+	char *testdir = NULL;
+
+	testdir = getenv("TESTDIR");
+	if (testdir) chdir(testdir);
 
 	alarm(10);
 
