@@ -270,7 +270,7 @@ static BOOL read_sid_from_file(int fd, char *sid_file, DOM_SID *sid)
 
   fline[sizeof(fline)-1] = '\0';
   if (!string_to_sid(sid, fline)) {
-    DEBUG(0,("unable to generate machine SID.\n"));
+    DEBUG(0,("unable to read sid.\n"));
     return False;
   }
 
@@ -289,15 +289,12 @@ BOOL read_sid(char *domain_name, DOM_SID *sid)
 	int fd;
 	char *p;
 	pstring sid_file;
-	fstring sid_string;
 	fstring file_name;
 	SMB_STRUCT_STAT st;
 
 	pstrcpy(sid_file, lp_smb_passwd_file());
-	sid_to_string(sid_string, sid);
 
-	DEBUG(10,("read_sid: Domain: %s SID: %s\n", domain_name, sid_string));
-	fstrcat(sid_string, "\n");
+	DEBUG(10,("read_sid: Domain: %s\n", domain_name));
 
 	if (sid_file[0] == 0)
 	{

@@ -295,9 +295,12 @@ char *rep_inet_ntoa(struct in_addr ip);
 
 /*The following definitions come from  lib/sids.c  */
 
+struct sid_map* add_sidmap_to_array(uint32 *len, struct sid_map ***array,
+				const struct sid_map *name);
 void get_sam_domain_name(void);
 BOOL get_member_domain_sid(void);
 void generate_wellknown_sids(void);
+BOOL create_sidmap_table(void);
 BOOL generate_sam_sid(char *domain_name, DOM_SID *sid);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain);
 BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);

@@ -43,9 +43,15 @@ terminate client connection
 ****************************************************************************/
 static void cli_use_free(struct cli_use *cli)
 {
-	cli_ulogoff(cli->cli);
-	cli_shutdown(cli->cli);
-	free(cli->cli);
+	if (cli->cli != NULL)
+	{
+		if (cli->cli->initialised)
+		{
+			cli_ulogoff(cli->cli);
+			cli_shutdown(cli->cli);
+		}
+		free(cli->cli);
+	}
 
 	free(cli);
 }

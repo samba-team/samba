@@ -69,13 +69,14 @@ DOM_SID global_sid_S_1_1;    /* everyone */
 DOM_SID global_sid_S_1_3;    /* Creator Owner */
 DOM_SID global_sid_S_1_5;    /* NT Authority */
 
-static struct sid_name_map_info
+struct sid_map
 {
 	DOM_SID *sid;
 	char *name;
 
-}
-sid_name_map[] =
+};
+
+struct sid_map static_sid_name_map[] =
 {
 	{ &global_sid_S_1_5_20, "BUILTIN" },
 	{ &global_sid_S_1_1   , "Everyone" },
@@ -86,6 +87,65 @@ sid_name_map[] =
 	{ NULL                , NULL      }
 };
 
+struct sid_map **sid_name_map = NULL;
+uint32 num_maps = 0;
+
+static struct sid_map *sid_map_dup(const struct sid_map *from)
+{
+	if (from != NULL)
+	{
+		struct sid_map *copy = (struct sid_map *)
+		                        malloc(sizeof(struct sid_map));
+		if (copy != NULL)
+		{
+			ZERO_STRUCTP(copy);
+			if (from->name != NULL)
+			{
+				copy->name  = strdup(from->name );
+			}
+			if (from->sid != NULL)
+			{
+				copy->sid = sid_dup(from->sid);
+			}
+		}
+		return copy;
+	}
+	return NULL;
+}
+
+static void sid_map_free(struct sid_map *map)
+{
+	if (map->name != NULL)
+	{
+		free(map->name);
+	}
+	if (map->sid != NULL)
+	{
+		free(map->sid);
+	}
+	free(map);
+}
+
+/****************************************************************************
+free a sid map array
+****************************************************************************/
+static void free_sidmap_array(uint32 num_entries, struct sid_map **entries)
+{
+	void(*fn)(void*) = (void(*)(void*))&sid_map_free;
+	free_void_array(num_entries, (void**)entries, *fn);
+}
+
+/****************************************************************************
+add a sid map state to the array
+****************************************************************************/
+struct sid_map* add_sidmap_to_array(uint32 *len, struct sid_map ***array,
+				const struct sid_map *name)
+{
+	void*(*fn)(const void*) = (void*(*)(const void*))&sid_map_dup;
+	return (struct sid_map*)add_copy_to_array(len,
+	                     (void***)array, (const void*)name, *fn, False);
+				
+}
 /****************************************************************************
  sets up the name associated with the SAM database for which we are responsible
 ****************************************************************************/
@@ -153,6 +213,54 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_S_1_1   , "S-1-1"   );
 	string_to_sid(&global_sid_S_1_3   , "S-1-3"   );
 	string_to_sid(&global_sid_S_1_5   , "S-1-5"   );
+}
+
+/****************************************************************************
+ create a sid map table
+****************************************************************************/
+BOOL create_sidmap_table(void)
+{
+	int i;
+	char **doms = NULL;
+	uint32 num_doms = 0;
+
+	for (i = 0; static_sid_name_map[i].name != NULL; i++)
+	{
+		add_sidmap_to_array(&num_maps, &sid_name_map,
+		                    &static_sid_name_map[i]);
+	}
+
+	enumtrustdoms(&doms, &num_doms);
+
+	for (i = 0; i < num_doms; i++)
+	{
+		struct sid_map map;
+		DOM_SID sid;
+
+		map.name = doms[i];
+		map.sid  = &sid;
+
+		if (!read_sid(map.name, map.sid))
+		{
+			DEBUG(0,("Could not read Domain SID %s\n", map.name));
+			return False;
+		}
+		add_sidmap_to_array(&num_maps, &sid_name_map, &map);
+	}
+
+
+	for (i = 0; i < num_maps; i++)
+	{
+		fstring sidstr;
+		sid_to_string(sidstr, sid_name_map[i]->sid);
+		DEBUG(10,("Map:\tDomain:\t%s\tSID:\t%s\n",
+		         sid_name_map[i]->name, sidstr));
+	}
+
+
+	free_char_array(num_doms, doms);
+
+	return True;
 }
 
 /****************************************************************************
@@ -275,18 +383,17 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain)
 
 	DEBUG(5,("map_domain_name_to_sid: %s\n", (*nt_domain)));
 
-	while (sid_name_map[i].name != NULL)
+	for (i = 0; sid_name_map[i]->name != NULL; i++)
 	{
-		DEBUG(5,("compare: %s\n", sid_name_map[i].name));
-		if (strequal(sid_name_map[i].name, (*nt_domain)))
+		DEBUG(5,("compare: %s\n", sid_name_map[i]->name));
+		if (strequal(sid_name_map[i]->name, (*nt_domain)))
 		{
 			fstring sid_str;
-			sid_copy(sid, sid_name_map[i].sid);
-			sid_to_string(sid_str, sid_name_map[i].sid);
+			sid_copy(sid, sid_name_map[i]->sid);
+			sid_to_string(sid_str, sid_name_map[i]->sid);
 			DEBUG(5,("found %s\n", sid_str));
 			return True;
 		}
-		i++;
 	}
 
 	DEBUG(0,("map_domain_name_to_sid: mapping to %s NOT IMPLEMENTED\n",
@@ -311,17 +418,16 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain)
 		return False;
 	}
 
-	while (sid_name_map[i].sid != NULL)
+	for (i = 0; sid_name_map[i]->sid != NULL; i++)
 	{
-		sid_to_string(sid_str, sid_name_map[i].sid);
+		sid_to_string(sid_str, sid_name_map[i]->sid);
 		DEBUG(5,("compare: %s\n", sid_str));
-		if (sid_equal(sid_name_map[i].sid, sid))
+		if (sid_equal(sid_name_map[i]->sid, sid))
 		{
-			fstrcpy(nt_domain, sid_name_map[i].name);
+			fstrcpy(nt_domain, sid_name_map[i]->name);
 			DEBUG(5,("found %s\n", nt_domain));
 			return True;
 		}
-		i++;
 	}
 
 	DEBUG(0,("map_domain_sid_to_name: mapping NOT IMPLEMENTED\n"));
@@ -367,7 +473,7 @@ BOOL split_domain_name(const char *fullname, char *domain, char *name)
 }
 
 /**************************************************************************
- enumerates all domains for which the SAM server is responsible
+ enumerates all trusted domains
 ***************************************************************************/
 BOOL enumtrustdoms(char ***doms, uint32 *num_entries)
 {
@@ -381,7 +487,9 @@ BOOL enumtrustdoms(char ***doms, uint32 *num_entries)
 	{
 		do
 		{
-			add_chars_to_array(num_entries, doms, tmp);
+			fstring domain;
+			split_at_first_component(tmp, domain, '=', NULL);
+			add_chars_to_array(num_entries, doms, domain);
 
 		} while (next_token(NULL, tmp, NULL, sizeof(tmp)));
 	}

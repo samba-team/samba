@@ -1913,6 +1913,8 @@ void readline_init(void)
 
 	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
 
+	pwdb_initialise(False);
+
 	process(&cli_info, NULL);
 
 	free_connections();
