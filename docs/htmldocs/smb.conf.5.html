@@ -379,8 +379,7 @@ names are checked against the supplied password, if they match then
 the connection is allowed as the corresponding user.
 <p><li> Step 4: If the client has previously validated a
 username/password pair with the server and the client has passed the
-validation token then that username is used. This step is skipped if
-<a href="smb.conf.5.html#revalidate"><strong>"revalidate = yes"</strong></a> for this service.
+validation token then that username is used. 
 <p><li> Step 5: If a <a href="smb.conf.5.html#user"><strong>"user = "</strong></a> field is given in the
 smb.conf file for the service and the client has supplied a password,
 and that password matches (according to the UNIX system's password
@@ -641,6 +640,7 @@ parameter for details. Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#printok"><strong>print ok</strong></a>
 <p><li > <a href="smb.conf.5.html#printable"><strong>printable</strong></a>
 <p><li > <a href="smb.conf.5.html#printer"><strong>printer</strong></a>
+<p><li > <a href="smb.conf.5.html#printeradmin"><strong>printer admin</strong></a>
 <p><li > <a href="smb.conf.5.html#printerdriver"><strong>printer driver</strong></a>
 <p><li > <a href="smb.conf.5.html#printerdriverlocation"><strong>printer driver location</strong></a>
 <p><li > <a href="smb.conf.5.html#printername"><strong>printer name</strong></a>
@@ -650,7 +650,6 @@ parameter for details. Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#queueresumecommand"><strong>queueresume command</strong></a>
 <p><li > <a href="smb.conf.5.html#readlist"><strong>read list</strong></a>
 <p><li > <a href="smb.conf.5.html#readonly"><strong>read only</strong></a>
-<p><li > <a href="smb.conf.5.html#revalidate"><strong>revalidate</strong></a>
 <p><li > <a href="smb.conf.5.html#rootpostexec"><strong>root postexec</strong></a>
 <p><li > <a href="smb.conf.5.html#rootpreexec"><strong>root preexec</strong></a>
 <p><li > <a href="smb.conf.5.html#rootpreexecclose"><strong>root preexec close</strong></a>
@@ -1403,40 +1402,40 @@ DNS name lookup requests, as doing a name lookup is a blocking action.
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list <strong>Samba-ntdom</strong> available by sending email to
-<a href="mailto:listproc@samba.org"><em>listproc@samba.org</em></a>
+mailing list <strong>Samba-ntdom</strong> available by visiting the web page at
+<a href="http://lists.samba.org/">http://lists.samba.org/</a>
 <p><a name="domainadminusers"></a> 
 <p></p><dt><strong><strong>domain admin users (G)</strong></strong><dd>
 <p>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list <strong>Samba-ntdom</strong> available by sending email to
-<a href="mailto:listproc@samba.org"><em>listproc@samba.org</em></a>
+mailing list <strong>Samba-ntdom</strong> available by visiting the web page at
+<a href="http://lists.samba.org/">http://lists.samba.org/</a>
 <p><a name="domaingroups"></a>
 <p></p><dt><strong><strong>domain groups (G)</strong></strong><dd>
 <p>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list <strong>Samba-ntdom</strong> available by sending email to
-<a href="mailto:listproc@samba.org"><em>listproc@samba.org</em></a>
+mailing list <strong>Samba-ntdom</strong> available by visiting the web page at
+<a href="http://lists.samba.org/">http://lists.samba.org/</a>
 <p><a name="domainguestgroup"></a>
 <p></p><dt><strong><strong>domain guest group (G)</strong></strong><dd>
 <p>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list <strong>Samba-ntdom</strong> available by sending email to
-<a href="mailto:listproc@samba.org"><em>listproc@samba.org</em></a>
+mailing list <strong>Samba-ntdom</strong> available by visiting the web page at 
+<a href="http://lists.samba.org/">http://lists.samba.org/</a>
 <p><a name="domainguestusers"></a>
 <p></p><dt><strong><strong>domain guest users (G)</strong></strong><dd>
 <p>This is an <strong>EXPERIMENTAL</strong> parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list <strong>Samba-ntdom</strong> available by sending email to
-<a href="mailto:listproc@samba.org"><em>listproc@samba.org</em></a>
+mailing list <strong>Samba-ntdom</strong> available by visiting the web page at
+<a href="http://lists.samba.org/">http://lists.samba.org/</a>
 <p><a name="domainlogons"></a>
 <p></p><dt><strong><strong>domain logons (G)</strong></strong><dd>
 <p>If set to true, the Samba server will serve Windows 95/98 Domain
@@ -3416,6 +3415,15 @@ access to the resource.
 <p><a name="printcap"></a>
 <p></p><dt><strong><strong>printcap (G)</strong></strong><dd>
 <p>Synonym for <a href="smb.conf.5.html#printcapname"><strong>printcapname</strong></a>.
+<p><a name="printeradmin"></a>
+<p></p><dt><strong><strong>printer admin (S)</strong></strong><dd>
+<p>This is a list of users that can do anything to printers via the
+remote administration interfaces offered by MSRPC (usually using a NT
+workstation). Note that the root user always has admin rights.
+<p><strong>Default:</strong>
+<code>     printer admin = &lt;empty string&gt;</code>
+<p><strong>Example:</strong>
+<code>	printer admin = admin, @staff</code>
 <p><a name="printcapname"></a>
 <p></p><dt><strong><strong>printcap name (G)</strong></strong><dd>
 <p>This parameter may be used to override the compiled-in default
@@ -3733,22 +3741,6 @@ as a different user".
 <code>     restrict anonymous = false</code>
 <p><strong>Example:</strong>
 <code>     restrict anonymous = true</code>
-<p><a name="revalidate"></a>
-<p></p><dt><strong><strong>revalidate (S)</strong></strong><dd>
-<p>Note that this option only works with
-<a href="smb.conf.5.html#securityequalshare"><strong>"security=share"</strong></a> and will be ignored if
-this is not the case.
-<p>This option controls whether Samba will allow a previously validated
-username/password pair to be used to attach to a share. Thus if you
-connect to <code>\\server\share1</code> then to <code>\\server\share2</code> it won't
-automatically allow the client to request connection to the second
-share as the same username as the first without a password.
-<p>If <strong>"revalidate"</strong> is <code>"True"</code> then the client will be denied
-automatic access as the same username.
-<p><strong>Default:</strong>
-<code>	revalidate = False</code>
-<p><strong>Example:</strong>
-<code>	revalidate = True</code>
 <p><a name="root"></a>
 <p></p><dt><strong><strong>root (G)</strong></strong><dd>
 <p>Synonym for <a href="smb.conf.5.html#rootdirectory"><strong>"root directory"</strong></a>.

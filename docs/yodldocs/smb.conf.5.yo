@@ -2002,8 +2002,8 @@ This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list bf(Samba-ntdom) available by sending email to
-email(listproc@samba.org)
+mailing list bf(Samba-ntdom) available by visiting the web page at
+url(http://lists.samba.org/)(http://lists.samba.org/)
 
 label(domainadminusers) 
 dit(bf(domain admin users (G)))
@@ -2012,8 +2012,8 @@ This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list bf(Samba-ntdom) available by sending email to
-email(listproc@samba.org)
+mailing list bf(Samba-ntdom) available by visiting the web page at
+url(http://lists.samba.org/)(http://lists.samba.org/)
 
 label(domaingroups)
 dit(bf(domain groups (G)))
@@ -2022,8 +2022,8 @@ This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list bf(Samba-ntdom) available by sending email to
-email(listproc@samba.org)
+mailing list bf(Samba-ntdom) available by visiting the web page at
+url(http://lists.samba.org/)(http://lists.samba.org/)
 
 label(domainguestgroup)
 dit(bf(domain guest group (G)))
@@ -2032,8 +2032,8 @@ This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list bf(Samba-ntdom) available by sending email to
-email(listproc@samba.org)
+mailing list bf(Samba-ntdom) available by visiting the web page at 
+url(http://lists.samba.org/)(http://lists.samba.org/)
 
 label(domainguestusers)
 dit(bf(domain guest users (G)))
@@ -2042,8 +2042,8 @@ This is an bf(EXPERIMENTAL) parameter that is part of the unfinished
 Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list bf(Samba-ntdom) available by sending email to
-email(listproc@samba.org)
+mailing list bf(Samba-ntdom) available by visiting the web page at
+url(http://lists.samba.org/)(http://lists.samba.org/)
 
 label(domainlogons)
 dit(bf(domain logons (G)))

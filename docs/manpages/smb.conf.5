@@ -463,8 +463,7 @@ the connection is allowed as the corresponding user\&.
 .IP 4\&. 
 Step 4: If the client has previously validated a
 username/password pair with the server and the client has passed the
-validation token then that username is used\&. This step is skipped if
-\fB"revalidate = yes"\fP for this service\&.
+validation token then that username is used\&. 
 .IP 
 .IP 5\&. 
 Step 5: If a \fB"user = "\fP field is given in the
@@ -1199,6 +1198,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBprinter\fP
 .IP 
 .IP o 
+\fBprinter admin\fP
+.IP 
+.IP o 
 \fBprinter driver\fP
 .IP 
 .IP o 
@@ -1224,9 +1226,6 @@ parameter for details\&. Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBread only\fP
-.IP 
-.IP o 
-\fBrevalidate\fP
 .IP 
 .IP o 
 \fBroot postexec\fP
@@ -2266,8 +2265,8 @@ This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
 Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list \fBSamba-ntdom\fP available by sending email to
-listproc@samba\&.org
+mailing list \fBSamba-ntdom\fP available by visiting the web page at
+http://lists\&.samba\&.org/
 .IP 
 .IP "\fBdomain admin users (G)\fP" 
 .IP 
@@ -2275,8 +2274,8 @@ This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
 Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list \fBSamba-ntdom\fP available by sending email to
-listproc@samba\&.org
+mailing list \fBSamba-ntdom\fP available by visiting the web page at
+http://lists\&.samba\&.org/
 .IP 
 .IP "\fBdomain groups (G)\fP" 
 .IP 
@@ -2284,8 +2283,8 @@ This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
 Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list \fBSamba-ntdom\fP available by sending email to
-listproc@samba\&.org
+mailing list \fBSamba-ntdom\fP available by visiting the web page at
+http://lists\&.samba\&.org/
 .IP 
 .IP "\fBdomain guest group (G)\fP" 
 .IP 
@@ -2293,8 +2292,8 @@ This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
 Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list \fBSamba-ntdom\fP available by sending email to
-listproc@samba\&.org
+mailing list \fBSamba-ntdom\fP available by visiting the web page at 
+http://lists\&.samba\&.org/
 .IP 
 .IP "\fBdomain guest users (G)\fP" 
 .IP 
@@ -2302,8 +2301,8 @@ This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
 Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
-mailing list \fBSamba-ntdom\fP available by sending email to
-listproc@samba\&.org
+mailing list \fBSamba-ntdom\fP available by visiting the web page at
+http://lists\&.samba\&.org/
 .IP 
 .IP "\fBdomain logons (G)\fP" 
 .IP 
@@ -4905,6 +4904,18 @@ access to the resource\&.
 .IP 
 Synonym for \fBprintcapname\fP\&.
 .IP 
+.IP "\fBprinter admin (S)\fP" 
+.IP 
+This is a list of users that can do anything to printers via the
+remote administration interfaces offered by MSRPC (usually using a NT
+workstation)\&. Note that the root user always has admin rights\&.
+.IP 
+\fBDefault:\fP
+\f(CW     printer admin = <empty string>\fP
+.IP 
+\fBExample:\fP
+\f(CW	printer admin = admin, @staff\fP
+.IP 
 .IP "\fBprintcap name (G)\fP" 
 .IP 
 This parameter may be used to override the compiled-in default
@@ -5330,27 +5341,6 @@ as a different user"\&.
 .IP 
 \fBExample:\fP
 \f(CW     restrict anonymous = true\fP
-.IP 
-.IP "\fBrevalidate (S)\fP" 
-.IP 
-Note that this option only works with
-\fB"security=share"\fP and will be ignored if
-this is not the case\&.
-.IP 
-This option controls whether Samba will allow a previously validated
-username/password pair to be used to attach to a share\&. Thus if you
-connect to \f(CW\e\eserver\eshare1\fP then to \f(CW\e\eserver\eshare2\fP it won\'t
-automatically allow the client to request connection to the second
-share as the same username as the first without a password\&.
-.IP 
-If \fB"revalidate"\fP is \f(CW"True"\fP then the client will be denied
-automatic access as the same username\&.
-.IP 
-\fBDefault:\fP
-\f(CW	revalidate = False\fP
-.IP 
-\fBExample:\fP
-\f(CW	revalidate = True\fP
 .IP 
 .IP "\fBroot (G)\fP" 
 .IP 

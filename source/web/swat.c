@@ -57,7 +57,7 @@ static int iNumNonAutoPrintServices = 0;
 ****************************************************************************/
 static int enum_index(int value, struct enum_list *enumlist)
 {
-int i;
+	int i;
 	for (i=0;enumlist[i].name;i++)
 		if (value == enumlist[i].value) break;
 	return(i);
@@ -65,8 +65,8 @@ int i;
 
 static char *fix_backslash(char *str)
 {
-static char newstring[1024];
-char *p = newstring;
+	static char newstring[1024];
+	char *p = newstring;
 
         while (*str) {
                 if (*str == '\\') {*p++ = '\\';*p++ = '\\';}
@@ -226,8 +226,11 @@ static void show_parameter(int snum, struct parm_struct *parm)
 
 	case P_ENUM:
 		printf("<select name=\"parm_%s\">",make_parm_name(parm->label)); 
-		for (i=0;parm->enum_list[i].name;i++)
-			printf("<option %s>%s",(*(int *)ptr)==parm->enum_list[i].value?"selected":"",parm->enum_list[i].name);
+		for (i=0;parm->enum_list[i].name;i++) {
+			if (i == 0 || parm->enum_list[i].value != parm->enum_list[i-1].value) {
+				printf("<option %s>%s",(*(int *)ptr)==parm->enum_list[i].value?"selected":"",parm->enum_list[i].name);
+			}
+		}
 		printf("</select>");
 		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
 			make_parm_name(parm->label),enum_index((int)(parm->def.ivalue),parm->enum_list));

@@ -100,7 +100,7 @@ static int nt_printq_status(int v)
 {
 	switch (v) {
 	case LPQ_PAUSED:
-		return PRINTER_STATUS_ERROR;
+		return PRINTER_STATUS_PAUSED;
 	case LPQ_QUEUED:
 	case LPQ_SPOOLING:
 	case LPQ_PRINTING:
@@ -3424,6 +3424,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	init_unistr(&job_info->datatype, "RAW");
 	init_unistr(&job_info->printprocessor, "winprint");
 	init_unistr(&job_info->parameters, "");
+	init_unistr(&job_info->drivername, ntprinter->info_2->drivername);
 	init_unistr(&job_info->text_status, "");
 	
 /* and here the security descriptor */

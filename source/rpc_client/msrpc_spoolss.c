@@ -661,7 +661,7 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
                 status = spoolss_getprinterdriver(&hnd, environment, level, &buffer, needed, &needed);
         }
 
-        report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
+        /* report(out_hnd, "\tstatus:[%d (%x)]\n", status, status); */
 
         if (status!=NT_STATUS_NO_PROBLEMO)
 	{
