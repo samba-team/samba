@@ -229,6 +229,13 @@ $(MANDIR)/%: $(DOCBOOKDIR)/%.xml xslt/man.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/man.xsl $<
 
+# Individual smb.conf parameters
+smb.conf-chunks: $(patsubst $(SMBDOTCONFDOC)/%.xml,$(HTMLDIR)/smb.conf/%.html,$(wildcard $(SMBDOTCONFDOC)/*/*.xml))
+	
+$(HTMLDIR)/smb.conf/%.html: $(SMBDOTCONFDOC)/%.xml
+	mkdir -p $(@D)
+	$(XSLTPROC) --output $@ xslt/smb.conf-html.xsl $<
+
 # Pearson compatible XML
 
 $(PEARSONDIR)/%.xml: %/index.xml xslt/pearson.xsl
