@@ -1,5 +1,5 @@
 !==
-!== Printing.txt for Samba release 2.0.9 08 May 2001
+!== Printing.txt for Samba release 2.0.10 23 Jun 2001
 !==
 Contributor:	Unknown <samba@samba.org>
 Date:		Unknown

@@ -1,5 +1,5 @@
 !==
-!== Recent-FAQs.txt for Samba release 2.0.9 08 May 2001
+!== Recent-FAQs.txt for Samba release 2.0.10 23 Jun 2001
 !==
 Contributor:	Samba-bugs@samba.org
 Date:		July 5, 1998

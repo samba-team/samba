@@ -1,5 +1,5 @@
 !==
-!== UNIX_INSTALL.txt for Samba release 2.0.9 08 May 2001
+!== UNIX_INSTALL.txt for Samba release 2.0.10 23 Jun 2001
 !==
 HOW TO INSTALL AND TEST SAMBA
 =============================

@@ -1,3 +1,6 @@
+!==
+!== NT4-Locking.txt for Samba release 2.0.10 23 Jun 2001
+!==
 NOTE: The NT Registry changes contained within this file may be injurious to
 the health of your system. Please make ABSOLUTELY sure that you backup the
 original values for each parameter BEFORE you make any changes.
