@@ -138,10 +138,6 @@ my_memchr (const void *b, int c, size_t len)
     return (void *)(p - 1);
 }
 
-#ifndef min
-#define min(x,y) (((x) < (y))?(x):(y))
-#endif
-
 #define STEP 16
 
 struct write_state {
@@ -243,7 +239,7 @@ doit(krb5_context context,
     out_len = snprintf (out_buf, sizeof(out_buf),
 			"USER %s\r\nPASS hej\r\nSTAT\r\n",
 			user);
-    if (krb_net_write(s, out_buf, out_len) != out_len)
+    if (krb5_net_write (context, s, out_buf, out_len) != out_len)
 	err (1, "write");
     if (verbose > 1)
 	write (STDERR_FILENO, out_buf, out_len);
@@ -299,9 +295,9 @@ doit(krb5_context context,
 				close(out_fd);
 				if (leavep) {
 				    state = QUIT;
-				    krb_net_write(s, "QUIT\r\n", 6);
+				    krb5_net_write (context, s, "QUIT\r\n", 6);
 				    if (verbose > 1)
-				      krb_net_write(STDERR_FILENO,
+				      krb5_net_write (context, STDERR_FILENO,
 						    "QUIT\r\n", 6);
 				} else {
 				    if (forkp) {
@@ -339,9 +335,9 @@ doit(krb5_context context,
 		    } else if (state == DELE) {
 			if (++deleted == count) {
 			    state = QUIT;
-			    krb_net_write (s, "QUIT\r\n", 6);
+			    krb5_net_write (context, s, "QUIT\r\n", 6);
 			    if (verbose > 1)
-				krb_net_write (STDERR_FILENO,
+				krb5_net_write (context, STDERR_FILENO,
 					       "QUIT\r\n", 6);
 			    break;
 			}
@@ -354,9 +350,9 @@ doit(krb5_context context,
 				     count, bytes);
 			if (count == 0) {
 			    state = QUIT;
-			    krb_net_write (s, "QUIT\r\n", 6);
+			    krb5_net_write (context, s, "QUIT\r\n", 6);
 			    if (verbose > 1)
-				krb_net_write (STDERR_FILENO,
+				krb5_net_write (context, STDERR_FILENO,
 					       "QUIT\r\n", 6);
 			    break;
 			}
@@ -380,7 +376,7 @@ doit(krb5_context context,
 	    else if(state == DELE)
 		out_len = snprintf (out_buf, sizeof(out_buf),
 				    "DELE %u\r\n", ++asked_deleted);
-	    if (krb_net_write (s, out_buf, out_len) != out_len)
+	    if (krb5_net_write (context, s, out_buf, out_len) != out_len)
 		err (1, "write");
 	    if (verbose > 1)
 		write (STDERR_FILENO, out_buf, out_len);
