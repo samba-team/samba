@@ -1,0 +1,39 @@
+#
+# $Id$
+#
+
+srcdir		= @srcdir@
+VPATH		= @srcdir@
+
+SHELL		= /bin/sh
+
+@SET_MAKE@
+
+SUBDIRS		= sia
+
+all:
+		for i in $(SUBDIRS); \
+		do (cd $$i && $(MAKE) $(MFLAGS) all); done
+
+Wall:
+		make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
+
+install: all
+	for i in $(SUBDIRS); \
+	do (cd $$i && $(MAKE) $(MFLAGS) install); done
+
+clean:
+		for i in $(SUBDIRS); \
+		do (cd $$i && $(MAKE) $(MFLAGS) clean); done
+
+mostlyclean:	clean
+
+distclean:
+		for i in $(SUBDIRS); \
+		do (cd $$i && $(MAKE) $(MFLAGS) distclean); done
+		rm -f Makefile config.status *~
+		rm -rf CVS
+
+realclean:
+		for i in $(SUBDIRS); \
+		do (cd $$i && $(MAKE) $(MFLAGS) realclean); done

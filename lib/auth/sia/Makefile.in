@@ -1,0 +1,75 @@
+#
+# $Id$
+#
+
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+AR = ar
+RANLIB = @RANLIB@
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+
+INSTALL = @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
+
+prefix = @prefix@
+exec_prefix = $(prefix)
+libdir = $(exec_prefix)/lib
+
+PICFLAGS = @PICFLAGS@
+ 
+LIBNAME = libsia_krb4
+LIBEXT = so
+LIB = $(LIBNAME).$(LIBEXT)
+
+SOURCES = sia.c
+
+OBJECTS = sia.o
+
+all: $(LIB)
+
+Wall:
+	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../.. -I../../../include -I$(srcdir) $(CFLAGS) $(PICFLAGS) $<
+
+install: all
+	$(MKINSTALLDIRS) $(libdir)
+	$(INSTALL) -m 0555 $(LIB) $(libdir)
+
+uninstall:
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
+
+check:
+
+clean:
+	rm -f $(LIB) *.o
+
+mostlyclean: clean
+
+distclean: clean
+	rm -f Makefile *.tab.c *~
+	rm -rf CVS
+
+realclean: distclean
+	rm -f TAGS
+
+dist: $(DISTFILES)
+	for file in $(DISTFILES); do \
+	  ln $$file ../`cat ../.fname`/lib \
+	    || cp -p $$file ../`cat ../.fname`/lib; \
+	done
+
+
+$(OBJECTS): ../../../config.h
+
+$(LIB): $(OBJECTS)
+	ld -shared -expect_unresolved \* -o $(LIB) $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a

@@ -1,0 +1,18 @@
+This is a quick attempt at a SIA module for Kerberos. To install this
+you will have to do the following:
+
+* Make sure libsia_krb4.so is available in /usr/athena/lib
+
+* Copy krb4_matrix.conf to /etc/sia
+
+* Apply security.patch to /sbin/init.d/security
+
+* Turn on krb4 security by issuing `rcmgr set SECURITY KRB4' and
+  `rcmgr set KRB4_MATRIX_CONF krb4_matrix.conf'
+
+* Digital thinks you should reboot your machine, but that really
+  shouldn't be necessary.  It's usually sufficient just to run
+  /sbin/init.d/security
+
+
+Users with local passwords (like root) should be able to login safely.
