@@ -69,7 +69,7 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2796930"></a><i class="parameter"><tt>log level</tt></i> parameter
+override the <a class="indexterm" name="id2796919"></a><i class="parameter"><tt>log level</tt></i> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
 <tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
 never removed by the client.
@@ -108,15 +108,15 @@ never removed by the client.
 	and group rids. </p></div><div class="refsect1" lang="en"><h2>CONFIGURATION</h2><p>Configuration of the <b class="command">winbindd</b> daemon 
 	is done through configuration parameters in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file.  All parameters should be specified in the 
 	[global] section of smb.conf. </p><div class="itemizedlist"><ul type="disc"><li><p>
-		<a class="indexterm" name="id2797162"></a><i class="parameter"><tt>winbind separator</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797180"></a><i class="parameter"><tt>idmap uid</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797198"></a><i class="parameter"><tt>idmap gid</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797216"></a><i class="parameter"><tt>winbind cache time</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797234"></a><i class="parameter"><tt>winbind enum users</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797252"></a><i class="parameter"><tt>winbind enum groups</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797270"></a><i class="parameter"><tt>template homedir</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797288"></a><i class="parameter"><tt>template shell</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797307"></a><i class="parameter"><tt>winbind use default domain</tt></i></p></li></ul></div></div><div class="refsect1" lang="en"><h2>EXAMPLE SETUP</h2><p>To setup winbindd for user and group lookups plus 
+		<a class="indexterm" name="id2797151"></a><i class="parameter"><tt>winbind separator</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2797169"></a><i class="parameter"><tt>idmap uid</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2797187"></a><i class="parameter"><tt>idmap gid</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2797205"></a><i class="parameter"><tt>winbind cache time</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2797223"></a><i class="parameter"><tt>winbind enum users</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2797241"></a><i class="parameter"><tt>winbind enum groups</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2797259"></a><i class="parameter"><tt>template homedir</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2797277"></a><i class="parameter"><tt>template shell</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2797296"></a><i class="parameter"><tt>winbind use default domain</tt></i></p></li></ul></div></div><div class="refsect1" lang="en"><h2>EXAMPLE SETUP</h2><p>To setup winbindd for user and group lookups plus 
 	authentication from a domain controller use something like the 
 	following setup. This was tested on a RedHat 6.2 Linux box. </p><p>In <tt class="filename">/etc/nsswitch.conf</tt> put the 
 	following:

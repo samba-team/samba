@@ -1,0 +1,67 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 27. Unicode/Charsets</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="integrate-ms-networks.html" title="Chapter 26. Integrating MS Windows networks with Samba"><link rel="next" href="Backup.html" title="Chapter 28. Samba Backup Techniques"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 27. Unicode/Charsets</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="integrate-ms-networks.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="Backup.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="unicode"></a>Chapter 27. Unicode/Charsets</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">TAKAHASHI</span> <span class="surname">Motonobu</span></h3><div class="affiliation"><div class="address"><p><tt class="email">&lt;<a href="mailto:monyo@home.monyo.com">monyo@home.monyo.com</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">25 March 2003</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="unicode.html#id2953342">Features and Benefits</a></dt><dt><a href="unicode.html#id2953385">What are charsets and unicode?</a></dt><dt><a href="unicode.html#id2953454">Samba and charsets</a></dt><dt><a href="unicode.html#id2953583">Conversion from old names</a></dt><dt><a href="unicode.html#id2953612">Japanese charsets</a></dt><dt><a href="unicode.html#id2953751">Common errors</a></dt><dd><dl><dt><a href="unicode.html#id2953758">CP850.so can't be found</a></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2953342"></a>Features and Benefits</h2></div></div><div></div></div><p>
+Every industry eventually matures. One of the great areas of maturation is in
+the focus that has been given over the past decade to make it possible for anyone
+anywhere to use a computer. It has not always been that way, in fact, not so long
+ago it was common for software to be written for exclusive use in the country of
+origin.
+</p><p>
+Of all the effort that has been brought to bear on providing native language support
+for all computer users, the efforts of the <a href="http://www.openi18n.org/" target="_top">Openi18n organisation</a> is deserving of
+special mention.
+</p><p>
+Samba-2.x supported a single locale through a mechanism called 
+<span class="emphasis"><em>codepages</em></span>. Samba-3 is destined to become a truly trans-global
+file and printer sharing platform.
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2953385"></a>What are charsets and unicode?</h2></div></div><div></div></div><p>
+Computers communicate in numbers. In texts, each number will be 
+translated to a corresponding letter. The meaning that will be assigned 
+to a certain number depends on the <span class="emphasis"><em>character set(charset)
+</em></span> that is used. 
+A charset can be seen as a table that is used to translate numbers to 
+letters. Not all computers use the same charset (there are charsets 
+with German umlauts, Japanese characters, etc). Usually a charset contains 
+256 characters, which means that storing a character with it takes 
+exactly one byte. </p><p>
+There are also charsets that support even more characters, 
+but those need twice(or even more) as much storage space. These 
+charsets can contain <b class="command">256 * 256 = 65536</b> characters, which
+is more then all possible characters one could think of. They are called 
+multibyte charsets (because they use more then one byte to 
+store one character). 
+</p><p>
+	A standardised multibyte charset is <a href="http://www.unicode.org/" target="_top">unicode</a>.
+A big advantage of using a multibyte charset is that you only need one; there 
+is no need to make sure two computers use the same charset when they are 
+communicating.
+</p><p>Old windows clients use single-byte charsets, named 
+'codepages' by Microsoft. However, there is no support for 
+negotiating the charset to be used in the smb protocol. Thus, you 
+have to make sure you are using the same charset when talking to an older client.
+Newer clients (Windows NT, 2K, XP) talk unicode over the wire.
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2953454"></a>Samba and charsets</h2></div></div><div></div></div><p>
+As of samba 3.0, samba can (and will) talk unicode over the wire. Internally, 
+samba knows of three kinds of character sets: 
+</p><div class="variablelist"><dl><dt><span class="term"><a class="indexterm" name="id2953476"></a><i class="parameter"><tt>unix charset</tt></i></span></dt><dd><p>
+		This is the charset used internally by your operating system. 
+		The default is <tt class="constant">UTF-8</tt>, which is fine for most 
+		systems. The default in previous samba releases was <tt class="constant">ASCII</tt>. 
+		</p></dd><dt><span class="term"><a class="indexterm" name="id2953514"></a><i class="parameter"><tt>display charset</tt></i></span></dt><dd><p>This is the charset samba will use to print messages
+		on your screen. It should generally be the same as the <b class="command">unix charset</b>.
+		</p></dd><dt><span class="term"><a class="indexterm" name="id2953548"></a><i class="parameter"><tt>dos charset</tt></i></span></dt><dd><p>This is the charset samba uses when communicating with 
+		DOS and Windows 9x clients. It will talk unicode to all newer clients.
+		The default depends on the charsets you have installed on your system.
+		Run <b class="command">testparm -v | grep &quot;dos charset&quot;</b> to see 
+		what the default is on your system. 
+		</p></dd></dl></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2953583"></a>Conversion from old names</h2></div></div><div></div></div><p>Because previous samba versions did not do any charset conversion, 
+characters in filenames are usually not correct in the unix charset but only 
+for the local charset used by the DOS/Windows clients.</p><p>Bjoern Jacke has written a utility named <a href="http://j3e.de/linux/convmv/" target="_top">convm</a> that can convert whole directory 
+	structures to different charsets with one single command. 
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2953612"></a>Japanese charsets</h2></div></div><div></div></div><p>Samba doesn't work correctly with Japanese charsets yet. Here are
+points of attention when setting it up:</p><div class="itemizedlist"><ul type="disc"><li><p>You should set <a class="indexterm" name="id2953633"></a><i class="parameter"><tt>mangling method</tt></i> = hash</p></li><li><p>There are various iconv() implementations around and not
+all of  them work equally well. glibc2's iconv() has a critical problem
+in CP932.  libiconv-1.8 works with CP932 but still has some problems and
+does not  work with EUC-JP.</p></li><li><p>You should set <a class="indexterm" name="id2953663"></a><i class="parameter"><tt>dos charset</tt></i> = CP932, not
+Shift_JIS, SJIS...</p></li><li><p>Currently only <a class="indexterm" name="id2953683"></a><i class="parameter"><tt>unix charset</tt></i> = CP932
+will work (but still has some problems...) because of iconv() issues.
+<a class="indexterm" name="id2953699"></a><i class="parameter"><tt>unix charset</tt></i> = EUC-JP doesn't work well because of
+iconv() issues.</p></li><li><p>Currently Samba 3.0 does not support <a class="indexterm" name="id2953718"></a><i class="parameter"><tt>unix charset</tt></i> = UTF8-MAC/CAP/HEX/JIS*</p></li></ul></div><p>More information (in Japanese) is available at: <a href="http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html" target="_top">http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html</a>.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2953751"></a>Common errors</h2></div></div><div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2953758"></a>CP850.so can't be found</h3></div></div><div></div></div><p>&#8220;<span class="quote">Samba is complaining about a missing <tt class="filename">CP850.so</tt> file</span>&#8221;.</p><p>CP850 is the default <a class="indexterm" name="id2953783"></a><i class="parameter"><tt>dos charset</tt></i>. The <a class="indexterm" name="id2953797"></a><i class="parameter"><tt>dos charset</tt></i> is used to convert data to the codepage used by your dos clients. If you don't have any dos clients, you can safely ignore this message. </p><p>CP850 should be supported by your local iconv implementation. Make sure you have all the required packages installed. If you compiled samba from source, make sure configure found iconv.</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="integrate-ms-networks.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="Backup.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 26. Integrating MS Windows networks with Samba </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 28. Samba Backup Techniques</td></tr></table></div></body></html>

@@ -1,0 +1,534 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 7. Domain Membership</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="type.html" title="Part II. Server Configuration Basics"><link rel="previous" href="samba-bdc.html" title="Chapter 6. Backup Domain Control"><link rel="next" href="StandAloneServer.html" title="Chapter 8. Stand-Alone Servers"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 7. Domain Membership</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="samba-bdc.html">Prev</a> </td><th width="60%" align="center">Part II. Server Configuration Basics</th><td width="20%" align="right"> <a accesskey="n" href="StandAloneServer.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="domain-member"></a>Chapter 7. Domain Membership</h2></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Jeremy</span> <span class="surname">Allison</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jra@samba.org">jra@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Gerald</span> <span class="othername">(Jerry)</span> <span class="surname">Carter</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jerry@samba.org">jerry@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Andrew</span> <span class="surname">Tridgell</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:tridge@samba.org">tridge@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="domain-member.html#id2890490">Features and Benefits</a></dt><dt><a href="domain-member.html#machine-trust-accounts">MS Windows Workstation/Server Machine Trust Accounts</a></dt><dd><dl><dt><a href="domain-member.html#id2890821">Manual Creation of Machine Trust Accounts</a></dt><dt><a href="domain-member.html#id2891126">Using NT4 Server Manager to Add Machine Accounts to the Domain</a></dt><dt><a href="domain-member.html#id2891341">&quot;On-the-Fly&quot; Creation of Machine Trust Accounts</a></dt><dt><a href="domain-member.html#id2891414">Making an MS Windows Workstation or Server a Domain Member</a></dt></dl></dd><dt><a href="domain-member.html#domain-member-server">Domain Member Server</a></dt><dd><dl><dt><a href="domain-member.html#id2891624">Joining an NT4 type Domain with Samba-3</a></dt><dt><a href="domain-member.html#id2892061">Why is this better than security = server?</a></dt></dl></dd><dt><a href="domain-member.html#ads-member">Samba ADS Domain Membership</a></dt><dd><dl><dt><a href="domain-member.html#id2892246">Setup your smb.conf</a></dt><dt><a href="domain-member.html#id2892373">Setup your /etc/krb5.conf</a></dt><dt><a href="domain-member.html#ads-create-machine-account">Create the computer account</a></dt><dt><a href="domain-member.html#ads-test-server">Test your server setup</a></dt><dt><a href="domain-member.html#ads-test-smbclient">Testing with smbclient</a></dt><dt><a href="domain-member.html#id2892751">Notes</a></dt></dl></dd><dt><a href="domain-member.html#id2892773">Common Errors</a></dt><dd><dl><dt><a href="domain-member.html#id2892816">Can Not Add Machine Back to Domain</a></dt><dt><a href="domain-member.html#id2892848">Adding Machine to Domain Fails</a></dt><dt><a href="domain-member.html#id2892992">I can't join a Windows 2003 PDC</a></dt></dl></dd></dl></div><p>
+Domain Membership is a subject of vital concern, Samba must be able to
+participate as a member server in a Microsoft Domain security context, and
+Samba must be capable of providing Domain machine member trust accounts,
+otherwise it would not be capable of offering a viable option for many users.
+</p><p>
+This chapter covers background information pertaining to domain membership,
+Samba configuration for it, and MS Windows client procedures for joining a
+domain.  Why is this necessary? Because both are areas in which there exists
+within the current MS Windows networking world and particularly in the
+UNIX/Linux networking and administration world, a considerable level of
+mis-information, incorrect understanding, and a lack of knowledge. Hopefully
+this chapter will fill the voids.
+</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2890490"></a>Features and Benefits</h2></div></div><div></div></div><p>
+MS Windows workstations and servers that want to participate in domain security need to
+be made Domain members. Participating in Domain security is often called 
+<span class="emphasis"><em>Single Sign On</em></span> or <span class="acronym">SSO</span> for short. This
+chapter describes the process that must be followed to make a workstation
+(or another server - be it an <span class="application">MS Windows NT4 / 200x</span>
+server) or a Samba server a member of an MS Windows Domain security context.
+</p><p>
+Samba-3 can join an MS Windows NT4 style domain as a native member server, an 
+MS Windows Active Directory Domain as a native member server, or a Samba Domain
+Control network.
+</p><p>
+Domain membership has many advantages:
+</p><div class="itemizedlist"><ul type="disc"><li><p>
+	MS Windows workstation users get the benefit of SSO
+	</p></li><li><p>
+	Domain user access rights and file ownership / access controls can be set
+	from the single Domain SAM (Security Account Manager) database 
+	(works with Domain member servers as well as with MS Windows workstations
+	that are domain members)
+	</p></li><li><p>
+	Only <span class="application">MS Windows NT4 / 200x / XP Professional</span>
+	workstations that are Domain members
+	can use network logon facilities
+	</p></li><li><p>
+	Domain Member workstations can be better controlled through the use of
+	Policy files (<tt class="filename">NTConfig.POL</tt>) and Desktop Profiles.
+	</p></li><li><p>
+	Through the use of logon scripts, users can be given transparent access to network
+	applications that run off application servers
+	</p></li><li><p>
+	Network administrators gain better application and user access management
+	abilities because there is no need to maintain user accounts on any network
+	client or server, other than the central Domain database 
+	(either NT4/Samba SAM style Domain, NT4 Domain that is back ended with an
+	LDAP directory, or via an Active Directory infrastructure)
+	</p></li></ul></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="machine-trust-accounts"></a>MS Windows Workstation/Server Machine Trust Accounts</h2></div></div><div></div></div><a class="indexterm" name="id2890621"></a><p>
+A machine trust account is an account that is used to authenticate a client
+machine
+(rather than a user) to the Domain Controller server.  In Windows terminology,
+this is known as a &quot;Computer Account.&quot;
+</p><p>
+The password of a machine trust account acts as the shared secret for
+secure communication with the Domain Controller.  This is a security
+feature to prevent an unauthorized machine with the same NetBIOS name
+from joining the domain and gaining access to domain user/group
+accounts.  Windows NT, 200x, XP Professional clients use machine trust
+accounts, but Windows 9x / Me / XP Home clients do not.  Hence, a
+Windows 9x / Me / XP Home  client is never a true member of a domain
+because it does not possess a machine trust account, and thus has no
+shared secret with the domain controller.
+</p><p>
+A Windows NT4 PDC stores each machine trust account in the Windows Registry.
+The introduction of MS Windows 2000 saw the introduction of Active Directory,
+the new repository for machine trust accounts.
+</p><p>
+A Samba PDC, however, stores each machine trust account in two parts,
+as follows:
+
+</p><div class="itemizedlist"><ul type="disc"><li><p>
+	A Domain Security Account (stored in the 
+	<a class="indexterm" name="id2890675"></a><i class="parameter"><tt>passdb backend</tt></i> that has been configured in the
+	<tt class="filename">smb.conf</tt> file. The precise nature of the account information that is
+	stored depends on the type of backend database that has been chosen.
+	</p><p>
+	The older format of this data is the <tt class="filename">smbpasswd</tt> database
+	which contains the UNIX login ID, the UNIX user identifier (UID), and the
+	LanMan and NT encrypted passwords. There is also some other information in
+	this file that we do not need to concern ourselves with here.
+	</p><p>
+	The two newer database types are called <span class="emphasis"><em>ldapsam</em></span>,
+	<span class="emphasis"><em>tdbsam</em></span>.  Both store considerably more data than the
+	older <tt class="filename">smbpasswd</tt> file did. The extra information
+	enables new user account controls to be used.
+	</p></li><li><p>
+	A corresponding UNIX account, typically stored in
+	<tt class="filename">/etc/passwd</tt>.  Work is in progress to allow a
+	simplified mode of operation that does not require UNIX user accounts, but
+	this may not be a feature of the early releases of Samba-3.
+	</p></li></ul></div><p>
+</p><a class="indexterm" name="id2890757"></a><p>
+There are three ways to create machine trust accounts:
+</p><div class="itemizedlist"><ul type="disc"><li><p>
+	Manual creation from the UNIX/Linux command line. Here, both the Samba and
+	corresponding UNIX account are created by hand.
+	</p></li><li><p>
+	<a class="indexterm" name="id2890790"></a>
+	Using the MS Windows NT4 Server Manager (either from an NT4 Domain member
+	server, or using the Nexus toolkit available from the Microsoft web site.
+	This tool can be run from any MS Windows machine so long as the user is
+	logged on as the administrator account.
+	</p></li><li><p>
+	&quot;On-the-fly&quot; creation. The Samba machine trust account is automatically
+	created by Samba at the time the client is joined to the domain.
+	(For security, this is the recommended method.) The corresponding UNIX
+	account may be created automatically or manually. 
+	</p></li></ul></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2890821"></a>Manual Creation of Machine Trust Accounts</h3></div></div><div></div></div><p>
+The first step in manually creating a machine trust account is to manually
+create the corresponding UNIX account in <tt class="filename">/etc/passwd</tt>. 
+This can be done using <b class="command">vipw</b> or another 'add user' command
+that is normally used to create new UNIX accounts.  The following is an example for a Linux based Samba server:
+<a class="indexterm" name="id2890851"></a>
+<a class="indexterm" name="id2890859"></a>
+
+
+</p><p>
+</p><pre class="screen">
+<tt class="prompt">root# </tt><b class="userinput"><tt>/usr/sbin/useradd -g 100 -d /dev/null -c <i class="replaceable"><tt>&quot;machine nickname&quot;</tt></i> \
+   -s /bin/false <i class="replaceable"><tt>machine_name</tt></i>$ </tt></b>
+
+<tt class="prompt">root# </tt><b class="userinput"><tt>passwd -l <i class="replaceable"><tt>machine_name</tt></i>$</tt></b>
+</pre><p>
+</p><p>
+<a class="indexterm" name="id2890921"></a>
+On *BSD systems, this can be done using the <b class="command">chpass</b> utility:
+</p><p>
+</p><pre class="screen">
+<tt class="prompt">root# </tt><b class="userinput"><tt>chpass -a \
+  &quot;<i class="replaceable"><tt>machine_name</tt></i>$:*:101:100::0:0:Workstation <i class="replaceable"><tt>machine_name</tt></i>:/dev/null:/sbin/nologin&quot;</tt></b>
+</pre><p>
+</p><p>
+The <tt class="filename">/etc/passwd</tt> entry will list the machine name 
+with a &quot;$&quot; appended, won't have a password, will have a null shell and no 
+home directory. For example a machine named 'doppy' would have an 
+<tt class="filename">/etc/passwd</tt> entry like this:
+</p><pre class="programlisting">
+doppy$:x:505:100:<i class="replaceable"><tt>machine_nickname</tt></i>:/dev/null:/bin/false
+</pre><p>
+Above, <i class="replaceable"><tt>machine_nickname</tt></i> can be any
+descriptive name for the client, i.e., BasementComputer.
+<i class="replaceable"><tt>machine_name</tt></i> absolutely must be the NetBIOS
+name of the client to be joined to the domain.  The &quot;$&quot; must be
+appended to the NetBIOS name of the client or Samba will not recognize
+this as a machine trust account.
+</p><p>
+Now that the corresponding UNIX account has been created, the next step is to create 
+the Samba account for the client containing the well-known initial 
+machine trust account password.  This can be done using the 
+<b class="command">smbpasswd</b> command 
+as shown here:
+</p><p>
+</p><pre class="screen">
+<tt class="prompt">root# </tt><b class="userinput"><tt>smbpasswd -a -m <i class="replaceable"><tt>machine_name</tt></i></tt></b>
+</pre><p>
+</p><p>
+where <i class="replaceable"><tt>machine_name</tt></i> is the machine's NetBIOS
+name.  The RID of the new machine account is generated from the UID of 
+the corresponding UNIX account.
+</p><div class="warning" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Join the client to the domain immediately</h3><p>
+	Manually creating a machine trust account using this method is the 
+	equivalent of creating a machine trust account on a Windows NT PDC using 
+	<a class="indexterm" name="id2891100"></a>
+	the <span class="application">Server Manager</span>.  From the time at which the 
+	account is created to the time which the client joins the domain and 
+	changes the password, your domain is vulnerable to an intruder joining 
+	your domain using a machine with the same NetBIOS name.  A PDC inherently 
+	trusts members of the domain and will serve out a large degree of user 
+	information to such clients.  You have been warned!
+	</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2891126"></a>Using NT4 Server Manager to Add Machine Accounts to the Domain</h3></div></div><div></div></div><p>
+If the machine from which you are trying to manage the domain is an 
+<span class="application">MS Windows NT4 workstation or MS Windows 200x / XP Professional</span>
+then the tool of choice is the package called <b class="command">SRVTOOLS.EXE</b>. 
+When executed in the target directory this will unpack <b class="command">SrvMge.exe</b>
+and <b class="command">UsrMgr.exe</b> (both are domain management tools for MS Windows NT4 workstation).
+</p><p>
+If your workstation is a <span class="application">Microsoft Windows 9x/Me</span> family product
+ you should download the <b class="command">Nexus.exe</b> package from the Microsoft web site.
+When executed from the target directory this will unpack the same tools but for use on 
+this platform.
+</p><p>
+Further information about these tools may be obtained from the following locations:
+<a href="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673" target="_top">http://support.microsoft.com/default.aspx?scid=kb;en-us;173673</a>
+<a href="http://support.microsoft.com/default.aspx?scid=kb;en-us;172540" target="_top">http://support.microsoft.com/default.aspx?scid=kb;en-us;172540</a>
+</p><p>
+Launch the <b class="command">srvmgr.exe</b> (Server Manager for Domains) and follow these steps:
+</p><div class="procedure"><p class="title"><b>Procedure 7.1. Server Manager Account Machine Account Management</b></p><ol type="1"><li><p>
+	From the menu select <span class="guimenu">Computer</span>
+	</p></li><li><p>
+	Click on <span class="guimenuitem">Select Domain</span>
+	</p></li><li><p>
+	Click on the name of the domain you wish to administer in the
+	<span class="guilabel">Select Domain</span> panel and then click 
+	<span class="guibutton">OK</span>.
+	</p></li><li><p>
+	Again from the menu select <span class="guimenu">Computer</span>
+	</p></li><li><p>
+	Select <span class="guimenuitem">Add to Domain</span>
+	</p></li><li><p>
+	In the dialog box, click on the radio button to 
+	<span class="guilabel">Add NT Workstation of Server</span>, then
+	enter the machine name in the field provided, then click the 
+	<span class="guibutton">Add</span> button.
+	</p></li></ol></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2891341"></a>&quot;On-the-Fly&quot; Creation of Machine Trust Accounts</h3></div></div><div></div></div><p>
+The second (and recommended) way of creating machine trust accounts is
+simply to allow the Samba server to create them as needed when the client
+is joined to the domain.
+</p><p>Since each Samba machine trust account requires a corresponding UNIX account, a method
+for automatically creating the UNIX account is usually supplied; this requires configuration of the
+add machine script option in
+<tt class="filename">smb.conf</tt>. This method is not required, however; corresponding UNIX
+accounts may also be created manually.
+</p><p>
+Below is an example for a RedHat Linux system.
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[global]</tt></i></td></tr><tr><td># &lt;...remainder of parameters...&gt;</td></tr><tr><td><i class="parameter"><tt>add machine script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u </tt></i></td></tr></table></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2891414"></a>Making an MS Windows Workstation or Server a Domain Member</h3></div></div><div></div></div><p>
+The procedure for making an MS Windows workstation of server a member of the domain varies
+with the version of Windows:
+</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2891426"></a>Windows 200x XP Professional</h4></div></div><div></div></div><p>
+	When the user elects to make the client a domain member, Windows 200x prompts for
+	an account and password that has privileges to create  machine accounts in the domain.
+	A Samba administrative account (i.e., a Samba account that has root privileges on the
+	Samba server) must be entered here; the operation will fail if an ordinary user
+	account is given. 
+	</p><p>
+	Note: For security reasons the password for this administrative account should be set
+	to a password that is other than that used for the root user in the
+	<tt class="filename">/etc/passwd</tt>.
+	</p><p>
+	The name of the account that is used to create domain member machine accounts can be
+	anything the network administrator may choose. If it is other than <span class="emphasis"><em>root</em></span>
+	then this is easily mapped to root using the file pointed to be the <tt class="filename">smb.conf</tt> parameter
+	<a class="indexterm" name="id2891478"></a><i class="parameter"><tt>username map</tt></i> = /etc/samba/smbusers.
+	</p><p>
+	The session key of the Samba administrative account acts as an
+	encryption key for setting the password of the machine trust
+	account. The machine trust account will be created on-the-fly, or
+	updated if it already exists.
+	</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2891503"></a>Windows NT4</h4></div></div><div></div></div><p>
+	If the machine trust account was created manually, on the
+	Identification Changes menu enter the domain name, but do not
+	check the box <span class="guilabel">Create a Computer Account in the Domain</span>.
+	In this case, the existing machine trust account is used to join the machine 
+	to the domain.
+	</p><p>
+	If the machine trust account is to be created
+	on-the-fly, on the Identification Changes menu enter the domain
+	name, and check the box <span class="guilabel">Create a Computer Account in the 
+	Domain</span>.  In this case, joining the domain proceeds as above
+	for Windows 2000 (i.e., you must supply a Samba administrative account when
+	prompted).
+	</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2891543"></a>Samba</h4></div></div><div></div></div><p>Joining a Samba client to a domain is documented in 
+		<a href="domain-member.html#domain-member-server" title="Domain Member Server">the domain member chapter</a>.
+	</p></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="domain-member-server"></a>Domain Member Server</h2></div></div><div></div></div><p>
+This mode of server operation involves the Samba machine being made a member
+of a domain security context. This means by definition that all user
+authentication will be done from a centrally defined authentication regime. 
+The authentication regime may come from an NT3/4 style (old domain technology)
+server, or it may be provided from an Active Directory server (ADS) running on
+MS Windows 2000 or later.
+</p><p>
+<span class="emphasis"><em>
+Of course it should be clear that the authentication back end itself could be
+from any distributed directory architecture server that is supported by Samba.
+This can be LDAP (from OpenLDAP), or Sun's iPlanet, of NetWare Directory
+Server, etc.
+</em></span>
+</p><p>
+Please refer to <a href="samba-pdc.html" title="Chapter 5. Domain Control">the chapter on setting up a PDC</a>
+for more information regarding how to create a domain
+machine account for a domain member server as well as for information
+regarding how to enable the Samba domain member machine to join the domain and
+to be fully trusted by it.
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2891624"></a>Joining an NT4 type Domain with Samba-3</h3></div></div><div></div></div><p>
+	</p><div class="table"><a name="id2891635"></a><p class="title"><b>Table 7.1. Assumptions</b></p><table summary="Assumptions" border="1"><colgroup><col><col></colgroup><tbody><tr><td align="left">NetBIOS name:</td><td align="left">SERV1</td></tr><tr><td align="left">Win2K/NT domain name:</td><td align="left">MIDEARTH</td></tr><tr><td align="left">Domain's PDC NetBIOS name:</td><td align="left">DOMPDC</td></tr><tr><td align="left">Domain's BDC NetBIOS names:</td><td align="left">DOMBDC1 and DOMBDC2</td></tr></tbody></table></div><p>
+</p><p>
+First, you must edit your <tt class="filename">smb.conf</tt> file to tell Samba it should
+now use domain security.
+</p><p>
+	Change (or add) your 
+	<a class="indexterm" name="id2891708"></a><i class="parameter"><tt>security</tt></i> line in the [global] section 
+of your <tt class="filename">smb.conf</tt> to read:
+</p><p>
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>security = domain</tt></i></td></tr></table><p>
+</p><p>
+Next change the <a class="indexterm" name="id2891752"></a><i class="parameter"><tt>workgroup</tt></i> line in the <i class="parameter"><tt>[global]</tt></i>
+section to read: 
+</p><p>
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>workgroup = MIDEARTH</tt></i></td></tr></table><p>
+</p><p>
+as this is the name of the domain we are joining.
+</p><p>
+You must also have the parameter
+<a class="indexterm" name="id2891802"></a><i class="parameter"><tt>encrypt passwords</tt></i> set to <tt class="constant">yes
+</tt> in order for your users to authenticate to the NT PDC.
+</p><p>
+Finally, add (or modify) a <a class="indexterm" name="id2891826"></a><i class="parameter"><tt>password server</tt></i> line in the [global]
+section to read: 
+</p><p>
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>password server = DOMPDC DOMBDC1 DOMBDC2</tt></i></td></tr></table><p>
+</p><p>
+These are the primary and backup domain controllers Samba 
+will attempt to contact in order to authenticate users. Samba will 
+try to contact each of these servers in order, so you may want to 
+rearrange this list in order to spread out the authentication load 
+among domain controllers.
+</p><p>
+Alternatively, if you want smbd to automatically determine 
+the list of Domain controllers to use for authentication, you may 
+set this line to be:
+</p><p>
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>password server = *</tt></i></td></tr></table><p>
+</p><p>
+This method allows Samba to use exactly the same mechanism that NT does. This 
+method either broadcasts or uses a WINS database in order to
+find domain controllers to authenticate against.
+</p><p>
+In order to actually join the domain, you must run this command:
+</p><p>
+</p><pre class="screen">
+<tt class="prompt">root# </tt><b class="userinput"><tt>net rpc join -S DOMPDC -U<i class="replaceable"><tt>Administrator%password</tt></i></tt></b>
+</pre><p>
+</p><p>
+If the <tt class="option">-S DOMPDC</tt> argument is not given then
+the domain name will be obtained from <tt class="filename">smb.conf</tt>.
+</p><p>
+As we are joining the domain DOM and the PDC for that domain 
+(the only machine that has write access to the domain SAM database) 
+is DOMPDC, we use it for the <tt class="option">-S</tt> option. 
+The <i class="replaceable"><tt>Administrator%password</tt></i> is 
+the login name and password for an account which has the necessary 
+privilege to add machines to the domain.  If this is successful 
+you will see the message:
+</p><p>
+<tt class="computeroutput">Joined domain DOM.</tt>
+or <tt class="computeroutput">Joined 'SERV1' to realm 'MYREALM'</tt>
+</p><p>
+in your terminal window. See the 
+<b class="command">net</b> man page for more details.
+</p><p>
+This process joins the server to the domain without having to create the machine
+trust account on the PDC beforehand.
+</p><p>
+This command goes through the machine account password 
+change protocol, then writes the new (random) machine account 
+password for this Samba server into a file in the same directory 
+in which an smbpasswd file would be stored - normally:
+</p><p>
+<tt class="filename">/usr/local/samba/private/secrets.tdb</tt>
+</p><p>
+This file is created and owned by root and is not 
+readable by any other user. It is the key to the domain-level 
+security for your system, and should be treated as carefully 
+as a shadow password file.
+</p><p>
+Finally, restart your Samba daemons and get ready for 
+clients to begin using domain security! The way you can restart your 
+samba daemons depends on your distribution, but in most cases running 
+</p><pre class="screen">
+	<tt class="prompt">root# </tt>/etc/init.d/samba restart
+</pre><p>
+does the job.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2892061"></a>Why is this better than security = server?</h3></div></div><div></div></div><p>
+Currently, domain security in Samba doesn't free you from 
+having to create local UNIX users to represent the users attaching 
+to your server. This means that if domain user <tt class="constant">DOM\fred
+</tt> attaches to your domain security Samba server, there needs 
+to be a local UNIX user fred to represent that user in the UNIX 
+filesystem. This is very similar to the older Samba security mode 
+security = server, 
+where Samba would pass through the authentication request to a Windows 
+NT server in the same way as a Windows 95 or Windows 98 server would.
+</p><p>
+	Please refer to <a href="winbind.html" title="Chapter 21. Winbind: Use of Domain Accounts">the chapter on winbind</a> for information on a system
+to automatically assign UNIX uids and gids to Windows NT Domain users and groups.
+</p><p>
+The advantage to domain-level security is that the 
+authentication in domain-level security is passed down the authenticated 
+RPC channel in exactly the same way that an NT server would do it. This 
+means Samba servers now participate in domain trust relationships in 
+exactly the same way NT servers do (i.e., you can add Samba servers into 
+a resource domain and have the authentication passed on from a resource
+domain PDC to an account domain PDC).
+</p><p>
+In addition, with <a class="indexterm" name="id2892116"></a><i class="parameter"><tt>security</tt></i> = server every Samba 
+daemon on a server has to keep a connection open to the 
+authenticating server for as long as that daemon lasts. This can drain 
+the connection resources on a Microsoft NT server and cause it to run 
+out of available connections. With <a class="indexterm" name="id2892135"></a><i class="parameter"><tt>security</tt></i> = domain, 
+however, the Samba daemons connect to the PDC/BDC only for as long 
+as is necessary to authenticate the user, and then drop the connection, 
+thus conserving PDC connection resources.
+</p><p>
+And finally, acting in the same manner as an NT server 
+authenticating to a PDC means that as part of the authentication 
+reply, the Samba server gets the user identification information such 
+as the user SID, the list of NT groups the user belongs to, etc. 
+</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+Much of the text of this document 
+was first published in the Web magazine 
+<a href="http://www.linuxworld.com" target="_top">LinuxWorld</a> as the article <a href="http://www.linuxworld.com/linuxworld/lw-1998-10/lw-10-samba.html" target="_top">Doing 
+the NIS/NT Samba</a>.
+</p></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="ads-member"></a>Samba ADS Domain Membership</h2></div></div><div></div></div><a class="indexterm" name="id2892203"></a><a class="indexterm" name="id2892211"></a><a class="indexterm" name="id2892223"></a><a class="indexterm" name="id2892231"></a><p>
+This is a rough guide to setting up Samba 3.0 with Kerberos authentication against a
+Windows2000 KDC. A familiarity with Kerberos is assumed.
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2892246"></a>Setup your <tt class="filename">smb.conf</tt></h3></div></div><div></div></div><p>
+You must use at least the following 3 options in <tt class="filename">smb.conf</tt>:
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>realm = your.kerberos.REALM</tt></i></td></tr><tr><td><i class="parameter"><tt>security = ADS</tt></i></td></tr><tr><td><i class="parameter"><tt>encrypt passwords = yes</tt></i></td></tr></table><p>
+In case samba can't figure out your ads server using your realm name, use the 
+<a class="indexterm" name="id2892305"></a><i class="parameter"><tt>ads server</tt></i> option in <tt class="filename">smb.conf</tt>:
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>ads server = your.kerberos.server</tt></i></td></tr></table><p>
+</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+You do <span class="emphasis"><em>not</em></span> need a smbpasswd file, and older clients will be authenticated as 
+if <a class="indexterm" name="id2892352"></a><i class="parameter"><tt>security</tt></i> = domain, although it won't do any harm and 
+allows you to have local users not in the domain. It is expected that the above 
+required options will change soon when active directory integration will get 
+better.
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2892373"></a>Setup your <tt class="filename">/etc/krb5.conf</tt></h3></div></div><div></div></div><p>
+The minimal configuration for <tt class="filename">krb5.conf</tt> is:
+</p><pre class="programlisting">
+[libdefaults]
+   default_realm = YOUR.KERBEROS.REALM
+
+	[realms]
+	YOUR.KERBEROS.REALM = {
+	kdc = your.kerberos.server
+	    }
+</pre><a class="indexterm" name="id2892409"></a><p>
+Test your config by doing a <b class="userinput"><tt>kinit
+<i class="replaceable"><tt>USERNAME</tt></i>@<i class="replaceable"><tt>REALM</tt></i></tt></b> and
+making sure that your password is accepted by the Win2000 KDC.
+</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+The realm must be uppercase or you will get <span class="errorname">Cannot find KDC for
+requested realm while getting initial credentials</span> error (Kerberos
+is case-sensitive!).
+</p></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+Time between the two servers must be synchronized.  You will get a
+<span class="errorname">kinit(v5): Clock skew too great while getting initial credentials</span>
+if the time difference is more than five minutes. 
+</p></div><p>
+You also must ensure that you can do a reverse DNS lookup on the IP
+address of your KDC. Also, the name that this reverse lookup maps to
+must either be the NetBIOS name of the KDC (ie. the hostname with no
+domain attached) or it can alternatively be the NetBIOS name
+followed by the realm. 
+</p><p>
+The easiest way to ensure you get this right is to add a 
+<tt class="filename">/etc/hosts</tt> entry mapping the IP address of your KDC to 
+its NetBIOS name. If you don't get this right then you will get a 
+<span class="errorname">local error</span> when you try to join the realm.
+</p><p>
+If all you want is Kerberos support in <span class="application">smbclient</span> then you can skip
+straight to <a href="domain-member.html#ads-test-smbclient" title="Testing with smbclient">Test with <span class="application">smbclient</span></a> now. 
+<a href="domain-member.html#ads-create-machine-account" title="Create the computer account">Creating a computer account</a> 
+and <a href="domain-member.html#ads-test-server" title="Test your server setup">testing your servers</a>
+is only needed if you want Kerberos support for <span class="application">smbd</span> and <span class="application">winbindd</span>.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="ads-create-machine-account"></a>Create the computer account</h3></div></div><div></div></div><p>
+As a user that has write permission on the Samba private directory
+(usually root) run:
+</p><pre class="screen">
+<tt class="prompt">root# </tt> <b class="userinput"><tt>net ads join -U Administrator%password</tt></b>
+</pre><p>
+</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2892592"></a>Possible errors</h4></div></div><div></div></div><p>
+</p><div class="variablelist"><dl><dt><span class="term"><span class="errorname">ADS support not compiled in</span></span></dt><dd><p>Samba must be reconfigured (remove config.cache) and recompiled
+	(make clean all install) after the Kerberos libs and headers are installed.
+	</p></dd><dt><span class="term"><span class="errorname">net ads join prompts for user name</span></span></dt><dd><p>You need to login to the domain using <b class="userinput"><tt>kinit
+	<i class="replaceable"><tt>USERNAME</tt></i>@<i class="replaceable"><tt>REALM</tt></i></tt></b>.
+	<i class="replaceable"><tt>USERNAME</tt></i> must be a user who has rights to add a machine
+	to the domain.  </p></dd></dl></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="ads-test-server"></a>Test your server setup</h3></div></div><div></div></div><p>
+If the join was successful, you will see a new computer account with the
+NetBIOS name of your Samba server in Active Directory (in the &quot;Computers&quot;
+folder under Users and Computers.
+</p><p>
+On a Windows 2000 client try <b class="userinput"><tt>net use * \\server\share</tt></b>. You should
+be logged in with Kerberos without needing to know a password. If
+this fails then run <b class="userinput"><tt>klist tickets</tt></b>. Did you get a ticket for the
+server? Does it have an encoding type of DES-CBC-MD5 ? 
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="ads-test-smbclient"></a>Testing with <span class="application">smbclient</span></h3></div></div><div></div></div><a class="indexterm" name="id2892719"></a><p>
+On your Samba server try to login to a Win2000 server or your Samba
+server using <span class="application">smbclient</span> and Kerberos. Use <span class="application">smbclient</span> as usual, but
+specify the <tt class="option">-k</tt> option to choose Kerberos authentication.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2892751"></a>Notes</h3></div></div><div></div></div><p>
+You must change administrator password at least once after DC 
+install, to create the right encoding types
+</p><p>
+W2k doesn't seem to create the _kerberos._udp and _ldap._tcp in
+their defaults DNS setup. Maybe this will be fixed later in service packs.
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2892773"></a>Common Errors</h2></div></div><div></div></div><p>
+In the process of adding / deleting / re-adding domain member machine accounts there are
+many traps for the unwary player and there are many &#8220;<span class="quote">little</span>&#8221; things that can go wrong.
+It is particularly interesting how often subscribers on the samba mailing list have concluded
+after repeated failed attempts to add a machine account that it is necessary to &quot;re-install&quot;
+MS Windows on t he machine. In truth, it is seldom necessary to reinstall because of this type
+of problem. The real solution is often very simple, and with understanding of how MS Windows
+networking functions easy to overcome.
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2892816"></a>Can Not Add Machine Back to Domain</h3></div></div><div></div></div><p>
+&#8220;<span class="quote"> A Windows workstation was reinstalled. The original domain machine
+account was deleted and added immediately. The workstation will not join the domain if I use 
+the same machine name. Attempts to add the machine fail with a message that the machine already
+exists on the network - I know it doesn't. Why is this failing?</span>&#8221;
+</p><p>
+The original name is still in the NetBIOS name cache and must expire after machine account
+deletion BEFORE adding that same name as a domain member again. The best advice is to delete
+the old account and then to add the machine with a new name.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2892848"></a>Adding Machine to Domain Fails</h3></div></div><div></div></div><p>
+	&#8220;<span class="quote">Adding a Windows 200x or XP Professional machine to the Samba PDC Domain fails with a
+message that, <span class="errorname">The machine could not be added at this time, there is a network problem.
+	Please try again later.</span> Why?</span>&#8221;
+</p><p>
+You should check that there is an <a class="indexterm" name="id2892875"></a><i class="parameter"><tt>add machine script</tt></i> in your <tt class="filename">smb.conf</tt>
+file. If there is not, please add one that is appropriate for your OS platform. If a script
+has been defined you will need to debug it's operation. Increase the <a class="indexterm" name="id2892900"></a><i class="parameter"><tt>log level</tt></i>
+in the <tt class="filename">smb.conf</tt> file to level 10, then try to rejoin the domain. Check the logs to see which
+operation is failing.
+</p><p>
+Possible causes include:
+</p><div class="itemizedlist"><ul type="disc"><li><p>
+	The script does not actually exist, or could not be located in the path specified.
+	</p><p>
+	<span class="emphasis"><em>Corrective Action:</em></span> Fix it. Make sure that when run manually
+	that the script will add both the UNIX system account _and_ the Samba SAM account.
+	</p></li><li><p>
+	The machine could not be added to the UNIX system accounts file <tt class="filename">/etc/passwd</tt>
+	</p><p>
+	<span class="emphasis"><em>Corrective Action:</em></span> Check that the machine name is a legal UNIX
+	system account name. ie: If the UNIX utility <b class="command">useradd</b> is called
+	then make sure that the machine name you are trying to add can be added using this
+	tool. <b class="command">Useradd</b> on some systems will not allow any upper case characters
+	nor will it allow spaces in the name.
+	</p></li></ul></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2892992"></a>I can't join a Windows 2003 PDC</h3></div></div><div></div></div><p>Windows 2003 requires SMB signing. Client side SMB signing has 
+		only been implemented partially in Samba 3.0. Set <a class="indexterm" name="id2893004"></a><i class="parameter"><tt>client use spnego</tt></i> = no when communicating 
+		with a windows 2003 server. </p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="samba-bdc.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="type.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="StandAloneServer.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 6. Backup Domain Control </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 8. Stand-Alone Servers</td></tr></table></div></body></html>
