@@ -395,7 +395,11 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 		unsigned int namelen = CVAL(pdata,offset);
 
 		offset++; /* Go past the namelen byte. */
-		if (offset + namelen >= data_size) {
+
+		/* integer wrap paranioa. */
+		if ((offset + namelen < offset) || (offset + namelen < namelen) ||
+				(offset > data_size) || (namelen > data_size) ||
+				(offset + namelen >= data_size)) {
 			break;
 		}
 		/* Ensure the name is null terminated. */
@@ -444,6 +448,16 @@ static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t d
 		namelen = CVAL(pdata,offset + 1);
 		val_len = SVAL(pdata,offset + 2);
 
+		/* integer wrap paranioa. */
+		if ((offset + namelen + 5 + val_len < offset) ||
+				(offset + namelen + 5 + val_len < namelen) ||
+				(offset + namelen + 5 + val_len < val_len) ||
+				(offset > data_size) ||
+				(namelen > data_size) ||
+				(offset + namelen >= data_size)) {
+			return NULL;
+		}
+
 		if (offset + 4 + namelen + 1 + val_len > data_size) {
 			return NULL;
 		}
@@ -473,7 +487,7 @@ static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t d
 
 		DLIST_ADD_END(ea_list_head, eal, tmp);
 
-		DEBUG(10,("read_ea_name_list: read ea name %s\n", eal->ea.name));
+		DEBUG(10,("read_ea_list: read ea name %s\n", eal->ea.name));
 		dump_data(10, eal->ea.value.data, eal->ea.value.length);
 	}
 
@@ -505,7 +519,7 @@ static size_t ea_list_size(struct ea_list *ealist)
 /****************************************************************************
  Return a union of EA's from a file list and a list of names.
  The TALLOC context for the two lists *MUST* be identical as we steal
- memory from one list to another. JRA.
+ memory from one list to add to another. JRA.
 ****************************************************************************/
 
 static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *file_list, size_t *total_ea_len)
@@ -2730,7 +2744,12 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 	/* Pull any EA list from the data portion. */
 	if (info_level == SMB_INFO_QUERY_EAS_FROM_LIST) {
-		uint32 ea_size = IVAL(pdata,0);
+		uint32 ea_size;
+
+		if (total_data < 4) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+		ea_size = IVAL(pdata,0);
 
 		if (total_data > 0 && ea_size != total_data) {
 			DEBUG(4,("call_trans2qfilepathinfo: Rejecting EA request with incorrect \
