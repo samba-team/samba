@@ -108,8 +108,9 @@ NetBIOS machine names will end up looking like
 they belong to that workgroup, this may cause
 name resolution problems and should be avoided.
 </para></listitem>
-
+</varlistentry>
 </variablelist>
+</para>
 
 </sect1>
 
@@ -276,5 +277,6 @@ The default is:
 where "host" refers the the native methods used by the Unix system
 to implement the gethostbyname() function call. This is normally
 controlled by <filename>/etc/host.conf</filename>, <filename>/etc/nsswitch.conf</filename> and <filename>/etc/resolv.conf</filename>.
+</para>
 </sect1>
 </chapter>

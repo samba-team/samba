@@ -23,6 +23,7 @@ BuildRoot   	: /tmp/%{Name}-%{Version}
 
 Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}.tar.gz
 
+
 %Package doc
 Group       	: Server/Network
 
@@ -170,7 +171,6 @@ a clean and stable API for SMB client application development.
 %Prep
 %setup
 
-
 for i in {cvs.,change-}log; do [ ! -f ../$i ] || mv ../$i source; done
 
 mv swat/help/welcome.html docs
@@ -200,13 +200,14 @@ rm configure
 autoconf
 
 CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
-	--prefix='$(DESTDIR)/usr' \
-	--localstatedir='$(DESTDIR)/var' \
-	--libdir='$(DESTDIR)%{EtcSamba}' \
-	--sbindir='$(DESTDIR)/usr/sbin' \
+	--prefix=/usr \
+	--localstatedir=/var \
+	--libdir=/usr/lib/samba \
+	--sbindir=/usr/sbin \
+	--with-configdir='%{EtcSamba}' \
 	--with-privatedir='$(LIBDIR)' \
-	--with-lockdir='$(DESTDIR)/var/lock/samba.d' \
-	--with-swatdir='$(DESTDIR)/usr/share/swat' \
+	--with-lockdir=/var/lock/samba.d \
+	--with-swatdir=/usr/share/swat \
 	--with-smbmount \
 	--with-pam \
 	--with-tdbsam \
@@ -223,43 +224,30 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-smbwrapper \
 	--with-libsmbclient \
 	--with-acl-support \
-	--with-sambabook=$(DESTDIR)/usr/share/swat/using_samba
+	--with-sambabook=/usr/share/swat/using_samba
 
-# Temp disabled - add later - JHT
-#	--with-pam_smbpass \
-#	--with-nisplus-home \
-
-make all nsswitch/libnss_wins.so nsswitch/libnss_winbind.so torture nsswitch/pam_winbind.so everything
+make all nsswitch/libnss_wins.so nsswitch/libnss_winbind.so torture nsswitch/pam_winbind.so modules everything pam_smbpass
 (cd tdb; make tdbdump tdbtest tdbtorture tdbtool)
-
-cd ../examples/VFS
-#CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
-#        --prefix='$(DESTDIR)/usr' \
-#        --localstatedir='$(DESTDIR)/var' \
-#        --libdir='$(DESTDIR)%{EtcSamba}' \
-#        --sbindir='$(DESTDIR)/usr/sbin'
-make
 
 %Install
 %{mkDESTDIR}
 VVS=packaging/%{Vendor}/%{Dist}
 
 mkdir -p $DESTDIR/etc/{{rc.d/init,logrotate,pam}.d,sysconfig/daemons}
-mkdir -p $DESTDIR%{EtcSamba}/codepages/src
+mkdir -p $DESTDIR%{EtcSamba}
 mkdir -p $DESTDIR/etc/skel/Samba
 mkdir -p $DESTDIR/home/samba
 mkdir -p $DESTDIR/lib/security
-mkdir -p $DESTDIR/lib/samba
 mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR%{NKinetdir}
 mkdir -p $DESTDIR/{sbin,bin,usr/{sbin,bin}}
 mkdir -p $DESTDIR/%{SVIdir}
-mkdir -p $DESTDIR/usr/{include,lib}
+mkdir -p $DESTDIR/usr/{include,lib/samba/vfs}
 mkdir -p $DESTDIR/usr/share/samba/codepages/src
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
 
-make -C source install installclientlib 
+make -C source DESTDIR=$RPM_BUILD_ROOT install-everything installclientlib 
 
 strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
 # Add links for mount.smbfs
@@ -281,29 +269,24 @@ do
 	install -m 755 source/tdb/$i $DESTDIR/usr/sbin
 done
 
-# Add VFS Modules
-for i in audit.so recycle.so netatalk.so skel.so
-do
-	install -m755 examples/VFS/$i $DESTDIR/lib/samba
-done
-
-#mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
-
-#cp -p source/codepages/codepage_def.??? $DESTDIR%{EtcSamba}/codepages/src
-
 # Install the nsswitch library extension file
 cp -p source/nsswitch/libnss_wins.so $DESTDIR/lib
 cp -p source/nsswitch/libnss_winbind.so $DESTDIR/lib
 cp -p source/nsswitch/pam_winbind.so $DESTDIR/lib/security
+cp -p source/bin/pam_smbpass.so $DESTDIR/lib/security
 # Make link for wins resolver
 ( cd $DESTDIR/lib; ln -s libnss_wins.so libnss_wins.so.2 )
 
 # Add libsmbclient.a support stuff
 install -m 755 source/bin/libsmbclient.a $DESTDIR/usr/lib
 
+# Add smbwrapper support
+install -m 755 source/bin/smbsh $DESTDIR/usr/bin
+install -m 755 source/bin/smbwrapper.so $DESTDIR/usr/lib
+
+# Ancilliary support files
 cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
-
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
 cp -p $VVS/findsmb $DESTDIR/usr/bin
@@ -385,6 +368,10 @@ Samba/README.txt                        base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$) base
 libnss_*                                base
 pam_*                                   base
+vfs_*                                   base
+pdb_*                                   base
+smbsh                                   base
+smbwrapper.so				base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$) base
 %{_defaultdocdir}/samba-                doc
 smb(mount|mnt|umount)                   smbfs
@@ -401,6 +388,7 @@ EOF
 
 %Post
 /usr/lib/LSB/init-install %{Name}
+ldconfig
 
 %Post -n swat
 %{NKinetdReload}

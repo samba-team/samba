@@ -5186,9 +5186,9 @@
 		connections with usernames not in the <parameter>user</parameter> 
 		list will be allowed. By default this option is disabled so that a 
 		client can supply a username to be used by the server.  Enabling
-		this parameter will force the server to only user the login 
+		this parameter will force the server to only use the login 
 		names from the <parameter>user</parameter> list and is only really
-		useful in <link linkend="SECURITYEQUALSSHARE">shave level</link>
+		useful in <link linkend="SECURITYEQUALSSHARE">share level</link>
 		security.</para>
 
 		<para>Note that this also means Samba won't try to deduce 

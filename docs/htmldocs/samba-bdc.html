@@ -5,7 +5,8 @@
 >How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -72,17 +73,13 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="SAMBA-BDC"
-></A
->Chapter 8. How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</H1
+NAME="SAMBA-BDC">Chapter 7. How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1143"
-></A
->8.1. Prerequisite Reading</H1
+NAME="AEN1127">7.1. Prerequisite Reading</H1
 ><P
 >Before you continue reading in this chapter, please make sure
 that you are comfortable with configuring a Samba PDC
@@ -97,9 +94,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1147"
-></A
->8.2. Background</H1
+NAME="AEN1131">7.2. Background</H1
 ><P
 >What is a Domain Controller? It is a machine that is able to answer
 logon requests from workstations in a Windows NT Domain. Whenever a
@@ -142,9 +137,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1155"
-></A
->8.3. What qualifies a Domain Controller on the network?</H1
+NAME="AEN1139">7.3. What qualifies a Domain Controller on the network?</H1
 ><P
 >Every machine that is a Domain Controller for the domain SAMBA has to
 register the NetBIOS group name SAMBA#1c with the WINS server and/or
@@ -159,9 +152,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1158"
-></A
->8.3.1. How does a Workstation find its domain controller?</H2
+NAME="AEN1142">7.3.1. How does a Workstation find its domain controller?</H2
 ><P
 >A NT workstation in the domain SAMBA that wants a local user to be
 authenticated has to find the domain controller for SAMBA. It does
@@ -178,9 +169,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1161"
-></A
->8.3.2. When is the PDC needed?</H2
+NAME="AEN1145">7.3.2. When is the PDC needed?</H2
 ><P
 >Whenever a user wants to change his password, this has to be done on
 the PDC. To find the PDC, the workstation does a NetBIOS name query
@@ -194,9 +183,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1164"
-></A
->8.4. Can Samba be a Backup Domain Controller?</H1
+NAME="AEN1148">7.4. Can Samba be a Backup Domain Controller?</H1
 ><P
 >With version 2.2, no. The native NT SAM replication protocols have
 not yet been fully implemented. The Samba Team is working on
@@ -213,9 +200,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1168"
-></A
->8.5. How do I set up a Samba BDC?</H1
+NAME="AEN1152">7.5. How do I set up a Samba BDC?</H1
 ><P
 >Several things have to be done:</P
 ><P
@@ -280,9 +265,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1185"
-></A
->8.5.1. How do I replicate the smbpasswd file?</H2
+NAME="AEN1169">7.5.1. How do I replicate the smbpasswd file?</H2
 ><P
 >Replication of the smbpasswd file is sensitive. It has to be done
 whenever changes to the SAM are made. Every user's password change is

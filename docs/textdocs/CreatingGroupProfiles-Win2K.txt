@@ -1,0 +1,55 @@
+You must first convert the profile from a local profile to a domain
+profile on the MS Windows workstation as follows:
+
+1. Log on as the LOCAL workstation administrator.
+
+2. Right click on the 'My Computer' Icon, select 'Properties'
+
+3. Click on the 'User Profiles' tab
+
+4. Select the profile you wish to convert (click on it once)
+
+5. Click on the button 'Copy To'
+
+6. In the "Permitted to use" box, click on the 'Change' button.
+
+7. Click on the 'Look in" area that lists the machine name, when you click
+here it will open up a selection box. Click on the domain to which the
+profile must be accessible.
+
+Note: You will need to log on if a logon box opens up. Eg: In the connect
+as: MIDEARTH\root, password: mypassword.
+
+8. To make the profile capable of being used by anyone select 'Everyone'
+
+9. Click OK. The Selection box will close.
+
+10. Now click on the 'Ok' button to create the profile in the path you
+nominated.
+
+Done. You now have a profile that can be editted using the samba-3.0.0
+profiles tool.
+
+
+
+> Keep profiles clean and small by making them mandatory.
+> See the Win2K/WinXP resource kits for details how to create a mandatory profile.
+>
+> Can you do this when using Samba as a PDC?  I thought you could only do
+> policies if you had a Win2K server?
+
+No difference. Samba handles the profile ACLs the same way Win2K does.
+But understand that it is the Win2K client that does all the processing
+of the SIDs on the ACLs in the profile NTUser.DAT file.
+
+
+Note:
+-----
+> Unless your users are using Outlook (or virtually any E-mail client for
+> that matter) I have a few users with .PST files that are over 1Gig in
+> size. This is due to the regular amount of data files that we are sent. I
+> have discussed with them the need to trim those files down.
+
+Under NT/2K the use of mandotory profiles forces the use of MS Exchange
+storage of mail data. That keeps desktop profiles usable.
+

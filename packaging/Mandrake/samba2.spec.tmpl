@@ -172,6 +172,7 @@ Group: System/Servers
 Source: ftp://samba.org/pub/samba/samba-%{source_ver}.tar.bz2
 URL:	http://www.samba.org
 Source1: samba.log
+Source2: mount.smb
 Source3: samba.xinetd
 Source4: swat_48.xpm.bz2
 Source5: swat_32.xpm.bz2
@@ -182,9 +183,21 @@ Source8: samba-vscan-%{vscanver}.tar.bz2
 %endif
 Source10: samba-print-pdf.sh.bz2
 Patch1: smbw.patch.bz2
+Patch2: samba-glibc21.patch.bz2
+#Patch3: network-recycle_bin.patch.bz2
 Patch5: samba-2.2.0-gawk.patch.bz2
 Patch12: samba-2.2.0-buildroot.patch.bz2
+#Patch16: samba-mkdir.patch.bz2
 Patch17: samba-3.0-smbmount-sbin.patch.bz2
+#Patches 20-22 to get packaging synced from 2.2.2 to 3.0
+Patch20: samba-3.0-smb.conf.patch.bz2
+Patch21: samba-3.0-winbind.init.patch.bz2
+Patch22: samba-3.0-system-auth-winbind.patch.bz2
+Patch23: samba-3alpha20-destdir.patch.bz2
+#Patch24: samba-3.0alpha13-installman.patch.bz2
+Patch25: samba-3.0alpha13-config_lang.patch.bz2
+#Patch 26 belongs with 20-22
+Patch26: samba-3.0-smb.init.patch.bz2
 Requires: pam >= 0.64, samba-common = %{version}
 BuildRequires: pam-devel autoconf readline-devel
 %if %build_acl
@@ -536,10 +549,20 @@ echo -e "\n%{name}-%{version}-%{release}\n">>%{SOURCE7}
 %else
 %setup -q -n %{pkg_name}-%{source_ver}
 %endif
+#%patch111 -p1
 %patch1 -p1 -b .smbw
+#%patch3 -p1 -b .net-r_bin
 %patch5 -p1 -b .gawk
+#%patch6 -p1
 %patch12 -p1 -b .buildroot
 %patch17 -p1 -b .sbin
+%patch20 -p1 -b .samba222
+%patch21 -p1 -b .samba222
+%patch22 -p1 -b .samba222
+%patch23 -p1 -b .destdir
+#%patch24 -p1 -b .langen
+%patch25 -p1 -b .multilang
+%patch26 -p1 -b .samba222
 cp %{SOURCE7} .
 
 # Make a copy of examples so that we have a clean one for doc:
@@ -1024,7 +1047,7 @@ fi
 %dir /var/log/%{name}
 %attr(1777,root,root) %dir /var/spool/%{name}
 %dir %{_datadir}/%{name}/scripts
-%attr(0755,root,root) %{_datadir}/%{name}/scripts/print-pdf
+#%attr(0755,root,root) %{_datadir}/%{name}/scripts/print-pdf
 #%attr(0750,root,root) %{_datadir}/%{name}/scripts/smbldap*.pl
 #%attr(0640,root,root) %config(noreplace) %{_sysconfdir}/%{name}/smbldap_conf.pm
 #%attr(0644,root,root) %{_datadir}/%{name}/scripts/smbldap_tools.pm
@@ -1086,8 +1109,11 @@ fi
 %dir /var/cache/%{name}
 %dir /var/log/%{name}
 %dir /var/run/%{name}
+#%{_bindir}/make_smbcodepage
+#%{_bindir}/make_unicodemap
 %{_bindir}/testparm%{samba_major}
 %{_bindir}/testprns%{samba_major}
+#%{_bindir}/make_printerdef
 %{_bindir}/rpcclient%{samba_major}
 %{_bindir}/smbsh%{samba_major}
 %{_bindir}/smbpasswd%{samba_major}
@@ -1098,6 +1124,8 @@ fi
 %attr(-,root,root) %config(noreplace) /etc/%{name}/smb-winbind.conf
 %attr(-,root,root) %config(noreplace) /etc/%{name}/lmhosts
 %attr(-,root,root) /var/lib/%{name}/codepages
+%{_mandir}/man1/make_smbcodepage*.1*
+%{_mandir}/man1/make_unicodemap*.1*
 %{_mandir}/man1/testparm*.1*
 %{_mandir}/man1/smbsh*.1*
 %{_mandir}/man1/testprns*.1*
