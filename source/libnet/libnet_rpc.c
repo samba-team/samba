@@ -116,7 +116,7 @@ static NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *m
 /* connect to a dcerpc interface */
 NTSTATUS libnet_rpc_connect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
 {
-	switch (r->pdc.level) {
+	switch (r->standard.level) {
 		case LIBNET_RPC_CONNECT_STANDARD:
 			return libnet_rpc_connect_standard(ctx, mem_ctx, r);
 		case LIBNET_RPC_CONNECT_PDC:

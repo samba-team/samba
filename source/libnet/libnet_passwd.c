@@ -336,7 +336,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 
 	/* prepare samr_Connect */
 	ZERO_STRUCT(p_handle);
-	sc.in.system_name = 0;
+	sc.in.system_name = NULL;
 	sc.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	sc.out.handle = &p_handle;
 
