@@ -295,7 +295,7 @@ void cli_connection_unlink(struct cli_connection *con)
 /****************************************************************************
 init client state
 ****************************************************************************/
-BOOL cli_connection_init(const char *srv_name, const char *pipe_name,
+BOOL cli_connection_init(const char *srv_name, char *pipe_name,
                          struct cli_connection **con)
 {
         return cli_connection_init_auth(srv_name, pipe_name, con, NULL, NULL);
@@ -304,7 +304,7 @@ BOOL cli_connection_init(const char *srv_name, const char *pipe_name,
 /****************************************************************************
 init client state
 ****************************************************************************/
-BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
+BOOL cli_connection_init_auth(const char *srv_name, char *pipe_name,
                               struct cli_connection **con,
                               cli_auth_fns * auth, void *auth_creds)
 {

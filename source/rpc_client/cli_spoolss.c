@@ -558,9 +558,6 @@ BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 
 
 
 
-       /*  memset(srv_name, 0, sizeof(srv_name));
-        unistr_to_ascii(srv_name, info2->servername.buffer, sizeof(srv_name)); */
-
         if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
                 return NT_STATUS_ACCESS_DENIED;
 
@@ -584,7 +581,9 @@ BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 
 	
 
         make_spoolss_q_addprinterex(&q_o, srv_name, client_name, 
-				    "Administrator", 2, info2);
+				    /* "Administrator", */
+				    con->pCli_state->user_name,
+				    2, info2);
 
         /* turn parameters into data stream and send the request */
         if (spoolss_io_q_addprinterex("", &q_o, &buf, 0) &&
@@ -592,11 +591,14 @@ BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 
 	{
         	ZERO_STRUCT(r_o);
 
-        	if(!spoolss_io_r_addprinterex("", &r_o, &rbuf, 0)) 
+        	if(spoolss_io_r_addprinterex("", &r_o, &rbuf, 0)) 
 		{
-                        /* report error code */
-                        DEBUG(5,("SPOOLSS_ADDPRINTEREX: %s\n", get_nt_error_msg(r_o.status)));
-                        valid_pol = False;
+			if (r_o.status != NT_STATUS_NO_PROBLEMO)
+                        {
+				/* report error code */
+                        	DEBUG(0,("SPOOLSS_ADDPRINTEREX: %s\n", get_nt_error_msg(r_o.status)));
+                        	valid_pol = False;
+			}
         	}
 		
 		if (valid_pol)
