@@ -226,7 +226,7 @@ void add_session_user(const char *user)
   fstring suser;
   struct passwd *passwd;
 
-  if (!passwd = Get_Pwnam(user)) return;
+  if (!(passwd = Get_Pwnam(user))) return;
 
   StrnCpy(suser,passwd->pw_name,sizeof(suser)-1);
 
