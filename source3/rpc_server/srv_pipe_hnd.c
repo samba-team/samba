@@ -208,11 +208,8 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	int data_pos; /* entire rpc data sent - no headers, no auth verifiers */
 	int this_pdu_data_pos;
 
-	DEBUG(6,("read_pipe: %x", p->pnum));
-
-	DEBUG(6,("name: %s open: %s pos: %d len: %d",
-		 p->name,
-		 BOOLSTR(p->open),
+	DEBUG(6,("read_pipe: %x name: %s open: %s pos: %d len: %d",
+		 p->pnum, p->name, BOOLSTR(p->open),
 		 pos, n));
 
 	if (!p || !p->open)
