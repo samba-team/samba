@@ -123,7 +123,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 	if (!h) {
 		print_tree(0, root, fullpath, no_values);
 	} else {
-		for(i = HKEY_CLASSES_ROOT; i < HKEY_PN; i++) {
+		for(i = HKEY_CLASSES_ROOT; i < HKEY_PERFORMANCE_NLSTEXT; i++) {
 			error = reg_get_hive(h, i, &root);
 			if (!W_ERROR_IS_OK(error)) {
 				fprintf(stderr, "Skipping %s\n", reg_get_hkey_name(i));

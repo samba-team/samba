@@ -173,7 +173,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 
 	error2 = error = WERR_OK; 
 
-	for(i = HKEY_CLASSES_ROOT; i <= HKEY_PN; i++) {
+	for(i = HKEY_CLASSES_ROOT; i <= HKEY_PERFORMANCE_NLSTEXT; i++) {
 		struct registry_key *r1, *r2;
 		error = reg_get_hive(h1, i, &r1);
 		if (!W_ERROR_IS_OK(error)) {

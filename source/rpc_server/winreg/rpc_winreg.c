@@ -70,8 +70,8 @@ func_winreg_OpenHive(HKPD,HKEY_PERFORMANCE_DATA)
 func_winreg_OpenHive(HKU,HKEY_USERS)
 func_winreg_OpenHive(HKCC,HKEY_CURRENT_CONFIG)
 func_winreg_OpenHive(HKDD,HKEY_DYN_DATA)
-func_winreg_OpenHive(HKPT,HKEY_PT)
-func_winreg_OpenHive(HKPN,HKEY_PN)
+func_winreg_OpenHive(HKPT,HKEY_PERFORMANCE_TEXT)
+func_winreg_OpenHive(HKPN,HKEY_PERFORMANCE_NLSTEXT)
 
 /* 
   winreg_CloseKey 
