@@ -1,3 +1,11 @@
+2002-08-22  Assar Westerlund  <assar@kth.se>
+
+	* lib/krb5/test_get_addrs.c, lib/krb5/krbhst-test.c: make it use
+	getarg so that it can handle --help and --version (and thus make
+	check can pass)
+
+	* lib/asn1/check-der.c: make this build again
+
 2002-08-22  Assar Westerlund <assar@kth.se>
 
 	* lib/asn1/der_get.c (der_get_int): handle len == 0.  based on a
