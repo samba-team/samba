@@ -842,7 +842,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 				return status;
 
 			o.in.connect_handle = &connect_handle;
-			o.in.access_mask = 0x200;
+			o.in.access_mask = 0x280;
 			domain_sid = l.out.sid;
 			o.in.sid = l.out.sid;
 			o.out.domain_handle = &domain_handle;
@@ -854,7 +854,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 			break;
 		}
 		o.in.connect_handle = &connect_handle;
-		o.in.access_mask = 0x200;
+		o.in.access_mask = 0x280;
 		o.in.sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32");
 		o.out.domain_handle = &builtin_handle;
 
