@@ -396,7 +396,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 			nt_status = find_connect_pdc(&cli, domain, setup_creds_as, sec_chan, trust_passwd, last_change_time);
 		} else {
 			int i;
-			BOOL retry = False;
+			BOOL retry = True;
 			for (i = 0; !NT_STATUS_IS_OK(nt_status) && retry && (i < 3); i++)
 				nt_status = connect_to_domain_password_server(&cli, remote_machine, setup_creds_as,
 						sec_chan, trust_passwd, &retry);
