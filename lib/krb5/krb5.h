@@ -773,6 +773,14 @@ krb5_get_host_realm(krb5_context context,
 		    const char *host,
 		    char ***realms);
 
+krb5_error_code
+krb5_set_default_realm(krb5_context context,
+		       char *realm);
+
+krb5_error_code
+krb5_get_default_realm(krb5_context context,
+		       char **realm);
+
 krb5_boolean
 krb5_kuserok (krb5_context context,
 	      krb5_principal principal,
