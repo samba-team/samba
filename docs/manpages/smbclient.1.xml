@@ -496,6 +496,18 @@
 		
 		
 		<varlistentry>
+		<term>case_sensitive</term>
+		<listitem><para>Toggles the setting of the flag in SMB packets that
+		tells the server to treat filenames as case sensitive. Set to OFF by
+		default (tells file server to treat filenames as case insensitive). Only
+		currently affects Samba 3.0.5 and above file servers with the case sensitive
+		parameter set to auto in the smb.conf.
+		</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
 		<term>cancel jobid0 [jobid1] ... [jobidN]</term>
 		<listitem><para>The client will request that the server cancel
 		the printjobs identified by the given numeric print job ids.
