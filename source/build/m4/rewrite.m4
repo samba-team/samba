@@ -1,94 +1,12 @@
 dnl Checks for programs.
-
-AC_PATH_PROG(PERL, perl)
-if test x"$PERL" = x""; then
-	AC_MSG_WARN([No version of perl was not found!])
-	AC_MSG_ERROR([Please Install perl from http://www.perl.com/])
-fi
-if test x"$debug" = x"yes";then
-	PERL="$PERL -W"
-fi
-
-AC_PROG_CC
-AC_PROG_INSTALL
-
-# compile with optimization and without debugging by default, but
-# allow people to set their own preference.
-if test "x$CFLAGS" = x
-then
-  CFLAGS="-O ${CFLAGS}"
-fi
-
-dnl Check if we use GNU ld
-LD=ld
-AC_PROG_LD_GNU
-
-dnl needed before AC_TRY_COMPILE
-AC_ISC_POSIX
-
-dnl look for executable suffix
-AC_EXEEXT
-
-dnl Check if C compiler understands -c and -o at the same time
-AC_PROG_CC_C_O
-if eval "test \"`echo '$ac_cv_prog_cc_'${ac_cc}_c_o`\" = no"; then
-      BROKEN_CC=
-else
-      BROKEN_CC=#
-fi
-AC_SUBST(BROKEN_CC)
-
-AC_CACHE_CHECK([that the C compiler can precompile header files],samba_cv_precompiled_headers, [
-	dnl Check whether the compiler can generate precompiled headers
-	touch conftest.h
-	if ${CC-cc} conftest.h 2> /dev/null && test -f conftest.h.gch; then
-		samba_cv_precompiled_headers=yes
-	else
-		samba_cv_precompiled_headers=no
-	fi])
-PCH_AVAILABLE="#"
-if test x"$samba_cv_precompiled_headers" = x"yes"; then
-	PCH_AVAILABLE=""
-fi
-AC_SUBST(PCH_AVAILABLE)
-
-
-dnl Check if the C compiler understands volatile (it should, being ANSI).
-AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
-    AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
-	samba_cv_volatile=yes,samba_cv_volatile=no)])
-if test x"$samba_cv_volatile" = x"yes"; then
-   AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
-fi
-
-
-AC_CANONICAL_SYSTEM
-
-dnl Add #include for broken IRIX header files
-  case "$host_os" in
-	*irix6*) AC_ADD_INCLUDE(<standards.h>)
-	;;
-esac
-
-AC_VALIDATE_CACHE_SYSTEM_TYPE
+dnl Unique-to-Samba variables we'll be playing with.
 
 DYNEXP=
 
-AC_HEADER_STDC
-AC_CHECK_HEADERS(stdbool.h)
-
-AC_CHECK_SIZEOF(short,cross)
-AC_CHECK_SIZEOF(int,cross)
-AC_CHECK_SIZEOF(long,cross)
-AC_CHECK_SIZEOF(long long,cross)
-if test x"$ac_cv_type_long_long" != x"yes";then
-    AC_MSG_ERROR([Sorry we need type 'long long'])
-fi
-if test $ac_cv_sizeof_long_long -lt 8;then
-    AC_MSG_ERROR([Sorry we need sizeof(long long) >= 8])
-fi
-AC_CHECK_TYPE(_Bool)
-
+AC_SUBST(SHLIBEXT)
+AC_SUBST(LDSHFLAGS)
+AC_SUBST(SONAMEFLAG)
+AC_SUBST(PICFLAG)
 #
 # Config CPPFLAG settings for strange OS's that must be set
 # before other tests.
@@ -345,11 +263,6 @@ AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h)
 
 
-AC_C_CONST
-AC_C_INLINE
-AC_C_BIGENDIAN
-AC_C_CHAR_UNSIGNED
-
 AC_TYPE_SIGNAL
 AC_TYPE_UID_T
 AC_TYPE_MODE_T
@@ -363,15 +276,7 @@ AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
-AC_CHECK_TYPE(uint_t, unsigned int)
-AC_CHECK_TYPE(int8_t, signed char)
-AC_CHECK_TYPE(uint8_t, unsigned char)
-AC_CHECK_TYPE(int16_t, short)
-AC_CHECK_TYPE(uint16_t, unsigned short)
-AC_CHECK_TYPE(int32_t, long)
-AC_CHECK_TYPE(uint32_t, unsigned long)
-AC_CHECK_TYPE(int64_t, long long)
-AC_CHECK_TYPE(uint64_t, unsigned long long)
+
 
 ############################################
 # we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the plugin loading code
@@ -822,16 +727,6 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
 if test $ac_cv_shlib_works = no; then
    BLDSHARED=false
 fi
-fi
-
-################
-
-AC_CACHE_CHECK([for long long],samba_cv_have_longlong,[
-AC_TRY_RUN([#include <stdio.h>
-main() { long long x = 1000000; x *= x; exit(((x/1000000) == 1000000)? 0: 1); }],
-samba_cv_have_longlong=yes,samba_cv_have_longlong=no,samba_cv_have_longlong=cross)])
-if test x"$samba_cv_have_longlong" = x"yes"; then
-    AC_DEFINE(HAVE_LONGLONG,1,[Whether the host supports long long's])
 fi
 
 #
