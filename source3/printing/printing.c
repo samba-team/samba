@@ -1077,6 +1077,7 @@ static void print_queue_update_internal( const char *sharename,
 
 	if ( !print_cache_expired(sharename, False) ) {
 		DEBUG(5,("print_queue_update_internal: print cache for %s is still ok\n", sharename));
+		release_print_db(pdb);
 		return;
 	}
 
