@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,6 +48,7 @@ krb5_crypto crypto;
 des_key_schedule schedule;
 des_cblock iv;
 #endif
+int sock_debug	     = 0;
 
 
 /*
@@ -522,6 +523,15 @@ proto (int s, int errsock,
 	return 1;
     }
 
+    if (sock_debug) {
+	int one = 1;
+	if (setsockopt(s, SOL_SOCKET, SO_DEBUG, &one, sizeof(one)) < 0)
+	    warn("setsockopt remote");
+	if (errsock2 != -1 &&
+	    setsockopt(errsock2, SOL_SOCKET, SO_DEBUG, &one, sizeof(one)) < 0)
+	    warn("setsockopt stderr");
+    }
+
     return loop (s, errsock2);
 }
 
@@ -765,38 +775,29 @@ static int do_errsock = 1;
 
 struct getargs args[] = {
 #ifdef KRB4
-    { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
-      NULL },
+    { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4" },
 #endif
-    { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
-      NULL },
-    { "broken", 'K', arg_flag,		&use_only_broken, "Use priv port",
-      NULL },
-    { "input",	'n', arg_negative_flag,	&input,		"Close stdin",
-      NULL },
-    { "encrypt", 'x', arg_flag,		&do_encrypt,	"Encrypt connection",
-      NULL },
+    { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5" },
+    { "broken", 'K', arg_flag,		&use_only_broken, "Use priv port" },
+    { NULL,	'd', arg_flag,		&sock_debug, "Enable socket debugging" },
+    { "input",	'n', arg_negative_flag,	&input,		"Close stdin" },
+    { "encrypt", 'x', arg_flag,		&do_encrypt,	"Encrypt connection" },
     { NULL, 	'z', arg_negative_flag,      &do_encrypt,
       "Don't encrypt connection", NULL },
-    { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials",
-      NULL },
-    { "forward", 'G', arg_negative_flag,&do_forward,	"Forward credentials",
-      NULL },
+    { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials"},
+    { NULL, 'G', arg_negative_flag,&do_forward,	"Don't forward credentials" },
     { "forwardable", 'F', arg_flag,	&do_forwardable,
-      "Forward forwardable credentials", NULL },
+      "Forward forwardable credentials" },
     { "unique", 'u', arg_flag,	&do_unique_tkfile,
-      "Use unique remote tkfile", NULL },
+      "Use unique remote tkfile" },
     { "tkfile", 'U', arg_string,  &unique_tkfile,
-      "Use that remote tkfile", NULL },
+      "Use that remote tkfile" },
     { "port",	'p', arg_string,	&port_str,	"Use this port",
       "number-or-service" },
-    { "user",	'l', arg_string,	&user,		"Run as this user",
-      NULL },
-    { "stderr", 'e', arg_negative_flag, &do_errsock,	"don't open stderr"},
-    { "version", 0,  arg_flag,		&do_version,	"Print version",
-      NULL },
-    { "help",	 0,  arg_flag,		&do_help,	NULL,
-      NULL }
+    { "user",	'l', arg_string,	&user,		"Run as this user" },
+    { "stderr", 'e', arg_negative_flag, &do_errsock,	"Don't open stderr"},
+    { "version", 0,  arg_flag,		&do_version,	NULL },
+    { "help",	 0,  arg_flag,		&do_help,	NULL }
 };
 
 static void
@@ -822,6 +823,7 @@ main(int argc, char **argv)
     int optind = 0;
     int ret = 1;
     char *cmd;
+    char *tmp;
     size_t cmd_len;
     const char *local_user;
     char *host = NULL;
@@ -915,6 +917,12 @@ main(int argc, char **argv)
 	    usage (1);
 	else
 	    host = argv[host_index = optind++];
+    }
+    
+    if((tmp = strchr(host, '@')) != NULL) {
+	*tmp++ = '\0';
+	user = host;
+	host = tmp;
     }
 
     if (optind == argc) {
