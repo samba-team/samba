@@ -23,24 +23,23 @@
 #ifndef _RPC_SRVSVC_H /* _RPC_SRVSVC_H */
 #define _RPC_SRVSVC_H 
 
-
 /* srvsvc pipe */
-#define SRV_NETCONNENUM        0x08
-#define SRV_NETFILEENUM        0x09
-#define SRV_NETSESSENUM        0x0c
-#define SRV_NET_SHARE_ADD      0x0e
-#define SRV_NETSHAREENUM_ALL   0x0f
-#define SRV_NET_SHARE_GET_INFO 0x10
-#define SRV_NET_SHARE_SET_INFO 0x11
-#define SRV_NET_SHARE_DEL      0x12
-#define SRV_NET_SRV_GET_INFO   0x15
-#define SRV_NET_SRV_SET_INFO   0x16
-#define SRV_NET_DISK_ENUM      0x17
-#define SRV_NET_REMOTE_TOD     0x1c
-#define SRV_NET_NAME_VALIDATE  0x21
-#define SRV_NETSHAREENUM       0x24
-#define SRV_NETFILEQUERYSECDESC 0x27
-#define SRV_NETFILESETSECDESC	0x28
+#define SRV_NET_CONN_ENUM          0x08
+#define SRV_NET_FILE_ENUM          0x09
+#define SRV_NET_SESS_ENUM          0x0c
+#define SRV_NET_SHARE_ADD          0x0e
+#define SRV_NET_SHARE_ENUM_ALL     0x0f
+#define SRV_NET_SHARE_GET_INFO     0x10
+#define SRV_NET_SHARE_SET_INFO     0x11
+#define SRV_NET_SHARE_DEL          0x12
+#define SRV_NET_SRV_GET_INFO       0x15
+#define SRV_NET_SRV_SET_INFO       0x16
+#define SRV_NET_DISK_ENUM          0x17
+#define SRV_NET_REMOTE_TOD         0x1c
+#define SRV_NET_NAME_VALIDATE      0x21
+#define SRV_NET_SHARE_ENUM         0x24
+#define SRV_NET_FILE_QUERY_SECDESC 0x27
+#define SRV_NET_FILE_SET_SECDESC   0x28
 
 #define MAX_SERVER_DISK_ENTRIES 15
 
@@ -831,4 +830,5 @@ typedef struct r_net_file_set_secdesc
 {
 	WERROR status;
 } SRV_R_NET_FILE_SET_SECDESC;
+
 #endif /* _RPC_SRVSVC_H */
