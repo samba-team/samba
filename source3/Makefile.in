@@ -132,7 +132,8 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 
 QUOTAOBJS=@QUOTAOBJS@
 
-VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ bin/vfs_netatalk.@SHLIBEXT@ bin/vfs_fake_perms.@SHLIBEXT@
+VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_extd_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@a \
+	bin/vfs_netatalk.@SHLIBEXT@ bin/vfs_fake_perms.@SHLIBEXT@
 PDB_MODULES = @MODULE_MYSQL@ @MODULE_XML@
 MODULES = bin/developer.@SHLIBEXT@ 
 
@@ -500,6 +501,7 @@ NSSTEST_OBJ = torture/nsstest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
 
 VFS_AUDIT_OBJ = modules/vfs_audit.o
+VFS_EXTD_AUDIT_OBJ = modules/vfs_extd_audit.o
 VFS_RECYCLE_OBJ = modules/vfs_recycle.o
 VFS_NETATALK_OBJ = modules/vfs_netatalk.o
 VFS_FAKE_PERMS_OBJ = modules/vfs_fake_perms.o
@@ -957,6 +959,11 @@ bin/xml.@SHLIBEXT@: $(XML_OBJ)
 		@SONAMEFLAG@`basename $@`
 
 bin/vfs_audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
+		@SONAMEFLAG@`basename $@`
+
+bin/vfs_extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
 		@SONAMEFLAG@`basename $@`
