@@ -104,7 +104,11 @@ sub FieldFromPython($$)
 	    if ($e->{ARRAY_LEN}) {
 		$result .= ArrayFromPython($e, $prefix);
 	    } else {
-		$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj, \"$e->{NAME}\");\n";
+		if (util::has_property($e, "value")) {
+		    $result .= "\ts->$prefix$e->{NAME} = 0;\n";
+		} else {
+		    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj, \"$e->{NAME}\");\n";
+		}
 	    }
 	} else {
 	    $result .= "\ts->$prefix$e->{NAME} = talloc(mem_ctx, sizeof($e->{TYPE}));\n";
