@@ -1472,13 +1472,6 @@ exit(1);
   fi
 fi
 
-AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
-           samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)])
-if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
-    AC_DEFINE(HAVE_TRUNCATED_SALT)
-fi
-
 AC_CACHE_CHECK([for broken nisplus include files],samba_cv_BROKEN_NISPLUS_INCLUDE_FILES,[
 AC_TRY_COMPILE([#include <sys/acl.h>
 #if defined(HAVE_RPCSVC_NIS_H)
@@ -1650,7 +1643,7 @@ AC_ARG_WITH(smbmount,
 
 #################################################
 # check for a PAM password database
-
+with_pam_for_crypt=no
 AC_MSG_CHECKING(whether to use PAM password database)
 AC_ARG_WITH(pam,
 [  --with-pam     Include PAM password database support
@@ -1660,6 +1653,7 @@ AC_ARG_WITH(pam,
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_PAM)
     LIBS="$LIBS -lpam"
+    with_pam_for_crypt=yes
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1705,11 +1699,26 @@ AC_ARG_WITH(pam_smbpass,
 ###############################################
 # test for where we get crypt() from, but only
 # if not using PAM
-if test "$with_pam" != yes; then
+if test $with_pam_for_crypt = no; then
 AC_CHECK_FUNCS(crypt)
 if test x"$ac_cv_func_crypt" = x"no"; then
     AC_CHECK_LIB(crypt, crypt, [LIBS="$LIBS -lcrypt";
 	AC_DEFINE(HAVE_CRYPT)])
+fi
+fi
+
+##
+## moved after the check for -lcrypt in order to
+## ensure that the necessary libraries are included
+## check checking for truncated salt.  Wrapped by the
+## $with_pam_for_crypt variable as above   --jerry
+##
+if test $with_pam_for_crypt = no; then
+AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
+	samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)])
+if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
+	AC_DEFINE(HAVE_TRUNCATED_SALT)
 fi
 fi
 
