@@ -24,6 +24,7 @@
 #include "includes.h"
 
 #define WINS_LIST "wins.dat"
+#define WINS_VERSION 1
 
 extern int DEBUGLEVEL;
 extern struct in_addr ipzero;
@@ -158,6 +159,8 @@ BOOL initialise_wins(void)
     BOOL got_token;
     BOOL was_ip;
     int i;
+    unsigned hash;
+    int version;
 
     /* Read a line from the wins.dat file. Strips whitespace
        from the beginning and end of the line.
@@ -167,6 +170,17 @@ BOOL initialise_wins(void)
       
     if (*line == '#')
       continue;
+
+    if (strncmp(line,"VERSION ", 8) == 0) {
+	    if (sscanf(line,"VERSION %d %u", &version, &hash) != 2 ||
+		version != WINS_VERSION ||
+		hash != iface_hash()) {
+		    DEBUG(0,("Discarding invalid wins.dat file [%s]\n",line));
+		    fclose(fp);
+		    return True;
+	    }
+	    continue;
+    }
 
     ptr = line;
 
@@ -1561,6 +1575,8 @@ void wins_write_database(void)
   }
 
   DEBUG(4,("wins_write_database: Dump of WINS name list.\n"));
+
+  fprintf(fp,"VERSION %d %u\n", WINS_VERSION, iface_hash());
  
   for( namerec 
            = (struct name_record *)ubi_trFirst( wins_server_subnet->namelist );

@@ -350,6 +350,28 @@ static struct interface *iface_find(struct in_addr ip)
   return NULL;
 }
 
+
+/****************************************************************************
+this function provides a simple hash of the configured interfaces. It is
+used to detect a change in interfaces to tell us whether to discard
+the current wins.dat file.
+Note that the result is independent of the order of the interfaces
+  **************************************************************************/
+unsigned iface_hash(void)
+{
+	unsigned ret = 0;
+	struct interface *i;
+
+	for (i=local_interfaces;i;i=i->next) {
+		unsigned x1 = (unsigned)str_checksum(inet_ntoa(i->ip));
+		unsigned x2 = (unsigned)str_checksum(inet_ntoa(i->nmask));
+		ret ^= (x1 ^ x2);
+	}
+
+	return ret;
+}
+
+
 /* these 3 functions return the ip/bcast/nmask for the interface
    most appropriate for the given ip address. If they can't find
    an appropriate interface they return the requested field of the
