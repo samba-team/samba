@@ -1,3 +1,15 @@
+2000-06-21  Assar Westerlund  <assar@sics.se>
+
+	* resolve.h: add T_SIG, T_KEY
+	* resolve.c: add SIG and KEY
+	* Makefile.am (libroken_la_SOURCES): add environment.c and
+	write_pid.c
+
+	* write_pid.c: new file for writing a pid file.
+
+	* environment.c: new file with functionality for reading
+	/etc/environment.  From Ake Sandgren <ake@cs.umu.se>
+
 2000-06-12  Johan Danielsson  <joda@pdc.kth.se>
 
 	* strsep_copy.c: strsep, but with const stringp so returns string
