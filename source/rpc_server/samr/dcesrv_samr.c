@@ -427,7 +427,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	/* check if the group already exists */
-	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->domain_dn, 
+	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL, 
 				   "sAMAccountName",
 				   "(&(sAMAccountName=%s)(objectclass=group))",
 				   groupname);
@@ -573,7 +573,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* check if the user already exists */
-	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->domain_dn, 
+	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL, 
 				   "sAMAccountName", 
 				   "(&(sAMAccountName=%s)(objectclass=user))", username);
 	if (name != NULL) {
@@ -1711,6 +1711,40 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			SET_UINT  (msg, info21.country_code,      "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)    
 			SET_UINT  (msg, info21.code_page,         "codePage");
+#undef IFSET
+		break;
+
+	case 23:
+#define IFSET(bit) if (bit & r->in.info->info23.info.fields_present)
+		IFSET(SAMR_FIELD_NAME)         
+			SET_STRING(msg, info23.info.full_name.name,    "displayName");
+		IFSET(SAMR_FIELD_DESCRIPTION)  
+			SET_STRING(msg, info23.info.description.name,  "description");
+		IFSET(SAMR_FIELD_COMMENT)      
+			SET_STRING(msg, info23.info.comment.name,      "comment");
+		IFSET(SAMR_FIELD_LOGON_SCRIPT) 
+			SET_STRING(msg, info23.info.logon_script.name, "scriptPath");
+		IFSET(SAMR_FIELD_PROFILE)      
+			SET_STRING(msg, info23.info.profile.name,      "profilePath");
+		IFSET(SAMR_FIELD_WORKSTATION)  
+			SET_STRING(msg, info23.info.workstations.name, "userWorkstations");
+		IFSET(SAMR_FIELD_LOGON_HOURS)  
+			SET_LHOURS(msg, info23.info.logon_hours,       "logonHours");
+		IFSET(SAMR_FIELD_CALLBACK)     
+			SET_STRING(msg, info23.info.callback.name,     "userParameters");
+		IFSET(SAMR_FIELD_COUNTRY_CODE) 
+			SET_UINT  (msg, info23.info.country_code,      "countryCode");
+		IFSET(SAMR_FIELD_CODE_PAGE)    
+			SET_UINT  (msg, info23.info.code_page,         "codePage");
+		IFSET(SAMR_FIELD_PASSWORD) {
+			status = samr_set_password(dce_call,
+						   a_state->sam_ctx,
+						   a_state->account_dn,
+						   a_state->domain_state->domain_dn,
+						   mem_ctx, msg, 
+						   &r->in.info->info23.password);
+		}
+#undef IFSET
 		break;
 
 		/* the set password levels are handled separately */
@@ -1721,6 +1755,49 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 					   a_state->domain_state->domain_dn,
 					   mem_ctx, msg, 
 					   &r->in.info->info24.password);
+		break;
+
+	case 25:
+#define IFSET(bit) if (bit & r->in.info->info25.info.fields_present)
+		IFSET(SAMR_FIELD_NAME)         
+			SET_STRING(msg, info25.info.full_name.name,    "displayName");
+		IFSET(SAMR_FIELD_DESCRIPTION)  
+			SET_STRING(msg, info25.info.description.name,  "description");
+		IFSET(SAMR_FIELD_COMMENT)      
+			SET_STRING(msg, info25.info.comment.name,      "comment");
+		IFSET(SAMR_FIELD_LOGON_SCRIPT) 
+			SET_STRING(msg, info25.info.logon_script.name, "scriptPath");
+		IFSET(SAMR_FIELD_PROFILE)      
+			SET_STRING(msg, info25.info.profile.name,      "profilePath");
+		IFSET(SAMR_FIELD_WORKSTATION)  
+			SET_STRING(msg, info25.info.workstations.name, "userWorkstations");
+		IFSET(SAMR_FIELD_LOGON_HOURS)  
+			SET_LHOURS(msg, info25.info.logon_hours,       "logonHours");
+		IFSET(SAMR_FIELD_CALLBACK)     
+			SET_STRING(msg, info25.info.callback.name,     "userParameters");
+		IFSET(SAMR_FIELD_COUNTRY_CODE) 
+			SET_UINT  (msg, info25.info.country_code,      "countryCode");
+		IFSET(SAMR_FIELD_CODE_PAGE)    
+			SET_UINT  (msg, info25.info.code_page,         "codePage");
+		IFSET(SAMR_FIELD_PASSWORD) {
+			status = samr_set_password_ex(dce_call,
+						      a_state->sam_ctx,
+						      a_state->account_dn,
+						      a_state->domain_state->domain_dn,
+						      mem_ctx, msg, 
+						      &r->in.info->info25.password);
+		}
+#undef IFSET
+		break;
+
+		/* the set password levels are handled separately */
+	case 26:
+		status = samr_set_password_ex(dce_call,
+					      a_state->sam_ctx,
+					      a_state->account_dn,
+					      a_state->domain_state->domain_dn,
+					      mem_ctx, msg, 
+					      &r->in.info->info26.password);
 		break;
 		
 
