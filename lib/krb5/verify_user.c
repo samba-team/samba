@@ -51,7 +51,7 @@ krb5_verify_user(krb5_context context,
 
     krb5_error_code ret;
     krb5_creds cred;
-    krb5_principal client, server;
+    krb5_principal server;
     krb5_get_init_creds_opt opt;
     krb5_verify_init_creds_opt vopt;
     krb5_ccache id;
@@ -90,13 +90,9 @@ krb5_verify_user(krb5_context context,
     else
 	id = ccache;
     if(ret == 0){
-	ret = krb5_cc_get_principal(context, id, &client);
+	ret = krb5_cc_initialize(context, id, client);
 	if(ret == 0){
-	    ret = krb5_cc_initialize(context, id, client);
-	    if(ret == 0){
-		ret = krb5_cc_store_cred(context, id, &cred);
-	    }
-	    krb5_free_principal(context, client);
+	    ret = krb5_cc_store_cred(context, id, &cred);
 	}
 	if(ccache == NULL)
 	    krb5_cc_close(context, id);
