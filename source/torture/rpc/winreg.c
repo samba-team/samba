@@ -168,6 +168,8 @@ static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("OpenKey failed - %s\n", win_errstr(r.out.result));
+
 		return False;
 	}
 
@@ -263,9 +265,6 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			if (!test_OpenKey(
 				    p, mem_ctx, handle, r.out.out_name->name,
 				    &key_handle)) {
-				printf("OpenKey(%s) failed - %s\n",
-				       r.out.out_name->name, 
-				       win_errstr(r.out.result));
 			} else {
 				test_key(p, mem_ctx, &key_handle, depth + 1);
 			}
@@ -290,6 +289,41 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_QueryValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *valuename)
+{
+	struct winreg_QueryValue r;
+	NTSTATUS status;
+	struct EnumValueNameOut valname;
+	uint32 zero = 0;
+	uint32 offered = 0xfff;
+
+	valname.name = valuename;
+
+	printf("Testing QueryValue\n");
+
+	r.in.handle = handle;
+	r.in.value_name.name = valuename;
+	r.in.type = &zero;
+	r.in.unknown1 = 0;
+	r.in.unknown2 = 0;
+	r.in.offered = &offered;
+	r.in.value_len1 = &offered;
+	r.in.value_len2 = &zero;
+
+	status = dcerpc_winreg_QueryValue(p, mem_ctx, &r);
+	if(NT_STATUS_IS_ERR(status)) {
+		printf("QueryValue failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("QueryValue failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			   struct policy_handle *handle, int max_valnamelen, int max_valbufsize)
 {
@@ -298,6 +332,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct EnumValueIn buf_val;
 	uint32 type;
 	uint32 len1 = max_valbufsize, len2 = 0;
+	BOOL ret = True;
 
 	printf("testing EnumValue\n");
 
@@ -324,6 +359,10 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			return False;
 		}
 
+		if (W_ERROR_IS_OK(r.out.result)) {
+			ret &= test_QueryValue(p, mem_ctx, handle, r.out.name_out.name);
+		}
+
 		r.in.enum_index++;
 	} while (W_ERROR_IS_OK(r.out.result));
 
@@ -332,7 +371,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	return True;
+	return ret;
 }
 
 static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
