@@ -53,7 +53,7 @@ krb5_init_context(krb5_context *context)
     memset(p, 0, sizeof(krb5_context_data));
     krb5_init_ets(p);
     p->cc_ops = NULL;
-    if(getuid() != geteuid())
+    if(getuid() == geteuid() && getgid() == getegid())
 	config_file = getenv("KRB5_CONFIG");
     if (config_file != NULL)
 	krb5_config_parse_file (config_file, &p->cf);
@@ -74,6 +74,25 @@ krb5_init_context(krb5_context *context)
     if (val >= 0)
 	p->max_retries = val;
 
+    p->ktype_is_etype = krb5_config_get_bool(p, NULL, "libdefaults", 
+					     "ktype_is_etype", NULL);
+
+    {
+	char **etypes;
+	etypes = krb5_config_get_strings(p, NULL, "libdefaults", 
+					 "default_etypes", NULL);
+	if(etypes){
+	    int i, j, k;
+	    for(i = 0; etypes[i]; i++);
+	    p->etypes = malloc((i+1) * sizeof(*p->etypes));
+	    for(j = 0, k = 0; j < i; j++) {
+		if(krb5_string_to_etype(p, etypes[j], &p->etypes[k]) == 0)
+		    k++;
+	    }
+	    p->etypes[k] = 0;
+	    krb5_config_free_strings(etypes);
+	}
+    }
     krb5_set_default_realm(p, NULL);
     *context = p;
     return 0;
