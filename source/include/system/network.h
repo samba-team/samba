@@ -57,7 +57,7 @@
 #include <net/if.h>
 #endif
 
-#ifdef DEVELOPER
+#ifdef SOCKET_WRAPPER
 #define SOCKET_WRAPPER_REPLACE
 #include "lib/socket_wrapper/socket_wrapper.h"
 #endif

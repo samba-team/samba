@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef SAMBA_MAJOR_VERSION
+#ifdef _SAMBA_BUILD
 #include "includes.h"
 #include "system/network.h"
 #else
@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <sys/un.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -53,7 +54,7 @@
 #define real_close close
 #endif
 
-static struct sockaddr *memdup(const void *data, socklen_t len)
+static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 {
 	struct sockaddr *ret = (struct sockaddr *)malloc(len);
 	memcpy(ret, data, len);
@@ -83,6 +84,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 {
 	unsigned int prt;
 	const char *p;
+	int type;
 
 	if ((*len) < sizeof(struct sockaddr_in)) {
 		return 0;
@@ -93,7 +95,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 	p = strchr(un->sun_path, '/');
 	if (p) p++; else p = un->sun_path;
 
-	if(sscanf(p, "sock_ip_%u", &prt) == 1) 
+	if(sscanf(p, "sock_ip_%d_%u", &type, &prt) == 1) 
 	{
 		in->sin_port = htons(prt);
 	}
@@ -102,12 +104,11 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 	return 0;
 }
 
-static int convert_in_un(const struct sockaddr_in *in, struct sockaddr_un *un)
+static int convert_in_un(int type, const struct sockaddr_in *in, struct sockaddr_un *un)
 {
 	uint16_t prt = ntohs(in->sin_port);
 	/* FIXME: ENETUNREACH if in->sin_addr is not loopback */
-	un->sun_family = AF_LOCAL;
-	snprintf(un->sun_path, sizeof(un->sun_path), "%s/sock_ip_%u", getenv("SOCKET_WRAPPER_DIR"), prt);
+	snprintf(un->sun_path, sizeof(un->sun_path), "%s/sock_ip_%d_%u", getenv("SOCKET_WRAPPER_DIR"), type, prt);
 	return 0;
 }
 
@@ -122,15 +123,17 @@ static struct socket_info *find_socket_info(int fd)
 	return NULL;
 }
 
-static int sockaddr_convert_to_un(const struct sockaddr *in_addr, socklen_t in_len, 
+static int sockaddr_convert_to_un(const struct socket_info *si, const struct sockaddr *in_addr, socklen_t in_len, 
 					 struct sockaddr_un *out_addr)
 {
 	if (!out_addr)
 		return 0;
 
+	out_addr->sun_family = AF_LOCAL;
+
 	switch (in_addr->sa_family) {
 	case AF_INET:
-		return convert_in_un((const struct sockaddr_in *)in_addr, out_addr);
+		return convert_in_un(si->type, (const struct sockaddr_in *)in_addr, out_addr);
 	case AF_LOCAL:
 		memcpy(out_addr, in_addr, sizeof(*out_addr));
 		return 0;
@@ -142,7 +145,8 @@ static int sockaddr_convert_to_un(const struct sockaddr *in_addr, socklen_t in_l
 	return -1;
 }
 
-static int sockaddr_convert_from_un(const struct sockaddr_un *in_addr, 
+static int sockaddr_convert_from_un(const struct socket_info *si, 
+									const struct sockaddr_un *in_addr, 
 									int family,
 					 	 struct sockaddr *out_addr,
 						 socklen_t *out_len)
@@ -210,7 +214,7 @@ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 
 	fd = ret;
 
-	ret = sockaddr_convert_from_un(&un_addr, parent_si->domain, addr, addrlen);
+	ret = sockaddr_convert_from_un(parent_si, &un_addr, parent_si->domain, addr, addrlen);
 
 	if (ret < 0) return ret;
 
@@ -221,7 +225,7 @@ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 
 	if (addr && addrlen) {
 		child_si->myname_len = *addrlen;
-		child_si->myname = memdup(addr, *addrlen);
+		child_si->myname = sockaddr_dup(addr, *addrlen);
 	}
 
 	return fd;
@@ -237,7 +241,7 @@ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
 		return real_connect(s, serv_addr, addrlen);
 	}
 
-	ret = sockaddr_convert_to_un((const struct sockaddr *)serv_addr, addrlen, &un_addr);
+	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)serv_addr, addrlen, &un_addr);
 	if (ret < 0) return ret;
 
 	ret = real_connect(s, 
@@ -246,7 +250,7 @@ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
 
 	if (ret >= 0) {
 		si->peername_len = addrlen;
-		si->peername = memdup(serv_addr, addrlen);
+		si->peername = sockaddr_dup(serv_addr, addrlen);
 	}
 
 	return ret;
@@ -262,7 +266,7 @@ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 		return real_bind(s, myaddr, addrlen);
 	}
 
-	ret = sockaddr_convert_to_un((const struct sockaddr *)myaddr, addrlen, &un_addr);
+	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)myaddr, addrlen, &un_addr);
 	if (ret < 0) return ret;
 
 	unlink(un_addr.sun_path);
@@ -273,7 +277,7 @@ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 
 	if (ret >= 0) {
 		si->myname_len = addrlen;
-		si->myname = memdup(myaddr, addrlen);
+		si->myname = sockaddr_dup(myaddr, addrlen);
 	}
 
 	return ret;
@@ -321,12 +325,17 @@ int swrap_getsockopt(int s, int level, int optname, void *optval, socklen_t *opt
 		return real_getsockopt(s, level, optname, optval, optlen);
 	}
 
-	if (level != SOL_SOCKET) {
+	if (level == SOL_SOCKET) {
+		return real_getsockopt(s, level, optname, optval, optlen);
+	} 
+
+	switch (si->domain) {
+	case AF_LOCAL:
+		return real_getsockopt(s, level, optname, optval, optlen);
+	default:
 		errno = ENOPROTOOPT;
 		return -1;
 	}
-
-	return real_getsockopt(s, level, optname, optval, optlen);
 }
 
 int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, socklen_t optlen)
@@ -337,12 +346,23 @@ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, so
 		return real_setsockopt(s, level, optname, optval, optlen);
 	}
 
-	if (level != SOL_SOCKET) {
+	if (level == SOL_SOCKET) {
+		return real_setsockopt(s, level, optname, optval, optlen);
+	}
+
+	switch (si->domain) {
+	case AF_LOCAL:
+		return real_setsockopt(s, level, optname, optval, optlen);
+	case AF_INET:
+		/* Silence some warnings */
+#ifdef TCP_NODELAY
+		if (optname == TCP_NODELAY) 
+			return 0;
+#endif
+	default:
 		errno = ENOPROTOOPT;
 		return -1;
 	}
-
-	return real_setsockopt(s, level, optname, optval, optlen);
 }
 
 ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
@@ -360,7 +380,7 @@ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr 
 	if (ret < 0) 
 		return ret;
 
-	ret = sockaddr_convert_from_un(&un_addr, si->domain, from, fromlen);
+	ret = sockaddr_convert_from_un(si, &un_addr, si->domain, from, fromlen);
 	
 	return ret;
 }
@@ -375,7 +395,7 @@ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const str
 		return real_sendto(s, buf, len, flags, to, tolen);
 	}
 
-	ret = sockaddr_convert_to_un(to, tolen, &un_addr);
+	ret = sockaddr_convert_to_un(si, to, tolen, &un_addr);
 	if (ret < 0) 
 		return ret;
 
