@@ -63,6 +63,11 @@ static BOOL setsamfilepwpos(void *vp, SMB_BIG_UINT tok)
 	return setsmbpwpos(vp, tok);
 }
 
+static BOOL string_empty (const char *str)
+{
+  return str == NULL || *str == '\0';
+}
+
 /*************************************************************************
  Routine to return the next entry in the smbpasswd list.
  this function is a nice, messy combination of reading:
@@ -109,19 +114,19 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 	   didn't filled the values
 	*/ 
 
-	if (user->full_name == NULL)
+	if (string_empty (user->full_name))
 		user->full_name    = full_name;
-	if (user->home_dir == NULL)
+	if (string_empty (user->home_dir))
 		user->home_dir     = home_dir;
-	if (user->dir_drive == NULL)
+	if (string_empty (user->dir_drive))
 		user->dir_drive    = home_drive;
-	if (user->logon_script == NULL)
+	if (string_empty (user->logon_script))
 		user->logon_script = logon_script;
-	if (user->profile_path == NULL)
+	if (string_empty (user->profile_path))
 		user->profile_path = profile_path;
-	if (user->acct_desc == NULL)
+	if (string_empty (user->acct_desc))
 		user->acct_desc    = acct_desc;
-	if (user->workstations == NULL)
+	if (string_empty (user->workstations))
 		user->workstations = workstations;
 
 	user->unknown_str = NULL; /* don't know, yet! */
