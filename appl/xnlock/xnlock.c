@@ -574,7 +574,6 @@ verify_krb5(const char *password)
 				 NULL)) {
 	    CREDENTIALS c;
 	    krb5_creds mcred, cred;
-	    char krb4tkfile[MAXPATHLEN];
 
 	    krb5_make_principal(context, &mcred.server,
 				client->realm,
