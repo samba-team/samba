@@ -1,3 +1,7 @@
+1999-10-17  Assar Westerlund  <assar@sics.se>
+
+	* xdbm.h: reorder db includes
+
 1999-10-10  Assar Westerlund  <assar@sics.se>
 
 	* socket.c: const-ize and comment

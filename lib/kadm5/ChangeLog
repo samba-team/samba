@@ -1,3 +1,8 @@
+1999-10-14  Assar Westerlund  <assar@sics.se>
+
+	* set_keys.c (_kadm5_set_keys): ignore old keys when setting new
+ 	ones and always add 3 DES keys and one 3DES key
+
 1999-10-03  Assar Westerlund  <assar@sics.se>
 
 	* init_c.c (_kadm5_c_init_context): use `krb5_get_krb_admin_hst'.

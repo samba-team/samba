@@ -1,3 +1,17 @@
+1999-10-17  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: only test for db.h with using berkeley_db. remember
+ 	to link with LIB_tgetent when checking for el_init. add xnlock
+
+	* appl/Makefile.am: add xnlock
+
+	* kdc/kerberos5.c (find_etype): support null keys
+
+	* kdc/kerberos4.c (get_des_key): support null keys
+
+	* lib/krb5/crypto.c (krb5_get_wrapped_length): more correct
+ 	calculation
+
 1999-10-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/kinit.c (main): pass ccache to krb524_convert_creds_kdc
