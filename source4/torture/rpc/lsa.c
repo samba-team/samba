@@ -368,6 +368,42 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 }
 
 
+static BOOL test_EnumTrustDom(struct dcerpc_pipe *p, 
+			      TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle)
+{
+	struct lsa_EnumTrustDom r;
+	NTSTATUS status;
+	int i;
+	uint32 resume_handle = 0;
+
+	printf("\nTesting EnumTrustDom\n");
+
+	r.in.handle = handle;
+	r.in.resume_handle = &resume_handle;
+	r.in.num_entries = 1000;
+	r.out.resume_handle = &resume_handle;
+
+	status = dcerpc_lsa_EnumTrustDom(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumTrustDom failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (r.out.domains) {
+		printf("lookup gave %d domains (max_count=%d)\n", 
+		       r.out.domains->count,
+		       r.out.domains->max_count);
+		for (i=0;i<r.out.domains->count;i++) {
+			printf("name='%s' sid=%s\n", 
+			       r.out.domains->domains[i].name.name,
+			       lsa_sid_string_talloc(mem_ctx, r.out.domains->domains[i].sid));
+		}
+	}
+
+	return True;
+}
+
 static BOOL test_Delete(struct dcerpc_pipe *p, 
 		       TALLOC_CTX *mem_ctx, 
 		       struct policy_handle *handle)
@@ -445,6 +481,10 @@ BOOL torture_rpc_lsa(int dummy)
 	}
 
 	if (!test_EnumPrivs(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_EnumTrustDom(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 	

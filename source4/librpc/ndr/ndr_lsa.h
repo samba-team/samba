@@ -186,11 +186,27 @@ struct lsa_CreateTrustDom {
 
 };
 
+struct lsa_TrustInformation {
+	struct lsa_Name name;
+	struct dom_sid2 *sid;
+};
+
+struct lsa_RefDomainList {
+	uint32 count;
+	struct lsa_TrustInformation *domains;
+	uint32 max_count;
+};
+
 struct lsa_EnumTrustDom {
 	struct {
+		struct policy_handle *handle;
+		uint32 *resume_handle;
+		uint32 num_entries;
 	} in;
 
 	struct {
+		uint32 *resume_handle;
+		struct lsa_RefDomainList *domains;
 		NTSTATUS result;
 	} out;
 
@@ -205,17 +221,6 @@ struct lsa_TranslatedSid {
 struct lsa_TransSidArray {
 	uint32 count;
 	struct lsa_TranslatedSid *sids;
-};
-
-struct lsa_TrustInformation {
-	struct lsa_Name name;
-	struct dom_sid2 *sid;
-};
-
-struct lsa_RefDomainList {
-	uint32 count;
-	struct lsa_TrustInformation *domains;
-	uint32 max_count;
 };
 
 struct lsa_LookupNames {
