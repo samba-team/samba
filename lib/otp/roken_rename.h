@@ -63,5 +63,11 @@
 #ifndef HAVE_STRLWR
 #define strlwr _otp_strlwr
 #endif
+#ifndef HAVE_STRLCAT
+#define strlcat _otp_strlcat
+#endif
+#ifndef HAVE_STRLCPY
+#define strlcpy _otp_strlcpy
+#endif
 
 #endif /* __roken_rename_h__ */
