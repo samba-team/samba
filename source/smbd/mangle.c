@@ -81,13 +81,14 @@ static int ucs2_to_dos(char *dest, const smb_ucs2_t *src, int dest_len)
 	return ret;
 }
 
-/* trasform in a string that contain only valid chars for win filenames */
+/* trasform in a string that contain only valid chars for win filenames,
+ not including a '.' */
 static void strvalid(smb_ucs2_t *src)
 {
 	if (!src || !*src) return;
 
 	while (*src) {
-		if (!isvalid83_w(*src)) *src = UCS2_CHAR('_');
+		if (!isvalid83_w(*src) || *src == UCS2_CHAR('.')) *src = UCS2_CHAR('_');
 		src++;
 	}
 }
@@ -110,13 +111,12 @@ static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **pr
 	}
 	if ((p = strrchr_w(*prefix, UCS2_CHAR('.'))))
 	{
-		p++;
-		ext_len = strlen_w(p);
-		if ((ext_len > 0) && (ext_len < 4)
-			&& (NT_STATUS_IS_OK(has_valid_chars(p)))) /* check extension */
+		ext_len = strlen_w(p+1);
+		if ((ext_len > 0) && (ext_len < 4) && (p != *prefix) &&
+		    (NT_STATUS_IS_OK(has_valid_chars(p+1)))) /* check extension */
 		{
-			*(p - 1) = 0;
-			*extension = strdup_w(p);
+			*p = 0;
+			*extension = strdup_w(p+1);
 			if (!*extension)
 			{
 				DEBUG(0,("mangle_get_prefix: out of memory!\n"));
@@ -584,6 +584,8 @@ NTSTATUS is_8_3_w(const smb_ucs2_t *fname)
 
 	if (NT_STATUS_IS_ERR(mangle_get_prefix(fname, &pref, &ext))) goto done;
 	plen = strlen_w(pref);
+
+	if (strchr_wa(pref, '.')) goto done;
 	if (plen < 1 || plen > 8) goto done;
 	if (ext) if (strlen_w(ext) > 3) goto done;
 
@@ -623,6 +625,8 @@ NTSTATUS is_valid_name(const smb_ucs2_t *fname)
 	if (!fname || !*fname) return NT_STATUS_INVALID_PARAMETER;
 
 	DEBUG(10,("is_valid_name: testing\n")); /* [%s]\n", s)); */
+
+	if (*fname == UCS2_CHAR('.')) return NT_STATUS_UNSUCCESSFUL;
 	
 	ret = has_valid_chars(fname);
 	if (NT_STATUS_IS_ERR(ret)) return ret;
