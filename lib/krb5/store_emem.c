@@ -47,7 +47,7 @@ typedef struct emem_storage{
     unsigned char *ptr;
 }emem_storage;
 
-static size_t
+static ssize_t
 emem_fetch(krb5_storage *sp, void *data, size_t size)
 {
     emem_storage *s = (emem_storage*)sp->data;
@@ -58,7 +58,7 @@ emem_fetch(krb5_storage *sp, void *data, size_t size)
     return size;
 }
 
-static size_t
+static ssize_t
 emem_store(krb5_storage *sp, void *data, size_t size)
 {
     emem_storage *s = (emem_storage*)sp->data;

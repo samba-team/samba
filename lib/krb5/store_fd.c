@@ -46,13 +46,13 @@ typedef struct fd_storage{
 
 #define FD(S) (((fd_storage*)(S)->data)->fd)
 
-static size_t
+static ssize_t
 fd_fetch(krb5_storage *sp, void *data, size_t size)
 {
     return read(FD(sp), data, size);
 }
 
-static size_t
+static ssize_t
 fd_store(krb5_storage *sp, void *data, size_t size)
 {
     return write(FD(sp), data, size);

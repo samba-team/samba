@@ -46,7 +46,7 @@ typedef struct mem_storage{
     unsigned char *ptr;
 }mem_storage;
 
-static size_t
+static ssize_t
 mem_fetch(krb5_storage *sp, void *data, size_t size)
 {
     mem_storage *s = (mem_storage*)sp->data;
@@ -57,7 +57,7 @@ mem_fetch(krb5_storage *sp, void *data, size_t size)
     return size;
 }
 
-static size_t
+static ssize_t
 mem_store(krb5_storage *sp, void *data, size_t size)
 {
     mem_storage *s = (mem_storage*)sp->data;
