@@ -764,6 +764,15 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 BOOL cli_receive_trans(struct cli_state *cli,int trans,
                               char **param, int *param_len,
                               char **data, int *data_len);
+BOOL cli_send_nt_trans(struct cli_state *cli, 
+		       int function, 
+		       int flags,
+		       uint16 *setup, int lsetup, int msetup,
+		       char *param, int lparam, int mparam,
+		       char *data, int ldata, int mdata);
+BOOL cli_receive_nt_trans(struct cli_state *cli,
+			  char **param, int *param_len,
+			  char **data, int *data_len);
 
 /*The following definitions come from  libsmb/credentials.c  */
 
@@ -2214,10 +2223,11 @@ void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
                            uint32 status);
 BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
 BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth);
-void init_lsa_sid_enum(LSA_SID_ENUM *sen, int num_entries, DOM_SID **sids);
-void init_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
-				int num_sids, DOM_SID **sids,
-				uint16 level);
+void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen, 
+		       int num_entries, DOM_SID **sids);
+void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l, 
+			POLICY_HND *hnd, int num_sids, DOM_SID **sids,
+			uint16 level);
 BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
 BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
 void init_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,

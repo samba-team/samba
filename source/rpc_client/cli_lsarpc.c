@@ -133,7 +133,7 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 	DEBUG(4,("LSA Lookup SIDs\n"));
 
 	/* store the parameters */
-	init_q_lookup_sids(&q_l, hnd, num_sids, sids, 1);
+	init_q_lookup_sids(cli->mem_ctx, &q_l, hnd, num_sids, sids, 1);
 
 	/* turn parameters into data stream */
 	if(!lsa_io_q_lookup_sids("", &q_l, &buf, 0)) {
