@@ -25,3 +25,5 @@ kf		2110/tcp			# forward credentials
 kx		2111/tcp			# X over kerberos
 kip		2112/tcp			# IP over kerberos
 kauth		2120/tcp			# Remote kauth
+iprop		2121/tcp			# incremental propagation
+krb524		4444/udp			# MIT 5->4
