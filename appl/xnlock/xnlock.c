@@ -964,7 +964,7 @@ main (int argc, char **argv)
       strlcpy(user_cpass, pw->pw_passwd, sizeof(user_cpass));
       setuid(uid);
       if (uid != 0 && setuid(0) != -1) {
-	fprintf(stderr, "Failed to drop privileges!");
+	fprintf(stderr, "Failed to drop privileges!\n");
 	exit(1);
       }
       /* Now we're no longer running setuid root. */
