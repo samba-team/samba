@@ -35,6 +35,8 @@
 #include "includes.h"
 #include "smb.h"
 
+extern BOOL AllowDebugChange;
+
 /* these live in util.c */
 extern FILE *dbf;
 
@@ -218,6 +220,7 @@ int main(int argc, char *argv[])
 
   dbf = stdout;
   DEBUGLEVEL = 2;
+  AllowDebugChange = False;
 
   printf("Load smb config files from %s\n",configfile);
 

@@ -22,6 +22,7 @@
 #include "includes.h"
 
 extern pstring global_myname;
+extern BOOL AllowDebugChange;
 
 /*
  * Next two lines needed for SunOS and don't
@@ -978,6 +979,8 @@ static int process_nonroot(int argc, char *argv[])
 int main(int argc, char **argv)
 {	
 	static pstring servicesf = CONFIGFILE;
+
+	AllowDebugChange = False;
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
 	set_auth_parameters(argc, argv);
