@@ -174,7 +174,6 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	struct in_addr dc_ip;
 	int i;
 	BOOL retry = True;
-
 	ZERO_STRUCT(dc_ip);
 
 	fstrcpy(new_conn->domain, domain);
@@ -232,6 +231,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 
 		if (!secrets_named_mutex(new_conn->controller, WINBIND_SERVER_MUTEX_WAIT_TIME, &new_conn->mutex_ref_count)) {
 			DEBUG(0,("cm_open_connection: mutex grab failed for %s\n", new_conn->controller));
+			result = NT_STATUS_POSSIBLE_DEADLOCK;
 			continue;
 		}
 
@@ -242,6 +242,8 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		
 		if (NT_STATUS_IS_OK(result))
 			break;
+
+		secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
 	}
 
 	SAFE_FREE(ipc_username);
@@ -249,7 +251,8 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	SAFE_FREE(ipc_password);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
+		if (new_conn->mutex_ref_count > 0)
+			secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
 		add_failed_connection_entry(new_conn, result);
 		return result;
 	}
@@ -264,14 +267,15 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		 * if the PDC is an NT4 box.   but since there is only one 2k 
 		 * specific UUID right now, i'm not going to bother.  --jerry
 		 */
-		secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
+		if (new_conn->mutex_ref_count > 0)
+			secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
 		if ( !is_win2k_pipe(pipe_index) )
 			add_failed_connection_entry(new_conn, result);
 		cli_shutdown(new_conn->cli);
 		return result;
 	}
 
-	if (!keep_mutex)
+	if ((new_conn->mutex_ref_count > 0) && !keep_mutex)
 		secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
 	return NT_STATUS_OK;
 }
