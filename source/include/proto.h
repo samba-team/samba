@@ -149,6 +149,7 @@ char *lp_socket_address(void);
 char *lp_nis_home_map_name(void);
 BOOL lp_wins_support(void);
 BOOL lp_wins_proxy(void);
+BOOL lp_local_master(void);
 BOOL lp_domain_master(void);
 BOOL lp_domain_logons(void);
 BOOL lp_preferred_master(void);
@@ -176,6 +177,8 @@ int lp_maxpacket(void);
 int lp_keepalive(void);
 int lp_passwordlevel(void);
 int lp_readsize(void);
+int lp_shmem_size(void);
+int lp_shmem_hash_size(void);
 int lp_deadtime(void);
 int lp_maxprotocol(void);
 int lp_security(void);
@@ -266,12 +269,12 @@ BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ec
 BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
 BOOL start_share_mode_mgmt(void);
 BOOL stop_share_mode_mgmt(void);
-int get_share_mode_by_fnum(int cnum,int fnum,int *pid);
-int get_share_mode_byname(int cnum,char *fname,int *pid);
-int get_share_mode(int cnum,struct stat *sbuf,int *pid);
-void del_share_mode(int fnum);
-BOOL set_share_mode(int fnum,int mode);
-void clean_share_modes(void);
+BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *);
+BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token);
+int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
+                    min_share_mode_entry **old_shares);
+void del_share_mode(share_lock_token token, int fnum);
+BOOL set_share_mode(share_lock_token token, int fnum);
 
 /*The following definitions come from  mangle.c  */
 
@@ -309,7 +312,7 @@ void do_announce_host(int command,
 		char *to_name  , int to_type  , struct in_addr to_ip,
 		time_t announce_interval,
 		char *server_name, int server_type, char *server_comment);
-void remove_my_servers(void);
+void announce_my_servers_removed(void);
 void announce_server(struct subnet_record *d, struct work_record *work,
 		     char *name, char *comment, time_t ttl, int server_type);
 void announce_host(time_t t);
@@ -394,7 +397,7 @@ void expire_servers(time_t t);
 struct subnet_record *find_subnet(struct in_addr bcast_ip);
 struct subnet_record *find_req_subnet(struct in_addr ip, BOOL bcast);
 struct subnet_record *find_subnet_all(struct in_addr bcast_ip);
-void add_subnet_interfaces(void);
+void add_workgroup_to_subnet( struct subnet_record *d, char *group);
 void add_my_subnets(char *group);
 void write_browse_list(time_t t);
 
@@ -406,7 +409,6 @@ struct work_record *remove_workgroup(struct subnet_record *d,
 struct work_record *find_workgroupstruct(struct subnet_record *d, 
 					 fstring name, BOOL add);
 void dump_workgroups(void);
-int check_work_servertype(const char *work_name, int type_mask);
 
 /*The following definitions come from  nameelect.c  */
 
@@ -724,6 +726,11 @@ BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off);
 void * smb_shm_offset2addr(smb_shm_offset_t offset);
 BOOL smb_shm_lock(void);
 BOOL smb_shm_unlock(void);
+smb_shm_offset_t smb_shm_alloc(int size);
+smb_shm_offset_t smb_shm_addr2offset(void *addr);
+smb_shm_offset_t smb_shm_get_userdef_off(void);
+BOOL smb_shm_lock_hash_entry( unsigned int entry);
+BOOL smb_shm_unlock_hash_entry( unsigned int entry );
 BOOL smb_shm_get_usage(int *bytes_free,
 		   int *bytes_used,
 		   int *bytes_overhead);

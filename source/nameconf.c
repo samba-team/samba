@@ -35,6 +35,8 @@
 #include "includes.h"
 extern int DEBUGLEVEL;
 
+extern fstring myworkgroup;
+
 #if 0
 struct smbbrowse_parms
     {
@@ -104,7 +106,7 @@ static struct smbbrowse *new_workgroup(struct smbbrowse *model,
     StrnCpy(new->work_name, workgroup_name, 15);
     strupper(new->work_name);
         
-	if (strequal(lp_workgroup(), workgroup_name))
+	if (strequal(myworkgroup, workgroup_name))
       StrnCpy(new->browsing_alias, default_name, 15);
     else
       sprintf(new->browsing_alias, "%.14s%x", default_name, nexttoken);
@@ -289,7 +291,7 @@ static void default_smbbrowse_conf(char *default_name)
     struct smbbrowse *w;
     
     /* The workgroup specified in smb.conf */
-    w = new_workgroup((struct smbbrowse *)NULL, lp_workgroup(), default_name);
+    w = new_workgroup((struct smbbrowse *)NULL, myworkgroup, default_name);
     w->should_local_master = lp_preferred_master();
     w->should_domain_master = lp_domain_master();
     w->should_workgroup_member = True;

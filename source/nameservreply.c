@@ -528,7 +528,8 @@ void reply_name_query(struct packet_struct *p)
     }
   }
 
-  DEBUG(3,("Name query "));
+  DEBUG(3,("Name query from %s for name %s<0x%x>\n", 
+                  inet_ntoa(p->ip), question->name, question->name_type));
   
   if (search == 0)
   {

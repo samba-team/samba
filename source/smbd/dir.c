@@ -433,6 +433,7 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
   BOOL isrootdir;
   pstring filename;
   BOOL matched;
+  BOOL needslash;
 
   *path = *pathreal = *filename = 0;
 
@@ -440,6 +441,9 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
 	       strequal(Connections[cnum].dirpath,".") ||
 	       strequal(Connections[cnum].dirpath,"/"));
   
+  needslash = 
+        ( Connections[cnum].dirpath[strlen(Connections[cnum].dirpath) -1] != '/');
+
   if (!Connections[cnum].dirptr)
     return(False);
   
@@ -467,7 +471,8 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
 	  strcpy(fname,filename);
 	  *path = 0;
 	  strcpy(path,Connections[cnum].dirpath);
-	  strcat(path,"/");
+          if(needslash)
+  	    strcat(path,"/");
 	  strcpy(pathreal,path);
 	  strcat(path,fname);
 	  strcat(pathreal,dname);

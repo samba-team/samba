@@ -37,6 +37,7 @@ extern int DEBUGLEVEL;
 
 extern pstring scope;
 extern pstring myname;
+extern fstring myworkgroup;
 extern struct in_addr ipzero;
 extern struct in_addr wins_ip;
 
@@ -141,6 +142,9 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
     }
     else
     {
+      DEBUG(4,("add_my_name_entry registering name %s with WINS server.\n",
+                name));
+      
       /* a time-to-live allows us to refresh this name with the WINS server. */
   	  queue_netbios_pkt_wins(ClientNMB,
 				 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
@@ -179,33 +183,32 @@ void add_domain_names(time_t t)
 
   for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
   {
-    work = find_workgroupstruct(d, lp_workgroup(), False);
+    work = find_workgroupstruct(d, myworkgroup, False);
     if (lp_domain_logons() && work && work->log_state == LOGON_NONE)
     {
-      make_nmb_name(&n,lp_workgroup(),0x1c,scope);
+      make_nmb_name(&n,myworkgroup,0x1c,scope);
       if (!find_name(d->namelist, &n, FIND_SELF))
       {
         /* logon servers are group names - we don't expect this to fail. */
         DEBUG(0,("%s attempting to become logon server for %s %s\n",
-             timestring(), lp_workgroup(), inet_ntoa(d->bcast_ip)));
+             timestring(), myworkgroup, inet_ntoa(d->bcast_ip)));
         become_logon_server(d, work);
       }
     }
   }
 
-  if(wins_subnet != 0)
-    work = find_workgroupstruct(wins_subnet, lp_workgroup(), False);
+ for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
+ { 
+   work = find_workgroupstruct(d, myworkgroup, True);
 
-  if (lp_domain_master() && work && work->dom_state == DOMAIN_NONE)
-    {
-
-      DEBUG(0,("add_domain_names:Checking for domain master on workgroup %s\n", lp_workgroup()));
-
-      make_nmb_name(&n,lp_workgroup(),0x1b,scope);
-      if (!find_name(wins_subnet->namelist, &n, FIND_SELF))
+   if (lp_domain_master() && work && work->dom_state == DOMAIN_NONE)
+     {
+      make_nmb_name(&n,myworkgroup,0x1b,scope);
+      if (!find_name(d->namelist, &n, FIND_SELF))
       {
-        DEBUG(0,("add_domain_names: attempting to become domain master browser on workgroup %s\n",
-                  lp_workgroup()));
+        DEBUG(0,("%s add_domain_names: attempting to become domain master \
+browser on workgroup %s %s\n",
+                  timestring(), myworkgroup, inet_ntoa(d->bcast_ip)));
 
         if (lp_wins_support())
         {
@@ -216,8 +219,8 @@ void add_domain_names(time_t t)
            */
                
           DEBUG(1,("%s initiating becoming domain master for %s\n",
-          		timestring(), lp_workgroup()));
-          become_domain_master(wins_subnet, work);
+          		timestring(), myworkgroup));
+          become_domain_master(d, work);
         }
         else
         {
@@ -228,15 +231,17 @@ void add_domain_names(time_t t)
              NetBIOS name 0x1b.
            */
 
-          DEBUG(0,("add_domain_names:querying WINS for domain master on workgroup %s\n", lp_workgroup()));
+          DEBUG(0,("add_domain_names:querying WINS for domain master \
+on workgroup %s\n", myworkgroup));
 
           queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,NAME_QUERY_DOMAIN,
-          			lp_workgroup(), 0x1b,
+          			myworkgroup, 0x1b,
           			0, 0,0,NULL,NULL,
           			False, False, ipzero, ipzero);
         }
       }
     }
+  }
 }
 
 
@@ -255,7 +260,6 @@ void add_my_names(void)
   for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
   {
     BOOL wins = (lp_wins_support() && (d == wins_subnet));
-    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
 
     add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE);
     add_my_name_entry(d, myname,0x03,nb_type|NB_ACTIVE);

@@ -40,6 +40,7 @@ extern struct in_addr wins_ip;
 extern struct in_addr ipzero;
 
 extern pstring myname;
+extern fstring myworkgroup;
 
 BOOL updatedlists = True;
 int updatecount = 0;
@@ -52,14 +53,9 @@ struct subnet_record *subnetlist = NULL;
 
 /* WINS subnet - keep this separate so enumeration code doesn't
    run onto it by mistake. */
-struct subnet_record *wins_subnet = 0;
+struct subnet_record *wins_subnet = NULL;
 
 extern uint16 nb_type; /* samba's NetBIOS name type */
-
-/* Forward references. */
-static struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
-				       struct in_addr mask_ip,
-				       char *name, BOOL add, BOOL lmhosts);
 
 /****************************************************************************
   add a domain into the list
@@ -129,6 +125,7 @@ struct subnet_record *find_subnet_all(struct in_addr bcast_ip)
   struct subnet_record *d = find_subnet(bcast_ip);
   if(!d)
     return wins_subnet;
+  return d;
 }
 
 /****************************************************************************
@@ -156,121 +153,122 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr
   return d;
 }
 
-
-/****************************************************************************
-  add the remote interfaces from lp_interfaces()
-  to the netbios subnet database.
-  ****************************************************************************/
-void add_subnet_interfaces(void)
-{
-  struct interface *i;
-
-  /* loop on all local interfaces */
-  for (i = local_interfaces; i; i = i->next)
-    {
-      /* add the interface into our subnet database */
-      if (!find_subnet(i->bcast))
-	{
-	  make_subnet(i->bcast,i->nmask, True);
-	}
-    }
-
-  /* add the pseudo-ip interface for WINS: 255.255.255.255 */
-  if (lp_wins_support() || (*lp_wins_server()))
-    {
-      struct in_addr wins_bcast = wins_ip;
-      struct in_addr wins_nmask = ipzero;
-      wins_subnet = make_subnet(wins_bcast, wins_nmask, False);
-    }
-}
-
-
-
-/****************************************************************************
-  add the default workgroup into the subnet lists.
-  **************************************************************************/
-void add_my_subnets(char *group)
-{
-  struct interface *i;
-
-  /* add or find domain on our local subnet, in the default workgroup */
-  
-  if (*group == '*') return;
-
-	/* the coding choice is up to you, andrew: i can see why you don't want
-       global access to the local_interfaces structure: so it can't get
-       messed up! */
-    for (i = local_interfaces; i; i = i->next)
-    {
-      add_subnet_entry(i->bcast,i->nmask,group, True, False);
-    }
-
-    /* If we are setup as a domain master browser, and are using
-       WINS, then we must add the workgroup to the WINS subnet. This
-       is used as a place to keep collated server lists. */
-
-    if(lp_domain_master() && (lp_wins_support() || lp_wins_server()))
-      if(find_workgroupstruct(wins_subnet, group, True) == 0)
-        DEBUG(0, ("add_my_subnets: Failed to add workgroup %s to \
-WINS subnet.\n", group));
-      else
-        DEBUG(3,("add_my_subnets: Added workgroup %s to WINS subnet.\n",
-                 group));
-}
-
-
 /****************************************************************************
   add a domain entry. creates a workgroup, if necessary, and adds the domain
   to the named a workgroup.
   ****************************************************************************/
 static struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
-				       struct in_addr mask_ip,
-				       char *name, BOOL add, BOOL lmhosts)
+				       struct in_addr mask_ip, char *name, 
+                                       BOOL create_subnets, BOOL add)
 {
-  struct subnet_record *d;
-
-  /* XXXX andrew: struct in_addr ip appears not to be referenced at all except
-     in the DEBUG comment. i assume that the DEBUG comment below actually
-     intends to refer to bcast_ip? i don't know.
-
-  struct in_addr ip = wins_ip;
-
-  */
+  struct subnet_record *d = NULL;
 
   if (zero_ip(bcast_ip)) 
     bcast_ip = *iface_bcast(bcast_ip);
   
-  /* add the domain into our domain database */
-  /* Note that we never add into the WINS subnet as add_subnet_entry
-     is only called to add our local interfaces. */
-  if ((d = find_subnet(bcast_ip)) ||
-      (d = make_subnet(bcast_ip, mask_ip, True)))
-    {
-      struct work_record *w = find_workgroupstruct(d, name, add);
-      
-      if (!w) return NULL;
+  /* Note that we should also add into the WINS subnet as add_subnet_entry
+    should be called to add NetBIOS names and server entries on all
+    interfaces, including the WINS interface
+   */
 
-      /* add WORKGROUP(1e) and WORKGROUP(00) entries into name database
-	 or register with WINS server, if it's our workgroup */
-      if (strequal(lp_workgroup(), name))
-	{
-	  add_my_name_entry(d,name,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
-	  add_my_name_entry(d,name,0x0 ,nb_type|NB_ACTIVE|NB_GROUP);
-	}
-      /* add samba server name to workgroup list. don't add
-         lmhosts server entries to local interfaces */
-      if (strequal(lp_workgroup(), name))
-      {
-	add_server_entry(d,w,myname,w->ServerType,0,lp_serverstring(),True);
-        DEBUG(3,("Added server name entry %s at %s\n",
-                  name,inet_ntoa(bcast_ip)));
-      }
-      
-      return d;
+  if(create_subnets == True)
+  {
+    /* Create new subnets. */
+    if((d = make_subnet(bcast_ip, mask_ip, add)) == NULL)
+    {
+      DEBUG(0,("add_subnet_entry: Unable to create subnet %s\n",
+               inet_ntoa(bcast_ip) ));
+      return NULL;
     }
-  return NULL;
+    return d;
+  }
+  if(ip_equal(bcast_ip, wins_ip))
+    return wins_subnet;
+  return find_subnet(bcast_ip);
 }
 
+/****************************************************************************
+ Add a workgroup into a subnet, and if it's our primary workgroup,
+ add the required names to it.
+**************************************************************************/
+
+void add_workgroup_to_subnet( struct subnet_record *d, char *group)
+{
+  struct work_record *w = NULL;
+
+  DEBUG(5,("add_workgroup_to_subnet: Adding workgroup %s to subnet %s\n",
+            group, inet_ntoa(d->bcast_ip)));
+
+  /* This next statement creates the workgroup struct if it doesn't
+     already exist. 
+   */
+  if((w = find_workgroupstruct(d, group, True)) == NULL)
+  {
+    DEBUG(0,("add_workgroup_to_subnet: Unable to add workgroup %s to subnet %s\n",
+              group, inet_ntoa(d->bcast_ip) ));
+    return;
+  }
+
+  /* add WORKGROUP(1e) and WORKGROUP(00) entries into name database
+     or register with WINS server, if it's our workgroup 
+   */
+  if (strequal(myworkgroup, group))
+  {
+    add_my_name_entry(d,group,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
+    add_my_name_entry(d,group,0x0 ,nb_type|NB_ACTIVE|NB_GROUP);
+    /* add samba server name to workgroup list. */
+    add_server_entry(d,w,myname,w->ServerType,0,lp_serverstring(),True);
+    DEBUG(3,("add_workgroup_to_subnet: Added server name entry %s to subnet %s\n",
+                myname, inet_ntoa(d->bcast_ip)));
+  }
+}
+
+/****************************************************************************
+  create subnet / workgroup / server entries
+     
+  - add or create the subnet lists
+  - add or create the workgroup entries in each subnet entry
+  - register appropriate NetBIOS names for the workgroup entries
+     
+**************************************************************************/
+void add_my_subnets(char *group)
+{    
+  static BOOL create_subnets = True;
+  struct subnet_record *d = NULL;
+  struct interface *i = NULL;
+
+  if (*group == '*') return;
+
+  /* Create subnets from all the local interfaces and thread them onto
+     the linked list. 
+   */
+  for (i = local_interfaces; i; i = i->next)
+  {
+    add_subnet_entry(i->bcast,i->nmask,group, create_subnets, True);
+  }
+
+  /* If we are using WINS, then we must add the workgroup to the WINS
+     subnet. This is used as a place to keep collated server lists.
+   */
+
+  /* Create the WINS subnet if we are using WINS - but don't thread it
+     onto the linked subnet list. 
+   */    
+  if (lp_wins_support() || lp_wins_server())
+  {
+    struct in_addr wins_nmask = ipzero;
+    wins_subnet = add_subnet_entry(wins_ip, wins_nmask, group, create_subnets, False);
+  }
+
+  /* Ensure we only create the subnets once. */
+  create_subnets = False;
+
+  /* Now we have created all the subnets - we can add the names
+     that make us a client member in the workgroup.
+   */
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
+    add_workgroup_to_subnet(d, group);
+}
 
 /*******************************************************************
   write out browse.dat

@@ -153,11 +153,13 @@ struct name_record *find_name(struct name_record *n,
 			{
 				continue;
 	  		}
-			DEBUG(9,("find_name: found name %s\n", name->name));
+			DEBUG(9,("find_name: found name %s(%02x)\n", 
+                                  name->name, name->name_type));
 			return ret;
 		}
 	}
-    DEBUG(9,("find_name: name %s NOT FOUND\n", name->name));
+    DEBUG(9,("find_name: name %s(%02x) NOT FOUND\n", name->name, 
+              name->name_type));
     return NULL;
 }
 
@@ -528,7 +530,6 @@ struct name_record *dns_name_search(struct nmb_name *question, int Time)
 {
 	int name_type = question->name_type;
 	char *qname = question->name;
-	char *r;
 	BOOL dns_type = (name_type == 0x20 || name_type == 0);
 	struct in_addr dns_ip;
 

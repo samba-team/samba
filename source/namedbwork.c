@@ -40,6 +40,8 @@ extern struct subnet_record *subnetlist;
 
 extern struct in_addr wins_ip;
 
+extern fstring myworkgroup;
+
 int workgroup_count = 0; /* unique index key: one for each workgroup */
 
 
@@ -192,8 +194,8 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
   if ((work = make_workgroup(name)))
     {
       if (!ip_equal(d->bcast_ip, wins_ip) &&
-	  lp_preferred_master() &&
-	  strequal(lp_workgroup(), name))
+	  lp_preferred_master() && lp_local_master() &&
+	  strequal(myworkgroup, name))
 	{
 	  DEBUG(3, ("preferred master startup for %s\n", work->work_group));
 	  work->needelection = True;

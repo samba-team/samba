@@ -263,13 +263,13 @@ struct response_record *queue_netbios_pkt_wins(
   if ((!lp_wins_support()) && (*lp_wins_server()))
     {
       /* samba is not a WINS server, and we are using a WINS server */
-      struct in_addr wins_ip;
-      wins_ip = *interpret_addr2(lp_wins_server());
+      struct in_addr real_wins_ip;
+      real_wins_ip = *interpret_addr2(lp_wins_server());
 
-      if (!zero_ip(wins_ip))
+      if (!zero_ip(real_wins_ip))
 	{
 	  bcast = False;
-	  send_ip = wins_ip;
+	  send_ip = real_wins_ip;
 	}
       else
 	{

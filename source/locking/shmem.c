@@ -23,7 +23,7 @@
 #include "includes.h"
 
 
-#if FAST_SHARE_MODES
+#ifdef FAST_SHARE_MODES
 
 
 extern int DEBUGLEVEL;
@@ -32,7 +32,7 @@ extern int DEBUGLEVEL;
 #define SMB_SHM_MAGIC 0x53484100
 /* = "SHM" in hex */
 
-#define SMB_SHM_VERSION 1
+#define SMB_SHM_VERSION 2
 
 /* WARNING : offsets are used because mmap() does not guarantee that all processes have the 
    shared memory mapped to the same address */
@@ -73,15 +73,109 @@ static pstring smb_shm_processreg_name = "";
 static struct SmbShmHeader *smb_shm_header_p = (struct SmbShmHeader *)0;
 static int smb_shm_times_locked = 0;
 
+static BOOL smb_shm_initialize_called = False;
+
+static BOOL smb_shm_global_lock(void)
+{
+   if (smb_shm_fd < 0)
+   {
+      DEBUG(0,("ERROR smb_shm_global_lock : bad smb_shm_fd (%d)\n",smb_shm_fd));
+      return False;
+   }
+   
+   smb_shm_times_locked++;
+   
+   if(smb_shm_times_locked > 1)
+   {
+      DEBUG(2,("smb_shm_global_lock : locked %d times\n",smb_shm_times_locked));
+      return True;
+   }
+   
+   /* Do an exclusive wait lock on the first byte of the file */
+   if (fcntl_lock(smb_shm_fd, F_SETLKW, 0, 1, F_WRLCK) == False)
+   {
+      DEBUG(0,("ERROR smb_shm_global_lock : fcntl_lock failed with code %d\n",errno));
+      smb_shm_times_locked--;
+      return False;
+   }
+   
+   return True;
+   
+}
+
+static BOOL smb_shm_global_unlock(void)
+{
+   if (smb_shm_fd < 0)
+   {
+      DEBUG(0,("ERROR smb_shm_global_unlock : bad smb_shm_fd (%d)\n",smb_shm_fd));
+      return False;
+   }
+   
+   if(smb_shm_times_locked == 0)
+   {
+      DEBUG(0,("ERROR smb_shm_global_unlock : shmem not locked\n",smb_shm_fd));
+      return False;
+   }
+   
+   smb_shm_times_locked--;
+   
+   if(smb_shm_times_locked > 0)
+   {
+      DEBUG(2,("smb_shm_global_unlock : still locked %d times\n",smb_shm_times_locked));
+      return True;
+   }
+   
+   /* Do a wait unlock on the first byte of the file */
+   if (fcntl_lock(smb_shm_fd, F_SETLKW, 0, 1, F_UNLCK) == False)
+   {
+      DEBUG(0,("ERROR smb_shm_global_unlock : fcntl_lock failed with code %d\n",errno));
+      smb_shm_times_locked++;
+      return False;
+   }
+   
+   return True;
+   
+}
+
+/* 
+ * Function to create the hash table for the share mode entries. Called
+ * when smb shared memory is global locked.
+ */
+
+BOOL smb_shm_create_hash_table( unsigned int size )
+{
+  size *= sizeof(smb_shm_offset_t);
+
+  smb_shm_global_lock();
+  smb_shm_header_p->userdef_off = smb_shm_alloc( size );
+
+  if(smb_shm_header_p->userdef_off == NULL_OFFSET)
+    {
+      DEBUG(0,("smb_shm_create_hash_table: Failed to create hash table of size %d\n",size));
+      smb_shm_global_unlock();
+      return False;
+    }
+
+  /* Clear hash buckets. */
+  memset( smb_shm_offset2addr(smb_shm_header_p->userdef_off), '\0', size);
+  smb_shm_global_unlock();
+  return True;
+}
+
 static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *other_processes)
 {
    int smb_shm_processes_fd = -1;
    int nb_read;
    pid_t other_pid;
+   int seek_back = -sizeof(other_pid);
    int free_slot = -1;
    int erased_slot;   
    
+#ifndef SECURE_SHARE_MODES
    smb_shm_processes_fd = open(processreg_file, O_RDWR | O_CREAT, 0666);
+#else /* SECURE_SHARE_MODES */
+   smb_shm_processes_fd = open(processreg_file, O_RDWR | O_CREAT, 0600);
+#endif /* SECURE_SHARE_MODES */
    if ( smb_shm_processes_fd < 0 )
    {
       DEBUG(0,("ERROR smb_shm_register_process : processreg_file open failed with code %d\n",errno));
@@ -99,9 +193,10 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
 	 else
 	 {
 	    /* erase old pid */
-            DEBUG(2,("smb_shm_register_process : erasing stale record for pid %d\n",other_pid));
+            DEBUG(2,("smb_shm_register_process : erasing stale record for pid %d (seek_back = %d)\n",
+                      other_pid, seek_back));
 	    other_pid = (pid_t)0;
-	    erased_slot = lseek(smb_shm_processes_fd, -sizeof(other_pid), SEEK_CUR);
+	    erased_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
 	    write(smb_shm_processes_fd, &other_pid, sizeof(other_pid));
 	    if(free_slot < 0)
 	       free_slot = erased_slot;
@@ -109,7 +204,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
       }
       else 
 	 if(free_slot < 0)
-	    free_slot = lseek(smb_shm_processes_fd, -sizeof(other_pid), SEEK_CUR);
+	    free_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
    }
    if (nb_read < 0)
    {
@@ -141,6 +236,7 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    int smb_shm_processes_fd = -1;
    int nb_read;
    pid_t other_pid;
+   int seek_back = -sizeof(other_pid);
    int erased_slot;
    BOOL found = False;
    
@@ -156,12 +252,14 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    
    while ((nb_read = read(smb_shm_processes_fd, &other_pid, sizeof(other_pid))) > 0)
    {
+      DEBUG(2,("smb_shm_unregister_process : read record for pid %d\n",other_pid));
       if(other_pid == pid)
       {
 	 /* erase pid */
-         DEBUG(2,("smb_shm_unregister_process : erasing record for pid %d\n",other_pid));
+         DEBUG(2,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %d)\n",
+                     other_pid, seek_back));
 	 other_pid = (pid_t)0;
-	 erased_slot = lseek(smb_shm_processes_fd, -sizeof(other_pid), SEEK_CUR);
+	 erased_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
 	 if(write(smb_shm_processes_fd, &other_pid, sizeof(other_pid)) < 0)
 	 {
 	    DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file write failed with code %d\n",errno));
@@ -257,6 +355,8 @@ static BOOL smb_shm_initialize(int size)
    
    smb_shm_header_p->consistent = True;
    
+   smb_shm_initialize_called = True;
+
    return True;
 }
    
@@ -291,7 +391,11 @@ BOOL smb_shm_open( char *file_name, int size)
    DEBUG(2,("smb_shm_open : using shmem file %s to be of size %d\n",file_name,size));
 
    old_umask = umask(0);
+#ifndef SECURE_SHARE_MODES
    smb_shm_fd = open(file_name, O_RDWR | O_CREAT, 0666);
+#else /* SECURE_SHARE_MODES */
+   smb_shm_fd = open(file_name, O_RDWR | O_CREAT, 0600);
+#endif /* SECURE_SHARE_MODE */
    umask(old_umask);
    if ( smb_shm_fd < 0 )
    {
@@ -299,16 +403,16 @@ BOOL smb_shm_open( char *file_name, int size)
       return False;
    }
    
-   if (!smb_shm_lock())
+   if (!smb_shm_global_lock())
    {
-      DEBUG(0,("ERROR smb_shm_open : can't do smb_shm_lock\n"));
+      DEBUG(0,("ERROR smb_shm_open : can't do smb_shm_global_lock\n"));
       return False;
    }
    
    if( (filesize = lseek(smb_shm_fd, 0, SEEK_END)) < 0)
    {
       DEBUG(0,("ERROR smb_shm_open : lseek failed with code %d\n",errno));
-      smb_shm_unlock();
+      smb_shm_global_unlock();
       close(smb_shm_fd);
       return False;
    }
@@ -332,7 +436,7 @@ BOOL smb_shm_open( char *file_name, int size)
 
    if (! smb_shm_register_process(smb_shm_processreg_name, getpid(), &other_processes))
    {
-      smb_shm_unlock();
+      smb_shm_global_unlock();
       close(smb_shm_fd);
       return False;
    }
@@ -344,7 +448,7 @@ BOOL smb_shm_open( char *file_name, int size)
       {
          DEBUG(0,("ERROR smb_shm_open : ftruncate failed with code %d\n",errno));
 	 smb_shm_unregister_process(smb_shm_processreg_name, getpid());
-	 smb_shm_unlock();
+	 smb_shm_global_unlock();
 	 close(smb_shm_fd);
 	 return False;
       }
@@ -369,7 +473,7 @@ BOOL smb_shm_open( char *file_name, int size)
    {
       DEBUG(0,("ERROR smb_shm_open : mmap failed with code %d\n",errno));
       smb_shm_unregister_process(smb_shm_processreg_name, getpid());
-      smb_shm_unlock();
+      smb_shm_global_unlock();
       close(smb_shm_fd);
       return False;
    }      
@@ -378,6 +482,8 @@ BOOL smb_shm_open( char *file_name, int size)
    if (created_new || !other_processes)
    {
       smb_shm_initialize(size);
+      /* Create the hash buckets for the share file entries. */
+      smb_shm_create_hash_table( lp_shmem_hash_size() );
    }
    else if (!smb_shm_validate_header(size) )
    {
@@ -385,12 +491,12 @@ BOOL smb_shm_open( char *file_name, int size)
       DEBUG(0,("ERROR smb_shm_open : corrupt shared mem file, remove it manually\n"));
       munmap((caddr_t)smb_shm_header_p, size);
       smb_shm_unregister_process(smb_shm_processreg_name, getpid());
-      smb_shm_unlock();
+      smb_shm_global_unlock();
       close(smb_shm_fd);
       return False;
    }
    
-   smb_shm_unlock();
+   smb_shm_global_unlock();
    return True;
       
 }
@@ -399,17 +505,22 @@ BOOL smb_shm_open( char *file_name, int size)
 BOOL smb_shm_close( void )
 {
    
+   if(smb_shm_initialize_called == False)
+     return True;
+
    DEBUG(2,("smb_shm_close\n"));
    if(smb_shm_times_locked > 0)
       DEBUG(0,("WARNING smb_shm_close : shmem was still locked %d times\n",smb_shm_times_locked));;
-   if ( munmap((caddr_t)smb_shm_header_p, smb_shm_header_p->total_size) < 0)
+   if ((smb_shm_header_p != NULL) && 
+              (munmap((caddr_t)smb_shm_header_p, smb_shm_header_p->total_size) < 0))
    {
       DEBUG(0,("ERROR smb_shm_close : munmap failed with code %d\n",errno));
    }
 
-   smb_shm_lock();
+   smb_shm_global_lock();
+   DEBUG(2,("calling smb_shm_unregister_process(%s, %d)\n", smb_shm_processreg_name, getpid()));
    smb_shm_unregister_process(smb_shm_processreg_name, getpid());
-   smb_shm_unlock();
+   smb_shm_global_unlock();
    
    close(smb_shm_fd);
    
@@ -438,9 +549,12 @@ smb_shm_offset_t smb_shm_alloc(int size)
       return NULL_OFFSET;
    }
    
+   smb_shm_global_lock();
+
    if( !smb_shm_header_p->consistent)
    {
       DEBUG(0,("ERROR smb_shm_alloc : shmem not consistent\n"));
+      smb_shm_global_unlock();
       return NULL_OFFSET;
    }
    
@@ -463,6 +577,7 @@ smb_shm_offset_t smb_shm_alloc(int size)
    if ( scanner_p == EOList_Addr )	
    {
       DEBUG(0,("ERROR smb_shm_alloc : alloc of %d bytes failed, no free space found\n",size));
+      smb_shm_global_unlock();
       return (NULL_OFFSET);
    }
    
@@ -516,6 +631,7 @@ smb_shm_offset_t smb_shm_alloc(int size)
 
    DEBUG(2,("smb_shm_alloc : request for %d bytes, allocated %d bytes at offset %d\n",size,scanner_p->size*CellSize,result_offset ));
 
+   smb_shm_global_unlock();
    return ( result_offset );
 }   
 
@@ -534,9 +650,12 @@ BOOL smb_shm_free(smb_shm_offset_t offset)
       return False;
    }
    
+   smb_shm_global_lock();
+
    if( !smb_shm_header_p->consistent)
    {
       DEBUG(0,("ERROR smb_shm_free : shmem not consistent\n"));
+      smb_shm_global_unlock();
       return False;
    }
    
@@ -545,6 +664,7 @@ BOOL smb_shm_free(smb_shm_offset_t offset)
    if (header_p->next != SMB_SHM_NOT_FREE_OFF)
    {
       DEBUG(0,("ERROR smb_shm_free : bad offset (%d)\n",offset));
+      smb_shm_global_unlock();
       return False;
    }
    
@@ -577,6 +697,7 @@ BOOL smb_shm_free(smb_shm_offset_t offset)
       smb_shm_solve_neighbors( header_p ); /* if neighbors then link them */
       
       smb_shm_header_p->consistent = True;
+      smb_shm_global_unlock();
       return True;
    } 
    else
@@ -590,6 +711,7 @@ BOOL smb_shm_free(smb_shm_offset_t offset)
       smb_shm_solve_neighbors(prev_p) ;
 
       smb_shm_header_p->consistent = True;
+      smb_shm_global_unlock();
       return True;
    }
 }
@@ -633,68 +755,71 @@ smb_shm_offset_t smb_shm_addr2offset(void *addr)
    return (smb_shm_offset_t)((char *)addr - (char *)smb_shm_header_p);
 }
 
-BOOL smb_shm_lock(void)
+/*******************************************************************
+  Lock a particular hash bucket entry.
+  ******************************************************************/
+
+BOOL smb_shm_lock_hash_entry( unsigned int entry)
 {
-   if (smb_shm_fd < 0)
-   {
-      DEBUG(0,("ERROR smb_shm_lock : bad smb_shm_fd (%d)\n",smb_shm_fd));
+  int start = (smb_shm_header_p->userdef_off + (entry * sizeof(smb_shm_offset_t)));
+
+  if (smb_shm_fd < 0)
+    {
+      DEBUG(0,("ERROR smb_shm_lock_hash_entry : bad smb_shm_fd (%d)\n",smb_shm_fd));
       return False;
-   }
-   
-   smb_shm_times_locked++;
-   
-   if(smb_shm_times_locked > 1)
-   {
-      DEBUG(2,("smb_shm_lock : locked %d times\n",smb_shm_times_locked));
-      return True;
-   }
-   
-   if (lockf(smb_shm_fd, F_LOCK, 0) < 0)
-   {
-      DEBUG(0,("ERROR smb_shm_lock : lockf failed with code %d\n",errno));
-      smb_shm_times_locked--;
+    }
+
+  if(entry >= lp_shmem_hash_size())
+    {
+      DEBUG(0,("ERROR smb_shm_lock_hash_entry : hash entry size too big (%d)\n", entry));
       return False;
-   }
-   
-   return True;
-   
+    }
+  
+  /* Do an exclusive wait lock on the 4 byte region mapping into this entry  */
+  if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(smb_shm_offset_t), F_WRLCK) == False)
+    {
+      DEBUG(0,("ERROR smb_shm_lock_hash_entry : fcntl_lock failed with code %d\n",errno));
+      return False;
+    }
+  
+  DEBUG(9,("smb_shm_lock_hash_entry: locked hash bucket %d\n", entry)); 
+  return True;
 }
 
+/*******************************************************************
+  Unlock a particular hash bucket entry.
+  ******************************************************************/
 
-
-BOOL smb_shm_unlock(void)
+BOOL smb_shm_unlock_hash_entry( unsigned int entry )
 {
-   if (smb_shm_fd < 0)
-   {
-      DEBUG(0,("ERROR smb_shm_unlock : bad smb_shm_fd (%d)\n",smb_shm_fd));
+  int start = (smb_shm_header_p->userdef_off + (entry * sizeof(smb_shm_offset_t)));
+
+  if (smb_shm_fd < 0)
+    {
+      DEBUG(0,("ERROR smb_shm_unlock_hash_entry : bad smb_shm_fd (%d)\n",smb_shm_fd));
       return False;
-   }
+    }
    
-   if(smb_shm_times_locked == 0)
-   {
-      DEBUG(0,("ERROR smb_shm_unlock : shmem not locked\n",smb_shm_fd));
+  if(entry >= lp_shmem_hash_size())
+    {
+      DEBUG(0,("ERROR smb_shm_unlock_hash_entry : hash entry size too big (%d)\n", entry));
       return False;
-   }
-   
-   smb_shm_times_locked--;
-   
-   if(smb_shm_times_locked > 0)
-   {
-      DEBUG(2,("smb_shm_unlock : still locked %d times\n",smb_shm_times_locked));
-      return True;
-   }
-   
-   if (lockf(smb_shm_fd, F_ULOCK, 0) < 0)
-   {
-      DEBUG(0,("ERROR smb_shm_unlock : lockf failed with code %d\n",errno));
-      smb_shm_times_locked++;
+    }
+
+  /* Do a wait lock on the 4 byte region mapping into this entry  */
+  if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(smb_shm_offset_t), F_UNLCK) == False)
+    {
+      DEBUG(0,("ERROR smb_shm_unlock_hash_entry : fcntl_lock failed with code %d\n",errno));
       return False;
-   }
-   
-   return True;
-   
+    }
+  
+  DEBUG(9,("smb_shm_unlock_hash_entry: unlocked hash bucket %d\n", entry)); 
+  return True;
 }
 
+/*******************************************************************
+  Gather statistics on shared memory usage.
+  ******************************************************************/
 
 BOOL smb_shm_get_usage(int *bytes_free,
 		   int *bytes_used,
@@ -716,4 +841,4 @@ BOOL smb_shm_get_usage(int *bytes_free,
 #else /* FAST_SHARE_MODES */
  int shmem_dummy_procedure(void)
 {return 0;}
-#endif
+#endif /* FAST_SHARE_MODES */

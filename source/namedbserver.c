@@ -37,6 +37,7 @@ extern int ClientDGRAM;
 extern int DEBUGLEVEL;
 
 extern pstring myname;
+extern fstring myworkgroup;
 
 /* this is our domain/workgroup/server database */
 extern struct subnet_record *subnetlist;
@@ -161,7 +162,7 @@ struct server_record *add_server_entry(struct subnet_record *d,
   }
   
   
-  if (strequal(lp_workgroup(),work->work_group))
+  if (strequal(myworkgroup,work->work_group))
     {
 	  if (servertype)
         servertype |= SV_TYPE_LOCAL_LIST_ONLY;

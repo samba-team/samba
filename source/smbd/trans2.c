@@ -277,6 +277,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 		    strequal(Connections[cnum].dirpath,"/"));
   BOOL was_8_3;
   int nt_extmode; /* Used for NT connections instead of mode */
+  BOOL needslash = ( Connections[cnum].dirpath[strlen(Connections[cnum].dirpath) -1] != '/');
 
   *fname = 0;
   *out_of_space = False;
@@ -323,7 +324,8 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 	    continue;
 
 	  strcpy(pathreal,Connections[cnum].dirpath);
-	  strcat(pathreal,"/");
+          if(needslash)
+  	    strcat(pathreal,"/");
 	  strcat(pathreal,fname);
 	  if (sys_stat(pathreal,&sbuf) != 0) 
 	    {

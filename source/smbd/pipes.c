@@ -42,6 +42,7 @@ extern files_struct Files[];
 extern BOOL case_sensitive;
 extern pstring sesssetup_user;
 extern int Client;
+extern fstring myworkgroup;
 
 /* this macro should always be used to extract an fnum (smb_fid) from
 a packet to ensure chaining works correctly */
@@ -250,7 +251,7 @@ static void LsarpcTNP3(char *data,char **rdata, int *rdata_len)
 {
   uint32 dword1;
   uint16 word1;
-  char * workgroup = lp_workgroup();
+  char * workgroup = myworkgroup;
   int wglen = strlen(workgroup);
   int i;
 

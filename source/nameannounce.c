@@ -35,6 +35,7 @@ extern BOOL CanRecurse;
 extern struct in_addr ipzero;
 
 extern pstring myname;
+extern fstring myworkgroup;
 
 extern int ClientDGRAM;
 extern int ClientNMB;
@@ -185,9 +186,9 @@ void do_announce_host(int command,
 
 
 /****************************************************************************
-  remove all samba's server entries
-  ****************************************************************************/
-void remove_my_servers(void)
+announce all samba's server entries as 'gone'.
+****************************************************************************/
+void announce_my_servers_removed(void)
 {
 	struct subnet_record *d; 
 	for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
@@ -372,7 +373,7 @@ static time_t announce_timer_last=0;
 
 void reset_announce_timer()
 {
-  announce_timer_last = 0;
+  announce_timer_last = time(NULL) - (CHECK_TIME_MST_ANNOUNCE * 60);
 }
 
 /****************************************************************************
@@ -396,7 +397,7 @@ void announce_master(time_t t)
       return;
     }
 
-  if(wins_subnet == 0)
+  if(wins_subnet == NULL)
     {
       DEBUG(10,("announce_master: no wins subnet, ignoring.\n"));
       return;
@@ -412,19 +413,19 @@ void announce_master(time_t t)
 	  if (AM_MASTER(work))
 	    {
 	      am_master = True;
+              DEBUG(4,( "announce_master: am_master = %d for \
+workgroup %s\n", am_master, work->work_group));
 	    }
 	}
     }
  
-  DEBUG(4,( "announce_master: am_master = %d for workgroup %s\n", am_master, lp_workgroup()));
-
   if (!am_master) return; /* only proceed if we are a master browser */
   
   /* Note that we don't do this if we are domain master browser
      and that we *only* do this on the WINS subnet. */
 
   /* Try and find our workgroup on the WINS subnet */
-  work = find_workgroupstruct(wins_subnet, lp_workgroup(), False);
+  work = find_workgroupstruct(wins_subnet, myworkgroup, False);
 
   if (work)
     {
@@ -488,7 +489,7 @@ in our own WINS database.\n", work->work_group));
 
            /* Check that this isn't one of our addresses (ie. we are not domain master
               ourselves) */
-           if(ismyip(nr->ip_flgs[0].ip))
+           if(ismyip(nr->ip_flgs[0].ip) || ip_equal(nr->ip_flgs[0].ip, ipzero))
              {
                DEBUG(4, ("announce_master: domain master ip found (%s) for workgroup %s \
 is one of our interfaces.\n", work->work_group, inet_ntoa(nr->ip_flgs[0].ip) ));
@@ -535,7 +536,7 @@ void announce_remote(time_t t)
   if (!*s) return;
 
   comment = lp_serverstring();
-  workgroup = lp_workgroup();
+  workgroup = myworkgroup;
 
   for (ptr=s; next_token(&ptr,s2,NULL); ) {
     /* the entries are of the form a.b.c.d/WORKGROUP with 
