@@ -22,7 +22,6 @@
 */
 
 #include "winbindd.h"
-#include "sids.h"
 
 /**
  * @file winbindd_util.c
