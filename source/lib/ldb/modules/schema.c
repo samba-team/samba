@@ -32,11 +32,9 @@
  *  Author: Simo Sorce
  */
 
-#include <ctype.h>
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
-#include <ctype.h>
 
 struct attribute_syntax {
 	const char *name;
