@@ -1608,7 +1608,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    ret = db_fetch(p, &uu);
 	    krb5_free_principal(context, p);
 	    if(ret){
-		if (ret == ENOENT)
+		if (ret == HDB_ERR_NOENTRY)
 		    ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 		goto out;
 	    }
@@ -1674,7 +1674,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    }
 	    kdc_log(0, "Server not found in database: %s: %s", spn,
 		    krb5_get_err_text(context, ret));
-	    if (ret == ENOENT)
+	    if (ret == HDB_ERR_NOENTRY)
 		ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	    goto out;
 	}
@@ -1688,7 +1688,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	if(ret){
 	    kdc_log(0, "Client not found in database: %s: %s",
 		    cpn, krb5_get_err_text(context, ret));
-	    if (ret == ENOENT)
+	    if (ret == HDB_ERR_NOENTRY)
 		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	    goto out;
 	}

@@ -69,7 +69,7 @@ fetch_server (const Ticket *t,
 	kdc_log(0,
 	"Request to convert ticket from %s for unknown principal %s: %s",
 		from, *spn, krb5_get_err_text(context, ret));
-	if (ret == ENOENT)
+	if (ret == HDB_ERR_NOENTRY)
 	    ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	return ret;
     }
