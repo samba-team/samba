@@ -8,6 +8,39 @@
 <!ENTITY email.patches 'samba-patches@samba.org'>
 <!ENTITY email.jelmer  'jelmer@samba.org'>
 
+<!-- Author entities -->
+<!ENTITY author.jelmer '
+<author>
+<firstname>Jelmer</firstname><surname>Vernooij</surname>
+<affiliation><orgname>The Samba Team</orgname><address><email>jelmer@samba.org</email></address></affiliation>
+</author>
+'>
+
+<!ENTITY author.jerry '
+<author>
+<firstname>Gerald (Jerry)</firstname><surname>Carter</surname>
+<affiliation><orgname>Samba Team</orgname><address><email>jerry@samba.org</email></address></affiliation>
+</author>
+'>
+
+<!ENTITY author.jeremy '
+<author>
+	<firstname>Jeremy</firstname><surname>Allison</surname>
+	<affiliation>
+		<orgname>Samba Team</orgname>
+		<address><email>jra@samba.org</email></address>
+	</affiliation>
+</author>'>
+
+<!ENTITY author.jht '
+<author>
+	<firstname>John H</firstname><surname>Terpstra</surname>
+	<affiliation>
+		<orgname>Samba Team</orgname>
+		<address><email>jht@samba.org</email></address>
+	</affiliation>
+</author>'>
+
 <!-- URL's -->
 <!ENTITY url.samba.cvsinfo 'http://pserver.samba.org/samba/cvs.html'>
 <!ENTITY url.pdc-howto.local 'samba-pdc-howto.html'>
