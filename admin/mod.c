@@ -45,7 +45,10 @@ doit2(HDB *db, hdb_entry *ent)
 {
     char buf[1024];
     int ret;
+    krb5_principal hata;
     
+    hata = ent->principal;
+
     ret = db->fetch(context, db, ent);
 
     switch(ret){
@@ -53,6 +56,7 @@ doit2(HDB *db, hdb_entry *ent)
 	krb5_warnx(context, "Entry not found in database");
 	return;
     case 0:
+	krb5_free_principal (context, hata);
 	break;
     default:
 	krb5_err(context, 1, ret, "dbget");
@@ -81,6 +85,8 @@ doit(const char *principal)
     HDB *db;
     hdb_entry ent;
     krb5_error_code ret;
+
+
     memset(&ent, 0, sizeof(ent));
     if((ret = hdb_open(context, &db, database, O_RDWR, 0600))){
 	krb5_warn(context, ret, "hdb_open");

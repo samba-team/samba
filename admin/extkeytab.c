@@ -48,6 +48,7 @@ ext_keytab(int argc, char **argv)
     int ret;
     krb5_keytab kid;
     krb5_keytab_entry key_entry;
+    krb5_principal principal;
     
     if(argc < 2 || argc > 3){
 	krb5_warnx(context, "Usage: ext_keytab principal [file]");
@@ -60,11 +61,12 @@ ext_keytab(int argc, char **argv)
 	return 0;
     }
 
-    ret = krb5_parse_name (context, argv[1], &ent.principal);
+    ret = krb5_parse_name (context, argv[1], &principal);
     if (ret) {
 	krb5_warn(context, ret, "krb5_parse_name");
 	goto cleanup1;
     }
+    ent.principal = principal;
 
     ret = db->fetch(context, db, &ent);
     if (ret) {
@@ -73,7 +75,10 @@ ext_keytab(int argc, char **argv)
 	goto cleanup1;
     }
 
+    key_entry.principal = principal;
+#if 0
     krb5_copy_principal (context, ent.principal, &key_entry.principal);
+#endif
     key_entry.vno = ent.kvno;
     /* XXX XXX XXX XXX */
     key_entry.keyblock.keytype = ent.keys.val[0].key.keytype;

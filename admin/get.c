@@ -47,18 +47,23 @@ get_entry(int argc, char **argv)
     int ret;
     hdb_entry ent;
     int i;
+    krb5_principal principal;
     
     if(argc != 2) {
 	krb5_warnx(context, "Usage: get_entry principal");
 	return 0;
     }
 	
-    krb5_parse_name(context, argv[1], &ent.principal);
-    
     if((ret = hdb_open(context, &db, database, O_RDONLY, 0600))) {
 	krb5_warn(context, ret, "hdb_open");
 	return 0;
     }
+    
+    krb5_parse_name(context, argv[1], &principal);
+
+    memset (&ent, 0, sizeof(ent));
+
+    ent.principal = principal;
     
     ret = db->fetch(context, db, &ent);
     
@@ -69,6 +74,8 @@ get_entry(int argc, char **argv)
     case 0: {
 	char buf[128];
 	char *name;
+
+	krb5_free_principal(context, principal);
 
 	krb5_unparse_name(context, ent.principal, &name);
 	printf("Principal: %s\n", name);
@@ -126,7 +133,7 @@ get_entry(int argc, char **argv)
 	krb5_warn(context, ret, "db->fetch");
 	break;
     }
-    memset(&ent, 0, sizeof(ent));
+    hdb_free_entry (context, &ent);
     db->close(context, db);
     return 0;
 }

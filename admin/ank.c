@@ -46,13 +46,15 @@ doit(const char *principal)
     HDB *db;
     hdb_entry ent;
     krb5_error_code ret;
+    krb5_principal ent_principal;
 
     memset(&ent, 0, sizeof(ent));
     if((ret = hdb_open(context, &db, database, O_RDWR, 0600))) {
 	krb5_warn(context, ret, "hdb_open");
 	return;
     }
-    krb5_parse_name(context, principal, &ent.principal);
+    krb5_parse_name(context, principal, &ent_principal);
+    ent.principal = ent_principal;
     
     ret = db->fetch(context, db, &ent);
     
@@ -61,7 +63,8 @@ doit(const char *principal)
 	break;
     case 0:
 	krb5_warnx(context, "Principal exists");
-	return;
+	krb5_free_principal (context, ent_principal);
+	goto cleanup;
     default:
 	krb5_err(context, 1, ret, "dbget");
     }
@@ -74,6 +77,7 @@ doit(const char *principal)
     if(ret)
 	krb5_err(context, 1, ret, "db->store");
 
+cleanup:
     db->close(context, db);
     hdb_free_entry(context, &ent);
 }
