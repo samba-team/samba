@@ -23,14 +23,14 @@ while (<MAKEIN>) {
     }
     elsif (/^# FOR SGI IRIX $OSver/) {
 	print MAKEOUT;
-	$a = <MAKEIN>;
-	print MAKEOUT $a;
-	($a = <MAKEIN>) =~ s/^# //;
-	print MAKEOUT $a;
-	($a = <MAKEIN>) =~ s/^# //;
-	print MAKEOUT $a;
-	($a = <MAKEIN>) =~ s/^# //;
-	print MAKEOUT $a;
+	while (<MAKEIN>) {
+	    last if ($_ eq "\n");
+	    if (/^# (FLAGSM|LIBSM|FLAGS1)/) {
+		s/^# //;
+	    }
+	    print MAKEOUT;
+	}
+	print MAKEOUT;
     }
     else {
 	print MAKEOUT;
