@@ -1,5 +1,23 @@
 Thu Mar 18 11:33:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* include/kadm5/Makefile.am: clean a lot of header files (since
+ 	automake lacks a clean-hook)
+
+	* include/Makefile.am: clean a lot of header files (since automake
+ 	lacks a clean-hook)
+
+	* lib/kadm5/Makefile.am: fix build-installation of headers
+
+	* lib/krb5/Makefile.am: remove include_dir hack
+
+	* lib/hdb/Makefile.am: remove include_dir hack
+
+	* lib/asn1/Makefile.am: remove include_dir hack
+
+	* include/Makefile.am: remove include_dir hack
+
+	* doc/whatis.texi: define sub for html
+
 	* configure.in: LIB_kdb, have_err_h, have_fnmatch_h, have_glob_h
 
 	* lib/asn1/Makefile.am: der.h

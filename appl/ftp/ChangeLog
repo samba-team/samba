@@ -1,5 +1,7 @@
 Thu Mar 18 12:07:09 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* ftpd/Makefile.am: clean ftpcmd.c
+
 	* ftpd/ftpd_locl.h: remove krb5.h (breaks in ftpcmd.y)
 
 	* ftpd/ftpd.c: move include of krb5.h here

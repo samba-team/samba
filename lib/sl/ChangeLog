@@ -1,5 +1,7 @@
 Thu Mar 18 15:07:06 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* Makefile.am: clean lex.c parse.c parse.h
+
 	* Makefile.am: install ss.h
 
 Thu Mar 11 15:01:01 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
