@@ -202,25 +202,6 @@ sub property_matches($$$)
 
 my %enum_list;
 
-sub register_enum($$)
-{
-	my $enum = shift;
-	my $name = shift;
-	$enum_list{$name} = $enum;
-}
-
-sub is_enum($)
-{
-	my $name = shift;
-	return defined $enum_list{$name}
-}
-
-sub get_enum($)
-{
-	my $name = shift;
-	return $enum_list{$name};
-}
-
 sub enum_type_decl($)
 {
 	my $enum = shift;
@@ -239,25 +220,6 @@ sub enum_type_fn($)
 }
 
 my %bitmap_list;
-
-sub register_bitmap($$)
-{
-	my $bitmap = shift;
-	my $name = shift;
-	$bitmap_list{$name} = $bitmap;
-}
-
-sub is_bitmap($)
-{
-	my $name = shift;
-	return defined $bitmap_list{$name};
-}
-
-sub get_bitmap($)
-{
-	my $name = shift;
-	return $bitmap_list{$name};
-}
 
 sub bitmap_type_fn($)
 {
