@@ -216,7 +216,18 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
   int snum,gid;
   int uid;
 
-  if ((current_user.cnum == cnum) && (vuser != 0) && (current_user.vuid == vuid) && 
+  /*
+   * We need a separate check in security=share mode due to vuid
+   * always being UID_FIELD_INVALID. If we don't do this then
+   * in share mode security we are *always* changing uid's between
+   * SMB's - this hurts performance - Badly.
+   */
+
+  if((lp_security() == SEC_SHARE) && (current_user.cnum == cnum) &&
+     (current_user.uid == conn->uid)) {
+    DEBUG(4,("Skipping become_user - already user\n"));
+    return(True);
+  } else if ((current_user.cnum == cnum) && (vuser != 0) && (current_user.vuid == vuid) && 
       (current_user.uid == vuser->uid)) {
     DEBUG(4,("Skipping become_user - already user\n"));
     return(True);

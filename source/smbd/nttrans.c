@@ -1071,6 +1071,19 @@ void process_pending_change_notify_queue(time_t t)
       continue;
     }
 
+    if(!become_service(cnum,True)) {
+      DEBUG(0,("process_pending_change_notify_queue: Unable to become service cnum=%d. \
+Error was %s.\n", cnum, strerror(errno) ));
+      /*
+       * Remove the entry and return an error to the client.
+       */
+      change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
+      ubi_slRemNext( &change_notify_queue, prev);
+      cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      unbecome_user();
+      continue;
+    }
+
     if(sys_stat(fsp->name, &st) < 0) {
       DEBUG(0,("process_pending_change_notify_queue: Unable to stat directory %s. \
 Error was %s.\n", fsp->name, strerror(errno) ));
@@ -1135,27 +1148,39 @@ static int call_nt_transact_notify_change(char *inbuf, char *outbuf, int length,
   if((!fsp->open) || (!fsp->is_directory) || (cnum != fsp->cnum))
     return(ERROR(ERRDOS,ERRbadfid));
 
-  /*
-   * Setup the current directory information in the
-   * directory entry in the files_struct. We will use
-   * this to check against when the timer expires.
-   */
-
-  if(sys_stat(fsp->name, &st) < 0) {
-			DEBUG(0,("call_nt_transact_notify_change: Unable to stat fnum = %d, name = %s. \
-		Error was %s\n", fnum, fsp->name, strerror(errno) ));
-			return -1;
-  }
- 
   if(fsp->f_u.dir_ptr == NULL) {
+
+    /*
+     * No currently stored directory info - we must
+     * generate it here.
+     */
+
     if((fsp->f_u.dir_ptr = (dir_status_struct *)malloc(sizeof(dir_status_struct))) == NULL) {
       DEBUG(0,("call_nt_transact_notify_change: Malloc fail !\n" ));
       return -1;
     }
-  }
 
-  fsp->f_u.dir_ptr->modify_time = st.st_mtime;
-  fsp->f_u.dir_ptr->status_time = st.st_ctime;
+    /*
+     * Setup the current directory information in the
+     * directory entry in the files_struct. We will use
+     * this to check against when the timer expires.
+     * NB. We only do this if there is no current directory
+     * information in the directory struct - as when we start
+     * monitoring file size etc. this information will start
+     * becoming increasingly expensive to maintain, so we won't
+     * want to re-generate it for every ChangeNofity call.
+     */
+
+    if(sys_stat(fsp->name, &st) < 0) {
+      DEBUG(0,("call_nt_transact_notify_change: Unable to stat fnum = %d, name = %s. \
+Error was %s\n", fnum, fsp->name, strerror(errno) ));
+      return -1;
+    }
+ 
+    fsp->f_u.dir_ptr->modify_time = st.st_mtime;
+    fsp->f_u.dir_ptr->status_time = st.st_ctime;
+
+  }
 
   /*
    * Now queue an entry on the notify change stack. We timestamp
@@ -1183,8 +1208,8 @@ static int call_nt_transact_notify_change(char *inbuf, char *outbuf, int length,
 
   ubi_slAddTail(&change_notify_queue, cnbp);
 
-  DEBUG(3,("call_nt_transact_notify_change: notify change called on directory fid=%d, name = %s\n",
-        fnum, fsp->name ));
+  DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
+fid=%d, name = %s\n", fnum, fsp->name ));
 
   return -1;
 }
