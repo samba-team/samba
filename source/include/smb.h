@@ -665,6 +665,7 @@ typedef struct _print_queue_struct
 {
   int job;
   int size;
+  int page_count;
   int status;
   int priority;
   time_t time;

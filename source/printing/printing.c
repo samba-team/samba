@@ -48,6 +48,7 @@ struct printjob {
 	time_t starttime; /* when the job started spooling */
 	int status; /* the status of this job */
 	size_t size; /* the size of the job so far */
+	int page_count;	/* then number of pages so far */
 	BOOL spooled; /* has it been sent to the spooler yet? */
 	BOOL smbjob; /* set if the job is a SMB job */
 	fstring filename; /* the filename used to spool the file */
@@ -876,12 +877,19 @@ write to a print file
 ****************************************************************************/
 int print_job_write(int jobid, const char *buf, int size)
 {
-	int fd;
+	int return_code;
+	struct printjob *pjob = print_job_find(jobid);
 
-	fd = print_job_fd(jobid);
-	if (fd == -1) return -1;
+	if (!pjob) return -1;
+	/* don't allow another process to get this info - it is meaningless */
+	if (pjob->pid != local_pid) return -1;
 
-	return write(fd, buf, size);
+	return_code = write(pjob->fd, buf, size);
+	if (return_code>0) {
+		pjob->size += size;
+		print_job_store(jobid, pjob);
+	}
+	return return_code;
 }
 
 /****************************************************************************
@@ -1121,6 +1129,21 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 }
 
 /****************************************************************************
+Update the number of pages spooled to jobid
+****************************************************************************/
+
+void print_job_endpage(int jobid)
+{
+	struct printjob *pjob = print_job_find(jobid);
+	if (!pjob) return;
+	/* don't allow another process to get this info - it is meaningless */
+	if (pjob->pid != local_pid) return;
+	
+	pjob->page_count++;
+	print_job_store(jobid, pjob);
+}
+
+/****************************************************************************
  Print a file - called on closing the file. This spools the job.
  If normal close is false then we're tearing down the jobs - treat as an
  error.
@@ -1237,6 +1260,7 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 
 	ts->queue[i].job = jobid;
 	ts->queue[i].size = pjob.size;
+	ts->queue[i].page_count = pjob.page_count;
 	ts->queue[i].status = pjob.status;
 	ts->queue[i].priority = 1;
 	ts->queue[i].time = pjob.starttime;

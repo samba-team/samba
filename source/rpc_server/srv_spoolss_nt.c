@@ -802,6 +802,7 @@ static BOOL srv_spoolss_sendnotify(char* printer_name, uint32 high, uint32 low, 
 	info.low 	= low;
 	info.high	= high;
 	info.flags	= flags;
+
 	fstrcpy(info.printer_name, printer_name);
 	
 	memcpy(msg, &info, sizeof(PRINTER_MESSAGE_INFO));	
@@ -2037,6 +2038,32 @@ static void spoolss_notify_job_size(int snum,
 }
 
 /*******************************************************************
+ * fill a notify_info_data with job size
+ ********************************************************************/
+static void spoolss_notify_total_pages(int snum,
+					SPOOL_NOTIFY_INFO_DATA *data,
+					print_queue_struct *queue,
+					NT_PRINTER_INFO_LEVEL *printer,
+					TALLOC_CTX *mem_ctx)
+{
+	data->notify_data.value[0]=queue->page_count;
+	data->notify_data.value[1]=0;
+}
+
+/*******************************************************************
+ * fill a notify_info_data with job size
+ ********************************************************************/
+static void spoolss_notify_pages_printed(int snum,
+					SPOOL_NOTIFY_INFO_DATA *data,
+					print_queue_struct *queue,
+					NT_PRINTER_INFO_LEVEL *printer,
+					TALLOC_CTX *mem_ctx)
+{
+	data->notify_data.value[0]=0;  /* Add code when back-end tracks this */
+	data->notify_data.value[1]=0;
+}
+
+/*******************************************************************
  Fill a notify_info_data with job position.
  ********************************************************************/
 
@@ -2141,8 +2168,8 @@ struct s_notify_info_data_table notify_info_data_table[] =
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_START_TIME,              "JOB_NOTIFY_START_TIME",              ONE_VALUE, spoolss_notify_start_time },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_UNTIL_TIME,              "JOB_NOTIFY_UNTIL_TIME",              ONE_VALUE, spoolss_notify_until_time },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_TIME,                    "JOB_NOTIFY_TIME",                    ONE_VALUE, spoolss_notify_job_time },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_PAGES,             "JOB_NOTIFY_TOTAL_PAGES",             ONE_VALUE, NULL },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PAGES_PRINTED,           "JOB_NOTIFY_PAGES_PRINTED",           ONE_VALUE, NULL },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_PAGES,             "JOB_NOTIFY_TOTAL_PAGES",             ONE_VALUE, spoolss_notify_total_pages },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PAGES_PRINTED,           "JOB_NOTIFY_PAGES_PRINTED",           ONE_VALUE, spoolss_notify_pages_printed },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_BYTES,             "JOB_NOTIFY_TOTAL_BYTES",             ONE_VALUE, spoolss_notify_job_size },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_BYTES_PRINTED,           "JOB_NOTIFY_BYTES_PRINTED",           ONE_VALUE, NULL },
 { END,                 END,                                "",                                   END,       NULL }
@@ -3905,6 +3932,7 @@ uint32 _spoolss_endpageprinter(pipes_struct *p, POLICY_HND *handle)
 	}
 	
 	Printer->page_started=False;
+	print_job_endpage(Printer->jobid);
 
 	return NT_STATUS_NO_PROBLEMO;
 }
@@ -3961,7 +3989,6 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 	unistr2_to_ascii(jobname, &info_1->docname, sizeof(jobname));
 	
 	Printer->jobid = print_job_start(&user, snum, jobname);
-
 	/* An error occured in print_job_start() so return an appropriate
 	   NT error code. */
 
@@ -3991,6 +4018,7 @@ uint32 _spoolss_enddocprinter(pipes_struct *p, POLICY_HND *handle)
 	
 	Printer->document_started=False;
 	print_job_end(Printer->jobid,True);
+	
 	/* error codes unhandled so far ... */
 
 	return 0x0;
@@ -4773,7 +4801,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	job_info->status=nt_printj_status(queue->status);
 	job_info->priority=queue->priority;
 	job_info->position=position;
-	job_info->totalpages=0;
+	job_info->totalpages=queue->page_count;
 	job_info->pagesprinted=0;
 
 	make_systemtime(&job_info->submitted, t);
@@ -4816,7 +4844,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	job_info->position=position;
 	job_info->starttime=0;
 	job_info->untiltime=0;
-	job_info->totalpages=0;
+	job_info->totalpages=queue->page_count;
 	job_info->size=queue->size;
 	make_systemtime(&(job_info->submitted), t);
 	job_info->timeelapsed=0;
@@ -5805,7 +5833,6 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	}
 
 	update_c_setprinter(FALSE);
-
 	srv_spoolss_sendnotify(printer->info_2->printername, 0, PRINTER_CHANGE_ADD_PRINTER, 0x0);
 
 	free_a_printer(&printer,2);
