@@ -1,6 +1,6 @@
 HEADERS = \
 	asn1.h asn1_err.h bits.h cache.h config_file.h \
-	des.h error.h gssapi.h hdb.h hdb_err.h \
+	des.h error.h getarg.h gssapi.h hdb.h hdb_err.h \
 	keytab.h krb5.h krb5_err.h md4.h md5.h roken.h \
 	sha.h sl.h store.h
 
@@ -65,6 +65,9 @@ err.h:
 	if test "$(HAVE_ERR_H)" != yes; then \
 	  $(LN_S) $(top_srcdir)/lib/roken/err.h err.h; \
 	fi || true
+
+getarg.h:
+	$(LN_S) $(top_srcdir)/lib/roken/getarg.h .
 
 error.h:
 	$(LN_S) $(top_srcdir)/lib/error/error.h .
