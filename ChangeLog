@@ -1,5 +1,14 @@
 1999-07-22  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/n-fold-test.c (main): print the correct data
+
+	* appl/Makefile.am (SUBDIRS): add kf
+
+	* appl/kf: new program.  From Miroslav Ruda <ruda@ics.muni.cz>
+
+	* kdc/hprop.c: declare some variables unconditionally to simplify
+ 	things
+
 	* kpasswd/kpasswdd.c: initialize kadm5 connection for every change
  	(otherwise the modifier in the database doesn't get set)
 

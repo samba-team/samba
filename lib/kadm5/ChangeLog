@@ -1,3 +1,7 @@
+1999-07-22  Assar Westerlund  <assar@sics.se>
+
+	* log.c (kadm5_log_flush): extra cast
+
 1999-07-07  Assar Westerlund  <assar@sics.se>
 
 	* marshall.c (store_principal_ent): encoding princ_expire_time and

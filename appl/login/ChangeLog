@@ -1,3 +1,7 @@
+1999-07-22  Assar Westerlund  <assar@sics.se>
+
+	* login.c (main): generate a better tty name
+
 1999-05-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* login.c (do_login): set $SHELL
