@@ -1534,17 +1534,6 @@ static int get_version_id (char * arch)
 
 /********************************************************************
  * _spoolss_deleteprinterdriver
- *
- * We currently delete the driver for the architecture only.
- * This can leave the driver for other archtectures.  However,
- * since every printer associates a "Windows NT x86" driver name
- * and we cannot delete that one while it is in use, **and** since
- * it is impossible to assign a driver to a Samba printer without
- * having the "Windows NT x86" driver installed,...
- * 
- * ....we should not get into trouble here.  
- *
- *                                                      --jerry
  ********************************************************************/
 
 WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER *q_u, SPOOL_R_DELETEPRINTERDRIVER *r_u)
@@ -1553,6 +1542,9 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	fstring				arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	int				version;
+	struct current_user		user;
+	
+	get_current_user(&user, p);
 	 
 	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
 	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
@@ -1576,7 +1568,7 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	if (printer_driver_in_use(info.info_3))
 		return WERR_PRINTER_DRIVER_IN_USE;
 
-	return delete_printer_driver(info.info_3, False);
+	return delete_printer_driver(info.info_3, &user, DRIVER_ANY_VERSION, False);
 }
 
 /********************************************************************
@@ -1591,6 +1583,9 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	int				version;
 	uint32				flags = q_u->delete_flags;
 	BOOL				delete_files;
+	struct current_user		user;
+	
+	get_current_user(&user, p);
 	
 	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
 	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
@@ -1611,7 +1606,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	
 	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) 
 		return WERR_UNKNOWN_PRINTER_DRIVER;
-
+		
 	if ( printer_driver_in_use(info.info_3) )
 		return WERR_PRINTER_DRIVER_IN_USE;
 	
@@ -1638,7 +1633,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 			return WERR_ACCESS_DENIED;	
 	}
 
-	return delete_printer_driver(info.info_3, delete_files);
+	return delete_printer_driver(info.info_3, &user, version, delete_files);
 }
 
 
@@ -6820,7 +6815,7 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 
 	ZERO_STRUCT(driver);
 
-	get_current_user(&user, p);	
+	get_current_user(&user, p);
 	
 	if (!convert_printer_driver_info(info, &driver, level)) {
 		err = WERR_NOMEM;
