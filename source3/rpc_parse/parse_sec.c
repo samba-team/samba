@@ -419,12 +419,11 @@ SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
 		dacl = new_sdb->sec->dacl;
 	} else {
 		dacl = old_sdb->sec->dacl;
-		secdesc_type |= SEC_DESC_DACL_PRESENT;
 	}
 
 	/* Create new security descriptor from bits */
 
-	psd = make_sec_desc(new_sdb->sec->revision, secdesc_type,
+	psd = make_sec_desc(new_sdb->sec->revision, 
 			    owner_sid, group_sid, sacl, dacl, &secdesc_size);
 
 	return_sdb = make_sec_desc_buf(secdesc_size, psd);
@@ -438,7 +437,7 @@ SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
  Creates a SEC_DESC structure
 ********************************************************************/
 
-SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
+SEC_DESC *make_sec_desc(uint16 revision, 
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
 			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size)
 {
@@ -453,7 +452,10 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 	ZERO_STRUCTP(dst);
 
 	dst->revision = revision;
-	dst->type     = type;
+	dst->type     = SEC_DESC_SELF_RELATIVE;
+
+	if (sacl) dst->type |= SEC_DESC_SACL_PRESENT;
+	if (dacl) dst->type |= SEC_DESC_DACL_PRESENT;
 
 	dst->off_owner_sid = 0;
 	dst->off_grp_sid   = 0;
@@ -535,7 +537,7 @@ SEC_DESC *dup_sec_desc( SEC_DESC *src)
 	if(src == NULL)
 		return NULL;
 
-	return make_sec_desc( src->revision, src->type, 
+	return make_sec_desc( src->revision, 
 				src->owner_sid, src->grp_sid, src->sacl,
 				src->dacl, &dummy);
 }
@@ -568,7 +570,7 @@ void free_sec_desc(SEC_DESC **ppsd)
 SEC_DESC *make_standard_sec_desc(DOM_SID *owner_sid, DOM_SID *grp_sid,
 				 SEC_ACL *dacl, size_t *sd_size)
 {
-	return make_sec_desc(SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
+	return make_sec_desc(SEC_DESC_REVISION,
 			     owner_sid, grp_sid, NULL, dacl, sd_size);
 }
 

@@ -2693,7 +2693,6 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 		/* Make a deep copy of the security descriptor */
 
 		psd = make_sec_desc(secdesc_ctr->sec->revision,
-				    secdesc_ctr->sec->type,
 				    owner_sid, group_sid,
 				    sacl,
 				    dacl,
@@ -2800,8 +2799,6 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 
 	if ((psa = make_sec_acl(NT4_ACL_REVISION, 2, ace)) != NULL) {
 		psd = make_sec_desc(SEC_DESC_REVISION,
-				    SEC_DESC_SELF_RELATIVE |
-				    SEC_DESC_DACL_PRESENT,
 				    &owner_sid, NULL,
 				    NULL, psa, &sd_size);
 		free_sec_acl(&psa);
@@ -2874,7 +2871,6 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 			sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 
 			psd = make_sec_desc((*secdesc_ctr)->sec->revision,
-					    (*secdesc_ctr)->sec->type,
 					    &owner_sid,
 					    (*secdesc_ctr)->sec->grp_sid,
 					    (*secdesc_ctr)->sec->sacl,

@@ -708,7 +708,7 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 	DEBUG(4,("REG Create Key: %s %s 0x%08x\n", key_name, key_class,
 		sam_access != NULL ? sam_access->mask : 0));
 
-	if((sec = make_sec_desc( 1, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, NULL, &sec_len)) == NULL) {
+	if((sec = make_sec_desc( 1, NULL, NULL, NULL, NULL, &sec_len)) == NULL) {
 		DEBUG(0,("make_sec_desc : malloc fail.\n"));
 		return False;
 	}
