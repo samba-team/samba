@@ -177,7 +177,7 @@ static struct cli_state *connect_one(char *share)
 
 	nt_status = cli_full_connection(&c, myname, server_n, NULL, 0, share, "?????", 
 					username, lp_workgroup(), password, 0,
-					NULL);
+					Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("cli_full_connection failed with error %s\n", nt_errstr(nt_status)));

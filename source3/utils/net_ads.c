@@ -848,7 +848,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 					opt_user_name, opt_workgroup,
 					opt_password ? opt_password : "", 
 					CLI_FULL_CONNECTION_USE_KERBEROS, 
-					NULL);
+					Undefined, NULL);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		d_printf("Unable to open a connnection to %s to obtain data "

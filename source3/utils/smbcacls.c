@@ -724,7 +724,8 @@ static struct cli_state *connect_one(const char *share)
 							    &ip, 0,
 							    share, "?????",  
 							    cmdline_auth_info.username, lp_workgroup(),
-							    cmdline_auth_info.password, 0, NULL))) {
+							    cmdline_auth_info.password, 0,
+							    cmdline_auth_info.signing_state, NULL))) {
 		return c;
 	} else {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));

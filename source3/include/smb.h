@@ -42,6 +42,7 @@
 #define SMB_PORT2 139
 #define SMB_PORTS "445 139"
 
+#define Undefined (-1)
 #define False (0)
 #define True (1)
 #define Auto (2)

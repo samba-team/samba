@@ -726,7 +726,8 @@ out_free:
 					opt_ipaddr ? &server_ip : NULL, 0,
 					"IPC$", "IPC",  
 					cmdline_auth_info.username, lp_workgroup(),
-					cmdline_auth_info.password, 0, NULL);
+					cmdline_auth_info.password, 0,
+					cmdline_auth_info.signing_state,NULL);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));

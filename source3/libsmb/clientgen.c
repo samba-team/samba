@@ -209,6 +209,27 @@ void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 }
 
 /****************************************************************************
+ Set the signing state (used from the command line).
+****************************************************************************/
+
+void cli_setup_signing_state(struct cli_state *cli, int signing_state)
+{
+	if (signing_state == Undefined)
+		return;
+
+	if (signing_state == False) {
+		cli->sign_info.allow_smb_signing = False;
+		cli->sign_info.mandatory_signing = False;
+		return;
+	}
+
+	cli->sign_info.allow_smb_signing = True;
+
+	if (signing_state == Required) 
+		cli->sign_info.mandatory_signing = True;
+}
+
+/****************************************************************************
  Initialise a client structure.
 ****************************************************************************/
 

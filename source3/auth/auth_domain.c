@@ -69,7 +69,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	/* Attempt connection */
 	*retry = True;
 	result = cli_full_connection(cli, global_myname(), dc_name, &dc_ip, 0, 
-		"IPC$", "IPC", "", "", "", 0, retry);
+		"IPC$", "IPC", "", "", "", 0, Undefined, retry);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		/* map to something more useful */

@@ -258,19 +258,21 @@ static void get_credentials_file(const char *file, struct user_auth_info *info)
  *		-A,--authentication-file
  *		-k,--use-kerberos
  *		-N,--no-pass
+ *		-S,--signing
  */
 
 
 static void popt_common_credentials_callback(poptContext con, 
-											 enum poptCallbackReason reason,
-											 const struct poptOption *opt,
-											 const char *arg, const void *data)
+					enum poptCallbackReason reason,
+					const struct poptOption *opt,
+					const char *arg, const void *data)
 {
 	char *p;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		cmdline_auth_info.use_kerberos = False;
 		cmdline_auth_info.got_pass = False;
+		cmdline_auth_info.signing_state = Undefined;
 		pstrcpy(cmdline_auth_info.username, "GUEST");	
 
 		if (getenv("LOGNAME"))pstrcpy(cmdline_auth_info.username,getenv("LOGNAME"));
@@ -327,6 +329,22 @@ static void popt_common_credentials_callback(poptContext con,
 		cmdline_auth_info.got_pass = True;
 #endif
 		break;
+
+	case 'S':
+		{
+			cmdline_auth_info.signing_state = -1;
+			if (strequal(arg, "off") || strequal(arg, "no") || strequal(arg, "false"))
+				cmdline_auth_info.signing_state = False;
+			else if (strequal(arg, "on") || strequal(arg, "yes") || strequal(arg, "true"))
+				cmdline_auth_info.signing_state = True;
+			else if (strequal(arg, "force") || strequal(arg, "required") || strequal(arg, "forced"))
+				cmdline_auth_info.signing_state = Required;
+			else {
+				fprintf(stderr, "Unknown signing option %s\n", arg );
+				exit(1);
+			}
+		}
+		break;
 	}
 }
 
@@ -338,5 +356,6 @@ struct poptOption popt_common_credentials[] = {
 	{ "no-pass", 'N', POPT_ARG_NONE, &cmdline_auth_info.got_pass, 0, "Don't ask for a password" },
 	{ "kerberos", 'k', POPT_ARG_NONE, &cmdline_auth_info.use_kerberos, 'k', "Use kerberos (active directory) authentication" },
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
+	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
 	POPT_TABLEEND
 };
