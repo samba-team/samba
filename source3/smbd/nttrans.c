@@ -1521,6 +1521,155 @@ int reply_ntcancel(connection_struct *conn,
 }
 
 /****************************************************************************
+ Copy a file.
+****************************************************************************/
+
+static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *newname, uint16 attrs)
+{
+	BOOL bad_path_oldname = False;
+	BOOL bad_path_newname = False;
+	SMB_STRUCT_STAT sbuf1, sbuf2;
+	pstring last_component_oldname;
+	pstring last_component_newname;
+	files_struct *fsp1,*fsp2;
+	uint16 fmode;
+	int access_mode;
+	int smb_action;
+	SMB_OFF_T ret=-1;
+	int close_ret;
+	NTSTATUS status = NT_STATUS_OK;
+
+	ZERO_STRUCT(sbuf1);
+	ZERO_STRUCT(sbuf2);
+
+	/* No wildcards. */
+	if (ms_has_wild(newname) || ms_has_wild(oldname)) {
+		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+	}
+
+	if (!CAN_WRITE(conn))
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+
+	unix_convert(oldname,conn,last_component_oldname,&bad_path_oldname,&sbuf1);
+	if (bad_path_oldname) {
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+
+	/* Quick check for "." and ".." */
+	if (last_component_oldname[0] == '.') {
+		if (!last_component_oldname[1] || (last_component_oldname[1] == '.' && !last_component_oldname[2])) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+	}
+
+        /* Source must already exist. */
+	if (!VALID_STAT(sbuf1)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	if (!check_name(oldname,conn)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* Ensure attributes match. */
+	fmode = dos_mode(conn,oldname,&sbuf1);
+	if ((fmode & ~attrs) & (aHIDDEN | aSYSTEM))
+		return NT_STATUS_NO_SUCH_FILE;
+
+	unix_convert(newname,conn,last_component_newname,&bad_path_newname,&sbuf2);
+	if (bad_path_newname) {
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+
+	/* Quick check for "." and ".." */
+	if (last_component_newname[0] == '.') {
+		if (!last_component_newname[1] || (last_component_newname[1] == '.' && !last_component_newname[2])) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+	}
+
+	/* Disallow if newname already exists. */
+	if (VALID_STAT(sbuf2)) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	if (!check_name(newname,conn)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* No links from a directory. */
+	if (S_ISDIR(sbuf1.st_mode)) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
+	/* Ensure this is within the share. */
+	if (!reduce_name(conn, oldname) != 0) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	DEBUG(10,("copy_internals: doing file copy %s to %s\n", oldname, newname));
+
+        fsp1 = open_file_shared1(conn,oldname,&sbuf1,FILE_READ_DATA,SET_DENY_MODE(DENY_ALL)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
+			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),FILE_ATTRIBUTE_NORMAL,0,
+			&access_mode,&smb_action);
+
+	if (!fsp1) {
+		status = NT_STATUS_ACCESS_DENIED;
+		if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
+			status = NT_STATUS_SHARING_VIOLATION;
+		unix_ERR_class = 0;
+		unix_ERR_code = 0;
+		unix_ERR_ntstatus = NT_STATUS_OK;
+		return status;
+	}
+
+	fsp2 = open_file_shared1(conn,newname,&sbuf2,FILE_WRITE_DATA,SET_DENY_MODE(DENY_ALL)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
+			(FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL),fmode,INTERNAL_OPEN_ONLY,
+			&access_mode,&smb_action);
+
+	if (!fsp2) {
+		status = NT_STATUS_ACCESS_DENIED;
+		if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
+			status = NT_STATUS_SHARING_VIOLATION;
+		unix_ERR_class = 0;
+		unix_ERR_code = 0;
+		unix_ERR_ntstatus = NT_STATUS_OK;
+		close_file(fsp1,False);
+		return status;
+	}
+
+	if (sbuf1.st_size)
+		ret = vfs_transfer_file(fsp1, fsp2, sbuf1.st_size);
+
+	/*
+	 * As we are opening fsp1 read-only we only expect
+	 * an error on close on fsp2 if we are out of space.
+	 * Thus we don't look at the error return from the
+	 * close of fsp1.
+	 */
+	close_file(fsp1,False);
+
+	/* Ensure the modtime is set correctly on the destination file. */
+	fsp2->pending_modtime = sbuf1.st_mtime;
+
+	close_ret = close_file(fsp2,False);
+
+	/* Grrr. We have to do this as open_file_shared1 adds aARCH when it
+	   creates the file. This isn't the correct thing to do in the copy case. JRA */
+	file_set_dosmode(conn, newname, fmode, &sbuf2);
+
+	if (ret < (SMB_OFF_T)sbuf1.st_size) {
+		return NT_STATUS_DISK_FULL;
+	}
+
+	if (close_ret != 0) {
+		status = map_nt_error_from_unix(close_ret);
+		DEBUG(3,("copy_internals: Error %s copy file %s to %s\n",
+			nt_errstr(status), oldname, newname));
+	}
+	return status;
+}
+
+/****************************************************************************
  Reply to a NT rename request.
 ****************************************************************************/
 
@@ -1536,11 +1685,6 @@ int reply_ntrename(connection_struct *conn,
 	uint16 rename_type = SVAL(inbuf,smb_vwv1);
 
 	START_PROFILE(SMBntrename);
-
-	if ((rename_type != RENAME_FLAG_RENAME) && (rename_type != RENAME_FLAG_HARD_LINK)) {
-		END_PROFILE(SMBntrename);
-		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
-	}
 
 	p = smb_buf(inbuf) + 1;
 	p += srvstr_get_path(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, True);
@@ -1572,10 +1716,22 @@ int reply_ntrename(connection_struct *conn,
 	
 	DEBUG(3,("reply_ntrename : %s -> %s\n",oldname,newname));
 	
-	if (rename_type == RENAME_FLAG_RENAME) {
-		status = rename_internals(conn, oldname, newname, attrs, False);
-	} else {
-		status = hardlink_internals(conn, oldname, newname);
+	switch(rename_type) {
+		case RENAME_FLAG_RENAME:
+			status = rename_internals(conn, oldname, newname, attrs, False);
+			break;
+		case RENAME_FLAG_HARD_LINK:
+			status = hardlink_internals(conn, oldname, newname);
+			break;
+		case RENAME_FLAG_COPY:
+			status = copy_internals(conn, oldname, newname, attrs);
+			break;
+		case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
+			status = NT_STATUS_INVALID_PARAMETER;
+			break;
+		default:
+			status = NT_STATUS_ACCESS_DENIED; /* Default error. */
+			break;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
