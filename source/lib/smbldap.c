@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
    Copyright (C) Jean François Micouleau	1998
    Copyright (C) Gerald Carter			2001-2003
@@ -155,6 +155,19 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
+
+
+/* trust password attributes */
+
+ATTRIB_MAP_ENTRY trustpw_attr_list[] = {
+	{ LDAP_ATTR_DOMAIN,             "sambaDomainName"       },
+	{ LDAP_ATTR_NTPW,		"sambaNTPassword"	},
+	{ LDAP_ATTR_TRUST_PASSWD_FLAGS, "sambaTrustFlags"       },
+	{ LDAP_ATTR_SID,		LDAP_ATTRIBUTE_SID	},
+	{ LDAP_ATTR_PWD_LAST_SET,	"sambaPwdLastSet"	},
+	{ LDAP_ATTR_LIST_END,           NULL                    }
+};
+
 
 /* privileges */
 

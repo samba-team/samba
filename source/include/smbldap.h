@@ -118,6 +118,7 @@ extern ATTRIB_MAP_ENTRY privilege_attr_list[];
 extern ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[];
 extern ATTRIB_MAP_ENTRY idpool_attr_list[];
 extern ATTRIB_MAP_ENTRY sidmap_attr_list[];
+extern ATTRIB_MAP_ENTRY trustpw_attr_list[];
 
 /* Function declarations -- not included in proto.h so we don't
    have to worry about LDAP structure types */
