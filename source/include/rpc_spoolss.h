@@ -38,10 +38,8 @@
 #define SPOOLSS_ABORTPRINTER				0x15
 #define SPOOLSS_READPRINTER				0x16
 #define SPOOLSS_WAITFORPRINTERCHANGE			0x1c
-#define SPOOLSS_ADDFORM					0x1e
 #define SPOOLSS_DELETEFORM				0x1f
 #define SPOOLSS_GETFORM					0x20
-#define SPOOLSS_SETFORM					0x21
 #define SPOOLSS_ENUMMONITORS				0x24
 #define SPOOLSS_ADDPORT					0x25
 #define SPOOLSS_CONFIGUREPORT				0x26
@@ -93,6 +91,8 @@
 #define SPOOLSS_GETPRINTERDATA				0x1a
 #define SPOOLSS_SETPRINTERDATA				0x1b
 #define SPOOLSS_CLOSEPRINTER				0x1d
+#define SPOOLSS_ADDFORM					0x1e
+#define SPOOLSS_SETFORM					0x21
 #define SPOOLSS_ENUMFORMS				0x22
 #define SPOOLSS_ENUMPORTS				0x23
 #define SPOOLSS_ENUMPRINTPROCESSORDATATYPES		0x33
@@ -1398,12 +1398,52 @@ typedef struct spool_q_setprinterdata
 	uint8 *data;
 	uint32 real_len;
 	uint32 numeric_data;
-}SPOOL_Q_SETPRINTERDATA;
+} SPOOL_Q_SETPRINTERDATA;
 
 typedef struct spool_r_setprinterdata
 {
 	uint32 status;
-}SPOOL_R_SETPRINTERDATA;
+} SPOOL_R_SETPRINTERDATA;
+
+typedef struct _form
+{
+       uint32 flags;
+       uint32 name_ptr;
+       uint32 size_x;
+       uint32 size_y;
+       uint32 left;
+       uint32 top;
+       uint32 right;
+       uint32 bottom;
+       UNISTR2 name;
+} FORM;
+
+typedef struct spool_q_addform
+{
+	PRINTER_HND handle;
+	uint32 level;
+	uint32 level2;
+	FORM form;
+} SPOOL_Q_ADDFORM;
+
+typedef struct spool_r_addform
+{
+	uint32 status;
+} SPOOL_R_ADDFORM;
+
+typedef struct spool_q_setform
+{
+	PRINTER_HND handle;
+	UNISTR2 name;
+	uint32 level;
+	uint32 level2;
+	FORM form;
+} SPOOL_Q_SETFORM;
+
+typedef struct spool_r_setform
+{
+	uint32 status;
+} SPOOL_R_SETFORM;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"

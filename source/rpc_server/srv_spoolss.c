@@ -430,6 +430,7 @@ static void api_spoolss_open_printer(pipes_struct *p, prs_struct *data, prs_stru
 static BOOL getprinterdata_printer_server(fstring value, uint32 size, uint32 *type, 
                                           uint32 *numeric_data, uint8 **data, uint32 *needed)
 {		
+	int i;
 		
 	if (!strcmp(value, "BeepEnabled"))
 	{
@@ -492,8 +493,14 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 size, uint32 *ty
 		*type = 0x1;			
 		*data  = (uint8 *)malloc( size*sizeof(uint8) );
 		ZERO_STRUCTP(*data);
-		make_unistr((UNISTR *)*data, directory);
-		*needed = 2*(strlen(directory)+1);			
+		
+		/* it's done by hand ready to go on the wire */
+		for (i=0; i<strlen(directory); i++)
+		{
+			(*data)[2*i]=directory[i];
+			(*data)[2*i+1]='\0';
+		}			
+		*needed = 2*(strlen(directory)+1);
 		return True;
 	}
 
@@ -503,7 +510,11 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 size, uint32 *ty
 		*type = 0x1;			
 		*data  = (uint8 *)malloc( size*sizeof(uint8) );
 		ZERO_STRUCTP(*data);
-		make_unistr((UNISTR *)*data, directory);
+		for (i=0; i<strlen(directory); i++)
+		{
+			(*data)[2*i]=directory[i];
+			(*data)[2*i+1]='\0';
+		}			
 		*needed = 2*(strlen(directory)+1);	
 		return True;
 	}
@@ -1824,6 +1835,8 @@ static void api_spoolss_enumprinters(pipes_struct *p, prs_struct *data,
 	spoolss_io_q_enumprinters("", &q_u, data, 0);
 
 	spoolss_reply_enumprinters(&q_u, rdata, p->conn);
+	
+	spoolss_io_free_buffer(&(q_u.buffer));
 }
 
 
@@ -2124,6 +2137,8 @@ static void api_spoolss_getprinterdriver2(pipes_struct *p, prs_struct *data,
 	spoolss_io_q_getprinterdriver2("", &q_u, data, 0);
 	
 	spoolss_reply_getprinterdriver2(&q_u, rdata);
+	
+	spoolss_io_free_buffer(&(q_u.buffer));
 }
 
 /****************************************************************************
@@ -2599,6 +2614,8 @@ static void api_spoolss_addjob(pipes_struct *p, prs_struct *data,
 	spoolss_io_q_addjob("", &q_u, data, 0);
 
 	spoolss_reply_addjob(&q_u, rdata);
+	
+	spoolss_io_free_buffer(&(q_u.buffer));
 }
 
 /****************************************************************************
@@ -2757,6 +2774,8 @@ static void api_spoolss_enumjobs(pipes_struct *p, prs_struct *data,
 	spoolss_io_q_enumjobs("", &q_u, data, 0);
 
 	spoolss_reply_enumjobs(&q_u, rdata, p->conn);
+	
+	spoolss_io_free_buffer(&(q_u.buffer));
 }
 
 /****************************************************************************
@@ -2958,6 +2977,8 @@ static void api_spoolss_enumprinterdrivers(pipes_struct *p, prs_struct *data,
 	spoolss_io_q_enumprinterdrivers("", &q_u, data, 0);
 
 	spoolss_reply_enumprinterdrivers(&q_u, rdata, p->conn);
+	
+	spoolss_io_free_buffer(&(q_u.buffer));
 }
 
 
@@ -3033,8 +3054,12 @@ static void api_spoolss_enumforms(pipes_struct *p, prs_struct *data,
 	spoolss_io_q_enumforms("", &q_u, data, 0);
 
 	spoolss_reply_enumforms(&q_u, rdata);
+	
+	spoolss_io_free_buffer(&(q_u.buffer));
 }
 
+/****************************************************************************
+****************************************************************************/
 static void fill_port_2(PORT_INFO_2 *port, char *name)
 {
 	make_unistr(&(port->port_name), name);
@@ -3101,6 +3126,8 @@ static void api_spoolss_enumports(pipes_struct *p, prs_struct *data,
 	spoolss_io_q_enumports("", &q_u, data, 0);
 
 	spoolss_reply_enumports(&q_u, rdata);
+	
+	spoolss_io_free_buffer(&(q_u.buffer));
 }
 
 /****************************************************************************
@@ -3225,6 +3252,8 @@ static void api_spoolss_getprinterdriverdirectory(pipes_struct *p, prs_struct *d
 	spoolss_io_q_getprinterdriverdir("", &q_u, data, 0);
 	
 	spoolss_reply_getprinterdriverdirectory(&q_u, rdata);
+	
+	spoolss_io_free_buffer(&(q_u.buffer));
 }
 
 /****************************************************************************
@@ -3381,6 +3410,86 @@ static void api_spoolss_setprinterdata(pipes_struct *p, prs_struct *data,
 	free(q_u.data);
 }
 
+/****************************************************************************
+****************************************************************************/
+static void spoolss_reply_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata)
+{
+       SPOOL_R_ADDFORM r_u;
+       int pnum=0;
+       int count=0;
+       nt_forms_struct *list=NULL;
+
+       DEBUG(5,("spoolss_reply_addform\n"));
+
+       pnum = find_printer_index_by_hnd(&(q_u->handle));
+
+       if (OPEN_HANDLE(pnum))
+       {
+	       count=get_ntforms(&list);
+
+	       add_a_form(&list, q_u->form, count);
+
+	       write_ntforms(&list, count+1);
+
+	       free(list);
+       }
+
+       r_u.status = 0x0;
+       spoolss_io_r_addform("", &r_u, rdata, 0);
+}
+
+/****************************************************************************
+****************************************************************************/
+static void api_spoolss_addform(pipes_struct *p, prs_struct *data,
+				prs_struct *rdata)
+{
+       SPOOL_Q_ADDFORM q_u;
+
+       spoolss_io_q_addform("", &q_u, data, 0);
+
+       spoolss_reply_addform(&q_u, rdata);
+}
+
+
+/****************************************************************************
+****************************************************************************/
+static void spoolss_reply_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata)
+{
+	SPOOL_R_SETFORM r_u;
+	int pnum=0;
+	int count=0;
+	nt_forms_struct *list=NULL;
+
+ 	DEBUG(5,("spoolss_reply_setform\n"));
+
+	pnum = find_printer_index_by_hnd(&(q_u->handle));
+
+	if (OPEN_HANDLE(pnum))
+	{
+		count=get_ntforms(&list);
+
+		update_a_form(&list, q_u->form, count);
+
+		write_ntforms(&list, count);
+
+		free(list);
+	}
+	r_u.status = 0x0;
+	spoolss_io_r_setform("", &r_u, rdata, 0);
+}
+
+/****************************************************************************
+****************************************************************************/
+static void api_spoolss_setform(pipes_struct *p, prs_struct *data,
+				prs_struct *rdata)
+{
+	SPOOL_Q_SETFORM q_u;
+
+	spoolss_io_q_setform("", &q_u, data, 0);
+
+	spoolss_reply_setform(&q_u, rdata);
+}
+
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
@@ -3413,6 +3522,8 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_GETPRINTERDRIVERDIRECTORY", SPOOLSS_GETPRINTERDRIVERDIRECTORY, api_spoolss_getprinterdriverdirectory },
  {"SPOOLSS_ENUMPRINTERDATA",           SPOOLSS_ENUMPRINTERDATA,           api_spoolss_enumprinterdata           },
  {"SPOOLSS_SETPRINTERDATA",            SPOOLSS_SETPRINTERDATA,            api_spoolss_setprinterdata            },
+ {"SPOOLSS_ADDFORM",                   SPOOLSS_ADDFORM,                   api_spoolss_addform                   },
+ {"SPOOLSS_SETFORM",                   SPOOLSS_SETFORM,                   api_spoolss_setform                   },
  { NULL,                               0,                                 NULL                                  }
 };
 

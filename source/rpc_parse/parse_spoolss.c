@@ -471,6 +471,7 @@ void spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 		case 0x1:
 		case 0x3:
 		case 0x4:
+		case 0x7:
 			prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size);
 			prs_align(ps);
 			break;
@@ -1387,6 +1388,23 @@ static void spoolss_io_read_buffer(char *desc, prs_struct *ps, int depth, BUFFER
 	}
 }
 
+/*******************************************************************
+ * read a uint8 buffer of size *size.
+ * allocate memory for it
+ * return a pointer to the allocated memory and the size
+ * return NULL and a size of 0 if the buffer is empty
+ *
+ * jfmxxxx: fix it to also write a buffer
+ ********************************************************************/
+void spoolss_io_free_buffer(BUFFER *buffer)
+{
+       DEBUG(8,("spoolss_io_free_buffer\n"));
+
+       if (buffer->ptr != 0x0000)
+       {
+	       free(buffer->data);
+       }
+}
 
 /*******************************************************************
  * read a structure.
@@ -3341,6 +3359,7 @@ void spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 		case 0x1:
 		case 0x3:
 		case 0x4:
+		case 0x7:
 			q_u->data=(uint8 *)malloc(q_u->max_len * sizeof(uint8));
 			prs_uint8s(False,"data", ps, depth, q_u->data, q_u->max_len);
 			prs_align(ps);
@@ -3387,3 +3406,93 @@ void convert_specific_param(NT_PRINTER_PARAM **param, UNISTR2 value , uint32 typ
 		
 	DEBUGADD(6,("\tvalue:[%s], len:[%d]\n",(*param)->value, (*param)->data_len));
 }
+
+/*******************************************************************
+********************************************************************/  
+static void spoolss_io_addform(char *desc, FORM *f, uint32 ptr, prs_struct *ps, int depth)
+{
+       prs_debug(ps, depth, desc, "spoolss_io_addform");
+       depth++;
+       prs_align(ps);
+
+       if (ptr!=0)
+       {
+	       prs_uint32("flags",    ps, depth, &(f->flags));
+	       prs_uint32("name_ptr", ps, depth, &(f->name_ptr));
+	       prs_uint32("size_x",   ps, depth, &(f->size_x));
+	       prs_uint32("size_y",   ps, depth, &(f->size_y));
+	       prs_uint32("left",     ps, depth, &(f->left));
+	       prs_uint32("top",      ps, depth, &(f->top));
+	       prs_uint32("right",    ps, depth, &(f->right));
+	       prs_uint32("bottom",   ps, depth, &(f->bottom));
+
+	       smb_io_unistr2("", &(f->name), f->name_ptr, ps, depth);
+       }
+}
+
+/*******************************************************************
+********************************************************************/  
+void spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth)
+{
+       uint32 useless_ptr=0;
+       prs_debug(ps, depth, desc, "spoolss_io_q_addform");
+       depth++;
+
+       prs_align(ps);
+       smb_io_prt_hnd("printer handle", &(q_u->handle), ps, depth);
+       prs_uint32("level",  ps, depth, &(q_u->level));
+       prs_uint32("level2", ps, depth, &(q_u->level2));
+
+       if (q_u->level==1)
+       {
+	       prs_uint32("useless_ptr", ps, depth, &(useless_ptr));
+	       spoolss_io_addform("", &(q_u->form), useless_ptr, ps, depth);
+       }
+}
+
+/*******************************************************************
+********************************************************************/  
+void spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int depth)
+{
+       prs_debug(ps, depth, desc, "spoolss_io_r_addform");
+       depth++;
+
+       prs_align(ps);
+       prs_uint32("status",	ps, depth, &(r_u->status));
+}
+
+/*******************************************************************
+********************************************************************/  
+void spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth)
+{
+	uint32 useless_ptr=0;
+	prs_debug(ps, depth, desc, "spoolss_io_q_setform");
+	depth++;
+
+	prs_align(ps);
+	smb_io_prt_hnd("printer handle", &(q_u->handle), ps, depth);
+	smb_io_unistr2("", &(q_u->name), True, ps, depth);
+	      
+	prs_align(ps);
+	
+	prs_uint32("level",  ps, depth, &(q_u->level));
+	prs_uint32("level2", ps, depth, &(q_u->level2));
+
+	if (q_u->level==1)
+	{
+		prs_uint32("useless_ptr", ps, depth, &(useless_ptr));
+		spoolss_io_addform("", &(q_u->form), useless_ptr, ps, depth);
+	}
+}
+
+/*******************************************************************
+********************************************************************/  
+void spoolss_io_r_setform(char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_setform");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("status",	ps, depth, &(r_u->status));
+}
+

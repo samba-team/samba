@@ -1581,6 +1581,9 @@ struct passgrp_ops *unix_initialise_password_grp(void);
 /*The following definitions come from  printing/nt_printing.c  */
 
 int get_ntforms(nt_forms_struct **list);
+int write_ntforms(nt_forms_struct **list, int number);
+void add_a_form(nt_forms_struct **list, FORM form, int count);
+void update_a_form(nt_forms_struct **list, FORM form, int count);
 int get_ntdrivers(connection_struct *conn, fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);
 void dump_a_param(NT_PRINTER_PARAM *param);
@@ -2748,6 +2751,7 @@ void spoolss_io_q_rfnpcnex(char *desc, SPOOL_Q_RFNPCNEX *q_u,
 void spoolss_io_r_rfnpcnex(char *desc, 
                            SPOOL_R_RFNPCNEX *r_u, 
                            prs_struct *ps, int depth);
+void spoolss_io_free_buffer(BUFFER *buffer);
 void spoolss_io_q_getprinterdriver2(char *desc, 
 				    SPOOL_Q_GETPRINTERDRIVER2 *q_u,
                                     prs_struct *ps, int depth);
@@ -2814,6 +2818,10 @@ void spoolss_io_q_enumprinterdata(char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_
 void spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth);
 void spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
 void convert_specific_param(NT_PRINTER_PARAM **param, UNISTR2 value , uint32 type, uint8 *data, uint32 len);
+void spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_setform(char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
