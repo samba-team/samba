@@ -1320,6 +1320,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 	char *vname = volume_label(SNUM(conn));
 	int snum = SNUM(conn);
 	char *fstype = lp_fstype(SNUM(conn));
+	int quota_flag = 0;
 
 	DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
@@ -1369,14 +1370,14 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		case SMB_QUERY_FS_ATTRIBUTE_INFO:
 		case SMB_FS_ATTRIBUTE_INFORMATION:
 
+
+#if defined(HAVE_SYS_QUOTAS)
+			quota_flag = FILE_VOLUME_QUOTAS;
+#endif
+
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
 				(lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)|
-#if defined(HAVE_SYS_QUOTAS)
-				FILE_VOLUME_QUOTAS
-#else
-				0
-#if				
-				); /* FS ATTRIBUTES */
+				quota_flag); /* FS ATTRIBUTES */
 
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
