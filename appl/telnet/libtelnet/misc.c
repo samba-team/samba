@@ -38,6 +38,7 @@ RCSID("$Id$");
 #include "misc.h"
 #include "auth.h"
 #include "encrypt.h"
+#include <stdio.h>
 #include <string.h>
 #ifdef SOCKS
 #include <socks.h>
