@@ -482,6 +482,7 @@ case "$host_os" in
 		*bsd*) LDSHFLAGS="-shared -Bshareable"
 		;;
 		*irix*) AC_DEFINE(IRIX)
+			AC_N_DEFINE(_SGIAPI_)
 			case "$host_os" in
 			*irix6*) AC_DEFINE(IRIX6)
 			;;

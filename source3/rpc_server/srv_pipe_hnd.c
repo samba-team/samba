@@ -252,11 +252,16 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	
 	fstrcpy(p->name, pipe_name);
 	
+#if 0
+
+   Comment out until memory leak fixed. JRA.
+
 	/*
 	 * For Luke - attempt to connect to RPC redirect process.
 	 */
 
 	attempt_remote_rpc_connect(p);
+#endif
 
 	DEBUG(4,("Opened pipe %s with handle %x (pipes_open=%d)\n",
 		 pipe_name, i, pipes_open));
