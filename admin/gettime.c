@@ -37,32 +37,13 @@
  */
 
 #include "admin_locl.h"
-#if defined (HAVE_SYS_TIMEB_H)
-#include <sys/timeb.h>
-#else
-
-/* get_date uses the obsolete `struct timeb' in its interface!  FIXME.
-   Since some systems don't have it, we define it here;
-   callers must do likewise.  */
-struct timeb
-  {
-    time_t		time;		/* Seconds since the epoch	*/
-    unsigned short	millitm;	/* Field not used		*/
-    short		timezone;	/* Minutes west of GMT		*/
-    short		dstflag;	/* Field not used		*/
-};
-#endif /* defined (HAVE_SYS_TIMEB_H) */
+#include <parse_time.h>
 
 time_t 
-gettime(const char *prompt, const char *def, int relative)
+gettime(const char *prompt, const char *def)
 {
     char buf[1024];
     time_t t;
-    struct timeb now, *tp = NULL;
-    if(relative){
-	memset(&now, 0, sizeof(now));
-	tp = &now;
-    }
     while(1){
 	printf("%s", prompt);
 	if(def)
@@ -74,7 +55,7 @@ gettime(const char *prompt, const char *def, int relative)
 	if(def && buf[0] == 0) strcpy(buf, def);
 	if(strcmp(buf, "infinite") == 0 || strcmp(buf, "unlimited") == 0)
 	    return 0;
-	t = get_date(buf, tp);
+	t = parse_time (buf, NULL);
 	if(t != -1)
 	    return t;
 	printf("Unrecognised time.\n");
