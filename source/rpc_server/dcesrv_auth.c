@@ -344,10 +344,18 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	ndr_push_zero(ndr, dce_conn->auth_state.auth_info->auth_pad_length);
 
 	payload_length = ndr->offset - DCERPC_REQUEST_LENGTH;
-	
-	dce_conn->auth_state.auth_info->credentials
-		= data_blob_talloc(call->mem_ctx, NULL, 
-				   gensec_sig_size(dce_conn->auth_state.gensec_security));
+
+	if (dce_conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
+		status = dcesrv_connect_verifier(call->mem_ctx,
+						 &dce_conn->auth_state.auth_info->credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return False;
+		}
+	} else {
+		dce_conn->auth_state.auth_info->credentials
+			= data_blob_talloc(call->mem_ctx, NULL, 
+					   gensec_sig_size(dce_conn->auth_state.gensec_security));
+	}
 
 	/* add the auth verifier */
 	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, dce_conn->auth_state.auth_info);
@@ -388,8 +396,6 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
-		status = dcesrv_connect_verifier(call->mem_ctx,
-						 &dce_conn->auth_state.auth_info->credentials);
 		break;
 
 	default:
