@@ -126,6 +126,8 @@ typedef struct
   char *szUsernameMap;
   char *szAliasnameMap;
   char *szGroupnameMap;
+  char *szBuiltinnameMap;
+  char *szNTusernameMap;
   char *szCharacterSet;
   char *szLogonScript;
   char *szLogonPath;
@@ -517,9 +519,13 @@ static struct parm_struct parm_table[] =
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL,  0},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL,   NULL,  0},
   {"smb passwd file",  P_STRING,  P_GLOBAL, &Globals.szSMBPasswdFile,   NULL,   NULL,  0},
+#if USE_SMBFILE_DB
   {"smb passgrp file", P_STRING,  P_GLOBAL, &Globals.szSMBPassGroupFile, NULL,   NULL,  0},
+#endif
+#if USE_SMBGROUP_DB
   {"smb group file",   P_STRING,  P_GLOBAL, &Globals.szSMBGroupFile,    NULL,   NULL,  0},
   {"smb alias file",   P_STRING,  P_GLOBAL, &Globals.szSMBAliasFile,    NULL,   NULL,  0},
+#endif
   {"hosts equiv",      P_STRING,  P_GLOBAL, &Globals.szHostsEquiv,      NULL,   NULL,  0},
   {"root directory",   P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
   {"root dir",         P_STRING,  P_GLOBAL, &Globals.szRootdir,         NULL,   NULL,  0},
@@ -687,6 +693,8 @@ static struct parm_struct parm_table[] =
 
   {"local group map",   P_STRING, P_GLOBAL, &Globals.szAliasnameMap,     NULL,   NULL,  0},
   {"domain group map",  P_STRING, P_GLOBAL, &Globals.szGroupnameMap,     NULL,   NULL,  0},
+  {"builtin group map", P_STRING, P_GLOBAL, &Globals.szBuiltinnameMap,   NULL,   NULL,  0},
+  {"domain user map",   P_STRING, P_GLOBAL, &Globals.szNTusernameMap,     NULL,   NULL,  0},
   {"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout,  NULL,   NULL,  0},
 
   {"Logon Options", P_SEP, P_SEPARATOR},
@@ -819,9 +827,13 @@ static void init_globals(void)
   DEBUG(3,("Initialising global parameters\n"));
 
   string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
+#if USE_SMBFILE_DB
   string_set(&Globals.szSMBPassGroupFile, SMB_PASSGRP_FILE);
+#endif
+#if USE_SMBGROUP_DB
   string_set(&Globals.szSMBGroupFile, SMB_GROUP_FILE);
   string_set(&Globals.szSMBAliasFile, SMB_ALIAS_FILE);
+#endif
   string_set(&Globals.szPasswdChat,"*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*");
   string_set(&Globals.szWorkGroup, WORKGROUP);
   string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
@@ -1101,9 +1113,13 @@ FN_GLOBAL_STRING(lp_logfile,&Globals.szLogFile)
 FN_GLOBAL_STRING(lp_smbrun,&Globals.szSmbrun)
 FN_GLOBAL_STRING(lp_configfile,&Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file,&Globals.szSMBPasswdFile)
+#if USE_SMBFILE_DB
 FN_GLOBAL_STRING(lp_smb_passgrp_file,&Globals.szSMBPassGroupFile)
+#endif
+#if USE_SMBGROUP_DB
 FN_GLOBAL_STRING(lp_smb_group_file,&Globals.szSMBGroupFile)
 FN_GLOBAL_STRING(lp_smb_alias_file,&Globals.szSMBAliasFile)
+#endif
 FN_GLOBAL_STRING(lp_serverstring,&Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname,&Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_lockdir,&Globals.szLockDir)
@@ -1120,6 +1136,8 @@ FN_GLOBAL_STRING(lp_workgroup,&Globals.szWorkGroup)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_aliasname_map,&Globals.szAliasnameMap)
 FN_GLOBAL_STRING(lp_groupname_map,&Globals.szGroupnameMap)
+FN_GLOBAL_STRING(lp_builtinname_map,&Globals.szBuiltinnameMap)
+FN_GLOBAL_STRING(lp_ntusrname_map,&Globals.szNTusernameMap)
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 
 FN_GLOBAL_STRING(lp_logon_drive,&Globals.szLogonDrive) 

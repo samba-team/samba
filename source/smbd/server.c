@@ -651,15 +651,28 @@ static void usage(char *pname)
 
 	codepage_initialise(lp_client_code_page());
 
-	fstrcpy(global_myworkgroup, lp_workgroup());
-
-	get_sam_domain_name();
-
-	generate_wellknown_sids();
-
-	if (!generate_sam_sid())
+	if (!pwdb_initialise())
 	{
-		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
+		exit(1);
+	}
+
+	if(!initialise_sam_password_db())
+	{
+		exit(1);
+	}
+
+	if(!initialise_passgrp_db())
+	{
+		exit(1);
+	}
+
+	if(!initialise_group_db())
+	{
+		exit(1);
+	}
+
+	if(!initialise_alias_db())
+	{
 		exit(1);
 	}
 
@@ -700,7 +713,7 @@ static void usage(char *pname)
 		become_daemon();
 	}
 
-    check_kernel_oplocks();
+	check_kernel_oplocks();
 
 	if (!directory_exist(lp_lockdir(), NULL)) {
 		mkdir(lp_lockdir(), 0755);
@@ -714,18 +727,6 @@ static void usage(char *pname)
 		exit(1);
 
 	if (!locking_init(0))
-		exit(1);
-
-	if(!initialise_passgrp_db())
-		exit(1);
-
-	if(!initialise_password_db())
-		exit(1);
-
-	if(!initialise_group_db())
-		exit(1);
-
-	if(!initialise_alias_db())
 		exit(1);
 
 	/* possibly reload the services file. */

@@ -72,23 +72,10 @@ struct smb_passwd *iterate_getsmbgrprid(uint32 user_rid,
 		uint32 **grps, int *num_grps,
 		uint32 **alss, int *num_alss)
 {
-	return iterate_getsmbgrpuid(pwdb_user_rid_to_uid(user_rid),
-	                            grps, num_grps, alss, num_alss);
-}
-
-/************************************************************************
- Utility function to search smb passwd by uid.  use this if your database
- does not have search facilities.
-*************************************************************************/
-
-struct smb_passwd *iterate_getsmbgrpuid(uid_t smb_userid,
-		uint32 **grps, int *num_grps,
-		uint32 **alss, int *num_alss)
-{
 	struct smb_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("search by smb_userid: %x\n", (int)smb_userid));
+	DEBUG(10, ("search by user_rid: 0x%x\n", user_rid));
 
 	/* Open the smb password database - not for update. */
 	fp = startsmbgrpent(False);
@@ -99,12 +86,47 @@ struct smb_passwd *iterate_getsmbgrpuid(uid_t smb_userid,
 		return NULL;
 	}
 
-	while ((pwd = getsmbgrpent(fp, grps, num_grps, alss, num_alss)) != NULL && pwd->smb_userid != smb_userid)
+	while ((pwd = getsmbgrpent(fp, grps, num_grps, alss, num_alss)) != NULL && pwd->user_rid != user_rid)
       ;
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("found by smb_userid: %x\n", (int)smb_userid));
+		DEBUG(10, ("found by user_rid: 0x%x\n", user_rid));
+	}
+
+	endsmbgrpent(fp);
+	return pwd;
+}
+
+/************************************************************************
+ Utility function to search smb passwd by uid.  use this if your database
+ does not have search facilities.
+*************************************************************************/
+
+struct smb_passwd *iterate_getsmbgrpuid(uid_t unix_uid,
+		uint32 **grps, int *num_grps,
+		uint32 **alss, int *num_alss)
+{
+	struct smb_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("search by unix_uid: %x\n", (int)unix_uid));
+
+	/* Open the smb password database - not for update. */
+	fp = startsmbgrpent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open smb passgrp database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsmbgrpent(fp, grps, num_grps, alss, num_alss)) != NULL && pwd->unix_uid != unix_uid)
+      ;
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("found by unix_uid: %x\n", (int)unix_uid));
 	}
 
 	endsmbgrpent(fp);
@@ -116,12 +138,14 @@ struct smb_passwd *iterate_getsmbgrpuid(uid_t smb_userid,
  does not have search facilities.
 *************************************************************************/
 
-struct smb_passwd *iterate_getsmbgrpnam(char *name,
+struct smb_passwd *iterate_getsmbgrpntnam(const char *nt_name,
 		uint32 **grps, int *num_grps,
 		uint32 **alss, int *num_alss)
 {
 	struct smb_passwd *pwd = NULL;
+	fstring name;
 	void *fp = NULL;
+	fstrcpy(name, nt_name);
 
 	DEBUG(10, ("search by name: %s\n", name));
 
@@ -134,7 +158,7 @@ struct smb_passwd *iterate_getsmbgrpnam(char *name,
 		return NULL;
 	}
 
-	while ((pwd = getsmbgrpent(fp, grps, num_grps, alss, num_alss)) != NULL && !strequal(pwd->smb_name, name))
+	while ((pwd = getsmbgrpent(fp, grps, num_grps, alss, num_alss)) != NULL && !strequal(pwd->nt_name, name))
       ;
 
 	if (pwd != NULL)
@@ -192,11 +216,11 @@ struct smb_passwd *getsmbgrpent(void *vp,
  Routine to search smb passwd by name.
 *************************************************************************/
 
-struct smb_passwd *getsmbgrpnam(char *name,
+struct smb_passwd *getsmbgrpntnam(char *name,
 		uint32 **grps, int *num_grps,
 		uint32 **alss, int *num_alss)
 {
-	return pwgrp_ops->getsmbgrpnam(name, grps, num_grps, alss, num_alss);
+	return pwgrp_ops->getsmbgrpntnam(name, grps, num_grps, alss, num_alss);
 }
 
 /************************************************************************
@@ -214,10 +238,10 @@ struct smb_passwd *getsmbgrprid(uint32 user_rid,
  Routine to search smb passwd by uid.
 *************************************************************************/
 
-struct smb_passwd *getsmbgrpuid(uid_t smb_userid,
+struct smb_passwd *getsmbgrpuid(uid_t unix_uid,
 		uint32 **grps, int *num_grps,
 		uint32 **alss, int *num_alss)
 {
-	return pwgrp_ops->getsmbgrpuid(smb_userid, grps, num_grps, alss, num_alss);
+	return pwgrp_ops->getsmbgrpuid(unix_uid, grps, num_grps, alss, num_alss);
 }
 

@@ -26,6 +26,7 @@
 extern int DEBUGLEVEL;
 
 extern fstring global_sam_name;
+extern DOM_SID global_sam_sid;
 
 /*
  * NOTE. All these functions are abstracted into a structure
@@ -67,7 +68,28 @@ BOOL initialise_alias_db(void)
 *************************************************************************/
 LOCAL_GRP *iterate_getaliasgid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem)
 {
-	return iterate_getaliasrid(pwdb_gid_to_alias_rid(gid), mem, num_mem);
+	DOM_NAME_MAP gmep;
+	uint32 rid;
+	if (!lookupsmbgrpgid(gid, &gmep))
+	{
+		DEBUG(0,("iterate_getaliasgid: gid %d does not map to one of our Domain's Aliases\n", gid));
+		return NULL;
+	}
+
+	if (gmep.type != SID_NAME_ALIAS )
+	{
+		DEBUG(0,("iterate_getaliasgid: gid %d does not map to one of our Domain's Aliases\n", gid));
+		return NULL;
+	}
+
+	sid_split_rid(&gmep.sid, &rid);
+	if (!sid_equal(&gmep.sid, &global_sam_sid))
+	{
+		DEBUG(0,("iterate_getaliasgid: gid %d does not map into our Domain SID\n", gid));
+		return NULL;
+	}
+
+	return iterate_getaliasrid(rid, mem, num_mem);
 }
 
 /************************************************************************
@@ -108,7 +130,7 @@ LOCAL_GRP *iterate_getaliasrid(uint32 rid, LOCAL_GRP_MEMBER **mem, int *num_mem)
  Utility function to search alias database by name.  use this if your database
  does not have search facilities.
 *************************************************************************/
-LOCAL_GRP *iterate_getaliasnam(char *name, LOCAL_GRP_MEMBER **mem, int *num_mem)
+LOCAL_GRP *iterate_getaliasntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem)
 {
 	LOCAL_GRP *als = NULL;
 	void *fp = NULL;
@@ -167,11 +189,11 @@ BOOL add_domain_alias(LOCAL_GRP **alss, int *num_alss, LOCAL_GRP *als)
 /*************************************************************************
  checks to see if a user is a member of a domain alias
  *************************************************************************/
-static BOOL user_is_member(char *user_name, LOCAL_GRP_MEMBER *mem, int num_mem)
+static BOOL user_is_member(const char *user_name, LOCAL_GRP_MEMBER *mem, int num_mem)
 {
 	int i;
 	pstring name;
-	slprintf(name, sizeof(name)-1, "\\%s\\%s", global_sam_name, user_name);
+	slprintf(name, sizeof(name)-1, "%s\\%s", global_sam_name, user_name);
 
 	for (i = 0; i < num_mem; i++)
 	{
@@ -190,7 +212,7 @@ static BOOL user_is_member(char *user_name, LOCAL_GRP_MEMBER *mem, int num_mem)
  gets an array of aliases that a user is in.  use this if your database
  does not have search facilities
  *************************************************************************/
-BOOL iterate_getuseraliasnam(char *user_name, LOCAL_GRP **alss, int *num_alss)
+BOOL iterate_getuseraliasntnam(const char *user_name, LOCAL_GRP **alss, int *num_alss)
 {
 	LOCAL_GRP *als = NULL;
 	LOCAL_GRP_MEMBER *mem = NULL;
@@ -347,9 +369,9 @@ BOOL mod_alias_entry(LOCAL_GRP* als)
  Routine to search alias database by name.
 *************************************************************************/
 
-LOCAL_GRP *getaliasnam(char *name, LOCAL_GRP_MEMBER **mem, int *num_mem)
+LOCAL_GRP *getaliasntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem)
 {
-	return aldb_ops->getaliasnam(name, mem, num_mem);
+	return aldb_ops->getaliasntnam(name, mem, num_mem);
 }
 
 /************************************************************************
@@ -373,9 +395,9 @@ LOCAL_GRP *getaliasgid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem)
 /*************************************************************************
  gets an array of aliases that a user is in.
  *************************************************************************/
-BOOL getuseraliasnam(char *user_name, LOCAL_GRP **als, int *num_alss)
+BOOL getuseraliasntnam(const char *user_name, LOCAL_GRP **als, int *num_alss)
 {
-	return aldb_ops->getuseraliasnam(user_name, als, num_alss);
+	return aldb_ops->getuseraliasntnam(user_name, als, num_alss);
 }
 
 /*************************************************************

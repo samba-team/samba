@@ -28,8 +28,6 @@
 
 extern int DEBUGLEVEL;
 
-extern BOOL sam_logon_in_ssb;
-extern pstring samlogon_user;
 extern fstring global_sam_name;
 extern pstring global_myname;
 extern DOM_SID global_sam_sid;
@@ -79,8 +77,8 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 			continue;
 		}
 
-		user_name_len = strlen(pwd->smb_name);
-		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len);
+		user_name_len = strlen(pwd->nt_name);
+		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->nt_name, user_name_len);
 		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len, 
 		               user_name_len, 1);
 		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
@@ -95,7 +93,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 		pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
 
 		DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
-		          (*num_entries), pwd->smb_name,
+		          (*num_entries), pwd->nt_name,
 		          pwd->user_rid, pwd->acct_ctrl));
 
 		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
@@ -401,7 +399,7 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 	SAMR_R_ENUM_DOM_GROUPS r_e;
 	DOMAIN_GRP *grps = NULL;
 	int num_entries = 0;
-	BOOL got_grps;
+	BOOL got_grps = False;
 	DOM_SID sid;
 	fstring sid_str;
 
@@ -418,38 +416,28 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 
 	DEBUG(5,("samr_reply_enum_dom_groups: sid %s\n", sid_str));
 
-	/* well-known groups */
-	if (sid_equal(&sid, &global_sid_S_1_5_20))
-	{
-		char *name;
-		got_grps = True;
-
-		while (num_entries < MAX_SAM_ENTRIES && ((name = domain_group_rids[num_entries].name) != NULL))
-		{
-			DOMAIN_GRP tmp_grp;
-
-			fstrcpy(tmp_grp.name   , name);
-			fstrcpy(tmp_grp.comment, "");
-			tmp_grp.rid = domain_group_rids[num_entries].rid;
-			tmp_grp.attr = 0x7;
-
-			if (!add_domain_group(&grps, &num_entries, &tmp_grp))
-			{
-				r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
-				break;
-			}
-		}
-	}
-	else if (sid_equal(&sid, &global_sam_sid))
+	if (sid_equal(&sid, &global_sam_sid))
 	{
 		BOOL ret;
-		char *name;
-		int i = 0;
 		got_grps = True;
 
 		become_root(True);
 		ret = enumdomgroups(&grps, &num_entries);
 		unbecome_root(True);
+
+		if (!ret)
+		{
+			r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (r_e.status == 0x0 &&
+	    (sid_equal(&sid, &global_sam_sid) ||
+	     sid_equal(&sid, &global_sid_S_1_5_20)))
+	{
+		char *name;
+		int i = 0;
+		got_grps = True;
 
 		while (num_entries < MAX_SAM_ENTRIES && ((name = domain_group_rids[i].name) != NULL))
 		{
@@ -467,11 +455,6 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 			}
 
 			i++;
-		}
-
-		if (!ret)
-		{
-			r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -747,10 +730,10 @@ static void api_samr_query_aliasinfo( uint16 vuid, prs_struct *data, prs_struct 
 static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 				prs_struct *rdata)
 {
-	uint32 rid[MAX_SAM_ENTRIES];
-	uint32 status     = 0;
+	uint32 status = 0;
+
+	uint32 *rid = NULL;
 	int num_rids = 0;
-	int i;
 	struct sam_passwd *sam_pass;
 	DOM_SID usr_sid;
 	DOM_SID dom_sid;
@@ -772,12 +755,6 @@ static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 	{
 		sid_to_string(dom_sid_str, &dom_sid       );
 		sid_to_string(sam_sid_str, &global_sam_sid);
-	}
-
-	if (num_rids > MAX_SAM_ENTRIES)
-	{
-		num_rids = MAX_SAM_ENTRIES;
-		DEBUG(5,("samr_query_useraliases: truncating entries to %d\n", num_rids));
 	}
 
 	if (status == 0x0)
@@ -811,17 +788,18 @@ static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 		else if (sid_equal(&dom_sid, &usr_sid))
 		{
 			LOCAL_GRP *mem_grp = NULL;
+			num_rids = 0;
 
 			DEBUG(10,("lookup on Domain SID\n"));
 
 			become_root(True);
-			getuseraliasnam(sam_pass->smb_name, &mem_grp, &num_rids);
+			getuseraliasntnam(sam_pass->nt_name, &mem_grp, &num_rids);
 			unbecome_root(True);
 
-			num_rids = MIN(num_rids, MAX_SAM_ENTRIES);
-
-			if (mem_grp != NULL)
+			rid = malloc(num_rids * sizeof(uint32));
+			if (mem_grp != NULL && rid != NULL)
 			{
+				int i;
 				for (i = 0; i < num_rids; i++)
 				{
 					rid[i] = mem_grp[i].rid;
@@ -839,6 +817,11 @@ static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 
 	/* store the response in the SMB stream */
 	samr_io_r_query_useraliases("", &r_u, rdata, 0);
+
+	if (rid != NULL)
+	{
+		free(rid);
+	}
 
 	DEBUG(5,("samr_query_useraliases: %d\n", __LINE__));
 
@@ -1150,46 +1133,7 @@ static void api_samr_open_user( uint16 vuid, prs_struct *data, prs_struct *rdata
  *************************************************************************/
 static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 {
-	struct smb_passwd *smb_pass;
-
-	if (!pwdb_rid_is_user(user_rid))
-	{
-		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
-		return False;
-	}
-
-	become_root(True);
-	smb_pass = getsmbpwrid(user_rid);
-	unbecome_root(True);
-
-	if (smb_pass == NULL)
-	{
-		DEBUG(4,("User 0x%x not found\n", user_rid));
-		return False;
-	}
-
-	DEBUG(3,("User:[%s]\n", smb_pass->smb_name));
-
-	make_sam_user_info10(id10, smb_pass->acct_ctrl); 
-
-	return True;
-}
-
-/*************************************************************************
- get_user_info_21
- *************************************************************************/
-static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
-{
-	NTTIME dummy_time;
 	struct sam_passwd *sam_pass;
-	LOGON_HRS hrs;
-	int i;
-
-	if (!pwdb_rid_is_user(user_rid))
-	{
-		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
-		return False;
-	}
 
 	become_root(True);
 	sam_pass = getsam21pwrid(user_rid);
@@ -1201,12 +1145,33 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 		return False;
 	}
 
-	DEBUG(3,("User:[%s]\n", sam_pass->smb_name));
+	DEBUG(3,("User:[%s]\n", sam_pass->nt_name));
 
-	dummy_time.low  = 0xffffffff;
-	dummy_time.high = 0x7fffffff;
+	make_sam_user_info10(id10, sam_pass->acct_ctrl); 
 
-	DEBUG(0,("get_user_info_21 - TODO: convert unix times to NTTIMEs\n"));
+	return True;
+}
+
+/*************************************************************************
+ get_user_info_21
+ *************************************************************************/
+static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
+{
+	struct sam_passwd *sam_pass;
+	LOGON_HRS hrs;
+	int i;
+
+	become_root(True);
+	sam_pass = getsam21pwrid(user_rid);
+	unbecome_root(True);
+
+	if (sam_pass == NULL)
+	{
+		DEBUG(4,("User 0x%x not found\n", user_rid));
+		return False;
+	}
+
+	DEBUG(3,("User:[%s]\n", sam_pass->nt_name));
 
 	/* create a LOGON_HRS structure */
 	hrs.len = sam_pass->hours_len;
@@ -1218,14 +1183,14 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 
 	make_sam_user_info21(id21,
 
-			   &dummy_time, /* logon_time */
-			   &dummy_time, /* logoff_time */
-			   &dummy_time, /* kickoff_time */
-			   &dummy_time, /* pass_last_set_time */
-			   &dummy_time, /* pass_can_change_time */
-			   &dummy_time, /* pass_must_change_time */
+			   &sam_pass->logon_time,
+			   &sam_pass->logoff_time,
+			   &sam_pass->kickoff_time,
+			   &sam_pass->pass_last_set_time,
+			   &sam_pass->pass_can_change_time,
+			   &sam_pass->pass_must_change_time,
 
-			   sam_pass->smb_name, /* user_name */
+			   sam_pass->nt_name, /* user_name */
 			   sam_pass->full_name, /* full_name */
 			   sam_pass->home_dir, /* home_dir */
 			   sam_pass->dir_drive, /* dir_drive */
@@ -1238,13 +1203,13 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 
 			   sam_pass->user_rid, /* RID user_id */
 			   sam_pass->group_rid, /* RID group_id */
-		       sam_pass->acct_ctrl,
+	                   sam_pass->acct_ctrl,
 
-	           sam_pass->unknown_3, /* unknown_3 */
-		       sam_pass->logon_divs, /* divisions per week */
-			   &hrs, /* logon hours */
-		       sam_pass->unknown_5,
-		       sam_pass->unknown_6);
+	                   sam_pass->unknown_3, /* unknown_3 */
+	                   sam_pass->logon_divs, /* divisions per week */
+	                   &hrs, /* logon hours */
+	                   sam_pass->unknown_5,
+	                   sam_pass->unknown_6);
 
 	return True;
 }
@@ -1393,7 +1358,7 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 		DOMAIN_GRP *mem_grp = NULL;
 
 		become_root(True);
-		getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_groups);
+		getusergroupsntnam(sam_pass->nt_name, &mem_grp, &num_groups);
 		unbecome_root(True);
 
                 gids = NULL;
@@ -1559,7 +1524,7 @@ static void api_samr_unknown_32( uint16 vuid, prs_struct *data, prs_struct *rdat
 	                            q_u.uni_mach_acct.uni_str_len));
 
 	become_root(True);
-	sam_pass = getsam21pwnam(mach_acct);
+	sam_pass = getsam21pwntnam(mach_acct);
 	unbecome_root(True);
 
 	if (sam_pass != NULL)

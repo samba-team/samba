@@ -185,39 +185,39 @@ void cmd_sam_enum_users(struct client_info *info)
 	BOOL res = True;
 	BOOL request_user_info  = False;
 	BOOL request_group_info = False;
+	BOOL request_alias_info = False;
 	uint16 num_entries = 0;
 	uint16 unk_0 = 0x0;
 	uint16 acb_mask = 0;
 	uint16 unk_1 = 0x0;
 	uint32 admin_rid = 0x304; /* absolutely no idea. */
 	fstring tmp;
+	int i;
 
-	sid_to_string(sid, &info->dom.level5_sid);
+	sid_copy(&sid1, &info->dom.level5_sid);
+	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
-	if (strlen(sid) == 0)
+	if (sid1.num_auths == 0)
 	{
 		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
-	make_dom_sid(&sid1, sid);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	/* a bad way to do token parsing... */
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	for (i = 0; i < 3; i++)
 	{
-		request_user_info  |= strequal(tmp, "-u");
-		request_group_info |= strequal(tmp, "-g");
-	}
-
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		request_user_info  |= strequal(tmp, "-u");
-		request_group_info |= strequal(tmp, "-g");
+		/* a bad way to do token parsing... */
+		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+		{
+			request_user_info  |= strequal(tmp, "-u");
+			request_group_info |= strequal(tmp, "-g");
+			request_alias_info |= strequal(tmp, "-a");
+		}
 	}
 
 #ifdef DEBUG_TESTING
@@ -275,14 +275,14 @@ void cmd_sam_enum_users(struct client_info *info)
 		fprintf(out_hnd, "No users\n");
 	}
 
-	if (request_user_info || request_group_info)
+	if (request_user_info || request_group_info || request_alias_info)
 	{
 		/* query all the users */
 		user_idx = 0;
 
 		while (res && user_idx < info->dom.num_sam_entries)
 		{
-			uint32 user_rid = info->dom.sam[user_idx].smb_userid;
+			uint32 user_rid = info->dom.sam[user_idx].user_rid;
 			SAM_USER_INFO_21 usr;
 
 			fprintf(out_hnd, "User RID: %8x  User Name: %s\n",
@@ -315,6 +315,26 @@ void cmd_sam_enum_users(struct client_info *info)
 					display_group_rid_info(out_hnd, ACTION_HEADER   , num_groups, gid);
 					display_group_rid_info(out_hnd, ACTION_ENUMERATE, num_groups, gid);
 					display_group_rid_info(out_hnd, ACTION_FOOTER   , num_groups, gid);
+				}
+			}
+
+			if (request_alias_info)
+			{
+				uint32 num_aliases;
+				uint32 rid[LSA_MAX_GROUPS];
+				DOM_SID als_sid;
+
+				sid_copy(&als_sid, &sid1);
+				sid_append_rid(&als_sid, user_rid);
+
+				/* send user alias query */
+				if (do_samr_query_useraliases(smb_cli,
+				                        &info->dom.samr_pol_open_domain,
+				                        &als_sid, &num_aliases, rid))
+				{
+					display_alias_rid_info(out_hnd, ACTION_HEADER   , &als_sid, num_aliases, rid);
+					display_alias_rid_info(out_hnd, ACTION_ENUMERATE, &als_sid, num_aliases, rid);
+					display_alias_rid_info(out_hnd, ACTION_FOOTER   , &als_sid, num_aliases, rid);
 				}
 			}
 
@@ -375,7 +395,7 @@ void cmd_sam_query_user(struct client_info *info)
 		return;
 	}
 
-	make_dom_sid(&sid1, sid);
+	string_to_sid(&sid1, sid);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -466,7 +486,7 @@ void cmd_sam_query_groups(struct client_info *info)
 		return;
 	}
 
-	make_dom_sid(&sid1, sid);
+	string_to_sid(&sid1, sid);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -549,7 +569,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 		return;
 	}
 
-	make_dom_sid(&sid1, sid);
+	string_to_sid(&sid1, sid);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -585,7 +605,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	            &info->dom.samr_pol_connect, admin_rid, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
-	/* send a query on the aliase */
+	/* send a query on the aliases */
 	res = res ? do_samr_query_unknown_12(smb_cli,
 	            &info->dom.samr_pol_open_domain, admin_rid, num_aliases, alias_rid,
 	            &num_aliases, alias_names, num_als_usrs) : False;
@@ -617,7 +637,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 
 		while (res && user_idx < info->dom.num_sam_entries)
 		{
-			uint32 user_rid = info->dom.sam[user_idx].smb_userid;
+			uint32 user_rid = info->dom.sam[user_idx].user_rid;
 			SAM_USER_INFO_21 usr;
 
 			fprintf(out_hnd, "User RID: %8x  User Name: %s\n",

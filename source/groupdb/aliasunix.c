@@ -66,62 +66,13 @@ static BOOL setalsunixpwpos(void *vp, SMB_BIG_UINT tok)
 }
 
 /*************************************************************************
- maps a unix group to a domain sid and an nt alias name.  
-*************************************************************************/
-static void map_unix_grp_to_nt_als(char *unix_name,
-	struct group *unix_grp, char *nt_name, DOM_SID *sid)
-{
-	BOOL found = False;
-	uint32 rid;
-	fstring ntname;
-	fstring ntdomain;
-
-	if (isdigit(unix_name[0]))
-	{
-		unix_grp->gr_gid = get_number(unix_name);
-		unix_grp->gr_name = unix_name;
-		found = map_alias_gid(unix_grp->gr_gid, sid, ntname, ntdomain);
-	}
-	else
-	{
-		unix_grp->gr_name = unix_name;
-		found = map_unix_alias_name(unix_grp->gr_name, sid, ntname, ntdomain);
-	}
-
-	if (found)
-	{
-		/*
-		 * find the NT name represented by this UNIX gid.
-		 * then, only accept NT aliass that are in our domain
-		 */
-
-		sid_split_rid(sid, &rid);
-	}
-	else
-	{
-		/*
-		 * assume that the UNIX group is an NT alias with
-		 * the same name.  convert gid to a alias rid.
-		 */
-		
-		fstrcpy(ntdomain, global_sam_name);
-		fstrcpy(ntname, unix_grp->gr_name);
-		sid_copy(sid, &global_sam_sid);
-	}
-
-	slprintf(nt_name, sizeof(fstring)-1, "\\%s\\%s",
-	         ntdomain, ntname);
-}
-
-/*************************************************************************
  Routine to return the next entry in the smbdomainalias list.
  *************************************************************************/
-BOOL get_unixalias_members(struct group *als,
+BOOL get_unixalias_members(struct group *grp,
 				int *num_mem, LOCAL_GRP_MEMBER **members)
 {
 	int i;
 	char *unix_name;
-	fstring nt_name;
 
 	if (num_mem == NULL || members == NULL)
 	{
@@ -131,28 +82,43 @@ BOOL get_unixalias_members(struct group *als,
 	(*num_mem) = 0;
 	(*members) = NULL;
 
-	for (i = 0; (unix_name = als->gr_mem[i]) != NULL; i++)
+	for (i = 0; (unix_name = grp->gr_mem[i]) != NULL; i++)
 	{
-		DOM_SID sid;
-		struct group unix_grp;
+		fstring name;
+		DOM_NAME_MAP gmep;
+		LOCAL_GRP_MEMBER *mem;
 
-		map_unix_grp_to_nt_als(unix_name, &unix_grp, nt_name, &sid);
+		fstrcpy(name, unix_name);
 
-		if (!sid_equal(&sid, &global_sam_sid))
+		if (!lookupsmbgrpnam(name, &gmep) &&
+		    !lookupsmbpwnam (name, &gmep))
 		{
-			DEBUG(0,("alias database: could not resolve name %s in domain %s\n",
-			          unix_name, global_sam_name));
 			continue;
 		}
 
-		(*members) = Realloc((*members), ((*num_mem)+1) * sizeof(LOCAL_GRP_MEMBER));
+		if (!sid_front_equal(&global_sam_sid, &gmep.sid))
+		{
+			DEBUG(0,("alias database: could not resolve name %s (wrong Domain SID)\n",
+			          name));
+			continue;
+		}
+
+		(*num_mem)++;
+		(*members) = Realloc((*members), (*num_mem) * sizeof(LOCAL_GRP_MEMBER));
 		if ((*members) == NULL)
 		{
+			DEBUG(0,("get_unixalias_members: could not realloc LOCAL_GRP_MEMBERs\n"));
 			return False;
 		}
 
-		fstrcpy((*members)[(*num_mem)].name, nt_name);
-		(*num_mem)++;
+		mem = &(*members)[(*num_mem)-1];
+		slprintf(mem->name, sizeof(mem->name)-1, "%s\\%s",
+		         gmep.nt_domain, gmep.nt_name);
+		sid_copy(&mem->sid, &gmep.sid);
+		mem->sid_use = gmep.type;
+
+		DEBUG(10,("get_unixalias_members: adding alias %s\n",
+		           mem->name));
 	}
 	return True;
 }
@@ -161,7 +127,7 @@ BOOL get_unixalias_members(struct group *als,
  Routine to return the next entry in the domain alias list.
 
  when we are a PDC or BDC, then unix groups that are explicitly NOT mapped
- to aliases (map_alias_gid) are treated as DOMAIN groups (see groupunix.c).
+ to aliases are treated as DOMAIN groups (see groupunix.c).
 
  when we are a member of a domain (not a PDC or BDC) then unix groups
  that are explicitly NOT mapped to aliases (map_alias_gid) are treated
@@ -190,36 +156,36 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 
 	aldb_init_als(&gp_buf);
 
-	fstrcpy(gp_buf.comment, "");
-
 	/* cycle through unix groups */
 	while ((unix_grp = getgrent()) != NULL)
 	{
-		DOM_SID sid;
-		if (map_alias_gid(unix_grp->gr_gid, &sid, gp_buf.name, NULL))
-		{
-			/*
-			 * find the NT name represented by this UNIX gid.
-			 * then, only accept NT aliases that are in our domain
-			 */
-
-			sid_split_rid(&sid, &gp_buf.rid);
-			if (sid_equal(&sid, &global_sam_sid))
-			{
-				break; /* hooray. */
-			}
-		}
-		else if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-		{
-			/*
-			 * if we are a member of a domain,
-			 * assume that the UNIX alias is an NT alias with
-			 * the same name.  convert gid to a alias rid.
-			 */
+		DOM_NAME_MAP gmep;
+		fstring sid_str;
+		DEBUG(10,("getgrpunixpwent: enum unix group entry %s\n",
+		           unix_grp->gr_name));
 			
-			fstrcpy(gp_buf.name, unix_grp->gr_name);
-			gp_buf.rid = pwdb_gid_to_alias_rid(unix_grp->gr_gid);
+		if (!lookupsmbgrpgid(unix_grp->gr_gid, &gmep))
+		{
+			continue;
 		}
+
+		sid_to_string(sid_str, &gmep.sid);
+		DEBUG(10,("group %s found, sid %s type %d\n",
+			gmep.nt_name, sid_str, gmep.type));
+
+		if (gmep.type != SID_NAME_ALIAS)
+		{
+			continue;
+		}
+
+		sid_split_rid(&gmep.sid, &gp_buf.rid);
+		if (!sid_equal(&global_sam_sid, &gmep.sid))
+		{
+			continue;
+		}
+
+		fstrcpy(gp_buf.name, gmep.nt_name);
+		break;
 	}
 
 	if (unix_grp == NULL)
@@ -279,7 +245,7 @@ static struct aliasdb_ops unix_ops =
 	getalsunixpwpos,
 	setalsunixpwpos,
 
-	iterate_getaliasnam,          /* In aliasdb.c */
+	iterate_getaliasntnam,          /* In aliasdb.c */
 	iterate_getaliasgid,          /* In aliasdb.c */
 	iterate_getaliasrid,          /* In aliasdb.c */
 	getalsunixpwent,
@@ -287,7 +253,7 @@ static struct aliasdb_ops unix_ops =
 	add_alsunixgrp_entry,
 	mod_alsunixgrp_entry,
 
-	iterate_getuseraliasnam      /* in aliasdb.c */
+	iterate_getuseraliasntnam      /* in aliasdb.c */
 };
 
 struct aliasdb_ops *unix_initialise_alias_db(void)

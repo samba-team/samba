@@ -28,10 +28,9 @@
 
 extern int DEBUGLEVEL;
 
-extern BOOL sam_logon_in_ssb;
-extern pstring samlogon_user;
 extern pstring global_myname;
 extern DOM_SID global_sam_sid;
+extern fstring global_sam_name;
 
 /*************************************************************************
  make_net_r_req_chal:
@@ -493,7 +492,7 @@ static void api_net_sam_logoff( uint16 vuid,
  net_login_interactive:
  *************************************************************************/
 static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
-				struct smb_passwd *smb_pass,
+				struct sam_passwd *smb_pass,
 				user_struct *vuser)
 {
 	uint32 status = 0x0;
@@ -543,7 +542,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
  net_login_network:
  *************************************************************************/
 static uint32 net_login_network(NET_ID_INFO_2 *id2,
-				struct smb_passwd *smb_pass,
+				struct sam_passwd *smb_pass,
 				user_struct *vuser)
 {
 	DEBUG(5,("net_login_network: lm_len: %d nt_len: %d\n",
@@ -598,7 +597,7 @@ static void api_net_sam_logon( uint16 vuid,
 	NET_USER_INFO_3 usr_info;
 	uint32 status = 0x0;
 	DOM_CRED srv_cred;
-	struct smb_passwd *smb_pass = NULL;
+	struct sam_passwd *sam_pass = NULL;
 	UNISTR2 *uni_samlogon_user = NULL;
 	fstring nt_username;
 
@@ -632,14 +631,14 @@ static void api_net_sam_logon( uint16 vuid,
 			{
 				uni_samlogon_user = &(q_l.sam_id.ctr->auth.id1.uni_user_name);
 
-				DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
+				DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", global_sam_name));
 				break;
 			}
 			case NET_LOGON_TYPE:
 			{
 				uni_samlogon_user = &(q_l.sam_id.ctr->auth.id2.uni_user_name);
 
-				DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
+				DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", global_sam_name));
 				break;
 			}
 			default:
@@ -660,26 +659,16 @@ static void api_net_sam_logon( uint16 vuid,
 
 		DEBUG(3,("User:[%s]\n", nt_username));
 
-		/*
-		 * Convert to a UNIX username.
-		 */
-		map_username(nt_username);
-
-		/*
-		 * Do any case conversions.
-		 */
-		(void)Get_Pwnam(nt_username, True);
-
 		become_root(True);
-		smb_pass = getsmbpwnam(nt_username);
+		sam_pass = getsam21pwntnam(nt_username);
 		unbecome_root(True);
 
-		if (smb_pass == NULL)
+		if (sam_pass == NULL)
 		{
 			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
 		}
-		else if (IS_BITS_SET_ALL(smb_pass->acct_ctrl, ACB_DISABLED) &&
-			 IS_BITS_CLR_ALL(smb_pass->acct_ctrl, ACB_PWNOTREQ))
+		else if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_DISABLED) &&
+			 IS_BITS_CLR_ALL(sam_pass->acct_ctrl, ACB_PWNOTREQ))
 		{
 			status =  0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
 		}
@@ -687,20 +676,20 @@ static void api_net_sam_logon( uint16 vuid,
 
 	/* validate password - if required */
 
-	if (status == 0 && !(IS_BITS_SET_ALL(smb_pass->acct_ctrl, ACB_PWNOTREQ)))
+	if (status == 0 && !(IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_PWNOTREQ)))
 	{
 		switch (q_l.sam_id.logon_level)
 		{
 			case INTERACTIVE_LOGON_TYPE:
 			{
 				/* interactive login. */
-				status = net_login_interactive(&q_l.sam_id.ctr->auth.id1, smb_pass, vuser);
+				status = net_login_interactive(&q_l.sam_id.ctr->auth.id1, sam_pass, vuser);
 				break;
 			}
 			case NET_LOGON_TYPE:
 			{
 				/* network login.  lm challenge and 24 byte responses */
-				status = net_login_network(&q_l.sam_id.ctr->auth.id2, smb_pass, vuser);
+				status = net_login_network(&q_l.sam_id.ctr->auth.id2, sam_pass, vuser);
 				break;
 			}
 		}
@@ -715,88 +704,60 @@ static void api_net_sam_logon( uint16 vuid,
 
 	if (status == 0)
 	{
-		DOM_GID *gids = NULL;
 		int num_gids = 0;
-		NTTIME dummy_time;
-		pstring logon_script;
-		pstring profile_path;
-		pstring home_dir;
-		pstring home_drive;
-		pstring my_name;
-		pstring my_workgroup;
 		DOMAIN_GRP *grp_mem;
-		uint32 r_uid;
-		uint32 r_gid;
 
 		/* set up pointer indicating user/password failed to be found */
 		usr_info.ptr_user_info = 0;
 
-		dummy_time.low  = 0xffffffff;
-		dummy_time.high = 0x7fffffff;
-
-		/* XXXX hack to get standard_sub_basic() to use sam logon username */
-		/* possibly a better way would be to do a become_user() call */
-		sam_logon_in_ssb = True;
-		pstrcpy(samlogon_user, nt_username);
-
-		pstrcpy(logon_script, lp_logon_script());
-		pstrcpy(profile_path, lp_logon_path());
-
-		pstrcpy(my_workgroup, lp_workgroup());
-
-		pstrcpy(home_drive, lp_logon_drive());
-		pstrcpy(home_dir, lp_logon_home());
-		pstrcpy(my_name, global_myname);
-		strupper(my_name);
-
-		status = lookup_user_rids(nt_username, &r_uid, &r_gid);
-		status = getusergroupsnam(nt_username, &grp_mem, &num_gids) ? 0 : 0xC0000000 | NT_STATUS_INVALID_PRIMARY_GROUP;
-
-		sam_logon_in_ssb = False;
+		if (!getusergroupsntnam(nt_username, &grp_mem, &num_gids))
+		{
+			status = 0xC0000000 | NT_STATUS_INVALID_PRIMARY_GROUP;
+		}
 
 		if (status == 0x0)
 		{
-			gids = NULL;
+			DOM_GID *gids = NULL;
 			num_gids = make_dom_gids(grp_mem, num_gids, &gids);
 
 			make_net_user_info3(&usr_info,
-				&dummy_time, /* logon_time */
-				&dummy_time, /* logoff_time */
-				&dummy_time, /* kickoff_time */
-				&dummy_time, /* pass_last_set_time */
-				&dummy_time, /* pass_can_change_time */
-				&dummy_time, /* pass_must_change_time */
+				&sam_pass->logon_time,
+				&sam_pass->logoff_time,
+				&sam_pass->kickoff_time,
+				&sam_pass->pass_last_set_time,
+				&sam_pass->pass_can_change_time,
+				&sam_pass->pass_must_change_time,
 
-				nt_username   , /* user_name */
-				vuser->real_name, /* full_name */
-				logon_script    , /* logon_script */
-				profile_path    , /* profile_path */
-				home_dir        , /* home_dir */
-				home_drive      , /* dir_drive */
+				sam_pass->nt_name         , /* user_name */
+				sam_pass->full_name       , /* full_name */
+				sam_pass->logon_script    , /* logon_script */
+				sam_pass->profile_path    , /* profile_path */
+				sam_pass->home_dir        , /* home_dir */
+				sam_pass->dir_drive       , /* dir_drive */
 
 				0, /* logon_count */
 				0, /* bad_pw_count */
 
-				r_uid   , /* RID user_id */
-				r_gid   , /* RID group_id */
+				sam_pass->user_rid   , /* RID user_id */
+				sam_pass->group_rid  , /* RID group_id */
 				num_gids,    /* uint32 num_groups */
 				gids    , /* DOM_GID *gids */
 				0x20    , /* uint32 user_flgs (?) */
 
 				NULL, /* char sess_key[16] */
 
-				my_name     , /* char *logon_srv */
-				my_workgroup, /* char *logon_dom */
-
-				&global_sam_sid,     /* DOM_SID *dom_sid */
+				global_myname  , /* char *logon_srv */
+				global_sam_name, /* char *logon_dom */
+				&global_sam_sid, /* DOM_SID *dom_sid */
 				NULL); /* char *other_sids */
+
+			/* Free any allocated groups array. */
+			if (gids)
+			{
+				free((char *)gids);
+			}
 		}
 
-		/* Free any allocated groups array. */
-		if (gids)
-		{
-			free((char *)gids);
-		}
 	}
 
 	net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status);

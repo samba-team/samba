@@ -22,7 +22,7 @@
 #ifdef USE_SMBUNIX_DB
 
 extern int DEBUGLEVEL;
-extern DOM_SID global_member_sid;
+extern DOM_SID global_sam_sid;
 
 /***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer
@@ -31,7 +31,7 @@ extern DOM_SID global_member_sid;
 
 static void *startsmbunixgrpent(BOOL update)
 {
-	return startsmbfilepwent(False);
+	return startsmbpwent(False);
 }
 
 /***************************************************************
@@ -40,7 +40,7 @@ static void *startsmbunixgrpent(BOOL update)
 
 static void endsmbunixgrpent(void *vp)
 {
-	endsmbfilepwent(vp);
+	endsmbpwent(vp);
 }
 
 /*************************************************************************
@@ -50,7 +50,7 @@ static void endsmbunixgrpent(void *vp)
 
 static SMB_BIG_UINT getsmbunixgrppos(void *vp)
 {
-	return getsmbfilepwpos(vp);
+	return getsmbpwpos(vp);
 }
 
 /*************************************************************************
@@ -60,7 +60,7 @@ static SMB_BIG_UINT getsmbunixgrppos(void *vp)
 
 static BOOL setsmbunixgrppos(void *vp, SMB_BIG_UINT tok)
 {
-	return setsmbfilepwpos(vp, tok);
+	return setsmbpwpos(vp, tok);
 }
 
 /*************************************************************************
@@ -71,11 +71,12 @@ static struct smb_passwd *getsmbunixgrpent(void *vp,
 		uint32 **als_rids, int *num_alss)
 {
 	/* Static buffers we will return. */
-	struct smb_passwd *pw_buf;
-	struct passwd *pw;
+	struct sam_passwd *pw_buf;
+	fstring unix_name;
 	int i;
 	int unixgrps;
 	gid_t *grps;
+	BOOL failed = False;
 
 	if (vp == NULL)
 	{
@@ -83,8 +84,15 @@ static struct smb_passwd *getsmbunixgrpent(void *vp,
 		return NULL;
 	}
 
-	pw_buf = getsmbfilepwent(vp);
+	pw_buf = getsam21pwent(vp);
 	
+	if (pw_buf == NULL)
+	{
+		return NULL;
+	}
+
+	fstrcpy(unix_name, pw_buf->unix_name);
+
 	if (grp_rids != NULL)
 	{
 		(*grp_rids) = NULL;
@@ -99,21 +107,14 @@ static struct smb_passwd *getsmbunixgrpent(void *vp,
 	
 	if (als_rids == NULL && grp_rids == NULL)
 	{
-		return pw_buf;
+		return pwdb_sam_to_smb(pw_buf);
 	}
 
 	/*
 	 * find all unix groups
 	 */
 
-	pw = Get_Pwnam(pw_buf->smb_name, False);
-
-	if (pw == NULL)
-	{
-		return NULL;
-	}
-
-	if (get_unixgroups(pw_buf->smb_name, pw->pw_uid, pw->pw_gid, &unixgrps, &grps))
+	if (get_unixgroups(unix_name, pw_buf->unix_uid, pw_buf->unix_gid, &unixgrps, &grps))
 	{
 		return NULL;
 	}
@@ -122,10 +123,8 @@ static struct smb_passwd *getsmbunixgrpent(void *vp,
 	 * check each unix group for a mapping as an nt alias or an nt group
 	 */
 
-	for (i = 0; i < unixgrps; i++)
+	for (i = 0; i < unixgrps && !failed; i++)
 	{
-		DOM_SID sid;
-		char *unix_grpname;
 		uint32 rid;
 
 		/*
@@ -134,101 +133,80 @@ static struct smb_passwd *getsmbunixgrpent(void *vp,
 		 * (user or not our own domain will be an error).
 		 */
 
-		unix_grpname = gidtoname(grps[i]);
-		if (map_unix_alias_name(unix_grpname, &sid, NULL, NULL))
+		DOM_NAME_MAP gmep;
+
+		if (!lookupsmbgrpgid(grps[i], &gmep))
 		{
-			/*
-			 * ok, the unix groupname is mapped to an alias.
-			 * check that it is in our domain.
-			 */
-
-			sid_split_rid(&sid, &rid);
-			if (!sid_equal(&sid, &global_member_sid))
-			{
-				pstring sid_str;
-				sid_to_string(sid_str, &sid);
-				DEBUG(0,("user %s is in a UNIX group %s that maps to an NT Domain Alias RID (0x%x) in another domain (%s)\n",
-				          pw_buf->smb_name, unix_grpname, rid, sid_str));
-				continue;
-			}
-
-			if (add_num_to_list(als_rids, num_alss, rid) == NULL)
-			{
-				return NULL;
-			}
+			continue;
 		}
-		else if (map_unix_group_name(unix_grpname, &sid, NULL, NULL))
+
+		sid_split_rid(&gmep.sid, &rid);
+		if (!sid_equal(&global_sam_sid, &gmep.sid))
 		{
-			/*
-			 * ok, the unix groupname is mapped to a domain group.
-			 * check that it is in our domain.
-			 */
-
-			sid_split_rid(&sid, &rid);
-			if (!sid_equal(&sid, &global_member_sid))
-			{
-				pstring sid_str;
-				sid_to_string(sid_str, &sid);
-				DEBUG(0,("user %s is in a UNIX group %s that maps to an NT Domain Group RID (0x%x) in another domain (%s)\n",
-				          pw_buf->smb_name, unix_grpname, rid, sid_str));
-				continue;
-			}
-
-			if (add_num_to_list(grp_rids, num_grps, rid) == NULL)
-			{
-				return NULL;
-			}
+			continue;
 		}
-		else if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-		{
-			/*
-			 * server is a member of a domain or stand-alone.
-			 * name is not explicitly mapped
-			 * so we are responsible for it.
-			 * as a LOCAL group.
-			 */
 
-			rid = pwdb_gid_to_alias_rid(grps[i]);
-			if (add_num_to_list(als_rids, num_alss, rid) == NULL)
+		switch (gmep.type)
+		{
+			case SID_NAME_ALIAS:
 			{
-				return NULL;
+				if (als_rids != NULL && add_num_to_list(als_rids, num_alss, rid) == NULL)
+				{
+					failed = True;
+				}
+				break;
 			}
-		}
-		else if (lp_server_role() != ROLE_DOMAIN_NONE)
-		{
-			/*
-			 * server is a PDC or BDC.
-			 * name is explicitly mapped
-			 * so we are responsible for it.
-			 * as a DOMAIN group.
-			 */
-
-			rid = pwdb_gid_to_group_rid(grps[i]);
-			if (add_num_to_list(grp_rids, num_grps, rid) == NULL)
+			case SID_NAME_DOM_GRP:
+			case SID_NAME_WKN_GRP:
 			{
-				return NULL;
+				if (grp_rids != NULL && add_num_to_list(grp_rids, num_grps, rid) == NULL)
+				{
+					failed = True;
+				}
+				break;
+			}
+			default:
+			{
+				break;
 			}
 		}
 	}
 
-	return pw_buf;
+	if (failed)
+	{
+		if (grp_rids != NULL && (*grp_rids) != NULL)
+		{
+			free(*grp_rids);
+			(*num_grps) = 0;
+		}
+
+		if (als_rids != NULL && (*als_rids) != NULL)
+		{
+			free(*als_rids);
+			(*num_alss) = 0;
+		}
+
+		return NULL;
+	}
+
+	return pwdb_sam_to_smb(pw_buf);
 }
 
-static struct passgrp_ops file_ops =
+static struct passgrp_ops smbunixgrp_ops =
 {
 	startsmbunixgrpent,
 	endsmbunixgrpent,
 	getsmbunixgrppos,
 	setsmbunixgrppos,
-	iterate_getsmbgrpnam,          /* In passgrp.c */
+	iterate_getsmbgrpntnam,          /* In passgrp.c */
 	iterate_getsmbgrpuid,          /* In passgrp.c */
 	iterate_getsmbgrprid,          /* In passgrp.c */
-	getsmbunixgrpent,
+	getsmbunixgrpent
 };
 
 struct passgrp_ops *unix_initialise_password_grp(void)
 {    
-  return &file_ops;
+  return &smbunixgrp_ops;
 }
 
 #else

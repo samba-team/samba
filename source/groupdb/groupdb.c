@@ -24,6 +24,7 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
+extern DOM_SID global_sam_sid;
 
 /*
  * NOTE. All these functions are abstracted into a structure
@@ -65,7 +66,28 @@ BOOL initialise_group_db(void)
 *************************************************************************/
 DOMAIN_GRP *iterate_getgroupgid(gid_t gid, DOMAIN_GRP_MEMBER **mem, int *num_mem)
 {
-	return iterate_getgrouprid(pwdb_gid_to_group_rid(gid), mem, num_mem);
+	DOM_NAME_MAP gmep;
+	uint32 rid;
+	if (!lookupsmbgrpgid(gid, &gmep))
+	{
+		DEBUG(0,("iterate_getgroupgid: gid %d does not map to one of our Domain's Groups\n", gid));
+		return NULL;
+	}
+
+	if (gmep.type != SID_NAME_DOM_GRP && gmep.type != SID_NAME_WKN_GRP)
+	{
+		DEBUG(0,("iterate_getgroupgid: gid %d does not map to one of our Domain's Groups\n", gid));
+		return NULL;
+	}
+
+	sid_split_rid(&gmep.sid, &rid);
+	if (!sid_equal(&gmep.sid, &global_sam_sid))
+	{
+		DEBUG(0,("iterate_getgroupgid: gid %d does not map into our Domain SID\n", gid));
+		return NULL;
+	}
+
+	return iterate_getgrouprid(rid, mem, num_mem);
 }
 
 /************************************************************************
@@ -105,7 +127,7 @@ DOMAIN_GRP *iterate_getgrouprid(uint32 rid, DOMAIN_GRP_MEMBER **mem, int *num_me
  Utility function to search group database by name.  use this if your database
  does not have search facilities.
 *************************************************************************/
-DOMAIN_GRP *iterate_getgroupnam(char *name, DOMAIN_GRP_MEMBER **mem, int *num_mem)
+DOMAIN_GRP *iterate_getgroupntnam(const char *name, DOMAIN_GRP_MEMBER **mem, int *num_mem)
 {
 	DOMAIN_GRP *grp = NULL;
 	void *fp = NULL;
@@ -165,7 +187,7 @@ BOOL add_domain_group(DOMAIN_GRP **grps, int *num_grps, DOMAIN_GRP *grp)
 /*************************************************************************
  checks to see if a user is a member of a domain group
  *************************************************************************/
-static BOOL user_is_member(char *user_name, DOMAIN_GRP_MEMBER *mem, int num_mem)
+static BOOL user_is_member(const char *user_name, DOMAIN_GRP_MEMBER *mem, int num_mem)
 {
 	int i;
 	for (i = 0; i < num_mem; i++)
@@ -185,7 +207,7 @@ static BOOL user_is_member(char *user_name, DOMAIN_GRP_MEMBER *mem, int num_mem)
  gets an array of groups that a user is in.  use this if your database
  does not have search facilities
  *************************************************************************/
-BOOL iterate_getusergroupsnam(char *user_name, DOMAIN_GRP **grps, int *num_grps)
+BOOL iterate_getusergroupsnam(const char *user_name, DOMAIN_GRP **grps, int *num_grps)
 {
 	DOMAIN_GRP *grp = NULL;
 	DOMAIN_GRP_MEMBER *mem = NULL;
@@ -342,9 +364,9 @@ BOOL mod_group_entry(DOMAIN_GRP* grp)
  Routine to search group database by name.
 *************************************************************************/
 
-DOMAIN_GRP *getgroupnam(char *name, DOMAIN_GRP_MEMBER **mem, int *num_mem)
+DOMAIN_GRP *getgroupntnam(const char *name, DOMAIN_GRP_MEMBER **mem, int *num_mem)
 {
-	return gpdb_ops->getgroupnam(name, mem, num_mem);
+	return gpdb_ops->getgroupntnam(name, mem, num_mem);
 }
 
 /************************************************************************
@@ -368,9 +390,9 @@ DOMAIN_GRP *getgroupgid(gid_t gid, DOMAIN_GRP_MEMBER **mem, int *num_mem)
 /*************************************************************************
  gets an array of groups that a user is in.
  *************************************************************************/
-BOOL getusergroupsnam(char *user_name, DOMAIN_GRP **grp, int *num_grps)
+BOOL getusergroupsntnam(const char *user_name, DOMAIN_GRP **grp, int *num_grps)
 {
-	return gpdb_ops->getusergroupsnam(user_name, grp, num_grps);
+	return gpdb_ops->getusergroupsntnam(user_name, grp, num_grps);
 }
 
 /*************************************************************

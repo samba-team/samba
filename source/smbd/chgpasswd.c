@@ -529,7 +529,7 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2
 
   if (smbpw->acct_ctrl & ACB_DISABLED)
   {
-    DEBUG(0,("change_lanman_password: account %s disabled.\n", smbpw->smb_name));
+    DEBUG(0,("change_lanman_password: account %s disabled.\n", smbpw->unix_name));
     return False;
   }
 

@@ -31,9 +31,11 @@ static BOOL add_new_user(char *user_name, uid_t uid, BOOL trust_account,
 {
 	struct smb_passwd new_smb_pwent;
 
+	pwdb_init_smb(&new_smb_pwent);
+
 	/* Create a new smb passwd entry and set it to the given password. */
-	new_smb_pwent.smb_userid = uid;
-	new_smb_pwent.smb_name = user_name; 
+	new_smb_pwent.unix_uid = uid;
+	new_smb_pwent.nt_name = user_name; 
 	new_smb_pwent.smb_passwd = NULL;
 	new_smb_pwent.smb_nt_passwd = NULL;
 	new_smb_pwent.acct_ctrl = (trust_account ? ACB_WSTRUST : ACB_NORMAL);

@@ -131,6 +131,7 @@ static LOCAL_GRP *getalsfilepwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 
 	pstring linebuf;
 	char  *p;
+	uint8 type;
 
 	aldb_init_als(&al_buf);
 
@@ -139,6 +140,8 @@ static LOCAL_GRP *getalsfilepwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 	 */
 	while (getfileline(vp, linebuf, sizeof(linebuf)) > 0)
 	{
+		DOM_NAME_MAP gmep;
+
 		/* get alias name */
 
 		p = strncpyn(al_buf.name, linebuf, sizeof(al_buf.name), ':');
@@ -190,9 +193,25 @@ static LOCAL_GRP *getalsfilepwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 			}
 		}
 
-		/* ok, set up the static data structure and return it */
+		/*
+		 * look up the gid, turn it into a rid.  the _correct_ type of rid */
+		 */
 
-		al_buf.rid     = pwdb_gid_to_alias_rid((gid_t)gidval);
+		if (!lookupsmbgrpgid((gid_t)gidval, &gmep))
+		{
+			continue;
+		}
+		if (gmep.type != SID_NAME_DOM_GRP &&
+		    gmep.type != SID_NAME_WKN_GRP))
+		{
+			continue;
+		}
+
+		sid_split_rid(&gmep.sid, &gp_buf.rid);
+		if (!sid_equal(&gmep.sid, &global_sam_sid))
+		{
+			continue;
+		}
 
 		make_alias_line(linebuf, sizeof(linebuf), &al_buf, mem, num_mem);
 		DEBUG(10,("line: '%s'\n", linebuf));
@@ -237,7 +256,7 @@ static struct aliasdb_ops file_ops =
 	getalsfilepwpos,
 	setalsfilepwpos,
 
-	iterate_getaliasnam,          /* In aliasdb.c */
+	iterate_getaliasntnam,          /* In aliasdb.c */
 	iterate_getaliasgid,          /* In aliasdb.c */
 	iterate_getaliasrid,          /* In aliasdb.c */
 	getalsfilepwent,
@@ -245,7 +264,7 @@ static struct aliasdb_ops file_ops =
 	add_alsfileals_entry,
 	mod_alsfileals_entry,
 
-	iterate_getuseraliasnam      /* in aliasdb.c */
+	iterate_getuseraliasntnam      /* in aliasdb.c */
 };
 
 struct aliasdb_ops *file_initialise_alias_db(void)
