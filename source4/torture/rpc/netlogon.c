@@ -65,20 +65,14 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	
 }
 
-static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				  struct netr_CredentialState *creds)
 {
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate a;
-	struct netr_LogonSamLogon l;
-	struct netr_LogonSamLogoff lo;
 	const char *plain_pass;
 	uint8 mach_pwd[16];
-	struct netr_Authenticator auth, auth2;
-	struct netr_NetworkInfo ninfo;
-	const char *username = lp_parm_string(-1, "torture", "username");
-	const char *password = lp_parm_string(-1, "torture", "password");
-	struct netr_CredentialState creds;
 
 	printf("Testing ServerReqChallenge\n");
 
@@ -100,7 +94,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	E_md4hash(plain_pass, mach_pwd);
 
-	creds_init(&creds, &r.in.credentials, &r.out.credentials, mach_pwd,
+	creds_init(creds, &r.in.credentials, &r.out.credentials, mach_pwd,
 		   &a.in.credentials);
 
 	a.in.server_name = NULL;
@@ -116,8 +110,28 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!creds_check(&creds, &a.out.credentials)) {
+	if (!creds_check(creds, &a.out.credentials)) {
 		printf("Credential chaining failed\n");
+		return False;
+	}
+
+	return True;
+}
+
+/*
+  try a netlogon SamLogon
+*/
+static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_LogonSamLogon r;
+	struct netr_Authenticator auth, auth2;
+	struct netr_NetworkInfo ninfo;
+	const char *username = lp_parm_string(-1, "torture", "username");
+	const char *password = lp_parm_string(-1, "torture", "password");
+	struct netr_CredentialState creds;
+
+	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
 		return False;
 	}
 
@@ -140,23 +154,69 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	creds_authenticator(&creds, &auth);
 
-	l.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	l.in.workstation = lp_netbios_name();
-	l.in.credential = &auth;
-	l.in.authenticator = &auth2;
-	l.in.logon_level = 2;
-	l.in.logon.network = &ninfo;
-	l.in.validation_level = 2;
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.workstation = lp_netbios_name();
+	r.in.credential = &auth;
+	r.in.authenticator = &auth2;
+	r.in.logon_level = 2;
+	r.in.logon.network = &ninfo;
+	r.in.validation_level = 2;
 
 	printf("Testing SamLogon\n");
 
-	status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &l);
+	status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LogonSamLogon - %s\n", nt_errstr(status));
 		return False;
 	}
 
-	if (!creds_check(&creds, &l.out.authenticator->cred)) {
+	if (!creds_check(&creds, &r.out.authenticator->cred)) {
+		printf("Credential chaining failed\n");
+	}
+
+	return True;
+}
+
+
+/*
+  try a change password for our machine account
+*/
+static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_ServerPasswordSet r;
+	const char *password;
+	struct netr_CredentialState creds;
+
+	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
+		return False;
+	}
+
+	creds_authenticator(&creds, &r.in.credential);
+
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.username = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
+	r.in.secure_challenge_type = 2;
+	r.in.computer_name = lp_netbios_name();
+
+	password = generate_random_str(8);
+	E_md4hash(password, r.in.new_password.data);
+
+	creds_encrypt(&creds, &r.in.new_password);
+
+	printf("Testing ServerPasswordSet on machine account\n");
+
+	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ServerPasswordSet - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!secrets_store_machine_password(password)) {
+		printf("Failed to save machine password\n");
+	}
+
+	if (!creds_check(&creds, &r.out.return_authenticator.cred)) {
 		printf("Credential chaining failed\n");
 	}
 
@@ -188,6 +248,10 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_LogonUasLogoff(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_SetPassword(p, mem_ctx)) {
 		ret = False;
 	}
 

@@ -109,3 +109,14 @@ void creds_authenticator(struct netr_CredentialState *creds,
 	next->cred = creds->cred2;
 	next->timestamp = creds->sequence;
 }
+
+
+/*
+  encrypt a 16 byte password buffer using the session key
+*/
+void creds_encrypt(struct netr_CredentialState *creds, struct netr_Password *pass)
+{
+	struct netr_Password tmp;
+	cred_hash3(tmp.data, pass->data, creds->session_key, 1);
+	*pass = tmp;
+}
