@@ -38,7 +38,6 @@ extern pstring global_myname;
 extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 
-extern fstring remote_machine;
 extern BOOL global_encrypted_passwords_negotiated;
 
 
@@ -108,7 +107,7 @@ int reply_special(char *inbuf,char *outbuf)
 		   of possibly valid usernames if we are operating
 		   in share mode security */
 		if (lp_security() == SEC_SHARE) {
-			add_session_user(remote_machine);
+			add_session_user(get_remote_machine_name());
 		}
 
 		reload_services(True);

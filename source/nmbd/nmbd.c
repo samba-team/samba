@@ -269,9 +269,8 @@ static BOOL reload_interfaces(time_t t)
 static BOOL reload_nmbd_services(BOOL test)
 {
 	BOOL ret;
-	extern fstring remote_machine;
 
-	fstrcpy( remote_machine, "nmbd" );
+	set_remote_machine_name("nmbd");
 
 	if ( lp_loaded() ) {
 		pstring fname;

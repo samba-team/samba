@@ -23,7 +23,6 @@
 extern int Protocol;
 extern int max_recv;
 extern fstring global_myworkgroup;
-extern fstring remote_machine;
 BOOL global_encrypted_passwords_negotiated = False;
 BOOL global_spnego_negotiated = False;
 struct auth_context *negprot_global_auth_context = NULL;

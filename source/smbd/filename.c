@@ -29,7 +29,6 @@
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
-extern fstring remote_machine;
 extern BOOL use_mangled_map;
 
 static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache);

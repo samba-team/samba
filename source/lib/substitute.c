@@ -25,8 +25,10 @@ fstring local_machine="";
 fstring remote_arch="UNKNOWN";
 userdom_struct current_user_info;
 fstring remote_proto="UNKNOWN";
-fstring remote_machine="";
 extern pstring global_myname;
+
+static fstring remote_machine="";
+
 
 void set_local_machine_name(const char* local_name)
 {

@@ -27,8 +27,6 @@
 
 #include "includes.h"
 
-extern fstring remote_machine;
-
 static TDB_CONTEXT *tdb;
 /* called when a session is created */
 BOOL session_claim(user_struct *vuser)
@@ -116,7 +114,7 @@ BOOL session_claim(user_struct *vuser)
 	sessionid.pid = pid;
 	sessionid.uid = vuser->uid;
 	sessionid.gid = vuser->gid;
-	fstrcpy(sessionid.remote_machine, remote_machine);
+	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
 	fstrcpy(sessionid.ip_addr, client_addr());
 
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str, sessionid.hostname)) {
