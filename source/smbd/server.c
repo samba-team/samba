@@ -67,7 +67,7 @@ extern int dcelogin_atmost_once;
 extern DOM_SID global_machine_sid;
 
 connection_struct Connections[MAX_CONNECTIONS];
-files_struct Files[MAX_OPEN_FILES];
+files_struct Files[MAX_OPEN_FILES+MAX_OPEN_DIRECTORIES];
 
 /*
  * Indirection for file fd's. Needed as POSIX locking
