@@ -1492,6 +1492,60 @@ BOOL spoolss_io_r_deleteprinterdriver(char *desc, SPOOL_R_DELETEPRINTERDRIVER *r
 }
 
 
+/*******************************************************************
+ * read a structure.
+ * called from api_spoolss_deleteprinterdriver (srv_spoolss.c)
+ * called from spoolss_deleteprinterdriver (cli_spoolss.c)
+ ********************************************************************/
+
+BOOL spoolss_io_q_deleteprinterdriverex(char *desc, SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterdriverex");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("server_ptr", ps, depth, &q_u->server_ptr))
+		return False;		
+	if(!smb_io_unistr2("server", &q_u->server, q_u->server_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("arch", &q_u->arch, True, ps, depth))
+		return False;
+	if(!smb_io_unistr2("driver", &q_u->driver, True, ps, depth))
+		return False;
+	if(!prs_uint32("delete_flags ", ps, depth, &q_u->delete_flags))
+		return False;		
+	if(!prs_uint32("version      ", ps, depth, &q_u->version))
+		return False;		
+
+
+	return True;
+}
+
+
+/*******************************************************************
+ * write a structure.
+ ********************************************************************/
+BOOL spoolss_io_r_deleteprinterdriverex(char *desc, SPOOL_R_DELETEPRINTERDRIVEREX *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterdriverex");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
 
 /*******************************************************************
  * read a structure.
@@ -5351,6 +5405,53 @@ BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, pr
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_addprinterdriver");
+	depth++;
+
+	if(!prs_werror("status", ps, depth, &q_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ fill in the prs_struct for a ADDPRINTERDRIVER request PDU
+ ********************************************************************/  
+
+BOOL spoolss_io_q_addprinterdriverex(char *desc, SPOOL_Q_ADDPRINTERDRIVEREX *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_addprinterdriverex");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("server_name_ptr", ps, depth, &q_u->server_name_ptr))
+		return False;
+	if(!smb_io_unistr2("server_name", &q_u->server_name, q_u->server_name_ptr, ps, depth))
+		return False;
+		
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("info_level", ps, depth, &q_u->level))
+		return False;
+
+	if(!spool_io_printer_driver_info_level("", &q_u->info, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("copy flags", ps, depth, &q_u->copy_flags))
+		return False;
+		
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/  
+
+BOOL spoolss_io_r_addprinterdriverex(char *desc, SPOOL_R_ADDPRINTERDRIVEREX *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_addprinterdriverex");
 	depth++;
 
 	if(!prs_werror("status", ps, depth, &q_u->status))

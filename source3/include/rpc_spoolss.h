@@ -702,6 +702,8 @@ typedef struct spool_q_deleteprinterdriverex
 	UNISTR2 server;
 	UNISTR2 arch;
 	UNISTR2 driver;
+	uint32 delete_flags;
+	uint32 version;
 }
 SPOOL_Q_DELETEPRINTERDRIVEREX;
 
@@ -1685,6 +1687,7 @@ typedef struct spool_q_addprinterdriverex
 	UNISTR2 server_name;
 	uint32 level;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL info;
+	uint32 copy_flags;
 }
 SPOOL_Q_ADDPRINTERDRIVEREX;
 
