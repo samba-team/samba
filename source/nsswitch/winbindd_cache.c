@@ -448,16 +448,9 @@ BOOL winbindd_fetch_gid_cache_entry(char *domain, gid_t gid,
 	return True;
 }
 
-/* Flush cache data about all known domains */
-
+/* Flush cache data - easiest to just reopen the tdb */
 void winbindd_flush_cache(void)
 {
-    struct winbindd_domain *domain;
-
-    DEBUG(2, ("flushing all domain cache info\n"));
-
-    for(domain = domain_list; domain; domain = domain->next) {
-        expire_cache(domain->name, CACHE_TYPE_USER);
-        expire_cache(domain->name, CACHE_TYPE_GROUP);
-    }
+	tdb_close(cache_tdb);
+	winbindd_cache_init();
 }
