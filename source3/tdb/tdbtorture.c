@@ -106,9 +106,9 @@ int main(int argc, char *argv[])
 	srand(seed + getpid());
 	for (i=0;i<loops;i++) addrec_db();
 
-	printf("traversed %d records\n", tdb_traverse(db, NULL));
-	printf("traversed %d records\n", tdb_traverse(db, traverse_fn));
-	printf("traversed %d records\n", tdb_traverse(db, traverse_fn));
+	printf("traversed %d records\n", tdb_traverse(db, NULL, NULL));
+	printf("traversed %d records\n", tdb_traverse(db, traverse_fn, NULL));
+	printf("traversed %d records\n", tdb_traverse(db, traverse_fn, NULL));
 
 	tdb_close(db);
 
