@@ -182,6 +182,7 @@ ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
 	pd.data = &data_buf;
 	pd.align = 4;
 	pd.io = True;
+	pd.error = False;
 	pd.offset = 0;
 
 	return rpc_command(p, &pd) ? ((ssize_t)n) : -1;

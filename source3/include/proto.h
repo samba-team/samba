@@ -1806,7 +1806,7 @@ BOOL do_reg_open_hku(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint3
 				POLICY_HND *hnd);
 BOOL do_reg_flush_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
 BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
-				char *class, uint32 *class_len,
+				char *key_class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
 				uint32 *max_subkeysize, uint32 *num_values,
 				uint32 *max_valnamelen, uint32 *max_valbufsize,
@@ -2323,7 +2323,7 @@ BOOL make_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol);
 BOOL reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int depth);
 BOOL reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int depth);
 BOOL make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
-				char *name, char *class,
+				char *key_name, char *key_class,
 				SEC_ACCESS *sam_access,
 				SEC_DESC_BUF *sec_buf,
 				int sec_len, SEC_DESC *sec);

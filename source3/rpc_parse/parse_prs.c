@@ -46,6 +46,7 @@ void prs_init(prs_struct *ps, uint32 size,
 	ps->io = io;
 	ps->align = align;
 	ps->offset = 0;
+	ps->error = False;
 
 	ps->data = NULL;
 	mem_buf_init(&(ps->data), margin);
@@ -82,7 +83,9 @@ void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next)
  ********************************************************************/
 void prs_align(prs_struct *ps)
 {
-	int mod = ps->offset & (ps->align-1);
+	int mod;
+	if (ps->error) return;
+	mod = ps->offset & (ps->align-1);
 	if (ps->align != 0 && mod != 0)
 	{
 		ps->offset += ps->align - mod;
@@ -96,6 +99,7 @@ void prs_align(prs_struct *ps)
  ********************************************************************/
 BOOL prs_grow(prs_struct *ps)
 {
+	if (ps->error) return False;
 	return mem_grow_data(&(ps->data), ps->io, ps->offset, False);
 }
 
@@ -105,8 +109,14 @@ BOOL prs_grow(prs_struct *ps)
  ********************************************************************/
 BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
-	if (q == NULL) return False;
+	char *q;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	if (q == NULL)
+	{
+		ps->error = True;
+		return False;
+	}
 
 	DBG_RW_CVAL(name, depth, ps->offset, ps->io, q, *data8)
 	ps->offset += 1;
@@ -119,8 +129,14 @@ BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
  ********************************************************************/
 BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
-	if (q == NULL) return False;
+	char *q;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	if (q == NULL)
+	{
+		ps->error = True;
+		return False;
+	}
 
 	DBG_RW_SVAL(name, depth, ps->offset, ps->io, q, *data16)
 	ps->offset += 2;
@@ -133,8 +149,14 @@ BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
  ********************************************************************/
 BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
 {
-	char *q = mem_data(&(ps->data), offset);
-	if (q == NULL) return False;
+	char *q;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	if (q == NULL)
+	{
+		ps->error = True;
+		return False;
+	}
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("prs_hash1\n"));
@@ -154,8 +176,14 @@ BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
  ********************************************************************/
 BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
-	if (q == NULL) return False;
+	char *q;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	if (q == NULL)
+	{
+		ps->error = True;
+		return False;
+	}
 
 	DBG_RW_IVAL(name, depth, ps->offset, ps->io, q, *data32)
 	ps->offset += 4;
@@ -169,11 +197,19 @@ BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
  ********************************************************************/
 BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
-	int end_offset = ps->offset + len * sizeof(uint8);
-	char *e = mem_data(&(ps->data), end_offset-1);
+	char *q;
+	int end_offset;
+	char *e;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	end_offset = ps->offset + len * sizeof(uint8);
+	e = mem_data(&(ps->data), end_offset-1);
 
-	if (q == NULL || e == NULL) return False;
+	if (q == NULL || e == NULL) 
+	{
+		ps->error = True;
+		return False;
+	}
 
 	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, data8s, len)
 	ps->offset = end_offset;
@@ -186,11 +222,22 @@ BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *da
  ********************************************************************/
 BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
 {
+	char *q;
+	int end_offset;
+	char *e;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	end_offset = ps->offset + len * sizeof(uint8);
+	e = mem_data(&(ps->data), end_offset-1);
 	char *q = mem_data(&(ps->data), ps->offset);
 	int end_offset = ps->offset + len * sizeof(uint16);
 	char *e = mem_data(&(ps->data), end_offset-1);
 
-	if (q == NULL || e == NULL) return False;
+	if (q == NULL || e == NULL)
+	{
+		ps->error = True;
+		return False;
+	}
 
 	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, data16s, len)
 	ps->offset = end_offset;
@@ -203,11 +250,19 @@ BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *
  ********************************************************************/
 BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
-	int end_offset = ps->offset + len * sizeof(uint32);
-	char *e = mem_data(&(ps->data), end_offset-1);
+	char *q;
+	int end_offset;
+	char *e;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	end_offset = ps->offset + len * sizeof(uint8);
+	e = mem_data(&(ps->data), end_offset-1);
 
-	if (q == NULL || e == NULL) return False;
+	if (q == NULL || e == NULL)
+	{
+		ps->error = True;
+		return False;
+	}
 
 	DBG_RW_PIVAL(charmode, name, depth, ps->offset, ps->io, q, data32s, len)
 	ps->offset = end_offset;
@@ -221,11 +276,19 @@ BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *
  ********************************************************************/
 BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
-	int end_offset = ps->offset + str->buf_len;
-	char *e = mem_data(&(ps->data), end_offset-1);
+	char *q;
+	int end_offset;
+	char *e;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	end_offset = ps->offset + len * sizeof(uint8);
+	e = mem_data(&(ps->data), end_offset-1);
 
-	if (q == NULL || e == NULL) return False;
+	if (q == NULL || e == NULL)
+	{
+		ps->error = True;
+		return False;
+	}
 
 	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->buf_len)
 	ps->offset = end_offset;
@@ -239,11 +302,19 @@ BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 
  ********************************************************************/
 BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
-	int end_offset = ps->offset + str->str_str_len * sizeof(uint8);
-	char *e = mem_data(&(ps->data), end_offset-1);
+	char *q;
+	int end_offset;
+	char *e;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	end_offset = ps->offset + len * sizeof(uint8);
+	e = mem_data(&(ps->data), end_offset-1);
 
-	if (q == NULL || e == NULL) return False;
+	if (q == NULL || e == NULL)
+	{
+		ps->error = True;
+		return False;
+	}
 
 	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->str_max_len)
 	ps->offset = end_offset;
@@ -257,11 +328,19 @@ BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 
  ********************************************************************/
 BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
-	int end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
-	char *e = mem_data(&(ps->data), end_offset-1);
+	char *q;
+	int end_offset;
+	char *e;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	end_offset = ps->offset + len * sizeof(uint8);
+	e = mem_data(&(ps->data), end_offset-1);
 
-	if (q == NULL || e == NULL) return False;
+	if (q == NULL || e == NULL)
+	{
+		ps->error = True;
+		return False;
+	}
 
 	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->uni_str_len)
 	ps->offset = end_offset;
@@ -275,11 +354,19 @@ BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 
  ********************************************************************/
 BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth)
 {
-	char *q = mem_data(&(ps->data), ps->offset);
-	int end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
-	char *e = mem_data(&(ps->data), end_offset-1);
+	char *q;
+	int end_offset;
+	char *e;
+	if (ps->error) return False;
+	q = mem_data(&(ps->data), ps->offset);
+	end_offset = ps->offset + len * sizeof(uint8);
+	e = mem_data(&(ps->data), end_offset-1);
 
-	if (q == NULL || e == NULL) return False;
+	if (q == NULL || e == NULL)
+	{
+		ps->error = True;
+		return False;
+	}
 
 	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->str.buffer, str->uni_str_len)
 	ps->offset = end_offset;
@@ -293,14 +380,20 @@ BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int d
 BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 {
 	int i = -1;
-	uint8 *start = (uint8*)mem_data(&(ps->data), ps->offset);
+	uint8 *start;
+	if (ps->error) return False;
+	start = (uint8*)mem_data(&(ps->data), ps->offset);
 
 	do
 	{
 		char *q;
 		i++;
 		q = mem_data(&(ps->data), ps->offset + i*2);
-		if (q == NULL) return False;
+		if (q == NULL) 
+		{
+			ps->error = True;
+			return False;
+		}
 		RW_SVAL(ps->io, q, str->buffer[i],0);
 	}
 	while ((i < sizeof(str->buffer) / sizeof(str->buffer[0])) &&
@@ -324,8 +417,10 @@ BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
  ********************************************************************/
 BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size)
 {
-	uint8 *start = (uint8*)mem_data(&(ps->data), ps->offset);
 	int i = -1; /* start off at zero after 1st i++ */
+	uint8 *start;
+	if (ps->error) return False;
+	start = (uint8*)mem_data(&(ps->data), ps->offset);
 
 	do
 	{
@@ -333,7 +428,11 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 		i++;
 
 		q = mem_data(&(ps->data), ps->offset + i);
-		if (q == NULL) return False;
+		if (q == NULL)
+		{
+			ps->error = True;
+			return False;
+		}
 
 		if (i < len || len == 0)
 		{
@@ -360,6 +459,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
  ********************************************************************/
 BOOL _prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset)
 {
+	if (ps->error) return False;
 	(*offset) = ps->offset;
 	if (ps->io)
 	{
@@ -380,6 +480,7 @@ BOOL _prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint
 BOOL _prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 				uint32 ptr_uint16, uint32 start_offset)
 {
+	if (ps->error) return False;
 	if (!ps->io)
 	{
 		/* storing: go back and do a retrospective job.  i hate this */
@@ -403,6 +504,7 @@ BOOL _prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
  ********************************************************************/
 BOOL _prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset)
 {
+	if (ps->error) return False;
 	(*offset) = ps->offset;
 	if (ps->io)
 	{
@@ -423,6 +525,7 @@ BOOL _prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint
 BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size)
 {
+	if (ps->error) return False;
 	if (!ps->io)
 	{
 		/* storing: go back and do a retrospective job.  i hate this */
