@@ -56,6 +56,7 @@ Subject:      Outstanding Issues, Development Goals
 
 - Develop Web based configuration tools for Samba (Portable)
   + Contact Dave Fenton and liaise (JHT)
+    Note that Dave Fenton is restarting work on this as of about 10 Aug 97
   + find willing workers (JHT)
 - Revise documentation and produce SGML format files and Makefile to produce
   text as well as HTML output files for placement on samba web server

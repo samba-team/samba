@@ -525,7 +525,7 @@ static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*
       loop_count++;
       if (loop_count > 200)
 	{
-	  DEBUG(0,("ERROR: Looping in FIND_NEXT??\n"));
+	  DEBUG(0,("Error: Looping in FIND_NEXT??\n"));
 	  break;
 	}
 
@@ -4818,7 +4818,7 @@ err_code_struct hard_msgs[] = {
   {"ERRwrite",29,"Write fault."},
   {"ERRread",30,"Read fault."},
   {"ERRgeneral",31,"General failure."},
-  {"ERRbadshare",32,"A open conflicts with an existing open."},
+  {"ERRbadshare",32,"An open conflicts with an existing open."},
   {"ERRlock",33,"A Lock request conflicted with an existing lock or specified an invalid mode, or an Unlock requested attempted to remove a lock held by another process."},
   {"ERRwrongdisk",34,"The wrong disk was found in a drive."},
   {"ERRFCBUnavail",35,"No FCBs are available to process request."},
@@ -4876,6 +4876,6 @@ char *smb_errstr(char *inbuf)
 	return ret;
       }
   
-  sprintf(ret,"ERROR: Unknown error (%d,%d)",class,num);
+  sprintf(ret,"Error: Unknown error (%d,%d)",class,num);
   return(ret);
 }
