@@ -33,6 +33,10 @@
 
 #define	FTP_NAMES
 #include "ftpd_locl.h"
+#ifdef KRB5
+#include <krb5.h>
+#endif
+
 RCSID("$Id$");
 
 static char version[] = "Version 6.00";
