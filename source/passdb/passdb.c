@@ -1455,6 +1455,8 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
     extern DOM_SID global_sam_sid;
 	DOM_SID dom_sid;
 	uint32 rid;
+	fstring str;
+	struct passwd *pass;
 
 	*name_type = SID_NAME_UNKNOWN;
 
@@ -1475,8 +1477,11 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	 * Ensure this uid really does exist.
 	 */
 
-	if(!sys_getpwuid(*puid))
+	if(!(pass = sys_getpwuid(*puid)))
 		return False;
+
+	DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_to_string( str, psid),
+		(unsigned int)*puid, pass->pw_name ));
 
 	return True;
 }
@@ -1504,6 +1509,8 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
     extern DOM_SID global_sam_sid;
 	DOM_SID dom_sid;
 	uint32 rid;
+	struct group *grp;
+	fstring str;
 
 	*name_type = SID_NAME_UNKNOWN;
 
@@ -1524,8 +1531,11 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	 * Ensure this gid really does exist.
 	 */
 
-	if(!getgrgid(*pgid))
+	if(!(grp = getgrgid(*pgid)))
 		return False;
+
+	DEBUG(10,("local_sid_to_gid: SID %s -> gid (%u) (%s).\n", sid_to_string( str, psid),
+		(unsigned int)*pgid, grp->gr_name ));
 
 	return True;
 }
