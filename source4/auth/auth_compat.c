@@ -95,7 +95,6 @@ BOOL password_ok(struct server_context *smb, const char *smb_name, DATA_BLOB pas
 
 	DATA_BLOB null_password = data_blob(NULL, 0);
 	BOOL encrypted = (smb->negotiate.encrypted_passwords && password_blob.length == 24);
-	NTSTATUS status;
 
 	if (encrypted) {
 		/* 
@@ -103,20 +102,20 @@ BOOL password_ok(struct server_context *smb, const char *smb_name, DATA_BLOB pas
 		 * but fall-through as required.
 		 * NTLMv2 makes no sense here.
 		 */
-		status = pass_check_smb(smb, smb_name, lp_workgroup(), null_password, 
-					password_blob, null_password, encrypted);
-		if (NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_IS_OK(pass_check_smb(smb, smb_name, lp_workgroup(), null_password, password_blob, null_password, encrypted))) {
 			return True;
 		}
 		
-		status = pass_check_smb(smb, smb_name, lp_workgroup(), password_blob, 
-					null_password, null_password, encrypted);
+		if (NT_STATUS_IS_OK(pass_check_smb(smb, smb_name, lp_workgroup(), password_blob, null_password, null_password, encrypted))) {
+			return True;
+		}
 	} else {
-		status = pass_check_smb(smb, smb_name, lp_workgroup(), null_password, 
-					null_password, password_blob, encrypted);
+		if (NT_STATUS_IS_OK(pass_check_smb(smb, smb_name, lp_workgroup(), null_password, null_password, password_blob, encrypted))) {
+			return True;
+		}
 	}
 
-	return NT_STATUS_IS_OK(status);
+	return False;
 }
 
 

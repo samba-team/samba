@@ -44,6 +44,7 @@ static NTSTATUS sesssetup_old(struct request_context *req, union smb_sesssetup *
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 	DATA_BLOB null_blob;
+	DATA_BLOB session_key;
 
 	if (!req->smb->negotiate.done_sesssetup) {
 		req->smb->negotiate.max_send = sess->old.in.bufsize;
@@ -63,11 +64,17 @@ static NTSTATUS sesssetup_old(struct request_context *req, union smb_sesssetup *
 								       user_info, 
 								       &server_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_ACCESS_DENIED;
+		return nt_status_squash(status);
+	}
+
+	if (server_info->user_session_key.data) {
+		session_key = data_blob(server_info->user_session_key.data, server_info->user_session_key.length);
+	} else {
+		session_key = data_blob(NULL, 0);
 	}
 
 	sess->old.out.action = 0;
-	sess->old.out.vuid = register_vuid(req->smb, server_info, sess->old.in.user);
+	sess->old.out.vuid = register_vuid(req->smb, server_info, &session_key, sess->old.in.user);
 	sesssetup_common_strings(req, 
 				 &sess->old.out.os,
 				 &sess->old.out.lanman,
@@ -85,6 +92,7 @@ static NTSTATUS sesssetup_nt1(struct request_context *req, union smb_sesssetup *
 	NTSTATUS status;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
+	DATA_BLOB session_key;
 
 	if (!req->smb->negotiate.done_sesssetup) {
 		req->smb->negotiate.max_send = sess->nt1.in.bufsize;
@@ -103,11 +111,17 @@ static NTSTATUS sesssetup_nt1(struct request_context *req, union smb_sesssetup *
 								       user_info, 
 								       &server_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_ACCESS_DENIED;
+		return nt_status_squash(status);
+	}
+
+	if (server_info->user_session_key.data) {
+		session_key = data_blob(server_info->user_session_key.data, server_info->user_session_key.length);
+	} else {
+		session_key = data_blob(NULL, 0);
 	}
 
 	sess->nt1.out.action = 0;
-	sess->nt1.out.vuid = register_vuid(req->smb, server_info, sess->old.in.user);
+	sess->nt1.out.vuid = register_vuid(req->smb, server_info, &session_key, sess->old.in.user);
 	sesssetup_common_strings(req, 
 				 &sess->nt1.out.os,
 				 &sess->nt1.out.lanman,
