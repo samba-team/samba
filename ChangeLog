@@ -1,3 +1,23 @@
+2003-01-14  Love  <lha@it.su.se>
+
+	* kdc/Makefile.am: always include kerberos4.c and 524.c in
+	kdc_SOURCES to support 524
+
+	* kdc/524.c: always compile in support for 524
+	
+	* kdc/kdc_locl.h: move out krb/524 protos from under #ifdef KRB4
+	
+	* kdc/config.c: always compile in support for 524
+	
+	* kdc/connect.c: always compile in support for 524
+	
+	* kdc/kerberos4.c: export encode_v4_ticket() and get_des_key()
+	even when we build without kerberos 4, 524 needs them
+	
+	* lib/krb5/convert_creds.c, lib/krb5/krb5-v4compat.h: Split out
+	Kerberos 4 help functions/structures so other parts of the source
+	tree can use it (like the KDC)
+
 2002-12-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/mk_rep.c: free allocated storage; reported by Howard
