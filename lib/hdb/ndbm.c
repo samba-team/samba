@@ -73,85 +73,6 @@ NDBM_unlock(krb5_context context, HDB *db)
 }
 
 static krb5_error_code
-NDBM_fetch(krb5_context context, HDB *db, hdb_entry *entry)
-{
-    DBM *d = (DBM*)db->db;
-    datum key, value;
-    krb5_data data;
-    krb5_error_code ret;
-
-    hdb_principal2key(context, entry->principal, &data);
-#if 0
-    krb5_free_principal (context, entry->principal);
-#endif
-
-    key.dptr = data.data;
-    key.dsize = data.length;
-    ret = db->lock(context, db, HDB_RLOCK);
-    if(ret) return ret;
-    value = dbm_fetch(d, key);
-    db->unlock(context, db);
-    krb5_data_free(&data);
-    if(value.dptr == NULL)
-	return HDB_ERR_NOENTRY;
-    
-    data.data = value.dptr;
-    data.length = value.dsize;
-    
-    hdb_value2entry(context, &data, entry);
-    /* krb5_data_free(&data); */
-    return 0;
-}
-
-static krb5_error_code
-NDBM_store(krb5_context context, HDB *db, hdb_entry *entry)
-{
-    DBM *d = (DBM*)db->db;
-    krb5_data data;
-    krb5_error_code ret;
-    int code;
-    datum key, value;
-    hdb_principal2key(context, entry->principal, &data);
-    key.dptr = data.data;
-    key.dsize = data.length;
-    hdb_entry2value(context, entry, &data);
-    value.dptr = data.data;
-    value.dsize = data.length;
-    ret = db->lock(context, db, HDB_WLOCK);
-    if(ret) return ret;
-    code = dbm_store(d, key, value, DBM_REPLACE);
-    db->unlock(context, db);
-    free(key.dptr);
-    free(value.dptr);
-    if(code < 0)
-	return errno;
-    return 0;
-}
-
-static krb5_error_code
-NDBM_delete(krb5_context context, HDB *db, hdb_entry *entry)
-{
-    DBM *d = (DBM*)db->db;
-    datum key;
-    krb5_data data;
-    int code;
-    krb5_error_code ret;
-
-    hdb_principal2key(context, entry->principal, &data);
-
-    key.dptr = data.data;
-    key.dsize = data.length;
-    ret = db->lock(context, db, HDB_WLOCK);
-    if(ret) return ret;
-    code = dbm_delete(d, key);
-    db->unlock(context, db);
-    krb5_data_free(&data);
-    if(code < 0)
-	return errno;
-    return 0;
-}
-
-static krb5_error_code
 NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
 
 {
@@ -269,6 +190,26 @@ NDBM__put(krb5_context context, HDB *db, int replace,
     return 0;
 }
 
+static krb5_error_code
+NDBM__del(krb5_context context, HDB *db, krb5_data key)
+{
+    DBM *d = (DBM*)db->db;
+    datum k;
+    int code;
+    krb5_error_code ret;
+
+    k.dptr = key.data;
+    k.dsize = key.length;
+    ret = db->lock(context, db, HDB_WLOCK);
+    if(ret) return ret;
+    code = dbm_delete(d, k);
+    db->unlock(context, db);
+    if(code < 0)
+	return errno;
+    return 0;
+}
+
+
 krb5_error_code
 hdb_ndbm_open(krb5_context context, HDB **db, 
 	      const char *filename, int flags, mode_t mode)
@@ -281,9 +222,9 @@ hdb_ndbm_open(krb5_context context, HDB **db,
     (*db)->db = d;
     (*db)->name = strdup(filename);
     (*db)->close = NDBM_close;
-    (*db)->fetch = NDBM_fetch;
-    (*db)->store = NDBM_store;
-    (*db)->delete = NDBM_delete;
+    (*db)->fetch = _hdb_fetch;
+    (*db)->store = _hdb_store;
+    (*db)->delete = _hdb_delete;
     (*db)->firstkey = NDBM_firstkey;
     (*db)->nextkey= NDBM_nextkey;
     (*db)->lock = NDBM_lock;
@@ -291,6 +232,7 @@ hdb_ndbm_open(krb5_context context, HDB **db,
     (*db)->rename = NDBM_rename;
     (*db)->_get = NDBM__get;
     (*db)->_put = NDBM__put;
+    (*db)->_del = NDBM__del;
     return 0;
 }
 

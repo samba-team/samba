@@ -93,17 +93,6 @@ DB_op(krb5_context context, HDB *db, hdb_entry *entry, int op)
 	db->unlock(context, db); /* XXX check value */
 	break;
     case 1:
-	hdb_entry2value(context, entry, &data);
-	value.data = data.data;
-	value.size = data.length;
-	code = db->lock(context, db, HDB_WLOCK);
-	if(code)
-	    return code;
-	code = d->put(d, &key, &value, 0);
-	db->unlock(context, db); /* XXX check value */
-	krb5_data_free(&data);
-	break;
-    case 2:
 	code = db->lock(context, db, HDB_WLOCK);
 	if(code)
 	    return code;
@@ -117,31 +106,16 @@ DB_op(krb5_context context, HDB *db, hdb_entry *entry, int op)
     if(code < 0)
 	return errno;
     if(code == 1)
-	return HDB_ERR_NOENTRY;
+	if(op == 2)
+	    return HDB_ERR_EXISTS;
+	else
+	    return HDB_ERR_NOENTRY;
     if(op == 0){
 	data.data = value.data;
 	data.length = value.size;
 	hdb_value2entry(context, &data, entry);
     }
     return 0;
-}
-
-static krb5_error_code
-DB_fetch(krb5_context context, HDB *db, hdb_entry *entry)
-{
-    return DB_op(context, db, entry, 0);
-}
-
-static krb5_error_code
-DB_store(krb5_context context, HDB *db, hdb_entry *entry)
-{
-    return DB_op(context, db, entry, 1);
-}
-
-static krb5_error_code
-DB_delete(krb5_context context, HDB *db, hdb_entry *entry)
-{
-    return DB_op(context, db, entry, 2);
 }
 
 static krb5_error_code
@@ -256,6 +230,26 @@ DB__put(krb5_context context, HDB *db, int replace,
     return 0;
 }
 
+static krb5_error_code
+DB__del(krb5_context context, HDB *db, krb5_data key)
+{
+    DB *d = (DB*)db->db;
+    DBT k;
+    krb5_error_code code;
+    k.data = key.data;
+    k.size = key.length;
+    code = db->lock(context, db, HDB_WLOCK);
+    if(code)
+	return code;
+    code = d->del(d, &k, 0);
+    db->unlock(context, db);
+    if(code == 1)
+	return HDB_ERR_NOENTRY;
+    if(code < 0)
+	return errno;
+    return 0;
+}
+
 krb5_error_code
 hdb_db_open(krb5_context context, HDB **db, 
 	    const char *filename, int flags, mode_t mode)
@@ -271,9 +265,9 @@ hdb_db_open(krb5_context context, HDB **db,
     (*db)->db = d;
     (*db)->name = strdup(filename);
     (*db)->close = DB_close;
-    (*db)->fetch = DB_fetch;
-    (*db)->store = DB_store;
-    (*db)->delete = DB_delete;
+    (*db)->fetch = _hdb_fetch;
+    (*db)->store = _hdb_store;
+    (*db)->delete = _hdb_delete;
     (*db)->firstkey = DB_firstkey;
     (*db)->nextkey= DB_nextkey;
     (*db)->lock = DB_lock;
@@ -281,6 +275,7 @@ hdb_db_open(krb5_context context, HDB **db,
     (*db)->rename = DB_rename;
     (*db)->_get = DB__get;
     (*db)->_put = DB__put;
+    (*db)->_del = DB__del;
     return 0;
 }
 
