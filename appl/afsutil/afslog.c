@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -14,12 +14,7 @@
  *    notice, this list of conditions and the following disclaimer in the 
  *    documentation and/or other materials provided with the distribution. 
  *
- * 3. All advertising materials mentioning features or use of this software 
- *    must display the following acknowledgement: 
- *      This product includes software developed by Kungliga Tekniska 
- *      Högskolan and its contributors. 
- *
- * 4. Neither the name of the Institute nor the names of its contributors 
+ * 3. Neither the name of the Institute nor the names of its contributors 
  *    may be used to endorse or promote products derived from this software 
  *    without specific prior written permission. 
  *
@@ -48,7 +43,9 @@ RCSID("$Id$");
 
 static int help_flag;
 static int version_flag;
-static int crete_user;
+#if 0
+static int create_user;
+#endif
 static getarg_strings cells;
 static char *realm;
 static getarg_strings files;
@@ -56,17 +53,16 @@ static int unlog_flag;
 static int verbose;
 
 struct getargs args[] = {
-    { "help", 'h', arg_flag, &help_flag, NULL, NULL },
-    { "version", 0, arg_flag, &version_flag, NULL, NULL },
-    { "verbose", 'v', arg_flag, &verbose, NULL, NULL },
+    { "cell",	'c', arg_strings, &cells, "cell to get tokens for", "cell" },
+    { "file",	'p', arg_strings, &files, "file to get tokens for", "path" },
+    { "realm",	'k', arg_string, &realm, "realm for afs cell", "realm" },
+    { "unlog",	'u', arg_flag, &unlog_flag, "remove tokens" },
 #if 0
-    { "create-user", 0, arg_flag, &crete_user, 
-      "create user if not found", NULL },
+    { "create-user", 0, arg_flag, &create_user, "create user if not found" },
 #endif
-    { "cell", 'c', arg_strings, &cells, "cell to get tokens for", "cell" },
-    { "realm", 'k', arg_string, &realm, "realm for afs cell", "realm" },
-    { "file", 'p', arg_strings, &files, "file to get tokens for", "path" },
-    { "unlog", 'u', arg_flag, &unlog_flag, "remove tokens", NULL },
+    { "verbose",'v', arg_flag, &verbose },
+    { "version", 0,  arg_flag, &version_flag },
+    { "help",	'h', arg_flag, &help_flag },
 };
 
 static int num_args = sizeof(args) / sizeof(args[0]);
@@ -184,10 +180,6 @@ main(int argc, char **argv)
     
     set_progname(argv[0]);
 
-    krb5_init_context(&context);
-    if(!k_hasafs())
-	krb5_errx(context, 1, 
-		  "AFS doesn't seem to be present on this machine");
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
     if(help_flag)
@@ -196,6 +188,12 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+    krb5_init_context(&context);
+    if(!k_hasafs())
+	krb5_errx(context, 1, 
+		  "AFS doesn't seem to be present on this machine");
+
     if(unlog_flag){
 	k_unlog();
 	exit(0);
