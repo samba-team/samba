@@ -14,10 +14,6 @@ more programs here
 
 Implement RFC1731 and 1734, pop over GSS-API
 
-** appl/telnet
-
-error messages when kerberos functions fail
-
 ** appl/test
 
 should test more stuff
