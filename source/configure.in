@@ -3268,14 +3268,8 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo\$(EXEEXT)"
 	EXTRA_SBIN_PROGS="$EXTRA_SBIN_PROGS bin/winbindd\$(EXEEXT)"
         if test x"$BLDSHARED" = x"true"; then
-		case "$host_os" in
-		*irix*)
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/$WINBIND_NSS.$SHLIBEXT"
-			;;
-		*)
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/$WINBIND_NSS.$SHLIBEXT"
-			;;
-		esac
+		SHLIB_PROGS="$SHLIB_PROGS nsswitch/$WINBIND_NSS.$SHLIBEXT"
+
 		if test x"$with_pam" = x"yes"; then
 			SHLIB_PROGS="$SHLIB_PROGS nsswitch/pam_winbind.$SHLIBEXT"
 		fi
@@ -3285,31 +3279,15 @@ else
 fi
 
 # Solaris has some extra fields in struct passwd that need to be
-# initialised otherwise nscd crashes.  Unfortunately autoconf < 2.50
-# doesn't have the AC_CHECK_MEMBER macro which would be handy for checking
-# this. 
+# initialised otherwise nscd crashes.  
+ 
+AC_CHECK_MEMBER(struct passwd.pw_comment,
+		AC_DEFINE(HAVE_PASSWD_PW_COMMENT, 1, [Defined if struct passwd has pw_comment field]),,
+		[#include <pwd.h>])
 
-#AC_CHECK_MEMBER(struct passwd.pw_comment,
-#		AC_DEFINE(HAVE_PASSWD_PW_COMMENT, 1, [Defined if struct passwd has pw_comment field]),
-#		[#include <pwd.h>])
-
-AC_CACHE_CHECK([whether struct passwd has pw_comment],samba_cv_passwd_pw_comment, [
-    AC_TRY_COMPILE([#include <pwd.h>],[struct passwd p; p.pw_comment;],
-	samba_cv_passwd_pw_comment=yes,samba_cv_passwd_pw_comment=no)])
-if test x"$samba_cv_passwd_pw_comment" = x"yes"; then
-   AC_DEFINE(HAVE_PASSWD_PW_COMMENT,1,[Whether struct passwd has pw_comment])
-fi
-
-#AC_CHECK_MEMBER(struct passwd.pw_age,
-#		AC_DEFINE(HAVE_PASSWD_PW_AGE, 1, [Defined if struct passwd has pw_age field]),
-#		[#include <pwd.h>])
-
-AC_CACHE_CHECK([whether struct passwd has pw_age],samba_cv_passwd_pw_age, [
-    AC_TRY_COMPILE([#include <pwd.h>],[struct passwd p; p.pw_age;],
-	samba_cv_passwd_pw_age=yes,samba_cv_passwd_pw_age=no)])
-if test x"$samba_cv_passwd_pw_age" = x"yes"; then
-   AC_DEFINE(HAVE_PASSWD_PW_AGE,1,[Whether struct passwd has pw_age])
-fi
+AC_CHECK_MEMBER(struct passwd.pw_age,
+		AC_DEFINE(HAVE_PASSWD_PW_AGE, 1, [Defined if struct passwd has pw_age field]),,
+		[#include <pwd.h>])
 
 #################################################
 # Check to see if we should use the included popt 
@@ -3451,6 +3429,7 @@ SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), "bin/recycle.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), "bin/audit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), "bin/extd_audit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK_OBJ), "bin/netatalk.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), "bin/fake_perms.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
