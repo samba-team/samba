@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -650,6 +650,14 @@ do_getticket (struct rx_header *hdr,
 	char sname[ANAME_SZ];
 	char sinstance[SNAME_SZ];
 	u_int32_t paddress;
+
+	if (aticket.length > sizeof(ticket.dat)) {
+	    kdc_log(0, "ticket too long (%u > %u)",
+		    (unsigned)aticket.length,
+		    (unsigned)sizeof(ticket.dat));
+	    make_error_reply (hdr, KABADTICKET, reply);
+	    goto out;
+	}
 
 	ticket.length = aticket.length;
 	memcpy (ticket.dat, aticket.data, ticket.length);
