@@ -1206,7 +1206,7 @@ done:
 
 /* unmangled must contain only the file name, not a path.
    and MUST be ZERO terminated */
-smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
+smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 {
 	TDB_DATA data, key, klock;
 	pstring keystr;
@@ -1441,6 +1441,83 @@ done:
 }
 
 
+/* non unicode compatibility functions */
+
+char *dos_mangle(char *dos_unmangled)
+{
+	smb_ucs2_t *in, *out;
+	char *dos_mangled;
+	size_t len;
+
+	if (!dos_unmangled || !*dos_unmangled) return NULL;
+
+	len = (strlen(dos_unmangled) + 1) * sizeof(smb_ucs2_t);
+	in = (smb_ucs2_t *)malloc(len);
+	if (!in)
+	{
+		DEBUG(0,("dos_mangle: out of memory!\n"));
+		return NULL;
+	}
+	dos_to_ucs2(in, dos_unmangled, len);
+
+	out = mangle(in);
+	if (!out)
+	{
+		SAFE_FREE(in);
+		return NULL;
+	}
+
+	dos_mangled = (char *)malloc(PSTRING_LEN);
+	if (!dos_mangled)
+	{
+		DEBUG(0,("dos_mangle: out of memory!\n"));
+		goto done;
+	}
+	ucs2_to_dos (dos_mangled, out, PSTRING_LEN);
+
+done:
+	SAFE_FREE(in);
+	SAFE_FREE(out);
+	return dos_mangled;
+}
+
+char *dos_unmangle(char *dos_mangled)
+{
+	smb_ucs2_t *in, *out;
+	char *dos_unmangled;
+	size_t len;
+
+	if (!dos_mangled || !*dos_mangled) return NULL;
+
+	len = (strlen(dos_mangled) + 1) * sizeof(smb_ucs2_t);
+	in = (smb_ucs2_t *)malloc(len);
+	if (!in)
+	{
+		DEBUG(0,("dos_unmangle: out of memory!\n"));
+		return NULL;
+	}
+	dos_to_ucs2(in, dos_mangled, len);
+
+	out = mangle(in);
+	if (!out)
+	{
+		SAFE_FREE(in);
+		return NULL;
+	}
+
+	dos_unmangled = (char *)malloc(PSTRING_LEN);
+	if (!dos_unmangled)
+	{
+		DEBUG(0,("dos_unmangle: out of memory!\n"));
+		goto done;
+	}
+	ucs2_to_dos (dos_unmangled, out, PSTRING_LEN);
+
+done:
+	SAFE_FREE(in);
+	SAFE_FREE(out);
+	return dos_unmangled;
+}
 
 
 /* backward compatibility functions */
@@ -1555,7 +1632,7 @@ BOOL check_mangled_cache(char *s)
 	if (res)
 	{
 		
-		ucs2_to_dos (s, res, (strlen_w(res) * 2));
+		ucs2_to_dos (s, res, PSTRING_LEN);
 		/* We MUST change this brainded interface,
 		   we do not know how many chars will be used
 		   in dos so i guess they will be no more than
@@ -1590,7 +1667,7 @@ void mangle_name_83(char *s)
 	}
 	dos_to_ucs2(u2, s, u2len);
 
-	res = _mangle(u2);
+	res = mangle(u2);
 	if (res) ucs2_to_dos (s, res, 13); /* ugly, but must be done this way */
 	DEBUG(10,("mangle_name_83: returning -> [%s]\n", s));
 	SAFE_FREE(res);
@@ -1656,7 +1733,7 @@ static void mangle_test (char *name, char *ext)
 		strncat_wa(ucs2_name, ".", 1);
 		strncat_wa(ucs2_name, ext, strlen(ext) + 1);
 	}
-	retstr = _mangle(ucs2_name);
+	retstr = mangle(ucs2_name);
 	if(retstr) pull_ucs2(NULL, unix_name, retstr, sizeof(unix_name), 0, STR_TERMINATE);
 	else unix_name[0] = 0;
 	if (ext) printf ("[%s.%s] ---> [%s]\n", name, ext, unix_name);
