@@ -734,8 +734,7 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 				{
 					*lp = 0;
 					pstrcpy(password, lp + 1);
-					memset(strchr(optarg, '%') + 1, 'X',
-					       strlen(password));
+					memset(lp+1, 'X', strlen(password));
 					got_pwd = True;
 				}
 				if (usr.ntc.user_name[0] == 0
