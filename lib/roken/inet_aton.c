@@ -53,6 +53,9 @@ RCSID("$Id$");
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 /* Minimal implementation of inet_aton. Doesn't handle hex numbers. */
 
