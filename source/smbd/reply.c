@@ -164,11 +164,10 @@ static int connection_error(char *inbuf,char *outbuf,int ecode)
 	return(ERROR(ERRSRV,ecode));
 }
 
-
-
 /****************************************************************************
   parse a share descriptor string
 ****************************************************************************/
+
 static void parse_connect(char *p,char *service,char *user,
 			  char *password,int *pwlen,char *dev)
 {
@@ -222,6 +221,14 @@ int reply_tcon(connection_struct *conn,
 
 	parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
+	/*
+	 * If the vuid is valid, we should be using that....
+	 */
+
+	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
+		pstrcpy(user,validated_username(vuid));
+	}
+
     /*
      * Ensure the user and password names are in UNIX codepage format.
      */
@@ -264,6 +271,7 @@ int reply_tcon(connection_struct *conn,
 /****************************************************************************
  Reply to a tcon and X.
 ****************************************************************************/
+
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	fstring service;
@@ -313,6 +321,14 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 	StrnCpy(devicename,path + strlen(path) + 1,6);
 	DEBUG(4,("Got device type %s\n",devicename));
+
+	/*
+	 * If the vuid is valid, we should be using that....
+	 */
+
+	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
+		pstrcpy(user,validated_username(vuid));
+	}
 
 	/*
 	 * Ensure the user and password names are in UNIX codepage format.
@@ -388,7 +404,6 @@ int reply_unknown(char *inbuf,char *outbuf)
   
 	return(ERROR(ERRSRV,ERRunknownsmb));
 }
-
 
 /****************************************************************************
   reply to an ioctl
