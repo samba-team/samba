@@ -161,7 +161,7 @@
 #endif
 #endif
 
-#ifdef HAVE_GLOB
+#ifdef HAVE_GLOB_H
 #include <glob.h>
 #endif
 
