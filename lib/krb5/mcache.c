@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -139,6 +139,7 @@ mcc_store_cred(krb5_context context,
     memset (&l->cred, 0, sizeof(l->cred));
     ret = krb5_copy_creds_contents (context, creds, &l->cred);
     if (ret) {
+	m->creds = l->next;
 	free (l);
 	return ret;
     }
