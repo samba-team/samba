@@ -1,3 +1,13 @@
+2005-02-05  Luke Howard  <lukeh@padl.com>
+
+	* lib/krb5/kcm.c: add _krb5_kcm_is_running, _krb5_kcm_noop
+
+	* kcm/acquire.c: don't leak salt if keyproc called multiple
+	  times
+
+	* kcm/config.c: allow KCM system ccache to be configured from
+	  krb5.conf, in the system_ccache stanza of [kcm]
+
 2005-02-02  Luke Howard  <lukeh@padl.com>
 
 	* configure.in: generate kcm/Makefile
