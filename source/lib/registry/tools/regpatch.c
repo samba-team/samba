@@ -754,7 +754,6 @@ int nt_apply_reg_command_file(REG_KEY *root, const char *cmd_file_name)
 
 int main (int argc, char **argv)
 {
-	uint32	setparms, checkparms;
 	int opt;
 	poptContext pc;
 	REG_KEY *root;
@@ -763,7 +762,6 @@ int main (int argc, char **argv)
 	const char *patch;
 	const char *backend = "dir";
 	REG_HANDLE *h;
-	int fullpath = 0, no_values = 0;
 	WERROR error;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP

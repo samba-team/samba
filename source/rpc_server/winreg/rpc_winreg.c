@@ -64,9 +64,9 @@ static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_in
 
 #define func_winreg_OpenHive(k,n) static NTSTATUS winreg_Open ## k (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct winreg_Open ## k *r) \
 { \
-	struct _privatedata *data = dce_call->conn->private; \
-	REG_KEY *root/* = reg_get_root(data->registry)*/; \
-	REG_KEY *k/* = reg_open_key(root, n)*/; \
+	/*struct _privatedata *data = dce_call->conn->private*/; \
+	/*REG_KEY *root = reg_get_root(data->registry)*/; \
+	REG_KEY *k /*= reg_open_key(root, n)*/; \
 \
 	if(!k) { \
 		r->out.result = WERR_BADFILE; \
@@ -145,7 +145,6 @@ static NTSTATUS winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 {
 	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	REG_KEY *parent, *key;
-	WERROR error;
 	if(!h) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -254,7 +253,6 @@ static NTSTATUS winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 	r->out.result = reg_open_key(k, r->in.keyname.name, &subkey);
 	if(W_ERROR_IS_OK(r->out.result)) {
-		struct dcesrv_handle *newh = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY); 
 		h->data = subkey; 
 		r->out.handle = &h->wire_handle; 
 	}

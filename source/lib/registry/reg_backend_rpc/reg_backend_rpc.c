@@ -192,7 +192,6 @@ static WERROR rpc_key_put_rpc_data(REG_KEY *k, struct rpc_key_data **data)
 
 static WERROR rpc_open_key(REG_HANDLE *h, const char *name, REG_KEY **key)
 {
-	WERROR error;
 	struct rpc_key_data *mykeydata;
 	*key = reg_key_new_abs(name, h, NULL);
 	return rpc_key_put_rpc_data(*key, &mykeydata);
@@ -202,7 +201,6 @@ static WERROR rpc_get_value_by_index(REG_KEY *parent, int n, REG_VAL **value)
 {
 	struct winreg_EnumValue r;
 	struct winreg_Uint8buf vb;
-	struct winreg_Uint16buf bn;
 	struct rpc_data *mydata = parent->handle->backend_data;
 	struct winreg_EnumValueName vn;
 	NTSTATUS status;
@@ -272,9 +270,7 @@ static WERROR rpc_get_subkey_by_index(REG_KEY *parent, int n, REG_KEY **subkey)
 	struct rpc_data *mydata = parent->handle->backend_data;
 	struct rpc_key_data *mykeydata = parent->backend_data;
 	WERROR error;
-	int i;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
 
 	/* If parent is the root key, list the hives */
 	if(parent->backend_data == mydata) { 
@@ -321,10 +317,8 @@ static WERROR rpc_query_key(REG_KEY *k)
 {
     NTSTATUS status;
     struct winreg_QueryInfoKey r;
-	struct rpc_data *mydata = k->handle->backend_data;
-	struct rpc_key_data *mykeydata;
-	WERROR error = rpc_key_put_rpc_data(k, &mykeydata);
-                                                                                                       
+    struct rpc_data *mydata = k->handle->backend_data;
+    struct rpc_key_data *mykeydata;                                                                                                       
     r.in.handle = &mykeydata->pol;
     init_winreg_String(&r.in.class, NULL);
                                                                                                        
@@ -387,7 +381,7 @@ static WERROR rpc_num_values(REG_KEY *key, int *count) {
 	if(!W_ERROR_IS_OK(error)) return error;
 
 	if(mykeydata->num_values == -1) {
-		WERROR error = rpc_query_key(key);
+		error = rpc_query_key(key);
 		if(!W_ERROR_IS_OK(error)) return error;
 	}
 			
@@ -411,7 +405,7 @@ static WERROR rpc_num_subkeys(REG_KEY *key, int *count) {
 	if(!W_ERROR_IS_OK(error)) return error;
 
 	if(mykeydata->num_subkeys == -1) {
-		WERROR error = rpc_query_key(key);
+		error = rpc_query_key(key);
 		if(!W_ERROR_IS_OK(error)) return error;
 	}
 			

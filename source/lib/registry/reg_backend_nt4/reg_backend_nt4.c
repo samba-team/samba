@@ -945,6 +945,8 @@ static WERROR vk_to_val(REG_KEY *parent, VK_HDR *vk_hdr, int size, REG_VAL **val
 	return WERR_OK;
 }
 
+#if 0 /* unused */
+
 static BOOL vl_verify(VL_TYPE vl, int count, int size)
 {
 	if(!vl) return False;
@@ -954,6 +956,8 @@ static BOOL vl_verify(VL_TYPE vl, int count, int size)
 	}
 	return True;
 }
+
+#endif
 
 static WERROR lf_verify(REG_HANDLE *h, LF_HDR *lf_hdr, int size)
 {
@@ -1127,6 +1131,8 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 	*key = tmp;
 	return WERR_OK;
 }
+
+#if 0 /* unused */
 
 /*
  * Allocate a new hbin block, set up the header for the block etc 
@@ -1463,8 +1469,6 @@ static unsigned int nt_store_security(REG_HANDLE *regf, KEY_SEC_DESC *sec)
 
 }
 
-#if 0
-
 /*
  * Store a KEY in the file ...
  *
@@ -1534,7 +1538,6 @@ static int nt_store_reg_key(REG_HANDLE *regf, REG_KEY *key)
 error:
 	return 0;
 }
-#endif
 
 /*
  * Store the registry header ...
@@ -1562,6 +1565,8 @@ error:
 	if (tmp) free(tmp);
 	return NULL;
 }
+
+#endif
 
 static WERROR nt_close_registry (REG_HANDLE *h) 
 {

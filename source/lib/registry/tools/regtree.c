@@ -60,7 +60,6 @@ void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 
 int main (int argc, char **argv)
 {
-	uint32	setparms, checkparms;
 	int opt;
 	char *backend = "dir", *credentials = NULL;
 	poptContext pc;
