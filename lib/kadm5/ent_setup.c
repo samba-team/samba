@@ -59,46 +59,64 @@ attr_to_flags(unsigned attr, HDBFlags *flags)
     flags->client =	        1; /* XXX */
 }
 
+/*
+ * Create the hdb entry `ent' based on data from `princ' with
+ * `princ_mask' specifying what fields to be gotten from there and
+ * `mask' specifying what fields we want filled in.
+ */
+
 kadm5_ret_t
-_kadm5_setup_entry(hdb_entry *ent, kadm5_principal_ent_t princ, 
-		   kadm5_principal_ent_t def, u_int32_t mask)
+_kadm5_setup_entry(hdb_entry *ent,
+		   u_int32_t mask,
+		   kadm5_principal_ent_t princ, 
+		   u_int32_t princ_mask,
+		   kadm5_principal_ent_t def,
+		   u_int32_t def_mask)
 {
-    if(mask & KADM5_PRINC_EXPIRE_TIME)
+    if(mask & KADM5_PRINC_EXPIRE_TIME
+       && princ_mask & KADM5_PRINC_EXPIRE_TIME)
 	set_value(ent->valid_end, princ->princ_expire_time);
-    if(mask & KADM5_PW_EXPIRATION)
+    if(mask & KADM5_PW_EXPIRATION
+       && princ_mask & KADM5_PW_EXPIRATION)
 	set_value(ent->pw_end, princ->pw_expiration);
-    if(mask & KADM5_ATTRIBUTES)
-	attr_to_flags(princ->attributes, &ent->flags);
-    else if(def){
-	/* attr_to_flags(def->attributes, &ent->flags); */
-	ent->flags.client = 1;
-	ent->flags.server = 1;
-	ent->flags.forwardable = 1;
-	ent->flags.proxiable = 1;
-	ent->flags.renewable = 1;
-	ent->flags.postdate = 1;
+    if(mask & KADM5_ATTRIBUTES) {
+	if (princ_mask & KADM5_ATTRIBUTES) {
+	    attr_to_flags(princ->attributes, &ent->flags);
+	} else if(def_mask & KADM5_ATTRIBUTES) {
+	    attr_to_flags(def->attributes, &ent->flags);
+	    ent->flags.invalid = 0;
+	} else {
+	    ent->flags.client      = 1;
+	    ent->flags.server      = 1;
+	    ent->flags.forwardable = 1;
+	    ent->flags.proxiable   = 1;
+	    ent->flags.renewable   = 1;
+	    ent->flags.postdate    = 1;
+	}
     }
     if(mask & KADM5_MAX_LIFE) {
-	if(princ->max_life)
+	if(princ_mask & KADM5_MAX_LIFE)
 	    set_value(ent->max_life, princ->max_life);
-	else if(def && def->max_life)
+	else if(def_mask & KADM5_MAX_LIFE)
 	    set_value(ent->max_life, def->max_life);
     }
-    if(mask & KADM5_KVNO)
+    if(mask & KADM5_KVNO
+       && princ_mask & KADM5_KVNO)
 	ent->kvno = princ->kvno;
     if(mask & KADM5_MAX_RLIFE) {
-	if(princ->max_renewable_life)
+	if(princ_mask & KADM5_MAX_RLIFE)
 	    set_value(ent->max_renew, princ->max_renewable_life);
-	else if(def && def->max_renewable_life)
+	else if(def_mask & KADM5_MAX_RLIFE)
 	    set_value(ent->max_renew, def->max_renewable_life);
     }
-    if(mask & KADM5_KEY_DATA) {
+    if(mask & KADM5_KEY_DATA
+       && princ_mask & KADM5_KEY_DATA) {
 	_kadm5_set_keys2(ent, princ->n_key_data, princ->key_data);
     }
-    if(mask & KADM5_TL_DATA){
+    if(mask & KADM5_TL_DATA) {
 	/* XXX */
     }
-    if(mask & KADM5_FAIL_AUTH_COUNT){
+    if(mask & KADM5_FAIL_AUTH_COUNT) {
 	/* XXX */
     }
     return 0;
