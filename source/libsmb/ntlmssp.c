@@ -307,8 +307,6 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ZERO_STRUCTP(*ntlmssp_state);
-
 	(*ntlmssp_state)->mem_ctx = mem_ctx;
 	(*ntlmssp_state)->get_challenge = get_challenge;
 
@@ -551,8 +549,6 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_CLIENT_STATE **ntlmssp_state)
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ZERO_STRUCTP(*ntlmssp_state);
 
 	(*ntlmssp_state)->mem_ctx = mem_ctx;
 
