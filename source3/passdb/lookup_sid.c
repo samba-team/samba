@@ -299,15 +299,20 @@ static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 
 NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 {
-	uid_t low, high;
 	fstring sid;
+	uid_t low, high;
 
 	ZERO_STRUCTP(psid);
 
 	if (fetch_sid_from_uid_cache(psid, uid))
 		return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
 
-	if (lp_idmap_uid(&low, &high) && uid >= low && uid <= high) {
+	/* DC's never use winbindd to resolve users outside the 
+	   defined idmap range */
+
+	if ( lp_server_role()==ROLE_DOMAIN_MEMBER 
+		|| (lp_idmap_uid(&low, &high) && uid >= low && uid <= high) ) 
+	{
 		if (winbind_uid_to_sid(psid, uid)) {
 
 			DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
@@ -336,15 +341,20 @@ NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 
 NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 {
-	gid_t low, high;
 	fstring sid;
+	gid_t low, high;
 
 	ZERO_STRUCTP(psid);
 
 	if (fetch_sid_from_gid_cache(psid, gid))
 		return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
 
-	if (lp_idmap_gid(&low, &high) && gid >= low && gid <= high) {
+	/* DC's never use winbindd to resolve groups outside the
+	   defined idmap range */
+
+	if ( lp_server_role()==ROLE_DOMAIN_MEMBER
+		|| (lp_idmap_gid(&low, &high) && gid >= low && gid <= high) )
+        {
 		if (winbind_gid_to_sid(psid, gid)) {
 
 			DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
@@ -458,7 +468,9 @@ NTSTATUS sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 	/* winbindd knows it; Ensure this is a group sid */
 
-	if ((name_type != SID_NAME_DOM_GRP) && (name_type != SID_NAME_ALIAS) && (name_type != SID_NAME_WKN_GRP)) {
+	if ((name_type != SID_NAME_DOM_GRP) && (name_type != SID_NAME_ALIAS) 
+		&& (name_type != SID_NAME_WKN_GRP)) 
+	{
 		DEBUG(10,("sid_to_gid: winbind lookup succeeded but SID is not a known group (%u)\n",
 			(unsigned int)name_type ));
 

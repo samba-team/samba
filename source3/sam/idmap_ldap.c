@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    idmap LDAP backend
@@ -7,17 +7,17 @@
    Copyright (C) Jim McDonough <jmcd@us.ibm.com>	2003
    Copyright (C) Simo Sorce 		2003
    Copyright (C) Gerald Carter 		2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -34,25 +34,84 @@
 
 #include "smbldap.h"
 
-#define IDMAP_GROUP_SUFFIX	"ou=idmap group"
-#define IDMAP_USER_SUFFIX	"ou=idmap people"
-
-
 struct ldap_idmap_state {
 	struct smbldap_state *smbldap_state;
 	TALLOC_CTX *mem_ctx;
 };
 
-#define LDAP_MAX_ALLOC_ID 128              /* number tries while allocating
-					      new id */
-
 static struct ldap_idmap_state ldap_state;
 
-static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type);
-static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id, int id_type, 
-					   const char *ldap_dn, LDAPMessage *entry);
-static NTSTATUS ldap_idmap_close(void);
+/* number tries while allocating new id */
+#define LDAP_MAX_ALLOC_ID 128
 
+
+/***********************************************************************
+ This function cannot be called to modify a mapping, only set a new one
+***********************************************************************/
+
+static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
+{
+	pstring dn;
+	pstring id_str;
+	fstring type;
+	LDAPMod **mods = NULL;
+	int rc = -1;
+	int ldap_op;
+	fstring sid_string;
+	LDAPMessage *entry = NULL;
+
+	sid_to_string( sid_string, sid );
+
+	ldap_op = LDAP_MOD_ADD;
+	pstr_sprintf(dn, "%s=%s,%s", get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID),
+		 sid_string, lp_ldap_idmap_suffix());
+
+	if ( id_type & ID_USERID )
+		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_UIDNUMBER ) );
+	else
+		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER ) );
+
+	pstr_sprintf(id_str, "%lu", ((id_type & ID_USERID) ? (unsigned long)id.uid :
+						 (unsigned long)id.gid));	
+	
+	smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDMAP_ENTRY );
+
+	smbldap_make_mod( ldap_state.smbldap_state->ldap_struct, 
+			  entry, &mods, type, id_str );
+
+	smbldap_make_mod( ldap_state.smbldap_state->ldap_struct,
+			  entry, &mods,  
+			  get_attr_key2string(sidmap_attr_list, LDAP_ATTR_SID), 
+			  sid_string );
+
+	/* There may well be nothing at all to do */
+
+	if (mods) {
+		smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_SID_ENTRY );
+		rc = smbldap_add(ldap_state.smbldap_state, dn, mods);
+		ldap_mods_free( mods, True );	
+	} else {
+		rc = LDAP_SUCCESS;
+	}
+
+	if (rc != LDAP_SUCCESS) {
+		char *ld_error = NULL;
+		ldap_get_option(ldap_state.smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
+				&ld_error);
+		DEBUG(0,("ldap_set_mapping_internals: Failed to %s mapping from %s to %lu [%s]\n",
+			 (ldap_op == LDAP_MOD_ADD) ? "add" : "replace",
+			 sid_string, (unsigned long)((id_type & ID_USERID) ? id.uid : id.gid), type));
+		DEBUG(0, ("ldap_set_mapping_internals: Error was: %s (%s)\n", 
+			ld_error ? ld_error : "(NULL)", ldap_err2string (rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+		
+	DEBUG(10,("ldap_set_mapping: Successfully created mapping from %s to %lu [%s]\n",
+		sid_string, ((id_type & ID_USERID) ? (unsigned long)id.uid : 
+			     (unsigned long)id.gid), type));
+
+	return NT_STATUS_OK;
+}
 
 /**********************************************************************
  Even if the sambaDomain attribute in LDAP tells us that this RID is 
@@ -77,7 +136,7 @@ static BOOL sid_in_use(struct ldap_idmap_state *state,
 	if (rc != LDAP_SUCCESS)	{
 		char *ld_error = NULL;
 		ldap_get_option(state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
-		DEBUG(2, ("Failed to check if sid %s is alredy in use: %s\n", 
+		DEBUG(2, ("Failed to check if sid %s is alredy in use: %s\n",
 			  sid_string, ld_error));
 		SAFE_FREE(ld_error);
 
@@ -142,7 +201,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 		}
 
 		/* yes, we keep 3 seperate counters, one for rids between 1000 (BASE_RID) and 
-		   algorithmic_rid_base.  The other two are to avoid stomping on the 
+		   algorithmic_rid_base.  The other two are to avoid stomping on the
 		   different sets of algorithmic RIDs */
 		
 		if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
@@ -337,7 +396,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	pstr_sprintf(filter, "(objectClass=%s)", LDAP_OBJ_IDPOOL);
 
 	attr_list = get_attr_list( idpool_attr_list );
-	
+
 	rc = smbldap_search(ldap_state.smbldap_state, lp_ldap_idmap_suffix(),
 			       LDAP_SCOPE_SUBTREE, filter,
 			       attr_list, 0, &result);
@@ -421,86 +480,45 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 {
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
-	fstring id_str;
 	pstring sid_str;
 	pstring filter;
 	pstring suffix;
 	const char *type;
-	const char *obj_class;
 	int rc;
 	int count;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	char **attr_list;
 
-	/* first we try for a samba user or group mapping */
-	
-	if ( id_type & ID_USERID ) {
+	if ( id_type & ID_USERID ) 
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
-		obj_class = LDAP_OBJ_SAMBASAMACCOUNT;
-		fstr_sprintf(id_str, "%lu", (unsigned long)id.uid );	
-		pstrcpy( suffix, lp_ldap_suffix());
-	}
-	else {
+	else 
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
-		obj_class = LDAP_OBJ_GROUPMAP;
-		fstr_sprintf(id_str, "%lu", (unsigned long)id.gid );	
-		pstrcpy( suffix, lp_ldap_group_suffix() );
-	}
+
+	pstrcpy( suffix, lp_ldap_idmap_suffix() );
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))",
+		LDAP_OBJ_IDMAP_ENTRY, type,  
+		((id_type & ID_USERID) ? (unsigned long)id.uid : (unsigned long)id.gid));
+		
 
 	DEBUG(5,("ldap_get_sid_from_id: Searching \"%s\"\n", filter ));
 		 
 	attr_list = get_attr_list( sidmap_attr_list );
-	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectClass=%s))(%s=%s))", 
-		 LDAP_OBJ_IDMAP_ENTRY, obj_class, type, id_str);
-
 	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
-			    filter, attr_list, 0, &result);
-	
+		filter, attr_list, 0, &result);
+
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(3,("ldap_get_isd_from_id: Failure looking up entry (%s)\n",
 			ldap_err2string(rc) ));
 		goto out;
 	}
-
-	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
-	
-	if (count > 1) {
-		DEBUG(0,("ldap_get_sid_from_id: mapping returned [%d] entries!\n",
-			count));
-		goto out;
-	}
-
-	/* fall back to looking up an idmap entry if we didn't find and 
-	   actual user or group */
-	
-	if (count == 0) {
-		ldap_msgfree(result);
-		result = NULL;
-		
-		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))",
-			LDAP_OBJ_IDMAP_ENTRY, type,  
-			 ((id_type & ID_USERID) ? (unsigned long)id.uid : 
-			  (unsigned long)id.gid));
-
-		pstrcpy( suffix, lp_ldap_idmap_suffix() );
-
-		rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
-			filter, attr_list, 0, &result);
-
-		if (rc != LDAP_SUCCESS) {
-			DEBUG(3,("ldap_get_isd_from_id: Failure looking up entry (%s)\n",
-				ldap_err2string(rc) ));
-			goto out;
-		}
 			   
-		count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
+	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
 
-		if (count != 1) {
-			DEBUG(0,("ldap_get_sid_from_id: mapping not found for %s: %lu\n", 
-				type, ((id_type & ID_USERID) ? (unsigned long)id.uid : 
-				       (unsigned long)id.gid)));
-			goto out;
-		}
+	if (count != 1) {
+		DEBUG(0,("ldap_get_sid_from_id: mapping not found for %s: %lu\n", 
+			type, ((id_type & ID_USERID) ? (unsigned long)id.uid : 
+			       (unsigned long)id.gid)));
+		goto out;
 	}
 	
 	entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
@@ -508,7 +526,7 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	if ( !smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, LDAP_ATTRIBUTE_SID, sid_str) )
 		goto out;
 	   
-	if (!string_to_sid(sid, sid_str)) 
+	if (!string_to_sid(sid, sid_str))
 		goto out;
 
 	ret = NT_STATUS_OK;
@@ -545,29 +563,14 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 	DEBUG(8,("ldap_get_id_from_sid: %s (%s)\n", sid_str,
 		(*id_type & ID_GROUPID ? "group" : "user") ));
 
-	/* ahhh....  ok.  We have to check users and groups in places other
-	   than idmap (hint: we're a domain member of a Samba domain) */
-
-	if ( *id_type & ID_GROUPID ) {
-
+	suffix = lp_ldap_idmap_suffix();
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))", 
+		LDAP_OBJ_IDMAP_ENTRY, LDAP_ATTRIBUTE_SID, sid_str);
+			
+	if ( *id_type & ID_GROUPID ) 
 		type = get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER );
-		suffix = lp_ldap_group_suffix();
-		pstr_sprintf(filter, "(&(|(objectClass=%s)(objectClass=%s))(%s=%s))", 
-			LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY, 
-			get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID ), 
-			sid_str);
-
-	}
-	else {
-
+	else 
 		type = get_attr_key2string( sidmap_attr_list, LDAP_ATTR_UIDNUMBER );
-		suffix = lp_ldap_suffix();
-		pstr_sprintf(filter, "(&(|(&(objectClass=%s)(objectClass=%s))(objectClass=%s))(%s=%s))", 
-			 LDAP_OBJ_SAMBASAMACCOUNT, LDAP_OBJ_POSIXACCOUNT, LDAP_OBJ_IDMAP_ENTRY, 
-			 get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID ), 
-			 sid_str);
-
-	}
 
 	DEBUG(10,("ldap_get_id_from_sid: Searching for \"%s\"\n", filter));
 
@@ -575,84 +578,55 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 
 	attr_list = get_attr_list( sidmap_attr_list );
 	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
-		filter, attr_list, 0, &result);	
-
-	if ( rc != LDAP_SUCCESS ) {
-		DEBUG(3,("ldap_get_id_from_sid: Failure looking up group mapping (%s)\n",
+		filter, attr_list, 0, &result);
+			
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(3,("ldap_get_id_from_sid: Failure looking up idmap entry (%s)\n",
 			ldap_err2string(rc) ));
 		goto out;
 	}
+			
+	/* check for the number of entries returned */
 
 	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
-
+	   
 	if ( count > 1 ) {
-		DEBUG(3,("ldap_get_id_from_sid: search \"%s\" returned [%d] entries.  Bailing...\n",
+		DEBUG(0, ("ldap_get_id_from_sid: (2nd) search %s returned [%d] entries!\n",
 			filter, count));
 		goto out;
 	}
-
-	/* see if we need to do a search here */
-
-	if ( count == 0 ) {
-
-		if ( result ) {
-			ldap_msgfree(result);
-			result = NULL;
-		}
-
-		/* look in idmap suffix */
-
-		suffix = lp_ldap_idmap_suffix();
-		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))", 
-			LDAP_OBJ_IDMAP_ENTRY, LDAP_ATTRIBUTE_SID, sid_str);
-
-		rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
-			filter, attr_list, 0, &result);
-			
-		if (rc != LDAP_SUCCESS) {
-			DEBUG(3,("ldap_get_id_from_sid: Failure looking up idmap entry (%s)\n",
-				ldap_err2string(rc) ));
-			goto out;
-		}
-			
-		/* check for the number of entries returned */
-
-		count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
-	   
-		if ( count > 1 ) {
-			DEBUG(0, ("ldap_get_id_from_sid: (2nd) search %s returned [%d] entries!\n",
-				filter, count));
-			goto out;
-		}
 	
+	/* try to allocate a new id if we still haven't found one */
 
-		/* try to allocate a new id if we still haven't found one */
+	if ( !count ) {
+		int i;
 
-		if ( (count==0) && !(*id_type & ID_QUERY_ONLY) ) {
-			int i;
-
-			DEBUG(8,("ldap_get_id_from_sid: Allocating new id\n"));
-		
-			for (i = 0; i < LDAP_MAX_ALLOC_ID; i++) {
-				ret = ldap_allocate_id(id, *id_type);
-				if ( NT_STATUS_IS_OK(ret) )
-					break;
-			}
-		
-			if ( !NT_STATUS_IS_OK(ret) ) {
-				DEBUG(0,("ldap_allocate_id: cannot acquire id lock!\n"));
-				goto out;
-			}
-
-			DEBUG(10,("ldap_get_id_from_sid: Allocated new %cid [%ul]\n",
-				(*id_type & ID_GROUPID ? 'g' : 'u'), (uint32)id->uid ));
-	
-			ret = ldap_set_mapping(sid, *id, *id_type);
-
-			/* all done */
-
+		if (*id_type & ID_QUERY_ONLY) {
+			DEBUG(5,("ldap_get_id_from_sid: No matching entry found and QUERY_ONLY flag set\n"));
 			goto out;
 		}
+
+		DEBUG(8,("ldap_get_id_from_sid: Allocating new id\n"));
+		
+		for (i = 0; i < LDAP_MAX_ALLOC_ID; i++) {
+			ret = ldap_allocate_id(id, *id_type);
+			if ( NT_STATUS_IS_OK(ret) )
+				break;
+		}
+		
+		if ( !NT_STATUS_IS_OK(ret) ) {
+			DEBUG(0,("ldap_allocate_id: cannot acquire id lock!\n"));
+			goto out;
+		}
+
+		DEBUG(10,("ldap_get_id_from_sid: Allocated new %cid [%ul]\n",
+			(*id_type & ID_GROUPID ? 'g' : 'u'), (uint32)id->uid ));
+	
+		ret = ldap_set_mapping(sid, *id, *id_type);
+
+		/* all done */
+
+		goto out;
 	}
 
 	DEBUG(10,("ldap_get_id_from_sid: success\n"));
@@ -683,206 +657,6 @@ out:
 	
 	return ret;
 }
-
-/***********************************************************************
- This function cannot be called to modify a mapping, only set a new one 
-
- This takes a possible pointer to the existing entry for the UID or SID
- involved.
-***********************************************************************/
-
-static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id, 
-					   int id_type, const char *ldap_dn, 
-					   LDAPMessage *entry)
-{
-	pstring dn; 
-	pstring id_str;
-	fstring type;
-	LDAPMod **mods = NULL;
-	int rc = -1;
-	int ldap_op;
-	fstring sid_string;
-	char **values = NULL;
-	int i;
-
-	sid_to_string( sid_string, sid );
-
-	if (ldap_dn) {
-		DEBUG(10, ("Adding new IDMAP mapping on DN: %s", ldap_dn));
-		ldap_op = LDAP_MOD_REPLACE;
-		pstrcpy( dn, ldap_dn );
-	} else {
-		ldap_op = LDAP_MOD_ADD;
-		pstr_sprintf(dn, "%s=%s,%s", get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID), 
-			 sid_string, lp_ldap_idmap_suffix());
-	}
-	
-	if ( id_type & ID_USERID ) 
-		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_UIDNUMBER ) );
-	else
-		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER ) );
-
-	pstr_sprintf(id_str, "%lu", ((id_type & ID_USERID) ? (unsigned long)id.uid : 
-						 (unsigned long)id.gid));	
-	
-	if (entry) 
-		values = ldap_get_values(ldap_state.smbldap_state->ldap_struct, entry, "objectClass");
-
-	if (values) {
-		BOOL found_idmap = False;
-		for (i=0; values[i]; i++) {
-			if (StrCaseCmp(values[i], LDAP_OBJ_IDMAP_ENTRY) == 0) {
-				found_idmap = True;
-				break;
-			}
-		}
-		if (!found_idmap)
-			smbldap_set_mod( &mods, LDAP_MOD_ADD, 
-					 "objectClass", LDAP_OBJ_IDMAP_ENTRY );
-	} else {
-		smbldap_set_mod( &mods, LDAP_MOD_ADD, 
-				 "objectClass", LDAP_OBJ_IDMAP_ENTRY );
-	}
-
-	smbldap_make_mod( ldap_state.smbldap_state->ldap_struct, 
-			  entry, &mods, type, id_str );
-
-	smbldap_make_mod( ldap_state.smbldap_state->ldap_struct, 
-			  entry, &mods,  
-			  get_attr_key2string(sidmap_attr_list, LDAP_ATTR_SID), 
-			  sid_string );
-
-	/* There may well be nothing at all to do */
-	if (mods) {
-		switch(ldap_op)
-		{
-		case LDAP_MOD_ADD: 
-			smbldap_set_mod( &mods, LDAP_MOD_ADD, 
-					 "objectClass", LDAP_OBJ_SID_ENTRY );
-			rc = smbldap_add(ldap_state.smbldap_state, dn, mods);
-			break;
-		case LDAP_MOD_REPLACE: 
-			rc = smbldap_modify(ldap_state.smbldap_state, dn, mods);
-			break;
-		}
-		
-		ldap_mods_free( mods, True );	
-	} else {
-		rc = LDAP_SUCCESS;
-	}
-
-	if (rc != LDAP_SUCCESS) {
-		char *ld_error = NULL;
-		ldap_get_option(ldap_state.smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
-				&ld_error);
-		DEBUG(0,("ldap_set_mapping_internals: Failed to %s mapping from %s to %lu [%s]\n",
-			 (ldap_op == LDAP_MOD_ADD) ? "add" : "replace",
-			 sid_string, (unsigned long)((id_type & ID_USERID) ? id.uid : id.gid), type));
-		DEBUG(0, ("ldap_set_mapping_internals: Error was: %s (%s)\n", ld_error ? ld_error : "(NULL)", ldap_err2string (rc)));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-		
-	DEBUG(10,("ldap_set_mapping: Successfully created mapping from %s to %lu [%s]\n",
-		sid_string, ((id_type & ID_USERID) ? (unsigned long)id.uid : 
-			     (unsigned long)id.gid), type));
-
-	return NT_STATUS_OK;
-}
-
-/***********************************************************************
- This function cannot be called to modify a mapping, only set a new one 
-***********************************************************************/
-
-static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type) 
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	char *dn = NULL;
-	LDAPMessage *result = NULL;
-	LDAPMessage *entry = NULL;
-	const char *type;
-	const char *obj_class;
-	const char *posix_obj_class;
-	const char *suffix;
-	fstring sid_str;
-	fstring id_str;
-	pstring filter;
-	char **attr_list;
-	int rc;
-	int count;
-
-	/* try for a samba user or group mapping (looking for an entry with a SID) */
-	if ( id_type & ID_USERID ) {
-		obj_class = LDAP_OBJ_SAMBASAMACCOUNT;
-		suffix = lp_ldap_suffix();
-		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
-		posix_obj_class = LDAP_OBJ_POSIXACCOUNT;
-		fstr_sprintf(id_str, "%lu", (unsigned long)id.uid );	
-	}
-	else {
-		obj_class = LDAP_OBJ_GROUPMAP;
-		suffix = lp_ldap_group_suffix();
-		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
-		posix_obj_class = LDAP_OBJ_POSIXGROUP;
-		fstr_sprintf(id_str, "%lu", (unsigned long)id.gid );	
-	}
-	
-	sid_to_string(sid_str, sid);
-	pstr_sprintf(filter, 
-		 "(|"
-		 "(&(|(objectClass=%s)(|(objectClass=%s)(objectClass=%s)))(%s=%s))"
-		 "(&(objectClass=%s)(%s=%s))"
-		 ")", 
-		 /* objectClasses that might contain a SID */
-		 LDAP_OBJ_SID_ENTRY, LDAP_OBJ_IDMAP_ENTRY, obj_class, 
-		 get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID ), 
-		 sid_str, 
-
-		 /* objectClasses that might contain a Unix UID/GID */
-		 posix_obj_class, 
-		 /* Unix UID/GID specifier*/
-		 type, 
-		 /* actual ID */
-		 id_str);
-
-	attr_list = get_attr_list( sidmap_attr_list );
-	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
-			    filter, attr_list, 0, &result);
-	free_attr_list( attr_list );
-	
-	if (rc != LDAP_SUCCESS)
-		goto out;
-
-	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
-	
-	/* fall back to looking up an idmap entry if we didn't find anything under the idmap
-	   user or group suffix */
-
-	if (count == 1) {
-		entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
-	
-		dn = smbldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
-		if (!dn)
-			goto out;
-		DEBUG(10, ("Found partial mapping entry at dn=%s, looking for %s\n", dn, type));
-
-		ret = ldap_set_mapping_internals(sid, id, id_type, dn, entry);
-
-		goto out;
-	} else if (count > 1) {
-		DEBUG(0, ("Too many entries trying to find DN to attach ldap \n"));
-		goto out;
-	}
-
-	ret = ldap_set_mapping_internals(sid, id, id_type, NULL, NULL);
-
-out:
-	if (result)
-		ldap_msgfree(result);
-	SAFE_FREE(dn);
-	
-	return ret;
-}
-
 
 /**********************************************************************
  Verify the sambaUnixIdPool entry in the directiry.  
