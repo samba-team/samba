@@ -398,12 +398,12 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     hdb_entry orig;
     unsigned long oflags, nflags;
 
-    *pmods = NULL;
-
     krb5_boolean is_samba_account = FALSE;
     krb5_boolean is_account = FALSE;
     krb5_boolean is_heimdal_entry = FALSE;
     krb5_boolean is_heimdal_principal = FALSE;
+
+    *pmods = NULL;
 
     if (msg != NULL) {
 	char **values;
