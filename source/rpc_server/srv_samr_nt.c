@@ -1239,53 +1239,73 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 
 NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOKUP_NAMES *r_u)
 {
-    uint32 rid[MAX_SAM_ENTRIES];
-    enum SID_NAME_USE type[MAX_SAM_ENTRIES];
-    int i;
-    int num_rids = q_u->num_names2;
-    DOM_SID pol_sid;
+	uint32 rid[MAX_SAM_ENTRIES];
+	uint32 local_rid;
+	enum SID_NAME_USE type[MAX_SAM_ENTRIES];
+	enum SID_NAME_USE local_type;
+	int i;
+	int num_rids = q_u->num_names2;
+	DOM_SID pol_sid;
+	fstring sid_str;
 
-    r_u->status = NT_STATUS_OK;
+	r_u->status = NT_STATUS_OK;
 
-    DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
+	DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
 
-    ZERO_ARRAY(rid);
-    ZERO_ARRAY(type);
+	ZERO_ARRAY(rid);
+	ZERO_ARRAY(type);
 
-    if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid)) {
-        init_samr_r_lookup_names(p->mem_ctx, r_u, 0, NULL, NULL, NT_STATUS_OBJECT_TYPE_MISMATCH);
-        return r_u->status;
-    }
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid)) {
+		init_samr_r_lookup_names(p->mem_ctx, r_u, 0, NULL, NULL, NT_STATUS_OBJECT_TYPE_MISMATCH);
+		return r_u->status;
+	}
 
-    if (num_rids > MAX_SAM_ENTRIES) {
-        num_rids = MAX_SAM_ENTRIES;
-        DEBUG(5,("_samr_lookup_names: truncating entries to %d\n", num_rids));
-    }
+	if (num_rids > MAX_SAM_ENTRIES) {
+		num_rids = MAX_SAM_ENTRIES;
+		DEBUG(5,("_samr_lookup_names: truncating entries to %d\n", num_rids));
+	}
 
-    for (i = 0; i < num_rids; i++) {
-        fstring name;
+	DEBUG(5,("_samr_lookup_names: looking name on SID %s\n", sid_to_string(sid_str, &pol_sid)));
 
-        r_u->status = NT_STATUS_NONE_MAPPED;
+	for (i = 0; i < num_rids; i++) {
+		fstring name;
+		DOM_SID sid;
 
-        rid [i] = 0xffffffff;
-        type[i] = SID_NAME_UNKNOWN;
+		r_u->status = NT_STATUS_NONE_MAPPED;
 
-        fstrcpy(name, dos_unistrn2(q_u->uni_name[i].buffer, q_u->uni_name[i].uni_str_len));
+		rid [i] = 0xffffffff;
+		type[i] = SID_NAME_UNKNOWN;
 
-        if(sid_equal(&pol_sid, &global_sam_sid)) {
-            DOM_SID sid;
-            if(local_lookup_name(global_myname, name, &sid, &type[i])) {
-                sid_split_rid( &sid, &rid[i]);
-                r_u->status = NT_STATUS_OK;
-            }
-        }
-    }
+		fstrcpy(name, dos_unistrn2(q_u->uni_name[i].buffer, q_u->uni_name[i].uni_str_len));
 
-    init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, (uint32 *)type, r_u->status);
+		/*
+		 * we are only looking for a name
+		 * the SID we get back can be outside
+		 * the scope of the pol_sid
+		 *
+		 * in clear: it prevents to reply to domain\group: yes
+		 * when only builtin\group exists.
+		 *
+		 * a cleaner code is to add the sid of the domain we're looking in
+		 * to the local_lookup_name function.
+		 */
+ 
+		if(local_lookup_name(global_myname, name, &sid, &local_type)) {
+			sid_split_rid(&sid, &local_rid);
+ 
+			if (sid_equal(&sid, &pol_sid)) {
+				rid[i]=local_rid;
+				type[i]=local_type;
+				r_u->status = NT_STATUS_OK;
+			}
+		}
+	}
 
-    DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
+	init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, (uint32 *)type, r_u->status);
 
-    return r_u->status;
+	DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
+
+	return r_u->status;
 }
 
 /*******************************************************************
