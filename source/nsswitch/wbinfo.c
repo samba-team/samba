@@ -27,8 +27,9 @@
 
 /* Prototypes from common.h */
 
-int winbindd_request(int req_type, struct winbindd_request *request,
-		     struct winbindd_response *response);
+enum nss_status winbindd_request(int req_type, 
+				 struct winbindd_request *request,
+				 struct winbindd_response *response);
 
 /* List groups a user is a member of */
 
@@ -260,6 +261,85 @@ static BOOL wbinfo_lookupname(char *name)
 	return True;
 }
 
+/* Authenticate a user with a plaintext password */
+
+static BOOL wbinfo_auth(char *username)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        enum winbindd_result result;
+        char *p;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+        p = strchr(username, '%');
+
+        if (p) {
+                *p = 0;
+                fstrcpy(request.data.auth.user, username);
+                fstrcpy(request.data.auth.pass, p + 1);
+                *p = '%';
+        } else
+                fstrcpy(request.data.auth.user, username);
+
+	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
+
+	/* Display response */
+
+        printf("plaintext password authentication %s\n", 
+               (result == WINBINDD_OK) ? "succeeded" : "failed");
+
+        return result == WINBINDD_OK;
+}
+
+/* Authenticate a user with a challenge/response */
+
+static BOOL wbinfo_auth_crap(char *username)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        enum winbindd_result result;
+        fstring pass;
+        char *p;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+        p = strchr(username, '%');
+
+        if (p) {
+                *p = 0;
+                fstrcpy(request.data.auth_crap.user, username);
+                fstrcpy(pass, p + 1);
+                *p = '%';
+        } else
+                fstrcpy(request.data.auth_crap.user, username);
+
+	generate_random_buffer(request.data.auth_crap.chal, 8, False);
+        
+        SMBencrypt(pass, request.data.auth_crap.chal, 
+                   request.data.auth_crap.lm_resp);
+        SMBNTencrypt(pass, request.data.auth_crap.chal,
+                     request.data.auth_crap.nt_resp);
+
+        request.data.auth_crap.lm_resp_len = 24;
+        request.data.auth_crap.nt_resp_len = 24;
+
+	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+
+	/* Display response */
+
+        printf("challenge/response password authentication %s\n", 
+               (result == WINBINDD_OK) ? "succeeded" : "failed");
+
+        return result == WINBINDD_OK;
+}
+
 /* Print domain users */
 
 static BOOL print_domain_users(void)
@@ -322,18 +402,20 @@ static BOOL print_domain_groups(void)
 
 static void usage(void)
 {
-	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm\n");
-	printf("\t-u\tlists all domain users\n");
-	printf("\t-g\tlists all domain groups\n");
-	printf("\t-n name\tconverts name to sid\n");
-	printf("\t-s sid\tconverts sid to name\n");
-	printf("\t-U uid\tconverts uid to sid\n");
-	printf("\t-G gid\tconverts gid to sid\n");
-	printf("\t-S sid\tconverts sid to uid\n");
-	printf("\t-Y sid\tconverts sid to gid\n");
-	printf("\t-t\tcheck shared secret\n");
-	printf("\t-m\tlist trusted domains\n");
-	printf("\t-r user\tget user groups\n");
+	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
+               "| -a user%%password\n");
+	printf("\t-u\t\t\tlists all domain users\n");
+	printf("\t-g\t\t\tlists all domain groups\n");
+	printf("\t-n name\t\t\tconverts name to sid\n");
+	printf("\t-s sid\t\t\tconverts sid to name\n");
+	printf("\t-U uid\t\t\tconverts uid to sid\n");
+	printf("\t-G gid\t\t\tconverts gid to sid\n");
+	printf("\t-S sid\t\t\tconverts sid to uid\n");
+	printf("\t-Y sid\t\t\tconverts sid to gid\n");
+	printf("\t-t\t\t\tcheck shared secret\n");
+	printf("\t-m\t\t\tlist trusted domains\n");
+	printf("\t-r user\t\t\tget user groups\n");
+	printf("\t-a user%%password\tauthenticate user\n");
 }
 
 /* Main program */
@@ -371,7 +453,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:")) != EOF) {
+	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:a:")) != EOF) {
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users()) {
@@ -444,7 +526,26 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			break;
+                case 'a': {
+                        BOOL got_error = False;
+
+                        if (!wbinfo_auth(optarg)) {
+                                printf("Could not authenticate user %s with "
+                                       "plaintext password\n", optarg);
+                                got_error = True;
+                        }
+
+                        if (!wbinfo_auth_crap(optarg)) {
+                                printf("Could not authenticate user %s with "
+                                       "challenge/response\n", optarg);
+                                got_error = True;
+                        }
+
+                        if (got_error)
+                                return 1;
+                        break;
 				
+                }
                       /* Invalid option */
 
 		default:
