@@ -27,46 +27,6 @@ extern int DEBUGLEVEL;
 
 extern pstring global_myname;
 
-
-/****************************************************************************
-update the encrypted smbpasswd file from the plaintext username and password
-
-this ugly hack needs to die, but not quite yet...
-*****************************************************************************/
-static BOOL update_smbpassword_file(char *user, char *password)
-{
-	SAM_ACCOUNT 	*sampass = NULL;
-	BOOL 		ret;
-	
-	pdb_init_sam(&sampass);
-	
-	become_root();
-	ret = pdb_getsampwnam(sampass, user);
-	unbecome_root();
-
-	if(ret == False) {
-		DEBUG(0,("update_smbpassword_file: pdb_getsampwnam failed to locate %s\n", user));
-		pdb_free_sam(sampass);
-		return False;
-	}
-
-	/*
-	 * Remove the account disabled flag - we are updating the
-	 * users password from a login.
-	 */
-	pdb_set_acct_ctrl(sampass, pdb_get_acct_ctrl(sampass) & ~ACB_DISABLED);
-
-	/* Here, the flag is one, because we want to ignore the
-           XXXXXXX'd out password */
-	ret = change_oem_password( sampass, password, True);
-	if (ret == False) {
-		DEBUG(3,("change_oem_password returned False\n"));
-	}
-
-	pdb_free_sam(sampass);
-	return ret;
-}
-
 /****************************************************************************
  Check user is in correct domain if required
 ****************************************************************************/
@@ -88,21 +48,29 @@ static BOOL check_domain_match(char *user, char *domain)
   }
 }
 
+/****************************************************************************
+ Check a users password, as given in the user-info struct and return various
+ interesting details in the server_info struct.
+
+ This functions does NOT need to be in a become_root()/unbecome_root() pair
+ as it makes the calls itself when needed.
+****************************************************************************/
 
 uint32 check_password(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
 {
 	
 	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
-
+	BOOL done_pam = False;
+	
 	DEBUG(3, ("check_password:  Checking password for user %s with the new password interface\n", user_info->smb_username.str));
-        if (check_hosts_equiv(user_info->smb_username.str)) {
-		nt_status = NT_STATUS_NOPROBLEMO;
-	}
-		
   	if (!check_domain_match(user_info->smb_username.str, user_info->domain.str)) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
+	if (nt_status != NT_STATUS_NOPROBLEMO) {
+		nt_status = check_rhosts_security(user_info, server_info);
+	}
+	
 	if ((lp_security() == SEC_DOMAIN) && (nt_status != NT_STATUS_NOPROBLEMO)) {
 		nt_status = check_domain_security(user_info, server_info);
 	}
@@ -115,28 +83,23 @@ uint32 check_password(const auth_usersupplied_info *user_info, auth_serversuppli
 		smb_user_control(user_info->smb_username.str, nt_status);
 	}
 
-	if ((nt_status != NT_STATUS_NOPROBLEMO) 
-	    && (user_info->plaintext_password.len > 0) 
-	    && (!lp_plaintext_to_smbpasswd())) {
-		return (pass_check(user_info->smb_username.str, 
-				  user_info->plaintext_password.str, 
-				  user_info->plaintext_password.len, 
-				  lp_update_encrypted() ? 
-				  update_smbpassword_file : NULL) 
-			? NT_STATUS_NOPROBLEMO : NT_STATUS_LOGON_FAILURE);
+	if (nt_status != NT_STATUS_NOPROBLEMO) {
+		if ((user_info->plaintext_password.len > 0) 
+		    && (!lp_plaintext_to_smbpasswd())) {
+			nt_status = check_unix_security(user_info, server_info);
+			done_pam = True;
+		} else { 
+			nt_status = check_smbpasswd_security(user_info, server_info);
+		}
 	}
 
-	if (nt_status != NT_STATUS_NOPROBLEMO) {
-		nt_status = check_smbpasswd_security(user_info, server_info);
-	}
-	
-	if (nt_status == NT_STATUS_NOPROBLEMO) {
+	if ((nt_status == NT_STATUS_NOPROBLEMO) && !done_pam) {
 		/* We might not be root if we are an RPC call */
 		become_root();
 		nt_status = smb_pam_accountcheck(user_info->smb_username.str);
 		unbecome_root();
 	}
-
+	
 	if (nt_status == NT_STATUS_NOPROBLEMO) {
 		DEBUG(5, ("check_password:  Password for user %s suceeded\n", user_info->smb_username.str));
 	} else {

@@ -208,7 +208,11 @@ uint32 check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_se
 	pdb_init_sam(&sampass);
 
 	/* get the account information */
+
+	become_root();
 	ret = pdb_getsampwnam(sampass, user_info->smb_username.str);
+	unbecome_root();
+
 	if (ret == False)
 	{
 		DEBUG(1,("Couldn't find user '%s' in passdb file.\n", user_info->smb_username.str));
@@ -216,11 +220,7 @@ uint32 check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_se
 		return(NT_STATUS_NO_SUCH_USER);
 	}
 
-	if ((nt_status = smb_password_ok(sampass, user_info, server_info)) != NT_STATUS_NOPROBLEMO)
-	{
-		pdb_free_sam(sampass);
-		return(nt_status);
-	}
+	nt_status = smb_password_ok(sampass, user_info, server_info);
 	
 	pdb_free_sam(sampass);
 	return nt_status;
