@@ -452,11 +452,8 @@ void gensec_end(struct gensec_security **gensec_security)
 	}
 	(*gensec_security)->private_data = NULL;
 
-	if (!(*gensec_security)->subcontext) {
-		/* don't destory this if this is a subcontext - it belongs to the parent */
-		talloc_free(*gensec_security);
-	}
-	gensec_security = NULL;
+	talloc_free(*gensec_security);
+	*gensec_security = NULL;
 }
 
 /** 

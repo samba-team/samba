@@ -277,19 +277,17 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 						  null_data_blob, 
 						  unwrapped_out);
 		}
-		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
-		    && (!NT_STATUS_IS_OK(nt_status))) {
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed: %s\n", 
 				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
-				gensec_end(&spnego_state->sub_sec_security);
-		} else {
-			break;
+			gensec_end(&spnego_state->sub_sec_security);
 		}
+		return nt_status;
 	}
 	if (!mechType || !mechType[i]) {
 		DEBUG(1, ("SPNEGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
 	}
-	return nt_status;
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 /** create a client negTokenInit 
@@ -369,22 +367,23 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 
 	/* compose reply */
 	spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
-	spnego_out.negTokenTarg.supportedMech 
-		= spnego_state->sub_sec_security->ops->oid;
 	spnego_out.negTokenTarg.responseToken = unwrapped_out;
 	spnego_out.negTokenTarg.mechListMIC = null_data_blob;
 	
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		spnego_out.negTokenTarg.supportedMech 
+			= spnego_state->sub_sec_security->ops->oid;
 		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
 		spnego_state->state_position = SPNEGO_SERVER_TARG;
 	} else if (NT_STATUS_IS_OK(nt_status)) {
+		spnego_out.negTokenTarg.supportedMech 
+			= spnego_state->sub_sec_security->ops->oid;
 		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
 		spnego_state->state_position = SPNEGO_DONE;
 	} else {
+		spnego_out.negTokenTarg.supportedMech = NULL;
 		spnego_out.negTokenTarg.negResult = SPNEGO_REJECT;
-		DEBUG(1, ("SPNEGO(%s) login failed: %s\n", 
-			  spnego_state->sub_sec_security->ops->name, 
-			  nt_errstr(nt_status)));
+		DEBUG(1, ("SPNEGO login failed: %s\n", nt_errstr(nt_status)));
 		spnego_state->state_position = SPNEGO_DONE;
 	}
 	

@@ -46,6 +46,14 @@ void smbd_process_init(void)
 
 void init_subsystems(void)
 {
+	/* Do *not* remove this, until you have removed
+	 * passdb/secrets.c, and proved that Samba still builds... */
+
+	/* Setup the SECRETS subsystem */
+	if (!secrets_init()) {
+		exit(1);
+	}
+
 	/* Setup the PROCESS_MODEL subsystem */
 	if (!process_model_init())
 		exit(1);
