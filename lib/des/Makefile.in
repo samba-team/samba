@@ -117,19 +117,19 @@ $(LIBNAME).$(SHLIBEXT): $(LIBOBJ)
 	rm -f $@
 	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(LIBOBJ)
 
-mdtest$(EXECSUFFIX): mdtest.o
+mdtest$(EXECSUFFIX): mdtest.o $(LIB)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ mdtest.o -L. -ldes
 
-destest$(EXECSUFFIX): destest.o
+destest$(EXECSUFFIX): destest.o $(LIB)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ destest.o -L. -ldes
 
-des$(EXECSUFFIX): des.o
+des$(EXECSUFFIX): des.o $(LIB)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ des.o -L. -ldes
 
-rpw$(EXECSUFFIX): rpw.o
+rpw$(EXECSUFFIX): rpw.o $(LIB)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ rpw.o -L. -ldes
 
-speed$(EXECSUFFIX): speed.o
+speed$(EXECSUFFIX): speed.o $(LIB)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ speed.o -L. -ldes
 
 $(LIBOBJ): ../../config.h
