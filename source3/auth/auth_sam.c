@@ -260,7 +260,7 @@ NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user
 		/* check for expired password */
 		if (must_change_time < time(NULL) && must_change_time != 0) {
 			DEBUG(1,("Account for user '%s' password expired!.\n", sampass->username));
-			DEBUG(1,("Password expired at '%ld' unix time.\n", (long)must_change_time));
+			DEBUG(1,("Password expired at '%s' (%ld) unix time.\n", http_timestring(must_change_time), (long)must_change_time));
 			return NT_STATUS_PASSWORD_EXPIRED;
 		}
 	}
