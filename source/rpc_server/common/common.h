@@ -21,6 +21,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#define NTSTATUS_TALLOC_CHECK(x) do {\
+	if (!(x)) return NT_STATUS_NO_MEMORY;\
+} while (0)
+
 #define WERR_TALLOC_CHECK(x) do {\
 	if (!(x)) return WERR_NOMEM;\
 } while (0)
