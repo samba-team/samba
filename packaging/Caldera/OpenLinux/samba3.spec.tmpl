@@ -255,11 +255,11 @@ make all nsswitch/libnss_wins.so nsswitch/libnss_winbind.so torture nsswitch/pam
 (cd tdb; make tdbdump tdbtest tdbtorture tdbtool)
 
 cd ../examples/VFS
-CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
-        --prefix='$(DESTDIR)/usr' \
-        --localstatedir='$(DESTDIR)/var' \
-        --libdir='$(DESTDIR)%{EtcSamba}' \
-        --sbindir='$(DESTDIR)/usr/sbin'
+#CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
+#        --prefix='$(DESTDIR)/usr' \
+#        --localstatedir='$(DESTDIR)/var' \
+#        --libdir='$(DESTDIR)%{EtcSamba}' \
+#        --sbindir='$(DESTDIR)/usr/sbin'
 make
 
 %Install
