@@ -113,37 +113,38 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 	lsa_io_r_query("", &r_q, rdata, 0);
 }
 
+
 /***************************************************************************
 make_dom_ref
-
- pretty much hard-coded choice of "other" sids, unfortunately...
-
  ***************************************************************************/
-static void make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid,
-                         DOM_SID *other_sid1, DOM_SID *other_sid2, DOM_SID *other_sid3)
+static void make_dom_ref(DOM_R_REF *ref, int num_domains,
+				char **dom_names, DOM_SID **dom_sids)
+                         
 {
-	int len_dom_name   = strlen(dom_name);
+	int i;
 
-	ref->undoc_buffer = 1;
-	ref->num_ref_doms_1 = 4;
-	ref->buffer_dom_name = 1;
-	ref->max_entries = 32;
-	ref->num_ref_doms_2 = 4;
-
-	make_uni_hdr2(&(ref->hdr_dom_name  ), len_dom_name  , len_dom_name  , 0);
-	make_uni_hdr2(&(ref->hdr_ref_dom[0]), sizeof(DOM_SID), sizeof(DOM_SID), 0);
-	make_uni_hdr2(&(ref->hdr_ref_dom[1]), sizeof(DOM_SID), sizeof(DOM_SID), 0);
-	make_uni_hdr2(&(ref->hdr_ref_dom[2]), sizeof(DOM_SID), sizeof(DOM_SID), 0);
-
-	if (dom_name != NULL)
+	if (num_domains > MAX_REF_DOMAINS)
 	{
-		make_unistr(&(ref->uni_dom_name), dom_name);
+		num_domains = MAX_REF_DOMAINS;
 	}
 
-	make_dom_sid2(&(ref->ref_dom[0]), dom_sid   );
-	make_dom_sid2(&(ref->ref_dom[1]), other_sid1);
-	make_dom_sid2(&(ref->ref_dom[2]), other_sid2);
-	make_dom_sid2(&(ref->ref_dom[3]), other_sid3);
+	ref->undoc_buffer = 1;
+	ref->num_ref_doms_1 = num_domains;
+	ref->undoc_buffer2 = 1;
+	ref->max_entries = MAX_REF_DOMAINS;
+	ref->num_ref_doms_2 = num_domains;
+
+	for (i = 0; i < num_domains; i++)
+	{
+		int len = dom_names[i] != NULL ? strlen(dom_names[i]) : 0;
+
+		make_uni_hdr(&(ref->hdr_ref_dom[i].hdr_dom_name), len, len, len != 0 ? 1 : 0);
+		ref->hdr_ref_dom[i].ptr_dom_sid = dom_sids[i] != NULL ? 1 : 0;
+
+		make_unistr2 (&(ref->ref_dom[i].uni_dom_name), dom_names[i], len);
+		make_dom_sid2(&(ref->ref_dom[i].ref_dom     ), dom_sids [i]);
+	}
+
 }
 
 /***************************************************************************
@@ -151,13 +152,12 @@ make_reply_lookup_rids
  ***************************************************************************/
 static void make_reply_lookup_rids(LSA_R_LOOKUP_RIDS *r_l,
 				int num_entries, uint32 dom_rids[MAX_LOOKUP_SIDS],
-				char *dom_name, DOM_SID *dom_sid,
-				DOM_SID *other_sid1, DOM_SID *other_sid2, DOM_SID *other_sid3)
+				int num_ref_doms,
+				char **dom_names, DOM_SID **dom_sids)
 {
 	int i;
 
-	make_dom_ref(&(r_l->dom_ref), dom_name, dom_sid,
-	             other_sid1, other_sid2, other_sid3);
+	make_dom_ref(&(r_l->dom_ref), num_ref_doms, dom_names, dom_sids);
 
 	r_l->num_entries = num_entries;
 	r_l->undoc_buffer = 1;
@@ -193,9 +193,6 @@ static void make_lsa_trans_names(LSA_TRANS_NAME_ENUM *trn,
 		fstring name;
 		uint32 type;
 		
-		trn->ptr_name[i] = 0;
-		trn->ptr_name[(*total)] = 0;
-
 		SMB_ASSERT_ARRAY(sid[i].sid.sub_auths, num_auths);
 
 		/* find the rid to look up */
@@ -212,7 +209,6 @@ static void make_lsa_trans_names(LSA_TRANS_NAME_ENUM *trn,
 
 		if (status == 0x0)
 		{
-			trn->ptr_name[i] = 1;
 			make_lsa_trans_name(&(trn->name[(*total)]), type, name, (*total));
 			(*total)++;
 		}
@@ -241,8 +237,8 @@ lsa_reply_lookup_sids
  ***************************************************************************/
 static void lsa_reply_lookup_sids(prs_struct *rdata,
 				int num_entries, DOM_SID2 sid[MAX_LOOKUP_SIDS],
-				char *dom_name, DOM_SID *dom_sid,
-				DOM_SID *other_sid1, DOM_SID *other_sid2, DOM_SID *other_sid3)
+				int num_ref_doms,
+				char **dom_names, DOM_SID **dom_sids)
 {
 	LSA_R_LOOKUP_SIDS r_l;
 	DOM_R_REF ref;
@@ -254,7 +250,7 @@ static void lsa_reply_lookup_sids(prs_struct *rdata,
 	ZERO_STRUCT(names);
 
 	/* set up the LSA Lookup SIDs response */
-	make_dom_ref(&ref, dom_name, dom_sid, other_sid1, other_sid2, other_sid3);
+	make_dom_ref(&ref, num_ref_doms, dom_names, dom_sids);
 	make_lsa_trans_names(&names, num_entries, sid, &mapped_count);
 	make_reply_lookup_sids(&r_l, &ref, &names, mapped_count, 0x0);
 
@@ -267,8 +263,8 @@ lsa_reply_lookup_rids
  ***************************************************************************/
 static void lsa_reply_lookup_rids(prs_struct *rdata,
 				int num_entries, uint32 dom_rids[MAX_LOOKUP_SIDS],
-				char *dom_name, DOM_SID *dom_sid,
-				DOM_SID *other_sid1, DOM_SID *other_sid2, DOM_SID *other_sid3)
+				int num_ref_doms,
+				char **dom_names, DOM_SID **dom_sids)
 {
 	LSA_R_LOOKUP_RIDS r_l;
 
@@ -276,7 +272,7 @@ static void lsa_reply_lookup_rids(prs_struct *rdata,
 
 	/* set up the LSA Lookup RIDs response */
 	make_reply_lookup_rids(&r_l, num_entries, dom_rids,
-				dom_name, dom_sid, other_sid1, other_sid2, other_sid3);
+				num_ref_doms, dom_names, dom_sids);
 	r_l.status = 0x0;
 
 	/* store the response in the SMB stream */
@@ -351,6 +347,9 @@ static void api_lsa_lookup_sids( uint16 vuid, prs_struct *data,
 	DOM_SID sid_S_1_3;
 	DOM_SID sid_S_1_5;
 
+	DOM_SID *sid_array[4];
+	char    *dom_names[4];
+
 	ZERO_STRUCT(q_l);
 	ZERO_STRUCT(sid_S_1_1);
 	ZERO_STRUCT(sid_S_1_3);
@@ -362,14 +361,25 @@ static void api_lsa_lookup_sids( uint16 vuid, prs_struct *data,
 	pstrcpy(dom_name, lp_workgroup());
 
 	string_to_sid(&sid_S_1_1, "S-1-1");
-    string_to_sid(&sid_S_1_3, "S-1-3");
-    string_to_sid(&sid_S_1_5, "S-1-5");
+        string_to_sid(&sid_S_1_3, "S-1-3");
+        string_to_sid(&sid_S_1_5, "S-1-5");
+
+	dom_names[0] = dom_name;
+	sid_array[0] = &global_machine_sid;
+
+	dom_names[1] = "Everyone";
+	sid_array[1] = &sid_S_1_1;
+
+	dom_names[2] = "don't know";
+	sid_array[2] = &sid_S_1_3;
+
+	dom_names[3] = "NT AUTHORITY";
+	sid_array[3] = &sid_S_1_5;
 
 	/* construct reply.  return status is always 0x0 */
-    lsa_reply_lookup_sids(rdata,
-                          q_l.sids.num_entries, q_l.sids.sid, /* SIDs */
-                          dom_name, &global_machine_sid, /* domain name, domain SID */
-                          &sid_S_1_1, &sid_S_1_3, &sid_S_1_5); /* the three other SIDs */
+	lsa_reply_lookup_sids(rdata,
+                              q_l.sids.num_entries, q_l.sids.sid, /* SIDs */
+                              4, dom_names, sid_array);
 }
 
 /***************************************************************************
@@ -381,11 +391,15 @@ static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
 	int i;
 	LSA_Q_LOOKUP_RIDS q_l;
 	pstring dom_name;
+	uint32 dom_rids[MAX_LOOKUP_SIDS];
+	uint32 dummy_g_rid;
+
 	DOM_SID sid_S_1_1;
 	DOM_SID sid_S_1_3;
 	DOM_SID sid_S_1_5;
-	uint32 dom_rids[MAX_LOOKUP_SIDS];
-	uint32 dummy_g_rid;
+
+	DOM_SID *sid_array[4];
+	char    *dom_names[4];
 
 	ZERO_STRUCT(q_l);
 	ZERO_STRUCT(sid_S_1_1);
@@ -399,15 +413,27 @@ static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
 	pstrcpy(dom_name, lp_workgroup());
 
 	string_to_sid(&sid_S_1_1, "S-1-1");
-    string_to_sid(&sid_S_1_3, "S-1-3");
-    string_to_sid(&sid_S_1_5, "S-1-5");
+        string_to_sid(&sid_S_1_3, "S-1-3");
+        string_to_sid(&sid_S_1_5, "S-1-5");
+
+	dom_names[0] = dom_name;
+	sid_array[0] = &global_machine_sid;
+
+	dom_names[1] = "Everyone";
+	sid_array[1] = &sid_S_1_1;
+
+	dom_names[2] = "don't know";
+	sid_array[2] = &sid_S_1_3;
+
+	dom_names[3] = "NT AUTHORITY";
+	sid_array[3] = &sid_S_1_5;
 
 	SMB_ASSERT_ARRAY(q_l.lookup_name, q_l.num_entries);
 
 	/* convert received RIDs to strings, so we can do them. */
 	for (i = 0; i < q_l.num_entries; i++)
 	{
-        fstring user_name;
+		fstring user_name;
 		fstrcpy(user_name, unistr2(q_l.lookup_name[i].str.buffer));
         /*
          * Map to the UNIX username.
@@ -429,8 +455,7 @@ static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
 	/* construct reply.  return status is always 0x0 */
 	lsa_reply_lookup_rids(rdata,
                               q_l.num_entries, dom_rids, /* text-converted SIDs */
-                              dom_name, &global_machine_sid, /* domain name, domain SID */
-                              &sid_S_1_1, &sid_S_1_3, &sid_S_1_5); /* the three other SIDs */
+                              4, dom_names, sid_array);
 }
 
 /***************************************************************************
@@ -443,17 +468,17 @@ static void api_lsa_close( uint16 vuid, prs_struct *data,
 	char *q = mem_data(&(rdata->data), rdata->offset);
 
 	SIVAL(q, 0, 0);
-    q += 4;
+	q += 4;
 	SIVAL(q, 0, 0);
-    q += 4;
+	q += 4;
 	SIVAL(q, 0, 0);
-    q += 4;
+	q += 4;
 	SIVAL(q, 0, 0);
-    q += 4;
+	q += 4;
 	SIVAL(q, 0, 0); 
-    q += 4;
+	q += 4;
 	SIVAL(q, 0, 0);
-    q += 4;
+	q += 4;
 
 	rdata->offset += 24;
 }
@@ -468,17 +493,17 @@ static void api_lsa_open_secret( uint16 vuid, prs_struct *data,
 	char *q = mem_data(&(rdata->data), rdata->offset);
 
 	SIVAL(q, 0, 0);
-    q += 4;
+	q += 4;
 	SIVAL(q, 0, 0);
-    q += 4;
+	q += 4;
 	SIVAL(q, 0, 0);
-    q += 4;
+	q += 4;
 	SIVAL(q, 0, 0);
-    q += 4;
+	q += 4;
 	SIVAL(q, 0, 0);
-    q += 4;
+	q += 4;
 	SIVAL(q, 0, 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND);
-    q += 4;
+	q += 4;
 	
 	rdata->offset += 24;
 }

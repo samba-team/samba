@@ -115,6 +115,7 @@ struct
   {"srvfiles",   cmd_srv_enum_files,   "DCE/RPC - List files on a server"},
 #endif
   {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
+  {"lookupsids", cmd_lsa_lookup_sids,  "Resolve names from SIDs"},
   {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)"},
   {"samuser",    cmd_sam_query_user,   "<username> SAM User Query (experimental!)"},
   {"samtest",    cmd_sam_test      ,   "SAM User Encrypted RPC test (experimental!)"},
