@@ -197,6 +197,16 @@ DES_set_key_checked(DES_cblock *key, DES_key_schedule *ks)
 }
 
 /*
+ * Compatibility function for eay libdes
+ */
+
+int
+DES_key_sched(DES_cblock *key, DES_key_schedule *ks)
+{
+    return DES_set_key(key, ks);
+}
+
+/*
  *
  */
 
