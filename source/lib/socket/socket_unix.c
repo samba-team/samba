@@ -71,15 +71,6 @@ static NTSTATUS unixdom_init(struct socket_context *sock)
 static void unixdom_close(struct socket_context *sock)
 {
 	close(sock->fd);
-	/* if we were listening, then don't leave the socket lying
-	   around in the filesystem */
-
-#if 0
-	/* FIXME - this doesn't work after fork(), etc */
-	if (sock->private_data) {
-		unlink((const char *)sock->private_data);
-	}
-#endif
 }
 
 static NTSTATUS unixdom_connect(struct socket_context *sock,
