@@ -33,8 +33,6 @@
 					POLICY_HND *user_pol, uint32 *rid);
 	BOOL samr_create_dom_alias(  POLICY_HND *domain_pol, const char *acct_name,
 					POLICY_HND *alias_pol, uint32 *rid);
-	BOOL samr_query_aliasinfo(  POLICY_HND *alias_pol, uint16 switch_value,
-					ALIAS_INFO_CTR *ctr);
 	BOOL samr_set_aliasinfo(  POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr);
 	BOOL samr_open_group(  const POLICY_HND *domain_pol,
 					uint32 flags, uint32 rid,
@@ -1156,23 +1154,17 @@ uint32 _samr_query_groupinfo(POLICY_HND *pol,
 	return status;
 }
 
-#if 0
-
 
 /*******************************************************************
  samr_reply_query_aliasinfo
  ********************************************************************/
-uint32 _samr_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
-				prs_struct *rdata)
+uint32 _samr_query_aliasinfo(POLICY_HND *alias_pol, uint16 switch_level,
+					ALIAS_INFO_CTR *ctr)
 {
-	SAMR_R_QUERY_ALIASINFO r_e;
-	ALIAS_INFO_CTR ctr;
 	uint32 status = 0x0;
 
-	ptr = 0;
-
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(pol)) == -1))
+	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), alias_pol) == -1))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -1183,9 +1175,8 @@ uint32 _samr_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 	{
 		if (switch_level == 3)
 		{
-			ptr = 1;
-			ctr.switch_value1 = 3;
-			make_samr_alias_info3(&ctr.alias.info3, "<fake account description>");
+			ctr->switch_value1 = 3;
+			make_samr_alias_info3(&ctr->alias.info3, "<fake account description>");
 		}
 		else
 		{
@@ -1193,14 +1184,10 @@ uint32 _samr_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 		}
 	}
 
-	make_samr_r_query_aliasinfo(&r_e, status == 0 ? &ctr : NULL, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_query_aliasinfo("", &r_e, rdata, 0);
-
-	DEBUG(5,("samr_query_aliasinfo: %d\n", __LINE__));
-
+	return status;
 }
+
+#if 0
 
 
 /*******************************************************************

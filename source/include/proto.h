@@ -4276,10 +4276,10 @@ uint32 _samr_query_groupmem(POLICY_HND *group_pol,
 					uint32 **rid,
 					uint32 **attr);
 uint32 _samr_query_groupinfo(POLICY_HND *pol,
-				uint16 switch_value,
+				uint16 switch_level,
 				GROUP_INFO_CTR* ctr);
-uint32 _samr_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
-				prs_struct *rdata);
+uint32 _samr_query_aliasinfo(POLICY_HND *alias_pol, uint16 switch_level,
+					ALIAS_INFO_CTR *ctr);
 uint32 _samr_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 				prs_struct *rdata);
 uint32 _samr_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u,

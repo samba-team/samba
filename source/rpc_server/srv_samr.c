@@ -417,56 +417,25 @@ static void api_samr_query_groupinfo( rpcsrv_struct *p, prs_struct *data, prs_st
 
 
 /*******************************************************************
- samr_reply_query_aliasinfo
- ********************************************************************/
-static void samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_QUERY_ALIASINFO r_e;
-	ALIAS_INFO_CTR ctr;
-	uint32 status = 0x0;
-
-	r_e.ptr = 0;
-
-	/* find the policy handle.  open a policy on it. */
-	if (r_e.status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->pol)) == -1))
-	{
-		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-
-	DEBUG(5,("samr_reply_query_aliasinfo: %d\n", __LINE__));
-
-	if (status == 0x0)
-	{
-		if (q_u->switch_level == 3)
-		{
-			r_e.ptr = 1;
-			ctr.switch_value1 = 3;
-			make_samr_alias_info3(&ctr.alias.info3, "<fake account description>");
-		}
-		else
-		{
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-		}
-	}
-
-	make_samr_r_query_aliasinfo(&r_e, status == 0 ? &ctr : NULL, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_query_aliasinfo("", &r_e, rdata, 0);
-
-	DEBUG(5,("samr_query_aliasinfo: %d\n", __LINE__));
-
-}
-
-/*******************************************************************
  api_samr_query_aliasinfo
  ********************************************************************/
 static void api_samr_query_aliasinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_ALIASINFO q_e;
+	SAMR_R_QUERY_ALIASINFO r_e;
+	ALIAS_INFO_CTR ctr;
+	uint32 status;
+
+	ZERO_STRUCT(q_e);
+	ZERO_STRUCT(r_e);
+	ZERO_STRUCT(ctr);
+	
 	samr_io_q_query_aliasinfo("", &q_e, data, 0);
-	samr_reply_query_aliasinfo(&q_e, rdata);
+
+	status = _samr_query_aliasinfo(&q_e.pol, q_e.switch_level, &ctr);
+
+	make_samr_r_query_aliasinfo(&r_e, status == 0 ? &ctr : NULL, status);
+	samr_io_r_query_aliasinfo("", &r_e, rdata, 0);
 }
 
 
