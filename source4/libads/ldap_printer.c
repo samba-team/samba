@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    ads (active directory) printer utility library
-   Copyright (C) Jim McDonough 2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 				      const char *printer, const char *servername)
 {
 	ADS_STATUS status;
-	char *srv_dn, **srv_cn, *exp;
+	char *srv_dn, **srv_cn, *s;
 	const char *attrs[] = {"*", "nTSecurityDescriptor", NULL};
 
 	status = ads_find_machine_acct(ads, res, servername);
@@ -44,13 +44,27 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 	srv_cn = ldap_explode_dn(srv_dn, 1);
 	ads_msgfree(ads, *res);
 
-	asprintf(&exp, "(cn=%s-%s)", srv_cn[0], printer);
-	status = ads_search(ads, res, exp, attrs);
+	asprintf(&s, "(cn=%s-%s)", srv_cn[0], printer);
+	status = ads_search(ads, res, s, attrs);
 
 	ldap_memfree(srv_dn);
 	ldap_value_free(srv_cn);
-	free(exp);
+	free(s);
 	return status;	
+}
+
+ADS_STATUS ads_find_printers(ADS_STRUCT *ads, void **res)
+{
+	char *ldap_expr;
+	const char *attrs[] = { "objectClass", "printerName", "location", "driverName",
+				"serverName", "description", NULL };
+
+	/* For the moment only display all printers */
+
+	ldap_expr = "(&(!(showInAdvancedViewOnly=TRUE))(uncName=*)"
+		"(objectCategory=printQueue))";
+
+	return ads_search(ads, res, ldap_expr, attrs);
 }
 
 /*
@@ -338,4 +352,3 @@ BOOL get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
 }
 
 #endif
-

@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    simple kerberos5/SPNEGO routines
    Copyright (C) Andrew Tridgell 2001
-   Copyright (C) Jim McDonough   2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    Copyright (C) Luke Howard     2003
    
    This program is free software; you can redistribute it and/or modify
@@ -323,24 +323,30 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
    generate a SPNEGO negTokenTarg packet, ready for a EXTENDED_SECURITY
    kerberos session setup 
 */
-DATA_BLOB spnego_gen_negTokenTarg(const char *principal, int time_offset)
+int spnego_gen_negTokenTarg(const char *principal, int time_offset, 
+			    DATA_BLOB *targ, 
+			    DATA_BLOB *session_key_krb5)
 {
-	DATA_BLOB tkt, tkt_wrapped, targ;
+	int retval;
+	DATA_BLOB tkt, tkt_wrapped;
 	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_NTLMSSP, NULL};
 
-	/* get a kerberos ticket for the service */
-	tkt = krb5_get_ticket(principal, time_offset);
+	/* get a kerberos ticket for the service and extract the session key */
+	retval = cli_krb5_get_ticket(principal, time_offset, &tkt, session_key_krb5);
+
+	if (retval)
+		return retval;
 
 	/* wrap that up in a nice GSS-API wrapping */
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
 
 	/* and wrap that in a shiny SPNEGO wrapper */
-	targ = gen_negTokenTarg(krb_mechs, tkt_wrapped);
+	*targ = gen_negTokenTarg(krb_mechs, tkt_wrapped);
 
 	data_blob_free(&tkt_wrapped);
 	data_blob_free(&tkt);
 
-	return targ;
+	return retval;
 }
 
 

@@ -462,7 +462,7 @@ AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/i
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
-AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h ldap.h lber.h dlfcn.h)
+AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 
 #
@@ -1815,7 +1815,7 @@ AC_SEARCH_LIBS(crypt, [crypt],
 ## check checking for truncated salt.  Wrapped by the
 ## $with_pam_for_crypt variable as above   --jerry
 ##
-if test $with_pam_for_crypt = no; then
+if test x"$with_pam_for_crypt" != x"yes"; then
 AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
 crypt_LIBS="$LIBS"
 LIBS="$AUTHLIBS $LIBS"

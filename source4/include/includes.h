@@ -339,10 +339,6 @@
 #include <stropts.h>
 #endif
 
-#ifdef HAVE_POLL_H
-#include <poll.h>
-#endif
-
 #ifdef HAVE_SYS_CAPABILITY_H
 
 #if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H)
@@ -721,7 +717,6 @@ extern int errno;
 #include "../tdb/tdbutil.h"
 #include "talloc.h"
 #include "nt_status.h"
-#include "ads.h"
 #include "interfaces.h"
 #include "trans2.h"
 #include "ioctl.h"
@@ -734,6 +729,7 @@ extern int errno;
 
 #include "version.h"
 #include "smb.h"
+#include "ads.h"
 #include "nameserv.h"
 #include "secrets.h"
 
@@ -1146,31 +1142,6 @@ time_t timegm(struct tm *tm);
 #if defined(HAVE_SYS_FS_VX_QUOTA_H)
 #define VXFS_QUOTA
 #endif
-
-#if defined(HAVE_KRB5)
-
-#ifndef KRB5_SET_REAL_TIME
-krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
-#endif
-
-#ifndef HAVE_KRB5_SET_DEFAULT_TGS_KTYPES
-krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc);
-#endif
-
-#if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
-krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_context auth_context, krb5_keyblock *keyblock);
-#endif
-
-/* Samba wrapper function for krb5 functionality. */
-void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
-int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
-void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt);
-krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
-krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
-krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
-void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
-BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16]);
-#endif /* HAVE_KRB5 */
 
 #endif /* _INCLUDES_H */
 

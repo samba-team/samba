@@ -60,7 +60,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	msg1 = gen_negTokenTarg(mechs, blob);
 	data_blob_free(&blob);
 
-	cred.bv_val = msg1.data;
+	cred.bv_val = (char *)msg1.data;
 	cred.bv_len = msg1.length;
 
 	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
@@ -96,7 +96,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		  nthash, 24,
 		  lp_workgroup(), 
 		  ads->auth.user_name, 
-		  lp_netbios_name(),
+		  global_myname(),
 		  sess_key, 16,
 		  neg_flags);
 
@@ -106,7 +106,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	data_blob_free(&blob);
 
 	/* now send the auth packet and we should be done */
-	cred.bv_val = auth.data;
+	cred.bv_val = (char *)auth.data;
 	cred.bv_len = auth.length;
 
 	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
@@ -124,21 +124,23 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 {
 	DATA_BLOB blob;
 	struct berval cred, *scred;
+	DATA_BLOB session_key;
 	int rc;
 
-	blob = spnego_gen_negTokenTarg(principal, ads->auth.time_offset);
+	rc = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, &blob, &session_key);
 
-	if (!blob.data) {
-		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
+	if (rc) {
+		return ADS_ERROR_KRB5(rc);
 	}
 
 	/* now send the auth packet and we should be done */
-	cred.bv_val = blob.data;
+	cred.bv_val = (char *)blob.data;
 	cred.bv_len = blob.length;
 
 	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
 
 	data_blob_free(&blob);
+	data_blob_free(&session_key);
 
 	return ADS_ERROR(rc);
 }
@@ -164,6 +166,8 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	}
 
 	blob = data_blob(scred->bv_val, scred->bv_len);
+
+	ber_bvfree(scred);
 
 #if 0
 	file_save("sasl_spnego.dat", blob.data, blob.length);
@@ -195,11 +199,18 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		status = ads_sasl_spnego_krb5_bind(ads, principal);
 		if (ADS_ERR_OK(status))
 			return status;
-		if (ads_kinit_password(ads) == 0) {
+
+		status = ADS_ERROR_KRB5(ads_kinit_password(ads)); 
+
+		if (ADS_ERR_OK(status)) {
 			status = ads_sasl_spnego_krb5_bind(ads, principal);
 		}
-		if (ADS_ERR_OK(status))
+
+		/* only fallback to NTLMSSP if allowed */
+		if (ADS_ERR_OK(status) || 
+		    !(ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP)) {
 			return status;
+		}
 	}
 #endif
 
@@ -223,13 +234,13 @@ failed:
 */
 static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 {
-	int minor_status;
+	uint32 minor_status;
 	gss_name_t serv_name;
 	gss_buffer_desc input_name;
 	gss_ctx_id_t context_handle;
 	gss_OID mech_type = GSS_C_NULL_OID;
 	gss_buffer_desc output_token, input_token;
-	OM_uint32 ret_flags, conf_state;
+	uint32 ret_flags, conf_state;
 	struct berval cred;
 	struct berval *scred;
 	int i=0;
@@ -324,7 +335,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	gss_release_name(&minor_status, &serv_name);
 
 	gss_rc = gss_unwrap(&minor_status,context_handle,&input_token,&output_token,
-			    &conf_state,NULL);
+			    (int *)&conf_state,NULL);
 	if (gss_rc) {
 		status = ADS_ERROR_GSS(gss_rc, minor_status);
 		goto failed;
@@ -349,13 +360,13 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	*p++ = max_msg_size>>16;
 	*p++ = max_msg_size>>8;
 	*p++ = max_msg_size;
-	snprintf(p, strlen(ads->config.bind_path)+4, "dn:%s", ads->config.bind_path);
-	p += strlen(p);
+	snprintf((char *)p, strlen(ads->config.bind_path)+4, "dn:%s", ads->config.bind_path);
+	p += strlen((const char *)p);
 
 	output_token.length = PTR_DIFF(p, output_token.value);
 
 	gss_rc = gss_wrap(&minor_status, context_handle,0,GSS_C_QOP_DEFAULT,
-			  &output_token, &conf_state,
+			  &output_token, (int *)&conf_state,
 			  &input_token);
 	if (gss_rc) {
 		status = ADS_ERROR_GSS(gss_rc, minor_status);

@@ -89,52 +89,6 @@ uint32 ads_uf2atype(uint32 uf)
 } 
 
 /* 
-translated the GROUP_CTRL Flags to GroupType (groupType) 
-*/ 
-uint32 ads_gcb2gtype(uint16 gcb)
-{
-	uint32 gtype = 0x00000000;
-
-	if (gcb & GCB_ALIAS_GROUP)	gtype |= GTYPE_SECURITY_BUILTIN_LOCAL_GROUP;
-	else if(gcb & GCB_LOCAL_GROUP)	gtype |= GTYPE_SECURITY_DOMAIN_LOCAL_GROUP;
-	if (gcb & GCB_GLOBAL_GROUP)	gtype |= GTYPE_SECURITY_GLOBAL_GROUP;
-		
-	return gtype;
-}
-
-/*
-translated the GroupType (groupType) to GROUP_CTRL Flags
-*/
-uint16 ads_gtype2gcb(uint32 gtype)
-{
-	uint16 gcb = 0x0000;
-
-	switch(gtype) {
-		case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
-			gcb = GCB_ALIAS_GROUP;
-			break;
-		case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
-			gcb = GCB_LOCAL_GROUP;
-			break;
-		case GTYPE_SECURITY_GLOBAL_GROUP:
-			gcb = GCB_GLOBAL_GROUP;
-			break;
-
-		case GTYPE_DISTRIBUTION_GLOBAL_GROUP:
-			gcb = GCB_GLOBAL_GROUP;
-			break;
-		case GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP:
-			gcb = GCB_LOCAL_GROUP;
-			break;
-		case GTYPE_DISTRIBUTION_UNIVERSAL_GROUP:
-			gcb = GCB_GLOBAL_GROUP;
-			break;
-	}
-	
-	return gcb;
-}
-
-/* 
 get the accountType from the groupType
 */
 uint32 ads_gtype2atype(uint32 gtype)
@@ -172,6 +126,8 @@ enum SID_NAME_USE ads_atype_map(uint32 atype)
 	switch (atype & 0xF0000000) {
 	case ATYPE_GLOBAL_GROUP:
 		return SID_NAME_DOM_GRP;
+	case ATYPE_SECURITY_LOCAL_GROUP:
+		return SID_NAME_ALIAS;
 	case ATYPE_ACCOUNT:
 		return SID_NAME_USER;
 	default:
