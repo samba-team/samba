@@ -206,6 +206,8 @@ AC_PROG_INSTALL
 AC_PROG_AWK
 AC_PATH_PROG(PERL, perl)
 
+AC_CHECK_TOOL(AR, ar)
+
 # compile with optimization and without debugging by default, but
 # allow people to set their own preference.
 if test "x$CFLAGS" = x
