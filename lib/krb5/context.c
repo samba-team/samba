@@ -96,6 +96,14 @@ krb5_init_context(krb5_context *context)
 	    krb5_config_free_strings(etypes);
 	}
     }
+#ifdef MEGA_SCHLEMM
+    {
+	const char * tmp = krb5_config_get_string(p, NULL, "libdefaults", 
+						  "dns_proxy", NULL);
+	if(tmp) 
+	    roken_gethostby_setup(p->http_proxy, tmp);
+    }
+#endif
     krb5_set_default_realm(p, NULL);
     *context = p;
     return 0;
