@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   Copyright (C) Stefan Metzmacher 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,8 +41,15 @@ struct gensec_ntlmssp_state {
 static const uint8_t *auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = ntlmssp_state->auth_context;
+	NTSTATUS status;
+	const uint8_t *chal;
 
-	return gensec_ntlmssp_state->auth_context->get_ntlm_challenge(gensec_ntlmssp_state->auth_context);
+	status = auth_get_challenge(gensec_ntlmssp_state->auth_context, &chal);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	return chal;
 }
 
 /**
@@ -53,7 +61,7 @@ static BOOL auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = ntlmssp_state->auth_context;
 
-	return gensec_ntlmssp_state->auth_context->challenge_may_be_modified;
+	return auth_challenge_may_be_modified(gensec_ntlmssp_state->auth_context);
 }
 
 /**
@@ -62,20 +70,20 @@ static BOOL auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
  */
 static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
 {
+	NTSTATUS nt_status;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = ntlmssp_state->auth_context;
 	struct auth_context *auth_context = gensec_ntlmssp_state->auth_context;
+	const uint8_t *chal;
 
-	SMB_ASSERT(challenge->length == 8);
+	if (challenge->length != 8) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	auth_context->challenge = data_blob_talloc(auth_context, 
-						   challenge->data, challenge->length);
+	chal = challenge->data;
 
-	auth_context->challenge_set_by = "NTLMSSP callback (NTLM2)";
+	nt_status = auth_context_set_challenge(auth_context, chal, "NTLMSSP callback (NTLM2)");
 
-	DEBUG(5, ("auth_context challenge set by %s\n", auth_context->challenge_set_by));
-	DEBUG(5, ("challenge is: \n"));
-	dump_data(5, auth_context->challenge.data, auth_context->challenge.length);
-	return NT_STATUS_OK;
+	return nt_status;
 }
 
 /**
@@ -90,44 +98,21 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	struct auth_usersupplied_info *user_info = NULL;
 	NTSTATUS nt_status;
 
-#if 0
-	/* the client has given us its machine name (which we otherwise would not get on port 445).
-	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
-
-	set_remote_machine_name(gensec_ntlmssp_state->ntlmssp_state->workstation, True);
-
-	/* setup the string used by %U */
-	/* sub_set_smb_name checks for weird internally */
-	sub_set_smb_name(gensec_ntlmssp_state->ntlmssp_state->user);
-
-	reload_services(True);
-
-#endif
-	nt_status = make_user_info_map(ntlmssp_state,
-				       &user_info, 
+	nt_status = make_user_info_map(ntlmssp_state, 
 				       gensec_ntlmssp_state->ntlmssp_state->user, 
 				       gensec_ntlmssp_state->ntlmssp_state->domain, 
 				       gensec_ntlmssp_state->ntlmssp_state->workstation, 
 	                               gensec_ntlmssp_state->ntlmssp_state->lm_resp.data ? &gensec_ntlmssp_state->ntlmssp_state->lm_resp : NULL, 
 	                               gensec_ntlmssp_state->ntlmssp_state->nt_resp.data ? &gensec_ntlmssp_state->ntlmssp_state->nt_resp : NULL, 
-				       NULL, NULL, NULL,
-				       True);
+				       NULL, NULL, NULL, True,
+				       &user_info);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
+	nt_status = auth_check_password(gensec_ntlmssp_state->auth_context, gensec_ntlmssp_state,
+						  user_info, &gensec_ntlmssp_state->server_info);
+	talloc_free(user_info);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	nt_status = gensec_ntlmssp_state->
-		auth_context->check_ntlm_password(gensec_ntlmssp_state->auth_context, 
-						  user_info, 
-						  gensec_ntlmssp_state, 
-						  &gensec_ntlmssp_state->server_info); 
-
-	free_user_info(&user_info);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
 	if (gensec_ntlmssp_state->server_info->user_session_key.length) {
 		DEBUG(10, ("Got NT session key of length %u\n", gensec_ntlmssp_state->server_info->user_session_key.length));
 		*user_session_key = data_blob_talloc(ntlmssp_state, 
@@ -151,12 +136,6 @@ static int gensec_ntlmssp_destroy(void *ptr)
 		ntlmssp_end(&gensec_ntlmssp_state->ntlmssp_state);
 	}
 
-	if (gensec_ntlmssp_state->auth_context) {
-		free_auth_context(&gensec_ntlmssp_state->auth_context);
-	}
-	if (gensec_ntlmssp_state->server_info) {
-		free_server_info(&gensec_ntlmssp_state->server_info);
-	}
 	return 0;
 }
 
@@ -183,21 +162,16 @@ static NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 {
 	NTSTATUS nt_status;
-	NTSTATUS status;
 	struct ntlmssp_state *ntlmssp_state;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
 
-	status = gensec_ntlmssp_start(gensec_security);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	nt_status = gensec_ntlmssp_start(gensec_security);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	gensec_ntlmssp_state = gensec_security->private_data;
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_server_start(gensec_ntlmssp_state,
-							      &gensec_ntlmssp_state->ntlmssp_state))) {
-		return nt_status;
-	}
+	nt_status = ntlmssp_server_start(gensec_ntlmssp_state, &gensec_ntlmssp_state->ntlmssp_state);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
@@ -206,19 +180,17 @@ static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_secur
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
-	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
-	nt_status = make_auth_context_subsystem(gensec_ntlmssp_state, &gensec_ntlmssp_state->auth_context);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
+	nt_status = auth_context_create(gensec_ntlmssp_state, lp_auth_methods(), &gensec_ntlmssp_state->auth_context);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
+	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	ntlmssp_state->auth_context = gensec_ntlmssp_state;
 	ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
 	ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	ntlmssp_state->check_password = auth_ntlmssp_check_password;
 	ntlmssp_state->server_role = lp_server_role();
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -226,19 +198,15 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
 	char *password = NULL;
-	
-	NTSTATUS status;
-	status = gensec_ntlmssp_start(gensec_security);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NTSTATUS nt_status;
+
+	nt_status = gensec_ntlmssp_start(gensec_security);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	gensec_ntlmssp_state = gensec_security->private_data;
-	status = ntlmssp_client_start(gensec_ntlmssp_state,
-				      &gensec_ntlmssp_state->ntlmssp_state);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	nt_status = ntlmssp_client_start(gensec_ntlmssp_state,
+					 &gensec_ntlmssp_state->ntlmssp_state);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
 		/*
@@ -259,36 +227,27 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
-	status = ntlmssp_set_domain(gensec_ntlmssp_state->ntlmssp_state, 
-				    gensec_security->user.domain);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	nt_status = ntlmssp_set_domain(gensec_ntlmssp_state->ntlmssp_state, 
+				       gensec_security->user.domain);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 	
-	status = ntlmssp_set_username(gensec_ntlmssp_state->ntlmssp_state, 
-				      gensec_security->user.name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	nt_status = ntlmssp_set_username(gensec_ntlmssp_state->ntlmssp_state, 
+					 gensec_security->user.name);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	if (gensec_security->user.name) {
-		status = gensec_get_password(gensec_security, gensec_ntlmssp_state, &password);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		nt_status = gensec_get_password(gensec_security, gensec_ntlmssp_state, &password);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 	}
 
 	if (password) {
-		status = ntlmssp_set_password(gensec_ntlmssp_state->ntlmssp_state, 
-					      password);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		nt_status = ntlmssp_set_password(gensec_ntlmssp_state->ntlmssp_state, password);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 	}
 
 	gensec_security->private_data = gensec_ntlmssp_state;
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -499,18 +458,13 @@ static NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_secur
 {
 	NTSTATUS nt_status;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-	nt_status = make_session_info(gensec_ntlmssp_state, gensec_ntlmssp_state->server_info, session_info);
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
+	nt_status = auth_generate_session_info(gensec_ntlmssp_state, gensec_ntlmssp_state->server_info, session_info);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	(*session_info)->session_key = data_blob_talloc(*session_info, 
 							gensec_ntlmssp_state->ntlmssp_state->session_key.data,
 							gensec_ntlmssp_state->ntlmssp_state->session_key.length);
-
-	(*session_info)->workstation = talloc_strdup(*session_info, 
-						     gensec_ntlmssp_state->ntlmssp_state->workstation);
 
 	return NT_STATUS_OK;
 }

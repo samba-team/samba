@@ -13,14 +13,13 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 
 #######################
-# Start MODULE auth_builtin
-[MODULE::auth_builtin]
-INIT_FUNCTION = auth_builtin_init
+# Start MODULE auth_anonymous
+[MODULE::auth_anonymous]
+INIT_FUNCTION = auth_anonymous_init
 SUBSYSTEM = AUTH
-REQUIRED_SUBSYSTEMS = LIBCLI_UTILS
 INIT_OBJ_FILES = \
-		auth/auth_builtin.o
-# End MODULE auth_builtin
+		auth/auth_anonymous.o
+# End MODULE auth_anonymous
 #######################
 
 #######################
@@ -33,7 +32,17 @@ INIT_OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIB_WINBIND_CLIENT \
 		NDR_NETLOGON LIBNDR
-# End MODULE auth_builtin
+# End MODULE auth_winbind
+#######################
+
+#######################
+# Start MODULE auth_developer
+[MODULE::auth_developer]
+INIT_FUNCTION = auth_developer_init
+SUBSYSTEM = AUTH
+INIT_OBJ_FILES = \
+		auth/auth_developer.o
+# End MODULE auth_developer
 #######################
 
 #######################
@@ -43,8 +52,6 @@ INIT_OBJ_FILES = \
 		auth/auth.o
 ADD_OBJ_FILES = \
 		auth/auth_util.o \
-		auth/pampass.o \
-		auth/pass_check.o \
 		auth/ntlm_check.o
 # End SUBSYSTEM AUTH
 #######################

@@ -330,8 +330,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 		return status;
 	}
 
-	session_info->refcount++;
-	(*dce_conn_p)->auth_state.session_info = session_info;
+	(*dce_conn_p)->auth_state.session_info = talloc_reference((*dce_conn_p), session_info);
 	(*dce_conn_p)->auth_state.session_key = dcesrv_inherited_session_key;
 
 	/* TODO: check security descriptor of the endpoint here 

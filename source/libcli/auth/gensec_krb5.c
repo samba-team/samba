@@ -6,6 +6,7 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
+   Copyright (C) Stefan Metzmacher 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,9 +30,6 @@
 #include "libcli/auth/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "auth/auth.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_AUTH
 
 enum GENSEC_KRB5_STATE {
 	GENSEC_KRB5_SERVER_START,
@@ -620,7 +618,7 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 }
 
 static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security,
-				     struct auth_session_info **session_info_out) 
+					 struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status;
 	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
@@ -629,20 +627,22 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	struct PAC_LOGON_INFO *logon_info;
 	char *p;
 	char *principal;
-	const char *username;
+	const char *account_name;
 	const char *realm;
 
-	*session_info_out = NULL;
-
 	principal = talloc_strdup(gensec_krb5_state, gensec_krb5_state->peer_principal);
+	NT_STATUS_HAVE_NO_MEMORY(principal);
+
 	p = strchr(principal, '@');
 	if (p) {
 		*p = '\0';
+		p++;
+		realm = p;
+	} else {
+		realm = lp_realm();
 	}
-	p++;
-	username = principal;
-	realm = p;
-	
+	account_name = principal;
+
 	/* decode and verify the pac */
 	nt_status = gensec_krb5_decode_pac(gensec_krb5_state, &logon_info, gensec_krb5_state->pac,
 					   gensec_krb5_state);
@@ -659,36 +659,33 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		union netr_Validation validation;
 		validation.sam3 = &logon_info->info3;
 		nt_status = make_server_info_netlogon_validation(gensec_krb5_state, 
-								 username, 
-								 &server_info,
-								 3,
-								 &validation); 
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
+								 account_name,
+								 3, &validation,
+								 &server_info); 
+		talloc_free(principal);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 	} else {
-		nt_status = sam_get_server_info(username, realm, gensec_krb5_state, &server_info);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
+		DATA_BLOB user_sess_key = data_blob(NULL, 0);
+		DATA_BLOB lm_sess_key = data_blob(NULL, 0);
+		/* TODO: should we pass the krb5 session key in here? */
+		nt_status = sam_get_server_info(gensec_krb5_state, account_name, realm,
+						user_sess_key, lm_sess_key,
+						&server_info);
+		talloc_free(principal);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = make_session_info(gensec_krb5_state, server_info, &session_info);
+	nt_status = auth_generate_session_info(gensec_krb5_state, server_info, &session_info);
 	talloc_free(server_info);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
-	talloc_free(principal);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	nt_status = gensec_krb5_session_key(gensec_security, &session_info->session_key);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	session_info->workstation = NULL;
+	*_session_info = session_info;
 
-	*session_info_out = session_info;
-
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 static BOOL gensec_krb5_have_feature(struct gensec_security *gensec_security,

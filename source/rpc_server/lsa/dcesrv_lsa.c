@@ -1556,12 +1556,12 @@ static NTSTATUS lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	if (!dce_call->conn->auth_state.session_info ||
 	    !dce_call->conn->auth_state.session_info->server_info ||
 	    !dce_call->conn->auth_state.session_info->server_info->account_name ||
-	    !dce_call->conn->auth_state.session_info->server_info->domain) {
+	    !dce_call->conn->auth_state.session_info->server_info->domain_name) {
 	    	return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	account_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->account_name);
-	authority_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->domain);
+	authority_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->domain_name);
 
 	_account_name = talloc_p(mem_ctx, struct lsa_String);
 	NTSTATUS_TALLOC_CHECK(_account_name);

@@ -24,29 +24,40 @@
 
 
 /* initialise the auth_context for this server and return the cryptkey */
-static void get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8]) 
+static NTSTATUS get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8]) 
 {
 	NTSTATUS nt_status;
-	const uint8_t *cryptkey;
+	const uint8_t *challenge;
 
 	/* muliple negprots are not premitted */
 	if (smb_conn->negotiate.auth_context) {
 		DEBUG(3,("get challenge: is this a secondary negprot?  auth_context is non-NULL!\n"));
-		smb_panic("secondary negprot");
+		return NT_STATUS_FOOBAR;
 	}
 
 	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));
 
-	nt_status = make_auth_context_subsystem(smb_conn, &smb_conn->negotiate.auth_context);
-
+	nt_status = auth_context_create(smb_conn, lp_auth_methods(), &smb_conn->negotiate.auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("make_auth_context_subsystem returned %s", nt_errstr(nt_status)));
-		smb_panic("cannot make_negprot_global_auth_context!\n");
+		DEBUG(0, ("auth_context_create() returned %s", nt_errstr(nt_status)));
+		return nt_status;
 	}
 
-	DEBUG(10, ("get challenge: getting challenge\n"));
-	cryptkey = smb_conn->negotiate.auth_context->get_ntlm_challenge(smb_conn->negotiate.auth_context);
-	memcpy(buff, cryptkey, 8);
+	nt_status = auth_context_create(smb_conn, lp_auth_methods(), &smb_conn->negotiate.auth_context);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("auth_context_create() returned %s", nt_errstr(nt_status)));
+		return nt_status;
+	}
+
+	nt_status = auth_get_challenge(smb_conn->negotiate.auth_context, &challenge);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("auth_get_challenge() returned %s", nt_errstr(nt_status)));
+		return nt_status;
+	}
+
+	memcpy(buff, challenge, 8);
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -140,8 +151,15 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 
 	/* Create a token value and add it to the outgoing packet. */
 	if (req->smb_conn->negotiate.encrypted_passwords) {
+		NTSTATUS nt_status;
+
 		SSVAL(req->out.vwv, VWV(11), 8);
-		get_challenge(req->smb_conn, req->out.data);
+
+		nt_status = get_challenge(req->smb_conn, req->out.data);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			smbsrv_terminate_connection(req->smb_conn, "LANMAN1 get_challenge failed\n");
+			return;
+		}
 	}
 
 	if (req->smb_conn->signing.mandatory_signing) {

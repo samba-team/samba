@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    Standardised Authentication types
-   Copyright (C) Andrew Bartlett 2001
+   Copyright (C) Andrew Bartlett   2001
+   Copyright (C) Stefan Metzmacher 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,50 +34,43 @@
 /* version 1 - version from samba 3.0 - metze */
 /* version 2 - initial samba4 version - metze */
 /* version 3 - subsequent samba4 version - abartlet */
-#define AUTH_INTERFACE_VERSION 3
-
-/* AUTH_STR - string */
-typedef struct auth_str
-{
-	int len;
-	char *str;
-} AUTH_STR;
+/* version 4 - subsequent samba4 version - metze */
+#define AUTH_INTERFACE_VERSION 4
 
 struct auth_usersupplied_info
 {
-	
+	const char *account_name;
+	const char *domain_name;
+	const char *workstation_name;
+
+	/* the values the client gives us */
+	struct {
+		const char *account_name;
+		const char *domain_name;
+	} client;
+
+	BOOL encrypted;
+
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
- 	DATA_BLOB lm_interactive_password;
+	DATA_BLOB lm_interactive_password;
 	DATA_BLOB nt_interactive_password;
  	DATA_BLOB plaintext_password;
-	
-	BOOL encrypted;
-	
-	AUTH_STR           client_domain;          /* domain name string */
-	AUTH_STR           domain;               /* domain name after mapping */
-	AUTH_STR           internal_username;    /* username after mapping */
-	AUTH_STR           smb_name;        /* username before mapping */
-	AUTH_STR           wksta_name;           /* workstation name (netbios calling name) unicode string */
-	
 };
 
 struct auth_serversupplied_info 
 {
-	BOOL guest;
-	
-	struct dom_sid *user_sid;
+	struct dom_sid *account_sid;
 	struct dom_sid *primary_group_sid;
 
 	size_t n_domain_groups;
 	struct dom_sid **domain_groups;
-	
+
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
 
 	const char *account_name;
-	const char *domain;
-	const char *realm;
+	const char *domain_name;
 
 	const char *full_name;
 	const char *logon_script;
@@ -90,76 +84,53 @@ struct auth_serversupplied_info
 	NTTIME last_password_change;
 	NTTIME allow_password_change;
 	NTTIME force_password_change;
-	
+
 	uint16 logon_count;
 	uint16 bad_password_count;
-	
+
 	uint32 acct_flags;
+
+	BOOL authenticated;
 };
 
 struct auth_session_info {
-	int refcount;
 	struct security_token *security_token;
 	struct auth_serversupplied_info *server_info;
 	DATA_BLOB session_key;
+};
 
-	/* needed to key the schannel credentials */
-	const char *workstation;
+struct auth_method_context;
+
+struct auth_operations {
+	const char *name;
+
+	NTSTATUS (*get_challenge)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, DATA_BLOB *challenge);
+
+	NTSTATUS (*check_password)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx,
+				   const struct auth_usersupplied_info *user_info,
+				   struct auth_serversupplied_info **server_info);
+};
+
+struct auth_method_context {
+	struct auth_method_context *prev, *next;
+	struct auth_context *auth_ctx;
+	const struct auth_operations *ops;
+	int depth;
+	void *private_data;
 };
 
 struct auth_context {
-	DATA_BLOB challenge; 
+	struct {
+		/* Who set this up in the first place? */ 
+		const char *set_by;
 
-	/* Who set this up in the first place? */ 
-	const char *challenge_set_by; 
+		BOOL may_be_modified;
 
-	BOOL challenge_may_be_modified;
-
-	struct auth_methods *challenge_set_method; 
+		DATA_BLOB data; 
+	} challenge;
 
 	/* methods, in the order they should be called */
-	struct auth_methods *auth_method_list;	
-
-	const uint8_t *(*get_ntlm_challenge)(struct auth_context *auth_context);
-	NTSTATUS (*check_ntlm_password)(struct auth_context *auth_context,
-					const struct auth_usersupplied_info *user_info, 
-					TALLOC_CTX *out_mem_ctx, 
-					struct auth_serversupplied_info **server_info);
-	NTSTATUS (*nt_status_squash)(NTSTATUS nt_status);
-};
-
-struct auth_methods
-{
-	struct auth_methods *prev, *next;
-	const char *name; /* What name got this module */
-
-	NTSTATUS (*auth)(const struct auth_context *auth_context,
-			 void *my_private_data, 
-			 TALLOC_CTX *mem_ctx,
-			 const struct auth_usersupplied_info *user_info, 
-			 struct auth_serversupplied_info **server_info);
-
-	DATA_BLOB (*get_chal)(const struct auth_context *auth_context,
-			      void **my_private_data, 
-			      TALLOC_CTX *mem_ctx);
-	
-	/* Used to keep tabs on things like the cli for SMB server authentication */
-	void *private_data;
-	
-	/* Function to clean up the above arbitary structure */
-	void (*free_private_data)(void **private_data);
-
-	/* Function to send a keepalive message on the above structure */
-	void (*send_keepalive)(void **private_data);
-
-};
-
-struct auth_operations {
-	/* the name of the backend */
-	const char *name;
-
-	/* Function to create a member of the authmethods list */
-	NTSTATUS (*init)(struct auth_context *, const char *, struct auth_methods **);
+	struct auth_method_context *methods;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

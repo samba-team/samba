@@ -440,7 +440,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 
 		mux_printf(mux_id, "GL %s\n", grouplist);
-		free_session_info(&session_info);
+		talloc_free(session_info);
 		data_blob_free(&in);
 		return;
 	}
@@ -450,7 +450,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	nt_status = gensec_update(*gensec_state, NULL, in, &out);
 	
 	/* don't leak 'bad password'/'no such user' info to the network client */
-	nt_status = nt_status_squash(nt_status);
+	nt_status = auth_nt_status_squash(nt_status);
 
 	if (out.length) {
 		out_base64 = base64_encode_data_blob(out);
@@ -494,7 +494,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 			reply_code = "AF";
 			reply_arg = talloc_asprintf(*gensec_state, 
-						    "%s%s%s", session_info->server_info->domain, 
+						    "%s%s%s", session_info->server_info->domain_name, 
 						    lp_winbind_separator(), session_info->server_info->account_name);
 			talloc_free(session_info);
 		}

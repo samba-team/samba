@@ -85,6 +85,7 @@ struct smbsrv_tcon;
 struct smb_signing_context;
 struct smbsrv_connection;
 struct auth_context;
+struct auth_method_context;
 struct request_buffer;
 
 struct pvfs_dir;

@@ -4,6 +4,7 @@
    endpoint server for the netlogon pipe
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   Copyright (C) Stefan Metzmacher <metze@samba.org>  2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -496,90 +497,79 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 			creds_des_decrypt(pipe_state->creds, &r->in.logon.password->ntpassword);
 		}
 
-		nt_status = make_auth_context_subsystem(pipe_state, &auth_context);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
+		/* TODO: we need to deny anonymous access here */
+		nt_status = auth_context_create(mem_ctx, lp_auth_methods(), &auth_context);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		chal = auth_context->get_ntlm_challenge(auth_context);
-		nt_status = make_user_info_netlogon_interactive(auth_context, 
-								&user_info,
+		nt_status = auth_get_challenge(auth_context, &chal);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
+
+		nt_status = make_user_info_netlogon_interactive(mem_ctx,
 								r->in.logon.password->identity_info.account_name.string,
 								r->in.logon.password->identity_info.domain_name.string,
 								r->in.logon.password->identity_info.workstation.string,
 								chal,
 								&r->in.logon.password->lmpassword,
-								&r->in.logon.password->ntpassword);
-		break;
-		
+								&r->in.logon.password->ntpassword,
+								&user_info);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
+		break;		
 	case 2:
 	case 6:
-		nt_status = make_auth_context_fixed(pipe_state,
-						    &auth_context, r->in.logon.network->challenge);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
+		/* TODO: we need to deny anonymous access here */
+		nt_status = auth_context_create(mem_ctx, lp_auth_methods(), &auth_context);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
+
+		nt_status = auth_context_set_challenge(auth_context, r->in.logon.network->challenge, "netr_LogonSamLogonWithFlags");
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		nt_status = make_user_info_netlogon_network(auth_context,
-							    &user_info,
 							    r->in.logon.network->identity_info.account_name.string,
 							    r->in.logon.network->identity_info.domain_name.string,
 							    r->in.logon.network->identity_info.workstation.string,
 							    r->in.logon.network->lm.data, r->in.logon.network->lm.length,
-							    r->in.logon.network->nt.data, r->in.logon.network->nt.length);
+							    r->in.logon.network->nt.data, r->in.logon.network->nt.length,
+							    &user_info);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 		break;
 	default:
-		free_auth_context(&auth_context);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
-	nt_status = auth_context->check_ntlm_password(auth_context,
-						      user_info, 
-						      mem_ctx,
-						      &server_info);
-
-	/* keep the auth_context for the life of this call */
-	talloc_steal(dce_call, auth_context);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
+	nt_status = auth_check_password(auth_context, mem_ctx, user_info, &server_info);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	sam = talloc_p(mem_ctx, struct netr_SamBaseInfo);
+	NT_STATUS_HAVE_NO_MEMORY(sam);
 
-	ZERO_STRUCTP(sam);
-	
 	sam->last_logon = server_info->last_logon;
 	sam->last_logoff = server_info->last_logoff;
 	sam->acct_expiry = server_info->acct_expiry;
 	sam->last_password_change = server_info->last_password_change;
 	sam->allow_password_change = server_info->allow_password_change;
 	sam->force_password_change = server_info->force_password_change;
-	
-	sam->account_name.string = talloc_strdup(mem_ctx, server_info->account_name);
-	sam->full_name.string = talloc_strdup(mem_ctx, server_info->full_name);
-	sam->logon_script.string = talloc_strdup(mem_ctx, server_info->logon_script);
-	sam->profile_path.string = talloc_strdup(mem_ctx, server_info->profile_path);
-	sam->home_directory.string = talloc_strdup(mem_ctx, server_info->home_directory);
-	sam->home_drive.string = talloc_strdup(mem_ctx, server_info->home_drive);
-	
+
+	sam->account_name.string = server_info->account_name;
+	sam->full_name.string = server_info->full_name;
+	sam->logon_script.string = server_info->logon_script;
+	sam->profile_path.string = server_info->profile_path;
+	sam->home_directory.string = server_info->home_directory;
+	sam->home_drive.string = server_info->home_drive;
+
 	sam->logon_count = server_info->logon_count;
 	sam->bad_password_count = sam->bad_password_count;
-	sam->rid = server_info->user_sid->sub_auths[server_info->user_sid->num_auths-1];
+	sam->rid = server_info->account_sid->sub_auths[server_info->account_sid->num_auths-1];
 	sam->primary_gid = server_info->primary_group_sid->sub_auths[server_info->primary_group_sid->num_auths-1];
 	sam->group_count = 0;
 	sam->groupids = NULL;
 	sam->user_flags = 0; /* TODO: w2k3 uses 0x120 - what is this? */
 	sam->acct_flags = server_info->acct_flags;	
 	sam->logon_server.string = lp_netbios_name();
-	
-	sam->domain.string = talloc_strdup(mem_ctx, server_info->domain);
-	
-	sam->domain_sid = dom_sid_dup(mem_ctx, server_info->user_sid);
+
+	sam->domain.string = server_info->domain_name;
+
+	sam->domain_sid = dom_sid_dup(mem_ctx, server_info->account_sid);
+	NT_STATUS_HAVE_NO_MEMORY(sam->domain_sid);
 	sam->domain_sid->num_auths--;
 
 	if (server_info->user_session_key.length == sizeof(sam->key.key)) {
@@ -627,6 +617,7 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 	switch (r->in.validation_level) {
 	case 2:
 		sam2 = talloc_p(mem_ctx, struct netr_SamInfo2);
+		NT_STATUS_HAVE_NO_MEMORY(sam2);
 		ZERO_STRUCTP(sam2);
 		sam2->base = *sam;
 		r->out.validation.sam2 = sam2;
@@ -634,6 +625,7 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 
 	case 3:
 		sam3 = talloc_p(mem_ctx, struct netr_SamInfo3);
+		NT_STATUS_HAVE_NO_MEMORY(sam3);
 		ZERO_STRUCTP(sam3);
 		sam3->base = *sam;
 		r->out.validation.sam3 = sam3;
@@ -641,6 +633,7 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 
 	case 6:
 		sam6 = talloc_p(mem_ctx, struct netr_SamInfo6);
+		NT_STATUS_HAVE_NO_MEMORY(sam6);
 		ZERO_STRUCTP(sam6);
 		sam6->base = *sam;
 		sam6->forest.string = lp_realm();
