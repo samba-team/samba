@@ -1255,7 +1255,7 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 /****************************************************************************
 issue a single SMBwrite and don't wait for a reply
 ****************************************************************************/
-static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, char *buf,
+static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint16 mode, char *buf,
 			    size_t size, int i)
 {
 	char *p;
@@ -1272,6 +1272,8 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, char 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 	SIVAL(cli->outbuf,smb_vwv3,offset);
+	SIVAL(cli->outbuf,smb_vwv5,IS_BITS_SET_ALL(mode, 0x0008) ? 0xFFFFFFFF : 0);
+	SSVAL(cli->outbuf,smb_vwv7,mode);
 	
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	SSVAL(cli->outbuf,smb_vwv11,
@@ -1282,13 +1284,20 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, char 
 
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 	
+	show_msg(cli->outbuf);
 	send_smb(cli->fd,cli->outbuf);
 }
 
 /****************************************************************************
   write to a file
+  write_mode: 0x0001 disallow write cacheing
+              0x0002 return bytes remaining
+              0x0004 use raw named pipe protocol
+              0x0008 start of message mode named pipe protocol
 ****************************************************************************/
-size_t cli_write(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
+size_t cli_write(struct cli_state *cli,
+				int fnum, uint16 write_mode,
+				char *buf, off_t offset, size_t size)
 {
 	int total = -1;
 	int issued=0;
@@ -1305,7 +1314,9 @@ size_t cli_write(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 
 		while (issued - received < mpx && issued < blocks) {
 			int size1 = MIN(block, size-issued*block);
-			cli_issue_write(cli, fnum, offset+issued*block, buf + issued*block,
+			cli_issue_write(cli, fnum, offset+issued*block,
+			                write_mode,
+			                buf + issued*block,
 					size1, issued);
 			issued++;
 		}
@@ -2226,9 +2237,12 @@ initialise a client structure
 BOOL cli_initialise(struct cli_state *cli)
 {
 	if (cli->initialised)
-      cli_shutdown(cli);
+	{
+		cli_shutdown(cli);
+	}
 
 	memset(cli, 0, sizeof(*cli));
+
 	cli->fd = -1;
 	cli->cnum = -1;
 	cli->pid = (uint16)getpid();
@@ -2241,8 +2255,12 @@ BOOL cli_initialise(struct cli_state *cli)
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
 	if (!cli->outbuf || !cli->inbuf)
-      return False;
+	{
+		return False;
+	}
+
 	cli->initialised = 1;
+
 	return True;
 }
 
@@ -2252,9 +2270,13 @@ shutdown a client structure
 void cli_shutdown(struct cli_state *cli)
 {
 	if (cli->outbuf)
-      free(cli->outbuf);
+	{
+		free(cli->outbuf);
+	}
 	if (cli->inbuf)
-      free(cli->inbuf);
+	{
+		free(cli->inbuf);
+	}
 #ifdef WITH_SSL
     if (cli->fd != -1)
       sslutil_disconnect(cli->fd);
@@ -2454,7 +2476,9 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		{
 			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown)
-              cli_shutdown(cli);
+			{
+				cli_shutdown(cli);
+			}
 			return False;
 		}
 		if (do_tcon)
@@ -2464,7 +2488,9 @@ BOOL cli_establish_connection(struct cli_state *cli,
 			{
 				DEBUG(1,("failed tcon_X\n"));
 				if (do_shutdown)
-                  cli_shutdown(cli);
+				{
+					cli_shutdown(cli);
+				}
 				return False;
 			}
 		}

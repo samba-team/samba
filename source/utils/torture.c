@@ -165,12 +165,12 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 			break;
 		}
 
-		if (cli_write(c, fnum, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
+		if (cli_write(c, fnum, 0, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
 			printf("write failed (%s)\n", cli_errstr(c));
 		}
 
 		for (j=0;j<50;j++) {
-			if (cli_write(c, fnum, (char *)buf, 
+			if (cli_write(c, fnum, 0, (char *)buf, 
 				      sizeof(pid)+(j*sizeof(buf)), 
 				      sizeof(buf)) != sizeof(buf)) {
 				printf("write failed (%s)\n", cli_errstr(c));
@@ -818,7 +818,7 @@ static void run_trans2test(void)
 
 	fnum = cli_open(&cli, fname2, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
-	cli_write(&cli, fnum,  (char *)&fnum, 0, sizeof(fnum));
+	cli_write(&cli, fnum,  0, (char *)&fnum, 0, sizeof(fnum));
 	cli_close(&cli, fnum);
 	if (!cli_qpathinfo2(&cli, "\\trans2\\", &c_time, &a_time, &m_time2, 
 			    &w_time, &size, NULL)) {

@@ -211,14 +211,16 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 		 BOOLSTR(p->open),
 		 pos, n));
 
-	if (!p || !p->open) {
+	if (!p || !p->open)
+	{
 		DEBUG(6,("pipe not open\n"));
 		return -1;		
 	}
 
 
 	if (p->rhdr.data == NULL || p->rhdr.data->data == NULL ||
-	    p->rhdr.data->data_used == 0) {
+	    p->rhdr.data->data_used == 0)
+	{
 		return 0;
 	}
 
@@ -237,18 +239,21 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	DEBUG(6,("read_pipe: len: %d num: %d n: %d\n", len, num, n));
 	
 	if (num > n) num = n;
-	if (num <= 0) {
+	if (num <= 0)
+	{
 		DEBUG(5,("read_pipe: 0 or -ve data length\n"));
 		return 0;
 	}
 
-	if (!IS_BITS_SET_ALL(p->hdr.flags, RPC_FLG_LAST)) {
+	if (!IS_BITS_SET_ALL(p->hdr.flags, RPC_FLG_LAST))
+	{
 		/* intermediate fragment - possibility of another header */
 		
 		DEBUG(5,("read_pipe: frag_len: %d data_pos: %d data_hdr_pos: %d\n",
 			 p->hdr.frag_len, data_pos, data_hdr_pos));
 		
-		if (data_hdr_pos == p->next_frag_start)	{
+		if (data_hdr_pos == p->next_frag_start)
+		{
 			DEBUG(6,("read_pipe: next fragment header\n"));
 
 			/* this is subtracted from the total data bytes, later */
@@ -263,10 +268,10 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 			p->next_frag_start += p->hdr.frag_len;
 			p->hdr_offsets += 0x18;
 		}			
-		
 	}
 	
-	if (num < hdr_num) {
+	if (num < hdr_num)
+	{
 		DEBUG(5,("read_pipe: warning - data read only part of a header\n"));
 	}
 
@@ -277,12 +282,15 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	data_pos += num;
 	data_hdr_pos += num;
 	
-	if (hdr_num == 0x18 && num == 0x18) {
+	if (hdr_num == 0x18 && num == 0x18)
+	{
 		DEBUG(6,("read_pipe: just header read\n"));
 
 		/* advance to the next fragment */
 		p->frag_len_left -= 0x18; 
-	} else if (data_hdr_pos == p->next_frag_start) {
+	}
+	else if (data_hdr_pos == p->next_frag_start)
+	{
 		DEBUG(6,("read_pipe: next fragment expected\n"));
 	}
 

@@ -313,16 +313,19 @@ static BOOL mem_find(struct mem_buf **buf, uint32 offset)
 
 	while (f != NULL && offset >= f->offset.end)
 	{
-		f = f->next;
-
 		DEBUG(200,("mem_find: next[%d..%d]\n",
-	      f->offset.start, f->offset.end));
+	      		f->offset.start, f->offset.end));
+
+		f = f->next;
 	}
 
 	(*buf) = f;
 
-	DEBUG(200,("mem_find: found data[%d..%d]\n",
-	      (*buf)->offset.start,(*buf)->offset.end));
+	if (f != NULL)
+	{
+		DEBUG(200,("mem_find: found data[%d..%d]\n",
+		      (*buf)->offset.start,(*buf)->offset.end));
+	}
 
 	return f != NULL;
 }

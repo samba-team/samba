@@ -72,54 +72,59 @@ struct pwd_info
 };
 
 struct cli_state {
-  int fd;
-  uint16 cnum;
-  uint16 pid;
-  uint16 mid;
-  uint16 vuid;
-  int protocol;
-  int sec_mode;
-  int rap_error;
-  int privilages;
+	int fd;
+	uint16 cnum;
+	uint16 pid;
+	uint16 mid;
+	uint16 vuid;
+	int protocol;
+	int sec_mode;
+	int rap_error;
+	int privilages;
 
-  fstring eff_name;
-  fstring desthost;
-  fstring user_name;
-  fstring domain;
+	fstring eff_name;
+	fstring desthost;
+	fstring user_name;
+	fstring domain;
 
-  fstring share;
-  fstring dev;
-  struct nmb_name called;
-  struct nmb_name calling;
-  fstring full_dest_host_name;
-  struct in_addr dest_ip;
+	fstring share;
+	fstring dev;
+	struct nmb_name called;
+	struct nmb_name calling;
+	fstring full_dest_host_name;
+	struct in_addr dest_ip;
 
-  struct pwd_info pwd;
-  unsigned char cryptkey[8];
-  uint32 sesskey;
-  int serverzone;
-  uint32 servertime;
-  int readbraw_supported;
-  int writebraw_supported;
-  int timeout;
-  int max_xmit;
-  int max_mux;
-  char *outbuf;
-  char *inbuf;
-  int bufsize;
-  int initialised;
-  int win95;
-  uint32 capabilities;
-  /*
-   * Only used in NT domain calls.
-   */
-  uint32 nt_error;                   /* NT RPC error code. */
-  uint16 nt_pipe_fnum;               /* Pipe handle. */
-  unsigned char sess_key[16];        /* Current session key. */
-  DOM_CRED clnt_cred;                /* Client credential. */
-  fstring mach_acct;                 /* MYNAME$. */
-  fstring srv_name_slash;            /* \\remote server. */
-  fstring clnt_name_slash;            /* \\local client. */
+	struct pwd_info pwd;
+	unsigned char cryptkey[8];
+	uint32 sesskey;
+	int serverzone;
+	uint32 servertime;
+	int readbraw_supported;
+	int writebraw_supported;
+	int timeout;
+	int max_xmit;
+	int max_mux;
+	char *outbuf;
+	char *inbuf;
+	int bufsize;
+	int initialised;
+	int win95;
+	uint32 capabilities;
+
+	/*
+	 * Only used in NT domain calls.
+	 */
+
+	uint32 nt_error;                   /* NT RPC error code. */
+	uint16 nt_pipe_fnum;               /* Pipe handle. */
+	unsigned char sess_key[16];        /* Current session key. */
+	unsigned char ntlmssp_hash[256];   /* ntlmssp data. */
+	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */
+	uint32 ntlmssp_srv_flgs;           /* ntlmssp server flags */
+	DOM_CRED clnt_cred;                /* Client credential. */
+	fstring mach_acct;                 /* MYNAME$. */
+	fstring srv_name_slash;            /* \\remote server. */
+	fstring clnt_name_slash;           /* \\local client. */
 };
 
 #endif /* _CLIENT_H */

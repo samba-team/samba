@@ -168,8 +168,14 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 void pwd_get_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 {
 	pwd_deobfuscate(pwd);
-	memcpy(lm_pwd, pwd->smb_lm_pwd, 16);
-	memcpy(nt_pwd, pwd->smb_nt_pwd, 16);
+	if (lm_pwd != NULL)
+	{
+		memcpy(lm_pwd, pwd->smb_lm_pwd, 16);
+	}
+	if (nt_pwd != NULL)
+	{
+		memcpy(nt_pwd, pwd->smb_nt_pwd, 16);
+	}
 	pwd_obfuscate(pwd);
 }
 
@@ -229,7 +235,13 @@ void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8])
 void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24], uchar nt_owf[24])
 {
 	pwd_deobfuscate(pwd);
-	memcpy(lm_owf, pwd->smb_lm_owf, 24);
-	memcpy(nt_owf, pwd->smb_nt_owf, 24);
+	if (lm_owf != NULL)
+	{
+		memcpy(lm_owf, pwd->smb_lm_owf, 24);
+	}
+	if (nt_owf != NULL)
+	{
+		memcpy(nt_owf, pwd->smb_nt_owf, 24);
+	}
 	pwd_obfuscate(pwd);
 }
