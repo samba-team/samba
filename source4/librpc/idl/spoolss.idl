@@ -243,6 +243,7 @@
 		[case(7)] spoolss_PrinterInfo7 info7;
 		[case(8)] spoolss_DeviceModeInfo info8;
 		[case(9)] spoolss_DeviceModeInfo info9;
+		[default];
 	} spoolss_PrinterInfo;
 
 	/******************/
@@ -315,6 +316,7 @@
 
 	typedef [nodiscriminant,public] union {
 		[case(1)] spoolss_JobInfo1 info1;
+		[default];
 	} spoolss_JobInfo;
 
 	/******************/
@@ -463,6 +465,7 @@
 		[case(4)] spoolss_DriverInfo4 info4;
 		[case(5)] spoolss_DriverInfo5 info5;
 		[case(6)] spoolss_DriverInfo6 info6;
+		[default];
 	} spoolss_DriverInfo;
 
 	/******************/
@@ -504,7 +507,25 @@
 
 	/******************/
 	/* Function: 0x0f */
-	WERROR spoolss_EnumPrintProcessors(
+	typedef struct {
+		[relative] nstring *print_processor_name;
+	} spoolss_PrintProcessorInfo1;
+
+	typedef [nodiscriminant,public] union {
+		[case(1)] spoolss_PrintProcessorInfo1 info1;
+		[default];
+	} spoolss_PrintProcessorInfo;
+
+	[noprint,nopull,nopush] WERROR spoolss_EnumPrintProcessors(
+		[in] unistr *servername,
+		[in] unistr *environment,
+		[in] uint32 level,
+		[in] DATA_BLOB *buffer,
+		/* [out,subcontext(4),switch_is(level)] spoolss_PrintProcessorInfo *info[count],*/
+		[out,subcontext(4),switch_is(level)]  spoolss_PrintProcessorInfo **info,
+		/* [out,subcontext(4),flag(NDR_REMAINING)] DATA_BLOB *info,*/
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
 	);
 
 	/******************/
@@ -668,6 +689,7 @@
 
 	typedef [nodiscriminant,public] union {
 		[case(1)] spoolss_FormInfo1 info1;
+		[default];
 	} spoolss_FormInfo;
 
 	/******************/
@@ -704,6 +726,7 @@
 	typedef [nodiscriminant,public] union {
 		[case(1)] spoolss_PortInfo1 info1;
 		[case(2)] spoolss_PortInfo2 info2;
+		[default];
 	} spoolss_PortInfo;
 
 	/******************/
@@ -720,7 +743,31 @@
 
 	/******************/
 	/* Function: 0x24 */
-	WERROR spoolss_EnumMonitors(
+	typedef struct {
+		[relative] nstring *monitor_name;
+	} spoolss_MonitorInfo1;
+
+	typedef struct {
+		[relative] nstring *monitor_name;
+		[relative] nstring *environment;
+		[relative] nstring *dll_name;
+	} spoolss_MonitorInfo2;
+
+	typedef [nodiscriminant,public] union {
+		[case(1)] spoolss_MonitorInfo1 info1;
+		[case(2)] spoolss_MonitorInfo2 info2;
+		[default];
+	} spoolss_MonitorInfo;
+
+	[noprint,nopull,nopush] WERROR spoolss_EnumMonitors(
+		[in] unistr *servername,
+		[in] uint32 level,
+		[in] DATA_BLOB *buffer,
+		/* [out,subcontext(4),switch_is(level)] spoolss_MonitorInfo *info[count], */
+		[out,subcontext(4),switch_is(level)] spoolss_MonitorInfo **info,
+		/* [out,subcontext(4),flag(NDR_REMAINING)] DATA_BLOB *info,*/
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
 	);
 
 	/******************/

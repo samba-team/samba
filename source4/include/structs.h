@@ -28,6 +28,8 @@ struct spoolss_EnumForms;
 struct spoolss_EnumJobs;
 struct spoolss_EnumPrinterDrivers;
 struct spoolss_EnumPorts;
+struct spoolss_EnumMonitors;
+struct spoolss_EnumPrintProcessors;
 
 struct drsuapi_DsReplicaObjectListItem;
 struct drsuapi_DsReplicaObjectListItemEx;
