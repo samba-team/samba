@@ -35,58 +35,6 @@
 #define UNIX_TYPE_UNKNOWN 0xFFFFFFFF
 
 
-/*
- Return the major devicenumber for UNIX extensions.
-*/
-static uint32_t unix_dev_major(dev_t dev)
-{
-#if defined(HAVE_DEVICE_MAJOR_FN)
-	return (uint32)major(dev);
-#else
-	return (uint32)(dev >> 8);
-#endif
-}
-
-/*
- Return the minor devicenumber for UNIX extensions.
-*/
-static uint32_t unix_dev_minor(dev_t dev)
-{
-#if defined(HAVE_DEVICE_MINOR_FN)
-	return (uint32)minor(dev);
-#else
-	return (uint32)(dev & 0xff);
-#endif
-}
-
-/*
- Return the filetype for UNIX extensions
-*/
-static uint32_t unix_filetype(mode_t mode)
-{
-	if (S_ISREG(mode)) return UNIX_TYPE_FILE;
-	if (S_ISDIR(mode)) return UNIX_TYPE_DIR;
-#ifdef S_ISLNK
-	if (S_ISLNK(mode)) return UNIX_TYPE_SYMLINK;
-#endif
-#ifdef S_ISCHR
-	if (S_ISCHR(mode)) return UNIX_TYPE_CHARDEV;
-#endif
-#ifdef S_ISBLK
-	if (S_ISBLK(mode)) return UNIX_TYPE_BLKDEV;
-#endif
-#ifdef S_ISFIFO
-	if (S_ISFIFO(mode)) return UNIX_TYPE_FIFO;
-#endif
-#ifdef S_ISSOCK
-	if (S_ISSOCK(mode)) return UNIX_TYPE_SOCKET;
-#endif
-
-	DEBUG(0,("unix_filetype: unknown filetype %u", (unsigned)mode));
-	return UNIX_TYPE_UNKNOWN;
-}
-
-
 /****************************************************************************
  Change a unix mode to a dos mode.
 ****************************************************************************/
@@ -152,4 +100,38 @@ NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name)
 	name->dos.file_id = (((uint64_t)name->st.st_dev)<<32) | name->st.st_ino;
 
 	return NT_STATUS_OK;
+}
+
+
+/*
+  return a set of unix file permissions for a new file or directory
+*/
+mode_t pvfs_fileperms(struct pvfs_state *pvfs, uint32 attrib)
+{
+	mode_t mode = S_IRUSR | S_IRGRP | S_IROTH;
+
+	if (attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		mode |= S_IXUSR | S_IXGRP | S_IXOTH;
+	}
+
+	if (!(attrib & FILE_ATTRIBUTE_READONLY)) {
+		mode |= S_IWUSR;
+	}
+
+	if ((attrib & FILE_ATTRIBUTE_ARCHIVE) &&
+	    (pvfs->flags & PVFS_FLAG_MAP_ARCHIVE)) {
+		mode |= S_IXUSR;
+	}
+
+	if ((attrib & FILE_ATTRIBUTE_SYSTEM) &&
+	    (pvfs->flags & PVFS_FLAG_MAP_SYSTEM)) {
+		mode |= S_IXGRP;
+	}
+
+	if ((attrib & FILE_ATTRIBUTE_HIDDEN) &&
+	    (pvfs->flags & PVFS_FLAG_MAP_HIDDEN)) {
+		mode |= S_IXOTH;
+	}
+
+	return mode;
 }

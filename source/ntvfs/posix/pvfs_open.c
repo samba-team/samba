@@ -150,7 +150,9 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	talloc_set_destructor(f, pvfs_dir_fd_destructor);
 
 	if (!name->exists) {
-		if (mkdir(name->full_name, 0755) == -1) {
+		uint32_t attrib = io->generic.in.file_attr | FILE_ATTRIBUTE_DIRECTORY;
+		mode_t mode = pvfs_fileperms(pvfs, attrib);
+		if (mkdir(name->full_name, mode) == -1) {
 			return pvfs_map_errno(pvfs,errno);
 		}
 		status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname,
@@ -287,7 +289,17 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
 	}
 
-	flags = O_RDWR;
+	switch (access_mask & (SA_RIGHT_FILE_READ_DATA | SA_RIGHT_FILE_WRITE_DATA)) {
+	case SA_RIGHT_FILE_READ_DATA:
+		flags = O_RDONLY;
+		break;
+	case SA_RIGHT_FILE_WRITE_DATA:
+		flags = O_WRONLY;
+		break;
+	case SA_RIGHT_FILE_WRITE_DATA|SA_RIGHT_FILE_READ_DATA:
+		flags = O_RDWR;
+		break;
+	}
 
 	f = talloc_p(req, struct pvfs_file);
 	if (f == NULL) {
@@ -299,11 +311,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
-	if (io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) {
-		mode = 0444;
-	} else {
-		mode = 0644;
-	}
+	mode = pvfs_fileperms(pvfs, io->ntcreatex.in.file_attr);
 
 	/* create the file */
 	fd = open(name->full_name, flags | O_CREAT | O_EXCL, mode);
@@ -434,7 +442,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	access_mask    = io->generic.in.access_mask;
 
 	if (access_mask & SEC_RIGHT_MAXIMUM_ALLOWED) {
-		if (name->dos.attrib & FILE_ATTRIBUTE_READONLY) {
+		if (name->exists && (name->dos.attrib & FILE_ATTRIBUTE_READONLY)) {
 			access_mask = GENERIC_RIGHTS_FILE_READ;
 		} else {
 			access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
@@ -488,7 +496,17 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	flags |= O_RDWR;
+	switch (access_mask & (SA_RIGHT_FILE_READ_DATA | SA_RIGHT_FILE_WRITE_DATA)) {
+	case SA_RIGHT_FILE_READ_DATA:
+		flags |= O_RDONLY;
+		break;
+	case SA_RIGHT_FILE_WRITE_DATA:
+		flags |= O_WRONLY;
+		break;
+	case SA_RIGHT_FILE_WRITE_DATA|SA_RIGHT_FILE_READ_DATA:
+		flags |= O_RDWR;
+		break;
+	}
 
 	/* handle creating a new file separately */
 	if (!name->exists) {
