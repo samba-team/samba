@@ -962,11 +962,53 @@ int nt_delete_reg_key(REG_KEY *key, int delete_name)
 }
 
 /*
+ * Convert a string to a value ...
+ * FIXME: Error handling and convert this at command parse time ... 
+ */
+void *str_to_val(int type, char *val, int *len)
+{
+  unsigned int *dwordp = NULL;
+
+  if (!len || !val) return NULL;
+
+  switch (type) {
+  case REG_TYPE_REGSZ:
+    *len = strlen(val);
+    return (void *)val;
+
+  case REG_TYPE_DWORD:
+    dwordp = (unsigned int *)malloc(sizeof(unsigned int));
+    if (!dwordp) return NULL;
+    /* Allow for ddddd and 0xhhhhh and 0ooooo */
+    if (strncmp(val, "0x", 2) == 0 || strncmp(val, "0X", 2) == 0) {
+      sscanf(val, "0[xX]%X", dwordp);
+    }
+    else if (*val == '0') {
+      sscanf(val, "0%o", dwordp);
+    }
+    else { 
+      sscanf(val, "%d", dwordp);
+    }
+    *len = sizeof(unsigned int);
+    return (void *)dwordp;
+
+    /* FIXME: Implement more of these */
+
+  default:
+    return NULL;
+    break;
+  }
+
+  return NULL;
+}
+
+/*
  * Add a value to the key specified ... We have to parse the value some more
  * based on the type to get it in the correct internal form
- * An empty name will be converted to "<No Name>" before here 
+ * An empty name will be converted to "<No Name>" before here
+ * Hmmm, maybe not. has_name is for that
  */
-REG_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
+VAL_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
 {
   int i;
   VAL_KEY *tmp = NULL;
@@ -977,8 +1019,10 @@ REG_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
 
   for (i = 0; i < key->values->val_count; i++) {
     if (strcmp(name, key->values->vals[i]->name) == 0){ /* Change the value */
-
-
+      free(key->values->vals[i]->data_blk);
+      key->values->vals[i]->data_blk = str_to_val(type, value, &
+						  key->values->vals[i]->data_len);
+      return key->values->vals[i];
     }
   }
 
@@ -991,8 +1035,30 @@ REG_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
 
   bzero(tmp, sizeof(VAL_KEY));
   tmp->name = strdup(name);
+  tmp->has_name = True;
   if (!tmp->name) goto error;
   tmp->data_type = type;
+  tmp->data_blk = str_to_val(type, value, &tmp->data_len);
+
+  /* Now, add to val list */
+
+  if (key->values->val_count >= key->values->max_vals) {
+    /*
+     * Allocate some more space 
+     */
+
+    if ((key->values = (VAL_LIST *)realloc(key->values, sizeof(VAL_LIST) + 
+					   key->values->val_count - 1 +
+					   REG_KEY_LIST_SIZE))) {
+      key->values->max_vals += REG_KEY_LIST_SIZE;
+    }
+    else goto error;
+  }
+
+  i = key->values->val_count;
+  key->values->val_count++;
+  key->values->vals[i] = tmp;
+  return tmp;
 
  error:
   if (tmp) nt_delete_val_key(tmp);
@@ -1000,7 +1066,7 @@ REG_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
 }
 
 /*
- * Delete a value. We return the value and let the caller deal witj it. 
+ * Delete a value. We return the value and let the caller deal with it. 
  */
 VAL_KEY *nt_delete_reg_value(REG_KEY *key, char *name)
 {
@@ -1008,8 +1074,11 @@ VAL_KEY *nt_delete_reg_value(REG_KEY *key, char *name)
 
   if (!key || !key->values || !name || !*name) return NULL;
 
+  /* FIXME: Allow empty value name */
   for (i = 0; i< key->values->val_count; i++) {
-    if (strcmp(name, key->values->vals[i]->name) == 0) {
+    if ((!key->values->vals[i]->has_name && !*name) || 
+	(key->values->vals[i]->has_name &&
+	 strcmp(name, key->values->vals[i]->name) == 0)) {
       VAL_KEY *val;
 
       val = key->values->vals[i];
@@ -2269,6 +2338,15 @@ typedef struct cmd_line {
   char *line;
 } CMD_LINE;
 
+void free_val_spec_list(VAL_SPEC_LIST *vl)
+{
+  if (!vl) return;
+  if (vl->name) free(vl->name);
+  if (vl->val) free(vl->val);
+  free(vl);
+
+}
+
 /* 
  * Some routines to handle lines of info in the command files
  */
@@ -2505,13 +2583,15 @@ char *parse_value(struct cmd_line *cl, int *vtype, char **val)
   while (*tstr == ' ') tstr++; /* Skip leading white space */
   p2 = strchr(p2, ':');
 
-  if (!p2) goto error;
-
-  *p2 = 0; p2++; /* split on the : */
+  if (p2) {
+    *p2 = 0; p2++; /* split on the : */
+  }
 
   *vtype = parse_value_type(tstr);
 
   if (!vtype) goto error;
+
+  if (!p2 || !*p2) return nstr;
 
   /* Now, parse the value string. It should return a newly malloc'd string */
   
@@ -2736,6 +2816,7 @@ CMD *regedit4_get_cmd(int fd)
 	vl = (struct val_spec_list *)malloc(sizeof(struct val_spec_list));
 	if (!vl) goto error;
 	vl->next = NULL;
+	vl->val = NULL;
 	vl->name = parse_value(cl, &vl->type, &vl->val);
 	if (!vl->name) goto error;
 	if (cmd->val_spec_list == NULL) {
@@ -3183,6 +3264,20 @@ int main(int argc, char *argv[])
 	}
 
 	while (cmd->val_count) {
+	  VAL_SPEC_LIST *val = cmd->val_spec_list;
+	  VAL_KEY *reg_val = NULL;
+	  
+	  if (val->type == REG_TYPE_DELETE) {
+	    reg_val = nt_delete_reg_value(tmp, val -> name);
+	    if (reg_val) nt_delete_val_key(reg_val);
+	  }
+	  else {
+	    reg_val = nt_add_reg_value(tmp, reg_val->name, val->type, 
+				       val->val);
+	  }
+
+	  cmd->val_spec_list = val->next;
+	  free_val_spec_list(val);
 	  cmd->val_count--;
 	}
 
