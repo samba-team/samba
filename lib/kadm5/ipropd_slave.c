@@ -226,6 +226,7 @@ static void
 send_im_here (krb5_context context, int fd,
 	      krb5_auth_context auth_context)
 {
+    krb5_storage *sp;
     krb5_data data;
     int ret;
 
@@ -233,7 +234,11 @@ send_im_here (krb5_context context, int fd,
     if (ret)
 	krb5_err (context, 1, ret, "send_im_here");
 
-    _krb5_put_int(data.data, I_AM_HERE, 4);
+    sp = krb5_storage_from_data (&data);
+    if (sp == NULL)
+	krb5_errx (context, 1, "krb5_storage_from_data");
+    krb5_store_int32(sp, I_AM_HERE);
+    krb5_storage_free(sp);
 
     ret = krb5_write_priv_message(context, auth_context, &fd, &data);
     krb5_data_free(&data);
@@ -251,7 +256,7 @@ receive_everything (krb5_context context, int fd,
     krb5_data data;
     int32_t vno;
     int32_t opcode;
-    unsigned long tmp;
+    krb5_storage *sp;
 
     char *dbname;
     HDB *mydb;
@@ -274,19 +279,22 @@ receive_everything (krb5_context context, int fd,
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
 
+    sp = NULL;
     do {
-	krb5_storage *sp;
-
 	ret = krb5_read_priv_message(context, auth_context, &fd, &data);
 
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_read_priv_message");
 
 	sp = krb5_storage_from_data (&data);
+	if (sp == NULL)
+	    krb5_errx (context, 1, "krb5_storage_from_data");
 	krb5_ret_int32 (sp, &opcode);
 	if (opcode == ONE_PRINC) {
 	    krb5_data fake_data;
 	    hdb_entry entry;
+
+	    krb5_storage_free(sp);
 
 	    fake_data.data   = (char *)data.data + 4;
 	    fake_data.length = data.length - 4;
@@ -302,14 +310,17 @@ receive_everything (krb5_context context, int fd,
 
 	    hdb_free_entry (context, &entry);
 	    krb5_data_free (&data);
-	}
+	} else if (opcode == NOW_YOU_HAVE)
+	    ;
+	else
+	    krb5_errx (context, 1, "strange opcode %d", opcode);
     } while (opcode == ONE_PRINC);
 
     if (opcode != NOW_YOU_HAVE)
 	krb5_errx (context, 1, "receive_everything: strange %d", opcode);
 
-    _krb5_get_int ((char *)data.data + 4, &tmp, 4);
-    vno = tmp;
+    krb5_ret_int32 (sp, &vno);
+    krb5_storage_free(sp);
 
     ret = kadm5_log_reinit (server_context);
     if (ret)

@@ -264,6 +264,7 @@ static int
 prop_one (krb5_context context, HDB *db, hdb_entry *entry, void *v)
 {
     krb5_error_code ret;
+    krb5_storage *sp;
     krb5_data data;
     struct slave *slave = (struct slave *)v;
 
@@ -276,7 +277,14 @@ prop_one (krb5_context context, HDB *db, hdb_entry *entry, void *v)
 	return ret;
     }
     memmove ((char *)data.data + 4, data.data, data.length - 4);
-    _krb5_put_int (data.data, ONE_PRINC, 4);
+    sp = krb5_storage_from_data(&data);
+    if (sp == NULL) {
+	krb5_data_free (&data);
+	return ENOMEM;
+    }
+    krb5_storage_seek(sp, data.length - 4, SEEK_SET);
+    krb5_store_int32(sp, ONE_PRINC);
+    krb5_storage_free(sp);
 
     ret = krb5_write_priv_message (context, slave->ac, &slave->fd, &data);
     krb5_data_free (&data);
@@ -288,6 +296,7 @@ send_complete (krb5_context context, slave *s,
 	       const char *database, u_int32_t current_version)
 {
     krb5_error_code ret;
+    krb5_storage *sp;
     HDB *db;
     krb5_data data;
     char buf[8];
@@ -299,7 +308,11 @@ send_complete (krb5_context context, slave *s,
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
 
-    _krb5_put_int(buf, TELL_YOU_EVERYTHING, 4);
+    sp = krb5_storage_from_mem (buf, 4);
+    if (sp == NULL)
+	krb5_errx (context, 1, "krb5_storage_from_mem");
+    krb5_store_int32 (sp, TELL_YOU_EVERYTHING);
+    krb5_storage_free (sp);
 
     data.data   = buf;
     data.length = 4;
@@ -322,8 +335,13 @@ send_complete (krb5_context context, slave *s,
     (*db->hdb_close)(context, db);
     (*db->hdb_destroy)(context, db);
 
-    _krb5_put_int (buf, NOW_YOU_HAVE, 4);
-    _krb5_put_int (buf + 4, current_version, 4);
+    sp = krb5_storage_from_mem (buf, 8);
+    if (sp == NULL)
+	krb5_errx (context, 1, "krb5_storage_from_mem");
+    krb5_store_int32 (sp, NOW_YOU_HAVE);
+    krb5_store_int32 (sp, current_version);
+    krb5_storage_free (sp);
+
     data.length = 8;
 
     s->version = current_version;
@@ -343,22 +361,27 @@ send_complete (krb5_context context, slave *s,
 static int
 send_are_you_there (krb5_context context, slave *s)
 {
+    krb5_storage *sp;
     krb5_data data;
+    char buf[4];
     int ret;
 
     if (s->flags & SLAVE_F_DEAD)
 	return 0;
 
-    ret = krb5_data_alloc (&data, 4);
-    if (ret) {
-	krb5_warn (context, ret, "are_you_there: krb5_data_alloc");
+    data.data = buf;
+    data.length = 4;
+
+    sp = krb5_storage_from_mem (buf, 4);
+    if (sp == NULL) {
+	krb5_warnx (context, "are_you_there: krb5_data_alloc");
 	slave_dead(s);
 	return 1;
     }
-    _krb5_put_int(data.data, ARE_YOU_THERE, 4);
-    
+    krb5_store_int32 (sp, ARE_YOU_THERE);
+    krb5_storage_free (sp);
+
     ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
-    krb5_data_free(&data);
 
     if (ret) {
 	krb5_warn (context, ret, "are_you_there: krb5_write_priv_message");
@@ -410,7 +433,14 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     krb5_storage_read (sp, (char *)data.data + 4, data.length - 4);
     krb5_storage_free(sp);
 
-    _krb5_put_int(data.data, FOR_YOU, 4);
+    sp = krb5_storage_from_data (&data);
+    if (sp == NULL) {
+	krb5_warnx (context, "send_diffs: krb5_storage_from_data");
+	slave_dead(s);
+	return 1;
+    }
+    krb5_store_int32 (sp, FOR_YOU);
+    krb5_storage_free(sp);
 
     ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
     krb5_data_free(&data);
