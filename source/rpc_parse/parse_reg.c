@@ -768,8 +768,8 @@ void make_reg_r_info(REG_R_INFO *r_r,
 				uint32 level, char *os_type,
 				uint32 status)
 {
-	uint8 buf[512];
-	int len = struni2((uint16*)buf, os_type);
+	char buf[512];
+	int len = struni2(buf, os_type);
 
 	r_r->ptr1 = 1;
 	r_r->level = level;

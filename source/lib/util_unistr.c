@@ -56,7 +56,7 @@ Return a ascii version of a unicode string
 Hack alert: uses fixed buffer(s) and only handles ascii strings
 ********************************************************************/
 #define MAXUNI 1024
-char *unistrn2(uint16 *buf, int len)
+char *unistrn2(char *buf, int len)
 {
 	static char lbufs[8][MAXUNI];
 	static int nexti;
@@ -65,9 +65,9 @@ char *unistrn2(uint16 *buf, int len)
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *buf && p-lbuf < MAXUNI-2 && len > 0; len--, p++, buf++)
+	for (p = lbuf; *buf && p-lbuf < MAXUNI-2 && len > 0; len--, p++, buf+=2)
 	{
-		*p = *buf;
+		SSVAL(p, 0, *buf);
 	}
 
 	*p = 0;
@@ -189,7 +189,7 @@ return number of unicode chars copied, excluding the null character.
 only handles ascii strings
 ********************************************************************/
 #define MAXUNI 1024
-int struni2(uint16 *p, const char *buf)
+int struni2(char *p, const char *buf)
 {
 	int len = 0;
 
@@ -197,9 +197,9 @@ int struni2(uint16 *p, const char *buf)
 
 	if (buf != NULL)
 	{
-		for (; *buf && len < MAXUNI-2; len++, p++, buf++)
+		for (; *buf && len < MAXUNI-2; len++, p += 2, buf++)
 		{
-			*p = *buf;
+			SSVAL(p, 0, *buf);
 		}
 	}
 
