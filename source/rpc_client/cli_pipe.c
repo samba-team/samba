@@ -971,9 +971,6 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, char *pipe_name, RPC_IFACE *
 	int i = 0;
 
 	while ((pipe_names[i].client_pipe != NULL) && hdr_ba->addr.len > 0) {
-		DEBUG(6,("bind_rpc_pipe: searching pipe name: client:%s server:%s\n",
-		pipe_names[i].client_pipe , pipe_names[i].server_pipe ));
-
 		if ((strequal(pipe_name, pipe_names[i].client_pipe ))) {
 			if (strequal(hdr_ba->addr.str, pipe_names[i].server_pipe )) {
 				DEBUG(5,("bind_rpc_pipe: server pipe_name found: %s\n",
