@@ -106,6 +106,23 @@ void ads_msgfree(ADS_STRUCT *ads, void *msg)
 }
 
 /*
+  free up memory from various ads requests
+*/
+void ads_memfree(ADS_STRUCT *ads, void *mem)
+{
+	if (!mem) return;
+	ldap_memfree(mem);
+}
+
+/*
+  get a dn from search results
+*/
+char *ads_get_dn(ADS_STRUCT *ads, void *res)
+{
+	return ldap_get_dn(ads->ld, res);
+}
+
+/*
   find a machine account given a hostname 
 */
 ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
@@ -120,6 +137,24 @@ ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
 	status = ads_search(ads, res, exp, attrs);
 	free(exp);
 	return status;
+}
+
+/*
+  duplicate an already-assembled list of values so that it can be
+  freed as part of the standard msgfree call
+*/
+static char **ads_dup_values(char **values)
+{
+	char **newvals;
+	int i;
+#define ADS_MAX_NUM_VALUES 32
+
+	for (i=0; values[i] && i<ADS_MAX_NUM_VALUES; i++);
+	newvals = malloc((i+1)*sizeof(char *));
+	for (i=0; values[i] && i<ADS_MAX_NUM_VALUES; i++)
+		newvals[i] = values[i];
+	newvals[i] = NULL;
+	return newvals;
 }
 
 /*
@@ -163,13 +198,17 @@ static BOOL ads_mod_list_add(void **mods, int mod_op, char *name, char **values)
 
 BOOL ads_mod_add_list(void **mods, char *name, char **values)
 {
-	return ads_mod_list_add(mods, LDAP_MOD_ADD, name, values);
+	char **newvals = ads_dup_values(values);
+	return ads_mod_list_add(mods, LDAP_MOD_ADD, name, newvals);
 }
 
 BOOL ads_mod_repl_list(void **mods, char *name, char **values)
 {
-	if (values && *values)
-		return ads_mod_list_add(mods, LDAP_MOD_REPLACE, name, values);
+	char **newvals;
+	if (values && *values) {
+		newvals = ads_dup_values(values);
+		return ads_mod_list_add(mods, LDAP_MOD_REPLACE, name, newvals);
+	}
 	else
 		return ads_mod_list_add(mods, LDAP_MOD_DELETE, name, NULL);
 }
@@ -204,15 +243,16 @@ BOOL ads_mod_list_add_var(void **mods, int mod_op, char *name, ...)
 
 BOOL ads_mod_repl(void **mods, char *name, char *val)
 {
-  if (val)
-	  return ads_mod_list_add_var(mods, LDAP_MOD_REPLACE, name, val);
-  else
-	  return ads_mod_list_add_var(mods, LDAP_MOD_DELETE, name, NULL);
+	if (val)
+		return ads_mod_list_add_var(mods, LDAP_MOD_REPLACE,
+					    name, val, NULL);
+	else
+		return ads_mod_list_add_var(mods, LDAP_MOD_DELETE, name, NULL);
 }
 
 BOOL ads_mod_add(void **mods, char *name, char *val)
 {
-  return ads_mod_list_add_var(mods, LDAP_MOD_ADD, name, val);
+	return ads_mod_list_add_var(mods, LDAP_MOD_ADD, name, val, NULL);
 }
 
 void ads_mod_list_end(void **mods)
@@ -239,7 +279,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, void **mods)
 	for(i=0;mods[i]>0;i++);
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
-	ret = ldap_add_s(ads->ld, mod_dn, (LDAPMod **) mods);
+	ret = ldap_modify_s(ads->ld, mod_dn, (LDAPMod **) mods);
 	return ADS_ERROR(ret);
 }
 
@@ -291,6 +331,11 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ...)
 	free(mods);
 	
 	return ADS_ERROR(ret);
+}
+
+ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
+{
+	return ADS_ERROR(ldap_delete(ads->ld, del_dn));
 }
 
 /*
@@ -508,9 +553,9 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	    return status;
 	}
 
-	hostnameDN = ldap_get_dn(ads->ld, (LDAPMessage *)res);
+	hostnameDN = ads_get_dn(ads, (LDAPMessage *)res);
 	rc = ldap_delete_s(ads->ld, hostnameDN);
-	ldap_memfree(hostnameDN);
+	ads_memfree(ads, hostnameDN);
 	if (rc != LDAP_SUCCESS) {
 		return ADS_ERROR(rc);
 	}

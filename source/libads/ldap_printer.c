@@ -23,6 +23,35 @@
 #ifdef HAVE_ADS
 
 /*
+  find a printer given the name and the hostname
+    Note that results "res" may be allocated on return so that the
+    results can be used.  It should be freed using ads_msgfree.
+*/
+ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
+				      char *printer, char *servername)
+{
+	ADS_STATUS status;
+	char *srv_dn, *exp;
+	const char *attrs[] = {"*", "nTSecurityDescriptor", NULL};
+
+	status = ads_find_machine_acct(ads, res, servername);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(1, ("ads_add_printer: cannot find host %s in ads\n",
+			  servername));
+		return status;
+	}
+	srv_dn = ldap_get_dn(ads->ld, *res);
+	ads_msgfree(ads, *res);
+
+	asprintf(&exp, "(printerName=%s)", printer);
+	status = ads_do_search(ads, srv_dn, LDAP_SCOPE_SUBTREE, 
+			       exp, &attrs, res);
+
+	free(exp);
+	return status;	
+}
+
+/*
   modify an entire printer entry in the directory
 */
 ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
@@ -32,7 +61,7 @@ ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 	ADS_STATUS status;
 
 	/* allocate the list */
-	mods = ads_mod_list_start(sizeof(prt) / sizeof(char *));
+	mods = ads_mod_list_start(sizeof(ADS_PRINTER_ENTRY) / sizeof(char *));
 
 	/* add the attributes to the list - required ones first */
 	ads_mod_repl(mods, "printerName", prt->printerName);
@@ -40,7 +69,8 @@ ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 	ads_mod_repl(mods, "shortServerName", prt->shortServerName);
 	ads_mod_repl(mods, "uNCName", prt->uNCName);
 	ads_mod_repl(mods, "versionNumber", prt->versionNumber);
-	/* now the optional ones */
+	/* now the optional ones - not ready yet, since it will
+	   fail if the attributes don't exist already 
 	ads_mod_repl_list(mods, "description", prt->description);
 	ads_mod_repl(mods, "driverName", prt->driverName);
 	ads_mod_repl(mods, "location", prt->location);
@@ -49,7 +79,7 @@ ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 	ads_mod_repl(mods, "printEndTime", prt->printEndTime);
 	ads_mod_repl_list(mods, "printBinNames", prt->printBinNames);
 
-	/* and many others */
+	... and many others */
 
 	/* do the ldap modify */
 	status = ads_gen_mod(ads, prt_dn, mods);
@@ -93,7 +123,7 @@ ADS_STATUS ads_add_printer(ADS_STRUCT *ads, const ADS_PRINTER_ENTRY *prt)
 	char *host_dn, *prt_dn;
 	const char *attrs[] = {"*", "nTSecurityDescriptor", NULL};
 
-	status = ads_find_machine_acct(ads, (void **)&res, 
+	status = ads_find_machine_acct(ads, (void **)&res,
 				       prt->shortServerName);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(1, ("ads_add_printer: cannot find host %s in ads\n",
@@ -107,7 +137,7 @@ ADS_STATUS ads_add_printer(ADS_STRUCT *ads, const ADS_PRINTER_ENTRY *prt)
 	asprintf(&prt_dn, "cn=%s-%s,%s", prt->shortServerName,
 		 prt->printerName, host_dn);
 
-	status = ads_search_dn(ads, res, prt_dn, attrs);
+	status = ads_search_dn(ads, &res, prt_dn, attrs);
 
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res)) {
 		DEBUG(1, ("ads_add_printer: printer %s already exists\n",
