@@ -335,10 +335,8 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     uint16 passlen1 = SVAL(inbuf,smb_vwv7);
     uint16 passlen2 = SVAL(inbuf,smb_vwv8);
     BOOL doencrypt = SMBENCRYPT();
-    char *p = smb_buf(inbuf);
-    if (passlen1 > 256) passlen1 = 0;
-    if (passlen2 > 256) passlen2 = 0; /* I don't know why NT gives weird 
-					lengths sometimes */
+    char *p = smb_buf(inbuf);    
+
     if(doencrypt) {
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
@@ -346,26 +344,33 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       smb_ntpasslen = passlen2;
       memcpy(smb_ntpasswd,p+passlen1,smb_ntpasslen);
     } else {
-      /* for Win95 */
-      if (passlen1 > passlen2) {
-	smb_apasslen = passlen1;
-	StrnCpy(smb_apasswd,p,smb_apasslen);
-      } else {
-	smb_apasslen = passlen2;
-	StrnCpy(smb_apasswd,p + passlen1,smb_apasslen);
+      /* both Win95 and WinNT stuff up the password lengths for
+	 non-encrypting systems. Uggh. 
+      
+	 if passlen1==24 its a win95 system, and its setting the
+	 password length incorrectly. Luckily it still works with the
+	 default code because Win95 will null terminate the password
+	 anyway 
+
+	 if passlen1>0 and passlen2>0 then its a NT box and its
+	 setting passlen2 to some random value which really stuffs
+	 things up. we need to fix that one.  */
+      if (passlen1 > 0 && passlen2 > 0) {
+	passlen2 = 0;
       }
+      /* we use the first password that they gave */
+      smb_apasslen = passlen1;
+      StrnCpy(smb_apasswd,p,smb_apasslen);
     }
-#if NT_WORKAROUND
-    if (passlen2 == 1) {
-      /* apparently NT sometimes sets passlen2 to 1 when it means 0. This
-	 tries to work around that problem */
-      passlen2 = 0;
-    }
-#endif
+    
     p += passlen1 + passlen2;
     strcpy(user,p); p = skip_string(p,1);
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 	     p,skip_string(p,1),skip_string(p,2)));
+
+    /* now work around the Win95 bug */
+    if(!doencrypt && smb_apasslen==24)
+      smb_apasslen = strlen(smb_apasswd);
   }
 
 
