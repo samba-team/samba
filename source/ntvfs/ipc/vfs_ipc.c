@@ -30,6 +30,8 @@
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
 
+#define IPC_BASE_FNUM 0x400
+
 /* this is the private structure used to keep the state of an open
    ipc$ connection. It needs to keep information about all open
    pipes */
@@ -196,7 +198,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fnum = idr_get_new(private->idtree_fnum, p, UINT16_MAX);
+	fnum = idr_get_new_above(private->idtree_fnum, p, IPC_BASE_FNUM, UINT16_MAX);
 	if (fnum == -1) {
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
