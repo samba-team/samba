@@ -62,32 +62,6 @@ typedef enum kcm_operation {
     KCM_OP_MAX
 } kcm_operation;
 
-/* Private client API */
-
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_kcm_chmod(krb5_context /*context*/,
-		krb5_ccache /*id*/,
-		u_int16_t /*mode*/);
-
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_kcm_chown(krb5_context /*context*/,
-		krb5_ccache /*id*/,
-		u_int32_t /*uid*/,
-		u_int32_t /*gid*/);
-
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_kcm_get_initial_ticket(krb5_context /*context*/,
-			     krb5_ccache /*id*/,
-			     krb5_principal /*server*/,
-			     krb5_keyblock */*key*/);
-
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_kcm_get_ticket(krb5_context /*context*/,
-		     krb5_ccache /*id*/,
-		     krb5_kdc_flags /*flags*/,
-		     krb5_enctype /*enctype*/,
-		     krb5_principal /*server*/);
-
 #define _PATH_KCM_SOCKET      "/var/run/.kcm_socket"
 
 #endif /* __KCM_H__ */
