@@ -1226,7 +1226,7 @@ clean: delheaders python_clean
 # This is quite ugly actually.. But we need to make 
 # sure the changes to include/config.h are used.
 modules_clean:
-	@-rm -f @MODULES_CLEAN@ auth/auth.o passdb/pdb_interface.o smbd/server.o lib/iconv.o smbd/vfs.o sam/idmap.o
+	@-rm -f auth/auth.o passdb/pdb_interface.o smbd/server.o lib/iconv.o smbd/vfs.o sam/idmap.o
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're

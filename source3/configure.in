@@ -2461,7 +2461,7 @@ AC_ARG_WITH(expsam,
       ;;
     nisplussam)
       ## pdb_nisplussam
-      MODULE_pdb_nisplussam=SHARED
+	  default_shared_modules="$default_shared_modules pdb_nisplussam"
       ;;
     *)
       echo "Unknown module name \"$i\"!  Exiting..."
@@ -3889,8 +3889,6 @@ SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), "bin/fake_perms.$SHLIBEXT", V
 SMB_SUBSYSTEM(VFS)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
-
-AC_SUBST(MODULES_CLEAN)
 
 #################################################
 # do extra things if we are running insure
