@@ -83,7 +83,7 @@ void cmd_reg_enum(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_open_policy(smb_cli,
+	res = res ? do_reg_open_hklm(smb_cli,
 				0x84E0, 0x02000000,
 				&info->dom.reg_pol_connect) : False;
 
@@ -220,7 +220,7 @@ void cmd_reg_query_key(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
-	res = res ? do_reg_open_policy(smb_cli,
+	res = res ? do_reg_open_hklm(smb_cli,
 				0x84E0, 0x02000000,
 				&info->dom.reg_pol_connect) : False;
 
@@ -320,11 +320,11 @@ void cmd_reg_test2(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
-	res  = res ? do_reg_open_policy(smb_cli,
+	res  = res ? do_reg_open_hklm(smb_cli,
 				0x84E0, 0x02000000,
 				&info->dom.reg_pol_connect) : False;
 
-	res1 = res ? do_reg_open_unk_4(smb_cli,
+	res1 = res ? do_reg_open_hku(smb_cli,
 				0x84E0, 0x02000000,
 				&info->dom.reg_pol_unk_4  ) : False;
 
@@ -477,7 +477,7 @@ void cmd_reg_create_val(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
-	res  = res ? do_reg_open_policy(smb_cli,
+	res  = res ? do_reg_open_hklm(smb_cli,
 				0x84E0, 0x02000000,
 				&info->dom.reg_pol_connect) : False;
 
@@ -543,7 +543,7 @@ void cmd_reg_delete_key(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
-	res  = res ? do_reg_open_policy(smb_cli,
+	res  = res ? do_reg_open_hklm(smb_cli,
 				0x84E0, 0x02000000,
 				&info->dom.reg_pol_connect) : False;
 
@@ -627,7 +627,7 @@ void cmd_reg_create_key(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
-	res  = res ? do_reg_open_policy(smb_cli,
+	res  = res ? do_reg_open_hklm(smb_cli,
 				0x84E0, 0x02000000,
 				&info->dom.reg_pol_connect) : False;
 
@@ -696,7 +696,7 @@ void cmd_reg_get_key_sec(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
 
 	/* open registry receive a policy handle */
-	res  = res ? do_reg_open_policy(smb_cli,
+	res  = res ? do_reg_open_hklm(smb_cli,
 				0x84E0, 0x02000000,
 				&info->dom.reg_pol_connect) : False;
 

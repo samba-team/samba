@@ -77,10 +77,10 @@ static void api_reg_close( uint16 vuid, prs_struct *data,
 /*******************************************************************
  reg_reply_open
  ********************************************************************/
-static void reg_reply_open(REG_Q_OPEN_POLICY *q_r,
+static void reg_reply_open(REG_Q_OPEN_HKLM *q_r,
 				prs_struct *rdata)
 {
-	REG_R_OPEN_POLICY r_u;
+	REG_R_OPEN_HKLM r_u;
 
 	r_u.status = 0x0;
 	/* get a (unique) handle.  open a policy on it. */
@@ -92,7 +92,7 @@ static void reg_reply_open(REG_Q_OPEN_POLICY *q_r,
 	DEBUG(5,("reg_open: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
-	reg_io_r_open_policy("", &r_u, rdata, 0);
+	reg_io_r_open_hklm("", &r_u, rdata, 0);
 
 	DEBUG(5,("reg_open: %d\n", __LINE__));
 }
@@ -103,10 +103,10 @@ static void reg_reply_open(REG_Q_OPEN_POLICY *q_r,
 static void api_reg_open( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
-	REG_Q_OPEN_POLICY q_u;
+	REG_Q_OPEN_HKLM q_u;
 
 	/* grab the reg open */
-	reg_io_q_open_policy("", &q_u, data, 0);
+	reg_io_q_open_hklm("", &q_u, data, 0);
 
 	/* construct reply.  always indicate success */
 	reg_reply_open(&q_u, rdata);
@@ -225,9 +225,9 @@ static struct api_struct api_reg_cmds[] =
 {
 	{ "REG_CLOSE"        , REG_CLOSE        , api_reg_close        },
 	{ "REG_OPEN_ENTRY"   , REG_OPEN_ENTRY   , api_reg_open_entry   },
-	{ "REG_OPEN"         , REG_OPEN_POLICY  , api_reg_open         },
+	{ "REG_OPEN"         , REG_OPEN_HKLM    , api_reg_open         },
 	{ "REG_INFO"         , REG_INFO         , api_reg_info         },
-    { NULL,		           0                , NULL                 }
+	{ NULL,                0                , NULL                 }
 };
 
 /*******************************************************************
