@@ -529,14 +529,14 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if (!((*domain_names) = (char **)talloc(mem_ctx, sizeof(char *) *
+	if (r.num_domains && !((*domain_names) = (char **)talloc(mem_ctx, sizeof(char *) *
 						r.num_domains))) {
 		DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*domain_sids) = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) *
+	if (r.num_domains && !((*domain_sids) = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) *
 						 r.num_domains))) {
 		DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
