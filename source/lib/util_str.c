@@ -334,9 +334,8 @@ char *strupper_static(const char *s)
  Convert a string to "normal" form.
 **/
 
-void strnorm(char *s)
+void strnorm(char *s, int case_default)
 {
-	extern int case_default;
 	if (case_default == CASE_UPPER)
 		strupper_m(s);
 	else
@@ -347,9 +346,8 @@ void strnorm(char *s)
  Check if a string is in "normal" case.
 **/
 
-BOOL strisnormal(const char *s)
+BOOL strisnormal(const char *s, int case_default)
 {
-	extern int case_default;
 	if (case_default == CASE_UPPER)
 		return(!strhaslower(s));
 	

@@ -365,7 +365,6 @@ typedef struct
 	BOOL bCaseSensitive;
 	BOOL bCasePreserve;
 	BOOL bShortCasePreserve;
-	BOOL bCaseMangle;
 	BOOL bHideDotFiles;
 	BOOL bHideSpecialFiles;
 	BOOL bHideUnReadable;
@@ -489,7 +488,6 @@ static service sDefault = {
 	False,			/* case sensitive */
 	True,			/* case preserve */
 	True,			/* short case preserve */
-	False,			/* case mangle */
 	True,			/* bHideDotFiles */
 	False,			/* bHideSpecialFiles */
 	False,			/* bHideUnReadable */
@@ -982,7 +980,6 @@ static struct parm_struct parm_table[] = {
 	{"casesignames", P_BOOL, P_LOCAL, &sDefault.bCaseSensitive, NULL, NULL, FLAG_HIDE}, 
 	{"preserve case", P_BOOL, P_LOCAL, &sDefault.bCasePreserve, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"short preserve case", P_BOOL, P_LOCAL, &sDefault.bShortCasePreserve, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"mangle case", P_BOOL, P_LOCAL, &sDefault.bCaseMangle, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangling char", P_CHAR, P_LOCAL, &sDefault.magic_char, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"hide dot files", P_BOOL, P_LOCAL, &sDefault.bHideDotFiles, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"hide special files", P_BOOL, P_LOCAL, &sDefault.bHideSpecialFiles, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
@@ -1833,7 +1830,6 @@ FN_LOCAL_BOOL(lp_rootpreexec_close, bRootpreexecClose)
 FN_LOCAL_BOOL(lp_casesensitive, bCaseSensitive)
 FN_LOCAL_BOOL(lp_preservecase, bCasePreserve)
 FN_LOCAL_BOOL(lp_shortpreservecase, bShortCasePreserve)
-FN_LOCAL_BOOL(lp_casemangle, bCaseMangle)
 FN_LOCAL_BOOL(lp_hide_dot_files, bHideDotFiles)
 FN_LOCAL_BOOL(lp_hide_special_files, bHideSpecialFiles)
 FN_LOCAL_BOOL(lp_hideunreadable, bHideUnReadable)

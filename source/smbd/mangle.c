@@ -120,5 +120,5 @@ void mangle_map(pstring OutName, BOOL need83, BOOL cache83, int snum)
 
 	/* invoke the inane "mangled map" code */
 	mangle_map_filename(OutName, snum);
-	mangle_fns->name_map(OutName, need83, cache83);
+	mangle_fns->name_map(OutName, need83, cache83, lp_defaultcase(snum));
 }

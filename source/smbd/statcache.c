@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern BOOL case_sensitive;
-
 /****************************************************************************
  Stat cache code used in unix_convert.
 *****************************************************************************/
@@ -50,7 +48,7 @@ static hash_table stat_cache;
  *
  */
 
-void stat_cache_add( const char *full_orig_name, const char *orig_translated_path)
+void stat_cache_add( const char *full_orig_name, const char *orig_translated_path, BOOL case_sensitive)
 {
 	stat_cache_entry *scp;
 	stat_cache_entry *found_scp;
@@ -222,7 +220,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 				 (name[1] == '.' && name[1] == '\0'))))
 		return False;
 
-	if (case_sensitive) {
+	if (conn->case_sensitive) {
 		chk_name = strdup(name);
 		if (!chk_name) {
 			DEBUG(0, ("stat_cache_lookup: strdup failed!\n"));
