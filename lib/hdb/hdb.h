@@ -86,8 +86,8 @@ krb5_error_code hdb_foreach(krb5_context context, HDB *db, hdb_foreach_func_t fu
 krb5_error_code hdb_check_db_format(krb5_context, HDB*);
 krb5_error_code hdb_init_db(krb5_context, HDB*);
 
-Key *hdb_unseal_key(Key*, des_key_schedule);
-void hdb_seal_key(Key*, des_key_schedule);
+Key *hdb_unseal_key(Key*, krb5_data);
+void hdb_seal_key(Key*, krb5_data);
 void hdb_free_key(Key*);
 
 #define HDB_DB_DIR "/var/heimdal"
