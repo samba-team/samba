@@ -116,13 +116,18 @@ proto (int sock, const char *service)
 
     if (auth_file != NULL) {
 	int fd = open (auth_file, O_WRONLY | O_CREAT, 0666);
-	krb5_ticket *ticket = context_hdl->ticket;
-	krb5_data *data = &ticket->ticket.authorization_data->val[0].ad_data;
+#if 0
+	krb5_ticket *ticket;
+	krb5_data *data;
+
+	ticket = context_hdl->ticket;
+	data = &ticket->ticket.authorization_data->val[0].ad_data;
 
 	if(fd < 0)
 	    err (1, "open %s", auth_file);
 	if (write (fd, data->data, data->length) != data->length)
 	    errx (1, "write to %s failed", auth_file);
+#endif
 	if (close (fd))
 	    err (1, "close %s", auth_file);
     }
