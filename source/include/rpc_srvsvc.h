@@ -33,6 +33,7 @@
 #define SRV_NETSHAREADD      0x0e
 #define SRV_NETSHAREENUM     0x0f
 #define SRV_NETSHAREGETINFO  0x10
+#define SRV_NETSHARESETINFO  0x11
 #define SRV_NETSHAREDEL      0x12
 #define SRV_NETTRANSPORTENUM 0x1a
 #define SRV_NET_SRV_GET_INFO 0x15
@@ -335,10 +336,6 @@ typedef struct r_net_tprt_enum_info
 
 } SRV_R_NET_TPRT_ENUM;
 
-/* oops - this is going to take up a *massive* amount of stack. */
-/* the UNISTR2s already have 1024 uint16 chars in them... */
-#define MAX_SHARE_ENTRIES 128
-
 /* SH_INFO_1 (pointers to level 1 share info strings) */
 typedef struct ptr_share_info1
 {
@@ -355,6 +352,14 @@ typedef struct str_share_info1
 	UNISTR2 uni_remark; /* unicode string of comment */
 
 } SH_INFO_1_STR;
+
+/* SHARE_INFO_1 (level 1 share info) */
+typedef struct _share_info_1
+{
+	SH_INFO_1     info1_hdr;
+	SH_INFO_1_STR info1_str;
+} SHARE_INFO_1;
+
 
 /* SRV_SHARE_INFO_1 */
 typedef struct share_info_1_info
@@ -392,7 +397,6 @@ typedef struct str_share_info2
 
 } SH_INFO_2_STR;
 
-
 /* SHARE_INFO_2 (level 2 share info) */
 typedef struct _share_info_2
 {
@@ -424,18 +428,26 @@ typedef struct _share_info_502
 	SH_INFO_502_DATA info502_data;
 } SHARE_INFO_502;
 
+/*
+ * This is the clean way, where microsoft always
+ * has "void *".
+ * and this may point to one or many structs
+ */
+typedef union _share_info_union
+{
+	SHARE_INFO_1   *id1;
+	SHARE_INFO_2   *id2;
+	SHARE_INFO_502 *id502;
+	void *id;
+} SHARE_INFO_UNION;
+
 
 typedef struct _share_info_ctr
 {
 	uint32 info_level;
 	uint32 info_ptr;
 
-	union
-	{
-		SHARE_INFO_2   *id2;
-		SHARE_INFO_502 *id502;
-		void *id;
-	} info;
+	SHARE_INFO_UNION info;
 
 } SHARE_INFO_CTR;
 
@@ -515,6 +527,19 @@ typedef struct r_net_share_add
 	uint32 status;
 
 } SRV_R_NET_SHARE_ADD;
+
+
+/* SRV_Q_NET_SHARE_DEL */
+typedef struct q_net_share_del
+{
+	uint32 ptr_srv_name;         /* pointer (to server name?) */
+	UNISTR2 uni_srv_name;        /* server name */
+
+	UNISTR2 uni_share_name;
+
+	uint32 unknown0; /* 0x0 */
+
+} SRV_Q_NET_SHARE_DEL;
 
 
 /* SRV_Q_NET_SHARE_GET_INFO */

@@ -79,19 +79,19 @@ struct sid_map
 {
 	DOM_SID *sid;
 	char *name;
-
+	uint32 type;
 };
 
 static const struct sid_map static_sid_name_map[] =
 {
-	{ &global_sid_S_1_5_20, "BUILTIN" }, /* SID_NAME_DOMAIN */
-	{ &global_sid_S_1_1   , "Global Domain" },
-	{ &global_sid_S_1_1_0 , "Everyone" }, /* SID_NAME_WKN_GRP */
-	{ &global_sid_S_1_3_0 , "Creator Owner" }, /* SID_NAME_WKN_GRP */
-	{ &global_sid_S_1_5   , "NT Authority" }, /* SID_NAME_DOMAIN */
-	{ &global_sid_system  , "SYSTEM" }, /* SID_NAME_WKN_GRP */
-	{ &global_sam_sid     , global_sam_name }, /* SID_NAME_DOMAIN */
-	{ &global_member_sid  , global_myworkgroup }, /* SID_NAME_DOMAIN */
+	{ &global_sid_S_1_5_20, "BUILTIN",          SID_NAME_DOMAIN },
+	{ &global_sid_S_1_1   , "Global Domain",    SID_NAME_DOMAIN },
+	{ &global_sid_S_1_1_0 , "Everyone",         SID_NAME_WKN_GRP },
+	{ &global_sid_S_1_3_0 , "Creator Owner",    SID_NAME_WKN_GRP },
+	{ &global_sid_S_1_5   , "NT Authority",     SID_NAME_DOMAIN },
+	{ &global_sid_system  , "SYSTEM",           SID_NAME_WKN_GRP },
+	{ &global_sam_sid     , global_sam_name,    SID_NAME_DOMAIN },
+	{ &global_member_sid  , global_myworkgroup, SID_NAME_DOMAIN },
 	{ NULL                , NULL      }
 };
 
@@ -102,8 +102,8 @@ static struct sid_map *sid_map_dup(const struct sid_map *from)
 {
 	if (from != NULL)
 	{
-		struct sid_map *copy = (struct sid_map *)
-		                        malloc(sizeof(struct sid_map));
+		struct sid_map *copy = g_new(struct sid_map, 1);
+
 		if (copy != NULL)
 		{
 			ZERO_STRUCTP(copy);
@@ -115,6 +115,7 @@ static struct sid_map *sid_map_dup(const struct sid_map *from)
 			{
 				copy->sid = sid_dup(from->sid);
 			}
+			copy->type = from->type;
 		}
 		return copy;
 	}
@@ -160,7 +161,6 @@ struct sid_map* add_sidmap_to_array(uint32 *len, struct sid_map ***array,
 ****************************************************************************/
 static void get_sam_domain_name(void)
 {
-
 	switch (lp_server_role())
 	{
 		case ROLE_DOMAIN_PDC:
@@ -262,6 +262,7 @@ BOOL create_sidmap_table(void)
 
 		map.name = doms[i];
 		map.sid  = &sid;
+		map.type = SID_NAME_DOMAIN;
 
 		if (!read_sid(map.name, map.sid))
 		{
@@ -280,7 +281,6 @@ BOOL create_sidmap_table(void)
 		DEBUG(10,("Map:\tDomain:\t%s\tSID:\t%s\n",
 		         sid_name_map[i]->name, sidstr));
 	}
-
 
 	free_char_array(num_doms, doms);
 

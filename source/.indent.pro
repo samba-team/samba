@@ -12,3 +12,4 @@
 -T POLICY_HND
 -T UNISTR2
 -T DOM_SID
+-T prs_struct
