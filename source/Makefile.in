@@ -294,7 +294,7 @@ GROUPDB_OBJ = groupdb/mapping.o
 
 PROFILE_OBJ = profile/profile.o
 PROFILES_OBJ = utils/profiles.o
-EDITREG_OBJ = utils/editreg.o
+EDITREG_OBJ = utils/editreg.o lib/snprintf.o
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
