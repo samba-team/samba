@@ -327,7 +327,11 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 
 	if(prs_offset(&p->in_data.data) == 0) {
 
-		if (!(p->hdr.flags & RPC_FLG_FIRST)) {
+		/*
+		 * AS/U doesn't set FIRST flag in a BIND packet it seems.
+		 */
+
+		if ((p->hdr.pkt_type == RPC_REQUEST) && !(p->hdr.flags & RPC_FLG_FIRST)) {
 			/*
 			 * Ensure that the FIRST flag is set. If not then we have
 			 * a stream missmatch.
