@@ -65,6 +65,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    char *share, char *dev, char *pass, int passlen);
 BOOL cli_tdis(struct cli_state *cli);
+BOOL cli_mv(struct cli_state *cli, char *fname_src, char *fname_dst);
 BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
