@@ -32,6 +32,7 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct pvfs_filename *name;
+	mode_t mode;
 
 	if (md->generic.level != RAW_MKDIR_MKDIR) {
 		return NT_STATUS_INVALID_LEVEL;
@@ -48,10 +49,9 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	/* TODO: this is a temporary implementation to allow other
-	   tests to run */
+	mode = pvfs_fileperms(pvfs, FILE_ATTRIBUTE_DIRECTORY);
 
-	if (mkdir(name->full_name, 0777) == -1) {
+	if (mkdir(name->full_name, mode) == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
 
