@@ -44,7 +44,9 @@ RCSID("$Id$");
 
 #include <sys/types.h>
 #include <ctype.h>
+#ifdef HAVE_DB_H
 #include <db.h>
+#endif
 #include <errno.h>	
 #include <fcntl.h>
 #include <limits.h>
@@ -275,6 +277,9 @@ getent(char **cap, size_t *len, char **db_array, int fd,
 	if (fd >= 0) {
 	    (void)lseek(fd, (off_t)0, SEEK_SET);
 	} else {
+#ifndef HAVE_DBOPEN
+#define dbopen(a, b, c, d, e) NULL
+#endif
 	    (void)snprintf(pbuf, sizeof(pbuf), "%s.db", *db_p);
 	    if ((capdbp = dbopen(pbuf, O_RDONLY, 0, DB_HASH, 0))
 		!= NULL) {
