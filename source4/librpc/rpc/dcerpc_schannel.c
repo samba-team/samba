@@ -159,7 +159,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 	}
 	p->auth_info->auth_pad_length = 0;
 	p->auth_info->auth_reserved = 0;
-	p->auth_info->auth_context_id = 1;
+	p->auth_info->auth_context_id = random();
 	p->security_state = NULL;
 
 	p->auth_info->credentials = data_blob_talloc(p->mem_ctx, 
