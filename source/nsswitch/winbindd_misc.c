@@ -31,18 +31,9 @@ extern pstring global_myname;
 static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
 					time_t *pass_last_set_time)
 {
-	struct machine_acct_pass *pass;
-	size_t size;
-
-	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
-	    size != sizeof(*pass)) 
+	if (!secrets_fetch_trust_account_password(domain, ret_pwd, pass_last_set_time)) {
                 return False;
-        
-	if (pass_last_set_time) 
-                *pass_last_set_time = pass->mod_time;
-
-	memcpy(ret_pwd, pass->hash, 16);
-	SAFE_FREE(pass);
+	}
 
 	return True;
 }
@@ -147,6 +138,14 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 		state->response.extra_data = extra_data;
 		state->response.length += extra_data_len;
 	}
+
+	return WINBINDD_OK;
+}
+
+enum winbindd_result winbindd_ping(struct winbindd_cli_state
+						   *state)
+{
+	DEBUG(3, ("[%5d]: ping\n", state->pid));
 
 	return WINBINDD_OK;
 }

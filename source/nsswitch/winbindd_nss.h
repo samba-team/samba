@@ -83,6 +83,7 @@ enum winbindd_cmd {
 	/* Miscellaneous other stuff */
 
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
+	WINBINDD_PING,              /* Just tell me winbind is running */
 
 	/* Placeholder for end of cmd list */
 
@@ -107,6 +108,7 @@ struct winbindd_request {
                 struct {
                         unsigned char chal[8];
                         fstring user;
+                        fstring domain;
                         fstring lm_resp;
                         uint16 lm_resp_len;
                         fstring nt_resp;

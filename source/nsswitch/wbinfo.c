@@ -31,6 +31,23 @@ NSS_STATUS winbindd_request(int req_type,
 			    struct winbindd_request *request,
 			    struct winbindd_response *response);
 
+/* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
+   form DOMAIN/user into a domain and a user */
+
+static BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
+{
+	char *p = strchr(domuser,*lp_winbind_separator());
+
+	if (!p)
+		return False;
+        
+	fstrcpy(user, p+1);
+	fstrcpy(domain, domuser);
+	domain[PTR_DIFF(p, domuser)] = 0;
+	strupper(domain);
+	return True;
+}
+
 /* List groups a user is a member of */
 
 static BOOL wbinfo_get_usergroups(char *user)
@@ -282,8 +299,10 @@ static BOOL wbinfo_auth(char *username)
 	 * Don't do the lookup if the name has no separator.
 	 */
  
-	if (!strchr(username, *lp_winbind_separator()))
+	if (!strchr(username, *lp_winbind_separator())) {
+		printf("no domain seperator (%s) in username - failing\n", lp_winbind_separator());
 		return False;
+	}
 
 	/* Send off request */
 
@@ -317,6 +336,8 @@ static BOOL wbinfo_auth_crap(char *username)
 	struct winbindd_request request;
 	struct winbindd_response response;
         NSS_STATUS result;
+        fstring name_user;
+        fstring name_domain;
         fstring pass;
         char *p;
 
@@ -324,8 +345,10 @@ static BOOL wbinfo_auth_crap(char *username)
 	 * Don't do the lookup if the name has no separator.
 	 */
  
-	if (!strchr(username, *lp_winbind_separator()))
+	if (!strchr(username, *lp_winbind_separator())) {
+		printf("no domain seperator (%s) in username - failing\n", lp_winbind_separator());
 		return False;
+	}
 
 	/* Send off request */
 
@@ -336,11 +359,14 @@ static BOOL wbinfo_auth_crap(char *username)
 
         if (p) {
                 *p = 0;
-                fstrcpy(request.data.auth_crap.user, username);
                 fstrcpy(pass, p + 1);
-                *p = '%';
-        } else
-                fstrcpy(request.data.auth_crap.user, username);
+	}
+		
+	parse_domain_user(username, name_domain, name_user);
+
+	fstrcpy(request.data.auth_crap.user, name_user);
+
+	fstrcpy(request.data.auth_crap.domain, name_domain);
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
         
@@ -447,6 +473,20 @@ static BOOL wbinfo_set_auth_user(char *username)
 	return True;
 }
 
+static BOOL wbinfo_ping(void)
+{
+        NSS_STATUS result;
+	
+	result = winbindd_request(WINBINDD_PING, NULL, NULL);
+
+	/* Display response */
+
+        printf("'ping' to winbindd %s\n", 
+               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
+
+        return result == NSS_STATUS_SUCCESS;
+}
+
 /* Print program usage */
 
 static void usage(void)
@@ -465,6 +505,7 @@ static void usage(void)
 	printf("\t-m\t\t\tlist trusted domains\n");
 	printf("\t-r user\t\t\tget user groups\n");
 	printf("\t-a user%%password\tauthenticate user\n");
+	printf("\t-p 'ping' winbindd to see if it is alive\n");
 }
 
 /* Main program */
@@ -500,6 +541,7 @@ int main(int argc, char **argv)
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
+		{ "ping", 'p', POPT_ARG_NONE, 0, 'p' },
 		{ 0, 0, 0, 0 }
 	};
 
@@ -638,6 +680,14 @@ int main(int argc, char **argv)
 			
                         if (got_error)
                                 return 1;
+                        break;
+		}
+                case 'p': {
+
+                        if (!wbinfo_ping()) {
+                                printf("could not ping winbindd!\n");
+                                return 1;
+			}
                         break;
 		}
 		case OPT_SET_AUTH_USER:

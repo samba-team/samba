@@ -53,10 +53,12 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	}
 
 	/* Parse domain and username */
-
+	
 	if (!parse_domain_user(state->request.data.auth.user, name_domain, 
-                          name_user))
+			       name_user)) {
+		DEBUG(5,("no domain seperator (%s) in username (%s) - failing fauth\n", lp_winbind_separator(), state->request.data.auth.user));
 		return WINBINDD_ERROR;
+	}
 
 	passlen = strlen(state->request.data.auth.pass);
 		
@@ -71,8 +73,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		
 		SMBNTencrypt((const uchar *)state->request.data.auth.pass, chal, local_nt_response);
 
-		lm_resp = data_blob(local_lm_response, sizeof(local_lm_response));
-		nt_resp = data_blob(local_nt_response, sizeof(local_nt_response));
+		lm_resp = data_blob_talloc(mem_ctx, local_lm_response, sizeof(local_lm_response));
+		nt_resp = data_blob_talloc(mem_ctx, local_nt_response, sizeof(local_nt_response));
 	}
 	
 	/*
@@ -106,8 +108,6 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 						&info3);
         
 done:
-	data_blob_free(&lm_resp);
-	data_blob_free(&nt_resp);
 
 	cli_shutdown(cli);
 
@@ -115,13 +115,12 @@ done:
 	
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
-
+	
 /* Challenge Response Authentication Protocol */
 
 enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
-	fstring name_domain, name_user;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
         NET_USER_INFO_3 info3;
@@ -132,23 +131,16 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	extern pstring global_myname;
 
-	DEBUG(3, ("[%5d]: pam auth crap %s\n", state->pid,
-		  state->request.data.auth_crap.user));
+	DEBUG(3, ("[%5d]: pam auth crap domain: %s user: %s\n", state->pid,
+		  state->request.data.auth_crap.user, state->request.data.auth_crap.user));
 
-	if (!(mem_ctx = talloc_init_named("winbind pam auth for %s", state->request.data.auth.user))) {
+	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for %s", state->request.data.auth.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
 		return WINBINDD_ERROR;
 	}
 
-	/* Parse domain and username */
-	if (!parse_domain_user(state->request.data.auth_crap.user, name_domain, 
-			       name_user))
-		return WINBINDD_ERROR;
-	
-	
-	
-	lm_resp = data_blob(state->request.data.auth_crap.lm_resp, state->request.data.auth_crap.lm_resp_len);
-	nt_resp = data_blob(state->request.data.auth_crap.nt_resp, state->request.data.auth_crap.nt_resp_len);
+	lm_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.lm_resp, state->request.data.auth_crap.lm_resp_len);
+	nt_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.nt_resp, state->request.data.auth_crap.nt_resp_len);
 	
 	/*
 	 * Get the machine account password for our primary domain
@@ -171,7 +163,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
         }
 
 	result = cli_netlogon_sam_network_logon(cli, mem_ctx,
-						name_user, name_domain, 
+						state->request.data.auth_crap.user, state->request.data.auth_crap.domain, 
 						global_myname, state->request.data.auth_crap.chal, 
 						lm_resp, nt_resp, 
 						&info3);
