@@ -248,6 +248,20 @@ void status_page(void)
 		stop_nmbd();
 	}
 
+#ifdef WITH_WINBIND
+	if (cgi_variable("winbindd_restart")) {
+		stop_winbindd();
+		start_winbindd();
+	}
+
+	if (cgi_variable("winbindd_start")) {
+		start_winbindd();
+	}
+
+	if (cgi_variable("winbindd_stop")) {
+		stop_winbindd();
+	}
+#endif
 	if (cgi_variable("autorefresh")) {
 		autorefresh = 1;
 	} else if (cgi_variable("norefresh")) {
@@ -319,6 +333,20 @@ void status_page(void)
 	    d_printf("<td><input type=submit name=\"nmbd_restart\" value=\"%s\"></td>\n", _("Restart nmbd"));
 	}
 	d_printf("</tr>\n");
+
+#ifdef WITH_WINBIND
+	fflush(stdout);
+	d_printf("<tr><td>%s</td><td>%s</td>\n", _("winbindd:"), winbindd_running()?_("running"):_("not running"));
+	if (geteuid() == 0) {
+	    if (winbindd_running()) {
+		d_printf("<td><input type=submit name=\"winbindd_stop\" value=\"%s\"></td>\n", _("Stop winbindd"));
+	    } else {
+		d_printf("<td><input type=submit name=\"winbindd_start\" value=\"%s\"></td>\n", _("Start winbindd"));
+	    }
+	    d_printf("<td><input type=submit name=\"winbindd_restart\" value=\"%s\"></td>\n", _("Restart winbindd"));
+	}
+	d_printf("</tr>\n");
+#endif
 
 	d_printf("</table>\n");
 	fflush(stdout);
