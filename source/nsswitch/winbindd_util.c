@@ -587,18 +587,15 @@ BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
 
 BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
 				uint32 user_rid, uint32 *num_groups,
 				DOM_GID **user_groups)
 {
-        TALLOC_CTX *mem_ctx;
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         POLICY_HND dom_pol, user_pol;
         uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
         BOOL got_dom_pol = False, got_user_pol = False;
-
-        if (!(mem_ctx = talloc_init()))
-                return False;
 
         /* Get sam handle */
 
@@ -638,8 +635,6 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 
         if (got_dom_pol)
                 cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
-
-        talloc_destroy(mem_ctx);
 
         return NT_STATUS_IS_OK(result);
 }

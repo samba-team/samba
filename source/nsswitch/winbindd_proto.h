@@ -137,8 +137,9 @@ BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
                               TALLOC_CTX *mem_ctx, uint32 user_rid, 
                               SAM_USERINFO_CTR **user_info);
 BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
-				uint32 user_rid, uint32 *num_groups,
-				DOM_GID **user_groups);
+                TALLOC_CTX *mem_ctx,
+                uint32 user_rid, uint32 *num_groups,
+                DOM_GID **user_groups);
 BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
                               TALLOC_CTX *mem_ctx,
                               uint32 group_rid, uint32 *num_names, 
