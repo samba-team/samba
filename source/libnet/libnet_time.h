@@ -18,20 +18,30 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct libnet_context {
-	TALLOC_CTX *mem_ctx;
-
-	/* here we need:
-	 * a client env context
-	 * a user env context
-	 */
-	struct {
-		const char *account_name;
-		const char *domain_name;
-		const char *password;
-	} user;
+/* struct and enum for getting the time of a remote system */
+enum libnet_RemoteTOD_level {
+	LIBNET_REMOTE_TOD_GENERIC,
+	LIBNET_REMOTE_TOD_SRVSVC
 };
 
-#include "libnet/libnet_passwd.h"
-#include "libnet/libnet_time.h"
-#include "libnet/libnet_rpc.h"
+union libnet_RemoteTOD {
+	struct {
+		enum libnet_RemoteTOD_level level;
+
+		struct _libnet_RemoteTOD_in {
+			const char *server_name;
+		} in;
+
+		struct _libnet_RemoteTOD_out {
+			time_t time;
+			int time_zone;
+			const char *error_string;
+		} out;
+	} generic;
+
+	struct {
+		enum libnet_RemoteTOD_level level;
+		struct _libnet_RemoteTOD_in in;
+		struct _libnet_RemoteTOD_out out;
+	} srvsvc;
+};
