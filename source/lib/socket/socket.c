@@ -160,7 +160,7 @@ NTSTATUS socket_set_option(struct socket_context *sock, const char *option, cons
 	return sock->ops->set_option(sock, option, val);
 }
 
-const char *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+char *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	if (!sock->ops->get_peer_addr) {
 		return NULL;
@@ -178,7 +178,7 @@ int socket_get_peer_port(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 	return sock->ops->get_peer_port(sock, mem_ctx);
 }
 
-const char *socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+char *socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	if (!sock->ops->get_my_addr) {
 		return NULL;
