@@ -177,6 +177,7 @@ extract_ticket(krb5_context context,
 	       krb5_creds *creds,		
 	       krb5_keyblock *key,
 	       krb5_const_pointer keyseed,
+	       krb5_addresses *addr,
 	       krb5_decrypt_proc decrypt_proc,
 	       krb5_const_pointer decryptarg);
 
