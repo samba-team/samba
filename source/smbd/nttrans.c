@@ -544,7 +544,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	/* See if it is one we want to handle. */
 
 	if (lp_disable_spoolss() && strequal(fname, "\\spoolss"))
-		return(ERROR_DOS(ERRSRV,ERRaccess));
+		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
 
 	for( i = 0; known_nt_pipes[i]; i++ )
 		if( strequal(fname,known_nt_pipes[i]))
