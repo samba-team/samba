@@ -103,7 +103,7 @@ main(int argc, char **argv)
   int i;
   int optind = 0;
 
-  set_progname(argv[0]);
+  setprogname(argv[0]);
   if(getarg(getargs, num_args, argc, argv, &optind))
       usage(1);
   if(help_flag)
@@ -172,7 +172,7 @@ main(int argc, char **argv)
 
   unsetenv("PAGPID");
   execvp(path, args);
-  if (errno == ENOENT) {
+  if (errno == ENOENT || c_flag) {
       char **sh_args = malloc ((i + 2) * sizeof(char *));
       int j;
 
