@@ -37,7 +37,7 @@
 
 /* a tdb tool for manipulating a tdb database */
 
-#define FSTRING_LEN 128
+#define FSTRING_LEN 256
 typedef char fstring[FSTRING_LEN];
 
 typedef struct connections_key {
@@ -65,6 +65,13 @@ static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 static void print_asc(unsigned char *buf,int len)
 {
 	int i;
+
+	/* We're probably printing ASCII strings so don't try to display
+	   the trailing NULL character. */
+
+	if (buf[len - 1] == 0)
+	        len--;
+
 	for (i=0;i<len;i++)
 		printf("%c",isprint(buf[i])?buf[i]:'.');
 }
@@ -299,7 +306,7 @@ static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 	return 0;
 #else
 	printf("\nkey %d bytes\n", key.dsize);
-	print_data(key.dptr, key.dsize);
+	print_asc(key.dptr, key.dsize);
 	printf("data %d bytes\n", dbuf.dsize);
 	print_data(dbuf.dptr, dbuf.dsize);
 	return 0;
@@ -308,8 +315,8 @@ static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 
 static int print_key(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
-	printf("\nkey %d bytes\n", key.dsize);
-	print_data(key.dptr, key.dsize);
+	print_asc(key.dptr, key.dsize);
+	printf("\n");
 	return 0;
 }
 
