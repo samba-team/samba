@@ -570,8 +570,8 @@ name: Domain Computers
 objectGUID: ${NEWGUID}
 objectSid: ${DOMAINSID}-515
 sAMAccountName: Domain Computers
-sAMAccountType: 268435456
-groupType: -2147483646
+sAMAccountType: 0x10000000
+groupType: 0x80000002
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -590,8 +590,8 @@ objectGUID: ${NEWGUID}
 objectSid: ${DOMAINSID}-516
 adminCount: 1
 sAMAccountName: Domain Controllers
-sAMAccountType: 268435456
-groupType: -2147483646
+sAMAccountType: 0x10000000
+groupType: 0x80000002
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -611,8 +611,8 @@ objectGUID: ${NEWGUID}
 objectSid: ${DOMAINSID}-518
 adminCount: 1
 sAMAccountName: Schema Admins
-sAMAccountType: 268435456
-groupType: -2147483646
+sAMAccountType: 0x10000000
+groupType: 0x80000002
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 unixName: ${WHEEL}
@@ -634,8 +634,8 @@ objectGUID: ${NEWGUID}
 objectSid: ${DOMAINSID}-519
 adminCount: 1
 sAMAccountName: Enterprise Admins
-sAMAccountType: 268435456
-groupType: -2147483646
+sAMAccountType: 0x10000000
+groupType: 0x80000002
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 unixName: ${WHEEL}
@@ -655,7 +655,7 @@ objectGUID: ${NEWGUID}
 objectSid: ${DOMAINSID}-517
 sAMAccountName: Cert Publishers
 sAMAccountType: 0x20000000
-groupType: -2147483644
+groupType: 0x80000004
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -676,8 +676,8 @@ objectGUID: ${NEWGUID}
 objectSid: ${DOMAINSID}-512
 adminCount: 1
 sAMAccountName: Domain Admins
-sAMAccountType: 268435456
-groupType: -2147483646
+sAMAccountType: 0x10000000
+groupType: 0x80000002
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 unixName: ${WHEEL}
@@ -697,8 +697,8 @@ name: Domain Users
 objectGUID: ${NEWGUID}
 objectSid: ${DOMAINSID}-513
 sAMAccountName: Domain Users
-sAMAccountType: 268435456
-groupType: -2147483646
+sAMAccountType: 0x10000000
+groupType: 0x80000002
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 unixName: ${USERS}
@@ -718,8 +718,8 @@ name: Domain Guests
 objectGUID: ${NEWGUID}
 objectSid: ${DOMAINSID}-514
 sAMAccountName: Domain Guests
-sAMAccountType: 268435456
-groupType: -2147483646
+sAMAccountType: 0x10000000
+groupType: 0x80000002
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -738,8 +738,8 @@ name: Group Policy Creator Owners
 objectGUID: ${NEWGUID}
 objectSid: ${DOMAINSID}-520
 sAMAccountName: Group Policy Creator Owners
-sAMAccountType: 268435456
-groupType: -2147483646
+sAMAccountType: 0x10000000
+groupType: 0x80000002
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 unixName: ${WHEEL}
@@ -759,7 +759,7 @@ objectGUID: ${NEWGUID}
 objectSid: ${DOMAINSID}-553
 sAMAccountName: RAS and IAS Servers
 sAMAccountType: 0x20000000
-groupType: -2147483644
+groupType: 0x80000004
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
