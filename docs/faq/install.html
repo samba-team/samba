@@ -5,7 +5,8 @@
 >Compiling and installing Samba on a Unix host</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="Samba FAQ"
 HREF="samba-faq.html"><LINK
@@ -69,17 +70,13 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="INSTALL"
-></A
->Chapter 2. Compiling and installing Samba on a Unix host</H1
+NAME="INSTALL">Chapter 2. Compiling and installing Samba on a Unix host</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN84"
-></A
->2.1. I can't see the Samba server in any browse lists!</H1
+NAME="AEN84">2.1. I can't see the Samba server in any browse lists!</H1
 ><P
 >See Browsing.html in the docs directory of the samba source
 for more information on browsing.</P
@@ -100,9 +97,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN89"
-></A
->2.2. Some files that I KNOW are on the server doesn't show up when I view the files from my client!</H1
+NAME="AEN89">2.2. Some files that I KNOW are on the server doesn't show up when I view the files from my client!</H1
 ><P
 >See the next question.</P
 ></DIV
@@ -111,9 +106,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN92"
-></A
->2.3. Some files on the server show up with really wierd filenames when I view the files from my client!</H1
+NAME="AEN92">2.3. Some files on the server show up with really wierd filenames when I view the files from my client!</H1
 ><P
 >If you check what files are not showing up, you will note that they
 are files which contain upper case letters or which are otherwise not
@@ -131,9 +124,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN96"
-></A
->2.4. My client reports "cannot locate specified computer" or similar</H1
+NAME="AEN96">2.4. My client reports "cannot locate specified computer" or similar</H1
 ><P
 >This indicates one of three things: You supplied an incorrect server
 name, the underlying TCP/IP layer is not working correctly, or the
@@ -166,9 +157,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN103"
-></A
->2.5. My client reports "cannot locate specified share name" or similar</H1
+NAME="AEN103">2.5. My client reports "cannot locate specified share name" or similar</H1
 ><P
 >This message indicates that your client CAN locate the specified
 server, which is a good start, but that it cannot find a service of
@@ -209,9 +198,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN112"
-></A
->2.6. Printing doesn't work</H1
+NAME="AEN112">2.6. Printing doesn't work</H1
 ><P
 >Make sure that the specified print command for the service you are
 connecting to is correct and that it has a fully-qualified path (eg.,
@@ -245,9 +232,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN120"
-></A
->2.7. My client reports "This server is not configured to list shared resources"</H1
+NAME="AEN120">2.7. My client reports "This server is not configured to list shared resources"</H1
 ><P
 >Your guest account is probably invalid for some reason. Samba uses the
 guest account for browsing in smbd.  Check that your guest account is
@@ -260,9 +245,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN124"
-></A
->2.8. Log message "you appear to have a trapdoor uid system"</H1
+NAME="AEN124">2.8. Log message "you appear to have a trapdoor uid system"</H1
 ><P
 >This can have several causes. It might be because you are using a uid
 or gid of 65535 or -1. This is a VERY bad idea, and is a big security
@@ -301,9 +284,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN132"
-></A
->2.9. Why are my file's timestamps off by an hour, or by a few hours?</H1
+NAME="AEN132">2.9. Why are my file's timestamps off by an hour, or by a few hours?</H1
 ><P
 >This is from Paul Eggert eggert@twinsun.com.</P
 ><P
@@ -418,20 +399,16 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN155"
-></A
->2.10. How do I set the printer driver name correctly?</H1
+NAME="AEN155">2.10. How do I set the printer driver name correctly?</H1
 ><P
->Question:</P
-><P
-><SPAN
+>Question:
+<SPAN
 CLASS="QUOTE"
 >" On NT, I opened "Printer Manager" and "Connect to Printer".
  Enter ["\\ptdi270\ps1"] in the box of printer. I got the
  following error message
  "</SPAN
->
- </P
+></P
 ><P
 > <PRE
 CLASS="PROGRAMLISTING"

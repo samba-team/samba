@@ -49,6 +49,7 @@ the samba HOWTO Collection</member>
 Windows NT in the chapter "Portability" of the samba HOWTO collection
 </member>
 </simplelist>
+</para>
 
 </sect1>
 
@@ -62,6 +63,7 @@ the program always prompts for the password if the server is a Samba server.
 It also ignores the "-N" argument when querying some (but not all) of our
 NT servers.
 </quote>
+</para>
 
 <para>
 No, it does not ignore -N, it is just that your server rejected the 

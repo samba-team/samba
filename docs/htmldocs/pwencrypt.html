@@ -5,7 +5,8 @@
 >LanMan and NT Password Encryption in Samba</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -72,17 +73,13 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="PWENCRYPT"
-></A
->Chapter 5. LanMan and NT Password Encryption in Samba</H1
+NAME="PWENCRYPT">Chapter 4. LanMan and NT Password Encryption in Samba</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN473"
-></A
->5.1. Introduction</H1
+NAME="AEN457">4.1. Introduction</H1
 ><P
 >Newer windows clients send encrypted passwords over 
 	the wire, instead of plain text passwords. The newest clients 
@@ -104,9 +101,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN478"
-></A
->5.2. Important Notes About Security</H1
+NAME="AEN462">4.2. Important Notes About Security</H1
 ><P
 >The unix and SMB password encryption techniques seem similar 
 	on the surface. This similarity is, however, only skin deep. The unix 
@@ -140,7 +135,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="/docbook-dsssl/warning.gif"
+SRC="../images/warning.gif"
 HSPACE="5"
 ALT="Warning"></TD
 ><TD
@@ -206,9 +201,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN497"
-></A
->5.2.1. Advantages of SMB Encryption</H2
+NAME="AEN481">4.2.1. Advantages of SMB Encryption</H2
 ><P
 ></P
 ><UL
@@ -235,9 +228,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN504"
-></A
->5.2.2. Advantages of non-encrypted passwords</H2
+NAME="AEN488">4.2.2. Advantages of non-encrypted passwords</H2
 ><P
 ></P
 ><UL
@@ -266,9 +257,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN513"
-></A
->5.3. The smbpasswd Command</H1
+NAME="AEN497">4.3. The smbpasswd Command</H1
 ><P
 >The smbpasswd command maintains the two 32 byte password fields 
 	in the smbpasswd file. If you wish to make it similar to the unix 
