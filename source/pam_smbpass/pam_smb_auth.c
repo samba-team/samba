@@ -106,7 +106,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     if (on( SMB_MIGRATE, ctrl )) {
 	retval = _smb_add_user(pamh, ctrl, name, sampass);
 	pdb_free_sam(sampass);
-	sampass = NULL;
 	AUTH_RETURN;
     }
 
@@ -122,7 +121,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
     if (_smb_blankpasswd( ctrl, sampass )) {
         pdb_free_sam(sampass);
-	sampass = NULL;
         retval = PAM_SUCCESS;
         AUTH_RETURN;
     }
@@ -134,7 +132,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	_log_err(LOG_CRIT, "auth: no password provided for [%s]"
 		 , name);
         pdb_free_sam(sampass);
-	sampass = NULL;
         AUTH_RETURN;
     }
 
@@ -142,7 +139,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
     retval = _smb_verify_password( pamh, sampass, p, ctrl );
     pdb_free_sam(sampass);
-    sampass = NULL;
     p = NULL;
     AUTH_RETURN;
 }

@@ -352,7 +352,8 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
          && pdb_gethexpwd( p, (char *) hash_pass ))) {
 
         if (!memcmp( hash_pass, pdb_get_lanman_passwd(sampass), 16 )
-            || (!memcmp( hash_pass, pdb_get_nt_passwd(sampass), 16 )))
+            || (pdb_get_nt_passwd(sampass)
+                && !memcmp( hash_pass, pdb_get_nt_passwd(sampass), 16 )))
         {
             retval = PAM_SUCCESS;
             if (data_name) {	/* reset failures */

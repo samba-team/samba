@@ -39,7 +39,7 @@ extern int _smb_get_user(pam_handle_t *, unsigned int,
 
 /* _smb_blankpasswd() is a quick check for a blank password */
 
-extern int _smb_blankpasswd(unsigned int, SAM_ACCOUNT *sampass);
+extern int _smb_blankpasswd(unsigned int, SAM_ACCOUNT *);
 
 
 /* obtain a password from the user */

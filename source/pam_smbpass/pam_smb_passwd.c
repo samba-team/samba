@@ -144,8 +144,8 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
         if (_smb_blankpasswd( ctrl, sampass )) {
 
+            pdb_free_sam(sampass);
             return PAM_SUCCESS;
-
         }
 
 	/* Password change by root, or for an expired token, doesn't
@@ -157,6 +157,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             Announce = (char *) malloc(sizeof(greeting)+strlen(user));
             if (Announce == NULL) {
                 _log_err(LOG_CRIT, "password: out of memory");
+                pdb_free_sam(sampass);
                 return PAM_BUF_ERR;
             }
             strncpy( Announce, greeting, sizeof(greeting) );
@@ -171,6 +172,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             if (retval != PAM_SUCCESS) {
                 _log_err( LOG_NOTICE
                           , "password - (old) token not obtained" );
+                pdb_free_sam(sampass);
                 return retval;
             }
 
@@ -184,6 +186,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         }
 
         pass_old = NULL;
+        pdb_free_sam(sampass);
         return retval;
 
     } else if (flags & PAM_UPDATE_AUTHTOK) {
@@ -192,6 +195,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             /* NOTE: there is currently no support for password expiring
                under Samba. Support will be added here when it becomes
                available. */
+            pdb_free_sam(sampass);
             return PAM_SUCCESS;
         }
         /*
@@ -218,6 +222,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
         if (retval != PAM_SUCCESS) {
             _log_err( LOG_NOTICE, "password: user not authenticated" );
+            pdb_free_sam(sampass);
             return retval;
         }
 
@@ -244,6 +249,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
                           , "password: new password not obtained" );
             }
             pass_old = NULL;                               /* tidy up */
+            pdb_free_sam(sampass);
             return retval;
         }
 
@@ -262,6 +268,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         if (retval != PAM_SUCCESS) {
             _log_err(LOG_NOTICE, "new password not acceptable");
             pass_new = pass_old = NULL;               /* tidy up */
+            pdb_free_sam(sampass);
             return retval;
         }
 
@@ -301,6 +308,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 	sampass = NULL;
     }
 
+    pdb_free_sam(sampass);
     return retval;
 }
 
