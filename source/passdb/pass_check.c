@@ -682,7 +682,7 @@ match is found and is used to update the encrypted password file
 return True on correct match, False otherwise
 ****************************************************************************/
 
-BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
+BOOL pass_check(char *user, char *password, int pwlen, 
 		BOOL (*fn) (char *, char *))
 {
 	pstring pass2;
@@ -702,12 +702,7 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 	if (((!*password) || (!pwlen)) && !lp_null_passwords())
 		return (False);
 
-	if (pwd && !user) {
-		pass = (struct passwd *)pwd;
-		user = pass->pw_name;
-	} else {
-		pass = Get_Pwnam(user, True);
-	}
+	pass = Get_Pwnam(user, True);
 
 #ifdef WITH_PAM
 

@@ -407,7 +407,7 @@ static BOOL cgi_handle_authorization(char *line)
 
 	tested_pass = True;
 
-	if(pass_check(user, user_pass, strlen(user_pass), NULL, NULL) == True) {
+	if(pass_check(user, user_pass, strlen(user_pass), NULL) == True) {
 
 		/*
 		 * Password was ok.
@@ -434,7 +434,7 @@ static BOOL cgi_handle_authorization(char *line)
 
 	if (!tested_pass)
 		pass_check(default_user_lookup, default_user_pass,
-					strlen(default_user_pass), NULL, NULL);
+					strlen(default_user_pass), NULL);
 
 	cgi_setup_error("401 Bad Authorization", "", 
 			"username or password incorrect");
