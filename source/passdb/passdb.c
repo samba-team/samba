@@ -2466,3 +2466,84 @@ BOOL pdb_init_trustpw_from_buffer(SAM_TRUST_PASSWD *trust, const char** buf, siz
 	tdb_trustpw_unpack(trust, *buf, buf_len);
 	return True;
 }
+
+
+/**
+ * Deallocates memory occupied by trust password structure
+ * 
+ * @param trust struct password structure pointer
+ **/
+
+static void destroy_trustpw_talloc(struct sam_trust_passwd **trust)
+{
+	if (!(*trust)) return;
+	
+	data_blob_clear(&((*trust)->private.pass));
+	talloc_destroy((*trust)->mem_ctx);
+	*trust = NULL;
+}
+
+
+/**
+ * Allocates SAM_TRUST_PASSWD structure using specified talloc context.
+ *
+ * @param mem_ctx talloc context to be used in memory allocation
+ * @param trust trust password structure
+ * @return NTSTATUS code of operation
+ **/
+
+NTSTATUS pdb_init_trustpw_talloc(TALLOC_CTX *mem_ctx, SAM_TRUST_PASSWD **trust)
+{
+	if (*trust != NULL) {
+		DEBUG(0, ("non NULL SAM_TRUST_PASSWD passed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	if (!mem_ctx) {
+		DEBUG(0, ("NULL talloc context passed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	*trust = (SAM_TRUST_PASSWD*) talloc(mem_ctx, sizeof(SAM_TRUST_PASSWD));
+	if (!(*trust)) {
+		DEBUG(0, ("unable to allocate SAM_TRUST_PASSWD from talloc context\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	(*trust)->mem_ctx = mem_ctx;
+	(*trust)->private.pass.length = 0;
+	(*trust)->private.pass.data   = NULL;
+	return NT_STATUS_OK;
+}
+
+
+/**
+ * Allocates SAM_TRUST_PASSWD structure. Creates required talloc context
+ * and passes it to pdb_init_trustpw_talloc function.
+ *
+ * @param trust trust password structure
+ * @return NTSTATUS code of operation
+ **/
+
+NTSTATUS pdb_init_trustpw(SAM_TRUST_PASSWD **trust)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS nt_status;
+	
+	mem_ctx = talloc_init("passdb internal SAM_TRUST_PASSWD allocation");
+	
+	if (!mem_ctx) {
+		DEBUG(0, ("error while allocating structure with talloc_init()\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	nt_status = pdb_init_trustpw_talloc(mem_ctx, trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_destroy(mem_ctx);
+		return nt_status;
+	}
+	
+	(*trust)->free_fn = destroy_trustpw_talloc;
+	
+	return NT_STATUS_OK;
+}

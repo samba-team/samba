@@ -288,7 +288,7 @@ static int ldapsam_search_trustpw_by_name(struct ldapsam_privates *ldap_state,
 {
 	pstring filter;
 	int rc;
-	
+
 	pstr_sprintf(filter, "(&(%s=%s)(objectclass=%s))",
 	             get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN), name,
 	             LDAP_OBJ_TRUST_PASSWORD);
@@ -3411,7 +3411,7 @@ done:
 static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMessage *entry,
                                    LDAPMod ***mod, SAM_TRUST_PASSWD *trustpw)
 {
-	fstring sidstr, mtime_str, flags_str, attr_val;
+	fstring sidstr, mtime_str, flags_str, attr_val, pass_str;
 	const DOM_SID *sid;
 	int ret;
 	const char *attr_domain, *attr_ntpw, *attr_sid, *attr_lct, *attr_flags;
@@ -3461,8 +3461,17 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 #else
 				DEBUG(10, ("Adding ldap mod to update (%s)\n", attr_ntpw));
 #endif
+				/* NT environment uses password hash stored in hex whereas ADS
+				   keep it plain */
+				if (pdb_get_tp_flags(trustpw) & PASS_TRUST_NT) {
+					pdb_sethexpwd(pass_str, pdb_get_tp_pass(trustpw), 0);
+
+				} else if (pdb_get_tp_flags(trustpw) & PASS_TRUST_ADS) {
+					strncpy(pass_str, pdb_get_tp_pass(trustpw), sizeof(pass_str));
+				}
+
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-						 attr_ntpw, pdb_get_tp_pass(trustpw));
+						 attr_ntpw, pass_str);
 			}
 		}
 	} else {
@@ -3471,8 +3480,17 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 #else
 		DEBUG(10, ("Adding ldap mod to add (%s)\n", attr_ntpw));
 #endif
+		/* NT environment uses password hash stored in hex whereas ADS
+		   keep it plain */
+		if (pdb_get_tp_flags(trustpw) & PASS_TRUST_NT) {
+			pdb_sethexpwd(pass_str, pdb_get_tp_pass(trustpw), 0);
+			
+		} else if (pdb_get_tp_flags(trustpw) & PASS_TRUST_ADS) {
+			strncpy(pass_str, pdb_get_tp_pass(trustpw), sizeof(pass_str));
+		}
+		
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod, attr_ntpw,
-				 pdb_get_tp_pass(trustpw));
+				 pass_str);
 	}
 
 	/* SID of the trust password */
@@ -3604,9 +3622,9 @@ static BOOL init_trustpw_from_ldap(struct ldapsam_privates* ldap_state, SAM_TRUS
 
 	if (pdb_get_tp_flags(trust) & PASS_TRUST_NT) {
 		pdb_gethexpwd(value, pass);
-		pdb_set_tp_pass(trust, pass);
+		pdb_set_tp_pass(trust, pass, NT_HASH_LEN);
 	} else if (pdb_get_tp_flags(trust) & PASS_TRUST_ADS)
-		pdb_set_tp_pass(trust, value);
+		pdb_set_tp_pass(trust, value, strlen(value));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(10, ("Trust password field filled with (%s=%s)\n", attr_ntpw, value));
@@ -3710,7 +3728,7 @@ static NTSTATUS ldapsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PAS
 
 	while (!ret) {
 		if (!ldap_state->entry)
-			return NT_STATUS_UNSUCCESSFUL;
+			return NT_STATUS_NO_MORE_ENTRIES;
 
 		ldap_state->index++;
 		ret = init_trustpw_from_ldap(ldap_state, trust, ldap_state->entry);
@@ -3719,7 +3737,10 @@ static NTSTATUS ldapsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PAS
 		                                    ldap_state->entry);
 	}
 
-	return NT_STATUS_OK;
+	if (ldap_state->entry)
+		return STATUS_MORE_ENTRIES;
+	else
+		return NT_STATUS_OK;
 }
 
 
@@ -3846,6 +3867,7 @@ static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, const SAM_
 	char **attr_list;
 	LDAPMessage *res = NULL, *trustpw_entry = NULL;
 	LDAPMod **mod = NULL;
+	const char *my_dom_name;
 	pstring dn;
 	int ldap_op;
 	int rc;
@@ -3886,11 +3908,19 @@ static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, const SAM_
 
 	ldap_op = LDAP_MOD_ADD;
 
+	/* There're two cases - being domain member (object sambaDomainName=<server netbios name>)
+   	   and being domain controller (object sambaDomainName=<domain name>) */
+	if (lp_server_role() == ROLE_DOMAIN_MEMBER) {
+		my_dom_name = global_myname();
+	} else {
+		my_dom_name = lp_workgroup();
+	}
+
 	/* DN of the object being added */
 	snprintf(dn, sizeof(dn) - 1, "%s=%s,%s=%s,%s", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN),
-	         dom_name, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), lp_workgroup(),
-	         lp_ldap_suffix());
-
+		 dom_name, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), my_dom_name,
+		 lp_ldap_suffix());
+	
 	/* Init LDAP entry from trust password structure */
 	if (!init_ldap_from_trustpw(ldap_state, trustpw_entry, &mod, &trustpw)) {
 		DEBUG(0, ("ldapsam_add_trustpw_passwd: init_ldap_from_trustpw failed!\n"));

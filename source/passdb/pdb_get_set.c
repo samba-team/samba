@@ -1297,12 +1297,12 @@ const char* pdb_get_tp_domain_name_c(const SAM_TRUST_PASSWD *trust)
 	return strdup(name);
 }
 
-const char* pdb_get_tp_pass(const SAM_TRUST_PASSWD *trust)
+const uint8* pdb_get_tp_pass(const SAM_TRUST_PASSWD *trust)
 {
 	if (!trust)
 		return NULL;
 
-	return trust->private.pass;
+	return trust->private.pass.data;
 }
 
 
@@ -1338,6 +1338,7 @@ BOOL pdb_set_tp_domain_name(SAM_TRUST_PASSWD *trust, const smb_ucs2_t *dom_name)
 BOOL pdb_set_tp_domain_name_c(SAM_TRUST_PASSWD *trust, const char *dom_name)
 {
 	int len;
+	
 	if (!trust || !dom_name)
 		return False;
 	
@@ -1360,12 +1361,19 @@ BOOL pdb_set_tp_flags(SAM_TRUST_PASSWD *trust, uint16 t_flags)
 	return True;
 }
 
-BOOL pdb_set_tp_pass(SAM_TRUST_PASSWD *trust, const char *pass)
+BOOL pdb_set_tp_pass(SAM_TRUST_PASSWD *trust, const uint8 *pass, size_t len)
 {
-	if (!trust || !pass)
-		return False;
+	TALLOC_CTX *mem_ctx;
 
-	strncpy(trust->private.pass, pass, sizeof(trust->private.pass));
+	if (!trust)
+		return False;
+	
+	mem_ctx = trust->mem_ctx;
+	if (pass)
+		trust->private.pass = data_blob_talloc(mem_ctx, pass, len);
+	else
+		trust->private.pass = data_blob_talloc(mem_ctx, NULL, 0);
+
 	return True;
 }
 

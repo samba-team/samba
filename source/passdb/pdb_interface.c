@@ -711,7 +711,7 @@ static NTSTATUS context_add_trust_passwd(struct pdb_context *context,
 
 	while (cur_methods) {
 		ret = cur_methods->add_trust_passwd(cur_methods, trust);
-		if (NT_STATUS_IS_OK(ret)) {
+		if (!NT_STATUS_EQUAL(ret, NT_STATUS_UNSUCCESSFUL)) {
 			trust->methods = cur_methods;
 			return ret;
 		}

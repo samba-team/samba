@@ -49,6 +49,7 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 struct tdbsam_privates {
 	TDB_CONTEXT 	*passwd_tdb;
+	TDB_LIST_NODE   *tp_key_list;
 
 	/* retrive-once info */
 	const char *tdbsam_location;
@@ -59,8 +60,6 @@ struct pwent_list {
 	TDB_DATA key;
 };
 static struct pwent_list *tdbsam_pwent_list;
-
-static TDB_LIST_NODE *tp_key_list;
 
 
 /**
@@ -721,19 +720,22 @@ static NTSTATUS tdbsam_settrustpwent(struct pdb_methods *methods)
 {
 	TDB_CONTEXT *secrets_tdb = secrets_open();
 	char* trustpw_pattern;
-
+	struct tdbsam_privates *priv;
+	
 	if (!methods)
 		return NT_STATUS_UNSUCCESSFUL;
-
+	
 	if (!secrets_tdb) {
 		DEBUG(1, ("pdb_settrustpwent: couldn't open secrets.tdb file.\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-
+	
+	priv = (struct tdbsam_privates*) methods->private_data;
+	
 	DEBUG(7, ("pdb_settrustpwent: opening trust passwords database.\n"));
 	asprintf(&trustpw_pattern, "%s*", TRUSTPW_PREFIX);
-	tp_key_list = tdb_search_keys(secrets_tdb, trustpw_pattern);
-
+	priv->tp_key_list = tdb_search_keys(secrets_tdb, trustpw_pattern);
+	
 	SAFE_FREE(trustpw_pattern);
 	return NT_STATUS_OK;
 }
@@ -741,8 +743,13 @@ static NTSTATUS tdbsam_settrustpwent(struct pdb_methods *methods)
 
 static void tdbsam_endtrustpwent(struct pdb_methods *methods)
 {
-	tdb_search_list_free(tp_key_list);
-	tp_key_list = NULL;
+	struct tdbsam_privates *priv;
+	
+	if (!methods) return;
+	
+	priv = (struct tdbsam_privates*) methods->private_data;
+	tdb_search_list_free(priv->tp_key_list);
+	priv->tp_key_list = NULL;
 	DEBUG(7, ("pdb_endtrustpwent: closing trust passwords database.\n"));
 }
 
@@ -759,22 +766,28 @@ static void tdbsam_endtrustpwent(struct pdb_methods *methods)
 static NTSTATUS tdbsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	struct tdbsam_privates *priv;
 	TDB_LIST_NODE *tp_key;
 	TDB_DATA tp_data;
 	TDB_CONTEXT *secrets_tdb = secrets_open();
+
+	if (!methods)
+		return NT_STATUS_UNSUCCESSFUL;
 
 	if (!secrets_tdb) {
 		DEBUG(0, ("pdb_gettrustpwent: couldn't open secrets.tdb file!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	tp_key = tp_key_list;
+	priv = (struct tdbsam_privates*) methods->private_data;
+
+	tp_key = priv->tp_key_list;
 	if (!tp_key || !tp_key->node_key.dptr) {
 		DEBUG(7, ("pdb_gettrustpwent: end of search keys list.\n"));
 		return NT_STATUS_NO_MORE_ENTRIES;
 	}
 
-	DLIST_REMOVE(tp_key_list, tp_key);
+	DLIST_REMOVE(priv->tp_key_list, tp_key);
 
 	tp_data = tdb_fetch(secrets_tdb, tp_key->node_key);
 	SAFE_FREE(tp_key->node_key.dptr);
@@ -791,7 +804,6 @@ static NTSTATUS tdbsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASS
 	}
 
 	nt_status = STATUS_MORE_ENTRIES;
-
 	SAFE_FREE(tp_data.dptr);
 	return nt_status;
 }
