@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -73,22 +73,22 @@ static krb5_error_code
 NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
 
 {
-    DBM *d = (DBM*)db->db;
+    struct ndbm_db *d = (struct ndbm_db *)db->db;
     datum key, value;
     krb5_data key_data, data;
     krb5_error_code ret;
 
     if(first)
-	key = dbm_firstkey(d);
+	key = dbm_firstkey(d->db);
     else
-	key = dbm_nextkey(d);
+	key = dbm_nextkey(d->db);
     if(key.dptr == NULL)
 	return HDB_ERR_NOENTRY;
     key_data.data = key.dptr;
     key_data.length = key.dsize;
     ret = db->lock(context, db, HDB_RLOCK);
     if(ret) return ret;
-    value = dbm_fetch(d, key);
+    value = dbm_fetch(d->db, key);
     db->unlock(context, db);
     data.data = value.dptr;
     data.length = value.dsize;
@@ -173,7 +173,7 @@ NDBM_rename(krb5_context context, HDB *db, const char *new_name)
 static krb5_error_code
 NDBM__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
 {
-    DBM *d = (DBM*)db->db;
+    struct ndbm_db *d = (struct ndbm_db *)db->db;
     datum k, v;
     int code;
 
@@ -182,7 +182,7 @@ NDBM__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
     code = db->lock(context, db, HDB_RLOCK);
     if(code)
 	return code;
-    v = dbm_fetch(d, k);
+    v = dbm_fetch(d->db, k);
     db->unlock(context, db);
     if(v.dptr == NULL)
 	return HDB_ERR_NOENTRY;
@@ -195,7 +195,7 @@ static krb5_error_code
 NDBM__put(krb5_context context, HDB *db, int replace, 
 	krb5_data key, krb5_data value)
 {
-    DBM *d = (DBM*)db->db;
+    struct ndbm_db *d = (struct ndbm_db *)db->db;
     datum k, v;
     int code;
 
@@ -207,7 +207,7 @@ NDBM__put(krb5_context context, HDB *db, int replace,
     code = db->lock(context, db, HDB_WLOCK);
     if(code)
 	return code;
-    code = dbm_store(d, k, v, replace ? DBM_REPLACE : DBM_INSERT);
+    code = dbm_store(d->db, k, v, replace ? DBM_REPLACE : DBM_INSERT);
     db->unlock(context, db);
     if(code == 1)
 	return HDB_ERR_EXISTS;
@@ -219,7 +219,7 @@ NDBM__put(krb5_context context, HDB *db, int replace,
 static krb5_error_code
 NDBM__del(krb5_context context, HDB *db, krb5_data key)
 {
-    DBM *d = (DBM*)db->db;
+    struct ndbm_db *d = (struct ndbm_db *)db->db;
     datum k;
     int code;
     krb5_error_code ret;
@@ -228,7 +228,7 @@ NDBM__del(krb5_context context, HDB *db, krb5_data key)
     k.dsize = key.length;
     ret = db->lock(context, db, HDB_WLOCK);
     if(ret) return ret;
-    code = dbm_delete(d, k);
+    code = dbm_delete(d->db, k);
     db->unlock(context, db);
     if(code < 0)
 	return errno;
