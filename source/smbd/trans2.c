@@ -566,7 +566,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			}
 
 			size = sbuf.st_size;
-			allocation_size = SMB_ROUNDUP_ALLOCATION(sbuf.st_size);
+			allocation_size = SMB_ROUNDUP(sbuf.st_size,SMB_ROUNDUP_ALLOCATION_SIZE);
 			mdate = sbuf.st_mtime;
 			adate = sbuf.st_atime;
 			cdate = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
@@ -1599,7 +1599,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	uint16 info_level;
 	int mode=0;
 	SMB_OFF_T size=0;
-	SMB_OFF_T allocation_size=0;
+	SMB_OFF_T allocation_size = 0;
+	SMB_OFF_T initial_allocation_size = 0;
 	unsigned int data_size;
 	SMB_STRUCT_STAT sbuf;
 	pstring fname1;
@@ -1672,6 +1673,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 			delete_pending = fsp->delete_on_close;
+			if (fsp->initial_allocation_size)
+				initial_allocation_size = fsp->initial_allocation_size;
 		}
 	} else {
 		/* qpathinfo */
@@ -1723,7 +1726,11 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	mode = dos_mode(conn,fname,&sbuf);
 	fullpathname = fname;
 	size = sbuf.st_size;
-	allocation_size = SMB_ROUNDUP_ALLOCATION(sbuf.st_size);
+	if (size == 0 && initial_allocation_size)
+		allocation_size = initial_allocation_size;
+	else
+		allocation_size = SMB_ROUNDUP(size,SMB_ROUNDUP_ALLOCATION_SIZE);
+
 	if (mode & aDIR)
 		size = 0;
 
@@ -2520,6 +2527,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #endif /* LARGE_SMB_OFF_T */
 			DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
 				fname, (double)allocation_size ));
+
+			if (allocation_size)
+				allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
 
 			if(allocation_size != sbuf.st_size) {
 				SMB_STRUCT_STAT new_sbuf;
