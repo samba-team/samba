@@ -1,5 +1,5 @@
-              WHATS NEW IN Samba 2.0.7-pre4
-              =============================
+              WHATS NEW IN Samba 2.0.7
+              ========================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
@@ -92,9 +92,6 @@ This pathname parameter causes Samba to read a list of environment
 variables from a named file on startup. This can be useful in setting
 up Samba in a clustered environment. See the smb.conf man page for more
 details.
-
-The default setting of the "level2 oplocks" parameter has changed from
-False to True in this release.
 
 Ability to delete users added
 -----------------------------
@@ -213,6 +210,8 @@ from Norbert Püschel (Pueschel.Norbert@Walzbarren-VAW.ne.uunet.de).
 62). SWAT fixes for SCO UnixWare (SIGPIPE handling).
 63). Fix for nmbd DOS with redirect recursion.
 64). Fix for log files growing without bound from Mattias Gronlund.
+65). Fix for smbd crash bug in truncate is locked.
+66). Memory leak fix in mangle name code.
 
 Older release notes for Samba 2.0.x follow.
 
