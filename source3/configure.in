@@ -172,11 +172,13 @@ AC_ARG_ENABLE(debug,
 
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if eval "test x$enable_developer = xyes"; then
-	CFLAGS="${CFLAGS} -g -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+        developer=yes
+    	CFLAGS="${CFLAGS} -g -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
 AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
     [if eval "test x$enable_krb5developer = xyes"; then
+        developer=yes
 	CFLAGS="${CFLAGS} -g -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
@@ -250,7 +252,7 @@ default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_r
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms"
 
-if test "x$enable_developer" = xyes; then
+if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_echo"
    default_shared_modules="$default_shared_modules charset_weird"
 fi
@@ -3453,7 +3455,6 @@ SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB,
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, "bin/nisplussam.$SHLIBEXT", PDB)
-SMB_MODULE(pdb_unix, passdb/pdb_unix.o, "bin/unixsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
 SMB_SUBSYSTEM(PDB)
 
