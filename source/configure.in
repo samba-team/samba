@@ -1573,7 +1573,7 @@ AC_ARG_WITH(libiconv,
 [  --with-libiconv=BASEDIR Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto) ],
 [
   if test "$withval" = "no" ; then
-    AC_MSG_ERROR(I won't take no for an answer)
+    AC_MSG_ERROR([argument to --with-libiconv must be a directory])
   else
      if test "$withval" != "yes" ; then
 	ICONV_PATH_SPEC=yes
