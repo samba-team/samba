@@ -743,7 +743,6 @@ dynconfig.@PICSUFFIX@: dynconfig.c Makefile
 	@echo Compiling $*.c with @PICFLAGS@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
-@POBAD_CC@	-@mv $*.@PICSUFFIX@.o $@
 
 lib/version.o: lib/version.c include/version.h
 	@echo Compiling $*.c
@@ -755,7 +754,6 @@ lib/version.@PICSUFFIX@: lib/version.c include/version.h
 	@echo Compiling $*.c with @PICFLAGS@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
-@POBAD_CC@	@mv $*.@PICSUFFIX@.o $@
 
 smbd/build_options.o: smbd/build_options.c Makefile include/config.h include/build_env.h include/proto.h
 	@echo Compiling $*.c
@@ -771,7 +769,6 @@ smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
 	@echo Compiling $*.c with @PICFLAGS@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
-@POBAD_CC@	@mv $*.@PICSUFFIX@.o $@
 
 bin/.dummy:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then :; else \
