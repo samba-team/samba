@@ -35,3 +35,15 @@ int real_utime(const char *name, struct utimbuf *buf)
 	return real_utimes(name, &tv[0]);
 }
 #endif
+
+#ifdef REPLACE_UTIMES
+int real_utimes(const char *name, struct timeval tv[2])
+{
+	struct utimbuf buf;
+
+	buf.actime = tv[0].tv_sec;
+	buf.modtime = tv[1].tv_sec;
+	
+	return real_utime(name, &buf);
+}
+#endif

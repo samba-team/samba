@@ -39,14 +39,28 @@
 }
 
 #ifdef HAVE__OPEN
- int _open(const char *name, int flags, mode_t mode) 
+ int _open(const char *name, int flags, ...) 
 {
-   return open(name, flags, mode);
+	va_list ap;
+	mode_t mode;
+
+	va_start(ap, flags);
+	mode = va_arg(ap, mode_t);
+	va_end(ap);
+
+	return open(name, flags, mode);
 }
 #elif HAVE___OPEN
- int __open(const char *name, int flags, mode_t mode) 
+ int __open(const char *name, int flags, ...) 
 {
-   return open(name, flags, mode);
+	va_list ap;
+	mode_t mode;
+
+	va_start(ap, flags);
+	mode = va_arg(ap, mode_t);
+	va_end(ap);
+
+	return open(name, flags, mode);
 }
 #endif
 
@@ -198,13 +212,25 @@
 
 
 #ifdef HAVE___FCNTL
- int __fcntl(int fd, int cmd, long arg)
+ int __fcntl(int fd, int cmd, ...)
 {
+	va_list ap;
+	long arg;
+	va_start(ap, cmd);
+	arg = va_arg(ap, long);
+	va_end(ap);
+
 	return fcntl(fd, cmd, arg);
 }
 #elif HAVE__FCNTL
- int _fcntl(int fd, int cmd, long arg)
+ int _fcntl(int fd, int cmd, ...)
 {
+	va_list ap;
+	long arg;
+	va_start(ap, cmd);
+	arg = va_arg(ap, long);
+	va_end(ap);
+
 	return fcntl(fd, cmd, arg);
 }
 #endif
@@ -600,7 +626,7 @@
 #endif
 
 #ifdef HAVE_UTIMES
- int utimes(const char *name,void *tvp)
+ int utimes(const char *name,struct timeval tvp[2])
 {
 	if (smbw_path(name)) {
 		return smbw_utimes(name, tvp);
