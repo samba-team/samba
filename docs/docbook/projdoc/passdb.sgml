@@ -323,21 +323,11 @@ Identified (RID).
 As a result of these defeciencies, a more robust means of storing user attributes
 used by smbd was developed.  The API which defines access to user accounts
 is commonly referred to as the samdb interface (previously this was called the passdb
-API, and is still so named in the CVS trees). In Samba 2.2.3, enabling support
-for a samdb backend (e.g. <parameter>--with-ldapsam</parameter> or
-<parameter>--with-tdbsam</parameter>) requires compile time support.
+API, and is still so named in the CVS trees). 
 </para>
 
 <para>
-When compiling Samba to include the <parameter>--with-ldapsam</parameter> autoconf
-option, smbd (and associated tools) will store and lookup user accounts in
-an LDAP directory.  In reality, this is very easy to understand.  If you are
-comfortable with using an smbpasswd file, simply replace "smbpasswd" with
-"LDAP directory" in all the documentation.
-</para>
-
-<para>
-There are a few points to stress about what the <parameter>--with-ldapsam</parameter>
+There are a few points to stress about what the ldapsam
 does not provide.  The LDAP support referred to in the this documentation does not
 include:
 </para>
@@ -602,8 +592,8 @@ of sambaAccount entries in the directory.
 <para>
 These password hashes are clear text equivalents and can be used to impersonate
 the user without deriving the original clear text strings.  For more information
-on the details of LM/NT password hashes, refer to the <ulink
-url="ENCRYPTION.html">ENCRYPTION chapter</ulink> of the Samba-HOWTO-Collection.
+on the details of LM/NT password hashes, refer to the <link
+linkend="passdb">User Database</link> of the Samba-HOWTO-Collection.
 </para>
 
 <para>

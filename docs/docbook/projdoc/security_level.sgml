@@ -3,7 +3,7 @@
 	&author.tridge;
 	&author.jelmer;
 </chapterinfo>
-<title>Samba as Stand-Alone Server</title
+<title>Samba as Stand-Alone Server</title>
 
 <para>
 In this section the function and purpose of Samba's <emphasis>security</emphasis>
@@ -11,7 +11,7 @@ modes are described.
 </para>
 
 <sect1>
-<Title>User and Share security level</title>
+<title>User and Share security level</title>
 
 <para>
 A SMB server tells the client at startup what "security level" it is

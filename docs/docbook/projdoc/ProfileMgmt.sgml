@@ -84,7 +84,7 @@ meta-service name as part of the profile share path.
 <para>
 To support Windows 9x / Me clients, you must use the "logon home" parameter. Samba has
 now been fixed so that <userinput>net use /home</userinput> now works as well, and it, too, relies
-on the <command>logon home</command< parameter.
+on the <command>logon home</command> parameter.
 </para>
 
 <para>
@@ -560,6 +560,8 @@ domain is not a member of a trust relationship with your NT4 PDC.</para></note>
 Follow the above for every profile you need to migrate.
 </para>
 
+</sect3>
+
 <sect3>
 <title>Side bar Notes</title>
 
@@ -574,7 +576,6 @@ settings as well as all your users.
 </para>
 
 </sect3>
-
 
 <sect3>
 <title>moveuser.exe</title>
@@ -682,7 +683,7 @@ is located on the Windows workstation, and knowing which registry keys affect th
 from which the default profile is created, it is possible to modify the default profile
 to one that has been optimised for the site. This has significant administrative 
 advantages.
-<para>
+</para>
 
 <sect2>
 <title>MS Windows 9x/Me</title>
@@ -1061,7 +1062,7 @@ A roaming profile will be cached locally unless the following registry key is cr
 
 In which case, the local cache copy will be deleted on logout.
 </para>
-</sect2
+</sect2>
 </sect1>
 
 </chapter>
