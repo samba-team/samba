@@ -117,6 +117,8 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 
 QUOTAOBJS=@QUOTAOBJS@
 
+MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ bin/vfs_netatalk.@SHLIBEXT@ @MODULE_MYSQL@ @MODULE_XML@
+
 ######################################################################
 # object file lists
 ######################################################################
@@ -424,6 +426,10 @@ NSSTEST_OBJ = torture/nsstest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
 
+VFS_AUDIT_OBJ = modules/vfs_audit.o
+VFS_RECYCLE_OBJ = modules/vfs_recycle.o
+VFS_NETATALK_OBJ = modules/vfs_netatalk.o
+
 LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -546,6 +552,8 @@ nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
 everything: all libsmbclient debug2html smbfilter talloctort 
+
+modules: SHOWFLAGS $(MODULES)
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
@@ -808,6 +816,21 @@ bin/pdb_xml.@SHLIBEXT@: $(PDB_XML_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PDB_XML_OBJ) @XML_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
+bin/vfs_audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
+		@SONAMEFLAG@`basename $@`
+
+bin/vfs_recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ) \
+		@SONAMEFLAG@`basename $@`
+
+bin/vfs_netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ) \
+		@SONAMEFLAG@`basename $@`
+
 bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) $(SECRETS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -836,6 +859,9 @@ installservers: all installdirs
 installbin: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SPROGS)
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(PROGS)
+
+installmodules: all installdirs
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(LIBDIR) $(MODULES)
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
@@ -927,6 +953,9 @@ uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SPROGS)
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PROGS)
 
+uninstallmodules:
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(MODULES)
+
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
 
@@ -935,7 +964,7 @@ TOPFILES=dynconfig.o dynconfig.po
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
-		$(TOPFILES) $(PROGS) $(SPROGS) .headers.stamp
+		$(TOPFILES) $(PROGS) $(SPROGS) $(MODULES) .headers.stamp
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
@@ -1012,7 +1041,7 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean delheaders
-	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy script/findsmb
+	-rm -f config.log $(PROGS) $(MODULES) $(SPROGS) bin/.dummy script/findsmb
 
 distclean: realclean
 	-rm -f include/stamp-h
@@ -1069,4 +1098,3 @@ dangerous-installcheck:
 	SATYR_SUITEDIR=../testsuite/satyr/ prefix=$(BASEDIR) \
 	LIBSMB_PROG=$(SBINDIR)/smbd \
 	testdir=./testdir $(SHELL) satyr
-
