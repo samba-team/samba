@@ -300,11 +300,11 @@ kadm5_c_init_with_context(krb5_context context,
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    snprintf (portstr, sizeof(portstr), "%u", ctx->kadmind_port);
-
     ret = _kadm5_c_init_context(&ctx, realm_params, context);
     if(ret)
 	return ret;
+
+    snprintf (portstr, sizeof(portstr), "%u", ctx->kadmind_port);
 
     error = getaddrinfo (ctx->admin_server, portstr,
 			 &hints, &ai);
