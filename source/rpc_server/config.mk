@@ -14,6 +14,7 @@ ADD_OBJ_FILES = \
 ################################################
 # Start MODULE dcerpc_dcom
 [MODULE::dcerpc_dcom]
+ENABLE = NO
 INIT_FUNCTION = dcerpc_server_dcom_init
 SUBSYSTEM = DCERPC
 INIT_OBJ_FILES = \
