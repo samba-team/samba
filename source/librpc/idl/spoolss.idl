@@ -100,17 +100,6 @@
 		[relative] nstring *comment;
 	} spoolss_PrinterInfo1;
 
-	typedef struct {
-		uint32 flags;
-		[relative] nstring *formname;
-		uint32 width;
-		uint32 length;
-		uint32 left;
-		uint32 top;
-		uint32 right;
-		uint32 bottom;
-	} spoolss_FormInfo1;
-
 	typedef [public] struct {
 		[relative] nstring *servername;
 		[relative] nstring *printername;
@@ -475,6 +464,17 @@
 
 	/******************/
 	/* Function: 0x20 */
+	typedef struct {
+		uint32 flags;
+		[relative] nstring *formname;
+		uint32 width;
+		uint32 length;
+		uint32 left;
+		uint32 top;
+		uint32 right;
+		uint32 bottom;
+	} spoolss_FormInfo1;
+
 	WERROR spoolss_GetForm(
 		[in,ref] policy_handle *handle,
 		[in] unistr formname,
