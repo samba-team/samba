@@ -1059,7 +1059,7 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
         SSVAL(cli->outbuf,smb_tid,cli->cnum);
         cli_setup_packet(cli);
 
-        SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN);
+        SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN | aDIR);
 
         p = smb_buf(cli->outbuf);
         *p++ = 4;
