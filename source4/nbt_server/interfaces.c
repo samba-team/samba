@@ -234,18 +234,35 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv)
 
 /*
   form a list of addresses that we should use in name query replies
+  we always place the IP in the given interface first
 */
-const char **nbtd_address_list(struct nbtd_server *nbtsrv, TALLOC_CTX *mem_ctx)
+const char **nbtd_address_list(struct nbtd_interface *iface, TALLOC_CTX *mem_ctx)
 {
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	const char **ret = NULL;
-	struct nbtd_interface *iface;
-	int count = 0;
+	struct nbtd_interface *iface2;
+	int count;
 
-	for (iface=nbtsrv->interfaces;iface;iface=iface->next) {
-		const char **ret2 = talloc_realloc(mem_ctx, ret, const char *, count+2);
+	ret = talloc_array(mem_ctx, const char *, 2);
+	if (ret == NULL) goto failed;
+
+	ret[0] = talloc_strdup(ret, iface->ip_address);
+	if (ret[0] == NULL) goto failed;
+	ret[1] = NULL;
+
+	count = 1;
+
+	for (iface2=nbtsrv->interfaces;iface2;iface2=iface2->next) {
+		const char **ret2;
+
+		if (strcmp(iface2->ip_address, iface->ip_address) == 0) {
+			continue;
+		}
+
+		ret2 = talloc_realloc(mem_ctx, ret, const char *, count+2);
 		if (ret2 == NULL) goto failed;
 		ret = ret2;
-		ret[count] = talloc_strdup(ret, iface->ip_address);
+		ret[count] = talloc_strdup(ret, iface2->ip_address);
 		if (ret[count] == NULL) goto failed;
 		count++;
 	}
