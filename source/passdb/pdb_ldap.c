@@ -1163,24 +1163,6 @@ static BOOL ldapsam_getsampwrid(struct pdb_context *context, SAM_ACCOUNT * user,
 }
 
 /**********************************************************************
- get rid by uid 
-*********************************************************************/
-
-static uint32 ldapsam_uid_to_user_rid(struct pdb_context *context, uid_t uid)
-{
-	return fallback_pdb_uid_to_user_rid(uid);
-}
-
-/**********************************************************************
- get uid by rid 
-*********************************************************************/
-
-static uid_t ldapsam_user_rid_to_uid(struct pdb_context *context, uint32 rid)
-{
-	return fallback_pdb_user_rid_to_uid(rid);
-}
-
-/**********************************************************************
 Delete entry from LDAP for username 
 *********************************************************************/
 static BOOL ldapsam_delete_sam_account(struct pdb_context *context, const SAM_ACCOUNT * sam_acct)
@@ -1445,8 +1427,6 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	(*pdb_method)->add_sam_account = ldapsam_add_sam_account;
 	(*pdb_method)->update_sam_account = ldapsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = ldapsam_delete_sam_account;
-	(*pdb_method)->uid_to_user_rid = ldapsam_uid_to_user_rid;
-	(*pdb_method)->user_rid_to_uid = ldapsam_user_rid_to_uid;
 
 	/* TODO: Setup private data and free */
 
