@@ -1056,6 +1056,11 @@ int sys_acl_set_fd(int fd, SMB_ACL_T acl_d)
 	return acl_set_fd(fd, acl_d->aclp);
 }
 
+int sys_acl_delete_def_file(const char *name)
+{
+	return acl_delete_def_file(name);
+}
+
 int sys_acl_free_text(char *text)
 {
 	return acl_free(text);
