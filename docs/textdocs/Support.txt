@@ -1,5 +1,5 @@
 !==
-!== Support.txt for Samba release 1.9.18p2 27 Jan 1998
+!== Support.txt for Samba release 1.9.18 08 Jan 1998
 !==
 The Samba Consultants List
 ==========================
@@ -38,7 +38,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       38
+    EUROPE                                       39
     MIDDLE EAST                                   1
 
 AFRICA
@@ -1008,7 +1008,7 @@ SYDNEY - AUSTRALIA
 John Terpstra - Aquasoft (jht@aquasoft.com.au)
 Business:  +612 9524 4040
 Home:      +612 9540 3154
-Mobile:    +614 1935 3637  (aka 0419 353637)
+Mobile:    +612 414 334422  (aka 0414 334422)
 Samba Experience: Member of Samba-Team. Long term contributor to Samba
                   Samba on BSD/OS, Solaris (Sparc & x86), ISC Unix, SCO Unix
                   NCR SVR4, Linux, UnixWare, IBM, HP, DEC, Others.
@@ -1915,6 +1915,24 @@ http://www.id.ibs.se/ibsid
         
 We have offices in about 20 cities in Sweden and can provide commercial 
 support for Samba.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+BERN - SWITZERLAND
+
+Charles Bueche           e-mail : cbueche@worldcom.ch
+Les Morels 9             phone  : +41.(0)79.330.00.70
+2515 Preles              fax    : +41.(0)32.315.52.16
+Switzerland
+
+I have used Samba for more than 4 years across several 
+large Swiss companies. I offer support on planing, 
+configuration and maintenance of Samba. My primary 
+platform is Sun Solaris, but I can also support 
+Samba on SunOS, HP, DEC-UNIX, or Linux.
+
+Other duties includes security audits (Inter- & Intranet),
+Sun High Availability and Checkpoint Firewall-1.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
