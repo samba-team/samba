@@ -12,7 +12,7 @@
 
 What you are seeing is being done deliberately.
 
-The problem is that some version of MS Windows NT have a bug when
+The problem is that some versions of MS Windows NT have a bug when
 used as a password server when Samba is set up to use "security=server"
 (Note that this is *NOT* a problem when using "security=domain").
 

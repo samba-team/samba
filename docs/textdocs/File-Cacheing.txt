@@ -30,7 +30,7 @@ from both Windows and UNIX.
 
 Two more data points :
 
-Samba-1.9.18 series supports oplocks.
+Samba-1.9.18 and later series supports oplocks.
 Samba-1.9.17 series does NOT.
 
 In addition, the following registry entries under MS Windows NT4 will
