@@ -293,8 +293,8 @@ void make_clnt_info(DOM_CLNT_INFO *clnt,
 void smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth);
 void make_logon_id(DOM_LOGON_ID *log, uint32 log_id_low, uint32 log_id_high);
 void smb_io_logon_id(char *desc,  DOM_LOGON_ID *log, prs_struct *ps, int depth);
-void make_arc4_owf(ARC4_OWF *hash, uint8 data[16]);
-void smb_io_arc4_owf(char *desc,  ARC4_OWF *hash, prs_struct *ps, int depth);
+void make_owf_info(OWF_INFO *hash, uint8 data[16]);
+void smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
 void smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 void smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
 void smb_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);

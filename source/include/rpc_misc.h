@@ -243,12 +243,12 @@ typedef struct logon_info
 
 } DOM_LOGON_ID;
 
-/* ARC4_OWF */
-typedef struct arc4_owf_info
+/* OWF INFO */
+typedef struct owf_info
 {
   uint8 data[16];
 
-} ARC4_OWF;
+} OWF_INFO;
 
 
 /* DOM_GID - group id + user attributes */

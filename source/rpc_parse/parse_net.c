@@ -580,8 +580,8 @@ void make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 	int len_user_name   = strlen(user_name  );
 	int len_wksta_name  = strlen(wksta_name );
 
-	unsigned char arc4_lm_owf[16];
-	unsigned char arc4_nt_owf[16];
+	unsigned char lm_owf[16];
+	unsigned char nt_owf[16];
 
 	if (id == NULL) return;
 
@@ -597,12 +597,10 @@ void make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  , len_user_name  , 4);
 	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name , len_wksta_name , 4);
 
-#ifdef USE_ARCFOUR
-
 	if (lm_cypher && nt_cypher)
 	{
 		void arcfour(uint8 key[16], uint8 out[16], uint8 in[16]);
-		unsigned char arc4_key[16];
+		unsigned char owf_key[16];
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("lm cypher:"));
 		dump_data(100, lm_cypher, 16);
@@ -611,43 +609,27 @@ void make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 		dump_data(100, nt_cypher, 16);
 #endif
 
-		memset(arc4_key, 0, 16);
-		memcpy(arc4_key, sess_key, 16);
+		memcpy(owf_key, sess_key, 16);
 
-		arcfour(arc4_key, arc4_lm_owf, lm_cypher);
-		arcfour(arc4_key, arc4_nt_owf, nt_cypher);
+                memcpy(lm_owf, lm_cypher, 16);
+                memcpy(nt_owf, nt_cypher, 16);
+		SamOEMhash(lm_owf, owf_key, False);
+		SamOEMhash(nt_owf, owf_key, False);
 
 #ifdef DEBUG_PASSWORD
-		DEBUG(100,("arcfour encrypt of lm owf password:"));
-		dump_data(100, arc4_lm_owf, 16);
+		DEBUG(100,("hash of lm owf password:"));
+		dump_data(100, lm_owf, 16);
 
-		DEBUG(100,("arcfour encrypt of nt owf password:"));
-		dump_data(100, arc4_nt_owf, 16);
+		DEBUG(100,("hash of nt owf password:"));
+		dump_data(100, nt_owf, 16);
 #endif
-		/* set up pointers to cypher blocks */
-		lm_cypher = arc4_lm_owf;
-		nt_cypher = arc4_nt_owf;
+		/* set up pointers to blocks */
+		lm_cypher = lm_owf;
+		nt_cypher = nt_owf;
 	}
 
-#else
-
-	if (lm_cypher)
-	{
-		/* oops.  can only send what-ever-it-is direct */
-		memcpy(arc4_lm_owf, lm_cypher, 16);
-		lm_cypher = arc4_lm_owf;
-	}
-	if (nt_cypher)
-	{
-		/* oops.  can only send what-ever-it-is direct */
-		memcpy(arc4_nt_owf, nt_cypher, 16);
-		nt_cypher = arc4_nt_owf;
-	}
-
-#endif
-
-	make_arc4_owf(&(id->arc4_lm_owf), lm_cypher);
-	make_arc4_owf(&(id->arc4_nt_owf), nt_cypher);
+	make_owf_info(&(id->lm_owf), lm_cypher);
+	make_owf_info(&(id->nt_owf), nt_cypher);
 
 	make_unistr2(&(id->uni_domain_name), domain_name, len_domain_name);
 	make_unistr2(&(id->uni_user_name  ), user_name  , len_user_name  );
@@ -678,8 +660,8 @@ void net_io_id_info1(char *desc,  NET_ID_INFO_1 *id, prs_struct *ps, int depth)
 		smb_io_unihdr("unihdr", &(id->hdr_user_name  ), ps, depth);
 		smb_io_unihdr("unihdr", &(id->hdr_wksta_name ), ps, depth);
 
-		smb_io_arc4_owf("", &(id->arc4_lm_owf), ps, depth);
-		smb_io_arc4_owf("", &(id->arc4_nt_owf), ps, depth);
+		smb_io_owf_info("", &(id->lm_owf), ps, depth);
+		smb_io_owf_info("", &(id->nt_owf), ps, depth);
 
 		smb_io_unistr2("unistr2", &(id->uni_domain_name), id->hdr_domain_name.buffer, ps, depth);
 		smb_io_unistr2("unistr2", &(id->uni_user_name  ), id->hdr_user_name.buffer, ps, depth);
@@ -701,8 +683,8 @@ void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 	int len_user_name   = strlen(user_name  );
 	int len_wksta_name  = strlen(wksta_name );
 
-	unsigned char arc4_lm_owf[24];
-	unsigned char arc4_nt_owf[24];
+	unsigned char lm_owf[24];
+	unsigned char nt_owf[24];
 
 	if (id == NULL) return;
 
@@ -721,14 +703,14 @@ void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 	if (nt_chal_resp)
 	{
 		/* oops.  can only send what-ever-it-is direct */
-		memcpy(arc4_nt_owf, nt_chal_resp, 24);
-		nt_chal_resp = arc4_nt_owf;
+		memcpy(nt_owf, nt_chal_resp, 24);
+		nt_chal_resp = nt_owf;
 	}
 	if (lm_chal_resp)
 	{
 		/* oops.  can only send what-ever-it-is direct */
-		memcpy(arc4_lm_owf, lm_chal_resp, 24);
-		lm_chal_resp = arc4_lm_owf;
+		memcpy(lm_owf, lm_chal_resp, 24);
+		lm_chal_resp = lm_owf;
 	}
 
 	memcpy(&(id->lm_chal), lm_challenge, sizeof(id->lm_chal));
