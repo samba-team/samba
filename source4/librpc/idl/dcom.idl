@@ -200,7 +200,7 @@ interface ObjectRpcBaseTypes
 		uint32 cPublicRefs; /* count of references passed */
 		OXID oxid; /* oxid of server with this oid */
 		OID oid; /* oid of object with this ipid */
-		IPID ipid; /* ipid of Interface */
+		IPID ipid; /* ipid of interface pointer to this object */
 	} 	STDOBJREF;
 
 	typedef struct
@@ -249,7 +249,7 @@ interface ObjectRpcBaseTypes
 	typedef [public] struct 
 	{
 		uint32 size;
-		[subcontext(4),align(4)] OBJREF obj;
+		[subcontext(4)] OBJREF obj;
 	} MInterfacePointer;
 }
 
@@ -501,11 +501,15 @@ uuid(DB7C21F8-FE33-4C11-AEA5-CEB56F076FBB),
 ]
 interface IStream : IUnknown
 {
-	WERROR IStream_Read([in] uint32 num_requested, 
-				[out,size_is(*num_read)] uint8 *data, 
-				[out] uint32 *num_read);
+	WERROR IStream_Read(
+				[out, size_is(num_requested), length_is(num_read)] uint8 pv[],
+				[in] uint32 num_requested, 
+				[in] uint32 *num_readx,
+				[out] uint32 num_read
+				);
 
-	WERROR IStream_Write([in,size_is(num_requested)] uint8 *data,
+	WERROR IStream_Write(
+				[in,size_is(num_requested)] uint8 *data,
 				 [in] uint32 num_requested,
-				 [out] uint32 *num_written);
+				 [out] uint32 num_written);
 }

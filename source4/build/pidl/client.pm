@@ -34,6 +34,10 @@ struct rpc_request *dcerpc_$name\_send(struct dcom_interface *d, TALLOC_CTX *mem
 		return NULL;
 	}
 
+	ZERO_STRUCT(r->in.ORPCthis);
+	r->in.ORPCthis.version.MajorVersion = 5;
+	r->in.ORPCthis.version.MinorVersion = 1;
+
 ";
 	} else {
 		$objarg = "NULL";

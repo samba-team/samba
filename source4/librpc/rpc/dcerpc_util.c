@@ -106,6 +106,10 @@ NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_ORPC) {
+		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
+	}
+
 	if (auth_info) {
 		pkt->auth_length = auth_info->credentials.length;
 	} else {

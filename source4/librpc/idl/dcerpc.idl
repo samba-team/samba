@@ -37,9 +37,18 @@ interface dcerpc
 	const uint8 DCERPC_MAX_SIGN_SIZE  = 32;
 
 	typedef struct {
+	} dcerpc_empty;
+	
+	typedef [nodiscriminant] union {
+		[default] dcerpc_empty empty;
+		[case(LIBNDR_FLAG_OBJECT_PRESENT)] GUID object;
+	} dcerpc_object;
+
+	typedef struct {
 		uint32 alloc_hint;
 		uint16 context_id;
 		uint16 opnum;
+		[switch_is(ndr->flags & LIBNDR_FLAG_OBJECT_PRESENT)] dcerpc_object object;
 		[flag(NDR_ALIGN8)]    DATA_BLOB _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB stub_and_verifier;
 	} dcerpc_request;
@@ -170,13 +179,6 @@ interface dcerpc
 		[case(DCERPC_PKT_BIND_NAK)]  dcerpc_bind_nak bind_nak;
 	} dcerpc_payload;
 
-	typedef struct {
-	} dcerpc_empty;
-	
-	typedef [nodiscriminant] union {
-		[default] dcerpc_empty empty;
-		[case(DCERPC_PFC_FLAG_ORPC)] GUID object;
-	} dcerpc_object;
 
 	/* pfc_flags values */
 	const uint8 DCERPC_PFC_FLAG_FIRST  = 0x01;
@@ -201,7 +203,6 @@ interface dcerpc
 		uint16 frag_length;	/* Total length of fragment */
 		uint16 auth_length;	/* authenticator length */
 		uint32 call_id;		/* Call identifier */
-		[switch_is(pfc_flags & DCERPC_PFC_FLAG_ORPC)] dcerpc_object object;
 		[switch_is(ptype)] dcerpc_payload u;
 	} dcerpc_packet;
 }
