@@ -44,13 +44,16 @@ if (@codepage) {
   @codepage[0] =~ s/^.*\=//;
   chdir '../../source';
   # if we have codepages we need to create them for the package
+  system("chmod +x ./installcp.sh");
   system("./installcp.sh . ../packaging/SGI/codepages . @codepage[0]");
   chdir $curdir;
   @codepage = sort split(' ',@codepage[0]);
 }
 # install the swat files
 chdir '../../source';
+system("chmod +x ./installswat.sh");
 system("./installswat.sh  ../packaging/SGI/swat ./");
+system("cp ../swat/README ../packaging/SGI/swat");
 chdir $curdir;
 
 # add my local files to the list of binaries to install
@@ -81,15 +84,15 @@ print IDB "l 0000 root sys etc/rc0.d/K39samba packaging/SGI samba.sw.base symval
 print IDB "l 0000 root sys etc/rc2.d/S81samba packaging/SGI samba.sw.base symval(../init.d/samba)\n";
 
 @copyfile = grep (/^COPY/,@allfiles);
-print IDB "d 0755 root sys usr/relnotes/samba packaging/SGI samba.man.relnotes\n";
+print IDB "d 0755 root sys usr/relnotes/samba/ packaging/SGI samba.man.relnotes\n";
 print IDB "f 0644 root sys usr/relnotes/samba/@copyfile[0] @copyfile[0] samba.man.relnotes\n";
 print IDB "f 0644 root sys usr/relnotes/samba/legal_notice.html packaging/SGI/legal_notice.html samba.man.relnotes\n";
 print IDB "f 0644 root sys usr/relnotes/samba/samba-relnotes.html packaging/SGI/relnotes.html samba.man.relnotes\n";
 
-print IDB "d 0755 root sys usr/samba packaging/SGI samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba/ packaging/SGI samba.sw.base\n";
 print IDB "f 0444 root sys usr/samba/README packaging/SGI/README samba.sw.base\n";
 
-print IDB "d 0755 root sys usr/samba/bin packaging/SGI samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba/bin/ packaging/SGI samba.sw.base\n";
 while(@bins) {
   $nextfile = shift @bins;
 
@@ -115,7 +118,7 @@ while(@bins) {
   }
 }
 
-print IDB "d 0755 root sys usr/samba/docs docs samba.man.doc\n";
+print IDB "d 0755 root sys usr/samba/docs/ docs samba.man.doc\n";
 while (@docs) {
   $nextfile = shift @docs;
   next if ($nextfile eq "CVS");
@@ -129,7 +132,7 @@ while (@docs) {
 }
 
 print IDB "f 0755 root sys usr/samba/inetd.sh packaging/SGI/inetd.sh samba.sw.base\n";
-print IDB "d 0755 root sys usr/samba/lib packaging/SGI samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba/lib/ packaging/SGI samba.sw.base\n";
 if (@codepage) {
   print IDB "d 0755 root sys usr/samba/lib/codepages packaging/SGI samba.sw.base\n";
   while (@codepage) {
@@ -140,7 +143,9 @@ if (@codepage) {
 print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.sw.base config(update)\n";
 print IDB "f 0755 root sys usr/samba/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.sw.base\n";
 
-print IDB "d 0755 root sys usr/samba/src packaging/SGI samba.src.samba\n";
+print IDB "d 0644 root sys usr/samba/private/ packaging/SGI samba.sw.base\n";
+print IDB "f 0600 root sys usr/samba/private/smbpasswd packaging/SGI/smbpasswd samba.sw.base config(update)\n";
+print IDB "d 0755 root sys usr/samba/src/ packaging/SGI samba.src.samba\n";
 @sorted = sort(@allfiles);
 while (@sorted) {
   $nextfile = shift @sorted;
@@ -161,7 +166,7 @@ while (@sorted) {
   }
 }
 
-print IDB "d 0755 root sys usr/samba/swat packaging/SGI/swat samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba/swat/ packaging/SGI/swat samba.sw.base\n";
 while (@swatfiles) {
   $nextfile = shift @swatfiles;
   ($file = $nextfile) =~ s/^packaging\/SGI\/swat\///;
@@ -174,10 +179,10 @@ while (@swatfiles) {
   }
 }
 
-print IDB "d 0755 root sys usr/samba/var packaging/SGI samba.sw.base\n";
-print IDB "d 0755 root sys usr/samba/var/locks packaging/SGI samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba/var/ packaging/SGI samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba/var/locks/ packaging/SGI samba.sw.base\n";
 
-print IDB "d 0755 root sys usr/share/catman/u_man packaging/SGI samba.man.manpages\n";
+print IDB "d 0755 root sys usr/share/catman/u_man/ packaging/SGI samba.man.manpages\n";
 $olddirnum = "0";
 while (@catman) {
   $nextfile = shift @catman;
