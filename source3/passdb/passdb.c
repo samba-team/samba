@@ -69,21 +69,21 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
 
-	user->init_flag		    = FLAG_SAM_UNINIT;
-	user->uid = user->gid	    = -1;
+	user->private.init_flag		    = FLAG_SAM_UNINIT;
+	user->private.uid = user->private.gid	    = -1;
 
-	user->logon_time            = (time_t)0;
-	user->pass_last_set_time    = (time_t)0;
-	user->pass_can_change_time  = (time_t)0;
-	user->logoff_time           = 
-	user->kickoff_time          = 
-	user->pass_must_change_time = get_time_t_max();
-	user->unknown_3 = 0x00ffffff; 	/* don't know */
-	user->logon_divs = 168; 	/* hours per week */
-	user->hours_len = 21; 		/* 21 times 8 bits = 168 */
-	memset(user->hours, 0xff, user->hours_len); /* available at all hours */
-	user->unknown_5 = 0x00000000; /* don't know */
-	user->unknown_6 = 0x000004ec; /* don't know */
+	user->private.logon_time            = (time_t)0;
+	user->private.pass_last_set_time    = (time_t)0;
+	user->private.pass_can_change_time  = (time_t)0;
+	user->private.logoff_time           = 
+	user->private.kickoff_time          = 
+	user->private.pass_must_change_time = get_time_t_max();
+	user->private.unknown_3 = 0x00ffffff; 	/* don't know */
+	user->private.logon_divs = 168; 	/* hours per week */
+	user->private.hours_len = 21; 		/* 21 times 8 bits = 168 */
+	memset(user->private.hours, 0xff, user->private.hours_len); /* available at all hours */
+	user->private.unknown_5 = 0x00000000; /* don't know */
+	user->private.unknown_6 = 0x000004ec; /* don't know */
 	return True;
 }	
 
@@ -103,7 +103,7 @@ BOOL pdb_init_sam(SAM_ACCOUNT **user)
 	}
 	
 	*user=(SAM_ACCOUNT *)malloc(sizeof(SAM_ACCOUNT));
-	
+
 	if (*user==NULL) {
 		DEBUG(0,("pdb_init_sam: error while allocating memory\n"));
 		return False;
@@ -173,9 +173,13 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 }
 
 
-/************************************************************
- Free the NT/LM hashes only.
- ***********************************************************/
+/**
+ * Free the contets of the SAM_ACCOUNT, but not the structure.
+ *
+ * Also wipes the LM and NT hashes from memory.
+ *
+ * @param user SAM_ACCOUNT to free members of.
+ **/
 
 static BOOL pdb_free_sam_contents(SAM_ACCOUNT *user)
 {
@@ -190,8 +194,8 @@ static BOOL pdb_free_sam_contents(SAM_ACCOUNT *user)
 	/* As we start mallocing more strings this is where  
 	   we should free them. */
 
-	SAFE_FREE(user->nt_pw);
-	SAFE_FREE(user->lm_pw);
+	data_blob_clear_free(&(user->private.lm_pw));
+	data_blob_clear_free(&(user->private.nt_pw));
 
 	return True;	
 }
@@ -199,7 +203,6 @@ static BOOL pdb_free_sam_contents(SAM_ACCOUNT *user)
 
 /************************************************************
  Reset the SAM_ACCOUNT and free the NT/LM hashes.
-  - note: they are not zero'ed out however.
  ***********************************************************/
 
 BOOL pdb_reset_sam(SAM_ACCOUNT *user)
@@ -225,7 +228,7 @@ BOOL pdb_reset_sam(SAM_ACCOUNT *user)
 
 
 /************************************************************
- Free the SAM_ACCOUNT and the NT/LM hashes.
+ Free the SAM_ACCOUNT and the member pointers.
  ***********************************************************/
 
 BOOL pdb_free_sam(SAM_ACCOUNT **user)
@@ -816,10 +819,21 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	return True;
 }
 
-static void select_name(pstring string, const UNISTR2 *from)
+/** 
+ * Quick hack to do an easy ucs2 -> mulitbyte conversion 
+ * @return static buffer containing the converted string
+ **/
+
+static char *pdb_convert(const UNISTR2 *from)
 {
-	if (from->buffer != 0)
-		unistr2_to_ascii(string, from, sizeof(pstring));
+	static pstring convert_buffer;
+	*convert_buffer = 0;
+	if (!from) {
+		return convert_buffer;
+	}
+
+	unistr2_to_ascii(convert_buffer, from, sizeof(pstring));
+	return convert_buffer;
 }
 
 /*************************************************************
@@ -832,39 +846,40 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	if (from == NULL || to == NULL) 
 		return;
 
-	to->logon_time = nt_time_to_unix(&from->logon_time);
-	to->logoff_time = nt_time_to_unix(&from->logoff_time);
-	to->kickoff_time = nt_time_to_unix(&from->kickoff_time);
-	to->pass_last_set_time = nt_time_to_unix(&from->pass_last_set_time);
-	to->pass_can_change_time = nt_time_to_unix(&from->pass_can_change_time);
-	to->pass_must_change_time = nt_time_to_unix(&from->pass_must_change_time);
+	pdb_set_logon_time(to,nt_time_to_unix(&from->logon_time));
+	pdb_set_logoff_time(to,nt_time_to_unix(&from->logoff_time));
+	pdb_set_kickoff_time(to, nt_time_to_unix(&from->kickoff_time));
+	pdb_set_pass_last_set_time(to, nt_time_to_unix(&from->pass_last_set_time));
+	pdb_set_pass_can_change_time(to, nt_time_to_unix(&from->pass_can_change_time));
+	pdb_set_pass_must_change_time(to, nt_time_to_unix(&from->pass_must_change_time));
 
-	select_name(to->username    , &from->uni_user_name   );
-	select_name(to->full_name   , &from->uni_full_name   );
-	select_name(to->home_dir    , &from->uni_home_dir    );
-	select_name(to->dir_drive   , &from->uni_dir_drive   );
-	select_name(to->logon_script, &from->uni_logon_script);
-	select_name(to->profile_path, &from->uni_profile_path);
-	select_name(to->acct_desc   , &from->uni_acct_desc   );
-	select_name(to->workstations, &from->uni_workstations);
-	select_name(to->unknown_str , &from->uni_unknown_str );
-	select_name(to->munged_dial , &from->uni_munged_dial );
+	pdb_set_username(to      , pdb_convert(&from->uni_user_name   ));
+	pdb_set_fullname(to      , pdb_convert(&from->uni_full_name   ));
+	pdb_set_homedir(to       , pdb_convert(&from->uni_home_dir    ), True);
+	pdb_set_dir_drive(to     , pdb_convert(&from->uni_dir_drive   ), True);
+	pdb_set_logon_script(to  , pdb_convert(&from->uni_logon_script), True);
+	pdb_set_profile_path(to  , pdb_convert(&from->uni_profile_path), True);
+	pdb_set_acct_desc(to     , pdb_convert(&from->uni_acct_desc   ));
+	pdb_set_workstations(to  , pdb_convert(&from->uni_workstations));
+	pdb_set_unknown_str(to   , pdb_convert(&from->uni_unknown_str ));
+	pdb_set_munged_dial(to   , pdb_convert(&from->uni_munged_dial ));
 
 	if (from->user_rid)
-		to->user_rid = from->user_rid;
+		pdb_set_user_rid(to, from->user_rid);
 	if (from->group_rid)
-		to->group_rid = from->group_rid;
+		pdb_set_group_rid(to, from->group_rid);
 
-	to->acct_ctrl = from->acb_info;
-	to->unknown_3 = from->unknown_3;
+	pdb_set_acct_ctrl(to, from->acb_info);
+	pdb_set_unknown_3(to, from->unknown_3);
 
-	to->logon_divs = from->logon_divs;
-	to->hours_len = from->logon_hrs.len;
-	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
+	pdb_set_logon_divs(to, from->logon_divs);
+	pdb_set_hours_len(to, from->logon_hrs.len);
+	pdb_set_hours(to, from->logon_hrs.hours);
 
-	to->unknown_5 = from->unknown_5;
-	to->unknown_6 = from->unknown_6;
+	pdb_set_unknown_5(to, from->unknown_5);
+	pdb_set_unknown_6(to, from->unknown_6);
 }
+
 
 /*************************************************************
  Copies a sam passwd.
@@ -875,40 +890,45 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	if (from == NULL || to == NULL) 
 		return;
 
-	to->logon_time = nt_time_to_unix(&from->logon_time);
-	to->logoff_time = nt_time_to_unix(&from->logoff_time);
-	to->kickoff_time = nt_time_to_unix(&from->kickoff_time);
-	to->pass_last_set_time = nt_time_to_unix(&from->pass_last_set_time);
-	to->pass_can_change_time = nt_time_to_unix(&from->pass_can_change_time);
-	to->pass_must_change_time = nt_time_to_unix(&from->pass_must_change_time);
+	pdb_set_logon_time(to,nt_time_to_unix(&from->logon_time));
+	pdb_set_logoff_time(to,nt_time_to_unix(&from->logoff_time));
+	pdb_set_kickoff_time(to, nt_time_to_unix(&from->kickoff_time));
+	pdb_set_pass_last_set_time(to, nt_time_to_unix(&from->pass_last_set_time));
+	pdb_set_pass_can_change_time(to, nt_time_to_unix(&from->pass_can_change_time));
+	pdb_set_pass_must_change_time(to, nt_time_to_unix(&from->pass_must_change_time));
 
-	select_name(to->username    , &from->uni_user_name   );
-	select_name(to->full_name   , &from->uni_full_name   );
-	select_name(to->home_dir    , &from->uni_home_dir    );
-	select_name(to->dir_drive   , &from->uni_dir_drive   );
-	select_name(to->logon_script, &from->uni_logon_script);
-	select_name(to->profile_path, &from->uni_profile_path);
-	select_name(to->acct_desc   , &from->uni_acct_desc   );
-	select_name(to->workstations, &from->uni_workstations);
-	select_name(to->unknown_str , &from->uni_unknown_str );
-	select_name(to->munged_dial , &from->uni_munged_dial );
+	pdb_set_username(to      , pdb_convert(&from->uni_user_name   ));
+	pdb_set_fullname(to      , pdb_convert(&from->uni_full_name   ));
+	pdb_set_homedir(to       , pdb_convert(&from->uni_home_dir    ), True);
+	pdb_set_dir_drive(to     , pdb_convert(&from->uni_dir_drive   ), True);
+	pdb_set_logon_script(to  , pdb_convert(&from->uni_logon_script), True);
+	pdb_set_profile_path(to  , pdb_convert(&from->uni_profile_path), True);
+	pdb_set_acct_desc(to     , pdb_convert(&from->uni_acct_desc   ));
+	pdb_set_workstations(to  , pdb_convert(&from->uni_workstations));
+	pdb_set_unknown_str(to   , pdb_convert(&from->uni_unknown_str ));
+	pdb_set_munged_dial(to   , pdb_convert(&from->uni_munged_dial ));
 
-	to->user_rid = from->user_rid;
-	to->group_rid = from->group_rid;
-	
+	if (from->user_rid)
+		pdb_set_user_rid(to, from->user_rid);
+	if (from->group_rid)
+		pdb_set_group_rid(to, from->group_rid);
+
 	/* FIXME!!  Do we need to copy the passwords here as well?
 	   I don't know.  Need to figure this out   --jerry */
 
-	to->acct_ctrl = from->acb_info;
-	to->unknown_3 = from->unknown_3;
+	/* Passwords dealt with in caller --abartlet */
 
-	to->logon_divs = from->logon_divs;
-	to->hours_len = from->logon_hrs.len;
-	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
+	pdb_set_acct_ctrl(to, from->acb_info);
+	pdb_set_unknown_3(to, from->unknown_3);
 
-	to->unknown_5 = from->unknown_5;
-	to->unknown_6 = from->unknown_6;
+	pdb_set_logon_divs(to, from->logon_divs);
+	pdb_set_hours_len(to, from->logon_hrs.len);
+	pdb_set_hours(to, from->logon_hrs.hours);
+
+	pdb_set_unknown_5(to, from->unknown_5);
+	pdb_set_unknown_6(to, from->unknown_6);
 }
+
 
 /*************************************************************
  Change a password entry in the local smbpasswd file.
@@ -1081,7 +1101,7 @@ account without a valid local system user.\n", user_name);
 uint16 pdb_get_acct_ctrl (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->acct_ctrl);
+		return (sampass->private.acct_ctrl);
 	else
 		return (ACB_DISABLED);
 }
@@ -1089,7 +1109,7 @@ uint16 pdb_get_acct_ctrl (const SAM_ACCOUNT *sampass)
 time_t pdb_get_logon_time (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->logon_time);
+		return (sampass->private.logon_time);
 	else
 		return (0);
 }
@@ -1097,7 +1117,7 @@ time_t pdb_get_logon_time (const SAM_ACCOUNT *sampass)
 time_t pdb_get_logoff_time (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->logoff_time);
+		return (sampass->private.logoff_time);
 	else
 		return (-1);
 }
@@ -1105,7 +1125,7 @@ time_t pdb_get_logoff_time (const SAM_ACCOUNT *sampass)
 time_t pdb_get_kickoff_time (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->kickoff_time);
+		return (sampass->private.kickoff_time);
 	else
 		return (-1);
 }
@@ -1113,7 +1133,7 @@ time_t pdb_get_kickoff_time (const SAM_ACCOUNT *sampass)
 time_t pdb_get_pass_last_set_time (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->pass_last_set_time);
+		return (sampass->private.pass_last_set_time);
 	else
 		return (-1);
 }
@@ -1121,7 +1141,7 @@ time_t pdb_get_pass_last_set_time (const SAM_ACCOUNT *sampass)
 time_t pdb_get_pass_can_change_time (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->pass_can_change_time);
+		return (sampass->private.pass_can_change_time);
 	else
 		return (-1);
 }
@@ -1129,7 +1149,7 @@ time_t pdb_get_pass_can_change_time (const SAM_ACCOUNT *sampass)
 time_t pdb_get_pass_must_change_time (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->pass_must_change_time);
+		return (sampass->private.pass_must_change_time);
 	else
 		return (-1);
 }
@@ -1137,7 +1157,7 @@ time_t pdb_get_pass_must_change_time (const SAM_ACCOUNT *sampass)
 uint16 pdb_get_logon_divs (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->logon_divs);
+		return (sampass->private.logon_divs);
 	else
 		return (-1);
 }
@@ -1145,7 +1165,7 @@ uint16 pdb_get_logon_divs (const SAM_ACCOUNT *sampass)
 uint32 pdb_get_hours_len (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->hours_len);
+		return (sampass->private.hours_len);
 	else
 		return (-1);
 }
@@ -1153,23 +1173,29 @@ uint32 pdb_get_hours_len (const SAM_ACCOUNT *sampass)
 const uint8* pdb_get_hours (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->hours);
+		return (sampass->private.hours);
 	else
 		return (NULL);
 }
 
 const uint8* pdb_get_nt_passwd (const SAM_ACCOUNT *sampass)
 {
-	if (sampass)
-		return (sampass->nt_pw);
+	if (sampass) {
+		SMB_ASSERT((!sampass->private.nt_pw.data) 
+			   || sampass->private.nt_pw.length == NT_HASH_LEN);
+		return ((uint8*)sampass->private.nt_pw.data);
+	}
 	else
 		return (NULL);
 }
 
 const uint8* pdb_get_lanman_passwd (const SAM_ACCOUNT *sampass)
 {
-	if (sampass)
-		return (sampass->lm_pw);
+	if (sampass) {
+		SMB_ASSERT((!sampass->private.lm_pw.data) 
+			   || sampass->private.lm_pw.length == LM_HASH_LEN);
+		return ((uint8*)sampass->private.lm_pw.data);
+	}
 	else
 		return (NULL);
 }
@@ -1177,7 +1203,7 @@ const uint8* pdb_get_lanman_passwd (const SAM_ACCOUNT *sampass)
 uint32 pdb_get_user_rid (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->user_rid);
+		return (sampass->private.user_rid);
 	else
 		return (-1);
 }
@@ -1185,15 +1211,29 @@ uint32 pdb_get_user_rid (const SAM_ACCOUNT *sampass)
 uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->group_rid);
+		return (sampass->private.group_rid);
 	else
 		return (-1);
+}
+
+/**
+ * Get flags showing what is initalised in the SAM_ACCOUNT
+ * @param sampass the SAM_ACCOUNT in question
+ * @return the flags indicating the members initialised in the struct.
+ **/
+ 
+uint32 pdb_get_init_flag (SAM_ACCOUNT *sampass)
+{
+        if (sampass)
+		return sampass->private.init_flag;
+	else 
+                return FLAG_SAM_UNINIT;
 }
 
 uid_t pdb_get_uid (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->uid);
+		return (sampass->private.uid);
 	else
 		return (-1);
 }
@@ -1201,7 +1241,7 @@ uid_t pdb_get_uid (const SAM_ACCOUNT *sampass)
 gid_t pdb_get_gid (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->gid);
+		return (sampass->private.gid);
 	else
 		return (-1);
 }
@@ -1209,7 +1249,7 @@ gid_t pdb_get_gid (const SAM_ACCOUNT *sampass)
 const char* pdb_get_username (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->username);
+		return (sampass->private.username);
 	else
 		return (NULL);
 }
@@ -1217,7 +1257,7 @@ const char* pdb_get_username (const SAM_ACCOUNT *sampass)
 const char* pdb_get_domain (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->domain);
+		return (sampass->private.domain);
 	else
 		return (NULL);
 }
@@ -1225,7 +1265,7 @@ const char* pdb_get_domain (const SAM_ACCOUNT *sampass)
 const char* pdb_get_nt_username (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->nt_username);
+		return (sampass->private.nt_username);
 	else
 		return (NULL);
 }
@@ -1233,7 +1273,7 @@ const char* pdb_get_nt_username (const SAM_ACCOUNT *sampass)
 const char* pdb_get_fullname (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->full_name);
+		return (sampass->private.full_name);
 	else
 		return (NULL);
 }
@@ -1241,7 +1281,7 @@ const char* pdb_get_fullname (const SAM_ACCOUNT *sampass)
 const char* pdb_get_homedir (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->home_dir);
+		return (sampass->private.home_dir);
 	else
 		return (NULL);
 }
@@ -1249,7 +1289,7 @@ const char* pdb_get_homedir (const SAM_ACCOUNT *sampass)
 const char* pdb_get_dirdrive (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->dir_drive);
+		return (sampass->private.dir_drive);
 	else
 		return (NULL);
 }
@@ -1257,7 +1297,7 @@ const char* pdb_get_dirdrive (const SAM_ACCOUNT *sampass)
 const char* pdb_get_logon_script (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->logon_script);
+		return (sampass->private.logon_script);
 	else
 		return (NULL);
 }
@@ -1265,7 +1305,7 @@ const char* pdb_get_logon_script (const SAM_ACCOUNT *sampass)
 const char* pdb_get_profile_path (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->profile_path);
+		return (sampass->private.profile_path);
 	else
 		return (NULL);
 }
@@ -1273,7 +1313,7 @@ const char* pdb_get_profile_path (const SAM_ACCOUNT *sampass)
 const char* pdb_get_acct_desc (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->acct_desc);
+		return (sampass->private.acct_desc);
 	else
 		return (NULL);
 }
@@ -1281,7 +1321,15 @@ const char* pdb_get_acct_desc (const SAM_ACCOUNT *sampass)
 const char* pdb_get_workstations (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->workstations);
+		return (sampass->private.workstations);
+	else
+		return (NULL);
+}
+
+const char* pdb_get_unknown_str (const SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->private.unknown_str);
 	else
 		return (NULL);
 }
@@ -1289,7 +1337,7 @@ const char* pdb_get_workstations (const SAM_ACCOUNT *sampass)
 const char* pdb_get_munged_dial (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->munged_dial);
+		return (sampass->private.munged_dial);
 	else
 		return (NULL);
 }
@@ -1297,7 +1345,7 @@ const char* pdb_get_munged_dial (const SAM_ACCOUNT *sampass)
 uint32 pdb_get_unknown3 (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->unknown_3);
+		return (sampass->private.unknown_3);
 	else
 		return (-1);
 }
@@ -1305,7 +1353,7 @@ uint32 pdb_get_unknown3 (const SAM_ACCOUNT *sampass)
 uint32 pdb_get_unknown5 (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->unknown_5);
+		return (sampass->private.unknown_5);
 	else
 		return (-1);
 }
@@ -1313,7 +1361,7 @@ uint32 pdb_get_unknown5 (const SAM_ACCOUNT *sampass)
 uint32 pdb_get_unknown6 (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->unknown_6);
+		return (sampass->private.unknown_6);
 	else
 		return (-1);
 }
@@ -1328,7 +1376,7 @@ BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags)
 		return False;
 		
 	if (sampass) {
-		sampass->acct_ctrl = flags;
+		sampass->private.acct_ctrl = flags;
 		return True;
 	}
 	
@@ -1340,7 +1388,7 @@ BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t mytime)
 	if (!sampass)
 		return False;
 
-	sampass->logon_time = mytime;
+	sampass->private.logon_time = mytime;
 	return True;
 }
 
@@ -1349,7 +1397,7 @@ BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t mytime)
 	if (!sampass)
 		return False;
 
-	sampass->logoff_time = mytime;
+	sampass->private.logoff_time = mytime;
 	return True;
 }
 
@@ -1358,7 +1406,7 @@ BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t mytime)
 	if (!sampass)
 		return False;
 
-	sampass->kickoff_time = mytime;
+	sampass->private.kickoff_time = mytime;
 	return True;
 }
 
@@ -1367,7 +1415,7 @@ BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t mytime)
 	if (!sampass)
 		return False;
 
-	sampass->pass_can_change_time = mytime;
+	sampass->private.pass_can_change_time = mytime;
 	return True;
 }
 
@@ -1376,7 +1424,7 @@ BOOL pdb_set_pass_must_change_time (SAM_ACCOUNT *sampass, time_t mytime)
 	if (!sampass)
 		return False;
 
-	sampass->pass_must_change_time = mytime;
+	sampass->private.pass_must_change_time = mytime;
 	return True;
 }
 
@@ -1385,7 +1433,7 @@ BOOL pdb_set_pass_last_set_time (SAM_ACCOUNT *sampass, time_t mytime)
 	if (!sampass)
 		return False;
 
-	sampass->pass_last_set_time = mytime;
+	sampass->private.pass_last_set_time = mytime;
 	return True;
 }
 
@@ -1394,25 +1442,32 @@ BOOL pdb_set_hours_len (SAM_ACCOUNT *sampass, uint32 len)
 	if (!sampass)
 		return False;
 
-	sampass->hours_len = len;
+	sampass->private.hours_len = len;
 	return True;
 }
 
-BOOL pdb_set_logons_divs (SAM_ACCOUNT *sampass, uint16 hours)
+BOOL pdb_set_logon_divs (SAM_ACCOUNT *sampass, uint16 hours)
 {
 	if (!sampass)
 		return False;
 
-	sampass->logon_divs = hours;
+	sampass->private.logon_divs = hours;
 	return True;
 }
 
+/**
+ * Set flags showing what is initalised in the SAM_ACCOUNT
+ * @param sampass the SAM_ACCOUNT in question
+ * @param flag The *new* flag to be set.  Old flags preserved
+ *             this flag is only added.  
+ **/
+ 
 BOOL pdb_set_init_flag (SAM_ACCOUNT *sampass, uint32 flag)
 {
         if (!sampass)
                 return False;
 
-        sampass->init_flag |= flag;
+        sampass->private.init_flag |= flag;
 
         return True;
 }
@@ -1422,8 +1477,11 @@ BOOL pdb_set_uid (SAM_ACCOUNT *sampass, const uid_t uid)
 	if (!sampass)
 		return False;
 	
-	sampass->uid = uid;
-	sampass->init_flag |= FLAG_SAM_UID; 
+	DEBUG(10, ("pdb_set_uid: setting uid %d, was %d\n", 
+		   (int)uid, (int)sampass->private.uid));
+ 
+	sampass->private.uid = uid;
+	pdb_set_init_flag(sampass, FLAG_SAM_UID); 
 
 	return True;
 
@@ -1434,8 +1492,11 @@ BOOL pdb_set_gid (SAM_ACCOUNT *sampass, const gid_t gid)
 	if (!sampass)
 		return False;
 		
-	sampass->gid = gid; 
-	sampass->init_flag |= FLAG_SAM_GID; 
+	DEBUG(10, ("pdb_set_gid: setting gid %d, was %d\n", 
+		   (int)gid, (int)sampass->private.gid));
+ 
+	sampass->private.gid = gid; 
+	pdb_set_init_flag(sampass, FLAG_SAM_GID); 
 
 	return True;
 
@@ -1446,7 +1507,10 @@ BOOL pdb_set_user_rid (SAM_ACCOUNT *sampass, uint32 rid)
 	if (!sampass)
 		return False;
 
-	sampass->user_rid = rid;
+	DEBUG(10, ("pdb_set_rid: setting user rid %d, was %d\n", 
+		   rid, sampass->private.user_rid));
+ 
+	sampass->private.user_rid = rid;
 	return True;
 }
 
@@ -1455,7 +1519,10 @@ BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid)
 	if (!sampass)
 		return False;
 
-	sampass->group_rid = grid;
+	DEBUG(10, ("pdb_set_group_rid: setting group rid %d, was %d\n", 
+		   grid, sampass->private.group_rid));
+ 
+	sampass->private.group_rid = grid;
 	return True;
 }
 
@@ -1467,11 +1534,14 @@ BOOL pdb_set_username(SAM_ACCOUNT *sampass, const char *username)
 {	
 	if (!sampass)
 		return False;
-	*sampass->username = '\0';
+	
+	*sampass->private.username = '\0';
+	DEBUG(10, ("pdb_set_username: setting username %s, was %s\n", 
+		   username, sampass->private.username));
+ 
 	if (!username)
 		return False;
-
-	StrnCpy (sampass->username, username, strlen(username));
+	StrnCpy (sampass->private.username, username, strlen(username));
 
 	return True;
 }
@@ -1484,11 +1554,11 @@ BOOL pdb_set_domain(SAM_ACCOUNT *sampass, const char *domain)
 {	
 	if (!sampass)
 		return False;
-	*sampass->domain = '\0';
+	*sampass->private.domain = '\0';
 	if (!domain)
 		return False;
 
-	StrnCpy (sampass->domain, domain, strlen(domain));
+	StrnCpy (sampass->private.domain, domain, strlen(domain));
 
 	return True;
 }
@@ -1501,11 +1571,11 @@ BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, const char *nt_username)
 {
 	if (!sampass)
 		return False;
-	*sampass->nt_username = '\0';
+	*sampass->private.nt_username = '\0';
 	if (!nt_username)
 		return False;
 
-	StrnCpy (sampass->nt_username, nt_username, strlen(nt_username));
+	StrnCpy (sampass->private.nt_username, nt_username, strlen(nt_username));
 
 	return True;
 }
@@ -1518,11 +1588,15 @@ BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, const char *fullname)
 {
 	if (!sampass)
 		return False;
-	*sampass->full_name = '\0';
+
+	DEBUG(10, ("pdb_set_fullname: setting full name %s, was %s\n", 
+		   fullname, sampass->private.full_name));
+ 
+	*sampass->private.full_name = '\0';
 	if (!fullname)
 		return False;
 
-	StrnCpy (sampass->full_name, fullname, strlen(fullname));
+	StrnCpy (sampass->private.full_name, fullname, strlen(fullname));
 
 	return True;
 }
@@ -1535,14 +1609,18 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, BOOL s
 {
 	if (!sampass)
 		return False;
-	*sampass->logon_script = '\0';
+
+	DEBUG(10, ("pdb_set_logon_script: setting logon script (store:%d) %s, was %s\n", 
+		   store, logon_script, sampass->private.logon_script));
+ 
+	*sampass->private.logon_script = '\0';
 	if (!logon_script)
 		return False;
 
-	StrnCpy (sampass->logon_script, logon_script, strlen(logon_script));
+	StrnCpy (sampass->private.logon_script, logon_script, strlen(logon_script));
 
 	if (store)
-		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT);
+		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT); 
 
 	return True;
 }
@@ -1555,11 +1633,15 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, BOOL 
 {
 	if (!sampass)
 		return False;
-	*sampass->profile_path = '\0';
+
+	DEBUG(10, ("pdb_set_profile_path: setting profile path (store:%d) %s, was %s\n", 
+		   store, profile_path, sampass->private.profile_path));
+ 
+	*sampass->private.profile_path = '\0';
 	if (!profile_path)
 		return False;
 	
-	StrnCpy (sampass->profile_path, profile_path, strlen(profile_path));
+	StrnCpy (sampass->private.profile_path, profile_path, strlen(profile_path));
 
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_PROFILE);
@@ -1575,11 +1657,11 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, BOOL store)
 {
 	if (!sampass)
 		return False;
-	*sampass->dir_drive = '\0';
+	*sampass->private.dir_drive = '\0';
 	if (!dir_drive)
 		return False;
 
-	StrnCpy (sampass->dir_drive, dir_drive, strlen(dir_drive));
+	StrnCpy (sampass->private.dir_drive, dir_drive, strlen(dir_drive));
 
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_DRIVE);
@@ -1595,11 +1677,11 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *homedir, BOOL store)
 {
 	if (!sampass)
 		return False;
-	*sampass->home_dir = '\0';
+	*sampass->private.home_dir = '\0';
 	if (!homedir)
 		return False;
 	
-	StrnCpy (sampass->home_dir, homedir, strlen(homedir));
+	StrnCpy (sampass->private.home_dir, homedir, strlen(homedir));
 
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
@@ -1615,11 +1697,11 @@ BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, const char *acct_desc)
 {
 	if (!sampass)
 		return False;
-	*sampass->acct_desc = '\0';
+	*sampass->private.acct_desc = '\0';
 	if (!acct_desc)
 		return False;
 	
-	StrnCpy (sampass->acct_desc, acct_desc, strlen(acct_desc));
+	StrnCpy (sampass->private.acct_desc, acct_desc, strlen(acct_desc));
 
 	return True;
 }
@@ -1632,11 +1714,28 @@ BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, const char *workstations)
 {
 	if (!sampass)
 		return False;
-	*sampass->workstations = '\0';
+	*sampass->private.workstations = '\0';
 	if (!workstations)
 		return False;
 
-	StrnCpy (sampass->workstations, workstations, strlen(workstations));
+	StrnCpy (sampass->private.workstations, workstations, strlen(workstations));
+
+	return True;
+}
+
+/*********************************************************************
+ Set the user's 'unknown_str', whatever the heck this actually is...
+ ********************************************************************/
+
+BOOL pdb_set_unknown_str (SAM_ACCOUNT *sampass, const char *unknown_str)
+{
+	if (!sampass)
+		return False;
+	*sampass->private.unknown_str = '\0';
+	if (!unknown_str)
+		return False;
+
+	StrnCpy (sampass->private.unknown_str, unknown_str, strlen(unknown_str));
 
 	return True;
 }
@@ -1649,11 +1748,11 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, const char *munged_dial)
 {
 	if (!sampass)
 		return False;
-	*sampass->munged_dial = '\0';
+	*sampass->private.munged_dial = '\0';
 	if (!munged_dial)
 		return False;
 
-	StrnCpy (sampass->munged_dial, munged_dial, strlen(munged_dial));
+	StrnCpy (sampass->private.munged_dial, munged_dial, strlen(munged_dial));
 
 	return True;
 }
@@ -1666,22 +1765,10 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, const uint8 *pwd)
 {
 	if (!sampass)
 		return False;
-	
-	if (!pwd) {
-		/* Allow setting to NULL */
-		SAFE_FREE(sampass->nt_pw);
-		return True;
-	}
 
-	if (sampass->nt_pw!=NULL)
-		DEBUG(4,("pdb_set_nt_passwd: NT hash non NULL overwritting ?\n"));
-	else
-		sampass->nt_pw=(unsigned char *)malloc(sizeof(unsigned char)*16);
+	data_blob_clear_free(&(sampass->private.nt_pw));
 	
-	if (sampass->nt_pw==NULL)
-		return False;
-
-	memcpy (sampass->nt_pw, pwd, 16);
+	sampass->private.nt_pw = data_blob(pwd, NT_HASH_LEN);
 
 	return True;
 }
@@ -1694,22 +1781,10 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 *pwd)
 {
 	if (!sampass)
 		return False;
-	
-	if (!pwd) {
-		/* Allow setting to NULL */
-		SAFE_FREE(sampass->lm_pw);
-		return True;
-	}
 
-	if (sampass->lm_pw!=NULL)
-		DEBUG(4,("pdb_set_lanman_passwd: LM hash non NULL overwritting ?\n"));
-	else
-		sampass->lm_pw=(unsigned char *)malloc(sizeof(unsigned char)*16);
+	data_blob_clear_free(&(sampass->private.lm_pw));
 	
-	if (sampass->lm_pw==NULL)
-		return False;
-
-	memcpy (sampass->lm_pw, pwd, 16);
+	sampass->private.lm_pw = data_blob(pwd, LM_HASH_LEN);
 
 	return True;
 }
@@ -1719,7 +1794,7 @@ BOOL pdb_set_unknown_3 (SAM_ACCOUNT *sampass, uint32 unkn)
 	if (!sampass)
 		return False;
 
-	sampass->unknown_3 = unkn;
+	sampass->private.unknown_3 = unkn;
 	return True;
 }
 
@@ -1728,7 +1803,7 @@ BOOL pdb_set_unknown_5 (SAM_ACCOUNT *sampass, uint32 unkn)
 	if (!sampass)
 		return False;
 
-	sampass->unknown_5 = unkn;
+	sampass->private.unknown_5 = unkn;
 	return True;
 }
 
@@ -1737,7 +1812,7 @@ BOOL pdb_set_unknown_6 (SAM_ACCOUNT *sampass, uint32 unkn)
 	if (!sampass)
 		return False;
 
-	sampass->unknown_6 = unkn;
+	sampass->private.unknown_6 = unkn;
 	return True;
 }
 
@@ -1747,11 +1822,11 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, const uint8 *hours)
 		return False;
 
 	if (!hours) {
-		memset ((char *)sampass->hours, 0, MAX_HOURS_LEN);
+		memset ((char *)sampass->private.hours, 0, MAX_HOURS_LEN);
 		return True;
 	}
 	
-	memcpy (sampass->hours, hours, MAX_HOURS_LEN);
+	memcpy (sampass->private.hours, hours, MAX_HOURS_LEN);
 
 	return True;
 }

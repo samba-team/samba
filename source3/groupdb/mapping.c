@@ -1155,7 +1155,7 @@ int smb_add_user_group(char *unix_group, char *unix_user)
  Delete a UNIX group on demand.
 ****************************************************************************/
 
-int smb_delete_user_group(char *unix_group, char *unix_user)
+int smb_delete_user_group(const char *unix_group, const char *unix_user)
 {
 	pstring del_script;
 	int ret;

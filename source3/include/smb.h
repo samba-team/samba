@@ -432,6 +432,12 @@ typedef struct files_struct
 	char *fsp_name;
 } files_struct;
 
+/* used to hold an arbitrary blob of data */
+typedef struct {
+	uint8 *data;
+	size_t length;
+} DATA_BLOB;
+
 /*
  * Structure used to keep directory state information around.
  * Used in NT change-notify code.
@@ -588,6 +594,9 @@ typedef struct {
 #define SHAREMODE_FN(fn) \
 	void (*fn)(share_mode_entry *, char*)
 
+#define NT_HASH_LEN 16
+#define LM_HASH_LEN 16
+
 /*
  * bit flags representing initialized fields in SAM_ACCOUNT
  */
@@ -600,53 +609,57 @@ typedef struct {
 #define FLAG_SAM_DRIVE		0x00000020
 
 #define IS_SAM_UNIX_USER(x) \
-	(((x)->init_flag & FLAG_SAM_UID) \
-	 && ((x)->init_flag & FLAG_SAM_GID))
+	((pdb_get_init_flag(x) & FLAG_SAM_UID) \
+	 && (pdb_get_init_flag(x) & FLAG_SAM_GID))
 
 #define IS_SAM_SET(x, flag)	((x)->init_flag & (flag))
 		
 typedef struct sam_passwd
 {
-	/* initiailization flags */
-	uint32 init_flag;
-	
-	time_t logon_time;            /* logon time */
-	time_t logoff_time;           /* logoff time */
-	time_t kickoff_time;          /* kickoff time */
-	time_t pass_last_set_time;    /* password last set time */
-	time_t pass_can_change_time;  /* password can change time */
-	time_t pass_must_change_time; /* password must change time */
-
-	pstring username;     /* UNIX username string */
-	pstring domain;       /* Windows Domain name */
-	pstring nt_username;  /* Windows username string */
-	pstring full_name;    /* user's full name string */
-	pstring home_dir;     /* home directory string */
-	pstring dir_drive;    /* home directory drive string */
-	pstring logon_script; /* logon script string */
-	pstring profile_path; /* profile path string */
-	pstring acct_desc  ;  /* user description string */
-	pstring workstations; /* login from workstations string */
-	pstring unknown_str ; /* don't know what this is, yet. */
-	pstring munged_dial ; /* munged path name and dial-back tel number */
-
-        uid_t uid;          /* this is a pointer to the unix uid_t */
-        gid_t gid;          /* this is a pointer to the unix gid_t */
-        uint32 user_rid;    /* Primary User ID */
-        uint32 group_rid;   /* Primary Group ID */
-
-        unsigned char *lm_pw; /* Null if no password */
-        unsigned char *nt_pw; /* Null if no password */
-
-        uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-        uint32 unknown_3; /* 0x00ff ffff */
-
-        uint16 logon_divs; /* 168 - number of hours in a week */
-        uint32 hours_len; /* normally 21 bytes */
-        uint8 hours[MAX_HOURS_LEN];
-
-        uint32 unknown_5; /* 0x0002 0000 */
-        uint32 unknown_6; /* 0x0000 04ec */
+	struct {
+		/* initiailization flags */
+		uint32 init_flag;
+		
+		time_t logon_time;            /* logon time */
+		time_t logoff_time;           /* logoff time */
+		time_t kickoff_time;          /* kickoff time */
+		time_t pass_last_set_time;    /* password last set time */
+		time_t pass_can_change_time;  /* password can change time */
+		time_t pass_must_change_time; /* password must change time */
+		
+		pstring username;     /* UNIX username string */
+		pstring domain;       /* Windows Domain name */
+		pstring nt_username;  /* Windows username string */
+		pstring full_name;    /* user's full name string */
+		pstring home_dir;     /* home directory string */
+		pstring dir_drive;    /* home directory drive string */
+		pstring logon_script; /* logon script string */
+		pstring profile_path; /* profile path string */
+		pstring acct_desc  ;  /* user description string */
+		pstring workstations; /* login from workstations string */
+		pstring unknown_str ; /* don't know what this is, yet. */
+		pstring munged_dial ; /* munged path name and dial-back tel number */
+		
+		uid_t uid;          /* this is a unix uid_t */
+		gid_t gid;          /* this is a unix gid_t */
+		uint32 user_rid;    /* Primary User ID */
+		uint32 group_rid;   /* Primary Group ID */
+		
+		DATA_BLOB lm_pw; /* .data is Null if no password */
+		DATA_BLOB nt_pw; /* .data is Null if no password */
+		
+		uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+		uint32 unknown_3; /* 0x00ff ffff */
+		
+		uint16 logon_divs; /* 168 - number of hours in a week */
+		uint32 hours_len; /* normally 21 bytes */
+		uint8 hours[MAX_HOURS_LEN];
+		
+		uint32 unknown_5; /* 0x0002 0000 */
+		uint32 unknown_6; /* 0x0000 04ec */
+	} private;
+	/* Lets see if the remaining code can get the hint that you
+	   are meant to use the pdb_...() functions. */
 	
 } SAM_ACCOUNT;
 
@@ -1615,12 +1628,6 @@ typedef struct user_struct
 
 	int session_id; /* used by utmp and pam session code */
 } user_struct;
-
-/* used to hold an arbitrary blob of data */
-typedef struct {
-	uint8 *data;
-	size_t length;
-} DATA_BLOB;
 
 
 #include "ntdomain.h"

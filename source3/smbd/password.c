@@ -228,7 +228,7 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 	ZERO_STRUCTP(vuser);
 
 	if (!IS_SAM_UNIX_USER(server_info->sam_account)) {
-		DEBUG(0,("Attempted session setup with invalid user.  No uid/gid in SAM_ACCOUNT\n"));
+		DEBUG(0,("Attempted session setup with invalid user.  No uid/gid in SAM_ACCOUNT (flags:%x)\n", pdb_get_init_flag(server_info->sam_account)));
 		free(vuser);
 		return UID_FIELD_INVALID;
 	}
