@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include <fnmatch.h>
 
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
@@ -524,3 +525,74 @@ int tdb_traverse_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf,
 {
     return tdb_delete(the_tdb, key);
 }
+
+
+
+/**
+ * Search across the whole tdb for keys that match the given pattern
+ * return the result as a list of keys
+ *
+ * @param tdb pointer to opened tdb file context
+ * @param pattern searching pattern used by fnmatch(3) functions
+ *
+ * @return list of keys found by looking up with given pattern
+ **/
+TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
+{
+	TDB_DATA key, next;
+	TDB_LIST_NODE *list = NULL;
+	TDB_LIST_NODE *rec = NULL;
+	TDB_LIST_NODE *tmp = NULL;
+	
+	for (key = tdb_firstkey(tdb); key.dptr; key = next) {
+		/* duplicate key string to ensure null-termination */
+		char *key_str = (char*) strndup(key.dptr, key.dsize);
+		if (!key_str) {
+			DEBUG(0, ("tdb_search_keys: strndup() failed!\n"));
+			smb_panic("strndup failed!\n");
+		}
+		
+		DEBUG(18, ("checking %s for match to pattern %s\n", key_str, pattern));
+		
+		next = tdb_nextkey(tdb, key);
+
+		/* do the pattern checking */
+		if (fnmatch(pattern, key_str, 0) == 0) {
+			rec = (TDB_LIST_NODE*) malloc(sizeof(*rec));
+			ZERO_STRUCTP(rec);
+
+			rec->node_key = key;
+	
+			DLIST_ADD_END(list, rec, tmp);
+		
+			DEBUG(18, ("checking %s matched pattern %s\n", key_str, pattern));
+		} else {
+			free(key.dptr);
+		}
+		
+		/* free duplicated key string */
+		free(key_str);
+	}
+	
+	return list;
+
+};
+
+
+/**
+ * Free the list returned by tdb_search_keys
+ *
+ * @param node list of results found by tdb_search_keys
+ **/
+void tdb_search_list_free(TDB_LIST_NODE* node)
+{
+	TDB_LIST_NODE *next_node;
+	
+	while (node) {
+		next_node = node->next;
+		SAFE_FREE(node);
+		node = next_node;
+	};
+};
+
+

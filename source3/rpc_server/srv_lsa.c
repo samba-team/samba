@@ -105,8 +105,10 @@ static BOOL api_lsa_enum_trust_dom(pipes_struct *p)
 	if(!lsa_io_q_enum_trust_dom("", &q_u, data, 0))
 		return False;
 
+	/* get required trusted domains information */
 	r_u.status = _lsa_enum_trust_dom(p, &q_u, &r_u);
 
+	/* prepare the response */
 	if(!lsa_io_r_enum_trust_dom("", &r_u, rdata, 0))
 		return False;
 

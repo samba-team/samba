@@ -1,6 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Copyright (C) Andrew Tridgell 1992-2001
+   Copyright (C) Andrew Bartlett      2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -124,9 +125,13 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 }
 
 
-/************************************************************************
-form a key for fetching the machine trust account password
-************************************************************************/
+/**
+ * Form a key for fetching the machine trust account password
+ *
+ * @param domain domain name
+ *
+ * @return stored password's key
+ **/
 char *trust_keystr(char *domain)
 {
 	static fstring keystr;
@@ -141,7 +146,7 @@ char *trust_keystr(char *domain)
 /**
  * Form a key for fetching a trusted domain password
  *
- * @param domain domain name
+ * @param domain trusted domain name
  *
  * @return stored password's key
  **/
@@ -194,21 +199,23 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
  Routine to get account password to trusted domain
 ************************************************************************/
 BOOL secrets_fetch_trusted_domain_password(char *domain, char** pwd,
-				DOM_SID *sid, time_t *pass_last_set_time)
+					   DOM_SID *sid, time_t *pass_last_set_time)
 {
 	struct trusted_dom_pass *pass;
 	size_t size;
 
+	/* fetching trusted domain password structure */
 	if (!(pass = secrets_fetch(trustdom_keystr(domain), &size))) {
 		DEBUG(5, ("secrets_fetch failed!\n"));
 		return False;
 	}
-	
+
 	if (size != sizeof(*pass)) {
 		DEBUG(0, ("secrets were of incorrect size!\n"));
 		return False;
 	}
-	
+
+	/* the trust's password */	
 	if (pwd) {
 		*pwd = strdup(pass->pass);
 		if (!*pwd) {
@@ -216,9 +223,12 @@ BOOL secrets_fetch_trusted_domain_password(char *domain, char** pwd,
 		}
 	}
 
+	/* last change time */
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
 
+	/* domain sid */
 	memcpy(&sid, &(pass->domain_sid), sizeof(sid));
+	
 	SAFE_FREE(pass);
 	
 	return True;
@@ -247,19 +257,30 @@ BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16])
  * @return true if succeeded
  **/
 
-BOOL secrets_store_trusted_domain_password(char* domain, char* pwd,
+BOOL secrets_store_trusted_domain_password(char* domain, smb_ucs2_t *uni_dom_name,
+					   size_t uni_name_len, char* pwd,
 					   DOM_SID sid)
 {
 	struct trusted_dom_pass pass;
 	ZERO_STRUCT(pass);
 
+	/* unicode domain name and its length */
+	if (!uni_dom_name)
+		return False;
+		
+	strncpy_w(pass.uni_name, uni_dom_name, sizeof(pass.uni_name) - 1);
+	pass.uni_name_len = uni_name_len;
+
+	/* last change time */
 	pass.mod_time = time(NULL);
 
+	/* password of the trust */
 	pass.pass_len = strlen(pwd);
 	fstrcpy(pass.pass, pwd);
 
+	/* domain sid */
 	memcpy(&(pass.domain_sid), &sid, sizeof(sid));
-	
+
 	return secrets_store(trustdom_keystr(domain), (void *)&pass, sizeof(pass));
 }
 
@@ -355,5 +376,102 @@ BOOL secrets_store_ldap_pw(char* dn, char* pw)
 		if (*p == ',') *p = '/';
 	
 	return secrets_store(key, pw, strlen(pw));
+}
+
+
+/**
+ * The linked list is allocated on the supplied talloc context, caller gets to destory
+ * when done.
+ *
+ * @param start_idx starting index, eg. we can start fetching
+ *	  at third or sixth trusted domain entry
+ * @param num_domains number of domain entries to fetch at one call
+ *
+ * @return list of trusted domains structs (unicode name, sid and password)
+ **/ 
+
+NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int start_idx, int max_num_domains, int *num_domains, TRUSTDOM ***domains)
+{
+	TDB_LIST_NODE *keys, *k;
+	TRUSTDOM *dom = NULL;
+	char *pattern;
+	uint32 idx = 0;
+	size_t size;
+	struct trusted_dom_pass *pass;
+
+	secrets_init();
+
+	*num_domains = 0;
+
+	/* generate searching pattern */
+	if (!(pattern = talloc_asprintf(ctx, "%s/*", SECRETS_DOMTRUST_ACCT_PASS))) {
+		DEBUG(0, ("secrets_get_trusted_domains: talloc_asprintf() failed!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DEBUG(5, ("secrets_get_trusted_domains: looking for %d domains, starting at index %d\n", 
+		  max_num_domains, start_idx));
+
+	*domains = talloc_zero(ctx, sizeof(**domains)*max_num_domains);
+
+	/* fetching trusted domains' data and collecting them in a list */
+	keys = tdb_search_keys(tdb, pattern);
+
+	/* searching for keys in sectrets db -- way to go ... */
+	for (k = keys; k; k = k->next) {
+		char *secrets_key;
+		
+		/* important: ensure null-termination of the key string */
+		secrets_key = strndup(k->node_key.dptr, k->node_key.dsize);
+		if (!secrets_key) {
+			DEBUG(0, ("strndup failed!\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+				
+		pass = secrets_fetch(secrets_key, &size);
+		
+		if (size != sizeof(*pass)) {
+			DEBUG(2, ("Secrets record %s is invalid!\n", secrets_key));
+			SAFE_FREE(pass);
+			continue;
+		}
+
+		SAFE_FREE(secrets_key);
+
+		if (idx >= start_idx && idx < start_idx + max_num_domains) {
+			dom = talloc_zero(ctx, sizeof(*dom));
+			if (!dom) {
+				/* free returned tdb record */
+				SAFE_FREE(pass);
+				
+				return NT_STATUS_NO_MEMORY;
+			}
+			
+				/* copy domain sid */
+			SMB_ASSERT(sizeof(dom->sid) == sizeof(pass->domain_sid));
+			memcpy(&(dom->sid), &(pass->domain_sid), sizeof(dom->sid));
+			
+				/* copy unicode domain name */
+			dom->name = talloc_strdup_w(ctx, pass->uni_name);
+			
+			(*domains)[*num_domains] = dom;
+
+			(*num_domains)++;
+			
+		}
+		
+		idx++;
+		
+		/* free returned tdb record */
+		SAFE_FREE(pass);
+	}
+	
+	DEBUG(5, ("secrets_get_trusted_domains: got %d of %d domains\n", 
+		  *num_domains, max_num_domains));
+
+	/* free the results of searching the keys */
+	tdb_search_list_free(keys);
+
+	return NT_STATUS_OK;
 }
 

@@ -278,8 +278,8 @@ typedef struct lsa_r_query_info
 typedef struct lsa_enum_trust_dom_info
 {
 	POLICY_HND pol; /* policy handle */
-    uint32 enum_context; /* enumeration context handle */
-    uint32 preferred_len; /* preferred maximum length */
+	uint32 enum_context; /* enumeration context handle */
+	uint32 preferred_len; /* preferred maximum length */
 
 } LSA_Q_ENUM_TRUST_DOM;
 

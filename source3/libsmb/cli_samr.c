@@ -971,7 +971,7 @@ NTSTATUS cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                POLICY_HND *domain_pol, uint32 flags,
-                               uint32 num_names, char **names,
+                               uint32 num_names, const char **names,
                                uint32 *num_rids, uint32 **rids,
                                uint32 **rid_types)
 {

@@ -696,6 +696,7 @@ extern int errno;
 #include "dlinklist.h"
 #include "../tdb/tdb.h"
 #include "../tdb/spinlock.h"
+#include "../tdb/tdbutil.h"
 #include "talloc.h"
 #include "ads.h"
 #include "interfaces.h"

@@ -4,6 +4,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Bartlett                   2002.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -523,40 +524,63 @@ BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e,
  Inits an LSA_R_ENUM_TRUST_DOM structure.
 ********************************************************************/
 
-void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context, 
-			   char *domain_name, DOM_SID *domain_sid,
-                           NTSTATUS status)
+void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context,
+			   uint32 requested_num_domains, uint32 num_domains, TRUSTDOM **td)
 {
+	int i;
+
         DEBUG(5, ("init_r_enum_trust_dom\n"));
 	
         r_e->enum_context = enum_context;
-	
-        if (NT_STATUS_IS_OK(status)) {
-                int len_domain_name = strlen(domain_name) + 1;
+	r_e->num_domains = 0;
+	r_e->ptr_enum_domains = 0;
+	r_e->num_domains2 = 0;
+
+	if (num_domains == 0) {
+		r_e->status = NT_STATUS_NO_MORE_ENTRIES;
+
+	} else {
+		/* 
+		 * allocating empty arrays of unicode headers, strings
+		 * and sids of enumerated trusted domains
+		 */
+		if (!(r_e->hdr_domain_name = (UNIHDR2 *)talloc(ctx,sizeof(UNIHDR2) * num_domains))) {
+			r_e->status = NT_STATUS_NO_MEMORY;
+			return;
+		}
 		
-                r_e->num_domains  = 1;
-                r_e->ptr_enum_domains = 1;
-                r_e->num_domains2 = 1;
+		if (!(r_e->uni_domain_name = (UNISTR2 *)talloc(ctx,sizeof(UNISTR2) * num_domains))) {
+			r_e->status = NT_STATUS_NO_MEMORY;
+			return;
+		}
+
+		if (!(r_e->domain_sid = (DOM_SID2 *)talloc(ctx,sizeof(DOM_SID2) * num_domains))) {
+			r_e->status = NT_STATUS_NO_MEMORY;
+			return;
+		}
 		
-		if (!(r_e->hdr_domain_name = (UNIHDR2 *)talloc(ctx,sizeof(UNIHDR2))))
-			return;
+		r_e->num_domains = num_domains;
+		r_e->num_domains2 = num_domains;
+		
+		for (i = 0; i < num_domains; i++) {
+			
+			/* don't know what actually is this for */
+			r_e->ptr_enum_domains = 1;
+			
+			init_uni_hdr2(&r_e->hdr_domain_name[i], strlen_w((td[i])->name));
+			init_dom_sid2(&r_e->domain_sid[i], &(td[i])->sid);
+			
+			init_unistr2_w(ctx, &r_e->uni_domain_name[i], (td[i])->name);
+			
+		};
 
-		if (!(r_e->uni_domain_name = (UNISTR2 *)talloc(ctx,sizeof(UNISTR2))))
-			return;
+		if (num_domains < requested_num_domains) {
+			r_e->status = NT_STATUS_NO_MORE_ENTRIES;
+		} else {
+			r_e->status = NT_STATUS_OK;
+		}
+	}
 
-		if (!(r_e->domain_sid = (DOM_SID2 *)talloc(ctx,sizeof(DOM_SID2))))
-			return;
-
-		init_uni_hdr2(&r_e->hdr_domain_name[0], len_domain_name);
-		init_unistr2 (&r_e->uni_domain_name[0], domain_name, 
-			      len_domain_name);
-		init_dom_sid2(&r_e->domain_sid[0], domain_sid);
-        } else {
-                r_e->num_domains = 0;
-                r_e->ptr_enum_domains = 0;
-        }
-	
-        r_e->status = status;
 }
 
 /*******************************************************************
@@ -603,7 +627,7 @@ BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e,
 		
 		for (i = 0; i < num_domains; i++) {
 			if(!smb_io_unistr2 ("", &r_e->uni_domain_name[i],
-					    r_e->hdr_domain_name[i].buffer, 
+					    r_e->hdr_domain_name[i].buffer,
 					    ps, depth))
 				return False;
 			if(!smb_io_dom_sid2("", &r_e->domain_sid[i], ps, 
