@@ -230,9 +230,9 @@ main(int argc, char **argv)
     ret = krb5_init_context(&context);
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
-
-    while((e = getarg(args, num_args, argc, argv, &optind)))
-	errx(1, "error at argument `%s'", argv[optind]);
+    
+    if(getarg(args, num_args, argc, argv, &optind))
+	usage(1);
 
     if (help_flag)
 	usage (0);
