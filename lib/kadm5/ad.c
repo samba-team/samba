@@ -31,6 +31,8 @@
  * SUCH DAMAGE. 
  */
 
+/* #define HAVE_TSASL 1 */
+
 #include "kadm5_locl.h"
 #ifdef OPENLDAP
 #include <ldap.h>
@@ -49,10 +51,47 @@ RCSID("$Id$");
 #define CTX2BASE(context) ((context)->base_dn)
 
 /*
+ * userAccountControl
+ */
+
+#define UF_SCRIPT	 			0x00000001
+#define UF_ACCOUNTDISABLE			0x00000002
+#define UF_UNUSED_0	 			0x00000004
+#define UF_HOMEDIR_REQUIRED			0x00000008
+#define UF_LOCKOUT	 			0x00000010
+#define UF_PASSWD_NOTREQD 			0x00000020
+#define UF_PASSWD_CANT_CHANGE 			0x00000040
+#define UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED	0x00000080
+#define UF_TEMP_DUPLICATE_ACCOUNT       	0x00000100
+#define UF_NORMAL_ACCOUNT               	0x00000200
+#define UF_UNUSED_1	 			0x00000400
+#define UF_INTERDOMAIN_TRUST_ACCOUNT    	0x00000800
+#define UF_WORKSTATION_TRUST_ACCOUNT    	0x00001000
+#define UF_SERVER_TRUST_ACCOUNT         	0x00002000
+#define UF_UNUSED_2	 			0x00004000
+#define UF_UNUSED_3	 			0x00008000
+#define UF_PASSWD_NOT_EXPIRE			0x00010000
+#define UF_MNS_LOGON_ACCOUNT			0x00020000
+#define UF_SMARTCARD_REQUIRED			0x00040000
+#define UF_TRUSTED_FOR_DELEGATION		0x00080000
+#define UF_NOT_DELEGATED			0x00100000
+#define UF_USE_DES_KEY_ONLY			0x00200000
+#define UF_DONT_REQUIRE_PREAUTH			0x00400000
+#define UF_UNUSED_4				0x00800000
+#define UF_UNUSED_5				0x01000000
+#define UF_UNUSED_6				0x02000000
+#define UF_UNUSED_7				0x04000000
+#define UF_UNUSED_8				0x08000000
+#define UF_UNUSED_9				0x10000000
+#define UF_UNUSED_10				0x20000000
+#define UF_UNUSED_11				0x40000000
+#define UF_UNUSED_12				0x80000000
+
+/*
  *
  */
 
-#ifndef TSASL
+#ifndef HAVE_TSASL
 static int
 sasl_interact(LDAP *ld, unsigned flags, void *defaults, void *interact)
 {
@@ -181,9 +220,9 @@ laddattr(char ***al, int *attrlen, char *attr)
 	return;
     a[*attrlen] = attr;
     a[*attrlen + 1] = NULL;
+    (*attrlen)++;
     *al = a;
 }
-
 
 static kadm5_ret_t
 _kadm5_ad_connect(void *server_handle)
@@ -346,6 +385,52 @@ ad_get_cred(kadm5_ad_context *context, const char *password)
     return 0;
 }
 
+/* XXX create filter in a better way */
+
+static int
+ad_find_entry(kadm5_ad_context *context, const char *fqdn, char **name)
+{
+    LDAPMessage *m, *m0;
+    char **attr = NULL;
+    int attrlen = 0;
+    char *filter;
+    int ret;
+
+    if (name)
+	*name = NULL;
+
+    laddattr(&attr, &attrlen, "distinguishedName");
+
+    if (fqdn)
+	asprintf(&filter, "(&(objectClass=computer)(dNSHostName=%s))", fqdn);
+    else
+	return KADM5_RPC_ERROR;
+
+    ret = ldap_search_s(CTX2LP(context), CTX2BASE(context),
+			LDAP_SCOPE_SUBTREE, 
+			filter, attr, 0, &m);
+    free(attr);
+    free(filter);
+    if (ret)
+	return KADM5_RPC_ERROR;
+
+    if (ldap_count_entries(CTX2LP(context), m) < 0) {
+	char **vals;
+	m0 = ldap_first_entry(CTX2LP(context), m);
+	vals = ldap_get_values(CTX2LP(context), m0, "distinguishedName");
+	if (vals == NULL || vals[0] == NULL) {
+	    ldap_msgfree(m);
+	    return KADM5_RPC_ERROR;
+	}
+	if (name)
+	    *name = strdup(vals[0]);
+	ldap_msgfree(m);
+    } else
+	return KADM5_UNK_PRINC;
+
+    return 0;
+}
+
 
 static kadm5_ret_t
 kadm5_ad_chpass_principal(void *server_handle,
@@ -391,13 +476,23 @@ kadm5_ad_create_principal(void *server_handle,
     /*
      * principal
      * KADM5_PRINCIPAL|KADM5_ATTRIBUTES|KADM5_PRINC_EXPIRE_TIME
-     */
-
-    /*
+     *
      * return 0 || KADM5_DUP;
      */
 
 #ifdef OPENLDAP
+    int ret;
+
+    ret = ad_get_cred(context, NULL);
+    if (ret)
+	return ret;
+
+    /*
+     */
+
+    if (ad_find_entry(context, "tiffo.l.nxs.se", NULL) == 0)
+	return KADM5_DUP;
+
     context = NULL; /* XXX */
     return KADM5_DUP; /* XXX */
 #else
@@ -458,7 +553,7 @@ kadm5_ad_get_principal(void *server_handle,
     LDAPMessage *m, *m0;
     char **attr = NULL;
     int attrlen = 0;
-    char *filter, *p;
+    char *filter, *p, *q;
     int ret;
 
     /*
@@ -481,15 +576,22 @@ kadm5_ad_get_principal(void *server_handle,
     laddattr(&attr, &attrlen, "objectClass");
     laddattr(&attr, &attrlen, "whenChanged");
     laddattr(&attr, &attrlen, "whenCreated");
+    laddattr(&attr, &attrlen, "lastLogon");
+    laddattr(&attr, &attrlen, "badPwdCount");
+    laddattr(&attr, &attrlen, "badPasswordTime");
+    laddattr(&attr, &attrlen, "pwdLastSet");
     laddattr(&attr, &attrlen, "accountExpires");
-    laddattr(&attr, &attrlen, "cn");
     laddattr(&attr, &attrlen, "userAccountControl");
 
-    krb5_unparse_name(context->context, principal, &p);
+    krb5_unparse_name_short(context->context, principal, &p);
+
+    /* replace @ in domain part with a / */
+    q = strrchr(p, '@');
+    if (q && (p != q && *(q - 1) != '\\'))
+	*q = '/';
 
     asprintf(&filter, 
-	     "(|(userPrincipalName=%s)"
-	     "(servicePrincipalName=%s))",
+	     "(|(userPrincipalName=%s)(servicePrincipalName=%s))",
 	     p, p);
     free(p);
 
@@ -497,6 +599,8 @@ kadm5_ad_get_principal(void *server_handle,
 			LDAP_SCOPE_SUBTREE, 
 			filter, attr, 0, &m);
     free(attr);
+    if (ret)
+	return KADM5_RPC_ERROR;
 
     if (ldap_count_entries(CTX2LP(context), m) > 0) {
 	char **vals;
@@ -520,11 +624,20 @@ kadm5_ad_get_principal(void *server_handle,
 	vals = ldap_get_values(CTX2LP(context), m0, "accountExpires");
 	if (vals)
 	    printf("accountExpires %s\n", vals[0]);
-    } else
-	goto fail;
+	if (mask & KADM5_KVNO) {
+	    vals = ldap_get_values(CTX2LP(context), m0, 
+				   "msDS-KeyVersionNumber");
+	    if (vals)
+		entry->kvno = atoi(vals[0]);
+	    else
+		entry->kvno = 0;
+	}
+	ldap_msgfree(m);
+    } else {
+	printf("no entry\n");
+	return KADM5_UNK_PRINC;
+    }
 
-    if (mask & KADM5_KVNO)
-	entry->kvno = 0; /* XXX */
     if (mask & KADM5_ATTRIBUTES)
 	entry->attributes = 0;
     if (mask & KADM5_PRINCIPAL)
