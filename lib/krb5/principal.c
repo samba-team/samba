@@ -635,19 +635,19 @@ krb5_sname_to_principal (krb5_context context,
 	if(hp != NULL)
 	    hostname = hp->h_name;
     }
-    ret = krb5_get_host_realm(context, hostname, &realms);
-    if(ret)
-	return ret;
     if(type == KRB5_NT_SRV_HST){
 	host = strdup(hostname);
 	if(host == NULL){
-	    krb5_free_host_realm(context, realms);
 	    return ENOMEM;
 	}
 	strlwr(host);
 	hostname = host;
     }
-    ret = krb5_make_principal(context, ret_princ, realms[0], sname, hostname, NULL);
+    ret = krb5_get_host_realm(context, hostname, &realms);
+    if(ret)
+	return ret;
+    ret = krb5_make_principal(context, ret_princ, realms[0], sname,
+			      hostname, NULL);
     if(host)
 	free(host);
     krb5_free_host_realm(context, realms);
