@@ -146,12 +146,6 @@ owner = root
 group = sys
 flags = 
 
-FILE:Samba:SHARED:usr/local/samba/bin/addtosmbpass:
-mode  = 0755
-owner = root
-group = sys
-flags = 
-
 FILE:Samba:SHARED:usr/local/samba/bin/mksmbpasswd.sh:
 mode  = 0755
 owner = root

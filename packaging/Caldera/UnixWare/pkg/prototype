@@ -24,7 +24,6 @@ f samba usr/local/samba/bin/rpcclient 0755 root sys
 f samba usr/local/samba/bin/smbspool 0755 root sys
 f samba usr/local/samba/bin/smbsh 0755 root sys
 f samba usr/local/samba/bin/smbwrapper.so 0755 root sys
-f samba usr/local/samba/bin/addtosmbpass 0755 root sys
 f samba usr/local/samba/bin/mksmbpasswd.sh 0755 root sys
 f samba usr/local/samba/bin/smbtar 0755 root sys
 f samba usr/local/samba/bin/smbprint 0755 root sys
@@ -220,7 +219,7 @@ f samba usr/local/samba/swat/help/lmhosts.5.html 0644 root sys
 f samba usr/local/samba/swat/help/make_smbcodepage.1.html 0644 root sys
 f samba usr/local/samba/swat/help/nmbd.8.html 0644 root sys
 f samba usr/local/samba/swat/help/nmblookup.1.html 0644 root sys
-f samba usr/local/samba/swat/help/rpcclient.8.html 0644 root sys
+f samba usr/local/samba/swat/help/rpcclient.1.html 0644 root sys
 f samba usr/local/samba/swat/help/samba-pdc-faq.html 0644 root sys
 f samba usr/local/samba/swat/help/samba-pdc-howto.html 0644 root sys
 f samba usr/local/samba/swat/help/samba.7.html 0644 root sys
