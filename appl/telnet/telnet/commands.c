@@ -1541,7 +1541,7 @@ env_find(unsigned char *var)
 	return(NULL);
 }
 
-#if IRIX == 4
+#ifdef IRIX4
 #define environ _environ
 #endif
 
