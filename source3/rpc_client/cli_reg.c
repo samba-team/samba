@@ -300,14 +300,6 @@ BOOL reg_flush_key( POLICY_HND *hnd)
 	REG_Q_FLUSH_KEY q_o;
 	BOOL valid_query = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -323,7 +315,7 @@ BOOL reg_flush_key( POLICY_HND *hnd)
 	reg_io_q_flush_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_FLUSH_KEY, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_FLUSH_KEY, &buf, &rbuf))
 	{
 		REG_R_FLUSH_KEY r_o;
 		BOOL p;
@@ -367,14 +359,6 @@ BOOL reg_query_key( POLICY_HND *hnd,
 	REG_Q_QUERY_KEY q_o;
 	BOOL valid_query = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -390,7 +374,7 @@ BOOL reg_query_key( POLICY_HND *hnd,
 	reg_io_q_query_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_QUERY_KEY, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_QUERY_KEY, &buf, &rbuf))
 	{
 		REG_R_QUERY_KEY r_o;
 		BOOL p;
@@ -440,14 +424,6 @@ BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk)
 	REG_Q_UNK_1A q_o;
 	BOOL valid_query = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -463,7 +439,7 @@ BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk)
 	reg_io_q_unk_1a("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_UNK_1A, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_UNK_1A, &buf, &rbuf))
 	{
 		REG_R_UNK_1A r_o;
 		BOOL p;
@@ -505,14 +481,6 @@ BOOL reg_query_info( POLICY_HND *hnd,
 	REG_Q_INFO q_o;
 	BOOL valid_query = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -528,7 +496,7 @@ BOOL reg_query_info( POLICY_HND *hnd,
 	reg_io_q_info("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_INFO, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_INFO, &buf, &rbuf))
 	{
 		REG_R_INFO r_o;
 		BOOL p;
@@ -572,14 +540,6 @@ BOOL reg_set_key_sec( POLICY_HND *hnd,
 	REG_Q_SET_KEY_SEC q_o;
 	BOOL valid_query = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -595,7 +555,7 @@ BOOL reg_set_key_sec( POLICY_HND *hnd,
 	reg_io_q_set_key_sec("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_SET_KEY_SEC, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_SET_KEY_SEC, &buf, &rbuf))
 	{
 		REG_R_SET_KEY_SEC r_o;
 		BOOL p;
@@ -630,14 +590,6 @@ BOOL reg_get_key_sec( POLICY_HND *hnd,
 	REG_Q_GET_KEY_SEC q_o;
 	BOOL valid_query = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -653,7 +605,7 @@ BOOL reg_get_key_sec( POLICY_HND *hnd,
 	reg_io_q_get_key_sec("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_GET_KEY_SEC, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_GET_KEY_SEC, &buf, &rbuf))
 	{
 		REG_R_GET_KEY_SEC r_o;
 		BOOL p;
@@ -706,14 +658,6 @@ BOOL reg_delete_val( POLICY_HND *hnd, char *val_name)
 	REG_Q_DELETE_VALUE q_o;
 	BOOL valid_delete = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -729,7 +673,7 @@ BOOL reg_delete_val( POLICY_HND *hnd, char *val_name)
 	reg_io_q_delete_val("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_DELETE_VALUE, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_DELETE_VALUE, &buf, &rbuf))
 	{
 		REG_R_DELETE_VALUE r_o;
 		BOOL p;
@@ -768,14 +712,6 @@ BOOL reg_delete_key( POLICY_HND *hnd, char *key_name)
 	REG_Q_DELETE_KEY q_o;
 	BOOL valid_delete = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -791,7 +727,7 @@ BOOL reg_delete_key( POLICY_HND *hnd, char *key_name)
 	reg_io_q_delete_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_DELETE_KEY, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_DELETE_KEY, &buf, &rbuf))
 	{
 		REG_R_DELETE_KEY r_o;
 		BOOL p;
@@ -836,14 +772,6 @@ BOOL reg_create_key( POLICY_HND *hnd,
 	SEC_DESC_BUF sec_buf;
 	int sec_len;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	ZERO_STRUCT(sec);
 	ZERO_STRUCT(sec_buf);
 	ZERO_STRUCT(q_o);
@@ -870,7 +798,7 @@ BOOL reg_create_key( POLICY_HND *hnd,
 	reg_io_q_create_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_CREATE_KEY, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_CREATE_KEY, &buf, &rbuf))
 	{
 		REG_R_CREATE_KEY r_o;
 		BOOL p;
@@ -915,14 +843,6 @@ BOOL reg_enum_key( POLICY_HND *hnd,
 	REG_Q_ENUM_KEY q_o;
 	BOOL valid_query = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -938,7 +858,7 @@ BOOL reg_enum_key( POLICY_HND *hnd,
 	reg_io_q_enum_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_ENUM_KEY, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_ENUM_KEY, &buf, &rbuf))
 	{
 		REG_R_ENUM_KEY r_o;
 		BOOL p;
@@ -983,14 +903,6 @@ BOOL reg_create_val( POLICY_HND *hnd,
 	REG_Q_CREATE_VALUE q_o;
 	BOOL valid_create = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -1006,7 +918,7 @@ BOOL reg_create_val( POLICY_HND *hnd,
 	reg_io_q_create_val("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_CREATE_VALUE, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_CREATE_VALUE, &buf, &rbuf))
 	{
 		REG_R_CREATE_VALUE r_o;
 		BOOL p;
@@ -1048,14 +960,6 @@ BOOL reg_enum_val( POLICY_HND *hnd,
 	REG_Q_ENUM_VALUE q_o;
 	BOOL valid_query = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -1071,7 +975,7 @@ BOOL reg_enum_val( POLICY_HND *hnd,
 	reg_io_q_enum_val("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_ENUM_VALUE, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_ENUM_VALUE, &buf, &rbuf))
 	{
 		REG_R_ENUM_VALUE r_o;
 		BOOL p;
@@ -1115,14 +1019,6 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 	REG_Q_OPEN_ENTRY q_o;
 	BOOL valid_pol = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
@@ -1138,7 +1034,7 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 	reg_io_q_open_entry("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_OPEN_ENTRY, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_OPEN_ENTRY, &buf, &rbuf))
 	{
 		REG_R_OPEN_ENTRY r_o;
 		BOOL p;
@@ -1157,9 +1053,16 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 
 		if (p)
 		{
+			struct cli_state *cli = NULL;
+			uint16 fnum = 0xffff;
+
+			if (!cli_state_get(hnd, &cli, &fnum))
+			{
+				return False;
+			}
+
 			memcpy(key_hnd, r_o.pol.data, sizeof(key_hnd->data));
-			valid_pol = register_policy_hnd(key_hnd) &&
-			        set_policy_cli_state(key_hnd, cli, fnum, NULL);
+			valid_pol = cli_pol_link(key_hnd, hnd);
 		}
 	}
 
@@ -1179,14 +1082,6 @@ BOOL reg_close( POLICY_HND *hnd)
 	REG_Q_CLOSE q_c;
 	BOOL valid_close = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
 	if (hnd == NULL) return False;
 
 	/* create and send a MSRPC command with api REG_CLOSE */
@@ -1203,7 +1098,7 @@ BOOL reg_close( POLICY_HND *hnd)
 	reg_io_q_close("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_CLOSE, &buf, &rbuf))
+	if (rpc_hnd_pipe_req(hnd, REG_CLOSE, &buf, &rbuf))
 	{
 		REG_R_CLOSE r_c;
 		BOOL p;
@@ -1263,7 +1158,7 @@ BOOL reg_shutdown(const char *srv_name,
 	struct cli_state *cli = NULL;
 	uint16 fnum = 0xffff;
 
-	if (!cli_state_init(srv_name, PIPE_WINREG, &cli, &fnum))
+	if (!cli_state_init(srv_name, PIPE_LSARPC, &cli, &fnum))
 	{
 		return False;
 	}

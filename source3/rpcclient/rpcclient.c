@@ -974,8 +974,7 @@ static char *complete_samenum_usr(char *text, int state)
 		num_usrs = 0;
 
 		/* Iterate all users */
-		if (msrpc_sam_enum_users(smb_cli,
-		                   domain, &sid1, srv_name,
+		if (msrpc_sam_enum_users(srv_name, domain, &sid1, 
 		                   &sam, &num_usrs,
 		                   NULL, NULL, NULL, NULL) == 0)
 		{
@@ -1030,8 +1029,7 @@ static char *complete_samenum_als(char *text, int state)
 		num_als = 0;
 
 		/* Iterate all aliases */
-		if (msrpc_sam_enum_aliases(smb_cli,
-		                   domain, &sid1, srv_name,
+		if (msrpc_sam_enum_aliases(srv_name, domain, &sid1, 
 		                   &sam, &num_als,
 		                   NULL, NULL, NULL) == 0)
 		{
@@ -1086,8 +1084,8 @@ static char *complete_samenum_grp(char *text, int state)
 		num_grps = 0;
 
 		/* Iterate all groups */
-		if (msrpc_sam_enum_groups(smb_cli,
-		                   domain, &sid1, srv_name,
+		if (msrpc_sam_enum_groups(srv_name,
+		                   domain, &sid1, 
 		                   &sam, &num_grps,
 		                   NULL, NULL, NULL) == 0)
 		{

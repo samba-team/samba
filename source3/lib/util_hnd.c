@@ -411,8 +411,14 @@ BOOL get_policy_cli_state(const POLICY_HND *hnd, struct cli_state **cli,
 	{
 		DEBUG(3,("Getting cli state pnum=%x\n", p->pnum));
 
-		(*cli ) = p->dev.cli->cli;
-		(*fnum) = p->dev.cli->fnum;
+		if (cli != NULL)
+		{
+			(*cli ) = p->dev.cli->cli;
+		}
+		if (fnum != NULL)
+		{
+			(*fnum) = p->dev.cli->fnum;
+		}
 
 		return True;
 	}
