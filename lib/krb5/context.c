@@ -105,8 +105,14 @@ init_context_from_config_file(krb5_context context)
     context->etypes_des = tmptypes;
 
     /* default keytab name */
-    INIT_FIELD(context, string, default_keytab, 
-	       KEYTAB_DEFAULT, "default_keytab_name");
+    tmp = NULL;
+    if(!issuid())
+	tmp = getenv("KRB5_KTNAME");
+    if(tmp != NULL)
+	context->default_keytab = tmp;
+    else
+	INIT_FIELD(context, string, default_keytab, 
+		   KEYTAB_DEFAULT, "default_keytab_name");
 
     INIT_FIELD(context, string, default_keytab_modify, 
 	       NULL, "default_keytab_modify_name");
