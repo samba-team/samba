@@ -3,9 +3,14 @@ Building Samba Packages for Debian GNU/Linux
 
 Building Debian packages is not as hard as some people might think. The
 following instructions will allow you to build your own Samba Debian
-packages. These instructions, and the files in packaging/Debian/, should
-be current as of Samba 3.0beta3, and should allow you to build Debian
-packages for Debian unstable.
+packages. These instructions, and the files in packaging/Debian/, are
+current as of Samba 3.0.0rc2, and allow you to build Debian packages
+for Debian unstable (so you need some development packages available
+only in Debian unstable.) If you are using something newer than 3.0.0rc2
+you might want to try to follow the instructions to see if patches
+apply cleanly. If some patches don't apply cleanly please e-mail
+samba@packages.debian.org since we might have fixed patches that we have
+not yet integrated into upstream Samba.
 
 We try to maintain as much compatibility with previous releases
 of Debian as possible, so it is possible that the files in
@@ -32,11 +37,11 @@ devscripts, etc.):
   libpam0g-dev
   libreadline4-dev
   libcupsys2-dev
-  libacl1-dev | acl-dev (>= 2.0.0)
+  libacl1-dev, libacl1 (>= 2.2.11-1)
   libkrb5-dev
   libldap2-dev
   po-debconf
-  python-dev (>= 2.2)
+  python2.3-dev
 
   Notes regarding the packages required to build Samba Debian packages:
 
@@ -44,12 +49,12 @@ devscripts, etc.):
     That's fine; the configure script won't detect CUPS support and the
     resulting binaries won't support CUPS.
 
-  * The list above is current as of samba-3.0.0beta3, but it can get
+  * The list above is current as of samba-3.0.0rc2, but it can get
     out of date. The best way to check what packages are required to
     build the samba packages on Debian is to look for the Build-Depends:
     field in the file debian/control.
 
-1) cd samba[-<version>]. For example, "cd samba-3.0.0beta3".
+1) cd samba[-<version>]. For example, "cd samba-3.0.0rc2".
 2) cp -a packaging/Debian/debian/ debian
   It's important that you copy instead of symlink because the build
   tools in Potato have a problem that prevents the build to work with
