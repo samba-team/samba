@@ -1,3 +1,30 @@
+2001-03-26  Assar Westerlund  <assar@sics.se>
+
+	* lib/hdb/hdb-ldap.c: change order of includes to allow it to work
+	with more versions of openldap
+
+	* kdc/kerberos5.c (tgs_rep2): try to set sec and usec in error
+	replies
+	(*): update callers of krb5_km_error
+	(check_tgs_flags): handle renews requesting non-renewable tickets
+
+	* lib/krb5/mk_error.c (krb5_mk_error): allow specifying both ctime
+	and cusec
+
+	* lib/krb5/krb5.h (krb5_checksum, krb5_keyusage): add
+	compatibility names
+
+	* lib/krb5/crypto.c (create_checksum): change so that `type == 0'
+	means pick from the `crypto' (context) and otherwise use that
+	type.  this is not a large change in practice and allows callers
+	to specify the exact checksum algorithm to use
+
+2001-03-13  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_cred.c (get_cred_kdc): add support for falling back
+	to KRB5_KU_AP_REQ_AUTH when KRB5_KU_TGS_REQ_AUTH gives `bad
+	integrity'.  this helps for talking to old (pre 0.3d) KDCs
+
 2001-03-12  Assar Westerlund  <assar@pdc.kth.se>
 
 	* lib/krb5/crypto.c (krb5_derive_key): new function, used by
