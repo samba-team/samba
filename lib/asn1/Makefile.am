@@ -1,6 +1,8 @@
 # $Id$
 
-include $(top_srcdir)/Makefile.am.common
+include $(top_srcdir)/cf/Makefile.am.common
+
+SUFFIXES = .x .et .h
 
 YFLAGS = -d
 
@@ -96,3 +98,6 @@ asn1_files: asn1_compile $(srcdir)/k5.asn1
 $(libasn1_la_OBJECTS): asn1.h asn1_err.h
 
 EXTRA_DIST = asn1_err.et
+
+.x.c:
+	@cmp -s $< $@ 2> /dev/null || cp $< $@
