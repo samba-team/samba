@@ -680,7 +680,12 @@ int winbind_setup_common(void)
 {
 	load_interfaces();
 
-	secrets_init();
+	if (!secrets_init()) {
+
+		DEBUG(0,("Could not initialize domain trust account secrets. Giving up\n"));
+		return 1;
+
+	}
 
 	/* Get list of domains we look up requests for.  This includes the
 	   domain which we are a member of as well as any trusted
