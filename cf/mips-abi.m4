@@ -58,11 +58,12 @@ case $abi in
 	fi
 	# Old GCC
 	abi=''
+	abilibdirext=''
 	;;
 	-mabi=n32|-mabi=64)
 		if test $with_mips_abi = yes; then
 			# Old GCC, default to O32
-			abi=32
+			abi=''
 			abilibdirext=''
 		else
 			# Some broken GCC
