@@ -378,6 +378,44 @@ pytdbpack_buffer(PyObject *val_iter, PyObject *packed_list)
 }
 
 
+static PyObject *pytdbpack_bad_type(char ch,
+				    const char *expected,
+				    PyObject *val_obj)
+{
+	PyObject *r = PyObject_Repr(val_obj);
+	if (!r)
+		return NULL;
+	PyErr_Format(PyExc_TypeError,
+		     "tdbpack: format '%c' requires %s, not %s",
+		     ch, expected, PyString_AS_STRING(r));
+	Py_DECREF(r);
+	return val_obj;
+}
+
+
+/*
+  XXX: glib and Samba have quicker macro for doing the endianness conversions,
+  but I don't know of one in plain libc, and it's probably not a big deal.  I
+  realize this is kind of dumb because we'll almost always be on x86, but
+  being safe is important.
+*/
+static void pack_le_uint32(unsigned long val_long, unsigned char *pbuf)
+{
+	pbuf[0] =         val_long & 0xff;
+	pbuf[1] = (val_long >> 8)  & 0xff;
+	pbuf[2] = (val_long >> 16) & 0xff;
+	pbuf[3] = (val_long >> 24) & 0xff;
+}
+
+
+static void pack_bytes(long len, const char *from,
+		       unsigned char **pbuf)
+{
+	memcpy(*pbuf, from, len);
+	(*pbuf) += len;
+}
+
+
 
 static PyObject *
 pytdbpack_unpack(PyObject *self,
@@ -445,46 +483,6 @@ pytdbpack_unpack(PyObject *self,
 	Py_XDECREF(ret_tuple);
 	Py_XDECREF(rest_string);
 	return NULL;
-}
-
-
-
-
-static PyObject *pytdbpack_bad_type(char ch,
-				    const char *expected,
-				    PyObject *val_obj)
-{
-	PyObject *r = PyObject_Repr(val_obj);
-	if (!r)
-		return NULL;
-	PyErr_Format(PyExc_TypeError,
-		     "tdbpack: format '%c' requires %s, not %s",
-		     ch, expected, PyString_AS_STRING(r));
-	Py_DECREF(r);
-	return val_obj;
-}
-
-
-/*
-  XXX: glib and Samba have quicker macro for doing the endianness conversions,
-  but I don't know of one in plain libc, and it's probably not a big deal.  I
-  realize this is kind of dumb because we'll almost always be on x86, but
-  being safe is important.
-*/
-static void pack_le_uint32(unsigned long val_long, unsigned char *pbuf)
-{
-	pbuf[0] =         val_long & 0xff;
-	pbuf[1] = (val_long >> 8)  & 0xff;
-	pbuf[2] = (val_long >> 16) & 0xff;
-	pbuf[3] = (val_long >> 24) & 0xff;
-}
-
-
-static void pack_bytes(long len, const char *from,
-		       unsigned char **pbuf)
-{
-	memcpy(*pbuf, from, len);
-	(*pbuf) += len;
 }
 
 
