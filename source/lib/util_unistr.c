@@ -95,9 +95,14 @@ static int check_dos_char(smb_ucs2_t c)
 	return (c == c2);
 }
 
-/*******************************************************************
-load the valid character map table
-********************************************************************/
+/**
+ * Load the valid character map table from <tt>valid.dat</tt> or
+ * create from the configured codepage.
+ *
+ * This function is called whenever the configuration is reloaded.
+ * However, the valid character table is not changed if it's loaded
+ * from a file, because we can't unmap files.
+ **/
 void init_valid_table(void)
 {
 	static int initialised;
@@ -114,6 +119,7 @@ void init_valid_table(void)
 		return;
 	}
 
+	/* Otherwise, using a dynamically loaded one. */
 	if (valid_table) free(valid_table);
 
 	DEBUG(2,("creating default valid table\n"));
@@ -126,6 +132,7 @@ void init_valid_table(void)
 		valid_table[i] = check_dos_char(c);
 	}
 }
+
 
 
 /*******************************************************************
