@@ -1,3 +1,15 @@
+Changes in release 0.3f
+
+ * improve building with openssl
+
+ * add kadmin -K, rcp -F 
+
+ * fix two incorrect weak DES keys
+
+ * fix building of kaserver compat in KDC
+
+ * bug fixes
+
 Changes in release 0.3e
 
  * rcp program included

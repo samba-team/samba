@@ -1,3 +1,16 @@
+2001-02-15  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/warn.c (_warnerr): add printf attributes
+	* lib/krb5/send_to_kdc.c (krb5_sendto): loop over all address
+	returned by getaddrinfo before trying the next kdc.  from
+	thorpej@netbsd.org
+
+	* lib/krb5/krb5.conf.5: fix default_realm in example
+
+	* kdc/connect.c: fix a few kdc_log format types
+
+	* configure.in: try to handle libdes/libcrypto ont requiring -L
+
 2001-02-10  Assar Westerlund  <assar@sics.se>
 
 	* lib/asn1/gen_decode.c (generate_type_decode): zero the data at
