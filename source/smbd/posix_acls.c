@@ -2213,11 +2213,11 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 	}
 
 	/*
-	 * If this is a simple 3 element ACL then it's a standard
+	 * If this is a simple 3 element ACL or no elements then it's a standard
 	 * UNIX permission set. Just use chmod...	
 	 */
 
-	if (num_entries == 3)
+	if ((num_entries == 3) || (num_entries == 0))
 		return -1;
 
 	return 0;
