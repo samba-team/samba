@@ -30,6 +30,7 @@ d none samba/docs 0755 root other
 f none samba/bin/smbtar=source/script/smbtar 0755 root other
 f none samba/bin/addtosmbpass=source/script/addtosmbpass 0755 root other
 f none samba/bin/convert_smbpasswd=source/script/convert_smbpasswd 0755 root other
+f none samba/bin/mksmbpasswd.sh=source/script/mksmbpasswd.sh 0755 root other
 #
 # man pages
 #
@@ -60,11 +61,12 @@ f none samba/man/man8/swat.8=docs/manpages/swat.8 0644 root other
 #
 # Stuff that goes into lib
 #
-f none samba/lib/smb.conf=examples/smb.conf.default 0644 root other
+f none samba/lib/smb.conf.example=examples/smb.conf.default 0644 root other
 d none samba/lib/regeditscripts 0755 root other
 f none samba/lib/regeditscripts/NT4_PlainPassword.reg=docs/NT4_PlainPassword.reg 0444 root other
 f none samba/lib/regeditscripts/Win95_PlainPassword.reg=docs/Win95_PlainPassword.reg 0444 root other
 f none samba/lib/regeditscripts/Win98_PlainPassword.reg=docs/Win98_PlainPassword.reg 0444 root other
+f none samba/lib/regeditscripts/Win2000_PlainPassword.reg=docs/Win2000_PlainPassword.reg 0444 root other
 #
 # Static part of prototype file ends.
 #
