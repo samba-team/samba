@@ -38,6 +38,10 @@ recv an smb
 BOOL cli_receive_smb(struct cli_state *cli)
 {
 	BOOL ret;
+
+	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
+	if (cli->fd == -1) return False; 
+
  again:
 	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
 	
@@ -77,6 +81,9 @@ BOOL cli_send_smb(struct cli_state *cli)
 	size_t len;
 	size_t nwritten=0;
 	ssize_t ret;
+
+	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
+	if (cli->fd == -1) return False;
 
 	len = smb_len(cli->outbuf) + 4;
 
