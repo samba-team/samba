@@ -327,7 +327,7 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
  of the mask entry as we scan the acl.
 ****************************************************************************/
 
-size_t get_num_posix_entries(acl_t posix_acl, acl_permset_t *posix_mask)
+static size_t get_num_posix_entries(acl_t posix_acl, acl_permset_t *posix_mask)
 {
 	size_t num_entries;
 	acl_entry_t entry;
@@ -362,7 +362,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
 	extern DOM_SID global_sid_World;
 	SMB_STRUCT_STAT sbuf;
-	SEC_ACE ace_list[6];
+	SEC_ACE *ace_list;
 	DOM_SID owner_sid;
 	DOM_SID group_sid;
 	size_t sd_size;
@@ -373,13 +373,15 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	int grp_acl_type;
 	SEC_ACCESS other_access;
 	int other_acl_type;
-	int num_acls = 0;
-	acl_t posix_acl;
+	size_t num_acls = 0;
+	size_t num_dir_acls = 0;
+	acl_t posix_acl = NULL;
+	acl_t directory_acl = NULL;
 	 
 	*ppdesc = NULL;
 
 	if(fsp->is_directory || fsp->fd == -1) {
-		if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+		if(vfs_stat(fsp,fsp->fsp_name, &sbuf) != 0) {
 			return 0;
 		}
 		/*
@@ -388,6 +390,13 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 
 		if ((posix_acl = acl_get_file( dos_to_unix(fsp->fsp_name, False), ACL_TYPE_ACCESS)) == NULL)
 			return 0;
+
+		/*
+		 * If it's a directory get the default POSIX ACL.
+		 */
+
+		if(fsp->is_directory) {
+		}
 
 	} else {
 		if(fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
