@@ -1728,7 +1728,7 @@ static void enum_all_printers_info_2(PRINTER_INFO_2 ***printers, uint32 *number,
 		{
 			DEBUG(4,("Found a printer: %s[%x]\n",lp_servicename(snum),snum));
 			*printers=Realloc(*printers, (*number+1)*sizeof(PRINTER_INFO_2 *));			
-			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1 pointers at [%p]\n", *number+1, *printers));			
+			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2 pointers at [%p]\n", *number+1, *printers));			
 			if (enum_printer_info_2( &((*printers)[*number]), snum, *number, conn) )
 			{			
 				(*number)++;
@@ -2071,7 +2071,6 @@ static void make_unistr_array(UNISTR ***uni_array, char **char_array, char *wher
 	DEBUGADD(7,("last one\n"));
 	
 	*uni_array=(UNISTR **)Realloc(*uni_array, sizeof(UNISTR *)*(i+1));
-	(*uni_array)[i]=(UNISTR *)malloc( sizeof(UNISTR));
 	(*uni_array)[i]=0x0000;
 	DEBUGADD(6,("last one:done\n"));
 }
@@ -2190,8 +2189,20 @@ static void spoolss_reply_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_
 	
 	if (info1!=NULL) free(info1);
 	if (info2!=NULL) free(info2);
-	if (info3!=NULL) free(info3);
+	if (info3!=NULL) 
+	{
+		UNISTR **dependentfiles;
+		int j=0;
+		dependentfiles=info3->dependentfiles;
+		while ( dependentfiles[j] != NULL )
+		{
+			free(dependentfiles[j]);
+			j++;
+		}
+		free(dependentfiles);
 	
+		free(info3);
+	}
 }
 
 /********************************************************************
@@ -3055,6 +3066,20 @@ static void spoolss_reply_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, pr
 		}
 		case 3:
 		{
+			UNISTR **dependentfiles;
+			
+			for (i=0; i<count; i++)
+			{
+				int j=0;
+				dependentfiles=(driver_info_3[i]).dependentfiles;
+				while ( dependentfiles[j] != NULL )
+				{
+					free(dependentfiles[j]);
+					j++;
+				}
+				
+				free(dependentfiles);		
+			}
 			free(driver_info_3);
 			break;
 		}
@@ -3617,6 +3642,8 @@ static void spoolss_reply_enumprintprocessors(SPOOL_Q_ENUMPRINTPROCESSORS *q_u, 
 	r_u.info_1=info_1;
 	
 	spoolss_io_r_enumprintprocessors("", &r_u, rdata, 0);
+	
+	free(info_1);
 }
 
 /****************************************************************************
@@ -3629,6 +3656,8 @@ static void api_spoolss_enumprintprocessors(pipes_struct *p, prs_struct *data,
 	spoolss_io_q_enumprintprocessors("", &q_u, data, 0);
 
 	spoolss_reply_enumprintprocessors(&q_u, rdata);
+
+	spoolss_io_free_buffer(&(q_u.buffer));
 }
 
 /****************************************************************************
@@ -3660,6 +3689,8 @@ static void spoolss_reply_enumprintmonitors(SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_
 	r_u.info_1=info_1;
 	
 	spoolss_io_r_enumprintmonitors("", &r_u, rdata, 0);
+	
+	free(info_1);
 }
 
 /****************************************************************************
@@ -3672,6 +3703,8 @@ static void api_spoolss_enumprintmonitors(pipes_struct *p, prs_struct *data,
 	spoolss_io_q_enumprintmonitors("", &q_u, data, 0);
 
 	spoolss_reply_enumprintmonitors(&q_u, rdata);
+
+	spoolss_io_free_buffer(&(q_u.buffer));
 }
 
 /****************************************************************************

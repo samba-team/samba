@@ -128,22 +128,41 @@ add a form struct at the end of the list
 ****************************************************************************/
 void add_a_form(nt_forms_struct **list, FORM form, int count)
 {
-       int n=count;
+	int n=0;
+	BOOL update;
+	fstring form_name;
 
-       *list=Realloc(*list, (n+1)*sizeof(nt_forms_struct));
+	/* 
+	 * NT tries to add forms even when 
+	 * they are already in the base
+	 * only update the values if already present
+	 */
 
-       (*list)[n].flag=form.flags;
-       (*list)[n].width=form.size_x;
-       (*list)[n].length=form.size_y;
-       (*list)[n].left=form.left;
-       (*list)[n].top=form.top;
-       (*list)[n].right=form.right;
-       (*list)[n].bottom=form.bottom;
+	update=False;
+	
+	unistr2_to_ascii(form_name, &(form.name), sizeof(form_name)-1);
+	for (n=0; n<count && update==False; n++)
+	{
+		if (!strncmp((*list)[n].name, form_name, strlen(form_name)))
+		{
+			DEBUG(3, ("NT workaround, [%s] already exists\n", form_name));
+			update=True;
+		}
+	}
 
-       if (form.name_ptr)
-       {
-	       unistr2_to_ascii((*list)[n].name, &(form.name), sizeof((*list)[n].name)-1);
-       }
+	if (update==False)
+	{
+		*list=Realloc(*list, (n+1)*sizeof(nt_forms_struct));
+		unistr2_to_ascii((*list)[n].name, &(form.name), sizeof((*list)[n].name)-1);
+	}
+	
+	(*list)[n].flag=form.flags;
+	(*list)[n].width=form.size_x;
+	(*list)[n].length=form.size_y;
+	(*list)[n].left=form.left;
+	(*list)[n].top=form.top;
+	(*list)[n].right=form.right;
+	(*list)[n].bottom=form.bottom;
 
 }
 
@@ -1123,6 +1142,7 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 					{
 						next_param=param->next;
 						DEBUG(6,("deleting param [%s]\n", param->value));
+						free(param->data);
 						free(param);
 						param=next_param;
 					}
@@ -1196,6 +1216,8 @@ uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 {
 	uint32 success;
+	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
+	char **dependentfiles;
 	
 	switch (level)
 	{
@@ -1203,7 +1225,22 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 		{
 			if (driver.info_3 != NULL)
 			{
-				free(driver.info_3);
+				info3=driver.info_3;
+				dependentfiles=info3->dependentfiles;
+	
+				while ( **dependentfiles != '\0' )
+				{
+					free (*dependentfiles);
+					dependentfiles++;
+				}
+				
+				/* the last one (1 char !) */
+				free (*dependentfiles);
+				
+				dependentfiles=info3->dependentfiles;
+				free (dependentfiles);
+				
+				free(info3);
 				success=0;
 			}
 			else
