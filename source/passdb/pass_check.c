@@ -499,8 +499,7 @@ static int linux_bigcrypt(char *password, char *salt1, char *crypted)
 	StrnCpy(salt, salt1, 2);
 	crypted += 2;
 
-	for (i = strlen(password); i > 0; i -= LINUX_PASSWORD_SEG_CHARS)
-	{
+	for (i = strlen(password); i > 0; i -= LINUX_PASSWORD_SEG_CHARS) {
 		char *p = crypt(password, salt) + 2;
 		if (strncmp(p, crypted, LINUX_PASSWORD_SEG_CHARS) != 0)
 			return (0);
@@ -525,16 +524,13 @@ static char *osf1_bigcrypt(char *password, char *salt1)
 	int i;
 	int parts = strlen(password) / AUTH_CLEARTEXT_SEG_CHARS;
 	if (strlen(password) % AUTH_CLEARTEXT_SEG_CHARS)
-	{
 		parts++;
-	}
 
 	StrnCpy(salt, salt1, 2);
 	StrnCpy(result, salt1, 2);
 	result[2] = '\0';
 
-	for (i = 0; i < parts; i++)
-	{
+	for (i = 0; i < parts; i++) {
 		p1 = crypt(p2, salt);
 		strncat(result, p1 + 2,
 			AUTH_MAX_PASSWD_LENGTH - strlen(p1 + 2) - 1);
@@ -565,12 +561,9 @@ static BOOL string_combinations2(char *s, int offset, BOOL (*fn) (char *),
 #endif
 
 	if (N <= 0 || offset >= len)
-	{
 		return (fn(s));
-	}
 
-	for (i = offset; i < (len - (N - 1)); i++)
-	{
+	for (i = offset; i < (len - (N - 1)); i++) {
 		char c = s[i];
 		if (!islower(c))
 			continue;
@@ -635,22 +628,17 @@ static BOOL password_check(char *password)
 			(strcmp
 			 (osf1_bigcrypt(password, this_salt),
 			  this_crypted) == 0);
-		if (!ret)
-		{
+		if (!ret) {
 			DEBUG(2,
 			      ("OSF1_ENH_SEC failed. Trying normal crypt.\n"));
-			ret =
-				(strcmp
-			       ((char *)crypt(password, this_salt),
-				this_crypted) == 0);
+			ret = (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
 		}
 		return ret;
 	}
 #endif /* OSF1_ENH_SEC */
 
 #ifdef ULTRIX_AUTH
-	return (strcmp((char *)crypt16(password, this_salt), this_crypted) ==
-		0);
+	return (strcmp((char *)crypt16(password, this_salt), this_crypted) == 0);
 #endif /* ULTRIX_AUTH */
 
 #ifdef LINUX_BIGCRYPT
@@ -669,9 +657,7 @@ static BOOL password_check(char *password)
 	if (strcmp(bigcrypt(password, this_salt), this_crypted) == 0)
 		return True;
 	else
-		return (strcmp
-			((char *)crypt(password, this_salt),
-			 this_crypted) == 0);
+		return (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
 #else /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 
 #ifdef HAVE_BIGCRYPT
@@ -682,8 +668,7 @@ static BOOL password_check(char *password)
 	DEBUG(1, ("Warning - no crypt available\n"));
 	return (False);
 #else /* HAVE_CRYPT */
-	return (strcmp((char *)crypt(password, this_salt), this_crypted) ==
-		0);
+	return (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
 #endif /* HAVE_CRYPT */
 #endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 }
@@ -711,30 +696,22 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 #endif
 
 	if (!password)
-	{
 		return (False);
-	}
 
 	if (((!*password) || (!pwlen)) && !lp_null_passwords())
-	{
 		return (False);
-	}
 
-	if (pwd && !user)
-	{
+	if (pwd && !user) {
 		pass = (struct passwd *)pwd;
 		user = pass->pw_name;
-	}
-	else
-	{
+	} else {
 		pass = Get_Pwnam(user, True);
 	}
 
 
 	DEBUG(4, ("Checking password for user %s (l=%d)\n", user, pwlen));
 
-	if (!pass)
-	{
+	if (!pass) {
 		DEBUG(3, ("Couldn't find user %s\n", user));
 		return (False);
 	}
@@ -750,9 +727,7 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 
 		spass = getspnam(pass->pw_name);
 		if (spass && spass->sp_pwdp)
-		{
 			pstrcpy(pass->pw_passwd, spass->sp_pwdp);
-		}
 	}
 #elif defined(IA_UINFO)
 	{
@@ -762,9 +737,7 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 		   2.1. (tangent@cyberport.com) */
 		uinfo_t uinfo;
 		if (ia_openinfo(pass->pw_name, &uinfo) != -1)
-		{
 			ia_get_logpwd(uinfo, &(pass->pw_passwd));
-		}
 	}
 #endif
 
@@ -782,13 +755,10 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 		DEBUG(5, ("Checking password for user %s in OSF1_ENH_SEC\n",
 			  user));
 		mypasswd = getprpwnam(user);
-		if (mypasswd)
-		{
+		if (mypasswd) {
 			fstrcpy(pass->pw_name, mypasswd->ufld.fd_name);
 			fstrcpy(pass->pw_passwd, mypasswd->ufld.fd_encrypt);
-		}
-		else
-		{
+		} else {
 			DEBUG(5,
 			      ("OSF1_ENH_SEC: No entry for user %s in protected database !\n",
 			       user));
@@ -799,8 +769,7 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 #ifdef ULTRIX_AUTH
 	{
 		AUTHORIZATION *ap = getauthuid(pass->pw_uid);
-		if (ap)
-		{
+		if (ap) {
 			fstrcpy(pass->pw_passwd, ap->a_password);
 			endauthent();
 		}
@@ -834,8 +803,7 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 	}
 
 	/* try it as it came to us */
-	if (password_check(password))
-	{
+	if (password_check(password)) {
 		if (fn)
 			fn(user, password);
 		return (True);
@@ -844,38 +812,34 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 	/* if the password was given to us with mixed case then we don't
 	   need to proceed as we know it hasn't been case modified by the
 	   client */
-	if (strhasupper(password) && strhaslower(password))
-	{
+	if (strhasupper(password) && strhaslower(password)) {
 		return (False);
 	}
 
 	/* make a copy of it */
 	StrnCpy(pass2, password, sizeof(pstring) - 1);
 
-	/* try all lowercase */
-	strlower(password);
-	if (password_check(password))
-	{
-		if (fn)
-			fn(user, password);
-		return (True);
+	/* try all lowercase if it's currently all uppercase */
+	if (strhasupper(password)) {
+		strlower(password);
+		if (password_check(password)) {
+			if (fn)
+				fn(user, password);
+			return (True);
+		}
 	}
 
 	/* give up? */
-	if (level < 1)
-	{
-
+	if (level < 1) {
 		/* restore it */
 		fstrcpy(password, pass2);
-
 		return (False);
 	}
 
 	/* last chance - all combinations of up to level chars upper! */
 	strlower(password);
 
-	if (string_combinations(password, password_check, level))
-	{
+	if (string_combinations(password, password_check, level)) {
 		if (fn)
 			fn(user, password);
 		return (True);
