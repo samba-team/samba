@@ -31,9 +31,9 @@ SHARED = @SHARED@
 AFS_EXTRA_LIBS	= @AFS_EXTRA_LIBS@
 LIB = $(LIBNAME).$(LIBEXT) $(AFS_EXTRA_LIBS)
 
-SOURCES = afssys.c afslib.c
+SOURCES = afssys.c afskrb.c afslib.c
 
-OBJECTS = afssys.o
+OBJECTS = afssys.o afskrb.o
 
 all: $(LIB)
 
