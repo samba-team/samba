@@ -10,10 +10,10 @@ RCSID("$Id$");
 const char *
 krb5_get_err_text(krb5_context context, long code)
 {
-    struct error_list *p;
+    struct error_table *p;
     for(p = context->et_list; p; p = p->next){
-	if(code >= p->table->base && code < p->table->base + p->table->n_msgs)
-	    return p->table->msgs[code - p->table->base];
+	if(code >= p->base && code < p->base + p->n_msgs)
+	    return p->msgs[code - p->base];
     }
     return strerror(code);
 }
