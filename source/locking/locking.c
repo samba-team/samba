@@ -156,21 +156,26 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 
 BOOL locking_init(int read_only)
 {
-  if (share_ops)
-    return True;
+	if (share_ops)
+		return True;
 
 #ifdef FAST_SHARE_MODES
-  share_ops = locking_shm_init(read_only);
+	share_ops = locking_shm_init(read_only);
+	if (!share_ops && read_only && (getuid() == 0)) {
+		/* this may be the first time the share modes code has
+                   been run. Initialise it now by running it read-write */
+		share_ops = locking_shm_init(0);
+	}
 #else
-  share_ops = locking_slow_init(read_only);
+	share_ops = locking_slow_init(read_only);
 #endif
 
-  if (!share_ops) {
-    DEBUG(0,("ERROR: Failed to initialise share modes!\n"));
-    return False;
-  }
+	if (!share_ops) {
+		DEBUG(0,("ERROR: Failed to initialise share modes\n"));
+		return False;
+	}
 	
-  return True;
+	return True;
 }
 
 /*******************************************************************
