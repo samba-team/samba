@@ -1,3 +1,5 @@
+; $Id$
+
 (let* ((heimdal-version (getenv "HV"))
        (version-string (concat "Release " heimdal-version)))
   (find-file "configure.in")
