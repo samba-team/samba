@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_parse.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 /* 
  *  parse:  Parse a raw input line from a POP client 

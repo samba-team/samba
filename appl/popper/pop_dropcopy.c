@@ -10,8 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_dropcopy.c	2.6  2.6 4/3/91";
 #endif /* not lint */
 
 #include <popper.h>
-
-extern int      errno;
+RCSID("$Id$");
 
 /* 
  *  dropcopy:   Make a temporary copy of the user's mail drop and 

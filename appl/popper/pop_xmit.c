@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_xmit.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 /*
  *  xmit:   POP XTND function to receive a message from 

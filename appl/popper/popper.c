@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)popper.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 int hangup = FALSE ;
 
@@ -116,26 +117,3 @@ main (int argc, char **argv)
 
     return(0);
 }
-
-#ifdef STRNCASECMP
-/*
- *  Perform a case-insensitive string comparision
- */
-int
-strncasecmp(char *str1, char *str2,int len)
-{
-    register int    i;
-    char            a,
-                    b;
-
-    for (i=len-1;i>=0;i--){
-        a = str1[i];
-        b = str2[i];
-        if (isupper(a)) a = tolower(str1[i]);
-        if (isupper(b)) b = tolower(str2[i]);
-        if (a > b) return (1);
-        if (a < b) return(-1);
-    }
-    return(0);
-}
-#endif /* STRNCASECMP */

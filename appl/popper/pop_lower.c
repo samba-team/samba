@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_lower.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 /* 
  *  lower:  Convert a string to lowercase

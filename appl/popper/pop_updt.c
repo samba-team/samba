@@ -10,8 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_updt.c	2.3  2.3 3/20/91";
 #endif /* not lint */
 
 #include <popper.h>
-
-extern int      errno;
+RCSID("$Id$");
 
 static char standard_error[] =
     "Error error updating primary drop. Mailbox unchanged";

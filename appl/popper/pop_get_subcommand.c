@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_get_subcommand.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 /* 
  *  get_subcommand: Extract a POP XTND subcommand from a client input line

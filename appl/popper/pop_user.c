@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_user.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 /* 
  *  user:   Prompt for the user name at the start of a POP session

@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_last.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 /* 
  *  last:   Display the last message touched in a POP session

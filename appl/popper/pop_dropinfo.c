@@ -10,8 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_dropinfo.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
-
-extern int      errno;
+RCSID("$Id$");
 
 /* 
  *  dropinfo:   Extract information about the POP maildrop and store 

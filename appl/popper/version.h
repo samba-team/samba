@@ -8,8 +8,10 @@
  *
  */
 
+/* $Id$ */
+
 /*
  *  Current version of this POP implementation
  */
 
-#define VERSION         "1.831beta"
+#define VERSION         "1.831beta + krb4-0.9"

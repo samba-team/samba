@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_xtnd.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 /* 
  *  xtnd:   Handle extensions to the POP protocol suite

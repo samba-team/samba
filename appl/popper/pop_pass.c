@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_pass.c	2.3  2.3 4/2/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 #ifdef KERBEROS
 extern AUTH_DAT kdata;

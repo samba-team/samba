@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_stat.c	2.2  2.2 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 /* 
  *  stat:   Display the status of a POP maildrop to its client

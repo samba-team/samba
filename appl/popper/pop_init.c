@@ -10,6 +10,7 @@ static char SccsId[] = "@(#)@(#)pop_init.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
 #include <popper.h>
+RCSID("$Id$");
 
 #ifdef KERBEROS
 AUTH_DAT kdata;
@@ -98,7 +99,11 @@ pop_init(POP *p,int argcount,char **argmessage)
 #endif
 
     /*  Process command line arguments */
-    while ((c = getopt(argcount,argmessage,"kdt:")) != EOF)
+    while ((c = getopt(argcount,argmessage,
+#ifdef KERBEROS
+		       "k"
+#endif
+		       "dt:")) != EOF)
         switch (c) {
 
             /*  Debugging requested */
@@ -119,10 +124,12 @@ pop_init(POP *p,int argcount,char **argmessage)
                 trace_file_name = optarg;
                 break;
 
+#ifdef KERBEROS
 	    /* Use kerberos version of POP3 protocol */
 	    case 'k':
 		p->kerberosp = 1;
 		break;
+#endif
 
             /*  Timeout value passed.  Default changed */
             case 'T':
