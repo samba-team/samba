@@ -212,10 +212,9 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 		      BOOL* self_referralp, int* consumedcntp)
 {
 	fstring localpath;
-
+	int consumed_level = 1;
 	char *p;
 	fstring reqpath;
-	pstring consumedbuf;
 
 	if (!dp || !conn) {
 		DEBUG(1,("resolve_dfs_path: NULL dfs_path* or NULL connection_struct*!\n"));
@@ -248,9 +247,6 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 		}
 	} 
 
-	pstrcpy(consumedbuf, dfspath);
-	trim_string(consumedbuf, NULL, "\\");
-
 	/* redirect if any component in the path is a link */
 	fstrcpy(reqpath, dp->reqpath);
 	p = strrchr(reqpath, '/');
@@ -269,16 +265,21 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 			*/
 			if (consumedcntp) {
 				char *q;
-				q = strrchr(consumedbuf, '\\');
-				if (q) 
-					*q = '\0';
-				*consumedcntp = strlen(consumedbuf);
-				DEBUG(10, ("resolve_dfs_path: Path consumed: %d\n", *consumedcntp));
+				pstring buf;
+				pstrcpy(buf, dfspath);
+				trim_string(buf, NULL, "\\");
+				for (; consumed_level; consumed_level--) {
+					q = strrchr(buf, '\\');
+					if (q) *q = 0;
+				}
+				*consumedcntp = strlen(buf);
+				DEBUG(10, ("resolve_dfs_path: Path consumed: %s (%d)\n", buf, *consumedcntp));
 			}
 			
 			return True;
 		}
 		p = strrchr(reqpath, '/');
+		consumed_level++;
 	}
 	
 	return False;
