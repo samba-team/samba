@@ -583,8 +583,8 @@ LDAP__lookup_princ(krb5_context context, HDB * db, const char *princname,
     rc = 1;
     (void) ldap_set_option((LDAP *) db->db, LDAP_OPT_SIZELIMIT, (void *) &rc);
 
-    rc = ldap_search_s((LDAP *) db->db, db->name,
-		       LDAP_SCOPE_ONELEVEL, filter, NULL, 0, msg);
+    rc = ldap_search_s((LDAP *) db->db, db->name, LDAP_SCOPE_ONELEVEL, filter, 
+		       krb5kdcentry_attrs, 0, msg);
     if (rc != LDAP_SUCCESS) {
 	ret = HDB_ERR_NOENTRY;
 	goto out;
