@@ -19,4 +19,4 @@ popper_SOURCES = \
 	pop_user.c pop_uidl.c pop_xover.c popper.c \
 	maildir.c
 
-LDADD = -L$(top_builddir)/lib/krb5 -lkrb5 $(LIB_otp) -L$(top_builddir)/lib/des -ldes $(LIB_krb4) -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/roken -lroken
+LDADD = -L$(top_builddir)/lib/krb5 -lkrb5 $(LIB_otp) -L$(top_builddir)/lib/des -ldes $(LIB_krb4) -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/roken -lroken $(DBLIB)
