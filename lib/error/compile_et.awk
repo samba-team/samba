@@ -22,8 +22,9 @@ $1 == "error_table" {
 	gsub("[^A-Z0-9_]", "_", H_FILE)
 	number = 0
 	print "/* Generated from " FILENAME " */" > c_file
-	print "#include <krb5_locl.h>" > c_file
-#	print "#include \"" h_file "\"\n" > c_file
+	print "#include <stddef.h>" > c_file # NULL
+	print "#include <stdlib.h>" > c_file # malloc
+	print "#include <error.h>" > c_file
 	print "" > c_file
 	print "static const char *text[] = {" > c_file
 
@@ -32,11 +33,9 @@ $1 == "error_table" {
 	print "#ifndef " H_FILE > h_file
 	print "#define " H_FILE > h_file
 	print "" > h_file
-#	print "#include <krb5.h>" > h_file
+	print "#include <error.h>" > h_file
 	print "" > h_file
-	print "struct error_list;" > h_file
-	print "" > h_file
-	print "void initialize_" name "_error_table(struct error_list**);" > h_file
+	print "void initialize_" name "_error_table(struct error_table**);" > h_file
 	print "" > h_file
 	print "enum " name "_error_number{" > h_file
 	print "\tERROR_TABLE_BASE_" name " = " base "," > h_file
@@ -47,17 +46,19 @@ function end_file(c_file, h_file){
 	print "\tNULL" > c_file
 	print "};" > c_file
 	print "" > c_file
-	print "static struct error_table et = { text, " base ", " number " };" > c_file
-	print "static struct error_list " name "_link = { 0, 0 };" > c_file
-
-	print "void initialize_" name "_error_table (struct error_list **list) {" > c_file
-	print "\tif (!" name "_link.table) {" > c_file
-        print "\t\t" name "_link.next = *list;" > c_file
-	print "\t\t" name "_link.table = &et;" > c_file
-	print "\t\t*list = &" name "_link;" > c_file
-	print "\t}" > c_file
+	print "void initialize_" name "_error_table (struct error_table **list)" > c_file
+	print "{" > c_file
+	print "    struct error_table *et = malloc(sizeof(*et));" > c_file
+	print "    if (et == NULL)" > c_file
+	print "        return;" > c_file
+	print "    et->msgs = text;" > c_file
+	print "    et->n_msgs = " number ";" > c_file
+	print "    et->base = " base ";" > c_file
+	print "    et->next = *list;" > c_file
+	print "    *list = et;" > c_file
 	print "}" > c_file
 	close(c_file)
+
 	print "\t" name "_num_errors = " number > h_file
 	print "};" > h_file
 	print "" > h_file
