@@ -1691,7 +1691,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   extern DOM_SID global_sam_sid;
   extern DOM_SID global_sid_World;
   SMB_STRUCT_STAT sbuf;
-  SEC_ACE ace_list[3];
+  SEC_ACE ace_list[6];
   DOM_SID owner_sid;
   DOM_SID group_sid;
   size_t sec_desc_size;
@@ -1752,6 +1752,34 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
     if(other_access.mask)
       init_sec_ace(&ace_list[num_acls++], &global_sid_World, other_acl_type,
                    other_access, 0);
+
+    if(fsp->is_directory) {
+      /*
+       * For directory ACLs we also add in the inherited permissions
+       * ACE entries. These are the permissions a file would get when
+       * being created in the directory.
+       */
+      mode_t mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE);
+
+      owner_access = map_unix_perms(&owner_acl_type, mode,
+                            S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
+      group_access = map_unix_perms(&grp_acl_type, mode,
+                            S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);
+      other_access = map_unix_perms(&other_acl_type, mode,
+                            S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory);
+
+      if(owner_access.mask)
+        init_sec_ace(&ace_list[num_acls++], &owner_sid, owner_acl_type,
+                     owner_access, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+
+      if(group_access.mask)
+        init_sec_ace(&ace_list[num_acls++], &group_sid, grp_acl_type,
+                     group_access, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+
+      if(other_access.mask)
+        init_sec_ace(&ace_list[num_acls++], &global_sid_World, other_acl_type,
+                     other_access, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+    }
 
     if(num_acls)
       if((psa = make_sec_acl( 3, num_acls, ace_list)) == NULL) {
@@ -1978,6 +2006,15 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_
   *pgrp = pdb_user_rid_to_gid(grp_rid);
 
   /*
+   * If no DACL then this is a chown only security descriptor.
+   */
+
+  if(!dacl) {
+    *pmode = 0;
+    return True;
+  }
+
+  /*
    * Now go through the DACL and ensure that
    * any owner/group sids match.
    */
@@ -1992,8 +2029,14 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_
       return False;
     }
 
+    if(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+      DEBUG(3,("unpack_unix_permissions: ignoring inherit only ACE.\n"));
+      continue;
+    }
+
     if(psa->flags != 0) {
-      DEBUG(3,("unpack_unix_permissions: unable to set ACE flags.\n"));
+      DEBUG(3,("unpack_unix_permissions: unable to set ACE flags (%x).\n", 
+            (unsigned int)psa->flags));
       return False;
     }
 
@@ -2071,9 +2114,9 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   prs_struct pd;
   SEC_DESC *psd = NULL;
   uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
-  uid_t user;
-  gid_t grp;
-  mode_t perms;
+  uid_t user = (uid_t)-1;
+  gid_t grp = (gid_t)-1;
+  mode_t perms = 0;
   SMB_STRUCT_STAT sbuf;
   files_struct *fsp = NULL;
 
@@ -2113,16 +2156,6 @@ security descriptor.\n"));
   }
 
   /*
-   * Now check some basics about the sd we got.
-   */
-
-  if(psd->dacl == NULL || psd->dacl->num_aces > 3 || psd->dacl->num_aces == 0) {
-    free_sec_desc(&psd);
-    DEBUG(3,("call_nt_transact_set_security_desc: invalid security descriptor.\n"));
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
-  /*
    * Unpack the user/group/world id's and permissions.
    */
 
@@ -2131,21 +2164,14 @@ security descriptor.\n"));
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  free_sec_desc(&psd);
-
   /*
-   * Get the current state of the file and check to see
-   * if we need to change anything.
+   * Get the current state of the file.
    */
 
   if(fsp->is_directory) {
     if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
-
-    perms &= lp_dir_mode(SNUM(conn));
-    perms |= lp_force_dir_mode(SNUM(conn));
-
   } else {
 
     int ret;
@@ -2155,13 +2181,8 @@ security descriptor.\n"));
     else
       ret = sys_fstat(fsp->fd_ptr->fd,&sbuf);
 
-    if(ret != 0) {
+    if(ret != 0)
       return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
-
-    perms &= lp_create_mode(SNUM(conn)); 
-    perms |= lp_force_create_mode(SNUM(conn));
-
   }
 
   /*
@@ -2181,19 +2202,44 @@ security descriptor.\n"));
   }
 
   /*
-   * Do we need to chmod ?
+   * Only change security if we got a DACL.
    */
 
-  if(sbuf.st_mode != perms) {
+  if(psd->dacl != NULL) {
+
+    free_sec_desc(&psd);
+
+    /*
+     * Check to see if we need to change anything.
+     */
+
+    if(fsp->is_directory) {
+
+      perms &= lp_dir_mode(SNUM(conn));
+      perms |= lp_force_dir_mode(SNUM(conn));
+
+    } else {
+
+      perms &= lp_create_mode(SNUM(conn)); 
+      perms |= lp_force_create_mode(SNUM(conn));
+
+    }
+
+    /*
+     * Do we need to chmod ?
+     */
+
+    if(sbuf.st_mode != perms) {
 
       DEBUG(3,("call_nt_transact_set_security_desc: chmod %s. perms = 0%o.\n",
             fsp->fsp_name, perms ));
 
-    if(dos_chmod( fsp->fsp_name, perms) == -1) {
+      if(dos_chmod( fsp->fsp_name, perms) == -1) {
         DEBUG(3,("call_nt_transact_set_security_desc: chmod %s, 0%o failed. Error = %s.\n",
               fsp->fsp_name, (unsigned int)perms, strerror(errno) ));
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       }
+    }
   }
 
   send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);

@@ -44,29 +44,46 @@ extern pstring myhostname;
  Here we do a set of 'hard coded' checks for bad
  configuration settings.
 ************************************************/
-static void do_global_checks(void)
+
+static int do_global_checks(void)
 {
+	int ret = 0;
 	SMB_STRUCT_STAT st;
+
 	if (lp_security() > SEC_SHARE && lp_revalidate(-1)) {
 		printf("WARNING: the 'revalidate' parameter is ignored in all but \
 'security=share' mode.\n");
 	}
 
-    if (lp_security() == SEC_DOMAIN && !lp_encrypted_passwords()) {
+	if (lp_security() == SEC_DOMAIN && !lp_encrypted_passwords()) {
 		printf("ERROR: in 'security=domain' mode the 'encrypt passwords' parameter must also be set to 'true'.\n");
+		ret = 1;
 	}
 
 	if (lp_wins_support() && *lp_wins_server()) {
 		printf("ERROR: both 'wins support = true' and 'wins server = <server>' \
 cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
+		ret = 1;
 	}
 
 	if (!directory_exist(lp_lockdir(), &st)) {
 		printf("ERROR: lock directory %s does not exist\n",
 		       lp_lockdir());
+		ret = 1;
 	} else if ((st.st_mode & 0777) != 0755) {
 		printf("WARNING: lock directory %s should have permissions 0755 for browsing to work\n",
 		       lp_lockdir());
+		ret = 1;
+	}
+
+	/*
+	 * Password server sanity checks.
+	 */
+
+	if((lp_security() == SEC_SERVER || lp_security() == SEC_DOMAIN) && !lp_passwordserver()) {
+		printf("ERROR: The setting 'security=%s' requires the 'password server' parameter be set \
+to a valid password server.\n", lp_security() );
+		ret = 1;
 	}
 
 	/*
@@ -82,6 +99,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		if(lp_passwd_program() == NULL) {
 			printf("ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd program' \
 parameter.\n" );
+			ret = 1;
 		} else {
 			pstring passwd_prog;
 			pstring truncated_prog;
@@ -95,12 +113,14 @@ parameter.\n" );
 			if(access(truncated_prog, F_OK) == -1) {
 				printf("ERROR: the 'unix password sync' parameter is set and the 'passwd program' (%s) \
 cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
+			ret = 1;
 			}
 		}
 
 		if(lp_passwd_chat() == NULL) {
 			printf("ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd chat' \
 parameter.\n");
+			ret = 1;
 		}
 
 		/*
@@ -112,12 +132,13 @@ parameter.\n");
 			if(strstr( lp_passwd_chat(), "%o")!=NULL) {
 				printf("ERROR: the 'passwd chat' script [%s] expects to use the old plaintext password \
 via the %%o substitution. With encrypted passwords this is not possible.\n", lp_passwd_chat() );
+				ret = 1;
 			}
 		}
 	}
 }   
 
- int main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   extern char *optarg;
   extern int optind;
@@ -125,6 +146,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
   int opt;
   int s;
   BOOL silent_mode = False;
+  int ret = 0;
 
   TimeInit();
 
@@ -152,22 +174,19 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
   printf("Load smb config files from %s\n",configfile);
 
-  if(!get_myname(myhostname,NULL))
-  {
+  if(!get_myname(myhostname,NULL)) {
     printf("Failed to get my hostname.\n");
     return(1);
   }
 
-  if (!lp_load(configfile,False,True,False))
-    {
+  if (!lp_load(configfile,False,True,False)) {
       printf("Error loading services.\n");
       return(1);
-    }
-
+  }
 
   printf("Loaded services file OK.\n");
 
-  do_global_checks();
+  ret = do_global_checks();
 
   for (s=0;s<1000;s++)
     if (VALID_SNUM(s))
@@ -201,18 +220,16 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		}
 	}
 
-  if (argc < 3)
-    {
+  if (argc < 3) {
       if (!silent_mode) {
 	printf("Press enter to see a dump of your service definitions\n");
 	fflush(stdout);
 	getc(stdin);
       }
       lp_dump(stdout,True, lp_numservices());
-    }
+  }
   
-  if (argc >= 3)
-    {
+  if (argc >= 3) {
       char *cname;
       char *caddr;
       
@@ -226,10 +243,8 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
       /* this is totally ugly, a real `quick' hack */
       for (s=0;s<1000;s++)
-	if (VALID_SNUM(s))
-	  {		 
-	    if (allow_access(lp_hostsdeny(s),lp_hostsallow(s),cname,caddr))
-	      {
+	if (VALID_SNUM(s)) {		 
+	    if (allow_access(lp_hostsdeny(s),lp_hostsallow(s),cname,caddr)) {
 		printf("Allow connection from %s (%s) to %s\n",
 		       cname,caddr,lp_servicename(s));
 	      }
@@ -240,7 +255,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	      }
 	  }
     }
-  return(0);
+  return(ret);
 }
 
 
