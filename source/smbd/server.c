@@ -3630,16 +3630,35 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 ****************************************************************************/
 int find_free_file(void )
 {
-  int i;
-  /* returning a file handle of 0 is a bad idea - so we start at 1 */
-  for (i=1;i<MAX_OPEN_FILES;i++)
-	  if (!Files[i].open) {
-		  /* paranoia */
-		  memset(&Files[i], 0, sizeof(Files[i]));
-		  return(i);
-	  }
-  DEBUG(1,("ERROR! Out of file structures - perhaps increase MAX_OPEN_FILES?\n"));
-  return(-1);
+	int i;
+	static int first_file;
+
+	/* we want to give out file handles differently on each new
+	   connection because of a common bug in MS clients where they try to
+	   reuse a file descriptor from an earlier smb connection. This code
+	   increases the chance that the errant client will get an error rather
+	   than causing corruption */
+	if (first_file == 0) {
+		first_file = (getpid() ^ (int)time(NULL)) % MAX_OPEN_FILES;
+		if (first_file == 0) first_file = 1;
+	}
+
+	for (i=first_file;i<MAX_OPEN_FILES;i++)
+		if (!Files[i].open) {
+			memset(&Files[i], 0, sizeof(Files[i]));
+			return(i);
+		}
+
+	/* returning a file handle of 0 is a bad idea - so we start at 1 */
+	for (i=1;i<first_file;i++)
+		if (!Files[i].open) {
+			memset(&Files[i], 0, sizeof(Files[i]));
+			return(i);
+		}
+
+
+	DEBUG(1,("ERROR! Out of file structures - perhaps increase MAX_OPEN_FILES?\n"));
+	return(-1);
 }
 
 /****************************************************************************
