@@ -35,8 +35,6 @@ extern pstring scope;
 extern struct in_addr ipzero;
 extern struct in_addr ipgrp;
 
-extern int num_response_packets;
-
 
 /***************************************************************************
   deals with an entry before it dies
@@ -174,14 +172,17 @@ static void dead_netbios_entry(struct subnet_record *d,
   ******************************************************************/
 void expire_netbios_response_entries()
 {
-  struct response_record *n;
-  struct response_record *nextn;
   struct subnet_record *d;
 
   for (d = subnetlist; d; d = d->next)
-   for (n = d->responselist; n; n = nextn)
+  {
+    struct response_record *n, *nextn;
+
+    for (n = d->responselist; n; n = nextn)
     {
-      if (n->repeat_time < time(NULL))
+	  nextn = n->next;
+
+      if (n->repeat_time <= time(NULL))
 	  {
 		  if (n->repeat_count > 0)
 		  {
@@ -192,10 +193,13 @@ void expire_netbios_response_entries()
 
             n->repeat_time += n->repeat_interval; /* XXXX ms needed */
             n->repeat_count--;
+
 		  }
 		  else
 		  {
-			  nextn = n->next;
+              DEBUG(4,("timeout response %d for %s %s\n",
+						n->response_id, namestr(&n->name),
+                        inet_ntoa(n->send_ip)));
 
 			  dead_netbios_entry    (d,n); /* process the non-response */
               remove_response_record(d,n); /* remove the non-response */
@@ -203,8 +207,8 @@ void expire_netbios_response_entries()
 			  continue;
 		   }
 	  }
-	  nextn = n->next;
     }
+  }
 }
 
 
@@ -274,7 +278,10 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
   initiate_netbios_packet(&id, fd, quest_type, name, name_type,
 				      nb_flags, bcast, recurse, send_ip);
 
-  if (id == 0xffff) return NULL;
+  if (id == 0xffff) {
+    DEBUG(4,("did not initiate netbios packet: %s\n", inet_ntoa(send_ip)));
+    return NULL;
+  }
   
   if ((n = make_response_queue_record(state,id,fd,
 						quest_type,name,name_type,nb_flags,ttl,

@@ -222,21 +222,21 @@ void dump_names(void)
       /* XXXX i have little imagination as to how to output nb_flags as
          anything other than as a hexadecimal number :-) */
 
-        sprintf(data, "%s#%02x %s %ld %2x",
+        sprintf(data, "%s#%02x %s %2x %ld",
 	       n->name.name,n->name.name_type, /* XXXX ignore the scope for now */
 	       inet_ntoa(n->ip),
-	       n->death_time,
-	       n->nb_flags);
+	       n->nb_flags,
+	       n->death_time);
 	    fprintf(f, "%s\n", data);
       }
 
 	  DEBUG(3,("%15s ", inet_ntoa(d->bcast_ip)));
 	  DEBUG(3,("%15s ", inet_ntoa(d->mask_ip)));
-      DEBUG(3,("%s %15s TTL=%15d NBFLAGS=%2x\n",
+      DEBUG(3,("%-19s %15s NB=%2x TTL=%ld \n",
 	       namestr(&n->name),
 	       inet_ntoa(n->ip),
-           n->death_time?n->death_time-t:0,
-	       n->nb_flags));
+	       n->nb_flags,
+           n->death_time?n->death_time-t:0));
     }
 
   fclose(f);
@@ -490,6 +490,8 @@ struct name_record *search_for_name(struct subnet_record **d,
   
   if (*d == NULL) return NULL;
 
+  DEBUG(4,("subnet %s ", inet_ntoa((*d)->bcast_ip)));
+
   /* now try DNS lookup. */
   if (!n)
     {
@@ -497,7 +499,7 @@ struct name_record *search_for_name(struct subnet_record **d,
       unsigned long a;
       
       /* only do DNS lookups if the query is for type 0x20 or type 0x0 */
-      if (!dns_type)
+      if (!dns_type && name_type != 0x1b)
 	{
 	  DEBUG(3,("types 0x20 0x1b 0x0 only: name not found\n"));
 	  return NULL;

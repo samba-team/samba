@@ -421,7 +421,8 @@ void announce_master(void)
   time_t t = time(NULL);
   BOOL am_master = False; /* are we a master of some sort? :-) */
 
-  if (last && (t-last < CHECK_TIME_MST_ANNOUNCE * 60))
+  if (!last) last = t;
+  if (t-last < CHECK_TIME_MST_ANNOUNCE * 60)
 	return;
 
   last = t;
