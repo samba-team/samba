@@ -506,10 +506,11 @@ AC_NEED_PROTO([
 vasnprintf)dnl
 fi
 
-AC_BROKEN(chown copyhostent daemon err errx fchown flock fnmatch freehostent)
+AC_BROKEN(chown copyhostent daemon err errx fchown flock fnmatch)
+AC_BROKEN(freeaddrinfo freehostent gai_strerror getaddrinfo)
 AC_BROKEN(getcwd getdtablesize gethostname getipnodebyaddr getipnodebyname)
 AC_BROKEN(geteuid getgid getegid)
-AC_BROKEN(getopt getusershell)
+AC_BROKEN(getnameinfo getopt getusershell)
 AC_BROKEN(inet_aton inet_ntop inet_pton initgroups innetgr iruserok lstat)
 AC_BROKEN(memmove)
 AC_BROKEN(mkstemp putenv rcmd readv recvmsg sendmsg setegid setenv seteuid)
@@ -727,6 +728,8 @@ timezone)
 AC_KRB_IPV6
 
 AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
+
+AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
 
 AC_HAVE_TYPE([struct sockaddr_storage], [#include <sys/socket.h>])
 
