@@ -1029,25 +1029,22 @@ static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 
 
 /* 
-  lsa_AddAccountRights
+  helper for lsa_AddAccountRights and lsa_RemoveAccountRights
 */
-static NTSTATUS lsa_AddAccountRights(struct dcesrv_call_state *dce_call, 
-				     TALLOC_CTX *mem_ctx,
-				     struct lsa_AddAccountRights *r)
+static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call, 
+					   TALLOC_CTX *mem_ctx,
+					   struct lsa_policy_state *state,
+					   int ldb_flag,
+					   const struct dom_sid *sid,
+					   const struct lsa_RightSet *rights)
 {
-	struct dcesrv_handle *h;
-	struct lsa_policy_state *state;
 	const char *sidstr;
 	struct ldb_message msg;
 	struct ldb_message_element el;
 	int i, ret;
 	const char *dn;
 
-	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
-
-	state = h->data;
-
-	sidstr = dom_sid_string(mem_ctx, r->in.sid);
+	sidstr = dom_sid_string(mem_ctx, sid);
 	if (sidstr == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1064,23 +1061,22 @@ static NTSTATUS lsa_AddAccountRights(struct dcesrv_call_state *dce_call,
 	}
 	msg.num_elements = 1;
 	msg.elements = &el;
-	el.flags = LDB_FLAG_MOD_ADD;
+	el.flags = ldb_flag;
 	el.name = talloc_strdup(mem_ctx, "privilege");
 	if (el.name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	el.num_values = r->in.rights->count;
+	el.num_values = rights->count;
 	el.values = talloc_array_p(mem_ctx, struct ldb_val, el.num_values);
 	if (el.values == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	for (i=0;i<el.num_values;i++) {
-		if (sec_privilege_id(r->in.rights->names[i].string) == -1) {
+		if (sec_privilege_id(rights->names[i].string) == -1) {
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
-		el.values[i].length = strlen(r->in.rights->names[i].string);
-		el.values[i].data = talloc_strdup(mem_ctx, 
-						  r->in.rights->names[i].string);
+		el.values[i].length = strlen(rights->names[i].string);
+		el.values[i].data = talloc_strdup(mem_ctx, rights->names[i].string);
 		if (el.values[i].data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1094,6 +1090,25 @@ static NTSTATUS lsa_AddAccountRights(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 }
 
+/* 
+  lsa_AddAccountRights
+*/
+static NTSTATUS lsa_AddAccountRights(struct dcesrv_call_state *dce_call, 
+				     TALLOC_CTX *mem_ctx,
+				     struct lsa_AddAccountRights *r)
+{
+	struct dcesrv_handle *h;
+	struct lsa_policy_state *state;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	return lsa_AddRemoveAccountRights(dce_call, mem_ctx, state, 
+					  LDB_FLAG_MOD_ADD,
+					  r->in.sid, r->in.rights);
+}
+
 
 /* 
   lsa_RemoveAccountRights
@@ -1102,7 +1117,16 @@ static NTSTATUS lsa_RemoveAccountRights(struct dcesrv_call_state *dce_call,
 					TALLOC_CTX *mem_ctx,
 					struct lsa_RemoveAccountRights *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct lsa_policy_state *state;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	return lsa_AddRemoveAccountRights(dce_call, mem_ctx, state, 
+					  LDB_FLAG_MOD_DELETE,
+					  r->in.sid, r->in.rights);
 }
 
 
