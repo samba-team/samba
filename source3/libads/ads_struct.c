@@ -139,7 +139,7 @@ ADS_STRUCT *ads_init(const char *realm,
 	ADS_STRUCT *ads;
 	
 	ads = (ADS_STRUCT *)smb_xmalloc(sizeof(*ads));
-	memset(ads, 0, sizeof(*ads));
+	ZERO_STRUCTP(ads);
 	
 	ads->realm = realm? strdup(realm) : NULL;
 	ads->ldap_server = ldap_server? strdup(ldap_server) : NULL;
@@ -147,7 +147,7 @@ ADS_STRUCT *ads_init(const char *realm,
 	ads->ldap_port = LDAP_PORT;
 
 	if (!ads->realm) {
-		ads->realm = lp_realm();
+		ads->realm = strdup(lp_realm());
 		if (!ads->realm[0]) {
 			ads->realm = get_default_realm(ads);
 		}
@@ -157,7 +157,7 @@ ADS_STRUCT *ads_init(const char *realm,
 		ads->bind_path = ads_build_dn(ads->realm);
 	}
 	if (!ads->ldap_server) {
-		ads->ldap_server = lp_ads_server();
+		ads->ldap_server = strdup(lp_ads_server());
 		if (!ads->ldap_server[0]) {
 			ads->ldap_server = find_ldap_server(ads);
 		}
@@ -175,7 +175,7 @@ ADS_STRUCT *ads_init(const char *realm,
 */
 void ads_destroy(ADS_STRUCT **ads)
 {
-	if (False && (ads) && (*ads)) {
+	if (ads && *ads) {
 		if ((*ads)->ld) ldap_unbind((*ads)->ld);
 		SAFE_FREE((*ads)->realm);
 		SAFE_FREE((*ads)->ldap_server);
