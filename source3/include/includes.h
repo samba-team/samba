@@ -428,6 +428,10 @@ union semun {
 #define INADDR_LOOPBACK 0x7f000001
 #endif
 
+#ifndef INADDR_NONE
+#define INADDR_NONE 0xffffffff
+#endif
+
 #ifndef HAVE_CRYPT
 #define crypt ufc_crypt
 #endif
