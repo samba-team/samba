@@ -555,7 +555,7 @@ void remove_pending_lock_requests_by_mid(int mid)
 			DEBUG(10,("remove_pending_lock_requests_by_mid - removing request type %d for \
 file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
-			blocking_lock_reply_error(blr,NT_STATUS_CANCELLED);
+			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
 			brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
 				blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
 				blr->offset, blr->count, True, NULL, NULL);
