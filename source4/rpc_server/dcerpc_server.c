@@ -651,6 +651,7 @@ int dcesrv_lookup_endpoints(const struct dcerpc_interface_table *table,
 		return -1;
 	}
 
+	(*e)->name = table->name;
 	(*e)->uuid = table->uuid;
 	(*e)->if_version = table->if_version;
 	(*e)->endpoint.type = ENDPOINT_SMB;

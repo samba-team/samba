@@ -35,6 +35,7 @@ struct dcesrv_endpoint {
 
 /* a endpoint combined with an interface description */
 struct dcesrv_ep_iface {
+	const char *name;
 	struct dcesrv_endpoint endpoint;
 	const char *uuid;
 	uint32 if_version;

@@ -20,6 +20,9 @@ interface epmapper
 	  with.
 	*/
 
+	const int EPMAPPER_STATUS_NO_MORE_ENTRIES = 0x16c9a0d6;
+
+
 	/* this guid indicates NDR encoding in a protocol tower */
 	const string NDR_GUID = "8a885d04-1ceb-11c9-9fe8-08002b104860";
 	const string NDR_GUID_VERSION = 2;
@@ -122,8 +125,6 @@ interface epmapper
 
 	/**********************/
 	/* Function 0x03      */
-
-	const int EPMAPPER_MAP_FAILED = 0x16c9a0d6;
 
 	typedef struct {
 		epm_twr_t *twr;
