@@ -255,7 +255,10 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
 	const size_t offset_end_of_sig = (smb_ss_field + 8);
 	unsigned char sequence_buf[8];
 	struct MD5Context md5_ctx;
+#if 0
+        /* JRA - apparently this is incorrect. */
 	unsigned char key_buf[16];
+#endif
 
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.

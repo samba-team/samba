@@ -8752,18 +8752,14 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	int 		i = 0;
 	BOOL 		found = False;
 	JOB_INFO_2 	*info_2;
-	WERROR 		ret;
+	WERROR 		result;
 	DEVICEMODE 	*devmode = NULL;
 	NT_DEVICEMODE	*nt_devmode = NULL;
 
-	info_2=SMB_MALLOC_P(JOB_INFO_2);
+	if ( !(info_2=SMB_MALLOC_P(JOB_INFO_2)) )
+		return WERR_NOMEM;
 
 	ZERO_STRUCTP(info_2);
-
-	if (info_2 == NULL) {
-		ret = WERR_NOMEM;
-		goto done;
-	}
 
 	for ( i=0; i<count && found==False; i++ ) 
 	{
@@ -8771,11 +8767,10 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 			found = True;
 	}
 	
-	if ( !found ) 
-	{
+	if ( !found ) {
 		/* NT treats not found as bad param... yet another bad
 		   choice */
-		ret = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAM;
 		goto done;
 	}
 	
@@ -8799,18 +8794,18 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	*needed += spoolss_size_job_info_2(info_2);
 
 	if (*needed > offered) {
-		ret = WERR_INSUFFICIENT_BUFFER;
+		result = WERR_INSUFFICIENT_BUFFER;
 		goto done;
 	}
 
 	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		ret = WERR_INSUFFICIENT_BUFFER;
+		result = WERR_NOMEM;
 		goto done;
 	}
 
 	smb_io_job_info_2("", buffer, info_2, 0);
 
-	ret = WERR_OK;
+	result = WERR_OK;
 	
  done:
 	/* Cleanup allocated memory */
@@ -8818,7 +8813,7 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	free_job_info_2(info_2);	/* Also frees devmode */
 	SAFE_FREE(info_2);
 
-	return ret;
+	return result;
 }
 
 /****************************************************************************
