@@ -50,8 +50,6 @@ make everything work with openssl and make prototypes compatible
 
 anonymous credentials not implemented
 
-add rc4
-
 ** lib/hdb
 
 ** lib/kadm5
