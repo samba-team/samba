@@ -13,7 +13,7 @@ OM_uint32 gss_test_oid_set_member (
 
   *present = 0;
   for (i = 0; i < set->count; ++i)
-    if (member->length = set->elements[i].length
+    if (member->length == set->elements[i].length
 	&& memcmp (member->elements,
 		   set->elements[i].elements,
 		   member->length) == 0) {
