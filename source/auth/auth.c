@@ -140,7 +140,8 @@ uint32 check_password(const auth_usersupplied_info *user_info, auth_serversuppli
 	if (nt_status == NT_STATUS_NOPROBLEMO) {
 		DEBUG(5, ("check_password:  Password for user %s suceeded\n", user_info->smb_username.str));
 	} else {
-		DEBUG(3, ("check_password:  Password for user %s FAILED with error %d\n", user_info->smb_username.str, nt_status));
+		DEBUG(3, ("check_password:  Password for user %s FAILED with error %s\n", user_info->smb_username.str, get_nt_error_msg(nt_status)));
+
 	}		
 	return nt_status;
 
