@@ -118,7 +118,7 @@ NTSTATUS smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 	
 	/* Quit if the account was disabled. */
 	if(acct_ctrl & ACB_DISABLED) {
-		DEBUG(1,("Account for user '%s' was disabled.\n", user_info->smb_username.str));
+		DEBUG(1,("Account for user '%s' was disabled.\n", sampass->username));
 		return(NT_STATUS_ACCOUNT_DISABLED);
 	}
 
@@ -165,12 +165,12 @@ NTSTATUS smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 	{
 		if (lp_null_passwords()) 
 		{
-			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", user_info->smb_username.str));
+			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", sampass->username));
 			return(NT_STATUS_OK);
 		} 
 		else 
 		{
-			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", user_info->smb_username.str));
+			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", sampass->username));
 			return(NT_STATUS_LOGON_FAILURE);
 		}		
 	}
@@ -178,7 +178,7 @@ NTSTATUS smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 	if (!user_info || !sampass) 
 		return(NT_STATUS_LOGON_FAILURE);
 
-	DEBUG(4,("smb_password_ok: Checking SMB password for user %s\n",user_info->smb_username.str));
+	DEBUG(4,("smb_password_ok: Checking SMB password for user %s\n",sampass->username));
 
 	nt_pw = pdb_get_nt_passwd(sampass);
 
@@ -191,7 +191,7 @@ NTSTATUS smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 			if (smb_pwd_check_ntlmv2( user_info->nt_resp.buffer, 
 						  user_info->nt_resp.len, 
 						  nt_pw, 
-						  user_info->chal, user_info->smb_username.str, 
+						  user_info->chal, sampass->username, 
 						  user_info->requested_domain.str,
 						  (char *)server_info->session_key))
 			{
@@ -252,12 +252,12 @@ NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_
 	/* get the account information */
 
 	become_root();
-	ret = pdb_getsampwnam(sampass, user_info->smb_username.str);
+	ret = pdb_getsampwnam(sampass, user_info->unix_username.str);
 	unbecome_root();
 
 	if (ret == False)
 	{
-		DEBUG(1,("Couldn't find user '%s' in passdb file.\n", user_info->smb_username.str));
+		DEBUG(1,("Couldn't find user '%s' in passdb file.\n", user_info->unix_username.str));
 		pdb_free_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
