@@ -140,8 +140,6 @@ LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
              passdb/pass_check.o passdb/ldap.o passdb/nispass.o passdb/smbpasschange.o
 
-PROFILE_OBJ = profile/profile.o
-
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
             smbd/ipc.o smbd/mangle.o smbd/negprot.o \
@@ -155,7 +153,7 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o \
 
 SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-           $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+           $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(LIB_OBJ)
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
