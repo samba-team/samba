@@ -12,7 +12,7 @@
 <xsl:variable name="latex.documentclass.book"></xsl:variable>
 <xsl:variable name="latex.hyperref.param.pdftex">hyperfigures,hyperindex,citecolor=black,urlcolor=black,filecolor=black,linkcolor=black,menucolor=red,pagecolor=black</xsl:variable>
 <xsl:variable name="latex.document.font">default</xsl:variable>
-<xsl:variable name="latex.admonition.path">xslt/figures</xsl:variable>
+<xsl:variable name="admon.graphics.path">xslt/figures</xsl:variable>
 <xsl:variable name="latex.use.tabularx">1</xsl:variable>
 <xsl:variable name="latex.fancyhdr.lh"></xsl:variable>
 <xsl:variable name="latex.use.fancyhdr"></xsl:variable>

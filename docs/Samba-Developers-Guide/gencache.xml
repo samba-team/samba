@@ -4,6 +4,7 @@
   <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
   %global_entities;
 ]>
+
 <chapter id="gencache">
 <chapterinfo>
 	<author>
@@ -54,8 +55,8 @@ kept together. The form the record has is:
 </para>
 
 <para><programlisting>
-key:     &lt;string&bt;
-value:   &lt;12-digit timeout&bt;/&lt;string&gt;
+key:     &lt;string&gt;
+value:   &lt;12-digit timeout&gt;/&lt;string&gt;
 </programlisting></para>
 
 <para>The timeout part is the ASCII representation of
@@ -118,8 +119,6 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 
 </programlisting></para>
 
-<sect1>
-<title>Writing your own caching layer</title>
 </sect1>
 
 </chapter>

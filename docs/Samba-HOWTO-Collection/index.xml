@@ -20,12 +20,7 @@
 
 <?latex \setcounter{page}{5} ?>
 
-<preface>
-	<title>Attribution</title>
-	<para>
-		<xi:include href="attributions.xml"/>
-	</para>
-</preface>
+<xi:include href="../Samba-HOWTO-Collection-attributions.xml"/>
 
 <?latex \cleardoublepage ?>
 

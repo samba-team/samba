@@ -4,12 +4,6 @@
 # 		James Moore <jmoore@php.net>
 # 		Gerald Carter <jerry@samba.org>
 # 		Jelmer Vernooij <jelmer@samba.org>
-#
-# Please see http://www.samba.org/samba/cvs.html
-# for information on getting the latest  
-# source and documentation source files.  
-#
-#
 
 # Programs
 WGET = @WGET@
@@ -38,14 +32,10 @@ SRCDIR = @SAMBASOURCEDIR@
 MANDIR = $(OUTPUTDIR)/manpages
 EPSTOPDF = @EPSTOPDF@
 MANPAGEDIR = manpages
-HOWTODIR = howto
-GUIDEDOC = guide
-DEVDOCDIR = devel
 MAKEINDEX = @MAKEINDEX@
-IMAGEPROJDIR = $(HOWTODIR)/imagefiles
-IMAGEGUIDEDIR = $(GUIDEDOC)/images
 EXAMPLESDIR = examples
 SMBDOTCONFDOC = smbdotconf
+DOCBOOKDIR = tmp
 PSDIR = $(OUTPUTDIR)
 PDFDIR = $(OUTPUTDIR)
 DVIDIR = $(OUTPUTDIR)
@@ -57,127 +47,121 @@ TXTDIR = $(OUTPUTDIR)/textdocs
 HTMLDIR=$(OUTPUTDIR)/htmldocs
 PLUCKERDIR=$(OUTPUTDIR)/plucker
 
+# Docs to build
+MAIN_DOCS = $(patsubst %/index.xml,$(DOCBOOKDIR)/%.xml,$(wildcard */index.xml))
+MANPAGES = $(wildcard $(MANPAGEDIR)/*.?.xml)
+
 # Lists of files to process
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
-MANPAGES_SOURCES = $(wildcard $(MANPAGEDIR)/*.?.xml)
-MANPAGES = $(patsubst $(MANPAGEDIR)/%.xml,$(MANDIR)/%,$(MANPAGES_SOURCES)) $(MANDIR)/smb.conf.5
-MANPAGES_HTML = $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES_SOURCES)) $(HTMLDIR)/smb.conf.5.html $(HTMLDIR)/manpages.html
-MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES_SOURCES)) $(PLUCKERDIR)/smb.conf.5.pdb
+MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES_SOURCES))
 
-HOWTODIR_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
-GUIDEDOC_IMAGES_PNG = $(wildcard $(IMAGEGUIDEDIR)/*.png)
-HOWTODIR_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
-HOWTODIR_DEPS = $(HOWTODIR)/*.xml $(HOWTODIR)/attributions.xml $(MANPAGEDIR)/*.xml smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
-DEVDOCDIR_DEPS = $(DEVDOCDIR)/*.xml $(DEVDOCDIR)/attributions.xml
+Samba_HOWTO_Collection_IMAGES_PNG = $(wildcard Samba-HOWTO-Collection/imagefiles/*.png)
+Samba_Guide_IMAGES_PNG = $(wildcard Samba-Guide/images/*.png)
+
+Samba_HOWTO_Collection_IMAGEDIR = Samba-HOWTO-Collection/imagefiles
+Samba_Guide_IMAGEDIR = Samba-Guide/images
+
+Samba_HOWTO_Collection_IMAGES_EPS = $(patsubst %.png,%.eps,$(Samba_HOWTO_Collection_IMAGES_PNG))
+Samba_Guide_IMAGES_EPS = $(patsubst %.png,%.eps,$(Samba_Guide_IMAGES_PNG))
 
 help: 
 	@echo "Supported make targets:"
-	@echo "release - Build the docs needed for a Samba release"
-	@echo "pdf - Build PDF version of book"
-	@echo "tex - Build Latex version of book"
-	@echo "dvi - Build Device Independant File of book"
-	@echo "ps - Build PostScript version of book"
-	@echo "manpages - Build manpages"
-	@echo "txt - Build plain text version of HOWTO Collection and Developers Guide"
-	@echo -n "html-single - Build single file HTML version of HOWTO Collection"
-	@echo " and developers guide"
-	@echo "html - Build HTML version of HOWTO Collection and Developers Guide"
-	@echo "htmlman - Build html version of manpages"
-	@echo "plucker - Build HOWTO, Developers Guide, man pages in Plucker format for PDA"
-	@echo "undocumented - Output list of undocumented smb.conf options"
-	@echo "samples - Extract examples"
-	@echo "files - Extract other files"
-	@echo "all - Build all docs that can be build using the utilities found by configure"
-	@echo "everything - Build all of the above"
+	@echo " release - Build the docs needed for a Samba release"
+	@echo " all - Build all docs that can be build using the utilities found by configure"
+	@echo " everything - Build all of the above"
+	@echo " pdf,tex,dvi,ps,manpages,txt,pearson,fo,htmlhelp - Build specific output format"
+	@echo " html - Build multi-file HTML version of HOWTO Collection, Guide and Dev-Guide"
+	@echo " html-single - Build single-file HTML version of HOWTO Collection, Guide and Dev-Guide"
+	@echo " htmlman - Build HTML version of manpages"
+	@echo " undocumented - Output list of undocumented smb.conf options"
+	@echo " samples - Extract examples"
+	@echo " files - Extract other files"
 
+Samba-Guide/index.xml: $(subst Samba-Guide/index.xml,,$(wildcard Samba-Guide/*.xml))
+Samba-HOWTO-Collection/index.xml: $(subst Samba-HOWTO-Collection/index.xml,,$(wildcard Samba-HOWTO-Collection/*.xml)) Samba-HOWTO-Collection-attributions.xml
+Samba-Developers-Guide/index.xml: $(subst Samba-Developers-Guide/index.xml,,$(wildcard Samba-Developers-Guide/*.xml)) Samba-Developers-Guide-attributions.xml
+
+# Pseudo targets 
 all: @TARGETS@
-
-everything: manpages pdf html-single html htmlman txt ps
-
+everything: manpages pdf html-single html htmlman txt ps fo htmlhelp pearson verify
 release: manpages htmlman html pdf guide
 
-# Global rules
+# Output format targets
+pdf: $(patsubst $(DOCBOOKDIR)/%.xml,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
+dvi: $(patsubst $(DOCBOOKDIR)/%.xml,$(DVIDIR)/%.dvi,$(MAIN_DOCS))
+ps: $(patsubst $(DOCBOOKDIR)/%.xml,$(PSDIR)/%.ps,$(MAIN_DOCS))
+txt: $(patsubst $(DOCBOOKDIR)/%.xml,$(TXTDIR)/%.txt,$(MAIN_DOCS))
+fo: $(patsubst $(DOCBOOKDIR)/%.xml,$(FODIR)/%.fo,$(MAIN_DOCS))
+tex: $(patsubst $(DOCBOOKDIR)/%.xml,%.tex,$(MAIN_DOCS))
+manpages: $(patsubst $(MANPAGEDIR)/%.xml,$(MANDIR)/%,$(MANPAGES)) 
+pearson: $(PEARSONDIR)/Samba-HOWTO-Collection.xml
+pearson-verify: $(PEARSONDIR)/Samba-HOWTO-Collection.report.html
+plucker: $(patsubst $(DOCBOOKDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
+htmlman: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES)) $(HTMLDIR)/manpages.html
+html-single: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLDIR)/%.html,$(MAIN_DOCS))
+html: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
+htmlhelp: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLHELPDIR)/%,$(MAIN_DOCS))
 
-pdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf $(PDFDIR)/Samba-Developers-Guide.pdf
+# Intermediate docbook docs
 
-dvi: $(DVIDIR) $(DVIDIR)/Samba-HOWTO-Collection.dvi $(DVIDIR)/Samba-Developers-Guide.dvi
+$(DOCBOOKDIR):
+	mkdir $@
 
-ps: $(PSDIR) $(PSDIR)/Samba-HOWTO-Collection.ps $(PSDIR)/Samba-Developers-Guide.ps
+$(DOCBOOKDIR)/%.xml: %/index.xml $(DOCBOOKDIR) xslt/expand-sambadoc.xsl
+	$(XSLTPROC) --stringparam noreference 1 --stringparam imagedir "$($(subst -,_,$*)_IMAGEDIR)/" --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
-txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
+$(DOCBOOKDIR)/%.xml: $(MANPAGEDIR)/%.xml $(DOCBOOKDIR) xslt/expand-sambadoc.xsl
+	$(XSLTPROC) --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
-fo: $(FODIR) $(FODIR)/Samba-HOWTO-Collection.fo $(FODIR)/Samba-Developers-Guide.fo
-
-htmlman: $(HTMLDIR) $(MANPAGES_HTML) $(HTMLDIR)/samba.css
-
-html-single: $(HTMLDIR) $(HTMLDIR)/samba.css $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html $(HTMLDIR)/Samba-Guide.html
-	cp -p $(GUIDEDOC_IMAGES_PNG) $(HOWTODIR_IMAGES_PNG) $(HTMLDIR)/images/
-
-html: $(HTMLDIR)/howto $(HTMLDIR)/guide $(HTMLDIR)/devel $(HTMLDIR)/index.html
-
-htmlhelp: $(HTMLHELPDIR)/Samba-HOWTO-Collection $(HTMLHELPDIR)/Samba-Developers-Guide $(HTMLHELPDIR)/Samba-Guide
-
-$(HTMLDIR)/index.html: htmldocs.html $(HTMLDIR)
-	cp $< $@
-	
-$(HTMLDIR)/howto: $(HTMLDIR) $(HTMLDIR)/howto/samba.css Samba-HOWTO-Collection.xml
-	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/howto/" xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
-	-mkdir $(HTMLDIR)/howto/images
-	cp -R $(HOWTODIR_IMAGES_PNG) $(HTMLDIR)/howto/images
-
-$(HTMLDIR)/devel: $(HTMLDIR) $(HTMLDIR)/devel/samba.css Samba-Developers-Guide.xml
-	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/devel/" xslt/html-chunk.xsl Samba-Developers-Guide.xml
-
-$(HTMLDIR)/guide: $(HTMLDIR) $(HTMLDIR)/guide/samba.css Samba-Guide.xml
-	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/guide/" xslt/html-chunk.xsl Samba-Guide.xml
-	-mkdir $(HTMLDIR)/guide/images
-	cp -R $(GUIDEDOC_IMAGES_PNG) $(HTMLDIR)/guide/images
-
-manpages: $(MANDIR) $(MANPAGES)
-
-manpages.xml: $(MANPAGES_SOURCES)
+manpages.xml: $(MANPAGES_SOURCES) xslt/manpage-summary.xsl
 	echo "<article><variablelist>" > $@
 	for I in $(MANPAGES_SOURCES); do $(XSLTPROC) xslt/manpage-summary.xsl $$I >> $@; done
 	echo "</variablelist></article>" >> $@
 
-tex: Samba-HOWTO-Collection.tex Samba-Developers-Guide.tex gpl.tex
+# HTML docs
 
-plucker: html-single htmlman $(PLUCKERDIR) $(MANPAGES_PLUCKER) $(PLUCKERDIR)/Samba-Developers-Guide.pdb $(PLUCKERDIR)/Samba-HOWTO-Collection.pdb
+$(HTMLDIR)/index.html: htmldocs.html $(HTMLDIR)
+	cp $< $@
+	
+$(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/% $(HTMLDIR)/%/samba.css  xslt/html-chunk.xsl
+	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/$*/" xslt/html-chunk.xsl $<
+	-mkdir $(HTMLDIR)/$*/images
 
-Samba-HOWTO-Collection.xml: $(HOWTODIR)/index.xml $(HOWTODIR_DEPS)
-	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+# Single large HTML files
+$(HTMLDIR):
+	mkdir $(HTMLDIR)
+	mkdir $(HTMLDIR)/images
 
-Samba-Guide.xml: $(GUIDEDOC)/guide-main.xml
-	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+$(OUTPUTDIR)/%/samba.css: xslt/html/samba.css
+	cp $< $@
 
-Samba-Developers-Guide.xml: $(DEVDOCDIR)/index.xml $(DEVDOCDIR_DEPS)
-	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+$(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR) $(HTMLDIR)/samba.css $(patsubst %.png,$(HTMLDIR)/images/%.png,$(%_IMAGES_PNG)) xslt/html.xsl
+	echo $^
+	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
-%/attributions.xml: %/index.xml
-	@echo "<empty/>" > $@ # Make sure we don't get recursive dependencies, etc!
-	$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
+$(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLDIR)/%,$(MAIN_DOCS)): $(HTMLDIR)
+	-mkdir $@
+
+%-attributions.xml: 
+	echo "<para/>" > $@
+	$(XSLTPROC) --xinclude xslt/generate-attributions.xsl $*/index.xml > $@
 
 clean: 
-	rm -rf $(OUTPUTDIR)/*
-	rm -f *.xml $(MANPAGES) $(TXTDIR)/*.txt $(PSDIR)/*.ps \
-	    $(PDFDIR)/*.pdf $(HTMLDIR)/*html $(HTMLDIR)/samba.css
+	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
+	rm -f *.xml
 	rm -f xslt/figures/*pdf
-	rm -f $(SMBDOTCONFDOC)/parameters.*.xml $(DVIDIR)/*.dvi
-	rm -f samba-doc.* index.* $(HOWTODIR)/changelog.xml $(HOWTODIR)/attributions.xml $(DEVDOCDIR)/attributions.xml
-	rm -f Samba-HOWTO-Collection.*
-	rm -f Samba-Developers-Guide.*
-	rm -f Samba-Guide.*
-	rm -f $(IMAGEPROJDIR)/*.eps
+	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
+	rm -f $(patsubst $(DOCBOOKDIR)/%.xml,%.*,$(MAIN_DOCS))
 
 # Text files
 $(TXTDIR):
 	mkdir $(TXTDIR)
 
-$(TXTDIR)/%.txt: $(HTMLDIR)/%.html
+$(TXTDIR)/%.txt: $(HTMLDIR)/%.html $(TXTDIR)
 	$(HTML2TEXT) -nobs -style pretty -o $@ $<
 
 # Tex files
-%.tex: %.xml
+%.tex: $(DOCBOOKDIR)/%.xml xslt/latex.xsl
 	$(XSLTPROC) --output $@ xslt/latex.xsl $<
 
 gpl.tex:
@@ -189,29 +173,27 @@ latexfigures: $(LATEX_FIGURES)
 	-$(PDFLATEX) $<
 	
 %.idx: %.aux
-	$(MAKEINDEX) `echo $< | sed -e 's/.aux//'`
+	$(MAKEINDEX) $*
 
 # Adobe PDF files
-$(PDFDIR)/%.pdf: %.tex %.aux %.idx latexfigures gpl.tex
+$(PDFDIR)/%.pdf: %.tex %.aux %.idx latexfigures gpl.tex $(PDFDIR) $(%_IMAGES_PNG)
 	-$(PDFLATEX) $<
 	-$(PDFLATEX) $<
-	$(THUMBPDF) $(patsubst %.tex,%.pdf,$<)
+	$(THUMBPDF) $*.pdf
 	-$(PDFLATEX) $<
-	mv $(patsubst %.tex,%.pdf,$<) $@
-
-epsimages: $(HOWTODIR_IMAGES_EPS)
+	mv $*.pdf $@
 
 # DVI files
-$(DVIDIR)/%.dvi: %.tex %.aux %.idx epsimages gpl.tex
+$(DVIDIR)/%.dvi: %.tex %.aux %.idx gpl.tex $(DVIDIR) $(%_IMAGES_EPS)
 	-$(LATEX) $< 
 	-$(LATEX) $< 
-	mv $(patsubst %.tex,%.dvi,$<) $@
+	mv $*.dvi $@
 
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
 
 # PostScript files
-$(PSDIR)/%.ps: $(DVIDIR)/%.dvi
+$(PSDIR)/%.ps: $(DVIDIR)/%.dvi $(PSDIR)
 	$(DVIPS) -o $@ $<
 
 xslt/figures/%.pdf: xslt/figures/%.eps
@@ -221,103 +203,74 @@ xslt/figures/%.pdf: xslt/figures/%.eps
 $(FODIR):
 	mkdir $(FODIR)
 
-$(FODIR)/%.fo: %.xml $(FODIR)
+$(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml $(FODIR)
 	$(XSLTPROC) --output $@ http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $<
 
 # HTML Help
-
 $(HTMLHELPDIR):
 	mkdir $(HTMLHELPDIR)
 
-$(HTMLHELPDIR)/Samba-HOWTO-Collection/images: 
-	-mkdir -p $@
-	cp -p $(HOWTODIR_IMAGES_PNG) $@
+$(HTMLHELPDIR)/%/images/%.png: $(%_IMAGEDIR)/%.png
+	cp $< $@
 
-$(HTMLHELPDIR)/Samba-Guide/images:
-	-mkdir -p $@
-	cp -p $(GUIDEDOC_IMAGES_PNG) $@
+$(HTMLHELPDIR)/%/images: $(HTMLHELPDIR)/%
+	mkdir -p $@
 
-$(HTMLHELPDIR)/Samba-Developers-Guide/images:
+$(HTMLHELPDIR)/%/images/: $@ $(subst $($*_IMAGEDIR),$@/,$($*_IMAGES_PNG))
 
-$(HTMLHELPDIR)/%: %.xml $(HTMLHELPDIR) $(HTMLHELPDIR)/%/images
+$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml $(HTMLHELPDIR) $(HTMLHELPDIR)/%/images/
 	-mkdir $@
-	$(XSLTPROC) --stringparam htmlhelp.chm $(patsubst %.xml,%.chm,$<) --stringparam manifest.in.base.dir "$@/" --stringparam base.dir "$@/" http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
+	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm --stringparam manifest.in.base.dir "$@/" --stringparam base.dir "$@/" http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
 
-# Single large HTML files
-
-$(HTMLDIR):
-	mkdir $(HTMLDIR)
-	mkdir $(HTMLDIR)/howto
-	mkdir $(HTMLDIR)/guide
-	mkdir $(HTMLDIR)/devel
-	mkdir $(HTMLDIR)/images
-
+# Plucker docs
 $(PLUCKERDIR):
 	mkdir $(PLUCKERDIR)
 
-%/samba.css: xslt/html/samba.css
-	if [ ! -d `dirname $@` ]; then mkdir -p `dirname $@`; fi
-	cp $< $@
-
-$(HTMLDIR)/Samba-HOWTO-Collection.html: Samba-HOWTO-Collection.xml $(HOWTODIR_DEPS) $(HOWTODIR_IMAGES_PNG)
-	$(XSLTPROC) --output $@ xslt/html.xsl $<
-
-$(HTMLDIR)/Samba-Guide.html: Samba-Guide.xml $(GUIDEDOC_IMAGES_PNG)
-	$(XSLTPROC) --output $@ xslt/html.xsl $<
-
-$(HTMLDIR)/Samba-Developers-Guide.html: Samba-Developers-Guide.xml $(DEVDOCDIR_DEPS)
-	$(XSLTPROC) --output $@ xslt/html.xsl $<
-
-$(HTMLDIR)/%.html: %.xml
-	$(XSLTPROC) --output $@ xslt/html.xsl $<
-
-$(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html
-	$(PLUCKERBUILD) -v -M1 --stayonhost  --noimages --zlib-compression -H file:$< -f $(patsubst $(PLUCKERDIR)/%.pdb,%,$@) -p $(PLUCKERDIR)
-
-%.xml: $(MANPAGEDIR)/%.xml
-	$(XSLTPROC) --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
+$(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html $(PLUCKERDIR)
+	$(PLUCKERBUILD) -v -M1 --stayonhost  --noimages --zlib-compression -H file:$< -f $* -p $(PLUCKERDIR)
 
 # Manpages
 $(MANPAGEDIR)/smb.conf.5.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/parameters.global.xml
 
-$(SMBDOTCONF)/parameters.all.xml:
-	@cd $(SMBDOTCONFDOC) && /bin/sh generate-file-list.sh >parameters.all.xml
+$(SMBDOTCONFDOC)/parameters.all.xml: $(shell find $(SMBDOTCONFDOC) -type f -name '*.xml' -mindepth 2 | sort -t/ -k3 | xargs) $(SMBDOTCONFDOC)/generate-file-list.sh
+	$(SMBDOTCONFDOC)/generate-file-list.sh $(SMBDOTCONFDOC) > $@
 
-$(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml
+$(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	$(XSLTPROC) --xinclude --param smb.context "'G'" --output $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
-$(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml
+$(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	$(XSLTPROC) --xinclude --param smb.context "'S'" --output $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
 $(MANDIR): 
 	mkdir $(MANDIR)
 
-$(MANDIR)/%: %.xml
+$(MANDIR)/%: $(DOCBOOKDIR)/%.xml xslt/man.xsl
 	$(XSLTPROC) --output $@ xslt/man.xsl $<
+
+# Pearson compatible XML
 
 $(PEARSONDIR):
 	mkdir $@
 
-$(PEARSONDIR)/%.xml: %.xml $(PEARSONDIR)
+$(PEARSONDIR)/%.xml: $(DOCBOOKDIR)/%.xml $(PEARSONDIR) xslt/pearson.xsl
 	$(XSLTPROC) --xinclude --output $@ xslt/pearson.xsl $<
 
 $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 	$(XMLLINT) --valid --noout --htmlout $< 2> $@
 
-pearson: $(PEARSONDIR)/Samba-HOWTO-Collection.xml
-pearson-verify: $(PEARSONDIR)/Samba-HOWTO-Collection.report.html
+# Validation verification
 
 $(VALIDATEDIR):
 	mkdir $@
 
-$(VALIDATEDIR)/%.report.html: %.xml
+$(VALIDATEDIR)/%.report.html: $(DOCBOOKDIR)/%.xml
 	$(XMLLINT) --valid --noout --htmlout $< 2> $@
 
 verify: $(VALIDATEDIR) $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html 
 
 # Find undocumented parameters
 
-undocumented: $(SMBDOTCONFDOC)/parameters.all.xml
+undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl scripts/find_missing_manpages.pl
 	@$(PERL) scripts/find_missing_doc.pl $(SRCDIR)
 	@$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)
 
@@ -326,19 +279,14 @@ undocumented: $(SMBDOTCONFDOC)/parameters.all.xml
 $(EXAMPLESDIR):
 	mkdir $(EXAMPLESDIR)
 
-files: $(HOWTODIR)/index.xml $(HOWTODIR)/attributions.xml $(EXAMPLESDIR)
+files: $(HOWTODIR)/index.xml $(EXAMPLESDIR) xslt/extract-smbfiles.xsl
 	$(XSLTPROC) xslt/extract-smbfiles.xsl $< > /dev/null
 
-samples: $(EXAMPLESDIR) Samba-HOWTO-Collection.xml
-	$(XSLTPROC) xslt/extract-examples.xsl Samba-HOWTO-Collection.xml > /dev/null 2> examples/README
+samples: $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml $(EXAMPLESDIR) xslt/extract-examples.xsl scripts/indent-smb.conf.pl
+	$(XSLTPROC) --xinclude xslt/extract-examples.xsl $< > /dev/null 2> examples/README
 	for I in examples/*.conf; do { ./scripts/indent-smb.conf.pl < $$I > $$I.tmp; mv $$I.tmp $$I; } done
 
-howto: $(PDFDIR)/Samba-HOWTO-Collection.pdf
-guide: $(PDFDIR)/Samba-Guide.pdf
-
-%/changelog.xml: % $(wildcard %/CVS/*)
-	touch $@
-	# FIXME
+# Archiving
 
 $(ARCHIVEDIR):
 	mkdir $(ARCHIVEDIR)
@@ -346,3 +294,12 @@ $(ARCHIVEDIR):
 archive: $(ARCHIVEDIR) guide howto
 	cp $(PDFDIR)/Samba-HOWTO-Collection.pdf $(ARCHIVEDIR)/TOSHARG-`date +%Y%m%d`.pdf
 	cp $(PDFDIR)/Samba-Guide.pdf $(ARCHIVEDIR)/S3bE-`date +%Y%m%d`.pdf
+
+# XSL scripts
+xslt/html.xsl: xslt/html-common.xsl settings.xsl
+xslt/html-chunk.xsl: xslt/html-common.xsl settings.xsl
+xslt/latex.xsl: settings.xsl
+xslt/expand-sambadoc.xsl: settings.xsl
+xslt/generate-attributions.xsl: 
+xslt/man.xsl:
+xslt/pearson.xsl:
