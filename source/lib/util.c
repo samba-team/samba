@@ -151,6 +151,35 @@ void reopen_logs(void)
 
 
 /*******************************************************************
+check if the log has grown too big
+********************************************************************/
+static void check_log_size(void)
+{
+  static int debug_count=0;
+  int maxlog;
+  struct stat st;
+
+  if (debug_count++ < 100) return;
+
+  maxlog = lp_max_log_size() * 1024;
+  if (!dbf || maxlog <= 0) return;
+
+  if (fstat(fileno(dbf),&st) == 0 && st.st_size > maxlog) {
+    fclose(dbf); dbf = NULL;
+    reopen_logs();
+    if (dbf && file_size(debugf) > maxlog) {
+      pstring name;
+      fclose(dbf); dbf = NULL;
+      sprintf(name,"%s.old",debugf);
+      sys_rename(debugf,name);
+      reopen_logs();
+    }
+  }
+  debug_count=0;
+}
+
+
+/*******************************************************************
 write an debug message on the debugfile. This is called by the DEBUG
 macro
 ********************************************************************/
@@ -165,43 +194,16 @@ va_dcl
 #endif
   va_list ap;  
   
-#ifdef __STDC__
-  va_start(ap, format_str);
-#else
-  va_start(ap);
-  format_str = va_arg(ap,char *);
-#endif
-
   if (stdout_logging) {
+#ifdef __STDC__
+    va_start(ap, format_str);
+#else
+    va_start(ap);
+    format_str = va_arg(ap,char *);
+#endif
     vfprintf(dbf,format_str,ap);
     va_end(ap);
     return(0);
-  }
-
-  {
-    static int debug_count=0;
-
-    debug_count++;
-    if (debug_count == 100) {
-      int maxlog = lp_max_log_size() * 1024;
-      if (dbf && maxlog > 0)
-	{
-	  struct stat st;
-
-	  if (fstat(fileno(dbf),&st) == 0 && st.st_size > maxlog) {
-	    fclose(dbf); dbf = NULL;
-	    reopen_logs();
-	    if (dbf && file_size(debugf) > maxlog) {
-	      pstring name;
-	      fclose(dbf); dbf = NULL;
-	      sprintf(name,"%s.old",debugf);
-	      sys_rename(debugf,name);
-	      reopen_logs();
-	    }
-	  }
-	}
-      debug_count=0;
-    }
   }
   
 #ifdef SYSLOG
@@ -241,7 +243,14 @@ va_dcl
       else
 	priority = priority_map[syslog_level];
       
+#ifdef __STDC__
+      va_start(ap, format_str);
+#else
+      va_start(ap);
+      format_str = va_arg(ap,char *);
+#endif
       vsprintf(msgbuf, format_str, ap);
+      va_end(ap);
       
       msgbuf[255] = '\0';
       syslog(priority, "%s", msgbuf);
@@ -252,11 +261,19 @@ va_dcl
   if (!lp_syslog_only())
 #endif
     {
+#ifdef __STDC__
+      va_start(ap, format_str);
+#else
+      va_start(ap);
+      format_str = va_arg(ap,char *);
+#endif
       vfprintf(dbf,format_str,ap);
+      va_end(ap);
       fflush(dbf);
     }
-  
-  va_end(ap);
+
+  check_log_size();
+
   return(0);
 }
 
