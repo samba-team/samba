@@ -587,6 +587,14 @@ struct hostent* roken_gethostbyaddr(const void*, size_t, int);
 #define roken_getsockname(a,b,c) getsockname(a, b, (void*)c)
 #endif
 
+#ifndef HAVE_SETPROGNAME
+void setprogname(const char *argv0);
+#endif
+
+#ifndef HAVE_GETPROGNAME
+const char *getprogname(void);
+#endif
+
 void set_progname(char *argv0);
 const char *get_progname(void);
 
