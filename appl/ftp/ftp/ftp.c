@@ -530,9 +530,9 @@ empty (fd_set * mask, int sec)
 {
     struct timeval t;
 
-    t.tv_sec = (long) sec;
+    t.tv_sec = sec;
     t.tv_usec = 0;
-    return (select (32, mask, NULL, NULL, &t));
+    return (select (FD_SETSIZE, mask, NULL, NULL, &t));
 }
 
 jmp_buf sendabort;
@@ -1627,6 +1627,8 @@ abort:
     pswitch (!proxy);
     if (cpend) {
 	FD_ZERO (&mask);
+	if (fileno(cin) >= FD_SETSIZE)
+	    errx (1, "fd too large");
 	FD_SET (fileno (cin), &mask);
 	if ((nfnd = empty (&mask, 10)) <= 0) {
 	    if (nfnd < 0) {
@@ -1655,6 +1657,8 @@ reset (int argc, char **argv)
 
     FD_ZERO (&mask);
     while (nfnd > 0) {
+	if (fileno (cin) >= FD_SETSIZE)
+	    errx (1, "fd too large");
 	FD_SET (fileno (cin), &mask);
 	if ((nfnd = empty (&mask, 0)) < 0) {
 	    warn ("reset");
@@ -1728,8 +1732,12 @@ abort_remote (FILE * din)
     fprintf (cout, "%cABOR\r\n", DM);
     fflush (cout);
     FD_ZERO (&mask);
+    if (fileno (cin) >= FD_SETSIZE)
+	errx (1, "fd too large");
     FD_SET (fileno (cin), &mask);
     if (din) {
+    if (fileno (din) >= FD_SETSIZE)
+	errx (1, "fd too large");
 	FD_SET (fileno (din), &mask);
     }
     if ((nfnd = empty (&mask, 10)) <= 0) {
