@@ -193,8 +193,9 @@ in the data and bss columns in "size" anyway (it will be included in
 How to use talloc
 -----------------
 
-Please see the separate document, talloc_guide.txt in this
-directory. You _must_ read this if you want to program in Samba4.
+Please see the separate document, source/lib/talloc/talloc_guide.txt
+You _must_ read this if you want to program in Samba4.
+
 
 Interface Structures
 --------------------
