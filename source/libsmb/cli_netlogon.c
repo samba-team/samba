@@ -231,7 +231,7 @@ NTSTATUS cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-	init_net_q_logon_ctrl2(&q, cli->srv_name_slash, query_level);
+	init_net_q_logon_ctrl2(&q, unix_to_dos_static(cli->srv_name_slash), query_level);
 
 	/* Marshall data and send request */
 
@@ -303,7 +303,8 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx, DOM_C
 
         gen_next_creds(cli, &clnt_creds);
 
-	init_net_q_sam_sync(&q, cli->srv_name_slash, cli->clnt_name_slash + 2,
+	init_net_q_sam_sync(&q, unix_to_dos_static(cli->srv_name_slash),
+				unix_to_dos_static(cli->clnt_name_slash + 2),
                             &clnt_creds, ret_creds, database_id);
 
 	/* Marshall data and send request */
@@ -363,8 +364,8 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         gen_next_creds(cli, &clnt_creds);
 
-	init_net_q_sam_deltas(&q, cli->srv_name_slash, 
-                              cli->clnt_name_slash + 2, &clnt_creds, 
+	init_net_q_sam_deltas(&q, unix_to_dos_static(cli->srv_name_slash), 
+                              unix_to_dos_static(cli->clnt_name_slash + 2), &clnt_creds, 
                               database_id, seqnum);
 
 	/* Marshall data and send request */
@@ -445,7 +446,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                 init_id_info1(&ctr.auth.id1, lp_workgroup_dos(), 
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
-                              dos_username, cli->clnt_name_slash,
+                              dos_username, unix_to_dos_static(cli->clnt_name_slash),
                               (char *)cli->sess_key, lm_owf_user_pwd,
                               nt_owf_user_pwd);
 
@@ -464,7 +465,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                 init_id_info2(&ctr.auth.id2, lp_workgroup_dos(), 
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
-                              dos_username, cli->clnt_name_slash, chal,
+                              dos_username, unix_to_dos_static(cli->clnt_name_slash), chal,
                               local_lm_response, 24, local_nt_response, 24);
                 break;
         }
@@ -474,7 +475,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                 goto done;
         }
 
-        init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname_dos(),
+        init_sam_info(&q.sam_id, unix_to_dos_static(cli->srv_name_slash), global_myname_dos(),
                       &clnt_creds, &dummy_rtn_creds, logon_type,
                       &ctr);
 
@@ -511,7 +512,8 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  **/
 
 NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					const char *unix_username, const char *unix_domain, const char *workstation, 
+					const char *unix_username, const char *unix_domain,
+					const char *unix_workstation, 
 					const uint8 chal[8],
 					DATA_BLOB lm_response, DATA_BLOB nt_response,
 					NET_USER_INFO_3 *info3, char **pp_raw_data, size_t *p_raw_data_len)
@@ -524,8 +526,8 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
         DOM_CRED clnt_creds, dummy_rtn_creds;
 	NET_ID_INFO_CTR ctr;
 	int validation_level = 3;
-	char *workstation_name_slash;
-	fstring dos_username, dos_domain;
+	char *dos_workstation_name_slash;
+	fstring dos_username, dos_domain, dos_workstation;
 	
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -534,10 +536,12 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	unix_to_dos(dos_username);
 	fstrcpy(dos_domain, unix_domain);
 	unix_to_dos(dos_domain);
+	fstrcpy(dos_workstation, unix_workstation);
+	unix_to_dos(dos_workstation);
 
-	workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
+	dos_workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", dos_workstation);
 	
-	if (!workstation_name_slash) {
+	if (!dos_workstation_name_slash) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -561,10 +565,10 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	init_id_info2(&ctr.auth.id2, dos_domain,
 		      0, /* param_ctrl */
 		      0xdead, 0xbeef, /* LUID? */
-		      dos_username, workstation_name_slash, (const uchar*)chal,
+		      dos_username, dos_workstation_name_slash, (const uchar*)chal,
 		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
  
-        init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname_dos(),
+        init_sam_info(&q.sam_id, unix_to_dos_static(cli->srv_name_slash), global_myname_dos(),
                       &clnt_creds, &dummy_rtn_creds, NET_LOGON_TYPE,
                       &ctr);
 
@@ -643,7 +647,7 @@ LSA Server Password Set.
 		 credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
 	
         /* store the parameters */
-	init_q_srv_pwset(&q_s, cli->srv_name_slash, cli->sess_key,
+	init_q_srv_pwset(&q_s, unix_to_dos_static(cli->srv_name_slash), cli->sess_key,
 			 mach_acct, sec_chan_type, machine_name, 
 			 &new_clnt_cred, (char *)hashed_mach_pwd);
 	
@@ -693,4 +697,3 @@ password ?).\n", cli->desthost ));
 }
 
 #endif	/* JERRY */
-
