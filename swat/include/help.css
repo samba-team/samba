@@ -9,10 +9,10 @@
 .nav {
 	display:none;
 }
-.controls {
+#controls {
 	background-color:#FFF;
 }
-.controls ul {
+#controls ul {
 	list-style-type:none;
 	margin-left:-10px;
 }
