@@ -81,7 +81,7 @@ struct request_context *init_smb_request(struct server_context *smb)
 */
 static void req_setup_chain_reply(struct request_context *req, unsigned wct, unsigned buflen)
 {
-	uint32 chain_base_size = req->out.size;
+	uint32_t chain_base_size = req->out.size;
 
 	/* we need room for the wct value, the words, the buffer length and the buffer */
 	req->out.size += 1 + VWV(wct) + 2 + buflen;
@@ -321,7 +321,7 @@ void req_reply_error(struct request_context *req, NTSTATUS status)
 	if (!lp_nt_status_support() || !(req->smb->negotiate.client_caps & CAP_STATUS32)) {
 		/* convert to DOS error codes */
 		uint8 eclass;
-		uint32 ecode;
+		uint32_t ecode;
 		ntstatus_to_dos(status, &eclass, &ecode);
 		req_reply_dos_error(req, eclass, ecode);
 		return;
@@ -597,7 +597,7 @@ BOOL req_pull_blob(struct request_context *req, const char *src, int len, DATA_B
 
 /* check that a lump of data in a request is within the bounds of the data section of
    the packet */
-BOOL req_data_oob(struct request_context *req, const char *ptr, uint32 count)
+BOOL req_data_oob(struct request_context *req, const char *ptr, uint32_t count)
 {
 	if (count == 0) {
 		return False;

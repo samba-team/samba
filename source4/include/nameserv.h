@@ -293,7 +293,7 @@ struct work_record
   BOOL    RunningElection;
   BOOL    needelection;
   int     ElectionCount;
-  uint32  ElectionCriterion;
+  uint32_t  ElectionCriterion;
 
   /* Domain master browser info. Used for efficient syncs. */
   struct nmb_name dmb_name;

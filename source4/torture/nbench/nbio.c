@@ -211,7 +211,7 @@ void nb_createx(const char *fname,
 		NTSTATUS status)
 {
 	union smb_open io;	
-	uint32 desired_access;
+	uint32_t desired_access;
 	NTSTATUS ret;
 	TALLOC_CTX *mem_ctx;
 	unsigned flags = 0;

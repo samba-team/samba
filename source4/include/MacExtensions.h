@@ -53,10 +53,10 @@
 */
 typedef struct _AfpInfo
 {
-	 uint32       	afpi_Signature;   		/* Must be *(PDWORD)"AFP" */
-	 uint32       	afpi_Version;     		/* Must be 0x00010000 */
-	 uint32       	afpi_Reserved1;
-	 uint32       	afpi_BackupTime;  		/* Backup time for the file/dir */
+	 uint32_t       	afpi_Signature;   		/* Must be *(PDWORD)"AFP" */
+	 uint32_t       	afpi_Version;     		/* Must be 0x00010000 */
+	 uint32_t       	afpi_Reserved1;
+	 uint32_t       	afpi_BackupTime;  		/* Backup time for the file/dir */
 	 unsigned char 	afpi_FinderInfo[AFP_FinderSize];  	/* Finder Info (32 bytes) */
 	 unsigned char 	afpi_ProDosInfo[6];  	/* ProDos Info (6 bytes) # */
 	 unsigned char 	afpi_Reserved2[6];

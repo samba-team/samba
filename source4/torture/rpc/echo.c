@@ -33,7 +33,7 @@ static BOOL test_addone(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	printf("\nTesting AddOne\n");
 
 	for (i=0;i<10;i++) {
-		uint32 n = i;
+		uint32_t n = i;
 		struct echo_AddOne r;
 		r.in.v = &n;
 		r.out.v = &n;

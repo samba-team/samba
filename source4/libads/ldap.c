@@ -985,7 +985,7 @@ char *ads_ou_string(const char *org_unit)
   add a machine account to the ADS server
 */
 static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname, 
-				       uint32 account_type,
+				       uint32_t account_type,
 				       const char *org_unit)
 {
 	ADS_STATUS ret, status;
@@ -1107,7 +1107,7 @@ static void dump_binary(const char *field, struct berval **values)
 }
 
 struct uuid {
-        uint32   i1;
+        uint32_t   i1;
         uint16   i2;
         uint16   i3;
         uint8    s[8];
@@ -1314,7 +1314,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @return status of join
  **/
 ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname, 
-			  uint32 account_type, const char *org_unit)
+			  uint32_t account_type, const char *org_unit)
 {
 	ADS_STATUS status;
 	LDAPMessage *res;
@@ -1737,15 +1737,15 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 }
 
 /**
- * pull a single uint32 from a ADS result
+ * pull a single uint32_t from a ADS result
  * @param ads connection to ads server
  * @param msg Results of search
  * @param field Attribute to retrieve
  * @param v Pointer to int to store result
  * @return boolean inidicating success
 */
-BOOL ads_pull_uint32(ADS_STRUCT *ads, 
-		     void *msg, const char *field, uint32 *v)
+BOOL ads_pull_uint32_t(ADS_STRUCT *ads, 
+		     void *msg, const char *field, uint32_t *v)
 {
 	char **values;
 
@@ -1921,7 +1921,7 @@ char *ads_pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
  * @param usn Pointer to retrieved update serial number
  * @return status of search
  **/
-ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
+ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32_t *usn)
 {
 	const char *attrs[] = {"highestCommittedUSN", NULL};
 	ADS_STATUS status;
@@ -1935,7 +1935,7 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
 
-	ads_pull_uint32(ads, res, "highestCommittedUSN", usn);
+	ads_pull_uint32_t(ads, res, "highestCommittedUSN", usn);
 	ads_msgfree(ads, res);
 	return ADS_SUCCESS;
 }

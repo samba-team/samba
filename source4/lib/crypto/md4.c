@@ -26,40 +26,40 @@
 */
 
 struct mdfour_state {
-	uint32 A, B, C, D;
+	uint32_t A, B, C, D;
 };
 
-static uint32 F(uint32 X, uint32 Y, uint32 Z)
+static uint32_t F(uint32_t X, uint32_t Y, uint32_t Z)
 {
 	return (X&Y) | ((~X)&Z);
 }
 
-static uint32 G(uint32 X, uint32 Y, uint32 Z)
+static uint32_t G(uint32_t X, uint32_t Y, uint32_t Z)
 {
 	return (X&Y) | (X&Z) | (Y&Z); 
 }
 
-static uint32 H(uint32 X, uint32 Y, uint32 Z)
+static uint32_t H(uint32_t X, uint32_t Y, uint32_t Z)
 {
 	return X^Y^Z;
 }
 
-static uint32 lshift(uint32 x, int s)
+static uint32_t lshift(uint32_t x, int s)
 {
 	x &= 0xFFFFFFFF;
 	return ((x<<s)&0xFFFFFFFF) | (x>>(32-s));
 }
 
 #define ROUND1(a,b,c,d,k,s) a = lshift(a + F(b,c,d) + X[k], s)
-#define ROUND2(a,b,c,d,k,s) a = lshift(a + G(b,c,d) + X[k] + (uint32)0x5A827999,s)
-#define ROUND3(a,b,c,d,k,s) a = lshift(a + H(b,c,d) + X[k] + (uint32)0x6ED9EBA1,s)
+#define ROUND2(a,b,c,d,k,s) a = lshift(a + G(b,c,d) + X[k] + (uint32_t)0x5A827999,s)
+#define ROUND3(a,b,c,d,k,s) a = lshift(a + H(b,c,d) + X[k] + (uint32_t)0x6ED9EBA1,s)
 
 /* this applies md4 to 64 byte chunks */
-static void mdfour64(struct mdfour_state *s, uint32 *M)
+static void mdfour64(struct mdfour_state *s, uint32_t *M)
 {
 	int j;
-	uint32 AA, BB, CC, DD;
-	uint32 X[16];
+	uint32_t AA, BB, CC, DD;
+	uint32_t X[16];
 
 	for (j=0;j<16;j++)
 		X[j] = M[j];
@@ -107,7 +107,7 @@ static void mdfour64(struct mdfour_state *s, uint32 *M)
 		X[j] = 0;
 }
 
-static void copy64(uint32 *M, const unsigned char *in)
+static void copy64(uint32_t *M, const unsigned char *in)
 {
 	int i;
 
@@ -116,7 +116,7 @@ static void copy64(uint32 *M, const unsigned char *in)
 			(in[i*4+1]<<8) | (in[i*4+0]<<0);
 }
 
-static void copy4(unsigned char *out, uint32 x)
+static void copy4(unsigned char *out, uint32_t x)
 {
 	out[0] = x&0xFF;
 	out[1] = (x>>8)&0xFF;
@@ -128,8 +128,8 @@ static void copy4(unsigned char *out, uint32 x)
 void mdfour(unsigned char *out, const unsigned char *in, int n)
 {
 	unsigned char buf[128];
-	uint32 M[16];
-	uint32 b = n * 8;
+	uint32_t M[16];
+	uint32_t b = n * 8;
 	int i;
 	struct mdfour_state state;
 

@@ -90,7 +90,7 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	uint8 mach_pwd[16];
 	struct creds_CredentialState creds;
 	const char *workgroup, *workstation;
-	uint32 negotiate_flags = 0;
+	uint32_t negotiate_flags = 0;
 
 	workstation = username;
 	workgroup = domain;

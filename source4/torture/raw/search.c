@@ -70,7 +70,7 @@ static NTSTATUS single_search(struct cli_state *cli,
 static struct {
 	const char *name;
 	enum search_level level;
-	uint32 capability_mask;
+	uint32_t capability_mask;
 	NTSTATUS status;
 	union smb_search_data data;
 } levels[] = {
@@ -123,7 +123,7 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* call all the levels */
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		uint32 cap = cli->transport->negotiate.capabilities;
+		uint32_t cap = cli->transport->negotiate.capabilities;
 
 		printf("testing %s\n", levels[i].name);
 

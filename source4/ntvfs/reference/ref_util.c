@@ -133,7 +133,7 @@ struct svfs_dir *svfs_list(TALLOC_CTX *mem_ctx, struct request_context *req, con
 /*
   convert a unix stat struct to a dos attrib
 */
-uint32 svfs_file_attrib(struct stat *st)
+uint32_t svfs_file_attrib(struct stat *st)
 {
 	if (S_ISDIR(st->st_mode)) {
 		return FILE_ATTRIBUTE_DIRECTORY;

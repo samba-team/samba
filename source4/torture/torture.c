@@ -142,7 +142,7 @@ BOOL torture_close_connection(struct cli_state *c)
 NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, 
 				const char *pipe_name,
 				const char *pipe_uuid, 
-				uint32 pipe_version)
+				uint32_t pipe_version)
 {
         NTSTATUS status;
 	char *binding = lp_parm_string(-1, "torture", "binding");
@@ -170,11 +170,11 @@ NTSTATUS torture_rpc_close(struct dcerpc_pipe *p)
 
 /* check if the server produced the expected error code */
 static BOOL check_error(int line, struct cli_state *c, 
-			uint8 eclass, uint32 ecode, NTSTATUS nterr)
+			uint8 eclass, uint32_t ecode, NTSTATUS nterr)
 {
         if (cli_is_dos_error(c->tree)) {
                 uint8 class;
-                uint32 num;
+                uint32_t num;
 
                 /* Check DOS error */
 
@@ -206,7 +206,7 @@ static BOOL check_error(int line, struct cli_state *c,
 }
 
 
-static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
+static BOOL wait_lock(struct cli_state *c, int fnum, uint32_t offset, uint32_t len)
 {
 	while (NT_STATUS_IS_ERR(cli_lock(c->tree, fnum, offset, len, -1, WRITE_LOCK))) {
 		if (!check_error(__LINE__, c, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return False;
@@ -330,7 +330,7 @@ static BOOL rw_torture3(struct cli_state *c, const char *lockfname)
 	BOOL correct = True;
 
 	srandom(1);
-	for (i = 0; i < sizeof(buf); i += sizeof(uint32))
+	for (i = 0; i < sizeof(buf); i += sizeof(uint32_t))
 	{
 		SIVAL(buf, i, sys_random());
 	}
@@ -1031,10 +1031,10 @@ static BOOL run_locktest3(int dummy)
 	struct cli_state *cli1, *cli2;
 	const char *fname = "\\lockt3.lck";
 	int fnum1, fnum2, i;
-	uint32 offset;
+	uint32_t offset;
 	BOOL correct = True;
 
-#define NEXT_OFFSET offset += (~(uint32)0) / torture_numops
+#define NEXT_OFFSET offset += (~(uint32_t)0) / torture_numops
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
@@ -3342,7 +3342,7 @@ error_test80:
 }
 
 
-static uint32 open_attrs_table[] = {
+static uint32_t open_attrs_table[] = {
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_ATTRIBUTE_ARCHIVE,
 		FILE_ATTRIBUTE_READONLY,
@@ -3364,9 +3364,9 @@ static uint32 open_attrs_table[] = {
 
 struct trunc_open_results {
 	unsigned int num;
-	uint32 init_attr;
-	uint32 trunc_attr;
-	uint32 result_attr;
+	uint32_t init_attr;
+	uint32_t trunc_attr;
+	uint32_t result_attr;
 };
 
 static struct trunc_open_results attr_results[] = {
@@ -3414,7 +3414,7 @@ static BOOL run_openattrtest(int dummy)
 		return False;
 	}
 	
-	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32); i++) {
+	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32_t); i++) {
 		cli_setatr(cli1->tree, fname, 0, 0);
 		cli_unlink(cli1->tree, fname);
 		fnum1 = cli_nt_create_full(cli1->tree, fname, 0, SA_RIGHT_FILE_WRITE_DATA, open_attrs_table[i],

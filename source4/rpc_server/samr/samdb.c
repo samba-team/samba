@@ -334,8 +334,8 @@ const char *samdb_result_string(struct ldb_message *msg, const char *attr,
 /*
   pull a rid from a objectSid in a result set. 
 */
-uint32 samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
-				 const char *attr, uint32 default_value)
+uint32_t samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+				 const char *attr, uint32_t default_value)
 {
 	struct dom_sid *sid;
 	const char *sidstr = ldb_msg_find_string(msg, attr, NULL);
@@ -625,7 +625,7 @@ int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx,
   return 0 on failure, the id on success
 */
 static NTSTATUS _samdb_allocate_next_id(void *ctx, TALLOC_CTX *mem_ctx, const char *dn, 
-					const char *attr, uint32 *id)
+					const char *attr, uint32_t *id)
 {
 	struct samdb_context *sam_ctx = ctx;
 	struct ldb_message msg;
@@ -696,7 +696,7 @@ static NTSTATUS _samdb_allocate_next_id(void *ctx, TALLOC_CTX *mem_ctx, const ch
   return 0 on failure, the id on success
 */
 NTSTATUS samdb_allocate_next_id(void *ctx, TALLOC_CTX *mem_ctx, const char *dn, const char *attr,
-				uint32 *id)
+				uint32_t *id)
 {
 	int tries = 10;
 	NTSTATUS status;
@@ -824,7 +824,7 @@ int samdb_msg_add_hashes(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
   add a acct_flags element to a message
 */
 int samdb_msg_add_acct_flags(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			     const char *attr_name, uint32 v)
+			     const char *attr_name, uint32_t v)
 {
 	return samdb_msg_add_uint(ctx, mem_ctx, msg, attr_name, samdb_acb2uf(v));
 }

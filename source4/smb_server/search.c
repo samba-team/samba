@@ -69,12 +69,12 @@ static void find_fill_info(struct request_context *req,
 			   union smb_search_data *file)
 {
 	char *p = req->out.data + req->out.data_size;
-	uint32 dos_date;
+	uint32_t dos_date;
 	char search_name[13];
 	
 	DEBUG(9,("find_fill_info: input file data: attr=0x%x size=%u time=0x%x name=%13s\n",
 		file->search.attrib, file->search.size,
-		(uint32)file->search.write_time, file->search.name));
+		(uint32_t)file->search.write_time, file->search.name));
 
 	p += req_append_bytes(req, file->search.search_id.data, 21);
 	p += req_append_bytes(req, (char*)&file->search.attrib, 1);

@@ -25,7 +25,7 @@
 struct schannel_state {
 	TALLOC_CTX *mem_ctx;
 	uint8 session_key[16];
-	uint32 seq_num;
+	uint32_t seq_num;
 	BOOL initiator;
 	DATA_BLOB signature;
 };

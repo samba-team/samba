@@ -48,8 +48,8 @@ static BOOL join_domain_bdc(TALLOC_CTX *mem_ctx)
 	union samr_UserInfo u;
 	struct policy_handle handle;
 	struct policy_handle domain_handle;
-	uint32 access_granted;
-	uint32 rid;
+	uint32_t access_granted;
+	uint32_t rid;
 	BOOL ret = True;
 	DATA_BLOB session_key;
 	struct samr_Name name;
@@ -288,7 +288,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-				   uint32 negotiate_flags,
+				   uint32_t negotiate_flags,
 				   struct creds_CredentialState *creds)
 {
 	NTSTATUS status;
@@ -1092,7 +1092,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_DatabaseSync r;
 	struct creds_CredentialState creds;
-	const uint32 database_ids[] = {0, 1, 2}; 
+	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
 	BOOL ret = True;
 
@@ -1102,7 +1102,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
-	r.in.preferredmaximumlength = (uint32)-1;
+	r.in.preferredmaximumlength = (uint32_t)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
 
 	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
@@ -1153,7 +1153,7 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_DatabaseDeltas r;
 	struct creds_CredentialState creds;
-	const uint32 database_ids[] = {0, 1, 2}; 
+	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
 	BOOL ret = True;
 
@@ -1163,7 +1163,7 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
-	r.in.preferredmaximumlength = (uint32)-1;
+	r.in.preferredmaximumlength = (uint32_t)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
 
 	for (i=0;i<ARRAY_SIZE(database_ids);i++) {
@@ -1438,7 +1438,7 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_DatabaseSync2 r;
 	struct creds_CredentialState creds;
-	const uint32 database_ids[] = {0, 1, 2}; 
+	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
 	BOOL ret = True;
 
@@ -1448,7 +1448,7 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
-	r.in.preferredmaximumlength = (uint32)-1;
+	r.in.preferredmaximumlength = (uint32_t)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
 
 	for (i=0;i<ARRAY_SIZE(database_ids);i++) {

@@ -29,7 +29,7 @@ struct debug_ops {
 	void (*print_suspicious_usage)(const char* from, const char* info);
 	
 	/* function to return process/thread id */
-	uint32 (*get_task_id)(void);
+	uint32_t (*get_task_id)(void);
 	
 	/* function to log process/thread id */
 	void (*log_task_id)(int fd);

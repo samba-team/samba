@@ -31,8 +31,8 @@
 */
 static NTSTATUS unicode_open(struct cli_tree *tree,
 			     TALLOC_CTX *mem_ctx,
-			     uint32 open_disposition, 
-			     const uint32 *u_name, 
+			     uint32_t open_disposition, 
+			     const uint32_t *u_name, 
 			     size_t u_name_len)
 {
 	union smb_open io;
@@ -92,8 +92,8 @@ static NTSTATUS unicode_open(struct cli_tree *tree,
 */
 static BOOL test_composed(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	const uint32 name1[] = {0x61, 0x308};
-	const uint32 name2[] = {0xe4};
+	const uint32_t name1[] = {0x61, 0x308};
+	const uint32_t name2[] = {0xe4};
 	NTSTATUS status1, status2;
 
 	printf("Testing composite character (a umlaut)\n");
@@ -121,8 +121,8 @@ static BOOL test_composed(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 */
 static BOOL test_diacritical(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	const uint32 name1[] = {0x308};
-	const uint32 name2[] = {0x308, 0x308};
+	const uint32_t name1[] = {0x308};
+	const uint32_t name2[] = {0x308, 0x308};
 	NTSTATUS status1, status2;
 
 	printf("Testing naked diacritical (umlaut)\n");
@@ -152,9 +152,9 @@ static BOOL test_diacritical(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 */
 static BOOL test_surrogate(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	const uint32 name1[] = {0xd800};
-	const uint32 name2[] = {0xdc00};
-	const uint32 name3[] = {0xd800, 0xdc00};
+	const uint32_t name1[] = {0xd800};
+	const uint32_t name2[] = {0xdc00};
+	const uint32_t name3[] = {0xd800, 0xdc00};
 	NTSTATUS status;
 
 	printf("Testing partial surrogate\n");
@@ -191,9 +191,9 @@ static BOOL test_surrogate(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 */
 static BOOL test_widea(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	const uint32 name1[] = {'a'};
-	const uint32 name2[] = {0xff41};
-	const uint32 name3[] = {0xff21};
+	const uint32_t name1[] = {'a'};
+	const uint32_t name2[] = {0xff41};
+	const uint32_t name3[] = {0xff21};
 	NTSTATUS status;
 
 	printf("Testing wide-a\n");

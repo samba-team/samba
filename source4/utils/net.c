@@ -390,10 +390,10 @@ static int net_getdomainsid(int argc, const char **argv)
 	return 0;
 }
 
-static uint32 get_maxrid(void)
+static uint32_t get_maxrid(void)
 {
 	SAM_ACCOUNT *pwd = NULL;
-	uint32 max_rid = 0;
+	uint32_t max_rid = 0;
 	GROUP_MAP *map = NULL;
 	int num_entries = 0;
 	int i;
@@ -405,7 +405,7 @@ static uint32 get_maxrid(void)
 
 	for (; (NT_STATUS_IS_OK(pdb_init_sam(&pwd))) 
 		     && pdb_getsampwent(pwd) == True; pwd=NULL) {
-		uint32 rid;
+		uint32_t rid;
 
 		if (!sid_peek_rid(pdb_get_user_sid(pwd), &rid)) {
 			DEBUG(0, ("can't get RID for user '%s'\n",
@@ -429,7 +429,7 @@ static uint32 get_maxrid(void)
 		return max_rid;
 
 	for (i = 0; i < num_entries; i++) {
-		uint32 rid;
+		uint32_t rid;
 
 		if (!sid_peek_check_rid(get_global_sam_sid(), &map[i].sid,
 					&rid)) {
@@ -451,7 +451,7 @@ static uint32 get_maxrid(void)
 
 static int net_maxrid(int argc, const char **argv)
 {
-	uint32 rid;
+	uint32_t rid;
 
 	if (argc != 0) {
 	        DEBUG(0, ("usage: net initrid\n"));

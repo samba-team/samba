@@ -583,7 +583,7 @@ static BOOL test_ntcreatex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int i;
 	struct {
-		uint32 open_disp;
+		uint32_t open_disp;
 		BOOL with_file;
 		NTSTATUS correct_status;
 	} open_funcs[] = {

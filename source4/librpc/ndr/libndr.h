@@ -26,7 +26,7 @@
 /* offset lists are used to allow a push/pull function to find the
    start of an encapsulating structure */
 struct ndr_ofs_list {
-	uint32 offset;
+	uint32_t offset;
 	struct ndr_ofs_list *next;
 };
 
@@ -40,10 +40,10 @@ struct ndr_ofs_list {
    particular transport
 */
 struct ndr_pull {
-	uint32 flags; /* LIBNDR_FLAG_* */
+	uint32_t flags; /* LIBNDR_FLAG_* */
 	char *data;
-	uint32 data_size;
-	uint32 offset;
+	uint32_t data_size;
+	uint32_t offset;
 	TALLOC_CTX *mem_ctx;
 
 	/* this points at a list of offsets to the structures being processed.
@@ -52,21 +52,21 @@ struct ndr_pull {
 };
 
 struct ndr_pull_save {
-	uint32 data_size;
-	uint32 offset;
+	uint32_t data_size;
+	uint32_t offset;
 	struct ndr_pull_save *next;
 };
 
 /* structure passed to functions that generate NDR formatted data */
 struct ndr_push {
-	uint32 flags; /* LIBNDR_FLAG_* */
+	uint32_t flags; /* LIBNDR_FLAG_* */
 	char *data;
-	uint32 alloc_size;
-	uint32 offset;
+	uint32_t alloc_size;
+	uint32_t offset;
 	TALLOC_CTX *mem_ctx;
 
 	/* this is used to ensure we generate unique reference IDs */
-	uint32 ptr_count;
+	uint32_t ptr_count;
 
 	/* this points at a list of offsets to the structures being processed.
 	   The first element in the list is the current structure */
@@ -77,16 +77,16 @@ struct ndr_push {
 };
 
 struct ndr_push_save {
-	uint32 offset;
+	uint32_t offset;
 	struct ndr_push_save *next;
 };
 
 
 /* structure passed to functions that print IDL structures */
 struct ndr_print {
-	uint32 flags; /* LIBNDR_FLAG_* */
+	uint32_t flags; /* LIBNDR_FLAG_* */
 	TALLOC_CTX *mem_ctx;
-	uint32 depth;
+	uint32_t depth;
 	void (*print)(struct ndr_print *, const char *, ...);
 	void *private;
 };
@@ -176,7 +176,7 @@ enum ndr_err_code {
 
 #define NDR_PUSH_ALIGN(ndr, n) do { \
 	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) { \
-		uint32 _pad = ((ndr->offset + (n-1)) & ~(n-1)) - ndr->offset; \
+		uint32_t _pad = ((ndr->offset + (n-1)) & ~(n-1)) - ndr->offset; \
 		while (_pad--) NDR_CHECK(ndr_push_uint8(ndr, 0)); \
 	} \
 } while(0)
@@ -233,11 +233,11 @@ typedef NTSTATUS (*ndr_pull_fn_t)(struct ndr_pull *, void *);
 typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, void *);
 typedef NTSTATUS (*ndr_push_const_fn_t)(struct ndr_push *, int ndr_flags, const void *);
 typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
-typedef NTSTATUS (*ndr_push_union_fn_t)(struct ndr_push *, int ndr_flags, uint32, void *);
-typedef NTSTATUS (*ndr_pull_union_fn_t)(struct ndr_pull *, int ndr_flags, uint32, void *);
+typedef NTSTATUS (*ndr_push_union_fn_t)(struct ndr_push *, int ndr_flags, uint32_t, void *);
+typedef NTSTATUS (*ndr_pull_union_fn_t)(struct ndr_pull *, int ndr_flags, uint32_t, void *);
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, void *);
-typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32, void *);
+typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32_t, void *);
 
 #include "librpc/ndr/ndr_basic.h"
 #include "librpc/ndr/ndr_sec.h"

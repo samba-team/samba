@@ -28,7 +28,7 @@ static BOOL test_NetConnEnum(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct srvsvc_NetConnEnum r;
 	struct srvsvc_NetConnCtr0 c0;
-	uint32 levels[] = {0, 1};
+	uint32_t levels[] = {0, 1};
 	int i;
 	BOOL ret = True;
 
@@ -37,7 +37,7 @@ static BOOL test_NetConnEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr0 = &c0;
 	r.in.ctr.ctr0->count = 0;
 	r.in.ctr.ctr0->array = NULL;
-	r.in.max_buffer = (uint32)-1;
+	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -59,7 +59,7 @@ static BOOL test_NetFileEnum(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct srvsvc_NetFileEnum r;
 	struct srvsvc_NetFileCtr3 c3;
-	uint32 levels[] = {2, 3};
+	uint32_t levels[] = {2, 3};
 	int i;
 	BOOL ret = True;
 
@@ -69,7 +69,7 @@ static BOOL test_NetFileEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr3 = &c3;
 	r.in.ctr.ctr3->count = 0;
 	r.in.ctr.ctr3->array = NULL;
-	r.in.max_buffer = (uint32)4096;
+	r.in.max_buffer = (uint32_t)4096;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -91,7 +91,7 @@ static BOOL test_NetSessEnum(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct srvsvc_NetSessEnum r;
 	struct srvsvc_NetSessCtr0 c0;
-	uint32 levels[] = {0, 1, 2, 10, 502};
+	uint32_t levels[] = {0, 1, 2, 10, 502};
 	int i;
 	BOOL ret = True;
 
@@ -101,7 +101,7 @@ static BOOL test_NetSessEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr0 = &c0;
 	r.in.ctr.ctr0->count = 0;
 	r.in.ctr.ctr0->array = NULL;
-	r.in.max_buffer = (uint32)-1;
+	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -153,16 +153,16 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct srvsvc_NetShareEnumAll r;
 	struct srvsvc_NetShareCtr0 c0;
-	uint32 levels[] = {0, 1, 2, 501, 502, 1004};
+	uint32_t levels[] = {0, 1, 2, 501, 502, 1004};
 	int i;
 	BOOL ret = True;
-	uint32 resume_handle;
+	uint32_t resume_handle;
 
 	ZERO_STRUCT(c0);
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.ctr.ctr0 = &c0;
-	r.in.max_buffer = (uint32)-1;
+	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = &resume_handle;
 	r.out.resume_handle = &resume_handle;
 
@@ -201,10 +201,10 @@ static BOOL test_NetDiskEnum(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct srvsvc_NetDiskEnum r;
-	uint32 levels[] = {0};
+	uint32_t levels[] = {0};
 	int i;
 	BOOL ret = True;
-	uint32 resume_handle=0;
+	uint32_t resume_handle=0;
 
 	r.in.server_unc = NULL;
 	r.in.unknown = 0;
@@ -232,7 +232,7 @@ static BOOL test_NetTransportEnum(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct srvsvc_NetTransportEnum r;
 	struct srvsvc_NetTransportCtr0 c0;
-	uint32 levels[] = {0, 1};
+	uint32_t levels[] = {0, 1};
 	int i;
 	BOOL ret = True;
 
@@ -240,7 +240,7 @@ static BOOL test_NetTransportEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr0 = &c0;
 	r.in.ctr.ctr0->count = 0;
 	r.in.ctr.ctr0->array = NULL;
-	r.in.max_buffer = (uint32)-1;
+	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -262,7 +262,7 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct srvsvc_NetShareEnum r;
 	struct srvsvc_NetShareCtr0 c0;
-	uint32 levels[] = {0, 1, 2, 502};
+	uint32_t levels[] = {0, 1, 2, 502};
 	int i;
 	BOOL ret = True;
 
@@ -270,7 +270,7 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 	r.in.ctr.ctr0 = &c0;
 	r.in.ctr.ctr0->count = 0;
 	r.in.ctr.ctr0->array = NULL;
-	r.in.max_buffer = (uint32)-1;
+	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {

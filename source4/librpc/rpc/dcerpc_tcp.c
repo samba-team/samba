@@ -26,7 +26,7 @@
 struct tcp_private {
 	int fd;
 	char *server_name;
-	uint32 port;
+	uint32_t port;
 };
 
 
@@ -47,7 +47,7 @@ static NTSTATUS tcp_raw_recv(struct dcerpc_pipe *p,
 {
 	struct tcp_private *tcp = p->transport.private;
 	ssize_t ret;
-	uint32 frag_length;
+	uint32_t frag_length;
 	DATA_BLOB blob1;
 
 	blob1 = data_blob_talloc(mem_ctx, NULL, 16);
@@ -171,7 +171,7 @@ static const char *tcp_peer_name(struct dcerpc_pipe *p)
 */
 NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p, 
 			      const char *server,
-			      uint32 port)
+			      uint32_t port)
 {
 	struct tcp_private *tcp;
 	int fd;

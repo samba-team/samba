@@ -47,9 +47,9 @@ int net_rpc_join_ok(const char *domain)
 	struct cli_state *cli;
 	uchar stored_md4_trust_password[16];
 	int retval = 1;
-	uint32 channel;
+	uint32_t channel;
 	NTSTATUS result;
-	uint32 neg_flags = 0x000001ff;
+	uint32_t neg_flags = 0x000001ff;
 
 	/* Connect to remote machine */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC))) {
@@ -108,13 +108,13 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
-        uint32 acb_info;
+        uint32_t acb_info;
 
 	/* rpc variables */
 
 	POLICY_HND lsa_pol, sam_pol, domain_pol, user_pol;
 	DOM_SID domain_sid;
-	uint32 user_rid;
+	uint32_t user_rid;
 
 	/* Password stuff */
 
@@ -131,8 +131,8 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	NTSTATUS result;
 	int retval = 1;
 	fstring domain;
-	uint32 num_rids, *name_types, *user_rids;
-	uint32 flags = 0x3e8;
+	uint32_t num_rids, *name_types, *user_rids;
+	uint32_t flags = 0x3e8;
 	char *acct_name;
 	const char *const_acct_name;
 

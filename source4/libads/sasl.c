@@ -33,7 +33,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	DATA_BLOB blob, chal1, chal2, auth;
 	uint8 challenge[8];
 	uint8 nthash[24], lmhash[24], sess_key[16];
-	uint32 neg_flags;
+	uint32_t neg_flags;
 	struct berval cred, *scred;
 	ADS_STATUS status;
 	int rc;
@@ -234,19 +234,19 @@ failed:
 */
 static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 {
-	uint32 minor_status;
+	uint32_t minor_status;
 	gss_name_t serv_name;
 	gss_buffer_desc input_name;
 	gss_ctx_id_t context_handle;
 	gss_OID mech_type = GSS_C_NULL_OID;
 	gss_buffer_desc output_token, input_token;
-	uint32 ret_flags, conf_state;
+	uint32_t ret_flags, conf_state;
 	struct berval cred;
 	struct berval *scred;
 	int i=0;
 	int gss_rc, rc;
 	uint8 *p;
-	uint32 max_msg_size;
+	uint32_t max_msg_size;
 	char *sname;
 	unsigned sec_layer;
 	ADS_STATUS status;

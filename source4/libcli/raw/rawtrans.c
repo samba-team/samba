@@ -320,8 +320,8 @@ NTSTATUS smb_raw_nttrans_recv(struct cli_request *req,
 			      TALLOC_CTX *mem_ctx,
 			      struct smb_nttrans *parms)
 {
-	uint32 total_data, recvd_data=0;
-	uint32 total_param, recvd_param=0;
+	uint32_t total_data, recvd_data=0;
+	uint32_t total_param, recvd_param=0;
 
 	if (!cli_request_receive(req) ||
 	    cli_request_is_error(req)) {
@@ -369,9 +369,9 @@ NTSTATUS smb_raw_nttrans_recv(struct cli_request *req,
 	
 	while (recvd_data < total_data || 
 	       recvd_param < total_param)  {
-		uint32 param_count, param_ofs, param_disp;
-		uint32 data_count, data_ofs, data_disp;
-		uint32 total_data2, total_param2;
+		uint32_t param_count, param_ofs, param_disp;
+		uint32_t data_count, data_ofs, data_disp;
+		uint32_t total_data2, total_param2;
 
 		/* parse out the total lengths again - they can shrink! */
 		total_param2 = IVAL(req->in.vwv, 3);

@@ -78,7 +78,7 @@ static const struct {
  	{SID_NAME_USE_NONE, NULL}
 };
 
-const char *sid_type_lookup(uint32 sid_type) 
+const char *sid_type_lookup(uint32_t sid_type) 
 {
 	int i = 0;
 
@@ -147,7 +147,7 @@ void generate_wellknown_sids(void)
  Return the last rid from the end of a sid
 *****************************************************************/  
 
-BOOL sid_peek_rid(const struct dom_sid *sid, uint32 *rid)
+BOOL sid_peek_rid(const struct dom_sid *sid, uint32_t *rid)
 {
 	if (!sid || !rid)
 		return False;		
@@ -164,7 +164,7 @@ BOOL sid_peek_rid(const struct dom_sid *sid, uint32 *rid)
  and check the sid against the exp_dom_sid  
 *****************************************************************/  
 
-BOOL sid_peek_check_rid(const struct dom_sid *exp_dom_sid, const struct dom_sid *sid, uint32 *rid)
+BOOL sid_peek_check_rid(const struct dom_sid *exp_dom_sid, const struct dom_sid *sid, uint32_t *rid)
 {
 	if (!exp_dom_sid || !sid || !rid)
 		return False;
@@ -285,7 +285,7 @@ size_t sid_size(const struct dom_sid *sid)
 	if (sid == NULL)
 		return 0;
 
-	return sid->num_auths * sizeof(uint32) + 8;
+	return sid->num_auths * sizeof(uint32_t) + 8;
 }
 
 /*****************************************************************

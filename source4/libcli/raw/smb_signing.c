@@ -24,7 +24,7 @@
 
 struct smb_basic_signing_context {
 	DATA_BLOB mac_key;
-	uint32 next_seq_num;
+	uint32_t next_seq_num;
 };
 
 /***********************************************************

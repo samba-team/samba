@@ -51,7 +51,7 @@ NTSTATUS smb_raw_changenotify_recv(struct cli_request *req,
 {
 	struct smb_nttrans nt;
 	NTSTATUS status;
-	uint32 ofs, i;
+	uint32_t ofs, i;
 	struct cli_session *session = req?req->session:NULL;
 
 	status = smb_raw_nttrans_recv(req, mem_ctx, &nt);
@@ -64,7 +64,7 @@ NTSTATUS smb_raw_changenotify_recv(struct cli_request *req,
 	
 	/* count them */
 	for (ofs=0; nt.out.params.length - ofs > 12; ) {
-		uint32 next = IVAL(nt.out.params.data, ofs);
+		uint32_t next = IVAL(nt.out.params.data, ofs);
 		parms->out.num_changes++;
 		if (next == 0 ||
 		    ofs + next >= nt.out.params.length) break;
