@@ -275,7 +275,11 @@ static struct event_context *sock_event_context(struct dcerpc_connection *p)
 */
 static NTSTATUS sock_shutdown_pipe(struct dcerpc_connection *p)
 {
-	sock_dead(p, NT_STATUS_OK);
+	struct sock_private *sock = p->transport.private;
+
+	if (sock && sock->sock) {
+		sock_dead(p, NT_STATUS_OK);
+	}
 
 	return NT_STATUS_OK;
 }
