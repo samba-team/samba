@@ -53,9 +53,6 @@ static BOOL api_spoolss_open_printer_ex(pipes_struct *p)
 	                                       q_u.user_switch, q_u.user_ctr,
 	                                       &r_u.handle);
 
-	/* we _really_ need to switch to talloc() */
-	free_spoolss_q_open_printer_ex(&q_u);
-
 	if (!spoolss_io_r_open_printer_ex("",&r_u,rdata,0)){
 		DEBUG(0,("spoolss_io_r_open_printer_ex: unable to marshall SPOOL_R_OPEN_PRINTER_EX.\n"));
 		return False;
@@ -85,7 +82,7 @@ static BOOL api_spoolss_getprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_getprinterdata( &q_u.handle, &q_u.valuename,
+	r_u.status = _spoolss_getprinterdata( p, &q_u.handle, &q_u.valuename,
 	                                      q_u.size, &r_u.type, &r_u.size,
 	                                      &r_u.data, &r_u.needed);
 
@@ -93,8 +90,6 @@ static BOOL api_spoolss_getprinterdata(pipes_struct *p)
 		DEBUG(0,("spoolss_io_r_getprinterdata: unable to marshall SPOOL_R_GETPRINTERDATA.\n"));
 		return False;
 	}
-
-	safe_free(r_u.data);
 
 	return True;
 }
@@ -277,9 +272,7 @@ static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
 	}
 
 	r_u.status = _spoolss_rfnpcnex(&q_u.handle, q_u.change,
-	                               q_u.option, data->mem_ctx, &r_u.info);
-
-	safe_free(q_u.option);
+	                               q_u.option, p->mem_ctx, &r_u.info);
 
 	/* we always have a NOTIFY_INFO struct */
 	r_u.info_ptr=0x1;
@@ -288,8 +281,6 @@ static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
 		DEBUG(0,("spoolss_io_r_rfnpcnex: unable to marshall SPOOL_R_RFNPCNEX.\n"));
 		return False;
 	}
-
-	safe_free(r_u.info.data);
 
 	return True;
 }
@@ -310,9 +301,6 @@ static BOOL api_spoolss_enumprinters(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if (!spoolss_io_q_enumprinters("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumprinters: unable to unmarshall SPOOL_Q_ENUMPRINTERS.\n"));
 		return False;
@@ -327,11 +315,8 @@ static BOOL api_spoolss_enumprinters(pipes_struct *p)
 
 	if (!new_spoolss_io_r_enumprinters("", &r_u, rdata, 0)) {
 		DEBUG(0,("new_spoolss_io_r_enumprinters: unable to marshall SPOOL_R_ENUMPRINTERS.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-
-	new_spoolss_free_buffer(q_u.buffer);
 
 	return True;
 }
@@ -351,9 +336,6 @@ static BOOL api_spoolss_getprinter(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if(!spoolss_io_q_getprinter("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getprinter: unable to unmarshall SPOOL_Q_GETPRINTER.\n"));
 		return False;
@@ -368,11 +350,9 @@ static BOOL api_spoolss_getprinter(pipes_struct *p)
 
 	if(!spoolss_io_r_getprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_getprinter: unable to marshall SPOOL_R_GETPRINTER.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
 
-	new_spoolss_free_buffer(q_u.buffer);
 	return True;
 }
 
@@ -392,9 +372,6 @@ static BOOL api_spoolss_getprinterdriver2(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if(!spoolss_io_q_getprinterdriver2("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getprinterdriver2: unable to unmarshall SPOOL_Q_GETPRINTERDRIVER2.\n"));
 		return False;
@@ -410,11 +387,9 @@ static BOOL api_spoolss_getprinterdriver2(pipes_struct *p)
 	
 	if(!spoolss_io_r_getprinterdriver2("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_getprinterdriver2: unable to marshall SPOOL_R_GETPRINTERDRIVER2.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
 	
-	new_spoolss_free_buffer(q_u.buffer);
 	return True;
 }
 
@@ -560,7 +535,6 @@ static BOOL api_spoolss_writeprinter(pipes_struct *p)
 	                                   q_u.buffer,
 	                                   &q_u.buffer_size2);
 	r_u.buffer_written = q_u.buffer_size2;
-	safe_free(q_u.buffer);
 
 	if(!spoolss_io_r_writeprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_writeprinter: unable to marshall SPOOL_R_WRITEPRINTER.\n"));
@@ -594,12 +568,8 @@ static BOOL api_spoolss_setprinter(pipes_struct *p)
 	
 	if(!spoolss_io_r_setprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_setprinter: unable to marshall SPOOL_R_SETPRINTER.\n"));
-		free_spoolss_q_setprinter(&q_u);
 		return False;
 	}
-
-	/* Free anything allocated in the unparse. */
-	free_spoolss_q_setprinter(&q_u);
 
 	return True;
 }
@@ -644,9 +614,6 @@ static BOOL api_spoolss_addjob(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if(!spoolss_io_q_addjob("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_addjob: unable to unmarshall SPOOL_Q_ADDJOB.\n"));
 		return False;
@@ -660,11 +627,8 @@ static BOOL api_spoolss_addjob(pipes_struct *p)
 		
 	if(!spoolss_io_r_addjob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_addjob: unable to marshall SPOOL_R_ADDJOB.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-
-	new_spoolss_free_buffer(q_u.buffer);
 
 	return True;		
 }
@@ -682,9 +646,6 @@ static BOOL api_spoolss_enumjobs(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if (!spoolss_io_q_enumjobs("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumjobs: unable to unmarshall SPOOL_Q_ENUMJOBS.\n"));
 		return False;
@@ -699,11 +660,8 @@ static BOOL api_spoolss_enumjobs(pipes_struct *p)
 
 	if (!spoolss_io_r_enumjobs("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_enumjobs: unable to marshall SPOOL_R_ENUMJOBS.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-
-	new_spoolss_free_buffer(q_u.buffer);
 
 	return True;
 }
@@ -777,9 +735,6 @@ static BOOL api_spoolss_enumprinterdrivers(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if (!spoolss_io_q_enumprinterdrivers("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumprinterdrivers: unable to unmarshall SPOOL_Q_ENUMPRINTERDRIVERS.\n"));
 		return False;
@@ -794,11 +749,8 @@ static BOOL api_spoolss_enumprinterdrivers(pipes_struct *p)
 
 	if (!new_spoolss_io_r_enumprinterdrivers("",&r_u,rdata,0)) {
 		DEBUG(0,("new_spoolss_io_r_enumprinterdrivers: unable to marshall SPOOL_R_ENUMPRINTERDRIVERS.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-
-	new_spoolss_free_buffer(q_u.buffer);
 
 	return True;
 }
@@ -816,9 +768,6 @@ static BOOL api_spoolss_getform(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if (!spoolss_io_q_getform("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getform: unable to unmarshall SPOOL_Q_GETFORM.\n"));
 		return False;
@@ -832,11 +781,8 @@ static BOOL api_spoolss_getform(pipes_struct *p)
 
 	if (!new_spoolss_io_r_getform("",&r_u,rdata,0)) {
 		DEBUG(0,("new_spoolss_io_r_getform: unable to marshall SPOOL_R_GETFORM.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-
-	new_spoolss_free_buffer(q_u.buffer);
 
 	return True;
 }
@@ -853,9 +799,6 @@ static BOOL api_spoolss_enumforms(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if (!spoolss_io_q_enumforms("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumforms: unable to unmarshall SPOOL_Q_ENUMFORMS.\n"));
 		return False;
@@ -870,11 +813,8 @@ static BOOL api_spoolss_enumforms(pipes_struct *p)
 
 	if (!new_spoolss_io_r_enumforms("",&r_u,rdata,0)) {
 		DEBUG(0,("new_spoolss_io_r_enumforms: unable to marshall SPOOL_R_ENUMFORMS.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-
-	new_spoolss_free_buffer(q_u.buffer);
 
 	return True;
 }
@@ -892,9 +832,6 @@ static BOOL api_spoolss_enumports(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if(!spoolss_io_q_enumports("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumports: unable to unmarshall SPOOL_Q_ENUMPORTS.\n"));
 		return False;
@@ -909,11 +846,8 @@ static BOOL api_spoolss_enumports(pipes_struct *p)
 
 	if (!new_spoolss_io_r_enumports("",&r_u,rdata,0)) {
 		DEBUG(0,("new_spoolss_io_r_enumports: unable to marshall SPOOL_R_ENUMPORTS.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-
-	new_spoolss_free_buffer(q_u.buffer);
 
 	return True;
 }
@@ -947,17 +881,6 @@ static BOOL api_spoolss_addprinterex(pipes_struct *p)
 		return False;
 	}
 	
-	if (q_u.info.info_ptr!=0) {
-		switch (q_u.info.level) {
-			case 1:
-				safe_free(q_u.info.info_1);
-				break;
-			case 2:
-				safe_free(q_u.info.info_2);
-				break;
-		}
-	}
-		
 	return True;
 }
 
@@ -975,7 +898,6 @@ static BOOL api_spoolss_addprinterdriver(pipes_struct *p)
 	
 	if(!spoolss_io_q_addprinterdriver("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_addprinterdriver: unable to unmarshall SPOOL_Q_ADDPRINTERDRIVER.\n"));
-		free_spoolss_q_addprinterdriver(&q_u);
 		return False;
 	}
 	
@@ -983,12 +905,9 @@ static BOOL api_spoolss_addprinterdriver(pipes_struct *p)
 				
 	if(!spoolss_io_r_addprinterdriver("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addprinterdriver: unable to marshall SPOOL_R_ADDPRINTERDRIVER.\n"));
-		free_spoolss_q_addprinterdriver(&q_u);
 		return False;
 	}
 	
-	free_spoolss_q_addprinterdriver(&q_u);
-
 	return True;
 }
 
@@ -1004,9 +923,6 @@ static BOOL api_spoolss_getprinterdriverdirectory(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if(!spoolss_io_q_getprinterdriverdir("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getprinterdriverdir: unable to unmarshall SPOOL_Q_GETPRINTERDRIVERDIR.\n"));
 		return False;
@@ -1021,11 +937,8 @@ static BOOL api_spoolss_getprinterdriverdirectory(pipes_struct *p)
 
 	if(!spoolss_io_r_getprinterdriverdir("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_getprinterdriverdir: unable to marshall SPOOL_R_GETPRINTERDRIVERDIR.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-
-	new_spoolss_free_buffer(q_u.buffer);
 
 	return True;
 }
@@ -1047,20 +960,15 @@ static BOOL api_spoolss_enumprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_enumprinterdata(&q_u.handle, q_u.index, q_u.valuesize, q_u.datasize,
+	r_u.status = _spoolss_enumprinterdata(p, &q_u.handle, q_u.index, q_u.valuesize, q_u.datasize,
 						&r_u.valuesize, &r_u.value, &r_u.realvaluesize,
 						&r_u.type,
 						&r_u.datasize, &r_u.data, &r_u.realdatasize);
 				
 	if(!spoolss_io_r_enumprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_enumprinterdata: unable to marshall SPOOL_R_ENUMPRINTERDATA.\n"));
-		safe_free(r_u.value);
-		safe_free(r_u.data);
 		return False;
 	}
-
-	safe_free(r_u.value);
-	safe_free(r_u.data);
 
 	return True;
 }
@@ -1086,8 +994,6 @@ static BOOL api_spoolss_setprinterdata(pipes_struct *p)
 				&q_u.value, q_u.type, q_u.max_len,
 				q_u.data, q_u.real_len, q_u.numeric_data);
 				
-	free_spoolss_q_setprinterdata(&q_u);
-
 	if(!spoolss_io_r_setprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_setprinterdata: unable to marshall SPOOL_R_SETPRINTERDATA.\n"));
 		return False;
@@ -1189,9 +1095,6 @@ static BOOL api_spoolss_enumprintprocessors(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 	
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if(!spoolss_io_q_enumprintprocessors("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumprintprocessors: unable to unmarshall SPOOL_Q_ENUMPRINTPROCESSORS.\n"));
 		return False;
@@ -1206,11 +1109,8 @@ static BOOL api_spoolss_enumprintprocessors(pipes_struct *p)
 
 	if(!spoolss_io_r_enumprintprocessors("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_enumprintprocessors: unable to marshall SPOOL_R_ENUMPRINTPROCESSORS.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-	
-	new_spoolss_free_buffer(q_u.buffer);
 	
 	return True;
 }
@@ -1227,9 +1127,6 @@ static BOOL api_spoolss_enumprintprocdatatypes(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 	
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if(!spoolss_io_q_enumprintprocdatatypes("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumprintprocdatatypes: unable to unmarshall SPOOL_Q_ENUMPRINTPROCDATATYPES.\n"));
 		return False;
@@ -1244,11 +1141,8 @@ static BOOL api_spoolss_enumprintprocdatatypes(pipes_struct *p)
 
 	if(!spoolss_io_r_enumprintprocdatatypes("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_enumprintprocdatatypes: unable to marshall SPOOL_R_ENUMPRINTPROCDATATYPES.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-	
-	new_spoolss_free_buffer(q_u.buffer);
 	
 	return True;
 }
@@ -1265,9 +1159,6 @@ static BOOL api_spoolss_enumprintmonitors(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 	
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if (!spoolss_io_q_enumprintmonitors("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumprintmonitors: unable to unmarshall SPOOL_Q_ENUMPRINTMONITORS.\n"));
 		return False;
@@ -1282,11 +1173,8 @@ static BOOL api_spoolss_enumprintmonitors(pipes_struct *p)
 
 	if (!spoolss_io_r_enumprintmonitors("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_enumprintmonitors: unable to marshall SPOOL_R_ENUMPRINTMONITORS.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
-	
-	new_spoolss_free_buffer(q_u.buffer);
 	
 	return True;
 }
@@ -1300,9 +1188,6 @@ static BOOL api_spoolss_getjob(pipes_struct *p)
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 	
-	if(!new_spoolss_allocate_buffer(&q_u.buffer))
-		return False;
-
 	if(!spoolss_io_q_getjob("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getjob: unable to unmarshall SPOOL_Q_GETJOB.\n"));
 		return False;
@@ -1317,11 +1202,9 @@ static BOOL api_spoolss_getjob(pipes_struct *p)
 	
 	if(!spoolss_io_r_getjob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_getjob: unable to marshall SPOOL_R_GETJOB.\n"));
-		new_spoolss_free_buffer(q_u.buffer);
 		return False;
 	}
 		
-	new_spoolss_free_buffer(q_u.buffer);
 	return True;
 }
 

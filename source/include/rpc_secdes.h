@@ -105,6 +105,10 @@ typedef struct security_ace_info
 #define ACL_REVISION 0x3
 #endif
 
+#ifndef NT4_ACL_REVISION
+#define NT4_ACL_REVISION 0x2
+#endif
+
 #ifndef _SEC_ACL
 /* SEC_ACL */
 typedef struct security_acl_info
@@ -149,7 +153,7 @@ typedef struct security_descriptor_info
 typedef struct sec_desc_buf_info
 {
 	uint32 max_len;
-	uint32 undoc;
+	uint32 ptr;
 	uint32 len;
 
 	SEC_DESC *sec;

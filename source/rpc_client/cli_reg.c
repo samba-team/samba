@@ -708,19 +708,17 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 	DEBUG(4,("REG Create Key: %s %s 0x%08x\n", key_name, key_class,
 		sam_access != NULL ? sam_access->mask : 0));
 
-	if((sec = make_sec_desc( 1, NULL, NULL, NULL, NULL, &sec_len)) == NULL) {
+	if((sec = make_sec_desc( cli->mem_ctx, 1, NULL, NULL, NULL, NULL, &sec_len)) == NULL) {
 		DEBUG(0,("make_sec_desc : malloc fail.\n"));
 		return False;
 	}
 
 	DEBUG(10,("make_sec_desc: len = %d\n", (int)sec_len));
 
-	if((sec_buf = make_sec_desc_buf( (int)sec_len, sec)) == NULL) {
+	if((sec_buf = make_sec_desc_buf( cli->mem_ctx, (int)sec_len, sec)) == NULL) {
 		DEBUG(0,("make_sec_desc : malloc fail (1)\n"));
-		free_sec_desc(&sec);
 		return False;
 	}
-	free_sec_desc(&sec);
 
 	prs_init(&buf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
@@ -729,7 +727,6 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 
 	/* turn parameters into data stream */
 	if(!reg_io_q_create_key("", &q_o, &buf, 0)) {
-		free_sec_desc_buf(&sec_buf);
 		prs_mem_free(&buf);
 		prs_mem_free(&rbuf);
 		return False;
@@ -737,13 +734,11 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 
 	/* send the data on \PIPE\ */
 	if (rpc_api_pipe_req(cli, REG_CREATE_KEY, &buf, &rbuf)) {
-		free_sec_desc_buf(&sec_buf);
 		prs_mem_free(&buf);
 		prs_mem_free(&rbuf);
 		return False;
 	}
 
-	free_sec_desc_buf(&sec_buf);
 	prs_mem_free(&buf);
 
 	ZERO_STRUCT(r_o);

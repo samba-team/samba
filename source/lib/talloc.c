@@ -139,3 +139,16 @@ void *talloc_zero(TALLOC_CTX *t, size_t size)
 
 	return p;
 }
+
+/* memdup with a talloc. */
+void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size)
+{
+	void *newp = talloc(t,size);
+
+	if (!newp)
+		return 0;
+
+	memcpy(newp, p, size);
+
+	return newp;
+}

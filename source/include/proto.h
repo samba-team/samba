@@ -369,6 +369,7 @@ void talloc_destroy_pool(TALLOC_CTX *t);
 void talloc_destroy(TALLOC_CTX *t);
 size_t talloc_pool_size(TALLOC_CTX *t);
 void *talloc_zero(TALLOC_CTX *t, size_t size);
+void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size);
 
 /*The following definitions come from  lib/time.c  */
 
@@ -522,7 +523,7 @@ struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd);
 void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping);
 BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		     uint32 acc_desired, uint32 *acc_granted, uint32 *status);
-SEC_DESC_BUF *se_create_child_secdesc(SEC_DESC *parent_ctr, 
+SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
 				      BOOL child_container);
 
 /*The following definitions come from  lib/util_sec.c  */
@@ -1993,7 +1994,7 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
 BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
                         fstring value, uint8 **data, uint32 *type, uint32 *len);
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
-BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr);
+BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secdesc_ctr);
 void map_printer_permissions(SEC_DESC *sd);
 BOOL print_access_check(struct current_user *user, int snum, int access_type);
 BOOL print_time_access_check(int snum);
@@ -2969,26 +2970,23 @@ void init_sec_access(SEC_ACCESS *t, uint32 mask);
 BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth);
 void init_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 flag);
 BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth);
-SEC_ACL *make_sec_acl(uint16 revision, int num_aces, SEC_ACE *ace_list);
-SEC_ACL *dup_sec_acl( SEC_ACL *src);
-void free_sec_acl(SEC_ACL **ppsa);
+SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *ace_list);
+SEC_ACL *dup_sec_acl(TALLOC_CTX *ctx, SEC_ACL *src);
 BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth);
 size_t sec_desc_size(SEC_DESC *psd);
 BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2);
 BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2);
 BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2);
-SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb);
-SEC_DESC *make_sec_desc(uint16 revision, 
+SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb);
+SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision, 
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
 			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size);
-SEC_DESC *dup_sec_desc( SEC_DESC *src);
-void free_sec_desc(SEC_DESC **ppsd);
-SEC_DESC *make_standard_sec_desc(DOM_SID *owner_sid, DOM_SID *grp_sid,
+SEC_DESC *dup_sec_desc( TALLOC_CTX *ctx, SEC_DESC *src);
+SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, DOM_SID *owner_sid, DOM_SID *grp_sid,
 				 SEC_ACL *dacl, size_t *sd_size);
 BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth);
-SEC_DESC_BUF *make_sec_desc_buf(size_t len, SEC_DESC *sec_desc);
-SEC_DESC_BUF *dup_sec_desc_buf(SEC_DESC_BUF *src);
-void free_sec_desc_buf(SEC_DESC_BUF **ppsdb);
+SEC_DESC_BUF *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc);
+SEC_DESC_BUF *dup_sec_desc_buf(TALLOC_CTX *ctx, SEC_DESC_BUF *src);
 BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_spoolss.c  */
@@ -2996,21 +2994,18 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 BOOL make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
                                      prs_struct *ps, int depth);
-void free_spoolss_devmode(DEVICEMODE *devmode);
 BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		const fstring printername, 
 		const fstring datatype, 
 		uint32 access_required,
 		const fstring clientname,
 		const fstring user_name);
-BOOL make_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name,
+BOOL make_spoolss_q_addprinterex(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name,
 				 const char* clientname, const char* user_name,
 				 uint32 level, PRINTER_INFO_2 *info);
-void free_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u);
-BOOL make_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
+BOOL make_spool_printer_info_2(TALLOC_CTX *ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
 			       PRINTER_INFO_2 *info);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
-void free_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
                                 const POLICY_HND *handle,
@@ -3054,8 +3049,6 @@ BOOL new_smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int
 BOOL new_smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth);
 BOOL new_smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth);
 void new_spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest);
-BOOL new_spoolss_allocate_buffer(NEW_BUFFER **buffer);
-void new_spoolss_free_buffer(NEW_BUFFER *buffer);
 uint32 new_get_buffer_size(NEW_BUFFER *buffer);
 BOOL new_smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *info, int depth);
 BOOL new_smb_io_port_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth);
@@ -3103,7 +3096,6 @@ BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps
 BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u, const POLICY_HND *hnd, uint32 level, 
 				NEW_BUFFER *buffer, uint32 offered);
 BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps, int depth);
-void free_spoolss_q_setprinter(SPOOL_Q_SETPRINTER *q_u);
 BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_fcpn(char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_fcpn(char *desc, SPOOL_Q_FCPN *q_u, prs_struct *ps, int depth);
@@ -3143,23 +3135,17 @@ BOOL spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u,
 			       prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u, 
                                           prs_struct *ps, int depth);
-void free_spool_printer_driver_info_level_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u);
 BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u, 
                                           prs_struct *ps, int depth);
-void free_spool_printer_driver_info_level_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u);
 BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
-void free_spool_printer_driver_info_level(SPOOL_PRINTER_DRIVER_INFO_LEVEL *il);
-BOOL make_spoolss_q_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u, 
+BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTERDRIVER *q_u, 
 				     const char* srv_name, uint32 level, 
 				     PRINTER_DRIVER_CTR *info);
-BOOL make_spool_driver_info_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
+BOOL make_spool_driver_info_3(TALLOC_CTX *ctx, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
 			      DRIVER_INFO_3 *info3);
-void free_spool_driver_info_3 (SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *info);
-BOOL make_spool_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src);
-void free_spool_buffer5(BUFFER5 *buf);
+BOOL make_spool_buffer5(TALLOC_CTX *ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
-void free_spoolss_q_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u);
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
                                 NT_PRINTER_DRIVER_INFO_LEVEL_3 **asc);
@@ -3184,7 +3170,6 @@ BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u,
 		const POLICY_HND *hnd,
 		uint32 idx, uint32 valuelen, uint32 datalen);
 BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth);
-void free_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u);
 BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
 BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
 				uint32 type, const uint8 *data, uint32 len);
@@ -3200,10 +3185,6 @@ void free_devmode(DEVICEMODE *devmode);
 void free_printer_info_1(PRINTER_INFO_1 *printer);
 void free_printer_info_2(PRINTER_INFO_2 *printer);
 void free_printer_info_3(PRINTER_INFO_3 *printer);
-void free_spool_printer_info_1(SPOOL_PRINTER_INFO_LEVEL_1 *printer);
-void free_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 *printer);
-void free_spool_printer_info_3(SPOOL_PRINTER_INFO_LEVEL_3 *printer);
-void free_spool_printer_info_level(SPOOL_PRINTER_INFO_LEVEL *pil);
 void free_print2_array(uint32 num_entries, PRINTER_INFO_2 **entries);
 void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries);
 void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries);
@@ -3436,7 +3417,7 @@ BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode);
 uint32 _spoolss_closeprinter(POLICY_HND *handle);
 uint32 _spoolss_deleteprinter(POLICY_HND *handle);
-uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
+uint32 _spoolss_getprinterdata(pipes_struct *p, POLICY_HND *handle, UNISTR2 *valuename,
 				uint32 in_size,
 				uint32 *type,
 				uint32 *out_size,
@@ -3445,9 +3426,8 @@ uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 uint32 _spoolss_rffpcnex(POLICY_HND *handle, uint32 flags, uint32 options,
 			 const UNISTR2 *localmachine, uint32 printerlocal,
 			 SPOOL_NOTIFY_OPTION *option);
-uint32 _spoolss_rfnpcnex( POLICY_HND *handle, uint32 change,
-			  SPOOL_NOTIFY_OPTION *option, TALLOC_CTX *mem_ctx,
-			  SPOOL_NOTIFY_INFO *info);
+uint32 _spoolss_rfnpcnex( pipes_struct *p, POLICY_HND *handle, uint32 change,
+			  SPOOL_NOTIFY_OPTION *option, SPOOL_NOTIFY_INFO *info);
 uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 level,
 			      NEW_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned);
@@ -3503,7 +3483,7 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environment, uint32 level,
 					NEW_BUFFER *buffer, uint32 offered,
 					uint32 *needed);
-uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
+uint32 _spoolss_enumprinterdata(pipes_struct *p, POLICY_HND *handle, uint32 idx,
 				uint32 in_value_len, uint32 in_data_len,
 				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
 				uint32 *out_type,

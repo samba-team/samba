@@ -584,7 +584,6 @@ BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
-	free_spoolss_q_addprinterex(&q_o);
 
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
@@ -813,7 +812,6 @@ uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIV
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
-	free_spool_driver_info_3(q_o.info.info_3);
 
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
