@@ -177,3 +177,47 @@ uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
 	return status;
 }
+
+/*******************************************************************
+ reg_shutdwon
+ ********************************************************************/
+
+#define SHUTDOWN_R_STRING "-r"
+#define SHUTDOWN_F_STRING "-f"
+
+
+uint32 _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
+{
+	uint32 status = NT_STATUS_NOPROBLEMO;
+	pstring shutdown_script;
+	UNISTR2 unimsg = q_u->uni_msg;
+	pstring message;
+	fstring timeout;
+	fstring r;
+	fstring f;
+	
+	rpcstr_pull (message, unimsg.buffer, sizeof(message), unimsg.uni_str_len*2,0);
+	snprintf(timeout, sizeof(timeout), "%d", q_u->timeout);
+	if ((q_u->flags) & 0x100) /* reboot */
+		snprintf(r, sizeof(r), SHUTDOWN_R_STRING);
+	if ((q_u->flags) & 0x001) /* force */
+		snprintf(f, sizeof(f), SHUTDOWN_F_STRING);
+
+	pstrcpy(shutdown_script, lp_shutdown_script());
+
+	if (!*shutdown_script) {
+		pstrcpy(shutdown_script, lp_shutdown_script());
+	}
+
+	if(*shutdown_script) {
+		int shutdown_ret;
+		all_string_sub(shutdown_script, "%m", message, sizeof(shutdown_script));
+		all_string_sub(shutdown_script, "%t", timeout, sizeof(shutdown_script));
+		all_string_sub(shutdown_script, "%r", r, sizeof(shutdown_script));
+		all_string_sub(shutdown_script, "%f", f, sizeof(shutdown_script));
+		shutdown_ret = smbrun(shutdown_script,NULL);
+		DEBUG(3,("_reg_shutdown: Running the command `%s' gave %d\n",shutdown_script,shutdown_ret));
+	}
+
+	return status;
+}
