@@ -8,9 +8,9 @@
     <para>This controls whether the client offers or even
     demands the use of the netlogon schannel.
     <parameter>client schannel = no</parameter> does not
-    offer the schannel, <parameter>server schannel =
+    offer the schannel, <parameter>client schannel =
     auto</parameter> offers the schannel but does not
-    enforce it, and <parameter>server schannel =
+    enforce it, and <parameter>client schannel =
     yes</parameter> denies access if the server is not
 	able to speak netlogon schannel. </para>
 </description>
