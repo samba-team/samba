@@ -772,7 +772,7 @@ static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
-	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
+	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
 		printf("DsReplicaSync disabled - enable dangerous tests to use\n");
 		return True;
 	}
@@ -791,7 +791,7 @@ static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			r.in.req.req1.info->unknown2		= 120;
 			ZERO_STRUCT(r.in.req.req1.info->guid1);
 			ZERO_ARRAY(r.in.req.req1.info->unknown3);
-			r.in.req.req1.info->nc_dn		= priv->domain_obj_dn;
+			r.in.req.req1.info->nc_dn		= priv->domain_obj_dn?priv->domain_obj_dn:"";
 			r.in.req.req1.guid1			= priv->dcinfo.ntds_guid;
 			r.in.req.req1.string1			= NULL;
 			r.in.req.req1.unknown1			= 16;

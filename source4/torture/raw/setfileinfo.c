@@ -527,7 +527,7 @@ BOOL torture_raw_sfileinfo_bug(void)
 	NTSTATUS status;
 	int fnum;
 
-	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
+	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
 		printf("torture_raw_sfileinfo_bug disabled - enable dangerous tests to use\n");
 		return True;
 	}
