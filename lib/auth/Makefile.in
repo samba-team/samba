@@ -9,7 +9,7 @@ SHELL		= /bin/sh
 
 @SET_MAKE@
 
-SUBDIRS		= pam sia afskauthlib
+SUBDIRS		= @LIB_AUTH_SUBDIRS@
 
 all:
 		for i in $(SUBDIRS); \
