@@ -1,6 +1,12 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha18
+ - huge number of changes! really too many to list ... (and its 1am
+   here, and I'm too tired) 
+   See the cvs tree at http://build.samba.org/
+
+
 Changes in alpha17
 - OpenLinux packaging updates (jht)
 - Locking updates - fix zero timeout (tridge, jra)
