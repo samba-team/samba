@@ -549,6 +549,7 @@ typedef struct _krb5_get_init_creds_opt {
     krb5_deltat renew_life;
     int forwardable;
     int proxiable;
+    int anonymous;
     krb5_enctype *etype_list;
     int etype_list_length;
     krb5_addresses *address_list;
@@ -570,6 +571,7 @@ typedef struct _krb5_get_init_creds_opt {
 #define KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST	0x0020
 #define KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST	0x0040
 #define KRB5_GET_INIT_CREDS_OPT_SALT		0x0080
+#define KRB5_GET_INIT_CREDS_OPT_ANONYMOUS	0x0100
 
 typedef struct _krb5_verify_init_creds_opt {
     krb5_flags flags;
