@@ -271,6 +271,7 @@ $(MANDIR)/%: %.xml
 
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml
 	@$(PERL) scripts/find_missing_doc.pl $(SRCDIR)
+	@$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)
 
 # Examples and the like
 
