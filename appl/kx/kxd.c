@@ -378,7 +378,6 @@ main (int argc, char **argv)
 	       break;
 	  case '?':
 	  default:
-	       fprintf (stderr, "%s: unknown option '%c'\n", prog, c);
 	       usage ();
 	  }
      }
