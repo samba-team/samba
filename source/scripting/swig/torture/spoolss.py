@@ -9,7 +9,8 @@ def ResizeBufferCall(fn, pipe, r):
     
     result = fn(pipe, r)
 
-    if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
+    if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER or \
+       result['result'] == dcerpc.WERR_MORE_DATA:
         r['buffer'] = result['buf_size'] * '\x00'
         r['buf_size'] = result['buf_size']
 
@@ -226,6 +227,49 @@ def test_EnumJobs(pipe, handle):
             sys.exit(1)
     
 
+    # TODO: AddJob, DeleteJob, ScheduleJob
+
+
+def test_EnumPrinterData(pipe, handle):
+
+    print 'test_EnumPrinterData'
+
+    enum_index = 0
+
+    while 1:
+
+        r = {}
+        r['handle'] = handle
+        r['enum_index'] = enum_index
+
+        r['value_offered'] = 0
+        r['data_size'] = 0
+        
+        result = dcerpc.spoolss_EnumPrinterData(pipe, r)
+
+        r['value_offered'] = result['value_needed']
+        r['data_size'] = result['data_size']
+
+        result = dcerpc.spoolss_EnumPrinterData(pipe, r)
+
+        if result['result'] == dcerpc.WERR_NO_MORE_ITEMS:
+            break
+
+        s = {}
+        s['handle'] = handle
+        s['value_name'] = result['value_name']
+
+        result2 = ResizeBufferCall(dcerpc.spoolss_GetPrinterData, pipe, s)
+
+        if result['buffer'][:result2['buf_size']] != result2['buffer']:
+            print 'EnumPrinterData/GetPrinterData mismatch'
+            sys.exit(1)
+ 
+        enum_index += 1
+
+    sys.exit(1)
+
+
 def test_EnumPrinters(pipe):
 
     print 'testing spoolss_EnumPrinters'
@@ -276,12 +320,15 @@ def test_EnumPrinters(pipe):
         test_EnumForms(pipe, handle)
         test_AddForm(pipe, handle)
         test_EnumJobs(pipe, handle)
+        test_EnumPrinterData(pipe, handle)
         test_ClosePrinter(pipe, handle)
 
 
 def test_PrintServer(pipe):
     
     handle = test_OpenPrinterEx(pipe, None)
+
+    # EnumForms and AddForm tests return WERR_BADFID here (??)
 
     test_ClosePrinter(pipe, handle)
     
