@@ -20,9 +20,9 @@
 */
 
 /* fork a child process to exec passwd and write to its
-* tty to change a users password. This is running as the
-* user who is attempting to change the password.
-*/
+ * tty to change a users password. This is running as the
+ * user who is attempting to change the password.
+ */
 
 /* 
  * This code was copied/borrowed and stolen from various sources.
@@ -53,24 +53,6 @@ extern int DEBUGLEVEL;
 extern struct passdb_ops pdb_ops;
 
 #if ALLOW_CHANGE_PASSWORD
-
-#ifdef WITH_PAM
-BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
-{
-	BOOL ret;
-
-	if (as_root)
-		become_root();
-
-	ret = smb_pam_passchange(name, oldpass, newpass);
-
-	if (as_root)
-		unbecome_root();
-
-	return ret;
-}     
-
-#else /* WITH_PAM */
 
 static int findpty(char **slave)
 {
@@ -475,35 +457,18 @@ BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
 
 	/* Take the passed information and test it for minimum criteria */
 	/* Minimum password length */
-	if (strlen(newpass) < lp_min_passwd_length())	/* too short, must be at least MINPASSWDLENGTH */
-	{
-		DEBUG(0,
-		      ("Password Change: user %s, New password is shorter than minimum password length = %d\n",
+	if (strlen(newpass) < lp_min_passwd_length()) {
+		/* too short, must be at least MINPASSWDLENGTH */
+		DEBUG(0, ("Password Change: user %s, New password is shorter than minimum password length = %d\n",
 		       name, lp_min_passwd_length()));
 		return (False);	/* inform the user */
 	}
 
 	/* Password is same as old password */
-	if (strcmp(oldpass, newpass) == 0)	/* don't allow same password */
-	{
-		DEBUG(2,
-		      ("Password Change: %s, New password is same as old\n", name));	/* log the attempt */
+	if (strcmp(oldpass, newpass) == 0) {
+		/* don't allow same password */
+		DEBUG(2, ("Password Change: %s, New password is same as old\n", name));	/* log the attempt */
 		return (False);	/* inform the user */
-	}
-
-	pstrcpy(passwordprogram, lp_passwd_program());
-	pstrcpy(chatsequence, lp_passwd_chat());
-
-	if (!*chatsequence)
-	{
-		DEBUG(2, ("Null chat sequence - no password changing\n"));
-		return (False);
-	}
-
-	if (!*passwordprogram)
-	{
-		DEBUG(2, ("Null password program - no password changing\n"));
-		return (False);
 	}
 
 	/* 
@@ -512,10 +477,8 @@ BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
 	 */
 
 	len = strlen(oldpass);
-	for (i = 0; i < len; i++)
-	{
-		if (iscntrl((int)oldpass[i]))
-		{
+	for (i = 0; i < len; i++) {
+		if (iscntrl((int)oldpass[i])) {
 			DEBUG(0,
 			      ("chat_with_program: oldpass contains control characters (disallowed).\n"));
 			return False;
@@ -523,14 +486,41 @@ BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
 	}
 
 	len = strlen(newpass);
-	for (i = 0; i < len; i++)
-	{
-		if (iscntrl((int)newpass[i]))
-		{
+	for (i = 0; i < len; i++) {
+		if (iscntrl((int)newpass[i])) {
 			DEBUG(0,
 			      ("chat_with_program: newpass contains control characters (disallowed).\n"));
 			return False;
 		}
+	}
+
+#ifdef WITH_PAM
+	if (lp_pam_password_change()) {
+		BOOL ret;
+
+		if (as_root)
+			become_root();
+
+		ret = smb_pam_passchange(name, oldpass, newpass);
+
+		if (as_root)
+			unbecome_root();
+
+		return ret;
+	}
+#endif
+
+	pstrcpy(passwordprogram, lp_passwd_program());
+	pstrcpy(chatsequence, lp_passwd_chat());
+
+	if (!*chatsequence) {
+		DEBUG(2, ("Null chat sequence - no password changing\n"));
+		return (False);
+	}
+
+	if (!*passwordprogram) {
+		DEBUG(2, ("Null password program - no password changing\n"));
+		return (False);
 	}
 
 	pstring_sub(passwordprogram, "%u", name);
@@ -544,8 +534,6 @@ BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
 	return (chat_with_program
 		(passwordprogram, name, chatsequence, as_root));
 }
-
-#endif /* WITH_PAM */
 
 #else /* ALLOW_CHANGE_PASSWORD */
 
