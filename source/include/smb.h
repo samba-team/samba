@@ -477,24 +477,11 @@ typedef struct domain_grp_member_info
 
 } DOMAIN_GRP_MEMBER;
 
-/* DOM_CHAL - challenge info */
-typedef struct chal_info
-{
-  uchar data[8]; /* credentials */
-} DOM_CHAL;
-
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
 typedef struct time_info
 {
   uint32 time;
 } UTIME;
-
-/* DOM_CREDs - timestamped client or server credentials */
-typedef struct cred_info
-{  
-  DOM_CHAL challenge; /* credentials */
-  UTIME timestamp;    /* credential time-stamp */
-} DOM_CRED;
 
 /* Structure used when SMBwritebmpx is active */
 typedef struct
@@ -632,19 +619,6 @@ struct current_user
 #define NO_BREAK_SENT 0
 #define EXCLUSIVE_BREAK_SENT 1
 #define LEVEL_II_BREAK_SENT 2
-
-/* Domain controller authentication protocol info */
-struct dcinfo
-{
-  DOM_CHAL clnt_chal; /* Initial challenge received from client */
-  DOM_CHAL srv_chal;  /* Initial server challenge */
-  DOM_CRED clnt_cred; /* Last client credential */
-  DOM_CRED srv_cred;  /* Last server credential */
-
-  uchar  sess_key[8]; /* Session key */
-  uchar  md4pw[16];   /* md4(machine password) */
-};
-
 
 typedef struct {
 	fstring smb_name; /* user name from the client */
@@ -1671,21 +1645,6 @@ struct pwd_info
 	uchar sess_key[16];
 };
 
-struct ntdom_info
-{
-	unsigned char sess_key[16];        /* Current session key. */
-	unsigned char ntlmssp_hash[258];   /* ntlmssp data. */
-	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */
-	uint32 ntlmssp_srv_flgs;           /* ntlmssp server flags */
-	uint32 ntlmssp_seq_num;            /* ntlmssp sequence number */
-	DOM_CRED clnt_cred;                /* Client credential. */
-
-	int max_recv_frag;
-	int max_xmit_frag;
-
-	vuser_key key;
-};
-
 /*
  * Network Computing Architechture Context Name Named Pipe
  * See MSDN docs for more information
@@ -1719,10 +1678,6 @@ typedef struct user_struct
 	gid_t *groups;
 
 	NT_USER_TOKEN *nt_user_token;
-
-	/* per-user authentication information on NT RPCs */
-	/* lkclXXXX - THIS SHOULD NOT BE HERE! */
-	struct dcinfo dc;
 } user_struct;
 
 #include "ntdomain.h"

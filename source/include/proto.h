@@ -168,38 +168,6 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len
 
 int ms_fnmatch(char *pattern, char *string);
 
-/*The following definitions come from  lib/msrpc-client.c  */
-
-BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout);
-BOOL msrpc_send(int fd, prs_struct *ps);
-BOOL msrpc_receive(int fd, prs_struct *ps);
-BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name);
-void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
-void msrpc_close_socket(struct msrpc_state *msrpc);
-void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
-BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
-				uint32 pid,
-				const char* pipename,
-				const struct user_creds *usr);
-struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc, uint32 pid);
-void msrpc_shutdown(struct msrpc_state *msrpc);
-BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
-		const char *pipe_name);
-
-/*The following definitions come from  lib/msrpc_use.c  */
-
-void init_msrpc_use(void);
-void free_msrpc_use(void);
-struct msrpc_state *msrpc_use_add(const char* pipe_name,
-				uint32 pid,
-				struct user_creds *usr_creds,
-				BOOL redir);
-BOOL msrpc_use_del(const char* pipe_name,
-				const struct user_creds *usr_creds,
-				BOOL force_close,
-				BOOL *connection_closed);
-void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use);
-
 /*The following definitions come from  lib/pidfile.c  */
 
 pid_t pidfile_pid(char *name);
