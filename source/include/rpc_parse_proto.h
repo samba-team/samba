@@ -1080,113 +1080,125 @@ JOB_INFO_2 *add_job2_to_array(uint32 *len, JOB_INFO_2 ***array,
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
-BOOL make_srv_share_info1_str(SH_INFO_1_STR *sh1,
-			      const char *net_name, const char *remark);
-BOOL make_srv_share_info1(SH_INFO_1 *sh1,
-			  const char *net_name, uint32 type,
-			  const char *remark);
-BOOL make_srv_share_info2_str(SH_INFO_2_STR *sh2,
-			      const char *net_name, const char *remark,
-			      const char *path, const char *pass);
-BOOL make_srv_share_info2(SH_INFO_2 *sh2,
-			  const char *net_name, uint32 type,
-			  const char *remark,
-			  uint32 perms, uint32 max_uses, uint32 num_uses,
-			  const char *path, const char *pass);
-void srv_free_share_info_ctr(SHARE_INFO_CTR *info,
-			     uint32 info_level, uint32 count);
-void srv_free_srv_share_ctr(SRV_SHARE_INFO_CTR *ctr);
-BOOL make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
-				const char *srv_name, 
-				uint32 share_level, SRV_SHARE_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd);
-BOOL srv_io_q_net_share_enum(char *desc,  SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *ps, int depth);
-BOOL srv_io_r_net_share_enum(char *desc,  SRV_R_NET_SHARE_ENUM *r_n, prs_struct *ps, int depth);
-BOOL make_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n,
+BOOL make_srv_sh_info1_str(SH_INFO_1_STR * sh1,
+			   const char *net_name, const char *remark);
+BOOL make_srv_sh_info1(SH_INFO_1 * sh1,
+		       const char *net_name, uint32 type, const char *remark);
+BOOL make_srv_sh_info2_str(SH_INFO_2_STR * sh2,
+			   const char *net_name, const char *remark,
+			   const char *path, const char *pass);
+BOOL make_srv_sh_info2(SH_INFO_2 * sh2,
+		       const char *net_name, uint32 type,
+		       const char *remark,
+		       uint32 perms, uint32 max_uses, uint32 num_uses,
+		       const char *path, const char *pass);
+void srv_free_share_info_ctr(SHARE_INFO_CTR * info);
+void srv_free_srv_share_ctr(SRV_SHARE_INFO_CTR * ctr);
+BOOL make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM * q_n,
+			       const char *srv_name,
+			       uint32 share_level, SRV_SHARE_INFO_CTR * ctr,
+			       uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_io_q_net_share_enum(char *desc, SRV_Q_NET_SHARE_ENUM * q_n,
+			     prs_struct * ps, int depth);
+BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM * r_n,
+			     prs_struct * ps, int depth);
+BOOL make_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO * q_n,
 				   const UNISTR2 *srv_name,
 				   const UNISTR2 *share_name,
 				   uint32 info_level);
-BOOL srv_io_q_net_share_get_info(char *desc, SRV_Q_NET_SHARE_GET_INFO *q_n,
-				 prs_struct *ps, int depth);
-BOOL make_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n,
+BOOL srv_io_q_net_share_get_info(char *desc, SRV_Q_NET_SHARE_GET_INFO * q_n,
+				 prs_struct * ps, int depth);
+BOOL make_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO * r_n,
 				   uint32 info_level,
-				   SHARE_INFO_CTR *ctr,
-				   uint32 status);
-BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO *r_n,
-				 prs_struct *ps, int depth);
-BOOL make_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name);
-BOOL make_srv_sess_info0(SESS_INFO_0 *ss0, char *name);
-BOOL make_srv_sess_info1_str(SESS_INFO_1_STR *ss1, char *name, char *user);
-BOOL make_srv_sess_info1(SESS_INFO_1 *ss1, 
-				char *name, char *user,
-				uint32 num_opens, uint32 open_time, uint32 idle_time,
-				uint32 user_flags);
-BOOL make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
-				const char *srv_name, const char *qual_name,
-				char *user_name,
-				uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd);
-BOOL srv_io_q_net_sess_enum(char *desc,  SRV_Q_NET_SESS_ENUM *q_n, prs_struct *ps, int depth);
-BOOL srv_io_r_net_sess_enum(char *desc,  SRV_R_NET_SESS_ENUM *r_n, prs_struct *ps, int depth);
-BOOL make_srv_conn_info0(CONN_INFO_0 *ss0, uint32 id);
-BOOL make_srv_conn_info1_str(CONN_INFO_1_STR *ss1, char *usr_name, char *net_name);
-BOOL make_srv_conn_info1(CONN_INFO_1 *ss1, 
-				uint32 id, uint32 type,
-				uint32 num_opens, uint32 num_users, uint32 open_time,
-				char *usr_name, char *net_name);
-BOOL make_srv_q_net_conn_enum(SRV_Q_NET_CONN_ENUM *q_n, 
-				const char *srv_name, const char *qual_name,
-				uint32 conn_level, SRV_CONN_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd);
-BOOL srv_io_q_net_conn_enum(char *desc,  SRV_Q_NET_CONN_ENUM *q_n, prs_struct *ps, int depth);
-BOOL srv_io_r_net_conn_enum(char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *ps, int depth);
-BOOL make_srv_tprt_info0_str(TPRT_INFO_0_STR *tp0,
-				char *trans_name,
-				char *trans_addr, uint32 trans_addr_len,
-				char *addr_name);
-BOOL make_srv_tprt_info0(TPRT_INFO_0 *tp0, 
-				uint32 num_vcs, uint32 trans_addr_len,
-				char *trans_name, char *trans_addr,
-				char *addr_name);
-void free_srv_tprt_info_0(SRV_TPRT_INFO_0 *tp0);
-void free_srv_tprt_ctr(SRV_TPRT_INFO_CTR *ctr);
-BOOL make_srv_q_net_tprt_enum(SRV_Q_NET_TPRT_ENUM *q_n, 
-				const char *srv_name, 
-				uint32 tprt_level, SRV_TPRT_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd);
-BOOL srv_io_q_net_tprt_enum(char *desc,  SRV_Q_NET_TPRT_ENUM *q_n, prs_struct *ps, int depth);
-BOOL srv_io_r_net_tprt_enum(char *desc,  SRV_R_NET_TPRT_ENUM *r_n, prs_struct *ps, int depth);
-BOOL make_srv_file_info3_str(FILE_INFO_3_STR *fi3,
+				   SHARE_INFO_CTR * ctr, uint32 status);
+BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO * r_n,
+				 prs_struct * ps, int depth);
+BOOL srv_io_q_net_share_add(char *desc, SRV_Q_NET_SHARE_ADD * q_n,
+			    prs_struct * ps, int depth);
+BOOL srv_io_r_net_share_add(char *desc, SRV_R_NET_SHARE_ADD * r_n,
+			    prs_struct * ps, int depth);
+BOOL make_srv_sess_info0_str(SESS_INFO_0_STR * ss0, char *name);
+BOOL make_srv_sess_info0(SESS_INFO_0 * ss0, char *name);
+BOOL make_srv_sess_info1_str(SESS_INFO_1_STR * ss1, char *name, char *user);
+BOOL make_srv_sess_info1(SESS_INFO_1 * ss1,
+			 char *name, char *user,
+			 uint32 num_opens, uint32 open_time, uint32 idle_time,
+			 uint32 user_flags);
+BOOL make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM * q_n,
+			      const char *srv_name, const char *qual_name,
+			      char *user_name,
+			      uint32 sess_level, SRV_SESS_INFO_CTR * ctr,
+			      uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_io_q_net_sess_enum(char *desc, SRV_Q_NET_SESS_ENUM * q_n,
+			    prs_struct * ps, int depth);
+BOOL srv_io_r_net_sess_enum(char *desc, SRV_R_NET_SESS_ENUM * r_n,
+			    prs_struct * ps, int depth);
+BOOL make_srv_conn_info0(CONN_INFO_0 * ss0, uint32 id);
+BOOL make_srv_conn_info1_str(CONN_INFO_1_STR * ss1, char *usr_name,
+			     char *net_name);
+BOOL make_srv_conn_info1(CONN_INFO_1 * ss1,
+			 uint32 id, uint32 type,
+			 uint32 num_opens, uint32 num_users, uint32 open_time,
+			 char *usr_name, char *net_name);
+BOOL make_srv_q_net_conn_enum(SRV_Q_NET_CONN_ENUM * q_n,
+			      const char *srv_name, const char *qual_name,
+			      uint32 conn_level, SRV_CONN_INFO_CTR * ctr,
+			      uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_io_q_net_conn_enum(char *desc, SRV_Q_NET_CONN_ENUM * q_n,
+			    prs_struct * ps, int depth);
+BOOL srv_io_r_net_conn_enum(char *desc, SRV_R_NET_CONN_ENUM * r_n,
+			    prs_struct * ps, int depth);
+BOOL make_srv_tprt_info0_str(TPRT_INFO_0_STR * tp0,
+			     char *trans_name,
+			     char *trans_addr, uint32 trans_addr_len,
+			     char *addr_name);
+BOOL make_srv_tprt_info0(TPRT_INFO_0 * tp0,
+			 uint32 num_vcs, uint32 trans_addr_len,
+			 char *trans_name, char *trans_addr, char *addr_name);
+void free_srv_tprt_info_0(SRV_TPRT_INFO_0 * tp0);
+void free_srv_tprt_ctr(SRV_TPRT_INFO_CTR * ctr);
+BOOL make_srv_q_net_tprt_enum(SRV_Q_NET_TPRT_ENUM * q_n,
+			      const char *srv_name,
+			      uint32 tprt_level, SRV_TPRT_INFO_CTR * ctr,
+			      uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_io_q_net_tprt_enum(char *desc, SRV_Q_NET_TPRT_ENUM * q_n,
+			    prs_struct * ps, int depth);
+BOOL srv_io_r_net_tprt_enum(char *desc, SRV_R_NET_TPRT_ENUM * r_n,
+			    prs_struct * ps, int depth);
+BOOL make_srv_file_info3_str(FILE_INFO_3_STR * fi3,
 			     const char *path_name, const char *user_name);
-BOOL make_srv_file_info3(FILE_INFO_3 *fl3,
+BOOL make_srv_file_info3(FILE_INFO_3 * fl3,
 			 uint32 id, uint32 perms, uint32 num_locks,
 			 const char *path_name, const char *user_name);
-void srv_free_srv_file_ctr(SRV_FILE_INFO_CTR *ctr);
-BOOL make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
-				const char *srv_name, const char *qual_name,
-				uint32 file_id,
-				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd);
-BOOL srv_io_q_net_file_enum(char *desc,  SRV_Q_NET_FILE_ENUM *q_n, prs_struct *ps, int depth);
-BOOL srv_io_r_net_file_enum(char *desc,  SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps, int depth);
-BOOL make_srv_q_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *srv,
-				char *server_name, uint32 switch_value);
-BOOL srv_io_q_net_srv_get_info(char *desc,  SRV_Q_NET_SRV_GET_INFO *q_n, prs_struct *ps, int depth);
-BOOL make_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
-				uint32 switch_value, SRV_INFO_CTR *ctr, uint32 status);
-BOOL srv_io_r_net_srv_get_info(char *desc,  SRV_R_NET_SRV_GET_INFO *r_n, prs_struct *ps, int depth);
-BOOL make_srv_q_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_t, char *server_name);
-BOOL srv_io_q_net_remote_tod(char *desc,  SRV_Q_NET_REMOTE_TOD *q_n, prs_struct *ps, int depth);
-BOOL make_time_of_day_info(TIME_OF_DAY_INFO *tod, uint32 elapsedt, uint32 msecs,
-                           uint32 hours, uint32 mins, uint32 secs, uint32 hunds,
-			   uint32 zone, uint32 tintervals, uint32 day,
-			   uint32 month, uint32 year, uint32 weekday);
-BOOL srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *ps, int depth);
+void srv_free_srv_file_ctr(SRV_FILE_INFO_CTR * ctr);
+BOOL make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM * q_n,
+			      const char *srv_name, const char *qual_name,
+			      uint32 file_id,
+			      uint32 file_level, SRV_FILE_INFO_CTR * ctr,
+			      uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_io_q_net_file_enum(char *desc, SRV_Q_NET_FILE_ENUM * q_n,
+			    prs_struct * ps, int depth);
+BOOL srv_io_r_net_file_enum(char *desc, SRV_R_NET_FILE_ENUM * r_n,
+			    prs_struct * ps, int depth);
+BOOL make_srv_q_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO * srv,
+				 char *server_name, uint32 switch_value);
+BOOL srv_io_q_net_srv_get_info(char *desc, SRV_Q_NET_SRV_GET_INFO * q_n,
+			       prs_struct * ps, int depth);
+BOOL make_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO * srv,
+				 uint32 switch_value, SRV_INFO_CTR * ctr,
+				 uint32 status);
+BOOL srv_io_r_net_srv_get_info(char *desc, SRV_R_NET_SRV_GET_INFO * r_n,
+			       prs_struct * ps, int depth);
+BOOL make_srv_q_net_remote_tod(SRV_Q_NET_REMOTE_TOD * q_t, char *server_name);
+BOOL srv_io_q_net_remote_tod(char *desc, SRV_Q_NET_REMOTE_TOD * q_n,
+			     prs_struct * ps, int depth);
+BOOL make_time_of_day_info(TIME_OF_DAY_INFO * tod, uint32 elapsedt,
+			   uint32 msecs, uint32 hours, uint32 mins,
+			   uint32 secs, uint32 hunds, uint32 zone,
+			   uint32 tintervals, uint32 day, uint32 month,
+			   uint32 year, uint32 weekday);
+BOOL srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD * r_n,
+			     prs_struct * ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_svc.c  */
 

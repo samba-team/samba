@@ -30,6 +30,7 @@
 #define SRV_NETCONNENUM      0x08
 #define SRV_NETFILEENUM      0x09
 #define SRV_NETSESSENUM      0x0c
+#define SRV_NETSHAREADD      0x0e
 #define SRV_NETSHAREENUM     0x0f
 #define SRV_NETSHAREGETINFO  0x10
 #define SRV_NETSHAREDEL      0x12
@@ -392,6 +393,15 @@ typedef struct str_share_info2
 } SH_INFO_2_STR;
 
 
+/* SHARE_INFO_2 (level 2 share info) */
+typedef struct _share_info_2
+{
+	SH_INFO_2     info2_hdr;
+	SH_INFO_2_STR info2_str;
+
+} SHARE_INFO_2;
+
+
 typedef struct _sh_info_502_hdr
 {
 	SH_INFO_2   info2_hdr;
@@ -415,10 +425,18 @@ typedef struct _share_info_502
 } SHARE_INFO_502;
 
 
-typedef union _share_info_ctr
+typedef struct _share_info_ctr
 {
-	SHARE_INFO_502 *info502;
-	void *info;
+	uint32 info_level;
+	uint32 info_ptr;
+
+	union
+	{
+		SHARE_INFO_2   *id2;
+		SHARE_INFO_502 *id502;
+		void *id;
+	} info;
+
 } SHARE_INFO_CTR;
 
 
@@ -477,6 +495,27 @@ typedef struct r_net_share_enum_info
 
 } SRV_R_NET_SHARE_ENUM;
 
+/* SRV_Q_NET_SHARE_ADD */
+typedef struct q_net_share_add
+{
+	uint32 ptr_srv_name;         /* pointer (to server name?) */
+	UNISTR2 uni_srv_name;        /* server name */
+
+	uint32  info_level;
+	SHARE_INFO_CTR ctr;
+
+	uint32 parm_error;
+
+} SRV_Q_NET_SHARE_ADD;
+
+/* SRV_R_NET_SHARE_ADD */
+typedef struct r_net_share_add
+{
+	uint32 parm_error;
+	uint32 status;
+
+} SRV_R_NET_SHARE_ADD;
+
 
 /* SRV_Q_NET_SHARE_GET_INFO */
 typedef struct q_net_share_get_info
@@ -486,16 +525,16 @@ typedef struct q_net_share_get_info
 
 	UNISTR2 share_name;
 	uint32  info_level;
+
 } SRV_Q_NET_SHARE_GET_INFO;
 
 /* SRV_R_NET_SHARE_GET_INFO */
 typedef struct r_net_share_get_info
 {
-	uint32 info_level;
-	uint32 info_ptr;
-	SHARE_INFO_CTR info;
+	SHARE_INFO_CTR *ctr;
 
 	uint32 status;
+
 } SRV_R_NET_SHARE_GET_INFO;
 
 

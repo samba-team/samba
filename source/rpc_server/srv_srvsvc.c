@@ -32,8 +32,8 @@ extern pstring global_myname;
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_srv_get_info( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_srv_get_info(rpcsrv_struct * p, prs_struct * data,
+				     prs_struct * rdata)
 {
 	SRV_Q_NET_SRV_GET_INFO q_n;
 	SRV_R_NET_SRV_GET_INFO r_n;
@@ -49,21 +49,20 @@ static BOOL api_srv_net_srv_get_info( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
+	status = _srv_net_srv_get_info(&q_n.uni_srv_name, q_n.switch_value,
+				       &ctr);
 
-	status = _srv_net_srv_get_info( &q_n.uni_srv_name, q_n.switch_value,
-					&ctr );
+	/* set up the net server get info structure */
+	make_srv_r_net_srv_get_info(&r_n, q_n.switch_value, &ctr, status);
 
-        /* set up the net server get info structure */
-        make_srv_r_net_srv_get_info(&r_n, q_n.switch_value, &ctr, status);
-
-        /* store the response in the SMB stream */
-        return srv_io_r_net_srv_get_info("", &r_n, rdata, 0);
+	/* store the response in the SMB stream */
+	return srv_io_r_net_srv_get_info("", &r_n, rdata, 0);
 }
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_file_enum(rpcsrv_struct * p, prs_struct * data,
+				  prs_struct * rdata)
 {
 	SRV_Q_NET_FILE_ENUM q_n;
 	SRV_R_NET_FILE_ENUM r_n;
@@ -88,8 +87,7 @@ static BOOL api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
 	r_n.status = _srv_net_file_enum(&q_n.uni_srv_name,
 					ctr.switch_value, &ctr,
 					q_n.preferred_len, &q_n.enum_hnd,
-					&(r_n.total_entries),
-					q_n.file_level);
+					&(r_n.total_entries), q_n.file_level);
 
 	memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
 
@@ -103,8 +101,8 @@ static BOOL api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_conn_enum( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_conn_enum(rpcsrv_struct * p, prs_struct * data,
+				  prs_struct * rdata)
 {
 	SRV_Q_NET_CONN_ENUM q_n;
 	SRV_R_NET_CONN_ENUM r_n;
@@ -125,11 +123,10 @@ static BOOL api_srv_net_conn_enum( rpcsrv_struct *p, prs_struct *data,
 	}
 
 
-	r_n.status = _srv_net_conn_enum( &q_n.uni_srv_name,
+	r_n.status = _srv_net_conn_enum(&q_n.uni_srv_name,
 					ctr.switch_value, &ctr,
 					q_n.preferred_len, &q_n.enum_hnd,
-					&(r_n.total_entries),
-					q_n.conn_level );
+					&(r_n.total_entries), q_n.conn_level);
 
 	memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
 
@@ -139,8 +136,8 @@ static BOOL api_srv_net_conn_enum( rpcsrv_struct *p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_sess_enum(rpcsrv_struct * p, prs_struct * data,
+				  prs_struct * rdata)
 {
 	SRV_Q_NET_SESS_ENUM q_n;
 	SRV_R_NET_SESS_ENUM r_n;
@@ -160,13 +157,12 @@ static BOOL api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
 
 	r_n.sess_level = q_n.sess_level;
 
-	r_n.status = _srv_net_sess_enum( &q_n.uni_srv_name,
+	r_n.status = _srv_net_sess_enum(&q_n.uni_srv_name,
 					ctr.switch_value, &ctr,
 					q_n.preferred_len, &q_n.enum_hnd,
-					&(r_n.total_entries),
-					q_n.sess_level );
+					&(r_n.total_entries), q_n.sess_level);
 
-        memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
+	memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
 
 	/* store the response in the SMB stream */
 	return srv_io_r_net_sess_enum("", &r_n, rdata, 0);
@@ -174,8 +170,8 @@ static BOOL api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_share_enum(rpcsrv_struct *p, prs_struct *data,
-				   prs_struct *rdata )
+static BOOL api_srv_net_share_enum(rpcsrv_struct * p, prs_struct * data,
+				   prs_struct * rdata)
 {
 	SRV_Q_NET_SHARE_ENUM q_n;
 	SRV_R_NET_SHARE_ENUM r_n;
@@ -198,11 +194,11 @@ static BOOL api_srv_net_share_enum(rpcsrv_struct *p, prs_struct *data,
 
 	r_n.share_level = q_n.share_level;
 
-	r_n.status = _srv_net_share_enum( &q_n.uni_srv_name, 
-				ctr.switch_value, &ctr,
-				q_n.preferred_len, &q_n.enum_hnd,
-				&(r_n.total_entries),
-				q_n.share_level );
+	r_n.status = _srv_net_share_enum(&q_n.uni_srv_name,
+					 ctr.switch_value, &ctr,
+					 q_n.preferred_len, &q_n.enum_hnd,
+					 &(r_n.total_entries),
+					 q_n.share_level);
 
 	memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
 
@@ -214,8 +210,33 @@ static BOOL api_srv_net_share_enum(rpcsrv_struct *p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_share_get_info(rpcsrv_struct *p, prs_struct *data,
-				       prs_struct *rdata )
+static BOOL api_srv_net_share_add(rpcsrv_struct * p, prs_struct * data,
+				  prs_struct * rdata)
+{
+	SRV_Q_NET_SHARE_ADD q_n;
+	SRV_R_NET_SHARE_ADD r_n;
+
+	ZERO_STRUCT(q_n);
+	ZERO_STRUCT(r_n);
+
+	if (!srv_io_q_net_share_add("srv_q_net_share_add", &q_n, data, 0))
+	{
+		return False;
+	}
+
+	r_n.status = _srv_net_share_add(&q_n.uni_srv_name,
+					q_n.info_level,
+					&q_n.ctr, &q_n.parm_error);
+	r_n.parm_error = q_n.parm_error;
+	srv_free_share_info_ctr(&q_n.ctr);
+
+	return srv_io_r_net_share_add("srv_r_net_share_add", &r_n, rdata, 0);
+}
+
+/*******************************************************************
+********************************************************************/
+static BOOL api_srv_net_share_get_info(rpcsrv_struct * p, prs_struct * data,
+				       prs_struct * rdata)
 {
 	SRV_Q_NET_SHARE_GET_INFO q_n;
 	SRV_R_NET_SHARE_GET_INFO r_n;
@@ -235,25 +256,26 @@ static BOOL api_srv_net_share_get_info(rpcsrv_struct *p, prs_struct *data,
 
 	status = _srv_net_share_get_info(&q_n.uni_srv_name,
 					 &q_n.share_name, q_n.info_level,
-					 &ctr);;
+					 &ctr);
 
 	make_srv_r_net_share_get_info(&r_n, q_n.info_level, &ctr, status);
+	ctr.info_level = q_n.info_level;
 
 	ret = srv_io_r_net_share_get_info("", &r_n, rdata, 0);
 
-	srv_free_share_info_ctr(&ctr, q_n.info_level, 1);
+	srv_free_share_info_ctr(&ctr);
 
 	return ret;
 }
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_srv_net_remote_tod(rpcsrv_struct * p, prs_struct * data,
+				   prs_struct * rdata)
 {
-        SRV_Q_NET_REMOTE_TOD q_n;
-        SRV_R_NET_REMOTE_TOD r_n;
-        TIME_OF_DAY_INFO tod;
+	SRV_Q_NET_REMOTE_TOD q_n;
+	SRV_R_NET_REMOTE_TOD r_n;
+	TIME_OF_DAY_INFO tod;
 	uint32 status;
 
 	ZERO_STRUCT(q_n);
@@ -266,7 +288,7 @@ static BOOL api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
 	}
 
 
-	status = _srv_net_remote_tod( &q_n.uni_srv_name, &tod );
+	status = _srv_net_remote_tod(&q_n.uni_srv_name, &tod);
 
 	r_n.tod = &tod;
 	r_n.ptr_srv_tod = 0x1;
@@ -280,24 +302,23 @@ static BOOL api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
 \PIPE\srvsvc commands
 ********************************************************************/
-static const struct api_struct api_srv_cmds[] =
-{
-	{ "SRV_NETCONNENUM"     , SRV_NETCONNENUM     , api_srv_net_conn_enum     },
-	{ "SRV_NETSESSENUM"     , SRV_NETSESSENUM     , api_srv_net_sess_enum     },
-	{ "SRV_NETSHAREENUM"    , SRV_NETSHAREENUM    , api_srv_net_share_enum    },
-	{ "SRV_NETSHAREENUM2"   , SRV_NETSHAREENUM2   , api_srv_net_share_enum    },
-	{ "SRV_NETSHAREGETINFO" , SRV_NETSHAREGETINFO , api_srv_net_share_get_info},
-	{ "SRV_NETFILEENUM"     , SRV_NETFILEENUM     , api_srv_net_file_enum     },
-	{ "SRV_NET_SRV_GET_INFO", SRV_NET_SRV_GET_INFO, api_srv_net_srv_get_info  },
-	{ "SRV_NET_REMOTE_TOD"  , SRV_NET_REMOTE_TOD  , api_srv_net_remote_tod    },
-	{ NULL                  , 0                   , NULL                      }
+static const struct api_struct api_srv_cmds[] = {
+	{"NETCONNENUM", SRV_NETCONNENUM, api_srv_net_conn_enum},
+	{"NETSESSENUM", SRV_NETSESSENUM, api_srv_net_sess_enum},
+	{"NETSHAREENUM", SRV_NETSHAREENUM, api_srv_net_share_enum},
+	{"NETSHAREENUM2", SRV_NETSHAREENUM2, api_srv_net_share_enum},
+	{"NETSHAREGETINFO", SRV_NETSHAREGETINFO, api_srv_net_share_get_info},
+	{"NETSHAREADD", SRV_NETSHAREADD, api_srv_net_share_add},
+	{"NETFILEENUM", SRV_NETFILEENUM, api_srv_net_file_enum},
+	{"NET_SRV_GET_INFO", SRV_NET_SRV_GET_INFO, api_srv_net_srv_get_info},
+	{"NET_REMOTE_TOD", SRV_NET_REMOTE_TOD, api_srv_net_remote_tod},
+	{NULL, 0, NULL}
 };
 
 /*******************************************************************
 receives a srvsvc pipe and responds.
 ********************************************************************/
-BOOL api_srvsvc_rpc(rpcsrv_struct *p)
+BOOL api_srvsvc_rpc(rpcsrv_struct * p)
 {
 	return api_rpcTNP(p, "api_srvsvc_rpc", api_srv_cmds);
 }
-

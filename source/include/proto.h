@@ -2507,33 +2507,27 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
-BOOL srv_net_srv_tprt_enum(
-			const char *srv_name, 
-			uint32 switch_value, SRV_TPRT_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL srv_net_srv_conn_enum( char *srv_name, char *qual_name,
-			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
-			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL srv_net_srv_share_enum( char *srv_name, 
-			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL srv_net_srv_share_get_info(const char *srv_name,
-				const char *share_name,
-				uint32 info_level);
-BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
-			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL srv_net_srv_get_info( char *srv_name, uint32 switch_value,
-				SRV_INFO_CTR *ctr);
-BOOL srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod);
+BOOL srv_net_srv_tprt_enum(const char *srv_name,
+			   uint32 switch_value, SRV_TPRT_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_net_srv_conn_enum(char *srv_name, char *qual_name,
+			   uint32 switch_value, SRV_CONN_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_net_srv_sess_enum(char *srv_name, char *qual_name, char *user_name,
+			   uint32 switch_value, SRV_SESS_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_net_srv_share_enum(char *srv_name,
+			    uint32 switch_value, SRV_SHARE_INFO_CTR * ctr,
+			    uint32 preferred_len, ENUM_HND * hnd);
+uint32 srv_net_srv_share_get_info(const char *srv_name,
+				  const char *share_name,
+				  uint32 info_level, SHARE_INFO_CTR * ctr);
+BOOL srv_net_srv_file_enum(char *srv_name, char *qual_name, uint32 file_id,
+			   uint32 switch_value, SRV_FILE_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_net_srv_get_info(char *srv_name, uint32 switch_value,
+			  SRV_INFO_CTR * ctr);
+BOOL srv_net_remote_tod(char *srv_name, TIME_OF_DAY_INFO * tod);
 
 /*The following definitions come from  rpc_client/cli_svcctl.c  */
 
@@ -2703,13 +2697,11 @@ void cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
 
 BOOL net_srv_get_info(struct client_info *info,
-		uint32 info_level,
-		SRV_INFO_CTR *ctr);
+		      uint32 info_level, SRV_INFO_CTR * ctr);
 void cmd_srv_query_info(struct client_info *info, int argc, char *argv[]);
-BOOL msrpc_srv_enum_tprt( const char* dest_srv,
-				uint32 info_level,
-				SRV_TPRT_INFO_CTR *ctr,
-				TPRT_INFO_FN(tprt_fn));
+BOOL msrpc_srv_enum_tprt(const char *dest_srv,
+			 uint32 info_level,
+			 SRV_TPRT_INFO_CTR * ctr, TPRT_INFO_FN(tprt_fn));
 void cmd_srv_enum_tprt(struct client_info *info, int argc, char *argv[]);
 void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[]);
 void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[]);
@@ -2826,36 +2818,38 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 /*The following definitions come from  rpcclient/display_srv.c  */
 
 char *get_file_oplock_str(uint32 op_type);
-void display_srv_info_ctr(FILE *out_hnd, enum action_type action,
-			  const SRV_INFO_CTR *ctr);
-void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action, 
-				SRV_CONN_INFO_CTR *const ctr);
-void display_tprt_info_0(FILE *out_hnd, enum action_type action, 
-		TPRT_INFO_0 *const info0, TPRT_INFO_0_STR *const str0);
-void display_srv_tprt_info_0_ctr(FILE *out_hnd, enum action_type action, 
-				const SRV_TPRT_INFO_0 *const ctr);
-void display_srv_tprt_info_ctr(FILE *out_hnd, enum action_type action, 
-				const SRV_TPRT_INFO_CTR *const ctr);
-void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action, 
-				SRV_SHARE_INFO_CTR *const ctr);
-void display_srv_file_info_ctr(FILE *out_hnd, enum action_type action, 
-				SRV_FILE_INFO_CTR *const ctr);
-void display_srv_sess_info_0_ctr(FILE *out_hnd, enum action_type action, 
-				SRV_SESS_INFO_0 *const ctr);
-void display_srv_sess_info_1_ctr(FILE *out_hnd, enum action_type action, 
-				SRV_SESS_INFO_1 *const ctr);
-void display_srv_sess_info_ctr(FILE *out_hnd, enum action_type action, 
-				SRV_SESS_INFO_CTR *const ctr);
-void display_server(FILE *out_hnd, enum action_type action, 
-				char *const sname, uint32 type, char *const comment);
-void display_share(FILE *out_hnd, enum action_type action, 
-				char *const sname, uint32 type, char *const comment);
-void display_share2(FILE *out_hnd, enum action_type action, 
-				char *const sname, uint32 type, char *const comment, 
-				uint32 perms, uint32 max_uses, uint32 num_uses, 
-				char *const path, char *const password);
-void display_name(FILE *out_hnd, enum action_type action, 
-				char *const sname);
+void display_srv_info_ctr(FILE * out_hnd, enum action_type action,
+			  const SRV_INFO_CTR * ctr);
+void display_srv_conn_info_ctr(FILE * out_hnd, enum action_type action,
+			       SRV_CONN_INFO_CTR * const ctr);
+void display_tprt_info_0(FILE * out_hnd, enum action_type action,
+			 TPRT_INFO_0 * const info0,
+			 TPRT_INFO_0_STR * const str0);
+void display_srv_tprt_info_0_ctr(FILE * out_hnd, enum action_type action,
+				 const SRV_TPRT_INFO_0 * const ctr);
+void display_srv_tprt_info_ctr(FILE * out_hnd, enum action_type action,
+			       const SRV_TPRT_INFO_CTR * const ctr);
+void display_srv_share_info_ctr(FILE * out_hnd, enum action_type action,
+				SRV_SHARE_INFO_CTR * const ctr);
+void display_share_info_ctr(FILE * out_hnd, enum action_type action,
+			    SHARE_INFO_CTR * const ctr);
+void display_srv_file_info_ctr(FILE * out_hnd, enum action_type action,
+			       SRV_FILE_INFO_CTR * const ctr);
+void display_srv_sess_info_0_ctr(FILE * out_hnd, enum action_type action,
+				 SRV_SESS_INFO_0 * const ctr);
+void display_srv_sess_info_1_ctr(FILE * out_hnd, enum action_type action,
+				 SRV_SESS_INFO_1 * const ctr);
+void display_srv_sess_info_ctr(FILE * out_hnd, enum action_type action,
+			       SRV_SESS_INFO_CTR * const ctr);
+void display_server(FILE * out_hnd, enum action_type action,
+		    char *const sname, uint32 type, char *const comment);
+void display_share(FILE * out_hnd, enum action_type action,
+		   char *const sname, uint32 type, char *const comment);
+void display_share2(FILE * out_hnd, enum action_type action,
+		    char *const sname, uint32 type, char *const comment,
+		    uint32 perms, uint32 max_uses, uint32 num_uses,
+		    char *const path, char *const password);
+void display_name(FILE * out_hnd, enum action_type action, char *const sname);
 
 /*The following definitions come from  rpcclient/display_svc.c  */
 
@@ -3787,7 +3781,7 @@ BOOL api_spoolss_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 
-BOOL api_srvsvc_rpc(rpcsrv_struct *p);
+BOOL api_srvsvc_rpc(rpcsrv_struct * p);
 
 /*The following definitions come from  rpc_server/srv_svcctl.c  */
 
@@ -4841,28 +4835,31 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 
 /*The following definitions come from  srvsvcd/srv_srvsvc_nt.c  */
 
-uint32 _srv_net_remote_tod(UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod);
+uint32 _srv_net_remote_tod(UNISTR2 *srv_name, TIME_OF_DAY_INFO * tod);
 uint32 _srv_net_srv_get_info(UNISTR2 *srv_name, uint32 switch_value,
-			     SRV_INFO_CTR *ctr);
-uint32 _srv_net_share_enum( const UNISTR2 *srv_name, 
-				uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
-				uint32 preferred_len, ENUM_HND *enum_hnd,
-				uint32 *total_entries, uint32 share_level );
+			     SRV_INFO_CTR * ctr);
+uint32 _srv_net_share_enum(const UNISTR2 *srv_name,
+			   uint32 switch_value, SRV_SHARE_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * enum_hnd,
+			   uint32 *total_entries, uint32 share_level);
+uint32 _srv_net_share_add(const UNISTR2 *srv_name,
+			  uint32 info_level,
+			  const SHARE_INFO_CTR * ctr, uint32 *parm_error);
 uint32 _srv_net_share_get_info(const UNISTR2 *srv_name,
 			       const UNISTR2 *share_name, uint32 info_level,
-			       SHARE_INFO_CTR *ctr);
-uint32 _srv_net_sess_enum(const UNISTR2 *srv_name, 
-			  uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
-			  uint32 preferred_len, ENUM_HND *enum_hnd,
+			       SHARE_INFO_CTR * ctr);
+uint32 _srv_net_sess_enum(const UNISTR2 *srv_name,
+			  uint32 switch_value, SRV_SESS_INFO_CTR * ctr,
+			  uint32 preferred_len, ENUM_HND * enum_hnd,
 			  uint32 *total_entries, uint32 sess_level);
-uint32 _srv_net_conn_enum( const UNISTR2 *srv_name, 
-			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
-			uint32 preferred_len, ENUM_HND *enum_hnd,
-			uint32 *total_entries, uint32 conn_level );
-uint32 _srv_net_file_enum( const UNISTR2 *srv_name, 
-			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
-			uint32 preferred_len, ENUM_HND *enum_hnd,
-			uint32 *total_entries, uint32 file_level );
+uint32 _srv_net_conn_enum(const UNISTR2 *srv_name,
+			  uint32 switch_value, SRV_CONN_INFO_CTR * ctr,
+			  uint32 preferred_len, ENUM_HND * enum_hnd,
+			  uint32 *total_entries, uint32 conn_level);
+uint32 _srv_net_file_enum(const UNISTR2 *srv_name,
+			  uint32 switch_value, SRV_FILE_INFO_CTR * ctr,
+			  uint32 preferred_len, ENUM_HND * enum_hnd,
+			  uint32 *total_entries, uint32 file_level);
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 

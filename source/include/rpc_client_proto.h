@@ -393,33 +393,27 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
-BOOL srv_net_srv_tprt_enum(
-			const char *srv_name, 
-			uint32 switch_value, SRV_TPRT_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL srv_net_srv_conn_enum( char *srv_name, char *qual_name,
-			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
-			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL srv_net_srv_share_enum( char *srv_name, 
-			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL srv_net_srv_share_get_info(const char *srv_name,
-				const char *share_name,
-				uint32 info_level);
-BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
-			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL srv_net_srv_get_info( char *srv_name, uint32 switch_value,
-				SRV_INFO_CTR *ctr);
-BOOL srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod);
+BOOL srv_net_srv_tprt_enum(const char *srv_name,
+			   uint32 switch_value, SRV_TPRT_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_net_srv_conn_enum(char *srv_name, char *qual_name,
+			   uint32 switch_value, SRV_CONN_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_net_srv_sess_enum(char *srv_name, char *qual_name, char *user_name,
+			   uint32 switch_value, SRV_SESS_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_net_srv_share_enum(char *srv_name,
+			    uint32 switch_value, SRV_SHARE_INFO_CTR * ctr,
+			    uint32 preferred_len, ENUM_HND * hnd);
+uint32 srv_net_srv_share_get_info(const char *srv_name,
+				  const char *share_name,
+				  uint32 info_level, SHARE_INFO_CTR * ctr);
+BOOL srv_net_srv_file_enum(char *srv_name, char *qual_name, uint32 file_id,
+			   uint32 switch_value, SRV_FILE_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd);
+BOOL srv_net_srv_get_info(char *srv_name, uint32 switch_value,
+			  SRV_INFO_CTR * ctr);
+BOOL srv_net_remote_tod(char *srv_name, TIME_OF_DAY_INFO * tod);
 
 /*The following definitions come from  rpc_client/cli_svcctl.c  */
 

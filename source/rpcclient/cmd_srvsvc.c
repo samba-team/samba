@@ -29,20 +29,20 @@
 #include "includes.h"
 #include "rpc_parse.h"
 #include "rpcclient.h"
+#include "nterr.h"
 
 extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern FILE* out_hnd;
+extern FILE *out_hnd;
 
 
 /****************************************************************************
 server get info query
 ****************************************************************************/
 BOOL net_srv_get_info(struct client_info *info,
-		uint32 info_level,
-		SRV_INFO_CTR *ctr)
+		      uint32 info_level, SRV_INFO_CTR * ctr)
 {
 	fstring dest_srv;
 
@@ -52,8 +52,8 @@ BOOL net_srv_get_info(struct client_info *info,
 	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	DEBUG(4,("net_srv_get_info: server:%s info level: %d\n",
-				dest_srv, (int)info_level));
+	DEBUG(4, ("net_srv_get_info: server:%s info level: %d\n",
+		  dest_srv, (int)info_level));
 
 	/* send info level: receive requested info.  hopefully. */
 	res = res ? srv_net_srv_get_info(dest_srv, info_level, ctr) : False;
@@ -73,30 +73,29 @@ void cmd_srv_query_info(struct client_info *info, int argc, char *argv[])
 
 	if (argc > 1)
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(argv[1], (char **)NULL, 10);
 	}
 
 	if (net_srv_get_info(info, info_level, &ctr))
 	{
-		DEBUG(5,("cmd_srv_query_info: query succeeded\n"));
+		DEBUG(5, ("cmd_srv_query_info: query succeeded\n"));
 
-		display_srv_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_info_ctr(out_hnd, ACTION_HEADER, &ctr);
 		display_srv_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
-		display_srv_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
+		display_srv_info_ctr(out_hnd, ACTION_FOOTER, &ctr);
 	}
 	else
 	{
-		DEBUG(5,("cmd_srv_query_info: query failed\n"));
+		DEBUG(5, ("cmd_srv_query_info: query failed\n"));
 	}
 }
 
 /****************************************************************************
 server enum transports
 ****************************************************************************/
-BOOL msrpc_srv_enum_tprt( const char* dest_srv,
-				uint32 info_level,
-				SRV_TPRT_INFO_CTR *ctr,
-				TPRT_INFO_FN(tprt_fn))
+BOOL msrpc_srv_enum_tprt(const char *dest_srv,
+			 uint32 info_level,
+			 SRV_TPRT_INFO_CTR * ctr, TPRT_INFO_FN(tprt_fn))
 {
 	BOOL res = True;
 	BOOL res1 = True;
@@ -107,8 +106,9 @@ BOOL msrpc_srv_enum_tprt( const char* dest_srv,
 	hnd.handle = 0;
 
 	/* enumerate transports on server */
-	res1 = res ? srv_net_srv_tprt_enum(dest_srv, 
-	            info_level, ctr, 0xffffffff, &hnd) : False;
+	res1 = res ? srv_net_srv_tprt_enum(dest_srv,
+					   info_level, ctr, 0xffffffff,
+					   &hnd) : False;
 
 	tprt_fn(ctr);
 
@@ -117,11 +117,11 @@ BOOL msrpc_srv_enum_tprt( const char* dest_srv,
 	return res1;
 }
 
-static void srv_display_tprt_ctr(const SRV_TPRT_INFO_CTR *ctr)
+static void srv_display_tprt_ctr(const SRV_TPRT_INFO_CTR * ctr)
 {
-	display_srv_tprt_info_ctr(out_hnd, ACTION_HEADER   , ctr);
+	display_srv_tprt_info_ctr(out_hnd, ACTION_HEADER, ctr);
 	display_srv_tprt_info_ctr(out_hnd, ACTION_ENUMERATE, ctr);
-	display_srv_tprt_info_ctr(out_hnd, ACTION_FOOTER   , ctr);
+	display_srv_tprt_info_ctr(out_hnd, ACTION_FOOTER, ctr);
 }
 
 /****************************************************************************
@@ -141,16 +141,14 @@ void cmd_srv_enum_tprt(struct client_info *info, int argc, char *argv[])
 
 	if (argc > 1)
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(argv[1], (char **)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_enum_tprt: server:%s info level: %d\n",
-				dest_srv, (int)info_level));
+	DEBUG(4, ("cmd_srv_enum_tprt: server:%s info level: %d\n",
+		  dest_srv, (int)info_level));
 
 	/* enumerate transports on server */
-	msrpc_srv_enum_tprt(dest_srv, 
-	            info_level, &ctr, 
-	            srv_display_tprt_ctr);
+	msrpc_srv_enum_tprt(dest_srv, info_level, &ctr, srv_display_tprt_ctr);
 }
 
 /****************************************************************************
@@ -178,33 +176,34 @@ void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[])
 
 	if (argc > 1)
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(argv[1], (char **)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_enum_conn: server:%s info level: %d\n",
-				dest_srv, (int)info_level));
+	DEBUG(4, ("cmd_srv_enum_conn: server:%s info level: %d\n",
+		  dest_srv, (int)info_level));
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate connections on server */
 	res = res ? srv_net_srv_conn_enum(dest_srv, qual_srv,
-	            info_level, &ctr, 0xffffffff, &hnd) : False;
+					  info_level, &ctr, 0xffffffff,
+					  &hnd) : False;
 
 	if (res)
 	{
-		display_srv_conn_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_conn_info_ctr(out_hnd, ACTION_HEADER, &ctr);
 		display_srv_conn_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
-		display_srv_conn_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
+		display_srv_conn_info_ctr(out_hnd, ACTION_FOOTER, &ctr);
 	}
 
 	if (res)
 	{
-		DEBUG(5,("cmd_srv_enum_conn: query succeeded\n"));
+		DEBUG(5, ("cmd_srv_enum_conn: query succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_srv_enum_conn: query failed\n"));
+		DEBUG(5, ("cmd_srv_enum_conn: query failed\n"));
 	}
 }
 
@@ -228,35 +227,36 @@ void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[])
 
 	if (argc > 1)
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(argv[1], (char **)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_enum_shares: server:%s info level: %d\n",
-				dest_srv, (int)info_level));
+	DEBUG(4, ("cmd_srv_enum_shares: server:%s info level: %d\n",
+		  dest_srv, (int)info_level));
 
 	hnd.ptr_hnd = 0;
 	hnd.handle = 0;
 
 	/* enumerate shares_files on server */
-	res = res ? srv_net_srv_share_enum(dest_srv, 
-	            info_level, &ctr, 0xffffffff, &hnd) : False;
+	res = res ? srv_net_srv_share_enum(dest_srv,
+					   info_level, &ctr, 0xffffffff,
+					   &hnd) : False;
 
 	if (res)
 	{
-		display_srv_share_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_HEADER, &ctr);
 		display_srv_share_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
-		display_srv_share_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
+		display_srv_share_info_ctr(out_hnd, ACTION_FOOTER, &ctr);
 	}
 
 	srv_free_srv_share_ctr(&ctr);
 
 	if (res)
 	{
-		DEBUG(5,("cmd_srv_enum_shares: query succeeded\n"));
+		DEBUG(5, ("cmd_srv_enum_shares: query succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_srv_enum_shares: query failed\n"));
+		DEBUG(5, ("cmd_srv_enum_shares: query failed\n"));
 	}
 }
 
@@ -267,9 +267,11 @@ void cmd_srv_share_get_info(struct client_info *info, int argc, char *argv[])
 {
 	fstring dest_srv;
 	const char *share_name;
-	uint32 info_level = 502;
+	uint32 info_level = 2;
+	SHARE_INFO_CTR ctr;
+	uint32 status = NT_STATUS_NOPROBLEMO;
 
-	BOOL res = True;
+	ZERO_STRUCT(ctr);
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
@@ -285,7 +287,7 @@ void cmd_srv_share_get_info(struct client_info *info, int argc, char *argv[])
 
 	if (argc > 2)
 	{
-		info_level = (uint32)strtol(argv[2], (char**)NULL, 10);
+		info_level = (uint32)strtol(argv[2], (char **)NULL, 10);
 	}
 
 	DEBUG(4,
@@ -293,18 +295,24 @@ void cmd_srv_share_get_info(struct client_info *info, int argc, char *argv[])
 	       dest_srv, share_name, (int)info_level));
 
 	/* enumerate shares_files on server */
-	res = res
-		? srv_net_srv_share_get_info(dest_srv, share_name, info_level)
-		: False;
+	status =
+		srv_net_srv_share_get_info(dest_srv, share_name, info_level,
+					   &ctr);
 
-	if (res)
+	if (status == 0x0)
 	{
-		DEBUG(5,("cmd_srv_share_get_info: query succeeded\n"));
+		display_share_info_ctr(out_hnd, ACTION_HEADER, &ctr);
+		display_share_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
+		display_share_info_ctr(out_hnd, ACTION_FOOTER, &ctr);
+
+		DEBUG(5, ("cmd_srv_share_get_info: query succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_srv_share_get_info: query failed\n"));
+		DEBUG(5, ("cmd_srv_share_get_info: query failed\n"));
 	}
+
+	srv_free_share_info_ctr(&ctr);
 }
 
 /****************************************************************************
@@ -327,33 +335,34 @@ void cmd_srv_enum_sess(struct client_info *info, int argc, char *argv[])
 
 	if (argc > 1)
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(argv[1], (char **)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_enum_sess: server:%s info level: %d\n",
-				dest_srv, (int)info_level));
+	DEBUG(4, ("cmd_srv_enum_sess: server:%s info level: %d\n",
+		  dest_srv, (int)info_level));
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate sessions on server */
 	res = res ? srv_net_srv_sess_enum(dest_srv, NULL, NULL,
-	                         info_level, &ctr, 0x1000, &hnd) : False;
+					  info_level, &ctr, 0x1000,
+					  &hnd) : False;
 
 	if (res)
 	{
-		display_srv_sess_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_sess_info_ctr(out_hnd, ACTION_HEADER, &ctr);
 		display_srv_sess_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
-		display_srv_sess_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
+		display_srv_sess_info_ctr(out_hnd, ACTION_FOOTER, &ctr);
 	}
 
 	if (res)
 	{
-		DEBUG(5,("cmd_srv_enum_sess: query succeeded\n"));
+		DEBUG(5, ("cmd_srv_enum_sess: query succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_srv_enum_sess: query failed\n"));
+		DEBUG(5, ("cmd_srv_enum_sess: query failed\n"));
 	}
 }
 
@@ -377,35 +386,36 @@ void cmd_srv_enum_files(struct client_info *info, int argc, char *argv[])
 
 	if (argc > 1)
 	{
-		info_level = (uint32)strtol(argv[1], (char**)NULL, 10);
+		info_level = (uint32)strtol(argv[1], (char **)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_enum_files: server:%s info level: %d\n",
-				dest_srv, (int)info_level));
+	DEBUG(4, ("cmd_srv_enum_files: server:%s info level: %d\n",
+		  dest_srv, (int)info_level));
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
 
 	/* enumerate files on server */
 	res = res ? srv_net_srv_file_enum(dest_srv, NULL, 0,
-	                info_level, &ctr, 0x1000, &hnd) : False;
+					  info_level, &ctr, 0x1000,
+					  &hnd) : False;
 
 	if (res)
 	{
-		display_srv_file_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
+		display_srv_file_info_ctr(out_hnd, ACTION_HEADER, &ctr);
 		display_srv_file_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
-		display_srv_file_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
+		display_srv_file_info_ctr(out_hnd, ACTION_FOOTER, &ctr);
 	}
 
 	srv_free_srv_file_ctr(&ctr);
 
 	if (res)
 	{
-		DEBUG(5,("cmd_srv_enum_files: query succeeded\n"));
+		DEBUG(5, ("cmd_srv_enum_files: query succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_srv_enum_files: query failed\n"));
+		DEBUG(5, ("cmd_srv_enum_files: query failed\n"));
 	}
 }
 
@@ -422,7 +432,7 @@ void cmd_time(struct client_info *info, int argc, char *argv[])
 	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	DEBUG(4,("cmd_time: server:%s\n", dest_srv));
+	DEBUG(4, ("cmd_time: server:%s\n", dest_srv));
 
 	/* enumerate files on server */
 	res = res ? srv_net_remote_tod(dest_srv, &tod) : False;
@@ -435,10 +445,10 @@ void cmd_time(struct client_info *info, int argc, char *argv[])
 
 	if (res)
 	{
-		DEBUG(5,("cmd_srv_enum_files: query succeeded\n"));
+		DEBUG(5, ("cmd_srv_enum_files: query succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_srv_enum_files: query failed\n"));
+		DEBUG(5, ("cmd_srv_enum_files: query failed\n"));
 	}
 }

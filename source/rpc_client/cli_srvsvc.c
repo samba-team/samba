@@ -29,49 +29,47 @@
 
 #include "includes.h"
 #include "rpc_parse.h"
+#include "nterr.h"
 
 extern int DEBUGLEVEL;
 
 /****************************************************************************
 do a server net tprt enum
 ****************************************************************************/
-BOOL srv_net_srv_tprt_enum(
-			const char *srv_name, 
-			uint32 switch_value, SRV_TPRT_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd)
+BOOL srv_net_srv_tprt_enum(const char *srv_name,
+			   uint32 switch_value, SRV_TPRT_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd)
 {
-	prs_struct data; 
+	prs_struct data;
 	prs_struct rdata;
 	SRV_Q_NET_TPRT_ENUM q_o;
 	BOOL valid_enum = False;
 	struct cli_connection *con = NULL;
 
-	if (ctr == NULL || preferred_len == 0) return False;
+	if (ctr == NULL || preferred_len == 0)
+		return False;
 
 	if (!cli_connection_init(srv_name, PIPE_SRVSVC, &con))
 	{
 		return False;
 	}
 
-	prs_init(&data , 0, 4, False);
-	prs_init(&rdata, 0, 4, True );
+	prs_init(&data, 0, 4, False);
+	prs_init(&rdata, 0, 4, True);
 
 	/* create and send a MSRPC command with api SRV_NETTPRTENUM */
 
-	DEBUG(4,("SRV Net Server Transport Enum, level %d, enum:%8x\n",
-				switch_value, get_enum_hnd(hnd)));
-				
+	DEBUG(4, ("SRV Net Server Transport Enum, level %d, enum:%8x\n",
+		  switch_value, get_enum_hnd(hnd)));
+
 	ctr->switch_value = switch_value;
 	ctr->ptr_tprt_ctr = 1;
 	ctr->tprt.info0.num_entries_read = 0;
-	ctr->tprt.info0.ptr_tprt_info    = 1;
+	ctr->tprt.info0.ptr_tprt_info = 1;
 
 	/* store the parameters */
 	make_srv_q_net_tprt_enum(&q_o, srv_name,
-	                         switch_value, ctr,
-	                         preferred_len,
-	                         hnd);
+				 switch_value, ctr, preferred_len, hnd);
 
 	/* turn parameters into data stream */
 	if (srv_io_q_net_tprt_enum("", &q_o, &data, 0) &&
@@ -84,19 +82,22 @@ BOOL srv_net_srv_tprt_enum(
 
 		srv_io_r_net_tprt_enum("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
-		
+
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_GET_INFO: %s\n",
+			       get_nt_error_msg(r_o.status)));
 			p = 0;
 		}
 
 		if (p && r_o.ctr->switch_value != switch_value)
 		{
 			/* different switch levels.  oops. */
-			DEBUG(0,("SRV_R_NET_SRV_TPRT_ENUM: info class %d does not match request %d\n",
-				r_o.ctr->switch_value, switch_value));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_TPRT_ENUM: info class %d does not match request %d\n",
+			       r_o.ctr->switch_value, switch_value));
 			p = 0;
 		}
 
@@ -107,9 +108,9 @@ BOOL srv_net_srv_tprt_enum(
 		}
 	}
 
-	prs_free_data(&data   );
-	prs_free_data(&rdata  );
-	
+	prs_free_data(&data);
+	prs_free_data(&rdata);
+
 	cli_connection_unlink(con);
 
 	return valid_enum;
@@ -118,42 +119,40 @@ BOOL srv_net_srv_tprt_enum(
 /****************************************************************************
 do a server net conn enum
 ****************************************************************************/
-BOOL srv_net_srv_conn_enum( char *srv_name, char *qual_name,
-			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd)
+BOOL srv_net_srv_conn_enum(char *srv_name, char *qual_name,
+			   uint32 switch_value, SRV_CONN_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd)
 {
-	prs_struct data; 
+	prs_struct data;
 	prs_struct rdata;
 	SRV_Q_NET_CONN_ENUM q_o;
 	BOOL valid_enum = False;
 	struct cli_connection *con = NULL;
 
-	if (ctr == NULL || preferred_len == 0) return False;
+	if (ctr == NULL || preferred_len == 0)
+		return False;
 
 	if (!cli_connection_init(srv_name, PIPE_SRVSVC, &con))
 	{
 		return False;
 	}
 
-	prs_init(&data , 0, 4, False);
-	prs_init(&rdata, 0, 4, True );
+	prs_init(&data, 0, 4, False);
+	prs_init(&rdata, 0, 4, True);
 
 	/* create and send a MSRPC command with api SRV_NETCONNENUM */
 
-	DEBUG(4,("SRV Net Server Connection Enum %s), level %d, enum:%8x\n",
-				qual_name, switch_value, get_enum_hnd(hnd)));
-				
+	DEBUG(4, ("SRV Net Server Connection Enum %s), level %d, enum:%8x\n",
+		  qual_name, switch_value, get_enum_hnd(hnd)));
+
 	ctr->switch_value = switch_value;
 	ctr->ptr_conn_ctr = 1;
 	ctr->conn.info0.num_entries_read = 0;
-	ctr->conn.info0.ptr_conn_info    = 1;
+	ctr->conn.info0.ptr_conn_info = 1;
 
 	/* store the parameters */
 	make_srv_q_net_conn_enum(&q_o, srv_name, qual_name,
-	                         switch_value, ctr,
-	                         preferred_len,
-	                         hnd);
+				 switch_value, ctr, preferred_len, hnd);
 
 	/* turn parameters into data stream */
 	if (srv_io_q_net_conn_enum("", &q_o, &data, 0) &&
@@ -166,19 +165,22 @@ BOOL srv_net_srv_conn_enum( char *srv_name, char *qual_name,
 
 		srv_io_r_net_conn_enum("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
-		
+
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_GET_INFO: %s\n",
+			       get_nt_error_msg(r_o.status)));
 			p = 0;
 		}
 
 		if (p && r_o.ctr->switch_value != switch_value)
 		{
 			/* different switch levels.  oops. */
-			DEBUG(0,("SRV_R_NET_SRV_CONN_ENUM: info class %d does not match request %d\n",
-				r_o.ctr->switch_value, switch_value));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_CONN_ENUM: info class %d does not match request %d\n",
+			       r_o.ctr->switch_value, switch_value));
 			p = 0;
 		}
 
@@ -189,9 +191,9 @@ BOOL srv_net_srv_conn_enum( char *srv_name, char *qual_name,
 		}
 	}
 
-	prs_free_data(&data   );
-	prs_free_data(&rdata  );
-	
+	prs_free_data(&data);
+	prs_free_data(&rdata);
+
 	cli_connection_unlink(con);
 
 	return valid_enum;
@@ -200,42 +202,40 @@ BOOL srv_net_srv_conn_enum( char *srv_name, char *qual_name,
 /****************************************************************************
 do a server net sess enum
 ****************************************************************************/
-BOOL srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
-			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd)
+BOOL srv_net_srv_sess_enum(char *srv_name, char *qual_name, char *user_name,
+			   uint32 switch_value, SRV_SESS_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd)
 {
-	prs_struct data; 
+	prs_struct data;
 	prs_struct rdata;
 	SRV_Q_NET_SESS_ENUM q_o;
 	BOOL valid_enum = False;
 	struct cli_connection *con = NULL;
 
-	if (ctr == NULL || preferred_len == 0) return False;
+	if (ctr == NULL || preferred_len == 0)
+		return False;
 
 	if (!cli_connection_init(srv_name, PIPE_SRVSVC, &con))
 	{
 		return False;
 	}
 
-	prs_init(&data , 0, 4, False);
-	prs_init(&rdata, 0, 4, True );
+	prs_init(&data, 0, 4, False);
+	prs_init(&rdata, 0, 4, True);
 
 	/* create and send a MSRPC command with api SRV_NETSESSENUM */
 
-	DEBUG(4,("SRV Net Session Enum, level %d, enum:%8x\n",
-				switch_value, get_enum_hnd(hnd)));
-				
+	DEBUG(4, ("SRV Net Session Enum, level %d, enum:%8x\n",
+		  switch_value, get_enum_hnd(hnd)));
+
 	ctr->switch_value = switch_value;
 	ctr->ptr_sess_ctr = 1;
 	ctr->sess.info0.num_entries_read = 0;
-	ctr->sess.info0.ptr_sess_info    = 1;
+	ctr->sess.info0.ptr_sess_info = 1;
 
 	/* store the parameters */
 	make_srv_q_net_sess_enum(&q_o, srv_name, qual_name, user_name,
-	                         switch_value, ctr,
-	                         preferred_len,
-	                         hnd);
+				 switch_value, ctr, preferred_len, hnd);
 
 	/* turn parameters into data stream */
 	if (srv_io_q_net_sess_enum("", &q_o, &data, 0) &&
@@ -248,19 +248,22 @@ BOOL srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
 
 		srv_io_r_net_sess_enum("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
-		
+
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SRV_R_NET_SRV_SESS_ENUM: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_SESS_ENUM: %s\n",
+			       get_nt_error_msg(r_o.status)));
 			p = 0;
 		}
 
 		if (p && r_o.ctr->switch_value != switch_value)
 		{
 			/* different switch levels.  oops. */
-			DEBUG(0,("SRV_R_NET_SRV_SESS_ENUM: info class %d does not match request %d\n",
-				r_o.ctr->switch_value, switch_value));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_SESS_ENUM: info class %d does not match request %d\n",
+			       r_o.ctr->switch_value, switch_value));
 			p = 0;
 		}
 
@@ -271,9 +274,9 @@ BOOL srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
 		}
 	}
 
-	prs_free_data(&data   );
-	prs_free_data(&rdata  );
-	
+	prs_free_data(&data);
+	prs_free_data(&rdata);
+
 	cli_connection_unlink(con);
 
 	return valid_enum;
@@ -282,44 +285,42 @@ BOOL srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
 /****************************************************************************
 do a server net share enum
 ****************************************************************************/
-BOOL srv_net_srv_share_enum( char *srv_name, 
-			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd)
+BOOL srv_net_srv_share_enum(char *srv_name,
+			    uint32 switch_value, SRV_SHARE_INFO_CTR * ctr,
+			    uint32 preferred_len, ENUM_HND * hnd)
 {
-	prs_struct data; 
+	prs_struct data;
 	prs_struct rdata;
 	SRV_Q_NET_SHARE_ENUM q_o;
 	BOOL valid_enum = False;
 	struct cli_connection *con = NULL;
 
-	if (ctr == NULL || preferred_len == 0) return False;
+	if (ctr == NULL || preferred_len == 0)
+		return False;
 
 	if (!cli_connection_init(srv_name, PIPE_SRVSVC, &con))
 	{
 		return False;
 	}
 
-	prs_init(&data , 0, 4, False);
-	prs_init(&rdata, 0, 4, True );
+	prs_init(&data, 0, 4, False);
+	prs_init(&rdata, 0, 4, True);
 
 	/* create and send a MSRPC command with api SRV_NETSHAREENUM */
 
-	DEBUG(4,("SRV Get Share Info, level %d, enum:%8x\n",
-				switch_value, get_enum_hnd(hnd)));
-				
+	DEBUG(4, ("SRV Get Share Info, level %d, enum:%8x\n",
+		  switch_value, get_enum_hnd(hnd)));
+
 	q_o.share_level = switch_value;
 
 	ctr->switch_value = switch_value;
 	ctr->ptr_share_ctr = 1;
 	ctr->share.info1.num_entries_read = 0;
-	ctr->share.info1.ptr_share_info    = 1;
+	ctr->share.info1.ptr_share_info = 1;
 
 	/* store the parameters */
-	make_srv_q_net_share_enum(&q_o, srv_name, 
-	                         switch_value, ctr,
-	                         preferred_len,
-	                         hnd);
+	make_srv_q_net_share_enum(&q_o, srv_name,
+				  switch_value, ctr, preferred_len, hnd);
 
 	/* turn parameters into data stream */
 	if (srv_io_q_net_share_enum("", &q_o, &data, 0) &&
@@ -332,19 +333,22 @@ BOOL srv_net_srv_share_enum( char *srv_name,
 
 		srv_io_r_net_share_enum("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
-		
+
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_GET_INFO: %s\n",
+			       get_nt_error_msg(r_o.status)));
 			p = 0;
 		}
 
 		if (p && r_o.ctr->switch_value != switch_value)
 		{
 			/* different switch levels.  oops. */
-			DEBUG(0,("SRV_R_NET_SRV_SHARE_ENUM: info class %d does not match request %d\n",
-				r_o.ctr->switch_value, switch_value));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_SHARE_ENUM: info class %d does not match request %d\n",
+			       r_o.ctr->switch_value, switch_value));
 			p = 0;
 		}
 
@@ -355,9 +359,9 @@ BOOL srv_net_srv_share_enum( char *srv_name,
 		}
 	}
 
-	prs_free_data(&data   );
-	prs_free_data(&rdata  );
-	
+	prs_free_data(&data);
+	prs_free_data(&rdata);
+
 	cli_connection_unlink(con);
 
 	return valid_enum;
@@ -366,32 +370,33 @@ BOOL srv_net_srv_share_enum( char *srv_name,
 /****************************************************************************
 do a share get info
 ****************************************************************************/
-BOOL srv_net_srv_share_get_info(const char *srv_name,
-				const char *share_name,
-				uint32 info_level)
+uint32 srv_net_srv_share_get_info(const char *srv_name,
+				  const char *share_name,
+				  uint32 info_level, SHARE_INFO_CTR * ctr)
 {
-	prs_struct data; 
+	prs_struct data;
 	prs_struct rdata;
 	SRV_Q_NET_SHARE_GET_INFO q_o;
 	struct cli_connection *con = NULL;
 	UNISTR2 uni_srv_name;
 	UNISTR2 uni_share_name;
-	BOOL valid_result = False;
+	uint32 status;
 
-	if (srv_name == NULL || share_name == NULL) return False;
+	if (srv_name == NULL || share_name == NULL || ctr == NULL)
+		return False;
 
 	if (!cli_connection_init(srv_name, PIPE_SRVSVC, &con))
 	{
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	prs_init(&data , 0, 4, False);
-	prs_init(&rdata, 0, 4, True );
+	prs_init(&data, 0, 4, False);
+	prs_init(&rdata, 0, 4, True);
 
 	DEBUG(4, ("SRV Get Share Info, share:%s, level %d\n",
 		  share_name, info_level));
-				
-	make_unistr2(&uni_srv_name,   srv_name,   strlen(srv_name) + 1);
+
+	make_unistr2(&uni_srv_name, srv_name, strlen(srv_name) + 1);
 	make_unistr2(&uni_share_name, share_name, strlen(share_name) + 1);
 
 	/* store the parameters */
@@ -404,60 +409,73 @@ BOOL srv_net_srv_share_get_info(const char *srv_name,
 	{
 		SRV_R_NET_SHARE_GET_INFO r_o;
 
-		srv_io_r_net_share_get_info("", &r_o, &rdata, 0);
+		ZERO_STRUCT(r_o);
+		ZERO_STRUCTP(ctr);
 
-		valid_result = False;
+		r_o.ctr = ctr;
+
+		if (!srv_io_r_net_share_get_info("", &r_o, &rdata, 0))
+		{
+			status = NT_STATUS_INVALID_PARAMETER;
+		}
+		else
+		{
+			status = r_o.status;
+		}
+
+	}
+	else
+	{
+		status = NT_STATUS_INVALID_PARAMETER;
 	}
 
-	prs_free_data(&data   );
-	prs_free_data(&rdata  );
-	
+	prs_free_data(&data);
+	prs_free_data(&rdata);
+
 	cli_connection_unlink(con);
 
-	return valid_result;
+	return status;
 }
 
 /****************************************************************************
 do a server net file enum
 ****************************************************************************/
-BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
-			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd)
+BOOL srv_net_srv_file_enum(char *srv_name, char *qual_name, uint32 file_id,
+			   uint32 switch_value, SRV_FILE_INFO_CTR * ctr,
+			   uint32 preferred_len, ENUM_HND * hnd)
 {
-	prs_struct data; 
+	prs_struct data;
 	prs_struct rdata;
 	SRV_Q_NET_FILE_ENUM q_o;
 	BOOL valid_enum = False;
 	struct cli_connection *con = NULL;
 
-	if (ctr == NULL || preferred_len == 0) return False;
+	if (ctr == NULL || preferred_len == 0)
+		return False;
 
 	if (!cli_connection_init(srv_name, PIPE_SRVSVC, &con))
 	{
 		return False;
 	}
 
-	prs_init(&data , 0, 4, False);
-	prs_init(&rdata, 0, 4, True );
+	prs_init(&data, 0, 4, False);
+	prs_init(&rdata, 0, 4, True);
 
 	/* create and send a MSRPC command with api SRV_NETFILEENUM */
 
-	DEBUG(4,("SRV Get File Info level %d, enum:%8x\n",
-				switch_value, get_enum_hnd(hnd)));
-				
+	DEBUG(4, ("SRV Get File Info level %d, enum:%8x\n",
+		  switch_value, get_enum_hnd(hnd)));
+
 	q_o.file_level = switch_value;
 
 	ctr->switch_value = switch_value;
 	ctr->ptr_file_ctr = 1;
 	ctr->file.info3.num_entries_read = 0;
-	ctr->file.info3.ptr_file_info    = 1;
+	ctr->file.info3.ptr_file_info = 1;
 
 	/* store the parameters */
 	make_srv_q_net_file_enum(&q_o, srv_name, qual_name, file_id,
-	                         switch_value, ctr,
-	                         preferred_len,
-	                         hnd);
+				 switch_value, ctr, preferred_len, hnd);
 
 	/* turn parameters into data stream */
 	if (srv_io_q_net_file_enum("", &q_o, &data, 0) &&
@@ -470,19 +488,22 @@ BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
 
 		srv_io_r_net_file_enum("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
-		
+
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_GET_INFO: %s\n",
+			       get_nt_error_msg(r_o.status)));
 			p = 0;
 		}
 
 		if (p && r_o.ctr->switch_value != switch_value)
 		{
 			/* different switch levels.  oops. */
-			DEBUG(0,("SRV_R_NET_SRV_FILE_ENUM: info class %d does not match request %d\n",
-				r_o.ctr->switch_value, switch_value));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_FILE_ENUM: info class %d does not match request %d\n",
+			       r_o.ctr->switch_value, switch_value));
 			p = 0;
 		}
 
@@ -493,9 +514,9 @@ BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
 		}
 	}
 
-	prs_free_data(&data   );
-	prs_free_data(&rdata  );
-	
+	prs_free_data(&data);
+	prs_free_data(&rdata);
+
 	cli_connection_unlink(con);
 
 	return valid_enum;
@@ -504,28 +525,29 @@ BOOL srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
 /****************************************************************************
 do a server get info 
 ****************************************************************************/
-BOOL srv_net_srv_get_info( char *srv_name, uint32 switch_value,
-				SRV_INFO_CTR *ctr)
+BOOL srv_net_srv_get_info(char *srv_name, uint32 switch_value,
+			  SRV_INFO_CTR * ctr)
 {
-	prs_struct data; 
+	prs_struct data;
 	prs_struct rdata;
 	SRV_Q_NET_SRV_GET_INFO q_o;
 	BOOL valid_info = False;
 	struct cli_connection *con = NULL;
 
-	if (switch_value == 0 || ctr == NULL) return False;
+	if (switch_value == 0 || ctr == NULL)
+		return False;
 
 	if (!cli_connection_init(srv_name, PIPE_SRVSVC, &con))
 	{
 		return False;
 	}
 
-	prs_init(&data , 0, 4, False);
-	prs_init(&rdata, 0, 4, True );
+	prs_init(&data, 0, 4, False);
+	prs_init(&rdata, 0, 4, True);
 
 	/* create and send a MSRPC command with api SRV_NET_SRV_GET_INFO */
 
-	DEBUG(4,("SRV Get Server Info level %d\n", switch_value));
+	DEBUG(4, ("SRV Get Server Info level %d\n", switch_value));
 
 	/* store the parameters */
 	make_srv_q_net_srv_get_info(&q_o, srv_name, switch_value);
@@ -542,19 +564,22 @@ BOOL srv_net_srv_get_info( char *srv_name, uint32 switch_value,
 		srv_io_r_net_srv_get_info("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
 		p = rdata.offset != 0;
-		
+
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_GET_INFO: %s\n",
+			       get_nt_error_msg(r_o.status)));
 			p = 0;
 		}
 
 		if (p && r_o.ctr->switch_value != q_o.switch_value)
 		{
 			/* different switch levels.  oops. */
-			DEBUG(0,("SRV_R_NET_SRV_GET_INFO: info class %d does not match request %d\n",
-				r_o.ctr->switch_value, q_o.switch_value));
+			DEBUG(0,
+			      ("SRV_R_NET_SRV_GET_INFO: info class %d does not match request %d\n",
+			       r_o.ctr->switch_value, q_o.switch_value));
 			p = 0;
 		}
 
@@ -565,9 +590,9 @@ BOOL srv_net_srv_get_info( char *srv_name, uint32 switch_value,
 		}
 	}
 
-	prs_free_data(&data   );
-	prs_free_data(&rdata  );
-	
+	prs_free_data(&data);
+	prs_free_data(&rdata);
+
 	cli_connection_unlink(con);
 
 	return valid_info;
@@ -576,27 +601,28 @@ BOOL srv_net_srv_get_info( char *srv_name, uint32 switch_value,
 /****************************************************************************
 get server time
 ****************************************************************************/
-BOOL srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod)
+BOOL srv_net_remote_tod(char *srv_name, TIME_OF_DAY_INFO * tod)
 {
-	prs_struct data; 
+	prs_struct data;
 	prs_struct rdata;
 	SRV_Q_NET_REMOTE_TOD q_t;
 	BOOL valid_info = False;
 	struct cli_connection *con = NULL;
 
-	if (tod == NULL) return False;
+	if (tod == NULL)
+		return False;
 
 	if (!cli_connection_init(srv_name, PIPE_SRVSVC, &con))
 	{
 		return False;
 	}
 
-	prs_init(&data , 0, 4, False);
-	prs_init(&rdata, 0, 4, True );
+	prs_init(&data, 0, 4, False);
+	prs_init(&rdata, 0, 4, True);
 
 	/* create and send a MSRPC command with api SRV_NET_REMOTE_TOD */
 
-	DEBUG(4,("SRV Remote TOD (%s)\n", srv_name));
+	DEBUG(4, ("SRV Remote TOD (%s)\n", srv_name));
 
 	/* store the parameters */
 	make_srv_q_net_remote_tod(&q_t, srv_name);
@@ -613,11 +639,13 @@ BOOL srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod)
 		srv_io_r_net_remote_tod("", &r_t, &rdata, 0);
 		p = rdata.offset != 0;
 		p = rdata.offset != 0;
-		
+
 		if (p && r_t.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SRV_R_NET_REMOTE_TOD: %s\n", get_nt_error_msg(r_t.status)));
+			DEBUG(0,
+			      ("SRV_R_NET_REMOTE_TOD: %s\n",
+			       get_nt_error_msg(r_t.status)));
 			p = False;
 		}
 
@@ -627,9 +655,9 @@ BOOL srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod)
 		}
 	}
 
-	prs_free_data(&data   );
-	prs_free_data(&rdata  );
-	
+	prs_free_data(&data);
+	prs_free_data(&rdata);
+
 	cli_connection_unlink(con);
 
 	return valid_info;
