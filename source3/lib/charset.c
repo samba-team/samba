@@ -273,12 +273,12 @@ void add_char_string(char *s)
   for (t=strtok(extra_chars," \t\r\n"); t; t=strtok(NULL," \t\r\n")) {
     char c1=0,c2=0;
     int i1=0,i2=0;
-    if (isdigit(*t) || (*t)=='-') {
+    if (isdigit((unsigned char)*t) || (*t)=='-') {
       sscanf(t,"%i:%i",&i1,&i2);
       add_dos_char(i1,True,i2,True);
     } else {
       sscanf(t,"%c:%c",&c1,&c2);
-      add_dos_char(c1,True,c2, True);
+      add_dos_char((unsigned char)c1,True,(unsigned char)c2, True);
     }
   }
 

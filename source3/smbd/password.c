@@ -153,12 +153,26 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
   struct passwd *pwfile; /* for getting real name from passwd file */
   int real_name_len;
 
+#if 0
+  /*
+   * After observing MS-Exchange services writing to a Samba share
+   * I belive this code is incorrect. Each service does it's own
+   * sessionsetup_and_X for the same user, and as each service shuts
+   * down, it does a user_logoff_and_X. As we are consolidating multiple
+   * sessionsetup_and_X's onto the same vuid here, when the first service
+   * shuts down, it invalidates all the open files for the other services.
+   * Hence I am removing this code and forcing each sessionsetup_and_X
+   * to get a new vuid.
+   * Jeremy Allison. (jallison@whistle.com).
+   */
+
   int i;
   for(i = 0; i < num_validated_users; i++) {
     vuser = &validated_users[i];
     if( vuser->uid == uid )
       return (uint16)(i + VUID_OFFSET); /* User already validated */
   }
+#endif
 
   validated_users = (user_struct *)Realloc(validated_users,
 			   sizeof(user_struct)*
