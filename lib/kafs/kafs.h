@@ -3,7 +3,7 @@
 
 #include <sys/bitypes.h>
 #include <sys/cdefs.h>
-#include <sys/ioctl.h>
+/* sys/ioctl.h must be included manually before kafs.h */
 
 /*
  */
