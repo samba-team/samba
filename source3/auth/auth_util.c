@@ -779,17 +779,9 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 
 	(*server_info)->sam_account    = sampass;
 
-#if 0	/* JERRY */
-	/* disabled until winbindd_passdb is completed to prevent winbindd deadlock on a Samba PDC */
-	if (!NT_STATUS_IS_OK(nt_status = sid_to_uid(pdb_get_user_sid(sampass), &((*server_info)->uid))))
-		return nt_status;
-#endif
-	if (!(pwd = getpwuid_alloc(((*server_info)->uid)))) {
-		fstring sid;
-		DEBUG(1, ("User %s in passdb (%s) maps to UID, but getpwuid(%u) fails!\n",
-			  pdb_get_username(sampass), 
-			  sid_to_string(sid, pdb_get_user_sid(sampass)),
-			  (unsigned)(*server_info)->uid));
+	if ( !(pwd = getpwnam_alloc(pdb_get_username(sampass))) )  {
+		DEBUG(1, ("User %s in passdb, but getpwnam() fails!\n",
+			  pdb_get_username(sampass)));
 		free_server_info(server_info);
 		return NT_STATUS_NO_SUCH_USER;
 	}
