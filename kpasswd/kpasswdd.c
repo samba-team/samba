@@ -533,15 +533,8 @@ doit (int port)
     krb5_addresses addrs;
     unsigned n, i;
     fd_set real_fdset;
-    void *sa_buf;
-    int sa_max_size;
-    struct sockaddr *sa;
-
-    sa_max_size = krb5_max_sockaddr_size ();
-    sa_buf = malloc (sa_max_size);
-    if (sa_buf == NULL)
-	krb5_errx (context, 1, "out of memory");
-    sa = (struct sockaddr *)sa_buf;
+    struct sockaddr_storage __ss;
+    struct sockaddr *sa = (struct sockaddr *)&__ss;
 
     ret = krb5_get_default_realm (context, &realm);
     if (ret)
@@ -598,7 +591,7 @@ doit (int port)
 	for (i = 0; i < n; ++i)
 	    if (FD_ISSET(sockets[i], &fdset)) {
 		u_char buf[BUFSIZ];
-		int addrlen = sa_max_size;
+		int addrlen = sizeof(__ss);
 
 		ret = recvfrom (sockets[i], buf, sizeof(buf), 0,
 				sa, &addrlen);
@@ -618,7 +611,6 @@ doit (int port)
     krb5_free_addresses (context, &addrs);
     krb5_free_principal (context, server);
     krb5_free_context (context);
-    free (sa_buf);
     return 0;
 }
 

@@ -172,37 +172,29 @@ static void
 init_socket(struct descr *d, krb5_address *a, int family, int type, int port)
 {
     krb5_error_code ret;
-    struct sockaddr *sa;
-    void *sa_buf;
+    struct sockaddr_storage __ss;
+    struct sockaddr *sa = (struct sockaddr *)&__ss;
     int sa_size;
 
     memset(d, 0, sizeof(*d));
     d->s = -1;
-
-    sa_size = krb5_max_sockaddr_size ();
-    sa_buf = malloc(sa_size);
-    if (sa_buf == NULL) {
-	kdc_log(0, "Failed to allocate %u bytes", sa_size);
-	return;
-    }
-    sa = (struct sockaddr *)sa_buf;
 
     ret = krb5_addr2sockaddr (a, sa, &sa_size, port);
     if (ret) {
 	krb5_warn(context, ret, "krb5_anyaddr");
 	close(d->s);
 	d->s = -1;
-	goto out;
+	return;
     }
 
     if (sa->sa_family != family)
-	goto out;
+	return;
 
     d->s = socket(family, type, 0);
     if(d->s < 0){
 	krb5_warn(context, errno, "socket(%d, %d, 0)", family, type);
 	d->s = -1;
-	goto out;
+	return;
     }
 #if defined(HAVE_SETSOCKOPT) && defined(SOL_SOCKET) && defined(SO_REUSEADDR)
     {
@@ -216,15 +208,13 @@ init_socket(struct descr *d, krb5_address *a, int family, int type, int port)
 	krb5_warn(context, errno, "bind(%d)", ntohs(port));
 	close(d->s);
 	d->s = -1;
-	goto out;
+	return;
     }
     if(type == SOCK_STREAM && listen(d->s, SOMAXCONN) < 0){
 	krb5_warn(context, errno, "listen");
 	close(d->s);
-	d->s = -1;
+	return;
     }
-out:
-    free (sa_buf);
 }
 
 /*
@@ -379,41 +369,30 @@ static void
 handle_udp(struct descr *d)
 {
     unsigned char *buf;
-    struct sockaddr *sa;
-    void *sa_buf;
-    int sa_size;
+    struct sockaddr_storage __ss;
+    struct sockaddr *sa = (struct sockaddr *)&__ss;
     int from_len;
     int n;
 
-    sa_size = krb5_max_sockaddr_size ();
-    sa_buf = malloc(sa_size);
-    if (sa_buf == NULL) {
-	kdc_log(0, "Failed to allocate %u bytes", sa_size);
-	return;
-    }
-    sa = (struct sockaddr *)sa_buf;
-    
     buf = malloc(max_request);
     if(buf == NULL){
 	kdc_log(0, "Failed to allocate %u bytes", max_request);
-	free (sa_buf);
 	return;
     }
 
-    from_len = sa_size;
+    from_len = sizeof(__ss);
     n = recvfrom(d->s, buf, max_request, 0, 
 		 sa, &from_len);
     if(n < 0){
 	krb5_warn(context, errno, "recvfrom");
 	goto out;
     }
-    if(n == 0){
+    if(n == 0) {
 	goto out;
     }
     do_request(buf, n, 0, d->s, sa, from_len);
 out:
     free (buf);
-    free (sa_buf);
 }
 
 static void
@@ -456,36 +435,25 @@ de_http(char *buf)
 static void
 add_new_tcp (struct descr *d, int index, int min_free)
 {
-    size_t sa_size;
-    char *sa_buf;
-    struct sockaddr *sa;
+    struct sockaddr_storage __ss;
+    struct sockaddr *sa = (struct sockaddr *)&__ss;
     int s;
     int from_len;
 
-    sa_size = krb5_max_sockaddr_size ();
-    sa_buf = malloc(sa_size);
-    if (sa_buf == NULL) {
-	kdc_log(0, "Failed to allocate %u bytes", sa_size);
-	return;
-    }
-    sa = (struct sockaddr *)sa_buf;
-
-    from_len = sa_size;
+    from_len = sizeof(__ss);
     s = accept(d[index].s, sa, &from_len);
     if(s < 0){
 	krb5_warn(context, errno, "accept");
-	goto out;
+	return;
     }
     if(min_free == -1){
 	close(s);
-	goto out;
+	return;
     }
 	    
     d[min_free].s = s;
     d[min_free].timeout = time(NULL) + TCP_TIMEOUT;
     d[min_free].type = SOCK_STREAM;
-out:
-    free (sa);
 }
 
 /*
@@ -636,9 +604,8 @@ handle_tcp(struct descr *d, int index, int min_free)
 {
     unsigned char buf[1024];
     char addr[32];
-    void *sa_buf;
-    struct sockaddr *sa;
-    int sa_size;
+    struct sockaddr_storage __ss;
+    struct sockaddr *sa = (struct sockaddr *)&__ss;
     int from_len;
     int n;
     int ret;
@@ -648,14 +615,6 @@ handle_tcp(struct descr *d, int index, int min_free)
 	return;
     }
 
-    sa_size = krb5_max_sockaddr_size ();
-    sa_buf = malloc(sa_size);
-    if (sa_buf == NULL) {
-	kdc_log(0, "Failed to allocate %u bytes", sa_size);
-	return;
-    }
-    sa = (struct sockaddr *)sa_buf;
-
     /*
      * We can't trust recvfrom to return an address so we always call
      * getpeername.
@@ -664,16 +623,16 @@ handle_tcp(struct descr *d, int index, int min_free)
     n = recvfrom(d[index].s, buf, sizeof(buf), 0, NULL, NULL);
     if(n < 0){
 	krb5_warn(context, errno, "recvfrom");
-	goto out;
+	return;
     }
-    from_len = sa_size;
+    from_len = sizeof(__ss);
     if (getpeername(d[index].s, sa, &from_len) < 0) {
 	krb5_warn(context, errno, "getpeername");
-	goto out;
+	return;
     }
     addr_to_string(sa, from_len, addr, sizeof(addr));
     if (grow_descr (&d[index], n))
-	goto out;
+	return;
     memcpy(d[index].buf + d[index].len, buf, n);
     d[index].len += n;
     if(d[index].len > 4 && d[index].buf[0] == 0) {
@@ -688,17 +647,15 @@ handle_tcp(struct descr *d, int index, int min_free)
 	    clear_descr (d + index);
     } else {
 	kdc_log (0, "TCP data of strange type from %s", addr);
-	goto out;
+	return;
     }
     if (ret < 0)
-	goto out;
+	return;
     else if (ret == 1) {
 	do_request(d[index].buf, d[index].len, 1,
 		   d[index].s, sa, from_len);
 	clear_descr(d + index);
     }
-out:
-    free (sa_buf);
 }
 
 void
