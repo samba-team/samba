@@ -66,6 +66,7 @@ Changes since 2.2.6pre2
 36) Add version strings to the usage message for smbcacls and smbpasswd
 37) Fix bug in the write cache code
 38) make the default printed values for boolean the same for all parameters
+39) Default all LDAP connections to v3 with compiling with --with-ldapsam
 
 
 Changes since 2.2.6pre1
