@@ -1036,6 +1036,23 @@ sub ParseStructNdrSize($)
 }
 
 #####################################################################
+# calculate size of ndr struct
+sub ParseUnionNdrSize($)
+{
+	my $t = shift;
+	my $static = fn_prefix($t);
+	my $sizevar;
+
+	pidl "size_t ndr_size_$t->{NAME}(const union $t->{NAME} *r, uint32_t level, int flags)\n";
+	pidl "{\n";
+	if (my $flags = util::has_property($t, "flag")) {
+		pidl "\tflags |= $flags;\n";
+	}
+	pidl "\treturn ndr_size_union(r, flags, level, (ndr_push_union_fn_t)ndr_push_$t->{NAME});\n";
+	pidl "}\n\n";
+}
+
+#####################################################################
 # parse a union - push side
 sub ParseUnionPush($)
 {
@@ -1395,6 +1412,9 @@ sub ParseTypedefNdrSize($)
 	
 	($t->{DATA}->{TYPE} eq "STRUCT") &&
 		ParseStructNdrSize($t);
+
+	($t->{DATA}->{TYPE} eq "UNION") &&
+		ParseUnionNdrSize($t);
 }
 
 #####################################################################

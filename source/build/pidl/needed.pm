@@ -31,6 +31,13 @@ sub NeededTypedef($)
 		$needed{"push_$t->{NAME}"} = 1;		
 	}
 
+	if (util::has_property($t, "nopull")) {
+		$needed{"pull_$t->{NAME}"} = 0;
+	}
+	if (util::has_property($t, "nopush")) {
+		$needed{"push_$t->{NAME}"} = 0;
+	}
+
 	if ($t->{DATA}->{TYPE} eq "STRUCT") {
 		if (util::has_property($t, "gensize")) {
 			$needed{"ndr_size_$t->{NAME}"} = 1;
@@ -47,6 +54,10 @@ sub NeededTypedef($)
 		}
 	}
 	if ($t->{DATA}->{TYPE} eq "UNION") {
+		if (util::has_property($t, "gensize")) {
+			$needed{"ndr_size_$t->{NAME}"} = 1;
+		}
+
 		for my $e (@{$t->{DATA}->{DATA}}) {
 			$e->{PARENT} = $t->{DATA};
 			if ($e->{TYPE} eq "UNION_ELEMENT") {
