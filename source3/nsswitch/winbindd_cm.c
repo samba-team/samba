@@ -376,7 +376,11 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	got_mutex = False;
 	*retry = False;
 
-	if (domain->primary || IS_DC) {
+	/* Windows 2003 SP1 does not lie LsaOpenPolicy() over schannel.
+	   Returns RPC_NT_CANNOT_SUPPPORT (0xc0020041) for that call.
+	   So just drop it on the lsarpc pipe */
+
+	if ( (domain->primary || IS_DC) && (pipe_index!=PI_LSARPC) ) {
 		NTSTATUS status = setup_schannel( *cli, domain->name );
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("schannel refused - continuing without "
