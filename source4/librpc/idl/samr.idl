@@ -717,7 +717,7 @@
 		uint8  unknown4;
 	} samr_UserInfo21;
 
-	typedef [flag(NDR_PAHEX)] struct {
+	typedef [public, flag(NDR_PAHEX)] struct {
 		uint8 data[516];
 	} samr_CryptPassword;
 

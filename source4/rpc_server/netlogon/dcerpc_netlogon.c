@@ -364,7 +364,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	if (num_records_domain == 0) {
-		DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n", 
+		DEBUG(3,("Couldn't find domain [%s] in samdb.\n", 
 			 domain_sid));
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -1000,12 +1000,115 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 
 
 /* 
-  netr_NETRSERVERPASSWORDSET2 
+  netr_ServerPasswordSet2 
 */
-static WERROR netr_NETRSERVERPASSWORDSET2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRSERVERPASSWORDSET2 *r)
+static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct netr_ServerPasswordSet2 *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct server_pipe_state *pipe_state = dce_call->context->private;
+
+	void *sam_ctx;
+	int num_records;
+	int num_records_domain;
+	int ret;
+	struct ldb_message **msgs;
+	struct ldb_message **msgs_domain;
+	NTSTATUS nt_status;
+	struct ldb_message *mod;
+	const char *domain_sid;
+	char new_pass[512];
+	uint32_t new_pass_len;
+
+	const char *attrs[] = {"objectSid", NULL };
+
+	const char **domain_attrs = attrs;
+
+	nt_status = netr_creds_server_step_check(pipe_state, &r->in.credential, &r->out.return_authenticator);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	sam_ctx = samdb_connect(mem_ctx);
+	if (sam_ctx == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+	/* pull the user attributes */
+	num_records = samdb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
+				   "(&(sAMAccountName=%s)(objectclass=user))", 
+				   pipe_state->creds->account_name);
+	if (num_records == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+ 	}
+
+	if (num_records == 0) {
+		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
+			 pipe_state->creds->account_name));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (num_records > 1) {
+		DEBUG(0,("Found %d records matching user [%s]\n", num_records, 
+			 pipe_state->creds->account_name));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
+	if (!domain_sid) {
+		DEBUG(0,("no objectSid in user record\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* find the domain's DN */
+	num_records_domain = samdb_search(sam_ctx, mem_ctx, NULL, 
+					  &msgs_domain, domain_attrs,
+					  "(&(objectSid=%s)(objectclass=domain))", 
+					  domain_sid);
+	if (num_records_domain == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (num_records_domain == 0) {
+		DEBUG(3,("Couldn't find domain [%s] in samdb.\n", 
+			 domain_sid));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (num_records_domain > 1) {
+		DEBUG(0,("Found %d records matching domain [%s]\n", 
+			 num_records_domain, domain_sid));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	mod = talloc_zero(mem_ctx, struct ldb_message);
+	NT_STATUS_HAVE_NO_MEMORY(mod);
+	mod->dn = talloc_reference(mod, msgs[0]->dn);
+    
+	creds_arcfour_crypt(pipe_state->creds, r->in.new_password.data, 516);
+
+	ret = decode_pw_buffer(r->in.new_password.data, new_pass, sizeof(new_pass),
+			      &new_pass_len, STR_UNICODE);
+	if (!ret) {
+		DEBUG(3,("netr_ServerPasswordSet2: failed to decode password buffer\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* set the password - samdb needs to know both the domain and user DNs,
+	   so the domain password policy can be used */
+	nt_status = samdb_set_password(sam_ctx, mod,
+				       msgs[0]->dn,
+				       msgs_domain[0]->dn,
+				       mod, new_pass, /* we have plaintext */
+				       NULL, NULL,
+				       False /* This is not considered a password change */,
+				       NULL);
+	ZERO_ARRAY(new_pass);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	ret = samdb_replace(sam_ctx, mem_ctx, mod);
+	if (ret != 0) {
+		/* we really need samdb.c to return NTSTATUS */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 

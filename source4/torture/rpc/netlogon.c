@@ -318,6 +318,74 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 /*
+  try a change password for our machine account
+*/
+static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_ServerPasswordSet2 r;
+	const char *password;
+	struct creds_CredentialState creds;
+
+	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME,
+				   machine_password, &creds)) {
+		return False;
+	}
+
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.account_name = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
+	r.in.secure_channel_type = SEC_CHAN_BDC;
+	r.in.computer_name = TEST_MACHINE_NAME;
+
+	password = generate_random_str(mem_ctx, 8);
+	encode_pw_buffer(r.in.new_password.data, password, STR_UNICODE);
+	creds_arcfour_crypt(&creds, r.in.new_password.data, 516);
+
+	printf("Testing ServerPasswordSet2 on machine account\n");
+	printf("Changing machine account password to '%s'\n", password);
+
+	creds_client_authenticator(&creds, &r.in.credential);
+
+	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ServerPasswordSet2 - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+		printf("Credential chaining failed\n");
+	}
+
+	/* by changing the machine password twice we test the
+	   credentials chaining fully, and we verify that the server
+	   allows the password to be set to the same value twice in a
+	   row (match win2k3) */
+	printf("Testing a second ServerPasswordSet2 on machine account\n");
+	printf("Changing machine account password to '%s' (same as previous run)\n", password);
+
+	creds_client_authenticator(&creds, &r.in.credential);
+
+	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ServerPasswordSet (2) - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+		printf("Credential chaining failed\n");
+	}
+
+	machine_password = password;
+
+	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
+		printf("ServerPasswordSet failed to actually change the password\n");
+		return False;
+	}
+
+	return True;
+}
+
+/*
   try a netlogon SamLogon
 */
 static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
@@ -397,8 +465,6 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	return ret;
 }
-
-
 
 /* we remember the sequence numbers so we can easily do a DatabaseDelta */
 static uint64_t sequence_nums[3];
@@ -1216,6 +1282,7 @@ BOOL torture_rpc_netlogon(void)
 	ret &= test_LogonUasLogoff(p, mem_ctx);
 	ret &= test_SamLogon(p, mem_ctx);
 	ret &= test_SetPassword(p, mem_ctx);
+	ret &= test_SetPassword2(p, mem_ctx);
 	ret &= test_GetDomainInfo(p, mem_ctx);
 	ret &= test_DatabaseSync(p, mem_ctx);
 	ret &= test_DatabaseDeltas(p, mem_ctx);
