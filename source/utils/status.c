@@ -285,7 +285,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 	
 	tdb = tdb_open(lock_path("connections.tdb"), 0, O_RDONLY, 0);
 	if (!tdb) {
-		printf("Couldn't open status file %s\n",fname);
+		printf("connections.tdb not initialised\n");
 		if (!lp_status(-1))
 			printf("You need to have status=yes in your smb config file\n");
 		return(0);
