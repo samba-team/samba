@@ -107,7 +107,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
-	sess_vuid = register_vuid(server_info, user, False);
+	sess_vuid = register_vuid(server_info, user);
 
 	free_server_info(&server_info);
 
