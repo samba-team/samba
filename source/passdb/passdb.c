@@ -2223,8 +2223,8 @@ BOOL pdb_update_bad_password_count(SAM_ACCOUNT *sampass, BOOL *updated)
 	}
 
 	/* First, check if there is a reset time to compare */
-	if (!resettime) {
-		DEBUG(9, ("Reset time = 0, can't reset bad pw count\n"));
+	if ((resettime == (uint32) -1) || (resettime == 0)) {
+		DEBUG(9, ("No reset time, can't reset bad pw count\n"));
 		return True;
 	}
 
@@ -2262,8 +2262,8 @@ BOOL pdb_update_autolock_flag(SAM_ACCOUNT *sampass, BOOL *updated)
 	}
 
 	/* First, check if there is a duration to compare */
-	if (!duration) {
-		DEBUG(9, ("Lockout duration = 0, can't reset autolock\n"));
+	if ((duration == (uint32) -1)  || (duration == 0)) {
+		DEBUG(9, ("No reset duration, can't reset autolock\n"));
 		return True;
 	}
 		      
