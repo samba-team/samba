@@ -29,7 +29,7 @@
 #include "libcli/composite/composite.h"
 
 
-static void nbt_start_refresh_timer(struct nbt_iface_name *iname);
+static void nbtd_start_refresh_timer(struct nbt_iface_name *iname);
 
 /*
   a name refresh request has completed
@@ -46,7 +46,7 @@ static void refresh_completion_handler(struct nbt_name_request *req)
 		DEBUG(4,("Refreshed name %s<%02x> on %s\n", 
 			 iname->name.name, iname->name.type, iname->iface->ip_address));
 		iname->registration_time = timeval_current();
-		nbt_start_refresh_timer(iname);
+		nbtd_start_refresh_timer(iname);
 		talloc_free(tmp_ctx);
 		return;
 	}
@@ -99,7 +99,7 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 /*
   start a timer to refresh this name
 */
-static void nbt_start_refresh_timer(struct nbt_iface_name *iname)
+static void nbtd_start_refresh_timer(struct nbt_iface_name *iname)
 {
 	uint32_t refresh_time;
 	uint32_t max_refresh_time = lp_parm_int(-1, "nbtd", "max_refresh_time", 7200);
@@ -116,9 +116,10 @@ static void nbt_start_refresh_timer(struct nbt_iface_name *iname)
 /*
   a name registration has completed
 */
-static void nbt_register_handler(struct composite_context *req)
+static void nbtd_register_handler(struct composite_context *req)
 {
-	struct nbt_iface_name *iname = talloc_get_type(req->async.private, struct nbt_iface_name);
+	struct nbt_iface_name *iname = talloc_get_type(req->async.private, 
+						       struct nbt_iface_name);
 	NTSTATUS status;
 
 	status = nbt_name_register_bcast_recv(req);
@@ -128,7 +129,7 @@ static void nbt_register_handler(struct composite_context *req)
 		DEBUG(3,("Registered %s<%02x> on interface %s\n",
 			 iname->name.name, iname->name.type, iname->iface->bcast_address));
 		iname->registration_time = timeval_current();
-		nbt_start_refresh_timer(iname);
+		nbtd_start_refresh_timer(iname);
 		return;
 	}
 
@@ -144,9 +145,9 @@ static void nbt_register_handler(struct composite_context *req)
 /*
   register a name on a network interface
 */
-static void nbt_register_name_iface(struct nbt_interface *iface,
-				    const char *name, enum nbt_name_type type,
-				    uint16_t nb_flags)
+static void nbtd_register_name_iface(struct nbt_interface *iface,
+				     const char *name, enum nbt_name_type type,
+				     uint16_t nb_flags)
 {
 	struct nbt_iface_name *iname;
 	const char *scope = lp_netbios_scope();
@@ -187,7 +188,7 @@ static void nbt_register_name_iface(struct nbt_interface *iface,
 	req = nbt_name_register_bcast_send(iface->nbtsock, &io);
 	if (req == NULL) return;
 
-	req->async.fn = nbt_register_handler;
+	req->async.fn = nbtd_register_handler;
 	req->async.private = iname;
 }
 
@@ -195,21 +196,21 @@ static void nbt_register_name_iface(struct nbt_interface *iface,
 /*
   register one name on all our interfaces
 */
-static void nbt_register_name(struct nbt_server *nbtsrv, 
-			      const char *name, enum nbt_name_type type,
-			      uint16_t nb_flags)
+static void nbtd_register_name(struct nbt_server *nbtsrv, 
+			       const char *name, enum nbt_name_type type,
+			       uint16_t nb_flags)
 {
 	struct nbt_interface *iface;
 	
 	/* register with all the local interfaces */
 	for (iface=nbtsrv->interfaces;iface;iface=iface->next) {
-		nbt_register_name_iface(iface, name, type, nb_flags);
+		nbtd_register_name_iface(iface, name, type, nb_flags);
 	}
 
 	/* register on our general broadcast interface as a permanent name */
 	if (nbtsrv->bcast_interface) {
-		nbt_register_name_iface(nbtsrv->bcast_interface, name, type, 
-					nb_flags | NBT_NM_PERMANENT);
+		nbtd_register_name_iface(nbtsrv->bcast_interface, name, type, 
+					 nb_flags | NBT_NM_PERMANENT);
 	}
 
 	/* TODO: register with our WINS servers */
@@ -219,21 +220,21 @@ static void nbt_register_name(struct nbt_server *nbtsrv,
 /*
   register our names on all interfaces
 */
-void nbt_register_names(struct nbt_server *nbtsrv)
+void nbtd_register_names(struct nbt_server *nbtsrv)
 {
 	uint16_t nb_flags = NBT_NODE_M;
 
 	/* note that we don't initially mark the names "ACTIVE". They are 
 	   marked active once registration is successful */
-	nbt_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_CLIENT, nb_flags);
-	nbt_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_USER,   nb_flags);
-	nbt_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_SERVER, nb_flags);
+	nbtd_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_CLIENT, nb_flags);
+	nbtd_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_USER,   nb_flags);
+	nbtd_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_SERVER, nb_flags);
 
 	nb_flags |= NBT_NM_GROUP;
-	nbt_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_CLIENT, nb_flags);
+	nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_CLIENT, nb_flags);
 
 	nb_flags |= NBT_NM_PERMANENT;
-	nbt_register_name(nbtsrv, "__SAMBA__",       NBT_NAME_CLIENT, nb_flags);
-	nbt_register_name(nbtsrv, "__SAMBA__",       NBT_NAME_SERVER, nb_flags);
-	nbt_register_name(nbtsrv, "*",               NBT_NAME_CLIENT, nb_flags);
+	nbtd_register_name(nbtsrv, "__SAMBA__",       NBT_NAME_CLIENT, nb_flags);
+	nbtd_register_name(nbtsrv, "__SAMBA__",       NBT_NAME_SERVER, nb_flags);
+	nbtd_register_name(nbtsrv, "*",               NBT_NAME_CLIENT, nb_flags);
 }
