@@ -2660,7 +2660,8 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
      zero then the file size should be extended or
      truncated to the size given in smb_vwv[2-3] */
   if(numtowrite == 0) {
-      nwritten = vfs_set_filelen(fsp, (SMB_OFF_T)startpos);
+      /* This is actually an allocate call, not set EOF. JRA */
+      nwritten = vfs_allocate_file_space(fsp, (SMB_OFF_T)startpos);
   } else
     nwritten = write_file(fsp,data,startpos,numtowrite);
   
