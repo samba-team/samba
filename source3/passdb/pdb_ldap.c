@@ -562,30 +562,44 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		}
 	}
 
-	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
-	pass_last_set_time = (time_t) atol(temp);
+	if (!get_single_attribute(ldap_struct, entry, "pwdLastSet", temp)) {
+		/* leave as default */
+	} else {
+		pass_last_set_time = (time_t) atol(temp);
+		pdb_set_pass_last_set_time(sampass, pass_last_set_time);
+	}
 
 	if (!get_single_attribute(ldap_struct, entry, "logonTime", temp)) {
+		/* leave as default */
+	} else {
 		logon_time = (time_t) atol(temp);
 		pdb_set_logon_time(sampass, logon_time, True);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "logoffTime", temp)) {
+		/* leave as default */
+	} else {
 		logoff_time = (time_t) atol(temp);
 		pdb_set_logoff_time(sampass, logoff_time, True);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "kickoffTime", temp)) {
+		/* leave as default */
+	} else {
 		kickoff_time = (time_t) atol(temp);
 		pdb_set_kickoff_time(sampass, kickoff_time, True);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "pwdCanChange", temp)) {
+		/* leave as default */
+	} else {
 		pass_can_change_time = (time_t) atol(temp);
 		pdb_set_pass_can_change_time(sampass, pass_can_change_time, True);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "pwdMustChange", temp)) {
+		/* leave as default */
+	} else {
 		pass_must_change_time = (time_t) atol(temp);
 		pdb_set_pass_must_change_time(sampass, pass_must_change_time, True);
 	}
@@ -597,68 +611,97 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	 */
 
 	if (!get_single_attribute(ldap_struct, entry, "cn", fullname)) {
-		get_single_attribute(ldap_struct, entry, "displayName", fullname);
+		if (!get_single_attribute(ldap_struct, entry, "displayName", fullname)) {
+			/* leave as default */
+		} else {
+			pdb_set_fullname(sampass, fullname);
+		}
+	} else {
+		pdb_set_fullname(sampass, fullname);
 	}
-
 
 	if (!get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive)) {
 		pstrcpy(dir_drive, lp_logon_drive());
 		standard_sub_advanced(-1, username, "", gid, username, dir_drive);
 		DEBUG(5,("homeDrive fell back to %s\n",dir_drive));
 		pdb_set_dir_drive(sampass, dir_drive, False);
-	}
-	else
+	} else {
 		pdb_set_dir_drive(sampass, dir_drive, True);
+	}
 
 	if (!get_single_attribute(ldap_struct, entry, "smbHome", homedir)) {
 		pstrcpy(homedir, lp_logon_home());
 		standard_sub_advanced(-1, username, "", gid, username, homedir);
 		DEBUG(5,("smbHome fell back to %s\n",homedir));
 		pdb_set_homedir(sampass, homedir, False);
-	}
-	else
+	} else {
 		pdb_set_homedir(sampass, homedir, True);
+	}
 
 	if (!get_single_attribute(ldap_struct, entry, "scriptPath", logon_script)) {
 		pstrcpy(logon_script, lp_logon_script());
 		standard_sub_advanced(-1, username, "", gid, username, logon_script);
 		DEBUG(5,("scriptPath fell back to %s\n",logon_script));
 		pdb_set_logon_script(sampass, logon_script, False);
-	}
-	else
+	} else {
 		pdb_set_logon_script(sampass, logon_script, True);
+	}
 
 	if (!get_single_attribute(ldap_struct, entry, "profilePath", profile_path)) {
 		pstrcpy(profile_path, lp_logon_path());
 		standard_sub_advanced(-1, username, "", gid, username, profile_path);
 		DEBUG(5,("profilePath fell back to %s\n",profile_path));
 		pdb_set_profile_path(sampass, profile_path, False);
-	}
-	else
+	} else {
 		pdb_set_profile_path(sampass, profile_path, True);
-		
-	get_single_attribute(ldap_struct, entry, "description", acct_desc);
-	get_single_attribute(ldap_struct, entry, "userWorkstations", workstations);
+	}
+
+	if (!get_single_attribute(ldap_struct, entry, "description", acct_desc)) {
+		/* leave as default */
+	} else {
+		pdb_set_acct_desc(sampass, acct_desc);
+	}
+
+	if (!get_single_attribute(ldap_struct, entry, "userWorkstations", workstations)) {
+		/* leave as default */;
+	} else {
+		pdb_set_workstations(sampass, workstations);
+	}
+
 	/* FIXME: hours stuff should be cleaner */
 	
 	logon_divs = 168;
 	hours_len = 21;
 	memset(hours, 0xff, hours_len);
 
-	get_single_attribute (ldap_struct, entry, "lmPassword", temp);
-	pdb_gethexpwd(temp, smblmpwd);
-	memset((char *)temp, '\0', sizeof(temp));
-	get_single_attribute (ldap_struct, entry, "ntPassword", temp);
-	pdb_gethexpwd(temp, smbntpwd);
-	memset((char *)temp, '\0', sizeof(temp));
-	get_single_attribute (ldap_struct, entry, "acctFlags", temp);
-	acct_ctrl = pdb_decode_acct_ctrl(temp);
+	if (!get_single_attribute (ldap_struct, entry, "lmPassword", temp)) {
+		/* leave as default */
+	} else {
+		pdb_gethexpwd(temp, smblmpwd);
+		memset((char *)temp, '\0', sizeof(temp));
+		if (!pdb_set_lanman_passwd(sampass, smblmpwd))
+			return False;
+	}
 
-	if (acct_ctrl == 0)
+	if (!get_single_attribute (ldap_struct, entry, "ntPassword", temp)) {
+		/* leave as default */
+	} else {
+		pdb_gethexpwd(temp, smbntpwd);
+		memset((char *)temp, '\0', sizeof(temp));
+		if (!pdb_set_nt_passwd(sampass, smbntpwd))
+			return False;
+	}
+
+	if (!get_single_attribute (ldap_struct, entry, "acctFlags", temp)) {
 		acct_ctrl |= ACB_NORMAL;
-	
-	pdb_set_acct_ctrl(sampass, acct_ctrl);
-	pdb_set_pass_last_set_time(sampass, pass_last_set_time);
+	} else {
+		acct_ctrl = pdb_decode_acct_ctrl(temp);
+
+		if (acct_ctrl == 0)
+			acct_ctrl |= ACB_NORMAL;
+
+		pdb_set_acct_ctrl(sampass, acct_ctrl);
+	}
 
 	pdb_set_hours_len(sampass, hours_len);
 	pdb_set_logon_divs(sampass, logon_divs);
@@ -671,17 +714,8 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	pdb_set_domain(sampass, domain);
 	pdb_set_nt_username(sampass, nt_username);
 
-	pdb_set_fullname(sampass, fullname);
-
-	pdb_set_acct_desc(sampass, acct_desc);
-	pdb_set_workstations(sampass, workstations);
 	pdb_set_munged_dial(sampass, munged_dial);
 	
-	if (!pdb_set_nt_passwd(sampass, smbntpwd))
-		return False;
-	if (!pdb_set_lanman_passwd(sampass, smblmpwd))
-		return False;
-
 	/* pdb_set_unknown_3(sampass, unknown3); */
 	/* pdb_set_unknown_5(sampass, unknown5); */
 	/* pdb_set_unknown_6(sampass, unknown6); */
