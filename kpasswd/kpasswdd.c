@@ -40,6 +40,8 @@
 #include <hdb.h>
 RCSID("$Id$");
 
+static sig_atomic_t exit_flag = 0;
+
 static void
 syslog_and_die (const char *m, ...)
 {
@@ -236,7 +238,7 @@ change (krb5_context context,
 	return;
     }
 
-    ent.principal = principal;
+    krb5_copy_principal (context, principal, &ent.principal);
 
     ret = db->fetch (context, db, &ent);
     
@@ -271,6 +273,7 @@ change (krb5_context context,
     } else {
 	Event *e;
 
+	free_EncryptionKey (old_keyblock);
 	memset (old_keyblock, 0, sizeof(*old_keyblock));
 	old_keyblock->keytype = new_keyblock.keytype;
 	krb5_data_copy (&old_keyblock->keyvalue,
@@ -280,10 +283,11 @@ change (krb5_context context,
 	e = malloc(sizeof(*e));
 	e->time = time(NULL);
 	krb5_copy_principal (context, principal, &e->principal);
+	free_Event (ent.modified_by);
+	free (ent.modified_by);
 	ent.modified_by = e;
 	ret = db->store (context, db, &ent);
     }
-    memset (&new_keyblock, 0, sizeof(new_keyblock));
     krb5_free_keyblock (context, &new_keyblock);
 
     if (ret == -1) {
@@ -349,7 +353,6 @@ verify (krb5_context context,
 	syslog (LOG_ERR, "initial flag not set");
 	reply_error (context, server, s, addr, ret, 1,
 		     "initial flag not set");
-	krb5_free_ticket (context, *ticket);
 	goto out;
     }
     krb_priv_data.data   = msg + 6 + ap_req_len;
@@ -389,19 +392,22 @@ process (krb5_context context,
     krb5_data_zero (&out_data);
 
     if (verify (context, &auth_context, server, &ticket, &out_data,
-		s, addr, msg, len) == 0)
+		s, addr, msg, len) == 0) {
 	change (context,
 		auth_context,
 		ticket->client,
 		s,
 		addr,
 		&out_data);
+	krb5_free_ticket (context, ticket);
+	free (ticket);
+    }
 
     krb5_data_free (&out_data);
     krb5_auth_con_free (context, auth_context);
 }
 
-static void
+static int
 doit (int port)
 {
     krb5_error_code ret;
@@ -445,22 +451,44 @@ doit (int port)
     addr.sin_port = port;
     if (bind (s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 	syslog_and_die ("bind: %m");
-    for (;;) {
+    while(exit_flag == 0) {
 	struct sockaddr_in other_addr;
+	struct fd_set fdset;
 	u_char buf[BUFSIZ];
 	int ret;
 	int addrlen = sizeof(other_addr);
+
+	FD_ZERO(&fdset);
+	FD_SET(s, &fdset);
+
+	ret = select (s + 1, &fdset, NULL, NULL, NULL);
+	if (ret < 0)
+	    if (errno == EINTR)
+		continue;
+	    else
+		syslog_and_die ("select: %m");
+	if (!FD_ISSET(s, &fdset))
+	    continue;
 
 	ret = recvfrom (s, buf, sizeof(buf), 0,
 			(struct sockaddr *)&other_addr,
 			&addrlen);
 	if (ret < 0)
 	    if(errno == EINTR)
-		continue;
+		break;
 	    else
 		syslog_and_die ("recvfrom: %m");
 	process (context, server, s, &other_addr, buf, ret);
     }
+    krb5_free_principal (context, server);
+    krb5_free_context (context);
+    return 0;
+}
+
+static RETSIGTYPE
+sigterm(int sig)
+{
+    exit_flag = 1;
 }
 
 int
@@ -469,6 +497,7 @@ main (int argc, char **argv)
     set_progname (argv[0]);
     openlog ("kpasswdd", LOG_ODELAY | LOG_PID, LOG_AUTH);
 
-    doit (krb5_getportbyname ("kpasswd", "udp", htons(KPASSWD_PORT)));
-    return 0;
+    signal (SIGINT, sigterm);
+
+    return doit (krb5_getportbyname ("kpasswd", "udp", htons(KPASSWD_PORT)));
 }
