@@ -64,6 +64,8 @@ main(int argc, char **argv)
     
     configure(argc, argv);
 
+    krb5_init_context(&context);
+
     if(keyfile){
 	FILE *f;
 	size_t len;
@@ -93,7 +95,6 @@ main(int argc, char **argv)
 
 
     signal(SIGINT, sigterm);
-    krb5_init_context(&context);
     loop(context);
     krb5_free_context(context);
     return 0;
