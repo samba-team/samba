@@ -143,7 +143,7 @@ GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe)
 
 	cr.in.system_name = 0;
 	cr.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	cr.out.handle = &handle;
+	cr.out.connect_handle = &handle;
 
 	status = dcerpc_samr_Connect(sam_pipe, mem_ctx, &cr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -152,7 +152,7 @@ GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe)
 		return GTK_WIDGET(d);
 	}
 
-	r.in.handle = &handle;
+	r.in.connect_handle = &handle;
 	r.in.resume_handle = &resume_handle;
 	r.in.buf_size = (uint32_t)-1;
 	r.out.resume_handle = &resume_handle;
