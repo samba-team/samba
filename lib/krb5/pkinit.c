@@ -417,7 +417,12 @@ build_auth_pack(krb5_context context,
     krb5_timestamp sec;
     int32_t usec;
 
-    cksum = CKSUMTYPE_SHA1; /* XXX PACKETCABLE can have problems with this */
+#if 0
+    /* XXX some PACKETCABLE needs implemetations need md5 */
+    cksum = CKSUMTYPE_RSA_MD5;
+#else
+    cksum = CKSUMTYPE_SHA1;
+#endif
 
     krb5_us_timeofday(context, &sec, &usec);
     a->pkAuthenticator.ctime = sec;
@@ -996,8 +1001,8 @@ _krb5_pk_verify_sign(krb5_context context,
 		     const char *data,
 		     size_t length,
 		     struct krb5_pk_identity *id,
-		     heim_oid *eContentType,
-		     krb5_data *eContent,
+		     heim_oid *contentType,
+		     krb5_data *content,
 		     struct krb5_pk_cert **signer)
 {
     STACK_OF(X509) *certificates;
@@ -1012,9 +1017,9 @@ _krb5_pk_verify_sign(krb5_context context,
     size_t size;
     
     *signer = NULL;
-    krb5_data_zero(eContent);
-    eContentType->length = 0;
-    eContentType->components = NULL;
+    krb5_data_zero(content);
+    contentType->length = 0;
+    contentType->components = NULL;
 
     memset(&sd, 0, sizeof(sd));
 
@@ -1036,11 +1041,11 @@ _krb5_pk_verify_sign(krb5_context context,
     /* XXX Check CMS version */
 
     if (sd.signerInfos.len < 1) {
-	free_SignedData(&sd);
 	krb5_set_error_string(context,
 			      "PKINIT: signature information missing from "
 			      "pkinit response");
-	return KRB5_KDC_ERR_INVALID_SIG;
+	ret = KRB5_KDC_ERR_INVALID_SIG;
+	goto out;
     }
 
     signer_info = &sd.signerInfos.val[0];
@@ -1049,8 +1054,7 @@ _krb5_pk_verify_sign(krb5_context context,
     if (ret) {
 	krb5_set_error_string(context,
 			      "PKINIT: failed to decode CertificateSet");
-	free_SignedData(&sd);
-	return ret;
+	goto out;
     }
 
     ret = cert_to_X509(context, &set, &certificates);
@@ -1058,8 +1062,7 @@ _krb5_pk_verify_sign(krb5_context context,
     if (ret) {
 	krb5_set_error_string(context,
 			      "PKINIT: failed to decode Certificates");
-	free_SignedData(&sd);
-	return ret;
+	goto out;
     }
 
     ret = pk_verify_chain_standard(context, id,
@@ -1067,10 +1070,8 @@ _krb5_pk_verify_sign(krb5_context context,
 				   certificates,
 				   &cert);
     sk_X509_free(certificates);
-    if (ret) {
-	free_SignedData(&sd);
-	return ret;
-    }
+    if (ret)
+	goto out;
   
     if (signer_info->signature.length == 0) {
 	free_SignedData(&sd);
@@ -1094,10 +1095,10 @@ _krb5_pk_verify_sign(krb5_context context,
 	evp_type = EVP_sha1();
     else {
 	X509_free(cert);
-	free_SignedData(&sd);
-	krb5_set_error_string(context, "The requested digest algorithm is "
-			      "not supported");
-	return KRB5_KDC_ERR_INVALID_SIG;
+	krb5_set_error_string(context, "PKINIT: The requested digest "
+			      "algorithm is not supported");
+	ret = KRB5_KDC_ERR_INVALID_SIG;
+	goto out;
     }
 
     EVP_VerifyInit(&md, evp_type);
@@ -1110,27 +1111,26 @@ _krb5_pk_verify_sign(krb5_context context,
 			  public_key);
     if (ret != 1) {
 	X509_free(cert);
-	free_SignedData(&sd);
 	krb5_set_error_string(context, "PKINIT: signature didn't verify: %s",
 			      ERR_error_string(ERR_get_error(), NULL));
-	return KRB5_KDC_ERR_INVALID_SIG;
+	ret = KRB5_KDC_ERR_INVALID_SIG;
+	goto out;
     }
 
-    ret = copy_oid(&sd.encapContentInfo.eContentType, eContentType);
+    ret = copy_oid(&sd.encapContentInfo.eContentType, contentType);
     if (ret) {
 	krb5_clear_error_string(context);
 	goto out;
     }
 
-    eContent->data = malloc(sd.encapContentInfo.eContent->length);
-    if (eContent->data == NULL) {
-	free_oid(eContentType);
+    content->data = malloc(sd.encapContentInfo.eContent->length);
+    if (content->data == NULL) {
 	krb5_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
-    eContent->length = sd.encapContentInfo.eContent->length;
-    memcpy(eContent->data,sd.encapContentInfo.eContent->data,eContent->length);
+    content->length = sd.encapContentInfo.eContent->length;
+    memcpy(content->data,sd.encapContentInfo.eContent->data,content->length);
 
     *signer = malloc(sizeof(**signer));
     if (*signer == NULL) {
@@ -1143,15 +1143,15 @@ _krb5_pk_verify_sign(krb5_context context,
  out:
     free_SignedData(&sd);
     if (ret) {
-	free_oid(eContentType);
-	krb5_data_free(eContent);
+	free_oid(contentType);
+	krb5_data_free(content);
     }
     return ret;
 }
 
 static krb5_error_code
 get_reply_key(krb5_context context,
-	      const krb5_data *eContent,
+	      const krb5_data *content,
 	      unsigned nonce,
 	      krb5_keyblock **key)
 {
@@ -1159,8 +1159,8 @@ get_reply_key(krb5_context context,
     krb5_error_code ret;
     size_t size;
 
-    ret = decode_ReplyKeyPack(eContent->data,
-			      eContent->length,
+    ret = decode_ReplyKeyPack(content->data,
+			      content->length,
 			      &key_pack,
 			      &size);
     if (ret) {
@@ -1221,8 +1221,8 @@ pk_rd_pa_reply_enckey(krb5_context context,
     X509 *user_cert;
     char *p;
     krb5_boolean bret;
-    krb5_data eContent;
-    heim_oid eContentType = { 0, NULL };
+    krb5_data content;
+    heim_oid contentType = { 0, NULL };
     struct krb5_pk_cert *host = NULL;
     heim_octet_string encryptedContent;
     heim_octet_string *any;
@@ -1233,7 +1233,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     memset(&tmp_key, 0, sizeof(tmp_key));
     memset(&ed, 0, sizeof(ed));
     krb5_data_zero(&plain);
-    krb5_data_zero(&eContent);
+    krb5_data_zero(&content);
     krb5_data_zero(&encryptedContent);
     krb5_data_zero(&ivec);
 
@@ -1373,8 +1373,8 @@ pk_rd_pa_reply_enckey(krb5_context context,
 			       p,
 			       length,
 			       ctx->id,
-			       &eContentType,
-			       &eContent,
+			       &contentType,
+			       &content,
 			       &host);
     if (ret)
 	goto out;
@@ -1387,20 +1387,20 @@ pk_rd_pa_reply_enckey(krb5_context context,
     }
 
     if (win2k_compat) {
-	if (heim_oid_cmp(&eContentType, &pkcs7_data_oid) != 0) {
+	if (heim_oid_cmp(&contentType, &pkcs7_data_oid) != 0) {
 	    krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
 	}
     } else {
-	if (heim_oid_cmp(&eContentType, &heim_pkrkeydata_oid) != 0) {
+	if (heim_oid_cmp(&contentType, &heim_pkrkeydata_oid) != 0) {
 	    krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
 	}
     }
 
-    ret = get_reply_key(context, &eContent, nonce, key);
+    ret = get_reply_key(context, &content, nonce, key);
     if (ret)
 	goto out;
 
@@ -1409,9 +1409,9 @@ pk_rd_pa_reply_enckey(krb5_context context,
  out:
     if (host)
 	_krb5_pk_cert_free(host);
-    free_oid(&eContentType);
+    free_oid(&contentType);
     free_octet_string(&encryptedContent);
-    krb5_data_free(&eContent);
+    krb5_data_free(&content);
     krb5_free_keyblock_contents(context, &tmp_key);
     krb5_data_free(&plain);
     krb5_data_free(&ivec);
@@ -1433,13 +1433,13 @@ pk_rd_pa_reply_dh(krb5_context context,
     struct krb5_pk_cert *host = NULL;
     BIGNUM *kdc_dh_pubkey = NULL;
     KDCDHKeyInfo kdc_dh_info;
-    heim_oid eContentType = { 0, NULL };
-    krb5_data eContent;
+    heim_oid contentType = { 0, NULL };
+    krb5_data content;
     krb5_error_code ret;
     int dh_gen_keylen;
     size_t size;
 
-    krb5_data_zero(&eContent);
+    krb5_data_zero(&content);
     memset(&kdc_dh_info, 0, sizeof(kdc_dh_info));
 
     if (heim_oid_cmp(&pkcs7_signed_oid, &rep->contentType)) {
@@ -1456,8 +1456,8 @@ pk_rd_pa_reply_dh(krb5_context context,
 			       rep->content->data,
 			       rep->content->length,
 			       ctx->id,
-			       &eContentType,
-			       &eContent,
+			       &contentType,
+			       &content,
 			       &host);
     if (ret)
 	goto out;
@@ -1467,13 +1467,13 @@ pk_rd_pa_reply_dh(krb5_context context,
     if (ret)
 	goto out;
 
-    if (heim_oid_cmp(&eContentType, &heim_pkdhkeydata_oid)) {
+    if (heim_oid_cmp(&contentType, &heim_pkdhkeydata_oid)) {
 	ret = KRB5KRB_AP_ERR_MSG_TYPE; /* XXX */
 	goto out;
     }
 
-    ret = decode_KDCDHKeyInfo(eContent.data,
-			      eContent.length,
+    ret = decode_KDCDHKeyInfo(content.data,
+			      content.length,
 			      &kdc_dh_info,
 			      &size);
 
@@ -1545,8 +1545,8 @@ pk_rd_pa_reply_dh(krb5_context context,
 	ASN1_INTEGER_free(dh_pub_key);
     if (host)
 	_krb5_pk_cert_free(host);
-    if (eContent.data)
-	krb5_data_free(&eContent);
+    if (content.data)
+	krb5_data_free(&content);
     free_KDCDHKeyInfo(&kdc_dh_info);
 
     return ret;
