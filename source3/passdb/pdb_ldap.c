@@ -422,6 +422,8 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			smbntpwd[NT_HASH_LEN];
 	uint16 		acct_ctrl = 0, 
 			logon_divs;
+	uint16 		bad_password_count = 0, 
+			logon_count = 0;
 	uint32 hours_len;
 	uint8 		hours[MAX_HOURS_LEN];
 	pstring temp;
@@ -704,7 +706,23 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	pdb_set_munged_dial(sampass, munged_dial, PDB_SET);
 	
 	/* pdb_set_unknown_3(sampass, unknown3, PDB_SET); */
-	/* pdb_set_unknown_5(sampass, unknown5, PDB_SET); */
+
+	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_BAD_PASSWORD_COUNT), temp)) {
+			/* leave as default */
+	} else {
+		bad_password_count = (uint32) atol(temp);
+		pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
+	}
+
+	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_COUNT), temp)) {
+			/* leave as default */
+	} else {
+		logon_count = (uint32) atol(temp);
+		pdb_set_logon_count(sampass, logon_count, PDB_SET);
+	}
+
 	/* pdb_set_unknown_6(sampass, unknown6, PDB_SET); */
 
 	pdb_set_hours(sampass, hours, PDB_SET);

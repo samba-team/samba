@@ -85,7 +85,8 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	
 	printf("\tunknown_3:\t0x%08x\n", usr->unknown_3); /* 0x00ff ffff */
 	printf("\tlogon_divs:\t%d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
-	printf("\tunknown_5:\t0x%08x\n", usr->unknown_5); /* 0x0002 0000 */
+	printf("\tbad_password_count:\t0x%08x\n", usr->bad_password_count);
+	printf("\tlogon_count:\t0x%08x\n", usr->logon_count);
 	
 	printf("\tpadding1[0..7]...\n");
 	
