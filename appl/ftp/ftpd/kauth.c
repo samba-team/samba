@@ -189,7 +189,7 @@ void kauth(char *principal, char *ticket)
     char *p;
     int ret;
   
-    ret = krb_parse_name(&pr, principal);
+    ret = krb_parse_name(principal, &pr);
     if(ret){
 	reply(500, "Bad principal: %s.", krb_get_err_text(ret));
 	return;
@@ -215,14 +215,14 @@ void kauth(char *principal, char *ticket)
 	return;
     }
     
-    ret = krb_get_in_tkt (pr.name, pr.instance, pr.realm, "krbtgt", realm, 12,
+    ret = krb_get_in_tkt (pr.name, pr.instance, pr.realm, "krbtgt", pr.realm, 12,
 			  NULL, save_tkt, NULL);
     if(ret != INTK_BADPW){
 	reply(500, "Kerberos error: %s.", krb_get_err_text(ret));
 	return;
     }
     base64_encode(cip.dat, cip.length, &p);
-    reply(300, "P=%s T=%s", krb_unparse_name_long(&pr), p);
+    reply(300, "P=%s T=%s", krb_unparse_name(&pr), p);
     free(p);
     memset(&cip, 0, sizeof(cip));
 }
@@ -311,7 +311,7 @@ void klist(void)
 	else
 	    strcpy(buf2, ">>> Expired <<< ");
 	lreply(200, "%s  %s  %s (%d)", buf1, buf2,
-	       krb_unparse_name(c.service, c.instance, c.realm), c.kvno); 
+	       krb_unparse_name_long(c.service, c.instance, c.realm), c.kvno); 
     }
     if (header && err == EOF) {
 	lreply(200, "No tickets in file.");
