@@ -63,8 +63,12 @@ install-suid-programs:
 install-exec-hook: install-suid-programs
 
 install-build-headers::
-	@foo='$(include_HEADERS) $(build_HEADERZ)'; \
+	@foo='$(include_HEADERS)'; \
+	if test -n "$(build_HEADERZ)"; then \
+		foo="$$foo $(build_HEADERZ)"; \
+	fi; \
 	for f in $$foo; do \
+		f=`basename $$f`; \
 		if test -f "$(srcdir)/$$f"; then file="$(srcdir)/$$f"; \
 		else file="$$f"; fi; \
 		if cmp -s  $$file $(buildinclude)/$$f 2> /dev/null ; then \
