@@ -35,18 +35,19 @@
 
 RCSID("$Id$");
 
-/*
- * change the password of `princ' to `password'
- */
-
-kadm5_ret_t
-kadm5_s_chpass_principal(void *server_handle, 
-			 krb5_principal princ,
-			 char *password)
+static kadm5_ret_t
+change(void *server_handle, 
+       krb5_principal princ,
+       char *password,
+       int cond)
 {
     kadm5_server_context *context = server_handle;
     hdb_entry ent;
     kadm5_ret_t ret;
+    Key *keys;
+    size_t num_keys;
+    int cmp = 1;
+
     ent.principal = princ;
     ret = context->db->open(context->context, context->db, O_RDWR, 0);
     if(ret)
@@ -55,9 +56,26 @@ kadm5_s_chpass_principal(void *server_handle,
 			     0, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
+
+    num_keys = ent.keys.len;
+    keys     = ent.keys.val;
+
+    ent.keys.len = 0;
+    ent.keys.val = NULL;
+
     ret = _kadm5_set_keys(context, &ent, password);
-    if(ret)
+    if(ret) {
+	_kadm5_free_keys (server_handle, num_keys, keys);
 	goto out2;
+    }
+    if (cond)
+	cmp = _kadm5_cmp_keys (ent.keys.val, ent.keys.len,
+			       keys, num_keys);
+    _kadm5_free_keys (server_handle, num_keys, keys);
+
+    if (cmp == 0)
+	goto out2;
+
     ret = _kadm5_set_modifier(context, &ent);
     if(ret)
 	goto out2;
@@ -76,6 +94,32 @@ out2:
 out:
     context->db->close(context->context, context->db);
     return _kadm5_error_code(ret);
+}
+
+
+
+/*
+ * change the password of `princ' to `password' if it's not already that.
+ */
+
+kadm5_ret_t
+kadm5_s_chpass_principal_cond(void *server_handle, 
+			      krb5_principal princ,
+			      char *password)
+{
+    return change (server_handle, princ, password, 1);
+}
+
+/*
+ * change the password of `princ' to `password'
+ */
+
+kadm5_ret_t
+kadm5_s_chpass_principal(void *server_handle, 
+			 krb5_principal princ,
+			 char *password)
+{
+    return change (server_handle, princ, password, 0);
 }
 
 /*
