@@ -429,39 +429,44 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
 /* Return a group structure from a group name */
 
-enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_state *state)
+enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state 
+                                                  *state)
 {
     DOM_SID domain_group_sid;
     struct winbindd_domain *domain;
     enum SID_NAME_USE name_type;
     uint32 group_rid;
-    fstring name_domain, name_group;
+    fstring name_domain, name_group, name;
     POSIX_ID surs_gid;
-    char *the_name;
+    char *tmp;
 
     /* Look for group domain name */
 
-    the_name = state->request.data.groupname;
-    next_token(&the_name, name_domain, "/\\", sizeof(fstring));
+    tmp = state->request.data.groupname;
+    next_token(&tmp, name_domain, "/\\", sizeof(fstring));
     next_token(NULL, name_group, "", sizeof(fstring));
 
     /* Get domain sid for the domain */
 
-    if ((domain = find_domain_sid_from_name(name_domain)) == NULL) {
+    if ((domain = find_domain_from_name(name_domain)) == NULL) {
         DEBUG(0, ("getgrname_from_group(): could not get domain sid for "
                   "domain %s\n", name_domain));
         return WINBINDD_ERROR;
     }
 
+    fstrcpy(name, name_domain);
+    fstrcat(name, "\\");
+    fstrcat(name, name_group);
+
     /* Get rid and name type from NT server */
         
-    if (!winbindd_lookup_sid_by_name(domain, name_group, &domain_group_sid, 
+    if (!winbindd_lookup_sid_by_name(domain, name, &domain_group_sid, 
                                      &name_type)) {
         DEBUG(1, ("group %s in domain %s does not exist\n", name_group,
                   name_domain));
         return WINBINDD_ERROR;
     }
-        
+
     if ((name_type != SID_NAME_ALIAS) && (name_type != SID_NAME_DOM_GRP)) {
         DEBUG(1, ("from_group: name '%s' is not a local or domain group: %d\n",
                   name_group, name_type));
@@ -492,7 +497,8 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_state *state)
 
 /* Return a group structure from a gid number */
 
-enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_state *state)
+enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state 
+                                                *state)
 {
     struct winbindd_domain *domain;
     DOM_SID domain_group_sid;
@@ -561,7 +567,7 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_state *state)
 
 /* "Rewind" file pointer for group database enumeration */
 
-enum winbindd_result winbindd_setgrent(struct winbindd_state *state)
+enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 {
     struct winbindd_domain *tmp;
 
@@ -607,7 +613,7 @@ enum winbindd_result winbindd_setgrent(struct winbindd_state *state)
 
 /* Close file pointer to ntdom group database */
 
-enum winbindd_result winbindd_endgrent(struct winbindd_state *state)
+enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 {
     if (state == NULL) return WINBINDD_ERROR;
 
@@ -619,7 +625,7 @@ enum winbindd_result winbindd_endgrent(struct winbindd_state *state)
 
 /* Fetch next group entry from netdom database */
 
-enum winbindd_result winbindd_getgrent(struct winbindd_state *state)
+enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 {
     if (state == NULL) return WINBINDD_ERROR;
 
@@ -643,7 +649,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_state *state)
 
                 do {
                     status =
-                        samr_enum_dom_aliases(&ent->domain->sam_dom_handle,
+                        samr_enum_dom_aliases(&ent->domain->sam_blt_handle,
                                               &start_ndx, 0x100000,
                                               &ent->sam_entries,
                                               &ent->num_sam_entries);

@@ -25,13 +25,13 @@
 
 /* List of all connected clients */
 
-static struct winbindd_state *client_list;
+static struct winbindd_cli_state *client_list;
 
 /* Print client information */
 
 void do_print_client_info(void)
 {
-    struct winbindd_state *client;
+    struct winbindd_cli_state *client;
     int i;
 
     if (client_list == NULL) {
@@ -179,14 +179,14 @@ static int create_sock(void)
     return sock;
 }
 
-static void process_request(struct winbindd_state *state)
+static void process_request(struct winbindd_cli_state *state)
 {
     /* Process command */
 
     state->response.result = WINBINDD_ERROR;
 
-    fprintf(stderr, "processing command %d from pid %d\n", 
-            state->request.cmd, state->pid);
+    fprintf(stderr, "processing command %s from pid %d\n", 
+            winbindd_cmd_to_string(state->request.cmd), state->pid);
 
     switch(state->request.cmd) {
         
@@ -240,8 +240,6 @@ static void process_request(struct winbindd_state *state)
         DEBUG(0, ("oops - unknown winbindd command %d\n", state->request.cmd));
         break;
     }
-
-    fprintf(stderr, "done\n");
 }
 
 /* Process a new connection by adding it to the client connection list */
@@ -249,7 +247,7 @@ static void process_request(struct winbindd_state *state)
 static void new_connection(int accept_sock)
 {
     struct sockaddr_un sunaddr;
-    struct winbindd_state *state;
+    struct winbindd_cli_state *state;
     int len, sock;
     
     /* Accept connection */
@@ -265,7 +263,9 @@ static void new_connection(int accept_sock)
 
     /* Create new connection structure */
 
-    if ((state = (struct winbindd_state *)malloc(sizeof(*state))) == NULL) {
+    if ((state = (struct winbindd_cli_state *)
+         malloc(sizeof(*state))) == NULL) {
+
         return;
     }
 
@@ -279,7 +279,7 @@ static void new_connection(int accept_sock)
 
 /* Remove a client connection from client connection list */
 
-static void remove_client(struct winbindd_state *state)
+static void remove_client(struct winbindd_cli_state *state)
 {
     /* It's a dead client - hold a funeral */
 
@@ -303,7 +303,7 @@ static void remove_client(struct winbindd_state *state)
 
 /* Process a complete received packet from a client */
 
-static void process_packet(struct winbindd_state *state)
+static void process_packet(struct winbindd_cli_state *state)
 {
     /* Process request */
 
@@ -319,7 +319,7 @@ static void process_packet(struct winbindd_state *state)
 
 /* Read some data from a client connection */
 
-static void client_read(struct winbindd_state *state)
+static void client_read(struct winbindd_cli_state *state)
 {
     int n;
     
@@ -347,7 +347,7 @@ static void client_read(struct winbindd_state *state)
 
 /* Write some data to a client connection */
 
-static void client_write(struct winbindd_state *state)
+static void client_write(struct winbindd_cli_state *state)
 {
     int n;
 
@@ -384,7 +384,7 @@ static void process_loop(int accept_sock)
     /* We'll be doing this a lot */
 
     while (1) {
-        struct winbindd_state *state;
+        struct winbindd_cli_state *state;
         fd_set r_fds, w_fds;
         int maxfd = accept_sock, selret;
 
@@ -403,10 +403,8 @@ static void process_loop(int accept_sock)
             /* Dispose of client connection if it is marked as finished */ 
 
             if (state->finished) {
-                struct winbindd_state *next = state->next;
+                struct winbindd_cli_state *next = state->next;
 
-                fprintf(stderr, "removing client sock %d, pid %d\n", 
-                        state->sock, state->pid);
                 remove_client(state);
                 state = next;
                 continue;
@@ -494,6 +492,8 @@ static void process_loop(int accept_sock)
 
 /* Main function */
 
+struct winbindd_state server_state;   /* Server state information */
+
 int main(int argc, char **argv)
 {
     extern fstring global_myname;
@@ -526,6 +526,9 @@ int main(int argc, char **argv)
     }
 
     pwdb_initialise(False);
+
+    ZERO_STRUCT(server_state);
+    fstrcpy(server_state.controller, lp_passwordserver());
 
     if (!winbindd_param_init()) {
         return 1;

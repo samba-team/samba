@@ -29,27 +29,96 @@
 
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 {
-    fstring level5_dom;
+    fstring level5_dom, domain_controller;
     BOOL res;
 
     if (domain == NULL) {
         return False;
     }
 
-    if (!get_any_dc_name(domain_name, domain->controller)) {
+    /* Get controller name for domain */
+
+    if (!get_any_dc_name(domain_name, domain_controller)) {
         return False;
     }
 
-    /* Get SID from domain controller.  We must call lsa_open_policy()
-       directly to avoid an infinite loop with open_lsa_handle() function. */ 
+    if (strnequal("\\\\", domain_controller, 2)) {
+        fstrcpy(domain->controller, &domain_controller[2]);
+    } else {
+        fstrcpy(domain->controller, domain_controller);
+    }
 
-    domain->lsa_handle_open =
-        lsa_open_policy(domain->controller, &domain->lsa_handle, False, 
-                        SEC_RIGHTS_MAXIMUM_ALLOWED);
+    /* Lookup sid for domain.  We must call lsa_open_policy() directly to
+       avoid an infinite loop with open_lsa_handle() function. */
 
-    res = domain->lsa_handle_open ? 
-        lsa_query_info_pol(&domain->lsa_handle, 0x05, level5_dom, 
-                           &domain->sid) : False;
+    server_state.lsa_handle_open =
+        lsa_open_policy(server_state.controller, &server_state.lsa_handle, 
+                        False, SEC_RIGHTS_MAXIMUM_ALLOWED);
+        
+    if (strequal(domain->controller, server_state.controller)) {
+
+        /* Do a level 5 query info policy */
+
+        res = server_state.lsa_handle_open ? 
+            lsa_query_info_pol(&server_state.lsa_handle, 0x05, level5_dom, 
+                               &domain->sid) : False;
+    } else {
+	uint32 enum_ctx = 0;
+	uint32 num_doms = 0;
+	char **domains = NULL;
+	DOM_SID **sids = NULL;
+        int i;
+
+        /* Use lsaenumdomains to get sid for this domain */
+
+        res = server_state.lsa_handle_open ?
+            lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
+                               &num_doms, &domains, &sids) : False;
+
+        /* Look for domain name */
+
+        if (res && domains && sids) {
+            int found = False;
+
+            for(i = 0; i < num_doms; i++) {
+                if (strequal(domain_name, domains[i])) {
+                    sid_copy(&domain->sid, sids[i]);
+                    found = True;
+                    break;
+                }
+            }
+
+            res = found;
+        }
+
+        /* Free memory */
+
+        if (domains) {
+
+            /* Free array elements */
+
+            for(i = 0; i < num_doms; i++) {
+                safe_free(domains[i]);
+            }
+
+            /* Free array */
+
+            safe_free(domains);
+        }
+
+        if (sids) {
+            
+            /* Free array elements */
+
+            for(i = 0; i < num_doms; i++) {
+                safe_free(sids[i]);
+            }
+
+            /* Free array */
+
+            safe_free(sids);
+        }
+    }
 
     return res;
 }
@@ -99,13 +168,13 @@ BOOL open_lsa_handle(struct winbindd_domain *domain)
 
     /* Open lsa handle if it isn't already open */
 
-    if (domain->got_domain_info && !domain->lsa_handle_open) {
-        domain->lsa_handle_open =
-            lsa_open_policy(domain->controller, &domain->lsa_handle, False, 
-                            SEC_RIGHTS_MAXIMUM_ALLOWED);
+    if (domain->got_domain_info && !server_state.lsa_handle_open) {
+        server_state.lsa_handle_open =
+            lsa_open_policy(server_state.controller, &server_state.lsa_handle, 
+                            False, SEC_RIGHTS_MAXIMUM_ALLOWED);
     }
 
-    return domain->lsa_handle_open;
+    return server_state.lsa_handle_open;
 }
 
 /* Open sam and sam domain handles to a domain and cache the results */
@@ -130,11 +199,22 @@ BOOL open_sam_handles(struct winbindd_domain *domain)
 
     if (domain->sam_handle_open && !domain->sam_dom_handle_open) {
         domain->sam_dom_handle_open =
-            samr_open_domain(&domain->sam_handle, SEC_RIGHTS_MAXIMUM_ALLOWED,
-                             &domain->sid, &domain->sam_dom_handle);
+            samr_open_domain(&domain->sam_handle, 
+                             SEC_RIGHTS_MAXIMUM_ALLOWED, &domain->sid, 
+                             &domain->sam_dom_handle);
     }
 
-    return domain->sam_dom_handle_open;
+    /* Open sam builtin handle if it isn't already open */
+
+    if (domain->sam_handle_open && !domain->sam_blt_handle_open) {
+        domain->sam_blt_handle_open =
+            samr_open_domain(&domain->sam_handle,
+                             SEC_RIGHTS_MAXIMUM_ALLOWED, global_sid_builtin,
+                             &domain->sam_blt_handle);
+    }
+
+    return domain->sam_dom_handle_open && 
+        domain->sam_blt_handle_open;
 }
 
 /* Lookup a sid in a domain from a name */
@@ -160,8 +240,8 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
 
     /* Lookup name */
 
-    res = domain->lsa_handle_open ? 
-        lsa_lookup_names(&domain->lsa_handle, num_names, (char **)&name,
+    res = server_state.lsa_handle_open ? 
+        lsa_lookup_names(&server_state.lsa_handle, num_names, (char **)&name,
                          &sids, &types, &num_sids) : False;
 
     /* Return rid and type if lookup successful */
@@ -206,8 +286,8 @@ BOOL winbindd_lookup_name_by_sid(struct winbindd_domain *domain,
 
     /* Lookup name */
 
-    res = domain->lsa_handle_open ? 
-        lsa_lookup_sids(&domain->lsa_handle, num_sids, &sid, &names, 
+    res = server_state.lsa_handle_open ? 
+        lsa_lookup_sids(&server_state.lsa_handle, num_sids, &sid, &names, 
                         &types, &num_names) : False;
 
     /* Return name and type if successful */
@@ -314,38 +394,24 @@ int winbindd_lookup_aliasmem(struct winbindd_domain *domain,
                              DOM_SID ***sids, char ***names, 
                              enum SID_NAME_USE **name_types)
 {
+    POLICY_HND *pol;
     BOOL res;
 
     /* Open sam handles */
 
     if (!open_sam_handles(domain)) return False;
 
+    if (sid_equal(global_sid_builtin, &domain->sid)) {
+        pol = &domain->sam_blt_handle;
+    } else {
+        pol = &domain->sam_dom_handle;
+    }
+
     /* Query alias membership */
     
     res = domain->sam_dom_handle_open ? 
-        sam_query_aliasmem(domain->controller, &domain->sam_dom_handle, 
-                           alias_rid, num_names, sids, names, 
-                           name_types) : False;
-
-    return res;
-}
-
-/* Lookup alias information given a rid */
-
-int winbindd_lookup_aliasinfo(struct winbindd_domain *domain,
-                              uint32 alias_rid, ALIAS_INFO_CTR *info)
-{
-    BOOL res;
-
-    /* Open pipes */
-
-    if (!open_sam_handles(domain)) return False;
-
-    /* Query group info */
-    
-    res = domain->sam_dom_handle_open ? 
-        get_samr_query_aliasinfo(&domain->sam_dom_handle, 1, alias_rid, 
-                                 info) : False;
+        sam_query_aliasmem(domain->controller, pol, alias_rid, num_names, 
+                           sids, names, name_types) : False;
 
     return res;
 }
@@ -363,33 +429,6 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
     /* Search through list */
 
     for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-        if (strcmp(domain_name, tmp->name) == 0) {
-
-            /* Get domain info for this domain */
-
-            if (!tmp->got_domain_info && !get_domain_info(tmp)) {
-                return NULL;
-            }
-
-            return tmp;
-        }
-    }
-
-    /* Not found */
-
-    return NULL;
-}
-
-/* Given a domain name, return the domain sid and domain controller we
-   found in winbindd_surs_init(). */
-
-struct winbindd_domain *find_domain_sid_from_name(char *domain_name)
-{
-    struct winbindd_domain *tmp;
-
-    /* Search through list */
-
-    for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
         if (strcmp(domain_name, tmp->name) == 0) {
 
             /* Get domain info for this domain */
@@ -636,3 +675,59 @@ BOOL winbindd_param_init(void)
 
     return result;
 }
+
+/* Convert a enum winbindd_cmd to a string */
+
+char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
+{
+    char *result;
+
+    switch (cmd) {
+
+    case WINBINDD_GETPWNAM_FROM_USER:
+        result = "getpwnam from user";
+        break;
+            
+    case WINBINDD_GETPWNAM_FROM_UID:
+        result = "getpwnam from uid";
+        break;
+
+    case WINBINDD_GETGRNAM_FROM_GROUP:
+        result = "getgrnam from group";
+        break;
+
+    case WINBINDD_GETGRNAM_FROM_GID:
+        result = "getgrnam from gid";
+        break;
+
+    case WINBINDD_SETPWENT:
+        result = "setpwent";
+        break;
+
+    case WINBINDD_ENDPWENT:
+        result = "endpwent";
+        break;
+
+    case WINBINDD_GETPWENT:
+        result = "getpwent";
+        break;
+
+    case WINBINDD_SETGRENT:
+        result = "setgrent";
+        break;
+
+    case WINBINDD_ENDGRENT:
+        result = "endgrent"; 
+        break;
+
+    case WINBINDD_GETGRENT:
+        result = "getgrent";
+        break;
+
+    default:
+        result = "invalid command";
+        break;
+    }
+
+    return result;
+};

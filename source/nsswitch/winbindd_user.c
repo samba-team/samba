@@ -80,20 +80,21 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 
 /* Return a password structure from a username */
 
-enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_state *state) 
+enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state 
+                                                 *state) 
 {
     uint32 name_type, user_rid;
     SAM_USERINFO_CTR user_info;
     DOM_SID user_sid, group_sid, tmp_sid;
-    fstring name_domain, name_user;
+    fstring name_domain, name_user, name;
     struct winbindd_domain *domain;
     POSIX_ID uid, gid;
-    char *the_name;
+    char *tmp;
 
     /* Get domain */
 
-    the_name = state->request.data.username;
-    next_token(&the_name, name_domain, "/\\", sizeof(fstring));
+    tmp = state->request.data.username;
+    next_token(&tmp, name_domain, "/\\", sizeof(fstring));
     next_token(NULL, name_user, "", sizeof(fstring));
 
     if ((domain = find_domain_from_name(name_domain)) == NULL) {
@@ -101,10 +102,13 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_state *state)
         return WINBINDD_ERROR;
     }
 
+    fstrcpy(name, name_domain);
+    fstrcat(name, "\\");
+    fstrcat(name, name_user);
+
     /* Get rid and name type from name */
     
-    if (!winbindd_lookup_sid_by_name(domain, name_user, &user_sid, 
-                                     &name_type)) {
+    if (!winbindd_lookup_sid_by_name(domain, name, &user_sid, &name_type)) {
         DEBUG(1, ("user '%s' does not exist\n", name_user));
         return WINBINDD_ERROR;
     }
@@ -164,7 +168,8 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_state *state)
 
 /* Return a password structure given a uid number */
 
-enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_state *state)
+enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state 
+                                                *state)
 {
     DOM_SID domain_user_sid, tmp_sid;
     struct winbindd_domain *domain;
@@ -248,7 +253,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_state *state)
 
 /* Rewind file pointer for ntdom passwd database */
 
-enum winbindd_result winbindd_setpwent(struct winbindd_state *state)
+enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 {
     struct winbindd_domain *tmp;
 
@@ -300,7 +305,7 @@ enum winbindd_result winbindd_setpwent(struct winbindd_state *state)
 
 /* Close file pointer to ntdom passwd database */
 
-enum winbindd_result winbindd_endpwent(struct winbindd_state *state)
+enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 {
     if (state == NULL) return WINBINDD_ERROR;
 
@@ -312,7 +317,7 @@ enum winbindd_result winbindd_endpwent(struct winbindd_state *state)
 
 /* Fetch next passwd entry from ntdom database */
 
-enum winbindd_result winbindd_getpwent(struct winbindd_state *state)
+enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 {
     if (state == NULL) return WINBINDD_ERROR;
 

@@ -36,8 +36,8 @@ extern int DEBUGLEVEL;
 
 /* Client state structure */
 
-struct winbindd_state {
-    struct winbindd_state *prev, *next;       /* Linked list pointers */
+struct winbindd_cli_state {
+    struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
     int sock;                                 /* Open socket from client */
     pid_t pid;                                /* pid of client */
     int read_buf_len, write_buf_len;          /* Indexes in request/response */
@@ -56,35 +56,46 @@ struct getent_state {
     BOOL got_sam_entries;
 };
 
-extern struct winbindd_domain *domain_list;
+/* Server state structure */
 
-/* Structures to hold domain list */
+struct winbindd_state {
+
+    /* Netbios name of PDC */
+
+    fstring controller;
+
+    /* Cached handle to lsa pipe */
+
+    POLICY_HND lsa_handle;
+    BOOL lsa_handle_open;
+};
+
+extern struct winbindd_state server_state;  /* Server information */
+
+/* Structures to hold per domain information */
 
 struct winbindd_domain {
 
     /* Domain information */
 
     fstring name;                          /* Domain name */
-
     fstring controller;                    /* NetBIOS name of DC */
+
     DOM_SID sid;                           /* SID for this domain */
     BOOL got_domain_info;                  /* Got controller and sid */
 
     uid_t uid_low, uid_high;               /* Range of uids to allocate */
     gid_t gid_low, gid_high;               /* Range of gids to allocate */
 
-    /* Cached handle to lsa pipe */
-
-    POLICY_HND lsa_handle;
-    BOOL lsa_handle_open;
-
     /* Cached handles to samr pipe */
 
-    POLICY_HND sam_handle, sam_dom_handle;
-    BOOL sam_handle_open, sam_dom_handle_open;
+    POLICY_HND sam_handle, sam_dom_handle, sam_blt_handle;
+    BOOL sam_handle_open, sam_dom_handle_open, sam_blt_handle_open;
 
     struct winbindd_domain *prev, *next;   /* Linked list info */
 };
+
+extern struct winbindd_domain *domain_list;  /* List of domains we know */
 
 #include "winbindd_proto.h"
 
