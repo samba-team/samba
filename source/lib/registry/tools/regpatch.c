@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "registry.h"
 #include "lib/cmdline/popt_common.h"
 
 /*

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "rap.h"
 
 struct rap_call {
 	TALLOC_CTX *mem_ctx;

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "ldap_server/ldap_server.h"
 #include "dlinklist.h"
 
 

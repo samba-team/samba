@@ -23,6 +23,7 @@
 #include "auth/auth.h"
 #include "dlinklist.h"
 #include "asn_1.h"
+#include "ldap_server/ldap_server.h"
 
 /*
   close the socket and shutdown a server_context

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "rap.h"
 
 #define NERR_Success 0
 #define NERR_badpass 86
