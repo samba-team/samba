@@ -32,6 +32,7 @@
  */
 
 #include "krb5_locl.h"
+#include <com_err.h>
 
 RCSID("$Id$");
 
@@ -83,6 +84,7 @@ init_context_from_config_file(krb5_context context)
 {
     krb5_error_code ret;
     const char * tmp;
+    krb5_enctype *tmptypes;
 
     INIT_FIELD(context, time, max_skew, 5 * 60, "clockskew");
     INIT_FIELD(context, time, kdc_timeout, 3, "kdc_timeout");
@@ -90,8 +92,17 @@ init_context_from_config_file(krb5_context context)
 
     INIT_FIELD(context, string, http_proxy, NULL, "http_proxy");
 
-    set_etypes (context, "default_etypes", &context->etypes);
-    set_etypes (context, "default_etypes_des", &context->etypes_des);
+    ret = set_etypes (context, "default_etypes", &tmptypes);
+    if(ret)
+	return ret;
+    free(context->etypes);
+    context->etypes = tmptypes;
+    
+    ret = set_etypes (context, "default_etypes_des", &tmptypes);
+    if(ret)
+	return ret;
+    free(context->etypes_des);
+    context->etypes_des = tmptypes;
 
     /* default keytab name */
     INIT_FIELD(context, string, default_keytab, 
@@ -116,11 +127,14 @@ init_context_from_config_file(krb5_context context)
 				 "dns_proxy", NULL);
     if(tmp) 
 	roken_gethostby_setup(context->http_proxy, tmp);
+    krb5_free_host_realm (context, context->default_realms);
     context->default_realms = NULL;
 
     {
 	krb5_addresses addresses;
 	char **adr, **a;
+
+	krb5_set_extra_addresses(context, NULL);
 	adr = krb5_config_get_strings(context, NULL, 
 				      "libdefaults", 
 				      "extra_addresses", 
@@ -135,6 +149,7 @@ init_context_from_config_file(krb5_context context)
 	}
 	krb5_config_free_strings(adr);
 
+	krb5_set_ignore_addresses(context, NULL);
 	adr = krb5_config_get_strings(context, NULL, 
 				      "libdefaults", 
 				      "ignore_addresses", 
@@ -154,19 +169,6 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, int, fcache_vno, 0, "fcache_version");
 
-    context->cc_ops       = NULL;
-    context->num_cc_ops	  = 0;
-    krb5_cc_register(context, &krb5_fcc_ops, TRUE);
-    krb5_cc_register(context, &krb5_mcc_ops, TRUE);
-
-    context->num_kt_types = 0;
-    context->kt_types     = NULL;
-    krb5_kt_register (context, &krb5_fkt_ops);
-    krb5_kt_register (context, &krb5_mkt_ops);
-    krb5_kt_register (context, &krb5_akf_ops);
-    krb5_kt_register (context, &krb4_fkt_ops);
-    krb5_kt_register (context, &krb5_srvtab_fkt_ops);
-    krb5_kt_register (context, &krb5_any_ops);
     return 0;
 }
 
@@ -174,41 +176,45 @@ krb5_error_code
 krb5_init_context(krb5_context *context)
 {
     krb5_context p;
-    const char *config_file = NULL;
-    krb5_config_section *tmp_cf;
     krb5_error_code ret;
+    char **files;
 
-    ALLOC(p, 1);
+    p = calloc(1, sizeof(*p));
     if(!p)
 	return ENOMEM;
-    memset(p, 0, sizeof(krb5_context_data));
+
+    ret = krb5_get_default_config_files(&files);
+    if(ret) 
+	goto out;
+    ret = krb5_set_config_files(p, files);
+    krb5_free_config_files(files);
+    if(ret) 
+	goto out;
 
     /* init error tables */
     krb5_init_ets(p);
 
-    if(!issuid())
-	config_file = getenv("KRB5_CONFIG");
-    if (config_file == NULL)
-	config_file = krb5_config_file;
+    p->cc_ops = NULL;
+    p->num_cc_ops = 0;
+    krb5_cc_register(p, &krb5_fcc_ops, TRUE);
+    krb5_cc_register(p, &krb5_mcc_ops, TRUE);
 
-    ret = krb5_config_parse_file (p, config_file, &tmp_cf);
+    p->num_kt_types = 0;
+    p->kt_types     = NULL;
+    krb5_kt_register (p, &krb5_fkt_ops);
+    krb5_kt_register (p, &krb5_mkt_ops);
+    krb5_kt_register (p, &krb5_akf_ops);
+    krb5_kt_register (p, &krb4_fkt_ops);
+    krb5_kt_register (p, &krb5_srvtab_fkt_ops);
+    krb5_kt_register (p, &krb5_any_ops);
 
-    if (ret == 0)
-	p->cf = tmp_cf;
-#if 0
-    else
-	krb5_warnx (p, "Unable to parse config file %s.  Ignoring.",
-		    config_file); /* XXX */
-#endif
-
-    ret = init_context_from_config_file(p);
+out:
     if(ret) {
 	krb5_free_context(p);
-	return ret;
+	p = NULL;
     }
-
     *context = p;
-    return 0;
+    return ret;
 }
 
 void
@@ -227,6 +233,74 @@ krb5_free_context(krb5_context context)
     krb5_set_extra_addresses(context, NULL);
     krb5_set_ignore_addresses(context, NULL);
     free(context);
+}
+
+krb5_error_code
+krb5_set_config_files(krb5_context context, char **filenames)
+{
+    krb5_error_code ret;
+    krb5_config_binding *tmp = NULL;
+    while(filenames != NULL && *filenames != NULL && **filenames != '\0') {
+	ret = krb5_config_parse_file_multi(context, *filenames, &tmp);
+	if(ret != ENOENT) {
+	    krb5_config_file_free(context, tmp);
+	    return ret;
+	}
+    }
+    krb5_config_file_free(context, context->cf);
+    context->cf = tmp;
+    ret = init_context_from_config_file(context);
+    return ret;
+}
+
+krb5_error_code 
+krb5_get_default_config_files(char ***pfilenames)
+{
+    const char *p, *q;
+    char **pp;
+    int n;
+
+    const char *files = NULL;
+    if (pfilenames == NULL)
+        return EINVAL;
+    if(!issuid())
+	files = getenv("KRB5_CONFIG");
+    if (files == NULL)
+	files = krb5_config_file;
+
+    for(n = 0, p = files; strsep_copy(&p, ":", NULL, 0) != -1; n++);
+    pp = malloc((n + 1) * sizeof(*pp));
+    if(pp == NULL)
+	return ENOMEM;
+
+    n = 0;
+    p = files;
+    while(1) {
+	ssize_t l;
+	q = p;
+	l = strsep_copy(&q, ":", NULL, 0);
+	if(l == -1)
+	    break;
+	pp[n] = malloc(l + 1);
+	if(pp[n] == NULL) {
+	    krb5_free_config_files(pp);
+	    return ENOMEM;
+	}
+	l = strsep_copy(&p, ":", pp[n], l + 1);
+	n++;
+    }
+    pp[n] = NULL;
+    *pfilenames = pp;
+    return 0;
+}
+
+void
+krb5_free_config_files(char **filenames)
+{
+    char **p;
+    for(p = filenames; *p != NULL; p++)
+	free(*p);
+    free(filenames);
 }
 
 /*
