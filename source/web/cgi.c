@@ -251,7 +251,7 @@ tell a browser about a fatal error in the http processing
   ***************************************************************************/
 static void cgi_setup_error(char *err, char *header, char *info)
 {
-	printf("HTTP/1.1 %s\r\n%sConnection: close\r\nContent-Type: text/html\r\n\r\n<HTML><HEAD><TITLE>%s</TITLE></HEAD><BODY><H1>%s</H1>%s<p></BODY></HTML>\r\n", err, header, err, err, info);
+	printf("HTTP/1.0 %s\r\n%sConnection: close\r\nContent-Type: text/html\r\n\r\n<HTML><HEAD><TITLE>%s</TITLE></HEAD><BODY><H1>%s</H1>%s<p></BODY></HTML>\r\n", err, header, err, err, info);
 	exit(0);
 }
 
@@ -349,7 +349,7 @@ static void cgi_download(char *file)
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");
 	}
-	printf("HTTP/1.1 200 OK\r\n");
+	printf("HTTP/1.0 200 OK\r\n");
 	if ((p=strrchr(file,'.'))) {
 		if (strcmp(p,".gif")==0) {
 			printf("Content-Type: image/gif\r\n");
@@ -458,7 +458,7 @@ void cgi_setup(char *rootdir, int auth_required)
 		cgi_download(url);
 	}
 
-	printf("HTTP/1.1 200 OK\r\nConnection: close\r\n");
+	printf("HTTP/1.0 200 OK\r\nConnection: close\r\n");
 	printf("Date: %s\r\n", http_timestring(time(NULL)));
 	baseurl = "";
 	pathinfo = url+1;
