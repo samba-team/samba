@@ -30,15 +30,19 @@ krb5_get_krbhst (krb5_context context,
 	 return KRB5_REALM_UNKNOWN;
 
      *hostlist = malloc (2 * sizeof (char *));
-     (*hostlist)[0] = val;
+     (*hostlist)[0] = strdup(val);
      (*hostlist)[1] = NULL;
      return 0;
 }
 
 krb5_error_code
 krb5_free_krbhst (krb5_context context,
-		  char *const *hostlist)
+		  char **hostlist)
 {
-    free ((void *)hostlist);
+    char **p;
+
+    for (p = hostlist; *p; ++p)
+	free (*p);
+    free (hostlist);
     return 0;
 }
