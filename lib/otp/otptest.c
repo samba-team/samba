@@ -63,43 +63,83 @@ test_one(OtpKey key1, char *name, char *val, void (*print)(OtpKey,char*),
     return 1;
   }
   if (memcmp (key1, key2, OTPKEYSIZE) != 0) {
-    printf ("key1 != key2\n");
-    return 1;
+    printf ("key1 != key2, ");
   }
   printf ("success\n");
   return 0;
 }
 
 static int
-test ()
+test (void)
 {
-  OtpAlgorithm *alg = otp_find_alg ("md5");
-  char *passphrase = "This is a test.";
-  char *seed = "ke1234";
-  char *hex = "5bf075d9959d036f";
-  char *hex_extended = "hex:5bf075d9959d036f";
-  char *standard_word = "BOND FOGY DRAB NE RISE MART";
-  char *standard_word_extended = "word:BOND FOGY DRAB NE RISE MART";
-  OtpKey key;
-  int i;
-  int n = 499;
+  struct test {
+    char *alg;
+    char *passphrase;
+    char *seed;
+    int count;
+    char *hex;
+    char *word;
+  } tests[] = {
 
-  if (alg == NULL) {
-    printf ("Could not find md5\n");
-    return 1;
-  }
-  if(alg->init (key, passphrase, seed))
-    return 1;
-  for (i = 0; i < n; ++i) {
-    if (alg->next (key))
+    /* md4 */
+    {"md4", "This is a test.", "TeSt", 0, "d1854218ebbb0b51", "ROME MUG FRED SCAN LIVE LACE"},
+    {"md4", "This is a test.", "TeSt", 1, "63473ef01cd0b444", "CARD SAD MINI RYE COL KIN"},
+    {"md4", "This is a test.", "TeSt", 99, "c5e612776e6c237a", "NOTE OUT IBIS SINK NAVE MODE"},
+    {"md4", "AbCdEfGhIjK", "alpha1", 0, "50076f47eb1ade4e", "AWAY SEN ROOK SALT LICE MAP"},
+    {"md4", "AbCdEfGhIjK", "alpha1", 1, "65d20d1949b5f7ab", "CHEW GRIM WU HANG BUCK SAID"},
+    {"md4", "AbCdEfGhIjK", "alpha1", 99, "d150c82cce6f62d1", "ROIL FREE COG HUNK WAIT COCA"},
+    {"md4", "OTP's are good", "correct", 0, "849c79d4f6f55388", "FOOL STEM DONE TOOL BECK NILE"},
+    {"md4", "OTP's are good", "correct", 1, "8c0992fb250847b1", "GIST AMOS MOOT AIDS FOOD SEEM"},
+    {"md4", "OTP's are good", "correct",99, "3f3bf4b4145fd74b", "TAG SLOW NOV MIN WOOL KENO"},
+
+
+    /* md5 */
+    {"md5", "This is a test.", "TeSt", 0, "9e876134d90499dd", "INCH SEA ANNE LONG AHEM TOUR"},
+    {"md5", "This is a test.", "TeSt", 1, "7965e05436f5029f", "EASE OIL FUM CURE AWRY AVIS"},
+    {"md5", "This is a test.", "TeSt", 99, "50fe1962c4965880", "BAIL TUFT BITS GANG CHEF THY"},
+    {"md5", "AbCdEfGhIjK", "alpha1",  0, "87066dd9644bf206", "FULL PEW DOWN ONCE MORT ARC"},
+    {"md5", "AbCdEfGhIjK", "alpha1",   1, "7cd34c1040add14b", "FACT HOOF AT FIST SITE KENT"},
+    {"md5", "AbCdEfGhIjK", "alpha1",  99, "5aa37a81f212146c", "BODE HOP JAKE STOW JUT RAP"},
+    {"md5", "OTP's are good", "correct", 0,  "f205753943de4cf9", "ULAN NEW ARMY FUSE SUIT EYED"},
+    {"md5", "OTP's are good", "correct", 1, "ddcdac956f234937", "SKIM CULT LOB SLAM POE HOWL"},
+    {"md5", "OTP's are good", "correct",99, "b203e28fa525be47", "LONG IVY JULY AJAR BOND LEE"},
+
+    /* sha */
+    {"sha", "This is a test.", "TeSt", 0, "bb9e6ae1979d8ff4", "MILT VARY MAST OK SEES WENT"},
+    {"sha", "This is a test.", "TeSt", 1, "63d936639734385b", "CART OTTO HIVE ODE VAT NUT"},
+    {"sha", "This is a test.", "TeSt", 99, "87fec7768b73ccf9", "GAFF WAIT SKID GIG SKY EYED"},
+    {"sha", "AbCdEfGhIjK", "alpha1", 0, "ad85f658ebe383c9", "LEST OR HEEL SCOT ROB SUIT"},
+    {"sha", "AbCdEfGhIjK", "alpha1", 1, "d07ce229b5cf119b", "RITE TAKE GELD COST TUNE RECK"},
+    {"sha", "AbCdEfGhIjK", "alpha1", 99, "27bc71035aaf3dc6", "MAY STAR TIN LYON VEDA STAN"},
+    {"sha", "OTP's are good", "correct", 0, "d51f3e99bf8e6f0b", "RUST WELT KICK FELL TAIL FRAU"},
+    {"sha", "OTP's are good", "correct", 1, "82aeb52d943774e4", "FLIT DOSE ALSO MEW DRUM DEFY"},
+    {"sha", "OTP's are good", "correct", 99, "4f296a74fe1567ec", "AURA ALOE HURL WING BERG WAIT"},
+    {NULL}
+  };
+
+  struct test *t;
+  int sum = 0;
+
+  for(t = tests; t->alg; ++t) {
+    int i;
+    OtpAlgorithm *alg = otp_find_alg (t->alg);
+    OtpKey key;
+
+    if (alg == NULL) {
+      printf ("Could not find alg %s\n", t->alg);
       return 1;
+    }
+    if(alg->init (key, t->passphrase, t->seed))
+      return 1;
+    for (i = 0; i < t->count; ++i) {
+      if (alg->next (key))
+	return 1;
+    }
+    sum += test_one (key, "hexadecimal", t->hex, otp_print_hex,
+		     alg) +
+      test_one (key, "standard_word", t->word, otp_print_stddict, alg);
   }
-  return test_one (key, "hexadecimal", hex, otp_print_hex, alg) +
-    test_one (key, "extended hexadecimal", hex_extended,
-	      otp_print_hex_extended, alg) +
-    test_one (key, "standard word", standard_word, otp_print_stddict, alg) +
-    test_one (key, "extended standard word", standard_word_extended,
-	      otp_print_stddict_extended, alg);
+  return sum;
 }
 
 int
