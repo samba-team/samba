@@ -43,7 +43,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
 		if (ftruncate(f->fd,
-			      info->end_of_file_info.in.size) != 0) {
+			      info->end_of_file_info.in.size) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
 		break;
