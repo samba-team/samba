@@ -1,5 +1,7 @@
 2000-04-12  Assar Westerlund  <assar@sics.se>
 
+	* cpw.c (do_cpw_entry): call set_password if no argument is given,
+	it will prompt for the password.
 	* kadmin.c: make help only print the commands that are actually
 	available.
 
