@@ -13931,6 +13931,10 @@ EOF
 #define LINUX_SENDFILE_API 1
 EOF
 
+		cat >> confdefs.h <<\EOF
+#define WITH_SENDFILE 1
+EOF
+
 	elif test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
     		cat >> confdefs.h <<\EOF
 #define HAVE_SENDFILE 1
@@ -13940,13 +13944,17 @@ EOF
 #define LINUX_SENDFILE_API 1
 EOF
 
+		cat >> confdefs.h <<\EOF
+#define WITH_SENDFILE 1
+EOF
+
 	elif test x"$samba_cv_HAVE_BROKEN_LINUX_SENDFILE" = x"yes"; then
-    		cat >> confdefs.h <<\EOF
-#define HAVE_SENDFILE 1
+		cat >> confdefs.h <<\EOF
+#define LINUX_BROKEN_SENDFILE_API 1
 EOF
 
 		cat >> confdefs.h <<\EOF
-#define LINUX_BROKEN_SENDFILE_API 1
+#define WITH_SENDFILE 1
 EOF
 
 	else
@@ -13975,7 +13983,7 @@ fi
 # (WINBIND_STARGETS) and shared libraries (WINBIND_LTARGETS).
 
 echo $ac_n "checking whether to build winbind""... $ac_c" 1>&6
-echo "configure:13979: checking whether to build winbind" >&5
+echo "configure:13987: checking whether to build winbind" >&5
 
 # Initially, the value of $host_os decides whether winbind is supported
 
@@ -14071,20 +14079,20 @@ fi
 #		[#include <pwd.h>])
 
 echo $ac_n "checking whether struct passwd has pw_comment""... $ac_c" 1>&6
-echo "configure:14075: checking whether struct passwd has pw_comment" >&5
+echo "configure:14083: checking whether struct passwd has pw_comment" >&5
 if eval "test \"`echo '$''{'samba_cv_passwd_pw_comment'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
     cat > conftest.$ac_ext <<EOF
-#line 14081 "configure"
+#line 14089 "configure"
 #include "confdefs.h"
 #include <pwd.h>
 int main() {
 struct passwd p; p.pw_comment;
 ; return 0; }
 EOF
-if { (eval echo configure:14088: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:14096: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_passwd_pw_comment=yes
 else
@@ -14109,20 +14117,20 @@ fi
 #		[#include <pwd.h>])
 
 echo $ac_n "checking whether struct passwd has pw_age""... $ac_c" 1>&6
-echo "configure:14113: checking whether struct passwd has pw_age" >&5
+echo "configure:14121: checking whether struct passwd has pw_age" >&5
 if eval "test \"`echo '$''{'samba_cv_passwd_pw_age'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
     cat > conftest.$ac_ext <<EOF
-#line 14119 "configure"
+#line 14127 "configure"
 #include "confdefs.h"
 #include <pwd.h>
 int main() {
 struct passwd p; p.pw_age;
 ; return 0; }
 EOF
-if { (eval echo configure:14126: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:14134: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_passwd_pw_age=yes
 else
@@ -14161,7 +14169,7 @@ fi
 
 if test x"$INCLUDED_POPT" != x"yes"; then
     echo $ac_n "checking for poptGetContext in -lpopt""... $ac_c" 1>&6
-echo "configure:14165: checking for poptGetContext in -lpopt" >&5
+echo "configure:14173: checking for poptGetContext in -lpopt" >&5
 ac_lib_var=`echo popt'_'poptGetContext | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -14169,7 +14177,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lpopt  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 14173 "configure"
+#line 14181 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -14180,7 +14188,7 @@ int main() {
 poptGetContext()
 ; return 0; }
 EOF
-if { (eval echo configure:14184: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:14192: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -14204,7 +14212,7 @@ fi
 fi
 
 echo $ac_n "checking whether to use included popt""... $ac_c" 1>&6
-echo "configure:14208: checking whether to use included popt" >&5
+echo "configure:14216: checking whether to use included popt" >&5
 if test x"$INCLUDED_POPT" = x"yes"; then
     echo "$ac_t""yes" 1>&6
     BUILD_POPT='$(POPT_OBJS)'
@@ -14243,16 +14251,16 @@ fi
 # final configure stuff
 
 echo $ac_n "checking configure summary""... $ac_c" 1>&6
-echo "configure:14247: checking configure summary" >&5
+echo "configure:14255: checking configure summary" >&5
 if test "$cross_compiling" = yes; then
   echo "configure: warning: cannot run when cross-compiling" 1>&2
 else
   cat > conftest.$ac_ext <<EOF
-#line 14252 "configure"
+#line 14260 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:14256: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:14264: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "$ac_t""yes" 1>&6
 else

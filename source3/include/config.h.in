@@ -292,6 +292,7 @@
 #undef HAVE_SENDFILE64
 #undef LINUX_SENDFILE_API
 #undef LINUX_BROKEN_SENDFILE_API
+#undef WITH_SENDFILE
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
