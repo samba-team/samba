@@ -228,10 +228,10 @@ component principals (ordinary users). He will not be able to change any
 @samp{/admin} principal.
 
 @example
-lha/admin@E.KTH.SE	all
-jimmy/admin@E.KTH.SE	all		*@E.KTH.SE
-jimmy/admin@E.KTH.SE	all		*/*@E.KTH.SE
-mille/admin@E.KTH.SE	change-password	*@E.KTH.SE
+lha/admin@@E.KTH.SE	all
+jimmy/admin@@E.KTH.SE	all		*@@E.KTH.SE
+jimmy/admin@@E.KTH.SE	all		*/*@@E.KTH.SE
+mille/admin@@E.KTH.SE	change-password	*@@E.KTH.SE
 @end example
 
 @node Password changing, Testing clients and servers, Remote administration, Setting up a realm
