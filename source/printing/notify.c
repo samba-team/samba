@@ -243,18 +243,21 @@ static void send_spoolss_notify2_msg(SPOOLSS_NOTIFY_MSG *msg)
 	 * as they will just cause flickering updates in the client.
 	 */
 
-	if ((num_messages < 100) && (msg->type == JOB_NOTIFY_TYPE) &&
-				(msg->field == JOB_NOTIFY_TOTAL_BYTES || msg->field == JOB_NOTIFY_TOTAL_PAGES)) {
+	if ((num_messages < 100) && (msg->type == JOB_NOTIFY_TYPE) 
+		&& (msg->field == JOB_NOTIFY_TOTAL_BYTES 
+		    || msg->field == JOB_NOTIFY_TOTAL_PAGES )) 
+	{
 
-		for (tmp_ptr = notify_queue_head; tmp_ptr; tmp_ptr = tmp_ptr->next) {
+		for (tmp_ptr = notify_queue_head; tmp_ptr; tmp_ptr = tmp_ptr->next) 
+		{
 			if (tmp_ptr->msg->type == msg->type &&
 					tmp_ptr->msg->field == msg->field &&
 					tmp_ptr->msg->id == msg->id &&
 					tmp_ptr->msg->flags == msg->flags &&
 					strequal(tmp_ptr->msg->printer, msg->printer)) {
 
-				DEBUG(5, ("send_spoolss_notify2_msg: replacing message 0x%02x/0x%02x for printer %s \
-in notify_queue\n", msg->type, msg->field, msg->printer));
+				DEBUG(5,("send_spoolss_notify2_msg: replacing message 0x%02x/0x%02x for "
+					 "printer %s in notify_queue\n", msg->type, msg->field, msg->printer));
 
 				tmp_ptr->msg = msg;
 				return;

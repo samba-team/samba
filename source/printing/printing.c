@@ -442,21 +442,29 @@ static void pjob_store_notify(int snum, uint32 jobid, struct printjob *old_data,
 	if (!old_data)
 		new_job = True;
 
-	/* Notify the job name first */
-
-	if (new_job || !strequal(old_data->jobname, new_data->jobname))
-		notify_job_name(snum, jobid, new_data->jobname);
-
 	/* Job attributes that can't be changed.  We only send
 	   notification for these on a new job. */
 
+ 	/* ACHTUNG!  Due to a bug in Samba's spoolss parsing of the 
+ 	   NOTIFY_INFO_DATA buffer, we *have* to send the job submission 
+ 	   time first or else we'll end up with potential alignment 
+ 	   errors.  I don't think the systemtime should be spooled as 
+ 	   a string, but this gets us around that error.   
+ 	   --jerry (i'll feel dirty for this) */
+ 
 	if (new_job) {
 		notify_job_submitted(snum, jobid, new_data->starttime);
 		notify_job_username(snum, jobid, new_data->user);
 	}
 
+	if (new_job || !strequal(old_data->jobname, new_data->jobname))
+		notify_job_name(snum, jobid, new_data->jobname);
+
 	/* Job attributes of a new job or attributes that can be
 	   modified. */
+
+	if (new_job || !strequal(old_data->jobname, new_data->jobname))
+		notify_job_name(snum, jobid, new_data->jobname);
 
 	if (new_job || old_data->status != new_data->status)
 		notify_job_status(snum, jobid, map_to_spoolss_status(new_data->status));
@@ -575,26 +583,19 @@ void pjob_delete(int snum, uint32 jobid)
 		return;
 
 	if (!pjob) {
-		DEBUG(5, ("pjob_delete(): we were asked to delete nonexistent job %u\n",
+		DEBUG(5, ("pjob_delete: we were asked to delete nonexistent job %u\n",
 					(unsigned int)jobid));
 		release_print_db(pdb);
 		return;
 	}
 
-	/* Send a notification that a job has been deleted */
-
-	job_status = map_to_spoolss_status(pjob->status);
-
 	/* We must cycle through JOB_STATUS_DELETING and
            JOB_STATUS_DELETED for the port monitor to delete the job
            properly. */
 	
-	job_status |= JOB_STATUS_DELETING;
+	job_status = JOB_STATUS_DELETING|JOB_STATUS_DELETED;
 	notify_job_status(snum, jobid, job_status);
 	
-	job_status |= JOB_STATUS_DELETED;
-	notify_job_status(snum, jobid, job_status);
-
 	/* Remove from printing.tdb */
 
 	tdb_delete(pdb->tdb, print_key(jobid));
