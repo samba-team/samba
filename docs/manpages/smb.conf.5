@@ -1048,6 +1048,31 @@ or perhaps on a home network where you trust your wife and kids :-)
 .B Example
 	hosts equiv = /etc/hosts.equiv
 
+.SS interfaces (G)
+
+This option allows you to setup multiple network interfaces, so that
+Samba can properly handle browsing on all interfaces.
+
+The option takes a list of ip/netmask pairs. The netmask may either be
+a bitmask, or a bitlength. 
+
+For example, the following line:
+
+interfaces = 192.168.2.10/24 192.168.3.10/24
+
+would configure two network interfaces with IP addresses 192.168.2.10
+and 192.168.3.10. The netmasks of both interfaces would be set to
+255.255.255.0. 
+
+You could produce an equivalent result by using:
+
+interfaces = 192.168.2.10/255.255.255.0 192.168.3.10/255.255.255.0
+
+if you prefer that format.
+
+If this option is not set then Samba will attempt to find a primary
+interface, but won't attempt to configure more than one interface.
+
 .SS invalid users (S)
 This is a list of users that should not be allowed to login to this
 service. This is really a "paranoid" check to absolutely ensure an

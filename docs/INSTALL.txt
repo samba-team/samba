@@ -113,11 +113,12 @@ NOTE: Some unixes already have entries like netbios_ns (note the
 underscore) in /etc/services. You must either edit /etc/services or
 /etc/inetd.conf to make them consistant.
 
-NOTE: On many systems you may need to give the nmbd a -B parameter to
-specify the broadcast address of your interface. Run ifconfig as root
-if you don't know what the broadcast is for your net. nmbd tries to
-determine it at run time, but fails on some unixes. See the section on
-"testing nmbd" for a method of finding if you need to do this.
+NOTE: On many systems you may need to use the "interfaces" option in
+smb.conf to specify the IP address and netmask of your interfaces. Run
+ifconfig as root if you don't know what the broadcast is for your
+net. nmbd tries to determine it at run time, but fails on some
+unixes. See the section on "testing nmbd" for a method of finding if
+you need to do this.
 
 !!!WARNING!!! Many unixes only accept around 5 parameters on the
 command line in inetd. This means you shouldn't use spaces between the
