@@ -274,7 +274,6 @@ typedef struct dom_trust_info
 /* DOM_R_REF */
 typedef struct dom_ref_info
 {
-	uint32 undoc_buffer; /* undocumented buffer pointer. */
 	uint32 num_ref_doms_1; /* num referenced domains */
 	uint32 ptr_ref_dom; /* pointer to referenced domains */
 	uint32 max_entries; /* 32 - max number of entries */
@@ -336,7 +335,9 @@ typedef struct lsa_q_lookup_sids
 /* LSA_R_LOOKUP_SIDS - response to LSA Lookup SIDs */
 typedef struct lsa_r_lookup_sids
 {
+	uint32              ptr_dom_ref;
 	DOM_R_REF           *dom_ref; /* domain reference info */
+
 	LSA_TRANS_NAME_ENUM *names;
 	uint32              mapped_count;
 
@@ -364,10 +365,11 @@ typedef struct lsa_q_lookup_names
 /* LSA_R_LOOKUP_NAMES - response to LSA Lookup NAMEs by name */
 typedef struct lsa_r_lookup_names
 {
+	uint32 ptr_dom_ref;
 	DOM_R_REF *dom_ref; /* domain reference info */
 
 	uint32 num_entries;
-	uint32 undoc_buffer; /* undocumented buffer pointer */
+	uint32 ptr_entries;
 	uint32 num_entries2; 
 	DOM_RID2 *dom_rid; /* domain RIDs being looked up */
 
