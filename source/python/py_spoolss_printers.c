@@ -145,8 +145,7 @@ PyObject *spoolss_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 	/* Return value */
 
 	if (!W_ERROR_IS_OK(werror)) {
-		PyErr_SetObject(spoolss_werror,
-				PyInt_FromLong(W_ERROR_V(werror)));
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		return NULL;
 	}
 
@@ -313,8 +312,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 	/* Return value */
 	
 	if (!W_ERROR_IS_OK(werror)) {
-		PyErr_SetObject(spoolss_werror,
-				PyInt_FromLong(W_ERROR_V(werror)));
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		return NULL;
 	}
 
