@@ -18,13 +18,14 @@
 <title> Samba FAQ
 
 <author>Paul Blackman, <tt>ictinus@samba.org</tt>
+<author>Jelmer Vernooij, <tt>jelmer@samba.org</tt>
 
-<date>v 0.8, June '97
+<date>v 1.0, August 2002
 
 <abstract> This is the Frequently Asked Questions (FAQ) document for
 Samba, the free and very popular SMB server product. An SMB server
 allows file and printer connections from clients such as Windows,
-OS/2, Linux and others. Current to version 1.9.17. Please send any
+OS/2, Linux and others. Current to version 3.0. Please send any
 corrections to the author.
 </abstract>
 

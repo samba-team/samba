@@ -165,7 +165,7 @@ CLASS="PARAMETER"
 >printer driver
 file</I
 ></TT
-> parameter, are being depreciated and should not 
+> parameter, are being deprecated and should not 
 be used in new installations.  For more information on this change, 
 you should refer to the <A
 HREF="#MIGRATION"
@@ -447,7 +447,7 @@ NAME="AEN88"
 >One issue that has arisen during the development
 phase of Samba 2.2 is the need to support driver downloads for
 100's of printers.  Using the Windows NT APW is somewhat 
-awkward to say the list.  If more than one printer are using the 
+awkward to say the least.  If more than one printer is using the 
 same driver, the <A
 HREF="rpcclient.1.html"
 TARGET="_top"
@@ -457,7 +457,7 @@ CLASS="COMMAND"
 setdriver command</B
 ></A
 > can be used to set the driver
-associated with an installed driver.  The following is example
+associated with an installed driver.  The following is an example
 of how this could be accomplished:</P
 ><P
 ><PRE
@@ -514,7 +514,7 @@ NAME="AEN99"
 CLASS="FILENAME"
 >smb.conf</TT
 >
-in the "Printers..." folder.  Also existing in this folder is the Windows NT 
+in the "Printers..." folder.  Also in this folder is the Windows NT 
 Add Printer Wizard icon.  The APW will be show only if</P
 ><P
 ></P
@@ -580,7 +580,7 @@ CLASS="PARAMETER"
 >add printer 
 command</I
 ></TT
-> and reparse to the <TT
+> and reparse the <TT
 CLASS="FILENAME"
 >smb.conf</TT
 >
@@ -594,7 +594,7 @@ CLASS="PARAMETER"
 > is executed under the context
 of the connected user, not necessarily a root account.</P
 ><P
->There is a complementing <A
+>There is a complementary <A
 HREF="smb.conf.5.html#DELETEPRINTERCOMMAND"
 TARGET="_top"
 ><TT
@@ -619,7 +619,7 @@ NAME="AEN124"
 >Windows NT/2000 print servers associate a port with each printer.  These normally
 take the form of LPT1:, COM1:, FILE:, etc...  Samba must also support the
 concept of ports associated with a printer.  By default, only one printer port,
-named "Samba Printer Port", exists on a system.  Samba does not really a port in
+named "Samba Printer Port", exists on a system.  Samba does not really need a port in
 order to print, rather it is a requirement of Windows clients.  </P
 ><P
 >Note that Samba does not support the concept of "Printer Pooling" internally 
@@ -978,7 +978,7 @@ CLASS="PARAMETER"
 >use client driver</I
 ></TT
 >). Both of 
-these options are described in the smb.coinf(5) man page and are 
+these options are described in the smb.conf(5) man page and are 
 disabled by default.</P
 ></DIV
 ></DIV
