@@ -204,13 +204,13 @@ krb5_unparse_name(krb5_context context,
     s = NULL;
     for (i = 0; i < ncomp; i++){
 	if(i){
-	    s = realloc(s, len + 1);
+	    s = realloc(s, len + 2);
 	    s[len] = '/';
 	    s[len + 1] = 0;
 	}
 	len = quote_string(princ_ncomp(principal, i), &s);
     }
-    s = realloc(s, len + 1);
+    s = realloc(s, len + 2);
     s[len] = '@';
     s[len + 1] = 0;
     len = quote_string(princ_realm(principal), &s);
