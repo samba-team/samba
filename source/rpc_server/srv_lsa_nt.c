@@ -233,6 +233,8 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 		}
 	}
 
+	become_root(); /* Need root to get to passdb to for local sids */
+
 	for (i = 0; i < num_entries; i++) {
 		BOOL status = False;
 		DOM_SID find_sid = sid[i].sid;
@@ -275,6 +277,8 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 					sid_name_use, name, dom_idx);
 		total++;
 	}
+
+	unbecome_root();
 
 	trn->num_entries = total;
 	trn->ptr_trans_names = 1;
