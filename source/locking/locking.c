@@ -87,7 +87,8 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	 * fd. So we don't need to use map_lock_type here.
 	 */
 	
-	return(fcntl_lock(fsp->fd_ptr->fd,SMB_F_GETLK,offset,count,lock_type));
+	return(conn->vfs_ops.lock(fsp->fd_ptr->fd,SMB_F_GETLK,offset,count,
+				  lock_type));
 }
 
 
@@ -113,8 +114,8 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
         lock_type, (double)offset, (double)count, fsp->fsp_name ));
 
   if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
-    ok = fcntl_lock(fsp->fd_ptr->fd,SMB_F_SETLK,offset,count,
-                    map_lock_type(fsp,lock_type));
+    ok = conn->vfs_ops.lock(fsp->fd_ptr->fd,SMB_F_SETLK,offset,count,
+			    map_lock_type(fsp,lock_type));
 
   if (!ok) {
     *eclass = ERRDOS;
@@ -140,7 +141,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
         (double)offset, (double)count, fsp->fsp_name ));
 
   if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
-    ok = fcntl_lock(fsp->fd_ptr->fd,SMB_F_SETLK,offset,count,F_UNLCK);
+    ok = conn->vfs_ops.lock(fsp->fd_ptr->fd,SMB_F_SETLK,offset,count,F_UNLCK);
    
   if (!ok) {
     *eclass = ERRDOS;
