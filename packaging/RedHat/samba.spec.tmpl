@@ -285,16 +285,13 @@ else
 	rm -f /etc/samba/samba.xinetd
 fi
 
-# Install the correct version of the samba pam file, depending on pam version.
-# (always keep an existing PAM config file)
-if [ ! -f /lib/security/pam_stack.so ]; then 
-	if [ -f /lib/security/pam_stack.so ]; then
-		echo "Installing stack version of /etc/pam.d/samba..."
-		mv /etc/samba/samba.stack /etc/pam.d/samba
-	else
-		echo "Installing non-stack version of /etc/pam.d/samba..."
-		rm -f /etc/samba/samba.stack
-	fi
+# Install the correct version of the samba pam file
+if [ -f /lib/security/pam_stack.so ]; then
+	echo "Installing stack version of /etc/pam.d/samba..."
+	mv /etc/samba/samba.stack /etc/pam.d/samba
+else
+	echo "Installing non-stack version of /etc/pam.d/samba..."
+	rm -f /etc/samba/samba.stack
 fi
 
 ## call ldconfig to create the version symlink for libsmbclient.so
