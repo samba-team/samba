@@ -223,7 +223,7 @@ fold(const unsigned char *str, size_t len, unsigned char *out)
     memcpy(out, key, size);
 }
 
-void
+static void
 DES3_string_to_key(char *str, size_t len, des_cblock *keys)
 {
     unsigned char tmp[24];
