@@ -22,7 +22,7 @@ What's going on?
 ----------------
 
 The syntax for mounting SMB shares has been changed so that shares can
-be mounted with the normal mount command. When giving a -t smb flag to
+be mounted with the normal mount command. When giving a -t smbfs flag to
 mount it knows to call an external mount program, mount.smb. With the
 new syntax, smbmount can be that mount.smb (through a symlink).
 
@@ -32,7 +32,7 @@ you almost certainly have this (exact util-linux version anyone?).
 With the new format you should not have to call smbmount/mount.smb
 directly. Instead you do something like this:
 
-  mount -t smb -o user=tridge,passwd=foobar //fjall/test /data/test
+  mount -t smbfs -o user=tridge,passwd=foobar //fjall/test /data/test
 
 The current list of options are:
       username=<arg>                  SMB username

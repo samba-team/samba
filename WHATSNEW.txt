@@ -58,7 +58,7 @@ log off to the Samba server.
 
 There are 5 new parameters in the smb.conf file.
 
-ump
+utmp
 utmp dir
 
 These two parameters are only available if the "--with-utmp"
@@ -211,6 +211,8 @@ versions of the NT logon packet.
 58). Win2K will only accept volume labels in UNICODE.
 59). Ensure nmbd doesn't attempt to use the loopback interface when
 registering names.
+60). Fixed bug where smbd didn't return '.' or '..' on top level
+share directory listing.
 
 Older release notes for Samba 2.0.x follow.
 

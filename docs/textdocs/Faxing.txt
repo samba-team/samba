@@ -214,7 +214,6 @@ The final step:
     path = /tmp
     printable = yes
     public = yes
-    writable = no
     create mode = 0700
     browseable = yes
     guest ok = no

@@ -32,7 +32,6 @@ How To:
 		[printer$]
    		  path=/usr/local/samba/printer
    		  public=yes
-   		  writable=no
    		  browseable=yes
 
 	Second, you have to build the list of drivers required for a specific
@@ -72,7 +71,6 @@ How To:
 		   browseable = yes
 		   printable = yes
 		   public = yes
-		   writable = no
 		   create mode = 0700
 		   printer driver=Apple LaserWriter
 		   printer driver location=\\%h\PRINTER$
