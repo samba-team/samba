@@ -190,7 +190,7 @@
 	krb5_error_code rc;
 	int num_kdcs, i;
 	struct sockaddr *sa;
-	struct addrinfo **ai;
+	struct addrinfo *ai;
 
 	*addr_pp = NULL;
 	*naddrs = 0;
@@ -226,10 +226,10 @@
 	for (i = 0; i < num_kdcs && (rc = krb5_krbhst_next(ctx, hnd, &hinfo) == 0); i++) {
 
 #if defined(HAVE_KRB5_KRBHST_GET_ADDRINFO)
-		rc = krb5_krbhst_get_addrinfo(ctx, hinfo, ai);
+		rc = krb5_krbhst_get_addrinfo(ctx, hinfo, &ai);
 		if (rc) {
 			DEBUG(0,("krb5_krbhst_get_addrinfo failed: %s\n", error_message(rc)));
-			return rc;
+			continue;
 		}
 #endif
 		if (hinfo->ai && hinfo->ai->ai_family == AF_INET) 
