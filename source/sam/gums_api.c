@@ -24,18 +24,38 @@
 
 NTSTATUS gums_create_object(GUMS_OBJECT **obj, uint32 type)
 {
-	TALLOC_CTX *mem_ctx = talloc_init("gums_create_object");
+	TALLOC_CTX *mem_ctx;
 	GUMS_OBJECT *go;
 	NTSTATUS ret;
-	
+
+       	mem_ctx = talloc_init("gums_create_object");
+	if (!mem_ctx) {
+		DEBUG(0, ("gums_create_object: Out of memory!\n"));
+		*obj = NULL;
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	go = talloc_zero(mem_ctx, sizeof(GUMS_OBJECT));
+	if (!go) {
+		DEBUG(0, ("gums_create_object: Out of memory!\n"));
+		talloc_destroy(mem_ctx);
+		*obj = NULL;
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	go->mem_ctx = mem_ctx;
 	go->type = type;
 	go->version = GUMS_OBJECT_VERSION;
 
 	switch(type) {
 		case GUMS_OBJ_DOMAIN:
-			go->data.domain = (GUMS_DOMAIN *)talloc_zero(mem_ctx, sizeof(GUMS_DOMAIN));
+			go->domain = (GUMS_DOMAIN *)talloc_zero(mem_ctx, sizeof(GUMS_DOMAIN));
+			if (!(go->domain)) {
+				ret = NT_STATUS_NO_MEMORY;
+				DEBUG(0, ("gums_create_object: Out of memory!\n"));
+				goto error;
+			}
+
 			break;
 
 /*
@@ -44,34 +64,32 @@ NTSTATUS gums_create_object(GUMS_OBJECT **obj, uint32 type)
 		case GUMS_OBJ_DOMAIN_TRUST:
 */
 		case GUMS_OBJ_NORMAL_USER:
-			go->data.user = (GUMS_USER *)talloc_zero(mem_ctx, sizeof(GUMS_USER));
+			go->user = (GUMS_USER *)talloc_zero(mem_ctx, sizeof(GUMS_USER));
+			if (!(go->user)) {
+				ret = NT_STATUS_NO_MEMORY;
+				DEBUG(0, ("gums_create_object: Out of memory!\n"));
+				goto error;
+			}
+			gums_set_user_acct_ctrl(go, ACB_NORMAL);
+			gums_set_user_hours(go, 0, NULL);
+
 			break;
 
 		case GUMS_OBJ_GROUP:
 		case GUMS_OBJ_ALIAS:
-			go->data.group = (GUMS_GROUP *)talloc_zero(mem_ctx, sizeof(GUMS_GROUP));
-			break;
+			go->group = (GUMS_GROUP *)talloc_zero(mem_ctx, sizeof(GUMS_GROUP));
+			if (!(go->group)) {
+				ret = NT_STATUS_NO_MEMORY;
+				DEBUG(0, ("gums_create_object: Out of memory!\n"));
+				goto error;
+			}
 
-		case GUMS_OBJ_PRIVILEGE:
-			go->data.priv = (GUMS_PRIVILEGE *)talloc_zero(mem_ctx, sizeof(GUMS_PRIVILEGE));
 			break;
 
 		default:
 			/* TODO: throw error */
 			ret = NT_STATUS_OBJECT_TYPE_MISMATCH;
 			goto error;
-	}
-
-	if (!(go->data.user)) {
-		ret = NT_STATUS_NO_MEMORY;
-		DEBUG(0, ("gums_create_object: Out of memory!\n"));
-		goto error;
-	}
-
-	switch(type) {
-		case GUMS_OBJ_NORMAL_USER:
-			gums_set_user_acct_ctrl(go, ACB_NORMAL);
-			gums_set_user_hours(go, 0, NULL);
 	}
 
 	*obj = go;
@@ -81,6 +99,33 @@ error:
 	talloc_destroy(go->mem_ctx);
 	*obj = NULL;
 	return ret;
+}
+
+NTSTATUS gums_create_privilege(GUMS_PRIVILEGE **priv)
+{
+	TALLOC_CTX *mem_ctx;
+	GUMS_PRIVILEGE *pri;
+
+       	mem_ctx = talloc_init("gums_create_privilege");
+	if (!mem_ctx) {
+		DEBUG(0, ("gums_create_privilege: Out of memory!\n"));
+		*priv = NULL;
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pri = talloc_zero(mem_ctx, sizeof(GUMS_PRIVILEGE));
+	if (!pri) {
+		DEBUG(0, ("gums_create_privilege: Out of memory!\n"));
+		talloc_destroy(mem_ctx);
+		*priv = NULL;
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pri->mem_ctx = mem_ctx;
+	pri->version = GUMS_PRIVILEGE_VERSION;
+
+	*priv = pri;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS gums_destroy_object(GUMS_OBJECT **obj)
@@ -95,6 +140,18 @@ NTSTATUS gums_destroy_object(GUMS_OBJECT **obj)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS gums_destroy_privilege(GUMS_PRIVILEGE **priv)
+{
+	if (!priv || !(*priv))
+		return NT_STATUS_INVALID_PARAMETER;
+
+	if ((*priv)->mem_ctx)
+		talloc_destroy((*priv)->mem_ctx);
+	*priv = NULL;
+
+	return NT_STATUS_OK;
+}
+
 void gums_reset_object(GUMS_OBJECT *go)
 {
 	go->seq_num = 0;
@@ -104,7 +161,7 @@ void gums_reset_object(GUMS_OBJECT *go)
 
 	switch(go->type) {
 		case GUMS_OBJ_DOMAIN:
-			memset(go->data.domain, 0, sizeof(GUMS_DOMAIN));
+			memset(go->domain, 0, sizeof(GUMS_DOMAIN));
 			break;
 
 /*
@@ -113,17 +170,13 @@ void gums_reset_object(GUMS_OBJECT *go)
 		case GUMS_OBJ_DOMAIN_TRUST:
 */
 		case GUMS_OBJ_NORMAL_USER:
-			memset(go->data.user, 0, sizeof(GUMS_USER));
+			memset(go->user, 0, sizeof(GUMS_USER));
 			gums_set_user_acct_ctrl(go, ACB_NORMAL);
 			break;
 
 		case GUMS_OBJ_GROUP:
 		case GUMS_OBJ_ALIAS:
-			memset(go->data.group, 0, sizeof(GUMS_GROUP));
-			break;
-
-		case GUMS_OBJ_PRIVILEGE:
-			memset(go->data.priv, 0, sizeof(GUMS_PRIVILEGE));
+			memset(go->group, 0, sizeof(GUMS_GROUP));
 			break;
 
 		default:
@@ -261,7 +314,7 @@ uint32 gums_get_domain_next_rid(const GUMS_OBJECT *obj)
 	if (obj->type != GUMS_OBJ_DOMAIN)
 		return -1;
 
-	return obj->data.domain->next_rid;
+	return obj->domain->next_rid;
 }
 
 NTSTATUS gums_set_domain_next_rid(GUMS_OBJECT *obj, uint32 rid)
@@ -272,7 +325,7 @@ NTSTATUS gums_set_domain_next_rid(GUMS_OBJECT *obj, uint32 rid)
 	if (obj->type != GUMS_OBJ_DOMAIN)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.domain->next_rid = rid;
+	obj->domain->next_rid = rid;
 	return NT_STATUS_OK;
 }
 
@@ -283,7 +336,7 @@ const DOM_SID *gums_get_user_pri_group(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return NULL;
 
-	return  obj->data.user->group_sid;
+	return  obj->user->group_sid;
 }
 
 const DATA_BLOB gums_get_user_nt_pwd(const GUMS_OBJECT *obj)
@@ -293,10 +346,10 @@ const DATA_BLOB gums_get_user_nt_pwd(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return data_blob(NULL, 0);
 
-	smbpasswd_sethexpwd(p, (unsigned char *)(obj->data.user->nt_pw.data), 0);
+	smbpasswd_sethexpwd(p, (unsigned char *)(obj->user->nt_pw.data), 0);
 	DEBUG(100, ("Reading NT Password=[%s]\n", p));
 
-	return obj->data.user->nt_pw;
+	return obj->user->nt_pw;
 }
 
 const DATA_BLOB gums_get_user_lm_pwd(const GUMS_OBJECT *obj)
@@ -306,10 +359,10 @@ const DATA_BLOB gums_get_user_lm_pwd(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return data_blob(NULL, 0);
 
-	smbpasswd_sethexpwd(p, (unsigned char *)(obj->data.user->lm_pw.data), 0);
+	smbpasswd_sethexpwd(p, (unsigned char *)(obj->user->lm_pw.data), 0);
 	DEBUG(100, ("Reading LM Password=[%s]\n", p));
 
-	return obj->data.user->lm_pw;
+	return obj->user->lm_pw;
 }
 
 const char *gums_get_user_fullname(const GUMS_OBJECT *obj)
@@ -317,7 +370,7 @@ const char *gums_get_user_fullname(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return NULL;
 
-	return obj->data.user->full_name;
+	return obj->user->full_name;
 }
 
 const char *gums_get_user_homedir(const GUMS_OBJECT *obj)
@@ -325,7 +378,7 @@ const char *gums_get_user_homedir(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return NULL;
 
-	return obj->data.user->home_dir;
+	return obj->user->home_dir;
 }
 
 const char *gums_get_user_dir_drive(const GUMS_OBJECT *obj)
@@ -333,7 +386,7 @@ const char *gums_get_user_dir_drive(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return NULL;
 
-	return obj->data.user->dir_drive;
+	return obj->user->dir_drive;
 }
 
 const char *gums_get_user_profile_path(const GUMS_OBJECT *obj)
@@ -341,7 +394,7 @@ const char *gums_get_user_profile_path(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return NULL;
 
-	return obj->data.user->profile_path;
+	return obj->user->profile_path;
 }
 
 const char *gums_get_user_logon_script(const GUMS_OBJECT *obj)
@@ -349,7 +402,7 @@ const char *gums_get_user_logon_script(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return NULL;
 
-	return obj->data.user->logon_script;
+	return obj->user->logon_script;
 }
 
 const char *gums_get_user_workstations(const GUMS_OBJECT *obj)
@@ -357,7 +410,7 @@ const char *gums_get_user_workstations(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return NULL;
 
-	return obj->data.user->workstations;
+	return obj->user->workstations;
 }
 
 const char *gums_get_user_unknown_str(const GUMS_OBJECT *obj)
@@ -365,7 +418,7 @@ const char *gums_get_user_unknown_str(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return NULL;
 
-	return obj->data.user->unknown_str;
+	return obj->user->unknown_str;
 }
 
 const char *gums_get_user_munged_dial(const GUMS_OBJECT *obj)
@@ -373,7 +426,7 @@ const char *gums_get_user_munged_dial(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return NULL;
 
-	return obj->data.user->munged_dial;
+	return obj->user->munged_dial;
 }
 
 NTTIME gums_get_user_logon_time(const GUMS_OBJECT *obj)
@@ -384,7 +437,7 @@ NTTIME gums_get_user_logon_time(const GUMS_OBJECT *obj)
 		return null_time;
 	}
 
-	return obj->data.user->logon_time;
+	return obj->user->logon_time;
 }
 
 NTTIME gums_get_user_logoff_time(const GUMS_OBJECT *obj)
@@ -395,7 +448,7 @@ NTTIME gums_get_user_logoff_time(const GUMS_OBJECT *obj)
 		return null_time;
 	}
 
-	return obj->data.user->logoff_time;
+	return obj->user->logoff_time;
 }
 
 NTTIME gums_get_user_kickoff_time(const GUMS_OBJECT *obj)
@@ -406,7 +459,7 @@ NTTIME gums_get_user_kickoff_time(const GUMS_OBJECT *obj)
 		return null_time;
 	}
 
-	return obj->data.user->kickoff_time;
+	return obj->user->kickoff_time;
 }
 
 NTTIME gums_get_user_pass_last_set_time(const GUMS_OBJECT *obj)
@@ -417,7 +470,7 @@ NTTIME gums_get_user_pass_last_set_time(const GUMS_OBJECT *obj)
 		return null_time;
 	}
 
-	return obj->data.user->pass_last_set_time;
+	return obj->user->pass_last_set_time;
 }
 
 NTTIME gums_get_user_pass_can_change_time(const GUMS_OBJECT *obj)
@@ -428,7 +481,7 @@ NTTIME gums_get_user_pass_can_change_time(const GUMS_OBJECT *obj)
 		return null_time;
 	}
 
-	return obj->data.user->pass_can_change_time;
+	return obj->user->pass_can_change_time;
 }
 
 NTTIME gums_get_user_pass_must_change_time(const GUMS_OBJECT *obj)
@@ -439,7 +492,7 @@ NTTIME gums_get_user_pass_must_change_time(const GUMS_OBJECT *obj)
 		return null_time;
 	}
 
-	return obj->data.user->pass_must_change_time;
+	return obj->user->pass_must_change_time;
 }
 
 uint16 gums_get_user_acct_ctrl(const GUMS_OBJECT *obj)
@@ -447,7 +500,7 @@ uint16 gums_get_user_acct_ctrl(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return 0;
 
-	return obj->data.user->acct_ctrl;
+	return obj->user->acct_ctrl;
 }
 
 uint16 gums_get_user_logon_divs(const GUMS_OBJECT *obj)
@@ -455,7 +508,7 @@ uint16 gums_get_user_logon_divs(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return 0;
 
-	return obj->data.user->logon_divs;
+	return obj->user->logon_divs;
 }
 
 uint32 gums_get_user_hours_len(const GUMS_OBJECT *obj)
@@ -463,7 +516,7 @@ uint32 gums_get_user_hours_len(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return 0;
 
-	return obj->data.user->hours_len;
+	return obj->user->hours_len;
 }
 
 const uint8 *gums_get_user_hours(const GUMS_OBJECT *obj)
@@ -471,7 +524,15 @@ const uint8 *gums_get_user_hours(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return NULL;
 
-	return obj->data.user->hours;
+	return obj->user->hours;
+}
+
+uint32 gums_get_user_unknown_3(const GUMS_OBJECT *obj)
+{
+	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
+		return 0;
+
+	return obj->user->unknown_3;
 }
 
 uint16 gums_get_user_bad_password_count(const GUMS_OBJECT *obj)
@@ -479,7 +540,7 @@ uint16 gums_get_user_bad_password_count(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return 0;
 
-	return obj->data.user->bad_password_count;
+	return obj->user->bad_password_count;
 }
 
 uint16 gums_get_user_logon_count(const GUMS_OBJECT *obj)
@@ -487,7 +548,7 @@ uint16 gums_get_user_logon_count(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return 0;
 
-	return obj->data.user->logon_count;
+	return obj->user->logon_count;
 }
 
 uint32 gums_get_user_unknown_6(const GUMS_OBJECT *obj)
@@ -495,7 +556,7 @@ uint32 gums_get_user_unknown_6(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return 0;
 
-	return obj->data.user->unknown_6;
+	return obj->user->unknown_6;
 }
 
 NTSTATUS gums_set_user_pri_group(GUMS_OBJECT *obj, const DOM_SID *sid)
@@ -506,8 +567,8 @@ NTSTATUS gums_set_user_pri_group(GUMS_OBJECT *obj, const DOM_SID *sid)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->group_sid = sid_dup_talloc(obj->mem_ctx, sid);
-	if (!(obj->data.user->group_sid)) return NT_STATUS_NO_MEMORY;
+	obj->user->group_sid = sid_dup_talloc(obj->mem_ctx, sid);
+	if (!(obj->user->group_sid)) return NT_STATUS_NO_MEMORY;
 	return NT_STATUS_OK;
 }
 
@@ -522,7 +583,7 @@ NTSTATUS gums_set_user_nt_pwd(GUMS_OBJECT *obj, const DATA_BLOB nt_pwd)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->nt_pw = data_blob_talloc(obj->mem_ctx, nt_pwd.data, nt_pwd.length);
+	obj->user->nt_pw = data_blob_talloc(obj->mem_ctx, nt_pwd.data, nt_pwd.length);
 
 	memcpy(r, nt_pwd.data, 16);
 	smbpasswd_sethexpwd(p, r, 0);
@@ -542,7 +603,7 @@ NTSTATUS gums_set_user_lm_pwd(GUMS_OBJECT *obj, const DATA_BLOB lm_pwd)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->lm_pw = data_blob_talloc(obj->mem_ctx, lm_pwd.data, lm_pwd.length);
+	obj->user->lm_pw = data_blob_talloc(obj->mem_ctx, lm_pwd.data, lm_pwd.length);
 
 	memcpy(r, lm_pwd.data, 16);
 	smbpasswd_sethexpwd(p, r, 0);
@@ -559,8 +620,8 @@ NTSTATUS gums_set_user_fullname(GUMS_OBJECT *obj, const char *fullname)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->full_name = (char *)talloc_strdup(obj->mem_ctx, fullname);
-	if (!(obj->data.user->full_name)) return NT_STATUS_NO_MEMORY;
+	obj->user->full_name = (char *)talloc_strdup(obj->mem_ctx, fullname);
+	if (!(obj->user->full_name)) return NT_STATUS_NO_MEMORY;
 	return NT_STATUS_OK;
 }
 
@@ -572,8 +633,8 @@ NTSTATUS gums_set_user_homedir(GUMS_OBJECT *obj, const char *homedir)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->home_dir = (char *)talloc_strdup(obj->mem_ctx, homedir);
-	if (!(obj->data.user->home_dir)) return NT_STATUS_NO_MEMORY;
+	obj->user->home_dir = (char *)talloc_strdup(obj->mem_ctx, homedir);
+	if (!(obj->user->home_dir)) return NT_STATUS_NO_MEMORY;
 	return NT_STATUS_OK;
 }
 
@@ -585,8 +646,8 @@ NTSTATUS gums_set_user_dir_drive(GUMS_OBJECT *obj, const char *dir_drive)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->dir_drive = (char *)talloc_strdup(obj->mem_ctx, dir_drive);
-	if (!(obj->data.user->dir_drive)) return NT_STATUS_NO_MEMORY;
+	obj->user->dir_drive = (char *)talloc_strdup(obj->mem_ctx, dir_drive);
+	if (!(obj->user->dir_drive)) return NT_STATUS_NO_MEMORY;
 	return NT_STATUS_OK;
 }
 
@@ -598,8 +659,8 @@ NTSTATUS gums_set_user_logon_script(GUMS_OBJECT *obj, const char *logon_script)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->logon_script = (char *)talloc_strdup(obj->mem_ctx, logon_script);
-	if (!(obj->data.user->logon_script)) return NT_STATUS_NO_MEMORY;
+	obj->user->logon_script = (char *)talloc_strdup(obj->mem_ctx, logon_script);
+	if (!(obj->user->logon_script)) return NT_STATUS_NO_MEMORY;
 	return NT_STATUS_OK;
 }
 
@@ -611,8 +672,8 @@ NTSTATUS gums_set_user_profile_path(GUMS_OBJECT *obj, const char *profile_path)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->profile_path = (char *)talloc_strdup(obj->mem_ctx, profile_path);
-	if (!(obj->data.user->profile_path)) return NT_STATUS_NO_MEMORY;
+	obj->user->profile_path = (char *)talloc_strdup(obj->mem_ctx, profile_path);
+	if (!(obj->user->profile_path)) return NT_STATUS_NO_MEMORY;
 	return NT_STATUS_OK;
 }
 
@@ -624,8 +685,8 @@ NTSTATUS gums_set_user_workstations(GUMS_OBJECT *obj, const char *workstations)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->workstations = (char *)talloc_strdup(obj->mem_ctx, workstations);
-	if (!(obj->data.user->workstations)) return NT_STATUS_NO_MEMORY;
+	obj->user->workstations = (char *)talloc_strdup(obj->mem_ctx, workstations);
+	if (!(obj->user->workstations)) return NT_STATUS_NO_MEMORY;
 	return NT_STATUS_OK;
 }
 
@@ -637,8 +698,8 @@ NTSTATUS gums_set_user_unknown_str(GUMS_OBJECT *obj, const char *unknown_str)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->unknown_str = (char *)talloc_strdup(obj->mem_ctx, unknown_str);
-	if (!(obj->data.user->unknown_str)) return NT_STATUS_NO_MEMORY;
+	obj->user->unknown_str = (char *)talloc_strdup(obj->mem_ctx, unknown_str);
+	if (!(obj->user->unknown_str)) return NT_STATUS_NO_MEMORY;
 	return NT_STATUS_OK;
 }
 
@@ -650,8 +711,8 @@ NTSTATUS gums_set_user_munged_dial(GUMS_OBJECT *obj, const char *munged_dial)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->munged_dial = (char *)talloc_strdup(obj->mem_ctx, munged_dial);
-	if (!(obj->data.user->munged_dial)) return NT_STATUS_NO_MEMORY;
+	obj->user->munged_dial = (char *)talloc_strdup(obj->mem_ctx, munged_dial);
+	if (!(obj->user->munged_dial)) return NT_STATUS_NO_MEMORY;
 	return NT_STATUS_OK;
 }
 
@@ -663,7 +724,7 @@ NTSTATUS gums_set_user_logon_time(GUMS_OBJECT *obj, NTTIME logon_time)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->logon_time = logon_time;
+	obj->user->logon_time = logon_time;
 	return NT_STATUS_OK;
 }
 
@@ -675,7 +736,7 @@ NTSTATUS gums_set_user_logoff_time(GUMS_OBJECT *obj, NTTIME logoff_time)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->logoff_time = logoff_time;
+	obj->user->logoff_time = logoff_time;
 	return NT_STATUS_OK;
 }
 
@@ -687,7 +748,7 @@ NTSTATUS gums_set_user_kickoff_time(GUMS_OBJECT *obj, NTTIME kickoff_time)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->kickoff_time = kickoff_time;
+	obj->user->kickoff_time = kickoff_time;
 	return NT_STATUS_OK;
 }
 
@@ -699,7 +760,7 @@ NTSTATUS gums_set_user_pass_last_set_time(GUMS_OBJECT *obj, NTTIME pass_last_set
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->pass_last_set_time = pass_last_set_time;
+	obj->user->pass_last_set_time = pass_last_set_time;
 	return NT_STATUS_OK;
 }
 
@@ -711,7 +772,7 @@ NTSTATUS gums_set_user_pass_can_change_time(GUMS_OBJECT *obj, NTTIME pass_can_ch
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->pass_can_change_time = pass_can_change_time;
+	obj->user->pass_can_change_time = pass_can_change_time;
 	return NT_STATUS_OK;
 }
 
@@ -723,7 +784,7 @@ NTSTATUS gums_set_user_pass_must_change_time(GUMS_OBJECT *obj, NTTIME pass_must_
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->pass_must_change_time = pass_must_change_time;
+	obj->user->pass_must_change_time = pass_must_change_time;
 	return NT_STATUS_OK;
 }
 
@@ -735,7 +796,7 @@ NTSTATUS gums_set_user_acct_ctrl(GUMS_OBJECT *obj, uint16 acct_ctrl)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->acct_ctrl = acct_ctrl;
+	obj->user->acct_ctrl = acct_ctrl;
 	return NT_STATUS_OK;
 }
 
@@ -747,7 +808,7 @@ NTSTATUS gums_set_user_logon_divs(GUMS_OBJECT *obj, uint16 logon_divs)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->logon_divs = logon_divs;
+	obj->user->logon_divs = logon_divs;
 	return NT_STATUS_OK;
 }
 
@@ -759,16 +820,28 @@ NTSTATUS gums_set_user_hours(GUMS_OBJECT *obj, uint32 hours_len, const uint8 *ho
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->hours_len = hours_len;
+	obj->user->hours_len = hours_len;
 	if (hours_len == 0)
 		DEBUG(10, ("gums_set_user_hours: Warning, hours_len is zero!\n"));
 
-	obj->data.user->hours = (uint8 *)talloc(obj->mem_ctx, MAX_HOURS_LEN);
-	if (!(obj->data.user->hours))
+	obj->user->hours = (uint8 *)talloc(obj->mem_ctx, MAX_HOURS_LEN);
+	if (!(obj->user->hours))
 		return NT_STATUS_NO_MEMORY;
 	if (hours_len)
-		memcpy(obj->data.user->hours, hours, hours_len);
+		memcpy(obj->user->hours, hours, hours_len);
 
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gums_set_user_unknown_3(GUMS_OBJECT *obj, uint32 unknown_3)
+{
+	if (!obj)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	if (obj->type != GUMS_OBJ_NORMAL_USER)
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+
+	obj->user->unknown_3 = unknown_3;
 	return NT_STATUS_OK;
 }
 
@@ -780,7 +853,7 @@ NTSTATUS gums_set_user_bad_password_count(GUMS_OBJECT *obj, uint16 bad_password_
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->bad_password_count = bad_password_count;
+	obj->user->bad_password_count = bad_password_count;
 	return NT_STATUS_OK;
 }
 
@@ -792,7 +865,7 @@ NTSTATUS gums_set_user_logon_count(GUMS_OBJECT *obj, uint16 logon_count)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->logon_count = logon_count;
+	obj->user->logon_count = logon_count;
 	return NT_STATUS_OK;
 }
 
@@ -804,7 +877,7 @@ NTSTATUS gums_set_user_unknown_6(GUMS_OBJECT *obj, uint32 unknown_6)
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.user->unknown_6 = unknown_6;
+	obj->user->unknown_6 = unknown_6;
 	return NT_STATUS_OK;
 }
 
@@ -817,8 +890,8 @@ const DOM_SID *gums_get_group_members(int *count, const GUMS_OBJECT *obj)
 		return NULL;
 	}
 
-	*count = obj->data.group->count;
-	return obj->data.group->members;
+	*count = obj->group->count;
+	return obj->group->members;
 }
 
 NTSTATUS gums_set_group_members(GUMS_OBJECT *obj, uint32 count, DOM_SID *members)
@@ -832,22 +905,22 @@ NTSTATUS gums_set_group_members(GUMS_OBJECT *obj, uint32 count, DOM_SID *members
 		obj->type != GUMS_OBJ_ALIAS)
 			return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	obj->data.group->count = count;
+	obj->group->count = count;
 
 	if (count) {
-		obj->data.group->members = (DOM_SID *)talloc(obj->mem_ctx, count * sizeof(DOM_SID));
-		if (!(obj->data.group->members)) {
+		obj->group->members = (DOM_SID *)talloc(obj->mem_ctx, count * sizeof(DOM_SID));
+		if (!(obj->group->members)) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
 
 		n = 0;
 		do {
-			sid_copy(&(obj->data.group->members[n]), &(members[n]));
+			sid_copy(&(obj->group->members[n]), &(members[n]));
 			n++;
 		} while (n < count);
 	} else {
-		obj->data.group->members = 0;
+		obj->group->members = 0;
 	}
 
 	return NT_STATUS_OK;
@@ -855,56 +928,51 @@ NTSTATUS gums_set_group_members(GUMS_OBJECT *obj, uint32 count, DOM_SID *members
 
 /* Privilege specific functions */
 
-const LUID_ATTR *gums_get_priv_luid_attr(const GUMS_OBJECT *obj)
+const LUID_ATTR *gums_get_priv_luid_attr(const GUMS_PRIVILEGE *priv)
 {
-	if (!obj || obj->type != GUMS_OBJ_PRIVILEGE)
+	if (!priv) {
 		return NULL;
+	}
 
-	return obj->data.priv->privilege;
+	return priv->privilege;
 }
 
-const DOM_SID *gums_get_priv_members(int *count, const GUMS_OBJECT *obj)
+const DOM_SID *gums_get_priv_members(int *count, const GUMS_PRIVILEGE *priv)
 {
-	if (!count || !obj || obj->type != GUMS_OBJ_PRIVILEGE) {
+	if (!count || !priv) {
 		*count = -1;
 		return NULL;
 	}
 
-	*count = obj->data.priv->count;
-	return obj->data.priv->members;
+	*count = priv->count;
+	return priv->members;
 }
 
-NTSTATUS gums_set_priv_luid_attr(GUMS_OBJECT *obj, LUID_ATTR *luid_attr)
+NTSTATUS gums_set_priv_luid_attr(GUMS_PRIVILEGE *priv, LUID_ATTR *luid_attr)
 {
-	if (!luid_attr || !obj)
+	if (!luid_attr || !priv)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	if (obj->type != GUMS_OBJ_PRIVILEGE)
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-
-	obj->data.priv->privilege = (LUID_ATTR *)talloc_memdup(obj->mem_ctx, luid_attr, sizeof(LUID_ATTR));
-	if (!(obj->data.priv->privilege)) return NT_STATUS_NO_MEMORY;
+	priv->privilege = (LUID_ATTR *)talloc_memdup(priv->mem_ctx, luid_attr, sizeof(LUID_ATTR));
+	if (!(priv->privilege)) return NT_STATUS_NO_MEMORY;
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gums_set_priv_members(GUMS_OBJECT *obj, uint32 count, DOM_SID *members)
+NTSTATUS gums_set_priv_members(GUMS_PRIVILEGE *priv, uint32 count, DOM_SID *members)
 {
 	uint32 n;
 
-	if (!obj || !members || !members)
+	if (!priv || !members || !members)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	if (obj->type != GUMS_OBJ_PRIVILEGE)
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-
-	obj->data.priv->count = count;
-	obj->data.priv->members = (DOM_SID *)talloc(obj->mem_ctx, count * sizeof(DOM_SID));
-	if (!(obj->data.priv->members))
+	priv->count = count;
+	priv->members = (DOM_SID *)talloc(priv->mem_ctx, count * sizeof(DOM_SID));
+	if (!(priv->members))
 		return NT_STATUS_NO_MEMORY;
 
 	n = 0;
 	do {
-		sid_copy(&(obj->data.priv->members[n]), &(members[n]));
+		sid_copy(&(priv->members[n]), &(members[n]));
 		n++;
 	} while (n < count);
 
