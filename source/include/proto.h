@@ -901,10 +901,8 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd);
 /*The following definitions come from  libsmb/clistr.c  */
 
 int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len, int flags);
-int clistr_push_size(struct cli_state *cli, const void *dest, const char *src, int dest_len, int flags);
 int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len, int src_len, int flags);
-int clistr_pull_size(struct cli_state *cli, const void *src, int src_len);
-int clistr_align(struct cli_state *cli, int offset);
+int clistr_align(const void *buf, const void *p);
 
 /*The following definitions come from  libsmb/clitrans.c  */
 
@@ -3454,7 +3452,7 @@ BOOL api_ntlsa_rpc(pipes_struct *p);
 
 /*The following definitions come from  rpc_server/srv_lsa_hnd.c  */
 
-void init_pipe_handles(pipes_struct *p);
+BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name);
 BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *), void *data_ptr);
 BOOL find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p);
 BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd);
@@ -4078,11 +4076,8 @@ void close_cnum(connection_struct *conn, uint16 vuid);
 
 /*The following definitions come from  smbd/srvstr.c  */
 
-int srvstr_push(void *inbuf, void *outbuf, void *dest, const char *src, int dest_len, int flags);
-int srvstr_push_size(void *inbuf, void *outbuf, 
-		     const void *dest, const char *src, int dest_len, int flags);
+int srvstr_push(void *outbuf, void *dest, const char *src, int dest_len, int flags);
 int srvstr_pull(void *inbuf, char *dest, const void *src, int dest_len, int src_len, int flags);
-int srvstr_pull_size(void *inbuf, const void *src, int src_len);
 int srvstr_align(void *inbuf, int offset);
 
 /*The following definitions come from  smbd/ssl.c  */
