@@ -242,11 +242,11 @@ static const struct {
 	enum epm_protocols protseq[MAX_PROTSEQ];
 } transports[] = {
 	{ "ncacn_np",     NCACN_NP, 3, 
-		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_SMB, EPM_PROTOCOL_PIPE }},
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_SMB, EPM_PROTOCOL_NETBIOS }},
 	{ "ncacn_ip_tcp", NCACN_IP_TCP, 3, 
-		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_IP, EPM_PROTOCOL_TCP } }, 
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_TCP, EPM_PROTOCOL_IP } }, 
 	{ "ncadg_ip_udp", NCACN_IP_UDP, 3, 
-		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_IP, EPM_PROTOCOL_UDP } },
+		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_UDP, EPM_PROTOCOL_IP } },
 	{ "ncalrpc", NCALRPC, 2, 
 		{ EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_PIPE } },
 	{ "ncacn_unix_stream", NCACN_UNIX_STREAM, 2, 
@@ -604,15 +604,9 @@ static NTSTATUS floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower, struct dcerpc_binding *binding)
+enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
 {
 	int i;
-
-	binding->transport = -1;
-	ZERO_STRUCT(binding->object);
-	binding->options = NULL;
-	binding->host = NULL;
-	binding->flags = 0;
 
 	/* Find a transport that matches this tower */
 	for (i=0;i<ARRAY_SIZE(transports);i++) {
@@ -620,7 +614,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 		if (transports[i].num_protocols != tower->num_floors - 2) {
 			continue; 
 		}
-		
+
 		for (j = 0; j < transports[i].num_protocols; j++) {
 			if (transports[i].protseq[j] != tower->floors[j+2].lhs.protocol) {
 				break;
@@ -628,10 +622,22 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 		}
 
 		if (j == transports[i].num_protocols) {
-			binding->transport = transports[i].transport;
-			break;
+			return transports[i].transport;
 		}
 	}
+	
+	/* Unknown transport */
+	return -1;
+}
+
+NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower, struct dcerpc_binding *binding)
+{
+	ZERO_STRUCT(binding->object);
+	binding->options = NULL;
+	binding->host = NULL;
+	binding->flags = 0;
+
+	binding->transport = dcerpc_transport_by_tower(tower);
 
 	if (binding->transport == -1) {
 		return NT_STATUS_NOT_SUPPORTED;
@@ -650,16 +656,16 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 	binding->options = talloc_array_p(mem_ctx, const char *, 2);
 
 	/* Set endpoint */
-	if (tower->num_floors >= 3) {
-		binding->options[0] = floor_get_rhs_data(mem_ctx, &tower->floors[tower->num_floors-1]);
+	if (tower->num_floors >= 4) {
+		binding->options[0] = floor_get_rhs_data(mem_ctx, &tower->floors[3]);
 	} else {
 		binding->options[0] = NULL;
 	}
 	binding->options[1] = NULL;
 
 	/* Set network address */
-	if (tower->num_floors >= 4) {
-		binding->host = floor_get_rhs_data(mem_ctx, &tower->floors[tower->num_floors-2]);
+	if (tower->num_floors >= 5) {
+		binding->host = floor_get_rhs_data(mem_ctx, &tower->floors[4]);
 	}
 	return NT_STATUS_OK;
 }
@@ -709,17 +715,16 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 		ZERO_STRUCT(tower->floors[2 + i].rhs);
 	}
 
-	/* The top floor contains the endpoint */
-	if (num_protocols >= 1 && binding->options && binding->options[0]) {
-		status = floor_set_rhs_data(mem_ctx, &tower->floors[2 + num_protocols - 1], binding->options[0]);
+	/* The 4th floor contains the endpoint */
+	if (num_protocols >= 2 && binding->options && binding->options[0]) {
+		status = floor_set_rhs_data(mem_ctx, &tower->floors[3], binding->options[0]);
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
 	}
-
-	/* The second-to-top floor contains the network address */
-	if (num_protocols >= 2 && binding->host) {
-		status = floor_set_rhs_data(mem_ctx, &tower->floors[2 + num_protocols - 2], binding->host);
+	/* The 5th contains the network address */
+	if (num_protocols >= 3 && binding->host) {
+		status = floor_set_rhs_data(mem_ctx, &tower->floors[4], binding->host);
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
