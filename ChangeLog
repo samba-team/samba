@@ -1,5 +1,12 @@
 2001-01-30  Assar Westerlund  <assar@sics.se>
 
+	* kdc/hprop.c (v4_get_masterkey): check kdb_verify_master_key
+	properly
+	(kdb_prop): decrypt key properly
+	* kdc/hprop.c: handle building with KRB4 always try to decrypt v4
+	data with the master key leave it up to the v5 how to encrypt with
+	that master key
+
 	* kdc/kstash.c: include file name in error messages
 	* kdc/hprop.c: fix a typo and check some more return values
 	* lib/hdb/hdb-ldap.c (LDAP__lookup_princ): call ldap_search_s
