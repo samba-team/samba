@@ -86,7 +86,7 @@ static void qfsinfo_aliases(struct smbcli_state *cli)
 	d_printf("\nChecking for QFSINFO aliases\n");
 
 	t2.in.max_param = 0;
-	t2.in.max_data = 0x8000;
+	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 0);
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;
@@ -109,7 +109,7 @@ static void qfileinfo_aliases(struct smbcli_state *cli)
 	d_printf("\nChecking for QFILEINFO aliases\n");
 
 	t2.in.max_param = 2;
-	t2.in.max_data = 0x8000;
+	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 2);
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;
@@ -149,7 +149,7 @@ static void qpathinfo_aliases(struct smbcli_state *cli)
 	d_printf("\nChecking for QPATHINFO aliases\n");
 
 	t2.in.max_param = 2;
-	t2.in.max_data = 0x8000;
+	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 2);
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;
@@ -193,7 +193,7 @@ static void findfirst_aliases(struct smbcli_state *cli)
 	d_printf("\nChecking for FINDFIRST aliases\n");
 
 	t2.in.max_param = 16;
-	t2.in.max_data = 0x8000;
+	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 16);
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;
@@ -345,7 +345,7 @@ static void setpathinfo_aliases(struct smbcli_state *cli)
 	d_printf("\nChecking for SETPATHINFO aliases\n");
 
 	t2.in.max_param = 32;
-	t2.in.max_data = 0x8000;
+	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 32);
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;
