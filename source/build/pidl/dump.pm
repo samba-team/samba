@@ -5,6 +5,7 @@
 
 package IdlDump;
 
+use strict;
 use Data::Dumper;
 
 my($res);
