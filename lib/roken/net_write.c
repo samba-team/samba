@@ -64,11 +64,12 @@ net_write (int fd, const void *buf, size_t nbytes)
 #else
 	count = write (fd, cbuf, rem);
 #endif
-	if (count < 0)
+	if (count < 0) {
 	    if (errno == EINTR)
 		continue;
 	    else
 		return count;
+	}
 	cbuf += count;
 	rem -= count;
     }

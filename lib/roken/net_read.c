@@ -64,13 +64,14 @@ net_read (int fd, void *buf, size_t nbytes)
 #else
 	count = read (fd, cbuf, rem);
 #endif
-	if (count < 0)
+	if (count < 0) {
 	    if (errno == EINTR)
 		continue;
 	    else
 		return count;
-	else if (count == 0)
+	} else if (count == 0) {
 	    return count;
+	}
 	cbuf += count;
 	rem -= count;
     }

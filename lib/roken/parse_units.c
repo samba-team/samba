@@ -88,11 +88,12 @@ parse_something (const char *s, const struct units *units,
 	    ++p;
 
 	val = strtod (p, &next); /* strtol(p, &next, 0); */
-	if (val == 0 && p == next)
+	if (val == 0 && p == next) {
 	    if(accept_no_val_p)
 		val = 1;
 	    else
 		return -1;
+	}
 	p = next;
 	while (isspace(*p))
 	    ++p;
@@ -126,7 +127,7 @@ parse_something (const char *s, const struct units *units,
 		}
 	    }
 	}
-	if (u->name == NULL)
+	if (u->name == NULL) {
 	    if (partial == 1) {
 		p += u_len;
 		res = (*func)(res, val, partial_unit->mult);
@@ -135,6 +136,7 @@ parse_something (const char *s, const struct units *units,
 	    } else {
 		return -1;
 	    }
+	}
 	if (*p == 's')
 	    ++p;
     }

@@ -169,11 +169,12 @@ otp_parse_hex (OtpKey key, char *s)
 
   b = buf;
   while (*s) {
-    if (strchr ("0123456789ABCDEFabcdef", *s))
+    if (strchr ("0123456789ABCDEFabcdef", *s)) {
       if (b - buf >= 16)
 	return -1;
       else
 	*b++ = tolower(*s);
+    }
     s++;
   }
   *b = '\0';

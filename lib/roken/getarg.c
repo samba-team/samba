@@ -338,11 +338,12 @@ arg_match_long(struct getargs *args, size_t num_args,
 		break;
 	}
     }
-    if (current == NULL)
+    if (current == NULL) {
 	if (partial_match == 1)
 	    current = partial;
 	else
 	    return ARG_ERR_NO_MATCH;
+    }
     
     if(*optarg == '\0' && !ISFLAG(*current))
 	return ARG_ERR_NO_MATCH;
