@@ -63,26 +63,29 @@ hdb_process_master_key(krb5_context context,
 		       hdb_master_key *mkey)
 {
     krb5_error_code ret;
+
     *mkey = calloc(1, sizeof(**mkey));
-    if(*mkey == NULL)
+    if(*mkey == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     (*mkey)->keytab.vno = kvno;
     ret = krb5_parse_name(context, "K/M", &(*mkey)->keytab.principal);
+    if(ret)
+	goto fail;
     ret = krb5_copy_keyblock_contents(context, key, &(*mkey)->keytab.keyblock);
-    if(ret) {
-	free(*mkey);
-	*mkey = NULL;
-	return ret;
-    }
+    if(ret)
+	goto fail;
     if(etype != 0)
 	(*mkey)->keytab.keyblock.keytype = etype;
     (*mkey)->keytab.timestamp = time(NULL);
     ret = krb5_crypto_init(context, key, etype, &(*mkey)->crypto);
-    if(ret) {
-	krb5_free_keyblock_contents(context, &(*mkey)->keytab.keyblock);
-	free(*mkey);
-	*mkey = NULL;
-    }
+    if(ret)
+	goto fail;
+    return 0;
+ fail:
+    hdb_free_master_key(context, *mkey);
+    *mkey = NULL;
     return ret;
 }
 
@@ -151,7 +154,7 @@ read_master_mit(krb5_context context, const char *filename,
     if(fd < 0) {
 	int save_errno = errno;
 	krb5_set_error_string(context, "failed to open %s: %s", filename,
-			      strerror(save_errno)));
+			      strerror(save_errno));
 	return save_errno;
     }
     sp = krb5_storage_from_fd(fd);
@@ -200,7 +203,7 @@ read_master_encryptionkey(krb5_context context, const char *filename,
     if(fd < 0) {
 	int save_errno = errno;
 	krb5_set_error_string(context, "failed to open %s: %s", 
-			      filename, streror(save_errno));
+			      filename, strerror(save_errno));
 	return save_errno;
     }
     
@@ -209,7 +212,7 @@ read_master_encryptionkey(krb5_context context, const char *filename,
     if(len < 0) {
 	int save_errno = errno;
 	krb5_set_error_string(context, "error reading %s: %s", 
-			      filename, streror(save_errno));
+			      filename, strerror(save_errno));
 	return save_errno;
     }
 
@@ -246,7 +249,7 @@ read_master_krb4(krb5_context context, const char *filename,
     if(fd < 0) {
 	int save_errno = errno;
 	krb5_set_error_string(context, "failed to open %s: %s", 
-			      filename, streror(save_errno));
+			      filename, strerror(save_errno));
 	return save_errno;
     }
     
@@ -255,7 +258,7 @@ read_master_krb4(krb5_context context, const char *filename,
     if(len < 0) {
 	int save_errno = errno;
 	krb5_set_error_string(context, "error reading %s: %s", 
-			      filename, streror(save_errno));
+			      filename, strerror(save_errno));
 	return save_errno;
     }
     if(len != 8) {
@@ -294,7 +297,7 @@ hdb_read_master_key(krb5_context context, const char *filename,
     if(f == NULL) {
 	int save_errno = errno;
 	krb5_set_error_string(context, "failed to open %s: %s", 
-			      filename, streror(save_errno));
+			      filename, strerror(save_errno));
 	return save_errno;
     }
     

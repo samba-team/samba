@@ -59,7 +59,7 @@ RCSID("$Id$");
   */
 
 static krb5_error_code
-append_string(krb5_storage *sp, const char *fmt, ...)
+append_string(krb5_context context, krb5_storage *sp, const char *fmt, ...)
 {
     krb5_error_code ret;
     char *s;
@@ -67,15 +67,17 @@ append_string(krb5_storage *sp, const char *fmt, ...)
     va_start(ap, fmt);
     vasprintf(&s, fmt, ap);
     va_end(ap);
-    if(s == NULL)
+    if(s == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     ret = sp->store(sp, s, strlen(s));
     free(s);
     return ret;
 }
 
 static krb5_error_code
-append_hex(krb5_storage *sp, krb5_data *data)
+append_hex(krb5_context context, krb5_storage *sp, krb5_data *data)
 {
     int i, printable = 1;
     char *p;
@@ -87,9 +89,10 @@ append_hex(krb5_storage *sp, krb5_data *data)
 	    break;
 	}
     if(printable)
-	return append_string(sp, "\"%.*s\"", data->length, data->data);
+	return append_string(context, sp, "\"%.*s\"",
+			     data->length, data->data);
     for(i = 0; i < data->length; i++) 
-	append_string(sp, "%02x", ((unsigned char*)data->data)[i]);
+	append_string(context, sp, "%02x", ((unsigned char*)data->data)[i]);
     return 0;
 }
 
@@ -107,13 +110,14 @@ append_event(krb5_context context, krb5_storage *sp, Event *ev)
     char *pr = NULL;
     krb5_error_code ret;
     if(ev == NULL)
-	return append_string(sp, "- ");
+	return append_string(context, sp, "- ");
     if (ev->principal != NULL) {
        ret = krb5_unparse_name(context, ev->principal, &pr);
        if(ret)
            return ret;
     }
-    ret = append_string(sp, "%s:%s ", time2str(ev->time), pr ? pr : "UNKNOWN");
+    ret = append_string(context, sp, "%s:%s ",
+			time2str(ev->time), pr ? pr : "UNKNOWN");
     free(pr);
     return ret;
 }
@@ -129,31 +133,31 @@ entry2string_int (krb5_context context, krb5_storage *sp, hdb_entry *ent)
     ret = krb5_unparse_name(context, ent->principal, &p);
     if(ret)
 	return ret;
-    append_string(sp, "%s ", p);
+    append_string(context, sp, "%s ", p);
     free(p);
     /* --- kvno */
-    append_string(sp, "%d", ent->kvno);
+    append_string(context, sp, "%d", ent->kvno);
     /* --- keys */
     for(i = 0; i < ent->keys.len; i++){
 	/* --- mkvno, keytype */
 	if(ent->keys.val[i].mkvno)
-	    append_string(sp, ":%d:%d:", 
+	    append_string(context, sp, ":%d:%d:", 
 			  *ent->keys.val[i].mkvno, 
 			  ent->keys.val[i].key.keytype);
 	else
-	    append_string(sp, "::%d:", 
+	    append_string(context, sp, "::%d:", 
 			  ent->keys.val[i].key.keytype);
 	/* --- keydata */
-	append_hex(sp, &ent->keys.val[i].key.keyvalue);
-	append_string(sp, ":");
+	append_hex(context, sp, &ent->keys.val[i].key.keyvalue);
+	append_string(context, sp, ":");
 	/* --- salt */
 	if(ent->keys.val[i].salt){
-	    append_string(sp, "%u/", ent->keys.val[i].salt->type);
-	    append_hex(sp, &ent->keys.val[i].salt->salt);
+	    append_string(context, sp, "%u/", ent->keys.val[i].salt->type);
+	    append_hex(context, sp, &ent->keys.val[i].salt->salt);
 	}else
-	    append_string(sp, "-");
+	    append_string(context, sp, "-");
     }
-    append_string(sp, " ");
+    append_string(context, sp, " ");
     /* --- created by */
     append_event(context, sp, &ent->created_by);
     /* --- modified by */
@@ -161,44 +165,44 @@ entry2string_int (krb5_context context, krb5_storage *sp, hdb_entry *ent)
 
     /* --- valid start */
     if(ent->valid_start)
-	append_string(sp, "%s ", time2str(*ent->valid_start));
+	append_string(context, sp, "%s ", time2str(*ent->valid_start));
     else
-	append_string(sp, "- ");
+	append_string(context, sp, "- ");
 
     /* --- valid end */
     if(ent->valid_end)
-	append_string(sp, "%s ", time2str(*ent->valid_end));
+	append_string(context, sp, "%s ", time2str(*ent->valid_end));
     else
-	append_string(sp, "- ");
+	append_string(context, sp, "- ");
     
     /* --- password ends */
     if(ent->pw_end)
-	append_string(sp, "%s ", time2str(*ent->pw_end));
+	append_string(context, sp, "%s ", time2str(*ent->pw_end));
     else
-	append_string(sp, "- ");
+	append_string(context, sp, "- ");
 
     /* --- max life */
     if(ent->max_life)
-	append_string(sp, "%d ", *ent->max_life);
+	append_string(context, sp, "%d ", *ent->max_life);
     else
-	append_string(sp, "- ");
+	append_string(context, sp, "- ");
 
     /* --- max renewable life */
     if(ent->max_renew)
-	append_string(sp, "%d ", *ent->max_renew);
+	append_string(context, sp, "%d ", *ent->max_renew);
     else
-	append_string(sp, "- ");
+	append_string(context, sp, "- ");
     
     /* --- flags */
-    append_string(sp, "%d ", HDBFlags2int(ent->flags));
+    append_string(context, sp, "%d ", HDBFlags2int(ent->flags));
 
     /* --- generation number */
     if(ent->generation) {
-	append_string(sp, "%s:%d:%d", time2str(ent->generation->time),
+	append_string(context, sp, "%s:%d:%d", time2str(ent->generation->time),
 		      ent->generation->usec,
 		      ent->generation->gen);
     } else
-	append_string(sp, "-");
+	append_string(context, sp, "-");
     
     return 0;
 }
@@ -211,8 +215,10 @@ hdb_entry2string (krb5_context context, hdb_entry *ent, char **str)
     krb5_storage *sp;
 
     sp = krb5_storage_emem();
-    if(sp == NULL)
+    if(sp == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     
     ret = entry2string_int(context, sp, ent);
     if(ret) {
@@ -239,8 +245,10 @@ hdb_print_entry(krb5_context context, HDB *db, hdb_entry *entry, void *data)
 
     fflush(f);
     sp = krb5_storage_from_fd(fileno(f));
-    if(sp == NULL)
+    if(sp == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
+    }
     
     ret = entry2string_int(context, sp, entry);
     if(ret) {
