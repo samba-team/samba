@@ -67,6 +67,40 @@ static void gotalarm_sig(void)
 	return ldp;
 }
 
+static int ldap_search_with_timeout(LDAP *ld,
+				    LDAP_CONST char *base,
+				    int scope,
+				    LDAP_CONST char *filter,
+				    char **attrs,
+				    int attrsonly,
+				    LDAPControl **sctrls,
+				    LDAPControl **cctrls,
+				    struct timeval *timeout,
+				    int sizelimit,
+				    LDAPMessage **res )
+{
+	int result;
+
+	/* Setup timeout */
+	gotalarm = 0;
+	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	alarm(lp_ldap_timeout());
+	/* End setup timeout. */
+
+	result = ldap_search_ext_s(ld, base, scope, filter, attrs,
+				   attrsonly, sctrls, cctrls, timeout,
+				   sizelimit, res);
+
+	/* Teardown timeout. */
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+	alarm(0);
+
+	if (gotalarm != 0)
+		return LDAP_TIMELIMIT_EXCEEDED;
+
+	return result;
+}
+
 /*
   try a connection to a given ldap server, returning True and setting the servers IP
   in the ads struct if successful
@@ -466,15 +500,17 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	*/
 	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
-	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_expr, 
-			       search_attrs, 0, controls,
-			       NULL, NULL, LDAP_NO_LIMIT, (LDAPMessage **)res);
+	rc = ldap_search_with_timeout(ads->ld, utf8_path, scope, utf8_expr, 
+				      search_attrs, 0, controls,
+				      NULL, NULL, LDAP_NO_LIMIT,
+				      (LDAPMessage **)res);
 
 	ber_free(cookie_be, 1);
 	ber_bvfree(cookie_bv);
 
 	if (rc) {
-		DEBUG(3,("ldap_search_ext_s(%s) -> %s\n", expr, ldap_err2string(rc)));
+		DEBUG(3,("ldap_search_with_timeout(%s) -> %s\n", expr,
+			 ldap_err2string(rc)));
 		goto done;
 	}
 
@@ -657,9 +693,10 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	/* see the note in ads_do_paged_search - we *must* disable referrals */
 	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
-	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_expr,
-			       search_attrs, 0, NULL, NULL, 
-			       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
+	rc = ldap_search_with_timeout(ads->ld, utf8_path, scope, utf8_expr,
+				      search_attrs, 0, NULL, NULL, 
+				      &timeout, LDAP_NO_LIMIT,
+				      (LDAPMessage **)res);
 
 	if (rc == LDAP_SIZELIMIT_EXCEEDED) {
 		DEBUG(3,("Warning! sizelimit exceeded in ldap. Truncating.\n"));
