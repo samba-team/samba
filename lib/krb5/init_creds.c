@@ -67,9 +67,9 @@ krb5_get_init_creds_opt_alloc(krb5_context context,
 }
 
 krb5_error_code
-krb5_get_init_creds_opt_copy(krb5_context context, 
-			     const krb5_get_init_creds_opt *in,
-			     krb5_get_init_creds_opt **out)
+_krb5_get_init_creds_opt_copy(krb5_context context, 
+			      const krb5_get_init_creds_opt *in,
+			      krb5_get_init_creds_opt **out)
 {
     struct _krb5_get_init_creds_opt_private *private;
     krb5_get_init_creds_opt *opt;
