@@ -3301,13 +3301,13 @@ sub strings with useful parameters
 Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
 Paul Rippin <pr3245@nopc.eurostat.cec.be>
 ********************************************************************/
-void standard_sub_basic(char *string)
+void standard_sub_basic(char *str)
   {
   char *s, *p;
     char pidstr[10];
   struct passwd *pass;
 
-  for (s = string ; (p = strchr(s,'%')) != NULL ; s = p )
+  for (s = str ; (p = strchr(s,'%')) != NULL ; s = p )
   {
     switch (*(p+1))
   {

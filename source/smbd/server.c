@@ -3471,12 +3471,12 @@ void exit_server(char *reason)
 /****************************************************************************
 do some standard substitutions in a string
 ****************************************************************************/
-void standard_sub(int cnum,char *string)
+void standard_sub(int cnum,char *str)
 {
   if (VALID_CNUM(cnum)) {
     char *p, *s, *home;
 
-    for ( s=string ; (p=strchr(s, '%')) != NULL ; s=p ) {
+    for ( s=str ; (p=strchr(s, '%')) != NULL ; s=p ) {
       switch (*(p+1)) {
         case 'H' : if ((home = get_home_dir(Connections[cnum].user))!=NULL)
                      string_sub(p,"%H",home);
@@ -3492,7 +3492,7 @@ void standard_sub(int cnum,char *string)
       }
     }
   }
-  standard_sub_basic(string);
+  standard_sub_basic(str);
 }
 
 /*
