@@ -2065,7 +2065,7 @@ AC_ARG_WITH(ldapsam,
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_LDAP_SAM)
     LIBS="-lldap $LIBS"
-    AC_CHECK_LIB(ber, ber_bvfree, [LIBS="$LIBS -lber"])
+    AC_CHECK_LIB(lber, ber_bvfree, [LIBS="$LIBS -llber"])
     LIBS="-lresolv $LIBS"
     AC_CHECK_FUNCS(ldap_start_tls_s)
     with_smbpasswd_sam=no
