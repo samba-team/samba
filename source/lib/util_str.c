@@ -1682,6 +1682,7 @@ BOOL str_list_sub_basic( char **list, const char *smb_name )
 			return False;
 		}
 
+		SAFE_FREE(*list);
 		*list = tmpstr;
 			
 		list++;
