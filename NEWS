@@ -5,6 +5,9 @@ Changes in release 0.3d
  * fix a bug in 3des gss-api mechanism, making it compatible with the
    specification and the MIT implementation
 
+ * make telnetd only allow a specific list of environment variables to
+   stop it from setting `sensitive' variables
+
  * try to use an existing libdes
 
  * lib/krb5, kdc: use correct usage type for ap-req messages.  This
