@@ -1282,7 +1282,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	}
 	
 	if (*needed > *out_size)
-		return WERR_STATUS_MORE_ENTRIES;
+		return WERR_MORE_DATA;
 	else 
 		return WERR_OK;
 }
@@ -7176,7 +7176,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 			*data = NULL;
 		}
 
-		return WERR_INVALID_PARAM;
+		return WERR_BADFILE;
 	}
 	
 	if (*needed > *out_size)
