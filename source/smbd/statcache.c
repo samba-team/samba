@@ -88,7 +88,7 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
    * StrnCpy always null terminates.
    */
 
-  StrnCpy(orig_name, full_orig_name, namelen);
+  StrnCpy(orig_name, full_orig_name, MIN(namelen, sizeof(orig_name)-1));
   if(!case_sensitive)
     strupper( orig_name );
 

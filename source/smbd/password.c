@@ -816,7 +816,7 @@ and given password ok\n", user));
 		if (!ok && lp_username(snum)) {
 			char *auser;
 			pstring user_list;
-			StrnCpy(user_list,lp_username(snum),sizeof(pstring));
+			StrnCpy(user_list,lp_username(snum),sizeof(pstring)-1);
 
 			pstring_sub(user_list,"%S",lp_servicename(snum));
 	  
