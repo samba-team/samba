@@ -153,20 +153,27 @@ NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid
 {
 	int j, maxj = lp_lock_spin_count();
 	int sleeptime = lp_lock_sleep_time();
-	NTSTATUS status;
+	NTSTATUS status, ret;
 
 	if (maxj <= 0)
 		maxj = 1;
 
+	ret = NT_STATUS_OK; /* to keep dumb compilers happy */
+
 	for (j = 0; j < maxj; j++) {
 		status = do_lock(fsp, conn, lock_pid, count, offset, lock_type);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) &&
-				!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT))
-			break;
+		    !NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
+			return status;
+		}
+		/* if we do fail then return the first error code we got */
+		if (j == 0) {
+			ret = status;
+		}
 		if (sleeptime)
 			sys_usleep(sleeptime);
 	}
-	return status;
+	return ret;
 }
 
 /****************************************************************************
