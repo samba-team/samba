@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh 
 
 # This script is an input filter for printcap printing on a unix machine. It
 # uses the smbclient program to print the file to the specified smb-based 
@@ -19,6 +19,11 @@
 # Script further altered by hamiltom@ecnz.co.nz (Michael Hamilton)
 # so that the server, service, and password can be read from 
 # a /usr/var/spool/lpd/PRINTNAME/.config file.
+#
+# Script further modified by Richard Sharpe to fix some things.
+# Get rid of the -x on the first line, and add parameters
+#
+#    -t  now causes translate to be used when sending files
 #
 # In order for this to work the /etc/printcap entry must include an 
 # accounting file (af=...):
@@ -53,6 +58,7 @@ logfile=/tmp/smb-print.log
 #   Extract the directory name from the file name.
 #   Concat this with /.config to get the config file.
 #
+TRANS=0
 eval acct_file=\${$#}
 spool_dir=`dirname $acct_file` 
 config_file=$spool_dir/.config
@@ -63,6 +69,16 @@ config_file=$spool_dir/.config
 #   password
 eval `cat $config_file`
 
+while getopts t c; do
+  case $c in
+    t)
+       TRANS=1
+       ;;
+
+    '?')  # Bad parameters, ignore it ...
+       ;;
+  esac
+done
 #
 # Some debugging help, change the >> to > if you want to same space.
 #
@@ -71,7 +87,9 @@ echo "server $server, service $service" >> $logfile
 (
 # NOTE You may wish to add the line `echo translate' if you want automatic
 # CR/LF translation when printing.
-#       echo translate
+	if [ $TRANS ]; then
+          echo translate
+        fi
 	echo "print -"
 	cat
 ) | /usr/local/samba/bin/smbclient "\\\\$server\\$service" $password -U $server -N -P >> $logfile
