@@ -2973,6 +2973,784 @@ static int rpc_share_migrate(int argc, const char **argv)
 	return net_run_function(argc, argv, func, rpc_share_usage);
 }
 
+struct full_alias {
+	DOM_SID sid;
+	int num_members;
+	DOM_SID *members;
+};
+
+static int num_server_aliases;
+static struct full_alias *server_aliases;
+
+/*
+ * Add an alias to the static list.
+ */
+static void push_alias(TALLOC_CTX *mem_ctx, struct full_alias *alias)
+{
+	if (server_aliases == NULL)
+		server_aliases = malloc(100 * sizeof(struct full_alias));
+
+	server_aliases[num_server_aliases] = *alias;
+	num_server_aliases += 1;
+}
+
+/*
+ * For a specific domain on the server, fetch all the aliases
+ * and their members. Add all of them to the server_aliases.
+ */
+static NTSTATUS
+rpc_fetch_domain_aliases(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			 POLICY_HND *connect_pol,
+			 const DOM_SID *domain_sid)
+{
+	uint32 start_idx, max_entries, num_entries, i;
+	struct acct_info *groups;
+	NTSTATUS result;
+	POLICY_HND domain_pol;
+
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	start_idx = 0;
+	max_entries = 250;
+
+	do {
+		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
+						  &start_idx, max_entries,
+						  &groups, &num_entries);
+
+		for (i = 0; i < num_entries; i++) {
+
+			POLICY_HND alias_pol;
+			struct full_alias alias;
+			DOM_SID *members;
+			int j;
+
+			result = cli_samr_open_alias(cli, mem_ctx, &domain_pol,
+						     MAXIMUM_ALLOWED_ACCESS,
+						     groups[i].rid,
+						     &alias_pol);
+			if (!NT_STATUS_IS_OK(result))
+				goto done;
+
+			result = cli_samr_query_aliasmem(cli, mem_ctx,
+							 &alias_pol,
+							 &alias.num_members,
+							 &members);
+			if (!NT_STATUS_IS_OK(result))
+				goto done;
+
+			result = cli_samr_close(cli, mem_ctx, &alias_pol);
+			if (!NT_STATUS_IS_OK(result))
+				goto done;
+
+			alias.members = NULL;
+
+			if (alias.num_members > 0) {
+				alias.members = malloc(alias.num_members *
+						       sizeof(DOM_SID));
+
+				for (j = 0; j < alias.num_members; j++)
+					sid_copy(&alias.members[j],
+						 &members[j]);
+			}
+
+			sid_copy(&alias.sid, domain_sid);
+			sid_append_rid(&alias.sid, groups[i].rid);
+
+			push_alias(mem_ctx, &alias);
+		}
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+
+	result = NT_STATUS_OK;
+
+ done:
+	cli_samr_close(cli, mem_ctx, &domain_pol);
+
+	return result;
+}
+
+/*
+ * Dump server_aliases as names for debugging purposes.
+ */
+static NTSTATUS
+rpc_aliaslist_dump(const DOM_SID *domain_sid, const char *domain_name,
+		   struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+		   int argc, const char **argv)
+{
+	int i;
+	NTSTATUS result;
+	POLICY_HND lsa_pol;
+
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &lsa_pol);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	for (i=0; i<num_server_aliases; i++) {
+		char **names;
+		char **domains;
+		uint32 *types;
+		int j;
+
+		struct full_alias *alias = &server_aliases[i];
+
+		result = cli_lsa_lookup_sids(cli, mem_ctx, &lsa_pol, 1,
+					     &alias->sid,
+					     &domains, &names, &types);
+		if (!NT_STATUS_IS_OK(result))
+			continue;
+
+		DEBUG(1, ("%s\\%s %d: ", domains[0], names[0], types[0]));
+
+		if (alias->num_members == 0) {
+			DEBUG(1, ("\n"));
+			continue;
+		}
+
+		result = cli_lsa_lookup_sids(cli, mem_ctx, &lsa_pol,
+					     alias->num_members,
+					     alias->members,
+					     &domains, &names, &types);
+
+		if (!NT_STATUS_IS_OK(result) &&
+		    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED))
+			continue;
+
+		for (j=0; j<alias->num_members; j++)
+			DEBUG(1, ("%s\\%s (%d); ",
+				  domains[j] ? domains[j] : "*unknown*", 
+				  names[j] ? names[j] : "*unknown*",types[j]));
+		DEBUG(1, ("\n"));
+	}
+
+	cli_lsa_close(cli, mem_ctx, &lsa_pol);
+
+	return NT_STATUS_OK;
+}
+
+/*
+ * Fetch a list of all server aliases and their members into
+ * server_aliases.
+ */
+static NTSTATUS
+rpc_aliaslist_internals(const DOM_SID *domain_sid, const char *domain_name,
+			struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			int argc, const char **argv)
+{
+	NTSTATUS result;
+	POLICY_HND connect_pol;
+	DOM_SID global_sid_Builtin;
+
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+	
+	string_to_sid(&global_sid_Builtin, "S-1-5-32");
+
+	result = rpc_fetch_domain_aliases(cli, mem_ctx, &connect_pol,
+					  &global_sid_Builtin);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+	
+	result = rpc_fetch_domain_aliases(cli, mem_ctx, &connect_pol,
+					  domain_sid);
+
+	cli_samr_close(cli, mem_ctx, &connect_pol);
+ done:
+	return result;
+}
+
+static void init_user_token(NT_USER_TOKEN *token, DOM_SID *user_sid)
+{
+	DOM_SID global_sid_World;
+	DOM_SID global_sid_Network;
+	DOM_SID global_sid_Authenticated_Users;
+
+	string_to_sid(&global_sid_World, "S-1-1-0");
+	string_to_sid(&global_sid_Network, "S-1-5-2");
+	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
+
+	token->num_sids = 4;
+
+	token->user_sids = malloc(4 * sizeof(DOM_SID));
+
+	token->user_sids[0] = *user_sid;
+	sid_copy(&token->user_sids[1], &global_sid_World);
+	sid_copy(&token->user_sids[2], &global_sid_Network);
+	sid_copy(&token->user_sids[3], &global_sid_Authenticated_Users);
+}
+
+static void free_user_token(NT_USER_TOKEN *token)
+{
+	SAFE_FREE(token->user_sids);
+}
+
+static BOOL is_sid_in_token(NT_USER_TOKEN *token, DOM_SID *sid)
+{
+	int i;
+
+	for (i=0; i<token->num_sids; i++) {
+		if (sid_compare(sid, &token->user_sids[i]) == 0)
+			return True;
+	}
+	return False;
+}
+
+static void add_sid_to_token(NT_USER_TOKEN *token, DOM_SID *sid)
+{
+	if (is_sid_in_token(token, sid))
+		return;
+
+	token->user_sids = Realloc(token->user_sids,
+				   (token->num_sids+1) * sizeof(DOM_SID));
+
+	sid_copy(&token->user_sids[token->num_sids], sid);
+
+	token->num_sids += 1;
+}
+
+struct user_token {
+	fstring name;
+	NT_USER_TOKEN token;
+};
+
+static void dump_user_token(struct user_token *token)
+{
+	int i;
+
+	d_printf("%s\n", token->name);
+
+	for (i=0; i<token->token.num_sids; i++) {
+		d_printf(" %s\n", sid_string_static(&token->token.user_sids[i]));
+	}
+}
+
+static BOOL is_alias_member(DOM_SID *sid, struct full_alias *alias)
+{
+	int i;
+
+	for (i=0; i<alias->num_members; i++) {
+		if (sid_compare(sid, &alias->members[i]) == 0)
+			return True;
+	}
+
+	return False;
+}
+
+static void collect_sid_memberships(NT_USER_TOKEN *token, DOM_SID sid)
+{
+	int i;
+
+	for (i=0; i<num_server_aliases; i++) {
+		if (is_alias_member(&sid, &server_aliases[i]))
+			add_sid_to_token(token, &server_aliases[i].sid);
+	}
+}
+
+/*
+ * We got a user token with all the SIDs we can know about without asking the
+ * server directly. These are the user and domain group sids. All of these can
+ * be members of aliases. So scan the list of aliases for each of the SIDs and
+ * add them to the token.
+ */
+
+static void collect_alias_memberships(NT_USER_TOKEN *token)
+{
+	int num_global_sids = token->num_sids;
+	int i;
+
+	for (i=0; i<num_global_sids; i++) {
+		collect_sid_memberships(token, token->user_sids[i]);
+	}
+}
+
+static BOOL get_user_sids(const char *domain, const char *user,
+			  NT_USER_TOKEN *token)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	fstring full_name;
+	NSS_STATUS result;
+
+	DOM_SID user_sid;
+
+	int i;
+
+	fstr_sprintf(full_name, "%s%c%s",
+		     domain, *lp_winbind_separator(), user);
+
+	/* First let's find out the user sid */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.name.dom_name, domain);
+	fstrcpy(request.data.name.name, user);
+
+	result = winbindd_request(WINBINDD_LOOKUPNAME, &request, &response);
+
+	if (result != NSS_STATUS_SUCCESS) {
+		DEBUG(1, ("winbind could not find %s\n", full_name));
+		return False;
+	}
+
+	if (response.data.sid.type != SID_NAME_USER) {
+		DEBUG(1, ("%s is not a user\n", full_name));
+		return False;
+	}
+
+	string_to_sid(&user_sid, response.data.sid.sid);
+
+	init_user_token(token, &user_sid);
+
+	/* And now the groups winbind knows about */
+
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.username, full_name);
+
+	result = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
+
+	if (result != NSS_STATUS_SUCCESS) {
+		DEBUG(1, ("winbind could not get groups of %s\n", full_name));
+		return False;
+	}
+
+	for (i = 0; i < response.data.num_entries; i++) {
+		gid_t gid = ((gid_t *)response.extra_data)[i];
+		DOM_SID sid;
+
+		struct winbindd_request sidrequest;
+		struct winbindd_response sidresponse;
+
+		ZERO_STRUCT(sidrequest);
+		ZERO_STRUCT(sidresponse);
+
+		sidrequest.data.gid = gid;
+
+		result = winbindd_request(WINBINDD_GID_TO_SID,
+					  &sidrequest, &sidresponse);
+
+		if (result != NSS_STATUS_SUCCESS) {
+			DEBUG(1, ("winbind could not find SID of gid %d\n",
+				  gid));
+			return False;
+		}
+
+		DEBUG(3, (" %s\n", sidresponse.data.sid.sid));
+
+		string_to_sid(&sid, sidresponse.data.sid.sid);
+		add_sid_to_token(token, &sid);
+	}
+
+	SAFE_FREE(response.extra_data);
+
+	return True;
+}
+	
+/**
+ * Get a list of all user tokens we want to look at
+ **/
+static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	const char *extra_data;
+	fstring name;
+	int i;
+	struct user_token *result;
+
+	/* Send request to winbind daemon */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+	
+	if (winbindd_request(WINBINDD_LIST_USERS, &request, &response) !=
+	    NSS_STATUS_SUCCESS)
+		return False;
+
+	/* Look through extra data */
+
+	if (!response.extra_data)
+		return False;
+
+	extra_data = (const char *)response.extra_data;
+	*num_tokens = 0;
+
+	while(next_token(&extra_data, name, ",", sizeof(fstring))) {
+		*num_tokens += 1;
+	}
+
+	result = malloc(*num_tokens * sizeof(struct user_token));
+
+	if (result == NULL) {
+		DEBUG(1, ("Could not malloc sid array\n"));
+		return False;
+	}
+
+	extra_data = (const char *)response.extra_data;
+	i=0;
+
+	while(next_token(&extra_data, name, ",", sizeof(fstring))) {
+
+		fstring domain, user;
+		char *p;
+
+		fstrcpy(result[i].name, name);
+
+		p = strchr(name, *lp_winbind_separator());
+
+		DEBUG(3, ("%s\n", name));
+
+		if (p == NULL)
+			continue;
+
+		*p++ = '\0';
+
+		fstrcpy(domain, name);
+		strupper_m(domain);
+		fstrcpy(user, p);
+
+		get_user_sids(domain, user, &(result[i].token));
+		i+=1;
+	}
+	
+	SAFE_FREE(response.extra_data);
+
+	*user_tokens = result;
+
+	return True;
+}
+
+static BOOL get_user_tokens_from_file(FILE *f,
+				      int *num_tokens,
+				      struct user_token **tokens)
+{
+	struct user_token *token = NULL;
+
+	while (!feof(f)) {
+		fstring line;
+
+		if (fgets(line, sizeof(line)-1, f) == NULL) {
+			return True;
+		}
+
+		if (line[strlen(line)-1] == '\n')
+			line[strlen(line)-1] = '\0';
+
+		if (line[0] == ' ') {
+			/* We have a SID */
+
+			DOM_SID sid;
+			string_to_sid(&sid, &line[1]);
+
+			if (token == NULL) {
+				DEBUG(0, ("File does not begin with username"));
+				return False;
+			}
+
+			add_sid_to_token(&token->token, &sid);
+			continue;
+		}
+
+		/* And a new user... */
+
+		*num_tokens += 1;
+		*tokens = Realloc(*tokens,
+				  *num_tokens *
+				  sizeof(struct user_token));
+		if (*tokens == NULL) {
+			DEBUG(0, ("Could not realloc tokens\n"));
+			return False;
+		}
+
+		token = &((*tokens)[*num_tokens-1]);
+
+		fstrcpy(token->name, line);
+		token->token.num_sids = 0;
+		token->token.user_sids = NULL;
+		continue;
+	}
+	
+	return False;
+}
+
+
+/*
+ * Show the list of all users that have access to a share
+ */
+
+static void show_userlist(struct cli_state *cli,
+			  TALLOC_CTX *mem_ctx, const char *netname,
+			  int num_tokens, struct user_token *tokens)
+{
+	int fnum;
+	SEC_DESC *share_sd = NULL;
+	SEC_DESC *root_sd = NULL;
+	int i;
+	SRV_SHARE_INFO info;
+	WERROR result;
+	uint16 cnum;
+
+	result = cli_srvsvc_net_share_get_info(cli, mem_ctx, netname,
+					       502, &info);
+
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(1, ("Coult not query secdesc for share %s\n",
+			  netname));
+		return;
+	}
+
+	share_sd = info.share.info502.info_502_str.sd;
+	if (share_sd == NULL) {
+		DEBUG(1, ("Got no secdesc for share %s\n",
+			  netname));
+	}
+
+	cnum = cli->cnum;
+
+	if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
+		return;
+	}
+
+	fnum = cli_nt_create(cli, "\\", READ_CONTROL_ACCESS);
+
+	if (fnum != -1) {
+		root_sd = cli_query_secdesc(cli, fnum, mem_ctx);
+	}
+
+	for (i=0; i<num_tokens; i++) {
+		uint32 acc_granted;
+		NTSTATUS status;
+
+		if (share_sd != NULL) {
+			if (!se_access_check(share_sd, &tokens[i].token,
+					     1, &acc_granted, &status)) {
+				DEBUG(1, ("Could not check share_sd for "
+					  "user %s\n",
+					  tokens[i].name));
+				continue;
+			}
+
+			if (!NT_STATUS_IS_OK(status))
+				continue;
+		}
+
+		if (root_sd == NULL) {
+			d_printf(" %s\n", tokens[i].name);
+			continue;
+		}
+
+		if (!se_access_check(root_sd, &tokens[i].token,
+				     1, &acc_granted, &status)) {
+			DEBUG(1, ("Could not check root_sd for user %s\n",
+				  tokens[i].name));
+			continue;
+		}
+
+		if (!NT_STATUS_IS_OK(status))
+			continue;
+
+		d_printf(" %s\n", tokens[i].name);
+	}
+
+	if (fnum != -1)
+		cli_close(cli, fnum);
+	cli_tdis(cli);
+	cli->cnum = cnum;
+	
+	return;
+}
+
+struct share_list {
+	int num_shares;
+	char **shares;
+};
+
+static void collect_share(const char *name, uint32 m,
+			  const char *comment, void *state)
+{
+	struct share_list *share_list = (struct share_list *)state;
+
+	if (m != STYPE_DISKTREE)
+		return;
+
+	share_list->num_shares += 1;
+	share_list->shares = Realloc(share_list->shares,
+				     share_list->num_shares * sizeof(char *));
+	share_list->shares[share_list->num_shares-1] = strdup(name);
+}
+
+static void rpc_share_userlist_usage(void)
+{
+	return;
+}
+	
+/** 
+ * List shares on a remote RPC server, including the security descriptors
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS 
+rpc_share_allowedusers_internals(const DOM_SID *domain_sid,
+				 const char *domain_name,
+				 struct cli_state *cli,
+				 TALLOC_CTX *mem_ctx,
+				 int argc, const char **argv)
+{
+	int ret;
+	BOOL r;
+	ENUM_HND hnd;
+	uint32 i;
+	FILE *f;
+
+	struct user_token *tokens = NULL;
+	int num_tokens = 0;
+
+	struct share_list share_list;
+
+	if (argc > 1) {
+		rpc_share_userlist_usage();
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (argc == 0) {
+		f = stdin;
+	} else {
+		f = fopen(argv[0], "r");
+	}
+
+	if (f == NULL) {
+		DEBUG(0, ("Could not open userlist: %s\n", strerror(errno)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	r = get_user_tokens_from_file(f, &num_tokens, &tokens);
+
+	if (f != stdin)
+		fclose(f);
+
+	if (!r) {
+		DEBUG(0, ("Could not read users from file\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	for (i=0; i<num_tokens; i++)
+		collect_alias_memberships(&tokens[i].token);
+
+	init_enum_hnd(&hnd, 0);
+
+	share_list.num_shares = 0;
+	share_list.shares = NULL;
+
+	ret = cli_RNetShareEnum(cli, collect_share, &share_list);
+
+	if (ret == -1) {
+		DEBUG(0, ("Error returning browse list: %s\n",
+			  cli_errstr(cli)));
+		goto done;
+	}
+
+	for (i = 0; i < share_list.num_shares; i++) {
+		char *netname = share_list.shares[i];
+
+		if (netname[strlen(netname)-1] == '$')
+			continue;
+
+		d_printf("%s\n", netname);
+
+		show_userlist(cli, mem_ctx, netname,
+			      num_tokens, tokens);
+	}
+ done:
+	for (i=0; i<num_tokens; i++) {
+		free_user_token(&tokens[i].token);
+	}
+	SAFE_FREE(tokens);
+	SAFE_FREE(share_list.shares);
+
+	return NT_STATUS_OK;
+}
+
+static int
+rpc_share_allowedusers(int argc, const char **argv)
+{
+	int result;
+
+	result = run_rpc_command(NULL, PI_SAMR, 0,
+				 rpc_aliaslist_internals,
+				 argc, argv);
+	if (result != 0)
+		return result;
+
+	result = run_rpc_command(NULL, PI_LSARPC, 0,
+				 rpc_aliaslist_dump,
+				 argc, argv);
+	if (result != 0)
+		return result;
+
+	return run_rpc_command(NULL, PI_SRVSVC, 0,
+			       rpc_share_allowedusers_internals,
+			       argc, argv);
+}
+
+int net_usersidlist(int argc, const char **argv)
+{
+	int num_tokens = 0;
+	struct user_token *tokens = NULL;
+	int i;
+
+	if (argc != 0) {
+		net_usersidlist_usage(argc, argv);
+		return 0;
+	}
+
+	if (!get_user_tokens(&num_tokens, &tokens)) {
+		DEBUG(0, ("Could not get the user/sid list\n"));
+		return 0;
+	}
+
+	for (i=0; i<num_tokens; i++) {
+		dump_user_token(&tokens[i]);
+		free_user_token(&tokens[i].token);
+	}
+
+	SAFE_FREE(tokens);
+	return 1;
+}
+
+int net_usersidlist_usage(int argc, const char **argv)
+{
+	d_printf("net usersidlist\n"
+		 "\tprints out a list of all users the running winbind knows\n"
+		 "\tabout, together with all their SIDs. This is used as\n"
+		 "\tinput to the 'net rpc share allowedusers' command.\n\n");
+
+	net_common_flags_usage(argc, argv);
+	return -1;
+}
+
 /** 
  * 'net rpc share' entrypoint.
  * @param argc  Standard main() style argc
@@ -2985,6 +3763,7 @@ int net_rpc_share(int argc, const char **argv)
 	struct functable func[] = {
 		{"add", rpc_share_add},
 		{"delete", rpc_share_delete},
+		{"allowedusers", rpc_share_allowedusers},
 		{"migrate", rpc_share_migrate},
 		{NULL, NULL}
 	};
