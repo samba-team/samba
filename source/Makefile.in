@@ -209,11 +209,11 @@ PROCESS_MODEL_OBJS = @PROCESS_MODEL_OBJS@
 PROCESS_MODEL_LIBS = @PROCESS_MODEL_LIBS@
 
 SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJS) $(SMBD_OBJ_SRV) \
-		$(PARAM_OBJ) $(SECRETS_OBJ) $(PASSDB_OBJ)  \
-		$(AUTH_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ) $(LIBSMB_OBJ)
+		$(PARAM_OBJ) $(SECRETS_OBJ)  \
+		$(LIB_OBJ) $(POPT_LIB_OBJ) $(LIBSMB_OBJ)
 
 SMBD_OBJS = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE) @BUILD_POPT@
-SMBD_LIBS = $(LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(AUTH_LIBS) $(PASSDB_LIBS) $(NTVFS_LIBS)
+SMBD_LIBS = $(LIBS) $(SMB_LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(AUTH_LIBS) $(PASSDB_LIBS) $(NTVFS_LIBS)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o libcli/raw/clirewrite.o
 
@@ -247,7 +247,7 @@ GENTEST_OBJ = torture/gentest.o torture/torture_util.o $(LIBSMB_OBJ) $(PARAM_OBJ
 MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 		$(LIB_OBJ) libcli/raw/clirewrite.o
 
-LOCKTEST_OBJ = torture/locktest.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
+LOCKTEST_OBJ = torture/locktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 		$(LIB_OBJ) libcli/raw/clirewrite.o
 
 NDRDUMP_OBJ = utils/ndrdump.o utils/rewrite.o \
@@ -256,10 +256,8 @@ NDRDUMP_OBJ = utils/ndrdump.o utils/rewrite.o \
 PROTO_OBJ = $(SMBD_OBJ_SRV) \
 	    $(SMBD_OBJ_MAIN) $(PROCESS_MODEL_OBJS) \
 	    $(LIBSMB_OBJ) \
-	    $(LIBRAW_OBJ) $(LIBCLIAUTH_OBJ) \
 	    $(SMBTORTURE_OBJ1) \
-	    $(AUTH_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
-	    $(PASSDB_OBJ) \
+	    $(PARAM_OBJ) $(SECRETS_OBJ) \
 	    $(READLINE_OBJ) $(CLIENT_OBJ1) \
 	    $(LIB_OBJ) $(POPT_LIB_OBJ)
 
