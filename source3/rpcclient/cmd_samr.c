@@ -1394,7 +1394,6 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol;
-	uint32 flags = 0x000003e8; /* Unknown */
 	uint32 num_rids, num_names, *rids, *name_types;
 	char **names;
 	int i;
@@ -1427,8 +1426,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli,
 	for (i = 0; i < argc - 1; i++)
                 sscanf(argv[i + 1], "%i", &rids[i]);
 
-	result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol,
-				      flags, num_rids, rids,
+	result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol, num_rids, rids,
 				      &num_names, &names, &name_types);
 
 	if (!NT_STATUS_IS_OK(result) &&
