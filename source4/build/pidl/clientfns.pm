@@ -14,7 +14,7 @@ sub pidl($)
 	$res .= shift;
 }
 
-use Data::Dumper;
+#use Data::Dumper;
 
 #####################################################################
 # produce boilerplate code for a interface
@@ -28,7 +28,7 @@ sub Boilerplate_ClientFns($)
 		if ($d->{TYPE} eq "FUNCTION") {
 
 		    pidl "/*\n";
-		    pidl Dumper($d);
+#		    pidl Dumper($d);
 		    pidl "\n*/\n\n";
 
 		    pidl "$d->{RETURN_TYPE} $d->{NAME}(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx";
