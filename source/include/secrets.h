@@ -24,6 +24,7 @@
 
 
 #define SECRETS_MACHINE_ACCT_PASS "SECRETS/$MACHINE.ACC"
+#define SECRETS_DOMAIN_SID    "SECRETS/SID"
 #define SECRETS_SAM_SID       "SAM/SAM_SID"
 
 struct machine_acct_pass {
