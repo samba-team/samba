@@ -386,7 +386,7 @@ FileSave("$dnsdomain.zone", $res);
 print "done
 
 Installation:
-- Please move newsam.ldb to sam.ldb in the lib/private/ directory of your
+- Please move newsam.ldb to sam.ldb in the private/ directory of your
   Samba4 installation
 - Please use $dnsdomain.zone to in BIND dns server
 ";
