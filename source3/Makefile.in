@@ -448,7 +448,7 @@ WINBINDD_OBJ = \
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o \
 	passdb/secrets.o
 
-WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o
+WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o nsswitch/winbind_nss_solaris.o
 
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 
