@@ -914,19 +914,6 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/lsaparse.c  */
 
-void make_q_logon_ctrl2(LSA_Q_LOGON_CTRL2 *q_l, char *server_name,
-			uint32 function_code);
-char* lsa_io_q_logon_ctrl2(BOOL io, LSA_Q_LOGON_CTRL2 *q_l, char *q, char *base, int align, int depth);
-void make_r_logon_ctrl2(LSA_R_LOGON_CTRL2 *r_l, uint32 query_level,
-				uint32 flags, uint32 pdc_status, uint32 logon_attempts,
-				uint32 tc_status, char *trusted_domain_name);
-char* lsa_io_r_logon_ctrl2(BOOL io, LSA_R_LOGON_CTRL2 *r_l, char *q, char *base, int align, int depth);
-void make_r_trust_dom(LSA_R_TRUST_DOM_LIST *r_t,
-			uint32 num_doms, char *dom_name);
-char* lsa_io_r_trust_dom(BOOL io, LSA_R_TRUST_DOM_LIST *r_t, char *q, char *base, int align, int depth);
-void make_q_trust_dom(LSA_Q_TRUST_DOM_LIST *q_l, char *server_name,
-			uint32 function_code);
-char* lsa_io_q_trust_dom(BOOL io, LSA_Q_TRUST_DOM_LIST *q_l, char *q, char *base, int align, int depth);
 void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
 			uint32 attributes, uint32 sec_qos,
 			uint32 desired_access);
@@ -948,25 +935,41 @@ char* lsa_io_q_lookup_sids(BOOL io, LSA_Q_LOOKUP_SIDS *q_s, char *q, char *base,
 char* lsa_io_r_lookup_sids(BOOL io, LSA_R_LOOKUP_SIDS *r_s, char *q, char *base, int align, int depth);
 char* lsa_io_q_lookup_rids(BOOL io, LSA_Q_LOOKUP_RIDS *q_r, char *q, char *base, int align, int depth);
 char* lsa_io_r_lookup_rids(BOOL io, LSA_R_LOOKUP_RIDS *r_r, char *q, char *base, int align, int depth);
-void make_q_req_chal(LSA_Q_REQ_CHAL *q_c,
+
+/*The following definitions come from  rpc_pipes/netparse.c  */
+
+void make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, char *server_name,
+			uint32 function_code);
+char* net_io_q_logon_ctrl2(BOOL io, NET_Q_LOGON_CTRL2 *q_l, char *q, char *base, int align, int depth);
+void make_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
+				uint32 flags, uint32 pdc_status, uint32 logon_attempts,
+				uint32 tc_status, char *trusted_domain_name);
+char* net_io_r_logon_ctrl2(BOOL io, NET_R_LOGON_CTRL2 *r_l, char *q, char *base, int align, int depth);
+void make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
+			uint32 num_doms, char *dom_name);
+char* net_io_r_trust_dom(BOOL io, NET_R_TRUST_DOM_LIST *r_t, char *q, char *base, int align, int depth);
+void make_q_trust_dom(NET_Q_TRUST_DOM_LIST *q_l, char *server_name,
+			uint32 function_code);
+char* net_io_q_trust_dom(BOOL io, NET_Q_TRUST_DOM_LIST *q_l, char *q, char *base, int align, int depth);
+void make_q_req_chal(NET_Q_REQ_CHAL *q_c,
 				char *logon_srv, char *logon_clnt,
 				DOM_CHAL *clnt_chal);
-char* lsa_io_q_req_chal(BOOL io, LSA_Q_REQ_CHAL *q_c, char *q, char *base, int align, int depth);
-char* lsa_io_r_req_chal(BOOL io, LSA_R_REQ_CHAL *r_c, char *q, char *base, int align, int depth);
-void make_q_auth_2(LSA_Q_AUTH_2 *q_a,
+char* net_io_q_req_chal(BOOL io, NET_Q_REQ_CHAL *q_c, char *q, char *base, int align, int depth);
+char* net_io_r_req_chal(BOOL io, NET_R_REQ_CHAL *r_c, char *q, char *base, int align, int depth);
+void make_q_auth_2(NET_Q_AUTH_2 *q_a,
 		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
 		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
-char* lsa_io_q_auth_2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align, int depth);
-char* lsa_io_r_auth_2(BOOL io, LSA_R_AUTH_2 *r_a, char *q, char *base, int align, int depth);
-void make_q_srv_pwset(LSA_Q_SRV_PWSET *q_s, char sess_key[16],
+char* net_io_q_auth_2(BOOL io, NET_Q_AUTH_2 *q_a, char *q, char *base, int align, int depth);
+char* net_io_r_auth_2(BOOL io, NET_R_AUTH_2 *r_a, char *q, char *base, int align, int depth);
+void make_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char sess_key[16],
 		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
 		DOM_CRED *cred, char nt_cypher[16]);
-char* lsa_io_q_srv_pwset(BOOL io, LSA_Q_SRV_PWSET *q_s, char *q, char *base, int align, int depth);
-char* lsa_io_r_srv_pwset(BOOL io, LSA_R_SRV_PWSET *r_s, char *q, char *base, int align, int depth);
-char* lsa_io_q_sam_logon(BOOL io, LSA_Q_SAM_LOGON *q_l, char *q, char *base, int align, int depth);
-char* lsa_io_r_sam_logon(BOOL io, LSA_R_SAM_LOGON *r_l, char *q, char *base, int align, int depth);
-char* lsa_io_q_sam_logoff(BOOL io, LSA_Q_SAM_LOGOFF *q_l, char *q, char *base, int align, int depth);
-char* lsa_io_r_sam_logoff(BOOL io, LSA_R_SAM_LOGOFF *r_l, char *q, char *base, int align, int depth);
+char* net_io_q_srv_pwset(BOOL io, NET_Q_SRV_PWSET *q_s, char *q, char *base, int align, int depth);
+char* net_io_r_srv_pwset(BOOL io, NET_R_SRV_PWSET *r_s, char *q, char *base, int align, int depth);
+char* net_io_q_sam_logon(BOOL io, NET_Q_SAM_LOGON *q_l, char *q, char *base, int align, int depth);
+char* net_io_r_sam_logon(BOOL io, NET_R_SAM_LOGON *r_l, char *q, char *base, int align, int depth);
+char* net_io_q_sam_logoff(BOOL io, NET_Q_SAM_LOGOFF *q_l, char *q, char *base, int align, int depth);
+char* net_io_r_sam_logoff(BOOL io, NET_R_SAM_LOGOFF *r_l, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  rpc_pipes/ntclientlogin.c  */
 
@@ -1005,20 +1008,20 @@ BOOL do_lsa_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hnd
 
 /*The following definitions come from  rpc_pipes/ntclientnet.c  */
 
-BOOL do_lsa_logon_ctrl2(struct cli_state *cli, int t_idx, uint16 fnum,
+BOOL do_net_logon_ctrl2(struct cli_state *cli, int t_idx, uint16 fnum,
 		char *host_name, uint32 status_level);
-BOOL do_lsa_auth2(struct cli_state *cli, int t_idx, uint16 fnum,
+BOOL do_net_auth2(struct cli_state *cli, int t_idx, uint16 fnum,
 		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
         DOM_CHAL *clnt_chal, uint32 neg_flags, DOM_CHAL *srv_chal);
-BOOL do_lsa_req_chal(struct cli_state *cli, int t_idx, uint16 fnum,
+BOOL do_net_req_chal(struct cli_state *cli, int t_idx, uint16 fnum,
 		char *desthost, char *myhostname,
         DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
-BOOL do_lsa_srv_pwset(struct cli_state *cli, int t_idx, uint16 fnum,
+BOOL do_net_srv_pwset(struct cli_state *cli, int t_idx, uint16 fnum,
 		uchar sess_key[16], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *mach_acct, uint16 sec_chan_type, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *srv_cred,
 		char nt_owf_new_mach_pwd[16]);
-BOOL do_lsa_sam_logon(struct cli_state *cli, int t_idx, uint16 fnum,
+BOOL do_net_sam_logon(struct cli_state *cli, int t_idx, uint16 fnum,
 		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
@@ -1026,7 +1029,7 @@ BOOL do_lsa_sam_logon(struct cli_state *cli, int t_idx, uint16 fnum,
 		DOM_ID_INFO_1 *id1, uint16 switch_value2,
 		USER_INFO_3 *user_info3,
 		DOM_CRED *srv_cred);
-BOOL do_lsa_sam_logoff(struct cli_state *cli, int t_idx, uint16 fnum,
+BOOL do_net_sam_logoff(struct cli_state *cli, int t_idx, uint16 fnum,
 		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
@@ -1163,13 +1166,29 @@ char* reg_io_r_open_entry(BOOL io, REG_R_OPEN_ENTRY *r_r, char *q, char *base, i
 
 /*The following definitions come from  rpc_pipes/samrparse.c  */
 
-void make_samr_q_close(SAMR_Q_CLOSE *q_c, POLICY_HND *hnd);
-char* samr_io_q_close(BOOL io, SAMR_Q_CLOSE *q_u, char *q, char *base, int align, int depth);
-char* samr_io_r_close(BOOL io, SAMR_R_CLOSE *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_close_hnd(SAMR_Q_CLOSE_HND *q_c, POLICY_HND *hnd);
+char* samr_io_q_close_hnd(BOOL io, SAMR_Q_CLOSE_HND *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_close_hnd(BOOL io, SAMR_R_CLOSE_HND *r_u, char *q, char *base, int align, int depth);
 void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 				POLICY_HND *pol, uint32 rid, char *sid);
 char* samr_io_q_open_domain(BOOL io, SAMR_Q_OPEN_DOMAIN *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_open_domain(BOOL io, SAMR_R_OPEN_DOMAIN *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
+				POLICY_HND *pol, uint32 switch_value);
+char* samr_io_q_unknown_3(BOOL io, SAMR_Q_UNKNOWN_3 *q_u, char *q, char *base, int align, int depth);
+void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, char *sid);
+char* sam_io_dom_sid3(BOOL io, DOM_SID3 *sid3, char *q, char *base, int align, int depth);
+void make_sam_sid_stuff(SAM_SID_STUFF *stf,
+				uint16 unknown_2, uint16 unknown_3,
+				uint32 unknown_4, uint16 unknown_6, uint16 unknown_7,
+				int num_sid3s, DOM_SID3 sid3[MAX_SAM_SIDS]);
+char* sam_io_sid_stuff(BOOL io, SAM_SID_STUFF *stf, char *q, char *base, int align, int depth);
+void make_samr_r_unknown_3(SAMR_R_UNKNOWN_3 *r_u,
+				uint16 unknown_2, uint16 unknown_3,
+				uint32 unknown_4, uint16 unknown_6, uint16 unknown_7,
+				int num_sid3s, DOM_SID3 sid3[MAX_SAM_SIDS],
+				uint32 status);
+char* samr_io_r_unknown_3(BOOL io, SAMR_R_UNKNOWN_3 *r_u, char *q, char *base, int align, int depth);
 void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
 				uint16 req_num_entries, uint16 unk_0,
 				uint16 acb_mask, uint16 unk_1, uint32 size);
@@ -1405,17 +1424,16 @@ void make_user_info15(USER_INFO_15 *usr,
 
 	uint32 unknown_0,
 	uint32 unknown_1,
-	char unknown_2[32],
 
-	uint32 user_id,
-	uint32 group_id,
-	uint32 num_groups,
-	uint32 other_groups[LSA_MAX_GROUPS],
+	uint32 user_rid,
+	uint32 group_rid,
+	uint16 acb_info, 
 
-	uint32 unknown_4,
+	uint32 unknown_3,
+	uint16 logon_divs,
+	LOGON_HRS *hrs,
 	uint32 unknown_5,
-	uint32 unknown_6,
-	LOGON_HRS *hrs);
+	uint32 unknown_6);
 char* smb_io_user_info15(BOOL io, USER_INFO_15 *usr, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  rpc_pipes/srvparse.c  */

@@ -272,10 +272,10 @@ implemented */
 
 /* NETLOGON opcodes and data structures */
 
-#define NET_QUERYFORPDC	     7 /* Query for PDC */
-#define NET_QUERYFORPDC_R   12 /* Response to Query for PDC */
-#define NET_SAMLOGON        18
-#define NET_SAMLOGON_R      19
+#define UDP_NET_QUERYFORPDC	     7 /* Query for PDC */
+#define UDP_NET_QUERYFORPDC_R   12 /* Response to Query for PDC */
+#define UDP_NET_SAMLOGON        18
+#define UDP_NET_SAMLOGON_R      19
 
 struct smb_passwd
 {

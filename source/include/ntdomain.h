@@ -107,7 +107,7 @@ SamrTestPrivateFunctionsUser
 
 ********************************************************************/
 
-#define SAMR_CLOSE             0x01
+#define SAMR_CLOSE_HND         0x01
 #define SAMR_OPEN_DOMAIN       0x07
 #define SAMR_LOOKUP_RIDS       0x11
 #define SAMR_UNKNOWN_3         0x03
@@ -123,24 +123,26 @@ SamrTestPrivateFunctionsUser
 #define SAMR_ENUM_DOM_ALIASES  0x0f
 #define SAMR_ENUM_DOM_GROUPS   0x30
 
+/* ntlsa pipe */
 #define LSA_OPENPOLICY         0x2c
 #define LSA_QUERYINFOPOLICY    0x07
 #define LSA_ENUMTRUSTDOM       0x0d
-#define LSA_REQCHAL            0x04
-#define LSA_SRVPWSET           0x06
-#define LSA_SAMLOGON           0x02
-#define LSA_SAMLOGOFF          0x03
-#define LSA_LOGON_CTRL2        0x0e
-#define LSA_TRUST_DOM_LIST     0x13
-#define LSA_AUTH2              0x0f
 #define LSA_CLOSE              0x00
+#define LSA_OPENSECRET         0x1C
 
 /* XXXX these are here to get a compile! */
-
-#define LSA_OPENSECRET      0x1C
 #define LSA_LOOKUPSIDS      0xFE
 #define LSA_LOOKUPRIDS      0xFD
 #define LSA_LOOKUPNAMES     0xFC
+
+/* NETLOGON pipe */
+#define NET_REQCHAL            0x04
+#define NET_SRVPWSET           0x06
+#define NET_SAMLOGON           0x02
+#define NET_SAMLOGOFF          0x03
+#define NET_AUTH2              0x0f
+#define NET_LOGON_CTRL2        0x0e
+#define NET_TRUST_DOM_LIST     0x13
 
 /* srvsvc pipe */
 #define NETSERVERGETINFO 0x15
@@ -212,6 +214,30 @@ typedef struct sid_info
   uint32 sub_auths[MAXSUBAUTHS];  /* pointer to sub-authorities. */
 
 } DOM_SID;
+
+/* DOM_SID3 example:
+   0x14 0x035b 0x0002 S-1-1
+   0x18 0x07ff 0x000f S-1-5-20-DOMAIN_ALIAS_RID_ADMINS
+   0x18 0x07ff 0x000f S-1-5-20-DOMAIN_ALIAS_RID_ACCOUNT_OPS
+   0x24 0x0044 0x0002 S-1-5-21-nnn-nnn-nnn-0x03f1
+ */
+
+/* DOM_SID3 example:
+   0x24 0x0044 0x0002 S-1-5-21-nnn-nnn-nnn-0x03ee
+   0x18 0x07ff 0x000f S-1-5-20-DOMAIN_ALIAS_RID_ADMINS
+   0x14 0x035b 0x0002 S-1-1
+ */
+
+/* DOM_SID3 - security id */
+typedef struct sid_info_3
+{
+	uint16 len; /* length, bytes, including length of len :-) */
+	uint16 unknown_0;
+	uint16 unknown_1;
+
+	DOM_SID sid;
+
+} DOM_SID3;
 
 /* UNIHDR - unicode string header */
 typedef struct unihdr_info
@@ -442,10 +468,16 @@ typedef struct user_info_15
 
 	uint32 user_rid;      /* User ID */
 	uint32 group_rid;     /* Group ID */
-	uint32 other_grp_rids[LSA_MAX_GROUPS]; /* Other Group RIDs, terminated by 0x00ff ffff */
-	uint32 unknown_4; /* 0x0000 00a8 */
 
+	uint16 acb_info;
+	/* uint8 pad[2] */
+
+	uint32 unknown_3; /* 0x00ff ffff */
+
+	uint32 logon_divs; /* 0x0000 00a8 which is 168 which is num hrs in a week */
+	/* uint8 pad[2] */
 	uint32 ptr_logon_hrs; /* unknown pointer */
+
 	uint32 unknown_5;     /* 0x0002 0000 */
 
 	char padding1[8];
@@ -725,8 +757,8 @@ typedef struct object_attributes_info
  query_level 0x3 - number of logon attempts.
 
  ********************************************************/
-/* LSA_Q_LOGON_CTRL2 - LSA Netr Logon Control 2*/
-typedef struct lsa_q_logon_ctrl2_info
+/* NET_Q_LOGON_CTRL2 - LSA Netr Logon Control 2*/
+typedef struct net_q_logon_ctrl2_info
 {
 	uint32       ptr;             /* undocumented buffer pointer */
 	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
@@ -735,7 +767,7 @@ typedef struct lsa_q_logon_ctrl2_info
 	uint32       query_level;   /* 0x1, 0x3 */
 	uint32       switch_value;  /* 0x1 */
 
-} LSA_Q_LOGON_CTRL2;
+} NET_Q_LOGON_CTRL2;
 
 /* NETLOGON_INFO_1 - pdc status info, i presume */
 typedef struct netlogon_1_info
@@ -775,8 +807,8 @@ typedef struct netlogon_3_info
  switch_value is same as query_level in request 
  *******************************************************/
 
-/* LSA_R_LOGON_CTRL2 - response to LSA Logon Control2 */
-typedef struct lsa_r_logon_ctrl2_info
+/* NET_R_LOGON_CTRL2 - response to LSA Logon Control2 */
+typedef struct net_r_logon_ctrl2_info
 {
 	uint32       switch_value;  /* 0x1, 0x3 */
 	uint32       ptr;
@@ -791,28 +823,28 @@ typedef struct lsa_r_logon_ctrl2_info
 
 	uint32 status; /* return code */
 
-} LSA_R_LOGON_CTRL2;
+} NET_R_LOGON_CTRL2;
 
-/* LSA_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
-typedef struct lsa_q_trust_dom_info
+/* NET_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
+typedef struct net_q_trust_dom_info
 {
 	uint32       ptr;             /* undocumented buffer pointer */
 	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
 	
 	uint32       function_code; /* 0x31 */
 
-} LSA_Q_TRUST_DOM_LIST;
+} NET_Q_TRUST_DOM_LIST;
 
 #define MAX_TRUST_DOMS 1
 
-/* LSA_R_TRUST_DOM_LIST - response to LSA Trusted Domains */
-typedef struct lsa_r_trust_dom_info
+/* NET_R_TRUST_DOM_LIST - response to LSA Trusted Domains */
+typedef struct net_r_trust_dom_info
 {
 	UNISTR2 uni_trust_dom_name[MAX_TRUST_DOMS];
 
 	uint32 status; /* return code */
 
-} LSA_R_TRUST_DOM_LIST;
+} NET_R_TRUST_DOM_LIST;
 
 /* LSA_Q_OPEN_POL - LSA Query Open Policy */
 typedef struct lsa_q_open_pol_info
@@ -997,83 +1029,83 @@ typedef struct lsa_r_lookup_rids
 
 
 /* NEG_FLAGS */
-typedef struct lsa_neg_flags_info
+typedef struct neg_flags_info
 {
     uint32 neg_flags; /* negotiated flags */
 
 } NEG_FLAGS;
 
 
-/* LSA_Q_REQ_CHAL */
-typedef struct lsa_q_req_chal_info
+/* NET_Q_REQ_CHAL */
+typedef struct net_q_req_chal_info
 {
     uint32  undoc_buffer; /* undocumented buffer pointer */
     UNISTR2 uni_logon_srv; /* logon server unicode string */
     UNISTR2 uni_logon_clnt; /* logon client unicode string */
     DOM_CHAL clnt_chal; /* client challenge */
 
-} LSA_Q_REQ_CHAL;
+} NET_Q_REQ_CHAL;
 
 
-/* LSA_R_REQ_CHAL */
-typedef struct lsa_r_req_chal_info
+/* NET_R_REQ_CHAL */
+typedef struct net_r_req_chal_info
 {
     DOM_CHAL srv_chal; /* server challenge */
 
   uint32 status; /* return code */
 
-} LSA_R_REQ_CHAL;
+} NET_R_REQ_CHAL;
 
 
 
-/* LSA_Q_AUTH_2 */
-typedef struct lsa_q_auth2_info
+/* NET_Q_AUTH_2 */
+typedef struct net_q_auth2_info
 {
     DOM_LOG_INFO clnt_id; /* client identification info */
     DOM_CHAL clnt_chal;     /* client-calculated credentials */
 
     NEG_FLAGS clnt_flgs; /* usually 0x0000 01ff */
 
-} LSA_Q_AUTH_2;
+} NET_Q_AUTH_2;
 
 
-/* LSA_R_AUTH_2 */
-typedef struct lsa_r_auth2_info
+/* NET_R_AUTH_2 */
+typedef struct net_r_auth2_info
 {
     DOM_CHAL srv_chal;     /* server-calculated credentials */
     NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
 
   uint32 status; /* return code */
 
-} LSA_R_AUTH_2;
+} NET_R_AUTH_2;
 
 
-/* LSA_Q_SRV_PWSET */
-typedef struct lsa_q_srv_pwset_info
+/* NET_Q_SRV_PWSET */
+typedef struct net_q_srv_pwset_info
 {
     DOM_CLNT_INFO clnt_id; /* client identification/authentication info */
     char pwd[16]; /* new password - undocumented. */
 
-} LSA_Q_SRV_PWSET;
+} NET_Q_SRV_PWSET;
     
-/* LSA_R_SRV_PWSET */
-typedef struct lsa_r_srv_pwset_info
+/* NET_R_SRV_PWSET */
+typedef struct net_r_srv_pwset_info
 {
     DOM_CRED srv_cred;     /* server-calculated credentials */
 
   uint32 status; /* return code */
 
-} LSA_R_SRV_PWSET;
+} NET_R_SRV_PWSET;
 
-/* LSA_Q_SAM_LOGON */
-typedef struct lsa_q_sam_logon_info
+/* NET_Q_SAM_LOGON */
+typedef struct net_q_sam_logon_info
 {
     DOM_SAM_INFO sam_id;
 
-} LSA_Q_SAM_LOGON;
+} NET_Q_SAM_LOGON;
 
-/* LSA_R_SAM_LOGON */
-typedef struct lsa_r_sam_logon_info
+/* NET_R_SAM_LOGON */
+typedef struct net_r_sam_logon_info
 {
     uint32 buffer_creds; /* undocumented buffer pointer */
     DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
@@ -1085,25 +1117,25 @@ typedef struct lsa_r_sam_logon_info
 
   uint32 status; /* return code */
 
-} LSA_R_SAM_LOGON;
+} NET_R_SAM_LOGON;
 
 
-/* LSA_Q_SAM_LOGOFF */
-typedef struct lsa_q_sam_logoff_info
+/* NET_Q_SAM_LOGOFF */
+typedef struct net_q_sam_logoff_info
 {
     DOM_SAM_INFO sam_id;
 
-} LSA_Q_SAM_LOGOFF;
+} NET_Q_SAM_LOGOFF;
 
-/* LSA_R_SAM_LOGOFF */
-typedef struct lsa_r_sam_logoff_info
+/* NET_R_SAM_LOGOFF */
+typedef struct net_r_sam_logoff_info
 {
     uint32 buffer_creds; /* undocumented buffer pointer */
     DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
     
   uint32 status; /* return code */
 
-} LSA_R_SAM_LOGOFF;
+} NET_R_SAM_LOGOFF;
 
 
 /* SH_INFO_1 (pointers to level 1 share info strings) */
@@ -1181,21 +1213,71 @@ typedef struct r_net_share_enum_info
 } SRV_R_NET_SHARE_ENUM;
 
 
-/* SAMR_Q_CLOSE - probably a policy handle close */
-typedef struct q_samr_close_info
+/* SAMR_Q_CLOSE_HND - probably a policy handle close */
+typedef struct q_samr_close_hnd_info
 {
     POLICY_HND pol;          /* policy handle */
 
-} SAMR_Q_CLOSE;
+} SAMR_Q_CLOSE_HND;
 
 
-/* SAMR_R_CLOSE - probably a policy handle close */
-typedef struct r_samr_close_info
+/* SAMR_R_CLOSE_HND - probably a policy handle close */
+typedef struct r_samr_close_hnd_info
 {
     POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
 
-} SAMR_R_CLOSE;
+} SAMR_R_CLOSE_HND;
+
+
+/****************************************************************************
+SAMR_Q_UNKNOWN_3 - info level 4.  returns SIDs.
+*****************************************************************************/
+
+/* SAMR_Q_UNKNOWN_3 - probably get domain info... */
+typedef struct q_samr_unknown_3_info
+{
+    POLICY_HND pol;          /* policy handle */
+	uint16 switch_value;     /* 0x0000 0004 */
+	/* uint8 pad[2] */
+
+} SAMR_Q_UNKNOWN_3;
+
+#define MAX_SAM_SIDS 15
+
+/* SAM_SID_STUFF */
+typedef struct sid_stuff_info
+{
+	uint16 unknown_2; /* 0x0001 */
+	uint16 unknown_3; /* 0x8004 */
+
+	uint8 padding1[8];
+
+	uint32 unknown_4; /* 0x0000 0014 */
+	uint32 unknown_5; /* 0x0000 0014 */
+
+	uint16 unknown_6; /* 0x0002 */
+	uint16 unknown_7; /* 0x5800 */
+
+	uint32 num_sids;
+	DOM_SID3 sid[MAX_SAM_SIDS];
+
+} SAM_SID_STUFF;
+
+/* SAMR_R_UNKNOWN_3 - probably an open */
+typedef struct r_samr_unknown_3_info
+{
+	uint32 ptr_0;
+	uint32 sid_stuff_len0;
+
+	uint32 ptr_1;
+	uint32 sid_stuff_len1;
+
+	SAM_SID_STUFF sid_stuff;
+
+	uint32 status;         /* return status */
+
+} SAMR_R_UNKNOWN_3;
 
 
 /****************************************************************************
@@ -1523,7 +1605,7 @@ typedef struct r_samr_lookup_names_info
 typedef struct q_samr_open_user_info
 {
     POLICY_HND pol;       /* policy handle */
-	uint32 unknown_0;     /* 16 bit unknown - 0x011b */
+	uint32 unknown_0;     /* 32 bit unknown - 0x02011b */
 	uint32 user_rid;      /* user RID */
 
 } SAMR_Q_OPEN_USER;
