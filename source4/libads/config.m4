@@ -2,7 +2,6 @@
 # Compile with LDAP support?
 
 LDAP_LIBS=""
-AC_SUBST(LDAP_LIBS)
 with_ldap_support=auto
 AC_MSG_CHECKING([for LDAP support])
 
@@ -73,6 +72,7 @@ if test x"$with_ldap_support" != x"no"; then
     with_ldap_support=yes
     AC_MSG_CHECKING(whether LDAP support is used)
     AC_MSG_RESULT(yes)
+    SMB_EXT_LIB_ENABLE(LDAP,YES)
   else
     if test x"$with_ldap_support" = x"yes"; then
 	AC_MSG_ERROR(libldap is needed for LDAP support)
@@ -86,14 +86,10 @@ if test x"$with_ldap_support" != x"no"; then
   LIBS=$ac_save_LIBS
 fi
 
-#hack
-LIBS="$LIBS $LDAP_LIBS"
-
 #################################################
 # active directory support
 
 KRB5_LIBS=""
-AC_SUBST(KRB5_LIBS)
 with_ads_support=auto
 AC_MSG_CHECKING([for Active Directory and krb5 support])
 
@@ -431,6 +427,7 @@ if test x"$with_ads_support" != x"no"; then
     AC_DEFINE(WITH_ADS,1,[Whether to include Active Directory support])
     AC_MSG_CHECKING(whether Active Directory and KRB5 support is used)
     AC_MSG_RESULT(yes)
+    SMB_EXT_LIB_ENABLE(KRB5,YES)
   else
     if test x"$with_ads_support" = x"yes"; then
 	AC_MSG_ERROR(libkrb5 is needed for Active Directory support)
@@ -443,5 +440,5 @@ if test x"$with_ads_support" != x"no"; then
   LIBS="$ac_save_LIBS"
 fi
 
-#hack
-LIBS="$LIBS $KRB5_LIBS"
+SMB_EXT_LIB(LDAP,[${LDAP_LIBS}],[${LDAP_CFLAGS}],[${LDAP_CPPFLAGS}],[${LDAP_LDFLAGS}])
+SMB_EXT_LIB(KRB5,[${KRB5_LIBS}],[${KRB5_CFLAGS}],[${KRB5_CPPFLAGS}],[${KRB5_LDFLAGS}])
