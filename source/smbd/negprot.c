@@ -159,16 +159,6 @@ reply for the nt protocol
 static int reply_nt1(char *outbuf)
 {
   /* dual names + lock_and_read + nt SMBs + remote API calls */
-  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|
-                     (lp_nt_smb_support() ? CAP_NT_SMBS | CAP_RPC_REMOTE_APIS : 0) |
-                     (SMB_OFF_T_BITS == 64 ? CAP_LARGE_FILES : 0);
-
-
-/*
-  other valid capabilities which we may support at some time...
-                     CAP_LARGE_READX|CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;
- */
-
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
@@ -177,9 +167,26 @@ static int reply_nt1(char *outbuf)
   char cryptkey[8];
   char crypt_len = 0;
 
-  if (lp_security() == SEC_SERVER) {
-	  cli = server_cryptkey();
-  }
+  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ;
+
+	if (lp_nt_smb_support())
+	{
+		capabilities |= CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
+	}
+
+	if (SMB_OFF_T_BITS == 64)
+	{
+		capabilities |= CAP_LARGE_FILES;
+	}
+/*
+  other valid capabilities which we may support at some time...
+                     CAP_LARGE_READX|CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;
+ */
+
+	if (lp_security() == SEC_SERVER)
+	{
+		cli = server_cryptkey();
+	}
 
   if (cli) {
 	  DEBUG(3,("using password server validation\n"));
