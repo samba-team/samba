@@ -2319,6 +2319,8 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
+	ServicePtrs[i]->autoloaded = True;
+
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
 	       user, newHomedir));
 	
@@ -3697,6 +3699,10 @@ void lp_killunused(BOOL (*snumused) (int))
 	int i;
 	for (i = 0; i < iNumServices; i++) {
 		if (!VALID(i))
+			continue;
+
+		/* don't kill autoloaded services */
+		if ( ServicePtrs[i]->autoloaded )
 			continue;
 
 		if (!snumused || !snumused(i)) {
