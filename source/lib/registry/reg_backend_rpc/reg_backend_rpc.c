@@ -100,7 +100,8 @@ WERROR rpc_list_hives (TALLOC_CTX *mem_ctx, const char *location, const char *cr
 static WERROR rpc_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *h, struct registry_key **k)
 {
 	NTSTATUS status;
-	char *user, *pass;
+	char *user;
+	char *pass;
 	struct rpc_key_data *mykeydata;
 	struct dcerpc_pipe *p;
 	int n;
@@ -114,18 +115,18 @@ static WERROR rpc_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *h, struct
 
 	user = talloc_strdup(mem_ctx, h->credentials);
 	pass = strchr(user, '%');
-	if(pass) 
-	{
-		*pass = '\0'; pass++;
+	if (pass) {
+		pass = strdup(pass+1);
 	} else {
-		pass = "";
+		pass = strdup("");
 	}
 
 	status = dcerpc_pipe_connect(&p, h->location, 
-                    DCERPC_WINREG_UUID,
-                    DCERPC_WINREG_VERSION,
-                     lp_workgroup(),
-                     user, pass);
+				     DCERPC_WINREG_UUID,
+				     DCERPC_WINREG_VERSION,
+				     lp_workgroup(),
+				     user, pass);
+	free(pass);
 
 	h->backend_data = p;
 
@@ -145,12 +146,7 @@ static WERROR rpc_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *h, struct
 	return known_hives[n].open((struct dcerpc_pipe *)h->backend_data, *k, &(mykeydata->pol));
 }
 
-static WERROR rpc_close_registry(struct registry_hive *h)
-{
-	dcerpc_pipe_close((struct dcerpc_pipe *)h->backend_data);
-	return WERR_OK;
-}
-
+#if 0
 static WERROR rpc_key_put_rpc_data(TALLOC_CTX *mem_ctx, struct registry_key *k)
 {
     struct winreg_OpenKey r;
@@ -173,7 +169,7 @@ static WERROR rpc_key_put_rpc_data(TALLOC_CTX *mem_ctx, struct registry_key *k)
 
 	return r.out.result;
 }
-
+#endif
 
 static WERROR rpc_open_rel_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const char *name, struct registry_key **key)
 {

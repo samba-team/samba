@@ -697,7 +697,7 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 	GetTimeOfDay(&tp_start);
 
 	if (lowercase) {
-		strlower(lname);
+		strlower(discard_const_p(char, lname));
 	}
 
 	fnum = smbcli_open(cli->tree, rname, O_RDONLY, DENY_NONE);
@@ -870,9 +870,10 @@ static void do_mget(file_info *finfo)
 	pstrcat(cur_dir,finfo->name);
 	pstrcat(cur_dir,"\\");
 
-	string_replace(finfo->name, '\\', '/');
-	if (lowercase)
-		strlower(finfo->name);
+	string_replace(discard_const_p(char, finfo->name), '\\', '/');
+	if (lowercase) {
+		strlower(discard_const_p(char, finfo->name));
+	}
 	
 	if (!directory_exist(finfo->name,NULL) && 
 	    mkdir(finfo->name,0777) != 0) {
@@ -2267,7 +2268,7 @@ static BOOL browse_host(const char *query_host)
 /****************************************************************************
 try and browse available connections on a host
 ****************************************************************************/
-static BOOL list_servers(char *wk_grp)
+static BOOL list_servers(const char *wk_grp)
 {
 	d_printf("REWRITE: list servers not implemented\n");
 	return False;
@@ -2636,7 +2637,7 @@ cleanup:
 /****************************************************************************
 make sure we swallow keepalives during idle time
 ****************************************************************************/
-static void readline_callback(const char **cmd_ptr)
+static void readline_callback(void)
 {
 	static time_t last_t;
 	time_t t;

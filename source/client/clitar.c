@@ -40,10 +40,8 @@
 
 /**
  Convert list of tokens to array; dependent on above routine.
- Uses last_ptr from above - bit of a hack.
 **/
-
-static char **toktocliplist(const char *ptr, int *ctok, const char *sep)
+static char **toktocliplist(char *ptr, int *ctok, const char *sep)
 {
 	char *s = ptr;
 	int ictok=0;
@@ -168,7 +166,7 @@ static int tarhandle;
 
 static void writetarheader(int f,  const char *aname, uint64_t size, time_t mtime,
 			   const char *amode, uint8_t ftype);
-static void do_atar(char *rname,char *lname,file_info *finfo1);
+static void do_atar(char *rname,const char *lname,file_info *finfo1);
 static void do_tar(file_info *finfo);
 static void oct_it(uint64_t value, int ndgs, char *p);
 static void fixtarname(char *tptr, const char *fp, int l);
@@ -641,7 +639,7 @@ static void do_setrattr(char *name, uint16_t attr, int set)
 /****************************************************************************
 append one remote file to the tar file
 ***************************************************************************/
-static void do_atar(char *rname,char *lname,file_info *finfo1)
+static void do_atar(char *rname,const char *lname,file_info *finfo1)
 {
   int fnum;
   uint64_t nread=0;
@@ -666,7 +664,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     finfo.mtime = finfo1 -> mtime;
     finfo.atime = finfo1 -> atime;
     finfo.ctime = finfo1 -> ctime;
-    finfo.name  = finfo1 -> name;
+    finfo.name  = discard_const_p(char, finfo1 -> name);
   }
   else {
 	  ZERO_STRUCT(finfo);
@@ -1443,13 +1441,13 @@ int cmd_setmode(const char **cmd_ptr)
 /****************************************************************************
 Principal command for creating / extracting
 ***************************************************************************/
-int cmd_tar(const char **cmd_ptr)
+int cmd_tar(char **cmd_ptr)
 {
   fstring buf;
   char **argl;
   int argcl;
 
-  if (!next_token(cmd_ptr,buf,NULL,sizeof(buf)))
+  if (!next_token((const char **)cmd_ptr,buf,NULL,sizeof(buf)))
     {
       DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
       return 1;

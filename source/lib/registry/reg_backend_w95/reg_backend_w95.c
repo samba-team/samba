@@ -300,15 +300,6 @@ static WERROR w95_get_subkey_by_index (TALLOC_CTX *mem_ctx, struct registry_key 
 	return WERR_NO_MORE_ITEMS;
 }
 
-static WERROR w95_close_reg(struct registry_hive *h)
-{
-	CREG *creg = h->backend_data;
-	if (creg->base) munmap(creg->base, creg->sbuf.st_size);
-	creg->base = NULL;
-    close(creg->fd);
-	return WERR_OK;
-}
-
 static WERROR w95_num_values(struct registry_key *k, int *count)
 {
 	RGKN_KEY *rgkn_key = k->backend_data;

@@ -31,6 +31,9 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 				  struct pvfs_filename *name, union smb_fileinfo *info)
 {
 	switch (info->generic.level) {
+	case RAW_FILEINFO_GENERIC:
+		return NT_STATUS_INVALID_LEVEL;
+
 	case RAW_FILEINFO_GETATTR:
 		info->getattr.out.attrib     = name->dos.attrib;
 		info->getattr.out.size       = name->st.st_size;

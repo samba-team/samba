@@ -599,14 +599,22 @@ NSS_STATUS winbindd_request(int req_type,
 
 BOOL winbind_off( void )
 {
-	static char *s = WINBINDD_DONT_ENV "=1";
-
+#if HAVE_SETENV
+	setenv(WINBINDD_DONT_ENV, "1", 1);
+	return True;
+#else
+	static const char *s = WINBINDD_DONT_ENV "=1";
 	return putenv(s) != -1;
+#endif
 }
 
 BOOL winbind_on( void )
 {
-	static char *s = WINBINDD_DONT_ENV "=0";
-
+#if HAVE_SETENV
+	setenv(WINBINDD_DONT_ENV, "0", 1);
+	return True;
+#else
+	static const char *s = WINBINDD_DONT_ENV "=0";
 	return putenv(s) != -1;
+#endif
 }

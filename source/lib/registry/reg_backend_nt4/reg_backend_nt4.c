@@ -934,7 +934,7 @@ static WERROR vk_to_val(TALLOC_CTX *mem_ctx, struct registry_key *parent, VK_HDR
 
 		if(tmp->data_type == REG_SZ) {
 			char *ret;
-	    	dat_len = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, dtmp, dat_len, (const void **)&ret);
+	    	dat_len = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, dtmp, dat_len, (void **)&ret);
 			dtmp = ret;
 		}
 
@@ -1570,16 +1570,6 @@ error:
 }
 
 #endif
-
-static WERROR nt_close_registry (struct registry_hive *h) 
-{
-	REGF *regf = h->backend_data;
-	if (regf->base) munmap(regf->base, regf->sbuf.st_size);
-	regf->base = NULL;
-	close(regf->fd);    /* Ignore the error :-) */
-
-	return WERR_OK;
-}
 
 static WERROR nt_open_hive (TALLOC_CTX *mem_ctx, struct registry_hive *h, struct registry_key **key)
 {

@@ -349,10 +349,6 @@ BOOL spnego_free_data(struct spnego_data *spnego)
 	switch(spnego->type) {
 	case SPNEGO_NEG_TOKEN_INIT:
 		if (spnego->negTokenInit.mechTypes) {
-			int i;
-			for (i = 0; spnego->negTokenInit.mechTypes[i]; i++) {
-				talloc_free(spnego->negTokenInit.mechTypes[i]);
-			}
 			talloc_free(spnego->negTokenInit.mechTypes);
 		}
 		data_blob_free(&spnego->negTokenInit.mechToken);

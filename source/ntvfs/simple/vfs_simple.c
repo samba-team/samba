@@ -508,43 +508,24 @@ static NTSTATUS svfs_write(struct ntvfs_module_context *ntvfs,
 {
 	ssize_t ret;
 
-	CHECK_READ_ONLY(req);
-
-	switch (wr->generic.level) {
-	case RAW_WRITE_WRITEX:
-		ret = pwrite(wr->writex.in.fnum, 
-			     wr->writex.in.data, 
-			     wr->writex.in.count,
-			     wr->writex.in.offset);
-		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
-		}
-		
-		wr->writex.out.nwritten = ret;
-		wr->writex.out.remaining = 0; /* should fill this in? */
-
-		return NT_STATUS_OK;
-
-	case RAW_WRITE_WRITE:
-		if (wr->write.in.count == 0) {
-			/* a truncate! */
-			ret = ftruncate(wr->write.in.fnum, wr->write.in.offset);
-		} else {
-			ret = pwrite(wr->write.in.fnum, 
-				     wr->write.in.data, 
-				     wr->write.in.count,
-				     wr->write.in.offset);
-		}
-		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
-		}
-		
-		wr->write.out.nwritten = ret;
-
-		return NT_STATUS_OK;
+	if (wr->generic.level != RAW_WRITE_WRITEX) {
+		return ntvfs_map_write(req, wr, ntvfs);
 	}
 
-	return NT_STATUS_NOT_SUPPORTED;
+	CHECK_READ_ONLY(req);
+
+	ret = pwrite(wr->writex.in.fnum, 
+		     wr->writex.in.data, 
+		     wr->writex.in.count,
+		     wr->writex.in.offset);
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+		
+	wr->writex.out.nwritten = ret;
+	wr->writex.out.remaining = 0; /* should fill this in? */
+	
+	return NT_STATUS_OK;
 }
 
 /*
