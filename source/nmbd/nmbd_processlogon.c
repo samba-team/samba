@@ -179,8 +179,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       q += 4;
       domainsidsize = IVAL(q, 0);
       q += 4;
-      q += domainsidsize + 2;
-      q = align2(q, buf);
+      q += domainsidsize;
+      q = align4(q, buf);
 
       ntversion = IVAL(q, 0);
       q += 4;
