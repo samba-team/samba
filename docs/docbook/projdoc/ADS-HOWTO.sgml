@@ -14,7 +14,8 @@ This is a rough guide to setting up Samba 3.0 with kerberos authentication again
 Windows2000 KDC. 
 </para>
 
-<para>Pieces you need before you begin:
+<para>Pieces you need before you begin:</para>
+<para>
 <simplelist>
 <member>a Windows 2000 server.</member>
 <member>samba 3.0 or higher.</member>
@@ -26,7 +27,8 @@ Windows2000 KDC.
 <sect1>
 <title>Installing the required packages for Debian</title>
 
-<para>On Debian you need to install the following packages:
+<para>On Debian you need to install the following packages:</para>
+<para>
 <simplelist>
 <member>libkrb5-dev</member>
 <member>krb5-user</member>
@@ -37,7 +39,8 @@ Windows2000 KDC.
 <sect1>
 <title>Installing the required packages for RedHat</title>
 
-<para>On RedHat this means you should have at least: 
+<para>On RedHat this means you should have at least: </para>
+<para>
 <simplelist>
 <member>krb5-workstation (for kinit)</member>
 <member>krb5-libs (for linking with)</member>
@@ -99,7 +102,7 @@ In case samba can't figure out your ads server using your realm name, use the
 <para>The minimal configuration for krb5.conf is:</para>
 
 <para><programlisting>
-	[realms]
+[realms]
     YOUR.KERBEROS.REALM = {
 	kdc = your.kerberos.server
     }

@@ -409,8 +409,8 @@ echo "  :sd=/var/spool/lpd/$2:\\" 			>> $PRINTCAP
 echo "  :mx=0:ml=0:sh:\\" 				>> $PRINTCAP
 echo "  :lp=/usr/local/samba/var/print/$5.prn:" 	>> $PRINTCAP
 
-touch "/usr/local/samba/var/print/$5.prn" >> /tmp/printadd.$$ 2>&1
-chown $LP "/usr/local/samba/var/print/$5.prn" >> /tmp/printadd.$$ 2>&1
+touch "/usr/local/samba/var/print/$5.prn" >> /tmp/printadd.$$ 2>&amp;1
+chown $LP "/usr/local/samba/var/print/$5.prn" >> /tmp/printadd.$$ 2>&amp;1
 
 mkdir /var/spool/lpd/$2
 chmod 700 /var/spool/lpd/$2
@@ -757,7 +757,7 @@ be:
     /usr/bin/id -p >/tmp/tmp.print
     # we run the command and save the error messages
     # replace the command with the one appropriate for your system
-    /usr/bin/lpr -r -P$1 $2 2>>&/tmp/tmp.print
+    /usr/bin/lpr -r -P$1 $2 2>>&amp;/tmp/tmp.print
 </programlisting></para>
 
 <para>
