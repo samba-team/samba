@@ -12,10 +12,10 @@ if { [regexp "Error" $output] } {
 
 set user_list [split $output "\n"]
 
-# Look up all users using finger.  This should test getpwnam()
+# Look up all users using finger -m.  This should test getpwnam()
 
 foreach { user } $user_list {
-    set output [util_start "finger" "-m $user" "" "no such user"]
+    set output [util_start "finger" "-m \"$user\"" "" "no such user"]
     verbose $output
 
     if { [regexp "no such user" $output] } {
@@ -25,12 +25,10 @@ foreach { user } $user_list {
     }
 }
 
-verbose "testing finger -m"
-
 # Run finger without the -m to also test set/get/endpwent()
 
 foreach { user } $user_list {
-    set output [util_start "finger" "-m $user"]
+    set output [util_start "finger" "\"$user\""]
     verbose $output
     
     if { [regexp "no such user" $output] } {
