@@ -157,7 +157,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 	{
 		DEBUG(10,("rpc_auth_pipe: seal\n"));
 		dump_data(100, reply_data, data_len);
-		NTLMSSPcalc(cli->ntlmssp_hash, reply_data, data_len);
+		NTLMSSPcalc(cli->ntlmssp_hash, (uchar*)reply_data, data_len);
 		dump_data(100, reply_data, data_len);
 	}
 
@@ -180,7 +180,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 	if (auth_verify)
 	{
 		prs_struct auth_verf;
-		char *data = (uchar*)mem_data(&rdata->data, len - auth_len);
+		char *data = mem_data(&rdata->data, len - auth_len);
 		if (data == NULL) return False;
 
 		DEBUG(10,("rpc_auth_pipe: verify\n"));

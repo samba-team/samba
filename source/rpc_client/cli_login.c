@@ -106,13 +106,13 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
                               uint32 smb_userid_low, char *password,
                               NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
-  unsigned char lm_owf_user_pwd[16];
-  unsigned char nt_owf_user_pwd[16];
+  uchar lm_owf_user_pwd[16];
+  uchar nt_owf_user_pwd[16];
   BOOL ret;
 
   DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
 
-  nt_lm_owf_gen(password, (char *)nt_owf_user_pwd, (char *)lm_owf_user_pwd);
+  nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
 
 #ifdef DEBUG_PASSWORD
 
