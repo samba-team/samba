@@ -36,7 +36,7 @@ static struct {
 #include <libexc.h>
 #endif
 
-static void call_backtrace(void)
+void call_backtrace(void)
 {
 #ifdef HAVE_BACKTRACE
 #define BACKTRACE_STACK_SIZE 64
