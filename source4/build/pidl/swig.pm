@@ -237,12 +237,35 @@ sub ParseStruct($)
     $res .= "\n%}\n\n";    
 }
 
+sub ParseUnion($)
+{
+    my($u) = shift;
+
+    $res .= "%{\n\n";
+    $res .= "/* Convert Python dict to union $u->{NAME} */\n\n";
+
+    $res .= "union $u->{NAME} *$u->{NAME}_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)\n";
+    $res .= "{\n";
+    $res .= "\treturn NULL;\n";
+    $res .= "}\n\n";
+
+    $res .= "/* Convert union $u->{NAME} to Python dict */\n\n";
+
+    $res .= "PyObject *$u->{NAME}_to_python(TALLOC_CTX *mem_ctx, union $u->{NAME} *u)\n";
+    $res .= "{\n";
+    $res .= "\treturn NULL;\n";
+    $res .= "}\n\n";
+
+    $res .= "\n%}\n\n";    
+}
+
 sub ParseTypedef($)
 {
     my($t) = shift;
 
     foreach my $e ($t) {
 	($e->{DATA}{TYPE} eq "STRUCT") && ParseStruct($e);
+	($e->{DATA}{TYPE} eq "UNION") && ParseUnion($e);
     }
 }
 
