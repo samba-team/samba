@@ -37,7 +37,7 @@ static char *charset_name(charset_t ch)
 	else if (ch == CH_UNIX) ret = lp_unix_charset();
 	else if (ch == CH_DOS) ret = lp_dos_charset();
 	else if (ch == CH_DISPLAY) ret = lp_display_charset();
-	else if (ch == CH_UTF8) ret = "UTF-8";
+	else if (ch == CH_UTF8) ret = "UTF8";
 
 	if (!ret || !*ret) ret = "ASCII";
 	return ret;
