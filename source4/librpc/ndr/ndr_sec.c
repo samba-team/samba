@@ -51,39 +51,6 @@ NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, struct dom_sid *
 
 
 /*
-  convert a dom_sid to a string
-*/
-char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
-{
-	int i, ofs, maxlen;
-	uint32_t ia;
-	char *ret;
-	
-	if (!sid) {
-		return talloc_strdup(mem_ctx, "(NULL SID)");
-	}
-
-	maxlen = sid->num_auths * 11 + 25;
-	ret = talloc(mem_ctx, maxlen);
-	if (!ret) return talloc_strdup(mem_ctx, "(SID ERR)");
-
-	ia = (sid->id_auth[5]) +
-		(sid->id_auth[4] << 8 ) +
-		(sid->id_auth[3] << 16) +
-		(sid->id_auth[2] << 24);
-
-	ofs = snprintf(ret, maxlen, "S-%u-%lu", 
-		       (uint_t)sid->sid_rev_num, (unsigned long)ia);
-
-	for (i = 0; i < sid->num_auths; i++) {
-		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu", (unsigned long)sid->sub_auths[i]);
-	}
-	
-	return ret;
-}
-
-
-/*
   print a dom_sid
 */
 void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, struct dom_sid *sid)
@@ -103,30 +70,6 @@ size_t ndr_size_dom_sid(struct dom_sid *sid)
 {
 	if (!sid) return 0;
 	return 8 + 4*sid->num_auths;
-}
-
-/*
-  add a rid to a domain dom_sid to make a full dom_sid
-*/
-struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx, 
-				const struct dom_sid *domain_sid, 
-				uint32_t rid)
-{
-	struct dom_sid *sid;
-
-	sid = talloc_p(mem_ctx, struct dom_sid);
-	if (!sid) return NULL;
-
-	*sid = *domain_sid;
-	/*TODO: use realloc! */
-	sid->sub_auths = talloc_array_p(mem_ctx, uint32_t, sid->num_auths+1);
-	if (!sid->sub_auths) {
-		return NULL;
-	}
-	memcpy(sid->sub_auths, domain_sid->sub_auths, sid->num_auths*sizeof(uint32_t));
-	sid->sub_auths[sid->num_auths] = rid;
-	sid->num_auths++;
-	return sid;
 }
 
 /*
