@@ -50,6 +50,7 @@ struct posix_lock {
 	SMB_OFF_T start;
 	SMB_OFF_T size;
 	int lock_type;
+	size_t ref_count;
 };
 
 /*
@@ -290,29 +291,83 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 	TDB_DATA dbuf;
-	struct posix_lock pl;
+	struct posix_lock *entries;
+	size_t count, i, ref_count;
 
 	/*
-	 * Now setup the new record.
+	 * Windows is very strange. It allows a write lock to be downgraded to
+	 * a read lock, but reference counts the locks. This means if you get
+	 * the following sequence :
+	 *
+	 * WRITE LOCK : start = 0, len = 10
+	 * READ LOCK : start = 0, len = 10
+	 * 
+	 * then another process will be able to get a read lock, but the unlock
+	 * sequence must be done twice to remove the read lock.
+	 * 
+	 * Under POSIX, the same sequence would not be reference counted, but
+	 * would leave a single read lock over the 0-10 region. In order to
+	 * re-create Windows semantics mapped to POSIX locks, we reference
+	 * count the POSIX lock request, so that when multiple locks over a
+	 * region is requested of the Samba POSIX lock code (this can only
+	 * be an overlay of a read onto a write lock due to the checks already
+	 * being done in brlock.c) then we map the lock onto POSIX, but just
+	 * increment the reference count in the tdb. Unlocks decrement the
+	 * reference count and only do the POSIX unlock call when the refcount
+	 * reaches zero.
 	 */
-
-	pl.fd = fsp->fd;
-	pl.start = start;
-	pl.size = size;
-	pl.lock_type = lock_type;
-
+	
 	dbuf.dptr = NULL;
 
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
-	dbuf.dptr = Realloc(dbuf.dptr, dbuf.dsize + sizeof(pl));
-	if (!dbuf.dptr) {
-		DEBUG(0,("add_posix_lock_entry: Realloc fail !\n"));
-		goto fail;
+	/* 
+	 * Look for an existing entry matching this region.
+	 */
+	
+	entries = (struct posix_lock *)dbuf.dptr;
+	count = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
+
+	for (i = 0; i < count; i++) {
+		struct posix_lock *entry = &entries[i];
+
+		/* 
+		 * Just increment the ref_count on a matching entry.
+		 * Note we don't take lock type into account here.
+		 */
+
+		if ((entry->fd == fsp->fd) &&
+			(entry->start == start) &&
+			(entry->size == size)) {
+				/* Overwrite the lock type also. */
+				entry->lock_type = lock_type;
+				ref_count = ++entry->ref_count;
+				break;
+		}
 	}
 
-	memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(pl));
-	dbuf.dsize += sizeof(pl);
+	if (i == count) {
+		struct posix_lock pl;
+
+		/*
+		 * New record needed.
+		 */
+
+		pl.fd = fsp->fd;
+		pl.start = start;
+		pl.size = size;
+		pl.lock_type = lock_type;
+		ref_count = pl.ref_count = 1;
+
+		dbuf.dptr = Realloc(dbuf.dptr, dbuf.dsize + sizeof(pl));
+		if (!dbuf.dptr) {
+			DEBUG(0,("add_posix_lock_entry: Realloc fail !\n"));
+			goto fail;
+		}
+
+		memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(pl));
+		dbuf.dsize += sizeof(pl);
+	}
 
 	if (tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
 		DEBUG(0,("add_posix_lock: Failed to add lock entry on file %s\n", fsp->fsp_name));
@@ -321,8 +376,8 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 
     free(dbuf.dptr);
 
-	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f:dev=%.0f inode=%.0f\n",
-			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size,
+	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f, ref_count = %u :dev=%.0f inode=%.0f\n",
+			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size, (unsigned int)ref_count,
 			(double)fsp->dev, (double)fsp->inode ));
 
     return True;
@@ -363,14 +418,26 @@ static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_
 		if (pl->fd == fsp->fd &&
 			pl->start == start &&
 			pl->size == size) {
-			/* Found it - delete it. */
-			if (count == 1) {
-				tdb_delete(posix_lock_tdb, kbuf);
-			} else {
-				if (i < count-1) {
-					memmove(&locks[i], &locks[i+1], sizeof(*locks)*((count-1) - i));
+
+			pl->ref_count--;
+
+			DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, ref_count = %u\n",
+					posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
+					(unsigned int)pl->ref_count ));
+
+			if (pl->ref_count == 0) {
+				/* Found it - delete it. */
+				if (count == 1) {
+					tdb_delete(posix_lock_tdb, kbuf);
+				} else {
+					if (i < count-1) {
+						memmove(&locks[i], &locks[i+1], sizeof(*locks)*((count-1) - i));
+					}
+					dbuf.dsize -= sizeof(*locks);
+					tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
 				}
-				dbuf.dsize -= sizeof(*locks);
+			} else {
+				/* Just re-store the new ref count. */
 				tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
 			}
 
