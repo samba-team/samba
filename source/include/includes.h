@@ -284,8 +284,8 @@ union semun_hack {
        char __dummy[5];
 };
 #define semun semun_hack
-#endif /* SGI_SEMUN_HACK */
-endif /* HAVE_SYSV_IPC */
+#endif /* NEED_SGI_SEMUN_HACK */
+#endif /* HAVE_SYSV_IPC */
 
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
