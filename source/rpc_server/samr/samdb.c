@@ -86,39 +86,7 @@ void samdb_close(void *ctx)
 	/* we don't actually close due to broken posix locking semantics */
 	sam_ctx->ldb = NULL;
 	free(sam_ctx);
-}
-
-/*
-  search the sam for the specified attributes - va_list variant
-*/
-int samdb_search_v(void *ctx, 
-		   TALLOC_CTX *mem_ctx,
-		   const char *basedn,
-		   struct ldb_message ***res,
-		   const char * const *attrs,
-		   const char *format, 
-		   va_list ap)
-{
-	struct samdb_context *sam_ctx = ctx;
-	char *expr = NULL;
-	int count;
-
-	vasprintf(&expr, format, ap);
-	if (expr == NULL) {
-		return -1;
-	}
-
-	ldb_set_alloc(sam_ctx->ldb, talloc_ldb_alloc, mem_ctx);
-
-	count = ldb_search(sam_ctx->ldb, basedn, LDB_SCOPE_SUBTREE, expr, attrs, res);
-
-	DEBUG(4,("samdb_search_v: %s %s -> %d\n", basedn?basedn:"NULL", expr, count));
-
-	free(expr);
-
-	return count;
-}
-				 
+}				 
 
 /*
   search the sam for the specified attributes - varargs variant
@@ -130,11 +98,12 @@ int samdb_search(void *ctx,
 		 const char * const *attrs,
 		 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
+	struct samdb_context *sam_ctx = ctx;
 	va_list ap;
 	int count;
 
 	va_start(ap, format);
-	count = samdb_search_v(ctx, mem_ctx, basedn, res, attrs, format, ap);
+	count = gendb_search_v(sam_ctx->ldb, mem_ctx, basedn, res, attrs, format, ap);
 	va_end(ap);
 
 	return count;
@@ -160,11 +129,12 @@ const char *samdb_search_string_v(void *ctx,
 				  const char *attr_name,
 				  const char *format, va_list ap)
 {
+	struct samdb_context *sam_ctx = ctx;
 	int count;
 	const char * const attrs[2] = { attr_name, NULL };
 	struct ldb_message **res = NULL;
 
-	count = samdb_search_v(ctx, mem_ctx, basedn, &res, attrs, format, ap);
+	count = gendb_search_v(sam_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
 	if (count > 1) {		
 		DEBUG(1,("samdb: search for %s %s not single valued (count=%d)\n", 
 			 attr_name, format, count));
@@ -205,13 +175,14 @@ int samdb_search_count(void *ctx,
 		       const char *basedn,
 		       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
 {
+	struct samdb_context *samdb_ctx = ctx;
 	va_list ap;
 	struct ldb_message **res;
 	const char * const attrs[] = { NULL };
 	int ret;
 
 	va_start(ap, format);
-	ret = samdb_search_v(ctx, mem_ctx, basedn, &res, attrs, format, ap);
+	ret = gendb_search_v(samdb_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
 	va_end(ap);
 
 	return ret;
@@ -228,13 +199,14 @@ uint_t samdb_search_uint(void *ctx,
 			 const char *attr_name,
 			 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
+	struct samdb_context *samdb_ctx = ctx;
 	va_list ap;
 	int count;
 	struct ldb_message **res;
 	const char * const attrs[2] = { attr_name, NULL };
 
 	va_start(ap, format);
-	count = samdb_search_v(ctx, mem_ctx, basedn, &res, attrs, format, ap);
+	count = gendb_search_v(samdb_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
 	va_end(ap);
 
 	if (count != 1) {
@@ -254,13 +226,14 @@ int64_t samdb_search_int64(void *ctx,
 			   const char *attr_name,
 			   const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
+	struct samdb_context *samdb_ctx = ctx;
 	va_list ap;
 	int count;
 	struct ldb_message **res;
 	const char * const attrs[2] = { attr_name, NULL };
 
 	va_start(ap, format);
-	count = samdb_search_v(ctx, mem_ctx, basedn, &res, attrs, format, ap);
+	count = gendb_search_v(samdb_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
 	va_end(ap);
 
 	if (count != 1) {
@@ -281,13 +254,14 @@ int samdb_search_string_multiple(void *ctx,
 				 const char *attr_name,
 				 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
+	struct samdb_context *samdb_ctx = ctx;
 	va_list ap;
 	int count, i;
 	const char * const attrs[2] = { attr_name, NULL };
 	struct ldb_message **res = NULL;
 
 	va_start(ap, format);
-	count = samdb_search_v(ctx, mem_ctx, basedn, &res, attrs, format, ap);
+	count = gendb_search_v(samdb_ctx->ldb, mem_ctx, basedn, &res, attrs, format, ap);
 	va_end(ap);
 
 	if (count <= 0) {
