@@ -377,7 +377,7 @@ static size_t skip_generic_multibyte_char(char c)
 ********************************************************************/
 
 /* convesion buffer */
-static char cvtbuf[1024];
+static char cvtbuf[2*sizeof(pstring)];
 
 /*******************************************************************
   EUC <-> SJIS
@@ -412,7 +412,7 @@ static char *sj_to_euc(char *from, BOOL overwrite)
   char *save;
 
   save = (char *) from;
-  for (out = cvtbuf; *from;) {
+  for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3);) {
     if (is_shift_jis (*from)) {
       int code = sjis2euc ((int) from[0] & 0xff, (int) from[1] & 0xff);
       *out++ = (code >> 8) & 0xff;
@@ -445,7 +445,7 @@ static char *euc_to_sj(char *from, BOOL overwrite)
   char *save;
 
   save = (char *) from;
-  for (out = cvtbuf; *from; ) {
+  for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3); ) {
     if (is_euc (*from)) {
       int code = euc2sjis ((int) from[0] & 0xff, (int) from[1] & 0xff);
       *out++ = (code >> 8) & 0xff;
@@ -496,48 +496,51 @@ static int jis2sjis(int hi, int lo)
 
 static char *jis8_to_sj(char *from, BOOL overwrite)
 {
-    char *out;
-    int shifted;
-    char *save;
+  char *out;
+  int shifted;
+  char *save;
 
-    shifted = _KJ_ROMAN;
-    save = (char *) from;
-    for (out = cvtbuf; *from;) {
-	if (is_esc (*from)) {
-	    if (is_so1 (from[1]) && is_so2 (from[2])) {
-		shifted = _KJ_KANJI;
-		from += 3;
-	    } else if (is_si1 (from[1]) && is_si2 (from[2])) {
-		shifted = _KJ_ROMAN;
-		from += 3;
-	    } else {			/* sequence error */
-		goto normal;
-	    }
-	} else {
-	normal:
-	    switch (shifted) {
-	    default:
-	    case _KJ_ROMAN:
-		*out++ = *from++;
-		break;
-	    case _KJ_KANJI:
-		{
-		    int code = jis2sjis ((int) from[0] & 0xff, (int) from[1] & 0xff);
-		    *out++ = (code >> 8) & 0xff;
-		    *out++ = code;
-		    from += 2;
-		}
-		break;
-	    }
-	}
-    }
-    *out = 0;
-    if (overwrite) {
-	pstrcpy (save, (char *) cvtbuf);
-	return save;
+  shifted = _KJ_ROMAN;
+  save = (char *) from;
+  for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3);) {
+    if (is_esc (*from)) {
+      if (is_so1 (from[1]) && is_so2 (from[2])) {
+        shifted = _KJ_KANJI;
+        from += 3;
+      } else if (is_si1 (from[1]) && is_si2 (from[2])) {
+        shifted = _KJ_ROMAN;
+        from += 3;
+      } else { /* sequence error */
+        goto normal;
+      }
     } else {
-	return cvtbuf;
+
+normal:
+
+      switch (shifted) {
+      default:
+      case _KJ_ROMAN:
+        *out++ = *from++;
+        break;
+      case _KJ_KANJI:
+        {
+          int code = jis2sjis ((int) from[0] & 0xff, (int) from[1] & 0xff);
+          *out++ = (code >> 8) & 0xff;
+          *out++ = code;
+          from += 2;
+          break;
+        }
+      }
     }
+  }
+
+  *out = 0;
+  if (overwrite) {
+    pstrcpy (save, (char *) cvtbuf);
+    return save;
+  } else {
+    return cvtbuf;
+  }
 }
 
 /*******************************************************************
@@ -547,54 +550,55 @@ static char *jis8_to_sj(char *from, BOOL overwrite)
 
 static char *sj_to_jis8(char *from, BOOL overwrite)
 {
-    char *out;
-    int shifted;
-    char *save;
+  char *out;
+  int shifted;
+  char *save;
 
-    shifted = _KJ_ROMAN;
-    save = (char *) from;
-    for (out = cvtbuf; *from; ) {
-	if (is_shift_jis (*from)) {
-	    int code;
-	    switch (shifted) {
-	    case _KJ_ROMAN:		/* to KANJI */
-		*out++ = jis_esc;
-		*out++ = jis_so1;
-		*out++ = jis_kso;
-		shifted = _KJ_KANJI;
-		break;
-	    }
-	    code = sjis2jis ((int) from[0] & 0xff, (int) from[1] & 0xff);
-	    *out++ = (code >> 8) & 0xff;
-	    *out++ = code;
-	    from += 2;
-	} else {
-	    switch (shifted) {
-	    case _KJ_KANJI:		/* to ROMAN/KANA */
-		*out++ = jis_esc;
-		*out++ = jis_si1;
-		*out++ = jis_ksi;
-		shifted = _KJ_ROMAN;
-		break;
-	    }
-	    *out++ = *from++;
-	}
-    }
-    switch (shifted) {
-    case _KJ_KANJI:			/* to ROMAN/KANA */
-	*out++ = jis_esc;
-	*out++ = jis_si1;
-	*out++ = jis_ksi;
-	shifted = _KJ_ROMAN;
-	break;
-    }
-    *out = 0;
-    if (overwrite) {
-	pstrcpy (save, (char *) cvtbuf);
-	return save;
+  shifted = _KJ_ROMAN;
+  save = (char *) from;
+  for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-4); ) {
+    if (is_shift_jis (*from)) {
+      int code;
+      switch (shifted) {
+      case _KJ_ROMAN: /* to KANJI */
+        *out++ = jis_esc;
+        *out++ = jis_so1;
+        *out++ = jis_kso;
+        shifted = _KJ_KANJI;
+        break;
+      }
+      code = sjis2jis ((int) from[0] & 0xff, (int) from[1] & 0xff);
+      *out++ = (code >> 8) & 0xff;
+      *out++ = code;
+      from += 2;
     } else {
-	return cvtbuf;
+      switch (shifted) {
+      case _KJ_KANJI: /* to ROMAN/KANA */
+        *out++ = jis_esc;
+        *out++ = jis_si1;
+        *out++ = jis_ksi;
+        shifted = _KJ_ROMAN;
+        break;
+      }
+      *out++ = *from++;
     }
+  }
+
+  switch (shifted) {
+  case _KJ_KANJI: /* to ROMAN/KANA */
+    *out++ = jis_esc;
+    *out++ = jis_si1;
+    *out++ = jis_ksi;
+    shifted = _KJ_ROMAN;
+    break;
+  }
+  *out = 0;
+  if (overwrite) {
+    pstrcpy (save, (char *) cvtbuf);
+    return save;
+  } else {
+    return cvtbuf;
+  }
 }
 
 /*******************************************************************
@@ -609,7 +613,7 @@ static char *jis7_to_sj(char *from, BOOL overwrite)
 
     shifted = _KJ_ROMAN;
     save = (char *) from;
-    for (out = cvtbuf; *from;) {
+    for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3);) {
 	if (is_esc (*from)) {
 	    if (is_so1 (from[1]) && is_so2 (from[2])) {
 		shifted = _KJ_KANJI;
@@ -668,7 +672,7 @@ static char *sj_to_jis7(char *from, BOOL overwrite)
 
     shifted = _KJ_ROMAN;
     save = (char *) from;
-    for (out = cvtbuf; *from; ) {
+    for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-4); ) {
 	if (is_shift_jis (*from)) {
 	    int code;
 	    switch (shifted) {
@@ -736,6 +740,7 @@ static char *sj_to_jis7(char *from, BOOL overwrite)
  Convert FROM contain 7 bits JIS(junet) codes to SHIFT JIS codes
  return converted buffer
 ********************************************************************/
+
 static char *junet_to_sj(char *from, BOOL overwrite)
 {
     char *out;
@@ -744,7 +749,7 @@ static char *junet_to_sj(char *from, BOOL overwrite)
 
     shifted = _KJ_ROMAN;
     save = (char *) from;
-    for (out = cvtbuf; *from;) {
+    for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3);) {
 	if (is_esc (*from)) {
 	    if (is_so1 (from[1]) && is_so2 (from[2])) {
 		shifted = _KJ_KANJI;
@@ -800,7 +805,7 @@ static char *sj_to_junet(char *from, BOOL overwrite)
 
     shifted = _KJ_ROMAN;
     save = (char *) from;
-    for (out = cvtbuf; *from; ) {
+    for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-4); ) {
 	if (is_shift_jis (*from)) {
 	    int code;
 	    switch (shifted) {
@@ -867,7 +872,7 @@ static char *hex_to_sj(char *from, BOOL overwrite)
     
     sp = (char *) from;
     dp = cvtbuf;
-    while (*sp) {
+    while (*sp && (dp - cvtbuf < sizeof(cvtbuf)-3)) {
 	if (*sp == hex_tag && isxdigit((int)sp[1]) && isxdigit((int)sp[2])) {
 	    *dp++ = (hex2bin (sp[1])<<4) | (hex2bin (sp[2]));
 	    sp += 3;
@@ -892,7 +897,7 @@ static char *sj_to_hex(char *from, BOOL overwrite)
     
     sp = (unsigned char*) from;
     dp = (unsigned char*) cvtbuf;
-    while (*sp) {
+    while (*sp && (((char *)dp)- cvtbuf < sizeof(cvtbuf)-7)) {
 	if (is_kana(*sp)) {
 	    *dp++ = hex_tag;
 	    *dp++ = bin2hex (((*sp)>>4)&0x0f);
@@ -929,7 +934,7 @@ static char *cap_to_sj(char *from, BOOL overwrite)
 
     sp = (char *) from;
     dp = cvtbuf;
-    while (*sp) {
+    while (*sp && (dp- cvtbuf < sizeof(cvtbuf)-2)) {
         /*
          * The only change between this and hex_to_sj is here. sj_to_cap only
          * translates characters greater or equal to 0x80 - make sure that here
@@ -960,7 +965,7 @@ static char *sj_to_cap(char *from, BOOL overwrite)
 
     sp = (unsigned char*) from;
     dp = (unsigned char*) cvtbuf;
-    while (*sp) {
+    while (*sp && (((char *)dp) - cvtbuf < sizeof(cvtbuf)-4)) {
 	if (*sp >= 0x80) {
 	    *dp++ = hex_tag;
 	    *dp++ = bin2hex (((*sp)>>4)&0x0f);
