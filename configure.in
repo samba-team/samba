@@ -3,7 +3,7 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
-AM_INIT_AUTOMAKE(heimdal,0.2a)
+AM_INIT_AUTOMAKE(heimdal,0.2b-pre)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
@@ -681,10 +681,22 @@ AC_CHECK_VAR([#ifdef HAVE_ERR_H
 #include <err.h>
 #endif],[__progname])
 
-AC_CHECK_DECLARATION([#include <stdlib.h>], optarg)
-AC_CHECK_DECLARATION([#include <stdlib.h>], optind)
-AC_CHECK_DECLARATION([#include <stdlib.h>], opterr)
-AC_CHECK_DECLARATION([#include <stdlib.h>], optopt)
+AC_CHECK_DECLARATION([#include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif], optarg)
+AC_CHECK_DECLARATION([#include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif], optind)
+AC_CHECK_DECLARATION([#include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif], opterr)
+AC_CHECK_DECLARATION([#include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif], optopt)
 
 AC_CHECK_DECLARATION([#include <stdlib.h>], environ)
 
