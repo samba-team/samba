@@ -321,7 +321,7 @@ PyObject *spoolss_hnd_setprinterdataex(PyObject *self, PyObject *args, PyObject 
 PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
-	static char *kwlist[] = { NULL };
+	static char *kwlist[] = { "key", NULL };
 	uint32 needed, i;
 	char *key;
 	WERROR werror;
