@@ -14,6 +14,8 @@
 @syncodeindex pg cp
 @c %**end of header
 
+@include version.texi
+
 @ifinfo
 @dircategory Heimdal
 @direntry
@@ -25,11 +27,11 @@
 @titlepage
 @title Heimdal
 @subtitle Kerberos 5 from KTH
-@subtitle Edition 0.0, for version 0.0o
-@subtitle 1998
+@subtitle Edition 0.0, for version @value{VERSION}
+@subtitle 1999
 @author Johan Danielsson
 @author Assar Westerlund
-@author last updated $Date$
+@author last updated @value{UPDATED}
 
 @def@copynext{@vskip 20pt plus 1fil@penalty-1000}
 @def@copyrightstart{}
