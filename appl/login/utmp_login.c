@@ -10,7 +10,6 @@ void utmp_login(char *tty, char *username, char *hostname)
     struct utmp utmp;
     struct hostent *he;
     int fd;
-    int ttyno;
 
     char *ttyx; /* tty w/o /dev/* */
 
@@ -62,11 +61,14 @@ void utmp_login(char *tty, char *username, char *hostname)
 #else
 
 #ifdef HAVE_TTYSLOT
-    ttyno = ttyslot();
-    if (ttyno > 0 && (fd = open(_PATH_UTMP, O_WRONLY, 0)) >= 0) {
+    {
+      int ttyno;
+      ttyno = ttyslot();
+      if (ttyno > 0 && (fd = open(_PATH_UTMP, O_WRONLY, 0)) >= 0) {
 	lseek(fd, (long)(ttyno * sizeof(struct utmp)), SEEK_SET);
 	write(fd, (char *)&utmp, sizeof(struct utmp));
 	close(fd);
+      }
     }
 #endif /* HAVE_TTYSLOT */
 #endif /* HAVE_SETUTENT */
