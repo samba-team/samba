@@ -34,10 +34,8 @@ RCSID("$Id$");
 
 #include <X11/Xauth.h>
 
-static
-write_short (s, file)
-unsigned short	s;
-FILE		*file;
+static int
+write_short (unsigned short s, FILE *file)
 {
     unsigned char   file_short[2];
 
@@ -48,11 +46,8 @@ FILE		*file;
     return 1;
 }
 
-static
-write_counted_string (count, string, file)
-unsigned short	count;
-char	*string;
-FILE	*file;
+static int
+write_counted_string (unsigned short count, char *string, FILE *file)
 {
     if (write_short (count, file) == 0)
 	return 0;
@@ -62,9 +57,7 @@ FILE	*file;
 }
 
 int
-XauWriteAuth (auth_file, auth)
-FILE	*auth_file;
-Xauth	*auth;
+XauWriteAuth (FILE *auth_file, Xauth *auth)
 {
     char    *malloc ();
 
