@@ -20,7 +20,7 @@ LIBTOOL_DEPS=@LIBTOOL_DEPS@
 LINK=$(LIBTOOL) --mode=link $(CC) $(FLAGS) $(LDFLAGS)
 
 RUNTEST = runtest
-RUNTESTDEFAULTFLAGS = --srcdir @srcdir@/testsuite
+RUNTESTDEFAULTFLAGS = --srcdir @srcdir@/../testsuite
 
 INSTALL = @INSTALL@
 INSTALLCMD=@INSTALL@
@@ -682,7 +682,7 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(GROUPDB_OBJ) $(PASSDB_OBJ) $(SAMPASSDB_OBJ) \
 		$(SMBPASSWD_OBJ) $(SIDDB_OBJ) \
 		$(RPC_SRVUTIL_OBJ) \
-		$(RPC_PARSE_OBJ2)
+		$(RPC_PARSE_OBJ2) $(WINBINDD_OBJ)
 
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
@@ -708,16 +708,19 @@ LIBSMB_LTOBJS = $(LIBSMB_OBJ:.o=.lo)
 
 LIBMSRPC_LTOBJS = $(RPC_CLIENT_OBJ:.o=.lo) $(RPC_PARSE_OBJ:.o=.lo)
 
-WINBINDD_OBJ1 = nsswitch/winbindd.o nsswitch/winbindd_user.o \
-nsswitch/winbindd_group.o nsswitch/winbindd_surs.o nsswitch/winbindd_sock.o
+WINBINDD_OBJ = \
+		nsswitch/winbindd.o       \
+		nsswitch/winbindd_user.o  \
+		nsswitch/winbindd_group.o \
+		nsswitch/winbindd_surs.o  \
+		nsswitch/winbindd_sock.o  \
+		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(STUB_UID_OBJ) \
+		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSURS_OBJ) $(LIBSMB_OBJ) 
 
-WINBINDD_OBJ = $(WINBINDD_OBJ1) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-$(STUB_UID_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSURS_OBJ) $(LIBSMB_OBJ) 
+NTDOM_OBJ = nsswitch/ntdom.o nsswitch/winbindd_sock.o
 
-NSS_OBJ_O = nsswitch/ntdom.o nsswitch/winbindd_sock.o
-
-NSS_OBJ = $(NSS_OBJ_O:.o=.po)
+NTDOM_LTOBJS = $(NTDOM_OBJ:.o=.lo)
 
 ######################################################################
 # now the rules...
@@ -753,7 +756,7 @@ rpctorture : CHECK bin/rpctorture
 
 smbfilter : CHECK bin/smbfilter
 
-nsswitch: CHECK nsswitch/ntdom.so bin/winbindd
+nsswitch: CHECK nsswitch/libnss_ntdom.so bin/winbindd
 
 check:
 	$(RUNTEST) $(RUNTESTDEFAULTFLAGS) $(RUNTESTFLAGS)
@@ -1095,9 +1098,9 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
 
-nsswitch/ntdom.so: $(NSS_OBJ) $(LIBSAMBA_OBJ)
+nsswitch/libnss_ntdom.so: $(NTDOM_LTOBJS) $(LIBSAMBA_LTOBJS)
 	@echo "Linking $@"
-	@$(LINK) -shared -o $@ $(NSS_OBJ) $(LIBSAMBA_OBJ)
+	@$(LINK) -shared -o $@ $(NTDOM_LTOBJS) $(LIBSAMBA_LTOBJS)
 
 bin/pam_ntdom_auth.so: $(PAM_NTDOM_LIBS) $(PAM_NTDOM_OBJ) bin/.dummy
 	@echo Linking $@
@@ -1167,8 +1170,7 @@ uninstallcp:
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.lo */*.so
 
-proto: lib_smb_proto rpc_client_proto rpc_parse_proto winbindd_proto \
-		all_other_proto_for_now
+proto: lib_smb_proto rpc_client_proto rpc_parse_proto all_other_proto_for_now
 
 all_other_proto_for_now: 
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
@@ -1179,11 +1181,6 @@ pam_ntdom_proto:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
 	  -h _PAM_NTDOM_PROTO_H_ pam_ntdom/pam_ntdom_proto.h \
 	  $(PAM_NTDOM_OBJ)
-
-winbindd_proto:
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
-	  -h _WINBINDD_PROTO_H_ include/winbindd_proto.h \
-	  $(WINBINDD_OBJ1)
 
 lib_smb_proto:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
