@@ -1073,11 +1073,10 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
     }
     case SMB_QUERY_FS_ATTRIBUTE_INFO:
       data_len = 12 + 2*strlen(FSTYPE_STRING);
-#if 1 /* JRATEST */
       SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES); /* FS ATTRIBUTES */
-#else /* JRATEST */
+#if 0 /* Old code. JRA. */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
-#endif /* JRATEST */
+#endif /* Old code. */
       SIVAL(pdata,4,128); /* Max filename component length */
       SIVAL(pdata,8,2*strlen(FSTYPE_STRING));
       PutUniCode(pdata+12,FSTYPE_STRING);
@@ -1147,8 +1146,10 @@ static int call_trans2setfsinfo(char *inbuf, char *outbuf, int length, int bufsi
 }
 
 /****************************************************************************
-  reply to a TRANS2_QFILEINFO (query file info by fileid)
+  Reply to a TRANS2_QFILEPATHINFO or TRANSACT2_QFILEINFO (query file info by
+  file name or file id).
 ****************************************************************************/
+
 static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length, 
 				    int bufsize,int cnum,
 				    char **pparams,char **ppdata,
@@ -1294,19 +1295,18 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     case SMB_QUERY_FILE_ALT_NAME_INFO:
       {
         pstring short_name;
-        pstrcpy(short_name,fname);
+        pstrcpy(short_name,p);
         /* Mangle if not already 8.3 */
         if(!is_8_3(short_name, True))
         {
           if(!name_map_mangle(short_name,True,SNUM(cnum)))
             *short_name = '\0';
         }
-        strncpy(pdata + 4,short_name,12);
-        (pdata + 4)[12] = 0;
-        strupper(pdata + 4);
-        l = strlen(pdata + 4);
-        data_size = 4 + l;
-        SIVAL(pdata,0,l);
+        strupper(short_name);
+        l = strlen(short_name);
+        PutUniCode(pdata + 4, short_name);
+        data_size = 4 + (2*l);
+        SIVAL(pdata,0,2*l);
       }
       break;
 
