@@ -374,7 +374,7 @@ fatalperror_errno(int f, const char *msg, int error)
 void
 fatalperror(int f, const char *msg)
 {
-    return fatalperror_errno(f, msg, errno);
+    fatalperror_errno(f, msg, errno);
 }
 
 char editedhost[32];
