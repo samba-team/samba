@@ -604,6 +604,14 @@ AC_HAVE_TYPE([struct sockaddr], [#include <sys/socket.h>])
 AC_HAVE_TYPE([struct sockaddr_storage], [#include <sys/socket.h>])
 AC_HAVE_TYPE([struct addrinfo], [#include <netdb.h>])
 AC_HAVE_TYPE([struct ifaddrs], [#include <ifaddrs.h>])
+AC_HAVE_TYPE([struct iovec],[
+#include <sys/types.h>
+#include <sys/uio.h>
+])
+AC_HAVE_TYPE([struct msghdr],[
+#include <sys/types.h>
+#include <sys/socket.h>
+])
 
 dnl
 dnl Check for struct winsize
