@@ -150,7 +150,7 @@ size_t __unsafe_string_function_usage_here2__(void);
 #define push_string(base_ptr, dest, src, dest_len, flags) push_string_fn2(NULL, 0, base_ptr, dest, src, dest_len, flags)
 #define pull_string(base_ptr, dest, src, dest_len, src_len, flags) pull_string_fn2(NULL, 0, base_ptr, dest, src, dest_len, src_len, flags)
 #define clistr_push(cli, dest, src, dest_len, flags) clistr_push_fn2(NULL, 0, cli, dest, src, dest_len, flags)
-#define clistr_pull(cli, dest, src, dest_len, src_len, flags) clistr_push_fn2(NULL, 0, cli, dest, src, dest_len, src_len, flags)
+#define clistr_pull(cli, dest, src, dest_len, src_len, flags) clistr_pull_fn2(NULL, 0, cli, dest, src, dest_len, src_len, flags)
 
 #define alpha_strcpy(dest,src,other_safe_chars,maxlength) alpha_strcpy_fn(NULL,0,dest,src,other_safe_chars,maxlength)
 #define StrnCpy(dest,src,n)		StrnCpy_fn(NULL,0,dest,src,n)
