@@ -1,0 +1,20 @@
+--- source/script/smbadduser
++++ source/script/smbadduser	Mon Feb  4 23:13:19 2002
+@@ -1,13 +1,13 @@
+-#!/bin/csh
++#!/bin/bash
+ #
+ # smbadduser - Written by Mike Zakharoff
+ #
+ unalias *
+-set path = ($path /usr/local/samba/bin)
++set path = ($path /usr/bin)
+ 
+-set smbpasswd = /usr/local/samba/private/smbpasswd
++set smbpasswd = /etc/samba/smbpasswd
+ #set smbpasswd = /etc/samba.d/smbpasswd
+-set user_map  = /usr/local/samba/lib/users.map
++set user_map  = /etc/samba/smbusers
+ #set user_map  = /etc/samba.d/smbusers
+ #
+ # Set to site specific passwd command

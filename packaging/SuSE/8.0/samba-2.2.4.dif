@@ -1,0 +1,41 @@
+--- source/Makefile.in
++++ source/Makefile.in	Sat Apr 20 22:17:25 2002
+@@ -79,8 +79,8 @@
+ PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DTDB_PASSWD_FILE=\"$(TDB_PASSWD_FILE)\"
+ FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DLOGFILEBASE=\"$(LOGFILEBASE)\"
+ FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
+-FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
+-FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\" 
++FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\" -DVARDIR=\"$(VARDIR)\" -DPIDDIR=\"$(PIDDIR)\"
++FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\" -DLIBDIR=\"$(LIBDIR)\"
+ FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H
+ FLAGS  = $(ISA) $(FLAGS5) $(PASSWD_FLAGS)
+ FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
+--- source/aclocal.m4
++++ source/aclocal.m4	Sat Apr 20 22:17:26 2002
+@@ -87,7 +87,7 @@
+ 
+ dnl Add an #include
+ dnl AC_ADD_INCLUDE(VARIABLE)
+-define(AC_ADD_INCLUDE,
++AC_DEFUN(AC_ADD_INCLUDE,
+ [cat >> confdefs.h <<\EOF
+ [#include] $1
+ EOF
+--- source/configure.in
++++ source/configure.in	Sat Apr 20 22:17:26 2002
+@@ -922,9 +922,11 @@
+ AC_MSG_RESULT([$PICFLAGS])
+ 
+ # try to work out how to produce pic code with this compiler
+-AC_PROG_CC_FLAG(fpic)
+-if test $ac_cv_prog_cc_fpic = yes; then
+-    PICFLAG="-fpic";
++if test x$PICFLAG = x; then
++  AC_PROG_CC_FLAG(fpic)
++  if test $ac_cv_prog_cc_fpic = yes; then
++      PICFLAG="-fpic";
++  fi
+ fi
+ if test x$PICFLAG = x; then
+   AC_PROG_CC_FLAG(KPIC)
