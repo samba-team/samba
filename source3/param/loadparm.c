@@ -969,7 +969,7 @@ static struct parm_struct parm_table[] = {
 #ifdef WITH_UTMP
 	{"utmp directory", P_STRING, P_GLOBAL, &Globals.szUtmpDir, NULL, NULL, 0},
 	{"wtmp directory", P_STRING, P_GLOBAL, &Globals.szWtmpDir, NULL, NULL, 0},
-	{"utmp"),          P_BOOL, P_GLOBAL, &Globals.bUtmp, NULL, NULL, 0},
+	{"utmp",          P_BOOL, P_GLOBAL, &Globals.bUtmp, NULL, NULL, 0},
 #endif
 	
 	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, 0},
