@@ -213,8 +213,10 @@ SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 #endif
 #endif
 
+int ROKEN_LIB_FUNCTION simple_execve(const char*, char*const[], char*const[]);
 int ROKEN_LIB_FUNCTION simple_execvp(const char*, char *const[]);
 int ROKEN_LIB_FUNCTION simple_execlp(const char*, ...);
+int ROKEN_LIB_FUNCTION simple_execle(const char*, ...);
 
 void ROKEN_LIB_FUNCTION print_version(const char *);
 
