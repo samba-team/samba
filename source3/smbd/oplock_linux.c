@@ -52,9 +52,9 @@ static VOLATILE SIG_ATOMIC_T fd_pending; /* the fd of the current pending signal
 /****************************************************************************
 handle a LEASE signal, incrementing the signals_received and blocking the signal
 ****************************************************************************/
-static void signal_handler(int signal, siginfo_t *info, void *unused)
+static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
-	BlockSignals(True, signal);
+	BlockSignals(True, sig);
 	fd_pending = (SIG_ATOMIC_T)info->si_fd;
 	signals_received++;
 	sys_select_signal();
