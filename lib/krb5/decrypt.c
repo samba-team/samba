@@ -28,7 +28,7 @@ krb5_des_cbc_decrypt(krb5_context context,
 	    u_int32_t my_checksum[4];
 	    memcpy(his_checksum, p + 8, 16);
 	    memset(p + 8, 0, 16);
-	    md5init(&m);
+	    md5_init(&m);
 	    md5_update (&m, ptr, len);
 	    md5_finito(&m, my_checksum);
 	    if(memcmp(his_checksum, my_checksum, 16))
@@ -73,7 +73,8 @@ krb5_decrypt (krb5_context context,
     switch(etype){
     case ETYPE_DES_CBC_CRC:
     case ETYPE_DES_CBC_MD5:
-	return des_cbc_crc_decrypt(context, ptr, len, etype, keyblock, result);
+	return krb5_des_cbc_decrypt(context, ptr, len, etype, keyblock,
+				    result);
     }
     return KRB5_PROG_ETYPE_NOSUPP;
 }
