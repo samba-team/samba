@@ -540,14 +540,14 @@ BOOL winbindd_param_init(void)
     result = lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
                              &num_doms, &domains, &sids);
 
-    if (result && domains && sids) {
+    if (result && domains) {
         int i;
 
         for(i = 0; i < num_doms; i++) {
 
-            if (!add_trusted_domain(domain->name)) {
+            if (!add_trusted_domain(domains[i])) {
                 DEBUG(0, ("could not add record for domain %s\n",
-                          domain->name));
+                          domains[i]));
                 result = False;
             }
         }
