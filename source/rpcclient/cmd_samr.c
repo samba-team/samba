@@ -79,13 +79,13 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	
 	printf("\tunknown_2[0..31]...\n"); /* user passwords? */
 	
-	printf("\tuser_rid :\t%x\n"  , usr->user_rid ); /* User ID */
-	printf("\tgroup_rid:\t%x\n"  , usr->group_rid); /* Group ID */
-	printf("\tacb_info :\t%04x\n", usr->acb_info ); /* Account Control Info */
+	printf("\tuser_rid :\t0x%x\n"  , usr->user_rid ); /* User ID */
+	printf("\tgroup_rid:\t0x%x\n"  , usr->group_rid); /* Group ID */
+	printf("\tacb_info :\t0x%04x\n", usr->acb_info ); /* Account Control Info */
 	
-	printf("\tunknown_3:\t%08x\n", usr->unknown_3); /* 0x00ff ffff */
+	printf("\tunknown_3:\t0x%08x\n", usr->unknown_3); /* 0x00ff ffff */
 	printf("\tlogon_divs:\t%d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
-	printf("\tunknown_5:\t%08x\n", usr->unknown_5); /* 0x0002 0000 */
+	printf("\tunknown_5:\t0x%08x\n", usr->unknown_5); /* 0x0002 0000 */
 	
 	printf("\tpadding1[0..7]...\n");
 	
