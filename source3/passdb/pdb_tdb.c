@@ -298,7 +298,7 @@ BOOL pdb_setsampwent(BOOL update)
 		DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
 		if (!(global_tdb_ent.passwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
 		{
-			DEBUG(0, ("Unable to create TDB passwd (smbpasswd.tdb) !!!"));
+			DEBUG(0, ("Unable to create TDB passwd (passdb.tdb) !!!"));
 			return False;
 		}
 	}
@@ -679,7 +679,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	if (!newpwd->user_rid)
 		pdb_set_user_rid (newpwd, pdb_uid_to_user_rid (newpwd->uid));
 	if (!newpwd->group_rid)
-		pdb_set_user_rid (newpwd, pdb_gid_to_group_rid (newpwd->gid));
+		pdb_set_group_rid (newpwd, pdb_gid_to_group_rid (newpwd->gid));
     
 	/* copy the SAM_ACCOUNT struct into a BYTE buffer for storage */
 	if ((data.dsize=init_buffer_from_sam (&buf, newpwd)) == -1)
