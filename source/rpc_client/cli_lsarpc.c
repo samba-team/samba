@@ -1163,7 +1163,7 @@ NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	LSA_Q_ENUM_ACCT_RIGHTS q;
 	LSA_R_ENUM_ACCT_RIGHTS r;
 	NTSTATUS result;
-	int i;
+	unsigned int i;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
