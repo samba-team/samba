@@ -142,6 +142,9 @@ receive (krb5_context context,
 	 kadm5_server_context *server_context)
 {
     int ret;
+    off_t left, right;
+    void *buf;
+    int32_t vers;
 
     ret = server_context->db->open(context,
 				   server_context->db,
@@ -149,8 +152,8 @@ receive (krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
 
-    for (;;) {
-	int32_t vers, len, timestamp, tmp;
+    do {
+	int32_t len, timestamp, tmp;
 	enum kadm_ops op;
 
 	if(krb5_ret_int32 (sp, &vers) != 0)
@@ -159,16 +162,42 @@ receive (krb5_context context,
 	krb5_ret_int32 (sp, &tmp);
 	op = tmp;
 	krb5_ret_int32 (sp, &len);
-	if (vers < server_context->log_context.version) {
+	if (vers <= server_context->log_context.version)
 	    sp->seek(sp, len, SEEK_CUR);
-	} else {
-	    ret = kadm5_log_replay (server_context,
-				    op, vers, len, sp);
-	    if (ret)
-		krb5_warn (context, ret, "kadm5_log_replay");
-	    else
-		server_context->log_context.version = vers;
-	}
+    } while(vers <= server_context->log_context.version);
+
+    left  = sp->seek (sp, -16, SEEK_CUR);
+    right = sp->seek (sp, 0, SEEK_END);
+    buf = malloc (right - left);
+    if (buf == NULL) {
+	krb5_warnx (context, "malloc: no memory");
+	return;
+    }
+    sp->seek (sp, left, SEEK_SET);
+    sp->fetch (sp, buf, right - left);
+    write (server_context->log_context.log_fd, buf, right-left);
+    fsync (server_context->log_context.log_fd);
+    free (buf);
+
+    sp->seek (sp, left, SEEK_SET);
+
+    for(;;) {
+	int32_t len, timestamp, tmp;
+	enum kadm_ops op;
+
+	if(krb5_ret_int32 (sp, &vers) != 0)
+	    break;
+	krb5_ret_int32 (sp, &timestamp);
+	krb5_ret_int32 (sp, &tmp);
+	op = tmp;
+	krb5_ret_int32 (sp, &len);
+
+	ret = kadm5_log_replay (server_context,
+				op, vers, len, sp);
+	if (ret)
+	    krb5_warn (context, ret, "kadm5_log_replay");
+	else
+	    server_context->log_context.version = vers;
 	sp->seek (sp, 8, SEEK_CUR);
     }
 
@@ -231,10 +260,8 @@ main(int argc, char **argv)
 	   server_context->log_context.version);
 
     for (;;) {
-	u_char buf[4];
 	int ret;
 	krb5_data data, out;
-	u_int32_t len;
 	krb5_storage *sp;
 	int32_t tmp;
 
@@ -260,6 +287,7 @@ main(int argc, char **argv)
 	    krb5_warnx (context, "Ignoring command %d", tmp);
 	    break;
 	}
+	krb5_storage_free (sp);
 	krb5_data_free (&out);
     }
 
