@@ -258,6 +258,7 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 			return False;
 		}
 
+		size = MIN(size, sizeof(fstring)-1);
 		strncpy(old_style_pw, data, size);
 		old_style_pw[size] = 0;
 
