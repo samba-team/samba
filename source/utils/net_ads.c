@@ -109,6 +109,9 @@ static int net_ads_info(int argc, const char **argv)
 	d_printf("LDAP port: %d\n", ads->ldap_port);
 	d_printf("Server time: %s\n", http_timestring(ads->config.current_time));
 
+       d_printf("KDC server: %s\n", ads->auth.kdc_server );
+       d_printf("Server time offset: %d\n", ads->auth.time_offset );
+
 	return 0;
 }
 
@@ -124,7 +127,7 @@ static ADS_STRUCT *ads_startup(void)
 	ADS_STATUS status;
 	BOOL need_password = False;
 	BOOL second_time = False;
-	char *realm;
+       char *cp;
 	
 	ads = ads_init(NULL, NULL, opt_host);
 
@@ -146,22 +149,24 @@ retry:
 
 	if (opt_password) {
 		use_in_memory_ccache();
-		ads->auth.password = strdup(opt_password);
+		ads->auth.password = smb_xstrdup(opt_password);
 	}
 
-	ads->auth.user_name = strdup(opt_user_name);
+	ads->auth.user_name = smb_xstrdup(opt_user_name);
 
-	/*
-	 * If the username is of the form "name@realm", 
-	 * extract the realm and convert to upper case.
-	 */
-	if ((realm = strchr(ads->auth.user_name, '@'))) {
-		*realm++ = '\0';
-		ads->auth.realm = strdup(realm);
-		strupper(ads->auth.realm);
-	}
+       /*
+        * If the username is of the form "name@realm", 
+        * extract the realm and convert to upper case.
+        * This is only used to establish the connection.
+        */
+       if ((cp = strchr(ads->auth.user_name, '@'))!=0) {
+               *cp++ = '\0';
+               ads->auth.realm = smb_xstrdup(cp);
+               strupper(ads->auth.realm);
+       }
 
 	status = ads_connect(ads);
+
 	if (!ADS_ERR_OK(status)) {
 		if (!need_password && !second_time) {
 			need_password = True;
@@ -230,7 +235,7 @@ static BOOL usergrp_display(char *field, void **values, void *data_area)
 	if (!field) { /* must be end of record */
 		if (!strchr_m(disp_fields[0], '$')) {
 			if (disp_fields[1])
-				d_printf("%-21.21s %-50.50s\n", 
+				d_printf("%-21.21s %s\n", 
 				       disp_fields[0], disp_fields[1]);
 			else
 				d_printf("%s\n", disp_fields[0]);
@@ -295,7 +300,8 @@ static int ads_user_add(int argc, const char **argv)
 
 	/* try setting the password */
 	asprintf(&upn, "%s@%s", argv[0], ads->config.realm);
-	status = krb5_set_password(ads->auth.kdc_server, upn, argv[1], ads->auth.time_offset);
+	status = ads_krb5_set_password(ads->auth.kdc_server, upn, argv[1], 
+				       ads->auth.time_offset);
 	safe_free(upn);
 	if (ADS_ERR_OK(status)) {
 		d_printf("User %s added\n", argv[0]);

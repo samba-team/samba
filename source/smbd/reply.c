@@ -148,7 +148,7 @@ int reply_tcon(connection_struct *conn,
 	const char *service;
 	pstring service_buf;
 	pstring password;
-	fstring dev;
+	pstring dev;
 	int outsize = 0;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int pwlen=0;
@@ -204,7 +204,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 {
 	fstring service;
 	DATA_BLOB password;
-	
+
 	/* what the cleint thinks the device is */
 	fstring client_devicetype;
 	/* what the server tells the client the share represents */
@@ -283,15 +283,16 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		set_message_end(outbuf,p);
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
-		const char *fsname = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
+		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
 		
 		set_message(outbuf,3,0,True);
- 
- 		p = smb_buf(outbuf);
+
+		p = smb_buf(outbuf);
 		p += srvstr_push(outbuf, p, server_devicetype, -1, 
- 				 STR_TERMINATE|STR_ASCII);
- 		p += srvstr_push(outbuf, p, fsname, -1, 
- 				 STR_TERMINATE);
+				 STR_TERMINATE|STR_ASCII);
+		p += srvstr_push(outbuf, p, fstype, -1, 
+				 STR_TERMINATE);
+		
 		set_message_end(outbuf,p);
 		
 		/* what does setting this bit do? It is set by NT4 and
@@ -398,7 +399,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	mode = SVAL(inbuf,smb_vwv0);
 
 	if (check_name(name,conn)) {
-		if (VALID_STAT(sbuf) || vfs_stat(conn,name,&sbuf) == 0)
+		if (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,name,&sbuf) == 0)
 			if (!(ok = S_ISDIR(sbuf.st_mode)))
 				errno = ENOTDIR;
 	}
@@ -457,7 +458,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	} else {
 		unix_convert(fname,conn,0,&bad_path,&sbuf);
 		if (check_name(fname,conn)) {
-			if (VALID_STAT(sbuf) || vfs_stat(conn,fname,&sbuf) == 0) {
+			if (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,fname,&sbuf) == 0) {
 				mode = dos_mode(conn,fname,&sbuf);
 				size = sbuf.st_size;
 				mtime = sbuf.st_mtime;
@@ -552,7 +553,7 @@ int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 	SMB_BIG_UINT dfree,dsize,bsize;
 	START_PROFILE(SMBdskattr);
 
-	conn->vfs_ops.disk_free(conn,".",True,&bsize,&dfree,&dsize);
+	SMB_VFS_DISK_FREE(conn,".",True,&bsize,&dfree,&dsize);
   
 	outsize = set_message(outbuf,5,0,True);
 	
@@ -1127,7 +1128,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
-	vfs_stat(conn,fname,&sbuf);
+	SMB_VFS_STAT(conn,fname,&sbuf);
 
 	/* Open file in dos compatibility share mode. */
 	/* We should fail if file does not exist. */
@@ -1226,7 +1227,7 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 	if (!CAN_WRITE(conn))
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 
-	if (conn->vfs_ops.lstat(conn,fname,&sbuf) != 0)
+	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0)
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	fmode = dos_mode(conn,fname,&sbuf);
@@ -1312,7 +1313,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 		error = can_delete(directory,conn,dirtype);
 		if (!NT_STATUS_IS_OK(error)) return error;
 
-		if (vfs_unlink(conn,directory) == 0) {
+		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
 		}
 	} else {
@@ -1342,7 +1343,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 				error = can_delete(fname,conn,dirtype);
 				if (!NT_STATUS_IS_OK(error)) continue;
-				if (vfs_unlink(conn,fname) == 0) count++;
+				if (SMB_VFS_UNLINK(conn,fname) == 0) count++;
 				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 			}
 			CloseDir(dirptr);
@@ -1428,7 +1429,7 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 		header.length = 4;
 		header.free = NULL;
 
-		if ( conn->vfs_ops.sendfile( smbd_server_fd(), fsp, fsp->fd, &header, startpos, nread) == -1) {
+		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, nread) == -1) {
 			/*
 			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
 			 * return ENOSYS then pretend we just got a normal read.
@@ -1463,6 +1464,7 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 {
+	extern struct current_user current_user;
 	ssize_t maxcount,mincount;
 	size_t nread = 0;
 	SMB_OFF_T startpos;
@@ -1552,7 +1554,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   
 		if (size < sizeneeded) {
 			SMB_STRUCT_STAT st;
-			if (vfs_fstat(fsp,fsp->fd,&st) == 0)
+			if (SMB_VFS_FSTAT(fsp,fsp->fd,&st) == 0)
 				size = st.st_size;
 			if (!fsp->can_write) 
 				fsp->size = size;
@@ -1721,7 +1723,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		SMB_STRUCT_STAT sbuf;
 		DATA_BLOB header;
 
-		if(vfs_fstat(fsp,fsp->fd, &sbuf) == -1)
+		if(SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf) == -1)
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 		if (startpos > sbuf.st_size)
@@ -1748,7 +1750,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		header.length = data - outbuf;
 		header.free = NULL;
 
-		if ( conn->vfs_ops.sendfile( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt) == -1) {
+		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt) == -1) {
 			/*
 			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
 			 * return ENOSYS then pretend we just got a normal read.
@@ -2260,7 +2262,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			break;
 	}
 
-	if((res = conn->vfs_ops.lseek(fsp,fsp->fd,startpos,umode)) == -1) {
+	if((res = SMB_VFS_LSEEK(fsp,fsp->fd,startpos,umode)) == -1) {
 		/*
 		 * Check for the special case where a seek before the start
 		 * of the file sets the offset to zero. Added in the CIFS spec,
@@ -2272,7 +2274,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
 			if(umode == SEEK_CUR) {
 
-				if((current_pos = conn->vfs_ops.lseek(fsp,fsp->fd,0,SEEK_CUR)) == -1) {
+				if((current_pos = SMB_VFS_LSEEK(fsp,fsp->fd,0,SEEK_CUR)) == -1) {
 					END_PROFILE(SMBlseek);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
@@ -2283,7 +2285,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
 				SMB_STRUCT_STAT sbuf;
 
-				if(vfs_fstat(fsp,fsp->fd, &sbuf) == -1) {
+				if(SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf) == -1) {
 					END_PROFILE(SMBlseek);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
@@ -2292,7 +2294,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			}
  
 			if(current_pos < 0)
-				res = conn->vfs_ops.lseek(fsp,fsp->fd,0,SEEK_SET);
+				res = SMB_VFS_LSEEK(fsp,fsp->fd,0,SEEK_SET);
 		}
 
 		if(res == -1) {
@@ -2360,6 +2362,7 @@ int reply_exit(connection_struct *conn,
 int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
                 int dum_buffsize)
 {
+	extern struct current_user current_user;
 	int outsize = 0;
 	time_t mtime;
 	int32 eclass = 0, err = 0;
@@ -2380,7 +2383,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	 * We can only use CHECK_FSP if we know it's not a directory.
 	 */
 
-	if(!fsp || (fsp->conn != conn)) {
+	if(!fsp || (fsp->conn != conn) || (fsp->vuid != current_user.vuid)) {
 		END_PROFILE(SMBclose);
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
@@ -2827,7 +2830,7 @@ NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
 	
 	if (check_name(directory, conn))
-		ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
+		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory));
 	
 	if (ret == -1) {
 		NTSTATUS nterr = set_bad_path_error(errno, bad_path);
@@ -2898,7 +2901,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 		pstrcat(fullname, "/");
 		pstrcat(fullname, dname);
 
-		if(conn->vfs_ops.lstat(conn,fullname, &st) != 0) {
+		if(SMB_VFS_LSTAT(conn,fullname, &st) != 0) {
 			ret = True;
 			break;
 		}
@@ -2908,11 +2911,11 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 				ret = True;
 				break;
 			}
-			if(vfs_rmdir(conn,fullname) != 0) {
+			if(SMB_VFS_RMDIR(conn,fullname) != 0) {
 				ret = True;
 				break;
 			}
-		} else if(vfs_unlink(conn,fullname) != 0) {
+		} else if(SMB_VFS_UNLINK(conn,fullname) != 0) {
 			ret = True;
 			break;
 		}
@@ -2929,7 +2932,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 {
 	BOOL ok;
 
-	ok = (vfs_rmdir(conn,directory) == 0);
+	ok = (SMB_VFS_RMDIR(conn,directory) == 0);
 	if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn))) {
 		/* 
 		 * Check to see if the only thing in this directory are
@@ -2971,21 +2974,21 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 					pstrcat(fullname, "/");
 					pstrcat(fullname, dname);
                      
-					if(conn->vfs_ops.lstat(conn,fullname, &st) != 0)
+					if(SMB_VFS_LSTAT(conn,fullname, &st) != 0)
 						break;
 					if(st.st_mode & S_IFDIR) {
 						if(lp_recursive_veto_delete(SNUM(conn))) {
 							if(recursive_rmdir(conn, fullname) != 0)
 								break;
 						}
-						if(vfs_rmdir(conn,fullname) != 0)
+						if(SMB_VFS_RMDIR(conn,fullname) != 0)
 							break;
-					} else if(vfs_unlink(conn,fullname) != 0)
+					} else if(SMB_VFS_UNLINK(conn,fullname) != 0)
 						break;
 				}
 				CloseDir(dirptr);
 				/* Retry the rmdir */
-				ok = (vfs_rmdir(conn,directory) == 0);
+				ok = (SMB_VFS_RMDIR(conn,directory) == 0);
 			} else {
 				CloseDir(dirptr);
 			}
@@ -3104,7 +3107,7 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 	if (ext2[0]) {
 		snprintf(pname2, available_space - 1, "%s.%s", root2, ext2);
 	} else {
-		StrnCpy(pname2, root2, available_space - 1);
+		pstrcpy_base(pname2, root2, name2);
 	}
 
 	return(True);
@@ -3281,7 +3284,7 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 
-		if(conn->vfs_ops.rename(conn,directory, newname) == 0) {
+		if(SMB_VFS_RENAME(conn,directory, newname) == 0) {
 			DEBUG(3,("rename_internals: succeeded doing rename on %s -> %s\n",
 				directory,newname));
 			return NT_STATUS_OK;	
@@ -3348,7 +3351,7 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 					continue;
 				}
 				
-				if (!conn->vfs_ops.rename(conn,fname,destname))
+				if (!SMB_VFS_RENAME(conn,fname,destname))
 					count++;
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
@@ -3442,7 +3445,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	if (!target_is_directory && count)
 		ofun = FILE_EXISTS_OPEN;
 
-	if (vfs_stat(conn,dest,&sbuf2) == -1)
+	if (SMB_VFS_STAT(conn,dest,&sbuf2) == -1)
 		ZERO_STRUCTP(&sbuf2);
 
 	fsp2 = open_file_shared(conn,dest,&sbuf2,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
@@ -3454,7 +3457,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	}
 
 	if ((ofun&3) == 1) {
-		if(conn->vfs_ops.lseek(fsp2,fsp2->fd,0,SEEK_END) == -1) {
+		if(SMB_VFS_LSEEK(fsp2,fsp2->fd,0,SEEK_END) == -1) {
 			DEBUG(0,("copy_file: error - vfs lseek returned error %s\n", strerror(errno) ));
 			/*
 			 * Stop the copy from occurring.
@@ -3938,7 +3941,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 
 	/* Setup the timeout in seconds. */
 
-	lock_timeout = ((lock_timeout == -1) ? -1 : (lock_timeout+999)/1000);
+	lock_timeout = ((lock_timeout == -1) ? -1 : (lock_timeout+499)/500);
 	
 	/* Now do any requested locks */
 	data += ((large_file_format ? 20 : 10)*num_ulocks);
@@ -4382,8 +4385,9 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 		SIVAL(outbuf,smb_vwv6,0);
 		SIVAL(outbuf,smb_vwv8,0);
 	} else {
+		uint32 allocation_size = get_allocation_size(fsp, &sbuf);
 		SIVAL(outbuf,smb_vwv6,(uint32)sbuf.st_size);
-		SIVAL(outbuf,smb_vwv8,SMB_ROUNDUP(sbuf.st_size,1024));
+		SIVAL(outbuf,smb_vwv8,allocation_size);
 	}
 	SSVAL(outbuf,smb_vwv10, mode);
   

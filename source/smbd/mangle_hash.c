@@ -556,8 +556,8 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
 	/* Fill the new cache entry, and add it to the cache. */
 	s1 = (char *)(new_entry + 1);
 	s2 = (char *)&(s1[mangled_len + 1]);
-	(void)StrnCpy( s1, mangled_name, mangled_len );
-	(void)StrnCpy( s2, raw_name,     raw_len );
+	safe_strcpy( s1, mangled_name, mangled_len );
+	safe_strcpy( s2, raw_name,     raw_len );
 	ubi_cachePut( mangled_cache, i, new_entry, s1 );
 }
 

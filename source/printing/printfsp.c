@@ -80,7 +80,7 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	string_set(&fsp->fsp_name,print_job_fname(SNUM(conn),jobid));
 	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
-	conn->vfs_ops.fstat(fsp,fsp->fd, &sbuf);
+	SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf);
 	fsp->mode = sbuf.st_mode;
 	fsp->inode = sbuf.st_ino;
 	fsp->dev = sbuf.st_dev;

@@ -66,6 +66,7 @@ typedef int BOOL;
 #define STR_ASCII 4
 #define STR_UNICODE 8
 #define STR_NOALIGN 16
+#define STR_TERMINATE_ASCII 128
 
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
@@ -154,6 +155,11 @@ typedef int BOOL;
 #define STYPE_HIDDEN    0x80000000 /* share is a hidden one (ends with $) */
 
 #include "doserr.h"
+
+typedef union unid_t {
+	uid_t uid;
+	gid_t gid;
+} unid_t;
 
 /*
  * SMB UCS2 (16-bit unicode) internal type.
@@ -404,9 +410,11 @@ typedef struct files_struct
 	BOOL is_stat;
 	BOOL directory_delete_on_close;
 	char *fsp_name;
+ 	FAKE_FILE_HANDLE *fake_file_handle;
 } files_struct;
 
 #include "ntquotas.h"
+#include "sysquotas.h"
 
 /* used to hold an arbitrary blob of data */
 typedef struct data_blob {
@@ -442,18 +450,10 @@ typedef struct
 #include "smb_acls.h"
 #include "vfs.h"
 
-typedef struct smb_vfs_handle_struct
-{
-    void *data;
-    /* Handle on dlopen() call */
-    void *handle;
-    struct smb_vfs_handle_struct  *next, *prev;
-    
-} smb_vfs_handle_struct;
-
 typedef struct connection_struct
 {
 	struct connection_struct *next, *prev;
+	TALLOC_CTX *mem_ctx;
 	unsigned cnum; /* an index passed over the wire */
 	int service;
 	BOOL force_user;
@@ -468,8 +468,9 @@ typedef struct connection_struct
 	char *connectpath;
 	char *origpath;
 
-	struct vfs_ops vfs_ops;                   /* Filesystem operations */
-	struct smb_vfs_handle_struct *vfs_private;
+	struct vfs_ops vfs;                   /* Filesystem operations */
+	struct vfs_ops vfs_opaque;			/* OPAQUE Filesystem operations */
+	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */

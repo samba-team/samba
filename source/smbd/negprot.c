@@ -100,8 +100,8 @@ static int reply_lanman1(char *inbuf, char *outbuf)
 	SSVAL(outbuf,smb_vwv1,secword); 
 	/* Create a token value and add it to the outgoing packet. */
 	if (global_encrypted_passwords_negotiated) {
-		SSVAL(outbuf,smb_vwv11, 8);
 		get_challenge(smb_buf(outbuf));
+		SSVAL(outbuf,smb_vwv11, 8);
 	}
 
 	Protocol = PROTOCOL_LANMAN1;
@@ -144,8 +144,8 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 
 	/* Create a token value and add it to the outgoing packet. */
 	if (global_encrypted_passwords_negotiated) {
-		SSVAL(outbuf,smb_vwv11, 8);
 		get_challenge(smb_buf(outbuf));
+		SSVAL(outbuf,smb_vwv11, 8);
 	}
 
 	Protocol = PROTOCOL_LANMAN2;
@@ -182,6 +182,16 @@ static int negprot_spnego(char *p)
 
 	ZERO_STRUCT(guid);
 	safe_strcpy((char *)guid, global_myname(), sizeof(guid)-1);
+
+#ifdef DEVELOPER
+	/* valgrind fixer... */
+	{
+		size_t sl = strlen(guid);
+		if (sizeof(guid)-sl)
+			memset(&guid[sl], '\0', sizeof(guid)-sl);
+	}
+#endif
+
 	strlower((char *)guid);
 
 #if 0

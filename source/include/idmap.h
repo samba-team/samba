@@ -22,6 +22,9 @@
    Boston, MA  02111-1307, USA.   
 */
 
+#define SMB_IDMAP_INTERFACE_VERSION	1
+
+
 #define ID_EMPTY	0x00
 #define ID_USERID	0x01
 #define ID_GROUPID	0x02
@@ -32,16 +35,11 @@
 #define ID_NOMAP	0x10
 #define ID_CACHE	0x20
 
-typedef union unid_t {
-	uid_t uid;
-	gid_t gid;
-} unid_t;
-
 /* Filled out by IDMAP backends */
 struct idmap_methods {
 
 	/* Called when backend is first loaded */
-	NTSTATUS (*init)(void);
+	NTSTATUS (*init)( char *params );
 
 	NTSTATUS (*get_sid_from_id)(DOM_SID *sid, unid_t id, int id_type);
 	NTSTATUS (*get_id_from_sid)(unid_t *id, int *id_type, const DOM_SID *sid);

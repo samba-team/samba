@@ -1025,9 +1025,9 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		}
 
 		if ( sending_msg_count ) {
-		cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
-				data_len, data, p->notify.change, 0 );
-	}
+			cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
+					data_len, data, p->notify.change, 0 );
+		}
 	}
 	
 done:
@@ -7609,12 +7609,12 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 {
 	pstring path;
 	pstring long_archi;
-	pstring short_archi;
+	const char *short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
 
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 
-	if (get_short_archi(short_archi, long_archi)==False)
+	if (!(short_archi = get_short_archi(long_archi)))
 		return WERR_INVALID_ENVIRONMENT;
 
 	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)
@@ -8440,7 +8440,7 @@ WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int i=0;
 	BOOL found=False;
@@ -8453,7 +8453,7 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	}
 		
 	for (i=0; i<count && found==False; i++) { 
-		if (queue[i].job==(int)jobid)
+		if ((*queue)[i].job==(int)jobid)
 			found=True;
 	}
 	
@@ -8463,7 +8463,7 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 		return WERR_INVALID_PARAM;
 	}
 	
-	fill_job_info_1(info_1, &(queue[i-1]), i, snum);
+	fill_job_info_1(info_1, &((*queue)[i-1]), i, snum);
 	
 	*needed += spoolss_size_job_info_1(info_1);
 
@@ -8485,7 +8485,7 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum, uint32 jobid, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int 		i = 0;
 	BOOL 		found = False;
@@ -8506,7 +8506,7 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 	for ( i=0; i<count && found==False; i++ ) 
 	{
-		if (queue[i].job == (int)jobid)
+		if ((*queue)[i].job == (int)jobid)
 			found = True;
 	}
 	
@@ -8537,7 +8537,7 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 		}
 	}
 	
-	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter, devmode);
+	fill_job_info_2(info_2, &((*queue)[i-1]), i, snum, ntprinter, devmode);
 	
 	*needed += spoolss_size_job_info_2(info_2);
 
@@ -8601,11 +8601,11 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 		
 	switch ( level ) {
 	case 1:
-			wstatus = getjob_level_1(queue, count, snum, jobid, 
+			wstatus = getjob_level_1(&queue, count, snum, jobid, 
 				buffer, offered, needed);
 			break;
 	case 2:
-			wstatus = getjob_level_2(queue, count, snum, jobid, 
+			wstatus = getjob_level_2(&queue, count, snum, jobid, 
 				buffer, offered, needed);
 			break;
 	default:
@@ -9143,12 +9143,12 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 {
 	pstring path;
 	pstring long_archi;
-	pstring short_archi;
+        const char *short_archi;
 	PRINTPROCESSOR_DIRECTORY_1 *info=NULL;
 
 	unistr2_to_ascii(long_archi, environment, sizeof(long_archi)-1);
 
-	if (get_short_archi(short_archi, long_archi)==False)
+	if (!(short_archi = get_short_archi(long_archi)))
 		return WERR_INVALID_ENVIRONMENT;
 
 	if((info=(PRINTPROCESSOR_DIRECTORY_1 *)malloc(sizeof(PRINTPROCESSOR_DIRECTORY_1))) == NULL)

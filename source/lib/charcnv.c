@@ -367,7 +367,7 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 		src = tmpbuf;
 	}
 
-	if (flags & STR_TERMINATE)
+	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
 		src_len++;
 
 	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
@@ -723,8 +723,21 @@ size_t pull_utf8_allocate(void **dest, const char *src)
 
 size_t push_string_fn(const char *function, unsigned int line, const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
+#ifdef DEVELOPER
+	/* We really need to zero fill here, not clobber
+	 * region, as we want to ensure that valgrind thinks
+	 * all of the outgoing buffer has been written to
+	 * so a send() or write() won't trap an error.
+	 * JRA.
+	 */
+#if 0
 	if (dest_len != (size_t)-1)
 		clobber_region(function, line, dest, dest_len);
+#else
+	if (dest_len != (size_t)-1)
+		memset(dest, '\0', dest_len);
+#endif
+#endif
 
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \

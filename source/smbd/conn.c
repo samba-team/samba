@@ -93,6 +93,7 @@ thinking the server is still available.
 ****************************************************************************/
 connection_struct *conn_new(void)
 {
+	TALLOC_CTX *mem_ctx;
 	connection_struct *conn;
 	int i;
 
@@ -103,10 +104,16 @@ connection_struct *conn_new(void)
 		return NULL;
 	}
 
-	conn = (connection_struct *)malloc(sizeof(*conn));
-	if (!conn) return NULL;
+	if ((mem_ctx=talloc_init("connection_struct"))==NULL) {
+		DEBUG(0,("talloc_init(connection_struct) failed!\n"));
+		return NULL;
+	}
 
-	ZERO_STRUCTP(conn);
+	if ((conn=(connection_struct *)talloc_zero(mem_ctx, sizeof(*conn)))==NULL) {
+		DEBUG(0,("talloc_zero() failed!\n"));
+		return NULL;
+	}
+	conn->mem_ctx = mem_ctx;
 	conn->cnum = i;
 
 	bitmap_set(bmap, i);
@@ -195,27 +202,16 @@ void conn_clear_vuid_cache(uint16 vuid)
 
 void conn_free(connection_struct *conn)
 {
- 	smb_vfs_handle_struct *handle, *thandle;
- 	void (*done_fptr)(connection_struct *the_conn);
+ 	vfs_handle_struct *handle = NULL, *thandle = NULL;
+ 	TALLOC_CTX *mem_ctx = NULL;
 
 	/* Free vfs_connection_struct */
-	handle = conn->vfs_private;
+	handle = conn->vfs_handles;
 	while(handle) {
-		/* Only call dlclose for the old modules */
-		if (handle->handle) {
-			/* Close dlopen() handle */
-			done_fptr = (void (*)(connection_struct *))sys_dlsym(handle->handle, "vfs_done");
-
-			if (done_fptr == NULL) {
-				DEBUG(3, ("No vfs_done() symbol found in module with handle %p, ignoring\n", handle->handle));
-			} else {
-				done_fptr(conn);
-			}
-			sys_dlclose(handle->handle);
-		}
-		DLIST_REMOVE(conn->vfs_private, handle);
+		DLIST_REMOVE(conn->vfs_handles, handle);
 		thandle = handle->next;
-		SAFE_FREE(handle);
+		if (handle->free_data)
+			handle->free_data(&handle->data);
 		handle = thandle;
 	}
 
@@ -238,8 +234,9 @@ void conn_free(connection_struct *conn)
 	bitmap_clear(bmap, conn->cnum);
 	num_open--;
 
+	mem_ctx = conn->mem_ctx;
 	ZERO_STRUCTP(conn);
-	SAFE_FREE(conn);
+	talloc_destroy(mem_ctx);
 }
 
 

@@ -222,6 +222,7 @@ char * parse_server(char * unc_name)
 			printf(" %s does not begin with \\\\ or //\n",unc_name);
 			return 0;
 		} else {
+			unc_name[0] = '\\';
 			unc_name[0] = '/';
 			unc_name[1] = '/';
 			unc_name += 2;

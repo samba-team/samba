@@ -1808,9 +1808,9 @@ static BOOL net_io_sam_domain_info(const char *desc, SAM_DOMAIN_INFO * info,
 	if (!smb_io_unihdr("hdr_unknown", &info->hdr_unknown, ps, depth))
                 return False;
 
-	if (prs_offset(ps) + 40 > prs_data_size(ps))
+	if (ps->data_offset + 40 > ps->buffer_size)
                 return False;
-        prs_set_offset(ps, prs_offset(ps) + 40);
+        ps->data_offset += 40;
 
 	if (!smb_io_unistr2("uni_dom_name", &info->uni_dom_name,
                             info->hdr_dom_name.buffer, ps, depth))
@@ -1847,9 +1847,9 @@ static BOOL net_io_sam_group_info(const char *desc, SAM_GROUP_INFO * info,
 	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
                 return False;
 
-	if (prs_offset(ps) + 48 > prs_data_size(ps))
+        if (ps->data_offset + 48 > ps->buffer_size)
                 return False;
-        prs_set_offset(ps, prs_offset(ps) + 48);
+	ps->data_offset += 48;
 
 	if (!smb_io_unistr2("uni_grp_name", &info->uni_grp_name,
                             info->hdr_grp_name.buffer, ps, depth))
@@ -2128,13 +2128,13 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 		uint32 len = 0x44;
 		if (!prs_uint32("pwd_len", ps, depth, &len))
                         return False;
-		old_offset = prs_offset(ps);
+		old_offset = ps->data_offset;
 		if (len > 0)
 		{
 			if (ps->io)
 			{
 				/* reading */
-                                if (!prs_hash1(ps, prs_offset(ps), sess_key))
+                                if (!prs_hash1(ps, ps->data_offset, sess_key, len))
                                         return False;
 			}
 			if (!net_io_sam_passwd_info("pass", &info->pass, 
@@ -2144,13 +2144,13 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 			if (!ps->io)
 			{
 				/* writing */
-                                if (!prs_hash1(ps, old_offset, sess_key))
+                                if (!prs_hash1(ps, old_offset, sess_key, len))
                                         return False;
 			}
 		}
-                if (old_offset + len > prs_data_size(ps))
+                if (old_offset + len > ps->buffer_size)
                         return False;
-		prs_set_offset(ps, old_offset + len);
+		ps->data_offset = old_offset + len;
 	}
 	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
                             info->hdr_sec_desc.buffer, ps, depth))
@@ -2185,9 +2185,9 @@ static BOOL net_io_sam_group_mem_info(const char *desc, SAM_GROUP_MEM_INFO * inf
 	if (!prs_uint32("num_members", ps, depth, &info->num_members))
                 return False;
 
-        if (prs_offset(ps) + 16 > prs_data_size(ps))
+        if (ps->data_offset + 16 > ps->buffer_size)
                 return False;
-	prs_set_offset(ps, prs_offset(ps) + 16);
+	ps->data_offset += 16;
 
 	if (info->ptr_rids != 0)
 	{
@@ -2267,9 +2267,9 @@ static BOOL net_io_sam_alias_info(const char *desc, SAM_ALIAS_INFO * info,
 	if (!smb_io_unihdr("hdr_als_desc", &info->hdr_als_desc, ps, depth))
                 return False;
 
-        if (prs_offset(ps) + 40 > prs_data_size(ps))
+        if (ps->data_offset + 40 > ps->buffer_size)
                 return False;
-	prs_set_offset(ps, prs_offset(ps) + 40);
+	ps->data_offset += 40;
 
 	if (!smb_io_unistr2("uni_als_name", &info->uni_als_name,
                             info->hdr_als_name.buffer, ps, depth))
@@ -2307,9 +2307,9 @@ static BOOL net_io_sam_alias_mem_info(const char *desc, SAM_ALIAS_MEM_INFO * inf
 
 	if (info->ptr_members != 0)
 	{
-                if (prs_offset(ps) + 16 > prs_data_size(ps))
+                if (ps->data_offset + 16 > ps->buffer_size)
                         return False;
-                prs_set_offset(ps, prs_offset(ps) + 16);
+                ps->data_offset += 16;
 
 		if (!prs_uint32("num_sids", ps, depth, &info->num_sids))
                         return False;

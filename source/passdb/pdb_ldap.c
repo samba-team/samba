@@ -59,6 +59,8 @@
 #define SAM_ACCOUNT struct sam_passwd
 #endif
 
+#include "smbldap.h"
+
 struct ldapsam_privates {
 	/* Former statics */
 	LDAP *ldap_struct;
@@ -93,177 +95,6 @@ struct ldapsam_privates {
 
 static struct ldapsam_privates *static_ldap_state;
 
-/* specify schema versions between 2.2. and 3.0 */
-
-#define SCHEMAVER_SAMBAACCOUNT		1
-#define SCHEMAVER_SAMBASAMACCOUNT	2
-
-/* objectclass names */
-
-#define LDAP_OBJ_SAMBASAMACCOUNT	"sambaSamAccount"
-#define LDAP_OBJ_SAMBAACCOUNT		"sambaAccount"
-#define LDAP_OBJ_GROUPMAP		"sambaGroupMapping"
-#define LDAP_OBJ_DOMINFO		"sambaDomain"
-
-#define LDAP_OBJ_ACCOUNT		"account"
-#define LDAP_OBJ_POSIXACCOUNT		"posixAccount"
-#define LDAP_OBJ_POSIXGROUP		"posixGroup"
-
-/* some generic attributes that get reused a lot */
-
-#define LDAP_ATTRIBUTE_SID		"sambaSID"
-
-/* attribute map table indexes */
-
-#define LDAP_ATTR_LIST_END		0
-#define LDAP_ATTR_UID			1
-#define LDAP_ATTR_UIDNUMBER		2
-#define LDAP_ATTR_GIDNUMBER		3
-#define LDAP_ATTR_UNIX_HOME		4
-#define LDAP_ATTR_PWD_LAST_SET		5
-#define LDAP_ATTR_PWD_CAN_CHANGE	6
-#define LDAP_ATTR_PWD_MUST_CHANGE	7
-#define LDAP_ATTR_LOGON_TIME		8
-#define LDAP_ATTR_LOGOFF_TIME		9
-#define LDAP_ATTR_KICKOFF_TIME		10
-#define LDAP_ATTR_CN			11
-#define LDAP_ATTR_DISPLAY_NAME		12
-#define LDAP_ATTR_HOME_PATH		13
-#define LDAP_ATTR_LOGON_SCRIPT		14
-#define LDAP_ATTR_PROFILE_PATH		15
-#define LDAP_ATTR_DESC			16
-#define LDAP_ATTR_USER_WKS		17
-#define LDAP_ATTR_USER_SID		18
-#define LDAP_ATTR_USER_RID		18
-#define LDAP_ATTR_PRIMARY_GROUP_SID	19
-#define LDAP_ATTR_PRIMARY_GROUP_RID	20
-#define LDAP_ATTR_LMPW			21
-#define LDAP_ATTR_NTPW			22
-#define LDAP_ATTR_DOMAIN		23
-#define LDAP_ATTR_OBJCLASS		24
-#define LDAP_ATTR_ACB_INFO		25
-#define LDAP_ATTR_NEXT_USERRID		26
-#define LDAP_ATTR_NEXT_GROUPRID		27
-#define LDAP_ATTR_DOM_SID		28
-#define LDAP_ATTR_HOME_DRIVE		29
-#define LDAP_ATTR_GROUP_SID		30
-#define LDAP_ATTR_GROUP_TYPE		31
-
-
-typedef struct _attrib_map_entry {
-	int		attrib;
-	const char 	*name;
-} ATTRIB_MAP_ENTRY;
-
-
-/* attributes used by Samba 2.2 */
-
-static ATTRIB_MAP_ENTRY attrib_map_v22[] = {
-	{ LDAP_ATTR_UID,		"uid" 		},
-	{ LDAP_ATTR_UIDNUMBER,		"uidNumber"	},
-	{ LDAP_ATTR_GIDNUMBER,		"gidNumber"	},
-	{ LDAP_ATTR_UNIX_HOME,		"homeDirectory"	},
-	{ LDAP_ATTR_PWD_LAST_SET,	"pwdLastSet"	},
-	{ LDAP_ATTR_PWD_CAN_CHANGE,	"pwdCanChange"	},
-	{ LDAP_ATTR_PWD_MUST_CHANGE,	"pwdMustChange"	},
-	{ LDAP_ATTR_LOGON_TIME,		"logonTime" 	},
-	{ LDAP_ATTR_LOGOFF_TIME,	"logoffTime"	},
-	{ LDAP_ATTR_KICKOFF_TIME,	"kickoffTime"	},
-	{ LDAP_ATTR_CN,			"cn"		},
-	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"	},
-	{ LDAP_ATTR_HOME_PATH,		"smbHome"	},
-	{ LDAP_ATTR_HOME_DRIVE,		"homeDrives"	},
-	{ LDAP_ATTR_LOGON_SCRIPT,	"scriptPath"	},
-	{ LDAP_ATTR_PROFILE_PATH,	"profilePath"	},
-	{ LDAP_ATTR_DESC,		"description"	},
-	{ LDAP_ATTR_USER_WKS,		"userWorkstations"},
-	{ LDAP_ATTR_USER_RID,		"rid"		},
-	{ LDAP_ATTR_PRIMARY_GROUP_RID,	"primaryGroupID"},
-	{ LDAP_ATTR_LMPW,		"lmPassword"	},
-	{ LDAP_ATTR_NTPW,		"ntPassword"	},
-	{ LDAP_ATTR_DOMAIN,		"domain"	},
-	{ LDAP_ATTR_OBJCLASS,		"objectClass"	},
-	{ LDAP_ATTR_ACB_INFO,		"acctFlags"	},
-	{ LDAP_ATTR_LIST_END,		NULL 		}
-};
-
-/* attributes used by Samba 3.0's sambaSamAccount */
-
-static ATTRIB_MAP_ENTRY attrib_map_v30[] = {
-	{ LDAP_ATTR_UID,		"uid" 			},
-	{ LDAP_ATTR_UIDNUMBER,		"uidNumber"		},
-	{ LDAP_ATTR_GIDNUMBER,		"gidNumber"		},
-	{ LDAP_ATTR_UNIX_HOME,		"homeDirectory"		},
-	{ LDAP_ATTR_PWD_LAST_SET,	"sambaPwdLastSet"	},
-	{ LDAP_ATTR_PWD_CAN_CHANGE,	"sambaPwdCanChange"	},
-	{ LDAP_ATTR_PWD_MUST_CHANGE,	"sambaPwdMustChange"	},
-	{ LDAP_ATTR_LOGON_TIME,		"sambaLogonTime" 	},
-	{ LDAP_ATTR_LOGOFF_TIME,	"sambaLogoffTime"	},
-	{ LDAP_ATTR_KICKOFF_TIME,	"sambaKickoffTime"	},
-	{ LDAP_ATTR_CN,			"cn"			},
-	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
-	{ LDAP_ATTR_HOME_DRIVE,		"sambaHomeDrive"	},
-	{ LDAP_ATTR_HOME_PATH,		"sambaHomePath"		},
-	{ LDAP_ATTR_LOGON_SCRIPT,	"sambaLogonScript"	},
-	{ LDAP_ATTR_PROFILE_PATH,	"sambaProfilePath"	},
-	{ LDAP_ATTR_DESC,		"description"		},
-	{ LDAP_ATTR_USER_WKS,		"sambaUserWorkstations"	},
-	{ LDAP_ATTR_USER_SID,		"sambaSID"		},
-	{ LDAP_ATTR_PRIMARY_GROUP_SID,	"sambaPrimaryGroupSID"	},
-	{ LDAP_ATTR_LMPW,		"sambaLMPassword"	},
-	{ LDAP_ATTR_NTPW,		"sambaNTPassword"	},
-	{ LDAP_ATTR_DOMAIN,		"sambaDomainName"	},
-	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
-	{ LDAP_ATTR_ACB_INFO,		"sambaAcctFlags"	},
-	{ LDAP_ATTR_LIST_END,		NULL 			}
-};
-
-/* attributes used for alalocating RIDs */
-
-static ATTRIB_MAP_ENTRY dominfo_attr_list[] = {
-	{ LDAP_ATTR_DOMAIN,		"sambaDomainName"	},
-	{ LDAP_ATTR_NEXT_USERRID,	"sambaNextUserRid"	},
-	{ LDAP_ATTR_NEXT_GROUPRID,	"sambaNextGroupRid"	},
-	{ LDAP_ATTR_DOM_SID,		"sambaSID"		},
-	{ LDAP_ATTR_LIST_END,		NULL			},
-};
-
-/* Samba 3.0 group mapping attributes */
-
-static ATTRIB_MAP_ENTRY groupmap_attr_list[] = {
-	{ LDAP_ATTR_GIDNUMBER,		"gidNumber"		},
-	{ LDAP_ATTR_GROUP_SID,		"sambaSID"		},
-	{ LDAP_ATTR_GROUP_TYPE,		"sambaGroupType"	},
-	{ LDAP_ATTR_DESC,		"description"		},
-	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
-	{ LDAP_ATTR_CN,			"cn"			},
-	{ LDAP_ATTR_LIST_END,		NULL			}	
-};
-
-static ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[] = {
-	{ LDAP_ATTR_GROUP_SID,		"sambaSID"		},
-	{ LDAP_ATTR_GROUP_TYPE,		"sambaGroupType"	},
-	{ LDAP_ATTR_DESC,		"description"		},
-	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
-	{ LDAP_ATTR_LIST_END,		NULL			}	
-};
-
-/**********************************************************************
- perform a simple table lookup and return the attribute name 
- **********************************************************************/
- 
-static const char* get_attr_key2string( ATTRIB_MAP_ENTRY table[], int key )
-{
-	int i = 0;
-	
-	while ( table[i].attrib != LDAP_ATTR_LIST_END ) {
-		if ( table[i].attrib == key )
-			return table[i].name;
-		i++;
-	}
-	
-	return NULL;
-}
 
 /**********************************************************************
  get the attribute name given a user schame version 
@@ -287,52 +118,6 @@ static const char* get_userattr_key2string( int schema_ver, int key )
 }
 
 /**********************************************************************
- Return the list of attribute names from a mapping table
- **********************************************************************/
-
-static char** get_attr_list( ATTRIB_MAP_ENTRY table[] )
-{
-	char **names;
-	int i = 0;
-	
-	while ( table[i].attrib != LDAP_ATTR_LIST_END )
-		i++;
-	i++;
-
-	names = (char**)malloc( sizeof(char*)*i );
-	if ( !names ) {
-		DEBUG(0,("get_attr_list: out of memory\n"));
-		return NULL;
-	}
-
-	i = 0;
-	while ( table[i].attrib != LDAP_ATTR_LIST_END ) {
-		names[i] = strdup( table[i].name );
-		i++;
-	}
-	names[i] = NULL;
-	
-	return names;
-}
-
-/*********************************************************************
- Cleanup 
- ********************************************************************/
-
-static void free_attr_list( char **list )
-{
-	int i = 0;
-
-	if ( !list )
-		return; 
-
-	while ( list[i] )
-		SAFE_FREE( list[i] );
-
-	SAFE_FREE( list );
-}
-
-/**********************************************************************
  return the list of attribute names given a user schema version 
  **********************************************************************/
 
@@ -351,70 +136,6 @@ static char** get_userattr_list( int schema_ver )
 	}
 	
 	return NULL;
-}
-
-/*******************************************************************
- find the ldap password
-******************************************************************/
-static BOOL fetch_ldapsam_pw(char **dn, char** pw)
-{
-	char *key = NULL;
-	size_t size;
-	
-	*dn = smb_xstrdup(lp_ldap_admin_dn());
-	
-	if (asprintf(&key, "%s/%s", SECRETS_LDAP_BIND_PW, *dn) < 0) {
-		SAFE_FREE(*dn);
-		DEBUG(0, ("fetch_ldapsam_pw: asprintf failed!\n"));
-	}
-	
-	*pw=secrets_fetch(key, &size);
-	SAFE_FREE(key);
-
-	if (!size) {
-		/* Upgrade 2.2 style entry */
-		char *p;
-	        char* old_style_key = strdup(*dn);
-		char *data;
-		fstring old_style_pw;
-		
-		if (!old_style_key) {
-			DEBUG(0, ("fetch_ldapsam_pw: strdup failed!\n"));
-			return False;
-		}
-
-		for (p=old_style_key; *p; p++)
-			if (*p == ',') *p = '/';
-	
-		data=secrets_fetch(old_style_key, &size);
-		if (!size && size < sizeof(old_style_pw)) {
-			DEBUG(0,("fetch_ldap_pw: neither ldap secret retrieved!\n"));
-			SAFE_FREE(old_style_key);
-			SAFE_FREE(*dn);
-			return False;
-		}
-
-		strncpy(old_style_pw, data, size);
-		old_style_pw[size] = 0;
-
-		SAFE_FREE(data);
-
-		if (!secrets_store_ldap_pw(*dn, old_style_pw)) {
-			DEBUG(0,("fetch_ldap_pw: ldap secret could not be upgraded!\n"));
-			SAFE_FREE(old_style_key);
-			SAFE_FREE(*dn);
-			return False;			
-		}
-		if (!secrets_delete(old_style_key)) {
-			DEBUG(0,("fetch_ldap_pw: old ldap secret could not be deleted!\n"));
-		}
-
-		SAFE_FREE(old_style_key);
-
-		*pw = smb_xstrdup(old_style_pw);		
-	}
-	
-	return True;
 }
 			     
 /*******************************************************************
@@ -632,7 +353,7 @@ static int ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ld
 	static_ldap_state = ldap_state;
 
 	/* get the password */
-	if (!fetch_ldapsam_pw(&ldap_dn, &ldap_secret))
+	if (!fetch_ldap_pw(&ldap_dn, &ldap_secret))
 	{
 		DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
 		return LDAP_INVALID_CREDENTIALS;
@@ -1097,93 +818,6 @@ static BOOL get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 	return True;
 }
 
-/************************************************************************
-Routine to manage the LDAPMod structure array
-manage memory used by the array, by each struct, and values
-
-************************************************************************/
-static void make_a_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value)
-{
-	LDAPMod **mods;
-	int i;
-	int j;
-
-	mods = *modlist;
-
-	/* sanity checks on the mod values */
-
-	if (attribute == NULL || *attribute == '\0')
-		return;	
-#if 0	/* commented out after discussion with abartlet.  Do not reenable.
-	   left here so other so re-add similar code   --jerry */
-       	if (value == NULL || *value == '\0')
-		return;
-#endif
-
-	if (mods == NULL) 
-	{
-		mods = (LDAPMod **) malloc(sizeof(LDAPMod *));
-		if (mods == NULL)
-		{
-			DEBUG(0, ("make_a_mod: out of memory!\n"));
-			return;
-		}
-		mods[0] = NULL;
-	}
-
-	for (i = 0; mods[i] != NULL; ++i) {
-		if (mods[i]->mod_op == modop && !strcasecmp(mods[i]->mod_type, attribute))
-			break;
-	}
-
-	if (mods[i] == NULL)
-	{
-		mods = (LDAPMod **) Realloc (mods, (i + 2) * sizeof (LDAPMod *));
-		if (mods == NULL)
-		{
-			DEBUG(0, ("make_a_mod: out of memory!\n"));
-			return;
-		}
-		mods[i] = (LDAPMod *) malloc(sizeof(LDAPMod));
-		if (mods[i] == NULL)
-		{
-			DEBUG(0, ("make_a_mod: out of memory!\n"));
-			return;
-		}
-		mods[i]->mod_op = modop;
-		mods[i]->mod_values = NULL;
-		mods[i]->mod_type = strdup(attribute);
-		mods[i + 1] = NULL;
-	}
-
-	if (value != NULL)
-	{
-		char *utf8_value = NULL;
-
-		j = 0;
-		if (mods[i]->mod_values != NULL) {
-			for (; mods[i]->mod_values[j] != NULL; j++);
-		}
-		mods[i]->mod_values = (char **)Realloc(mods[i]->mod_values,
-					       (j + 2) * sizeof (char *));
-					       
-		if (mods[i]->mod_values == NULL) {
-			DEBUG (0, ("make_a_mod: Memory allocation failure!\n"));
-			return;
-		}
-
-		if (push_utf8_allocate(&utf8_value, value) == (size_t)-1) {
-			DEBUG (0, ("make_a_mod: String conversion failure!\n"));
-			return;
-		}
-
-		mods[i]->mod_values[j] = utf8_value;
-
-		mods[i]->mod_values[j + 1] = NULL;
-	}
-	*modlist = mods;
-}
-
 /**********************************************************************
   Set attribute to newval in LDAP, regardless of what value the
   attribute had in LDAP before.
@@ -1217,7 +851,7 @@ static void make_ldap_mod(LDAP *ldap_struct, LDAPMessage *existing,
 	   the old value, should it exist. */
 
 	if ((newval != NULL) && (strlen(newval) > 0)) {
-		make_a_mod(mods, LDAP_MOD_ADD, attribute, newval);
+		ldap_set_mod(mods, LDAP_MOD_ADD, attribute, newval);
 	}
 
 	if (values == NULL) {
@@ -1232,7 +866,7 @@ static void make_ldap_mod(LDAP *ldap_struct, LDAPMessage *existing,
 	   deny the complete operation if somebody changed the
 	   attribute behind our back. */
 
-	make_a_mod(mods, LDAP_MOD_DELETE, attribute, values[0]);
+	ldap_set_mod(mods, LDAP_MOD_DELETE, attribute, values[0]);
 	ldap_value_free(values);
 }
 
@@ -1288,7 +922,7 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 		{
 			if (StrCaseCmp(*attrib, name) == 0) {
 				DEBUG(10, ("deleting attribute %s\n", name));
-				make_a_mod(&mods, LDAP_MOD_DELETE, name, NULL);
+				ldap_set_mod(&mods, LDAP_MOD_DELETE, name, NULL);
 			}
 		}
 
@@ -1299,10 +933,10 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 		ber_free(ptr, 0);
 	}
 	
-	make_a_mod(&mods, LDAP_MOD_DELETE, "objectClass", objectclass);
+	ldap_set_mod(&mods, LDAP_MOD_DELETE, "objectClass", objectclass);
 
 	rc = ldapsam_modify(ldap_state, dn, mods);
-	ldap_mods_free(mods, 1);
+	ldap_mods_free(mods, True);
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
@@ -1488,12 +1122,11 @@ static uint32 search_next_allocated_rid(struct ldapsam_privates *ldap_state, int
 static NTSTATUS add_new_domain_info(struct ldapsam_privates *ldap_state) 
 {
 	pstring tmp;
-	pstring filter;
+	pstring filter, dn;
 	LDAPMod **mods = NULL;
 	int rc;
 	int ldap_op;
 	LDAPMessage *result = NULL;
-	char *dn = NULL;
 	int num_result;
 	char **attr_list;
 
@@ -1533,29 +1166,26 @@ static NTSTATUS add_new_domain_info(struct ldapsam_privates *ldap_state)
 	/* Check if we need to add an entry */
 	DEBUG(3,("Adding new domain\n"));
 	ldap_op = LDAP_MOD_ADD;
-	asprintf (&dn, "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
+	snprintf(dn, sizeof(dn), "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
 		ldap_state->domain_name, lp_ldap_suffix());
 
 	/* Free original search */
 	ldap_msgfree(result);
 
-	if (!dn)
-		return NT_STATUS_NO_MEMORY;
-
 	/* make the changes - the entry *must* not already have samba attributes */
-	make_a_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
+	ldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
 		ldap_state->domain_name);
 
 	sid_to_string(tmp, &ldap_state->domain_sid);
-	make_a_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID), tmp);
+	ldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID), tmp);
 
 	snprintf(tmp, sizeof(tmp)-1, "%i", next_allocated_user_rid);
-	make_a_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), tmp);
+	ldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), tmp);
 
 	snprintf(tmp, sizeof(tmp)-1, "%i", next_allocated_group_rid);
-	make_a_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID), tmp);
+	ldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID), tmp);
 
-	make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_DOMINFO);
+	ldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_DOMINFO);
 
 	switch(ldap_op)
 	{
@@ -1581,12 +1211,12 @@ static NTSTATUS add_new_domain_info(struct ldapsam_privates *ldap_state)
 		       ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
 
-		ldap_mods_free(mods,1);
+		ldap_mods_free(mods, True);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	DEBUG(2,("added: domain = %s in the LDAP database\n", ldap_state->domain_name));
-	ldap_mods_free(mods, 1);
+	ldap_mods_free(mods, True);
 	return NT_STATUS_OK;
 }
 
@@ -1766,20 +1396,20 @@ static NTSTATUS ldapsam_next_rid(struct ldapsam_privates *ldap_state, uint32 *ri
 				get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID),
 				domain_sid_string)) 
 			{
-				ldap_mods_free(mods, 1);
+				ldap_mods_free(mods, True);
 				ldap_memfree(dn);
 				ldap_msgfree(result);
 				return ret;
 			}
 
 			if (!string_to_sid(&dom_sid, domain_sid_string)) { 
-				ldap_mods_free(mods, 1);
+				ldap_mods_free(mods, True);
 				ldap_memfree(dn);
 				ldap_msgfree(result);
 				return ret;
 			}
 
-			ldap_mods_free(mods, 1);
+			ldap_mods_free(mods, True);
 			mods = NULL;
 			ldap_memfree(dn);
 			ldap_msgfree(result);
@@ -1802,7 +1432,7 @@ static NTSTATUS ldapsam_next_rid(struct ldapsam_privates *ldap_state, uint32 *ri
 		DEBUG(2, ("Failed to modify rid: %s\n", ld_error));
 		SAFE_FREE(ld_error);
 
-		ldap_mods_free(mods, 1);
+		ldap_mods_free(mods, True);
 		mods = NULL;
 
 		ldap_memfree(dn);
@@ -2268,13 +1898,13 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 					  "finding next available NUA RID failed, "
 					  "cannot store!\n",
 					  pdb_get_username(sampass)));
-				ldap_mods_free(*mods, 1);
+				ldap_mods_free(*mods, True);
 				return False;
 			}
 		} else {
 			DEBUG(0, ("NO user RID specified on account %s, "
 				  "cannot store!\n", pdb_get_username(sampass)));
-			ldap_mods_free(*mods, 1);
+			ldap_mods_free(*mods, True);
 			return False;
 		}
 
@@ -2284,7 +1914,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		if (!pdb_set_user_sid_from_rid(sampass, rid, PDB_CHANGED)) {
 			DEBUG(0, ("Could not store RID back onto SAM_ACCOUNT for user %s!\n", 
 				  pdb_get_username(sampass)));
-			ldap_mods_free(*mods, 1);
+			ldap_mods_free(*mods, True);
 			return False;
 		}
 	}
@@ -2693,7 +2323,7 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		switch(ldap_op)
 		{
 			case LDAP_MOD_ADD: 
-				make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_ACCOUNT);
+				ldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_ACCOUNT);
 				rc = ldapsam_add(ldap_state, dn, mods);
 				break;
 			case LDAP_MOD_REPLACE: 
@@ -2884,12 +2514,12 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	if (mods == NULL) {
 		DEBUG(4,("mods is empty: nothing to update for user: %s\n",
 			 pdb_get_username(newpwd)));
-		ldap_mods_free(mods, 1);
+		ldap_mods_free(mods, True);
 		return NT_STATUS_OK;
 	}
 	
 	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,LDAP_MOD_REPLACE, element_is_changed);
-	ldap_mods_free(mods,1);
+	ldap_mods_free(mods,True);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		char *ld_error = NULL;
@@ -3020,10 +2650,10 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	switch ( ldap_state->schema_ver )
 	{
 		case SCHEMAVER_SAMBAACCOUNT:
-			make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_SAMBAACCOUNT);
+			ldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_SAMBAACCOUNT);
 			break;
 		case SCHEMAVER_SAMBASAMACCOUNT:
-			make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_SAMBASAMACCOUNT);
+			ldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_SAMBASAMACCOUNT);
 			break;
 		default:
 			DEBUG(0,("ldapsam_add_sam_account: invalid schema version specified\n"));
@@ -3034,12 +2664,12 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	if (NT_STATUS_IS_ERR(ret)) {
 		DEBUG(0,("failed to modify/add user with uid = %s (dn = %s)\n",
 			 pdb_get_username(newpwd),dn));
-		ldap_mods_free(mods,1);
+		ldap_mods_free(mods, True);
 		return ret;
 	}
 
 	DEBUG(2,("added: uid == %s in the LDAP database\n", pdb_get_username(newpwd)));
-	ldap_mods_free(mods, 1);
+	ldap_mods_free(mods, True);
 	
 	return NT_STATUS_OK;
 }
@@ -3083,7 +2713,7 @@ static int ldapsam_search_one_group (struct ldapsam_privates *ldap_state,
 
 
 	attr_list = get_attr_list(groupmap_attr_list);
-	rc = ldapsam_search(ldap_state, lp_ldap_suffix (), scope,
+	rc = ldapsam_search(ldap_state, lp_ldap_group_suffix (), scope,
 			    filter, attr_list, 0, result);
 	free_attr_list( attr_list );
 
@@ -3095,7 +2725,7 @@ static int ldapsam_search_one_group (struct ldapsam_privates *ldap_state,
 			  "Problem during the LDAP search: LDAP error: %s (%s)",
 			  ld_error?ld_error:"(unknown)", ldap_err2string(rc)));
 		DEBUG(3, ("ldapsam_search_one_group: Query was: %s, %s\n",
-			  lp_ldap_suffix(), filter));
+			  lp_ldap_group_suffix(), filter));
 		SAFE_FREE(ld_error);
 	}
 
@@ -3372,7 +3002,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	if (!init_ldap_from_group(ldap_state->ldap_struct,
 				  result, &mods, map)) {
 		DEBUG(0, ("init_ldap_from_group failed!\n"));
-		ldap_mods_free(mods, 1);
+		ldap_mods_free(mods, True);
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -3384,11 +3014,10 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	make_a_mod(&mods, LDAP_MOD_ADD, "objectClass",
-		   "sambaGroupMapping");
+	ldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP );
 
 	rc = ldapsam_modify(ldap_state, dn, mods);
-	ldap_mods_free(mods, 1);
+	ldap_mods_free(mods, True);
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
@@ -3449,7 +3078,7 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 
 	rc = ldapsam_modify(ldap_state, dn, mods);
 
-	ldap_mods_free(mods, 1);
+	ldap_mods_free(mods, True);
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
@@ -3509,14 +3138,14 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods, BOOL update)
 
 	snprintf( filter, sizeof(filter)-1, "(objectclass=%s)", LDAP_OBJ_GROUPMAP);
 	attr_list = get_attr_list( groupmap_attr_list );
-	rc = ldapsam_search(ldap_state, lp_ldap_suffix(),
+	rc = ldapsam_search(ldap_state, lp_ldap_group_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter,
 			    attr_list, 0, &ldap_state->result);
 	free_attr_list( attr_list );
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0, ("LDAP search failed: %s\n", ldap_err2string(rc)));
-		DEBUG(3, ("Query was: %s, %s\n", lp_ldap_suffix(), filter));
+		DEBUG(3, ("Query was: %s, %s\n", lp_ldap_group_suffix(), filter));
 		ldap_msgfree(ldap_state->result);
 		ldap_state->result = NULL;
 		return NT_STATUS_UNSUCCESSFUL;

@@ -573,8 +573,10 @@ static BOOL open_sockets(BOOL isdaemon, int port)
  **************************************************************************** */
  int main(int argc, const char *argv[])
 {
-	static BOOL opt_interactive = False;
+	pstring logfile;
+	static BOOL opt_interactive;
 	poptContext pc;
+	int opt;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
@@ -586,46 +588,47 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	POPT_COMMON_SAMBA
 	{ NULL }
 	};
-	pstring logfile;
 
-  global_nmb_port = NMB_PORT;
-  global_in_nmbd = True;
+	global_nmb_port = NMB_PORT;
 
-  StartupTime = time(NULL);
+	pc = poptGetContext("nmbd", argc, argv, long_options, 0);
+	while ((opt = poptGetNextOpt(pc)) != -1) ;
+	poptFreeContext(pc);
 
-  sys_srandom(time(NULL) ^ sys_getpid());
-
-  slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
-  lp_set_logfile(logfile);
-
-  fault_setup((void (*)(void *))fault_continue );
-
-  /* POSIX demands that signals are inherited. If the invoking process has
-   * these signals masked, we will have problems, as we won't receive them. */
-  BlockSignals(False, SIGHUP);
-  BlockSignals(False, SIGUSR1);
-  BlockSignals(False, SIGTERM);
-
-  CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
-  CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
-
+	global_in_nmbd = True;
+	
+	StartupTime = time(NULL);
+	
+	sys_srandom(time(NULL) ^ sys_getpid());
+	
+	slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
+	
+	fault_setup((void (*)(void *))fault_continue );
+	
+	/* POSIX demands that signals are inherited. If the invoking process has
+	 * these signals masked, we will have problems, as we won't receive them. */
+	BlockSignals(False, SIGHUP);
+	BlockSignals(False, SIGUSR1);
+	BlockSignals(False, SIGTERM);
+	
+	CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
+	CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
+	
 #if defined(SIGFPE)
-  /* we are never interested in SIGFPE */
-  BlockSignals(True,SIGFPE);
+	/* we are never interested in SIGFPE */
+	BlockSignals(True,SIGFPE);
 #endif
 
-  /* We no longer use USR2... */
+	/* We no longer use USR2... */
 #if defined(SIGUSR2)
-  BlockSignals(True, SIGUSR2);
+	BlockSignals(True, SIGUSR2);
 #endif
-  pc = poptGetContext("nmbd", argc, argv, long_options, 0);
-  
-  poptFreeContext(pc);
 
-  if ( opt_interactive ) {
-    Fork = False;
-    log_stdout = True;
-  }
+	if ( opt_interactive ) {
+		Fork = False;
+		log_stdout = True;
+	}
 
   if ( log_stdout && Fork ) {
     DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));

@@ -437,6 +437,10 @@
 #include <com_err.h>
 #endif
 
+#if HAVE_ATTR_XATTR_H
+#include <attr/xattr.h>
+#endif
+
 /* Special macros that are no-ops except when run under Valgrind on
  * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
 #if HAVE_VALGRIND_MEMCHECK_H
@@ -769,9 +773,6 @@ extern int errno;
 #include "version.h"
 
 #include "smb.h"
-/*
-#include "smbw.h"
-*/
 
 #include "nameserv.h"
 
@@ -808,14 +809,12 @@ extern int errno;
 
 #include "auth.h"
 
-#include "sam.h"
-
-#include "gums.h"
-
 #include "idmap.h"
 
 #include "client.h"
+
 #include "smbw.h"
+
 #include "session.h"
 
 #include "asn_1.h"
@@ -827,8 +826,6 @@ extern int errno;
 #include "module.h"
 
 #include "nsswitch/winbind_client.h"
-
-#include "genparser.h"
 
 /*
  * Type for wide character dirent structure.
@@ -875,6 +872,10 @@ struct functable {
 struct printjob;
 
 struct smb_ldap_privates;
+
+/* forward declarations from smbldap.c */
+
+#include "smbldap.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
@@ -1283,7 +1284,7 @@ krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
 void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
-BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16]);
+BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16]);
 #endif /* HAVE_KRB5 */
 
 /* TRUE and FALSE are part of the C99 standard and gcc, but

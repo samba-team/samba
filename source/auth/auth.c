@@ -63,7 +63,7 @@ static struct auth_init_function_entry *auth_find_backend_entry(const char *name
 	struct auth_init_function_entry *entry = backends;
 
 	while(entry) {
-		if (strequal(entry->name, name)) return entry;
+		if (strcmp(entry->name, name)==0) return entry;
 		entry = entry->next;
 	}
 	
@@ -261,12 +261,6 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		if (NT_STATUS_IS_OK(nt_status))
 			break;
 	}
-
-	/* This is one of the few places the *relies* (rather than just sets defaults
-	   on the value of lp_security().  This needs to change.  A new paramater 
-	   perhaps? */
-	if (lp_security() >= SEC_SERVER)
-		smb_user_control(user_info, *server_info, nt_status);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		pdb_username = pdb_get_username((*server_info)->sam_account);

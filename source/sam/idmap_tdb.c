@@ -263,7 +263,7 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
-static NTSTATUS db_idmap_init(void)
+static NTSTATUS db_idmap_init( char *params )
 {
 	SMB_STRUCT_STAT stbuf;
 	char *tdbfile = NULL;
@@ -424,7 +424,7 @@ static void db_idmap_status(void)
 	/* Display complete mapping of users and groups to rids */
 }
 
-struct idmap_methods db_methods = {
+static struct idmap_methods db_methods = {
 
 	db_idmap_init,
 	db_get_sid_from_id,
@@ -435,9 +435,7 @@ struct idmap_methods db_methods = {
 
 };
 
-NTSTATUS idmap_reg_tdb(struct idmap_methods **meth)
+NTSTATUS idmap_tdb_init(void)
 {
-	*meth = &db_methods;
-
-	return NT_STATUS_OK;
+	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "tdb", &db_methods);
 }

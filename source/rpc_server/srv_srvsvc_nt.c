@@ -1840,8 +1840,6 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	struct current_user user;
 	connection_struct *conn = NULL;
 	BOOL became_user = False; 
-	fstring dev;
-	fstrcpy(dev, "A:");
 
 	ZERO_STRUCT(st);
 
@@ -1855,7 +1853,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	get_current_user(&user, p);
 
 	become_root();
-	conn = make_connection(qualname, null_pw, dev, user.vuid, &nt_status);
+	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1889,7 +1887,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 		}
 	}
 
-	sd_size = conn->vfs_ops.get_nt_acl(fsp, fsp->fsp_name, &psd);
+	sd_size = SMB_VFS_GET_NT_ACL(fsp, fsp->fsp_name, (OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 
 	if (sd_size == 0) {
 		DEBUG(3,("_srv_net_file_query_secdesc: Unable to get NT ACL for file %s\n", filename));
@@ -1945,11 +1943,8 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	struct current_user user;
 	connection_struct *conn = NULL;
 	BOOL became_user = False;
-	fstring dev;
-	fstrcpy(dev, "A:");
 
 	ZERO_STRUCT(st);
-
 
 	r_u->status = WERR_OK;
 
@@ -1961,7 +1956,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	get_current_user(&user, p);
 
 	become_root();
-	conn = make_connection(qualname, null_pw, dev, user.vuid, &nt_status);
+	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1996,7 +1991,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 		}
 	}
 
-	ret = conn->vfs_ops.set_nt_acl(fsp, fsp->fsp_name, q_u->sec_info, q_u->sec_desc);
+	ret = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name, q_u->sec_info, q_u->sec_desc);
 
 	if (ret == False) {
 		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", filename));

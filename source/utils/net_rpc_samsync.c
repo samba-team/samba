@@ -209,6 +209,11 @@ int rpc_samdump(int argc, const char **argv)
 
 	fstrcpy(cli->domain, lp_workgroup());
 
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+		DEBUG(0,("Could not open connection to NETLOGON pipe\n"));
+		goto fail;
+	}
+
 	if (!secrets_fetch_trust_account_password(lp_workgroup(),
 						  trust_password,
 						  NULL, &sec_channel)) {
@@ -216,7 +221,8 @@ int rpc_samdump(int argc, const char **argv)
 		goto fail;
 	}
 
-	if (!cli_nt_open_netlogon(cli, trust_password, sec_channel)) {
+	if (!NT_STATUS_IS_OK(cli_nt_establish_netlogon(cli, sec_channel,
+						       trust_password))) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}
@@ -929,11 +935,17 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 					       db_type, sync_context,
 					       &num_deltas,
 					       &hdr_deltas, &deltas);
-		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
-				     ret_creds);
-                for (i = 0; i < num_deltas; i++) {
-			fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
-                }
+
+		if (NT_STATUS_IS_OK(result) ||
+		    NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+
+			clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
+					     ret_creds);
+
+			for (i = 0; i < num_deltas; i++) {
+				fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
+			}
+		}
 		sync_context += 1;
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
@@ -947,7 +959,6 @@ int rpc_vampire(int argc, const char **argv)
 	struct cli_state *cli = NULL;
 	uchar trust_password[16];
 	DOM_CRED ret_creds;
-	uint32 neg_flags = 0x000001ff;
 	DOM_SID dom_sid;
 	uint32 sec_channel;
 
@@ -971,8 +982,8 @@ int rpc_vampire(int argc, const char **argv)
 		goto fail;
 	}
 	
-	result = cli_nt_setup_creds(cli, sec_channel,  trust_password,
-				    &neg_flags, 2);
+	result = cli_nt_establish_netlogon(cli, sec_channel,  trust_password);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to setup BDC creds\n");
 		goto fail;

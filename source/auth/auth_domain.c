@@ -130,7 +130,6 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	struct in_addr dest_ip;
 	fstring remote_machine;
         NTSTATUS result;
-	uint32 neg_flags = 0x000001ff;
 
 	*retry = False;
 
@@ -214,7 +213,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = cli_nt_setup_creds(*cli, sec_chan, trust_passwd, &neg_flags, 2);
+	result = cli_nt_establish_netlogon(*cli, sec_chan, trust_passwd);
 
         if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to setup the NETLOGON credentials to machine \
@@ -341,6 +340,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
          */
 
 	nt_status = cli_netlogon_sam_network_logon(cli, mem_ctx,
+						   NULL,
 						   user_info->smb_name.str, user_info->domain.str, 
 						   user_info->wksta_name.str, chal, 
 						   user_info->lm_resp, user_info->nt_resp, 
@@ -458,7 +458,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-NTSTATUS auth_init_ntdomain(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
+static NTSTATUS auth_init_ntdomain(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
@@ -546,7 +546,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 }
 
 /* module initialisation */
-NTSTATUS auth_init_trustdomain(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
+static NTSTATUS auth_init_trustdomain(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;

@@ -28,9 +28,9 @@
 /****************************************************************************
 core of smb password checking routine.
 ****************************************************************************/
-static BOOL smb_pwd_check_ntlmv1(DATA_BLOB nt_response,
+static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 				 const uchar *part_passwd,
-				 DATA_BLOB sec_blob,
+				 const DATA_BLOB *sec_blob,
 				 uint8 user_sess_key[16])
 {
 	/* Finish the encryption of part_passwd. */
@@ -42,17 +42,17 @@ static BOOL smb_pwd_check_ntlmv1(DATA_BLOB nt_response,
 		return False;
 	}
 	
-	if (sec_blob.length != 8) {
-		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challenge size (%d)\n", sec_blob.length));
+	if (sec_blob->length != 8) {
+		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challenge size (%d)\n", sec_blob->length));
 		return False;
 	}
 	
-	if (nt_response.length != 24) {
-		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%d)\n", nt_response.length));
+	if (nt_response->length != 24) {
+		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%d)\n", nt_response->length));
 		return False;
 	}
 
-	SMBOWFencrypt(part_passwd, sec_blob.data, p24);
+	SMBOWFencrypt(part_passwd, sec_blob->data, p24);
 	if (user_sess_key != NULL)
 	{
 		SMBsesskeygen_ntv1(part_passwd, NULL, user_sess_key);
@@ -61,16 +61,16 @@ static BOOL smb_pwd_check_ntlmv1(DATA_BLOB nt_response,
 	
 	
 #if DEBUG_PASSWORD
-	DEBUG(100,("Part password (P16) was |"));
+	DEBUG(100,("Part password (P16) was |\n"));
 	dump_data(100, part_passwd, 16);
-	DEBUG(100,("Password from client was |"));
-	dump_data(100, nt_response.data, nt_response.length);
-	DEBUG(100,("Given challenge was |"));
-	dump_data(100, sec_blob.data, sec_blob.length);
-	DEBUG(100,("Value from encryption was |"));
+	DEBUGADD(100,("Password from client was |\n"));
+	dump_data(100, nt_response->data, nt_response->length);
+	DEBUGADD(100,("Given challenge was |\n"));
+	dump_data(100, sec_blob->data, sec_blob->length);
+	DEBUGADD(100,("Value from encryption was |\n"));
 	dump_data(100, p24, 24);
 #endif
-  return (memcmp(p24, nt_response.data, 24) == 0);
+  return (memcmp(p24, nt_response->data, 24) == 0);
 }
 
 
@@ -79,9 +79,9 @@ core of smb password checking routine. (NTLMv2, LMv2)
 
 Note:  The same code works with both NTLMv2 and LMv2.
 ****************************************************************************/
-static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
+static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 				 const uchar *part_passwd,
-				 const DATA_BLOB sec_blob,
+				 const DATA_BLOB *sec_blob,
 				 const char *user, const char *domain,
 				 uint8 user_sess_key[16])
 {
@@ -98,42 +98,43 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 		return False;
 	}
 
-	if (ntv2_response.length < 16) {
+	if (ntv2_response->length < 24) {
 		/* We MUST have more than 16 bytes, or the stuff below will go
-		   crazy... */
+		   crazy.  No known implementation sends less than the 24 bytes
+		   for LMv2, let alone NTLMv2. */
 		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect password length (%d)\n", 
-			  ntv2_response.length));
+			  ntv2_response->length));
 		return False;
 	}
 
-	client_key_data = data_blob(ntv2_response.data+16, ntv2_response.length-16);
+	client_key_data = data_blob(ntv2_response->data+16, ntv2_response->length-16);
 	/* 
 	   todo:  should we be checking this for anything?  We can't for LMv2, 
 	   but for NTLMv2 it is meant to contain the current time etc.
 	*/
 
-	memcpy(client_response, ntv2_response.data, sizeof(client_response));
+	memcpy(client_response, ntv2_response->data, sizeof(client_response));
 
 	if (!ntv2_owf_gen(part_passwd, user, domain, kr)) {
 		return False;
 	}
 
-	SMBOWFencrypt_ntv2(kr, sec_blob, client_key_data, value_from_encryption);
+	SMBOWFencrypt_ntv2(kr, sec_blob, &client_key_data, value_from_encryption);
 	if (user_sess_key != NULL)
 	{
 		SMBsesskeygen_ntv2(kr, value_from_encryption, user_sess_key);
 	}
 
 #if DEBUG_PASSWORD
-	DEBUG(100,("Part password (P16) was |"));
+	DEBUG(100,("Part password (P16) was |\n"));
 	dump_data(100, part_passwd, 16);
-	DEBUG(100,("Password from client was |"));
-	dump_data(100, ntv2_response.data, ntv2_response.length);
-	DEBUG(100,("Variable data from client was |"));
+	DEBUGADD(100,("Password from client was |\n"));
+	dump_data(100, ntv2_response->data, ntv2_response->length);
+	DEBUGADD(100,("Variable data from client was |\n"));
 	dump_data(100, client_key_data.data, client_key_data.length);
-	DEBUG(100,("Given challenge was |"));
-	dump_data(100, sec_blob.data, sec_blob.length);
-	DEBUG(100,("Value from encryption was |"));
+	DEBUGADD(100,("Given challenge was |\n"));
+	dump_data(100, sec_blob->data, sec_blob->length);
+	DEBUGADD(100,("Value from encryption was |\n"));
 	dump_data(100, value_from_encryption, 16);
 #endif
 	data_blob_clear_free(&client_key_data);
@@ -185,8 +186,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		   use it (ie. does it exist in the smbpasswd file).
 		*/
 		DEBUG(4,("sam_password_ok: Checking NTLMv2 password with domain [%s]\n", user_info->client_domain.str));
-		if (smb_pwd_check_ntlmv2( user_info->nt_resp, 
-					  nt_pw, auth_context->challenge, 
+		if (smb_pwd_check_ntlmv2( &user_info->nt_resp, 
+					  nt_pw, &auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  user_info->client_domain.str,
 					  user_sess_key))
@@ -195,11 +196,12 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		}
 
 		DEBUG(4,("sam_password_ok: Checking NTLMv2 password without a domain\n"));
-		if (smb_pwd_check_ntlmv2( user_info->nt_resp, 
-					  nt_pw, auth_context->challenge, 
+		if (smb_pwd_check_ntlmv2( &user_info->nt_resp, 
+					  nt_pw, &auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  "",
 					  user_sess_key))
+		    
 		{
 			return NT_STATUS_OK;
 		} else {
@@ -213,8 +215,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			   use it (ie. does it exist in the smbpasswd file).
 			*/
 			DEBUG(4,("sam_password_ok: Checking NT MD4 password\n"));
-			if (smb_pwd_check_ntlmv1(user_info->nt_resp, 
-						 nt_pw, auth_context->challenge,
+			if (smb_pwd_check_ntlmv1(&user_info->nt_resp, 
+						 nt_pw, &auth_context->challenge,
 						 user_sess_key)) 
 			{
 				return NT_STATUS_OK;
@@ -224,7 +226,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			}
 		} else {
 			DEBUG(2,("sam_password_ok: NTLMv1 passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));			
-			/* no return, because we might pick up LMv2 in the LM field */
+			/* no return, becouse we might pick up LMv2 in the LM field */
 		}
 	}
 	
@@ -242,8 +244,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			lm_pw = pdb_get_lanman_passwd(sampass);
 			
 			DEBUG(4,("sam_password_ok: Checking LM password\n"));
-			if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
-						 lm_pw, auth_context->challenge,
+			if (smb_pwd_check_ntlmv1(&user_info->lm_resp, 
+						 lm_pw, &auth_context->challenge,
 						 user_sess_key)) 
 			{
 				return NT_STATUS_OK;
@@ -261,8 +263,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		   - related to Win9X, legacy NAS pass-though authentication
 		*/
 		DEBUG(4,("sam_password_ok: Checking LMv2 password with domain %s\n", user_info->client_domain.str));
-		if (smb_pwd_check_ntlmv2( user_info->lm_resp, 
-					  nt_pw, auth_context->challenge, 
+		if (smb_pwd_check_ntlmv2( &user_info->lm_resp, 
+					  nt_pw, &auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  user_info->client_domain.str,
 					  user_sess_key))
@@ -271,8 +273,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		}
 
 		DEBUG(4,("sam_password_ok: Checking LMv2 password without a domain\n"));
-		if (smb_pwd_check_ntlmv2( user_info->lm_resp, 
-					  nt_pw, auth_context->challenge, 
+		if (smb_pwd_check_ntlmv2( &user_info->lm_resp, 
+					  nt_pw, &auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  "",
 					  user_sess_key))
@@ -286,8 +288,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM field\n"));
 		if (lp_ntlm_auth()) 
 		{
-			if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
-						 nt_pw, auth_context->challenge,
+			if (smb_pwd_check_ntlmv1(&user_info->lm_resp, 
+						 nt_pw, &auth_context->challenge,
 						 user_sess_key)) 
 			{
 				return NT_STATUS_OK;
@@ -438,14 +440,14 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	nt_status = sam_account_ok(mem_ctx, sampass, user_info);
+	nt_status = sam_password_ok(auth_context, mem_ctx, sampass, user_info, user_sess_key);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		pdb_free_sam(&sampass);
 		return nt_status;
 	}
 
-	nt_status = sam_password_ok(auth_context, mem_ctx, sampass, user_info, user_sess_key);
+	nt_status = sam_account_ok(mem_ctx, sampass, user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		pdb_free_sam(&sampass);
@@ -468,7 +470,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
@@ -509,7 +511,7 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 }
 
 /* module initialisation */
-NTSTATUS auth_init_samstrict(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_samstrict(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
@@ -535,11 +537,11 @@ static NTSTATUS check_samstrict_dc_security(const struct auth_context *auth_cont
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	/* If we are a domain member, we must not 
-	   attempt to check the password locally,
+	/* If we are a PDC we must not check the password here 
 	   unless it is one of our aliases, empty
-	   or our domain if we are a logon server.*/
-	
+	   or equal to our domain name.  Other names may be
+	   Trusted domains.
+	*/
 
 	if ((!is_myworkgroup(user_info->domain.str))&&
 		(!is_myname(user_info->domain.str))) {
@@ -552,7 +554,7 @@ static NTSTATUS check_samstrict_dc_security(const struct auth_context *auth_cont
 }
 
 /* module initialisation */
-NTSTATUS auth_init_samstrict_dc(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_samstrict_dc(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;

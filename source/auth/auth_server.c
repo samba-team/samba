@@ -372,12 +372,19 @@ use this machine as the password server.\n"));
 
 	cli_ulogoff(cli);
 
-	if NT_STATUS_IS_OK(nt_status) {
+	if (NT_STATUS_IS_OK(nt_status)) {
 		struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
 		if (pass) {
 			nt_status = make_server_info_pw(server_info, pass);
 		} else {
-			nt_status = NT_STATUS_NO_SUCH_USER;
+			auth_add_user_script(user_info->domain.str, user_info->internal_username.str);
+			pass = Get_Pwnam(user_info->internal_username.str);
+
+			if (pass) {
+				nt_status = make_server_info_pw(server_info, pass);
+			} else {
+				nt_status = NT_STATUS_NO_SUCH_USER;
+			}
 		}
 	}
 
@@ -388,7 +395,7 @@ use this machine as the password server.\n"));
 	return(nt_status);
 }
 
-NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
+static NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;

@@ -48,7 +48,7 @@ BOOL sec_io_access(const char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "sec_io_access");
 	depth++;
 	
-	if(!prs_uint32("mask", ps, depth, &(t->mask)))
+	if(!prs_uint32("mask", ps, depth, &t->mask))
 		return False;
 
 	return True;
@@ -579,8 +579,6 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 {
 	SEC_DESC *dst;
 	uint32 offset     = 0;
-	uint32 offset_sid = SEC_DESC_HEADER_SIZE;
-	uint32 offset_acl = 0;
 
 	*sd_size = 0;
 
@@ -610,58 +608,33 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 	if(dacl && ((dst->dacl = dup_sec_acl(ctx, dacl)) == NULL))
 		goto error_exit;
 
-	offset = 0;
+	offset = SEC_DESC_HEADER_SIZE;
 
 	/*
 	 * Work out the linearization sizes.
 	 */
+
+	if (dst->sacl != NULL) {
+		dst->off_sacl = offset;
+		offset += dst->sacl->size;
+	}
+
+	if (dst->dacl != NULL) {
+		dst->off_dacl = offset;
+		offset += dst->dacl->size;
+	}
+
 	if (dst->owner_sid != NULL) {
-
-		if (offset == 0)
-			offset = SEC_DESC_HEADER_SIZE;
-
+		dst->off_owner_sid = offset;
 		offset += sid_size(dst->owner_sid);
 	}
 
 	if (dst->grp_sid != NULL) {
-
-		if (offset == 0)
-			offset = SEC_DESC_HEADER_SIZE;
-
+		dst->off_grp_sid = offset;
 		offset += sid_size(dst->grp_sid);
 	}
 
-	if (dst->sacl != NULL) {
-
-		offset_acl = SEC_DESC_HEADER_SIZE;
-
-		dst->off_sacl  = offset_acl;
-		offset_acl    += dst->sacl->size;
-		offset        += dst->sacl->size;
-		offset_sid    += dst->sacl->size;
-	}
-
-	if (dst->dacl != NULL) {
-
-		if (offset_acl == 0)
-			offset_acl = SEC_DESC_HEADER_SIZE;
-
-		dst->off_dacl  = offset_acl;
-		offset_acl    += dst->dacl->size;
-		offset        += dst->dacl->size;
-		offset_sid    += dst->dacl->size;
-	}
-
-	*sd_size = (size_t)((offset == 0) ? SEC_DESC_HEADER_SIZE : offset);
-
-	if (dst->owner_sid != NULL)
-		dst->off_owner_sid = offset_sid;
-		
-	/* sid_size() returns 0 if the sid is NULL so this is ok */
-		
-	if (dst->grp_sid != NULL)
-		dst->off_grp_sid = offset_sid + sid_size(dst->owner_sid);
-
+	*sd_size = (size_t)offset;
 	return dst;
 
 error_exit:

@@ -111,6 +111,9 @@ static void cli_simple_sign_outgoing_message(struct cli_state *cli)
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.
 	 * and zero out the next 4 bytes.
+	 *
+	 * We put the sequence into the packet, because we are going
+	 * to copy over it anyway.
 	 */
 	SIVAL(cli->outbuf, smb_ss_field, 
 	      data->send_seq_num);
@@ -132,7 +135,7 @@ static void cli_simple_sign_outgoing_message(struct cli_state *cli)
 	memcpy(&cli->outbuf[smb_ss_field], calc_md5_mac, 8);
 
 /*	cli->outbuf[smb_ss_field+2]=0; 
-	Uncomment this to test if the remote server actually verifies signitures...*/
+	Uncomment this to test if the remote server actually verifies signatures...*/
 	data->send_seq_num++;
 	data->reply_seq_num = data->send_seq_num;
 	data->send_seq_num++;
@@ -155,6 +158,8 @@ static BOOL cli_simple_check_incoming_message(struct cli_state *cli)
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.
 	 * and zero out the next 4 bytes.
+	 *
+	 * We do this here, to avoid modifying the packet.
 	 */
 
 	SIVAL(sequence_buf, 0, data->reply_seq_num);
@@ -163,15 +168,28 @@ static BOOL cli_simple_check_incoming_message(struct cli_state *cli)
 	/* get a copy of the server-sent mac */
 	memcpy(server_sent_mac, &cli->inbuf[smb_ss_field], sizeof(server_sent_mac));
 	
-	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
+	/* Calculate the 16 byte MAC - but don't alter the data in the
+	   incoming packet.
+	   
+	   This makes for a bit for fussing about, but it's not too bad.
+	*/
 	MD5Init(&md5_ctx);
+
+	/* intialise with the key */
 	MD5Update(&md5_ctx, data->mac_key.data, 
 		  data->mac_key.length); 
+
+	/* copy in the first bit of the SMB header */
 	MD5Update(&md5_ctx, cli->inbuf + 4, smb_ss_field - 4);
+
+	/* copy in the sequence number, instead of the signature */
 	MD5Update(&md5_ctx, sequence_buf, sizeof(sequence_buf));
-	
+
+	/* copy in the rest of the packet in, skipping the signature */
 	MD5Update(&md5_ctx, cli->inbuf + offset_end_of_sig, 
 		  smb_len(cli->inbuf) - (offset_end_of_sig - 4));
+
+	/* caclulate the MD5 sig */ 
 	MD5Final(calc_md5_mac, &md5_ctx);
 
 	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
@@ -219,10 +237,10 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 	data = smb_xmalloc(sizeof(*data));
 	cli->sign_info.signing_context = data;
 	
-	data->mac_key = data_blob(NULL, MIN(response.length + 16, 40));
+	data->mac_key = data_blob(NULL, response.length + 16);
 
 	memcpy(&data->mac_key.data[0], user_session_key, 16);
-	memcpy(&data->mac_key.data[16],response.data, MIN(response.length, 40 - 16));
+	memcpy(&data->mac_key.data[16],response.data, response.length);
 
 	/* Initialise the sequence number */
 	data->send_seq_num = 0;

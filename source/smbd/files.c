@@ -346,6 +346,10 @@ void file_free(files_struct *fsp)
 
 	string_free(&fsp->fsp_name);
 
+	if (fsp->fake_file_handle) {
+		destroy_fake_file_handle(&fsp->fake_file_handle);
+	}
+
 	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
 	files_used--;
 

@@ -270,14 +270,23 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	if (passlen != 24) {
 		if (lp_client_ntlmv2_auth()) {
 			DATA_BLOB server_chal;
-
+			DATA_BLOB names_blob;
 			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
 
-			if (!SMBNTLMv2encrypt(user, workgroup, pass, server_chal, 
+			/* note that the 'workgroup' here is a best guess - we don't know
+			   the server's domain at this point.  The 'server name' is also
+			   dodgy... 
+			*/
+			names_blob = NTLMv2_generate_names_blob(cli->called.name, workgroup);
+
+			if (!SMBNTLMv2encrypt(user, workgroup, pass, &server_chal, 
+					      &names_blob,
 					      &lm_response, &nt_response, &session_key)) {
+				data_blob_free(&names_blob);
 				data_blob_free(&server_chal);
 				return False;
 			}
+			data_blob_free(&names_blob);
 			data_blob_free(&server_chal);
 
 		} else {
@@ -822,9 +831,6 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		return False;
 
 	clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE|STR_ASCII);
-
-	if (strcasecmp(share,"IPC$")==0)
-		fstrcpy(cli->dev, "IPC");
 
 	if (cli->protocol >= PROTOCOL_NT1 &&
 	    smb_buflen(cli->inbuf) == 3) {

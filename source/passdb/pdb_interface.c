@@ -74,7 +74,7 @@ static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
 	struct pdb_init_function_entry *entry = backends;
 
 	while(entry) {
-		if (strcasecmp(entry->name, name) == 0) return entry;
+		if (strcmp(entry->name, name)==0) return entry;
 		entry = entry->next;
 	}
 

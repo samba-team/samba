@@ -81,11 +81,11 @@ lastlog:
 
 Notes:
 	Each connection requires a small number (starting at 0, working up)
-	to represent the line (unum).  This must be unique within and across
-	all smbd processes.
+	to represent the line.  This must be unique within and across all
+	smbd processes.  It is the 'id_num' from Samba's session.c code.
 
 	The 4 byte 'ut_id' component is vital to distinguish connections,
-	of which there could be several hundered or even thousand.
+	of which there could be several hundred or even thousand.
 	Entries seem to be printable characters, with optional NULL pads.
 
 	We need to be distinct from other entries in utmp/wtmp.
@@ -105,11 +105,8 @@ Notes:
 	Arbitrarily I have chosen to use a distinctive 'SM' for the
 	first two bytes.
 
-	The remaining two encode the "unum" (see above).
-
-	For "utmp consolidate" the suggestion was made to encode the pid into
-	those remaining two bytes (16 bits).  But recent UNIX (e.g Solaris 8)
-	is migrating to pids > 16 bits, so we ought not to do this.
+	The remaining two bytes encode the session 'id_num' (see above).
+	Our caller (session.c) should note our 16-bit limitation.
 
 ****************************************************************************/
 
@@ -124,33 +121,6 @@ Notes:
 #ifdef HAVE_LASTLOG_H
 #include <lastlog.h>
 #endif
-
-/****************************************************************************
- Obtain/release a small number (0 upwards) unique within and across smbds.
-****************************************************************************/
-/*
- * Need a "small" number to represent this connection, unique within this
- * smbd and across all smbds.
- *
- * claim:
- *	Start at 0, hunt up for free, unique number "unum" by attempting to
- *	store it as a key in a tdb database:
- *		key: unum		data: pid+conn  
- *	Also store its inverse, ready for yield function:
- *		key: pid+conn		data: unum
- *
- * yield:
- *	Find key: pid+conn; data is unum;  delete record
- *	Find key: unum ; delete record.
- *
- * Comment:
- *	The claim algorithm (a "for" loop attempting to store numbers in a tdb
- *	database) will be increasingly inefficient with larger numbers of
- *	connections.  Is it possible to write a suitable primitive within tdb?
- *
- *	However, by also storing the inverse key/data pair, we at least make
- *	the yield algorithm efficient.
- */
 
 /****************************************************************************
  Default paths to various {u,w}tmp{,x} files.
@@ -484,6 +454,7 @@ static int ut_id_encode(int i, char *fourbyte)
 */
 static BOOL sys_utmp_fill(struct utmp *u,
 			  const char *username, const char *hostname,
+			  struct in_addr *ipaddr,
 			  const char *id_str, int id_num)
 {			  
 	struct timeval timeval;
@@ -503,10 +474,6 @@ static BOOL sys_utmp_fill(struct utmp *u,
 	/*
 	 * ut_line:
 	 *	If size limit proves troublesome, then perhaps use "ut_id_encode()".
-	 *
-	 * Temporary variable "line_tmp" avoids trouble:
-	 * o  with unwanted trailing NULL if ut_line full;
-	 * o  with overflow if ut_line would be more than full.
 	 */
 	if (strlen(id_str) > sizeof(u->ut_line)) {
 		DEBUG(1,("id_str [%s] is too long for %d char utmp field\n",
@@ -538,8 +505,9 @@ static BOOL sys_utmp_fill(struct utmp *u,
 #if defined(HAVE_UT_UT_HOST)
 	utmp_strcpy(u->ut_host, hostname, sizeof(u->ut_host));
 #endif
-
 #if defined(HAVE_UT_UT_ADDR)
+	if (ipaddr)
+		u->ut_addr = ipaddr->s_addr;
 	/*
 	 * "(unsigned long) ut_addr" apparently exists on at least HP-UX 10.20.
 	 * Volunteer to implement, please ...
@@ -561,6 +529,7 @@ static BOOL sys_utmp_fill(struct utmp *u,
 ****************************************************************************/
 
 void sys_utmp_yield(const char *username, const char *hostname, 
+		    struct in_addr *ipaddr,
 		    const char *id_str, int id_num)
 {
 	struct utmp u;
@@ -576,7 +545,7 @@ void sys_utmp_yield(const char *username, const char *hostname,
 	u.ut_type = DEAD_PROCESS;
 #endif
 
-	if (!sys_utmp_fill(&u, username, hostname, id_str, id_num)) return;
+	if (!sys_utmp_fill(&u, username, hostname, ipaddr, id_str, id_num)) return;
 
 	sys_utmp_update(&u, NULL, False);
 }
@@ -586,6 +555,7 @@ void sys_utmp_yield(const char *username, const char *hostname,
 ****************************************************************************/
 
 void sys_utmp_claim(const char *username, const char *hostname, 
+		    struct in_addr *ipaddr,
 		    const char *id_str, int id_num)
 {
 	struct utmp u;
@@ -596,7 +566,7 @@ void sys_utmp_claim(const char *username, const char *hostname,
 	u.ut_type = USER_PROCESS;
 #endif
 
-	if (!sys_utmp_fill(&u, username, hostname, id_str, id_num)) return;
+	if (!sys_utmp_fill(&u, username, hostname, ipaddr, id_str, id_num)) return;
 
 	sys_utmp_update(&u, hostname, True);
 }

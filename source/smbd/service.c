@@ -704,14 +704,12 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	
 	/* Invoke VFS make connection hook */
 
-	if (conn->vfs_ops.connect) {
-		if (conn->vfs_ops.connect(conn, lp_servicename(snum), user) < 0) {
-			DEBUG(0,("make_connection: VFS make connection failed!\n"));
-			change_to_root_user();
-			conn_free(conn);
-			*status = NT_STATUS_UNSUCCESSFUL;
-			return NULL;
-		}
+	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), user) < 0) {
+		DEBUG(0,("make_connection: VFS make connection failed!\n"));
+		change_to_root_user();
+		conn_free(conn);
+		*status = NT_STATUS_UNSUCCESSFUL;
+		return NULL;
 	}
 
 	/* we've finished with the user stuff - go back to root */
@@ -872,13 +870,8 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 				 get_remote_machine_name(),conn->client_address,
 				 lp_servicename(SNUM(conn))));
 
-	if (conn->vfs_ops.disconnect != NULL) {
-
-	    /* Call VFS disconnect hook */
-	    
-	    conn->vfs_ops.disconnect(conn);
-	    
-	}
+	/* Call VFS disconnect hook */    
+	SMB_VFS_DISCONNECT(conn);
 
 	yield_connection(conn, lp_servicename(SNUM(conn)));
 

@@ -107,8 +107,8 @@ struct browse_cache_record *create_browser_in_lmb_cache( char *work_name,
   /* Allow the new lmb to miss an announce period before we remove it. */
   browc->death_time = now + ( (CHECK_TIME_MST_ANNOUNCE + 2) * 60 );
 
-  StrnCpy(  browc->lmb_name, browser_name, sizeof(browc->lmb_name)-1 );
-  StrnCpy(  browc->work_group, work_name, sizeof(browc->work_group)-1 );
+  pstrcpy(  browc->lmb_name, browser_name);
+  pstrcpy(  browc->work_group, work_name);
   strupper( browc->lmb_name );
   strupper( browc->work_group );
   

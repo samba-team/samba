@@ -329,7 +329,7 @@ DATA_BLOB spnego_gen_negTokenTarg(const char *principal, int time_offset)
 	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_NTLMSSP, NULL};
 
 	/* get a kerberos ticket for the service */
-	tkt = krb5_get_ticket(principal, time_offset);
+	tkt = cli_krb5_get_ticket(principal, time_offset);
 
 	/* wrap that up in a nice GSS-API wrapping */
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);

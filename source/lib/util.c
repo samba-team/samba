@@ -937,6 +937,19 @@ void *Realloc(void *p,size_t size)
 	return(ret);
 }
 
+void *Realloc_zero(void *ptr, size_t size)
+{
+	void *tptr = NULL;
+		
+	tptr = Realloc(ptr, size);
+	if(tptr == NULL)
+		return NULL;
+
+	memset((char *)tptr,'\0',size);
+
+	return tptr;
+}
+
 /****************************************************************************
  Free memory, checks for NULL.
  Use directly SAFE_FREE()

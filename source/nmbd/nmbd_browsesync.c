@@ -106,6 +106,7 @@ As a local master browser, send an announce packet to the domain master browser.
 static void announce_local_master_browser_to_domain_master_browser( struct work_record *work)
 {
   pstring outbuf;
+  fstring myname;
   char *p;
 
   if(ismyip(work->dmb_addr))
@@ -125,8 +126,11 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
   SCVAL(p,0,ANN_MasterAnnouncement);
   p++;
 
-  StrnCpy(p,global_myname(),15);
-  strupper(p);
+  fstrcpy(myname, global_myname());
+  strupper(myname);
+  myname[15]='\0';
+  push_pstring_base(p, myname, outbuf);
+
   p = skip_string(p,1);
 
   if( DEBUGLVL( 4 ) )

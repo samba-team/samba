@@ -2575,14 +2575,7 @@ NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_EN
 		return r_u->status;
 	}
 
-	switch (lp_server_role()) {
-	case ROLE_DOMAIN_PDC:
-	case ROLE_DOMAIN_BDC:
-		name = lp_workgroup();
-		break;
-	default:
-		name = global_myname();
-	}
+	name = get_global_sam_name();
 
 	fstrcpy(dom[0],name);
 	strupper(dom[0]);

@@ -36,7 +36,7 @@ extern DOM_SID global_sid_Authenticated_Users;
  Create a UNIX user on demand.
 ****************************************************************************/
 
-static int smb_create_user(const char *unix_user, const char *homedir)
+static int smb_create_user(const char *domain, const char *unix_username, const char *homedir)
 {
 	pstring add_script;
 	int ret;
@@ -44,7 +44,9 @@ static int smb_create_user(const char *unix_user, const char *homedir)
 	pstrcpy(add_script, lp_adduser_script());
 	if (! *add_script)
 		return -1;
-	all_string_sub(add_script, "%u", unix_user, sizeof(pstring));
+	all_string_sub(add_script, "%u", unix_username, sizeof(pstring));
+	if (domain)
+		all_string_sub(add_script, "%D", domain, sizeof(pstring));
 	if (homedir)
 		all_string_sub(add_script, "%H", homedir, sizeof(pstring));
 	ret = smbrun(add_script,NULL);
@@ -56,24 +58,18 @@ static int smb_create_user(const char *unix_user, const char *homedir)
  Add and Delete UNIX users on demand, based on NTSTATUS codes.
 ****************************************************************************/
 
-void smb_user_control(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info, NTSTATUS nt_status)
+void auth_add_user_script(const char *domain, const char *username)
 {
 	struct passwd *pwd=NULL;
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-
-		if (!(server_info->sam_fill_level & SAM_FILL_UNIX)) {
-			
-			/*
-			 * User validated ok against Domain controller.
-			 * If the admin wants us to try and create a UNIX
-			 * user on the fly, do so.
-			 */
-			
-			if(lp_adduser_script() && !(pwd = Get_Pwnam(user_info->internal_username.str))) {
-				smb_create_user(user_info->internal_username.str, NULL);
-			}
-		}
+	/*
+	 * User validated ok against Domain controller.
+	 * If the admin wants us to try and create a UNIX
+	 * user on the fly, do so.
+	 */
+	
+	if(lp_adduser_script() && !(pwd = Get_Pwnam(username))) {
+		smb_create_user(domain, username, NULL);
 	}
 }
 
@@ -914,30 +910,38 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		nt_status = pdb_init_sam_pw(&sam_account, passwd);
 		passwd_free(&passwd);
 	} else {
-		char *dom_user;
-		dom_user = talloc_asprintf(mem_ctx, "%s%s%s", 
-					   nt_domain,
-					   lp_winbind_separator(),
-					   internal_username);
-		
-		if (!dom_user) {
-			DEBUG(0, ("talloc_asprintf failed!\n"));
-			return NT_STATUS_NO_MEMORY;
-		} else { 
-		
-			if (!(passwd = Get_Pwnam(dom_user))
-				/* Only lookup local for the local
-				   domain, we don't want this for
-				   trusted domains */
-			    && strequal(nt_domain, lp_workgroup())) {
-				passwd = Get_Pwnam(internal_username);
+		int try = 0;
+		while (try < 2) {
+			char *dom_user;
+			dom_user = talloc_asprintf(mem_ctx, "%s%s%s", 
+						   nt_domain,
+						   lp_winbind_separator(),
+						   internal_username);
+			
+			if (!dom_user) {
+				DEBUG(0, ("talloc_asprintf failed!\n"));
+				nt_status = NT_STATUS_NO_MEMORY;
+			} else { 
+				
+				if (!(passwd = Get_Pwnam(dom_user))
+				    /* Only lookup local for the local
+				       domain, we don't want this for
+				       trusted domains */
+				    && strequal(nt_domain, lp_workgroup())) {
+					passwd = Get_Pwnam(internal_username);
+				}
+				
+				if (!passwd) {
+					nt_status = NT_STATUS_NO_SUCH_USER;
+				} else {
+					nt_status = pdb_init_sam_pw(&sam_account, passwd);
+					break;
+				}
 			}
-			    
-			if (!passwd) {
-				return NT_STATUS_NO_SUCH_USER;
-			} else {
-				nt_status = pdb_init_sam_pw(&sam_account, passwd);
+			if (try == 0) {
+				auth_add_user_script(nt_domain, internal_username);
 			}
+			try++;
 		}
 	}
 	

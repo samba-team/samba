@@ -205,7 +205,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		/*
 		 * No POSIX to worry about, just close.
 		 */
-		ret = conn->vfs_ops.close(fsp,fsp->fd);
+		ret = SMB_VFS_CLOSE(fsp,fsp->fd);
 		fsp->fd = -1;
 		return ret;
 	}
@@ -259,7 +259,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		DEBUG(10,("fd_close_posix: doing close on %u fd's.\n", (unsigned int)count ));
 
 		for(i = 0; i < count; i++) {
-			if (conn->vfs_ops.close(fsp,fd_array[i]) == -1) {
+			if (SMB_VFS_CLOSE(fsp,fd_array[i]) == -1) {
 				saved_errno = errno;
 			}
 		}
@@ -278,7 +278,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	 * Finally close the fd associated with this fsp.
 	 */
 
-	ret = conn->vfs_ops.close(fsp,fsp->fd);
+	ret = SMB_VFS_CLOSE(fsp,fsp->fd);
 
 	if (saved_errno != 0) {
         errno = saved_errno;
@@ -646,11 +646,10 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 	int ret;
-	struct connection_struct *conn = fsp->conn;
 
 	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fd,op,(double)offset,(double)count,type));
 
-	ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
+	ret = SMB_VFS_LOCK(fsp,fsp->fd,op,offset,count,type);
 
 	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
 
@@ -674,7 +673,7 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
 			errno = 0;
 			count &= 0x7fffffff;
-			ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
+			ret = SMB_VFS_LOCK(fsp,fsp->fd,op,offset,count,type);
 		}
 	}
 
