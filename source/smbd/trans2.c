@@ -678,11 +678,18 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,0,nt_extmode); p += 4;
 			SIVAL(p,0,strlen(fname)); p += 4;
 			SIVAL(p,0,0); p += 4;
+			/* Clear the short name buffer. This is 
+			 * IMPORTANT as not doing so will trigger
+			 * a Win2k client bug. JRA.
+			 */
+			memset(p,'\0',26);
 			if (!was_8_3) {
-				fstrcpy(p+2,fname);
-				mangle_map(p+2,True,True,SNUM(conn));
-				strupper(p+2);
-				SSVAL(p, 0, strlen(p+2));
+				fstring tmpname;
+				fstrcpy(tmpname,fname);
+				mangle_map(tmpname,True,True,SNUM(conn));
+				strupper(tmpname);
+				fstrcpy(p+2,tmpname);
+				SSVAL(p, 0, strlen(tmpname));
 			} else {
 				SSVAL(p,0,0);
 				*(p+2) = 0;
