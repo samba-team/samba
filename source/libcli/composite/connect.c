@@ -277,29 +277,31 @@ static NTSTATUS connect_resolve(struct smbcli_composite *c,
 static void state_handler(struct smbcli_composite *c)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
+	NTSTATUS status;
 
 	switch (state->stage) {
 	case CONNECT_RESOLVE:
-		c->status = connect_resolve(c, state->io);
+		status = connect_resolve(c, state->io);
 		break;
 	case CONNECT_SOCKET:
-		c->status = connect_socket(c, state->io);
+		status = connect_socket(c, state->io);
 		break;
 	case CONNECT_SESSION_REQUEST:
-		c->status = connect_session_request(c, state->io);
+		status = connect_session_request(c, state->io);
 		break;
 	case CONNECT_NEGPROT:
-		c->status = connect_negprot(c, state->io);
+		status = connect_negprot(c, state->io);
 		break;
 	case CONNECT_SESSION_SETUP:
-		c->status = connect_session_setup(c, state->io);
+		status = connect_session_setup(c, state->io);
 		break;
 	case CONNECT_TCON:
-		c->status = connect_tcon(c, state->io);
+		status = connect_tcon(c, state->io);
 		break;
 	}
 
-	if (!NT_STATUS_IS_OK(c->status)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		c->status = status;
 		c->state = SMBCLI_REQUEST_ERROR;
 		if (c->async.fn) {
 			c->async.fn(c);
