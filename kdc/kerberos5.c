@@ -227,46 +227,29 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
     pa.val = NULL;
     pa.len = 0;
     for(i = 0; i < client->keys.len; i++){
-#ifndef KTYPE_IS_ETYPE
-	tmp = realloc(pa.val, (pa.len + 1) * sizeof(*pa.val));
-	if(tmp == NULL) {
-	    free_PA_KEY_INFO(&pa);
-	    return ret;
-	}
-	pa.val = tmp;
-	pa.val[pa.len].keytype = client->keys.val[i].key.keytype;
-	if(client->keys.val[i].salt){
-	    pa.val[pa.len].salttype = client->keys.val[i].salt->type;
-	    ALLOC(pa.val[pa.len].salt);
-	    ret = copy_octet_string(&client->keys.val[i].salt->salt,
-				    pa.val[pa.len].salt);
-	    if(tmp == NULL) {
-		free_PA_KEY_INFO(&pa);
-		return ret;
-	    }
-	}
-	else {
-	    pa.val[pa.len].salttype = pa_pw_salt;
-	    pa.val[pa.len].salt = NULL;
-	}
-	pa.len++;
-#else
+#ifdef KTYPE_IS_ETYPE
 	krb5_enctype *etypes, *e;
 	ret = krb5_keytype_to_etypes(context, 
 				     client->keys.val[i].key.keytype,
 				     &etypes);
 	for(e = etypes; *e; e++){
+#endif
 	    tmp = realloc(pa.val, (pa.len + 1) * sizeof(*pa.val));
 	    if(tmp == NULL) {
 		free_PA_KEY_INFO(&pa);
 		return ret;
 	    }
 	    pa.val = tmp;
+#ifndef KTYPE_IS_ETYPE
+	    pa.val[pa.len].keytype = client->keys.val[i].key.keytype;
+#else
 	    pa.val[pa.len].keytype = *e;
+#endif
 	    if(client->keys.val[i].salt){
 		pa.val[pa.len].salttype = client->keys.val[i].salt->type;
+		ALLOC(pa.val[pa.len].salt);
 		ret = copy_octet_string(&client->keys.val[i].salt->salt,
-					&pa.val[pa.len].salt);
+					pa.val[pa.len].salt);
 		if(tmp == NULL) {
 		    free_PA_KEY_INFO(&pa);
 		    return ret;
@@ -274,10 +257,10 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 	    }
 	    else {
 		pa.val[pa.len].salttype = pa_pw_salt;
-		pa.val[pa.len].salt.data = NULL;
-		pa.val[pa.len].salt.length = 0;
+		pa.val[pa.len].salt = NULL;
 	    }
 	    pa.len++;
+#ifdef KTYPE_IS_ETYPE
 	}
 #endif
     }
@@ -408,7 +391,7 @@ as_rep(KDC_REQ *req,
 
     if (server->flags.invalid) {
 	ret = KRB5KDC_ERR_POLICY;
-	kdc_log(0, "Server (%s) has invalid bit set", server_name);
+	kdc_log(0, "Server's (%s) has invalid bit set", server_name);
 	goto out;
     }
 
@@ -421,7 +404,7 @@ as_rep(KDC_REQ *req,
     if (client->pw_end && *client->pw_end < kdc_time
 	&& !server->flags.change_pw) {
 	ret = KRB5KDC_ERR_KEY_EXPIRED;
-	kdc_log(0, "Client (%s)'s key has expired", client_name);
+	kdc_log(0, "Client's (%s) key has expired", client_name);
 	goto out;
     }
 
