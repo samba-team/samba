@@ -131,11 +131,13 @@ find_db_spec(kadm5_server_context *ctx)
     krb5_config_binding *default_binding = NULL;
     krb5_context context = ctx->context;
 
-    while((db_binding = krb5_config_get_next(context, NULL, &top_binding, 
-					     krb5_config_list, 
-					     "kdc", 
-					     "database",
-					     NULL))) {
+    while((db_binding = (krb5_config_binding *)
+	   krb5_config_get_next(context,
+				NULL, &top_binding, 
+				krb5_config_list, 
+				"kdc", 
+				"database",
+				NULL))) {
 	const char *p;
 	p = krb5_config_get_string(context, db_binding, "realm", NULL);
 	if(p == NULL) {
