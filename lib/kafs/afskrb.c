@@ -210,11 +210,13 @@ k_afsklog_all_local_cells(char *krealm, uid_t uid)
     int num_cells = sizeof(cells) / sizeof(cells[0]);
     int index = 0;
 
-    char *p, home[MaxPathLen];
+    char *p;
     
     if ((p = getenv("HOME"))) {
-	sprintf(home, "%s/.TheseCells", p);
-	k_find_cells(home, cells, num_cells, &index);
+	char home[MaxPathLen];
+
+	if (k_concat(home, sizeof(home), p, "/.TheseCells", NULL) == 0)
+	    k_find_cells(home, cells, num_cells, &index);
     }
     k_find_cells(_PATH_THESECELLS, cells, num_cells, &index);
     k_find_cells(_PATH_THISCELL, cells, num_cells, &index);
