@@ -73,8 +73,11 @@ static BOOL smb_pwd_check_ntlmv1(DATA_BLOB nt_response,
   return (memcmp(p24, nt_response.data, 24) == 0);
 }
 
+
 /****************************************************************************
-core of smb password checking routine.
+core of smb password checking routine. (NTLMv2, LMv2)
+
+Note:  The same code works with both NTLMv2 and LMv2.
 ****************************************************************************/
 static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 				 const uchar *part_passwd,
@@ -104,6 +107,11 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 	}
 
 	client_key_data = data_blob(ntv2_response.data+16, ntv2_response.length-16);
+	/* 
+	   todo:  should we be checking this for anything?  We can't for LMv2, 
+	   but for NTLMv2 it is meant to contain the current time etc.
+	*/
+
 	memcpy(client_response, ntv2_response.data, sizeof(client_response));
 
 	if (!ntv2_owf_gen(part_passwd, user, domain, kr)) {
@@ -206,54 +214,71 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			}
 		} else {
 			DEBUG(2,("sam_password_ok: NTLMv1 passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));			
-				/* No return, we want to check the LM hash below in this case */
+			/* no return, becouse we might pick up LMv2 in the LM feild */
 		}
 	}
 	
-	if (IS_SAM_DEFAULT(sampass, PDB_LMPASSWD)) {
-		DEBUG(3,("sam_password_ok: NO LanMan password set for user %s (and no NT password supplied)\n",pdb_get_username(sampass)));
-		auth_flags &= (~AUTH_FLAG_LM_RESP);		
-	}
-	
 	if (auth_flags & AUTH_FLAG_LM_RESP) {
-		lm_pw = pdb_get_lanman_passwd(sampass);
-			
 		if (user_info->lm_resp.length != 24) {
 			DEBUG(2,("sam_password_ok: invalid LanMan password length (%d) for user %s\n", 
 				 user_info->nt_resp.length, pdb_get_username(sampass)));		
 		}
 		
 		if (!lp_lanman_auth()) {
-			DEBUG(3,("sam_password_ok: Lanman passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));			
-			return NT_STATUS_LOGON_FAILURE;
-		}
-		
-		DEBUG(4,("sam_password_ok: Checking LM password\n"));
-		if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
-					 lm_pw, auth_context->challenge,
-					 user_sess_key)) 
-		{
-			return NT_STATUS_OK;
+			DEBUG(3,("sam_password_ok: Lanman passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));
+		} else if (IS_SAM_DEFAULT(sampass, PDB_LMPASSWD)) {
+			DEBUG(3,("sam_password_ok: NO LanMan password set for user %s (and no NT password supplied)\n",pdb_get_username(sampass)));
 		} else {
-			if (lp_ntlm_auth() && (!IS_SAM_DEFAULT(sampass, PDB_NTPASSWD))) {				
-				nt_pw = pdb_get_nt_passwd(sampass);
-				/* Apparently NT accepts NT responses in the LM field
-				   - I think this is related to Win9X pass-though authentication
-				*/
-				DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM field\n"));
-				if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
-							 nt_pw, auth_context->challenge,
-							 user_sess_key)) 
-				{
-					return NT_STATUS_OK;
-				} else {
-					DEBUG(3,("sam_password_ok: NT MD4 password in LM field failed for user %s\n",pdb_get_username(sampass)));
-					return NT_STATUS_WRONG_PASSWORD;
-				}
+			lm_pw = pdb_get_lanman_passwd(sampass);
+			
+			DEBUG(4,("sam_password_ok: Checking LM password\n"));
+			if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
+						 lm_pw, auth_context->challenge,
+						 user_sess_key)) 
+			{
+				return NT_STATUS_OK;
 			}
-			DEBUG(4,("sam_password_ok: LM password check failed for user %s\n",pdb_get_username(sampass)));
+		}
+
+		if (IS_SAM_DEFAULT(sampass, PDB_NTPASSWD)) {
+			DEBUG(4,("sam_password_ok: LM password check failed for user, no NT password %s\n",pdb_get_username(sampass)));
 			return NT_STATUS_WRONG_PASSWORD;
 		} 
+		
+		nt_pw = pdb_get_nt_passwd(sampass);
+
+		/* This is for 'LMv2' authentication.  almost NTLMv2 but limited to 24 bytes.
+		   - related to Win9X, legacy NAS pass-though authentication
+		*/
+		DEBUG(4,("sam_password_ok: Checking LMv2 password\n"));
+		if (smb_pwd_check_ntlmv2( user_info->lm_resp, 
+					  nt_pw, auth_context->challenge, 
+					  user_info->smb_name.str, 
+					  user_info->client_domain.str,
+					  user_sess_key))
+		{
+			return NT_STATUS_OK;
+		}
+
+		/* Apparently NT accepts NT responses in the LM field
+		   - I think this is related to Win9X pass-though authentication
+		*/
+		DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM field\n"));
+		if (lp_ntlm_auth()) 
+		{
+			if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
+						 nt_pw, auth_context->challenge,
+						 user_sess_key)) 
+			{
+				return NT_STATUS_OK;
+			}
+			DEBUG(3,("sam_password_ok: LM password, NT MD4 password in LM field and LMv2 failed for user %s\n",pdb_get_username(sampass)));
+			return NT_STATUS_WRONG_PASSWORD;
+		} else {
+			DEBUG(3,("sam_password_ok: LM password and LMv2 failed for user %s, and NT MD4 password in LM field not permitted\n",pdb_get_username(sampass)));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+			
 	}
 		
 	/* Should not be reached, but if they send nothing... */
