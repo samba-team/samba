@@ -146,7 +146,8 @@ int ads_kdestroy(const char *cc_name)
 	krb5_ccache cc = NULL;
 
 	if ((code = krb5_init_context (&ctx))) {
-		DEBUG(3, ("ads_kdestroy: kdb5_init_context rc=%d\n", code));
+		DEBUG(3, ("ads_kdestroy: kdb5_init_context failed: %s\n", 
+			error_message(code)));
 		return code;
 	}
   
@@ -157,15 +158,16 @@ int ads_kdestroy(const char *cc_name)
 		}
 	} else {
 		if ((code = krb5_cc_resolve(ctx, cc_name, &cc))) {
-			DEBUG(3, ("ads_kdestroy: krb5_cc_resolve rc=%d\n",
-				  code));
+			DEBUG(3, ("ads_kdestroy: krb5_cc_resolve failed: %s\n",
+				  error_message(code)));
 			krb5_free_context(ctx);
 			return code;
 		}
 	}
 
 	if ((code = krb5_cc_destroy (ctx, cc))) {
-		DEBUG(3, ("ads_kdestroy: krb5_cc_destroy rc=%d\n", code));
+		DEBUG(3, ("ads_kdestroy: krb5_cc_destroy failed: %s\n", 
+			error_message(code)));
 	}
 
 	krb5_free_context (ctx);
