@@ -5,16 +5,22 @@ include $(top_srcdir)/Makefile.am.common
 CLEANFILES = roken.h make-roken.c print_version.h
 
 lib_LTLIBRARIES = libroken.la
-libroken_la_LDFLAGS = -version-info 7:1:2
+libroken_la_LDFLAGS = -version-info 8:0:3
 
 noinst_PROGRAMS = make-roken make-print-version
 
-check_PROGRAMS = parse_bytes-test strpftime-test getaddrinfo-test
+check_PROGRAMS = parse_bytes-test \
+		strpftime-test \
+		getaddrinfo-test \
+		snprintf-test
+
 TESTS = $(check_PROGRAMS)
 
 getaddrinfo_test_LDADD = libroken.la
 parse_bytes_test_LDADD = libroken.la
 strpftime_test_SOURCES = strpftime-test.c strftime.c strptime.c snprintf.c
+snprintf_test_SOURCES  = snprintf-test.c snprintf.c
+snprintf_test_LDADD    = -lm
 
 if KRB4
 if KRB5
@@ -54,6 +60,7 @@ libroken_la_SOURCES =		\
 	snprintf.c		\
 	socket.c		\
 	strcollect.c		\
+	timeval.c		\
 	tm2time.c		\
 	timeval.c		\
 	verify.c		\
