@@ -1,5 +1,7 @@
 2003-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/Makefile.am (LDADD): link with LIB_dlopen
+	
 	* kdc/pkinit.c: clean up
 	
 	* lib/krb5/krb5.h: make pkinit_win2k_compatible into a flag field
@@ -9,7 +11,7 @@
 	* kdc/pkinit.c: print an error and turn of pkinit if openssl
 	failed to load
 
-	* kdc/config.c: read pkinit (pki-muble) configuration options
+	* kdc/config.c: read pkinit (pki-mumble) configuration options
 	
 	* kdc/kerberos5.c: add pkinit support
 	
