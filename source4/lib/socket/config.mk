@@ -8,6 +8,14 @@ INIT_OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE socket_unix
+[MODULE::socket_unix]
+INIT_OBJ_FILES = \
+		lib/socket/socket_unix.o
+# End MODULE socket_unix
+################################################
+
+################################################
 # Start SUBSYSTEM SOCKET
 [SUBSYSTEM::SOCKET]
 INIT_OBJ_FILES = \
