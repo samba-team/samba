@@ -1,0 +1,74 @@
+#
+# @(#) Test for memory leaks using getgrent
+#
+
+load_lib util-defs.exp
+load_lib "$srcdir/lib/compile.exp"
+
+# Compile test program
+
+simple_compile "leaktest1"
+
+# Run it as a subprocess and leakcheck in the other
+
+system "$srcdir/$subdir/leaktest1 &"
+
+set num_loops 0
+
+while { 1 } {
+    
+    # Get process info
+    
+    spawn ps auxww
+    
+    set got_self 0
+    set got_winbindd 0
+    
+    expect {
+	-re "((\[0-9]+ +\[0-9]+) pts\[^\r]*winbindd\[^\r]*)\r\n" { \
+		set winbindd_vsz [lindex [split $expect_out(2,string) " "] 0]; \
+		set got_winbindd 1; exp_continue; }
+	-re "((\[0-9]+ +\[0-9]+) pts\[^\r]*$subdir/leaktest1\[^\r]*)\r\n" { \
+		set self_vsz [lindex [split $expect_out(2,string) " "] 0]; \
+		set got_self 1; exp_continue; }
+	eof { if { !$got_winbindd } { \
+		perror "could not find ps entry for winbindd"; \
+		return -1; }
+	if { !$got_self } { \
+		perror "could not find ps entry for self"; \
+		return -1; }}
+	timeout { perror "timed out running ps"; return -1 }
+    }
+    
+    verbose "winbindd size = $winbindd_vsz, test program size = $self_vsz"
+    
+    # Take a sample point after a couple of iterations
+    
+    if { $num_loops == 10 } {
+	set self_sample_vsz $self_vsz
+	set winbindd_sample_vsz $self_vsz
+    }
+    
+    # After a few more iterations check current size against sample
+    
+    if { $num_loops == 100 } {
+	if { $self_vsz > $self_sample_vsz } {
+	    fail "memory leak in test program"
+	} else {
+	    pass "no leaks in test program"
+	}
+	if { $winbindd_vsz > $winbindd_vsz } {
+	    fail "memory leak in winbind"
+	} else {
+	    pass "no leaks in winbindd"
+	}
+	
+	system "touch /tmp/leaktest1.exit"
+	return
+    }
+    
+    # Increment loop counter
+    
+    incr num_loops
+    sleep 2
+}
