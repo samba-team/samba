@@ -629,6 +629,7 @@ static BOOL test_SetAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.alias_handle = handle;
 		r.in.level = levels[i];
+		r.in.info  = talloc_p(mem_ctx, union samr_AliasInfo);
 		switch (r.in.level) {
 		    case 2 : init_samr_String(&r.in.info->name,TEST_ALIASNAME); break;
 		    case 3 : init_samr_String(&r.in.info->description,
