@@ -173,7 +173,6 @@ NTSTATUS gums_make_domain(DOM_SID *sid, const char *name, const char *descriptio
 
 	ret = fns->set_object(go);
 
-done:
 	gums_destroy_object(&go);
 	return ret;
 }
@@ -208,7 +207,6 @@ NTSTATUS gums_make_alias(DOM_SID *sid, const char *name, const char *description
 
 	ret = fns->set_object(go);
 
-done:
 	gums_destroy_object(&go);
 	return ret;
 }

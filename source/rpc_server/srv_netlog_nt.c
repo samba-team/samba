@@ -762,4 +762,18 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	return status;
 }
 
+/*************************************************************************
+ _ds_enum_dom_trusts
+ *************************************************************************/
+NTSTATUS _ds_enum_dom_trusts(pipes_struct *p, DS_Q_ENUM_DOM_TRUSTS *q_u,
+			     DS_R_ENUM_DOM_TRUSTS *r_u)
+{
+	NTSTATUS status = NT_STATUS_OK;
 
+	/* We just return zero trusts for now. At least that way we're
+	   consistent with NetTrustedDomainList which is what the fallback
+	   for this function is. Both of these functions need to be
+	   reworked. */
+
+	return status;
+}
