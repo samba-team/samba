@@ -1,3 +1,10 @@
+2002-09-05  Johan Danielsson  <joda@pdc.kth.se>
+
+	* appl/kf/kf.c: fix warning string
+
+	* lib/krb5/log.c (krb5_vlog_msg): delay message formating till we
+	know we need it
+
 2002-09-04  Assar Westerlund  <assar@kth.se>
 
 	* kdc/kerberos5.c (encode_reply): correct error logging
