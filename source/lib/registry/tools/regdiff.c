@@ -175,15 +175,15 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 
 	for(i = HKEY_CLASSES_ROOT; i <= HKEY_PERFORMANCE_NLSTEXT; i++) {
 		struct registry_key *r1, *r2;
-		error = reg_get_hive(h1, i, &r1);
+		error = reg_get_predefined_key(h1, i, &r1);
 		if (!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Unable to open hive %s for backend 1\n", reg_get_hkey_name(i)));
+			DEBUG(0, ("Unable to open hive %s for backend 1\n", reg_get_predef_name(i)));
 			continue;
 		}
 		
-		error = reg_get_hive(h2, i, &r2);
+		error = reg_get_predefined_key(h2, i, &r2);
 		if (!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Unable to open hive %s for backend 2\n", reg_get_hkey_name(i)));
+			DEBUG(0, ("Unable to open hive %s for backend 2\n", reg_get_predef_name(i)));
 			continue;
 		}
 

@@ -48,7 +48,7 @@ static WERROR winreg_openhive (struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 	h = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY); 
 
-	error = reg_get_hive(ctx, hkey, (struct registry_key **)&h->data);
+	error = reg_get_predefined_key(ctx, hkey, (struct registry_key **)&h->data);
 	if (!W_ERROR_IS_OK(error)) {
 		return error;
 	}
