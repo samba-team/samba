@@ -255,7 +255,7 @@ static BOOL is_illegal_name( char *name )
   s = (unsigned char *)name;
   while( *s )
     {
-    skip = skip_multibyte_char( *s );
+    skip = get_character_len( *s );
     if( skip != 0 )
       {
       s += skip;
@@ -374,7 +374,7 @@ BOOL is_8_3( char *fname, BOOL check_case )
   dot_pos = NULL;
   while( *p )
     {
-    if( (skip = skip_multibyte_char( *p )) != 0 )
+    if( (skip = get_character_len( *p )) != 0 )
       p += skip;
     else 
       {
@@ -878,7 +878,7 @@ void mangle_name_83( char *s)
       *p++ = 0;
       while( *p && extlen < 3 )
         {
-        skip = skip_multibyte_char( *p );
+        skip = get_character_len( *p );
         switch( skip )
           {
           case 2: 
@@ -912,7 +912,7 @@ void mangle_name_83( char *s)
 
   while( *p && baselen < 5 )
     {
-    skip = skip_multibyte_char(*p);
+    skip = get_character_len(*p);
     switch( skip )
       {
       case 2:

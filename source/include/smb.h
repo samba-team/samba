@@ -1699,6 +1699,11 @@ enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
 #define DEFAULT_CLIENT_CODE_PAGE MSDOS_LATIN_1_CODEPAGE
 #endif /* KANJI */
 
+/* Global val set if multibyte codepage. */
+extern int global_is_multibyte_codepage;
+
+#define get_character_len(x) (global_is_multibyte_codepage ? skip_multibyte_char((x)) : 0)
+
 /* 
  * Size of buffer to use when moving files across filesystems. 
  */

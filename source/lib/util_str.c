@@ -343,7 +343,7 @@ void strlower(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else
@@ -396,7 +396,7 @@ void strupper(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else
@@ -440,16 +440,28 @@ BOOL strisnormal(char *s)
 void string_replace(char *s,char oldc,char newc)
 {
   size_t skip;
-  while (*s)
-  {
-    skip = skip_multibyte_char( *s );
-    if( skip != 0 )
-      s += skip;
-    else
-    {
+
+  /*
+   * sbcs optimization.
+   */
+  if(!global_is_multibyte_codepage) {
+    while (*s) {
       if (oldc == *s)
         *s = newc;
       s++;
+    }
+  } else {
+    while (*s)
+    {
+      skip = get_character_len( *s );
+      if( skip != 0 )
+        s += skip;
+      else
+      {
+        if (oldc == *s)
+          *s = newc;
+        s++;
+      }
     }
   }
 }
@@ -476,10 +488,17 @@ size_t str_charnum(const char *s)
 {
   size_t len = 0;
   
-  while (*s != '\0') {
-    int skip = skip_multibyte_char(*s);
-    s += (skip ? skip : 1);
-    len++;
+  /*
+   * sbcs optimization.
+   */
+  if(!global_is_multibyte_codepage) {
+    return strlen(s);
+  } else {
+    while (*s != '\0') {
+      int skip = get_character_len(*s);
+      s += (skip ? skip : 1);
+      len++;
+    }
   }
   return len;
 }
@@ -518,7 +537,7 @@ BOOL trim_string(char *s,const char *front,const char *back)
 
   if(back_len)
   {
-    if(!is_multibyte_codepage())
+    if(!global_is_multibyte_codepage)
     {
       s_len = strlen(s);
       while ((s_len >= back_len) && 
@@ -552,11 +571,20 @@ BOOL trim_string(char *s,const char *front,const char *back)
         size_t charcount = 0;
         char *mbp = s;
 
-        while(charcount < (mb_s_len - mb_back_len))
-        {
-          size_t skip = skip_multibyte_char(*mbp);
-          mbp += (skip ? skip : 1);
-          charcount++;
+        /*
+         * sbcs optimization.
+         */
+        if(!global_is_multibyte_codepage) {
+          while(charcount < (mb_s_len - mb_back_len)) {
+            mbp += 1;
+            charcount++;
+          }
+        } else {
+          while(charcount < (mb_s_len - mb_back_len)) {
+            size_t skip = skip_multibyte_char(*mbp);
+            mbp += (skip ? skip : 1);
+            charcount++;
+          }
         }
 
         /*
@@ -615,7 +643,7 @@ BOOL strhasupper(const char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else {
@@ -670,7 +698,7 @@ BOOL strhaslower(const char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else {
@@ -720,7 +748,7 @@ size_t count_chars(const char *s,char c)
   {
     while (*s) 
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else {
@@ -774,7 +802,7 @@ BOOL str_is_all(const char *s,char c)
   {
     while (*s)
     {
-      size_t skip = skip_multibyte_char( *s );
+      size_t skip = get_character_len( *s );
       if( skip != 0 )
         s += skip;
       else {
