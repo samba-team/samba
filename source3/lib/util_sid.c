@@ -55,6 +55,11 @@ DOM_SID global_sid_Builtin_Print_Operators;	/* Builtin print operators */
 DOM_SID global_sid_Builtin_Backup_Operators;	/* Builtin backup operators */
 DOM_SID global_sid_Builtin_Replicator;		/* Builtin replicator */
 
+#define SECURITY_NULL_SID_AUTHORITY    0
+#define SECURITY_WORLD_SID_AUTHORITY   1
+#define SECURITY_LOCAL_SID_AUTHORITY   2
+#define SECURITY_CREATOR_SID_AUTHORITY 3
+#define SECURITY_NT_AUTHORITY          5
 
 /*
  * An NT compatible anonymous token.
@@ -63,14 +68,14 @@ DOM_SID global_sid_Builtin_Replicator;		/* Builtin replicator */
 static DOM_SID anon_sid_array[3];
 
 NT_USER_TOKEN anonymous_token = {
-    3,
-    anon_sid_array
+	3,
+	anon_sid_array
 };
 
 static DOM_SID system_sid_array[4];
 NT_USER_TOKEN system_token = {
-    1,
-    system_sid_array
+	1,
+	system_sid_array
 };
 
 /****************************************************************************
@@ -81,13 +86,13 @@ const static struct {
 	enum SID_NAME_USE sid_type;
 	char *string;
 } sid_name_type[] = {
-	{SID_NAME_USER, "user"},
-	{SID_NAME_DOM_GRP, "domain group"},
-	{SID_NAME_DOMAIN, "domain"},
-	{SID_NAME_ALIAS, "local group"},
-	{SID_NAME_WKN_GRP, "well-known group"},
-	{SID_NAME_DELETED, "deleted account"},
-	{SID_NAME_INVALID, "invalid account"},
+	{SID_NAME_USER, "User"},
+	{SID_NAME_DOM_GRP, "Domain Group"},
+	{SID_NAME_DOMAIN, "Domain"},
+	{SID_NAME_ALIAS, "Local Group"},
+	{SID_NAME_WKN_GRP, "Well-known Group"},
+	{SID_NAME_DELETED, "Deleted Account"},
+	{SID_NAME_INVALID, "Invalid Account"},
 	{SID_NAME_UNKNOWN, "UNKNOWN"},
 
  	{SID_NAME_USE_NONE, NULL}
@@ -106,9 +111,7 @@ const char *sid_type_lookup(uint32 sid_type)
 
 	/* Default return */
 	return "SID *TYPE* is INVALID";
-	
 }
-
 
 /****************************************************************************
  Creates some useful well known sids
@@ -117,22 +120,30 @@ const char *sid_type_lookup(uint32 sid_type)
 void generate_wellknown_sids(void)
 {
 	static BOOL initialised = False;
+
 	if (initialised) 
 		return;
 
+	/* SECURITY_NULL_SID_AUTHORITY */
+	string_to_sid(&global_sid_NULL, "S-1-0-0");
+
+	/* SECURITY_WORLD_SID_AUTHORITY */
 	string_to_sid(&global_sid_World_Domain, "S-1-1");
 	string_to_sid(&global_sid_World, "S-1-1-0");
+
+	/* SECURITY_CREATOR_SID_AUTHORITY */
 	string_to_sid(&global_sid_Creator_Owner_Domain, "S-1-3");
 	string_to_sid(&global_sid_Creator_Owner, "S-1-3-0");
 	string_to_sid(&global_sid_Creator_Group, "S-1-3-1");
+
+	/* SECURITY_NT_AUTHORITY */
 	string_to_sid(&global_sid_NT_Authority, "S-1-5");
-	string_to_sid(&global_sid_System, "S-1-5-18");
-	string_to_sid(&global_sid_NULL, "S-1-0-0");
-	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
 	string_to_sid(&global_sid_Network, "S-1-5-2");
 	string_to_sid(&global_sid_Anonymous, "S-1-5-7");
+	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
+	string_to_sid(&global_sid_System, "S-1-5-18");
 
-	/* create well known builtin SIDs */
+	/* SECURITY_BUILTIN_DOMAIN_RID */
 	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 	string_to_sid(&global_sid_Builtin_Administrators, "S-1-5-32-544");
 	string_to_sid(&global_sid_Builtin_Users, "S-1-5-32-545");
@@ -195,40 +206,59 @@ void split_domain_name(const char *fullname, char *domain, char *name)
 			fullname, domain, name));
 }
 
+/****************************************************************************
+ Test if a SID is wellknown and resolvable.
+****************************************************************************/
+
+BOOL resolvable_wellknown_sid(DOM_SID *sid)
+{
+	uint32 ia = (sid->id_auth[5]) +
+			(sid->id_auth[4] << 8 ) +
+			(sid->id_auth[3] << 16) +
+			(sid->id_auth[2] << 24);
+
+	if (sid->sid_rev_num != SEC_DESC_REVISION || sid->num_auths < 1)
+		return False;
+
+	return (ia == SECURITY_WORLD_SID_AUTHORITY ||
+		ia == SECURITY_CREATOR_SID_AUTHORITY);
+}
+
 /*****************************************************************
  Convert a SID to an ascii string.
 *****************************************************************/
 
 char *sid_to_string(fstring sidstr_out, const DOM_SID *sid)
 {
-  char subauth[16];
-  int i;
-  uint32 ia;
+	char subauth[16];
+	int i;
+	uint32 ia;
   
-  if (!sid) {
-	  fstrcpy(sidstr_out, "(NULL SID)");
-	  return sidstr_out;
-  }
+	if (!sid) {
+		fstrcpy(sidstr_out, "(NULL SID)");
+		return sidstr_out;
+	}
 
-  /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-  ia = (sid->id_auth[5]) +
-	  (sid->id_auth[4] << 8 ) +
-	  (sid->id_auth[3] << 16) +
-	  (sid->id_auth[2] << 24);
+	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
+	ia = (sid->id_auth[5]) +
+		(sid->id_auth[4] << 8 ) +
+		(sid->id_auth[3] << 16) +
+		(sid->id_auth[2] << 24);
 
-  slprintf(sidstr_out, sizeof(fstring) - 1, "S-%u-%lu", (unsigned int)sid->sid_rev_num, (unsigned long)ia);
+	slprintf(sidstr_out, sizeof(fstring) - 1, "S-%u-%lu", (unsigned int)sid->sid_rev_num, (unsigned long)ia);
 
-  for (i = 0; i < sid->num_auths; i++) {
-    slprintf(subauth, sizeof(subauth)-1, "-%lu", (unsigned long)sid->sub_auths[i]);
-    fstrcat(sidstr_out, subauth);
-  }
+	for (i = 0; i < sid->num_auths; i++) {
+		slprintf(subauth, sizeof(subauth)-1, "-%lu", (unsigned long)sid->sub_auths[i]);
+		fstrcat(sidstr_out, subauth);
+	}
 
-  return sidstr_out;
+	return sidstr_out;
 }
 
-/*
-  useful function for debug lines
-*/
+/*****************************************************************
+ Useful function for debug lines.
+*****************************************************************/  
+
 const char *sid_string_static(const DOM_SID *sid)
 {
 	static fstring sid_str;
