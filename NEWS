@@ -1,3 +1,8 @@
+Changes in release 0.2b:
+
+ * bug fixes
+ * actually bump shared library versions
+
 Changes in release 0.2a:
 
  * a new program verify_krb5_conf for checking your /etc/krb5.conf
