@@ -564,24 +564,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 static void init_srv_r_net_share_enum(pipes_struct *p, SRV_R_NET_SHARE_ENUM *r_n,
 				      uint32 info_level, uint32 resume_hnd, BOOL all)  
 {
-	user_struct *user;
-
 	DEBUG(5,("init_srv_r_net_share_enum: %d\n", __LINE__));
-
-	/* Don't let anonymous users access this RPC */
-
-	if (!(user = get_valid_user_struct(p->vuid))) {
-		DEBUG(3, ("invalid vuid %d in init_srv_r_net_share_enum()\n",
-			  p->vuid));
-		r_n->status = WERR_ACCESS_DENIED;
-		return;
-	}
-
-	if (lp_restrict_anonymous() > 0 && user->guest) {
-		DEBUG(5, ("access denied to anonymous connection"));
-		r_n->status = WERR_ACCESS_DENIED;
-		return;
-	}
 
 	if (init_srv_share_info_ctr(p, &r_n->ctr, info_level,
 				    &resume_hnd, &r_n->total_entries, all)) {
@@ -1042,11 +1025,21 @@ WERROR _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 
 	DEBUG(5,("srv_net_srv_get_info: %d\n", __LINE__));
 
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to srv_net_srv_get_info\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
 	switch (q_u->switch_value) {
+
+		/* Technically level 102 should only be available to
+		   Administrators but there isn't anything super-secret
+		   here, as most of it is made up. */
+
 	case 102:
 		init_srv_info_102(&ctr->srv.sv102,
 		                  500, global_myname, 
-						string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH),
+				  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH),
 		                  lp_major_announce_version(), lp_minor_announce_version(),
 		                  lp_default_server_announce(),
 		                  0xffffffff, /* users */
@@ -1176,6 +1169,11 @@ WERROR _srv_net_share_enum_all(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R
 {
 	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
 
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to srv_net_share_enum_all\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
 	/* Create the list of shares for the response. */
 	init_srv_r_net_share_enum(p, r_u,
 				q_u->ctr.info_level,
@@ -1193,6 +1191,11 @@ WERROR _srv_net_share_enum_all(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R
 WERROR _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET_SHARE_ENUM *r_u)
 {
 	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
+
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to srv_net_share_enum\n"));
+		return WERR_ACCESS_DENIED;
+	}
 
 	/* Create the list of shares for the response. */
 	init_srv_r_net_share_enum(p, r_u,

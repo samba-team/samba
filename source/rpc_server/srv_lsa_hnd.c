@@ -249,3 +249,31 @@ void close_policy_by_pipe(pipes_struct *p)
 		DEBUG(10,("close_policy_by_pipe: deleted handle list for pipe %s\n", p->name ));
 	}
 }
+
+/*******************************************************************
+Shall we allow access to this rpc?  Currently this function
+implements the 'restrict anonymous' setting by denying access to
+anonymous users if the restrict anonymous level is > 0.  Further work
+will be checking a security descriptor to determine whether a user
+token has enough access to access the pipe.
+********************************************************************/
+
+BOOL pipe_access_check(pipes_struct *p)
+{
+	/* Don't let anonymous users access this RPC if restrict
+	   anonymous > 0 */
+
+	if (lp_restrict_anonymous() > 0) {
+		user_struct *user = get_valid_user_struct(p->vuid);
+
+		if (!user) {
+			DEBUG(3, ("invalid vuid %d\n", p->vuid));
+			return False;
+		}
+
+		if (user->guest)
+			return False;
+	}
+
+	return True;
+}
