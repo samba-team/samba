@@ -289,7 +289,7 @@ size_t sid_size(const struct dom_sid *sid)
 }
 
 /*****************************************************************
- Return the binary string representation of a DOM_SID.
+ Return the binary string representation of a struct dom_sid.
  Caller must free.
 *****************************************************************/
 
