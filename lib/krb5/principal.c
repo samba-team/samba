@@ -746,6 +746,7 @@ krb5_425_conv_principal_ext(krb5_context context,
 		krb5_set_error_string (context, "malloc: out of memory");
 		return ENOMEM;
 	    }
+	    strlwr(low_inst);
 	    ret = krb5_make_principal(context, &pr, realm, name, low_inst,
 				      NULL);
 	    free (low_inst);
