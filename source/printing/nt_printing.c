@@ -2508,8 +2508,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 {
 	pstring key;
 	NT_PRINTER_INFO_LEVEL_2 info;
-	int 		len = 0,
-			devmode_length = 0;
+	int 		len = 0;
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 		
