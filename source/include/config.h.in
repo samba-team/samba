@@ -870,6 +870,9 @@
 /* Define if you have the dl library (-ldl).  */
 #undef HAVE_LIBDL
 
+/* Define if you have the gen library (-lgen).  */
+#undef HAVE_LIBGEN
+
 /* Define if you have the inet library (-linet).  */
 #undef HAVE_LIBINET
 

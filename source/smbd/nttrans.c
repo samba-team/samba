@@ -806,8 +806,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					restore_case_semantics(file_attributes);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
+#ifdef EROFS
+			} else if (((errno == EACCES) || (errno == EROFS)) && stat_open_only) {
+#else /* !EROFS */
 			} else if (errno == EACCES && stat_open_only) {
-
+#endif
 				/*
 				 * We couldn't open normally and all we want
 				 * are the permissions. Try and do a stat open.
@@ -1132,7 +1135,11 @@ static int call_nt_transact_create(connection_struct *conn,
 				restore_case_semantics(file_attributes);
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
-		} else if(errno == EACCES && stat_open_only) {
+#ifdef EROFS
+		} else if (((errno == EACCES) || (errno == EROFS)) && stat_open_only) {
+#else /* !EROFS */
+		} else if (errno == EACCES && stat_open_only) {
+#endif
 
 			/*
 			 * We couldn't open normally and all we want

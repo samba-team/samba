@@ -435,6 +435,9 @@ AC_LIBTESTFUNC(sec, putprpwnam)
 AC_LIBTESTFUNC(security, set_auth_parameters)
 AC_LIBTESTFUNC(sec, set_auth_parameters)
 
+# UnixWare 7.x has its getspnam in -lgen
+AC_LIBTESTFUNC(gen, getspnam)
+
 AC_LIBTESTFUNC(security, getspnam)
 AC_LIBTESTFUNC(sec, getspnam)
 

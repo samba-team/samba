@@ -1076,15 +1076,6 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
     case ANN_GetBackupListReq:
     {
       debug_browse_data(buf, len);
-
-      /* This is one occasion where we change a subnet that is
-        given to us. If the packet was sent to WORKGROUP<1b> instead
-        of WORKGROUP<1d> then it was unicast to us a domain master
-        browser. Change subrec to unicast.
-      */
-      if(dgram->dest_name.name_type == 0x1b)
-        subrec = unicast_subnet;
-
       process_get_backup_list_request(subrec, p, buf+1);
       break;
     }

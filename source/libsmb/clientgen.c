@@ -773,8 +773,12 @@ BOOL cli_session_setup(struct cli_state *cli,
 		if ((cli->sec_mode & 2) && passlen != 24) {
 			passlen = 24;
 			ntpasslen = 24;
-			SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
-			SMBNTencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
+			fstrcpy(pword, pass);
+			unix_to_dos(pword,True);
+			fstrcpy(ntpword, ntpass);;
+			unix_to_dos(ntpword,True);
+			SMBencrypt((uchar *)pword,(uchar *)cli->cryptkey,(uchar *)pword);
+			SMBNTencrypt((uchar *)ntpword,(uchar *)cli->cryptkey,(uchar *)ntpword);
 		} else {
 			fstrcpy(pword, pass);
 			unix_to_dos(pword,True);
@@ -867,11 +871,15 @@ BOOL cli_session_setup(struct cli_state *cli,
         server_type = skip_string(server_os,1);
         server_domain = skip_string(server_type,1);
         fstrcpy(cli->server_os, server_os);
+		dos_to_unix(cli->server_os, True);
         fstrcpy(cli->server_type, server_type);
+		dos_to_unix(cli->server_type, True);
         fstrcpy(cli->server_domain, server_domain);
+		dos_to_unix(cli->server_domain, True);
       }
 
       fstrcpy(cli->user_name, user);
+      dos_to_unix(cli->user_name, True);
 
       return True;
 }
@@ -902,7 +910,7 @@ send a tconX
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    char *share, char *dev, char *pass, int passlen)
 {
-	fstring fullshare, pword;
+	fstring fullshare, pword, dos_pword;
 	char *p;
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -916,10 +924,23 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	}
 
 	if ((cli->sec_mode & 2) && *pass && passlen != 24) {
+		/*
+		 * Non-encrypted passwords - convert to DOS codepage before encryption.
+		 */
 		passlen = 24;
-		SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
+		fstrcpy(dos_pword,pass);
+		unix_to_dos(dos_pword,True);
+		SMBencrypt((uchar *)dos_pword,(uchar *)cli->cryptkey,(uchar *)pword);
 	} else {
-		memcpy(pword, pass, passlen);
+		if(!(cli->sec_mode & 2)) {
+			/*
+			 * Non-encrypted passwords - convert to DOS codepage before using.
+			 */
+			fstrcpy(pword,pass);
+			unix_to_dos(pword,True);
+		} else {
+			memcpy(pword, pass, passlen);
+		}
 	}
 
 	slprintf(fullshare, sizeof(fullshare)-1,
@@ -941,6 +962,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	fstrcpy(p,fullshare);
 	p = skip_string(p,1);
 	pstrcpy(p,dev);
+	unix_to_dos(p,True);
 
 	SCVAL(cli->inbuf,smb_rcls, 1);
 
@@ -1013,9 +1035,11 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
         p = smb_buf(cli->outbuf);
         *p++ = 4;
         pstrcpy(p,fname_src);
+        unix_to_dos(p,True);
         p = skip_string(p,1);
         *p++ = 4;
         pstrcpy(p,fname_dst);
+        unix_to_dos(p,True);
 
         cli_send_smb(cli);
         if (!cli_receive_smb(cli)) {
@@ -1050,6 +1074,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
 	pstrcpy(p,fname);
+    unix_to_dos(p,True);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -1082,6 +1107,7 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
 	pstrcpy(p,dname);
+    unix_to_dos(p,True);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -1114,6 +1140,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
 	pstrcpy(p,dname);
+    unix_to_dos(p,True);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -1158,6 +1185,7 @@ int cli_nt_create(struct cli_state *cli, char *fname)
 
 	p = smb_buf(cli->outbuf);
 	pstrcpy(p,fname);
+    unix_to_dos(p,True);
 	p = skip_string(p,1);
 
 	cli_send_smb(cli);
@@ -1237,6 +1265,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
   
 	p = smb_buf(cli->outbuf);
 	pstrcpy(p,fname);
+    unix_to_dos(p,True);
 	p = skip_string(p,1);
 
 	cli_send_smb(cli);
@@ -1692,6 +1721,7 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 	p = smb_buf(cli->outbuf);
 	*p = 4;
 	pstrcpy(p+1, fname);
+    unix_to_dos(p+1,True);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -1741,6 +1771,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 	p = smb_buf(cli->outbuf);
 	*p = 4;
 	pstrcpy(p+1, fname);
+    unix_to_dos(p+1,True);
 	p = skip_string(p,1);
 	*p = 4;
 
@@ -1777,6 +1808,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	memset(param, 0, param_len);
 	SSVAL(param, 0, SMB_INFO_STANDARD);
 	pstrcpy(&param[6], fname);
+    unix_to_dos(&param[6],True);
 
 	do {
 		ret = (cli_send_trans(cli, SMBtrans2, 
@@ -1850,6 +1882,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	memset(param, 0, param_len);
 	SSVAL(param, 0, SMB_QUERY_FILE_ALL_INFO);
 	pstrcpy(&param[6], fname);
+    unix_to_dos(&param[6],True);
 
 	if (!cli_send_trans(cli, SMBtrans2, 
                             NULL, 0,                      /* name, length */
@@ -1995,6 +2028,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->size = IVAL(p,16);
 				finfo->mode = CVAL(p,24);
 				pstrcpy(finfo->name,p+27);
+				dos_to_unix(finfo->name,True);
 			}
 			return(28 + CVAL(p,26));
 
@@ -2007,6 +2041,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->size = IVAL(p,16);
 				finfo->mode = CVAL(p,24);
 				pstrcpy(finfo->name,p+31);
+				dos_to_unix(finfo->name,True);
 			}
 			return(32 + CVAL(p,30));
 
@@ -2020,6 +2055,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->size = IVAL(p,20);
 				finfo->mode = CVAL(p,28);
 				pstrcpy(finfo->name,p+33);
+				dos_to_unix(finfo->name,True);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -2032,6 +2068,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->size = IVAL(p,20);
 				finfo->mode = CVAL(p,28);
 				pstrcpy(finfo->name,p+37);
+				dos_to_unix(finfo->name,True);
 			}
 			return(SVAL(p,4)+4);
 			
@@ -2068,6 +2105,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				p += 2; /* short name len? */
 				p += 24; /* short name? */	  
 				StrnCpy(finfo->name,p,MIN(sizeof(finfo->name)-1,namelen));
+				dos_to_unix(finfo->name,True);
 				return(ret);
 			}
 			return(SVAL(p,0));
@@ -2108,6 +2146,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 	pstring param;
 	
 	pstrcpy(mask,Mask);
+	unix_to_dos(mask,True);
 	
 	while (ff_eos == 0) {
 		loop_count++;
@@ -2201,7 +2240,9 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 		} else {
 			pstrcpy(mask,"");
 		}
-  
+ 
+		dos_to_unix(mask, True);
+ 
 		/* and add them to the dirlist pool */
 		dirlist = Realloc(dirlist,dirlist_len + data_len);
 
@@ -2261,6 +2302,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   char *rparam = NULL;
   char *rdata = NULL;
   int rprcnt, rdrcnt;
+  pstring dos_new_password;
 
   if (strlen(user) >= sizeof(fstring)-1) {
     DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
@@ -2286,19 +2328,22 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    */
   memset(upper_case_old_pw, '\0', sizeof(upper_case_old_pw));
   fstrcpy(upper_case_old_pw, old_password);
+  unix_to_dos(upper_case_old_pw,True);
   strupper(upper_case_old_pw);
   E_P16((uchar *)upper_case_old_pw, old_pw_hash);
 
-	if (!make_oem_passwd_hash( data, new_password, old_pw_hash, False))
-	{
-		return False;
-	}
+  pstrcpy(dos_new_password, new_password);
+  unix_to_dos(dos_new_password, True);
+
+  if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
+    return False;
 
   /* 
    * Now place the old password hash in the data.
    */
   memset(upper_case_new_pw, '\0', sizeof(upper_case_new_pw));
   fstrcpy(upper_case_new_pw, new_password);
+  unix_to_dos(upper_case_new_pw,True);
   strupper(upper_case_new_pw);
 
   E_P16((uchar *)upper_case_new_pw, new_pw_hash);
@@ -2359,6 +2404,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	     numprots++) {
 		*p++ = 2;
 		pstrcpy(p,prots[numprots].name);
+		unix_to_dos(p,True);
 		p += strlen(p) + 1;
 	}
 
@@ -3005,6 +3051,7 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
 	safe_strcpy(p,path2,strlen(path2));
+	unix_to_dos(p,True);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -3035,9 +3082,11 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
 	pstrcpy(p,username);
+	unix_to_dos(p,True);
 	p = skip_string(p,1);
 	*p++ = 4;
 	pstrcpy(p,host);
+	unix_to_dos(p,True);
 	p = skip_string(p,1);
 	
 	set_message(cli->outbuf,0,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
