@@ -837,7 +837,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	pstring fname;
 	char *p, *q, *pdata = *ppdata;
 	uint32 reskey=0;
-	int prev_dirpos=0;
+	long prev_dirpos=0;
 	int mode=0;
 	SMB_OFF_T file_size = 0;
 	SMB_BIG_UINT allocation_size = 0;
@@ -866,10 +866,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 	while (!found) {
 		BOOL got_match;
-
 		/* Needed if we run out of space */
-		prev_dirpos = TellDir(conn->dirptr);
-		dname = ReadDirName(conn->dirptr);
+		long curr_dirpos = prev_dirpos = TellDir(conn->dirptr);
+		dname = ReadDirName(conn->dirptr,&curr_dirpos);
 
 		/*
 		 * Due to bugs in NT client redirectors we are not using
@@ -880,8 +879,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		reskey = 0;
 
-		DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%lx now at offset %d\n",
-			(long)conn->dirptr,TellDir(conn->dirptr)));
+		DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%lx now at offset %ld\n",
+			(long)conn->dirptr,curr_dirpos));
       
 		if (!dname) 
 			return(False);
@@ -1649,7 +1648,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	/* Get the attr mask from the dptr */
 	dirtype = dptr_attr(dptr_num);
 
-	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%d)\n",
+	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%ld)\n",
 		dptr_num, mask, dirtype, 
 		(long)conn->dirptr,
 		TellDir(conn->dirptr)));
@@ -1671,6 +1670,16 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	 */
 
 	if(*resume_name && !continue_bit) {
+		long current_pos = 0;
+		/*
+		 * Remember, mangle_map is called by
+		 * get_lanman2_dir_entry(), so the resume name
+		 * could be mangled. Ensure we check the unmangled name.
+		 */
+
+		if (mangle_is_mangled(resume_name)) {
+			mangle_check_cache(resume_name, sizeof(resume_name)-1);
+		}
 
 		/*
 		 * Fix for NT redirector problem triggered by resume key indexes
@@ -1678,77 +1687,10 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		 * and instead look for the filename to continue from (also given
 		 * to us by NT/95/smbfs/smbclient). If no other scans have been done between the
 		 * findfirst/findnext (as is usual) then the directory pointer
-		 * should already be at the correct place. Check this by scanning
-		 * backwards looking for an exact (ie. case sensitive) filename match. 
-		 * If we get to the beginning of the directory and haven't found it then scan
-		 * forwards again looking for a match. JRA.
+		 * should already be at the correct place.
 		 */
 
-		int current_pos, start_pos;
-		const char *dname = NULL;
-		pstring dname_pstring;
-		void *dirptr = conn->dirptr;
-		start_pos = TellDir(dirptr);
-		for(current_pos = start_pos; current_pos >= 0; current_pos--) {
-			DEBUG(7,("call_trans2findnext: seeking to pos %d\n", current_pos));
-
-			SeekDir(dirptr, current_pos);
-			dname = ReadDirName(dirptr);
-			if (dname) {
-				/*
-				 * Remember, mangle_map is called by
-				 * get_lanman2_dir_entry(), so the resume name
-				 * could be mangled. Ensure we do the same
-				 * here.
-				 */
-				
-				/* make sure we get a copy that mangle_map can modify */
-
-				pstrcpy(dname_pstring, dname);
-				mangle_map( dname_pstring, False, True, SNUM(conn));
-				
-				if(strcsequal( resume_name, dname_pstring)) {
-					SeekDir(dirptr, current_pos+1);
-					DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
-					break;
-				}
-			}
-		}
-
-		/*
-		 * Scan forward from start if not found going backwards.
-		 */
-
-		if(current_pos < 0) {
-			DEBUG(7,("call_trans2findnext: notfound: seeking to pos %d\n", start_pos));
-			SeekDir(dirptr, start_pos);
-			for(current_pos = start_pos; (dname = ReadDirName(dirptr)) != NULL; ++current_pos) {
-
-				/*
-				 * Remember, mangle_map is called by
-				 * get_lanman2_dir_entry(), so the resume name
-				 * could be mangled. Ensure we do the same
-				 * here.
-				 */
-
-				if(dname) {
-					/* make sure we get a copy that mangle_map can modify */
-					
-					pstrcpy(dname_pstring, dname);
-					mangle_map(dname_pstring, False, True, SNUM(conn));
-
-					if(strcsequal( resume_name, dname_pstring)) {
-						SeekDir(dirptr, current_pos+1);
-						DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
-						break;
-					}
-				}
-			} /* end for */
-		} /* end if current_pos */
-		/* Can't find the name. Just resume from where we were... */
-		if (dname == 0) {
-			SeekDir(dirptr, start_pos);
-		}
+		finished = !SearchDir(conn->dirptr, resume_name, &current_pos, True);
 	} /* end if resume_name && !continue_bit */
 
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {

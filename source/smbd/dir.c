@@ -612,9 +612,10 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 		return(False);
 
 	while (!found) {
-		dname = ReadDirName(conn->dirptr);
+		long curoff = TellDir(conn->dirptr);
+		dname = ReadDirName(conn->dirptr, &curoff);
 
-		DEBUG(6,("readdir on dirptr 0x%lx now at offset %d\n",
+		DEBUG(6,("readdir on dirptr 0x%lx now at offset %ld\n",
 			(long)conn->dirptr,TellDir(conn->dirptr)));
       
 		if (dname == NULL) 
@@ -666,14 +667,6 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 
 	return(found);
 }
-
-typedef struct {
-	int pos;
-	int numentries;
-	int mallocsize;
-	char *data;
-	char *current;
-} Dir;
 
 /*******************************************************************
  Check to see if a user can read a file. This is only approximate,
@@ -806,117 +799,74 @@ static BOOL file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 	return True;
 }
 
+#define NAME_CACHE_SIZE 100
+
+struct name_cache_entry {
+	char *name;
+	long offset;
+};
+
+typedef struct {
+	connection_struct *conn;
+	DIR *dir;
+	long offset;
+	char *dir_path;
+	struct name_cache_entry *name_cache;
+	unsigned int name_cache_index;
+	BOOL hide_unreadable;
+	BOOL hide_unwriteable;
+	BOOL hide_special;
+	BOOL use_veto;
+	BOOL finished;
+} Dir;
+
 /*******************************************************************
  Open a directory.
 ********************************************************************/
 
 void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 {
-	Dir *dirp;
-	const char *n;
-	DIR *p = SMB_VFS_OPENDIR(conn,name);
-	int used=0;
-
-	if (!p)
-		return(NULL);
-	dirp = SMB_MALLOC_P(Dir);
+	Dir *dirp = SMB_MALLOC_P(Dir);
 	if (!dirp) {
-		DEBUG(0,("Out of memory in OpenDir\n"));
-		SMB_VFS_CLOSEDIR(conn,p);
-		return(NULL);
+		return NULL;
 	}
-	dirp->pos = dirp->numentries = dirp->mallocsize = 0;
-	dirp->data = dirp->current = NULL;
+	ZERO_STRUCTP(dirp);
 
-	while (True) {
-		int l;
-		BOOL normal_entry = True;
-		SMB_STRUCT_STAT st;
-		char *entry = NULL;
+	dirp->conn = conn;
+	dirp->use_veto = use_veto;
 
-		if (used == 0) {
-			n = ".";
-			normal_entry = False;
-		} else if (used == 2) {
-			n = "..";
-			normal_entry = False;
-		} else {
-			n = vfs_readdirname(conn, p);
-			if (n == NULL)
-				break;
-			if ((strcmp(".",n) == 0) ||(strcmp("..",n) == 0))
-				continue;
-			normal_entry = True;
-	    	}
-
-		ZERO_STRUCT(st);
-		l = strlen(n)+1;
-
-		/* If it's a vetoed file, pretend it doesn't even exist */
-		if (normal_entry && use_veto && conn && IS_VETO_PATH(conn, n))
-			continue;
-
-		/* Honour _hide unreadable_ option */
-		if (normal_entry && conn && lp_hideunreadable(SNUM(conn))) {
-			int ret=0;
-      
-			if (entry || asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
-				ret = user_can_read_file(conn, entry, &st);
-			}
-			if (!ret) {
-				SAFE_FREE(entry);
-				continue;
-			}
-		}
-
-		/* Honour _hide unwriteable_ option */
-		if (normal_entry && conn && lp_hideunwriteable_files(SNUM(conn))) {
-			int ret=0;
-      
-			if (entry || asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
-				ret = user_can_write_file(conn, entry, &st);
-			}
-			if (!ret) {
-				SAFE_FREE(entry);
-				continue;
-			}
-		}
-
-		/* Honour _hide_special_ option */
-		if (normal_entry && conn && lp_hide_special_files(SNUM(conn))) {
-			int ret=0;
-      
-			if (entry || asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
-				ret = file_is_special(conn, entry, &st);
-			}
-			if (ret) {
-				SAFE_FREE(entry);
-				continue;
-			}
-		}
-
-		SAFE_FREE(entry);
-
-		if (used + l > dirp->mallocsize) {
-			int s = MAX(used+l,used+2000);
-			char *r;
-			r = (char *)SMB_REALLOC(dirp->data,s);
-			if (!r) {
-				DEBUG(0,("Out of memory in OpenDir\n"));
-					break;
-			}
-			dirp->data = r;
-			dirp->mallocsize = s;
-			dirp->current = dirp->data;
-		}
-
-		safe_strcpy_base(dirp->data+used,n, dirp->data, dirp->mallocsize);
-		used += l;
-		dirp->numentries++;
+	dirp->dir_path = SMB_STRDUP(name);
+	if (!dirp->dir_path) {
+		goto fail;
+	}
+	dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_path);
+	if (!dirp->dir) {
+		DEBUG(5,("OpenDir: Can't open %s. %s\n", dirp->dir_path, strerror(errno) ));
+		goto fail;
 	}
 
-	SMB_VFS_CLOSEDIR(conn,p);
+	dirp->name_cache = SMB_CALLOC_ARRAY(struct name_cache_entry, NAME_CACHE_SIZE);
+	if (!dirp->name_cache) {
+		goto fail;
+	}
+
+	dirp->hide_unreadable = lp_hideunreadable(SNUM(conn));
+	dirp->hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
+	dirp->hide_special = lp_hide_special_files(SNUM(conn));
+
 	return((void *)dirp);
+
+  fail:
+
+	if (dirp) {
+		if (dirp->dir) {
+			SMB_VFS_CLOSEDIR(conn,dirp->dir);
+		}
+		SAFE_FREE(dirp->dir_path);
+		SAFE_FREE(dirp->name_cache);
+		SAFE_FREE(dirp);
+	}
+	return NULL;
 }
 
 
@@ -924,65 +874,195 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
  Close a directory.
 ********************************************************************/
 
-void CloseDir(void *p)
+int CloseDir(void *p)
 {
-	if (!p)
-		return;    
-	SAFE_FREE(((Dir *)p)->data);
-	SAFE_FREE(p);
+	int i, ret = 0;
+	Dir *dirp = (Dir *)p;
+
+	if (dirp->dir) {
+		ret = SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
+	}
+	SAFE_FREE(dirp->dir_path);
+	if (dirp->name_cache) {
+		for (i = 0; i < NAME_CACHE_SIZE; i++) {
+			SAFE_FREE(dirp->name_cache[i].name);
+		}
+	}
+	SAFE_FREE(dirp->name_cache);
+	SAFE_FREE(dirp);
+	return ret;
 }
 
 /*******************************************************************
- Read from a directory.
+ Set a directory into an inactive state.
 ********************************************************************/
 
-const char *ReadDirName(void *p)
+static void SleepDir(Dir *dirp)
 {
-	char *ret;
+	if (dirp->dir) {
+		SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
+		dirp->dir = 0;
+	}
+	dirp->offset = 0;
+}
+
+/*******************************************************************
+ Wake a directory into a known state.
+********************************************************************/
+
+static int WakeDir(Dir *dirp, long offset)
+{
+	if (!dirp->dir) {
+		dirp->dir = SMB_VFS_OPENDIR(dirp->conn, dirp->dir_path);
+		if (!dirp->dir) {
+			DEBUG(0,("WakeDir: Can't open %s. %s\n", dirp->dir_path, strerror(errno) ));
+			dirp->finished = True;
+			return -1;
+		}
+	}
+	if (offset != dirp->offset) {
+		SMB_VFS_SEEKDIR(dirp->conn, dirp->dir, offset);
+		dirp->offset = SMB_VFS_TELLDIR(dirp->conn, dirp->dir);
+		if (dirp->offset != offset) {
+			DEBUG(0,("WakeDir: in path %s. offset changed %ld -> %ld\n",
+				dirp->dir_path, offset, dirp->offset ));
+			return -1;
+		}
+	}
+	return 0;
+}
+
+/*******************************************************************
+ Read from a directory. Also return current offset.
+********************************************************************/
+
+const char *ReadDirName(void *p, long *poffset)
+{
+	const char *n;
 	Dir *dirp = (Dir *)p;
+	connection_struct *conn = dirp->conn;
 
-	if (!dirp || !dirp->current || dirp->pos >= dirp->numentries)
-		return(NULL);
+	if (WakeDir(dirp, *poffset) == -1) {
+		return NULL;
+	}
 
-	ret = dirp->current;
-	dirp->current = skip_string(dirp->current,1);
-	dirp->pos++;
+	while ((n = vfs_readdirname(conn, dirp->dir))) {
+		struct name_cache_entry *e;
 
-	return(ret);
+		if (!((strcmp(".",n) == 0) || (strcmp("..",n) == 0))) {
+			/* If it's a vetoed file, pretend it doesn't even exist */
+			if (dirp->use_veto && IS_VETO_PATH(conn, n)) {
+				continue;
+			}
+
+			if (dirp->hide_unreadable || dirp->hide_unwriteable || dirp->hide_special) {
+				SMB_STRUCT_STAT st;
+				ZERO_STRUCT(st);
+				char *entry = NULL;
+
+				if (asprintf(&entry, "%s/%s/%s", conn->origpath, dirp->dir_path, n) == -1) {
+					return NULL;
+				}
+				/* Honour _hide unreadable_ option */
+				if (dirp->hide_unreadable && !user_can_read_file(conn, entry, &st)) {
+					SAFE_FREE(entry);
+					continue;
+				}
+				/* Honour _hide unwriteable_ option */
+				if (dirp->hide_unwriteable && !user_can_write_file(conn, entry, &st)) {
+					SAFE_FREE(entry);
+					continue;
+				}
+				/* Honour _hide_special_ option */
+				if (dirp->hide_special && !file_is_special(conn, entry, &st)) {
+					SAFE_FREE(entry);
+					continue;
+				}
+				SAFE_FREE(entry);
+			}
+		}
+
+		dirp->offset = SMB_VFS_TELLDIR(conn, dirp->dir);
+		if (dirp->offset == -1) {
+			return NULL;
+		}
+		dirp->name_cache_index = (dirp->name_cache_index+1) % NAME_CACHE_SIZE;
+
+		e = &dirp->name_cache[dirp->name_cache_index];
+		SAFE_FREE(e->name);
+		e->name = SMB_STRDUP(n);
+		*poffset = e->offset= dirp->offset;
+		return e->name;
+	}
+
+	dirp->finished = True;
+	SleepDir(dirp);
+	return NULL;
 }
 
 /*******************************************************************
  Seek a dir.
 ********************************************************************/
 
-BOOL SeekDir(void *p,int pos)
+BOOL SeekDir(void *p,long offset)
 {
 	Dir *dirp = (Dir *)p;
-
-	if (!dirp)
-		return(False);
-
-	if (pos < dirp->pos) {
-		dirp->current = dirp->data;
-		dirp->pos = 0;
-	}
-
-	while (dirp->pos < pos && ReadDirName(p))
-		;
-
-	return (dirp->pos == pos);
+	return (WakeDir(dirp, offset) != -1);
 }
 
 /*******************************************************************
  Tell a dir position.
 ********************************************************************/
 
-int TellDir(void *p)
+long TellDir(void *p)
 {
 	Dir *dirp = (Dir *)p;
+	return(dirp->offset);
+}
 
-	if (!dirp)
-		return(-1);
-  
-	return(dirp->pos);
+/*******************************************************************
+ Find an entry by name. Leave us at the offset after it.
+********************************************************************/
+
+BOOL SearchDir(void *p, const char *name, long *poffset, BOOL case_sensitive)
+{
+	int i;
+	Dir *dirp = (Dir *)p;
+	const char *entry;
+	connection_struct *conn = dirp->conn;
+
+	/* Re-create dir but don't seek. */
+	if (WakeDir(dirp, dirp->offset) == -1) {
+		return False;
+	}
+
+	/* Search back in the name cache. */
+	for (i = dirp->name_cache_index; i >= 0; i--) {
+		struct name_cache_entry *e = &dirp->name_cache[i];
+		if (e->name && (case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
+			*poffset = e->offset;
+			WakeDir(dirp, e->offset);
+			return True;
+		}
+	}
+	for (i = NAME_CACHE_SIZE-1; i > dirp->name_cache_index; i--) {
+		struct name_cache_entry *e = &dirp->name_cache[i];
+		if (e->name && (case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
+			*poffset = e->offset;
+			WakeDir(dirp, e->offset);
+			return True;
+		}
+	}
+
+	/* Not found in the name cache. Rewind directory and start from scratch. */
+	SMB_VFS_REWINDDIR(conn, dirp->dir);
+	*poffset = 0;
+	while ((entry = ReadDirName(dirp, poffset))) {
+		if (case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
+			return True;
+		}
+	}
+
+	SleepDir(dirp);
+	return False;
 }
