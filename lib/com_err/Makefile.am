@@ -2,14 +2,18 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
+YFLAGS = -d
+
 INCLUDES = -I$(top_builddir)/include -I$(srcdir)
 
 lib_LIBRARIES = libcom_err.a
 
 bin_PROGRAMS = compile_et
 
-libcom_err_a_SOURCES = error.c comerr.c
+compile_et_SOURCES = compile_et.c parse.y lex.l
 
-compile_et: $(srcdir)/compile_et.in
-	sed -e 's/@awk@/$(AWK)/' -e "/#awksrc/r $(srcdir)/compile_et.awk" $(srcdir)/compile_et.in > compile_et
-	chmod +x compile_et
+libcom_err_a_SOURCES = error.c com_err.c
+
+$(compile_et_OBJECTS): parse.h
+
+compile_et_LDADD = -L../roken -lroken
