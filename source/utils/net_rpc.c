@@ -1005,26 +1005,32 @@ rpc_user_info_internals(const DOM_SID *domain_sid, const char *domain_name,
 	result = cli_samr_query_usergroups(cli, mem_ctx, &user_pol,
 					   &num_rids, &user_gids);
 
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
 	/* Look up rids */
 
-	rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
+	if (rids) {
+		rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
 
-	for (i = 0; i < num_rids; i++)
-                rids[i] = user_gids[i].g_rid;
+		for (i = 0; i < num_rids; i++)
+                	rids[i] = user_gids[i].g_rid;
 
-	result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol,
-				      flags, num_rids, rids,
-				      &num_names, &names, &name_types);
+		result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol,
+				      	      flags, num_rids, rids,
+				      	      &num_names, &names, &name_types);
 
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+
+		/* Display results */
+
+		for (i = 0; i < num_names; i++)
+			printf("%s\n", names[i]);
 	}
-
-	/* Display results */
-
-	for (i = 0; i < num_names; i++)
-		printf("%s\n", names[i]);
-
+	else {
+		printf("no groups\n");
+	}
  done:
 	return result;
 }
