@@ -563,10 +563,10 @@ kadm5_ad_create_principal(void *server_handle,
 #ifdef OPENLDAP
     LDAPMod *attrs[7], rattrs[6], *a;
     char *useraccvals[2] = { NULL, NULL }, 
-	*samvals[2], *dnsvals[2], *spnvals[4], *tv[2];
+	*samvals[2], *dnsvals[2], *spnvals[5], *tv[2];
     char *ocvals_spn[] = { "top", "person", "organizationalPerson", 
 			   "user", "computer", NULL}; 
-    char *p, *realmless_p, *dn = NULL;
+    char *p, *realmless_p, *p_msrealm = NULL, *dn = NULL;
     const char *fqdn;
     char *s, *samname = NULL, *short_spn = NULL;
     int ret, i;
@@ -634,19 +634,26 @@ kadm5_ad_create_principal(void *server_handle,
 	    errno = ENOMEM;
 	    goto out;
 	}
-	{
-	    char *p1, *p2;
-	    
-	    p1 = strchr(short_spn, '.');
-	    p2 = strrchr(short_spn, '@');
-	    if (p1 == NULL && p2 == NULL) {
-		free(short_spn);
-		short_spn = NULL;
-	    } else {
-		memmove(p1, p2, strlen(p2) + 1);
-	    }
+	s = strchr(short_spn, '.');
+	if (s) {
+	    *s = '\0';
+	} else {
+	    free(short_spn);
+	    short_spn = NULL;
 	}
 
+	p_msrealm = strdup(p);
+	if (p_msrealm == NULL) {
+	    errno = ENOMEM;
+	    goto out;
+	}
+	s = strrchr(p_msrealm, '@');
+	if (s) {
+	    *s = '/';
+	} else {
+	    free(p_msrealm);
+	    p_msrealm = NULL;
+	}
 
 	asprintf(&dn, "cn=%s, cn=Computers, %s", fqdn, CTX2BASE(context));
 	if (dn == NULL) {
@@ -688,10 +695,14 @@ kadm5_ad_create_principal(void *server_handle,
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "servicePrincipalName";
 	a->mod_values = spnvals;
-	spnvals[0] = p;
-	spnvals[1] = realmless_p;
-	spnvals[2] = short_spn; /* possibly NULL */
-	spnvals[3] = NULL;
+	i = 0;
+	spnvals[i++] = p;
+	spnvals[i++] = realmless_p;
+	if (short_spn)
+	    spnvals[i++] = short_spn;
+	if (p_msrealm)
+	    spnvals[i++] = p_msrealm;
+	spnvals[i++] = NULL;
 	a++;
 
 	a->mod_op = LDAP_MOD_ADD;
@@ -749,6 +760,8 @@ kadm5_ad_create_principal(void *server_handle,
 	free(samname);
     if (short_spn)
 	free(short_spn);
+    if (p_msrealm)
+	free(p_msrealm);
     free(p);
 
     if (check_ldap(context, ret))
