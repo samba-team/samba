@@ -237,6 +237,15 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				 */
 				DEBUG(5,("Not a dir %s\n",start));
 				*end = '/';
+				/* 
+				 * We need to return the fact that the intermediate
+				 * name resolution failed. This is used to return an
+				 * error of ERRbadpath rather than ERRbadfile. Some
+				 * Windows applications depend on the difference between
+				 * these two errors.
+				 */
+				errno = ENOTDIR;
+				*bad_path = True;
 				return(False);
 			}
 
@@ -265,6 +274,9 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			if (end)
 				pstrcpy(rest,end+1);
 
+			/* Reset errno so we can detect directory open errors. */
+			errno = 0;
+
 			/*
 			 * Try to find this part of the path in the directory.
 			 */
@@ -292,6 +304,11 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 					return(False);
 				}
 	      
+				if (errno == ENOTDIR) {
+					*bad_path = True;
+					return(False);
+				}
+
 				/* 
 				 * Just the last part of the name doesn't exist.
 				 * We may need to strupper() or strlower() it in case
@@ -392,12 +409,11 @@ BOOL check_name(pstring name,connection_struct *conn)
 {
 	BOOL ret = True;
 
-	errno = 0;
-
 	if (IS_VETO_PATH(conn, name))  {
 		/* Is it not dot or dot dot. */
 		if (!((name[0] == '.') && (!name[1] || (name[1] == '.' && !name[2])))) {
 			DEBUG(5,("file path name %s vetoed\n",name));
+			errno = ENOENT;
 			return False;
 		}
 	}
@@ -416,13 +432,15 @@ BOOL check_name(pstring name,connection_struct *conn)
 		if ( (SMB_VFS_LSTAT(conn,name,&statbuf) != -1) &&
 				(S_ISLNK(statbuf.st_mode)) ) {
 			DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));
+			errno = EACCES;
 			ret = False; 
 		}
 	}
 #endif
 
-	if (!ret)
+	if (!ret) {
 		DEBUG(5,("check_name on %s failed\n",name));
+	}
 
 	return(ret);
 }
@@ -496,5 +514,6 @@ static BOOL scan_directory(const char *path, char *name, size_t maxlength,
 	}
 
 	CloseDir(cur_dir);
+	errno = ENOENT;
 	return(False);
 }

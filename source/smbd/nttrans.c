@@ -651,7 +651,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 
 		if(!dir_fsp->is_directory) {
 
-			srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
+			srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status,False);
 			if (!NT_STATUS_IS_OK(status)) {
 				END_PROFILE(SMBntcreateX);
 				return ERROR_NT(status);
@@ -693,14 +693,14 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			dir_name_len++;
 		}
 
-		srvstr_get_path(inbuf, rel_fname, smb_buf(inbuf), sizeof(rel_fname), 0, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, rel_fname, smb_buf(inbuf), sizeof(rel_fname), 0, STR_TERMINATE, &status,False);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
 		pstrcat(fname, rel_fname);
 	} else {
-		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status,False);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
@@ -762,7 +762,18 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	set_posix_case_semantics(conn, file_attributes);
 		
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
-		
+	if (bad_path) {
+		restore_case_semantics(conn, file_attributes);
+		END_PROFILE(SMBntcreateX);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
+	/* All file access must go through check_name() */
+	if (!check_name(fname,conn)) {
+		restore_case_semantics(conn, file_attributes);
+		END_PROFILE(SMBntcreateX);
+		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+	}
+
 	/* 
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -1015,7 +1026,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
-	srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -1218,7 +1229,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			return ERROR_DOS(ERRDOS,ERRbadfid);
 
 		if(!dir_fsp->is_directory) {
-			srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
+			srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status, False);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -1251,14 +1262,14 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		{
 			pstring tmpname;
-			srvstr_get_path(inbuf, tmpname, params+53, sizeof(tmpname), parameter_count-53, STR_TERMINATE, &status);
+			srvstr_get_path(inbuf, tmpname, params+53, sizeof(tmpname), parameter_count-53, STR_TERMINATE, &status, False);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
 			pstrcat(fname, tmpname);
 		}
 	} else {
-		srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status, False);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -1292,6 +1303,15 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
+	if (bad_path) {
+		restore_case_semantics(conn, file_attributes);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
+	/* All file access must go through check_name() */
+	if (!check_name(fname,conn)) {
+		restore_case_semantics(conn, file_attributes);
+		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+	}
     
 	/*
 	 * If it's a request for a directory open, deal with it separately.
@@ -1523,7 +1543,7 @@ int reply_ntrename(connection_struct *conn,
 	}
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1536,7 +1556,7 @@ int reply_ntrename(connection_struct *conn,
 	}
 
 	p++;
-	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1640,7 +1660,7 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	fsp = file_fsp(params, 0);
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
-	srvstr_get_path(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE, &status, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
