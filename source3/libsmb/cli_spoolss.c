@@ -1070,6 +1070,8 @@ done:
 	return result;	
 }
 
+/* Get print processor directory */
+
 NTSTATUS cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 						TALLOC_CTX *mem_ctx,
 						char *name,
