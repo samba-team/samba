@@ -932,7 +932,7 @@ size_t pull_ascii_fstring(char *dest, const void *src)
 
 size_t pull_ascii_nstring(char *dest, size_t dest_len, const void *src)
 {
-	return pull_ascii(dest, src, dest_len, sizeof(nstring), STR_TERMINATE);
+	return pull_ascii(dest, src, dest_len, sizeof(nstring)-1, STR_TERMINATE);
 }
 
 /**
