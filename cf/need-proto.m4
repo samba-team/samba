@@ -17,7 +17,7 @@ $2(&xx);
 eval "ac_cv_func_$2_noproto=yes",
 eval "ac_cv_func_$2_noproto=no"))
 if test "$ac_cv_func_$2_noproto" = yes; then
-	AC_DEFINE(AS_TR_CPP(NEED_[]$2[]_PROTO), 1
+	AC_DEFINE(AS_TR_CPP(NEED_[]$2[]_PROTO), 1,
 		[define if the system is missing a prototype for $2()])
 fi
 fi
