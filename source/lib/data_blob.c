@@ -142,3 +142,21 @@ BOOL data_blob_equal(const DATA_BLOB *d1, const DATA_BLOB *d2)
 	return False;
 }
 
+/*******************************************************************
+print the data_blob as hex string
+*******************************************************************/
+char *data_blob_hex_string(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
+{
+	int i;
+	char *hex_string;
+
+	hex_string = talloc_array_p(mem_ctx, char, (blob->length*2)+1);
+	if (!hex_string) {
+		return NULL;
+	}
+
+	for (i = 0; i < blob->length; i++)
+		slprintf(&hex_string[i*2], 3, "%02X", blob->data[i]);
+
+	return hex_string;
+}
