@@ -116,16 +116,27 @@ class GtkDictBrowser:
 
     # Set the text to appear in the right hand side of the user interface 
 
-    def set_value_text(self, text):
+    def set_value_text(self, item):
+
+        # Clear old old value in text window
+
         self.text.delete_text(0, self.text.get_length())
+        
+        if type(item) == str:
 
-        # The text widget has trouble inserting text containing NULL
-        # characters.
+            # The text widget has trouble inserting text containing NULL
+            # characters.
+            
+            item = string.replace(item, "\x00", ".")
+            
+            self.text.insert(self.font, None, None, item)
 
-        text = string.replace(text, "\x00", ".")
+        else:
 
-        self.text.insert(self.font, None, None, text)
-
+            # A non-text item
+            
+            self.text.insert(self.font, None, None, repr(item))
+            
     # This function is called when a key is selected in the left hand side
     # of the user interface.
 
@@ -246,7 +257,7 @@ def hex_string(data):
 
 if __name__ == "__main__":
 
-    dict = {"chicken": "ham", "spam": "fun"}
+    dict = {"chicken": "ham", "spam": "fun", "subdict": {"a": "b", "c": "d"}}
 
     db = GtkDictBrowser(dict)
 
