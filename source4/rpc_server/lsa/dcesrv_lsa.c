@@ -613,10 +613,10 @@ static NTSTATUS lsa_OpenTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC
 
 
 /* 
-  lsa_QueryInfoTrustedDomain
+  lsa_QueryTrustedDomainInfo
 */
-static NTSTATUS lsa_QueryInfoTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_QueryInfoTrustedDomain *r)
+static NTSTATUS lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_QueryTrustedDomainInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -743,10 +743,10 @@ static NTSTATUS lsa_RemoveAccountRights(struct dcesrv_call_state *dce_call, TALL
 
 
 /* 
-  lsa_QueryTrustDomainInfo
+  lsa_QueryTrustedDomainInfoBySid
 */
-static NTSTATUS lsa_QueryTrustDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_QueryTrustDomainInfo *r)
+static NTSTATUS lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+						struct lsa_QueryTrustedDomainInfoBySid *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
