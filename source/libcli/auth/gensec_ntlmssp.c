@@ -186,6 +186,14 @@ static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_secur
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
+	/* IF we are not doing Signing or Sealing, we can actually do
+	 * NTLM2.  When we crack the crypto puzzle, then we can enable
+	 * this always, in the constant flags */
+
+	if (!(gensec_security->want_features & GENSEC_WANT_SIGN) && !(gensec_security->want_features & GENSEC_WANT_SEAL)) {
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
+	}
+
 	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&gensec_ntlmssp_state->auth_context))) {
 		return nt_status;
@@ -235,6 +243,14 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 	}
 	if (gensec_security->want_features & GENSEC_WANT_SEAL) {
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+
+	/* IF we are not doing Signing or Sealing, we can actually do
+	 * NTLM2.  When we crack the crypto puzzle, then we can enable
+	 * this always, in the constant flags */
+
+	if (!(gensec_security->want_features & GENSEC_WANT_SIGN) && !(gensec_security->want_features & GENSEC_WANT_SEAL)) {
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
 	status = ntlmssp_set_domain(gensec_ntlmssp_state->ntlmssp_state, 
