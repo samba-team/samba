@@ -460,7 +460,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
 
       struct hostent *hp;
 
-      DEBUG(3,("resolve_name: Attempting host lookup for name %s\n"));
+      DEBUG(3,("resolve_name: Attempting host lookup for name %s\n", name));
 
       if (((hp = Get_Hostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
         putip((char *)return_ip,(char *)hp->h_addr);
@@ -477,7 +477,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
       pstring lmhost_name;
       int name_type;
 
-      DEBUG(3,("resolve_name: Attempting lmhosts lookup for name %s\n"));
+      DEBUG(3,("resolve_name: Attempting lmhosts lookup for name %s\n", name));
 
       fp = startlmhosts( LMHOSTSFILE );
       if(fp) {
@@ -502,7 +502,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
        * would then block).
        */
 
-      DEBUG(3,("resolve_name: Attempting wins lookup for name %s\n"));
+      DEBUG(3,("resolve_name: Attempting wins lookup for name %s<0x20>\n", name));
 
       if(*lp_wins_server()) {
         struct in_addr wins_ip = *interpret_addr2(lp_wins_server());
@@ -536,7 +536,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
        * "bcast" means do a broadcast lookup on all the local interfaces.
        */
 
-      DEBUG(3,("resolve_name: Attempting broadcast lookup for name %s\n"));
+      DEBUG(3,("resolve_name: Attempting broadcast lookup for name %s<0x20>\n", name));
 
       sock = open_socket_in( SOCK_DGRAM, 0, 3,
                              interpret_addr(lp_socket_address()) );
