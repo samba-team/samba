@@ -25,7 +25,6 @@
 pstring servicesf = CONFIGFILE;
 extern pstring debugf;
 extern pstring sesssetup_user;
-extern pstring local_machine;
 extern fstring myworkgroup;
 
 char *InBuffer = NULL;
@@ -114,21 +113,6 @@ static int find_free_connection(int hash);
 #define IS_DOS_ARCHIVE(test_mode) (((test_mode) & aARCH) != 0)
 #define IS_DOS_SYSTEM(test_mode) (((test_mode) & aSYSTEM) != 0)
 #define IS_DOS_HIDDEN(test_mode) (((test_mode) & aHIDDEN) != 0)
-
-/* use this to validate user against a password server. "security = server" */
-static struct cli_state pwd_srv;
-
-/****************************************************************************
-  for use in reply.c, to access the password server connection.
-****************************************************************************/
-struct cli_state *pwd_server_connection(void)
-{
-	if (pwd_srv.initialised)
-	{
-		return &pwd_srv;
-	}
-	return NULL;
-}
 
 /****************************************************************************
   when exiting, take the whole family
@@ -2273,30 +2257,21 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 {
   int outsize = set_message(outbuf,0,0,True);
   int cmd;
-  int flgs2;
-  cmd   = CVAL(inbuf,smb_com);
-  flgs2 = SVAL(outbuf,smb_flg2);
+  cmd = CVAL(inbuf,smb_com);
   
-  if ((flgs2 & FLAGS2_32_BIT_ERROR_CODES) == FLAGS2_32_BIT_ERROR_CODES)
-  {
-    SIVAL(outbuf,smb_rcls,error_code);  
-
-    DEBUG(3,("%s 32 bit error packet at line %d cmd=%d (%s) eclass=%08x [%s]\n",
-	   timestring(), line, cmd, smb_fn_name(cmd), error_code, smb_errstr(outbuf)));
-  }
-  else
-  {
-    CVAL(outbuf,smb_rcls) = error_class;
-    SSVAL(outbuf,smb_err,error_code);  
-
-    DEBUG(3,("%s error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",
-	   timestring(), line, cmd, smb_fn_name(cmd), error_class, error_code));
-  }
+  CVAL(outbuf,smb_rcls) = error_class;
+  SSVAL(outbuf,smb_err,error_code);  
   
+  DEBUG(3,("%s error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",
+	   timestring(),
+	   line,
+	   (int)CVAL(inbuf,smb_com),
+	   smb_fn_name(CVAL(inbuf,smb_com)),
+	   error_class,
+	   error_code));
+
   if (errno != 0)
-  {
-    DEBUG(3,("error string = %s\n", strerror(errno)));
-  }
+    DEBUG(3,("error string = %s\n",strerror(errno)));
   
   return(outsize);
 }
@@ -2353,13 +2328,12 @@ static int sig_cld()
   **************************************************************************/
 static int sig_pipe()
 {
+	struct cli_state *cli;
 	BlockSignals(True,SIGPIPE);
 
-	if (pwd_srv.initialised)
-    {
+	if ((cli = server_client()) && cli->initialised) {
 		DEBUG(3,("lost connection to password server\n"));
-		cli_shutdown(&pwd_srv);
-
+		cli_shutdown(cli);
 #ifndef DONT_REINSTALL_SIG
 		signal(SIGPIPE, SIGNAL_CAST sig_pipe);
 #endif
@@ -3710,27 +3684,29 @@ int reply_lanman2(char *outbuf)
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
+  struct cli_state *cli = NULL;
   char cryptkey[8];
   char crypt_len = 0;
 
-  if (lp_security() == SEC_SERVER && server_cryptkey(&pwd_srv, local_machine))
-  {
+  if (lp_security() == SEC_SERVER) {
+	  cli = server_cryptkey();
+  }
+
+  if (cli) {
 	  DEBUG(3,("using password server validation\n"));
-	  doencrypt = ((pwd_srv.sec_mode & 2) != 0);
+	  doencrypt = ((cli->sec_mode & 2) != 0);
   }
 
   if (lp_security()>=SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
 
-  if (doencrypt)
-  {
+  if (doencrypt) {
 	  crypt_len = 8;
-	  if (pwd_srv.initialised)
-      {
+	  if (!cli) {
 		  generate_next_challenge(cryptkey);
 	  } else {
-		  memcpy(cryptkey, pwd_srv.cryptkey, 8);
-		  set_challenge(pwd_srv.cryptkey);
+		  memcpy(cryptkey, cli->cryptkey, 8);
+		  set_challenge(cli->cryptkey);
 	  }
   }
 
@@ -3775,14 +3751,16 @@ int reply_nt1(char *outbuf)
   char cryptkey[8];
   char crypt_len = 0;
 
-  if (lp_security() == SEC_SERVER && server_cryptkey(&pwd_srv, local_machine))
-  {
-	  DEBUG(3,("using password server validation\n"));
-	  doencrypt = ((pwd_srv.sec_mode & 2) != 0);
+  if (lp_security() == SEC_SERVER) {
+	  cli = server_cryptkey();
   }
 
-  if (doencrypt)
-  {
+  if (cli) {
+	  DEBUG(3,("using password server validation\n"));
+	  doencrypt = ((cli->sec_mode & 2) != 0);
+  }
+
+  if (doencrypt) {
 	  crypt_len = 8;
 	  if (!cli) {
 		  generate_next_challenge(cryptkey);
@@ -4884,14 +4862,15 @@ static void process(void)
 
       if (keepalive && (counter-last_keepalive)>keepalive) 
       {
+	      struct cli_state *cli = server_client();
 	      if (!send_keepalive(Client)) { 
 		      DEBUG(2,("%s Keepalive failed - exiting\n",timestring()));
 		      return;
 	      }	    
 	      /* also send a keepalive to the password server if its still
 		 connected */
-	      if (pwd_srv.initialised)
-		      send_keepalive(pwd_srv.fd);
+	      if (cli && cli->initialised)
+		      send_keepalive(cli->fd);
 	      last_keepalive = counter;
       }
 

@@ -151,28 +151,9 @@ return a SMB error string from a SMB buffer
 char *smb_errstr(char *inbuf)
 {
   static pstring ret;
-  int i,j;
-  BOOL nt_errors = (SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES) == FLAGS2_32_BIT_ERROR_CODES;
-
-  if (nt_errors)
-  {
-    char *nt_errstr = NULL;
-    uint32 nt_err = IVAL(inbuf, smb_rcls);
-    uint16 nt_num =  nt_err & 0x0000ffff;
-    uint16 class  = (nt_err & 0xffff0000) >> 16;
-
-    /* maybe lookup the error message in the nt error codes... */
-    if ((nt_errstr = get_nt_error_msg(nt_num)) != NULL)
-    {
-      sprintf(ret,"NT Error: (%4x, %s)", class, nt_errstr);
-      return ret;
-    }
-    sprintf(ret,"NT Error: Unknown error (%4x %4x)", class, nt_num);
-  }
-  else
-  {
   int class = CVAL(inbuf,smb_rcls);
   int num = SVAL(inbuf,smb_err);
+  int i,j;
 
   for (i=0;err_classes[i].class;i++)
     if (err_classes[i].code == class)
@@ -195,8 +176,7 @@ char *smb_errstr(char *inbuf)
 	sprintf(ret,"%s - %d",err_classes[i].class,num);
 	return ret;
       }
-    sprintf(ret,"Error: Unknown error (%4x,%d)", class, num);
-  }
-
+  
+  sprintf(ret,"Error: Unknown error (%d,%d)",class,num);
   return(ret);
 }
