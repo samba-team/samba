@@ -27,3 +27,5 @@ LDADD = \
 	$(LIB_des) \
 	$(LIB_roken) \
 	$(DBLIB)
+
+man_MANS = popper.8
