@@ -177,7 +177,7 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 
 		for (j = 0; j < r.out.count; j++)
-			test_GetForm(p, mem_ctx, handle, info[j].info1.name);
+			test_GetForm(p, mem_ctx, handle, info[j].info1.formname);
 	}
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
@@ -221,7 +221,7 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.in.level = 1;
 	form.flags = 2;		/* User form */
-	form.name = formname;
+	form.formname = formname;
 	form.width = 1;
 	form.length = 2;
 	form.left = 3;
