@@ -318,7 +318,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 * Setup the counts for this PDU.
 	 */
 
-	p->out_data.data_sent_length += (data_len + ss_padding_len);
+	p->out_data.data_sent_length += data_len;
 	p->out_data.current_pdu_len = p->hdr.frag_len;
 	p->out_data.current_pdu_sent = 0;
 
