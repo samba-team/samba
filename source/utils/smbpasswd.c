@@ -106,7 +106,7 @@ static int gethexpwd(char *p, char *pwd)
 
 static struct smb_passwd *
 _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd, 
-		BOOL *got_valid_nt_entry, long *pwd_seekpos)
+		BOOL *got_valid_nt_entry, BOOL *got_valid_last_change_time, long *pwd_seekpos)
 {
 	/* Static buffers we will return. */
 	static struct smb_passwd pw_buf;
@@ -121,6 +121,9 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 	long            linebuf_len;
 
         pw_buf.acct_ctrl = ACB_NORMAL;
+        *got_valid_last_change_time = False;
+        *got_valid_nt_entry = False;
+        *valid_old_pwd = False;
 
 	/*
 	 * Scan the file, a line at a time and check if the name matches.
@@ -337,7 +340,31 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
                   /* Must have some account type set. */
                   if(pw_buf.acct_ctrl == 0)
                     pw_buf.acct_ctrl = ACB_NORMAL;
-            
+           
+                  /* Now try and get the last change time. */
+                  if(*p == ']')
+                    p++;
+                  if(*p == ':') {
+                      p++;
+                    if(*p && StrnCaseCmp( p, "LCT-", 4)) {
+                      int i;
+                      p += 4;
+                      for(i = 0; i < 8; i++) {
+                        if(p[i] == '\0' || !isxdigit(p[i]))
+                          break;
+                      }
+                      if(i == 8) {
+                      /*
+                       * p points at 8 characters of hex digits -
+                       * read into a time_t as the seconds since
+                       * 1970 that the password was last changed.
+                       */
+                        pw_buf.last_change_time = (time_t)strtol(p, NULL, 16);
+                        *got_valid_last_change_time = True;
+                      } /* i == 8 */
+                    } /* *p && StrnCaseCmp() */
+                  } /* *p == ':' */
+ 
                 } else {
                   /* 'Old' style file. Fake up based on user name. */
                   /*
@@ -353,41 +380,6 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 		return &pw_buf;
 	}
 	return NULL;
-}
-
-/**********************************************************
- Encode the account control bits into a string.
-**********************************************************/
-
-char *encode_acct_ctrl(uint16 acct_ctrl)
-{
-  static fstring acct_str;
-  char *p = acct_str;
-
-  *p++ = '[';
-
-  if(acct_ctrl & ACB_HOMDIRREQ)
-    *p++ = 'H';
-  if(acct_ctrl & ACB_TEMPDUP)
-    *p++ = 'T';
-  if(acct_ctrl & ACB_NORMAL)
-    *p++ = 'U';
-  if(acct_ctrl & ACB_MNS)
-    *p++ = 'M';
-  if(acct_ctrl & ACB_WSTRUST)
-    *p++ = 'W';
-  if(acct_ctrl & ACB_SVRTRUST)
-    *p++ = 'S';
-  if(acct_ctrl & ACB_AUTOLOCK)
-    *p++ = 'L';
-  if(acct_ctrl & ACB_PWNOEXP)
-    *p++ = 'X';
-  if(acct_ctrl & ACB_DOMTRUST)
-    *p++ = 'I';
-
-  *p++ = ']';
-  *p = '\0';
-  return acct_str;
 }
 
 /**********************************************************
@@ -454,7 +446,7 @@ int main(int argc, char **argv)
   BOOL		 got_valid_nt_entry = False;
   long            seekpos;
   int             pwfd;
-  char            ascii_p16[66];
+  pstring         ascii_p16;
   char            c;
   int             ch;
   int             ret, i, err, writelen;
@@ -467,6 +459,7 @@ int main(int argc, char **argv)
   char *remote_machine = NULL;
   BOOL		 add_user = False;
   BOOL		 got_new_pass = False;
+  BOOL		 got_valid_last_change_time = False;
   BOOL		 machine_account = False;
   BOOL		 disable_user = False;
   BOOL		 set_no_password = False;
@@ -833,7 +826,7 @@ int main(int argc, char **argv)
 
   /* Get the smb passwd entry for this user */
   smb_pwent = _my_get_smbpwnam(fp, user_name, &valid_old_pwd, 
-			       &got_valid_nt_entry, &seekpos);
+                    &got_valid_nt_entry, &got_valid_last_change_time, &seekpos);
   if (smb_pwent == NULL) {
     if(add_user == False) {
       fprintf(stderr, "%s: Failed to find entry for user %s in file %s.\n",
@@ -866,6 +859,7 @@ Error was %s\n", prog_name, user_name, pfile, strerror(errno));
 
       new_entry_length = strlen(user_name) + 1 + 15 + 1 + 
                          32 + 1 + 32 + 1 + sizeof(fstring) + 
+                         1 + 13 + 
                          1 + strlen(pwd->pw_dir) + 1 + 
                          strlen(pwd->pw_shell) + 1;
       if((new_entry = (char *)malloc( new_entry_length )) == 0) {
@@ -898,8 +892,8 @@ Error was %s\n", prog_name, pwd->pw_name, pfile, strerror(errno));
       }
       p += 32;
       *p++ = ':';
-      sprintf(p, "%s:%s:%s\n", encode_acct_ctrl(acct_ctrl),
-              pwd->pw_dir, pwd->pw_shell);
+      sprintf(p, "%s:TLC-%08X:%s:%s\n", encode_acct_ctrl(acct_ctrl),
+              (uint32)time(NULL), pwd->pw_dir, pwd->pw_shell);
       if(write(fd, new_entry, strlen(new_entry)) != strlen(new_entry)) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
 Error was %s\n", prog_name, pwd->pw_name, pfile, strerror(errno));
@@ -924,7 +918,8 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
   }
 
   /*
-   * We are root - just write the new password.
+   * We are root - just write the new password
+   * and the valid last change time.
    */
 
   /* Create the 32 byte representation of the new p16 */
@@ -950,6 +945,13 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
       }
     }
   }
+  ascii_p16[65] = ':';
+  ascii_p16[66] = '\0';
+  if(got_valid_last_change_time) {
+    strcpy(&ascii_p16[66], encode_acct_ctrl(smb_pwent->acct_ctrl));
+    sprintf(&ascii_p16[strlen(ascii_p16)], ":TLC-%08X", (uint32)time(NULL));
+  }
+
   /*
    * Do an atomic write into the file at the position defined by
    * seekpos.
@@ -984,7 +986,8 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
     fclose(fp);
     exit(1);
   }
-  writelen = (got_valid_nt_entry) ? 65 : 32;
+  writelen = (got_valid_nt_entry) ? 
+              ( got_valid_last_change_time ? strlen(ascii_p16) : 65) : 32;
   if (write(pwfd, ascii_p16, writelen) != writelen) {
     err = errno;
     fprintf(stderr, "%s: write fail in file %s.\n",

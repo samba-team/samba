@@ -192,6 +192,7 @@ struct smb_passwd *getsmbpwent(void *vp)
   }
 
   pw_buf.acct_ctrl = ACB_NORMAL;  
+  pw_buf.last_change_time = (time_t)-1;
 
   /*
    * Scan the file, a line at a time and check if the name matches.
@@ -229,14 +230,16 @@ struct smb_passwd *getsmbpwent(void *vp)
     /*
      * The line we have should be of the form :-
      * 
-     * username:uid:[32hex bytes]:....other flags presently
+     * username:uid:32hex bytes:[Account type]:LCT-12345678....other flags presently
      * ignored....
      * 
      * or,
      *
-     * username:uid:[32hex bytes]:[32hex bytes]:....ignored....
+     * username:uid:32hex bytes:32hex bytes:[Account type]:LCT-12345678....ignored....
      *
      * if Windows NT compatible passwords are also present.
+     * [Account type] is an ascii encoding of the type of account.
+     * LCT-(8 hex digits) is the time_t value of the last change time.
      */
 
     if (linebuf[0] == '#' || linebuf[0] == '\0') {
@@ -412,6 +415,28 @@ struct smb_passwd *getsmbpwent(void *vp)
       if(pw_buf.acct_ctrl == 0)
         pw_buf.acct_ctrl = ACB_NORMAL;
 
+      /* Now try and get the last change time. */
+      if(*p == ']')
+        p++;
+      if(*p == ':') {
+        p++;
+        if(*p && StrnCaseCmp( p, "LCT-", 4)) {
+          int i;
+          p += 4;
+          for(i = 0; i < 8; i++) {
+            if(p[i] == '\0' || !isxdigit(p[i]))
+              break;
+          }
+          if(i == 8) {
+            /*
+             * p points at 8 characters of hex digits - 
+             * read into a time_t as the seconds since
+             * 1970 that the password was last changed.
+             */
+            pw_buf.last_change_time = (time_t)strtol(p, NULL, 16);
+          }
+        }
+      }
     } else {
       /* 'Old' style file. Fake up based on user name. */
       /*
@@ -519,6 +544,41 @@ struct smb_passwd *getsmbpwuid(unsigned int uid)
   return get_smbpwd_entry(NULL, uid);
 }
 
+/**********************************************************
+ Encode the account control bits into a string.
+**********************************************************/
+        
+char *encode_acct_ctrl(uint16 acct_ctrl)
+{
+  static fstring acct_str;
+  char *p = acct_str;
+ 
+  *p++ = '[';
+
+  if(acct_ctrl & ACB_HOMDIRREQ)
+    *p++ = 'H';
+  if(acct_ctrl & ACB_TEMPDUP)
+    *p++ = 'T'; 
+  if(acct_ctrl & ACB_NORMAL)
+    *p++ = 'U';
+  if(acct_ctrl & ACB_MNS)
+    *p++ = 'M';
+  if(acct_ctrl & ACB_WSTRUST)
+    *p++ = 'W';
+  if(acct_ctrl & ACB_SVRTRUST) 
+    *p++ = 'S';
+  if(acct_ctrl & ACB_AUTOLOCK)
+    *p++ = 'L';
+  if(acct_ctrl & ACB_PWNOEXP)
+    *p++ = 'X';
+  if(acct_ctrl & ACB_DOMTRUST)
+    *p++ = 'I';
+      
+  *p++ = ']';
+  *p = '\0';
+  return acct_str;
+}     
+
 /************************************************************************
  Routine to add an entry to the smbpasswd file.
 *************************************************************************/
@@ -574,7 +634,7 @@ Error was %s\n", pwd->smb_name, pfile, strerror(errno)));
     return False;
   }
 
-  new_entry_length = strlen(pwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 2;
+  new_entry_length = strlen(pwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 5 + 1 + 13 + 2;
 
   if((new_entry = (char *)malloc( new_entry_length )) == NULL) {
     DEBUG(0, ("add_smbpwd_entry(malloc): Failed to add entry for user %s to file %s. \
@@ -600,10 +660,13 @@ Error was %s\n", pwd->smb_name, pfile, strerror(errno)));
   p += 32;
 
   *p++ = ':';
-  sprintf((char *)p,"\n");
+
+  /* Add the account encoding and the last change time. */
+  sprintf((char *)p, "%s:LCT-%08X:\n", encode_acct_ctrl(pwd->acct_ctrl),
+                     (uint32)time(NULL));
 
 #ifdef DEBUG_PASSWORD
-  DEBUG(100, ("add_smbpwd_entry(%d): new_entry_len %d entry_len %d made line |%s|\n", 
+  DEBUG(100, ("add_smbpwd_entry(%d): new_entry_len %d entry_len %d made line |%s|", 
 		             fd, new_entry_length, strlen(new_entry), new_entry));
 #endif
 
@@ -641,13 +704,15 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
   char            linebuf[256];
   char            readbuf[16 * 1024];
   unsigned char   c;
-  char            ascii_p16[66];
+  fstring         ascii_p16;
+  fstring         encode_bits;
   unsigned char  *p = NULL;
   long            linebuf_len = 0;
   FILE           *fp;
   int             lockfd;
   char           *pfile = lp_smb_passwd_file();
   BOOL found_entry = False;
+  BOOL got_last_change_time = False;
 
   long pwd_seekpos = 0;
 
@@ -837,6 +902,55 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
     return False;
   }
 
+  /* 
+   * Now check if the account info and the password last
+   * change time is available.
+   */
+  p += 33; /* Move to the first character of the line after
+              the NT password. */
+
+  if (*p == '[') {
+
+    /* 
+     * Note that here we are assuming that the account
+     * info in the pwd struct matches the account info
+     * here in the file. It better..... JRA.
+     */
+
+    i = 0;
+    p++;
+    while((linebuf_len > PTR_DIFF(p, linebuf)) && (*p != ']'))
+      encode_bits[i++] = *p++;
+
+    encode_bits[i] = '\0';
+
+    /* Go past the ']' */
+    if(linebuf_len > PTR_DIFF(p, linebuf))
+      p++;
+
+    if((linebuf_len > PTR_DIFF(p, linebuf)) && (*p == ':')) {
+      p++;
+
+      /* We should be pointing at the TLC entry. */
+      if((linebuf_len > (PTR_DIFF(p, linebuf) + 13)) && StrnCaseCmp( p, "LCT-", 4)) {
+
+        p += 4;
+        for(i = 0; i < 8; i++) {
+          if(p[i] == '\0' || !isxdigit(p[i]))
+            break;
+        }
+        if(i == 8) {
+          /*
+           * p points at 8 characters of hex digits -
+           * read into a time_t as the seconds since
+           * 1970 that the password was last changed.
+           */
+          got_last_change_time = True;
+        } /* i == 8 */
+      } /* *p && StrnCaseCmp() */
+    } /* p == ':' */
+  } /* p == '[' */
+
   /* Entry is correctly formed. */
 
   /*
@@ -887,6 +1001,17 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
   } else {
     /* No NT hash - write out an 'invalid' string. */
     strcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+  }
+
+  /* Add on the account info bits and the time of last
+     password change. */
+
+  pwd->last_change_time = time(NULL);
+
+  if(got_last_change_time) {
+    sprintf(&ascii_p16[strlen(ascii_p16)], ":[%s]:TLC-%08X", 
+                     encode_bits, (uint32)pwd->last_change_time );
+    wr_len = strlen(ascii_p16);
   }
 
 #ifdef DEBUG_PASSWORD

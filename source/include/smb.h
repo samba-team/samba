@@ -287,6 +287,7 @@ struct smb_passwd
 	unsigned char *smb_nt_passwd; /* Null if no password */
 	/* Other fields / flags may be added later */
         uint16 acct_ctrl;
+        time_t last_change_time;
 };
 
 struct cli_state {

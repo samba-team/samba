@@ -653,6 +653,8 @@ int main(int argc,char *argv[])
         }
     }
 
+  reopen_logs();
+
   DEBUG(1,("%s netbios nameserver version %s started\n",timestring(),VERSION));
   DEBUG(1,("Copyright Andrew Tridgell 1994-1997\n"));
 

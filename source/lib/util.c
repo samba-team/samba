@@ -270,7 +270,10 @@ va_dcl
     {
       if (!dbf) {
 	      int oldumask = umask(022);
-	      dbf = fopen(debugf,"w");
+              if(append_log)
+                dbf = fopen(debugf,"a");
+              else
+                dbf = fopen(debugf,"w");
 	      umask(oldumask);
 	      if (dbf) {
 		      setbuf(dbf,NULL);

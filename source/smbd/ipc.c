@@ -330,8 +330,9 @@ static BOOL init_package(struct pack_desc* p, int count, int subcount)
   p->subcount = 0;
   p->curpos = p->format;
   if (i > n) {
+    p->neededlen = i;
     i = n = 0;
-    p->errcode = NERR_BufTooSmall;
+    p->errcode = ERROR_MORE_DATA;
   }
   else
     p->errcode = NERR_Success;
