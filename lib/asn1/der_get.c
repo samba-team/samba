@@ -89,7 +89,7 @@ der_get_octet_string (unsigned char *p, int len, krb5_data *data)
     return -1;
   data->len = slen;
   data->data = malloc(slen);
-  if (data->data == NULL)
+  if (data->data == NULL && data->len != 0)
     return -1;
   memcpy (data->data, p, slen);
   return slen + l;
