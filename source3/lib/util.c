@@ -1040,7 +1040,7 @@ BOOL get_mydomname(fstring my_domname)
  Interpret a protocol description string, with a default.
 ****************************************************************************/
 
-int interpret_protocol(char *str,int def)
+int interpret_protocol(const char *str,int def)
 {
 	if (strequal(str,"NT1"))
 		return(PROTOCOL_NT1);
@@ -1411,15 +1411,15 @@ void smb_panic(const char *why)
 	{
 		extern char *global_clobber_region_function;
 		extern unsigned int global_clobber_region_line;
-		
+
 		if (global_clobber_region_function) {
 			DEBUG(0,("smb_panic: clobber_region() last called from [%s(%u)]\n",
-				 global_clobber_region_function,
-				 global_clobber_region_line));
+					 global_clobber_region_function,
+					 global_clobber_region_line));
 		} 
 	}
 #endif
-	
+
 	cmd = lp_panic_action();
 	if (cmd && *cmd) {
 		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));
@@ -1427,10 +1427,10 @@ void smb_panic(const char *why)
 
 		if (result == -1)
 			DEBUG(0, ("smb_panic(): fork failed in panic action: %s\n",
-				  strerror(errno)));
+					  strerror(errno)));
 		else
 			DEBUG(0, ("smb_panic(): action returned status %d\n",
-				  WEXITSTATUS(result)));
+					  WEXITSTATUS(result)));
 	}
 	DEBUG(0,("PANIC: %s\n", why));
 
@@ -1455,8 +1455,8 @@ void smb_panic(const char *why)
 }
 
 /*******************************************************************
- A readdir wrapper which just returns the file name.
-********************************************************************/
+  A readdir wrapper which just returns the file name.
+ ********************************************************************/
 
 const char *readdirname(DIR *p)
 {
