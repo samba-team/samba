@@ -149,7 +149,8 @@ WERROR reg_get_hive(struct registry_context *ctx, uint32_t hkey, struct registry
 /* Open a registry file/host/etc */
 WERROR reg_open_hive(struct registry_context *parent_ctx, const char *backend, const char *location, const char *credentials, struct registry_key **root)
 {
-	struct registry_hive *ret;
+	struct registry_hive *rethive;
+	struct registry_key *retkey;
 	struct reg_init_function_entry *entry;
 	WERROR werr;
 
@@ -164,28 +165,30 @@ WERROR reg_open_hive(struct registry_context *parent_ctx, const char *backend, c
 		return WERR_NOT_SUPPORTED;
 	}
 	
-	ret = talloc_p(parent_ctx, struct registry_hive);
-	ret->location = location?talloc_strdup(ret, location):NULL;
-	ret->functions = entry->hive_functions;
-	ret->backend_data = NULL;
-	ret->reg_ctx = parent_ctx;
+	rethive = talloc_p(parent_ctx, struct registry_hive);
+	rethive->location = location?talloc_strdup(rethive, location):NULL;
+	rethive->functions = entry->hive_functions;
+	rethive->backend_data = NULL;
+	rethive->reg_ctx = parent_ctx;
 
-	werr = entry->hive_functions->open_hive(ret, &ret->root);
+	werr = entry->hive_functions->open_hive(rethive, &retkey);
+
+	rethive->root = retkey;
 
 	if(!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
 	
-	if(!ret->root) {
+	if(!retkey) {
 		DEBUG(0, ("Backend %s didn't provide root key!\n", backend));
 		return WERR_GENERAL_FAILURE;
 	}
 
-	ret->root->hive = ret;
-	ret->root->name = NULL;
-	ret->root->path = talloc_strdup(ret, "");
+	retkey->hive = rethive;
+	retkey->name = NULL;
+	retkey->path = talloc_strdup(retkey, "");
 	
-	*root = ret->root;
+	*root = retkey;
 
 	return WERR_OK;
 }
