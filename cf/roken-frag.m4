@@ -69,6 +69,7 @@ AC_CHECK_HEADERS([\
 	shadow.h				\
 	sys/bswap.h				\
 	sys/ioctl.h				\
+	sys/mman.h				\
 	sys/param.h				\
 	sys/proc.h				\
 	sys/resource.h				\
@@ -204,6 +205,8 @@ if test "$ac_cv_func_cgetent" = no; then
 fi
 
 AC_REQUIRE([AC_FUNC_GETLOGIN])
+
+AC_REQUIRE([AC_FUNC_MMAP])
 
 AC_FIND_FUNC_NO_LIBS(getsockopt,,
 [#ifdef HAVE_SYS_TYPES_H
