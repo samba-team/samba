@@ -888,7 +888,10 @@ static int process_root(void)
         /* Change Trust Password */
                 
         if (changing_trust_pw) {
-        	return change_trust_account_password(new_domain, remote_machine);
+        	if (change_trust_account_password(new_domain, remote_machine)) {
+			return 0;
+		}
+		return 1;
         }
 
 
