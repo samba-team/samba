@@ -1773,24 +1773,27 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 	union smb_open io1, io2;
 	extern int torture_numops;
 	int failures = 0;
+	char buf[1];
 
-	fname = talloc_asprintf(cli1, "\\ntdeny_%d.dat", client);
+	ZERO_STRUCT(buf);
+
+	fname = talloc_asprintf(cli1, "\\ntdeny_%d.dll", client);
 
 	smbcli_unlink(cli1->tree, fname);
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
-	smbcli_write(cli1->tree, fnum1, 0, fname, 0, strlen(fname));
+	smbcli_write(cli1->tree, fnum1, 0, buf, 0, sizeof(buf));
 	smbcli_close(cli1->tree, fnum1);
 
 	GetTimeOfDay(&tv_start);
 
 	io1.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	io1.ntcreatex.in.root_fid = 0;
-	io1.ntcreatex.in.flags = 0;
-	io1.ntcreatex.in.create_options = 0;
-	io1.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io1.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io1.ntcreatex.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+	io1.ntcreatex.in.file_attr = 0;
 	io1.ntcreatex.in.alloc_size = 0;
 	io1.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
-	io1.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io1.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
 	io1.ntcreatex.in.security_flags = 0;
 	io1.ntcreatex.in.fname = fname;
 	io2 = io1;
@@ -1814,7 +1817,7 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		
 		io2.ntcreatex.in.share_access = map_bits(share_access_bits, b_sa2, nbits1);
 		io2.ntcreatex.in.access_mask  = map_bits(access_mask_bits,  b_am2, nbits2);
-		
+
 		status1 = smb_raw_open(cli1->tree, mem_ctx, &io1);
 		status2 = smb_raw_open(cli2->tree, mem_ctx, &io2);
 		
@@ -1823,14 +1826,13 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		} else if (!NT_STATUS_IS_OK(status2)) {
 			res = A_0;
 		} else {
-			char x = 1;
 			res = A_0;
 			if (smbcli_read(cli2->tree, 
-					io2.ntcreatex.out.fnum, (void *)&x, 0, 1) == 1) {
+					io2.ntcreatex.out.fnum, (void *)buf, 0, sizeof(buf)) >= 1) {
 				res += A_R;
 			}
 			if (smbcli_write(cli2->tree, 
-					 io2.ntcreatex.out.fnum, 0, (void *)&x, 0, 1) == 1) {
+					 io2.ntcreatex.out.fnum, 0, (void *)buf, 0, sizeof(buf)) >= 1) {
 				res += A_W;
 			}
 		}

@@ -503,7 +503,7 @@ typedef struct nt_user_token {
 #define FLAGS2_IS_LONG_NAME            0x0040
 #define FLAGS2_EXTENDED_SECURITY       0x0800 
 #define FLAGS2_DFS_PATHNAMES           0x1000
-#define FLAGS2_READ_PERMIT_NO_EXECUTE  0x2000
+#define FLAGS2_READ_PERMIT_EXECUTE     0x2000
 #define FLAGS2_32_BIT_ERROR_CODES      0x4000 
 #define FLAGS2_UNICODE_STRINGS         0x8000
 

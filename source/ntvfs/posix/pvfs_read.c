@@ -34,6 +34,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	struct pvfs_file *f;
 	NTSTATUS status;
 	uint32_t maxcnt;
+	uint32_t mask;
 
 	if (rd->generic.level != RAW_READ_READX) {
 		return ntvfs_map_read(req, rd, ntvfs);
@@ -48,8 +49,12 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	if (!(f->access_mask & SA_RIGHT_FILE_READ_EXEC)) {
-		return NT_STATUS_ACCESS_VIOLATION;
+	mask = SA_RIGHT_FILE_READ_DATA;
+	if (req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) {
+		mask |= SA_RIGHT_FILE_EXECUTE;
+	}
+	if (!(f->access_mask & mask)) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	maxcnt = rd->readx.in.maxcnt;

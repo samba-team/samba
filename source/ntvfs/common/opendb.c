@@ -154,20 +154,24 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 
 	/* if either open involves no read.write or delete access then
 	   it can't conflict */
-	if (!(e1->access_mask & (SA_RIGHT_FILE_WRITE_DATA | 
+	if (!(e1->access_mask & (SA_RIGHT_FILE_WRITE_APPEND | 
 				 SA_RIGHT_FILE_READ_EXEC | 
 				 STD_RIGHT_DELETE_ACCESS))) {
 		return False;
 	}
-	if (!(e2->access_mask & (SA_RIGHT_FILE_WRITE_DATA | 
+	if (!(e2->access_mask & (SA_RIGHT_FILE_WRITE_APPEND | 
 				 SA_RIGHT_FILE_READ_EXEC | 
 				 STD_RIGHT_DELETE_ACCESS))) {
 		return False;
 	}
 
 	/* check the basic share access */
-	CHECK_MASK(e1->access_mask, e2->share_access, SA_RIGHT_FILE_WRITE_DATA, NTCREATEX_SHARE_ACCESS_WRITE);
-	CHECK_MASK(e2->access_mask, e1->share_access, SA_RIGHT_FILE_WRITE_DATA, NTCREATEX_SHARE_ACCESS_WRITE);
+	CHECK_MASK(e1->access_mask, e2->share_access, 
+		   SA_RIGHT_FILE_WRITE_APPEND, 
+		   NTCREATEX_SHARE_ACCESS_WRITE);
+	CHECK_MASK(e2->access_mask, e1->share_access, 
+		   SA_RIGHT_FILE_WRITE_APPEND, 
+		   NTCREATEX_SHARE_ACCESS_WRITE);
 
 	CHECK_MASK(e1->access_mask, e2->share_access, 
 		   SA_RIGHT_FILE_READ_EXEC, 
