@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "nterr.h"
-#include "rpc_parse.h"
 #include "rpc_client.h"
 #include "rpcclient.h"
 
@@ -33,7 +32,6 @@ extern int DEBUGLEVEL;
 
 extern FILE* out_hnd;
 
-extern struct user_creds *usr_creds;
 
 void cmd_dfs_add(struct client_info *info, int argc, char *argv[])
 {
