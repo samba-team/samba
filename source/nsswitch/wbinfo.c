@@ -3,7 +3,7 @@
 
    Winbind status program.
 
-   Copyright (C) Tim Potter      2000
+   Copyright (C) Tim Potter      2000-2002
    Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
@@ -593,6 +593,8 @@ static BOOL wbinfo_set_auth_user(char *username)
 
 	/* Store in secrets.tdb */
 
+	secrets_init();
+
 	if (!secrets_store(SECRETS_AUTH_USER, username, 
 			   strlen(username) + 1) ||
 	    !secrets_store(SECRETS_AUTH_DOMAIN, domain, 
@@ -625,7 +627,7 @@ static BOOL wbinfo_ping(void)
 static void usage(void)
 {
 	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
-               "| -a user%%password\n");
+               "| -[aA] user%%password\n");
 	printf("\t-u\t\t\tlists all domain users\n");
 	printf("\t-g\t\t\tlists all domain groups\n");
 	printf("\t-n name\t\t\tconverts name to sid\n");
@@ -640,6 +642,7 @@ static void usage(void)
 	printf("\t-m\t\t\tlist trusted domains\n");
 	printf("\t-r user\t\t\tget user groups\n");
 	printf("\t-a user%%password\tauthenticate user\n");
+	printf("\t-A user%%password\tstore user and password used by winbindd (root only)\n");
 	printf("\t-p 'ping' winbindd to see if it is alive\n");
 	printf("\t--sequence\t\tshow sequence numbers of all domains\n");
 }
@@ -683,7 +686,7 @@ int main(int argc, char **argv)
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
-		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
+		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p' },
 		{ 0, 0, 0, 0 }
 	};
