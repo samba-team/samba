@@ -239,7 +239,7 @@ AC_VALIDATE_CACHE_SYSTEM_TYPE
 DYNEXP=
 
 dnl Add modules that have to be built by default here
-default_modules="pdb_smbpasswd pdb_tdb pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_netlog rpc_dfs rpc_srv rpc_spoolss"
+default_modules="pdb_smbpasswd pdb_tdbsam pdb_unix rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss"
 
 #
 # Config CPPFLAG settings for strange OS's that must be set
@@ -2449,23 +2449,6 @@ AC_ARG_WITH(tdbsam,
   AC_MSG_RESULT(no)
 )
 
-#################################################
-# check for a NISPLUS password database
-AC_MSG_CHECKING(whether to use NISPLUS SAM database)
-AC_ARG_WITH(nisplussam,
-[  --with-nisplussam       Include NISPLUS SAM support (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_NISPLUS_SAM,1,[Whether to include nisplus SAM support])
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
 ########################################################################################
 ##
 ## END OF TESTS FOR SAM BACKENDS.  
@@ -3357,7 +3340,7 @@ AC_SUBST(PYTHON)
 for i in `echo $default_modules | sed -e's/,/ /g'`
 do
 	dnl Set to shared instead of static when dlopen() is available?
-	eval MODULE_$i=STATIC
+	eval MODULE_DEFAULT_$i=STATIC
 done
 
 AC_ARG_WITH(static-modules,
@@ -3378,27 +3361,30 @@ AC_ARG_WITH(shared-modules,
 	done
 fi ])
 
-SMB_MODULE($MODULE_pdb_xml, pdb_xml, modules/xml.o, bin/xml.so PDB)
-SMB_MODULE($MODULE_pdb_mysql, pdb_mysql, modules/mysql.o, bin/mysql.so, PDB)
-SMB_MODULE($MODULE_pdb_ldap, pdb_ldap, passdb/pdb_ldap.o, bin/ldapsam.so, PDB)
-SMB_MODULE($MODULE_pdb_smbpasswd, pdb_smbpasswd, passdb/pdb_smbpasswd.o, bin/smbpasswd.so, PDB)
-SMB_MODULE($MODULE_pdb_tdb, pdb_tdbsam, passdb/pdb_tdb.o, bin/tdbsam.so, PDB)
-SMB_MODULE($MODULE_pdb_nisplus, pdb_nisplussam, passdb/pdb_nisplus.o, bin/nisplussam.so, PDB)
-SMB_MODULE($MODULE_pdb_unix, pdb_unix, passdb/pdb_unix.o, bin/unixsam.so, PDB)
-SMB_MODULE(STATIC, pdb_guest, passdb/pdb_guest.o, bin/guest.so, PDB)
+# Always built these modules static
+MODULE_pdb_guest=STATIC
+
+SMB_MODULE(pdb_xml, modules/xml.o, bin/xml.so, PDB)
+SMB_MODULE(pdb_mysql, modules/mysql.o, bin/mysql.so, PDB)
+SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, bin/ldapsam.so, PDB)
+SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, bin/smbpasswd.so, PDB)
+SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, bin/tdbsam.so, PDB)
+SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, bin/nisplussam.so, PDB)
+SMB_MODULE(pdb_unix, passdb/pdb_unix.o, bin/unixsam.so, PDB)
+SMB_MODULE(pdb_guest, passdb/pdb_guest.o, bin/guest.so, PDB)
 SMB_SUBSYSTEM(PDB)
 
-SMB_MODULE($MODULE_rpc_lsa, rpc_lsa, \$(RPC_LSA_OBJ), bin/librpc_lsa.so, RPC)
-SMB_MODULE($MODULE_rpc_reg, rpc_reg, \$(RPC_REG_OBJ), bin/librpc_reg.so, RPC)
-SMB_MODULE($MODULE_rpc_wks, rpc_wks, \$(RPC_WKS_OBJ), bin/librpc_wks.so, RPC)
-SMB_MODULE($MODULE_rpc_netlog, rpc_net, \$(RPC_NETLOG_OBJ), bin/librpc_netlog.so, RPC)
-SMB_MODULE($MODULE_rpc_dfs, rpc_dfs, \$(RPC_DFS_OBJ), bin/librpc_dfs.so, RPC)
-SMB_MODULE($MODULE_rpc_srv, rpc_srv, \$(RPC_SVC_OBJ), bin/librpc_srvsvc.so, RPC)
-SMB_MODULE($MODULE_rpc_spoolss, rpc_spoolss, \$(RPC_SPOOLSS_OBJ), bin/librpc_spoolss.so, RPC)
-SMB_MODULE($MODULE_rpc_samr, rpc_samr, \$(RPC_SAMR_OBJ), bin/librpc_samr.so, RPC)
+SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), bin/librpc_lsarpc.so, RPC)
+SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), bin/librpc_reg.so, RPC)
+SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), bin/librpc_wks.so, RPC)
+SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), bin/librpc_netlog.so, RPC)
+SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), bin/librpc_dfs.so, RPC)
+SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), bin/librpc_srvsvc.so, RPC)
+SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), bin/librpc_spoolss.so, RPC)
+SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), bin/librpc_samr.so, RPC)
 SMB_SUBSYSTEM(RPC)
 
-SMB_MODULE($MODULE_charset_weird, charset_weird, modules/developer.o, bin/developer.so, CHARSET)
+SMB_MODULE(charset_weird, modules/developer.o, bin/developer.so, CHARSET)
 SMB_SUBSYSTEM(CHARSET)
 
 #################################################
