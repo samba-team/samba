@@ -726,6 +726,7 @@ krb5_get_in_cred(krb5_context context,
 		    done = 0;
 		    preauth = my_preauth;
 		    krb5_free_error_contents(context, &error);
+		    krb5_clear_error_string(context);
 		    continue;
 		}
 		if(ret_as_reply)
