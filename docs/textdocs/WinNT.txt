@@ -1,0 +1,56 @@
+There are some particular issues with Samba and Windows NT
+
+=====================================================================
+One of the most annoying problems with WinNT is that NT refuses to
+connect to a server that is in user level security mode and that
+doesn't support password encryption unless it first prompts the user
+for a password.
+
+This means even if you have the same password on the NT box and the
+Samba server you will get prompted for a password. Entering the
+correct password will get you connected.
+
+The other major ramification of this feature of NT is that it can't
+browse a user level non-encrypted server unless it already has a
+connection open. This is because there is no spot for a password
+prompt in the browser window. It works fine if you already have a
+drive mounted (for example, one auto mounted on startup).
+
+Samba should support encrypted passwords soon, which will solve this
+problem.
+=====================================================================
+
+
+
+=====================================================================
+When you mount a printer using the print manager in NT you may find
+the following info from Matthew Harrell <harrell@leech.nrl.navy.mil>
+useful:
+
+------------
+        I noticed in your change-log you noted that some people were
+still unable to use print manager under NT.  If this is the same problem
+that I encountered, it's caused by the length of time it takes NT to
+determine if the printer is ready.
+
+The problem occurs when you double-click on a printer to connect it to
+the NT machine.  Because it's unable to determine if the printer is ready
+in the short span of time it has, it assumes it isn't and gives some
+strange error about not having enough resources (I forget what the error
+is).  A solution to this that seems to work fine for us is to click
+once on the printer, look at the bottom of the window and wait until
+it says it's ready, then clilck on "OK".
+
+By the way, this problem probably occurs in our group because the
+Samba server doesn't actually have the printers - it queues them to
+remote printers either on other machines or using their own network
+cards.  Because of this "middle layer", it takes an extra amount of
+time for the NT machine to get verification that the printer queue
+actually exists.
+
+I hope this helped in some way...
+-----------
+=====================================================================
+
+
+

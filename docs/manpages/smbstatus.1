@@ -1,0 +1,52 @@
+.TH SMBSTATUS 1 17/1/1995 smbstatus smbstatus
+.SH NAME
+smbstatus \- report on current Samba connections
+.SH SYNOPSIS
+.B smbstatus
+[-d]
+[-s
+.I configuration file
+]
+.SH DESCRIPTION
+This program is part of the Samba suite.
+
+.B smbstatus
+is a very simple program to list the current Samba connections
+
+Just run the program and the output is self explanatory. You can offer
+a configuration filename to override the default. The default is
+CONFIGFILE from the Makefile.
+
+Option
+.I -d
+gives verbose output.
+
+.I -p
+print a list of smbd processes and exit. Useful for scripting.
+
+.SH ENVIRONMENT VARIABLES
+Not applicable.
+
+.SH INSTALLATION
+The location of the server and its support files is a matter for individual
+system administrators. The following are thus suggestions only.
+
+It is recommended that the
+.B smbstatus
+program be installed under the /usr/local hierarchy, in a directory readable
+by all, writeable only by root. The program itself should be executable by all.
+
+.SH VERSION
+This man page is (mostly) correct for version 1.9.00 of the Samba suite, plus some
+of the recent patches to it. These notes will necessarily lag behind 
+development of the software, so it is possible that your version of 
+the program has extensions or parameter semantics that differ from or are not 
+covered by this man page. Please notify these to the address below for 
+rectification.
+.SH SEE ALSO
+.B smb.conf(5),
+.B smbd(8)
+
+See
+.B smb.conf(5) for a full list of contributors and details on how to 
+submit bug reports, comments etc.

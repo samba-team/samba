@@ -1,0 +1,145 @@
+BROWSING
+========
+
+Samba now fully supports browsing. The browsing is supported by nmbd
+and is also controlled by options in the smb.conf file (see
+smb.conf(5)).
+
+Samba can act as a browse master for a workgroup, but currently cannot
+act as a domain controller. The ability to be a domain controller will
+be added in a later version.
+
+To get browsing to work you need to run nmbd as usual, but will need
+to use the "workgroup" option in smb.conf to control what workgroup
+Samba becomes a part of.
+
+The -G option is most useful for simple setups where Samba is browsable
+in only one workgroup. In more complex cases the lmhosts file is
+better.
+
+Be very careful setting up your lmhosts file. An incorrectly setup
+lmhosts file can have disasterous results for your net!
+
+A simple lmhosts file might be:
+
+# This is a simple lmhosts file
+#
+# This is a host alias. Anyone querying this name
+# will get the specified IP
+192.0.2.17 SMBDATA
+#
+# first put ourselves in workgroup MYGROUP using
+# our own net address
+0.0.0.0 MYGROUP G
+
+Note in the above that I overrode what workgroup Samba is in using the
+G flag. Also note that the 0.0.0.0 address is used, which will be
+automatically replaced with the broadcast address for groups, and with
+the local IP address for other entries.
+
+Samba also has a useful option for a Samba server to offer itself for
+browsing on another subnet.
+
+This works by the lmhosts file specifying a broadcast address on the
+other network to use to find a browse master for the workgroup.
+
+For example if you wanted yourself to appear in the workgroup STAFF on
+the network which has a broadcast of 192.0.3.255 then this entry would
+do the trick:
+
+# put ourselves in the STAFF workgroup on the other subnet
+192.0.3.255 STAFF G
+
+Notice the G at the end! It is very important you include this as this
+entry without the G could cause a broadcast storm! 
+
+If something doesn't work then hopefully the log.nmb file will
+help you track down the problem. Try a debug level of 2 or 3 for
+finding problems.
+
+Note that if it doesn't work for you, then you should still be able to
+type the server name as \\SERVER in filemanager then hit enter and
+filemanager should display the list of available shares.
+
+Some people find browsing fails because they don't have the global
+"guest account" set to a valid account. Remember that the IPC$
+connection that lists the shares is done as guest, and thus you must
+have a valid guest account.
+
+Also, a lot of people are getting bitten by the problem of too many
+parameters on the command line of nmbd in inetd.conf. This trick is to
+not use spaces between the option and the parameter (eg: -d2 instead
+of -d 2), and to not use the -B and -N options. New versions of nmbd
+are now far more likely to correctly find your broadcast and network
+addess, so in most cases these aren't needed.
+
+The other big problem people have is that their broadcast address,
+netmask or IP address is wrong (specified with the -B, -N and -I
+options to nmbd). 
+
+FORCING SAMBA TO BE THE MASTER
+==============================
+
+Who becomes the "master browser" is determined by an election process
+using broadcasts. Each election packet contains a number of parameters
+which determine what precedence (bias) a host should have in the
+election. By default Samba uses a very low precedence and thus loses
+elections to just about anyone else.
+
+If you want Samba to win elections then just set the "os level" global
+option in smb.conf to a higher number. It defaults to 0. Using 33
+would make it win all elections over every other system (except other
+samba systems!)
+
+A "os level" of 2 would make it beat WfWg and Win95, but not NTAS. A
+NTAS domain controller uses level 32.
+
+The maximum os level is 255
+
+MAKING SAMBA THE DOMAIN MASTER
+==============================
+
+The domain master is responsible for collating the browse lists of
+multiple subnets so that browsing can occur between subnets. You can
+make samba act as the domain master by setting "domain master = yes"
+in smb.conf. By default it will not be a domain master.
+
+When samba is the domain master and the master browser it will listen
+for master announcements from other subnets and then contact them to
+synchronise browse lists.
+
+If you want samba to be the domain master then I suggest you also set
+the "os level" high enough to make sure it wins elections.
+
+NOTIFYING THE DOMAIN CONTROLLER
+===============================
+
+If you have a domain controller for the domain which Samba is a part
+of then you should add the line "domain controller = address" to
+smb.conf. "address" can either be a name available via DNS or a IP
+address or a broadcast address. If it is a broadcast address then
+Samba will look for a domain controller on that network.
+
+When Samba is the master browser it will regularly contact the domain
+controller to synchronise browse lists.
+
+
+NOTE ABOUT BROADCAST ADDRESSES
+==============================
+
+If your network uses a "0" based broadcast address (for example if it
+ends in a 0) then you will strike problems. Windows for Workgroups
+does not seem to support a 0's broadcast and you will probably find
+that browsing and name lookups won't work.
+
+You have a few options:
+
+1) change to a 1's broadcast on your unix server. These often end in
+.255 (check with your local network guru for details)
+
+2) set the nmbd broadcast to a 1's based address on the command line using
+the -B option. This only works if your network setup listens on both
+0s and 1s based broadcasts. The -B option can only control what
+address it sends to, not what it listens on.
+
+
