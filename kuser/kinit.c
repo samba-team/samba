@@ -62,12 +62,12 @@ struct getargs args[] = {
 };
 
 static void
-usage (void)
+usage (int ret)
 {
     arg_printusage (args,
 		    sizeof(args)/sizeof(*args),
 		    "[principal]");
-    exit (1);
+    exit (ret);
 }
 
 int
@@ -77,13 +77,8 @@ main (int argc, char **argv)
     krb5_context context;
     krb5_ccache  ccache;
     krb5_principal principal;
-    krb5_principal server;
     krb5_creds cred;
     krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
-    int c;
-    char *realm;
-    char pwbuf[128];
-    krb5_kdc_rep kdc_rep;
     int optind = 0;
     krb5_get_init_creds_opt opt;
 
@@ -91,10 +86,10 @@ main (int argc, char **argv)
     memset(&cred, 0, sizeof(cred));
     
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
-	usage();
+	usage(1);
     
     if (help_flag)
-	usage ();
+	usage (0);
 
     if(version_flag){
 	printf("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
