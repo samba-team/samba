@@ -3,6 +3,10 @@
 	* su.c (verfiy_krb5): get the name out of the ccache before
  	closing it
 
+1999-05-05  Assar Westerlund  <assar@sics.se>
+
+	* su.c: some more error checking
+
 Wed Apr 21 21:04:36 1999  Assar Westerlund  <assar@sics.se>
 
 	* su.c (-f): implement
