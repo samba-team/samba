@@ -27,14 +27,14 @@
 BOOL nmbd_running(void)
 {
 	extern struct in_addr loopback_ip;
-	int fd, count;
+	int fd, count, flags;
 	struct in_addr *ip_list;
 
 	if ((fd = open_socket_in(SOCK_DGRAM, 0, 3,
 				 interpret_addr("127.0.0.1"), True)) != -1) {
 		if ((ip_list = name_query(fd, "__SAMBA__", 0, 
 					  True, True, loopback_ip,
-					  &count)) != NULL) {
+					  &count, &flags)) != NULL) {
 			SAFE_FREE(ip_list);
 			close(fd);
 			return True;
