@@ -41,7 +41,7 @@ interface epmapper
 		uint16 version;
 	} epm_prot_uuid;
 
-	typedef enum {
+	typedef [enum8bit] enum {
 		
 		/* Level 4 and higher */
 		EPM_PROTOCOL_DNET_NSP		= 0x04,
@@ -71,7 +71,7 @@ interface epmapper
 		EPM_PROTOCOL_HTTP    		= 0x1f,
 		EPM_PROTOCOL_UNIX_DS  		= 0x20, /* Unix domain socket */
 		EPM_PROTOCOL_NULL			= 0x21
-	} epm_protocols;
+	} epm_protocol;
 
 	typedef [nodiscriminant] union {
 		[case(EPM_PROTOCOL_UUID)] epm_prot_uuid uuid;
@@ -206,7 +206,7 @@ interface epmapper
 	} epm_rhs;
 
 	typedef struct {
-		uint8  protocol;
+		epm_protocol  protocol;
 		[switch_is(protocol)] epm_protocol_info info;
 	} epm_lhs;
 
@@ -226,7 +226,7 @@ interface epmapper
 	} epm_tower;
 
 	typedef struct {
-		[value(ndr_size_epm_tower(0, &r->tower,ndr->flags))] uint32  tower_length;
+		[value(ndr_size_epm_tower(&r->tower, ndr->flags))] uint32  tower_length;
 		[subcontext(4)] epm_tower tower;
 	} epm_twr_t;
 

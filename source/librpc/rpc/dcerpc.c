@@ -907,7 +907,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	if (object) {
 		pkt.u.request.object.object = *object;
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_ORPC;
-		chunk_size -= ndr_size_GUID(0,object,0);
+		chunk_size -= ndr_size_GUID(object,0);
 	}
 
 	DLIST_ADD(p->pending, req);

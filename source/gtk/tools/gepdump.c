@@ -55,7 +55,7 @@ static void on_about1_activate (GtkMenuItem *menuitem, gpointer user_data)
 	gtk_widget_destroy(GTK_WIDGET(aboutwin));
 }
 
-static const char *get_protocol_name(enum epm_protocols protocol)
+static const char *get_protocol_name(enum epm_protocol protocol)
 {
 	switch (protocol) {
 	case EPM_PROTOCOL_UUID: return "UUID";
