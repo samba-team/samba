@@ -130,15 +130,20 @@ parse_keys(hdb_entry *ent, char *str)
 	    ((u_char*)key->key.keyvalue.data)[i / 2] = tmp;
 	}
 	p = strtok_r(NULL, ":", &save);
-	if(strcmp(p, "-") != 0){
+	if (p == NULL) {
 	    key->salt = malloc(sizeof(*key->salt));
-	    krb5_data_alloc(key->salt, (strlen(p) - 1) / 2 + 1);
-	    for(i = 0; i < strlen(p); i += 2){
-		sscanf(p + i, "%02x", &tmp);
-		((u_char*)key->salt->data)[i / 2] = tmp;
+	    krb5_data_zero (key->salt);
+	} else {
+	    if(strcmp(p, "-") != 0){
+		key->salt = malloc(sizeof(*key->salt));
+		krb5_data_alloc(key->salt, (strlen(p) - 1) / 2 + 1);
+		for(i = 0; i < strlen(p); i += 2){
+		    sscanf(p + i, "%02x", &tmp);
+		    ((u_char*)key->salt->data)[i / 2] = tmp;
+		}
 	    }
+	    p = strtok_r(NULL, ":", &save);
 	}
-	p = strtok_r(NULL, ":", &save);
     }
 }
 
