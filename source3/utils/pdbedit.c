@@ -590,7 +590,7 @@ int main (int argc, char **argv)
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
-		case 'V':
+		case 'C':
 			account_policy_value_set = True;
 			break;
 		}
