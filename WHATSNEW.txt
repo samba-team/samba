@@ -4,6 +4,9 @@
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
 
+There are several important oplock logic bugs that have been fixed in
+this release, so an upgrade is recommended.
+
 New daemon included - winbindd
 ------------------------------
 
@@ -24,7 +27,11 @@ The current version of winbindd shipped in 2.2.2 does have some
 memory leaks, which will be addressed for the next Samba release,
 so it is advisable to monitor the winbind process. This code is
 being used in production by several vendors, so the leaks are
-managable.
+managable. In addition, this version of winbind does not work
+correctly against a Samba PDC, due to some missing calls on the
+PDC side. These problems are being addressed for the next Samba
+release, but it was thought better to release the code now rather
+than delay the main Samba code to match the winbind release schedule.
 
 For more information on using winbind, see the man pages for 
 winbindd and wbinfo.
@@ -34,37 +41,42 @@ Note that winbindd is not installed by default.
 New/Changed parameters in 2.2.2
 -------------------------------
 
+For more information on these parameters, see the man pages for
+smb.conf.
+
 Added/changed parameters.
 -------------------------
 
 strict allocate
+
+Causes Samba not to create UNIX 'sparse' files, but to follow the
+Windows behaviour of always allocating on-disk space.
+
 use mmap
+
+Set to 'on' by default, only set to 'off' on HPUX 11.x or below or other
+UNIX systems that don't have coherent mmap/read-write internal caches.
+You should not need to set this parameter.
+
+nt acl support
+
+This parameter has been changed to a per-share option, and is very
+useful in enabling Windows 2000 SP2 to load/save profiles from a 
+Samba share.
 
 New printing parameters.
 ------------------------
 
 disable spoolss
 
-Enabling this parameter will disables Samba's support for the SPOOLSS set 
-of MS-RPC's and will yield identical behavior as Samba 2.0.x. Windows NT/2000 
-clients will downgrade to using Lanman style printing commands. Windows 9x/ME 
-will be uneffected by the parameter. However, this will also disable the 
-ability to upload printer drivers to a Samba server via the Windows NT Add 
-Printer Wizard or by using the NT printer properties dialog window. It will 
-also disable the capability of Windows NT/2000 clients to download print 
-drivers from the Samba host upon demand.  Be very careful about enabling this 
-parameter. 
+Setting this parameter causes Samba to go back to the old 2.0.x
+LANMAN printing behaviour, for people who wish to disable the
+new SPOOLSS pipe.
 
 use client driver
 
-This parameter applies only to Windows NT/2000
-clients.  It has no affect on Windows 95/98/ME clients.  When
-serving a printer to Windows NT/2000 clients without first installing
-a valid printer driver on the Samba host, the client will be required
-to install a local printer driver.  From this point on, the client
-will treat the print as a local printer and not a network printer
-connection.  This is much the same behavior that will occur
-when "disable spoolss = yes"
+Causes Windows NT/2000 clients to need have a local printer driver
+installed and to treat the printer as local.
 
 New LDAP parameters.
 --------------------
@@ -73,7 +85,6 @@ Samba 2.2.2 contains new code to maintain a Samba SAM database
 on a remote LDAP server. These parameters have been added as
 part of this code. These parameters are only available when Samba
 has been compiled with the --with-ldapsam option.
-Please see the smb.conf man page for details.
 
 ldap admin dn
 ldap ssl
@@ -112,14 +123,83 @@ share modes
 ldap root
 ldap root passwd
 
+New Documentation.
+------------------
+
+Some new README's have been added in the docs/ directory. These cover
+using roving profiles with Windows 2000 SP2 (docs/README.Win2kSP2),
+and how to use Samba to help prevent Windows virus spread
+(docs/README.Win32-Viruses).
+
+Quota problems on a Linux 2.4 kernel.
+-------------------------------------
+
+Currently the quota interfaces have diverged between the Linus
+2.4.x kernels and the Alan Cox 2.4.x kernels (the Alan Cox varients
+are shipped with RedHat). Running quota-enabled Samba compiled on
+an Alan Cox kernel works correctly on an Alan Cox kernel (the one
+shipped by default with RedHat 7.x) but fails on a Linus kernel.
+
+This is a mess, and hopefully Alan and Linus will sort it out soon.
+In the meantime we need to ship.....
+
 Changes in 2.2.2
 -----------------
 
-
-
-
-
-
+1). mmap tdb code disabled on HPUX. This should prevent the reports of
+tdb corruption on HUPX.
+2). Large file support set to off in Solaris 5.5 and below.
+3). Better CUPS detection.
+4). New SAM (password database) backends - smbpasswd (traditional),
+LDAP, NIS+ and Samba TDB.
+5). Quota fixups on Linux.
+6). libsmbclient stand-alone code added. Can be built as a shared library
+under Linux.
+7). Tru64 ACL suppport added.
+8). winbindd option added.
+9). Realloc fail tidyup fixes all over the code.
+10). Large improvement in hash table code efficiency - would be found with
+large stat caches.
+11). Error code consistency improved (still needs more work).
+12). Profile shared memory support added to nmbd.
+13). New Windows 2000/NT passthrough info levels added.
+14). readraw/writeraw code rewritten - many bugs fixed.
+15). UNIX password sync (non pam) code fixed, use correct wildcard matcher.
+16). Reverse DNS lookup avoided on socket open.
+17). Bug preventing nmbd re-registering names on WINS server timeout fixed.
+18). Zero length byte range lock code added. Much closer to Windows semantics.
+19). Alignment fault fixes for Linux/Alpha.
+20). Error checking on tdb returns vastly improved.
+21). Handling of delete on close fixed. No longer possible to leave 'dead'
+file entries.
+22). Handling of oplock break failure cleanups improved. Should not be
+able to leave 'dead' entries.
+23). Fix handling of errors trying to set 64 bit locks on 32 bit NFS mounts.
+24). Misc. MS-DFS code fixes.
+25). Ignore logon packets if not a PDC (needed for PDC/BDC failover).
+26). winbind pam module added.
+27). Order N^^2 enumeration of printers problem fixed.
+28). Password backend database code re-ordered to allow different password
+backends (at compile time currently).
+29). Improved print driver version detection for Windows 2000.
+30). Driver DEVMODE initialization fixes.
+31). Improved SYSV print parse code.
+32). Fixed enumeration of large numbers of users/groups from Windows clients.
+Code still too slow.
+33). Fix for buggy NetApp RPC pipe clients.
+34). Fix for NT sending multiple SetPrinterDataEx calls.
+35). Fix for logic bug where smbd could delay oplock break request messages
+from other smbd daemons whilst client kept us busy.
+36). Fix deadlock problem with connections tdb on enumeration.
+37). Fixes for setting/getting NT ACLs - improved POSIX mapping both ways.
+38). Removed unused readbmpx/writebmpx code.
+39). Attempt to fix Linux 2.4.x quota mess.
+40). Improved ctemp code for Windows 2000 compatibilty.
+41). Finally understood difference between set EOF and set allocation requests.
+Added strict allocate parameter to help.
+42). Correctly return name types on name to SID lookups.
+43). tdb spinlock code update.
+44). Use pread/pwrite on systems that have it to fix race condition in tdb code.
 
 Older release notes for Samba 2.2.x follow.
 
