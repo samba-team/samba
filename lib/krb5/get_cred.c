@@ -179,10 +179,13 @@ init_tgs_req (krb5_context context,
     t->pvno = 5;
     t->msg_type = krb_tgs_req;
     if (in_creds->session.keytype) {
-	ret = krb5_keytype_to_enctypes_default (context,
-						in_creds->session.keytype,
-						&t->req_body.etype.len,
-						&t->req_body.etype.val);
+	ALLOC_SEQ(&t->req_body.etype, 1);
+	if(t->req_body.etype.val == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    goto fail;
+	}
+	t->req_body.etype.val[0] = in_creds->session.keytype;
     } else {
 	ret = krb5_init_etype(context, 
 			      &t->req_body.etype.len, 
