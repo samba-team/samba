@@ -60,6 +60,7 @@
 .Nm gss_inquire_mechs_for_name ,
 .Nm gss_inquire_names_for_mech ,
 .Nm gss_krb5_copy_ccache ,
+.Nm gss_krb5_compat_des3_mic ,
 .Nm gss_process_context_token ,
 .Nm gss_release_buffer ,
 .Nm gss_release_cred ,
@@ -257,6 +258,12 @@ GSS-API library (libgssapi, -lgssapi)
 .Fa "krb5_ccache out"
 .Fc
 .Ft OM_uint32
+.Fo gss_krb5_compat_des3_mic
+.Fa "OM_uint32 * minor_status"
+.Fa "gss_ctx_id_t context_handle"
+.Fa "int onoff"
+.Fc 
+.Ft OM_uint32
 .Fo gss_process_context_token
 .Fc
 .Ft OM_uint32
@@ -437,6 +444,20 @@ the initiator to the acceptor when using token delegation in the
 Kerberos mechanism.
 The acceptor receives the delegated token in the last argument to
 .Fn gss_accept_sec_context .
+.Pp
+.Nm gss_krb5_compat_des3_mic
+turns on or off the compatibly with older version of Heimdal using
+des3 get and verify mic, this is way to programmatically set the
+[gssapi]broken_des3_mic and [gssapi]correct_des3_mic flags (see
+COMPATIBILITY section in
+.Xr gssapi 3 ) .
+If the CPP symbol
+.Dv GSS_C_KRB5_COMPAT_DES3_MIC
+is present,
+.Nm gss_krb5_compat_des3_mic
+exists.
+.Nm gss_krb5_compat_des3_mic
+will be removed in a later version of the GSS-API library.
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_ccache 3 ,
