@@ -1,3 +1,11 @@
+2003-03-18  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* afslog.1: --no-v4, --no-v5
+	
+	* Makefile.am: always build afsutils now
+	
+	* afslog.c: make build without KRB4
+	
 2002-11-26  Johan Danielsson  <joda@pdc.kth.se>
 
 	* afslog.c: remove plural form in help string
