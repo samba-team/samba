@@ -831,7 +831,7 @@ static struct parm_struct parm_table[] = {
 	{"debug pid", P_BOOL, P_GLOBAL, &Globals.bDebugPid, NULL, NULL, 0},
 	{"debug uid", P_BOOL, P_GLOBAL, &Globals.bDebugUid, NULL, NULL, 0},
 	
-	{"status", P_BOOL, P_LOCAL, &sDefault.status, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE | FLAG_PRINT},
+	{"status", P_BOOL, P_LOCAL, &sDefault.status, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE | FLAG_PRINT | FLAG_DEPRECATED},
 
 	{"Protocol Options", P_SEP, P_SEPARATOR},
 	
