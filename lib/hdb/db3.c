@@ -267,7 +267,7 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
     }
     db_create(&d, NULL, 0);
     db->hdb_db = d;
-#if (DB_VERSION_MAJOR > 3) && (DB_VERSION_MINOR > 0)
+#if (DB_VERSION_MAJOR >= 4) && (DB_VERSION_MINOR >= 1)
     if ((ret = d->open(db->hdb_db, NULL, fn, NULL, DB_BTREE, myflags, mode))) {
 #else
     if ((ret = d->open(db->hdb_db, fn, NULL, DB_BTREE, myflags, mode))) {
