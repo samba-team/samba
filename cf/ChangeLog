@@ -1,3 +1,7 @@
+2005-03-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken-frag.m4: include <sys/socket.h> for <netinet6/in6_var.h>
+	
 2005-03-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* sunos.m4: Match solaris 10.  From: Joakim Fallsjo
