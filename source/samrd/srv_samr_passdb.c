@@ -2470,6 +2470,11 @@ uint32 _samr_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 /*******************************************************************
  samr_reply_create_user
  ********************************************************************/
+/*
+	uint32 samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
+						uint32 unk_0, uint32 unk_1,
+						POLICY_HND *user_pol, uint32 *rid);
+*/
 uint32 _samr_create_user(SAMR_Q_CREATE_USER *q_u,
 				prs_struct *rdata)
 {
@@ -2567,6 +2572,9 @@ uint32 _samr_create_user(SAMR_Q_CREATE_USER *q_u,
 /*******************************************************************
  samr_reply_connect_anon
  ********************************************************************/
+/*
+??
+*/
 uint32 _samr_connect_anon(SAMR_Q_CONNECT_ANON *q_u,
 				prs_struct *rdata)
 {
@@ -2607,6 +2615,10 @@ uint32 _samr_connect_anon(SAMR_Q_CONNECT_ANON *q_u,
 /*******************************************************************
  samr_reply_connect
  ********************************************************************/
+/*
+	BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
+					POLICY_HND *connect_pol);
+*/
 uint32 _samr_connect(SAMR_Q_CONNECT *q_u,
 				prs_struct *rdata)
 {
@@ -2647,6 +2659,11 @@ uint32 _samr_connect(SAMR_Q_CONNECT *q_u,
 /*******************************************************************
  samr_reply_open_alias
  ********************************************************************/
+/*
+	BOOL samr_open_alias(  const POLICY_HND *domain_pol,
+					uint32 flags, uint32 rid,
+					POLICY_HND *alias_pol);
+*/
 uint32 _samr_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 				prs_struct *rdata)
 {
@@ -2746,53 +2763,44 @@ uint32 _samr_open_group(SAMR_Q_OPEN_GROUP *q_u,
 
 /* XXXX now do a make proto; make samrd/srv_samr_passdb.c,
    and go to rpc_server/srv_samr.c */
+#endif 
 
 /*******************************************************************
- samr_reply_lookup_domain
- ********************************************************************/
-uint32 _samr_lookup_domain(SAMR_Q_LOOKUP_DOMAIN *q_u,
-				prs_struct *rdata)
+samr_lookup_domain
+********************************************************************/
+uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
+				const UNISTR2 *uni_domain,
+				DOM_SID *dom_sid)
 {
-	SAMR_R_LOOKUP_DOMAIN r_u;
 	fstring domain;
 
 	DEBUG(5,("samr_lookup_domain: %d\n", __LINE__));
 
-	ptr_sid = 0;
-	status = 0x0;
-
 	/* find the connection policy handle */
-	if (find_policy_by_hnd(get_global_hnd_cache(), &(connect_pol)) == -1)
+	if (find_policy_by_hnd(get_global_hnd_cache(), connect_pol) == -1)
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0)
-        {
-		unistr2_to_ascii(domain, &(uni_domain), sizeof(domain));
-		DEBUG(5, ("Lookup Domain: %s\n", domain));
+	unistr2_to_ascii(domain, uni_domain, sizeof(domain));
+	DEBUG(5, ("Lookup Domain: %s\n", domain));
 
-		/* check it's one of ours */
-		if (strequal(domain, global_sam_name))
-		{
-			make_dom_sid2(&(dom_sid), &global_sam_sid);
-			ptr_sid = 1;
-		}
-		else if (strequal(domain, "BUILTIN"))
-		{
-			make_dom_sid2(&(dom_sid), &global_sid_S_1_5_20);
-			ptr_sid = 1;
-		}
-		else
-		{
-			status = NT_STATUS_NO_SUCH_DOMAIN;
-		}
+	/* check it's one of ours */
+	if (strequal(domain, global_sam_name))
+	{
+		sid_copy(dom_sid, &global_sam_sid);
 	}
-
-	/* store the response in the SMB stream */
-	samr_io_r_lookup_domain("", &r_u, rdata, 0);
+	else if (strequal(domain, "BUILTIN"))
+	{
+		sid_copy(dom_sid, &global_sid_S_1_5_20);
+	}
+	else
+	{
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
 
 	DEBUG(5,("samr_lookup_domain: %d\n", __LINE__));
+
+	return 0x0;
 }
 
-#endif

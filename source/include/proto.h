@@ -3119,6 +3119,8 @@ BOOL samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int
 BOOL make_samr_q_lookup_domain(SAMR_Q_LOOKUP_DOMAIN *q_u,
 		POLICY_HND *pol, const char *dom_name);
 BOOL samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN *q_u, prs_struct *ps, int depth);
+BOOL make_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN *r_u,
+		DOM_SID *dom_sid, uint32 status);
 BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 				const POLICY_HND *connect_pol, uint32 flags,
@@ -4342,8 +4344,8 @@ uint32 _samr_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 				prs_struct *rdata);
 uint32 _samr_open_group(SAMR_Q_OPEN_GROUP *q_u,
 				prs_struct *rdata);
-uint32 _samr_lookup_domain(SAMR_Q_LOOKUP_DOMAIN *q_u,
-				prs_struct *rdata);
+uint32 _samr_lookup_domain(POLICY_HND *connect_pol, UNISTR2 *uni_domain,
+				   	DOM_SID *dom_sid);
 
 /*The following definitions come from  smbd/blocking.c  */
 

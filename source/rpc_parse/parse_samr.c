@@ -123,6 +123,27 @@ BOOL samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN *q_u, prs_struct *
 }
 
 /*******************************************************************
+makes a SAMR_R_LOOKUP_DOMAIN structure.
+********************************************************************/
+BOOL make_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN *r_u,
+		DOM_SID *dom_sid, uint32 status)
+{
+	if (r_u == NULL) return False;
+
+	DEBUG(5,("make_samr_r_lookup_domain\n"));
+
+	r_u->status = status;
+	r_u->ptr_sid = 0;
+	if (status == 0x0)
+	{
+		r_u->ptr_sid = 1;
+		make_dom_sid2(&(r_u->dom_sid), dom_sid);
+	}
+
+	return True;
+}
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN *r_u, prs_struct *ps, int depth)
