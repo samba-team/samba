@@ -1,4 +1,11 @@
+Fri Feb 19 06:50:35 1999  Assar Westerlund  <assar@sics.se>
+
+	* Release 0.1a
+
 Sat Feb 13 17:12:53 1999  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/mk_safe.c (krb5_mk_safe): sizeof(buf) -> buf_size, buf
+ 	is now a `u_char *'
 
 	* lib/krb5/get_in_tkt.c (krb5_init_etype): etypes are now `int'
 
