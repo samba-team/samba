@@ -829,7 +829,11 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 				if (p) {
 					*p++ = '\0';
 					fstrcpy(last_component, p);
+				} else {
+					fstrcpy(last_component, tmp_fname);
+					pstrcpy(tmp_fname, ".");
 				}
+
 #ifdef REALPATH_TAKES_NULL
 				resolved_name = SMB_VFS_REALPATH(conn,tmp_fname,NULL);
 #else
