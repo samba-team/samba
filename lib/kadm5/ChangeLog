@@ -1,5 +1,7 @@
-2003-06-26  Love  <lha@stacken.kth.se>
+2003-06-26  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* set_keys.c (make_keys): add AES support
+	
 	* set_keys.c: fix off by one in the aes case, pointed out by Ken
 	Raeburn
 
