@@ -15,6 +15,15 @@
 	/**********************************************/
 	/* Function 0x00                              */
 
+	typedef enum {
+		DS_ROLE_STANDALONE_WORKSTATION = 0,
+		DS_ROLE_MEMBER_WORKSTATION     = 1,
+		DS_ROLE_STANDALONE_SERVER      = 2,
+		DS_ROLE_MEMBER_SERVER          = 3,
+		DS_ROLE_BACKUP_DC              = 4,
+		DS_ROLE_PRIMARY_DC             = 5
+	} ds_Role;
+
 	typedef struct {
 		uint16    role;
 		uint32    flags;
@@ -23,9 +32,43 @@
 		unistr    *forest;
 		GUID domain_guid;
 	} ds_DomainBasicInformation;
+
+	typedef enum {
+		DS_NOT_UPGRADING = 0,
+		DS_UPGRADING     = 1
+	} ds_UpgradeStatus;
+
+	typedef enum {
+		DS_PREVIOUS_UNKNOWN = 0,
+		DS_PREVIOUS_PRIMARY = 1,
+		DS_PREVIOUS_BACKUP  = 2
+	} ds_PreviousStatus;
+
+	typedef struct {
+		uint32 upgrading;
+		uint16 previous_role;
+	} ds_DomainUpgradeStatus;
+
+	typedef enum {
+		DS_STATUS_IDLE         = 0,
+		DS_STATUS_ACTIVE       = 1,
+		DS_STATUS_NEEDS_REBOOT = 2
+	} ds_Status;
+
+	typedef struct {
+		uint16 status;
+	} ds_RoleOpStatus;
 	
+	typedef enum {
+		DS_BASIC_INFORMATION = 1,
+		DS_UPGRADE_STATUS    = 2,
+		DS_ROLE_OP_STATUS    = 3
+	} ds_InformationLevel;
+
 	typedef union {
-		[case(1)] ds_DomainBasicInformation basic;
+		[case(DS_BASIC_INFORMATION)] ds_DomainBasicInformation basic;
+		[case(DS_UPGRADE_STATUS)]    ds_DomainUpgradeStatus    upgrade;
+		[case(DS_ROLE_OP_STATUS)]    ds_RoleOpStatus           status;
 	} ds_DomainInformation;
 
 	WERROR ds_RolerGetPrimaryDomainInformation(
@@ -33,7 +76,11 @@
 		[out,switch_is(level)] ds_DomainInformation *info
 		);
 
-
+	/*
+	  w2k3 has removed all the calls below from their implementation.
+	  These stubs are left here only as a way of documenting the names
+	  of the calls in case they ever turn up on the wire.
+	*/
 	WERROR ds_RolerDnsNameToFlatName();
 	WERROR ds_RolerDcAsDc();
 	WERROR ds_RolerDcAsReplica();

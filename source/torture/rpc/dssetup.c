@@ -28,18 +28,23 @@ static BOOL test_RolerGetPrimaryDomainInformation(struct dcerpc_pipe *p, TALLOC_
 {
 	struct ds_RolerGetPrimaryDomainInformation r;
 	NTSTATUS status;
+	BOOL ret = True;
+	int i;
 
 	printf("\ntesting RolerGetPrimaryDomainInformation\n");
 
-	r.in.level = 1;
+	for (i=DS_BASIC_INFORMATION;i<=DS_ROLE_OP_STATUS;i++) {
+		r.in.level = i;
 
-	status = dcerpc_ds_RolerGetPrimaryDomainInformation(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("RolerGetPrimaryDomainInformation failed - %s\n", nt_errstr(status));
-		return False;
+		status = dcerpc_ds_RolerGetPrimaryDomainInformation(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("RolerGetPrimaryDomainInformation level %d failed - %s\n",
+			       i, nt_errstr(status));
+			ret = False;
+		}
 	}
 
-	return True;
+	return ret;
 }
 
 BOOL torture_rpc_dssetup(void)
