@@ -361,18 +361,7 @@ static TDB_DATA locking_key_fsp(files_struct *fsp)
 BOOL lock_share_entry(connection_struct *conn,
 		      SMB_DEV_T dev, SMB_INO_T inode)
 {
-#if 1 /* JRATEST */
-	int count = 0;
-	for (count = 0; count < LOCK_SHARE_ENTRY_SPIN_COUNT; count++)
-		if (tdb_chainlock(tdb, locking_key(dev, inode)) == 0)
-			return True;
-		else
-			DEBUG(0,("lock_share_entry: locking (%d) for dev = %x, inode = %.0f failed with error %s\n",
-				count, (unsigned int)dev, (double)inode, strerror(errno) ));
-	return False;
-#else
 	return tdb_chainlock(tdb, locking_key(dev, inode)) == 0;
-#endif
 }
 
 /*******************************************************************
@@ -391,18 +380,7 @@ void unlock_share_entry(connection_struct *conn,
 
 BOOL lock_share_entry_fsp(files_struct *fsp)
 {
-#if 1 /* JRATEST */
-	int count = 0;
-	for (count = 0; count < LOCK_SHARE_ENTRY_SPIN_COUNT; count++)
-		if (tdb_chainlock(tdb, locking_key(fsp->dev, fsp->inode)) == 0)
-			return True;
-		else
-			DEBUG(0,("lock_share_entry_fsp: locking (%d) for dev = %x, inode = %.0f failed with error %s\n",
-				count, (unsigned int)fsp->dev, (double)fsp->inode, strerror(errno) ));
-	return False;
-#else
 	return tdb_chainlock(tdb, locking_key(fsp->dev, fsp->inode)) == 0;
-#endif
 }
 
 /*******************************************************************
