@@ -225,9 +225,14 @@ AC_DEFINE(OLD_ENVIRON)
 AC_SUBST(OLD_ENVIRON)
 
 #
-# AIX needs /lib/pse.exp for getmsg
+# AIX needs /lib/pse.exp for getmsg, but alas that file is broken in
+# AIX414
 #
-if test -f /lib/pse.exp ; then LIBS="$LIBS -bI:/lib/pse.exp"; fi
+
+if test -f /lib/pse.exp ;then
+	GETMSG_LIB="getmsg.exp"; 
+	AC_SUBST(GETMSG_LIB)
+fi
 
 AC_CHECK_LIB(termcap, tgetent)
 AC_CHECK_LIB(curses, setupterm)

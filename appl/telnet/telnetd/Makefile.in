@@ -10,7 +10,7 @@ AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
-LIBS = @LIBS@
+LIBS = @LIBS@ @GETMSG_LIBS@
 INSTALL = @INSTALL@
 MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
 
