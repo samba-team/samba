@@ -495,15 +495,13 @@ BOOL get_referred_path(char *pathname, struct junction_map *jucn,
 	 */
 
 	if (dp.reqpath[0] == '\0') {
-		return self_ref(pathname, jucn, consumedcntp, self_referralp);
-	}
 
-	pstrcpy(conn_path, lp_pathname(snum));
-	if (!create_conn_struct(conn, snum, conn_path))
-		return False;
-
-	if (*lp_msdfs_proxy(snum) != '\0') {
 		struct referral* ref;
+
+		if (*lp_msdfs_proxy(snum) == '\0')
+			return self_ref(pathname, jucn, consumedcntp,
+					self_referralp);
+
 		jucn->referral_count = 1;
 		if ((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
 			DEBUG(0, ("malloc failed for referral\n"));
@@ -521,6 +519,10 @@ BOOL get_referred_path(char *pathname, struct junction_map *jucn,
 		ret = True;
 		goto out;
 	}
+
+	pstrcpy(conn_path, lp_pathname(snum));
+	if (!create_conn_struct(conn, snum, conn_path))
+		return False;
 
 	/* If not remote & not a self referral, return False */
 	if (!resolve_dfs_path(pathname, &dp, conn, False, 
