@@ -6,15 +6,6 @@
 
 interface misc
 {
-	/* server roles */
-	typedef enum {
-		ROLE_STANDALONE    = 0,
-		ROLE_DOMAIN_MEMBER = 1,
-		ROLE_DOMAIN_BDC    = 2,
-		ROLE_DOMAIN_PDC    = 3
-	} samr_Role;
-
-
 	typedef [public,noprint,gensize] struct {
 		uint32 time_low;
 		uint16 time_mid;
@@ -27,18 +18,4 @@ interface misc
 		uint32 handle_type;
 		GUID   uuid;
 	} policy_handle;
-
-	typedef [public, flag(NDR_PAHEX)] struct {
-		uint8 hash[16];
-	} samr_Password;
-
-	typedef [public, flag(NDR_PAHEX)] struct {
-		uint8 data[8];
-	} netr_Credential;
-
-	typedef [public] struct {
-		netr_Credential cred;
-		time_t timestamp;
-	} netr_Authenticator;
-
 }

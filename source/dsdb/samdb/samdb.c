@@ -837,11 +837,11 @@ int samdb_msg_add_uint64(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
   add a samr_Password element to a message
 */
 int samdb_msg_add_hash(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-		       const char *attr_name, struct samr_Password hash)
+		       const char *attr_name, struct samr_Password *hash)
 {
 	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
-	val.data = talloc_memdup(mem_ctx, hash.hash, 16);
+	val.data = talloc_memdup(mem_ctx, hash->hash, 16);
 	if (!val.data) {
 		return -1;
 	}

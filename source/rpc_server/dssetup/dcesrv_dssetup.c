@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"
 #include "rpc_server/common/common.h"
 

@@ -122,6 +122,13 @@
 
 	/************************/
 	/* Function    0x08     */
+	/* server roles */
+	typedef [v1_enum] enum {
+		ROLE_STANDALONE    = 0,
+		ROLE_DOMAIN_MEMBER = 1,
+		ROLE_DOMAIN_BDC    = 2,
+		ROLE_DOMAIN_PDC    = 3
+	} samr_Role;
 
 	typedef struct {
 		uint16 min_password_length;
@@ -139,7 +146,7 @@
 		samr_String primary; /* PDC name if this is a BDC */
 		uint64 sequence_num;
 		uint32 unknown2;
-		uint32 role;
+		samr_Role role;
 		uint32 unknown3;
 		uint32 num_users;
 		uint32 num_groups;
@@ -163,7 +170,7 @@
 	} samr_DomInfo6;
 
 	typedef struct {
-		uint32 role;
+		samr_Role role;
 	} samr_DomInfo7;
 
 	typedef struct {
@@ -780,7 +787,10 @@
 
 	/************************/
 	/* Function    0x26     */
-	
+	typedef [public, flag(NDR_PAHEX)] struct {
+		uint8 hash[16];
+	} samr_Password;
+
 	/*
 	  this is a password change interface that doesn't give
 	  the server the plaintext password. Depricated.

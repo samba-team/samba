@@ -20,6 +20,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "librpc/gen_ndr/ndr_netlogon.h"
+
 struct creds_CredentialState {
 	uint32_t negotiate_flags;
 	uint8_t session_key[16];
@@ -31,8 +33,6 @@ struct creds_CredentialState {
 	char *computer_name;
 	char *account_name;
 };
-
-
 
 /* for the timebeing, use the same neg flags as Samba3. */
 /* The 7 here seems to be required to get Win2k not to downgrade us
