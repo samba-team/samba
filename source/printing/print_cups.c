@@ -818,17 +818,16 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 		{
 			qalloc += 16;
 
-			if (qalloc == 16)
-				temp = malloc(sizeof(print_queue_struct) * qalloc);
-			else
-				temp = realloc(queue, sizeof(print_queue_struct) * qalloc);
+			temp = Realloc(queue, sizeof(print_queue_struct) * qalloc);
 
 			if (temp == NULL)
 			{
+				DEBUG(0,("cups_queue_get: Not enough memory!");
 				ippDelete(response);
 				httpClose(http);
 
-				return (qcount);
+				free (queue);
+				return (0);
 			}
 
 			queue = temp;
@@ -959,6 +958,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 		DEBUG(0,("Unable to get printer status for %s - %s\n", PRINTERNAME(snum),
 			 ippErrorString(cupsLastError())));
 		httpClose(http);
+		*q = queue;
 		return (qcount);
 	}
 
@@ -968,7 +968,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 			 ippErrorString(response->request.status.status_code)));
 		ippDelete(response);
 		httpClose(http);
-
+		*q = queue;
 		return (qcount);
 	}
 

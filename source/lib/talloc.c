@@ -90,7 +90,7 @@ void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 
 	for (tc=t->list; tc; tc=tc->next) {
 		if (tc->ptr == ptr) {
-			ptr = realloc(ptr, size);
+			ptr = Realloc(ptr, size);
 			if (ptr) {
 				t->total_alloc_size += (size - tc->size);
 				tc->size = size;

@@ -1020,6 +1020,10 @@ static void do_put(char *rname,char *lname)
 		 rname));
   
 	buf = (char *)malloc(maxwrite);
+	if (!buf) {
+		DEBUG(0, ("ERROR: Not enough memory!\n"));
+		return;
+	}
 	while (!feof(f)) {
 		int n = maxwrite;
 		int ret;
