@@ -235,7 +235,7 @@ usage (int code)
 int
 main(int argc, char **argv)
 {
-    int addrlen, on = 1, tos;
+    int his_addr_len, ctrl_addr_len, on = 1, tos;
     char *cp, line[LINE_MAX];
     FILE *fd;
     int port;
@@ -313,7 +313,6 @@ main(int argc, char **argv)
 	ftpd_timeout = maxtimeout;
 #endif
 
-
     if(interactive_flag)
 	mini_inetd (port);
 
@@ -322,13 +321,13 @@ main(int argc, char **argv)
      * necessary for anonymous ftp's that chroot and can't do it later.
      */
     openlog("ftpd", LOG_PID | LOG_NDELAY, LOG_FTP);
-    addrlen = sizeof(his_addr_ss);
-    if (getpeername(STDIN_FILENO, his_addr, &addrlen) < 0) {
+    his_addr_len = sizeof(his_addr_ss);
+    if (getpeername(STDIN_FILENO, his_addr, &his_addr_len) < 0) {
 	syslog(LOG_ERR, "getpeername (%s): %m",argv[0]);
 	exit(1);
     }
-    addrlen = sizeof(ctrl_addr_ss);
-    if (getsockname(STDIN_FILENO, ctrl_addr, &addrlen) < 0) {
+    ctrl_addr_len = sizeof(ctrl_addr_ss);
+    if (getsockname(STDIN_FILENO, ctrl_addr, &ctrl_addr_len) < 0) {
 	syslog(LOG_ERR, "getsockname (%s): %m",argv[0]);
 	exit(1);
     }
@@ -365,7 +364,7 @@ main(int argc, char **argv)
     if (fcntl(fileno(stdin), F_SETOWN, getpid()) == -1)
 	syslog(LOG_ERR, "fcntl F_SETOWN: %m");
 #endif
-    dolog(his_addr);
+    dolog(his_addr, his_addr_len);
     /*
      * Set up default state
      */
@@ -1775,11 +1774,9 @@ renamecmd(char *from, char *to)
 }
 
 static void
-dolog(struct sockaddr *sa)
+dolog(struct sockaddr *sa, int sa_len)
 {
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-
-	inaddr2str (sin->sin_addr, remotehost, sizeof(remotehost));
+	getnameinfo (sa, sa_len, remotehost, sizeof(remotehost), NULL, 0, 0);
 #ifdef HAVE_SETPROCTITLE
 	snprintf(proctitle, sizeof(proctitle), "%s: connected", remotehost);
 	setproctitle(proctitle);
