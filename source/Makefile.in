@@ -18,6 +18,7 @@ LDFLAGS=@LDFLAGS@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
 AWK=@AWK@
 DYNEXP=@DYNEXP@
+PYTHON=@PYTHON@
 
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
@@ -881,9 +882,8 @@ python_common_proto:
 		$(PY_COMMON_PROTO_OBJ)
 
 python_ext: $(PYTHON_OBJS)
-	@echo python python/setup.py build
-	@PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
-		python python/setup.py build
+	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
+		$(PYTHON) python/setup.py build
 
 # revert to the previously installed version
 revert:
