@@ -33,7 +33,7 @@
  */
 
 #include "includes.h"
-#include "ldb_tdb/ldb_tdb.h"
+#include "ldb_tdb.h"
 
 /*
   free a message that has all parts separately allocated

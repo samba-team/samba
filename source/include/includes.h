@@ -741,6 +741,15 @@ struct functable {
 	int (*fn)(int argc, const char **argv);
 };
 
+#define malloc_p(type) (type *)malloc(sizeof(type))
+#define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
+#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
+
+#ifndef HAVE_COMPARISON_FN_T
+typedef int (*comparison_fn_t)(const void *, const void *);
+#endif
+
+#include "lib/ldb/include/ldb_parse.h"
 
 #include "nsswitch/nss.h"
 
