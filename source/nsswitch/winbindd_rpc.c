@@ -39,7 +39,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	POLICY_HND dom_pol;
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	int i;
+	int i, loop_count = 0;
 
 	DEBUG(3,("rpc: query_user_list\n"));
 
@@ -65,7 +65,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	do {
 		SAM_DISPINFO_CTR ctr;
 		SAM_DISPINFO_1 info1;
-		uint32 count = 0, start=i;
+		uint32 count = 0, start=i, max_entries, max_size;
 		int j;
 		TALLOC_CTX *ctx2;
 
@@ -77,10 +77,15 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			goto done;
 		}
 		
+		get_query_dispinfo_params(
+			loop_count, &max_entries, &max_size);
+
 		/* Query display info level 1 */
-		result = cli_samr_query_dispinfo(hnd->cli, ctx2,
-						 &dom_pol, &start, 1,
-						 &count, 0xFFFF, &ctr);
+		result = cli_samr_query_dispinfo(
+			hnd->cli, ctx2, &dom_pol, &start, 1, &count, 
+			max_entries, max_size, &ctr);
+
+		loop_count++;
 
 		if (!NT_STATUS_IS_OK(result) && 
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) break;
