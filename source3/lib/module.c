@@ -27,6 +27,7 @@ NTSTATUS smb_load_module(const char *module_name)
 	void *handle;
 	init_module_function *init;
 	NTSTATUS nt_status;
+	const char *error;
 
 	/* Always try to use LAZY symbol resolving; if the plugin has 
 	 * backwards compatibility, there might be symbols in the 
@@ -41,8 +42,11 @@ NTSTATUS smb_load_module(const char *module_name)
 
 	init = sys_dlsym(handle, "init_module");
 
-	if(!init) {
-		DEBUG(0, ("Error trying to resolve symbol 'init_module' in %s: %s\n", module_name, sys_dlerror()));
+	/* we must check sys_dlerror() to determine if it worked, because
+           sys_dlsym() can validly return NULL */
+	error = sys_dlerror();
+	if (error) {
+		DEBUG(0, ("Error trying to resolve symbol 'init_module' in %s: %s\n", module_name, error));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
