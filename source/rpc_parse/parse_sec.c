@@ -64,6 +64,13 @@ BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
  Sets up a SEC_ACE structure.
 ********************************************************************/
 
+static size_t sec_ace_get_size(const SEC_ACE *ace)
+{
+	if (ace == NULL)
+		return 0;
+	return sid_size(&ace->sid) + 8;
+}
+
 BOOL make_sec_ace(SEC_ACE * t, const DOM_SID *sid, uint8 type,
 		  SEC_ACCESS mask, uint8 flag)
 {
@@ -71,10 +78,10 @@ BOOL make_sec_ace(SEC_ACE * t, const DOM_SID *sid, uint8 type,
 
 	t->type = type;
 	t->flags = flag;
-	t->size = sid_size(sid) + 8;
 	t->info = mask;
-
 	sid_copy(&t->sid, sid);
+
+	t->size = sec_ace_get_size(t);
 
 	return True;
 }
@@ -128,7 +135,7 @@ BOOL make_sec_acl(SEC_ACL * t, uint16 revision, int num_aces, SEC_ACE * ace)
 
 	for (i = 0; i < num_aces; i++)
 	{
-		t->size += ace[i].size;
+		t->size += sec_ace_get_size(&ace[i]);
 	}
 
 	return True;
