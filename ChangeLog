@@ -1,3 +1,22 @@
+2003-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.c: add pkinit support
+	
+	* lib/krb5/init_creds_pw.c: add support for pkinit
+	
+	* lib/krb5/krb5_locl.h: add the opaque krb5_pk_init_ctx to
+	_krb5_get_init_creds_opt_private
+
+	* lib/krb5/pkinit.c: rename krb5_pk_init_openssl_ctx to
+	krb5_pk_init_ctx fix win2k error handling
+	
+	* lib/krb5/pkinit.c: PKINIT patch from Daniel Kouril and Petr
+	Holub, I removed the dependency on valicert asn1 parser, remove
+	smartcard and globus support (for now). Work to be done on this:
+	DH support, Globus support, Smartcard support, windows support (MS
+	implements -09 of the draft), verify that it conforms the new
+	draft
+
 2003-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/asn1/der_copy.c (copy_oid): copy all components
