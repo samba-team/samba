@@ -158,7 +158,7 @@
 #define real_fstat(fd,st)            	(__fstat(fd,st))
 #endif
 
-#ifdef HAVE__ACL
+#if defined(HAVE_SYS_ACL_H) && defined(HAVE__ACL)
 #define real_acl(fn,cmd,n,buf)            	(_acl(fn,cmd,n,buf))
 #elif SYS_acl
 #define real_acl(fn,cmd,n,buf)		(syscall(SYS_acl,(fn),(cmd),(n),(buf)))
