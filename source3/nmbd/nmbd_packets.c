@@ -1794,7 +1794,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
   dgram->header.packet_offset = 0;
   
-  make_nmb_name(&dgram->source_name,srcname,0,scope);
+  make_nmb_name(&dgram->source_name,srcname,src_type,scope);
   make_nmb_name(&dgram->dest_name,dstname,dest_type,scope);
 
   ptr = &dgram->data[0];
