@@ -907,6 +907,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 
 
 	ldap_state->last_ping = time(NULL);
+	ldap_state->pid = sys_getpid();
 	DEBUG(4,("The LDAP server is succesfully connected\n"));
 
 	return LDAP_SUCCESS;
@@ -965,6 +966,9 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 		got_alarm = False;
 		old_handler = CatchSignal(SIGALRM, gotalarm_sig);
 		alarm(endtime - now);
+
+		if (ldap_state->pid != sys_getpid())
+			smbldap_close(ldap_state);
 	}
 
 	while (1) {
