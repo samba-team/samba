@@ -63,6 +63,8 @@ extern fstring myworkgroup;
 #define QNLEN 12		/* queue name maximum length */
 
 extern int Client;
+extern int oplock_sock;
+extern int smb_read_error;
 
 static BOOL api_Unsupported(int cnum,uint16 vuid, char *param,char *data,
 			    int mdrcnt,int mprcnt,
@@ -3244,7 +3246,7 @@ static int named_pipe(int cnum,uint16 vuid, char *outbuf,char *name,
 /****************************************************************************
   reply to a SMBtrans
   ****************************************************************************/
-int reply_trans(char *inbuf,char *outbuf)
+int reply_trans(char *inbuf,char *outbuf, int size, int bufsize)
 {
   fstring name;
 
@@ -3307,12 +3309,18 @@ int reply_trans(char *inbuf,char *outbuf)
   /* receive the rest of the trans packet */
   while (pscnt < tpscnt || dscnt < tdscnt)
     {
+      BOOL ret;
       int pcnt,poff,dcnt,doff,pdisp,ddisp;
       
-      if (!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT) ||
-	  CVAL(inbuf, smb_com) != SMBtrans)
+      ret = receive_next_smb(Client,oplock_sock,inbuf,bufsize,SMB_SECONDARY_WAIT);
+
+      if ((ret && (CVAL(inbuf, smb_com) != SMBtrans)) || !ret)
 	{
-	  DEBUG(2,("Invalid secondary trans2 packet\n"));
+          if(ret)
+            DEBUG(0,("reply_trans: Invalid secondary trans packet\n"));
+          else
+            DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
+              (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 	  if (params) free(params);
 	  if (data) free(data);
 	  if (setup) free(setup);

@@ -43,7 +43,7 @@ static BOOL challenge_sent=False;
 /*******************************************************************
 Get the next challenge value - no repeats.
 ********************************************************************/
-void generate_next_challenge(char *challenge)
+void generate_next_challenge(uchar *challenge)
 {
 	unsigned char buf[16];
 	static int counter = 0;
@@ -68,7 +68,7 @@ void generate_next_challenge(char *challenge)
 /*******************************************************************
 set the last challenge sent, usually from a password server
 ********************************************************************/
-BOOL set_challenge(char *challenge)
+BOOL set_challenge(uchar *challenge)
 {
   memcpy(saved_challenge,challenge,8);
   challenge_sent = True;
@@ -78,7 +78,7 @@ BOOL set_challenge(char *challenge)
 /*******************************************************************
 get the last challenge sent
 ********************************************************************/
-BOOL last_challenge(char *challenge)
+BOOL last_challenge(uchar *challenge)
 {
   if (!challenge_sent) return(False);
   memcpy(challenge,saved_challenge,8);
@@ -832,7 +832,7 @@ static BOOL smb_password_check(uint8 password[24], uint8 part_passwd[16], uint8 
 check if a username/password is OK
 ****************************************************************************/
 BOOL smb_password_ok(struct smb_passwd *smb_pass,
-				char lm_pass[24], char nt_pass[24])
+				uchar lm_pass[24], uchar nt_pass[24])
 {
 	uint8 challenge[8];
 
@@ -955,7 +955,7 @@ BOOL password_ok(char *user, BOOL *guest,
 			return(False);
 		}
 
-		if (smb_password_ok(smb_pass, password, nt_pass))
+		if (smb_password_ok(smb_pass, (uchar*)password, (uchar*)nt_pass))
 		{
 			update_protected_database(user,True);
 			return(True);

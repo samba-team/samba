@@ -327,7 +327,7 @@ struct cli_state
 	char called_netbios_name[16];
 	char calling_netbios_name[16];
 
-	char cryptkey[8];
+	uchar cryptkey[8];
 	uint32 sesskey;
 	int serverzone;
 	uint32 servertime;
@@ -540,22 +540,26 @@ typedef struct
   char *name;
 } files_struct;
 
-struct mem_buffer
+struct mem_buf
 {
 	char *data;
-	int data_size;
-	int data_used;
+	uint32 data_size;
+	uint32 data_used;
 
-	int margin; /* safety margin when reallocing */
+	uint32 margin; /* safety margin when reallocing. */
+			    /* this can be abused quite nicely */
 
-	int align; /* alignment of data structures */
+	uint8 align; /* alignment of data structures (smb, dce/rpc, udp etc) */
+	uint32 start_offset; /* when used with mem_array, this can be non-zero */
 };
+
+#define mem_buffer mem_buf /* for now... */
 
 struct api_struct
 {
   char *name;
   uint8 opnum;
-  void (*fn) (int uid, struct mem_buffer*, int*, struct mem_buffer*, int*);
+  void (*fn) (int uid, struct mem_buf*, int*, struct mem_buf*, int*);
 };
 
 struct uid_cache {

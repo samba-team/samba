@@ -135,7 +135,7 @@ void nt_owf_gen(char *pwd, uchar nt_p16[16])
 }
 
 /* Does both the NT and LM owfs of a user's password */
-void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], char p16[16])
+void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
 {
 	char passwd[130];
 	StrnCpy(passwd, pwd, sizeof(passwd)-1);

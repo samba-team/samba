@@ -274,9 +274,9 @@ parameters:
 ****************************************************************************/
 BOOL cli_api_pipe(struct cli_state *cli, int t_idx,
 	char *pipe_name, int pipe_name_len,
-	int prcnt,int drcnt, int srcnt,
-	int mprcnt,int mdrcnt,
-	int *rprcnt,int *rdrcnt,
+	uint32 prcnt,uint32 drcnt, uint32 srcnt,
+	uint32 mprcnt,uint32 mdrcnt,
+	uint32 *rprcnt,uint32 *rdrcnt,
 	char *param, char *data, uint16 *setup,
 	char **rparam,char **rdata)
 {
@@ -566,7 +566,7 @@ will be generated.
 BOOL cli_session_setup(struct cli_state *cli,
 		       char *user, 
 		       char *pass, int passlen,
-		       char *ntpass, int ntpasslen,
+		       uchar *ntpass, int ntpasslen,
 		       char *workgroup)
 {
 	char *p;
@@ -622,13 +622,13 @@ BOOL cli_session_setup(struct cli_state *cli,
 			{
 				/* do a LM password encrypt */
 				passlen = 24;
-				SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
+				SMBencrypt(pass,(uchar *)cli->cryptkey,(uchar *)pword);
 
 				if (!ntpass)
 				{
 					/* do an NT password encrypt */
 					ntpasslen = 24;
-					SMBNTencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)ntpword);
+					SMBNTencrypt(pass,(uchar *)cli->cryptkey,(uchar *)ntpword);
 				}
 			}
 			else
@@ -3172,7 +3172,7 @@ BOOL cli_establish_connection(struct cli_state *cli, int *t_idx,
 				char *service, char *service_type,
 				BOOL do_shutdown, BOOL do_tcon, BOOL encrypted)
 {
-	uchar passwd[129];
+	char passwd[129];
 	int pass_len = 0;
 
 	DEBUG(5,("cli_establish_connection: %s<%02x> (%s) - %s [%s]\n",
@@ -3259,8 +3259,8 @@ BOOL cli_establish_connection(struct cli_state *cli, int *t_idx,
 #endif
 		/* attempt encrypted session */
 		if (!cli_session_setup(cli, username,
-	                       lm_owf_passwd, sizeof(lm_owf_passwd),
-	                       nt_owf_passwd, sizeof(nt_owf_passwd),
+	                       (char*)lm_owf_passwd, sizeof(lm_owf_passwd),
+	                              nt_owf_passwd, sizeof(nt_owf_passwd),
 	                       workgroup))
 		{
 			DEBUG(1,("failed session setup\n"));
@@ -3270,7 +3270,7 @@ BOOL cli_establish_connection(struct cli_state *cli, int *t_idx,
 		if (do_tcon)
 		{
 			if (!cli_send_tconX(cli, t_idx,  service, service_type,
-			                    nt_owf_passwd, sizeof(nt_owf_passwd)))
+			                    (char*)nt_owf_passwd, sizeof(nt_owf_passwd)))
 			{
 				DEBUG(1,("failed tcon_X\n"));
 				if (do_shutdown) cli_shutdown(cli);
@@ -3283,7 +3283,7 @@ BOOL cli_establish_connection(struct cli_state *cli, int *t_idx,
 		/* attempt clear-text session */
 		if (!cli_session_setup(cli, username,
 	                       passwd, pass_len,
-	                       "", 0,
+	                       NULL, 0,
 	                       workgroup))
 		{
 			DEBUG(1,("failed session setup\n"));
@@ -3293,7 +3293,7 @@ BOOL cli_establish_connection(struct cli_state *cli, int *t_idx,
 		if (do_tcon)
 		{
 			if (!cli_send_tconX(cli, t_idx,  service, service_type,
-			                    passwd, pass_len))
+			                    (char*)passwd, pass_len))
 			{
 				DEBUG(1,("failed tcon_X\n"));
 				if (do_shutdown) cli_shutdown(cli);

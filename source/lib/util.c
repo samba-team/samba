@@ -77,9 +77,10 @@ fstring remote_proto="UNKNOWN";
 pstring myhostname="";
 pstring user_socket_options="";   
 
-BOOL sess_trust_acct = False;
 pstring sesssetup_user="";
+pstring sesssetup_domain="";
 pstring samlogon_user="";
+BOOL sesssetup_as_guest = True;
 
 BOOL sam_logon_in_ssb = False;
 
@@ -1202,7 +1203,7 @@ void show_msg(char *buf)
 
   if (DEBUGLEVEL < 10) return;
 
-  dump_data(10, smb_buf(buf), MIN(bcc, 512));
+  dump_data(10, (uchar*)smb_buf(buf), MIN(bcc, 512));
 }
 
 /*******************************************************************

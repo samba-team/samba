@@ -94,7 +94,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 		return;
 	}
 
-	if (!cli_session_setup(&cli, "", "", 1, "", 0, work->work_group)) {
+	if (!cli_session_setup(&cli, "", "", 1, NULL, 0, work->work_group)) {
 		DEBUG(1,("%s rejected the browse sync sessionsetup\n", 
 			 name));
 		cli_shutdown(&cli);

@@ -24,10 +24,8 @@
 
 pstring servicesf = CONFIGFILE;
 extern pstring debugf;
-extern pstring sesssetup_user;
 extern pstring local_machine;
 extern fstring myworkgroup;
-extern BOOL sess_trust_acct;
 
 char *InBuffer = NULL;
 char *OutBuffer = NULL;
@@ -2538,7 +2536,7 @@ max can be %d\n", num_interfaces, FD_SETSIZE));
           return True; 
         }
         close(Client); /* The parent doesn't need this socket */
-#endif /NO_FORK_DEBUG */
+#endif /* NO_FORK_DEBUG */
       } /* end for num */
     } /* end while 1 */
   } /* end if is_daemon */
@@ -3572,14 +3570,15 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   }
 
   {
-    DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) connect to service %s as user %s (uid=%d,gid=%d) (pid %d)\n",
+    DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) connect to service %s as user %s (uid=%d,gid=%d) (pid %d) (ro=%s)\n",
 			    timestring(),
 			    remote_machine,
 			    client_addr(),
 			    lp_servicename(SNUM(cnum)),user,
 			    pcon->uid,
 			    pcon->gid,
-			    (int)getpid()));
+			    (int)getpid(),
+				BOOLSTR(pcon->read_only)));
   }
 
   return(cnum);
@@ -3713,7 +3712,7 @@ int reply_lanman2(char *outbuf)
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
-  char cryptkey[8];
+  uchar cryptkey[8];
   char crypt_len = 0;
 
   if (lp_security() == SEC_SERVER && server_cryptkey(&pwd_srv, local_machine))
@@ -3766,7 +3765,7 @@ reply for the nt protocol
 int reply_nt1(char *outbuf)
 {
   /* dual names + lock_and_read + nt SMBs + remote API calls */
-  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ;
+  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_RPC_REMOTE_APIS;
 /*
   other valid capabilities which we may support at some time...
                      CAP_LARGE_FILES|CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
@@ -3777,7 +3776,7 @@ int reply_nt1(char *outbuf)
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
   int data_len;
-  char cryptkey[8];
+  uchar cryptkey[8];
   char crypt_len = 0;
 
   if (lp_security() == SEC_SERVER && server_cryptkey(&pwd_srv, local_machine))
@@ -4614,7 +4613,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	    return(ERROR(ERRSRV,ERRaccess));
 
 	  /* ipc services are limited */
-	  if ((sess_trust_acct || IS_IPC(cnum)) && (flags & AS_USER) && !(flags & CAN_IPC))
+	  if ((IS_IPC(cnum)) && (flags & AS_USER) && !(flags & CAN_IPC))
 	    return(ERROR(ERRSRV,ERRaccess));	    
 
 	  /* load service specific parameters */

@@ -27,7 +27,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  initialise a memory buffer.
  ********************************************************************/
-void buf_init(struct mem_buffer *buf, int align, int margin)
+void buf_init(struct mem_buf *buf, int align, int margin)
 {
 	buf->data      = NULL;
 	buf->data_size = 0;
@@ -39,7 +39,7 @@ void buf_init(struct mem_buffer *buf, int align, int margin)
 /*******************************************************************
  initialise a memory buffer.
  ********************************************************************/
-void buf_create(struct mem_buffer *buf, char *data, int size, int align, int margin)
+void buf_create(struct mem_buf *buf, char *data, int size, int align, int margin)
 {
 	buf->data      = data;
 	buf->data_size = size;
@@ -49,9 +49,20 @@ void buf_create(struct mem_buffer *buf, char *data, int size, int align, int mar
 }
 
 /*******************************************************************
+ takes a memory buffer out of one structure: puts it in the other.
+ NULLs the one that the buffer is being stolen from.
+ ********************************************************************/
+void buf_take(struct mem_buf *buf_to, struct mem_buf *buf_from)
+{
+	memcpy(buf_to, buf_from, sizeof(*buf_to));
+
+	buf_init(buf_from, buf_from->align, buf_from->margin);
+}
+
+/*******************************************************************
  allocate a memory buffer.  assume it's empty
  ********************************************************************/
-BOOL buf_alloc(struct mem_buffer *buf, int size)
+BOOL buf_alloc(struct mem_buf *buf, int size)
 {
 	buf->data_size = size + buf->margin;
 	buf->data_used = size;
@@ -74,20 +85,9 @@ BOOL buf_alloc(struct mem_buffer *buf, int size)
 }
 
 /*******************************************************************
- takes a memory buffer out of one structure: puts it in the other.
- NULLs the one that the buffer is being stolen from.
- ********************************************************************/
-void buf_take(struct mem_buffer *buf_to, struct mem_buffer *buf_from)
-{
-	memcpy(buf_to, buf_from, sizeof(*buf_to));
-
-	buf_init(buf_from, buf_from->align, buf_from->margin);
-}
-
-/*******************************************************************
  frees a memory buffer.
  ********************************************************************/
-void buf_free(struct mem_buffer *buf)
+void buf_free(struct mem_buf *buf)
 {
 	if (buf->data != NULL)
 	{
@@ -99,7 +99,7 @@ void buf_free(struct mem_buffer *buf)
 /*******************************************************************
  reallocate a memory buffer, including a safety margin
  ********************************************************************/
-BOOL buf_realloc(struct mem_buffer *buf, int new_size)
+BOOL buf_realloc(struct mem_buf *buf, int new_size)
 {
 	/* hm.  maybe we want to align the data size here... */
 	char *new_data = realloc(buf->data, new_size + buf->margin);
@@ -132,7 +132,7 @@ BOOL buf_realloc(struct mem_buffer *buf, int new_size)
 /*******************************************************************
  reallocate a memory buffer, retrospectively :-)
  ********************************************************************/
-void buf_grow(struct mem_buffer *buf, int new_size)
+void buf_grow(struct mem_buf *buf, int new_size)
 {
 	if (new_size + buf->margin >= buf->data_size)
 	{
@@ -144,7 +144,7 @@ void buf_grow(struct mem_buffer *buf, int new_size)
 align a pointer to a multiple of align_offset bytes.  looks like it
 will work for offsets of 0, 2 and 4...
 ********************************************************************/
-void buf_align(struct mem_buffer *buf, int *data_off)
+void buf_align(struct mem_buf *buf, int *data_off)
 {
 	int mod = ((*data_off) & (buf->align-1));
 	if (buf->align != 0 && mod != 0)
@@ -156,7 +156,7 @@ void buf_align(struct mem_buffer *buf, int *data_off)
 /*******************************************************************
  stream a uint8
  ********************************************************************/
-void buf_uint8(char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint8 *data)
+void buf_uint8(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint8 *data)
 {
 	char *q = &(buf->data[(*data_off)]);
 	DBG_RW_CVAL(name, depth, buf->data, io, q, *data)
@@ -166,7 +166,7 @@ void buf_uint8(char *name, int depth, struct mem_buffer *buf, int *data_off, BOO
 /*******************************************************************
  stream a uint16
  ********************************************************************/
-void buf_uint16(char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint16 *data)
+void buf_uint16(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint16 *data)
 {
 	char *q = &(buf->data[(*data_off)]);
 	DBG_RW_SVAL(name, depth, buf->data, io, q, *data)
@@ -176,7 +176,7 @@ void buf_uint16(char *name, int depth, struct mem_buffer *buf, int *data_off, BO
 /*******************************************************************
  stream a uint32
  ********************************************************************/
-void buf_uint32(char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint32 *data)
+void buf_uint32(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint32 *data)
 {
 	char *q = &(buf->data[(*data_off)]);
 	DBG_RW_IVAL(name, depth, buf->data, io, q, *data)
@@ -187,7 +187,7 @@ void buf_uint32(char *name, int depth, struct mem_buffer *buf, int *data_off, BO
 /******************************************************************
  stream an array of uint8s.  length is number of uint8s
  ********************************************************************/
-void buf_uint8s(BOOL charmode, char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint8 *data, int len)
+void buf_uint8s(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint8 *data, int len)
 {
 	char *q = &(buf->data[(*data_off)]);
 	DBG_RW_PCVAL(charmode, name, depth, buf->data, io, q, data, len)
@@ -197,7 +197,7 @@ void buf_uint8s(BOOL charmode, char *name, int depth, struct mem_buffer *buf, in
 /******************************************************************
  stream an array of uint16s.  length is number of uint16s
  ********************************************************************/
-void buf_uint16s(BOOL charmode, char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint16 *data, int len)
+void buf_uint16s(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint16 *data, int len)
 {
 	char *q = &(buf->data[(*data_off)]);
 	DBG_RW_PSVAL(charmode, name, depth, buf->data, io, q, data, len)
@@ -207,7 +207,7 @@ void buf_uint16s(BOOL charmode, char *name, int depth, struct mem_buffer *buf, i
 /******************************************************************
  stream an array of uint32s.  length is number of uint32s
  ********************************************************************/
-void buf_uint32s(BOOL charmode, char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint32 *data, int len)
+void buf_uint32s(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint32 *data, int len)
 {
 	char *q = &(buf->data[(*data_off)]);
 	DBG_RW_PIVAL(charmode, name, depth, buf->data, io, q, data, len)
@@ -218,7 +218,7 @@ void buf_uint32s(BOOL charmode, char *name, int depth, struct mem_buffer *buf, i
  stream a "not" unicode string, length/buffer specified separately,
  in byte chars
  ********************************************************************/
-void buf_uninotstr2(BOOL charmode, char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, UNINOTSTR2 *str)
+void buf_uninotstr2(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, UNINOTSTR2 *str)
 {
 	char *q = &(buf->data[(*data_off)]);
 	DBG_RW_PSVAL(charmode, name, depth, buf->data, io, q, str->buffer, str->uni_max_len)
@@ -229,7 +229,7 @@ void buf_uninotstr2(BOOL charmode, char *name, int depth, struct mem_buffer *buf
  stream a unicode string, length/buffer specified separately,
  int uint16 chars.
  ********************************************************************/
-void buf_unistr2(BOOL charmode, char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, UNISTR2 *str)
+void buf_unistr2(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, UNISTR2 *str)
 {
 	char *q = &(buf->data[(*data_off)]);
 	DBG_RW_PSVAL(charmode, name, depth, buf->data, io, q, str->buffer, str->uni_max_len)
@@ -239,11 +239,11 @@ void buf_unistr2(BOOL charmode, char *name, int depth, struct mem_buffer *buf, i
 /*******************************************************************
  stream a unicode  null-terminated string
  ********************************************************************/
-void buf_unistr(char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, UNISTR *str)
+void buf_unistr(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, UNISTR *str)
 {
 	int i = 0;
 	char *ptr = buf->data;
-	char *start = ptr;
+	uint8 *start = (uint8*)ptr;
 
 	do 
 	{

@@ -53,9 +53,9 @@ BOOL cli_receive_trans(struct cli_state *cli, int t_idx,
 			      int *param_len, char **data,char **param);
 BOOL cli_api_pipe(struct cli_state *cli, int t_idx,
 	char *pipe_name, int pipe_name_len,
-	int prcnt,int drcnt, int srcnt,
-	int mprcnt,int mdrcnt,
-	int *rprcnt,int *rdrcnt,
+	uint32 prcnt,uint32 drcnt, uint32 srcnt,
+	uint32 mprcnt,uint32 mdrcnt,
+	uint32 *rprcnt,uint32 *rdrcnt,
 	char *param, char *data, uint16 *setup,
 	char **rparam,char **rdata);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli, int t_idx,char *user, char *workstation);
@@ -70,7 +70,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, int t_idx,
 BOOL cli_session_setup(struct cli_state *cli,
 		       char *user, 
 		       char *pass, int passlen,
-		       char *ntpass, int ntpasslen,
+		       uchar *ntpass, int ntpasslen,
 		       char *workgroup);
 BOOL cli_send_tconX(struct cli_state *cli, int *t_idx, 
 		    char *share, char *dev, char *pass, int passlen);
@@ -566,23 +566,23 @@ void mdfour(unsigned char *out, unsigned char *in, int n);
 
 /*The following definitions come from  membuffer.c  */
 
-void buf_init(struct mem_buffer *buf, int align, int margin);
-void buf_create(struct mem_buffer *buf, char *data, int size, int align, int margin);
-BOOL buf_alloc(struct mem_buffer *buf, int size);
-void buf_take(struct mem_buffer *buf_to, struct mem_buffer *buf_from);
-void buf_free(struct mem_buffer *buf);
-BOOL buf_realloc(struct mem_buffer *buf, int new_size);
-void buf_grow(struct mem_buffer *buf, int new_size);
-void buf_align(struct mem_buffer *buf, int *data_off);
-void buf_uint8(char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint8 *data);
-void buf_uint16(char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint16 *data);
-void buf_uint32(char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint32 *data);
-void buf_uint8s(BOOL charmode, char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint8 *data, int len);
-void buf_uint16s(BOOL charmode, char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint16 *data, int len);
-void buf_uint32s(BOOL charmode, char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, uint32 *data, int len);
-void buf_uninotstr2(BOOL charmode, char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, UNINOTSTR2 *str);
-void buf_unistr2(BOOL charmode, char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, UNISTR2 *str);
-void buf_unistr(char *name, int depth, struct mem_buffer *buf, int *data_off, BOOL io, UNISTR *str);
+void buf_init(struct mem_buf *buf, int align, int margin);
+void buf_create(struct mem_buf *buf, char *data, int size, int align, int margin);
+void buf_take(struct mem_buf *buf_to, struct mem_buf *buf_from);
+BOOL buf_alloc(struct mem_buf *buf, int size);
+void buf_free(struct mem_buf *buf);
+BOOL buf_realloc(struct mem_buf *buf, int new_size);
+void buf_grow(struct mem_buf *buf, int new_size);
+void buf_align(struct mem_buf *buf, int *data_off);
+void buf_uint8(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint8 *data);
+void buf_uint16(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint16 *data);
+void buf_uint32(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint32 *data);
+void buf_uint8s(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint8 *data, int len);
+void buf_uint16s(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint16 *data, int len);
+void buf_uint32s(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, uint32 *data, int len);
+void buf_uninotstr2(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, UNINOTSTR2 *str);
+void buf_unistr2(BOOL charmode, char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, UNISTR2 *str);
+void buf_unistr(char *name, int depth, struct mem_buf *buf, int *data_off, BOOL io, UNISTR *str);
 
 /*The following definitions come from  message.c  */
 
@@ -833,9 +833,9 @@ BOOL pm_process( char *FileName,
 
 /*The following definitions come from  password.c  */
 
-void generate_next_challenge(char *challenge);
-BOOL set_challenge(char *challenge);
-BOOL last_challenge(char *challenge);
+void generate_next_challenge(uchar *challenge);
+BOOL set_challenge(uchar *challenge);
+BOOL last_challenge(uchar *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
@@ -844,7 +844,7 @@ void add_session_user(char *user, BOOL *changed_to_guest);
 void dfs_unlogin(void);
 BOOL password_check(char *password);
 BOOL smb_password_ok(struct smb_passwd *smb_pass,
-				char lm_pass[24], char nt_pass[24]);
+				uchar lm_pass[24], uchar nt_pass[24]);
 BOOL password_ok(char *user, BOOL *guest,
 				char *password, int pwlen,
 				char *nt_pass, int nt_pwlen,
@@ -987,6 +987,8 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/lsaparse.c  */
 
+void make_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, uint32 sec_qos);
+void lsa_io_obj_attr(char *desc, BOOL io, LSA_OBJ_ATTR *attr, struct mem_buffer *buf, int *q, int depth);
 void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
 			uint32 attributes, uint32 sec_qos,
 			uint32 desired_access);
@@ -1166,13 +1168,13 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum,
 				int *num_sam_users);
 BOOL do_samr_connect(struct cli_state *cli, int t_idx, uint16 fnum, 
 				char *srv_name, uint32 unknown_0,
-				POLICY_HND *rtn_pol);
+				POLICY_HND *connect_pol);
 BOOL do_samr_open_user(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
 				POLICY_HND *user_pol);
 BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum, 
-				POLICY_HND *pol, uint32 rid, char *sid,
-				POLICY_HND *rtn_pol);
+				POLICY_HND *connect_pol, uint32 rid, char *sid,
+				POLICY_HND *domain_pol);
 BOOL do_samr_query_unknown_12(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint32 rid, uint32 num_gids, uint32 *gids,
 				uint32 *num_aliases,
@@ -1550,7 +1552,7 @@ void make_sam_info(DOM_SAM_INFO *sam,
 				DOM_ID_INFO_1 *id1, uint16 switch_value2);
 void smb_io_sam_info(char *desc, BOOL io, DOM_SAM_INFO *sam, struct mem_buffer *buf, int *q, int depth);
 void smb_io_gid(char *desc, BOOL io, DOM_GID *gid, struct mem_buffer *buf, int *q, int depth);
-void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 frag,
+void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 				uint32 call_id, int data_len);
 void smb_io_rpc_hdr(char *desc, BOOL io, RPC_HDR *rpc, struct mem_buffer *buf, int *q, int depth);
 void make_rpc_iface(RPC_IFACE *ifc, char data[16], uint32 version);
@@ -1573,8 +1575,6 @@ void make_rpc_hdr_ba(RPC_HDR_BA *rpc,
 				uint8 num_results, uint16 result, uint16 reason,
 				RPC_IFACE *transfer);
 void smb_io_rpc_hdr_ba(char *desc, BOOL io, RPC_HDR_BA *rpc, struct mem_buffer *buf, int *q, int depth);
-void make_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, uint32 sec_qos);
-void smb_io_obj_attr(char *desc, BOOL io, LSA_OBJ_ATTR *attr, struct mem_buffer *buf, int *q, int depth);
 void make_rpc_hdr_rr(RPC_HDR_RR *hdr, enum RPC_PKT_TYPE pkt_type,
 				uint32 call_id, int data_len, uint8 opnum);
 void smb_io_rpc_hdr_rr(char *desc, BOOL io, RPC_HDR_RR *rpc, struct mem_buffer *buf, int *q, int depth);
@@ -1768,7 +1768,7 @@ void SMBNTencrypt(char *passwd, uchar *c8, uchar p24[24]);
 void E_md4hash(uchar *passwd, uchar p16[16]);
 void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void nt_owf_gen(char *pwd, uchar nt_p16[16]);
-void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], char p16[16]);
+void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16]);
 BOOL obfuscate_pwd(unsigned char pwd[16], unsigned char sess_key[16], uint8 mode);
 
 /*The following definitions come from  smberr.c  */

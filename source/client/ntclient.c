@@ -134,7 +134,7 @@ void cmd_srv_query_conn(struct client_info *info)
 	/* enumerate connections on server */
 	res = res ? do_srv_net_srv_conn_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
 				dest_srv, qual_srv,
-	            info_level, &ctr, 0x1000, &hnd) : False;
+	            info_level, &ctr, 0xffffffff, &hnd) : False;
 
 	if (res)
 	{
@@ -188,13 +188,13 @@ void cmd_srv_query_shares(struct client_info *info)
 	/* open srvsvc session. */
 	res = res ? do_srv_session_open(ipc_cli, ipc_tidx, info) : False;
 
-	hnd.ptr_hnd = 1;
+	hnd.ptr_hnd = 0;
 	hnd.handle = 0;
 
 	/* enumerate shares_files on server */
 	res = res ? do_srv_net_srv_share_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
 				dest_srv, 
-	            info_level, &ctr, 0x1000, &hnd) : False;
+	            info_level, &ctr, 0xffffffff, &hnd) : False;
 
 	if (res)
 	{

@@ -40,10 +40,13 @@ extern files_struct Files[];
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
-extern pstring sesssetup_user;
 extern fstring myworkgroup;
 extern int Client;
 extern int global_oplock_break;
+
+extern pstring sesssetup_user;
+extern pstring sesssetup_domain;
+extern BOOL sesssetup_as_guest;
 
 /* this macro should always be used to extract an fnum (smb_fid) from
 a packet to ensure chaining works correctly */
@@ -754,7 +757,8 @@ static int process_sesssetup(char *inbuf,char *outbuf, int length,int bufsize,
 	/**** reconfigure the server, according to the (new?) username ****/
 
 	strlower(user);
-	strcpy(sesssetup_user,user);
+	strcpy(sesssetup_user, user);
+	strcpy(sesssetup_domain, domain);
 	reload_services(True);
 	add_session_user(user, (*smb_passwd == 0) ? guest : NULL);
 
@@ -812,7 +816,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	pstring user;
 	fstring domain;
 
-	BOOL guest = False;
+	sesssetup_as_guest = False;
 
 	*domain        = 0;
 	*smb_passwd    = 0;
@@ -837,7 +841,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 	/* check username and possibly guest access rights */
 	if (!process_sesssetup(inbuf, outbuf, length, bufsize,
-	                       &guest, user, domain,
+	                       &sesssetup_as_guest, user, domain,
 		                   smb_passwd, smb_passlen,
 		                   smb_nt_passwd, smb_nt_passlen))
 	{
@@ -846,7 +850,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 	return construct_reply_sesssetup_and_X(inbuf, outbuf,
 	                                       length, bufsize,
-	                                       user, guest);
+	                                       user, sesssetup_as_guest);
 }
 
 
@@ -2921,6 +2925,7 @@ int reply_printwrite(char *inbuf,char *outbuf)
 int reply_mkdir(char *inbuf,char *outbuf)
 {
   pstring directory;
+  pstring cwd;
   int cnum;
   int outsize,ret= -1;
   BOOL bad_path = False;
@@ -2929,6 +2934,9 @@ int reply_mkdir(char *inbuf,char *outbuf)
   cnum = SVAL(inbuf,smb_tid);
   unix_convert(directory,cnum,0,&bad_path);
   
+  getcwd(cwd, sizeof(cwd));
+  DEBUG(4,("reply_mkdir: curdir: %s mkdir: %s\n", cwd, directory));
+	
   if (check_name(directory,cnum))
     ret = sys_mkdir(directory,unix_mode(cnum,aDIR));
   
