@@ -227,7 +227,8 @@ int main(int argc, char **argv)
 		case 'k':
 #if defined(AUTHENTICATION) && defined(KRB4)
 		    {
-			extern char *dest_realm, dst_realm_buf[], dst_realm_sz;
+			extern char *dest_realm, dst_realm_buf[];
+			extern int dst_realm_sz;
 			dest_realm = dst_realm_buf;
 			(void)strncpy(dest_realm, optarg, dst_realm_sz);
 		    }
