@@ -49,7 +49,7 @@ int srvstr_push(void *outbuf, void *dest, const char *src, int dest_len, int fla
 
 	if (!(flags & STR_ASCII) && srvstr_align(outbuf, PTR_DIFF(dest, outbuf))) {
 		*(char *)dest = 0;
-		dest++;
+		dest = (void *)((char *)dest + 1);
 		dest_len--;
 		len++;
 	}
@@ -98,7 +98,7 @@ int srvstr_pull(void *inbuf, char *dest, const void *src, int dest_len, int src_
 	}
 
 	if (!(flags & STR_ASCII) && srvstr_align(inbuf, PTR_DIFF(src, inbuf))) {
-		src++;
+		src = (void *)((char *)src + 1);
 		if (src_len > 0) src_len--;
 	}
 

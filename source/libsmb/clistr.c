@@ -47,7 +47,7 @@ int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len
 
 	if (!(flags & STR_ASCII) && clistr_align(cli->outbuf, dest)) {
 		*(char *)dest = 0;
-		dest++;
+		dest = (void *)((char *)dest + 1);
 		dest_len--;
 		len++;
 	}
@@ -96,7 +96,7 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 	}
 
 	if (!(flags & STR_ASCII) && clistr_align(cli->inbuf, src)) {
-		src++;
+		src = (void *)((char *)src + 1);
 		if (src_len > 0) src_len--;
 	}
 
