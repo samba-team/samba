@@ -48,7 +48,7 @@ des_rand_data(unsigned char *data, int size)
 {
     struct itimerval tv, otv;
     struct sigaction sa, osa;
-    int i;
+    int i, j;
   
     /*
      * If there is a /dev/random it's use is preferred.
@@ -77,14 +77,12 @@ des_rand_data(unsigned char *data, int size)
     tv.it_interval = tv.it_value;
     setitimer(ITIMER_REAL, &tv, &otv);
 
-    for(i = 0; i < 4; i++)
-	{
-	    int j;
-	    for (igdata = 0; igdata < size;) /* igdata++ in sigALRM */
-		counter++;
-	    for (j = 0; j < size; j++) /* Only use 2 bits each lap */
-		gdata[j] = (gdata[j]>>2) | (gdata[j]<<6);
-	}
+    for(i = 0; i < 4; i++) {
+	for (igdata = 0; igdata < size;) /* igdata++ in sigALRM */
+	    counter++;
+	for (j = 0; j < size; j++) /* Only use 2 bits each lap */
+	    gdata[j] = (gdata[j]>>2) | (gdata[j]<<6);
+    }
     setitimer(ITIMER_REAL, &otv, 0);
     sigaction(SIGALRM, &osa, 0);
 }
