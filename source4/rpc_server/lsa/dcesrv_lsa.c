@@ -76,6 +76,7 @@ struct lsa_secret_state {
 	uint32_t access_mask;
 	const char *secret_dn;
 	struct ldb_wrap *sam_ctx;
+	BOOL global;
 };
 
 /* 
@@ -1277,6 +1278,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		const char *name2;
 		name = &r->in.name.string[2];
 		secret_state->sam_ctx = talloc_reference(secret_state, policy_state->sam_ctx);
+		secret_state->global = True;
 
 		if (strlen(name) < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -1305,6 +1307,8 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		samdb_msg_add_string(secret_state->sam_ctx, mem_ctx, msg, "cn", name2);
 	
 	} else {
+		secret_state->global = False;
+
 		name = r->in.name.string;
 		if (strlen(name) < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -1391,6 +1395,7 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	if (strncmp("G$", r->in.name.string, 2) == 0) {
 		name = &r->in.name.string[2];
 		secret_state->sam_ctx = talloc_reference(secret_state, policy_state->sam_ctx);
+		secret_state->global = True;
 
 		if (strlen(name) < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -1411,12 +1416,14 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		}
 	
 	} else {
+		secret_state->sam_ctx = talloc_reference(secret_state, secrets_db_connect(mem_ctx));
+
+		secret_state->global = False;
 		name = r->in.name.string;
 		if (strlen(name) < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		secret_state->sam_ctx = talloc_reference(secret_state, secrets_db_connect(mem_ctx));
 		/* search for the secret record */
 		ret = samdb_search(secret_state->sam_ctx,
 				   mem_ctx, "cn=LSA Secrets", &msgs, attrs,
@@ -1510,6 +1517,26 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		if (samdb_msg_add_uint64(secret_state->sam_ctx, 
 					 mem_ctx, msg, "priorSetTime", nt_now) != 0) { 
 			return NT_STATUS_NO_MEMORY; 
+		}
+
+		if (!r->in.new_val) {
+			/* This behaviour varies depending of if this is a local, or a global secret... */
+			if (secret_state->global) {
+				/* set old value mtime */
+				if (samdb_msg_add_uint64(secret_state->sam_ctx, 
+							 mem_ctx, msg, "lastSetTime", nt_now) != 0) { 
+					return NT_STATUS_NO_MEMORY; 
+				}
+			} else {
+				if (samdb_msg_add_delete(secret_state->sam_ctx, 
+							 mem_ctx, msg, "secret")) {
+					return NT_STATUS_NO_MEMORY;
+				}
+				if (samdb_msg_add_delete(secret_state->sam_ctx, 
+							 mem_ctx, msg, "lastSetTime")) {
+					return NT_STATUS_NO_MEMORY;
+				}
+			}
 		}
 	}
 
@@ -1642,6 +1669,10 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	
 	if (r->in.old_val) {
 		const struct ldb_val *prior_val;
+		r->out.old_val = talloc_zero(mem_ctx, struct lsa_DATA_BUF_PTR);
+		if (!r->out.old_val) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		/* Decrypt */
 		prior_val = ldb_msg_find_ldb_val(res[0], "priorSecret");
 		
@@ -1653,8 +1684,10 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			if (!crypt_secret.length) {
 				return NT_STATUS_NO_MEMORY;
 			}
-			r->out.old_val = talloc(mem_ctx, struct lsa_DATA_BUF_PTR);
 			r->out.old_val->buf = talloc(mem_ctx, struct lsa_DATA_BUF);
+			if (!r->out.old_val->buf) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			r->out.old_val->buf->size = crypt_secret.length;
 			r->out.old_val->buf->length = crypt_secret.length;
 			r->out.old_val->buf->data = crypt_secret.data;
@@ -1671,6 +1704,11 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	
 	if (r->in.new_val) {
 		const struct ldb_val *new_val;
+		r->out.new_val = talloc_zero(mem_ctx, struct lsa_DATA_BUF_PTR);
+		if (!r->out.new_val) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		/* Decrypt */
 		new_val = ldb_msg_find_ldb_val(res[0], "secret");
 		
@@ -1682,8 +1720,10 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			if (!crypt_secret.length) {
 				return NT_STATUS_NO_MEMORY;
 			}
-			r->out.new_val = talloc(mem_ctx, struct lsa_DATA_BUF_PTR);
 			r->out.new_val->buf = talloc(mem_ctx, struct lsa_DATA_BUF);
+			if (!r->out.new_val->buf) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			r->out.new_val->buf->length = crypt_secret.length;
 			r->out.new_val->buf->size = crypt_secret.length;
 			r->out.new_val->buf->data = crypt_secret.data;
