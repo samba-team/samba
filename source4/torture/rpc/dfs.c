@@ -48,20 +48,21 @@ static BOOL test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	uint32 total=0;
 	struct dfs_EnumStruct e;
 	uint32 i = 0;
-	struct dfs_String s;
-	struct dfs_Enum1 e1;
+	struct dfs_Info1 s;
+	struct dfs_EnumArray1 e2;
 
-	e.level = 1;
-	e.e.enum1 = &e1;
-	e.e.enum1->count = 0;
-	e.e.enum1->s = &s;
-	s.str = NULL;
-
-	r.in.level = 1;
+	r.in.level = 3;
 	r.in.bufsize = (uint32)-1;
 	r.in.total = &total;
 	r.in.unknown = NULL;
 	r.in.info = &e;
+
+	e.level = r.in.level;
+	e.e.info1 = &e2;
+	e.e.info1->count = 0;
+	e.e.info1->s = &s;
+	s.path = NULL;
+
 	
 	status = dcerpc_dfs_Enum(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -62,17 +62,50 @@ struct dfs_Info {
 
 };
 
-struct dfs_String {
-	const char *str;
+struct dfs_Info1 {
+	const char *path;
 };
 
-struct dfs_Enum1 {
+struct dfs_EnumArray1 {
 	uint32 count;
-	struct dfs_String *s;
+	struct dfs_Info1 *s;
+};
+
+struct dfs_Info2 {
+	const char *path;
+	const char *comment;
+	uint32 state;
+	uint32 num_stores;
+};
+
+struct dfs_EnumArray2 {
+	uint32 count;
+	struct dfs_Info2 *s;
+};
+
+struct dfs_StorageInfo {
+	uint32 state;
+	const char *server;
+	const char *share;
+};
+
+struct dfs_Info3 {
+	const char *path;
+	const char *comment;
+	uint32 state;
+	uint32 num_stores;
+	struct dfs_StorageInfo *stores;
+};
+
+struct dfs_EnumArray3 {
+	uint32 count;
+	struct dfs_Info3 *s;
 };
 
 union dfs_EnumInfo {
-/* [case(1)] */ struct dfs_Enum1 *enum1;
+/* [case(1)] */ struct dfs_EnumArray1 *info1;
+/* [case(2)] */ struct dfs_EnumArray2 *info2;
+/* [case(3)] */ struct dfs_EnumArray3 *info3;
 };
 
 struct dfs_EnumStruct {

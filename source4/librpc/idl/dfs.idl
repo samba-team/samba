@@ -49,16 +49,49 @@
 	/* Function: 0x05 */
 
 	typedef struct {
-		unistr *str;
-	} dfs_String;
+		unistr *path;
+	} dfs_Info1;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] dfs_String *s;
-	} dfs_Enum1;
+		[size_is(count)] dfs_Info1 *s;
+	} dfs_EnumArray1;
+
+	typedef struct {
+		unistr *path;
+		unistr *comment;
+		uint32 state;
+		uint32 num_stores;
+	} dfs_Info2;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info2 *s;
+	} dfs_EnumArray2;
+
+	typedef struct {
+		uint32 state;
+		unistr *server;
+		unistr *share;
+	} dfs_StorageInfo;
+
+	typedef struct {
+		unistr *path;
+		unistr *comment;
+		uint32 state;
+		uint32 num_stores;
+		[size_is(num_stores)] dfs_StorageInfo *stores;
+	} dfs_Info3;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info3 *s;
+	} dfs_EnumArray3;
 
 	typedef union {
-		case(1) dfs_Enum1 *enum1;
+		case(1) dfs_EnumArray1 *info1;
+		case(2) dfs_EnumArray2 *info2;
+		case(3) dfs_EnumArray3 *info3;
 	} dfs_EnumInfo;
 
 	typedef struct {
