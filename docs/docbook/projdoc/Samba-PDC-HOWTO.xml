@@ -78,7 +78,21 @@ The following functionalities are new to the Samba-3 release:
 	</para></listitem>
 	
 	<listitem><para>
-	Adding users via the User Manager for Domains
+	Adding users via the User Manager for Domains or via the Windows 200x Microsoft
+	Management Console.
+	</para></listitem>
+
+	<listitem><para>
+	Samba-3 introduces replaceable and multiple user account (authentication)
+	back ends. In the case where the back end is placed in an LDAP database
+	Samba-3 confers the benefits of a back end that can be distributed, replicated,
+	and highly scalable.
+	</para></listitem>
+
+	<listitem><para>
+	Samba-3 implements full Unicode support. This simplifies cross locale internationalisation
+	support. It also opens up the use of protocols that samba-2.2.x had but could not use due
+	to the need to fully support Unicode.
 	</para></listitem>
 </itemizedlist>
 
@@ -94,7 +108,11 @@ The following functionalities are NOT provided by Samba-3:
 	
 	<listitem><para>
 	Acting as a Windows 2000 Domain Controller (i.e. Kerberos and 
-	Active Directory)
+	Active Directory) - In point of fact, Samba-3 DOES have some
+	Active Directory Domain Control ability that is at this time
+	purely experimental <emphasis>AND</emphasis> that is certain
+	to change as it becomes a fully supported feature some time
+	during the samba-3 (or later) life cycle.
 	</para></listitem>
 </itemizedlist>
 
