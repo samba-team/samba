@@ -27,6 +27,7 @@
 #error this code will only compile on versions of linux after 2.1.70
 #endif
 
+#include <linux/limits.h>
 #include "includes.h"
 
 #include <mntent.h>

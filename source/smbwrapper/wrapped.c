@@ -30,6 +30,10 @@
 #include <errno.h>
 #include "realcalls.h"
 
+#ifndef NULL
+# define NULL ((void *)0)
+#endif
+
  int open(char *name, int flags, mode_t mode)
 {
 	if (smbw_path(name)) {
