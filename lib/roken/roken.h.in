@@ -260,7 +260,7 @@ int setegid(gid_t egid);
 int lstat(const char *path, struct stat *buf);
 #endif
 
-#ifndef HAVE_MKSTEMP
+#if !defined(HAVE_MKSTEMP) || defined(NEED_MKSTEMP_PROTO)
 int mkstemp(char *);
 #endif
 
@@ -286,7 +286,7 @@ int iruserok(unsigned raddr, int superuser, const char *ruser,
 	     const char *luser);
 #endif
 
-#ifndef HAVE_GETHOSTNAME
+#if !defined(HAVE_GETHOSTNAME) || defined(NEED_GETHOSTNAME_PROTO)
 int gethostname(char *name, int namelen);
 #endif
 
