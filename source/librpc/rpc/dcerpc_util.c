@@ -457,7 +457,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 		pipe_name += 6;
 	}
 	    
-	if ((binding->flags & DCERPC_SCHANNEL_ANY) || !username || !username[0]) {
+	if ((binding->flags & (DCERPC_SCHANNEL_ANY | DCERPC_SIGN | DCERPC_SEAL))
+		|| !username || !username[0]) {
 		status = smbcli_full_connection(&cli, lp_netbios_name(),
 					     binding->host, NULL, 
 					     "ipc$", "?????", 
