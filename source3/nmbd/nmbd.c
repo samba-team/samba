@@ -567,6 +567,8 @@ int main(int argc,char *argv[])
 
   StartupTime = time(NULL);
 
+  srandom(time(NULL) ^ getpid());
+
   TimeInit();
 
   pstrcpy( debugf, NMBLOGFILE );
