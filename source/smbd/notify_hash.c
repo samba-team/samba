@@ -116,14 +116,15 @@ static void *hash_register_notify(connection_struct *conn, char *path, uint32 fl
 }
 
 /****************************************************************************
-check if a change notify should be issued 
+ Check if a change notify should be issued.
+ A time of zero means instantaneous check - don't modify the last check time.
 *****************************************************************************/
 static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, uint32 flags, void *datap, time_t t)
 {
 	struct change_data *data = (struct change_data *)datap;
 	struct change_data data2;
 
-	if (t < data->last_check_time + lp_change_notify_timeout()) return False;
+	if (t && t < data->last_check_time + lp_change_notify_timeout()) return False;
 
 	if (!become_user(conn,vuid)) return True;
 	if (!become_service(conn,True)) {
@@ -140,7 +141,9 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 		return True;
 	}
 
-	data->last_check_time = t;	    
+	if (t)
+		data->last_check_time = t;
+
 	unbecome_user();
 
 	return False;
