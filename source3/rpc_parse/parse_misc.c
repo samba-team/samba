@@ -1119,6 +1119,8 @@ static void smb_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int de
 
 	smb_io_unistr2("unistr2", &(d_q->uni_domain_name), d_q->buffer_dom_name, ps, depth); /* domain name (unicode string) */
 
+	prs_align(ps);
+
 	if (d_q->buffer_dom_sid != 0)
 	{
 		smb_io_dom_sid2("", &(d_q->dom_sid), ps, depth); /* domain SID */
