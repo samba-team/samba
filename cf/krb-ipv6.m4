@@ -3,6 +3,11 @@ dnl
 dnl test for IPv6
 dnl
 AC_DEFUN(AC_KRB_IPV6, [
+AC_ARG_WITH(ipv6,
+[  --without-ipv6	do not enable IPv6 support],[
+if test "$withval" = "no"; then
+	ac_cv_lib_ipv6=no
+fi])
 AC_CACHE_CHECK(for IPv6,ac_cv_lib_ipv6,
 AC_TRY_COMPILE([
 #ifdef HAVE_SYS_TYPES_H
@@ -19,13 +24,6 @@ AC_TRY_COMPILE([
 #endif
 ],
 [
-#if defined(IN6ADDR_ANY_INIT)
-struct in6_addr any = IN6ADDR_ANY_INIT;
-#elif defined(IPV6ADDR_ANY_INIT)
-struct in6_addr any = IPV6ADDR_ANY_INIT;
-#else
-#error no any?
-#endif
  struct sockaddr_in6 sin6;
  int s;
 
@@ -33,7 +31,7 @@ struct in6_addr any = IPV6ADDR_ANY_INIT;
 
  sin6.sin6_family = AF_INET6;
  sin6.sin6_port = htons(17);
- sin6.sin6_addr = any;
+ sin6.sin6_addr = in6addr_any;
  bind(s, (struct sockaddr *)&sin6, sizeof(sin6));
 ],
 ac_cv_lib_ipv6=yes,
