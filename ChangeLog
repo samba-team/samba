@@ -1,3 +1,15 @@
+1999-06-23  Assar Westerlund  <assar@sics.se>
+
+	* kdc/connect.c (add_port_string): don't return a value
+
+ 	* lib/kadm5/init_c.c (get_cred_cache): you cannot reuse the cred
+ 	cache if the principals are different.  close and NULL the old one
+ 	so that we create a new one.
+
+	* configure.in: move around cgywin et al
+	(LIB_kdb): set at the end of krb4-block
+	(krb4): test for krb_enable_debug and krb_disable_debug
+
 1999-06-16  Assar Westerlund  <assar@sics.se>
 
 	* kuser/kdestroy.c (main): try to destroy v4 ticket even if the
