@@ -10,15 +10,14 @@ REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="UP"
-TITLE="Optional configuration"
+TITLE="Advanced Configuration"
 HREF="optional.html"><LINK
 REL="PREVIOUS"
-TITLE="Integrating MS Windows networks with Samba"
-HREF="integrate-ms-networks.html"><LINK
+TITLE="System Policies"
+HREF="advancednetworkmanagement.html"><LINK
 REL="NEXT"
-TITLE="Configuring PAM for distributed but centrally 
-managed authentication"
-HREF="pam.html"></HEAD
+TITLE="Group mapping HOWTO"
+HREF="groupmapping.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -46,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="integrate-ms-networks.html"
+HREF="advancednetworkmanagement.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -60,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="pam.html"
+HREF="groupmapping.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -81,14 +80,13 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1748"
+NAME="AEN1663"
 >11.1. Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></H1
 ><P
->New in the Samba 2.0.4 release is the ability for Windows 
-	NT clients to use their native security settings dialog box to 
-	view and modify the underlying UNIX permissions.</P
+>Windows NT clients can use their native security settings 
+	dialog box to view and modify the underlying UNIX permissions.</P
 ><P
 >Note that this ability is careful not to compromise 
 	the security of the UNIX host Samba is running on, and 
@@ -100,11 +98,11 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1752"
+NAME="AEN1667"
 >11.2. How to view file security on a Samba share</A
 ></H1
 ><P
->From an NT 4.0 client, single-click with the right 
+>From an NT4/2000/XP client, single-click with the right 
 	mouse button on any file or directory in a Samba mounted 
 	drive letter or UNC path. When the menu pops-up, click 
 	on the <SPAN
@@ -114,15 +112,14 @@ CLASS="EMPHASIS"
 >Properties</I
 ></SPAN
 > entry at the bottom of 
-	the menu. This brings up the normal file properties dialog
-	box, but with Samba 2.0.4 this will have a new tab along the top
-	marked <SPAN
+	the menu. This brings up the file properties dialog
+	box. Click on the tab <SPAN
 CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Security</I
 ></SPAN
->. Click on this tab and you 
+> and you 
 	will see three buttons, <SPAN
 CLASS="emphasis"
 ><I
@@ -170,7 +167,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1763"
+NAME="AEN1678"
 >11.3. Viewing file ownership</A
 ></H1
 ><P
@@ -239,7 +236,7 @@ CLASS="EMPHASIS"
 ><P
 >There is an NT chown command that will work with Samba 
 	and allow a user with Administrator privilege connected 
-	to a Samba 2.0.4 server as root to change the ownership of 
+	to a Samba server as root to change the ownership of 
 	files on both a local NTFS filesystem or remote mounted NTFS 
 	or Samba drive. This is available as part of the <SPAN
 CLASS="emphasis"
@@ -256,7 +253,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1783"
+NAME="AEN1698"
 >11.4. Viewing file or directory permissions</A
 ></H1
 ><P
@@ -310,7 +307,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1798"
+NAME="AEN1713"
 >11.4.1. File Permissions</A
 ></H2
 ><P
@@ -372,7 +369,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1812"
+NAME="AEN1727"
 >11.4.2. Directory Permissions</A
 ></H2
 ><P
@@ -404,7 +401,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1819"
+NAME="AEN1734"
 >11.5. Modifying file or directory permissions</A
 ></H1
 ><P
@@ -436,7 +433,7 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >"Add"</B
 > 
-	button will not return a list of users in Samba 2.0.4 (it will give 
+	button will not return a list of users in Samba (it will give 
 	an error message of <B
 CLASS="COMMAND"
 >"The remote procedure call failed 
@@ -500,13 +497,14 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1841"
+NAME="AEN1756"
 >11.6. Interaction with the standard Samba create mask 
 	parameters</A
 ></H1
 ><P
->Note that with Samba 2.0.5 there are four new parameters 
-	to control this interaction.  These are :</P
+>There are four parameters 
+	to control interaction with the standard Samba create mask parameters.
+	These are :</P
 ><P
 ><VAR
 CLASS="PARAMETER"
@@ -569,9 +567,8 @@ CLASS="PARAMETER"
 >create mask
 	</VAR
 ></A
-> parameter to provide compatibility with Samba 2.0.4 
-	where this permission change facility was introduced. To allow a user to 
-	modify all the user/group/world permissions on a file, set this parameter 
+> parameter. To allow a user to modify all the
+	user/group/world permissions on a file, set this parameter 
 	to 0777.</P
 ><P
 >Next Samba checks the changed permissions for a file against 
@@ -602,8 +599,7 @@ CLASS="PARAMETER"
 >force 
 	create mode</VAR
 ></A
-> parameter to provide compatibility
-	with Samba 2.0.4 where the permission change facility was introduced.
+> parameter.
 	To allow a user to modify all the user/group/world permissions on a file
 	with no restrictions set this parameter to 000.</P
 ><P
@@ -651,9 +647,7 @@ CLASS="PARAMETER"
  	the <VAR
 CLASS="PARAMETER"
 >force directory mode</VAR
-> parameter to provide 
-	compatibility with Samba 2.0.4 where the permission change facility 
-	was introduced.</P
+> parameter. </P
 ><P
 >In this way Samba enforces the permission restrictions that 
 	an administrator can set on a Samba share, whilst still allowing users 
@@ -691,37 +685,13 @@ CLASS="PARAMETER"
 CLASS="PARAMETER"
 >force directory security mode = 0</VAR
 ></P
-><P
->As described, in Samba 2.0.4 the parameters :</P
-><P
-><VAR
-CLASS="PARAMETER"
->create mask</VAR
-></P
-><P
-><VAR
-CLASS="PARAMETER"
->force create mode</VAR
-></P
-><P
-><VAR
-CLASS="PARAMETER"
->directory mask</VAR
-></P
-><P
-><VAR
-CLASS="PARAMETER"
->force directory mode</VAR
-></P
-><P
->were used instead of the parameters discussed here.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1905"
+NAME="AEN1810"
 >11.7. Interaction with the standard Samba file attribute 
 	mapping</A
 ></H1
@@ -780,7 +750,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="integrate-ms-networks.html"
+HREF="advancednetworkmanagement.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -798,7 +768,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="pam.html"
+HREF="groupmapping.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -808,7 +778,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Integrating MS Windows networks with Samba</TD
+>System Policies</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -822,8 +792,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Configuring PAM for distributed but centrally 
-managed authentication</TD
+>Group mapping HOWTO</TD
 ></TR
 ></TABLE
 ></DIV

@@ -87,7 +87,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3807"
+NAME="AEN3706"
 >26.1. Access Samba source code via CVS</A
 ></H1
 ><DIV
@@ -95,7 +95,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3809"
+NAME="AEN3708"
 >26.1.1. Introduction</A
 ></H2
 ><P
@@ -117,7 +117,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3814"
+NAME="AEN3713"
 >26.1.2. CVS Access to samba.org</A
 ></H2
 ><P
@@ -130,7 +130,7 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN3817"
+NAME="AEN3716"
 >26.1.2.1. Access via CVSweb</A
 ></H3
 ><P
@@ -151,7 +151,7 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN3822"
+NAME="AEN3721"
 >26.1.2.2. Access via cvs</A
 ></H3
 ><P
@@ -256,7 +256,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3850"
+NAME="AEN3749"
 >26.2. Accessing the samba sources via rsync and ftp</A
 ></H1
 ><P
@@ -284,7 +284,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3856"
+NAME="AEN3755"
 >26.3. Building the Binaries</A
 ></H1
 ><P
@@ -365,13 +365,135 @@ CLASS="USERINPUT"
 ></P
 ><P
 >if you find this version a disaster!</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN3783"
+>26.3.1. Compiling samba with Active Directory support</A
+></H2
+><P
+>In order to compile samba with ADS support, you need to have installed
+	on your system: 
+	<P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>the MIT kerberos development libraries (either install from the sources or use a package). The heimdal libraries will not work.</TD
+></TR
+><TR
+><TD
+>the OpenLDAP development libraries.</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+>
+
+	</P
+><P
+>If your kerberos libraries are in a non-standard location then
+	  remember to add the configure option --with-krb5=DIR.</P
+><P
+>After you run configure make sure that <TT
+CLASS="FILENAME"
+>include/config.h</TT
+> it generates contains lines like this:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>#define HAVE_KRB5 1
+#define HAVE_LDAP 1
+		  </PRE
+></P
+><P
+>If it doesn't then configure did not find your krb5 libraries or
+	    your ldap libraries. Look in config.log to figure out why and fix
+		  it.</P
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN3795"
+>26.3.1.1. Installing the required packages for Debian</A
+></H3
+><P
+>On Debian you need to install the following packages:</P
+><P
+>	<P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>libkrb5-dev</TD
+></TR
+><TR
+><TD
+>krb5-user</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+>
+	</P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN3802"
+>26.3.1.2. Installing the required packages for RedHat</A
+></H3
+><P
+>On RedHat this means you should have at least: </P
+><P
+>	<P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>krb5-workstation (for kinit)</TD
+></TR
+><TR
+><TD
+>krb5-libs (for linking with)</TD
+></TR
+><TR
+><TD
+>krb5-devel (because you are compiling from source)</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+>
+	</P
+><P
+>in addition to the standard development environment.</P
+><P
+>Note that these are not standard on a RedHat install, and you may need
+	to get them off CD2.</P
+></DIV
+></DIV
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3884"
+NAME="AEN3812"
 >26.4. Starting the smbd and nmbd</A
 ></H1
 ><P
@@ -411,7 +533,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3894"
+NAME="AEN3822"
 >26.4.1. Starting from inetd.conf</A
 ></H2
 ><P
@@ -511,7 +633,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3923"
+NAME="AEN3851"
 >26.4.2. Alternative: starting it as a daemon</A
 ></H2
 ><P

@@ -13,8 +13,8 @@ REL="PREVIOUS"
 TITLE="Unicode/Charsets"
 HREF="unicode.html"><LINK
 REL="NEXT"
-TITLE="Portability"
-HREF="portability.html"></HEAD
+TITLE="Samba performance issues"
+HREF="speed.html"></HEAD
 ><BODY
 CLASS="PART"
 BGCOLOR="#FFFFFF"
@@ -56,7 +56,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="portability.html"
+HREF="speed.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -83,6 +83,65 @@ CLASS="TOC"
 >Table of Contents</B
 ></DT
 ><DT
+>23. <A
+HREF="speed.html"
+>Samba performance issues</A
+></DT
+><DD
+><DL
+><DT
+>23.1. <A
+HREF="speed.html#AEN3443"
+>Comparisons</A
+></DT
+><DT
+>23.2. <A
+HREF="speed.html#AEN3449"
+>Socket options</A
+></DT
+><DT
+>23.3. <A
+HREF="speed.html#AEN3456"
+>Read size</A
+></DT
+><DT
+>23.4. <A
+HREF="speed.html#AEN3461"
+>Max xmit</A
+></DT
+><DT
+>23.5. <A
+HREF="speed.html#AEN3466"
+>Log level</A
+></DT
+><DT
+>23.6. <A
+HREF="speed.html#AEN3469"
+>Read raw</A
+></DT
+><DT
+>23.7. <A
+HREF="speed.html#AEN3474"
+>Write raw</A
+></DT
+><DT
+>23.8. <A
+HREF="speed.html#AEN3478"
+>Slow Clients</A
+></DT
+><DT
+>23.9. <A
+HREF="speed.html#AEN3482"
+>Slow Logins</A
+></DT
+><DT
+>23.10. <A
+HREF="speed.html#AEN3485"
+>Client tuning</A
+></DT
+></DL
+></DD
+><DT
 >24. <A
 HREF="portability.html"
 >Portability</A
@@ -91,34 +150,34 @@ HREF="portability.html"
 ><DL
 ><DT
 >24.1. <A
-HREF="portability.html#AEN3626"
+HREF="portability.html#AEN3525"
 >HPUX</A
 ></DT
 ><DT
 >24.2. <A
-HREF="portability.html#AEN3632"
+HREF="portability.html#AEN3531"
 >SCO Unix</A
 ></DT
 ><DT
 >24.3. <A
-HREF="portability.html#AEN3636"
+HREF="portability.html#AEN3535"
 >DNIX</A
 ></DT
 ><DT
 >24.4. <A
-HREF="portability.html#AEN3665"
+HREF="portability.html#AEN3564"
 >RedHat Linux Rembrandt-II</A
 ></DT
 ><DT
 >24.5. <A
-HREF="portability.html#AEN3671"
+HREF="portability.html#AEN3570"
 >AIX</A
 ></DT
 ><DD
 ><DL
 ><DT
 >24.5.1. <A
-HREF="portability.html#AEN3673"
+HREF="portability.html#AEN3572"
 >Sequential Read Ahead</A
 ></DT
 ></DL
@@ -134,37 +193,37 @@ HREF="other-clients.html"
 ><DL
 ><DT
 >25.1. <A
-HREF="other-clients.html#AEN3691"
+HREF="other-clients.html#AEN3590"
 >Macintosh clients?</A
 ></DT
 ><DT
 >25.2. <A
-HREF="other-clients.html#AEN3700"
+HREF="other-clients.html#AEN3599"
 >OS2 Client</A
 ></DT
 ><DD
 ><DL
 ><DT
 >25.2.1. <A
-HREF="other-clients.html#AEN3702"
+HREF="other-clients.html#AEN3601"
 >How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></DT
 ><DT
 >25.2.2. <A
-HREF="other-clients.html#AEN3717"
+HREF="other-clients.html#AEN3616"
 >How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></DT
 ><DT
 >25.2.3. <A
-HREF="other-clients.html#AEN3726"
+HREF="other-clients.html#AEN3625"
 >Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></DT
 ><DT
 >25.2.4. <A
-HREF="other-clients.html#AEN3730"
+HREF="other-clients.html#AEN3629"
 >How do I get printer driver download working 
 		for OS/2 clients?</A
 ></DT
@@ -172,46 +231,46 @@ HREF="other-clients.html#AEN3730"
 ></DD
 ><DT
 >25.3. <A
-HREF="other-clients.html#AEN3740"
+HREF="other-clients.html#AEN3639"
 >Windows for Workgroups</A
 ></DT
 ><DD
 ><DL
 ><DT
 >25.3.1. <A
-HREF="other-clients.html#AEN3742"
+HREF="other-clients.html#AEN3641"
 >Use latest TCP/IP stack from Microsoft</A
 ></DT
 ><DT
 >25.3.2. <A
-HREF="other-clients.html#AEN3747"
+HREF="other-clients.html#AEN3646"
 >Delete .pwl files after password change</A
 ></DT
 ><DT
 >25.3.3. <A
-HREF="other-clients.html#AEN3752"
+HREF="other-clients.html#AEN3651"
 >Configure WfW password handling</A
 ></DT
 ><DT
 >25.3.4. <A
-HREF="other-clients.html#AEN3756"
+HREF="other-clients.html#AEN3655"
 >Case handling of passwords</A
 ></DT
 ><DT
 >25.3.5. <A
-HREF="other-clients.html#AEN3761"
+HREF="other-clients.html#AEN3660"
 >Use TCP/IP as default protocol</A
 ></DT
 ></DL
 ></DD
 ><DT
 >25.4. <A
-HREF="other-clients.html#AEN3764"
+HREF="other-clients.html#AEN3663"
 >Windows '95/'98</A
 ></DT
 ><DT
 >25.5. <A
-HREF="other-clients.html#AEN3780"
+HREF="other-clients.html#AEN3679"
 >Windows 2000 Service Pack 2</A
 ></DT
 ></DL
@@ -225,48 +284,57 @@ HREF="compiling.html"
 ><DL
 ><DT
 >26.1. <A
-HREF="compiling.html#AEN3807"
+HREF="compiling.html#AEN3706"
 >Access Samba source code via CVS</A
 ></DT
 ><DD
 ><DL
 ><DT
 >26.1.1. <A
-HREF="compiling.html#AEN3809"
+HREF="compiling.html#AEN3708"
 >Introduction</A
 ></DT
 ><DT
 >26.1.2. <A
-HREF="compiling.html#AEN3814"
+HREF="compiling.html#AEN3713"
 >CVS Access to samba.org</A
 ></DT
 ></DL
 ></DD
 ><DT
 >26.2. <A
-HREF="compiling.html#AEN3850"
+HREF="compiling.html#AEN3749"
 >Accessing the samba sources via rsync and ftp</A
 ></DT
 ><DT
 >26.3. <A
-HREF="compiling.html#AEN3856"
+HREF="compiling.html#AEN3755"
 >Building the Binaries</A
 ></DT
+><DD
+><DL
+><DT
+>26.3.1. <A
+HREF="compiling.html#AEN3783"
+>Compiling samba with Active Directory support</A
+></DT
+></DL
+></DD
 ><DT
 >26.4. <A
-HREF="compiling.html#AEN3884"
+HREF="compiling.html#AEN3812"
 >Starting the smbd and nmbd</A
 ></DT
 ><DD
 ><DL
 ><DT
 >26.4.1. <A
-HREF="compiling.html#AEN3894"
+HREF="compiling.html#AEN3822"
 >Starting from inetd.conf</A
 ></DT
 ><DT
 >26.4.2. <A
-HREF="compiling.html#AEN3923"
+HREF="compiling.html#AEN3851"
 >Alternative: starting it as a daemon</A
 ></DT
 ></DL
@@ -282,32 +350,32 @@ HREF="bugreport.html"
 ><DL
 ><DT
 >27.1. <A
-HREF="bugreport.html#AEN3946"
+HREF="bugreport.html#AEN3874"
 >Introduction</A
 ></DT
 ><DT
 >27.2. <A
-HREF="bugreport.html#AEN3956"
+HREF="bugreport.html#AEN3884"
 >General info</A
 ></DT
 ><DT
 >27.3. <A
-HREF="bugreport.html#AEN3962"
+HREF="bugreport.html#AEN3890"
 >Debug levels</A
 ></DT
 ><DT
 >27.4. <A
-HREF="bugreport.html#AEN3979"
+HREF="bugreport.html#AEN3907"
 >Internal errors</A
 ></DT
 ><DT
 >27.5. <A
-HREF="bugreport.html#AEN3989"
+HREF="bugreport.html#AEN3917"
 >Attaching to a running process</A
 ></DT
 ><DT
 >27.6. <A
-HREF="bugreport.html#AEN3992"
+HREF="bugreport.html#AEN3920"
 >Patches</A
 ></DT
 ></DL
@@ -321,81 +389,81 @@ HREF="diagnosis.html"
 ><DL
 ><DT
 >28.1. <A
-HREF="diagnosis.html#AEN4015"
+HREF="diagnosis.html#AEN3943"
 >Introduction</A
 ></DT
 ><DT
 >28.2. <A
-HREF="diagnosis.html#AEN4020"
+HREF="diagnosis.html#AEN3948"
 >Assumptions</A
 ></DT
 ><DT
 >28.3. <A
-HREF="diagnosis.html#AEN4030"
+HREF="diagnosis.html#AEN3958"
 >Tests</A
 ></DT
 ><DD
 ><DL
 ><DT
 >28.3.1. <A
-HREF="diagnosis.html#AEN4032"
+HREF="diagnosis.html#AEN3960"
 >Test 1</A
 ></DT
 ><DT
 >28.3.2. <A
-HREF="diagnosis.html#AEN4038"
+HREF="diagnosis.html#AEN3966"
 >Test 2</A
 ></DT
 ><DT
 >28.3.3. <A
-HREF="diagnosis.html#AEN4044"
+HREF="diagnosis.html#AEN3972"
 >Test 3</A
 ></DT
 ><DT
 >28.3.4. <A
-HREF="diagnosis.html#AEN4059"
+HREF="diagnosis.html#AEN3987"
 >Test 4</A
 ></DT
 ><DT
 >28.3.5. <A
-HREF="diagnosis.html#AEN4064"
+HREF="diagnosis.html#AEN3992"
 >Test 5</A
 ></DT
 ><DT
 >28.3.6. <A
-HREF="diagnosis.html#AEN4070"
+HREF="diagnosis.html#AEN3998"
 >Test 6</A
 ></DT
 ><DT
 >28.3.7. <A
-HREF="diagnosis.html#AEN4078"
+HREF="diagnosis.html#AEN4006"
 >Test 7</A
 ></DT
 ><DT
 >28.3.8. <A
-HREF="diagnosis.html#AEN4104"
+HREF="diagnosis.html#AEN4032"
 >Test 8</A
 ></DT
 ><DT
 >28.3.9. <A
-HREF="diagnosis.html#AEN4121"
+HREF="diagnosis.html#AEN4049"
 >Test 9</A
 ></DT
 ><DT
 >28.3.10. <A
-HREF="diagnosis.html#AEN4129"
+HREF="diagnosis.html#AEN4057"
 >Test 10</A
 ></DT
 ><DT
 >28.3.11. <A
-HREF="diagnosis.html#AEN4135"
+HREF="diagnosis.html#AEN4063"
 >Test 11</A
 ></DT
 ></DL
 ></DD
 ><DT
 >28.4. <A
-HREF="diagnosis.html#AEN4140"
+HREF="diagnosis.html#AEN4068"
 >Still having troubles?</A
 ></DT
 ></DL
@@ -438,7 +506,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="portability.html"
+HREF="speed.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -458,7 +526,7 @@ VALIGN="top"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Portability</TD
+>Samba performance issues</TD
 ></TR
 ></TABLE
 ></DIV

@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Optional configuration</TITLE
+>Advanced Configuration</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
@@ -13,8 +13,8 @@ REL="PREVIOUS"
 TITLE="Samba as a NT4 or Win2k domain member"
 HREF="domain-security.html"><LINK
 REL="NEXT"
-TITLE="Integrating MS Windows networks with Samba"
-HREF="integrate-ms-networks.html"></HEAD
+TITLE="System Policies"
+HREF="advancednetworkmanagement.html"></HEAD
 ><BODY
 CLASS="PART"
 BGCOLOR="#FFFFFF"
@@ -56,7 +56,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="integrate-ms-networks.html"
+HREF="advancednetworkmanagement.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -74,11 +74,11 @@ NAME="OPTIONAL"
 CLASS="TITLEPAGE"
 ><H1
 CLASS="TITLE"
->III. Optional configuration</H1
+>III. Advanced Configuration</H1
 ><DIV
 CLASS="PARTINTRO"
 ><A
-NAME="AEN1503"
+NAME="AEN1387"
 ></A
 ><H1
 >Introduction</H1
@@ -95,127 +95,79 @@ CLASS="TOC"
 ></DT
 ><DT
 >10. <A
-HREF="integrate-ms-networks.html"
->Integrating MS Windows networks with Samba</A
+HREF="advancednetworkmanagement.html"
+>System Policies</A
 ></DT
 ><DD
 ><DL
 ><DT
 >10.1. <A
-HREF="integrate-ms-networks.html#AEN1517"
->Agenda</A
+HREF="advancednetworkmanagement.html#AEN1401"
+>Basic System Policy Info</A
 ></DT
+><DD
+><DL
+><DT
+>10.1.1. <A
+HREF="advancednetworkmanagement.html#AEN1445"
+>Creating Group Prolicy Files</A
+></DT
+></DL
+></DD
 ><DT
 >10.2. <A
-HREF="integrate-ms-networks.html#AEN1539"
->Name Resolution in a pure Unix/Linux world</A
+HREF="advancednetworkmanagement.html#AEN1456"
+>Roaming Profiles</A
 ></DT
 ><DD
 ><DL
 ><DT
 >10.2.1. <A
-HREF="integrate-ms-networks.html#AEN1555"
-><TT
-CLASS="FILENAME"
->/etc/hosts</TT
-></A
+HREF="advancednetworkmanagement.html#AEN1464"
+>Windows NT Configuration</A
 ></DT
 ><DT
 >10.2.2. <A
-HREF="integrate-ms-networks.html#AEN1571"
-><TT
-CLASS="FILENAME"
->/etc/resolv.conf</TT
-></A
+HREF="advancednetworkmanagement.html#AEN1473"
+>Windows 9X Configuration</A
 ></DT
 ><DT
 >10.2.3. <A
-HREF="integrate-ms-networks.html#AEN1582"
-><TT
-CLASS="FILENAME"
->/etc/host.conf</TT
-></A
+HREF="advancednetworkmanagement.html#AEN1481"
+>Win9X and WinNT Configuration</A
 ></DT
 ><DT
 >10.2.4. <A
-HREF="integrate-ms-networks.html#AEN1590"
-><TT
-CLASS="FILENAME"
->/etc/nsswitch.conf</TT
-></A
+HREF="advancednetworkmanagement.html#AEN1488"
+>Windows 9X Profile Setup</A
+></DT
+><DT
+>10.2.5. <A
+HREF="advancednetworkmanagement.html#AEN1524"
+>Windows NT Workstation 4.0</A
+></DT
+><DT
+>10.2.6. <A
+HREF="advancednetworkmanagement.html#AEN1532"
+>Windows NT/200x Server</A
+></DT
+><DT
+>10.2.7. <A
+HREF="advancednetworkmanagement.html#AEN1535"
+>Sharing Profiles between W9x/Me and NT4/200x/XP workstations</A
+></DT
+><DT
+>10.2.8. <A
+HREF="advancednetworkmanagement.html#AEN1542"
+>Windows NT 4</A
+></DT
+><DT
+>10.2.9. <A
+HREF="advancednetworkmanagement.html#AEN1580"
+>Windows 2000/XP</A
 ></DT
 ></DL
 ></DD
-><DT
->10.3. <A
-HREF="integrate-ms-networks.html#AEN1602"
->Name resolution as used within MS Windows networking</A
-></DT
-><DD
-><DL
-><DT
->10.3.1. <A
-HREF="integrate-ms-networks.html#AEN1614"
->The NetBIOS Name Cache</A
-></DT
-><DT
->10.3.2. <A
-HREF="integrate-ms-networks.html#AEN1619"
->The LMHOSTS file</A
-></DT
-><DT
->10.3.3. <A
-HREF="integrate-ms-networks.html#AEN1627"
->HOSTS file</A
-></DT
-><DT
->10.3.4. <A
-HREF="integrate-ms-networks.html#AEN1632"
->DNS Lookup</A
-></DT
-><DT
->10.3.5. <A
-HREF="integrate-ms-networks.html#AEN1635"
->WINS Lookup</A
-></DT
-></DL
-></DD
-><DT
->10.4. <A
-HREF="integrate-ms-networks.html#AEN1647"
->How browsing functions and how to deploy stable and 
-dependable browsing using Samba</A
-></DT
-><DT
->10.5. <A
-HREF="integrate-ms-networks.html#AEN1657"
->MS Windows security options and how to configure 
-Samba for seemless integration</A
-></DT
-><DD
-><DL
-><DT
->10.5.1. <A
-HREF="integrate-ms-networks.html#AEN1685"
->Use MS Windows NT as an authentication server</A
-></DT
-><DT
->10.5.2. <A
-HREF="integrate-ms-networks.html#AEN1693"
->Make Samba a member of an MS Windows NT security domain</A
-></DT
-><DT
->10.5.3. <A
-HREF="integrate-ms-networks.html#AEN1710"
->Configure Samba as an authentication server</A
-></DT
-></DL
-></DD
-><DT
->10.6. <A
-HREF="integrate-ms-networks.html#AEN1727"
->Conclusions</A
-></DT
 ></DL
 ></DD
 ><DT
@@ -227,53 +179,53 @@ HREF="unix-permissions.html"
 ><DL
 ><DT
 >11.1. <A
-HREF="unix-permissions.html#AEN1748"
+HREF="unix-permissions.html#AEN1663"
 >Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></DT
 ><DT
 >11.2. <A
-HREF="unix-permissions.html#AEN1752"
+HREF="unix-permissions.html#AEN1667"
 >How to view file security on a Samba share</A
 ></DT
 ><DT
 >11.3. <A
-HREF="unix-permissions.html#AEN1763"
+HREF="unix-permissions.html#AEN1678"
 >Viewing file ownership</A
 ></DT
 ><DT
 >11.4. <A
-HREF="unix-permissions.html#AEN1783"
+HREF="unix-permissions.html#AEN1698"
 >Viewing file or directory permissions</A
 ></DT
 ><DD
 ><DL
 ><DT
 >11.4.1. <A
-HREF="unix-permissions.html#AEN1798"
+HREF="unix-permissions.html#AEN1713"
 >File Permissions</A
 ></DT
 ><DT
 >11.4.2. <A
-HREF="unix-permissions.html#AEN1812"
+HREF="unix-permissions.html#AEN1727"
 >Directory Permissions</A
 ></DT
 ></DL
 ></DD
 ><DT
 >11.5. <A
-HREF="unix-permissions.html#AEN1819"
+HREF="unix-permissions.html#AEN1734"
 >Modifying file or directory permissions</A
 ></DT
 ><DT
 >11.6. <A
-HREF="unix-permissions.html#AEN1841"
+HREF="unix-permissions.html#AEN1756"
 >Interaction with the standard Samba create mask 
 	parameters</A
 ></DT
 ><DT
 >11.7. <A
-HREF="unix-permissions.html#AEN1905"
+HREF="unix-permissions.html#AEN1810"
 >Interaction with the standard Samba file attribute 
 	mapping</A
 ></DT
@@ -281,6 +233,11 @@ HREF="unix-permissions.html#AEN1905"
 ></DD
 ><DT
 >12. <A
+HREF="groupmapping.html"
+>Group mapping HOWTO</A
+></DT
+><DT
+>13. <A
 HREF="pam.html"
 >Configuring PAM for distributed but centrally 
 managed authentication</A
@@ -288,43 +245,20 @@ managed authentication</A
 ><DD
 ><DL
 ><DT
->12.1. <A
-HREF="pam.html#AEN1926"
+>13.1. <A
+HREF="pam.html#AEN1866"
 >Samba and PAM</A
 ></DT
 ><DT
->12.2. <A
-HREF="pam.html#AEN1970"
+>13.2. <A
+HREF="pam.html#AEN1915"
 >Distributed Authentication</A
 ></DT
 ><DT
->12.3. <A
-HREF="pam.html#AEN1977"
+>13.3. <A
+HREF="pam.html#AEN1920"
 >PAM Configuration in smb.conf</A
 ></DT
-></DL
-></DD
-><DT
->13. <A
-HREF="msdfs.html"
->Hosting a Microsoft Distributed File System tree on Samba</A
-></DT
-><DD
-><DL
-><DT
->13.1. <A
-HREF="msdfs.html#AEN1997"
->Instructions</A
-></DT
-><DD
-><DL
-><DT
->13.1.1. <A
-HREF="msdfs.html#AEN2032"
->Notes</A
-></DT
-></DL
-></DD
 ></DL
 ></DD
 ><DT
@@ -336,122 +270,122 @@ HREF="printing.html"
 ><DL
 ><DT
 >14.1. <A
-HREF="printing.html#AEN2058"
+HREF="printing.html#AEN1946"
 >Introduction</A
 ></DT
 ><DT
 >14.2. <A
-HREF="printing.html#AEN2080"
+HREF="printing.html#AEN1968"
 >Configuration</A
 ></DT
 ><DD
 ><DL
 ><DT
 >14.2.1. <A
-HREF="printing.html#AEN2088"
+HREF="printing.html#AEN1976"
 >Creating [print$]</A
 ></DT
 ><DT
 >14.2.2. <A
-HREF="printing.html#AEN2123"
+HREF="printing.html#AEN2011"
 >Setting Drivers for Existing Printers</A
 ></DT
 ><DT
 >14.2.3. <A
-HREF="printing.html#AEN2139"
+HREF="printing.html#AEN2027"
 >Support a large number of printers</A
 ></DT
 ><DT
 >14.2.4. <A
-HREF="printing.html#AEN2150"
+HREF="printing.html#AEN2038"
 >Adding New Printers via the Windows NT APW</A
 ></DT
 ><DT
 >14.2.5. <A
-HREF="printing.html#AEN2180"
+HREF="printing.html#AEN2068"
 >Samba and Printer Ports</A
 ></DT
 ></DL
 ></DD
 ><DT
 >14.3. <A
-HREF="printing.html#AEN2188"
+HREF="printing.html#AEN2076"
 >The Imprints Toolset</A
 ></DT
 ><DD
 ><DL
 ><DT
 >14.3.1. <A
-HREF="printing.html#AEN2192"
+HREF="printing.html#AEN2080"
 >What is Imprints?</A
 ></DT
 ><DT
 >14.3.2. <A
-HREF="printing.html#AEN2202"
+HREF="printing.html#AEN2090"
 >Creating Printer Driver Packages</A
 ></DT
 ><DT
 >14.3.3. <A
-HREF="printing.html#AEN2205"
+HREF="printing.html#AEN2093"
 >The Imprints server</A
 ></DT
 ><DT
 >14.3.4. <A
-HREF="printing.html#AEN2209"
+HREF="printing.html#AEN2097"
 >The Installation Client</A
 ></DT
 ></DL
 ></DD
 ><DT
 >14.4. <A
-HREF="printing.html#AEN2231"
+HREF="printing.html#AEN2119"
 >Diagnosis</A
 ></DT
 ><DD
 ><DL
 ><DT
 >14.4.1. <A
-HREF="printing.html#AEN2233"
+HREF="printing.html#AEN2121"
 >Introduction</A
 ></DT
 ><DT
 >14.4.2. <A
-HREF="printing.html#AEN2249"
+HREF="printing.html#AEN2137"
 >Debugging printer problems</A
 ></DT
 ><DT
 >14.4.3. <A
-HREF="printing.html#AEN2258"
+HREF="printing.html#AEN2146"
 >What printers do I have?</A
 ></DT
 ><DT
 >14.4.4. <A
-HREF="printing.html#AEN2266"
+HREF="printing.html#AEN2154"
 >Setting up printcap and print servers</A
 ></DT
 ><DT
 >14.4.5. <A
-HREF="printing.html#AEN2294"
+HREF="printing.html#AEN2182"
 >Job sent, no output</A
 ></DT
 ><DT
 >14.4.6. <A
-HREF="printing.html#AEN2305"
+HREF="printing.html#AEN2193"
 >Job sent, strange output</A
 ></DT
 ><DT
 >14.4.7. <A
-HREF="printing.html#AEN2317"
+HREF="printing.html#AEN2205"
 >Raw PostScript printed</A
 ></DT
 ><DT
 >14.4.8. <A
-HREF="printing.html#AEN2320"
+HREF="printing.html#AEN2208"
 >Advanced Printing</A
 ></DT
 ><DT
 >14.4.9. <A
-HREF="printing.html#AEN2323"
+HREF="printing.html#AEN2211"
 >Real debugging</A
 ></DT
 ></DL
@@ -467,46 +401,46 @@ HREF="cups-printing.html"
 ><DL
 ><DT
 >15.1. <A
-HREF="cups-printing.html#AEN2343"
+HREF="cups-printing.html#AEN2231"
 >Introduction</A
 ></DT
 ><DT
 >15.2. <A
-HREF="cups-printing.html#AEN2348"
+HREF="cups-printing.html#AEN2236"
 >CUPS - RAW Print Through  Mode</A
 ></DT
 ><DT
 >15.3. <A
-HREF="cups-printing.html#AEN2403"
+HREF="cups-printing.html#AEN2291"
 >The CUPS Filter Chains</A
 ></DT
 ><DT
 >15.4. <A
-HREF="cups-printing.html#AEN2442"
+HREF="cups-printing.html#AEN2330"
 >CUPS Print Drivers and Devices</A
 ></DT
 ><DD
 ><DL
 ><DT
 >15.4.1. <A
-HREF="cups-printing.html#AEN2449"
+HREF="cups-printing.html#AEN2337"
 >Further printing steps</A
 ></DT
 ></DL
 ></DD
 ><DT
 >15.5. <A
-HREF="cups-printing.html#AEN2519"
+HREF="cups-printing.html#AEN2407"
 >Limiting the number of pages users can print</A
 ></DT
 ><DT
 >15.6. <A
-HREF="cups-printing.html#AEN2608"
+HREF="cups-printing.html#AEN2496"
 >Advanced Postscript Printing from MS Windows</A
 ></DT
 ><DT
 >15.7. <A
-HREF="cups-printing.html#AEN2623"
+HREF="cups-printing.html#AEN2511"
 >Auto-Deletion of CUPS spool files</A
 ></DT
 ></DL
@@ -520,227 +454,334 @@ HREF="winbind.html"
 ><DL
 ><DT
 >16.1. <A
-HREF="winbind.html#AEN2685"
+HREF="winbind.html#AEN2573"
 >Abstract</A
 ></DT
 ><DT
 >16.2. <A
-HREF="winbind.html#AEN2689"
+HREF="winbind.html#AEN2577"
 >Introduction</A
 ></DT
 ><DT
 >16.3. <A
-HREF="winbind.html#AEN2702"
+HREF="winbind.html#AEN2590"
 >What Winbind Provides</A
 ></DT
 ><DD
 ><DL
 ><DT
 >16.3.1. <A
-HREF="winbind.html#AEN2709"
+HREF="winbind.html#AEN2597"
 >Target Uses</A
 ></DT
 ></DL
 ></DD
 ><DT
 >16.4. <A
-HREF="winbind.html#AEN2713"
+HREF="winbind.html#AEN2601"
 >How Winbind Works</A
 ></DT
 ><DD
 ><DL
 ><DT
 >16.4.1. <A
-HREF="winbind.html#AEN2718"
+HREF="winbind.html#AEN2606"
 >Microsoft Remote Procedure Calls</A
 ></DT
 ><DT
 >16.4.2. <A
-HREF="winbind.html#AEN2722"
+HREF="winbind.html#AEN2610"
 >Microsoft Active Directory Services</A
 ></DT
 ><DT
 >16.4.3. <A
-HREF="winbind.html#AEN2725"
+HREF="winbind.html#AEN2613"
 >Name Service Switch</A
 ></DT
 ><DT
 >16.4.4. <A
-HREF="winbind.html#AEN2741"
+HREF="winbind.html#AEN2629"
 >Pluggable Authentication Modules</A
 ></DT
 ><DT
 >16.4.5. <A
-HREF="winbind.html#AEN2749"
+HREF="winbind.html#AEN2637"
 >User and Group ID Allocation</A
 ></DT
 ><DT
 >16.4.6. <A
-HREF="winbind.html#AEN2753"
+HREF="winbind.html#AEN2641"
 >Result Caching</A
 ></DT
 ></DL
 ></DD
 ><DT
 >16.5. <A
-HREF="winbind.html#AEN2756"
+HREF="winbind.html#AEN2644"
 >Installation and Configuration</A
 ></DT
 ><DD
 ><DL
 ><DT
 >16.5.1. <A
-HREF="winbind.html#AEN2761"
+HREF="winbind.html#AEN2649"
 >Introduction</A
 ></DT
 ><DT
 >16.5.2. <A
-HREF="winbind.html#AEN2774"
+HREF="winbind.html#AEN2662"
 >Requirements</A
 ></DT
 ><DT
 >16.5.3. <A
-HREF="winbind.html#AEN2788"
+HREF="winbind.html#AEN2676"
 >Testing Things Out</A
 ></DT
 ></DL
 ></DD
 ><DT
 >16.6. <A
-HREF="winbind.html#AEN3013"
+HREF="winbind.html#AEN2901"
 >Limitations</A
 ></DT
 ><DT
 >16.7. <A
-HREF="winbind.html#AEN3023"
+HREF="winbind.html#AEN2911"
 >Conclusion</A
 ></DT
 ></DL
 ></DD
 ><DT
 >17. <A
+HREF="integrate-ms-networks.html"
+>Integrating MS Windows networks with Samba</A
+></DT
+><DD
+><DL
+><DT
+>17.1. <A
+HREF="integrate-ms-networks.html#AEN2932"
+>Name Resolution in a pure Unix/Linux world</A
+></DT
+><DD
+><DL
+><DT
+>17.1.1. <A
+HREF="integrate-ms-networks.html#AEN2948"
+><TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+></A
+></DT
+><DT
+>17.1.2. <A
+HREF="integrate-ms-networks.html#AEN2964"
+><TT
+CLASS="FILENAME"
+>/etc/resolv.conf</TT
+></A
+></DT
+><DT
+>17.1.3. <A
+HREF="integrate-ms-networks.html#AEN2975"
+><TT
+CLASS="FILENAME"
+>/etc/host.conf</TT
+></A
+></DT
+><DT
+>17.1.4. <A
+HREF="integrate-ms-networks.html#AEN2983"
+><TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+></A
+></DT
+></DL
+></DD
+><DT
+>17.2. <A
+HREF="integrate-ms-networks.html#AEN2995"
+>Name resolution as used within MS Windows networking</A
+></DT
+><DD
+><DL
+><DT
+>17.2.1. <A
+HREF="integrate-ms-networks.html#AEN3007"
+>The NetBIOS Name Cache</A
+></DT
+><DT
+>17.2.2. <A
+HREF="integrate-ms-networks.html#AEN3012"
+>The LMHOSTS file</A
+></DT
+><DT
+>17.2.3. <A
+HREF="integrate-ms-networks.html#AEN3020"
+>HOSTS file</A
+></DT
+><DT
+>17.2.4. <A
+HREF="integrate-ms-networks.html#AEN3025"
+>DNS Lookup</A
+></DT
+><DT
+>17.2.5. <A
+HREF="integrate-ms-networks.html#AEN3028"
+>WINS Lookup</A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>18. <A
 HREF="improved-browsing.html"
 >Improved browsing in samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->17.1. <A
-HREF="improved-browsing.html#AEN3033"
+>18.1. <A
+HREF="improved-browsing.html#AEN3047"
 >Overview of browsing</A
 ></DT
 ><DT
->17.2. <A
-HREF="improved-browsing.html#AEN3038"
+>18.2. <A
+HREF="improved-browsing.html#AEN3052"
 >Browsing support in samba</A
 ></DT
 ><DT
->17.3. <A
-HREF="improved-browsing.html#AEN3046"
+>18.3. <A
+HREF="improved-browsing.html#AEN3060"
 >Problem resolution</A
 ></DT
 ><DT
->17.4. <A
-HREF="improved-browsing.html#AEN3055"
+>18.4. <A
+HREF="improved-browsing.html#AEN3069"
 >Browsing across subnets</A
 ></DT
 ><DD
 ><DL
 ><DT
->17.4.1. <A
-HREF="improved-browsing.html#AEN3060"
+>18.4.1. <A
+HREF="improved-browsing.html#AEN3074"
 >How does cross subnet browsing work ?</A
 ></DT
 ></DL
 ></DD
 ><DT
->17.5. <A
-HREF="improved-browsing.html#AEN3095"
+>18.5. <A
+HREF="improved-browsing.html#AEN3109"
 >Setting up a WINS server</A
 ></DT
 ><DT
->17.6. <A
-HREF="improved-browsing.html#AEN3114"
+>18.6. <A
+HREF="improved-browsing.html#AEN3128"
 >Setting up Browsing in a WORKGROUP</A
 ></DT
 ><DT
->17.7. <A
-HREF="improved-browsing.html#AEN3132"
+>18.7. <A
+HREF="improved-browsing.html#AEN3146"
 >Setting up Browsing in a DOMAIN</A
 ></DT
 ><DT
->17.8. <A
-HREF="improved-browsing.html#AEN3142"
+>18.8. <A
+HREF="improved-browsing.html#AEN3156"
 >Forcing samba to be the master</A
 ></DT
 ><DT
->17.9. <A
-HREF="improved-browsing.html#AEN3151"
+>18.9. <A
+HREF="improved-browsing.html#AEN3165"
 >Making samba the domain master</A
 ></DT
 ><DT
->17.10. <A
-HREF="improved-browsing.html#AEN3169"
+>18.10. <A
+HREF="improved-browsing.html#AEN3183"
 >Note about broadcast addresses</A
 ></DT
 ><DT
->17.11. <A
-HREF="improved-browsing.html#AEN3172"
+>18.11. <A
+HREF="improved-browsing.html#AEN3186"
 >Multiple interfaces</A
 ></DT
 ></DL
 ></DD
 ><DT
->18. <A
+>19. <A
+HREF="msdfs.html"
+>Hosting a Microsoft Distributed File System tree on Samba</A
+></DT
+><DD
+><DL
+><DT
+>19.1. <A
+HREF="msdfs.html#AEN3200"
+>Instructions</A
+></DT
+><DD
+><DL
+><DT
+>19.1.1. <A
+HREF="msdfs.html#AEN3235"
+>Notes</A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>20. <A
 HREF="vfs.html"
 >Stackable VFS modules</A
 ></DT
 ><DD
 ><DL
 ><DT
->18.1. <A
-HREF="vfs.html#AEN3190"
+>20.1. <A
+HREF="vfs.html#AEN3259"
 >Introduction and configuration</A
 ></DT
 ><DT
->18.2. <A
-HREF="vfs.html#AEN3199"
+>20.2. <A
+HREF="vfs.html#AEN3268"
 >Included modules</A
 ></DT
 ><DD
 ><DL
 ><DT
->18.2.1. <A
-HREF="vfs.html#AEN3201"
+>20.2.1. <A
+HREF="vfs.html#AEN3270"
 >audit</A
 ></DT
 ><DT
->18.2.2. <A
-HREF="vfs.html#AEN3209"
+>20.2.2. <A
+HREF="vfs.html#AEN3278"
 >recycle</A
 ></DT
 ><DT
->18.2.3. <A
-HREF="vfs.html#AEN3246"
+>20.2.3. <A
+HREF="vfs.html#AEN3315"
 >netatalk</A
 ></DT
 ></DL
 ></DD
 ><DT
->18.3. <A
-HREF="vfs.html#AEN3253"
+>20.3. <A
+HREF="vfs.html#AEN3322"
 >VFS modules available elsewhere</A
 ></DT
 ><DD
 ><DL
 ><DT
->18.3.1. <A
-HREF="vfs.html#AEN3257"
+>20.3.1. <A
+HREF="vfs.html#AEN3326"
 >DatabaseFS</A
 ></DT
 ><DT
->18.3.2. <A
-HREF="vfs.html#AEN3265"
+>20.3.2. <A
+HREF="vfs.html#AEN3334"
 >vscan</A
 ></DT
 ></DL
@@ -748,171 +789,59 @@ HREF="vfs.html#AEN3265"
 ></DL
 ></DD
 ><DT
->19. <A
-HREF="groupmapping.html"
->Group mapping HOWTO</A
-></DT
-><DT
->20. <A
-HREF="speed.html"
->Samba performance issues</A
-></DT
-><DD
-><DL
-><DT
->20.1. <A
-HREF="speed.html#AEN3320"
->Comparisons</A
-></DT
-><DT
->20.2. <A
-HREF="speed.html#AEN3326"
->Socket options</A
-></DT
-><DT
->20.3. <A
-HREF="speed.html#AEN3333"
->Read size</A
-></DT
-><DT
->20.4. <A
-HREF="speed.html#AEN3338"
->Max xmit</A
-></DT
-><DT
->20.5. <A
-HREF="speed.html#AEN3343"
->Log level</A
-></DT
-><DT
->20.6. <A
-HREF="speed.html#AEN3346"
->Read raw</A
-></DT
-><DT
->20.7. <A
-HREF="speed.html#AEN3351"
->Write raw</A
-></DT
-><DT
->20.8. <A
-HREF="speed.html#AEN3355"
->Slow Clients</A
-></DT
-><DT
->20.9. <A
-HREF="speed.html#AEN3359"
->Slow Logins</A
-></DT
-><DT
->20.10. <A
-HREF="speed.html#AEN3362"
->Client tuning</A
-></DT
-></DL
-></DD
-><DT
 >21. <A
-HREF="groupprofiles.html"
->Creating Group Prolicy Files</A
-></DT
-><DD
-><DL
-><DT
->21.1. <A
-HREF="groupprofiles.html#AEN3410"
->Windows '9x</A
-></DT
-><DT
->21.2. <A
-HREF="groupprofiles.html#AEN3420"
->Windows NT 4</A
-></DT
-><DD
-><DL
-><DT
->21.2.1. <A
-HREF="groupprofiles.html#AEN3443"
->Side bar Notes</A
-></DT
-><DT
->21.2.2. <A
-HREF="groupprofiles.html#AEN3447"
->Mandatory profiles</A
-></DT
-><DT
->21.2.3. <A
-HREF="groupprofiles.html#AEN3450"
->moveuser.exe</A
-></DT
-><DT
->21.2.4. <A
-HREF="groupprofiles.html#AEN3453"
->Get SID</A
-></DT
-></DL
-></DD
-><DT
->21.3. <A
-HREF="groupprofiles.html#AEN3458"
->Windows 2000/XP</A
-></DT
-></DL
-></DD
-><DT
->22. <A
 HREF="securing-samba.html"
 >Securing Samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->22.1. <A
-HREF="securing-samba.html#AEN3539"
+>21.1. <A
+HREF="securing-samba.html#AEN3348"
 >Introduction</A
 ></DT
 ><DT
->22.2. <A
-HREF="securing-samba.html#AEN3542"
+>21.2. <A
+HREF="securing-samba.html#AEN3351"
 >Using host based protection</A
 ></DT
 ><DT
->22.3. <A
-HREF="securing-samba.html#AEN3549"
+>21.3. <A
+HREF="securing-samba.html#AEN3358"
 >Using interface protection</A
 ></DT
 ><DT
->22.4. <A
-HREF="securing-samba.html#AEN3558"
+>21.4. <A
+HREF="securing-samba.html#AEN3367"
 >Using a firewall</A
 ></DT
 ><DT
->22.5. <A
-HREF="securing-samba.html#AEN3565"
+>21.5. <A
+HREF="securing-samba.html#AEN3374"
 >Using a IPC$ share deny</A
 ></DT
 ><DT
->22.6. <A
-HREF="securing-samba.html#AEN3574"
+>21.6. <A
+HREF="securing-samba.html#AEN3383"
 >Upgrading Samba</A
 ></DT
 ></DL
 ></DD
 ><DT
->23. <A
+>22. <A
 HREF="unicode.html"
 >Unicode/Charsets</A
 ></DT
 ><DD
 ><DL
 ><DT
->23.1. <A
-HREF="unicode.html#AEN3588"
+>22.1. <A
+HREF="unicode.html#AEN3397"
 >What are charsets and unicode?</A
 ></DT
 ><DT
->23.2. <A
-HREF="unicode.html#AEN3597"
+>22.2. <A
+HREF="unicode.html#AEN3406"
 >Samba and charsets</A
 ></DT
 ></DL
@@ -955,7 +884,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="integrate-ms-networks.html"
+HREF="advancednetworkmanagement.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -975,7 +904,7 @@ VALIGN="top"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Integrating MS Windows networks with Samba</TD
+>System Policies</TD
 ></TR
 ></TABLE
 ></DIV

@@ -10,14 +10,14 @@ REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="UP"
-TITLE="Optional configuration"
+TITLE="Advanced Configuration"
 HREF="optional.html"><LINK
 REL="PREVIOUS"
-TITLE="Unified Logons between Windows NT and UNIX using Winbind"
-HREF="winbind.html"><LINK
+TITLE="Integrating MS Windows networks with Samba"
+HREF="integrate-ms-networks.html"><LINK
 REL="NEXT"
-TITLE="Stackable VFS modules"
-HREF="vfs.html"></HEAD
+TITLE="Hosting a Microsoft Distributed File System tree on Samba"
+HREF="msdfs.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="winbind.html"
+HREF="integrate-ms-networks.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="vfs.html"
+HREF="msdfs.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -74,14 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="IMPROVED-BROWSING"
 ></A
->Chapter 17. Improved browsing in samba</H1
+>Chapter 18. Improved browsing in samba</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3033"
->17.1. Overview of browsing</A
+NAME="AEN3047"
+>18.1. Overview of browsing</A
 ></H1
 ><P
 >SMB networking provides a mechanism by which clients can access a list
@@ -109,8 +109,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3038"
->17.2. Browsing support in samba</A
+NAME="AEN3052"
+>18.2. Browsing support in samba</A
 ></H1
 ><P
 >Samba facilitates browsing.  The browsing is supported by nmbd
@@ -152,8 +152,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3046"
->17.3. Problem resolution</A
+NAME="AEN3060"
+>18.3. Problem resolution</A
 ></H1
 ><P
 >If something doesn't work then hopefully the log.nmb file will help
@@ -199,8 +199,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3055"
->17.4. Browsing across subnets</A
+NAME="AEN3069"
+>18.4. Browsing across subnets</A
 ></H1
 ><P
 >Since the release of Samba 1.9.17(alpha1) Samba has been
@@ -230,8 +230,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3060"
->17.4.1. How does cross subnet browsing work ?</A
+NAME="AEN3074"
+>18.4.1. How does cross subnet browsing work ?</A
 ></H2
 ><P
 >Cross subnet browsing is a complicated dance, containing multiple
@@ -441,8 +441,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3095"
->17.5. Setting up a WINS server</A
+NAME="AEN3109"
+>18.5. Setting up a WINS server</A
 ></H1
 ><P
 >Either a Samba machine or a Windows NT Server machine may be set up
@@ -524,8 +524,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3114"
->17.6. Setting up Browsing in a WORKGROUP</A
+NAME="AEN3128"
+>18.6. Setting up Browsing in a WORKGROUP</A
 ></H1
 ><P
 >To set up cross subnet browsing on a network containing machines
@@ -556,10 +556,10 @@ options in the [global] section of the smb.conf file :</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->        domain master = yes
-        local master = yes
-        preferred master = yes
-        os level = 65</PRE
+>domain master = yes
+local master = yes
+preferred master = yes
+os level = 65</PRE
 ></P
 ><P
 >The domain master browser may be the same machine as the WINS
@@ -576,10 +576,10 @@ smb.conf file :</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->        domain master = no
-        local master = yes
-        preferred master = yes
-        os level = 65</PRE
+>domain master = no
+local master = yes
+preferred master = yes
+os level = 65</PRE
 ></P
 ><P
 >Do not do this for more than one Samba server on each subnet,
@@ -598,10 +598,10 @@ options in the [global] section of the smb.conf file :</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->        domain master = no
-        local master = no
-        preferred master = no
-        os level = 0</PRE
+>domain master = no
+local master = no
+preferred master = no
+os level = 0</PRE
 ></P
 ></DIV
 ><DIV
@@ -609,8 +609,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3132"
->17.7. Setting up Browsing in a DOMAIN</A
+NAME="AEN3146"
+>18.7. Setting up Browsing in a DOMAIN</A
 ></H1
 ><P
 >If you are adding Samba servers to a Windows NT Domain then
@@ -628,10 +628,10 @@ file :</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->        domain master = no
-        local master = yes
-        preferred master = yes
-        os level = 65</PRE
+>domain master = no
+local master = yes
+preferred master = yes
+os level = 65</PRE
 ></P
 ><P
 >If you wish to have a Samba server fight the election with machines
@@ -660,8 +660,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3142"
->17.8. Forcing samba to be the master</A
+NAME="AEN3156"
+>18.8. Forcing samba to be the master</A
 ></H1
 ><P
 >Who becomes the "master browser" is determined by an election process
@@ -708,8 +708,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3151"
->17.9. Making samba the domain master</A
+NAME="AEN3165"
+>18.9. Making samba the domain master</A
 ></H1
 ><P
 >The domain master is responsible for collating the browse lists of
@@ -781,8 +781,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3169"
->17.10. Note about broadcast addresses</A
+NAME="AEN3183"
+>18.10. Note about broadcast addresses</A
 ></H1
 ><P
 >If your network uses a "0" based broadcast address (for example if it
@@ -795,8 +795,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3172"
->17.11. Multiple interfaces</A
+NAME="AEN3186"
+>18.11. Multiple interfaces</A
 ></H1
 ><P
 >Samba now supports machines with multiple network interfaces.  If you
@@ -820,7 +820,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="winbind.html"
+HREF="integrate-ms-networks.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -838,7 +838,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="vfs.html"
+HREF="msdfs.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -848,7 +848,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Unified Logons between Windows NT and UNIX using Winbind</TD
+>Integrating MS Windows networks with Samba</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -862,7 +862,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Stackable VFS modules</TD
+>Hosting a Microsoft Distributed File System tree on Samba</TD
 ></TR
 ></TABLE
 ></DIV
