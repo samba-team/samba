@@ -254,7 +254,7 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 	get_single_attribute(ldap_struct, entry, "rid", temp);
 
 	/* the smb (unix) ids are not stored: they are created */
-	user->smb_userid = pwdb_user_rid_to_uid (atoi(temp));
+	user->unix_uid = pwdb_user_rid_to_uid (atoi(temp));
 
 	if (user->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
 	{
@@ -347,7 +347,7 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 	user->group_rid = atoi(temp);
 
 	/* the smb (unix) ids are not stored: they are created */
-	user->smb_userid = pw_buf.smb_userid;
+	user->unix_uid = pw_buf.unix_uid;
 	user->smb_grpid = group_rid_to_uid(user->group_rid);
 
 	user->acct_ctrl = pw_buf.acct_ctrl;
@@ -553,7 +553,7 @@ static BOOL modadd_ldappwd_entry(struct smb_passwd *newpwd, int flag)
 	}
 	slprintf(nthash, sizeof(nthash)-1, "%s", temp);
 
-	slprintf(rid, sizeof(rid)-1, "%d", uid_to_user_rid(newpwd->smb_userid) );
+	slprintf(rid, sizeof(rid)-1, "%d", uid_to_user_rid(newpwd->unix_uid) );
 	slprintf(lst, sizeof(lst)-1, "%08X", newpwd->pass_last_set_time);
 	
 	mods = NULL; 
@@ -925,9 +925,9 @@ static struct smb_passwd *getldappwnam(char *name)
   return pwdb_sam_to_smb(iterate_getsam21pwnam(name));
 }
 
-static struct smb_passwd *getldappwuid(uid_t smb_userid)
+static struct smb_passwd *getldappwuid(uid_t unix_uid)
 {
-  return pwdb_sam_to_smb(iterate_getsam21pwuid(smb_userid));
+  return pwdb_sam_to_smb(iterate_getsam21pwuid(unix_uid));
 }
 
 static struct smb_passwd *getldappwrid(uint32 user_rid)

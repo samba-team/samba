@@ -29,7 +29,7 @@ extern int DEBUGLEVEL;
  Convert a SID to an ascii string.
 *****************************************************************/
 
-char *sid_to_string(pstring sidstr_out, DOM_SID *sid)
+char *sid_to_string(pstring sidstr_out, const DOM_SID *sid)
 {
   char subauth[16];
   int i;
@@ -55,10 +55,10 @@ char *sid_to_string(pstring sidstr_out, DOM_SID *sid)
  Convert a string to a SID. Returns True on success, False on fail.
 *****************************************************************/  
    
-BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
+BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
   pstring tok;
-  char *p = sidstr;
+  const char *p = sidstr;
   /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
   uint32 ia;
 
@@ -146,7 +146,7 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
 /*****************************************************************
  copies a sid
 *****************************************************************/  
-void sid_copy(DOM_SID *sid1, DOM_SID *sid2)
+void sid_copy(DOM_SID *sid1, const DOM_SID *sid2)
 {
 	int i;
 
@@ -163,10 +163,35 @@ void sid_copy(DOM_SID *sid1, DOM_SID *sid2)
 	sid1->num_auths   = sid2->num_auths;
 	sid1->sid_rev_num = sid2->sid_rev_num;
 }
+
+/*****************************************************************
+ compare two sids up to the auths of the first sid
+*****************************************************************/  
+BOOL sid_front_equal(const DOM_SID *sid1, const DOM_SID *sid2)
+{
+	int i;
+
+	/* compare most likely different rids, first: i.e start at end */
+	for (i = sid1->num_auths-1; i >= 0; --i)
+	{
+		if (sid1->sub_auths[i] != sid2->sub_auths[i]) return False;
+	}
+
+	if (sid1->num_auths   >  sid2->num_auths  ) return False;
+	if (sid1->sid_rev_num != sid2->sid_rev_num) return False;
+
+	for (i = 0; i < 6; i++)
+	{
+		if (sid1->id_auth[i] != sid2->id_auth[i]) return False;
+	}
+
+	return True;
+}
+
 /*****************************************************************
  compare two sids
 *****************************************************************/  
-BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2)
+BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	int i;
 
@@ -191,7 +216,7 @@ BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2)
 /*****************************************************************
  calculates size of a sid
 *****************************************************************/  
-int sid_size(DOM_SID *sid)
+int sid_size(const DOM_SID *sid)
 {
 	if (sid == NULL)
 	{

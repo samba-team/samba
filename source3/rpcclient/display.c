@@ -867,6 +867,50 @@ void display_name(FILE *out_hnd, enum action_type action,
 
 
 /****************************************************************************
+ display alias rid info
+ ****************************************************************************/
+void display_alias_rid_info(FILE *out_hnd, enum action_type action,
+				DOM_SID *sid,
+				uint32 num_rids, uint32 *rid)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fstring sid_str;
+			sid_to_string(sid_str, sid);
+			if (num_rids == 0)
+			{
+				fprintf(out_hnd, "\tNo Aliases: Sid %s\n", sid_str);
+			}
+			else
+			{
+				fprintf(out_hnd, "\tAlias Info: Sid %s\n", sid_str);
+				fprintf(out_hnd, "\t----------\n");
+			}
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < num_rids; i++)
+			{
+				fprintf(out_hnd, "\tAlias RID: %8x\n", rid[i]);
+			}
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+
+/****************************************************************************
  display group rid info
  ****************************************************************************/
 void display_group_rid_info(FILE *out_hnd, enum action_type action,

@@ -391,11 +391,11 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 	if (!lm_pass || !smb_pass) return(False);
 
 	DEBUG(4,("Checking SMB password for user %s\n", 
-		 smb_pass->smb_name));
+		 smb_pass->unix_name));
 
 	if(smb_pass->acct_ctrl & ACB_DISABLED) {
 		DEBUG(3,("account for user %s was disabled.\n", 
-			 smb_pass->smb_name));
+			 smb_pass->unix_name));
 		return(False);
 	}
 
@@ -436,7 +436,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 	if((smb_pass->smb_passwd == NULL) && 
 	   (smb_pass->acct_ctrl & ACB_PWNOTREQ)) {
 		DEBUG(4,("no password required for user %s\n",
-			 smb_pass->smb_name));
+			 smb_pass->unix_name));
 		return True;
 	}
 
@@ -502,7 +502,7 @@ BOOL pass_check_smb(char *user, char *domain,
         }
 
 	/* Ensure the uid's match */
-	if (smb_pass->smb_userid != pass->pw_uid)
+	if (smb_pass->unix_uid != pass->pw_uid)
 	{
 		DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
 		return(False);
@@ -510,7 +510,7 @@ BOOL pass_check_smb(char *user, char *domain,
 
 	if (lm_pwd[0] == '\0' && IS_BITS_SET_ALL(smb_pass->acct_ctrl, ACB_PWNOTREQ) && lp_null_passwords())
 	{
-		DEBUG(3,("account for user %s has no password and null passwords are allowed.\n", smb_pass->smb_name));
+		DEBUG(3,("account for user %s has no password and null passwords are allowed.\n", smb_pass->unix_name));
 		return(True);
 	}
 
@@ -587,7 +587,7 @@ validate a group username entry. Return the username or NULL
 ****************************************************************************/
 static char *validate_group(char *group,char *password,int pwlen,int snum)
 {
-#ifdef HAVE_NETGROUP
+#if defined(HAVE_NETGROUP) && defined(HAVE_GETNETGRENT) && defined(HAVE_SETNETGRENT) && defined(HAVE_ENDNETGRENT)
   {
     char *host, *user, *domain;
     setnetgrent(group);

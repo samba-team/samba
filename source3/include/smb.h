@@ -357,14 +357,15 @@ typedef struct nttime_info
 
 struct sam_passwd
 {
-	time_t logon_time;            /* logon time */
-	time_t logoff_time;           /* logoff time */
-	time_t kickoff_time;          /* kickoff time */
-	time_t pass_last_set_time;    /* password last set time */
-	time_t pass_can_change_time;  /* password can change time */
-	time_t pass_must_change_time; /* password must change time */
+	NTTIME logon_time;            /* logon time */
+	NTTIME logoff_time;           /* logoff time */
+	NTTIME kickoff_time;          /* kickoff time */
+	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME pass_can_change_time;  /* password can change time */
+	NTTIME pass_must_change_time; /* password must change time */
 
-	char *smb_name;     /* username string */
+	char *unix_name;    /* unix username string */
+	char *nt_name;      /* nt username string */
 	char *full_name;    /* user's full name string */
 	char *home_dir;     /* home directory string */
 	char *dir_drive;    /* home directory drive string */
@@ -375,8 +376,8 @@ struct sam_passwd
 	char *unknown_str ; /* don't know what this is, yet. */
 	char *munged_dial ; /* munged path name and dial-back tel number */
 
-	uid_t smb_userid;       /* this is actually the unix uid_t */
-	gid_t smb_grpid;        /* this is actually the unix gid_t */
+	uid_t unix_uid;       /* this is actually the unix uid_t */
+	gid_t unix_gid;        /* this is actually the unix gid_t */
 	uint32 user_rid;      /* Primary User ID */
 	uint32 group_rid;     /* Primary Group ID */
 
@@ -396,8 +397,11 @@ struct sam_passwd
 
 struct smb_passwd
 {
-	uid_t smb_userid;     /* this is actually the unix uid_t */
-	char *smb_name;     /* username string */
+	uid_t unix_uid;     /* unix userid */
+	char *unix_name;     /* unix username string */
+
+	uint32 user_rid;     /* Primary User ID */
+	char *nt_name;     /* unix username string */
 
 	unsigned char *smb_passwd; /* Null if no password */
 	unsigned char *smb_nt_passwd; /* Null if no password */
@@ -410,8 +414,8 @@ struct smb_passwd
 struct sam_disp_info
 {
 	uint32 user_rid;      /* Primary User ID */
-	char *smb_name;     /* username string */
-	char *full_name;    /* user's full name string */
+	char *nt_name;        /* username string */
+	char *full_name;      /* user's full name string */
 };
 
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
@@ -429,6 +433,28 @@ typedef struct sid_info
   uint32 sub_auths[MAXSUBAUTHS];  /* pointer to sub-authorities. */
 
 } DOM_SID;
+
+
+typedef struct group_name_info
+{
+	char *nt_name;
+	char *nt_domain;
+	char *unix_name;
+
+	DOM_SID sid;
+	uint8 type;
+	uint32 unix_id;
+
+} DOM_NAME_MAP;
+
+/* map either local aliases, domain groups or builtin aliases */
+typedef enum 
+{
+	DOM_MAP_LOCAL,
+	DOM_MAP_DOMAIN,
+	DOM_MAP_USER,
+
+} DOM_MAP_TYPE;
 
 
 /*** query a local group, get a list of these: shows who is in that group ***/
@@ -744,53 +770,28 @@ struct shmem_ops {
  * to support the following operations.
  */
 
-struct passdb_ops {
-  /*
-   * Password database ops.
-   */
-  void *(*startsmbpwent)(BOOL);
-  void (*endsmbpwent)(void *);
-  SMB_BIG_UINT (*getsmbpwpos)(void *);
-  BOOL (*setsmbpwpos)(void *, SMB_BIG_UINT);
+struct smb_passdb_ops
+{
+	/*
+	 * Password database operations.
+	 */
+	void *(*startsmbpwent)(BOOL);
+	void (*endsmbpwent)(void *);
+	SMB_BIG_UINT (*getsmbpwpos)(void *);
+	BOOL (*setsmbpwpos)(void *, SMB_BIG_UINT);
 
-  /*
-   * smb password database query functions.
-   */
-  struct smb_passwd *(*getsmbpwnam)(const char *);
-  struct smb_passwd *(*getsmbpwuid)(uid_t);
-  struct smb_passwd *(*getsmbpwrid)(uint32);
-  struct smb_passwd *(*getsmbpwent)(void *);
+	/*
+	 * smb password database query functions.
+	 */
+	struct smb_passwd *(*getsmbpwnam)(const char *);
+	struct smb_passwd *(*getsmbpwuid)(uid_t);
+	struct smb_passwd *(*getsmbpwent)(void *);
 
-  /*
-   * smb password database modification functions.
-   */
-  BOOL (*add_smbpwd_entry)(struct smb_passwd *);
-  BOOL (*mod_smbpwd_entry)(struct smb_passwd *, BOOL);
-
-  /*
-   * Functions that manupulate a struct sam_passwd.
-   */
-  struct sam_passwd *(*getsam21pwent)(void *);
-
-  /*
-   * sam password database query functions.
-   */
-  struct sam_passwd *(*getsam21pwnam)(const char *);
-  struct sam_passwd *(*getsam21pwuid)(uid_t);
-  struct sam_passwd *(*getsam21pwrid)(uint32);
-
-  /*
-   * sam password database modification functions.
-   */
-  BOOL (*add_sam21pwd_entry)(struct sam_passwd *);
-  BOOL (*mod_sam21pwd_entry)(struct sam_passwd *, BOOL);
-
-  /*
-   * sam query display info functions.
-   */
-  struct sam_disp_info *(*getsamdispnam)(const char *);
-  struct sam_disp_info *(*getsamdisprid)(uint32);
-  struct sam_disp_info *(*getsamdispent)(void *);
+	/*
+	 * smb password database modification functions.
+	 */
+	BOOL (*add_smbpwd_entry)(struct smb_passwd *);
+	BOOL (*mod_smbpwd_entry)(struct smb_passwd *, BOOL);
 
 #if 0
   /*
@@ -803,27 +804,64 @@ struct passdb_ops {
 };
 
 /*
+ * Each implementation of the password database code needs
+ * to support the following operations.
+ */
+
+struct sam_passdb_ops {
+  /*
+   * Password database operations.
+   */
+  void *(*startsam21pwent)(BOOL);
+  void (*endsam21pwent)(void *);
+  SMB_BIG_UINT (*getsam21pwpos)(void *);
+  BOOL (*setsam21pwpos)(void *, SMB_BIG_UINT);
+
+  /*
+   * sam password database query functions.
+   */
+  struct sam_passwd *(*getsam21pwntnam)(const char *);
+  struct sam_passwd *(*getsam21pwuid)(uid_t);
+  struct sam_passwd *(*getsam21pwrid)(uint32);
+  struct sam_passwd *(*getsam21pwent)(void *);
+
+  /*
+   * sam password database modification functions.
+   */
+  BOOL (*add_sam21pwd_entry)(struct sam_passwd *);
+  BOOL (*mod_sam21pwd_entry)(struct sam_passwd *, BOOL);
+
+  /*
+   * sam query display info functions.
+   */
+  struct sam_disp_info *(*getsamdispntnam)(const char *);
+  struct sam_disp_info *(*getsamdisprid)(uint32);
+  struct sam_disp_info *(*getsamdispent)(void *);
+
+};
+
+/*
  * Each implementation of the passgrp database code needs
  * to support the following operations.
  */
 
-struct passgrp_ops {
-  /*
-   * Password database ops.
-   */
-  void *(*startsmbgrpent)(BOOL);
-  void (*endsmbgrpent)(void *);
-  SMB_BIG_UINT (*getsmbgrppos)(void *);
-  BOOL (*setsmbgrppos)(void *, SMB_BIG_UINT);
+struct passgrp_ops
+{
+	/*
+	 * Password group database ops.
+	 */
+	void *(*startsmbgrpent)(BOOL);
+	void (*endsmbgrpent)(void *);
+	SMB_BIG_UINT (*getsmbgrppos)(void *);
+	BOOL (*setsmbgrppos)(void *, SMB_BIG_UINT);
 
-  /*
-   * smb passgrp database query functions.
-   */
-  struct smb_passwd *(*getsmbgrpnam)(char *, uint32**, int*, uint32**, int*);
-  struct smb_passwd *(*getsmbgrpuid)(uid_t , uint32**, int*, uint32**, int*);
-  struct smb_passwd *(*getsmbgrprid)(uint32, uint32**, int*, uint32**, int*);
-  struct smb_passwd *(*getsmbgrpent)(void *, uint32**, int*, uint32**, int*);
-
+	/*
+	 * smb passgrp database query functions, by user attributes.
+	 */
+	struct smb_passwd *(*getsmbgrpntnam)(const char *, uint32**, int*, uint32**, int*);
+	struct smb_passwd *(*getsmbgrpuid)(uid_t , uint32**, int*, uint32**, int*);
+	struct smb_passwd *(*getsmbgrprid)(uint32, uint32**, int*, uint32**, int*);
+	struct smb_passwd *(*getsmbgrpent)(void *, uint32**, int*, uint32**, int*);
 };
 
 /*
@@ -846,10 +884,9 @@ struct groupdb_ops
 	BOOL (*setgrouppos)(void *, SMB_BIG_UINT);
 
 	/*
-	 * group database query functions. set the BOOL to Tru
-	 * if you want the members in the group as well.
+	 * group database query functions. 
 	 */
-	DOMAIN_GRP *(*getgroupnam)(char *, DOMAIN_GRP_MEMBER **, int *);
+	DOMAIN_GRP *(*getgroupntnam)(const char *, DOMAIN_GRP_MEMBER **, int *);
 	DOMAIN_GRP *(*getgroupgid)(gid_t , DOMAIN_GRP_MEMBER **, int *);
 	DOMAIN_GRP *(*getgrouprid)(uint32, DOMAIN_GRP_MEMBER **, int *);
 	DOMAIN_GRP *(*getgroupent)(void *, DOMAIN_GRP_MEMBER **, int *);
@@ -863,7 +900,7 @@ struct groupdb_ops
 	/*
 	 * user group functions
 	 */
-	BOOL (*getusergroupsnam)(char *, DOMAIN_GRP **, int *);
+	BOOL (*getusergroupsntnam)(const char *, DOMAIN_GRP **, int *);
 };
 
 /*
@@ -886,10 +923,9 @@ struct aliasdb_ops
 	BOOL (*setaliaspos)(void *, SMB_BIG_UINT);
 
 	/*
-	 * alias database query functions. set the BOOL to Tru
-	 * if you want the members in the alias as well.
+	 * alias database query functions. 
 	 */
-	LOCAL_GRP *(*getaliasnam)(char *, LOCAL_GRP_MEMBER **, int *);
+	LOCAL_GRP *(*getaliasntnam)(const char *, LOCAL_GRP_MEMBER **, int *);
 	LOCAL_GRP *(*getaliasgid)(gid_t , LOCAL_GRP_MEMBER **, int *);
 	LOCAL_GRP *(*getaliasrid)(uint32, LOCAL_GRP_MEMBER **, int *);
 	LOCAL_GRP *(*getaliasent)(void *, LOCAL_GRP_MEMBER **, int *);
@@ -903,7 +939,7 @@ struct aliasdb_ops
 	/*
 	 * user alias functions
 	 */
-	BOOL (*getuseraliasnam)(char *, LOCAL_GRP **, int *);
+	BOOL (*getuseraliasntnam)(const char *, LOCAL_GRP **, int *);
 };
 
 /* this is used for smbstatus */

@@ -113,7 +113,7 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 		p = Atoic((char *) p, &uidval, ":");
 
 		pw_buf.smb_name = user_name;
-		pw_buf.smb_userid = uidval;
+		pw_buf.unix_uid = uidval;
 
 		/*
 		 * Now get a list of alias RIDs

@@ -334,7 +334,7 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli,
 			for (i = 0; i < *num_sam_users; i++)
 			{
 
-				(*sam)[i].smb_userid = r_e.sam[i].rid;
+				(*sam)[i].user_rid = r_e.sam[i].rid;
 				if (r_e.sam[i].hdr_name.buffer)
 				{
 					char *acct_name = unistrn2(r_e.uni_acct_name[name_idx].buffer,
@@ -347,7 +347,7 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli,
 					bzero((*sam)[i].acct_name, sizeof((*sam)[i].acct_name));
 				}
 				DEBUG(5,("do_samr_enum_dom_users: idx: %4d rid: %8x acct: %s\n",
-				          i, (*sam)[i].smb_userid, (*sam)[i].acct_name));
+				          i, (*sam)[i].user_rid, (*sam)[i].acct_name));
 			}
 			valid_pol = True;
 		}
@@ -619,6 +619,67 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a SAMR Query User Aliases
+****************************************************************************/
+BOOL do_samr_query_useraliases(struct cli_state *cli, 
+				POLICY_HND *pol, DOM_SID *sid,
+				uint32 *num_aliases, uint32 *rid)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_QUERY_USERALIASES q_o;
+	BOOL valid_query = False;
+
+	/* create and send a MSRPC command with api SAMR_QUERY_USERALIASES */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Query User Aliases.\n"));
+
+	if (pol == NULL || sid == NULL || rid == NULL || num_aliases == 0) return False;
+
+	/* store the parameters */
+	make_samr_q_query_useraliases(&q_o, pol, sid);
+
+	/* turn parameters into data stream */
+	samr_io_q_query_useraliases("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_QUERY_USERALIASES, &data, &rdata))
+	{
+		SAMR_R_QUERY_USERALIASES r_o;
+		BOOL p;
+
+		/* get user info */
+		r_o.rid = rid;
+
+		samr_io_r_query_useraliases("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_QUERY_USERALIASES: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p && r_o.ptr != 0)
+		{
+			valid_query = True;
+			*num_aliases = r_o.num_entries;
+		}
+
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_query;
+}
+
+/****************************************************************************
 do a SAMR Query User Groups
 ****************************************************************************/
 BOOL do_samr_query_usergroups(struct cli_state *cli, 
@@ -628,7 +689,7 @@ BOOL do_samr_query_usergroups(struct cli_state *cli,
 	prs_struct rdata;
 
 	SAMR_Q_QUERY_USERGROUPS q_o;
-    BOOL valid_query = False;
+	BOOL valid_query = False;
 
 	/* create and send a MSRPC command with api SAMR_QUERY_USERGROUPS */
 

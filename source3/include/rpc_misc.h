@@ -43,12 +43,10 @@
 #define BUILTIN_ALIAS_RID_USERS         (0x00000221L)
 #define BUILTIN_ALIAS_RID_GUESTS        (0x00000222L)
 #define BUILTIN_ALIAS_RID_POWER_USERS   (0x00000223L)
-
 #define BUILTIN_ALIAS_RID_ACCOUNT_OPS   (0x00000224L)
 #define BUILTIN_ALIAS_RID_SYSTEM_OPS    (0x00000225L)
 #define BUILTIN_ALIAS_RID_PRINT_OPS     (0x00000226L)
 #define BUILTIN_ALIAS_RID_BACKUP_OPS    (0x00000227L)
-
 #define BUILTIN_ALIAS_RID_REPLICATOR    (0x00000228L)
 
 /*
@@ -61,9 +59,9 @@
 #define RID_MULTIPLIER 4
 
 /* The three common types. */
-#define RID_TYPE_USER 0
-#define RID_TYPE_GROUP 1
-#define RID_TYPE_ALIAS 2
+#define RID_TYPE_USER    0
+#define RID_TYPE_GROUP   1
+#define RID_TYPE_ALIAS   2
 
 /* ENUM_HND */
 typedef struct enum_hnd_info
@@ -212,6 +210,17 @@ typedef struct domrid4_info
 	uint32 rid;  /* user RID */
 
 } DOM_RID4;
+
+/* DOM_RID5 - rid, type & attributes */
+typedef struct domrid5_info
+{
+	uint32 ptr_unk;   /* pointer to unk */
+	uint32 unk;      /* value is 0x1 */
+	uint32 rid;  /* RID */
+	uint8  type; /* SID_NAME_USE_ENUM */
+	uint16 attr;
+
+} DOM_RID5;
 
 /* DOM_CLNT_SRV - client / server names */
 typedef struct clnt_srv_info

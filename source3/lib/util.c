@@ -121,7 +121,7 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 /****************************************************************************
 gets either a hex number (0xNNN) or decimal integer (NNN).
 ****************************************************************************/
-int get_number(char *tmp)
+int get_number(const char *tmp)
 {
 	if (strnequal(tmp, "0x", 2))
 	{
@@ -2185,33 +2185,18 @@ void standard_sub(connection_struct *conn,char *str)
 {
 	char *p, *s, *home;
 
-	for (s=str; (p=strchr(s, '%'));s=p) {
-		switch (*(p+1)) {
-		case 'H': 
-			if ((home = get_home_dir(conn->user))) {
-				string_sub(p,"%H",home);
-			} else {
-				p += 2;
-			}
-			break;
-			
-		case 'P': 
-			string_sub(p,"%P",conn->connectpath); 
-			break;
-			
-		case 'S': 
-			string_sub(p,"%S",
-				   lp_servicename(SNUM(conn))); 
-			break;
-			
-		case 'g': 
-			string_sub(p,"%g",
-				   gidtoname(conn->gid)); 
-			break;
-		case 'u': 
-			string_sub(p,"%u",conn->user); 
-			break;
-			
+	for (s=str; (p=strchr(s, '%'));s=p)
+	{
+		switch (*(p+1))
+		{
+			case 'H': 
+				if ((home = get_home_dir(conn->user)) != NULL) {
+					string_sub(p,"%H",home);
+				} else {
+					p += 2;
+				}
+				break;
+				
 			/* Patch from jkf@soton.ac.uk Left the %N (NIS
 			 * server name) in standard_sub_basic as it is
 			 * a feature for logon servers, hence uses the
@@ -2219,17 +2204,14 @@ void standard_sub(connection_struct *conn,char *str)
 			 * here as it is used instead of the default
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
-		case 'p': 
-			string_sub(p,"%p",
-				   automount_path(lp_servicename(SNUM(conn)))); 
-			break;
-		case '\0': 
-			p++; 
-			break; /* don't run off the end of the string 
-				*/
-			
-		default: p+=2; 
-			break;
+			case 'p': string_sub(p,"%p", automount_path(lp_servicename(SNUM(conn)))); break;
+			case 'P': string_sub(p,"%P",conn->connectpath); break; 
+			case 'S': string_sub(p,"%S", lp_servicename(SNUM(conn))); break; 
+			case 'g': string_sub(p,"%g", gidtoname(conn->gid)); break;
+			case 'u': string_sub(p,"%u", conn->user); break;
+				
+			case '\0': p++; break; /* don't run off the end of the string */ 
+			default  : p+=2; break;
 		}
 	}
 	
@@ -2351,13 +2333,48 @@ char *gidtoname(gid_t gid)
 }
 
 /*******************************************************************
+turn a group name into a gid
+********************************************************************/
+
+BOOL nametogid(const char *name, gid_t *gid)
+{
+	struct group *grp = getgrnam(name);
+	if (grp)
+	{
+		*gid = grp->gr_gid;
+		return True;
+	}
+	else if (isdigit(name[0]))
+	{
+		*gid = (gid_t)get_number(name);
+		return True;
+	}
+	else
+	{
+		return False;
+	}
+}
+
+/*******************************************************************
 turn a user name into a uid
 ********************************************************************/
-uid_t nametouid(const char *name)
+BOOL nametouid(const char *name, uid_t *uid)
 {
-	struct passwd *pass = getpwnam(name);
-	if (pass) return(pass->pw_uid);
-	return (uid_t)-1;
+	struct passwd *pass = Get_Pwnam(name, False);
+	if (pass)
+	{
+		*uid = pass->pw_uid;
+		return True;
+	}
+	else if (isdigit(name[0]))
+	{
+		*uid = (uid_t)get_number(name);
+		return True;
+	}
+	else
+	{
+		return False;
+	}
 }
 
 /*******************************************************************

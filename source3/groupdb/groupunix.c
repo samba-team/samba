@@ -25,7 +25,6 @@ extern int DEBUGLEVEL;
 
 
 extern DOM_SID global_sam_sid;
-extern fstring global_sam_name;
 
 /***************************************************************
  Start to enumerate the grppasswd list. Returns a void pointer
@@ -66,48 +65,6 @@ static BOOL setgrpunixpwpos(void *vp, SMB_BIG_UINT tok)
 }
 
 /*************************************************************************
- maps a unix group to a domain sid and an nt group name.  
-*************************************************************************/
-static void map_unix_grp_to_nt_grp(char *unix_name,
-	struct group *unix_grp, char *nt_name, DOM_SID *sid)
-{
-	BOOL found = False;
-	uint32 rid;
-
-	if (isdigit(unix_name[0]))
-	{
-		unix_grp->gr_gid = get_number(unix_name);
-		unix_grp->gr_name = unix_name;
-		found = map_group_gid(unix_grp->gr_gid, sid, nt_name, NULL);
-	}
-	else
-	{
-		unix_grp->gr_name = unix_name;
-		found = map_unix_group_name(unix_grp->gr_name, sid, nt_name, NULL);
-	}
-
-	if (found)
-	{
-		/*
-		 * find the NT name represented by this UNIX gid.
-		 * then, only accept NT groups that are in our domain
-		 */
-
-		sid_split_rid(sid, &rid);
-	}
-	else
-	{
-		/*
-		 * assume that the UNIX group is an NT group with
-		 * the same name.  convert gid to a group rid.
-		 */
-		
-		fstrcpy(nt_name, unix_grp->gr_name);
-		sid_copy(sid, &global_sam_sid);
-	}
-}
-
-/*************************************************************************
  Routine to return the next entry in the smbdomaingroup list.
  *************************************************************************/
 BOOL get_unixgroup_members(struct group *grp,
@@ -115,7 +72,6 @@ BOOL get_unixgroup_members(struct group *grp,
 {
 	int i;
 	char *unix_name;
-	fstring nt_name;
 
 	if (num_mem == NULL || members == NULL)
 	{
@@ -127,15 +83,27 @@ BOOL get_unixgroup_members(struct group *grp,
 
 	for (i = 0; (unix_name = grp->gr_mem[i]) != NULL; i++)
 	{
-		DOM_SID sid;
-		struct group unix_grp;
+		DOM_NAME_MAP gmep;
 
-		map_unix_grp_to_nt_grp(unix_name, &unix_grp, nt_name, &sid);
-
-		if (!sid_equal(&sid, &global_sam_sid))
+		if (!lookupsmbgrpnam(unix_name, &gmep) &&
+		    !lookupsmbpwnam (unix_name, &gmep))
 		{
-			DEBUG(0,("group database: could not resolve name %s in domain %s\n",
-			          unix_name, global_sam_name));
+			continue;
+		}
+
+		if (gmep.type != SID_NAME_DOM_GRP &&
+		    gmep.type != SID_NAME_USER &&
+		    gmep.type != SID_NAME_WKN_GRP)
+		{
+			DEBUG(0,("group database: name %s is not in a Domain Group\n",
+			          unix_name));
+			continue;
+		}
+			
+		if (!sid_front_equal(&global_sam_sid, &gmep.sid))
+		{
+			DEBUG(0,("group database: could not resolve name %s (wrong Domain SID)\n",
+			          unix_name));
 			continue;
 		}
 
@@ -145,7 +113,7 @@ BOOL get_unixgroup_members(struct group *grp,
 			return False;
 		}
 
-		fstrcpy((*members)[(*num_mem)].name, nt_name);
+		fstrcpy((*members)[(*num_mem)].name, gmep.nt_name);
 		(*members)[(*num_mem)].attr = 0x07;
 		(*num_mem)++;
 	}
@@ -189,53 +157,29 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 	/* cycle through unix groups */
 	while ((unix_grp = getgrent()) != NULL)
 	{
-		DOM_SID sid;
-		BOOL is_alias;
-
+		DOM_NAME_MAP gmep;
 		DEBUG(10,("getgrpunixpwent: enum unix group entry %s\n",
 		           unix_grp->gr_name));
-		is_alias = map_alias_gid(unix_grp->gr_gid, &sid, NULL, NULL);
-		if (is_alias)
-		{
-			sid_split_rid(&sid, NULL);
-			is_alias = sid_equal(&sid, &global_sam_sid);
-		}
-
-		if (map_group_gid(unix_grp->gr_gid, &sid, gp_buf.name, NULL))
-		{
-			fstring sid_str;
-			/*
-			 * find the NT name represented by this UNIX gid.
-			 * then, only accept NT groups that are in our domain
-			 */
-
-			sid_to_string(sid_str, &sid);
-			DEBUG(10,("getgrpunixpwent: entry %s mapped to name %s, SID %s\n",
-			           unix_grp->gr_name, gp_buf.name, sid_str));
-
-			sid_split_rid(&sid, &gp_buf.rid);
-			if (sid_equal(&sid, &global_sam_sid))
-			{
-				if (!is_alias)
-				{
-					break; /* hooray. */
-				}
-				DEBUG(0,("configuration mistake: unix group %s is mapped to both an NT alias and an NT group\n",
-				          gp_buf.name));
-			}
-		}
-		else if (!is_alias)
-		{
-			/*
-			 * assume that the UNIX group is an NT group with
-			 * the same name.  convert gid to a group rid.
-			 */
 			
-			fstrcpy(gp_buf.name, unix_grp->gr_name);
-			gp_buf.rid = pwdb_gid_to_group_rid(unix_grp->gr_gid);
-
-			break;
+		if (!lookupsmbgrpgid(unix_grp->gr_gid, &gmep))
+		{
+			continue;
 		}
+
+		if (gmep.type != SID_NAME_DOM_GRP &&
+		    gmep.type != SID_NAME_WKN_GRP)
+		{
+			continue;
+		}
+
+		sid_split_rid(&gmep.sid, &gp_buf.rid);
+		if (!sid_equal(&gmep.sid, &global_sam_sid))
+		{
+			continue;
+		}
+
+		fstrcpy(gp_buf.name, gmep.nt_name);
+		break;
 	}
 
 	if (unix_grp == NULL)
@@ -295,7 +239,7 @@ static struct groupdb_ops unix_ops =
 	getgrpunixpwpos,
 	setgrpunixpwpos,
 
-	iterate_getgroupnam,          /* In groupdb.c */
+	iterate_getgroupntnam,          /* In groupdb.c */
 	iterate_getgroupgid,          /* In groupdb.c */
 	iterate_getgrouprid,          /* In groupdb.c */
 	getgrpunixpwent,

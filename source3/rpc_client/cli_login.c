@@ -101,7 +101,7 @@ password equivalents, protected by the session key) is inherently insecure
 given the current design of the NT Domain system. JRA.
  ****************************************************************************/
 BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
-                              uint32 smb_userid_low, char *password,
+                              uint32 luid_low, char *password,
                               NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
   uchar lm_owf_user_pwd[16];
@@ -129,7 +129,7 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
 
   /* Create the structure needed for SAM logon. */
   make_id_info1(&ctr->auth.id1, domain, 0, 
-                smb_userid_low, 0,
+                luid_low, 0,
                 username, cli->clnt_name_slash,
                 (char *)cli->sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
 
@@ -154,7 +154,7 @@ password equivalents over the network. JRA.
 ****************************************************************************/
 
 BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
-                          uint32 smb_userid_low, char lm_chal[8], char lm_chal_resp[24],
+                          uint32 luid_low, char lm_chal[8], char lm_chal_resp[24],
                           char nt_chal_resp[24],
                           NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
@@ -165,7 +165,7 @@ BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username,
 
   /* Create the structure needed for SAM logon. */
   make_id_info2(&ctr->auth.id2, domain, 0, 
-                smb_userid_low, 0,
+                luid_low, 0,
                 username, cli->clnt_name_slash,
                 (uchar *)lm_chal, (uchar *)lm_chal_resp, (uchar *)nt_chal_resp);
 

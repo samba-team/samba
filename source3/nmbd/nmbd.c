@@ -1,7 +1,7 @@
 /*
-   Unix SMB/Netbios implementation.
+   Unix SMB/NetBIOS implementation.
    Version 1.9.
-   NBT netbios routines and daemon - version 2
+   NBT NetBIOS routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    
    This program is free software; you can redistribute it and/or modify
@@ -509,7 +509,7 @@ static BOOL init_structs(void)
     *p = 0;
   strlower( local_machine );
 
-  DEBUG( 5, ("Netbios name list:-\n") );
+  DEBUG( 5, ("NetBIOS name list:-\n") );
   for( n=0; my_netbios_names[n]; n++ )
     DEBUGADD( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names[n] ) );
 
@@ -566,9 +566,6 @@ static void usage(char *pname)
   setup_logging( argv[0], False );
 
   charset_initialise();
-
-  if(!initialise_password_db())
-    exit(1);
 
 #ifdef LMHOSTSFILE
   pstrcpy( host_file, LMHOSTSFILE );
@@ -661,7 +658,7 @@ static void usage(char *pname)
 
   reopen_logs();
 
-  DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
+  DEBUG( 1, ( "NetBIOS nameserver version %s started.\n", VERSION ) );
   DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1998\n" ) );
 
   if( !get_myname( myhostname, NULL) )
@@ -680,13 +677,17 @@ static void usage(char *pname)
 
   reload_services( True );
 
-  fstrcpy( global_myworkgroup, lp_workgroup() );
+	if (!pwdb_initialise())
+	{
+		exit(1);
+	}
 
-  if (strequal(global_myworkgroup,"*"))
-  {
-    DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
-    exit(1);
-  }
+	if (!get_member_domain_sid())
+	{
+		DEBUG(0,("ERROR: Samba cannot obtain PDC SID from PDC(s) %s.\n",
+		          lp_passwordserver()));
+		exit(1);
+	}
 
   set_samba_nb_type();
 

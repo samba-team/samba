@@ -105,7 +105,7 @@ static char *get_group_members(char *p, int *num_mem, DOMAIN_GRP_MEMBER **member
 
 		if (!found)
 		{
-			DEBUG(0,("alias database: could not resolve name %s in domain %s\n",
+			DEBUG(0,("group database: could not resolve name %s in domain %s\n",
 			          name, global_sam_name));
 			continue;
 		}
@@ -130,6 +130,7 @@ static DOMAIN_GRP *getgrpfilepwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 {
 	/* Static buffers we will return. */
 	static DOMAIN_GRP gp_buf;
+	DOM_NAME_MAP gmep;
 
 	int gidval;
 
@@ -196,7 +197,22 @@ static DOMAIN_GRP *getgrpfilepwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 
 		/* ok, set up the static data structure and return it */
 
-		gp_buf.rid     = pwdb_gid_to_group_rid((gid_t)gidval);
+		if (!lookupsmbgrpgid((gid_t)gidval, &gmep))
+		{
+			continue;
+		}
+		if (gmep.type != SID_NAME_DOM_GRP &&
+		    gmep.type != SID_NAME_WKN_GRP))
+		{
+			continue;
+		}
+
+		sid_split_rid(&gmep.sid, &gp_buf.rid);
+		if (!sid_equal(&gmep.sid, &global_sam_sid))
+		{
+			continue;
+		}
+
 		gp_buf.attr    = 0x07;
 
 		make_group_line(linebuf, sizeof(linebuf), &gp_buf, mem, num_mem);
@@ -242,7 +258,7 @@ static struct groupdb_ops file_ops =
 	getgrpfilepwpos,
 	setgrpfilepwpos,
 
-	iterate_getgroupnam,          /* In groupdb.c */
+	iterate_getgroupntnam,          /* In groupdb.c */
 	iterate_getgroupgid,          /* In groupdb.c */
 	iterate_getgrouprid,          /* In groupdb.c */
 	getgrpfilepwent,
@@ -250,7 +266,7 @@ static struct groupdb_ops file_ops =
 	add_grpfilegrp_entry,
 	mod_grpfilegrp_entry,
 
-	iterate_getusergroupsnam      /* in groupdb.c */
+	iterate_getusergroupntnam      /* in groupdb.c */
 };
 
 struct groupdb_ops *file_initialise_group_db(void)

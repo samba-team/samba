@@ -371,7 +371,7 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	pwdb_set_can_change_time (pwdlchg_t, sizeof(pwdlchg_t), newpwd->pass_can_change_time ); 
 	pwdb_set_must_change_time(pwdmchg_t, sizeof(pwdmchg_t), newpwd->pass_must_change_time); 
 
-	slprintf(uid, sizeof(uid), "%u", newpwd->smb_userid);
+	slprintf(uid, sizeof(uid), "%u", newpwd->unix_uid);
 	slprintf(user_rid, sizeof(user_rid), "0x%x", newpwd->user_rid);
 	slprintf(smb_grpid, sizeof(smb_grpid), "%u", newpwd->smb_grpid);
 	slprintf(group_rid, sizeof(group_rid), "0x%x", newpwd->group_rid);
@@ -500,7 +500,7 @@ static BOOL make_sam_from_nisp(struct sam_passwd *pw_buf, nis_result *result)
 	uidval = atoi(ENTRY_VAL(obj, NPF_UID));
 
 	pw_buf->smb_name      = user_name;
-	pw_buf->smb_userid    = uidval;		
+	pw_buf->unix_uid    = uidval;		
 	pw_buf->smb_passwd    = smbpwd;
 	pw_buf->smb_nt_passwd = smbntpwd;
 
@@ -621,9 +621,9 @@ static struct smb_passwd *getnisppwnam(char *name)
 	return pwdb_sam_to_smb(getnisp21pwnam(name));
 }
 
-static struct sam_passwd *getnisp21pwuid(uid_t smb_userid)
+static struct sam_passwd *getnisp21pwuid(uid_t unix_uid)
 {
-	return getnisp21pwrid(pwdb_uid_to_user_rid(smb_userid));
+	return getnisp21pwrid(pwdb_uid_to_user_rid(unix_uid));
 }
 
 static struct smb_passwd *getnisppwrid(uid_t user_rid)
@@ -631,9 +631,9 @@ static struct smb_passwd *getnisppwrid(uid_t user_rid)
 	return pwdb_sam_to_smb(getnisp21pwuid(pwdb_user_rid_to_uid(user_rid)));
 }
 
-static struct smb_passwd *getnisppwuid(uid_t smb_userid)
+static struct smb_passwd *getnisppwuid(uid_t unix_uid)
 {
-	return pwdb_sam_to_smb(getnisp21pwuid(smb_userid));
+	return pwdb_sam_to_smb(getnisp21pwuid(unix_uid));
 }
 
 static struct sam_disp_info *getnispdispnam(char *name)

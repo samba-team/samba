@@ -1645,6 +1645,30 @@ void samr_io_r_query_aliasinfo(char *desc,  SAMR_R_QUERY_ALIASINFO *r_u, prs_str
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
+
+/*******************************************************************
+makes a SAMR_Q_QUERY_USERALIASES structure.
+********************************************************************/
+void make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
+				POLICY_HND *hnd,
+				DOM_SID *sid)
+{
+	if (q_u == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_samr_q_query_useraliases\n"));
+
+	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
+
+	q_u->num_sids1 = 1;
+	q_u->ptr = 0;
+	q_u->num_sids2 = 1;
+
+	{
+		q_u->ptr_sid[0] = 1;
+		make_dom_sid2(&q_u->sid[0], sid);
+	}
+}
+
 /*******************************************************************
 reads or writes a SAMR_Q_QUERY_USERALIASES structure.
 ********************************************************************/
@@ -1695,7 +1719,6 @@ makes a SAMR_R_QUERY_USERALIASES structure.
 void make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u,
 		uint32 num_rids, uint32 *rid, uint32 status)
 {
-	int i;
 	if (r_u == NULL) return;
 
 	DEBUG(5,("make_samr_r_query_useraliases\n"));
@@ -1706,12 +1729,7 @@ void make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u,
 		r_u->ptr = 1;
 		r_u->num_entries2 = num_rids;
 
-		SMB_ASSERT_ARRAY(r_u->rid, num_rids);
-
-		for (i = 0; i < num_rids; i++)
-		{
-			r_u->rid[i] = rid[i];
-		}
+		r_u->rid = rid;
 	}
 	else
 	{
@@ -1743,8 +1761,6 @@ void samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs
 
 	if (r_u->num_entries != 0)
 	{
-		SMB_ASSERT_ARRAY(r_u->rid, r_u->num_entries2);
-
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
 			slprintf(tmp, sizeof(tmp)-1, "rid[%02d]", i);

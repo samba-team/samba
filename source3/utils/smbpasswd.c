@@ -548,7 +548,8 @@ int main(int argc, char **argv)
 	
 	charset_initialise();
 	
-	if(!initialise_password_db()) {
+	if(!pwdb_initialise())
+	{
 		fprintf(stderr, "Can't setup password database vectors.\n");
 		exit(1);
 	}
