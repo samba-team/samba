@@ -20,6 +20,7 @@ LINK=$(LIBTOOL) --mode=link $(CC) $(FLAGS) $(LDFLAGS)
 INSTALL = @INSTALL@
 INSTALLCMD=@INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
+SAM_SRVDB_OBJ = @SAM_SRVDB_OBJ@
 
 VPATH=@srcdir@
 srcdir=@srcdir@
@@ -290,7 +291,7 @@ NETLOGOND_OBJ1 = netlogond/netlogond.o \
 SAMRD_OBJ1 = samrd/samrd.o \
 		rpc_server/srv_lookup.o \
 		rpc_server/srv_pipe_ntlmssp.o \
-		rpc_server/srv_samr.o samrd/srv_samr_passdb.o \
+		rpc_server/srv_samr.o $(SAM_SRVDB_OBJ) \
 		smbd/chgpasswd.o
 
 SVCCTLD_OBJ1 = svcctld/svcctld.o \
