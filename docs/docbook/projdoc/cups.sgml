@@ -48,8 +48,9 @@ convenience of third party applications. Make sure it is set! For details see
 If SAMBA is compiled against libcups, then <command>printcap =
 cups</command> uses the CUPS API to list printers, submit jobs, etc. Otherwise it
 maps to the System V commands with an additional <parameter>-oraw</parameter>
-option for printing. You can use the <command>ldd</command> command to
-find out details:
+option for printing. On a Linux system, you can use the <command>ldd</command> command to
+find out details (ldd may not be present on other OS platforms, or its
+function may be embodied by a different command):
 </para>
 
 <para>
@@ -122,7 +123,7 @@ There is a web browser interface to the print options (select
 http://localhost:631/printers/ and click on one "Configure Printer" button
 to see it), a commandline interface (see <command>man lpoptions</command> or
 try if you have <command>lphelp</command> on your system) plus some different GUI frontends on Linux
-UNIX, which can present PPD options to the users. PPD optons are normally
+UNIX, which can present PPD options to the users. PPD options are normally
 meant to become evaluated by the PostScript RIP on the real PostScript
 printer.
 </para>
@@ -139,8 +140,8 @@ This is logical, as CUPS includes a fully featured
 PostScript interpreter (RIP). This RIP is based on Ghostscript. It can
 process all received PostScript (and additionally many other file formats)
 from clients. All CUPS-PPDs geared to non-PostScript printers contain an
-additional line, starting with the keyword <parameter>*cupsFilter</parameter>
-this line
+additional line, starting with the keyword <parameter>*cupsFilter</parameter>.
+This line
 tells the CUPS print system which printer-specific filter to use for the
 interpretation of the accompanying PostScript. Thus CUPS lets all its
 printers appear as PostScript devices to its clients, because it can act as a
@@ -163,7 +164,7 @@ spooler can do:
     printfiles from all client platforms in a uniform way;</para></listitem>
   <listitem><para>act as a central accounting and billing server, as all files are passed
     through the <command>pstops</command> Filter and are therefor logged in
-    the CUPS <filename>page&lowbar;log  </filename> <emphasis>NOTE: </emphasis>this
+    the CUPS <filename>page&lowbar;log</filename>. - <emphasis>NOTE: </emphasis>this
     can not happen with "raw" print jobs, which always remain unfiltered
     per definition;</para></listitem>
   <listitem><para>enable clients to consolidate on a single PostScript driver, even for
@@ -179,7 +180,7 @@ spooler can do:
 <para>
 This setup may be of special interest to people
 experiencing major problems in WTS environments. WTS need often a multitude
-of non-PostScript drivers installed to run their clients' multitude of
+of non-PostScript drivers installed to run their clients' variety of
 different printer models. This often imposes the price of much increased
 instability. In many cases, in an attempt to overcome this problem, site
 administrators have resorted to restrict the allowed drivers installed on
@@ -258,7 +259,7 @@ UPPERCASE filenames, to this directory as follows:
 </programlisting></para>
 
 <para>
-Users of the ESP Print Pro software are able to isntall
+Users of the ESP Print Pro software are able to install
 their "Samba Drivers" package for this purpose with no problem.
 </para>
 </sect1>
@@ -312,10 +313,17 @@ supporting more than 1.000 non-PostScript models.
 <emphasis>NOTE: </emphasis>the cupsomatic trick from Linuxprinting.org is
 working different from the other drivers. While the other drivers take the
 generic CUPS raster (produced by CUPS' own pstoraster PostScript RIP) as
-their input, cupsomatic "kidmaps" the PostScript inside CUPS, before
+their input, cupsomatic "kidnaps" the PostScript inside CUPS, before
 RIP-ping, deviates it to an external Ghostscript installation (which now
 becomes the RIP) and gives it back to a CUPS backend once Ghostscript is
-finished.
+finished. -- CUPS versions from 1.1.15 and later will provide their pstoraster
+PostScript RIP function again inside a system-wide Ghostscript 
+installation rather than in "their own" pstoraster filter. (This 
+CUPS-enabling Ghostscript version may be installed either as a 
+patch to GNU or AFPL Ghostscript, or as a complete ESP Ghostscript package).
+However, this will not change the cupsomatic approach of guiding the printjob
+along a different path through the filtering system than the standard CUPS
+way...
 </para>
 
 <para>
@@ -419,6 +427,17 @@ should be a new printer in your client's local "Printers" folder,
 named (in my case) "infotec_IS2027 on kdebitshop"
 </para>
 
+<para>
+<emphasis>NOTE: </emphasis>
+<command>cupsaddsmb</command> will only reliably work i
+with CUPS version 1.1.15 or higher
+and Samba from 2.2.4. If it doesn't work, or if the automatic printer
+driver download to the clients doesn't succeed, you can still manually
+install the CUPS printer PPD on top of the Adobe PostScript driver on
+clients and then point the client's printer queue to the Samba printer
+share for connection, should you desire to use the CUPS networked
+PostScript RIP functions.
+</para>
 </sect2>
 </sect1>
 
