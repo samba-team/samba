@@ -1,3 +1,7 @@
+Sun Nov 22 12:16:06 1998  Assar Westerlund  <assar@sics.se>
+
+	* krb-struct-spwd.m4: new file
+
 Thu Jun  4 04:07:41 1998  Assar Westerlund  <assar@sics.se>
 
 	* find-func-no-libs2.m4: new file
