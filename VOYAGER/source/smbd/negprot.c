@@ -473,7 +473,7 @@ int reply_negprot(connection_struct *conn,
 			arch = ARCH_SAMBA;
 			break;
 		}
-
+ 
 		p += strlen(p) + 2;
 	}
     

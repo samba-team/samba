@@ -835,14 +835,3 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 	}
 }
 
-char *invent_winbind_proto(void)
-{
-	char *proto;
-
-	asprintf(&proto, "WB_PROTO_%s", generate_random_str(8));
-
-	if (!secrets_store(proto, "I'm winbind", strlen("I'm winbind")+1))
-		SAFE_FREE(proto);
-
-	return proto;
-}

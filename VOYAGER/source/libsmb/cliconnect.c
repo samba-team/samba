@@ -1039,7 +1039,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
 	     numprots++)
 		plength += strlen(prots[numprots].name)+2;
-
+    
 	set_message(cli->outbuf,0,plength,True);
 
 	p = smb_buf(cli->outbuf);

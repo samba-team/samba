@@ -71,7 +71,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	}
 	
 	if (!string_to_sid(&required_membership_sid, group_sid)) {
-		DEBUG(0, ("winbindd_pam_auth: could not parse %s as a SID!", 
+		DEBUG(0, ("check_info3_in_group: could not parse %s as a SID!", 
 			  group_sid));
 
 		return NT_STATUS_INVALID_PARAMETER;
@@ -530,8 +530,12 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		
 	} while ( (attempts < 2) && retry );
 
-	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
-        
+	if (cli != NULL) {
+		/* We might have come out of the loop above with cli == NULL,
+		   so don't dereference that. */
+		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
+	}
+
 	if (NT_STATUS_IS_OK(result)) {
 		netsamlogon_cache_store( cli->mem_ctx, &info3 );
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);

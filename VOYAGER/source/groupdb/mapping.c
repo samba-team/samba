@@ -26,7 +26,6 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 #define DATABASE_VERSION_V1 1 /* native byte format. */
 #define DATABASE_VERSION_V2 2 /* le format. */
 
-#define GROUP_PREFIX "UNIXGROUP/"
 #define NAME_PREFIX "NAMEMAP/"
 #define COMMENT_PREFIX "COMMENT/"
 #define ALIAS_PREFIX "ALIAS/"
