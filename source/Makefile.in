@@ -452,9 +452,9 @@ SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o $(PARAM_OBJ) $(SECRETS_OBJ
                 $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
 		$(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(LIBMSRPC_OBJ) lib/dummyroot.o
 
-PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSMB_OBJ) $(LIBMSRPC_OBJ) \
+PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
 		$(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
-		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(KRBCLIENT_OBJ) $(RPC_PARSE_OBJ) lib/dummyroot.o
+		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) lib/dummyroot.o
 
 SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ) $(SECRETS_OBJ)
 
@@ -880,7 +880,7 @@ bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 
 bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDB_LIBS) $(LDAP_LIBS) $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDB_LIBS) $(LDAP_LIBS)
 
 bin/smbget@EXEEXT@: $(SMBGET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
