@@ -1,3 +1,7 @@
+2005-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* slc-gram.y: cast argument to isalnum to unsigned char
+
 2004-09-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* slc-gram.y: add support for "strings" and "negative-flag" types,
@@ -7,7 +11,7 @@
 
 	* slc-gram.y: add min_args/max_args checking
 	
-2004-06-21  Love  <lha@stacken.kth.se>
+2004-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* slc-gram.y: pull in <stdlib.h> and <vers.h> to avoid warnings
 	
