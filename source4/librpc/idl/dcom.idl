@@ -480,16 +480,6 @@ object,
 }
 
 [
-object,
-	uuid("330E9E75-DF48-11CF-8E2C-00A0C90DC94B"),
-	pointer_default(unique)
-	]
-	interface IDcomEchoServ : IDispatch
-{
-	HRESULT EchoPlusOne([in] uint32 x, [out] uint32 *y);
-}
-
-[
 	object,
 	uuid("00000003-0000-0000-C000-000000000046")
 ] interface IMarshal : IUnknown

@@ -68,6 +68,7 @@ ADD_OBJ_FILES = \
 		torture/rpc/epmapper.o \
 		torture/rpc/winreg.o \
 		torture/rpc/oxidresolve.o \
+		torture/rpc/remact.o \
 		torture/rpc/mgmt.o \
 		torture/rpc/scanner.o \
 		torture/rpc/autoidl.o \
