@@ -126,10 +126,13 @@ static void net_reply_auth_2(NET_Q_AUTH_2 *q_a, prs_struct *rdata,
 				DOM_CHAL *resp_cred, int status)
 {
 	NET_R_AUTH_2 r_a;
+	NEG_FLAGS srv_flgs;
+
+	srv_flgs.neg_flags = 0x000001ff;
 
 	/* set up the LSA AUTH 2 response */
 
-	make_net_r_auth_2(&r_a, resp_cred, &(q_a->clnt_flgs), status);
+	make_net_r_auth_2(&r_a, resp_cred, &srv_flgs, status);
 
 	/* store the response in the SMB stream */
 	net_io_r_auth_2("", &r_a, rdata, 0);

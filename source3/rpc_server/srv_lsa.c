@@ -478,15 +478,16 @@ static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
 	{
 		fstring user_name;
 		fstrcpy(user_name, unistr2(q_l.lookup_name[i].str.buffer));
-        /*
-         * Map to the UNIX username.
-         */
-        map_username(user_name);
 
-        /*
-         * Do any case conversions.
-         */
-        (void)Get_Pwnam(user_name, True);
+		/*
+		 * Map to the UNIX username.
+		 */
+		map_username(user_name);
+
+		/*
+		 * Do any case conversions.
+		 */
+		(void)Get_Pwnam(user_name, True);
 
 		if (!pdb_name_to_rid(user_name, &dom_rids[i], &dummy_g_rid))
 		{
