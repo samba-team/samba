@@ -19,10 +19,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    
 */
+/* Must have this here if we want to test WITH_LDAP ... */
+#include "includes.h"
 
 #ifdef WITH_LDAP
-
-#include "includes.h"
 
 #include <lber.h>
 #include <ldap.h>
