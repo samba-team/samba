@@ -745,7 +745,7 @@ void build_options(BOOL screen);
 	reopen_logs();
 
 	DEBUG(0,( "smbd version %s started.\n", SAMBA_VERSION_STRING));
-	DEBUGADD(0,( "Copyright Andrew Tridgell and the Samba Team 1992-2003\n"));
+	DEBUGADD(0,( "Copyright Andrew Tridgell and the Samba Team 1992-2004\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
