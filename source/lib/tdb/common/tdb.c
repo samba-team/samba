@@ -89,7 +89,7 @@
 /* NB assumes there is a local variable called "tdb" that is the
  * current context, also takes doubly-parenthesized print-style
  * argument. */
-#define TDB_LOG(x) (tdb->log_fn?((tdb->log_fn x),0) : 0)
+#define TDB_LOG(x) tdb->log_fn x
 
 /* lock offsets */
 #define GLOBAL_LOCK 0
@@ -277,7 +277,7 @@ static int tdb_lock(TDB_CONTEXT *tdb, int list, int ltype)
 	if (tdb->locked[list+1].count == 0) {
 		if (!tdb->read_only && tdb->header.rwlocks) {
 			if (tdb_spinlock(tdb, list, ltype)) {
-				TDB_LOG((tdb, 0, "tdb_lock spinlock failed on list ltype=%d\n", 
+				TDB_LOG((tdb, 0, "tdb_lock spinlock failed on list %d ltype=%d\n", 
 					   list, ltype));
 				return -1;
 			}
@@ -1755,6 +1755,11 @@ TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL, NULL);
 }
 
+/* a default logging function */
+static void null_log_fn(TDB_CONTEXT *tdb, int level, const char *fmt, ...)
+{
+}
+
 
 TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
@@ -1778,7 +1783,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->lockedkeys = NULL;
 	tdb->flags = tdb_flags;
 	tdb->open_flags = open_flags;
-	tdb->log_fn = log_fn;
+	tdb->log_fn = log_fn?log_fn:null_log_fn;
 	tdb->hash_fn = hash_fn ? hash_fn : default_tdb_hash;
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
@@ -1861,7 +1866,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	if (tdb_already_open(st.st_dev, st.st_ino)) {
 		TDB_LOG((tdb, 2, "tdb_open_ex: "
 			 "%s (%d,%d) is already open in this process\n",
-			 name, st.st_dev, st.st_ino));
+			 name, (int)st.st_dev, (int)st.st_ino));
 		errno = EBUSY;
 		goto fail;
 	}
@@ -2082,7 +2087,7 @@ int tdb_chainunlock_read(TDB_CONTEXT *tdb, TDB_DATA key)
 /* register a loging function */
 void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , const char *, ...))
 {
-	tdb->log_fn = fn;
+	tdb->log_fn = fn?fn:null_log_fn;
 }
 
 
