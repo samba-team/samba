@@ -8698,7 +8698,7 @@ EOF
 		;;
 		*bsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
-			DYNEXP="-Wl,--export-dynamic"
+			DYNEXP="-Wl,-Bdynamic"
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 			cat >> confdefs.h <<\EOF
