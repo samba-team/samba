@@ -79,11 +79,28 @@ be:
     # replace the command with the one appropriate for your system
     /usr/bin/lpr -r -P$1 $2 2>>&/tmp/tmp.print
 
-Then you print a file:
+Then you print a file and try removing it.  You may find that the
+print queue needs to be stopped in order to see the queue status
+and remove the job:
 
-    echo "print /tmp/test" |
-        smbclient //server/pr password -Uuser
+h4: {42} % echo hi >/tmp/hi
+h4: {43} % smbclient //localhost/lw4
+added interface ip=10.0.0.4 bcast=10.0.0.255 nmask=255.255.255.0
+Password: 
+Domain=[ASTART] OS=[Unix] Server=[Samba 2.0.7]
+smb: \> print /tmp/hi
+putting file /tmp/hi as hi-17534 (0.0 kb/s) (average 0.0 kb/s)
+smb: \> queue
+1049     3            hi-17534
+smb: \> cancel 1049
+Error cancelling job 1049 : code 0
+smb: \> cancel 1049
+Job 1049 cancelled
+smb: \> queue
+smb: \> exit
 
+The 'code 0' indicates that the job was removed.  The comment
+by the  smbclient is a bit misleading on this.
 You can observe the command output and then and look at the
 /tmp/tmp.print file to see what the results are.  You can quickly
 find out if the problem is with your printing system.  Often people
