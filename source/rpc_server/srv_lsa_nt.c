@@ -765,6 +765,7 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	uint32 enum_context = q_u->enum_context;
 	int num_privs = count_all_privileges();
 	LSA_PRIV_ENTRY *entries = NULL;
+	LUID_ATTR luid;
 
 	/* remember that the enum_context starts at 0 and not 1 */
 
@@ -794,13 +795,17 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 		if( i < enum_context) {
 			init_unistr2(&entries[i].name, NULL, UNI_FLAGS_NONE);
 			init_uni_hdr(&entries[i].hdr_name, &entries[i].name);
+			
 			entries[i].luid_low = 0;
 			entries[i].luid_high = 0;
 		} else {
 			init_unistr2(&entries[i].name, privs[i].name, UNI_FLAGS_NONE);
 			init_uni_hdr(&entries[i].hdr_name, &entries[i].name);
-			entries[i].luid_low = privs[i].se_priv;
-			entries[i].luid_high = 0;
+			
+			luid = get_privilege_luid( &privs[i].se_priv );
+			
+			entries[i].luid_low = luid.luid.low;
+			entries[i].luid_high = luid.luid.high;
 		}
 	}
 
@@ -819,7 +824,7 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 {
 	struct lsa_info *handle;
 	fstring name_asc;
-	int i = 0;
+	const char *description;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
@@ -834,22 +839,25 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 
 	unistr2_to_ascii(name_asc, &q_u->name, sizeof(name_asc));
 
-	DEBUG(10,("_lsa_priv_get_dispname: %s\n", name_asc));
+	DEBUG(10,("_lsa_priv_get_dispname: name = %s\n", name_asc));
 
-	while (privs[i].se_priv != SE_END && !strequal(name_asc, privs[i].name))
-		i++;
+	description = get_privilege_dispname( name_asc );
 	
-	if (privs[i].se_priv != SE_END) {
-		DEBUG(10,(": %s\n", privs[i].description));
-		init_unistr2(&r_u->desc, privs[i].description, UNI_FLAGS_NONE);
+	if ( description ) {
+		DEBUG(10,("_lsa_priv_get_dispname: display name = %s\n", description));
+		
+		init_unistr2(&r_u->desc, description, UNI_FLAGS_NONE);
 		init_uni_hdr(&r_u->hdr_desc, &r_u->desc);
 
 		r_u->ptr_info = 0xdeadbeef;
 		r_u->lang_id = q_u->lang_id;
+		
 		return NT_STATUS_OK;
 	} else {
 		DEBUG(10,("_lsa_priv_get_dispname: doesn't exist\n"));
+		
 		r_u->ptr_info = 0;
+		
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 }
@@ -1026,24 +1034,31 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
 NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_R_ENUMPRIVSACCOUNT *r_u)
 {
 	struct lsa_info *info=NULL;
-	PRIVILEGE_SET priv;
+	SE_PRIV mask;
+	PRIVILEGE_SET privileges;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	privilege_set_init( &priv );
+	if ( !get_privileges_for_sids( &mask, &info->sid, 1 ) ) 
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	get_privileges_for_sids( &priv, &info->sid, 1 );
+	privilege_set_init( &privileges );
 
-	DEBUG(10,("_lsa_enum_privsaccount: %s has %d privileges\n", 
-		sid_string_static(&info->sid), priv.count));
+	if ( se_priv_to_privilege_set( &privileges, &mask ) ) {
 
-	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, priv.set, priv.count, 0);
+		DEBUG(10,("_lsa_enum_privsaccount: %s has %d privileges\n", 
+			sid_string_static(&info->sid), privileges.count));
 
-	privilege_set_free( &priv );
+		r_u->status = init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, privileges.set, privileges.count, 0);
+	}
+	else
+		r_u->status = NT_STATUS_NO_SUCH_PRIVILEGE;
 
-	return NT_STATUS_OK;
+	privilege_set_free( &privileges );
+
+	return r_u->status;
 }
 
 /***************************************************************************
@@ -1114,8 +1129,7 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u)
 {
 	struct lsa_info *info = NULL;
-	int i = 0;
-	uint32 mask;
+	SE_PRIV mask;
 	PRIVILEGE_SET *set = NULL;
 
 	/* find the connection policy handle. */
@@ -1130,17 +1144,15 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 
 	set = &q_u->set;
 
-	for (i = 0; i < set->count; i++) {
+	if ( !privilege_set_to_se_priv( &mask, set ) )
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
 
-		mask = luid_to_privilege_mask( &(set->set[i].luid) );
-
-		if ( mask != SE_END ) {
-			if ( !grant_privilege( &info->sid, mask ) ) {
-				DEBUG(3,("_lsa_addprivs: grant_privilege( %s, 0x%x) failed!\n",
-					sid_string_static(&info->sid), mask ));
-				return NT_STATUS_NO_SUCH_PRIVILEGE;
-			}
-		}
+	if ( !grant_privilege( &info->sid, &mask ) ) {
+		DEBUG(3,("_lsa_addprivs: grant_privilege(%s) failed!\n",
+			sid_string_static(&info->sid) ));
+		DEBUG(3,("Privilege mask:\n"));
+		dump_se_priv( DBGC_ALL, 3, &mask );
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
 	return NT_STATUS_OK;
@@ -1153,8 +1165,7 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEPRIVS *r_u)
 {
 	struct lsa_info *info = NULL;
-	int i = 0;
-	uint32 mask;
+	SE_PRIV mask;
 	PRIVILEGE_SET *set = NULL;
 
 	/* find the connection policy handle. */
@@ -1169,16 +1180,15 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 
 	set = &q_u->set;
 
-	for (i = 0; i < set->count; i++) {
-		mask = luid_to_privilege_mask( &(set->set[i].luid) );
+	if ( !privilege_set_to_se_priv( &mask, set ) )
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
 
-		if ( mask != SE_END ) {
-			if ( !revoke_privilege( &info->sid, mask ) ) {
-				DEBUG(3,("_lsa_removeprivs: revoke_privilege( %s, 0x%x) failed!\n",
-					sid_string_static(&info->sid), mask ));
-				return NT_STATUS_NO_SUCH_PRIVILEGE;
-			}
-		}
+	if ( !revoke_privilege( &info->sid, &mask ) ) {
+		DEBUG(3,("_lsa_removeprivs: revoke_privilege(%s) failed!\n",
+			sid_string_static(&info->sid) ));
+		DEBUG(3,("Privilege mask:\n"));
+		dump_se_priv( DBGC_ALL, 3, &mask );
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
 	return NT_STATUS_OK;
@@ -1373,7 +1383,7 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	sid_copy( &sid, &q_u->sid.sid );
 
 	if ( q_u->removeall ) {
-		if ( !revoke_privilege( &sid, SE_ALL_PRIVS ) ) 
+		if ( !revoke_all_privileges( &sid ) ) 
 			return NT_STATUS_ACCESS_DENIED;
 	
 		return NT_STATUS_OK;
@@ -1406,6 +1416,7 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 	struct lsa_info *info = NULL;
 	DOM_SID sid;
 	PRIVILEGE_SET privileges;
+	SE_PRIV mask;
 	
 
 	/* find the connection policy handle. */
@@ -1418,11 +1429,20 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 	   
 	sid_copy( &sid, &q_u->sid.sid );
 	
+	if ( !get_privileges_for_sids( &mask, &sid, 1 ) )
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
 	privilege_set_init( &privileges );
 
-	get_privileges_for_sids( &privileges, &sid, 1 );
+	if ( se_priv_to_privilege_set( &privileges, &mask ) ) {
 
-	r_u->status = init_r_enum_acct_rights( r_u, &privileges );
+		DEBUG(10,("_lsa_enum_acct_rights: %s has %d privileges\n", 
+			sid_string_static(&sid), privileges.count));
+
+		r_u->status = init_r_enum_acct_rights( r_u, &privileges );
+	}
+	else 
+		r_u->status = NT_STATUS_NO_SUCH_PRIVILEGE;
 
 	privilege_set_free( &privileges );
 

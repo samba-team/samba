@@ -302,7 +302,7 @@ typedef struct sid_list {
 typedef struct _nt_user_token {
 	size_t num_sids;
 	DOM_SID *user_sids;
-	PRIVILEGE_SET privileges;
+	SE_PRIV privileges;
 } NT_USER_TOKEN;
 
 /*** query a local group, get a list of these: shows who is in that group ***/

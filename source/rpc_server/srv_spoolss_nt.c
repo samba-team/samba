@@ -1684,6 +1684,8 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 		if ( printer_default->access_required & SERVER_ACCESS_ADMINISTER ) 
 		{
+			SE_PRIV se_printop = SE_PRINT_OPERATOR;
+
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
@@ -1693,7 +1695,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			   and not a printer admin, then fail */
 			
 			if ( user.uid != 0
-				&& !user_has_privilege( user.nt_user_token, SE_PRINT_OPERATOR )
+				&& !user_has_privileges( user.nt_user_token, &se_printop )
 				&& !user_in_list(uidtoname(user.uid), lp_printer_admin(snum), user.groups, user.ngroups) )
 			{
 				close_printer_handle(p, handle);

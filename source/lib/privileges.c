@@ -25,6 +25,13 @@
 
 #define PRIVPREFIX              "PRIV_"
 
+#define GENERATE_LUID_LOW(x)	(x)+1;
+
+static SE_PRIV se_priv_all  = SE_ALL_PRIVS;
+static SE_PRIV se_priv_end  = SE_END;
+static SE_PRIV se_priv_none = SE_NONE;
+
+
 #define ALLOC_CHECK(ptr, err, label, str) do { if ((ptr) == NULL) \
 	{ DEBUG(0, ("%s: out of memory!\n", str)); err = NT_STATUS_NO_MEMORY; goto label; } } while(0)
 	
@@ -79,32 +86,123 @@ PRIVS privs[] = {
 #endif
 
 typedef struct priv_sid_list {
-	uint32 se_priv;
+	SE_PRIV privilege;
 	SID_LIST sids;
 } PRIV_SID_LIST;
+
+
+/***************************************************************************
+ copy an SE_PRIV structure
+****************************************************************************/
+
+BOOL se_priv_copy( SE_PRIV *dst, SE_PRIV *src )
+{
+	if ( !dst || !src )
+		return False;
+		
+	memcpy( dst, src, sizeof(SE_PRIV) );
+	
+	return True;
+}
+
+/***************************************************************************
+ combine 2 SE_PRIV structures and store the resulting set in mew_mask
+****************************************************************************/
+
+static void se_priv_add( SE_PRIV *mask, SE_PRIV *addpriv )
+{
+	int i;
+
+	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
+		mask->mask[i] |= addpriv->mask[i];
+	}
+}
+
+/***************************************************************************
+ remove one SE_PRIV sytucture from another and store the resulting set 
+ in mew_mask
+****************************************************************************/
+
+static void se_priv_remove( SE_PRIV *mask, SE_PRIV *removepriv )
+{	
+	int i;
+
+	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
+		mask->mask[i] &= ~removepriv->mask[i];
+	}
+}
+
+/***************************************************************************
+ invert a given SE_PRIV and store the set in new_mask
+****************************************************************************/
+
+static void se_priv_invert( SE_PRIV *new_mask, SE_PRIV *mask )
+{	
+	SE_PRIV allprivs;
+	
+	se_priv_copy( &allprivs, &se_priv_all );
+	se_priv_remove( &allprivs, mask );
+	se_priv_copy( new_mask, &allprivs );
+}
+
+/***************************************************************************
+ check if 2 SE_PRIV structure are equal
+****************************************************************************/
+
+static BOOL se_priv_equal( SE_PRIV *mask1, SE_PRIV *mask2 )
+{	
+	return ( memcmp(mask1, mask2, sizeof(SE_PRIV)) == 0 );
+}
+
+
+/***************************************************************************
+ dump an SE_PRIV structure to the log files
+****************************************************************************/
+
+void dump_se_priv( int dbg_cl, int dbg_lvl, SE_PRIV *mask )
+{
+	int i;
+	
+	DEBUGADDC( dbg_cl, dbg_lvl,("SE_PRIV "));
+	
+	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
+		DEBUGADDC( dbg_cl, dbg_lvl,(" 0x%x", mask->mask[i] ));
+	}
+		
+	DEBUGADDC( dbg_cl, dbg_lvl, ("\n"));
+}
 
 /***************************************************************************
  Retrieve the privilege mask (set) for a given SID
 ****************************************************************************/
 
-static uint32 get_privileges( const DOM_SID *sid, uint32 *mask )
+static BOOL get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 {
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
 	fstring keystr;
-	uint32 priv_mask;
+	TDB_DATA key, data;
 	
 	if ( !tdb )
 		return False;
 
+	/* PRIV_<SID> (NULL terminated) as the key */
+	
 	fstr_sprintf( keystr, "%s%s", PRIVPREFIX, sid_string_static(sid) );
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
 
-	if ( !tdb_fetch_uint32( tdb, keystr, &priv_mask ) ) {
+	data = tdb_fetch( tdb, key );
+	
+	if ( !data.dptr ) {
 		DEBUG(3,("get_privileges: No privileges assigned to SID [%s]\n",
 			sid_string_static(sid)));
 		return False;
 	}
 	
-	*mask = priv_mask;
+	SMB_ASSERT( data.dsize == sizeof( SE_PRIV ) );
+	
+	se_priv_copy( mask, (SE_PRIV*)data.dptr );
+	
 	return True;
 }
 
@@ -112,66 +210,68 @@ static uint32 get_privileges( const DOM_SID *sid, uint32 *mask )
  Store the privilege mask (set) for a given SID
 ****************************************************************************/
 
-static BOOL set_privileges( const DOM_SID *sid, uint32 mask )
+static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 {
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
 	fstring keystr;
+	TDB_DATA key, data;
 	
 	if ( !tdb )
 		return False;
 
+	/* PRIV_<SID> (NULL terminated) as the key */
+	
 	fstr_sprintf( keystr, "%s%s", PRIVPREFIX, sid_string_static(sid) );
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
+	
+	/* no packing.  static size structure, just write it out */
+	
+	data.dptr  = (char*)mask;
+	data.dsize = sizeof(SE_PRIV);
 
-	return tdb_store_uint32( tdb, keystr, mask );
+	return ( tdb_store(tdb, key, data, TDB_REPLACE) != -1 );
 }
 
 /****************************************************************************
  check if the privilege is in the privilege list
 ****************************************************************************/
 
-static BOOL check_priv_in_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
+static BOOL is_privilege_assigned( SE_PRIV *privileges, SE_PRIV *check )
 {
-	int i;
+	SE_PRIV p1, p2;
 
-	if ( !priv_set )
+	if ( !privileges || !check )
 		return False;
-
-	for ( i = 0; i < priv_set->count; i++ ) {
-		LUID_ATTR *cur_set;
-
-		cur_set = &priv_set->set[i];
-
-		/* check only the low and high part. Checking the attr 
-		   field has no meaning */
-
-		if ( (cur_set->luid.low == set.luid.low) 
-			&& (cur_set->luid.high == set.luid.high) ) 
-		{
-			return True;
-		}
-	}
-
-	return False;
+	
+	se_priv_copy( &p1, check );
+	
+	/* invert the SE_PRIV we want to check for and remove that from the 
+	   original set.  If we are left with the SE_PRIV we are checking 
+	   for then return True */
+	   
+	se_priv_invert( &p1, check );
+	se_priv_copy( &p2, privileges );
+	se_priv_remove( &p2, &p1 );
+	
+	return se_priv_equal( &p2, check );
 }
 
 /****************************************************************************
  add a privilege to a privilege array
  ****************************************************************************/
 
-static NTSTATUS add_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
+static BOOL privilege_set_add(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 {
-	NTSTATUS ret;
 	LUID_ATTR *new_set;
-
-	/* check if the privilege is not already in the list */
-
-	if ( check_priv_in_privilege(priv_set, set) )
-		return NT_STATUS_OK;
 
 	/* we can allocate memory to add the new privilege */
 
 	new_set = TALLOC_REALLOC_ARRAY(priv_set->mem_ctx, priv_set->set, LUID_ATTR, priv_set->count + 1);
-	ALLOC_CHECK(new_set, ret, done, "add_privilege");
+	if ( !new_set ) {
+		DEBUG(0,("privilege_set_add: failed to allocate memory!\n"));
+		return False;
+	}	
 
 	new_set[priv_set->count].luid.high = set.luid.high;
 	new_set[priv_set->count].luid.low = set.luid.low;
@@ -180,78 +280,79 @@ static NTSTATUS add_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 	priv_set->count++;
 	priv_set->set = new_set;
 
-	ret = NT_STATUS_OK;
-
-done:
-	return ret;
+	return True;
 }
 
 /*********************************************************************
  Generate the LUID_ATTR structure based on a bitmask
 *********************************************************************/
 
-static LUID_ATTR get_privilege_luid( uint32 mask )
+LUID_ATTR get_privilege_luid( SE_PRIV *mask )
 {
 	LUID_ATTR priv_luid;
+	int i;
 
 	priv_luid.attr = 0;
 	priv_luid.luid.high = 0;
-	priv_luid.luid.low = mask;
+	
+	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
+	
+		/* just use the index+1 (so its non-zero) into the 
+		   array as the lower portion of the LUID */
+	
+		if ( se_priv_equal( &privs[i].se_priv, mask ) ) {
+			priv_luid.luid.low = GENERATE_LUID_LOW(i);
+		}
+	}
 
 	return priv_luid;
 }
 
 /*********************************************************************
- Convert a privilege mask to an LUID_ATTR[] and add the privileges to 
- the PRIVILEGE_SET
+ Generate the LUID_ATTR structure based on a bitmask
 *********************************************************************/
 
-static void add_privilege_set( PRIVILEGE_SET *privset, uint32 mask )
+const char* get_privilege_dispname( const char *name )
 {
-	LUID_ATTR luid;
 	int i;
+
+	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 	
-	for (i=0; privs[i].se_priv != SE_END; i++) {
-
-		/* skip if the privilege is not part of the mask */
-
-		if ( !(mask & privs[i].se_priv) ) 
-			continue;
-
-		/* remove the bit from the mask */
-
-		mask &= ~privs[i].se_priv;	
-		
-		luid = get_privilege_luid( privs[i].se_priv );
-		
-		add_privilege( privset, luid );
+		if ( strequal( privs[i].name, name ) ) {
+			return privs[i].description;
+		}
 	}
 
-	/* log an error if we have anything left at this point */
-	if ( mask )
-		DEBUG(0,("add_privilege_set: leftover bits! [0x%x]\n", mask ));
+	return NULL;
 }
 
 /*********************************************************************
  get a list of all privleges for all sids the in list
 *********************************************************************/
 
-void get_privileges_for_sids(PRIVILEGE_SET *privset, DOM_SID *slist, int scount)
+BOOL get_privileges_for_sids(SE_PRIV *privileges, DOM_SID *slist, int scount)
 {
-	uint32 priv_mask;
+	SE_PRIV mask;
 	int i;
+	BOOL found = False;
+
+	se_priv_copy( privileges, &se_priv_none );
 	
 	for ( i=0; i<scount; i++ ) {
 		/* don't add unless we actually have a privilege assigned */
 
-		if ( !get_privileges( &slist[i], &priv_mask ) )
+		if ( !get_privileges( &slist[i], &mask ) )
 			continue;
 
-		DEBUG(5,("get_privileges_for_sids: sid = %s, privilege mask = 0x%x\n",
-			sid_string_static(&slist[i]), priv_mask));
+		DEBUG(5,("get_privileges_for_sids: sid = %s\nPrivilege set:\n", 
+			sid_string_static(&slist[i])));
+		dump_se_priv( DBGC_ALL, 5, &mask );
 			
-		add_privilege_set( privset, priv_mask );
+		se_priv_add( privileges, &mask );
+		found = True;
 	}
+
+	return found;
 }
 
 
@@ -265,6 +366,11 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 	int  prefixlen = strlen(PRIVPREFIX);
 	DOM_SID sid;
 	fstring sid_string;
+	
+	/* easy check first */
+	
+	if ( data.dsize != sizeof(SE_PRIV) )
+		return 0;
 
 	/* check we have a PRIV_+SID entry */
 
@@ -273,13 +379,15 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 		
 	/* check to see if we are looking for a particular privilege */
 
-	if ( priv->se_priv != SE_NONE ) {
-		uint32 mask = SVAL(data.dptr, 0);
+	if ( !se_priv_equal(&priv->privilege, &se_priv_none) ) {
+		SE_PRIV mask;
+		
+		se_priv_copy( &mask, (SE_PRIV*)data.dptr );
 		
 		/* if the SID does not have the specified privilege 
 		   then just return */
 		   
-		if ( !(mask & priv->se_priv) )
+		if ( !is_privilege_assigned( &mask, &priv->privilege) )
 			return 0;
 	}
 		
@@ -306,7 +414,8 @@ NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
 	PRIV_SID_LIST priv;
 	
 	ZERO_STRUCT(priv);
-	priv.se_priv = SE_NONE;
+
+	se_priv_copy( &priv.privilege, &se_priv_none );
 
 	tdb_traverse( tdb, priv_traverse_fn, &priv);
 
@@ -318,18 +427,17 @@ NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
 	return NT_STATUS_OK;
 }
 
+#if 0	/* JERRY - not used */
 /***************************************************************************
  Retrieve the SIDs assigned to a given privilege
 ****************************************************************************/
 
-NTSTATUS priv_get_sids(const char *privname, DOM_SID **sids, int *num_sids)
+ NTSTATUS priv_get_sids(const char *privname, DOM_SID **sids, int *num_sids)
 {
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
 	PRIV_SID_LIST priv;
 	
 	ZERO_STRUCT(priv);	
-	priv.se_priv = 
-	
 
 	tdb_traverse( tdb, priv_traverse_fn, &priv);
 
@@ -340,24 +448,32 @@ NTSTATUS priv_get_sids(const char *privname, DOM_SID **sids, int *num_sids)
 
 	return NT_STATUS_OK;
 }
+#endif
 
 /***************************************************************************
  Add privilege to sid
 ****************************************************************************/
 
-BOOL grant_privilege(const DOM_SID *sid, uint32 priv_mask)
+BOOL grant_privilege(const DOM_SID *sid, SE_PRIV *priv_mask)
 {
-	uint32 old_mask, new_mask;
+	SE_PRIV old_mask, new_mask;
 	
 	if ( get_privileges( sid, &old_mask ) )
-		new_mask = old_mask | priv_mask;
+		se_priv_copy( &new_mask, &old_mask );
 	else
-		new_mask = priv_mask;
+		se_priv_copy( &new_mask, &se_priv_none );
 
-	DEBUG(10,("grant_privilege: %s, orig priv set = 0x%x, new privilege set = 0x%x\n",
-		sid_string_static(sid), old_mask, new_mask ));
+	se_priv_add( &new_mask, priv_mask );
+
+	DEBUG(10,("grant_privilege: %s\n", sid_string_static(sid)));
 	
-	return set_privileges( sid, new_mask );
+	DEBUGADD( 10, ("original privilege mask:\n"));
+	dump_se_priv( DBGC_ALL, 10, &old_mask );
+	
+	DEBUGADD( 10, ("new privilege mask:\n"));
+	dump_se_priv( DBGC_ALL, 10, &new_mask );
+	
+	return set_privileges( sid, &new_mask );
 }
 
 /*********************************************************************
@@ -368,9 +484,9 @@ BOOL grant_privilege_by_name(DOM_SID *sid, const char *name)
 {
 	int i;
 
-	for ( i = 0; privs[i].se_priv != SE_END; i++ ) {
+	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 		if ( strequal(privs[i].name, name) ) {
-			return grant_privilege( sid, privs[i].se_priv );
+			return grant_privilege( sid, &privs[i].se_priv );
                 }
         }
 
@@ -383,21 +499,35 @@ BOOL grant_privilege_by_name(DOM_SID *sid, const char *name)
  Remove privilege from sid
 ****************************************************************************/
 
-BOOL revoke_privilege(const DOM_SID *sid, uint32 priv_mask)
+BOOL revoke_privilege(const DOM_SID *sid, SE_PRIV *priv_mask)
 {
-	uint32 old_mask, new_mask;
+	SE_PRIV mask;
 	
-	if ( get_privileges( sid, &old_mask ) )
-		new_mask = old_mask | priv_mask;
-	else
-		new_mask = priv_mask;
+	/* if the user has no privileges, then we can't revoke any */
 	
-	new_mask = old_mask & ~priv_mask;
+	if ( !get_privileges( sid, &mask ) )
+		return True;
+	
+	DEBUG(10,("revoke_privilege: %s\n", sid_string_static(sid)));
+	
+	DEBUGADD( 10, ("original privilege mask:\n"));
+	dump_se_priv( DBGC_ALL, 10, &mask );
 
-        DEBUG(10,("revoke_privilege: %s, orig priv set = 0x%x, new priv set = 0x%x\n",
-                sid_string_static(sid), old_mask, new_mask ));
+	se_priv_remove( &mask, priv_mask );
 	
-	return set_privileges( sid, new_mask );
+	DEBUGADD( 10, ("new privilege mask:\n"));
+	dump_se_priv( DBGC_ALL, 10, &mask );
+	
+	return set_privileges( sid, &mask );
+}
+
+/*********************************************************************
+ Revoke all privileges
+*********************************************************************/
+
+BOOL revoke_all_privileges( DOM_SID *sid )
+{
+	return revoke_privilege( sid, &se_priv_all );
 }
 
 /*********************************************************************
@@ -408,9 +538,9 @@ BOOL revoke_privilege_by_name(DOM_SID *sid, const char *name)
 {
 	int i;
 
-	for ( i = 0; privs[i].se_priv != SE_END; i++ ) {
+	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 		if ( strequal(privs[i].name, name) ) {
-			return revoke_privilege( sid, privs[i].se_priv );
+			return revoke_privilege( sid, &privs[i].se_priv );
                 }
         }
 
@@ -425,7 +555,7 @@ BOOL revoke_privilege_by_name(DOM_SID *sid, const char *name)
 
 NTSTATUS privilege_create_account(const DOM_SID *sid )
 {
-	return ( grant_privilege( sid, SE_NONE ) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
+	return ( grant_privilege(sid, &se_priv_none) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
 }
 
 /****************************************************************************
@@ -508,12 +638,13 @@ done:
 	return ret;
 }
 
+#if 0 /* not used */
 /****************************************************************************
  Performa deep copy of a PRIVILEGE_SET structure.  Assumes an initialized 
  destination structure.
 *****************************************************************************/
 
-BOOL dup_privilege_set( PRIVILEGE_SET *dest, PRIVILEGE_SET *src )
+ BOOL dup_privilege_set( PRIVILEGE_SET *dest, PRIVILEGE_SET *src )
 {
 	NTSTATUS result;
 	
@@ -532,15 +663,16 @@ BOOL dup_privilege_set( PRIVILEGE_SET *dest, PRIVILEGE_SET *src )
 
 	return True;
 }
+#endif
 
 /****************************************************************************
  Does the user have the specified privilege ?  We only deal with one privilege
  at a time here.
 *****************************************************************************/
 
-BOOL user_has_privilege(NT_USER_TOKEN *token, uint32 privilege)
+BOOL user_has_privileges(NT_USER_TOKEN *token, SE_PRIV *privilege)
 {
-	return check_priv_in_privilege( &token->privileges, get_privilege_luid(privilege) );
+	return is_privilege_assigned( &token->privileges, privilege );
 }
 
 /****************************************************************************
@@ -550,38 +682,37 @@ BOOL user_has_privilege(NT_USER_TOKEN *token, uint32 privilege)
 char* luid_to_privilege_name(const LUID *set)
 {
 	static fstring name;
-	int i = 0;
+	int max = count_all_privileges();
 
 	if (set->high != 0)
 		return NULL;
 
-	for ( i=0; privs[i].se_priv!=SE_END; i++ ) {
-		if (set->low == privs[i].se_priv) {
-			fstrcpy(name, privs[i].name);
-			return name;
-		}
-	}
+	if ( set->low > max )
+		return NULL;
 
-	return NULL;
+	fstrcpy( name, privs[set->low - 1].name );
+	
+	return name;
 }
 
 /****************************************************************************
  Convert an LUID to a 32-bit mask
 ****************************************************************************/
 
-uint32 luid_to_privilege_mask(const LUID *set)
+SE_PRIV* luid_to_privilege_mask(const LUID *set)
 {
-	int i = 0;
-
+	static SE_PRIV mask;
+	int max = count_all_privileges();
+	
 	if (set->high != 0)
-		return SE_END;
+		return NULL;
 
-	for ( i=0; privs[i].se_priv != SE_END; i++ ) {
-		if (set->low == privs[i].se_priv)
-			return privs[i].se_priv;
-	}
+	if ( set->low > max )
+		return NULL;
 
-	return SE_END;
+	se_priv_copy( &mask, &privs[set->low - 1].se_priv );
+
+	return &mask;
 }
 
 /*******************************************************************
@@ -596,20 +727,78 @@ int count_all_privileges( void )
 		return count;
 
 	/* loop over the array and count it */	
-	for ( count=0; privs[count].se_priv != SE_END; count++ ) ;
+	for ( count=0; !se_priv_equal(&privs[count].se_priv, &se_priv_end); count++ ) ;
 
 	return count;
+}
+
+#if 0	/* not used */
+/*******************************************************************
+ return True is the SID has an entry in the account_pol.tdb
+*******************************************************************/
+
+ BOOL is_privileged_sid( DOM_SID *sid ) 
+{
+	SE_PRIV mask;
+
+	/* check if the lookup succeeds */
+
+	return get_privileges( sid, &mask );
+}
+#endif
+
+/*******************************************************************
+*******************************************************************/
+
+BOOL se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
+{
+	int i;
+	uint32 num_privs = count_all_privileges();
+	LUID_ATTR luid;
+	
+	luid.attr = 0;
+	luid.luid.high = 0;
+	
+	for ( i=0; i<num_privs; i++ ) {
+		if ( !is_privilege_assigned(mask, &privs[i].se_priv) )
+			continue;
+		
+		luid.luid.low = GENERATE_LUID_LOW(i);
+		
+		if ( !privilege_set_add( set, luid ) )
+			return False;
+	}
+
+	return True;
 }
 
 /*******************************************************************
 *******************************************************************/
 
-BOOL is_privileged_sid( DOM_SID *sid ) 
+BOOL privilege_set_to_se_priv( SE_PRIV *mask, PRIVILEGE_SET *privset )
 {
-	int mask;
+	int i;
+	uint32 num_privs = count_all_privileges();
+	
+	ZERO_STRUCTP( mask );
+	
+	for ( i=0; i<privset->count; i++ ) {
+		SE_PRIV r;
+	
+		/* sanity check for invalid privilege.  we really
+		   only care about the low 32 bits */
+		   
+		if ( privset->set[i].luid.high != 0 )
+			return False;
+		
+		/* make sure :LUID.low is in range */	
+		if ( privset->set[i].luid.low == 0 || privset->set[i].luid.low > num_privs )
+			return False;
+		
+		r = privs[privset->set[i].luid.low - 1].se_priv;
+		se_priv_add( mask, &r );
+	}
 
-	/* check if the lookup succeeds */
-
-	return get_privileges( sid, &mask );
+	return True;
 }
 
