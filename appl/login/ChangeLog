@@ -1,5 +1,9 @@
 1999-08-09  Johan Danielsson  <joda@pdc.kth.se>
 
+	* login.c (start_logout_process): call setproctitle
+
+	* login_locl.h: declare struct spwd
+
 	* login.c: add support for starting extra processes at login and
 	logout; always preserve TERM and TZ
 
