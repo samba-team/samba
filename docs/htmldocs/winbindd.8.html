@@ -37,7 +37,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >nmblookup</B
->  [-d debuglevel] [-i] [-S] [-r] [-A] [-h] [-B &lt;broadcast address&gt;] [-U &lt;unicast address&gt;] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-i &lt;NetBIOS scope&gt;] [-T] {name}</P
+>  [-d debuglevel] [-i] [-S] [-r] [-A] [-h] [-B &#60;broadcast address&#62;] [-U &#60;unicast address&#62;] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-i &#60;NetBIOS scope&#62;] [-T] {name}</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -128,11 +128,20 @@ CLASS="FILENAME"
 > and then from the 
 	Windows NT server. </P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >passwd:         files winbind
 group:          files winbind
 	</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DIV
 ><DIV
@@ -272,7 +281,7 @@ CLASS="COMMAND"
 ><P
 >Default: <B
 CLASS="COMMAND"
->winbind uid = &lt;empty string&gt; 
+>winbind uid = &#60;empty string&#62; 
 		</B
 ></P
 ><P
@@ -292,7 +301,7 @@ CLASS="COMMAND"
 ><P
 >Default: <B
 CLASS="COMMAND"
->winbind gid = &lt;empty string&gt;
+>winbind gid = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -363,9 +372,8 @@ CLASS="COMMAND"
 > system call will not 
 		return any data. </P
 ><P
-><I
-CLASS="EMPHASIS"
->Warning:</I
+><EM
+>Warning:</EM
 > Turning off user enumeration 
 		may cause some programs to behave oddly.  For example, the finger 
 		program relies on having access to the full user list when 
@@ -404,9 +412,8 @@ CLASS="COMMAND"
 > system 
 		call will not return any data. </P
 ><P
-><I
-CLASS="EMPHASIS"
->Warning:</I
+><EM
+>Warning:</EM
 > Turning off group 
 		enumeration may cause some programs to behave oddly. 
 		</P
@@ -487,11 +494,20 @@ CLASS="FILENAME"
 > put the 
 	following:</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >passwd:     files winbind
 group:      files winbind
 	</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >In <TT
@@ -505,6 +521,12 @@ CLASS="PARAMETER"
 ></TT
 > lines with something like this: </P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >auth       required	/lib/security/pam_securetty.so
@@ -512,6 +534,9 @@ auth       required	/lib/security/pam_nologin.so
 auth       sufficient	/lib/security/pam_winbind.so
 auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Note in particular the use of the <TT
@@ -585,6 +610,12 @@ CLASS="FILENAME"
 >Finally, setup a smb.conf containing directives like the 
 	following:  </P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >[global]
@@ -598,6 +629,9 @@ CLASS="PROGRAMLISTING"
         security = domain
         password server = *
 	</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Now start winbindd and you should find that your user and 

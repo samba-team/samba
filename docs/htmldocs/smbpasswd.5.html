@@ -118,20 +118,17 @@ CLASS="CONSTANT"
 > and the user will not be able to 
 		log onto the Samba server. </P
 ><P
-><I
-CLASS="EMPHASIS"
->WARNING !!</I
+><EM
+>WARNING !!</EM
 > Note that, due to 
 		the challenge-response nature of the SMB/CIFS authentication
 		protocol, anyone with a knowledge of this password hash will 
 		be able to impersonate the user on the network. For this
-		reason these hashes are known as <I
-CLASS="EMPHASIS"
+		reason these hashes are known as <EM
 >plain text 
-		equivalents</I
-> and must <I
-CLASS="EMPHASIS"
->NOT</I
+		equivalents</EM
+> and must <EM
+>NOT</EM
 > be made 
 		available to anyone but the root user. To protect these passwords 
 		the smbpasswd file is placed in a directory with read and 
@@ -156,20 +153,17 @@ CLASS="EMPHASIS"
 		password this entry will be identical (i.e. the password is 
 		not "salted" as the UNIX password is). </P
 ><P
-><I
-CLASS="EMPHASIS"
->WARNING !!</I
+><EM
+>WARNING !!</EM
 >. Note that, due to 
 		the challenge-response nature of the SMB/CIFS authentication
 		protocol, anyone with a knowledge of this password hash will 
 		be able to impersonate the user on the network. For this
-		reason these hashes are known as <I
-CLASS="EMPHASIS"
+		reason these hashes are known as <EM
 >plain text 
-		equivalents</I
-> and must <I
-CLASS="EMPHASIS"
->NOT</I
+		equivalents</EM
+> and must <EM
+>NOT</EM
 > be made 
 		available to anyone but the root user. To protect these passwords 
 		the smbpasswd file is placed in a directory with read and 
@@ -192,9 +186,8 @@ CLASS="EMPHASIS"
 ><UL
 ><LI
 ><P
-><I
-CLASS="EMPHASIS"
->U</I
+><EM
+>U</EM
 > - This means 
 			this is a "User" account, i.e. an ordinary user. Only User 
 			and Workstation Trust accounts are currently supported 
@@ -202,9 +195,8 @@ CLASS="EMPHASIS"
 ></LI
 ><LI
 ><P
-><I
-CLASS="EMPHASIS"
->N</I
+><EM
+>N</EM
 > - This means the
 			account has no password (the passwords in the fields Lanman 
 			Password Hash and NT Password Hash are ignored). Note that this 
@@ -225,18 +217,16 @@ CLASS="FILENAME"
 ></LI
 ><LI
 ><P
-><I
-CLASS="EMPHASIS"
->D</I
+><EM
+>D</EM
 > - This means the account 
 			is disabled and no SMB/CIFS logins  will be	allowed for 
 			this user. </P
 ></LI
 ><LI
 ><P
-><I
-CLASS="EMPHASIS"
->W</I
+><EM
+>W</EM
 > - This means this account 
 			is a "Workstation Trust" account. This kind of account is used 
 			in the Samba PDC code stream to allow Windows NT Workstations 
