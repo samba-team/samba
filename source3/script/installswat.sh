@@ -4,23 +4,16 @@
 SWATDIR=$1
 SRCDIR=$2/
 BOOKDIR=$SWATDIR/using_samba
-IS_I18N=$3
 
 echo Installing SWAT in $SWATDIR
 echo Installing the Samba Web Administration Tool
 
-if [ X$IS_I18N = Xyes ]; then
-    LANGS=". `cd $SRCDIR../swat/; /bin/echo lang/??`"
-    echo Installing langs are `cd $SRCDIR../swat/lang/; /bin/echo ??`
-else
-    LANGS=.
-fi
+LANGS=". `cd $SRCDIR../swat/; /bin/echo lang/??`"
+echo Installing langs are `cd $SRCDIR../swat/lang/; /bin/echo ??`
 
 for ln in $LANGS; do 
-
-SWATLANGDIR=$SWATDIR/$ln
-
-for d in $SWATLANGDIR $SWATLANGDIR/help $SWATLANGDIR/images \
+ SWATLANGDIR=$SWATDIR/$ln
+ for d in $SWATLANGDIR $SWATLANGDIR/help $SWATLANGDIR/images \
 	$SWATLANGDIR/include; do
     if [ ! -d $d ]; then
 	mkdir -p $d
@@ -29,8 +22,7 @@ for d in $SWATLANGDIR $SWATLANGDIR/help $SWATLANGDIR/images \
 	    exit 1
 	fi
     fi
-done
-
+ done
 done
 
 # Install images
