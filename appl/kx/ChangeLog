@@ -1,3 +1,7 @@
+2003-02-25  Love Hörquist Åstrand <lha@it.su.se>
+
+	* krb4.c: remove \n from warnx, from NetBSD
+	
 2002-12-11  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kx.c (connect_host): pass size of thisaddr_ss to getsockname
