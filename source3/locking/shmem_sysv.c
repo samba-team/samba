@@ -658,7 +658,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	}
 	
 	if (shm_id == -1) {
-		DEBUG(0,("Can't create or use IPC area\n"));
+		DEBUG(0,("Can't create or use IPC area. Error was %s\n", strerror(errno)));
 		global_unlock();
 		return NULL;
 	}   
@@ -667,7 +667,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	shm_header_p = (struct ShmHeader *)shmat(shm_id, 0, 
 						 read_only?SHM_RDONLY:0);
 	if ((long)shm_header_p == -1) {
-		DEBUG(0,("Can't attach to IPC area\n"));
+		DEBUG(0,("Can't attach to IPC area. Error was %s\n", strerror(errno)));
 		global_unlock();
 		return NULL;
 	}
@@ -676,7 +676,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	   we use a registration file containing the processids of the file
 	   mapping processes */
 	if (shmctl(shm_id, IPC_STAT, &shm_ds) != 0) {
-		DEBUG(0,("ERROR shm_open : can't IPC_STAT\n"));
+		DEBUG(0,("ERROR shm_open : can't IPC_STAT. Error was %s\n", strerror(errno)));
 	}
 
 	if (!read_only) {
