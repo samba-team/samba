@@ -473,11 +473,12 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 				      char *pass, char *workgroup)
 {
 	const char *mechs[] = {OID_NTLMSSP, NULL};
-	DATA_BLOB msg1;
+	DATA_BLOB msg1, struct_blob;
 	DATA_BLOB blob, chal1, chal2, auth;
 	uint8 challenge[8];
 	uint8 nthash[24], lmhash[24], sess_key[16];
-	uint32 neg_flags;
+	uint32 neg_flags, chal_flags, ntlmssp_command, unkn1, unkn2;
+	pstring server_domain;  /* FIX THIS, SHOULD be UCS2-LE */
 
 	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
 		NTLMSSP_NEGOTIATE_128 | 
@@ -517,6 +518,31 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 	}
 
 	data_blob_free(&blob);
+
+	/*
+	 * Ok, chal1 and chal2 are actually two identical copies of
+	 * the NTLMSSP Challenge BLOB, and they contain, encoded in them
+	 * the challenge to use.
+	 */
+
+	if (!msrpc_parse(&chal1, "CdUdbddB",
+			 "NTLMSSP",
+			 &ntlmssp_command, 
+			 &server_domain,
+			 &chal_flags,
+			 challenge, 8,
+			 &unkn1, &unkn2,
+			 struct_blob.data, &struct_blob.length)) {
+	  DEBUG(0, ("Failed to parse the NTLMSSP Challenge\n"));
+	  return False;
+	}
+			
+	if (ntlmssp_command != NTLMSSP_CHALLENGE) {
+	  DEBUG(0, ("NTLMSSP Response != NTLMSSP_CHALLENGE. Got %0X\n", 
+		    ntlmssp_command));
+	  return False;
+	}
+ 
 
 	/* encrypt the password with the challenge */
 	memcpy(challenge, chal1.data + 24, 8);
