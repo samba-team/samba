@@ -1289,13 +1289,16 @@ send_data(FILE *instr, FILE *outstr, off_t blksize)
 	case TYPE_I:
 	case TYPE_L:
 #ifdef HAVE_MMAP
+#ifndef MAP_FAILED
+#define MAP_FAILED (-1)
+#endif
 	    {
 		struct stat st;
 		char *chunk;
 		int in = fileno(instr);
-		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode)){
+		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode)) {
 		    chunk = mmap(0, st.st_size, PROT_READ, MAP_SHARED, in, 0);
-		    if(chunk != NULL){
+		    if(chunk != (void *)MAP_FAILED) {
 			cnt = st.st_size - restart_point;
 			auth_write(fileno(outstr),
 				   chunk + restart_point,
