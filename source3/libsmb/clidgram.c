@@ -42,6 +42,7 @@ int cli_send_mailslot(BOOL unique, char *mailslot, char *buf, int len,
   struct sockaddr_in sock_out;
   char *ptr, *p2;
   char tmp[4];
+  int name_size;
 
   bzero((char *)&p, sizeof(p));
 
@@ -50,8 +51,6 @@ int cli_send_mailslot(BOOL unique, char *mailslot, char *buf, int len,
    */
 
   if (dgram_sock < 1) {
-
-    int name_size;
 
     if ((dgram_sock = open_socket_out(SOCK_DGRAM, &dest_ip, 138, LONG_CONNECT_TIMEOUT)) < 0) {
 
@@ -67,21 +66,34 @@ int cli_send_mailslot(BOOL unique, char *mailslot, char *buf, int len,
     /* Now, bind my addr to it ... */
 
     bzero((char *)&sock_out, sizeof(sock_out));
-    putip((char *)&sock_out.sin_addr, (char *)&src_ip);
-    sock_out.sin_port = INADDR_ANY;
+    sock_out.sin_addr.s_addr = INADDR_ANY;
+    sock_out.sin_port = htons(138);
     sock_out.sin_family = AF_INET;
 
-    bind(dgram_sock, (struct sockaddr_in *)&sock_out, sizeof(sock_out));
+    if (bind(dgram_sock, (struct sockaddr_in *)&sock_out, sizeof(sock_out)) < 0) {
 
-    /* Now, figure out what socket name we were bound to. We want the port */
+      /* Try again on any port ... */
 
-    name_size = sizeof(sock_out);
+      sock_out.sin_port = INADDR_ANY;
 
-    getsockname(dgram_sock, (struct sockaddr_in *)&sock_out, &name_size);
+      if (bind(dgram_sock, (struct sockaddr_in *)&sock_out, sizeof(sock_out)) < 0) {
 
-    fprintf(stderr, "Socket bound to IP:%s, port: %d\n", inet_ntoa(sock_out.sin_addr), ntohs(sock_out.sin_port));
+	DEBUG(4, ("failed to bind socket to address ...\n"));
+	return False;
+
+      }
+
+    }
 
   }
+
+  /* Now, figure out what socket name we were bound to. We want the port */
+
+  name_size = sizeof(sock_out);
+
+  getsockname(dgram_sock, (struct sockaddr_in *)&sock_out, &name_size);
+
+  fprintf(stderr, "Socket bound to IP:%s, port: %d\n", inet_ntoa(sock_out.sin_addr), ntohs(sock_out.sin_port));
 
   /*
    * Next, build the DGRAM ...
@@ -93,8 +105,10 @@ int cli_send_mailslot(BOOL unique, char *mailslot, char *buf, int len,
   dgram->header.flags.first = True;
   dgram->header.flags.more = False;
   dgram->header.dgm_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)sys_getpid()%(unsigned)100);
-  dgram->header.source_ip = src_ip;
+  dgram->header.source_ip.s_addr = sock_out.sin_addr.s_addr;
+  fprintf(stderr, "Source IP = %0X\n", dgram->header.source_ip);
   dgram->header.source_port = ntohs(sock_out.sin_port);
+  fprintf(stderr, "Source Port = %0X\n", dgram->header.source_port);
   dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
   dgram->header.packet_offset = 0;
   
@@ -147,7 +161,7 @@ int cli_get_response(BOOL unique, char *mailslot, char *buf, int bufsiz)
 {
   struct packet_struct *packet;
 
-  packet = read_packet(dgram_sock, DGRAM_PACKET);
+  packet = receive_dgram_packet(dgram_sock, 2, mailslot);
 
   if (packet) { /* We got one, pull what we want out of the SMB data ... */
 
@@ -166,7 +180,6 @@ int cli_get_response(BOOL unique, char *mailslot, char *buf, int bufsiz)
   else 
     return -1;
 
-  return 0;
 }
 
 /*
@@ -187,7 +200,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   }
 
-  bzero(&my_ip, 4);  /* Cheap way to get 0.0.0.0 in there */
+  my_ip.s_addr = inet_addr("0.0.0.0");
  
   if (!resolve_name(myname, &my_ip, 0x00)) { /* FIXME: Call others here */
 
@@ -220,7 +233,6 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   /* Should check the response here ... FIXME */
 
-  return 0;
 }
 
 /*
@@ -236,7 +248,4 @@ int cli_get_backup_server(char *my_name, char *target, char *servername, int nam
 
   strncpy(servername, cli_backup_list, MIN(16, namesize));
 
-  /* Should check the response here ... FIXME */
-
-  return 0;
 }
