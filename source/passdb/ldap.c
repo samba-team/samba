@@ -993,7 +993,7 @@ static struct passdb_ops ldap_ops =
 	getldapdispent
 };
 
-struct passdb_ops *ldap_initialize_password_db(void)
+struct passdb_ops *ldap_initialise_password_db(void)
 {
   return &ldap_ops;
 }

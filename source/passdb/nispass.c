@@ -673,7 +673,7 @@ static struct passdb_ops nispasswd_ops = {
   getnispdispent
 };
 
-struct passdb_ops *nisplus_initialize_password_db(void)
+struct passdb_ops *nisplus_initialise_password_db(void)
 {
   return &nispasswd_ops;
 }
