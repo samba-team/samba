@@ -53,5 +53,33 @@ BOOL torture_ntlmssp_self_check(int dummy)
 	dump_data_pw("NTLMSSP sig: ", sig.data, sig.length);
 	dump_data_pw("NTLMSSP sig: ", expected_sig.data, expected_sig.length);
 
+	ntlmssp_end(&ntlmssp_state);
+
+	if (!NT_STATUS_IS_OK(ntlmssp_client_start(&ntlmssp_state))) {
+		return False;
+	}
+
+	ntlmssp_state->session_key = strhex_to_data_blob("0102030405e538b0");
+	dump_data_pw("NTLMSSP session key: \n", 
+		     ntlmssp_state->session_key.data,  
+		     ntlmssp_state->session_key.length);
+
+	ntlmssp_state->server_use_session_keys = True;
+	ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_KEY_EXCH;
+
+	if (!NT_STATUS_IS_OK(status = ntlmssp_sign_init(ntlmssp_state))) {
+		printf("Failed to sign_init: %s\n", nt_errstr(status));
+		return False;
+	}
+
+	data = strhex_to_data_blob("6a43494653");
+	ntlmssp_sign_packet(ntlmssp_state, ntlmssp_state->mem_ctx, 
+			    data.data, data.length, &sig);
+
+	expected_sig = strhex_to_data_blob("0100000078010900397420fe0e5a0f89");
+
+	dump_data_pw("NTLMSSP sig: ", sig.data, sig.length);
+	dump_data_pw("NTLMSSP sig: ", expected_sig.data, expected_sig.length);
+
 	return True;
 }
