@@ -26,7 +26,6 @@
 extern int DEBUGLEVEL;
 static fstring password;
 static fstring username;
-static fstring workgroup;
 static int got_pass;
 
 static BOOL showall = False;
@@ -124,7 +123,7 @@ struct cli_state *connect_one(char *share)
 	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
-			       workgroup)) {
+			       lp_workgroup())) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		return NULL;
 	}
@@ -170,6 +169,15 @@ void listfn(file_info *f, const char *s)
 	finfo = f;
 }
 
+static void get_short_name(struct cli_state *cli, 
+			   char *name, fstring short_name)
+{
+	cli_list(cli, name, aHIDDEN | aDIR, listfn);
+	if (finfo) {
+		fstrcpy(short_name, finfo->short_name);
+		strlower(short_name);
+	}
+}
 
 static void testpair(struct cli_state *cli, char *mask, char *file)
 {
@@ -197,10 +205,8 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 		cli_list_old(cli, mask, aHIDDEN | aDIR, listfn);
 	} else {
 		cli_list(cli, mask, aHIDDEN | aDIR, listfn);
-	}
-	if (finfo) {
-		fstrcpy(short_name, finfo->short_name);
-		strlower(short_name);
+		finfo = NULL;
+		get_short_name(cli, file, short_name);
 	}
 
 	res2 = reg_test(mask, file, short_name);
@@ -223,7 +229,7 @@ static void test_mask(int argc, char *argv[],
 	int mc_len = strlen(maskchars);
 	int fc_len = strlen(filechars);
 
-	cli_mkdir(cli, "masktest");
+	cli_mkdir(cli, "\\masktest");
 
 	cli_unlink(cli, "\\masktest\\*");
 
@@ -362,9 +368,6 @@ static void usage(void)
 			break;
 		case 'o':
 			old_list = True;
-			break;
-		case 'W':
-			pstrcpy(workgroup, optarg);
 			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
