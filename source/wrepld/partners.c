@@ -32,7 +32,7 @@ BOOL check_partner(int assoc)
 {
 	int i;
 
-	DEBUG(0,("check_partner: total_current_partners: %d\n", total_current_partners));
+	DEBUG(5,("check_partner: total_current_partners: %d\n", total_current_partners));
 
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==assoc)
@@ -46,7 +46,7 @@ add a new entry to the list
 ********************************************************************/
 BOOL add_partner(int client_assoc, int server_assoc, BOOL pull, BOOL push)
 {
-	DEBUG(0,("add_partner: total_current_partners: %d\n", total_current_partners));
+	DEBUG(5,("add_partner: total_current_partners: %d\n", total_current_partners));
 
 	if (total_current_partners==64)
 		return False;
@@ -68,7 +68,7 @@ BOOL remove_partner(int client_assoc)
 {
 	int i,j;
 
-	DEBUG(0,("remove_partner: total_current_partners: %d\n", total_current_partners));
+	DEBUG(5,("remove_partner: total_current_partners: %d\n", total_current_partners));
 
 	for (i=0; current_partners[i].client_assoc!=client_assoc && i<total_current_partners; i++)
 		;
@@ -97,7 +97,7 @@ BOOL update_server_partner(int client_assoc, int server_assoc)
 {
 	int i;
 	
-	DEBUG(0,("update_server_partner: total_current_partners: %d\n", total_current_partners));
+	DEBUG(5,("update_server_partner: total_current_partners: %d\n", total_current_partners));
 
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==client_assoc) {
@@ -115,7 +115,7 @@ BOOL check_pull_partner(int assoc)
 {
 	int i;
 	
-	DEBUG(0,("check_pull_partner: total_current_partners: %d\n", total_current_partners));
+	DEBUG(5,("check_pull_partner: total_current_partners: %d\n", total_current_partners));
 
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==assoc &&
@@ -132,7 +132,7 @@ BOOL check_push_partner(int assoc)
 {
 	int i;
 	
-	DEBUG(0,("check_push_partner: total_current_partners: %d\n", total_current_partners));
+	DEBUG(5,("check_push_partner: total_current_partners: %d\n", total_current_partners));
 
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==assoc &&
@@ -149,7 +149,7 @@ int get_server_assoc(int assoc)
 {
 	int i;
 	
-	DEBUG(0,("get_server_assoc: total_current_partners: %d\n", total_current_partners));
+	DEBUG(5,("get_server_assoc: total_current_partners: %d\n", total_current_partners));
 
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==assoc)
@@ -166,7 +166,7 @@ BOOL write_server_assoc_table(int client_assoc, struct in_addr partner, struct i
 {
 	int i;
 	
-	DEBUG(0,("write_server_assoc_table: total_current_partners: %d\n", total_current_partners));
+	DEBUG(5,("write_server_assoc_table: total_current_partners: %d\n", total_current_partners));
 
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==client_assoc) {
@@ -185,7 +185,7 @@ BOOL get_server_assoc_table(int client_assoc, struct in_addr *partner, struct in
 {
 	int i;
 	
-	DEBUG(0,("get_server_assoc_table: total_current_partners: %d\n", total_current_partners));
+	DEBUG(5,("get_server_assoc_table: total_current_partners: %d\n", total_current_partners));
 
 	for (i=0; i<total_current_partners; i++)
 		if (current_partners[i].client_assoc==client_assoc) {
