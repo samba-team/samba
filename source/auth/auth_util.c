@@ -50,7 +50,7 @@ static int smb_create_user(const char *domain, const char *unix_username, const 
 	if (homedir)
 		all_string_sub(add_script, "%H", homedir, sizeof(pstring));
 	ret = smbrun(add_script,NULL);
-	DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
+	DEBUG(ret ? 0 : 3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
 	return ret;
 }
 
