@@ -550,5 +550,9 @@ BOOL load_dos_unicode_map(int codepage)
 
 BOOL load_unix_unicode_map(const char *unix_char_set)
 {
-  return load_unicode_map(unix_char_set, &unixcp_to_ucs2, &ucs2_to_unixcp);
+  fstring upper_unix_char_set;
+
+  fstrcpy(upper_unix_char_set, unix_char_set);
+  strupper(upper_unix_char_set);
+  return load_unicode_map(upper_unix_char_set, &unixcp_to_ucs2, &ucs2_to_unixcp);
 }
