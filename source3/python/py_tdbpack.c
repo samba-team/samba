@@ -661,13 +661,19 @@ pytdbpack_pack_data(const char *format_str,
 			long size;
 			char *sval;
 
-			if (!PyInt_Check(val_obj)) {
-				pytdbpack_bad_type(ch, "Integer", val_obj);
+			if (!PyNumber_Check(val_obj)) {
+				pytdbpack_bad_type(ch, "Number", val_obj);
 				return NULL;
 			}
 
-			size = PyInt_AsLong(val_obj);
+			if (!(val_obj = PyNumber_Long(val_obj)))
+				return NULL;
+
+			size = PyLong_AsLong(val_obj);
 			pack_uint32(size, &packed);
+
+			/* Release the new reference created by the cast */
+			Py_DECREF(val_obj);
 
 			val_obj = PySequence_GetItem(val_seq, val_i++);
 			if (!val_obj)
