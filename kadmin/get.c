@@ -44,10 +44,15 @@ struct get_entry_data {
 static void
 print_entry_terse(kadm5_principal_ent_t princ)
 {
+    krb5_error_code ret;
     char *p;
-    krb5_unparse_name(context, princ->principal, &p);
+
+    ret = krb5_unparse_name(context, princ->principal, &p);
+    if (ret)
+	p = "<error unparsing name>";
     printf("  %s\n", p);
-    free(p);
+    if (ret == 0)
+	free(p);
 }
 
 static void
