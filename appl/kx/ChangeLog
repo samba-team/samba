@@ -1,3 +1,7 @@
+Sun Dec  5 14:25:55 1999  Assar Westerlund  <assar@sics.se>
+
+	* common.c (INADDR_LOOPBACK): remove.  now in roken.
+
 1999-12-05  Assar Westerlund  <assar@sics.se>
 
 	* kxd.c (recv_conn): use getnameinfo_verified
