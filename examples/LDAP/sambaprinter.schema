@@ -1,0 +1,201 @@
+##
+## schema file for OpenLDAP 2.x
+## OIDs are owned by the Samba Team
+##
+## Prerequisite schemas - samba.schema
+##
+## Printer support
+## 1.3.6.1.4.1.7165.2.3.1.x - attributetypes
+## 1.3.6.1.4.1.7165.2.3.2.x - objectclasses
+
+#####################################################################
+##
+## PRINTER SECTION
+##
+#####################################################################
+
+##
+## Drivers
+## 
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.1 NAME 'sambaDrvName'
+	SUBSTR caseIgnoreSubstringsMatch
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.2 NAME 'sambaDrvEnvironment'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.3 NAME 'sambaDrvPath'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.4 NAME 'sambaDrvDataFile'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.5 NAME 'sambaDrvConfigFile'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.6 NAME 'sambaDrvHelpFile'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.7 NAME 'sambaDrvMonitorName'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.8 NAME 'sambaDrvDefDataType'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.9 NAME 'sambaDrvDepFile'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.10 NAME 'sambaDrvVersion'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+	
+objectclass ( 1.3.6.1.4.1.7165.2.3.2.1 NAME 'sambaPrinterDriver'
+	SUP top STRUCTURAL
+	MUST ( sambaDrvName $ sambaDrvVersion $ sambaDrvEnvironment $ 
+	       sambaDrvPath $ sambaDrvDataFile $ sambaDrvConfigFile $ 
+	       sambaDrvHelpFile ) 
+	MAY ( sambaDrvMonitorName $ sambaDrvDefDataType $ sambaDrvDepFile ) )
+
+##
+## Forms
+##
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.11 NAME 'sambaFormName'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.12 NAME 'sambaFormFlag'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+## packed binary 4x4byte blob ( left, top, right, bottom )
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.13 NAME 'sambaFormDimensions'
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.5 SINGLE-VALUE )
+	
+objectclass ( 1.3.6.1.4.1.7165.2.3.2.2 NAME 'sambaPrinterForm'
+	SUP top STRUCTURAL
+	MUST ( sambaFormName $ sambaFormFlag $ sambaFormDimensions ) )
+
+##
+## Printers
+##
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.14 NAME 'sambaPrintAttributes'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.15 NAME 'sambaPrintPriority'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.16 NAME 'sambaPrintDefPriority'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.17 NAME 'sambaPrintStartTime'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.18 NAME 'sambaPrintUntilTime'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.19 NAME 'sambaPrintStatus'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.20 NAME 'sambaPrintCjobs'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.21 NAME 'sambaPrintAveragePpm'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.22 NAME 'sambaPrintName'
+	SUBSTR caseIgnoreSubstringsMatch
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.23 NAME 'sambaShareName'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.24 NAME 'sambaPrintPort'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.25 NAME 'sambaPrintComment'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.26 NAME 'sambaPrintLocation'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+## packed version of devmode
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.27 NAME 'sambaPrintDevMode'
+	EQUALITY octetStringMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 SINGLE-VALUE )
+	
+## packed security descriptor
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.28 NAME 'sambaSecDesc'
+	EQUALITY octetStringMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 SINGLE-VALUE )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.29 NAME 'sambaPrintSepFile'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.30 NAME 'sambaPrintProc'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.31 NAME 'sambaPrintDataType'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+## packed Key\Name\Value
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.32 NAME 'sambaPrintData'
+	EQUALITY octetStringMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.33 NAME 'sambaPrintParams'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.34 NAME 'sambaPrintChangeID'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.35 NAME 'sambaPrintCsetPrinter'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.3.1.36 NAME 'sambaPrintSetupTime'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+objectclass ( 1.3.6.1.4.1.7165.2.3.2.3 NAME 'sambaPrinter'
+	SUP top STRUCTURAL
+	MUST ( sambaPrintAttributes $ sambaPrintPriority $
+	       sambaPrintDefPriority $
+	       sambaPrintStartTime $ sambaPrintUntilTime $ sambaPrintStatus $ 
+	       sambaPrintCjobs $ sambaPrintAveragePpm $ sambaPrintName $ 
+	       sambaShareName $ sambaPrintPort $ sambaPrintComment $
+	       sambaPrintDevmode $ sambaPrintProc $ sambaPrintDataType $ 
+	       sambaPrintData $ sambaPrintChangeID $ 
+	       sambaPrintCsetPrinter $ sambaPrintSetupTime )
+	MAY ( sambaDrvName $ sambaPrintLocation $ sambaPrintSepFile $
+	      sambaPrintParams $ sambaSecDesc ) )
+
+objectclass ( 1.3.6.1.4.1.7165.2.3.2.4 NAME 'sambaContainer'
+	SUP top STRUCTURAL
+	MUST ( cn ) )
