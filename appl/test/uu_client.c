@@ -50,6 +50,7 @@ proto (int sock, const char *hostname, const char *service)
     krb5_data data;
     krb5_data packet;
     krb5_creds mcred, cred;
+    krb5_ticket *ticket;
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -129,11 +130,25 @@ proto (int sock, const char *hostname, const char *service)
 	krb5_err(context, 1, status, "krb5_auth_con_setuserkey");
     
     status = krb5_recvauth(context, &auth_context, &sock, 
-			   VERSION, client, 0, NULL, NULL);
+			   VERSION, client, 0, NULL, &ticket);
 
     if (status)
 	krb5_err(context, 1, status, "krb5_recvauth");
     
+    if (ticket->ticket.authorization_data) {
+	AuthorizationData *authz;
+	int i;
+
+	printf("Authorization data:\n");
+
+	authz = ticket->ticket.authorization_data;
+	for (i = 0; i < authz->len; i++) {
+	    printf("\ttype %d, length %d\n",
+		   authz->val[i].ad_type,
+		   authz->val[i].ad_data.length);
+	}
+    }
+
     data.data   = "hej";
     data.length = 3;
 
