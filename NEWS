@@ -1,5 +1,7 @@
 Changes in release 0.3a:
 
+ * implement arcfour-hmac-md5 to interoperate with W2K
+
  * modularise the handling of the master key, and allow for other
    encryption types. This makes it easier to import a database from
    some other source without having to re-encrypt all keys.
