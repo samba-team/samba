@@ -157,7 +157,7 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 	}
 
 	vuser->guest = server_info->guest;
-	fstrcpy(vuser->user.unix_name, pdb_get_username(server_info->sam_account)); 
+	fstrcpy(vuser->user.unix_name, server_info->unix_name); 
 
 	/* This is a potentially untrusted username */
 	alpha_strcpy(vuser->user.smb_name, smb_name, ". _-$", sizeof(vuser->user.smb_name));
