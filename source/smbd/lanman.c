@@ -1502,6 +1502,8 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   data_len = fixed_len = string_len = 0;
   for (i=0;i<count;i++) {
     fstring servicename_dos;
+    if (!(lp_browseable(i) && lp_snum_ok(i)))
+	    continue;
     push_ascii_fstring(servicename_dos, lp_servicename(i));
     if( lp_browseable( i )
         && lp_snum_ok( i )
@@ -1530,6 +1532,8 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   for( i = 0; i < count; i++ )
     {
     fstring servicename_dos;
+    if (!(lp_browseable(i) && lp_snum_ok(i)))
+	    continue;
     push_ascii_fstring(servicename_dos, lp_servicename(i));
     if( lp_browseable( i )
         && lp_snum_ok( i )
