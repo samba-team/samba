@@ -35,6 +35,17 @@ struct clisocket_connect {
 	const char *dest_host;
 };
 
+
+static int smbcli_sock_destructor(void *ptr)
+{
+	struct smbcli_socket *sock = talloc_get_type(ptr, struct smbcli_socket);
+
+	if (sock->event.fde && sock->event.ctx) {
+		event_remove_fd(sock->event.ctx, sock->event.fde);
+	}
+	return 0;
+}
+
 /*
   create a smbcli_socket context
 */
@@ -52,6 +63,8 @@ struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx)
 		talloc_free(sock);
 		return NULL;
 	}
+
+	talloc_set_destructor(sock, smbcli_sock_destructor);
 
 	return sock;
 }

@@ -54,7 +54,6 @@ static int transport_destructor(void *ptr)
 	struct smbcli_transport *transport = ptr;
 
 	smbcli_transport_dead(transport);
-	event_remove_fd(transport->socket->event.ctx, transport->socket->event.fde);
 	event_remove_timed(transport->socket->event.ctx, transport->socket->event.te);
 	return 0;
 }
