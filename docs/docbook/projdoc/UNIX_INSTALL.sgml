@@ -88,13 +88,13 @@
 	<para>
 	SWAT is a web-based interface that helps you configure samba. 
 	SWAT might not be available in the samba package on your platform, 
-	but in a seperate package. Please read the swat manpage 
+	but in a separate package. Please read the swat manpage 
 	on compiling, installing and configuring swat from source.
 	</para>
 
 	<para>To launch SWAT just run your favorite web browser and 
 	point it at "http://localhost:901/". Replace <replaceable>localhost</replaceable> with the name of the computer you are running samba on if you 
-	are running samba on a different computer then your browser.</para>
+	are running samba on a different computer than your browser.</para>
 
 	<para>Note that you can attach to SWAT from any IP connected 
 	machine but connecting from a remote machine leaves your 
