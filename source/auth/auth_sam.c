@@ -185,7 +185,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 				invalid_ws = False;
 				break;
 			}
-			if (tok[0] == '@') {
+			if (tok[0] == '+') {
 				DEBUG(10,("sam_account_ok: checking for workstation %s in group: %s\n", 
 					machine_name, tok + 1));
 				if (user_in_group_list(machine_name, tok + 1, NULL, 0)) {
