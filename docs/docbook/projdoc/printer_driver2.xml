@@ -8,16 +8,12 @@
 			<address><email>kpfeifle@danka.de</email></address>
 		</affiliation>
 	</author>
-	<pubdate> (23 May 2003) </pubdate>
+	<pubdate>May 32, 2003</pubdate>
 </chapterinfo>
 
-<title>Classical Printing Support in Samba 3.0</title>
+<title>Classical Printing Support</title>
 
 <sect1>
-<title>Introduction</title>
-	
-<sect2>
-
 <title>Features and Benefits</title>
 
 <para>
@@ -65,8 +61,6 @@ similar, but may differ in details. Windows NT is somewhat different
 again.
 </para>
 </note>
-
-</sect2>
 
 </sect1>
 
@@ -158,12 +152,12 @@ this (if you run it) and tell you so.</para></listitem>
 <title>Parameters Recommended for Use</title>
 
 <para>The following <filename>smb.conf</filename> parameters directly
-related to printing are used in Samba 3.0. See also the
+related to printing are used in Samba-3. See also the
 <filename>smb.conf</filename> man page for detailed explanations:
 </para>
 
 <formalpara>
-<title>LIST OF PRINTING RELATED PARAMETERS IN SAMBA-3.0</title>
+<title>LIST OF PRINTING RELATED PARAMETERS IN Samba-3</title>
 <para>
 <itemizedlist><title>Global level parameters:</title>
 <listitem><para><parameter>addprinter command (G)</parameter></para></listitem>
@@ -258,12 +252,12 @@ announced some time ago). Here is a list of them:
 </para>
 
 <formalpara>
-<title>"OLD" PARAMETERS, REMOVED IN SAMBA-3.0</title>
+<title>"OLD" PARAMETERS, REMOVED IN Samba-3</title>
 
 <para>
 The following <filename>smb.conf</filename> parameters have been
 deprecated already in Samba 2.2 and are now completely removed from
-Samba 3.0.  You cannot use them in new 3.0 installations:
+Samba-3.  You cannot use them in new 3.0 installations:
 
 <itemizedlist>
 <listitem><para><parameter>printer driver file (G)</parameter></para></listitem>
@@ -280,7 +274,7 @@ Samba 3.0.  You cannot use them in new 3.0 installations:
 </sect1>
 
 <sect1>
-<title>A simple Configuration to Print with Samba 3.0</title>
+<title>A simple Configuration to Print with Samba-3</title>
 
 <para>
 Here is a very simple example configuration for print related settings
@@ -293,7 +287,7 @@ However, in many environments these are enough to provide a valid
 <filename>smb.conf</filename> which enables all clients to print.
 </para>
 
-<para><programlisting>
+<para><screen>
  [global]
          printing = bsd
          load printers = yes
@@ -303,7 +297,7 @@ However, in many environments these are enough to provide a valid
          printable = yes
          public = yes
          writable = no
-</programlisting></para>
+</screen></para>
 
 <para>
 This is only an example configuration. Many settings, if not
@@ -340,7 +334,7 @@ setup, with exactly the same settings in <filename>smb.conf</filename>
 as shown above:
 </para>
 
-<para><programlisting>
+<para><screen>
 
  transmeta: # testparm -v | egrep "(lp|print|spool|driver|ports|\[)"
  
@@ -379,7 +373,7 @@ as shown above:
         path = /var/spool/samba
         printable = Yes
 
-</programlisting></para>
+</screen></para>
 
 <para>
 You can easily verify which settings were implicitly added by Samba's
@@ -405,7 +399,7 @@ try to just "comment out" the <parameter>load printers</parameter>"
 parameter. If your 2.2.x system behaves like mine, you'll see this:
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde-bitshop:/etc/samba # grep "load printers" smb.conf
  #      load printers = Yes
@@ -414,7 +408,7 @@ parameter. If your 2.2.x system behaves like mine, you'll see this:
  kde-bitshop:/etc/samba # testparm -v smb.conf | egrep "(load printers)"
         load printers = Yes
 
-</programlisting></para>
+</screen></para>
 
 <para>
 Despite my imagination that the commenting out of this setting should
@@ -423,7 +417,7 @@ cost me quite some time to find out the reason. But I am not fooled
 any more... at least not by this ;-)
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde-bitshop:/etc/samba # grep -A1 "load printers" smb.conf
         load printers = No
@@ -434,7 +428,7 @@ any more... at least not by this ;-)
  kde-bitshop:/etc/samba # testparm -v smb.conf.simpleprinting | egrep "(load printers)"
         load printers = No
 
-</programlisting></para>
+</screen></para>
 
 <para>
 Only when setting the parameter explicitly to
@@ -458,12 +452,12 @@ You can have a working Samba print configuration with this
 minimal <filename>smb.conf</filename>:
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde-bitshop:/etc/samba # cat /etc/samba/smb.conf-minimal
         [printers]
 
-</programlisting></para>
+</screen></para>
 
 <para>
 This example should show you that you can use testparm to test any
@@ -481,7 +475,7 @@ would be, if you used this minimalistic file as your real
 <filename>smb.conf</filename>:
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde-bitshop:~ # testparm -v /etc/samba/smb.conf-minimal | egrep "(print|lpq|spool|driver|ports|[)"
  Processing section "[printers]"
@@ -510,7 +504,7 @@ would be, if you used this minimalistic file as your real
  [printers]
         printable = Yes
 
-</programlisting></para>
+</screen></para>
 
 <para>
 testparm issued 2 warnings:
@@ -542,9 +536,9 @@ in a parameter value is retained verbatim.</quote> This means that a
 line consisting of, for example,
 </para>
 
-<para><programlisting>
+<para><screen>
 printing =lprng     #This defines LPRng as the printing system"
-</programlisting></para>
+</screen></para>
 
 <para>
 will regard the whole of the string after the "="
@@ -555,7 +549,7 @@ that will be ignored, and a default value used instead.]
 </sect1>
 
 <sect1>
-<title>Extended Sample Configuration to Print with Samba 3.0</title>
+<title>Extended Sample Configuration to Print with Samba-3</title>
 
 <para>
 Here we show a more verbose example configuration for print related
@@ -578,7 +572,7 @@ connection spawns an smbd process of its own, so it is not a bad idea
 to optimize the <filename>smb.conf</filename> in environments with
 hundreds or thousands of clients.</para></tip>
 
-<para><programlisting>
+<para><screen>
  [global]
          printing = bsd
          load printers = yes
@@ -609,7 +603,7 @@ hundreds or thousands of clients.</para></tip>
          hosts allow = 0.0.0.0
          hosts deny = turbo_xp, 10.160.50.23, 10.160.51.60
          guest ok = no
-</programlisting></para>
+</screen></para>
 
 <para>
 This <emphasis>also</emphasis> is only an example configuration. You
@@ -799,9 +793,9 @@ privilege to be able to print. Test this by logging in as your
 guest user using "su - guest" and run a system print command like
 </para>
 
-<para><programlisting>
+<para><screen>
 lpr -P printername /etc/motd
-</programlisting></para>
+</screen></para>
 
 </listitem></varlistentry>
 
@@ -1138,11 +1132,11 @@ remove it. Note that ';' is the usual separator for commands in shell
 scripts:
 </para>
 
-<para><programlisting>
+<para><screen>
 <![CDATA[
  print command = echo Printing %s >> /tmp/print.log; lpr -P %p %s; rm %s
 ]]>
-</programlisting></para>
+</screen></para>
 
 <para>
 You may have to vary your own command considerably from this example
@@ -1151,9 +1145,9 @@ for the <parameter>print command</parameter> parameter varies depending on the s
 the <parameter>printing</parameter> parameter. Another example is:
 </para>
 
-<para><programlisting>
+<para><screen>
  print command = /usr/local/samba/bin/myprintscript %p %s
-</programlisting></para>
+</screen></para>
 </sect2>
 </sect1>
 
@@ -1203,7 +1197,7 @@ files).</para></listitem>
 </itemizedlist>
 
 <para>
-One other benefit of an update is this: Samba 3.0 is able to publish
+One other benefit of an update is this: Samba-3 is able to publish
 all its printers in Active Directory (or LDAP)!
 </para>
 
@@ -1284,7 +1278,7 @@ is responsible for all further processing, if needed.
 </sect2>
 
 <sect2>
-<title>The [printer$] Section is removed from Samba 3.0</title>
+<title>The [printer$] Section is removed from Samba-3</title>
 
 <formalpara><title>
 <parameter>[print$]</parameter> vs. <parameter>[printer$]</parameter>
@@ -1338,7 +1332,7 @@ parameter values, such as 'path' are arbitrary and should be replaced
 with appropriate values for your site):
 </para>
 
-<para><programlisting>
+<para><screen>
  [global]
       ; members of the ntadmin group should be able to add drivers and set
       ; printer properties. root is implicitly always a 'printer admin'.
@@ -1355,7 +1349,7 @@ with appropriate values for your site):
       guest ok = yes
       read only = yes
       write list = @ntadmin, root
-</programlisting></para>
+</screen></para>
 
 <para>
 Of course, you also need to ensure that the directory named by the
@@ -1460,7 +1454,7 @@ Therefore, create a directory tree below the
 to support.
 </para>
 
-<para><programlisting>
+<para><screen>
 
 [print$]--+--
           |--W32X86           # serves drivers to "Windows NT x86"
@@ -1469,7 +1463,7 @@ to support.
           |--W32MIPS          # serves drivers to "Windows NT R4000"
           |--W32PPC           # serves drivers to "Windows NT PowerPC"
 
-</programlisting></para>
+</screen></para>
 
 <important><title>REQUIRED PERMISSIONS</title>
 
@@ -1547,7 +1541,7 @@ entrance to this realm seems a little bit weird at first).
 The initial listing of printers in the Samba host's
 <emphasis>Printers</emphasis> folder accessed from a client's Explorer
 will have no real printer driver assigned to them. By default, in
-Samba 3.0 (as in 2.2.1 and later) this driver name is set to a NULL
+Samba-3 (as in 2.2.1 and later) this driver name is set to a NULL
 string. This must be changed now. The local <emphasis>Add Printer
 Wizard</emphasis>, run from NT/2000/XP clients, will help us in this
 task.
@@ -1698,7 +1692,7 @@ printers and drivers. Note the different quotes used to overcome the
 different spaces in between words:
 </para>
 
-<para><programlisting>
+<para><screen>
 
   kde-bitshop:~# rpcclient -U'Danka%xxxx' -c 'getdriver "Heidelberg Digimaster 9110 (PS)" 3' TURBO_XP
   cmd = getdriver "Heidelberg Digimaster 9110 (PS)" 3
@@ -1729,7 +1723,7 @@ different spaces in between words:
           Monitorname: []
           Defaultdatatype: []
 
-</programlisting></para>
+</screen></para>
 
 <para>
 You may notice, that this driver has quite a big number of
@@ -1777,7 +1771,7 @@ names which were leaked to us by <command>getdriver</command>. The
 listing is edited to include linebreaks for readability:
 </para>
 
-<para><programlisting>
+<para><screen>
 
   kde-bitshop:~# smbclient //TURBO_XP/print\$ -U'Danka%xxxx'                            \
                                               -c 'cd W32X86/2;mget HD*_de.*             \
@@ -1794,7 +1788,7 @@ listing is edited to include linebreaks for readability:
                                                                    (average 737.3 kb/s)
   [...,]
 
-</programlisting></para>
+</screen></para>
 
 <para>
 After this command is complete, the files are in our current local
@@ -1847,7 +1841,7 @@ store the files into a <emphasis>Samba/UNIX</emphasis> print server's
 <parameter>[print$]</parameter> share...
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde-bitshop:~# smbclient //SAMBA-CUPS/print\$ -U'root%xxxx' -c 'cd W32X86; put HDNIS01_de.DLL; \
                                                put Hddm91c1_de.ppd; put HDNIS01U_de.DLL;        \
@@ -1878,7 +1872,7 @@ store the files into a <emphasis>Samba/UNIX</emphasis> print server's
  putting file HDNIS01Aux.dll as \W32X86\HDNIS01Aux.dll (14994.6 kb/s) (average 11405.2 kb/s)
  putting file HDNIS01_de.NTF as \W32X86\HDNIS01_de.NTF (23390.2 kb/s) (average 13170.8 kb/s)
 
-</programlisting></para>
+</screen></para>
 
 <para>
 Phewww -- that was a lot of typing! Most drivers are a lot smaller --
@@ -1903,7 +1897,7 @@ For now we verify that our files are there. This can be done with
 also and do this through a standard UNIX shell access too):
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde-bitshop:~# smbclient //SAMBA-CUPS/print\$ -U 'root%xxxx' -c 'cd W32X86; pwd; dir; cd 2; pwd; dir'
  added interface ip=10.160.51.60 bcast=10.160.51.255 nmask=255.255.252.0
@@ -1941,7 +1935,7 @@ also and do this through a standard UNIX shell access too):
   PDFcreator2.PPD                     A    15746  Sun Apr 20 22:24:07 2003
                 40976 blocks of size 262144. 709 blocks available
 
-</programlisting></para>
+</screen></para>
 
 <para>
 Notice that there are already driver files present in the
@@ -1971,7 +1965,7 @@ database files. The following command and its output has been edited,
 again, for readability:
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde-bitshop:~# rpcclient -Uroot%xxxx -c 'adddriver "Windows NT x86" "dm9110:HDNIS01_de.DLL: \
                                           Hddm91c1_de.ppd:HDNIS01U_de.DLL:HDNIS01U_de.HLP:   \
@@ -1989,7 +1983,7 @@ again, for readability:
 
  Printer Driver dm9110 successfully installed.
 
-</programlisting></para>
+</screen></para>
 
 <para>
 After this step the driver should be recognized by Samba on the print
@@ -2017,7 +2011,7 @@ subdirectory. You can check this again with
 <command>smbclient</command>:
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde-bitshop:~# smbclient //SAMBA-CUPS/print\$ -Uroot%xxxx -c 'cd W32X86;dir;pwd;cd 2;dir;pwd'
  added interface ip=10.160.51.162 bcast=10.160.51.255 nmask=255.255.252.0
@@ -2055,7 +2049,7 @@ subdirectory. You can check this again with
   Hddm91c1_de_reg.HLP                 A   228417  Sun May  4 04:32:18 2003
                 40976 blocks of size 262144. 731 blocks available
 
-</programlisting></para>
+</screen></para>
 
 <para>
 Another verification is that the timestamp of the printing TDB files
@@ -2102,9 +2096,9 @@ tab).</emphasis>. An alternative, much quicker method for Windows
 course adapt the name to your Samba server instead of SAMBA-CUPS):
 </para>
 
-<para><programlisting>
+<para><screen>
   rundll32 printui.dll,PrintUIEntry /s /t2 /n\\SAMBA-CUPS
-</programlisting></para>
+</screen></para>
 </listitem>
 
 <listitem><para>from a UNIX prompt run this command (or a variant
@@ -2112,9 +2106,9 @@ thereof), where "SAMBA-CUPS" is the name of the Samba host and "xxxx"
 represents the actual Samba password assigned to root:
 </para>
 
-<para><programlisting>
+<para><screen>
   rpcclient -U'root%xxxx' -c 'enumdrivers' SAMBA-CUPS
-</programlisting></para>
+</screen></para>
 
 <para>
 You will see a listing of all drivers Samba knows about. Your new one
@@ -2140,7 +2134,7 @@ You can name the driver as you like. If you repeat the
 with a different driver name, it will work the same:
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde-bitshop:~# rpcclient -Uroot%xxxx                                        \
                           -c 'adddriver "Windows NT x86"                     \
@@ -2160,7 +2154,7 @@ with a different driver name, it will work the same:
 
  Printer Driver myphantasydrivername successfully installed.
 
-</programlisting></para>
+</screen></para>
 
 <para>
 You will also be able to bind that driver to any print queue (however,
@@ -2186,22 +2180,22 @@ store this info in its "memory", the TDB files. The <command>rpcclient
 setdriver</command> command achieves exactly this:
 </para>
 
-<para><programlisting>
+<para><screen>
  kde-bitshop:~# rpcclient -U'root%xxxx' -c 'setdriver dm9110 myphantasydrivername' SAMBA-CUPS
  cmd = setdriver dm9110 myphantasydrivername
  Successfully set dm9110 to driver myphantasydrivername.
-</programlisting></para>
+</screen></para>
 
 <para>
 Ahhhhh -- no, I didn't want to do that. Repeat, this time with the
 name I intended: 
 </para>
 
-<para><programlisting>
+<para><screen>
  kde-bitshop:~# rpcclient -U'root%xxxx' -c 'setdriver dm9110 dm9110' SAMBA-CUPS
  cmd = setdriver dm9110 dm9110
  Succesfully set dm9110 to driver dm9110.
-</programlisting></para>
+</screen></para>
 
 <para>
 The syntax of the command is <command>rpcclient -U'root%sambapassword'
@@ -2243,9 +2237,9 @@ guarantee that your connection is not unwittingly mapped to
 <parameter>bad user</parameter> "nobody". In a DOS box type:
 </para>
 
-<para><programlisting>
+<para><screen>
 net use \\SAMBA-SERVER\print$ /user:root
-</programlisting></para>
+</screen></para>
 
 <para>
 Replace root, if needed, by another valid 'printer admin' user as
@@ -2437,17 +2431,17 @@ You can also open your local "Printers and Faxes" folder by using this
 command on Windows 2000 and Windows XP Professional workstations:
 </para>
 
-<para><programlisting>
+<para><screen>
 rundll32 shell32.dll,SHHelpShortcuts_RunDLL PrintersFolder
-</programlisting></para>
+</screen></para>
 
 <para>
 or this command on Windows NT 4.0 workstations:
 </para>
 
-<para><programlisting>
+<para><screen>
 rundll32 shell32.dll,Control_RunDLL MAIN.CPL @2
-</programlisting></para>
+</screen></para>
 
 <para>
 You can enter the commands either inside a "DOS box" window or in the
@@ -2490,9 +2484,9 @@ To connect as root to a Samba printer, try this command from a Windows
 2K/XP DOS box command prompt:
 </para>
 
-<para><programlisting>
+<para><screen>
 runas /netonly /user:root "rundll32 printui.dll,PrintUIEntry /p /t3 /n \\SAMBA-SERVER\printername"
-</programlisting></para>
+</screen></para>
 
 <para>
 You will be prompted for root's Samba-password; type it, wait a few
@@ -2651,18 +2645,18 @@ for all users!
 with the right privileges):
 </para>
 
-<para><programlisting>
+<para><screen>
 rundll32 printui.dll,PrintUIEntry /p /t3 /n\\SAMBA-SERVER\printersharename
-</programlisting></para>
+</screen></para>
 
 <para>
 to see the tab with the <emphasis>Printing Defaults...</emphasis>
 button (the one you need). Also run this command:
 </para>
 
-<para><programlisting>
+<para><screen>
 rundll32 printui.dll,PrintUIEntry /p /t0 /n\\SAMBA-SERVER\printersharename
-</programlisting></para>
+</screen></para>
 
 <para>
 to see the tab with the <emphasis>Printing Preferences...</emphasis>
@@ -2697,7 +2691,7 @@ conduct the <command>adddriver</command> again and again). The
 following is an example of how this could be accomplished:
 </para>
 
-<para><programlisting>
+<para><screen>
 
  ----------------------------------------------------------------------------------
  $ rpcclient SAMBA-CUPS -U root%secret -c 'enumdrivers'
@@ -2764,7 +2758,7 @@ following is an example of how this could be accomplished:
  [....]
  ----------------------------------------------------------------------------------
 
-</programlisting></para>
+</screen></para>
 
 <para>
 It may be not easy to recognize: but the first call to
@@ -2797,9 +2791,9 @@ privileges (i.e. root or <emphasis>printer admin</emphasis>).
 <tip><para> Try this from a Windows 2K/XP DOS box command prompt:
 </para>
 
-<para><programlisting>
+<para><screen>
 runas /netonly /user:root rundll32 printui.dll,PrintUIEntry /p /t0 /n \\SAMBA-SERVER\printersharename
-</programlisting></para>
+</screen></para>
 
 <para>
 and click on <emphasis>Printing Preferences...</emphasis>
@@ -2935,7 +2929,7 @@ Note: the version-0 set contained 40 (!)
 reasons:
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde4@kde-bitshop:# rpcclient -U 'Administrator%xxxx' -c 'enumdrivers 3' 10.160.50.8 
 
@@ -2994,7 +2988,7 @@ reasons:
          Monitorname: [CPCA Language Monitor2]
          Defaultdatatype: []
 
-</programlisting></para>
+</screen></para>
 
 <para>
 If we write the "version 2" files and the "version 3" files
@@ -3002,7 +2996,7 @@ into different text files and compare the result, we see this
 picture:
 </para>
 
-<para><programlisting>
+<para><screen>
 <![CDATA[
  kde4@kde-bitshop:# sdiff 2-files 3-files
 
@@ -3032,7 +3026,7 @@ picture:
 ]]>
 
 
-</programlisting></para>
+</screen></para>
 
 <para>
 Don't be fooled though! Driver files for each version with identical
@@ -3040,7 +3034,7 @@ names may be different in their content, as you can see from this size
 comparison:
 </para>
 
-<para><programlisting>
+<para><screen>
 
  kde4@kde-bitshop:#  for i in cns3g.hlp cns3gui.dll cns3g.dll; do                  \
                             smbclient //10.160.50.8/print\$ -U 'Administrator%xxxx' \
@@ -3056,7 +3050,7 @@ comparison:
   CNS3G.DLL               A  1145088  Thu May 30 02:31:00 2002
   CNS3G.DLL               A    15872  Thu May 30 02:31:00 2002
 
-</programlisting></para>
+</screen></para>
 
 <para>
 In my example were even more differences than shown here.  Conclusion:
@@ -3215,7 +3209,7 @@ The basic installation process is in four steps and perl code is
 wrapped around smbclient and rpcclient
 </para>
 
-<para><programlisting>
+<para><screen>
 
  foreach (supported architecture for a given driver)
  {
@@ -3228,7 +3222,7 @@ wrapped around smbclient and rpcclient
  4.  rpcclient: Issue an AddPrinterEx() MS-RPC to actually
      create the printer
 
-</programlisting></para>
+</screen></para>
 
 <para>
 One of the problems encountered when implementing the Imprints tool
@@ -3245,9 +3239,9 @@ Properties dialog only includes space for one printer driver name. A
 quick look in the Windows NT 4.0 system registry at
 </para>
 
-<para><programlisting>
+<para><screen>
  HKLM\System\CurrentControlSet\Control\Print\Environment
-</programlisting></para>
+</screen></para>
 
 <para>
 will reveal that Windows NT always uses the NT driver name.  This is
@@ -3284,9 +3278,9 @@ if integrated in Logon Scripts. You can see what options are
 available by typing in a command prompt ("DOS box") this:
 </para>
 
-<para><programlisting>
+<para><screen>
  rundll32 printui.dll,PrintUIEntry /?
-</programlisting></para>
+</screen></para>
 
 <para>
 A window pops up which shows you all of the commandline switches
@@ -3298,11 +3292,11 @@ what the lines actually do (it works if 2k/XP Windows clients access
 printers via Samba, but works for Windows-based print servers too):
 </para>
 
-<para><programlisting>
+<para><screen>
  rundll32 printui.dll,PrintUIEntry /dn /n "\\sambacupsserver\infotec2105-IPDS" /q
  rundll32 printui.dll,PrintUIEntry /in /n "\\sambacupsserver\infotec2105-PS"
  rundll32 printui.dll,PrintUIEntry /y /n "\\sambacupsserver\infotec2105-PS"
-</programlisting></para>
+</screen></para>
 
 <para>
 Here is a list of the used commandline parameters: 
@@ -3327,7 +3321,7 @@ Here is a list of the used commandline parameters:
 </variablelist>
 
 <para>
-I have tested this with a Samba 2.2.7a and a Samba 3.0alpha24
+I have tested this with a Samba 2.2.7a and a Samba-3alpha24
 installation and Windows XP Professional clients. Note that this
 specific command set works with network print queues (installing
 local print queues requires different parameters, but this is of no
@@ -3420,7 +3414,7 @@ create a new printer on Samba and the UNIX print subsystem!
 </sect1>
 
 <sect1>
-<title>Migration of "Classical" printing to Samba 3.0</title>
+<title>Migration of "Classical" printing to Samba-3</title>
 
 <para>
 The basic "NT-style" printer driver management has not changed
