@@ -387,20 +387,17 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   }
   
   /*
-   * Don't cache a name with mangled or wildcard components
-   * as this can change the size.
-   */
-
-  if(!component_was_mangled && !name_has_wildcard)
-    stat_cache_add(orig_path, name);
-
-  /*
+   * If we get to here, the filename should have ben added 
+   * to the stat_cache.  Therefore a stat_cache_lookup() is needed here
+   * to fill in the SMB_STRUCT_STAT.
+   *
    * If we ended up resolving the entire path then return a valid
    * stat struct if we got one.
    */
-
-  if (VALID_STAT(st) && (strlen(orig_path) == strlen(name)))
+  if (stat_cache_lookup(conn, name, dirpath, &start, &st) 
+       && (strlen(orig_path) == strlen(name))) {
     *pst = st;
+  }
 
   /* 
    * The name has been resolved.
