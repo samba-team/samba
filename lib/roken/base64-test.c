@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -42,7 +42,7 @@ RCSID("$Id$");
 int
 main(int argc, char **argv)
 {
-    int numerr;
+    int numerr = 0;
     int numtest = 1;
     struct test {
 	void *data;
