@@ -774,7 +774,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	}
 
 	if (do_shutdown)
-      cli_shutdown(cli);
+		cli_shutdown(cli);
 
 	return True;
 }
