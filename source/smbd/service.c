@@ -152,10 +152,9 @@ int find_service(fstring service)
 		int iPrinterService;
 
 		if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) >= 0) {
-			char *pszTemp;
+			const char *pszTemp = lp_printcapname();
 
 			DEBUG(3,("checking whether %s is a valid printer name...\n", service));
-			pszTemp = lp_printcapname();
 			if ((pszTemp != NULL) && pcap_printername_ok(service, pszTemp)) {
 				DEBUG(3,("%s is a valid printer name\n", service));
 				DEBUG(3,("adding %s as a printer service\n", service));
@@ -877,12 +876,21 @@ void remove_stale_printers( void )
 	iNumServices = lp_numservices();
 	printersServiceNum = lp_servicenumber( PRINTERS_NAME);
 	for( snum = 0; snum < iNumServices; snum++) {
+
 		/* Never remove PRINTERS_NAME */
+
 		if ( snum == printersServiceNum)
 			continue;
 		pname = lp_printername( snum);
-		/* Is snum a print service and still in the printing subsystem? */
-		if ( lp_print_ok( snum) && !pcap_printername_ok( pname, NULL)) {
+
+		/* Is snum an autoloaded print service and still 
+		   in the printing subsystem? */
+
+		if ( lp_snum_ok(snum) 
+			&& lp_print_ok(snum) 
+			&& lp_autoloaded(snum)
+			&& !pcap_printername_ok( pname, NULL)) 
+		{
 			DEBUG( 3, ( "Removing printer: %s\n", pname));
 			lp_killservice( snum);
 		}
