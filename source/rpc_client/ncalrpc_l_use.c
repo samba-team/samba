@@ -267,20 +267,25 @@ BOOL ncalrpc_l_use_del(const char *pipe_name,
 
 	for (i = 0; i < num_clis; i++)
 	{
-		char *cli_name = NULL;
+		char *ncalrpc_name = NULL;
 
 		if (clis[i] == NULL)
 			continue;
 		if (clis[i]->cli == NULL)
 			continue;
 
-		cli_name = clis[i]->cli->pipe_name;
+		ncalrpc_name = clis[i]->cli->pipe_name;
 
-		DEBUG(10, ("connection: %s [%d,%x]", cli_name,
+		if (strnequal("\\PIPE\\", pipe_name, 6))
+		{
+			ncalrpc_name = &ncalrpc_name[6];
+		}
+
+		DEBUG(10, ("connection: %s [%d,%x]", ncalrpc_name,
 			   clis[i]->cli->nt.key.pid,
 			   clis[i]->cli->nt.key.vuid));
 
-		if (!strequal(cli_name, pipe_name))
+		if (!strequal(ncalrpc_name, pipe_name))
 			continue;
 
 		if (key->pid != clis[i]->cli->nt.key.pid ||

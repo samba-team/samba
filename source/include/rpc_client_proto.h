@@ -690,7 +690,7 @@ BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
 				   const char *srv_name,
 				   const struct ntuser_creds *ntc,
 				   const char *pipe_name, BOOL redir,
-				   BOOL reuse, BOOL *is_new_connection);
+				   BOOL reuse);
 void init_ncacn_np_use(void);
 void free_ncacn_np_use(void);
 struct ncacn_np *ncacn_np_initialise(struct ncacn_np *msrpc,
