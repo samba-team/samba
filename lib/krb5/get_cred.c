@@ -173,9 +173,12 @@ krb5_get_credentials (krb5_context context,
 	if(ret) return ret;
 	principalname2krb5_principal(&princ, error.sname, error.realm);
 	krb5_unparse_name(context, princ, &name);
-	fprintf(stderr, "Error: %s", name);
+	fprintf(stderr, "Error: %s ", name);
 	if(error.e_text)
-	    fprintf(stderr, " \"%s\"", *error.e_text);
+	    fprintf(stderr, "%s", *error.e_text);
+	else
+	    fprintf(stderr, "%s", 
+		    krb5_get_err_text(context, error.error_code));
 	fprintf(stderr, " (code %d)\n", error.error_code);
 	abort();
 	break;
