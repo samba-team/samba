@@ -67,6 +67,21 @@ done:
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_Name(struct ndr_print *ndr, const char *name, struct lsa_Name *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint16(ndr, "name_len", r->name_len);
+	ndr_print_uint16(ndr, "name_size", r->name_size);
+	ndr_print_ptr(ndr, "name", r->name);
+	ndr->depth++;
+	if (r->name) {
+		ndr_print_unistr_noterm(ndr, "name", r->name);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_pull_lsa_PrivEntry(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivEntry *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -78,6 +93,16 @@ buffers:
 		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_PrivEntry(struct ndr_print *ndr, const char *name, struct lsa_PrivEntry *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_lsa_Name(ndr, "name", &r->name);
+	ndr_print_uint32(ndr, "luid_low", r->luid_low);
+	ndr_print_uint32(ndr, "luid_high", r->luid_high);
+	ndr->depth--;
 }
 
 static NTSTATUS ndr_pull_lsa_PrivArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivArray *r)
@@ -99,6 +124,20 @@ buffers:
 	}
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_PrivArray(struct ndr_print *ndr, const char *name, struct lsa_PrivArray *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "privs", r->privs);
+	ndr->depth++;
+	if (r->privs) {
+		ndr_print_array(ndr, "privs", r->privs, sizeof(r->privs[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_PrivEntry);
+	}
+	ndr->depth--;
+	ndr->depth--;
 }
 
 NTSTATUS ndr_push_lsa_EnumPrivs(struct ndr_push *ndr, struct lsa_EnumPrivs *r)
@@ -179,6 +218,16 @@ done:
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_QosInfo(struct ndr_print *ndr, const char *name, struct lsa_QosInfo *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint16(ndr, "impersonation_level", r->impersonation_level);
+	ndr_print_uint8(ndr, "context_mode", r->context_mode);
+	ndr_print_uint8(ndr, "effective_only", r->effective_only);
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_push_lsa_ObjectAttribute(struct ndr_push *ndr, int ndr_flags, struct lsa_ObjectAttribute *r)
 {
 	struct ndr_push_save _save1, _save2, _save3;
@@ -212,6 +261,38 @@ buffers:
 	ndr_push_restore(ndr, &_save3);
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_ObjectAttribute(struct ndr_print *ndr, const char *name, struct lsa_ObjectAttribute *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_ptr(ndr, "root_dir", r->root_dir);
+	ndr->depth++;
+	if (r->root_dir) {
+		ndr_print_uint8(ndr, "root_dir", *r->root_dir);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "object_name", r->object_name);
+	ndr->depth++;
+	if (r->object_name) {
+		ndr_print_unistr(ndr, "object_name", r->object_name);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "attributes", r->attributes);
+	ndr_print_ptr(ndr, "sec_desc", r->sec_desc);
+	ndr->depth++;
+	if (r->sec_desc) {
+		ndr_print_security_descriptor(ndr, "sec_desc", r->sec_desc);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sec_qos", r->sec_qos);
+	ndr->depth++;
+	if (r->sec_qos) {
+		ndr_print_lsa_QosInfo(ndr, "sec_qos", r->sec_qos);
+	}
+	ndr->depth--;
+	ndr->depth--;
 }
 
 NTSTATUS ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, struct lsa_OpenPolicy *r)
@@ -250,6 +331,20 @@ done:
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name, struct lsa_AuditLogInfo *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "percent_full", r->percent_full);
+	ndr_print_uint32(ndr, "log_size", r->log_size);
+	ndr_print_NTTIME(ndr, "retention_time", r->retention_time);
+	ndr_print_uint8(ndr, "shutdown_in_progress", r->shutdown_in_progress);
+	ndr_print_NTTIME(ndr, "time_to_shutdown", r->time_to_shutdown);
+	ndr_print_uint32(ndr, "next_audit_record", r->next_audit_record);
+	ndr_print_uint32(ndr, "unknown", r->unknown);
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_pull_lsa_AuditEventsInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditEventsInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -258,6 +353,14 @@ buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *name, struct lsa_AuditEventsInfo *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "auditing_mode", r->auditing_mode);
+	ndr->depth--;
 }
 
 static NTSTATUS ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union lsa_PolicyInformation *r)
@@ -292,6 +395,10 @@ buffers:
 	}
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_PolicyInformation(struct ndr_print *ndr, const char *name, uint16 level, union lsa_PolicyInformation *r)
+{
 }
 
 NTSTATUS ndr_push_lsa_QueryInfoPolicy(struct ndr_push *ndr, struct lsa_QueryInfoPolicy *r)
@@ -393,6 +500,19 @@ done:
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_SidPtr(struct ndr_print *ndr, const char *name, struct lsa_SidPtr *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_ptr(ndr, "sid", r->sid);
+	ndr->depth++;
+	if (r->sid) {
+		ndr_print_dom_sid2(ndr, "sid", r->sid);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_push_lsa_SidArray(struct ndr_push *ndr, int ndr_flags, struct lsa_SidArray *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -426,6 +546,20 @@ buffers:
 	}
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_SidArray(struct ndr_print *ndr, const char *name, struct lsa_SidArray *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "num_sids", r->num_sids);
+	ndr_print_ptr(ndr, "sids", r->sids);
+	ndr->depth++;
+	if (r->sids) {
+		ndr_print_array(ndr, "sids", r->sids, sizeof(r->sids[0]), r->num_sids, (ndr_print_fn_t)ndr_print_lsa_SidPtr);
+	}
+	ndr->depth--;
+	ndr->depth--;
 }
 
 NTSTATUS ndr_push_lsa_EnumAccounts(struct ndr_push *ndr, struct lsa_EnumAccounts *r)
@@ -480,6 +614,20 @@ done:
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_DomainInformation(struct ndr_print *ndr, const char *name, struct lsa_DomainInformation *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_lsa_Name(ndr, "name", &r->name);
+	ndr_print_ptr(ndr, "sid", r->sid);
+	ndr->depth++;
+	if (r->sid) {
+		ndr_print_dom_sid2(ndr, "sid", r->sid);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_pull_lsa_DomainList(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainList *r)
 {
 	uint32 _ptr_domains;
@@ -499,6 +647,20 @@ buffers:
 	}
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_DomainList(struct ndr_print *ndr, const char *name, struct lsa_DomainList *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "domains", r->domains);
+	ndr->depth++;
+	if (r->domains) {
+		ndr_print_array(ndr, "domains", r->domains, sizeof(r->domains[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_DomainInformation);
+	}
+	ndr->depth--;
+	ndr->depth--;
 }
 
 NTSTATUS ndr_push_lsa_EnumTrustDom(struct ndr_push *ndr, struct lsa_EnumTrustDom *r)
@@ -543,6 +705,16 @@ done:
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_TranslatedSid(struct ndr_print *ndr, const char *name, struct lsa_TranslatedSid *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint16(ndr, "sid_type", r->sid_type);
+	ndr_print_uint32(ndr, "rid", r->rid);
+	ndr_print_uint32(ndr, "sid_index", r->sid_index);
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_push_lsa_TransSidArray(struct ndr_push *ndr, int ndr_flags, struct lsa_TransSidArray *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -578,6 +750,20 @@ done:
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_TransSidArray(struct ndr_print *ndr, const char *name, struct lsa_TransSidArray *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "sids", r->sids);
+	ndr->depth++;
+	if (r->sids) {
+		ndr_print_array(ndr, "sids", r->sids, sizeof(r->sids[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_TranslatedSid);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_pull_lsa_TrustInformation(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustInformation *r)
 {
 	uint32 _ptr_sid;
@@ -597,6 +783,20 @@ buffers:
 	}
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_TrustInformation(struct ndr_print *ndr, const char *name, struct lsa_TrustInformation *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_lsa_Name(ndr, "name", &r->name);
+	ndr_print_ptr(ndr, "sid", r->sid);
+	ndr->depth++;
+	if (r->sid) {
+		ndr_print_dom_sid2(ndr, "sid", r->sid);
+	}
+	ndr->depth--;
+	ndr->depth--;
 }
 
 static NTSTATUS ndr_pull_lsa_RefDomainList(struct ndr_pull *ndr, int ndr_flags, struct lsa_RefDomainList *r)
@@ -619,6 +819,21 @@ buffers:
 	}
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_RefDomainList(struct ndr_print *ndr, const char *name, struct lsa_RefDomainList *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "domains", r->domains);
+	ndr->depth++;
+	if (r->domains) {
+		ndr_print_array(ndr, "domains", r->domains, sizeof(r->domains[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_TrustInformation);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "max_count", r->max_count);
+	ndr->depth--;
 }
 
 NTSTATUS ndr_push_lsa_LookupNames(struct ndr_push *ndr, struct lsa_LookupNames *r)
@@ -681,6 +896,16 @@ done:
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_TranslatedName(struct ndr_print *ndr, const char *name, struct lsa_TranslatedName *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint16(ndr, "sid_type", r->sid_type);
+	ndr_print_lsa_Name(ndr, "name", &r->name);
+	ndr_print_uint32(ndr, "sid_index", r->sid_index);
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_push_lsa_TransNameArray(struct ndr_push *ndr, int ndr_flags, struct lsa_TransNameArray *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -714,6 +939,20 @@ buffers:
 	}
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_TransNameArray(struct ndr_print *ndr, const char *name, struct lsa_TransNameArray *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "names", r->names);
+	ndr->depth++;
+	if (r->names) {
+		ndr_print_array(ndr, "names", r->names, sizeof(r->names[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_TranslatedName);
+	}
+	ndr->depth--;
+	ndr->depth--;
 }
 
 NTSTATUS ndr_push_lsa_LookupSids(struct ndr_push *ndr, struct lsa_LookupSids *r)
@@ -787,6 +1026,15 @@ done:
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_LUID(struct ndr_print *ndr, const char *name, struct lsa_LUID *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "low", r->low);
+	ndr_print_uint32(ndr, "high", r->high);
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_pull_lsa_LUIDAttribute(struct ndr_pull *ndr, int ndr_flags, struct lsa_LUIDAttribute *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -799,6 +1047,15 @@ done:
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_LUIDAttribute(struct ndr_print *ndr, const char *name, struct lsa_LUIDAttribute *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_lsa_LUID(ndr, "luid", &r->luid);
+	ndr_print_uint32(ndr, "attribute", r->attribute);
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_pull_lsa_PrivilegeSet(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivilegeSet *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -809,6 +1066,15 @@ buffers:
 		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->set, sizeof(r->set[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_LUIDAttribute));
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_PrivilegeSet(struct ndr_print *ndr, const char *name, struct lsa_PrivilegeSet *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_lsa_LUIDAttribute(ndr, "set", r->set);
+	ndr->depth--;
 }
 
 NTSTATUS ndr_push_lsa_EnumPrivsAccount(struct ndr_push *ndr, struct lsa_EnumPrivsAccount *r)
@@ -1070,6 +1336,19 @@ NTSTATUS ndr_pull_ENUMACCTWITHRIGHT(struct ndr_pull *ndr, struct ENUMACCTWITHRIG
 	return NT_STATUS_OK;
 }
 
+void ndr_print_lsa_RightAttribute(struct ndr_print *ndr, const char *name, struct lsa_RightAttribute *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_ptr(ndr, "name", r->name);
+	ndr->depth++;
+	if (r->name) {
+		ndr_print_unistr(ndr, "name", r->name);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static NTSTATUS ndr_pull_lsa_RightSet(struct ndr_pull *ndr, int ndr_flags, struct lsa_RightSet *r)
 {
 	uint32 _ptr_names;
@@ -1089,6 +1368,20 @@ buffers:
 	}
 done:
 	return NT_STATUS_OK;
+}
+
+void ndr_print_lsa_RightSet(struct ndr_print *ndr, const char *name, struct lsa_RightSet *r)
+{
+	ndr_print_struct(ndr, name);
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "names", r->names);
+	ndr->depth++;
+	if (r->names) {
+		ndr_print_array(ndr, "names", r->names, sizeof(r->names[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_Name);
+	}
+	ndr->depth--;
+	ndr->depth--;
 }
 
 NTSTATUS ndr_push_lsa_EnumAccountRights(struct ndr_push *ndr, struct lsa_EnumAccountRights *r)

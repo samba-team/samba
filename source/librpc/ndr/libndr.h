@@ -58,7 +58,21 @@ struct ndr_push_save {
 	uint32 offset;
 };
 
+
+/* structure passed to functions that print IDL structures */
+struct ndr_print {
+	uint32 flags; /* LIBNDR_FLAG_* */
+	TALLOC_CTX *mem_ctx;
+	uint32 depth;
+	void (*print)(struct ndr_print *, const char *, ...);
+};
+
 #define LIBNDR_FLAG_BIGENDIAN 1
+
+
+/* useful macro for debugging */
+#define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)
+
 
 
 /*
@@ -97,6 +111,7 @@ typedef NTSTATUS (*ndr_pull_fn_t)(struct ndr_pull *, void *);
 
 typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, void *);
 typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
+typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
 
 /* now pull in the individual parsers */
 #include "librpc/ndr/ndr_sec.h"

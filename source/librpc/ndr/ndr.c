@@ -243,3 +243,64 @@ buffers:
 done:
 	return NT_STATUS_OK;
 }
+
+
+/*
+  print a generic array
+*/
+void ndr_print_array(struct ndr_print *ndr, const char *name, void *base, 
+		     size_t elsize, uint32 count, 
+		     void (*print_fn)(struct ndr_print *, const char *, void *))
+{
+	int i;
+	char *p = base;
+	ndr->print(ndr, "%s: ARRAY(%d)", name, count);
+	ndr->depth++;
+	for (i=0;i<count;i++) {
+		char *idx=NULL;
+		asprintf(&idx, "[%d]", i);
+		if (idx) {
+			print_fn(ndr, idx, p);
+			free(idx);
+		}
+		p += elsize;
+	}
+	ndr->depth--;
+}
+
+
+
+static void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...)
+{
+	va_list ap;
+	char *s = NULL;
+	int i;
+
+	va_start(ap, format);
+	vasprintf(&s, format, ap);
+	va_end(ap);
+
+	for (i=0;i<ndr->depth;i++) {
+		DEBUG(0,("    "));
+	}
+
+	DEBUG(0,("%s\n", s));
+	free(s);
+}
+
+/*
+  a useful helper function for printing idl structures via DEBUG()
+*/
+void ndr_print_debug(void (*fn)(struct ndr_print *, const char *, void *),
+		     const char *name,
+		     void *ptr)
+{
+	struct ndr_print ndr;
+
+	ndr.mem_ctx = talloc_init("ndr_print_debug");
+	if (!ndr.mem_ctx) return;
+	ndr.print = ndr_print_debug_helper;
+	ndr.depth = 0;
+	fn(&ndr, name, ptr);
+	talloc_destroy(ndr.mem_ctx);
+}

@@ -314,3 +314,56 @@ NTSTATUS ndr_push_security_descriptor(struct ndr_push *ndr,
 
 	return NT_STATUS_OK;
 }
+
+
+/*
+  print a dom_sid
+*/
+void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, struct dom_sid *sid)
+{
+	int i, ofs, maxlen;
+	uint32 ia;
+	char *ret;
+	
+	if (!sid) {
+		ndr->print(ndr, "%-25s: (NULL SID)", name);
+		return;
+	}
+
+	maxlen = sid->num_auths * 11 + 25;
+	ret = talloc(ndr->mem_ctx, maxlen);
+	if (!ret) return;
+
+	ia = (sid->id_auth[5]) +
+		(sid->id_auth[4] << 8 ) +
+		(sid->id_auth[3] << 16) +
+		(sid->id_auth[2] << 24);
+
+	ofs = snprintf(ret, maxlen, "S-%u-%lu", 
+		       (unsigned int)sid->sid_rev_num, (unsigned long)ia);
+
+	for (i = 0; i < sid->num_auths; i++) {
+		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu", (unsigned long)sid->sub_auths[i]);
+	}
+
+	ndr->print(ndr, "%-25s: %s", name, ret);
+}
+
+void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, struct dom_sid2 *sid)
+{
+	ndr_print_dom_sid(ndr, name, sid);
+}
+
+/*
+  print a security descriptor 
+*/
+void ndr_print_security_descriptor(struct ndr_print *ndr, 
+				   const char *name,
+				   struct security_descriptor *sd)
+{
+	ndr->print(ndr->depth, "%-25s: ndr_print_security_descriptor not implemented", 
+		   name);
+}
+
+
+
