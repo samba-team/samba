@@ -32,6 +32,7 @@
  *  Author: Simo Sorce
  */
 
+#include <ctype.h>
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
@@ -74,7 +75,6 @@ static struct attribute_syntax attrsyn[] = {
 
 
 struct private_data {
-	struct ldb_context *schema_db;
 	const char *error_string;
 };
 
@@ -273,6 +273,7 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 			}
 			if (!ok) {
 				/* Schema Violation: Object Class Description Not Found */
+				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Objectclass %s not found.\n", schema_struct->objectclass_list[i].name);
 				data->error_string = "ObjectClass not found";
 				return -1;
 			}
@@ -280,11 +281,13 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 		} else {
 			if (ret < 0) {
 				/* Schema DB Error: Error occurred retrieving Object Class Description */
+				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Error retrieving Objectclass %s.\n", schema_struct->objectclass_list[i].name);
 				data->error_string = "Internal error. Error retrieving schema objectclass";
 				return -1;
 			}
 			if (ret > 1) {
 				/* Schema DB Error: Too Many Records */
+				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Too many records found retrieving Objectclass %s.\n", schema_struct->objectclass_list[i].name);
 				data->error_string = "Internal error. Too many records searching for schema objectclass";
 				return -1;
 			}
@@ -393,7 +396,7 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 	}
 
 	/* find all other objectclasses recursively */
-	ret = get_attr_list_recursive(module, data->schema_db, entry_structs);
+	ret = get_attr_list_recursive(module, module->ldb, entry_structs);
 	if (ret != 0) {
 		talloc_free(entry_structs);
 		return ret;
@@ -413,7 +416,8 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 		}
 
 		if ( ! found ) {
-			data->error_string = "Objectclass violation, a required attribute is mischema_structing";
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "The required attribute %s is missing.\n", entry_structs->must[i].name);
+			data->error_string = "Objectclass violation, a required attribute is missing";
 			talloc_free(entry_structs);
 			return -1;
 		}
@@ -435,6 +439,7 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 			}
 
 			if ( ! found ) {
+				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "The attribute %s is not referenced by any objectclass.\n", entry_structs->check_list[i].name);
 				data->error_string = "Objectclass violation, an invalid attribute name was found";
 				talloc_free(entry_structs);
 				return -1;
@@ -487,7 +492,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 	}
 
 	/* find all modify objectclasses recursively if any objectclass is being added */
-	ret = get_attr_list_recursive(module, data->schema_db, modify_structs);
+	ret = get_attr_list_recursive(module, module->ldb, modify_structs);
 	if (ret != 0) {
 		talloc_free(entry_structs);
 		return ret;
@@ -501,7 +506,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 	}
 
 	/* find all other objectclasses recursively */
-	ret = get_attr_list_recursive(module, data->schema_db, entry_structs);
+	ret = get_attr_list_recursive(module, module->ldb, entry_structs);
 	if (ret != 0) {
 		talloc_free(entry_structs);
 		return ret;
@@ -517,6 +522,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		for (j = 0; j < entry_structs->must_num; j++) {
 			if (schema_attr_cmp(entry_structs->must[j].name, modify_structs->check_list[i].name) == 0) {
 				if ((modify_structs->check_list[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
+					ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Trying to delete the required attribute %s.\n", modify_structs->check_list[i].name);
 					data->error_string = "Objectclass violation: trying to delete a required attribute";
 					talloc_free(entry_structs);
 					return -1;
@@ -544,6 +550,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		for (j = 0; j < modify_structs->check_list_num; j++) {
 			if (schema_attr_cmp(modify_structs->must[i].name, modify_structs->check_list[j].name) == 0) {
 				if ((modify_structs->check_list[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
+					ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Trying to delete the required attribute %s.\n", modify_structs->must[i].name);
 					data->error_string = "Objectclass violation: trying to delete a required attribute";
 					talloc_free(entry_structs);
 					return -1;
@@ -555,6 +562,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		}
 
 		if ( ! found ) {
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "The required attribute %s is missing.\n", modify_structs->must[i].name);
 			data->error_string = "Objectclass violation, a required attribute is missing";
 			talloc_free(entry_structs);
 			return -1;
@@ -578,6 +586,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 			}
 
 			if ( ! found ) {
+				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "The attribute %s is not referenced by any objectclass.\n", modify_structs->check_list[i].name);
 				data->error_string = "Objectclass violation, an invalid attribute name was found";
 				talloc_free(entry_structs);
 				return -1;
@@ -641,9 +650,6 @@ static const struct ldb_module_ops schema_ops = {
 	schema_errstring,
 };
 
-#define SCHEMA_PREFIX		"schema:"
-#define SCHEMA_PREFIX_LEN	7
-
 #ifdef HAVE_DLOPEN_DISABLED
 struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
 #else
@@ -652,57 +658,14 @@ struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *optio
 {
 	struct ldb_module *ctx;
 	struct private_data *data;
-	char *db_url = NULL;
-	int i;
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx) {
 		return NULL;
 	}
 
-	if (options) {
-		for (i = 0; options[i] != NULL; i++) {
-			if (strncmp(options[i], SCHEMA_PREFIX, SCHEMA_PREFIX_LEN) == 0) {
-				db_url = talloc_strdup(ctx, &options[i][SCHEMA_PREFIX_LEN]);
-				SCHEMA_TALLOC_CHECK(ctx, db_url, NULL);
-			}
-		}
-	}
-
-	if (!db_url) { /* search if it is defined in the calling ldb */
-		int ret;
-		const char * attrs[] = { "@SCHEMADB", NULL };
-		struct ldb_message **msgs;
-
-		ret = ldb_search(ldb, "", LDB_SCOPE_BASE, "dn=@MODULES", (const char * const *)attrs, &msgs);
-		if (ret == 0) {
-			ldb_debug(ldb, LDB_DEBUG_TRACE, "Schema DB not found\n");
-			ldb_search_free(ldb, msgs);
-			return NULL;
-		} else {
-			if (ret < 0) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "ldb error (%s) occurred searching for schema db, bailing out!\n", ldb_errstring(ldb));
-				ldb_search_free(ldb, msgs);
-				return NULL;
-			}
-			if (ret > 1) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found, bailing out\n");
-				ldb_search_free(ldb, msgs);
-				return NULL;
-			}
-
-			db_url = talloc_strndup(ctx, msgs[0]->elements[0].values[0].data, msgs[0]->elements[0].values[0].length);
-			SCHEMA_TALLOC_CHECK(ctx, db_url, NULL);
-		}
-
-		ldb_search_free(ldb, msgs);
-	}
-
 	data = talloc(ctx, struct private_data);
 	SCHEMA_TALLOC_CHECK(ctx, data, NULL);
-
-	data->schema_db = ldb_connect(db_url, 0, NULL); 
-	SCHEMA_TALLOC_CHECK(ctx, data->schema_db, NULL);
 
 	data->error_string = NULL;
 	ctx->private_data = data;
