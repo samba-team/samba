@@ -61,7 +61,7 @@ mode_t unix_mode(connection_struct *conn,int dosmode,const char *fname)
 
     dname = parent_dirname(fname);
     DEBUG(2,("unix_mode(%s) inheriting from %s\n",fname,dname));
-    if (dos_stat(dname,&sbuf) != 0) {
+    if (vfs_stat(conn,dname,&sbuf) != 0) {
       DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n",fname,dname,strerror(errno)));
       return(0);      /* *** shouldn't happen! *** */
     }
@@ -191,7 +191,7 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
 
   if (!st) {
     st = &st1;
-    if (conn->vfs_ops.stat(dos_to_unix(fname,False),st)) return(-1);
+    if (vfs_stat(conn,fname,st)) return(-1);
   }
 
   if (S_ISDIR(st->st_mode)) dosmode |= aDIR;
@@ -227,7 +227,7 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
     unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
   }
 
-  return(conn->vfs_ops.chmod(dos_to_unix(fname,False),unixmode));
+  return(vfs_chmod(conn,fname,unixmode));
 }
 
 
@@ -258,7 +258,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
      (as DOS does).
    */
 
-  if(conn->vfs_ops.stat(dos_to_unix(fname,False),&sb) != 0)
+  if(vfs_stat(conn,fname,&sb) != 0)
     return -1;
 
   /* Check if we have write access. */
