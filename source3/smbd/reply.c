@@ -353,8 +353,7 @@ int reply_ioctl(connection_struct *conn,
 	switch (ioctl_code) {
 		case IOCTL_QUERY_JOB_INFO:		    
 		{
-			uint16 rap_jobid = pjobid_to_rap(SNUM(fsp->conn), fsp->print_jobid);
-			SSVAL(p,0,rap_jobid);             /* Job number */
+			SSVAL(p,0,fsp->rap_print_jobid);             /* Job number */
 			srvstr_push(outbuf, p+2, global_myname(), 15, STR_TERMINATE|STR_ASCII);
 			srvstr_push(outbuf, p+18, lp_servicename(SNUM(conn)), 13, STR_TERMINATE|STR_ASCII);
 			break;

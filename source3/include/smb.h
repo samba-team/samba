@@ -360,7 +360,7 @@ typedef struct files_struct
 	int fnum;
 	struct connection_struct *conn;
 	int fd;
-	uint32 print_jobid;
+	uint16 rap_print_jobid;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	BOOL delete_on_close;
