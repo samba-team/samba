@@ -178,7 +178,7 @@ BOOL init_domain_list(void)
 /* Given a domain name, return the struct winbindd domain info for it 
    if it is actually working. */
 
-struct winbindd_domain *find_domain_from_name(char *domain_name)
+struct winbindd_domain *find_domain_from_name(const char *domain_name)
 {
 	struct winbindd_domain *domain;
 
