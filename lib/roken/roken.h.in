@@ -320,6 +320,10 @@ int roken_vconcat (char *s, size_t len, va_list args);
 
 size_t roken_vmconcat (char **s, size_t max_len, va_list args);
 
+ssize_t net_write (int fd, const void *buf, size_t nbytes);
+
+ssize_t net_read (int fd, void *buf, size_t nbytes);
+
 int issuid(void);
 
 #ifndef HAVE_STRUCT_WINSIZE
