@@ -79,16 +79,16 @@ void init_iconv(void)
 	}
 }
 
-/****************************************************************************
- Convert string from one encoding to another, making error checking etc
- Parameters:
-	descriptor - conversion descriptor, created in init_iconv
- 	src - pointer to source string (multibyte or singlebyte)
-	srclen - length of the source string in bytes
-	dest - pointer to destination string (multibyte or singlebyte)
-	destlen - maximal length allowed for string
-return the number of bytes occupied in the destination
-****************************************************************************/
+/**
+ * Convert string from one encoding to another, making error checking etc
+ *
+ * @param descriptor conversion descriptor, created in init_iconv()
+ * @param src pointer to source string (multibyte or singlebyte)
+ * @param srclen length of the source string in bytes
+ * @param dest pointer to destination string (multibyte or singlebyte)
+ * @param destlen maximal length allowed for string
+ * @retval the number of bytes occupied in the destination
+ **/
 size_t convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen)
@@ -118,7 +118,7 @@ size_t convert_string(charset_t from, charset_t to,
 
 	i_len=srclen;
 	o_len=destlen;
-	retval=smb_iconv(descriptor,&inbuf, &i_len, &outbuf, &o_len);
+	retval = smb_iconv(descriptor, &(const char *)inbuf, &i_len, &outbuf, &o_len);
 	if(retval==-1) 		
 	{
 	    	char *reason="unknown error";
@@ -142,10 +142,14 @@ size_t convert_string(charset_t from, charset_t to,
 	return destlen-o_len;
 }
 
-/* you must provide source lenght -1 is not accepted as lenght.
-   this function will return the size in bytes of the converted string
-   or -1 in case of error.
- */
+/**
+ * Convert between character sets, allocating a new buffer for the result.
+ *
+ * @param srclen length of source buffer.
+ * @note -1 is not accepted for srclen.
+ *
+ * @retval Size in bytes of the converted string; or -1 in case of error.
+ **/
 size_t convert_string_allocate(charset_t from, charset_t to,
 		      		void const *src, size_t srclen, void **dest)
 {
@@ -186,8 +190,8 @@ convert:
 	i_len = srclen;
 	o_len = destlen;
 	retval = smb_iconv(descriptor,
-				&inbuf, &i_len,
-				&outbuf, &o_len);
+			   &(const char *) inbuf, &i_len,
+			   &outbuf, &o_len);
 	if(retval == -1) 		
 	{
 	    	char *reason="unknown error";
