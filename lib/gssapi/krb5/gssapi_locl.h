@@ -131,4 +131,7 @@ gssapi_krb5_set_error_string (void);
 char *
 gssapi_krb5_get_error_string (void);
 
+OM_uint32
+_gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx);
+
 #endif
