@@ -211,6 +211,48 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
 }
 
 /****************************************************************************
+ Initialize the groups a user belongs to.
+****************************************************************************/
+
+BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
+{
+	struct sec_ctx *prev_ctx_p;
+	BOOL result = True;
+
+	become_root();
+
+	/* Call initgroups() to get user groups */
+
+	if (initgroups(user,gid) == -1) {
+		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
+		if (getuid() == 0) {
+			if (gid < 0 || gid > 32767 || uid < 0 || uid > 32767) {
+				DEBUG(0,("This is probably a problem with the account %s\n", user));
+			}
+		}
+		result = False;
+		goto done;
+	}
+
+	/* Store groups in previous user's security context.  This will
+	   always work as the become_root() call increments the stack
+	   pointer. */
+
+	prev_ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx - 1];
+
+	safe_free(prev_ctx_p->groups);
+	prev_ctx_p->groups = NULL;
+	prev_ctx_p->ngroups = 0;
+
+	get_current_groups(&prev_ctx_p->ngroups, &prev_ctx_p->groups);
+
+ done:
+	unbecome_root();
+
+	return result;
+}
+
+/****************************************************************************
  Create a new security context on the stack.  It is the same as the old
  one.  User changes are done using the set_sec_ctx() function.
 ****************************************************************************/
