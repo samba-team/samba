@@ -1,5 +1,8 @@
 Tue Jun 10 00:35:54 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/krb5/krb5.h: Include asn1.h; krb5_data is now an
+ 	octet_string.
+
 	* lib/asn1/der*,gen.c: krb5_data -> octet_string, char * ->
  	general_string
 
