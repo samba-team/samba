@@ -148,6 +148,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	DATA_BLOB auth_data;
 	auth_serversupplied_info *server_info = NULL;
 	ADS_STRUCT *ads;
+	BOOL foreign = False;
 
 	if (!spnego_parse_krb5_wrap(*secblob, &ticket)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
@@ -185,31 +186,26 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		if (!lp_allow_trusted_domains()) {
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
-		/* this gives a fully qualified user name (ie. with full realm).
-		   that leads to very long usernames, but what else can we do? */
-		asprintf(&user, "%s%s%s", p+1, lp_winbind_separator(), client);
-	} else {
-		user = strdup(client);
+		foreign = True;
 	}
+
+	/* this gives a fully qualified user name (ie. with full realm).
+	   that leads to very long usernames, but what else can we do? */
+	asprintf(&user, "%s%s%s", p+1, lp_winbind_separator(), client);
+	
+	pw = Get_Pwnam(user);
+	if (!pw && !foreign) {
+		pw = Get_Pwnam(client);
+		SAFE_FREE(user);
+		user = smb_xstrdup(client);
+	}
+
 	ads_destroy(&ads);
 
 	/* setup the string used by %U */
 	sub_set_smb_name(user);
 
 	reload_services(True);
-
-	/* the password is good - let them in */
-	pw = Get_Pwnam(user);
-	if (!pw && !strstr(user, lp_winbind_separator())) {
-		char *user2;
-		/* try it with a winbind domain prefix */
-		asprintf(&user2, "%s%s%s", lp_workgroup(), lp_winbind_separator(), user);
-		pw = Get_Pwnam(user2);
-		if (pw) {
-			free(user);
-			user = user2;
-		}
-	}
 
 	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n",user));
