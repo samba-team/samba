@@ -2455,6 +2455,9 @@ address %x. Error was %s\n", htonl(INADDR_LOOPBACK), strerror(errno)));
   }
   oplock_port = ntohs(sock_name.sin_port);
 
+  DEBUG(3,("open_oplock ipc: pid = %d, oplock_port = %u\n", 
+            getpid(), oplock_port));
+
   return True;
 }
 
@@ -2545,6 +2548,31 @@ pid %d, port %d, for file dev = %x, inode = %x\n", remotepid,
 
       }
       break;
+    /* 
+     * Keep this as a debug case - eventually we can remove it.
+     */
+    case 0x8001:
+      DEBUG(0,("process_local_message: Received unsolicited break \
+reply - dumping info.\n"));
+
+      if(msg_len != OPLOCK_BREAK_MSG_LEN)
+      {
+        DEBUG(0,("process_local_message: ubr: incorrect length for reply \
+(was %d, should be %d).\n", msg_len, OPLOCK_BREAK_MSG_LEN));
+        return False;
+      }
+
+      {
+        uint32 remotepid = IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
+        uint32 dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
+        uint32 inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
+
+        DEBUG(0,("process_local_message: unsolicited oplock break reply from \
+pid %d, port %d, dev = %x, inode = %x\n", remotepid, from_port, dev, inode));
+
+       }
+       return False;
+
     default:
       DEBUG(0,("process_local_message: unknown UDP message command code (%x) - ignoring.\n",
                 (unsigned int)SVAL(msg_start,0)));
@@ -2860,6 +2888,7 @@ oplock break response from pid %d on port %d for dev = %x, inode = %x.\n",
              share_entry->pid, share_entry->op_port, dev, inode));
       if(push_local_message(op_break_reply, sizeof(op_break_reply)) == False)
         return False;
+      continue;
     }
 
     break;

@@ -1042,10 +1042,8 @@ typedef struct
 {
   smb_shm_offset_t next_share_mode_entry;
   int pid;
-#ifdef USE_OPLOCKS
   uint16 op_port;
   uint16 op_type;
-#endif /* USE_OPLOCKS */
   int share_mode;
   struct timeval time;
 } share_mode_entry;
@@ -1054,10 +1052,8 @@ typedef struct
 typedef struct
 {
   int pid;
-#ifdef USE_OPLOCKS
   uint16 op_port;
   uint16 op_type;
-#endif /* USE_OPLOCKS */
   int share_mode;
   struct timeval time;
 } min_share_mode_entry;
@@ -1083,11 +1079,7 @@ struct connect_record
 };
 
 #ifndef LOCKING_VERSION
-#ifdef USE_OPLOCKS
 #define LOCKING_VERSION 4
-#else /* USE_OPLOCKS */
-#define LOCKING_VERSION 3
-#endif /* USE_OPLOCKS */
 #endif /* LOCKING_VERSION */
 
 #if !defined(FAST_SHARE_MODES)
@@ -1103,11 +1095,7 @@ struct connect_record
 #define SMF_FILENAME_LEN_OFFSET 8
 #define SMF_HEADER_LENGTH 10
 
-#ifdef USE_OPLOCKS
 #define SMF_ENTRY_LENGTH 20
-#else /* USE_OPLOCKS */
-#define SMF_ENTRY_LENGTH 16
-#endif /* USE_OPLOCKS */
 
 /*
  * Share mode record offsets.
@@ -1117,11 +1105,8 @@ struct connect_record
 #define SME_USEC_OFFSET 4
 #define SME_SHAREMODE_OFFSET 8
 #define SME_PID_OFFSET 12
-
-#ifdef USE_OPLOCKS
 #define SME_PORT_OFFSET 16
 #define SME_OPLOCK_TYPE_OFFSET 18
-#endif /* USE_OPLOCKS */
 
 #endif /* FAST_SHARE_MODES */
 

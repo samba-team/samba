@@ -25,6 +25,10 @@
 
    May 1997. Jeremy Allison (jallison@whistle.com). Modified share mode
    locking to deal with multiple share modes per open file.
+
+   September 1997. Jeremy Allison (jallison@whistle.com). Added oplock
+   support.
+
 */
 
 #include "includes.h"
@@ -726,13 +730,60 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
 
   {
     int old_umask;
+    BOOL gotlock = False;
     unbecome_user();
     old_umask = umask(0);
+
+    /*
+     * There was a race condition in the original slow share mode code.
+     * A smbd could open a share mode file, and before getting
+     * the lock, another smbd could delete the last entry for
+     * the share mode file and delete the file entry from the
+     * directory. Thus this smbd would be left with a locked
+     * share mode fd attached to a file that no longer had a
+     * directory entry. Thus another smbd would think that
+     * there were no outstanding opens on the file. To fix
+     * this we now check we can do a stat() call on the filename
+     * before allowing the lock to proceed, and back out completely
+     * and try the open again if we cannot.
+     * Jeremy Allison (jallison@whistle.com).
+     */
+
+    do
+    {
+      struct stat dummy_stat;
+
 #ifdef SECURE_SHARE_MODES
-    fd = (share_lock_token)open(fname,O_RDWR|O_CREAT,0600);
+      fd = (share_lock_token)open(fname,O_RDWR|O_CREAT,0600);
 #else /* SECURE_SHARE_MODES */
-    fd = (share_lock_token)open(fname,O_RDWR|O_CREAT,0666);
+      fd = (share_lock_token)open(fname,O_RDWR|O_CREAT,0666);
 #endif /* SECURE_SHARE_MODES */
+
+       /* At this point we have an open fd to the share mode file. 
+         Lock the first byte exclusively to signify a lock. */
+      if(fcntl_lock(fd, F_SETLKW, 0, 1, F_WRLCK) == False)
+      {
+        DEBUG(0,("ERROR lock_share_entry: fcntl_lock on file %s failed with %s\n",
+                  fname, strerror(errno)));   
+        close(fd);
+        return False;
+      }
+
+      /* 
+       * If we cannot stat the filename, the file was deleted between
+       * the open and the lock call. Back out and try again.
+       */
+
+      if(stat(fname, &dummy_stat)!=0)
+      {
+        DEBUG(2,("lock_share_entry: Re-issuing open on %s to fix race. Error was %s\n",
+                fname, strerror(errno)));
+        close(fd);
+      }
+      else
+        gotlock = True;
+    } while(!gotlock);
+
     umask(old_umask);
     if(!become_user(cnum,Connections[cnum].vuid))
     {
@@ -750,18 +801,8 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
     }
   }
 
-  /* At this point we have an open fd to the share mode file. 
-     Lock the first byte exclusively to signify a lock. */
-  if(fcntl_lock(fd, F_SETLKW, 0, 1, F_WRLCK) == False)
-   {
-      DEBUG(0,("ERROR lock_share_entry: fcntl_lock failed with %s\n",
-                  strerror(errno)));   
-      close(fd);
-      return False;
-   }
-
-   *ptok = (share_lock_token)fd;
-   return True;
+  *ptok = (share_lock_token)fd;
+  return True;
 }
 
 /*******************************************************************
@@ -781,7 +822,7 @@ BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token tok
       ret = False;
    }
  
-  close((int)token);
+  close(fd);
   return ret;
 }
 

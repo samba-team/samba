@@ -24,6 +24,7 @@
 extern int DEBUGLEVEL;
 
 
+#if 0 /* NEED TO DO THIS TO GET A COMPILE - LUKE PLEASE CHECK THIS !!! */
 /*******************************************************************
 reads or writes an LSA_R_OPEN_POL structure.
 ********************************************************************/
@@ -446,6 +447,7 @@ char* lsa_io_r_sam_logoff(BOOL io, LSA_R_SAM_LOGOFF *r_l, char *q, char *base, i
 	return q;
 }
 
+#endif /* 0 LUKE PLEASE CHECK !! */
 #if 0
 /*******************************************************************
 reads or writes a structure.
