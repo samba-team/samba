@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBD" "8" "18 March 2003" "" ""
+.TH "SMBD" "8" "24 March 2003" "" ""
 
 .SH NAME
 smbd \- server to provide SMB/CIFS services to clients
@@ -85,19 +85,21 @@ command line. \fBsmbd\fR also logs to standard
 output, as if the \fB-S\fR parameter had been
 given.
 .TP
-\fB-h\fR
-Prints the help information (usage) 
-for \fBsmbd\fR.
-.TP
 \fB-V\fR
 Prints the version number for 
 \fBsmbd\fR.
 .TP
-\fB-b\fR
-Prints information about how 
-Samba was built.
+\fB-s <configuration file>\fR
+The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See \fIsmb.conf(5)\fR for more information.
+The default configuration file name is determined at 
+compile time.
 .TP
-\fB-d <debug level>\fR
+\fB-d|--debug=debuglevel\fR
 \fIdebuglevel\fR is an integer 
 from 0 to 10.  The default value if this parameter is 
 not specified is zero.
@@ -116,8 +118,20 @@ use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.
 
 Note that specifying this parameter here will 
-override the \fIlog
-level\fR parameter in the \fBsmb.conf\fR(5) file.
+override the log
+level file.
+.TP
+\fB-l|--logfile=logbasename\fR
+File name for log/debug files. The extension
+".client" will be appended. The log file is
+never removed by the client.
+.TP
+\fB-h|--help\fR
+Print a summary of command line options.
+.TP
+\fB-b\fR
+Prints information about how 
+Samba was built.
 .TP
 \fB-l <log directory>\fR
 If specified,
@@ -133,10 +147,6 @@ will log to the default debug log location defined at compile time.
 
 The default log directory is specified at
 compile time.
-.TP
-\fB-O <socket options>\fR
-See the \fIsocket options\fR 
-parameter in the \fBsmb.conf\fR(5) file for details.
 .TP
 \fB-p <port number>\fR
 \fIport number\fR is a positive integer 
@@ -160,16 +170,6 @@ section 4.3.5.
 
 This parameter is not normally specified except 
 in the above situation.
-.TP
-\fB-s <configuration file>\fR
-The file specified contains the 
-configuration details required by the server.  The 
-information in this file includes server-specific
-information such as what printcap file to use, as well 
-as descriptions of all the services that the server is 
-to provide. See \fBsmb.conf\fR(5) for more information.
-The default configuration file name is determined at 
-compile time.
 .SH "FILES"
 .TP
 \fB\fI/etc/inetd.conf\fB\fR

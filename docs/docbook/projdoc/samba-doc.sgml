@@ -5,6 +5,7 @@
 <!ENTITY DOMAIN-MEMBER SYSTEM "DOMAIN_MEMBER.sgml">
 <!ENTITY WINBIND SYSTEM "winbind.sgml">
 <!ENTITY NT-Security SYSTEM "NT_Security.sgml">
+<!ENTITY ServerType SYSTEM "ServerType.sgml">
 <!ENTITY Samba-PDC-HOWTO SYSTEM "Samba-PDC-HOWTO.sgml">
 <!ENTITY Samba-BDC-HOWTO SYSTEM "Samba-BDC-HOWTO.sgml">
 <!ENTITY IntegratingWithWindows SYSTEM "Integrating-with-Windows.sgml">
@@ -91,6 +92,7 @@ Samba can operate in various SMB networks. This part contains information on con
 for various environments.
 </para>
 </partintro>
+&ServerType;
 &SECURITY-LEVEL;
 &Samba-PDC-HOWTO;
 &Samba-BDC-HOWTO;

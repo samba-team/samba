@@ -3,13 +3,13 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WBINFO" "1" "18 March 2003" "" ""
+.TH "WBINFO" "1" "24 March 2003" "" ""
 
 .SH NAME
 wbinfo \- Query information from winbind daemon
 .SH SYNOPSIS
 
-\fBwbinfo\fR [ \fB-u\fR ] [ \fB-g\fR ] [ \fB-i ip\fR ] [ \fB-N netbios-name\fR ] [ \fB-n name\fR ] [ \fB-s sid\fR ] [ \fB-U uid\fR ] [ \fB-G gid\fR ] [ \fB-S sid\fR ] [ \fB-Y sid\fR ] [ \fB-t\fR ] [ \fB-m\fR ] [ \fB-r user\fR ] [ \fB-a user%password\fR ] [ \fB-A user%password\fR ] [ \fB-p\fR ]
+\fBwbinfo\fR [ \fB-u\fR ] [ \fB-g\fR ] [ \fB-N netbios-name\fR ] [ \fB-I ip\fR ] [ \fB-n name\fR ] [ \fB-s sid\fR ] [ \fB-U uid\fR ] [ \fB-G gid\fR ] [ \fB-S sid\fR ] [ \fB-Y sid\fR ] [ \fB-t\fR ] [ \fB-m\fR ] [ \fB--sequence\fR ] [ \fB-r user\fR ] [ \fB-a user%password\fR ] [ \fB-A user%password\fR ] [ \fB--get-auth-user\fR ] [ \fB-p\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -96,6 +96,10 @@ Windows NT server \fBwinbindd\fR(8) contacts
 when resolving names.  This list does not include the Windows 
 NT domain the server is a Primary Domain Controller for.
 .TP
+\fB--sequence\fR
+Show sequence numbers of 
+all known domains
+.TP
 \fB-r username\fR
 Try to obtain the list of UNIX group ids
 to which the user belongs.  This only works for users
@@ -111,6 +115,23 @@ during session setup to a domain controller.  This enables
 winbindd to operate in a Windows 2000 domain with Restrict
 Anonymous turned on (a.k.a. Permissions compatiable with
 Windows 2000 servers only).
+.TP
+\fB--get-auth-user\fR
+Print username and password used by winbindd
+during session setup to a domain controller. Username 
+and password can be set using '-A'. Only available for 
+root.
+.TP
+\fB-p\fR
+Check whether winbindd is still alive. 
+Prints out either 'succeeded' or 'failed'.
+.TP
+\fB-V\fR
+Prints the version number for 
+\fBsmbd\fR.
+.TP
+\fB-h|--help\fR
+Print a summary of command line options.
 .SH "EXIT STATUS"
 .PP
 The wbinfo program returns 0 if the operation 

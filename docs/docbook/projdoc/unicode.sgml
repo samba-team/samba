@@ -2,10 +2,10 @@
 <chapterinfo>
 	<author>
 		<firstname>Jelmer</firstname><surname>Vernooij</surname>
-		<affiliate>
+		<affiliation>
 			<orgname>Samba Team</orgname>
 			<address><email>jelmer@samba.org</email></address>
-		</affiliate>
+		</affiliation>
 	</author>
 	<pubdate>25 March 2003</pubdate>
 </chapterinfo>
@@ -18,8 +18,8 @@
 <para>
 Computers communicate in numbers. In texts, each number will be 
 translated to a corresponding letter. The meaning that will be assigned 
-to a certain number depends on the <emphasize>character set(charset)
-</emphasize> that is used. 
+to a certain number depends on the <emphasis>character set(charset)
+</emphasis> that is used. 
 A charset can be seen as a table that is used to translate numbers to 
 letters. Not all computers use the same charset (there are charsets 
 with German umlauts, Japanese characters, etc). Usually a charset contains 
@@ -64,7 +64,7 @@ samba knows of three kinds of character sets:
 		<term>unix charset</term>
 		<listitem><para>
 		This is the charset used internally by your operating system. 
-		The default is <emphasize>ASCII</emphasize>, which is fine for most 
+		The default is <emphasis>ASCII</emphasis>, which is fine for most 
 		systems.
 		</para></listitem>
 	</varlistentry>

@@ -13,13 +13,18 @@
 			<orgname>Samba Team</orgname>
 			<address><email>dbannon@samba.org</email></address>
 		</affiliation>
+		<firstname>John H</firstname><surname>Terpstra</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address><email>jht@samba.org</email></address>
+		</affiliation>
 		
 	</author>
 	<pubdate> (26 Apr 2001) </pubdate>
 </chapterinfo>
 
 <title>
-Samba as a NT4 or Win2k Primary Domain Controller
+Samba as an NT4 or Win2k Primary Domain Controller
 </title>
 
 
@@ -37,8 +42,7 @@ that you are comfortable with configuring basic files services
 in smb.conf and how to enable and administer password 
 encryption in Samba.  Theses two topics are covered in the
 <ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename></ulink> 
-manpage and the <ulink url="ENCRYPTION.html">Encryption chapter</ulink> 
-of this HOWTO Collection.
+manpage.
 </para>
 
 
@@ -56,46 +60,28 @@ of this HOWTO Collection.
 Background
 </title>
 
-<note>
 <para>
-<emphasis>Author's Note:</emphasis> This document is a combination 
-of David Bannon's "Samba 2.2 PDC HOWTO" and "Samba NT Domain FAQ". 
-Both documents are superseded by this one.
-</para>
-</note>
-
-<para>
-Versions of Samba prior to release 2.2 had marginal capabilities to act
-as a Windows NT 4.0 Primary Domain Controller
-<indexterm><primary>Primary Domain Controller</primary></indexterm>
-(PDC).  With Samba 2.2.0, we are proud to announce official support for
-Windows NT 4.0-style domain logons from Windows NT 4.0 and Windows 
-2000 clients.  This article outlines the steps
-necessary for configuring Samba as a PDC.  It is necessary to have a
-working Samba server prior to implementing the PDC functionality.  If
-you have not followed the steps outlined in <ulink
-url="UNIX_INSTALL.html"> UNIX_INSTALL.html</ulink>, please make sure
-that your server is configured correctly before proceeding.  Another
-good resource in the <ulink url="smb.conf.5.html">smb.conf(5) man
-page</ulink>. The following functionality should work in 2.2:
+This article outlines the steps necessary for configuring Samba as a PDC.
+It is necessary to have a working Samba server prior to implementing the
+PDC functionality.
 </para>
 
 <itemizedlist>
 	<listitem><para>
-	domain logons for Windows NT 4.0/2000 clients.
+	domain logons for Windows NT 4.0 / 200x / XP Professional clients.
 	</para></listitem>
 	
 	<listitem><para>
-	placing a Windows 9x client in user level security
+	placing Windows 9x / Me clients in user level security
 	</para></listitem>
 	
 	<listitem><para>
 	retrieving a list of users and groups from a Samba PDC to
-	Windows 9x/NT/2000 clients
+	Windows 9x / Me / NT / 200x / XP Professional clients
 	</para></listitem>
 	
 	<listitem><para>
-	roving (roaming) user profiles
+	roaming user profiles
 	</para></listitem>
 	
 	<listitem><para>
@@ -105,7 +91,7 @@ page</ulink>. The following functionality should work in 2.2:
 
 
 <para>
-The following pieces of functionality are not included in the 2.2 release:
+The following functionalities are new to the Samba 3.0 release:
 </para>
 
 <itemizedlist>
@@ -114,14 +100,20 @@ The following pieces of functionality are not included in the 2.2 release:
 	</para></listitem>
 	
 	<listitem><para>
+	Adding users via the User Manager for Domains
+	</para></listitem>
+</itemizedlist>
+
+<para>
+The following functionalities are NOT provided by Samba 3.0:
+</para>
+
+<itemizedlist>
+	<listitem><para>
 	SAM replication with Windows NT 4.0 Domain Controllers
 	(i.e. a Samba PDC and a Windows NT BDC or vice versa) 
 	</para></listitem>
 	
-	<listitem><para>
-	Adding users via the User Manager for Domains
-	</para></listitem>
-
 	<listitem><para>
 	Acting as a Windows 2000 Domain Controller (i.e. Kerberos and 
 	Active Directory)
@@ -129,16 +121,21 @@ The following pieces of functionality are not included in the 2.2 release:
 </itemizedlist>
 
 <para>
-Please note that Windows 9x clients are not true members of a domain
+Please note that Windows 9x / Me / XP Home clients are not true members of a domain
 for reasons outlined in this article.  Therefore the protocol for
 support Windows 9x-style domain logons is completely different
-from NT4 domain logons and has been officially supported for some 
+from NT4 / Win2k type domain logons and has been officially supported for some 
 time.
+</para>
+
+<para><emphasis>
+MS Windows XP Home edition is NOT able to join a domain and does not permit
+the use of domain logons.</emphasis>
 </para>
 
 
 <para>
-Implementing a Samba PDC can basically be divided into 2 broad
+Implementing a Samba PDC can basically be divided into 3 broad
 steps.
 </para>
 
@@ -148,8 +145,11 @@ steps.
 	</para></listitem>
 	
 	<listitem><para>
-	Creating machine trust accounts	and joining clients 
-	to the domain
+	Creating machine trust accounts	and joining clients to the domain
+	</para></listitem>
+
+	<listitem><para>
+	Adding and managing domain user accounts
 	</para></listitem>
 </orderedlist>
 
@@ -157,7 +157,7 @@ steps.
 There are other minor details such as user profiles, system
 policies, etc...  However, these are not necessarily specific
 to a Samba PDC as much as they are related to Windows NT networking
-concepts.  They will be mentioned only briefly here.
+concepts.
 </para>
 
 </sect1>
@@ -174,11 +174,10 @@ concepts.  They will be mentioned only briefly here.
 
 <para>
 The first step in creating a working Samba PDC is to 
-understand the parameters necessary in smb.conf.  I will not
-attempt to re-explain the parameters here as they are more that
-adequately covered in <ulink url="smb.conf.5.html"> the smb.conf
-man page</ulink>.  For convenience, the parameters have been
-linked with the actual smb.conf description.
+understand the parameters necessary in smb.conf. Here we
+attempt to explain the parameters that are covered in
+<ulink url="smb.conf.5.html"> the smb.conf
+man page</ulink>.
 </para>
 
 <para>
@@ -209,8 +208,7 @@ Here is an example <filename>smb.conf</filename> for acting as a PDC:
     ; where to store user profiles?
     <ulink url="smb.conf.5.html#LOGONPATH">logon path</ulink> = \\%N\profiles\%u
     
-    ; where is a user's home directory and where should it
-    ; be mounted at?
+    ; where is a user's home directory and where should it be mounted at?
     <ulink url="smb.conf.5.html#LOGONDRIVE">logon drive</ulink> = H:
     <ulink url="smb.conf.5.html#LOGONHOME">logon home</ulink> = \\homeserver\%u
     
@@ -256,20 +254,16 @@ There are a couple of points to emphasize in the above configuration.
 </itemizedlist>    
 
 <para>
-As Samba 2.2 does not offer a complete implementation of group mapping
+Samba 3.0 offers a complete implementation of group mapping
 between Windows NT groups and Unix groups (this is really quite
-complicated to explain in a short space), you should refer to the
-<ulink url="smb.conf.5.html#DOMAINADMINGROUP">domain admin
-group</ulink> smb.conf parameter for information of creating "Domain
-Admins" style accounts.
+complicated to explain in a short space).
 </para>
 
 </sect1>
 
 
 <sect1>
-<title>Creating Machine Trust Accounts and Joining Clients to the
-Domain</title>
+<title>Creating Machine Trust Accounts and Joining Clients to the Domain</title>
 
 <para>
 A machine trust account is a Samba account that is used to
@@ -282,15 +276,65 @@ The password of a machine trust account acts as the shared secret for
 secure communication with the Domain Controller.  This is a security
 feature to prevent an unauthorized machine with the same NetBIOS name
 from joining the domain and gaining access to domain user/group
-accounts.  Windows NT and 2000 clients use machine trust accounts, but
-Windows 9x clients do not.  Hence, a Windows 9x client is never a true
-member of a domain because it does not possess a machine trust
-account, and thus has no shared secret with the domain controller.
+accounts.  Windows NT, 200x, XP Professional clients use machine trust
+accounts, but Windows 9x / Me / XP Home clients do not.  Hence, a
+Windows 9x / Me / XP Home  client is never a true member of a domain
+because it does not possess a machine trust account, and thus has no
+shared secret with the domain controller.
 </para>
 
 <para>A Windows PDC stores each machine trust account in the Windows
-Registry.  A Samba PDC, however, stores each machine trust account 
-in two parts, as follows:
+Registry. A Samba-3 PDC also has to stoe machine trust account information
+in a suitable back-end data store. With Samba-3 there can be multiple back-ends
+for this including:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	<emphasis>smbpaswd</emphasis> - the plain ascii file stored used by
+	earlier versions of Samba. This file configuration option requires
+	a Unix/Linux system account for EVERY entry (ie: both for user and for
+	machine accounts). This file will be located in the <emphasis>private</emphasis>
+	directory (default is /usr/local/samba/lib/private or on linux /etc/samba).
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>smbpasswd_nua</emphasis> - This file is independant of the
+	system wide user accounts. The use of this back-end option requires
+	specification of the "non unix account range" option also. It is called
+	smbpasswd and will be located in the <filename>private</filename> directory.
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>tdbsam</emphasis> - a binary database backend that will be
+	stored in the <emphasis>private</emphasis> directory in a file called
+	<emphasis>passwd.tdb</emphasis>. The key benefit of this binary format
+	file is that it can store binary objects that can not be accomodated
+	in the traditional plain text smbpasswd file.
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>tdbsam_nua</emphasis> like the smbpasswd_nua option above, this
+	file allows the creation of arbitrary user and machine accounts without
+	requiring that account to be added to the system (/etc/passwd) file. It
+	too requires the specification of the "non unix account range" option
+	in the [globals] section of the smb.conf file.
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>ldapsam</emphasis> - An LDAP based back-end. Permits the
+	LDAP server to be specified. eg: ldap://localhost or ldap://frodo.murphy.com
+	</para></listitem>
+
+	<listitem><para>
+	<emphasis>ldapsam_nua</emphasis> - LDAP based back-end with no unix
+	account requirement, like smbpasswd_nua and tdbsam_nua above.
+	</para></listitem>
+</itemizedlist>
+
+<para>
+A Samba PDC, however, stores each machine trust account in two parts,
+as follows:
 
 <itemizedlist>
     <listitem><para>A Samba account, stored in the same location as user

@@ -3,13 +3,13 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "PDBEDIT" "8" "18 March 2003" "" ""
+.TH "PDBEDIT" "8" "24 March 2003" "" ""
 
 .SH NAME
 pdbedit \- manage the SAM database
 .SH SYNOPSIS
 
-\fBpdbedit\fR [ \fB-l\fR ] [ \fB-v\fR ] [ \fB-w\fR ] [ \fB-u username\fR ] [ \fB-f fullname\fR ] [ \fB-h homedir\fR ] [ \fB-D drive\fR ] [ \fB-S script\fR ] [ \fB-p profile\fR ] [ \fB-a\fR ] [ \fB-m\fR ] [ \fB-x\fR ] [ \fB-i passdb-backend\fR ] [ \fB-e passdb-backend\fR ] [ \fB-b passdb-backend\fR ] [ \fB-d debuglevel\fR ] [ \fB-s configfile\fR ] [ \fB-P account-policy\fR ] [ \fB-V value\fR ]
+\fBpdbedit\fR [ \fB-l\fR ] [ \fB-v\fR ] [ \fB-w\fR ] [ \fB-u username\fR ] [ \fB-f fullname\fR ] [ \fB-h homedir\fR ] [ \fB-D drive\fR ] [ \fB-S script\fR ] [ \fB-p profile\fR ] [ \fB-a\fR ] [ \fB-m\fR ] [ \fB-x\fR ] [ \fB-i passdb-backend\fR ] [ \fB-e passdb-backend\fR ] [ \fB-b passdb-backend\fR ] [ \fB-d debuglevel\fR ] [ \fB-s configfile\fR ] [ \fB-P account-policy\fR ] [ \fB-C value\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -194,18 +194,35 @@ Example: \fBpdbedit -P "bad lockout attempt"\fR
 account policy value for bad lockout attempt is 0
 .fi
 .TP
-\fB-V account-policy-value\fR
+\fB-C account-policy-value\fR
 Sets an account policy to a specified value. 
 This option may only be used in conjunction
 with the \fI-P\fR option.
 
-Example: \fBpdbedit -P "bad lockout attempt" -V 3\fR
+Example: \fBpdbedit -P "bad lockout attempt" -C 3\fR
 
 
 .nf
 account policy value for bad lockout attempt was 0
 account policy value for bad lockout attempt is now 3
 .fi
+.TP
+\fB-h|--help\fR
+Print a summary of command line options.
+.TP
+\fB-V\fR
+Prints the version number for 
+\fBsmbd\fR.
+.TP
+\fB-s <configuration file>\fR
+The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See \fIsmb.conf(5)\fR for more information.
+The default configuration file name is determined at 
+compile time.
 .TP
 \fB-d|--debug=debuglevel\fR
 \fIdebuglevel\fR is an integer 
@@ -229,18 +246,10 @@ Note that specifying this parameter here will
 override the log
 level file.
 .TP
-\fB-h|--help\fR
-Print a summary of command line options.
-.TP
-\fB-s <configuration file>\fR
-The file specified contains the 
-configuration details required by the server.  The 
-information in this file includes server-specific
-information such as what printcap file to use, as well 
-as descriptions of all the services that the server is 
-to provide. See \fIsmb.conf(5)\fR for more information.
-The default configuration file name is determined at 
-compile time.
+\fB-l|--logfile=logbasename\fR
+File name for log/debug files. The extension
+".client" will be appended. The log file is
+never removed by the client.
 .SH "NOTES"
 .PP
 This command may be used only by root.

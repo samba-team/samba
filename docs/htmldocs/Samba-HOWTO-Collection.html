@@ -178,42 +178,42 @@ HREF="#PASSDB"
 ><DL
 ><DT
 >3.1. <A
-HREF="#AEN227"
+HREF="#AEN234"
 >Introduction</A
 ></DT
 ><DT
 >3.2. <A
-HREF="#AEN234"
+HREF="#AEN241"
 >Important Notes About Security</A
 ></DT
 ><DT
 >3.3. <A
-HREF="#AEN260"
+HREF="#AEN279"
 >The smbpasswd Command</A
 ></DT
 ><DT
 >3.4. <A
-HREF="#AEN291"
+HREF="#AEN310"
 >Plain text</A
 ></DT
 ><DT
 >3.5. <A
-HREF="#AEN296"
+HREF="#AEN315"
 >TDB</A
 ></DT
 ><DT
 >3.6. <A
-HREF="#AEN299"
+HREF="#AEN318"
 >LDAP</A
 ></DT
 ><DT
 >3.7. <A
-HREF="#AEN517"
+HREF="#AEN536"
 >MySQL</A
 ></DT
 ><DT
 >3.8. <A
-HREF="#AEN565"
+HREF="#AEN584"
 >Passdb XML plugin</A
 ></DT
 ></DL
@@ -229,167 +229,190 @@ HREF="#TYPE"
 ><DL
 ><DT
 >4. <A
-HREF="#SECURITYLEVELS"
->User and Share security level (for servers not in a domain)</A
-></DT
-><DT
->5. <A
-HREF="#SAMBA-PDC"
->Samba as a NT4 or Win2k Primary Domain Controller</A
+HREF="#SERVERTYPE"
+>Nomenclature of Server Types</A
 ></DT
 ><DD
 ><DL
 ><DT
->5.1. <A
-HREF="#AEN625"
+>4.1. <A
+HREF="#AEN627"
+>Stand Alone Server</A
+></DT
+><DT
+>4.2. <A
+HREF="#AEN633"
+>Domain Member Server</A
+></DT
+><DT
+>4.3. <A
+HREF="#AEN639"
+>Domain Controller</A
+></DT
+></DL
+></DD
+><DT
+>5. <A
+HREF="#SECURITYLEVELS"
+>User and Share security level (for servers not in a domain)</A
+></DT
+><DT
+>6. <A
+HREF="#SAMBA-PDC"
+>Samba as an NT4 or Win2k Primary Domain Controller</A
+></DT
+><DD
+><DL
+><DT
+>6.1. <A
+HREF="#AEN703"
 >Prerequisite Reading</A
 ></DT
 ><DT
->5.2. <A
-HREF="#AEN631"
+>6.2. <A
+HREF="#AEN708"
 >Background</A
 ></DT
 ><DT
->5.3. <A
-HREF="#AEN670"
+>6.3. <A
+HREF="#AEN746"
 >Configuring the Samba Domain Controller</A
 ></DT
 ><DT
->5.4. <A
-HREF="#AEN713"
->Creating Machine Trust Accounts and Joining Clients to the
-Domain</A
+>6.4. <A
+HREF="#AEN788"
+>Creating Machine Trust Accounts and Joining Clients to the Domain</A
 ></DT
 ><DT
->5.5. <A
-HREF="#AEN797"
+>6.5. <A
+HREF="#AEN896"
 >Common Problems and Errors</A
 ></DT
 ><DT
->5.6. <A
-HREF="#AEN845"
+>6.6. <A
+HREF="#AEN944"
 >System Policies and Profiles</A
 ></DT
 ><DT
->5.7. <A
-HREF="#AEN889"
+>6.7. <A
+HREF="#AEN988"
 >What other help can I get?</A
 ></DT
 ><DT
->5.8. <A
-HREF="#AEN1003"
+>6.8. <A
+HREF="#AEN1102"
 >Domain Control for Windows 9x/ME</A
 ></DT
 ><DT
->5.9. <A
-HREF="#AEN1141"
+>6.9. <A
+HREF="#AEN1240"
 >DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></DT
 ></DL
 ></DD
 ><DT
->6. <A
+>7. <A
 HREF="#SAMBA-BDC"
 >How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.1. <A
-HREF="#AEN1177"
+>7.1. <A
+HREF="#AEN1276"
 >Prerequisite Reading</A
 ></DT
 ><DT
->6.2. <A
-HREF="#AEN1181"
+>7.2. <A
+HREF="#AEN1280"
 >Background</A
 ></DT
 ><DT
->6.3. <A
-HREF="#AEN1189"
+>7.3. <A
+HREF="#AEN1288"
 >What qualifies a Domain Controller on the network?</A
 ></DT
 ><DT
->6.4. <A
-HREF="#AEN1198"
+>7.4. <A
+HREF="#AEN1297"
 >Can Samba be a Backup Domain Controller to an NT PDC?</A
 ></DT
 ><DT
->6.5. <A
-HREF="#AEN1203"
+>7.5. <A
+HREF="#AEN1302"
 >How do I set up a Samba BDC?</A
 ></DT
 ></DL
 ></DD
 ><DT
->7. <A
+>8. <A
 HREF="#ADS"
 >Samba as a ADS domain member</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.1. <A
-HREF="#AEN1242"
+>8.1. <A
+HREF="#AEN1341"
 >Installing the required packages for Debian</A
 ></DT
 ><DT
->7.2. <A
-HREF="#AEN1249"
+>8.2. <A
+HREF="#AEN1348"
 >Installing the required packages for RedHat</A
 ></DT
 ><DT
->7.3. <A
-HREF="#AEN1259"
+>8.3. <A
+HREF="#AEN1358"
 >Compile Samba</A
 ></DT
 ><DT
->7.4. <A
-HREF="#AEN1274"
+>8.4. <A
+HREF="#AEN1373"
 >Setup your /etc/krb5.conf</A
 ></DT
 ><DT
->7.5. <A
-HREF="#AEN1284"
+>8.5. <A
+HREF="#AEN1383"
 >Create the computer account</A
 ></DT
 ><DT
->7.6. <A
-HREF="#AEN1296"
+>8.6. <A
+HREF="#AEN1395"
 >Test your server setup</A
 ></DT
 ><DT
->7.7. <A
-HREF="#AEN1301"
+>8.7. <A
+HREF="#AEN1400"
 >Testing with smbclient</A
 ></DT
 ><DT
->7.8. <A
-HREF="#AEN1304"
+>8.8. <A
+HREF="#AEN1403"
 >Notes</A
 ></DT
 ></DL
 ></DD
 ><DT
->8. <A
+>9. <A
 HREF="#DOMAIN-SECURITY"
 >Samba as a NT4 or Win2k domain member</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.1. <A
-HREF="#AEN1326"
+>9.1. <A
+HREF="#AEN1425"
 >Joining an NT Domain with Samba 3.0</A
 ></DT
 ><DT
->8.2. <A
-HREF="#AEN1381"
+>9.2. <A
+HREF="#AEN1480"
 >Samba and Windows 2000 Domains</A
 ></DT
 ><DT
->8.3. <A
-HREF="#AEN1384"
+>9.3. <A
+HREF="#AEN1483"
 >Why is this better than security = server?</A
 ></DT
 ></DL
@@ -404,95 +427,95 @@ HREF="#OPTIONAL"
 ><DD
 ><DL
 ><DT
->9. <A
+>10. <A
 HREF="#INTEGRATE-MS-NETWORKS"
 >Integrating MS Windows networks with Samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.1. <A
-HREF="#AEN1416"
+>10.1. <A
+HREF="#AEN1515"
 >Agenda</A
 ></DT
 ><DT
->9.2. <A
-HREF="#AEN1438"
+>10.2. <A
+HREF="#AEN1537"
 >Name Resolution in a pure Unix/Linux world</A
 ></DT
 ><DT
->9.3. <A
-HREF="#AEN1501"
+>10.3. <A
+HREF="#AEN1600"
 >Name resolution as used within MS Windows networking</A
 ></DT
 ><DT
->9.4. <A
-HREF="#AEN1546"
+>10.4. <A
+HREF="#AEN1645"
 >How browsing functions and how to deploy stable and 
 dependable browsing using Samba</A
 ></DT
 ><DT
->9.5. <A
-HREF="#AEN1556"
+>10.5. <A
+HREF="#AEN1655"
 >MS Windows security options and how to configure 
 Samba for seemless integration</A
 ></DT
 ><DT
->9.6. <A
-HREF="#AEN1626"
+>10.6. <A
+HREF="#AEN1725"
 >Conclusions</A
 ></DT
 ></DL
 ></DD
 ><DT
->10. <A
+>11. <A
 HREF="#UNIX-PERMISSIONS"
 >UNIX Permission Bits and Windows NT Access Control Lists</A
 ></DT
 ><DD
 ><DL
 ><DT
->10.1. <A
-HREF="#AEN1647"
+>11.1. <A
+HREF="#AEN1746"
 >Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></DT
 ><DT
->10.2. <A
-HREF="#AEN1651"
+>11.2. <A
+HREF="#AEN1750"
 >How to view file security on a Samba share</A
 ></DT
 ><DT
->10.3. <A
-HREF="#AEN1662"
+>11.3. <A
+HREF="#AEN1761"
 >Viewing file ownership</A
 ></DT
 ><DT
->10.4. <A
-HREF="#AEN1682"
+>11.4. <A
+HREF="#AEN1781"
 >Viewing file or directory permissions</A
 ></DT
 ><DT
->10.5. <A
-HREF="#AEN1718"
+>11.5. <A
+HREF="#AEN1817"
 >Modifying file or directory permissions</A
 ></DT
 ><DT
->10.6. <A
-HREF="#AEN1740"
+>11.6. <A
+HREF="#AEN1839"
 >Interaction with the standard Samba create mask 
 	parameters</A
 ></DT
 ><DT
->10.7. <A
-HREF="#AEN1804"
+>11.7. <A
+HREF="#AEN1903"
 >Interaction with the standard Samba file attribute 
 	mapping</A
 ></DT
 ></DL
 ></DD
 ><DT
->11. <A
+>12. <A
 HREF="#PAM"
 >Configuring PAM for distributed but centrally 
 managed authentication</A
@@ -500,321 +523,340 @@ managed authentication</A
 ><DD
 ><DL
 ><DT
->11.1. <A
-HREF="#AEN1825"
+>12.1. <A
+HREF="#AEN1924"
 >Samba and PAM</A
 ></DT
 ><DT
->11.2. <A
-HREF="#AEN1869"
+>12.2. <A
+HREF="#AEN1968"
 >Distributed Authentication</A
 ></DT
 ><DT
->11.3. <A
-HREF="#AEN1876"
+>12.3. <A
+HREF="#AEN1975"
 >PAM Configuration in smb.conf</A
 ></DT
 ></DL
 ></DD
 ><DT
->12. <A
+>13. <A
 HREF="#MSDFS"
 >Hosting a Microsoft Distributed File System tree on Samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->12.1. <A
-HREF="#AEN1896"
+>13.1. <A
+HREF="#AEN1995"
 >Instructions</A
 ></DT
 ></DL
 ></DD
 ><DT
->13. <A
+>14. <A
 HREF="#PRINTING"
 >Printing Support</A
 ></DT
 ><DD
 ><DL
 ><DT
->13.1. <A
-HREF="#AEN1957"
+>14.1. <A
+HREF="#AEN2056"
 >Introduction</A
 ></DT
 ><DT
->13.2. <A
-HREF="#AEN1979"
+>14.2. <A
+HREF="#AEN2078"
 >Configuration</A
 ></DT
 ><DT
->13.3. <A
-HREF="#AEN2087"
+>14.3. <A
+HREF="#AEN2186"
 >The Imprints Toolset</A
 ></DT
 ><DT
->13.4. <A
-HREF="#AEN2130"
+>14.4. <A
+HREF="#AEN2229"
 >Diagnosis</A
 ></DT
 ></DL
 ></DD
 ><DT
->14. <A
+>15. <A
 HREF="#WINBIND"
 >Unified Logons between Windows NT and UNIX using Winbind</A
 ></DT
 ><DD
 ><DL
 ><DT
->14.1. <A
-HREF="#AEN2263"
+>15.1. <A
+HREF="#AEN2362"
 >Abstract</A
 ></DT
 ><DT
->14.2. <A
-HREF="#AEN2267"
+>15.2. <A
+HREF="#AEN2366"
 >Introduction</A
 ></DT
 ><DT
->14.3. <A
-HREF="#AEN2280"
+>15.3. <A
+HREF="#AEN2379"
 >What Winbind Provides</A
 ></DT
 ><DT
->14.4. <A
-HREF="#AEN2291"
+>15.4. <A
+HREF="#AEN2390"
 >How Winbind Works</A
 ></DT
 ><DT
->14.5. <A
-HREF="#AEN2334"
+>15.5. <A
+HREF="#AEN2433"
 >Installation and Configuration</A
 ></DT
 ><DT
->14.6. <A
-HREF="#AEN2583"
+>15.6. <A
+HREF="#AEN2690"
 >Limitations</A
 ></DT
 ><DT
->14.7. <A
-HREF="#AEN2593"
+>15.7. <A
+HREF="#AEN2700"
 >Conclusion</A
 ></DT
 ></DL
 ></DD
 ><DT
->15. <A
+>16. <A
 HREF="#IMPROVED-BROWSING"
 >Improved browsing in samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->15.1. <A
-HREF="#AEN2603"
+>16.1. <A
+HREF="#AEN2710"
 >Overview of browsing</A
 ></DT
 ><DT
->15.2. <A
-HREF="#AEN2608"
+>16.2. <A
+HREF="#AEN2715"
 >Browsing support in samba</A
 ></DT
 ><DT
->15.3. <A
-HREF="#AEN2616"
+>16.3. <A
+HREF="#AEN2723"
 >Problem resolution</A
 ></DT
 ><DT
->15.4. <A
-HREF="#AEN2625"
+>16.4. <A
+HREF="#AEN2732"
 >Browsing across subnets</A
 ></DT
 ><DT
->15.5. <A
-HREF="#AEN2665"
+>16.5. <A
+HREF="#AEN2772"
 >Setting up a WINS server</A
 ></DT
 ><DT
->15.6. <A
-HREF="#AEN2684"
+>16.6. <A
+HREF="#AEN2791"
 >Setting up Browsing in a WORKGROUP</A
 ></DT
 ><DT
->15.7. <A
-HREF="#AEN2702"
+>16.7. <A
+HREF="#AEN2809"
 >Setting up Browsing in a DOMAIN</A
 ></DT
 ><DT
->15.8. <A
-HREF="#AEN2712"
+>16.8. <A
+HREF="#AEN2819"
 >Forcing samba to be the master</A
 ></DT
 ><DT
->15.9. <A
-HREF="#AEN2721"
+>16.9. <A
+HREF="#AEN2828"
 >Making samba the domain master</A
 ></DT
 ><DT
->15.10. <A
-HREF="#AEN2739"
+>16.10. <A
+HREF="#AEN2846"
 >Note about broadcast addresses</A
 ></DT
 ><DT
->15.11. <A
-HREF="#AEN2742"
+>16.11. <A
+HREF="#AEN2849"
 >Multiple interfaces</A
 ></DT
 ></DL
 ></DD
 ><DT
->16. <A
+>17. <A
 HREF="#VFS"
 >Stackable VFS modules</A
 ></DT
 ><DD
 ><DL
 ><DT
->16.1. <A
-HREF="#AEN2760"
+>17.1. <A
+HREF="#AEN2867"
 >Introduction and configuration</A
 ></DT
 ><DT
->16.2. <A
-HREF="#AEN2769"
+>17.2. <A
+HREF="#AEN2876"
 >Included modules</A
 ></DT
 ><DT
->16.3. <A
-HREF="#AEN2823"
+>17.3. <A
+HREF="#AEN2930"
 >VFS modules available elsewhere</A
 ></DT
 ></DL
 ></DD
 ><DT
->17. <A
+>18. <A
 HREF="#GROUPMAPPING"
 >Group mapping HOWTO</A
 ></DT
 ><DT
->18. <A
+>19. <A
 HREF="#SPEED"
 >Samba performance issues</A
 ></DT
 ><DD
 ><DL
 ><DT
->18.1. <A
-HREF="#AEN2890"
+>19.1. <A
+HREF="#AEN2997"
 >Comparisons</A
 ></DT
 ><DT
->18.2. <A
-HREF="#AEN2896"
+>19.2. <A
+HREF="#AEN3003"
 >Socket options</A
 ></DT
 ><DT
->18.3. <A
-HREF="#AEN2903"
+>19.3. <A
+HREF="#AEN3010"
 >Read size</A
 ></DT
 ><DT
->18.4. <A
-HREF="#AEN2908"
+>19.4. <A
+HREF="#AEN3015"
 >Max xmit</A
 ></DT
 ><DT
->18.5. <A
-HREF="#AEN2913"
+>19.5. <A
+HREF="#AEN3020"
 >Log level</A
 ></DT
 ><DT
->18.6. <A
-HREF="#AEN2916"
+>19.6. <A
+HREF="#AEN3023"
 >Read raw</A
 ></DT
 ><DT
->18.7. <A
-HREF="#AEN2921"
+>19.7. <A
+HREF="#AEN3028"
 >Write raw</A
 ></DT
 ><DT
->18.8. <A
-HREF="#AEN2925"
+>19.8. <A
+HREF="#AEN3032"
 >Slow Clients</A
 ></DT
 ><DT
->18.9. <A
-HREF="#AEN2929"
+>19.9. <A
+HREF="#AEN3036"
 >Slow Logins</A
 ></DT
 ><DT
->18.10. <A
-HREF="#AEN2932"
+>19.10. <A
+HREF="#AEN3039"
 >Client tuning</A
 ></DT
 ></DL
 ></DD
 ><DT
->19. <A
+>20. <A
 HREF="#GROUPPROFILES"
 >Creating Group Prolicy Files</A
 ></DT
 ><DD
 ><DL
 ><DT
->19.1. <A
-HREF="#AEN2980"
+>20.1. <A
+HREF="#AEN3087"
 >Windows '9x</A
 ></DT
 ><DT
->19.2. <A
-HREF="#AEN2990"
+>20.2. <A
+HREF="#AEN3097"
 >Windows NT 4</A
 ></DT
 ><DT
->19.3. <A
-HREF="#AEN3028"
+>20.3. <A
+HREF="#AEN3135"
 >Windows 2000/XP</A
 ></DT
 ></DL
 ></DD
 ><DT
->20. <A
+>21. <A
 HREF="#SECURING-SAMBA"
 >Securing Samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->20.1. <A
-HREF="#AEN3109"
+>21.1. <A
+HREF="#AEN3216"
 >Introduction</A
 ></DT
 ><DT
->20.2. <A
-HREF="#AEN3112"
+>21.2. <A
+HREF="#AEN3219"
 >Using host based protection</A
 ></DT
 ><DT
->20.3. <A
-HREF="#AEN3119"
+>21.3. <A
+HREF="#AEN3226"
 >Using interface protection</A
 ></DT
 ><DT
->20.4. <A
-HREF="#AEN3128"
+>21.4. <A
+HREF="#AEN3235"
 >Using a firewall</A
 ></DT
 ><DT
->20.5. <A
-HREF="#AEN3135"
+>21.5. <A
+HREF="#AEN3242"
 >Using a IPC$ share deny</A
 ></DT
 ><DT
->20.6. <A
-HREF="#AEN3144"
+>21.6. <A
+HREF="#AEN3251"
 >Upgrading Samba</A
+></DT
+></DL
+></DD
+><DT
+>22. <A
+HREF="#UNICODE"
+>Unicode/Charsets</A
+></DT
+><DD
+><DL
+><DT
+>22.1. <A
+HREF="#AEN3265"
+>What are charsets and unicode?</A
+></DT
+><DT
+>22.2. <A
+HREF="#AEN3274"
+>Samba and charsets</A
 ></DT
 ></DL
 ></DD
@@ -828,166 +870,166 @@ HREF="#APPENDIXES"
 ><DD
 ><DL
 ><DT
->21. <A
+>23. <A
 HREF="#PORTABILITY"
 >Portability</A
 ></DT
 ><DD
 ><DL
 ><DT
->21.1. <A
-HREF="#AEN3156"
+>23.1. <A
+HREF="#AEN3303"
 >HPUX</A
 ></DT
 ><DT
->21.2. <A
-HREF="#AEN3162"
+>23.2. <A
+HREF="#AEN3309"
 >SCO Unix</A
 ></DT
 ><DT
->21.3. <A
-HREF="#AEN3166"
+>23.3. <A
+HREF="#AEN3313"
 >DNIX</A
 ></DT
 ><DT
->21.4. <A
-HREF="#AEN3195"
+>23.4. <A
+HREF="#AEN3342"
 >RedHat Linux Rembrandt-II</A
 ></DT
 ><DT
->21.5. <A
-HREF="#AEN3201"
+>23.5. <A
+HREF="#AEN3348"
 >AIX</A
 ></DT
 ></DL
 ></DD
 ><DT
->22. <A
+>24. <A
 HREF="#OTHER-CLIENTS"
 >Samba and other CIFS clients</A
 ></DT
 ><DD
 ><DL
 ><DT
->22.1. <A
-HREF="#AEN3221"
+>24.1. <A
+HREF="#AEN3368"
 >Macintosh clients?</A
 ></DT
 ><DT
->22.2. <A
-HREF="#AEN3230"
+>24.2. <A
+HREF="#AEN3377"
 >OS2 Client</A
 ></DT
 ><DT
->22.3. <A
-HREF="#AEN3270"
+>24.3. <A
+HREF="#AEN3417"
 >Windows for Workgroups</A
 ></DT
 ><DT
->22.4. <A
-HREF="#AEN3294"
+>24.4. <A
+HREF="#AEN3441"
 >Windows '95/'98</A
 ></DT
 ><DT
->22.5. <A
-HREF="#AEN3310"
+>24.5. <A
+HREF="#AEN3457"
 >Windows 2000 Service Pack 2</A
 ></DT
 ></DL
 ></DD
 ><DT
->23. <A
+>25. <A
 HREF="#COMPILING"
 >How to compile SAMBA</A
 ></DT
 ><DD
 ><DL
 ><DT
->23.1. <A
-HREF="#AEN3337"
+>25.1. <A
+HREF="#AEN3484"
 >Access Samba source code via CVS</A
 ></DT
 ><DT
->23.2. <A
-HREF="#AEN3380"
+>25.2. <A
+HREF="#AEN3527"
 >Accessing the samba sources via rsync and ftp</A
 ></DT
 ><DT
->23.3. <A
-HREF="#AEN3386"
+>25.3. <A
+HREF="#AEN3533"
 >Building the Binaries</A
 ></DT
 ><DT
->23.4. <A
-HREF="#AEN3414"
+>25.4. <A
+HREF="#AEN3561"
 >Starting the smbd and nmbd</A
 ></DT
 ></DL
 ></DD
 ><DT
->24. <A
+>26. <A
 HREF="#BUGREPORT"
 >Reporting Bugs</A
 ></DT
 ><DD
 ><DL
 ><DT
->24.1. <A
-HREF="#AEN3476"
+>26.1. <A
+HREF="#AEN3623"
 >Introduction</A
 ></DT
 ><DT
->24.2. <A
-HREF="#AEN3486"
+>26.2. <A
+HREF="#AEN3633"
 >General info</A
 ></DT
 ><DT
->24.3. <A
-HREF="#AEN3492"
+>26.3. <A
+HREF="#AEN3639"
 >Debug levels</A
 ></DT
 ><DT
->24.4. <A
-HREF="#AEN3509"
+>26.4. <A
+HREF="#AEN3656"
 >Internal errors</A
 ></DT
 ><DT
->24.5. <A
-HREF="#AEN3519"
+>26.5. <A
+HREF="#AEN3666"
 >Attaching to a running process</A
 ></DT
 ><DT
->24.6. <A
-HREF="#AEN3522"
+>26.6. <A
+HREF="#AEN3669"
 >Patches</A
 ></DT
 ></DL
 ></DD
 ><DT
->25. <A
+>27. <A
 HREF="#DIAGNOSIS"
 >The samba checklist</A
 ></DT
 ><DD
 ><DL
 ><DT
->25.1. <A
-HREF="#AEN3545"
+>27.1. <A
+HREF="#AEN3692"
 >Introduction</A
 ></DT
 ><DT
->25.2. <A
-HREF="#AEN3550"
+>27.2. <A
+HREF="#AEN3697"
 >Assumptions</A
 ></DT
 ><DT
->25.3. <A
-HREF="#AEN3560"
+>27.3. <A
+HREF="#AEN3707"
 >Tests</A
 ></DT
 ><DT
->25.4. <A
-HREF="#AEN3670"
+>27.4. <A
+HREF="#AEN3817"
 >Still having troubles?</A
 ></DT
 ></DL
@@ -1142,146 +1184,146 @@ HREF="#PASSDB"
 ><DL
 ><DT
 >3.1. <A
-HREF="#AEN227"
+HREF="#AEN234"
 >Introduction</A
 ></DT
 ><DT
 >3.2. <A
-HREF="#AEN234"
+HREF="#AEN241"
 >Important Notes About Security</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.2.1. <A
-HREF="#AEN249"
+HREF="#AEN267"
 >Advantages of SMB Encryption</A
 ></DT
 ><DT
 >3.2.2. <A
-HREF="#AEN254"
+HREF="#AEN273"
 >Advantages of non-encrypted passwords</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3.3. <A
-HREF="#AEN260"
+HREF="#AEN279"
 >The smbpasswd Command</A
 ></DT
 ><DT
 >3.4. <A
-HREF="#AEN291"
+HREF="#AEN310"
 >Plain text</A
 ></DT
 ><DT
 >3.5. <A
-HREF="#AEN296"
+HREF="#AEN315"
 >TDB</A
 ></DT
 ><DT
 >3.6. <A
-HREF="#AEN299"
+HREF="#AEN318"
 >LDAP</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.6.1. <A
-HREF="#AEN301"
+HREF="#AEN320"
 >Introduction</A
 ></DT
 ><DT
 >3.6.2. <A
-HREF="#AEN321"
+HREF="#AEN340"
 >Introduction</A
 ></DT
 ><DT
 >3.6.3. <A
-HREF="#AEN350"
+HREF="#AEN369"
 >Supported LDAP Servers</A
 ></DT
 ><DT
 >3.6.4. <A
-HREF="#AEN355"
+HREF="#AEN374"
 >Schema and Relationship to the RFC 2307 posixAccount</A
 ></DT
 ><DT
 >3.6.5. <A
-HREF="#AEN367"
+HREF="#AEN386"
 >Configuring Samba with LDAP</A
 ></DT
 ><DT
 >3.6.6. <A
-HREF="#AEN414"
+HREF="#AEN433"
 >Accounts and Groups management</A
 ></DT
 ><DT
 >3.6.7. <A
-HREF="#AEN419"
+HREF="#AEN438"
 >Security and sambaAccount</A
 ></DT
 ><DT
 >3.6.8. <A
-HREF="#AEN439"
+HREF="#AEN458"
 >LDAP specials attributes for sambaAccounts</A
 ></DT
 ><DT
 >3.6.9. <A
-HREF="#AEN509"
+HREF="#AEN528"
 >Example LDIF Entries for a sambaAccount</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3.7. <A
-HREF="#AEN517"
+HREF="#AEN536"
 >MySQL</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.7.1. <A
-HREF="#AEN519"
+HREF="#AEN538"
 >Building</A
 ></DT
 ><DT
 >3.7.2. <A
-HREF="#AEN525"
+HREF="#AEN544"
 >Creating the database</A
 ></DT
 ><DT
 >3.7.3. <A
-HREF="#AEN535"
+HREF="#AEN554"
 >Configuring</A
 ></DT
 ><DT
 >3.7.4. <A
-HREF="#AEN552"
+HREF="#AEN571"
 >Using plaintext passwords or encrypted password</A
 ></DT
 ><DT
 >3.7.5. <A
-HREF="#AEN557"
+HREF="#AEN576"
 >Getting non-column data from the table</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3.8. <A
-HREF="#AEN565"
+HREF="#AEN584"
 >Passdb XML plugin</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.8.1. <A
-HREF="#AEN567"
+HREF="#AEN586"
 >Building</A
 ></DT
 ><DT
 >3.8.2. <A
-HREF="#AEN573"
+HREF="#AEN592"
 >Usage</A
 ></DT
 ></DL
@@ -2041,7 +2083,7 @@ CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN227"
+NAME="AEN234"
 >3.1. Introduction</A
 ></H2
 ><P
@@ -2082,7 +2124,7 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN234"
+NAME="AEN241"
 >3.2. Important Notes About Security</A
 ></H2
 ><P
@@ -2143,6 +2185,10 @@ CLASS="EMPHASIS"
 >Other Microsoft operating systems which also exhibit 
 		this behavior includes</P
 ><P
+> These versions of MS Windows do not support full domain
+		security protocols, although they may log onto a domain environment.
+		Of these Only MS Windows XP Home does NOT support domain logons.</P
+><P
 ></P
 ><TABLE
 BORDER="0"
@@ -2163,7 +2209,43 @@ BORDER="0"
 ></TR
 ><TR
 ><TD
->Windows 2000</TD
+>Windows Me</TD
+></TR
+><TR
+><TD
+>Windows XP Home</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+><P
+> The following versions of MS Windows fully support domain
+		security protocols.</P
+><P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>Windows NT 3.5x</TD
+></TR
+><TR
+><TD
+>Windows NT 4.0</TD
+></TR
+><TR
+><TD
+>Windows 2000 Professional</TD
+></TR
+><TR
+><TD
+>Windows 200x Server/Advanced Server</TD
+></TR
+><TR
+><TD
+>Windows XP Professional</TD
 ></TR
 ></TBODY
 ></TABLE
@@ -2181,6 +2263,21 @@ CLASS="EMPHASIS"
 		SMB Challenge/Response mechanism described here.  Enabling
 		clear text authentication does not disable the ability
 		of the client to participate in encrypted authentication.</P
+><P
+>MS Windows clients will cache the encrypted password alone.
+		Even when plain text passwords are re-enabled, through the appropriate
+		registry change, the plain text password is NEVER cached. This means that
+		in the event that a network connections should become disconnected (broken)
+		only the cached (encrypted) password will be sent to the resource server
+		to affect a auto-reconnect. If the resource server does not support encrypted
+		passwords the auto-reconnect will fail. <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>USE OF ENCRYPTED PASSWORDS
+		IS STRONGLY ADVISED.</I
+></SPAN
+></P
 ></TD
 ></TR
 ></TABLE
@@ -2190,7 +2287,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN249"
+NAME="AEN267"
 >3.2.1. Advantages of SMB Encryption</A
 ></H3
 ><P
@@ -2200,19 +2297,24 @@ BORDER="0"
 ><TBODY
 ><TR
 ><TD
->plain text passwords are not passed across 
+>Plain text passwords are not passed across 
 			the network. Someone using a network sniffer cannot just 
 			record passwords going to the SMB server.</TD
 ></TR
 ><TR
 ><TD
 >WinNT doesn't like talking to a server 
-			that isn't using SMB encrypted passwords. It will refuse 
+			that SM not support encrypted passwords. It will refuse 
 			to browse the server if the server is also in user level 
 			security mode. It will insist on prompting the user for the 
 			password on each connection, which is very annoying. The
 			only things you can do to stop this is to use SMB encryption.
 			</TD
+></TR
+><TR
+><TD
+>Encrypted password support allows auto-matic share
+			(resource) reconnects.</TD
 ></TR
 ></TBODY
 ></TABLE
@@ -2224,7 +2326,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN254"
+NAME="AEN273"
 >3.2.2. Advantages of non-encrypted passwords</A
 ></H3
 ><P
@@ -2234,20 +2336,19 @@ BORDER="0"
 ><TBODY
 ><TR
 ><TD
->plain text passwords are not kept 
-			on disk. </TD
+>Plain text passwords are not kept 
+			on disk, and are NOT cached in memory. </TD
 ></TR
 ><TR
 ><TD
->uses same password file as other unix 
+>Uses same password file as other unix 
 			services such as login and ftp</TD
 ></TR
 ><TR
 ><TD
->you are probably already using other 
-			services (such as telnet and ftp) which send plain text 
-			passwords over the net, so sending them for SMB isn't 
-			such a big deal.</TD
+>Use of other services (such as telnet and ftp) which
+			send plain text passwords over the net, so sending them for SMB
+			isn't such a big deal.</TD
 ></TR
 ></TBODY
 ></TABLE
@@ -2260,7 +2361,7 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN260"
+NAME="AEN279"
 >3.3. The smbpasswd Command</A
 ></H2
 ><P
@@ -2272,8 +2373,7 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >yppasswd</B
 > programs.
-	It maintains the two 32 byte password fields 
-	in the passdb backend. </P
+	It maintains the two 32 byte password fields in the passdb backend. </P
 ><P
 ><B
 CLASS="COMMAND"
@@ -2364,7 +2464,7 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN291"
+NAME="AEN310"
 >3.4. Plain text</A
 ></H2
 ><P
@@ -2384,7 +2484,7 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN296"
+NAME="AEN315"
 >3.5. TDB</A
 ></H2
 ><P
@@ -2397,7 +2497,7 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN299"
+NAME="AEN318"
 >3.6. LDAP</A
 ></H2
 ><DIV
@@ -2405,7 +2505,7 @@ CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN301"
+NAME="AEN320"
 >3.6.1. Introduction</A
 ></H3
 ><P
@@ -2473,7 +2573,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN321"
+NAME="AEN340"
 >3.6.2. Introduction</A
 ></H3
 ><P
@@ -2582,15 +2682,16 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN350"
+NAME="AEN369"
 >3.6.3. Supported LDAP Servers</A
 ></H3
 ><P
->The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
-2.0 server and client libraries.  The same code should be able to work with
-Netscape's Directory Server and client SDK. However, due to lack of testing
-so far, there are bound to be compile errors and bugs.  These should not be
-hard to fix. If you are so inclined, please be sure to forward all patches to
+>The LDAP samdb code in 2.2.3 (and later) has been developed and tested
+using the OpenLDAP 2.0 server and client libraries. 
+The same code should be able to work with Netscape's Directory Server
+and client SDK. However, due to lack of testing so far, there are bound
+to be compile errors and bugs.  These should not be hard to fix.
+If you are so inclined, please be sure to forward all patches to
 <A
 HREF="samba-patches@samba.org"
 TARGET="_top"
@@ -2607,7 +2708,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN355"
+NAME="AEN374"
 >3.6.4. Schema and Relationship to the RFC 2307 posixAccount</A
 ></H3
 ><P
@@ -2664,7 +2765,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN367"
+NAME="AEN386"
 >3.6.5. Configuring Samba with LDAP</A
 ></H3
 ><DIV
@@ -2672,7 +2773,7 @@ CLASS="SECT3"
 ><H4
 CLASS="SECT3"
 ><A
-NAME="AEN369"
+NAME="AEN388"
 >3.6.5.1. OpenLDAP configuration</A
 ></H4
 ><P
@@ -2754,7 +2855,7 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN386"
+NAME="AEN405"
 >3.6.5.2. Configuring Samba</A
 ></H4
 ><P
@@ -2870,7 +2971,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN414"
+NAME="AEN433"
 >3.6.6. Accounts and Groups management</A
 ></H3
 ><P
@@ -2895,7 +2996,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN419"
+NAME="AEN438"
 >3.6.7. Security and sambaAccount</A
 ></H3
 ><P
@@ -2974,7 +3075,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN439"
+NAME="AEN458"
 >3.6.8. LDAP specials attributes for sambaAccounts</A
 ></H3
 ><P
@@ -3181,7 +3282,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN509"
+NAME="AEN528"
 >3.6.9. Example LDIF Entries for a sambaAccount</A
 ></H3
 ><P
@@ -3240,7 +3341,7 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN517"
+NAME="AEN536"
 >3.7. MySQL</A
 ></H2
 ><DIV
@@ -3248,7 +3349,7 @@ CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN519"
+NAME="AEN538"
 >3.7.1. Building</A
 ></H3
 ><P
@@ -3269,7 +3370,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN525"
+NAME="AEN544"
 >3.7.2. Creating the database</A
 ></H3
 ><P
@@ -3305,7 +3406,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN535"
+NAME="AEN554"
 >3.7.3. Configuring</A
 ></H3
 ><P
@@ -3416,7 +3517,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN552"
+NAME="AEN571"
 >3.7.4. Using plaintext passwords or encrypted password</A
 ></H3
 ><P
@@ -3431,7 +3532,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN557"
+NAME="AEN576"
 >3.7.5. Getting non-column data from the table</A
 ></H3
 ><P
@@ -3457,7 +3558,7 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN565"
+NAME="AEN584"
 >3.8. Passdb XML plugin</A
 ></H2
 ><DIV
@@ -3465,7 +3566,7 @@ CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN567"
+NAME="AEN586"
 >3.8.1. Building</A
 ></H3
 ><P
@@ -3485,7 +3586,7 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN573"
+NAME="AEN592"
 >3.8.2. Usage</A
 ></H3
 ><P
@@ -3522,7 +3623,7 @@ CLASS="TITLE"
 ><DIV
 CLASS="PARTINTRO"
 ><A
-NAME="AEN581"
+NAME="AEN600"
 ></A
 ><H1
 >Introduction</H1
@@ -3539,153 +3640,185 @@ CLASS="TOC"
 ></DT
 ><DT
 >4. <A
+HREF="#SERVERTYPE"
+>Nomenclature of Server Types</A
+></DT
+><DD
+><DL
+><DT
+>4.1. <A
+HREF="#AEN627"
+>Stand Alone Server</A
+></DT
+><DT
+>4.2. <A
+HREF="#AEN633"
+>Domain Member Server</A
+></DT
+><DT
+>4.3. <A
+HREF="#AEN639"
+>Domain Controller</A
+></DT
+><DD
+><DL
+><DT
+>4.3.1. <A
+HREF="#AEN642"
+>Domain Controller Types</A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>5. <A
 HREF="#SECURITYLEVELS"
 >User and Share security level (for servers not in a domain)</A
 ></DT
 ><DT
->5. <A
+>6. <A
 HREF="#SAMBA-PDC"
->Samba as a NT4 or Win2k Primary Domain Controller</A
+>Samba as an NT4 or Win2k Primary Domain Controller</A
 ></DT
 ><DD
 ><DL
 ><DT
->5.1. <A
-HREF="#AEN625"
+>6.1. <A
+HREF="#AEN703"
 >Prerequisite Reading</A
 ></DT
 ><DT
->5.2. <A
-HREF="#AEN631"
+>6.2. <A
+HREF="#AEN708"
 >Background</A
 ></DT
 ><DT
->5.3. <A
-HREF="#AEN670"
+>6.3. <A
+HREF="#AEN746"
 >Configuring the Samba Domain Controller</A
 ></DT
 ><DT
->5.4. <A
-HREF="#AEN713"
->Creating Machine Trust Accounts and Joining Clients to the
-Domain</A
+>6.4. <A
+HREF="#AEN788"
+>Creating Machine Trust Accounts and Joining Clients to the Domain</A
 ></DT
 ><DD
 ><DL
 ><DT
->5.4.1. <A
-HREF="#AEN732"
+>6.4.1. <A
+HREF="#AEN831"
 >Manual Creation of Machine Trust Accounts</A
 ></DT
 ><DT
->5.4.2. <A
-HREF="#AEN773"
+>6.4.2. <A
+HREF="#AEN872"
 >"On-the-Fly" Creation of Machine Trust Accounts</A
 ></DT
 ><DT
->5.4.3. <A
-HREF="#AEN782"
+>6.4.3. <A
+HREF="#AEN881"
 >Joining the Client to the Domain</A
 ></DT
 ></DL
 ></DD
 ><DT
->5.5. <A
-HREF="#AEN797"
+>6.5. <A
+HREF="#AEN896"
 >Common Problems and Errors</A
 ></DT
 ><DT
->5.6. <A
-HREF="#AEN845"
+>6.6. <A
+HREF="#AEN944"
 >System Policies and Profiles</A
 ></DT
 ><DT
->5.7. <A
-HREF="#AEN889"
+>6.7. <A
+HREF="#AEN988"
 >What other help can I get?</A
 ></DT
 ><DT
->5.8. <A
-HREF="#AEN1003"
+>6.8. <A
+HREF="#AEN1102"
 >Domain Control for Windows 9x/ME</A
 ></DT
 ><DD
 ><DL
 ><DT
->5.8.1. <A
-HREF="#AEN1029"
+>6.8.1. <A
+HREF="#AEN1128"
 >Configuration Instructions:	Network Logons</A
 ></DT
 ><DT
->5.8.2. <A
-HREF="#AEN1048"
+>6.8.2. <A
+HREF="#AEN1147"
 >Configuration Instructions:	Setting up Roaming User Profiles</A
 ></DT
 ></DL
 ></DD
 ><DT
->5.9. <A
-HREF="#AEN1141"
+>6.9. <A
+HREF="#AEN1240"
 >DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></DT
 ></DL
 ></DD
 ><DT
->6. <A
+>7. <A
 HREF="#SAMBA-BDC"
 >How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.1. <A
-HREF="#AEN1177"
+>7.1. <A
+HREF="#AEN1276"
 >Prerequisite Reading</A
 ></DT
 ><DT
->6.2. <A
-HREF="#AEN1181"
+>7.2. <A
+HREF="#AEN1280"
 >Background</A
 ></DT
 ><DT
->6.3. <A
-HREF="#AEN1189"
+>7.3. <A
+HREF="#AEN1288"
 >What qualifies a Domain Controller on the network?</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.3.1. <A
-HREF="#AEN1192"
+>7.3.1. <A
+HREF="#AEN1291"
 >How does a Workstation find its domain controller?</A
 ></DT
 ><DT
->6.3.2. <A
-HREF="#AEN1195"
+>7.3.2. <A
+HREF="#AEN1294"
 >When is the PDC needed?</A
 ></DT
 ></DL
 ></DD
 ><DT
->6.4. <A
-HREF="#AEN1198"
+>7.4. <A
+HREF="#AEN1297"
 >Can Samba be a Backup Domain Controller to an NT PDC?</A
 ></DT
 ><DT
->6.5. <A
-HREF="#AEN1203"
+>7.5. <A
+HREF="#AEN1302"
 >How do I set up a Samba BDC?</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.5.1. <A
-HREF="#AEN1220"
+>7.5.1. <A
+HREF="#AEN1319"
 >How do I replicate the smbpasswd file?</A
 ></DT
 ><DT
->6.5.2. <A
-HREF="#AEN1224"
+>7.5.2. <A
+HREF="#AEN1323"
 >Can I do this all with LDAP?</A
 ></DT
 ></DL
@@ -3693,83 +3826,83 @@ HREF="#AEN1224"
 ></DL
 ></DD
 ><DT
->7. <A
+>8. <A
 HREF="#ADS"
 >Samba as a ADS domain member</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.1. <A
-HREF="#AEN1242"
+>8.1. <A
+HREF="#AEN1341"
 >Installing the required packages for Debian</A
 ></DT
 ><DT
->7.2. <A
-HREF="#AEN1249"
+>8.2. <A
+HREF="#AEN1348"
 >Installing the required packages for RedHat</A
 ></DT
 ><DT
->7.3. <A
-HREF="#AEN1259"
+>8.3. <A
+HREF="#AEN1358"
 >Compile Samba</A
 ></DT
 ><DT
->7.4. <A
-HREF="#AEN1274"
+>8.4. <A
+HREF="#AEN1373"
 >Setup your /etc/krb5.conf</A
 ></DT
 ><DT
->7.5. <A
-HREF="#AEN1284"
+>8.5. <A
+HREF="#AEN1383"
 >Create the computer account</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.5.1. <A
-HREF="#AEN1288"
+>8.5.1. <A
+HREF="#AEN1387"
 >Possible errors</A
 ></DT
 ></DL
 ></DD
 ><DT
->7.6. <A
-HREF="#AEN1296"
+>8.6. <A
+HREF="#AEN1395"
 >Test your server setup</A
 ></DT
 ><DT
->7.7. <A
-HREF="#AEN1301"
+>8.7. <A
+HREF="#AEN1400"
 >Testing with smbclient</A
 ></DT
 ><DT
->7.8. <A
-HREF="#AEN1304"
+>8.8. <A
+HREF="#AEN1403"
 >Notes</A
 ></DT
 ></DL
 ></DD
 ><DT
->8. <A
+>9. <A
 HREF="#DOMAIN-SECURITY"
 >Samba as a NT4 or Win2k domain member</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.1. <A
-HREF="#AEN1326"
+>9.1. <A
+HREF="#AEN1425"
 >Joining an NT Domain with Samba 3.0</A
 ></DT
 ><DT
->8.2. <A
-HREF="#AEN1381"
+>9.2. <A
+HREF="#AEN1480"
 >Samba and Windows 2000 Domains</A
 ></DT
 ><DT
->8.3. <A
-HREF="#AEN1384"
+>9.3. <A
+HREF="#AEN1483"
 >Why is this better than security = server?</A
 ></DT
 ></DL
@@ -3781,9 +3914,210 @@ HREF="#AEN1384"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
+NAME="SERVERTYPE"
+></A
+>Chapter 4. Nomenclature of Server Types</H1
+><P
+>Adminstrators of Microsoft networks often refer to there being three
+different type of servers:</P
+><P
+></P
+><UL
+><LI
+><P
+>Stand Alone Server</P
+></LI
+><LI
+><P
+>Domain Member Server</P
+></LI
+><LI
+><P
+>Domain Controller</P
+><P
+></P
+><UL
+><LI
+><P
+>Primary Domain Controller</P
+></LI
+><LI
+><P
+>Backup Domain Controller</P
+></LI
+></UL
+></LI
+></UL
+><P
+>A network administrator who is familiar with these terms and who
+wishes to migrate to or use Samba will want to know what these terms mean
+within a Samba context.</P
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN627"
+>4.1. Stand Alone Server</A
+></H2
+><P
+>The term <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>stand alone server</I
+></SPAN
+> means that the server
+will provide local authentication and access control for all resources
+that are available from it. In general this means that there will be a
+local user database. In more technical terms, it means that resources
+on the machine will either be made available in either SHARE mode or in
+USER mode. SHARE mode and USER mode security are documented under
+discussions regarding "security mode". The smb.conf configuration parameters
+that control security mode are: "security = user" and "security = share".</P
+><P
+>Samba tends to blur the distinction a little in respect of what is
+a stand alone server. This is because the authentication database may be
+local or on a remote server, even if from the samba protocol perspective
+the samba server is NOT a member of a domain security context.</P
+><P
+>Through the use of PAM (Pluggable Authentication Modules) and nsswitch
+(the name service switcher) the source of authentication may reside on 
+another server. We would be inclined to call this the authentication server.
+This means that the samba server may use the local Unix/Linux system
+password database (/etc/passwd or /etc/shadow), may use a local smbpasswd
+file (/etc/samba/smbpasswd or /usr/local/samba/lib/private/smbpasswd), or
+may use an LDAP back end, or even via PAM and Winbind another CIFS/SMB
+server for authentication.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN633"
+>4.2. Domain Member Server</A
+></H2
+><P
+>This mode of server operation involves the samba machine being made a member
+of a domain security context. This means by definition that all user authentication
+will be done from a centrally defined authentication regime. The authentication
+regime may come from an NT3/4 style (old domain technology) server, or it may be
+provided from an Active Directory server (ADS) running on MS Windows 2000 or later.
+&#62;/para&#62;&#13;</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Of course it should be clear that the authentication back end itself could be from any
+distributed directory architecture server that is supported by Samba. This can be
+LDAP (from OpenLDAP), or Sun's iPlanet, of NetWare Directory Server, etc.</I
+></SPAN
+></P
+><P
+>Please refer to the section on Howto configure Samba as a Primary Domain Controller
+and for more information regarding how to create a domain machine account for a
+domain member server as well as for information regading how to enable the samba
+domain member machine to join the domain and to be fully trusted by it.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN639"
+>4.3. Domain Controller</A
+></H2
+><P
+>Over the years public perceptions of what Domain Control really is has taken on an
+almost mystical nature. Before we branch into a brief overview of what Domain Control
+is the following types of controller are known:</P
+><DIV
+CLASS="SECT2"
+><HR><H3
+CLASS="SECT2"
+><A
+NAME="AEN642"
+>4.3.1. Domain Controller Types</A
+></H3
+><P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>Primary Domain Controller</TD
+></TR
+><TR
+><TD
+>Backup Domain Controller</TD
+></TR
+><TR
+><TD
+>ADS Domain Controller</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+><P
+>The <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Primary Domain Controller</I
+></SPAN
+> or PDC plays an important role in the MS 
+Windows NT3 and NT4 Domain Control architecture, but not in the manner that so many
+expect. The PDC seeds the Domain Control database (a part of the Windows registry) and
+it plays a key part in synchronisation of the domain authentication database. </P
+><P
+>New to Samba-3.0.0 is the ability to use a back-end file that holds the same type of data as
+the NT4 style SAM (Security Account Manager) database (one of the registry files).
+The samba-3.0.0 SAM can be specified via the smb.conf file parameter "passwd backend" and
+valid options include <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+> smbpasswd tdbsam ldapsam nisplussam plugin unixsam</I
+></SPAN
+>.
+The smbpasswd, tdbsam and ldapsam options can have a "_nua" suffix to indicate that No Unix
+Accounts need to be created. In other words, the Samba SAM will be independant of Unix/Linux
+system accounts, provided a uid range is defined from which SAM accounts can be created.</P
+><P
+>The <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Backup Domain Controller</I
+></SPAN
+> or BDC plays a key role in servicing network
+authentication requests. The BDC is biased to answer logon requests so that on a network segment
+that has a BDC and a PDC the BDC will be most likely to service network logon requests. The PDC will
+answer network logon requests when the BDC is too busy (high load). A BDC can be promoted to
+a PDC. If the PDC is on line at the time that the BDC is promoted to PDC the previous PDC is
+automatically demoted to a BDC.</P
+><P
+>At this time Samba is NOT capable of acting as an <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ADS Domain Controller</I
+></SPAN
+>.&#13;</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
 NAME="SECURITYLEVELS"
 ></A
->Chapter 4. User and Share security level (for servers not in a domain)</H1
+>Chapter 5. User and Share security level (for servers not in a domain)</H1
 ><P
 >A SMB server tells the client at startup what "security level" it is
 running. There are two options "share level" and "user level". Which
@@ -3883,14 +4217,14 @@ CLASS="CHAPTER"
 ><A
 NAME="SAMBA-PDC"
 ></A
->Chapter 5. Samba as a NT4 or Win2k Primary Domain Controller</H1
+>Chapter 6. Samba as an NT4 or Win2k Primary Domain Controller</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN625"
->5.1. Prerequisite Reading</A
+NAME="AEN703"
+>6.1. Prerequisite Reading</A
 ></H2
 ><P
 >Before you continue reading in this chapter, please make sure 
@@ -3905,98 +4239,42 @@ CLASS="FILENAME"
 >smb.conf(5)</TT
 ></A
 > 
-manpage and the <A
-HREF="ENCRYPTION.html"
-TARGET="_top"
->Encryption chapter</A
-> 
-of this HOWTO Collection.</P
+manpage.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN631"
->5.2. Background</A
+NAME="AEN708"
+>6.2. Background</A
 ></H2
-><DIV
-CLASS="NOTE"
 ><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->Author's Note:</I
-></SPAN
-> This document is a combination 
-of David Bannon's "Samba 2.2 PDC HOWTO" and "Samba NT Domain FAQ". 
-Both documents are superseded by this one.</P
-></TD
-></TR
-></TABLE
-></DIV
-><P
->Versions of Samba prior to release 2.2 had marginal capabilities to act
-as a Windows NT 4.0 Primary Domain Controller
-
-(PDC).  With Samba 2.2.0, we are proud to announce official support for
-Windows NT 4.0-style domain logons from Windows NT 4.0 and Windows 
-2000 clients.  This article outlines the steps
-necessary for configuring Samba as a PDC.  It is necessary to have a
-working Samba server prior to implementing the PDC functionality.  If
-you have not followed the steps outlined in <A
-HREF="UNIX_INSTALL.html"
-TARGET="_top"
-> UNIX_INSTALL.html</A
->, please make sure
-that your server is configured correctly before proceeding.  Another
-good resource in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
->smb.conf(5) man
-page</A
->. The following functionality should work in 2.2:</P
+>This article outlines the steps necessary for configuring Samba as a PDC.
+It is necessary to have a working Samba server prior to implementing the
+PDC functionality.</P
 ><P
 ></P
 ><UL
 ><LI
 ><P
->	domain logons for Windows NT 4.0/2000 clients.
+>	domain logons for Windows NT 4.0 / 200x / XP Professional clients.
 	</P
 ></LI
 ><LI
 ><P
->	placing a Windows 9x client in user level security
+>	placing Windows 9x / Me clients in user level security
 	</P
 ></LI
 ><LI
 ><P
 >	retrieving a list of users and groups from a Samba PDC to
-	Windows 9x/NT/2000 clients
+	Windows 9x / Me / NT / 200x / XP Professional clients
 	</P
 ></LI
 ><LI
 ><P
->	roving (roaming) user profiles
+>	roaming user profiles
 	</P
 ></LI
 ><LI
@@ -4006,7 +4284,7 @@ page</A
 ></LI
 ></UL
 ><P
->The following pieces of functionality are not included in the 2.2 release:</P
+>The following functionalities are new to the Samba 3.0 release:</P
 ><P
 ></P
 ><UL
@@ -4017,13 +4295,19 @@ page</A
 ></LI
 ><LI
 ><P
->	SAM replication with Windows NT 4.0 Domain Controllers
-	(i.e. a Samba PDC and a Windows NT BDC or vice versa) 
+>	Adding users via the User Manager for Domains
 	</P
 ></LI
+></UL
+><P
+>The following functionalities are NOT provided by Samba 3.0:</P
+><P
+></P
+><UL
 ><LI
 ><P
->	Adding users via the User Manager for Domains
+>	SAM replication with Windows NT 4.0 Domain Controllers
+	(i.e. a Samba PDC and a Windows NT BDC or vice versa) 
 	</P
 ></LI
 ><LI
@@ -4034,13 +4318,22 @@ page</A
 ></LI
 ></UL
 ><P
->Please note that Windows 9x clients are not true members of a domain
+>Please note that Windows 9x / Me / XP Home clients are not true members of a domain
 for reasons outlined in this article.  Therefore the protocol for
 support Windows 9x-style domain logons is completely different
-from NT4 domain logons and has been officially supported for some 
+from NT4 / Win2k type domain logons and has been officially supported for some 
 time.</P
 ><P
->Implementing a Samba PDC can basically be divided into 2 broad
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>MS Windows XP Home edition is NOT able to join a domain and does not permit
+the use of domain logons.</I
+></SPAN
+></P
+><P
+>Implementing a Samba PDC can basically be divided into 3 broad
 steps.</P
 ><P
 ></P
@@ -4053,8 +4346,12 @@ TYPE="1"
 ></LI
 ><LI
 ><P
->	Creating machine trust accounts	and joining clients 
-	to the domain
+>	Creating machine trust accounts	and joining clients to the domain
+	</P
+></LI
+><LI
+><P
+>	Adding and managing domain user accounts
 	</P
 ></LI
 ></OL
@@ -4062,27 +4359,26 @@ TYPE="1"
 >There are other minor details such as user profiles, system
 policies, etc...  However, these are not necessarily specific
 to a Samba PDC as much as they are related to Windows NT networking
-concepts.  They will be mentioned only briefly here.</P
+concepts.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN670"
->5.3. Configuring the Samba Domain Controller</A
+NAME="AEN746"
+>6.3. Configuring the Samba Domain Controller</A
 ></H2
 ><P
 >The first step in creating a working Samba PDC is to 
-understand the parameters necessary in smb.conf.  I will not
-attempt to re-explain the parameters here as they are more that
-adequately covered in <A
+understand the parameters necessary in smb.conf. Here we
+attempt to explain the parameters that are covered in
+<A
 HREF="smb.conf.5.html"
 TARGET="_top"
 > the smb.conf
 man page</A
->.  For convenience, the parameters have been
-linked with the actual smb.conf description.</P
+>.</P
 ><P
 >Here is an example <TT
 CLASS="FILENAME"
@@ -4160,8 +4456,7 @@ TARGET="_top"
 >logon path</A
 > = \\%N\profiles\%u
     
-    ; where is a user's home directory and where should it
-    ; be mounted at?
+    ; where is a user's home directory and where should it be mounted at?
     <A
 HREF="smb.conf.5.html#LOGONDRIVE"
 TARGET="_top"
@@ -4259,25 +4554,17 @@ CLASS="FILENAME"
 ></LI
 ></UL
 ><P
->As Samba 2.2 does not offer a complete implementation of group mapping
+>Samba 3.0 offers a complete implementation of group mapping
 between Windows NT groups and Unix groups (this is really quite
-complicated to explain in a short space), you should refer to the
-<A
-HREF="smb.conf.5.html#DOMAINADMINGROUP"
-TARGET="_top"
->domain admin
-group</A
-> smb.conf parameter for information of creating "Domain
-Admins" style accounts.</P
+complicated to explain in a short space).</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN713"
->5.4. Creating Machine Trust Accounts and Joining Clients to the
-Domain</A
+NAME="AEN788"
+>6.4. Creating Machine Trust Accounts and Joining Clients to the Domain</A
 ></H2
 ><P
 >A machine trust account is a Samba account that is used to
@@ -4289,14 +4576,127 @@ Account."</P
 secure communication with the Domain Controller.  This is a security
 feature to prevent an unauthorized machine with the same NetBIOS name
 from joining the domain and gaining access to domain user/group
-accounts.  Windows NT and 2000 clients use machine trust accounts, but
-Windows 9x clients do not.  Hence, a Windows 9x client is never a true
-member of a domain because it does not possess a machine trust
-account, and thus has no shared secret with the domain controller.</P
+accounts.  Windows NT, 200x, XP Professional clients use machine trust
+accounts, but Windows 9x / Me / XP Home clients do not.  Hence, a
+Windows 9x / Me / XP Home  client is never a true member of a domain
+because it does not possess a machine trust account, and thus has no
+shared secret with the domain controller.</P
 ><P
 >A Windows PDC stores each machine trust account in the Windows
-Registry.  A Samba PDC, however, stores each machine trust account 
-in two parts, as follows:
+Registry. A Samba-3 PDC also has to stoe machine trust account information
+in a suitable back-end data store. With Samba-3 there can be multiple back-ends
+for this including:</P
+><P
+></P
+><UL
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>smbpaswd</I
+></SPAN
+> - the plain ascii file stored used by
+	earlier versions of Samba. This file configuration option requires
+	a Unix/Linux system account for EVERY entry (ie: both for user and for
+	machine accounts). This file will be located in the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>private</I
+></SPAN
+>
+	directory (default is /usr/local/samba/lib/private or on linux /etc/samba).
+	</P
+></LI
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>smbpasswd_nua</I
+></SPAN
+> - This file is independant of the
+	system wide user accounts. The use of this back-end option requires
+	specification of the "non unix account range" option also. It is called
+	smbpasswd and will be located in the <TT
+CLASS="FILENAME"
+>private</TT
+> directory.
+	</P
+></LI
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>tdbsam</I
+></SPAN
+> - a binary database backend that will be
+	stored in the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>private</I
+></SPAN
+> directory in a file called
+	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>passwd.tdb</I
+></SPAN
+>. The key benefit of this binary format
+	file is that it can store binary objects that can not be accomodated
+	in the traditional plain text smbpasswd file.
+	</P
+></LI
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>tdbsam_nua</I
+></SPAN
+> like the smbpasswd_nua option above, this
+	file allows the creation of arbitrary user and machine accounts without
+	requiring that account to be added to the system (/etc/passwd) file. It
+	too requires the specification of the "non unix account range" option
+	in the [globals] section of the smb.conf file.
+	</P
+></LI
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ldapsam</I
+></SPAN
+> - An LDAP based back-end. Permits the
+	LDAP server to be specified. eg: ldap://localhost or ldap://frodo.murphy.com
+	</P
+></LI
+><LI
+><P
+>	<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ldapsam_nua</I
+></SPAN
+> - LDAP based back-end with no unix
+	account requirement, like smbpasswd_nua and tdbsam_nua above.
+	</P
+></LI
+></UL
+><P
+>A Samba PDC, however, stores each machine trust account in two parts,
+as follows:
 
 <P
 ></P
@@ -4349,8 +4749,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN732"
->5.4.1. Manual Creation of Machine Trust Accounts</A
+NAME="AEN831"
+>6.4.1. Manual Creation of Machine Trust Accounts</A
 ></H3
 ><P
 >The first step in manually creating a machine trust account is to
@@ -4519,8 +4919,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN773"
->5.4.2. "On-the-Fly" Creation of Machine Trust Accounts</A
+NAME="AEN872"
+>6.4.2. "On-the-Fly" Creation of Machine Trust Accounts</A
 ></H3
 ><P
 >The second (and recommended) way of creating machine trust accounts is
@@ -4556,8 +4956,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN782"
->5.4.3. Joining the Client to the Domain</A
+NAME="AEN881"
+>6.4.3. Joining the Client to the Domain</A
 ></H3
 ><P
 >The procedure for joining a client to the domain varies with the
@@ -4624,8 +5024,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN797"
->5.5. Common Problems and Errors</A
+NAME="AEN896"
+>6.5. Common Problems and Errors</A
 ></H2
 ><P
 ></P
@@ -4830,8 +5230,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN845"
->5.6. System Policies and Profiles</A
+NAME="AEN944"
+>6.6. System Policies and Profiles</A
 ></H2
 ><P
 >Much of the information necessary to implement System Policies and
@@ -5007,8 +5407,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN889"
->5.7. What other help can I get?</A
+NAME="AEN988"
+>6.7. What other help can I get?</A
 ></H2
 ><P
 >There are many sources of information available in the form 
@@ -5427,8 +5827,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1003"
->5.8. Domain Control for Windows 9x/ME</A
+NAME="AEN1102"
+>6.8. Domain Control for Windows 9x/ME</A
 ></H2
 ><DIV
 CLASS="NOTE"
@@ -5561,8 +5961,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1029"
->5.8.1. Configuration Instructions:	Network Logons</A
+NAME="AEN1128"
+>6.8.1. Configuration Instructions:	Network Logons</A
 ></H3
 ><P
 >The main difference between a PDC and a Windows 9x logon 
@@ -5667,8 +6067,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1048"
->5.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
+NAME="AEN1147"
+>6.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
 ></H3
 ><DIV
 CLASS="WARNING"
@@ -5720,8 +6120,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1056"
->5.8.2.1. Windows NT Configuration</A
+NAME="AEN1155"
+>6.8.2.1. Windows NT Configuration</A
 ></H4
 ><P
 >To support WinNT clients, in the [global] section of smb.conf set the
@@ -5771,8 +6171,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1064"
->5.8.2.2. Windows 9X Configuration</A
+NAME="AEN1163"
+>6.8.2.2. Windows 9X Configuration</A
 ></H4
 ><P
 >To support Win9X clients, you must use the "logon home" parameter. Samba has
@@ -5802,8 +6202,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1072"
->5.8.2.3. Win9X and WinNT Configuration</A
+NAME="AEN1171"
+>6.8.2.3. Win9X and WinNT Configuration</A
 ></H4
 ><P
 >You can support profiles for both Win9X and WinNT clients by setting both the
@@ -5847,8 +6247,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1079"
->5.8.2.4. Windows 9X Profile Setup</A
+NAME="AEN1178"
+>6.8.2.4. Windows 9X Profile Setup</A
 ></H4
 ><P
 >When a user first logs in on Windows 9X, the file user.DAT is created,
@@ -6007,8 +6407,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1115"
->5.8.2.5. Windows NT Workstation 4.0</A
+NAME="AEN1214"
+>6.8.2.5. Windows NT Workstation 4.0</A
 ></H4
 ><P
 >When a user first logs in to a Windows NT Workstation, the profile
@@ -6121,8 +6521,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1128"
->5.8.2.6. Windows NT Server</A
+NAME="AEN1227"
+>6.8.2.6. Windows NT Server</A
 ></H4
 ><P
 >There is nothing to stop you specifying any path that you like for the
@@ -6135,8 +6535,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1131"
->5.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
+NAME="AEN1230"
+>6.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
 ></H4
 ><DIV
 CLASS="WARNING"
@@ -6228,8 +6628,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1141"
->5.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
+NAME="AEN1240"
+>6.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></H2
 ><DIV
 CLASS="WARNING"
@@ -6367,14 +6767,14 @@ CLASS="CHAPTER"
 ><A
 NAME="SAMBA-BDC"
 ></A
->Chapter 6. How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</H1
+>Chapter 7. How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1177"
->6.1. Prerequisite Reading</A
+NAME="AEN1276"
+>7.1. Prerequisite Reading</A
 ></H2
 ><P
 >Before you continue reading in this chapter, please make sure
@@ -6390,8 +6790,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1181"
->6.2. Background</A
+NAME="AEN1280"
+>7.2. Background</A
 ></H2
 ><P
 >What is a Domain Controller? It is a machine that is able to answer
@@ -6435,8 +6835,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1189"
->6.3. What qualifies a Domain Controller on the network?</A
+NAME="AEN1288"
+>7.3. What qualifies a Domain Controller on the network?</A
 ></H2
 ><P
 >Every machine that is a Domain Controller for the domain SAMBA has to
@@ -6452,8 +6852,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1192"
->6.3.1. How does a Workstation find its domain controller?</A
+NAME="AEN1291"
+>7.3.1. How does a Workstation find its domain controller?</A
 ></H3
 ><P
 >A NT workstation in the domain SAMBA that wants a local user to be
@@ -6471,8 +6871,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1195"
->6.3.2. When is the PDC needed?</A
+NAME="AEN1294"
+>7.3.2. When is the PDC needed?</A
 ></H3
 ><P
 >Whenever a user wants to change his password, this has to be done on
@@ -6487,8 +6887,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1198"
->6.4. Can Samba be a Backup Domain Controller to an NT PDC?</A
+NAME="AEN1297"
+>7.4. Can Samba be a Backup Domain Controller to an NT PDC?</A
 ></H2
 ><P
 >With version 2.2, no. The native NT SAM replication protocols have
@@ -6510,8 +6910,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1203"
->6.5. How do I set up a Samba BDC?</A
+NAME="AEN1302"
+>7.5. How do I set up a Samba BDC?</A
 ></H2
 ><P
 >Several things have to be done:</P
@@ -6577,8 +6977,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1220"
->6.5.1. How do I replicate the smbpasswd file?</A
+NAME="AEN1319"
+>7.5.1. How do I replicate the smbpasswd file?</A
 ></H3
 ><P
 >Replication of the smbpasswd file is sensitive. It has to be done
@@ -6598,8 +6998,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1224"
->6.5.2. Can I do this all with LDAP?</A
+NAME="AEN1323"
+>7.5.2. Can I do this all with LDAP?</A
 ></H3
 ><P
 >The simple answer is YES.  Samba's pdb_ldap code supports
@@ -6616,7 +7016,7 @@ CLASS="CHAPTER"
 ><A
 NAME="ADS"
 ></A
->Chapter 7. Samba as a ADS domain member</H1
+>Chapter 8. Samba as a ADS domain member</H1
 ><P
 >This is a rough guide to setting up Samba 3.0 with kerberos authentication against a
 Windows2000 KDC. </P
@@ -6654,8 +7054,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1242"
->7.1. Installing the required packages for Debian</A
+NAME="AEN1341"
+>8.1. Installing the required packages for Debian</A
 ></H2
 ><P
 >On Debian you need to install the following packages:</P
@@ -6684,8 +7084,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1249"
->7.2. Installing the required packages for RedHat</A
+NAME="AEN1348"
+>8.2. Installing the required packages for RedHat</A
 ></H2
 ><P
 >On RedHat this means you should have at least: </P
@@ -6723,8 +7123,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1259"
->7.3. Compile Samba</A
+NAME="AEN1358"
+>8.3. Compile Samba</A
 ></H2
 ><P
 >If your kerberos libraries are in a non-standard location then
@@ -6779,8 +7179,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1274"
->7.4. Setup your /etc/krb5.conf</A
+NAME="AEN1373"
+>8.4. Setup your /etc/krb5.conf</A
 ></H2
 ><P
 >The minimal configuration for krb5.conf is:</P
@@ -6818,8 +7218,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1284"
->7.5. Create the computer account</A
+NAME="AEN1383"
+>8.5. Create the computer account</A
 ></H2
 ><P
 >As a user that has write permission on the Samba private directory
@@ -6833,8 +7233,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1288"
->7.5.1. Possible errors</A
+NAME="AEN1387"
+>8.5.1. Possible errors</A
 ></H3
 ><P
 ><P
@@ -6858,8 +7258,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1296"
->7.6. Test your server setup</A
+NAME="AEN1395"
+>8.6. Test your server setup</A
 ></H2
 ><P
 >On a Windows 2000 client try <B
@@ -6878,8 +7278,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1301"
->7.7. Testing with smbclient</A
+NAME="AEN1400"
+>8.7. Testing with smbclient</A
 ></H2
 ><P
 >On your Samba server try to login to a Win2000 server or your Samba
@@ -6891,8 +7291,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1304"
->7.8. Notes</A
+NAME="AEN1403"
+>8.8. Notes</A
 ></H2
 ><P
 >You must change administrator password at least once after DC install,
@@ -6908,14 +7308,14 @@ CLASS="CHAPTER"
 ><A
 NAME="DOMAIN-SECURITY"
 ></A
->Chapter 8. Samba as a NT4 or Win2k domain member</H1
+>Chapter 9. Samba as a NT4 or Win2k domain member</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1326"
->8.1. Joining an NT Domain with Samba 3.0</A
+NAME="AEN1425"
+>9.1. Joining an NT Domain with Samba 3.0</A
 ></H2
 ><P
 >Assume you have a Samba 3.0 server with a NetBIOS name of 
@@ -7102,8 +7502,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1381"
->8.2. Samba and Windows 2000 Domains</A
+NAME="AEN1480"
+>9.2. Samba and Windows 2000 Domains</A
 ></H2
 ><P
 >Many people have asked regarding the state of Samba's ability to participate in
@@ -7116,8 +7516,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1384"
->8.3. Why is this better than security = server?</A
+NAME="AEN1483"
+>9.3. Why is this better than security = server?</A
 ></H2
 ><P
 >Currently, domain security in Samba doesn't free you from 
@@ -7210,7 +7610,7 @@ CLASS="TITLE"
 ><DIV
 CLASS="PARTINTRO"
 ><A
-NAME="AEN1402"
+NAME="AEN1501"
 ></A
 ><H1
 >Introduction</H1
@@ -7226,51 +7626,51 @@ CLASS="TOC"
 >Table of Contents</B
 ></DT
 ><DT
->9. <A
+>10. <A
 HREF="#INTEGRATE-MS-NETWORKS"
 >Integrating MS Windows networks with Samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.1. <A
-HREF="#AEN1416"
+>10.1. <A
+HREF="#AEN1515"
 >Agenda</A
 ></DT
 ><DT
->9.2. <A
-HREF="#AEN1438"
+>10.2. <A
+HREF="#AEN1537"
 >Name Resolution in a pure Unix/Linux world</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.2.1. <A
-HREF="#AEN1454"
+>10.2.1. <A
+HREF="#AEN1553"
 ><TT
 CLASS="FILENAME"
 >/etc/hosts</TT
 ></A
 ></DT
 ><DT
->9.2.2. <A
-HREF="#AEN1470"
+>10.2.2. <A
+HREF="#AEN1569"
 ><TT
 CLASS="FILENAME"
 >/etc/resolv.conf</TT
 ></A
 ></DT
 ><DT
->9.2.3. <A
-HREF="#AEN1481"
+>10.2.3. <A
+HREF="#AEN1580"
 ><TT
 CLASS="FILENAME"
 >/etc/host.conf</TT
 ></A
 ></DT
 ><DT
->9.2.4. <A
-HREF="#AEN1489"
+>10.2.4. <A
+HREF="#AEN1588"
 ><TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
@@ -7279,140 +7679,140 @@ CLASS="FILENAME"
 ></DL
 ></DD
 ><DT
->9.3. <A
-HREF="#AEN1501"
+>10.3. <A
+HREF="#AEN1600"
 >Name resolution as used within MS Windows networking</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.3.1. <A
-HREF="#AEN1513"
+>10.3.1. <A
+HREF="#AEN1612"
 >The NetBIOS Name Cache</A
 ></DT
 ><DT
->9.3.2. <A
-HREF="#AEN1518"
+>10.3.2. <A
+HREF="#AEN1617"
 >The LMHOSTS file</A
 ></DT
 ><DT
->9.3.3. <A
-HREF="#AEN1526"
+>10.3.3. <A
+HREF="#AEN1625"
 >HOSTS file</A
 ></DT
 ><DT
->9.3.4. <A
-HREF="#AEN1531"
+>10.3.4. <A
+HREF="#AEN1630"
 >DNS Lookup</A
 ></DT
 ><DT
->9.3.5. <A
-HREF="#AEN1534"
+>10.3.5. <A
+HREF="#AEN1633"
 >WINS Lookup</A
 ></DT
 ></DL
 ></DD
 ><DT
->9.4. <A
-HREF="#AEN1546"
+>10.4. <A
+HREF="#AEN1645"
 >How browsing functions and how to deploy stable and 
 dependable browsing using Samba</A
 ></DT
 ><DT
->9.5. <A
-HREF="#AEN1556"
+>10.5. <A
+HREF="#AEN1655"
 >MS Windows security options and how to configure 
 Samba for seemless integration</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.5.1. <A
-HREF="#AEN1584"
+>10.5.1. <A
+HREF="#AEN1683"
 >Use MS Windows NT as an authentication server</A
 ></DT
 ><DT
->9.5.2. <A
-HREF="#AEN1592"
+>10.5.2. <A
+HREF="#AEN1691"
 >Make Samba a member of an MS Windows NT security domain</A
 ></DT
 ><DT
->9.5.3. <A
-HREF="#AEN1609"
+>10.5.3. <A
+HREF="#AEN1708"
 >Configure Samba as an authentication server</A
 ></DT
 ></DL
 ></DD
 ><DT
->9.6. <A
-HREF="#AEN1626"
+>10.6. <A
+HREF="#AEN1725"
 >Conclusions</A
 ></DT
 ></DL
 ></DD
 ><DT
->10. <A
+>11. <A
 HREF="#UNIX-PERMISSIONS"
 >UNIX Permission Bits and Windows NT Access Control Lists</A
 ></DT
 ><DD
 ><DL
 ><DT
->10.1. <A
-HREF="#AEN1647"
+>11.1. <A
+HREF="#AEN1746"
 >Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></DT
 ><DT
->10.2. <A
-HREF="#AEN1651"
+>11.2. <A
+HREF="#AEN1750"
 >How to view file security on a Samba share</A
 ></DT
 ><DT
->10.3. <A
-HREF="#AEN1662"
+>11.3. <A
+HREF="#AEN1761"
 >Viewing file ownership</A
 ></DT
 ><DT
->10.4. <A
-HREF="#AEN1682"
+>11.4. <A
+HREF="#AEN1781"
 >Viewing file or directory permissions</A
 ></DT
 ><DD
 ><DL
 ><DT
->10.4.1. <A
-HREF="#AEN1697"
+>11.4.1. <A
+HREF="#AEN1796"
 >File Permissions</A
 ></DT
 ><DT
->10.4.2. <A
-HREF="#AEN1711"
+>11.4.2. <A
+HREF="#AEN1810"
 >Directory Permissions</A
 ></DT
 ></DL
 ></DD
 ><DT
->10.5. <A
-HREF="#AEN1718"
+>11.5. <A
+HREF="#AEN1817"
 >Modifying file or directory permissions</A
 ></DT
 ><DT
->10.6. <A
-HREF="#AEN1740"
+>11.6. <A
+HREF="#AEN1839"
 >Interaction with the standard Samba create mask 
 	parameters</A
 ></DT
 ><DT
->10.7. <A
-HREF="#AEN1804"
+>11.7. <A
+HREF="#AEN1903"
 >Interaction with the standard Samba file attribute 
 	mapping</A
 ></DT
 ></DL
 ></DD
 ><DT
->11. <A
+>12. <A
 HREF="#PAM"
 >Configuring PAM for distributed but centrally 
 managed authentication</A
@@ -7420,39 +7820,39 @@ managed authentication</A
 ><DD
 ><DL
 ><DT
->11.1. <A
-HREF="#AEN1825"
+>12.1. <A
+HREF="#AEN1924"
 >Samba and PAM</A
 ></DT
 ><DT
->11.2. <A
-HREF="#AEN1869"
+>12.2. <A
+HREF="#AEN1968"
 >Distributed Authentication</A
 ></DT
 ><DT
->11.3. <A
-HREF="#AEN1876"
+>12.3. <A
+HREF="#AEN1975"
 >PAM Configuration in smb.conf</A
 ></DT
 ></DL
 ></DD
 ><DT
->12. <A
+>13. <A
 HREF="#MSDFS"
 >Hosting a Microsoft Distributed File System tree on Samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->12.1. <A
-HREF="#AEN1896"
+>13.1. <A
+HREF="#AEN1995"
 >Instructions</A
 ></DT
 ><DD
 ><DL
 ><DT
->12.1.1. <A
-HREF="#AEN1931"
+>13.1.1. <A
+HREF="#AEN2030"
 >Notes</A
 ></DT
 ></DL
@@ -7460,130 +7860,130 @@ HREF="#AEN1931"
 ></DL
 ></DD
 ><DT
->13. <A
+>14. <A
 HREF="#PRINTING"
 >Printing Support</A
 ></DT
 ><DD
 ><DL
 ><DT
->13.1. <A
-HREF="#AEN1957"
+>14.1. <A
+HREF="#AEN2056"
 >Introduction</A
 ></DT
 ><DT
->13.2. <A
-HREF="#AEN1979"
+>14.2. <A
+HREF="#AEN2078"
 >Configuration</A
 ></DT
 ><DD
 ><DL
 ><DT
->13.2.1. <A
-HREF="#AEN1987"
+>14.2.1. <A
+HREF="#AEN2086"
 >Creating [print$]</A
 ></DT
 ><DT
->13.2.2. <A
-HREF="#AEN2022"
+>14.2.2. <A
+HREF="#AEN2121"
 >Setting Drivers for Existing Printers</A
 ></DT
 ><DT
->13.2.3. <A
-HREF="#AEN2038"
+>14.2.3. <A
+HREF="#AEN2137"
 >Support a large number of printers</A
 ></DT
 ><DT
->13.2.4. <A
-HREF="#AEN2049"
+>14.2.4. <A
+HREF="#AEN2148"
 >Adding New Printers via the Windows NT APW</A
 ></DT
 ><DT
->13.2.5. <A
-HREF="#AEN2079"
+>14.2.5. <A
+HREF="#AEN2178"
 >Samba and Printer Ports</A
 ></DT
 ></DL
 ></DD
 ><DT
->13.3. <A
-HREF="#AEN2087"
+>14.3. <A
+HREF="#AEN2186"
 >The Imprints Toolset</A
 ></DT
 ><DD
 ><DL
 ><DT
->13.3.1. <A
-HREF="#AEN2091"
+>14.3.1. <A
+HREF="#AEN2190"
 >What is Imprints?</A
 ></DT
 ><DT
->13.3.2. <A
-HREF="#AEN2101"
+>14.3.2. <A
+HREF="#AEN2200"
 >Creating Printer Driver Packages</A
 ></DT
 ><DT
->13.3.3. <A
-HREF="#AEN2104"
+>14.3.3. <A
+HREF="#AEN2203"
 >The Imprints server</A
 ></DT
 ><DT
->13.3.4. <A
-HREF="#AEN2108"
+>14.3.4. <A
+HREF="#AEN2207"
 >The Installation Client</A
 ></DT
 ></DL
 ></DD
 ><DT
->13.4. <A
-HREF="#AEN2130"
+>14.4. <A
+HREF="#AEN2229"
 >Diagnosis</A
 ></DT
 ><DD
 ><DL
 ><DT
->13.4.1. <A
-HREF="#AEN2132"
+>14.4.1. <A
+HREF="#AEN2231"
 >Introduction</A
 ></DT
 ><DT
->13.4.2. <A
-HREF="#AEN2148"
+>14.4.2. <A
+HREF="#AEN2247"
 >Debugging printer problems</A
 ></DT
 ><DT
->13.4.3. <A
-HREF="#AEN2157"
+>14.4.3. <A
+HREF="#AEN2256"
 >What printers do I have?</A
 ></DT
 ><DT
->13.4.4. <A
-HREF="#AEN2165"
+>14.4.4. <A
+HREF="#AEN2264"
 >Setting up printcap and print servers</A
 ></DT
 ><DT
->13.4.5. <A
-HREF="#AEN2193"
+>14.4.5. <A
+HREF="#AEN2292"
 >Job sent, no output</A
 ></DT
 ><DT
->13.4.6. <A
-HREF="#AEN2204"
+>14.4.6. <A
+HREF="#AEN2303"
 >Job sent, strange output</A
 ></DT
 ><DT
->13.4.7. <A
-HREF="#AEN2216"
+>14.4.7. <A
+HREF="#AEN2315"
 >Raw PostScript printed</A
 ></DT
 ><DT
->13.4.8. <A
-HREF="#AEN2219"
+>14.4.8. <A
+HREF="#AEN2318"
 >Advanced Printing</A
 ></DT
 ><DT
->13.4.9. <A
-HREF="#AEN2222"
+>14.4.9. <A
+HREF="#AEN2321"
 >Real debugging</A
 ></DT
 ></DL
@@ -7591,235 +7991,235 @@ HREF="#AEN2222"
 ></DL
 ></DD
 ><DT
->14. <A
+>15. <A
 HREF="#WINBIND"
 >Unified Logons between Windows NT and UNIX using Winbind</A
 ></DT
 ><DD
 ><DL
 ><DT
->14.1. <A
-HREF="#AEN2263"
+>15.1. <A
+HREF="#AEN2362"
 >Abstract</A
 ></DT
 ><DT
->14.2. <A
-HREF="#AEN2267"
+>15.2. <A
+HREF="#AEN2366"
 >Introduction</A
 ></DT
 ><DT
->14.3. <A
-HREF="#AEN2280"
+>15.3. <A
+HREF="#AEN2379"
 >What Winbind Provides</A
 ></DT
 ><DD
 ><DL
 ><DT
->14.3.1. <A
-HREF="#AEN2287"
+>15.3.1. <A
+HREF="#AEN2386"
 >Target Uses</A
 ></DT
 ></DL
 ></DD
 ><DT
->14.4. <A
-HREF="#AEN2291"
+>15.4. <A
+HREF="#AEN2390"
 >How Winbind Works</A
 ></DT
 ><DD
 ><DL
 ><DT
->14.4.1. <A
-HREF="#AEN2296"
+>15.4.1. <A
+HREF="#AEN2395"
 >Microsoft Remote Procedure Calls</A
 ></DT
 ><DT
->14.4.2. <A
-HREF="#AEN2300"
+>15.4.2. <A
+HREF="#AEN2399"
 >Microsoft Active Directory Services</A
 ></DT
 ><DT
->14.4.3. <A
-HREF="#AEN2303"
+>15.4.3. <A
+HREF="#AEN2402"
 >Name Service Switch</A
 ></DT
 ><DT
->14.4.4. <A
-HREF="#AEN2319"
+>15.4.4. <A
+HREF="#AEN2418"
 >Pluggable Authentication Modules</A
 ></DT
 ><DT
->14.4.5. <A
-HREF="#AEN2327"
+>15.4.5. <A
+HREF="#AEN2426"
 >User and Group ID Allocation</A
 ></DT
 ><DT
->14.4.6. <A
-HREF="#AEN2331"
+>15.4.6. <A
+HREF="#AEN2430"
 >Result Caching</A
 ></DT
 ></DL
 ></DD
 ><DT
->14.5. <A
-HREF="#AEN2334"
+>15.5. <A
+HREF="#AEN2433"
 >Installation and Configuration</A
 ></DT
 ><DD
 ><DL
 ><DT
->14.5.1. <A
-HREF="#AEN2341"
+>15.5.1. <A
+HREF="#AEN2438"
 >Introduction</A
 ></DT
 ><DT
->14.5.2. <A
-HREF="#AEN2354"
+>15.5.2. <A
+HREF="#AEN2451"
 >Requirements</A
 ></DT
 ><DT
->14.5.3. <A
-HREF="#AEN2368"
+>15.5.3. <A
+HREF="#AEN2465"
 >Testing Things Out</A
 ></DT
 ></DL
 ></DD
 ><DT
->14.6. <A
-HREF="#AEN2583"
+>15.6. <A
+HREF="#AEN2690"
 >Limitations</A
 ></DT
 ><DT
->14.7. <A
-HREF="#AEN2593"
+>15.7. <A
+HREF="#AEN2700"
 >Conclusion</A
 ></DT
 ></DL
 ></DD
 ><DT
->15. <A
+>16. <A
 HREF="#IMPROVED-BROWSING"
 >Improved browsing in samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->15.1. <A
-HREF="#AEN2603"
+>16.1. <A
+HREF="#AEN2710"
 >Overview of browsing</A
 ></DT
 ><DT
->15.2. <A
-HREF="#AEN2608"
+>16.2. <A
+HREF="#AEN2715"
 >Browsing support in samba</A
 ></DT
 ><DT
->15.3. <A
-HREF="#AEN2616"
+>16.3. <A
+HREF="#AEN2723"
 >Problem resolution</A
 ></DT
 ><DT
->15.4. <A
-HREF="#AEN2625"
+>16.4. <A
+HREF="#AEN2732"
 >Browsing across subnets</A
 ></DT
 ><DD
 ><DL
 ><DT
->15.4.1. <A
-HREF="#AEN2630"
+>16.4.1. <A
+HREF="#AEN2737"
 >How does cross subnet browsing work ?</A
 ></DT
 ></DL
 ></DD
 ><DT
->15.5. <A
-HREF="#AEN2665"
+>16.5. <A
+HREF="#AEN2772"
 >Setting up a WINS server</A
 ></DT
 ><DT
->15.6. <A
-HREF="#AEN2684"
+>16.6. <A
+HREF="#AEN2791"
 >Setting up Browsing in a WORKGROUP</A
 ></DT
 ><DT
->15.7. <A
-HREF="#AEN2702"
+>16.7. <A
+HREF="#AEN2809"
 >Setting up Browsing in a DOMAIN</A
 ></DT
 ><DT
->15.8. <A
-HREF="#AEN2712"
+>16.8. <A
+HREF="#AEN2819"
 >Forcing samba to be the master</A
 ></DT
 ><DT
->15.9. <A
-HREF="#AEN2721"
+>16.9. <A
+HREF="#AEN2828"
 >Making samba the domain master</A
 ></DT
 ><DT
->15.10. <A
-HREF="#AEN2739"
+>16.10. <A
+HREF="#AEN2846"
 >Note about broadcast addresses</A
 ></DT
 ><DT
->15.11. <A
-HREF="#AEN2742"
+>16.11. <A
+HREF="#AEN2849"
 >Multiple interfaces</A
 ></DT
 ></DL
 ></DD
 ><DT
->16. <A
+>17. <A
 HREF="#VFS"
 >Stackable VFS modules</A
 ></DT
 ><DD
 ><DL
 ><DT
->16.1. <A
-HREF="#AEN2760"
+>17.1. <A
+HREF="#AEN2867"
 >Introduction and configuration</A
 ></DT
 ><DT
->16.2. <A
-HREF="#AEN2769"
+>17.2. <A
+HREF="#AEN2876"
 >Included modules</A
 ></DT
 ><DD
 ><DL
 ><DT
->16.2.1. <A
-HREF="#AEN2771"
+>17.2.1. <A
+HREF="#AEN2878"
 >audit</A
 ></DT
 ><DT
->16.2.2. <A
-HREF="#AEN2779"
+>17.2.2. <A
+HREF="#AEN2886"
 >recycle</A
 ></DT
 ><DT
->16.2.3. <A
-HREF="#AEN2816"
+>17.2.3. <A
+HREF="#AEN2923"
 >netatalk</A
 ></DT
 ></DL
 ></DD
 ><DT
->16.3. <A
-HREF="#AEN2823"
+>17.3. <A
+HREF="#AEN2930"
 >VFS modules available elsewhere</A
 ></DT
 ><DD
 ><DL
 ><DT
->16.3.1. <A
-HREF="#AEN2827"
+>17.3.1. <A
+HREF="#AEN2934"
 >DatabaseFS</A
 ></DT
 ><DT
->16.3.2. <A
-HREF="#AEN2835"
+>17.3.2. <A
+HREF="#AEN2942"
 >vscan</A
 ></DT
 ></DL
@@ -7827,153 +8227,172 @@ HREF="#AEN2835"
 ></DL
 ></DD
 ><DT
->17. <A
+>18. <A
 HREF="#GROUPMAPPING"
 >Group mapping HOWTO</A
 ></DT
 ><DT
->18. <A
+>19. <A
 HREF="#SPEED"
 >Samba performance issues</A
 ></DT
 ><DD
 ><DL
 ><DT
->18.1. <A
-HREF="#AEN2890"
+>19.1. <A
+HREF="#AEN2997"
 >Comparisons</A
 ></DT
 ><DT
->18.2. <A
-HREF="#AEN2896"
+>19.2. <A
+HREF="#AEN3003"
 >Socket options</A
 ></DT
 ><DT
->18.3. <A
-HREF="#AEN2903"
+>19.3. <A
+HREF="#AEN3010"
 >Read size</A
 ></DT
 ><DT
->18.4. <A
-HREF="#AEN2908"
+>19.4. <A
+HREF="#AEN3015"
 >Max xmit</A
 ></DT
 ><DT
->18.5. <A
-HREF="#AEN2913"
+>19.5. <A
+HREF="#AEN3020"
 >Log level</A
 ></DT
 ><DT
->18.6. <A
-HREF="#AEN2916"
+>19.6. <A
+HREF="#AEN3023"
 >Read raw</A
 ></DT
 ><DT
->18.7. <A
-HREF="#AEN2921"
+>19.7. <A
+HREF="#AEN3028"
 >Write raw</A
 ></DT
 ><DT
->18.8. <A
-HREF="#AEN2925"
+>19.8. <A
+HREF="#AEN3032"
 >Slow Clients</A
 ></DT
 ><DT
->18.9. <A
-HREF="#AEN2929"
+>19.9. <A
+HREF="#AEN3036"
 >Slow Logins</A
 ></DT
 ><DT
->18.10. <A
-HREF="#AEN2932"
+>19.10. <A
+HREF="#AEN3039"
 >Client tuning</A
 ></DT
 ></DL
 ></DD
 ><DT
->19. <A
+>20. <A
 HREF="#GROUPPROFILES"
 >Creating Group Prolicy Files</A
 ></DT
 ><DD
 ><DL
 ><DT
->19.1. <A
-HREF="#AEN2980"
+>20.1. <A
+HREF="#AEN3087"
 >Windows '9x</A
 ></DT
 ><DT
->19.2. <A
-HREF="#AEN2990"
+>20.2. <A
+HREF="#AEN3097"
 >Windows NT 4</A
 ></DT
 ><DD
 ><DL
 ><DT
->19.2.1. <A
-HREF="#AEN3013"
+>20.2.1. <A
+HREF="#AEN3120"
 >Side bar Notes</A
 ></DT
 ><DT
->19.2.2. <A
-HREF="#AEN3017"
+>20.2.2. <A
+HREF="#AEN3124"
 >Mandatory profiles</A
 ></DT
 ><DT
->19.2.3. <A
-HREF="#AEN3020"
+>20.2.3. <A
+HREF="#AEN3127"
 >moveuser.exe</A
 ></DT
 ><DT
->19.2.4. <A
-HREF="#AEN3023"
+>20.2.4. <A
+HREF="#AEN3130"
 >Get SID</A
 ></DT
 ></DL
 ></DD
 ><DT
->19.3. <A
-HREF="#AEN3028"
+>20.3. <A
+HREF="#AEN3135"
 >Windows 2000/XP</A
 ></DT
 ></DL
 ></DD
 ><DT
->20. <A
+>21. <A
 HREF="#SECURING-SAMBA"
 >Securing Samba</A
 ></DT
 ><DD
 ><DL
 ><DT
->20.1. <A
-HREF="#AEN3109"
+>21.1. <A
+HREF="#AEN3216"
 >Introduction</A
 ></DT
 ><DT
->20.2. <A
-HREF="#AEN3112"
+>21.2. <A
+HREF="#AEN3219"
 >Using host based protection</A
 ></DT
 ><DT
->20.3. <A
-HREF="#AEN3119"
+>21.3. <A
+HREF="#AEN3226"
 >Using interface protection</A
 ></DT
 ><DT
->20.4. <A
-HREF="#AEN3128"
+>21.4. <A
+HREF="#AEN3235"
 >Using a firewall</A
 ></DT
 ><DT
->20.5. <A
-HREF="#AEN3135"
+>21.5. <A
+HREF="#AEN3242"
 >Using a IPC$ share deny</A
 ></DT
 ><DT
->20.6. <A
-HREF="#AEN3144"
+>21.6. <A
+HREF="#AEN3251"
 >Upgrading Samba</A
+></DT
+></DL
+></DD
+><DT
+>22. <A
+HREF="#UNICODE"
+>Unicode/Charsets</A
+></DT
+><DD
+><DL
+><DT
+>22.1. <A
+HREF="#AEN3265"
+>What are charsets and unicode?</A
+></DT
+><DT
+>22.2. <A
+HREF="#AEN3274"
+>Samba and charsets</A
 ></DT
 ></DL
 ></DD
@@ -7986,14 +8405,14 @@ CLASS="CHAPTER"
 ><A
 NAME="INTEGRATE-MS-NETWORKS"
 ></A
->Chapter 9. Integrating MS Windows networks with Samba</H1
+>Chapter 10. Integrating MS Windows networks with Samba</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1416"
->9.1. Agenda</A
+NAME="AEN1515"
+>10.1. Agenda</A
 ></H2
 ><P
 >To identify the key functional mechanisms of MS Windows networking 
@@ -8059,8 +8478,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1438"
->9.2. Name Resolution in a pure Unix/Linux world</A
+NAME="AEN1537"
+>10.2. Name Resolution in a pure Unix/Linux world</A
 ></H2
 ><P
 >The key configuration files covered in this section are:</P
@@ -8101,8 +8520,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1454"
->9.2.1. <TT
+NAME="AEN1553"
+>10.2.1. <TT
 CLASS="FILENAME"
 >/etc/hosts</TT
 ></A
@@ -8182,8 +8601,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1470"
->9.2.2. <TT
+NAME="AEN1569"
+>10.2.2. <TT
 CLASS="FILENAME"
 >/etc/resolv.conf</TT
 ></A
@@ -8220,8 +8639,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1481"
->9.2.3. <TT
+NAME="AEN1580"
+>10.2.3. <TT
 CLASS="FILENAME"
 >/etc/host.conf</TT
 ></A
@@ -8249,8 +8668,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1489"
->9.2.4. <TT
+NAME="AEN1588"
+>10.2.4. <TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
 ></A
@@ -8318,8 +8737,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1501"
->9.3. Name resolution as used within MS Windows networking</A
+NAME="AEN1600"
+>10.3. Name resolution as used within MS Windows networking</A
 ></H2
 ><P
 >MS Windows networking is predicated about the name each machine 
@@ -8403,8 +8822,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1513"
->9.3.1. The NetBIOS Name Cache</A
+NAME="AEN1612"
+>10.3.1. The NetBIOS Name Cache</A
 ></H3
 ><P
 >All MS Windows machines employ an in memory buffer in which is 
@@ -8430,8 +8849,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1518"
->9.3.2. The LMHOSTS file</A
+NAME="AEN1617"
+>10.3.2. The LMHOSTS file</A
 ></H3
 ><P
 >This file is usually located in MS Windows NT 4.0 or 
@@ -8533,8 +8952,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1526"
->9.3.3. HOSTS file</A
+NAME="AEN1625"
+>10.3.3. HOSTS file</A
 ></H3
 ><P
 >This file is usually located in MS Windows NT 4.0 or 2000 in 
@@ -8555,8 +8974,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1531"
->9.3.4. DNS Lookup</A
+NAME="AEN1630"
+>10.3.4. DNS Lookup</A
 ></H3
 ><P
 >This capability is configured in the TCP/IP setup area in the network 
@@ -8575,8 +8994,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1534"
->9.3.5. WINS Lookup</A
+NAME="AEN1633"
+>10.3.5. WINS Lookup</A
 ></H3
 ><P
 >A WINS (Windows Internet Name Server) service is the equivaent of the 
@@ -8616,8 +9035,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1546"
->9.4. How browsing functions and how to deploy stable and 
+NAME="AEN1645"
+>10.4. How browsing functions and how to deploy stable and 
 dependable browsing using Samba</A
 ></H2
 ><P
@@ -8683,8 +9102,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1556"
->9.5. MS Windows security options and how to configure 
+NAME="AEN1655"
+>10.5. MS Windows security options and how to configure 
 Samba for seemless integration</A
 ></H2
 ><P
@@ -8810,8 +9229,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1584"
->9.5.1. Use MS Windows NT as an authentication server</A
+NAME="AEN1683"
+>10.5.1. Use MS Windows NT as an authentication server</A
 ></H3
 ><P
 >This method involves the additions of the following parameters 
@@ -8846,8 +9265,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1592"
->9.5.2. Make Samba a member of an MS Windows NT security domain</A
+NAME="AEN1691"
+>10.5.2. Make Samba a member of an MS Windows NT security domain</A
 ></H3
 ><P
 >This method involves additon of the following paramters in the smb.conf file:</P
@@ -8909,8 +9328,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1609"
->9.5.3. Configure Samba as an authentication server</A
+NAME="AEN1708"
+>10.5.3. Configure Samba as an authentication server</A
 ></H3
 ><P
 >This mode of authentication demands that there be on the 
@@ -8946,8 +9365,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1616"
->9.5.3.1. Users</A
+NAME="AEN1715"
+>10.5.3.1. Users</A
 ></H4
 ><P
 >A user account that may provide a home directory should be 
@@ -8969,8 +9388,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1621"
->9.5.3.2. MS Windows NT Machine Accounts</A
+NAME="AEN1720"
+>10.5.3.2. MS Windows NT Machine Accounts</A
 ></H4
 ><P
 >These are required only when Samba is used as a domain 
@@ -8990,8 +9409,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1626"
->9.6. Conclusions</A
+NAME="AEN1725"
+>10.6. Conclusions</A
 ></H2
 ><P
 >Samba provides a flexible means to operate as...</P
@@ -9028,14 +9447,14 @@ CLASS="CHAPTER"
 ><A
 NAME="UNIX-PERMISSIONS"
 ></A
->Chapter 10. UNIX Permission Bits and Windows NT Access Control Lists</H1
+>Chapter 11. UNIX Permission Bits and Windows NT Access Control Lists</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1647"
->10.1. Viewing and changing UNIX permissions using the NT 
+NAME="AEN1746"
+>11.1. Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></H2
 ><P
@@ -9053,8 +9472,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1651"
->10.2. How to view file security on a Samba share</A
+NAME="AEN1750"
+>11.2. How to view file security on a Samba share</A
 ></H2
 ><P
 >From an NT 4.0 client, single-click with the right 
@@ -9123,8 +9542,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1662"
->10.3. Viewing file ownership</A
+NAME="AEN1761"
+>11.3. Viewing file ownership</A
 ></H2
 ><P
 >Clicking on the <B
@@ -9209,8 +9628,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1682"
->10.4. Viewing file or directory permissions</A
+NAME="AEN1781"
+>11.4. Viewing file or directory permissions</A
 ></H2
 ><P
 >The third button is the <B
@@ -9263,8 +9682,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1697"
->10.4.1. File Permissions</A
+NAME="AEN1796"
+>11.4.1. File Permissions</A
 ></H3
 ><P
 >The standard UNIX user/group/world triple and 
@@ -9325,8 +9744,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1711"
->10.4.2. Directory Permissions</A
+NAME="AEN1810"
+>11.4.2. Directory Permissions</A
 ></H3
 ><P
 >Directories on an NT NTFS file system have two 
@@ -9357,8 +9776,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1718"
->10.5. Modifying file or directory permissions</A
+NAME="AEN1817"
+>11.5. Modifying file or directory permissions</A
 ></H2
 ><P
 >Modifying file and directory permissions is as simple 
@@ -9453,8 +9872,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1740"
->10.6. Interaction with the standard Samba create mask 
+NAME="AEN1839"
+>11.6. Interaction with the standard Samba create mask 
 	parameters</A
 ></H2
 ><P
@@ -9674,8 +10093,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1804"
->10.7. Interaction with the standard Samba file attribute 
+NAME="AEN1903"
+>11.7. Interaction with the standard Samba file attribute 
 	mapping</A
 ></H2
 ><P
@@ -9723,15 +10142,15 @@ CLASS="CHAPTER"
 ><A
 NAME="PAM"
 ></A
->Chapter 11. Configuring PAM for distributed but centrally 
+>Chapter 12. Configuring PAM for distributed but centrally 
 managed authentication</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1825"
->11.1. Samba and PAM</A
+NAME="AEN1924"
+>12.1. Samba and PAM</A
 ></H2
 ><P
 >A number of Unix systems (eg: Sun Solaris), as well as the 
@@ -9944,8 +10363,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1869"
->11.2. Distributed Authentication</A
+NAME="AEN1968"
+>12.2. Distributed Authentication</A
 ></H2
 ><P
 >The astute administrator will realize from this that the 
@@ -9977,8 +10396,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1876"
->11.3. PAM Configuration in smb.conf</A
+NAME="AEN1975"
+>12.3. PAM Configuration in smb.conf</A
 ></H2
 ><P
 >There is an option in smb.conf called <A
@@ -10019,14 +10438,14 @@ CLASS="CHAPTER"
 ><A
 NAME="MSDFS"
 ></A
->Chapter 12. Hosting a Microsoft Distributed File System tree on Samba</H1
+>Chapter 13. Hosting a Microsoft Distributed File System tree on Samba</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1896"
->12.1. Instructions</A
+NAME="AEN1995"
+>13.1. Instructions</A
 ></H2
 ><P
 >The Distributed File System (or Dfs) provides a means of 
@@ -10157,8 +10576,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1931"
->12.1.1. Notes</A
+NAME="AEN2030"
+>13.1.1. Notes</A
 ></H3
 ><P
 ></P
@@ -10192,14 +10611,14 @@ CLASS="CHAPTER"
 ><A
 NAME="PRINTING"
 ></A
->Chapter 13. Printing Support</H1
+>Chapter 14. Printing Support</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1957"
->13.1. Introduction</A
+NAME="AEN2056"
+>14.1. Introduction</A
 ></H2
 ><P
 >Beginning with the 2.2.0 release, Samba supports 
@@ -10281,8 +10700,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1979"
->13.2. Configuration</A
+NAME="AEN2078"
+>14.2. Configuration</A
 ></H2
 ><DIV
 CLASS="WARNING"
@@ -10343,8 +10762,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1987"
->13.2.1. Creating [print$]</A
+NAME="AEN2086"
+>14.2.1. Creating [print$]</A
 ></H3
 ><P
 >In order to support the uploading of printer driver 
@@ -10560,8 +10979,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2022"
->13.2.2. Setting Drivers for Existing Printers</A
+NAME="AEN2121"
+>14.2.2. Setting Drivers for Existing Printers</A
 ></H3
 ><P
 >The initial listing of printers in the Samba host's 
@@ -10632,8 +11051,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2038"
->13.2.3. Support a large number of printers</A
+NAME="AEN2137"
+>14.2.3. Support a large number of printers</A
 ></H3
 ><P
 >One issue that has arisen during the development
@@ -10698,8 +11117,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2049"
->13.2.4. Adding New Printers via the Windows NT APW</A
+NAME="AEN2148"
+>14.2.4. Adding New Printers via the Windows NT APW</A
 ></H3
 ><P
 >By default, Samba offers all printer shares defined in <TT
@@ -10853,8 +11272,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2079"
->13.2.5. Samba and Printer Ports</A
+NAME="AEN2178"
+>14.2.5. Samba and Printer Ports</A
 ></H3
 ><P
 >Windows NT/2000 print servers associate a port with each printer.  These normally
@@ -10888,8 +11307,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2087"
->13.3. The Imprints Toolset</A
+NAME="AEN2186"
+>14.3. The Imprints Toolset</A
 ></H2
 ><P
 >The Imprints tool set provides a UNIX equivalent of the 
@@ -10906,8 +11325,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2091"
->13.3.1. What is Imprints?</A
+NAME="AEN2190"
+>14.3.1. What is Imprints?</A
 ></H3
 ><P
 >Imprints is a collection of tools for supporting the goals 
@@ -10938,8 +11357,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2101"
->13.3.2. Creating Printer Driver Packages</A
+NAME="AEN2200"
+>14.3.2. Creating Printer Driver Packages</A
 ></H3
 ><P
 >The process of creating printer driver packages is beyond
@@ -10954,8 +11373,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2104"
->13.3.3. The Imprints server</A
+NAME="AEN2203"
+>14.3.3. The Imprints server</A
 ></H3
 ><P
 >The Imprints server is really a database server that 
@@ -10978,8 +11397,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2108"
->13.3.4. The Installation Client</A
+NAME="AEN2207"
+>14.3.4. The Installation Client</A
 ></H3
 ><P
 >More information regarding the Imprints installation client 
@@ -11072,16 +11491,16 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2130"
->13.4. Diagnosis</A
+NAME="AEN2229"
+>14.4. Diagnosis</A
 ></H2
 ><DIV
 CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2132"
->13.4.1. Introduction</A
+NAME="AEN2231"
+>14.4.1. Introduction</A
 ></H3
 ><P
 >This is a short description of how to debug printing problems with
@@ -11155,8 +11574,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2148"
->13.4.2. Debugging printer problems</A
+NAME="AEN2247"
+>14.4.2. Debugging printer problems</A
 ></H3
 ><P
 >One way to debug printing problems is to start by replacing these
@@ -11212,8 +11631,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2157"
->13.4.3. What printers do I have?</A
+NAME="AEN2256"
+>14.4.3. What printers do I have?</A
 ></H3
 ><P
 >You can use the 'testprns' program to check to see if the printer
@@ -11241,8 +11660,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2165"
->13.4.4. Setting up printcap and print servers</A
+NAME="AEN2264"
+>14.4.4. Setting up printcap and print servers</A
 ></H3
 ><P
 >You may need to set up some printcaps for your Samba system to use.
@@ -11325,8 +11744,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2193"
->13.4.5. Job sent, no output</A
+NAME="AEN2292"
+>14.4.5. Job sent, no output</A
 ></H3
 ><P
 >This is the most frustrating part of printing.  You may have sent the
@@ -11370,8 +11789,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2204"
->13.4.6. Job sent, strange output</A
+NAME="AEN2303"
+>14.4.6. Job sent, strange output</A
 ></H3
 ><P
 >Once you have the job printing, you can then start worrying about
@@ -11416,8 +11835,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2216"
->13.4.7. Raw PostScript printed</A
+NAME="AEN2315"
+>14.4.7. Raw PostScript printed</A
 ></H3
 ><P
 >This is a problem that is usually caused by either the print spooling
@@ -11431,8 +11850,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2219"
->13.4.8. Advanced Printing</A
+NAME="AEN2318"
+>14.4.8. Advanced Printing</A
 ></H3
 ><P
 >Note that you can do some pretty magic things by using your
@@ -11447,8 +11866,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2222"
->13.4.9. Real debugging</A
+NAME="AEN2321"
+>14.4.9. Real debugging</A
 ></H3
 ><P
 >If the above debug tips don't help, then maybe you need to bring in
@@ -11462,14 +11881,14 @@ CLASS="CHAPTER"
 ><A
 NAME="WINBIND"
 ></A
->Chapter 14. Unified Logons between Windows NT and UNIX using Winbind</H1
+>Chapter 15. Unified Logons between Windows NT and UNIX using Winbind</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2263"
->14.1. Abstract</A
+NAME="AEN2362"
+>15.1. Abstract</A
 ></H2
 ><P
 >Integration of UNIX and Microsoft Windows NT through 
@@ -11495,8 +11914,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2267"
->14.2. Introduction</A
+NAME="AEN2366"
+>15.2. Introduction</A
 ></H2
 ><P
 >It is well known that UNIX and Microsoft Windows NT have 
@@ -11549,8 +11968,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2280"
->14.3. What Winbind Provides</A
+NAME="AEN2379"
+>15.3. What Winbind Provides</A
 ></H2
 ><P
 >Winbind unifies UNIX and Windows NT account management by 
@@ -11591,8 +12010,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2287"
->14.3.1. Target Uses</A
+NAME="AEN2386"
+>15.3.1. Target Uses</A
 ></H3
 ><P
 >Winbind is targeted at organizations that have an 
@@ -11615,8 +12034,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2291"
->14.4. How Winbind Works</A
+NAME="AEN2390"
+>15.4. How Winbind Works</A
 ></H2
 ><P
 >The winbind system is designed around a client/server 
@@ -11635,8 +12054,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2296"
->14.4.1. Microsoft Remote Procedure Calls</A
+NAME="AEN2395"
+>15.4.1. Microsoft Remote Procedure Calls</A
 ></H3
 ><P
 >Over the last few years, efforts have been underway 
@@ -11661,8 +12080,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2300"
->14.4.2. Microsoft Active Directory Services</A
+NAME="AEN2399"
+>15.4.2. Microsoft Active Directory Services</A
 ></H3
 ><P
 >                Since late 2001, Samba has gained the ability to
@@ -11680,8 +12099,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2303"
->14.4.3. Name Service Switch</A
+NAME="AEN2402"
+>15.4.3. Name Service Switch</A
 ></H3
 ><P
 >The Name Service Switch, or NSS, is a feature that is 
@@ -11760,8 +12179,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2319"
->14.4.4. Pluggable Authentication Modules</A
+NAME="AEN2418"
+>15.4.4. Pluggable Authentication Modules</A
 ></H3
 ><P
 >Pluggable Authentication Modules, also known as PAM, 
@@ -11809,8 +12228,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2327"
->14.4.5. User and Group ID Allocation</A
+NAME="AEN2426"
+>15.4.5. User and Group ID Allocation</A
 ></H3
 ><P
 >When a user or group is created under Windows NT 
@@ -11835,8 +12254,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2331"
->14.4.6. Result Caching</A
+NAME="AEN2430"
+>15.4.6. Result Caching</A
 ></H3
 ><P
 >An active system can generate a lot of user and group 
@@ -11858,8 +12277,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2334"
->14.5. Installation and Configuration</A
+NAME="AEN2433"
+>15.5. Installation and Configuration</A
 ></H2
 ><P
 >Many thanks to John Trostel <A
@@ -11872,21 +12291,13 @@ for providing the HOWTO for this section.</P
 >This HOWTO describes how to get winbind services up and running 
 to control access and authenticate users on your Linux box using 
 the winbind services which come with SAMBA 2.2.2.</P
-><P
->There is also some Solaris specific information in 
-<TT
-CLASS="FILENAME"
->docs/textdocs/Solaris-Winbind-HOWTO.txt</TT
->.
-Future revisions of this document will incorporate that
-information.</P
 ><DIV
 CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2341"
->14.5.1. Introduction</A
+NAME="AEN2438"
+>15.5.1. Introduction</A
 ></H3
 ><P
 >This HOWTO describes the procedures used to get winbind up and 
@@ -11944,8 +12355,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2354"
->14.5.2. Requirements</A
+NAME="AEN2451"
+>15.5.2. Requirements</A
 ></H3
 ><P
 >If you have a samba configuration file that you are currently 
@@ -12014,8 +12425,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2368"
->14.5.3. Testing Things Out</A
+NAME="AEN2465"
+>15.5.3. Testing Things Out</A
 ></H3
 ><P
 >Before starting, it is probably best to kill off all the SAMBA 
@@ -12059,8 +12470,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2379"
->14.5.3.1. Configure and compile SAMBA</A
+NAME="AEN2476"
+>15.5.3.1. Configure and compile SAMBA</A
 ></H4
 ><P
 >The configuration and compilation of SAMBA is pretty straightforward.
@@ -12125,8 +12536,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2398"
->14.5.3.2. Configure <TT
+NAME="AEN2495"
+>15.5.3.2. Configure <TT
 CLASS="FILENAME"
 >nsswitch.conf</TT
 > and the 
@@ -12230,8 +12641,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2431"
->14.5.3.3. Configure smb.conf</A
+NAME="AEN2528"
+>15.5.3.3. Configure smb.conf</A
 ></H4
 ><P
 >Several parameters are needed in the smb.conf file to control 
@@ -12305,8 +12716,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2447"
->14.5.3.4. Join the SAMBA server to the PDC domain</A
+NAME="AEN2544"
+>15.5.3.4. Join the SAMBA server to the PDC domain</A
 ></H4
 ><P
 >Enter the following command to make the SAMBA server join the 
@@ -12343,8 +12754,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2458"
->14.5.3.5. Start up the winbindd daemon and test it!</A
+NAME="AEN2555"
+>15.5.3.5. Start up the winbindd daemon and test it!</A
 ></H4
 ><P
 >Eventually, you will want to modify your smb startup script to 
@@ -12359,6 +12770,21 @@ CLASS="PROMPT"
 > <B
 CLASS="COMMAND"
 >/usr/local/samba/bin/winbindd</B
+></P
+><P
+>Winbindd can now also run in 'dual daemon mode'. This will make it 
+run as 2 processes. The first will answer all requests from the cache,
+thus making responses to clients faster. The other will
+update the cache for the query that the first has just responded.
+Advantage of this is that responses stay accurate and are faster. 
+You can enable dual daemon mode by adding '-B' to the commandline:</P
+><P
+><SAMP
+CLASS="PROMPT"
+>root#</SAMP
+> <B
+CLASS="COMMAND"
+>/usr/local/samba/bin/winbindd -B</B
 ></P
 ><P
 >I'm always paranoid and like to make sure the daemon 
@@ -12464,16 +12890,16 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2494"
->14.5.3.6. Fix the init.d startup scripts</A
+NAME="AEN2595"
+>15.5.3.6. Fix the init.d startup scripts</A
 ></H4
 ><DIV
 CLASS="SECT4"
 ><H5
 CLASS="SECT4"
 ><A
-NAME="AEN2496"
->14.5.3.6.1. Linux</A
+NAME="AEN2597"
+>15.5.3.6.1. Linux</A
 ></H5
 ><P
 >The <B
@@ -12537,8 +12963,22 @@ CLASS="PROGRAMLISTING"
 }</PRE
 ></P
 ><P
+>If you would like to run winbindd in dual daemon mode, replace 
+the line 
+<PRE
+CLASS="PROGRAMLISTING"
+>        daemon /usr/local/samba/bin/winbindd</PRE
+>
+
+in the example above with:
+
+<PRE
+CLASS="PROGRAMLISTING"
+>        daemon /usr/local/samba/bin/winbindd -B</PRE
+>.</P
+><P
 >The 'stop' function has a corresponding entry to shut down the 
-services and look s like this:</P
+services and looks like this:</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
@@ -12568,8 +13008,8 @@ CLASS="SECT4"
 ><HR><H5
 CLASS="SECT4"
 ><A
-NAME="AEN2513"
->14.5.3.6.2. Solaris</A
+NAME="AEN2617"
+>15.5.3.6.2. Solaris</A
 ></H5
 ><P
 >On solaris, you need to modify the 
@@ -12633,14 +13073,27 @@ echo Starting Winbind Daemon
    ;;
 esac</PRE
 ></P
+><P
+>Again, if you would like to run samba in dual daemon mode, replace 
+<PRE
+CLASS="PROGRAMLISTING"
+>   /usr/local/samba/bin/winbindd</PRE
+>
+
+in the script above with:
+
+<PRE
+CLASS="PROGRAMLISTING"
+>   /usr/local/samba/bin/winbindd -B</PRE
+></P
 ></DIV
 ><DIV
 CLASS="SECT4"
 ><HR><H5
 CLASS="SECT4"
 ><A
-NAME="AEN2520"
->14.5.3.6.3. Restarting</A
+NAME="AEN2627"
+>15.5.3.6.3. Restarting</A
 ></H5
 ><P
 >If you restart the <B
@@ -12663,8 +13116,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2526"
->14.5.3.7. Configure Winbind and PAM</A
+NAME="AEN2633"
+>15.5.3.7. Configure Winbind and PAM</A
 ></H4
 ><P
 >If you have made it this far, you know that winbindd and samba are working
@@ -12721,8 +13174,8 @@ CLASS="SECT4"
 ><HR><H5
 CLASS="SECT4"
 ><A
-NAME="AEN2543"
->14.5.3.7.1. Linux/FreeBSD-specific PAM configuration</A
+NAME="AEN2650"
+>15.5.3.7.1. Linux/FreeBSD-specific PAM configuration</A
 ></H5
 ><P
 >The <TT
@@ -12850,8 +13303,8 @@ CLASS="SECT4"
 ><HR><H5
 CLASS="SECT4"
 ><A
-NAME="AEN2576"
->14.5.3.7.2. Solaris-specific configuration</A
+NAME="AEN2683"
+>15.5.3.7.2. Solaris-specific configuration</A
 ></H5
 ><P
 >The /etc/pam.conf needs to be changed. I changed this file so that my Domain
@@ -12937,8 +13390,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2583"
->14.6. Limitations</A
+NAME="AEN2690"
+>15.6. Limitations</A
 ></H2
 ><P
 >Winbind has a number of limitations in its current 
@@ -12979,8 +13432,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2593"
->14.7. Conclusion</A
+NAME="AEN2700"
+>15.7. Conclusion</A
 ></H2
 ><P
 >The winbind system, through the use of the Name Service 
@@ -12997,14 +13450,14 @@ CLASS="CHAPTER"
 ><A
 NAME="IMPROVED-BROWSING"
 ></A
->Chapter 15. Improved browsing in samba</H1
+>Chapter 16. Improved browsing in samba</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2603"
->15.1. Overview of browsing</A
+NAME="AEN2710"
+>16.1. Overview of browsing</A
 ></H2
 ><P
 >SMB networking provides a mechanism by which clients can access a list
@@ -13032,8 +13485,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2608"
->15.2. Browsing support in samba</A
+NAME="AEN2715"
+>16.2. Browsing support in samba</A
 ></H2
 ><P
 >Samba facilitates browsing.  The browsing is supported by nmbd
@@ -13075,8 +13528,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2616"
->15.3. Problem resolution</A
+NAME="AEN2723"
+>16.3. Problem resolution</A
 ></H2
 ><P
 >If something doesn't work then hopefully the log.nmb file will help
@@ -13122,8 +13575,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2625"
->15.4. Browsing across subnets</A
+NAME="AEN2732"
+>16.4. Browsing across subnets</A
 ></H2
 ><P
 >Since the release of Samba 1.9.17(alpha1) Samba has been
@@ -13153,8 +13606,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2630"
->15.4.1. How does cross subnet browsing work ?</A
+NAME="AEN2737"
+>16.4.1. How does cross subnet browsing work ?</A
 ></H3
 ><P
 >Cross subnet browsing is a complicated dance, containing multiple
@@ -13364,8 +13817,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2665"
->15.5. Setting up a WINS server</A
+NAME="AEN2772"
+>16.5. Setting up a WINS server</A
 ></H2
 ><P
 >Either a Samba machine or a Windows NT Server machine may be set up
@@ -13447,8 +13900,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2684"
->15.6. Setting up Browsing in a WORKGROUP</A
+NAME="AEN2791"
+>16.6. Setting up Browsing in a WORKGROUP</A
 ></H2
 ><P
 >To set up cross subnet browsing on a network containing machines
@@ -13532,8 +13985,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2702"
->15.7. Setting up Browsing in a DOMAIN</A
+NAME="AEN2809"
+>16.7. Setting up Browsing in a DOMAIN</A
 ></H2
 ><P
 >If you are adding Samba servers to a Windows NT Domain then
@@ -13583,8 +14036,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2712"
->15.8. Forcing samba to be the master</A
+NAME="AEN2819"
+>16.8. Forcing samba to be the master</A
 ></H2
 ><P
 >Who becomes the "master browser" is determined by an election process
@@ -13631,8 +14084,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2721"
->15.9. Making samba the domain master</A
+NAME="AEN2828"
+>16.9. Making samba the domain master</A
 ></H2
 ><P
 >The domain master is responsible for collating the browse lists of
@@ -13704,8 +14157,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2739"
->15.10. Note about broadcast addresses</A
+NAME="AEN2846"
+>16.10. Note about broadcast addresses</A
 ></H2
 ><P
 >If your network uses a "0" based broadcast address (for example if it
@@ -13718,8 +14171,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2742"
->15.11. Multiple interfaces</A
+NAME="AEN2849"
+>16.11. Multiple interfaces</A
 ></H2
 ><P
 >Samba now supports machines with multiple network interfaces.  If you
@@ -13733,14 +14186,14 @@ CLASS="CHAPTER"
 ><A
 NAME="VFS"
 ></A
->Chapter 16. Stackable VFS modules</H1
+>Chapter 17. Stackable VFS modules</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2760"
->16.1. Introduction and configuration</A
+NAME="AEN2867"
+>17.1. Introduction and configuration</A
 ></H2
 ><P
 >Since samba 3.0, samba supports stackable VFS(Virtual File System) modules.  
@@ -13780,16 +14233,16 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2769"
->16.2. Included modules</A
+NAME="AEN2876"
+>17.2. Included modules</A
 ></H2
 ><DIV
 CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2771"
->16.2.1. audit</A
+NAME="AEN2878"
+>17.2.1. audit</A
 ></H3
 ><P
 >A simple module to audit file access to the syslog
@@ -13826,8 +14279,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2779"
->16.2.2. recycle</A
+NAME="AEN2886"
+>17.2.2. recycle</A
 ></H3
 ><P
 >A recycle-bin like modules. When used any unlink call
@@ -13897,8 +14350,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2816"
->16.2.3. netatalk</A
+NAME="AEN2923"
+>17.2.3. netatalk</A
 ></H3
 ><P
 >A netatalk module, that will ease co-existence of samba and
@@ -13930,8 +14383,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2823"
->16.3. VFS modules available elsewhere</A
+NAME="AEN2930"
+>17.3. VFS modules available elsewhere</A
 ></H2
 ><P
 >This section contains a listing of various other VFS modules that 
@@ -13946,8 +14399,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2827"
->16.3.1. DatabaseFS</A
+NAME="AEN2934"
+>17.3.1. DatabaseFS</A
 ></H3
 ><P
 >URL: <A
@@ -13980,8 +14433,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2835"
->16.3.2. vscan</A
+NAME="AEN2942"
+>17.3.2. vscan</A
 ></H3
 ><P
 >URL: <A
@@ -14004,7 +14457,7 @@ CLASS="CHAPTER"
 ><A
 NAME="GROUPMAPPING"
 ></A
->Chapter 17. Group mapping HOWTO</H1
+>Chapter 18. Group mapping HOWTO</H1
 ><P
 > 
 Starting with Samba 3.0 alpha 2, a new group mapping function is available. The
@@ -14105,14 +14558,14 @@ CLASS="CHAPTER"
 ><A
 NAME="SPEED"
 ></A
->Chapter 18. Samba performance issues</H1
+>Chapter 19. Samba performance issues</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2890"
->18.1. Comparisons</A
+NAME="AEN2997"
+>19.1. Comparisons</A
 ></H2
 ><P
 >The Samba server uses TCP to talk to the client. Thus if you are
@@ -14142,8 +14595,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2896"
->18.2. Socket options</A
+NAME="AEN3003"
+>19.2. Socket options</A
 ></H2
 ><P
 >There are a number of socket options that can greatly affect the
@@ -14170,8 +14623,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2903"
->18.3. Read size</A
+NAME="AEN3010"
+>19.3. Read size</A
 ></H2
 ><P
 >The option "read size" affects the overlap of disk reads/writes with
@@ -14196,8 +14649,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2908"
->18.4. Max xmit</A
+NAME="AEN3015"
+>19.4. Max xmit</A
 ></H2
 ><P
 >At startup the client and server negotiate a "maximum transmit" size,
@@ -14219,8 +14672,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2913"
->18.5. Log level</A
+NAME="AEN3020"
+>19.5. Log level</A
 ></H2
 ><P
 >If you set the log level (also known as "debug level") higher than 2
@@ -14233,8 +14686,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2916"
->18.6. Read raw</A
+NAME="AEN3023"
+>19.6. Read raw</A
 ></H2
 ><P
 >The "read raw" operation is designed to be an optimised, low-latency
@@ -14255,8 +14708,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2921"
->18.7. Write raw</A
+NAME="AEN3028"
+>19.7. Write raw</A
 ></H2
 ><P
 >The "write raw" operation is designed to be an optimised, low-latency
@@ -14272,8 +14725,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2925"
->18.8. Slow Clients</A
+NAME="AEN3032"
+>19.8. Slow Clients</A
 ></H2
 ><P
 >One person has reported that setting the protocol to COREPLUS rather
@@ -14289,8 +14742,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2929"
->18.9. Slow Logins</A
+NAME="AEN3036"
+>19.9. Slow Logins</A
 ></H2
 ><P
 >Slow logins are almost always due to the password checking time. Using
@@ -14302,8 +14755,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2932"
->18.10. Client tuning</A
+NAME="AEN3039"
+>19.10. Client tuning</A
 ></H2
 ><P
 >Often a speed problem can be traced to the client. The client (for
@@ -14410,14 +14863,14 @@ CLASS="CHAPTER"
 ><A
 NAME="GROUPPROFILES"
 ></A
->Chapter 19. Creating Group Prolicy Files</H1
+>Chapter 20. Creating Group Prolicy Files</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2980"
->19.1. Windows '9x</A
+NAME="AEN3087"
+>20.1. Windows '9x</A
 ></H2
 ><P
 >You need the Win98 Group Policy Editor to
@@ -14459,8 +14912,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2990"
->19.2. Windows NT 4</A
+NAME="AEN3097"
+>20.2. Windows NT 4</A
 ></H2
 ><P
 >Unfortunately, the Resource Kit info is Win NT4 or 200x specific.</P
@@ -14540,8 +14993,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3013"
->19.2.1. Side bar Notes</A
+NAME="AEN3120"
+>20.2.1. Side bar Notes</A
 ></H3
 ><P
 >You should obtain the SID of your NT4 domain. You can use smbpasswd to do
@@ -14556,8 +15009,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3017"
->19.2.2. Mandatory profiles</A
+NAME="AEN3124"
+>20.2.2. Mandatory profiles</A
 ></H3
 ><P
 >The above method can be used to create mandatory profiles also. To convert
@@ -14569,8 +15022,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3020"
->19.2.3. moveuser.exe</A
+NAME="AEN3127"
+>20.2.3. moveuser.exe</A
 ></H3
 ><P
 >The W2K professional resource kit has moveuser.exe. moveuser.exe changes
@@ -14582,8 +15035,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3023"
->19.2.4. Get SID</A
+NAME="AEN3130"
+>20.2.4. Get SID</A
 ></H3
 ><P
 >You can identify the SID by using GetSID.exe from the Windows NT Server 4.0
@@ -14605,8 +15058,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3028"
->19.3. Windows 2000/XP</A
+NAME="AEN3135"
+>20.3. Windows 2000/XP</A
 ></H2
 ><P
 >You must first convert the profile from a local profile to a domain
@@ -14843,14 +15296,14 @@ CLASS="CHAPTER"
 ><A
 NAME="SECURING-SAMBA"
 ></A
->Chapter 20. Securing Samba</H1
+>Chapter 21. Securing Samba</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3109"
->20.1. Introduction</A
+NAME="AEN3216"
+>21.1. Introduction</A
 ></H2
 ><P
 >This note was attached to the Samba 2.2.8 release notes as it contained an
@@ -14862,8 +15315,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3112"
->20.2. Using host based protection</A
+NAME="AEN3219"
+>21.2. Using host based protection</A
 ></H2
 ><P
 >In many installations of Samba the greatest threat comes for outside
@@ -14894,8 +15347,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3119"
->20.3. Using interface protection</A
+NAME="AEN3226"
+>21.3. Using interface protection</A
 ></H2
 ><P
 >By default Samba will accept connections on any network interface that
@@ -14930,8 +15383,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3128"
->20.4. Using a firewall</A
+NAME="AEN3235"
+>21.4. Using a firewall</A
 ></H2
 ><P
 >Many people use a firewall to deny access to services that they don't
@@ -14960,8 +15413,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3135"
->20.5. Using a IPC$ share deny</A
+NAME="AEN3242"
+>21.5. Using a IPC$ share deny</A
 ></H2
 ><P
 >If the above methods are not suitable, then you could also place a
@@ -14999,14 +15452,133 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3144"
->20.6. Upgrading Samba</A
+NAME="AEN3251"
+>21.6. Upgrading Samba</A
 ></H2
 ><P
 >Please check regularly on http://www.samba.org/ for updates and
 important announcements.  Occasionally security releases are made and 
 it is highly recommended to upgrade Samba when a security vulnerability
 is discovered.</P
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="UNICODE"
+></A
+>Chapter 22. Unicode/Charsets</H1
+><DIV
+CLASS="SECT1"
+><H2
+CLASS="SECT1"
+><A
+NAME="AEN3265"
+>22.1. What are charsets and unicode?</A
+></H2
+><P
+>Computers communicate in numbers. In texts, each number will be 
+translated to a corresponding letter. The meaning that will be assigned 
+to a certain number depends on the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>character set(charset)</I
+></SPAN
+> that is used. 
+A charset can be seen as a table that is used to translate numbers to 
+letters. Not all computers use the same charset (there are charsets 
+with German umlauts, Japanese characters, etc). Usually a charset contains 
+256 characters, which means that storing a character with it takes 
+exactly one byte. </P
+><P
+>There are also charsets that support even more characters, 
+but those need twice(or even more) as much storage space. These 
+charsets can contain <B
+CLASS="COMMAND"
+>256 * 256 = 65536</B
+> characters, which
+is more then all possible characters one could think of. They are called 
+multibyte charsets (because they use more then one byte to 
+store one character). </P
+><P
+>A standardised multibyte charset is unicode, info available at 
+<A
+HREF="http://www.unicode.org/"
+TARGET="_top"
+>www.unicode.org</A
+>. 
+Big advantage of using a multibyte charset is that you only need one; no 
+need to make sure two computers use the same charset when they are 
+communicating.</P
+><P
+>Old windows clients used to use single-byte charsets, named 
+'codepages' by microsoft. However, there is no support for 
+negotiating the charset to be used in the smb protocol. Thus, you 
+have to make sure you are using the same charset when talking to an old client.
+Newer clients (Windows NT, 2K, XP) talk unicode over the wire.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3274"
+>22.2. Samba and charsets</A
+></H2
+><P
+>As of samba 3.0, samba can (and will) talk unicode over the wire. Internally, 
+samba knows of three kinds of character sets: </P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>unix charset</DT
+><DD
+><P
+>		This is the charset used internally by your operating system. 
+		The default is <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ASCII</I
+></SPAN
+>, which is fine for most 
+		systems.
+		</P
+></DD
+><DT
+>display charset</DT
+><DD
+><P
+>This is the charset samba will use to print messages
+		on your screen. It should generally be the same as the <B
+CLASS="COMMAND"
+>unix charset</B
+>.
+		</P
+></DD
+><DT
+>dos charset</DT
+><DD
+><P
+>This is the charset samba uses when communicating with 
+		DOS and Windows 9x clients. It will talk unicode to all newer clients.
+		The default depends on the charsets you have installed on your system.
+		Run <B
+CLASS="COMMAND"
+>testparm -v | grep "dos charset"</B
+> to see 
+		what the default is on your system. 
+		</P
+></DD
+></DL
+></DIV
+><P
+></P
 ></DIV
 ></DIV
 ></DIV
@@ -15028,42 +15600,42 @@ CLASS="TOC"
 >Table of Contents</B
 ></DT
 ><DT
->21. <A
+>23. <A
 HREF="#PORTABILITY"
 >Portability</A
 ></DT
 ><DD
 ><DL
 ><DT
->21.1. <A
-HREF="#AEN3156"
+>23.1. <A
+HREF="#AEN3303"
 >HPUX</A
 ></DT
 ><DT
->21.2. <A
-HREF="#AEN3162"
+>23.2. <A
+HREF="#AEN3309"
 >SCO Unix</A
 ></DT
 ><DT
->21.3. <A
-HREF="#AEN3166"
+>23.3. <A
+HREF="#AEN3313"
 >DNIX</A
 ></DT
 ><DT
->21.4. <A
-HREF="#AEN3195"
+>23.4. <A
+HREF="#AEN3342"
 >RedHat Linux Rembrandt-II</A
 ></DT
 ><DT
->21.5. <A
-HREF="#AEN3201"
+>23.5. <A
+HREF="#AEN3348"
 >AIX</A
 ></DT
 ><DD
 ><DL
 ><DT
->21.5.1. <A
-HREF="#AEN3203"
+>23.5.1. <A
+HREF="#AEN3350"
 >Sequential Read Ahead</A
 ></DT
 ></DL
@@ -15071,147 +15643,147 @@ HREF="#AEN3203"
 ></DL
 ></DD
 ><DT
->22. <A
+>24. <A
 HREF="#OTHER-CLIENTS"
 >Samba and other CIFS clients</A
 ></DT
 ><DD
 ><DL
 ><DT
->22.1. <A
-HREF="#AEN3221"
+>24.1. <A
+HREF="#AEN3368"
 >Macintosh clients?</A
 ></DT
 ><DT
->22.2. <A
-HREF="#AEN3230"
+>24.2. <A
+HREF="#AEN3377"
 >OS2 Client</A
 ></DT
 ><DD
 ><DL
 ><DT
->22.2.1. <A
-HREF="#AEN3232"
+>24.2.1. <A
+HREF="#AEN3379"
 >How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></DT
 ><DT
->22.2.2. <A
-HREF="#AEN3247"
+>24.2.2. <A
+HREF="#AEN3394"
 >How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></DT
 ><DT
->22.2.3. <A
-HREF="#AEN3256"
+>24.2.3. <A
+HREF="#AEN3403"
 >Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></DT
 ><DT
->22.2.4. <A
-HREF="#AEN3260"
+>24.2.4. <A
+HREF="#AEN3407"
 >How do I get printer driver download working 
 		for OS/2 clients?</A
 ></DT
 ></DL
 ></DD
 ><DT
->22.3. <A
-HREF="#AEN3270"
+>24.3. <A
+HREF="#AEN3417"
 >Windows for Workgroups</A
 ></DT
 ><DD
 ><DL
 ><DT
->22.3.1. <A
-HREF="#AEN3272"
+>24.3.1. <A
+HREF="#AEN3419"
 >Use latest TCP/IP stack from Microsoft</A
 ></DT
 ><DT
->22.3.2. <A
-HREF="#AEN3277"
+>24.3.2. <A
+HREF="#AEN3424"
 >Delete .pwl files after password change</A
 ></DT
 ><DT
->22.3.3. <A
-HREF="#AEN3282"
+>24.3.3. <A
+HREF="#AEN3429"
 >Configure WfW password handling</A
 ></DT
 ><DT
->22.3.4. <A
-HREF="#AEN3286"
+>24.3.4. <A
+HREF="#AEN3433"
 >Case handling of passwords</A
 ></DT
 ><DT
->22.3.5. <A
-HREF="#AEN3291"
+>24.3.5. <A
+HREF="#AEN3438"
 >Use TCP/IP as default protocol</A
 ></DT
 ></DL
 ></DD
 ><DT
->22.4. <A
-HREF="#AEN3294"
+>24.4. <A
+HREF="#AEN3441"
 >Windows '95/'98</A
 ></DT
 ><DT
->22.5. <A
-HREF="#AEN3310"
+>24.5. <A
+HREF="#AEN3457"
 >Windows 2000 Service Pack 2</A
 ></DT
 ></DL
 ></DD
 ><DT
->23. <A
+>25. <A
 HREF="#COMPILING"
 >How to compile SAMBA</A
 ></DT
 ><DD
 ><DL
 ><DT
->23.1. <A
-HREF="#AEN3337"
+>25.1. <A
+HREF="#AEN3484"
 >Access Samba source code via CVS</A
 ></DT
 ><DD
 ><DL
 ><DT
->23.1.1. <A
-HREF="#AEN3339"
+>25.1.1. <A
+HREF="#AEN3486"
 >Introduction</A
 ></DT
 ><DT
->23.1.2. <A
-HREF="#AEN3344"
+>25.1.2. <A
+HREF="#AEN3491"
 >CVS Access to samba.org</A
 ></DT
 ></DL
 ></DD
 ><DT
->23.2. <A
-HREF="#AEN3380"
+>25.2. <A
+HREF="#AEN3527"
 >Accessing the samba sources via rsync and ftp</A
 ></DT
 ><DT
->23.3. <A
-HREF="#AEN3386"
+>25.3. <A
+HREF="#AEN3533"
 >Building the Binaries</A
 ></DT
 ><DT
->23.4. <A
-HREF="#AEN3414"
+>25.4. <A
+HREF="#AEN3561"
 >Starting the smbd and nmbd</A
 ></DT
 ><DD
 ><DL
 ><DT
->23.4.1. <A
-HREF="#AEN3424"
+>25.4.1. <A
+HREF="#AEN3571"
 >Starting from inetd.conf</A
 ></DT
 ><DT
->23.4.2. <A
-HREF="#AEN3453"
+>25.4.2. <A
+HREF="#AEN3600"
 >Alternative: starting it as a daemon</A
 ></DT
 ></DL
@@ -15219,128 +15791,128 @@ HREF="#AEN3453"
 ></DL
 ></DD
 ><DT
->24. <A
+>26. <A
 HREF="#BUGREPORT"
 >Reporting Bugs</A
 ></DT
 ><DD
 ><DL
 ><DT
->24.1. <A
-HREF="#AEN3476"
+>26.1. <A
+HREF="#AEN3623"
 >Introduction</A
 ></DT
 ><DT
->24.2. <A
-HREF="#AEN3486"
+>26.2. <A
+HREF="#AEN3633"
 >General info</A
 ></DT
 ><DT
->24.3. <A
-HREF="#AEN3492"
+>26.3. <A
+HREF="#AEN3639"
 >Debug levels</A
 ></DT
 ><DT
->24.4. <A
-HREF="#AEN3509"
+>26.4. <A
+HREF="#AEN3656"
 >Internal errors</A
 ></DT
 ><DT
->24.5. <A
-HREF="#AEN3519"
+>26.5. <A
+HREF="#AEN3666"
 >Attaching to a running process</A
 ></DT
 ><DT
->24.6. <A
-HREF="#AEN3522"
+>26.6. <A
+HREF="#AEN3669"
 >Patches</A
 ></DT
 ></DL
 ></DD
 ><DT
->25. <A
+>27. <A
 HREF="#DIAGNOSIS"
 >The samba checklist</A
 ></DT
 ><DD
 ><DL
 ><DT
->25.1. <A
-HREF="#AEN3545"
+>27.1. <A
+HREF="#AEN3692"
 >Introduction</A
 ></DT
 ><DT
->25.2. <A
-HREF="#AEN3550"
+>27.2. <A
+HREF="#AEN3697"
 >Assumptions</A
 ></DT
 ><DT
->25.3. <A
-HREF="#AEN3560"
+>27.3. <A
+HREF="#AEN3707"
 >Tests</A
 ></DT
 ><DD
 ><DL
 ><DT
->25.3.1. <A
-HREF="#AEN3562"
+>27.3.1. <A
+HREF="#AEN3709"
 >Test 1</A
 ></DT
 ><DT
->25.3.2. <A
-HREF="#AEN3568"
+>27.3.2. <A
+HREF="#AEN3715"
 >Test 2</A
 ></DT
 ><DT
->25.3.3. <A
-HREF="#AEN3574"
+>27.3.3. <A
+HREF="#AEN3721"
 >Test 3</A
 ></DT
 ><DT
->25.3.4. <A
-HREF="#AEN3589"
+>27.3.4. <A
+HREF="#AEN3736"
 >Test 4</A
 ></DT
 ><DT
->25.3.5. <A
-HREF="#AEN3594"
+>27.3.5. <A
+HREF="#AEN3741"
 >Test 5</A
 ></DT
 ><DT
->25.3.6. <A
-HREF="#AEN3600"
+>27.3.6. <A
+HREF="#AEN3747"
 >Test 6</A
 ></DT
 ><DT
->25.3.7. <A
-HREF="#AEN3608"
+>27.3.7. <A
+HREF="#AEN3755"
 >Test 7</A
 ></DT
 ><DT
->25.3.8. <A
-HREF="#AEN3634"
+>27.3.8. <A
+HREF="#AEN3781"
 >Test 8</A
 ></DT
 ><DT
->25.3.9. <A
-HREF="#AEN3651"
+>27.3.9. <A
+HREF="#AEN3798"
 >Test 9</A
 ></DT
 ><DT
->25.3.10. <A
-HREF="#AEN3659"
+>27.3.10. <A
+HREF="#AEN3806"
 >Test 10</A
 ></DT
 ><DT
->25.3.11. <A
-HREF="#AEN3665"
+>27.3.11. <A
+HREF="#AEN3812"
 >Test 11</A
 ></DT
 ></DL
 ></DD
 ><DT
->25.4. <A
-HREF="#AEN3670"
+>27.4. <A
+HREF="#AEN3817"
 >Still having troubles?</A
 ></DT
 ></DL
@@ -15354,7 +15926,7 @@ CLASS="CHAPTER"
 ><A
 NAME="PORTABILITY"
 ></A
->Chapter 21. Portability</H1
+>Chapter 23. Portability</H1
 ><P
 >Samba works on a wide range of platforms but the interface all the 
 platforms provide is not always compatible. This chapter contains 
@@ -15364,8 +15936,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3156"
->21.1. HPUX</A
+NAME="AEN3303"
+>23.1. HPUX</A
 ></H2
 ><P
 >HP's implementation of supplementary groups is, er, non-standard (for
@@ -15394,8 +15966,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3162"
->21.2. SCO Unix</A
+NAME="AEN3309"
+>23.2. SCO Unix</A
 ></H2
 ><P
 > 
@@ -15411,8 +15983,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3166"
->21.3. DNIX</A
+NAME="AEN3313"
+>23.3. DNIX</A
 ></H2
 ><P
 >DNIX has a problem with seteuid() and setegid(). These routines are
@@ -15518,8 +16090,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3195"
->21.4. RedHat Linux Rembrandt-II</A
+NAME="AEN3342"
+>23.4. RedHat Linux Rembrandt-II</A
 ></H2
 ><P
 >By default RedHat Rembrandt-II during installation adds an
@@ -15542,16 +16114,16 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3201"
->21.5. AIX</A
+NAME="AEN3348"
+>23.5. AIX</A
 ></H2
 ><DIV
 CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3203"
->21.5.1. Sequential Read Ahead</A
+NAME="AEN3350"
+>23.5.1. Sequential Read Ahead</A
 ></H3
 ><P
 >Disabling Sequential Read Ahead using "vmtune -r 0" improves 
@@ -15565,7 +16137,7 @@ CLASS="CHAPTER"
 ><A
 NAME="OTHER-CLIENTS"
 ></A
->Chapter 22. Samba and other CIFS clients</H1
+>Chapter 24. Samba and other CIFS clients</H1
 ><P
 >This chapter contains client-specific information.</P
 ><DIV
@@ -15573,8 +16145,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3221"
->22.1. Macintosh clients?</A
+NAME="AEN3368"
+>24.1. Macintosh clients?</A
 ></H2
 ><P
 >Yes. <A
@@ -15619,16 +16191,16 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3230"
->22.2. OS2 Client</A
+NAME="AEN3377"
+>24.2. OS2 Client</A
 ></H2
 ><DIV
 CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3232"
->22.2.1. How can I configure OS/2 Warp Connect or 
+NAME="AEN3379"
+>24.2.1. How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></H3
 ><P
@@ -15686,8 +16258,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3247"
->22.2.2. How can I configure OS/2 Warp 3 (not Connect), 
+NAME="AEN3394"
+>24.2.2. How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></H3
 ><P
@@ -15730,8 +16302,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3256"
->22.2.3. Are there any other issues when OS/2 (any version) 
+NAME="AEN3403"
+>24.2.3. Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></H3
 ><P
@@ -15752,8 +16324,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3260"
->22.2.4. How do I get printer driver download working 
+NAME="AEN3407"
+>24.2.4. How do I get printer driver download working 
 		for OS/2 clients?</A
 ></H3
 ><P
@@ -15799,16 +16371,16 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3270"
->22.3. Windows for Workgroups</A
+NAME="AEN3417"
+>24.3. Windows for Workgroups</A
 ></H2
 ><DIV
 CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3272"
->22.3.1. Use latest TCP/IP stack from Microsoft</A
+NAME="AEN3419"
+>24.3.1. Use latest TCP/IP stack from Microsoft</A
 ></H3
 ><P
 >Use the latest TCP/IP stack from microsoft if you use Windows
@@ -15829,8 +16401,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3277"
->22.3.2. Delete .pwl files after password change</A
+NAME="AEN3424"
+>24.3.2. Delete .pwl files after password change</A
 ></H3
 ><P
 >WfWg does a lousy job with passwords. I find that if I change my
@@ -15849,8 +16421,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3282"
->22.3.3. Configure WfW password handling</A
+NAME="AEN3429"
+>24.3.3. Configure WfW password handling</A
 ></H3
 ><P
 >There is a program call admincfg.exe
@@ -15868,8 +16440,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3286"
->22.3.4. Case handling of passwords</A
+NAME="AEN3433"
+>24.3.4. Case handling of passwords</A
 ></H3
 ><P
 >Windows for Workgroups uppercases the password before sending it to the server. Unix passwords can be case-sensitive though. Check the <A
@@ -15886,8 +16458,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3291"
->22.3.5. Use TCP/IP as default protocol</A
+NAME="AEN3438"
+>24.3.5. Use TCP/IP as default protocol</A
 ></H3
 ><P
 >To support print queue reporting you may find
@@ -15902,8 +16474,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3294"
->22.4. Windows '95/'98</A
+NAME="AEN3441"
+>24.4. Windows '95/'98</A
 ></H2
 ><P
 >When using Windows 95 OEM SR2 the following updates are recommended where Samba
@@ -15950,8 +16522,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3310"
->22.5. Windows 2000 Service Pack 2</A
+NAME="AEN3457"
+>24.5. Windows 2000 Service Pack 2</A
 ></H2
 ><P
 > 
@@ -16034,7 +16606,7 @@ CLASS="CHAPTER"
 ><A
 NAME="COMPILING"
 ></A
->Chapter 23. How to compile SAMBA</H1
+>Chapter 25. How to compile SAMBA</H1
 ><P
 >You can obtain the samba source from the <A
 HREF="http://samba.org/"
@@ -16047,16 +16619,16 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3337"
->23.1. Access Samba source code via CVS</A
+NAME="AEN3484"
+>25.1. Access Samba source code via CVS</A
 ></H2
 ><DIV
 CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3339"
->23.1.1. Introduction</A
+NAME="AEN3486"
+>25.1.1. Introduction</A
 ></H3
 ><P
 >Samba is developed in an open environment.  Developers use CVS
@@ -16077,8 +16649,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3344"
->23.1.2. CVS Access to samba.org</A
+NAME="AEN3491"
+>25.1.2. CVS Access to samba.org</A
 ></H3
 ><P
 >The machine samba.org runs a publicly accessible CVS 
@@ -16090,8 +16662,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN3347"
->23.1.2.1. Access via CVSweb</A
+NAME="AEN3494"
+>25.1.2.1. Access via CVSweb</A
 ></H4
 ><P
 >You can access the source code via your 
@@ -16111,8 +16683,8 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN3352"
->23.1.2.2. Access via cvs</A
+NAME="AEN3499"
+>25.1.2.2. Access via cvs</A
 ></H4
 ><P
 >You can also access the source code via a 
@@ -16216,8 +16788,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3380"
->23.2. Accessing the samba sources via rsync and ftp</A
+NAME="AEN3527"
+>25.2. Accessing the samba sources via rsync and ftp</A
 ></H2
 ><P
 >	pserver.samba.org also exports unpacked copies of most parts of the CVS tree at <A
@@ -16244,8 +16816,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3386"
->23.3. Building the Binaries</A
+NAME="AEN3533"
+>25.3. Building the Binaries</A
 ></H2
 ><P
 >To do this, first run the program <B
@@ -16331,8 +16903,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3414"
->23.4. Starting the smbd and nmbd</A
+NAME="AEN3561"
+>25.4. Starting the smbd and nmbd</A
 ></H2
 ><P
 >You must choose to start smbd and nmbd either
@@ -16371,8 +16943,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3424"
->23.4.1. Starting from inetd.conf</A
+NAME="AEN3571"
+>25.4.1. Starting from inetd.conf</A
 ></H3
 ><P
 >NOTE; The following will be different if 
@@ -16471,8 +17043,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3453"
->23.4.2. Alternative: starting it as a daemon</A
+NAME="AEN3600"
+>25.4.2. Alternative: starting it as a daemon</A
 ></H3
 ><P
 >To start the server as a daemon you should create 
@@ -16530,14 +17102,14 @@ CLASS="CHAPTER"
 ><A
 NAME="BUGREPORT"
 ></A
->Chapter 24. Reporting Bugs</H1
+>Chapter 26. Reporting Bugs</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3476"
->24.1. Introduction</A
+NAME="AEN3623"
+>26.1. Introduction</A
 ></H2
 ><P
 >The email address for bug reports for stable releases is <A
@@ -16581,8 +17153,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3486"
->24.2. General info</A
+NAME="AEN3633"
+>26.2. General info</A
 ></H2
 ><P
 >Before submitting a bug report check your config for silly
@@ -16606,8 +17178,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3492"
->24.3. Debug levels</A
+NAME="AEN3639"
+>26.3. Debug levels</A
 ></H2
 ><P
 >If the bug has anything to do with Samba behaving incorrectly as a
@@ -16676,8 +17248,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3509"
->24.4. Internal errors</A
+NAME="AEN3656"
+>26.4. Internal errors</A
 ></H2
 ><P
 >If you get a "INTERNAL ERROR" message in your log files it means that
@@ -16720,8 +17292,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3519"
->24.5. Attaching to a running process</A
+NAME="AEN3666"
+>26.5. Attaching to a running process</A
 ></H2
 ><P
 >Unfortunately some unixes (in particular some recent linux kernels)
@@ -16737,8 +17309,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3522"
->24.6. Patches</A
+NAME="AEN3669"
+>26.6. Patches</A
 ></H2
 ><P
 >The best sort of bug report is one that includes a fix! If you send us
@@ -16760,14 +17332,14 @@ CLASS="CHAPTER"
 ><A
 NAME="DIAGNOSIS"
 ></A
->Chapter 25. The samba checklist</H1
+>Chapter 27. The samba checklist</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3545"
->25.1. Introduction</A
+NAME="AEN3692"
+>27.1. Introduction</A
 ></H2
 ><P
 >This file contains a list of tests you can perform to validate your
@@ -16788,8 +17360,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3550"
->25.2. Assumptions</A
+NAME="AEN3697"
+>27.2. Assumptions</A
 ></H2
 ><P
 >In all of the tests it is assumed you have a Samba server called 
@@ -16826,16 +17398,16 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3560"
->25.3. Tests</A
+NAME="AEN3707"
+>27.3. Tests</A
 ></H2
 ><DIV
 CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3562"
->25.3.1. Test 1</A
+NAME="AEN3709"
+>27.3.1. Test 1</A
 ></H3
 ><P
 >In the directory in which you store your smb.conf file, run the command
@@ -16856,8 +17428,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3568"
->25.3.2. Test 2</A
+NAME="AEN3715"
+>27.3.2. Test 2</A
 ></H3
 ><P
 >Run the command "ping BIGSERVER" from the PC and "ping ACLIENT" from
@@ -16882,8 +17454,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3574"
->25.3.3. Test 3</A
+NAME="AEN3721"
+>27.3.3. Test 3</A
 ></H3
 ><P
 >Run the command "smbclient -L BIGSERVER" on the unix box. You
@@ -16953,8 +17525,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3589"
->25.3.4. Test 4</A
+NAME="AEN3736"
+>27.3.4. Test 4</A
 ></H3
 ><P
 >Run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
@@ -16974,8 +17546,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3594"
->25.3.5. Test 5</A
+NAME="AEN3741"
+>27.3.5. Test 5</A
 ></H3
 ><P
 >run the command <B
@@ -16995,8 +17567,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3600"
->25.3.6. Test 6</A
+NAME="AEN3747"
+>27.3.6. Test 6</A
 ></H3
 ><P
 >Run the command <B
@@ -17029,8 +17601,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3608"
->25.3.7. Test 7</A
+NAME="AEN3755"
+>27.3.7. Test 7</A
 ></H3
 ><P
 >Run the command <B
@@ -17118,8 +17690,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3634"
->25.3.8. Test 8</A
+NAME="AEN3781"
+>27.3.8. Test 8</A
 ></H3
 ><P
 >On the PC type the command <B
@@ -17178,8 +17750,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3651"
->25.3.9. Test 9</A
+NAME="AEN3798"
+>27.3.9. Test 9</A
 ></H3
 ><P
 >Run the command <B
@@ -17212,8 +17784,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3659"
->25.3.10. Test 10</A
+NAME="AEN3806"
+>27.3.10. Test 10</A
 ></H3
 ><P
 >Run the command <B
@@ -17238,8 +17810,8 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN3665"
->25.3.11. Test 11</A
+NAME="AEN3812"
+>27.3.11. Test 11</A
 ></H3
 ><P
 >From file manager try to browse the server. Your samba server should
@@ -17266,8 +17838,8 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3670"
->25.4. Still having troubles?</A
+NAME="AEN3817"
+>27.4. Still having troubles?</A
 ></H2
 ><P
 >Try the mailing list or newsgroup, or use the ethereal utility to
