@@ -233,6 +233,11 @@ OM_uint32 gss_acquire_cred
     gss_cred_id_t handle;
     OM_uint32 ret;
 
+    if (cred_usage != GSS_C_ACCEPT && cred_usage != GSS_C_INITIATE && cred_usage != GSS_C_BOTH) {
+	*minor_status = GSS_KRB5_S_G_BAD_USAGE;
+	return GSS_S_FAILURE;
+    }
+
     GSSAPI_KRB5_INIT ();
 
     *output_cred_handle = NULL;
@@ -280,7 +285,8 @@ OM_uint32 gss_acquire_cred
 	    free(handle);
 	    return (ret);
 	}
-    } else if (cred_usage == GSS_C_ACCEPT || cred_usage == GSS_C_BOTH) {
+    }
+    if (cred_usage == GSS_C_ACCEPT || cred_usage == GSS_C_BOTH) {
 	ret = acquire_acceptor_cred(minor_status, desired_name, time_req,
 	    desired_mechs, cred_usage, handle, actual_mechs, time_rec);
 	if (ret != GSS_S_COMPLETE) {
@@ -288,11 +294,6 @@ OM_uint32 gss_acquire_cred
 	    free(handle);
 	    return (ret);
 	}
-    } else {
-	HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
-	free(handle);
-	*minor_status = GSS_KRB5_S_G_BAD_USAGE;
-	return GSS_S_FAILURE;
     }
     ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
     if (ret == GSS_S_COMPLETE)
