@@ -886,6 +886,9 @@ case "$host_os" in
 				PICFLAG="-fPIC"
 			else
 				PICFLAG="-KPIC"
+				## ${CFLAGS} added for building 64-bit shared 
+				## libs using Sun's Compiler
+				LDSHFLAGS="-G \${CFLAGS}"
 				POBAD_CC=""
 				PICSUFFIX="po.o"
 			fi
