@@ -44,7 +44,6 @@ extern BOOL connect_as_printer;
 extern BOOL connect_as_ipc;
 extern struct in_addr ipzero;
 
-char cryptkey[8];
 extern BOOL doencrypt;
 
 extern pstring user_socket_options;
