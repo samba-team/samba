@@ -5091,6 +5091,10 @@ uint32 _srv_net_srv_share_enum( const UNISTR2 *srv_name,
 				uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 				uint32 preferred_len, ENUM_HND *enum_hnd,
 				uint32 *total_entries, uint32 share_level );
+uint32 _srv_net_sess_enum( const UNISTR2 *srv_name, 
+                                uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
+                                uint32 preferred_len, ENUM_HND *enum_hnd,
+                                uint32 *total_entries, uint32 sess_level );
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 
