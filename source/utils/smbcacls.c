@@ -97,18 +97,19 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 {
 	char *p;
 	unsigned atype, aflags, amask;
+	DOM_SID sid;
+	SEC_ACCESS mask;
 	ZERO_STRUCTP(ace);
 	p = strchr(str,':');
 	if (!p) return False;
 	*p = 0;
 	if (sscanf(p+1, "%x/%x/%08x", 
 		   &atype, &aflags, &amask) != 3 ||
-	    !StringToSid(&ace->sid, str)) {
+	    !StringToSid(&sid, str)) {
 		return False;
 	}
-	ace->type = atype;
-	ace->flags = aflags;
-	ace->info.mask = amask;
+	mask.mask = amask;
+	init_sec_ace(ace, &sid, atype, mask, aflags);
 	return True;
 }
 
@@ -117,16 +118,20 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 /* add an ACE to a list of ACEs in a SEC_ACL */
 static BOOL add_ace(SEC_ACL **acl, SEC_ACE *ace)
 {
+	SEC_ACL *new;
+	SEC_ACE *aces;
 	if (! *acl) {
-		*acl = (SEC_ACL *)calloc(1, sizeof(*acl));
-		if (! *acl) return False;
-		(*acl)->revision = 3;
+		(*acl) = make_sec_acl(3, 1, ace);
+		return True;
 	}
 
-	(*acl)->ace = Realloc((*acl)->ace,(1+((*acl)->num_aces))*sizeof(SEC_ACE));
-	if (!(*acl)->ace) return False;
-	memcpy(&((*acl)->ace[(*acl)->num_aces]), ace, sizeof(SEC_ACE));
-	(*acl)->num_aces++;
+	aces = calloc(1+(*acl)->num_aces,sizeof(SEC_ACE));
+	memcpy(aces, (*acl)->ace, (*acl)->num_aces * sizeof(SEC_ACE));
+	memcpy(aces+(*acl)->num_aces, ace, sizeof(SEC_ACE));
+	new = make_sec_acl((*acl)->revision,1+(*acl)->num_aces, aces);
+	free_sec_acl(acl);
+	free(aces);
+	(*acl) = new;
 	return True;
 }
 
@@ -189,7 +194,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 		}
 	}
 
-	ret = make_sec_desc(revision, type, owner_sid, grp_sid, 
+	ret = make_sec_desc(revision, owner_sid, grp_sid, 
 			    sacl, dacl, &sd_size);
 
 	free_sec_acl(&sacl);
@@ -376,7 +381,7 @@ static void cacl_set(struct cli_state *cli, char *filename,
 		free_sec_desc(&sd);
 	}
 
-	sd = make_sec_desc(old->revision, old->type, old->owner_sid, old->grp_sid, 
+	sd = make_sec_desc(old->revision, old->owner_sid, old->grp_sid, 
 			   old->sacl, old->dacl, &sd_size);
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
