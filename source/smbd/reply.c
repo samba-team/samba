@@ -1090,7 +1090,10 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 	if (Protocol >= PROTOCOL_NT1)
 		SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
-  
+
+	/* This SMB *always* returns ASCII names. Remove the unicode bit in flags2. */
+	SSVAL(outbuf,smb_flg2, (SVAL(outbuf, smb_flg2) & (~FLAGS2_UNICODE_STRINGS)));
+	  
 	outsize += DIR_STRUCT_SIZE*numentries;
 	smb_setlen(outbuf,outsize - 4);
   
