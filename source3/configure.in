@@ -2733,11 +2733,13 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)])
 #################################################
 # check for sendfile support
 
-AC_MSG_CHECKING(whether to support sendfile)
+AC_MSG_CHECKING(whether to check for support sendfile)
 AC_ARG_WITH(sendfile-support,
-[  --with-sendfile-support      Include sendfile support (default=no)],
+[  --with-sendfile-support      Check for sendfile support (default=no)],
 [ case "$withval" in
   yes)
+
+	AC_MSG_RESULT(yes);
 
 	case "$host_os" in
 	*linux*)
@@ -2884,6 +2886,7 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
         size_t xferred;
         struct sendfilevec vec[2];
 	ssize_t nwritten;
+	int tofd;
 
 	sfvcnt = 2;
 
@@ -2916,6 +2919,7 @@ samba_cv_HAVE_SENDFILEV64=yes,samba_cv_HAVE_SENDFILEV64=no)])
         size_t xferred;
         struct sendfilevec vec[2];
 	ssize_t nwritten;
+	int tofd;
 
 	sfvcnt = 2;
 
