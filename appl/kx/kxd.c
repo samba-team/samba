@@ -364,9 +364,9 @@ doit(int sock, int tcpp)
 	       snprintf (display, display_size, "localhost:%u", display_num);
 	  else
 	       snprintf (display, display_size, ":%u", display_num);
-	  strncpy(xauthfile, tempnam("/tmp", NULL), xauthfile_size);
-	  if(create_and_write_cookie (xauthfile, cookie, cookie_len))
-	       return 1;
+	  if(create_and_write_cookie (xauthfile, xauthfile_size, 
+				      cookie, cookie_len))
+	      return 1;
 
 	  p = msg;
 	  *p++ = ACK;
