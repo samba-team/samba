@@ -130,6 +130,7 @@ static void request_handler(struct smbcli_request *req)
 		   are happy */
 		state->session_key_err = gensec_session_key(session->gensec, &session_key);
 		if (NT_STATUS_IS_OK(state->session_key_err)) {
+			set_user_session_key(session, &session_key);
 			smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
 		}
 
