@@ -61,6 +61,11 @@ server. Please use it with care. If you do not need it then do NOT
 install.
 
 %changelog
+* Sat Apr 08 2000 John H Terpsta <jht@turbolinux.com>
+- Added nsswitch stuff
+- Fixed some typos
+- Changed hard link for smbmount to symlink
+
 * Sun Apr 02 2000 John H Terpstra <jht@turbolinux.com>
 - Updated for samba-2.0.7
 - Added codepages 775 1251
@@ -191,7 +196,7 @@ do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
 # Now link smbmount to mount.smb 
-ln $RPM_BUILD_ROOT/usr/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
+ln -s $RPM_BUILD_ROOT/usr/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
 # Install level 1 man pages
 # At a later date add back to line below: smbsh.1
