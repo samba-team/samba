@@ -75,6 +75,8 @@ struct rpc_key_data {
 	struct policy_handle pol;
 	int num_subkeys;
 	int num_values;
+	int max_valnamelen;
+	int max_valdatalen;
 };
 
 struct {
@@ -194,6 +196,54 @@ static WERROR rpc_open_key(REG_HANDLE *h, const char *name, REG_KEY **key)
 	return rpc_key_put_rpc_data(*key, &mykeydata);
 }
 
+static WERROR rpc_get_value_by_index(REG_KEY *parent, int n, REG_VAL **value)  
+{
+	struct winreg_EnumValue r;
+	struct winreg_Uint8buf vb;
+	struct winreg_Uint16buf bn;
+	struct rpc_data *mydata = parent->handle->backend_data;
+	struct winreg_EnumValueName vn;
+	NTSTATUS status;
+	struct rpc_key_data *mykeydata = parent->backend_data;
+	uint32 type = 0x0, requested_len = 0, returned_len = 0;
+
+	/* FIXME */
+	
+	r.in.handle = &mykeydata->pol;
+	r.in.enum_index = n;
+	r.in.type = r.out.type = &type;
+	r.in.requested_len = r.out.requested_len = &requested_len;
+	r.in.returned_len = r.out.returned_len = &returned_len;
+	bn.max_len = mykeydata->max_valnamelen*3;
+	bn.offset = 0;
+	bn.len = 0;
+	bn.buffer = NULL;
+	vn.max_len = mykeydata->max_valnamelen*3;	
+	vn.buf = &bn;
+	r.in.name = r.out.name = &vn;
+	vb.max_len = mykeydata->max_valdatalen*3;
+	vb.offset = 0x0;
+	vb.len = 0x0;
+	vb.buffer = NULL;
+	r.in.value = r.out.value = &vb;
+
+	status = dcerpc_winreg_EnumValue(mydata->pipe, parent->mem_ctx, &r);
+	if(NT_STATUS_IS_ERR(status)) {
+		DEBUG(0, ("Error in EnumValue: %s\n", nt_errstr(status)));
+	}
+	
+	if(NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
+		*value = reg_val_new(parent, NULL);
+		(*value)->name = (char *)r.out.name->buf->buffer;
+		(*value)->data_type = type;
+		(*value)->data_len = r.out.value->len;
+		(*value)->data_blk = r.out.value->buffer;
+		return WERR_OK;
+	}
+	
+	return r.out.result;
+}
+
 static WERROR rpc_get_subkey_by_index(REG_KEY *parent, int n, REG_KEY **subkey) 
 {
 	struct winreg_EnumKey r;
@@ -269,6 +319,8 @@ static WERROR rpc_query_key(REG_KEY *k)
     if (W_ERROR_IS_OK(r.out.result)) {
 		mykeydata->num_subkeys = r.out.num_subkeys;
 		mykeydata->num_values = r.out.num_values;
+		mykeydata->max_valnamelen = r.out.max_valnamelen;
+		mykeydata->max_valdatalen = r.out.max_valbufsize;
 	} 
 
 	return r.out.result;
@@ -355,6 +407,7 @@ static struct registry_ops reg_backend_rpc = {
 	.open_root_key = rpc_open_root,
 	.open_key = rpc_open_key,
 	.get_subkey_by_index = rpc_get_subkey_by_index,
+	.get_value_by_index = rpc_get_value_by_index,
 	.add_key = rpc_add_key,
 	.del_key = rpc_del_key,
 	.free_key_backend_data = rpc_close_key,

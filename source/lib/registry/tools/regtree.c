@@ -53,7 +53,7 @@ void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 		}
 
 		if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-			DEBUG(0, ("Error occured while fetching subkeys for '%s'\n", reg_key_get_path(p)));
+			DEBUG(0, ("Error occured while fetching values for '%s': %s\n", reg_key_get_path(p), win_errstr(error)));
 		}
 	}
 }
