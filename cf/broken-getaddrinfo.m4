@@ -15,7 +15,7 @@ main(int argc, char **argv)
 	struct addrinfo hints, *ai;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags = AI_PASSIVE;
-	hints.ai_socktype = SOCK_STEAM;
+	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_family = PF_UNSPEC;
 	if(getaddrinfo(NULL, "17", &hints, &ai) == EAI_SERVICE)
 		return 1;
