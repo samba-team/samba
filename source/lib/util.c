@@ -2509,7 +2509,7 @@ turn a user name into a uid
 ********************************************************************/
 BOOL nametouid(const char *name, uid_t *uid)
 {
-	struct passwd *pass = Get_Pwnam(name, False);
+	struct passwd *pass = Get_Pwnam((char *)name, False);
 	if (pass)
 	{
 		*uid = pass->pw_uid;
