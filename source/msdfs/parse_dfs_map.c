@@ -111,12 +111,30 @@ static BOOL parse_referral(char* s, struct referral* ref)
   return True;
 }
 
+static void create_mount_point(int snum, struct junction_map *jn)
+{
+  fstring dfsvolumepath;
+
+  fstrcpy(dfsvolumepath, lp_pathname(snum));
+  fstrcat(dfsvolumepath, "/");
+  fstrcat(dfsvolumepath, jn->volume_name);
+	
+  if(!directory_exist(dfsvolumepath, NULL))
+    {
+      DEBUG(10,("create_mount_point: creating msdfs mntpt %s\n",
+		dfsvolumepath));
+      become_root(False);
+      mkdir(dfsvolumepath, 0700);
+      unbecome_root(False);
+    }
+}
 static BOOL load_dfsmap(char* fname, int snum)
 {
   struct junction_map* junction = NULL;
   struct referral tmp_ref_array[MAX_ALTERNATE_PATHS];
   int ref_count = 0;
   FILE* fp;
+  int line_cnt = 0;
 
   if(lp_dfsmap_loaded(snum))
     return True;
@@ -136,6 +154,7 @@ static BOOL load_dfsmap(char* fname, int snum)
       pstring rawline;
       char* line;
 
+      line_cnt++;
       if(!fgets(rawline,PSTRING_LEN,fp))
 	continue;
 
@@ -149,6 +168,7 @@ static BOOL load_dfsmap(char* fname, int snum)
 
       if(line[0]!='\\')
 	{
+
 	  /* a junction encountered. add the current junction first */
 	  if(junction)
 	    {
@@ -163,6 +183,9 @@ static BOOL load_dfsmap(char* fname, int snum)
 		  DEBUG(6,("Unable to add junction entry %s:%s after parsing\n",
 			   junction->service_name,junction->volume_name));
 		}
+
+	      /* create a unix directory as a junction/mount point. */
+	      create_mount_point(snum, junction);
 	      free(junction);
 	    }
 	  
@@ -181,7 +204,7 @@ static BOOL load_dfsmap(char* fname, int snum)
 	  /* referral encountered. add to current junction */
 	  if(!junction)
 	    {
-	      DEBUG(4,("Invalid entry in Dfs map file.\nAlternate path defined outside of a junction in line:\n%s\n",line));
+	      DEBUG(4,("Invalid entry in Dfs map file.\nAlternate path defined outside of a junction in %s\nline %d: %s\n",fname, line_cnt, line));
 	      return False;
 	    }
 
@@ -198,7 +221,7 @@ static BOOL load_dfsmap(char* fname, int snum)
     {
       junction->referral_count = ref_count;
       junction->referral_list = tmp_ref_array;
-      DEBUG(4,("Adding Dfs junction: %s\%s  Referrals: %u First referral path: %s\n",
+      DEBUG(4,("Adding Dfs junction: %s\\%s  Referrals: %u First referral path: %s\n",
 		       junction->service_name,junction->volume_name,
 		       junction->referral_count, junction->referral_list[0].alternate_path));
       if(!add_junction_entry(junction))
@@ -206,6 +229,7 @@ static BOOL load_dfsmap(char* fname, int snum)
 	  DEBUG(6,("Unable to add junction entry %s:%s after parsing\n",
 		   junction->service_name,junction->volume_name));
 	}
+      create_mount_point(snum, junction);
       free(junction);
     }
   
@@ -231,7 +255,7 @@ void load_dfsmaps(void)
 	}
       else
 	{
-	  DEBUG(0,("handle_dfsmap: Unable to load Dfs map file %s.\nService %s not using MS Dfs",dfsmapfile,lp_servicename(i)));
+	  DEBUG(0,("handle_dfsmap: Unable to load Dfs map file %s.\nService %s not using MS Dfs\n",dfsmapfile,lp_servicename(i)));
 	  set_dfsmap_loaded(i,False);
 	}
       
