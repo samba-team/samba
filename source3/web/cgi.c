@@ -292,6 +292,36 @@ static void cgi_auth_error(void)
 	exit(0);
 }
 
+/***************************************************************************
+authenticate when we are running as a CGI
+  ***************************************************************************/
+static void cgi_web_auth(void)
+{
+	char *user = getenv("REMOTE_USER");
+	struct passwd *pwd;
+	char *head = "Content-Type: text/html\r\n\r\n<HTML><BODY><H1>SWAT installation Error</H1>\n";
+	char *tail = "</BODY></HTML>\r\n";
+
+	if (!user) {
+		printf("%sREMOTE_USER not set. Not authenticated by web server.<br>%s\n",
+		       head, tail);
+		exit(0);
+	}
+
+	pwd = getpwnam(user);
+	if (!pwd) {
+		printf("%sCannot find user %s<br>%s\n", head, user, tail);
+		exit(0);
+	}
+
+	setuid(0);
+	setuid(pwd->pw_uid);
+	if (geteuid() != pwd->pw_uid || getuid() != pwd->pw_uid) {
+		printf("%sFailed to become user %s - uid=%d/%d<br>%s\n", 
+		       head, user, (int)geteuid(), (int)getuid(), tail);
+		exit(0);
+	}
+}
 
 /***************************************************************************
 decode a base64 string in-place - simple and slow algorithm
@@ -483,6 +513,8 @@ static void cgi_download(char *file)
 }
 
 
+
+
 /***************************************************************************
 setup the cgi framework, handling the possability that this program is either
 run as a true cgi program by a web browser or is itself a mini web server
@@ -502,7 +534,7 @@ void cgi_setup(char *rootdir, int auth_required)
 	/* maybe we are running under a web server */
 	if (getenv("CONTENT_LENGTH") || getenv("REQUEST_METHOD")) {
 		if (auth_required) {
-			cgi_auth_error();
+			cgi_web_auth();
 		}
 		return;
 	}
