@@ -41,7 +41,14 @@ INCLUDES += $(INCLUDE_openldap)
 
 include_HEADERS = hdb.h hdb_err.h hdb_asn1.h hdb-protos.h hdb-private.h
 
-libhdb_la_LIBADD = ../krb5/libkrb5.la ../asn1/libasn1.la ../roken/libroken.la $(LIB_openldap) $(DBLIB) $(LIB_NDBM)
+libhdb_la_LIBADD = \
+	../krb5/libkrb5.la \
+	../asn1/libasn1.la \
+	../roken/libroken.la \
+	$(LIB_openldap) \
+	$(LIB_dlopen) \
+	$(DBLIB) \
+	$(LIB_NDBM)
 
 $(libhdb_la_OBJECTS): $(srcdir)/hdb-protos.h $(srcdir)/hdb-private.h
 
