@@ -25,7 +25,7 @@ struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 		NDR_PRINT_IN_DEBUG($name, r);
 	}
 	
-	return dcerpc_ndr_request_table_send(p, NULL, &dcerpc_table_$interface->{NAME}, DCERPC_$uname, mem_ctx, r);
+	return dcerpc_ndr_request_send(p, NULL, &dcerpc_table_$interface->{NAME}, DCERPC_$uname, mem_ctx, r);
 }
 
 NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)

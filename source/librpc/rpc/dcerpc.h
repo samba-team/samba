@@ -181,11 +181,10 @@ struct rpc_request {
 	uint32_t fault_code;
 
 	/* use by the ndr level async recv call */
-	struct rpc_request_ndr {
-		NTSTATUS (*ndr_push)(struct ndr_push *, int, void *);
-		NTSTATUS (*ndr_pull)(struct ndr_pull *, int, void *);
+	struct {
+		const struct dcerpc_interface_table *table;
+		uint32_t opnum;
 		void *struct_ptr;
-		size_t struct_size;
 		TALLOC_CTX *mem_ctx;
 	} ndr;
 

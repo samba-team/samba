@@ -65,33 +65,37 @@ static void remote_op_unbind(struct dcesrv_connection *dce_conn, const struct dc
 static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
 	struct dcesrv_remote_private *private = dce_call->conn->private;
-	NTSTATUS status;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
-	const char *name = dce_call->conn->iface->ndr->calls[opnum].name;
-	ndr_push_flags_fn_t ndr_push_fn = dce_call->conn->iface->ndr->calls[opnum].ndr_push;
-	ndr_pull_flags_fn_t ndr_pull_fn = dce_call->conn->iface->ndr->calls[opnum].ndr_pull;
-	ndr_print_function_t ndr_print_fn = dce_call->conn->iface->ndr->calls[opnum].ndr_print;
-	size_t struct_size = dce_call->conn->iface->ndr->calls[opnum].struct_size;
+	const struct dcerpc_interface_call *call;
+	const char *name;
+
+	if (opnum >= dce_call->conn->iface->ndr->num_calls) {
+		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	name = dce_call->conn->iface->ndr->calls[opnum].name;
+	call = &dce_call->conn->iface->ndr->calls[opnum];
 
 	if (private->c_pipe->flags & DCERPC_DEBUG_PRINT_IN) {
-		ndr_print_function_debug(ndr_print_fn, name, NDR_IN | NDR_SET_VALUES, r);		
+		ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);		
 	}
 
-	status = dcerpc_ndr_request(private->c_pipe, NULL, opnum, mem_ctx,
-				    (ndr_push_flags_fn_t) ndr_push_fn,
-				    (ndr_pull_flags_fn_t) ndr_pull_fn,
-				    r, struct_size);
+	/* we didn't use the return code of this function as we only check the last_fault_code */
+	dcerpc_ndr_request(private->c_pipe, NULL, dce_call->conn->iface->ndr,
+				    opnum, mem_ctx,r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("dcesrv_remote: call[%s] failed with: %s!\n",name, nt_errstr(status)));
-		return status;
+	dce_call->fault_code = private->c_pipe->last_fault_code;
+	if (dce_call->fault_code != 0) {
+		DEBUG(0,("dcesrv_remote: call[%s] failed with: %s!\n",name, dcerpc_errstr(mem_ctx, dce_call->fault_code)));
+		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
-	if (NT_STATUS_IS_OK(status) && (private->c_pipe->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		ndr_print_function_debug(ndr_print_fn, name, NDR_OUT, r);		
+	if ((dce_call->fault_code == 0) && (private->c_pipe->flags & DCERPC_DEBUG_PRINT_OUT)) {
+		ndr_print_function_debug(call->ndr_print, name, NDR_OUT, r);		
 	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const struct dcesrv_interface *iface)

@@ -1156,37 +1156,20 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_pipe *p,
 /*
  send a rpc request given a dcerpc_call structure 
  */
-struct rpc_request *dcerpc_ndr_request_table_send(struct dcerpc_pipe *p,
+struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 						const struct GUID *object,
 						const struct dcerpc_interface_table *table,
 						uint32_t opnum, 
 						TALLOC_CTX *mem_ctx, 
 						void *r)
 {
-	const struct dcerpc_interface_call *call = &table->calls[opnum];
-	
-	return dcerpc_ndr_request_send(p, object, opnum, mem_ctx, call->ndr_push, call->ndr_pull, r, call->struct_size);
-}
-						
-
-/*
-  send a rpc request with a given set of ndr helper functions
-
-  call dcerpc_ndr_request_recv() to receive the answer
-*/
-struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
-						const struct GUID *object,
-					    uint32_t opnum,
-					    TALLOC_CTX *mem_ctx,
-					    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
-					    NTSTATUS (*ndr_pull)(struct ndr_pull *, int, void *),
-					    void *struct_ptr,
-					    size_t struct_size)
-{
+	const struct dcerpc_interface_call *call;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB request;
 	struct rpc_request *req;
+
+	call = &table->calls[opnum];
 
 	/* setup for a ndr_push_* call */
 	push = ndr_push_init();
@@ -1199,7 +1182,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	}
 
 	/* push the structure into a blob */
-	status = ndr_push(push, NDR_IN, struct_ptr);
+	status = call->ndr_push(push, NDR_IN, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Unable to ndr_push structure in dcerpc_ndr_request_send - %s\n",
 			 nt_errstr(status)));
@@ -1211,8 +1194,8 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	request = ndr_push_blob(push);
 
 	if (p->flags & DCERPC_DEBUG_VALIDATE_IN) {
-		status = dcerpc_ndr_validate_in(p, mem_ctx, request, struct_size, 
-						ndr_push, ndr_pull);
+		status = dcerpc_ndr_validate_in(p, mem_ctx, request, call->struct_size, 
+						call->ndr_push, call->ndr_pull);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2,("Validation failed in dcerpc_ndr_request_send - %s\n",
 				 nt_errstr(status)));
@@ -1228,10 +1211,9 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	req = dcerpc_request_send(p, object, opnum, mem_ctx, &request);
 
 	if (req != NULL) {
-		req->ndr.ndr_push = ndr_push;
-		req->ndr.ndr_pull = ndr_pull;
-		req->ndr.struct_ptr = struct_ptr;
-		req->ndr.struct_size = struct_size;
+		req->ndr.table = table;
+		req->ndr.opnum = opnum;
+		req->ndr.struct_ptr = r;
 		req->ndr.mem_ctx = mem_ctx;
 	}
 
@@ -1249,14 +1231,18 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	NTSTATUS status;
 	DATA_BLOB response;
 	struct ndr_pull *pull;
-	struct rpc_request_ndr ndr = req->ndr;
 	uint_t flags;
+	TALLOC_CTX *mem_ctx = req->ndr.mem_ctx;
+	void *r = req->ndr.struct_ptr;
+	uint32_t opnum = req->ndr.opnum;
+	const struct dcerpc_interface_table *table = req->ndr.table;
+	const struct dcerpc_interface_call *call = &table->calls[opnum];
 
 	/* make sure the recv code doesn't free the request, as we
 	   need to grab the flags element before it is freed */
 	talloc_increase_ref_count(req);
 
-	status = dcerpc_request_recv(req, ndr.mem_ctx, &response);
+	status = dcerpc_request_recv(req, mem_ctx, &response);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1265,7 +1251,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	talloc_free(req);
 
 	/* prepare for ndr_pull_* */
-	pull = ndr_pull_init_flags(p, &response, ndr.mem_ctx);
+	pull = ndr_pull_init_flags(p, &response, mem_ctx);
 	if (!pull) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1278,15 +1264,19 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	dump_data(10, pull->data, pull->data_size);
 
 	/* pull the structure from the blob */
-	status = ndr.ndr_pull(pull, NDR_OUT, ndr.struct_ptr);
+	status = call->ndr_pull(pull, NDR_OUT, r);
 	if (!NT_STATUS_IS_OK(status)) {
+		dcerpc_log_packet(table, opnum, NDR_OUT, 
+				  &response);
 		return status;
 	}
 
 	if (p->flags & DCERPC_DEBUG_VALIDATE_OUT) {
-		status = dcerpc_ndr_validate_out(p, ndr.mem_ctx, ndr.struct_ptr, ndr.struct_size, 
-						 ndr.ndr_push, ndr.ndr_pull);
+		status = dcerpc_ndr_validate_out(p, mem_ctx, r, call->struct_size, 
+						 call->ndr_push, call->ndr_pull);
 		if (!NT_STATUS_IS_OK(status)) {
+			dcerpc_log_packet(table, opnum, NDR_OUT, 
+				  &response);
 			return status;
 		}
 	}
@@ -1312,17 +1302,15 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
   standard format
 */
 NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
-				struct GUID *object,
-			    uint32_t opnum,
-			    TALLOC_CTX *mem_ctx,
-			    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
-			    NTSTATUS (*ndr_pull)(struct ndr_pull *, int, void *),
-			    void *struct_ptr,
-			    size_t struct_size)
+			    const struct GUID *object,
+			    const struct dcerpc_interface_table *table,
+			    uint32_t opnum, 
+			    TALLOC_CTX *mem_ctx, 
+			    void *r)
 {
 	struct rpc_request *req;
 
-	req = dcerpc_ndr_request_send(p, object, opnum, mem_ctx, ndr_push, ndr_pull, struct_ptr, struct_size);
+	req = dcerpc_ndr_request_send(p, object, table, opnum, mem_ctx, r);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
