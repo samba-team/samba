@@ -137,7 +137,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define SCVAL(buf,pos,val) (CVAL(buf,pos) = (val))
 
 #define CVALCONST(buf,pos) (((const unsigned char *)(buf))[pos])
-#define PVALCONST(buf,pos) ((const unsigned)CVAL(buf,pos))
+#define PVALCONST(buf,pos) ((const unsigned)CVALCONST(buf,pos))
 
 #if CAREFUL_ALIGNMENT
 
