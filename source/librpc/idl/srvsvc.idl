@@ -440,13 +440,17 @@
 	} srvsvc_NetShareInfo502;
 
 	typedef struct {
-		uint32 dfs_flags;
-	} srvsvc_NetShareInfo1005;
-
-	typedef struct {
 		uint32 count;
 		[size_is(count)] srvsvc_NetShareInfo502 *array;
 	} srvsvc_NetShareCtr502;
+
+	typedef struct {
+		uint32 dummy;
+	} srvsvc_NetShareInfo1004;
+
+	typedef struct {
+		uint32 dfs_flags;
+	} srvsvc_NetShareInfo1005;
 
 	typedef union {
 		[case(0)] srvsvc_NetShareInfo0 *info0;
@@ -454,6 +458,7 @@
 		[case(2)] srvsvc_NetShareInfo2 *info2;
 		[case(501)] srvsvc_NetShareInfo501 *info501;
 		[case(502)] srvsvc_NetShareInfo502 *info502;
+		[case(1004)] srvsvc_NetShareInfo1004 *info1004;
 		[case(1005)] srvsvc_NetShareInfo1005 *info1005;
 		[default] ;
 	} srvsvc_NetShareInfo;
