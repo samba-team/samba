@@ -5,7 +5,6 @@
   http://www.grimes.demon.co.uk/DCOM/DCOMSpec.htm
  */
 
-#define HRESULT uint32
 #define OLESTR unistr
 
 [
@@ -279,7 +278,7 @@ interface IUnknown
 	/* Function 0x00 */
 	/* Returns the interface with the specified IID 
 	   if implemented by this object */
-	HRESULT QueryInterface([in] IID *riid
+	WERROR QueryInterface([in] IID *riid
 	   /*FIXME, [out] void **data*/);
 
 	/*****************/
@@ -298,17 +297,17 @@ interface IUnknown
 	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
-	HRESULT CreateInstance(/*FIXME[in] IUnknown *pUnknown, 
+	WERROR CreateInstance(/*FIXME[in] IUnknown *pUnknown, 
 			       [in] IID *riid,
 			       [out, iid_is(riid)] void **ppv*/);
 
-	HRESULT RemoteCreateInstance();
+	WERROR RemoteCreateInstance();
 
 	/* Set lock to TRUE when you want to do a lock
 	and set it to FALSE when you want to unlock */
-	HRESULT LockServer([in] uint8 lock);
+	WERROR LockServer([in] uint8 lock);
 
-	HRESULT RemoteLockServer();
+	WERROR RemoteLockServer();
 }
 
 /*//////////////////////////////////////////////////////////////// */
@@ -329,12 +328,12 @@ interface IRemUnknown : IUnknown
 {
 	typedef [public] struct 
 	{
-		HRESULT hResult; /* result of call */
+		WERROR hResult; /* result of call */
 		STDOBJREF std; /* data for returned interface */
 	}
 	REMQIRESULT;
 
-	HRESULT RemQueryInterface (
+	WERROR RemQueryInterface (
 		[in] IPID *ripid, /* interface to QI on */
 		[in] uint32 cRefs, /* count of AddRefs requested */
 		[in] uint16 cIids, /* count of IIDs that follow */
@@ -349,13 +348,13 @@ interface IRemUnknown : IUnknown
 		uint32 cPrivateRefs;
 	} REMINTERFACEREF;
 
-	HRESULT RemAddRef (
+	WERROR RemAddRef (
 		 [in] uint16 cInterfaceRefs,
 		 [in, size_is(cInterfaceRefs)] REMINTERFACEREF InterfaceRefs[],
-		 [out, size_is(cInterfaceRefs)] HRESULT* pResults
+		 [out, size_is(cInterfaceRefs)] WERROR* pResults
 		);
 
-	HRESULT RemRelease (
+	WERROR RemRelease (
 		 [in] uint16 cInterfaceRefs,
 		 [in, size_is(cInterfaceRefs)] REMINTERFACEREF InterfaceRefs[]
 		);
@@ -381,7 +380,7 @@ interface IRemUnknown : IUnknown
 ]
 	interface ISystemActivator : IClassActivator
 {
-	HRESULT ISystemActivatorRemoteCreateInstance([in] HYPER_T unknown1,  /* IPID ? */
+	WERROR ISystemActivatorRemoteCreateInstance([in] HYPER_T unknown1,  /* IPID ? */
 											  [in] MInterfacePointer iface,
 											  [in] HYPER_T unknown2,
 											  [out] uint32 unknown3, 
@@ -400,11 +399,11 @@ interface IRemUnknown : IUnknown
 
 interface IRemUnknown2 : IRemUnknown
 {
-	HRESULT RemQueryInterface2 (
+	WERROR RemQueryInterface2 (
 		 [in] IPID *ripid,
 		 [in] uint16 cIids,
 		 [in, size_is(cIids)] IID *iids,
-		 [out, size_is(cIids)] HRESULT *phr,
+		 [out, size_is(cIids)] WERROR *phr,
 		 [out, size_is(cIids)] MInterfacePointer *ppMIF
 		);
 }
@@ -425,7 +424,7 @@ object,
 {
 	/*****************/
 	/* Function 0x03 */
-	HRESULT GetTypeInfoCount(
+	WERROR GetTypeInfoCount(
 			[out] uint16 *pctinfo);
 
 	typedef struct {
@@ -438,14 +437,14 @@ object,
 
 	/*****************/
 	/* Function 0x04 */
-	HRESULT GetTypeInfo (
+	WERROR GetTypeInfo (
 			[in] uint16 iTInfo,
 			[in] LCID lcid,
 			[out] REF_ITypeInfo *ppTInfo);
 
 	/*****************/
 	/* Function 0x05 */
-	HRESULT GetIDsOfNames(
+	WERROR GetIDsOfNames(
 			[in] IID *riid,
 			/*FIXME[in,size_is(cNames)] OLESTR *rgszNames[], */
 			[in] uint16 cNames,
@@ -468,7 +467,7 @@ object,
 
 	/*****************/
 	/* Function 0x06 */
-	HRESULT Invoke(
+	WERROR Invoke(
 			[in] DISPID dispIdMember,
 			[in] IID *riid,
 			[in] LCID lcid,
@@ -484,6 +483,6 @@ object,
 	uuid("00000003-0000-0000-C000-000000000046")
 ] interface IMarshal : IUnknown
 {
-	HRESULT MarshalInterface();
-	HRESULT UnMarshalInterface();
+	WERROR MarshalInterface();
+	WERROR UnMarshalInterface();
 }
