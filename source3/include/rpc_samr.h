@@ -1016,7 +1016,6 @@ typedef struct r_samr_unknown_38
 	uint16 unk_0;
 	uint16 unk_1;
 	uint16 unk_2;
-	uint16 unk_3;
 	uint32 status;         /* return status */
 
 } SAMR_R_UNKNOWN_38;
