@@ -168,8 +168,7 @@ load the list of network interfaces
 ****************************************************************************/
 void load_interfaces(void)
 {
-	char *ptr;
-	fstring token;
+	char **ptr;
 	int i;
 	struct iface_struct ifaces[MAX_INTERFACES];
 
@@ -201,7 +200,7 @@ void load_interfaces(void)
 
 	/* if we don't have a interfaces line then use all broadcast capable 
 	   interfaces except loopback */
-	if (!ptr || !*ptr) {
+	if (!ptr || !*ptr || !**ptr) {
 		if (total_probed <= 0) {
 			DEBUG(0,("ERROR: Could not determine network interfaces, you must use a interfaces config line\n"));
 			exit(1);
@@ -216,8 +215,9 @@ void load_interfaces(void)
 		return;
 	}
 
-	while (next_token(&ptr,token,NULL,sizeof(token))) {
-		interpret_interface(token);
+	while (*ptr) {
+		interpret_interface(*ptr);
+		ptr++;
 	}
 
 	if (!local_interfaces) {
