@@ -964,7 +964,7 @@ static void maybe_push_modules(int fd, char **modules)
  * that is necessary.  The return value is a file descriptor
  * for the slave side.
  */
-int getptyslave(void)
+void getptyslave(void)
 {
 	register int t = -1;
 
