@@ -1667,12 +1667,3 @@ char * base64_encode_data_blob(DATA_BLOB data)
     return result;
 }
 
-#ifdef VALGRIND
-size_t valgrind_strlen(const char *s)
-{
-	size_t count;
-	for(count = 0; *s++; count++)
-		;
-	return count;
-}
-#endif
