@@ -10,6 +10,7 @@ mandir=@mandir@
 LIBS=@LIBS@
 CC=@CC@
 CFLAGS=@CFLAGS@
+CPPFLAGS=@CPPFLAGS@
 LDFLAGS=@LDFLAGS@
 AWK=@AWK@
 
@@ -20,7 +21,7 @@ srcdir=@srcdir@
 builddir=@builddir@
 SHELL=/bin/sh
 
-BASEDIR=@prefix@
+BASEDIR= @prefix@
 BINDIR = @bindir@
 SBINDIR = @sbindir@
 LIBDIR = @libdir@
