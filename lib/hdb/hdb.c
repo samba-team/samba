@@ -71,6 +71,26 @@ hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent)
     krb5_storage_free(sp);
 }
 
+
+
+krb5_error_code
+hdb_etype2key(krb5_context context, 
+	      hdb_entry *e, 
+	      krb5_enctype etype, 
+	      krb5_keyblock **key)
+{
+    krb5_keytype keytype;
+    krb5_error_code ret;
+    ret = krb5_etype2keytype(context, etype, &keytype);
+    if(ret)
+	return ret;
+    if(keytype == e->keyblock.keytype){
+	*key = &e->keyblock;
+	return 0;
+    }
+    return KRB5_PROG_ETYPE_NOSUPP;
+}
+
 void
 hdb_free_entry(krb5_context context, hdb_entry *ent)
 {
