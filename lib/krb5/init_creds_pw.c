@@ -610,8 +610,11 @@ set_paid(struct pa_info_data *paid, krb5_context context,
 }
 
 static struct pa_info_data *
-pa_etype_info2(krb5_context context, krb5_principal client, AS_REQ *asreq,
-	       struct pa_info_data *paid, heim_octet_string *data)
+pa_etype_info2(krb5_context context,
+	       const krb5_principal client, 
+	       const AS_REQ *asreq,
+	       struct pa_info_data *paid, 
+	       heim_octet_string *data)
 {
     krb5_error_code ret;
     ETYPE_INFO2 e;
@@ -657,8 +660,11 @@ pa_etype_info2(krb5_context context, krb5_principal client, AS_REQ *asreq,
 }
 
 static struct pa_info_data *
-pa_etype_info(krb5_context context, krb5_principal client, AS_REQ *asreq,
-	      struct pa_info_data *paid, heim_octet_string *data)
+pa_etype_info(krb5_context context,
+	      const krb5_principal client, 
+	      const AS_REQ *asreq,
+	      struct pa_info_data *paid,
+	      heim_octet_string *data)
 {
     krb5_error_code ret;
     ETYPE_INFO e;
@@ -707,8 +713,11 @@ pa_etype_info(krb5_context context, krb5_principal client, AS_REQ *asreq,
 }
 
 static struct pa_info_data *
-pa_pw_or_afs3_salt(krb5_context context, krb5_principal client, AS_REQ *asreq,
-		   struct pa_info_data *paid, heim_octet_string *data)
+pa_pw_or_afs3_salt(krb5_context context,
+		   const krb5_principal client, 
+		   const AS_REQ *asreq,
+		   struct pa_info_data *paid,
+		   heim_octet_string *data)
 {
     krb5_error_code ret;
     if (paid->etype == ENCTYPE_NULL)
@@ -727,8 +736,11 @@ pa_pw_or_afs3_salt(krb5_context context, krb5_principal client, AS_REQ *asreq,
 
 struct pa_info {
     krb5_preauthtype type;
-    struct pa_info_data *(*process)(krb5_context, krb5_principal, AS_REQ *,
-			    struct pa_info_data *, heim_octet_string *);
+    struct pa_info_data *(*salt_info)(krb5_context,
+				      const krb5_principal, 
+				      const AS_REQ *,
+				      struct pa_info_data *, 
+				      heim_octet_string *);
 };
 
 static struct pa_info preauth_prefs[] = {
@@ -739,8 +751,11 @@ static struct pa_info preauth_prefs[] = {
 };
     
 static struct pa_info_data *
-process_pa(krb5_context context, krb5_principal client, AS_REQ *asreq,
-	   struct pa_info_data *paid, METHOD_DATA *md)
+process_pa_info(krb5_context context, 
+		const krb5_principal client, 
+		const AS_REQ *asreq,
+		struct pa_info_data *paid,
+		METHOD_DATA *md)
 {
     int i, j;
     struct pa_info *info;
@@ -750,8 +765,8 @@ process_pa(krb5_context context, krb5_principal client, AS_REQ *asreq,
 	for (j = 0; j < md->len; j++)
 	    if (info->type == md->val[j].padata_type) {
 		paid->salt.salttype = info->type;
-		return (*info->process)(context, client, asreq,
-					paid, &md->val[j].padata_value);
+		return (*info->salt_info)(context, client, asreq,
+					  paid, &md->val[j].padata_value);
 	    }
     }
     return NULL;
@@ -811,15 +826,15 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
 }
 
 static krb5_error_code
-add_padata(krb5_context context,
-	   METHOD_DATA *md, 
-	   krb5_principal client,
-	   krb5_s2k_proc key_proc,
-	   krb5_const_pointer keyseed,
-	   krb5_enctype *enctypes,
-	   unsigned netypes,
-	   krb5_salt *salt,
-	   krb5_data *s2kparams)
+add_enc_ts_padata(krb5_context context,
+		  METHOD_DATA *md, 
+		  krb5_principal client,
+		  krb5_s2k_proc key_proc,
+		  krb5_const_pointer keyseed,
+		  krb5_enctype *enctypes,
+		  unsigned netypes,
+		  krb5_salt *salt,
+		  krb5_data *s2kparams)
 {
     krb5_error_code ret;
     PA_DATA *pa2;
@@ -865,65 +880,96 @@ add_padata(krb5_context context,
 }
 
 static krb5_error_code
+pa_data_to_md_ts_enc(krb5_context context,
+		     const AS_REQ *a,
+		     const krb5_principal client,
+		     struct preauth_ctx *pa_ctx,
+		     struct pa_info_data *ppaid,
+		     METHOD_DATA *md)
+{
+    if (pa_ctx->key_proc == NULL || pa_ctx->password == NULL)
+	return 0;
+
+    if (ppaid) {
+	add_enc_ts_padata(context, md, client, 
+			  pa_ctx->key_proc, pa_ctx->password,
+			  &ppaid->etype, 1,
+			  &ppaid->salt, ppaid->s2kparams);
+    } else {
+	krb5_salt salt;
+	
+	/* make a v5 salted pa-data */
+	add_enc_ts_padata(context, md, client, 
+			  pa_ctx->key_proc, pa_ctx->password,
+			  a->req_body.etype.val, a->req_body.etype.len, 
+			  NULL, NULL);
+	
+	/* make a v4 salted pa-data */
+	salt.salttype = KRB5_PW_SALT;
+	krb5_data_zero(&salt.saltvalue);
+	add_enc_ts_padata(context, md, client, 
+			  pa_ctx->key_proc, pa_ctx->password, 
+			  a->req_body.etype.val, a->req_body.etype.len, 
+			  &salt, NULL);
+    }
+    return 0;
+}
+
+static krb5_error_code
+pa_data_to_key_plain(krb5_context context,
+		     const krb5_principal client,
+		     struct preauth_ctx *pa_ctx,
+		     krb5_salt salt,
+		     krb5_data *s2kparams,
+		     krb5_enctype etype,
+		     krb5_keyblock **key)
+{
+    krb5_error_code ret;
+
+    ret = (*pa_ctx->key_proc)(context, etype, pa_ctx->password,
+			      salt, s2kparams, key);
+    return ret;
+}
+
+
+static krb5_error_code
 process_pa_data_to_md(krb5_context context,
 		      const krb5_creds *creds,
-		      AS_REQ *a,
+		      const AS_REQ *a,
 		      struct preauth_ctx *pa_ctx,
-		      METHOD_DATA *md,
+		      METHOD_DATA *in_md,
+		      METHOD_DATA **out_md,
 		      krb5_prompter_fct prompter,
 		      void *prompter_data)
 {
     struct pa_info_data paid, *ppaid;
 
-    a->padata = NULL;
     memset(&paid, 0, sizeof(paid));
 
-    if (md->len == 0)
+    if (in_md->len == 0)
 	return 0;
 
     paid.etype = ENCTYPE_NULL;
-    ppaid = process_pa(context, creds->client, a, &paid, md);
+    ppaid = process_pa_info(context, creds->client, a, &paid, in_md);
 
-    ALLOC(a->padata, 1);
-    if (a->padata == NULL) {
+    ALLOC(*out_md, 1);
+    if (*out_md == NULL) {
 	if (ppaid)
 	    free_paid(context, ppaid);
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
-    a->padata->len = 0;
-    a->padata->val = NULL;
+    (*out_md)->len = 0;
+    (*out_md)->val = NULL;
     
     /* 
      * here is where we should check for other pre-auth types then
      * KRB5_PADATA_ENC_TIMESTAMP
      */
 
-    if (ppaid) {
-	add_padata(context, a->padata, creds->client, 
-		   pa_ctx->key_proc, pa_ctx->password,
-		   &paid.etype, 1,
-		   &paid.salt, paid.s2kparams);
+    pa_data_to_md_ts_enc(context, a, creds->client, pa_ctx, ppaid, *out_md);
+    if (ppaid)
 	free_paid(context, ppaid);
-    } else {
-	krb5_salt salt;
-
-	/* make a v5 salted pa-data */
-	add_padata(context, a->padata, creds->client, 
-		   pa_ctx->key_proc, pa_ctx->password, 
-		   a->req_body.etype.val, a->req_body.etype.len, 
-		   NULL, NULL);
-	
-	/* make a v4 salted pa-data */
-	salt.salttype = KRB5_PW_SALT;
-	krb5_data_zero(&salt.saltvalue);
-	add_padata(context, a->padata, creds->client, 
-		   pa_ctx->key_proc, pa_ctx->password, 
-		   a->req_body.etype.val, a->req_body.etype.len, 
-		   &salt, NULL);
-
-    }    
-
     return 0;
 }
 
@@ -935,7 +981,7 @@ process_pa_data_to_key(krb5_context context,
 		       krb5_kdc_rep *rep,
 		       krb5_keyblock **key)
 {
-    struct pa_info_data paid, *ppaid;
+    struct pa_info_data paid, *ppaid = NULL;
     krb5_error_code ret;
     krb5_enctype etype;
 
@@ -943,34 +989,27 @@ process_pa_data_to_key(krb5_context context,
 
     etype = rep->kdc_rep.enc_part.etype;
 
-    paid.etype = etype;
-    if (rep->kdc_rep.padata)
-	ppaid = process_pa(context, creds->client, a, &paid, 
-			   rep->kdc_rep.padata);
-    else
-	ppaid = NULL;
+    if (rep->kdc_rep.padata) {
+	paid.etype = etype;
+	ppaid = process_pa_info(context, creds->client, a, &paid, 
+				rep->kdc_rep.padata);
+    }
+    if (ppaid == NULL) {
+	ret = krb5_get_pw_salt (context, creds->client, &paid.salt);
+	if (ret)
+	    return ret;
+	paid.etype = etype;
+	paid.s2kparams = NULL;
+    }
 
     /*
      * Here is the second place we want to add hook when we support
      * other preauth mechs then KRB5_PA_ENC_TIMESTAMP.
      */
 
-    if(ppaid) {
-	ret = (*pa_ctx->key_proc)(context, etype, pa_ctx->password,
-				  paid.salt, paid.s2kparams, key);
-	free_paid(context, ppaid);
-    } else {
-	krb5_salt salt;
-	/* make a v5 salted pa-data */
-	ret = krb5_get_pw_salt (context, creds->client, &salt);
-	
-	if (ret)
-	    return ret;
-	ret = (*pa_ctx->key_proc)(context, etype, pa_ctx->password,
-				  salt, NULL, key);
-	krb5_free_salt(context, salt);
-    }
-
+    ret = pa_data_to_key_plain(context, creds->client, pa_ctx, 
+				paid.salt, paid.s2kparams, etype, key);
+    free_paid(context, &paid);
     return ret;
 }
 
@@ -1079,7 +1118,8 @@ init_cred_loop(krb5_context context,
 	}
 
 	/* fill_in_md_data */
-	ret = process_pa_data_to_md(context, creds, &a, pa_ctx, &md,
+	ret = process_pa_data_to_md(context, creds, &a, pa_ctx,
+				    &md, &a.padata,
 				    prompter, prompter_data);
 	if (ret)
 	    goto out;
