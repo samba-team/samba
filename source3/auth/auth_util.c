@@ -412,8 +412,8 @@ BOOL make_user_info_winbind(auth_usersupplied_info **user_info,
 				     username, username,
 				     domain, domain, 
 				     global_myname, 
-				     local_nt_blob,
 				     local_lm_blob,
+				     local_nt_blob,
 				     plaintext_blob, 
 				     ntlmssp_flags, False);
 		
@@ -450,7 +450,7 @@ BOOL make_user_info_winbind_crap(auth_usersupplied_info **user_info,
 			     smb_name, smb_name, 
 			     client_domain, client_domain, 
 			     global_myname, 
-			     nt_blob, lm_blob,
+			     lm_blob, nt_blob,
 			     plaintext_blob, 
 			     ntlmssp_flags, True);
 
