@@ -40,9 +40,11 @@
 	<para>This option takes the standard substitutions, allowing 
 	you to have separate logon scripts for each user or machine.</para>
 
+	<warning>
         <para>
         Do not quote the value. Setting this as <quote>\\%N\profile\%U</quote>
-        will break profile handling.
+		will break profile handling.  </para>
+	</warning>
 
 	<para>Note that this option is only useful if Samba is set up 
 	as a logon server.</para>

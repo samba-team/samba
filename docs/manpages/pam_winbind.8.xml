@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../entities/global.entities'> %globalentities;
+]>
+<refentry id="pam_winbind.8">
+
+<refmeta>
+	<refentrytitle>pam_winbind</refentrytitle>
+	<manvolnum>8</manvolnum>
+</refmeta>
+
+
+<refnamediv>
+	<refname>pam_winbind</refname>
+	<refpurpose>PAM module for Winbind</refpurpose>
+</refnamediv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>pam_winbind is a PAM module that can authenticate users against the local domain 
+	by talking to the Winbind daemon.</para>
+
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<para>
+		pam_winbind does not support any additional options.
+	</para>
+
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+
+	<para>winbind(8)</para>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 3.0 of Samba.</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+	
+	<para>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</para>
+	
+	<para>This manpage was written by Jelmer Vernooij.</para>
+
+</refsect1>
+
+</refentry>
