@@ -69,6 +69,9 @@
 #ifdef HAVE_NETINET6_IN6_H
 #include <netinet6/in6.h>
 #endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
@@ -433,6 +436,10 @@ copyhostent (const struct hostent *h);
 typedef unsigned short sa_family_t;
 #endif
 
+#ifndef HAVE_SOCKLEN_T
+typedef int socklen_t;
+#endif
+
 #if HAVE_STRUCT_SOCKADDR_SA_LEN
 
 struct sockaddr_storage {
@@ -463,6 +470,86 @@ struct sockaddr_storage {
 #endif
 
 #endif /* HAVE_STRUCT_SOCKADDR_STORAGE */
+
+#ifndef HAVE_STRUCT_ADDRINFO
+struct addrinfo {
+    int    ai_flags;
+    int    ai_family;
+    int    ai_socktype;
+    int    ai_protocol;
+    size_t ai_addrlen;
+    char  *ai_canonname;
+    struct sockaddr *ai_addr;
+    struct addrinfo *ai_next;
+};
+#endif
+
+#ifndef EAI_NOERROR
+#define EAI_NOERROR	0	/* no error */
+#endif
+#ifndef EAI_ADDRFAMILY
+#define EAI_ADDRFAMILY	1	/* address family for nodename not supported */
+#define EAI_AGAIN	2	/* temporary failure in name resolution */
+#define EAI_BADFLAGS	3	/* invalid value for ai_flags */
+#define EAI_FAIL	4	/* non-recoverable failure in name resolution */
+#define EAI_FAMILY	5	/* ai_family not supported */
+#define EAI_MEMORY	6	/* memory allocation failure */
+#define EAI_NODATA	7	/* no address associated with nodename */
+#define EAI_NONAME	8	/* nodename nor servname provided, or not known */
+#define EAI_SERVICE	9	/* servname not supported for ai_socktype */
+#define EAI_SOCKTYPE   10	/* ai_socktype not supported */
+#define EAI_SYSTEM     11	/* system error returned in errno */
+#endif
+
+/* flags for getaddrinfo() */
+
+#ifndef AI_PASSIVE
+
+#define AI_PASSIVE	0x01
+#define AI_CANONNAME	0x02
+#define AI_NUMERICHOST	0x04
+
+#endif
+
+/* flags for getnameinfo() */
+
+#ifndef NI_DGRAM
+#define NI_DGRAM	0x01
+#define NI_NAMEREQD	0x02
+#define NI_NOFQDN	0x04
+#define NI_NUMERICHOST	0x08
+#define NI_NUMERICSERV	0x10
+#endif
+
+#ifndef NI_MAXHOST
+#define NI_MAXHOST  1025
+#define NI_MAXSERV    32
+#endif
+
+#ifndef HAVE_GETADDRINFO
+int
+getaddrinfo(const char *nodename,
+	    const char *servname,
+	    const struct addrinfo *hints,
+	    struct addrinfo **res);
+#endif
+
+#ifndef HAVE_GETNAMEINFO
+int getnameinfo(const struct sockaddr *sa, socklen_t salen,
+		char *host, size_t hostlen,
+		char *serv, size_t servlen,
+		int flags);
+#endif
+
+#ifndef HAVE_FREEADDRINFO
+void
+freeaddrinfo(struct addrinfo *ai);
+#endif
+
+#ifndef HAVE_GAI_STRERROR
+char *
+gai_strerror(int ecode);
+#endif
 
 /*
  * kludges and such
