@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,6 +35,10 @@
 
 #ifndef GSSAPI_LOCL_H
 #define GSSAPI_LOCL_H
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <krb5_locl.h>
 #include <gssapi.h>
