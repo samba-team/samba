@@ -583,7 +583,7 @@ static time_t get_time_from_string(char *p)
 
 	for (i = 0; i < 8; i++)
 	{
-		if (p[i] == '\0' || !isxdigit(p[i]))
+		if (p[i] == '\0' || !isxdigit((int)(p[i]&0xFF)))
 		break;
 	}
 	if (i == 8)
