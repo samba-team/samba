@@ -120,6 +120,8 @@ Rep-get-princ-aliases ::= SEQUENCE {
 	...
 }
 
+Err-get-princ-aliases ::= NULL
+
 -- Get list of encryption types supported by KDC for new types
 Req-get-supported-etypes ::= NULL
 
@@ -129,35 +131,35 @@ Err-get-supported-etypes ::= NULL
 
 -- Choice switch
 
--- Op-req ::= CHOICE {
--- 	null[0]			Req-null
--- 	change-pw[1]		Req-change-pw,
--- 	set-keys[2]		Req-set-keys,
--- 	get-pw-policy[3]	Req-get-pw-policy,
--- 	get-princ-aliases[4]	Req-get-princ-aliases,
--- 	get-supported-etypes[5]	Req-get-supported-etypes,
--- 	...
--- }
--- 
--- Op-rep ::= CHOICE {
--- 	null[0]			Rep-null,
--- 	change-pw[1]		Rep-change-pw,
--- 	set-keys[2]		Rep-set-keys,
--- 	get-pw-policy[3]	Rep-get-pw-policy,
--- 	get-princ-aliases[4]	Rep-get-princ-aliases,
--- 	get-supported-etypes[5]	Rep-get-supported-etypes,
--- 	...
--- }
--- 
--- Op-error ::= CHOICE {
--- 	null[0]			Err-null,
--- 	change-pw[1]		Err-change-pw,
--- 	set-keys[2]		Err-set-keys,
--- 	get-pw-policy[3]	Err-get-pw-policy,
--- 	get-princ-aliases[4]	Err-get-princ-aliases,
--- 	get-supported-etypes[5]	Err-get-supported-etypes,
--- 	...
--- }
+Op-req ::= CHOICE {
+	null[0]			Req-null,
+	change-pw[1]		Req-change-pw,
+	set-keys[2]		Req-set-keys,
+	get-pw-policy[3]	Req-get-pw-policy,
+	get-princ-aliases[4]	Req-get-princ-aliases,
+	get-supported-etypes[5]	Req-get-supported-etypes,
+	...
+}
+ 
+Op-rep ::= CHOICE {
+	null[0]			Rep-null,
+	change-pw[1]		Rep-change-pw,
+	set-keys[2]		Rep-set-keys,
+	get-pw-policy[3]	Rep-get-pw-policy,
+	get-princ-aliases[4]	Rep-get-princ-aliases,
+	get-supported-etypes[5]	Rep-get-supported-etypes,
+	...
+}
+
+Op-error ::= CHOICE {
+	null[0]			Err-null,
+	change-pw[1]		Err-change-pw,
+	set-keys[2]		Err-set-keys,
+	get-pw-policy[3]	Err-get-pw-policy,
+	get-princ-aliases[4]	Err-get-princ-aliases,
+	get-supported-etypes[5]	Err-get-supported-etypes,
+	...
+}
 
 
 Request ::= [ APPLICATION 0 ] SEQUENCE {
