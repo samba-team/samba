@@ -711,7 +711,7 @@ libsmbclient: bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 
 bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(SHLD) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
 
 nsswitch/libnss_wins.so: $(NSS_OBJ)
 	@echo "Linking $@"
