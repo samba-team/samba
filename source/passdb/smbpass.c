@@ -425,18 +425,12 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 }
 
 /*************************************************************************
- Routine to return the next entry in the smbpasswd list.
- this function is a nice, messy combination of reading:
- - the smbpasswd file
- - the unix password database
- - smb.conf options (not done at present).
- *************************************************************************/
-
-static struct sam_passwd *getsmbfile21pwent(void *vp)
+ build a fully populated struct sam_passwd given a struct smb_passwd
+ ************************************************************************/
+static struct sam_passwd* build_sampw_from_smbpw (struct smb_passwd *pw_buf)
 {
-	struct smb_passwd *pw_buf = getsmbfilepwent(vp);
 	static struct sam_passwd user;
-	struct passwd *pwfile;
+	struct passwd 		 *pwfile;
 
 	static pstring full_name;
 	static pstring home_dir;
@@ -445,9 +439,8 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 	static pstring profile_path;
 	static pstring acct_desc;
 	static pstring workstations;
-	
-	DEBUG(5,("getsmbfile21pwent\n"));
 
+	/* lookup in local system passwd file */
 	if (pw_buf == NULL) return NULL;
 
 	pwfile = sys_getpwnam(pw_buf->smb_name);
@@ -457,9 +450,13 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 		DEBUG(0,("getsmbfile21pwent: username %s not in unix passwd database!\n", pw_buf->smb_name));
 		return NULL;
 	}
-
-	pdb_init_sam(&user);
-
+		
+	/* init structure */
+	ZERO_STRUCT (user);
+	pdb_init_sam (&user);
+	
+	
+	/* set data fields */
 	pstrcpy(samlogon_user, pw_buf->smb_name);
 
 	if (samlogon_user[strlen(samlogon_user)-1] != '$')
@@ -468,7 +465,7 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 		/* possibly a better way would be to do a become_user() call */
 		sam_logon_in_ssb = True;
 
-		user.smb_userid    = pw_buf->smb_userid;
+		user.smb_userid    = pwfile->pw_uid;
 		user.smb_grpid     = pwfile->pw_gid;
 
 		user.user_rid  = pdb_uid_to_user_rid (user.smb_userid);
@@ -490,7 +487,7 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 	}
 	else
 	{
-		user.smb_userid    = pw_buf->smb_userid;
+		user.smb_userid    = pwfile->pw_uid;
 		user.smb_grpid     = pwfile->pw_gid;
 
 		user.user_rid  = pdb_uid_to_user_rid (user.smb_userid);
@@ -530,6 +527,27 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 	user.unknown_6 = 0x000004ec; /* don't know */
 
 	return &user;
+}
+
+
+/*************************************************************************
+ Routine to return the next entry in the smbpasswd list.
+ this function is a nice, messy combination of reading:
+ - the smbpasswd file
+ - the unix password database
+ - smb.conf options (not done at present).
+ *************************************************************************/
+
+static struct sam_passwd *getsmbfile21pwent(void *vp)
+{
+	struct smb_passwd 	*pw_buf = getsmbfilepwent(vp);
+	struct sam_passwd 	*user;
+
+	
+	DEBUG(5,("getsmbfile21pwent\n"));
+	user = build_sampw_from_smbpw(pw_buf);
+
+	return user;
 }
 
 /*************************************************************************
@@ -1197,6 +1215,124 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
   endsmbfilepwent_internal(fp_write,&pfile2_lockdepth);
   return True;
 }
+
+/*
+ * Functions that return/manipulate a struct smb_passwd.
+ */
+
+/************************************************************************
+ Utility function to search smb passwd by uid.  use this if your database
+ does not have search facilities.
+*************************************************************************/
+
+static struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid)
+{
+	struct smb_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("search by smb_userid: %x\n", (int)smb_userid));
+
+	/* Open the smb password database - not for update. */
+	fp = startsmbpwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open smb password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsmbpwent(fp)) != NULL && pwd->smb_userid != smb_userid)
+      ;
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("found by smb_userid: %x\n", (int)smb_userid));
+	}
+
+	endsmbpwent(fp);
+	return pwd;
+}
+
+/************************************************************************
+ Utility function to search smb passwd by rid.  
+*************************************************************************/
+
+static struct smb_passwd *iterate_getsmbpwrid(uint32 user_rid)
+{
+	return iterate_getsmbpwuid(pdb_user_rid_to_uid(user_rid));
+}
+
+/************************************************************************
+ Utility function to search smb passwd by name.  use this if your database
+ does not have search facilities.
+*************************************************************************/
+
+static struct smb_passwd *iterate_getsmbpwnam(char *name)
+{
+	struct smb_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("search by name: %s\n", name));
+
+	/* Open the sam password file - not for update. */
+	fp = startsmbpwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open smb password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsmbpwent(fp)) != NULL && !strequal(pwd->smb_name, name))
+      ;
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("found by name: %s\n", name));
+	}
+
+	endsmbpwent(fp);
+	return pwd;
+}
+
+/*
+ * Functions that manupulate a struct sam_passwd.
+ */
+
+/************************************************************************
+ Utility function to search sam passwd by name.  use this if your database
+ does not have search facilities.
+*************************************************************************/
+
+static struct sam_passwd *smbiterate_getsam21pwnam(char *name)
+{
+	struct sam_passwd *pwd = NULL;
+	struct smb_passwd *smbpw = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("search by name: %s\n", name));
+
+	/* Open the smb password database - not for update. */
+	fp = startsmbpwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("unable to open sam password database.\n"));
+		return NULL;
+	}
+
+	smbpw = getsmbpwnam(name);
+
+	if (smbpw != NULL)
+	{
+		pwd = build_sampw_from_smbpw (smbpw);
+		DEBUG(10, ("found by name: %s\n", name));
+	}
+
+	endsmbpwent(fp);
+	return pwd;
+}
+
 	
 /*
  * Stub functions - implemented in terms of others.
@@ -1232,15 +1368,15 @@ static struct passdb_ops file_ops = {
   endsmbfilepwent,
   getsmbfilepwpos,
   setsmbfilepwpos,
-  iterate_getsmbpwnam,          /* In passdb.c */
-  iterate_getsmbpwuid,          /* In passdb.c */
-  iterate_getsmbpwrid,          /* In passdb.c */
+  iterate_getsmbpwnam,
+  iterate_getsmbpwuid,
+  iterate_getsmbpwrid,
   getsmbfilepwent,
   add_smbfilepwd_entry,
   mod_smbfilepwd_entry,
   del_smbfilepwd_entry,
   getsmbfile21pwent,
-  iterate_getsam21pwnam,
+  smbiterate_getsam21pwnam,
   iterate_getsam21pwuid,
   iterate_getsam21pwrid, 
   add_smbfile21pwd_entry,
