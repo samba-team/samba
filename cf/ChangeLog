@@ -1,3 +1,8 @@
+2001-06-24  Assar Westerlund  <assar@sics.se>
+
+	* roken-frag.m4: make sure of building getaddrinfo et al if
+	missing
+
 2001-06-20  Johan Danielsson  <joda@pdc.kth.se>
 
 	* install-catman.sh: try to install links to manpages
