@@ -180,7 +180,7 @@ uint32 pdb_get_user_rid (const SAM_ACCOUNT *sampass)
 		if (sid_peek_check_rid(get_global_sam_sid(), pdb_get_user_sid(sampass),&u_rid))
 			return u_rid;
 	
-	return (-1);
+	return (0);
 }
 
 uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
@@ -190,7 +190,7 @@ uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
 	if (sampass)
 		if (sid_peek_check_rid(get_global_sam_sid(), pdb_get_group_sid(sampass),&g_rid))
 			return g_rid;
-	return (-1);
+	return (0);
 }
 
 /**
@@ -521,7 +521,29 @@ BOOL pdb_set_user_sid (SAM_ACCOUNT *sampass, DOM_SID *u_sid)
 	return True;
 }
 
-BOOL pdb_set_group_sid(SAM_ACCOUNT *sampass, DOM_SID *g_sid)
+BOOL pdb_set_user_sid_from_string (SAM_ACCOUNT *sampass, fstring u_sid)
+{
+	DOM_SID new_sid;
+	if (!sampass || !u_sid)
+		return False;
+
+	DEBUG(10, ("pdb_set_user_sid_from_string: setting user sid %s\n",
+		   u_sid));
+
+	if (!string_to_sid(&new_sid, u_sid)) { 
+		DEBUG(1, ("pdb_set_user_sid_from_string: %s isn't a valid SID!\n", u_sid));
+		return False;
+	}
+	 
+	if (!pdb_set_user_sid(sampass, &new_sid)) {
+		DEBUG(1, ("pdb_set_user_sid_from_string: could not set sid %s on SAM_ACCOUNT!\n", u_sid));
+		return False;
+	}
+
+	return True;
+}
+
+BOOL pdb_set_group_sid (SAM_ACCOUNT *sampass, DOM_SID *g_sid)
 {
 	if (!sampass || !g_sid)
 		return False;
@@ -531,6 +553,27 @@ BOOL pdb_set_group_sid(SAM_ACCOUNT *sampass, DOM_SID *g_sid)
 	DEBUG(10, ("pdb_set_group_sid: setting group sid %s\n", 
 		    sid_string_static(&sampass->private.group_sid)));
 
+	return True;
+}
+
+BOOL pdb_set_group_sid_from_string (SAM_ACCOUNT *sampass, fstring g_sid)
+{
+	DOM_SID new_sid;
+	if (!sampass || !g_sid)
+		return False;
+
+	DEBUG(10, ("pdb_set_group_sid_from_string: setting group sid %s\n",
+		   g_sid));
+
+	if (!string_to_sid(&new_sid, g_sid)) { 
+		DEBUG(1, ("pdb_set_group_sid_from_string: %s isn't a valid SID!\n", g_sid));
+		return False;
+	}
+	 
+	if (!pdb_set_group_sid(sampass, &new_sid)) {
+		DEBUG(1, ("pdb_set_group_sid_from_string: could not set sid %s on SAM_ACCOUNT!\n", g_sid));
+		return False;
+	}
 	return True;
 }
 
