@@ -1,5 +1,7 @@
 1999-05-14  Assar Westerlund  <assar@sics.se>
 
+	* check-netinet-ip-and-tcp.m4: proper autoheader tricks
+
 	* check-netinet-ip-and-tcp.m4: new file for checking for
  	netinet/{ip,tcp}.h.  These are special as they on Irix 6.5.3
 	require <standards.h> to be included in advance.
