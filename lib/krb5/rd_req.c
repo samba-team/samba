@@ -76,49 +76,52 @@ krb5_rd_req_with_keyblock(krb5_context context,
   if (ap_req.ap_options.use_session_key)
     abort ();
   else {
-    EncTicketPart decr_part;
     Authenticator authenticator;
+    krb5_ticket *t;
 
+    t = malloc(sizeof(*t));
     ret = decrypt_tkt_enc_part (context,
 				keyblock,
 				&ap_req.ticket.enc_part,
-				&decr_part);
+				&t->tkt);
     if (ret)
-      return ret;
+	return ret;
 
-    if (ticket) {
-      *ticket = malloc(sizeof(**ticket));
-
-      principalname2krb5_principal(&(*ticket)->enc_part2.client,
-				   decr_part.cname,
-				   decr_part.crealm);
-    }
+    principalname2krb5_principal(&t->enc_part2.client,
+				 t->tkt.cname,
+				 t->tkt.crealm);
+    if (ticket)
+	*ticket = t;
 
     /* save key */
 
-    (*auth_context)->key.keytype = decr_part.key.keytype;
+    (*auth_context)->key.keytype = t->tkt.key.keytype;
     krb5_data_copy(&(*auth_context)->key.contents,
-		   decr_part.key.keyvalue.data,
-		   decr_part.key.keyvalue.length);
+		   t->tkt.key.keyvalue.data,
+		   t->tkt.key.keyvalue.length);
 
     ret = decrypt_authenticator (context,
-				 &decr_part.key,
+				 &t->tkt.key,
 				 &ap_req.authenticator,
 				 &authenticator);
     if (ret)
-      return ret;
+	return ret;
 
-    if (strcmp (authenticator.crealm, decr_part.crealm) != 0)
-      return KRB5KRB_AP_ERR_BADMATCH;
+    memset((*auth_context)->authenticator, 0, 
+	   sizeof((*auth_context)->authenticator));
     {
-      krb5_principal p1, p2;
-
-      principalname2krb5_principal(&p1, authenticator.cname,
-				   authenticator.crealm);
-      principalname2krb5_principal(&p2, decr_part.cname,
-				   decr_part.crealm);
-      if (!krb5_principal_compare (context, p1, p2))
-	return KRB5KRB_AP_ERR_BADMATCH;
+	krb5_principal p2;
+	
+	principalname2krb5_principal(&(*auth_context)->authenticator->cname, 
+				     authenticator.cname,
+				     authenticator.crealm);
+	principalname2krb5_principal(&p2, 
+				     t->tkt.cname,
+				     t->tkt.crealm);
+	if (!krb5_principal_compare (context, 
+				     (*auth_context)->authenticator->cname, 
+				     p2))
+	    return KRB5KRB_AP_ERR_BADMATCH;
     }
     (*auth_context)->authenticator->cusec = authenticator.cusec;
     (*auth_context)->authenticator->ctime = authenticator.ctime;
@@ -133,11 +136,11 @@ krb5_rd_req_with_keyblock(krb5_context context,
 
     /* Check address and time */
     gettimeofday (&now, NULL);
-    if ((decr_part.starttime ? *decr_part.starttime : decr_part.authtime)
+    if ((t->tkt.starttime ? *t->tkt.starttime : t->tkt.authtime)
 	- now.tv_sec > 600 ||
-	decr_part.flags.invalid)
+	t->tkt.flags.invalid)
       return KRB5KRB_AP_ERR_TKT_NYV;
-    if (now.tv_sec - decr_part.endtime > 600)
+    if (now.tv_sec - t->tkt.endtime > 600)
       return KRB5KRB_AP_ERR_TKT_EXPIRED;
 
     return 0;
@@ -159,7 +162,7 @@ krb5_rd_req(krb5_context context,
 	krb5_kt_default(context, &keytab);
     ret = krb5_kt_get_entry(context,
 			    keytab,
-			    server,
+			    (krb5_principal)server,
 			    0,
 			    KEYTYPE_DES,
 			    &entry);
