@@ -387,7 +387,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 
 BOOL check_name(pstring name,connection_struct *conn)
 {
-	BOOL ret;
+	BOOL ret = True;
 
 	errno = 0;
 
@@ -398,7 +398,9 @@ BOOL check_name(pstring name,connection_struct *conn)
 		}
 	}
 
-	ret = reduce_name(conn,name,conn->connectpath,lp_widelinks(SNUM(conn)));
+	if (!lp_widelinks(SNUM(conn))) {
+		ret = reduce_name(conn,name,conn->connectpath);
+	}
 
 	/* Check if we are allowing users to follow symlinks */
 	/* Patch from David Clerc <David.Clerc@cui.unige.ch>

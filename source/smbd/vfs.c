@@ -845,10 +845,9 @@ static BOOL readlink_check(connection_struct *conn, const char *dir, char *name)
  Reduce a file name, removing .. elements and checking that
  it is below dir in the heirachy. This uses vfs_GetWd() and so must be run
  on the system that has the referenced file system.
- Widelinks are allowed if widelinks is true.
 ********************************************************************/
 
-BOOL reduce_name(connection_struct *conn, pstring s, const char *dir,BOOL widelinks)
+BOOL reduce_name(connection_struct *conn, pstring s, const char *dir)
 {
 #ifndef REDUCE_PATHS
 	return True;
@@ -861,20 +860,6 @@ BOOL reduce_name(connection_struct *conn, pstring s, const char *dir,BOOL wideli
 	BOOL relative = (*s != '/');
 
 	*dir2 = *wd = *base_name = *newname = 0;
-
-	if (widelinks) {
-		unix_clean_name(s);
-		/* can't have a leading .. */
-		if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/')) {
-			DEBUG(3,("Illegal file name? (%s)\n",s));
-			return(False);
-		}
-
-		if (strlen(s) == 0)
-			pstrcpy(s,"./");
-
-		return(True);
-	}
 
 	DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
 
