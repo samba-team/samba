@@ -1,3 +1,7 @@
+2004-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c: stop using AlgorithmIdentifierNonOpt
+	
 2004-09-30 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* lib/krb5/krb5.conf.5: assume minutes for time
