@@ -1084,6 +1084,12 @@ BOOL get_user_creds(int c, struct user_creds *usr);
 BOOL msrpcd_init(int c, msrpc_pipes_struct *p);
 void msrpcd_process(int c, msrpc_pipes_struct *p);
 
+/*The following definitions come from  netlogond/creds_db.c  */
+
+BOOL cred_get(const char *domain, const char* wks, struct dcinfo *dc);
+BOOL cred_store(const char *domain, const char* wks, struct dcinfo *dc);
+BOOL cred_init_db(void);
+
 /*The following definitions come from  netlogond/netlogond.c  */
 
 void msrpc_service_init(char* service_name);
@@ -4670,6 +4676,7 @@ BOOL reload_services(BOOL test);
 
 /*The following definitions come from  tdb/tdb.c  */
 
+char *tdb_error(TDB_CONTEXT *tdb);
 int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);

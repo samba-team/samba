@@ -63,6 +63,11 @@ void msrpc_service_init(char* service_name)
 	{
 		exit(-1);
 	}
+
+	if (!cred_init_db())
+	{
+		exit(-1);
+	}
 }
 
 /****************************************************************************

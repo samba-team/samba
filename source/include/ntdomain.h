@@ -118,12 +118,6 @@ typedef struct rpcsrv_struct
 
 	uint16 vuid;
 
-	/* per-user authentication info.  hmm, this not appropriate, but
-	   it will do for now.  dcinfo contains NETLOGON-specific info,
-	   so have to think of a better method.
-	 */
-	struct dcinfo dc;
-
 } rpcsrv_struct;
 
 struct cli_connection;

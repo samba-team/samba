@@ -300,7 +300,7 @@ static void net_reply_sam_sync(NET_Q_SAM_SYNC *q_s, prs_struct *rdata,
 /******************************************************************
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
-static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
+static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 {
 	struct smb_passwd *smb_pass;
 
@@ -317,13 +317,13 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 	if (!allow_access(lp_domain_hostsdeny(), lp_domain_hostsallow(),
 	                  client_name(Client), client_addr(Client)))
 	{
-		DEBUG(0,("get_md4pw: Workstation %s denied access to domain\n", mach_acct));
+		DEBUG(0,("get_md4pw: Workstation %s denied access to domain\n", trust_acct));
 		return False;
 	}
 #endif /* 0 */
 
 	become_root(True);
-	smb_pass = getsmbpwnam(mach_acct);
+	smb_pass = getsmbpwnam(trust_acct);
 	unbecome_root(True);
 
 	if ((smb_pass) != NULL && !(smb_pass->acct_ctrl & ACB_DISABLED) &&
@@ -334,14 +334,14 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 
 		return True;
 	}
-	if (strequal(mach_name, global_myname))
+	if (strequal(trust_name, global_myname))
 	{
 		DEBUG(0,("get_md4pw: *** LOOPBACK DETECTED - USING NULL KEY ***\n"));
 		memset(md4pw, 0, 16);
 		return True;
 	}
 
-	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
+	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", trust_acct));
 	return False;
 }
 
@@ -355,48 +355,58 @@ static void api_net_req_chal( rpcsrv_struct *p,
 	NET_Q_REQ_CHAL q_r;
 	uint32 status = 0x0;
 
-	fstring mach_acct;
-	fstring mach_name;
+	fstring trust_acct;
+	fstring trust_name;
+
+	struct dcinfo dc;
+
+	ZERO_STRUCT(dc);
 
 	DEBUG(5,("api_net_req_chal(%d)\n", __LINE__));
 
 	/* grab the challenge... */
 	net_io_q_req_chal("", &q_r, data, 0);
 
-	unistr2_to_ascii(mach_acct, &q_r.uni_logon_clnt, sizeof(mach_acct)-1);
+	unistr2_to_ascii(trust_acct, &q_r.uni_logon_clnt, sizeof(trust_acct)-1);
 
-	fstrcpy(mach_name, mach_acct);
-	strlower(mach_name);
+	fstrcpy(trust_name, trust_acct);
+	strlower(trust_name);
 
-	fstrcat(mach_acct, "$");
+	fstrcat(trust_acct, "$");
 
-	if (get_md4pw((char *)p->dc.md4pw, mach_name, mach_acct))
+	if (status == 0x0 &&
+	    get_md4pw((char *)dc.md4pw, trust_name, trust_acct))
 	{
 		/* copy the client credentials */
-		memcpy(p->dc.clnt_chal.data          , q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
-		memcpy(p->dc.clnt_cred.challenge.data, q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
+		memcpy(dc.clnt_chal.data          , q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
+		memcpy(dc.clnt_cred.challenge.data, q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
 
 		/* create a server challenge for the client */
 		/* Set these to random values. */
-                generate_random_buffer(p->dc.srv_chal.data, 8, False);
+                generate_random_buffer(dc.srv_chal.data, 8, False);
 
-		memcpy(p->dc.srv_cred.challenge.data, p->dc.srv_chal.data, 8);
+		memcpy(dc.srv_cred.challenge.data, dc.srv_chal.data, 8);
 
-		bzero(p->dc.sess_key, sizeof(p->dc.sess_key));
+		bzero(dc.sess_key, sizeof(dc.sess_key));
 
 		/* from client / server challenges and md4 password, generate sess key */
-		cred_session_key(&(p->dc.clnt_chal), &(p->dc.srv_chal),
-				 (char *)p->dc.md4pw, p->dc.sess_key);
+		cred_session_key(&(dc.clnt_chal), &(dc.srv_chal),
+				 (char *)dc.md4pw, dc.sess_key);
 	}
-	else
+	else if (status == 0x0)
 	{
 		/* lkclXXXX take a guess at a good error message to return :-) */
 		status = 0xC0000000 | NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
 	}
 
+	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
 	/* construct reply. */
 	net_reply_req_chal(&q_r, rdata,
-					&(p->dc.srv_chal), status);
+					&(dc.srv_chal), status);
 
 }
 
@@ -413,28 +423,43 @@ static void api_net_auth( rpcsrv_struct *p,
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 
+	fstring trust_name;
+	struct dcinfo dc;
+
 	srv_time.time = 0;
 
 	/* grab the challenge... */
 	net_io_q_auth("", &q_a, data, 0);
 
+	unistr2_to_ascii(trust_name, &q_a.clnt_id.uni_comp_name,
+	                             sizeof(trust_name)-1);
+
+	if (!cred_get(global_sam_name, trust_name, &dc))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
 	/* check that the client credentials are valid */
-	if (cred_assert(&(q_a.clnt_chal), p->dc.sess_key,
-                    &(p->dc.clnt_cred.challenge), srv_time))
+	if (status == 0x0 && cred_assert(&(q_a.clnt_chal), dc.sess_key,
+                    &(dc.clnt_cred.challenge), srv_time))
 	{
 
 		/* create server challenge for inclusion in the reply */
-		cred_create(p->dc.sess_key, &(p->dc.srv_cred.challenge), srv_time, &srv_cred);
+		cred_create(dc.sess_key, &(dc.srv_cred.challenge), srv_time, &srv_cred);
 
 		/* copy the received client credentials for use next time */
-		memcpy(p->dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
-		memcpy(p->dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+		memcpy(dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+		memcpy(dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
 	}
-	else
+	else if (status == 0x0)
 	{
 		status = NT_STATUS_ACCESS_DENIED | 0xC0000000;
 	}
 
+	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
 	/* construct reply. */
 	net_reply_auth(&q_a, rdata, &srv_cred, status);
 }
@@ -452,28 +477,46 @@ static void api_net_auth_2( rpcsrv_struct *p,
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 
+	fstring trust_name;
+	struct dcinfo dc;
+
 	srv_time.time = 0;
 
 	/* grab the challenge... */
 	net_io_q_auth_2("", &q_a, data, 0);
 
-	/* check that the client credentials are valid */
-	if (cred_assert(&(q_a.clnt_chal), p->dc.sess_key,
-                    &(p->dc.clnt_cred.challenge), srv_time))
-	{
+	unistr2_to_ascii(trust_name, &q_a.clnt_id.uni_comp_name,
+	                             sizeof(trust_name)-1);
 
-		/* create server challenge for inclusion in the reply */
-		cred_create(p->dc.sess_key, &(p->dc.srv_cred.challenge), srv_time, &srv_cred);
-
-		/* copy the received client credentials for use next time */
-		memcpy(p->dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
-		memcpy(p->dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
-	}
-	else
+	if (!cred_get(global_sam_name, trust_name, &dc))
 	{
-		status = NT_STATUS_ACCESS_DENIED | 0xC0000000;
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
+	if (status == 0x0)
+	{
+		/* check that the client credentials are valid */
+		if (cred_assert(&(q_a.clnt_chal), dc.sess_key,
+			    &(dc.clnt_cred.challenge), srv_time))
+		{
+
+			/* create server challenge for inclusion in the reply */
+			cred_create(dc.sess_key, &(dc.srv_cred.challenge), srv_time, &srv_cred);
+
+			/* copy the received client credentials for use next time */
+			memcpy(dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+			memcpy(dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+		}
+		else
+		{
+			status = NT_STATUS_ACCESS_DENIED | 0xC0000000;
+		}
+	}
+
+	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
 	/* construct reply. */
 	net_reply_auth_2(&q_a, rdata, &srv_cred, status);
 }
@@ -488,28 +531,39 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 	NET_Q_SRV_PWSET q_a;
 	uint32 status = NT_STATUS_WRONG_PASSWORD|0xC0000000;
 	DOM_CRED srv_cred;
-	pstring mach_acct;
+	pstring trust_acct;
 	struct smb_passwd *smb_pass;
 	BOOL ret;
+
+	fstring trust_name;
+	struct dcinfo dc;
 
 	/* grab the challenge and encrypted password ... */
 	net_io_q_srv_pwset("", &q_a, data, 0);
 
+	unistr2_to_ascii(trust_name, &q_a.clnt_id.login.uni_comp_name,
+	                             sizeof(trust_name)-1);
+
+	if (!cred_get(global_sam_name, trust_name, &dc))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
 	/* checks and updates credentials.  creates reply credentials */
-	if (deal_with_creds(p->dc.sess_key, &(p->dc.clnt_cred), 
+	if (status == 0x0 && deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
 	                    &(q_a.clnt_id.cred), &srv_cred))
 	{
-		memcpy(&(p->dc.srv_cred), &(p->dc.clnt_cred), sizeof(p->dc.clnt_cred));
+		memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
-		unistr2_to_ascii(mach_acct, &q_a.clnt_id.login.uni_acct_name,
-				 sizeof(mach_acct)-1);
+		unistr2_to_ascii(trust_acct, &q_a.clnt_id.login.uni_acct_name,
+				 sizeof(trust_acct)-1);
 
-		DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
+		DEBUG(3,("Server Password Set Wksta:[%s]\n", trust_acct));
 
 		become_root(True);
-		smb_pass = getsmbpwnam(mach_acct);
+		smb_pass = getsmbpwnam(trust_acct);
 		unbecome_root(True);
 
 		if (smb_pass != NULL)
@@ -524,7 +578,7 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 			}
 			DEBUG(100,("\n"));
 
-			cred_hash3( pwd, q_a.pwd, p->dc.sess_key, 0);
+			cred_hash3( pwd, q_a.pwd, dc.sess_key, 0);
 
 			/* lies!  nt and lm passwords are _not_ the same: don't care */
 			smb_pass->smb_passwd    = pwd;
@@ -545,12 +599,16 @@ static void api_net_srv_pwset( rpcsrv_struct *p,
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
 	}
-	else
+	else if (status == 0x0)
 	{
 		/* lkclXXXX take a guess at a sensible error code to return... */
-		status = 0xC0000000 | NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
+		status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
 	}
 
+	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
 	/* Construct reply. */
 	net_reply_srv_pwset(&q_a, rdata, &srv_cred, status);
 }
@@ -567,6 +625,10 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	NET_ID_INFO_CTR ctr;	
 
 	DOM_CRED srv_cred;
+	uint32 status = 0x0;
+
+	fstring trust_name;
+	struct dcinfo dc;
 
 	/* the DOM_ID_INFO_1 structure is a bit big.  plus we might want to
 	   dynamically allocate it inside net_io_q_sam_logon, at some point */
@@ -575,13 +637,25 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	/* grab the challenge... */
 	net_io_q_sam_logoff("", &q_l, data, 0);
 
-	/* checks and updates credentials.  creates reply credentials */
-	deal_with_creds(p->dc.sess_key, &(p->dc.clnt_cred), 
-	                &(q_l.sam_id.client.cred), &srv_cred);
-	memcpy(&(p->dc.srv_cred), &(p->dc.clnt_cred), sizeof(p->dc.clnt_cred));
+	unistr2_to_ascii(trust_name, &q_l.sam_id.client.login.uni_comp_name,
+	                             sizeof(trust_name)-1);
 
+	if (!cred_get(global_sam_name, trust_name, &dc))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* checks and updates credentials.  creates reply credentials */
+	deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
+	                &(q_l.sam_id.client.cred), &srv_cred);
+	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
+
+	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
 	/* construct reply.  always indicate success */
-	net_reply_sam_logoff(&q_l, rdata, &srv_cred, 0x0);
+	net_reply_sam_logoff(&q_l, rdata, &srv_cred, status);
 }
 
 /*************************************************************************
@@ -595,23 +669,42 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 	DOM_CRED srv_creds;
 	uint32 status = 0x0;
 
+	fstring trust_name;
+	struct dcinfo dc;
+
 	/* grab the challenge... */
 	net_io_q_sam_sync("", &q_s, data, 0);
 
-	/* checks and updates credentials.  creates reply credentials */
-	if (deal_with_creds(p->dc.sess_key, &(p->dc.clnt_cred), 
-	                &(q_s.cli_creds), &srv_creds))
+	unistr2_to_ascii(trust_name, &q_s.uni_cli_name,
+	                             sizeof(trust_name)-1);
+
+	if (!cred_get(global_sam_name, trust_name, &dc))
 	{
-		memcpy(&(p->dc.srv_cred), &(p->dc.clnt_cred),
-		       sizeof(p->dc.clnt_cred));
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
-	else
+
+	if (status == 0x0)
 	{
-		status = 0xC0000000 | NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
+		/* checks and updates credentials.  creates reply credentials */
+		if (deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
+				&(q_s.cli_creds), &srv_creds))
+		{
+			memcpy(&(dc.srv_cred), &(dc.clnt_cred),
+			       sizeof(dc.clnt_cred));
+		}
+		else
+		{
+			status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (status == 0x0 && !cred_store(global_sam_name, trust_name, &dc))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* construct reply. */
-	net_reply_sam_sync(&q_s, rdata, p->dc.sess_key, &srv_creds, status);
+	net_reply_sam_sync(&q_s, rdata, dc.sess_key, &srv_creds, status);
 }
 
 
@@ -789,7 +882,6 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
  api_net_sam_logon:
  *************************************************************************/
 static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
-				struct dcinfo *dc,
 				DOM_CRED *srv_cred, NET_USER_INFO_3 *usr_info)
 {
 	struct sam_passwd *sam_pass = NULL;
@@ -822,14 +914,25 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 	DOMAIN_GRP *grp_mem = NULL;
 	DOM_GID *gids = NULL;
 
+	fstring trust_name;
+	struct dcinfo dc;
+
+	unistr2_to_ascii(trust_name, &q_l->sam_id.client.login.uni_comp_name,
+	                             sizeof(trust_name)-1);
+
+	if (!cred_get(global_sam_name, trust_name, &dc))
+	{
+		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
 	/* checks and updates credentials.  creates reply credentials */
-	if (!deal_with_creds(dc->sess_key, &(dc->clnt_cred), 
+	if (!deal_with_creds(dc.sess_key, &dc.clnt_cred, 
 	                     &(q_l->sam_id.client.cred), srv_cred))
 	{
 		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 	
-	memcpy(&(dc->srv_cred), &(dc->clnt_cred), sizeof(dc->clnt_cred));
+	memcpy(&dc.srv_cred, &dc.clnt_cred, sizeof(dc.clnt_cred));
 
 	/* find the username */
 
@@ -886,7 +989,7 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 	{
 		/* general login.  cleartext password */
 		uint32 status = 0x0;
-		status = net_login_general(&q_l->sam_id.ctr->auth.id4, dc, sess_key);
+		status = net_login_general(&q_l->sam_id.ctr->auth.id4, &dc, sess_key);
 		enc_user_sess_key = sess_key;
 
 		if (status != 0x0)
@@ -952,13 +1055,13 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 			case INTERACTIVE_LOGON_TYPE:
 			{
 				/* interactive login. */
-				status = net_login_interactive(&q_l->sam_id.ctr->auth.id1, sam_pass, dc);
+				status = net_login_interactive(&q_l->sam_id.ctr->auth.id1, sam_pass, &dc);
 				break;
 			}
 			case NETWORK_LOGON_TYPE:
 			{
 				/* network login.  lm challenge and 24 byte responses */
-				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, dc, sess_key, lm_pw8);
+				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, &dc, sess_key, lm_pw8);
 				padding = lm_pw8;
 				enc_user_sess_key = sess_key;
 				break;
@@ -1032,6 +1135,11 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 		free((char *)gids);
 	}
 
+	if (!cred_store(global_sam_name, trust_name, &dc))
+	{
+		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
 	return 0x0;
 }
 
@@ -1051,7 +1159,7 @@ static void api_net_sam_logon( rpcsrv_struct *p,
 	q_l.sam_id.ctr = &ctr;
 	net_io_q_sam_logon("", &q_l, data, 0);
 
-	status = reply_net_sam_logon(&q_l, &p->dc, &srv_cred, &usr_info);
+	status = reply_net_sam_logon(&q_l, &srv_cred, &usr_info);
 	net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status);
 }
 
