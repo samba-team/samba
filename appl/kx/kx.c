@@ -118,7 +118,11 @@ connect_host (char *host, char *user, des_cblock *key,
      if (hostent == NULL) {
 	  fprintf (stderr,
 		   "%s: gethostbyname '%s' failed: %s", prog, host,
+#ifdef HAVE_H_ERRNO
 		   hstrerror(h_errno));
+#else
+		   "unknown error");
+#endif
 	  return -1;
      }
 
