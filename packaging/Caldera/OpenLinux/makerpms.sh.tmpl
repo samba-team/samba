@@ -46,8 +46,8 @@ mv -f samba2.spec samba2.spec-nonlsb
 ln -f samba2.spec-lsb samba3.spec
 fi
 if [ $team -ne 0 ]; then
-	mv -f samba3.spec samba3.spec-lsb
-	ln -f samba3.spec-team samba3.spec
+#	mv -f samba3.spec samba3.spec-lsb
+#	ln -f samba3.spec-team samba3.spec
 	rpm -ba -v samba3.spec
 else
 	rpm -ba -v --rmsource --clean samba3.spec
