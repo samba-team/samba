@@ -176,11 +176,17 @@ BOOL get_rid_from_id(int id, uint32 *rid, struct winbindd_domain **domain,
 
             if (domain) {
                 *domain = find_domain_from_name(domain_name);
+		if (*domain == NULL) {
+			DEBUG(1, ("unknown domain %s for rid %d\n",
+				  domain_name, the_rid));
+			result = False;
+			goto done;
+		}
             }
 
             result = True;
         }
-            
+    done:            
         free(data.dptr);
     }
 
