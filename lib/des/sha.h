@@ -49,11 +49,11 @@
 
 struct sha {
   unsigned offset;
-  u_int32_t counter[5];
-  u_int32_t current[20];
   unsigned sz;
+  u_int32_t counter[5];
+  unsigned char save[64];
 };
 
 void sha_init (struct sha *m);
-void sha_update (struct sha *m, void *v, size_t len);
+void sha_update (struct sha *m, const void *v, size_t len);
 void sha_finito (struct sha *m, void *res);

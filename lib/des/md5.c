@@ -213,48 +213,38 @@ swap_u_int32_t (u_int32_t t)
 #endif
 }
 
+struct x32{
+  unsigned int a:32;
+  unsigned int b:32;
+};
+
 void
 md5_update (struct md5 *m, const void *v, size_t len)
 {
-  u_char *p = (u_char *)v;
+  const unsigned char *p = v;
   m->sz += len;
-  if (m->offset == 0 && len % 64 == 0) 
-    while (len > 0) {
+  while(len > 0){
+    size_t l = min(len, 64 - m->offset);
+    memcpy(m->save + m->offset, p, l);
+    m->offset += l;
+    p += l;
+    len -= l;
+    if(m->offset == 64){
 #if defined(WORDS_BIGENDIAN)
-      {
-	int i;
-	u_int32_t *u = (u_int32_t *)p;
-
-	for (i = 0; i < 16; ++i)
-	  m->current[i] = swap_u_int32_t (u[i]);
+      int i;
+      u_int32_t current[16];
+      struct x32 *u = (struct x32*)m->save;
+      for(i = 0; i < 8; i++){
+	current[2*i+0] = swap_u_int32_t(u[i].a);
+	current[2*i+1] = swap_u_int32_t(u[i].b);
       }
-      calc (m, m->current);
+      calc(m, current);
 #else
-      calc (m, (u_int32_t *)p);
+      calc(m, (u_int32_t*)m->save);
 #endif
-      p += 64;
-      len -= 64;
+      m->offset = 0;
     }
-  else
-    while (len > 0) {
-      unsigned l;
-
-      l = min(64 - m->offset, len);
-      memcpy ((char *)m->current + m->offset, p, l);
-      p += l;
-      len -= l;
-      m->offset += l;
-      if (m->offset == 64) {
-#if defined(WORDS_BIGENDIAN)
-	int i;
-
-	for (i = 0; i < 16; ++i)
-	  m->current[i] = swap_u_int32_t (m->current[i]);
-#endif
-	calc (m, m->current);
-	m->offset = 0;
-      }
-    }
+  }
 }
 
 void
@@ -267,8 +257,10 @@ md5_finito (struct md5 *m, void *res)
   *zeros = 0x80;
   memset (zeros + 1, 0, sizeof(zeros) - 1);
   len = 8 * m->sz;
-  len = swap_u_int32_t (len);
-  memcpy (zeros + dstart, &len, sizeof(len));
+  zeros[dstart+0] = (len >> 0) & 0xff;
+  zeros[dstart+1] = (len >> 8) & 0xff;
+  zeros[dstart+2] = (len >> 16) & 0xff;
+  zeros[dstart+3] = (len >> 24) & 0xff;
   md5_update (m, zeros, dstart + 8);
   {
       int i;

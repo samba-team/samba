@@ -68,7 +68,7 @@ md4_init (struct md4 *m)
   A = 0x67452301;
 }
 
-static inline u_int32_t
+static u_int32_t
 cshift (u_int32_t x, unsigned n)
 {
   return (x << n) | (x >> (32 - n));
@@ -85,7 +85,7 @@ a = cshift(a + OP(b,c,d) + X[k] + i, s)
 #define DO2(a,b,c,d,k,s,i) DOIT(a,b,c,d,k,s,i,G)
 #define DO3(a,b,c,d,k,s,i) DOIT(a,b,c,d,k,s,i,H)
 
-static inline void
+static void
 calc (struct md4 *m, u_int32_t *data)
 {
   u_int32_t AA, BB, CC, DD;
@@ -171,7 +171,7 @@ calc (struct md4 *m, u_int32_t *data)
  * From `Performance analysis of MD5' by Joseph D. Touch <touch@isi.edu>
  */
 
-static inline u_int32_t
+static u_int32_t
 swap_u_int32_t (u_int32_t t)
 {
 #if defined(WORDS_BIGENDIAN)
@@ -189,48 +189,38 @@ swap_u_int32_t (u_int32_t t)
 #endif
 }
 
+struct x32{
+  unsigned int a:32;
+  unsigned int b:32;
+};
+
 void
-md4_update (struct md4 *m, void *v, size_t len)
+md4_update (struct md4 *m, const void *v, size_t len)
 {
-  u_char *p = (u_char *)v;
+  const unsigned char *p = v;
   m->sz += len;
-  if (m->offset == 0 && len % 64 == 0) 
-    while (len > 0) {
+  while(len > 0){
+    size_t l = min(len, 64 - m->offset);
+    memcpy(m->save + m->offset, p, l);
+    m->offset += l;
+    p += l;
+    len -= l;
+    if(m->offset == 64){
 #if defined(WORDS_BIGENDIAN)
-      {
-	int i;
-	u_int32_t *u = (u_int32_t *)p;
-
-	for (i = 0; i < 16; ++i)
-	  m->current[i] = swap_u_int32_t (u[i]);
+      int i;
+      u_int32_t current[16];
+      struct x32 *u = (struct x32*)m->save;
+      for(i = 0; i < 8; i++){
+	current[2*i+0] = swap_u_int32_t(u[i].a);
+	current[2*i+1] = swap_u_int32_t(u[i].b);
       }
-      calc (m, m->current);
+      calc(m, current);
 #else
-      calc (m, (u_int32_t *)p);
+      calc(m, (u_int32_t*)m->save);
 #endif
-      p += 64;
-      len -= 64;
+      m->offset = 0;
     }
-  else
-    while (len > 0) {
-      unsigned l;
-
-      l = min(64 - m->offset, len);
-      memcpy ((char *)m->current + m->offset, p, l);
-      p += l;
-      len -= l;
-      m->offset += l;
-      if (m->offset == 64) {
-#if defined(WORDS_BIGENDIAN)
-	int i;
-
-	for (i = 0; i < 16; ++i)
-	  m->current[i] = swap_u_int32_t (m->current[i]);
-#endif
-	calc (m, m->current);
-	m->offset = 0;
-      }
-    }
+  }
 }
 
 void
@@ -243,8 +233,10 @@ md4_finito (struct md4 *m, void *res)
   *zeros = 0x80;
   memset (zeros + 1, 0, sizeof(zeros) - 1);
   len = 8 * m->sz;
-  len = swap_u_int32_t (len);
-  memcpy (zeros + dstart, &len, sizeof(len));
+  zeros[dstart+0] = (len >> 0) & 0xff;
+  zeros[dstart+1] = (len >> 8) & 0xff;
+  zeros[dstart+2] = (len >> 16) & 0xff;
+  zeros[dstart+3] = (len >> 24) & 0xff;
   md4_update (m, zeros, dstart + 8);
   {
       int i;

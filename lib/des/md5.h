@@ -51,7 +51,7 @@ struct md5 {
   unsigned offset;
   unsigned sz;
   u_int32_t counter[4];
-  u_int32_t current[16];
+  unsigned char save[64];
 };
 
 void md5_init (struct md5 *m);

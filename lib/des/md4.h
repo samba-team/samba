@@ -49,11 +49,11 @@
 
 struct md4 {
   unsigned offset;
-  u_int32_t counter[4];
-  u_int32_t current[16];
   unsigned sz;
+  u_int32_t counter[4];
+  unsigned char save[64];
 };
 
 void md4_init (struct md4 *m);
-void md4_update (struct md4 *m, void *p, size_t len);
+void md4_update (struct md4 *m, const void *p, size_t len);
 void md4_finito (struct md4 *m, void *res);
