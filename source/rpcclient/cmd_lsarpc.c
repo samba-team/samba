@@ -176,6 +176,8 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 		       sid_type_lookup(types[i]), types[i]);
 	}
 
+	cli_lsa_close(cli, mem_ctx, &pol);
+
  done:
 	return result;
 }
@@ -233,7 +235,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Print results */
 
-	for (i = 0; i < argc - 1; i++) {
+	for (i = 0; i < (argc - 1); i++) {
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sids[i]);
@@ -241,6 +243,8 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		       domains[i] ? domains[i] : "*unknown*", 
 		       names[i] ? names[i] : "*unknown*", types[i]);
 	}
+
+	cli_lsa_close(cli, mem_ctx, &pol);
 
  done:
 	return result;
@@ -673,7 +677,7 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct cli_state *cli,
 
 /* Get a privilege value given its name */
 
-static NTSTATUS cmd_lsa_lookupprivvalue(struct cli_state *cli, 
+static NTSTATUS cmd_lsa_lookup_priv_value(struct cli_state *cli, 
 					TALLOC_CTX *mem_ctx, int argc, 
 					const char **argv) 
 {
@@ -693,7 +697,7 @@ static NTSTATUS cmd_lsa_lookupprivvalue(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = cli_lsa_lookupprivvalue(cli, mem_ctx, &pol, argv[1], &luid);
+	result = cli_lsa_lookup_priv_value(cli, mem_ctx, &pol, argv[1], &luid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -765,7 +769,7 @@ struct cmd_set lsarpc_commands[] = {
 #endif
 	{ "lsaaddacctrights",    RPC_RTYPE_NTSTATUS, cmd_lsa_add_acct_rights,    NULL, PI_LSARPC, "Add rights to an account",   "" },
 	{ "lsaremoveacctrights", RPC_RTYPE_NTSTATUS, cmd_lsa_remove_acct_rights, NULL, PI_LSARPC, "Remove rights from an account",   "" },
-	{ "lsalookupprivvalue",  RPC_RTYPE_NTSTATUS, cmd_lsa_lookupprivvalue,    NULL, PI_LSARPC, "Get a privilege value given its name", "" },
+	{ "lsalookupprivvalue",  RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_priv_value,  NULL, PI_LSARPC, "Get a privilege value given its name", "" },
 	{ "lsaquerysecobj",      RPC_RTYPE_NTSTATUS, cmd_lsa_query_secobj,       NULL, PI_LSARPC, "Query LSA security object", "" },
 
 	{ NULL }
