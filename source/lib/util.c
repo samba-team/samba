@@ -3541,6 +3541,10 @@ char *client_name(void)
 
   strcpy(name_buf,"UNKNOWN");
 
+  if (Client == -1) {
+	  return name_buf;
+  }
+
   if (getpeername(Client, &sa, &length) < 0) {
     DEBUG(0,("getpeername failed\n"));
     return name_buf;
@@ -3578,6 +3582,10 @@ char *client_addr(void)
     return addr_buf;
 
   strcpy(addr_buf,"0.0.0.0");
+
+  if (Client == -1) {
+	  return addr_buf;
+  }
 
   if (getpeername(Client, &sa, &length) < 0) {
     DEBUG(0,("getpeername failed\n"));
