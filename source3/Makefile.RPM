@@ -98,7 +98,7 @@ PAM_LIBS = -ldl -lpam
 # DES_BASE=/usr/local/libdes
 # DES_FLAGS= -I$(DES_BASE)
 # DES_LIB= -L$(DES_BASE) -ldes
-# PASSWD_FLAGS=-DSMB_PASSWD=\"$(BINDIR)/smbpasswd\" -DSMB_PASSWD_FILE=\"$(BASEDIR)/private/smbpasswd\"
+# PASSWD_FLAGS=-DUSE_LIBDES -DSMB_PASSWD=\"$(BINDIR)/smbpasswd\" -DSMB_PASSWD_FILE=\"$(BASEDIR)/private/smbpasswd\"
 
 ######################################
 # VTP-Support

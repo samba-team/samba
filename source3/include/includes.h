@@ -290,8 +290,10 @@ typedef unsigned short mode_t;
 #include <string.h>
 #include <arpa/inet.h>
 #include <rpcsvc/ypclnt.h>
-#include <crypt.h> 
 #include <termios.h>
+#ifndef USE_LIBDES
+#include <crypt.h>
+#endif /* USE_LIBDES */
 extern int gettimeofday (struct timeval *, void *);
 extern int gethostname (char *name, int namelen);
 extern int innetgr (const char *, const char *, const char *, const char *);
