@@ -648,7 +648,7 @@ BOOL make_sam_user_info11(SAM_USER_INFO_11 *usr,
 				uint16 acct_ctrl);
 BOOL sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
 BOOL make_sam_user_info24(SAM_USER_INFO_24 *usr,
-	char newpass[516], uint16 passlen);
+	const char newpass[516], uint16 passlen);
 BOOL make_sam_user_info23W(SAM_USER_INFO_23 *usr,
 
 	const NTTIME *logon_time, /* all zeros */

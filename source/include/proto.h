@@ -2543,12 +2543,10 @@ BOOL set_samr_set_userinfo2(
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, void *usr);
-BOOL set_samr_set_userinfo( 
-				POLICY_HND *pol_open_domain,
+BOOL set_samr_set_userinfo( const POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, void *usr);
-BOOL get_samr_query_userinfo( 
-				const POLICY_HND *pol_open_domain,
+BOOL get_samr_query_userinfo( const POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, SAM_USERINFO_CTR *ctr);
 BOOL get_samr_query_groupinfo( 
