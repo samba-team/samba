@@ -101,7 +101,7 @@ do_connect (char *host, int port, int nodelay)
     struct hostent *h;
     struct sockaddr_in addr;
     char **p;
-    int s;
+    int s = -1;
 
     h = roken_gethostbyname (host);
     if (h == NULL)
@@ -134,7 +134,7 @@ do_connect (char *host, int port, int nodelay)
     }
 }
 
-typedef enum { INIT = 0, GREAT, USER, PASS, STAT, RETR, TOP, 
+typedef enum { INIT = 0, GREET, USER, PASS, STAT, RETR, TOP, 
 	       DELE, QUIT } pop_state;
 
 #define PUSH_BUFSIZ 65536
