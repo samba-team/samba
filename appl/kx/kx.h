@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -124,9 +124,16 @@ struct tm *localtime(const time_t *);
 struct hostent  *gethostbyname(const char *);
 #endif
 
+#ifdef KRB4
 #include <krb.h>
+#include <prot.h>
+#endif
+#ifdef KRB5
+#include <krb5.h>
+#endif
 
 #include <err.h>
+#include <getarg.h>
 #include <roken.h>
 
 struct x_socket {
@@ -148,9 +155,6 @@ extern char xauthfile[];
 extern int xauthfile_size;
 extern u_char cookie[];
 extern size_t cookie_len;
-
-int copy_encrypted (int fd1, int fd2, des_cblock *iv,
-		    des_key_schedule schedule);
 
 int get_xsockets (int *number, struct x_socket **sockets, int tcpp);
 int chown_xsockets (int n, struct x_socket *sockets, uid_t uid, gid_t gid);
@@ -188,3 +192,84 @@ enum { INIT = 0, ACK = 1, NEW_CONN = 2, ERROR = 3 };
 enum kx_flags { PASSIVE = 1, KEEP_ALIVE = 2 };
 
 typedef enum kx_flags kx_flags;
+
+struct kx_context {
+    int (*authenticate)(struct kx_context *kc, int s);
+    int (*userok)(struct kx_context *kc, char *user);
+    ssize_t (*read)(struct kx_context *kc,
+		    int fd, void *buf, size_t len);
+    ssize_t (*write)(struct kx_context *kc,
+		     int fd, const void *buf, size_t len);
+    int (*copy_encrypted)(struct kx_context *kc,
+			  int fd1, int fd2);
+    void (*destroy)(struct kx_context *kc);
+    char *host;
+    char *user;
+    int port;
+    int debug_flag;
+    int keepalive_flag;
+    int tcp_flag;
+    struct sockaddr_in thisaddr, thataddr;
+    void *data;
+};
+
+typedef struct kx_context kx_context;
+
+void
+context_set (kx_context *kc, char *host, char *user, int port,
+	     int debug_flag, int keepalive_flag, int tcp_flag);
+
+void
+context_destroy (kx_context *kc);
+
+int
+context_authenticate (kx_context *kc, int s);
+
+int
+context_userok (kx_context *kc, char *user);
+
+ssize_t
+kx_read (kx_context *kc, int fd, void *buf, size_t len);
+
+ssize_t
+kx_write (kx_context *kc, int fd, const void *buf, size_t len);
+
+int
+copy_encrypted (kx_context *kc, int fd1, int fd2);
+
+#ifdef KRB4
+
+void
+krb4_make_context (kx_context *c);
+
+int
+recv_v4_auth (kx_context *kc, int sock, u_char *buf);
+
+#endif
+
+#ifdef KRB5
+
+void
+krb5_make_context (kx_context *c);
+
+int
+recv_v5_auth (kx_context *kc, int sock, u_char *buf);
+
+#endif
+
+void
+fatal (kx_context *kc, int fd, char *format, ...)
+#ifdef __GNUC__
+__attribute__ ((format (printf, 3, 4)))
+#endif
+;
+
+#ifndef KRB4
+
+int
+krb_get_int(void *f, u_int32_t *to, int size, int lsb);
+
+int
+krb_put_int(u_int32_t from, void *to, size_t rem, int size);
+
+#endif
