@@ -720,13 +720,13 @@ BOOL smb_pam_passchange(char * user, char * oldpassword, char * newpassword)
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */
- BOOL smb_pam_claim_session(const char *user, char *tty, char *rhost)
+ BOOL smb_pam_claim_session(char *user, char *tty, char *rhost)
 {
 	return True;
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */
- BOOL smb_pam_close_session(const char *in_user, char *tty, char *rhost)
+ BOOL smb_pam_close_session(char *in_user, char *tty, char *rhost)
 {
 	return True;
 }
