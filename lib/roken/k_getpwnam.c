@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -52,7 +52,7 @@ k_getpwnam (char *user)
      struct passwd *p;
 
      p = getpwnam (user);
-#ifdef HAVE_GETSPNAM
+#if defined(HAVE_GETSPNAM) && defined(HAVE_STRUCT_SPWD)
      if(p)
      {
 	  struct spwd *spwd;
