@@ -200,6 +200,7 @@
 #undef INTEL_SPINLOCKS
 #undef MIPS_SPINLOCKS
 #undef POWERPC_SPINLOCKS
+#undef HAVE_POSIX_ACLS
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
