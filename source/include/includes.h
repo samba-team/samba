@@ -655,7 +655,6 @@ extern int errno;
 #include "nterr.h"
 #include "secrets.h"
 #include "messages.h"
-#include "util_list.h"
 
 #include "util_getent.h"
 
