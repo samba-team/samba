@@ -863,7 +863,10 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	p++;
 	SSVAL(p,0,fsp->fnum);
 	p += 2;
-	SIVAL(p,0,smb_action);
+	if ((create_disposition == FILE_SUPERSEDE) && (smb_action == FILE_WAS_OVERWRITTEN))
+		SIVAL(p,0,FILE_WAS_SUPERSEDED);
+	else
+		SIVAL(p,0,smb_action);
 	p += 4;
 	
 	/* Create time. */  
@@ -1336,7 +1339,10 @@ static int call_nt_transact_create(connection_struct *conn,
 	p += 2;
 	SSVAL(p,0,fsp->fnum);
 	p += 2;
-	SIVAL(p,0,smb_action);
+	if ((create_disposition == FILE_SUPERSEDE) && (smb_action == FILE_WAS_OVERWRITTEN))
+		SIVAL(p,0,FILE_WAS_SUPERSEDED);
+	else
+		SIVAL(p,0,smb_action);
 	p += 8;
 
 	/* Create time. */
