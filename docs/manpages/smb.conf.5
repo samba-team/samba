@@ -321,6 +321,10 @@ case, while short names are lowered. Default no.
 Here is a list of all global parameters. See the section of each
 parameter for details.  Note that some are synonyms.
 
+announce as
+
+announce version
+
 auto services
 
 browse list
@@ -344,6 +348,8 @@ dfree command
 dns proxy
 
 domain controller
+
+domain logons
 
 domain master
 
@@ -649,7 +655,7 @@ write list
 .SS EXPLANATION OF EACH PARAMETER
 .RS 3
 
-.SS admin users (G)
+.SS admin users (S)
 
 This is a list of users who will be granted administrative privileges
 on the share. This means that they will do all file operations as the
@@ -664,6 +670,35 @@ file permissions.
 
 .B Example:
 	admin users = jason
+
+.SS announce as (G)
+
+This specifies what type of server nmbd will announce itself as in
+browse lists. By default this is set to Windows NT. The valid options
+are "NT", "Win95" or "WfW" meaining Windows NT, Windows 95 and
+Windows for Workgroups respectively. Do not change this parameter
+unless you have a specific need to stop Samba appearing as an NT
+server as this may prevent Samba servers from participating as
+browser servers correctly.
+
+.B Default:
+    announce as = NT
+
+.B Example
+    announce as = Win95
+
+.SS announce version (G)
+
+This specifies the major and minor version numbers that nmbd
+will use when announcing itself as a server. The default is 4.2.
+Do not change this parameter unless you have a specific need to
+set a Samba server to be a downlevel server.
+
+.B Default:
+   announce version = 4.2
+
+.B Example:
+   announce version = 2.0
 
 .SS auto services (G)
 This is a list of services that you want to be automatically added to
@@ -1108,6 +1143,15 @@ logons from Win95 machines to. You should never need to set this parameter.
 
 .B Default:
 	 domain controller = no
+
+.SS domain logons (G)
+
+If set to true, the Samba server will serve Windows 95 domain logons
+for the workgroup it is in. For more details on setting up this feature
+see the file DOMAINS.txt in the Samba source documentation directory.
+
+.B Default:
+	 domain logons = no
 
 .SS domain master (G)
 
