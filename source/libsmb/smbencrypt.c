@@ -65,9 +65,9 @@ void E_md4hash(uchar *passwd, uchar *p16)
 	if(len > 128)
 		len = 128;
 	/* Password must be converted to NT unicode - null terminated. */
-	dos_struni2((char *)wpwd, passwd, 256);
+	dos_struni2((char *)wpwd, (const char *)passwd, 256);
 	/* Calculate length in bytes */
-	len = strlen_w(wpwd) * sizeof(int16);
+	len = strlen_w((const smb_ucs2_t *)wpwd) * sizeof(int16);
 
 	mdfour(p16, (unsigned char *)wpwd, len);
 }
@@ -202,7 +202,7 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 			int new_pw_len, BOOL nt_pass_set)
 {
-	generate_random_buffer(buffer, 516, True);
+	generate_random_buffer((unsigned char *)buffer, 516, True);
 
 	if (new_pw_len < 0 || new_pw_len > 512)
 		return False;
@@ -324,7 +324,7 @@ void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16])
         SIVAL(buf, i * 2, pwd->buffer[i]);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
-	mdfour(nt_p16, buf, pwd->uni_str_len * 2);
+	mdfour(nt_p16, (unsigned char *)buf, pwd->uni_str_len * 2);
  
 	/* clear out local copy of user's password (just being paranoid). */
 	ZERO_STRUCT(buf);

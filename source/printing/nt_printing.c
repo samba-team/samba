@@ -2910,7 +2910,7 @@ static BOOL convert_driver_init(NT_PRINTER_PARAM *param, TALLOC_CTX *ctx, NT_DEV
 	ZERO_STRUCT(devmode);
 
 	prs_init(&ps, 0, ctx, UNMARSHALL);
-	ps.data_p      = param->data;
+	ps.data_p      = (char *)param->data;
 	ps.buffer_size = param->data_len;
 
 	if (spoolss_io_devmode("phantom DEVMODE", &ps, 0, &devmode))

@@ -349,9 +349,9 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 
 		machine_pwd = (char *)upw.buffer;
 		plen = upw.uni_str_len * 2;
-		generate_random_buffer(machine_pwd, plen, True);
+		generate_random_buffer((unsigned char *)machine_pwd, plen, True);
 
-		encode_pw_buffer(pwbuf, machine_pwd, plen, False);
+		encode_pw_buffer((char *)pwbuf, machine_pwd, plen, False);
 
 		nt_owf_genW(&upw, ntpw);
 	}
@@ -361,7 +361,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 	ZERO_STRUCT(ctr);
 	ZERO_STRUCT(p24);
 
-	init_sam_user_info24(&p24, pwbuf,24);
+	init_sam_user_info24(&p24, (char *)pwbuf,24);
 
 	ctr.switch_value = 24;
 	ctr.info.id24 = &p24;
