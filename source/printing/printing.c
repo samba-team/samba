@@ -2183,7 +2183,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 		uint32 jobid;
 		struct printjob *pjob;
 
-		jobid = IVAL(&cgdata.dptr, i*4);
+		jobid = IVAL(cgdata.dptr, i*4);
 		DEBUG(5,("get_stored_queue_info: changed job = %u\n", (unsigned int)jobid));
 		pjob = print_job_find(snum, jobid);
 		if (!pjob) {
