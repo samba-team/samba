@@ -402,8 +402,8 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 			case ROLE_DOMAIN_MEMBER:
 				name = dos_domain;
 				/* We need to return the Domain SID here. */
-				if (secrets_fetch_domain_sid(dos_domain,
-							     &domain_sid))
+				if (secrets_fetch_domain_sid(
+					    global_myworkgroup, &domain_sid))
 					sid = &domain_sid;
 				else
 					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

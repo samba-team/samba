@@ -106,14 +106,13 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
 	strupper(key);
-	dos_to_unix(key);                /* Convert key to unix-codepage */
+
 	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
 
 	if (dyn_sid == NULL)
 		return False;
 
-	if (size != sizeof(DOM_SID))
-	{ 
+	if (size != sizeof(DOM_SID)) {
 		SAFE_FREE(dyn_sid);
 		return False;
 	}
@@ -130,15 +129,14 @@ form a key for fetching a domain trust password
 char *trust_keystr(char *domain)
 {
 	static fstring keystr;
-	fstring dos_domain;
+	fstring upper_domain;
 
-	fstrcpy(dos_domain, domain);
-	unix_to_dos(dos_domain);
+	fstrcpy(upper_domain, domain);
+	strupper(upper_domain);
 
 	slprintf(keystr,sizeof(keystr)-1,"%s/%s", 
-		 SECRETS_MACHINE_ACCT_PASS, dos_domain);
+		 SECRETS_MACHINE_ACCT_PASS, upper_domain);
 
-	strupper(keystr);
 	return keystr;
 }
 
