@@ -1,3 +1,12 @@
+1999-08-25  Assar Westerlund  <assar@sics.se>
+
+	* cpw.c (set_password): use correct variable.  From Love
+ 	<lha@e.kth.se>
+
+	* server.c (v5_loop): use correct error code
+
+	* ank.c (add_one_principal): initialize `default_ent'
+
 1999-08-21  Assar Westerlund  <assar@sics.se>
 
 	* random_password.c: new file, stolen from krb4
