@@ -227,8 +227,10 @@ static BOOL check_access_allowed_for_current_user( char *fname, int accmode )
     int status_code;
 
     while ((wpid = sys_waitpid(child_pid, &status_code, 0)) < 0) {
-      if(errno == EINTR)
+      if(errno == EINTR) {
+        errno = 0;
         continue;
+      }
       DEBUG(0,("check_access_allowed_for_current_user: The process \
 is no longer waiting ! Error = %s\n", strerror(errno) ));
       CatchChild();
