@@ -682,19 +682,6 @@ static void usage(char *pname)
   BlockSignals(True,SIGFPE);
 #endif
 
-  /* Setup the signals that allow the debug log level
-     to by dynamically changed. */
-
-  /* If we are using the malloc debug code we can't use
-     SIGUSR1 and SIGUSR2 to do debug level changes. */
-#if defined(SIGUSR1)
-  CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
-#endif /* SIGUSR1 */
-
-#if defined(SIGUSR2)
-  CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
-#endif /* SIGUSR2 */
-
   while( EOF != 
          (opt = getopt( argc, argv, "Vaos:T:I:C:bAB:N:Rn:l:d:Dp:hSH:G:f:" )) )
     {
@@ -850,12 +837,6 @@ static void usage(char *pname)
 
   /* We can only take signals in the select. */
   BlockSignals( True, SIGTERM );
-#if defined(SIGUSR1)
-  BlockSignals( True, SIGUSR1);
-#endif /* SIGUSR1 */
-#if defined(SIGUSR2)
-  BlockSignals( True, SIGUSR2);
-#endif /* SIGUSR2 */
 
   process();
 

@@ -59,8 +59,8 @@ uint32 crc32_calc_buffer( char *buffer, uint32 count);
 
 /*The following definitions come from  lib/debug.c  */
 
-void sig_usr2( int sig );
-void sig_usr1( int sig );
+void debug_message(pid_t src, void *buf, int len);
+void debug_message_send(pid_t pid, int level);
 void setup_logging( char *pname, BOOL interactive );
 void reopen_logs( void );
 void force_check_log_size( void );
@@ -149,6 +149,12 @@ void initialize_multibyte_vectors( int client_codepage);
 /*The following definitions come from  lib/md4.c  */
 
 void mdfour(unsigned char *out, unsigned char *in, int n);
+
+/*The following definitions come from  lib/messages.c  */
+
+BOOL message_init(void);
+BOOL message_send_pid(pid_t pid, enum message_type msg_type, void *buf, size_t len);
+void message_dispatch(void);
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
 

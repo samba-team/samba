@@ -131,6 +131,9 @@ static void async_processing(fd_set *fds, char *buffer, int buffer_len)
 		reload_services(False);
 		reload_after_sighup = False;
 	}
+
+	/* check for any pending internal messages */
+	message_dispatch();
 }
 
 /****************************************************************************
