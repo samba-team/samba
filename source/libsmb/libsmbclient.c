@@ -412,6 +412,13 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 
   }
 
+  if (smbc_initialized) { /* Already done, so don't do it again */
+
+    return 0
+
+  }
+
+
   smbc_initialized = 1;
   smbc_auth_fn = fn;
   /*  smbc_debug = debug; */
