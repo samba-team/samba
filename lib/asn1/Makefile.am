@@ -4,8 +4,7 @@ AUTOMAKE_OPTIONS = no-dependencies
 
 lib_LIBRARIES = libasn1.a
 
-libasn1_a_SOURCES = asn1.c der_get.c der_put.c der_free.c der_length.c
-
+libasn1_a_SOURCES = der_get.c der_put.c der_free.c der_length.c
 
 noinst_PROGRAMS = asn1_compile
 
@@ -25,6 +24,10 @@ lex.c: lex.l
 
 lex.o: parse.h
 
-asn1.c: asn1_compile k5.asn1
+libasn1.a: asn1_compile $(libasn1_a_OBJECTS) $(libasn1_a_DEPENDENCIES)
 	./asn1_compile $(srcdir)/k5.asn1
-
+	o=`sed -e 's/\.c/.o/g' asn1_files`; \
+	$(MAKE) $$o;\
+	rm -f libasn1.a; \
+	$(AR) cru libasn1.a $(libasn1_a_OBJECTS) $(libasn1_a_LIBADD) $$o; \
+	$(RANLIB) libasn1.a
