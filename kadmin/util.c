@@ -587,7 +587,7 @@ hex2n (char c)
     static char hexdigits[] = "0123456789abcdef";
     const char *p;
 
-    p = strchr (hexdigits, tolower((int)c));
+    p = strchr (hexdigits, tolower((unsigned char)c));
     if (p == NULL)
 	return -1;
     else
