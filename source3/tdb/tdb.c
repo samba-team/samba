@@ -1394,7 +1394,9 @@ static int tdb_already_open(dev_t device,
    is advisory, use zero for a default value.
 
    Return is NULL on error, in which case errno is also set.  Don't 
-   try to call tdb_error or tdb_errname, just do strerror(errno).  */
+   try to call tdb_error or tdb_errname, just do strerror(errno).
+
+   @param name may be NULL for internal databases. */
 TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode)
 {
