@@ -422,10 +422,8 @@
 /*
  * Define additional missing types
  */
-#if defined(HAVE_SIG_ATOMIC_T_TYPE)
-typedef sig_atomic_t SIG_ATOMIC_T;
-#else
-typedef int SIG_ATOMIC_T;
+#ifndef HAVE_SIG_ATOMIC_T_TYPE
+typedef int sig_atomic_t;
 #endif
 
 #ifndef HAVE_SOCKLEN_T_TYPE
