@@ -2077,7 +2077,7 @@ AC_ARG_WITH(msdfs,
 #################################################
 # check for Samba VFS support
 
-AC_MSG_CHECKING(whether to support the experimantal Samba vfs)
+AC_MSG_CHECKING(whether to support the experimental Samba vfs)
 AC_ARG_WITH(vfs,
 [  --with-vfs              Include Samba vfs support (default=no)],
 [ case "$withval" in
