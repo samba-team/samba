@@ -90,7 +90,9 @@ sub HeaderUnionElement($)
 {
     my($element) = shift;
     $res .= "/* [case($element->{CASE})] */ ";
-    HeaderElement($element->{DATA});
+    if ($element->{TYPE} eq "UNION_ELEMENT") {
+	    HeaderElement($element->{DATA});
+    }
 }
 
 #####################################################################
