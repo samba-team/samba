@@ -1,3 +1,12 @@
+1999-10-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* getarg.3: document arg_collect
+
+	* getarg.c: change the way arg_collect works; it's still quite
+	horrible though
+
+	* getarg.h: change type of the collect function
+
 1999-10-17  Assar Westerlund  <assar@sics.se>
 
 	* xdbm.h: undo last commit
