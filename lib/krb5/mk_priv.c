@@ -52,7 +52,7 @@ krb5_mk_priv(krb5_context context,
   u_char *buf;
   size_t buf_size;
   size_t len;
-  int tmp_seq;
+  u_int32_t tmp_seq;
   krb5_keyblock *key;
   int32_t sec, usec;
   KerberosTime sec2;
