@@ -1,3 +1,48 @@
+2003-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.c: When running kinit in "fork mode" do pagsh
+	independent of krb4, also always do krb4 setup of cc. Always try
+	to destroy the v4 cc.
+	- add boolean --{,no-}request-pac that will request pac or not
+
+	* kuser/klist.c (check_for_tgt): set client as part of the
+	pattern/match cred
+
+	* lib/krb5/convert_creds.c (_krb5_krb_dest_tkt): unlink v4 token
+	(get_krb4_cc_name): move out from _krb5_krb_tf_setup
+	(_krb5_krb_tf_setup): adapt to allocated filename instead of
+	static filename
+
+	* lib/krb5/krb5-v4compat.h: add _krb5_krb_dest_tkt and TKT_ROOT
+	
+	* lib/krb5/init_creds_pw.c (*) send PA_PAC_REQUEST when the user
+	have requested either use PAC or not use PAC, if the option not
+	set from the user, leave it up to the kdc to decide.
+	(init_creds_loop): clear error string on success
+
+	* lib/krb5/init_creds.c: add
+	krb5_get_init_creds_opt_set_paq_request break out common part of
+	extended opt functions to require_ext_opt
+
+	* lib/krb5/krb5_locl.h: add enum krb5_get_init_creds_req_pac and
+	use it in struct _krb5_get_init_creds_opt_private
+	
+	* tools/kdc-log-analyze.pl: handle some more failure lines
+	
+	* doc/programming.texi: some diffrences between Heimdal and MIT
+	Kerberos in the API
+
+	* doc/setup.texi: add Setting up DNS
+	
+	* lib/krb5/rd_req.c (krb5_rd_req): always free keyblock since its
+	alway used
+
+	* lib/asn1/Makefile.am: add SAM types and PAC_REQUEST
+	
+	* lib/asn1/k5.asn1: add more preauth types, add PA-PAC-REQUEST
+	
+	* lib/asn1: add boolean support
+
 2003-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/changepw.c (setpw_send_request): free ap_req_data on
