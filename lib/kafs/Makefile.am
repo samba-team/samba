@@ -29,6 +29,6 @@ libkafs_a_SOURCES = afssys.c afskrb.c afskrb5.c common.c
 # AIX: this almost works with gcc, but somehow it fails to use the
 # correct ld, use ld instead
 afslib.so: afslib.o
-	ld -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp -bnoentry afslib.o
+	ld -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp -bnoentry afslib.o -lc
 
 $(OBJECTS): ../../include/config.h

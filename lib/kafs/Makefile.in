@@ -97,7 +97,7 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 # AIX: this almost works with gcc, but somehow it fails to use the
 # correct ld, use ld instead
 afslib.so: afslib.o
-	ld -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp @AFS_EXTRA_LD@ afslib.o
+	ld -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp @AFS_EXTRA_LD@ afslib.o -lc
 
 $(OBJECTS): ../../include/config.h
 
