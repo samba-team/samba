@@ -66,7 +66,6 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 
 	ret->sid_rev_num = rev;
 	ret->id_auth[0] = 0;
-	ret->id_auth[0] = 0;
 	ret->id_auth[1] = 0;
 	ret->id_auth[2] = ia >> 24;
 	ret->id_auth[3] = ia >> 16;
