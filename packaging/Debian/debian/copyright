@@ -3,18 +3,10 @@ This is the Debian Linux prepackaged version of the Samba SMB
 <Andrew.Tridgell@anu.edu.au> and many others.
 
 This package was put together by Eloy Paris <peloy@debian.org>
-based on previous work by Klee Dienes <klee@debian.org>, 
-Andrew Howell <andrew@it.com.au> and Bruce Perens <bruce@pixar.com>
-from sources found at <URL:ftp://samba.anu.edu.au/pub/samba>.
-
-As of early in the samba-2.0.0alpha series, the Samba package for Debian
-was split into the following packages:
-
-- samba (the Samba server)
-- smbclient (a LAN Manager client - like the ftp program)
-- swat (Samba Web Administration Tool)
-- smbfs (smbfs userland utilities for kernels > 2.0.x)
-- samba-doc (Samba documentation).
+and Steve Langasek <vorlon@debian.org> based on previous work by
+Klee Dienes <klee@debian.org>, Andrew Howell <andrew@it.com.au>
+and Bruce Perens <bruce@pixar.com> from sources found at
+<URL:ftp://ftp.samba.org/pub/samba>.
 
 Copyright:
 

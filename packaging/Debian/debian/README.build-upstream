@@ -1,0 +1,62 @@
+Building Samba Packages for Debian GNU/Linux
+--------------------------------------------
+
+Building Debian packages is not as hard as some people might think. The
+following instructions will allow you to build your own Samba Debian
+packages. These instructions, and the files in packaging/Debian/, are
+current as of Samba 2.2.5, and should allow you to build Debian packages
+for Debian Potato (2.2), Debian Woody (3.0), and Debian unstable as of
+the date Samba 2.2.5 was released.
+
+Instructions
+------------
+
+If you want to build Samba packages for Debian and you just want to use
+upstream sources, i.e. you don't want to wait for us to put official
+packages out, or you want packages for a Debian version for which we
+don't provide deb's, or you don't want to use official packages, or
+you want to add --this-cool-switch to configure, or whatever, follow
+these instructions:
+
+0) Make sure you have the following packages installed (in addition
+to the normal Debian development packages -- dpkg-dev, libc6-dev,
+devscripts, etc.):
+
+  debhelper
+  libpam0g-dev
+  libreadline4-dev
+  libcupsys2-dev
+  autoconf
+
+  Notes about the packages required to build Samba Debian packages:
+
+  * The libcupsys2-dev is not available in Debian Potato (Debian 2.2).
+  That's fine; the configure script won't detect CUPS support and the
+  resulting binaries won't support CUPS.
+
+1) cd samba[-<version>]. For example, "cd samba-2.2.5".
+2) cp -a packaging/Debian/debian/ debian
+  It's important that you copy instead of symlink because the build
+  tools in Potato have a problem that prevents the build to work with
+  a symlink.
+3) dch -i (this is completely optional - only do it if you understand
+   Debian version numbers! Don't complain later if you can't upgrade
+   to official versions of the Samba packages for Debian.)
+  - Edit the changelog and make sure the version is right. For example,
+  for Samba 2.2.4, the version number should something like 2.2.4-0.1
+  (use a number less than 1 like 0.1, 0.2, etc. so there is no conflict
+  with future upgrades to the official Debian packages.)
+4) Run 'debian/rules binary'.
+  - It is better that you prefix the above command with 'fakeroot'.
+    If you have problems you might try building as root.
+5) That's it. Your new packages should be in ../. Install with dpkg.
+
+Please e-mail samba@packages.debian.org with comments, questions or
+suggestions. Please talk to us and not to the Samba Team. They have
+better things to do and know nothing about the Debian packaging system.
+
+Eloy A. Paris <peloy@debian.org>
+Steve Langasek <vorlon@debian.org>
+
+$Id: README.build-upstream,v 1.1.6.1 2003/06/01 04:30:10 peloy Exp $
+
