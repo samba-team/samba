@@ -26,16 +26,6 @@ static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (
 static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (const char *), int N);
 
 /*****************************************************************
- Check if a user or group name is local (this is a *local* name for
- *local* people, there's nothing for you here...).
-*****************************************************************/
-
-static BOOL name_is_local(const char *name)
-{
-	return !(strchr_m(name, *lp_winbind_separator()));
-}
-
-/*****************************************************************
  Splits passed user or group name to domain and user/group name parts
  Returns True if name was splitted and False otherwise.
 *****************************************************************/
@@ -397,42 +387,6 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 				 */
 				if(user_in_group_list(user, *list +2, groups, n_groups))
 					return True;
-			}
-		} else if (!name_is_local(*list)) {
-			/*
-			 * If user name did not match and token is not
-			 * a unix group and the token has a winbind separator in the
-			 * name then see if it is a Windows group.
-			 */
-
-			DOM_SID g_sid;
-			enum SID_NAME_USE name_type;
-			BOOL winbind_answered = False;
-			BOOL ret;
-			fstring groupname, domain;
-			
-			/* Parse a string of the form DOMAIN/user into a domain and a user */
-
-			char *p = strchr(*list,*lp_winbind_separator());
-			
-			DEBUG(10,("user_in_list: checking if user |%s| is in winbind group |%s|\n", user, *list));
-
-			if (p) {
-				fstrcpy(groupname, p+1);
-				fstrcpy(domain, *list);
-				domain[PTR_DIFF(p, *list)] = 0;
-
-				/* Check to see if name is a Windows group */
-				if (winbind_lookup_name(domain, groupname, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
-					
-				/* Check if user name is in the Windows group */
-					ret = user_in_winbind_group_list(user, *list, &winbind_answered);
-					
-					if (winbind_answered && ret == True) {
-						DEBUG(10,("user_in_list: user |%s| is in winbind group |%s|\n", user, *list));
-						return ret;
-					}
-				}
 			}
 		}
     
