@@ -2380,6 +2380,7 @@ static struct {
 	{"SCAN-CASETABLE", torture_casetable, 0},
 	{"SCAN-PIPE_NUMBER", run_pipe_number, 0},
 	{"SCAN-IOCTL",  torture_ioctl_test, 0},
+	{"SCAN-RAP",  torture_rap_scan, 0},
 
 	/* rpc testers */
         {"RPC-LSA", torture_rpc_lsa, 0},
