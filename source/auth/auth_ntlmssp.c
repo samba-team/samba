@@ -203,3 +203,31 @@ NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *auth_ntlmssp_state,
 			      out_mem_ctx, 
 			      in, out);
 }
+
+/** 
+ * Return the credentials of a logged on user, including session keys
+ * etc.
+ *
+ * Only valid after a successful authentication
+ *
+ */
+
+NTSTATUS auth_ntlmssp_get_session_info(struct auth_ntlmssp_state *auth_ntlmssp_state, 
+				       struct auth_session_info **session_info) 
+{
+	NTSTATUS nt_status;
+	nt_status = make_session_info(auth_ntlmssp_state->server_info, session_info);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	/* the session_info owns this now */
+	auth_ntlmssp_state->server_info = NULL;
+
+	(*session_info)->session_key = data_blob_talloc((*session_info)->mem_ctx, 
+							auth_ntlmssp_state->ntlmssp_state->session_key.data,
+							auth_ntlmssp_state->ntlmssp_state->session_key.length);
+
+	return NT_STATUS_OK;
+}
