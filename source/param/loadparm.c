@@ -2681,7 +2681,7 @@ static BOOL do_parameter(char *pszParmName, char *pszParmValue)
 /***************************************************************************
 print a parameter of the specified type
 ***************************************************************************/
-static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
+static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(*dos_to_ext)(char *, BOOL))
 {
 	int i;
 	switch (p->type)
@@ -2720,14 +2720,22 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 
 		case P_GSTRING:
 		case P_UGSTRING:
-			if ((char *)ptr)
-				fprintf(f, "%s", (char *)ptr);
+			if ((char *)ptr) {
+				if (p->flags & FLAG_DOS_STRING)
+					fprintf(f, "%s", dos_to_ext((char *)ptr, False));
+				else
+					fprintf(f, "%s", (char *)ptr);
+			}
 			break;
 
 		case P_STRING:
 		case P_USTRING:
-			if (*(char **)ptr)
-				fprintf(f, "%s", *(char **)ptr);
+			if (*(char **)ptr) {
+				if(p->flags & FLAG_DOS_STRING)
+					fprintf(f,"%s",dos_to_ext(*(char **)ptr, False));
+				else
+					fprintf(f, "%s", *(char **)ptr);
+			}
 			break;
 		case P_SEP:
 			break;
@@ -2882,7 +2890,7 @@ static BOOL is_default(int i)
 /***************************************************************************
 Display the contents of the global structure.
 ***************************************************************************/
-static void dump_globals(FILE * f)
+static void dump_globals(FILE *f, char *(*dos_to_ext)(char *, BOOL))
 {
 	int i;
 	fprintf(f, "# Global parameters\n[global]\n");
@@ -2895,7 +2903,7 @@ static void dump_globals(FILE * f)
 			if (defaults_saved && is_default(i))
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
-			print_parameter(&parm_table[i], parm_table[i].ptr, f);
+			print_parameter(&parm_table[i], parm_table[i].ptr, f, dos_to_ext);
 			fprintf(f, "\n");
 		}
 }
@@ -2916,7 +2924,7 @@ BOOL lp_is_default(int snum, struct parm_struct *parm)
 /***************************************************************************
 Display the contents of a single services record.
 ***************************************************************************/
-static void dump_a_service(service * pService, FILE * f)
+static void dump_a_service(service * pService, FILE * f, char *(*dos_to_ext)(char *, BOOL))
 {
 	int i;
 	if (pService != &sDefault)
@@ -2947,7 +2955,7 @@ static void dump_a_service(service * pService, FILE * f)
 
 			fprintf(f, "\t%s = ", parm_table[i].label);
 			print_parameter(&parm_table[i],
-					((char *)pService) + pdiff, f);
+					((char *)pService) + pdiff, f, dos_to_ext);
 			fprintf(f, "\n");
 		}
 }
@@ -3317,7 +3325,7 @@ int lp_numservices(void)
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
-void lp_dump(FILE * f, BOOL show_defaults, int maxtoprint)
+void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint, char *(*dos_to_ext)(char *, BOOL))
 {
 	int iService;
 
@@ -3326,24 +3334,24 @@ void lp_dump(FILE * f, BOOL show_defaults, int maxtoprint)
 		defaults_saved = False;
 	}
 
-	dump_globals(f);
+	dump_globals(f, dos_to_ext);
 
-	dump_a_service(&sDefault, f);
+	dump_a_service(&sDefault, f, dos_to_ext);
 
 	for (iService = 0; iService < maxtoprint; iService++)
-		lp_dump_one(f, show_defaults, iService);
+		lp_dump_one(f, show_defaults, iService, dos_to_ext);
 }
 
 /***************************************************************************
 Display the contents of one service in human-readable form.
 ***************************************************************************/
-void lp_dump_one(FILE * f, BOOL show_defaults, int snum)
+void lp_dump_one(FILE * f, BOOL show_defaults, int snum, char *(*dos_to_ext)(char *, BOOL))
 {
 	if (VALID(snum))
 	{
 		if (iSERVICE(snum).szService[0] == '\0')
 			return;
-		dump_a_service(pSERVICE(snum), f);
+		dump_a_service(pSERVICE(snum), f, dos_to_ext);
 	}
 }
 

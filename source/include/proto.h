@@ -1763,8 +1763,8 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	     BOOL add_ipc);
 void lp_resetnumservices(void);
 int lp_numservices(void);
-void lp_dump(FILE * f, BOOL show_defaults, int maxtoprint);
-void lp_dump_one(FILE * f, BOOL show_defaults, int snum);
+void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint, char *(*dos_to_ext)(char *, BOOL));
+void lp_dump_one(FILE * f, BOOL show_defaults, int snum, char *(*dos_to_ext)(char *, BOOL));
 int lp_servicenumber(char *pszServiceName);
 char *volume_label(int snum);
 int lp_server_role(void);

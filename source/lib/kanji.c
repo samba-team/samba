@@ -1673,3 +1673,19 @@ void initialize_multibyte_vectors( int client_codepage)
     break; 
   }
 }
+/* *******************************************************
+   function(s) for "dynamic" encoding of SWAT output.
+   in this version, only dos_to_dos, dos_to_unix, unix_to_dos
+   are used for bug fix. conversion to web encoding
+   (to catalog file encoding) is not needed because
+   they are using same character codes.
+   **************************************************** */
+static char *no_conversion(char *str, BOOL bOverwrite)
+{
+       static pstring temp;
+       if(bOverwrite)
+               return str;
+       pstrcpy(temp, str);
+       return temp;
+}
+char *(*_dos_to_dos)(char *, BOOL) = no_conversion;
