@@ -765,6 +765,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
         struct winbindd_domain *domain;
 	struct getent_state groups;
 	char *extra_data = NULL;
+	char *ted = NULL;
 	int extra_data_len = 0, i;
 	void *sam_entries = NULL;
 
@@ -783,8 +784,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		}
 
 		/* Get list of sam groups */
-		if (groups.sam_entries)
-			free (groups.sam_entries);
+
 		ZERO_STRUCT(groups);
 		groups.domain = domain;
 
@@ -835,10 +835,15 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		/* Allocate some memory for extra data.  Note that we limit
 		   account names to sizeof(fstring) = 128 characters.  */
 		
-		extra_data = Realloc(extra_data, sizeof(fstring) * total_entries);
-
-		if (!extra_data)
+                ted = Realloc(extra_data, sizeof(fstring) * total_entries);
+ 
+		if (!ted) {
+			DEBUG(0,("winbindd_list_groups: failed to enlarge buffer!\n"));
+			if (extra_data)
+				free(extra_data);
 			return WINBINDD_ERROR;
+		} else
+			extra_data = ted;
 
 		/* Pack group list into extra data fields */
 
