@@ -88,7 +88,8 @@ BOOL eventlog_io_r_readeventlog(char *desc, EVENTLOG_R_READEVENTLOG *r_u, prs_st
 
 BOOL make_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
 			uint32 sid_name_use, char *name, uint32 idx);
-int make_dom_ref(DOM_R_REF *ref, const char *dom_name, const DOM_SID *dom_sid);
+int make_dom_ref_uni(DOM_R_REF *ref, const UNISTR2 *uni_domname, const DOM_SID *dom_sid);
+int make_dom_ref(DOM_R_REF *ref, const char *domname, const DOM_SID *dom_sid);
 BOOL make_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
 				uint32 unknown);
 BOOL make_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos);
