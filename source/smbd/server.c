@@ -141,7 +141,7 @@ BOOL allowable_number_of_smbd_processes(void)
 			DEBUG(0,("allowable_number_of_smbd_processes: number of processes (%d) is over allowed limit (%d)\n",
 				val, max_processes ));
 			/* BEGIN_ADMIN_LOG */
-			sys_adminlog( LOG_ERR, (char*)gettext( "Client connection disallowed due to limit. max smbd processes: %u"), 
+			sys_adminlog( LOG_ERR, (char*)gettext( "Rejected client connection due to limit. max smbd processes: %u." ), 
         max_processes );
 			/* END_ADMIN_LOG */
 			return False;
