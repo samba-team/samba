@@ -661,13 +661,13 @@ NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_
 		DEBUG(5,("_samr_query_sec_obj: querying security on SAM\n"));
 		r_u->status = samr_make_sam_obj_sd(p->mem_ctx, &psd, &sd_size);
 	}
-	else if (sid_equal(&pol_sid,get_global_sam_sid()))  //check if it is our domain SID
+	else if (sid_equal(&pol_sid,get_global_sam_sid()))  /* check if it is our domain SID */
 
 	{
 		DEBUG(5,("_samr_query_sec_obj: querying security on Domain with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
 		r_u->status = samr_make_dom_obj_sd(p->mem_ctx, &psd, &sd_size);
 	}
-	else if (sid_equal(&pol_sid,&global_sid_Builtin)) //check if it is the Builtin  Domain
+	else if (sid_equal(&pol_sid,&global_sid_Builtin)) /* check if it is the Builtin  Domain */
 	{
 		/* TODO: Builtin probably needs a different SD with restricted write access*/
 		DEBUG(5,("_samr_query_sec_obj: querying security on Builtin Domain with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
