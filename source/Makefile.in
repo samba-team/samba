@@ -712,14 +712,14 @@ WINBINDD_OBJ = \
 		nsswitch/winbindd_user.o  \
 		nsswitch/winbindd_group.o \
 		nsswitch/winbindd_surs.o  \
-		nsswitch/winbindd_sock.o  \
+		nsswitch/winbindd_util.o  \
 		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(STUB_UID_OBJ) \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSURS_OBJ) $(LIBSMB_OBJ) 
 
-NTDOM_OBJ = nsswitch/ntdom.o nsswitch/winbindd_sock.o
+NTDOM_OBJ = nsswitch/ntdom.o
 
-NTDOM_LTOBJS = $(NTDOM_OBJ:.o=.lo)
+NTDOM_ICOBJS = $(NTDOM_OBJ:.o=.po)
 
 ######################################################################
 # now the rules...
@@ -757,7 +757,7 @@ smbfilter : CHECK bin/smbfilter
 
 nsswitch: CHECK nsswitch/libnss_ntdom.so bin/winbindd
 
-check:
+check: all nsswitch
 	$(RUNTEST) $(RUNTESTDEFAULTFLAGS) $(RUNTESTFLAGS)
 
 .SUFFIXES:
@@ -1097,9 +1097,9 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
 
-nsswitch/libnss_ntdom.so: $(NTDOM_LTOBJS) $(LIBSAMBA_LTOBJS)
+nsswitch/libnss_ntdom.so: $(NTDOM_ICOBJS)
 	@echo "Linking $@"
-	@$(LINK) -shared -o $@ $(NTDOM_LTOBJS) $(LIBSAMBA_LTOBJS)
+	@$(LINK) -shared -o $@ $(NTDOM_ICOBJS)
 
 bin/pam_ntdom_auth.so: $(PAM_NTDOM_LIBS) $(PAM_NTDOM_OBJ) bin/.dummy
 	@echo Linking $@
