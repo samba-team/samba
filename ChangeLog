@@ -1,3 +1,11 @@
+Fri Apr  9 20:24:04 1999  Assar Westerlund  <assar@sics.se>
+
+	* kuser/klist.c (print_cred_verbose): handle the case of a bad
+ 	enctype
+
+	* configure.in: test for more header files
+	(LIB_roken): set
+
 Wed Apr  7 23:37:26 1999  Assar Westerlund  <assar@sics.se>
 
 	* kdc/hpropd.c: fix some error messages to be more understandable.
