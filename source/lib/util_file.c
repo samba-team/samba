@@ -805,3 +805,150 @@ SMB_OFF_T get_file_size(char *file_name)
 	return (buf.st_size);
 }
 
+
+/***************************************************************
+ Internal fn to enumerate the smbpasswd list. Returns a void pointer
+ to ensure no modification outside this module. Checks for atomic
+ rename of smbpasswd file on update or create once the lock has
+ been granted to prevent race conditions. JRA.
+****************************************************************/
+
+void *startfilepw_race_condition_avoid(const char *pfile, enum pwf_access_type type, int *lock_depth)
+{
+  FILE *fp = NULL;
+  const char *open_mode = NULL;
+  int race_loop = 0;
+  int lock_type;
+
+  if (!*pfile) {
+    DEBUG(0, ("startfilepw_race_condition_avoid: No SMB password file set\n"));
+    return (NULL);
+  }
+
+  switch(type) {
+  case PWF_READ:
+    open_mode = "rb";
+    lock_type = F_RDLCK;
+    break;
+  case PWF_UPDATE:
+    open_mode = "r+b";
+    lock_type = F_WRLCK;
+    break;
+  case PWF_CREATE:
+    /*
+     * Ensure atomic file creation.
+     */
+    {
+      int i, fd = -1;
+
+      for(i = 0; i < 5; i++) {
+        if((fd = sys_open(pfile, O_CREAT|O_TRUNC|O_EXCL|O_RDWR, 0600))!=-1)
+          break;
+        sys_usleep(200); /* Spin, spin... */
+      }
+      if(fd == -1) {
+        DEBUG(0,("startfilepw_race_condition_avoid: too many race conditions creating file %s\n", pfile));
+        return NULL;
+      }
+      close(fd);
+      open_mode = "r+b";
+      lock_type = F_WRLCK;
+      break;
+    }
+  }
+
+  for(race_loop = 0; race_loop < 5; race_loop++) {
+    DEBUG(10, ("startfilepw_race_condition_avoid: opening file %s\n", pfile));
+
+    if((fp = sys_fopen(pfile, open_mode)) == NULL) {
+      DEBUG(0, ("startfilepw_race_condition_avoid: unable to open file %s. Error was %s\n", pfile, strerror(errno) ));
+      return NULL;
+    }
+
+    if (!file_lock(fileno(fp), lock_type, 5, lock_depth)) {
+      DEBUG(0, ("startfilepw_race_condition_avoid: unable to lock file %s. Error was %s\n", pfile, strerror(errno) ));
+      fclose(fp);
+      return NULL;
+    }
+
+    /*
+     * Only check for replacement races on update or create.
+     * For read we don't mind if the data is one record out of date.
+     */
+
+    if(type == PWF_READ) {
+      break;
+    } else {
+      SMB_STRUCT_STAT sbuf1, sbuf2;
+
+      /*
+       * Avoid the potential race condition between the open and the lock
+       * by doing a stat on the filename and an fstat on the fd. If the
+       * two inodes differ then someone did a rename between the open and
+       * the lock. Back off and try the open again. Only do this 5 times to
+       * prevent infinate loops. JRA.
+       */
+
+      if (sys_stat(pfile,&sbuf1) != 0) {
+        DEBUG(0, ("startfilepw_race_condition_avoid: unable to stat file %s. Error was %s\n", pfile, strerror(errno)));
+        file_unlock(fileno(fp), lock_depth);
+        fclose(fp);
+        return NULL;
+      }
+
+      if (sys_fstat(fileno(fp),&sbuf2) != 0) {
+        DEBUG(0, ("startfilepw_race_condition_avoid: unable to fstat file %s. Error was %s\n", pfile, strerror(errno)));
+        file_unlock(fileno(fp), lock_depth);
+        fclose(fp);
+        return NULL;
+      }
+
+      if( sbuf1.st_ino == sbuf2.st_ino) {
+        /* No race. */
+        break;
+      }
+
+      /*
+       * Race occurred - back off and try again...
+       */
+
+      file_unlock(fileno(fp), lock_depth);
+      fclose(fp);
+    }
+  }
+
+  if(race_loop == 5) {
+    DEBUG(0, ("startfilepw_race_condition_avoid: too many race conditions opening file %s\n", pfile));
+    return NULL;
+  }
+
+  /* Set a buffer to do more efficient reads */
+  setvbuf(fp, (char *)NULL, _IOFBF, 1024);
+
+  /* Make sure it is only rw by the owner */
+  if(fchmod(fileno(fp), S_IRUSR|S_IWUSR) == -1) {
+    DEBUG(0, ("startfilepw_race_condition_avoid: failed to set 0600 permissions on password file %s. \
+Error was %s\n.", pfile, strerror(errno) ));
+    file_unlock(fileno(fp), lock_depth);
+    fclose(fp);
+    return NULL;
+  }
+
+  /* We have a lock on the file. */
+  return (void *)fp;
+}
+
+
+/***************************************************************
+ End enumeration of the smbpasswd list.
+****************************************************************/
+
+void endfilepw_race_condition_avoid(void *vp, int *lock_depth)
+{
+  FILE *fp = (FILE *)vp;
+
+  file_unlock(fileno(fp), lock_depth);
+  fclose(fp);
+  DEBUG(7, ("endfilepw_race_condition_avoid: closed password file.\n"));
+}
+

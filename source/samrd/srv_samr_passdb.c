@@ -985,14 +985,31 @@ uint32 _samr_query_dispinfo(const POLICY_HND * domain_pol, uint16 level,
 
 
 /*******************************************************************
- samr_reply_delete_dom_user
+ samr_delete_dom_user
  ********************************************************************/
-uint32 _samr_delete_dom_user(POLICY_HND * user_pol)
+uint32 _samr_delete_dom_user(POLICY_HND *user_pol)
 {
-	DEBUG(0, ("samr_delete_dom_user: not implemented\n"));
-	return NT_STATUS_ACCESS_DENIED;
-}
+        fstring user_name;
+        uint32 user_rid = 0x0;
+        DOM_SID user_sid;
+	struct sam_passwd *sam_pass;
 
+        /* find the policy handle.  open a policy on it. */
+        if (!get_policy_samr_sid(get_global_hnd_cache(), user_pol, &user_sid))
+        {
+                return NT_STATUS_INVALID_HANDLE;
+        }
+        sid_split_rid(&user_sid, &user_rid);
+
+        DEBUG(0, ("_samr_delete_dom_user: user_rid:0x%x\n", user_rid));
+
+        if (!del_smbpwd_entry(user_rid))
+        {
+                return NT_STATUS_ACCESS_DENIED;
+        }
+
+        return NT_STATUS_NOPROBLEMO;
+}
 
 /*******************************************************************
  samr_reply_delete_dom_group

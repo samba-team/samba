@@ -364,6 +364,7 @@ struct smb_passwd
 	time_t pass_last_set_time;	/* password last set time */
 };
 
+enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
 
 struct sam_disp_info
 {
@@ -763,6 +764,7 @@ struct smb_passdb_ops
 	 */
 	BOOL (*add_smbpwd_entry) (struct smb_passwd *);
 	BOOL (*mod_smbpwd_entry) (struct smb_passwd *, BOOL);
+	BOOL (*del_smbpwd_entry) (uint32);
 
 #if 0
 	/*

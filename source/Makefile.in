@@ -32,7 +32,7 @@ BASEDIR= @prefix@
 BINDIR = @bindir@
 # we don't use sbindir because we want full compatibility with
 # the previous releases of Samba
-SBINDIR = @bindir@
+SBINDIR = @sbindir@
 LIBDIR = @libdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
@@ -254,7 +254,7 @@ UNIXPASSDB_OBJ = passdb/pass_check.o
 PASSDB_OBJ = passdb/passdb.o passdb/smbpass.o \
              passdb/ldap.o passdb/ldapdb.o passdb/nt5ldap.o passdb/nispass.o \
              passdb/smbpasschange.o passdb/mysqlpass.o passdb/smbpassnt5ldap.o \
-             lib/util_pwdb.o lib/domain_namemap.o 
+             passdb/smbpassfile.o lib/util_pwdb.o lib/domain_namemap.o 
 
 SIDDB_OBJ = lib/sids.o lib/util_seaccess.o
 

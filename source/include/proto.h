@@ -208,22 +208,24 @@ dbg_Token dbg_char2token( dbg_Token *state, int c );
 
 /*The following definitions come from  lib/domain_namemap.c  */
 
-BOOL map_unix_group_name(char *group_name, DOM_NAME_MAP *grp_info);
-BOOL map_unix_alias_name(char *alias_name, DOM_NAME_MAP *grp_info);
-BOOL map_nt_alias_name(char *ntalias_name, char *nt_domain, DOM_NAME_MAP *grp_info);
-BOOL map_nt_group_name(char *ntgroup_name, char *nt_domain, DOM_NAME_MAP *grp_info);
-BOOL map_alias_sid(DOM_SID *psid, DOM_NAME_MAP *grp_info);
-BOOL map_group_sid(DOM_SID *psid, DOM_NAME_MAP *grp_info);
-BOOL lookupsmbpwnam(const char *unix_usr_name, DOM_NAME_MAP *grp);
-BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep);
-BOOL lookupsmbpwntnam(const char *fullntname, DOM_NAME_MAP *gmep);
-BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP *gmep);
-BOOL lookupsmbgrpnam(const char *unix_grp_name, DOM_NAME_MAP *grp);
-BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP *gmep);
-BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP *gmep);
+BOOL map_unix_group_name(char *group_name, DOM_NAME_MAP * grp_info);
+BOOL map_unix_alias_name(char *alias_name, DOM_NAME_MAP * grp_info);
+BOOL map_nt_alias_name(char *ntalias_name, char *nt_domain,
+		       DOM_NAME_MAP * grp_info);
+BOOL map_nt_group_name(char *ntgroup_name, char *nt_domain,
+		       DOM_NAME_MAP * grp_info);
+BOOL map_alias_sid(DOM_SID *psid, DOM_NAME_MAP * grp_info);
+BOOL map_group_sid(DOM_SID *psid, DOM_NAME_MAP * grp_info);
+BOOL lookupsmbpwnam(const char *unix_usr_name, DOM_NAME_MAP * grp);
+BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP * gmep);
+BOOL lookupsmbpwntnam(const char *fullntname, DOM_NAME_MAP * gmep);
+BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP * gmep);
+BOOL lookupsmbgrpnam(const char *unix_grp_name, DOM_NAME_MAP * grp);
+BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP * gmep);
+BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP * gmep);
 const struct passwd *map_nt_and_unix_username(const char *domain,
-				const char *ntuser,
-				char *unix_user, char *nt_user);
+					      const char *ntuser,
+					      char *unix_user, char *nt_user);
 
 /*The following definitions come from  lib/doscalls.c  */
 
@@ -942,6 +944,8 @@ char *fgets_slash(char *s2,int maxlen,FILE *f);
 BOOL file_modified(const char *filename, time_t *lastmodified);
 void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified);
 SMB_OFF_T get_file_size(char *file_name);
+void *startfilepw_race_condition_avoid(const char *pfile, enum pwf_access_type type, int *lock_depth);
+void endfilepw_race_condition_avoid(void *vp, int *lock_depth);
 
 /*The following definitions come from  lib/util_hnd.c  */
 
@@ -2153,6 +2157,7 @@ BOOL setsmbpwpos(void *vp, SMB_BIG_UINT tok);
 struct smb_passwd *getsmbpwent(void *vp);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
+BOOL del_smbpwd_entry(uint32 rid);
 struct smb_passwd *getsmbpwnam(const char *name);
 struct smb_passwd *getsmbpwuid(uid_t unix_uid);
 void pwdb_init_smb(struct smb_passwd *user);
@@ -2230,6 +2235,7 @@ struct sam_passdb_ops *ldap_initialise_sam_password_db(void);
 /*The following definitions come from  passdb/smbpass.c  */
 
 struct smb_passwd *getsmbfilepwent(void *vp);
+char *format_new_smbpasswd_entry(struct smb_passwd *newpwd);
 struct smb_passdb_ops *file_initialise_password_db(void);
 
 /*The following definitions come from  passdb/smbpasschange.c  */
@@ -2240,6 +2246,20 @@ BOOL local_password_change(char *user_name,
 				char *new_passwd, 
 				char *err_str, size_t err_str_len,
 				char *msg_str, size_t msg_str_len);
+
+/*The following definitions come from  passdb/smbpassfile.c  */
+
+BOOL trust_password_lock( const char *domain, const char *name, BOOL update);
+BOOL trust_password_unlock(void);
+BOOL trust_password_delete( char *domain, char *name );
+BOOL get_trust_account_password( uchar *ret_pwd, time_t *pass_last_set_time);
+BOOL set_trust_account_password( uchar *md4_new_pwd);
+BOOL trust_get_passwd_time( uchar trust_passwd[16],
+				const char *domain, const char *myname,
+				NTTIME *modtime);
+BOOL trust_get_passwd( uchar trust_passwd[16],
+				const char *domain, const char *myname);
+BOOL create_trust_account_file(char *domain, char *name, uchar pass[16]);
 
 /*The following definitions come from  passdb/smbpassgroup.c  */
 
@@ -4199,7 +4219,7 @@ uint32 _samr_query_dispinfo(const POLICY_HND * domain_pol, uint16 level,
 			    uint32 max_size,
 			    uint32 * data_size,
 			    uint32 * num_entries, SAM_DISPINFO_CTR * ctr);
-uint32 _samr_delete_dom_user(POLICY_HND * user_pol);
+uint32 _samr_delete_dom_user(POLICY_HND *user_pol);
 uint32 _samr_delete_dom_group(POLICY_HND * group_pol);
 uint32 _samr_query_groupmem(const POLICY_HND * group_pol,
 			    uint32 * num_mem, uint32 ** rid, uint32 ** attr);
