@@ -943,7 +943,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     struct in_addr *dest_ip, int port,
 			     char *service, char *service_type,
 			     char *user, char *domain, 
-			     char *password, int pass_len) 
+			     char *password, int pass_len, BOOL *retry) 
 {
 	struct ntuser_creds creds;
 	NTSTATUS nt_status;
@@ -952,6 +952,9 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct cli_state *cli;
 	struct in_addr ip;
 	
+	if (retry)
+		*retry = False;
+
 	if (!output_cli)
 		DEBUG(0, ("output_cli is NULL!?!"));
 
@@ -978,6 +981,9 @@ again:
 		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	if (retry)
+		*retry = True;
 
 	if (!cli_session_request(cli, &calling, &called)) {
 		char *p;

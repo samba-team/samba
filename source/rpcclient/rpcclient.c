@@ -764,7 +764,7 @@ int main(int argc, char *argv[])
 					&server_ip, 0,
 					"IPC$", "IPC",  
 					username, domain,
-					password, strlen(password));
+					password, strlen(password), NULL);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
