@@ -882,6 +882,7 @@ static struct parm_struct parm_table[] = {
 	{"max disk size", P_INTEGER, P_GLOBAL, &Globals.maxdisksize, NULL, NULL, 0},
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, 0},
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_PRINT},
+	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, 0},
 	{"read size", P_INTEGER, P_GLOBAL, &Globals.ReadSize, NULL, NULL, 0},
 	
 	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, 0},
@@ -891,8 +892,6 @@ static struct parm_struct parm_table[] = {
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_SHARE},
 	{"use mmap", P_BOOL, P_GLOBAL, &Globals.bUseMmap, NULL, NULL, 0},
 	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_SHARE},
-
-	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, 0},
 
 	{"Printing Options", P_SEP, P_SEPARATOR},
 	

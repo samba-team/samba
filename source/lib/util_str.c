@@ -439,7 +439,7 @@ void strupper(char *s)
 
 /* Convert a string to upper case, but don't modify it */
 
-char *strupper_static(char *s)
+char *strupper_static(const char *s)
 {
 	static pstring str;
 
