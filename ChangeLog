@@ -1,5 +1,11 @@
 2000-07-08  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/hdb/mkey.c (read_master_encryptionkey): handle old keytype
+	based files, and convert the key to cfb64
+
+	* lib/hdb/mkey.c (hdb_read_master_key): set mkey to NULL before
+	doing anything else
+
 	* lib/krb5/send_to_kdc.c: use krb5_eai_to_heim_errno
 
 	* lib/krb5/get_for_creds.c: use krb5_eai_to_heim_errno
