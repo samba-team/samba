@@ -1,5 +1,10 @@
 Thu Mar 18 11:02:55 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* Makefile.am.common: make install-build-headers a multi
+ 	dependency target
+
+	* Makefile.am.common: remove include_dir hack
+
 	* Makefile.am.common: define LIB_kafs and LIB_gssapi
 
 	* krb-find-db.m4: subst DBLIB also
