@@ -136,7 +136,7 @@ static void show_locks(void)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *connect_one(char *share, int snum)
+static struct cli_state *connect_one(char *share, int snum)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
