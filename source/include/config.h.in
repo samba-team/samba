@@ -278,6 +278,13 @@
 #ifndef _GNU_SOURCE
 #undef _GNU_SOURCE
 #endif
+#undef HAVE_SENDFILE
+#undef HAVE_SENDFILE64
+#undef LINUX_SENDFILE_API
+#undef LINUX_BROKEN_SENDFILE_API
+#undef WITH_SENDFILE
+#undef FREEBSD_SENDFILE_API
+#undef HPUX_SENDFILE_API
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

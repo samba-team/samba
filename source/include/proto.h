@@ -172,6 +172,15 @@ void sys_select_signal(void);
 int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
 int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
 
+/* The following definitions come from lib/sendfile.c  */
+
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+
 /* The following definitions come from lib/signal.c  */
 
 void BlockSignals(BOOL block,int signum);
@@ -2138,6 +2147,7 @@ BOOL lp_use_client_driver(int );
 BOOL lp_default_devmode(int );
 BOOL lp_nt_acl_support(int );
 BOOL lp_force_unknown_acl_user(int );
+BOOL lp_use_sendfile(int );
 int lp_create_mask(int );
 int lp_force_create_mode(int );
 int lp_security_mask(int );
@@ -4643,9 +4653,13 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name);
 int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 void fail_readraw(void);
+void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T startpos, size_t nread,
+		ssize_t mincount, char *outbuf);
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
 int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length, int dum_buffsiz);
 int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, 
+		files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt);
 int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
@@ -4810,6 +4824,8 @@ int vfswrap_open(connection_struct *conn, const char *fname, int flags, mode_t m
 int vfswrap_close(files_struct *fsp, int fd);
 ssize_t vfswrap_read(files_struct *fsp, int fd, void *data, size_t n);
 ssize_t vfswrap_write(files_struct *fsp, int fd, const void *data, size_t n);
+ssize_t vfswrap_sendfile(int tofd, struct files_struct *fsp, int fromfd, const DATA_BLOB *hdr,
+			SMB_OFF_T offset, size_t n);
 SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
 int vfswrap_rename(connection_struct *conn, const char *oldname, const char *newname);
 int vfswrap_fsync(files_struct *fsp, int fd);

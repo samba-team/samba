@@ -41,7 +41,8 @@
 
 /* Changed to version 2 for CIFS UNIX extensions (mknod and link added). JRA. */
 /* Changed to version 3 for POSIX acl extensions. JRA. */
-#define SMB_VFS_INTERFACE_VERSION 3
+/* Changed to version 4 for sendfile extension. JRA. */
+#define SMB_VFS_INTERFACE_VERSION 4
 
 /* VFS operations structure */
 
@@ -73,6 +74,7 @@ struct vfs_ops {
 	ssize_t (*read)(struct files_struct *fsp, int fd, void *data, size_t n);
 	ssize_t (*write)(struct files_struct *fsp, int fd, const void *data, size_t n);
 	SMB_OFF_T (*lseek)(struct files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
+	ssize_t (*sendfile)(int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 	int (*rename)(struct connection_struct *conn, const char *old, const char *new);
 	int (*fsync)(struct files_struct *fsp, int fd);
 	int (*stat)(struct connection_struct *conn, const char *fname, SMB_STRUCT_STAT *sbuf);

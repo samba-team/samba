@@ -411,6 +411,9 @@ typedef struct
 	BOOL bUseClientDriver;
 	BOOL bDefaultDevmode;
 	BOOL bNTAclSupport;
+#ifdef WITH_SENDFILE
+	BOOL bUseSendfile;
+#endif
 	BOOL bForceUnknownAclUser;
 
 	char dummy[3];		/* for alignment */
@@ -533,6 +536,9 @@ static service sDefault = {
 	False,			/* bDefaultDevmode */
 	True,			/* bNTAclSupport */
 	False,			/* bForceUnknownAclUser */
+#ifdef WITH_SENDFILE
+	False,                  /* bUseSendfile */
+#endif
 
 	""			/* dummy */
 };
@@ -892,6 +898,9 @@ static struct parm_struct parm_table[] = {
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_SHARE},
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_SHARE},
 	{"use mmap", P_BOOL, P_GLOBAL, &Globals.bUseMmap, NULL, NULL, 0},
+#ifdef WITH_SENDFILE
+	{"use sendfile", P_BOOL, P_LOCAL, &sDefault.bUseSendfile, NULL, NULL, FLAG_SHARE},
+#endif
 	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_SHARE},
 
 	{"Printing Options", P_SEP, P_SEPARATOR},
@@ -1789,6 +1798,9 @@ FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
 FN_LOCAL_BOOL(lp_force_unknown_acl_user, bForceUnknownAclUser)
+#ifdef WITH_SENDFILE
+FN_LOCAL_BOOL(lp_use_sendfile, bUseSendfile)
+#endif
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)

@@ -104,6 +104,12 @@ static ssize_t skel_write(struct files_struct *fsp, int fd, const void *data, si
 	return default_vfs_ops.write(fsp, fd, data, n);
 }
 
+static ssize_t skel_sendfile(int tofd, struct files_struct *fsp, int fromfd, const DATA_BLOB *hdr,
+		SMB_OFF_T offset, size_t n)
+{
+	return default_vfs_ops.sendfile(tofd, fsp, fromfd, hdr, offset, n);
+}
+
 static SMB_OFF_T skel_lseek(struct files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
 {
 	return default_vfs_ops.lseek(fsp, filedes, offset, whence);
@@ -379,6 +385,7 @@ struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
 	tmp_ops.read = skel_read;
 	tmp_ops.write = skel_write;
 	tmp_ops.lseek = skel_lseek;
+	tmp_ops.sendfile = skel_sendfile;
 	tmp_ops.rename = skel_rename;
 	tmp_ops.fsync = skel_fsync;
 	tmp_ops.stat = skel_stat;
@@ -462,6 +469,7 @@ struct vfs_ops skel_ops = {
 	skel_read,
 	skel_write,
 	skel_lseek,
+	skel_sendfile,
 	skel_rename,
 	skel_fsync,
 	skel_stat,

@@ -90,6 +90,7 @@ struct vfs_ops recycle_ops = {
 	NULL,				/* read  */
 	NULL,				/* write */
 	NULL,				/* lseek */
+	NULL,				/* sendfile */
 	NULL,				/* rename */
 	NULL,				/* fsync */
 	NULL,				/* stat  */

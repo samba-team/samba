@@ -2170,6 +2170,59 @@ void fail_readraw(void)
 }
 
 /****************************************************************************
+ Use sendfile in readbraw.
+****************************************************************************/
+
+void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T startpos, size_t nread,
+		ssize_t mincount, char *outbuf)
+{
+	ssize_t ret=0;
+
+#if defined(WITH_SENDFILE)
+	/*
+	 * We can only use sendfile on a non-chained packet and on a file
+	 * that is exclusively oplocked. reply_readbraw has already checked the length.
+	 */
+
+	if ((nread > 0) && (lp_write_cache_size(SNUM(conn)) == 0) &&
+			EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && lp_use_sendfile(SNUM(conn)) ) {
+		DATA_BLOB header;
+
+		_smb_setlen(outbuf,nread);
+		header.data = outbuf;
+		header.length = 4;
+		header.free = NULL;
+
+		if ( conn->vfs_ops.sendfile( smbd_server_fd(), fsp, fsp->fd, &header, startpos, nread) == -1) {
+			/*
+			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
+			 * return ENOSYS then pretend we just got a normal read.
+			 */
+			if (errno == ENOSYS)
+				goto normal_read;
+
+			DEBUG(0,("send_file_readbraw: sendfile failed for file %s (%s). Terminating\n",
+				fsp->fsp_name, strerror(errno) ));
+			exit_server("send_file_readbraw sendfile failed");
+		}
+
+	}
+
+  normal_read:
+#endif
+
+	if (nread > 0) {
+		ret = read_file(fsp,outbuf+4,startpos,nread);
+		if (ret < mincount)
+			ret = 0;
+	}
+
+	_smb_setlen(outbuf,ret);
+	if (write_data(smbd_server_fd(),outbuf,4+ret) != 4+ret)
+		fail_readraw();
+}
+
+/****************************************************************************
  Reply to a readbraw (core+ protocol).
 ****************************************************************************/
 
@@ -2179,7 +2232,6 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	size_t nread = 0;
 	SMB_OFF_T startpos;
 	char *header = outbuf;
-	ssize_t ret=0;
 	files_struct *fsp;
 	START_PROFILE(SMBreadbraw);
 
@@ -2281,15 +2333,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n", fsp->fnum, (double)startpos,
 				(int)maxcount, (int)mincount, (int)nread ) );
   
-	if (nread > 0) {
-		ret = read_file(fsp,header+4,startpos,nread);
-		if (ret < mincount)
-			ret = 0;
-	}
-
-	_smb_setlen(header,ret);
-	if (write_data(smbd_server_fd(),header,4+ret) != 4+ret)
-		fail_readraw();
+	send_file_readbraw(conn, fsp, startpos, nread, mincount, outbuf);
 
 	DEBUG(5,("readbraw finished\n"));
 	END_PROFILE(SMBreadbraw);
@@ -2419,6 +2463,93 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 }
 
 /****************************************************************************
+ Reply to a read and X - possibly using sendfile.
+****************************************************************************/
+
+int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, 
+		files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt)
+{
+	ssize_t nread = -1;
+	char *data = smb_buf(outbuf);
+
+#if defined(WITH_SENDFILE)
+	/*
+	 * We can only use sendfile on a non-chained packet and on a file
+	 * that is exclusively oplocked.
+	 */
+
+	if ((CVAL(inbuf,smb_vwv0) == 0xFF) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) &&
+			lp_use_sendfile(SNUM(conn)) && (lp_write_cache_size(SNUM(conn)) == 0) ) {
+		SMB_STRUCT_STAT sbuf;
+		DATA_BLOB header;
+
+		if(vfs_fstat(fsp,fsp->fd, &sbuf) == -1)
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+		if (startpos > sbuf.st_size)
+			goto normal_read;
+
+		if (smb_maxcnt > (sbuf.st_size - startpos))
+			smb_maxcnt = (sbuf.st_size - startpos);
+
+		if (smb_maxcnt == 0)
+			goto normal_read;
+
+		/* 
+		 * Set up the packet header before send. We
+		 * assume here the sendfile will work (get the
+		 * correct amount of data).
+		 */
+
+		SSVAL(outbuf,smb_vwv5,smb_maxcnt);
+		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
+		SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
+		SCVAL(outbuf,smb_vwv0,0xFF);
+		set_message(outbuf,12,smb_maxcnt,False);
+		header.data = outbuf;
+		header.length = data - outbuf;
+		header.free = NULL;
+
+		if ( conn->vfs_ops.sendfile( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt) == -1) {
+			/*
+			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
+			 * return ENOSYS then pretend we just got a normal read.
+			 */
+			if (errno == ENOSYS)
+				goto normal_read;
+
+			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
+				fsp->fsp_name, strerror(errno) ));
+			exit_server("send_file_readX sendfile failed");
+		}
+
+		DEBUG( 3, ( "send_file_readX: sendfile fnum=%d max=%d nread=%d\n",
+			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+		return -1;
+	}
+
+  normal_read:
+
+#endif
+
+	nread = read_file(fsp,data,startpos,smb_maxcnt);
+  
+	if (nread < 0) {
+		END_PROFILE(SMBreadX);
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
+
+	SSVAL(outbuf,smb_vwv5,nread);
+	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
+	SSVAL(smb_buf(outbuf),-2,nread);
+  
+	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
+		fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+
+	return nread;
+}
+
+/****************************************************************************
  Reply to a read and X.
 ****************************************************************************/
 
@@ -2427,7 +2558,9 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	files_struct *fsp = file_fsp(inbuf,smb_vwv2);
 	SMB_OFF_T startpos = IVAL(inbuf,smb_vwv3);
 	size_t smb_maxcnt = SVAL(inbuf,smb_vwv5);
+#if 0
 	size_t smb_mincnt = SVAL(inbuf,smb_vwv6);
+#endif
 	ssize_t nread = -1;
 	char *data;
 	START_PROFILE(SMBreadX);
@@ -2472,22 +2605,12 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		END_PROFILE(SMBreadX);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
-	nread = read_file(fsp,data,startpos,smb_maxcnt);
-  
-	if (nread < 0) {
-		END_PROFILE(SMBreadX);
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
-	}
-  
-	SSVAL(outbuf,smb_vwv5,nread);
-	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
-	SSVAL(smb_buf(outbuf),-2,nread);
-  
-	DEBUG( 3, ( "readX fnum=%d min=%d max=%d nread=%d\n",
-		fsp->fnum, (int)smb_mincnt, (int)smb_maxcnt, (int)nread ) );
+	nread = send_file_readX(conn, inbuf, outbuf, length, fsp, startpos, smb_maxcnt);
+	if (nread != -1)
+		nread = chain_reply(inbuf,outbuf,length,bufsize);
 
 	END_PROFILE(SMBreadX);
-	return chain_reply(inbuf,outbuf,length,bufsize);
+	return nread;
 }
 
 /****************************************************************************
