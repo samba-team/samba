@@ -47,9 +47,6 @@ if [ "$AUTOCONFFOUND" = "0" -o "$AUTOHEADERFOUND" = "0" ]; then
 	exit 1
 fi
 
-echo "$0: running script/mkversion.sh"
-./script/mkversion.sh || exit 1
-
 rm -rf autom4te*.cache
 
 echo "$0: running $AUTOHEADER"
