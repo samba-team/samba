@@ -34,16 +34,24 @@ RCSID("$Id$");
 #ifdef KRB4
 #include <krb.h>
 #endif
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB4)
 #include <kafs.h>
 #endif
 
 #include <roken.h>
 #include <err.h>
 
+static char login[16];
+static char userprompt[128];
+#ifdef KRB4
 static char name[ANAME_SZ];
 static char inst[INST_SZ];
 static char realm[REALM_SZ + 1];
+#endif
+#ifdef KRB5
+static krb5_context context;
+static krb5_principal client;
+#endif
 
 #define font_height(font)	  	(font->ascent + font->descent)
 
@@ -432,7 +440,6 @@ move(XtPointer _p, XtIntervalId *_id)
 static void
 post_prompt_box(Window window)
 {
-    char s[64];
     int width = (Width / 3);
     int height = font_height(font) * 6;
     int box_x, box_y;
@@ -448,11 +455,6 @@ post_prompt_box(Window window)
 
     time_y = prompt_y = Height / 2;
     box_y = prompt_y - 3 * font_height(font);
-
-    snprintf (s, sizeof(s), "User: %s%s%s@%s", name,
-	      inst[0] ? "." : "",
-	      inst[0] ? inst : "",
-	      realm);
 
     /* erase current guy -- text message may still exist */
     XSetForeground(dpy, gc, Black);
@@ -470,7 +472,8 @@ post_prompt_box(Window window)
     XDrawRectangle(dpy, window, gc, box_x+12, box_y+12, width-23, height-23);
 
     XDrawString(dpy, window, gc,
-	prompt_x, prompt_y-font_height(font), s, strlen(s));
+		prompt_x, prompt_y-font_height(font), 
+		userprompt, strlen(userprompt));
     XDrawString(dpy, window, gc, prompt_x, prompt_y, PROMPT, strlen(PROMPT));
     /* set background for copyplane and DrawImageString; need reverse video */
     XSetBackground(dpy, gc, White);
@@ -546,18 +549,11 @@ countdown(XtPointer _t, XtIntervalId *_d)
 
 #ifdef KRB5
 static int
-verify_krb5(const char *name, const char *inst, const char *realm, 
-	    const char *password)
+verify_krb5(const char *password)
 {
-    krb5_context context;
-    krb5_principal client;
     krb5_error_code ret;
     krb5_ccache id;
     
-    krb5_init_context(&context);
-    if(inst && inst[0] == 0)
-	inst = NULL;
-    krb5_make_principal(context, &client, realm, name, inst, NULL);
     krb5_cc_default(context, &id);
     ret = krb5_verify_user(context,
 			   client, 
@@ -565,17 +561,16 @@ verify_krb5(const char *name, const char *inst, const char *realm,
 			   password, 
 			   0,
 			   NULL);
-    krb5_free_principal(context, client);
     if (ret == 0){
+#ifdef KRB4
 	if (k_hasafs())
 	    krb5_afslog(context, id, NULL, NULL);
-	krb5_free_context(context);
+#endif
 	return 0;
     }
-    if (ret != INTK_BADPW)
+    if (ret != KRB5KRB_AP_ERR_MODIFIED)
 	krb5_warn(context, ret, "verify_krb5");
     
-    krb5_free_context(context);
     return -1;
 }
 #endif
@@ -617,17 +612,18 @@ verify(char *password)
     /*
      * Try to verify as user in case password change.
      */
-    if (unix_verify_user(name, password) == 0)
+    if (unix_verify_user(login, password) == 0)
 	return 0;
 
 #ifdef KRB5
     /*
      * Try to verify as user with kerberos 5.
      */
-    if(verify_krb5(name, inst, realm, password) == 0)
+    if(verify_krb5(password) == 0)
 	return 0;
 #endif
 
+#ifdef KRB4
     /*
      * Try to verify as user with kerberos 4.
      */
@@ -640,6 +636,7 @@ verify(char *password)
     if (ret != INTK_BADPW)
 	warnx ("warning: %s",
 	       (ret < 0) ? strerror(ret) : krb_get_err_text(ret));
+#endif
     
     return -1;
 }
@@ -932,6 +929,8 @@ main (int argc, char **argv)
       strcpy(user_cpass, pw->pw_passwd);
       setuid(getuid());
       /* Now we're no longer running setuid root. */
+      strncpy(login, pw->pw_name, sizeof(login));
+      login[sizeof(login) - 1] = '\0';
     }
 
     srand(getpid());
@@ -940,7 +939,22 @@ main (int argc, char **argv)
 
     locked_at = time(0);
 
+    snprintf(userprompt, sizeof(userprompt), "User: %s", login);
+#ifdef KRB4
     krb_get_default_principal(name, inst, realm);
+    snprintf(userprompt, sizeof(userprompt), "User: %s", 
+	     krb_unparse_name_long(name, inst, realm));
+#endif
+#ifdef KRB5
+    {
+	char *str;
+	krb5_init_context(&context);
+	krb5_get_default_principal(context, &client);
+	krb5_unparse_name(context, client, &str);
+	snprintf(userprompt, sizeof(userprompt), "User: %s", str);
+	free(str);
+    }
+#endif
 
     override = XtVaAppInitialize(&app, "XNlock", options, XtNumber(options),
 				 (Cardinal*)&argc, argv, NULL, 
@@ -955,8 +969,10 @@ main (int argc, char **argv)
     White = appres.fg;
 
     if (appres.destroytickets) {
+#ifdef KRB4
         dest_tkt();		/* Nuke old ticket file */
 	creat(TKT_FILE, 0600);	/* but keep a place holder */
+#endif
     }
 
     dpy = XtDisplay(override);
@@ -1051,3 +1067,4 @@ main (int argc, char **argv)
     XtAppMainLoop(app);
     exit(0);
 }
+
