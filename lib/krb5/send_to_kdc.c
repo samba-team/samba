@@ -300,7 +300,7 @@ send_via_proxy (krb5_context context,
 }
 
 /*
- * Send the data `send' to one KDC in `realm' and get back the reply
+ * Send the data `send' to one hots in `hostlist' and get back the reply
  * in `receive'.
  */
 
@@ -412,6 +412,9 @@ krb5_sendto_kdc2(krb5_context context,
 	return ret;
     ret = krb5_sendto(context, send, hostlist, port, receive);
     krb5_free_krbhst (context, hostlist);
+    if (ret == KRB5_KDC_UNREACH)
+	krb5_set_error_string(context,
+			      "unable to reach any KDC in realm %s", *realm);
     return ret;
 }
 
