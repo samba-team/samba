@@ -311,7 +311,7 @@ BOOL generate_sam_sid(char *domain_name)
 	}
 
 	if (!directory_exist(sid_file, NULL)) {
-		if (dos_mkdir(sid_file, 0700) != 0) {
+		if (mkdir(sid_file, 0700) != 0) {
 			DEBUG(0,("can't create private directory %s : %s\n",
 				 sid_file, strerror(errno)));
 			return False;
