@@ -1,11 +1,6 @@
-//#include "des_locl.h"
+#include "des_locl.h"
 
-#ifndef RETSIGTYPE
-#include <des.h>
-#define RETSIGTYPE void
-#else
 RCSID("$Id$");
-#endif
 
 #include <time.h>
 #include <signal.h>
