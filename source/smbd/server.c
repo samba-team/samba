@@ -626,11 +626,11 @@ static void usage(char *pname)
 		exit(1);
 	}
 
-	init_structs();
-	
 	if (!reload_services(False))
 		return(-1);	
 
+	init_structs();
+	
 #ifdef WITH_SSL
 	{
 		extern BOOL sslEnabled;
