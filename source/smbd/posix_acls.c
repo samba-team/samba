@@ -439,7 +439,8 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		sid_copy(&owner_sid, psd->owner_sid);
 		if (!sid_to_uid( &owner_sid, puser, &sid_type)) {
-			DEBUG(3,("unpack_nt_owners: unable to validate owner sid.\n"));
+			DEBUG(3,("unpack_nt_owners: unable to validate owner sid for %s\n",
+				 sid_string_static(&owner_sid)));
 			return False;
 		}
  	}
