@@ -20,16 +20,6 @@ key_proc (krb5_context context,
     return 0;
 }
 
-int
-extract_ticket(krb5_context context, 
-	 krb5_kdc_rep *rep, 
-	 krb5_creds *creds,		
-	 krb5_key_proc key_proc,
-	 krb5_const_pointer keyseed,
-	 krb5_decrypt_proc decrypt_proc,
-	 krb5_const_pointer decryptarg);
-
-
 krb5_error_code
 krb5_get_credentials (krb5_context context,
 		      krb5_flags options,
@@ -206,8 +196,9 @@ krb5_get_credentials (krb5_context context,
 	len = decode_TGS_REP(resp.data, resp.length, &rep.part1);
 	if(len < 0)
 	    return ASN1_PARSE_ERROR;
-	err = extract_ticket(context, &rep, *out_creds, key_proc, 
+	err = extract_ticket(context, &rep, *out_creds,
 			     &(*out_creds)->session,
+			     NULL,
 			     NULL,
 			     NULL);
 	if(err)
