@@ -169,34 +169,6 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 }
 
 /********************************************************************
- Periodically we need to refresh the trusted domain cache for smbd 
-********************************************************************/
-
-void rescan_trusted_domains( void )
-{
-	time_t now = time(NULL);
-	struct winbindd_domain *mydomain = NULL;
-	
-	/* see if the time has come... */
-	
-	if ( (now > last_trustdom_scan) && ((now-last_trustdom_scan) < WINBINDD_RESCAN_FREQ) )
-		return;
-		
-	if ( (mydomain = find_our_domain()) == NULL ) {
-		DEBUG(0,("rescan_trusted_domains: Can't find my own domain!\n"));
-		return;
-	}
-	
-	/* this will only add new domains we didn't already know about */
-	
-	add_trusted_domains( mydomain );
-
-	last_trustdom_scan = now;
-	
-	return;	
-}
-
-/********************************************************************
   rescan our domains looking for new trusted domains
 ********************************************************************/
 
@@ -269,6 +241,34 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	}
 
 	talloc_destroy(mem_ctx);
+}
+
+/********************************************************************
+ Periodically we need to refresh the trusted domain cache for smbd 
+********************************************************************/
+
+void rescan_trusted_domains( void )
+{
+	time_t now = time(NULL);
+	struct winbindd_domain *mydomain = NULL;
+	
+	/* see if the time has come... */
+	
+	if ( (now > last_trustdom_scan) && ((now-last_trustdom_scan) < WINBINDD_RESCAN_FREQ) )
+		return;
+		
+	if ( (mydomain = find_our_domain()) == NULL ) {
+		DEBUG(0,("rescan_trusted_domains: Can't find my own domain!\n"));
+		return;
+	}
+	
+	/* this will only add new domains we didn't already know about */
+	
+	add_trusted_domains( mydomain );
+
+	last_trustdom_scan = now;
+	
+	return;	
 }
 
 /* Look up global info for the winbind daemon */
