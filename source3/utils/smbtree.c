@@ -90,10 +90,12 @@ static struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip
 /* Return the IP address and workgroup of a master browser on the 
    network. */
 
-static BOOL find_master_ip_bcast(pstring workgroup, struct in_addr *server_ip)
+static struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user_auth_info *user_info)
 {
 	struct in_addr *ip_list;
+	struct cli_state *cli;
 	int i, count;
+	struct in_addr server_ip; 
 
         /* Go looking for workgroups by broadcasting on the local network */ 
 
@@ -107,7 +109,7 @@ static BOOL find_master_ip_bcast(pstring workgroup, struct in_addr *server_ip)
 		if (!name_status_find("*", 0, 0x1d, ip_list[i], name))
 			continue;
 
-                if (!find_master_ip(name, server_ip))
+                if (!find_master_ip(name, &server_ip))
 			continue;
 
                 pstrcpy(workgroup, name);
@@ -115,10 +117,13 @@ static BOOL find_master_ip_bcast(pstring workgroup, struct in_addr *server_ip)
                 DEBUG(4, ("found master browser %s, %s\n", 
                           name, inet_ntoa(ip_list[i])));
 
-                return True;
+        	if (!(cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info)))
+				continue;
+			
+			return cli;
 	}
 
-	return False;
+	return NULL;
 }
 
 /****************************************************************************
@@ -136,18 +141,20 @@ static BOOL get_workgroups(struct user_auth_info *user_info)
 
 	pstrcpy(master_workgroup, lp_workgroup());
 
-        if (use_bcast || !find_master_ip(lp_workgroup(), &server_ip)) {
-                DEBUG(4, ("Unable to find master browser for workgroup %s\n", 
+        if (!use_bcast && !find_master_ip(lp_workgroup(), &server_ip)) {
+                DEBUG(4, ("Unable to find master browser for workgroup %s, falling back to broadcast\n", 
 			  master_workgroup));
-		if (!find_master_ip_bcast(master_workgroup, &server_ip)) {
+				use_bcast = True;
+		} else if(!use_bcast) {
+        	if (!(cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info)))
+				return False;
+		}
+		
+		if (!(cli = get_ipc_connect_master_ip_bcast(master_workgroup, user_info))) {
 			DEBUG(4, ("Unable to find master browser by "
 				  "broadcast\n"));
 			return False;
-		}
         }
-
-        if (!(cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info)))
-                return False;
 
         if (!cli_NetServerEnum(cli, master_workgroup, 
                                SV_TYPE_DOMAIN_ENUM, add_name, &workgroups))
