@@ -244,6 +244,7 @@ typedef struct
 	BOOL bUpdateEncrypt;
 	BOOL bStripDot;
 	BOOL bNullPasswords;
+	BOOL bObeyPamRestrictions;
 	BOOL bLoadPrinters;
 	BOOL bUseRhosts;
 	BOOL bReadRaw;
@@ -672,6 +673,7 @@ static struct parm_struct parm_table[] = {
 	{"min password length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, 0},
 	{"map to guest", P_ENUM, P_GLOBAL, &Globals.map_to_guest, NULL, enum_map_to_guest, 0},
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, 0},
+	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, 0},
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, 0},
 /* #ifdef WITH_TDBPWD
 	{"tdb passwd file", P_STRING, P_GLOBAL, &Globals.szTDBPasswdFile, NULL, NULL, 0},
@@ -1236,6 +1238,7 @@ static void init_globals(void)
 	Globals.bReadPrediction = False;
 	Globals.bReadbmpx = False;
 	Globals.bNullPasswords = False;
+	Globals.bObeyPamRestrictions = False;
 	Globals.bStripDot = False;
 	Globals.syslog = 1;
 	Globals.bSyslogOnly = False;
@@ -1511,6 +1514,7 @@ FN_GLOBAL_BOOL(lp_readbmpx, &Globals.bReadbmpx)
 FN_GLOBAL_BOOL(lp_readraw, &Globals.bReadRaw)
 FN_GLOBAL_BOOL(lp_writeraw, &Globals.bWriteRaw)
 FN_GLOBAL_BOOL(lp_null_passwords, &Globals.bNullPasswords)
+FN_GLOBAL_BOOL(lp_obey_pam_restrictions, &Globals.bObeyPamRestrictions)
 FN_GLOBAL_BOOL(lp_strip_dot, &Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords, &Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_update_encrypted, &Globals.bUpdateEncrypt)

@@ -1677,6 +1677,7 @@ BOOL lp_readbmpx(void);
 BOOL lp_readraw(void);
 BOOL lp_writeraw(void);
 BOOL lp_null_passwords(void);
+BOOL lp_obey_pam_restrictions(void);
 BOOL lp_strip_dot(void);
 BOOL lp_encrypted_passwords(void);
 BOOL lp_update_encrypted(void);
