@@ -769,13 +769,6 @@ BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 			int name_idx = 0;
 
 			*num_sam_users = r_e.num_entries2;
-			if (*num_sam_users > MAX_SAM_ENTRIES)
-			{
-				*num_sam_users = MAX_SAM_ENTRIES;
-				DEBUG(2,("samr_enum_dom_users: sam user entries limited to %d\n",
-				          *num_sam_users));
-			}
-
 			*sam = (struct acct_info*) malloc(sizeof(struct acct_info) * (*num_sam_users));
 				    
 			if ((*sam) == NULL)
@@ -797,6 +790,15 @@ BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 				          i, (*sam)[i].rid, (*sam)[i].acct_name));
 			}
 			valid_pol = True;
+		}
+
+		if (r_e.sam != NULL)
+		{
+			free(r_e.sam);
+		}
+		if (r_e.uni_acct_name != NULL)
+		{
+			free(r_e.uni_acct_name);
 		}
 	}
 

@@ -535,8 +535,8 @@ typedef struct r_samr_enum_dom_users_info
 
 	uint32 num_entries3;
 
-	SAM_ENTRY sam[MAX_SAM_ENTRIES];
-	UNISTR2 uni_acct_name[MAX_SAM_ENTRIES];
+	SAM_ENTRY *sam;
+	UNISTR2 *uni_acct_name;
 
 	uint32 num_entries4;
 
