@@ -13,6 +13,7 @@ start a secure remote xterm
 .Op Fl k
 .Op Fl r Ar rsh_args
 .Op Fl x Ar xterm_args
+.Op Fl K Ar kx_args
 .Op Fl w Ar term_emulator
 .Op Fl b Ar rsh_program
 .Ar host
@@ -46,6 +47,11 @@ Send
 .Ar xterm_args
 as arguments to
 .Nm xterm
+.It Fl X
+Send
+.Ar kx_args
+as arguments to
+.Nm kx
 .It Fl w
 Use
 .Ar term_emulator
