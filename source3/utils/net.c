@@ -352,6 +352,7 @@ static struct functable net_func[] = {
 	{"TIME", net_time},
 	{"LOOKUP", net_lookup},
 	{"JOIN", net_join},
+	{"CACHE", net_cache},
 
 	{"HELP", net_help},
 	{NULL, NULL}

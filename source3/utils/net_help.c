@@ -135,6 +135,7 @@ static int net_usage(int argc, const char **argv)
 		 "  net user\t\tto manage users\n"\
 		 "  net group\t\tto manage groups\n"\
 		 "  net join\t\tto join a domain\n"\
+		 "  net cache\t\tto operate on cache tdb file\n"\
 		 "\n"\
 		 "  net ads <command>\tto run ADS commands\n"\
 		 "  net rap <command>\tto run RAP (pre-RPC) commands\n"\
