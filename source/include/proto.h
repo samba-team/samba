@@ -1670,6 +1670,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
 /*The following definitions come from  smbd/dfree.c  */
 
+SMB_BIG_UINT sys_disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
 
 /*The following definitions come from  smbd/dir.c  */
 
