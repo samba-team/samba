@@ -74,14 +74,14 @@ static void signal_handler(int signal, siginfo_t *info, void *unused)
 
 /****************************************************************************
  Check if a change notify should be issued.
- time zero means instantaneous check (used for hash). Ignore this (normal method
- will be used instead).
+ time non-zero means timeout check (used for hash). Ignore this (async method
+ where time is zero will be used instead).
 *****************************************************************************/
 static BOOL kernel_check_notify(connection_struct *conn, uint16 vuid, char *path, uint32 flags, void *datap, time_t t)
 {
 	struct change_data *data = (struct change_data *)datap;
 
-	if (!t)
+	if (t)
 		return False;
 
 	if (data->directory_handle != (int)fd_pending) return False;
