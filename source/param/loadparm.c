@@ -554,7 +554,6 @@ static BOOL handle_source_env(const char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(const char *pszParmValue, char **ptr);
 static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr);
 static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr);
-static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( const char *pszParmValue, char **ptr );
 static BOOL handle_workgroup( const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_aliases( const char *pszParmValue, char **ptr );
@@ -763,7 +762,6 @@ static struct parm_struct parm_table[] = {
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.bAlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1420,7 +1418,7 @@ static void init_globals(void)
 #ifdef WITH_LDAP_SAMCONFIG
 	string_set(&Globals.szLdapServer, "localhost");
 	Globals.ldap_port = 636;
-	Globals.szPassdbBackend = str_list_make("ldapsam guest", NULL);
+	Globals.szPassdbBackend = str_list_make("ldapsam_compat guest", NULL);
 #else
 	Globals.szPassdbBackend = str_list_make("smbpasswd guest", NULL);
 #endif /* WITH_LDAP_SAMCONFIG */
@@ -2856,7 +2854,7 @@ static BOOL handle_copy(const char *pszParmValue, char **ptr)
 }
 
 /***************************************************************************
- Handle winbind/non unix account uid and gid allocation parameters.  The format of these
+ Handle winbind uid and gid allocation parameters.  The format of these
  parameters is:
 
  [global]
@@ -2873,7 +2871,6 @@ static BOOL handle_copy(const char *pszParmValue, char **ptr)
 
 static uid_t winbind_uid_low, winbind_uid_high;
 static gid_t winbind_gid_low, winbind_gid_high;
-static uint32 non_unix_account_low, non_unix_account_high;
 
 BOOL lp_winbind_uid(uid_t *low, uid_t *high)
 {
@@ -2899,20 +2896,6 @@ BOOL lp_winbind_gid(gid_t *low, gid_t *high)
 
         if (high)
                 *high = winbind_gid_high;
-
-        return True;
-}
-
-BOOL lp_non_unix_account_range(uint32 *low, uint32 *high)
-{
-        if (non_unix_account_low == 0 || non_unix_account_high == 0)
-                return False;
-
-        if (low)
-                *low = non_unix_account_low;
-
-        if (high)
-                *high = non_unix_account_high;
 
         return True;
 }
@@ -2949,27 +2932,6 @@ static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr)
 
         winbind_gid_low = low;
         winbind_gid_high = high;
-
-	return True;
-}
-
-/***************************************************************************
- Do some simple checks on "non unix account range" parameter values.
-***************************************************************************/
-
-static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr)
-{
-	uint32 low, high;
-
-	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
-		return False;
-
-	/* Parse OK */
-
-	string_set(ptr, pszParmValue);
-
-        non_unix_account_low = low;
-        non_unix_account_high = high;
 
 	return True;
 }

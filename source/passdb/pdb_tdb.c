@@ -978,8 +978,8 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 
 	tdb_state->permit_non_unix_accounts = True;
 
-	if (!lp_non_unix_account_range(&low_nua_uid, &high_nua_uid)) {
-		DEBUG(0, ("cannot use tdbsam_nua without 'non unix account range' in smb.conf!\n"));
+	if (!lp_winbind_uid(&low_nua_uid, &high_nua_uid)) {
+		DEBUG(0, ("cannot use tdbsam_nua without 'winbind uid' range in smb.conf!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
