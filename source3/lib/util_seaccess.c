@@ -146,7 +146,7 @@ static BOOL check_ace(SEC_ACE *ace, BOOL is_owner, DOM_SID *sid,
 				if (ace_grant(mask, acc_desired, 
 					      acc_granted)) {
 					*status = NT_STATUS_NO_PROBLEMO;
-					DEBUG(3, ("access granted\n"));
+					DEBUG(3, ("access granted by ace\n"));
 					return True;
 				}
 			}
@@ -168,7 +168,7 @@ static BOOL check_ace(SEC_ACE *ace, BOOL is_owner, DOM_SID *sid,
 				if (ace_deny(mask, acc_desired, 
 					     acc_granted)) {
 					*status = NT_STATUS_ACCESS_DENIED;
-					DEBUG(3, ("access denied\n"));
+					DEBUG(3, ("access denied by ace\n"));
 					return True;
 				}
 			}
@@ -204,9 +204,8 @@ static BOOL check_ace(SEC_ACE *ace, BOOL is_owner, DOM_SID *sid,
    or more ACEs explicitly grant all requested access rights.  See
    "Access-Checking" document in MSDN. */ 
 
-BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
-		     gid_t *groups, uint32 acc_desired, 
-		     uint32 *acc_granted, uint32 *status)
+BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
+		     uint32 acc_desired, uint32 *acc_granted, uint32 *status)
 {
 	DOM_SID user_sid, group_sid;
 	DOM_SID **group_sids = NULL;
@@ -214,6 +213,7 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 	uint ngroup_sids = 0;
 	SEC_ACL *acl;
 	uint8 check_ace_type;
+	fstring sid_str;
 
 	if (!status || !acc_granted) return False;
 
@@ -226,6 +226,7 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 		*status = NT_STATUS_NOPROBLEMO;
 		*acc_granted = acc_desired;
 		acc_desired = 0;
+		DEBUG(3, ("no sd, access allowed\n"));
 
                 goto done;
 	}
@@ -245,9 +246,12 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 
 	/* Create user sid */
 
-	if (!winbind_uid_to_sid(uid, &user_sid)) {
-		DEBUG(3, ("could not lookup sid for uid %d\n", uid));
+	if (!winbind_uid_to_sid(user->uid, &user_sid)) {
+		DEBUG(3, ("could not lookup sid for uid %d\n", user->uid));
 	}
+
+	sid_to_string(sid_str, &user_sid);
+	DEBUG(3, ("user sid is %s\n", sid_str));
 
 	/* If we're the owner, then we can do anything */
 
@@ -255,23 +259,27 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 		*status = NT_STATUS_NOPROBLEMO;
 		*acc_granted = acc_desired;
 		acc_desired = 0;
+		DEBUG(3, ("is owner, access allowed\n"));
 
                 goto done;
 	}
 
 	/* Create group sid */
 
-	if (!winbind_gid_to_sid(gid, &group_sid)) {
-		DEBUG(3, ("could not lookup sid for gid %d\n", gid));
+	if (!winbind_gid_to_sid(user->gid, &group_sid)) {
+		DEBUG(3, ("could not lookup sid for gid %d\n", user->gid));
 	}
+
+	sid_to_string(sid_str, &group_sid);
+	DEBUG(3, ("group sid is %s\n", sid_str));
 
 	/* Create array of group sids */
 
 	add_sid_to_array(&ngroup_sids, &group_sids, &group_sid);
 
-	for (i = 0; i < ngroups; i++) {
-		if (groups[i] != gid) {
-			if (winbind_gid_to_sid(groups[i], &group_sid)) {
+	for (i = 0; i < user->ngroups; i++) {
+		if (user->groups[i] != user->gid) {
+			if (winbind_gid_to_sid(user->groups[i], &group_sid)) {
 
 				/* If we're a group member then we can also
 				   do anything */
@@ -280,6 +288,8 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 					*status = NT_STATUS_NOPROBLEMO;
 					*acc_granted = acc_desired;
 					acc_desired = 0;
+					DEBUG(3, ("is group member "
+						  "access allowed\n"));
 
 					goto done;
 				}
@@ -288,8 +298,11 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 						 &group_sid);
 			} else {
 				DEBUG(3, ("could not lookup sid for gid %d\n", 
-					  gid));
+					  user->gid));
 			}
+
+			sid_to_string(sid_str, &group_sid);
+			DEBUG(3, ("supplementary group %s\n", sid_str));
 		}
 	}
 
@@ -305,6 +318,7 @@ BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
 		*status = NT_STATUS_NOPROBLEMO;
 		*acc_granted = acc_desired;
 		acc_desired = 0;
+		DEBUG(3, ("null ace, access allowed\n"));
 
                 goto done;
         }
