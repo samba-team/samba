@@ -223,7 +223,7 @@ int event_loop_once(struct event_context *ev)
 	struct loop_event *le;
 	struct timed_event *te, *te_next;
 	int selrtn;
-	struct timeval tval, t;
+	struct timeval tval, t, *tvalp=NULL;
 	uint32_t destruction_count = ev->destruction_count;
 
 	t = timeval_current();
@@ -264,13 +264,13 @@ int event_loop_once(struct event_context *ev)
 			talloc_free(te);
 			continue;
 		}
-
 		tv = timeval_diff(&te->next_event, &t);
-		if (timeval_is_zero(&tval)) {
+		if (tvalp == NULL) {
 			tval = tv;
 		} else {
 			tval = timeval_min(&tv, &tval);
 		}
+		tvalp = &tval;
 	}
 
 	/* only do a select() if there're fd_events
@@ -290,11 +290,7 @@ int event_loop_once(struct event_context *ev)
 		 * sys_select() with something in the events
 		 * structure - for now just use select() 
 		 */
-		if (timeval_is_zero(&tval)) {
-			selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, NULL);
-		} else {
-			selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, &tval);
-		}
+		selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
 		
 		t = timeval_current();
 		
