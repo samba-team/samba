@@ -239,6 +239,118 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
 	return (ssize_t)total;
 }
 
+/****************************************************************************
+ Check the timeout. 
+****************************************************************************/
+
+static BOOL timeout_until(struct timeval *timeout,
+			  const struct timeval *endtime)
+{
+	struct timeval now;
+
+	GetTimeOfDay(&now);
+
+	if ((now.tv_sec > endtime->tv_sec) ||
+	    ((now.tv_sec == endtime->tv_sec) &&
+	     (now.tv_usec > endtime->tv_usec)))
+		return False;
+
+	timeout->tv_sec = endtime->tv_sec - now.tv_sec;
+	timeout->tv_usec = endtime->tv_usec - now.tv_usec;
+	return True;
+}
+
+
+/****************************************************************************
+ Read data from the client, reading exactly N bytes, with timeout. 
+****************************************************************************/
+
+ssize_t read_data_until(int fd,char *buffer,size_t N,
+			const struct timeval *endtime)
+{
+	ssize_t ret;
+	size_t total=0;  
+ 
+	smb_read_error = 0;
+
+	while (total < N) {
+
+		if (endtime != NULL) {
+			fd_set r_fds;
+			struct timeval timeout;
+			int res;
+
+			FD_ZERO(&r_fds);
+			FD_SET(fd, &r_fds);
+
+			if (!timeout_until(&timeout, endtime))
+				return -1;
+
+			res = sys_select(fd+1, &r_fds, NULL, NULL, &timeout);
+			if (res <= 0)
+				return -1;
+		}
+
+		ret = sys_read(fd,buffer + total,N - total);
+
+		if (ret == 0) {
+			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_EOF;
+			return 0;
+		}
+
+		if (ret == -1) {
+			DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
+}
+
+/****************************************************************************
+ Write data to a fd with timeout.
+****************************************************************************/
+
+ssize_t write_data_until(int fd,char *buffer,size_t N,
+			 const struct timeval *endtime)
+{
+	size_t total=0;
+	ssize_t ret;
+
+	while (total < N) {
+
+		if (endtime != NULL) {
+			fd_set w_fds;
+			struct timeval timeout;
+			int res;
+
+			FD_ZERO(&w_fds);
+			FD_SET(fd, &w_fds);
+
+			if (!timeout_until(&timeout, endtime))
+				return -1;
+
+			res = sys_select(fd+1, NULL, &w_fds, NULL, &timeout);
+			if (res <= 0)
+				return -1;
+		}
+
+		ret = sys_write(fd,buffer + total,N - total);
+
+		if (ret == -1) {
+			DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0)
+			return total;
+
+		total += ret;
+	}
+	return (ssize_t)total;
+}
+
 
 /****************************************************************************
 send a keepalive packet (rfc1002)
