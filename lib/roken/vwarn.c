@@ -46,5 +46,5 @@ RCSID("$Id$");
 void
 vwarn(const char *fmt, va_list ap)
 {
-    warnerr(0, 0, 1, fmt, ap);
+    warnerr(1, fmt, ap);
 }

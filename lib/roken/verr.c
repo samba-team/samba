@@ -46,5 +46,6 @@ RCSID("$Id$");
 void
 verr(int eval, const char *fmt, va_list ap)
 {
-    warnerr(1, eval, 1, fmt, ap);
+    warnerr(1, fmt, ap);
+    exit(eval);
 }

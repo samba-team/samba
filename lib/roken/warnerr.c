@@ -65,7 +65,7 @@ set_progname(char *argv0)
 }
 
 void
-warnerr(int doexit, int eval, int doerrno, const char *fmt, va_list ap)
+warnerr(int doerrno, const char *fmt, va_list ap)
 {
     int sverrno = errno;
     if(__progname != NULL){
@@ -81,6 +81,4 @@ warnerr(int doexit, int eval, int doerrno, const char *fmt, va_list ap)
     if(doerrno)
 	fprintf(stderr, "%s", strerror(sverrno));
     fprintf(stderr, "\n");
-    if(doexit)
-	exit(eval);
 }
