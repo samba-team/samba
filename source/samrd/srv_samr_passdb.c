@@ -31,7 +31,6 @@
 	BOOL samr_open_alias(  const POLICY_HND *domain_pol,
 					uint32 flags, uint32 rid,
 					POLICY_HND *alias_pol);
-	BOOL samr_del_aliasmem(  POLICY_HND *alias_pol, DOM_SID *sid);
 	BOOL samr_delete_dom_alias(  POLICY_HND *alias_pol);
 	uint32 samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
 					uint32 unk_0, uint32 unk_1,
@@ -533,22 +532,19 @@ uint32 _samr_add_aliasmem(POLICY_HND *alias_pol, DOM_SID *sid)
 	return status;
 }
 
-#if 0
 /*******************************************************************
  samr_reply_del_aliasmem
  ********************************************************************/
-uint32 _samr_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u,
-				prs_struct *rdata)
+uint32 _samr_del_aliasmem(POLICY_HND *alias_pol, DOM_SID *sid)
 {
-	SAMR_R_DEL_ALIASMEM r_e;
 	DOM_SID alias_sid;
 	uint32 alias_rid;
 	fstring alias_sid_str;
 
-	status = 0x0;
+	uint32 status = 0x0;
 
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &alias_pol, &alias_sid))
+	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), alias_pol, &alias_sid))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -566,13 +562,13 @@ uint32 _samr_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u,
 		{
 			DEBUG(10,("del member on Domain SID\n"));
 
-			status = del_alias_member(alias_rid, &sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
+			status = del_alias_member(alias_rid, sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 		}
 		else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
 		{
 			DEBUG(10,("del member on BUILTIN SID\n"));
 
-			status = del_builtin_member(alias_rid, &sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
+			status = del_builtin_member(alias_rid, sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
 		}
 		else
 		{
@@ -580,12 +576,10 @@ uint32 _samr_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u,
 		}
 	}
 
-	/* store the response in the SMB stream */
-	samr_io_r_del_aliasmem("", &r_e, rdata, 0);
-
-	DEBUG(5,("samr_del_aliasmem: %d\n", __LINE__));
+	return status;
 }
 
+#if 0
 /*******************************************************************
  samr_reply_enum_domains
  ********************************************************************/
