@@ -189,11 +189,10 @@ struct nmb_data
   time_t refresh_time; /* The time the record should be refreshed. */
 };
 
-/* This is the structure used for the local netbios name list. */
+/* This structure represents an entry in a local netbios name list. */
 struct name_record
   {
   ubi_trNode            node[1];
-
   struct subnet_record *subnet;
   struct nmb_name       name;    /* The netbios name. */
   struct nmb_data       data;    /* The netbios data. */
@@ -201,16 +200,14 @@ struct name_record
 
 /* Browser cache for synchronising browse lists. */
 struct browse_cache_record
-{
-  struct browse_cache_record *next;
-  struct browse_cache_record *prev;
-
-  pstring lmb_name;
-  pstring work_group;
+  {
+  ubi_dlNode     node[1];
+  pstring        lmb_name;
+  pstring        work_group;
   struct in_addr ip;
-  time_t sync_time;
-  time_t death_time; /* The time the record must be removed. */
-};
+  time_t         sync_time;
+  time_t         death_time; /* The time the record must be removed. */
+  };
 
 /* This is used to hold the list of servers in my domain, and is
    contained within lists of domains. */

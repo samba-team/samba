@@ -215,7 +215,9 @@ void dmb_expire_and_sync_browser_lists(time_t t)
 
   expire_lmb_browsers(t);
 
-  for (browc = lmb_browserlist; browc; browc = browc->next)
+  for( browc = (struct browse_cache_record *)ubi_dlFirst( lmb_browserlist );
+       browc;
+       browc = (struct browse_cache_record *)ubi_dlNext( browc ) )
   {
     if (browc->sync_time < t)
       sync_with_lmb(browc);
