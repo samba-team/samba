@@ -58,6 +58,7 @@ typedef struct
 	share_mode_entry e;
 } shm_share_mode_entry;
 
+static int read_only;
 
 /*******************************************************************
   deinitialize the shared memory for share_mode management 
@@ -715,17 +716,21 @@ static struct share_ops share_ops = {
 /*******************************************************************
   initialize the shared memory for share_mode management 
   ******************************************************************/
-struct share_ops *locking_shm_init(void)
+struct share_ops *locking_shm_init(int ronly)
 {
 	pstring shmem_file_name;
+
+	read_only = ronly;
    
 	pstrcpy(shmem_file_name,lp_lockdir());
-	if (!directory_exist(shmem_file_name,NULL))
+	if (!directory_exist(shmem_file_name,NULL)) {
+		if (read_only) return NULL;
 		mkdir(shmem_file_name,0755);
+	}
 	trim_string(shmem_file_name,"","/");
 	if (!*shmem_file_name) return(False);
 	strcat(shmem_file_name, "/SHARE_MEM_FILE");
-	if (smb_shm_open(shmem_file_name, lp_shmem_size()))
+	if (smb_shm_open(shmem_file_name, lp_shmem_size(), read_only))
 		return &share_ops;
 	return NULL;
 }

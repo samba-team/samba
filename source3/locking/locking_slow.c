@@ -58,6 +58,14 @@ extern files_struct Files[];
 #define SME_PORT_OFFSET 16
 #define SME_OPLOCK_TYPE_OFFSET 18
 
+/* we need world read for smbstatus to function correctly */
+#ifdef SECURE_SHARE_MODES
+#define SHARE_FILE_MODE 0600
+#else
+#define SHARE_FILE_MODE 0644
+#endif
+
+static int read_only;
 
 /*******************************************************************
   deinitialize share_mode management 
@@ -87,6 +95,8 @@ Force a share file to be deleted.
 ********************************************************************/
 static int delete_share_file( int cnum, char *fname )
 {
+  if (read_only) return -1;
+
   /* the share file could be owned by anyone, so do this as root */
   become_root(False);
 
@@ -120,14 +130,13 @@ static BOOL slow_lock_share_entry(int cnum, uint32 dev, uint32 inode, int *ptok)
   if(!share_name(cnum, dev, inode, fname))
     return False;
 
+  if (read_only) return True;
+
   /* we need to do this as root */
   become_root(False);
 
   {
-    int old_umask;
     BOOL gotlock = False;
-    old_umask = umask(0);
-
     /*
      * There was a race condition in the original slow share mode code.
      * A smbd could open a share mode file, and before getting
@@ -147,11 +156,8 @@ static BOOL slow_lock_share_entry(int cnum, uint32 dev, uint32 inode, int *ptok)
     {
       struct stat dummy_stat;
 
-#ifdef SECURE_SHARE_MODES
-      fd = (int)open(fname,O_RDWR|O_CREAT,0600);
-#else /* SECURE_SHARE_MODES */
-      fd = (int)open(fname,O_RDWR|O_CREAT,0666);
-#endif /* SECURE_SHARE_MODES */
+      fd = (int)open(fname,read_only?O_RDONLY:(O_RDWR|O_CREAT),
+		     SHARE_FILE_MODE);
 
       if(fd < 0)
       {
@@ -192,8 +198,6 @@ static BOOL slow_lock_share_entry(int cnum, uint32 dev, uint32 inode, int *ptok)
      * as we don't want to return and leave ourselves running
      * as root !
      */
-
-    umask(old_umask);
   }
 
   *ptok = (int)fd;
@@ -213,6 +217,8 @@ static BOOL slow_unlock_share_entry(int cnum, uint32 dev, uint32 inode, int toke
   int ret = True;
   struct stat sb;
   pstring fname;
+
+  if (read_only) return True;
 
   /* Fix for zero length share files from
      Gerald Werner <wernerg@mfldclin.edu> */
@@ -959,13 +965,14 @@ static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 		strcat(lname,"/");
 		strcat(lname,s);
        
-		fd = open(lname,O_RDWR,0);
+		fd = open(lname,read_only?O_RDONLY:O_RDWR,0);
 		if (fd < 0) {
 			continue;
 		}
 
 		/* Lock the share mode file while we read it. */
-		if(fcntl_lock(fd, F_SETLKW, 0, 1, F_WRLCK) == False) {
+		if(!read_only &&
+		   fcntl_lock(fd, F_SETLKW, 0, 1, F_WRLCK) == False) {
 			close(fd);
 			continue;
 		}
@@ -1027,10 +1034,14 @@ static struct share_ops share_ops = {
 /*******************************************************************
   initialize the slow share_mode management 
   ******************************************************************/
-struct share_ops *locking_slow_init(void)
+struct share_ops *locking_slow_init(int ronly)
 {
+
+	read_only = ronly;
+
 	if (!directory_exist(lp_lockdir(),NULL)) {
-		mkdir(lp_lockdir(),0755);
+		if (!read_only)
+			mkdir(lp_lockdir(),0755);
 		if (!directory_exist(lp_lockdir(),NULL))
 			return NULL;
 	}

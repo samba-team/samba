@@ -111,17 +111,17 @@ BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *
 /****************************************************************************
   initialise the locking functions
 ****************************************************************************/
-BOOL locking_init(void)
+BOOL locking_init(int read_only)
 {
 #ifdef FAST_SHARE_MODES
-	share_ops = locking_shm_init();
+	share_ops = locking_shm_init(read_only);
 	if (!share_ops) {
 		DEBUG(0,("ERROR: Failed to initialise fast share modes - trying slow code\n"));
 	}
 	if (share_ops) return True;
 #endif	
 
-	share_ops = locking_slow_init();
+	share_ops = locking_slow_init(read_only);
 	if (!share_ops) {
 		DEBUG(0,("ERROR: Failed to initialise share modes!\n"));
 		return False;

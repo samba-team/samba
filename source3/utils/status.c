@@ -262,7 +262,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 
   printf("\n");
 
-  locking_init();
+  locking_init(1);
 
   if (share_mode_forall(print_share_mode) <= 0)
     printf("No locked files\n");
