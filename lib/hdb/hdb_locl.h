@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,7 +63,7 @@
 
 #include <krb5.h>
 #include <hdb.h>
-#include <hdb_asn1.h>
+#include <hdb-private.h>
 
 #if defined(HAVE_DB_185_H)
 #include <db_185.h>
@@ -81,8 +81,8 @@ int hdb_key2principal(krb5_context, krb5_data*, krb5_principal);
 krb5_error_code hdb_lock(int, int);
 krb5_error_code hdb_unlock(int);
 
-krb5_error_code _hdb_fetch(krb5_context, HDB*, hdb_entry*);
-krb5_error_code _hdb_store(krb5_context, HDB*, int, hdb_entry*);
+krb5_error_code _hdb_fetch(krb5_context, HDB*, unsigned, hdb_entry*);
+krb5_error_code _hdb_store(krb5_context, HDB*, unsigned, hdb_entry*);
 krb5_error_code _hdb_remove(krb5_context, HDB*, hdb_entry*);
 
 #endif /* __HDB_LOCL_H__ */
