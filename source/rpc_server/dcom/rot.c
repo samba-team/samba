@@ -23,19 +23,6 @@
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
-#include "rpc_server/dcom/dcom.h"
-
-struct dcom_object *dcom_object_by_oid(struct GUID *oid)
-{
-	/* FIXME */
-	return NULL;
-}
-
-struct dcom_class *dcom_class_by_clsid(struct GUID *clsid)
-{
-	/* FIXME */
-	return NULL;
-}
 
 struct dcom_object *dcom_call_get_object(struct dcesrv_call_state *call)
 {

@@ -298,21 +298,41 @@ sub HeaderFunction($)
 
 #####################################################################
 # output prototypes for a IDL function
-sub HeaderFnProto($)
+sub HeaderFnProto($$)
 {
+	my $interface = shift;
     my $fn = shift;
     my $name = $fn->{NAME};
 	
-	my $firstarg = "dcerpc_pipe";
-	if (util::has_property($fn, "object")) {
-		$firstarg = "dcom_interface"; 
-	}
-	
     $res .= "void ndr_print_$name(struct ndr_print *, const char *, int, struct $name *);\n";
-    $res .= "struct rpc_request *dcerpc_$name\_send(struct $firstarg *, TALLOC_CTX *, struct $name *);\n";
-    $res .= "NTSTATUS dcerpc_$name(struct $firstarg *, TALLOC_CTX *, struct $name *);\n";
+
+	if (util::has_property($interface, "object")) {
+		$res .= "NTSTATUS dcom_$interface->{NAME}_$name (struct dcom_interface_p *, TALLOC_CTX *mem_ctx, struct $name *);\n";
+	} else {
+	    $res .= "NTSTATUS dcerpc_$name(struct dcerpc_pipe *, TALLOC_CTX *, struct $name *);\n";
+    	$res .= "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *, TALLOC_CTX *, struct $name *);\n";
+	}
     $res .= "\n";
 }
+
+
+#####################################################################
+# generate vtable structure for DCOM interface
+sub HeaderVTable($)
+{
+	my $interface = shift;
+	$res .= "struct dcom_$interface->{NAME}_vtable {\n";
+ 	if (defined($interface->{BASE})) {
+		$res .= "\tstruct dcom_$interface->{BASE}\_vtable base;\n";
+	}
+
+	my $data = $interface->{DATA};
+	foreach my $d (@{$data}) {
+		$res .= "\tNTSTATUS (*$d->{NAME}) (struct dcom_interface_p *, TALLOC_CTX *mem_ctx, struct $d->{NAME} *);\n" if ($d->{TYPE} eq "FUNCTION");
+	}
+	$res .= "};\n\n";
+}
+
 
 #####################################################################
 # parse the interface definitions
@@ -379,11 +399,14 @@ sub HeaderInterface($)
 	    HeaderTypedef($d);
 	($d->{TYPE} eq "TYPEDEF") &&
 	    HeaderTypedefProto($d);
-	($d->{TYPE} eq "FUNCTION") && 
+	($d->{TYPE} eq "FUNCTION") &&
 	    HeaderFunction($d);
-	($d->{TYPE} eq "FUNCTION") && 
-	    HeaderFnProto($d);
+	($d->{TYPE} eq "FUNCTION") &&
+			HeaderFnProto($interface, $d);
     }
+	
+	(util::has_property($interface, "object")) &&
+		HeaderVTable($interface);
 
     $res .= "#endif /* _HEADER_NDR_$interface->{NAME} */\n";
 }

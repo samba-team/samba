@@ -111,8 +111,29 @@ WERROR dcom_init(struct dcom_context **ctx, const char *domain, const char *user
 	(*ctx)->domain = talloc_strdup(*ctx, domain);
 	(*ctx)->user = talloc_strdup(*ctx, user);
 	(*ctx)->password = talloc_strdup(*ctx, pass);
+	(*ctx)->dcerpc_flags = 0;
 	
 	return WERR_OK;
+}
+
+static struct dcom_object_exporter *oxid_mapping_by_oxid (struct dcom_context *ctx, HYPER_T oxid)
+{
+	struct dcom_object_exporter *m;
+	
+	for (m = ctx->oxids;m;m = m->next) {
+		if (m->oxid	== oxid) {
+			break;
+		}
+	}
+
+	/* Add oxid mapping if we couldn't find one */
+	if (!m) {
+		m = talloc_zero_p(ctx, struct dcom_object_exporter);
+		m->oxid = oxid;
+		DLIST_ADD(ctx->oxids, m);
+	}
+
+	return m;
 }
 
 WERROR dcom_ping(struct dcom_context *ctx)
@@ -122,11 +143,12 @@ WERROR dcom_ping(struct dcom_context *ctx)
 	return WERR_OK;
 }
 
-WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface **ip, WERROR *results)
+WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface_p ***ip, WERROR *results)
 {
-	struct dcom_oxid_mapping *m;
 	struct RemoteActivation r;
+	struct DUALSTRINGARRAY dualstring;
 	int i;
+	struct dcom_object_exporter *m;
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
 	uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
@@ -148,8 +170,7 @@ WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const ch
 	r.in.Interfaces = num_ifaces;
 	r.in.pIIDs = iid;
 	r.out.ifaces = talloc_array_p(ctx, struct pMInterfacePointer, num_ifaces);
-	m = talloc_zero_p(ctx, struct dcom_oxid_mapping);
-	r.out.pdsaOxidBindings = &m->bindings;
+	r.out.pdsaOxidBindings = &dualstring;
 	
 	status = dcerpc_RemoteActivation(p, ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
@@ -165,28 +186,33 @@ WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const ch
 		return r.out.hr; 
 	}
 
-	*ip = talloc_array_p(ctx, struct dcom_interface, num_ifaces);
+	*ip = talloc_array_p(ctx, struct dcom_interface_p *, num_ifaces);
 	for (i = 0; i < num_ifaces; i++) {
 		results[i] = r.out.results[i];
-		(*ip)[i].private_references = 1;
-		(*ip)[i].objref = &r.out.ifaces[i].p->obj;
-		(*ip)[i].pipe = NULL;
-		(*ip)[i].ctx = ctx;
+		(*ip)[i] = NULL;
+		if (W_ERROR_IS_OK(results[i])) {
+			status = dcom_ifacep_from_OBJREF(ctx, &(*ip)[i], &r.out.ifaces[i].p->obj);
+			if (NT_STATUS_IS_OK(status)) {
+				(*ip)[i]->private_references = 1;
+			} else {
+				results[i] = ntstatus_to_werror(status);
+			}
+		}
 	}
 
 	/* Add the OXID data for the returned oxid */
-	m->oxid = r.out.pOxid;
+	m = oxid_mapping_by_oxid(ctx, r.out.pOxid);
 	m->bindings = *r.out.pdsaOxidBindings;
-	DLIST_ADD(ctx->oxids, m);
 	
 	return WERR_OK;
 }
 
-WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface *ip)
+WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface_p **ip)
 {
-	struct dcom_oxid_mapping *m;
+	struct dcom_object_exporter *m;
 	struct RemoteActivation r;
 	struct dcerpc_pipe *p;
+	struct DUALSTRINGARRAY dualstring;
 	NTSTATUS status;
 	struct pMInterfacePointer pm;
 	uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
@@ -209,8 +235,7 @@ WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const
 	r.in.pIIDs = iid;
 	r.in.Mode = MODE_GET_CLASS_OBJECT;
 	r.out.ifaces = &pm;
-	m = talloc_zero_p(ctx, struct dcom_oxid_mapping);
-	r.out.pdsaOxidBindings = &m->bindings;
+	r.out.pdsaOxidBindings = &dualstring;
 
 	status = dcerpc_RemoteActivation(p, ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
@@ -223,35 +248,18 @@ WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const
 	if(!W_ERROR_IS_OK(r.out.results[0])) { return r.out.results[0]; }
 	
 	/* Set up the interface data */
-	ip->private_references = 1;
-	ip->pipe = NULL;
-	ip->objref = &pm.p->obj;
-	ip->ctx = ctx;
+	dcom_ifacep_from_OBJREF(ctx, ip, &pm.p->obj);
+	(*ip)->private_references = 1;
 	
 	/* Add the OXID data for the returned oxid */
-	m->oxid = r.out.pOxid;
+	m = oxid_mapping_by_oxid(ctx, r.out.pOxid);
 	m->bindings = *r.out.pdsaOxidBindings;
-	DLIST_ADD(ctx->oxids, m);
 
 	return WERR_OK;
 }
 
-static struct dcom_oxid_mapping *oxid_mapping_by_oxid (struct dcom_context *ctx, HYPER_T oxid)
+NTSTATUS dcom_get_pipe (struct dcom_interface_p *iface, struct dcerpc_pipe **p)
 {
-	struct dcom_oxid_mapping *m;
-	
-	for (m = ctx->oxids;m;m = m->next) {
-		if (m->oxid	== oxid) {
-			return m;
-		}
-	}
-
-	return NULL;
-}
-
-NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
-{
-	struct dcom_oxid_mapping *m;
 	struct dcerpc_binding binding;
 	struct GUID iid;
 	HYPER_T oxid;
@@ -260,37 +268,140 @@ NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
 
 	*p = NULL;
 	
-	SMB_ASSERT(iface->objref->signature == OBJREF_SIGNATURE);
+	oxid = iface->ox->oxid;
+	iid = iface->interface->iid;
 
-	if (iface->objref->flags & OBJREF_HANDLER) {
-		DEBUG(0, ("dcom_get_pipe: OBJREF_HANDLER not supported!\n"));
+	if (iface->ox->pipe) {
+		if (!uuid_equal(&iface->ox->pipe->syntax.uuid, &iid)) {
+			iface->ox->pipe->syntax.uuid = iid;
+			status = dcerpc_alter(iface->ox->pipe, iface->ctx);
+			if (NT_STATUS_IS_ERR(status)) {
+				return status;
+			}
+		}
+		*p = iface->ox->pipe;
+		return NT_STATUS_OK;
+	}
+
+	i = 0;
+	do {
+		status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, iface->ox->bindings.stringbindings[i]);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, ("Error parsing string binding"));
+		} else {
+			binding.flags = iface->ctx->dcerpc_flags;
+			status = dcerpc_pipe_connect_b(&iface->ox->pipe, &binding, GUID_string(iface->ctx, &iid) , 0.0, iface->ctx->domain, iface->ctx->user, iface->ctx->password);
+		}
+
+		i++;
+	} while (NT_STATUS_IS_ERR(status) && iface->ox->bindings.stringbindings[i]);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(0, ("Unable to connect to remote host - %s\n", nt_errstr(status)));
+		return status;
+	}
+
+	DEBUG(2, ("Successfully connected to OXID %llx\n", oxid));
+	
+	*p = iface->ox->pipe;
+	return NT_STATUS_OK;
+}
+
+struct dcom_object *dcom_object_by_oid(struct dcom_object_exporter *ox, HYPER_T oid)
+{
+	struct dcom_object *o;
+
+	for (o = ox->objects; o; o = o->next) {
+		if (o->oid == oid) {
+			break;
+		}
+	}
+
+	if (o == NULL) {
+		o = talloc_zero_p(ox, struct dcom_object);
+		o->oid = oid;
+		DLIST_ADD(ox->objects, o);
+	}
+	
+	return o;
+}
+
+NTSTATUS dcom_ifacep_from_OBJREF(struct dcom_context *ctx, struct dcom_interface_p **_p, struct OBJREF *o)
+{
+	struct dcom_interface_p *p = talloc_p(ctx, struct dcom_interface_p);
+
+	p->ctx = ctx;	
+	p->interface = dcom_interface_by_iid(&o->iid);
+	if (!p->interface) {
+		DEBUG(0, ("Unable to find interface with IID %s\n", GUID_string(ctx, &o->iid)));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (iface->objref->flags & OBJREF_CUSTOM) {
-		DEBUG(0, ("dcom_get_pipe: OBJREF_CUSTOM not supported!\n"));
+	p->private_references = 0;
+	p->objref_flags = o->flags;
+	
+	switch(p->objref_flags) {
+	case OBJREF_NULL: 
+		p->object = NULL; 
+		p->ox = NULL;
+		p->vtable = dcom_proxy_vtable_by_iid(&p->interface->iid);
+		ZERO_STRUCT(p->ipid);
+		*_p = p;
+		return NT_STATUS_OK;
+		
+	case OBJREF_STANDARD:
+		p->ox = oxid_mapping_by_oxid(ctx, o->u_objref.u_standard.std.oxid);
+		p->ipid = o->u_objref.u_standard.std.ipid;
+		p->object = dcom_object_by_oid(p->ox, o->u_objref.u_standard.std.oid);
+		p->ox->resolver_address = o->u_objref.u_standard.saResAddr;
+		p->vtable = dcom_proxy_vtable_by_iid(&p->interface->iid);
+		*_p = p;
+		return NT_STATUS_OK;
+		
+	case OBJREF_HANDLER:
+		p->ox = oxid_mapping_by_oxid(ctx, o->u_objref.u_handler.std.oxid );
+		p->ipid = o->u_objref.u_handler.std.ipid;
+		p->object = dcom_object_by_oid(p->ox, o->u_objref.u_standard.std.oid);
+		p->ox->resolver_address = o->u_objref.u_handler.saResAddr;
+		p->vtable = dcom_vtable_by_clsid(&o->u_objref.u_handler.clsid);
+		/* FIXME: Do the custom unmarshaling call */
+	
+		*_p = p;
+		return NT_STATUS_OK;
+		
+	case OBJREF_CUSTOM:
+		{
+			const struct dcom_interface *imarshal = dcom_vtable_by_clsid(&o->u_objref.u_custom.clsid);
+			p->vtable = NULL;
+		
+		/* FIXME: Do the actual custom unmarshaling call */
+		p->ox = NULL;
+		p->object = NULL;
+		ZERO_STRUCT(p->ipid);
+		*_p = p;
 		return NT_STATUS_NOT_SUPPORTED;
+		}
 	}
 
-	oxid = iface->objref->u_objref.u_standard.std.oxid;
-	iid = iface->objref->iid;
+	return NT_STATUS_NOT_SUPPORTED;
 
-	m = oxid_mapping_by_oxid(iface->ctx, oxid);
-
+	
+#if 0
+	struct dcom_oxid_mapping *m;
 	/* Add OXID mapping if none present yet */
 	if (!m) {
 		struct dcerpc_pipe *po;
 		struct ResolveOxid r;
 		uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 
-		DEBUG(3, ("No binding data present yet, resolving OXID %llu\n", oxid));
+		DEBUG(3, ("No binding data present yet, resolving OXID %llu\n", p->ox->oxid));
 
-		m = talloc_zero_p(iface->ctx, struct dcom_oxid_mapping);
+		m = talloc_zero_p(p->ctx, struct dcom_oxid_mapping);
 		m->oxid = oxid;	
 
 		i = 0;
 		do {
-			status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, iface->objref->u_objref.u_standard.saResAddr.stringbindings[i]);
+			status = dcerpc_binding_from_STRINGBINDING(p->ctx, &binding, p->client.objref->u_objref.u_standard.saResAddr.stringbindings[i]);
 
 			if (NT_STATUS_IS_OK(status)) {
 				binding.flags = iface->ctx->dcerpc_flags;
@@ -300,7 +411,7 @@ NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
 			}
 
 			i++;
-		} while (!NT_STATUS_IS_OK(status) && iface->objref->u_objref.u_standard.saResAddr.stringbindings[i]);
+		} while (!NT_STATUS_IS_OK(status) && iface->client.objref->u_objref.u_standard.saResAddr.stringbindings[i]);
 
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(1, ("Error while connecting to OXID Resolver : %s\n", nt_errstr(status)));
@@ -322,39 +433,7 @@ NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
 
 		DLIST_ADD(iface->ctx->oxids, m);
 	}
+#endif
 
-	if (m->pipe) {
-		if (!uuid_equal(&m->pipe->syntax.uuid, &iid)) {
-			m->pipe->syntax.uuid = iid;
-			status = dcerpc_alter(m->pipe, iface->ctx);
-			if (NT_STATUS_IS_ERR(status)) {
-				return status;
-			}
-		}
-		*p = m->pipe;
-		return NT_STATUS_OK;
-	}
-
-	i = 0;
-	do {
-		status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, m->bindings.stringbindings[i]);
-		if (NT_STATUS_IS_ERR(status)) {
-			DEBUG(1, ("Error parsing string binding"));
-		} else {
-			binding.flags = iface->ctx->dcerpc_flags;
-			status = dcerpc_pipe_connect_b(&m->pipe, &binding, GUID_string(iface->ctx, &iid) , 0.0, iface->ctx->domain, iface->ctx->user, iface->ctx->password);
-		}
-
-		i++;
-	} while (NT_STATUS_IS_ERR(status) && m->bindings.stringbindings[i]);
-
-	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(0, ("Unable to connect to remote host - %s\n", nt_errstr(status)));
-		return status;
-	}
-
-	DEBUG(2, ("Successfully connected to OXID %llx\n", oxid));
-	
-	*p = m->pipe;
-	return NT_STATUS_OK;
+	return NT_STATUS_NOT_SUPPORTED;	
 }

@@ -29,11 +29,18 @@ struct IUnknown_QueryInterface;
 
 struct dcom_context 
 {
-	struct dcom_oxid_mapping {
-		struct dcom_oxid_mapping *prev, *next;
+	struct dcom_object_exporter {
+		struct dcom_object_exporter *prev, *next;
+		struct STRINGARRAY resolver_address;
 		struct DUALSTRINGARRAY bindings;
 		HYPER_T oxid;
 		struct dcerpc_pipe *pipe;
+		struct dcom_object
+		{
+			struct dcom_object *prev, *next;
+			HYPER_T oid;
+			void *private_data;
+		} *objects;
 	} *oxids;
 	const char *domain;
 	const char *user;
@@ -41,11 +48,32 @@ struct dcom_context
 	uint32_t dcerpc_flags;
 };
 
+/* Specific implementation of one or more interfaces */
+struct dcom_class
+{
+	const char *prog_id;
+	struct GUID clsid;
+	void (*get_class_object) (struct GUID *iid, void **vtable);
+};
+
 struct dcom_interface
 {
+	struct GUID iid;
+	int num_methods;
+	struct GUID base_iid;
+	const void *proxy_vtable;
+};
+
+struct dcom_interface_p
+{
 	struct dcom_context *ctx;
-	struct dcerpc_pipe *pipe;
-	struct OBJREF *objref;
+	const struct dcom_interface *interface;
+	const void *vtable; /* Points to one of the available implementations */
+	struct GUID ipid;
+	struct dcom_object *object;
+	int objref_flags;
+	int orpc_flags;
+	struct dcom_object_exporter *ox;
 	uint32_t private_references;
 };
 
