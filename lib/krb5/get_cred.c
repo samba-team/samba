@@ -113,9 +113,9 @@ krb5_get_kdc_cred(krb5_context context,
     krb5_generate_random_block(&req.req_body.nonce, 
 			       sizeof(req.req_body.nonce));
     if(second_ticket){
-	req.req_body.additional_tickets = malloc(sizeof(*req.req_body.additional_tickets));
+	ALLOC(req.req_body.additional_tickets, 1);
 	req.req_body.additional_tickets->len = 1;
-	req.req_body.additional_tickets->val = malloc(sizeof(*req.req_body.additional_tickets->val));
+	ALLOC(req.req_body.additional_tickets->val, 1);
 	copy_Ticket(second_ticket, req.req_body.additional_tickets->val); 
     }
     req.req_body.enc_authorization_data = NULL;
