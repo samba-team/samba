@@ -170,16 +170,6 @@ interface/version dce/rpc pipe identification
         }, 0x01                             \
 }
 
-#define SYNT_EPM_V3                         \
-{                                           \
-	{                                   \
-                0xe1af8308, 0x5d1f, 0x11c9, \
-                { 0x91, 0xa4 },             \
-		{ 0x08, 0x00,               \
-                  0x2b, 0x14, 0xa0, 0xfa }  \
-	}, 0x03                             \
-}
-
 #define SYNT_SVCCTL_V2                      \
 {                                           \
 	{                                   \
@@ -220,7 +210,6 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_NETDFS  , SYNT_NETDFS_V3        , PIPE_NETDFS   , TRANS_SYNT_V2 },
 	{ PIPE_ECHO    , SYNT_ECHO_V1          , PIPE_ECHO     , TRANS_SYNT_V2 },
 	{ PIPE_SHUTDOWN, SYNT_SHUTDOWN_V1      , PIPE_SHUTDOWN , TRANS_SYNT_V2 },
-	{ PIPE_EPM     , SYNT_EPM_V3           , PIPE_EPM      , TRANS_SYNT_V2 },
 	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_EVENTLOG, SYNT_EVENTLOG_V0      , PIPE_EVENTLOG , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }

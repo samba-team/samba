@@ -210,10 +210,9 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_NETDFS		8
 #define PI_ECHO 		9
 #define PI_SHUTDOWN		10
-#define PI_EPM			11
-#define PI_SVCCTL		12
-#define PI_EVENTLOG 		13
-#define PI_MAX_PIPES		14
+#define PI_SVCCTL		11
+#define PI_EVENTLOG 		12
+#define PI_MAX_PIPES		13
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info

@@ -404,7 +404,6 @@ typedef struct {
 #include "rpc_dfs.h"
 #include "rpc_ds.h"
 #include "rpc_echo.h"
-#include "rpc_epmapper.h"
 #include "rpc_shutdown.h"
 
 #endif /* _NT_DOMAIN_H */
