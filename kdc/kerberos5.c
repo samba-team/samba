@@ -47,16 +47,26 @@ fix_time(time_t **t)
     if(**t == 0) **t = MAX_TIME; /* fix for old clients */
 }
 
+static int
+realloc_method_data(METHOD_DATA *md)
+{
+    PA_DATA *pa;
+    pa = realloc(md->val, (md->len + 1) * sizeof(*md->val));
+    if(pa == NULL)
+	return ENOMEM;
+    md->val = pa;
+    md->len++;
+    return 0;
+}
+
 static void
-set_salt_padata (METHOD_DATA **m, Salt *salt)
+set_salt_padata (METHOD_DATA *md, Salt *salt)
 {
     if (salt) {
-	ALLOC(*m);
-	(*m)->len = 1;
-	ALLOC((*m)->val);
-	(*m)->val->padata_type = salt->type;
+	realloc_method_data(md);
+	md->val[md->len - 1].padata_type = salt->type;
 	copy_octet_string(&salt->salt,
-			  &(*m)->val->padata_value);
+			  &md->val[md->len - 1].padata_value);
     }
 }
 
@@ -258,18 +268,6 @@ encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek,
     }
     reply->data = buf;
     reply->length = buf_size;
-    return 0;
-}
-
-static int
-realloc_method_data(METHOD_DATA *md)
-{
-    PA_DATA *pa;
-    pa = realloc(md->val, (md->len + 1) * sizeof(*md->val));
-    if(pa == NULL)
-	return ENOMEM;
-    md->val = pa;
-    md->len++;
     return 0;
 }
 
@@ -648,6 +646,10 @@ as_rep(KDC_REQ *req,
     const char *e_text = NULL;
     krb5_crypto crypto;
     Key *ckey, *skey;
+    EncryptionKey *reply_key;
+#ifdef PKINIT
+    pk_client_params *pkp = NULL;
+#endif
 
     memset(&rep, 0, sizeof(rep));
 
@@ -705,7 +707,50 @@ as_rep(KDC_REQ *req,
 	int i = 0;
 	PA_DATA *pa;
 	int found_pa = 0;
-	kdc_log(5, "Looking for pa-data -- %s", client_name);
+
+#ifdef PKINIT
+	kdc_log(5, "Looking for PKINIT pa-data -- %s", client_name);
+
+	i = 0;
+	e_text = "No PKINIT PA found";
+	while((pa = find_padata(req, &i, KRB5_PADATA_PK_AS_REQ))){
+	    char *client_cert = NULL;
+	    found_pa = 1;
+	    
+	    ret = pk_rd_padata(context, req, pa, &pkp);
+	    if (ret) {
+		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+		kdc_log(5, "Failed to decode PKINIT PA-DATA -- %s", 
+			client_name);
+		continue;
+	    }
+	    if (ret == 0 && pkp == NULL)
+		continue;
+
+	    ret = pk_check_client(context, 
+				  client_princ, 
+				  pkp,
+				  &client_cert);
+	    if (ret) {
+		e_text = "PKINIT certificate not allowed to "
+		    "impersonate principal";
+		pk_free_client_param(context, pkp);
+		pkp = NULL;
+		goto preauth_done;
+	    }
+	    et.flags.pre_authent = 1;
+	    kdc_log(2, "PKINIT pre-authentication succeded -- %s using %s", 
+		    client_name, client_cert);
+	    free(client_cert);
+	    break;
+	}
+	if (pkp)
+	    goto preauth_done;
+#endif
+	kdc_log(5, "Looking for ENC-TS pa-data -- %s", client_name);
+
+	i = 0;
+	e_text = "No ENC-TS found";
 	while((pa = find_padata(req, &i, KRB5_PADATA_ENC_TIMESTAMP))){
 	    krb5_data ts_data;
 	    PA_ENC_TS_ENC p;
@@ -792,9 +837,11 @@ as_rep(KDC_REQ *req,
 		goto out;
 	    }
 	    et.flags.pre_authent = 1;
-	    kdc_log(2, "Pre-authentication succeded -- %s", client_name);
+	    kdc_log(2, "ENC-TS Pre-authentication succeded -- %s", 
+		    client_name);
 	    break;
 	}
+    preauth_done:
 	if(found_pa == 0 && require_preauth)
 	    goto use_pa;
 	/* We come here if we found a pa-enc-timestamp, but if there
@@ -1059,9 +1106,28 @@ as_rep(KDC_REQ *req,
 	copy_HostAddresses(et.caddr, ek.caddr);
     }
 
-    set_salt_padata (&rep.padata, ckey->salt);
+    ALLOC(rep.padata);
+    rep.padata->len = 0;
+    rep.padata->val = NULL;
+
+    reply_key = &ckey->key;
+#if PKINIT
+    if (pkp) {
+	ret = pk_mk_pa_reply(context, pkp, &reply_key, rep.padata);
+	if (ret)
+	    goto out;
+    }
+#endif
+
+    set_salt_padata (rep.padata, ckey->salt);
+
+    if (rep.padata->len == 0) {
+	free(rep.padata);
+	rep.padata = NULL;
+    }
+
     ret = encode_reply(&rep, &et, &ek, setype, server->kvno, &skey->key,
-		       client->kvno, &ckey->key, &e_text, reply);
+		       client->kvno, reply_key, &e_text, reply);
     free_EncTicketPart(&et);
     free_EncKDCRepPart(&ek);
   out:
@@ -1079,6 +1145,10 @@ as_rep(KDC_REQ *req,
 	ret = 0;
     }
   out2:
+#ifdef PKINIT
+    if (pkp)
+	pk_free_client_param(context, pkp);
+#endif
     if (client_princ)
 	krb5_free_principal(context, client_princ);
     free(client_name);
