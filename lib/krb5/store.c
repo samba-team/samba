@@ -721,3 +721,169 @@ cleanup:
     }
     return ret;
 }
+
+#define SC_CLIENT_PRINCIPAL	    0x0001
+#define SC_SERVER_PRINCIPAL	    0x0002
+#define SC_SESSION_KEY		    0x0004
+#define SC_TICKET		    0x0008
+#define SC_SECOND_TICKET	    0x0010
+#define SC_AUTHDATA		    0x0020
+#define SC_ADDRESSES		    0x0040
+
+/*
+ *
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_creds_tag(krb5_storage *sp,
+		     krb5_creds *creds)
+{
+    int ret;
+    int32_t header = 0;
+
+    if (creds->client)
+	header |= SC_CLIENT_PRINCIPAL;
+    if (creds->server)
+	header |= SC_SERVER_PRINCIPAL;
+    if (creds->session.keyvalue.data)
+	header |= SC_SESSION_KEY;
+    if (creds->ticket.data)
+	header |= SC_TICKET;
+    if (creds->second_ticket.length)
+	header |= SC_SECOND_TICKET;
+    if (creds->authdata.len)
+	header |= SC_AUTHDATA;
+    if (creds->addresses.len)
+	header |= SC_ADDRESSES;
+
+    ret = krb5_store_int32(sp, header);
+
+    if (creds->client) {
+	ret = krb5_store_principal(sp, creds->client);
+	if(ret)
+	    return ret;
+    }
+
+    if (creds->server) {
+	ret = krb5_store_principal(sp, creds->server);
+	if(ret)
+	    return ret;
+    }
+
+    if (creds->session.keyvalue.data) {
+	ret = krb5_store_keyblock(sp, creds->session);
+	if(ret)
+	    return ret;
+    }
+
+    ret = krb5_store_times(sp, creds->times);
+    if(ret)
+	return ret;
+    ret = krb5_store_int8(sp, creds->second_ticket.length != 0); /* is_skey */
+    if(ret)
+	return ret;
+
+    ret = krb5_store_int32(sp, bitswap32(TicketFlags2int(creds->flags.b)));
+    if(ret)
+	return ret;
+
+    if (creds->addresses.len) {
+	ret = krb5_store_addrs(sp, creds->addresses);
+	if(ret)
+	    return ret;
+    }
+
+    if (creds->authdata.len) {
+	ret = krb5_store_authdata(sp, creds->authdata);
+	if(ret)
+	    return ret;
+    }
+
+    if (creds->ticket.data) {
+	ret = krb5_store_data(sp, creds->ticket);
+	if(ret)
+	    return ret;
+    }
+
+    if (creds->second_ticket.data) {
+	ret = krb5_store_data(sp, creds->second_ticket);
+	if (ret)
+	    return ret;
+    }
+
+    return ret;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_creds_tag(krb5_storage *sp,
+		   krb5_creds *creds)
+{
+    krb5_error_code ret;
+    int8_t dummy8;
+    int32_t dummy32, header;
+
+    memset(creds, 0, sizeof(*creds));
+
+    ret = krb5_ret_int32 (sp, &header);
+    if (ret) goto cleanup;
+
+    if (header & SC_CLIENT_PRINCIPAL) {
+	ret = krb5_ret_principal (sp,  &creds->client);
+	if(ret) goto cleanup;
+    }
+    if (header & SC_SERVER_PRINCIPAL) {
+	ret = krb5_ret_principal (sp,  &creds->server);
+	if(ret) goto cleanup;
+    }
+    if (header & SC_SESSION_KEY) {
+	ret = krb5_ret_keyblock (sp,  &creds->session);
+	if(ret) goto cleanup;
+    }
+    ret = krb5_ret_times (sp,  &creds->times);
+    if(ret) goto cleanup;
+    ret = krb5_ret_int8 (sp,  &dummy8);
+    if(ret) goto cleanup;
+    ret = krb5_ret_int32 (sp,  &dummy32);
+    if(ret) goto cleanup;
+    /*
+     * Runtime detect the what is the higher bits of the bitfield. If
+     * any of the higher bits are set in the input data, its either a
+     * new ticket flag (and this code need to be removed), or its a
+     * MIT cache (or new Heimdal cache), lets change it to our current
+     * format.
+     */
+    {
+	u_int32_t mask = 0xffff0000;
+	creds->flags.i = 0;
+	creds->flags.b.anonymous = 1;
+	if (creds->flags.i & mask)
+	    mask = ~mask;
+	if (dummy32 & mask)
+	    dummy32 = bitswap32(dummy32);
+    }
+    creds->flags.i = dummy32;
+    if (header & SC_ADDRESSES) {
+	ret = krb5_ret_addrs (sp,  &creds->addresses);
+	if(ret) goto cleanup;
+    }
+    if (header & SC_AUTHDATA) {
+	ret = krb5_ret_authdata (sp,  &creds->authdata);
+	if(ret) goto cleanup;
+    }
+    if (header & SC_TICKET) {
+	ret = krb5_ret_data (sp,  &creds->ticket);
+	if(ret) goto cleanup;
+    }
+    if (header & SC_SECOND_TICKET) {
+	ret = krb5_ret_data (sp,  &creds->second_ticket);
+	if(ret) goto cleanup;
+    }
+
+cleanup:
+    if(ret) {
+#if 0	
+	krb5_free_cred_contents(context, creds); /* XXX */
+#endif
+    }
+    return ret;
+}
