@@ -668,6 +668,7 @@ extern int errno;
 #include "cli_context.h"
 #include "registry.h"
 #include "rap.h"
+#include "ldap_server/ldap_server.h"
 #include "gtk/common/gtk-smb.h"
 #include "gtk/common/select.h"
 
