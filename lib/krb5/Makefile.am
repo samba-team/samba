@@ -4,6 +4,11 @@ include $(top_srcdir)/Makefile.am.common
 
 INCLUDES += $(INCLUDE_krb4)
 
+LDADD = libkrb5.la
+
+check_PROGRAMS = n-fold-test
+TESTS = n-fold-test
+
 lib_LTLIBRARIES = libkrb5.la
 
 ERR_FILES = krb5_err.c heim_err.c
