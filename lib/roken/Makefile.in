@@ -136,7 +136,8 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(LIB) *.o *.a roken.h make-roken$(EXECSUFFIX) make-roken.c
+	rm -f $(LIB) *.o *.a roken.h make-roken$(EXECSUFFIX) make-roken.c \
+		make-print-version$(EXESUFFIX) print_version.h
 
 mostlyclean: clean
 

@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include
 
-CLEANFILES = roken.h make-roken.c
+CLEANFILES = roken.h make-roken.c print_version.h
 
 lib_LIBRARIES = libroken.a
 
