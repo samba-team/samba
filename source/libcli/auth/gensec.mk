@@ -67,3 +67,13 @@ ADD_OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = AUTH
 # End MODULE gensec_ntlmssp
 ################################################
+
+################################################
+# Start SUBSYSTEM SCHANNELDB
+[SUBSYSTEM::SCHANNELDB]
+INIT_OBJ_FILES = \
+		libcli/auth/schannel_state.o
+#
+# End SUBSYSTEM SCHANNELDB
+################################################
+
