@@ -476,6 +476,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current size %.0f\n",
 				fsp->fsp_name, (double)st.st_size ));
 
+		flush_write_cache(fsp, SIZECHANGE_FLUSH);
 		if ((ret = vfs_ops->ftruncate(fsp, fsp->fd, len)) != -1) {
 			set_filelen_write_cache(fsp, len);
 		}
@@ -514,6 +515,7 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 
 	release_level_2_oplocks_on_change(fsp);
 	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
+	flush_write_cache(fsp, SIZECHANGE_FLUSH);
 	if ((ret = fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, len)) != -1)
 		set_filelen_write_cache(fsp, len);
 

@@ -418,7 +418,7 @@ len = %u\n",fsp->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (unsigne
       if ( n <= wcp->alloc_size && n > wcp->data_size) {
         cache_flush_needed = True;
       } else {
-	DO_PROFILE_INC(writecache_direct_writes);
+        DO_PROFILE_INC(writecache_direct_writes);
         return real_write_file(fsp, data, pos, n);
       }
 
@@ -551,7 +551,13 @@ static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 {
   if(fsp->wcp) {
-    flush_write_cache(fsp, SIZECHANGE_FLUSH);
+    /* The cache *must* have been flushed before we do this. */
+    if (fsp->wcp->data_size != 0) {
+      pstring msg;
+      slprintf(msg, sizeof(msg)-1, "set_filelen_write_cache: size change \
+on file %s with write cache size = %u\n", fsp->fsp_name, fsp->wcp->data_size );
+      smb_panic(msg);
+    }
     fsp->wcp->file_size = file_size;
   }
 }
@@ -564,6 +570,7 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
 {
   write_cache *wcp = fsp->wcp;
   size_t data_size;
+  ssize_t ret;
 
   if(!wcp || !wcp->data_size)
     return 0;
@@ -581,7 +588,16 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
     DO_PROFILE_INC(writecache_num_perfect_writes);
 #endif
 
-  return real_write_file(fsp, wcp->data, wcp->offset, data_size);
+  ret = real_write_file(fsp, wcp->data, wcp->offset, data_size);
+
+  /*
+   * Ensure file size if kept up to date if write extends file.
+   */
+
+  if ((ret != -1) && (wcp->offset + ret >= wcp->file_size))
+    wcp->file_size = wcp->offset + ret;
+
+  return ret;
 }
 
 /*******************************************************************
