@@ -13,7 +13,7 @@
 
 	<para>Well-behaved clients always ask for lock checks when it 
 	is important.  So in the vast majority of cases, <command moreinfo="none">strict 
-	locking = no</command> is preferable.</para>
+	locking = no</command> is acceptable.</para>
 	</description>
-	<value type="default">no</value>
+	<value type="default">yes</value>
 </samba:parameter>
