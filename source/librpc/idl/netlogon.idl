@@ -577,7 +577,7 @@ interface netlogon
 
 
 	NTSTATUS netr_DatabaseDeltas(
-		[in]      unistr logonserver,
+		[in]      unistr logon_server,
 		[in]      unistr computername,
 		[in]      netr_Authenticator credential,
 		[in,out]  netr_Authenticator return_authenticator,
@@ -592,7 +592,7 @@ interface netlogon
 	/* Function 0x08 */
 
 	NTSTATUS netr_DatabaseSync(
-		[in]     unistr logonserver,
+		[in]     unistr logon_server,
 		[in]     unistr computername,
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
@@ -619,7 +619,7 @@ interface netlogon
 	} netr_AccountBuffer;
 
 	NTSTATUS netr_AccountDeltas(
-		[in]     unistr *logonserver,
+		[in]     unistr *logon_server,
 		[in]     unistr computername,
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
@@ -638,7 +638,7 @@ interface netlogon
 	/* Function 0x0A */
 
 	NTSTATUS netr_AccountSync(
-		[in]      unistr *logonserver,
+		[in]      unistr *logon_server,
 		[in]      unistr computername,
 		[in]      netr_Authenticator credential,
 		[in,out]  netr_Authenticator return_authenticator,
@@ -662,56 +662,57 @@ interface netlogon
 		[out] unistr *dcname
 		);
 
-#if 0
+
+
+	/*****************/
+	/* Function 0x0C */
 
 	typedef struct {
 		uint32 flags;
 		uint32 pdc_connection_status;
-	} NETLOGON_INFO_1;
+	} netr_NETLOGON_INFO_1;
 
 	typedef struct {
 		uint32 flags;
 		uint32 pdc_connection_status;
 		unistr trusted_dc_name;
 		uint32 tc_connection_status;
-	} NETLOGON_INFO_2;
+	} netr_NETLOGON_INFO_2;
 
 	typedef struct {
 		uint32 flags;
 		uint32 logon_attempts;
-		uint32 reserved;
-		uint32 reserved;
-		uint32 reserved;
-		uint32 reserved;
-		uint32 reserved;
-	} NETLOGON_INFO_3;
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
+		uint32 unknown4;
+		uint32 unknown5;
+	} netr_NETLOGON_INFO_3;
 
-	typedef [switch_type(long)] union {
-		[case(1)]  NETLOGON_INFO_1 *i1;
-		[case(2)]  NETLOGON_INFO_2 *i2;
-		[case(3)]  NETLOGON_INFO_3 *i3;
-	} CONTROL_QUERY_INFORMATION;
+	typedef union {
+		[case(1)]  netr_NETLOGON_INFO_1 *info1;
+		[case(2)]  netr_NETLOGON_INFO_2 *info2;
+		[case(3)]  netr_NETLOGON_INFO_3 *info3;
+	} netr_CONTROL_QUERY_INFORMATION;
 
-
-	/*****************/
-	/* Function 0x0C */
-
-	NTSTATUS netr_LogonControl(
-		[in][string] wchar_t *logonserver,
-		[in] uint32 function_code,
-		[in] uint32 level,
-		[out][ref] CONTROL_QUERY_INFORMATION
+	WERROR netr_LogonControl(
+		[in]   unistr *logon_server,
+		[in]   uint32 function_code,
+		[in]   uint32 level,
+		[out,switch_is(level)]  netr_CONTROL_QUERY_INFORMATION info
 		);
 
 
 	/*****************/
 	/* Function 0x0D */
 
-	NTSTATUS netr_GetAnyDCName(
-		[in] unistr *logon_server,
-		[in] unistr *domainname,
-		[out]unistr *dcname,
-		};
+	WERROR netr_GetAnyDCName(
+		[in]  unistr *logon_server,
+		[in]  unistr *domainname,
+		[out] unistr *dcname
+		);
+
+#if 0
 
 	typedef [switch_type(long)] union {
 		[case(5)] unistr *unknown;
@@ -725,7 +726,7 @@ interface netlogon
 	/* Function 0x0E */
 
 	NTSTATUS netr_LogonControl2(
-		[in][string] wchar_t *logonserver,
+		[in][string] wchar_t *logon_server,
 		[in] uint32 function_code,
 		[in] uint32 level,
 		[in][ref] CONTROL_DATA_INFORMATION *data,
@@ -737,7 +738,7 @@ interface netlogon
 	/* Function 0x0F */
 
 	NTSTATUS netr_ServerAuthenticate2(
-		[in][string] wchar_t *logonserver,
+		[in][string] wchar_t *logon_server,
 		[in] unistr username,
 		[in] uint16 secure_channel_type,
 		[in] unistr computername,
@@ -751,7 +752,7 @@ interface netlogon
 	/* Function 0x10 */
 
 	NTSTATUS netr_DatabaseSync2(
-		[in][string][ref] wchar_t *logonserver, # REF!!!
+		[in][string][ref] wchar_t *logon_server, # REF!!!
 		[in][string][ref] wchar_t *computername,
 		[in][ref] AUTHENTICATOR credential,
 		[in][out][ref] AUTHENTICATOR return_authenticator,
@@ -767,7 +768,7 @@ interface netlogon
 	/* Function 0x11 */
 
 	NTSTATUS netr_DatabaseRedo(
-		[in][string][ref] wchar_t *logonserver, # REF!!!
+		[in][string][ref] wchar_t *logon_server, # REF!!!
 		[in][string][ref] wchar_t *computername,
 		[in][ref] netr_Authenticator credential,
 		[in][out][ref] netr_Authenticator return_authenticator,
@@ -781,7 +782,7 @@ interface netlogon
 	/* Function 0x12 */
 
 	NTSTATUS netr_LogonControl2Ex(
-		[in][string] wchar_t *logonserver,
+		[in][string] wchar_t *logon_server,
 		[in] uint32 function_code,
 		[in] uint32 level,
 		[in][ref] CONTROL_DATA_INFORMATION *data,

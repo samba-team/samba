@@ -259,7 +259,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = lp_netbios_name();
 	r.in.preferredmaximumlength = (uint32)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
@@ -293,7 +293,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			    r.out.delta_enum_array->delta_enum[0].delta_union.domain) {
 				sequence_nums[r.in.database_id] = 
 					r.out.delta_enum_array->delta_enum[0].delta_union.domain->sequence_num;
-				printf("sequence_nums[%d]=0x%08x%08x\n",
+				printf("\tsequence_nums[%d]=0x%08x%08x\n",
 				       r.in.database_id, 
 				       sequence_nums[r.in.database_id].high,
 				       sequence_nums[r.in.database_id].low);
@@ -321,7 +321,7 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = lp_netbios_name();
 	r.in.preferredmaximumlength = (uint32)-1;
 	ZERO_STRUCT(r.in.return_authenticator);
@@ -372,7 +372,7 @@ static BOOL test_AccountDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = lp_netbios_name();
 	ZERO_STRUCT(r.in.return_authenticator);
 	creds_client_authenticator(&creds, &r.in.credential);
@@ -407,7 +407,7 @@ static BOOL test_AccountSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = lp_netbios_name();
 	ZERO_STRUCT(r.in.return_authenticator);
 	creds_client_authenticator(&creds, &r.in.credential);
@@ -445,6 +445,63 @@ static BOOL test_GetDcName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetDcName - %s\n", nt_errstr(status));
 		return False;
+	}
+
+	printf("\tDC is at '%s'\n", r.out.dcname);
+
+	return True;
+}
+
+/*
+  try a netlogon LogonControl 
+*/
+static BOOL test_LogonControl(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_LogonControl r;
+	BOOL ret = True;
+	int i;
+
+	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.function_code = 1;
+
+	for (i=1;i<4;i++) {
+		r.in.level = i;
+
+		printf("Testing LogonControl level %d\n", i);
+
+		status = dcerpc_netr_LogonControl(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonControl - %s\n", nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
+
+/*
+  try a netlogon GetAnyDCName
+*/
+static BOOL test_GetAnyDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_GetAnyDCName r;
+
+	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.domainname = lp_workgroup();
+
+	printf("Testing GetAnyDCName\n");
+
+	status = dcerpc_netr_GetAnyDCName(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetAnyDCName - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (r.out.dcname) {
+		printf("\tDC is at '%s'\n", r.out.dcname);
 	}
 
 	return True;
@@ -503,6 +560,14 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_GetDcName(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_LogonControl(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_GetAnyDCName(p, mem_ctx)) {
 		ret = False;
 	}
 
