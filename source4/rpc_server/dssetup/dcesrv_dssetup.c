@@ -39,7 +39,7 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 	case DS_ROLE_BASIC_INFORMATION:
 	{
 		void *sam_ctx;
-		const char * const attrs[] = { "dnsDomain", "objectGUID", "name", NULL };
+		const char * const attrs[] = { "dnsDomain", "nTMixedDomain", "objectGUID", "name", NULL };
 		int ret;
 		struct ldb_message **res;
 		union dssetup_DsRoleInfo *info;
@@ -95,13 +95,17 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 				return WERR_SERVER_UNAVAILABLE;
 			}
 
-			flags		= 0;
-			flags		|= DS_ROLE_PRIMARY_DS_RUNNING;
-			flags		|= DS_ROLE_PRIMARY_DS_MIXED_MODE;
-			flags		|= DS_ROLE_PRIMARY_DOMAIN_GUID_PRESENT;
+			flags		= DS_ROLE_PRIMARY_DS_RUNNING;
+
+			if (samdb_result_uint(res[0], "nTMixedDomain", 0) == 1) {
+				flags		|= DS_ROLE_PRIMARY_DS_MIXED_MODE;
+			}
+
 			domain		= samdb_result_string(res[0], "name", NULL);
 			dns_domain	= samdb_result_string(res[0], "dnsDomain", NULL);
 			forest		= samdb_result_string(res[0], "dnsDomain", NULL);
+
+			flags		|= DS_ROLE_PRIMARY_DOMAIN_GUID_PRESENT;
 			domain_guid	= samdb_result_guid(res[0], "objectGUID");
 			break;
 		}
