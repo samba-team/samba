@@ -16,7 +16,6 @@ ktutil_SOURCES = add.c				\
 		 list.c				\
 		 purge.c			\
 		 remove.c			\
-		 srvconvert.c			\
 		 srvcreate.c
 
 LDADD = \
