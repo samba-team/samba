@@ -132,7 +132,7 @@ int net_help_share(int argc, const char **argv)
 	"[misc. options] [targets]"
 	"\n\tshows a list of all shares together with all users allowed to"
 	"\n\taccess them. This needs the output of 'net usersidlist' on"
-	"\n\tstdin or in <filename>.\n"
+	"\n\tstdin or in <filename>.\n\n"
 	 "net [<method>] share MIGRATE FILES <sharename> [misc. options] [targets]"
 	 "\n\tMigrates files from remote to local server\n\n"
 	 "net [<method>] share MIGRATE SHARES <sharename> [misc. options] [targets]"

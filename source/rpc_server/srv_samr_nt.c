@@ -3123,7 +3123,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	
 	can_add_machines = user_has_privileges( p->pipe_user.nt_user_token, &se_machineop );
 	
-	DEBUG(5, ("_samr_create_user: %s is%s a member of the Domain Admins group\n",
+	DEBUG(5, ("_samr_set_userinfo: %s is%s a member of the Domain Admins group\n",
 		p->pipe_user_name, can_add_machines ? "" : " not"));
 
 	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
