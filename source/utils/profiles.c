@@ -1,7 +1,7 @@
 /* 
    Samba Unix/Linux SMB client utility profiles.c 
    Copyright (C) 2002 Richard Sharpe, rsharpe@richardsharpe.com
-   Copyright (C) 2003 Jelmer Vernooij
+   Copyright (C) 2003 Jelmer Vernooij (conversion to popt)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ times...
 the "regf"-Block
 ================
  
-"regf" is obviosly the abbreviation for "Registry file". "regf" is the
+"regf" is obviously the abbreviation for "Registry file". "regf" is the
 signature of the header-block which is always 4kb in size, although only
 the first 64 bytes seem to be used and a checksum is calculated over
 the first 0x200 bytes only!
