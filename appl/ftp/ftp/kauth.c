@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -128,8 +128,13 @@ kauth(int argc, char **argv)
 	return;
     }
     memset (tktcopy.dat, 0, tktcopy.length);
-    ret = command("SITE KAUTH %s %s", name, p);
-    free(p);
+    {
+	int save;
+	save = set_command_prot(prot_private);
+	ret = command("SITE KAUTH %s %s", name, p);
+	free(p);
+	set_command_prot(save);
+    }
     if(ret != COMPLETE){
 	code = -1;
 	return;
