@@ -1,3 +1,8 @@
+2004-03-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/fcache.c (fcc_store_cred): NULL terminate
+	krb5_config_get_bool_default' arglist
+	
 2004-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kerberos5.c: add missing req argument to pk_mk_pa_reply
