@@ -48,11 +48,11 @@
 	typically this output will end up in <filename>log.smbmount</filename>. The <command>
 	smbmount</command> process may also be called mount.smbfs.</para>
 
-	<para><emphasis>NOTE:</emphasis> <command>smbmount</command> 
+	<note><para> <command>smbmount</command> 
 	calls <citerefentry><refentrytitle>smbmnt</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> to do the actual mount. You 
 	must make sure that <command>smbmnt</command> is in the path so 
-	that it can be found. </para>
+	that it can be found. </para></note>
 	
 </refsect1>
 
@@ -144,6 +144,7 @@ password = &lt;value&gt;
 		<term>fmask=&lt;arg&gt;</term>
 		<listitem><para>sets the file mask. This determines the 
 		permissions that remote files have in the local filesystem. 
+		This is not a umask, but the actual permissions for the files.
 		The default is based on the current umask. </para></listitem>
 		</varlistentry>
 		
@@ -152,6 +153,7 @@ password = &lt;value&gt;
 		<term>dmask=&lt;arg&gt;</term>
 		<listitem><para>Sets the directory mask. This determines the 
 		permissions that remote directories have in the local filesystem. 
+		This is not a umask, but the actual permissions for the directories.
 		The default is based on the current umask. </para></listitem>
 		</varlistentry>
 		
