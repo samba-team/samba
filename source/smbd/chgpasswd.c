@@ -779,7 +779,7 @@ BOOL check_oem_password(char *user,
 
 	/* save pointers to passwords so we don't have to keep looking them up */
 	lanman_pw = pdb_get_lanman_passwd(sampass);
-	nt_pw     = pdb_get_nt_passwd    (sampass);
+	nt_pw = pdb_get_nt_passwd(sampass);
 
 	/* check for null passwords */
 	if (lanman_pw == NULL) {
@@ -787,6 +787,9 @@ BOOL check_oem_password(char *user,
 			if (!pdb_set_lanman_passwd(sampass, null_pw)) {
 				return False;
 			}
+			lanman_pw = pdb_get_lanman_passwd(sampass);
+			if (!lanman_pw)
+				return False;
 		} else {
 			DEBUG(0,("check_oem_password: no lanman password !\n"));
 			return False;
@@ -794,9 +797,12 @@ BOOL check_oem_password(char *user,
 	}
 
 	if (pdb_get_nt_passwd(sampass) == NULL && nt_pass_set) {
-		if (acct_ctrl & ACB_PWNOTREQ)
+		if (acct_ctrl & ACB_PWNOTREQ) {
 			pdb_set_nt_passwd(sampass, null_pw);
-		else {
+			nt_pw = pdb_get_nt_passwd(sampass);
+			if (!nt_pw)
+				return False;
+		} else {
 			DEBUG(0,("check_oem_password: no ntlm password !\n"));
 			return False;
 		}
