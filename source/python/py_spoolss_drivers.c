@@ -66,47 +66,91 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
-		return NULL;
+		goto done;
 	}
 
 	/* Return value */
 	
 	switch (level) {
 	case 1:
-		result = PyList_New(num_drivers);
+		result = PyDict_New();
 		
 		for (i = 0; i < num_drivers; i++) {
 			PyObject *value;
+			fstring name;
 			
+			rpcstr_pull(name, ctr.info1[i].name.buffer,
+				    sizeof(fstring), -1, STR_TERMINATE);
+
 			py_from_DRIVER_INFO_1(&value, &ctr.info1[i]);
-			PyList_SetItem(result, i, value);
+
+			PyDict_SetItemString(
+				value, "level", PyInt_FromLong(1));
+
+			PyDict_SetItemString(result, name, value);
 		}
 		
 		break;
 	case 2: 
-		result = PyList_New(num_drivers);
+		result = PyDict_New();
 
 		for(i = 0; i < num_drivers; i++) {
 			PyObject *value;
+			fstring name;
+
+			rpcstr_pull(name, ctr.info2[i].name.buffer,
+				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_DRIVER_INFO_2(&value, &ctr.info2[i]);
-			PyList_SetItem(result, i, value);
+
+			PyDict_SetItemString(
+				value, "level", PyInt_FromLong(2));
+
+			PyDict_SetItemString(result, name, value);
+		}
+
+		break;
+	case 3: 
+		result = PyDict_New();
+
+		for(i = 0; i < num_drivers; i++) {
+			PyObject *value;
+			fstring name;
+
+			rpcstr_pull(name, ctr.info3[i].name.buffer,
+				    sizeof(fstring), -1, STR_TERMINATE);
+
+			py_from_DRIVER_INFO_3(&value, &ctr.info3[i]);
+
+			PyDict_SetItemString(
+				value, "level", PyInt_FromLong(3));
+
+			PyDict_SetItemString(result, name, value);
 		}
 
 		break;
 	case 6: 
-		result = PyList_New(num_drivers);
+		result = PyDict_New();
 
 		for(i = 0; i < num_drivers; i++) {
 			PyObject *value;
+			fstring name;
+
+			rpcstr_pull(name, ctr.info6[i].name.buffer,
+				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_DRIVER_INFO_6(&value, &ctr.info6[i]);
+
+			PyDict_SetItemString(
+				value, "level", PyInt_FromLong(6));
+
 			PyList_SetItem(result, i, value);
 		}
 
 		break;
 	default:
-		result = Py_None;
+		PyErr_SetString(spoolss_error, "unknown info level returned");
+		result = NULL;
 		break;
 	}
 	
@@ -245,23 +289,109 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 				   PyObject *kw)
 {
-	return NULL;
+	static char *kwlist[] = { "server", "info", "creds", NULL };
+	char *server;
+	uint32 level;
+	PyObject *info, *result = NULL, *creds = NULL, *level_obj;
+	WERROR werror;
+	TALLOC_CTX *mem_ctx;
+	struct cli_state *cli;
+	PRINTER_DRIVER_CTR ctr;
+	union {
+		DRIVER_INFO_3 driver_3;
+	} dinfo;
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "sO!|O!", kwlist, &server, &PyDict_Type,
+		    &info, &PyDict_Type, &creds))
+		return NULL;
+	
+	if (server[0] == '\\' && server[1] == '\\')
+		server += 2;
+
+	mem_ctx = talloc_init();
+
+	if (!(cli = open_pipe_creds(server, creds, cli_spoolss_initialise,
+				    NULL)))
+		goto done;
+
+	if ((level_obj = PyDict_GetItemString(info, "level"))) {
+
+		if (!PyInt_Check(level_obj)) {
+			PyErr_SetString(spoolss_error, 
+					"level not an integer");
+			goto done;
+		}
+
+		level = PyInt_AsLong(level_obj);
+
+		/* Only level 2, 3 supported by NT */
+
+		if (level != 3) {
+			PyErr_SetString(spoolss_error,
+					"unsupported info level");
+			goto done;
+		}
+
+	} else {
+		PyErr_SetString(spoolss_error, "no info level present");
+		goto done;
+	}
+
+	ZERO_STRUCT(ctr);
+
+	switch(level) {
+	case 3:
+		ctr.info3 = &dinfo.driver_3;
+
+		if (!py_to_DRIVER_INFO_3(&dinfo.driver_3, info)) {
+			PyErr_SetString(spoolss_error,
+					"error converting to driver info 3");
+			goto done;
+		}
+
+		break;
+	default:
+		PyErr_SetString(spoolss_error, "unsupported info level");
+		goto done;
+	}
+
+	werror = cli_spoolss_addprinterdriver(cli, mem_ctx, level, &ctr);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		goto done;
+	}
+
+	Py_INCREF(Py_None);
+	result = Py_None;
+
+done:
+	cli_shutdown(cli);
+	talloc_destroy(mem_ctx);
+
+	return result;
 }
 
 PyObject *spoolss_addprinterdriverex(PyObject *self, PyObject *args,
 				     PyObject *kw)
 {
+	/* Not supported by Samba server */
+
+	PyErr_SetString(spoolss_error, "Not implemented");
 	return NULL;
 }
 
 PyObject *spoolss_deleteprinterdriver(PyObject *self, PyObject *args,
 				      PyObject *kw)
 {
+	PyErr_SetString(spoolss_error, "Not implemented");
 	return NULL;
 }
 
 PyObject *spoolss_deleteprinterdriverex(PyObject *self, PyObject *args,
 					PyObject *kw)
 {
+	PyErr_SetString(spoolss_error, "Not implemented");
 	return NULL;
 }
