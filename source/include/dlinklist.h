@@ -56,3 +56,18 @@
           DLIST_REMOVE(list, p) \
           DLIST_ADD(list, p) \
 }
+
+/* demote an element to the top of the list, needs a tmp pointer */
+#define DLIST_DEMOTE(list, p, tmp) \
+{ \
+		DLIST_REMOVE(list, p) \
+		if (!(list)) { \
+			(list) = (p); \
+			(p)->next = (p)->prev = NULL; \
+		} else { \
+			for ((tmp) = (list); (tmp)->next; (tmp) = (tmp)->next) ; \
+			(tmp)->next = (p); \
+			(p)->next = NULL; \
+			(p)->prev = (tmp); \
+		} \
+}
