@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 20, 2003
+.Dd March 20, 2004
 .Dt KRB5 3
 .Os
 .Sh NAME
@@ -190,6 +190,8 @@ krb5_copy_address.3
 krb5_copy_addresses.3
 krb5_copy_checksum.3
 krb5_copy_data.3
+krb5_copy_keyblock.3
+krb5_copy_keyblock_contents.3
 krb5_copy_ticket.3
 krb5_create_checksum.3
 krb5_crypto_destroy.3
@@ -225,9 +227,12 @@ krb5_free_data_contents.3
 krb5_free_error_string.3
 krb5_free_error_string3.
 krb5_free_host_realm.3
+krb5_free_keyblock.3
+krb5_free_keyblock_contents.3
 krb5_free_krbhst.3
 krb5_free_principal.3
 krb5_free_ticket.3
+krb5_generate_random_keyblock.3
 krb5_get_all_client_addrs.3
 krb5_get_all_server_addrs.3
 krb5_get_default_config_files.3
@@ -252,7 +257,10 @@ krb5_h_addr2addr.3
 krb5_h_addr2sockaddr.3
 krb5_have_error_string.3
 krb5_init_context.3
+krb5_init_ets.3
 krb5_initlog.3
+krb5_keyblock_get_enctype.3
+krb5_keyblock_zero.3
 krb5_keytab_entry.3
 krb5_krbhst_format_string.3
 krb5_krbhst_free.3
