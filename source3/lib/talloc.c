@@ -55,13 +55,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 	void *p;
 	struct talloc_chunk *tc;
 
-	if (size == 0) {
-		/* debugging value used to track down
-		   memory problems. BAD_PTR is defined
-		   in talloc.h */
-		p = BAD_PTR;
-		return p;
-	}
+	if (size == 0) return NULL;
 
 	p = malloc(size);
 	if (!p) return p;
