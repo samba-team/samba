@@ -72,6 +72,14 @@ begin with the Samba-HOWTO-Collection for overviews and specific
 tasks (the current book is up to approximately 400 pages) and to 
 refer to the various man pages for information on individual options.
 
+We are very glad to be able to include the second edition of
+"Using Samba" by Jay Ts, Robert Eckstein, and David Collier-Brown
+(O'Reilly & Associates) in this release.  The book is available
+on-line at http://samba.org/samba/docs/ and is included with 
+the Samba Web Administration Tool (SWAT).  Thanks to the authors and
+publisher for making "Using Samba" under the GNU Free Documentation 
+License.
+
 
 ######################################################################
 Changes since 3.0rc1

@@ -96,6 +96,13 @@ if [ "x$BOOKDIR" != "x" -a -f $SRCDIR../docs/htmldocs/using_samba/toc.html ]; th
         chmod 0644 $FNAME
     done
 
+    for f in $SRCDIR../docs/htmldocs/using_samba/*.gif; do
+        FNAME=$BOOKDIR/`basename $f`
+        echo $FNAME
+        cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+        chmod 0644 $FNAME
+    done
+
     # Figures
 
     for f in $SRCDIR../docs/htmldocs/using_samba/figs/*.gif; do
