@@ -973,6 +973,7 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 	struct passwd *pw = NULL;
 	char *p;
 	fstring mapped_username;
+	fstring strip_username;
 	
 	/* we only save a copy of the username it has been mangled 
 	   by winbindd use default domain */
@@ -1010,9 +1011,11 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 		}
 
 		/* setup for lookup of just the username */
-		p++;
-		fstrcpy( mapped_username, p );
+		/* remember that p and mapped_username are overlapping memory */
 
+		p++;
+		fstrcpy( strip_username, p );
+		fstrcpy( mapped_username, strip_username );
 	}
 	
 	/* just lookup a plain username */
