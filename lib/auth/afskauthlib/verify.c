@@ -246,7 +246,7 @@ afs_verify(char *name,
     if(pwd == NULL)
 	return 1;
 
-    if (!pag_set) && k_hasafs()) {
+    if (!pag_set && k_hasafs()) {
         k_setpag();
         pag_set=1;
     }
