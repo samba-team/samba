@@ -14,8 +14,14 @@ kauth_SOURCES = kinit.c kauth_options.c
 
 noinst_PROGRAMS = kfoo kverify
 
+if KRB4
+AFSLIB=$(top_builddir)/lib/kafs/libkafs.a 
+else
+AFSLIB=
+endif
+
 kauth_LDADD = \
-	$(top_builddir)/lib/kafs/libkafs.a \
+	$(AFSLIB) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
