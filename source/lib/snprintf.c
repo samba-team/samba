@@ -100,6 +100,19 @@
 #define LLONG long
 #endif
 
+/* free memory if the pointer is valid and zero the pointer */
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
+#endif
+
+#ifndef VA_COPY
+#ifdef HAVE_VA_COPY
+#define VA_COPY(dest, src) __va_copy(dest, src)
+#else
+#define VA_COPY(dest, src) (dest) = (src)
+#endif
+#endif
+
 static size_t dopr(char *buffer, size_t maxlen, const char *format, 
 		   va_list args_in);
 static void fmtstr(char *buffer, size_t *currlen, size_t maxlen,
@@ -158,11 +171,8 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 	size_t currlen;
 	va_list args;
 	
-#if defined(HAVE_VA_COPY)
-	__va_copy(args, args_in);
-#else
-	args = args_in;
-#endif
+	VA_COPY(args, args_in);
+
 	state = DP_S_DEFAULT;
 	currlen = flags = cflags = min = 0;
 	max = -1;
@@ -790,30 +800,19 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 
 #endif 
 
-/* free memory if the pointer is valid and zero the pointer */
-#ifndef SAFE_FREE
-#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
-#endif
-
 #ifndef HAVE_VASPRINTF
  int vasprintf(char **ptr, const char *format, va_list ap)
 {
 	int ret;
 	va_list ap2;
 	
-#if defined(HAVE_VA_COPY)
-	__va_copy(ap2, ap);
-#else
-	ap2 = ap;
-#endif
+	VA_COPY(ap2, ap);
 	ret = vsnprintf(NULL, 0, format, ap2);
 	if (ret <= 0) return ret;
 
 	(*ptr) = (char *)malloc(ret+1);
 	if (!*ptr) return -1;
-#if defined(HAVE_VA_COPY)
-	__va_copy(ap2, ap);
-#endif
+	VA_COPY(ap2, ap);
 	ret = vsnprintf(*ptr, ret+1, format, ap2);
 
 	return ret;

@@ -6705,11 +6705,7 @@ BOOL samr_io_r_get_dom_pwinfo(char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
 
 	if(!prs_uint16("unk_0", ps, depth, &r_u->unk_0))
 		return False;
-	if(!prs_align(ps))
-		return False;
 	if(!prs_uint16("unk_1", ps, depth, &r_u->unk_1))
-		return False;
-	if(!prs_align(ps))
 		return False;
 	if(!prs_uint16("unk_2", ps, depth, &r_u->unk_2))
 		return False;
