@@ -114,7 +114,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{images,help,include,using_samba}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
-mkdir -p $RPM_BUILD_ROOT/var/cache/samba
+mkdir -p $RPM_BUILD_ROOT/var/lib/samba
 mkdir -p $RPM_BUILD_ROOT/var/{log,run}/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/lib/security
@@ -242,36 +242,23 @@ if [ "$1" -eq "2" ]; then
 	#
 	for i in /var/lock/samba/*.tdb; do
 		if [ -f $i ]; then
-			newname=`echo $i | sed -e's|var\/lock\/samba|var\/cache\/samba|'`
+			newname="/var/lib/samba/`basename $i`"
 			echo "Moving $i to $newname"
 			mv $i $newname
 		fi
 	done
 
-	# Remove the transient tdb files.
-	if [ -e /var/cache/samba/brlock.tdb ]; then
-		rm -f /var/cache/samba/brlock.tdb
-	fi
-
-	if [ -e /var/cache/samba/unexpected.tdb ]; then
-		rm -f /var/cache/samba/unexpected.tdb
-	fi
-
-	if [ -e /var/cache/samba/connections.tdb ]; then
-		rm -f /var/cache/samba/connections.tdb
-	fi
-
-	if [ -e /var/cache/samba/locking.tdb ]; then
-		rm -f /var/cache/samba/locking.tdb
-	fi
-
-	if [ -e /var/cache/samba/messages.tdb ]; then
-		rm -f /var/cache/samba/messages.tdb
-	fi
-
-	if [ -d /var/lock/samba ]; then
-		rm -rf /var/lock/samba
-	fi
+	#
+	# For 3.0.1 we move the tdb files from /var/cache/samba to /var/lib/samba
+	#
+	echo "Moving tdb files in /var/cache/samba/*.tdb to /var/lib/samba/*.tdb"
+	for i in /var/cache/samba/*.tdb; do
+		if [ -f $i ]; then
+		        newname="/var/lib/samba/`basename $i`"
+	        	echo "Moving $i to $newname"
+	       		mv $i $newname
+		fi
+	done
 fi
 
 ##
@@ -310,20 +297,6 @@ if [ ! -f /lib/security/pam_stack.so ]; then
 	fi
 fi
 
-#
-# For 3.0.1 we move the tdb files from /var/cache/samba to /var/lib/samba
-#
-echo "Moving tdb files in /var/cache/samba/*.tdb to /var/lib/samba/*.tdb"
-for i in /var/cache/samba/*.tdb
-do
-if [ -f $i ]; then
-        newname=`echo $i | sed -e's|var\/lock\/samba|var\/lib\/samba|'`
-        echo "Moving $i to $newname"
-        mv $i $newname
-fi
-done
-
-
 ## call ldconfig to create the version symlink for libsmbclient.so
 /sbin/ldconfig
 
@@ -334,32 +307,32 @@ if [ "$1" -eq "0" ] ; then
 
 	# We want to remove the browse.dat and wins.dat files 
 	# so they can not interfer with a new version of samba!
-	if [ -e /var/cache/samba/browse.dat ]; then
-		rm -f /var/cache/samba/browse.dat
+	if [ -e /var/lib/samba/browse.dat ]; then
+		rm -f /var/lib/samba/browse.dat
 	fi
-	if [ -e /var/cache/samba/wins.dat ]; then
-		rm -f /var/cache/samba/wins.dat
+	if [ -e /var/lib/samba/wins.dat ]; then
+		rm -f /var/lib/samba/wins.dat
 	fi
 
 	# Remove the transient tdb files.
-	if [ -e /var/cache/samba/brlock.tdb ]; then
-		rm -f /var/cache/samba/brlock.tdb
+	if [ -e /var/lib/samba/brlock.tdb ]; then
+		rm -f /var/lib/samba/brlock.tdb
 	fi
 
-	if [ -e /var/cache/samba/unexpected.tdb ]; then
-		rm -f /var/cache/samba/unexpected.tdb
+	if [ -e /var/lib/samba/unexpected.tdb ]; then
+		rm -f /var/lib/samba/unexpected.tdb
 	fi
 
-	if [ -e /var/cache/samba/connections.tdb ]; then
-		rm -f /var/cache/samba/connections.tdb
+	if [ -e /var/lib/samba/connections.tdb ]; then
+		rm -f /var/lib/samba/connections.tdb
 	fi
 
-	if [ -e /var/cache/samba/locking.tdb ]; then
-		rm -f /var/cache/samba/locking.tdb
+	if [ -e /var/lib/samba/locking.tdb ]; then
+		rm -f /var/lib/samba/locking.tdb
 	fi
 
-	if [ -e /var/cache/samba/messages.tdb ]; then
-		rm -f /var/cache/samba/messages.tdb
+	if [ -e /var/lib/samba/messages.tdb ]; then
+		rm -f /var/lib/samba/messages.tdb
 	fi
 fi
 
@@ -374,8 +347,8 @@ if [ "$1" -eq  "0" ] ; then
       rm -rf /var/log/samba
     fi
 
-    if [ -e /var/cache/samba ]; then
-      rm -rf /var/cache/samba
+    if [ -e /var/lib/samba ]; then
+      rm -rf /var/lib/samba
     fi
 
     # Remove swat entries from /etc/inetd.conf and /etc/services
@@ -468,7 +441,7 @@ MANDIR_MACRO/man1/*
 MANDIR_MACRO/man5/*
 MANDIR_MACRO/man7/*
 MANDIR_MACRO/man8/*
-%attr(755,root,root) %dir /var/cache/samba
+%attr(755,root,root) %dir /var/lib/samba
 %dir /var/log/samba
 %dir /var/run/samba
 %attr(1777,root,root) %dir /var/spool/samba
