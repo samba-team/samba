@@ -7,7 +7,7 @@
 	&author.jerry;
 	&author.jht;
 </chapterinfo>
-<title>Configuring Group Mapping</title>
+<title>Mapping MS Windows and Unix Groups</title>
 
 	<para>
 	Starting with Samba-3, new group mapping functionality is available to create associations
@@ -264,8 +264,44 @@ net groupmap modify ntgroup="Power Users" unixgroup=sys
 <title>Common Errors</title>
 
 <para>
-There must be some stuff that can go here!
+At this time there are many little surprises for the unwary administrator. In a real sense
+it is imperative that every step of automated control scripts must be carefully tested
+manually before putting them into active service.
 </para>
+
+	<sect2>
+	<title>Adding Groups Fails</title>
+
+		<para>
+		This is a common problem when the <command>groupadd</command> is called directly
+		by the samba interface script for the <parameter>add group script</parameter> in
+		the &smb.conf; file.
+		</para>
+
+		<para>
+		The most common cause of failure is an attempt to add an MS Windows group acocunt
+		that has either an upper case character and/or a space character in it.
+		</para>
+
+		<para>
+		There are three possible work-arounds. Firstly, use only group names that comply
+		with the limitations of the Unix/Linux <command>groupadd</command> system tool.
+		The second involves use of the script mentioned earlier in this chapter, and the
+		third option is to manually create a Unix/Linux group account that can substitute
+		for the MS Windows group name, then use the procedure listed above to map that group
+		to the MS Windows group.
+		</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Adding MS Windows Groups to MS Windows Groups Fails</title>
+
+		<para>
+		Samba-3 does NOT support nexted groups from the MS Windows control environment.
+		</para>
+
+	</sect2>
 
 </sect1>
 
