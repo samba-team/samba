@@ -91,14 +91,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	p = (pipes_struct *)malloc(sizeof(*p));
 	if (!p) return NULL;
 
-	/* hook into the front of the list */
-	if (!Pipes) {
-		Pipes = p;
-	} else {
-		Pipes->prev = p;
-		p->next = Pipes;
-		Pipes = p;
-	}
+	DLIST_ADD(Pipes, p);
 
 	bitmap_set(bmap, i);
 	i += PIPE_HANDLE_OFFSET;
@@ -292,13 +285,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 	DEBUG(4,("closed pipe name %s pnum=%x (pipes_open=%d)\n", 
 		 p->name, p->pnum, pipes_open));  
 
-	if (p == Pipes) {
-		Pipes = p->next;
-		if (Pipes) Pipes->prev = NULL;
-	} else {
-		p->prev->next = p->next;
-		if (p->next) p->next->prev = p->prev;
-	}
+	DLIST_REMOVE(Pipes, p);
 
 	memset(p, 0, sizeof(*p));
 

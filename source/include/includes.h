@@ -314,6 +314,8 @@ extern int errno;
 /* Lists, trees, caching, datbase... */
 #include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
+#include "dlinklist.h"
+
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
 #endif /* UBI_BINTREE_H */
