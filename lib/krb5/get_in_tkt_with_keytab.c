@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,19 +40,14 @@
 
 RCSID("$Id$");
 
-struct args {
-    krb5_keytab keytab;
-    krb5_principal principal;
-};
-
-static krb5_error_code
+krb5_error_code
 krb5_keytab_key_proc (krb5_context context,
 		      krb5_keytype type,
 		      krb5_data *salt,
 		      krb5_const_pointer keyseed,
 		      krb5_keyblock **key)
 {
-    struct args *args  = (struct args *)keyseed;
+    krb5_keytab_key_proc_args *args  = (krb5_keytab_key_proc_args *)keyseed;
     krb5_keytab keytab = args->keytab;
     krb5_principal principal  = args->principal;
     krb5_error_code ret;
@@ -91,7 +86,7 @@ krb5_get_in_tkt_with_keytab (krb5_context context,
 			     krb5_creds *creds,
 			     krb5_kdc_rep *ret_as_reply)
 {
-    struct args *a;
+    krb5_keytab_key_proc_args *a;
 
     a = malloc(sizeof(*a));
     if (a == NULL)
