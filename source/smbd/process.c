@@ -867,6 +867,7 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
   {
     DEBUG(0,("Reloading services after SIGHUP\n"));
     reload_services(False);
+    reopen_logs();
     reload_after_sighup = False;
     last_smb_conf_reload_time = t;
     /*
