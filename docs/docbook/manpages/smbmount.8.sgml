@@ -100,6 +100,11 @@ password = &lt;value&gt;
 		</varlistentry>
 
 		<varlistentry>
+		<term>krb</term>
+		<listitem><para>Use kerberos (Active Directory). </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>netbiosname=&lt;arg&gt;</term>
 		<listitem><para>sets the source NetBIOS name. It defaults 
 		to the local hostname. </para></listitem>
@@ -140,7 +145,7 @@ password = &lt;value&gt;
 
 		<varlistentry>
 		<term>dmask=&lt;arg&gt;</term>
-		<listitem><para>sets the directory mask. This determines the 
+		<listitem><para>Sets the directory mask. This determines the 
 		permissions that remote directories have in the local filesystem. 
 		The default is based on the current umask. </para></listitem>
 		</varlistentry>
@@ -148,7 +153,7 @@ password = &lt;value&gt;
 		
 		<varlistentry>
 		<term>debug=&lt;arg&gt;</term>
-		<listitem><para>sets the debug level. This is useful for 
+		<listitem><para>Sets the debug level. This is useful for 
 		tracking down SMB connection problems. A suggested value to
 		start with is 4. If set too high there will be a lot of
 		output, possibly hiding the useful output.</para></listitem>
@@ -157,7 +162,7 @@ password = &lt;value&gt;
 		
 		<varlistentry>
 		<term>ip=&lt;arg&gt;</term>
-		<listitem><para>sets the destination host or IP address.
+		<listitem><para>Sets the destination host or IP address.
 		</para></listitem>
 		</varlistentry>
 
@@ -165,14 +170,14 @@ password = &lt;value&gt;
 
 		<varlistentry>
 		<term>workgroup=&lt;arg&gt;</term>
-		<listitem><para>sets the workgroup on the destination </para>
+		<listitem><para>Sets the workgroup on the destination </para>
 		</listitem>
 		</varlistentry>
 
 
 		<varlistentry>
 		<term>sockopt=&lt;arg&gt;</term>
-		<listitem><para>sets the TCP socket options. See the <ulink
+		<listitem><para>Sets the TCP socket options. See the <ulink
 		url="smb.conf.5.html#SOCKETOPTIONS"><citerefentry><refentrytitle>smb.conf</refentrytitle>
 		<manvolnum>5</manvolnum></citerefentry></ulink> <parameter>socket options</parameter> option.
 		</para></listitem>
@@ -181,14 +186,13 @@ password = &lt;value&gt;
 
 		<varlistentry>
 		<term>scope=&lt;arg&gt;</term>
-		<listitem><para>sets the NetBIOS scope </para></listitem>
+		<listitem><para>Sets the NetBIOS scope </para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>guest</term>
-		<listitem><para>don't prompt for a password </para></listitem>
+		<listitem><para>Don't prompt for a password </para></listitem>
 		</varlistentry>
-
 
 		<varlistentry>
 		<term>ro</term>
