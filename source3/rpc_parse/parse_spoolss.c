@@ -2305,8 +2305,11 @@ uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
 	
 	for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
 
-	size+=2*i;
-	size+=6;
+	i=i+2; /* to count all chars including the leading zero */
+	i=2*i; /* because we need the value in bytes */
+	i=i+4; /* the offset pointer size */
+
+	size+=i;
 
 	return size;
 }
