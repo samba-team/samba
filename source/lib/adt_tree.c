@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "adt_tree.h"
 
 
 /**************************************************************************
@@ -53,7 +54,7 @@ static BOOL trim_tree_keypath( char *path, char **base, char **new_path )
  for comparision of two children
  *************************************************************************/
 
-SORTED_TREE* sorted_tree_init( void *data_p,
+ SORTED_TREE* pathtree_init( void *data_p,
                                int (cmp_fn)(void*, void*),
                                void (free_fn)(void*) )
 {
@@ -83,7 +84,7 @@ SORTED_TREE* sorted_tree_init( void *data_p,
  Delete a tree and free all allocated memory
  *************************************************************************/
 
-static void sorted_tree_destroy_children( TREE_NODE *root )
+static void pathtree_destroy_children( TREE_NODE *root )
 {
 	int i;
 	
@@ -92,7 +93,7 @@ static void sorted_tree_destroy_children( TREE_NODE *root )
 	
 	for ( i=0; i<root->num_children; i++ )
 	{
-		sorted_tree_destroy_children( root->children[i] );	
+		pathtree_destroy_children( root->children[i] );	
 	}
 	
 	SAFE_FREE( root->children );
@@ -105,10 +106,10 @@ static void sorted_tree_destroy_children( TREE_NODE *root )
  Delete a tree and free all allocated memory
  *************************************************************************/
 
-void sorted_tree_destroy( SORTED_TREE *tree )
+ void pathtree_destroy( SORTED_TREE *tree )
 {
 	if ( tree->root )
-		sorted_tree_destroy_children( tree->root );	
+		pathtree_destroy_children( tree->root );	
 	
 	if ( tree->free_func )
 		tree->free_func( tree->root );
@@ -120,7 +121,7 @@ void sorted_tree_destroy( SORTED_TREE *tree )
  Find the next child given a key string
  *************************************************************************/
 
-static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
+static TREE_NODE* pathtree_birth_child( TREE_NODE *node, char* key )
 {
 	TREE_NODE *infant = NULL;
 	TREE_NODE **siblings;
@@ -144,7 +145,7 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 	/* first child */
 	
 	if ( node->num_children == 1 ) {
-		DEBUG(11,("sorted_tree_birth_child: First child of node [%s]! [%s]\n", 
+		DEBUG(11,("pathtree_birth_child: First child of node [%s]! [%s]\n", 
 			node->key ? node->key : "NULL", infant->key ));
 		node->children[0] = infant;
 	}
@@ -161,14 +162,14 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 	
 		for ( i = node->num_children-1; i>=1; i-- )
 		{
-			DEBUG(11,("sorted_tree_birth_child: Looking for crib; infant -> [%s], child -> [%s]\n",
+			DEBUG(11,("pathtree_birth_child: Looking for crib; infant -> [%s], child -> [%s]\n",
 				infant->key, node->children[i-1]->key));
 			
 			/* the strings should never match assuming that we 
-			   have called sorted_tree_find_child() first */
+			   have called pathtree_find_child() first */
 		
 			if ( StrCaseCmp( infant->key, node->children[i-1]->key ) > 0 ) {
-				DEBUG(11,("sorted_tree_birth_child: storing infant in i == [%d]\n", 
+				DEBUG(11,("pathtree_birth_child: storing infant in i == [%d]\n", 
 					i));
 				node->children[i] = infant;
 				break;
@@ -179,7 +180,7 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 			node->children[i] = node->children[i-1];
 		}
 
-		DEBUG(11,("sorted_tree_birth_child: Exiting loop (i == [%d])\n", i ));
+		DEBUG(11,("pathtree_birth_child: Exiting loop (i == [%d])\n", i ));
 		
 		/* if we haven't found the correct slot yet, the child 
 		   will be first in the list */
@@ -195,24 +196,24 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
  Find the next child given a key string
  *************************************************************************/
 
-static TREE_NODE* sorted_tree_find_child( TREE_NODE *node, char* key )
+static TREE_NODE* pathtree_find_child( TREE_NODE *node, char* key )
 {
 	TREE_NODE *next = NULL;
 	int i, result;
 	
 	if ( !node ) {
-		DEBUG(0,("sorted_tree_find_child: NULL node passed into function!\n"));
+		DEBUG(0,("pathtree_find_child: NULL node passed into function!\n"));
 		return NULL;
 	}
 	
 	if ( !key ) {
-		DEBUG(0,("sorted_tree_find_child: NULL key string passed into function!\n"));
+		DEBUG(0,("pathtree_find_child: NULL key string passed into function!\n"));
 		return NULL;
 	}
 	
 	for ( i=0; i<node->num_children; i++ )
 	{	
-		DEBUG(11,("sorted_tree_find_child: child key => [%s]\n",
+		DEBUG(11,("pathtree_find_child: child key => [%s]\n",
 			node->children[i]->key));
 			
 		result = StrCaseCmp( node->children[i]->key, key );
@@ -228,7 +229,7 @@ static TREE_NODE* sorted_tree_find_child( TREE_NODE *node, char* key )
 			break;
 	}
 
-	DEBUG(11,("sorted_tree_find_child: %s [%s]\n",
+	DEBUG(11,("pathtree_find_child: %s [%s]\n",
 		next ? "Found" : "Did not find", key ));	
 	
 	return next;
@@ -238,22 +239,22 @@ static TREE_NODE* sorted_tree_find_child( TREE_NODE *node, char* key )
  Add a new node into the tree given a key path and a blob of data
  *************************************************************************/
 
-BOOL sorted_tree_add( SORTED_TREE *tree, const char *path, void *data_p )
+ BOOL pathtree_add( SORTED_TREE *tree, const char *path, void *data_p )
 {
 	char *str, *base, *path2;
 	TREE_NODE *current, *next;
 	BOOL ret = True;
 	
-	DEBUG(8,("sorted_tree_add: Enter\n"));
+	DEBUG(8,("pathtree_add: Enter\n"));
 		
 	if ( !path || *path != '/' ) {
-		DEBUG(0,("sorted_tree_add: Attempt to add a node with a bad path [%s]\n",
+		DEBUG(0,("pathtree_add: Attempt to add a node with a bad path [%s]\n",
 			path ? path : "NULL" ));
 		return False;
 	}
 	
 	if ( !tree ) {
-		DEBUG(0,("sorted_tree_add: Attempt to add a node to an uninitialized tree!\n"));
+		DEBUG(0,("pathtree_add: Attempt to add a node to an uninitialized tree!\n"));
 		return False;
 	}
 	
@@ -262,7 +263,7 @@ BOOL sorted_tree_add( SORTED_TREE *tree, const char *path, void *data_p )
 	path++;	
 	path2 = SMB_STRDUP( path );
 	if ( !path2 ) {
-		DEBUG(0,("sorted_tree_add: strdup() failed on string [%s]!?!?!\n", path));
+		DEBUG(0,("pathtree_add: strdup() failed on string [%s]!?!?!\n", path));
 		return False;
 	}
 	
@@ -286,11 +287,11 @@ BOOL sorted_tree_add( SORTED_TREE *tree, const char *path, void *data_p )
 			
 		/* iterate to the next child--birth it if necessary */
 		
-		next = sorted_tree_find_child( current, base );
+		next = pathtree_find_child( current, base );
 		if ( !next ) {
-			next = sorted_tree_birth_child( current, base );
+			next = pathtree_birth_child( current, base );
 			if ( !next ) {
-				DEBUG(0,("sorted_tree_add: Failed to create new child!\n"));
+				DEBUG(0,("pathtree_add: Failed to create new child!\n"));
 				ret =  False;
 				goto done;
 			}
@@ -310,10 +311,10 @@ BOOL sorted_tree_add( SORTED_TREE *tree, const char *path, void *data_p )
 	
 	current->data_p = data_p;
 	
-	DEBUG(10,("sorted_tree_add: Successfully added node [%s] to tree\n",
+	DEBUG(10,("pathtree_add: Successfully added node [%s] to tree\n",
 		path ));
 
-	DEBUG(8,("sorted_tree_add: Exit\n"));
+	DEBUG(8,("pathtree_add: Exit\n"));
 
 done:
 	SAFE_FREE( path2 );
@@ -325,7 +326,7 @@ done:
  Recursive routine to print out all children of a TREE_NODE
  *************************************************************************/
 
-static void sorted_tree_print_children( TREE_NODE *node, int debug, const char *path )
+static void pathtree_print_children( TREE_NODE *node, int debug, const char *path )
 {
 	int i;
 	int num_children;
@@ -347,7 +348,7 @@ static void sorted_tree_print_children( TREE_NODE *node, int debug, const char *
 		
 	num_children = node->num_children;
 	for ( i=0; i<num_children; i++ )
-		sorted_tree_print_children( node->children[i], debug, path2 );
+		pathtree_print_children( node->children[i], debug, path2 );
 	
 
 }
@@ -356,7 +357,7 @@ static void sorted_tree_print_children( TREE_NODE *node, int debug, const char *
  Dump the kys for a tree to the log file
  *************************************************************************/
 
-void sorted_tree_print_keys( SORTED_TREE *tree, int debug )
+ void pathtree_print_keys( SORTED_TREE *tree, int debug )
 {
 	int i;
 	int num_children = tree->root->num_children;
@@ -366,7 +367,7 @@ void sorted_tree_print_keys( SORTED_TREE *tree, int debug )
 			tree->root->data_p ? "data" : "NULL" ));
 	
 	for ( i=0; i<num_children; i++ ) {
-		sorted_tree_print_children( tree->root->children[i], debug, 
+		pathtree_print_children( tree->root->children[i], debug, 
 			tree->root->key ? tree->root->key : "ROOT/" );
 	}
 	
@@ -378,23 +379,23 @@ void sorted_tree_print_keys( SORTED_TREE *tree, int debug )
  the tree
  *************************************************************************/
 
-void* sorted_tree_find( SORTED_TREE *tree, char *key )
+ void* pathtree_find( SORTED_TREE *tree, char *key )
 {
 	char *keystr, *base, *str, *p;
 	TREE_NODE *current;
 	void *result = NULL;
 	
-	DEBUG(10,("sorted_tree_find: Enter [%s]\n", key ? key : "NULL" ));
+	DEBUG(10,("pathtree_find: Enter [%s]\n", key ? key : "NULL" ));
 
 	/* sanity checks first */
 	
 	if ( !key ) {
-		DEBUG(0,("sorted_tree_find: Attempt to search tree using NULL search string!\n"));
+		DEBUG(0,("pathtree_find: Attempt to search tree using NULL search string!\n"));
 		return NULL;
 	}
 	
 	if ( !tree ) {
-		DEBUG(0,("sorted_tree_find: Attempt to search an uninitialized tree using string [%s]!\n",
+		DEBUG(0,("pathtree_find: Attempt to search an uninitialized tree using string [%s]!\n",
 			key ? key : "NULL" ));
 		return NULL;
 	}
@@ -410,7 +411,7 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 		keystr = SMB_STRDUP( key );
 	
 	if ( !keystr ) {
-		DEBUG(0,("sorted_tree_find: strdup() failed on string [%s]!?!?!\n", key));
+		DEBUG(0,("pathtree_find: strdup() failed on string [%s]!?!?!\n", key));
 		return NULL;
 	}
 
@@ -428,12 +429,12 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 
 		trim_tree_keypath( p, &base, &str );
 			
-		DEBUG(11,("sorted_tree_find: [loop] base => [%s], new_path => [%s]\n", 
+		DEBUG(11,("pathtree_find: [loop] base => [%s], new_path => [%s]\n", 
 			base, str));
 
 		/* iterate to the next child */
 		
-		current = sorted_tree_find_child( current, base );
+		current = pathtree_find_child( current, base );
 	
 		/* 
 		 * the idea is that the data_p for a parent should 
@@ -452,11 +453,11 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 	
 	/* result should be the data_p from the lowest match node in the tree */
 	if ( result )
-		DEBUG(11,("sorted_tree_find: Found data_p!\n"));
+		DEBUG(11,("pathtree_find: Found data_p!\n"));
 	
 	SAFE_FREE( keystr );
 	
-	DEBUG(10,("sorted_tree_find: Exit\n"));
+	DEBUG(10,("pathtree_find: Exit\n"));
 	
 	return result;
 }
