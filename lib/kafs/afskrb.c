@@ -150,7 +150,8 @@ realm_of_cell(char *cell)
 		hp = gethostbyaddr((char*)&addr, 4, AF_INET);
 		if(hp == NULL)
 		    break;
-		strcpy(buf, hp->h_name);
+		strncpy (buf, hp->h_name, sizeof(buf));
+		buf[sizeof(buf) - 1] = '\0';
 		realm = krb_realmofhost(buf);
 		break;
 	    }
