@@ -73,11 +73,6 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 		      enum brl_type lock_type,
 		      br_off start, br_off size)
 {
-	printf("%6d   %05x:%05x    %s  %9.0f   %9.0f\n", 
-	       (int)pid, (int)dev, (int)ino, 
-	       lock_type==READ_LOCK?"R":"W",
-	       (double)start, (double)size);
-
 #if NASTY_POSIX_LOCK_HACK
 	{
 		pstring cmd;
@@ -91,6 +86,12 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 		lastino = ino;
 	}
 #endif
+
+	printf("%6d   %05x:%05x    %s  %9.0f   %9.0f   %9.0f\n", 
+	       (int)pid, (int)dev, (int)ino, 
+	       lock_type==READ_LOCK?"R":"W",
+	       (double)start, (double)size, (double)start+size);
+
 }
 
 /***************************************************** 
