@@ -294,8 +294,8 @@ void timevalfix(struct timeval *t1);
 void timevaladd(struct timeval *t1, const struct timeval *t2);
 void timevalsub(struct timeval *t1, const struct timeval *t2);
 
-void pid_write_file (const char *progname);
-void pid_delete_file (void);
+void pid_file_write (const char *progname);
+void pid_file_delete (void);
 
 int
 read_environment(const char *file, char ***env);
