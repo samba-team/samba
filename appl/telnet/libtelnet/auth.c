@@ -100,7 +100,7 @@ extern rsaencpwd_printsub();
 #endif
 
 int auth_debug_mode = 0;
-static 	char	*Name = "Noname";
+static 	const	char	*Name = "Noname";
 static	int	Server = 0;
 static	Authenticator	*authenticated = 0;
 static	int	authenticating = 0;
@@ -217,7 +217,7 @@ findauthenticator(int type, int way)
 }
 
 void
-auth_init(char *name, int server)
+auth_init(const char *name, int server)
 {
     Authenticator *ap = authenticators;
 
