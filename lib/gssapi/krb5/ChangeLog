@@ -1,3 +1,12 @@
+2003-03-15  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* Makefile.am: s/gss_aquire_cred.3/gss_acquire_cred.3/
+	* Makefile.am: man_MANS += gss_aquire_cred.3
+	
+2003-03-14  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* gss_aquire_cred.3: the gssapi api manpage
+	
 2003-03-03  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* inquire_context.c: (gss_inquire_context): rename argument open
