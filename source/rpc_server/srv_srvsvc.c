@@ -30,252 +30,6 @@ extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 /*******************************************************************
- fill in a conn info level 0 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_conn_info_0(SRV_CONN_INFO_0 *ss0, uint32 *snum, uint32 *stot)
-{
-	uint32 num_entries = 0;	
-	struct connect_record *crec;
-	uint32 connection_count;
-
-        if (!get_connection_status(&crec, &connection_count))
-	{
-		(*snum) = 0;
-		(*stot) = 0;
-		return;
-	}
-
-	(*stot) = connection_count;
-
-	if (ss0 == NULL)
-	{
-		(*snum) = 0;
-		return;
-	}
-
-	DEBUG(0,("make_srv_conn_0_ss0\n"));
-
-	if (snum)
-	{
-		for (; (*snum) < (*stot) && num_entries < MAX_CONN_ENTRIES; (*snum)++)
-		{
-			make_srv_conn_info0(&(ss0->info_0    [num_entries]), (*snum));
-
-			/* move on to creating next connection */
-			/* move on to creating next conn */
-			num_entries++;
-		}
-
-		ss0->num_entries_read  = num_entries;
-		ss0->ptr_conn_info     = num_entries > 0 ? 1 : 0;
-		ss0->num_entries_read2 = num_entries;
-		
-		
-
-		if ((*snum) >= (*stot))
-		{
-			(*snum) = 0;
-		}
-	}
-	else
-	{
-		ss0->num_entries_read = 0;
-		ss0->ptr_conn_info = 0;
-		ss0->num_entries_read2 = 0;
-
-		(*stot) = 0;
-	}
-
-	free(crec);
-}
-
-/*******************************************************************
- fill in a conn info level 1 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_conn_1_info(CONN_INFO_1    *se1, CONN_INFO_1_STR *str1,
-				uint32 id, uint32 type,
-				uint32 num_opens, uint32 num_users, uint32 open_time,
-				char *usr_name, char *net_name)
-{
-	make_srv_conn_info1    (se1 , id, type, num_opens, num_users, open_time, usr_name, net_name);
-	make_srv_conn_info1_str(str1, usr_name, net_name);
-}
-
-/*******************************************************************
- fill in a conn info level 1 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *stot)
-{
-	uint32 num_entries = 0;	
-        time_t current_time;
-        time_t diff;
-
-	struct connect_record *crec;
-	uint32 connection_count;
-
-        if (!get_connection_status(&crec, &connection_count))
-	{
-		(*snum) = 0;
-		(*stot) = 0;
-		return;
-	}
-
-	(*stot) = connection_count;
-
-	if (ss1 == NULL)
-	{
-		(*snum) = 0;
-		return;
-	}
-
-        current_time=time(NULL);
-        
-	DEBUG(5,("make_srv_conn_1_ss1\n"));
-
-	if (snum)
-	{
-		for (; (*snum) < (*stot) && num_entries < MAX_CONN_ENTRIES; (*snum)++)
-		{
-			diff = current_time - crec[num_entries].start;
-			make_srv_conn_1_info(&(ss1->info_1    [num_entries]),
-								 &(ss1->info_1_str[num_entries]),
-			                     (*snum), 0, 0, 1, diff,uidtoname(crec[num_entries].uid), 
-			                     crec[num_entries].name);
-
-/* FIXME : type of connection + number of locked files */
-
-			/* move on to creating next connection */
-			/* move on to creating next conn */
-			num_entries++;
-		}
-
-		ss1->num_entries_read  = num_entries;
-		ss1->ptr_conn_info     = num_entries > 0 ? 1 : 0;
-		ss1->num_entries_read2 = num_entries;
-		
-
-		if ((*snum) >= (*stot))
-		{
-			(*snum) = 0;
-		}
-	}
-	else
-	{
-		ss1->num_entries_read = 0;
-		ss1->ptr_conn_info = 0;
-		ss1->num_entries_read2 = 0;
-		
-		(*stot) = 0;
-	}
-
-	free(crec);
-}
-
-/*******************************************************************
- makes a SRV_R_NET_CONN_ENUM structure.
-********************************************************************/
-static uint32 make_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
-				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
-{
-	uint32 status = NT_STATUS_NOPROBLEMO;
-	DEBUG(5,("make_srv_conn_info_ctr: %d\n", __LINE__));
-
-	ctr->switch_value = switch_value;
-
-	switch (switch_value)
-	{
-		case 0:
-		{
-			make_srv_conn_info_0(&(ctr->conn.info0), resume_hnd, total_entries);
-			ctr->ptr_conn_ctr = 1;
-			break;
-		}
-		case 1:
-		{
-			make_srv_conn_info_1(&(ctr->conn.info1), resume_hnd, total_entries);
-			ctr->ptr_conn_ctr = 1;
-			break;
-		}
-		default:
-		{
-			DEBUG(5,("make_srv_conn_info_ctr: unsupported switch value %d\n",
-			          switch_value));
-			(*resume_hnd = 0);
-			(*total_entries) = 0;
-			ctr->ptr_conn_ctr = 0;
-			status = NT_STATUS_INVALID_INFO_CLASS;
-			break;
-		}
-	}
-
-	return status;
-}
-
-/*******************************************************************
- makes a SRV_R_NET_CONN_ENUM structure.
-********************************************************************/
-static void make_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
-				uint32 resume_hnd, int conn_level, int switch_value)  
-{
-	DEBUG(5,("make_srv_r_net_conn_enum: %d\n", __LINE__));
-
-	r_n->conn_level  = conn_level;
-	if (conn_level == -1)
-	{
-		r_n->status = NT_STATUS_INVALID_INFO_CLASS;
-	}
-	else
-	{
-		r_n->status = make_srv_conn_info_ctr(r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
-	}
-	if (r_n->status != NT_STATUS_NOPROBLEMO)
-	{
-		resume_hnd = 0;
-	}
-	make_enum_hnd(&(r_n->enum_hnd), resume_hnd);
-}
-
-/*******************************************************************
-net conn enum
-********************************************************************/
-static void srv_reply_net_conn_enum(SRV_Q_NET_CONN_ENUM *q_n,
-				prs_struct *rdata)
-{
-	SRV_R_NET_CONN_ENUM r_n;
-	SRV_CONN_INFO_CTR ctr;
-
-	r_n.ctr = &ctr;
-
-	DEBUG(5,("srv_net_conn_enum: %d\n", __LINE__));
-
-	/* set up the */
-	make_srv_r_net_conn_enum(&r_n,
-				get_enum_hnd(&q_n->enum_hnd),
-				q_n->conn_level,
-				q_n->ctr->switch_value);
-
-	/* store the response in the SMB stream */
-	srv_io_r_net_conn_enum("", &r_n, rdata, 0);
-
-	DEBUG(5,("srv_net_conn_enum: %d\n", __LINE__));
-}
-
-/*******************************************************************
  fill in a file info level 3 structure.
  ********************************************************************/
 static void make_srv_file_3_info(FILE_INFO_3     *fl3, FILE_INFO_3_STR *str3,
@@ -454,24 +208,37 @@ static void api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
 	srv_reply_net_file_enum(&q_n, rdata);
 }
 
-
 /*******************************************************************
 ********************************************************************/
 static void api_srv_net_conn_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_CONN_ENUM q_n;
+	SRV_R_NET_CONN_ENUM r_n;
 	SRV_CONN_INFO_CTR ctr;
 
+	ZERO_STRUCT(q_n);
+	ZERO_STRUCT(r_n);
+
 	q_n.ctr = &ctr;
+	r_n.ctr = &ctr;
+
+	r_n.conn_level = q_n.conn_level;
 
 	/* grab the net server get enum */
 	srv_io_q_net_conn_enum("", &q_n, data, 0);
 
-	/* construct reply.  always indicate success */
-	srv_reply_net_conn_enum(&q_n, rdata);
-}
+	r_n.status = _srv_net_conn_enum( &q_n.uni_srv_name,
+					ctr.switch_value, &ctr,
+					q_n.preferred_len, &q_n.enum_hnd,
+					&(r_n.total_entries),
+					q_n.conn_level );
 
+	memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
+
+	/* store the response in the SMB stream */
+	srv_io_r_net_conn_enum("", &r_n, rdata, 0);
+}
 
 /*******************************************************************
 ********************************************************************/
@@ -525,7 +292,7 @@ static void api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
 
 	r_n.share_level = q_n.share_level;
 
-	r_n.status = _srv_net_srv_share_enum( &q_n.uni_srv_name, 
+	r_n.status = _srv_net_share_enum( &q_n.uni_srv_name, 
 				ctr.switch_value, &ctr,
 				q_n.preferred_len, &q_n.enum_hnd,
 				&(r_n.total_entries),

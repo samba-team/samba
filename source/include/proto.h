@@ -5223,7 +5223,7 @@ uint32 _spoolss_getjob( const POLICY_HND *handle,
 uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod );
 uint32 _srv_net_srv_get_info( UNISTR2 *srv_name, uint32 switch_value,
                                 SRV_INFO_CTR *ctr);
-uint32 _srv_net_srv_share_enum( const UNISTR2 *srv_name, 
+uint32 _srv_net_share_enum( const UNISTR2 *srv_name, 
 				uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 				uint32 preferred_len, ENUM_HND *enum_hnd,
 				uint32 *total_entries, uint32 share_level );
@@ -5231,6 +5231,10 @@ uint32 _srv_net_sess_enum( const UNISTR2 *srv_name,
                                 uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
                                 uint32 preferred_len, ENUM_HND *enum_hnd,
                                 uint32 *total_entries, uint32 sess_level );
+uint32 _srv_net_conn_enum( const UNISTR2 *srv_name, 
+			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
+			uint32 preferred_len, ENUM_HND *enum_hnd,
+			uint32 *total_entries, uint32 conn_level );
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 
