@@ -311,11 +311,6 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 	SMB_OFF_T space_avail;
 	SMB_BIG_UINT bsize,dfree,dsize;
 
-#if 0
-	if (!lp_strict_allocate(SNUM(fsp->conn)))
-		return vfs_set_filelen(fsp, len);
-#endif
-
 	release_level_2_oplocks_on_change(fsp);
 
 	/*
@@ -344,6 +339,9 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 	}
 
 	/* Grow - we need to test if we have enough space. */
+
+	if (!lp_strict_allocate(SNUM(fsp->conn)))
+		return 0;
 
 	len -= st.st_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
