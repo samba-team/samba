@@ -29,7 +29,7 @@ static TDB_CONTEXT *namecache_tdb;
 struct nc_value {
 	time_t expiry;		     /* When entry expires */
 	int count;		     /* Number of addresses */
-	struct in_addr ip_list[0];   /* Address list */
+	struct in_addr *ip_list;   /* Address list */
 };
 
 /* Initialise namecache system */
