@@ -244,7 +244,7 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		name = pvfs_list_next(dir, &search->current_index);
 		if (name == NULL) break;
 
-		file = talloc_p(mem_ctx, union smb_search_data);
+		file = talloc(mem_ctx, union smb_search_data);
 		if (!file) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -334,7 +334,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 	/* we initially make search a child of the request, then if we
 	   need to keep it long term we steal it for the private
 	   structure */
-	search = talloc_p(req, struct pvfs_search_state);
+	search = talloc(req, struct pvfs_search_state);
 	if (!search) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -475,7 +475,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	/* we initially make search a child of the request, then if we
 	   need to keep it long term we steal it for the private
 	   structure */
-	search = talloc_p(req, struct pvfs_search_state);
+	search = talloc(req, struct pvfs_search_state);
 	if (!search) {
 		return NT_STATUS_NO_MEMORY;
 	}

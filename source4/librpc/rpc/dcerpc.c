@@ -33,7 +33,7 @@ static struct dcerpc_interface_list *dcerpc_pipes = NULL;
 */
 NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interface)
 {
-	struct dcerpc_interface_list *l = talloc_p(talloc_autofree_context(),
+	struct dcerpc_interface_list *l = talloc(talloc_autofree_context(),
 						   struct dcerpc_interface_list);
 		
 	if (idl_iface_by_name (interface->name) != NULL) {
@@ -96,7 +96,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx)
 {
 	struct dcerpc_pipe *p;
 
-	p = talloc_p(mem_ctx, struct dcerpc_pipe);
+	p = talloc(mem_ctx, struct dcerpc_pipe);
 	if (!p) {
 		return NULL;
 	}
@@ -534,7 +534,7 @@ static NTSTATUS full_request(struct dcerpc_connection *c,
 			     DATA_BLOB *request_blob,
 			     DATA_BLOB *reply_blob)
 {
-	struct full_request_state *state = talloc_p(mem_ctx, struct full_request_state);
+	struct full_request_state *state = talloc(mem_ctx, struct full_request_state);
 	NTSTATUS status;
 
 	if (state == NULL) {
@@ -864,7 +864,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 
 	p->conn->transport.recv_data = dcerpc_request_recv_data;
 
-	req = talloc_p(mem_ctx, struct rpc_request);
+	req = talloc(mem_ctx, struct rpc_request);
 	if (req == NULL) {
 		return NULL;
 	}

@@ -75,7 +75,7 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 		}
 	}
 
-	components = talloc_array_p(name, char *, num_components);
+	components = talloc_array(name, char *, num_components);
 	p = name->full_name + strlen(pvfs->base_directory);
 	*p++ = 0;
 
@@ -345,7 +345,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t
 		if (c == '\\') num_components++;
 	}
 
-	components = talloc_array_p(s, char *, num_components+1);
+	components = talloc_array(s, char *, num_components+1);
 	if (components == NULL) {
 		talloc_free(s);
 		return NT_STATUS_NO_MEMORY;
@@ -450,7 +450,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
-	*name = talloc_p(mem_ctx, struct pvfs_filename);
+	*name = talloc(mem_ctx, struct pvfs_filename);
 	if (*name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -511,7 +511,7 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
-	*name = talloc_p(mem_ctx, struct pvfs_filename);
+	*name = talloc(mem_ctx, struct pvfs_filename);
 	if (*name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -591,7 +591,7 @@ NTSTATUS pvfs_resolve_parent(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	char *p;
 
-	*name = talloc_p(mem_ctx, struct pvfs_filename);
+	*name = talloc(mem_ctx, struct pvfs_filename);
 	if (*name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

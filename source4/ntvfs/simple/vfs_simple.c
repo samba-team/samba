@@ -71,7 +71,7 @@ static NTSTATUS svfs_connect(struct ntvfs_module_context *ntvfs,
 	struct smbsrv_tcon *tcon = req->tcon;
 	struct svfs_private *private;
 
-	private = talloc_p(tcon, struct svfs_private);
+	private = talloc(tcon, struct svfs_private);
 
 	private->next_search_handle = 0;
 	private->connectpath = talloc_strdup(tcon, lp_pathname(tcon->service));
@@ -227,7 +227,7 @@ static NTSTATUS svfs_map_fileinfo(struct ntvfs_module_context *ntvfs,
 	info->generic.out.num_streams = 0;
 	/* setup a single data stream */
 	info->generic.out.num_streams = 1 + (dir?dir->count:0);
-	info->generic.out.streams = talloc_array_p(req, 
+	info->generic.out.streams = talloc_array(req, 
 						   struct stream_struct,
 						   info->generic.out.num_streams);
 	if (!info->generic.out.streams) {
@@ -380,7 +380,7 @@ do_open:
 		return map_nt_error_from_unix(errno);
 	}
 
-	f = talloc_p(req->tcon, struct svfs_file);
+	f = talloc(req->tcon, struct svfs_file);
 	f->fd = fd;
 	f->name = talloc_strdup(req->tcon, unix_path);
 
@@ -787,7 +787,7 @@ static NTSTATUS svfs_search_first(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	search = talloc_zero_p(private, struct search_state);
+	search = talloc_zero(private, struct search_state);
 	if (!search) {
 		return NT_STATUS_NO_MEMORY;
 	}

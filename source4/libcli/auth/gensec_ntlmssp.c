@@ -143,7 +143,7 @@ static NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
 	
-	gensec_ntlmssp_state = talloc_p(gensec_security, struct gensec_ntlmssp_state);
+	gensec_ntlmssp_state = talloc(gensec_security, struct gensec_ntlmssp_state);
 	if (!gensec_ntlmssp_state) {
 		return NT_STATUS_NO_MEMORY;
 	}

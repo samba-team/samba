@@ -130,7 +130,7 @@ static struct ldap_parse_tree *ldap_parse_simple(TALLOC_CTX *mem_ctx,
 	if (val && strchr("()&|", *val))
 		return NULL;
 	
-	ret = talloc_p(mem_ctx, struct ldap_parse_tree);
+	ret = talloc(mem_ctx, struct ldap_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -157,7 +157,7 @@ static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
 {
 	struct ldap_parse_tree *ret, *next;
 
-	ret = talloc_p(mem_ctx, struct ldap_parse_tree);
+	ret = talloc(mem_ctx, struct ldap_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -165,7 +165,7 @@ static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
 
 	ret->operation = op;
 	ret->u.list.num_elements = 1;
-	ret->u.list.elements = talloc_p(mem_ctx, struct ldap_parse_tree *);
+	ret->u.list.elements = talloc(mem_ctx, struct ldap_parse_tree *);
 	if (!ret->u.list.elements) {
 		errno = ENOMEM;
 		return NULL;
@@ -180,7 +180,7 @@ static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
 
 	while (*s && (next = ldap_parse_filter(mem_ctx, &s))) {
 		struct ldap_parse_tree **e;
-		e = talloc_realloc_p(ret,
+		e = talloc_realloc(ret,
 				     ret->u.list.elements,
 				     struct ldap_parse_tree *,
 				     ret->u.list.num_elements+1);
@@ -205,7 +205,7 @@ static struct ldap_parse_tree *ldap_parse_not(TALLOC_CTX *mem_ctx, const char *s
 {
 	struct ldap_parse_tree *ret;
 
-	ret = talloc_p(mem_ctx, struct ldap_parse_tree);
+	ret = talloc(mem_ctx, struct ldap_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -448,7 +448,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 
 			ldap_push_filter(&data, tree);
 
-			talloc_destroy(mem_ctx);
+			talloc_free(mem_ctx);
 		}
 
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
@@ -1186,7 +1186,7 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 		for (i=0; asn1_peek_tag(data, ASN1_SEQUENCE(0)); i++) {
 			asn1_start_tag(data, ASN1_SEQUENCE(0));
 
-			ctrl = talloc_realloc_p(msg->mem_ctx, ctrl, struct ldap_Control, i+1);
+			ctrl = talloc_realloc(msg->mem_ctx, ctrl, struct ldap_Control, i+1);
 			if (!ctrl) {
 				return False;
 			}

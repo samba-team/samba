@@ -41,7 +41,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 		}
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
 		DEBUG(0, ("Error occured while getting subkey by index: %d\n", W_ERROR_V(error1)));
@@ -60,7 +60,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 		writediff(t2, t1, out);
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
 		DEBUG(0, ("Error occured while getting subkey by index: %d\n", W_ERROR_V(error1)));
@@ -82,7 +82,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 		}
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
 		DEBUG(0, ("Error occured while getting value by index: %d\n", W_ERROR_V(error1)));
@@ -101,7 +101,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 		}
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
 		DEBUG(0, ("Error occured while getting value by index: %d\n", W_ERROR_V(error1)));

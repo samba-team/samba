@@ -408,11 +408,11 @@ failed:
 	}
 
 	/* on failure we need to fill in the reject reasons */
-	dominfo = talloc_p(mem_ctx, struct samr_DomInfo1);
+	dominfo = talloc(mem_ctx, struct samr_DomInfo1);
 	if (dominfo == NULL) {
 		return status;
 	}
-	reject = talloc_p(mem_ctx, struct samr_ChangeReject);
+	reject = talloc(mem_ctx, struct samr_ChangeReject);
 	if (reject == NULL) {
 		return status;
 	}
@@ -683,12 +683,12 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	}
 	
 	/* store the password history */
-	new_lmPwdHistory = talloc_array_p(mem_ctx, struct samr_Password, 
+	new_lmPwdHistory = talloc_array(mem_ctx, struct samr_Password, 
 					  pwdHistoryLength);
 	if (!new_lmPwdHistory) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	new_ntPwdHistory = talloc_array_p(mem_ctx, struct samr_Password, 
+	new_ntPwdHistory = talloc_array(mem_ctx, struct samr_Password, 
 					  pwdHistoryLength);
 	if (!new_ntPwdHistory) {
 		return NT_STATUS_NO_MEMORY;

@@ -80,7 +80,7 @@ struct ldb_wrap *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	w = talloc_p(mem_ctx, struct ldb_wrap);
+	w = talloc(mem_ctx, struct ldb_wrap);
 	if (w == NULL) {
 		return NULL;
 	}
@@ -151,7 +151,7 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	w = talloc_p(mem_ctx, struct tdb_wrap);
+	w = talloc(mem_ctx, struct tdb_wrap);
 	if (w == NULL) {
 		return NULL;
 	}

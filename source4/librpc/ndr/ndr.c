@@ -48,7 +48,7 @@ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	struct ndr_pull *ndr;
 
-	ndr = talloc_zero_p(mem_ctx, struct ndr_pull);
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
 	if (!ndr) return NULL;
 
 	ndr->data = blob->data;
@@ -121,14 +121,14 @@ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 {
 	struct ndr_push *ndr;
 
-	ndr = talloc_zero_p(mem_ctx, struct ndr_push);
+	ndr = talloc_zero(mem_ctx, struct ndr_push);
 	if (!ndr) {
 		return NULL;
 	}
 
 	ndr->flags = 0;
 	ndr->alloc_size = NDR_BASE_MARSHALL_SIZE;
-	ndr->data = talloc_array_p(ndr, uint8_t, ndr->alloc_size);
+	ndr->data = talloc_array(ndr, uint8_t, ndr->alloc_size);
 	if (!ndr->data) {
 		return NULL;
 	}
@@ -315,7 +315,7 @@ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
 {
 	struct ndr_print *ndr;
 
-	ndr = talloc_p(NULL, struct ndr_print);
+	ndr = talloc(NULL, struct ndr_print);
 	if (!ndr) return;
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
@@ -332,7 +332,7 @@ void ndr_print_union_debug(ndr_print_union_fn_t fn, const char *name, uint32_t l
 {
 	struct ndr_print *ndr;
 
-	ndr = talloc_p(NULL, struct ndr_print);
+	ndr = talloc(NULL, struct ndr_print);
 	if (!ndr) return;
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
@@ -348,7 +348,7 @@ void ndr_print_function_debug(ndr_print_function_t fn, const char *name, int fla
 {
 	struct ndr_print *ndr;
 
-	ndr = talloc_p(NULL, struct ndr_print);
+	ndr = talloc(NULL, struct ndr_print);
 	if (!ndr) return;
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
@@ -639,7 +639,7 @@ static NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx,
 				uint32_t value)
 {
 	struct ndr_token_list *tok;
-	tok = talloc_p(mem_ctx, struct ndr_token_list);
+	tok = talloc(mem_ctx, struct ndr_token_list);
 	if (tok == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

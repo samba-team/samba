@@ -237,7 +237,7 @@ static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data, 
 		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
-	blob = talloc_p(sock, struct sock_blob);
+	blob = talloc(sock, struct sock_blob);
 	if (blob == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -302,7 +302,7 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	struct fd_event fde;
 	NTSTATUS status;
 
-	sock = talloc_p(c, struct sock_private);
+	sock = talloc(c, struct sock_private);
 	if (!sock) {
 		return NT_STATUS_NO_MEMORY;
 	}

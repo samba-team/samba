@@ -159,7 +159,7 @@ static int next_attr(char **s, const char **attr, struct ldap_val *value)
 BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldap_val *value,
 			 struct ldap_attribute *attrib)
 {
-	attrib->values = talloc_realloc_p(mem_ctx, 
+	attrib->values = talloc_realloc(mem_ctx, 
 					  attrib->values,
 					  DATA_BLOB,
 					  attrib->num_values+1);
@@ -177,7 +177,7 @@ BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
 				       struct ldap_attribute **attribs,
 				       int *num_attribs)
 {
-	*attribs = talloc_realloc_p(mem_ctx,
+	*attribs = talloc_realloc(mem_ctx,
 				    *attribs,
 				    struct ldap_attribute,
 				    *num_attribs+1);
@@ -211,7 +211,7 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 		}
 
 		if (attrib == NULL) {
-			r->attributes = talloc_realloc_p(msg->mem_ctx,
+			r->attributes = talloc_realloc(msg->mem_ctx,
 							 r->attributes,
 							 struct ldap_attribute,
 							 r->num_attributes+1);
@@ -236,7 +236,7 @@ BOOL add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
 				    struct ldap_mod **mods,
 				    int *num_mods)
 {
-	*mods = talloc_realloc_p(mem_ctx, *mods, struct ldap_mod, (*num_mods)+1);
+	*mods = talloc_realloc(mem_ctx, *mods, struct ldap_mod, (*num_mods)+1);
 
 	if (*mods == NULL)
 		return False;

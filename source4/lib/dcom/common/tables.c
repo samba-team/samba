@@ -81,9 +81,9 @@ NTSTATUS dcom_register_interface(const void *_iface)
 
 	DEBUG(5, ("Adding DCOM interface %s\n", GUID_string(lcl_ctx, &iface->iid)));
 
-	talloc_destroy(lcl_ctx);
+	talloc_free(lcl_ctx);
 	
-	l = talloc_zero_p(interfaces?interfaces:talloc_autofree_context(), 
+	l = talloc_zero(interfaces?interfaces:talloc_autofree_context(), 
 			  struct interface_list);
 
 	l->interface = *iface;
@@ -96,7 +96,7 @@ NTSTATUS dcom_register_interface(const void *_iface)
 NTSTATUS dcom_register_class(const void *_class)
 {
 	const struct dcom_class *class = _class;
-	struct class_list *l = talloc_zero_p(classes?classes:talloc_autofree_context(), 
+	struct class_list *l = talloc_zero(classes?classes:talloc_autofree_context(), 
 					     struct class_list);
 
 	l->class = *class;

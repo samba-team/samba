@@ -173,7 +173,7 @@ BOOL torture_rpc_eventlog(void)
 
 	test_CloseEventLog(p, mem_ctx, &handle);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
     torture_rpc_close(p);
 

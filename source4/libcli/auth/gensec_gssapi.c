@@ -62,7 +62,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
 
-	gensec_gssapi_state = talloc_p(gensec_security, struct gensec_gssapi_state);
+	gensec_gssapi_state = talloc(gensec_security, struct gensec_gssapi_state);
 	if (!gensec_gssapi_state) {
 		return NT_STATUS_NO_MEMORY;
 	}

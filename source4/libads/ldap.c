@@ -277,7 +277,7 @@ static struct berval *dup_berval(TALLOC_CTX *ctx, const struct berval *in_val)
 
 	if (!in_val) return NULL;
 
-	value = talloc_zero_p(ctx, struct berval);
+	value = talloc_zero(ctx, struct berval);
 	if (value == NULL)
 		return NULL;
 	if (in_val->bv_len == 0) return value;
@@ -479,7 +479,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	ldap_controls_free(rcontrols);
 
 done:
-	talloc_destroy(ctx);
+	talloc_free(ctx);
 	/* if/when we decide to utf8-encode attrs, take out this next line */
 	str_list_free(&search_attrs);
 
@@ -641,7 +641,7 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	}
 
  done:
-	talloc_destroy(ctx);
+	talloc_free(ctx);
 	/* if/when we decide to utf8-encode attrs, take out this next line */
 	str_list_free(&search_attrs);
 	return ADS_ERROR(rc);
@@ -805,7 +805,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		*mods = modlist;
 	}
 		
-	if (!(modlist[curmod] = talloc_zero_p(ctx, LDAPMod)))
+	if (!(modlist[curmod] = talloc_zero(ctx, LDAPMod)))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	modlist[curmod]->mod_type = talloc_strdup(ctx, name);
 	if (mod_op & LDAP_MOD_BVALUES) {
@@ -1088,7 +1088,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 		}
 	}
 done:
-	talloc_destroy(ctx);
+	talloc_free(ctx);
 	return ret;
 }
 
@@ -1158,13 +1158,13 @@ static void dump_sd(const char *filed, struct berval **values)
 	/* parse secdesc */
 	if (!sec_io_desc("sd", &psd, &ps, 1)) {
 		prs_mem_free(&ps);
-		talloc_destroy(ctx);
+		talloc_free(ctx);
 		return;
 	}
 	if (psd) ads_disp_sd(psd);
 
 	prs_mem_free(&ps);
-	talloc_destroy(ctx);
+	talloc_free(ctx);
 }
 
 /*
@@ -1292,7 +1292,7 @@ void ads_process_results(ADS_STRUCT *ads, void *res,
 		fn(NULL, NULL, data_area); /* completed an entry */
 
 	}
-	talloc_destroy(ctx);
+	talloc_free(ctx);
 }
 
 /**
@@ -1514,7 +1514,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 ads_set_sd_error:
 	ads_msgfree(ads, res);
 	prs_mem_free(&ps_wire);
-	talloc_destroy(ctx);
+	talloc_free(ctx);
 	return ret;
 }
 
@@ -1593,7 +1593,7 @@ char **ads_pull_strings(ADS_STRUCT *ads,
 
 	*num_values = ldap_count_values(values);
 
-	ret = talloc_array_p(mem_ctx, char *, *num_values+1);
+	ret = talloc_array(mem_ctx, char *, *num_values+1);
 	if (!ret) {
 		ldap_value_free(values);
 		return NULL;
@@ -1840,7 +1840,7 @@ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	for (i=0; values[i]; i++)
 		/* nop */ ;
 
-	(*sids) = talloc_array_p(mem_ctx, DOM_SID, i);
+	(*sids) = talloc_array(mem_ctx, DOM_SID, i);
 	if (!(*sids)) {
 		ldap_value_free_len(values);
 		return 0;
@@ -2000,7 +2000,7 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 
 	p = strchr(value, ':');
 	if (!p) {
-		talloc_destroy(ctx);
+		talloc_free(ctx);
 		DEBUG(1, ("ads_server_info: returned ldap server name did not contain a ':' "
 			  "so was deemed invalid\n"));
 		return ADS_ERROR(LDAP_DECODING_ERROR);
@@ -2011,7 +2011,7 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	ads->config.ldap_server_name = strdup(p+1);
 	p = strchr(ads->config.ldap_server_name, '$');
 	if (!p || p[1] != '@') {
-		talloc_destroy(ctx);
+		talloc_free(ctx);
 		DEBUG(1, ("ads_server_info: returned ldap server name (%s) does not contain '$@'"
 			  " so was deemed invalid\n", ads->config.ldap_server_name));
 		SAFE_FREE(ads->config.ldap_server_name);
@@ -2037,7 +2037,7 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 		DEBUG(4,("time offset is %d seconds\n", ads->auth.time_offset));
 	}
 
-	talloc_destroy(ctx);
+	talloc_free(ctx);
 
 	return ADS_SUCCESS;
 }

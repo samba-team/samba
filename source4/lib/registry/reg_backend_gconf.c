@@ -35,7 +35,7 @@ static WERROR reg_open_gconf_hive(struct registry_hive *h, struct registry_key *
 	h->backend_data = (void *)gconf_client_get_default();
 	if(!h->backend_data) return WERR_FOOBAR;
 	
-	*k = talloc_p(h, struct registry_key);
+	*k = talloc(h, struct registry_key);
 	(*k)->name = talloc_strdup(*k, "");
 	(*k)->path = talloc_strdup(*k, "");
 	(*k)->backend_data = talloc_strdup(*k, "/");
@@ -57,7 +57,7 @@ static WERROR gconf_open_key (TALLOC_CTX *mem_ctx, struct registry_key *h, const
 		return WERR_DEST_NOT_FOUND;
 	}
 
-	ret = talloc_p(mem_ctx, struct registry_key);
+	ret = talloc(mem_ctx, struct registry_key);
 	ret->backend_data = fullpath;
 
 	*key = ret;
@@ -83,7 +83,7 @@ static WERROR gconf_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *p,
 	entry = cur->data;
 	value = gconf_entry_get_value(entry);
 		
-	newval = talloc_p(mem_ctx, struct registry_value);
+	newval = talloc(mem_ctx, struct registry_value);
 	newval->name = talloc_strdup(mem_ctx, strrchr(gconf_entry_get_key(entry), '/')+1);
 	if(value) {
 		switch(value->type) {
@@ -99,20 +99,20 @@ static WERROR gconf_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *p,
 
 		case GCONF_VALUE_INT:
 			newval->data_type = REG_DWORD;
-			newval->data_blk = talloc_p(mem_ctx, long);
+			newval->data_blk = talloc(mem_ctx, long);
 			*((long *)newval->data_blk) = gconf_value_get_int(value);
 			newval->data_len = sizeof(long);
 			break;
 
 		case GCONF_VALUE_FLOAT:
-			newval->data_blk = talloc_p(mem_ctx, double);
+			newval->data_blk = talloc(mem_ctx, double);
 			newval->data_type = REG_BINARY;
 			*((double *)newval->data_blk) = gconf_value_get_float(value);
 			newval->data_len = sizeof(double);
 			break;
 
 		case GCONF_VALUE_BOOL:
-			newval->data_blk = talloc_p(mem_ctx, BOOL);
+			newval->data_blk = talloc(mem_ctx, BOOL);
 			newval->data_type = REG_BINARY;
 			*((BOOL *)newval->data_blk) = gconf_value_get_bool(value);
 			newval->data_len = sizeof(BOOL);
@@ -142,7 +142,7 @@ static WERROR gconf_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *p
 	
 	if(!cur) return WERR_NO_MORE_ITEMS;
 	
-	*sub = talloc_p(mem_ctx, struct registry_key);	
+	*sub = talloc(mem_ctx, struct registry_key);	
 	(*sub)->name = talloc_strdup(mem_ctx, strrchr((char *)cur->data, '/')+1);
 	(*sub)->backend_data = talloc_strdup(mem_ctx, cur->data);
 

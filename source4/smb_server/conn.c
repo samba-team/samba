@@ -69,7 +69,7 @@ struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn)
 	struct smbsrv_tcon *tcon;
 	int i;
 
-	tcon = talloc_zero_p(smb_conn, struct smbsrv_tcon);
+	tcon = talloc_zero(smb_conn, struct smbsrv_tcon);
 	if (!tcon) return NULL;
 
 	i = idr_get_new(smb_conn->tree.idtree_tid, tcon, UINT16_MAX);

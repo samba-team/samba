@@ -180,12 +180,12 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	f = talloc_p(req, struct pvfs_file);
+	f = talloc(req, struct pvfs_file);
 	if (f == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	f->handle = talloc_p(f, struct pvfs_file_handle);
+	f->handle = talloc(f, struct pvfs_file_handle);
 	if (f->handle == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -468,12 +468,12 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		flags = O_RDONLY;
 	}
 
-	f = talloc_p(req, struct pvfs_file);
+	f = talloc(req, struct pvfs_file);
 	if (f == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	f->handle = talloc_p(f, struct pvfs_file_handle);
+	f->handle = talloc(f, struct pvfs_file_handle);
 	if (f->handle == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -805,7 +805,7 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 		}
 	}
 
-	r = talloc_p(req, struct pvfs_open_retry);
+	r = talloc(req, struct pvfs_open_retry);
 	if (r == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -962,12 +962,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	f = talloc_p(req, struct pvfs_file);
+	f = talloc(req, struct pvfs_file);
 	if (f == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	f->handle = talloc_p(f, struct pvfs_file_handle);
+	f->handle = talloc(f, struct pvfs_file_handle);
 	if (f->handle == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

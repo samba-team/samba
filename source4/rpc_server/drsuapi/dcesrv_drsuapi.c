@@ -40,7 +40,7 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	r->out.bind_info = NULL;
 	ZERO_STRUCTP(r->out.bind_handle);
 
-	b_state = talloc_p(dce_call->conn, struct drsuapi_bind_state);
+	b_state = talloc(dce_call->conn, struct drsuapi_bind_state);
 	WERR_TALLOC_CHECK(b_state);
 
 	b_state->sam_ctx = samdb_connect(b_state);
@@ -57,7 +57,7 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 
 	handle->data = talloc_steal(handle, b_state);
 
-	bind_info = talloc_p(mem_ctx, struct drsuapi_DsBindInfoCtr);
+	bind_info = talloc(mem_ctx, struct drsuapi_DsBindInfoCtr);
 	WERR_TALLOC_CHECK(bind_info);
 
 	ZERO_STRUCT(site_guid);

@@ -77,7 +77,7 @@ static struct rap_call *new_rap_srv_call(TALLOC_CTX *mem_ctx,
 {
 	struct rap_call *call;
 
-	call = talloc_p(mem_ctx, struct rap_call);
+	call = talloc(mem_ctx, struct rap_call);
 
 	if (call == NULL)
 		return NULL;
@@ -92,7 +92,7 @@ static struct rap_call *new_rap_srv_call(TALLOC_CTX *mem_ctx,
 	call->ndr_pull_data = ndr_pull_init_blob(&trans->in.data, mem_ctx);
 	call->ndr_pull_data->flags = RAPNDR_FLAGS;
 
-	call->heap = talloc_p(mem_ctx, struct rap_string_heap);
+	call->heap = talloc(mem_ctx, struct rap_string_heap);
 
 	if (call->heap == NULL)
 		return NULL;
@@ -179,7 +179,7 @@ static NTSTATUS rap_push_string(struct ndr_push *data_push,
 	NDR_CHECK(ndr_push_uint16(data_push, heap->offset));
 	NDR_CHECK(ndr_push_uint16(data_push, 0));
 
-	heap->strings = talloc_realloc_p(heap->mem_ctx,
+	heap->strings = talloc_realloc(heap->mem_ctx,
 					 heap->strings,
 					 const char *,
 					 heap->num_strings + 1);

@@ -300,7 +300,7 @@ static BOOL test_Insert(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.num_ents = 1;
 
-	r.in.entries = talloc_array_p(mem_ctx, struct epm_entry_t, 1);
+	r.in.entries = talloc_array(mem_ctx, struct epm_entry_t, 1);
 	ZERO_STRUCT(r.in.entries[0].object);
 	r.in.entries[0].annotation = "smbtorture endpoint";
 	status = dcerpc_parse_binding(mem_ctx, "ncalrpc:[SMBTORTURE]", &bd);
@@ -309,7 +309,7 @@ static BOOL test_Insert(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	r.in.entries[0].tower = talloc_p(mem_ctx, struct epm_twr_t);
+	r.in.entries[0].tower = talloc(mem_ctx, struct epm_twr_t);
 
 	status = dcerpc_binding_build_tower(mem_ctx, &bd, &r.in.entries[0].tower->tower);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -343,7 +343,7 @@ static BOOL test_InqObject(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct epm_InqObject r;
 
-	r.in.epm_object = talloc_p(mem_ctx, struct GUID);
+	r.in.epm_object = talloc(mem_ctx, struct GUID);
 	GUID_from_string(DCERPC_EPMAPPER_UUID, r.in.epm_object);
 
 	status = dcerpc_epm_InqObject(p, mem_ctx, &r);
@@ -384,7 +384,7 @@ BOOL torture_rpc_epmapper(void)
 		ret = False;
 	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	torture_rpc_close(p);
 

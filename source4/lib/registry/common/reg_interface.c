@@ -44,7 +44,7 @@ NTSTATUS registry_register(const void *_hive_ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	entry = talloc_p(talloc_autofree_context(), struct reg_init_function_entry);
+	entry = talloc(talloc_autofree_context(), struct reg_init_function_entry);
 	entry->hive_functions = hive_ops;
 
 	DLIST_ADD(backends, entry);
@@ -93,8 +93,8 @@ static struct {
 int reg_list_predefs(TALLOC_CTX *mem_ctx, char ***predefs, uint32_t **hkeys)
 {
 	int i;
-	*predefs = talloc_array_p(mem_ctx, char *, ARRAY_SIZE(predef_names));
-	*hkeys = talloc_array_p(mem_ctx, uint32_t, ARRAY_SIZE(predef_names));
+	*predefs = talloc_array(mem_ctx, char *, ARRAY_SIZE(predef_names));
+	*hkeys = talloc_array(mem_ctx, uint32_t, ARRAY_SIZE(predef_names));
 
 	for (i = 0; predef_names[i].name; i++) {
 		(*predefs)[i] = talloc_strdup(mem_ctx, predef_names[i].name);
@@ -129,7 +129,7 @@ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, const char *
 
 WERROR reg_close (struct registry_context *ctx)
 {
-	talloc_destroy(ctx);
+	talloc_free(ctx);
 
 	return WERR_OK;
 }
@@ -165,7 +165,7 @@ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *backend, const char *lo
 		return WERR_NOT_SUPPORTED;
 	}
 	
-	rethive = talloc_p(parent_ctx, struct registry_hive);
+	rethive = talloc(parent_ctx, struct registry_hive);
 	rethive->location = location?talloc_strdup(rethive, location):NULL;
 	rethive->functions = entry->hive_functions;
 	rethive->backend_data = NULL;
@@ -277,7 +277,7 @@ WERROR reg_key_num_subkeys(struct registry_key *key, int *count)
 		TALLOC_CTX *mem_ctx = talloc_init("num_subkeys");
 		
 		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, key, i, &dest)); i++);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 
 		*count = i;
 		if(W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) error = WERR_OK;
@@ -303,7 +303,7 @@ WERROR reg_key_num_values(struct registry_key *key, int *count)
 		TALLOC_CTX *mem_ctx = talloc_init("num_subkeys");
 		
 		for(i = 0; W_ERROR_IS_OK(error = key->hive->functions->get_value_by_index(mem_ctx, key, i, &dest)); i++);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 
 		*count = i;
 		if(W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) error = WERR_OK;
@@ -490,7 +490,7 @@ WERROR reg_key_subkeysizes(struct registry_key *key, uint32 *max_subkeylen, uint
 		i++;
 	} while (W_ERROR_IS_OK(error));
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return WERR_OK;
 }
@@ -517,7 +517,7 @@ WERROR reg_key_valuesizes(struct registry_key *key, uint32 *max_valnamelen, uint
 		i++;
 	} while (W_ERROR_IS_OK(error));
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return WERR_OK;
 }

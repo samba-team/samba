@@ -258,7 +258,7 @@ int samdb_search_string_multiple(struct ldb_wrap *sam_ctx,
 		}
 	}
 
-	*strs = talloc_array_p(mem_ctx, const char *, count+1);
+	*strs = talloc_array(mem_ctx, const char *, count+1);
 	if (! *strs) {
 		samdb_search_free(sam_ctx, mem_ctx, res);
 		return -1;
@@ -467,7 +467,7 @@ uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 		return 0;
 	}
 
-	*hashes = talloc_array_p(mem_ctx, struct samr_Password, count);
+	*hashes = talloc_array(mem_ctx, struct samr_Password, count);
 	if (! *hashes) {
 		return 0;
 	}
@@ -488,7 +488,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 	struct samr_Password *lmPwdHash, *ntPwdHash;
 	if (unicodePwd) {
 		if (nt_pwd) {
-			ntPwdHash = talloc_p(mem_ctx, struct samr_Password);
+			ntPwdHash = talloc(mem_ctx, struct samr_Password);
 			if (!ntPwdHash) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -500,7 +500,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 		if (lm_pwd) {
 			BOOL lm_hash_ok;
 		
-			lmPwdHash = talloc_p(mem_ctx, struct samr_Password);
+			lmPwdHash = talloc(mem_ctx, struct samr_Password);
 			if (!lmPwdHash) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -551,7 +551,7 @@ struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_
 	const int units_per_week = 168;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
 	ZERO_STRUCT(hours);
-	hours.bits = talloc_array_p(mem_ctx, uint8, units_per_week);
+	hours.bits = talloc_array(mem_ctx, uint8, units_per_week);
 	if (!hours.bits) {
 		return hours;
 	}

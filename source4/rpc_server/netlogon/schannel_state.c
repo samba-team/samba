@@ -154,7 +154,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	const struct ldb_val *val;
 	char *expr=NULL;
 
-	*creds = talloc_zero_p(mem_ctx, struct creds_CredentialState);
+	*creds = talloc_zero(mem_ctx, struct creds_CredentialState);
 	if (!*creds) {
 		return NT_STATUS_NO_MEMORY;
 	}

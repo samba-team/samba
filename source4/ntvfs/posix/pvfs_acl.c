@@ -195,7 +195,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	uid_t uid = -1;
 	gid_t gid = -1;
 
-	acl = talloc_p(req, struct xattr_NTACL);
+	acl = talloc(req, struct xattr_NTACL);
 	if (acl == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -289,7 +289,7 @@ NTSTATUS pvfs_acl_query(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	struct security_descriptor *sd;
 
-	acl = talloc_p(req, struct xattr_NTACL);
+	acl = talloc(req, struct xattr_NTACL);
 	if (acl == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -367,7 +367,7 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	struct security_descriptor *sd;
 
-	acl = talloc_p(req, struct xattr_NTACL);
+	acl = talloc(req, struct xattr_NTACL);
 	if (acl == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -595,7 +595,7 @@ NTSTATUS pvfs_acl_inherit(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	acl = talloc_p(req, struct xattr_NTACL);
+	acl = talloc(req, struct xattr_NTACL);
 	if (acl == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

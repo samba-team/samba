@@ -44,7 +44,7 @@ static struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, uint16 callno)
 {
 	struct rap_call *call;
 
-	call = talloc_p(mem_ctx, struct rap_call);
+	call = talloc(mem_ctx, struct rap_call);
 
 	if (call == NULL)
 		return NULL;
@@ -241,7 +241,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.count));
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.available));
 
-	r->out.info = talloc_array_p(call, union rap_shareenum_info,
+	r->out.info = talloc_array(call, union rap_shareenum_info,
 				     r->out.count);
 
 	if (r->out.info == NULL) {
@@ -272,7 +272,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 	result = NT_STATUS_OK;
 
  done:
-	talloc_destroy(call);
+	talloc_free(call);
 	return result;
 }
 
@@ -335,7 +335,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.count));
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.available));
 
-	r->out.info = talloc_array_p(call, union rap_server_info,
+	r->out.info = talloc_array(call, union rap_server_info,
 				     r->out.count);
 
 	if (r->out.info == NULL) {
@@ -367,7 +367,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 	result = NT_STATUS_OK;
 
  done:
-	talloc_destroy(call);
+	talloc_free(call);
 	return result;
 }
 
@@ -433,7 +433,7 @@ BOOL torture_raw_rap(void)
 	}
 
 	torture_close_connection(cli);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return ret;
 }

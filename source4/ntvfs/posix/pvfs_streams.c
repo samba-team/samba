@@ -38,7 +38,7 @@ NTSTATUS pvfs_stream_information(struct pvfs_state *pvfs,
 	int i;
 	NTSTATUS status;
 
-	streams = talloc_p(mem_ctx, struct xattr_DosStreams);
+	streams = talloc(mem_ctx, struct xattr_DosStreams);
 	if (streams == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -49,7 +49,7 @@ NTSTATUS pvfs_stream_information(struct pvfs_state *pvfs,
 	}
 
 	info->num_streams = streams->num_streams+1;
-	info->streams = talloc_array_p(mem_ctx, struct stream_struct, info->num_streams);
+	info->streams = talloc_array(mem_ctx, struct stream_struct, info->num_streams);
 	if (!info->streams) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -85,7 +85,7 @@ NTSTATUS pvfs_stream_info(struct pvfs_state *pvfs, struct pvfs_filename *name, i
 		return NT_STATUS_OK;
 	}
 
-	streams = talloc_p(name, struct xattr_DosStreams);
+	streams = talloc(name, struct xattr_DosStreams);
 	if (streams == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -127,7 +127,7 @@ static NTSTATUS pvfs_stream_update_size(struct pvfs_state *pvfs, struct pvfs_fil
 	int i;
 	NTSTATUS status;
 
-	streams = talloc_p(name, struct xattr_DosStreams);
+	streams = talloc(name, struct xattr_DosStreams);
 	if (streams == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -148,7 +148,7 @@ static NTSTATUS pvfs_stream_update_size(struct pvfs_state *pvfs, struct pvfs_fil
 
 	if (i == streams->num_streams) {
 		struct xattr_DosStream *s;
-		streams->streams = talloc_realloc_p(streams, streams->streams, 
+		streams->streams = talloc_realloc(streams, streams->streams, 
 						    struct xattr_DosStream,
 						    streams->num_streams+1);
 		if (streams->streams == NULL) {
@@ -204,7 +204,7 @@ NTSTATUS pvfs_stream_delete(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	streams = talloc_p(name, struct xattr_DosStreams);
+	streams = talloc(name, struct xattr_DosStreams);
 	if (streams == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -71,7 +71,7 @@ static NTSTATUS echo_TestCall(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 static NTSTATUS echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestCall2 *r)
 {
-	r->out.info = talloc_p(mem_ctx, union echo_Info);
+	r->out.info = talloc(mem_ctx, union echo_Info);
 	if (!r->out.info) {
 		return NT_STATUS_NO_MEMORY;
 	}

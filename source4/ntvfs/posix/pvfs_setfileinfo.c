@@ -174,7 +174,7 @@ NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	ealist = talloc_p(name, struct xattr_DosEAs);
+	ealist = talloc(name, struct xattr_DosEAs);
 
 	/* load the current list */
 	status = pvfs_doseas_load(pvfs, name, fd, ealist);
@@ -194,7 +194,7 @@ NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs,
 
 		if (i==ealist->num_eas) {
 			/* add it */
-			ealist->eas = talloc_realloc_p(ealist, ealist->eas, 
+			ealist->eas = talloc_realloc(ealist, ealist->eas, 
 						       struct xattr_EA, 
 						       ealist->num_eas+1);
 			if (ealist->eas == NULL) {

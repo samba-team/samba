@@ -279,7 +279,7 @@ static NTSTATUS test_enumtrusts(struct smbcli_transport *transport)
 				 DCERPC_LSARPC_VERSION);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -326,7 +326,7 @@ static NTSTATUS test_enumtrusts(struct smbcli_transport *transport)
 
 	talloc_free(p);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return NT_STATUS_OK;
 }
@@ -350,7 +350,7 @@ static NTSTATUS test_lookupnames(struct smbcli_transport *transport,
 				 DCERPC_LSARPC_VERSION);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -404,7 +404,7 @@ static NTSTATUS test_lookupnames(struct smbcli_transport *transport,
 		    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
 			printf("LookupNames failed - %s\n", nt_errstr(status));
 			talloc_free(p);
-			talloc_destroy(mem_ctx);
+			talloc_free(mem_ctx);
 			return NT_STATUS_OK;
 		}
 	}
@@ -425,7 +425,7 @@ static NTSTATUS test_lookupnames(struct smbcli_transport *transport,
 
 	talloc_free(p);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return NT_STATUS_OK;
 }
@@ -457,7 +457,7 @@ static NTSTATUS setup_netlogon_creds(struct smbcli_transport *transport,
 				 DCERPC_NETLOGON_VERSION);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -569,7 +569,7 @@ static NTSTATUS torture_samlogon(struct dcerpc_pipe *p,
 			      &lmv2_response, &ntlmv2_response, 
 			      NULL, NULL)) {
 		data_blob_free(&names_blob);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	data_blob_free(&names_blob);
@@ -591,7 +591,7 @@ static NTSTATUS torture_samlogon(struct dcerpc_pipe *p,
 
 	log.out.return_authenticator = NULL;
 	status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &log);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	data_blob_free(&lmv2_response);
 	data_blob_free(&ntlmv2_response);
 	return status;
@@ -616,7 +616,7 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 				 DCERPC_SAMR_VERSION);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -720,14 +720,14 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 
 		l.in.domain_handle = &domain_handle;
 		l.in.num_rids = g.out.rids->count;
-		l.in.rids = talloc_array_p(mem_ctx, uint32_t, g.out.rids->count);
+		l.in.rids = talloc_array(mem_ctx, uint32_t, g.out.rids->count);
 
 		for (i=0; i<g.out.rids->count; i++)
 			l.in.rids[i] = g.out.rids->rid[i].rid;
 
 		status = dcerpc_samr_LookupRids(p, mem_ctx, &l);
 		if (!NT_STATUS_IS_OK(status)) {
-			talloc_destroy(mem_ctx);
+			talloc_free(mem_ctx);
 			return status;
 		}
 	}
@@ -749,7 +749,7 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 	}
 
 	talloc_free(p);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return NT_STATUS_OK;
 }
@@ -780,7 +780,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 				 DCERPC_SAMR_VERSION);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -912,7 +912,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 		ga.in.domain_handle = &builtin_handle;
 
 		sids.num_sids = g.out.rids->count+2;
-		sids.sids = talloc_array_p(mem_ctx, struct lsa_SidPtr,
+		sids.sids = talloc_array(mem_ctx, struct lsa_SidPtr,
 					   g.out.rids->count+2);
 		sids.sids[0].sid = user_sid;
 		sids.sids[1].sid = primary_group_sid;
@@ -958,7 +958,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 	}
 
 	talloc_free(p);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return NT_STATUS_OK;
 }
@@ -979,7 +979,7 @@ static NTSTATUS test_remoteTOD(struct smbcli_transport *transport)
 				 DCERPC_SRVSVC_VERSION);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -993,7 +993,7 @@ static NTSTATUS test_remoteTOD(struct smbcli_transport *transport)
 
 	ZERO_STRUCT(r.out);
 	status = dcerpc_srvsvc_NetRemoteTOD(p, mem_ctx, &r);
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	talloc_free(p);
 	return status;
 }
@@ -1021,7 +1021,7 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 	if (mem_ctx == NULL)
 		return False;
 
-	netlogon_creds = talloc_p(mem_ctx, struct creds_CredentialState);
+	netlogon_creds = talloc(mem_ctx, struct creds_CredentialState);
 	if (!netlogon_creds) {
 		return False;
 	}
@@ -1112,7 +1112,7 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 
 	talloc_free(transport);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return True;
 }

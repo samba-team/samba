@@ -253,11 +253,11 @@ WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CT
 			int count;
 			int i;
 
-			ctr1 = talloc_p(mem_ctx, struct drsuapi_DsNameCtr1);
+			ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
 			WERR_TALLOC_CHECK(ctr1);
 
 			count = r->in.req.req1.count;
-			names = talloc_array_p(mem_ctx, struct drsuapi_DsNameInfo1, count);
+			names = talloc_array(mem_ctx, struct drsuapi_DsNameInfo1, count);
 			WERR_TALLOC_CHECK(names);
 
 			for (i=0; i < count; i++) {

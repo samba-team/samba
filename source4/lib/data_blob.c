@@ -150,7 +150,7 @@ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
 	int i;
 	char *hex_string;
 
-	hex_string = talloc_array_p(mem_ctx, char, (blob->length*2)+1);
+	hex_string = talloc_array(mem_ctx, char, (blob->length*2)+1);
 	if (!hex_string) {
 		return NULL;
 	}

@@ -70,7 +70,7 @@ void update_joblist(void)
                         -1);
 
 	}
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	gtk_widget_set_sensitive(tasks, TRUE);
 }
 
@@ -115,12 +115,12 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 		gtk_show_ntstatus(mainwin, status);
 		at_pipe = NULL;
 		gtk_widget_destroy(GTK_WIDGET(d));
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		return;
 	}
 	gtk_widget_destroy(GTK_WIDGET(d));
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	update_joblist();
 }
 
@@ -164,12 +164,12 @@ on_new_activate                        (GtkMenuItem     *menuitem,
 
 	status = dcerpc_atsvc_JobAdd(at_pipe, mem_ctx, &r);
 	if(!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		gtk_show_ntstatus(mainwin, status);
 		return;
 	}
 	
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	gtk_widget_destroy(d);
 	
 	d = gtk_message_dialog_new (GTK_WINDOW(mainwin), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Job Id: %d", r.out.job_id);
@@ -200,7 +200,7 @@ on_delete_activate                     (GtkMenuItem     *menuitem,
 
 		mem_ctx = talloc_init("del_job");
 		status = dcerpc_atsvc_JobDel(at_pipe, mem_ctx, &r);
-		talloc_destroy(mem_ctx);
+		talloc_free(mem_ctx);
 		if(!NT_STATUS_IS_OK(status)) {
 			gtk_show_ntstatus(mainwin, status);
 			return;

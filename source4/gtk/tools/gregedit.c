@@ -990,7 +990,7 @@ static GtkWidget* create_savefilewin (void)
 
 	gtk_main ();
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 	return 0;
 }
 
