@@ -145,7 +145,7 @@ AC_CHECK_HEADERS(curses.h db.h dbm.h dirent.h err.h errno.h)
 AC_CHECK_HEADERS(fcntl.h grp.h inttypes.h limits.h ndbm.h net/if.h netdb.h)
 AC_CHECK_HEADERS(netinet/in.h netinet/in6.h netinet/in6_var.h)
 AC_CHECK_HEADERS(netinet/in6_machtypes.h netinet/in_systm.h)
-AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinfo/ni.h paths.h pty.h pwd.h)
+AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinfo/ni.h netinet6/in6.h paths.h pty.h pwd.h)
 AC_CHECK_HEADERS(rpcsvc/dbm.h sac.h sgtty.h shadow.h signal.h stropts.h)
 AC_CHECK_HEADERS(sys/bitypes.h sys/file.h sys/filio.h sys/ioctl.h)
 AC_CHECK_HEADERS(sys/param.h sys/proc.h sys/pty.h sys/ptyio.h)
@@ -171,7 +171,8 @@ AC_FIND_FUNC(syslog, syslog)
 
 AC_FIND_FUNC(logwtmp, util)
 AC_FIND_FUNC_NO_LIBS(tgetent, termcap)
-AC_FIND_FUNC(inet_ntop, ip6)
+AC_FIND_FUNC(gethostbyname2, inet6 ip6)
+AC_FIND_FUNC(inet_ntop, inet6 ip6)
 AC_CHECK_FUNCS(inet_pton)
 
 dnl Checks for library functions.
@@ -179,7 +180,7 @@ dnl Checks for library functions.
 AC_BROKEN_SNPRINTF
 AC_BROKEN_VSNPRINTF
 
-AC_CHECK_FUNCS(_getpty asnprintf asprintf fcntl gethostname gethostbyname2)
+AC_CHECK_FUNCS(_getpty asnprintf asprintf fcntl gethostname)
 AC_CHECK_FUNCS(getmsg grantpt logwtmp mktime ptsname rand random)
 AC_CHECK_FUNCS(revoke select setitimer setlogin setpcred setpgid)
 AC_CHECK_FUNCS(setsid setsockopt sigaction strstr timegm ttyname umask)
