@@ -262,7 +262,6 @@ akf_add_entry(krb5_context context,
 {
     struct akf_data *d = id->data;
     int fd, created = 0;
-    int32_t kvno;
     krb5_error_code ret;
 
     fd = open (d->filename, O_RDWR | O_BINARY);
