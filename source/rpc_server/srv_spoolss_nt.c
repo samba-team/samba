@@ -5175,7 +5175,13 @@ WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R
 		return WERR_BADFID;
 
 	(*buffer_written) = print_job_write(snum, Printer->jobid, (char *)buffer, buffer_size);
-
+	if (*buffer_written == -1) {
+		r_u->buffer_written = 0;
+		if (errno == ENOSPC)
+			return WERR_NO_SPOOL_SPACE;
+		else
+			return WERR_ACCESS_DENIED;
+	}
 
 	r_u->buffer_written = q_u->buffer_size2;
 

@@ -1265,42 +1265,6 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 	return len;
 }
 
-#if 0 /* JRATEST */
-/****************************************************************************
- Determine the number of jobs in all queues. This is very expensive. Don't
- call ! JRA.
-****************************************************************************/
-
-static int get_total_jobs(void)
-{
-	int total_jobs = 0;
-	int snum;
-	int services = lp_numservices();
-
-	for (snum = 0; snum < services; snum++) {
-		struct tdb_print_db *pdb;
-		int jobs;
-
-		if (!lp_print_ok(snum))
-			continue;
-
-		pdb = get_print_db_byname(lp_const_servicename(snum));
-		if (!pdb)
-			continue;
-
-		/* make sure the database is up to date */
-		if (print_cache_expired(snum))
-			print_queue_update(snum);
-
-		jobs = tdb_fetch_int32(pdb->tdb, "INFO/total_jobs");
-		if (jobs > 0)
-			total_jobs += jobs;
-		release_print_db(pdb);
-	}
-	return total_jobs;
-}
-#endif /* JRATEST */
-
 /***************************************************************************
  Start spooling a job - return the jobid.
 ***************************************************************************/
@@ -1363,17 +1327,6 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 		errno = ENOSPC;
 		return (uint32)-1;
 	}
-
-#if 0 /* JRATEST */
-	/* Insure the maximum print jobs in the system is not violated */
-	if (lp_totalprintjobs() && get_total_jobs() > lp_totalprintjobs()) {
-		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per system (%d).\n",
-			njobs, lp_totalprintjobs() ));
-		release_print_db(pdb);
-		errno = ENOSPC;
-		return (uint32)-1;
-	}
-#endif /* JRATEST */
 
 	/* create the database entry */
 	ZERO_STRUCT(pjob);
@@ -1445,7 +1398,7 @@ to open spool file %s.\n", pjob.filename));
 		goto fail;
 	}
 
-	pjob_store(snum, jobid, &pjob, False);
+	pjob_store(snum, jobid, &pjob, True);
 
 	release_print_db(pdb);
 
