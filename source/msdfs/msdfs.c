@@ -84,9 +84,11 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 
 static BOOL create_conn_struct( connection_struct *conn, int snum)
 {
+
 	ZERO_STRUCTP(conn);
 	conn->service = snum;
 	conn->connectpath = lp_pathname(snum);
+	pstring_sub(conn->connectpath, "%S", lp_servicename(snum));
 
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0,("create_conn_struct: smbd_vfs_init failed.\n"));
@@ -366,8 +368,10 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 
 	/* Verify the share is a dfs root */
 	snum = lp_servicenumber(jn->service_name);
-	if(snum < 0)
-		return False;
+	if(snum < 0) {
+		if ((snum = find_service(jn->service_name)) < 0)
+			return False;
+	}
 	
 	if (!create_conn_struct(conn, snum))
 		return False;
