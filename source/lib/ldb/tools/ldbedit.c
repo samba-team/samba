@@ -27,7 +27,7 @@
  *
  *  Component: ldbedit
  *
- *  Description: utility for ldb editing
+ *  Description: utility for ldb database editing
  *
  *  Author: Andrew Tridgell
  */
@@ -36,6 +36,7 @@
 
 /*
   modify a database record so msg1 becomes msg2
+  returns the number of modified elements
 */
 static int modify_record(struct ldb_context *ldb, 
 			 struct ldb_message *msg1,
@@ -44,6 +45,7 @@ static int modify_record(struct ldb_context *ldb,
 	struct ldb_message mod;
 	struct ldb_message_element *el;
 	int i;
+	int count = 0;
 
 	mod.dn = msg1->dn;
 	mod.num_elements = 0;
@@ -63,6 +65,7 @@ static int modify_record(struct ldb_context *ldb,
 				el?LDB_FLAG_MOD_REPLACE:LDB_FLAG_MOD_ADD) != 0) {
 			return -1;
 		}
+		count++;
 	}
 
 	/* look in msg1 to find elements that need to be deleted */
@@ -74,6 +77,7 @@ static int modify_record(struct ldb_context *ldb,
 					      LDB_FLAG_MOD_DELETE) != 0) {
 				return -1;
 			}
+			count++;
 		}
 	}
 
@@ -82,11 +86,12 @@ static int modify_record(struct ldb_context *ldb,
 	}
 
 	if (ldb_modify(ldb, &mod) != 0) {
-		fprintf(stderr, "failed to modify %s\n", msg1->dn);
+		fprintf(stderr, "failed to modify %s - %s\n", 
+			msg1->dn, ldb_errstring(ldb));
 		return -1;
 	}
 
-	return 0;
+	return count;
 }
 
 /*
@@ -114,18 +119,22 @@ static int merge_edits(struct ldb_context *ldb,
 	int i;
 	struct ldb_message *msg;
 	int ret = 0;
+	int adds=0, modifies=0, deletes=0;
 
 	/* do the adds and modifies */
 	for (i=0;i<count2;i++) {
 		msg = msg_find(msgs1, count1, msgs2[i]->dn);
 		if (!msg) {
 			if (ldb_add(ldb, msgs2[i]) != 0) {
-				fprintf(stderr, "failed to add %s\n",
-					msgs2[i]->dn);
+				fprintf(stderr, "failed to add %s - %s\n",
+					msgs2[i]->dn, ldb_errstring(ldb));
 				return -1;
 			}
+			adds++;
 		} else {
-			modify_record(ldb, msg, msgs2[i]);
+			if (modify_record(ldb, msg, msgs2[i]) > 0) {
+				modifies++;
+			}
 		}
 	}
 
@@ -134,12 +143,15 @@ static int merge_edits(struct ldb_context *ldb,
 		msg = msg_find(msgs2, count2, msgs1[i]->dn);
 		if (!msg) {
 			if (ldb_delete(ldb, msgs1[i]->dn) != 0) {
-				fprintf(stderr, "failed to delete %s\n",
-					msgs1[i]->dn);
+				fprintf(stderr, "failed to delete %s - %s\n",
+					msgs1[i]->dn, ldb_errstring(ldb));
 				return -1;
 			}
+			deletes++;
 		}
 	}
+
+	printf("# %d adds  %d modifies  %d deletes\n", adds, modifies, deletes);
 
 	return ret;
 }
@@ -151,7 +163,7 @@ static int save_ldif(FILE *f, struct ldb_message **msgs, int count)
 {
 	int i;
 
-	fprintf(f, "# returned %d records\n", count);
+	fprintf(f, "# editing %d records\n", count);
 
 	for (i=0;i<count;i++) {
 		struct ldb_ldif ldif;
@@ -252,7 +264,7 @@ static void usage(void)
 	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
 	printf("  -s base|sub|one  choose search scope\n");
 	printf("  -b basedn        choose baseDN\n");
-	printf("  -a               edit all records (expression 'dn=*')\n");
+	printf("  -a               edit all records (expression 'objectclass=*')\n");
 	printf("  -e editor        choose editor (or $VISUAL or $EDITOR)\n");
 	exit(1);
 }
@@ -306,7 +318,7 @@ static void usage(void)
 			break;
 
 		case 'a':
-			expression = "dn=*";
+			expression = "objectclass=*";
 			break;
 			
 		case 'h':
@@ -355,7 +367,7 @@ static void usage(void)
 	if (ret > 0) {
 		ret = ldb_search_free(ldb, msgs);
 		if (ret == -1) {
-			fprintf(stderr, "search_free failed\n");
+			fprintf(stderr, "search_free failed - %s\n", ldb_errstring(ldb));
 			exit(1);
 		}
 	}

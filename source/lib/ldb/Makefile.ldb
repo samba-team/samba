@@ -1,9 +1,9 @@
 
 # ldap support is optional edit WITH_LDAP to suit
-WITH_LDAP=0
+WITH_LDAP=1
 
 ifeq ($(WITH_LDAP),1)
-OPENLDAP_PREFIX=/home/tridge/samba/openldap/prefix
+OPENLDAP_PREFIX=/usr
 LDAP_LIBS=-L$(OPENLDAP_PREFIX)/lib -lldap
 LDAP_FLAGS=-DHAVE_LDAP=1
 LDB_LDAP_OBJ=ldb_ldap/ldb_ldap.o
