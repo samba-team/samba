@@ -80,7 +80,7 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
-otptest$(EXECSUFFIX): $(OTPTEST_OBJECTS)
+otptest$(EXECSUFFIX): $(OTPTEST_OBJECTS) $(LIB)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OTPTEST_OBJECTS) -L. -lotp -L../des -ldes $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 $(LIBNAME).a: $(LIB_OBJECTS)
