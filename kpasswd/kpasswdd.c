@@ -394,6 +394,7 @@ out:
 static int
 verify (krb5_auth_context *auth_context,
 	krb5_principal server,
+	krb5_keytab keytab,
 	krb5_ticket **ticket,
 	krb5_data *out_data,
 	int s,
@@ -429,7 +430,7 @@ verify (krb5_auth_context *auth_context,
 		       auth_context,
 		       &ap_req_data,
 		       server,
-		       NULL,
+		       keytab,
 		       NULL,
 		       ticket);
     if (ret) {
@@ -466,6 +467,7 @@ out:
 
 static void
 process (krb5_principal server,
+	 krb5_keytab keytab,
 	 int s,
 	 krb5_address *this_addr,
 	 struct sockaddr *sa,
@@ -506,7 +508,7 @@ process (krb5_principal server,
 	goto out;
     }
 
-    if (verify (&auth_context, server, &ticket, &out_data,
+    if (verify (&auth_context, server, keytab, &ticket, &out_data,
 		s, sa, sa_size, msg, len) == 0) {
 	change (auth_context,
 		ticket->client,
@@ -523,7 +525,8 @@ out:
 }
 
 static int
-doit (int port)
+doit (krb5_keytab keytab,
+      int port)
 {
     krb5_error_code ret;
     krb5_principal server;
@@ -602,7 +605,7 @@ doit (int port)
 			krb5_err (context, 1, errno, "recvfrom");
 		}
 
-		process (server, sockets[i],
+		process (server, keytab, sockets[i],
 			 &addrs.val[i],
 			 sa, addrlen,
 			 buf, ret);
@@ -624,6 +627,7 @@ sigterm(int sig)
 const char *check_library;
 const char *check_function;
 #endif
+char *keytab_str;
 int version_flag;
 int help_flag;
 
@@ -634,6 +638,8 @@ struct getargs args[] = {
     { "check-function", 0, arg_string, &check_function,
       "password check function to load", "function" },
 #endif
+    { "keytab", 'k', arg_string, &keytab_str, 
+      "keytab to get authentication key from", "kspec" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -643,6 +649,7 @@ int
 main (int argc, char **argv)
 {
     int optind;
+    krb5_keytab keytab;
     
     optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
@@ -680,6 +687,12 @@ main (int argc, char **argv)
     }
 #endif
 
+    if(keytab_str) {
+	krb5_error_code ret = krb5_kt_resolve(context, keytab_str, &keytab);
+	if(ret)
+	    krb5_err(context, 1, ret, "%s", keytab_str);
+    }
+
     setup_passwd_quality_check(context);
 
 #ifdef HAVE_SIGACTION
@@ -696,5 +709,7 @@ main (int argc, char **argv)
     signal(SIGINT, sigterm);
 #endif
 
-    return doit (krb5_getportbyname (context, "kpasswd", "udp", KPASSWD_PORT));
+    return doit (keytab,
+		 krb5_getportbyname (context, "kpasswd", 
+				     "udp", KPASSWD_PORT));
 }
