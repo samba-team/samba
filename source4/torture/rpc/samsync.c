@@ -30,7 +30,7 @@
 #include "system/time.h"
 
 #define TEST_MACHINE_NAME "samsynctest"
-#define TEST_MACHINE_NAME2 "samsynctest2"
+#define TEST_WKSTA_MACHINE_NAME "samsynctest2"
 #define TEST_USER_NAME "samsynctestuser"
 
 /*
@@ -522,10 +522,10 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		}
 	}
 
-	nt_status = test_SamLogon(samsync_state->p, mem_ctx, samsync_state->creds, 
+	nt_status = test_SamLogon(samsync_state->p_netlogon_wksta, mem_ctx, samsync_state->creds_netlogon_wksta, 
 				  domain,
 				  username, 
-				  TEST_MACHINE_NAME,
+				  TEST_WKSTA_MACHINE_NAME,
 				  lm_hash_p,
 				  nt_hash_p,
 				  &info3);
@@ -1135,7 +1135,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 				nt_status = test_SamLogon(samsync_state->p_netlogon_wksta, mem_ctx, samsync_state->creds_netlogon_wksta, 
 							  t->name,
 							  username, 
-							  TEST_MACHINE_NAME2,
+							  TEST_WKSTA_MACHINE_NAME,
 							  NULL, 
 							  &nt_hash,
 							  NULL);
@@ -1156,7 +1156,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 				nt_status = test_SamLogon(samsync_state->p_netlogon_wksta, mem_ctx, samsync_state->creds_netlogon_wksta, 
 							  t->name,
 							  username, 
-							  TEST_MACHINE_NAME2,
+							  TEST_WKSTA_MACHINE_NAME,
 							  NULL,
 							  &nt_hash,
 							  NULL);
@@ -1307,7 +1307,7 @@ BOOL torture_rpc_samsync(void)
 		return False;
 	}
 	
-	join_ctx2 = torture_join_domain(TEST_MACHINE_NAME2, lp_workgroup(), ACB_WSTRUST, 
+	join_ctx2 = torture_join_domain(TEST_WKSTA_MACHINE_NAME, lp_workgroup(), ACB_WSTRUST, 
 				       &machine_password2);
 	if (!join_ctx2) {
 		printf("Failed to join as member\n");
@@ -1445,7 +1445,7 @@ BOOL torture_rpc_samsync(void)
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
 				       lp_workgroup(), 
-				       TEST_MACHINE_NAME2,
+				       TEST_WKSTA_MACHINE_NAME,
 				       machine_password2);
 
 	if (!NT_STATUS_IS_OK(status)) {
