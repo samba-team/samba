@@ -49,7 +49,7 @@ roken_concat (char *s, size_t len, ...)
     va_list args;
 
     va_start(args, len);
-    ret = k_vconcat (s, len, args);
+    ret = roken_vconcat (s, len, args);
     va_end(args);
     return ret;
 }
@@ -111,7 +111,7 @@ roken_mconcat (char **s, size_t max_len, ...)
     va_list args;
 
     va_start(args, max_len);
-    ret = k_vmconcat (s, max_len, args);
+    ret = roken_vmconcat (s, max_len, args);
     va_end(args);
     return ret;
 }
