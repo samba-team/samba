@@ -19,25 +19,49 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct ldap_message_queue {
-	struct ldap_message_queue *prev, *next;
-	struct ldap_message *msg;
-};
-
 struct rw_buffer {
 	uint8_t *data;
 	size_t ofs, length;
+};
+
+enum ldapsrv_call_state {
+	LDAPSRV_CALL_STATE_NEW = 0,
+	LDAPSRV_CALL_STATE_BUSY,
+	LDAPSRV_CALL_STATE_ASYNC,
+	LDAPSRV_CALL_STATE_ABORT,
+	LDAPSRV_CALL_STATE_COMPLETE
+};
+
+enum ldapsrv_reply_state {
+	LDAPSRV_REPLY_STATE_NEW = 0,
+	LDAPSRV_REPLY_STATE_SEND
+};
+
+struct ldapsrv_connection;
+
+struct ldapsrv_call {
+	struct ldapsrv_call *prev,*next;
+	enum ldapsrv_call_state state;
+
+	struct ldapsrv_connection *conn;
+
+	struct ldap_message request;
+
+	struct ldapsrv_reply {
+		struct ldapsrv_reply *prev,*next;
+		enum ldapsrv_reply_state state;
+		struct ldap_message msg;
+	} *replies;
 };
 
 struct ldapsrv_connection {
 	struct server_connection *connection;
 
 	struct gensec_security *gensec_ctx;
-
 	struct auth_session_info *session_info;
 
 	struct rw_buffer in_buffer;
 	struct rw_buffer out_buffer;
-	struct ldap_message_queue *in_queue;
-	struct ldap_message_queue *out_queue;
+
+	struct ldapsrv_call *calls;
 };
