@@ -92,8 +92,8 @@ ac_help="$ac_help
 ac_help="$ac_help
   --with-spinlocks        use spin locks instead of fcntl locks "
 ac_help="$ac_help
-  --with-posix-acls        Include POSIX ACL support
-  --without-posix-acls  Don't include POSIX ACL support (default)"
+  --with-acl-support        Include ACL support
+  --without-acl-support  Don't include ACL support (default)"
 
 # Initialize some variables set by options.
 # The variables have the same names as the options, with
@@ -11502,18 +11502,34 @@ EOF
 fi
 
 #################################################
-# check for POSIX ACL support
+# check for ACL support
 
-echo $ac_n "checking whether to support POSIX ACLs""... $ac_c" 1>&6
-echo "configure:11509: checking whether to support POSIX ACLs" >&5
-# Check whether --with-posix-acls or --without-posix-acls was given.
-if test "${with_posix_acls+set}" = set; then
-  withval="$with_posix_acls"
+echo $ac_n "checking whether to support ACLs""... $ac_c" 1>&6
+echo "configure:11509: checking whether to support ACLs" >&5
+# Check whether --with-acl-support or --without-acl-support was given.
+if test "${with_acl_support+set}" = set; then
+  withval="$with_acl_support"
    case "$withval" in
   yes)
 
-    echo $ac_n "checking for acl_get_file in -lacl""... $ac_c" 1>&6
-echo "configure:11517: checking for acl_get_file in -lacl" >&5
+		case "$host_os" in
+		*unixware*)
+			echo "$ac_t""Using SVR4 ACLs" 1>&6
+			cat >> confdefs.h <<\EOF
+#define HAVE_UNIXWARE_ACLS 1
+EOF
+
+			;;
+		*solaris*)
+			echo "$ac_t""Using solaris ACLs" 1>&6
+			cat >> confdefs.h <<\EOF
+#define HAVE_SOLARIS_ACLS 1
+EOF
+
+			;;
+		*)
+		    echo $ac_n "checking for acl_get_file in -lacl""... $ac_c" 1>&6
+echo "configure:11533: checking for acl_get_file in -lacl" >&5
 ac_lib_var=`echo acl'_'acl_get_file | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -11521,7 +11537,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lacl  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 11525 "configure"
+#line 11541 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -11532,7 +11548,7 @@ int main() {
 acl_get_file()
 ; return 0; }
 EOF
-if { (eval echo configure:11536: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:11552: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -11559,14 +11575,14 @@ else
   echo "$ac_t""no" 1>&6
 fi
 
-echo $ac_n "checking for POSIX ACL support""... $ac_c" 1>&6
-echo "configure:11564: checking for POSIX ACL support" >&5
+			echo $ac_n "checking for ACL support""... $ac_c" 1>&6
+echo "configure:11580: checking for ACL support" >&5
 if eval "test \"`echo '$''{'samba_cv_HAVE_POSIX_ACLS'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
-cat > conftest.$ac_ext <<EOF
-#line 11570 "configure"
+			cat > conftest.$ac_ext <<EOF
+#line 11586 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #include <sys/acl.h>
@@ -11574,7 +11590,7 @@ int main() {
  acl_t acl; int entry_id; acl_entry_t *entry_p; return acl_get_entry( acl, entry_id, entry_p);
 ; return 0; }
 EOF
-if { (eval echo configure:11578: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:11594: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_HAVE_POSIX_ACLS=yes
 else
@@ -11587,14 +11603,16 @@ rm -f conftest*
 fi
 
 echo "$ac_t""$samba_cv_HAVE_POSIX_ACLS" 1>&6
-if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
-    echo "$ac_t""yes" 1>&6
-    cat >> confdefs.h <<\EOF
+			if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
+			    echo "$ac_t""Using posix ACLs" 1>&6
+			    cat >> confdefs.h <<\EOF
 #define HAVE_POSIX_ACLS 1
 EOF
 
-fi
-    ;;
+			fi
+			;;
+		esac
+		;;
   *)
     echo "$ac_t""no" 1>&6
 	cat >> confdefs.h <<\EOF
@@ -11617,11 +11635,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 11621 "configure"
+#line 11639 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:11625: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11643: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else
