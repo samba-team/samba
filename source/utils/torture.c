@@ -29,7 +29,9 @@ static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
 static char *sockops="TCP_NODELAY";
 static int nprocs=1, numops=100;
+static int procnum; /* records process count number when forking */
 static struct cli_state current_cli;
+static fstring randomfname;
 
 static double create_procs(void (*fn)(int));
 
@@ -270,6 +272,101 @@ static void run_torture(int dummy)
 	close_connection(&cli);
 }
 
+static BOOL rw_torture3(struct cli_state *c, char *lockfname)
+{
+	int fnum = -1;
+	int i = 0;
+	char buf[131072];
+	char buf_rd[131072];
+	unsigned count;
+	unsigned countprev = 0;
+	unsigned sent = 0;
+
+	srandom(1);
+	for (i = 0; i < sizeof(buf); i += sizeof(uint32))
+	{
+		SIVAL(buf, i, sys_random());
+	}
+
+	if (procnum == 0)
+	{
+		fnum = cli_open(c, lockfname, O_RDWR | O_CREAT | O_EXCL, 
+				 DENY_NONE);
+		if (fnum == -1) {
+			printf("first open read/write of %s failed (%s)\n",
+					lockfname, cli_errstr(c));
+			return False;
+		}
+	}
+	else
+	{
+		for (i = 0; i < 500 && fnum == -1; i++)
+		{
+			fnum = cli_open(c, lockfname, O_RDONLY, 
+					 DENY_NONE);
+			msleep(10);
+		}
+		if (fnum == -1) {
+			printf("second open read-only of %s failed (%s)\n",
+					lockfname, cli_errstr(c));
+			return False;
+		}
+	}
+
+	i = 0;
+	for (count = 0; count < sizeof(buf); count += sent)
+	{
+		if (count >= countprev) {
+			printf("%d %8d\r", i, count);
+			fflush(stdout);
+			i++;
+			countprev += (sizeof(buf) / 20);
+		}
+
+		if (procnum == 0)
+		{
+			sent = ((unsigned)sys_random()%(20))+ 1;
+			if (sent > sizeof(buf) - count)
+			{
+				sent = sizeof(buf) - count;
+			}
+
+			if (cli_write(c, fnum, 0, buf+count, count, sent) != sent) {
+				printf("write failed (%s)\n", cli_errstr(c));
+			}
+		}
+		else
+		{
+			sent = cli_read(c, fnum, buf_rd+count, count,
+						  sizeof(buf)-count);
+			if (sent < 0)
+			{
+				printf("read failed offset:%d size:%d (%s)\n",
+						count, sizeof(buf)-count,
+						cli_errstr(c));
+				sent = 0;
+			}
+			if (sent > 0)
+			{
+				if (memcmp(buf_rd+count, buf+count, sent) != 0)
+				{
+					printf("read/write compare failed\n");
+					printf("offset: %d req %d recvd %d\n",
+						count, sizeof(buf)-count, sent);
+					break;
+				}
+			}
+		}
+
+	}
+
+	if (!cli_close(c, fnum)) {
+		printf("close failed (%s)\n", cli_errstr(c));
+	}
+
+	return True;
+}
+
 static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 {
 	char *lockfname = "\\torture.lck";
@@ -357,6 +454,21 @@ static void run_readwritetest(int dummy)
 
 	close_connection(&cli1);
 	close_connection(&cli2);
+}
+
+static void run_readwritemulti(int dummy)
+{
+	static struct cli_state cli;
+	BOOL test;
+
+	cli = current_cli;
+
+	cli_sockopt(&cli, sockops);
+
+	printf("run_readwritemulti: fname %s\n", randomfname);
+	test = rw_torture3(&cli, randomfname);
+
+	close_connection(&cli);
 }
 
 int line_count = 0;
@@ -1860,6 +1972,7 @@ static double create_procs(void (*fn)(int))
 	memset((char *)child_status, 0, sizeof(int)*nprocs);
 
 	for (i=0;i<nprocs;i++) {
+		procnum = i;
 		if (fork() == 0) {
 			pid_t mypid = getpid();
 			sys_srandom(((int)mypid) ^ ((int)time(NULL)));
@@ -1944,7 +2057,8 @@ static struct {
 	{"DENY1",  run_denytest1, 0},
 	{"DENY2",  run_denytest2, 0},
 	{"TCON",  run_tcon_test, 0},
-	{"RW",  run_readwritetest, 0},
+	{"RW1",  run_readwritetest, 0},
+	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{NULL, NULL, 0}};
 
 
@@ -1962,6 +2076,9 @@ static void run_test(char *name)
 	}
 	
 	for (i=0;torture_ops[i].name;i++) {
+		fstrcpy(randomfname, "\\XXXXXXX");
+		mktemp(randomfname);
+
 		if (strequal(name, torture_ops[i].name)) {
 			start_timer();
 			printf("Running %s\n", name);
