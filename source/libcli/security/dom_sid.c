@@ -184,7 +184,7 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 }
 
 /*
-  convert a string to a dom_sid, returning a talloc'd dom_sid
+  copy a dom_sid structure
 */
 struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 {
@@ -195,7 +195,7 @@ struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 		return NULL;
 	}
 
-	ret->sub_auths = talloc_array_p(mem_ctx, uint32_t, dom_sid->num_auths);
+	ret->sub_auths = talloc_array_p(ret, uint32_t, dom_sid->num_auths);
 	if (!ret->sub_auths) {
 		return NULL;
 	}

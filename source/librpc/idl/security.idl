@@ -46,9 +46,28 @@ interface security
 		uint32 sub_auths[num_auths];
 	} dom_sid;
 
+	const int SEC_ACE_FLAG_OBJECT_INHERIT		= 0x001;
+	const int SEC_ACE_FLAG_CONTAINER_INHERIT	= 0x002;
+	const int SEC_ACE_FLAG_NO_PROPAGATE_INHERIT	= 0x004;
+	const int SEC_ACE_FLAG_INHERIT_ONLY		= 0x008;
+	const int SEC_ACE_FLAG_INHERITED_ACE		= 0x010;
+	const int SEC_ACE_FLAG_VALID_INHERIT		= 0x00f;
+	const int SEC_ACE_FLAG_SUCCESSFUL_ACCESS	= 0x040;
+	const int SEC_ACE_FLAG_FAILED_ACCESS		= 0x080;
+
+	const int SEC_ACE_TYPE_ACCESS_ALLOWED		= 0x0;
+	const int SEC_ACE_TYPE_ACCESS_DENIED		= 0x1;
+	const int SEC_ACE_TYPE_SYSTEM_AUDIT		= 0x2;
+	const int SEC_ACE_TYPE_SYSTEM_ALARM		= 0x3;
+	const int SEC_ACE_TYPE_ALLOWED_COMPOUND		= 0x4;
+	const int SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT	= 0x5;
+	const int SEC_ACE_TYPE_ACCESS_DENIED_OBJECT     = 0x6;
+	const int SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT      = 0x7;
+	const int SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT	= 0x8;
+
 	typedef [public] struct {
-		uint8 type;  /* xxxx_xxxx_ACE_TYPE - e.g allowed / denied etc */
-		uint8 flags; /* xxxx_INHERIT_xxxx - e.g OBJECT_INHERIT_ACE */
+		uint8 type;  /* SEC_ACE_TYPE_* */
+		uint8 flags; /* SEC_ACE_FLAG_* */
 		[value(ndr_size_security_ace(r))] uint16 size;
 		uint32 access_mask;
 
