@@ -504,7 +504,7 @@ static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE
 	depth++;
 
 	if (UNMARSHALLING(ps)) {
-		devmode->devicename.buffer = prs_alloc_mem(ps, 32 * sizeof(uint16) );
+		devmode->devicename.buffer = (uint16 *)prs_alloc_mem(ps, 32 * sizeof(uint16) );
 		if (devmode->devicename.buffer == NULL)
 			return False;
 	}
@@ -549,7 +549,7 @@ static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		devmode->formname.buffer = prs_alloc_mem(ps, 32 * sizeof(uint16) );
+		devmode->formname.buffer = (uint16 *)prs_alloc_mem(ps, 32 * sizeof(uint16) );
 		if (devmode->formname.buffer == NULL)
 			return False;
 	}
