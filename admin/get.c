@@ -89,7 +89,6 @@ kt_get(int argc, char **argv)
     int server_port = 0;
     int help_flag = 0;
     int optind = 0;
-    int i, j;
     struct getarg_strings etype_strs = {0, NULL};
     krb5_enctype *etypes = NULL;
     size_t netypes = 0;
@@ -111,13 +110,14 @@ kt_get(int argc, char **argv)
 	},
 	{ "help",		'h',	arg_flag,    NULL }
     };
+    int i = 0, j;
 
-    args[0].value = &principal;
-    args[1].value = &etype_strs;
-    args[2].value = &realm;
-    args[3].value = &admin_server;
-    args[4].value = &server_port;
-    args[5].value = &help_flag;
+    args[i++].value = &principal;
+    args[i++].value = &etype_strs;
+    args[i++].value = &realm;
+    args[i++].value = &admin_server;
+    args[i++].value = &server_port;
+    args[i++].value = &help_flag;
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind)
        || help_flag) {
