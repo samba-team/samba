@@ -282,9 +282,9 @@ substitutions and other smb.conf options.
 
 .SS NAME MANGLING
 
-Samba supports "name mangling" so that DOS and Windows clients can use
-files that don't conform to the 8.3 format. It can also be set to adjust
-the case of 8.3 format filenames.
+Samba supports "name mangling" so that older DOS and Windows 3 clients
+can use files that don't conform to the 8.3 format. It can also be set
+to adjust the case of 8.3 format filenames.
 
 There are several options that control the way mangling is performed,
 and they are grouped here rather than listed separately. For the
@@ -1206,12 +1206,11 @@ only one accessing the file and it will aggressively cache file
 data. With some oplock types the client may even cache file open/close
 operations. This can give enormous performance benefits.
 
-Samba does not support opportunistic locks because they are very
-difficult to do under Unix. Samba can fake them, however, by granting
-a oplock whenever a client asks for one. This is controlled using the
-smb.conf option "fake oplocks". If you set "fake oplocks = yes" then
-you are telling the client that it may aggressively cache the file
-data.
+Samba does not support opportunistic locks in this release. Samba can
+fake them, however, by granting a oplock whenever a client asks for
+one. This is controlled using the smb.conf option "fake oplocks". If
+you set "fake oplocks = yes" then you are telling the client that it
+may aggressively cache the file data.
 
 By enabling this option on all read-only shares or shares that you know
 will only be accessed from one client at a time you will see a big
