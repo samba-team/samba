@@ -1,3 +1,16 @@
+2000-10-01  Assar Westerlund  <assar@sics.se>
+
+	* kdc/524.c (set_address): allocate memory for storing addresses
+	in if the original request had an empty set of addresses
+	* kdc/524.c (set_address): fix bad return of pointer to automatic
+	data
+
+	* config.sub: update to version 2000-09-11 (aka 1.181) from
+	subversions.gnu.org
+
+	* config.guess: update to version 2000-09-05 (aka 1.156) from
+	subversions.gnu.org plus some minor tweaks
+
 2000-09-20  Assar Westerlund  <assar@juguete.sics.se>
 
 	* Release 0.3c
