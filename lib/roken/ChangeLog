@@ -1,8 +1,8 @@
 2001-02-20  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in (setprogname, getprogname): add prototypes
-	* warnerr.c (setprogname, getprogname: add), leaving the
-	underscore versions for backwards compat.  change all callers
+	* warnerr.c (setprogname, getprogname): rename to. change all
+	callers
 	
 2001-02-12  Assar Westerlund  <assar@sics.se>
 
