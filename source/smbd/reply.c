@@ -38,6 +38,7 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
+extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern int Client;
 extern int global_oplock_break;
@@ -387,14 +388,39 @@ int reply_unknown(char *inbuf,char *outbuf)
 int reply_ioctl(connection_struct *conn,
 		char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	DEBUG(3,("ignoring ioctl\n"));
-#if 0
-	/* we just say it succeeds and hope its all OK. 
-	   some day it would be nice to interpret them individually */
-	return set_message(outbuf,1,0,True); 
-#else
-	return(ERROR(ERRSRV,ERRnosupport));
-#endif
+	uint16 device     = SVAL(inbuf,smb_vwv1);
+	uint16 function   = SVAL(inbuf,smb_vwv2);
+	uint32 ioctl_code = (device << 16) + function;
+	int replysize, outsize;
+	char *p;
+
+	DEBUG(4, ("Received IOCTL (code 0x%x)\n", ioctl_code));
+
+	switch (ioctl_code)
+	{
+	    case IOCTL_QUERY_JOB_INFO:
+		replysize = 33;    // actually 32, but allow for alignment
+		break;
+	    default:
+		return(ERROR(ERRSRV,ERRnosupport));
+	}
+
+	outsize = set_message(outbuf,8,replysize,True);
+	SSVAL(outbuf,smb_vwv1,replysize); // Total data bytes returned
+	SSVAL(outbuf,smb_vwv5,replysize); // Data bytes this buffer
+	SSVAL(outbuf,smb_vwv6,52);        // Offset to data
+	p = smb_buf(outbuf) + 1;
+
+	switch (ioctl_code)
+	{
+	    case IOCTL_QUERY_JOB_INFO:
+		SSVAL(p,0,1);                              // Job number
+		snprintf(p+2, 16, "%-15s", global_myname); // Our NetBIOS name
+		StrnCpy(p+18, lp_servicename(SNUM(conn)), 13); // Service name
+		break;
+	}
+
+	return outsize;
 }
 
 /****************************************************************************
