@@ -114,11 +114,11 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 #define RW_IVAL(read, big_endian, inbuf, outbuf, offset) \
 	{ if (read) { (outbuf) = ((big_endian) ? RIVAL(inbuf,offset) : IVAL (inbuf,offset)); } \
-	else      { (big_endian) ? RSIVAL(inbuf,offset,outbuf) : SIVAL(inbuf,offset,outbuf); } }
+	else      { if (big_endian) { RSIVAL(inbuf,offset,outbuf); } else { SIVAL(inbuf,offset,outbuf); } } }
 
 #define RW_SVAL(read, big_endian, inbuf, outbuf, offset) \
 	{ if (read) { (outbuf) = ((big_endian) ? RSVAL(inbuf,offset) : SVAL (inbuf,offset)); } \
-	else      { (big_endian) ? RSSVAL(inbuf,offset,outbuf) : SSVAL(inbuf,offset,outbuf); } }
+	else      { if (big_endian) { RSSVAL(inbuf,offset,outbuf); } else { SSVAL(inbuf,offset,outbuf); } } }
 
 #undef CAREFUL_ALIGNMENT
 
