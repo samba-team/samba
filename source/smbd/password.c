@@ -221,8 +221,10 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
 	}
 
 	/* Now add the additional SIDs from the supplimentary token. */
-	for (i = 0; i < sup_tok->num_sids; i++)
-		sid_copy( &psids[psid_ndx++], &sup_tok->user_sids[i] );
+	if (sup_tok) {
+		for (i = 0; i < sup_tok->num_sids; i++)
+			sid_copy( &psids[psid_ndx++], &sup_tok->user_sids[i] );
+	}
 
 	/*
 	 * Finally add the "standard" SIDs.
