@@ -151,7 +151,15 @@ static void push_int_bigendian(ASN1_DATA *data, unsigned int i, BOOL negative)
 BOOL asn1_write_Integer(ASN1_DATA *data, int i)
 {
 	if (!asn1_push_tag(data, ASN1_INTEGER)) return False;
-	push_int_bigendian(data, i, i<0);
+	if (i == -1) {
+		/* -1 is special as it consists of all-0xff bytes. In
+                    push_int_bigendian this is the only case that is not
+                    properly handled, as all 0xff bytes would be handled as
+                    leading ones to be ignored. */
+		asn1_write_uint8(data, 0xff);
+	} else {
+		push_int_bigendian(data, i, i<0);
+	}
 	return asn1_pop_tag(data);
 }
 

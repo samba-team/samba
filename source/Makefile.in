@@ -1278,6 +1278,9 @@ bin/t_doschar@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_doschar.o
 bin/t_push_ucs2@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
 	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_push_ucs2.o -L ./bin -lbigballofmud
 
+bin/t_asn1@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_asn1.o
+	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_asn1.o -L ./bin -lbigballofmud
+
 bin/t_snprintf@EXEEXT@: lib/snprintf.c
 	$(CC) $(FLAGS) -o $@ -DTEST_SNPRINTF lib/snprintf.c -lm
 install: installbin installman installscripts installdat installswat installmodules @INSTALLCLIENT@
@@ -1569,4 +1572,4 @@ check: check-programs
 # These are called by the test suite and need to be built before
 # running it.  For the time being we don't build all of BIN_PROGS,
 # because they're not all needed.
-check-programs: bin/t_strcmp bin/t_strstr bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf
+check-programs: bin/t_strcmp bin/t_strstr bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf bin/t_asn1
