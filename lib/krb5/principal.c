@@ -37,7 +37,9 @@
  */
 
 #include "krb5_locl.h"
+#ifdef HAVE_RES_SEARCH
 #define USE_RESOLVER
+#endif
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
