@@ -25,6 +25,8 @@ extern int DEBUGLEVEL;
 extern int Protocol;
 extern struct in_addr ipzero;
 
+BOOL global_machine_password_needs_changing = False;
+
 /* users from session setup */
 static pstring session_users="";
 

@@ -30,8 +30,6 @@
 extern int DEBUGLEVEL;
 extern pstring global_myname;
 
-BOOL global_machine_password_needs_changing = False;
-
 
 static int mach_passwd_lock_depth;
 static FILE *mach_passwd_fp;
