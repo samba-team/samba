@@ -30,13 +30,13 @@ int global_nmb_port = -1;
 extern BOOL global_in_nmbd;
 
 /* are we running as a daemon ? */
-static BOOL is_daemon = False;
+static BOOL is_daemon;
 
 /* fork or run in foreground ? */
 static BOOL Fork = True;
 
 /* log to standard output ? */
-static BOOL log_stdout = False;
+static BOOL log_stdout;
 
 /* have we found LanMan clients yet? */
 BOOL found_lm_clients = False;
