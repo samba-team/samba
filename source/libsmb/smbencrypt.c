@@ -321,6 +321,37 @@ DATA_BLOB NTLMv2_generate_response(uchar ntlm_v2_hash[16],
 	return final_response;
 }
 
+BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
+		      const DATA_BLOB server_chal, 
+		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
+		      DATA_BLOB *session_key) 
+{
+	uchar nt_hash[16];
+	uchar ntlm_v2_hash[16];
+	E_md4hash(password, nt_hash);
+
+	/* We don't use the NT# directly.  Instead we use it mashed up with
+	   the username and domain.
+	   This prevents username swapping during the auth exchange
+	*/
+	if (!ntv2_owf_gen(nt_hash, user, domain, ntlm_v2_hash)) {
+		return False;
+	}
+	
+	*nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 64 /* pick a number, > 8 */);
+	
+	/* LMv2 */
+	
+	*lm_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 8);
+	
+	*session_key = data_blob(NULL, 16);
+	
+	/* The NTLMv2 calculations also provide a session key, for signing etc later */
+	/* use only the first 16 bytes of nt_response for session key */
+	SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, session_key->data);
+
+	return True;
+}
 
 /***********************************************************
  encode a password buffer.  The caller gets to figure out 
