@@ -147,7 +147,7 @@ static uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint32  *type)
 	sid_copy(&tmp, sid);
 	sid_split_rid(&tmp, &rid);
 
-	if (!sid_equal(&global_sid_S_1_5_20, &tmp))
+	if (!sid_equal(global_sid_builtin, &tmp))
 	{
 		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 	}
@@ -216,7 +216,7 @@ static uint32 lookup_wk_alias_sid(DOM_SID *sid, char *alias_name, uint32  *type)
 	sid_copy(&tmp, sid);
 	sid_split_rid(&tmp, &rid);
 
-	if (!sid_equal(&global_sid_S_1_5_20, &tmp))
+	if (!sid_equal(global_sid_builtin, &tmp))
 	{
 		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 	}
@@ -285,7 +285,7 @@ static uint32 lookup_wk_user_sid(DOM_SID *sid, char *user_name, uint32  *type)
 	sid_copy(&tmp, sid);
 	sid_split_rid(&tmp, &rid);
 
-	if (!sid_equal(&global_sid_S_1_5_20, &tmp))
+	if (!sid_equal(global_sid_builtin, &tmp))
 	{
 		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 	}

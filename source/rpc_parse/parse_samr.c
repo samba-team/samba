@@ -5942,17 +5942,22 @@ BOOL make_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, const uchar * sess_key,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
-			  int depth)
+static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR *ctr,
+				 prs_struct *ps, int depth)
 {
+	BOOL ret;
 	if (ctr == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "samr_io_userinfo_ctr");
 	depth++;
 
+	prs_align(ps);
+
 	prs_uint16("switch_value", ps, depth, &(ctr->switch_value));
 	prs_align(ps);
+
+	ret = False;
 
 	switch (ctr->switch_value)
 	{
@@ -5963,17 +5968,14 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 				/* reading */
 				ctr->info.id10 = g_new(SAM_USER_INFO_10, 1);
 			}
-			if (ctr->info.id10 != NULL)
-			{
-				sam_io_user_info10("", ctr->info.id10, ps,
-						   depth);
-			}
-			else
+			if (ctr->info.id10 == NULL)
 			{
 				DEBUG(2,
 				      ("samr_io_userinfo_ctr: info pointer not initialised\n"));
 				return False;
 			}
+			ret = sam_io_user_info10("", ctr->info.id10, ps, 
+						 depth);
 			break;
 		}
 		case 0x11:
@@ -5983,17 +5985,14 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 				/* reading */
 				ctr->info.id11 = g_new(SAM_USER_INFO_11, 1);
 			}
-			if (ctr->info.id11 != NULL)
-			{
-				sam_io_user_info11("", ctr->info.id11, ps,
-						   depth);
-			}
-			else
+			if (ctr->info.id11 == NULL)
 			{
 				DEBUG(2,
 				      ("samr_io_userinfo_ctr: info pointer not initialised\n"));
 				return False;
 			}
+			ret = sam_io_user_info11("", ctr->info.id11, ps,
+						 depth);
 			break;
 		}
 		case 0x12:
@@ -6003,17 +6002,14 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 				/* reading */
 				ctr->info.id12 = g_new(SAM_USER_INFO_12, 1);
 			}
-			if (ctr->info.id12 != NULL)
-			{
-				sam_io_user_info12("", ctr->info.id12, ps,
-						   depth);
-			}
-			else
+			if (ctr->info.id12 == NULL)
 			{
 				DEBUG(2,
 				      ("samr_io_userinfo_ctr: info pointer not initialised\n"));
 				return False;
 			}
+			ret = sam_io_user_info12("", ctr->info.id12, ps,
+						 depth);
 			break;
 		}
 		case 21:
@@ -6023,17 +6019,14 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 				/* reading */
 				ctr->info.id21 = g_new(SAM_USER_INFO_21, 1);
 			}
-			if (ctr->info.id21 != NULL)
-			{
-				sam_io_user_info21("", ctr->info.id21, ps,
-						   depth);
-			}
-			else
+			if (ctr->info.id21 == NULL)
 			{
 				DEBUG(2,
 				      ("samr_io_userinfo_ctr: info pointer not initialised\n"));
 				return False;
 			}
+			ret = sam_io_user_info21("", ctr->info.id21, ps,
+						 depth);
 			break;
 		}
 		case 23:
@@ -6043,17 +6036,14 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 				/* reading */
 				ctr->info.id23 = g_new(SAM_USER_INFO_23, 1);
 			}
-			if (ctr->info.id23 != NULL)
-			{
-				sam_io_user_info23("", ctr->info.id23, ps,
-						   depth);
-			}
-			else
+			if (ctr->info.id23 == NULL)
 			{
 				DEBUG(2,
 				      ("samr_io_userinfo_ctr: info pointer not initialised\n"));
 				return False;
 			}
+			ret = sam_io_user_info23("", ctr->info.id23, ps,
+						 depth);
 			break;
 		}
 		case 24:
@@ -6069,13 +6059,15 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 				      ("samr_io_userinfo_ctr: info pointer not initialised\n"));
 				return False;
 			}
-			sam_io_user_info24("", ctr->info.id24, ps, depth);
+			ret = sam_io_user_info24("", ctr->info.id24, ps,
+						 depth);
 			break;
 		}
 		default:
 		{
 			DEBUG(2,
 			      ("samr_io_userinfo_ctr: unknown switch level\n"));
+			ret = False;
 			break;
 		}
 
@@ -6083,7 +6075,7 @@ BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
 
 	prs_align(ps);
 
-	return True;
+	return ret;
 }
 
 /*******************************************************************

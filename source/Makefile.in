@@ -34,10 +34,9 @@ BINDIR = @bindir@
 # the previous releases of Samba
 SBINDIR = @bindir@
 LIBDIR = @libdir@
-VARDIR = $(BASEDIR)/var
+VARDIR = @localstatedir@
 MANDIR = @mandir@
 SYSCONFDIR = @sysconfdir@
-PRIVATEDIR = $(BASEDIR)/private
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -54,6 +53,8 @@ DRIVERFILE = $(LIBDIR)/printers.def
 FORMSFILE = $(LIBDIR)/ntforms.def
 NTDRIVERSDIR = $(LIBDIR)
 PASSWD_PROGRAM = /bin/passwd
+PRIVATEDIR = @privatedir@
+
 SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
 SAM_DIR = $(BASEDIR)/sam
 SMB_PASSGRP_FILE = $(BASEDIR)/private/smbpassgrp

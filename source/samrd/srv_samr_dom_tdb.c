@@ -384,7 +384,7 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 	DEBUG(5, ("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
 
 	/* well-known aliases */
-	if (sid_equal(&sid, &global_sid_S_1_5_20))
+	if (sid_equal(&sid, global_sid_builtin))
 	{
 		BOOL ret = True;
 		/* builtin aliases */

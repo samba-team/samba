@@ -94,7 +94,7 @@ static BOOL check_ace(const SEC_ACE *ace, BOOL is_owner,
 		case SEC_ACE_TYPE_ACCESS_ALLOWED:
 		{
 			/* everyone - or us */
-			if (sid_equal(&ace->sid, &global_sid_S_1_1_0) ||
+			if (sid_equal(&ace->sid, global_sid_everyone) ||
 			    sid_equal(&ace->sid, sid))
 			{
 				(*status) = acegrant(mask, acc_req, acc_grant, acc_deny);
@@ -109,7 +109,7 @@ static BOOL check_ace(const SEC_ACE *ace, BOOL is_owner,
 		case SEC_ACE_TYPE_ACCESS_DENIED:
 		{
 			/* everyone - or us */
-			if (sid_equal(&ace->sid, &global_sid_S_1_1_0) ||
+			if (sid_equal(&ace->sid, global_sid_everyone) ||
 			    sid_equal(&ace->sid, sid))
 			{
 				(*status) = acedeny(mask, acc_req, acc_grant, acc_deny);

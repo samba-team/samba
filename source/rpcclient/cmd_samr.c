@@ -1205,6 +1205,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			}
 
 			res1 = res1 ? lsa_close(&pol_sec) : False;
+			res = res ? lsa_close(&lsa_pol) : False;
 
 			memset(ntpw, 0, sizeof(ntpw));
 		}
@@ -1213,8 +1214,6 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	{
 		report(out_hnd, "Create Domain User: FAILED\n");
 	}
-
-	res = res ? lsa_close(&lsa_pol) : False;
 
 	memset(&upw, 0, sizeof(upw));
 }

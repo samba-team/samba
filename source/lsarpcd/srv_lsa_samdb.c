@@ -386,7 +386,7 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 			 map_domain_sid_to_name(&find_sid, dom_name))
 		{
 			if (sid_equal(&find_sid, &global_sam_sid) ||
-			    sid_equal(&find_sid, &global_sid_S_1_5_20))
+			    sid_equal(&find_sid, global_sid_builtin))
 			{
 				status1 = lookup_sam_rid(dom_name,
 				             &find_sid, rid,

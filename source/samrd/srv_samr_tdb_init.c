@@ -128,7 +128,7 @@ static uint32 init_dom_tdbs(const DOM_SID * sam_sid)
 	status = initialise_dom_tdb(sam_sid);
 	if (status != 0x0)
 		return status;
-	status = initialise_dom_tdb(&global_sid_S_1_5_20);
+	status = initialise_dom_tdb(global_sid_builtin);
 	return status;
 }
 
@@ -165,7 +165,7 @@ uint32 initialise_sam_tdb(const char *sam_name, const DOM_SID * sam_sid)
 	strupper(dom_name);
 
 	if (!create_domain(sam_tdb, sam_name, sam_sid) ||
-	    !create_domain(sam_tdb, "BUILTIN", &global_sid_S_1_5_20))
+	    !create_domain(sam_tdb, "BUILTIN", global_sid_builtin))
 	{
 		tdb_close(sam_tdb);
 		return NT_STATUS_ACCESS_DENIED;

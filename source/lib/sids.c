@@ -73,6 +73,7 @@ DOM_SID global_sid_system;   /* NT System */
 DOM_SID global_sid_S_1_1_0;  /* everyone */
 
 const DOM_SID *global_sid_everyone = NULL;
+const DOM_SID *global_sid_builtin = NULL;
 
 struct sid_map
 {
@@ -233,6 +234,7 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_system  , "S-1-5-17");
 
 	global_sid_everyone = &global_sid_S_1_1_0;
+	global_sid_builtin  = &global_sid_S_1_5_20;
 }
 
 /****************************************************************************

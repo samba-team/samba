@@ -1299,9 +1299,7 @@ BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth)
 	prs_align(ps);
 	
 	prs_uint32("ptr", ps, depth, &pol->ptr); 
-	smb_io_rpc_uuid("uuid", &pol->uuid, ps, depth);
-
-	return True;
+	return smb_io_rpc_uuid("uuid", &pol->uuid, ps, depth);
 }
 
 /*******************************************************************

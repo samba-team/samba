@@ -96,7 +96,7 @@ uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
-	else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
+	else if (sid_equal(&alias_sid, global_sid_builtin))
 	{
 		DEBUG(10,("add member on BUILTIN SID\n"));
 
@@ -146,7 +146,7 @@ uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
-	else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
+	else if (sid_equal(&alias_sid, global_sid_builtin))
 	{
 		DEBUG(10,("del member on BUILTIN SID\n"));
 
@@ -267,7 +267,7 @@ uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol,
 
 	DEBUG(10,("sid is %s\n", alias_sid_str));
 
-	if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
+	if (sid_equal(&alias_sid, global_sid_builtin))
 	{
 		DEBUG(10,("lookup on S-1-5-20\n"));
 
@@ -395,7 +395,7 @@ uint32 _samr_open_alias(const POLICY_HND *domain_pol,
 
 	/* this should not be hard-coded like this */
 	if (!sid_equal(&sid, &global_sam_sid) &&
-	    !sid_equal(&sid, &global_sid_S_1_5_20))
+	    !sid_equal(&sid, global_sid_builtin))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}

@@ -119,7 +119,7 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 		return False;
 	}
 
-	if (sid_equal(&grp->sid, &global_sid_S_1_5_20))
+	if (sid_equal(&grp->sid, global_sid_builtin))
 	{
 		/*
 		 * only builtin aliases are recognised in S-1-5-20

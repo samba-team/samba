@@ -60,10 +60,10 @@ uint32 samr_make_usr_obj_sd(SEC_DESC_BUF *buf, DOM_SID *usr_sid)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sid_copy(&adm_sid, &global_sid_S_1_5_20);
+	sid_copy(&adm_sid, global_sid_builtin);
 	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
 
-	sid_copy(&act_sid, &global_sid_S_1_5_20);
+	sid_copy(&act_sid, global_sid_builtin);
 	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
 
 	sid_copy(&glb_sid, global_sid_everyone);

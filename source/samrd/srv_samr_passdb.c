@@ -485,7 +485,7 @@ uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
-	else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
+	else if (sid_equal(&alias_sid, global_sid_builtin))
 	{
 		DEBUG(10,("add member on BUILTIN SID\n"));
 
@@ -530,7 +530,7 @@ uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
-	else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
+	else if (sid_equal(&alias_sid, global_sid_builtin))
 	{
 		DEBUG(10,("del member on BUILTIN SID\n"));
 
@@ -775,7 +775,7 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
 
 	/* well-known aliases */
-	if (sid_equal(&sid, &global_sid_S_1_5_20))
+	if (sid_equal(&sid, global_sid_builtin))
 	{
 		BOOL ret;
 		/* builtin aliases */
@@ -1215,7 +1215,7 @@ uint32 _samr_query_useraliases(const POLICY_HND *pol,
 
 	DEBUG(10,("sid is %s\n", dom_sid_str));
 
-	if (sid_equal(&dom_sid, &global_sid_S_1_5_20))
+	if (sid_equal(&dom_sid, global_sid_builtin))
 	{
 		BOOL ret;
 		DEBUG(10,("lookup on S-1-5-20\n"));
@@ -1335,7 +1335,7 @@ uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol,
 
 	DEBUG(10,("sid is %s\n", alias_sid_str));
 
-	if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
+	if (sid_equal(&alias_sid, global_sid_builtin))
 	{
 		DEBUG(10,("lookup on S-1-5-20\n"));
 
@@ -2470,7 +2470,7 @@ uint32 _samr_open_alias(const POLICY_HND *domain_pol,
 
 	/* this should not be hard-coded like this */
 	if (!sid_equal(&sid, &global_sam_sid) &&
-	    !sid_equal(&sid, &global_sid_S_1_5_20))
+	    !sid_equal(&sid, global_sid_builtin))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -2528,8 +2528,8 @@ uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
 	}
 	else if (strequal(domain, "BUILTIN"))
 	{
-		sid_copy(dom_sid, &global_sid_S_1_5_20);
-		return 0x0;
+		sid_copy(dom_sid, global_sid_builtin);
+		return NT_STATUS_NOPROBLEMO;
 	}
 
 	return NT_STATUS_NO_SUCH_DOMAIN;

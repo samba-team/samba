@@ -240,7 +240,7 @@ uint32 lookup_wk_group_name(const char *group_name, const char *domain,
 	}
 	else if (strequal(domain, "BUILTIN"))
 	{
-		sid_copy(sid, &global_sid_S_1_5_20);
+		sid_copy(sid, global_sid_builtin);
 	}
 	else
 	{
@@ -283,7 +283,7 @@ uint32 lookup_wk_user_name(const char *user_name, const char *domain,
 	}
 	else if (strequal(domain, "BUILTIN"))
 	{
-		sid_copy(sid, &global_sid_S_1_5_20);
+		sid_copy(sid, global_sid_builtin);
 	}
 	else
 	{
@@ -323,7 +323,7 @@ uint32 lookup_builtin_alias_name(const char *alias_name, const char *domain,
 	{
 		if (sid != NULL)
 		{
-			sid_copy(sid, &global_sid_S_1_5_20);
+			sid_copy(sid, global_sid_builtin);
 		}
 	}
 	else

@@ -1912,8 +1912,8 @@ BOOL nt5ldap_sam_user_info21_mods(const SAM_USER_INFO_21 *usr, LDAPMod ***mods, 
 
 void dfs_unlogin(void);
 BOOL pass_check(const char *_user, const char *_password,
-				int pwlen, const struct passwd *pwd,
-				BOOL (*fn)(const char *, const char *));
+		int pwlen, const struct passwd *pwd,
+		BOOL (*fn) (const char *, const char *));
 
 /*The following definitions come from  passdb/passdb.c  */
 
@@ -3920,139 +3920,6 @@ uint32 samr_open_by_nt5ldaprid( LDAPDB *hds,
 				POLICY_HND *pol, uint32 access_mask, uint32 rid);
 BOOL pwdbsam_initialise(void);
 
-/*The following definitions come from  samrd/srv_samr_passdb.c  */
-
-uint32 _samr_close(POLICY_HND *hnd);
-uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID *sid);
-uint32 _samr_open_domain(const POLICY_HND *connect_pol,
-				uint32 ace_perms,
-				const DOM_SID *sid,
-				POLICY_HND *domain_pol);
-uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
-				uint16 *unknown_0,
-				uint16 *unknown_1,
-				uint32 *unknown_2);
-uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SEC_DESC_BUF *buf);
-uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx, 
-				uint16 acb_mask, uint16 unk_1, uint32 size,
-				SAM_ENTRY **sam,
-				UNISTR2 **uni_acct_name,
-				uint32 *num_sam_users);
-uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown);
-uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid);
-uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
-uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
-uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx, 
-				uint32 size,
-				SAM_ENTRY **sam,
-				UNISTR2 **uni_acct_name,
-				uint32 *num_sam_users);
-uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
-				uint32 *start_idx, uint32 size,
-				SAM_ENTRY **sam,
-				UNISTR2 **uni_acct_name,
-				uint32 *num_sam_groups);
-uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
-					uint32 *start_idx, uint32 size,
-					SAM_ENTRY **sam,
-					UNISTR2 **uni_acct_name,
-					uint32 *num_sam_aliases);
-uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
-					uint32 start_idx,
-					uint32 max_entries,
-					uint32 max_size,
-					uint32 *data_size,
-					uint32 *num_entries,
-					SAM_DISPINFO_CTR *ctr);
-uint32 _samr_delete_dom_user(POLICY_HND *user_pol);
-uint32 _samr_delete_dom_group(POLICY_HND *group_pol);
-uint32 _samr_query_groupmem(const POLICY_HND *group_pol, 
-					uint32 *num_mem,
-					uint32 **rid,
-					uint32 **attr);
-uint32 _samr_set_groupinfo(const POLICY_HND *pol,
-				uint16 switch_level,
-				const GROUP_INFO_CTR* ctr);
-uint32 _samr_query_groupinfo(const POLICY_HND *pol,
-				uint16 switch_level,
-				GROUP_INFO_CTR* ctr);
-uint32 _samr_query_aliasinfo(const POLICY_HND *alias_pol,
-				uint16 switch_level,
-				ALIAS_INFO_CTR *ctr);
-uint32 _samr_query_useraliases(const POLICY_HND *pol,
-				const uint32 *ptr_sid, const DOM_SID2 *sid,
-				uint32 *num_aliases, uint32 **rid);
-uint32 _samr_delete_dom_alias(POLICY_HND *alias_pol);
-uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol, 
-				uint32 *num_mem, DOM_SID2 **sid);
-uint32 _samr_lookup_names(const POLICY_HND *pol,
-				
-			uint32 num_names1,
-			uint32 flags,
-			uint32 ptr,
-			const UNISTR2 *uni_name,
-
-			uint32 *num_rids1,
-			uint32 rid[MAX_SAM_ENTRIES],
-			uint32 *num_types1,
-			uint32 type[MAX_SAM_ENTRIES]);
-uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
-				const UNISTR2 *uni_user_name,
-				const char nt_newpass[516],
-				const uchar nt_oldhash[16],
-				const char lm_newpass[516],
-				const uchar lm_oldhash[16]);
-uint32 _samr_get_dom_pwinfo(const UNISTR2 *uni_srv_name,
-				uint16 *unk_0, uint16 *unk_1, uint16 *unk_2);
-uint32 _samr_lookup_rids(const POLICY_HND *pol,
-				uint32 num_rids, uint32 flags,
-				const uint32 *rids,
-				uint32 *num_names,
-				UNIHDR **hdr_name, UNISTR2** uni_name,
-				uint32 **types);
-uint32 _samr_open_user(const POLICY_HND *domain_pol,
-					uint32 access_mask, uint32 user_rid, 
-					POLICY_HND *user_pol);
-uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR *ctr);
-uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR *ctr);
-uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR *ctr);
-uint32 _samr_query_usergroups(const POLICY_HND *pol,
-				uint32 *num_groups,
-				DOM_GID **gids);
-uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
-				const UNISTR2 *uni_acct_name,
-				uint32 access_mask,
-				POLICY_HND *alias_pol, uint32 *rid);
-uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
-				const UNISTR2 *uni_acct_name,
-				uint32 access_mask,
-				POLICY_HND *group_pol, uint32 *rid);
-uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
-				uint16 switch_value,
-				SAM_UNK_CTR *ctr);
-uint32 _samr_create_user(const POLICY_HND *domain_pol,
-				const UNISTR2 *uni_username,
-				uint16 acb_info, uint32 access_mask, 
-				POLICY_HND *user_pol,
-				uint32 *unknown_0, uint32 *user_rid);
-uint32 _samr_connect_anon(const UNISTR2 *srv_name, uint32 access_mask,
-				POLICY_HND *connect_pol);
-uint32 _samr_connect(const UNISTR2 *srv_name, uint32 access_mask,
-				POLICY_HND *connect_pol);
-uint32 _samr_open_alias(const POLICY_HND *domain_pol,
-					uint32 access_mask, uint32 alias_rid,
-					POLICY_HND *alias_pol);
-uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
-				uint32 group_rid,
-				POLICY_HND *group_pol);
-uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
-				const UNISTR2 *uni_domain,
-				DOM_SID *dom_sid);
-BOOL pwdbsam_initialise(void);
-
 /*The following definitions come from  samrd/srv_samr_sam_tdb.c  */
 
 uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx, 
@@ -4187,17 +4054,6 @@ void process_blocking_lock_queue(time_t t);
 void generate_next_challenge(char *challenge);
 BOOL set_challenge(unsigned char *challenge);
 BOOL last_challenge(unsigned char *challenge);
-
-/*The following definitions come from  smbd/chgpasswd.c  */
-
-BOOL chgpasswd(const char *_name,char *oldpass,char *newpass, BOOL as_root);
-BOOL chgpasswd(const char *name,char *oldpass,char *newpass, BOOL as_root);
-BOOL pass_oem_change(const char *user,
-			const uchar *lmdata, const uchar *lmhash,
-			const uchar *ntdata, const uchar *nthash);
-BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd,
-				BOOL unicode, BOOL override);
-BOOL update_smbpassword_file(const char *user, const char *password);
 
 /*The following definitions come from  smbd/close.c  */
 
