@@ -128,6 +128,9 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	/* possibly change the file size */
 	if (newstats.st.st_size != f->name->st.st_size) {
+		if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+			return NT_STATUS_FILE_IS_A_DIRECTORY;
+		}
 		if (ftruncate(f->fd, newstats.st.st_size) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
@@ -150,6 +153,10 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	/* possibly change the attribute */
 	if (newstats.dos.attrib != f->name->dos.attrib) {
 		mode_t mode = pvfs_fileperms(pvfs, newstats.dos.attrib);
+		if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+			/* ignore on directories for now */
+			return NT_STATUS_OK;
+		}
 		if (fchmod(f->fd, mode) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}

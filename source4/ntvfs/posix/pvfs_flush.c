@@ -28,6 +28,9 @@
 */
 static void pvfs_flush_file(struct pvfs_state *pvfs, struct pvfs_file *f)
 {
+	if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		return;
+	}
 	if (pvfs->flags & PVFS_FLAG_STRICT_SYNC) {
 		fsync(f->fd);
 	}
