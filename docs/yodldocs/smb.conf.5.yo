@@ -193,7 +193,7 @@ dit(bf(The [printers] section))
 
 This section works like link(bf([homes]))(homes), but for printers.
 
-If a [printers] section occurs in the configuration file, users are
+If a bf([printers]) section occurs in the configuration file, users are
 able to connect to any printer specified in the local host's printcap
 file.
 
@@ -203,7 +203,7 @@ link(bf([homes]))(homes) section exists, it is used as described
 above. Otherwise, the requested section name is treated as a printer
 name and the appropriate printcap file is scanned to see if the
 requested section name is a valid printer share name. If a match is
-found, a new printer share is created by cloning the [printers]
+found, a new printer share is created by cloning the bf([printers])
 section.
 
 A few modifications are then made to the newly created share:
@@ -220,11 +220,11 @@ given, the username is set to the located printer name.
 
 endit()
 
-Note that the [printers] service MUST be printable - if you specify
+Note that the bf([printers]) service MUST be printable - if you specify
 otherwise, the server will refuse to load the configuration file.
 
 Typically the path specified would be that of a world-writeable spool
-directory with the sticky bit set on it. A typical [printers] entry
+directory with the sticky bit set on it. A typical bf([printers]) entry
 would look like this:
 
 verb(
@@ -512,7 +512,7 @@ it() link(bf(debug timestamp))(debugtimestamp)
 
 it() link(bf(debug uid))(debuguid)
 
-it() link(bf(debuglevel))(debuglevel)
+it() link(bf(debug level))(debuglevel)
 
 it() link(bf(default))(default)
 
@@ -527,8 +527,6 @@ it() link(bf(dns proxy))(dnsproxy)
 it() link(bf(domain admin group))(domainadmingroup)
 
 it() link(bf(domain admin users))(domainadminusers)
-
-it() link(bf(domain controller))(domaincontroller)
 
 it() link(bf(domain groups))(domaingroups)
 
@@ -617,6 +615,8 @@ it() link(bf(max xmit))(maxxmit)
 it() link(bf(message command))(messagecommand)
 
 it() link(bf(min passwd length))(minpasswdlength)
+
+it() link(bf(min password length))(minpasswordlength)
 
 it() link(bf(min wins ttl))(minwinsttl)
 
@@ -762,17 +762,15 @@ it() link(bf(username level))(usernamelevel)
 
 it() link(bf(username map))(usernamemap)
 
-it() link(bf(utmp))(utmp)
-
 it() link(bf(utmp directory))(utmpdirectory)
 
 it() link(bf(valid chars))(validchars)
 
+it() link(bf(wins hook))(winshook)
+
 it() link(bf(wins proxy))(winsproxy)
 
 it() link(bf(wins server))(winsserver)
-
-it() link(bf(wins hook))(winshook)
 
 it() link(bf(wins support))(winssupport)
 
@@ -922,9 +920,9 @@ it() link(bf(only guest))(onlyguest)
 
 it() link(bf(only user))(onlyuser)
 
-it() link(bf(oplocks))(oplocks)
-
 it() link(bf(oplock contention limit))(oplockcontentionlimit)
+
+it() link(bf(oplocks))(oplocks)
 
 it() link(bf(path))(path)
 
@@ -970,9 +968,9 @@ it() link(bf(root postexec))(rootpostexec)
 
 it() link(bf(root preexec))(rootpreexec)
 
-it() link(bf(security mask))(securitymask)
-
 it() link(bf(root preexec close))(rootpreexecclose)
+
+it() link(bf(security mask))(securitymask)
 
 it() link(bf(set directory))(setdirectory)
 
@@ -993,6 +991,8 @@ it() link(bf(user))(user)
 it() link(bf(username))(username)
 
 it() link(bf(users))(users)
+
+it() link(bf(utmp))(utmp)
 
 it() link(bf(valid users))(validusers)
 
@@ -1633,7 +1633,7 @@ dit(bf(debug timestamp (G)))
 
 Samba2.0 debug log messages are timestamped by default. If you are
 running at a high link(bf("debug level"))(debuglevel) these timestamps
-can be distracting. This boolean parameter allows them to be turned
+can be distracting. This boolean parameter allows timestamping to be turned
 off.
 
   bf(Default:)
@@ -2003,13 +2003,6 @@ To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
 email(listproc@samba.org)
-
-label(domain controller)
-dit(bf(domain controller (G)))
-
-This is a bf(DEPRECATED) parameter. It is currently not used within
-the Samba source and should be removed from all current smb.conf
-files. It is left behind for compatibility reasons.
 
 label(domaingroups)
 dit(bf(domain groups (G)))
@@ -3928,6 +3921,11 @@ tt(	min print space = 2000)
 label(minpasswdlength)
 dit(bf(min passwd length (G)))
 
+Synonym for link(bf("min password length"))(minpasswordlength).
+
+label(minpasswordlength)
+dit(bf(min password length (G)))
+
 This option sets the minimum length in characters of a plaintext password
 than smbd will accept when performing UNIX password changing.
 
@@ -3936,7 +3934,7 @@ link(bf("passwd program"))(passwdprogram) and link(bf("passwd chat
 debug"))(passwdchatdebug).
 
   bf(Default:)
-tt(	min passwd length = 5)
+tt(	min password length = 5)
 
 
 label(minwinsttl)
@@ -4250,7 +4248,7 @@ tt(	os level = 65    ; This will win against any NT Server)
 label(packetsize)
 dit(bf(packet size (G)))
 
-This is a deprecated parameter that how no effect on the current
+This is a deprecated parameter that has no effect on the current
 Samba code. It is left in the parameter list to prevent breaking
 old bf(smb.conf) files.
 
@@ -4862,11 +4860,11 @@ label(printing)
 dit(bf(printing (S)))
 
 This parameters controls how printer status information is interpreted
-on your system, and also affects the default values for the
+on your system. It also affects the default values for the
 link(bf("print command"))(printcommand), link(bf("lpq
 command"))(lpqcommand) link(bf("lppause command"))(lppausecommand),
 link(bf("lpresume command"))(lpresumecommand), and link(bf("lprm
-command"))(lprmcommand).
+command"))(lprmcommand) if specified in the bf([global]} section.
 
 Currently eight printing styles are supported. They are
 bf("printing=BSD"), bf("printing=AIX"), bf("printing=LPRNG"),
@@ -4875,7 +4873,7 @@ bf("printing=SYSV"),bf("printing="HPUX"),bf("printing=QNX") and
 bf("printing=SOFTQ").
 
 To see what the defaults are for the other print commands when using
-these three options use the url(bf("testparm"))(testparm.1.html) program.
+the various options use the url(bf("testparm"))(testparm.1.html) program.
 
 This option can be set on a per printer basis
 
@@ -5004,10 +5002,7 @@ label(readonly)
 dit(bf(read only (S)))
 
 Note that this is an inverted synonym for
-link(bf("writeable"))(writeable) and link(bf("write ok"))(writeok).
-
-See also link(bf("writeable"))(writeable) and link(bf("write
-ok"))(writeok).
+link(bf("writeable"))(writeable).
 
 label(readprediction)
 dit(bf(read prediction (G)))
@@ -6155,15 +6150,7 @@ tt(	time server = True)
 label(timestamplogs)
 dit(bf(timestamp logs (G)))
 
-Samba2.0 will a timestamps to all log entries by default. This
-can be distracting if you are attempting to debug a problem. This
-parameter allows the timestamping to be turned off.
-
-  bf(Default:)
-tt(	timestamp logs = True)
-
-  bf(Example:)
-tt(	timestamp logs = False)
+Synonym for url(bf("debug timestamp"))(debugtimestamp).
 
 label(unixpasswordsync)
 dit(bf(unix password sync (G)))
@@ -6428,7 +6415,7 @@ tt(	no username map)
 tt(	username map = /usr/local/samba/lib/users.map)
 
 label(utmp)
-dit(bf(utmp (G)))
+dit(bf(utmp (S)))
 
 This boolean parameter is only available if Samba has been configured and compiled 
 with the option tt(--with-utmp). If set to True then Samba will attempt
