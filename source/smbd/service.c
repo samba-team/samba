@@ -169,6 +169,72 @@ struct server_socket *service_setup_socket(struct server_service *service,
 	return sock;
 }
 
+struct server_connection *server_setup_connection(struct event_context *ev, struct server_socket *server_socket, int accepted_fd, time_t t)
+{
+	struct fd_event fde;
+	struct timed_event idle;
+	struct server_connection *srv_conn;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_init("server_service_connection");
+	if (!mem_ctx) {
+		DEBUG(0,("talloc_init(server_service_connection) failed\n"));
+		return NULL;
+	}
+
+	srv_conn = talloc_p(mem_ctx, struct server_connection);
+	if (!srv_conn) {
+		DEBUG(0,("talloc_p(mem_ctx, struct server_service_connection) failed\n"));
+		talloc_destroy(mem_ctx);
+		return NULL;
+	}
+
+	ZERO_STRUCTP(srv_conn);
+	srv_conn->mem_ctx = mem_ctx;
+
+	fde.private 	= srv_conn;
+	fde.fd		= accepted_fd;
+	fde.flags	= EVENT_FD_READ;
+	fde.handler	= server_io_handler;
+
+	idle.private 	= srv_conn;
+	idle.next_event	= t + SERVER_DEFAULT_IDLE_TIME;
+	idle.handler	= server_idle_handler;
+
+	srv_conn->event.ctx		= ev;
+	srv_conn->event.fde		= &fde;
+	srv_conn->event.idle		= &idle;
+	srv_conn->event.idle_time	= SERVER_DEFAULT_IDLE_TIME;
+
+	srv_conn->server_socket		= server_socket;
+	srv_conn->service		= server_socket->service;
+
+	/* TODO: we need a generic socket subsystem */
+	srv_conn->socket		= talloc_p(srv_conn->mem_ctx, struct socket_context);
+	if (!srv_conn->socket) {
+		DEBUG(0,("talloc_p(srv_conn->mem_ctx, struct socket_context) failed\n"));
+		talloc_destroy(mem_ctx);
+		return NULL;
+	}
+	srv_conn->socket->private_data	= NULL;
+	srv_conn->socket->ops		= NULL;
+	srv_conn->socket->client_addr	= NULL;
+	srv_conn->socket->pkt_count	= 0;
+	srv_conn->socket->fde		= srv_conn->event.fde;
+
+	/* create a smb server context and add it to out event
+	   handling */
+	server_socket->service->ops->accept_connection(srv_conn);
+
+	/* accpect_connection() of the service may changed idle.next_event */
+	srv_conn->event.fde	= event_add_fd(ev,&fde);
+	srv_conn->event.idle	= event_add_timed(ev,&idle);
+
+	srv_conn->socket->fde	= srv_conn->event.fde;
+
+	return srv_conn;
+}
+
 /*
   close the socket and shutdown a server_context
 */
@@ -176,6 +242,13 @@ void server_terminate_connection(struct server_connection *srv_conn, const char 
 {
 	DEBUG(0,("server_terminate_connection\n"));
 	srv_conn->service->model_ops->terminate_connection(srv_conn, reason);
+}
+
+void server_destroy_connection(struct server_connection *srv_conn)
+{
+	close(srv_conn->event.fde->fd);
+	event_remove_fd(srv_conn->event.ctx, srv_conn->event.fde);
+	event_remove_timed(srv_conn->event.ctx, srv_conn->event.idle);
 }
 
 void server_io_handler(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)

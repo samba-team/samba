@@ -37,4 +37,7 @@ struct server_context {
 #define SERVER_TCP_LOW_PORT  1024
 #define SERVER_TCP_HIGH_PORT 1300
 
+/* the default idle time of a service */
+#define SERVER_DEFAULT_IDLE_TIME 300
+
 #endif /* _SERVER_H */
