@@ -518,6 +518,7 @@ DATA_BLOB spnego_gen_auth_response(void)
   A = ASCII string (pointer + length) Actually same as B
   B = data blob (pointer + length)
   b = data blob in header (pointer + length)
+  D
   d = word (4 bytes)
   C = constant ascii string
  */

@@ -458,7 +458,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 				      char *pass, char *workgroup)
 {
 	DATA_BLOB msg1, struct_blob;
-	DATA_BLOB blob, chal1, chal2, auth;
+	DATA_BLOB blob, chal1, chal2, auth, challenge_blob;
 	uint8 challenge[8];
 	uint8 nthash[24], lmhash[24], sess_key[16];
 	uint32 neg_flags, chal_flags, ntlmssp_command, unkn1, unkn2;
@@ -516,9 +516,9 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 			 &ntlmssp_command, 
 			 &server_domain,
 			 &chal_flags,
-			 challenge, 8,
+			 &challenge_blob, 8,
 			 &unkn1, &unkn2,
-			 struct_blob.data, &struct_blob.length)) {
+			 &struct_blob)) {
 	  DEBUG(0, ("Failed to parse the NTLMSSP Challenge\n"));
 	  return False;
 	}
@@ -529,11 +529,14 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 		return False;
 	}
  
+	DEBUG(10, ("Challenge:\n"));
+	dump_data(10, challenge_blob.data, 8);
 
-	/* encrypt the password with the challenge */
-	memcpy(challenge, chal1.data + 24, 8);
+	/* encrypt the password with the challenge which is in the blob */
+	memcpy(challenge, challenge_blob.data, 8); 
 	SMBencrypt(pass, challenge,lmhash);
 	SMBNTencrypt(pass, challenge,nthash);
+	data_blob_free(&challenge_blob);
 
 #if 0
 	file_save("nthash.dat", nthash, 24);
