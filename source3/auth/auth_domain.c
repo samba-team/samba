@@ -115,7 +115,7 @@ static NTSTATUS rpc_resolve_dc(const char *server,
  * @param cli the cli to return containing the active connection
  * @param server either a machine name or text IP address to
  *               connect to.
- * @param trust_password the trust password to establish the
+ * @param trust_passwd the trust password to establish the
  *                       credentials with.
  *
  **/
