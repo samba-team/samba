@@ -147,10 +147,10 @@ typedef struct ntlmssp_state
 	uint32 ntlmssp_seq_num;
 
 	/* ntlmv2 */
-	char send_sign_const[16];
-	char send_seal_const[16];
-	char recv_sign_const[16];
-	char recv_seal_const[16];
+	unsigned char send_sign_const[16];
+	unsigned char send_seal_const[16];
+	unsigned char recv_sign_const[16];
+	unsigned char recv_seal_const[16];
 
 	unsigned char send_sign_hash[258];
 	unsigned char send_seal_hash[258];
