@@ -4702,7 +4702,7 @@ ac_given_INSTALL="$INSTALL"
 trap 'rm -fr `echo "Makefile tests/dummy client/dummy lib/dummy ubiqx/dummy
 web/dummy param/dummy nmbd/dummy smbd/dummy rpc_server/dummy
 rpc_parse/dummy script/dummy include/dummy codepages/dummy
-libsmb/dummy bin/dummy include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+libsmb/dummy bin/dummy printing/dummy include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -4798,7 +4798,7 @@ cat >> $CONFIG_STATUS <<EOF
 CONFIG_FILES=\${CONFIG_FILES-"Makefile tests/dummy client/dummy lib/dummy ubiqx/dummy
 web/dummy param/dummy nmbd/dummy smbd/dummy rpc_server/dummy
 rpc_parse/dummy script/dummy include/dummy codepages/dummy
-libsmb/dummy bin/dummy"}
+libsmb/dummy bin/dummy printing/dummy"}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then

@@ -647,4 +647,4 @@ fi
 AC_OUTPUT(Makefile tests/dummy client/dummy lib/dummy ubiqx/dummy
 web/dummy param/dummy nmbd/dummy smbd/dummy rpc_server/dummy
 rpc_parse/dummy script/dummy include/dummy codepages/dummy
-libsmb/dummy bin/dummy)
+libsmb/dummy bin/dummy printing/dummy)

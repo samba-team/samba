@@ -1091,11 +1091,6 @@ BOOL pm_process( char *FileName,
                  BOOL (*sfunc)(char *),
                  BOOL (*pfunc)(char *, char *) );
 
-/*The following definitions come from  param/pcap.c  */
-
-BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
-void pcap_printer_fn(void (*fn)(char *, char *));
-
 /*The following definitions come from  passdb/ldap.c  */
 
 struct passdb_ops *ldap_initialize_password_db(void);
@@ -1176,6 +1171,30 @@ BOOL trust_password_unlock(void);
 BOOL trust_password_delete( char *domain, char *name );
 BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
 BOOL set_trust_account_password( unsigned char *md4_new_pwd);
+
+/*The following definitions come from  printing/pcap.c  */
+
+BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
+void pcap_printer_fn(void (*fn)(char *, char *));
+
+/*The following definitions come from  printing/print_svid.c  */
+
+void sysv_printer_fn(void (*fn)(char *, char *));
+int sysv_printername_ok(char *name);
+
+/*The following definitions come from  printing/printing.c  */
+
+void lpq_reset(int snum);
+void print_file(connection_struct *conn, files_struct *file);
+int get_printqueue(int snum, 
+		   connection_struct *conn,print_queue_struct **queue,
+		   print_status_struct *status);
+void del_printqueue(connection_struct *conn,int snum,int jobid);
+void status_printjob(connection_struct *conn,int snum,int jobid,int status);
+int printjob_encode(int snum, int job);
+void printjob_decode(int jobid, int *snum, int *job);
+void status_printqueue(connection_struct *conn,int snum,int status);
+void load_printers(void);
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
@@ -2007,25 +2026,6 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 int read_predict(int fd,int offset,char *buf,char **ptr,int num);
 void do_read_prediction(void);
 void invalidate_read_prediction(int fd);
-
-/*The following definitions come from  smbd/print_svid.c  */
-
-void sysv_printer_fn(void (*fn)(char *, char *));
-int sysv_printername_ok(char *name);
-
-/*The following definitions come from  smbd/printing.c  */
-
-void lpq_reset(int snum);
-void print_file(connection_struct *conn, files_struct *file);
-int get_printqueue(int snum, 
-		   connection_struct *conn,print_queue_struct **queue,
-		   print_status_struct *status);
-void del_printqueue(connection_struct *conn,int snum,int jobid);
-void status_printjob(connection_struct *conn,int snum,int jobid,int status);
-int printjob_encode(int snum, int job);
-void printjob_decode(int jobid, int *snum, int *job);
-void status_printqueue(connection_struct *conn,int snum,int status);
-void load_printers(void);
 
 /*The following definitions come from  smbd/quotas.c  */
 

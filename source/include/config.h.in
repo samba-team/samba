@@ -304,6 +304,9 @@
 /* Define if you have the <netinet/tcp.h> header file.  */
 #undef HAVE_NETINET_TCP_H
 
+/* Define if you have the <rpcsvc/ypclnt.h> header file.  */
+#undef HAVE_RPCSVC_YPCLNT_H
+
 /* Define if you have the <security/pam_appl.h> header file.  */
 #undef HAVE_SECURITY_PAM_APPL_H
 
@@ -357,9 +360,6 @@
 
 /* Define if you have the <sys/param.h> header file.  */
 #undef HAVE_SYS_PARAM_H
-
-/* Define if you have the <rpcsvc/ypclnt.h> header file.  */
-#undef HAVE_RPCSVC_YPCLNT_H
 
 /* Define if you have the <sys/security.h> header file.  */
 #undef HAVE_SYS_SECURITY_H
