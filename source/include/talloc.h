@@ -22,6 +22,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/**
+ * @ingroup talloc
+ * @{
+ * @sa talloc.c
+ */
+
 struct talloc_chunk {
 	struct talloc_chunk *next;
 	size_t size;
@@ -50,4 +56,6 @@ char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
 char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
 	PRINTF_ATTRIBUTE(2, 3);
 
-#endif
+/** @} */
+
+#endif /* ndef _TALLOC_H_ */

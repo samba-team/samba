@@ -36,9 +36,12 @@
 
    talloc does not zero the memory. It guarantees memory of a
    TALLOC_ALIGN alignment
+
+   @sa talloc.h
 */
 
-/* TODO: We could allocate both the talloc_chunk structure, and the
+/**
+ * @todo We could allocate both the talloc_chunk structure, and the
  * memory it contains all in one allocation, which might be a bit
  * faster and perhaps use less memory overhead.
  *
@@ -106,7 +109,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 	return p;
 }
 
-/* a talloc version of realloc */
+/** A talloc version of realloc */
 void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 {
 	struct talloc_chunk *tc;
@@ -133,7 +136,8 @@ void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 	return NULL;
 }
 
-/* destroy a whole pool */
+/** Destroy all the memory allocated inside @p t, but not @p t
+ * itself. */
 void talloc_destroy_pool(TALLOC_CTX *t)
 {
 	struct talloc_chunk *c;
@@ -151,7 +155,7 @@ void talloc_destroy_pool(TALLOC_CTX *t)
 	t->total_alloc_size = 0;
 }
 
-/* destroy a whole pool including the context */
+/** Destroy a whole pool including the context */
 void talloc_destroy(TALLOC_CTX *t)
 {
 	if (!t)
@@ -161,13 +165,13 @@ void talloc_destroy(TALLOC_CTX *t)
 	SAFE_FREE(t);
 }
 
-/* return the current total size of the pool. */
+/** Return the current total size of the pool. */
 size_t talloc_pool_size(TALLOC_CTX *t)
 {
 	return t->total_alloc_size;
 }
 
-/* talloc and zero memory. */
+/** talloc and zero memory. */
 void *talloc_zero(TALLOC_CTX *t, size_t size)
 {
 	void *p = talloc(t, size);
@@ -178,7 +182,7 @@ void *talloc_zero(TALLOC_CTX *t, size_t size)
 	return p;
 }
 
-/* memdup with a talloc. */
+/** memdup with a talloc. */
 void *talloc_memdup(TALLOC_CTX *t, const void *p, size_t size)
 {
 	void *newp = talloc(t,size);
@@ -191,7 +195,7 @@ void *talloc_memdup(TALLOC_CTX *t, const void *p, size_t size)
 	return newp;
 }
 
-/* strdup with a talloc */
+/** strdup with a talloc */
 char *talloc_strdup(TALLOC_CTX *t, const char *p)
 {
 	return talloc_memdup(t, p, strlen(p) + 1);
