@@ -309,7 +309,7 @@ MS Windows 200x domain control protcols also.
 At this time any appearance that Samba-3 is capable of acting as an
 <emphasis>ADS Domain Controller</emphasis> is limited and experimental in nature.
 This functionality should not be used until the samba-team offers formal support for it.
-At such a time, the documentation will be revised to duely reflect all configuration and
+At such a time, the documentation will be revised to duly reflect all configuration and
 management requirements.
 </para>
 
@@ -331,7 +331,7 @@ other than the machine being configured so that the network configuration has a 
 for it's workgroup entry. It is not uncommon for the name WORKGROUP to be used for this. With this
 mode of configuration there are NO machine trust accounts and any concept of membership as such
 is limited to the fact that all machines appear in the network neighbourhood to be logically
-groupped together. Again, just to be clear: <strong>workgroup mode does not involve any security machine 
+grouped together. Again, just to be clear: <strong>workgroup mode does not involve any security machine 
 accounts</strong>.
 </para>
 
@@ -535,9 +535,9 @@ There are a couple of points to emphasize in the above configuration.
 <title>Samba ADS Domain Control</title>
 
 <para>
-Samba-3 is not and can not act as an Active Directory Server. It can not truely function as
+Samba-3 is not and can not act as an Active Directory Server. It can not truly function as
 an Active Directory Primary Domain Controller. The protocols for some of the functionality
-the Active Directory Domain Controllers is have been partially implemented on an experiemental
+the Active Directory Domain Controllers is have been partially implemented on an experimental
 only basis. Please do NOT expect Samba-3 to support these protocols - nor should you depend
 on any such functionality either now or in the future. The Samba-Team may well remove such
 experiemental features or may change their behaviour.
