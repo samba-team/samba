@@ -3840,7 +3840,7 @@ static int check_posix_acl_group_write(connection_struct *conn, const char *dnam
 					}
 				}
 				break;
-			case SMB_ACL_MASK:
+			case SMB_ACL_GROUP:
 				{
 					gid_t *pgid = (gid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
 					if (pgid == NULL) {
