@@ -91,6 +91,17 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	exit(1);
     printf("Server: %s\n", str);
     free (str);
+    {
+	Ticket t;
+	size_t len;
+	printf("Version number: ");
+	decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
+	if(t.enc_part.kvno)
+	    printf("%d\n", *t.enc_part.kvno);
+	else
+	    printf("unknown\n");
+	free_Ticket(&t);
+    }
     printf("Session key: type = %d, length = %d\n", 
 	   cred->session.keytype, 
 	   cred->session.keyvalue.length);
@@ -105,19 +116,23 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	printf("Renew till: %s\n", 
 	       printable_time(cred->times.renew_till));
     printf("Ticket flags: ");
-#define PRINT_FLAG(f) if(cred->flags.b. ##f) { if(!first_flag) printf(", "); printf("%s", #f); first_flag = 0; }
+#define PRINT_FLAG2(f, s) if(cred->flags.b. ##f) { if(!first_flag) printf(", "); printf("%s", #s); first_flag = 0; }
+#define PRINT_FLAG(f) PRINT_FLAG2(f, f)
     first_flag = 1;
     PRINT_FLAG(forwardable);
     PRINT_FLAG(forwarded);
     PRINT_FLAG(proxiable);
     PRINT_FLAG(proxy);
-    PRINT_FLAG(may_postdate);
+    PRINT_FLAG2(may_postdate, may-postdate);
     PRINT_FLAG(postdated);
     PRINT_FLAG(invalid);
     PRINT_FLAG(renewable);
     PRINT_FLAG(initial);
-    PRINT_FLAG(pre_authent);
-    PRINT_FLAG(hw_authent);
+    PRINT_FLAG2(pre_authent, pre-authenticated);
+    PRINT_FLAG2(hw_authent, hw-authenticated);
+    PRINT_FLAG2(transited_policy_checked, transited-policy-checked);
+    PRINT_FLAG2(ok_as_delegate, ok-as-delegate);
+    PRINT_FLAG(anonymous);
     printf("\n");
     printf("Addresses: ");
     for(j = 0; j < cred->addresses.len; j++){
