@@ -13,7 +13,7 @@ foo_DATA = \
 	base64.h des.h error.h getarg.h gssapi.h hdb.h kafs.h	\
 	krb5-protos.h krb5-types.h krb5.h md4.h md5.h otp.h	\
 	parse_time.h parse_units.h roken.h sha.h sl.h		\
-	der.h							\
+	der.h xdbm.h						\
 	@EXTRA_HDRS@
 
 
@@ -73,3 +73,5 @@ store.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/store.h .
 der.h:
 	$(LN_S) $(top_srcdir)/lib/asn1/der.h .
+xdbm.h:
+	$(LN_S) $(top_srcdir)/lib/roken/xdbm.h .
