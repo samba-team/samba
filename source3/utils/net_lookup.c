@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "includes.h"
-#include "../utils/net.h"
+#include "utils/net.h"
 
 int net_lookup_usage(int argc, const char **argv)
 {

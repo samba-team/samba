@@ -29,7 +29,7 @@
  **/
 
 #include "includes.h"
-#include "../web/swat_proto.h"
+#include "web/swat_proto.h"
 
 static BOOL demo_mode = False;
 static BOOL have_write_access = False;

@@ -6,7 +6,7 @@
 #define SMBC_DIR_MODE  (S_IFDIR | 0555)
 
 
-#include "../include/libsmbclient.h"
+#include "include/libsmbclient.h"
 
 
 struct _SMBCSRV {

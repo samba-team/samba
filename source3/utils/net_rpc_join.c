@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
  
 #include "includes.h"
-#include "../utils/net.h"
+#include "utils/net.h"
 
 /* Macro for checking RPC error codes to make things more readable */
 
