@@ -135,15 +135,15 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 	*response = '\0';
 	len = sizeof(response) - 2;
 
-	if ( status = lookup_byaddr_backend(state->request.data.name, &count)) {
+	if ((status = lookup_byaddr_backend(state->request.data.name, &count))){
 	    size = strlen(state->request.data.name) + 1;
 	    if (size > len) {
 		SAFE_FREE(status);
 		return WINBINDD_ERROR;
 	    }
 	    len -= size;
-	    strncat(response,state->request.data.name,size);
-	    strncat(response,"\t",1);
+	    safe_strcat(response,state->request.data.name,size);
+	    safe_strcat(response,"\t",1);
 	    for (i = 0; i < count; i++) {
 		/* ignore group names */
 		if (status[i].flags & 0x80) continue;
@@ -154,8 +154,8 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 			    return WINBINDD_ERROR;
 			}
 			len -= size;
-			strncat(response, status[i].name, size);
-			strncat(response, " ", 1);
+			safe_strcat(response, status[i].name, size);
+			safe_strcat(response, " ", 1);
 		}
 	    }
 	    response[strlen(response)-1] = '\n';
@@ -180,7 +180,7 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 	*response = '\0';
 	len = sizeof(response) - 2;
 
-	if (ip_list = lookup_byname_backend(state->request.data.name, &count)) {
+	if ((ip_list = lookup_byname_backend(state->request.data.name,&count))){
 		for (i = count; i ; i--) {
 		    addr = inet_ntoa(ip_list[i-1]);
 		    size = strlen(addr) + 1;
@@ -191,16 +191,16 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 		    len -= size;
 		    if (i != 0)
 			response[strlen(response)-1] = ' ';
-		    strncat(response,addr,size);
-		    strncat(response,"\t",1);
+		    safe_strcat(response,addr,size);
+		    safe_strcat(response,"\t",1);
 		}
 		size = strlen(state->request.data.name) + 1;
 		if (size > len) {
 		    SAFE_FREE(ip_list);
 		    return WINBINDD_ERROR;
 		}   
-		strncat(response,state->request.data.name,size);
-		strncat(response,"\n",1);
+		safe_strcat(response,state->request.data.name,size);
+		safe_strcat(response,"\n",1);
 		SAFE_FREE(ip_list);
 	} else
 		return WINBINDD_ERROR;
