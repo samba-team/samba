@@ -1,8 +1,3 @@
-# generate prototypes for Samba C code
-# tridge, June 1996
-# added comment for each source file for use as crude index
-# dan, 17 June 1996
-
 BEGIN {
   inheader=0;
   current_file="";

@@ -122,7 +122,8 @@ void announce_backup(void)
   int tok;
   
   if (!lastrun) lastrun = t;
-  if (t < lastrun + CHECK_TIME_ANNOUNCE_BACKUP * 60) return;
+  if (t < lastrun + CHECK_TIME_ANNOUNCE_BACKUP * 60)
+	return;
   lastrun = t;
   
   for (tok = 0; tok <= workgroup_count; tok++)
@@ -179,19 +180,102 @@ void announce_backup(void)
 
 
 /****************************************************************************
+  send a host announcement packet
+  **************************************************************************/
+void do_announce_host(int command,
+		char *from_name, int from_type, struct in_addr from_ip,
+		char *to_name  , int to_type  , struct in_addr to_ip,
+		int updatecount, time_t announce_interval,
+		char *server_name, int server_type, char *server_comment)
+{
+	pstring outbuf;
+	char *p;
+
+	bzero(outbuf,sizeof(outbuf));
+	p = outbuf+1;
+
+	/* command type */
+	CVAL(outbuf,0) = command;
+
+	/* announcement parameters */
+	CVAL(p,0) = updatecount;
+	SIVAL(p,1,announce_interval*1000); /* ms - despite the spec */
+
+	StrnCpy(p+5,server_name,16);
+	strupper(p+5);
+
+	CVAL(p,21) = 2; /* major version */
+	CVAL(p,22) = 2; /* minor version */
+
+	SIVAL(p,23,server_type);
+	SSVAL(p,27,0xaa55); /* browse signature */
+	SSVAL(p,29,1); /* browse version */
+
+	strcpy(p+31,server_comment);
+	p += 31;
+	p = skip_string(p,1);
+
+	/* send the announcement */
+	send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
+					  PTR_DIFF(p,outbuf),
+					  from_name, to_name,
+					  from_type, to_type,
+					  to_ip, from_ip);
+}
+
+
+/****************************************************************************
+  announce a server entry
+  ****************************************************************************/
+void announce_server(struct subnet_record *d, struct work_record *work,
+					char *name, char *comment, time_t ttl, int server_type)
+{
+	if (AM_MASTER(work))
+	{
+		DEBUG(3,("sending local master announce to %s for %s(1e)\n",
+						inet_ntoa(d->bcast_ip),work->work_group));
+
+		do_announce_host(ANN_LocalMasterAnnouncement,
+						name            , 0x00, d->myip,
+						work->work_group, 0x1e, d->bcast_ip,
+						updatecount, ttl*1000,
+						name, server_type, comment);
+
+		DEBUG(3,("sending domain announce to %s for %s\n",
+						inet_ntoa(d->bcast_ip),work->work_group));
+
+		/* XXXX should we do a domain-announce-kill? */
+		if (server_type != 0)
+		{
+			do_announce_host(ANN_DomainAnnouncement,
+						work->work_group, 0x00, d->myip,
+						MSBROWSE        , 0x01, d->bcast_ip,
+						updatecount, ttl*1000,
+						name, server_type ? SV_TYPE_DOMAIN_ENUM : 0, comment);
+		}
+	}
+	else
+	{
+		DEBUG(3,("sending host announce to %s for %s(1d)\n",
+						inet_ntoa(d->bcast_ip),work->work_group));
+
+		do_announce_host(ANN_HostAnnouncement,
+						name            , 0x00, d->myip,
+						work->work_group, 0x1d, d->bcast_ip,
+						updatecount, ttl*1000,
+						name, server_type, comment);
+	}
+}
+
+/****************************************************************************
   construct a host announcement unicast
   **************************************************************************/
 void announce_host(void)
 {
   time_t t = time(NULL);
-  pstring outbuf;
-  char *p;
-  char *namep;
-  char *stypep;
-  char *commentp;
+  struct subnet_record *d;
   pstring comment;
   char *my_name;
-  struct subnet_record *d;
 
   StrnCpy(comment, *ServerComment ? ServerComment : "NoComment", 43);
 
@@ -225,9 +309,6 @@ void announce_host(void)
 	  
 	  work->lastannounce_time = t;
 
-	  /* when announcing to remote networks we make sure we don't
-             claim to be any sort of special server, otherwise we may
-             stuff up their browsing */
 	  if (!d->my_interface) {
 	    stype &= ~(SV_TYPE_POTENTIAL_BROWSER | SV_TYPE_MASTER_BROWSER |
 		       SV_TYPE_DOMAIN_MASTER | SV_TYPE_BACKUP_BROWSER |
@@ -243,78 +324,15 @@ void announce_host(void)
 	  
 	  if (announce)
 	    {
-	      bzero(outbuf,sizeof(outbuf));
-	      p = outbuf+1;
-	      
-	      CVAL(p,0) = updatecount;
-	      /* ms - despite the spec */
-	      SIVAL(p,1,work->announce_interval*1000); 
-	      namep = p+5;
-	      StrnCpy(namep,my_name,16);
-	      strupper(namep);
-	      CVAL(p,21) = 2; /* major version */
-	      CVAL(p,22) = 2; /* minor version */
-	      stypep = p+23;
-	      SIVAL(p,23,stype);
-	      SSVAL(p,27,0xaa55); /* browse signature */
-	      SSVAL(p,29,1); /* browse version */
-	      commentp = p+31;
-	      strcpy(commentp,comment);
-	      p = p+31;
-	      p = skip_string(p,1);
-	      
-	      if (d->my_interface && AM_MASTER(work))
-		{
-		  SIVAL(stypep,0,work->ServerType);
-		  
-		  DEBUG(2,("sending local master announce to %s for %s\n",
-			   inet_ntoa(d->bcast_ip),work->work_group));
-		  
-		  CVAL(outbuf,0) = ANN_LocalMasterAnnouncement;
-		  
-		  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
-				      PTR_DIFF(p,outbuf),
-				      my_name,work->work_group,0,
-				      0x1e,d->bcast_ip,
-				      *iface_ip(d->bcast_ip));
-		  
-		  DEBUG(2,("sending domain announce to %s for %s\n",
-			   inet_ntoa(d->bcast_ip),work->work_group));
-		  
-		  CVAL(outbuf,0) = ANN_DomainAnnouncement;
-		  
-		  StrnCpy(namep,work->work_group,15);
-		  strupper(namep);
-		  StrnCpy(commentp,myname,15);
-		  strupper(commentp);
-		  
-		  SIVAL(stypep,0,(unsigned)0x80000000);
-		  p = commentp + strlen(commentp) + 1;
-		  
-		  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
-				      PTR_DIFF(p,outbuf),
-				      my_name,MSBROWSE,0,0x01,d->bcast_ip,
-				      *iface_ip(d->bcast_ip));
-		}
-	      else
-		{
-		  DEBUG(2,("sending host announce to %s for %s\n",
-			   inet_ntoa(d->bcast_ip),work->work_group));
-		  
-		  CVAL(outbuf,0) = ANN_HostAnnouncement;
-		  
-		  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
-				      PTR_DIFF(p,outbuf),
-				      my_name,work->work_group,0,0x1d,
-				      d->bcast_ip,*iface_ip(d->bcast_ip));
-		}
+		announce_server(d,work,my_name,comment,work->announce_interval,stype);
 	    }
 	  
-	  if (work->needannounce) {
-	    work->needannounce = False;
-	    break;
-	    /* sorry: can't do too many announces. do some more later */
-	  }
+	  if (work->needannounce)
+	    {
+	      work->needannounce = False;
+	      break;
+	      /* sorry: can't do too many announces. do some more later */
+	    }
 	}
     }
 }
@@ -328,7 +346,7 @@ void announce_host(void)
   least 15 minutes.
   
   this actually gets done in search_and_sync_workgroups() via the
-  MASTER_SERVER_CHECK command, if there is a response from the
+  NAME_QUERY_MST_SRV_CHK command, if there is a response from the
   name query initiated here.  see response_name_query()
   **************************************************************************/
 void announce_master(void)
@@ -382,9 +400,9 @@ void announce_master(void)
 			  struct in_addr ip;
 			  ip = ipzero;
 			  
-			  queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,
-						 MASTER_SERVER_CHECK,
-						 work->work_group,0x1b,0,
+			  queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY,
+						 NAME_QUERY_MST_SRV_CHK,
+						 work->work_group,0x1b,0,0,
 						 False, False, ip);
 			}
 		      else
@@ -392,9 +410,9 @@ void announce_master(void)
 			  struct subnet_record *d2;
 			  for (d2 = subnetlist; d2; d2 = d2->next)
 			    {
-			      queue_netbios_packet(ClientNMB,NMB_QUERY,
-						   MASTER_SERVER_CHECK,
-						   work->work_group,0x1b,0,
+			      queue_netbios_packet(d,ClientNMB,NMB_QUERY,
+						   NAME_QUERY_MST_SRV_CHK,
+						   work->work_group,0x1b,0,0,
 						   True, False, d2->bcast_ip);
 			    }
 			}
@@ -427,8 +445,8 @@ void announce_master(void)
 	      /* check the existence of a pdc for this workgroup, and if
 		 one exists at the specified ip, sync with it and announce
 		 ourselves as a master browser to it */
-	      queue_netbios_pkt_wins(ClientNMB, NMB_QUERY,MASTER_SERVER_CHECK,
-				     work->work_group,0x1b, 0,
+	      queue_netbios_pkt_wins(d,ClientNMB, NMB_QUERY,NAME_QUERY_MST_SRV_CHK,
+				     work->work_group,0x1b, 0, 0,
 				     bcast, False, ip);
 	    }
 	}

@@ -69,6 +69,9 @@ static int sig_term()
   /* remove all samba names, with wins server if necessary. */
   remove_my_names();
   
+  /* announce all server entries as 0 time-to-live, 0 type */
+  remove_my_servers();
+
   /* XXXX don't care if we never receive a response back... yet */
   /* XXXX other things: if we are a master browser, force an election? */
   
@@ -204,6 +207,7 @@ BOOL reload_services(BOOL test)
   }
 
   load_interfaces();
+  add_subnet_interfaces();
 
   return(ret);
 }
@@ -286,9 +290,13 @@ static void load_hosts_file(char *fname)
 	  ipmask = *iface_nmask(ipaddr);
 
 	if (group) {
-	  add_subnet_entry(ipaddr, ipmask, name, True);
+	  add_subnet_entry(ipaddr, ipmask, name, True, True);
 	} else {
-	  add_netbios_entry(name,0x20,NB_ACTIVE,0,source,ipaddr,True);
+      struct subnet_record *d = find_subnet(ipaddr);
+      if (d)
+      {
+	    add_netbios_entry(d,name,0x20,NB_ACTIVE,0,source,ipaddr,True,True);
+      }
 	}
       }
     }
@@ -316,16 +324,19 @@ static void process(void)
       announce_host();
 
 #if 0
-      /* what was this stuff supposed to do? It sent
+      /* XXXX what was this stuff supposed to do? It sent
 	 ANN_GetBackupListReq packets which I think should only be
 	 sent when trying to find out who to browse with */	 
+
       announce_backup();
 #endif
 
       announce_master();
 
+      query_refresh_names();
+
       expire_names_and_servers();
-      expire_netbios_response_entries(t-10);
+      expire_netbios_response_entries();
       refresh_my_names(t);
 
       write_browse_list();
@@ -514,7 +525,7 @@ static void usage(char *pname)
     return(-1);	
 
   if (*group)
-    add_my_domains(group);
+    add_my_subnets(group);
 
   if (!is_daemon && !is_a_socket(0)) {
     DEBUG(0,("standard input is not a socket, assuming -D option\n"));
@@ -535,16 +546,22 @@ static void usage(char *pname)
     DEBUG(3,("Loaded hosts file\n"));
   }
 
+
+
   if (!*ServerComment)
     strcpy(ServerComment,"Samba %v");
   string_sub(ServerComment,"%v",VERSION);
   string_sub(ServerComment,"%h",myhostname);
 
   add_my_names();
-  add_my_domains(lp_workgroup());
+  add_my_subnets(lp_workgroup());
 
   DEBUG(3,("Checked names\n"));
   
+  load_netbios_names();
+
+  DEBUG(3,("Loaded names\n"));
+
   write_browse_list();
 
   DEBUG(3,("Dumped names\n"));

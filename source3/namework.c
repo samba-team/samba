@@ -49,6 +49,9 @@ extern int workgroup_count; /* total number of workgroups we know about */
 extern struct browse_cache_record *browserlist;
 
 /* this is our domain/workgroup/server database */
+extern struct interface *local_interfaces;
+
+/* this is our domain/workgroup/server database */
 extern struct subnet_record *subnetlist;
 
 /* machine comment for host announcements */
@@ -66,9 +69,6 @@ extern int  updatecount;
 #define DOMCTL_TYPE (SV_TYPE_DOMAIN_CTRL   )
 
 extern time_t StartupTime;
-
-#define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
-#define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
 
 #define BROWSE_MAILSLOT "\\MAILSLOT\\BROWSE"
 
@@ -158,28 +158,26 @@ void tell_become_backup(void)
 /****************************************************************************
 find a server responsible for a workgroup, and sync browse lists
 **************************************************************************/
-static BOOL sync_browse_entry(struct browse_cache_record *b)
+static void start_sync_browse_entry(struct browse_cache_record *b)
 {                     
   struct subnet_record *d;
   struct work_record *work;
-  /*
-    if (!strequal(serv_name, b->name))
-    {
-    DEBUG(0, ("browser's netbios name (%s) does not match %s (%s)",
-    b->name, inet_ntoa(b->ip), serv_name));
-    }
-    */
-  if (!(d = find_domain(b->ip))) return False;
-  if (!(work = find_workgroupstruct(d, b->group, False))) return False;
   
+  if (!(d = find_subnet(b->ip))) return;
+
+  /* only sync if we are the master */
   if (AM_MASTER(work)) {
-    /* only try to sync browse lists if we are the master, otherwise
-       the net could get a little bit too busy */
-    sync_browse_lists(work,b->name,0x20,b->ip);
+
+      /* first check whether the group we intend to sync with exists. if it
+         doesn't, the server must have died. o dear. */
+
+      /* see response_netbios_packet() or expire_netbios_response_entries() */
+      queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_SYNC,
+					   b->group,0x20,0,0,
+					   False,False,b->ip);
   }
-  b->synced = True;
   
-  return True;
+  b->synced = True;
 }
 
 
@@ -193,6 +191,8 @@ void do_browser_lists(void)
   time_t t = time(NULL);
   
   if (t-last < 20) return; /* don't do too many of these at once! */
+                           /* XXXX equally this period should not be too long
+                              the server may die in the intervening gap */
   
   last = t;
   
@@ -202,12 +202,13 @@ void do_browser_lists(void)
       if (b->sync_time < t && b->synced == False) break;
     }
   
-  if (!b || b->synced || sync_browse_entry(b))
+  if (b && !b->synced)
     {
-      /* leave entries (even ones already sync'd) for up to a minute.
-	 this stops them getting re-sync'd too often */
+    /* sync with the selected entry then remove some dead entries */
+    start_sync_browse_entry(b);
       expire_browse_cache(t - 60);
     }
+
 }
 
 
@@ -221,7 +222,7 @@ void sync_server(enum cmd_type cmd, char *serv_name, char *work_name,
 {                     
   add_browser_entry(serv_name, name_type, work_name, 0, ip);
 
-  if (cmd == MASTER_SERVER_CHECK)
+  if (cmd == NAME_QUERY_MST_SRV_CHK)
     {
       /* announce ourselves as a master browser to serv_name */
       do_announce_request(myname, serv_name, ANN_MasterAnnouncement,
@@ -231,55 +232,22 @@ void sync_server(enum cmd_type cmd, char *serv_name, char *work_name,
 
 
 /****************************************************************************
-update workgroup database from a name registration
-**************************************************************************/
-void update_from_reg(char *name, int type, struct in_addr ip)
-{                     
-  /* default server type: minimum guess at requirement XXXX */
-
-  DEBUG(3,("update from registration: host %s ip %s type %0x\n",
-	    name, inet_ntoa(ip), type));
-
-  /* workgroup types, but not a chat type */
-  if (type >= 0x1b && type <= 0x1e)
-    {
-      struct work_record *work;
-      struct subnet_record *d;
-      
-      if (!(d    = find_domain(ip))) return;
-      if (!(work = find_workgroupstruct(d, name, False))) return;
-      
-      /* request the server to announce if on our subnet */
-      if (d->my_interface) announce_request(work, ip);
-      
-      /* domain master type or master browser type */
-      if (type == 0x1b || type == 0x1d)
-	{
-	  struct hostent *hp = gethostbyaddr((char*)&ip, sizeof(ip), AF_INET);
-	  if (hp) {
-	    /* gethostbyaddr name may not match netbios name but who cares */
-	    add_browser_entry(hp->h_name, type, work->work_group, 120, ip);
-	  }
-	}
-    }
-}
-
-
-/****************************************************************************
   add the default workgroup into my domain
   **************************************************************************/
-void add_my_domains(char *group)
+void add_my_subnets(char *group)
 {
-  int n,i;
-  struct in_addr *ip;
+  struct interface *i;
+
+  /* add or find domain on our local subnet, in the default workgroup */
 
   if (*group == '*') return;
 
-  n = iface_count();
-  for (i=0;i<n;i++) {
-    ip = iface_n_ip(i);
-    if (!ip) return;
-    add_subnet_entry(*iface_bcast(*ip),*iface_nmask(*ip),lp_workgroup(),True);
+	/* the coding choice is up to you, andrew: i can see why you don't want
+       global access to the local_interfaces structure: so it can't get
+       messed up! */
+    for (i = local_interfaces; i; i = i->next)
+    {
+      add_subnet_entry(i->bcast,i->nmask,group, True, False);
   }
 }
 
@@ -464,7 +432,7 @@ static void process_announce(struct packet_struct *p,int command,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_domain(ip); 
+  struct subnet_record *d = find_subnet(ip); 
   int update_count = CVAL(buf,0);
   int ttl = IVAL(buf,1)/1000;
   char *name = buf+5;
@@ -545,8 +513,8 @@ static void process_master_announce(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_domain(ip);
-  struct subnet_record *mydomain = find_domain(*iface_bcast(ip));
+  struct subnet_record *d = find_subnet(ip);
+  struct subnet_record *mydomain = find_subnet(*iface_bcast(ip));
   char *name = buf;
   struct work_record *work;
   name[15] = 0;
@@ -613,7 +581,7 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
       
       DEBUG(4,("Found browser server at %s\n", inet_ntoa(back_ip)));
       
-      if ((d = find_domain(back_ip)))
+      if ((d = find_subnet(back_ip)))
 	{
 	  struct subnet_record *d1;
 	  for (d1 = subnetlist; d1; d1 = d1->next)
@@ -623,8 +591,8 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
 		{
 		  if (work->token == Index)
 		    {
-		      queue_netbios_packet(ClientNMB,NMB_QUERY,SERVER_CHECK,
-					   work->work_group,0x1d,0,
+		      queue_netbios_packet(d1,ClientNMB,NMB_QUERY,NAME_QUERY_SRV_CHK,
+					   work->work_group,0x1d,0,0,
 					   False,False,back_ip);
 		      return;
 		    }
@@ -714,7 +682,7 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
 	    {
 	      if (AM_MASTER(work))
 		{
-		  become_nonmaster(d,work);
+		  become_nonmaster(d,work,SV_TYPE_DOMAIN_MASTER|SV_TYPE_MASTER_BROWSER);
 		}
 	    }
 	}
@@ -729,7 +697,7 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
 	  struct work_record *work;
 	  for (work=d->workgrouplist;work;work=remove_workgroup(d,work));
 	}
-      add_my_domains(lp_workgroup());
+      add_my_subnets(lp_workgroup());
     }
   
   /* stop browsing altogether. i don't think this is a good idea! */
@@ -751,7 +719,7 @@ static void process_announce_request(struct packet_struct *p,char *buf)
   struct dgram_packet *dgram = &p->packet.dgram;
   struct work_record *work;
   struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_domain(ip);
+  struct subnet_record *d = find_subnet(ip);
   int token = CVAL(buf,0);
   char *name = buf+1;
   
@@ -783,7 +751,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_domain(ip);
+  struct subnet_record *d = find_subnet(ip);
   char *logname,*q;
   char *reply_name;
   BOOL add_slashes = False;

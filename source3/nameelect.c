@@ -42,8 +42,6 @@ extern  pstring ServerComment;
 
 extern time_t StartupTime;
 
-#define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
-
 #define BROWSE_MAILSLOT "\\MAILSLOT\\BROWSE"
 
 extern struct subnet_record *subnetlist;
@@ -61,7 +59,6 @@ void check_master_browser(void)
   if (!lastrun) lastrun = t;
   if (t < lastrun + CHECK_TIME_MST_BROWSE * 60) 
     return;
-
   lastrun = t;
 
   dump_workgroups();
@@ -77,8 +74,8 @@ void check_master_browser(void)
 
 	  if (!AM_MASTER(work))
 	    {
-	      queue_netbios_packet(ClientNMB,NMB_QUERY,CHECK_MASTER,
-				   work->work_group,0x1d,0,
+	      queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_MST_CHK,
+				   work->work_group,0x1d,0,0,
 				   True,False,d->bcast_ip);
 	    }
 	}
@@ -91,13 +88,13 @@ void check_master_browser(void)
   ******************************************************************/
 void browser_gone(char *work_name, struct in_addr ip)
 {
-  struct subnet_record *d = find_domain(ip);
+  struct subnet_record *d = find_subnet(ip);
   struct work_record *work = find_workgroupstruct(d, work_name, False);
 
   if (!work || !d) return;
 
   if (strequal(work->work_group, lp_workgroup()) &&
-      d->my_interface)
+      ismybcast(d->bcast_ip))
     {
 
       DEBUG(2,("Forcing election on %s %s\n",
@@ -120,6 +117,7 @@ void browser_gone(char *work_name, struct in_addr ip)
       remove_workgroup(d, work);      
     }
 }
+
 
 /****************************************************************************
   send an election packet
@@ -169,15 +167,16 @@ static void become_master(struct subnet_record *d, struct work_record *work)
   work->ElectionCriterion |= 0x5;
   
   /* add browse, master and general names to database or register with WINS */
-  add_name_entry(MSBROWSE        ,0x01,NB_ACTIVE|NB_GROUP);
-  add_name_entry(work->work_group,0x1d,NB_ACTIVE         );
+  add_my_name_entry(d,MSBROWSE        ,0x01,NB_ACTIVE|NB_GROUP);
+  add_my_name_entry(d,work->work_group,0x1d,NB_ACTIVE         );
   
   if (lp_domain_master())
     {
       DEBUG(4,("Domain master: adding names...\n"));
       
       /* add domain master and domain member names or register with WINS */
-      add_name_entry(work->work_group,0x1b,NB_ACTIVE);
+      add_my_name_entry(d,work->work_group,0x1b,NB_ACTIVE         );
+      
       work->ServerType |= SV_TYPE_DOMAIN_MASTER;
       
       if (lp_domain_logons())
@@ -200,21 +199,44 @@ static void become_master(struct subnet_record *d, struct work_record *work)
 
 
 /*******************************************************************
-  unbecome the master browser
+  unbecome the master browser. initates removal of necessary netbios 
+  names, and tells the world that we are no longer a master browser.
   ******************************************************************/
-void become_nonmaster(struct subnet_record *d, struct work_record *work)
+void become_nonmaster(struct subnet_record *d, struct work_record *work,
+				int remove_type)
 {
+  int new_server_type = work->ServerType;
+
   DEBUG(2,("Becoming non-master for %s\n",work->work_group));
   
-  work->ServerType &= ~SV_TYPE_MASTER_BROWSER;
-  work->ServerType &= ~SV_TYPE_DOMAIN_MASTER;
-  work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
+  /* can only remove master or domain types with this function */
+  remove_type &= ~(SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER);
+
+  /* unbecome a master browser; unbecome a domain master, too :-( */
+  if (remove_type & SV_TYPE_MASTER_BROWSER)
+    remove_type |= SV_TYPE_DOMAIN_MASTER;
   
+  new_server_type &= ~remove_type;
+
+  if (!(new_server_type & (SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER)))
+  {
+    /* no longer a master browser of any sort */
+
+  	work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
   work->ElectionCriterion &= ~0x4;
   
-  remove_name_entry(work->work_group,0x1b);
-  remove_name_entry(work->work_group,0x1d);
-  remove_name_entry(MSBROWSE        ,0x01);
+	/* announce ourselves as no longer active as a master browser. */
+    announce_server(d, work, work->work_group, myname, 0, 0);
+    remove_name_entry(d,MSBROWSE        ,0x01);
+  }
+  
+  work->ServerType = new_server_type;
+
+  if (!(work->ServerType & SV_TYPE_DOMAIN_MASTER))
+    remove_name_entry(d,work->work_group,0x1b);
+
+  if (!(work->ServerType & SV_TYPE_DOMAIN_MASTER))
+    remove_name_entry(d,work->work_group,0x1d);
 }
 
 
@@ -292,7 +314,7 @@ void process_election(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_domain(ip);
+  struct subnet_record *d = find_subnet(ip);
   int version = CVAL(buf,0);
   uint32 criterion = IVAL(buf,1);
   int timeup = IVAL(buf,5)/1000;
@@ -335,7 +357,8 @@ void process_election(struct packet_struct *p,char *buf)
 		  /* if we are the master then remove our masterly names */
 		  if (AM_MASTER(work))
 		    {
-		      become_nonmaster(d, work);
+		      become_nonmaster(d, work,
+					SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER);
 		    }
 		}
 	    }
@@ -355,10 +378,6 @@ BOOL check_elections(void)
   for (d = subnetlist; d; d = d->next)
     {
       struct work_record *work;
-      
-      /* we only want to run elections on our own interfaces */
-      if (!d->my_interface) continue;
-
       for (work = d->workgrouplist; work; work = work->next)
 	{
 	  run_any_election |= work->RunningElection;
