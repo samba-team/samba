@@ -165,7 +165,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	rc = ads_search_retry(ads, &res, "(objectclass=user)", attrs);
+	rc = ads_search_retry(ads, &res, "(objectCategory=user)", attrs);
 	if (rc) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
@@ -256,7 +256,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	rc = ads_search_retry(ads, &res, "(objectclass=group)", attrs);
+	rc = ads_search_retry(ads, &res, "(objectCategory=group)", attrs);
 	if (rc) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
@@ -591,7 +591,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	sid_from_rid(domain, group_rid, &group_sid);
 	sidstr = sid_binstring(&group_sid);
 	/* search for all users who have that group sid as primary group or as member */
-	asprintf(&exp, "(&(objectclass=user)(|(primaryGroupID=%d)(memberOf=%s)))",
+	asprintf(&exp, "(&(objectCategory=user)(|(primaryGroupID=%d)(memberOf=%s)))",
 		 group_rid, sidstr);
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
