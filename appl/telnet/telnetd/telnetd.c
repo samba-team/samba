@@ -761,6 +761,24 @@ Please contact your net administrator");
     /*NOTREACHED*/
 }  /* end of doit */
 
+/* output contents of /etc/issue.net, or /etc/issue */
+static void
+show_issue(void)
+{
+    FILE *f;
+    char buf[128];
+    f = fopen("/etc/issue.net", "r");
+    if(f == NULL)
+	f = fopen("/etc/issue", "r");
+    if(f){
+	while(fgets(buf, sizeof(buf)-2, f)){
+	    strcpy(buf + strcspn(buf, "\r\n"), "\r\n");
+	    writenet((unsigned char*)buf, strlen(buf));
+	}
+	fclose(f);
+    }
+}
+
 /*
  * Main loop.  Select from pty and network, and
  * hand data to telnet receiver finite state machine.
@@ -917,6 +935,7 @@ telnet(int f, int p, char *host, int level, char *autoname)
     }
 #endif
 
+    show_issue();
     /*
      * Show banner that getty never gave.
      *
