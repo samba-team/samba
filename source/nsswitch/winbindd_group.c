@@ -104,6 +104,15 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	DEBUG(10, ("group SID %s\n", sid_to_string(sid_string, group_sid)));
 
 	*num_gr_mem = 0;
+
+	/* HACK ALERT!! This whole routine does not cope with group members
+	 * from more than one domain, ie aliases. Thus we have to work it out
+	 * ourselves in a special routine. */
+
+	if (domain->internal)
+		return fill_passdb_alias_grmem(domain, group_sid,
+					       num_gr_mem,
+					       gr_mem, gr_mem_len);
 	
 	if ( !((group_name_type==SID_NAME_DOM_GRP) ||
 		((group_name_type==SID_NAME_ALIAS) && domain->primary)) )
@@ -376,7 +385,8 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 	}
 
 	if ( !((name_type==SID_NAME_DOM_GRP) ||
-	       ((name_type==SID_NAME_ALIAS) && domain->primary) ))
+	       ((name_type==SID_NAME_ALIAS) && domain->primary) ||
+	       ((name_type==SID_NAME_ALIAS) && domain->internal)) )
 	{
 		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
 			  group_name, name_type));
@@ -539,8 +549,8 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	/* get the domain local groups if we are a member of a native win2k domain
 	   and are not using LDAP to get the groups */
 	   
-	if ( lp_security() != SEC_ADS && domain->native_mode 
-		&& domain->primary )
+	if ( ( lp_security() != SEC_ADS && domain->native_mode 
+		&& domain->primary) || domain->internal )
 	{
 		DEBUG(4,("get_sam_group_entries: Native Mode 2k domain; enumerating local groups as well\n"));
 		
