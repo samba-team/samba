@@ -235,7 +235,10 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 		for (i = 0; i < num_sids; i++) {
 			PyObject *obj = PyList_GetItem(py_sids, i);
 			
-			string_to_sid(&sids[i], PyString_AsString(obj));
+			if (!string_to_sid(&sids[i], PyString_AsString(obj))) {
+				PyErr_SetString(PyExc_ValueError, "string_to_sid failed");
+				return NULL;
+			}
 		}
 
 	} else {
@@ -245,7 +248,10 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 		num_sids = 1;
 		sids = (DOM_SID *)talloc(hnd->mem_ctx, sizeof(DOM_SID));
 
-		string_to_sid(&sids[0], PyString_AsString(py_sids));
+		if (!string_to_sid(&sids[0], PyString_AsString(py_sids))) {
+			PyErr_SetString(PyExc_ValueError, "string_to_sid failed");
+			return NULL;
+		}
 	}
 
 	ntstatus = cli_lsa_lookup_sids(hnd->cli, hnd->mem_ctx, &hnd->pol,
