@@ -45,7 +45,7 @@ static void standard_accept_connection(struct event_context *ev, struct fd_event
 	/* accept an incoming connection. */
 	status = socket_accept(server_socket->socket, &sock, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("accept_connection_single: accept: %s\n",
+		DEBUG(0,("standard_accept_connection: accept: %s\n",
 			 nt_errstr(status)));
 		return;
 	}
@@ -91,7 +91,7 @@ static void standard_accept_connection(struct event_context *ev, struct fd_event
 /* called when a SMB connection goes down */
 static void standard_terminate_connection(struct server_connection *conn, const char *reason) 
 {
-	DEBUG(2,("single_terminate_connection: reason[%s]\n",reason));
+	DEBUG(2,("standard_terminate_connection: reason[%s]\n",reason));
 
 	if (conn) {
 		talloc_free(conn->service->srv_ctx);
