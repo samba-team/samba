@@ -453,6 +453,8 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 	return blob2;
 }
 
+#ifdef HAVE_KRB5
+
 /****************************************************************************
  Send a extended security session setup blob, returning a reply blob.
 ****************************************************************************/
@@ -467,7 +469,6 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 	return cli_session_setup_blob_receive(cli);
 }
 
-#ifdef HAVE_KRB5
 /****************************************************************************
  Use in-memory credentials cache
 ****************************************************************************/
@@ -503,7 +504,8 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, const char *princi
 
 	return !cli_is_error(cli);
 }
-#endif
+#endif	/* HAVE_KRB5 */
+
 
 /****************************************************************************
  Do a spnego/NTLMSSP encrypted session setup.
