@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -74,8 +74,9 @@ der_get_length (unsigned char *p, size_t len, size_t *val, size_t *size)
 {
     size_t v;
 
-    if (--len < 0)
+    if (len <= 0)
 	return ASN1_OVERRUN;
+    --len;
     v = *p++;
     if (v < 128) {
 	*val = v;
@@ -153,8 +154,8 @@ der_get_tag (unsigned char *p, size_t len, Der_class *class, Der_type *type,
 {
     if (len < 1)
 	return ASN1_OVERRUN;
-    *class = ((*p) >> 6) & 0x03;
-    *type = ((*p) >> 5) & 0x01;
+    *class = (Der_class)(((*p) >> 6) & 0x03);
+    *type = (Der_type)(((*p) >> 5) & 0x01);
     *tag = (*p) & 0x1F;
     if(size) *size = 1;
     return 0;
