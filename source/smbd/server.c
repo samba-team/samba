@@ -312,7 +312,7 @@ int file_utime(int cnum, char *fname, struct utimbuf *times)
   if(sys_utime(fname, times) == 0)
     return 0;
 
-  if((errno != EPERM) && (errno != EACCESS))
+  if((errno != EPERM) && (errno != EACCES))
     return -1;
 
   if(!lp_dos_filetimes(SNUM(cnum)))
