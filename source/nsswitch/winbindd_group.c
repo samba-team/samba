@@ -41,11 +41,77 @@ static void winbindd_fill_grent(struct winbindd_gr *gr, char *gr_name,
 /* Fill in group membership */
 
 struct grent_mem_group {
-    uint32 group_rid;
-    enum SID_NAME_USE group_name_type;
+    uint32 rid;
+    enum SID_NAME_USE name_type;
     fstring domain_name;
+    struct winbindd_domain *domain;
     struct grent_mem_group *prev, *next;
 };
+
+struct grent_mem_list {
+    fstring name;
+    struct grent_mem_list *prev, *next;
+};
+
+/* Name comparison function for qsort() */
+
+static int iface_comp(struct grent_mem_list *n1, struct grent_mem_list *n2)
+{
+    /* Silly cases */
+
+    if (!n1 && !n2) return 0;
+    if (!n1) return -1;
+    if (!n2) return 1;
+
+    return strcmp(n1->name, n2->name);
+}
+
+static struct grent_mem_list *sort_groupmem_list(struct grent_mem_list *list,
+                                                 int num_gr_mem)
+{
+    struct grent_mem_list *groupmem_array, *temp;
+    int i;
+
+    /* Allocate and zero an array to hold sorted entries */
+
+    if ((groupmem_array = malloc(num_gr_mem * 
+                                 sizeof(struct grent_mem_list))) == NULL) {
+        return NULL;
+    }
+
+    memset((char *)groupmem_array, 0, num_gr_mem * 
+           sizeof(struct grent_mem_list));
+
+    /* Copy list to array */
+
+    for(temp = list, i = 0; temp && i < num_gr_mem; temp = temp->next, i++) {
+        fstrcpy(groupmem_array[i].name, temp->name);
+    }
+
+    /* Sort array */
+
+    qsort(groupmem_array, num_gr_mem, sizeof(struct grent_mem_list),
+          iface_comp);
+
+    /* Fix up resulting array to a linked list and return it */
+
+    for(i = 0; i < num_gr_mem; i++) {
+
+        /* Fix up previous link */
+
+        if (i != 0) {
+            groupmem_array[i].prev = &groupmem_array[i - 1];
+        }
+
+        /* Fix up next link */
+
+        if (i != (num_gr_mem - 1)) {
+            groupmem_array[i].next = &groupmem_array[i + 1];
+        }
+    }
+
+    return groupmem_array;
+}
 
 static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                                     uint32 group_rid, 
@@ -53,27 +119,28 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                                     struct winbindd_gr *gr)
 {
     struct grent_mem_group *done_groups = NULL, *todo_groups = NULL;
-    struct grent_mem_group *temp;
-    pstring groupmem_list;
+    struct grent_mem_group *temp_group;
+    struct grent_mem_list *groupmem_list = NULL;
     
     /* Initialise group membership information */
 
     gr->num_gr_mem = 0;
-    pstrcpy(groupmem_list, "");
 
     /* Add first group to todo_groups list */
 
-    if ((temp = (struct grent_mem_group *)malloc(sizeof(*temp))) == NULL) {
+    if ((temp_group = 
+         (struct grent_mem_group *)malloc(sizeof(*temp_group))) == NULL) {
         return False;
     }
 
-    ZERO_STRUCTP(temp);
+    ZERO_STRUCTP(temp_group);
 
-    temp->group_rid = group_rid;
-    temp->group_name_type = group_name_type;
-    fstrcpy(temp->domain_name, domain->name);
+    temp_group->rid = group_rid;
+    temp_group->name_type = group_name_type;
+    temp_group->domain = domain;
+    fstrcpy(temp_group->domain_name, domain->name);
 
-    DLIST_ADD(todo_groups, temp);
+    DLIST_ADD(todo_groups, temp_group);
             
     /* Iterate over all groups to find members of */
 
@@ -91,9 +158,12 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
         done_group = 0;
 
-        for (temp = done_groups; temp != NULL; temp = temp->next) {
-            if ((temp->group_rid == current_group->group_rid) &&
-                (strcmp(temp->domain_name, current_group->domain_name) == 0)) {
+        for (temp_group = done_groups; temp_group != NULL; 
+             temp_group = temp_group->next) {
+
+            if ((temp_group->rid == current_group->rid) &&
+                (strcmp(temp_group->domain_name, 
+                        current_group->domain_name) == 0)) {
                 
                 done_group = 1;
             }
@@ -103,19 +173,21 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
         /* Lookup group membership for the current group */
 
-        if (current_group->group_name_type == SID_NAME_DOM_GRP) {
+        if (current_group->name_type == SID_NAME_DOM_GRP) {
 
-            if (!winbindd_lookup_groupmem(domain, current_group->group_rid, 
-                                          &num_names, &rid_mem, &names, 
-                                          &name_types)) {
+            if (!winbindd_lookup_groupmem(current_group->domain, 
+                                          current_group->rid, &num_names, 
+                                          &rid_mem, &names, &name_types)) {
 
                 DEBUG(1, ("fill_grent_mem(): could not lookup membership "
-                          "for group rid %d\n", current_group->group_rid));
+                          "for group rid %d in domain %s\n", 
+                          current_group->rid,
+                          current_group->domain->name));
 
                 /* Exit if we cannot lookup the membership for the group
                    this function was called to look at */
 
-                if (current_group->group_rid == group_rid) {
+                if (current_group->rid == group_rid) {
                     return False;
                 } else {
                     goto cleanup;
@@ -123,11 +195,11 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
             }
         }
 
-        if (current_group->group_name_type == SID_NAME_ALIAS) {
+        if (current_group->name_type == SID_NAME_ALIAS) {
 
-            if (!winbindd_lookup_aliasmem(domain, current_group->group_rid, 
-                                          &num_names, &sids, &names, 
-                                          &name_types)) {
+            if (!winbindd_lookup_aliasmem(current_group->domain, 
+                                          current_group->rid, &num_names, 
+                                          &sids, &names, &name_types)) {
 
                 DEBUG(1, ("fill_grent_mem(): group rid %d not a local group\n",
                           group_rid));
@@ -135,7 +207,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                 /* Exit if we cannot lookup the membership for the group
                    this function was called to look at */
 
-                if (current_group->group_rid == group_rid) {
+                if (current_group->rid == group_rid) {
                     return False;
                 } else {
                     goto cleanup;
@@ -173,9 +245,9 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                 }
 
             } else {
-                name_dom = domain->name;
+                name_dom = current_group->domain->name;
                 name_user = name_part1;
-                name_domain = domain;
+                name_domain = current_group->domain;
             }
 
             if (winbindd_lookup_sid_by_name(name_domain, name_user, NULL, 
@@ -184,52 +256,63 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                 /* Check name type */
 
                 if (name_type == SID_NAME_USER) {
+                    struct grent_mem_list *entry;
 
                     /* Add to group membership list */
                 
-                    pstrcat(groupmem_list, name_dom);
-                    pstrcat(groupmem_list, "/");
-                    pstrcat(groupmem_list, name_user);
-                    pstrcat(groupmem_list, ",");
+                    if ((entry = (struct grent_mem_list *)
+                         malloc(sizeof(*entry))) != NULL) {
 
-                    gr->num_gr_mem++;
+                        /* Create name */
+
+                        fstrcpy(entry->name, name_dom);
+                        fstrcat(entry->name, "/");
+                        fstrcat(entry->name, name_user);
+                        
+                        /* Add to list */
+
+                        DLIST_ADD(groupmem_list, entry);
+                        gr->num_gr_mem++;
+
+                    }
 
                 } else {
-                    struct grent_mem_group *temp2;
+                    struct grent_mem_group *todo_group;
                     DOM_SID todo_sid;
                     uint32 todo_rid;
-                    char *todo_domain;
 
                     /* Add group to todo list */
 
-                    if ((winbindd_lookup_sid_by_name(domain, names[i], 
-                                                     &todo_sid, &name_type) 
-                         == WINBINDD_OK) && 
-                        (todo_domain = strtok(names[i], "/\\"))) {
-                        
+                    if (winbindd_lookup_sid_by_name(name_domain, names[i], 
+                                                    &todo_sid, &name_type) 
+                        == WINBINDD_OK) {
+
                         /* Fill in group entry */
 
                         sid_split_rid(&todo_sid, &todo_rid);
 
-                        if ((temp2 = (struct grent_mem_group *)
-                             malloc(sizeof(*temp2))) != NULL) {
+                        if ((todo_group = (struct grent_mem_group *)
+                             malloc(sizeof(*todo_group))) != NULL) {
                             
-                            ZERO_STRUCTP(temp2);
-                            temp2->group_rid = todo_rid;
-                            temp2->group_name_type = name_type;
-                            fstrcpy(temp2->domain_name, todo_domain);
-                            
-                            DLIST_ADD(todo_groups, temp2);
+                            ZERO_STRUCTP(todo_group);
+
+                            todo_group->rid = todo_rid;
+                            todo_group->name_type = name_type;
+                            todo_group->domain = name_domain;
+
+                            fstrcpy(todo_group->domain_name, name_dom);
+
+                            DLIST_ADD(todo_groups, todo_group);
                         }
                     }
                 }
             }
         }
 
-        /* Remove group from todo list and add to done_groups list */
-
     cleanup:
         
+        /* Remove group from todo list and add to done_groups list */
+
         DLIST_REMOVE(todo_groups, current_group);
         DLIST_ADD(done_groups, current_group);
 
@@ -274,23 +357,72 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
     
     /* Free done groups list */
 
-    temp = done_groups;
+    temp_group = done_groups;
 
-    if (temp != NULL) {
-        while (temp != NULL) {
+    if (temp_group != NULL) {
+        while (temp_group != NULL) {
             struct grent_mem_group *next;
 
-            DLIST_REMOVE(done_groups, temp);
-            next = temp->next;
+            DLIST_REMOVE(done_groups, temp_group);
+            next = temp_group->next;
 
+            free(temp_group);
+            temp_group = next;
+        }
+    }
+
+    /* Remove duplicates from group member list. */
+
+    fstrcpy(gr->gr_mem, "");
+
+    if (gr->num_gr_mem > 0) {
+        struct grent_mem_list *sorted_groupmem_list, *temp;
+        fstring prev_name;
+        int num_uniq_gr_mem;
+
+        /* Sort list */
+
+        sorted_groupmem_list = sort_groupmem_list(groupmem_list, 
+                                                  gr->num_gr_mem);
+        
+        /* Remove duplicates by iteration */
+
+        num_uniq_gr_mem = 0;
+        fstrcpy(prev_name, "");
+
+        for(temp = sorted_groupmem_list; temp; temp = temp->next) {
+            if (!strequal(temp->name, prev_name)) {
+
+                /* Got a unique name - add to list */
+
+                pstrcat(gr->gr_mem, temp->name);
+                pstrcat(gr->gr_mem, ",");
+                fstrcpy(prev_name, temp->name);
+                num_uniq_gr_mem++;
+            }
+        }
+
+        gr->num_gr_mem = num_uniq_gr_mem;
+
+        /* Free memory for sorted_groupmem_list.  It was allocated as an
+           array in sort_groupmem_list() so can be freed in one go. */
+
+        free(sorted_groupmem_list);
+
+        /* Free groupmem_list */
+
+        temp = groupmem_list;
+
+        while (temp != NULL) {
+            struct grent_mem_list *next;
+            
+            DLIST_REMOVE(groupmem_list, temp);
+            next = temp->next;
+            
             free(temp);
             temp = next;
         }
     }
-
-    /* Phew - copy group membership list into group structure and return */
-
-    pstrcpy(gr->gr_mem, groupmem_list);
 
     return True;
 }
@@ -446,6 +578,13 @@ enum winbindd_result winbindd_setgrent(struct winbindd_state *state)
 
     for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
         struct getent_state *domain_state;
+
+        /* Skip domains other than WINBINDD_DOMAIN environment variable */
+
+        if ((strcmp(state->request.data.domain, "") != 0) &&
+            (strcmp(state->request.data.domain, tmp->name) == 0)) {
+                continue;
+        }
 
         /* Create a state record for this domain */
 
