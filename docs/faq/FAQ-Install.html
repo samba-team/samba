@@ -1,55 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 2. Compiling and installing Samba on a Unix host</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"><link rel="home" href="samba-faq.html" title="Samba FAQ"><link rel="up" href="samba-faq.html" title="Samba FAQ"><link rel="previous" href="FAQ-general.html" title="Chapter 1. General Information"><link rel="next" href="FAQ-Config.html" title="Chapter 3. Configuration problems"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 2. Compiling and installing Samba on a Unix host</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="FAQ-general.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="FAQ-Config.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><h2 class="title"><a name="FAQ-Install"></a>Chapter 2. Compiling and installing Samba on a Unix host</h2></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="FAQ-Install.html#id2808542">I can't see the Samba server in any browse lists!</a></dt><dt><a href="FAQ-Install.html#id2811456">Some files that I KNOW are on the server don't show up when I view the files from my client!</a></dt><dt><a href="FAQ-Install.html#id2811470">Some files on the server show up with really wierd filenames when I view the files from my client!</a></dt><dt><a href="FAQ-Install.html#id2860743">My client reports &quot;cannot locate specified computer&quot; or similar</a></dt><dt><a href="FAQ-Install.html#id2860797">My client reports &quot;cannot locate specified share name&quot; or similar</a></dt><dt><a href="FAQ-Install.html#id2806029">Printing doesn't work</a></dt><dt><a href="FAQ-Install.html#id2807904">My client reports &quot;This server is not configured to list shared resources&quot;</a></dt><dt><a href="FAQ-Install.html#id2807925">Log message &quot;you appear to have a trapdoor uid system&quot; </a></dt><dt><a href="FAQ-Install.html#id2807990">Why are my file's timestamps off by an hour, or by a few hours?</a></dt><dt><a href="FAQ-Install.html#id2811127">How do I set the printer driver name correctly?</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2808542"></a>I can't see the Samba server in any browse lists!</h2></div></div><p>
-See Browsing.html in the docs directory of the samba source
-for more information on browsing.
-</p><p>
-If your GUI client does not permit you to select non-browsable
-servers, you may need to do so on the command line. For example, under
-Lan Manager you might connect to the above service as disk drive M:
-thusly:
-</p><pre class="programlisting">
-   net use M: \\mary\fred
-</pre><p>
-The details of how to do this and the specific syntax varies from
-client to client - check your client's documentation.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2811456"></a>Some files that I KNOW are on the server don't show up when I view the files from my client!</h2></div></div><p>See the next question.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2811470"></a>Some files on the server show up with really wierd filenames when I view the files from my client!</h2></div></div><p>
-If you check what files are not showing up, you will note that they
-are files which contain upper case letters or which are otherwise not
-DOS-compatible (ie, they are not legal DOS filenames for some reason).
-</p><p>
-The Samba server can be configured either to ignore such files
-completely, or to present them to the client in &quot;mangled&quot; form. If you
-are not seeing the files at all, the Samba server has most likely been
-configured to ignore them.  Consult the man page smb.conf(5) for
-details of how to change this - the parameter you need to set is
-&quot;mangled names = yes&quot;.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2860743"></a>My client reports &quot;cannot locate specified computer&quot; or similar</h2></div></div><p>
-This indicates one of three things: You supplied an incorrect server
-name, the underlying TCP/IP layer is not working correctly, or the
-name you specified cannot be resolved.
-</p><p>
-After carefully checking that the name you typed is the name you
-should have typed, try doing things like pinging a host or telnetting
-to somewhere on your network to see if TCP/IP is functioning OK. If it
-is, the problem is most likely name resolution.
-</p><p>
-If your client has a facility to do so, hardcode a mapping between the
-hosts IP and the name you want to use. For example, with Lan Manager
-or Windows for Workgroups you would put a suitable entry in the file
-LMHOSTS. If this works, the problem is in the communication between
-your client and the netbios name server. If it does not work, then
-there is something fundamental wrong with your naming and the solution
-is beyond the scope of this document.
-</p><p>
-If you do not have any server on your subnet supplying netbios name
-resolution, hardcoded mappings are your only option. If you DO have a
-netbios name server running (such as the Samba suite's nmbd program),
-the problem probably lies in the way it is set up. Refer to Section
-Two of this FAQ for more ideas.
-</p><p>
-By the way, remember to REMOVE the hardcoded mapping before further
-tests :-)
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2860797"></a>My client reports &quot;cannot locate specified share name&quot; or similar</h2></div></div><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 2. Compiling and installing Samba on a Unix host</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-faq.html" title="Samba FAQ"><link rel="up" href="samba-faq.html" title="Samba FAQ"><link rel="previous" href="FAQ-general.html" title="Chapter 1. General Information"><link rel="next" href="FAQ-ClientApp.html" title="Chapter 3. Specific client application problems"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 2. Compiling and installing Samba on a Unix host</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="FAQ-general.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="FAQ-ClientApp.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="FAQ-Install"></a>Chapter 2. Compiling and installing Samba on a Unix host</h2></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="FAQ-Install.html#id2816137">My client reports &quot;cannot locate specified share name&quot; or similar</a></dt><dt><a href="FAQ-Install.html#id2816189">Why are my file's timestamps off by an hour, or by a few hours?</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2816137"></a>My client reports &quot;cannot locate specified share name&quot; or similar</h2></div></div><div></div></div><p>
 This message indicates that your client CAN locate the specified
 server, which is a good start, but that it cannot find a service of
 the name you gave.
@@ -58,68 +7,7 @@ The first step is to check the exact name of the service you are
 trying to connect to (consult your system administrator). Assuming it
 exists and you specified it correctly (read your client's docs on how
 to specify a service name correctly), read on:
-</p><table class="simplelist" border="0" summary="Simple list"><tr><td>Many clients cannot accept or use service names longer than eight characters.</td></tr><tr><td>Many clients cannot accept or use service names containing spaces.</td></tr><tr><td>Some servers (not Samba though) are case sensitive with service names.</td></tr><tr><td>Some clients force service names into upper case.</td></tr></table></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2806029"></a>Printing doesn't work</h2></div></div><p>
-Make sure that the specified print command for the service you are
-connecting to is correct and that it has a fully-qualified path (eg.,
-use &quot;/usr/bin/lpr&quot; rather than just &quot;lpr&quot;).
-</p><p>
-Make sure that the spool directory specified for the service is
-writable by the user connected to the service. In particular the user
-&quot;nobody&quot; often has problems with printing, even if it worked with an
-earlier version of Samba. Try creating another guest user other than
-&quot;nobody&quot;.
-</p><p>
-Make sure that the user specified in the service is permitted to use
-the printer.
-</p><p>
-Check the debug log produced by smbd. Search for the printer name and
-see if the log turns up any clues. Note that error messages to do with
-a service ipc$ are meaningless - they relate to the way the client
-attempts to retrieve status information when using the LANMAN1
-protocol.
-</p><p>
-If using WfWg then you need to set the default protocol to TCP/IP, not
-Netbeui. This is a WfWg bug.
-</p><p>
-If using the Lanman1 protocol (the default) then try switching to
-coreplus.  Also not that print status error messages don't mean
-printing won't work. The print status is received by a different
-mechanism.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2807904"></a>My client reports &quot;This server is not configured to list shared resources&quot;</h2></div></div><p>
-Your guest account is probably invalid for some reason. Samba uses the
-guest account for browsing in smbd.  Check that your guest account is
-valid.
-</p><p>See also 'guest account' in smb.conf man page.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2807925"></a>Log message &quot;you appear to have a trapdoor uid system&quot; </h2></div></div><p>
-This can have several causes. It might be because you are using a uid
-or gid of 65535 or -1. This is a VERY bad idea, and is a big security
-hole. Check carefully in your /etc/passwd file and make sure that no
-user has uid 65535 or -1. Especially check the &quot;nobody&quot; user, as many
-broken systems are shipped with nobody setup with a uid of 65535.
-</p><p>It might also mean that your OS has a trapdoor uid/gid system :-)</p><p>
-This means that once a process changes effective uid from root to
-another user it can't go back to root. Unfortunately Samba relies on
-being able to change effective uid from root to non-root and back
-again to implement its security policy. If your OS has a trapdoor uid
-system this won't work, and several things in Samba may break. Less
-things will break if you use user or server level security instead of
-the default share level security, but you may still strike
-problems.
-</p><p>
-The problems don't give rise to any security holes, so don't panic,
-but it does mean some of Samba's capabilities will be unavailable.
-In particular you will not be able to connect to the Samba server as
-two different uids at once. This may happen if you try to print as a
-&quot;guest&quot; while accessing a share as a normal user. It may also affect
-your ability to list the available shares as this is normally done as
-the guest user.
-</p><p>
-Complain to your OS vendor and ask them to fix their system.
-</p><p>
-Note: the reason why 65535 is a VERY bad choice of uid and gid is that
-it casts to -1 as a uid, and the setreuid() system call ignores (with
-no error) uid changes to -1. This means any daemon attempting to run
-as uid 65535 will actually run as root. This is not good!
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2807990"></a>Why are my file's timestamps off by an hour, or by a few hours?</h2></div></div><p>
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td>Many clients cannot accept or use service names longer than eight characters.</td></tr><tr><td>Many clients cannot accept or use service names containing spaces.</td></tr><tr><td>Some servers (not Samba though) are case sensitive with service names.</td></tr><tr><td>Some clients force service names into upper case.</td></tr></table></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2816189"></a>Why are my file's timestamps off by an hour, or by a few hours?</h2></div></div><div></div></div><p>
 This is from Paul Eggert eggert@twinsun.com.
 </p><p>
 Most likely it's a problem with your time zone settings.
@@ -173,22 +61,4 @@ time zone is also set appropriately.  [[I don't know how to do this.]]
 Samba traditionally has had many problems dealing with time zones, due
 to the bizarre ways that Microsoft network protocols handle time
 zones.  
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2811127"></a>How do I set the printer driver name correctly?</h2></div></div><p>Question:
-&#8220; On NT, I opened &quot;Printer Manager&quot; and &quot;Connect to Printer&quot;.
- Enter [&quot;\\ptdi270\ps1&quot;] in the box of printer. I got the
- following error message
- &#8221;</p><p>
- </p><pre class="programlisting">
-     You do not have sufficient access to your machine
-     to connect to the selected printer, since a driver
-     needs to be installed locally.
- </pre><p>
- </p><p>Answer:</p><p>In the more recent versions of Samba you can now set the &quot;printer
-driver&quot; in smb.conf. This tells the client what driver to use. For
-example:</p><pre class="programlisting">
-     printer driver = HP LaserJet 4L
-</pre><p>With this, NT knows to use the right driver. You have to get this string
-exactly right.</p><p>To find the exact string to use, you need to get to the dialog box in
-your client where you select which printer driver to install. The
-correct strings for all the different printers are shown in a listbox
-in that dialog box.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="FAQ-general.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="samba-faq.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="FAQ-Config.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 1. General Information </td><td width="20%" align="center"><a accesskey="h" href="samba-faq.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 3. Configuration problems</td></tr></table></div></body></html>
+</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="FAQ-general.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="samba-faq.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="FAQ-ClientApp.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 1. General Information </td><td width="20%" align="center"><a accesskey="h" href="samba-faq.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 3. Specific client application problems</td></tr></table></div></body></html>
