@@ -1942,7 +1942,7 @@ BOOL spoolss_open_printer_ex(  const char *printername,
                          const char *datatype, uint32 access_required,
                          const char *station,  const char *username,
                         POLICY_HND *hnd);
-uint32 spoolss_addprinterex(POLICY_HND *hnd,const char* srv_name, PRINTER_INFO_2 *info2);
+BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 *info2);
 BOOL spoolss_closeprinter(POLICY_HND *hnd);
 uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
                         uint32 in_size,
