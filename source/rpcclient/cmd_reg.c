@@ -42,7 +42,7 @@
  *
  */
 
-#if 0 /* Simo: reg functions need to be updated to the new cmd interface */
+#if 0 /* This whole file need to be rewritten for the cirrent rpcclient interface */
 
 /****************************************************************************
 nt registry enum
@@ -889,7 +889,6 @@ static void cmd_reg_get_key_sec(struct client_info *info)
 	}
 }
 
-#endif /* 0 */
 
 /****************************************************************************
 nt registry shutdown
@@ -964,44 +963,28 @@ static NTSTATUS cmd_reg_abort_shutdown(struct cli_state *cli,
 	return result;
 }
 
+#endif	 /* This whole file need to be rewritten for the cirrent rpcclient interface */
+
 
 /* List of commands exported by this module */
 struct cmd_set reg_commands[] = {
 
 	{ "REG"  },
-
+#if 0
 	{ "shutdown", RPC_RTYPE_NTSTATUS, cmd_reg_shutdown, NULL, PI_WINREG, "Remote Shutdown",
 				"syntax: shutdown [-m message] [-t timeout] [-r] [-h] [-f] (-r == reboot, -h == halt, -f == force)" },
 				
 	{ "abortshutdown", RPC_RTYPE_NTSTATUS, cmd_reg_abort_shutdown, NULL, PI_WINREG, "Abort Shutdown",
 				"syntax: abortshutdown" },
-/*
-	{ "regenum",		cmd_reg_enum,			"Registry Enumeration",
-				"<keyname>" },
-				
-	{ "regdeletekey",	cmd_reg_delete_key,		"Registry Key Delete",
-				"<keyname>" },
-				
-	{ "regcreatekey",	cmd_reg_create_key,		"Registry Key Create",
-				"<keyname> [keyclass]" },
-				
-	{ "regqueryval",	cmd_reg_query_info,		"Registry Value Query",
-				"<valname>" },
-				
-	{ "regquerykey",	cmd_reg_query_key,		"Registry Key Query",
-				"<keyname>" },
-				
-	{ "regdeleteval",	cmd_reg_delete_val,		"Registry Value Delete",
-				"<valname>" },
-	
-	{ "regcreateval",	cmd_reg_create_val,		"Registry Key Create",
-				"<valname> <valtype> <value>" },
-	
-	{ "reggetsec",		cmd_reg_get_key_sec,		"Registry Key Security",
-				"<keyname>" },
-	
-	{ "regtestsec",		cmd_reg_test_key_sec,		"Test Registry Key Security",
-				"<keyname>" },
-*/
+	{ "regenum",		cmd_reg_enum,			"Registry Enumeration", "<keyname>" },
+	{ "regdeletekey",	cmd_reg_delete_key,		"Registry Key Delete", "<keyname>" },
+	{ "regcreatekey",	cmd_reg_create_key,		"Registry Key Create", "<keyname> [keyclass]" },
+	{ "regqueryval",	cmd_reg_query_info,		"Registry Value Query", "<valname>" },
+	{ "regquerykey",	cmd_reg_query_key,		"Registry Key Query", "<keyname>" },
+	{ "regdeleteval",	cmd_reg_delete_val,		"Registry Value Delete", "<valname>" },
+	{ "regcreateval",	cmd_reg_create_val,		"Registry Key Create", "<valname> <valtype> <value>" },
+	{ "reggetsec",		cmd_reg_get_key_sec,		"Registry Key Security", "<keyname>" },
+	{ "regtestsec",		cmd_reg_test_key_sec,		"Test Registry Key Security", "<keyname>" },
+#endif
 	{ NULL }
 };
