@@ -434,7 +434,7 @@ static ssize_t read_socket_data(int fd,char *buffer,size_t N)
  Write data to a fd.
 ****************************************************************************/
 
-ssize_t write_data_until(int fd,char *buffer,size_t N,
+ssize_t write_data_until(int fd,const char *buffer,size_t N,
 			 const struct timeval *endtime)
 {
 	size_t total=0;
@@ -472,7 +472,7 @@ ssize_t write_data_until(int fd,char *buffer,size_t N,
 	return (ssize_t)total;
 }
 
-ssize_t write_data(int fd,char *buffer,size_t N)
+ssize_t write_data(int fd,const char *buffer,size_t N)
 {
 	return write_data_until(fd, buffer, N, NULL);
 }

@@ -617,7 +617,7 @@ static BOOL ldap_search_entry(struct smbldap_state *ldap_state,
 static BOOL ldap_entry_set(struct smbldap_state *ldap_state,
 			   struct ldap_entry *entry)
 {
-	int rc;
+	int rc = LDAP_OTHER;
 	struct ldap_entry *old = NULL;
 	struct ldapmod **mods = NULL;
 
@@ -1040,7 +1040,6 @@ static struct ldap_entry *prepare_form_entry(const char *name)
 
 BOOL prldap_set_form(nt_forms_struct *form)
 {
-	char *dn;
 	pstring buf;
 	int len;
 	int rc;
@@ -1059,10 +1058,8 @@ BOOL prldap_set_form(nt_forms_struct *form)
 	len = tdb_pack(buf, sizeof(buf), "dddddd", form->width, form->length,
 		       form->left, form->top, form->right, form->bottom);
 
-	if (len > sizeof(buf)) {
-		SAFE_FREE(dn);
+	if (len > sizeof(buf))
 		return False;
-	}
 
 	ldap_entry_bin(entry, "sambaFormDimensions", buf, len);
 

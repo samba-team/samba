@@ -4121,7 +4121,7 @@ static void free_dev_mode(DEVICEMODE *dev)
 	if (dev == NULL)
 		return;
 
-		SAFE_FREE(dev->private);
+	SAFE_FREE(dev->private);
 	SAFE_FREE(dev);	
 }
 

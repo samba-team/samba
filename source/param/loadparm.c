@@ -182,6 +182,7 @@ typedef struct
 	BOOL bWinbindNestedGroups;
 	char *szWinbindBackend;
 	char **szIdmapBackend;
+	char **szPrinterDBBackend;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
@@ -265,6 +266,7 @@ typedef struct
 	BOOL bObeyPamRestrictions;
 	BOOL bLoadPrinters;
 	int PrintcapCacheTime;
+	int printerdb_cache_time;
 	BOOL bLargeReadwrite;
 	BOOL bReadRaw;
 	BOOL bWriteRaw;
@@ -979,6 +981,7 @@ static struct parm_struct parm_table[] = {
 	{"max reported print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxReportedPrintJobs, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"max print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxPrintJobs, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"load printers", P_BOOL, P_GLOBAL, &Globals.bLoadPrinters, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
+	{"printerdb cache time", P_INTEGER, P_GLOBAL, &Globals.printerdb_cache_time, NULL, NULL, FLAG_ADVANCED}, 
 	{"printcap cache time", P_INTEGER, P_GLOBAL, &Globals.PrintcapCacheTime, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"printcap name", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"printcap", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_HIDE}, 
@@ -1203,6 +1206,7 @@ static struct parm_struct parm_table[] = {
 
 	{"enable rid algorithm", P_BOOL, P_GLOBAL, &Globals.bEnableRidAlgorithm, NULL, NULL, FLAG_DEPRECATED}, 
 	{"idmap backend", P_LIST, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED}, 
+	{"printerdb backend", P_LIST, P_GLOBAL, &Globals.szPrinterDBBackend, NULL, NULL, FLAG_ADVANCED}, 
 	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED}, 
 	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_HIDE}, 
 	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED}, 
@@ -1405,6 +1409,8 @@ static void init_globals(void)
 
 	Globals.bLoadPrinters = True;
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
+	Globals.printerdb_cache_time = 300;	/* 5 minutes */
+
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
@@ -1681,6 +1687,7 @@ FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_INTEGER(lp_printcap_cache_time, &Globals.PrintcapCacheTime)
+FN_GLOBAL_INTEGER(lp_printerdb_cache_time, &Globals.printerdb_cache_time)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
 FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
 FN_GLOBAL_STRING(lp_deleteprinter_cmd, &Globals.szDeletePrinterCommand)
@@ -1758,6 +1765,7 @@ FN_GLOBAL_BOOL(lp_winbind_nested_groups, &Globals.bWinbindNestedGroups)
 
 
 FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend)
+FN_GLOBAL_LIST(lp_printerdb_backend, &Globals.szPrinterDBBackend)
 FN_GLOBAL_BOOL(lp_enable_rid_algorithm, &Globals.bEnableRidAlgorithm)
 
 #ifdef WITH_LDAP_SAMCONFIG

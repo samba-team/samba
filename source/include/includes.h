@@ -854,6 +854,8 @@ extern int errno;
 
 #include "idmap.h"
 
+#include "printerdb.h"
+
 #include "client.h"
 
 #include "smbw.h"
