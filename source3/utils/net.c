@@ -370,6 +370,7 @@ static struct functable net_func[] = {
 	poptContext pc;
 	static char *servicesf = dyn_CONFIGFILE;
 	static char *debuglevel = NULL;
+	int opt_machine_pass = 0;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
@@ -391,6 +392,7 @@ static struct functable net_func[] = {
 		{"reboot",	'r', POPT_ARG_NONE,   &opt_reboot},
 		{"force",	'f', POPT_ARG_NONE,   &opt_force},
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
+		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		{ 0, 0, 0, 0}
 	};
 
@@ -426,6 +428,7 @@ static struct functable net_func[] = {
 		default:
 			d_printf("\nInvalid option %c (%d)\n", (char)opt, opt);
 			net_help(argc, argv);
+			exit(1);
 		}
 	}
 
@@ -445,7 +448,7 @@ static struct functable net_func[] = {
 			break;
 		}
 	}
-  	 
+
 	if (!opt_requester_name) {
 		static fstring myname;
 		get_myname(myname);
@@ -477,6 +480,23 @@ static struct functable net_func[] = {
 
 	load_interfaces();
 
+	if (opt_machine_pass) {
+		/* it is very useful to be able to make ads queries as the
+		   machine account for testing purposes and for domain leave */
+
+		if (!secrets_init()) {
+			d_printf("ERROR: Unable to open secrets database\n");
+			exit(1);
+		}
+
+		asprintf(&opt_user_name,"%s$", global_myname);
+		opt_password = secrets_fetch_machine_password();
+		if (!opt_password) {
+			d_printf("ERROR: Unable to fetch machine password\n");
+			exit(1);
+		}
+	}
+  	 
 	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_help);
 	
 	DEBUG(2,("return code = %d\n", rc));
