@@ -299,13 +299,13 @@ BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token tok
 int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
                     min_share_mode_entry **old_shares);
 void del_share_mode(share_lock_token token, int fnum);
-BOOL set_share_mode(share_lock_token token, int fnum);
+BOOL set_share_mode(share_lock_token token, int fnum, uint16 port);
 BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok);
 BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token);
 int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
                     min_share_mode_entry **old_shares);
 void del_share_mode(share_lock_token token, int fnum);
-BOOL set_share_mode(share_lock_token token,int fnum);
+BOOL set_share_mode(share_lock_token token,int fnum, uint16 port);
 
 /*The following definitions come from  mangle.c  */
 

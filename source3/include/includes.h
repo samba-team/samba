@@ -1194,6 +1194,10 @@ it works and getting lots of bug reports */
 #define QSORT_CAST (int (*)())
 #endif
 
+#ifndef INADDR_LOOPBACK
+#define INADDR_LOOPBACK 0x7f000001
+#endif /* INADDR_LOOPBACK */
+
 /* this is a rough check to see if this machine has a lstat() call.
    it is not guaranteed to work */
 #if !(defined(S_ISLNK) || defined(S_IFLNK))

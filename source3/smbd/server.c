@@ -87,7 +87,7 @@ static int num_connections_open = 0;
 #ifdef USE_OPLOCKS
 /* Oplock ipc UDP socket. */
 int oplock_sock = -1;
-int oplock_port = -1;
+uint16 oplock_port = 0;
 #endif /* USE_OPLOCKS */
 
 extern fstring remote_machine;
@@ -1720,7 +1720,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
        file (which expects the share_mode_entry to be there).
      */
     if (lp_share_modes(SNUM(cnum)))
-      set_share_mode(token, fnum);
+      set_share_mode(token, fnum, 0);
 
     if ((flags2&O_TRUNC) && file_existed)
       truncate_unless_locked(fnum,cnum,token,&share_locked);
@@ -2275,9 +2275,13 @@ static BOOL open_oplock_ipc()
   DEBUG(3,("open_oplock_ipc: opening loopback UDP socket.\n"));
 
   /* Open a lookback UDP socket on a random port. */
-  oplock_sock = open_socket_in(SOCK_DGRAM, 0, 0,interpret_addr("127.0.0.1"));
+  oplock_sock = open_socket_in(SOCK_DGRAM, 0, 0, htonl(INADDR_LOOPBACK));
   if (oplock_sock == -1)
+  {
+    DEBUG(0,("open_oplock_ipc: Failed to get local UDP socket for \
+address %x. Error was %s\n", INADDR_LOOPBACK, strerror(errno)));
     return(False);
+  }
 
   /* Find out the transient UDP port we have been allocated. */
   if(getsockname(oplock_sock, (struct sockaddr *)&sock_name, &name_len)<0)
@@ -2299,13 +2303,13 @@ static BOOL open_oplock_ipc()
 static BOOL process_local_message(int oplock_sock, char *buffer, int buf_size)
 {
   int32 msg_len;
-  int16 port;
-  struct in_addr from;
+  int16 from_port;
+  struct in_addr from_addr;
   char *msg_start;
 
   msg_len = IVAL(buffer,0);
-  port = SVAL(buffer,4);
-  memcpy((char *)&from, &buffer[6], sizeof(struct in_addr));
+  from_port = SVAL(buffer,4);
+  memcpy((char *)&from_addr, &buffer[6], sizeof(struct in_addr));
 
   msg_start = &buffer[6 + sizeof(struct in_addr)];
 
@@ -2318,6 +2322,13 @@ static BOOL process_local_message(int oplock_sock, char *buffer, int buf_size)
   }
 
   /* Validate message from address (must be localhost). */
+  if(from_addr.s_addr != htonl(INADDR_LOOPBACK))
+  {
+    DEBUG(0,("process_local_message: invalid from address \
+(was %x should be 127.0.0.1\n", from_addr.s_addr));
+   return False;
+  }
+
   return True;
 }
 #endif /* USE_OPLOCKS */
@@ -3994,14 +4005,57 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   return(outsize);
 }
 
+/****************************************************************************
+  process an smb from the client - split out from the process() code so
+  it can be used by the oplock break code.
+****************************************************************************/
+
+static void process_smb(char *InBuffer, char *OutBuffer)
+{
+  extern int Client;
+  static int trans_num = 0;
+
+  int msg_type = CVAL(InBuffer,0);
+  int32 len = smb_len(InBuffer);
+  int nread = len + 4;
+
+  DEBUG(6,("got message type 0x%x of len 0x%x\n",msg_type,len));
+  DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));
+
+#ifdef WITH_VTP
+  if(trans_num == 1 && VT_Check(InBuffer)) 
+  {
+    VT_Process();
+    return;
+  }
+#endif
+
+  if (msg_type == 0)
+    show_msg(InBuffer);
+
+  nread = construct_reply(InBuffer,OutBuffer,nread,max_send);
+      
+  if(nread > 0) 
+  {
+    if (CVAL(OutBuffer,0) == 0)
+      show_msg(OutBuffer);
+	
+    if (nread != smb_len(OutBuffer) + 4) 
+    {
+      DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
+                 nread, smb_len(OutBuffer)));
+    }
+    else
+      send_smb(Client,OutBuffer);
+  }
+  trans_num++;
+}
 
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
 static void process(void)
 {
-  static int trans_num = 0;
-  int nread;
   extern int Client;
 
   InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -4025,10 +4079,6 @@ static void process(void)
 
   while (True)
   {
-    int32 len;      
-    int msg_type;
-    int msg_flags;
-    int type;
     int deadtime = lp_deadtime()*60;
     int counter;
     int last_keepalive=0;
@@ -4048,7 +4098,7 @@ static void process(void)
     for (counter=SMBD_SELECT_LOOP; 
 #ifdef USE_OPLOCKS
           !receive_message_or_smb(Client,oplock_sock,
-                      InBuffer,SMBD_SELECT_LOOP*1000,&got_smb); 
+                      InBuffer,BUFFER_SIZE,SMBD_SELECT_LOOP*1000,&got_smb); 
 #else /* USE_OPLOCKS */
           !receive_smb(Client,InBuffer,SMBD_SELECT_LOOP*1000); 
 #endif /* USE_OPLOCKS */
@@ -4136,54 +4186,11 @@ static void process(void)
 
 #ifdef USE_OPLOCKS
     if(got_smb)
-    {
 #endif /* USE_OPLOCKS */
-      msg_type = CVAL(InBuffer,0);
-      msg_flags = CVAL(InBuffer,1);
-      type = CVAL(InBuffer,smb_com);
-
-      len = smb_len(InBuffer);
-
-      DEBUG(6,("got message type 0x%x of len 0x%x\n",msg_type,len));
-
-      nread = len + 4;
-      
-      DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));
-
-#ifdef WITH_VTP
-      if(trans_num == 1 && VT_Check(InBuffer)) 
-      {
-        VT_Process();
-        return;
-      }
-#endif
-
-
-      if (msg_type == 0)
-        show_msg(InBuffer);
-
-      nread = construct_reply(InBuffer,OutBuffer,nread,max_send);
-      
-      if(nread > 0) 
-      {
-        if (CVAL(OutBuffer,0) == 0)
-          show_msg(OutBuffer);
-	
-        if (nread != smb_len(OutBuffer) + 4) 
-        {
-          DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
-                     nread, smb_len(OutBuffer)));
-        }
-        else
-          send_smb(Client,OutBuffer);
-      }
-      trans_num++;
+      process_smb(InBuffer, OutBuffer);
 #ifdef USE_OPLOCKS
-    } 
     else
-    {
       process_local_message(oplock_sock, InBuffer, BUFFER_SIZE);
-    }
 #endif /* USE_OPLOCKS */
   }
 }
