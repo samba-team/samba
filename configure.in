@@ -520,7 +520,7 @@ AC_BROKEN(memmove)
 AC_BROKEN(mkstemp putenv rcmd readv recvmsg sendmsg setegid setenv seteuid)
 AC_BROKEN(strcasecmp strncasecmp strdup strerror strftime)
 AC_BROKEN(strlcat strlcpy strlwr)
-AC_BROKEN(strndup strnlen strsep strtok_r strupr)
+AC_BROKEN(strndup strnlen strptime strsep strtok_r strupr)
 AC_BROKEN(swab unsetenv verr verrx vsyslog)
 AC_BROKEN(vwarn vwarnx warn warnx writev)
 
@@ -713,6 +713,20 @@ AC_HAVE_STRUCT_FIELD(struct utmp, ut_type, [#include <utmp.h>])
 AC_HAVE_STRUCT_FIELD(struct utmp, ut_user, [#include <utmp.h>])
 AC_HAVE_STRUCT_FIELD(struct utmpx, ut_exit, [#include <utmpx.h>])
 AC_HAVE_STRUCT_FIELD(struct utmpx, ut_syslen, [#include <utmpx.h>])
+
+dnl
+dnl Check for fields in struct tm
+dnl
+
+AC_HAVE_STRUCT_FIELD(struct tm, tm_gmtoff, [#include <time.h>])
+
+dnl
+dnl or do we have a variable `timezone' ?
+dnl
+
+AC_CHECK_VAR(
+[#include <time.h>],
+timezone)
 
 AC_KRB_IPV6
 
