@@ -306,6 +306,13 @@ static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 #endif
 }
 
+static int print_key(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+{
+	printf("\nkey %d bytes\n", key.dsize);
+	print_data(key.dptr, key.dsize);
+	return 0;
+}
+
 static int total_bytes;
 
 static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
@@ -445,6 +452,9 @@ int main(int argc, char *argv[])
         } else if ((strcmp(tok, "n") == 0) ||
                    (strcmp(tok, "next") == 0)) {
             next_record(tdb, &iterate_kbuf);
+        } else if ((strcmp(tok, "keys") == 0)) {
+                bIterate = 0;
+                tdb_traverse(tdb, print_key, NULL);
         } else {
             help();
         }
