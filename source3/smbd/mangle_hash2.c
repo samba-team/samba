@@ -187,7 +187,7 @@ static BOOL is_mangled(const char *name)
 {
 	int len, i;
 
-	M_DEBUG(0,("is_mangled %s\n", name));
+	M_DEBUG(0,("is_mangled %s ?\n", name));
 
 	/* the best distinguishing characteristic is the ~ */
 	if (name[6] != '~') return False;
@@ -220,6 +220,8 @@ static BOOL is_mangled(const char *name)
 			return False;
 		}
 	}
+
+	M_DEBUG(0,("is_mangled %s -> yes\n", name));
 
 	return True;
 }
@@ -319,6 +321,7 @@ static BOOL check_cache(char *name)
 
 	/* make sure that this is a mangled name from this cache */
 	if (!is_mangled(name)) {
+		M_DEBUG(0,("check_cache: %s -> not mangled\n", name));
 		return False;
 	}
 
@@ -333,6 +336,7 @@ static BOOL check_cache(char *name)
 	/* now look in the prefix cache for that hash */
 	prefix = cache_lookup(hash);
 	if (!prefix) {
+		M_DEBUG(0,("check_cache: %s -> %08X -> not found\n", name, hash));
 		return False;
 	}
 
@@ -484,7 +488,8 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 		cache_insert(name, prefix_len, hash);
 	}
 
-	M_DEBUG(0,("name_map: %s -> %s\n", name, new_name));
+	M_DEBUG(0,("name_map: %s -> %08X -> %s (cache=%d)\n", 
+		   name, hash, new_name, cache83));
 
 	/* and overwrite the old name */
 	fstrcpy(name, new_name);
