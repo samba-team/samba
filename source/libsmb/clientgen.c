@@ -2604,6 +2604,8 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 	if (cli->fd == -1)
 		return False;
 
+	set_socket_options(cli->fd,user_socket_options);
+
 	return True;
 }
 

@@ -854,4 +854,12 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #define MSG_WAITALL 0
 #endif
 
+/* default socket options. Dave Miller thinks we should default to TCP_NODELAY
+   given the socket IO pattern that Samba uses */
+#ifdef TCP_NODELAY
+#define DEFAULT_SOCKET_OPTIONS "TCP_NODELAY"
+#else
+#define DEFAULT_SOCKET_OPTIONS ""
+#endif
+
 #endif /* _INCLUDES_H */

@@ -151,14 +151,6 @@
 #define LONG_CONNECT_TIMEOUT 30000
 #define SHORT_CONNECT_TIMEOUT 5000
 
-/* default socket options. Dave Miller thinks we should default to TCP_NODELAY
-   given the socket IO pattern that Samba uses*/
-#ifdef TCP_NODELAY
-#define DEFAULT_SOCKET_OPTIONS "TCP_NODELAY"
-#else
-#define DEFAULT_SOCKET_OPTIONS ""
-#endif
-
 /* the default netbios keepalive timeout */
 #define DEFAULT_KEEPALIVE 300
 

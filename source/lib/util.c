@@ -93,7 +93,7 @@ fstring local_machine="";
 fstring remote_arch="UNKNOWN";
 static enum remote_arch_types ra_type = RA_UNKNOWN;
 fstring remote_proto="UNKNOWN";
-pstring user_socket_options="";   
+pstring user_socket_options=DEFAULT_SOCKET_OPTIONS;   
 
 pstring sesssetup_user="";
 pstring samlogon_user="";
