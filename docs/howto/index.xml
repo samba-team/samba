@@ -4,7 +4,8 @@
 <!ENTITY % globalentities SYSTEM '../entities/global.entities'> %globalentities;
 ]>
 
-<book id="Samba-HOWTO-Collection">
+<book id="Samba-HOWTO-Collection"
+	xmlns:xi="http://www.w3.org/2003/XInclude">
 <title>The Official Samba-3 HOWTO and Reference Guide</title>
 
 <bookinfo>
@@ -22,7 +23,7 @@
 <preface>
 	<title>Attribution</title>
 	<para>
-		&attributions;
+		<xi:include href="attributions.xml"/>
 	</para>
 </preface>
 
@@ -85,7 +86,7 @@ submission.
 
 <?latex \cleardoublepage ?>
 
-&foreword-tridge;
+<xi:include href="foreword-tridge.xml"/>
 
 <?latex \cleardoublepage ?>
 <!-- Contents -->
@@ -94,7 +95,7 @@ submission.
 
 <lot/>
 
-&IntroSMB;
+<xi:include href="IntroSMB.xml"/>
 
 <!-- Chapters -->
 <part id="introduction">
@@ -106,8 +107,8 @@ submission.
 and how to configure the parts of Samba you will most likely need.
 PLEASE read this.</para>
 </partintro>
-&UNIX-INSTALL;
-&FastStart;
+<xi:include href="Install.xml"/>
+<xi:include href="FastStart.xml"/>
 </part>
 
 <part id="type">
@@ -120,12 +121,12 @@ configuring Samba to function as the type of server your network requires. Pleas
 section carefully.
 </para>
 </partintro>
-&ServerType;
-&Samba-PDC-HOWTO;
-&Samba-BDC-HOWTO;
-&DOMAIN-MEMBER;
-&StandAloneServer;
-&ClientConfig;
+<xi:include href="ServerType.xml"/>
+<xi:include href="PDC.xml"/>
+<xi:include href="BDC.xml"/>
+<xi:include href="DomainMember.xml"/>
+<xi:include href="StandAloneServer.xml"/>
+<xi:include href="WindowsClientConfig.xml"/>
 </part>
 
 <part id="optional">
@@ -136,56 +137,56 @@ section carefully.
 Samba has several features that you might want or might not want to use. The chapters in this part each cover specific Samba features.
 </para>
 </partintro>
-&NetworkBrowsing;
-&Passdb;
-&GROUP-MAPPING-HOWTO;
-&AccessControls;
-&locking;
-&SecuringSamba;
-&Trusts;
-&MS-Dfs-Setup;
-&PRINTER-DRIVER2;
-&CUPS;
-&VFS;
-&WINBIND;
-&AdvancedNetworkAdmin;
-&PolicyMgmt;
-&ProfileMgmt;
-&Samba-PAM;
-&IntegratingWithWindows;
-&unicode;
-&Backup;
-&HighAvailability;
+<xi:include href="NetworkBrowsing.xml"/>
+<xi:include href="Passdb.xml"/>
+<xi:include href="Group-Mapping.xml"/>
+<xi:include href="AccessControls.xml"/>
+<xi:include href="locking.xml"/>
+<xi:include href="Securing.xml"/>
+<xi:include href="InterdomainTrusts.xml"/>
+<xi:include href="msdfs.xml"/>
+<xi:include href="Printing.xml"/>
+<xi:include href="CUPS-printing.xml"/>
+<xi:include href="VFS.xml"/>
+<xi:include href="Winbind.xml"/>
+<xi:include href="AdvancedNetworkAdmin.xml"/>
+<xi:include href="PolicyMgmt.xml"/>
+<xi:include href="ProfileMgmt.xml"/>
+<xi:include href="PAM.xml"/>
+<xi:include href="Integrating-With_windows.xml"/>
+<xi:include href="Unicode.xml"/>
+<xi:include href="Backup.xml"/>
+<xi:include href="HighAvailability.xml"/>
 </part>
 
 <part id="migration">
 <title>Migration and Updating</title>
-&upgrading;
-&NT4Migration;
-&SWAT;
+<xi:include href="upgrading-to-3.0.xml"/>
+<xi:include href="NT4Migration.xml"/>
+<xi:include href="SWAT.xml"/>
 </part>
 
 <part id="troubleshooting">
 <title>Troubleshooting</title>
-&Diagnosis;
-&problems;
-&BUGS;
+<xi:include href="Diagnosis.xml"/>
+<xi:include href="Problems.xml"/>
+<xi:include href="Bugs.xml"/>
 </part>
 
 <part id="Appendix">
 <title>Appendixes</title>
-&Compiling;
-&Portability;
-&Other-Clients;
-&SPEED;
-&DNS-DHCP-Configuration;
+<xi:include href="Compiling.xml"/>
+<xi:include href="Portability.xml"/>
+<xi:include href="Other-Clients.xml"/>
+<xi:include href="Speed.xml"/>
+<xi:include href="DNS-DHCP-Configuration.xml"/>
 </part>
 
 
 
 <?latex \include{gpl}?>
 
-&glossary;
+<xi:include href="glossary.xml"/>
 
 <?latex \chaptermark{Subject index} ?>
 <index/>
