@@ -8663,7 +8663,6 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 
 	free_job_info_2(info_2);	/* Also frees devmode */
 	SAFE_FREE(info_2);
-	free_a_printer(&ntprinter, 2);
 
 	return ret;
 }
