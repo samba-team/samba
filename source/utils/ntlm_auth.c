@@ -1576,9 +1576,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	} else if (strequal(request, "Request-LanMan-Session-Key")) {
 		ntlm_server_1_lm_session_key = strequal(parameter, "Yes");
 	} else {
-		x_fprintf(x_stdout, "Error: Unknown request %s\n", request);
+		x_fprintf(x_stdout, "Error: Unknown request %s\n.\n", request);
 	}
-	x_fprintf(x_stdout, ".\n");
 }
 
 static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helper_function fn) 
