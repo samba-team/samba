@@ -128,9 +128,6 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		status = auth_context->check_ntlm_password(auth_context, 
 							   user_info, 
 							   &server_info);
-		
-		free_auth_context(&auth_context);
-
 	} else {
 		TALLOC_CTX *mem_ctx = talloc_init("NT1 session setup");
 		char *remote_machine;
@@ -164,6 +161,8 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
+
+	talloc_steal(session_info, server_info);
 
 	sess->nt1.out.action = 0;
 	sess->nt1.out.vuid = smbsrv_register_session(req->smb_conn, session_info, NULL);
