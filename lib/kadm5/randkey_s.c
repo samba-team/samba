@@ -49,6 +49,7 @@ kadm5_s_randkey_principal(void *server_handle,
     kadm5_server_context *context = server_handle;
     hdb_entry ent;
     kadm5_ret_t ret;
+    krb5_keyblock *keys = NULL;
 
     ent.principal = princ;
     ret = context->db->open(context->context, context->db, O_RDWR, 0);
@@ -60,11 +61,18 @@ kadm5_s_randkey_principal(void *server_handle,
     {
 	/* XXX this should be merged with set_keys */
 	int i;
-	Key *key;
-	*new_keys = malloc(ent.keys.len * sizeof(**new_keys));
+
+	keys = malloc(ent.keys.len * sizeof(*keys));
+	if (keys == NULL) {
+	    ret = ENOMEM;
+	    goto out2;
+	}
 	for(i = 0; i < ent.keys.len; i++){
-	    key = &ent.keys.val[i];
-	    if(key->salt){
+	    Key *key = &ent.keys.val[i];
+
+	    free(key->mkvno);
+	    key->mkvno = NULL;
+	    if(key->salt) {
 		/* zap any salt */
 		free_Salt(key->salt);
 		key->salt = NULL;
@@ -77,9 +85,10 @@ kadm5_s_randkey_principal(void *server_handle,
 	    if(ret)
 		break;
 	    ret = krb5_copy_keyblock_contents(context->context, 
-					      &key->key, &(*new_keys)[i]);
+					      &key->key, &keys[i]);
 	    if(ret)
 		break;
+
 	    *n_keys = i + 1;
 	}
 	ent.kvno++;
@@ -103,13 +112,15 @@ out2:
     hdb_free_entry(context->context, &ent);
 out:
     context->db->close(context->context, context->db);
-    if(ret){
+    if(ret && keys != NULL) {
 	int i;
 	for(i = 0; i < *n_keys; i++)
-	    krb5_free_keyblock_contents(context->context, &(*new_keys)[i]);
-	free(*new_keys);
+	    krb5_free_keyblock_contents(context->context, &keys[i]);
+	free(keys);
 	*n_keys = 0;
     }
+    if (ret == 0)
+	*new_keys = keys;
     return _kadm5_error_code(ret);
 }
 
