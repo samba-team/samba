@@ -172,6 +172,22 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			 pdb_get_username(sampass)));
 		/* No return, we want to check the LM hash below in this case */
 		auth_flags &= (~(AUTH_FLAG_NTLMv2_RESP |  AUTH_FLAG_NTLM_RESP));
+	} else {
+		/* Check for cleartext netlogon. Used by Exchange 5.5. */
+		unsigned char zeros[8];
+
+		memset(zeros,'\0',sizeof(zeros));
+		if (auth_context->challenge.length == sizeof(zeros) && 
+				(memcmp(auth_context->challenge.data, zeros, auth_context->challenge.length) == 0 ) &&
+				user_info->nt_resp.length) {
+			if ((nt_pw = pdb_get_nt_passwd(sampass)) != NULL) {
+				unsigned char pwhash[16];
+				mdfour(pwhash, user_info->nt_resp.data, user_info->nt_resp.length);
+				if (memcmp(pwhash, nt_pw, sizeof(pwhash)) == 0) {
+					return NT_STATUS_OK;
+				}
+			}
+		}
 	}
 	
 	if (auth_flags & AUTH_FLAG_NTLMv2_RESP) {
