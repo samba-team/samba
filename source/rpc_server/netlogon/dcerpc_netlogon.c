@@ -901,23 +901,24 @@ static WERROR netr_DSRGETSITENAME(struct dcesrv_call_state *dce_call, TALLOC_CTX
   fill in a netr_DomainTrustInfo from a ldb search result
 */
 static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx, struct ldb_message *res,
-				       struct netr_DomainTrustInfo *info)
+				       struct netr_DomainTrustInfo *info, BOOL is_local)
 {
 	ZERO_STRUCTP(info);
-	
-	info->domainname.string = samdb_result_string(res, "flatName", NULL);
-	if (info->domainname.string == NULL) {
+
+	if (is_local) {
 		info->domainname.string = samdb_result_string(res, "name", NULL);
 		info->fulldomainname.string = samdb_result_string(res, "dnsDomain", NULL);
+		info->guid = samdb_result_guid(res, "objectGUID");
+		info->sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
 	} else {
+		info->domainname.string = samdb_result_string(res, "flatName", NULL);
 		info->fulldomainname.string = samdb_result_string(res, "name", NULL);
+		info->guid = samdb_result_guid(res, "objectGUID");
+		info->sid = samdb_result_dom_sid(mem_ctx, res, "securityIdentifier");
 	}
 
 	/* TODO: we need proper forest support */
 	info->forest.string = info->fulldomainname.string;
-
-	info->guid = samdb_result_guid(res, "objectGUID");
-	info->sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
 
 	return NT_STATUS_OK;
 }
@@ -931,7 +932,8 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 {
 	struct server_pipe_state *pipe_state = dce_call->conn->private;
 	const char * const attrs[] = { "name", "dnsDomain", "objectSid", 
-				       "objectGUID", "flatName", NULL };
+				       "objectGUID", "flatName", "securityIdentifier",
+				       NULL };
 	void *sam_ctx;
 	struct ldb_message **res1, **res2;
 	struct netr_DomainInfo1 *info1;
@@ -981,18 +983,18 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = fill_domain_trust_info(mem_ctx, res1[0], &info1->domaininfo);
+	status = fill_domain_trust_info(mem_ctx, res1[0], &info1->domaininfo, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = fill_domain_trust_info(mem_ctx, res1[0], &info1->trusts[0]);
+	status = fill_domain_trust_info(mem_ctx, res1[0], &info1->trusts[0], True);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	for (i=0;i<ret2;i++) {
-		status = fill_domain_trust_info(mem_ctx, res2[i], &info1->trusts[i+1]);
+		status = fill_domain_trust_info(mem_ctx, res2[i], &info1->trusts[i+1], False);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
