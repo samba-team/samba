@@ -84,7 +84,7 @@ BOOL map_username(char *user)
   
   f = sys_fopen(mapfile,"r");
   if (!f) {
-    DEBUG(0,("can't open username map %s\n",mapfile));
+    DEBUG(0,("can't open username map %s. Error %s\n",mapfile, strerror(errno) ));
     return False;
   }
 
