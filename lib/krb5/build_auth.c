@@ -93,9 +93,10 @@ krb5_build_authenticator (krb5_context context,
     }
 
     ASN1_MALLOC_ENCODE(Authenticator, buf, buf_size, auth, &len, ret);
-
     if (ret)
 	goto fail;
+    if(buf_size != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
 
     ret = krb5_crypto_init(context, &cred->session, enctype, &crypto);
     if (ret)
