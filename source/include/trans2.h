@@ -235,6 +235,14 @@ Byte offset   Type     name                description
  * Thursby MAC extensions....
  */
 
+/*
+ * MAC CIFS Extensions have the range 0x300 - 0x2FF reserved.
+ * Supposedly Microsoft have agreed to this.
+ */
+
+#define MIN_MAC_INFO_LEVEL 0x300
+#define MAX_MAC_INFO_LEVEL 0x3FF
+
 #define SMB_MAC_QUERY_FS_INFO           0x301
 
 #define DIRLEN_GUESS (45+MAX(l1_achName,l2_achName))
@@ -299,8 +307,52 @@ Byte offset   Type     name                description
 #define SMB_FILE_TRACKING_INFORMATION			1036
 #define SMB_FILE_MAXIMUM_INFORMATION			1037
 
+/* UNIX CIFS Extensions - created by HP */
+/*
+ * UNIX CIFS Extensions have the range 0x200 - 0x2FF reserved.
+ * Supposedly Microsoft have agreed to this.
+ */
+
+#define MIN_UNIX_INFO_LEVEL 0x200
+#define MAX_UNIX_INFO_LEVEL 0x2FF
+
+#define SMB_QUERY_FILE_UNIX_BASIC      0x200   /* UNIX File Info*/
+#define SMB_SET_FILE_UNIX_BASIC        0x200
+
+#define MODE_NO_CHANGE                 -1     /* file mode value which */
+                                              /* means "don't change it" */
+
+/*
+ LARGE_INTEGER EndOfFile                File size
+ LARGE_INTEGER Blocks                   Number of bytes used on disk (st_blocks).
+ LARGE_INTEGER CreationTime             Creation time
+ LARGE_INTEGER LastAccessTime           Last access time
+ LARGE_INTEGER LastModificationTime     Last modification time
+ LARGE_INTEGER Uid                      Numeric user id for the owner
+ LARGE_INTEGER Gid                      Numeric group id of owner
+ ULONG Type                             Enumeration specifying the pathname type:
+                                         0 -- File
+                                         1 -- Directory
+                                         2 -- Symbolic link
+                                         3 -- Character device
+                                         4 -- Block device
+                                         5 -- FIFO (named pipe)
+
+ LARGE_INTEGER devmajor                 Major device number if type is device
+ LARGE_INTEGER devminor                 Minor device number if type is device
+ LARGE_INTEGER uniqueid                 This is a server-assigned unique id for the file. The client
+                                        will typically map this onto an inode number. The scope of
+                                        uniqueness is the share.
+ LARGE_INTEGER permissions              Standard UNIX file permissions
+ LARGE_INTEGER nlinks                   The number of directory entries that map to this entry
+                                          (number of hard links)
+
+*/
+
+#define SMB_QUERY_FILE_UNIX_LINK       0x201
+#define SMB_SET_FILE_UNIX_LINK         0x201
+#define SMB_SET_FILE_UNIX_HLINK        0x203
+
+#define SMB_FIND_FILE_UNIX             0x202
 
 #endif
-
-
-

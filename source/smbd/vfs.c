@@ -72,6 +72,8 @@ static struct vfs_ops default_vfs_ops = {
 	vfswrap_lock,
 	vfswrap_symlink,
 	vfswrap_readlink,
+	vfswrap_link,
+	vfswrap_mknod,
 
 	vfswrap_fget_nt_acl,
 	vfswrap_get_nt_acl,
