@@ -540,22 +540,22 @@ typedef struct nt_user_token {
 
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
-#define CAP_RAW_MODE         0x0001
-#define CAP_MPX_MODE         0x0002
-#define CAP_UNICODE          0x0004
-#define CAP_LARGE_FILES      0x0008
-#define CAP_NT_SMBS          0x0010
-#define CAP_RPC_REMOTE_APIS  0x0020
-#define CAP_STATUS32         0x0040
-#define CAP_LEVEL_II_OPLOCKS 0x0080
-#define CAP_LOCK_AND_READ    0x0100
-#define CAP_NT_FIND          0x0200
-#define CAP_DFS              0x1000
-#define CAP_W2K_SMBS         0x2000
-#define CAP_LARGE_READX      0x4000
-#define CAP_LARGE_WRITEX     0x8000
-#define CAP_UNIX             0x800000 /* Capabilities for UNIX extensions. Created by HP. */
-#define CAP_EXTENDED_SECURITY 0x80000000
+#define CAP_RAW_MODE		0x00000001
+#define CAP_MPX_MODE		0x00000002
+#define CAP_UNICODE		0x00000004
+#define CAP_LARGE_FILES		0x00000008
+#define CAP_NT_SMBS		0x00000010
+#define CAP_RPC_REMOTE_APIS	0x00000020
+#define CAP_STATUS32		0x00000040
+#define CAP_LEVEL_II_OPLOCKS	0x00000080
+#define CAP_LOCK_AND_READ	0x00000100
+#define CAP_NT_FIND		0x00000200
+#define CAP_DFS			0x00001000
+#define CAP_W2K_SMBS		0x00002000
+#define CAP_LARGE_READX		0x00004000
+#define CAP_LARGE_WRITEX	0x00008000
+#define CAP_UNIX		0x00800000 /* Capabilities for UNIX extensions. Created by HP. */
+#define CAP_EXTENDED_SECURITY	0x80000000
 
 /*
  * Global value meaing that the smb_uid field should be
