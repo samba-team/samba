@@ -450,21 +450,29 @@ static GtkWidget* create_mainwin (void)
 	menu_file_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_file), menu_file_menu);
 
-	open_nt4 = gtk_image_menu_item_new_with_mnemonic("_Open NT4 file");
-	gtk_widget_show (open_nt4);
-	gtk_container_add (GTK_CONTAINER (menu_file_menu), open_nt4);
+	if(reg_has_backend("nt4")) {
+		open_nt4 = gtk_image_menu_item_new_with_mnemonic("_Open NT4 file");
+		gtk_widget_show (open_nt4);
+		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_nt4);
+	}
 
-	open_w95 = gtk_image_menu_item_new_with_mnemonic("_Open Win9x file");
-	gtk_widget_show (open_w95);
-	gtk_container_add (GTK_CONTAINER (menu_file_menu), open_w95);
+	if(reg_has_backend("w95")) {
+		open_w95 = gtk_image_menu_item_new_with_mnemonic("_Open Win9x file");
+		gtk_widget_show (open_w95);
+		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_w95);
+	}
 
-	open_gconf = gtk_image_menu_item_new_with_mnemonic ("_Open GConf");
-	gtk_widget_show (open_gconf);
-	gtk_container_add (GTK_CONTAINER (menu_file_menu), open_gconf);
+	if(reg_has_backend("gconf")) {
+		open_gconf = gtk_image_menu_item_new_with_mnemonic ("_Open GConf");
+		gtk_widget_show (open_gconf);
+		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_gconf);
+	}
 
-	open_remote = gtk_menu_item_new_with_mnemonic ("_Open Remote");
-	gtk_widget_show (open_remote);
-	gtk_container_add (GTK_CONTAINER (menu_file_menu), open_remote);
+	if(reg_has_backend("rpc")) {
+		open_remote = gtk_menu_item_new_with_mnemonic ("_Open Remote");
+		gtk_widget_show (open_remote);
+		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_remote);
+	}
 
 	save = gtk_image_menu_item_new_from_stock ("gtk-save", accel_group);
 	gtk_widget_show (save);

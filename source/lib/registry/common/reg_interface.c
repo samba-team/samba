@@ -58,25 +58,8 @@ NTSTATUS registry_register(void *_function)
 /* Find a backend in the list of available backends */
 static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 {
-	struct reg_init_function_entry *entry = backends;
-
-	while(entry) {
-		if (strcmp(entry->functions->name, name)==0) return entry;
-		entry = entry->next;
-	}
-
-	return NULL;
-}
-
-/* Open a registry file/host/etc */
-WERROR reg_open(const char *backend, const char *location, const char *credentials, REG_HANDLE **h)
-{
 	struct reg_init_function_entry *entry;
 	static BOOL reg_first_init = True;
-	TALLOC_CTX *mem_ctx;
-	REG_HANDLE *ret;
-	NTSTATUS status;
-	WERROR werr;
 
 	if(reg_first_init) {
 		status = register_subsystem("registry", registry_register);
@@ -87,6 +70,30 @@ WERROR reg_open(const char *backend, const char *location, const char *credentia
 		reg_first_init = False;
 	}
 
+	entry = backends;
+
+	while(entry) {
+		if (strcmp(entry->functions->name, name)==0) return entry;
+		entry = entry->next;
+	}
+
+	return NULL;
+}
+
+BOOL reg_has_backend(const char *backend)
+{
+	return reg_find_backend_entry(backend)?True:False;
+}
+
+/* Open a registry file/host/etc */
+WERROR reg_open(const char *backend, const char *location, const char *credentials, REG_HANDLE **h)
+{
+	struct reg_init_function_entry *entry;
+	TALLOC_CTX *mem_ctx;
+	REG_HANDLE *ret;
+	NTSTATUS status;
+	WERROR werr;
+	
 	entry = reg_find_backend_entry(backend);
 	
 	if (!entry) {
