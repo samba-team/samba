@@ -48,10 +48,8 @@ RCSID("$Id$");
 #endif
 
 #ifdef HAVE_UTMPX_H
-#include <utmpx.h>
 struct	utmpx wtmp;
-#else
-#include <utmp.h>
+#elif defined(HAVE_UTMP_H)
 struct	utmp wtmp;
 #endif /* HAVE_UTMPX_H */
 
