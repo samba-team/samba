@@ -84,6 +84,12 @@ int chain_fnum = -1;
 /* number of open connections */
 static int num_connections_open = 0;
 
+#ifdef USE_OPLOCKS
+/* Oplock ipc UDP socket. */
+int oplock_sock = -1;
+int oplock_port = -1;
+#endif /* USE_OPLOCKS */
+
 extern fstring remote_machine;
 
 pstring OriginalDir;
@@ -2257,6 +2263,64 @@ static BOOL open_sockets(BOOL is_daemon,int port)
   return True;
 }
 
+#ifdef USE_OPLOCKS
+/****************************************************************************
+  open the oplock IPC socket communication
+****************************************************************************/
+static BOOL open_oplock_ipc()
+{
+  struct sockaddr_in sock_name;
+  int name_len = sizeof(sock_name);
+
+  DEBUG(3,("open_oplock_ipc: opening loopback UDP socket.\n"));
+
+  /* Open a lookback UDP socket on a random port. */
+  oplock_sock = open_socket_in(SOCK_DGRAM, 0, 0,interpret_addr("127.0.0.1"));
+  if (oplock_sock == -1)
+    return(False);
+
+  /* Find out the transient UDP port we have been allocated. */
+  if(getsockname(oplock_sock, (struct sockaddr *)&sock_name, &name_len)<0)
+  {
+    DEBUG(0,("open_oplock_ipc: Failed to get local UDP port. Error was %s\n",
+            strerror(errno)));
+    close(oplock_sock);
+    oplock_sock = -1;
+    return False;
+  }
+  oplock_port = ntohs(sock_name.sin_port);
+
+  return True;
+}
+
+/****************************************************************************
+  process an oplock break message.
+****************************************************************************/
+static BOOL process_local_message(int oplock_sock, char *buffer, int buf_size)
+{
+  int32 msg_len;
+  int16 port;
+  struct in_addr from;
+  char *msg_start;
+
+  msg_len = IVAL(buffer,0);
+  port = SVAL(buffer,4);
+  memcpy((char *)&from, &buffer[6], sizeof(struct in_addr));
+
+  msg_start = &buffer[6 + sizeof(struct in_addr)];
+
+  /* Validate message length. */
+  if(msg_len > (buf_size  - (6 + sizeof(struct in_addr))))
+  {
+    DEBUG(0,("process_local_message: invalid msg_len (%d) max can be %d\n",
+              msg_len, buf_size  - (6 + sizeof(struct in_addr))));
+    return False;
+  }
+
+  /* Validate message from address (must be localhost). */
+  return True;
+}
+#endif /* USE_OPLOCKS */
 
 /****************************************************************************
 check if a snum is in use
@@ -3960,32 +4024,40 @@ static void process(void)
 #endif    
 
   while (True)
+  {
+    int32 len;      
+    int msg_type;
+    int msg_flags;
+    int type;
+    int deadtime = lp_deadtime()*60;
+    int counter;
+    int last_keepalive=0;
+    int service_load_counter = 0;
+#ifdef USE_OPLOCKS
+    BOOL got_smb = False;
+#endif /* USE_OPLOCKS */
+
+    if (deadtime <= 0)
+      deadtime = DEFAULT_SMBD_TIMEOUT;
+
+    if (lp_readprediction())
+      do_read_prediction();
+
+    errno = 0;      
+
+    for (counter=SMBD_SELECT_LOOP; 
+#ifdef USE_OPLOCKS
+          !receive_message_or_smb(Client,oplock_sock,
+                      InBuffer,SMBD_SELECT_LOOP*1000,&got_smb); 
+#else /* USE_OPLOCKS */
+          !receive_smb(Client,InBuffer,SMBD_SELECT_LOOP*1000); 
+#endif /* USE_OPLOCKS */
+          counter += SMBD_SELECT_LOOP)
     {
-      int32 len;      
-      int msg_type;
-      int msg_flags;
-      int type;
-      int deadtime = lp_deadtime()*60;
-      int counter;
-      int last_keepalive=0;
-      int service_load_counter = 0;
-
-      if (deadtime <= 0)
-	deadtime = DEFAULT_SMBD_TIMEOUT;
-
-      if (lp_readprediction())
-	do_read_prediction();
-
-      errno = 0;      
-
-      for (counter=SMBD_SELECT_LOOP; 
-	   !receive_smb(Client,InBuffer,SMBD_SELECT_LOOP*1000); 
-	   counter += SMBD_SELECT_LOOP)
-	{
-	  int i;
-	  time_t t;
-	  BOOL allidle = True;
-	  extern int keepalive;
+      int i;
+      time_t t;
+      BOOL allidle = True;
+      extern int keepalive;
 
       if (counter > 365 * 3600) /* big number of seconds. */
       {
@@ -3993,69 +4065,79 @@ static void process(void)
         service_load_counter = 0;
       }
 
-	  if (smb_read_error == READ_EOF) {
-	    DEBUG(3,("end of file from client\n"));
-	    return;
-	  }
+      if (smb_read_error == READ_EOF) 
+      {
+        DEBUG(3,("end of file from client\n"));
+        return;
+      }
 
-	  if (smb_read_error == READ_ERROR) {
-	    DEBUG(3,("receive_smb error (%s) exiting\n",
-		     strerror(errno)));
-	    return;
-	  }
+      if (smb_read_error == READ_ERROR) 
+      {
+        DEBUG(3,("receive_smb error (%s) exiting\n",
+                  strerror(errno)));
+        return;
+      }
 
-	  t = time(NULL);
+      t = time(NULL);
 
-	  /* become root again if waiting */
-	  unbecome_user();
+      /* become root again if waiting */
+      unbecome_user();
 
-	  /* check for smb.conf reload */
-	  if (counter >= service_load_counter + SMBD_RELOAD_CHECK)
+      /* check for smb.conf reload */
+      if (counter >= service_load_counter + SMBD_RELOAD_CHECK)
       {
         service_load_counter = counter;
 
         /* reload services, if files have changed. */
-	    reload_services(True);
+        reload_services(True);
       }
 
-	  /* automatic timeout if all connections are closed */      
-	  if (num_connections_open==0 && counter >= IDLE_CLOSED_TIMEOUT) {
-	    DEBUG(2,("%s Closing idle connection\n",timestring()));
-	    return;
-	  }
+      /* automatic timeout if all connections are closed */      
+      if (num_connections_open==0 && counter >= IDLE_CLOSED_TIMEOUT) 
+      {
+        DEBUG(2,("%s Closing idle connection\n",timestring()));
+        return;
+      }
 
-	  if (keepalive && (counter-last_keepalive)>keepalive) {
-	    extern int password_client;
-	    if (!send_keepalive(Client)) {
-	      DEBUG(2,("%s Keepalive failed - exiting\n",timestring()));
-	      return;
-	    }	    
-	    /* also send a keepalive to the password server if its still
-	       connected */
-	    if (password_client != -1)
-	      send_keepalive(password_client);
-	    last_keepalive = counter;
-	  }
+      if (keepalive && (counter-last_keepalive)>keepalive) 
+      {
+        extern int password_client;
+        if (!send_keepalive(Client))
+        { 
+          DEBUG(2,("%s Keepalive failed - exiting\n",timestring()));
+          return;
+        }	    
+        /* also send a keepalive to the password server if its still
+           connected */
+        if (password_client != -1)
+          send_keepalive(password_client);
+        last_keepalive = counter;
+      }
 
-	  /* check for connection timeouts */
-	  for (i=0;i<MAX_CONNECTIONS;i++)
-	    if (Connections[i].open)
-	      {
-		/* close dirptrs on connections that are idle */
-		if ((t-Connections[i].lastused)>DPTR_IDLE_TIMEOUT)
-		  dptr_idlecnum(i);
+      /* check for connection timeouts */
+      for (i=0;i<MAX_CONNECTIONS;i++)
+        if (Connections[i].open)
+        {
+          /* close dirptrs on connections that are idle */
+          if ((t-Connections[i].lastused)>DPTR_IDLE_TIMEOUT)
+            dptr_idlecnum(i);
 
-		if (Connections[i].num_files_open > 0 ||
-		    (t-Connections[i].lastused)<deadtime)
-		  allidle = False;
-	      }
+          if (Connections[i].num_files_open > 0 ||
+                     (t-Connections[i].lastused)<deadtime)
+            allidle = False;
+        }
 
-	  if (allidle && num_connections_open>0) {
-	    DEBUG(2,("%s Closing idle connection 2\n",timestring()));
-	    return;
-	  }
-	}
+      if (allidle && num_connections_open>0) 
+      {
+        DEBUG(2,("%s Closing idle connection 2\n",timestring()));
+        return;
+      }
+    }
 
+#ifdef USE_OPLOCKS
+    if(got_smb)
+    {
+#endif /* USE_OPLOCKS */
       msg_type = CVAL(InBuffer,0);
       msg_flags = CVAL(InBuffer,1);
       type = CVAL(InBuffer,smb_com);
@@ -4069,7 +4151,8 @@ static void process(void)
       DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));
 
 #ifdef WITH_VTP
-      if(trans_num == 1 && VT_Check(InBuffer)) {
+      if(trans_num == 1 && VT_Check(InBuffer)) 
+      {
         VT_Process();
         return;
       }
@@ -4077,25 +4160,32 @@ static void process(void)
 
 
       if (msg_type == 0)
-	show_msg(InBuffer);
+        show_msg(InBuffer);
 
       nread = construct_reply(InBuffer,OutBuffer,nread,max_send);
       
-      if(nread > 0) {
+      if(nread > 0) 
+      {
         if (CVAL(OutBuffer,0) == 0)
-	  show_msg(OutBuffer);
+          show_msg(OutBuffer);
 	
         if (nread != smb_len(OutBuffer) + 4) 
-	  {
-	    DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
-		     nread,
-		     smb_len(OutBuffer)));
-	  }
-	else
-	  send_smb(Client,OutBuffer);
+        {
+          DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
+                     nread, smb_len(OutBuffer)));
+        }
+        else
+          send_smb(Client,OutBuffer);
       }
       trans_num++;
+#ifdef USE_OPLOCKS
+    } 
+    else
+    {
+      process_local_message(oplock_sock, InBuffer, BUFFER_SIZE);
     }
+#endif /* USE_OPLOCKS */
+  }
 }
 
 
@@ -4373,6 +4463,12 @@ static void usage(char *pname)
       if (sys_chroot(lp_rootdir()) == 0)
 	DEBUG(2,("%s changed root to %s\n",timestring(),lp_rootdir()));
     }
+
+#ifdef USE_OPLOCKS
+  /* Setup the oplock IPC socket. */
+  if(!open_oplock_ipc())
+    exit(1);
+#endif /* USE_OPLOCKS */
 
   process();
   close_sockets();
