@@ -1004,7 +1004,7 @@ some platforms don't have strndup
 
 #ifndef HAVE_STRNLEN
 /*******************************************************************
-some platforms don't have strndup
+some platforms don't have strnlen
 ********************************************************************/
  size_t strnlen(const char *s, size_t n)
 {
