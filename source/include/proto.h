@@ -9,14 +9,14 @@ BOOL allow_access(char *deny_list,char *allow_list,char *cname,char *caddr);
 /*The following definitions come from  asyncdns.c  */
 
 int asyncdns_fd(void);
-void kill_async_dns_child();
+void kill_async_dns_child(void);
 void start_async_dns(void);
 void run_dns_queue(void);
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n);
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n);
-void kill_async_dns_child();
+void kill_async_dns_child(void);
 
 /*The following definitions come from  cgi.c  */
 
@@ -58,8 +58,8 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd);
 /*The following definitions come from  client.c  */
 
 void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num);
-void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir);
-void cmd_help(void);
+void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir);
+void cmd_help(char *dum1, char *dum2);
 
 /*The following definitions come from  clientgen.c  */
 
@@ -126,16 +126,16 @@ BOOL cli_send_trans_request(char *outbuf,int trans,
 			       int mdata,int mparam,int msetup);
 BOOL cli_send_session_request(char *inbuf,char *outbuf);
 BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, struct connection_options *options);
-void cli_send_logout(void );
+void cli_send_logout(char *dum1, char *dum2);
 BOOL cli_open_sockets(int port );
 BOOL cli_reopen_connection(char *inbuf,char *outbuf);
 
 /*The following definitions come from  clitar.c  */
 
 int padit(char *buf, int bufsize, int padsize);
-void cmd_block(void);
-void cmd_tarmode(void);
-void cmd_setmode(void);
+void cmd_block(char *dum1, char *dum2);
+void cmd_tarmode(char *dum1, char *dum2);
+void cmd_setmode(char *dum1, char *dum2);
 void cmd_tar(char *inbuf, char *outbuf);
 int process_tar(char *inbuf, char *outbuf);
 int clipfind(char **aret, int ret, char *tok);
@@ -186,7 +186,7 @@ void DirCacheFlush( int snum );
 
 /*The following definitions come from  fault.c  */
 
-void fault_setup(void (*fn)());
+void fault_setup(void (*fn)(void *));
 
 /*The following definitions come from  getsmbpass.c  */
 
@@ -200,7 +200,7 @@ BOOL ismyip(struct in_addr ip);
 BOOL ismybcast(struct in_addr bcast);
 BOOL is_local_net(struct in_addr from);
 int iface_count(void);
-BOOL we_are_multihomed();
+BOOL we_are_multihomed(void);
 struct interface *get_interface(int n);
 struct in_addr *iface_n_ip(int n);
 struct in_addr *iface_bcast(struct in_addr ip);
@@ -466,19 +466,19 @@ void *smb_mem_resize(void *ptr,size_t newsize);
 
 /*The following definitions come from  message.c  */
 
-int reply_sends(char *inbuf,char *outbuf);
-int reply_sendstrt(char *inbuf,char *outbuf);
-int reply_sendtxt(char *inbuf,char *outbuf);
-int reply_sendend(char *inbuf,char *outbuf);
+int reply_sends(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_sendstrt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_sendtxt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_sendend(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 
 /*The following definitions come from  namequery.c  */
 
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 		 struct in_addr to_ip,char *master,char *rname,
-		 void (*fn)());
+		 void (*fn)(struct packet_struct *));
 struct in_addr *name_query(int fd,char *name,int name_type, 
-			   BOOL bcast,BOOL recurse,
-			   struct in_addr to_ip, int *count, void (*fn)());
+                           BOOL bcast,BOOL recurse, struct in_addr to_ip, 
+                           int *count, void (*fn)(struct packet_struct *));
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
@@ -571,8 +571,8 @@ void add_logon_names(void);
 
 /*The following definitions come from  nmbd_mynames.c  */
 
-BOOL register_my_workgroup_and_names();
-void release_my_names();
+BOOL register_my_workgroup_and_names(void);
+void release_my_names(void);
 void refresh_my_names(time_t t);
 
 /*The following definitions come from  nmbd_namelistdb.c  */
@@ -604,7 +604,7 @@ void standard_success_release(struct subnet_record *subrec,
 void expire_names_on_subnet(struct subnet_record *subrec, time_t t);
 void expire_names(time_t t);
 void add_samba_names_to_subnet(struct subnet_record *subrec);
-void dump_all_namelists();
+void dump_all_namelists(void);
 
 /*The following definitions come from  nmbd_namequery.c  */
 
@@ -699,7 +699,7 @@ void process_browse_packet(struct packet_struct *p, char *buf,int len);
 void process_lanman_packet(struct packet_struct *p, char *buf,int len);
 BOOL validate_nmb_response_packet( struct nmb_packet *nmb );
 BOOL validate_nmb_packet( struct nmb_packet *nmb );
-void run_packet_queue();
+void run_packet_queue(void);
 void retransmit_or_expire_response_records(time_t t);
 BOOL listen_for_packets(BOOL run_election);
 BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
@@ -735,7 +735,7 @@ void send_browser_reset(int reset_type, char *to_name, int to_type, struct in_ad
 void broadcast_announce_request(struct subnet_record *subrec, struct work_record *work);
 void announce_my_server_names(time_t t);
 void announce_my_lm_server_names(time_t t);
-void reset_announce_timer();
+void reset_announce_timer(void);
 void announce_myself_to_domain_master_browser(time_t t);
 void announce_my_servers_removed(void);
 void announce_remote(time_t t);
@@ -755,8 +755,8 @@ void write_browse_list(time_t t, BOOL force_write);
 
 /*The following definitions come from  nmbd_subnetdb.c  */
 
-BOOL create_subnets();
-BOOL we_are_a_wins_client();
+BOOL create_subnets(void);
+BOOL we_are_a_wins_client(void);
 struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec);
 struct subnet_record *get_next_subnet_maybe_unicast_or_wins_server(struct subnet_record *subrec);
 
@@ -847,7 +847,7 @@ BOOL server_validate(char *user, char *domain,
 /*The following definitions come from  pcap.c  */
 
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
-void pcap_printer_fn(void (*fn)());
+void pcap_printer_fn(void (*fn)(char *, char*));
 
 /*The following definitions come from  pipes.c  */
 
@@ -862,12 +862,12 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
 /*The following definitions come from  predict.c  */
 
 int read_predict(int fd,int offset,char *buf,char **ptr,int num);
-void do_read_prediction();
+void do_read_prediction(void);
 void invalidate_read_prediction(int fd);
 
 /*The following definitions come from  print_svid.c  */
 
-void sysv_printer_fn(void (*fn)());
+void sysv_printer_fn(void (*fn)(char *, char *));
 int sysv_printername_ok(char *name);
 
 /*The following definitions come from  printing.c  */
@@ -899,56 +899,56 @@ void *memcpy_wrapped(void *d,void *s,int l,char *fname,int line);
 
 /*The following definitions come from  reply.c  */
 
-int reply_special(char *inbuf,char *outbuf);
-int reply_tcon(char *inbuf,char *outbuf);
+int reply_special(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_tcon(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize);
-int reply_unknown(char *inbuf,char *outbuf);
-int reply_ioctl(char *inbuf,char *outbuf);
+int reply_unknown(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_ioctl(char *inbuf,char *outbuf, int size, int bufsize);
 int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize);
-int reply_chkpth(char *inbuf,char *outbuf);
-int reply_getatr(char *inbuf,char *outbuf);
-int reply_setatr(char *inbuf,char *outbuf);
-int reply_dskattr(char *inbuf,char *outbuf);
-int reply_search(char *inbuf,char *outbuf);
-int reply_fclose(char *inbuf,char *outbuf);
-int reply_open(char *inbuf,char *outbuf);
+int reply_chkpth(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_getatr(char *inbuf,char *outbuf, int in_size, int buffsize);
+int reply_setatr(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_dskattr(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_search(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_fclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_open(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize);
-int reply_mknew(char *inbuf,char *outbuf);
-int reply_ctemp(char *inbuf,char *outbuf);
-int reply_unlink(char *inbuf,char *outbuf);
-int reply_readbraw(char *inbuf, char *outbuf);
-int reply_lockread(char *inbuf,char *outbuf);
-int reply_read(char *inbuf,char *outbuf);
+int reply_mknew(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_ctemp(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_unlink(char *inbuf,char *outbuf, int dum_size, int dum_bufsize);
+int reply_readbraw(char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
+int reply_lockread(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_read(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_read_and_X(char *inbuf,char *outbuf,int length,int bufsize);
-int reply_writebraw(char *inbuf,char *outbuf);
-int reply_writeunlock(char *inbuf,char *outbuf);
+int reply_writebraw(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_writeunlock(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
 int reply_write(char *inbuf,char *outbuf,int dum1,int dum2);
 int reply_write_and_X(char *inbuf,char *outbuf,int length,int bufsize);
-int reply_lseek(char *inbuf,char *outbuf);
-int reply_flush(char *inbuf,char *outbuf);
-int reply_exit(char *inbuf,char *outbuf);
-int reply_close(char *inbuf,char *outbuf);
-int reply_writeclose(char *inbuf,char *outbuf);
-int reply_lock(char *inbuf,char *outbuf);
-int reply_unlock(char *inbuf,char *outbuf);
-int reply_tdis(char *inbuf,char *outbuf);
-int reply_echo(char *inbuf,char *outbuf);
-int reply_printopen(char *inbuf,char *outbuf);
-int reply_printclose(char *inbuf,char *outbuf);
-int reply_printqueue(char *inbuf,char *outbuf);
-int reply_printwrite(char *inbuf,char *outbuf);
-int reply_mkdir(char *inbuf,char *outbuf);
-int reply_rmdir(char *inbuf,char *outbuf);
-int reply_mv(char *inbuf,char *outbuf);
-int reply_copy(char *inbuf,char *outbuf);
-int reply_setdir(char *inbuf,char *outbuf);
+int reply_lseek(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_flush(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_exit(char *inbuf,char *outbuf, int size, int bufsize);
+int reply_close(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_writeclose(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_lock(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_unlock(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_tdis(char *inbuf,char *outbuf, int size, int bufsize);
+int reply_echo(char *inbuf,char *outbuf, int size, int bufsize);
+int reply_printopen(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_printclose(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_printqueue(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_printwrite(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_mkdir(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_rmdir(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_mv(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_copy(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_setdir(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
 int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_readbmpx(char *inbuf,char *outbuf,int length,int bufsize);
-int reply_writebmpx(char *inbuf,char *outbuf);
-int reply_writebs(char *inbuf,char *outbuf);
-int reply_setattrE(char *inbuf,char *outbuf);
-int reply_getattrE(char *inbuf,char *outbuf);
+int reply_writebmpx(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_writebs(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_setattrE(char *inbuf,char *outbuf,int dum_size, int dum_buffsize);
+int reply_getattrE(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 
 /*The following definitions come from  rpc_pipes/lsa_hnd.c  */
 
@@ -1499,7 +1499,7 @@ int interpret_security(char *str,int def);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
-void reset_globals_after_fork();
+void reset_globals_after_fork(void);
 char *client_name(void);
 char *client_addr(void);
 char *automount_server(char *user_name);
@@ -1522,7 +1522,7 @@ int file_lock(char *name,int timeout);
 void file_unlock(int fd);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
-enum remote_arch_types get_remote_arch();
+enum remote_arch_types get_remote_arch(void);
 char *skip_unicode_string(char *buf,int n);
 char *unistrn2(uint16 *buf, int len);
 char *unistr2(uint16 *buf);

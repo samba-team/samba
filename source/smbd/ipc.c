@@ -2994,7 +2994,7 @@ struct
   char * pipe_srv_name;
 #endif
   int subcommand;
-  BOOL (*fn) ();
+  BOOL (*fn)(int,...);
 } api_fd_commands [] =
   {
 #ifdef NTDOMAIN
@@ -3003,10 +3003,10 @@ struct
     { "TransactNmPipe",     "srvsvc",	"lsass",	0x26,	api_srvsvcTNP },
     { "TransactNmPipe",     "wkssvc",	"ntsvcs",	0x26,	api_wkssvcTNP },
     { "TransactNmPipe",     "NETLOGON",	"NETLOGON",	0x26,	api_netlogrpcTNP },
-    { NULL,		            NULL,       NULL,	-1,	(BOOL (*)())api_Unsupported }
+    { NULL,		            NULL,       NULL,	-1,	api_Unsupported }
 #else
-    { "TransactNmPipe"  ,	"lsarpc",	0x26,	api_LsarpcTNP },
-    { NULL,		NULL,		-1,	(BOOL (*)())api_Unsupported }
+    { "TransactNmPipe"  ,	"lsarpc",	0x26,	(BOOL (*)(int,...)) api_LsarpcTNP },
+    { NULL,		NULL,		-1,	(BOOL (*)(int,...)) api_Unsupported }
 #endif
   };
 
@@ -3204,36 +3204,36 @@ struct
 {
   char *name;
   int id;
-  BOOL (*fn)();
+  BOOL (*fn)(int,uint16,char *,char *,int,int,char **,char **,int *,int *);
   int flags;
 } api_commands[] = {
-  {"RNetShareEnum",	0,	(BOOL (*)())api_RNetShareEnum,0},
-  {"RNetShareGetInfo",	1,	(BOOL (*)())api_RNetShareGetInfo,0},
-  {"RNetServerGetInfo",	13,	(BOOL (*)())api_RNetServerGetInfo,0},
-  {"RNetUserGetInfo",	56,	(BOOL (*)())api_RNetUserGetInfo,0},
-  {"NetUserGetGroups",	59,	(BOOL (*)())api_NetUserGetGroups,0},
-  {"NetWkstaGetInfo",	63,	(BOOL (*)())api_NetWkstaGetInfo,0},
-  {"DosPrintQEnum",	69,	(BOOL (*)())api_DosPrintQEnum,0},
-  {"DosPrintQGetInfo",	70,	(BOOL (*)())api_DosPrintQGetInfo,0},
-  {"WPrintJobEnumerate",76,	(BOOL (*)())api_WPrintJobEnumerate,0},
-  {"WPrintJobGetInfo",	77,	(BOOL (*)())api_WPrintJobGetInfo,0},
-  {"RDosPrintJobDel",	81,	(BOOL (*)())api_RDosPrintJobDel,0},
-  {"RDosPrintJobPause",	82,	(BOOL (*)())api_RDosPrintJobDel,0},
-  {"RDosPrintJobResume",83,	(BOOL (*)())api_RDosPrintJobDel,0},
-  {"WPrintDestEnum",	84,	(BOOL (*)())api_WPrintDestEnum,0},
-  {"WPrintDestGetInfo",	85,	(BOOL (*)())api_WPrintDestGetInfo,0},
-  {"NetRemoteTOD",	91,	(BOOL (*)())api_NetRemoteTOD,0},
-  {"WPrintQueuePurge",	103,	(BOOL (*)())api_WPrintQueuePurge,0},
-  {"NetServerEnum",	104,	(BOOL (*)())api_RNetServerEnum,0},
-  {"WAccessGetUserPerms",105,	(BOOL (*)())api_WAccessGetUserPerms,0},
-  {"SetUserPassword",	115,	(BOOL (*)())api_SetUserPassword,0},
-  {"WWkstaUserLogon",	132,	(BOOL (*)())api_WWkstaUserLogon,0},
-  {"PrintJobInfo",	147,	(BOOL (*)())api_PrintJobInfo,0},
-  {"WPrintDriverEnum",	205,	(BOOL (*)())api_WPrintDriverEnum,0},
-  {"WPrintQProcEnum",	206,	(BOOL (*)())api_WPrintQProcEnum,0},
-  {"WPrintPortEnum",	207,	(BOOL (*)())api_WPrintPortEnum,0},
-  {"SamOEMChangePassword", 214, (BOOL (*)())api_SamOEMChangePassword,0},
-  {NULL,		-1,	(BOOL (*)())api_Unsupported,0}};
+  {"RNetShareEnum",	0,	api_RNetShareEnum,0},
+  {"RNetShareGetInfo",	1,	api_RNetShareGetInfo,0},
+  {"RNetServerGetInfo",	13,	api_RNetServerGetInfo,0},
+  {"RNetUserGetInfo",	56,	api_RNetUserGetInfo,0},
+  {"NetUserGetGroups",	59,	api_NetUserGetGroups,0},
+  {"NetWkstaGetInfo",	63,	api_NetWkstaGetInfo,0},
+  {"DosPrintQEnum",	69,	api_DosPrintQEnum,0},
+  {"DosPrintQGetInfo",	70,	api_DosPrintQGetInfo,0},
+  {"WPrintJobEnumerate",76,	api_WPrintJobEnumerate,0},
+  {"WPrintJobGetInfo",	77,	api_WPrintJobGetInfo,0},
+  {"RDosPrintJobDel",	81,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobPause",	82,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobResume",83,	api_RDosPrintJobDel,0},
+  {"WPrintDestEnum",	84,	api_WPrintDestEnum,0},
+  {"WPrintDestGetInfo",	85,	api_WPrintDestGetInfo,0},
+  {"NetRemoteTOD",	91,	api_NetRemoteTOD,0},
+  {"WPrintQueuePurge",	103,	api_WPrintQueuePurge,0},
+  {"NetServerEnum",	104,	api_RNetServerEnum,0},
+  {"WAccessGetUserPerms",105,	api_WAccessGetUserPerms,0},
+  {"SetUserPassword",	115,	api_SetUserPassword,0},
+  {"WWkstaUserLogon",	132,	api_WWkstaUserLogon,0},
+  {"PrintJobInfo",	147,	api_PrintJobInfo,0},
+  {"WPrintDriverEnum",	205,	api_WPrintDriverEnum,0},
+  {"WPrintQProcEnum",	206,	api_WPrintQProcEnum,0},
+  {"WPrintPortEnum",	207,	api_WPrintPortEnum,0},
+  {"SamOEMChangePassword", 214, api_SamOEMChangePassword,0},
+  {NULL,		-1,	api_Unsupported,0}};
 
 
 /****************************************************************************

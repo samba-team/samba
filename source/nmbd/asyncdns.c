@@ -110,7 +110,7 @@ static void asyncdns_process(void)
   WINS db that our parent is going to write.
  **************************************************************************** */
 
-static int sig_term()
+static int sig_term(void)
 {
   _exit(0);
   /* Keep compiler happy.. */
@@ -122,7 +122,7 @@ static int sig_term()
  child so we don't get child async dns processes lying around, causing trouble.
   ****************************************************************************/
 
-void kill_async_dns_child()
+void kill_async_dns_child(void)
 {
   if(child_pid != 0 && child_pid != -1)
     kill(child_pid, SIGTERM);
@@ -342,7 +342,7 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 /***************************************************************************
  With sync dns there is no child to kill on SIGTERM.
   ****************************************************************************/
-void kill_async_dns_child()
+void kill_async_dns_child(void)
 {
   return;
 }

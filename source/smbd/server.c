@@ -1060,7 +1060,7 @@ static file_fd_struct *fd_get_already_open(struct stat *sbuf)
 fd support routines - attempt to find a empty slot in the FileFd array.
 Increments the ref_count of the returned entry.
 ****************************************************************************/
-static file_fd_struct *fd_get_new()
+static file_fd_struct *fd_get_new(void)
 {
   int i;
   file_fd_struct *fd_ptr;
@@ -2359,7 +2359,7 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 /****************************************************************************
 this prevents zombie child processes
 ****************************************************************************/
-static int sig_cld()
+static int sig_cld(void)
 {
   static int depth = 0;
   if (depth != 0)
@@ -2404,7 +2404,7 @@ static int sig_cld()
 /****************************************************************************
   this is called when the client exits abruptly
   **************************************************************************/
-static int sig_pipe()
+static int sig_pipe(void)
 {
 	struct cli_state *cli;
 	BlockSignals(True,SIGPIPE);
@@ -2677,7 +2677,7 @@ static void process_smb(char *inbuf, char *outbuf)
 /****************************************************************************
   open the oplock IPC socket communication
 ****************************************************************************/
-static BOOL open_oplock_ipc()
+static BOOL open_oplock_ipc(void)
 {
   struct sockaddr_in sock_name;
   int len = sizeof(sock_name);
@@ -3297,7 +3297,7 @@ BOOL reload_services(BOOL test)
 /****************************************************************************
 this prevents zombie child processes
 ****************************************************************************/
-static int sig_hup()
+static int sig_hup(void)
 {
   BlockSignals(True,SIGHUP);
   DEBUG(0,("Got SIGHUP\n"));
@@ -4129,7 +4129,7 @@ struct {
 /****************************************************************************
   reply to a negprot
 ****************************************************************************/
-static int reply_negprot(char *inbuf,char *outbuf)
+static int reply_negprot(char *inbuf,char *outbuf, int size, int bufsize)
 {
   int outsize = set_message(outbuf,1,0,True);
   int Index=0;
@@ -4627,11 +4627,12 @@ force write permissions on print services.
    functions. Any message that has a NULL function is unimplemented -
    please feel free to contribute implementations!
 */
+
 struct smb_message_struct
 {
   int code;
   char *name;
-  int (*fn)();
+  int (*fn)(char *, char *, int, int);
   int flags;
 #if PROFILING
   unsigned long time;
@@ -4649,7 +4650,7 @@ struct smb_message_struct
    {SMBecho,"SMBecho",reply_echo,0},
    {SMBsesssetupX,"SMBsesssetupX",reply_sesssetup_and_X,0},
    {SMBtconX,"SMBtconX",reply_tcon_and_X,0},
-   {SMBulogoffX, "SMBulogoffX", reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
+   {SMBulogoffX, "SMBulogoffX",reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
    {SMBgetatr,"SMBgetatr",reply_getatr,AS_USER},
    {SMBsetatr,"SMBsetatr",reply_setatr,AS_USER | NEED_WRITE},
    {SMBchkpth,"SMBchkpth",reply_chkpth,AS_USER},
@@ -4716,10 +4717,10 @@ struct smb_message_struct
    {SMBfclose,"SMBfclose",reply_fclose,AS_USER},
 
    /* LANMAN2.0 PROTOCOL FOLLOWS */
-   {SMBfindnclose, "SMBfindnclose", reply_findnclose, AS_USER},
-   {SMBfindclose, "SMBfindclose", reply_findclose,AS_USER},
-   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER},
-   {SMBtranss2, "SMBtranss2", reply_transs2, AS_USER},
+   {SMBfindnclose, "SMBfindnclose",reply_findnclose, AS_USER},
+   {SMBfindclose, "SMBfindclose",reply_findclose,AS_USER},
+   {SMBtrans2, "SMBtrans2",reply_trans2, AS_USER},
+   {SMBtranss2, "SMBtranss2",reply_transs2, AS_USER},
 
    /* messaging routines */
    {SMBsends,"SMBsends",reply_sends,AS_GUEST},
@@ -4795,7 +4796,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   if (match == num_smb_messages)
     {
       DEBUG(0,("Unknown message type %d!\n",type));
-      outsize = reply_unknown(inbuf,outbuf);
+      outsize = reply_unknown(inbuf,outbuf,size,bufsize);
     }
   else
     {
@@ -4862,7 +4863,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	}
       else
 	{
-	  outsize = reply_unknown(inbuf,outbuf);
+	  outsize = reply_unknown(inbuf,outbuf,size,bufsize);
 	}
     }
 
@@ -5006,7 +5007,7 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   bzero(outbuf,smb_size);
 
   if (msg_type != 0)
-    return(reply_special(inbuf,outbuf));  
+    return(reply_special(inbuf,outbuf,size,bufsize));  
 
   CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
   set_message(outbuf,0,0,True);
@@ -5287,7 +5288,7 @@ static void usage(char *pname)
   seteuid(0);
 #endif
 
-  fault_setup(exit_server);
+  fault_setup((void (*)(void *))exit_server);
   signal(SIGTERM , SIGNAL_CAST dflt_sig);
 
   /* we want total control over the permissions on created files,

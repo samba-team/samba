@@ -72,22 +72,13 @@ extern int Protocol;
 int blocksize=20;
 int tarhandle;
 
-static void writetarheader();
-static void do_atar();
-static void do_tar();
-static void oct_it();
-static void fixtarname();
-static int dotarbuf();
-static void dozerobuf();
-static void dotareof();
-static void initarbuf();
-static int do_setrattr();
-
-/* restore functions */
-static long readtarheader();
-static long unoct();
-static void do_tarput();
-static void unfixtarname();
+/* Forward references. */
+static void fixtarname(char *tptr, char *fp, int l);
+static int dotarbuf(int f, char *b, int n);
+static void oct_it(long value, int ndgs, char *p);
+static long readtarheader(union hblock *hb, file_info *finfo, char *prefix);
+static void unfixtarname(char *tptr, char *fp, int l);
+static long unoct(char *p, int ndgs);
 
 /*
  * tar specific utitlities
@@ -288,7 +279,7 @@ static void dozerobuf(int f, int n)
 /****************************************************************************
 Malloc tape buffer
 ****************************************************************************/
-static void initarbuf()
+static void initarbuf(void)
 {
   /* initialize tar buffer */
   tbufsiz=blocksize*TBLOCK;
@@ -1265,7 +1256,7 @@ static void unfixtarname(char *tptr, char *fp, int l)
   }
 }
 
-static void do_tarput()
+static void do_tarput(void)
 {
   file_info finfo;
   int nread=0, bufread;
@@ -1461,7 +1452,7 @@ static void do_tarput()
 /****************************************************************************
 Blocksize command
 ***************************************************************************/
-void cmd_block(void)
+void cmd_block(char *dum1, char *dum2)
 {
   fstring buf;
   int block;
@@ -1486,7 +1477,7 @@ void cmd_block(void)
 /****************************************************************************
 command to set incremental / reset mode
 ***************************************************************************/
-void cmd_tarmode(void)
+void cmd_tarmode(char *dum1, char *dum2)
 {
   fstring buf;
 
@@ -1526,7 +1517,7 @@ void cmd_tarmode(void)
 /****************************************************************************
 Feeble attrib command
 ***************************************************************************/
-void cmd_setmode(void)
+void cmd_setmode(char *dum1, char *dum2)
 {
   char *q;
   fstring buf;

@@ -88,7 +88,7 @@ static void populate_printers()
  * names longer than 8 characters appear to work with my test
  * clients (Win95/NT).
  */
-void sysv_printer_fn(void (*fn)())
+void sysv_printer_fn(void (*fn)(char *, char *))
 {
 	printer_t *tmp;
 

@@ -528,7 +528,7 @@ char *mktemp(char *); /* No standard include */
 #else
 #define USE_DIRECT
 #endif
-#define SIGNAL_CAST (void (*)())
+#define SIGNAL_CAST (void (*)(int))
 #define USE_SETVBUF
 #define USE_SETSID
 #define USE_GETCWD
@@ -538,6 +538,10 @@ char *mktemp(char *); /* No standard include */
 #define HAVE_GETTIMEOFDAY
 #define HAVE_PATHCONF
 #define HAVE_GETGRNAM 1
+#ifndef QSORT_CAST
+#define QSORT_CAST (int (*)(const void *, const void *))
+#endif
+
 #endif 
 
 #ifdef __OpenBSD__
@@ -1289,7 +1293,7 @@ it works and getting lots of bug reports */
 #endif
 
 #ifndef QSORT_CAST
-#define QSORT_CAST (int (*)())
+#define QSORT_CAST (int (*)(void *, void *))
 #endif
 
 #ifndef INADDR_LOOPBACK

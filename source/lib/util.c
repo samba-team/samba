@@ -3715,7 +3715,7 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 static BOOL global_client_name_done = False;
 static BOOL global_client_addr_done = False;
 
-void reset_globals_after_fork()
+void reset_globals_after_fork(void)
 {
   global_client_name_done = False;
   global_client_addr_done = False;
@@ -4610,7 +4610,7 @@ void set_remote_arch(enum remote_arch_types type)
 /*******************************************************************
  Get the remote_arch type.
 ********************************************************************/
-enum remote_arch_types get_remote_arch()
+enum remote_arch_types get_remote_arch(void)
 {
   return ra_type;
 }

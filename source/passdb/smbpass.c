@@ -24,7 +24,7 @@ extern int      DEBUGLEVEL;
 int             gotalarm;
 
 void 
-gotalarm_sig()
+gotalarm_sig(void)
 {
 	gotalarm = 1;
 }

@@ -89,7 +89,7 @@ static void _interpret_node_status(char *p, char *master,char *rname)
   **************************************************************************/
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 		 struct in_addr to_ip,char *master,char *rname,
-		 void (*fn)())
+		 void (*fn)(struct packet_struct *))
 {
   BOOL found=False;
   int retries = 2;
@@ -195,8 +195,8 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
   *count will be set to the number of addresses returned
   ****************************************************************************/
 struct in_addr *name_query(int fd,char *name,int name_type, 
-			   BOOL bcast,BOOL recurse,
-			   struct in_addr to_ip, int *count, void (*fn)())
+                           BOOL bcast,BOOL recurse, struct in_addr to_ip, 
+                           int *count, void (*fn)(struct packet_struct *))
 {
   BOOL found=False;
   int i, retries = 3;

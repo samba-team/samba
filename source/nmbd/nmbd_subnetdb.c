@@ -164,7 +164,7 @@ for port %d. Error was %s\n", inet_ntoa(myip), DGRAM_PORT, strerror(errno)));
   Create subnet entries.
 **************************************************************************/
 
-BOOL create_subnets()
+BOOL create_subnets(void)
 {    
   int num_interfaces = iface_count();
   int i;
@@ -265,7 +265,7 @@ BOOL create_subnets()
 Function to tell us if we can use the unicast subnet.
 ******************************************************************/
 
-BOOL we_are_a_wins_client()
+BOOL we_are_a_wins_client(void)
 {
   static int cache_we_are_a_wins_client = -1;
 

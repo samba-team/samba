@@ -61,7 +61,7 @@ extern struct in_addr ipzero;
 /**************************************************************************** **
   catch a sigterm
  **************************************************************************** */
-static int sig_term()
+static int sig_term(void)
 {
   BlockSignals(True,SIGTERM);
   
@@ -441,7 +441,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 /**************************************************************************** **
  initialise connect, service and file structs
  **************************************************************************** */
-static BOOL init_structs()
+static BOOL init_structs(void)
 {
   extern fstring local_machine;
   char *p, *ptr;
@@ -580,7 +580,7 @@ int main(int argc,char *argv[])
     argc--;
   }
 
-  fault_setup( fault_continue );
+  fault_setup((void (*)(void *)) fault_continue );
 
   signal( SIGHUP,  SIGNAL_CAST sig_hup );
   signal( SIGTERM, SIGNAL_CAST sig_term );

@@ -91,7 +91,7 @@ static int strlocate(char *xpLine,char *xpS)
 /* ******************************************************************* */
 /* *    Scan qconfig and search all virtual printer (device printer) * */
 /* ******************************************************************* */
-static void ScanQconfig_fn(char *psz,void (*fn)())
+static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 {
 	int iLg,iEtat;
 	FILE *pfile;
@@ -313,7 +313,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 run a function on each printer name in the printcap file. The function is 
 passed the primary name and the comment (if possible)
 ***************************************************************************/
-void pcap_printer_fn(void (*fn)())
+void pcap_printer_fn(void (*fn)(char *, char*))
 {
   pstring name,comment;
   char *line;

@@ -551,7 +551,7 @@ static void dump_subnet_namelist( struct subnet_record *subrec, FILE *fp)
  into a file. Initiated by SIGHUP - used to debug the state of the namelists.
 **************************************************************************/
 
-void dump_all_namelists()
+void dump_all_namelists(void)
 {
   fstring fname;
   FILE *fp; 
