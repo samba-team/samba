@@ -1843,8 +1843,9 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 }
 
 /****************************************************************************
-  reply to a unlink
+ Reply to a unlink
 ****************************************************************************/
+
 int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
@@ -1858,6 +1859,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL has_wild;
   BOOL exists=False;
   BOOL bad_path = False;
+  BOOL rc = True;
 
   *directory = *mask = 0;
 
@@ -1867,7 +1869,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
    
   DEBUG(3,("reply_unlink : %s\n",name));
    
-  unix_convert(name,conn,0,&bad_path,NULL);
+  rc = unix_convert(name,conn,0,&bad_path,NULL);
 
   p = strrchr(name,'/');
   if (!p) {
@@ -1879,7 +1881,16 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     pstrcpy(mask,p+1);
   }
 
-  if (is_mangled(mask))
+  /*
+   * We should only check the mangled cache
+   * here if unix_convert failed. This means
+   * that the path in 'mask' doesn't exist
+   * on the file system and so we need to look
+   * for a possible mangle. This patch from
+   * Tine Smukavec <valentin.smukavec@hermes.si>.
+   */
+
+  if (!rc && is_mangled(mask))
     check_mangled_cache( mask );
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
@@ -3432,10 +3443,11 @@ int rename_internals(connection_struct *conn,
 	int count=0;
 	int error = ERRnoaccess;
 	BOOL exists=False;
+	BOOL rc = True;
 
 	*directory = *mask = 0;
 
-	unix_convert(name,conn,0,&bad_path1,NULL);
+	rc = unix_convert(name,conn,0,&bad_path1,NULL);
 	unix_convert(newname,conn,newname_last_component,&bad_path2,NULL);
 
 	/*
@@ -3458,7 +3470,16 @@ int rename_internals(connection_struct *conn,
 		*p = '/'; /* Replace needed for exceptional test below. */
 	}
 
-	if (is_mangled(mask))
+	/*
+	 * We should only check the mangled cache
+	 * here if unix_convert failed. This means
+	 * that the path in 'mask' doesn't exist
+	 * on the file system and so we need to look
+	 * for a possible mangle. This patch from
+	 * Tine Smukavec <valentin.smukavec@hermes.si>.
+	 */
+
+	if (!rc && is_mangled(mask))
 		check_mangled_cache( mask );
 
 	has_wild = strchr(mask,'*') || strchr(mask,'?');
@@ -3743,6 +3764,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   BOOL target_is_directory=False;
   BOOL bad_path1 = False;
   BOOL bad_path2 = False;
+  BOOL rc = True;
 
   *directory = *mask = 0;
 
@@ -3757,7 +3779,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(ERROR(ERRSRV,ERRinvdevice));
   }
 
-  unix_convert(name,conn,0,&bad_path1,NULL);
+  rc = unix_convert(name,conn,0,&bad_path1,NULL);
   unix_convert(newname,conn,0,&bad_path2,NULL);
 
   target_is_directory = dos_directory_exist(newname,NULL);
@@ -3786,7 +3808,16 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     pstrcpy(mask,p+1);
   }
 
-  if (is_mangled(mask))
+  /*
+   * We should only check the mangled cache
+   * here if unix_convert failed. This means
+   * that the path in 'mask' doesn't exist
+   * on the file system and so we need to look
+   * for a possible mangle. This patch from
+   * Tine Smukavec <valentin.smukavec@hermes.si>.
+   */
+
+  if (!rc && is_mangled(mask))
     check_mangled_cache( mask );
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
@@ -3827,7 +3858,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    pstrcpy(destname,newname);
 	    if (resolve_wildcards(fname,destname) && 
-		copy_file(directory,newname,conn,ofun,
+		copy_file(fname,destname,conn,ofun,
 			  count,target_is_directory,&err)) count++;
 	    DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname,destname));
 	  }
