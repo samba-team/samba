@@ -22,11 +22,11 @@
 #include "includes.h"
 
 #ifdef HAVE_DLOPEN
-NTSTATUS smb_load_module(const char *module_name)
+int smb_load_module(const char *module_name)
 {
 	void *handle;
 	init_module_function *init;
-	NTSTATUS nt_status;
+	int status;
 	const char *error;
 
 	/* Always try to use LAZY symbol resolving; if the plugin has 
@@ -37,7 +37,7 @@ NTSTATUS smb_load_module(const char *module_name)
 
 	if(!handle) {
 		DEBUG(0, ("Error loading module '%s': %s\n", module_name, sys_dlerror()));
-		return NT_STATUS_UNSUCCESSFUL;
+		return False;
 	}
 
 	init = sys_dlsym(handle, "init_module");
@@ -47,14 +47,14 @@ NTSTATUS smb_load_module(const char *module_name)
 	error = sys_dlerror();
 	if (error) {
 		DEBUG(0, ("Error trying to resolve symbol 'init_module' in %s: %s\n", module_name, error));
-		return NT_STATUS_UNSUCCESSFUL;
+		return False;
 	}
 
-	nt_status = init();
+	status = init();
 
 	DEBUG(2, ("Module '%s' loaded\n", module_name));
 
-	return nt_status;
+	return status;
 }
 
 /* Load all modules in list and return number of 
@@ -65,7 +65,7 @@ int smb_load_modules(const char **modules)
 	int success = 0;
 
 	for(i = 0; modules[i]; i++){
-		if(NT_STATUS_IS_OK(smb_load_module(modules[i]))) {
+		if(smb_load_module(modules[i])) {
 			success++;
 		}
 	}
@@ -77,10 +77,10 @@ int smb_load_modules(const char **modules)
 
 #else /* HAVE_DLOPEN */
 
-NTSTATUS smb_load_module(const char *module_name)
+int smb_load_module(const char *module_name)
 {
 	DEBUG(0,("This samba executable has not been build with plugin support"));
-	return NT_STATUS_NOT_SUPPORTED;
+	return False;
 }
 
 int smb_load_modules(const char **modules)

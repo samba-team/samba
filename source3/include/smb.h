@@ -1721,6 +1721,6 @@ extern struct poptOption popt_common_netbios_name[];
 extern struct poptOption popt_common_log_base[];
 
 /* Module support */
-typedef NTSTATUS (init_module_function) (void);
+typedef int (init_module_function) (void);
 
 #endif /* _SMB_H */
