@@ -1,0 +1,297 @@
+/*
+ * Metrics for samba PMDA
+ *
+ * $Revision: 1.1 $
+ */
+
+samba {
+	smbd
+	syscalls
+	statcache
+	writecache
+	SMB
+}
+
+samba.smbd {
+	smb_count			SAMBA:0:0
+	uid_changes			SAMBA:0:1
+}
+
+samba.syscalls {
+	opendir				SAMBA:1:2
+	opendir_time			SAMBA:1:3
+	readdir				SAMBA:1:4
+	readdir_time			SAMBA:1:5
+	mkdir				SAMBA:1:6
+	mkdir_time			SAMBA:1:7
+	rmdir				SAMBA:1:8
+	rmdir_time			SAMBA:1:9
+	closedir			SAMBA:1:10
+	closedir_time			SAMBA:1:11
+	open				SAMBA:1:12
+	open_time			SAMBA:1:13
+	close				SAMBA:1:14
+	close_time			SAMBA:1:15
+	read				SAMBA:1:16
+	read_time			SAMBA:1:17
+	read_bytes			SAMBA:1:18
+	write				SAMBA:1:19
+	write_time			SAMBA:1:20
+	write_bytes			SAMBA:1:21
+	lseek				SAMBA:1:22
+	lseek_time			SAMBA:1:23
+	rename				SAMBA:1:24
+	rename_time			SAMBA:1:25
+	fsync				SAMBA:1:26
+	fsync_time			SAMBA:1:27
+	stat				SAMBA:1:28
+	stat_time			SAMBA:1:29
+	fstat				SAMBA:1:30
+	fstat_time			SAMBA:1:31
+	lstat				SAMBA:1:32
+	lstat_time			SAMBA:1:33
+	unlink				SAMBA:1:34
+	unlink_time			SAMBA:1:35
+	chmod				SAMBA:1:36
+	chmod_time			SAMBA:1:37
+	chown				SAMBA:1:38
+	chown_time			SAMBA:1:39
+	chdir				SAMBA:1:40
+	chdir_time			SAMBA:1:41
+	getwd				SAMBA:1:42
+	getwd_time			SAMBA:1:43
+	utime				SAMBA:1:44
+	utime_time			SAMBA:1:45
+	ftruncate			SAMBA:1:46
+	ftruncate_time			SAMBA:1:47
+	fcntl_lock			SAMBA:1:48
+	fcntl_lock_time			SAMBA:1:49
+}
+
+samba.statcache {
+	lookups				SAMBA:2:50
+	misses				SAMBA:2:51
+	hits				SAMBA:2:52
+}
+
+samba.writecache {
+	num_caches			SAMBA:3:53
+	allocated_caches		SAMBA:3:54
+	read_hits			SAMBA:3:55
+	total_writes			SAMBA:3:56
+	init_writes			SAMBA:3:57
+	abutted_writes			SAMBA:3:58
+	perfect_writes			SAMBA:3:59
+	direct_writes			SAMBA:3:60
+	non_oplock_writes		SAMBA:3:61
+	seek_flush			SAMBA:3:62
+	read_flush			SAMBA:3:63
+	write_flush			SAMBA:3:64
+	readraw_flush			SAMBA:3:65
+	oplock_rel_flush		SAMBA:3:66
+	close_flush			SAMBA:3:67
+	sync_flush			SAMBA:3:68
+	size_change_flush		SAMBA:3:69
+}
+
+samba.SMB {
+	SMB_mkdir			SAMBA:4:70
+	SMB_mkdir_time			SAMBA:4:71
+	SMB_rmdir			SAMBA:4:72
+	SMB_rmdir_time			SAMBA:4:73
+	SMB_open			SAMBA:4:74
+	SMB_open_time			SAMBA:4:75
+	SMB_create			SAMBA:4:76
+	SMB_create_time			SAMBA:4:77
+	SMB_close			SAMBA:4:78
+	SMB_close_time			SAMBA:4:79
+	SMB_flush			SAMBA:4:80
+	SMB_flush_time			SAMBA:4:81
+	SMB_unlink			SAMBA:4:82
+	SMB_unlink_time			SAMBA:4:83
+	SMB_mv				SAMBA:4:84
+	SMB_mv_time			SAMBA:4:85
+	SMB_getattr			SAMBA:4:86
+	SMB_getattr_time		SAMBA:4:87
+	SMB_setattr			SAMBA:4:88
+	SMB_setattr_time		SAMBA:4:89
+	SMB_read			SAMBA:4:90
+	SMB_read_time			SAMBA:4:91
+	SMB_write			SAMBA:4:92
+	SMB_write_time			SAMBA:4:93
+	SMB_lock			SAMBA:4:94
+	SMB_lock_time			SAMBA:4:95
+	SMB_unlock			SAMBA:4:96
+	SMB_unlock_time			SAMBA:4:97
+	SMB_ctemp			SAMBA:4:98
+	SMB_ctemp_time			SAMBA:4:99
+	SMB_mknew			SAMBA:4:100
+	SMB_mknew_time			SAMBA:4:101
+	SMB_chkpth			SAMBA:4:102
+	SMB_chkpth_time			SAMBA:4:103
+	SMB_exit			SAMBA:4:104
+	SMB_exit_time			SAMBA:4:105
+	SMB_lseek			SAMBA:4:106
+	SMB_lseek_time			SAMBA:4:107
+	SMB_lockread			SAMBA:4:108
+	SMB_lockread_time		SAMBA:4:109
+	SMB_writeunlock			SAMBA:4:110
+	SMB_writeunlock_time		SAMBA:4:111
+	SMB_readBraw			SAMBA:4:112
+	SMB_readBraw_time		SAMBA:4:113
+	SMB_readBmpx			SAMBA:4:114
+	SMB_readBmpx_time		SAMBA:4:115
+	SMB_readBs			SAMBA:4:116
+	SMB_readBs_time			SAMBA:4:117
+	SMB_writeBraw			SAMBA:4:118
+	SMB_writeBraw_time		SAMBA:4:119
+	SMB_writeBmpx			SAMBA:4:120
+	SMB_writeBmpx_time		SAMBA:4:121
+	SMB_writeBs			SAMBA:4:122
+	SMB_writeBs_time		SAMBA:4:123
+	SMB_writec			SAMBA:4:124
+	SMB_writec_time			SAMBA:4:125
+	SMB_setattrE			SAMBA:4:126
+	SMB_setattrE_time		SAMBA:4:127
+	SMB_getattrE			SAMBA:4:128
+	SMB_getattrE_time		SAMBA:4:129
+	SMB_lockingX			SAMBA:4:130
+	SMB_lockingX_time		SAMBA:4:131
+	SMB_trans			SAMBA:4:132
+	SMB_trans_time			SAMBA:4:133
+	SMB_transs			SAMBA:4:134
+	SMB_transs_time			SAMBA:4:135
+	SMB_ioctl			SAMBA:4:136
+	SMB_ioctl_time			SAMBA:4:137
+	SMB_ioctls			SAMBA:4:138
+	SMB_ioctls_time			SAMBA:4:139
+	SMB_copy			SAMBA:4:140
+	SMB_copy_time			SAMBA:4:141
+	SMB_move			SAMBA:4:142
+	SMB_move_time			SAMBA:4:143
+	SMB_echo			SAMBA:4:144
+	SMB_echo_time			SAMBA:4:145
+	SMB_writeclose			SAMBA:4:146
+	SMB_writeclose_time		SAMBA:4:147
+	SMB_openX			SAMBA:4:148
+	SMB_openX_time			SAMBA:4:149
+	SMB_readX			SAMBA:4:150
+	SMB_readX_time			SAMBA:4:151
+	SMB_writeX			SAMBA:4:152
+	SMB_writeX_time			SAMBA:4:153
+	SMB_trans2			SAMBA:4:154
+	SMB_trans2_time			SAMBA:4:155
+	SMB_transs2			SAMBA:4:156
+	SMB_transs2_time		SAMBA:4:157
+	SMB_findclose			SAMBA:4:158
+	SMB_findclose_time		SAMBA:4:159
+	SMB_findNclose			SAMBA:4:160
+	SMB_findNclose_time		SAMBA:4:161
+	SMB_tcon			SAMBA:4:162
+	SMB_tcon_time			SAMBA:4:163
+	SMB_tdis			SAMBA:4:164
+	SMB_tdis_time			SAMBA:4:165
+	SMB_negprot			SAMBA:4:166
+	SMB_negprot_time		SAMBA:4:167
+	SMB_sessetupX			SAMBA:4:168
+	SMB_sessetupX_time		SAMBA:4:169
+	SMB_ulogoffX			SAMBA:4:170
+	SMB_ulogoffX_time		SAMBA:4:171
+	SMB_tconX			SAMBA:4:172
+	SMB_tconX_time			SAMBA:4:173
+	SMB_dskattr			SAMBA:4:174
+	SMB_dskattr_time		SAMBA:4:175
+	SMB_search			SAMBA:4:176
+	SMB_search_time			SAMBA:4:177
+	SMB_ffirst			SAMBA:4:178
+	SMB_ffirst_time			SAMBA:4:179
+	SMB_funique			SAMBA:4:180
+	SMB_funique_time		SAMBA:4:181
+	SMB_fclose			SAMBA:4:182
+	SMB_fclose_time			SAMBA:4:183
+	SMB_NTtrans			SAMBA:4:184
+	SMB_NTtrans_time		SAMBA:4:185
+	SMB_NTtranss			SAMBA:4:186
+	SMB_NTtranss_time		SAMBA:4:187
+	SMB_NTcreateX			SAMBA:4:188
+	SMB_NTcreateX_time		SAMBA:4:189
+	SMB_NTcancel			SAMBA:4:190
+	SMB_NTcancel_time		SAMBA:4:191
+	SMB_splopen			SAMBA:4:192
+	SMB_splopen_time		SAMBA:4:193
+	SMB_splwrite			SAMBA:4:194
+	SMB_splwrite_time		SAMBA:4:195
+	SMB_splclose			SAMBA:4:196
+	SMB_splclose_time		SAMBA:4:197
+	SMB_splretq			SAMBA:4:198
+	SMB_splretq_time		SAMBA:4:199
+	SMB_sends			SAMBA:4:200
+	SMB_sends_time			SAMBA:4:201
+	SMB_sendb			SAMBA:4:202
+	SMB_sendb_time			SAMBA:4:203
+	SMB_fwdname			SAMBA:4:204
+	SMB_fwdname_time		SAMBA:4:205
+	SMB_cancelf			SAMBA:4:206
+	SMB_cancelf_time		SAMBA:4:207
+	SMB_getmach			SAMBA:4:208
+	SMB_getmach_time		SAMBA:4:209
+	SMB_sendstrt			SAMBA:4:210
+	SMB_sendstrt_time		SAMBA:4:211
+	SMB_sendend			SAMBA:4:212
+	SMB_sendend_time		SAMBA:4:213
+	SMB_sendtxt			SAMBA:4:214
+	SMB_sendtxt_time		SAMBA:4:215
+	SMB_invalid			SAMBA:4:216
+	SMB_invalid_time		SAMBA:4:217
+
+	PATHWORK_setdir			SAMBA:4:218
+	PATHWORK_setdir_time		SAMBA:4:219
+
+	TRANS2_open			SAMBA:4:220
+	TRANS2_open_time		SAMBA:4:221
+	TRANS2_ffirst			SAMBA:4:222
+	TRANS2_ffirst_time		SAMBA:4:223
+	TRANS2_fnext			SAMBA:4:224
+	TRANS2_fnext_time		SAMBA:4:225
+	TRANS2_qfsinfo			SAMBA:4:226
+	TRANS2_qfsinfo_time		SAMBA:4:227
+	TRANS2_sfsinfo			SAMBA:4:228
+	TRANS2_sfsinfo_time		SAMBA:4:229
+	TRANS2_qpathinfo		SAMBA:4:230
+	TRANS2_qpathinfo_time		SAMBA:4:231
+	TRANS2_spathinfo		SAMBA:4:232
+	TRANS2_spathinfo_time		SAMBA:4:233
+	TRANS2_qfileinfo		SAMBA:4:234
+	TRANS2_qfileinfo_time		SAMBA:4:235
+	TRANS2_sfileinfo		SAMBA:4:236
+	TRANS2_sfileinfo_time		SAMBA:4:237
+	TRANS2_fsctl			SAMBA:4:238
+	TRANS2_fsctl_time		SAMBA:4:239
+	TRANS2_ioctl			SAMBA:4:240
+	TRANS2_ioctl_time		SAMBA:4:241
+	TRANS2_fnotifyfirst		SAMBA:4:242
+	TRANS2_fnotifyfirst_time	SAMBA:4:243
+	TRANS2_fnotifynext		SAMBA:4:244
+	TRANS2_fnotifynext_time		SAMBA:4:245
+	TRANS2_mkdir			SAMBA:4:246
+	TRANS2_mkdir_time		SAMBA:4:247
+	TRANS2_sessetup			SAMBA:4:248
+	TRANS2_sessetup_time		SAMBA:4:249
+	TRANS2_getDFSref		SAMBA:4:250
+	TRANS2_getDFSref_time		SAMBA:4:251
+	TRANS2_rptDFSinconsist		SAMBA:4:252
+	TRANS2_rptDFSinconsist_time	SAMBA:4:253
+
+	NTTRANS_create			SAMBA:4:254
+	NTTRANS_create_time		SAMBA:4:255
+	NTTRANS_ioctl			SAMBA:4:256
+	NTTRANS_ioctl_time		SAMBA:4:257
+	NTTRANS_setsecdesc		SAMBA:4:258
+	NTTRANS_setsecdesc_time		SAMBA:4:259
+	NTTRANS_notifychange		SAMBA:4:260
+	NTTRANS_notifychange_time	SAMBA:4:261
+	NTTRANS_rename			SAMBA:4:262
+	NTTRANS_rename_time		SAMBA:4:263
+	NTTRANS_qsecdesc		SAMBA:4:264
+	NTTRANS_qsecdesc_time		SAMBA:4:265
+}
