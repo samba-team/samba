@@ -23,6 +23,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
 
+static uint32 internal_referent_id = 0;
+
+
 /*******************************************************************
  Reads or writes a handle.
 ********************************************************************/
@@ -211,7 +214,6 @@ BOOL epm_io_floor(const char *desc, EPM_FLOOR *floor,
 NTSTATUS init_epm_tower(TALLOC_CTX *ctx, EPM_TOWER *tower, 
 			const EPM_FLOOR *floors, int num_floors)
 {
-	static uint32 internal_referent_id = 0;
 	int size = 0;
 	int i;
 
@@ -224,7 +226,6 @@ NTSTATUS init_epm_tower(TALLOC_CTX *ctx, EPM_TOWER *tower,
 		size += floors[i].rhs.length;
 	}
 
-	tower->referent_id = ++internal_referent_id;
 	tower->max_length = tower->length = size;
 	tower->num_floors = num_floors;
 	tower->floors = talloc(ctx, sizeof(EPM_FLOOR) * num_floors);
@@ -248,8 +249,9 @@ BOOL epm_io_tower(const char *desc, EPM_TOWER *tower,
 	prs_debug(ps, depth, desc, "epm_io_tower");
 	depth++;
 
-	if (!prs_uint32("referent_id", ps, depth, &tower->referent_id))
+	if (!prs_align(ps))
 		return False;
+
 	if (!prs_uint32("max_length", ps, depth, &tower->max_length))
 		return False;
 	if (!prs_uint32("length", ps, depth, &tower->length))
@@ -278,9 +280,18 @@ BOOL epm_io_tower(const char *desc, EPM_TOWER *tower,
 NTSTATUS init_epm_tower_array(TALLOC_CTX *ctx, EPM_TOWER_ARRAY *array,
 			      const EPM_TOWER *towers, int num_towers)
 {
+	int i;
+
 	array->max_count = num_towers;
 	array->offset = 0;
 	array->count = num_towers;
+	array->tower_ref_ids = talloc(ctx, sizeof(uint32) * num_towers);
+	if (!array->tower_ref_ids) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<num_towers;i++)
+		array->tower_ref_ids[i] = ++internal_referent_id;
+
 	array->towers = talloc(ctx, sizeof(EPM_TOWER) * num_towers);
 	if (!array->towers) {
 		return NT_STATUS_NO_MEMORY;
@@ -307,6 +318,18 @@ BOOL epm_io_tower_array(const char *desc, EPM_TOWER_ARRAY *array,
 		return False;
 	if (!prs_uint32("count", ps, depth, &array->count))
 		return False;
+
+
+	if (UNMARSHALLING(ps)) {
+		array->tower_ref_ids = talloc(ps->mem_ctx,
+					      sizeof(uint32) * array->count);
+		if (!array->tower_ref_ids) {
+			return False;
+		}
+	}
+	for (i=0; i < array->count; i++)
+		if (!prs_uint32("ref_id", ps, depth, &array->tower_ref_ids[i]))
+			return False;
 
 	if (!prs_set_offset(ps, prs_offset(ps) + array->offset))
 		return False;
@@ -376,6 +399,8 @@ NTSTATUS init_epm_q_map(TALLOC_CTX *ctx, EPM_Q_MAP *q_map,
 	/* For now let's not take more than 4 towers per result */
 	q_map->max_towers = num_towers * 4;
 
+	q_map->tower_ref_id = ++internal_referent_id;
+
 	handle++;
 
 	return NT_STATUS_OK;
@@ -391,6 +416,9 @@ BOOL epm_io_q_map(const char *desc, EPM_Q_MAP *io_map, prs_struct *ps,
 	depth++;
 	
 	if (!epm_io_handle("handle", &io_map->handle, ps, depth))
+		return False;
+
+	if (!prs_uint32("max_towers", ps, 0, &io_map->tower_ref_id))
 		return False;
 
 	/* HACK: We need a more elegant way of doing this */
@@ -416,8 +444,6 @@ BOOL epm_io_q_map(const char *desc, EPM_Q_MAP *io_map, prs_struct *ps,
 BOOL epm_io_r_map(const char *desc, EPM_R_MAP *io_map,
 		  prs_struct *ps, int depth)
 {
-	int i;
-
 	prs_debug(ps, depth, desc, "epm_io_r_map");
 	depth++;
 
@@ -433,11 +459,11 @@ BOOL epm_io_r_map(const char *desc, EPM_R_MAP *io_map,
 		if (!io_map->results)
 			return False;
 	}
-	for (i = 0; i < io_map->num_results; i++) {
-		if (!epm_io_tower_array("results", io_map->results + i,
-					ps, depth))
+	if (!epm_io_tower_array("results", io_map->results, ps, depth))
 			return False;
-	}
+
+	if (!prs_align(ps))
+		return False;
 
 	if (!prs_uint32("status", ps, depth, &io_map->status))
 		return False;
