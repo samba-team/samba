@@ -1831,7 +1831,7 @@ test how many open files this server supports on the one socket
 */
 static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 {
-	const char *template = "\\maxfid.%d.%d";
+#define MAXFID_TEMPLATE "\\maxfid.%d.%d"
 	char *fname;
 	int fnums[0x11000], i;
 	int retries=4;
@@ -1845,7 +1845,7 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 	printf("Testing maximum number of open files\n");
 
 	for (i=0; i<0x11000; i++) {
-		asprintf(&fname, template, i,(int)getpid());
+		asprintf(&fname, MAXFID_TEMPLATE, i,(int)getpid());
 		if ((fnums[i] = smbcli_open(cli->tree, fname, 
 					O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) ==
 		    -1) {
@@ -1862,7 +1862,7 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 
 	printf("cleaning up\n");
 	for (;i>=0;i--) {
-		asprintf(&fname, template, i,(int)getpid());
+		asprintf(&fname, MAXFID_TEMPLATE, i,(int)getpid());
 		if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnums[i]))) {
 			printf("Close of fnum %d failed - %s\n", fnums[i], smbcli_errstr(cli->tree));
 		}
@@ -1881,6 +1881,7 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 		correct = False;
 	}
 	return correct;
+#undef MAXFID_TEMPLATE
 }
 
 /* send smb negprot commands, not reading the response */
