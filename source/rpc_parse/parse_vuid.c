@@ -73,7 +73,7 @@ BOOL make_vuid_user_struct(user_struct * r_u,
 	r_u->guest = guest;
 
 	r_u->n_groups = n_groups;
-	r_u->groups = g_new(uint32, r_u->n_groups);
+	r_u->groups = g_new(gid_t, r_u->n_groups);
 	if (r_u->groups == NULL && n_groups != 0)
 	{
 		return False;
@@ -98,6 +98,23 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 
 	uint32 uid = (uint32)r_u->uid;
 	uint32 gid = (uint32)r_u->gid;
+	uint32 *groups;
+
+	if (r_u->n_groups != 0)
+	{
+		groups = g_new(uint32, r_u->n_groups);
+		if (groups == NULL)
+		{
+			return False;
+		}
+	}
+	if (MARSHALLING(ps))
+	{
+		for (i = 0; i < r_u->n_groups; i++)
+		{
+			groups[i] = (uint32)r_u->groups[i];
+		}
+	}
 
 	if (r_u == NULL)
 		return False;
@@ -128,10 +145,10 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 	prs_uint32("n_groups", ps, depth, &(r_u->n_groups));
 	if (r_u->n_groups != 0)
 	{
-		if (ps->io)
+		if (UNMARSHALLING(ps))
 		{
 			/* reading */
-			r_u->groups = g_new(uint32, r_u->n_groups);
+			r_u->groups = g_new(gid_t, r_u->n_groups);
 		}
 		if (r_u->groups == NULL)
 		{
@@ -141,7 +158,15 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 	}
 	for (i = 0; i < r_u->n_groups; i++)
 	{
-		prs_uint32("", ps, depth, &(r_u->groups[i]));
+		prs_uint32("", ps, depth, &groups[i]);
+	}
+
+	if (MARSHALLING(ps))
+	{
+		for (i = 0; i < r_u->n_groups; i++)
+		{
+			r_u->groups[i] = (gid_t)groups[i];
+		}
 	}
 
 	net_io_user_info3("usr", &r_u->usr, ps, depth);
