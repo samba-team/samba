@@ -1,3 +1,8 @@
+Sun Apr  5 09:21:43 1998  Assar Westerlund  <assar@sics.se>
+
+	* parse.y: define alloca to malloc in case we're using bison but
+ 	don't have alloca
+
 Sat Mar 28 11:39:00 1998  Assar Westerlund  <assar@sics.se>
 
 	* sl.c (sl_loop): s/2/1

@@ -1,4 +1,9 @@
-Tue Mar 24 05:13:01 1998  assar westerlund  <assar@sics.se>
+Sun Apr  5 09:22:11 1998  Assar Westerlund  <assar@sics.se>
+
+	* parse.y: define alloca to malloc in case we're using bison but
+ 	don't have alloca
+
+Tue Mar 24 05:13:01 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: link with snprintf (From Derrick J Brashear
  	<shadow@dementia.org>)
