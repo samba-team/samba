@@ -1,10 +1,11 @@
-<chapter id="general">
+<chapter id="FAQ-general">
 <title>General Information</title>
 
 <sect1>
 <title>Where can I get it?</title>
 <para>
 The Samba suite is available at the <ulink url="http://samba.org/">samba website</ulink>.
+</para>
 </sect1>
 
 <sect1>
@@ -41,6 +42,7 @@ same version number without the alpha, for example 1.9.16.</member>
 <member>Inevitably bugs are found in the "stable" releases and minor patch
 levels are released which give us the pXX series, for example 1.9.16p2.</member>
 </simplelist>
+</para>
 
 <para>
 So the progression goes:
@@ -134,7 +136,7 @@ already know this, but the rest may need some help. Andrew doesn't ask
 for payment, but he does appreciate it when people give him
 pizza. This calls for a little organisation when the pizza donor is
 twenty thousand kilometres away, but it has been done.
-<?para>
+</para>
 
 <para>
 Method 1: Ring up your local branch of an international pizza chain

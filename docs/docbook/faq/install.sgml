@@ -1,4 +1,4 @@
-<chapter id="Install">
+<chapter id="FAQ-Install">
 <title>Compiling and installing Samba on a Unix host</title>
 
 <sect1>
@@ -19,9 +19,10 @@ thusly:
 The details of how to do this and the specific syntax varies from
 client to client - check your client's documentation.
 </para>
+</sect1>
 
 <sect1>
-<title>Some files that I KNOW are on the server doesn't show up when I view the files from my client!
+<title>Some files that I KNOW are on the server don't show up when I view the files from my client!</title>
 <para>See the next question.</para>
 </sect1>
 
@@ -146,6 +147,7 @@ coreplus.  Also not that print status error messages don't mean
 printing won't work. The print status is received by a different
 mechanism.
 </para>
+</sect1>
 
 <sect1>
 <title>My client reports "This server is not configured to list shared resources"</title>
@@ -293,14 +295,15 @@ Samba traditionally has had many problems dealing with time zones, due
 to the bizarre ways that Microsoft network protocols handle time
 zones.  
 </para>
+</sect1>
 
 <sect1>
 <title>How do I set the printer driver name correctly?</title>
-<para>Question:<para>
+<para>Question:
 <quote> On NT, I opened "Printer Manager" and "Connect to Printer".
  Enter ["\\ptdi270\ps1"] in the box of printer. I got the
  following error message
- </quote>
+ </quote></para>
  <para>
  <programlisting>
      You do not have sufficient access to your machine
