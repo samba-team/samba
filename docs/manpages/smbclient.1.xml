@@ -820,7 +820,21 @@
 		</varlistentry>
 
 
-		
+
+		<varlistentry>
+		<term>stat file</term>
+		<listitem><para>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. The client requests the
+		UNIX basic info level and prints out the same info that the Linux stat command
+		would about the file. This includes the size, blocks used on disk, file type,
+		permissions, inode number, number of links and finally the three timestamps
+		(access, modify and change). If the file is a special file (symlink, character or
+		block device, fifo or socket) then extra information may also be printed.
+		</para></listitem>
+		</varlistentry>
+
+
+
 		<varlistentry>
 		<term>symlink target linkname</term>
 		<listitem><para>This command depends on the server supporting the CIFS
