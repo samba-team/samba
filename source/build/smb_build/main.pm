@@ -51,7 +51,9 @@ sub smb_build_main($)
 		"torture/config.mk",
 		"librpc/config.mk",
 		"client/config.mk",
-		"libcli/libsmb.mk");
+		"libcli/libsmb.mk",
+		"libcli/config.mk"
+	);
 
 	$| = 1;
 

@@ -25,7 +25,7 @@ ADD_OBJ_FILES = \
 		librpc/rpc/dcerpc_spnego.o \
 		librpc/rpc/dcerpc_smb.o \
 		librpc/rpc/dcerpc_sock.o
-REQUIRED_SUBSYSTEMS = LIBSMB SOCKET
+REQUIRED_SUBSYSTEMS = SOCKET
 # End SUBSYSTEM LIBRPC_RAW
 ################################################
 
@@ -84,6 +84,6 @@ ADD_OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM LIBRPC
 [SUBSYSTEM::LIBRPC]
-REQUIRED_SUBSYSTEMS = LIBNDR_RAW LIBNDR_GEN LIBRPC_RAW LIBDCOM
+REQUIRED_SUBSYSTEMS = LIBNDR_RAW LIBNDR_GEN LIBRPC_RAW LIBSMB LIBDCOM
 # End SUBSYSTEM LIBRPC
 ################################################

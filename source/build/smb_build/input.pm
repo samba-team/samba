@@ -11,7 +11,7 @@ use strict;
 package input;
 
 my $subsystem_output_type = "OBJLIST";
-our $srcdir = ".";
+my $srcdir = ".";
 
 sub strtrim($)
 {

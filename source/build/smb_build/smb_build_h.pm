@@ -103,13 +103,13 @@ sub create_smb_build_h($)
 
 	$output .= _prepare_smb_build_h($CTX);
 
-	open(SMB_BUILD_H,"> $input::srcdir/include/smb_build.h") || die ("Can't open include/smb_build.h\n");
+	open(SMB_BUILD_H,"> include/smb_build.h") || die ("Can't open include/smb_build.h\n");
 
 	print SMB_BUILD_H $output;
 
 	close(SMB_BUILD_H);
 
-	print "config.smb_build.pl: creating $input::srcdir/include/smb_build.h\n";
+	print "config.smb_build.pl: creating include/smb_build.h\n";
 	return;	
 }
 1;
