@@ -134,6 +134,10 @@ struct cli_state {
 
 	/* a oplock break request handler */
 	BOOL (*oplock_handler)(struct cli_state *cli, int fnum, unsigned char level);
+
+	/* was this structure allocated by cli_initialise? If so, then
+			free in cli_shutdown() */
+	BOOL allocated
 };
 
 #endif /* _CLIENT_H */
