@@ -1530,8 +1530,8 @@ typedef struct q_samr_open_alias_info
 {
 	POLICY_HND dom_pol;
 
-	uint32 unknown_0;         /* 0x0000 0008 */
-	uint32 rid_alias;        /* rid */
+	uint32 access_mask;         
+	uint32 rid_alias;
 
 } SAMR_Q_OPEN_ALIAS;
 
