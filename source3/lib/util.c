@@ -1698,41 +1698,42 @@ int smb_mkstemp(char *template)
 #endif
 }
 
-/*****************************************************************
- malloc that aborts with smb_panic on fail or zero size.
- *****************************************************************/  
 
-void *xmalloc(size_t size)
+/**
+ malloc that aborts with smb_panic on fail or zero size.
+**/
+
+void *smb_xmalloc(size_t size)
 {
 	void *p;
 	if (size == 0)
-		smb_panic("xmalloc: called with zero size.\n");
+		smb_panic("smb_xmalloc: called with zero size.\n");
 	if ((p = malloc(size)) == NULL)
-		smb_panic("xmalloc: malloc fail.\n");
+		smb_panic("smb_xmalloc: malloc fail.\n");
 	return p;
 }
 
-/*****************************************************************
+/**
  Memdup with smb_panic on fail.
- *****************************************************************/  
+**/
 
-void *xmemdup(const void *p, size_t size)
+void *smb_xmemdup(const void *p, size_t size)
 {
 	void *p2;
-	p2 = xmalloc(size);
+	p2 = smb_xmalloc(size);
 	memcpy(p2, p, size);
 	return p2;
 }
 
-/*****************************************************************
+/**
  strdup that aborts on malloc fail.
- *****************************************************************/  
+**/
 
-char *xstrdup(const char *s)
+char *smb_xstrdup(const char *s)
 {
 	char *s1 = strdup(s);
 	if (!s1)
-		smb_panic("xstrdup: malloc fail\n");
+		smb_panic("smb_xstrdup: malloc fail\n");
 	return s1;
 }
 
@@ -2021,7 +2022,7 @@ DATA_BLOB data_blob(const void *p, size_t length)
 		return ret;
 	}
 
-	ret.data = xmemdup(p, length);
+	ret.data = smb_xmemdup(p, length);
 	ret.length = length;
 	return ret;
 }
