@@ -34,6 +34,8 @@ static struct {
 	{"profilelevel", MSG_REQ_PROFILELEVEL},
 	{"debuglevel", MSG_REQ_DEBUGLEVEL},
 	{"close-share", MSG_SMB_FORCE_TDIS},
+	{"dmalloc-mark", MSG_REQ_DMALLOC_MARK },
+	{"dmalloc-log-changed", MSG_REQ_DMALLOC_LOG_CHANGED },
 	{"printnotify", MSG_PRINTER_NOTIFY2 },
 	{"drvupgrade", MSG_PRINTER_DRVUPGRADE},
 	{"tallocdump", MSG_REQ_TALLOC_USAGE},
@@ -529,6 +531,11 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		break;
 	}
 
+	case MSG_REQ_DMALLOC_LOG_CHANGED:
+	case MSG_REQ_DMALLOC_MARK:
+		if (!send_message(dest, mtype, NULL, 0, False))
+			return False;
+		break;
 	}
 		
 	/* check if we have any pending print notify messages */

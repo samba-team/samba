@@ -176,6 +176,16 @@ AC_ARG_ENABLE(debug,
 	CFLAGS="${CFLAGS} -g"
     fi])
 
+AC_ARG_ENABLE(dmalloc, [  --enable-dmalloc        Enable heap debugging [default=no]])
+
+if test "x$enable_dmalloc" = xyes
+then
+        AC_DEFINE(ENABLE_DMALLOC, 1, [Define to turn on dmalloc debugging])
+        AC_DEFINE(DMALLOC_FUNC_CHECK, 1,
+                  [Define to check invariants around some common functions])
+        LIBS="$LIBS -ldmalloc"
+fi
+
 
 #################################################
 # set gcov support - Support for gcc/gcov code coverage tool (default=no)

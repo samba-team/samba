@@ -818,6 +818,8 @@ static void usage(char *pname)
 	if (!message_init())
 		exit(1);
 
+	register_dmalloc_msgs();
+
 	if (!print_backend_init())
 		exit(1);
 

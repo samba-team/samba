@@ -785,6 +785,26 @@ struct printjob;
 #define PRINTCAP_NAME "/etc/printcap"
 #endif
 
+#ifdef __GNUC__
+/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
+ * the parameter containing the format, and a2 the index of the first
+ * argument.  **/
+#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#else
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+
+#ifdef __GNUC__
+/** gcc attribute used on function parameters so that it does not emit
+ * warnings about them being unused. **/
+#  define UNUSED(param) param __attribute__ ((unused))
+#else
+#  define UNUSED(param) param
+/** Feel free to add definitions for other compilers here. */
+#endif
+
+
+
 #ifndef SIGCLD
 #define SIGCLD SIGCHLD
 #endif
@@ -965,6 +985,13 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
+
+/* dmalloc -- free heap debugger (dmalloc.org).  This should be near
+ * the *bottom* of include files so as not to conflict. */
+#ifdef ENABLE_DMALLOC
+#  include <dmalloc.h>
+#endif
+
 
 /* Some POSIX definitions for those without */
  
