@@ -246,7 +246,7 @@ passed as NULL, the configuration will be queried for the name.
 BOOL pcap_printername_ok(const char *pszPrintername, const char *pszPrintcapname)
 {
   char *line=NULL;
-  char *psz;
+  const char *psz;
   char *p,*q;
   XFILE *pfile;
 
