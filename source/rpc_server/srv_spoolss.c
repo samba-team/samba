@@ -1580,11 +1580,7 @@ static BOOL api_spoolss_replycloseprinter(pipes_struct *p)
 \pipe\spoolss commands
 ********************************************************************/
 
-#ifdef RPC_SPOOLSS_DYNAMIC
-int rpc_pipe_init(void)
-#else
 int rpc_spoolss_init(void)
-#endif
 {
   struct api_struct api_spoolss_cmds[] = 
     {

@@ -645,11 +645,7 @@ static BOOL api_lsa_query_info2(pipes_struct *p)
 /***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
-#ifdef RPC_LSA_DYNAMIC
-int rpc_pipe_init(void)
-#else
 int rpc_lsa_init(void)
-#endif
 {
 static const struct api_struct api_lsa_cmds[] =
 {
