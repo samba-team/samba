@@ -2510,6 +2510,12 @@ problems with machines in trust relationships in which case you can
 disable it here, but be warned, we have heard that some NT machines
 will then allow anyone in with any password! Make sure you test it.
 
+In Samba 1.9.18p5 this parameter is of limited use, as smbd now
+explicitly tests for this NT bug and will refuse to use a password
+server that has the problem. The parameter still defaults to on,
+for compatibility, but it is now probably safe to set this to
+off without testing the NT server being used as a password server.
+
 .B Default:
 	networkstation user login = yes
 

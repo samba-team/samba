@@ -1690,15 +1690,10 @@ use this machine as the password server.\n"));
 
 	/* if logged in as guest then reject */
 	if ((SVAL(cli.inbuf,smb_vwv2) & 1) != 0) {
-		DEBUG(1,("password server %s gave us guest only\n", cli.desthost));
+		DEBUG(0,("password server %s gave us guest only\n", cli.desthost));
 		return(False);
 	}
 
-
-	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
-		DEBUG(1,("password server %s refused IPC$ connect\n", cli.desthost));
-		return False;
-	}
 
         /*
          * This patch from Rob Nielsen <ran@adc.com> makes doing
@@ -1711,24 +1706,30 @@ use this machine as the password server.\n"));
 
 	if (lp_net_wksta_user_logon()) {
 		DEBUG(3,("trying NetWkstaUserLogon with password server %s\n", cli.desthost));
+	        if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+                        DEBUG(0,("password server %s refused IPC$ connect\n", cli.desthost));
+                        return False;
+                }
+
 		if (!cli_NetWkstaUserLogon(&cli,user,local_machine)) {
-			DEBUG(1,("password server %s failed NetWkstaUserLogon\n", cli.desthost));
+			DEBUG(0,("password server %s failed NetWkstaUserLogon\n", cli.desthost));
 			cli_tdis(&cli);
 			return False;
 		}
 
 		if (cli.privilages == 0) {
-			DEBUG(1,("password server %s gave guest privilages\n", cli.desthost));
+			DEBUG(0,("password server %s gave guest privilages\n", cli.desthost));
 			cli_tdis(&cli);
 			return False;
 		}
 
 		if (!strequal(cli.eff_name, user)) {
-			DEBUG(1,("password server %s gave different username %s\n", 
+			DEBUG(0,("password server %s gave different username %s\n", 
 			 	cli.desthost,
 			 	cli.eff_name));
 			cli_tdis(&cli);
 			return False;
+	        cli_tdis(&cli);
 		}
 	}
         else {
@@ -1737,7 +1738,6 @@ use this machine as the password server.\n"));
 
 	DEBUG(3,("password server %s accepted the password\n", cli.desthost));
 
-	cli_tdis(&cli);
         cli_ulogoff(&cli);
 
 	return(True);
