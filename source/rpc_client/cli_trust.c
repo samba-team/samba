@@ -194,8 +194,6 @@ BOOL change_trust_account_password( const char *domain, char *remote_machine)
 			goto failed;
 		}
 
-		/* Try and connect to the PDC list in turn as an IP address used as a string */
-
 		if ( !lookup_dc_name(global_myname_unix(), domain, &pdc_ip, dc_name) ) 
 			goto failed;
 	}
