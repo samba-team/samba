@@ -48,8 +48,7 @@ krb5_error_code
 krb5_principal2principalname (PrincipalName *p,
 			      const krb5_principal from)
 {
-    copy_PrincipalName(&from->name, p);
-    return 0;
+    return copy_PrincipalName(&from->name, p);
 }
 
 krb5_error_code
