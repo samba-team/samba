@@ -43,6 +43,14 @@ static unsigned signals_processed;
 #define RT_SIGNAL_NOTIFY 34
 #endif
 
+#ifndef F_SETSIG
+#define F_SETSIG 10
+#endif
+
+#ifndef F_NOTIFY
+#define F_NOTIFY 1026
+#endif
+
 /****************************************************************************
  This is the structure to keep the information needed to
  determine if a directory has changed.
@@ -73,6 +81,8 @@ static BOOL kernel_check_notify(connection_struct *conn, uint16 vuid, char *path
 
 	if (data->directory_handle != fd_pending) return False;
 
+	DEBUG(3,("kernel change notify on %s fd=%d\n", path, fd_pending));
+
 	close(fd_pending);
 	data->directory_handle = fd_pending = -1;
 	signals_processed++;
@@ -86,15 +96,17 @@ remove a change notify data structure
 static void kernel_remove_notify(void *datap)
 {
 	struct change_data *data = (struct change_data *)datap;
-	if (data->directory_handle != -1) {
-		if (data->directory_handle == fd_pending) {
-			data->directory_handle = fd_pending = -1;
+	int fd = data->directory_handle;
+	if (fd != -1) {
+		if (fd == fd_pending) {
+			fd_pending = -1;
 			signals_processed++;
 			BlockSignals(False, RT_SIGNAL_NOTIFY);
 		}
-		close(data->directory_handle);
+		close(fd);
 	}
 	free(data);
+	DEBUG(3,("removed kernel change notify fd=%d\n", fd));
 }
 
 
@@ -107,10 +119,10 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 	int fd;
 	unsigned long kernel_flags;
 	
-	fd = dos_open(fsp->fsp_name, O_RDONLY, 0);
+	fd = dos_open(path, O_RDONLY, 0);
 
 	if (fd == -1) {
-		DEBUG(3,("Failed to open directory %s for change notify\n", fsp->fsp_name));
+		DEBUG(3,("Failed to open directory %s for change notify\n", path));
 		return NULL;
 	}
 
@@ -120,8 +132,8 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 	}
 
 	kernel_flags = 0;
-	if (flags & FILE_NOTIFY_CHANGE_FILE_NAME)   kernel_flags |= DN_RENAME;
-	if (flags & FILE_NOTIFY_CHANGE_DIR_NAME)    kernel_flags |= DN_RENAME;
+	if (flags & FILE_NOTIFY_CHANGE_FILE_NAME)   kernel_flags |= DN_RENAME|DN_DELETE;
+	if (flags & FILE_NOTIFY_CHANGE_DIR_NAME)    kernel_flags |= DN_RENAME|DN_DELETE;
 	if (flags & FILE_NOTIFY_CHANGE_ATTRIBUTES)  kernel_flags |= DN_MODIFY;
 	if (flags & FILE_NOTIFY_CHANGE_SIZE)        kernel_flags |= DN_MODIFY;
 	if (flags & FILE_NOTIFY_CHANGE_LAST_WRITE)  kernel_flags |= DN_MODIFY;
@@ -133,9 +145,30 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 		return NULL;
 	}
 
+	if (fcntl(fd, F_SETOWN, sys_getpid()) == -1) {
+		DEBUG(3,("Failed to set owner for change notify\n"));
+		return NULL;
+	}
+
 	data.directory_handle = fd;
 
+	DEBUG(3,("kernel change notify on %s (flags=0x%x) fd=%d\n", 
+		 path, (int)kernel_flags, fd));
+
 	return (void *)memdup(&data, sizeof(data));
+}
+
+/****************************************************************************
+see if the kernel supports change notify
+****************************************************************************/
+static BOOL kernel_notify_available(void) 
+{
+	int fd, ret;
+	fd = open("/tmp", O_RDONLY);
+	if (fd == -1) return False; /* uggh! */
+	ret = fcntl(fd, F_NOTIFY, 0);
+	close(fd);
+	return ret == 0 || errno != EINVAL;
 }
 
 
@@ -146,6 +179,8 @@ struct cnotify_fns *kernel_notify_init(void)
 {
 	static struct cnotify_fns cnotify;
         struct sigaction act;
+
+	if (!kernel_notify_available()) return NULL;
 
         act.sa_handler = NULL;
         act.sa_sigaction = signal_handler;

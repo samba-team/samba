@@ -47,6 +47,10 @@ static int fd_pending; /* the fd of the current pending signal */
 #define RT_SIGNAL_LEASE 33
 #endif
 
+#ifndef F_SETSIG
+#define F_SETSIG 10
+#endif
+
 /****************************************************************************
 handle a LEASE signal, incrementing the signals_received and blocking the signal
 ****************************************************************************/
@@ -60,8 +64,7 @@ static void signal_handler(int signal, siginfo_t *info, void *unused)
 
 /****************************************************************************
 try to gain a linux capability
-****************************************************************************/
-static void set_capability(unsigned capability)
+****************************************************************************/static void set_capability(unsigned capability)
 {
 #ifndef _LINUX_CAPABILITY_VERSION
 #define _LINUX_CAPABILITY_VERSION 0x19980330
@@ -101,6 +104,12 @@ try again
 static int linux_setlease(int fd, int leasetype)
 {
 	int ret;
+
+	if (fcntl(fd, F_SETSIG, RT_SIGNAL_LEASE) == -1) {
+		DEBUG(3,("Failed to set signal handler for kernel lease\n"));
+		return -1;
+	}
+
 	ret = fcntl(fd, F_SETLEASE, leasetype);
 	if (ret == -1 && errno == EACCES) {
 		set_capability(CAP_LEASE);
@@ -133,7 +142,7 @@ static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_l
 	dev = sbuf.st_dev;
 	inode = sbuf.st_ino;
      
-	DEBUG(5,("receive_local_message: kernel oplock break request received for \
+	DEBUG(3,("receive_local_message: kernel oplock break request received for \
 dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
      
 	/*
@@ -167,14 +176,14 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
 static BOOL linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
 	if (linux_setlease(fsp->fd, F_WRLCK) == -1) {
-		DEBUG(5,("set_file_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
+		DEBUG(3,("set_file_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
 inode = %.0f. (%s)\n",
 			 fsp->fsp_name, fsp->fd, 
 			 (unsigned int)fsp->dev, (double)fsp->inode, strerror(errno)));
 		return False;
 	}
 	
-	DEBUG(10,("set_file_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f\n",
+	DEBUG(3,("set_file_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f\n",
 		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode));
 
 	return True;
@@ -226,7 +235,7 @@ static BOOL linux_kernel_oplock_parse(char *msg_start, int msg_len, SMB_INO_T *i
         memcpy((char *)inode, msg_start+KERNEL_OPLOCK_BREAK_INODE_OFFSET, sizeof(*inode));
         memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
 
-        DEBUG(5,("kernel oplock break request for file dev = %x, inode = %.0f\n", 
+        DEBUG(3,("kernel oplock break request for file dev = %x, inode = %.0f\n", 
 		 (unsigned int)*dev, (double)*inode));
 
 	return True;
@@ -282,6 +291,8 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 	koplocks.parse_message = linux_kernel_oplock_parse;
 	koplocks.msg_waiting = linux_oplock_msg_waiting;
 	koplocks.notification_fd = -1;
+
+	DEBUG(3,("Linux kernel oplocks enabled\n"));
 
 	return &koplocks;
 }

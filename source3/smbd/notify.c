@@ -212,7 +212,10 @@ initialise the change notify subsystem
 ****************************************************************************/
 BOOL init_change_notify(void)
 {
-	cnotify = hash_notify_init();
+#if HAVE_KERNEL_CHANGE_NOTIFY
+	cnotify = kernel_notify_init();
+#endif
+	if (!cnotify) cnotify = hash_notify_init();
 	
 	if (!cnotify) {
 		DEBUG(0,("Failed to init change notify system\n"));
