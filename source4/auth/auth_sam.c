@@ -196,6 +196,19 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 			       "accountExpires",
 			       "objectSid",
 			       "userWorkstations",
+			       
+			       /* required for server_info, not access control: */
+			       "sAMAaccountName",
+			       "displayName",
+			       "scriptPath",
+			       "profilePath",
+			       "homeDirectory",
+			       "homeDrive",
+			       "lastLogon",
+			       "lastLogoff",
+			       "accountExpires",
+			       "badPwdCount",
+			       "logonCount",
 			       NULL,
 	};
 
@@ -346,13 +359,66 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		
 		(*server_info)->n_domain_groups = group_ret;
 		(*server_info)->domain_groups = groupSIDs;
-
 	}
+
+	(*server_info)->account_name 
+		= talloc_strdup((*server_info)->mem_ctx, 
+				samdb_result_string(msgs[0], "sAMAccountName", ""));
+
+	(*server_info)->domain
+		= talloc_strdup((*server_info)->mem_ctx, 
+				samdb_result_string(msgs_domain[0], "name", ""));
+
+	(*server_info)->full_name 
+		= talloc_strdup((*server_info)->mem_ctx, 
+				samdb_result_string(msgs[0], "displayName", ""));
+
+	(*server_info)->logon_script 
+		= talloc_strdup((*server_info)->mem_ctx, 
+				samdb_result_string(msgs[0], "scriptPath", ""));
+	(*server_info)->profile_path 
+		= talloc_strdup((*server_info)->mem_ctx, 
+				samdb_result_string(msgs[0], "profilePath", ""));
+	(*server_info)->home_directory 
+		= talloc_strdup((*server_info)->mem_ctx, 
+				samdb_result_string(msgs[0], "homeDirectory", ""));
+
+	(*server_info)->home_drive 
+		= talloc_strdup((*server_info)->mem_ctx, 
+				samdb_result_string(msgs[0], "homeDrive", ""));
+
+	(*server_info)->last_logon = samdb_result_nttime(msgs[0], "lastLogon", 0);
+	(*server_info)->last_logoff = samdb_result_nttime(msgs[0], "lastLogoff", 0);
+	(*server_info)->acct_expiry = samdb_result_nttime(msgs[0], "accountExpires", 0);
+	(*server_info)->last_password_change = samdb_result_nttime(msgs[0], "pwdLastSet", 0);
+	(*server_info)->allow_password_change
+		= samdb_result_allow_password_change(sam_ctx, mem_ctx, 
+						     domain_dn, msgs[0], "pwdLastSet");
+	(*server_info)->allow_password_change
+		= samdb_result_force_password_change(sam_ctx, mem_ctx, 
+						     domain_dn, msgs[0], "pwdLastSet");
+
+	(*server_info)->logon_count = samdb_result_uint(msgs[0], "logonCount", 0);
+	(*server_info)->bad_password_count = samdb_result_uint(msgs[0], "badPwdCount", 0);
+
+	(*server_info)->acct_flags = samdb_result_acct_flags(msgs[0], "userAccountControl");
 
 	(*server_info)->guest = False;
 
 	(*server_info)->user_session_key = user_sess_key;
 	(*server_info)->lm_session_key = lm_sess_key;
+
+	if (!(*server_info)->account_name 
+	    || !(*server_info)->full_name 
+	    || !(*server_info)->logon_script
+	    || !(*server_info)->profile_path
+	    || !(*server_info)->home_directory
+	    || !(*server_info)->home_drive) {
+		talloc_destroy((*server_info)->mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	samdb_close(sam_ctx);
 
 	return nt_status;
 }

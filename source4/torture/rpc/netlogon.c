@@ -306,12 +306,12 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		samlogon_state->r.in.logon_level = levels[i];
 		samlogon_state->r.in.logon.network = &ninfo;
 	
-		ninfo.logon_info.domain_name.string = lp_workgroup();
-		ninfo.logon_info.parameter_control = 0;
-		ninfo.logon_info.logon_id_low = 0;
-		ninfo.logon_info.logon_id_high = 0;
-		ninfo.logon_info.account_name.string = samlogon_state->account_name;
-		ninfo.logon_info.workstation.string = TEST_MACHINE_NAME;
+		ninfo.identity_info.domain_name.string = lp_workgroup();
+		ninfo.identity_info.parameter_control = 0;
+		ninfo.identity_info.logon_id_low = 0;
+		ninfo.identity_info.logon_id_high = 0;
+		ninfo.identity_info.account_name.string = samlogon_state->account_name;
+		ninfo.identity_info.workstation.string = TEST_MACHINE_NAME;
 		
 		memcpy(ninfo.challenge, chall->data, 8);
 		
