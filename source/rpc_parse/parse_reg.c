@@ -1021,7 +1021,7 @@ void make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx)
 	memset(q_i->pad2, 0, sizeof(q_i->pad2));
 
 	q_i->ptr3 = 1;
-	unix_to_nt_time(&q_i->time, 0);            /* current time? */
+	init_nt_time(&(q_i->time));   /* ignored ? */
 }
 
 /*******************************************************************
