@@ -253,7 +253,8 @@ krb4_auth(void *app_data, char *host)
       struct in_addr natAddr;
 
       if (krb_get_our_ip_for_realm(krb_realmofhost(host),
-				   &natAddr) != KSUCCESS)
+				   &natAddr) != KSUCCESS
+	  && krb_get_our_ip_for_realm(NULL, &natAddr) != KSUCCESS)
 	printf("Can't get address for realm %s\n",
 	       krb_realmofhost(host));
       else {
