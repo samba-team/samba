@@ -85,6 +85,11 @@ der_get_length (unsigned char *p, size_t len, size_t *val, size_t *size)
 	size_t l;
 	unsigned tmp;
 
+	if(v == 0x80){
+	    *val = ASN1_INDEFINITE;
+	    *size = 1;
+	    return 0;
+	}
 	v &= 0x7F;
 	if (len < v)
 	    return ASN1_OVERRUN;
@@ -318,7 +323,7 @@ decode_generalized_time (unsigned char *p, size_t len, time_t *t, size_t *size)
 int
 fix_dce(size_t reallen, size_t *len)
 {
-    if(reallen == 0)
+    if(reallen == ASN1_INDEFINITE)
 	return 1;
     if(*len < reallen)
 	return -1;
