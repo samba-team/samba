@@ -202,6 +202,8 @@ void sig_usr1( int sig );
 void setup_logging( char *pname, BOOL interactive );
 void reopen_logs( void );
 void force_check_log_size( void );
+BOOL need_to_check_log_size( void );
+void check_log_size( void );
 void dbgflush( void );
 BOOL dbghdr( int level, char *file, char *func, int line );
 dbg_Token dbg_char2token( dbg_Token *state, int c );
@@ -1787,25 +1789,27 @@ BOOL winbindd_lookup_by_name(char *system_name, DOM_SID *level5_sid,
 int winbindd_lookup_by_sid(char *system_name, DOM_SID *level5_sid,
                            DOM_SID *sid, char *name,
                            enum SID_NAME_USE *type);
-int winbindd_lookup_userinfo(char *system_name, DOM_SID *level5_sid,
-                             uint32 user_rid, SAM_USERINFO_CTR *user_info);
-int winbindd_lookup_groupinfo(char *system_name, DOM_SID *level5_sid,
+int winbindd_lookup_userinfo(char *system_name, DOM_SID *dom_sid,
+                             uint32 user_rid, POLICY_HND *sam_dom_handle,
+                             SAM_USERINFO_CTR *user_info);
+int winbindd_lookup_groupinfo(char *system_name, DOM_SID *dom_sid,
                               uint32 group_rid, GROUP_INFO_CTR *info);
-int winbindd_lookup_groupmem(char *system_name, DOM_SID *level5_sid,
-                             uint32 group_rid, uint32 *num_names,
-                             uint32 **rid_mem, char ***names,
-                             uint32 **name_types);
+int winbindd_lookup_groupmem(char *system_name, DOM_SID *dom_sid,
+                             uint32 group_rid, POLICY_HND *sam_dom_handle,
+                             uint32 *num_names, uint32 **rid_mem, 
+                             char ***names, uint32 **name_types);
 int winbindd_lookup_aliasmem(char *system_name, DOM_SID *dom_sid,
-                             uint32 alias_rid, uint32 *num_names,
-                             DOM_SID ***sids, char ***names,
-                             uint32 **name_types);
-int winbindd_lookup_aliasinfo(char *system_name, DOM_SID *level5_sid,
+                             uint32 alias_rid, POLICY_HND *sam_dom_handle,
+                             uint32 *num_names, DOM_SID ***sids, 
+                             char ***names, uint32 **name_types);
+int winbindd_lookup_aliasinfo(char *system_name, DOM_SID *dom_sid,
                               uint32 alias_rid, ALIAS_INFO_CTR *info);
 int main(int argc, char **argv);
 
 /*The following definitions come from  nsswitch/winbindd_group.c  */
 
 enum winbindd_result winbindd_getgrnam_from_group(char *groupname,
+                                                  POLICY_HND *sam_dom_handle,
                                                   struct winbindd_gr *gr);
 enum winbindd_result winbindd_getgrnam_from_gid(gid_t gid, 
                                                 struct winbindd_gr *gr);
@@ -1840,7 +1844,8 @@ BOOL winbindd_surs_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid, BOOL create);
 
 /*The following definitions come from  nsswitch/winbindd_user.c  */
 
-enum winbindd_result winbindd_getpwnam_from_user(char *user_name, 
+enum winbindd_result winbindd_getpwnam_from_user(char *user_name,
+                                                 POLICY_HND *sam_dom_handle,
                                                  struct winbindd_pw *pw);
 enum winbindd_result winbindd_getpwnam_from_uid(uid_t uid, 
                                                 struct winbindd_pw *pw);
@@ -3336,6 +3341,8 @@ BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE * q_c, prs_struct * ps, int depth);
 BOOL lsa_io_r_close(char *desc, LSA_R_CLOSE * r_c, prs_struct * ps, int depth);
 BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint16 type, uint32 idx);
 BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
+BOOL lsa_io_dom_query_2(char *desc, DOM_QUERY_2 *d_q,
+			prs_struct *ps, int depth);
 BOOL lsa_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
 BOOL lsa_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
 
@@ -5830,8 +5837,6 @@ BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT
 
 /*The following definitions come from  smbd/nttrans.c  */
 
-void fail_next_srvsvc_open(void);
-BOOL should_fail_next_srvsvc_open(const char *pipename);
 int reply_ntcreate_and_X(connection_struct *conn,
 			 char *inbuf,char *outbuf,int length,int bufsize);
 int reply_ntcancel(connection_struct *conn,

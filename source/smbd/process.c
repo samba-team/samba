@@ -926,6 +926,12 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
   process_pending_change_notify_queue(t);
 
   /*
+   * Now we are root, check if the log files need pruning.
+   */
+  if(need_to_check_log_size())
+      check_log_size();
+
+  /*
    * Modify the select timeout depending upon
    * what we have remaining in our queues.
    */
