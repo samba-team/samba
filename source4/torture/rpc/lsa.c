@@ -21,6 +21,16 @@
 
 #include "includes.h"
 
+/*
+  this makes the debug code display the right thing
+*/
+static void init_lsa_Name(struct lsa_Name *name, const char *s)
+{
+	name->name = s;
+	name->name_len = strlen_m(s)*2;
+	name->name_size = name->name_len;
+}
+
 static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct lsa_ObjectAttribute attr;
@@ -114,9 +124,7 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 
 	names = talloc(mem_ctx, tnames->count * sizeof(names[0]));
 	for (i=0;i<tnames->count;i++) {
-		names[i].name_len = 2*strlen(tnames->names[i].name.name);
-		names[i].name_size = 2*strlen(tnames->names[i].name.name);
-		names[i].name = tnames->names[i].name.name;
+		init_lsa_Name(&names[i], tnames->names[i].name.name);
 	}
 
 	r.in.handle = handle;

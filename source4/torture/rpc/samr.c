@@ -21,6 +21,17 @@
 
 #include "includes.h"
 
+
+/*
+  this makes the debug code display the right thing
+*/
+static void init_samr_Name(struct samr_Name *name, const char *s)
+{
+	name->name = s;
+	name->name_len = strlen_m(s)*2;
+	name->name_size = name->name_len;
+}
+
 static BOOL test_Close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		       struct policy_handle *handle)
 {
@@ -69,7 +80,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint32 rid;
 	struct samr_Name name;
 
-	name.name = "samrtorturetest";
+	init_samr_Name(&name, "samrtorturetest");
 
 	r.in.handle = handle;
 	r.in.username = &name;
