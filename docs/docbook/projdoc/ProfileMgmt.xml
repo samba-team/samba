@@ -317,6 +317,25 @@ local desktop cache, as shown below.  When this user then next logs in,
 they will be told that they are logging in "for the first time".
 </para>
 
+	<warning>
+		<para>
+        Before deleting the contents of the
+        directory listed in the ProfilePath (this is likely to be
+	<filename>c:\windows\profiles\username)</filename>, ask them if they
+	have any important files stored on their desktop or in their start menu. 
+	Delete the contents of the directory ProfilePath (making a backup if any
+	of the files are needed).
+        </para>
+
+        <para>
+	This will have the effect of removing the local (read-only hidden
+	system file) user.DAT in their profile directory, as well as the
+	local "desktop", "nethood", "start menu" and "programs" folders.
+        </para>
+	</warning>
+
+
+
 <orderedlist>
 	<listitem>
         <para>
@@ -342,23 +361,6 @@ they will be told that they are logging in "for the first time".
 
 		<para>[Exit the registry editor].</para>
 	</listitem>
-
-	<warning>
-		<para>
-        Before deleting the contents of the
-        directory listed in the ProfilePath (this is likely to be
-	<filename>c:\windows\profiles\username)</filename>, ask them if they
-	have any important files stored on their desktop or in their start menu. 
-	Delete the contents of the directory ProfilePath (making a backup if any
-	of the files are needed).
-        </para>
-
-        <para>
-	This will have the effect of removing the local (read-only hidden
-	system file) user.DAT in their profile directory, as well as the
-	local "desktop", "nethood", "start menu" and "programs" folders.
-        </para>
-	</warning>
 
 	<listitem>
         <para>

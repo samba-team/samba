@@ -20,8 +20,8 @@
 	<author>
 		<firstname>John</firstname><surname>Trostel</surname>
 		<affiliation>
-			<address><email>jtrostel@snapserver.com</email></address>
 			<orgname>SNAP</orgname>
+			<address><email>jtrostel@snapserver.com</email></address>
 		</affiliation>
 	</author>
 

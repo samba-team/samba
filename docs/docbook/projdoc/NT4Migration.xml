@@ -288,7 +288,7 @@ generally fit into three basic categories.
 <table frame="all"><title>The 3 Major Site Types</title>
 <tgroup cols="2">
 	<colspec align="left"/>
-	<colspec align="justify" colspec="1*"/>
+	<colspec align="justify"/>
 	<thead>
 	<row><entry>Number of Users</entry><entry>Description</entry></row>
 	</thead>
