@@ -35,63 +35,37 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 	struct pvfs_file *f;
 	NTSTATUS status;
 
-	switch (wr->generic.level) {
-	case RAW_WRITE_WRITEX:
-		f = pvfs_find_fd(pvfs, req, wr->writex.in.fnum);
-		if (!f) {
-			return NT_STATUS_INVALID_HANDLE;
-		}
-		status = pvfs_check_lock(pvfs, f, req->smbpid, 
-					 wr->writex.in.offset,
-					 wr->writex.in.count,
-					 WRITE_LOCK);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		ret = pwrite(f->fd, 
-			     wr->writex.in.data, 
-			     wr->writex.in.count,
-			     wr->writex.in.offset);
-		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
-		}
-		
-		wr->writex.out.nwritten = ret;
-		wr->writex.out.remaining = 0; /* should fill this in? */
-
-		return NT_STATUS_OK;
-
-	case RAW_WRITE_WRITE:
-		f = pvfs_find_fd(pvfs, req, wr->write.in.fnum);
-		if (!f) {
-			return NT_STATUS_INVALID_HANDLE;
-		}
-		if (wr->write.in.count == 0) {
-			/* a truncate! */
-			ret = ftruncate(f->fd, wr->write.in.offset);
-		} else {
-			status = pvfs_check_lock(pvfs, f, req->smbpid, 
-						 wr->write.in.offset,
-						 wr->write.in.count,
-						 WRITE_LOCK);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-
-			ret = pwrite(f->fd,
-				     wr->write.in.data, 
-				     wr->write.in.count,
-				     wr->write.in.offset);
-		}
-		if (ret == -1) {
-			return pvfs_map_errno(pvfs, errno);
-		}
-		
-		wr->write.out.nwritten = ret;
-
-		return NT_STATUS_OK;
+	if (wr->generic.level != RAW_WRITE_WRITEX) {
+		return ntvfs_map_write(req, wr, ntvfs);
 	}
 
-	return NT_STATUS_NOT_SUPPORTED;
+	f = pvfs_find_fd(pvfs, req, wr->writex.in.fnum);
+	if (!f) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
+	status = pvfs_check_lock(pvfs, f, req->smbpid, 
+				 wr->writex.in.offset,
+				 wr->writex.in.count,
+				 WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	ret = pwrite(f->fd, 
+		     wr->writex.in.data, 
+		     wr->writex.in.count,
+		     wr->writex.in.offset);
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+	
+	wr->writex.out.nwritten = ret;
+	wr->writex.out.remaining = 0; /* should fill this in? */
+	
+	return NT_STATUS_OK;
 }

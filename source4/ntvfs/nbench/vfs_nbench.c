@@ -59,10 +59,8 @@ static void nbench_log(struct nbench_private *private,
   status code and any result parameters much harder.
 */
 #define PASS_THRU_REQ(ntvfs, req, op, args) do { \
-	void *send_fn_saved = req->async.send_fn; \
-	req->async.send_fn = NULL; \
+	req->control_flags &= ~REQ_CONTROL_MAY_ASYNC; \
 	status = ntvfs_next_##op args; \
-	req->async.send_fn = send_fn_saved; \
 } while (0)
 
 
