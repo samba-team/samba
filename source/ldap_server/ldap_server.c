@@ -198,10 +198,9 @@ void ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
 
 struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn, const char *dn)
 {
-	static const struct ldapsrv_partition_ops null_ops;
-	static struct ldapsrv_partition null_part = {
-		.ops = &null_ops
-	};
+	static struct ldapsrv_partition null_part;
+
+	null_part.ops = ldapsrv_get_sldb_partition_ops();
 
 	return &null_part;
 }
@@ -270,11 +269,10 @@ static void ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	DEBUGADD(10, (" basedn: %s", req->basedn));
 	DEBUGADD(10, (" filter: %s\n", req->filter));
 
-	if ((strcasecmp("", req->basedn) == 0) &&
-	    (req->scope == LDAP_SEARCH_SCOPE_BASE)) {
+	if (strcasecmp("", req->basedn) == 0) {
 		ldapsrv_RootDSE_Search(call, req);
 		return;
-	} 
+	}
 
 	part = ldapsrv_get_partition(call->conn, req->basedn);
 
