@@ -60,6 +60,14 @@ NTSTATUS socket_create(const char *name, enum socket_type type, struct socket_co
 		return status;
 	}
 
+	/* by enabling "testnonblock" mode, all socket receive and
+	   send calls on non-blocking sockets will randomly recv/send
+	   less data than requested */
+	if (!(flags & SOCKET_FLAG_BLOCK) &&
+	    lp_parm_bool(-1, "socket", "testnonblock", False)) {
+		(*new_sock)->flags |= SOCKET_FLAG_TESTNONBLOCK;
+	}
+
 	talloc_set_destructor(*new_sock, socket_destructor);
 
 	return NT_STATUS_OK;
@@ -108,7 +116,7 @@ NTSTATUS socket_listen(struct socket_context *sock, const char *my_address, int 
 	return sock->ops->listen(sock, my_address, port, queue_size, flags);
 }
 
-NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_sock, uint32_t flags)
+NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_sock)
 {
 	NTSTATUS status;
 
@@ -124,7 +132,7 @@ NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	status = sock->ops->accept(sock, new_sock, flags);
+	status = sock->ops->accept(sock, new_sock);
 
 	if (NT_STATUS_IS_OK(status)) {
 		talloc_set_destructor(*new_sock, socket_destructor);
@@ -149,6 +157,10 @@ NTSTATUS socket_recv(struct socket_context *sock, void *buf,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
+	if ((sock->flags & SOCKET_FLAG_TESTNONBLOCK) && wantlen > 1) {
+		return sock->ops->recv(sock, buf, 1+(random() % (wantlen-1)), nread, flags);
+	}
+
 	return sock->ops->recv(sock, buf, wantlen, nread, flags);
 }
 
@@ -166,6 +178,12 @@ NTSTATUS socket_send(struct socket_context *sock,
 
 	if (!sock->ops->send) {
 		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if ((sock->flags & SOCKET_FLAG_TESTNONBLOCK) && blob->length > 1) {
+		DATA_BLOB blob2 = *blob;
+		blob2.length = 1+(random() % (blob2.length-1));
+		return sock->ops->send(sock, &blob2, sendlen, flags);
 	}
 
 	return sock->ops->send(sock, blob, sendlen, flags);
