@@ -581,7 +581,7 @@ encrypt_is(data, cnt)
 	} else {
 		ret = (*ep->is)(data, cnt);
 		if (encrypt_debug_mode)
-			printf("(*ep->is)(%x, %d) returned %s(%d)\n", data, cnt,
+			printf("(*ep->is)(%p, %d) returned %s(%d)\n", data, cnt,
 				(ret < 0) ? "FAIL " :
 				(ret == 0) ? "SUCCESS " : "MORE_TO_DO ", ret);
 	}
@@ -625,7 +625,7 @@ encrypt_reply(data, cnt)
 	} else {
 		ret = (*ep->reply)(data, cnt);
 		if (encrypt_debug_mode)
-			printf("(*ep->reply)(%x, %d) returned %s(%d)\n",
+			printf("(*ep->reply)(%p, %d) returned %s(%d)\n",
 				data, cnt,
 				(ret < 0) ? "FAIL " :
 				(ret == 0) ? "SUCCESS " : "MORE_TO_DO ", ret);
@@ -741,27 +741,9 @@ encrypt_request_start(data, cnt)
 
 static unsigned char str_keyid[(MAXKEYLEN*2)+5] = { IAC, SB, TELOPT_ENCRYPT };
 
-encrypt_enc_keyid(keyid, len)
-	unsigned char *keyid;
-	int len;
-{
-	encrypt_keyid(&ki[1], keyid, len);
-}
-
-encrypt_dec_keyid(keyid, len)
-	unsigned char *keyid;
-	int len;
-{
-	encrypt_keyid(&ki[0], keyid, len);
-}
-
-encrypt_keyid(kp, keyid, len)
-	struct key_info *kp;
-	unsigned char *keyid;
-	int len;
+void encrypt_keyid(struct key_info *kp, unsigned char *keyid, int len)
 {
 	Encryptions *ep;
-	unsigned char *strp, *cp;
 	int dir = kp->dir;
 	register int ret = 0;
 
@@ -798,12 +780,18 @@ encrypt_keyid(kp, keyid, len)
 	encrypt_send_keyid(dir, kp->keyid, kp->keylen, 0);
 }
 
-	void
-encrypt_send_keyid(dir, keyid, keylen, saveit)
-	int dir;
-	unsigned char *keyid;
-	int keylen;
-	int saveit;
+void encrypt_enc_keyid(unsigned char *keyid, int len)
+{
+	encrypt_keyid(&ki[1], keyid, len);
+}
+
+void encrypt_dec_keyid(unsigned char *keyid, int len)
+{
+	encrypt_keyid(&ki[0], keyid, len);
+}
+
+
+void encrypt_send_keyid(int dir, unsigned char *keyid, int keylen, int saveit)
 {
 	unsigned char *strp;
 
@@ -954,10 +942,9 @@ encrypt_send_request_end()
 		printf(">>>%s: Request input to be clear text\r\n", Name);
 }
 
-	void
-encrypt_wait()
+
+void encrypt_wait(void)
 {
-	register int encrypt, decrypt;
 	if (encrypt_debug_mode)
 		printf(">>>%s: in encrypt_wait\r\n", Name);
 	if (!havesessionkey || !(I_SUPPORT_ENCRYPT & remote_supports_decrypt))
@@ -974,10 +961,8 @@ encrypt_debug(mode)
 	encrypt_debug_mode = mode;
 }
 
-	void
-encrypt_gen_printsub(data, cnt, buf, buflen)
-	unsigned char *data, *buf;
-	int cnt, buflen;
+void encrypt_gen_printsub(unsigned char *data, int cnt, 
+			  unsigned char *buf, int buflen)
 {
 	char tbuf[16], *cp;
 

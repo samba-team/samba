@@ -165,8 +165,9 @@ char valid_opts[] = {
 	'\0'
 };
 
-main(argc, argv)
-	char *argv[];
+void doit(struct sockaddr_in*);
+
+int main(int argc, char **argv)
 {
 	struct sockaddr_in from;
 	int on = 1, fromlen;
@@ -787,8 +788,7 @@ extern void telnet P((int, int, char *));
 /*
  * Get a pty, scan input lines.
  */
-doit(who)
-	struct sockaddr_in *who;
+void doit(struct sockaddr_in *who)
 {
 	char *host, *inet_ntoa();
 	int t;

@@ -72,6 +72,25 @@ des_new_random_key(des_cblock *key)
   return(0);
 }
 
+/* this is for broken Solaris */
+#ifndef HAVE_GETHOSTID 
+
+#include <sys/systeminfo.h>
+
+static long gethostid(void)
+{
+  static int flag=0;
+  static long hostid;
+  if(!flag){
+    char s[32];
+    sysinfo(SI_HW_SERIAL, s, 32);
+    sscanf(s, "%u", &hostid);
+    flag=1;
+  }
+  return hostid;
+}
+#endif
+
 /*
  * des_init_random_number_generator:
  *

@@ -56,7 +56,7 @@ static char sccsid[] = "@(#)commands.c	8.4 (Berkeley) 5/30/95";
 #include <netdb.h>
 #include <ctype.h>
 #include <pwd.h>
-#include <varargs.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <stdlib.h>
 
@@ -81,7 +81,7 @@ static char sccsid[] = "@(#)commands.c	8.4 (Berkeley) 5/30/95";
 
 #ifndef	MAXHOSTNAMELEN
 #define	MAXHOSTNAMELEN 64
-#endif	MAXHOSTNAMELEN
+#endif
 
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
 int tos = -1;
@@ -96,7 +96,8 @@ extern int isprefix();
 extern char **genget();
 extern int Ambiguous();
 
-static call();
+typedef int (*intrtn_t)(int, char**);
+static int call(intrtn_t, ...);
 
 typedef struct {
 	char	*name;		/* command name */
@@ -167,9 +168,7 @@ makeargv()
  * Todo:  1.  Could take random integers (12, 0x12, 012, 0b1).
  */
 
-	static
-special(s)
-	register char *s;
+static char special(char *s)
 {
 	register char c;
 	char b;
@@ -289,14 +288,10 @@ static struct sendlist Sendlist[] = {
 #define	GETSEND(name) ((struct sendlist *) genget(name, (char **) Sendlist, \
 				sizeof(struct sendlist)))
 
-    static int
-sendcmd(argc, argv)
-    int  argc;
-    char **argv;
+static int sendcmd(int argc, char **argv)
 {
     int count;		/* how many bytes we are going to need to send */
     int i;
-    int question = 0;	/* was at least one argument a question */
     struct sendlist *s;	/* pointer to current command */
     int success = 0;
     int needconnect = 0;
@@ -1085,8 +1080,7 @@ unsetcmd(argc, argv)
 #ifdef	KLUDGELINEMODE
 extern int kludgelinemode;
 
-    static int
-dokludgemode()
+static void dokludgemode(void)
 {
     kludgelinemode = 1;
     send_wont(TELOPT_LINEMODE, 1);
@@ -1437,11 +1431,7 @@ shell(argc, argv)
 extern int shell();
 #endif	/* !defined(TN3270) */
 
-    /*VARARGS*/
-    static
-bye(argc, argv)
-    int  argc;		/* Number of arguments */
-    char *argv[];	/* arguments */
+static int bye(int argc, char **argv)
 {
     extern int resettermname;
 
@@ -1464,11 +1454,10 @@ bye(argc, argv)
 	longjmp(toplevel, 1);
 	/* NOTREACHED */
     }
-    return 1;			/* Keep lint, etc., happy */
 }
 
 /*VARARGS*/
-quit()
+void quit(void)
 {
 	(void) call(bye, "bye", "fromquit", 0);
 	Exit(0);
@@ -1533,10 +1522,7 @@ getslc(name)
 		genget(name, (char **) SlcList, sizeof(struct slclist));
 }
 
-    static
-slccmd(argc, argv)
-    int  argc;
-    char *argv[];
+static int slccmd(int argc, char **argv)
 {
     struct slclist *c;
 
@@ -1630,9 +1616,7 @@ getenvcmd(name)
 		genget(name, (char **) EnvList, sizeof(struct envlist));
 }
 
-env_cmd(argc, argv)
-    int  argc;
-    char *argv[];
+int env_cmd(int argc, char **argv)
 {
     struct envlist *c;
 
@@ -1854,7 +1838,7 @@ env_default(init, welldefined)
 
 	if (init) {
 		nep = &envlisthead;
-		return;
+		return NULL;
 	}
 	if (nep) {
 		while (nep = nep->next) {
@@ -1961,9 +1945,7 @@ auth_help()
     return 0;
 }
 
-auth_cmd(argc, argv)
-    int  argc;
-    char *argv[];
+int auth_cmd(int argc, char **argv)
 {
     struct authlist *c;
 
@@ -2068,9 +2050,7 @@ EncryptHelp()
     return 0;
 }
 
-encrypt_cmd(argc, argv)
-    int  argc;
-    char *argv[];
+int encrypt_cmd(int argc, char **argv)
 {
     struct encryptlist *c;
 
@@ -2148,11 +2128,8 @@ filestuff(fd)
 /*
  * Print status about the connection.
  */
-    /*ARGSUSED*/
-    static
-status(argc, argv)
-    int	 argc;
-    char *argv[];
+
+static int status(int argc, char **argv)
 {
     if (connected) {
 	printf("Connected to %s.\n", hostname);
@@ -2230,10 +2207,91 @@ ayt_status()
 
 unsigned long inet_addr();
 
-    int
-tn(argc, argv)
-    int argc;
-    char *argv[];
+static char *rcname = 0;
+static char rcbuf[128];
+
+static Command *getcmd(char *name);
+
+static void cmdrc(char *m1, char *m2)
+{
+    register Command *c;
+    FILE *rcfile;
+    int gotmachine = 0;
+    int l1 = strlen(m1);
+    int l2 = strlen(m2);
+    char m1save[64];
+
+    if (skiprc)
+	return;
+
+    strcpy(m1save, m1);
+    m1 = m1save;
+
+    if (rcname == 0) {
+	rcname = getenv("HOME");
+	if (rcname)
+	    strcpy(rcbuf, rcname);
+	else
+	    rcbuf[0] = '\0';
+	strcat(rcbuf, "/.telnetrc");
+	rcname = rcbuf;
+    }
+
+    if ((rcfile = fopen(rcname, "r")) == 0) {
+	return;
+    }
+
+    for (;;) {
+	if (fgets(line, sizeof(line), rcfile) == NULL)
+	    break;
+	if (line[0] == 0)
+	    break;
+	if (line[0] == '#')
+	    continue;
+	if (gotmachine) {
+	    if (!isspace(line[0]))
+		gotmachine = 0;
+	}
+	if (gotmachine == 0) {
+	    if (isspace(line[0]))
+		continue;
+	    if (strncasecmp(line, m1, l1) == 0)
+		strncpy(line, &line[l1], sizeof(line) - l1);
+	    else if (strncasecmp(line, m2, l2) == 0)
+		strncpy(line, &line[l2], sizeof(line) - l2);
+	    else if (strncasecmp(line, "DEFAULT", 7) == 0)
+		strncpy(line, &line[7], sizeof(line) - 7);
+	    else
+		continue;
+	    if (line[0] != ' ' && line[0] != '\t' && line[0] != '\n')
+		continue;
+	    gotmachine = 1;
+	}
+	makeargv();
+	if (margv[0] == 0)
+	    continue;
+	c = getcmd(margv[0]);
+	if (Ambiguous(c)) {
+	    printf("?Ambiguous command: %s\n", margv[0]);
+	    continue;
+	}
+	if (c == 0) {
+	    printf("?Invalid command: %s\n", margv[0]);
+	    continue;
+	}
+	/*
+	 * This should never happen...
+	 */
+	if (c->needconnect && !connected) {
+	    printf("?Need to be connected first for %s.\n", margv[0]);
+	    continue;
+	}
+	(*c->handler)(margc, margv);
+    }
+    fclose(rcfile);
+}
+
+int tn(int argc, char **argv)
 {
     register struct hostent *host = 0;
     struct sockaddr_in sin;
@@ -2444,7 +2502,7 @@ tn(argc, argv)
 
 	user = getenv("USER");
 	if (user == NULL ||
-	    (pw = getpwnam(user)) && pw->pw_uid != getuid()) {
+	    ((pw = getpwnam(user)) && pw->pw_uid != getuid())) {
 		if (pw = getpwuid(getuid()))
 			user = pw->pw_name;
 		else
@@ -2528,7 +2586,7 @@ static Command cmdtab[] = {
 #endif
 	{ "environ",	envhelp,	env_cmd,	0 },
 	{ "?",		helphelp,	help,		0 },
-	0
+	{ 0,            0,              0,              0 }
 };
 
 static char	crmodhelp[] =	"deprecated command -- use 'toggle crmod' instead";
@@ -2538,7 +2596,7 @@ static Command cmdtab2[] = {
 	{ "help",	0,		help,		0 },
 	{ "escape",	escapehelp,	setescape,	0 },
 	{ "crmod",	crmodhelp,	togcrmod,	0 },
-	0
+	{ 0,            0,		0, 		0 }
 };
 
 
@@ -2546,30 +2604,20 @@ static Command cmdtab2[] = {
  * Call routine with argc, argv set from args (terminated by 0).
  */
 
-    /*VARARGS1*/
-    static
-call(va_alist)
-    va_dcl
+static int call(intrtn_t routine, ...)
 {
     va_list ap;
-    typedef int (*intrtn_t)();
-    intrtn_t routine;
     char *args[100];
     int argno = 0;
 
-    va_start(ap);
-    routine = (va_arg(ap, intrtn_t));
-    while ((args[argno++] = va_arg(ap, char *)) != 0) {
-	;
-    }
+    va_start(ap, routine);
+    while ((args[argno++] = va_arg(ap, char *)) != 0);
     va_end(ap);
     return (*routine)(argno-1, args);
 }
 
 
-    static Command *
-getcmd(name)
-    char *name;
+static Command *getcmd(char *name)
 {
     Command *cm;
 
@@ -2662,10 +2710,7 @@ command(top, tbuf, cnt)
 /*
  * Help command.
  */
-	static
-help(argc, argv)
-	int argc;
-	char *argv[];
+static int help(int argc, char **argv)
 {
 	register Command *c;
 
@@ -2692,88 +2737,6 @@ help(argc, argv)
 	return 0;
 }
 
-static char *rcname = 0;
-static char rcbuf[128];
-
-cmdrc(m1, m2)
-	char *m1, *m2;
-{
-    register Command *c;
-    FILE *rcfile;
-    int gotmachine = 0;
-    int l1 = strlen(m1);
-    int l2 = strlen(m2);
-    char m1save[64];
-
-    if (skiprc)
-	return;
-
-    strcpy(m1save, m1);
-    m1 = m1save;
-
-    if (rcname == 0) {
-	rcname = getenv("HOME");
-	if (rcname)
-	    strcpy(rcbuf, rcname);
-	else
-	    rcbuf[0] = '\0';
-	strcat(rcbuf, "/.telnetrc");
-	rcname = rcbuf;
-    }
-
-    if ((rcfile = fopen(rcname, "r")) == 0) {
-	return;
-    }
-
-    for (;;) {
-	if (fgets(line, sizeof(line), rcfile) == NULL)
-	    break;
-	if (line[0] == 0)
-	    break;
-	if (line[0] == '#')
-	    continue;
-	if (gotmachine) {
-	    if (!isspace(line[0]))
-		gotmachine = 0;
-	}
-	if (gotmachine == 0) {
-	    if (isspace(line[0]))
-		continue;
-	    if (strncasecmp(line, m1, l1) == 0)
-		strncpy(line, &line[l1], sizeof(line) - l1);
-	    else if (strncasecmp(line, m2, l2) == 0)
-		strncpy(line, &line[l2], sizeof(line) - l2);
-	    else if (strncasecmp(line, "DEFAULT", 7) == 0)
-		strncpy(line, &line[7], sizeof(line) - 7);
-	    else
-		continue;
-	    if (line[0] != ' ' && line[0] != '\t' && line[0] != '\n')
-		continue;
-	    gotmachine = 1;
-	}
-	makeargv();
-	if (margv[0] == 0)
-	    continue;
-	c = getcmd(margv[0]);
-	if (Ambiguous(c)) {
-	    printf("?Ambiguous command: %s\n", margv[0]);
-	    continue;
-	}
-	if (c == 0) {
-	    printf("?Invalid command: %s\n", margv[0]);
-	    continue;
-	}
-	/*
-	 * This should never happen...
-	 */
-	if (c->needconnect && !connected) {
-	    printf("?Need to be connected first for %s.\n", margv[0]);
-	    continue;
-	}
-	(*c->handler)(margc, margv);
-    }
-    fclose(rcfile);
-}
 
 #if	defined(IP_OPTIONS) && defined(IPPROTO_IP)
 

@@ -131,7 +131,7 @@ static	krb5_authenticator authenticator;
 
 #define Voidptr krb5_pointer
 
-Block	session_key;
+des_cblock	session_key;
 
 	static int
 Data(ap, type, d, c)
@@ -430,12 +430,12 @@ kerberos5_is(ap, data, cnt)
 		    authdat->authenticator->subkey->keytype == KEYTYPE_DES) {
 		    memmove((Voidptr )session_key,
 			   (Voidptr )authdat->authenticator->subkey->contents,
-			   sizeof(Block));
+			   sizeof(des_cblock));
 		} else if (authdat->ticket->enc_part2->session->keytype ==
 			   KEYTYPE_DES) {
 		    memmove((Voidptr )session_key,
 			(Voidptr )authdat->ticket->enc_part2->session->contents,
-			sizeof(Block));
+			sizeof(des_cblock));
 		} else
 		    break;
 
@@ -518,7 +518,7 @@ kerberos5_reply(ap, data, cnt)
 
 		    tmpkey.keytype = KEYTYPE_DES;
 		    tmpkey.contents = session_key;
-		    tmpkey.length = sizeof(Block);
+		    tmpkey.length = sizeof(des_cblock);
 
 		    if (r = krb5_rd_rep(&inbuf, &tmpkey, &reply)) {
 			printf("[ Mutual authentication failed: %s ]\n",

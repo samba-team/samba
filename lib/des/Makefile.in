@@ -34,13 +34,13 @@ SOURCES = cbc_cksm.c cbc_enc.c ecb_enc.c pcbc_enc.c \
         qud_cksm.c read_pwd.c set_key.c str2key.c \
         cfb_enc.c \
 	3ecb_enc.c ofb_enc.c 3cbc_enc.c rnd_keys.c key_par.c \
-	enc_read.c enc_writ.c gethostid.c fcrypt.c
+	enc_read.c enc_writ.c fcrypt.c
 
 OBJECTS = cbc_cksm.o cbc_enc.o ecb_enc.o pcbc_enc.o \
         qud_cksm.o read_pwd.o set_key.o str2key.o \
         cfb_enc.o \
 	3ecb_enc.o ofb_enc.o 3cbc_enc.o rnd_keys.o key_par.o \
-	enc_read.o enc_writ.o gethostid.o fcrypt.o
+	enc_read.o enc_writ.o fcrypt.o
 
 all: $(LIB)
 

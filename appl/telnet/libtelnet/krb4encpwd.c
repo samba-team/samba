@@ -113,7 +113,7 @@ static	KTEXT_ST auth;
 static	char name[ANAME_SZ];
 static	char user_passwd[ANAME_SZ];
 static	AUTH_DAT adat = { 0 };
-static Schedule sched;
+static des_key_schedule sched;
 static char  challenge[REALM_SZ];
 
 	static int
@@ -157,7 +157,7 @@ krb4encpwd_init(ap, server)
 	int server;
 {
 	char hostname[80], *cp, *realm;
-	C_Block skey;
+	des_clock skey;
 
 	if (server) {
 		str_data[3] = TELQUAL_REPLY;
@@ -202,7 +202,7 @@ krb4encpwd_is(ap, data, cnt)
 	int cnt;
 {
 	Session_Key skey;
-	Block datablock;
+	des_cblock datablock;
 	char  r_passwd[ANAME_SZ], r_user[ANAME_SZ];
 	char  lhostname[ANAME_SZ], *cp;
 	int r;
@@ -232,7 +232,7 @@ krb4encpwd_is(ap, data, cnt)
 		  return;
 		}
 
-		memmove((void *)session_key, (void *)adat.session, sizeof(Block));
+		memmove((void *)session_key, (void *)adat.session, sizeof(des_cblock));
 		Data(ap, KRB4_ENCPWD_ACCEPT, (void *)0, 0);
 		auth_finished(ap, AUTH_USER);
 		break;
@@ -242,7 +242,7 @@ krb4encpwd_is(ap, data, cnt)
 		 *  Take the received random challenge text and save
 		 *  for future authentication.
 		 */
-		memmove((void *)challenge, (void *)data, sizeof(Block));
+		memmove((void *)challenge, (void *)data, sizeof(des_cblock));
 		break;
 
 
@@ -280,7 +280,7 @@ krb4encpwd_reply(ap, data, cnt)
 {
 	Session_Key skey;
 	KTEXT_ST krb_token;
-	Block enckey;
+	des_cblock enckey;
 	CREDENTIALS cred;
 	int r;
 	char	randchal[REALM_SZ], instance[ANAME_SZ], *cp;

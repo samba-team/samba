@@ -45,11 +45,9 @@ static char sccsid[] = "@(#)genget.c	8.2 (Berkeley) 5/30/95";
  * the length is returned.  If *s1 is a prefix of *s2,
  * the length of *s1 is returned.
  */
-	int
-isprefix(s1, s2)
-	register char *s1, *s2;
+
+int isprefix(char *s1, char *s2)
 {
-	register int n = 0;
 	char *os1;
 	register char c1, c2;
 

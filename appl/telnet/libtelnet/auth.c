@@ -539,7 +539,6 @@ auth_name(data, cnt)
 	unsigned char *data;
 	int cnt;
 {
-	Authenticator *ap;
 	unsigned char savename[256];
 
 	if (cnt < 1) {

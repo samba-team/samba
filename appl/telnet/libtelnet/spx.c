@@ -100,8 +100,8 @@ static unsigned char str_name[1024] = { IAC, SB, TELOPT_AUTHENTICATION,
 #define	SPX_REJECT	1		/* Rejected (reason might follow) */
 #define SPX_ACCEPT	2		/* Accepted */
 
-static Schedule sched;
-static Block	challenge	= { 0 };
+static des_key_schedule sched;
+static des_cblock	challenge	= { 0 };
 
 
 /*******************************************************************/
@@ -200,7 +200,7 @@ spx_init(ap, server)
 spx_send(ap)
 	Authenticator *ap;
 {
-	Block enckey;
+	des_cblock enckey;
 	int r;
 
 	gss_OID	actual_mech_type, output_name_type;
@@ -312,7 +312,7 @@ spx_is(ap, data, cnt)
 	int cnt;
 {
 	Session_Key skey;
-	Block datablock;
+	des_cblock datablock;
 	int r;
 
 	if (cnt-- < 1)

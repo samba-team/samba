@@ -101,10 +101,7 @@ static u_long ring_clock = 0;
 
 /* Buffer state transition routines */
 
-    ring_init(ring, buffer, count)
-Ring *ring;
-    unsigned char *buffer;
-    int count;
+int ring_init(Ring *ring, unsigned char *buffer, int count)
 {
     memset((char *)ring, 0, sizeof *ring);
 

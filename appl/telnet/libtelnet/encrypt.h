@@ -62,14 +62,10 @@
 #define	DIR_DECRYPT		1
 #define	DIR_ENCRYPT		2
 
-typedef	unsigned char Block[8];
-typedef unsigned char *BlockT;
-typedef struct { Block _B; } Schedule[16];
-
 #define	VALIDKEY(key)	( key[0] | key[1] | key[2] | key[3] | \
 			  key[4] | key[5] | key[6] | key[7])
 
-#define	SAMEKEY(k1, k2)	(!bcmp((void *)k1, (void *)k2, sizeof(Block)))
+#define	SAMEKEY(k1, k2)	(!bcmp((void *)k1, (void *)k2, sizeof(des_cblock)))
 
 typedef	struct {
 	short		type;

@@ -200,7 +200,7 @@ rsaencpwd_is(ap, data, cnt)
 	int cnt;
 {
 	Session_Key skey;
-	Block datablock;
+	des_cblock datablock;
 	char  r_passwd[PWD_SZ], r_user[NAME_SZ];
 	char  *cp, key[160];
 	char  chalkey[160], *ptr;
@@ -321,7 +321,7 @@ rsaencpwd_reply(ap, data, cnt)
 {
 	Session_Key skey;
 	KTEXT_ST token;
-	Block enckey;
+	des_cblock enckey;
 	int r, pubkey_len;
 	char	randchal[CHAL_SZ], *cp;
 	char	chalkey[160], pubkey[128], *ptr;

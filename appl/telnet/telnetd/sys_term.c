@@ -1432,7 +1432,7 @@ startslave(host, autologin, autoname)
 #ifdef ENCRYPTION
 	if (encrypt_output == 0 || decrypt_input == 0)
 #endif
-	  writenet(tbuf, strlen(tbuf));
+	  writenet((unsigned char*)tbuf, strlen(tbuf));
       }
 #ifndef	NEWINIT
 # ifdef	PARENT_DOES_UTMP

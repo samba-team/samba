@@ -138,7 +138,7 @@ extern int
     crmod,
     netdata,		/* Print out network data flow */
     prettydump,		/* Print "netdata" output in user readable format */
-#if	defined(unix)
+#if defined(unix) || defined(__unix__) || defined(__unix)
 #if	defined(TN3270)
     cursesdata,		/* Print out curses data flow */
     apitrace,		/* Trace API transactions */
@@ -309,6 +309,8 @@ extern int
 
 extern cc_t
     *tcval P((int));
+
+extern void quit P((void));
 
 #ifndef	USE_TERMIO
 
