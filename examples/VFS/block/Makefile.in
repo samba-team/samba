@@ -1,0 +1,42 @@
+MAKEFILE	= Makefile.vfs
+
+include	$(MAKEFILE)
+
+CC		= @CC@
+LIBTOOL		= libtool
+CFLAGS		= @CFLAGS@ $(VFS_CFLAGS)
+CPPFLAGS	= @CPPFLAGS@ $(VFS_CPPFLAGS)
+LDFLAGS		= @LDFLAGS@ $(VFS_LDFLAGS)
+LDSHFLAGS	= -shared
+srcdir		= @builddir@
+FLAGS		=  $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper  -I. $(CPPFLAGS) -I$(srcdir)
+
+# Default target
+
+default: $(VFS_OBJS)
+
+# if file doesn't exist try to create one; 
+# it is possible that some variables will be 
+# defined correctly
+Makefile.vfs:
+	@echo -ne "VFS_OBJS\t= " > $(MAKEFILE); \
+	for i in *.c; do \
+	echo -n $$i" " | sed -e 's/\(.*\)\.c\(.*\)/\1\.so\2/g' >> $(MAKEFILE); \
+	done; \
+	echo -ne "\nVFS_CFLAGS\t= \nVFS_CPPFLAGS\t= \nVFS_LDFLAGS\t= \n" >> $(MAKEFILE)
+	make
+
+# Pattern rules
+
+%.so: %.lo
+	$(LIBTOOL) $(CC) $(LDSHFLAGS) $(LDFLAGS) -o $@ $< 
+
+%.lo: %.c
+	$(LIBTOOL) $(CC) $(FLAGS) -c $<
+
+# Misc targets
+
+clean:
+	rm -rf .libs
+	rm -f core *~ *% *.bak \
+	$(VFS_OBJS) $(VFS_OBJS:.so=.o) $(VFS_OBJS:.so=.lo) 
