@@ -852,14 +852,13 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 	/* loop over all groups looking for a matching printer name */
 	
 	for ( i=0; i<ctr->num_groups; i++ ) {
-		if ( strcmp(ctr->msg_groups[i].printername, msg->printer) == 0 )
+		if ( strequal(ctr->msg_groups[i].printername, msg->printer))
 			break;
 	}
 	
 	/* add a new group? */
 	
-	if ( i == ctr->num_groups )
-	{
+	if ( i == ctr->num_groups ) {
 		ctr->num_groups++;
 
 		if ( !(groups = talloc_realloc( ctr->ctx, ctr->msg_groups, sizeof(SPOOLSS_NOTIFY_MSG_GROUP)*ctr->num_groups)) ) {
@@ -926,8 +925,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 	
 	/* loop over all printers */
 	
-	for (p = printers_list; p; p = p->next) 
-	{
+	for (p = printers_list; p; p = p->next) {
 		SPOOL_NOTIFY_INFO_DATA *data;
 		uint32	data_len = 0;
 		uint32 	id;
@@ -956,8 +954,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		
 		/* build the array of change notifications */
 		
-		for ( i=0; i<msg_group->num_msgs; i++ )
-		{
+		for ( i=0; i<msg_group->num_msgs; i++ ) {
 			SPOOLSS_NOTIFY_MSG	*msg = &messages[i];
 			
 			/* Are we monitoring this event? */
@@ -990,8 +987,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 
 			/* Convert unix jobid to smb jobid */
 
-			if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) 
-			{
+			if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) {
 				id = sysjob_to_jobid(msg->id);
 
 				if (id == -1) {
@@ -1057,8 +1053,11 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, void *buf, size_t len )
 		tdb_unpack((char *)buf + offset, len - offset, "B", 
 			   &msg->len, &msg->notify.data);
 			   
-	DEBUG(3, ("notify2_unpack_msg: got NOTIFY2 message, type %d, field 0x%02x, flags 0x%04x\n",
-		  msg->type, msg->field, msg->flags));
+	DEBUG(3, ("notify2_unpack_msg: got NOTIFY2 message for printer %s, type %d, field 0x%02x, flags 0x%04x\n",
+		  msg->printer, msg->type, msg->field, msg->flags));
+
+	/* msg->printer is in unix charset. Convert ! */
+	unix_to_dos(msg->printer);
 
 	if (msg->len == 0)
 		DEBUG(3, ("notify2_unpack_msg: value1 = %d, value2 = %d\n", msg->notify.value[0],
