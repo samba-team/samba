@@ -102,16 +102,22 @@ static char *automount_path(char *user_name)
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
-	if (lp_nis_home_map())
-	{
-	        char *home_path_start;
+	if (lp_nis_home_map()) {
+		char *home_path_start;
 		char *automount_value = automount_lookup(user_name);
-		home_path_start = strchr(automount_value,':');
-		if (home_path_start != NULL)
-		{
-		  DEBUG(5, ("NIS lookup succeeded.  Home path is: %s\n",
-		        home_path_start?(home_path_start+1):""));
-		  pstrcpy(server_path, home_path_start+1);
+
+		if(strlen(automount_value) > 0) {
+			home_path_start = strchr(automount_value,':');
+			if (home_path_start != NULL) {
+				DEBUG(5, ("NIS lookup succeeded.  Home path is: %s\n",
+						home_path_start?(home_path_start+1):""));
+				pstrcpy(server_path, home_path_start+1);
+			}
+		} else {
+			/* NIS key lookup failed: default to user home directory from password file */
+          pstrcpy(server_path, get_user_home_dir(user_name));
+		  DEBUG(5, ("NIS lookup failed. Using Home path from passwd file. Home path is: %s\n",
+		        server_path ));
 		}
 	}
 #endif
