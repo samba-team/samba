@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include <sys/ioctl.h>
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
@@ -74,7 +75,6 @@ k_afsklog(char *cell, char *krealm)
   int k_errno;
   CREDENTIALS c;
   KTEXT_ST ticket;
-  char username[256];
   char realm[REALM_SZ];
   char CELL[64];
 
