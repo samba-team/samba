@@ -558,7 +558,7 @@ int msrpc_main(int argc,char *argv[])
 	fstrcpy(static_pipe.name, pipe_name);
 	if (msrpcd_init(ClientMSRPC, &static_pipe))
 	{
-		reload_services(False);
+		reload_services(True);
 		msrpcd_process(ClientMSRPC, &static_pipe);
 	}
 	if (ClientMSRPC != -1)

@@ -355,6 +355,7 @@ BOOL msrpcd_init(int c, pipes_struct *p)
 {
 	struct user_creds usr;
 	gid_t *groups = NULL;
+	char *user;
 
 	if (!get_user_creds(c, &usr))
 	{
@@ -405,6 +406,19 @@ BOOL msrpcd_init(int c, pipes_struct *p)
 
 	ZERO_STRUCTP(p->l);
 
+	user = usr.uxc.user_name;
+	if (!strequal(user,lp_guestaccount(-1)) &&
+	     lp_servicenumber(user) < 0)      
+	{
+		int homes = lp_servicenumber(HOMES_NAME);
+		char *home = get_unixhome_dir(user);
+		if (homes >= 0 && home)
+		{
+			pstring home_dir;
+			fstrcpy(home_dir, home);
+			lp_add_home(user,homes,home_dir);
+		}
+	}
 	return True;
 }
 
