@@ -160,11 +160,6 @@ static BOOL cli_simple_check_incoming_message(struct cli_state *cli)
 	SIVAL(sequence_buf, 0, data->reply_seq_num);
 	SIVAL(sequence_buf, 4, 0);
 
-	if (smb_len(cli->inbuf) < (offset_end_of_sig - 4)) {
-		DEBUG(1, ("Can't check signature on short packet! smb_len = %u\n", smb_len(cli->inbuf)));
-		return False;
-	}
-
 	/* get a copy of the server-sent mac */
 	memcpy(server_sent_mac, &cli->inbuf[smb_ss_field], sizeof(server_sent_mac));
 	
@@ -275,7 +270,7 @@ static BOOL cli_ntlmssp_check_incoming_message(struct cli_state *cli)
 {
 	BOOL good;
 	NTSTATUS nt_status;
-	DATA_BLOB sig = data_blob(&cli->outbuf[smb_ss_field], 8);
+	DATA_BLOB sig = data_blob(&cli->inbuf[smb_ss_field], 8);
 
 	NTLMSSP_CLIENT_STATE *ntlmssp_state = cli->sign_info.signing_context;
 
@@ -460,8 +455,14 @@ void cli_caclulate_sign_mac(struct cli_state *cli)
 BOOL cli_check_sign_mac(struct cli_state *cli) 
 {
 	BOOL good;
-	good = cli->sign_info.check_incoming_message(cli);
-	
+
+	if (smb_len(cli->inbuf) < (smb_ss_field + 8 - 4)) {
+		DEBUG(1, ("Can't check signature on short packet! smb_len = %u\n", smb_len(cli->inbuf)));
+		good = False;
+	} else {
+		good = cli->sign_info.check_incoming_message(cli);
+	}
+
 	if (!good) {
 		if (cli->sign_info.doing_signing) {
 			return False;
