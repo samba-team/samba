@@ -449,6 +449,8 @@ packet size
 
 passwd chat
 
+passwd chat debug
+
 passwd program
 
 password level
@@ -2602,7 +2604,7 @@ smbpasswd file is being changed, without access to the old password
 cleartext. In this case the old password cleartext is set to ""
 (the empty string).
 
-See also 'unix password sync'
+See also 'unix password sync' and 'passwd chat debug'
 
 .B Example:
         passwd chat = "*Enter OLD password*" %o\en "*Enter NEW password*" %n\en \e
@@ -2611,6 +2613,22 @@ See also 'unix password sync'
 
 .B Default:
        passwd chat = *old*password* %o\en *new*password* %n\en *new*password* %n\en *changed*
+
+.SS passwd chat debug (G)
+
+This boolean specifies if the passwd chat script parameter is run
+in 'debug' mode. In this mode the strings passed to and received
+from the passwd chat are printed in the smbd log with a debug level
+of 100. This is a dangerous option as it will allow plaintext passwords
+to be seen in the smbd log. It is available to help Samba admins
+debug their passwd chat scripts and should be turned off after
+this has been done. This parameter is off by default.
+
+.B Example:
+     passwd chat debug = True
+
+.B Default:
+     passwd chat debug = False
 
 .SS passwd program (G)
 The name of a program that can be used to set user passwords.
