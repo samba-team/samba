@@ -62,12 +62,18 @@ void remove_name_entry(struct subnet_record *d, char *name,int type, BOOL direct
       a de-registration packet to the local subnet before removing the
       name from its local-subnet name database. */
 
+  int search = FIND_SELF;
   struct name_record n;
   struct name_record *n2=NULL;
       
   make_nmb_name(&n.name,name,type,scope);
 
-  if ((n2 = find_name_search(&d, &n.name, FIND_SELF, ipzero)))
+  if(d == wins_subnet)
+    search |= FIND_WINS;
+  else
+    search |= FIND_LOCAL;
+
+  if ((n2 = find_name_search(&d, &n.name, search, ipzero)))
   {
     /* check name isn't already being de-registered */
     if (NAME_DEREG(n2->ip_flgs[0].nb_flags))
@@ -78,6 +84,14 @@ void remove_name_entry(struct subnet_record *d, char *name,int type, BOOL direct
   }
 
   if (!n2) return;
+
+  /* Only remove names with non-zero death times. */
+  if(n2->death_time == 0)
+  {
+    DEBUG(5,("remove_name_entry: Name %s(%d) has zero ttl - not removing.\n",
+             name, type));
+    return;
+  }
 
   /* remove the name immediately. even if the spec says we should
      first try to release them, this is too dangerous with our current
