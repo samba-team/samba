@@ -129,11 +129,6 @@ implemented */
 #define GET_DELETE_ON_CLOSE_FLAG(x) (((x) & DELETE_ON_CLOSE_FLAG) ? True : False)
 #define SET_DELETE_ON_CLOSE_FLAG(x) ((x) ? DELETE_ON_CLOSE_FLAG : 0)
 
-/* was delete access requested in NT open ? */
-#define DELETE_ACCESS_REQUESTED (1<<17)
-#define GET_DELETE_ACCESS_REQUESTED(x) (((x) & DELETE_ACCESS_REQUESTED) ? True : False)
-#define SET_DELETE_ACCESS_REQUESTED(x) ((x) ? DELETE_ACCESS_REQUESTED : 0)
-
 /* open disposition values */
 #define FILE_EXISTS_FAIL 0
 #define FILE_EXISTS_OPEN 1
@@ -404,6 +399,7 @@ typedef struct files_struct
 	write_cache *wcp;
 	struct timeval open_time;
 	int share_mode;
+	uint32 desired_access;
 	time_t pending_modtime;
 	int oplock_type;
 	int sent_oplock_break;
@@ -571,6 +567,7 @@ typedef struct {
 	uint16 op_port;
 	uint16 op_type;
 	int share_mode;
+	uint32 desired_access;
 	struct timeval time;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
@@ -1395,7 +1392,7 @@ extern int global_is_multibyte_codepage;
 #define COPYBUF_SIZE (8*1024)
 
 /* 
- * Integers used to override error codes. 
+ * Values used to override error codes. 
  */
 extern int unix_ERR_class;
 extern int unix_ERR_code;

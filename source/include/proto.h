@@ -4411,8 +4411,8 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 				int *Access,int *action);
 files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf);
 int close_file_fchmod(files_struct *fsp);
-files_struct *open_directory(connection_struct *conn, char *fname,
-		SMB_STRUCT_STAT *psbuf, int share_mode, int smb_ofun, mode_t unixmode, int *action);
+files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf,
+			uint32 desired_access, int share_mode, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 /*The following definitions come from  smbd/oplock.c  */

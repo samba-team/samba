@@ -2097,7 +2097,7 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
 	 * Only allow delete on close for files/directories opened with delete intent.
 	 */
 
-	if (delete_on_close && !GET_DELETE_ACCESS_REQUESTED(fsp->share_mode)) {
+	if (delete_on_close && !(fsp->desired_access & DELETE_ACCESS)) {
 		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
 				fsp->fsp_name ));
 		return NT_STATUS_ACCESS_DENIED;

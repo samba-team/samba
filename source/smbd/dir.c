@@ -688,7 +688,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 	/* Pseudo-open the file (note - no fd's created). */
 
 	if(S_ISDIR(ste.st_mode))	
-		 fsp = open_directory(conn, name, &ste, SET_DENY_MODE(DENY_NONE), (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+		 fsp = open_directory(conn, name, &ste, 0, SET_DENY_MODE(DENY_NONE), (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 			unix_mode(conn,aRONLY|aDIR, name), &smb_action);
 	else
 		fsp = open_file_shared1(conn, name, &ste, FILE_READ_ATTRIBUTES, SET_DENY_MODE(DENY_NONE), 
@@ -699,7 +699,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
 	sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd);
-	close_file(fsp, True);
+	close_file(fsp, False);
 
 	/* No access if SD get failed. */
 	if (!sd_size)
