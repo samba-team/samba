@@ -1593,6 +1593,13 @@ struct packet_struct *receive_packet(int fd,enum packet_type type,int t);
 
 char *get_nt_error_msg(uint32 nt_code);
 
+/*The following definitions come from  nttrans.c  */
+
+int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize);
+int reply_ntcancel(char *inbuf,char *outbuf,int length,int bufsize);
+int reply_nttranss(char *inbuf,char *outbuf,int length,int bufsize);
+int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize);
+
 /*The following definitions come from  params.c  */
 
 BOOL pm_process( char *FileName,

@@ -279,19 +279,20 @@ static void restore_case_semantics(uint32 file_attributes)
 static int map_create_disposition( uint32 create_disposition)
 {
   switch( create_disposition ) {
-  case CREATE_NEW:
+  case FILE_CREATE:
     /* create if not exist, fail if exist */
     return 0x10;
-  case CREATE_ALWAYS:
+  case FILE_SUPERSEDE:
+  case FILE_OVERWRITE_IF:
     /* create if not exist, trunc if exist */
     return 0x12;
-  case OPEN_EXISTING:
+  case FILE_OPEN:
     /* fail if not exist, open if exists */
     return 0x1;
-  case OPEN_ALWAYS:
+  case FILE_OPEN_IF:
     /* create if not exist, open if exists */
     return 0x11;
-  case TRUNCATE_EXISTING:
+  case FILE_OVERWRITE:
     /* fail if not exist, truncate if exists */
     return 0x2;
   default:
@@ -305,7 +306,7 @@ static int map_create_disposition( uint32 create_disposition)
  Utility function to map share modes.
 ****************************************************************************/
 
-static int map_share_mode( uint32 desired_access, uint32 share_access)
+static int map_share_mode( uint32 desired_access, uint32 share_access, uint32 file_attributes)
 {
   int smb_open_mode;
 
@@ -354,34 +355,14 @@ static int map_share_mode( uint32 desired_access, uint32 share_access)
  Reply to an NT create and X call on a pipe.
 ****************************************************************************/
 
-static int nt_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
+static int nt_open_pipe(char *fname, char *inbuf, char *outbuf, int *ppnum)
 {
-  pstring fname;
   int cnum = SVAL(inbuf,smb_tid);
   int pnum = -1;
   uint16 vuid = SVAL(inbuf, smb_uid);
-  uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
-  uint32 desired_access = IVAL(inbuf,smb_ntcreate_DesiredAccess);
-  uint32 file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
-  uint32 share_access = IVAL(inbuf,smb_ntcreate_ShareAccess);
-  uint32 create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
-  uint32 fname_len = MIN(((uint32)SVAL(inbuf,smb_ntcreate_NameLength)),
-                         ((uint32)sizeof(fname)-1));
-  int smb_ofun;
-  int smb_open_mode;
-  int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
-  int unixmode;
-  int fmode=0,mtime=0,rmode=0;
-  off_t file_size = 0;
-  struct stat sbuf;
-  int smb_action = 0;
-  BOOL bad_path = False;
-  files_struct *fsp;
-  char *p = NULL;
+  int i;
 
-  StrnCpy(fname,smb_buf(inbuf),fname_len);
-    
-  DEBUG(4,("nt_open_pipe_and_X: Opening pipe %s.\n", fname));
+  DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
     
   /* See if it is one we want to handle. */
   for( i = 0; known_nt_pipes[i]; i++ )
@@ -392,19 +373,16 @@ static int nt_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     return(ERROR(ERRSRV,ERRaccess));
     
   /* Strip \\ off the name. */
-  p = &fname[1];
+  fname++;
     
-  /* Known pipes arrive with DIR attribs. Remove it so a regular file */
-  /* can be opened and add it in after the open. */
-  DEBUG(3,("nt_open_pipe_and_X: Known pipe %s opening.\n",p));
+  DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
-  if((smb_ofun = map_create_disposition( create_disposition )) == -1)
-    return(ERROR(ERRDOS,ERRbadaccess));
-  smb_ofun |= 0x10;     /* Add Create if not exists flag */
-    
-  pnum = open_rpc_pipe_hnd(p, cnum, vuid);
+  pnum = open_rpc_pipe_hnd(fname, cnum, vuid);
   if (pnum < 0)
     return(ERROR(ERRSRV,ERRnofids));
+
+  *ppnum = pnum + 0x800; /* Mark file handle up into high range. */
+  return 0;
 }
 
 /****************************************************************************
@@ -428,20 +406,16 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
   /* Breakout the oplock request bits so we can set the
      reply bits separately. */
-  int oplock_request = flags & (REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
+  int oplock_request = 0;
   int unixmode;
   int fmode=0,mtime=0,rmode=0;
-  off_t file_size = 0;
+  off_t file_len = 0;
   struct stat sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
   files_struct *fsp;
   char *p = NULL;
   
-  /* If it's an IPC, pass off the pipe handler. */
-  if (IS_IPC(cnum))
-    return nt_open_pipe_and_X(inbuf,outbuf,length,bufsize);
-
   /* If it's a request for a directory open, fail it. */
   if(flags & OPEN_DIRECTORY)
     return(ERROR(ERRDOS,ERRnoaccess));
@@ -459,87 +433,108 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
    * and the share access.
    */
 
-  if((smb_open_mode = map_share_mode( desired_access, share_access)) == -1)
+  if((smb_open_mode = map_share_mode( desired_access, share_access, file_attributes)) == -1)
     return(ERROR(ERRDOS,ERRbadaccess));
 
   /*
-   * Check if POSIX semantics are wanted.
+   * Get the file name.
    */
-
-  set_posix_case_semantics(file_attributes);
-
   StrnCpy(fname,smb_buf(inbuf),fname_len);
   fname[fname_len] = '\0';
-  unix_convert(fname,cnum,0,&bad_path);
+
+  /* If it's an IPC, use the pipe handler. */
+  if (IS_IPC(cnum)) {
+    int ret = nt_open_pipe(fname, inbuf, outbuf, &fnum);
+    if(ret != 0)
+      return ret;
+    smb_action = FILE_WAS_OPENED;
+  } else {
+
+    /*
+     * Ordinary file.
+     */
+
+    /*
+     * Check if POSIX semantics are wanted.
+     */
+
+    set_posix_case_semantics(file_attributes);
+
+    unix_convert(fname,cnum,0,&bad_path);
     
-  fnum = find_free_file();
-  if (fnum < 0) {
+    fnum = find_free_file();
+    if (fnum < 0) {
+      restore_case_semantics(file_attributes);
+      return(ERROR(ERRSRV,ERRnofids));
+    }
+
+    if (!check_name(fname,cnum)) { 
+      if((errno == ENOENT) && bad_path) {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
+      Files[fnum].reserved = False;
+
+      restore_case_semantics(file_attributes);
+
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    } 
+  
+    unixmode = unix_mode(cnum,smb_attr | aARCH);
+    
+    oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+    oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+
+    open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
+                     oplock_request,&rmode,&smb_action);
+
+    fsp = &Files[fnum];
+    
+    if (!fsp->open) { 
+      if((errno == ENOENT) && bad_path) {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
+      Files[fnum].reserved = False;
+
+      restore_case_semantics(file_attributes);
+
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    } 
+  
+    if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      close_file(fnum,False);
+
+      restore_case_semantics(file_attributes);
+
+      return(ERROR(ERRDOS,ERRnoaccess));
+    } 
+  
     restore_case_semantics(file_attributes);
-    return(ERROR(ERRSRV,ERRnofids));
+
+    file_len = sbuf.st_size;
+    fmode = dos_mode(cnum,fname,&sbuf);
+    if(fmode == 0)
+      fmode = FILE_ATTRIBUTE_NORMAL;
+    mtime = sbuf.st_mtime;
+    if (fmode & aDIR) {
+      close_file(fnum,False);
+      return(ERROR(ERRDOS,ERRnoaccess));
+    } 
+  
+    /* 
+     * If the caller set the extended oplock request bit
+     * and we granted one (by whatever means) - set the
+     * correct bit for extended oplock reply.
+     */
+    
+    if (oplock_request && lp_fake_oplocks(SNUM(cnum)))
+      smb_action |= EXTENDED_OPLOCK_GRANTED;
+  
+    if(oplock_request && fsp->granted_oplock)
+      smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
-
-  if (!check_name(fname,cnum)) { 
-    if((errno == ENOENT) && bad_path) {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    Files[fnum].reserved = False;
-
-    restore_case_semantics(file_attributes);
-
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  } 
-  
-  unixmode = unix_mode(cnum,smb_attr | aARCH);
-    
-  open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
-                   oplock_request,&rmode,&smb_action);
-
-  fsp = &Files[fnum];
-    
-  if (!fsp->open) { 
-    if((errno == ENOENT) && bad_path) {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    Files[fnum].reserved = False;
-
-    restore_case_semantics(file_attributes);
-
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  } 
-  
-  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum,False);
-
-    restore_case_semantics(file_attributes);
-
-    return(ERROR(ERRDOS,ERRnoaccess));
-  } 
-  
-  restore_case_semantics(file_attributes);
-
-  size = sbuf.st_size;
-  fmode = dos_mode(cnum,fname,&sbuf);
-  mtime = sbuf.st_mtime;
-  if (fmode & aDIR) {
-    close_file(fnum,False);
-    return(ERROR(ERRDOS,ERRnoaccess));
-  } 
-  
-  /* If the caller set the extended oplock request bit
-     and we granted one (by whatever means) - set the
-     correct bit for extended oplock reply.
-   */
-    
-  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    smb_action |= EXTENDED_OPLOCK_GRANTED;
-  } 
-  
-  if(oplock_request && fsp->granted_oplock) {
-    smb_action |= EXTENDED_OPLOCK_GRANTED;
-  } 
-  
+ 
   set_message(outbuf,34,0,True);
 
   p = outbuf + smb_vwv2;
@@ -549,26 +544,46 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
    * exclusive & batch here.
    */
 
-  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 3 : 0));
+  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 1 : 0));
   p++;
   SSVAL(p,0,fnum);
   p += 2;
   SIVAL(p,0,smb_action);
   p += 4;
 
-  /* Create time. */  
-  put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(cnum))));
-  p += 8;
-  put_long_date(p,sbuf.st_atime); /* access time */
-  p += 8;
-  put_long_date(p,sbuf.st_mtime); /* write time */
-  p += 8;
-  put_long_date(p,sbuf.st_mtime); /* change time */
-  p += 8;
-  SIVAL(p,0,fmode); /* File Attributes. */
-  p += 12;
-  SIVAL(p,0, size & 0xFFFFFFFF);
-  SIVAL(p,4, (size >> 32));
+  if (IS_IPC(cnum)) {
+    /*
+     * Deal with pipe return.
+     */  
+    p += 32;
+    SIVAL(p,0,FILE_ATTRIBUTE_NORMAL); /* File Attributes. */
+    p += 20;
+    /* File type. */
+    SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
+    /* Device state. */
+    SSVAL(p,2, 0x5FF); /* ? */
+  } else {
+    /*
+     * Deal with file return.
+     */  
+    /* Create time. */  
+    put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(cnum))));
+    p += 8;
+    put_long_date(p,sbuf.st_atime); /* access time */
+    p += 8;
+    put_long_date(p,sbuf.st_mtime); /* write time */
+    p += 8;
+    put_long_date(p,sbuf.st_mtime); /* change time */
+    p += 8;
+    SIVAL(p,0,fmode); /* File Attributes. */
+    p += 12;
+    if(sizeof(off_t) == 8) {
+      SIVAL(p,0, file_len & 0xFFFFFFFF);
+      SIVAL(p,4, file_len >> 32);
+    } else {
+      SIVAL(p,0,file_len);
+    }
+  }
 
   chain_fnum = fnum;
     
@@ -579,12 +594,13 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
  Reply to a NT_TRANSACT_CREATE call (needs to process SD's).
 ****************************************************************************/
 
-static int call_nt_transact_create(char *inbuf, char *outbuf, int bufsize, int cnum,
-                                   char **setup, char **params, char **data)
+static int call_nt_transact_create(char *inbuf, char *outbuf, int length, 
+                                   int bufsize, int cnum,
+                                   char **ppsetup, char **ppparams, char **ppdata)
 {
   pstring fname;
   int fnum = -1;
-  char *params = *pparams;
+  char *params = *ppparams;
   uint32 flags = IVAL(params,0);
   uint32 desired_access = IVAL(params,8);
   uint32 file_attributes = IVAL(params,20);
@@ -595,6 +611,17 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int bufsize, int c
   int smb_ofun;
   int smb_open_mode;
   int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
+  /* Breakout the oplock request bits so we can set the
+     reply bits separately. */
+  int oplock_request = 0;
+  int unixmode;
+  int fmode=0,mtime=0,rmode=0;
+  off_t file_len = 0;
+  struct stat sbuf;
+  int smb_action = 0;
+  BOOL bad_path = False;
+  files_struct *fsp;
+  char *p = NULL;
 
   /* If it's a request for a directory open, fail it. */
   if(flags & OPEN_DIRECTORY)
@@ -613,112 +640,150 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int bufsize, int c
    * and the share access.
    */
 
-  if((smb_open_mode = map_share_mode( desired_access, share_access)) == -1)
+  if((smb_open_mode = map_share_mode( desired_access, share_access, file_attributes)) == -1)
     return(ERROR(ERRDOS,ERRbadaccess));
 
   /*
-   * Check if POSIX semantics are wanted.
+   * Get the file name.
    */
-
-  set_posix_case_semantics(file_attributes);
 
   StrnCpy(fname,params+53,fname_len);
   fname[fname_len] = '\0';
-  unix_convert(fname,cnum,0,&bad_path);
+
+  /* If it's an IPC, use the pipe handler. */
+  if (IS_IPC(cnum)) {
+    int ret = nt_open_pipe(fname, inbuf, outbuf, &fnum);
+    if(ret != 0)
+      return ret;
+    smb_action = FILE_WAS_OPENED;
+  } else {
+    /*
+     * Check if POSIX semantics are wanted.
+     */
+
+    set_posix_case_semantics(file_attributes);
+
+    unix_convert(fname,cnum,0,&bad_path);
     
-  fnum = find_free_file();
-  if (fnum < 0) {
+    fnum = find_free_file();
+    if (fnum < 0) {
+      restore_case_semantics(file_attributes);
+      return(ERROR(ERRSRV,ERRnofids));
+    }
+
+    if (!check_name(fname,cnum)) { 
+      if((errno == ENOENT) && bad_path) {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
+      Files[fnum].reserved = False;
+
+      restore_case_semantics(file_attributes);
+
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    } 
+  
+    unixmode = unix_mode(cnum,smb_attr | aARCH);
+    
+    oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+    oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+
+    open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
+                     oplock_request,&rmode,&smb_action);
+
+    fsp = &Files[fnum];
+    
+    if (!fsp->open) { 
+      if((errno == ENOENT) && bad_path) {
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadpath;
+      }
+      Files[fnum].reserved = False;
+
+      restore_case_semantics(file_attributes);
+
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    } 
+  
+    if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      close_file(fnum,False);
+
+      restore_case_semantics(file_attributes);
+
+      return(ERROR(ERRDOS,ERRnoaccess));
+    } 
+  
     restore_case_semantics(file_attributes);
-    return(ERROR(ERRSRV,ERRnofids));
+
+    file_len = sbuf.st_size;
+    fmode = dos_mode(cnum,fname,&sbuf);
+    if(fmode == 0)
+      fmode = FILE_ATTRIBUTE_NORMAL;
+    mtime = sbuf.st_mtime;
+    if (fmode & aDIR) {
+      close_file(fnum,False);
+      return(ERROR(ERRDOS,ERRnoaccess));
+    } 
+  
+    /* 
+     * If the caller set the extended oplock request bit
+     * and we granted one (by whatever means) - set the
+     * correct bit for extended oplock reply.
+     */
+    
+    if (oplock_request && lp_fake_oplocks(SNUM(cnum)))
+      smb_action |= EXTENDED_OPLOCK_GRANTED;
+  
+    if(oplock_request && fsp->granted_oplock)
+      smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
-  if (!check_name(fname,cnum)) { 
-    if((errno == ENOENT) && bad_path) {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    Files[fnum].reserved = False;
-
-    restore_case_semantics(file_attributes);
-
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  } 
-  
-  unixmode = unix_mode(cnum,smb_attr | aARCH);
-    
-  open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
-                   oplock_request,&rmode,&smb_action);
-
-  fsp = &Files[fnum];
-    
-  if (!fsp->open) { 
-    if((errno == ENOENT) && bad_path) {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    Files[fnum].reserved = False;
-
-    restore_case_semantics(file_attributes);
-
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  } 
-  
-  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum,False);
-
-    restore_case_semantics(file_attributes);
-
-    return(ERROR(ERRDOS,ERRnoaccess));
-  } 
-  
-  restore_case_semantics(file_attributes);
-
-  size = sbuf.st_size;
-  fmode = dos_mode(cnum,fname,&sbuf);
-  mtime = sbuf.st_mtime;
-  if (fmode & aDIR) {
-    close_file(fnum,False);
-    return(ERROR(ERRDOS,ERRnoaccess));
-  } 
-  
-  /* If the caller set the extended oplock request bit
-     and we granted one (by whatever means) - set the
-     correct bit for extended oplock reply.
-   */
-    
-  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    smb_action |= EXTENDED_OPLOCK_GRANTED;
-  } 
-  
-  if(oplock_request && fsp->granted_oplock) {
-    smb_action |= EXTENDED_OPLOCK_GRANTED;
-  } 
-
   /* Realloc the size of parameters and data we will return */
-  params = *pparams = Realloc(*pparams, 69);
+  params = *ppparams = Realloc(*ppparams, 69);
   if(params == NULL)
     return(ERROR(ERRDOS,ERRnomem));
 
   p = params;
-  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 3 : 0));
+  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 1 : 0));
   p += 2;
   SSVAL(p,0,fnum);
   p += 2;
   SIVAL(p,0,smb_action);
   p += 8;
-  /* Create time. */
-  put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(cnum))));
-  p += 8;
-  put_long_date(p,sbuf.st_atime); /* access time */
-  p += 8;
-  put_long_date(p,sbuf.st_mtime); /* write time */
-  p += 8;
-  put_long_date(p,sbuf.st_mtime); /* change time */
-  p += 8;
-  SIVAL(p,0,fmode); /* File Attributes. */
-  p += 12;
-  SIVAL(p,0, size & 0xFFFFFFFF);
-  SIVAL(p,4, (size >> 32));
+
+  if (IS_IPC(cnum)) {
+    /*
+     * Deal with pipe return.
+     */  
+    p += 32;
+    SIVAL(p,0,FILE_ATTRIBUTE_NORMAL); /* File Attributes. */
+    p += 20;
+    /* File type. */
+    SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
+    /* Device state. */
+    SSVAL(p,2, 0x5FF); /* ? */
+  } else {
+    /*
+     * Deal with file return.
+     */
+    /* Create time. */
+    put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(cnum))));
+    p += 8;
+    put_long_date(p,sbuf.st_atime); /* access time */
+    p += 8;
+    put_long_date(p,sbuf.st_mtime); /* write time */
+    p += 8;
+    put_long_date(p,sbuf.st_mtime); /* change time */
+    p += 8;
+    SIVAL(p,0,fmode); /* File Attributes. */
+    p += 12;
+    if(sizeof(off_t) == 8) {
+      SIVAL(p,0, file_len & 0xFFFFFFFF);
+      SIVAL(p,4, (file_len >> 32));
+    } else {
+      SIVAL(p,0,file_len);
+    }
+  }
 
   /* Send the required number of replies */
   send_nt_replies(outbuf, bufsize, params, 69, *ppdata, 0);
@@ -750,16 +815,16 @@ int reply_nttranss(char *inbuf,char *outbuf,int length,int bufsize)
  Reply to an NT transact rename command.
 ****************************************************************************/
 
-static int call_nt_transact_rename(char *inbuf, char *outbuf, int bufsize, int cnum,
-                                   char **setup, char **params, char **data)
+static int call_nt_transact_rename(char *inbuf, char *outbuf, int length, 
+                                   int bufsize, int cnum,
+                                   char **ppsetup, char **ppparams, char **ppdata)
 {
-  char *params = *pparams;
+  char *params = *ppparams;
   pstring new_name;
   int fnum = SVAL(params, 0);
   BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
-  uint32 total_parameter_count = IVAL(inbuf, smb_nt_TotalParameterCount);
   uint32 fname_len = MIN((((uint32)IVAL(inbuf,smb_nt_TotalParameterCount)-4)),
-                         ((uint32)sizeof(fname)-1));
+                         ((uint32)sizeof(new_name)-1));
   int outsize = 0;
 
   CHECK_FNUM(fnum, cnum);
@@ -767,7 +832,7 @@ static int call_nt_transact_rename(char *inbuf, char *outbuf, int bufsize, int c
   new_name[fname_len] = '\0';
 
   outsize = rename_internals(inbuf, outbuf, Files[fnum].name,
-                             newname, replace_if_exists);
+                             new_name, replace_if_exists);
   if(outsize == 0) {
     /*
      * Rename was successful.
@@ -784,8 +849,9 @@ static int call_nt_transact_rename(char *inbuf, char *outbuf, int bufsize, int c
  don't allow a directory to be opened.
 ****************************************************************************/
 
-static int call_nt_transact_notify_change(char *inbuf, char *outbuf, int bufsize, int cnum,
-                                          char **setup, char **params, char **data)
+static int call_nt_transact_notify_change(char *inbuf, char *outbuf, int length,
+                                          int bufsize, int cnum,
+                                          char **ppsetup, char **ppparams, char **ppdata)
 {
   DEBUG(0,("call_nt_transact_notify_change: Should not be called !\n"));
   return(ERROR(ERRSRV,ERRnosupport));
@@ -796,8 +862,9 @@ static int call_nt_transact_notify_change(char *inbuf, char *outbuf, int bufsize
  is planned to be though).
 ****************************************************************************/
 
-static int call_nt_transact_query_security_desc(char *inbuf, char *outbuf, int bufsize, int cnum,
-                                                char **setup, char **params, char **data)
+static int call_nt_transact_query_security_desc(char *inbuf, char *outbuf, int length, 
+                                                int bufsize, int cnum,
+                                                char **ppsetup, char **ppparams, char **ppdata)
 {
   DEBUG(0,("call_nt_transact_query_security_desc: Currently not implemented.\n"));
   return(ERROR(ERRSRV,ERRnosupport));
@@ -808,8 +875,9 @@ static int call_nt_transact_query_security_desc(char *inbuf, char *outbuf, int b
  is planned to be though).
 ****************************************************************************/
 
-static int call_nt_transact_set_security_desc(char *inbuf, char *outbuf, int bufsize, int cnum,
-                                              char **setup, char **params, char **data)
+static int call_nt_transact_set_security_desc(char *inbuf, char *outbuf, int length,
+                                              int bufsize, int cnum,
+                                              char **ppsetup, char **ppparams, char **ppdata)
 {
   DEBUG(0,("call_nt_transact_set_security_desc: Currently not implemented.\n"));
   return(ERROR(ERRSRV,ERRnosupport));
@@ -819,8 +887,9 @@ static int call_nt_transact_set_security_desc(char *inbuf, char *outbuf, int buf
  Reply to IOCTL - not implemented - no plans.
 ****************************************************************************/
 
-static int call_nt_transact_ioctl(char *inbuf, char *outbuf, int bufsize, int cnum,
-                                  char **setup, char **params, char **data)
+static int call_nt_transact_ioctl(char *inbuf, char *outbuf, int length,
+                                  int bufsize, int cnum,
+                                  char **ppsetup, char **ppparams, char **ppdata)
 {
   DEBUG(0,("call_nt_transact_ioctl: Currently not implemented.\n"));
   return(ERROR(ERRSRV,ERRnosupport));
@@ -865,12 +934,13 @@ due to being in oplock break state.\n", timestring() ));
   outsize = set_message(outbuf,0,0,True);
 
   /* 
-   * All nttrans messages we handle have smb_wcnt == 19 + setup_count.
+   * All nttrans messages we handle have smb_wct == 19 + setup_count.
    * Ensure this is so as a sanity check.
    */
 
-  if(CVAL(inbuf, smb_wcnt) != 19 + setup_count) {
-    DEBUG(2,("Invalid smb_wcnt in trans2 call\n"));
+  if(CVAL(inbuf, smb_wct) != 19 + setup_count) {
+    DEBUG(2,("Invalid smb_wct %d in nttrans call (should be %d)\n",
+          CVAL(inbuf, smb_wct), 19 + setup_count));
     return(ERROR(ERRSRV,ERRerror));
   }
     
@@ -955,11 +1025,11 @@ due to being in oplock break state.\n", timestring() ));
   /* Now we must call the relevant NT_TRANS function */
   switch(function_code) {
     case NT_TRANSACT_CREATE:
-      outsize = call_nt_transact_create(inbuf, outbuf, bufsize, cnum, 
+      outsize = call_nt_transact_create(inbuf, outbuf, length, bufsize, cnum, 
                                         &setup, &params, &data);
       break;
     case NT_TRANSACT_IOCTL:
-      outsize = call_nt_transact_ioctl(inbuf, outbuf, bufsize, cnum,
+      outsize = call_nt_transact_ioctl(inbuf, outbuf, length, bufsize, cnum,
                                        &setup, &params, &data);
       break;
     case NT_TRANSACT_SET_SECURITY_DESC:
@@ -976,12 +1046,12 @@ due to being in oplock break state.\n", timestring() ));
       break;
     case NT_TRANSACT_QUERY_SECURITY_DESC:
       outsize = call_nt_transact_query_security_desc(inbuf, outbuf, length, bufsize, cnum,
-                                                     &setup, &params, &data, total_data);
+                                                     &setup, &params, &data);
       break;
     default:
       /* Error in request */
       DEBUG(0,("reply_nttrans: %s Unknown request %d in nttrans call\n",timestring(),
-                 tran_call));
+                 function_code));
       if(setup)
         free(setup);
       if(params)
