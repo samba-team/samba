@@ -105,7 +105,7 @@ AC_ARG_WITH(swatdir,
 #################################################
 # set configuration directory location
 AC_ARG_WITH(configdir,
-[  --with-configdir=DIR    Where to put configuration files (\$libdir)],
+[  --with-configdir=DIR    Where to put configuration files ($libdir)],
 [ case "$withval" in
   yes|no)
   #
@@ -121,7 +121,7 @@ AC_ARG_WITH(configdir,
 #################################################
 # set log directory location
 AC_ARG_WITH(logfilebase,
-[  --with-logfilebase=DIR  Where to put log files (\$(VARDIR))],
+[  --with-logfilebase=DIR  Where to put log files ($VARDIR)],
 [ case "$withval" in
   yes|no)
   #
@@ -131,6 +131,38 @@ AC_ARG_WITH(logfilebase,
   ;;
   * )
     logfilebase="$withval"
+    ;;
+  esac])
+
+#################################################
+# set lib directory location
+AC_ARG_WITH(libdir,
+[  --with-libdir=DIR       Where to put libdir ($libdir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-libdir without argument - will use default])
+  ;;
+  * )
+    libdir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set lib directory location
+AC_ARG_WITH(mandir,
+[  --with-mandir=DIR       Where to put man pages ($mandir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-mandir without argument - will use default])
+  ;;
+  * )
+    mandir="$withval"
     ;;
   esac])
 
