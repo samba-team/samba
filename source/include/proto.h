@@ -1788,9 +1788,9 @@ int print_job_fd(int jobid);
 char *print_job_fname(int jobid);
 BOOL print_job_set_place(int jobid, int place);
 BOOL print_job_set_name(int jobid, char *name);
-BOOL print_job_delete(struct current_user *user, int jobid);
-BOOL print_job_pause(struct current_user *user, int jobid);
-BOOL print_job_resume(struct current_user *user, int jobid);
+BOOL print_job_delete(struct current_user *user, int jobid, int *errcode);
+BOOL print_job_pause(struct current_user *user, int jobid, int *errcode);
+BOOL print_job_resume(struct current_user *user, int jobid, int *errcode);
 int print_job_write(int jobid, const char *buf, int size);
 int print_job_start(struct current_user *user, int snum, char *jobname);
 BOOL print_job_end(int jobid);
@@ -2754,6 +2754,10 @@ SEC_ACL *dup_sec_acl( SEC_ACL *src);
 void free_sec_acl(SEC_ACL **ppsa);
 BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth);
 size_t sec_desc_size(SEC_DESC *psd);
+BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2);
+BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2);
+BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2);
+SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb);
 SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
 			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size);
@@ -3227,12 +3231,8 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 			  NEW_BUFFER *buffer, uint32 offered,
 			  uint32 *needed, uint32 *returned);
 uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid);
-uint32 _spoolss_setjob( POLICY_HND *handle,
-				uint32 jobid,
-				uint32 level,
-                pipes_struct *p,
-				JOB_INFO *ctr,
-				uint32 command);
+uint32 _spoolss_setjob(POLICY_HND *handle, uint32 jobid, uint32 level,
+		       pipes_struct *p, JOB_INFO *ctr, uint32 command);
 uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,
 				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
