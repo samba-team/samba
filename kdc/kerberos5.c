@@ -90,15 +90,42 @@ find_etype(hdb_entry *princ, unsigned *etypes, unsigned len,
 }
 
 static krb5_error_code
-find_keys(hdb_entry *client, hdb_entry *server, 
-	  Key **ckey, krb5_enctype *cetype,
-	  Key **skey, krb5_enctype *setype, 
-#ifndef KTYPE_IS_ETYPE
-	  krb5_keytype *sess_ktype,
-#else
-	  krb5_enctype *sess_ktype,
-#endif
-	  unsigned *etypes, unsigned num_etypes)
+find_keys1(hdb_entry *client, hdb_entry *server, 
+	   Key **ckey, krb5_enctype *cetype,
+	   Key **skey, krb5_enctype *setype, 
+	   krb5_enctype *sess_ktype,
+	   unsigned *etypes, unsigned num_etypes)
+{
+    int i;
+    krb5_error_code ret;
+    for(i = 0; i < num_etypes; i++) {
+	if(client){
+	    ret = hdb_etype2key(context, client, etypes[i], ckey);
+	    if(ret)
+		continue;
+	}
+	if(server){
+	    ret = hdb_etype2key(context, server, etypes[i], skey);
+	    if(ret)
+		continue;
+	}
+	if(cetype)
+	    *cetype = etypes[i];
+	if(setype)
+	    *setype = etypes[i];
+	if(sess_ktype)
+	    *sess_ktype = etypes[i];
+	return 0;
+    }
+    return KRB5KDC_ERR_ETYPE_NOSUPP;
+}
+
+static krb5_error_code
+find_keys2(hdb_entry *client, hdb_entry *server, 
+	   Key **ckey, krb5_enctype *cetype,
+	   Key **skey, krb5_enctype *setype, 
+	   krb5_keytype *sess_ktype,
+	   unsigned *etypes, unsigned num_etypes)
 {
     int i;
     krb5_error_code ret;
@@ -119,11 +146,7 @@ find_keys(hdb_entry *client, hdb_entry *server,
 	    kdc_log(0, "Server has no support for etypes");
 	    return KRB5KDC_ERR_ETYPE_NOSUPP;
 	}
-#ifndef KTYPE_IS_ETYPE
 	*sess_ktype = (*skey)->key.keytype;
-#else
-	*sess_ktype = etypes[i];
-#endif
     }
     if(server){
 	/* find server key */
@@ -227,24 +250,22 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
     pa.val = NULL;
     pa.len = 0;
     for(i = 0; i < client->keys.len; i++){
-#ifdef KTYPE_IS_ETYPE
 	krb5_enctype *etypes, *e;
-	ret = krb5_keytype_to_etypes(context, 
-				     client->keys.val[i].key.keytype,
-				     &etypes);
+	krb5_enctype ex[2] = { client->keys.val[i].key.keytype, 0 };
+	if(context->ktype_is_etype)
+	    ret = krb5_keytype_to_etypes(context, 
+					 client->keys.val[i].key.keytype,
+					 &etypes);
+	else
+	    etypes = ex;
 	for(e = etypes; *e; e++){
-#endif
 	    tmp = realloc(pa.val, (pa.len + 1) * sizeof(*pa.val));
 	    if(tmp == NULL) {
 		free_PA_KEY_INFO(&pa);
 		return ret;
 	    }
 	    pa.val = tmp;
-#ifndef KTYPE_IS_ETYPE
-	    pa.val[pa.len].keytype = client->keys.val[i].key.keytype;
-#else
 	    pa.val[pa.len].keytype = *e;
-#endif
 	    if(client->keys.val[i].salt){
 		pa.val[pa.len].salttype = client->keys.val[i].salt->type;
 		ALLOC(pa.val[pa.len].salt);
@@ -260,9 +281,9 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 		pa.val[pa.len].salt = NULL;
 	    }
 	    pa.len++;
-#ifdef KTYPE_IS_ETYPE
 	}
-#endif
+	if(context->ktype_is_etype)
+	    free(etypes);
     }
     len = length_PA_KEY_INFO(&pa);
     buf = malloc(len);
@@ -536,38 +557,29 @@ as_rep(KDC_REQ *req,
 	goto out2;
     }
 
-
-
-    ret = find_keys(client, server, &ckey, &cetype, &skey, &setype, 
-		    &sess_ktype, b->etype.val, b->etype.len);
+    if(context->ktype_is_etype)
+	ret = find_keys1(client, server, &ckey, &cetype, &skey, &setype, 
+			 &sess_ktype, b->etype.val, b->etype.len);
+    else
+	ret = find_keys2(client, server, &ckey, &cetype, &skey, &setype, 
+			 &sess_ktype, b->etype.val, b->etype.len);
     if(ret)
 	goto out;
 	
     {
 	char *cet, *set = NULL, *skt = NULL;
 	krb5_etype_to_string(context, cetype, &cet);
-	if(cetype != setype)
-	    krb5_etype_to_string(context, setype, &set);
-#ifndef KTYPE_IS_ETYPE
-	krb5_keytype_to_string(context, sess_ktype, &skt);
-#else
-	if(cetype != sess_ktype)
-	    krb5_etype_to_string(context, sess_ktype, &skt);
-#endif
-	if(set)
-	    if(skt)
+	if(context->ktype_is_etype){
+		kdc_log(5, "Using %s", cet);
+	}else{
+	    if(cetype != setype)
+		krb5_etype_to_string(context, setype, &set);
+	    krb5_keytype_to_string(context, sess_ktype, &skt);
+	    if(set)
 		kdc_log(5, "Using %s/%s/%s", cet, set, skt);
 	    else
-		kdc_log(5, "Using %s/%s", cet, set);
-	else
-	    if(skt){
-#ifndef KTYPE_IS_ETYPE
 		kdc_log(5, "Using %s/%s", cet, skt);
-#else
-		kdc_log(5, "Using %s/%s/%s", cet, cet, skt);
-#endif
-	    }else
-    		kdc_log(5, "Using %s", cet);
+	}
 	free(skt);
 	free(set);
 	free(cet);
@@ -620,15 +632,13 @@ as_rep(KDC_REQ *req,
 	goto out;
     }
 
-#ifndef KTYPE_IS_ETYPE
-    krb5_generate_random_keyblock(context, sess_ktype, &et.key);
-#else
-    {
+    if(context->ktype_is_etype) {
 	krb5_keytype kt;
 	ret = krb5_etype_to_keytype(context, sess_ktype, &kt);
 	krb5_generate_random_keyblock(context, kt, &et.key);
-    }
-#endif
+	et.key.keytype = sess_ktype;
+    }else
+	krb5_generate_random_keyblock(context, sess_ktype, &et.key);
     copy_PrincipalName(b->cname, &et.cname);
     copy_Realm(&b->realm, &et.crealm);
     
@@ -970,15 +980,35 @@ tgs_make_reply(KDC_REQ_BODY *b,
     krb5_enctype sess_ktype;
 #endif
     
-    ret = find_keys(NULL, server, NULL, NULL, &skey, &setype, 
-		    &sess_ktype, b->etype.val, b->etype.len);
-    if(ret)
-	return ret;
-    if(adtkt)
+    if(adtkt) {
+	int i;
+	krb5_keytype kt;
 	ekey = &adtkt->key;
-    else
+	for(i = 0; i < b->etype.len; i++){
+	    ret = krb5_etype_to_keytype(context, b->etype.val[i], &kt);
+	    if(ret)
+		continue;
+	    if(adtkt->key.keytype == kt)
+		break;
+	}
+	if(i == b->etype.len)
+	    return KRB5KDC_ERR_ETYPE_NOSUPP;
+	setype = b->etype.val[i];
+	if(context->ktype_is_etype)
+	    sess_ktype = b->etype.val[i];
+	else
+	    sess_ktype = kt;
+    }else{
+	if(context->ktype_is_etype)
+	    ret = find_keys1(NULL, server, NULL, NULL, &skey, &setype, 
+			     &sess_ktype, b->etype.val, b->etype.len);
+	else
+	    ret = find_keys2(NULL, server, NULL, NULL, &skey, &setype, 
+			     &sess_ktype, b->etype.val, b->etype.len);
+	if(ret)
+	    return ret;
 	ekey = &skey->key;
-    ret = krb5_keytype_to_etype(context, ekey->keytype, &setype);
+    }
     
     memset(&rep, 0, sizeof(rep));
     memset(&et, 0, sizeof(et));
@@ -1068,15 +1098,12 @@ tgs_make_reply(KDC_REQ_BODY *b,
     /* XXX Check enc-authorization-data */
     et.authorization_data = auth_data;
 
-#ifndef KTYPE_IS_ETYPE
-    krb5_generate_random_keyblock(context, sess_ktype, &et.key);
-#else
-    {
+    if(context->ktype_is_etype) {
 	krb5_keytype kt;
 	ret = krb5_etype_to_keytype(context, sess_ktype, &kt);
 	krb5_generate_random_keyblock(context, kt, &et.key);
-    }
-#endif
+    }else
+	krb5_generate_random_keyblock(context, sess_ktype, &et.key);
     et.crealm = tgt->crealm;
     et.cname = tgt->cname;
 	    
