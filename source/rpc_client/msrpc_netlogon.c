@@ -144,6 +144,27 @@ static uint32 domain_client_validate( char *user, char *domain,
 		}
 	}
 
+	if (status == (NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT|0xc0000000))
+	{
+		DEBUG(10,("domain_client_validate: wks trust valid:%s\n",
+		           user));
+		return status;
+	}
+
+	if (status == (NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT|0xc0000000))
+	{
+		DEBUG(10,("domain_client_validate: srv trust valid:%s\n",
+		           user));
+		return status;
+	}
+
+	if (status == (NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT|0xc0000000))
+	{
+		DEBUG(10,("domain_client_validate: interdom trust valid:%s\n",
+		           user));
+		return status;
+	}
+
 	if (status != 0x0)
 	{
 		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
