@@ -5,8 +5,7 @@ ADD_OBJ_FILES = libcli/util/asn1.o \
 		libcli/util/errormap.o \
 		libcli/util/clierror.o \
 		libcli/util/nterr.o \
-		libcli/util/smbdes.o \
-		libcli/util/smbencrypt.o
+		libcli/util/smbdes.o
 
 [SUBSYSTEM::LIBCLI_LSA]
 ADD_OBJ_FILES = libcli/util/clilsa.o
@@ -26,7 +25,7 @@ ADD_OBJ_FILES = \
 	libcli/nbt/nbtname.o \
 	libcli/nbt/nbtsocket.o \
 	libcli/nbt/namequery.o
-REQUIRED_SUBSYSTEMS = NDR_NBT
+REQUIRED_SUBSYSTEMS = LIBNDR_RAW NDR_NBT SOCKET
 
 [SUBSYSTEM::LIBCLI_RESOLVE]
 ADD_OBJ_FILES = \
@@ -39,4 +38,4 @@ REQUIRED_SUBSYSTEMS = LIBCLI_NBT
 
 [SUBSYSTEM::LIBCLI]
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH \
-	LIBCLI_COMPOSITE LIBCLI_NBT LIBCLI_RESOLVE
+	LIBCLI_COMPOSITE LIBCLI_NBT LIB_SECURITY LIBCLI_RESOLVE
