@@ -270,6 +270,7 @@ static int wb_getgroups(const char *user, gid_t **groups)
 
 	/* Call winbindd */
 
+	ZERO_STRUCT(request);
 	fstrcpy(request.data.username, user);
 
 	ZERO_STRUCT(response);
