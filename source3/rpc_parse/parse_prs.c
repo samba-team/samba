@@ -1392,14 +1392,13 @@ void netsec_encode(struct netsec_auth_struct *a,
 	uchar sess_kf0[16];
 	int i;
 
-	/* store the sequence number */
-	SIVAL(dataN, 0, a->seq_num);
+	SIVAL(dataN, 0, 0);
 
-	for (i = 0; i < sizeof(sess_kf0); i++)
-	{
+	for (i = 0; i < sizeof(sess_kf0); i++) {
 		sess_kf0[i] = a->sess_key[i] ^ 0xf0;
 	}
 
+	DEBUG(10,("SCHANNEL: netsec_encode seq_num=%d data_len=%d\n", a->seq_num, data_len));
 	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
 	dump_data_pw("a->seq_num :\n", dataN, sizeof(dataN));
 
@@ -1459,14 +1458,13 @@ BOOL netsec_decode(struct netsec_auth_struct *a,
 	uchar sess_kf0[16];
 	int i;
 
-	/* store the sequence number */
-	SIVAL(dataN, 0, a->seq_num);
+	SIVAL(dataN, 0, 0);
 
-	for (i = 0; i < sizeof(sess_kf0); i++)
-	{
+	for (i = 0; i < sizeof(sess_kf0); i++) {
 		sess_kf0[i] = a->sess_key[i] ^ 0xf0;
 	}
 
+	DEBUG(10,("SCHANNEL: netsec_decode seq_num=%d data_len=%d\n", a->seq_num, data_len));
 	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
 	dump_data_pw("a->seq_num :\n", dataN, sizeof(dataN));
 	hmac_md5(a->sess_key, dataN, 0x4, digest1);

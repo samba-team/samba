@@ -1144,8 +1144,8 @@ creates an RPC_AUTH_NETSEC_NEG structure.
 void init_rpc_auth_netsec_neg(RPC_AUTH_NETSEC_NEG *neg,
 			      const char *domain, const char *myname)
 {
-	neg->unknown1 = 0;
-	neg->unknown2 = 0x13;
+	neg->type1 = 0;
+	neg->type2 = 0x3;
 	fstrcpy(neg->domain, domain);
 	fstrcpy(neg->myname, myname);
 }
@@ -1166,15 +1166,15 @@ BOOL smb_io_rpc_auth_netsec_neg(const char *desc, RPC_AUTH_NETSEC_NEG *neg,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("unknown1", ps, depth, &neg->unknown1))
+	if(!prs_uint32("type1", ps, depth, &neg->type1))
 		return False;
-	if(!prs_uint32("unknown2", ps, depth, &neg->unknown2))
-		return False;
-	if(!prs_string("myname  ", ps, depth, neg->myname, 
-		       strlen(neg->myname), sizeof(neg->myname)))
+	if(!prs_uint32("type2", ps, depth, &neg->type2))
 		return False;
 	if(!prs_string("domain  ", ps, depth, neg->domain,
 		       strlen(neg->domain), sizeof(neg->domain)))
+		return False;
+	if(!prs_string("myname  ", ps, depth, neg->myname, 
+		       strlen(neg->myname), sizeof(neg->myname)))
 		return False;
 
 	return True;
