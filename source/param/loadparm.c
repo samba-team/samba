@@ -960,13 +960,13 @@ static struct parm_struct parm_table[] =
   {"host msdfs",      P_BOOL,    P_GLOBAL, &Globals.bHostMSDfs,        NULL,   NULL, FLAG_GLOBAL},
 #endif
 
-  {"Winbind daemon options", P_SEP, P_SEPARATOR},
+  {"Winbind options", P_SEP, P_SEPARATOR},
 
   {"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_id, NULL, 0},
   {"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_id, NULL, 0},
   {"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, 0},
   {"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, 0},
-  {"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL,   NULL,  0},
+  {"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL,   NULL, 0},
 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL, 0}
 };
@@ -1181,6 +1181,8 @@ static void init_globals(void)
   string_set(&Globals.sMysqlTable,"smbpasswd");
 #endif
 
+  string_set(&Globals.szTemplateShell, "/bin/false");
+  string_set(&Globals.szTemplateHomedir, "/home/%U");
   Globals.winbind_cache_time = 15;
 
   /*
