@@ -326,7 +326,7 @@ use with an LDAP directory could appear as
      ldap suffix = "ou=people,dc=samba,dc=org"
 
      # generally the default ldap search filter is ok
-     # ldap filter = "(&(uid=%u)(objectclass=sambaAccount))"
+     # ldap filter = "(&amp;(uid=%u)(objectclass=sambaAccount))"
 </programlisting></para>
 
 
