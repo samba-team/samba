@@ -15,6 +15,7 @@
 * Slave Servers::               
 * Incremental propagation::     
 * Salting::
+* Cross realm::
 @end menu
 
 A
@@ -447,7 +448,7 @@ master# /usr/heimdal/libexec/ipropd-master &
 slave#  /usr/heimdal/libexec/ipropd-slave master &
 @end example
 
-@node Salting, , Incremental propagation, Setting up a realm
+@node Salting, Cross realm, Incremental propagation, Setting up a realm
 @section Salting
 @cindex Salting
 
@@ -498,3 +499,68 @@ string (same as no salt).
 the cell appended to the password.
 
 @end itemize
+
+@node Cross realm, , Salting, Setting up a realm
+@section Cross realm
+@cindex Cross realm
+
+Suppose you are residing in the realm @samp{MY.REALM}, how do you
+authenticate to a server in @samp{OTHER.REALM}? Having valid tickets in
+@samp{MY.REALM} allows you to communicate with kerberised services in that
+realm. However, the computer in the other realm does not have a secret
+key shared with the Kerberos server in your realm.
+
+It is possible to add a share keys between two realms that trust each
+other. When a client program, such as @code{telnet} or @code{ssh},
+finds that the other computer is in a different realm, it will try to
+get a ticket granting ticket for that other realm, but from the local
+Kerberos server. With that ticket granting ticket, it will then obtain
+service tickets from the Kerberos server in the other realm.
+
+For a two way trust between @samp{MY.REALM} and @samp{OTHER.REALM}
+add the following principals to each realm. The principals should be
+@samp{krbtgt/OTHER.REALM@@MY.REALM} and
+@samp{krbtgt/MY.REALM@@OTHER.REALM} in @samp{MY.REALM}, and
+@samp{krbtgt/MY.REALM@@OTHER.REALM} and
+@samp{krbtgt/OTHER.REALM@@MY.REALM}in @samp{OTHER.REALM}.
+
+In Kerberos 5 the trust can be one configured to be one way. So that
+users from @samp{MY.REALM} can authenticate to services in
+@samp{OTHER.REALM}, but not the opposite. In the example above, the
+@samp{krbtgt/MY.REALM@@OTHER.REALM} then should be removed.
+
+The two principals must have the same key, key version number, and the
+same set of encryption types. Remember to transfer the two keys in a
+safe manner.
+
+@example
+@cartouche
+vr$ klist
+Credentials cache: FILE:/tmp/krb5cc_913.console
+        Principal: lha@@E.KTH.SE
+
+  Issued           Expires          Principal                   
+May  3 13:55:52  May  3 23:55:54  krbtgt/E.KTH.SE@@E.KTH.SE      
+
+vr$ telnet -l lha hummel.it.su.se
+Trying 2001:6b0:5:1095:250:fcff:fe24:dbf...
+Connected to hummel.it.su.se.
+Escape character is '^]'.
+Waiting for encryption to be negotiated...
+[ Trying mutual KERBEROS5 (host/hummel.it.su.se@@SU.SE)... ]
+[ Kerberos V5 accepts you as ``lha@@E.KTH.SE'' ]
+Encryption negotiated.
+Last login: Sat May  3 14:11:47 from vr.l.nxs.se
+hummel$ exit
+
+vr$ klist
+Credentials cache: FILE:/tmp/krb5cc_913.console
+        Principal: lha@@E.KTH.SE
+
+  Issued           Expires          Principal                   
+May  3 13:55:52  May  3 23:55:54  krbtgt/E.KTH.SE@@E.KTH.SE      
+May  3 13:55:56  May  3 23:55:54  krbtgt/SU.SE@@E.KTH.SE         
+May  3 14:10:54  May  3 23:55:54  host/hummel.it.su.se@@SU.SE    
+
+@end cartouche
+@end example
