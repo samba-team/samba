@@ -43,15 +43,12 @@ endit()
 
 An example follows :
 
-verb(
-
-#
-# Sample Samba lmhosts file.
-#
-192.9.200.1	TESTPC
-192.9.200.20	NTSERVER#20
-192.9.200.21	SAMBASERVER
-)
+# nl()
+# Sample Samba lmhosts file. nl()
+# nl()
+192.9.200.1	TESTPC nl()
+192.9.200.20	NTSERVER#20 nl()
+192.9.200.21	SAMBASERVER nl()
 
 Contains three IP to NetBIOS name mappings. The first and third will
 be returned for any queries for the names tt("TESTPC") and
