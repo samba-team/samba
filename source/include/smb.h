@@ -257,10 +257,14 @@ typedef fstring string;
 
 
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
-typedef uint32 UTIME;
+typedef struct time_info
+{
+  uint32 time;
+
+} UTIME;
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
-typedef struct nttime
+typedef struct nttime_info
 {
   uint32 low;
   uint32 high;
@@ -348,10 +352,17 @@ typedef struct log_info
 
 } DOM_LOG_INFO;
 
-/* DOM_CREDs - client or server credentials */
-typedef struct cred_info
+/* DOM_CHAL - challenge info */
+typedef struct chal_info
 {
   uint8 data[8]; /* credentials */
+
+} DOM_CHAL;
+
+/* DOM_CREDs - timestamped client or server credentials */
+typedef struct cred_info
+{
+  DOM_CHAL challenge; /* credentials */
   UTIME timestamp;    /* credential time-stamp */
 
 } DOM_CRED;
@@ -436,6 +447,364 @@ typedef struct rpc_hdr_info
   uint8  cancel_count; /* 0 - cancel count */
   uint8  reserved; /* 0 - reserved */
 } RPC_HDR;
+
+/* DOM_QUERY_5 - info class 5 LSA Query response */
+typedef struct dom_query_5_info
+{
+  uint16 uni_dom_max_len; /* domain name string length * 2 */
+  uint16 uni_dom_str_len; /* domain name string length * 2 */
+  uint32 buffer_dom_name; /* undocumented domain name string buffer pointer */
+  uint32 buffer_dom_sid; /* undocumented domain SID string buffer pointer */
+  UNISTR uni_domain_name; /* domain name (unicode string) */
+  DOM_SID dom_sid; /* domain SID */
+
+} DOM_QUERY_5;
+
+/* level 5 is same as level 3.  we hope. */
+typedef DOM_QUERY_5 DOM_QUERY_3;
+
+/* LSA_POL_HND */
+typedef struct lsa_policy_info
+{
+  uint8 data[20]; /* policy handle */
+
+} LSA_POL_HND;
+
+
+/* LSA_Q_QUERY_INFO - LSA query info policy */
+typedef struct lsa_query_info
+{
+    uint16 info_class; /* info class (also a policy handle?) */
+
+} LSA_Q_QUERY_INFO;
+
+/* LSA_R_QUERY_INFO - response to LSA query info policy */
+typedef struct lsa_r_query_info
+{
+    uint32 undoc_buffer; /* undocumented buffer pointer */
+    uint16 info_class; /* info class (same as info class in request) */
+    
+	union
+    {
+        DOM_QUERY_3 id3;
+		DOM_QUERY_5 id5;
+    } dom;
+
+} LSA_R_QUERY_INFO;
+
+#define MAX_REF_DOMAINS 10
+
+/* DOM_R_REF */
+typedef struct dom_ref_info
+{
+    uint32 undoc_buffer; /* undocumented buffer pointer. */
+    uint32 num_ref_doms_1; /* num referenced domains? */
+    uint32 buffer_dom_name; /* undocumented domain name buffer pointer. */
+    uint32 max_entries; /* 32 - max number of entries */
+    uint32 num_ref_doms_2; /* 4 - num referenced domains? */
+
+    UNIHDR2 hdr_dom_name; /* domain name unicode string header */
+    UNIHDR2 hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domain unicode string headers */
+
+    UNISTR uni_dom_name; /* domain name unicode string */
+    DOM_SID uni_dom_sid; /* domain SID */
+    DOM_SID uni_ref_dom[MAX_REF_DOMAINS]; /* referenced domain SIDs */
+
+} DOM_R_REF;
+
+#define MAX_LOOKUP_SIDS 10
+
+/* LSA_Q_LOOKUP_SIDS - LSA Lookup SIDs */
+typedef struct lsa_q_lookup_sids
+{
+
+    LSA_POL_HND pol_hnd; /* policy handle */
+    uint32 num_entries;
+    uint32 buffer_dom_sid; /* undocumented domain SID buffer pointer */
+    uint32 buffer_dom_name; /* undocumented domain name buffer pointer */
+    uint32 buffer_lookup_sids[MAX_LOOKUP_SIDS]; /* undocumented domain SID pointers to be looked up. */
+    DOM_SID dom_sids[MAX_LOOKUP_SIDS]; /* domain SIDs to be looked up. */
+    uint8 undoc[16]; /* completely undocumented 16 bytes */
+
+} LSA_Q_LOOKUP_SIDS;
+
+/* LSA_R_LOOKUP_SIDS - response to LSA Lookup SIDs */
+typedef struct lsa_r_lookup_sids
+{
+    DOM_R_REF dom_ref; /* domain reference info */
+
+    uint32 num_entries;
+    uint32 undoc_buffer2; /* undocumented buffer pointer */
+    uint32 num_entries2; 
+
+    DOM_SID2 dom_sid[MAX_LOOKUP_SIDS]; /* domain SIDs being looked up */
+
+    uint32 num_entries3; 
+
+} LSA_R_LOOKUP_SIDS;
+
+/* DOM_NAME - XXXX not sure about this structure */
+typedef struct dom_name_info
+{
+    uint32 uni_str_len;
+    uint16 buffer[MAX_UNISTRLEN];
+
+} DOM_NAME;
+
+
+#define UNKNOWN_LEN 1
+
+/* LSA_Q_LOOKUP_RIDS - LSA Lookup RIDs */
+typedef struct lsa_q_lookup_rids
+{
+
+    LSA_POL_HND pol_hnd; /* policy handle */
+    uint32 num_entries;
+    uint32 num_entries2;
+    uint32 buffer_dom_sid; /* undocumented domain SID buffer pointer */
+    uint32 buffer_dom_name; /* undocumented domain name buffer pointer */
+    DOM_NAME lookup_name[MAX_LOOKUP_SIDS]; /* names to be looked up */
+    uint8 undoc[UNKNOWN_LEN]; /* completely undocumented bytes of unknown length */
+
+} LSA_Q_LOOKUP_RIDS;
+
+/* LSA_R_LOOKUP_RIDS - response to LSA Lookup Names */
+typedef struct lsa_r_lookup_rids
+{
+
+    uint32 num_entries;
+    uint32 undoc_buffer2; /* undocumented buffer pointer */
+
+    uint32 num_entries2; 
+    DOM_RID2 dom_rid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
+
+    uint32 num_entries3; 
+
+} LSA_R_LOOKUP_RIDS;
+
+
+
+/* NEG_FLAGS */
+typedef struct lsa_neg_flags_info
+{
+    uint32 neg_flags; /* negotiated flags */
+
+} NEG_FLAGS;
+
+
+/* LSA_Q_REQ_CHAL */
+typedef struct lsa_q_req_chal_info
+{
+    uint32  undoc_buffer; /* undocumented buffer pointer */
+    UNISTR2 uni_logon_srv; /* logon server unicode string */
+    UNISTR2 uni_logon_clnt; /* logon client unicode string */
+    DOM_CHAL clnt_chal; /* client challenge */
+
+} LSA_Q_REQ_CHAL;
+
+
+/* LSA_R_REQ_CHAL */
+typedef struct lsa_r_req_chal_info
+{
+    DOM_CHAL srv_chal; /* server challenge */
+
+} LSA_R_REQ_CHAL;
+
+
+
+/* LSA_Q_AUTH_2 */
+typedef struct lsa_q_auth2_info
+{
+    DOM_LOG_INFO clnt_id; /* client identification info */
+    DOM_CHAL clnt_chal;     /* client-calculated credentials */
+
+    NEG_FLAGS clnt_flgs; /* usually 0x0000 01ff */
+
+} LSA_Q_AUTH_2;
+
+
+/* LSA_R_AUTH_2 */
+typedef struct lsa_r_auth2_info
+{
+    DOM_CHAL srv_chal;     /* server-calculated credentials */
+    NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
+
+} LSA_R_AUTH_2;
+
+
+/* LSA_Q_SRV_PWSET */
+typedef struct lsa_q_srv_pwset_info
+{
+    DOM_CLNT_INFO clnt_id; /* client identification/authentication info */
+    char pwd[16]; /* new password - undocumented. */
+
+} LSA_Q_SRV_PWSET;
+    
+/* LSA_R_SRV_PWSET */
+typedef struct lsa_r_srv_pwset_info
+{
+    DOM_CHAL srv_chal;     /* server-calculated credentials */
+
+} LSA_R_SRV_PWSET;
+
+#define LSA_MAX_GROUPS 32
+
+/* LSA_USER_INFO */
+typedef struct lsa_q_user_info
+{
+	uint32 undoc_buffer;
+
+	NTTIME logon_time;            /* logon time */
+	NTTIME logoff_time;           /* logoff time */
+	NTTIME kickoff_time;          /* kickoff time */
+	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME pass_can_change_time;  /* password can change time */
+	NTTIME pass_must_change_time; /* password must change time */
+
+	UNIHDR hdr_user_name;    /* username unicode string header */
+	UNIHDR hdr_full_name;    /* user's full name unicode string header */
+	UNIHDR hdr_logon_script; /* logon script unicode string header */
+	UNIHDR hdr_profile_path; /* profile path unicode string header */
+	UNIHDR hdr_home_dir;     /* home directory unicode string header */
+	UNIHDR hdr_dir_drive;    /* home directory drive unicode string header */
+
+	uint16 logon_count;  /* logon count */
+	uint16 bad_pw_count; /* bad password count */
+
+	uint32 user_id;       /* User ID */
+	uint32 group_id;      /* Group ID */
+	uint32 num_groups;    /* num groups */
+	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
+	uint32 user_flgs;     /* user flags */
+
+	char sess_key[16]; /* unused user session key */
+
+	UNIHDR hdr_logon_srv; /* logon server unicode string header */
+	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
+
+	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
+	char padding[40];    /* unused padding bytes? */
+
+	uint32 num_sids; /* 0 - num_sids */
+	uint32 buffer_sids; /* NULL - undocumented pointer to SIDs. */
+	
+	UNISTR2 uni_user_name;    /* username unicode string */
+	UNISTR2 uni_full_name;    /* user's full name unicode string */
+	UNISTR2 uni_logon_script; /* logon script unicode string */
+	UNISTR2 uni_profile_path; /* profile path unicode string */
+	UNISTR2 uni_home_dir;     /* home directory unicode string */
+	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
+
+	uint32 num_groups2;        /* num groups */
+	DOM_GID gids[LSA_MAX_GROUPS]; /* group info */
+
+	UNISTR2 uni_logon_srv; /* logon server unicode string */
+	UNISTR2 uni_logon_dom; /* logon domain unicode string */
+
+	DOM_SID undoc_dom_sids[2]; /* undocumented - domain SIDs */
+	DOM_SID dom_sid;           /* domain SID */
+
+} LSA_USER_INFO;
+
+
+/* LSA_Q_SAM_LOGON */
+typedef struct lsa_q_sam_logon_info
+{
+    DOM_SAM_INFO sam_id;
+
+} LSA_Q_SAM_LOGON;
+
+/* LSA_R_SAM_LOGON */
+typedef struct lsa_r_sam_logon_info
+{
+    uint32 buffer_creds; /* undocumented buffer pointer */
+    DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
+    
+    uint32 buffer_user;
+    LSA_USER_INFO user;
+
+    uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
+
+} LSA_R_SAM_LOGON;
+
+
+/* LSA_Q_SAM_LOGOFF */
+typedef struct lsa_q_sam_logoff_info
+{
+    DOM_SAM_INFO sam_id;
+
+} LSA_Q_SAM_LOGOFF;
+
+/* LSA_R_SAM_LOGOFF */
+typedef struct lsa_r_sam_logoff_info
+{
+    uint32 buffer_creds; /* undocumented buffer pointer */
+    DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
+    
+} LSA_R_SAM_LOGOFF;
+
+/*
+
+Yet to be turned into structures:
+
+6) \\MAILSLOT\NET\NTLOGON
+-------------------------
+
+6.1) Query for PDC
+------------------
+
+Request:
+
+    uint16         0x0007 - Query for PDC
+    STR            machine name
+    STR            response mailslot
+    uint8[]        padding to 2-byte align with start of mailslot.
+    UNISTR         machine name
+    uint32         NTversion
+    uint16         LMNTtoken
+    uint16         LM20token
+
+Response:
+
+    uint16         0x000A - Respose to Query for PDC
+    STR            machine name (in uppercase)
+    uint8[]        padding to 2-byte align with start of mailslot.
+    UNISTR         machine name
+    UNISTR         domain name
+    uint32         NTversion (same as received in request)
+    uint16         LMNTtoken (same as received in request)
+    uint16         LM20token (same as received in request)
+
+
+6.2) SAM Logon
+--------------
+
+Request:
+
+    uint16         0x0012 - SAM Logon
+    uint16         request count
+    UNISTR         machine name
+    UNISTR         user name
+    STR            response mailslot
+    uint32         alloweable account
+    uint32         domain SID size
+    char[sid_size] domain SID, of sid_size bytes.
+    uint8[]        ???? padding to 4? 2? -byte align with start of mailslot.
+    uint32         NTversion
+    uint16         LMNTtoken
+    uint16         LM20token
+    
+Response:
+
+    uint16         0x0013 - Response to SAM Logon
+    UNISTR         machine name
+    UNISTR         user name - workstation trust account
+    UNISTR         domain name 
+    uint32         NTversion
+    uint16         LMNTtoken
+    uint16         LM20token
+
+*/
 
 
 struct smb_passwd {
