@@ -241,6 +241,8 @@
 #define SHUT_RDWR 2
 #endif
 
+ROKEN_CPP_START
+
 #if IRIX != 4 /* fix for compiler bug */
 #ifdef RETSIGTYPE
 typedef RETSIGTYPE (*SigAction)(int);
@@ -313,6 +315,8 @@ int
 read_environment(const char *file, char ***env);
 
 void warnerr(int doerrno, const char *fmt, va_list ap)
-     __attribute__ ((format (printf, 2, 0)));
+    __attribute__ ((format (printf, 2, 0)));
+
+ROKEN_CPP_END
 
 #endif /* __ROKEN_COMMON_H__ */
