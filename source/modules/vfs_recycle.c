@@ -555,11 +555,10 @@ static int recycle_unlink(connection_struct *conn, const char *file_name)
 	/* see if we need to recreate the original directory structure in the recycle bin */
 	if (recbin->keep_dir_tree == True) {
 		asprintf(&temp_name, "%s/%s", recbin->repository, path_name);
-		ALLOC_CHECK(temp_name, done);
 	} else {
 		temp_name = strdup(recbin->repository);
-		ALLOC_CHECK(temp_name, done);
 	}
+	ALLOC_CHECK(temp_name, done);
 
 	exist = recycle_directory_exist(conn, temp_name);
 	if (exist) {
