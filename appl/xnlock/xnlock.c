@@ -297,8 +297,8 @@ zrefresh(void)
       return -1;
   case 0:
       /* Child */
-      execlp("zrefresh", "zrefresh", 0);
-      execl(BINDIR "/zrefresh", "zrefresh", 0);
+      execlp("zrefresh", "zrefresh", NULL);
+      execl(BINDIR "/zrefresh", "zrefresh", NULL);
       return -1;
   default:
       /* Parent */
