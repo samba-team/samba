@@ -81,7 +81,7 @@ FLAGS  = $(ISA) $(FLAGS5) $(PASSWD_FLAGS)
 FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
-PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol @RUNPROG@
+PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/make_printerdef @RUNPROG@
 PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup 
