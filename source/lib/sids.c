@@ -199,8 +199,7 @@ BOOL get_member_domain_sid(void)
 		}
 	}
 
-	return get_domain_sids(global_myname, NULL,
-	                       &global_member_sid, lp_workgroup());
+	return get_domain_sids(lp_workgroup(), NULL, &global_member_sid);
 }
 
 
