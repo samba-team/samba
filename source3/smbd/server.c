@@ -3887,8 +3887,6 @@ static void process(void)
       int counter;
       int last_keepalive=0;
       int service_load_counter = 0;
-      int share_check_counter = 0;
-      int share_clean_counter = 0;
 
       if (deadtime <= 0)
 	deadtime = DEFAULT_SMBD_TIMEOUT;
@@ -3910,8 +3908,6 @@ static void process(void)
       if (counter > 365 * 3600) /* big number of seconds. */
       {
         counter = 0;
-        share_check_counter = 0;
-        share_clean_counter = 0;
         service_load_counter = 0;
       }
 
@@ -3942,22 +3938,6 @@ static void process(void)
         /* reload services, if files have changed. */
 	    reload_services(True);
       }
-
-#if 0 /* JRA */
-	  /* check the share modes every 10 secs */
-	  if (counter >= share_check_counter + SHARE_MODES_CHECK)
-      {
-        share_check_counter = counter;
-	    check_share_modes();
-      }
-
-	  /* clean the share modes every 5 minutes */
-	  if (counter >= share_clean_counter + SHARE_MODES_CLEAN)
-      {
-        share_clean_counter = counter;
-	    clean_share_modes();
-      }
-#endif /* JRA */
 
 	  /* automatic timeout if all connections are closed */      
 	  if (num_connections_open==0 && counter >= IDLE_CLOSED_TIMEOUT) {

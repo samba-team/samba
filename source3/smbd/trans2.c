@@ -343,7 +343,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 	  size = sbuf.st_size;
 	  mdate = sbuf.st_mtime;
 	  adate = sbuf.st_atime;
-	  cdate = sbuf.st_mtime;
+	  cdate = sbuf.st_ctime;
 	  if(mode & aDIR)
 	    size = 0;
 
@@ -915,10 +915,10 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
       /* Return volume name */
       int volname_len = MIN(strlen(vname),11);
       data_len = l2_vol_szVolLabel + volname_len + 1;
-      put_dos_date2(pdata,l2_vol_fdateCreation,st.st_mtime);
+      put_dos_date2(pdata,l2_vol_fdateCreation,st.st_ctime);
       SCVAL(pdata,l2_vol_cch,volname_len);
       StrnCpy(pdata+l2_vol_szVolLabel,vname,volname_len);
-      DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",st.st_mtime, volname_len,
+      DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",st.st_ctime, volname_len,
 	       pdata+l2_vol_szVolLabel));
       break;
     }
@@ -1073,7 +1073,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     case SMB_INFO_STANDARD:
     case SMB_INFO_QUERY_EA_SIZE:
       data_size = (info_level==1?22:26);
-      put_dos_date2(pdata,l1_fdateCreation,sbuf.st_mtime); /* create = mod */
+      put_dos_date2(pdata,l1_fdateCreation,sbuf.st_ctime); /* create = inode mod */
       put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime); /* access time */
       put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
       SIVAL(pdata,l1_cbFile,size);
@@ -1084,7 +1084,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
 
     case SMB_INFO_QUERY_EAS_FROM_LIST:
       data_size = 24;
-      put_dos_date2(pdata,0,sbuf.st_mtime); /* create time = mod time */
+      put_dos_date2(pdata,0,sbuf.st_ctime); /* create time = inode mod time */
       put_dos_date2(pdata,4,sbuf.st_atime);
       put_dos_date2(pdata,8,sbuf.st_mtime);
       SIVAL(pdata,12,size);
@@ -1101,18 +1101,18 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
       return(ERROR(ERRDOS,ERRbadfunc)); /* os/2 needs this */      
 
     case SMB_QUERY_FILE_BASIC_INFO:
-      data_size = 40; /* w95 returns 40 bytes not 36. */
-      put_long_date(pdata,sbuf.st_mtime); /* create time = mod time */
+      data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
+      put_long_date(pdata,sbuf.st_ctime); /* create time = inode mod time */
       put_long_date(pdata+8,sbuf.st_atime); /* access time */
       put_long_date(pdata+16,sbuf.st_mtime); /* write time */
-      put_long_date(pdata+24,sbuf.st_ctime); /* change time */
+      put_long_date(pdata+24,sbuf.st_mtime); /* change time */
       SIVAL(pdata,32,mode);
 
       DEBUG(5,("SMB_QFBI - "));
-      DEBUG(5,("create: %s ", ctime(&sbuf.st_mtime)));
+      DEBUG(5,("create: %s ", ctime(&sbuf.st_ctime)));
       DEBUG(5,("access: %s ", ctime(&sbuf.st_atime)));
       DEBUG(5,("write: %s ", ctime(&sbuf.st_mtime)));
-      DEBUG(5,("change: %s ", ctime(&sbuf.st_ctime)));
+      DEBUG(5,("change: %s ", ctime(&sbuf.st_mtime)));
       DEBUG(5,("mode: %x\n", mode));
 
       break;
@@ -1143,10 +1143,10 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
       break;
 
     case SMB_QUERY_FILE_ALL_INFO:
-      put_long_date(pdata,sbuf.st_mtime); /* create time = mod time */
+      put_long_date(pdata,sbuf.st_ctime); /* create time = inode mod time */
       put_long_date(pdata+8,sbuf.st_atime); /* access time */
       put_long_date(pdata+16,sbuf.st_mtime); /* write time */
-      put_long_date(pdata+24,sbuf.st_ctime); /* change time */
+      put_long_date(pdata+24,sbuf.st_mtime); /* change time */
       SIVAL(pdata,32,mode);
       pdata += 40;
       SIVAL(pdata,0,size);
@@ -1300,7 +1300,7 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
 
     case SMB_SET_FILE_BASIC_INFO:
     {
-      /* create time */
+      /* Ignore create time at offset pdata. */
 
       /* access time */
       tvs.actime = interpret_long_date(pdata+8);
@@ -1330,10 +1330,10 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
     }
   }
 
-  DEBUG(3,("actime: %s " , ctime(&tvs.actime)));
-  DEBUG(3,("modtime: %s ", ctime(&tvs.modtime)));
-  DEBUG(3,("size: %x "   , size));
-  DEBUG(3,("mode: %x\n"  , mode));
+  DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
+  DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
+  DEBUG(6,("size: %x "   , size));
+  DEBUG(6,("mode: %x\n"  , mode));
 
   /* get some defaults (no modifications) if any info is zero. */
   if (!tvs.actime) tvs.actime = st.st_atime;
