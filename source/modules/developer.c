@@ -128,5 +128,5 @@ struct charset_functions weird_functions = {"WEIRD", weird_pull, weird_push};
 int init_module(void)
 {
 	smb_register_charset(&weird_functions);
-	return 0;
+	return 1;
 }

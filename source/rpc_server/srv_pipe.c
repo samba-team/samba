@@ -794,10 +794,10 @@ int rpc_pipe_register_commands(const char *clnt, const char *srv, const struct a
 /*******************************************************************
  Register commands to an RPC pipe
 *******************************************************************/
-NTSTATUS rpc_load_module(const char *module)
+int rpc_load_module(const char *module)
 {
         pstring full_path;
-		NTSTATUS status;
+		int status;
         
         pstrcpy(full_path, lib_path("rpc"));
         pstrcat(full_path, "/librpc_");
@@ -805,7 +805,7 @@ NTSTATUS rpc_load_module(const char *module)
         pstrcat(full_path, ".");
         pstrcat(full_path, shlib_ext());
 		
-		if (!NT_STATUS_IS_OK(status = smb_load_module(full_path)))  {
+		if (!(status = smb_load_module(full_path)))  {
                 DEBUG(0, ("Could not load requested pipe %s as %s\n", 
                     module, full_path));
         }
@@ -858,7 +858,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
                        }
                 }
 
-                if (!api_fd_commands[i].name && !NT_STATUS_IS_OK(rpc_load_module(p->name))) {
+                if (!api_fd_commands[i].name && !rpc_load_module(p->name)) {
                        DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
                                 p->name ));
                        if(!setup_bind_nak(p))
