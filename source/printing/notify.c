@@ -463,6 +463,15 @@ void notify_printer_sharename(int snum, char *share_name)
 		snum, strlen(share_name) + 1, share_name);
 }
 
+void notify_printer_printername(int snum, char *printername)
+{
+	const char *printer_name = SERVICE(snum);
+
+	send_notify_field_buffer(
+		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINTER_NAME,
+		snum, strlen(printername) + 1, printername);
+}
+
 void notify_printer_port(int snum, char *port_name)
 {
 	const char *printer_name = SERVICE(snum);
