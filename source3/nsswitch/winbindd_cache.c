@@ -606,10 +606,11 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 	centry = centry_start(domain, status);
 	if (!centry)
 		return;
+	centry_put_uint32(centry, type);
 	centry_put_sid(centry, sid);
 	fstrcpy(uname, name);
 	strupper_m(uname);
-	centry_end(centry, "NS/%s", sid_to_string(sid_string, sid));
+	centry_end(centry, "NS/%s/%s", domain->name, uname);
 	DEBUG(10,("wcache_save_name_to_sid: %s -> %s\n", uname, sid_string));
 	centry_free(centry);
 }
