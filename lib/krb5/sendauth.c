@@ -90,6 +90,7 @@ krb5_sendauth(krb5_context context,
     krb5_creds this_cred;
     krb5_principal this_client = NULL;
     krb5_creds *creds;
+    ssize_t sret;
 
     len = strlen(version) + 1;
     net_len = htonl(len);
@@ -103,11 +104,14 @@ krb5_sendauth(krb5_context context,
 	|| krb5_net_write (context, p_fd, appl_version, len) != len)
 	return errno;
 
-    if (krb5_net_read (context, p_fd, &repl, sizeof(repl)) != sizeof(repl))
+    sret = krb5_net_read (context, p_fd, &repl, sizeof(repl));
+    if (sret < 0)
 	return errno;
+    else if (sret != sizeof(repl))
+	return KRB5_SENDAUTH_BADRESPONSE;
 
     if (repl != 0)
-	return KRB5_SENDAUTH_BADRESPONSE; /* XXX */
+	return KRB5_SENDAUTH_REJECTED;
 
     if (in_creds == NULL) {
 	if (ccache == NULL) {
