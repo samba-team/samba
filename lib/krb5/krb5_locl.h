@@ -45,6 +45,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
