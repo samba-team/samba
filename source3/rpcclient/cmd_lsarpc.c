@@ -82,6 +82,8 @@ static uint32 cmd_lsa_query_info_policy(int argc, char **argv)
 		cli_lsa_close(&cli, &pol);
 	}
 
+	cli_lsa_shutdown(&cli);
+
 	return result;
 }
 
@@ -146,6 +148,8 @@ static uint32 cmd_lsa_lookup_names(int argc, char **argv)
 	if (got_policy_hnd) {
 		cli_lsa_close(&cli, &pol);
 	}
+
+	cli_lsa_shutdown(&cli);
 
 	return result;
 }
@@ -232,6 +236,8 @@ static uint32 cmd_lsa_lookup_sids(int argc, char **argv)
 		cli_lsa_close(&cli, &pol);
 	}
 
+	cli_lsa_shutdown(&cli);
+
 	return result;
 }
 
@@ -302,6 +308,8 @@ static uint32 cmd_lsa_enum_trust_dom(int argc, char **argv)
 	if (got_policy_hnd) {
 		cli_lsa_close(&cli, &pol);
 	}
+
+	cli_lsa_shutdown(&cli);
 
 	return result;
 }
