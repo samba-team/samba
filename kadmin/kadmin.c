@@ -72,7 +72,7 @@ static struct getargs args[] = {
     },
     {	
 	"server-port",	's',	arg_integer,   &server_port, 
-	"server to contact", "host" 
+	"server to contact", "port number" 
     },
     {	"local", 'l', arg_flag, &local_flag, "local admin mode" },
     {	"help",		'h',	arg_flag,   &help_flag },
