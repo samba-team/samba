@@ -42,6 +42,9 @@ static BOOL analyze;
 #define NFILES 2
 #define LOCK_TIMEOUT 0
 
+#define NASTY_POSIX_LOCK_HACK 1
+
+
 struct record {
 	char r1, r2;
 	char conn, f;
@@ -74,6 +77,20 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 	       (int)pid, (int)dev, (int)ino, 
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)size);
+
+#if NASTY_POSIX_LOCK_HACK
+	{
+		pstring cmd;
+		static SMB_INO_T lastino;
+
+		if (lastino != ino) {
+			slprintf(cmd, sizeof(cmd), 
+				 "egrep POSIX.*%d /proc/locks", (int)ino);
+			system(cmd);
+		}
+		lastino = ino;
+	}
+#endif
 }
 
 /***************************************************** 
