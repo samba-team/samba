@@ -1217,7 +1217,7 @@ static int net_help(int argc, const char **argv)
 		{NULL, NULL}};
 
 	return net_run_function(argc, argv, func, help_usage);
-};
+}
 
 /* main function table */
 static struct functable net_func[] = {
