@@ -18,6 +18,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "includes.h"
 #include "printing.h"
 
 #ifdef HAVE_CUPS
