@@ -104,6 +104,7 @@ libkrb5_la_SOURCES =				\
 	net_write.c				\
 	n-fold.c				\
 	padata.c				\
+	pkinit.c				\
 	principal.c				\
 	prog_setup.c				\
 	prompter_posix.c			\
