@@ -84,6 +84,9 @@
 #ifndef T_CERT
 #define T_CERT		37
 #endif
+#ifndef T_SSHFP
+#define T_SSHFP		44
+#endif
 
 #ifndef MAXDNAME
 #define MAXDNAME	1025
@@ -151,6 +154,14 @@ struct cert_record {
     u_char   cert_data[1];
 };
 
+struct sshfp_record {
+    unsigned algorithm;
+    unsigned type;
+    size_t   sshfp_len;
+    u_char   sshfp_data[1];
+};
+
+
 struct resource_record{
     char *domain;
     unsigned type;
@@ -167,13 +178,23 @@ struct resource_record{
 	struct key_record *key;
 	struct cert_record *cert;
 	struct sig_record *sig;
+	struct sshfp_record *sshfp;
     }u;
     struct resource_record *next;
 };
 
 struct dns_header {
     unsigned id;
-    unsigned misc;
+    unsigned flags;
+#define rk_DNS_HEADER_RESPONSE_FLAG		1
+#define rk_DNS_HEADER_AUTHORITIVE_ANSWER	2
+#define rk_DNS_HEADER_TRUNCATED_MESSAGE		4
+#define rk_DNS_HEADER_RECURSION_DESIRED		8
+#define rk_DNS_HEADER_RECURSION_AVAILABLE	16
+#define rk_DNS_HEADER_AUTHENTIC_DATA		32
+#define rk_DNS_HEADER_CHECKING_DISABLED		64
+    unsigned opcode;
+    unsigned response_code;
     unsigned qdcount;
     unsigned ancount;
     unsigned nscount;
