@@ -116,7 +116,8 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 			       struct winbindd_cm_conn *new_conn)
 {
 	NTSTATUS result;
-	char *ipc_username, *ipc_domain, *ipc_password;
+	char *machine_password; 
+	char *machine_krb5_principal, *ipc_username, *ipc_domain, *ipc_password;
 	struct in_addr dc_ip;
 	int i;
 	BOOL retry = True;
@@ -137,10 +138,15 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		
 	/* Initialise SMB connection */
 
-	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
+	/* grab stored passwords */
+	machine_password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
+	
+	if (asprintf(&machine_krb5_principal, "%s$@%s", global_myname(), lp_realm()) == -1) {
+		SAFE_FREE(machine_password);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	DEBUG(5, ("connecting to %s from %s with username [%s]\\[%s]\n", 
-	      new_conn->controller, global_myname(), ipc_domain, ipc_username));
+	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
 
 	for (i = 0; retry && (i < 3); i++) {
 		BOOL got_mutex;
@@ -150,12 +156,75 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 			continue;
 		}
 		
-		result = cli_full_connection(&new_conn->cli, global_myname(), new_conn->controller, 
-					     &dc_ip, 0, "IPC$", "IPC", ipc_username, ipc_domain, 
-					     ipc_password, CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, 
-					     Undefined, &retry);
-		
-		secrets_named_mutex_release(new_conn->controller);
+		new_conn->cli = NULL;
+		result = cli_start_connection(&new_conn->cli, global_myname(), 
+					      new_conn->controller, 
+					      &dc_ip, 0, Undefined, 
+					      CLI_FULL_CONNECTION_USE_KERBEROS, 
+					      &retry);
+
+		if (NT_STATUS_IS_OK(result)) {
+			if ((lp_security() == SEC_ADS) 
+				&& (new_conn->cli->protocol >= PROTOCOL_NT1 && new_conn->cli->capabilities & CAP_EXTENDED_SECURITY)) {
+				new_conn->cli->use_kerberos = True;
+				DEBUG(5, ("connecting to %s from %s with kerberos principal [%s]\n", 
+					  new_conn->controller, global_myname(), machine_krb5_principal));
+
+				if (!cli_session_setup_spnego(new_conn->cli, machine_krb5_principal, 
+							      machine_password, 
+							      domain)) {
+					result = cli_nt_error(new_conn->cli);
+					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
+					if (NT_STATUS_IS_OK(result)) 
+						result = NT_STATUS_UNSUCCESSFUL;
+				}
+			}
+			new_conn->cli->use_kerberos = False;
+			if (!NT_STATUS_IS_OK(result) 
+			    && new_conn->cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {	
+				DEBUG(5, ("connecting to %s from %s with username [%s]\\[%s]\n", 
+					  new_conn->controller, global_myname(), ipc_domain, ipc_username));
+
+				if (!cli_session_setup(new_conn->cli, ipc_username, 
+						       ipc_password, strlen(ipc_password)+1, 
+						       ipc_password, strlen(ipc_password)+1, 
+						       domain)) {
+					result = cli_nt_error(new_conn->cli);
+					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
+					if (NT_STATUS_IS_OK(result)) 
+						result = NT_STATUS_UNSUCCESSFUL;
+				}
+			}
+			if (!NT_STATUS_IS_OK(result)) {	
+				if (!cli_session_setup(new_conn->cli, "", NULL, 0, 
+						       NULL, 0, 
+						       "")) {
+					result = cli_nt_error(new_conn->cli);
+					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
+					if (NT_STATUS_IS_OK(result)) 
+						result = NT_STATUS_UNSUCCESSFUL;
+				} 
+				
+			}
+			if (NT_STATUS_IS_OK(result) && !cli_send_tconX(new_conn->cli, "IPC$", "IPC",
+								       "", 0)) {
+				result = cli_nt_error(new_conn->cli);
+				DEBUG(1,("failed tcon_X with %s\n", nt_errstr(result)));
+				cli_shutdown(new_conn->cli);
+				if (NT_STATUS_IS_OK(result)) {
+					result = NT_STATUS_UNSUCCESSFUL;
+				}
+			}
+		}
+
+		if (NT_STATUS_IS_OK(result)) {
+			struct ntuser_creds creds;
+			init_creds(&creds, ipc_username, ipc_domain, ipc_password);
+			cli_init_creds(new_conn->cli, &creds);
+		}
+
+		if (got_mutex)
+			secrets_named_mutex_release(new_conn->controller);
 
 		if (NT_STATUS_IS_OK(result))
 			break;
@@ -164,6 +233,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	SAFE_FREE(ipc_username);
 	SAFE_FREE(ipc_domain);
 	SAFE_FREE(ipc_password);
+	SAFE_FREE(machine_password);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		add_failed_connection_entry(domain, new_conn->controller, result);

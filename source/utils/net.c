@@ -181,6 +181,27 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 	}
 }
 
+/****************************************************************************
+ Use the local machine's password for this session
+****************************************************************************/
+int net_use_machine_password(void) 
+{
+	char *user_name = NULL;
+
+	if (!secrets_init()) {
+		d_printf("ERROR: Unable to open secrets database\n");
+		exit(1);
+	}
+
+	user_name = NULL;
+	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
+	if (asprintf(&user_name, "%s$@%s", global_myname(), lp_realm()) == -1) {
+		return -1;
+	}
+	opt_user_name = user_name;
+	return 0;
+}
+
 BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_name)
 {
 
@@ -321,7 +342,7 @@ static int net_join(int argc, const char **argv)
 		if (net_ads_join(argc, argv) == 0)
 			return 0;
 		else
-			d_printf("ADS join did not work, trying RPC...\n");
+			d_printf("ADS join did not work, falling back to RPC...\n");
 	}
 	return net_rpc_join(argc, argv);
 }
@@ -649,23 +670,10 @@ static struct functable net_func[] = {
 	sec_init();
 
 	if (opt_machine_pass) {
-		char *user = NULL;
 		/* it is very useful to be able to make ads queries as the
 		   machine account for testing purposes and for domain leave */
 
-		if (!secrets_init()) {
-			d_printf("ERROR: Unable to open secrets database\n");
-			exit(1);
-		}
-
-		opt_password = secrets_fetch_machine_password(opt_workgroup, NULL, NULL);
-
-		asprintf(&user,"%s$", global_myname());
-		opt_user_name = user;
-		if (!opt_password) {
-			d_printf("ERROR: Unable to fetch machine password\n");
-			exit(1);
-		}
+		net_use_machine_password();
 	}
 
 	if (!opt_password) {
