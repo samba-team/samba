@@ -8,7 +8,7 @@
    Copyright (C) Simo Sorce 2001
    Copyright (C) Alexander Bokovoy 2002
    Copyright (C) Stefan (metze) Metzmacher 2002
-   Copyright (C) Anthony Liguori 2003
+   Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
    Copyright (C) James Myers 2003 <myersjj@samba.org>
    
    This program is free software; you can redistribute it and/or modify

@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Copyright (C) 2001 by Martin Pool <mbp@samba.org>
-   Copyright (C) 2003 by Anthony Liguori <aliguor@us.ibm.com>
+   Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
