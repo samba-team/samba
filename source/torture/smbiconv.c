@@ -183,7 +183,6 @@ int main(int argc, char *argv[])
 		{ "to-code", 't', POPT_ARG_STRING, &to, 0, "Encoding for output" },
 		{ "output", 'o', POPT_ARG_STRING, &output, 0, "Write output to this file" },
 		{ "preload-modules", 'p', POPT_ARG_STRING, &preload_modules[0], 0, "Modules to load" },
-		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
 
