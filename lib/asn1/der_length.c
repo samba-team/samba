@@ -68,7 +68,7 @@ len_int (int val)
 }
 
 static size_t
-len_oid (const oid *oid)
+len_oid (const heim_oid *oid)
 {
     size_t ret = 1;
     int n;
@@ -128,7 +128,7 @@ length_enumerated (const unsigned *data)
 }
 
 size_t
-length_general_string (const general_string *data)
+length_general_string (const heim_general_string *data)
 {
     char *str = *data;
     size_t len = strlen(str);
@@ -136,13 +136,13 @@ length_general_string (const general_string *data)
 }
 
 size_t
-length_octet_string (const octet_string *k)
+length_octet_string (const heim_octet_string *k)
 {
     return 1 + length_len(k->length) + k->length;
 }
 
 size_t
-length_oid (const oid *k)
+length_oid (const heim_oid *k)
 {
     size_t len = len_oid (k);
 
@@ -152,7 +152,7 @@ length_oid (const oid *k)
 size_t
 length_generalized_time (const time_t *t)
 {
-    octet_string k;
+    heim_octet_string k;
     size_t ret;
 
     time2generalizedtime (*t, &k);

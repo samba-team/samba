@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 int
-copy_general_string (const general_string *from, general_string *to)
+copy_general_string (const heim_general_string *from, heim_general_string *to)
 {
     *to = strdup(*from);
     if(*to == NULL)
@@ -45,7 +45,7 @@ copy_general_string (const general_string *from, general_string *to)
 }
 
 int
-copy_octet_string (const octet_string *from, octet_string *to)
+copy_octet_string (const heim_octet_string *from, heim_octet_string *to)
 {
     to->length = from->length;
     to->data   = malloc(to->length);
@@ -56,7 +56,7 @@ copy_octet_string (const octet_string *from, octet_string *to)
 }
 
 int
-copy_oid (const oid *from, oid *to)
+copy_oid (const heim_oid *from, heim_oid *to)
 {
     to->length     = from->length;
     to->components = malloc(to->length * sizeof(*to->components));

@@ -6,17 +6,17 @@
 #ifndef __asn1_common_definitions__
 #define __asn1_common_definitions__
 
-typedef struct octet_string {
+typedef struct heim_octet_string {
     size_t length;
     void *data;
-} octet_string;
+} heim_octet_string;
 
-typedef char *general_string;
-typedef char *utf8_string;
+typedef char *heim_general_string;
+typedef char *heim_utf8_string;
 
-typedef struct oid {
+typedef struct heim_oid {
     size_t length;
     unsigned *components;
-} oid;
+} heim_oid;
 
 #endif

@@ -36,19 +36,19 @@
 RCSID("$Id$");
 
 void
-free_general_string (general_string *str)
+free_general_string (heim_general_string *str)
 {
     free(*str);
 }
 
 void
-free_octet_string (octet_string *k)
+free_octet_string (heim_octet_string *k)
 {
     free(k->data);
 }
 
 void
-free_oid (oid *k)
+free_oid (heim_oid *k)
 {
     free(k->components);
 }

@@ -138,7 +138,7 @@ loop (unsigned char *buf, size_t len, int indent)
 		break;
 	    }
 	    case UT_OctetString : {
-		octet_string str;
+		heim_octet_string str;
 		int i;
 		unsigned char *uc;
 
@@ -155,7 +155,7 @@ loop (unsigned char *buf, size_t len, int indent)
 	    }
 	    case UT_GeneralizedTime :
 	    case UT_GeneralString : {
-		general_string str;
+		heim_general_string str;
 
 		ret = der_get_general_string (buf, length, &str, NULL);
 		if (ret)
@@ -166,7 +166,7 @@ loop (unsigned char *buf, size_t len, int indent)
 		break;
 	    }
 	    case UT_OID: {
-		oid o;
+		heim_oid o;
 		int i;
 
 		ret = der_get_oid(buf, length, &o, NULL);

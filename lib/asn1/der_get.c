@@ -112,7 +112,7 @@ der_get_length (const unsigned char *p, size_t len,
 
 int
 der_get_general_string (const unsigned char *p, size_t len, 
-			general_string *str, size_t *size)
+			heim_general_string *str, size_t *size)
 {
     char *s;
 
@@ -128,7 +128,7 @@ der_get_general_string (const unsigned char *p, size_t len,
 
 int
 der_get_octet_string (const unsigned char *p, size_t len, 
-		      octet_string *data, size_t *size)
+		      heim_octet_string *data, size_t *size)
 {
     data->length = len;
     data->data = malloc(len);
@@ -141,7 +141,7 @@ der_get_octet_string (const unsigned char *p, size_t len,
 
 int
 der_get_oid (const unsigned char *p, size_t len,
-	     oid *data, size_t *size)
+	     heim_oid *data, size_t *size)
 {
     int n;
     size_t oldlen = len;
@@ -321,7 +321,7 @@ decode_enumerated (const unsigned char *p, size_t len,
 
 int
 decode_general_string (const unsigned char *p, size_t len, 
-		       general_string *str, size_t *size)
+		       heim_general_string *str, size_t *size)
 {
     size_t ret = 0;
     size_t l;
@@ -353,7 +353,7 @@ decode_general_string (const unsigned char *p, size_t len,
 
 int
 decode_octet_string (const unsigned char *p, size_t len, 
-		     octet_string *k, size_t *size)
+		     heim_octet_string *k, size_t *size)
 {
     size_t ret = 0;
     size_t l;
@@ -385,7 +385,7 @@ decode_octet_string (const unsigned char *p, size_t len,
 
 int
 decode_oid (const unsigned char *p, size_t len, 
-	    oid *k, size_t *size)
+	    heim_oid *k, size_t *size)
 {
     size_t ret = 0;
     size_t l;
@@ -433,7 +433,7 @@ int
 decode_generalized_time (const unsigned char *p, size_t len,
 			 time_t *t, size_t *size)
 {
-    octet_string k;
+    heim_octet_string k;
     char *times;
     size_t ret = 0;
     size_t l;

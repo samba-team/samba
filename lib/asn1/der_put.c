@@ -134,7 +134,7 @@ der_put_length (unsigned char *p, size_t len, size_t val, size_t *size)
 
 int
 der_put_general_string (unsigned char *p, size_t len, 
-			const general_string *str, size_t *size)
+			const heim_general_string *str, size_t *size)
 {
     size_t slen = strlen(*str);
 
@@ -149,7 +149,7 @@ der_put_general_string (unsigned char *p, size_t len,
 
 int
 der_put_octet_string (unsigned char *p, size_t len, 
-		      const octet_string *data, size_t *size)
+		      const heim_octet_string *data, size_t *size)
 {
     if (len < data->length)
 	return ASN1_OVERFLOW;
@@ -162,7 +162,7 @@ der_put_octet_string (unsigned char *p, size_t len,
 
 int
 der_put_oid (unsigned char *p, size_t len,
-	     const oid *data, size_t *size)
+	     const heim_oid *data, size_t *size)
 {
     unsigned char *base = p;
     int n;
@@ -310,7 +310,7 @@ encode_enumerated (unsigned char *p, size_t len, const unsigned *data,
 
 int
 encode_general_string (unsigned char *p, size_t len, 
-		       const general_string *data, size_t *size)
+		       const heim_general_string *data, size_t *size)
 {
     size_t ret = 0;
     size_t l;
@@ -334,7 +334,7 @@ encode_general_string (unsigned char *p, size_t len,
 
 int
 encode_octet_string (unsigned char *p, size_t len, 
-		     const octet_string *k, size_t *size)
+		     const heim_octet_string *k, size_t *size)
 {
     size_t ret = 0;
     size_t l;
@@ -358,7 +358,7 @@ encode_octet_string (unsigned char *p, size_t len,
 
 int
 encode_oid(unsigned char *p, size_t len,
-	   const oid *k, size_t *size)
+	   const heim_oid *k, size_t *size)
 {
     size_t ret = 0;
     size_t l;
@@ -381,7 +381,7 @@ encode_oid(unsigned char *p, size_t len,
 }
 
 int
-time2generalizedtime (time_t t, octet_string *s)
+time2generalizedtime (time_t t, heim_octet_string *s)
 {
      struct tm *tm;
      size_t len;
@@ -405,7 +405,7 @@ encode_generalized_time (unsigned char *p, size_t len,
 {
     size_t ret = 0;
     size_t l;
-    octet_string k;
+    heim_octet_string k;
     int e;
 
     e = time2generalizedtime (*t, &k);

@@ -97,21 +97,21 @@ init_generate (const char *filename, const char *base)
 	     "#ifndef __asn1_common_definitions__\n"
 	     "#define __asn1_common_definitions__\n\n");
     fprintf (headerfile,
-	     "typedef struct octet_string {\n"
+	     "typedef struct heim_octet_string {\n"
 	     "  size_t length;\n"
 	     "  void *data;\n"
-	     "} octet_string;\n\n");
+	     "} heim_octet_string;\n\n");
     fprintf (headerfile,
-	     "typedef char *general_string;\n\n"
+	     "typedef char *heim_general_string;\n\n"
 	     );
     fprintf (headerfile,
-	     "typedef char *utf8_string;\n\n"
+	     "typedef char *heim_utf8_string;\n\n"
 	     );
     fprintf (headerfile,
-	     "typedef struct oid {\n"
+	     "typedef struct heim_oid {\n"
 	     "  size_t length;\n"
 	     "  unsigned *components;\n"
-	     "} oid;\n\n");
+	     "} heim_oid;\n\n");
     fputs("#define ASN1_MALLOC_ENCODE(T, B, BL, S, L, R)                  \\\n"
 	  "  do {                                                         \\\n"
 	  "    (BL) = length_##T((S));                                    \\\n"
@@ -315,11 +315,11 @@ define_type (int level, char *name, Type *t, int typedefp)
 	break;
     case TOctetString:
 	space(level);
-	fprintf (headerfile, "octet_string %s;\n", name);
+	fprintf (headerfile, "heim_octet_string %s;\n", name);
 	break;
     case TOID :
 	space(level);
-	fprintf (headerfile, "oid %s;\n", name);
+	fprintf (headerfile, "heim_oid %s;\n", name);
 	break;
     case TBitString: {
 	Member *m;
@@ -401,7 +401,7 @@ define_type (int level, char *name, Type *t, int typedefp)
 	break;
     case TGeneralString:
 	space(level);
-	fprintf (headerfile, "general_string %s;\n", name);
+	fprintf (headerfile, "heim_general_string %s;\n", name);
 	break;
     case TUTF8String:
 	space(level);

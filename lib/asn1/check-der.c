@@ -130,8 +130,8 @@ test_unsigned (void)
 static int
 cmp_octet_string (void *a, void *b)
 {
-    octet_string *oa = (octet_string *)a;
-    octet_string *ob = (octet_string *)b;
+    heim_octet_string *oa = (heim_octet_string *)a;
+    heim_octet_string *ob = (heim_octet_string *)b;
 
     if (oa->length != ob->length)
 	return ob->length - oa->length;
@@ -142,7 +142,7 @@ cmp_octet_string (void *a, void *b)
 static int
 test_octet_string (void)
 {
-    octet_string s1 = {8, "\x01\x23\x45\x67\x89\xab\xcd\xef"};
+    heim_octet_string s1 = {8, "\x01\x23\x45\x67\x89\xab\xcd\xef"};
 
     struct test_case tests[] = {
 	{NULL, 10, "\x04\x08\x01\x23\x45\x67\x89\xab\xcd\xef"}
@@ -152,7 +152,7 @@ test_octet_string (void)
     tests[0].val = &s1;
     asprintf (&tests[0].name, "a octet string");
 
-    return generic_test (tests, ntests, sizeof(octet_string),
+    return generic_test (tests, ntests, sizeof(heim_octet_string),
 			 (generic_encode)encode_octet_string,
 			 (generic_length)length_octet_string,
 			 (generic_decode)decode_octet_string,
