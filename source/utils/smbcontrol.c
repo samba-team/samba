@@ -30,6 +30,8 @@ static struct {
 	{"debug", MSG_DEBUG},
 	{"force-election", MSG_FORCE_ELECTION},
 	{"ping", MSG_PING},
+	{"profile", MSG_PROFILE},
+	{"debuglevel", MSG_REQ_DEBUGLEVEL},
 	{NULL, -1}
 };
 
@@ -44,12 +46,17 @@ static void usage(BOOL doexit)
 	}
 	printf("\t<destination> is one of \"nmbd\", \"smbd\" or a process ID\n");
 	printf("\t<message-type> is one of: ");
-	for (i=0; msg_types[i].name; i++) printf("%s, ", msg_types[i].name);
+	for (i=0; msg_types[i].name; i++) 
+	    printf("%s%s", i?", ":"",msg_types[i].name);
 	printf("\n");
 	if (doexit) exit(1);
 }
 
 static int pong_count;
+static BOOL got_level;
+static BOOL pong_registered = False;
+static BOOL debuglevel_registered = False;
+
 
 /****************************************************************************
 a useful function for testing the message system
@@ -57,6 +64,19 @@ a useful function for testing the message system
 void pong_function(int msg_type, pid_t src, void *buf, size_t len)
 {
 	pong_count++;
+	printf("PONG\n");
+}
+
+/****************************************************************************
+Prints out the current Debug level returned by MSG_DEBUGLEVEL
+****************************************************************************/
+void debuglevel_function(int msg_type, pid_t src, void *buf, size_t len)
+{
+        int level;
+        memcpy(&level, buf, sizeof(int));
+
+	printf("Current debug level is %d\n",level);
+	got_level = True;
 }
 
 /****************************************************************************
@@ -123,6 +143,25 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 		send_message(dest, MSG_DEBUG, &v, sizeof(int));
 		break;
 
+	case MSG_PROFILE:
+		if (!params) {
+			fprintf(stderr,"MSG_PROFILE needs a parameter\n");
+			return(False);
+		}
+		if (strequal(params, "on")) {
+			v = 2;
+		} else if (strequal(params, "off")) {
+			v = 0;
+		} else if (strequal(params, "count")) {
+			v = 1;
+		} else {
+		    fprintf(stderr,
+			"MSG_PROFILE parameter must be on, off, or count\n");
+		    return(False);
+		}
+		send_message(dest, MSG_PROFILE, &v, sizeof(int));
+		break;
+
 	case MSG_FORCE_ELECTION:
 		if (!strequal(dest, "nmbd")) {
 			fprintf(stderr,"force-election can only be sent to nmbd\n");
@@ -131,13 +170,31 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 		send_message(dest, MSG_FORCE_ELECTION, NULL, 0);
 		break;
 
+	case MSG_REQ_DEBUGLEVEL:
+		if (!debuglevel_registered) {
+		    message_register(MSG_DEBUGLEVEL, debuglevel_function);
+		    debuglevel_registered = True;
+		}
+		if (strequal(dest, "nmbd") || strequal(dest, "smbd")) {
+		    fprintf(stderr,"debuglevel can only be sent to a PID\n");
+		    return(False);
+		}
+		got_level = False;
+		send_message(dest, MSG_REQ_DEBUGLEVEL, NULL, 0);
+		while (!got_level) message_dispatch();
+		break;
+
 	case MSG_PING:
-		message_register(MSG_PONG, pong_function);
+		if (!pong_registered) {
+		    message_register(MSG_PONG, pong_function);
+		    pong_registered = True;
+		}
 		if (!params) {
 			fprintf(stderr,"MSG_PING needs a parameter\n");
 			return(False);
 		}
 		n = atoi(params);
+		pong_count = 0;
 		for (i=0;i<n;i++) {
 			send_message(dest, MSG_PING, NULL, 0);
 		}

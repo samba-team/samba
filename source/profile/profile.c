@@ -34,9 +34,35 @@ static BOOL read_only;
 struct profile_struct *profile_p;
 
 BOOL do_profile_flag = False;
+BOOL do_profile_times = False;
 
 struct timeval profile_starttime;
 struct timeval profile_endtime;
+
+/****************************************************************************
+receive a set profile level message
+****************************************************************************/
+void profile_message(int msg_type, pid_t src, void *buf, size_t len)
+{
+        int level;
+
+	memcpy(&level, buf, sizeof(int));
+	switch (level) {
+	case 0:
+		do_profile_flag = False;
+		do_profile_times = False;
+		break;
+	case 1:
+		do_profile_flag = True;
+		do_profile_times = False;
+		break;
+	case 2:
+		do_profile_flag = True;
+		do_profile_times = True;
+		break;
+	}
+	DEBUG(1,("Profile level set to %d from pid %d\n", level, (int)src));
+}
 
 /*******************************************************************
   open the profiling shared memory area
@@ -103,7 +129,7 @@ BOOL profile_setup(BOOL rdonly)
 		DEBUG(3,("Initialised profile area\n"));
 	}
 
-	do_profile_flag = True;		/* temp for now */
+	message_register(MSG_PROFILE, profile_message);
 	return True;
 }
 
