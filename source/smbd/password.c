@@ -1729,8 +1729,8 @@ use this machine as the password server.\n"));
 			 	cli.eff_name));
 			cli_tdis(&cli);
 			return False;
-	        cli_tdis(&cli);
 		}
+	        cli_tdis(&cli);
 	}
         else {
 		DEBUG(3,("skipping NetWkstaUserLogon with password server %s\n", cli.desthost));
