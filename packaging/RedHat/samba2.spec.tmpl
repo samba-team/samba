@@ -356,7 +356,7 @@ if [ -f /etc/inetd.conf ]; then
 fi
 
 # Add swat entry to xinetd.d if needed.
-if [ -d $RPM_BUILD_ROOT/etc/xinetd.d ]; then
+if [ -d $RPM_BUILD_ROOT/etc/xinetd.d -a ! -f /etc/xinetd.d/swat ]; then
 	mv /etc/samba/samba.xinetd /etc/xinetd.d/swat
 else
 	rm -f /etc/samba/samba.xinetd
@@ -373,7 +373,9 @@ fi
 
 # Create winbind nss client symlink
 
-ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2
+if [ -e /lib/libnss_winbind.so ]
+	ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2
+fi
 
 %preun
 if [ $1 = 0 ] ; then
