@@ -339,7 +339,9 @@ void cli_nt_session_close(struct cli_state *cli)
 		ntlmssp_client_end(&cli->ntlmssp_pipe_state);
 	}
 
-	cli_close(cli, cli->nt_pipe_fnum);
+	if (cli->nt_pipe_fnum != 0)
+		cli_close(cli, cli->nt_pipe_fnum);
+
 	cli->nt_pipe_fnum = 0;
 	cli->pipe_idx = -1;
 }
