@@ -115,9 +115,6 @@ int		rl_meta_chars = 1;
 **  Declarations.
 */
 static unsigned char	*editinput();
-extern int	read();
-extern int	write();
-extern char	*getenv();
 extern char	*tgetstr();
 extern int	tgetent();
 
