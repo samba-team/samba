@@ -408,6 +408,9 @@ union semun {
 #define PASSWORD_LENGTH 8
 #endif
 
+#ifdef REPLACE_INET_NTOA
+#define inet_ntoa rep_inet_ntoa
+#endif
 
 #ifndef HAVE_PIPE
 #define SYNC_DNS 1

@@ -105,6 +105,7 @@
 #undef WITH_AUTOMOUNT
 #undef HAVE_PAM_AUTHENTICATE
 #undef HAVE_BROKEN_GETGROUPS
+#undef REPLACE_INET_NTOA
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
