@@ -699,8 +699,8 @@ CRC32_checksum(krb5_context context,
 {
     u_int32_t crc;
     unsigned char *r = C->checksum.data;
-    crc_init_table ();
-    crc = crc_update (data, len, 0);
+    _krb5_crc_init_table ();
+    crc = _krb5_crc_update (data, len, 0);
     r[0] = crc & 0xff;
     r[1] = (crc >> 8)  & 0xff;
     r[2] = (crc >> 16) & 0xff;
@@ -973,7 +973,7 @@ HMAC_SHA1_DES3_checksum(krb5_context context,
     struct checksum_type *c = _find_checksum(CKSUMTYPE_SHA1);
     /* iovec? */
     unsigned char *p = malloc(4 + len);
-    k_put_int(p, len, 4);
+    _krb5_put_int(p, len, 4);
     memcpy(p + 4, data , len);
     hmac(context, c, p, 4 + len, key, result);
     memset(p, 0, 4 + len);
@@ -1575,7 +1575,7 @@ encrypt_internal_derived(krb5_context context,
     q = p;
     krb5_generate_random_block(q, et->confoundersize); /* XXX */
     q += et->confoundersize;
-    k_put_int(q, len, 4);
+    _krb5_put_int(q, len, 4);
     q += 4;
     memcpy(q, data, len);
     
@@ -1725,7 +1725,7 @@ decrypt_internal_derived(krb5_context context,
 	free(p);
 	return ret;
     }
-    k_get_int(p + et->confoundersize, &l, 4);
+    _krb5_get_int(p + et->confoundersize, &l, 4);
     memmove(p, p + et->confoundersize + 4, l);
     result->data = realloc(p, l);
     if(p == NULL) {
@@ -2007,7 +2007,7 @@ _get_derived_key(krb5_context context,
     if(d == NULL)
 	return ENOMEM;
     krb5_copy_keyblock(context, crypto->key.key, &d->key);
-    k_put_int(constant, usage, 4);
+    _krb5_put_int(constant, usage, 4);
     derive_key(context, crypto->et, d, constant, sizeof(constant));
     *key = d;
     return 0;
