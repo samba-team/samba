@@ -171,9 +171,7 @@ struct ntlmssp_state
 	char recv_sign_key[16];
 	char recv_seal_key[16];
 
-	uint8_t send_sign_hash[258];
 	uint8_t send_seal_hash[258];
-	uint8_t recv_sign_hash[258];
 	uint8_t recv_seal_hash[258];
 
 	/* ntlmv1 */
