@@ -61,7 +61,7 @@ void reg_val_free( REG_VAL *val )
 /**********************************************************************
  *********************************************************************/
 
-uint8* reg_val_data_blk( REG_VAL *val )
+uint8_t * reg_val_data_blk( REG_VAL *val )
 {
 	return val->data_blk;
 }
