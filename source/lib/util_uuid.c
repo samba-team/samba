@@ -71,7 +71,7 @@ void uuid_generate_random(GUID *out)
 	uuid_pack(&uu, out);
 }
 
-char *uuid_to_string(const GUID in)
+char *guid_to_string(const GUID in)
 {
 	struct uuid uu;
 	char *out;
