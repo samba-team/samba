@@ -65,13 +65,15 @@
 #endif
 
 /* termios.h *must* be included before curses.h */
+#ifdef HAVE_TERMIOS_H
 #include <termios.h>
+#endif
 
 #if defined(SOCKS) && defined(HAVE_CURSES_H)
 #include <curses.h>
 #endif
 
-#ifdef HAVE_SYS_TERMIO_H
+#if defined(HAVE_SYS_TERMIO_H) && !defined(HAVE_TERMIOS_H)
 #include <sys/termio.h>
 #endif
 
