@@ -6,7 +6,7 @@
     encrypt passwords = yes
     server string = Samba %v Build Farm Tests
     name resolve order = lmhosts
-
+    guest account = WHOAMI
     domain logons = yes
 
     include = PREFIX/lib/smb.conf.%L
