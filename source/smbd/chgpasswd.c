@@ -759,6 +759,7 @@ BOOL check_oem_password(char *user,
 
 	if (ret == False) {
 		DEBUG(0, ("check_oem_password: getsmbpwnam returned NULL\n"));
+		pdb_free_sam(sampass);
 		return False;
 	}
 

@@ -559,6 +559,7 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	/* Quit if the account was disabled. */
 	if(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
 		DEBUG(1,("Account for user '%s' was disabled.\n", user));
+		pdb_free_sam(sampass);
 		return(False);
 	}
 
@@ -566,18 +567,23 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	if (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) {
 		if (lp_null_passwords()) {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", user));
+			pdb_free_sam(sampass);
 			return(True);
 		} else {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", user));
+			pdb_free_sam(sampass);
 			return(False);
 		}		
 	}
 
-	if (smb_password_ok(sampass, chal, lm_pwd, nt_pwd))
+	if (smb_password_ok(sampass, chal, lm_pwd, nt_pwd)) {
+		pdb_free_sam(sampass);
 		return(True);
-	
+	}
+
 	DEBUG(2,("pass_check_smb failed - invalid password for user [%s]\n", user));
 
+	pdb_free_sam(sampass);
 	return False;
 }
 

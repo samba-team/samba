@@ -457,6 +457,7 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 						guest_user, NULL);
 
 	p->ntlmssp_auth_validated = True;
+	pdb_free_sam(sampass);
 	return True;
 }
 

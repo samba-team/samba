@@ -652,19 +652,25 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		}
 	}
 
-	if (!NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
+		pdb_free_sam(sampass);
 		return status;
+	}
 
 #ifdef WITH_PAM
 	become_root();
 	status = smb_pam_accountcheck(pdb_get_username(sampass));
 	unbecome_root();
-	if (!NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
+		pdb_free_sam(sampass);
 		return status;
+	}
 #endif
 
-	if (acct_ctrl & ACB_DISABLED)
+	if (acct_ctrl & ACB_DISABLED) {
+		pdb_free_sam(sampass);
 		return NT_STATUS_ACCOUNT_DISABLED;
+	}
     
 	/* lkclXXXX this is the point at which, if the login was
 		successful, that the SAM Local Security Authority should
@@ -713,7 +719,8 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
                             &global_sam_sid,     /* DOM_SID *dom_sid */
                             NULL); /* char *other_sids */
         
-    }
+	}
 
-    return status;
+	pdb_free_sam(sampass);
+	return status;
 }
