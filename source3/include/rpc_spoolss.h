@@ -796,7 +796,7 @@ PRINTER_INFO_2;
 typedef struct printer_info_3
 {
 	uint32 flags;
-	SEC_DESC sec;
+	SEC_DESC *secdesc;
 }
 PRINTER_INFO_3;
 
