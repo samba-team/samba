@@ -16,11 +16,36 @@
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS lsa_Delete ();
+	NTSTATUS lsa_Delete (
+		[in,ref]     policy_handle *handle
+		);
 
 	/******************/
 	/* Function: 0x02 */
-	NTSTATUS lsa_EnumPrivs ();
+
+	typedef struct {
+		uint16 name_len;
+		uint16 name_size;
+		unistr_noterm *name;
+	} lsa_Name;
+
+	typedef struct {
+		lsa_Name name;
+		uint32 luid_low;
+		uint32 luid_high;
+	} lsa_PrivEntry;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_PrivEntry *privs;
+	} lsa_PrivArray;
+
+	NTSTATUS lsa_EnumPrivs (
+		[in,ref]     policy_handle *handle,
+		[in,out,ref] uint32 *resume_handle,
+		[in]         uint32 max_count,
+		[out,ref]    lsa_PrivArray *privs
+		);
 
 	/******************/
 	/* Function: 0x03 */
@@ -111,12 +136,6 @@
 
 	/******************/
 	/* Function: 0x0e */
-
-	typedef struct {
-		uint16 name_len;
-		uint16 name_size;
-		unistr_noterm *name;
-	} lsa_Name;
 
 	typedef struct {
 		uint16 sid_type;
