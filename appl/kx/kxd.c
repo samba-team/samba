@@ -11,6 +11,23 @@ static size_t cookie_len;
 
 #define COOKIE_TYPE "MIT-MAGIC-COOKIE-1"
 
+/*
+ * Signal handler that justs waits for the children when they die.
+ */
+
+static RETSIGTYPE
+childhandler (int sig)
+{
+     pid_t pid;
+     int status;
+
+     do { 
+       pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
+     } while(pid > 0);
+     signal (SIGCHLD, childhandler);
+     SIGRETURN(0);
+}
+
 static int
 fatal (int fd, char *s)
 {
