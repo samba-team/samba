@@ -113,6 +113,7 @@ interface dcerpc
 	const uint8 DCERPC_AUTH_TYPE_SCHANNEL = 68;
 	const uint8 DCERPC_AUTH_TYPE_MSMQ	  = 100;
 	
+	const uint8 DCERPC_AUTH_LEVEL_DEFAULT	= DCERPC_AUTH_LEVEL_CONNECT;
 	const uint8 DCERPC_AUTH_LEVEL_NONE      = 1;
 	const uint8 DCERPC_AUTH_LEVEL_CONNECT   = 2;
 	const uint8 DCERPC_AUTH_LEVEL_CALL      = 3;
