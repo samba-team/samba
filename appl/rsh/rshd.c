@@ -33,7 +33,7 @@ fatal (int sock, const char *m, ...)
     len = vsnprintf (buf + 1, sizeof(buf) - 1, m, args);
     va_end(args);
     syslog (LOG_ERR, buf + 1);
-    krb_net_write (sock, buf, len + 1);
+    net_write (sock, buf, len + 1);
     exit (1);
 }
 
@@ -41,7 +41,7 @@ static void
 read_str (int s, char *str, size_t sz, char *expl)
 {
     while (sz > 0) {
-	if (krb_net_read (s, str, 1) != 1)
+	if (net_read (s, str, 1) != 1)
 	    syslog_and_die ("read: %m");
 	if (*str == '\0')
 	    return;
@@ -51,6 +51,7 @@ read_str (int s, char *str, size_t sz, char *expl)
     fatal (s, "%s too long", expl);
 }
 
+#ifdef KRB4
 static int
 recv_krb4_auth (int s, u_char *buf,
 		struct sockaddr_in thisaddr,
@@ -68,7 +69,7 @@ recv_krb4_auth (int s, u_char *buf,
 
     if (memcmp (buf, KRB_SENDAUTH_VERS, 4) != 0)
 	return -1;
-    if (krb_net_read (s, buf + 4, KRB_SENDAUTH_VLEN - 4) !=
+    if (net_read (s, buf + 4, KRB_SENDAUTH_VLEN - 4) !=
 	KRB_SENDAUTH_VLEN - 4)
 	syslog_and_die ("reading auth info: %m");
     if (memcmp (buf, KRB_SENDAUTH_VERS, KRB_SENDAUTH_VLEN) != 0)
@@ -100,6 +101,7 @@ recv_krb4_auth (int s, u_char *buf,
     read_str (s, cmd, COMMAND_SZ, "command");
     return 0;
 }
+#endif /* KRB4 */
 
 static int
 recv_krb5_auth (int s, u_char *buf,
@@ -120,7 +122,7 @@ recv_krb5_auth (int s, u_char *buf,
 	return -1;
     len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3]);
 	
-    if (krb_net_read(s, buf, len) != len)
+    if (net_read(s, buf, len) != len)
 	syslog_and_die ("reading auth info: %m");
     if (len != sizeof(KRB5_SENDAUTH_VERSION)
 	|| memcmp (buf, KRB5_SENDAUTH_VERSION, len) != 0)
@@ -174,7 +176,7 @@ recv_krb5_auth (int s, u_char *buf,
 			krb5_get_err_text(context, status));
 
     /* discard forwarding information */
-    krb_net_read (s, buf, 4);
+    net_read (s, buf, 4);
 
     if(!krb5_kuserok (context,
 		     ticket->enc_part2.client,
@@ -221,7 +223,7 @@ loop (int from0, int to0,
 		close (from0);
 		FD_CLR(from0, &real_readset);
 	    } else
-		krb_net_write (to0, buf, ret);
+		net_write (to0, buf, ret);
 	}
 	if (FD_ISSET(from1, &readset)) {
 	    ret = read (from1, buf, sizeof(buf));
@@ -280,7 +282,7 @@ setup_copier (void)
 	close (p1[1]);
 	close (p2[1]);
 
-	if (krb_net_write (STDOUT_FILENO, "", 1) != 1)
+	if (net_write (STDOUT_FILENO, "", 1) != 1)
 	    fatal (STDOUT_FILENO, "write failed");
 
 	loop (STDIN_FILENO, p0[1],
@@ -318,7 +320,7 @@ doit (void)
     p = buf;
     port = 0;
     for(;;) {
-	if (krb_net_read (s, p, 1) != 1)
+	if (net_read (s, p, 1) != 1)
 	    syslog_and_die ("reading port number: %m");
 	if (*p == '\0')
 	    break;
@@ -347,15 +349,18 @@ doit (void)
 	    syslog_and_die ("connect: %m");
     }
     
-    if (krb_net_read (s, buf, 4) != 4)
+    if (net_read (s, buf, 4) != 4)
 	syslog_and_die ("reading auth info: %m");
     
+#ifdef KRB4
     if (recv_krb4_auth (s, buf, thisaddr, thataddr,
 			client_user,
 			server_user,
 			cmd) == 0)
 	auth_method = AUTH_KRB4;
-    else if(recv_krb5_auth (s, buf, thisaddr, thataddr,
+    else
+#endif /* KRB4 */
+    if(recv_krb5_auth (s, buf, thisaddr, thataddr,
 			    client_user,
 			    server_user,
 			    cmd) == 0)
@@ -407,7 +412,7 @@ doit (void)
     if (do_encrypt) {
 	setup_copier ();
     } else {
-	if (krb_net_write (s, "", 1) != 1)
+	if (net_write (s, "", 1) != 1)
 	    fatal (s, "write failed");
     }
 
@@ -462,11 +467,12 @@ main(int argc, char **argv)
     if (inetd) {
 	if (port == 0)
 	    if (do_encrypt)
-		port = k_getportbyname ("ekshell", "tcp", htons(545));
+		port = krb5_getportbyname ("ekshell", "tcp", htons(545));
 	    else
-		port = k_getportbyname ("kshell",  "tcp", htons(544));
+		port = krb5_getportbyname ("kshell",  "tcp", htons(544));
 	mini_inetd (port);
     }
 
     doit ();
+    return 0;
 }

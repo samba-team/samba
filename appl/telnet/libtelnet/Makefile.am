@@ -2,7 +2,7 @@
 
 AUTOHEADER_FLAGS = no-dependencies foreign
 
-INCLUDES = -I$(top_builddir)/include -I$(srcdir)/..
+INCLUDES = -I$(top_builddir)/include -I$(srcdir)/.. $(INCLUDE_krb4)
 
 noinst_LIBRARIES = libtelnet.a
 

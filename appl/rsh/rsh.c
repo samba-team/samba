@@ -18,7 +18,11 @@ static int no_input;
 static void
 usage (void)
 {
-    errx (1, "Usage: %s [-45nx] [-p port] [-l user] host command", __progname);
+    errx (1, "Usage: %s [-"
+#ifdef KRB4
+	  "4"
+#endif
+	  "5nx] [-p port] [-l user] host command", __progname);
 }
 
 static int
@@ -56,7 +60,7 @@ loop (int s, int errsock)
 		if (--count == 0)
 		    return 0;
 	    } else
-		krb_net_write (STDOUT_FILENO, buf, ret);
+		net_write (STDOUT_FILENO, buf, ret);
 	}
 	if (FD_ISSET(errsock, &readset)) {
 	    ret = do_read (errsock, buf, sizeof(buf));
@@ -68,7 +72,7 @@ loop (int s, int errsock)
 		if (--count == 0)
 		    return 0;
 	    } else
-		krb_net_write (STDERR_FILENO, buf, ret);
+		net_write (STDERR_FILENO, buf, ret);
 	}
 	if (FD_ISSET(STDIN_FILENO, &readset)) {
 	    ret = read (STDIN_FILENO, buf, sizeof(buf));
@@ -83,6 +87,7 @@ loop (int s, int errsock)
     }
 }
 
+#ifdef KRB4
 static void
 send_krb4_auth(int s, struct sockaddr_in thisaddr,
 	       struct sockaddr_in thataddr,
@@ -108,11 +113,12 @@ send_krb4_auth(int s, struct sockaddr_in thisaddr,
     memcpy (iv, cred.session, sizeof(iv));
 
     len = strlen(remote_user) + 1;
-    if (krb_net_write (s, remote_user, len) != len)
+    if (net_write (s, remote_user, len) != len)
 	err (1, "write");
-    if (krb_net_write (s, cmd, cmd_len) != cmd_len)
+    if (net_write (s, cmd, cmd_len) != cmd_len)
 	err (1, "write");
 }
+#endif /* KRB4 */
 
 static void
 send_krb5_auth(int s, struct sockaddr_in thisaddr,
@@ -172,14 +178,14 @@ send_krb5_auth(int s, struct sockaddr_in thisaddr,
 	    krb5_get_err_text(context, status));
 
     len = strlen(local_user) + 1;
-    if (krb_net_write (s, local_user, len) != len)
+    if (net_write (s, local_user, len) != len)
 	err (1, "write");
-    if (do_encrypt && krb_net_write (s, "-x ", 3) != 3)
+    if (do_encrypt && net_write (s, "-x ", 3) != 3)
 	err (1, "write");
-    if (krb_net_write (s, cmd, cmd_len) != cmd_len)
+    if (net_write (s, cmd, cmd_len) != cmd_len)
 	err (1, "write");
     len = strlen(remote_user) + 1;
-    if (krb_net_write (s, remote_user, len) != len)
+    if (net_write (s, remote_user, len) != len)
 	err (1, "write");
 
     {
@@ -235,7 +241,7 @@ proto (int s, char *hostname, char *local_user, char *remote_user,
     p = buf;
     snprintf (p, sizeof(buf), "%u", ntohs(erraddr.sin_port));
     len = strlen(buf) + 1;
-    if(krb_net_write (s, buf, len) != len)
+    if(net_write (s, buf, len) != len)
 	err (1, "write");
 
     errsock2 = accept (errsock, NULL, NULL);
@@ -243,11 +249,14 @@ proto (int s, char *hostname, char *local_user, char *remote_user,
 	err (1, "accept");
     close (errsock);
 
+#ifdef KRB4
     if (auth_method == AUTH_KRB4)
 	send_krb4_auth (s, thisaddr, thataddr,
 			hostname, remote_user, local_user,
 			cmd_len, cmd);
-    else if(auth_method == AUTH_KRB5)
+    else
+#endif /* KRB4 */
+    if(auth_method == AUTH_KRB5)
 	send_krb5_auth (s, thisaddr, thataddr,
 			hostname, remote_user, local_user,
 			cmd_len, cmd);
@@ -256,7 +265,7 @@ proto (int s, char *hostname, char *local_user, char *remote_user,
 
     free (cmd);
 
-    if (krb_net_read (s, &reply, 1) != 1)
+    if (net_read (s, &reply, 1) != 1)
 	err (1, "read");
     if (reply != 0) {
 
@@ -355,9 +364,11 @@ main(int argc, char **argv)
     auth_method = AUTH_KRB5;
     while ((c = getopt(argc, argv, "45l:nxp:")) != EOF) {
 	switch (c) {
+#ifdef KRB4
 	case '4':
 	    auth_method = AUTH_KRB4;
 	    break;
+#endif
 	case '5':
 	    auth_method = AUTH_KRB5;
 	    break;
@@ -397,10 +408,12 @@ main(int argc, char **argv)
 	usage ();
 
     if (port == 0)
+#ifdef KRB4
 	if (do_encrypt && auth_method == AUTH_KRB4)
 	    port = k_getportbyname ("ekshell", "tcp", htons(545));
 	else
-	    port = k_getportbyname ("kshell", "tcp", htons(544));
+#endif /* KRB4 */
+	    port = krb5_getportbyname ("kshell", "tcp", htons(544));
 
     return doit (*argv, remote_user, port,
 		 argc - 1, argv + 1);
