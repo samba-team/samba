@@ -255,6 +255,7 @@ int main(int argc, char **argv)
 		}
 	}
 
+	encrypt_verbose_quiet(1);
 	if (autologin == -1) {		/* esc@magic.fi; force  */
 #if defined(AUTHENTICATION)
 		autologin = 1;
