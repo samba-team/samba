@@ -1376,7 +1376,7 @@ static const char *readdirname(DIR *p)
 	if (!p)
 		return(NULL);
   
-	ptr = (struct smb_dirent *)readdir(p);
+	ptr = (struct dirent *)readdir(p);
 	if (!ptr)
 		return(NULL);
 
