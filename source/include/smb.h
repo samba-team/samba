@@ -1619,6 +1619,9 @@ typedef struct {
 #include "popt_common.h"
 
 #define PORT_NONE	0
+#ifndef LDAP_PORT
+#define LDAP_PORT	389
+#endif
 
 /* used by the IP comparison function */
 struct ip_service {
