@@ -33,11 +33,7 @@ static struct cmd_list {
 	struct cmd_set *cmd_set;
 } *cmd_list;
 
-TALLOC_CTX *global_ctx;
-
 extern pstring user_socket_options;
-extern SIG_ATOMIC_T got_sig_term;
-extern SIG_ATOMIC_T reload_after_sighup;
 
 /****************************************************************************
 handle completion of commands for readline
@@ -204,8 +200,8 @@ static NTSTATUS cmd_debuglevel(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	/* Cleanup */
-	talloc_destroy(global_ctx);
-	global_ctx = NULL;
+	talloc_destroy(mem_ctx);
+	mem_ctx = NULL;
 	vfs->data = NULL;
 	vfs->data_size = 0;
 	return NT_STATUS_OK;
@@ -214,7 +210,7 @@ static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 static NTSTATUS cmd_quit(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	/* Cleanup */
-	talloc_destroy(global_ctx);
+	talloc_destroy(mem_ctx);
 
 	exit(0);
 	return NT_STATUS_OK; /* NOTREACHED */
@@ -268,6 +264,7 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
 	char *p = cmd, **argv = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	pstring buf;
+	TALLOC_CTX *mem_ctx;
 	int argc = 0, i;
 
 	/* Count number of arguments first time through the loop then
@@ -305,16 +302,16 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
 
 	if (cmd_entry->fn) {
 
-		if (global_ctx == NULL) {
+		if (mem_ctx == NULL) {
 			/* Create mem_ctx */
-			if (!(global_ctx = talloc_init())) {
+			if (!(mem_ctx = talloc_init())) {
 		       		DEBUG(0, ("talloc_init() failed\n"));
 				goto done;
 			}
 		}
 
 		/* Run command */
-		result = cmd_entry->fn(vfs, global_ctx, argc, argv);
+		result = cmd_entry->fn(vfs, mem_ctx, argc, argv);
 
 	} else {
 		fprintf (stderr, "Invalid command\n");
