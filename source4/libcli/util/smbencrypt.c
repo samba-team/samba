@@ -267,12 +267,10 @@ DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx,
 {
 	DATA_BLOB names_blob = data_blob_talloc(mem_ctx, NULL, 0);
 	
-	ndr_push_format_blob(&names_blob ,mem_ctx,
-			"aaa", 
-			NTLMSSP_NAME_TYPE_DOMAIN, domain,
-			NTLMSSP_NAME_TYPE_SERVER, hostname,
-			0, "");
-
+	msrpc_gen(mem_ctx, &names_blob, "aaa", 
+		  NTLMSSP_NAME_TYPE_DOMAIN, domain,
+		  NTLMSSP_NAME_TYPE_SERVER, hostname,
+		  0, "");
 	return names_blob;
 }
 
@@ -291,14 +289,13 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLO
 
 	/* See http://www.ubiqx.org/cifs/SMB.html#SMB.8.5 */
 
-	ndr_push_format_blob(&response, mem_ctx,
-			"ddbbdb", 
-			0x00000101,     /* Header  */
-			0,              /* 'Reserved'  */
-			long_date, 8,	  /* Timestamp */
-			client_chal, 8, /* client challenge */
-			0,		  /* Unknown */
-			names_blob->data, names_blob->length);	/* End of name list */
+	msrpc_gen(mem_ctx, &response, "ddbbdb", 
+		  0x00000101,     /* Header  */
+		  0,              /* 'Reserved'  */
+		  long_date, 8,	  /* Timestamp */
+		  client_chal, 8, /* client challenge */
+		  0,		  /* Unknown */
+		  names_blob->data, names_blob->length);	/* End of name list */
 
 	return response;
 }
