@@ -1377,7 +1377,7 @@ distclean: realclean
 	-rm -f include/stamp-h
 	-rm -f include/config.h Makefile
 	-rm -f config.status config.cache so_locations
-	-rm -rf .deps
+	-rm -rf .deps TAGS
 
 realdistclean: distclean
 	-rm -f include/config.h.in
