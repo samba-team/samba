@@ -732,10 +732,11 @@ typedef struct q_samr_query_group_info
 typedef struct samr_group_info1
 {
 	UNIHDR hdr_acct_name;
-	UNIHDR hdr_acct_desc;
 
 	uint32 unknown_1; /* 0x0000 0003 - number of group members? */
 	uint32 unknown_2; /* 0x0000 0001 - number of group members? */
+
+	UNIHDR hdr_acct_desc;
 
 	UNISTR2 uni_acct_name;
 	UNISTR2 uni_acct_desc;
