@@ -24,8 +24,13 @@
 static void init_winreg_String(struct winreg_String *name, const char *s)
 {
 	name->name = s;
-	name->name_len = 2*strlen_m(s);
-	name->name_size = name->name_len;
+	if (s) {
+		name->name_len = 2 * (strlen_m(s) + 1);
+		name->name_size = name->name_len;
+	} else {
+		name->name_len = 0;
+		name->name_size = 0;
+	}
 }
 
 static BOOL test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -196,7 +201,6 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint32 type;
 	uint32 value1, value2;
 
-
 	printf("\ntesting EnumValue\n");
 
 	qik.in.handle = handle;
@@ -333,8 +337,83 @@ static BOOL test_OpenHKCU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-typedef BOOL (*winreg_open_fn)(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			       struct policy_handle *handle);
+typedef BOOL winreg_open_fn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			    struct policy_handle *handle);
+
+BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
+{
+	struct policy_handle handle;
+	winreg_open_fn *open_fn = (winreg_open_fn *)fn;
+	BOOL ret = True;
+	struct winreg_EnumKey r;
+	struct winreg_EnumKeyNameRequest keyname;
+	struct winreg_String classname;
+	struct winreg_Time tm;
+	NTSTATUS status;
+
+	if (!open_fn(p, mem_ctx, &handle))
+		return False;
+
+#if 0
+	if (!test_GetVersion(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+		    
+	if (!test_DeleteKey(p, mem_ctx, &handle, "spottyfoot")) {
+		ret = False;
+	}
+#endif
+
+	/* Enumerate keys */
+
+	r.in.handle = &handle;
+	r.in.key_index = 0;
+	r.in.key_name_len = r.out.key_name_len = 0;
+	r.in.unknown = r.out.unknown = 0x0414;
+	keyname.unknown = 0x0000020a;
+	init_winreg_String(&keyname.key_name, NULL);
+	init_winreg_String(&classname, NULL);
+	r.in.in_name = &keyname;
+	r.in.class = &classname;
+	tm.low = tm.high = 0x7fffffff;
+	r.in.last_changed_time = &tm;
+
+	do {
+		status = dcerpc_winreg_EnumKey(p, mem_ctx, &r);
+
+		if (W_ERROR_IS_OK(r.out.result)) {
+			struct policy_handle key_handle;
+
+			if (!test_OpenKey(
+				    p, mem_ctx, &handle, r.out.out_name->name,
+				    &key_handle)) {
+				printf("OpenKey(%s) failed - %s\n",
+				       r.out.out_name->name, 
+				       win_errstr(r.out.result));
+				goto next_key;
+			}
+
+			if (!test_QueryInfoKey(p, mem_ctx, &handle, NULL)) {
+
+			}
+		}
+	next_key:
+		r.in.key_index++;
+
+	} while (W_ERROR_IS_OK(r.out.result));
+
+#if 0		    
+	if (!test_EnumValue(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+#endif
+
+	if (!test_CloseKey(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	return ret;
+}
 
 BOOL torture_rpc_winreg(int dummy)
 {
@@ -342,7 +421,7 @@ BOOL torture_rpc_winreg(int dummy)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	winreg_open_fn open_fns[] = { test_OpenHKLM };
+	winreg_open_fn *open_fns[] = { test_OpenHKLM };
 	int i;
 
 	mem_ctx = talloc_init("torture_rpc_winreg");
@@ -351,6 +430,7 @@ BOOL torture_rpc_winreg(int dummy)
 					DCERPC_WINREG_NAME, 
 					DCERPC_WINREG_UUID, 
 					DCERPC_WINREG_VERSION);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -358,31 +438,8 @@ BOOL torture_rpc_winreg(int dummy)
 	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	for (i = 0; i < ARRAY_SIZE(open_fns); i++) {
-		struct policy_handle handle;
-
-		if (!open_fns[i](p, mem_ctx, &handle))
+		if (!test_Open(p, mem_ctx, open_fns[i]))
 			ret = False;
-
-#if 0
-		    if (!test_GetVersion(p, mem_ctx, &handle)) {
-			    ret = False;
-		    }
-		    
-		    if (!test_DeleteKey(p, mem_ctx, &handle, "spottyfoot")) {
-			    ret = False;
-		    }
-#endif	    
-		    if (!test_EnumKey(p, mem_ctx, &handle)) {
-			    ret = False;
-		    }
-		    
-		    if (!test_EnumValue(p, mem_ctx, &handle)) {
-			    ret = False;
-		    }
-
-		    if (!test_CloseKey(p, mem_ctx, &handle)) {
-			    ret = False;
-		    }
 	}
 
 	talloc_destroy(mem_ctx);
