@@ -1011,13 +1011,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 					*lp = 0;
 					pstrcpy(password, lp + 1);
 					cmd_set_options |= CMD_PASS;
-					memset(strchr(optarg, '%') + 1, 'X',
-					       strlen(password));
-				}
-				if (usr.ntc.user_name[0] == 0
-				    && password[0] == 0)
-				{
-					cmd_set_options |= CMD_NOPW;
+					memset(lp+1, 'X', strlen(password));
 				}
 				break;
 			}
@@ -1195,7 +1189,8 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 		{
 			report(out_hnd, "FAILED\n");
 		}
-		usr_creds = NULL;
+		/* ???? --jerry
+		usr_creds = NULL; */
 	}
 	if (cmd_str != NULL)
 	{
