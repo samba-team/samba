@@ -662,6 +662,7 @@ static void usage(char *pname)
   extern FILE *dbf;
   extern char *optarg;
   extern BOOL  append_log;
+  extern BOOL AllowDebugChange;
   BOOL opt_interactive = False;
   pstring logfile;
 
@@ -754,6 +755,7 @@ static void usage(char *pname)
           break;
         case 'd':
           DEBUGLEVEL = atoi(optarg);
+	  AllowDebugChange = False;
           break;
         case 'p':
           global_nmb_port = atoi(optarg);
