@@ -315,6 +315,7 @@ typedef struct
 	char *szPostExec;
 	char *szRootPreExec;
 	char *szRootPostExec;
+	char *szCupsOptions;
 	char *szPrintcommand;
 	char *szLpqcommand;
 	char *szLprmcommand;
@@ -438,6 +439,7 @@ static service sDefault = {
 	NULL,			/* szPostExec */
 	NULL,			/* szRootPreExec */
 	NULL,			/* szRootPostExec */
+	NULL,			/* szCupsOptions */
 	NULL,			/* szPrintcommand */
 	NULL,			/* szLpqcommand */
 	NULL,			/* szLprmcommand */
@@ -952,6 +954,7 @@ static struct parm_struct parm_table[] = {
 	{"printable", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"print ok", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_HIDE}, 
 	{"printing", P_ENUM, P_LOCAL, &sDefault.iPrinting, handle_printing, enum_printing, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
+	{"cups options", P_STRING, P_LOCAL, &sDefault.szCupsOptions, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"print command", P_STRING, P_LOCAL, &sDefault.szPrintcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"disable spoolss", P_BOOL, P_GLOBAL, &Globals.bDisableSpoolss, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"lpq command", P_STRING, P_LOCAL, &sDefault.szLpqcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
@@ -1800,6 +1803,7 @@ FN_LOCAL_STRING(lp_username, szUsername)
 FN_LOCAL_LIST(lp_invalid_users, szInvalidUsers)
 FN_LOCAL_LIST(lp_valid_users, szValidUsers)
 FN_LOCAL_LIST(lp_admin_users, szAdminUsers)
+FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)
