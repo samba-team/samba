@@ -1,5 +1,5 @@
                   WHATS NEW IN Samba 3.0 alpha23
-                           31st March 2003
+                          30th March 2003
                   ==============================
 
 This is a pre-release of Samba 3.0. This is NOT a stable release.
@@ -89,7 +89,7 @@ Changes in alpha23:
   to transfer your group mapping database to LDAP.
 
   All groups must be represented as posixGroup objects in
-  the directory and adapt the LDAP schema to support the
+  the directory and you must adapt your LDAP schema to support the
   sambaGroupMapping before running this command.  Refer to
   examples/LDAP/samba.schema for details on the objectclass.
 
@@ -123,7 +123,7 @@ Changes in alpha23:
     change of owning user is towards the current user. Otherwise
     chown is done after setting ACLs.
 4)  Continuing work on NTLMSSP-based SMB signing
-5)  When opening an existing DB, don't require the hash_size
+5)  When opening an existing TDB, don't require the hash_size
     specified to the open call to be the same as that of the
     existing tdb.  The specified hash_size is only used if the
     tdb needs to be (re)created.
@@ -144,7 +144,7 @@ Changes in alpha23:
 17) Add a 'privileged' mode to Winbindd
 18) Work around platforms that have broken getgrnam() implementations
 19) Merge real time signal fixes for kernel oplock code from HEAD
-20) fix CIDR hosts allow/deny notation
+20) Fix CIDR hosts allow/deny notation
 21) Fixup tcon&X server responses and error codes
 22) Set domain for users in passdb created by "net rpc vampire"
 23) More scalable printing updates
