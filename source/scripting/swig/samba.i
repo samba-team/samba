@@ -24,17 +24,14 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-%typemap(in) uint32 {
-	if (!PyInt_Check($input) && !PyLong_Check($input)) {
-		PyErr_SetString(PyExc_TypeError, "integer expected");
-		return NULL;
-	}
-	$1 = (uint32_t)PyLong_AsLong($input);
-}
-
-%typemap(out) uint32 {
-	$result = PyLong_FromLong($1);
-}
+%apply unsigned char { uint8_t };
+%apply char { int8_t };
+%apply unsigned int { uint16_t };
+%apply int { int16_t };
+%apply unsigned long { uint32_t };
+%apply long { int32_t };
+%apply unsigned long long { uint64_t };
+%apply long long { int64_t };
 
 %typemap(out) NTSTATUS {
         $result = PyLong_FromLong(NT_STATUS_V($1));
