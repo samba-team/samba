@@ -331,14 +331,28 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
         if (!ent->got_sam_entries) {
             uint32 status, start_ndx = 0;
 
-            if (!open_sam_handles(ent->domain)) goto cleanup;
+            /* Look in cache for entries, else get them direct */
 
-            do {
-                status =
-                    samr_enum_dom_users(
-                        &ent->domain->sam_dom_handle, &start_ndx, 0, 0, 
-                        0x10000, &ent->sam_entries, &ent->num_sam_entries);
-            } while (status == STATUS_MORE_ENTRIES);
+            if (!winbindd_fetch_user_cache(ent->domain->name, 
+                                           &ent->sam_entries,
+                                           &ent->num_sam_entries)) {
+
+                /* Fetch the user entries */
+
+                if (!open_sam_handles(ent->domain)) goto cleanup;
+
+                do {
+                    status =
+                        samr_enum_dom_users(
+                            &ent->domain->sam_dom_handle, &start_ndx, 0, 0, 
+                            0x10000, &ent->sam_entries, &ent->num_sam_entries);
+                } while (status == STATUS_MORE_ENTRIES);
+
+                /* Fill cache with received entries */
+            
+                winbindd_fill_user_cache(ent->domain->name, ent->sam_entries, 
+                                         ent->num_sam_entries);
+            }
             
             ent->got_sam_entries = True;
         }
@@ -388,7 +402,8 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
     cleanup:
 
-        /* Free mallocated memory for sam entries */
+        /* Free mallocated memory for sam entries.  The data stored here
+           may have been allocated from the cache. */
 
         if (ent->sam_entries != NULL) free(ent->sam_entries);
         ent->sam_entries = NULL;
