@@ -409,7 +409,7 @@ static int new_user (struct pdb_context *in, const char *username,
 	if (NT_STATUS_IS_OK(in->pdb_add_sam_account (in, sam_pwent))) { 
 		print_user_info (in, username, True, False);
 	} else {
-		fprintf (stderr, "Unable to add user! (does it alredy exist?)\n");
+		fprintf (stderr, "Unable to add user! (does it already exist?)\n");
 		pdb_free_sam (&sam_pwent);
 		return -1;
 	}
