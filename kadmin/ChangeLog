@@ -1,3 +1,15 @@
+1999-11-25  Assar Westerlund  <assar@sics.se>
+
+	* version4.c (kadm_ser_mod): use kadm5_s_modify_principal (no
+ 	_with_key)
+
+	* kadmin.c: add `del_enctype'
+
+	* del_enctype.c (del_enctype): new function for deleting enctypes
+	from a principal
+
+	* Makefile.am (kadmin_SOURCES): add del_enctype.c
+
 1999-11-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* server.c: cope with old clients
