@@ -1,3 +1,8 @@
+2001-09-29  Assar Westerlund  <assar@sics.se>
+
+	* install-catman.sh: handle man pages without SYNOPSIS but looking
+	for both SYNOPSIS and DESCRIPTION
+
 2001-09-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: include freeaddrinfo if using getaddrinfo

@@ -1,3 +1,9 @@
+2001-09-29  Assar Westerlund  <assar@sics.se>
+
+	* kuser/kinit.1: add the kauth alias
+	* kuser/kinit.c: allow specification of afslog in krb5.conf, noted
+	by jhutz@cs.cmu.edu
+
 2001-09-27  Assar Westerlund  <assar@sics.se>
 
 	* lib/asn1/gen.c: remove the need for libasn1.h, also make
