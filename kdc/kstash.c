@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -14,12 +14,7 @@
  *    notice, this list of conditions and the following disclaimer in the 
  *    documentation and/or other materials provided with the distribution. 
  *
- * 3. All advertising materials mentioning features or use of this software 
- *    must display the following acknowledgement: 
- *      This product includes software developed by Kungliga Tekniska 
- *      Högskolan and its contributors. 
- *
- * 4. Neither the name of the Institute nor the names of its contributors 
+ * 3. Neither the name of the Institute nor the names of its contributors 
  *    may be used to endorse or promote products derived from this software 
  *    without specific prior written permission. 
  *
@@ -78,9 +73,13 @@ write_keyfile(EncryptionKey key)
 			 sizeof(buf), &key, &len);
     fwrite(buf + sizeof(buf) - len, len, 1, f);
     memset(buf, 0, sizeof(buf));
-    if(ferror(f))
-	krb5_err(context, 1, errno, "%s", keyfile);
+    if(ferror(f)) {
+	int e = errno;
+	unlink(keyfile);
+	krb5_err(context, 1, e, "%s", keyfile);
+    }
     fclose(f);
+    chmod(keyfile, 0400);
 }
 
 static int
@@ -164,7 +163,7 @@ main(int argc, char **argv)
 	exit(convert_file());
 
     key.keytype = ETYPE_DES_CBC_MD5; /* XXX */
-    if(v4_keyfile){
+    if(v4_keyfile) {
 	f = fopen(v4_keyfile, "r");
 	if(f == NULL)
 	    krb5_err(context, 1, errno, "fopen(%s)", v4_keyfile);
@@ -172,7 +171,7 @@ main(int argc, char **argv)
 	key.keyvalue.data = malloc(key.keyvalue.length);
 	fread(key.keyvalue.data, 1, key.keyvalue.length, f);
 	fclose(f);
-    }else{
+    } else {
 	krb5_salt salt;
 	salt.salttype = KRB5_PW_SALT;
 	/* XXX better value? */
