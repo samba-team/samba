@@ -105,8 +105,8 @@ recv_bsd_auth (int s, u_char *buf,
     pwd = getpwnam(server_username);
     if (pwd == NULL)
 	fatal(s, "Login incorrect.");
-    if (iruserok(thataddr.sin_addr.s_addr, pwd->pw_uid == 0, client_username,
-		 server_username))
+    if (iruserok(thataddr.sin_addr.s_addr, pwd->pw_uid == 0,
+		 client_username, server_username))
 	fatal(s, "Login incorrect.");
     return 0;
 }
@@ -263,9 +263,9 @@ recv_krb5_auth (int s, u_char *buf,
 	syslog_and_die ("krb5_recvauth: %s",
 			krb5_get_err_text(context, status));
 
-    read_str (s, client_username, USERNAME_SZ, "local username");
-    read_str (s, cmd, COMMAND_SZ, "command");
     read_str (s, server_username, USERNAME_SZ, "remote username");
+    read_str (s, cmd, COMMAND_SZ, "command");
+    read_str (s, client_username, USERNAME_SZ, "local username");
 
     status = krb5_auth_con_getkey (context, auth_context, &keyblock);
     if (status)
