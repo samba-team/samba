@@ -453,7 +453,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBADS_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) lib/dummyroot.o
 
-PAM_WINBIND_PICOBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/replace1.po lib/snprintf.po
+PAM_WINBIND_PICOBJ = nsswitch/pam_winbind.@PICSUFFIX@ nsswitch/wb_common.@PICSUFFIX@ lib/replace1.@PICSUFFIX@ lib/snprintf.@PICSUFFIX@
 
 SMBW_OBJ1 = smbwrapper/smbw.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
@@ -481,7 +481,7 @@ LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_OBJ) $(UBIQX_OBJ) $(SECRETS_OBJ) \
 	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
 	$(GROUPDB_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ) lib/dummyroot.o
 
-LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.po)
+LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.@PICSUFFIX@)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o 
 
@@ -585,17 +585,17 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
 
-WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.po)
+WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.@PICSUFFIX@)
 
-PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
-LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.po)
+PICOBJS = $(SMBWRAPPER_OBJ:.o=.@PICSUFFIX@)
+LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
 
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
                pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
                lib/dummyroot.o $(PARAM_OBJ) $(LIB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
                $(SECRETS_OBJ) $(UBIQX_OBJ) $(SMBLDAP_OBJ) $(LIBSAMBA_OBJ)
 
-PAM_SMBPASS_PICOOBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
+PAM_SMBPASS_PICOOBJ = $(PAM_SMBPASS_OBJ_0:.o=.@PICSUFFIX@)
 
 IDMAP_OBJ     = sam/idmap.o sam/idmap_util.o @IDMAP_STATIC@
 
@@ -628,7 +628,7 @@ WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 
 WINBIND_NSS_OBJ = nsswitch/wb_common.o lib/replace1.o @WINBIND_NSS_EXTRA_OBJS@
 
-WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po) lib/snprintf.po
+WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.@PICSUFFIX@) lib/snprintf.@PICSUFFIX@
 
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
@@ -686,7 +686,7 @@ everything: all libsmbclient debug2html smbfilter talloctort modules torture \
 	$(EVERYTHING_PROGS)
 
 .SUFFIXES:
-.SUFFIXES: .c .o .po .lo
+.SUFFIXES: .c .o .@PICSUFFIX@ .lo
 
 SHOWFLAGS:
 	@echo "Using FLAGS = $(FLAGS)"
@@ -720,25 +720,25 @@ dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
 	@$(CC) $(FLAGS) $(PATH_FLAGS) -c $< -o $@ 
 
-dynconfig.po: dynconfig.c Makefile
+dynconfig.@PICSUFFIX@: dynconfig.c Makefile
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-	@echo Compiling $*.c with @PICFLAG@
-	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAG@ -c $< -o $*.@PICSUFFIX@
-@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@
-@POBAD_CC@	@mv $*.po.o $@
+	@echo Compiling $*.c with @PICFLAGS@
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
+@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
+@POBAD_CC@	@mv $*.@PICSUFFIX@.o $@
 
 lib/version.o: lib/version.c include/version.h
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) -c $< -o $@ 
 
-lib/version.po: lib/version.c include/version.h
+lib/version.@PICSUFFIX@: lib/version.c include/version.h
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-	@echo Compiling $*.c with @PICFLAG@
-	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAG@ -c $< -o $*.@PICSUFFIX@
-@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@
-@POBAD_CC@	@mv $*.po.o $@
+	@echo Compiling $*.c with @PICFLAGS@
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
+@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
+@POBAD_CC@	@mv $*.@PICSUFFIX@.o $@
 
 smbd/build_options.o: smbd/build_options.c Makefile include/config.h include/build_env.h include/proto.h
 	@echo Compiling $*.c
@@ -748,13 +748,13 @@ smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
 	@echo Generating $@
 	@dir=smbd $(MAKEDIR) && $(AWK) -f $(srcdir)/script/mkbuildoptions.awk > $(builddir)/smbd/build_options.c < $(srcdir)/include/config.h.in
 
-.c.po: 
+.c.@PICSUFFIX@: 
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-	@echo Compiling $*.c with @PICFLAG@
-	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< -o $*.@PICSUFFIX@
-@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@
-@POBAD_CC@	@mv $*.po.o $@
+	@echo Compiling $*.c with @PICFLAGS@
+	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
+@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
+@POBAD_CC@	@mv $*.@PICSUFFIX@.o $@
 
 bin/.dummy:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then :; else \
@@ -1026,112 +1026,112 @@ nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) bin/.dummy
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_PICOBJ) \
 		@SONAMEFLAG@`basename $@` -lpam
 
-bin/rhosts.@SHLIBEXT@: $(AUTH_RHOSTS_OBJ:.o=.po)
+bin/rhosts.@SHLIBEXT@: $(AUTH_RHOSTS_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_RHOSTS_OBJ:.o=.po) @SONAMEFLAG@`basename $@`
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_RHOSTS_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
-bin/builtin.@SHLIBEXT@: $(AUTH_BUILTIN_OBJ:.o=.po)
+bin/builtin.@SHLIBEXT@: $(AUTH_BUILTIN_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_BUILTIN_OBJ:.o=.po) @SONAMEFLAG@`basename $@`
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_BUILTIN_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
-bin/domain.@SHLIBEXT@: $(AUTH_DOMAIN_OBJ:.o=.po)
+bin/domain.@SHLIBEXT@: $(AUTH_DOMAIN_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_DOMAIN_OBJ:.o=.po) @SONAMEFLAG@`basename $@`
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_DOMAIN_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
-bin/smbserver.@SHLIBEXT@: $(AUTH_SERVER_OBJ:.o=.po)
+bin/smbserver.@SHLIBEXT@: $(AUTH_SERVER_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SERVER_OBJ:.o=.po) @SONAMEFLAG@`basename $@`
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SERVER_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
-bin/winbind.@SHLIBEXT@: $(AUTH_WINBIND_OBJ:.o=.po)
+bin/winbind.@SHLIBEXT@: $(AUTH_WINBIND_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_WINBIND_OBJ:.o=.po) @SONAMEFLAG@`basename $@`
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_WINBIND_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
-bin/unix.@SHLIBEXT@: $(AUTH_UNIX_OBJ:.o=.po)
+bin/unix.@SHLIBEXT@: $(AUTH_UNIX_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_UNIX_OBJ:.o=.po) @SONAMEFLAG@`basename $@`
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_UNIX_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
-bin/sam.@SHLIBEXT@: $(AUTH_SAM_OBJ:.o=.po)
+bin/sam.@SHLIBEXT@: $(AUTH_SAM_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SAM_OBJ:.o=.po) @SONAMEFLAG@`basename $@`
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SAM_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
-bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ:.o=.po)
+bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(MYSQL_OBJ:.o=.po) @MYSQL_LIBS@ \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(MYSQL_OBJ:.o=.@PICSUFFIX@) @MYSQL_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.po
+bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.@PICSUFFIX@
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) $(LDAP_LIBS) -o $@ passdb/pdb_ldap.po \
+	@$(SHLD) $(LDSHFLAGS) $(LDAP_LIBS) -o $@ passdb/pdb_ldap.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/tdbsam.@SHLIBEXT@: passdb/pdb_tdb.po
+bin/tdbsam.@SHLIBEXT@: passdb/pdb_tdb.@PICSUFFIX@
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_tdb.po \
+	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_tdb.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/smbpasswd.@SHLIBEXT@: passdb/pdb_smbpasswd.po
+bin/smbpasswd.@SHLIBEXT@: passdb/pdb_smbpasswd.@PICSUFFIX@
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.po \
+	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/weird.@SHLIBEXT@: $(DEVEL_HELP_WEIRD_OBJ:.o=.po)
+bin/weird.@SHLIBEXT@: $(DEVEL_HELP_WEIRD_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_WEIRD_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_WEIRD_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/CP850.@SHLIBEXT@: $(DEVEL_HELP_CP850_OBJ:.o=.po)
+bin/CP850.@SHLIBEXT@: $(DEVEL_HELP_CP850_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_CP850_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_CP850_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/CP437.@SHLIBEXT@: $(DEVEL_HELP_CP437_OBJ:.o=.po)
+bin/CP437.@SHLIBEXT@: $(DEVEL_HELP_CP437_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_CP437_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_CP437_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.po)
+bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(XML_OBJ:.o=.po) @XML_LIBS@ \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(XML_OBJ:.o=.@PICSUFFIX@) @XML_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ:.o=.po)
+bin/audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ:.o=.po)
+bin/extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXTD_AUDIT_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXTD_AUDIT_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ:.o=.po)
+bin/recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ:.o=.po)
+bin/netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/fake_perms.@SHLIBEXT@: $(VFS_FAKE_PERMS_OBJ:.o=.po)
+bin/fake_perms.@SHLIBEXT@: $(VFS_FAKE_PERMS_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/default_quota.@SHLIBEXT@: $(VFS_DEFAULT_QUOTA_OBJ:.o=.po)
+bin/default_quota.@SHLIBEXT@: $(VFS_DEFAULT_QUOTA_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_DEFAULT_QUOTA_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_DEFAULT_QUOTA_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/readonly.@SHLIBEXT@: $(VFS_READONLY_OBJ:.o=.po)
+bin/readonly.@SHLIBEXT@: $(VFS_READONLY_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READONLY_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READONLY_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/cap.@SHLIBEXT@: $(VFS_CAP_OBJ:.o=.po)
+bin/cap.@SHLIBEXT@: $(VFS_CAP_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CAP_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CAP_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
@@ -1230,7 +1230,7 @@ PYTHON_OBJS = $(PARAM_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
 	$(UBIQX_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	$(SECRETS_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ) lib/dummyroot.o
 
-PYTHON_PICOBJS = $(PYTHON_OBJS:.o=.po)
+PYTHON_PICOBJS = $(PYTHON_OBJS:.o=.@PICSUFFIX@)
 
 python_ext: $(PYTHON_PICOBJS)
 	@if test -z "$(PYTHON)"; then \
@@ -1295,10 +1295,10 @@ uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
 
 # Toplevel clean files
-TOPFILES=dynconfig.o dynconfig.po
+TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 
 clean: delheaders python_clean
-	-rm -f core */*~ *~ */*.o */*.po */*.@SHLIBEXT@ \
+	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
 		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp
 

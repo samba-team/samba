@@ -141,7 +141,7 @@ AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
 AC_SUBST(SHLD)
 AC_SUBST(HOST_OS)
-AC_SUBST(PICFLAG)
+AC_SUBST(PICFLAGS)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
@@ -1031,7 +1031,7 @@ HOST_OS="$host_os"
 LDSHFLAGS="-shared"
 SONAMEFLAG="#"
 SHLD="\${CC} \${CFLAGS}"
-PICFLAG=""
+PICFLAGS=""
 PICSUFFIX="po"
 POBAD_CC="#"
 SHLIBEXT="so"
@@ -1049,7 +1049,7 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="true"
 			LDSHFLAGS="-shared" 
 			DYNEXP="-Wl,--export-dynamic"
-			PICFLAG="-fPIC"
+			PICFLAGS="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
@@ -1058,12 +1058,12 @@ if test "$enable_shared" = "yes"; then
 			LDSHFLAGS="-G"
 			SONAMEFLAG="-h "
 			if test "${GCC}" = "yes"; then
-				PICFLAG="-fPIC"
+				PICFLAGS="-fPIC"
 				if test "${ac_cv_prog_gnu_ld}" = "yes"; then
 					DYNEXP="-Wl,-E"
 				fi
 			else
-				PICFLAG="-KPIC"
+				PICFLAGS="-KPIC"
 				## ${CFLAGS} added for building 64-bit shared 
 				## libs using Sun's Compiler
 				LDSHFLAGS="-G \${CFLAGS}"
@@ -1077,7 +1077,7 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="true"
 			LDSHFLAGS="-G"
 			SONAMEFLAG="-Wl,-h,"
-			PICFLAG="-KPIC"   # Is this correct for SunOS
+			PICFLAGS="-KPIC"   # Is this correct for SunOS
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
@@ -1085,7 +1085,7 @@ if test "$enable_shared" = "yes"; then
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,--export-dynamic"
 			SONAMEFLAG="-Wl,-soname,"
-			PICFLAG="-fPIC -DPIC"
+			PICFLAGS="-fPIC -DPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
@@ -1093,7 +1093,7 @@ if test "$enable_shared" = "yes"; then
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,-Bdynamic"
 			SONAMEFLAG="-Wl,-soname,"
-			PICFLAG="-fPIC"
+			PICFLAGS="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
@@ -1107,9 +1107,9 @@ if test "$enable_shared" = "yes"; then
 			SONAMEFLAG="-soname "
 			SHLD="\${LD}"
 			if test "${GCC}" = "yes"; then
-				PICFLAG="-fPIC"
+				PICFLAGS="-fPIC"
 			else 
-				PICFLAG="-KPIC"
+				PICFLAGS="-KPIC"
 			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 			;;
@@ -1117,7 +1117,7 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry,-berok"
 			DYNEXP="-Wl,-brtl,-bexpall"
-			PICFLAG="-O2"
+			PICFLAGS="-O2"
 			if test "${GCC}" != "yes"; then
 				## for funky AIX compiler using strncpy()
 				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
@@ -1133,9 +1133,9 @@ if test "$enable_shared" = "yes"; then
 				SHLD="/usr/bin/ld"
 				LDSHFLAGS="-B symbolic -b -z"
 				SONAMEFLAG="+h "
-				PICFLAG="+z"
+				PICFLAGS="+z"
 			elif test "${GCC}" = "yes"; then
-				PICFLAG="-fPIC"
+				PICFLAGS="-fPIC"
 			fi
 			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
@@ -1148,7 +1148,7 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			SONAMEFLAG="-Wl,-soname,"
-			PICFLAG="-fPIC"
+			PICFLAGS="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
@@ -1159,7 +1159,7 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			SONAMEFLAG="-Wl,-soname,"
-			PICFLAG="-KPIC"
+			PICFLAGS="-KPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 		*next2*) AC_DEFINE(NEXT2,1,[Whether the host os is NeXT v2])
@@ -1219,17 +1219,12 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
                [ac_cv_shlib_works],[
    ac_cv_shlib_works=no
    # try building a trivial shared library
-   if test "$PICSUFFIX" = "po"; then
-     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
-       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
-       ac_cv_shlib_works=yes
-   else
-     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.$PICSUFFIX ${srcdir-.}/tests/shlib.c &&
-       mv shlib.$PICSUFFIX shlib.po &&
-       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
-       ac_cv_shlib_works=yes
-   fi
-   rm -f "shlib.$SHLIBEXT" shlib.po
+   $CC $CPPFLAGS $CFLAGS $PICFLAGS -c -o \
+	shlib.$PICSUFFIX ${srcdir-.}/tests/shlib.c && \
+	$CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" \
+	shlib.$PICSUFFIX && \
+	ac_cv_shlib_works=yes
+   rm -f "shlib.$SHLIBEXT" shlib.$PICSUFFIX
 ])
 if test $ac_cv_shlib_works = no; then
    BLDSHARED=false
@@ -2185,7 +2180,7 @@ AC_ARG_WITH(smbwrapper,
 
 # Conditions under which smbwrapper should not be built.
 
-	if test x$PICFLAG = x; then
+	if test x$PICFLAGS = x; then
 	   echo No support for PIC code - disabling smbwrapper and smbsh
 	   WRAPPROG=""
 	   WRAP=""
@@ -2798,7 +2793,7 @@ AC_ARG_WITH(pam_smbpass,
 
        # Conditions under which pam_smbpass should not be built.
 
-       if test x$PICFLAG = x; then
+       if test x$PICFLAGS = x; then
           AC_MSG_ERROR([No support for PIC code])
        elif test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
 	  AC_MSG_ERROR([No security/pam_appl.h found])
