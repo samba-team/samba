@@ -589,8 +589,8 @@ reply to a session setup command
 int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   uint16 sess_vuid;
-  int gid;
-  int uid;
+  gid_t gid;
+  uid_t uid;
   int   smb_bufsize;    
   int   smb_apasslen = 0;   
   pstring smb_apasswd;
@@ -3624,7 +3624,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 {
   int Access,action;
   SMB_STRUCT_STAT st;
-  int ret=-1;
+  SMB_OFF_T ret=-1;
   files_struct *fsp1,*fsp2;
   pstring dest;
   
@@ -3698,7 +3698,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
    */
   *err_ret = close_file(fsp2,False);
 
-  return(ret == st.st_size);
+  return(ret == (SMB_OFF_T)st.st_size);
 }
 
 

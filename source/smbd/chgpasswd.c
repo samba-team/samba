@@ -108,8 +108,8 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
   int slave;
   struct termios stermios;
   struct passwd *pass = Get_Pwnam(name,True);
-  int gid;
-  int uid;
+  gid_t gid;
+  uid_t uid;
 
   if (pass == NULL) {
     DEBUG(0,("dochild: user name %s doesn't exist in the UNIX password database.\n",

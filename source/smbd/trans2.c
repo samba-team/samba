@@ -1867,10 +1867,8 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
   /* Try and set the times, size and mode of this file -
      if they are different from the current values
    */
-  if (st.st_mtime != tvs.modtime || st.st_atime != tvs.actime)
-  {
-    if(fsp != NULL)
-    {
+  if (st.st_mtime != tvs.modtime || st.st_atime != tvs.actime) {
+    if(fsp != NULL) {
       /*
        * This was a setfileinfo on an open file.
        * NT does this a lot. It's actually pointless
@@ -1878,35 +1876,43 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
        * on the next write, so we save the request
        * away and will set it on file code. JRA.
        */
+
+      DEBUG(10,("call_trans2setfilepathinfo: setting pending modtime to %s\n",
+            ctime(&tvs.modtime) ));
       fsp->pending_modtime = tvs.modtime;
-    }
-    else if(file_utime(conn, fname, &tvs)!=0)
-    {
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    } else {
+
+      DEBUG(10,("call_trans2setfilepathinfo: setting utimes to modified values.\n"));
+
+      if(file_utime(conn, fname, &tvs)!=0)
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
   }
 
   /* check the mode isn't different, before changing it */
-  if (mode != dos_mode(conn, fname, &st) && file_chmod(conn, fname, mode, NULL))
-  {
-    DEBUG(2,("chmod of %s failed (%s)\n", fname, strerror(errno)));
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  if ((mode != 0) && (mode != dos_mode(conn, fname, &st))) {
+
+    DEBUG(10,("call_trans2setfilepathinfo: file %s : setting dos mode %x\n",
+          fname, mode ));
+
+    if(file_chmod(conn, fname, mode, NULL)) {
+      DEBUG(2,("chmod of %s failed (%s)\n", fname, strerror(errno)));
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
   }
 
-  if(size != st.st_size)
-  {
-    if (fd == -1)
-    {
+  if(size != st.st_size) {
+
+    DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
+          fname, (double)size ));
+
+    if (fd == -1) {
       fd = dos_open(fname,O_RDWR,0);
       if (fd == -1)
-      {
         return(UNIXERROR(ERRDOS,ERRbadpath));
-      }
       set_filelen(fd, size);
       close(fd);
-    }
-    else
-    {
+    } else {
       set_filelen(fd, size);
     }
   }
