@@ -35,293 +35,235 @@ extern fstring global_myworkgroup;
 Process a domain logon packet
 **************************************************************************/
 
-void process_logon_packet(struct packet_struct *p, char *buf, int len,
-			  char *mailslot)
+void process_logon_packet(struct packet_struct *p,char *buf,int len, 
+                          char *mailslot)
 {
-	struct dgram_packet *dgram = &p->packet.dgram;
-	pstring my_name;
-	fstring reply_name;
-	pstring outbuf;
-	int code;
-	uint16 token = 0;
-	uint32 ntversion = 0;
-	uint16 lmnttoken = 0;
-	uint16 lm20token = 0;
-	uint32 domainsidsize;
-	BOOL short_request = 0;
-	char *getdc;
-	char *uniuser;		/* Unicode user name. */
-	char *unicomp;		/* Unicode computer name. */
+  struct dgram_packet *dgram = &p->packet.dgram;
+  pstring my_name;
+  fstring reply_name;
+  pstring outbuf;
+  int code;
+  uint16 token = 0;
+  uint32 ntversion = 0;
+  uint16 lmnttoken = 0;
+  uint16 lm20token = 0;
+  uint32 domainsidsize;
+  BOOL short_request = False;
+  char *getdc;
+  char *uniuser; /* Unicode user name. */
+  pstring ascuser;
+  char *unicomp; /* Unicode computer name. */
 
-	memset(outbuf, 0, sizeof(outbuf));
+  memset(outbuf, 0, sizeof(outbuf));
 
-	if (!lp_domain_logons())
-	{
-		DEBUG(3,
-		      ("process_logon_packet: Logon packet received from IP %s and domain \
-logons are not enabled.\n",
-		       inet_ntoa(p->ip)));
-		return;
-	}
+  if (!lp_domain_logons())
+  {
+    DEBUG(3,("process_logon_packet: Logon packet received from IP %s and domain \
+logons are not enabled.\n", inet_ntoa(p->ip) ));
+    return;
+  }
 
-	pstrcpy(my_name, global_myname);
-	strupper(my_name);
+  pstrcpy(my_name, global_myname);
+  strupper(my_name);
 
-	code = SVAL(buf, 0);
-	DEBUG(1,
-	      ("process_logon_packet: Logon from %s: code = %x\n",
-	       inet_ntoa(p->ip), code));
+  code = SVAL(buf,0);
+  DEBUG(1,("process_logon_packet: Logon from %s: code = %x\n", inet_ntoa(p->ip), code));
 
-	switch (code)
-	{
-		case 0:
-		{
-			char *q = buf + 2;
-			char *machine = q;
-			char *user = skip_string(machine, 1);
+  switch (code)
+  {
+    case 0:    
+    {
+      char *q = buf + 2;
+      char *machine = q;
+      char *user = skip_string(machine,1);
 
-			getdc = skip_string(user, 1);
-			q = skip_string(getdc, 1);
-			token = SVAL(q, 3);
+      getdc = skip_string(user,1);
+      q = skip_string(getdc,1);
+      token = SVAL(q,3);
 
-			fstrcpy(reply_name, my_name);
+      fstrcpy(reply_name,my_name); 
 
-			DEBUG(3,
-			      ("process_logon_packet: Domain login request from %s at IP %s user=%s token=%x\n",
-			       machine, inet_ntoa(p->ip), user, token));
+      DEBUG(3,("process_logon_packet: Domain login request from %s at IP %s user=%s token=%x\n",
+             machine,inet_ntoa(p->ip),user,token));
 
-			q = outbuf;
-			SSVAL(q, 0, 6);
-			q += 2;
+      q = outbuf;
+      SSVAL(q, 0, 6);
+      q += 2;
 
-			fstrcpy(reply_name, "\\\\");
-			fstrcat(reply_name, my_name);
-			fstrcpy(q, reply_name);
-			q = skip_string(q, 1);	/* PDC name */
+      fstrcpy(reply_name, "\\\\");
+      fstrcat(reply_name, my_name);
+      fstrcpy(q, reply_name); q = skip_string(q, 1); /* PDC name */
 
-			SSVAL(q, 0, token);
-			q += 2;
+      SSVAL(q, 0, token);
+      q += 2;
 
-			dump_data(4, outbuf, PTR_DIFF(q, outbuf));
+      dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
-			send_mailslot(True, getdc,
-				      outbuf, PTR_DIFF(q, outbuf),
-				      dgram->dest_name.name,
-				      dgram->dest_name.name_type,
-				      dgram->source_name.name,
-				      dgram->source_name.name_type,
-				      p->ip, *iface_ip(p->ip), p->port);
-			break;
-		}
+      send_mailslot(True, getdc, 
+                    outbuf,PTR_DIFF(q,outbuf),
+                    dgram->dest_name.name,
+                    dgram->dest_name.name_type,
+                    dgram->source_name.name,
+                    dgram->source_name.name_type,
+                    p->ip, *iface_ip(p->ip), p->port);  
+      break;
+    }
 
-		case QUERYFORPDC:
-		{
-			char *q = buf + 2;
-			char *machine = q;
+    case QUERYFORPDC:
+    {
+      char *q = buf + 2;
+      char *machine = q;
 
-			getdc = skip_string(machine, 1);
-			unicomp = skip_string(getdc, 1);
+      getdc = skip_string(machine,1);
+      unicomp = skip_string(getdc,1);
 
-			q = align2(unicomp, buf);
+      /* at this point we can work out if this is a W9X or NT style
+         request. Experiments show that the difference is wether the
+         packet ends here. For a W9X request we now end with a pair of
+         bytes (usually 0xFE 0xFF) whereas with NT we have two further
+         strings - the following is a simple way of detecting this */
+      if (len - PTR_DIFF(unicomp, buf) > 3) {
+	      short_request = True;
+      } else {
+	      /* A full length (NT style) request */
+	      q = skip_unicode_string(unicomp, 1);
 
-			q = skip_unibuf(q, buf + len - q);
-
-			if ((buf - q) >= len)
-			{	/* Check for a short request */
-
-				short_request = 1;
-
-			}
-			else
-			{	/* A full length request */
-
-				/* if there is more than 16 bytes left,
-				 * then there is a domain name in here
-				 * which we have to skip.
-				 */
-				if (len - PTR_DIFF(q, buf) > 16)
-				{
-					/* skip domain name */
+	      if (len - PTR_DIFF(q, buf) > 8) {
+					/* with NT5 clients we can sometimes
+					   get additional data - a length specificed string
+					   containing the domain name, then 16 bytes of
+					   data (no idea what it is) */
 					int dom_len = CVAL(q, 0);
-					q+= 1;
-					DEBUG(10,("domain name :%s\n", q));
-					if (dom_len != 0)
-					{
-						q = skip_string(q, 1);
+					q++;
+					if (dom_len != 0) {
+						q += dom_len + 1;
 					}
 					q += 16;
-				}
+	      }
+	      ntversion = IVAL(q, 0);
+	      lmnttoken = SVAL(q, 4);
+	      lm20token = SVAL(q, 6);
+      }
 
-				ntversion = IVAL(q, 0);
-				q += 4;
-				lmnttoken = SVAL(q, 0);
-				q += 2;
-				lm20token = SVAL(q, 0);
-				q += 2;
+      /* Construct reply. */
+      q = outbuf;
+      SSVAL(q, 0, QUERYFORPDC_R);
+      q += 2;
 
-			}
+      fstrcpy(reply_name,my_name);
+      fstrcpy(q, reply_name);
+      q = skip_string(q, 1); /* PDC name */
 
-			/* Construct reply. */
+      /* PDC and domain name */
+      if (!short_request)  /* Make a full reply */
+      {
+        q = align2(q, buf);
 
-			q = outbuf;
-			SSVAL(q, 0, QUERYFORPDC_R);
-			q += 2;
+        q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
+        q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True); /* Domain name*/
 
-			fstrcpy(reply_name, my_name);
-			fstrcpy(q, reply_name);
-			q = skip_string(q, 1);	/* PDC name */
+        SIVAL(q, 0, ntversion);
+        SSVAL(q, 4, lmnttoken);
+        SSVAL(q, 6, lm20token);
+        q += 8;
+      }
 
-			/* PDC and domain name */
+      /* RJS, 21-Feb-2000, we send a short reply if the request was short */
 
-			if (!short_request)	/* Make a full reply */
-			{
-				q = align2(q, buf);
-
-				q = ascii_to_unibuf(q, my_name,
-						    outbuf +
-						    sizeof(outbuf) - q - 2);
-				q = ascii_to_unibuf(q, global_myworkgroup,
-						    outbuf +
-						    sizeof(outbuf) - q - 2);
-
-				ntversion = 0x01;
-
-				SIVAL(q, 0, ntversion);
-				q += 4;
-				SSVAL(q, 0, lmnttoken);
-				q += 2;
-				SSVAL(q, 0, lm20token);
-				q += 2;
-			}
-
-			/* RJS, 21-Feb-2000, we send a short reply if the request was short */
-
-			DEBUG(3,
-			      ("process_logon_packet: GETDC request from %s at IP %s, \
+      DEBUG(3,("process_logon_packet: GETDC request from %s at IP %s, \
 reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
-			       machine, inet_ntoa(p->ip), reply_name,
-			       lp_workgroup(), QUERYFORPDC_R,
-			       (uint32)ntversion, (uint32)lmnttoken,
-			       (uint32)lm20token));
+            machine,inet_ntoa(p->ip), reply_name, lp_workgroup(),
+            QUERYFORPDC_R, (uint32)ntversion, (uint32)lmnttoken,
+            (uint32)lm20token ));
 
-			dump_data(4, outbuf, PTR_DIFF(q, outbuf));
+      dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
-			send_mailslot(True, getdc,
-				      outbuf, PTR_DIFF(q, outbuf),
-				      my_name,
-				      0x0,
-				      dgram->source_name.name,
-				      dgram->source_name.name_type,
-				      p->ip, *iface_ip(p->ip), p->port);
-			return;
-		}
+      send_mailslot(True, getdc,
+                  outbuf,PTR_DIFF(q,outbuf),
+                  dgram->dest_name.name,
+                  dgram->dest_name.name_type,
+                  dgram->source_name.name,
+                  dgram->source_name.name_type,
+                  p->ip, *iface_ip(p->ip), p->port);  
+      return;
+    }
 
-		case SAMLOGON:
-		{
-			char *q = buf + 2;
+    case SAMLOGON:
+    {
+      char *q = buf + 2;
 
-			q += 2;
-			unicomp = q;
-			uniuser = skip_unibuf(unicomp, buf + len - q);
-			getdc = skip_unibuf(uniuser, buf + len - q);
-			q = skip_string(getdc, 1);
-			q += 4;	/* skip Account Control Bits */
-			domainsidsize = IVAL(q, 0);
-			q += 4;
+      q += 2;
+      unicomp = q;
+      uniuser = skip_unicode_string(unicomp,1);
+      getdc = skip_unicode_string(uniuser,1);
+      q = skip_string(getdc,1);
+      q += 4;
+      domainsidsize = IVAL(q, 0);
+      q += 4;
+      q += domainsidsize + 3;
+      ntversion = IVAL(q, 0);
+      q += 4;
+      lmnttoken = SVAL(q, 0);
+      q += 2;
+      lm20token = SVAL(q, 0);
+      q += 2;
 
-			if (domainsidsize != 0)
-			{
-				q += domainsidsize;
-				q = align4(q, buf);
-			}
+      DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %d\n", domainsidsize, ntversion));
 
-			ntversion = IVAL(q, 0);
-			q += 4;
-			lmnttoken = SVAL(q, 0);
-			q += 2;
-			lm20token = SVAL(q, 0);
-			q += 2;
+      /*
+       * we respond regadless of whether the machine is in our password 
+       * database. If it isn't then we let smbd send an appropriate error.
+       * Let's ignore the SID.
+       */
 
-			DEBUG(3,
-			      ("process_logon_packet: SAMLOGON sidsize %d ntv %x\n",
-			       domainsidsize, ntversion));
+      pstrcpy(ascuser, dos_unistr(uniuser));
+      DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
-			/*
-			 * we respond regadless of whether the machine is in our password 
-			 * database. If it isn't then we let smbd send an appropriate error.
-			 * Let's ignore the SID.
-			 */
+      fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
+      fstrcpy(reply_name+2,my_name); 
 
-			fstrcpy(reply_name, "\\\\");	/* Here it wants \\LOGONSERVER. */
-			fstrcpy(reply_name + 2, my_name);
+      DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
+	       dos_unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
+	       SAMLOGON_R ,lmnttoken));
 
-			ntversion = 0x01;
-			lmnttoken = 0xffff;
-			lm20token = 0xffff;
+      /* Construct reply. */
 
-			if (DEBUGLVL(3))
-			{
-				fstring ascuser;
-				fstring asccomp;
+      q = outbuf;
+      if (SVAL(uniuser, 0) == 0) {
+	      SSVAL(q, 0, SAMLOGON_UNK_R);	/* user unknown */
+      }	else {
+	      SSVAL(q, 0, SAMLOGON_R);
+      }
+      q += 2;
 
-				unibuf_to_ascii(ascuser, uniuser,
-						sizeof(ascuser) - 1);
-				unibuf_to_ascii(asccomp, unicomp,
-						sizeof(asccomp) - 1);
+      q += dos_PutUniCode(q, reply_name,sizeof(pstring), True);
+      unistrcpy(q, uniuser);
+      q = skip_unicode_string(q, 1); /* User name (workstation trust account) */
+      q += dos_PutUniCode(q, lp_workgroup(),sizeof(pstring), True);
 
-				DEBUGADD(3,
-					 ("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-					  asccomp, inet_ntoa(p->ip), ascuser,
-					  reply_name, global_myworkgroup,
-					  SAMLOGON_R, lmnttoken));
-			}
+      SIVAL(q, 0, ntversion);
+      q += 4;
+      SSVAL(q, 0, lmnttoken);
+      q += 2;
+      SSVAL(q, 0, lm20token);
+      q += 2;
 
-			/* Construct reply. */
+      dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
-			q = outbuf;
-			if (uniuser[0] == 0)
-			{
-				SSVAL(q, 0, SAMLOGON_UNK_R);	/* user unknown */
-			}
-			else
-			{
-				SSVAL(q, 0, SAMLOGON_R);
-			}
-			q += 2;
+      send_mailslot(True, getdc,
+                   outbuf,PTR_DIFF(q,outbuf),
+                   dgram->dest_name.name,
+                   dgram->dest_name.name_type,
+                   dgram->source_name.name,
+                   dgram->source_name.name_type,
+                   p->ip, *iface_ip(p->ip), p->port);  
+      break;
+    }
 
-			/* Logon server, trust account, domain */
-			q = ascii_to_unibuf(q, reply_name,
-					    outbuf + sizeof(outbuf) - q - 2);
-			q = uni_strncpy(q, uniuser,
-					outbuf + sizeof(outbuf) - q - 2);
-			q = ascii_to_unibuf(q, lp_workgroup(),
-					    outbuf + sizeof(outbuf) - q - 2);
-
-			SIVAL(q, 0, ntversion);
-			q += 4;
-			SSVAL(q, 0, lmnttoken);
-			q += 2;
-			SSVAL(q, 0, lm20token);
-			q += 2;
-
-			dump_data(4, outbuf, PTR_DIFF(q, outbuf));
-
-			send_mailslot(True, getdc,
-				      outbuf, PTR_DIFF(q, outbuf),
-				      my_name,
-				      0x0,
-				      dgram->source_name.name,
-				      dgram->source_name.name_type,
-				      p->ip, *iface_ip(p->ip), p->port);
-			break;
-		}
-
-		default:
-		{
-			DEBUG(3,
-			      ("process_logon_packet: Unknown domain request %d\n",
-			       code));
-			return;
-		}
-	}
+    default:
+    {
+      DEBUG(3,("process_logon_packet: Unknown domain request %d\n",code));
+      return;
+    }
+  }
 }
