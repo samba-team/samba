@@ -39,6 +39,8 @@ details.  The list of changes per contributor are as follows:
 
 o   Jeremy Allison <jra@samba.org>
     * Fix SMB signing bug when copying large files.
+    * Correct error logic in mkdir_internals() (caused a panic
+      when combined with --enable-developer).
 
       
 o   Andrew Bartlet <abartlet@samba.org>
