@@ -786,6 +786,8 @@ stop() {
 <sect4>
 <title>Solaris</title>
 
+<para>Winbind doesn't work on solaris 9, see the <link linkend="winbind-solaris9">Portability</link> chapter for details.</para>
+
 <para>On solaris, you need to modify the 
 <filename>/etc/init.d/samba.server</filename> startup script. It usually 
 only starts smbd and nmbd but should now start winbindd too. If you 

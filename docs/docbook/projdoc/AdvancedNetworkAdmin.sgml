@@ -269,7 +269,22 @@ Those wishing to use more elaborate or capable logon processing system should ch
 <simplelist>
 	<member>http://www.craigelachie.org/rhacer/ntlogon</member>
 	<member>http://www.kixtart.org</member>
+	<member>http://support.microsoft.com/default.asp?scid=kb;en-us;189105</member>
 </simplelist>
+
+<sect2>
+<title>Adding printers without user intervention</title>
+
+<para>
+Printers may be added automatically during logon script processing through the use of:
+
+<programlisting>
+	rundll32 printui.dll,PrintUIEntry /?
+</programlisting>
+
+See the documentation in the Microsoft knowledgebase article no: 189105 referred to above.
+</para>
+</sect2>
 
 </sect1>
 </chapter>
