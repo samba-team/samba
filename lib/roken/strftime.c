@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -348,8 +348,10 @@ strftime (char *buf, size_t maxsize, const char *format,
 #if defined(HAVE_STRUCT_TM_TM_GMTOFF)
 				(long)tm->tm_gmtoff
 #elif defined(HAVE_TIMEZONE)
+#ifdef HAVE_ALTZONE
 				tm->tm_isdst ?
 				(long)altzone :
+#endif
 				(long)timezone
 #else
 #error Where in timezone chaos are you?
