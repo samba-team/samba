@@ -479,7 +479,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	/* Initialise VFS function pointers */
 
 #if WITH_VFS
-
 	if (*lp_vfsobj(SNUM(conn))) {
 
 #ifdef HAVE_LIBDL
@@ -495,9 +494,19 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	    return NULL;
 #endif /* HAVE_LIBDL */
 
-	} else /* Normal share - initialise with disk access functions */
-#else /* WITH_VFS */
+	} else {
+
+		/* Normal share - initialise with disk access functions */
+
 	    vfs_init_default(conn);
+	}
+
+#else /* WITH_VFS */
+
+	/* Normal share - initialise with disk access functions */
+
+	vfs_init_default(conn);
+
 #endif /* WITH_VFS */
 
 	/* execute any "root preexec = " line */
