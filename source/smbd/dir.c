@@ -907,7 +907,7 @@ void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 			dirp->current = dirp->data;
 		}
 
-		pstrcpy(dirp->data+used,n);
+		safe_strcpy(dirp->data+used,n, dirp->mallocsize - used - 1);
 		used += l;
 		dirp->numentries++;
 	}

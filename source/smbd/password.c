@@ -62,10 +62,14 @@ void invalidate_vuid(uint16 vuid)
 
 	if (vuser == NULL)
 		return;
-
+	
 	SAFE_FREE(vuser->homedir);
-
+	SAFE_FREE(vuser->unix_homedir);
+	SAFE_FREE(vuser->logon_script);
+	
 	session_yield(vuser);
+
+	free_server_info(&vuser->server_info);
 
 	DLIST_REMOVE(validated_users, vuser);
 
@@ -93,11 +97,15 @@ void invalidate_all_vuids(void)
 	}
 }
 
-/****************************************************************************
-register a uid/name pair as being valid and that a valid password
-has been given. vuid is biased by an offset. This allows us to
-tell random client vuid's (normally zero) from valid vuids.
-****************************************************************************/
+/**
+ *  register that a valid login has been performed, establish 'session'.
+ *  @param server_info The token returned from the authentication process. 
+ *   (now 'owned' by register_vuid)
+ *
+ *  @return Newly allocated vuid, biased by an offset. (This allows us to
+ *   tell random client vuid's (normally zero) from valid vuids.)
+ *
+ */
 
 int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 {
@@ -136,6 +144,7 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 	if (!IS_SAM_UNIX_USER(server_info->sam_account)) {
 		DEBUG(0,("Attempted session setup with invalid user.  No uid/gid in SAM_ACCOUNT\n"));
 		free(vuser);
+		free_server_info(&server_info);
 		return UID_FIELD_INVALID;
 	}
 	
@@ -147,20 +156,24 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 		if (!(vuser->groups = memdup(server_info->groups, sizeof(gid_t) * vuser->n_groups))) {
 			DEBUG(0,("register_vuid: failed to memdup vuser->groups\n"));
 			free(vuser);
+			free_server_info(&server_info);
 			return UID_FIELD_INVALID;
 		}
 	}
 
 	vuser->guest = server_info->guest;
 	fstrcpy(vuser->user.unix_name, pdb_get_username(server_info->sam_account)); 
-	fstrcpy(vuser->user.smb_name, smb_name); 
+
+	/* This is a potentially untrusted username */
+	alpha_strcpy(vuser->user.smb_name, smb_name, ". _-$", sizeof(vuser->user.smb_name));
+
 	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
 	fstrcpy(vuser->user.full_name, pdb_get_fullname(server_info->sam_account));
 
 	{
 		/* Keep the homedir handy */
 		const char *homedir = pdb_get_homedir(server_info->sam_account);
-		const char *unix_homedir = pdb_get_unix_homedir(server_info->sam_account); /* should be optained by SMS */
+		const char *unix_homedir = pdb_get_unix_homedir(server_info->sam_account);
 		const char *logon_script = pdb_get_logon_script(server_info->sam_account);
 		if (homedir) {
 			vuser->homedir = smb_xstrdup(homedir);
@@ -188,9 +201,17 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 		vuser->nt_user_token = dup_nt_token(server_info->ptok);
 	} else {
 		DEBUG(1, ("server_info does not contain a user_token - cannot continue\n"));
-		free(vuser);
+		free_server_info(&server_info);
+		SAFE_FREE(vuser->homedir);
+		SAFE_FREE(vuser->unix_homedir);
+		SAFE_FREE(vuser->logon_script);
+
+		SAFE_FREE(vuser);
 		return UID_FIELD_INVALID;
 	}
+
+	/* use this to keep tabs on all our info from the authentication */
+	vuser->server_info = server_info;
 
 	DEBUG(3,("UNIX uid %d is UNIX user %s, and will be vuid %u\n",(int)vuser->uid,vuser->user.unix_name, vuser->vuid));
 

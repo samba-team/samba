@@ -125,7 +125,6 @@ NTSTATUS auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 	if ((*auth_ntlmssp_state)->server_info) {
 		free_server_info(&(*auth_ntlmssp_state)->server_info);
 	}
-
 	talloc_destroy(mem_ctx);
 	*auth_ntlmssp_state = NULL;
 	return NT_STATUS_OK;

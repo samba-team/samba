@@ -168,6 +168,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
+	data_blob_free(&auth_data);
+
 	DEBUG(3,("Ticket name is [%s]\n", client));
 
 	p = strchr_m(client, '@');
@@ -219,10 +221,10 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(ret);
 	}
 	
+	/* register_vuid keeps the server info */
 	sess_vuid = register_vuid(server_info, user);
 
 	free(user);
-	free_server_info(&server_info);
 
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
@@ -263,8 +265,10 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		int sess_vuid;
-		sess_vuid = register_vuid(server_info, (*auth_ntlmssp_state)->ntlmssp_state->user /* check this for weird */);
-		
+		/* register_vuid keeps the server info */
+		sess_vuid = register_vuid(server_info, (*auth_ntlmssp_state)->ntlmssp_state->user);
+		(*auth_ntlmssp_state)->server_info = NULL;
+
 		if (sess_vuid == -1) {
 			nt_status = NT_STATUS_LOGON_FAILURE;
 		} else {
@@ -272,7 +276,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 			set_message(outbuf,4,0,True);
 			SSVAL(outbuf, smb_vwv3, 0);
 			
-			if ((*auth_ntlmssp_state)->server_info && (*auth_ntlmssp_state)->server_info->guest) {
+			if (server_info->guest) {
 				SSVAL(outbuf,smb_vwv2,1);
 			}
 			
@@ -285,7 +289,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 	data_blob_free(&response);
 
 	if (!ret || !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		auth_ntlmssp_end(&global_ntlmssp_state);
+		auth_ntlmssp_end(auth_ntlmssp_state);
 	}
 
 	return ret;
@@ -584,13 +588,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			 domain,native_os,native_lanman));
 	}
 	
-	/* don't allow for weird usernames or domains */
-	alpha_strcpy(user, user, ". _-$", sizeof(user));
-	alpha_strcpy(domain, domain, ". _-@", sizeof(domain));
-	if (strstr(user, "..") || strstr(domain,"..")) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-
 	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, get_remote_machine_name()));
 
 	if (*user) {
@@ -609,7 +606,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		fstrcpy(sub_user, lp_guestaccount());
 	}
 
-	fstrcpy(current_user_info.smb_name,sub_user);
+	sub_set_smb_name(sub_user);
 
 	reload_services(True);
 	
@@ -692,15 +689,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	/* register the name and uid as being validated, so further connections
 	   to a uid can get through without a password, on the same VC */
 
+	/* register_vuid keeps the server info */
 	sess_vuid = register_vuid(server_info, sub_user);
-
-	free_server_info(&server_info);
   
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
- 
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
 	

@@ -671,14 +671,22 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 	};
 	
 	n_unix_groups = groups_max();
-	if ((*unix_groups = malloc( sizeof(gid_t) * groups_max() ) ) == NULL) {
+	if ((*unix_groups = malloc( sizeof(gid_t) * n_unix_groups ) ) == NULL) {
 		DEBUG(0, ("get_user_groups_from_local_sam: Out of memory allocating unix group list\n"));
 		passwd_free(&usr);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
 	if (sys_getgrouplist(usr->pw_name, usr->pw_gid, *unix_groups, &n_unix_groups) == -1) {
-		*unix_groups = Realloc(*unix_groups, sizeof(gid_t) * n_unix_groups);
+		gid_t *groups_tmp;
+		groups_tmp = Realloc(*unix_groups, sizeof(gid_t) * n_unix_groups);
+		if (!groups_tmp) {
+			SAFE_FREE(*unix_groups);
+			passwd_free(&usr);
+			return NT_STATUS_NO_MEMORY;
+		}
+		*unix_groups = groups_tmp;
+
 		if (sys_getgrouplist(usr->pw_name, usr->pw_gid, *unix_groups, &n_unix_groups) == -1) {
 			DEBUG(0, ("get_user_groups_from_local_sam: failed to get the unix group list\n"));
 			SAFE_FREE(*unix_groups);

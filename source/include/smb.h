@@ -1642,6 +1642,8 @@ typedef struct user_struct
 				 TDB key string */
 	int homes_snum;
 
+	struct auth_serversupplied_info *server_info;
+
 } user_struct;
 
 
