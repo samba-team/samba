@@ -33,11 +33,30 @@
 
 #include "gssapi_locl.h"
 
+RCSID("$Id$");
+
 /*
  * Implements draft-brezak-win2k-krb-rc4-hmac-04.txt
+ *
+ * The arcfour message have the following formats:
+ *
+ * MIC token
+ * 	TOK_ID[2] = 01 01
+ *	SGN_ALG[2] = 11 00
+ *	Filler[4]
+ *	SND_SEQ[8]
+ *	SGN_CKSUM[8]
+ *
+ * WRAP token
+ *	TOK_ID[2] = 02 01
+ *	SGN_ALG[2];
+ *	SEAL_ALG[2]
+ *	Filler[2]
+ *	SND_SEQ[2]
+ *	SGN_CKSUM[8]
+ *	Confounder[8]
  */
 
-RCSID("$Id$");
 
 static krb5_error_code
 arcfour_mic_key(krb5_context context, krb5_keyblock *key,
