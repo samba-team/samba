@@ -36,9 +36,23 @@
 #ifndef _SYMBOL_H
 #define _SYMBOL_H
 
-enum typetype { TInteger, TOctetString, TBitString, TSequence, TSequenceOf,
-		TGeneralizedTime, TGeneralString, TApplication, TType, 
-		TUInteger, TEnumerated, TOID, TUTF8String, TNull, TChoice };
+enum typetype { 
+    TApplication,
+    TBitString,
+    TChoice,
+    TEnumerated,
+    TGeneralString,
+    TGeneralizedTime,
+    TInteger, 
+    TNull,
+    TOID,
+    TOctetString,
+    TSequence,
+    TSequenceOf,
+    TType, 
+    TUInteger,
+    TUTF8String
+};
 
 typedef enum typetype Typetype;
 
