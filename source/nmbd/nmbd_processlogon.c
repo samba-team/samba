@@ -130,7 +130,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
          packet ends here. For a W9X request we now end with a pair of
          bytes (usually 0xFE 0xFF) whereas with NT we have two further
          strings - the following is a simple way of detecting this */
-      if (PTR_DIFF(buf, q) >= len)
+      if (PTR_DIFF(q, buf) >= len)
       {
 	      short_request = True;
       } else {
