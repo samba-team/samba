@@ -1,5 +1,7 @@
 Wed Jul 16 03:37:41 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kdc/kerberos5.c (tgs_rep2): Free ticket and ap_req.
+
 	* lib/krb5/auth_context.c (krb5_auth_con_free): Free remote
  	subkey.
 
