@@ -882,6 +882,7 @@ void smbd_process(void)
         unsigned char trust_passwd_hash[16];
         time_t lct;
         pstring remote_machine_list;
+        int sec_chan = SEC_CHAN_WKSTA;
 
         /*
          * We're in domain level security, and the code that
@@ -917,8 +918,11 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
         }
 
         pstrcpy(remote_machine_list, lp_passwordserver());
+        if (lp_server_role() == ROLE_DOMAIN_BDC)
+          sec_chan = SEC_CHAN_BDC;
 
-        change_trust_account_password( global_myworkgroup, remote_machine_list);
+        change_trust_account_password(global_myworkgroup, remote_machine_list,
+                                        sec_chan);
         trust_password_unlock();
         global_machine_password_needs_changing = False;
       }
