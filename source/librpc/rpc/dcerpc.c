@@ -785,6 +785,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	struct dcerpc_packet pkt;
 	DATA_BLOB blob;
 	uint32_t remaining, chunk_size;
+	BOOL first_packet = True;
 
 	p->transport.recv_data = dcerpc_request_recv_data;
 
@@ -820,10 +821,11 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	DLIST_ADD(p->pending, req);
 
 	/* we send a series of pdus without waiting for a reply */
-	while (remaining > 0) {
+	while (remaining > 0 || first_packet) {
 		uint32_t chunk = MIN(chunk_size, remaining);
 		BOOL last_frag = False;
 
+		first_packet = False;
 		pkt.pfc_flags = 0;
 
 		if (remaining == stub_data->length) {
