@@ -110,6 +110,7 @@ krb5_sendauth(krb5_context context,
       if (ret)
 	return ret;
     }
+    memset(&this_cred, 0, sizeof(this_cred));
     this_cred.client = client;
     this_cred.server = server;
     this_cred.times.endtime = 0;
