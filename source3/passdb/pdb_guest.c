@@ -24,11 +24,16 @@
   Lookup a name in the SAM database
  ******************************************************************/
 
-static NTSTATUS guestsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname)
+static NTSTATUS guestsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *sam_account, const char *sname)
 {
 	NTSTATUS nt_status;
-	struct passwd *pass;
 	const char *guest_account = lp_guestaccount();
+
+	if (!sam_account || !sname) {
+		DEBUG(0,("invalid name specified"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	if (!(guest_account && *guest_account)) {
 		DEBUG(1, ("NULL guest account!?!?\n"));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -38,21 +43,31 @@ static NTSTATUS guestsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *
 		DEBUG(0,("invalid methods\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	if (!sname) {
-		DEBUG(0,("invalid name specified"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	if (!strequal(guest_account, sname)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 		
-	pass = getpwnam_alloc(guest_account);
+	pdb_fill_default_sam(sam_account);
+	
+	if (!pdb_set_username(sam_account, guest_account, PDB_SET))
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	if (!pdb_set_fullname(sam_account, guest_account, PDB_SET))
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	if (!pdb_set_domain(sam_account, lp_workgroup(), PDB_DEFAULT))
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL, PDB_DEFAULT))
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	if (!pdb_set_user_sid_from_rid(sam_account, DOMAIN_USER_RID_GUEST, PDB_DEFAULT))
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	if (!pdb_set_group_sid_from_rid(sam_account, DOMAIN_GROUP_RID_GUESTS, PDB_DEFAULT))
+		return NT_STATUS_UNSUCCESSFUL;
 
-	nt_status = pdb_fill_sam_pw(user, pass);
-
-	passwd_free(&pass);
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 
@@ -61,35 +76,17 @@ static NTSTATUS guestsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *
  **************************************************************************/
 
 static NTSTATUS guestsam_getsampwrid (struct pdb_methods *methods, 
-				 SAM_ACCOUNT *user, uint32 rid)
+				 SAM_ACCOUNT *sam_account, uint32 rid)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct passwd *pass = NULL;
-	const char *guest_account = lp_guestaccount();
-	if (!(guest_account && *guest_account)) {
-		DEBUG(1, ("NULL guest account!?!?\n"));
-		return nt_status;
-	}
-
-	if (!methods) {
-		DEBUG(0,("invalid methods\n"));
-		return nt_status;
-	}
-	
-	if (rid == DOMAIN_USER_RID_GUEST) {
-		pass = getpwnam_alloc(guest_account);
-		if (!pass) {
-			DEBUG(1, ("guest account %s does not seem to exist...\n", guest_account));
-			return NT_STATUS_NO_SUCH_USER;
-		}
-	} else {
+	if (rid != DOMAIN_USER_RID_GUEST) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	nt_status = pdb_fill_sam_pw(user, pass);
-	passwd_free(&pass);
+	if (!sam_account) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	return nt_status;
+	return guestsam_getsampwnam (methods, sam_account, lp_guestaccount());
 }
 
 static NTSTATUS guestsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
@@ -97,6 +94,7 @@ static NTSTATUS guestsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
 		return NT_STATUS_NO_SUCH_USER;
+
 	return guestsam_getsampwrid(my_methods, user, rid);
 }
 

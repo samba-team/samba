@@ -101,7 +101,7 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	BOOL ret = True;
 	struct passwd *pw;
 	uid_t uid = -1;
-	gid_t gid = -1; /* This is what standard sub advanced expects if no gid is known */
+	gid_t gid = -1;
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
@@ -143,30 +143,6 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	if (len == -1)  {
 		ret = False;
 		goto done;
-	}
-
-	/* validate the account and fill in UNIX uid and gid. Standard
-	 * getpwnam() is used instead of Get_Pwnam() as we do not need
-	 * to try case permutations
-	 */
-	if (!username || !(pw = getpwnam_alloc(username))) {
-		if (!(tdb_state->permit_non_unix_accounts)) {
-			DEBUG(0,("tdbsam: getpwnam_alloc(%s) return NULL.  User does not exist!\n", username));
-			ret = False;
-			goto done;
-		}
-	}
-		
-	if (pw) {
-		uid = pw->pw_uid;
-		gid = pw->pw_gid;
-		
-		pdb_set_unix_homedir(sampass, pw->pw_dir, PDB_SET);
-
-		passwd_free(&pw);
-
-		pdb_set_uid(sampass, uid, PDB_SET);
-		pdb_set_gid(sampass, gid, PDB_SET);
 	}
 
 	pdb_set_logon_time(sampass, logon_time, PDB_SET);
@@ -664,7 +640,7 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT 
 		return nt_status;
 	}
 
-	fstrcpy (name, data.dptr);
+	fstrcpy(name, data.dptr);
 	SAFE_FREE(data.dptr);
 	
 	tdb_close (pwd_tdb);
@@ -768,54 +744,40 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 		return False;
 	}
 
+	if (!pdb_get_group_rid(newpwd)) {
+		DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
+		ret = False;
+		goto done;
+	}
+
 	/* if flag == TDB_INSERT then make up a new RID else throw an error. */
 	if (!(user_rid = pdb_get_user_rid(newpwd))) {
-		if (flag & TDB_INSERT) {
-			if (IS_SAM_UNIX_USER(newpwd)) {
-				if (tdb_state->algorithmic_rids) {
-					user_rid = fallback_pdb_uid_to_user_rid(pdb_get_uid(newpwd));
-				} else {
-					user_rid = BASE_RID;
-					tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
-					if (!tdb_ret) {
-						ret = False;
-						goto done;
-					}
-				}
-				pdb_set_user_sid_from_rid(newpwd, user_rid, PDB_CHANGED);
-			} else {
-				user_rid = tdb_state->low_nua_rid;
-				tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "NUA_RID_COUNTER", &user_rid, RID_MULTIPLIER);
-				if (!tdb_ret) {
-					ret = False;
-					goto done;
-				}
-				if (user_rid > tdb_state->high_nua_rid) {
-					DEBUG(0, ("tdbsam: no NUA rids available, cannot add user %s!\n", pdb_get_username(newpwd)));
-					ret = False;
-					goto done;
-				}
-				pdb_set_user_sid_from_rid(newpwd, user_rid, PDB_CHANGED);
+		if ((flag & TDB_INSERT) && tdb_state->permit_non_unix_accounts) {
+			uint32 lowrid, highrid;
+			if (!idmap_get_free_rid_range(&lowrid, &highrid)) {
+				/* should never happen */
+				DEBUG(0, ("tdbsam: something messed up, no high/low rids but nua enabled ?!\n"));
+				ret = False;
+				goto done;
+			}
+			user_rid = lowrid;
+			tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
+			if (!tdb_ret) {
+				ret = False;
+				goto done;
+			}
+			if (user_rid > highrid) {
+				DEBUG(0, ("tdbsam: no NUA rids available, cannot add user %s!\n", pdb_get_username(newpwd)));
+				ret = False;
+				goto done;
+			}
+			if (!pdb_set_user_sid_from_rid(newpwd, user_rid, PDB_CHANGED)) {
+				DEBUG(0, ("tdbsam: not able to set new allocated user RID into sam account!\n"));
+				ret = False;
+				goto done;
 			}
 		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
-			ret = False;
-			goto done;
-		}
-	}
-
-	if (!pdb_get_group_rid(newpwd)) {
-		if (flag & TDB_INSERT) {
-			if (!tdb_state->permit_non_unix_accounts) {
-				DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
-				ret = False;
-				goto done;
-			} else {
-				/* This seems like a good default choice for non-unix users */
-				pdb_set_group_sid_from_rid(newpwd, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
-			}
-		} else {
-			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
 			ret = False;
 			goto done;
 		}
@@ -837,7 +799,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
   	/* setup the USER index key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
 	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
+	key.dsize = strlen(keystr) + 1;
 
 	/* add the account */
 	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS) {
@@ -849,7 +811,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 	}
 	
 	/* setup RID data */
-	data.dsize = sizeof(fstring);
+	data.dsize = strlen(name) + 1;
 	data.dptr = name;
 
 	/* setup the RID index key */
@@ -873,6 +835,49 @@ done:
 	
 	return (ret);	
 }
+
+#if 0
+/***************************************************************************
+ Allocates a new RID and returns it to the caller as a domain sid
+
+ NOTE: Use carefullt, do not waste RIDs they are a limited resource!
+ 							- SSS
+ ***************************************************************************/
+
+static NTSTATUS tdbsam_get_next_sid (struct pdb_methods *my_methods, DOM_SID *sid)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
+	TDB_CONTEXT 	*pwd_tdb;
+	uint32		rid;
+
+	if (sid == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
+  	if (!pwd_tdb)
+	{
+		DEBUG(0, ("tdbsam_get_next_sid: Unable to open TDB passwd (%s)!\n", tdb_state->tdbsam_location));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rid = BASE_RID;
+	if (tdb_change_uint32_atomic(pwd_tdb, "RID_COUNTER", &rid, 1)) {
+
+		sid_copy(sid, get_global_sam_sid());
+		if (!sid_append_rid(sid, rid)) {
+			goto done;
+		}
+		
+		ret = NT_STATUS_OK;
+	}
+
+done:
+	tdb_close (pwd_tdb);
+	return ret;
+}
+#endif
 
 /***************************************************************************
  Modifies an existing SAM_ACCOUNT
@@ -912,14 +917,7 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 {
 	NTSTATUS nt_status;
 	struct tdbsam_privates *tdb_state;
-
-#if 0 /* when made a module use this */
-	tdbsam_debug_level = debug_add_class("tdbsam");
-	if(tdbsam_debug_level == -1) {
-		tdbsam_debug_level = DBGC_ALL;
-		DEBUG(0, ("tdbsam: Couldn't register custom debugging class!\n"));
-	}
-#endif
+	uint32 low_nua_uid, high_nua_uid;
 
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
 		return nt_status;
@@ -953,47 +951,29 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, tdbfile);
 	}
 
-	tdb_state->algorithmic_rids = True;
-
 	(*pdb_method)->private_data = tdb_state;
 
 	(*pdb_method)->free_private_data = free_private_data;
 
-	return NT_STATUS_OK;
-}
+	if (lp_idmap_uid(&low_nua_uid, &high_nua_uid)) {
+		DEBUG(0, ("idmap uid range defined, non unix accounts enabled\n"));
 
-NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
-{
-	NTSTATUS nt_status;
-	struct tdbsam_privates *tdb_state;
-	uint32 low_nua_uid, high_nua_uid;
+		tdb_state->permit_non_unix_accounts = True;
 
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_tdbsam(pdb_context, pdb_method, location))) {
-		return nt_status;
+		tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
+
+		tdb_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
+
+	} else {
+		tdb_state->algorithmic_rids = True;
 	}
-
-	(*pdb_method)->name = "tdbsam_nua";
-
-	tdb_state = (*pdb_method)->private_data;
-
-	tdb_state->permit_non_unix_accounts = True;
-
-	if (!lp_winbind_uid(&low_nua_uid, &high_nua_uid)) {
-		DEBUG(0, ("cannot use tdbsam_nua without 'winbind uid' range in smb.conf!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
-
-	tdb_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_tdbsam_init(void)
+int pdb_tdbsam_init(void)
 {
 	smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam", pdb_init_tdbsam);
-	smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam_nua", pdb_init_tdbsam_nua);
-	return NT_STATUS_OK;
+	return True;
 }
 

@@ -1134,28 +1134,23 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
 static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampass)
 {
 	uid_t uid;
+	uint32 rid;
 
 	if (sampass == NULL) 
 		return False;
 
+	rid = pdb_get_user_rid(sampass);
+
+	/* If the user specified a RID, make sure its able to be both stored and retreived */
+	if (rid && rid != DOMAIN_USER_RID_GUEST && uid != fallback_pdb_user_rid_to_uid(rid)) {
+		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
+		return False;
+	}
+
 	ZERO_STRUCTP(smb_pw);
- 
-        if (!IS_SAM_UNIX_USER(sampass)) {
-		smb_pw->smb_userid_set = False;
-		DEBUG(5,("build_smb_pass: storing user without a UNIX uid or gid. \n"));
-	} else {
-		uint32 rid = pdb_get_user_rid(sampass);
-		smb_pw->smb_userid_set = True;
-		uid = pdb_get_uid(sampass);
 
-		/* If the user specified a RID, make sure its able to be both stored and retreived */
-		if (rid && rid != DOMAIN_USER_RID_GUEST && uid != fallback_pdb_user_rid_to_uid(rid)) {
-			DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
-			return False;
-		}
-
-		smb_pw->smb_userid=uid;
-        }
+	smb_pw->smb_userid_set = True;
+	smb_pw->smb_userid=uid;
 
 	smb_pw->smb_name=(const char*)pdb_get_username(sampass);
 
@@ -1215,7 +1210,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 			*/
 			pdb_set_group_sid_from_rid (sam_pass, DOMAIN_GROUP_RID_USERS, PDB_SET); 
 			pdb_set_username (sam_pass, pw_buf->smb_name, PDB_SET);
-			pdb_set_domain (sam_pass, get_global_sam_name(), PDB_DEFAULT);
+			pdb_set_domain (sam_pass, lp_workgroup(), PDB_DEFAULT);
 			
 		} else {
 			DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s with uid %u is not in unix passwd database!\n", pw_buf->smb_name, pw_buf->smb_userid));
@@ -1507,7 +1502,6 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
-
 NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
@@ -1554,35 +1548,16 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 
 	(*pdb_method)->free_private_data = free_private_data;
 
-	return NT_STATUS_OK;
-}
-
-NTSTATUS pdb_init_smbpasswd_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
-{
-	NTSTATUS nt_status;
-	struct smbpasswd_privates *privates;
-
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_smbpasswd(pdb_context, pdb_method, location))) {
-		return nt_status;
-	}
-
-	(*pdb_method)->name = "smbpasswd_nua";
-
-	privates = (*pdb_method)->private_data;
-	
-	privates->permit_non_unix_accounts = True;
-
-	if (!lp_winbind_uid(&privates->low_nua_userid, &privates->high_nua_userid)) {
-		DEBUG(0, ("cannot use smbpasswd_nua without 'winbind uid' range in smb.conf!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+	if (lp_idmap_uid(&privates->low_nua_userid, &privates->high_nua_userid)) {
+		DEBUG(0, ("idmap uid range defined, non unix accounts enabled\n"));
+		privates->permit_non_unix_accounts = True;
 	}
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_smbpasswd_init(void) 
+int pdb_smbpasswd_init(void) 
 {
 	smb_register_passdb(PASSDB_INTERFACE_VERSION, "smbpasswd", pdb_init_smbpasswd);
-	smb_register_passdb(PASSDB_INTERFACE_VERSION, "smbpasswd_nua", pdb_init_smbpasswd_nua);
-	return NT_STATUS_OK;
+	return True;
 }

@@ -170,17 +170,17 @@ static BOOL default_group_mapping(void)
 
 	/* Add the Wellknown groups */
 
-	add_initial_entry(-1, "S-1-5-32-544", SID_NAME_ALIAS, "Administrators", "", privilege_all, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-545", SID_NAME_ALIAS, "Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-546", SID_NAME_ALIAS, "Guests", "", privilege_none, PR_ACCESS_FROM_NETWORK);
-	add_initial_entry(-1, "S-1-5-32-547", SID_NAME_ALIAS, "Power Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-544", SID_NAME_WKN_GRP, "Administrators", "", privilege_all, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-545", SID_NAME_WKN_GRP, "Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-546", SID_NAME_WKN_GRP, "Guests", "", privilege_none, PR_ACCESS_FROM_NETWORK);
+	add_initial_entry(-1, "S-1-5-32-547", SID_NAME_WKN_GRP, "Power Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
 
-	add_initial_entry(-1, "S-1-5-32-548", SID_NAME_ALIAS, "Account Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-549", SID_NAME_ALIAS, "System Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-550", SID_NAME_ALIAS, "Print Operators", "", privilege_print_op, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-551", SID_NAME_ALIAS, "Backup Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-548", SID_NAME_WKN_GRP, "Account Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-549", SID_NAME_WKN_GRP, "System Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-550", SID_NAME_WKN_GRP, "Print Operators", "", privilege_print_op, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-551", SID_NAME_WKN_GRP, "Backup Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
 
-	add_initial_entry(-1, "S-1-5-32-552", SID_NAME_ALIAS, "Replicators", "", privilege_none, PR_ACCESS_FROM_NETWORK);
+	add_initial_entry(-1, "S-1-5-32-552", SID_NAME_WKN_GRP, "Replicators", "", privilege_none, PR_ACCESS_FROM_NETWORK);
 
 	/* Add the defaults domain groups */
 
@@ -763,7 +763,7 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 
 		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0)
 			continue;
-		
+
 		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr)
 			continue;
@@ -803,7 +803,7 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 			free_privilege(set);
 			continue;
 		}
-		
+
 		if (unix_only==ENUM_ONLY_MAPPED && map.gid==-1) {
 			DEBUG(11,("enum_group_mapping: group %s is non mapped\n", map.nt_name));
 			free_privilege(set);
@@ -838,6 +838,7 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 			free_privilege(&(mapt[entries].priv_set));
 
 		entries++;
+
 	}
 
 	*num_entries=entries;

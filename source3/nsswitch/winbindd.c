@@ -128,7 +128,6 @@ static void winbindd_status(void)
 static void print_winbindd_status(void)
 {
 	winbindd_status();
-	winbindd_idmap_status();
 	winbindd_cm_status();
 }
 
@@ -146,7 +145,7 @@ static void terminate(void)
 {
 	pstring path;
 
-	winbindd_idmap_close();
+	idmap_close();
 	
 	/* Remove socket file */
 	snprintf(path, sizeof(path), "%s/%s", 
@@ -834,8 +833,11 @@ int main(int argc, char **argv)
 
 	/* Winbind daemon initialisation */
 
-	if (!winbindd_idmap_init())
+	if (!idmap_init())
 		return 1;
+
+	if (!idmap_init_wellknown_sids())
+		exit(1);
 
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */

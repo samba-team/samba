@@ -274,11 +274,13 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/util_sam_sid.o passdb/pdb_compat.o \
-		@PDB_STATIC@
+		passdb/privileges.o @PDB_STATIC@
 
 XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
 DEVEL_HELP_OBJ = modules/weird.o
+
+IDMAP_OBJ = sam/idmap.o sam/idmap_util.o sam/idmap_tdb.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -340,7 +342,7 @@ SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(MSDFS_OBJ) $(LIBSMB_OBJ) \
 		$(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) \
 		$(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
 		$(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(LIBADS_SERVER_OBJ) \
-		$(LIB_SMBD_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ)
+		$(LIB_SMBD_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) $(IDMAP_OBJ)
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				printing/print_cups.o printing/print_generic.o \
@@ -378,9 +380,9 @@ SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o web/neg_lang.o 
 
 SWAT_OBJ = $(SWAT_OBJ1) $(PARAM_OBJ) $(PRINTING_OBJ) $(LIBSMB_OBJ) \
-		   $(LOCKING_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
+	   $(LOCKING_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
 	   $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
-	   $(POPT_LIB_OBJ)
+	   $(POPT_LIB_OBJ) $(IDMAP_OBJ)
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -404,11 +406,12 @@ TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
 
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(SECRETS_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
-                $(UBIQX_OBJ) $(LIB_OBJ) $(KRBCLIENT_OBJ)
+                $(UBIQX_OBJ) $(LIB_OBJ) $(KRBCLIENT_OBJ) \
+		$(IDMAP_OBJ)
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
 		$(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
-		$(POPT_LIB_OBJ)
+		$(POPT_LIB_OBJ) $(IDMAP_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 	         rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o \
@@ -421,7 +424,8 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ) \
              $(READLINE_OBJ) $(GROUPDB_OBJ) $(KRBCLIENT_OBJ) \
-	     $(LIBADS_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
+	     $(LIBADS_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
+	     $(IDMAP_OBJ)
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/snprintf.po
 
@@ -468,7 +472,8 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	  $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 	  $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
-	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ)
+	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
+	  $(IDMAP_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
 	  $(LIB_OBJ) $(KRBCLIENT_OBJ)
@@ -547,7 +552,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(LIB_SMBD_OBJ) $(SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
 	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
-	    $(RPC_ECHO_OBJ)
+	    $(IDMAP_OBJ) $(RPC_ECHO_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) \
 	    $(LIB_OBJ) $(NSSWINS_OBJ)
@@ -562,7 +567,7 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
                pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
                libsmb/smbencrypt.o libsmb/smbdes.o libsmb/nterr.o \
                $(PARAM_OBJ) $(LIB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-               $(SECRETS_OBJ) $(UBIQX_OBJ)
+               $(SECRETS_OBJ) $(UBIQX_OBJ) $(IDMAP_OBJ)
 
 PAM_SMBPASS_PICOOBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
 
@@ -570,8 +575,6 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd.o       \
 		nsswitch/winbindd_user.o  \
 		nsswitch/winbindd_group.o \
-		nsswitch/winbindd_idmap.o \
-		nsswitch/winbindd_idmap_tdb.o \
 		nsswitch/winbindd_util.o  \
 		nsswitch/winbindd_cache.o \
 		nsswitch/winbindd_pam.o   \
@@ -581,13 +584,14 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_wins.o \
 		nsswitch/winbindd_rpc.o \
 		nsswitch/winbindd_ads.o \
-		nsswitch/winbindd_dual.o
+		nsswitch/winbindd_dual.o \
+		nsswitch/winbindd_passdb.o
 
 WINBINDD_OBJ = \
-		$(WINBINDD_OBJ1) $(PASSDB_GET_SET_OBJ) \
+		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
-		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
+		$(PROFILE_OBJ) $(UNIGRP_OBJ) $(IDMAP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \

@@ -126,7 +126,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	
 	/* see if this is a native mode win2k domain, but only for our own domain */
 	   
-	if ( lp_server_role() != ROLE_DOMAIN_PDC && strequal( lp_workgroup(), domain_name) ) 	{
+	if ( strequal( lp_workgroup(), domain_name) ) 	{
 		domain->native_mode = cm_check_for_native_mode_win2k( domain_name );
 		DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
 					domain->native_mode ? "native" : "mixed" ));
@@ -211,7 +211,6 @@ BOOL init_domain_list(void)
 
 	/* Add ourselves as the first entry */
 	domain = add_trusted_domain(lp_workgroup(), NULL, &cache_methods, NULL);
-		
 	if (!secrets_fetch_domain_sid(domain->name, &domain->sid)) {
 		DEBUG(1, ("Could not fetch sid for our domain %s\n",
 			  domain->name));
@@ -220,7 +219,7 @@ BOOL init_domain_list(void)
 
 	/* get any alternate name for the primary domain */
 	cache_methods.alternate_name(domain);
-	
+
 	/* do an initial scan for trusted domains */
 	rescan_trusted_domains(True);
 
@@ -381,12 +380,12 @@ BOOL winbindd_param_init(void)
 {
 	/* Parse winbind uid and winbind_gid parameters */
 
-	if (!lp_winbind_uid(&server_state.uid_low, &server_state.uid_high)) {
+	if (!lp_idmap_uid(&server_state.uid_low, &server_state.uid_high)) {
 		DEBUG(0, ("winbind uid range missing or invalid\n"));
 		return False;
 	}
 	
-	if (!lp_winbind_gid(&server_state.gid_low, &server_state.gid_high)) {
+	if (!lp_idmap_gid(&server_state.gid_low, &server_state.gid_high)) {
 		DEBUG(0, ("winbind gid range missing or invalid\n"));
 		return False;
 	}

@@ -767,22 +767,34 @@ extern int errno;
 #include "debugparse.h"
 
 #include "version.h"
-#include "idmap.h"
+
 #include "smb.h"
-#include "smbw.h"
+
 #include "nameserv.h"
 
 #include "secrets.h"
 
 #include "byteorder.h"
 
+#include "privileges.h"
+
+#include "rpc_creds.h"
+
+#include "mapping.h"
+
+#include "passdb.h"
+
 #include "ntdomain.h"
+
+#include "rpc_misc.h"
+
+#include "rpc_secdes.h"
+
+#include "nt_printing.h"
 
 #include "msdfs.h"
 
 #include "smbprofile.h"
-
-#include "mapping.h"
 
 #include "rap.h"
 
@@ -793,7 +805,11 @@ extern int errno;
 
 #include "auth.h"
 
-#include "passdb.h"
+#include "idmap.h"
+
+#include "client.h"
+
+#include "smbw.h"
 
 #include "session.h"
 
@@ -851,6 +867,8 @@ struct functable {
 
 struct printjob;
 
+struct smb_ldap_privates;
+
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
@@ -898,7 +916,7 @@ struct printjob;
 #define MAP_FILE 0
 #endif
 
-#if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP))
+#if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP) && !defined(WITH_TDB_SAM))
 #define USE_SMBPASS_DB 1
 #endif
 

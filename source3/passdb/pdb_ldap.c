@@ -164,7 +164,7 @@ static const char *attr[] = {"uid", "pwdLastSet", "logonTime",
 			     "smbHome", "scriptPath",
 			     "profilePath", "description",
 			     "userWorkstations", "rid", "ntSid",
-			     "primaryGroupID", "primaryGroupSid", "lmPassword",
+			     "primaryGroupID", "lmPassword",
 			     "ntPassword", "acctFlags",
 			     "domain", "objectClass", 
 			     "uidNumber", "gidNumber", 
@@ -519,10 +519,9 @@ static int ldapsam_retry_open(struct ldapsam_privates *ldap_state, int *attempts
 		
 	if (*attempts != 0) {
 		unsigned int sleep_time;
-		uint8 rand_byte;
+		uint8 rand_byte = 128; /* a reasonable place to start */
 
-		/* Sleep for a random timeout */
-		rand_byte = (char)(sys_random());
+		generate_random_buffer(&rand_byte, 1, False);
 
 		sleep_time = (((*attempts)*(*attempts))/2)*rand_byte*2; 
 		/* we retry after (0.5, 1, 2, 3, 4.5, 6) seconds
@@ -1534,12 +1533,11 @@ Initialize SAM_ACCOUNT from an LDAP query (unix attributes only)
 *********************************************************************/
 static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state, 
 				SAM_ACCOUNT * sampass,
-				LDAPMessage * entry)
+				LDAPMessage * entry,
+				gid_t *gid)
 {
 	pstring  homedir;
 	pstring  temp;
-	uid_t uid;
-	gid_t gid;
 	char **ldap_values;
 	char **values;
 
@@ -1564,19 +1562,12 @@ static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state,
 	if (!get_single_attribute(ldap_state->ldap_struct, entry, "homeDirectory", homedir)) 
 		return False;
 	
-	if (!get_single_attribute(ldap_state->ldap_struct, entry, "uidNumber", temp))
-		return False;
-	
-	uid = (uid_t)atol(temp);
-	
 	if (!get_single_attribute(ldap_state->ldap_struct, entry, "gidNumber", temp))
 		return False;
 	
 	gid = (gid_t)atol(temp);
 
 	pdb_set_unix_homedir(sampass, homedir, PDB_SET);
-	pdb_set_uid(sampass, uid, PDB_SET);
-	pdb_set_gid(sampass, gid, PDB_SET);
 	
 	DEBUG(10, ("user has posixAcccount attributes\n"));
 	return True;
@@ -1618,8 +1609,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	uint8 		hours[MAX_HOURS_LEN];
 	pstring temp;
 	uid_t		uid = -1;
-	gid_t 		gid = getegid();
-
+	gid_t		gid = getegid();
 
 	/*
 	 * do a little initialization
@@ -1667,30 +1657,10 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		if (get_single_attribute(ldap_state->ldap_struct, entry, "ntSid", temp)) {
 			pdb_set_user_sid_from_string(sampass, temp, PDB_SET);
 		}
-		if (get_single_attribute(ldap_state->ldap_struct, entry, "primaryGroupSid", temp)) {
-			pdb_set_group_sid_from_string(sampass, temp, PDB_SET);
-		} else {
-			pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
-		}
 	} else {
 		if (get_single_attribute(ldap_state->ldap_struct, entry, "rid", temp)) {
 			user_rid = (uint32)atol(temp);
 			pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
-		}
-		if (get_single_attribute(ldap_state->ldap_struct, entry, "primaryGroupID", temp)) {
-			uint32 group_rid;
-			group_rid = (uint32)atol(temp);
-
-			if (group_rid > 0) {
-				/* for some reason, we often have 0 as a primary group RID.
-				   Make sure that we treat this just as a 'default' value
-				*/
-				pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
-			} else {
-				pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
-			}
-		} else {
-			pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
 		}
 	}
 
@@ -1699,44 +1669,29 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		return False;
 	}
 
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, "primaryGroupID", temp)) {
+		pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
+	} else {
+		uint32 group_rid;
+		group_rid = (uint32)atol(temp);
+		pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
+	}
+
 	/* 
 	 * If so configured, try and get the values from LDAP 
 	 */
 
-	if (!lp_ldap_trust_ids() || (!get_unix_attributes(ldap_state, sampass, entry))) {
+	if (!lp_ldap_trust_ids() && (get_unix_attributes(ldap_state, sampass, entry, &gid))) {
 		
-		/* 
-		 * Otherwise just ask the system getpw() calls.
-		 */
-	
-		pw = getpwnam_alloc(username);
-		if (pw == NULL) {
-			if (! ldap_state->permit_non_unix_accounts) {
-				DEBUG (2,("init_sam_from_ldap: User [%s] does not exist via system getpwnam!\n", username));
-				return False;
+		if (pdb_get_init_flags(sampass,PDB_GROUPSID) == PDB_DEFAULT) {
+			GROUP_MAP map;
+			/* call the mapping code here */
+			if(pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
+				pdb_set_group_sid(sampass, &map.sid, PDB_SET);
+			} 
+			else {
+				pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid), PDB_SET);
 			}
-		} else {
-			uid = pw->pw_uid;
-			pdb_set_uid(sampass, uid, PDB_SET);
-			gid = pw->pw_gid;
-			pdb_set_gid(sampass, gid, PDB_SET);
-			
-			pdb_set_unix_homedir(sampass, pw->pw_dir, PDB_SET);
-
-			passwd_free(&pw);
-		}
-	}
-
-	if ((pdb_get_init_flags(sampass,PDB_GROUPSID) == PDB_DEFAULT) 
-		&& (pdb_get_init_flags(sampass,PDB_GID) != PDB_DEFAULT)) {
-		GROUP_MAP map;
-		gid = pdb_get_gid(sampass);
-		/* call the mapping code here */
-		if(pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
-			pdb_set_group_sid(sampass, &map.sid, PDB_SET);
-		} 
-		else {
-			pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid), PDB_SET);
 		}
 	}
 
@@ -1964,16 +1919,15 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	if (need_update(sampass, PDB_USERSID)) {
 		fstring sid_string;
 		fstring dom_sid_string;
-		const DOM_SID *user_sid = pdb_get_user_sid(sampass);
+		const DOM_SID *user_sid;
+		user_sid = pdb_get_user_sid(sampass);
 		
 		if (ldap_state->use_ntsid) {
 			make_ldap_mod(ldap_state->ldap_struct, existing, mods,
 				      "ntSid", sid_to_string(sid_string, user_sid));
 		} else {
 			if (!sid_peek_check_rid(get_global_sam_sid(), user_sid, &rid)) {
-				DEBUG(1, ("User's SID (%s) is not for this domain (%s), cannot add to LDAP!\n", 
-					  sid_to_string(sid_string, user_sid), 
-					  sid_to_string(dom_sid_string, get_global_sam_sid())));
+				DEBUG(1, ("User's SID (%s) is not for this domain (%s), cannot add to LDAP!\n", sid_to_string(sid_string, user_sid), sid_to_string(dom_sid_string, get_global_sam_sid())));
 				return False;
 			}
 			slprintf(temp, sizeof(temp) - 1, "%i", rid);
@@ -1987,24 +1941,10 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	   'free' to hang off the unix primary group makes life easier */
 
 	if (need_update(sampass, PDB_GROUPSID)) {
-		fstring sid_string;
-		fstring dom_sid_string;
-		const DOM_SID *group_sid = pdb_get_group_sid(sampass);
-		
-		if (ldap_state->use_ntsid) {
-			make_ldap_mod(ldap_state->ldap_struct, existing, mods,
-				      "primaryGroupSid", sid_to_string(sid_string, group_sid));
-		} else {
-			if (!sid_peek_check_rid(get_global_sam_sid(), group_sid, &rid)) {
-				DEBUG(1, ("User's Primary Group SID (%s) is not for this domain (%s), cannot add to LDAP!\n", 
-					  sid_to_string(sid_string, group_sid), 
-					  sid_to_string(dom_sid_string, get_global_sam_sid())));
-				return False;
-			}
-			slprintf(temp, sizeof(temp) - 1, "%i", rid);
-			make_ldap_mod(ldap_state->ldap_struct, existing, mods,
-				      "primaryGroupID", temp);
-		}
+		rid = pdb_get_group_rid(sampass);
+		slprintf(temp, sizeof(temp) - 1, "%i", rid);
+		make_ldap_mod(ldap_state->ldap_struct, existing, mods,
+			      "primaryGroupID", temp);
 	}
 
 	/* displayName, cn, and gecos should all be the same
@@ -2416,8 +2356,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 	{ "lmPassword", "ntPassword", "pwdLastSet", "logonTime", "logoffTime",
 	  "kickoffTime", "pwdCanChange", "pwdMustChange", "acctFlags",
 	  "displayName", "smbHome", "homeDrive", "scriptPath", "profilePath",
-	  "userWorkstations", "primaryGroupID", "primaryGroupSid", "domain", 
-	  "rid", "ntSid", NULL };
+	  "userWorkstations", "primaryGroupID", "domain", "rid", "ntSid", NULL };
 
 	if (!sam_acct) {
 		DEBUG(0, ("sam_acct was NULL!\n"));
@@ -3130,7 +3069,7 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
@@ -3173,7 +3112,7 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 		ldap_state->uri = "ldap://localhost";
 	}
 
-	ldap_state->domain_name = talloc_strdup(pdb_context->mem_ctx, get_global_sam_name());
+	ldap_state->domain_name = talloc_strdup(pdb_context->mem_ctx, lp_workgroup());
 	if (!ldap_state->domain_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3186,9 +3125,6 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 
 	(*pdb_method)->free_private_data = free_private_data;
 
-	/* setup random, for our backoffs */
-	sys_srandom(sys_getpid() ^ time(NULL));
-
 	return NT_STATUS_OK;
 }
 
@@ -3197,7 +3133,7 @@ static NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
 
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam(pdb_context, pdb_method, location))) {
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam_common(pdb_context, pdb_method, location))) {
 		return nt_status;
 	}
 
@@ -3229,50 +3165,54 @@ static NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
-	uint32 low_winbind_uid, high_winbind_uid;
-	uint32 low_winbind_gid, high_winbind_gid;
+	uint32 low_idmap_uid, high_idmap_uid;
+	uint32 low_idmap_gid, high_idmap_gid;
 
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam(pdb_context, pdb_method, location))) {
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam_common(pdb_context, pdb_method, location))) {
 		return nt_status;
 	}
 
-	(*pdb_method)->name = "ldapsam_nua";
+	(*pdb_method)->name = "ldapsam";
 
 	ldap_state = (*pdb_method)->private_data;
 	
 	ldap_state->permit_non_unix_accounts = True;
 
 	/* We know these uids can't turn up as allogorithmic RIDs */
-	if (!lp_winbind_uid(&low_winbind_uid, &high_winbind_uid)) {
-		DEBUG(0, ("cannot use ldapsam_nua without 'winbind uid' range in smb.conf!\n"));
+	if (!lp_idmap_uid(&low_idmap_uid, &high_idmap_uid)) {
+		DEBUG(0, ("cannot use ldapsam_nua without 'idmap uid' range in smb.conf!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* We know these gids can't turn up as allogorithmic RIDs */
-	if (!lp_winbind_gid(&low_winbind_gid, &high_winbind_gid)) {
-		DEBUG(0, ("cannot use ldapsam_nua without 'winbind gid' range in smb.conf!\n"));
+	if (!lp_idmap_gid(&low_idmap_gid, &high_idmap_gid)) {
+		DEBUG(0, ("cannot use ldapsam_nua without 'wibnind gid' range in smb.conf!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ldap_state->low_allocated_user_rid=fallback_pdb_uid_to_user_rid(low_winbind_uid);
+	ldap_state->low_allocated_user_rid=fallback_pdb_uid_to_user_rid(low_idmap_uid);
 
-	ldap_state->high_allocated_user_rid=fallback_pdb_uid_to_user_rid(high_winbind_uid);
+	ldap_state->high_allocated_user_rid=fallback_pdb_uid_to_user_rid(high_idmap_uid);
 
-	ldap_state->low_allocated_group_rid=pdb_gid_to_group_rid(low_winbind_gid);
+	ldap_state->low_allocated_group_rid=pdb_gid_to_group_rid(low_idmap_gid);
 
-	ldap_state->high_allocated_group_rid=pdb_gid_to_group_rid(high_winbind_gid);
+	ldap_state->high_allocated_group_rid=pdb_gid_to_group_rid(high_idmap_gid);
 
 	return NT_STATUS_OK;
 }
 
 NTSTATUS pdb_ldap_init(void)
 {
-	smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam", pdb_init_ldapsam);
-	smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam_compat", pdb_init_ldapsam_compat);
-	smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam_nua", pdb_init_ldapsam_nua);
+	NTSTATUS nt_status;
+	if (!NT_STATUS_IS_OK(nt_status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam", pdb_init_ldapsam)))
+		return nt_status;
+
+	if (!NT_STATUS_IS_OK(nt_status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam_compat", pdb_init_ldapsam_compat)))
+		return nt_status;
+
 	return NT_STATUS_OK;
 }

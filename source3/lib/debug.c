@@ -154,6 +154,7 @@ static const char *default_classname_table[] = {
 	"auth",              /* DBGC_AUTH         */
 	"winbind",           /* DBGC_WINBIND      */
 	"vfs",		     /* DBGC_VFS	  */
+	"idmap",	     /* DBGC_IDMAP	  */
 	NULL
 };
 

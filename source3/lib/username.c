@@ -339,7 +339,7 @@ static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL
  		goto err;
  	}
 
-	if (!lp_winbind_gid(&gid_low, &gid_high)) {
+	if (!lp_idmap_gid(&gid_low, &gid_high)) {
 		DEBUG(4, ("winbind gid range not configured, therefore %s cannot be a winbind group\n", gname));
  		goto err;
 	}

@@ -2214,40 +2214,181 @@ static int process_command_string(char *cmd)
 	return rc;
 }	
 
-/****************************************************************************
-handle completion of commands for readline
-****************************************************************************/
-static char **completion_fn(char *text, int start, int end)
-{
 #define MAX_COMPLETIONS 100
+
+typedef struct {
+	pstring dirmask;
 	char **matches;
-	int i, count=0;
+	int count, samelen;
+	const char *text;
+	int len;
+} completion_remote_t;
 
-	/* for words not at the start of the line fallback to filename completion */
-	if (start) return NULL;
+static void completion_remote_filter(file_info *f, const char *mask, void *state)
+{
+	completion_remote_t *info = (completion_remote_t *)state;
 
-	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
-	if (!matches) return NULL;
+	if ((info->count < MAX_COMPLETIONS - 1) && (strncmp(info->text, f->name, info->len) == 0) && (strcmp(f->name, ".") != 0) && (strcmp(f->name, "..") != 0)) {
+		if ((info->dirmask[0] == 0) && !(f->mode & aDIR))
+			info->matches[info->count] = strdup(f->name);
+		else {
+			pstring tmp;
 
-	matches[count++] = strdup(text);
-	if (!matches[0]) return NULL;
-
-	for (i=0;commands[i].fn && count < MAX_COMPLETIONS-1;i++) {
-		if (strncmp(text, commands[i].name, strlen(text)) == 0) {
-			matches[count] = strdup(commands[i].name);
-			if (!matches[count]) return NULL;
-			count++;
+			if (info->dirmask[0] != 0)
+				pstrcpy(tmp, info->dirmask);
+			else
+				tmp[0] = 0;
+			pstrcat(tmp, f->name);
+			if (f->mode & aDIR)
+				pstrcat(tmp, "/");
+			info->matches[info->count] = strdup(tmp);
 		}
-	}
+		if (info->matches[info->count] == NULL)
+			return;
+		if (f->mode & aDIR)
+			smb_readline_ca_char(0);
 
-	if (count == 2) {
-		SAFE_FREE(matches[0]);
-		matches[0] = strdup(matches[1]);
+		if (info->count == 1)
+			info->samelen = strlen(info->matches[info->count]);
+		else
+			while (strncmp(info->matches[info->count], info->matches[info->count-1], info->samelen) != 0)
+				info->samelen--;
+		info->count++;
 	}
-	matches[count] = NULL;
-	return matches;
 }
 
+static char **remote_completion(const char *text, int len)
+{
+	pstring dirmask;
+	int i;
+	completion_remote_t info = { "", NULL, 1, len, text, len };
+
+	if (len >= PATH_MAX)
+		return(NULL);
+
+	info.matches = (char **)malloc(sizeof(info.matches[0])*MAX_COMPLETIONS);
+	if (!info.matches) return NULL;
+	info.matches[0] = NULL;
+
+	for (i = len-1; i >= 0; i--)
+		if ((text[i] == '/') || (text[i] == '\\'))
+			break;
+	info.text = text+i+1;
+	info.samelen = info.len = len-i-1;
+
+	if (i > 0) {
+		strncpy(info.dirmask, text, i+1);
+		info.dirmask[i+1] = 0;
+		snprintf(dirmask, sizeof(dirmask), "%s%*s*", cur_dir, i-1, text);
+	} else
+		snprintf(dirmask, sizeof(dirmask), "%s*", cur_dir);
+
+	if (cli_list(cli, dirmask, aDIR | aSYSTEM | aHIDDEN, completion_remote_filter, &info) < 0)
+		goto cleanup;
+
+	if (info.count == 2)
+		info.matches[0] = strdup(info.matches[1]);
+	else {
+		info.matches[0] = malloc(info.samelen+1);
+		if (!info.matches[0])
+			goto cleanup;
+		strncpy(info.matches[0], info.matches[1], info.samelen);
+		info.matches[0][info.samelen] = 0;
+	}
+	info.matches[info.count] = NULL;
+	return info.matches;
+
+cleanup:
+	for (i = 0; i < info.count; i++)
+		free(info.matches[i]);
+	free(info.matches);
+	return NULL;
+}
+
+static char **completion_fn(const char *text, int start, int end)
+{
+	smb_readline_ca_char(' ');
+
+	if (start) {
+		const char *buf, *sp;
+		int i;
+		char compl_type;
+
+		buf = smb_readline_get_line_buffer();
+		if (buf == NULL)
+			return NULL;
+		
+		sp = strchr(buf, ' ');
+		if (sp == NULL)
+			return NULL;
+		
+		for (i = 0; commands[i].name; i++)
+			if ((strncmp(commands[i].name, text, sp - buf) == 0) && (commands[i].name[sp - buf] == 0))
+				break;
+		if (commands[i].name == NULL)
+			return NULL;
+
+		while (*sp == ' ')
+			sp++;
+
+		if (sp == (buf + start))
+			compl_type = commands[i].compl_args[0];
+		else
+			compl_type = commands[i].compl_args[1];
+
+		if (compl_type == COMPL_REMOTE)
+			return remote_completion(text, end - start);
+		else /* fall back to local filename completion */
+			return NULL;
+	} else {
+		char **matches;
+		int i, len, samelen, count=1;
+
+		matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+		if (!matches) return NULL;
+		matches[0] = NULL;
+
+		len = strlen(text);
+		for (i=0;commands[i].fn && count < MAX_COMPLETIONS-1;i++) {
+			if (strncmp(text, commands[i].name, len) == 0) {
+				matches[count] = strdup(commands[i].name);
+				if (!matches[count])
+					goto cleanup;
+				if (count == 1)
+					samelen = strlen(matches[count]);
+				else
+					while (strncmp(matches[count], matches[count-1], samelen) != 0)
+						samelen--;
+				count++;
+			}
+		}
+
+		switch (count) {
+		case 0:	/* should never happen */
+		case 1:
+			goto cleanup;
+		case 2:
+			matches[0] = strdup(matches[1]);
+			break;
+		default:
+			matches[0] = malloc(samelen+1);
+			if (!matches[0])
+				goto cleanup;
+			strncpy(matches[0], matches[1], samelen);
+			matches[0][samelen] = 0;
+		}
+		matches[count] = NULL;
+		return matches;
+
+cleanup:
+		while (i >= 0) {
+			free(matches[i]);
+			i--;
+		}
+		free(matches);
+		return NULL;
+	}
+}
 
 /****************************************************************************
 make sure we swallow keepalives during idle time

@@ -100,7 +100,12 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	
 	ret = smb_xmalloc(sizeof(*ret));
 	ZERO_STRUCTP(ret);
-	switch (lp_security()) {
+	switch (lp_security()) { /* winbind pdc disabled until ready
+	if (!strcmp(domain->name, lp_workgroup()) && (lp_security() == SEC_USER)) {
+		extern struct winbindd_methods passdb_methods;
+		ret->backend = &passdb_methods;
+
+	} else switch (lp_security()) { */
 #ifdef HAVE_ADS
 	case SEC_ADS: {
 		extern struct winbindd_methods ads_methods;

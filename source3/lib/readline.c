@@ -116,6 +116,29 @@ char *smb_readline(char *prompt, void (*callback)(void),
 }
 
 /****************************************************************************
+ * return line buffer text
+ ****************************************************************************/
+const char *smb_readline_get_line_buffer(void)
+{
+#if defined(HAVE_LIBREADLINE)
+	return rl_line_buffer;
+#else
+	return NULL;
+#endif
+}
+
+
+/****************************************************************************
+ * set completion append character
+ ***************************************************************************/
+void smb_readline_ca_char(char c)
+{
+#if defined(HAVE_LIBREADLINE)
+	rl_completion_append_character = c;
+#endif
+}
+
+/****************************************************************************
 history
 ****************************************************************************/
 int cmd_history(void)
@@ -135,3 +158,4 @@ int cmd_history(void)
 
 	return 0;
 }
+

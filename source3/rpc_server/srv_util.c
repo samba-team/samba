@@ -112,7 +112,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	*prids=NULL;
 	*numgroups=0;
 
-	winbind_groups_exist = lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
+	winbind_groups_exist = lp_idmap_gid(&winbind_gid_low, &winbind_gid_high);
 
 
 	DEBUG(10,("get_alias_user_groups: looking if SID %s is a member of groups in the SID domain %s\n", 
@@ -129,7 +129,12 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 
 	fstrcpy(user_name, pdb_get_username(sam_pass));
 	grid=pdb_get_group_rid(sam_pass);
-	gid=pdb_get_gid(sam_pass);
+	if (NT_STATUS_IS_ERR(sid_to_gid(pdb_get_group_sid(sam_pass), &gid))) {
+		/* this should never happen */
+		DEBUG(2,("get_alias_user_groups: sid_to_gid failed!\n"));
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	become_root();
 	/* on some systems this must run as root */

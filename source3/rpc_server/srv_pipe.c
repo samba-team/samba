@@ -472,16 +472,10 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
-	if (!IS_SAM_UNIX_USER(server_info->sam_account)) {
-		DEBUG(0,("Attempted authenticated pipe with invalid user.  No uid/gid in SAM_ACCOUNT\n"));
-		free_server_info(&server_info);
-		return False;
-	}
-	
 	memcpy(p->session_key, server_info->session_key, sizeof(p->session_key));
 
-	p->pipe_user.uid = pdb_get_uid(server_info->sam_account);
-	p->pipe_user.gid = pdb_get_gid(server_info->sam_account);
+	p->pipe_user.uid = server_info->uid;
+	p->pipe_user.gid = server_info->gid;
 	
 	p->pipe_user.ngroups = server_info->n_groups;
 	if (p->pipe_user.ngroups) {
