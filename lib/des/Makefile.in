@@ -30,35 +30,13 @@ LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
 LIB = $(LIBNAME).$(LIBEXT)
 
-SOURCES = cfb_enc.c \
-          cbc_enc.c \
-          fcrypt.c \
-          key_par.c \
-          ofb_enc.c \
-          pcbc_enc.c \
-          qud_cksm.c \
-          read_pwd.c \
-          rnd_keys.c \
-          str2key.c \
-          cbc_cksm.c \
-          ecb_enc.c \
-          set_key.c
+# Generated with lorder *.o | tsort | xargs echo
 
-OBJECTS = cfb_enc.o \
-          cbc_enc.o \
-          fcrypt.o \
-          key_par.o \
-          ofb_enc.o \
-          pcbc_enc.o \
-          qud_cksm.o \
-          read_pwd.o \
-          rnd_keys.o \
-          str2key.o \
-          cbc_cksm.o \
-          ecb_enc.o \
-          set_key.o
+LIBSRC = cbc3_enc.c cbc_enc.c cfb64ede.c cfb64enc.c cfb_enc.c ecb3_enc.c ede_enc.c fcrypt.c key_par.c ncbc_enc.c ofb64ede.c ofb64enc.c ofb_enc.c pcbc_enc.c qud_cksm.c read_pwd.c rnd_keys.c str2key.c cbc_cksm.c ecb_enc.c set_key.c
 
-all: $(LIB)
+LIBOBJ = cbc3_enc.o cbc_enc.o cfb64ede.o cfb64enc.o cfb_enc.o ecb3_enc.o ede_enc.o fcrypt.o key_par.o ncbc_enc.o ofb64ede.o ofb64enc.o ofb_enc.o pcbc_enc.o qud_cksm.o read_pwd.o rnd_keys.o str2key.o cbc_cksm.o ecb_enc.o set_key.o
+
+all: $(LIB) destest
 
 Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
@@ -66,16 +44,20 @@ Wall:
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $(PICFLAGS) $<
 
+destest.o: destest.c
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+
 install: all
-	$(MKDIRHIER) $(prefix)/lib
-	$(INSTALL_DATA) $(LIB) $(libdir)
+	$(MKDIRHIER) $(libdir)
+	$(INSTALL) -m 0555 $(LIB) $(libdir)
 
 uninstall:
 
-TAGS: $(SOURCES)
-	etags $(SOURCES)
+TAGS: $(LIBSRC)
+	etags $(LIBSRC)
 
-check:
+check: ./destest
+	./destest
 
 clean:
 	rm -f $(LIB) *.o *.a
@@ -95,13 +77,16 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-$(LIBNAME).a: $(OBJECTS)
+$(LIBNAME).a: $(LIBOBJ)
 	rm -f $@
-	$(AR) cr $@ $(OBJECTS)
+	$(AR) cr $@ $(LIBOBJ)
 	-$(RANLIB) $@
 
-$(LIBNAME).$(SHLIBEXT): $(OBJECTS)
+$(LIBNAME).$(SHLIBEXT): $(LIBOBJ)
 	rm -f $@
-	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS)
+	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(LIBOBJ)
 
-$(OBJECTS): ../../config.h
+destest: destest.o
+	$(CC) $(CFLAGS) destest.o -o $@ -L. -ldes
+
+$(LIBOBJ): ../../config.h

@@ -1,6 +1,6 @@
 #!/usr/local/bin/perl
 # Copyright (C) 1993 Eric Young
-# des.pl - eric young 22/11/1991 eay@psych.psy.uq.oz.au
+# des.pl - eric young 22/11/1991 eay@mincom.oz.au or eay@psych.psy.uq.oz.au
 # eay - 92/08/31 - I think I have fixed all problems for 64bit
 # versions of perl but I could be wrong since I have not tested it yet :-).
 #
@@ -452,7 +452,7 @@ sub doFP
 sub main'des_ecb_encrypt
 	{
 	local(*ks,$encrypt,$in)=@_;
-	local($l,$r,$inc,$start,$end,$i,$t,$u,@input);
+	local($l,$r,$i,$t,$u,@input);
 	
 	@input=unpack("C8",$in);
 	# Get the bytes in the order we want.

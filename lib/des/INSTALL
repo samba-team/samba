@@ -5,10 +5,10 @@ If your C library does not support the times(3) function, change the
 #undef TIMES in speed.c
 If it does, check the HZ value for the times(3) function.
 If your system does not define CLK_TCK it will be assumed to
-be 60.
+be 100.0.
 
-If possible use gcc v 2.2.2
-Turn on the maximum optimising
+If possible use gcc v 2.7.?
+Turn on the maximum optimising (normally '-O3 -fomit-frame-pointer' for gcc)
 
 type 'make'
 
@@ -46,8 +46,12 @@ limitations of DOS compilers :-(.
 For Turbo C v 2.0, make sure to define MSDOS, in the relevant menu.
 
 There is an alternative version of the D_ENCRYPT macro that can be
-enabled with the -DALT_ECB option in the makefile.  This alternative
+enabled with the -DDES_USE_PTR option in the makefile.  This alternative
 macro can make a +-%20 speed difference to the DES encryption speed,
 depending on the compiler/CPU combinations.
 It has its greatest effect on Sparc machines when using the sun compiler.
-If in doubt, try enable/disable it and running speed.
+If in doubt, try enable/disable it and running speed.  It does not
+seem to affect gcc much.
+
+When building for glibc, ignore all of the above and just unpack into
+glibc-1.??/des and then gmake as per normal.

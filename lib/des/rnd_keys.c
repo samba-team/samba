@@ -1,9 +1,86 @@
-#include "des_locl.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#include "protos.h"
 
 RCSID("$Id$");
+#endif
 
+#include <des.h>
+
+#include <sys/bitypes.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include <signal.h>
+#include <fcntl.h>
+
+/*
+ * Generate "random" data by checksumming a file.
+ *
+ * Returns -1 if there were any problems with permissions or I/O
+ * errors.
+ */
+static
+int
+sumFile (const char *name, int len, void *sum_)
+{
+  int32_t *sum = sum_;
+  int32_t buf[1024*2];
+  int fd, i;
+
+  fd = open (name, 0);
+  if (fd < 0)
+    return -1;
+
+  while (len > 0)
+    {
+      int n = read(fd, buf, sizeof(buf));
+      if (n < 0)
+	{
+	  close(fd);
+	  return n;
+	}
+      for (i = 0; i < (n/sizeof(buf[0])); i++)
+	{
+	  sum[0] += buf[i];
+	  i++;
+	  sum[1] += buf[i];
+	}
+      len -= n;
+    }
+  close (fd);
+  return 0;
+}
+
+#if 0
+static
+int
+md5sumFile (const char *name, int len, int32_t sum[4])
+{
+  int32_t buf[1024*2];
+  int fd, cnt;
+  struct md5 md5;
+
+  fd = open (name, 0);
+  if (fd < 0)
+    return -1;
+
+  md5_init(&md5);
+  while (len > 0)
+    {
+      int n = read(fd, buf, sizeof(buf));
+      if (n < 0)
+	{
+	  close(fd);
+	  return n;
+	}
+      md5_update(&md5, buf, n);
+      len -= n;
+    }
+  md5_finito(&md5, (unsigned char *)sum);
+  close (fd);
+  return 0;
+}
+#endif
 
 /*
  * Create a sequence of random 64 bit blocks.
@@ -31,18 +108,15 @@ sigALRM(int sig)
     if (igdata < gsize)
 	gdata[igdata++] ^= counter & 0xff;
 
-#ifdef VOID_RETSIGTYPE
-    return;
-#else
-    return (RETSIGTYPE)0;
-#endif
+    SIGRETURN(0);
 }
 
 /*
  * Generate size bytes of "random" data using timed interrupts.
- * This is a slooow routine but it's meant to be slow.
+ * It takes about 40ms/byte random data.
  * It's not neccessary to be root to run it.
  */
+static
 void
 des_rand_data(unsigned char *data, int size)
 {
@@ -60,6 +134,10 @@ des_rand_data(unsigned char *data, int size)
       if (fd != -1)
 	  close(fd);
     }
+
+    /* Paranoia? Initialize data from /dev/mem if we can read it. */
+    if (size >= 8)
+      sumFile("/dev/mem", (1024*1024*2), data);
 
     gdata = data;
     gsize = size;
@@ -137,7 +215,7 @@ do_initialize(void)
 {
     des_cblock default_seed;
     do {
-	des_rand_data((unsigned char*)&default_seed, sizeof(default_seed));
+	des_generate_random_block(&default_seed);
 	des_set_odd_parity(&default_seed);
     } while (des_is_weak_key(&default_seed));
     des_init_random_number_generator(&default_seed);
@@ -205,16 +283,15 @@ void
 des_init_random_number_generator(des_cblock *seed)
 {
     struct timeval now;
-    static u_int32_t uniq[2];
+    des_cblock uniq;
     des_cblock new_key;
 
     gettimeofday(&now, (struct timezone *)0);
-    if (uniq[0] == 0 && uniq[1] == 0)
-	des_rand_data((unsigned char *)uniq, sizeof(uniq));
+    des_generate_random_block(&uniq);
 
     /* Pick a unique random key from the shared sequence. */
     des_set_random_generator_seed(seed);
-    set_sequence_number((unsigned char *)uniq);
+    set_sequence_number((unsigned char *)&uniq);
     des_new_random_key(&new_key);
 
     /* Select a new nonshared sequence, */
@@ -227,10 +304,10 @@ des_init_random_number_generator(des_cblock *seed)
 }
 
 /* This is for backwards compatibility. */
-int
-des_random_key(unsigned char *ret)
+void
+des_random_key(des_cblock ret)
 {
-    return des_new_random_key((des_cblock *) ret);
+    des_new_random_key((des_cblock *)ret);
 }
 
 #ifdef TESTRUN
@@ -242,7 +319,8 @@ main()
 
     while (1)
         {
-            des_rand_data(data, 8);
+	    if (sumFile("/dev/mem", (1024*1024*8), data) != 0)
+	      { perror("sumFile"); exit(1); }
             for (i = 0; i < 8; i++)
                 printf("%02x", data[i]);
             printf("\n");
@@ -254,7 +332,7 @@ main()
 int
 main()
 {
-    unsigned char data[8];
+    des_cblock data;
     int i;
 
     while (1)

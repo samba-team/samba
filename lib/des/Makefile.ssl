@@ -1,0 +1,187 @@
+#
+# SSLeay/crypto/des/Makefile
+#
+
+DIR=	des
+TOP=	../..
+CC=	cc
+INCLUDES=
+CFLAG=-g
+INSTALLTOP=/usr/local/ssl
+MAKE=		make -f Makefile.ssl
+MAKEDEPEND=	makedepend -fMakefile.ssl
+MAKEFILE=	Makefile.ssl
+
+CFLAGS= $(INCLUDES) $(CFLAG)
+
+GENERAL=Makefile
+TEST=destest.c
+APPS=
+
+LIB=$(TOP)/libcrypto.a
+LIBSRC=	cbc3_enc.c cbc_cksm.c cbc_enc.c  cfb64enc.c cfb_enc.c  \
+	ecb3_enc.c ecb_enc.c  ede_enc.c  enc_read.c enc_writ.c \
+	fcrypt.c   ncbc_enc.c ofb64enc.c ofb_enc.c  pcbc_enc.c \
+	qud_cksm.c rand_key.c read_pwd.c rpc_enc.c  set_key.c  \
+	str2key.c  cfb64ede.c ofb64ede.c supp.c
+
+LIBOBJ=	cbc3_enc.o cbc_cksm.o cbc_enc.o  cfb64enc.o cfb_enc.o  \
+	ecb3_enc.o ecb_enc.o  ede_enc.o  enc_read.o enc_writ.o \
+	fcrypt.o   ncbc_enc.o ofb64enc.o ofb_enc.o  pcbc_enc.o \
+	qud_cksm.o rand_key.o read_pwd.o rpc_enc.o  set_key.o  \
+	str2key.o  cfb64ede.o ofb64ede.o supp.o
+
+SRC= $(LIBSRC)
+
+EXHEADER= des.h
+HEADER=	des_locl.h rpc_des.h podd.h sk.h spr.h version.h $(EXHEADER)
+
+ALL=    $(GENERAL) $(SRC) $(HEADER)
+
+top:
+	(cd ../..; $(MAKE) DIRS=crypto SDIRS=$(DIR) sub_all)
+
+all:	lib
+
+lib:	$(LIBOBJ)
+	ar r $(LIB) $(LIBOBJ)
+	$(TOP)/util/ranlib.sh $(LIB)
+	@touch lib
+
+links:
+	/bin/rm -f Makefile
+	ln -s Makefile.ssl Makefile
+	/bin/rm -f des.doc
+	ln -s ../../doc/des.doc .
+	$(TOP)/util/mklink.sh ../../include $(EXHEADER)
+	$(TOP)/util/mklink.sh ../../test $(TEST)
+	$(TOP)/util/mklink.sh ../../apps $(APPS)
+
+install: installs
+
+installs:
+	@for i in $(EXHEADER) ; \
+	do  \
+	(cp $$i $(INSTALLTOP)/include/$$i; \
+	chmod 644 $(INSTALLTOP)/include/$$i ) \
+	done;
+
+tags:
+	ctags $(SRC)
+
+tests:
+
+lint:
+	lint -DLINT -DPROTO $(INCLUDES) $(SRC)>fluff
+
+depend:
+	$(MAKEDEPEND) $(INCLUDES) $(PROGS) $(LIBSRC)
+
+dclean:
+	sed -e '/^# DO NOT DELETE THIS LINE/ q' $(MAKEFILE) >Makefile.new
+	mv -f Makefile.new $(MAKEFILE)
+
+clean:
+	/bin/rm -f *.o *.obj lib tags core .nfs* *.old *.bak fluff
+
+errors:
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+cbc3_enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+cbc3_enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+cbc3_enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+cbc3_enc.o: /usr/include/sys/unistd.h des.h
+cbc_cksm.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+cbc_cksm.o: /usr/include/stdlib.h /usr/include/unistd.h
+cbc_cksm.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+cbc_cksm.o: /usr/include/sys/unistd.h des.h
+cbc_enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+cbc_enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+cbc_enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+cbc_enc.o: /usr/include/sys/unistd.h des.h
+cfb64enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+cfb64enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+cfb64enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+cfb64enc.o: /usr/include/sys/unistd.h des.h
+cfb_enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+cfb_enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+cfb_enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+cfb_enc.o: /usr/include/sys/unistd.h des.h
+ecb3_enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+ecb3_enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+ecb3_enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+ecb3_enc.o: /usr/include/sys/unistd.h des.h
+ecb_enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+ecb_enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+ecb_enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+ecb_enc.o: /usr/include/sys/unistd.h des.h spr.h
+ede_enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+ede_enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+ede_enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+ede_enc.o: /usr/include/sys/unistd.h des.h
+enc_read.o: /usr/include/stdio.h /usr/include/sys/feature_tests.h
+enc_read.o: /usr/include/errno.h /usr/include/sys/errno.h des_locl.h
+enc_read.o: /usr/include/stdlib.h /usr/include/unistd.h
+enc_read.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+enc_read.o: /usr/include/sys/unistd.h des.h
+enc_writ.o: /usr/include/errno.h /usr/include/sys/errno.h /usr/include/time.h
+enc_writ.o: /usr/include/sys/feature_tests.h des_locl.h /usr/include/stdio.h
+enc_writ.o: /usr/include/stdlib.h /usr/include/unistd.h
+enc_writ.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+enc_writ.o: /usr/include/sys/unistd.h des.h
+fcrypt.o: /usr/include/stdio.h /usr/include/sys/feature_tests.h
+ncbc_enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+ncbc_enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+ncbc_enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+ncbc_enc.o: /usr/include/sys/unistd.h des.h
+ofb64enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+ofb64enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+ofb64enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+ofb64enc.o: /usr/include/sys/unistd.h des.h
+ofb_enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+ofb_enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+ofb_enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+ofb_enc.o: /usr/include/sys/unistd.h des.h
+pcbc_enc.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+pcbc_enc.o: /usr/include/stdlib.h /usr/include/unistd.h
+pcbc_enc.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+pcbc_enc.o: /usr/include/sys/unistd.h des.h
+qud_cksm.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+qud_cksm.o: /usr/include/stdlib.h /usr/include/unistd.h
+qud_cksm.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+qud_cksm.o: /usr/include/sys/unistd.h des.h
+rand_key.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+rand_key.o: /usr/include/stdlib.h /usr/include/unistd.h
+rand_key.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+rand_key.o: /usr/include/sys/unistd.h des.h /usr/include/time.h
+read_pwd.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+read_pwd.o: /usr/include/stdlib.h /usr/include/unistd.h
+read_pwd.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+read_pwd.o: /usr/include/sys/unistd.h des.h /usr/include/signal.h
+read_pwd.o: /usr/include/sys/signal.h /usr/include/string.h
+read_pwd.o: /usr/include/setjmp.h /usr/include/sys/ioctl.h
+rpc_enc.o: rpc_des.h des_locl.h /usr/include/stdio.h
+rpc_enc.o: /usr/include/sys/feature_tests.h /usr/include/stdlib.h
+rpc_enc.o: /usr/include/unistd.h /usr/include/sys/types.h
+rpc_enc.o: /usr/include/sys/machtypes.h /usr/include/sys/unistd.h des.h
+rpc_enc.o: version.h
+set_key.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+set_key.o: /usr/include/stdlib.h /usr/include/unistd.h
+set_key.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+set_key.o: /usr/include/sys/unistd.h des.h podd.h sk.h
+str2key.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+str2key.o: /usr/include/stdlib.h /usr/include/unistd.h
+str2key.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+str2key.o: /usr/include/sys/unistd.h des.h
+cfb64ede.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+cfb64ede.o: /usr/include/stdlib.h /usr/include/unistd.h
+cfb64ede.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+cfb64ede.o: /usr/include/sys/unistd.h des.h
+ofb64ede.o: des_locl.h /usr/include/stdio.h /usr/include/sys/feature_tests.h
+ofb64ede.o: /usr/include/stdlib.h /usr/include/unistd.h
+ofb64ede.o: /usr/include/sys/types.h /usr/include/sys/machtypes.h
+ofb64ede.o: /usr/include/sys/unistd.h des.h
+supp.o: /usr/include/stdio.h /usr/include/sys/feature_tests.h des_locl.h
+supp.o: /usr/include/stdlib.h /usr/include/unistd.h /usr/include/sys/types.h
+supp.o: /usr/include/sys/machtypes.h /usr/include/sys/unistd.h des.h
