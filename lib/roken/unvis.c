@@ -39,6 +39,9 @@
 RCSID("$Id$");
 #endif
 #include <roken.h>
+#ifndef _DIAGASSERT
+#define _DIAGASSERT(X)
+#endif
 #else
 #include <sys/cdefs.h>
 #if defined(LIBC_SCCS) && !defined(lint)
