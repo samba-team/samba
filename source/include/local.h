@@ -186,4 +186,7 @@
 #define SESSION_TEMPLATE "smb/%d"
 #endif
 
+/* the maximum age in seconds of a password. Should be a lp_ parameter */
+#define MAX_PASSWORD_AGE (21*24*60*60)
+
 #endif

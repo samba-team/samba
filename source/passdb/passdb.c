@@ -79,11 +79,11 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
 	
 	ZERO_STRUCTP(user);
 	user->logon_time            = (time_t)0;
-	user->logoff_time           = (time_t)-1;
-	user->kickoff_time          = (time_t)-1;
-	user->pass_last_set_time    = (time_t)-1;
-	user->pass_can_change_time  = (time_t)-1;
-	user->pass_must_change_time = (time_t)-1;
+	user->logoff_time           = (time_t)0;
+	user->kickoff_time          = (time_t)0;
+	user->pass_last_set_time    = (time_t)0;
+	user->pass_can_change_time  = (time_t)0;
+	user->pass_must_change_time = (time_t)0;
 
 	user->unknown_3 = 0x00ffffff; 	/* don't know */
 	user->logon_divs = 168; 	/* hours per week */
