@@ -55,7 +55,6 @@ docs/docbook/devdoc/* - most of these docs are outdated and need updates...
 docs/docbook/projdoc/Diagnosis.sgml - Needs extension
 
 Documentation for following smb.conf.5 parameters does not exist:
-set primary group script // logon
 -valid                   // misc
 acl compatibility        // protocol
 client signing           // protocol
