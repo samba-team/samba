@@ -63,6 +63,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_CURSES_H
+#include <curses.h>
+#endif
+
 #include <termios.h>
 
 #ifdef HAVE_FCNTL_H
@@ -75,10 +79,6 @@
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
-#endif
-
-#ifdef HAVE_CURSES_H
-#include <curses.h>
 #endif
 
 #ifdef HAVE_SYS_TYPES_H
