@@ -317,6 +317,8 @@ static void cacl_set(struct cli_state *cli, char *filename,
 		return;
 	}
 
+	/* the desired access below is the only one I could find that works with
+	   NT4, W2KP and Samba */
 	fnum = cli_nt_create(cli, filename, MAXIMUM_ALLOWED_ACCESS | 0x60000);
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
