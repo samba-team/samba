@@ -53,6 +53,13 @@
 					<xsl:text>&gt;</xsl:text>
 				</xsl:when>
 			</xsl:choose>
+			<xsl:choose>
+				<xsl:when test="contrib != ''">
+					<xsl:text> (</xsl:text>
+						<xsl:value-of select="contrib"/>
+					<xsl:text>) </xsl:text>
+					</xsl:when>
+			</xsl:choose>
 		</xsl:element>
 	</xsl:element>
 </xsl:template>
