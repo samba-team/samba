@@ -567,7 +567,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 	
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
-		DEBUG(0,("Can't change directory to %s (%s)\n",
+		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
+			 remote_machine, conn->client_address,
 			 conn->connectpath,strerror(errno)));
 		unbecome_user();
 		yield_connection(conn,
