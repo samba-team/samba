@@ -762,6 +762,10 @@ it() link(bf(username level))(usernamelevel)
 
 it() link(bf(username map))(usernamemap)
 
+it() link(bf(utmp))(utmp)
+
+it() link(bf(utmp directory))(utmpdirectory)
+
 it() link(bf(valid chars))(validchars)
 
 it() link(bf(wins proxy))(winsproxy)
@@ -6356,6 +6360,39 @@ tt(	no username map)
 
   bf(Example:)
 tt(	username map = /usr/local/samba/lib/users.map)
+
+label(utmp)
+dit(bf(utmp (G)))
+
+This boolean parameter is only available if Samba has been configured and compiled
+with the option tt(--with-utmp). If set to True then Samba will attempt
+to add utmp or utmpx records (depending on the UNIX system) whenever a
+connection is made to a Samba server. Sites may use this to record the
+user connecting to a Samba share.
+
+See also the link(bf("utmp directory"))(utmpdirectory) parameter.
+
+  bf(Default:)
+tt(utmp = False)
+
+  bf(Example:)
+tt(utmp = True)
+
+label(utmpdirectory)
+dit(bf(utmp directory(G)))
+
+This parameter is only available if Samba has been configured and compiled
+with the option tt(--with-utmp). It specifies a directory pathname that is
+used to store the utmp or utmpx files (depending on the UNIX system) that
+record user connections to a Samba server. See also the link(bf("utmp"))(utmp)
+parameter. By default this is not set, meaning the system will use whatever
+utmp file the native system is set to use (usually /var/run/utmp on Linux).
+
+  bf(Default:)
+tt(no utmp directory)
+
+  bf(Example:)
+tt(utmp directory = /var/adm/)
 
 label(validchars)
 dit(bf(valid chars (G)))
