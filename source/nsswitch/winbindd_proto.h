@@ -72,6 +72,13 @@ BOOL winbindd_idmap_get_rid_from_gid(gid_t gid, uint32 *group_rid,
 BOOL winbindd_idmap_init(void);
 void winbindd_idmap_dump_status(void);
 
+/*The following definitions come from  nsswitch/winbindd_misc.c  */
+
+enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state
+						 *state);
+enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
+						   *state);
+
 /*The following definitions come from  nsswitch/winbindd_pam.c  */
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) ;
@@ -99,7 +106,8 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state);
 /*The following definitions come from  nsswitch/winbindd_util.c  */
 
 BOOL domain_handles_open(struct winbindd_domain *domain);
-void establish_connections(void) ;
+void winbindd_kill_connections(void);
+void establish_connections(BOOL force_reestablish) ;
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain);
 BOOL get_domain_info(struct winbindd_domain *domain);
 BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
