@@ -347,7 +347,7 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 
 		if (memcmp(&negative_gr_cache_entry, &state->response.data.gr,
 				sizeof(state->response.data.gr)) == 0)
-            return WINBINDD_ERROR;
+			return WINBINDD_ERROR;
 
 		state->response.length += extra_data_len;
 		return WINBINDD_OK;

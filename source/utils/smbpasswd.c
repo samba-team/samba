@@ -560,11 +560,6 @@ static BOOL password_change(const char *remote_machine, char *user_name,
  ******************************************************************/
 static BOOL store_ldap_admin_pw (char* pw)
 {
-	TDB_DATA kbuf, dbuf;
-	pstring fname;
-	pstring key;
-	char *p;
-	
 	if (!pw) 
 		return False;
 
