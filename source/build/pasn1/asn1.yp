@@ -37,7 +37,7 @@ asn1_target:
 ;
 
 asn1_delim: 
-	':' ':' '='
+	delimitter
 ;
 
 asn1_application:
@@ -166,6 +166,9 @@ anytext:  #empty { "" }
     | anytext '(' anytext ')' anytext  { "$_[1]$_[2]$_[3]$_[4]$_[5]" }
 ;
 
+delimitter: DELIMITTER
+;
+
 identifier: IDENTIFIER
 ;
 
@@ -223,6 +226,10 @@ again:
 		if (s/^(\n)//) {
 			$parser->YYData->{LINE}++;
 			goto again;
+		}
+		if (s/^::=//) {
+			$parser->YYData->{LAST_TOKEN} = $1;
+			return('DELIMITTER',$1); 
 		}
 		if (s/^\"(.*?)\"//) {
 			$parser->YYData->{LAST_TOKEN} = $1;
