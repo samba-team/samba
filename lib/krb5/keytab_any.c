@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 2001, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -195,6 +195,51 @@ any_end_seq_get(krb5_context context,
     return ret;
 }
 
+static krb5_error_code
+any_add_entry(krb5_context context,
+	      krb5_keytab id,
+	      krb5_keytab_entry *entry)
+{
+    struct any_data *a = id->data;
+    krb5_error_code ret;
+    while(a != NULL) {
+	ret = krb5_kt_add_entry(context, a->kt, entry);
+	if(ret != 0 && ret != KRB5_KT_NOWRITE) {
+	    krb5_set_error_string(context, "failed to add entry to %s", 
+				  a->name);
+	    return ret;
+	}
+	a = a->next;
+    }
+    return 0;
+}
+
+static krb5_error_code
+any_remove_entry(krb5_context context,
+		 krb5_keytab id,
+		 krb5_keytab_entry *entry)
+{
+    struct any_data *a = id->data;
+    krb5_error_code ret;
+    int found = 0;
+    while(a != NULL) {
+	ret = krb5_kt_remove_entry(context, a->kt, entry);
+	if(ret == 0)
+	    found++;
+	else {
+	    if(ret != KRB5_KT_NOWRITE && ret != KRB5_KT_NOTFOUND) {
+		krb5_set_error_string(context, "failed to remove entry from %s", 
+				      a->name);
+		return ret;
+	    }
+	}
+	a = a->next;
+    }
+    if(!found)
+	return KRB5_KT_NOTFOUND;
+    return 0;
+}
+
 const krb5_kt_ops krb5_any_ops = {
     "ANY",
     any_resolve,
@@ -204,6 +249,6 @@ const krb5_kt_ops krb5_any_ops = {
     any_start_seq_get,
     any_next_entry,
     any_end_seq_get,
-    NULL, /* add_entry */
-    NULL  /* remote_entry */
+    any_add_entry,
+    any_remove_entry
 };
