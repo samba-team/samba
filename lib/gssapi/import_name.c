@@ -78,7 +78,6 @@ import_hostbased_name (OM_uint32 *minor_status,
     char *p;
     char *host;
     char local_hostname[MAXHOSTNAMELEN];
-    struct hostent *hostent;
 
     tmp = malloc (input_name_buffer->length + 1);
     if (tmp == NULL)
@@ -99,10 +98,6 @@ import_hostbased_name (OM_uint32 *minor_status,
 	}
 	host = local_hostname;
     }
-    hostent = gethostbyname (host);
-    if (hostent != NULL)
-	host = hostent->h_name;
-    strlwr (host);
 
     kerr = krb5_sname_to_principal (gssapi_krb5_context,
 				    host,
