@@ -242,6 +242,27 @@ void generate_random_buffer( unsigned char *out, int len, BOOL do_reseed_now)
 	}
 }
 
+
+/*
+  very basic password quality checker
+*/
+static BOOL check_password_quality(const char *s)
+{
+	int has_digit=0, has_capital=0, has_lower=0;
+	while (*s) {
+		if (isdigit(*s)) {
+			has_digit++;
+		} else if (isupper(*s)) {
+			has_capital++;
+		} else if (islower(*s)) {
+			has_lower++;
+		}
+		s++;
+	}
+
+	return has_digit && has_lower && has_capital;
+}
+
 /*******************************************************************
  Use the random number generator to generate a random string.
 ********************************************************************/
@@ -257,11 +278,19 @@ char *generate_random_str(size_t len)
 
 	if (len > sizeof(retstr)-1)
 		len = sizeof(retstr) -1;
-	generate_random_buffer( retstr, len, False);
+
+again:
+	generate_random_buffer(retstr, len, False);
 	for (i = 0; i < len; i++)
-		retstr[i] = c_list[ retstr[i] % (sizeof(c_list)-1) ];
+		retstr[i] = c_list[retstr[i] % (sizeof(c_list)-1) ];
 
 	retstr[i] = '\0';
+
+	/* we need to make sure the random string passes basic quality tests
+	   or it might be rejected by windows as a password */
+	if (len >= 7 && !check_password_quality(retstr)) {
+		goto again;
+	}
 
 	return (char *)retstr;
 }
