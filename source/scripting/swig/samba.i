@@ -29,7 +29,11 @@
 		PyErr_SetString(PyExc_TypeError, "integer expected");
 		return NULL;
 	}
-	$1 = (uint32_t)PyInt_AsLong($input);
+	$1 = (uint32_t)PyLong_AsLong($input);
+}
+
+%typemap(out) uint32 {
+	$1 = PyLong_FromLong($input);
 }
 
 %typemap(out) NTSTATUS {
