@@ -1,3 +1,7 @@
+2003-04-22  Love  <lha@stacken.kth.se>
+
+	* resolve.c: copy NUL too, from janj@wenf.org via openbsd
+	
 2003-04-16  Love  <lha@stacken.kth.se>
 
 	* parse_units.h: remove typedef for units to avoid problems with
