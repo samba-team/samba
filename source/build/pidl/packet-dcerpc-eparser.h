@@ -69,9 +69,9 @@ void ndr_pull_uint8(struct e_ndr_pull *ndr, proto_tree *tree, int hf, guint8 *da
 void ndr_pull_uint16(struct e_ndr_pull *ndr, proto_tree *tree, int hf, guint16 *data);
 void ndr_pull_uint32(struct e_ndr_pull *ndr, proto_tree *tree, int hf, guint32 *data);
 void ndr_pull_advance(struct e_ndr_pull *ndr, int offset);
-void ndr_pull_subcontext_flags_fn(struct e_ndr_pull *ndr, proto_tree *tree,
-				  size_t sub_size, 
-				  void (*fn)(struct e_ndr_pull *, 
+void ndr_pull_subcontext_flags_fn(struct e_ndr_pull *ndr,
+				  proto_tree *tree, size_t sub_size, 
+				  void (*fn)(struct e_ndr_pull *,
 					     proto_tree *tree, int ndr_flags));
 void ndr_pull_subcontext_header(struct e_ndr_pull *ndr, proto_tree *tree,
 				size_t sub_size, struct e_ndr_pull *ndr2);
@@ -82,11 +82,11 @@ void ndr_pull_NTTIME(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gNTTIME *
 void ndr_pull_HYPER_T(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gHYPER_T *data);
 void ndr_pull_int64(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gint64 *data);
 void ndr_pull_uint64(struct e_ndr_pull *ndr, proto_tree *tree, int hf, guint64 *data);
-void ndr_pull_string(struct e_ndr_pull *ndr, proto_tree *tree, int hf);
+void ndr_pull_string(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags);
 void ndr_pull_dom_sid2(struct e_ndr_pull *ndr, proto_tree *tree, int flags);
 
 void ndr_pull_relative(struct e_ndr_pull *ndr, proto_tree *tree,
-		       void (*fn)(struct e_ndr_pull *ndr, 
+		       void (*fn)(struct e_ndr_pull *ndr,
 				  proto_tree *tree, int ndr_flags));
 
 int lsa_dissect_LSA_SECURITY_DESCRIPTOR(tvbuff_t tvb, int offset,
@@ -107,5 +107,8 @@ void ndr_pull_array_uint32(struct e_ndr_pull *ndr, proto_tree *tree, int hf, int
 void ndr_pull_array(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags, 
 		    guint32 n, void (*fn)(struct e_ndr_pull *ndr, 
 					  proto_tree *tree, int ndr_flags));
+
+proto_tree *get_subtree(proto_tree *tree, char *name, struct e_ndr_pull *ndr,
+			gint ett);
 
 #endif /* _packet_dcerpc_eparser_h */
