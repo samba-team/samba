@@ -50,16 +50,6 @@ SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 }
 
 /****************************************************************************
- Utility functions for dealing with extended attributes.
-****************************************************************************/
-
-struct ea_list {
-	struct ea_list *next, *prev;
-	struct ea_struct ea;
-};
-
-static 
-/****************************************************************************
   Send the required number of replies back.
   We assume all fields other than the data fields are
   set correctly for the type of call.
