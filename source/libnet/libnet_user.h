@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    
-   Copyright (C) Stefan Metzmacher	2004
+   Copyright (C) Rafal Szczesniak <mimir@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,22 +18,30 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct libnet_context {
-	TALLOC_CTX *mem_ctx;
 
-	/* here we need:
-	 * a client env context
-	 * a user env context
-	 */
-	struct {
-		const char *account_name;
-		const char *domain_name;
-		const char *password;
-	} user;
+enum libnet_CreateUser_level {
+	LIBNET_CREATE_USER_GENERIC,
+	LIBNET_CREATE_USER_SAMR,
 };
 
-#include "libnet/libnet_passwd.h"
-#include "libnet/libnet_time.h"
-#include "libnet/libnet_rpc.h"
-#include "libnet/libnet_join.h"
-#include "libnet/libnet_user.h"
+
+union libnet_CreateUser {
+	struct {
+		enum libnet_CreateUser_level level;
+
+		struct _libnet_CreateUser_in {
+			const char *user_name;
+			const char *domain_name;
+		} in;
+		
+		struct _libnet_CreateUser_out {
+			const char *error_string;
+		} out;
+	} generic;
+
+	struct {
+		enum libnet_CreateUser_level level;
+		struct _libnet_CreateUser_in in;
+		struct _libnet_CreateUser_out out;
+	} samr;
+};
