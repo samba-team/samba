@@ -31,9 +31,9 @@ popper, etc.)
 include enough backwards compatibility with Kerberos V4
 @end itemize
 
-This initial pre-version is mostly compatible with the M.I.T
+This initial pre-version is mostly compatible with the M.I.T.
 implementation, as well as DCE secd. The library is at least not
-completely different from the M.I.T @code{libkrb5}.
+completely different from the M.I.T. @code{libkrb5}.
 
 @heading Status
 
@@ -66,8 +66,8 @@ a library @file{libkafs} for authenticating to AFS and a program
 @item
 some simple test programs
 @item
-a KDC that supports most things, not including cross-realm and
-user-to-user, optionally, it may also support Kerberos V4 and kaserver,
+a KDC that supports most things; optionally, it may also support
+Kerberos V4 and kaserver,
 @item
 simple programs for distributing databases between a KDC master and
 slaves
@@ -75,7 +75,7 @@ slaves
 a password changing daemon @file{kpasswdd}, library functions for
 changing passwords and a simple client
 @item
-an incredibly simple @file{kdb_edit}
+some kind of administration system
 @item
 Kerberos V4 support in many of the applications.
 @end itemize

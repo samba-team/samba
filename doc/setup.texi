@@ -39,20 +39,22 @@ assignments. The value of a variable extends to the end of the line.
         var = yet another value
 @end example
 
-To denote entries in the config file, the names of sections and bindings
-will be given separated with slashes (@samp{/}). The @samp{other-var}
-variable will thus be @samp{section1/a-subsection/other-var}.
+In this manual, names of sections and bindings will be given as strings
+separated by slashes (@samp{/}). The @samp{other-var} variable will thus
+be @samp{section1/a-subsection/other-var}.
 
 For in-depth information about the contents of the config file, refer to
 the @file{krb5.conf} manual page. Some of the more important sections
-are briefly described here. The @samp{libdefaults} section contains a
-list of library configuration parameters, such as the default realm and
-the timeout for kdc responses. The @samp{realms} section contains
-information about specific realms, such as where they hide their
-KDC. This section serves the same purpose as the Kerberos 4
-@file{krb.conf} file, but can contain more information. Finally the
-@samp{domain_realm} section contains a list of mappings from domains to
-realms, equivalent to the Kerberos 4 @file{krb.realms} file.
+are briefly described here.
+
+The @samp{libdefaults} section contains a list of library configuration
+parameters, such as the default realm and the timeout for kdc
+responses. The @samp{realms} section contains information about specific
+realms, such as where they hide their KDC. This section serves the same
+purpose as the Kerberos 4 @file{krb.conf} file, but can contain more
+information. Finally the @samp{domain_realm} section contains a list of
+mappings from domains to realms, equivalent to the Kerberos 4
+@file{krb.realms} file.
 
 To continue with the realm setup, you will have to create a config file,
 with contents similar to the following.
@@ -89,33 +91,31 @@ Master key:
 Verifying password - Master key: 
 @end example
 
-To initialise the database use the @code{kdb_edit} program. First issue
-a @kbd{init MY.REALM} command. This will create the database and insert
+To initialise the database use the @code{kadmin} program, with the
+@samp{-l} option (to enable local database mode). First issue a
+@kbd{init MY.REALM} command. This will create the database and insert
 default principals for that realm. You can have more than one realm in
 one database, so @samp{init} does not destroy any old database.
 
 Before creating the database, @samp{init} will ask you some questions
-about default and max ticket lifetimes. The default values should be fine.
+about max ticket lifetimes.
 
 After creating the database you should probably add yourself. You do
-this with the @samp{ank} command. It takes as argument the name of a
+this with the @samp{add} command. It takes as argument the name of a
 principal. The principal should contain a realm, so if you haven't setup
 a default realm, you will need to explicitly include the realm.
 
 @example
-# kdb_edit
-kdb_edit: Database is encrypted
-kdb_edit> init MY.REALM
-Realm max ticket life: [infinite] 
-Realm max renewable ticket life: [infinite] 
-Default ticket life: [1 day] 
-Default renewable ticket life: [7 days] 
-kdb_edit> ank me
-Max ticket life [1 day]: 
-Max renewable ticket [7 days]: 
-Flags [client, server, postdate, renewable, proxiable, forwardable]: 
-Password:
-Verifying password - Password:
+# kadmin -l
+kadmin> init MY.REALM
+Realm max ticket life [unlimited]:
+Realm max renewable ticket life [unlimited]:
+kadmin> add me  
+Max ticket life [unlimited]:
+Max renewable life [unlimited]:
+Attributes []:
+Password: 
+Verifying password - Password: 
 @end example
 
 Now start the KDC and try getting a ticket.
@@ -125,7 +125,7 @@ Now start the KDC and try getting a ticket.
 # kinit me
 me@@MY.REALMS's Password:
 # klist
-Credentials cache: /tmp/krb5cc_3008
+Credentials cache: /tmp/krb5cc_0
         Principal: me@@MY.REALM
 
   Issued           Expires          Principal
@@ -134,40 +134,34 @@ Aug 25 07:25:55  Aug 25 17:25:55  krbtgt/MY.REALM@@MY.REALM
 
 To verify that the contents of the database you can use the @samp{dump}
 command to list all the entries.  It should look something similar to
-the following example (note that the entries here are divided into two
-lines for typographical reasons):
+the following example (note that the entries here are truncated for
+typographical reasons):
 
 @smallexample
-kdb_edit> dump
-krbtgt/MY.REALM@@MY.REALM 1:0:1:0001010000010000:- \
-19970908002104:kadmin@@MY.REALM - - - - - - 62
-default@@MY.REALM 0 \
-19970908002104:kadmin@@MY.REALM - - - - 86400 604800 128
-kadmin/changepw@@MY.REALM 1:0:1:2213b905229d3990:- \
-19970908002104:kadmin@@MY.REALM - - - - 86400 604800 545
-me@@MY.REALM 1:0:1:908f1cf6110487cc:- \
-19970908002112:kadmin@@MY.REALM - - - - 86400 604800 126
+kadmin> dump
+me@@MY.REALM 1:0:1:0b01d3cb7c293b57:-:0:7:8aec316b9d1629e3baf8 ...
+kadmin/admin@@MY.REALM 1:0:1:e5c8a2675b37a443:-:0:7:cb913ebf85 ...
+krbtgt/MY.REALM@@MY.REALM 1:0:1:52b53b61c875ce16:-:0:7:c8943be ...
+kadmin/changepw@@MY.REALM 1:0:1:f48c8af2b340e9fb:-:0:7:e3e6088 ...
 @end smallexample
 
 @section keytabs
 
 To extract a service ticket from the database and put it in a keytab you
 need to first create the principal in the database with @samp{ank}
-(entering @kbd{random} for password) and then extract it with
-@samp{ext_keytab}.
+(using the @kbd{--random} flag to get a random password) and then
+extract it with @samp{ext_keytab}.
 
 @example
-# kdb_edit
-kdb_edit> ank host/my.host.name
-Max ticket life [1 day]: 
-Max renewable life [1 week]: 
-Flags [client, server, postdate, renewable, proxiable, forwardable]: 
-Password:
-Verifying password - Password:
-kdb_edit> ext host/my.host.name
+kadmin> add --random host/my.host.name
+Max ticket life [unlimited]:
+Max renewable life [unlimited]:
+Attributes []:
+kadmin> ext host/my.host.name
 # ktutil list
-Version  Type  Principal
-     1     1   host/my.host.name@@MY.REALM
+Version  Type    Principal
+     1   des     host/my.host.name@@MY.REALM
+     1   des3    host/my.host.name@@MY.REALM
 @end example
 
 @section Testing clients and servers

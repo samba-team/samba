@@ -66,14 +66,11 @@ library will be used instead.
 @node Finishing the installation,  , Building and Installing, Building and Installing
 @section Loose threads
 
-The 
-@pindex rsh
-@code{rsh} program in this distribution presently isn't usable with
-non-kerberised @code{rshd}s. It should not be installed set-uid to root.
-
 @pindex login
-The @code{telnetd} daemon will try to use the @code{login} found in the
-@file{/usr/athena/bin} directory. If you don't have a working login
-program there (it should grok the @samp{-f} flag), you can either start
-telnetd with the @samp{-L} flag, or edit the definition of @code{BINDIR}
-in @file{telnetd.h}.
+There is a login program in the distribution, but it isn't built by
+default, and might not work as expected. Instead, @code{telnetd} will
+try to use the @code{login} found in the @file{/usr/athena/bin}
+directory. If you don't have a working login program there (it should
+grok the @samp{-f} flag), you can either start telnetd with the
+@samp{-L} flag, or edit the definition of @code{BINDIR} in
+@file{telnetd.h}.
