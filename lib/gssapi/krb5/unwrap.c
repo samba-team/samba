@@ -388,6 +388,8 @@ OM_uint32 gss_unwrap
   OM_uint32 ret;
   krb5_keytype keytype;
 
+  if (qop_state != NULL)
+      *qop_state = GSS_C_QOP_DEFAULT;
   ret = gss_krb5_get_remotekey(context_handle, &key);
   if (ret) {
       gssapi_krb5_set_error_string ();
