@@ -345,7 +345,7 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	</para>
 
 	<para>
-	The columns above represent (from left to right): permissions, number of hard links to file, owner, group, size (bytes), access date, access time, file name.
+	The columns above represent (from left to right): permissions, number of hard links to file, owner, group, size (bytes), access date, time of last modification, and file name.
 	</para>
 
 	<para>
