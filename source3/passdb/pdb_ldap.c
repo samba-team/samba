@@ -770,15 +770,15 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 
 	/* see if we have newer updates */
 	if (!(cache_entry = login_cache_read(sampass))) {
-		DEBUG (9, ("No cache entry, bad count = %d, bad time = %d\n",
-			   pdb_get_bad_password_count(sampass),
-			   pdb_get_bad_password_time(sampass)));
+		DEBUG (9, ("No cache entry, bad count = %u, bad time = %u\n",
+			   (unsigned int)pdb_get_bad_password_count(sampass),
+			   (unsigned int)pdb_get_bad_password_time(sampass)));
 		return True;
 	}
 
-	DEBUG(7, ("ldap time is %d, cache time is %d, bad time = %d\n", 
-		  ldap_entry_time, cache_entry->entry_timestamp, 
-		  cache_entry->bad_password_time));
+	DEBUG(7, ("ldap time is %u, cache time is %u, bad time = %u\n", 
+		  (unsigned int)ldap_entry_time, (unsigned int)cache_entry->entry_timestamp, 
+		  (unsigned int)cache_entry->bad_password_time));
 
 	if (ldap_entry_time > cache_entry->entry_timestamp) {
 		/* cache is older than directory , so
@@ -1038,11 +1038,13 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		uint32 pol;
 		account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &pol);
 
-		DEBUG(3, ("updating bad password fields, policy=%d, count=%d, time=%d\n", pol, badcount, badtime));
+		DEBUG(3, ("updating bad password fields, policy=%u, count=%u, time=%u\n",
+			(unsigned int)pol, (unsigned int)badcount, (unsigned int)badtime));
 
 		if ((badcount >= pol) || (badcount == 0)) {
-			DEBUG(7, ("making mods to update ldap, count=%d, time=%d\n", badcount, badtime));
-			slprintf (temp, sizeof (temp) - 1, "%li", badcount);
+			DEBUG(7, ("making mods to update ldap, count=%u, time=%u\n",
+				(unsigned int)badcount, (unsigned int)badtime));
+			slprintf (temp, sizeof (temp) - 1, "%li", (long)badcount);
 			smbldap_make_mod(
 				ldap_state->smbldap_state->ldap_struct,
 				existing, mods, 
@@ -1070,7 +1072,6 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			DEBUG(7, ("Updating bad password count and time in login cache\n"));
 			login_cache_write(sampass, cache_entry);
 		}
-			
 	}
 
 	return True;
