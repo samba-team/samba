@@ -217,7 +217,7 @@ static int winbind_auth_request(const char *user, const char *pass, const char *
 		struct winbindd_response response;
 
 		ZERO_STRUCT(request);
-		ZERO_STRUCT(response)
+		ZERO_STRUCT(response);
 
 		if (ctrl & WINBIND_DEBUG_ARG)
 			_pam_log(LOG_DEBUG, "no sid given, looking up: %s\n", member);
