@@ -88,8 +88,8 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
      des_cblock iv1, iv2;
      int num1 = 0, num2 = 0;
 
-     memcpy (&iv1, iv, sizeof(iv1));
-     memcpy (&iv2, iv, sizeof(iv2));
+     memcpy (iv1, *iv, sizeof(iv1));
+     memcpy (iv2, *iv, sizeof(iv2));
      for (;;) {
 	  fd_set fdset;
 	  int ret;
