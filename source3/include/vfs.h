@@ -68,8 +68,8 @@ struct vfs_ops {
     
     int (*open)(struct connection_struct *conn, const char *fname, int flags, mode_t mode);
     int (*close)(struct files_struct *fsp, int fd);
-    ssize_t (*read)(struct files_struct *fsp, int fd, char *data, size_t n);
-    ssize_t (*write)(struct files_struct *fsp, int fd, const char *data, size_t n);
+    ssize_t (*read)(struct files_struct *fsp, int fd, void *data, size_t n);
+    ssize_t (*write)(struct files_struct *fsp, int fd, const void *data, size_t n);
     SMB_OFF_T (*lseek)(struct files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
     int (*rename)(struct connection_struct *conn, const char *old, const char *new);
     int (*fsync)(struct files_struct *fsp, int fd);

@@ -78,7 +78,7 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
 		return;
 	}
 
-	transfer_file(tmp_fd,outfd,st.st_size, NULL,0,0);
+	transfer_file(tmp_fd,outfd,st.st_size);
 	close(tmp_fd);
 	close(outfd);
   }
