@@ -10,6 +10,7 @@ securely forward X conections
 .Sh SYNOPSIS
 .Ar kx
 .Op Fl d
+.Op Fl l Ar username
 .Ar host
 .Sh DESCRIPTION
 The
@@ -18,6 +19,9 @@ program forwards a X connection from a remote client to a local screen
 through an authenticated and encrypted stream.  Options supported by
 .Nm kx :
 .Bl -tag -width Ds
+.It Fl l
+Log in on remote host as user
+.Ar username
 .It Fl d
 Do not fork.
 .El
