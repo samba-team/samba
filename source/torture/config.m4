@@ -10,6 +10,8 @@ SMB_SUBSYSTEM_MK(TORTURE_RAP,torture/config.mk)
 
 SMB_SUBSYSTEM_MK(TORTURE_AUTH,torture/config.mk)
 
+SMB_SUBSYSTEM_MK(TORTURE_LOCAL,torture/config.mk)
+
 SMB_SUBSYSTEM_MK(TORTURE_NBENCH,torture/config.mk)
 
 SMB_SUBSYSTEM_MK(TORTURE_LDAP,torture/config.mk)

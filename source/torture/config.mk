@@ -94,6 +94,16 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 
 #################################
+# Start SUBSYSTEM TORTURE_LOCAL
+[SUBSYSTEM::TORTURE_LOCAL]
+ADD_OBJ_FILES = \
+		torture/local/iconv.o
+REQUIRED_SUBSYSTEMS = \
+		LIBSMB
+# End SUBSYSTEM TORTURE_LOCAL
+#################################
+
+#################################
 # Start SUBSYSTEM TORTURE_NBENCH
 [SUBSYSTEM::TORTURE_NBENCH]
 ADD_OBJ_FILES = \
@@ -125,6 +135,7 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_RPC \
 		TORTURE_RAP \
 		TORTURE_AUTH \
+		TORTURE_LOCAL \
 		TORTURE_NBENCH \
 		TORTURE_LDAP \
 		CONFIG \

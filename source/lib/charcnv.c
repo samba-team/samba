@@ -47,12 +47,12 @@ static const char *charset_name(charset_t ch)
 {
 	const char *ret = NULL;
 
-	if (ch == CH_UCS2) ret = "UTF-16LE";
+	if (ch == CH_UTF16) ret = "UTF-16LE";
 	else if (ch == CH_UNIX) ret = lp_unix_charset();
 	else if (ch == CH_DOS) ret = lp_dos_charset();
 	else if (ch == CH_DISPLAY) ret = lp_display_charset();
 	else if (ch == CH_UTF8) ret = "UTF8";
-	else if (ch == CH_UCS2BE) ret = "UCS-2BE";
+	else if (ch == CH_UTF16BE) ret = "UTF-16BE";
 
 	if (!ret || !*ret) ret = "ASCII";
 	return ret;
@@ -81,13 +81,13 @@ void init_iconv(void)
 
 	/* so that charset_name() works we need to get the UNIX<->UCS2 going
 	   first */
-	if (!conv_handles[CH_UNIX][CH_UCS2])
-		conv_handles[CH_UNIX][CH_UCS2] = smb_iconv_open(charset_name(CH_UCS2), 
+	if (!conv_handles[CH_UNIX][CH_UTF16])
+		conv_handles[CH_UNIX][CH_UTF16] = smb_iconv_open(charset_name(CH_UTF16), 
 								"ASCII");
 
-	if (!conv_handles[CH_UCS2][CH_UNIX])
-		conv_handles[CH_UCS2][CH_UNIX] = smb_iconv_open("ASCII", 
-								charset_name(CH_UCS2));
+	if (!conv_handles[CH_UTF16][CH_UNIX])
+		conv_handles[CH_UTF16][CH_UNIX] = smb_iconv_open("ASCII", 
+								charset_name(CH_UTF16));
 
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
@@ -293,7 +293,7 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 	size_t size;
 	smb_ucs2_t *buffer;
 	
-	size = convert_string_allocate(CH_UNIX, CH_UCS2, src, srclen,
+	size = convert_string_allocate(CH_UNIX, CH_UTF16, src, srclen,
 				       (void **) &buffer);
 	if (size == -1) {
 		smb_panic("failed to create UCS2 buffer");
@@ -303,7 +303,7 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 		return srclen;
 	}
 	
-	size = convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
+	size = convert_string(CH_UTF16, CH_UNIX, buffer, size, dest, destlen);
 	free(buffer);
 	return size;
 }
@@ -313,7 +313,7 @@ size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 	size_t size;
 	smb_ucs2_t *buffer;
 	
-	size = convert_string_allocate(CH_UNIX, CH_UCS2, src, srclen,
+	size = convert_string_allocate(CH_UNIX, CH_UTF16, src, srclen,
 				       (void **) &buffer);
 	if (size == -1) {
 		smb_panic("failed to create UCS2 buffer");
@@ -322,7 +322,7 @@ size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 		free(buffer);
 		return srclen;
 	}
-	size = convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
+	size = convert_string(CH_UTF16, CH_UNIX, buffer, size, dest, destlen);
 	free(buffer);
 	return size;
 }
@@ -461,7 +461,7 @@ ssize_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest
 	/* ucs2 is always a multiple of 2 bytes */
 	dest_len &= ~1;
 
-	len += convert_string(CH_UNIX, CH_UCS2, src, src_len, dest, dest_len);
+	len += convert_string(CH_UNIX, CH_UTF16, src, src_len, dest, dest_len);
 	return len;
 }
 
@@ -480,7 +480,7 @@ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 	size_t src_len = strlen(src)+1;
 
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UCS2, src, src_len, (const void **)dest);
+	return convert_string_talloc(ctx, CH_UNIX, CH_UTF16, src, src_len, (const void **)dest);
 }
 
 
@@ -498,7 +498,7 @@ ssize_t push_ucs2_allocate(smb_ucs2_t **dest, const char *src)
 	size_t src_len = strlen(src)+1;
 
 	*dest = NULL;
-	return convert_string_allocate(CH_UNIX, CH_UCS2, src, src_len, (void **)dest);	
+	return convert_string_allocate(CH_UNIX, CH_UTF16, src, src_len, (void **)dest);	
 }
 
 /**
@@ -603,7 +603,7 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 	if (src_len != (size_t)-1)
 		src_len &= ~1;
 	
-	ret = convert_string(CH_UCS2, CH_UNIX, src, src_len, dest, dest_len);
+	ret = convert_string(CH_UTF16, CH_UNIX, src, src_len, dest, dest_len);
 	if (dest_len)
 		dest[MIN(ret, dest_len-1)] = 0;
 
@@ -627,7 +627,7 @@ ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src)
 {
 	size_t src_len = (strlen_w(src)+1) * sizeof(smb_ucs2_t);
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UCS2, CH_UNIX, src, src_len, (const void **)dest);
+	return convert_string_talloc(ctx, CH_UTF16, CH_UNIX, src, src_len, (const void **)dest);
 }
 
 /**
@@ -642,7 +642,7 @@ ssize_t pull_ucs2_allocate(void **dest, const smb_ucs2_t *src)
 {
 	size_t src_len = (strlen_w(src)+1) * sizeof(smb_ucs2_t);
 	*dest = NULL;
-	return convert_string_allocate(CH_UCS2, CH_UNIX, src, src_len, dest);	
+	return convert_string_allocate(CH_UTF16, CH_UNIX, src, src_len, dest);	
 }
 
 /**

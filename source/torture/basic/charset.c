@@ -50,7 +50,7 @@ static NTSTATUS unicode_open(struct smbcli_tree *tree,
 	}
 	SSVAL(ucs_name, i*2, 0);
 
-	i = convert_string_allocate(CH_UCS2, CH_UNIX, ucs_name, (1+u_name_len)*2, (void **)&fname);
+	i = convert_string_allocate(CH_UTF16, CH_UNIX, ucs_name, (1+u_name_len)*2, (void **)&fname);
 	if (i == -1) {
 		free(ucs_name);
 		return NT_STATUS_NO_MEMORY;
