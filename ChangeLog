@@ -1,5 +1,7 @@
 Thu Feb 12 03:28:40 1998  Assar Westerlund  <assar@sics.se>
 
+	* lib/kadm5/log.c (get_version): globalize
+
 	* lib/kadm5/kadm5_locl.h: include <sys/file.h>
 
 	* lib/asn1/Makefile.am: add PA_KEY_INFO and PA_KEY_INFO_ENTRY
