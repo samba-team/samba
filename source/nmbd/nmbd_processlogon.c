@@ -4,6 +4,8 @@
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
    Copyright (C) Jeremy Allison 1994-1998
+   Copyright (C) Jim McDonough 2002
+   Copyright (C) Anthony Liguori 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -225,6 +227,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
     case SAMLOGON:
     {
       char *q = buf + 2;
+      char *q1;
       fstring asccomp;
 
       q += 2;
@@ -284,19 +287,108 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       /* Construct reply. */
 
       q = outbuf;
-      if (SVAL(uniuser, 0) == 0) {
-	      SSVAL(q, 0, SAMLOGON_UNK_R);	/* user unknown */
-      }	else {
-	      SSVAL(q, 0, SAMLOGON_R);
-      }
-      q += 2;
+      /* we want the simple version unless we are an ADS PDC..which means  */
+      /* never, at least for now */
+      if ((ntversion < 11) || (SEC_ADS != lp_security()) || (ROLE_DOMAIN_PDC != lp_server_role())) {
+	if (SVAL(uniuser, 0) == 0) {
+	  SSVAL(q, 0, SAMLOGON_UNK_R);	/* user unknown */
+	} else {
+	  SSVAL(q, 0, SAMLOGON_R);
+	}
 
-      q += dos_PutUniCode(q, reply_name,sizeof(pstring), True);
-      q += dos_PutUniCode(q, ascuser, sizeof(pstring), True);
-      q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True);
+	q += 2;
+
+	q += dos_PutUniCode(q, reply_name,sizeof(pstring), True);
+	q += dos_PutUniCode(q, ascuser, sizeof(pstring), True);
+	q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True);
+      } 
+#ifdef HAVE_ADS
+      else {
+	GUID domain_guid;
+	pstring domain;
+	char *component, *dc;
+	uint8 size;
+
+	safe_strcpy(domain, lp_realm(), sizeof(domain));
+	
+	if (SVAL(uniuser, 0) == 0) {
+	  SSVAL(q, 0, SAMLOGON_AD_UNK_R);	/* user unknown */
+	} else {
+	  SSVAL(q, 0, SAMLOGON_AD_R);
+	}
+	q += 2;
+
+	SSVAL(q, 0, 0);
+	q += 2;
+	SIVAL(q, 0, ADS_PDC|ADS_GC|ADS_LDAP|ADS_DS|
+	            ADS_KDC|ADS_TIMESERV|ADS_CLOSEST|ADS_WRITABLE);
+	q += 4;
+
+	/* Push Domain GUID */
+	if (False == secrets_fetch_domain_guid(domain, &domain_guid)) {
+	  DEBUG(2, ("Could not fetch DomainGUID for %s\n", domain));
+	  return;
+	}
+	memcpy(q, &domain_guid, sizeof(domain_guid));
+	q += sizeof(domain_guid);
+
+	/* Push domain components */
+	dc = domain;
+	q1 = q;
+	while ((component = strsep(&dc, "."))) {
+	  size = push_ascii(&q[1], component, -1, 0);
+	  SCVAL(q, 0, size);
+	  q += (size + 1);
+	}
+	SCVAL(q, 0, 0); q++;
+	SSVAL(q, 0, 0x18c0); /* not sure what this is for, but  */
+	q += 2;              /* it must follow the domain name. */
+
+	/* Push dns host name */
+	size = push_ascii(&q[1], global_myname, -1, 0);
+	SCVAL(q, 0, size);
+	q += (size + 1);
+	SSVAL(q, 0, 0x18c0); /* not sure what this is for, but  */
+	q += 2;              /* it must follow the domain name. */
+
+	/* Push NETBIOS of domain */
+	size = push_ascii(&q[1], domain, -1, STR_UPPER);
+	SCVAL(q, 0, size);
+	q += (size + 1);
+	SCVAL(q, 0, 0); q++; /* is this a null terminator or empty field */
+	/* null terminator would not be needed because size is included */
+
+	/* Push NETBIOS of hostname */
+	size = push_ascii(&q[1], my_name, -1, 0);
+	SCVAL(q, 0, size);
+	q += (size + 1);
+	SCVAL(q, 0, 0); q++; /* null terminator or empty field? */
+
+	/* Push user account */
+	size = push_ascii(&q[1], ascuser, -1, 0);
+	SCVAL(q, 0, size);
+	q += (size + 1);
+
+	/* Push 'Default-First-Site-Name' */
+	size = push_ascii(&q[1], "Default-First-Site-Name", -1, 0);
+	SCVAL(q, 0, size);
+	q += (size + 1);
+
+	SSVAL(q, 0, 0xc000); /* unknown */
+	SCVAL(q, 2, PTR_DIFF(q,q1));
+	SCVAL(q, 3, 0x10); /* unknown */
+	q += 4;
+
+	SIVAL(q, 0, 0x00000002); q += 4; /* unknown */
+	SIVAL(q, 0, (iface_ip(p->ip))->s_addr); q += 4;
+	SIVAL(q, 0, 0x00000000); q += 4; /* unknown */
+	SIVAL(q, 0, 0x00000000); q += 4; /* unknown */
+      }	
+#endif
 
       /* tell the client what version we are */
-      SIVAL(q, 0, 1); /* our ntversion */
+      SIVAL(q, 0, ((ntversion < 11) || (SEC_ADS != lp_security())) ? 1 : 13); 
+      /* our ntversion */
       SSVAL(q, 4, 0xffff); /* our lmnttoken */ 
       SSVAL(q, 6, 0xffff); /* our lm20token */
       q += 8;
