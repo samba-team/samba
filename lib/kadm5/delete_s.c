@@ -57,7 +57,7 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
 	goto out;
     }
     
-    hdb_seal_keys(context->db, &ent);
+    hdb_seal_keys(context->context, context->db, &ent);
 
     kadm5_log_delete (context, princ);
     

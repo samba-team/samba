@@ -62,7 +62,7 @@ kadm5_s_chpass_principal(void *server_handle,
     if(ret)
 	goto out2;
 
-    hdb_seal_keys(context->db, &ent);
+    hdb_seal_keys(context->context, context->db, &ent);
 
     kadm5_log_modify (context,
 		      &ent,
@@ -105,7 +105,7 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
     if(ret)
 	goto out2;
 
-    hdb_seal_keys(context->db, &ent);
+    hdb_seal_keys(context->context, context->db, &ent);
 
     kadm5_log_modify (context,
 		      &ent,

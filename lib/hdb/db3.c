@@ -108,7 +108,7 @@ DB_seq(krb5_context context, HDB *db,
     if (hdb_value2entry(context, &data, entry))
 	return DB_seq(context, db, flags, entry, DB_NEXT);
     if (db->master_key_set && (flags & HDB_F_DECRYPT))
-	hdb_unseal_keys (db, entry);
+	hdb_unseal_keys (context, db, entry);
     if (entry->principal == NULL) {
 	entry->principal = malloc(sizeof(*entry->principal));
 	hdb_key2principal(context, &key_data, entry->principal);

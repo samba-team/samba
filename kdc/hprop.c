@@ -45,8 +45,7 @@ static int to_stdout;
 static int verbose_flag;
 static int encrypt_flag;
 static int decrypt_flag;
-static EncryptionKey mkey5;
-static krb5_data msched5;
+static hdb_master_key mkey5;
 
 static char *source_type;
 
@@ -102,7 +101,7 @@ open_socket(krb5_context context, const char *hostname, const char *port)
 
 int hdb_entry2value(krb5_context, hdb_entry*, krb5_data*);
 
-static krb5_error_code
+krb5_error_code
 v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
 {
     krb5_error_code ret;
@@ -110,9 +109,9 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     krb5_data data;
 
     if(encrypt_flag)
-	_hdb_seal_keys_int(entry, 0, msched5);
+	_hdb_seal_keys_int(context, entry, mkey5);
     if(decrypt_flag)
-	_hdb_unseal_keys_int(entry, 0, msched5);
+	_hdb_unseal_keys_int(context, entry, mkey5);
 
     ret = hdb_entry2value(context, entry, &data);
     if(ret) {
@@ -740,10 +739,6 @@ main(int argc, char **argv)
     if(ret) {
 	if(encrypt_flag || decrypt_flag)
 	    krb5_errx(context, 1, "No master key file found");
-    } else {
-	ret = hdb_process_master_key(context, mkey5, &msched5);
-	if(ret)
-	    krb5_err(context, 1, ret, "hdb_process_master_key");
     }
     
 #ifdef KRB4

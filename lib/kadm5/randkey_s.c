@@ -69,7 +69,7 @@ kadm5_s_randkey_principal(void *server_handle,
     if(ret)
 	goto out3;
 
-    hdb_seal_keys(context->db, &ent);
+    hdb_seal_keys(context->context, context->db, &ent);
 
     kadm5_log_modify (context,
 		      &ent,

@@ -82,7 +82,7 @@ kadm5_s_rename_principal(void *server_handle,
     ent2.principal = ent.principal;
     ent.principal = target;
 
-    hdb_seal_keys(context->db, &ent);
+    hdb_seal_keys(context->context, context->db, &ent);
 
     kadm5_log_rename (context,
 		      source,
