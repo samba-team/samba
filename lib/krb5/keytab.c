@@ -562,10 +562,12 @@ fkt_start_seq_get(krb5_context context,
 }
 
 static krb5_error_code
-fkt_next_entry(krb5_context context, 
-	       krb5_keytab id, 
-	       krb5_keytab_entry *entry, 
-	       krb5_kt_cursor *cursor)
+fkt_next_entry_int(krb5_context context, 
+		   krb5_keytab id, 
+		   krb5_keytab_entry *entry, 
+		   krb5_kt_cursor *cursor,
+		   off_t *start,
+		   off_t *end)
 {
     u_int32_t len;
     u_int32_t timestamp;
@@ -582,6 +584,7 @@ loop:
 	cursor->offset += 4 + -tmp32;
 	goto loop;
     }
+    if(start) *start = cursor->offset;
     len = tmp32;
     cursor->offset += 4 + len;
     ret = krb5_kt_ret_principal (cursor->sp, &entry->principal);
@@ -605,8 +608,18 @@ loop:
     /* backwards compatibility with Heimdal <= 0.0n */
     if(len == 4711)
 	cursor->offset = cursor->sp->seek(cursor->sp, 0, SEEK_CUR);
+    if(end) *end = cursor->offset;
     
     return 0;
+}
+
+static krb5_error_code
+fkt_next_entry(krb5_context context, 
+	       krb5_keytab id, 
+	       krb5_keytab_entry *entry, 
+	       krb5_kt_cursor *cursor)
+{
+    return fkt_next_entry_int(context, id, entry, cursor, NULL, NULL);
 }
 
 static krb5_error_code
@@ -679,14 +692,13 @@ fkt_remove_entry(krb5_context context,
     int found = 0;
     
     fkt_start_seq_get_int(context, id, O_RDWR | O_BINARY, &cursor);
-    pos_start = cursor.offset;
-    while(krb5_kt_next_entry(context, id, &e, &cursor) == 0) {
+    while(fkt_next_entry_int(context, id, &e, &cursor, 
+			     &pos_start, &pos_end) == 0) {
 	if(kt_compare(context, &e, entry->principal, 
 		      entry->vno, entry->keyblock.keytype)) {
 	    int32_t len;
 	    unsigned char buf[128];
 	    found = 1;
-	    pos_end = cursor.offset;
 	    cursor.sp->seek(cursor.sp, pos_start, SEEK_SET);
 	    krb5_ret_int32(cursor.sp, &len);
 	    cursor.sp->seek(cursor.sp, pos_start, SEEK_SET);
@@ -698,9 +710,7 @@ fkt_remove_entry(krb5_context context,
 		cursor.sp->store(cursor.sp, buf, min(len, sizeof(buf)));
 		len -= min(len, sizeof(buf));
 	    }
-	    break;
 	}
-	pos_start = cursor.offset;
     }
     krb5_kt_end_seq_get(context, id, &cursor);
     if (!found)
