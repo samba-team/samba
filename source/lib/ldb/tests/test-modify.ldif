@@ -4,6 +4,9 @@ changetype: modify
 add: drink
 drink: mango lassi
 -
+add: drink
+drink: lemonade
+-
 delete: pager
 -
 replace: telephonenumber

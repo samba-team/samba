@@ -516,8 +516,13 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			   already exists */
 			ret = find_element(&msg2, msg->elements[i].name);
 			if (ret != -1) {
-				ltdb->last_err_string = "Attribute exists";
-				goto failed;
+				for (j=0;j<msg->elements[i].num_values;j++) {
+					if (ldb_msg_find_val(&msg2.elements[ret], 
+							     &msg->elements[i].values[j])) {
+						ltdb->last_err_string = "Type or value exists";
+						goto failed;
+					}
+				}
 			}
 			if (msg_add_element(ldb, &msg2, &msg->elements[i]) != 0) {
 				goto failed;
