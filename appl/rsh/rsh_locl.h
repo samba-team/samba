@@ -139,7 +139,7 @@ extern krb5_crypto crypto;
 extern int key_usage;
 extern void *ivec_in[2];
 extern void *ivec_out[2];
-void init_ivecs(int);
+void init_ivecs(int, int);
 #endif
 #ifdef KRB4
 extern des_key_schedule schedule;
