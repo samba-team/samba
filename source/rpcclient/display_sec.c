@@ -64,10 +64,10 @@ static const char *get_sec_mask_str(uint32 type)
 				case SEC_RIGHTS_ENUM_SUBKEYS   : fstrcat(typestr, "Enum "); break;
 				case SEC_RIGHTS_NOTIFY         : fstrcat(typestr, "Notify "); break;
 				case SEC_RIGHTS_CREATE_LINK    : fstrcat(typestr, "CreateLink "); break;
-				case SEC_RIGHTS_DELETE         : fstrcat(typestr, "Delete "); break;
-				case SEC_RIGHTS_READ_CONTROL   : fstrcat(typestr, "ReadControl "); break;
-				case SEC_RIGHTS_WRITE_DAC      : fstrcat(typestr, "WriteDAC "); break;
-				case SEC_RIGHTS_WRITE_OWNER    : fstrcat(typestr, "WriteOwner "); break;
+				case DELETE_ACCESS             : fstrcat(typestr, "Delete "); break;
+				case READ_CONTROL_ACCESS       : fstrcat(typestr, "ReadControl "); break;
+				case WRITE_DAC_ACCESS          : fstrcat(typestr, "WriteDAC "); break;
+				case WRITE_OWNER_ACCESS        : fstrcat(typestr, "WriteOwner "); break;
 			}
 			type &= ~(1 << i);
 		}
