@@ -217,7 +217,6 @@ BOOL prs_buf_copy(char *copy_into, const prs_struct * buf,
 
 	prs_debug_out(bcp, "prs_struct_copy", 200);
 
-	/* there's probably an off-by-one bug, here, and i haven't even tested the code :-) */
 	while (offset < end && ((q = prs_data(bcp, offset)) != NULL))
 	{
 		uint32 copy_len;

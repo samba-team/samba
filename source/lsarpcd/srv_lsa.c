@@ -35,7 +35,7 @@ extern fstring global_myworkgroup;
 /***************************************************************************
 make_dom_query
  ***************************************************************************/
-static void make_dom_query(DOM_QUERY * d_q, char *dom_name, DOM_SID * dom_sid)
+static void make_dom_query(DOM_QUERY * d_q, char *dom_name, DOM_SID *dom_sid)
 {
 	fstring sid_str;
 	int domlen = strlen(dom_name);
@@ -97,7 +97,7 @@ static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS * r_l,
 /***************************************************************************
 lsa_reply_lookup_sids
  ***************************************************************************/
-static BOOL lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS * q_l, prs_struct * rdata)
+static BOOL lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS * q_l, prs_struct *rdata)
 {
 	LSA_R_LOOKUP_SIDS r_l;
 	DOM_R_REF ref;
@@ -125,8 +125,7 @@ static BOOL lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS * q_l, prs_struct * rdata)
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static BOOL api_lsa_open_policy2(rpcsrv_struct * p, prs_struct * data,
-				 prs_struct * rdata)
+static BOOL api_lsa_open_policy2(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_OPEN_POL2 q_o;
 	LSA_R_OPEN_POL2 r_o;
@@ -147,8 +146,7 @@ static BOOL api_lsa_open_policy2(rpcsrv_struct * p, prs_struct * data,
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static BOOL api_lsa_open_policy(rpcsrv_struct * p, prs_struct * data,
-				prs_struct * rdata)
+static BOOL api_lsa_open_policy(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_OPEN_POL q_o;
 	LSA_R_OPEN_POL r_o;
@@ -169,8 +167,7 @@ static BOOL api_lsa_open_policy(rpcsrv_struct * p, prs_struct * data,
 /***************************************************************************
 api_lsa_enum_trust_dom
  ***************************************************************************/
-static BOOL api_lsa_enum_trust_dom(rpcsrv_struct * p, prs_struct * data,
-				   prs_struct * rdata)
+static BOOL api_lsa_enum_trust_dom(prs_struct *data, prs_struct *rdata)
 {
 	uint32 status;
 	uint32 enum_context;
@@ -211,8 +208,7 @@ static BOOL api_lsa_enum_trust_dom(rpcsrv_struct * p, prs_struct * data,
 /***************************************************************************
 api_lsa_query_info
  ***************************************************************************/
-static BOOL api_lsa_query_info(rpcsrv_struct * p, prs_struct * data,
-			       prs_struct * rdata)
+static BOOL api_lsa_query_info(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_QUERY_INFO q_i;
 	LSA_R_QUERY_INFO r_i;
@@ -250,8 +246,7 @@ static BOOL api_lsa_query_info(rpcsrv_struct * p, prs_struct * data,
 /***************************************************************************
 api_lsa_lookup_sids
  ***************************************************************************/
-static BOOL api_lsa_lookup_sids(rpcsrv_struct * p, prs_struct * data,
-				prs_struct * rdata)
+static BOOL api_lsa_lookup_sids(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_LOOKUP_SIDS q_l;
 	ZERO_STRUCT(q_l);
@@ -269,8 +264,7 @@ static BOOL api_lsa_lookup_sids(rpcsrv_struct * p, prs_struct * data,
 /***************************************************************************
 api_lsa_lookup_names
  ***************************************************************************/
-static BOOL api_lsa_lookup_names(rpcsrv_struct * p, prs_struct * data,
-				 prs_struct * rdata)
+static BOOL api_lsa_lookup_names(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_LOOKUP_NAMES q_l;
 	LSA_R_LOOKUP_NAMES r_l;
@@ -311,8 +305,7 @@ static BOOL api_lsa_lookup_names(rpcsrv_struct * p, prs_struct * data,
 /***************************************************************************
  api_lsa_close
  ***************************************************************************/
-static BOOL api_lsa_close(rpcsrv_struct * p, prs_struct * data,
-			  prs_struct * rdata)
+static BOOL api_lsa_close(prs_struct *data, prs_struct *rdata)
 {
 	LSA_R_CLOSE r_c;
 	LSA_Q_CLOSE q_c;
@@ -333,8 +326,7 @@ static BOOL api_lsa_close(rpcsrv_struct * p, prs_struct * data,
 /***************************************************************************
  api_lsa_create_secret
  ***************************************************************************/
-static BOOL api_lsa_create_secret(rpcsrv_struct * p, prs_struct * data,
-				  prs_struct * rdata)
+static BOOL api_lsa_create_secret(prs_struct *data, prs_struct *rdata)
 {
 	LSA_R_CREATE_SECRET r_o;
 	LSA_Q_CREATE_SECRET q_o;
@@ -356,8 +348,7 @@ static BOOL api_lsa_create_secret(rpcsrv_struct * p, prs_struct * data,
 /***************************************************************************
  api_lsa_set_secret.  AGH!  HACK! :)
  ***************************************************************************/
-static BOOL api_lsa_set_secret(rpcsrv_struct * p, prs_struct * data,
-			       prs_struct * rdata)
+static BOOL api_lsa_set_secret(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_SET_SECRET q_o;
 	LSA_R_SET_SECRET r_o;
@@ -382,8 +373,7 @@ static BOOL api_lsa_set_secret(rpcsrv_struct * p, prs_struct * data,
 /***************************************************************************
  api_lsa_query_secret.  AGH!  HACK! :)
  ***************************************************************************/
-static BOOL api_lsa_query_secret(rpcsrv_struct * p, prs_struct * data,
-				 prs_struct * rdata)
+static BOOL api_lsa_query_secret(prs_struct *data, prs_struct *rdata)
 {
 	LSA_R_QUERY_SECRET r_o;
 	LSA_Q_QUERY_SECRET q_o;
@@ -435,8 +425,7 @@ static BOOL api_lsa_query_secret(rpcsrv_struct * p, prs_struct * data,
 /***************************************************************************
  api_lsa_create_secret
  ***************************************************************************/
-static BOOL api_lsa_open_secret(rpcsrv_struct * p, prs_struct * data,
-				prs_struct * rdata)
+static BOOL api_lsa_open_secret(prs_struct *data, prs_struct *rdata)
 {
 	LSA_R_OPEN_SECRET r_o;
 	LSA_Q_OPEN_SECRET q_o;

@@ -334,12 +334,22 @@ void add_srv_auth_fn(rpcsrv_struct * l, srv_auth_fns * fn)
 ****************************************************************************/
 BOOL msrpcd_init(int c, rpcsrv_struct ** l)
 {
-	vuser_key uk;
 	user_struct *vuser = NULL;
+	vuser_key uk;
+
+	(*l) = malloc(sizeof(*(*l)));
+	if ((*l) == NULL)
+	{
+		return False;
+	}
+
+	ZERO_STRUCTP(*l);
 
 	if (!get_user_creds(c, &uk))
 	{
 		DEBUG(0, ("authentication failed\n"));
+		safe_free(*l);
+		(*l) = NULL;
 		return False;
 	}
 
@@ -347,32 +357,27 @@ BOOL msrpcd_init(int c, rpcsrv_struct ** l)
 	{
 		if (!become_vuser(&uk))
 		{
+			safe_free(*l);
+			(*l) = NULL;
 			return False;
 		}
 
 		vuser = get_valid_user_struct(&uk);
 		if (vuser == NULL)
 		{
+			safe_free(*l);
+			(*l) = NULL;
 			return False;
 		}
 	}
 	else
 	{
-		if (!become_guest())
-		{
-			return False;
-		}
-	}
-
-	(*l) = malloc(sizeof(*(*l)));
-	if ((*l) == NULL)
-	{
-		vuid_free_user_struct(vuser);
+		safe_free(*l);
+		(*l) = NULL;
 		return False;
 	}
 
-	ZERO_STRUCTP(*l);
-
+	(*l)->initial_pipe_key = uk;
 	(*l)->key = uk;
 	(*l)->c = c;
 
@@ -459,12 +464,13 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 			return;
 		}
 
+#if 0
 		if (counter == 0)
 		{
 			/* reload services, if files have changed. */
 			fn->reload_services(True);
 		}
-
+#endif
 		/*
 		 * If reload_after_sighup == True then we got a SIGHUP
 		 * and are being asked to reload. Fix from <branko.cibej@hermes.si>

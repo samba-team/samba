@@ -152,6 +152,7 @@ typedef struct rpcsrv_struct
 	RPC_HDR_REQ hdr_req;
 
 	vuser_key key;
+	vuser_key initial_pipe_key;
 
 	int c;			/* socket */
 

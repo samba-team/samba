@@ -51,7 +51,6 @@ extern fstring global_sam_name;
 #define NERR_BufTooSmall (NERR_BASE+23)
 #define NERR_JobNotFound (NERR_BASE+51)
 #define NERR_DestNotFound (NERR_BASE+52)
-#define ERROR_INVALID_LEVEL 124
 
 #define ACCESS_READ 0x01
 #define ACCESS_WRITE 0x02

@@ -28,7 +28,7 @@
 
 extern int DEBUGLEVEL;
 
-uint16 ctx_id_table[65536];
+vuser_key ctx_id_table[65536];
 
 /*******************************************************************
 turns a DCE/RPC response stream into a DCE/RPC reply
@@ -153,7 +153,9 @@ static BOOL api_pipe_nack_resp(rpcsrv_struct * l, uint16 rej_code,
 
 	DEBUG(5, ("api_pipe_nack_resp: make response\n"));
 
+#if 0
 	l->faulted_once_before = True;
+#endif
 
 	prs_init(&(rhdr), 0, 4, False);
 	prs_init(&(rnack), 0, 4, False);
@@ -265,18 +267,18 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 		return False;
 	}
 
-	assoc_gid = l->hdr_rb.bba.assoc_gid;
-
-	if (assoc_gid != 0)
-	{
-		l->key.pid = assoc_gid;
-	}
-
 	if (l->hdr.auth_len != 0)
 	{
 		RPC_HDR_AUTH auth_info;
 		BOOL found = False;
 		int i;
+
+		assoc_gid = l->hdr_rb.bba.assoc_gid;
+
+		if (assoc_gid != 0)
+		{
+			l->key.pid = assoc_gid;
+		}
 
 		/* decode the authentication verifier */
 		smb_io_rpc_hdr_auth("", &auth_info, &l->data_i, 0);
@@ -305,10 +307,12 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 		l->auth_info = NULL;
 
 		assoc_gid = l->hdr_rb.bba.assoc_gid;
+#if 0
 		if (assoc_gid != 0)
 		{
 			l->key.pid = assoc_gid;
 		}
+#endif
 	}
 
 	if (assoc_gid == 0)
@@ -573,6 +577,11 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct *req,
 	{
 		case RPC_BIND:
 		{
+			reply = become_vuser(&l->initial_pipe_key);
+			if (!reply)
+			{
+				break;
+			}
 			reply = api_pipe_bind_req(l, name, resp);
 			if (!reply)
 			{
@@ -598,29 +607,23 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct *req,
 			{
 				vuser_key key = l->key;
 				/* read the rpc header */
-				reply =
-					smb_io_rpc_hdr_req("req",
+				reply = smb_io_rpc_hdr_req("req",
 							   &(l->hdr_req),
 							   &l->data_i, 0);
 				if (reply)
 				{
-					key.vuid =
-						ctx_id_table[l->
-							     hdr_req.context_id];
-					reply = become_vuser(&key)
-						|| become_guest();
+					key = ctx_id_table[l->hdr_req.context_id];
+					reply = become_vuser(&key);
 
 				}
 				if (reply)
 				{
-					reply =
-						api_pipe_request(l, name,
+					reply = api_pipe_request(l, name,
 								 resp);
 				}
 				if (!reply)
 				{
-					DEBUG(10,
-					      ("dce/rpc request failed\n"));
+					DEBUG(10, ("dce/rpc request failed\n"));
 				}
 			}
 			break;

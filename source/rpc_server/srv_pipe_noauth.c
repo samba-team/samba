@@ -156,16 +156,17 @@ static BOOL api_noauth_auth_gen(rpcsrv_struct * l, prs_struct *resp,
 
 static BOOL api_noauth_auth_chk(rpcsrv_struct * l, enum RPC_PKT_TYPE pkt_type)
 {
-	extern uint16 ctx_id_table[65536];
+	extern vuser_key ctx_id_table[65536];
 	const vuser_key *key = get_sec_ctx();
 	l->auth_validated = True;
 
 	if (key == NULL)
 	{
+		DEBUG(5,("api_noauth_auth_chk: no vuser_key\n"));
 		return False;
 	}
 
-	ctx_id_table[l->hdr_rb.context_id] = key->vuid;
+	ctx_id_table[l->hdr_rb.context_id] = *key;
 
 	return True;
 }
