@@ -230,6 +230,13 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 }
 
 
+/**
+ * Trust password flag name to flag conversion
+ *
+ * @param flag_name SAM_TRUST_PASSWD structure flag name
+ * @return flag value
+ **/
+
 static int trustpw_flag(const char* flag_name)
 {
 	const int flag_num = 5;
@@ -250,6 +257,13 @@ static int trustpw_flag(const char* flag_name)
 	return 0;
 }
 
+
+/**
+ * Trust password flag to flag name conversion
+ *
+ * @param val SAM_TRUST_PASSWD structure flag
+ * @return passed flag name
+ **/
 
 static char* trustpw_flag_name(const int val)
 {
@@ -272,6 +286,15 @@ static char* trustpw_flag_name(const int val)
 }
 
 
+/**
+ * Print trust password structure information
+ *
+ * @param mem_ctx memory context (for unicode name conversion)
+ * @param trust SAM_TRUST_PASSWD structure
+ * @param verbose verbose mode on/off
+ * @return 0 on success, otherwise failure
+ **/
+ 
 static int print_trustpw_info(TALLOC_CTX *mem_ctx, SAM_TRUST_PASSWD *trust, BOOL verbose)
 {
 	char *dom_name;
@@ -297,6 +320,16 @@ static int print_trustpw_info(TALLOC_CTX *mem_ctx, SAM_TRUST_PASSWD *trust, BOOL
 }
 
 
+/**
+ * Print trust password information by given name
+ *
+ * @param in initialised pdb_context
+ * @param name domain name of the trust password
+ * @param verbose verbose mode on/off
+ * @param smbpwdstyle smbpassword-style output (ignored here)
+ * @return 0 on success, otherwise failure
+ **/
+ 
 static int print_trust_info(struct pdb_context *in, const char *name, BOOL verbose, BOOL smbpwdstyle)
 {
 	SAM_TRUST_PASSWD trust;
@@ -339,6 +372,7 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 	in->pdb_endsampwent(in);
 	return 0;
 }
+
 
 /**
  * List trust passwords
