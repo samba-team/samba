@@ -954,15 +954,15 @@ BOOL samr_delete_dom_alias(  POLICY_HND *alias_pol)
 /****************************************************************************
 do a SAMR Create Domain User
 ****************************************************************************/
-BOOL samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
+uint32 samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
 				uint32 unk_0, uint32 unk_1,
 				POLICY_HND *user_pol, uint32 *rid)
 {
 	prs_struct data;
 	prs_struct rdata;
+	uint32 status = NT_STATUS_INVALID_PARAMETER | 0xC0000000;
 
 	SAMR_Q_CREATE_USER q_o;
-	BOOL valid_pol = False;
 
 	if (user_pol == NULL || domain_pol == NULL || acct_name == NULL || rid == NULL) return False;
 
@@ -987,26 +987,30 @@ BOOL samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
 
 		samr_io_r_create_user("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
+		status = r_o.status;
 
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
 			DEBUG(4,("SAMR_R_CREATE_USER: %s\n", get_nt_error_msg(r_o.status)));
-			p = False;
+			p = r_o.status != NT_STATUS_USER_EXISTS;
 		}
 
 		if (p)
 		{
 			memcpy(user_pol, &r_o.user_pol, sizeof(r_o.user_pol));
 			*rid = r_o.user_rid;
-			valid_pol = cli_pol_link(user_pol, domain_pol);
+			if (!cli_pol_link(user_pol, domain_pol))
+			{
+				status = NT_STATUS_INVALID_HANDLE | 0xC0000000;
+			}
 		}
 	}
 
 	prs_mem_free(&data   );
 	prs_mem_free(&rdata  );
 
-	return valid_pol;
+	return status;
 }
 
 /****************************************************************************
@@ -1632,7 +1636,7 @@ BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 do a SAMR Query Lookup Names
 ****************************************************************************/
 BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
-				uint32 num_names, char **names,
+				uint32 num_names, const char **names,
 				uint32 *num_rids,
 				uint32 rid[MAX_LOOKUP_SIDS],
 				uint32 type[MAX_LOOKUP_SIDS])

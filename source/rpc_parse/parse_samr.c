@@ -4399,7 +4399,7 @@ makes a SAMR_Q_LOOKUP_NAMES structure.
 ********************************************************************/
 BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 		POLICY_HND *pol, uint32 flags,
-		uint32 num_names, char **name)
+		uint32 num_names, const char **name)
 {
 	uint32 i;
 	if (q_u == NULL) return False;
@@ -4937,10 +4937,10 @@ BOOL sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int 
 
  *************************************************************************/
 BOOL make_sam_user_info24(SAM_USER_INFO_24 *usr,
-	char newpass[516])
+	char newpass[516], uint16 passlen)
 {
 	memcpy(usr->pass, newpass, sizeof(usr->pass));
-	usr->unk_0 = 0x44;
+	usr->unk_0 = passlen;
 
 	return True;
 }
@@ -4948,7 +4948,7 @@ BOOL make_sam_user_info24(SAM_USER_INFO_24 *usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL sam_io_user_info24(char *desc,  SAM_USER_INFO_24 *usr, prs_struct *ps, int depth)
+static BOOL sam_io_user_info24(char *desc, SAM_USER_INFO_24 *usr, prs_struct *ps, int depth)
 {
 	if (usr == NULL) return False;
 
@@ -5673,26 +5673,29 @@ BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 		case 0x18:
 		{
 			uchar sess_key[16];
-			if (!cli_get_sesskey(hnd, sess_key))
+			if (!cli_get_usr_sesskey(hnd, sess_key))
 			{
 				return False;
 			}
+			SamOEMhash(q_u->info.id24->pass, sess_key, 1);
 #ifdef DEBUG_PASSWORD
 			dump_data(100, sess_key, 16);
+			dump_data(100, q_u->info.id24->pass, 516);
 #endif
-			SamOEMhash(q_u->info.id24->pass, sess_key, 1);
+			break;
 		}
 		case 0x17:
 		{
 			uchar sess_key[16];
-			if (!cli_get_sesskey(hnd, sess_key))
+			if (!cli_get_usr_sesskey(hnd, sess_key))
 			{
 				return False;
 			}
+			SamOEMhash(q_u->info.id23->pass, sess_key, 1);
 #ifdef DEBUG_PASSWORD
 			dump_data(100, sess_key, 16);
+			dump_data(100, q_u->info.id23->pass, 516);
 #endif
-			SamOEMhash(q_u->info.id23->pass, sess_key, 1);
 			break;
 		}
 		default:

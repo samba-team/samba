@@ -749,7 +749,8 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	    pwdb_encode_acct_ctrl(acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
 	if (msrpc_sam_create_dom_user(srv_name, &sid1,
-	                              acct_name, acb_info, &user_rid))
+	                              acct_name, acb_info, NULL,
+	                              &user_rid))
 	{
 		report(out_hnd, "Create Domain User: OK\n");
 	}
@@ -1863,7 +1864,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		if (True)
 		{
 			SAM_USER_INFO_24 *p = (SAM_USER_INFO_24*)malloc(sizeof(SAM_USER_INFO_24));
-			make_sam_user_info24(p, pwbuf);
+			make_sam_user_info24(p, pwbuf, strlen(password));
 
 			usr = p;
 			switch_value = 24;

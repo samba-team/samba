@@ -1802,8 +1802,10 @@ BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con);
 BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con);
 BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from);
+BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16]);
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16]);
 BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name);
+BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16]);
 BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
 BOOL cli_get_sesskey_srv(const char* srv_name, uchar sess_key[16]);
 void cli_con_gen_next_creds(struct cli_connection *con,
@@ -2033,7 +2035,7 @@ BOOL samr_open_alias(  const POLICY_HND *domain_pol,
 BOOL samr_del_aliasmem(  POLICY_HND *alias_pol, DOM_SID *sid);
 BOOL samr_add_aliasmem(  POLICY_HND *alias_pol, DOM_SID *sid);
 BOOL samr_delete_dom_alias(  POLICY_HND *alias_pol);
-BOOL samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
+uint32 samr_create_dom_user(  POLICY_HND *domain_pol, const char *acct_name,
 				uint32 unk_0, uint32 unk_1,
 				POLICY_HND *user_pol, uint32 *rid);
 BOOL samr_create_dom_alias(  POLICY_HND *domain_pol, const char *acct_name,
@@ -2057,7 +2059,7 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 			      DOM_SID *dom_sid);
 BOOL samr_query_lookup_names(  POLICY_HND *pol, uint32 flags,
-				uint32 num_names, char **names,
+				uint32 num_names, const char **names,
 				uint32 *num_rids,
 				uint32 rid[MAX_LOOKUP_SIDS],
 				uint32 type[MAX_LOOKUP_SIDS]);
@@ -2297,8 +2299,9 @@ uint32 msrpc_sam_enum_aliases( const char* srv_name,
 				ALIAS_FN(als_fn),
 				ALIAS_INFO_FN(als_inf_fn),
 				ALIAS_MEM_FN(als_mem_fn));
-BOOL create_samr_domain_user( POLICY_HND *pol_open_domain,
+BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 				const char *acct_name, uint16 acb_info,
+				const char* password,
 				uint32 *rid);
 BOOL create_samr_domain_alias( POLICY_HND *pol_open_domain,
 				const char *acct_name, const char *acct_desc,
@@ -2344,7 +2347,8 @@ BOOL get_samr_query_aliasinfo(
 				uint32 info_level,
 				uint32 alias_rid, ALIAS_INFO_CTR *ctr);
 BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
-				char *acct_name, uint16 acb_info,
+				const char *acct_name, uint16 acb_info,
+				const char *password,
 				uint32 *rid);
 BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 				DOM_SID *sid1,
@@ -3026,7 +3030,7 @@ BOOL make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
 BOOL samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 		POLICY_HND *pol, uint32 flags,
-		uint32 num_names, char **name);
+		uint32 num_names, const char **name);
 BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
 BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		uint32 num_rids, uint32 *rid, uint8 *type, uint32 status);
@@ -3060,7 +3064,7 @@ BOOL make_sam_user_info11(SAM_USER_INFO_11 *usr,
 				uint16 acct_ctrl);
 BOOL sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
 BOOL make_sam_user_info24(SAM_USER_INFO_24 *usr,
-	char newpass[516]);
+	char newpass[516], uint16 passlen);
 BOOL make_sam_user_info23W(SAM_USER_INFO_23 *usr,
 
 	NTTIME *logon_time, /* all zeros */
