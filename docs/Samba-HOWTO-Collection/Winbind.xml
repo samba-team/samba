@@ -604,12 +604,30 @@ linkend="winbindcfg">the next example</link>, was modified to include the necess
 <title>Join the Samba Server to the PDC Domain</title>
 
 <para>
+All machines that will participate in domain security should be members of
+the domain. This applies also to the PDC and all BDCs.
+</para>
+
+<para>
+The process of joining a domain requires the use of the <command>net rpc join</command>
+command. This process communicates with the domain controller it will register with
+(usually the PDC) via MS DCE RPC. This means, of course, that the <command>smbd</command>
+process must be running on the target DC. This means that it is necessary to temporarily
+start Samba on a PDC so that it can join its own domain.
+</para>
+
+<para>
 Enter the following command to make the Samba server join the 
-PDC domain, where <replaceable>PDC</replaceable> is the name of 
+domain, where <replaceable>PDC</replaceable> is the name of 
 your PDC and <replaceable>Administrator</replaceable> is 
 a domain user who has administrative privileges in the domain.
 </para>
 	
+<note><para>
+Before attempting to join a machine to the domain verify that Samba is running
+on the target DC (usually PDC) and that it is capable of being reached via ports
+137/udp, 135/tcp, 139/tcp, and 445/tcp (if Samba or Windows Server 2Kx.
+</para></note>
 
 <para>
 &rootprompt;<userinput>/usr/local/samba/bin/net rpc join -S PDC -U Administrator</userinput>
