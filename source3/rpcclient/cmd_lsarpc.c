@@ -78,7 +78,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID *sids;
 	uint32 *types;
-	int num_names, i;
+	int i;
 
 	if (argc == 1) {
 		printf("Usage: %s [name1 [name2 [...]]]\n", argv[0]);
@@ -93,15 +93,17 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 		goto done;
 
 	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
-				      (const char**)(argv + 1), &sids, 
-				      &types, &num_names);
+				      (const char**)(argv + 1), &sids, &types);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
+	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
 		goto done;
+
+	result = NT_STATUS_OK;
 
 	/* Print results */
 
-	for (i = 0; i < num_names; i++) {
+	for (i = 0; i < (argc - 1); i++) {
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sids[i]);
@@ -124,7 +126,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	char **domains;
 	char **names;
 	uint32 *types;
-	int num_names, i;
+	int i;
 
 	if (argc == 1) {
 		printf("Usage: %s [sid1 [sid2 [...]]]\n", argv[0]);
@@ -153,18 +155,21 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Lookup the SIDs */
 
 	result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids, 
-				     &domains, &names, &types, &num_names);
+				     &domains, &names, &types);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
+	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
 		goto done;
+
+	result = NT_STATUS_OK;
 
 	/* Print results */
 
-	for (i = 0; i < num_names; i++) {
+	for (i = 0; i < (argc - 1); i++) {
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sids[i]);
-		printf("%s [%s]\\[%s] (%d)\n", sid_str, 
+		printf("%s %s\\%s (%d)\n", sid_str, 
 		       domains[i] ? domains[i] : "*unknown*", 
 		       names[i] ? names[i] : "*unknown*", types[i]);
 	}
@@ -446,6 +451,7 @@ static NTSTATUS cmd_lsa_lookupprivvalue(struct cli_state *cli,
 		goto done;
 
 	/* Print results */
+
 	printf("%u:%u (0x%x:0x%x)\n", luid.high, luid.low, luid.high, luid.low);
 
  done:
