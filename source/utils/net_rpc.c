@@ -1531,7 +1531,7 @@ rpc_group_delmem_internals(const DOM_SID *domain_sid, const char *domain_name,
 						   &group_sid, argv[1]);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("Could not del %s to %s: %s\n",
+			d_printf("Could not del %s from %s: %s\n",
 				 argv[1], argv[0], nt_errstr(result));
 		}
 		return result;
