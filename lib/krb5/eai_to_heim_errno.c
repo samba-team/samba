@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,8 +35,14 @@
 
 RCSID("$Id$");
 
+/*
+ * convert the getaddrinfo error code in `eai_errno' into a
+ * krb5_error_code. `system_error' should have the value of the errno
+ * after the failed call.
+ */
+
 krb5_error_code
-krb5_eai_to_heim_errno(int eai_errno)
+krb5_eai_to_heim_errno(int eai_errno, int system_error)
 {
     switch(eai_errno) {
     case EAI_NOERROR:
@@ -62,7 +68,7 @@ krb5_eai_to_heim_errno(int eai_errno)
     case EAI_SOCKTYPE:
 	return HEIM_EAI_SOCKTYPE;
     case EAI_SYSTEM:
-	return errno;
+	return system_error;
     default:
 	return HEIM_EAI_UNKNOWN; /* XXX */
     }
