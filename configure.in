@@ -39,6 +39,10 @@ AM_PROG_LEX
 AC_PROG_RANLIB
 AC_PROG_AWK
 AC_KRB_PROG_LN_S
+
+AC_MIPS_ABI
+CC="$CC $abi"
+
 AM_DISABLE_SHARED
 AM_PROG_LIBTOOL
 
@@ -52,11 +56,12 @@ if test "$withval" = no; then
 fi
 ])
 
-AC_TEST_PACKAGE(krb4,krb.h,libkrb.a,-lkrb,/usr/athena)
+AC_TEST_PACKAGE_NEW(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena)
 
 LIB_kdb=
 if test "$with_krb4"; then
-	LIB_kdb="$LIB_krb4 -lkdb"
+	LIB_krb4="-rpath $krb4_libdir $LIB_krb4"
+	LIB_kdb="-rpath $krb4_libdir -L$krb4_libdir -lkdb -lkrb"
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
 	AC_CACHE_CHECK(for four valued krb_put_int, ac_cv_func_krb_put_int_four,
@@ -151,9 +156,9 @@ fi
 
 AC_CHECK_MAN
 
-AC_TEST_PACKAGE(readline,readline.h,libreadline.a,-lreadline)
+AC_TEST_PACKAGE_NEW(readline,[#include <readline.h>],-lreadline)
 
-AC_TEST_PACKAGE(hesiod,hesiod.h,libhesiod.a,-lhesiod)
+AC_TEST_PACKAGE_NEW(hesiod,[#include <hesiod.h>],-lhesiod)
 
 AC_C_BIGENDIAN
 AC_C_INLINE
@@ -513,14 +518,14 @@ dnl
 dnl Check for fields in struct utmp
 dnl
 
-AC_HAVE_STRUCT_FIELD(utmp, ut_addr, [#include <utmp.h>])
-AC_HAVE_STRUCT_FIELD(utmp, ut_host, [#include <utmp.h>])
-AC_HAVE_STRUCT_FIELD(utmp, ut_id, [#include <utmp.h>])
-AC_HAVE_STRUCT_FIELD(utmp, ut_pid, [#include <utmp.h>])
-AC_HAVE_STRUCT_FIELD(utmp, ut_type, [#include <utmp.h>])
-AC_HAVE_STRUCT_FIELD(utmp, ut_user, [#include <utmp.h>])
-AC_HAVE_STRUCT_FIELD(utmpx, ut_exit, [#include <utmpx.h>])
-AC_HAVE_STRUCT_FIELD(utmpx, ut_syslen, [#include <utmpx.h>])
+AC_HAVE_STRUCT_FIELD(struct utmp, ut_addr, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(struct utmp, ut_host, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(struct utmp, ut_id, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(struct utmp, ut_pid, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(struct utmp, ut_type, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(struct utmp, ut_user, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(struct utmpx, ut_exit, [#include <utmpx.h>])
+AC_HAVE_STRUCT_FIELD(struct utmpx, ut_syslen, [#include <utmpx.h>])
 
 AC_KRB_IPV6
 
@@ -565,18 +570,15 @@ if test "$ac_cv_func_el_init" = yes ; then
 fi
 AC_FIND_FUNC_NO_LIBS(readline, edit readline)
 ac_foo=no
-if test "$with_readline"; then
-	LIB_readline="$READLINELIB"
-	INCLUDE_readline="$READLINEINCLUDE"
+if test "$with_readline" = yes; then
+	:
 elif test "$ac_cv_func_readline" = yes; then
-	INCLUDE_readline=
+	:
 elif test "$ac_cv_func_el_init" = yes; then
 	ac_foo=yes
 	LIB_readline="\$(top_builddir)/lib/editline/libel_compat.a $LIB_el_init"
-	INCLUDE_readline='-I$(top_srcdir)/lib/editline'
 else
 	LIB_readline='$(top_builddir)/lib/editline/libeditline.a'
-	INCLUDE_readline='-I$(top_srcdir)/lib/editline'
 fi
 AM_CONDITIONAL(el_compat, test "$ac_foo" = yes)
 LIB_readline="$LIB_readline \$(LIB_tgetent)"
