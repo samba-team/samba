@@ -206,6 +206,7 @@
 
 #define PRINTER_NOTIFY_TYPE 0x00
 #define JOB_NOTIFY_TYPE     0x01
+#define PRINT_TABLE_END     0xFF
 
 #define MAX_PRINTER_NOTIFY 26
 #define MAX_JOB_NOTIFY 24
