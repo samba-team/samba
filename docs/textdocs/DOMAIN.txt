@@ -323,7 +323,7 @@ matter to be resolved].
 
 [lkcl 20aug97 - after samba digest correspondance, one user found, and
 another confirmed, that profiles cannot be loaded from a samba server
-unless "security = user" and "encrypted passwords = yes" (see the file
+unless "security = user" and "encrypt passwords = yes" (see the file
 ENCRYPTION.txt) or "security = server" and "password server = ip.address.
 of.yourNTserver" are used.  either of these options will allow the NT
 workstation to access the samba server using LAN manager encrypted
