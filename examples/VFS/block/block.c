@@ -87,7 +87,7 @@ static BOOL get_section(char *sect);
 static BOOL get_parameter_value(char *param, char *value);
 static BOOL load_param(void);
 static BOOL search(struct stat *stat_buf);
-static BOOL dir_search(char *link, char *dir);
+static BOOL dir_search(char *linkstr, char *dir);
 static BOOL enter_pblock_dir(char *dir);
 
 
@@ -346,12 +346,11 @@ static DIR *block_opendir(struct connection_struct *conn, char *fname)
 
 	char *dir_name = NULL; 
 	struct stat stat_buf;
+	size_t len;
 
-	dir_name = alloca((strlen(conn->origpath) + strlen(fname) + 2) * sizeof(char));
-
-	pstrcpy(dir_name,conn->origpath);
-	pstrcat(dir_name, "/");	
-	strncat(dir_name, fname, strcspn(fname,"/"));
+	len = strlen(conn->origpath) + 1 + strcspn(fname, "/");
+	asprintf(&dir_name, "%s/%s", conn->origpath, fname);
+	dir_name[len] = '\0';
 
 	if((lstat(dir_name,&stat_buf)) == 0)
 	{
@@ -397,13 +396,13 @@ static BOOL search(struct stat *stat_buf)
  * Find dir in list to block id the starting point is link from a share
  */
 
-static BOOL dir_search(char *link, char *dir)
+static BOOL dir_search(char *linkstr, char *dir)
 {
 	char buf[PATH_MAX +1], *ext_path;
 	int len = 0;
 	struct block_dir *tmp_pblock = pblock_dir;
 	
-	if((len = readlink(link,buf,sizeof(buf))) == -1)
+	if((len = readlink(linkstr, buf, sizeof(buf))) == -1)
 	{
 		return TRUE;
 
@@ -413,9 +412,9 @@ static BOOL dir_search(char *link, char *dir)
 	}
 	
 	
-        if((ext_path = strchr(dir,'/')) != NULL)
+        if((ext_path = strchr(dir, '/')) != NULL)
 	{
-		pstrcat(buf,&ext_path[1]);
+		pstrcat(buf, &ext_path[1]);
 		len = strlen(buf);		
 	}
 	
@@ -427,7 +426,7 @@ static BOOL dir_search(char *link, char *dir)
 			continue;
 		}
 		
-		if((strstr(buf,tmp_pblock->dir_name)) != NULL)
+		if((strstr(buf, tmp_pblock->dir_name)) != NULL)
 		{
 			return TRUE;
 		}
