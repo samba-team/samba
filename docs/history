@@ -194,3 +194,25 @@ Samba Team
 
 ps: The bugs are ours, so please report any you find.
 ---------------------
+
+---------------------
+It's now October 1998. We just got back from the 3rd CIFS conference
+in SanJose. The Samba Team was the biggest contingent there.
+
+Samba 2.0 should be shipping in the next few weeks with much better
+domain controller support, GUI configuration, a new user space SMB
+filesystem and lots of other neat stuff. I've also noticed that a
+search of job ads in DejaNews turned up 3900 that mention Samba. Looks
+like we've created a small industry.
+
+I've been asked again where the name Samba came from. I might as well
+put it down here for everyone to read. The code in Samba was first
+called just "server", it then got renamed "smbserver" when I
+discovered that the protocol is called SMB. Then in April 1994 I got
+an email from Syntax, the makers of "TotalNet advanced Server", a
+commercial SMB server. They told me that they had a trademark on the
+name SMBserver and I would have to change the name. I ran an egrep for
+words containing S, M, and B on /usr/dict/words and the name Samba
+looked like the best choice. Strangely enough when I repeat that now I
+notice that Samba isn't in /usr/dict/words on my system anymore! 
+---------------------
