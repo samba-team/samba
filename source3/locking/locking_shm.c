@@ -619,14 +619,16 @@ static int shm_share_forall(void (*fn)(share_mode_entry *, char *))
 
 			while(entry_scanner_p != 0) {
 				
-				fn(&entry_scanner_p->e, 
-				   file_scanner_p->file_name);
+				if (process_exists(entry_scanner_p->e.pid)) {
+					fn(&entry_scanner_p->e, 
+					   file_scanner_p->file_name);
+					count++;
+				}
 
 				entry_scanner_p = 
 					(shm_share_mode_entry *)
 					shmops->offset2addr(
 							    entry_scanner_p->next_share_mode_entry);
-				count++;
 			} /* end while entry_scanner_p */
 			file_scanner_p = (share_mode_record *)
 				shmops->offset2addr(file_scanner_p->next_offset);
