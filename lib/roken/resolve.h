@@ -171,10 +171,6 @@ struct resource_record{
     struct resource_record *next;
 };
 
-#ifndef T_A /* XXX if <arpa/nameser.h> isn't included */
-typedef int HEADER; /* will never be used */
-#endif
-
 struct dns_header {
     unsigned id;
     unsigned misc;
