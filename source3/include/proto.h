@@ -547,7 +547,8 @@ BOOL check_elections(void);
 
 /*The following definitions come from  namelogon.c  */
 
-void process_logon_packet(struct packet_struct *p,char *buf,int len);
+void process_logon_packet(struct packet_struct *p,char *buf,int len, 
+			  char *mailslot);
 
 /*The following definitions come from  namepacket.c  */
 
