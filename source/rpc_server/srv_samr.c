@@ -742,9 +742,9 @@ static void api_samr_query_aliasinfo( uint16 vuid, prs_struct *data, prs_struct 
 
 
 /*******************************************************************
- samr_reply_lookup_ids
+ samr_reply_query_useraliases
  ********************************************************************/
-static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
+static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 				prs_struct *rdata)
 {
 	uint32 rid[MAX_SAM_ENTRIES];
@@ -759,9 +759,9 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 	fstring dom_sid_str;
 	fstring usr_sid_str;
 
-	SAMR_R_LOOKUP_IDS r_u;
+	SAMR_R_QUERY_USERALIASES r_u;
 
-	DEBUG(5,("samr_lookup_ids: %d\n", __LINE__));
+	DEBUG(5,("samr_query_useraliases: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
 	if (status == 0x0 && !get_lsa_policy_samr_sid(&q_u->pol, &dom_sid))
@@ -777,7 +777,7 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 	if (num_rids > MAX_SAM_ENTRIES)
 	{
 		num_rids = MAX_SAM_ENTRIES;
-		DEBUG(5,("samr_lookup_ids: truncating entries to %d\n", num_rids));
+		DEBUG(5,("samr_query_useraliases: truncating entries to %d\n", num_rids));
 	}
 
 	if (status == 0x0)
@@ -806,16 +806,16 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 	{
 		if (sid_equal(&dom_sid, &global_sid_S_1_5_20))
 		{
-			DEBUG(5,("lookup on S-1-5-20\n"));
+			DEBUG(10,("lookup on S-1-5-20\n"));
 		}
 		else if (sid_equal(&dom_sid, &usr_sid))
 		{
-			DOMAIN_GRP *mem_grp = NULL;
+			LOCAL_GRP *mem_grp = NULL;
 
-			DEBUG(5,("lookup on Domain SID\n"));
+			DEBUG(10,("lookup on Domain SID\n"));
 
 			become_root(True);
-			getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_rids);
+			getuseraliasnam(sam_pass->smb_name, &mem_grp, &num_rids);
 			unbecome_root(True);
 
 			num_rids = MIN(num_rids, MAX_SAM_ENTRIES);
@@ -835,27 +835,27 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 		}
 	}
 
-	make_samr_r_lookup_ids(&r_u, num_rids, rid, status);
+	make_samr_r_query_useraliases(&r_u, num_rids, rid, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_lookup_ids("", &r_u, rdata, 0);
+	samr_io_r_query_useraliases("", &r_u, rdata, 0);
 
-	DEBUG(5,("samr_lookup_ids: %d\n", __LINE__));
+	DEBUG(5,("samr_query_useraliases: %d\n", __LINE__));
 
 }
 
 /*******************************************************************
- api_samr_lookup_ids
+ api_samr_query_useraliases
  ********************************************************************/
-static void api_samr_lookup_ids( uint16 vuid, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_useraliases( uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
-	SAMR_Q_LOOKUP_IDS q_u;
+	SAMR_Q_QUERY_USERALIASES q_u;
 
 	/* grab the samr 0x10 */
-	samr_io_q_lookup_ids("", &q_u, data, 0);
+	samr_io_q_query_useraliases("", &q_u, data, 0);
 
 	/* construct reply.  always indicate success */
-	samr_reply_lookup_ids(&q_u, rdata);
+	samr_reply_query_useraliases(&q_u, rdata);
 }
 
 /*******************************************************************
@@ -1750,11 +1750,11 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_ENUM_DOM_USERS"   , SAMR_ENUM_DOM_USERS   , api_samr_enum_dom_users   },
 	{ "SAMR_ENUM_DOM_GROUPS"  , SAMR_ENUM_DOM_GROUPS  , api_samr_enum_dom_groups  },
 	{ "SAMR_ENUM_DOM_ALIASES" , SAMR_ENUM_DOM_ALIASES , api_samr_enum_dom_aliases },
-	{ "SAMR_LOOKUP_IDS"       , SAMR_LOOKUP_IDS       , api_samr_lookup_ids       },
+	{ "SAMR_QUERY_USERALIASES", SAMR_QUERY_USERALIASES, api_samr_query_useraliases},
 	{ "SAMR_LOOKUP_NAMES"     , SAMR_LOOKUP_NAMES     , api_samr_lookup_names     },
 	{ "SAMR_OPEN_USER"        , SAMR_OPEN_USER        , api_samr_open_user        },
 	{ "SAMR_QUERY_USERINFO"   , SAMR_QUERY_USERINFO   , api_samr_query_userinfo   },
-	{ "SAMR_QUERY_DOMAIN_INFO", SAMR_QUERY_DOMAIN_INFO, api_samr_query_dom_info        },
+	{ "SAMR_QUERY_DOMAIN_INFO", SAMR_QUERY_DOMAIN_INFO, api_samr_query_dom_info   },
 	{ "SAMR_QUERY_USERGROUPS" , SAMR_QUERY_USERGROUPS , api_samr_query_usergroups },
 	{ "SAMR_QUERY_DISPINFO"   , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },
 	{ "SAMR_QUERY_ALIASINFO"  , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },

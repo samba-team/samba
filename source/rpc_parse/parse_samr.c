@@ -1646,16 +1646,16 @@ void samr_io_r_query_aliasinfo(char *desc,  SAMR_R_QUERY_ALIASINFO *r_u, prs_str
 }
 
 /*******************************************************************
-reads or writes a SAMR_Q_LOOKUP_IDS structure.
+reads or writes a SAMR_Q_QUERY_USERALIASES structure.
 ********************************************************************/
-void samr_io_q_lookup_ids(char *desc,  SAMR_Q_LOOKUP_IDS *q_u, prs_struct *ps, int depth)
+void samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs_struct *ps, int depth)
 {
 	fstring tmp;
 	int i;
 
 	if (q_u == NULL) return;
 
-	prs_debug(ps, depth, desc, "samr_io_q_lookup_ids");
+	prs_debug(ps, depth, desc, "samr_io_q_query_useraliases");
 	depth++;
 
 	prs_align(ps);
@@ -1690,15 +1690,15 @@ void samr_io_q_lookup_ids(char *desc,  SAMR_Q_LOOKUP_IDS *q_u, prs_struct *ps, i
 
 
 /*******************************************************************
-makes a SAMR_R_LOOKUP_IDS structure.
+makes a SAMR_R_QUERY_USERALIASES structure.
 ********************************************************************/
-void make_samr_r_lookup_ids(SAMR_R_LOOKUP_IDS *r_u,
+void make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u,
 		uint32 num_rids, uint32 *rid, uint32 status)
 {
 	int i;
 	if (r_u == NULL) return;
 
-	DEBUG(5,("make_samr_r_lookup_ids\n"));
+	DEBUG(5,("make_samr_r_query_useraliases\n"));
 
 	if (status == 0x0)
 	{
@@ -1726,13 +1726,13 @@ void make_samr_r_lookup_ids(SAMR_R_LOOKUP_IDS *r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void samr_io_r_lookup_ids(char *desc,  SAMR_R_LOOKUP_IDS *r_u, prs_struct *ps, int depth)
+void samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs_struct *ps, int depth)
 {
 	fstring tmp;
 	int i;
 	if (r_u == NULL) return;
 
-	prs_debug(ps, depth, desc, "samr_io_r_lookup_ids");
+	prs_debug(ps, depth, desc, "samr_io_r_query_useraliases");
 	depth++;
 
 	prs_align(ps);

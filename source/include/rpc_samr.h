@@ -80,7 +80,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CLOSE_HND         0x01
 #define SAMR_OPEN_DOMAIN       0x07
 #define SAMR_QUERY_DOMAIN_INFO 0x08
-#define SAMR_LOOKUP_IDS        0x10
+#define SAMR_QUERY_USERALIASES        0x10
 #define SAMR_LOOKUP_NAMES      0x11
 #define SAMR_UNKNOWN_3         0x03
 #define SAMR_QUERY_DISPINFO    0x28
@@ -760,14 +760,14 @@ typedef struct r_samr_query_user_info
 
 
 /****************************************************************************
-SAMR_Q_LOOKUP_IDS - do a conversion from name to RID.
+SAMR_Q_QUERY_USERALIASES - do a conversion from name to RID.
 
 the policy handle allocated by an "samr open secret" call is associated
 with a SID.  this policy handle is what is queried here, *not* the SID
 itself.  the response to the lookup rids is relative to this SID.
 *****************************************************************************/
-/* SAMR_Q_LOOKUP_IDS */
-typedef struct q_samr_lookup_ids_info
+/* SAMR_Q_QUERY_USERALIASES */
+typedef struct q_samr_query_useraliases_info
 {
 	POLICY_HND pol;       /* policy handle */
 
@@ -778,11 +778,11 @@ typedef struct q_samr_lookup_ids_info
 	uint32   ptr_sid[MAX_LOOKUP_SIDS]; /* pointers to sids to be looked up */
 	DOM_SID2 sid    [MAX_LOOKUP_SIDS]; /* sids to be looked up. */
 
-} SAMR_Q_LOOKUP_IDS;
+} SAMR_Q_QUERY_USERALIASES;
 
 
-/* SAMR_R_LOOKUP_IDS */
-typedef struct r_samr_lookup_ids_info
+/* SAMR_R_QUERY_USERALIASES */
+typedef struct r_samr_query_useraliases_info
 {
 	uint32 num_entries;
 	uint32 ptr; /* undocumented buffer pointer */
@@ -792,7 +792,7 @@ typedef struct r_samr_lookup_ids_info
 
 	uint32 status; /* return code */
 
-} SAMR_R_LOOKUP_IDS;
+} SAMR_R_QUERY_USERALIASES;
 
 
 /****************************************************************************
