@@ -141,6 +141,7 @@ kadm5_ret_t
 _kadm5_setup_entry __P((
 	hdb_entry *ent,
 	kadm5_principal_ent_t princ,
+	kadm5_principal_ent_t def,
 	u_int32_t mask));
 
 #endif /* __KADM5_LOCL_H__ */
