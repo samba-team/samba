@@ -9,8 +9,6 @@ YFLAGS = -d
 
 lib_LIBRARIES = libasn1.a
 
-include_HEADERS = asn1.h
-
 SUFFIXES = .x
 
 BUILT_SOURCES = asn1_APOptions.c asn1_AP_REP.c asn1_AP_REQ.c \
@@ -55,7 +53,7 @@ asn1_compile_LDADD = -L../roken -lroken @LEXLIB@
 
 CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) $(foo) asn1_files
 
-incdir = includedir
+incdir = $(includedir)
 inc_DATA = asn1.h
 idir = $(top_builddir)/include
 
