@@ -327,6 +327,7 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 	aprinter++;
 
 	DEBUGADD(5,("searching for [%s] (len=%d)\n", aprinter, strlen(aprinter)));
+
 	/*
 	 * store the Samba share name in it
 	 * in back we have the long printer name
@@ -361,14 +362,54 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 		found=True;
 	}
 
-	if (found==False)
-	{
+	/* 
+	 * if we haven't found a printer with the given printername
+	 * then it can be a share name as you can open both \\server\printer and
+	 * \\server\share
+	 */
+
+	/*
+	 * we still check if the printer description file exists as NT won't be happy
+	 * if we reply OK in the openprinter call and can't reply in the subsequent RPC calls
+	 */
+
+	if (found==False) {
+		DEBUGADD(5,("Printer not found, checking for share now\n"));
+	
+		for (snum=0;snum<n_services && found==False;snum++) {
+	
+			if ( !(lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) )
+				continue;
+		
+			DEBUGADD(5,("share:%s\n",lp_servicename(snum)));
+
+			if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
+				continue;
+
+			DEBUG(10,("set_printer_hnd_printername: printername [%s], aprinter [%s]\n", 
+					printer.info_2->printername, aprinter ));
+
+			if ( strlen(lp_servicename(snum)) != strlen(aprinter) ) {
+				free_a_printer(printer, 2);
+				continue;
+			}
+		
+			if ( strncasecmp(lp_servicename(snum), aprinter, strlen(aprinter)))  {
+				free_a_printer(printer, 2);
+				continue;
+			}
+		
+			found=True;
+		}
+	}
+		
+	if (found==False) {
 		DEBUGADD(4,("Printer not found\n"));
 		return False;
 	}
 	
 	snum--;
-	DEBUGADD(4,("Printer found: %s[%x]\n",lp_servicename(snum),snum));
+	DEBUGADD(4,("Printer found: %s -> %s[%x]\n",printer.info_2->printername, lp_servicename(snum),snum));
 	ZERO_STRUCT(Printer->dev.printername);
 	strncpy(Printer->dev.printername, lp_servicename(snum), strlen(lp_servicename(snum)));
 	free_a_printer(printer, 2);
