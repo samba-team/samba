@@ -62,8 +62,8 @@ krb5_rd_safe(krb5_context context,
       r = KRB5KRB_AP_ERR_MSG_TYPE;
       goto failure;
   }
-  /* XXX - checksum collision-proff and keyed */
-  if (safe.cksum.cksumtype != CKSUMTYPE_RSA_MD5_DES) {
+  if (!krb5_checksum_is_keyed(safe.cksum.cksumtype)
+      || !krb5_checksum_is_collision_proof(safe.cksum.cksumtype)) {
       r = KRB5KRB_AP_ERR_INAPP_CKSUM;
       goto failure;
   }
