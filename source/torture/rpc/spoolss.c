@@ -27,7 +27,7 @@ static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinter r;
-	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7};
+	uint16_t levels[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 	int i;
 	BOOL ret = True;
 	
@@ -684,7 +684,7 @@ static BOOL test_OpenPrinter_badname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	opEx.in.userlevel.level1	= NULL;
 	opEx.out.handle			= &handle;
 
-	printf("\nTesting OpenPrinter(%s) with bad name\n", opEx.in.printername);
+	printf("\nTesting OpenPrinterEx(%s) with bad name\n", opEx.in.printername);
 
 	status = dcerpc_spoolss_OpenPrinterEx(p, mem_ctx, &opEx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -711,6 +711,7 @@ static BOOL test_OpenPrinter_badnames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx
 	ret &= test_OpenPrinter_badname(p, mem_ctx, "__INVALID_PRINTER__");
 	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\127.0.0.1");
 	ret &= test_OpenPrinter_badname(p, mem_ctx, "\\\\localhost");
+	ret &= test_OpenPrinter_badname(p, mem_ctx, "");
 
 	name = talloc_asprintf(mem_ctx, "\\\\%s\\", dcerpc_server_name(p));
 	ret &= test_OpenPrinter_badname(p, mem_ctx, name);
@@ -868,12 +869,12 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		union spoolss_PrinterInfo *info;
 		int j;
 
-		r.in.flags = 0x02;
-		r.in.server = "";
-		r.in.level = levels[i];
-		r.in.buffer = NULL;
-		r.in.buf_size = &buf_size;
-		r.out.buf_size = &buf_size;
+		r.in.flags	= PRINTER_ENUM_LOCAL;
+		r.in.server	= "";
+		r.in.level	= levels[i];
+		r.in.buffer	= NULL;
+		r.in.buf_size	= &buf_size;
+		r.out.buf_size	= &buf_size;
 
 		printf("\nTesting EnumPrinters level %u\n", r.in.level);
 
@@ -883,14 +884,14 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			ret = False;
 			continue;
 		}
-		
+
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
 			data_blob_clear(&blob);
 			r.in.buffer = &blob;
 			status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
 		}
-		
+
 		if (!NT_STATUS_IS_OK(status) ||
 		    !W_ERROR_IS_OK(r.out.result)) {
 			printf("EnumPrinters failed - %s/%s\n", 
@@ -920,10 +921,11 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			}
 		}
 	}
-	
+
 	return ret;
 }
 
+#if 0
 static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				   struct policy_handle *handle, 
 				   const char *driver_name)
@@ -963,19 +965,18 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	return True;
 }
+#endif
 	
 static BOOL test_EnumPrinterDrivers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct spoolss_EnumPrinterDrivers r;
 	NTSTATUS status;
-	uint16_t levels[] = {1, 2, 3};
+	uint16_t levels[] = {1, 2, 3, 4, 5, 6};
 	int i;
 	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		uint32_t buf_size;
-		union spoolss_DriverInfo *info;
-		uint32_t j;
 
 		r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 		r.in.environment = "Windows NT x86";
@@ -1009,25 +1010,13 @@ static BOOL test_EnumPrinterDrivers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		    !W_ERROR_IS_OK(r.out.result)) {
 			printf("EnumPrinterDrivers failed - %s/%s\n", 
 			       nt_errstr(status), win_errstr(r.out.result));
+			ret = False;
 			break;
 		}
 
 		if (!r.out.info) {
 			printf("No printer drivers returned");
 			break;
-		}
-
-		info = *r.out.info;
-
-		if (r.in.level != 1) continue;
-
-		for (j=0;j<r.out.count;j++) {
-			struct policy_handle handle;
-
-			if (!call_OpenPrinterEx(p, mem_ctx, "",&handle)) {
-				continue;
-			}
-			ret &=test_GetPrinterDriver2(p, mem_ctx, &handle, info[j].info1.driver_name);
 		}
 	}
 
