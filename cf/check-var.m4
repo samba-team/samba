@@ -12,7 +12,7 @@ int foo() { return $1; }],
 ac_foo=`eval echo \\$ac_cv_var_$1`
 AC_MSG_RESULT($ac_foo)
 if test "$ac_foo" = yes; then
-	AC_DEFINE_UNQUOTED(AC_TR_CPP(HAVE_[]$1), 1, 
+	AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_[]$1), 1, 
 		[Define if you have the `]$1[' variable.])
 	m4_ifval([$2], AC_CHECK_DECLARATION([$2],[$1]))
 fi
