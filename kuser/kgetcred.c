@@ -38,10 +38,12 @@ RCSID("$Id$");
 static char *etype_str;
 static int version_flag;
 static int help_flag;
+static int transit_check = 1;
 
 struct getargs args[] = {
     { "enctype",	'e', arg_string, &etype_str,
       "encryption type to use", "enctype"},
+    { "transit-check",	0,   arg_negative_flag, &transit_check },
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
 };
@@ -63,9 +65,12 @@ main(int argc, char **argv)
     krb5_context context;
     krb5_ccache cache;
     krb5_creds in, *out;
+    krb5_kdc_flags flags;
     int optind = 0;
 
     setprogname (argv[0]);
+
+    flags.i = 0;
 
     ret = krb5_init_context (&context);
     if (ret)
@@ -111,8 +116,11 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err (context, 1, ret, "krb5_parse_name %s", argv[0]);
 
+    if (!transit_check)
+	flags.b.disable_transited_check = 1;
+
     in.times.endtime = 0;
-    ret = krb5_get_credentials(context, 0, cache, &in, &out);
+    ret = krb5_get_credentials_with_flags(context, 0, flags, cache, &in, &out);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_get_credentials");
 
