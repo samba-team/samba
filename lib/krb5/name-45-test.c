@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 2002 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -110,10 +110,10 @@ static struct testcase {
      "	v4_instance_resolve = true\n",
      HEIM_ERR_V4_PRINC_NO_CONV, 0},
 
-    {"rcmd", "ratatosk", "NADA.KTH.SE", "NADA.KTH.SE", 2,
-     {"host", "ratatosk.pdc.kth.se"}, NULL, HEIM_ERR_V4_PRINC_NO_CONV, 0},
-    {"rcmd", "ratatosk", "NADA.KTH.SE", "NADA.KTH.SE", 2,
-     {"host", "ratatosk.pdc.kth.se"},
+    {"rcmd", "hokkigai", "NADA.KTH.SE", "NADA.KTH.SE", 2,
+     {"host", "hokkigai.pdc.kth.se"}, NULL, HEIM_ERR_V4_PRINC_NO_CONV, 0},
+    {"rcmd", "hokkigai", "NADA.KTH.SE", "NADA.KTH.SE", 2,
+     {"host", "hokkigai.pdc.kth.se"},
      "[libdefaults]\n"
      "	v4_instance_resolve = true\n"
      "[realms]\n"
