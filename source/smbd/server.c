@@ -1849,8 +1849,16 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
 
         DEBUG(5,("open_file_shared: granted oplock (%x) on file %s, \
 dev = %x, inode = %x\n", oplock_request, fname, dev, inode));
-      }
 
+      }
+      else
+      {
+        port = 0;
+        oplock_request = 0;
+      }
+#else /* USE_OPLOCKS */
+      oplock_request = 0;
+      port = 0;
 #endif /* USE_OPLOCKS */
       set_share_mode(token, fnum, port, oplock_request);
     }
@@ -2764,7 +2772,7 @@ BOOL request_oplock_break(min_share_mode_entry *share_entry,
     /* We are breaking our own oplock, make sure it's us. */
     if(share_entry->op_port != oplock_port)
     {
-      DEBUG(0,("request_oplock_break: corrupt share mode entry - pid = %x, port = %d \
+      DEBUG(0,("request_oplock_break: corrupt share mode entry - pid = %d, port = %d \
 should be %d\n", pid, share_entry->op_port, oplock_port));
       return False;
     }
