@@ -4212,8 +4212,9 @@ static struct {
 	{"RPC-MULTIBIND", torture_multi_bind, 0},
 	{"RPC-DRSUAPI", torture_rpc_drsuapi, 0},
 
-	/* crypto testers */
-	{"CRYPT-NTLMSSP", torture_ntlmssp_self_check, 0},
+	/* local (no server) testers */
+	{"LOCAL-NTLMSSP", torture_ntlmssp_self_check, 0},
+	{"LOCAL-ICONV", torture_local_iconv, 0},
 
 	/* ldap testers */
 	{"LDAP-BASIC", torture_ldap_basic, 0},

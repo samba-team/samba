@@ -421,14 +421,14 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 	uint32_t len1, ofs, len2;
 	uint16_t len3;
 	int ret;
-	int chset = CH_UCS2;
+	int chset = CH_UTF16;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 
 	if (NDR_BE(ndr)) {
-		chset = CH_UCS2BE;
+		chset = CH_UTF16BE;
 	}
 
 	switch (ndr->flags & LIBNDR_STRING_FLAGS) {
@@ -600,14 +600,14 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
 	ssize_t s_len, c_len;
 	int ret;
-	int chset = CH_UCS2;
+	int chset = CH_UTF16;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 
 	if (NDR_BE(ndr)) {
-		chset = CH_UCS2BE;
+		chset = CH_UTF16BE;
 	}
 	
 	s_len = s?strlen(s):0;

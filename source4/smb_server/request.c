@@ -468,7 +468,7 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
 		src_len2 += 2;
 	}
 
-	ret = convert_string_talloc(req->mem_ctx, CH_UCS2, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc(req->mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (const void **)dest);
 
 	if (ret == -1) {
 		*dest = NULL;
