@@ -300,10 +300,10 @@ failed with error %s\n", strerror(errno) ));
  
  	/*
  	 * Now we have the gid list for this user - convert the gname
- 	 * to a gid_t via winbind and do the comparison.
+ 	 * to a gid_t via either winbind or the local UNIX lookup and do the comparison.
  	 */
  
-	if (!winbind_nametogid(&gid, gname)) {
+	if ((gid = nametogid(gname)) == (gid_t)-1) {
  		DEBUG(0,("user_in_winbind_group_list: winbind_lookup_name for group %s failed.\n",
  			gname ));
  		goto err;
