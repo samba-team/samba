@@ -19,30 +19,90 @@
 		unistr_noterm *name;
 	} eventlog_String;
 
+	typedef struct { 
+		uint32 size;
+		uint32 reserved;
+		uint32 recordnumber;
+		uint32 creationtime;
+		uint32 writetime;
+		uint32 eventnumber;
+		uint16 eventtype;
+		uint16 num_of_strings;
+		uint16 category;
+		uint16 reserved_flag;
+		uint32 closingrecord;
+		uint32 stringoffset;
+		[size_is(num_of_strings)] eventlog_String bla[*];
+		uint32 sid_length;
+		[length_is(sid_length)] dom_sid *sids;
+		uint32 data_length;
+		[length_is(data_length)] uint8 *data;
+		unistr *source_name;
+		unistr *machine_name;
+	} eventlog_Record;
+
 	/******************/
 	/* Function: 0x00 */
-	NTSTATUS eventlog_OpenEventLog(
-		[in]	    eventlog_OpenUnknown0 *unknown0,
-		[in]	    eventlog_String source,
-		[in]	    eventlog_String unknown1,
-		[in]	    uint32 unknown2,
-		[in]	    uint32 unknown3,
-		[out,ref]   policy_handle *handle
-	);
+	NTSTATUS eventlog_Unknown0();
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS eventlog_GetNumRecords(
-	);
-
+	NTSTATUS eventlog_Unknown1();
+	
 	/******************/
 	/* Function: 0x02 */
-	NTSTATUS eventlog_ReadEventLog(
-	);
+	[id(3)] NTSTATUS eventlog_CloseEventLog(
+									[in,out,ref]     policy_handle *handle
+								   );
+
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS eventlog_CloseEventLog(
-		[in,out,ref]     policy_handle *handle
-	);
+	NTSTATUS eventlog_Unknown3();
+
+	/******************/
+	/* Function: 0x04 */
+	NTSTATUS eventlog_GetNumRecords(
+									[in,ref]     policy_handle *handle,
+									[out]		 uint32 number
+								   );
+	/******************/
+	/* Function: 0x05 */
+	NTSTATUS eventlog_Unknown5();
+
+	/******************/
+	/* Function: 0x06 */
+	NTSTATUS eventlog_Unknown6();
+
+	/******************/
+	/* Function: 0x07 */
+	NTSTATUS eventlog_OpenEventLog(
+								   [in]	    eventlog_OpenUnknown0 *unknown0,
+								   [in]	    eventlog_String source,
+								   [in]	    eventlog_String unknown1,
+								   [in]	    uint32 unknown2,
+								   [in]	    uint32 unknown3,
+								   [out,ref]   policy_handle *handle
+								  );
+
+	/******************/
+	/* Function: 0x08 */
+	NTSTATUS eventlog_Unknown8();
+
+	/******************/
+	/* Function: 0x09 */
+	NTSTATUS eventlog_Unknowna();
+
+	/******************/
+	/* Function: 0x0a */
+	NTSTATUS eventlog_ReadEventLog(
+								   [in,ref]     policy_handle *handle,
+								   [in] 		uint32 flags,
+								   [in]			uint32 offset,
+								   [in,out]		uint32 number_of_bytes,
+								   [out,size_is(number_of_bytes),ref]		uint8 *data,
+								   [out]		uint32 sent_size,
+								   [out]		uint32 real_size
+								  );
+
 }
