@@ -37,6 +37,14 @@
  * SUCH DAMAGE. 
  */
 
+/*
+ * This is to handle the definition of this symbol in some AIX
+ * headers, which will conflict with the definition that lex will
+ * generate for it.  It's only a problem for AIX lex.
+ */
+
+#undef ECHO
+
 #include "compile_et.h"
 #include "parse.h"
 
