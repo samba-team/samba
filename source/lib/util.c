@@ -1326,9 +1326,7 @@ BOOL is_myname(char *s)
 
 BOOL is_myname_or_ipaddr(char *s)
 {
-	fstring temp;
-	char *ptr;
-	pstring nbname;
+	char **ptr;
 	
 	/* optimize for the common case */
 	if (strequal(s, global_myname)) 
@@ -1354,9 +1352,9 @@ BOOL is_myname_or_ipaddr(char *s)
 	
 	/* check for an alias */
   	ptr = lp_netbios_aliases();
-	while ( next_token(&ptr, nbname, NULL, sizeof(nbname)) )
+	for ( ; *ptr; ptr++ )
 	{
-		if (StrCaseCmp(s, nbname) == 0)
+		if (StrCaseCmp(s, *ptr) == 0)
 			return True;
 	}
 		
