@@ -33,6 +33,6 @@ void warn(const char *fmt, ...)
 void vwarnx(const char *fmt, va_list ap)
      __attribute__ ((format (printf, 1, 0)));
 void warnx(const char *fmt, ...)
-     __attribute__ ((format (printf, 1, 2)));;
+     __attribute__ ((format (printf, 1, 2)));
 
 #endif /* __ERR_H__ */
