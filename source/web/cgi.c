@@ -198,6 +198,7 @@ void cgi_load_variables(FILE *f1)
 	}
 
 	fclose(stdin);
+	(void)open("/dev/null", O_RDWR);
 
 	if ((s=query_string) || (s=getenv("QUERY_STRING"))) {
 		for (tok=strtok(s,"&;");tok;tok=strtok(NULL,"&;")) {

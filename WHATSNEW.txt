@@ -210,6 +210,7 @@ registering names.
 share directory listing.
 61). Fix for soft quotas not being set (make them equal to hardquota)
 from Norbert Püschel (Pueschel.Norbert@Walzbarren-VAW.ne.uunet.de).
+62). SWAT fixes for SCO UnixWare (SIGPIPE handling).
 
 Older release notes for Samba 2.0.x follow.
 
