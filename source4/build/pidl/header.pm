@@ -125,11 +125,11 @@ sub HeaderType($$$)
 		    HeaderUnion($data, $name);
 		return;
 	}
-	if ($data =~ "unistr") {
+	if ($data =~ "unistr" ||
+	    $data =~ "ascstr") {
 		$res .= "const char";
-	} elsif ($data =~ "nstring") {
-		$res .= "const char *";
-	} elsif ($data =~ "lstring") {
+	} elsif ($data =~ "nstring" ||
+		 $data =~ "lstring") {
 		$res .= "const char *";
 	} elsif (util::is_scalar_type($data)) {
 		$res .= "$data";
