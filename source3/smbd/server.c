@@ -1049,7 +1049,15 @@ void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *s
     /* Set the flags as needed without the read/write modes. */
     open_flags = flags & ~(O_RDWR|O_WRONLY|O_RDONLY);
     fd_ptr->fd = fd_attempt_open(fname, open_flags|O_RDWR, mode);
+    /*
+     * On some systems opening a file for R/W access on a read only
+     * filesystems sets errno to EROFS.
+     */
+#ifdef EROFS
+    if((fd_ptr->fd == -1) && ((errno == EACCES) || (errno == EROFS))) {
+#else /* No EROFS */
     if((fd_ptr->fd == -1) && (errno == EACCES)) {
+#endif /* EROFS */
       if(flags & O_WRONLY) {
         fd_ptr->fd = fd_attempt_open(fname, open_flags|O_WRONLY, mode);
         fd_ptr->real_open_flags = O_WRONLY;
@@ -1155,7 +1163,7 @@ void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *s
     {
       Files[fnum].mmap_size = file_size(fname);
       Files[fnum].mmap_ptr = (char *)mmap(NULL,Files[fnum].mmap_size,
-					  PROT_READ,MAP_SHARED,Files[fnum].fd,0);
+					  PROT_READ,MAP_SHARED,Files[fnum]->fd_ptr.fd,0);
 
       if (Files[fnum].mmap_ptr == (char *)-1 || !Files[fnum].mmap_ptr)
 	{
