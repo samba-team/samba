@@ -158,8 +158,6 @@ int cli_get_response(BOOL unique, char *mailslot, char *buf, int bufsiz)
      * from fixed, known locations ...
      */
 
-    fprintf(stderr, "Packet: Data is: %s\n", &dgram->data[92]);
-
     /* Copy the data to buffer, respecting sizes ... */
 
     bcopy(&dgram->data[92], buf, MIN(bufsiz, (dgram->datasize - 92)));
@@ -188,9 +186,9 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   }
 
-  inet_aton("10.0.0.6", &my_ip);
+  inet_aton("0.0.0.0", &my_ip);
 
-  if (!resolve_name(myname, &my_ip, 0x00)) {
+  if (!resolve_name(myname, &my_ip, 0x00)) { /* FIXME: Call others here */
 
     fprintf(stderr, "Could not resolve name: %s<00>\n", myname);
 
