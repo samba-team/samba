@@ -2041,26 +2041,6 @@ BOOL samr_io_q_create_dom_group(char *desc,  SAMR_Q_CREATE_DOM_GROUP *q_e, prs_s
 	return True;
 }
 
-
-/*******************************************************************
-makes a SAMR_R_CREATE_DOM_GROUP structure.
-********************************************************************/
-BOOL make_samr_r_create_dom_group(SAMR_R_CREATE_DOM_GROUP *r_u, POLICY_HND *pol,
-		uint32 rid, uint32 status)
-{
-	if (r_u == NULL) return False;
-
-	DEBUG(5,("make_samr_r_create_dom_group\n"));
-
-	memcpy(&(r_u->pol), pol, sizeof(*pol));
-
-	r_u->rid    = rid   ;
-	r_u->status = status;
-
-	return True;
-}
-
-
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
@@ -3929,24 +3909,6 @@ BOOL samr_io_q_create_dom_alias(char *desc,  SAMR_Q_CREATE_DOM_ALIAS *q_u, prs_s
 }
 
 /*******************************************************************
-makes a SAMR_R_CREATE_DOM_ALIAS structure.
-********************************************************************/
-BOOL make_samr_r_create_dom_alias(SAMR_R_CREATE_DOM_ALIAS *r_u, POLICY_HND *pol,
-		uint32 rid, uint32 status)
-{
-	if (r_u == NULL) return False;
-
-	DEBUG(5,("make_samr_r_create_dom_alias\n"));
-
-	memcpy(&(r_u->alias_pol), pol, sizeof(*pol));
-	r_u->rid    = rid   ;
-	r_u->status = status;
-
-	return True;
-}
-
-
-/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_create_dom_alias(char *desc,  SAMR_R_CREATE_DOM_ALIAS *r_u, prs_struct *ps, int depth)
@@ -4615,27 +4577,6 @@ BOOL samr_io_q_create_user(char *desc,  SAMR_Q_CREATE_USER *q_u, prs_struct *ps,
 	prs_uint32("unknown_1", ps, depth, &(q_u->unknown_1));
 
 	prs_align(ps);
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL make_samr_r_create_user(SAMR_R_CREATE_USER *r_u,
-				POLICY_HND *user_pol,
-				uint32 unk_0, uint32 user_rid,
-				uint32 status)
-{
-	if (r_u == NULL) return False;
-
-	DEBUG(5,("samr_make_samr_r_create_user\n"));
-
-	memcpy(&r_u->user_pol, user_pol, sizeof(r_u->user_pol));
-	
-	r_u->unknown_0 = unk_0;
-	r_u->user_rid = user_rid;
-	r_u->status = status;
 
 	return True;
 }

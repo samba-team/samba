@@ -722,216 +722,22 @@ static void api_samr_query_usergroups( rpcsrv_struct *p, prs_struct *data, prs_s
 	safe_free(gids);
 }
 
-
-/*******************************************************************
- opens a samr alias by rid, returns a policy handle.
- ********************************************************************/
-static uint32 open_samr_alias(DOM_SID *sid, POLICY_HND *alias_pol,
-				uint32 alias_rid)
-{
-	BOOL pol_open = False;
-	uint32 status = 0x0;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (status == 0x0 && !(pol_open = open_policy_hnd(get_global_hnd_cache(), alias_pol)))
-	{
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	DEBUG(0,("TODO: verify that the alias rid exists\n"));
-
-	/* associate a RID with the (unique) handle. */
-	if (status == 0x0 && !set_policy_samr_rid(get_global_hnd_cache(), alias_pol, alias_rid))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	sid_append_rid(sid, alias_rid);
-
-	/* associate an alias SID with the (unique) handle. */
-	if (status == 0x0 && !set_policy_samr_sid(get_global_hnd_cache(), alias_pol, sid))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (status != 0 && pol_open)
-	{
-		close_policy_hnd(get_global_hnd_cache(), alias_pol);
-	}
-
-	return status;
-}
-
-/*******************************************************************
- samr_reply_create_dom_alias
- ********************************************************************/
-static void samr_reply_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_CREATE_DOM_ALIAS r_u;
-	DOM_SID dom_sid;
-	LOCAL_GRP grp;
-	POLICY_HND alias_pol;
-	uint32 status = 0x0;
-
-	bzero(&alias_pol, sizeof(alias_pol));
-
-	DEBUG(5,("samr_create_dom_alias: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->dom_pol)) == -1))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	/* find the domain sid */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->dom_pol, &dom_sid))
-	{
-		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
-	}
-
-	if (!sid_equal(&dom_sid, &global_sam_sid))
-	{
-		status = NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (status == 0x0)
-	{
-		unistr2_to_ascii(grp.name, &q_u->uni_acct_desc, sizeof(grp.name)-1);
-		fstrcpy(grp.comment, "");
-		grp.rid = 0xffffffff;
-
-		become_root(True);
-		status = add_alias_entry(&grp) ? 0 : (NT_STATUS_ACCESS_DENIED);
-		unbecome_root(True);
-	}
-
-	if (status == 0x0)
-	{
-		status = open_samr_alias(&dom_sid, &alias_pol, grp.rid);
-	}
-
-	/* construct the response. */
-	make_samr_r_create_dom_alias(&r_u, &alias_pol, grp.rid, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_create_dom_alias("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_create_dom_alias: %d\n", __LINE__));
-
-}
-
 /*******************************************************************
  api_samr_create_dom_alias
  ********************************************************************/
 static void api_samr_create_dom_alias( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CREATE_DOM_ALIAS q_u;
+	SAMR_R_CREATE_DOM_ALIAS r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	samr_io_q_create_dom_alias("", &q_u, data, 0);
-	samr_reply_create_dom_alias(&q_u, rdata);
-}
-
-/*******************************************************************
- opens a samr group by rid, returns a policy handle.
- ********************************************************************/
-static uint32 open_samr_group(DOM_SID *sid, POLICY_HND *group_pol,
-				uint32 group_rid)
-{
-	BOOL pol_open = False;
-	uint32 status = 0x0;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (status == 0x0 && !(pol_open = open_policy_hnd(get_global_hnd_cache(), group_pol)))
-	{
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	DEBUG(0,("TODO: verify that the group rid exists\n"));
-
-	/* associate a RID with the (unique) handle. */
-	if (status == 0x0 && !set_policy_samr_rid(get_global_hnd_cache(), group_pol, group_rid))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	sid_append_rid(sid, group_rid);
-
-	/* associate an group SID with the (unique) handle. */
-	if (status == 0x0 && !set_policy_samr_sid(get_global_hnd_cache(), group_pol, sid))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (status != 0 && pol_open)
-	{
-		close_policy_hnd(get_global_hnd_cache(), group_pol);
-	}
-
-	return status;
-}
-
-/*******************************************************************
- samr_reply_create_dom_group
- ********************************************************************/
-static void samr_reply_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_CREATE_DOM_GROUP r_u;
-	DOM_SID dom_sid;
-	DOMAIN_GRP grp;
-	POLICY_HND group_pol;
-	uint32 status = 0x0;
-
-	bzero(&group_pol, sizeof(group_pol));
-
-	DEBUG(5,("samr_create_dom_group: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->pol)) == -1))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	/* find the domain sid */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->pol, &dom_sid))
-	{
-		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
-	}
-
-	if (!sid_equal(&dom_sid, &global_sam_sid))
-	{
-		status = NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (status == 0x0)
-	{
-		unistr2_to_ascii(grp.name, &q_u->uni_acct_desc, sizeof(grp.name)-1);
-		fstrcpy(grp.comment, "");
-		grp.rid = 0xffffffff;
-		grp.attr = 0x07;
-
-		become_root(True);
-		status = add_group_entry(&grp) ? 0x0 : (NT_STATUS_ACCESS_DENIED);
-		unbecome_root(True);
-	}
-
-	if (status == 0x0)
-	{
-		status = open_samr_group(&dom_sid, &group_pol, grp.rid);
-	}
-
-	/* construct the response. */
-	make_samr_r_create_dom_group(&r_u, &group_pol, grp.rid, status);
+	r_u.status = _samr_create_dom_alias(&q_u.dom_pol, &q_u.uni_acct_desc, &r_u.alias_pol, &r_u.rid);
 
 	/* store the response in the SMB stream */
-	samr_io_r_create_dom_group("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_create_dom_group: %d\n", __LINE__));
-
+	samr_io_r_create_dom_alias("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
@@ -940,90 +746,16 @@ static void samr_reply_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_u,
 static void api_samr_create_dom_group( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CREATE_DOM_GROUP q_u;
-	samr_io_q_create_dom_group("", &q_u, data, 0);
-	samr_reply_create_dom_group(&q_u, rdata);
-}
+	SAMR_R_CREATE_DOM_GROUP r_u;
 
-
-/*******************************************************************
- samr_reply_query_dom_info
- ********************************************************************/
-static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_QUERY_DOMAIN_INFO r_u;
-	SAM_UNK_CTR ctr;
-	uint16 switch_value = 0x0;
-	uint32 status = 0x0;
-
+	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-	ZERO_STRUCT(ctr);
 
-	r_u.ctr = &ctr;
-
-	DEBUG(5,("samr_reply_query_dom_info: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (r_u.status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->domain_pol)) == -1))
-	{
-		r_u.status = NT_STATUS_INVALID_HANDLE;
-		DEBUG(5,("samr_reply_query_dom_info: invalid handle\n"));
-	}
-
-	if (status == 0x0)
-	{
-		switch (q_u->switch_value)
-		{
-			case 0x07:
-			{
-				switch_value = 0x7;
-				make_unk_info7(&ctr.info.inf7);
-
-				break;
-			}
-			case 0x06:
-			{
-				switch_value = 0x6;
-				make_unk_info6(&ctr.info.inf6);
-
-				break;
-			}
-			case 0x03:
-			{
-				switch_value = 0x3;
-				make_unk_info3(&ctr.info.inf3);
-
-				break;
-			}
-			case 0x02:
-			{
-				switch_value = 0x2;
-				make_unk_info2(&ctr.info.inf2, global_sam_name, global_myname);
-
-				break;
-			}
-			case 0x01:
-			{
-				switch_value = 0x1;
-				make_unk_info1(&ctr.info.inf1);
-
-				break;
-			}
-			default:
-			{
-				status = NT_STATUS_INVALID_INFO_CLASS;
-				break;
-			}
-		}
-	}
-
-	make_samr_r_query_dom_info(&r_u, switch_value, &ctr, status);
+	samr_io_q_create_dom_group("", &q_u, data, 0);
+	r_u.status = _samr_create_dom_group(&q_u.pol, &q_u.uni_acct_desc, &r_u.pol, &r_u.rid);
 
 	/* store the response in the SMB stream */
-	samr_io_r_query_dom_info("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_query_dom_info: %d\n", __LINE__));
-
+	samr_io_r_create_dom_group("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
@@ -1032,106 +764,23 @@ static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 static void api_samr_query_dom_info( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_DOMAIN_INFO q_e;
+	SAMR_R_QUERY_DOMAIN_INFO r_u;
+	SAM_UNK_CTR ctr;
+	uint16 switch_value;
+	uint32 status;
+
+	ZERO_STRUCT(q_e);
+	ZERO_STRUCT(r_u);
+	ZERO_STRUCT(ctr);
+
 	samr_io_q_query_dom_info("", &q_e, data, 0);
-	samr_reply_query_dom_info(&q_e, rdata);
-}
 
-
-
-/*******************************************************************
- samr_reply_create_user
- ********************************************************************/
-static void samr_reply_create_user(SAMR_Q_CREATE_USER *q_u,
-				prs_struct *rdata)
-{
-	struct sam_passwd *sam_pass;
-	fstring user_name;
-
-	SAMR_R_CREATE_USER r_u;
-	POLICY_HND pol;
-	uint32 status = 0x0;
-	uint32 user_rid = 0x0;
-	BOOL pol_open = False;
-	uint32 unk_0 = 0x30;
-
-	/* find the machine account: tell the caller if it exists.
-	   lkclXXXX i have *no* idea if this is a problem or not
-	   or even if you are supposed to construct a different
-	   reply if the account already exists...
-	 */
-
-	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->domain_pol)) == -1))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (status == 0x0 && !(pol_open = open_policy_hnd(get_global_hnd_cache(), &pol)))
-	{
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	unistr2_to_ascii(user_name, &q_u->uni_name, sizeof(user_name)-1);
-
-	sam_pass = getsam21pwntnam(user_name);
-
-	if (sam_pass != NULL)
-	{
-		/* account exists: say so */
-		status = NT_STATUS_USER_EXISTS;
-	}
-	else
-	{
-		pstring err_str;
-		pstring msg_str;
-
-		if (!local_password_change(user_name, True,
-		          q_u->acb_info | ACB_DISABLED | ACB_PWNOTREQ, 0xffff,
-		          NULL,
-		          err_str, sizeof(err_str),
-		          msg_str, sizeof(msg_str)))
-		{
-			DEBUG(0,("%s\n", err_str));
-			status = NT_STATUS_ACCESS_DENIED;
-		}
-		else
-		{
-			sam_pass = getsam21pwntnam(user_name);
-			if (sam_pass == NULL)
-			{
-				/* account doesn't exist: say so */
-				status = NT_STATUS_ACCESS_DENIED;
-			}
-			else
-			{
-				user_rid = sam_pass->user_rid;
-				unk_0 = 0x000703ff;
-			}
-		}
-	}
-
-	/* associate the RID with the (unique) handle. */
-	if (status == 0x0 && !set_policy_samr_rid(get_global_hnd_cache(), &pol, user_rid))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (status != 0 && pol_open)
-	{
-		close_policy_hnd(get_global_hnd_cache(), &pol);
-	}
-
-	DEBUG(5,("samr_create_user: %d\n", __LINE__));
-
-	make_samr_r_create_user(&r_u, &pol, unk_0, user_rid, status);
+	switch_value = q_e.switch_value;
+	status = _samr_query_dom_info(&q_e.domain_pol, q_e.switch_value, &ctr);
+	make_samr_r_query_dom_info(&r_u, switch_value, &ctr, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_create_user("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_create_user: %d\n", __LINE__));
-
+	samr_io_r_query_dom_info("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
@@ -1140,52 +789,18 @@ static void samr_reply_create_user(SAMR_Q_CREATE_USER *q_u,
 static void api_samr_create_user( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CREATE_USER q_u;
+	SAMR_R_CREATE_USER r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 
 	/* grab the samr unknown 32 */
 	samr_io_q_create_user("", &q_u, data, 0);
-
-	/* construct reply. */
-	samr_reply_create_user(&q_u, rdata);
-}
-
-
-/*******************************************************************
- samr_reply_connect_anon
- ********************************************************************/
-static void samr_reply_connect_anon(SAMR_Q_CONNECT_ANON *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_CONNECT_ANON r_u;
-	BOOL pol_open = False;
-
-	/* set up the SAMR connect_anon response */
-
-	r_u.status = 0x0;
-	/* get a (unique) handle.  open a policy on it. */
-	if (r_u.status == 0x0 && !(pol_open = open_policy_hnd(get_global_hnd_cache(), &(r_u.connect_pol))))
-	{
-		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	/* associate the domain SID with the (unique) handle. */
-	if (r_u.status == 0x0 && !set_policy_samr_pol_status(get_global_hnd_cache(), &(r_u.connect_pol), q_u->unknown_0))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (r_u.status != 0 && pol_open)
-	{
-		close_policy_hnd(get_global_hnd_cache(), &(r_u.connect_pol));
-	}
-
-	DEBUG(5,("samr_connect_anon: %d\n", __LINE__));
+	r_u.status = _samr_create_user(&q_u.domain_pol, &q_u.uni_name, q_u.acb_info, 
+					   q_u.unknown_1, &r_u.user_pol, &r_u.unknown_0, &r_u.user_rid);
 
 	/* store the response in the SMB stream */
-	samr_io_r_connect_anon("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_connect_anon: %d\n", __LINE__));
-
+	samr_io_r_create_user("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
@@ -1194,8 +809,16 @@ static void samr_reply_connect_anon(SAMR_Q_CONNECT_ANON *q_u,
 static void api_samr_connect_anon( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CONNECT_ANON q_u;
+	SAMR_R_CONNECT_ANON r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	samr_io_q_connect_anon("", &q_u, data, 0);
-	samr_reply_connect_anon(&q_u, rdata);
+	r_u.status = _samr_connect_anon(q_u.unknown_0, q_u.unknown_1, q_u.unknown_2, &r_u.connect_pol);
+
+	/* store the response in the SMB stream */
+	samr_io_r_connect_anon("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
@@ -1210,9 +833,7 @@ static void api_samr_connect( rpcsrv_struct *p, prs_struct *data, prs_struct *rd
 	ZERO_STRUCT(r_u);
 
 	samr_io_q_connect("", &q_u, data, 0);
-	r_u.status = _samr_connect(&q_u.uni_srv_name,
-	                            q_u.unknown_0,
-	                           &r_u.connect_pol);
+	r_u.status = _samr_connect(&q_u.uni_srv_name, q_u.unknown_0, &r_u.connect_pol);
 
 	/* store the response in the SMB stream */
 	samr_io_r_connect("", &r_u, rdata, 0);
@@ -1231,9 +852,8 @@ static void api_samr_open_alias( rpcsrv_struct *p, prs_struct *data, prs_struct 
 	ZERO_STRUCT(r_u);
 
 	samr_io_q_open_alias("", &q_u, data, 0);
-	r_u.status = _samr_open_alias(&q_u.dom_pol,
-	                               q_u.unknown_0,
-	                               q_u.rid_alias, &r_u.pol);
+
+	r_u.status = _samr_open_alias(&q_u.dom_pol, q_u.unknown_0, q_u.rid_alias, &r_u.pol);
 
 	/* store the response in the SMB stream */
 	samr_io_r_open_alias("", &r_u, rdata, 0);
@@ -1252,8 +872,7 @@ static void api_samr_open_group( rpcsrv_struct *p, prs_struct *data, prs_struct 
 	ZERO_STRUCT(r_u);
 
 	samr_io_q_open_group("", &q_u, data, 0);
-	/* leave flags 0, because it isn't used in _samr_open_group() */
-	r_u.status = _samr_open_group(&q_u.domain_pol, 0, q_u.rid_group, &r_u.pol);
+	r_u.status = _samr_open_group(&q_u.domain_pol, q_u.unknown, q_u.rid_group, &r_u.pol);
 
 	/* store the response in the SMB stream */
 	samr_io_r_open_group("", &r_u, rdata, 0);
