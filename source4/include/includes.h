@@ -45,13 +45,11 @@
 #undef HAVE_TERMIOS_H
 #endif
 
-#ifdef LINUX
 #ifndef DEFAULT_PRINTING
 #define DEFAULT_PRINTING PRINT_BSD
 #endif
 #ifndef PRINTCAP_NAME
 #define PRINTCAP_NAME "/etc/printcap"
-#endif
 #endif
 
 #ifdef __GNUC__
