@@ -74,6 +74,9 @@ Please create the binaries before packaging." >&2
     fi
   done
 
+  # Create a symbolic link to the Samba book in docs/ for beginners
+  echo 's none samba/docs/samba_book=htmldocs/using_samba'
+
   echo "#\n# Text Docs \n#"
   echo d none samba/docs/textdocs 0755 root other
   cd $DISTR_BASE/docs/textdocs
