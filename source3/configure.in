@@ -108,12 +108,21 @@ case "$host_os" in
 #
       case `uname -r` in
 			*9*|*10*)
-				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE"
+				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_ALIGNMENT_REQUIRED=1 -D_MAX_ALIGNMENT=4"
 		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS)
+				AC_DEFINE(_HPUX_SOURCE)
+				AC_DEFINE(_POSIX_SOURCE)
+				AC_DEFINE(_ALIGNMENT_REQUIRED,1)
+				AC_DEFINE(_MAX_ALIGNMENT,4)
 				;;
 			*11*)
-				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_LARGEFILE64_SOURCE"
+				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_LARGEFILE64_SOURCE -D_ALIGNMENT_REQUIRED=1 -D_MAX_ALIGNMENT=4"
 		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS)
+				AC_DEFINE(_HPUX_SOURCE)
+				AC_DEFINE(_POSIX_SOURCE)
+				AC_DEFINE(_LARGEFILE64_SOURCE)
+				AC_DEFINE(_ALIGNMENT_REQUIRED,1)
+				AC_DEFINE(_MAX_ALIGNMENT,4)
 				;;
       esac
       DYNEXP="-Wl,-E"
@@ -133,6 +142,7 @@ case "$host_os" in
     *aix4*)
 	  AC_MSG_RESULT([enabling large file support])
       CPPFLAGS="$CPPFLAGS -D_LARGE_FILES"
+      AC_DEFINE(_LARGE_FILES)
       ;;    
 #
 # Defines needed for Solaris 2.6/2.7 aka 7.0 to make it admit
@@ -156,14 +166,19 @@ case "$host_os" in
 				case "$ac_cv_gcc_compiler_version_number" in
 					*"gcc version 2.6"*|*"gcc version 2.7"*)
 						CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
+						AC_DEFINE(_LARGEFILE64_SOURCE)
 						;;
 					*)
 						CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+						AC_DEFINE(_LARGEFILE64_SOURCE)
+						AC_DEFINE(_FILE_OFFSET_BITS,64)
 						;;
 				esac
 			else
-                DYNEXP="-dc -dp"
+				DYNEXP="-dc -dp"
 				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+				AC_DEFINE(_LARGEFILE64_SOURCE)
+				AC_DEFINE(_FILE_OFFSET_BITS,64)
 			fi
 			;;
 		esac
@@ -188,6 +203,7 @@ exit(1);
         CPPFLAGS="$old_CPPFLAGS"
         if test x$SINIX_LFS_SUPPORT = xyes ; then
           CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
+          AC_DEFINE(_LARGEFILE64_SOURCE)
           CFLAGS="`getconf LFS64_CFLAGS` $CFLAGS"
           LDFLAGS="`getconf LFS64_LDFLAGS` $LDFLAGS"
           LIBS="`getconf LFS64_LIBS` $LIBS"
@@ -240,6 +256,9 @@ main() {
         CPPFLAGS="$old_CPPFLAGS"
         if test x$LINUX_LFS_SUPPORT = xyes ; then
           CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
+          AC_DEFINE(_LARGEFILE64_SOURCE)
+          AC_DEFINE(_FILE_OFFSET_BITS,64)
+          AC_DEFINE(_GNU_SOURCE)
         fi
        AC_MSG_RESULT([$LINUX_LFS_SUPPORT])
 		;;
@@ -260,6 +279,8 @@ exit(1);
         CPPFLAGS="$old_CPPFLAGS"
         if test x$GLIBC_LFS_SUPPORT = xyes ; then
           CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
+          AC_DEFINE(_LARGEFILE64_SOURCE)
+          AC_DEFINE(_GNU_SOURCE)
         fi
       AC_MSG_RESULT([$GLIBC_LFS_SUPPORT])
     ;;
