@@ -1182,9 +1182,11 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
      * the recursion desired flag is not set (you were right Luke :-).
      * This function should *only* be called from the WINS server
      * code. JRA.
+     * Note that this packet is sent to the current owner of the name,
+     * not the person who sent the packet.
      */
 
-    query_name_from_wins_server( p->ip,
+    query_name_from_wins_server( namerec->data.ip[0],
                                  question->name,
                                  question->name_type, 
                                  wins_multihomed_register_query_success,
