@@ -101,7 +101,7 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 	if (dom_name != NULL) {
 		for (num = 0; num < ref->num_ref_doms_1; num++) {
 			fstring domname;
-			rpcstr_pull(domname, &ref->ref_dom[num].uni_dom_name, sizeof(domname), -1, 0);
+			rpcstr_pull(domname, ref->ref_dom[num].uni_dom_name.buffer, sizeof(domname), -1, 0);
 			if (strequal(domname, dom_name))
 				return num;
 		}
