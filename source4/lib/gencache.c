@@ -250,13 +250,15 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		char* entry_buf = strndup(databuf.dptr, databuf.dsize);
 		char *v;
 		time_t t;
+		unsigned i;
 
 		v = (char*)malloc(sizeof(char) * 
 				  (databuf.dsize - TIMEOUT_LEN));
 				
 		SAFE_FREE(databuf.dptr);
-		sscanf(entry_buf, CACHE_DATA_FMT, (int*)&t, v);
+		sscanf(entry_buf, CACHE_DATA_FMT, (int*)&i, v);
 		SAFE_FREE(entry_buf);
+		t = i;
 
 		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
 			   "timeout = %s\n", t > time(NULL) ? "valid" :
@@ -307,6 +309,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	TDB_DATA databuf;
 	char *keystr = NULL, *valstr = NULL, *entry = NULL;
 	time_t timeout = 0;
+	unsigned i;
 
 	/* fail completely if get null pointers passed */
 	SMB_ASSERT(fn && keystr_pattern);
@@ -335,7 +338,8 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		entry = strndup(databuf.dptr, databuf.dsize);
 		SAFE_FREE(databuf.dptr);
 		valstr = (char*)malloc(sizeof(char) * (databuf.dsize - TIMEOUT_LEN));
-		sscanf(entry, CACHE_DATA_FMT, (int*)(&timeout), valstr);
+		sscanf(entry, CACHE_DATA_FMT, (int*)(&i), valstr);
+		timeout = i;
 		
 		DEBUG(10, ("Calling function with arguments (key = %s, value = %s, timeout = %s)\n",
 		           keystr, valstr, ctime(&timeout)));
