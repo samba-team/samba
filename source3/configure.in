@@ -2086,8 +2086,8 @@ LIBS=""
   AC_MSG_CHECKING(for working krb5-config)
   if test -x "$KRB5_CONFIG"; then
     LIBS="$LIBS `$KRB5_CONFIG --libs`"
-    CFLAGS="$CFLAGS `$KRB5_CONFIG --cflags`" 
-    CPPFLAGS="$CPPFLAGS `$KRB5_CONFIG --cflags`"
+    CFLAGS="$CFLAGS `$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`" 
+    CPPFLAGS="$CPPFLAGS `$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`"
     FOUND_KRB5=yes
     AC_MSG_RESULT(yes)
   else
