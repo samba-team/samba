@@ -159,7 +159,7 @@ static int smb_pam_conv(int num_msg,
 
 			default:
 				/* Must be an error of some sort... */
-				free(reply);
+				SAFE_FREE(reply);
 				return PAM_CONV_ERR;
 		}
 	}
@@ -250,7 +250,7 @@ static void free_pw_chat(struct chat_struct *list)
     while (list) {
         struct chat_struct *old_head = list;
         DLIST_REMOVE(list, list);
-        free(old_head);
+        SAFE_FREE(old_head);
     }
 }
 
@@ -325,8 +325,7 @@ static int smb_pam_passchange_conv(int num_msg,
 			if (!found) {
 				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
 				free_pw_chat(pw_chat);
-				free(reply);
-				reply = NULL;
+				SAFE_FREE(reply);
 				return PAM_CONV_ERR;
 			}
 			break;
@@ -358,8 +357,7 @@ static int smb_pam_passchange_conv(int num_msg,
 			if (!found) {
 				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
 				free_pw_chat(pw_chat);
-				free(reply);
-				reply = NULL;
+				SAFE_FREE(reply);
 				return PAM_CONV_ERR;
 			}
 			break;
@@ -376,8 +374,7 @@ static int smb_pam_passchange_conv(int num_msg,
 		default:
 			/* Must be an error of some sort... */
 			free_pw_chat(pw_chat);
-			free(reply);
-			reply = NULL;
+			SAFE_FREE(reply);
 			return PAM_CONV_ERR;
 		}
 	}
@@ -395,9 +392,9 @@ static int smb_pam_passchange_conv(int num_msg,
 static void smb_free_pam_conv(struct pam_conv *pconv)
 {
 	if (pconv)
-		safe_free(pconv->appdata_ptr);
+		SAFE_FREE(pconv->appdata_ptr);
 
-	safe_free(pconv);
+	SAFE_FREE(pconv);
 }
 
 /***************************************************************************
@@ -411,8 +408,8 @@ static struct pam_conv *smb_setup_pam_conv(smb_pam_conv_fn smb_pam_conv_fnptr, c
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)malloc(sizeof(struct smb_pam_userdata));
 
 	if (pconv == NULL || udp == NULL) {
-		safe_free(pconv);
-		safe_free(udp);
+		SAFE_FREE(pconv);
+		SAFE_FREE(udp);
 		return NULL;
 	}
 

@@ -331,7 +331,7 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 	if (buflen != len)
 	{
 		/* error */
-		free (*buf);
+		SAFE_FREE (*buf);
 		return (-1);
 	}
 

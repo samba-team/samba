@@ -150,14 +150,9 @@ BOOL pdb_free_sam(SAM_ACCOUNT *user)
 		return False;
 	}
 
-	if (user->nt_pw)
-		free(user->nt_pw);
-
-	if (user->lm_pw)
-		free(user->lm_pw);
-
-	free(user);
-	user = NULL;
+	SAFE_FREE(user->nt_pw);
+	SAFE_FREE(user->lm_pw);
+	SAFE_FREE(user);
 	
 	return True;	
 }
@@ -173,12 +168,8 @@ BOOL pdb_reset_sam(SAM_ACCOUNT *user)
 		return False;
 	}
 	
-	if (user->nt_pw)
-		free(user->nt_pw);
-	
-	if (user->lm_pw)
-		free(user->lm_pw);
-		
+	SAFE_FREE(user->nt_pw);
+	SAFE_FREE(user->lm_pw);	
 	ZERO_STRUCTP(user);
 
 	return True;

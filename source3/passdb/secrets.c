@@ -106,12 +106,12 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 
 	if (size != sizeof(DOM_SID))
 	{ 
-		free(dyn_sid);
+		SAFE_FREE(dyn_sid);
 		return False;
 	}
 
 	*sid = *dyn_sid;
-	free(dyn_sid);
+	SAFE_FREE(dyn_sid);
 	return True;
 }
 
@@ -145,7 +145,7 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
 	memcpy(ret_pwd, pass->hash, 16);
-	free(pass);
+	SAFE_FREE(pass);
 	return True;
 }
 
