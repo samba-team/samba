@@ -1252,7 +1252,7 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
     }
 
     dir->dir_end = dir->dir_next = dir->dir_list;
-
+  
   }
   else {
 
@@ -1267,10 +1267,10 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
     }
 
     dir->dir_end = dir->dir_end->next;
-    dir->dir_end->next = NULL;
 
   }
 
+  dir->dir_end->next = NULL;
   dir->dir_end->dirent = dirent;
 
   dirent->smbc_type = type;
