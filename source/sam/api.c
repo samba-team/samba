@@ -120,7 +120,7 @@ NTSTATUS sam_get_domain_by_sid(const NT_USER_TOKEN *access_token, const uint32 a
 
 /* Account API */
 
-NTSTATUS sam_create_account(const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS sam_create_account(const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
 {
 	SAM_CONTEXT *sam_context = sam_get_static_context(False);
 
@@ -128,7 +128,7 @@ NTSTATUS sam_create_account(const NT_USER_TOKEN *access_token, const uint32 acce
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return sam_context->sam_create_account(sam_context, access_token, access_desired, domainsid, account);
+	return sam_context->sam_create_account(sam_context, access_token, access_desired, domainsid, account_name, acct_ctrl, account);
 }
 
 NTSTATUS sam_add_account(const DOM_SID *domainsid, const SAM_ACCOUNT_HANDLE *account)
@@ -164,7 +164,7 @@ NTSTATUS sam_delete_account(const SAM_ACCOUNT_HANDLE *account)
 	return sam_context->sam_delete_account(sam_context, account);
 }
 
-NTSTATUS sam_enum_accounts(const NT_USER_TOKEN *access_token, const DOM_SID *domain, int32 *account_count, SAM_ACCOUNT_ENUM **accounts)
+NTSTATUS sam_enum_accounts(const NT_USER_TOKEN *access_token, const DOM_SID *domain, uint16 acct_ctrl, uint32 *account_count, SAM_ACCOUNT_ENUM **accounts)
 {
 	SAM_CONTEXT *sam_context = sam_get_static_context(False);
 
@@ -172,7 +172,7 @@ NTSTATUS sam_enum_accounts(const NT_USER_TOKEN *access_token, const DOM_SID *dom
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return sam_context->sam_enum_accounts(sam_context, access_token, domain, account_count, accounts);
+	return sam_context->sam_enum_accounts(sam_context, access_token, domain, acct_ctrl, account_count, accounts);
 }
 
 NTSTATUS sam_get_account_by_sid(const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *accountsid, SAM_ACCOUNT_HANDLE **account)
@@ -198,6 +198,17 @@ NTSTATUS sam_get_account_by_name(const NT_USER_TOKEN *access_token, const uint32
 }
 
 /* Group API */
+
+NTSTATUS sam_create_group(const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, const char *group_name, uint16 group_ctrl, SAM_GROUP_HANDLE **group)
+{
+	SAM_CONTEXT *sam_context = sam_get_static_context(False);
+
+	if (!sam_context) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return sam_context->sam_create_group(sam_context, access_token, access_desired, domainsid, group_name, group_ctrl, group);
+}
 
 NTSTATUS sam_add_group(const DOM_SID *domainsid, const SAM_GROUP_HANDLE *group)
 {
@@ -232,7 +243,7 @@ NTSTATUS sam_delete_group(const SAM_GROUP_HANDLE *group)
 	return sam_context->sam_delete_group(sam_context, group);
 }
 
-NTSTATUS sam_enum_groups(const NT_USER_TOKEN *access_token, const DOM_SID *domainsid, const uint32 type, uint32 *groups_count, SAM_GROUP_ENUM **groups)
+NTSTATUS sam_enum_groups(const NT_USER_TOKEN *access_token, const DOM_SID *domainsid, uint16 group_ctrl, uint32 *groups_count, SAM_GROUP_ENUM **groups)
 {
 	SAM_CONTEXT *sam_context = sam_get_static_context(False);
 
@@ -240,7 +251,7 @@ NTSTATUS sam_enum_groups(const NT_USER_TOKEN *access_token, const DOM_SID *domai
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return sam_context->sam_enum_groups(sam_context, access_token, domainsid, type, groups_count, groups);
+	return sam_context->sam_enum_groups(sam_context, access_token, domainsid, group_ctrl, groups_count, groups);
 }
 
 NTSTATUS sam_get_group_by_sid(const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *groupsid, SAM_GROUP_HANDLE **group)
@@ -298,7 +309,7 @@ NTSTATUS sam_enum_groupmembers(const SAM_GROUP_HANDLE *group, uint32 *members_co
 	return sam_context->sam_enum_groupmembers(sam_context, group, members_count, members);
 }
 
-NTSTATUS sam_get_groups_of_account(const SAM_ACCOUNT_HANDLE *account, const uint32 type, uint32 *group_count, SAM_GROUP_ENUM **groups)
+NTSTATUS sam_get_groups_of_sid(const NT_USER_TOKEN *access_token, const DOM_SID **sids, uint16 group_ctrl, uint32 *group_count, SAM_GROUP_ENUM **groups)
 {
 	SAM_CONTEXT *sam_context = sam_get_static_context(False);
 
@@ -306,6 +317,6 @@ NTSTATUS sam_get_groups_of_account(const SAM_ACCOUNT_HANDLE *account, const uint
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return sam_context->sam_get_groups_of_account(sam_context, account, type, group_count, groups);
+	return sam_context->sam_get_groups_of_sid(sam_context, access_token, sids, group_ctrl, group_count, groups);
 }
 

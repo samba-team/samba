@@ -25,11 +25,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SAM
 
-NTSTATUS sam_get_account_domain_sid(const SAM_ACCOUNT_HANDLE *sampass, DOM_SID **sid)
+NTSTATUS sam_get_account_domain_sid(const SAM_ACCOUNT_HANDLE *sampass, const DOM_SID **sid)
 {
 	NTSTATUS status;
 	SAM_DOMAIN_HANDLE *domain;
-	if (!sampass || !sid) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(!sampass || !sid);
 
 	if (!NT_STATUS_IS_OK(status = sam_get_account_domain(sampass, &domain))){
 		DEBUG(0, ("sam_get_account_domain_sid: Can't get domain for account\n"));
@@ -39,11 +39,11 @@ NTSTATUS sam_get_account_domain_sid(const SAM_ACCOUNT_HANDLE *sampass, DOM_SID *
 	return sam_get_domain_sid(domain, sid);
 }
 
-NTSTATUS sam_get_account_domain_name(const SAM_ACCOUNT_HANDLE *sampass, char **domain_name)
+NTSTATUS sam_get_account_domain_name(const SAM_ACCOUNT_HANDLE *sampass, const char **domain_name)
 {
 	NTSTATUS status;
 	SAM_DOMAIN_HANDLE *domain;
-	if (!sampass || !domain_name) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && domain_name);
 
 	if (!NT_STATUS_IS_OK(status = sam_get_account_domain(sampass, &domain))){
 		DEBUG(0, ("sam_get_account_domain_name: Can't get domain for account\n"));
@@ -55,7 +55,7 @@ NTSTATUS sam_get_account_domain_name(const SAM_ACCOUNT_HANDLE *sampass, char **d
 
 NTSTATUS sam_get_account_acct_ctrl(const SAM_ACCOUNT_HANDLE *sampass, uint16 *acct_ctrl)
 {
-	if(!sampass || !acct_ctrl) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && acct_ctrl);
 
 	*acct_ctrl = sampass->private.acct_ctrl;
 
@@ -64,7 +64,7 @@ NTSTATUS sam_get_account_acct_ctrl(const SAM_ACCOUNT_HANDLE *sampass, uint16 *ac
 
 NTSTATUS sam_get_account_logon_time(const SAM_ACCOUNT_HANDLE *sampass, NTTIME *logon_time)
 {
-	if(!sampass || !logon_time) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && logon_time) ;
 
 	*logon_time = sampass->private.logon_time;
 
@@ -73,7 +73,7 @@ NTSTATUS sam_get_account_logon_time(const SAM_ACCOUNT_HANDLE *sampass, NTTIME *l
 
 NTSTATUS sam_get_account_logoff_time(const SAM_ACCOUNT_HANDLE *sampass, NTTIME *logoff_time)
 {
-	if(!sampass || !logoff_time) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && logoff_time) ;
 
 	*logoff_time = sampass->private.logoff_time;
 
@@ -82,7 +82,7 @@ NTSTATUS sam_get_account_logoff_time(const SAM_ACCOUNT_HANDLE *sampass, NTTIME *
 
 NTSTATUS sam_get_account_kickoff_time(const SAM_ACCOUNT_HANDLE *sampass, NTTIME *kickoff_time)
 {
-	if (!sampass || !kickoff_time) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && kickoff_time);
 
 	*kickoff_time = sampass->private.kickoff_time;
 
@@ -91,7 +91,7 @@ NTSTATUS sam_get_account_kickoff_time(const SAM_ACCOUNT_HANDLE *sampass, NTTIME 
 
 NTSTATUS sam_get_account_pass_last_set_time(const SAM_ACCOUNT_HANDLE *sampass, NTTIME *pass_last_set_time)
 {
-	if (!sampass || !pass_last_set_time) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && pass_last_set_time);
 
 	*pass_last_set_time = sampass->private.pass_last_set_time;
 
@@ -100,7 +100,7 @@ NTSTATUS sam_get_account_pass_last_set_time(const SAM_ACCOUNT_HANDLE *sampass, N
 
 NTSTATUS sam_get_account_pass_can_change_time(const SAM_ACCOUNT_HANDLE *sampass, NTTIME *pass_can_change_time)
 {
-	if (!sampass || !pass_can_change_time) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && pass_can_change_time);
 
 	*pass_can_change_time = sampass->private.pass_can_change_time;
 
@@ -109,7 +109,7 @@ NTSTATUS sam_get_account_pass_can_change_time(const SAM_ACCOUNT_HANDLE *sampass,
 
 NTSTATUS sam_get_account_pass_must_change_time(const SAM_ACCOUNT_HANDLE *sampass, NTTIME *pass_must_change_time)
 {
-	if (!sampass || !pass_must_change_time) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && pass_must_change_time);
 
 	*pass_must_change_time = sampass->private.pass_must_change_time;
 
@@ -118,7 +118,7 @@ NTSTATUS sam_get_account_pass_must_change_time(const SAM_ACCOUNT_HANDLE *sampass
 
 NTSTATUS sam_get_account_logon_divs(const SAM_ACCOUNT_HANDLE *sampass, uint16 *logon_divs)
 {
-	if (!sampass || !logon_divs) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && logon_divs);
 
 	*logon_divs = sampass->private.logon_divs;
 
@@ -127,16 +127,16 @@ NTSTATUS sam_get_account_logon_divs(const SAM_ACCOUNT_HANDLE *sampass, uint16 *l
 
 NTSTATUS sam_get_account_hours_len(const SAM_ACCOUNT_HANDLE *sampass, uint32 *hours_len)
 {
-	if (!sampass || !hours_len) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && hours_len);
 
 	*hours_len = sampass->private.hours_len;
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_get_account_hours(const SAM_ACCOUNT_HANDLE *sampass, uint8 **hours)
+NTSTATUS sam_get_account_hours(const SAM_ACCOUNT_HANDLE *sampass, const uint8 **hours)
 {
-	if (!sampass || !hours) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && hours);
 
 	*hours = sampass->private.hours;
 
@@ -145,7 +145,7 @@ NTSTATUS sam_get_account_hours(const SAM_ACCOUNT_HANDLE *sampass, uint8 **hours)
 
 NTSTATUS sam_get_account_nt_pwd(const SAM_ACCOUNT_HANDLE *sampass, DATA_BLOB *nt_pwd)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	SMB_ASSERT((!sampass->private.nt_pw.data) 
 		   || sampass->private.nt_pw.length == NT_HASH_LEN);
@@ -157,7 +157,7 @@ NTSTATUS sam_get_account_nt_pwd(const SAM_ACCOUNT_HANDLE *sampass, DATA_BLOB *nt
 
 NTSTATUS sam_get_account_lm_pwd(const SAM_ACCOUNT_HANDLE *sampass, DATA_BLOB *lm_pwd)
 { 
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	SMB_ASSERT((!sampass->private.lm_pw.data) 
 		   || sampass->private.lm_pw.length == LM_HASH_LEN);
@@ -176,25 +176,25 @@ NTSTATUS sam_get_account_lm_pwd(const SAM_ACCOUNT_HANDLE *sampass, DATA_BLOB *lm
 
 NTSTATUS sam_get_account_plaintext_pwd(const SAM_ACCOUNT_HANDLE *sampass, char **plain_pwd)
 {
-	if (!sampass || !plain_pwd) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && plain_pwd);
 
 	*plain_pwd = sampass->private.plaintext_pw;
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_get_account_sid(const SAM_ACCOUNT_HANDLE *sampass, DOM_SID **sid)
+NTSTATUS sam_get_account_sid(const SAM_ACCOUNT_HANDLE *sampass, const DOM_SID **sid)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*sid = &(sampass->private.account_sid);
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_get_account_pgroup(const SAM_ACCOUNT_HANDLE *sampass, DOM_SID **sid)
+NTSTATUS sam_get_account_pgroup(const SAM_ACCOUNT_HANDLE *sampass, const DOM_SID **sid)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*sid = &(sampass->private.group_sid);
 
@@ -209,7 +209,7 @@ NTSTATUS sam_get_account_pgroup(const SAM_ACCOUNT_HANDLE *sampass, DOM_SID **sid
  
 NTSTATUS sam_get_account_init_flag(const SAM_ACCOUNT_HANDLE *sampass, uint32 *initflag)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*initflag = sampass->private.init_flag;
 
@@ -218,7 +218,7 @@ NTSTATUS sam_get_account_init_flag(const SAM_ACCOUNT_HANDLE *sampass, uint32 *in
 
 NTSTATUS sam_get_account_name(const SAM_ACCOUNT_HANDLE *sampass, char **account_name)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*account_name = sampass->private.account_name;
 
@@ -227,7 +227,7 @@ NTSTATUS sam_get_account_name(const SAM_ACCOUNT_HANDLE *sampass, char **account_
 
 NTSTATUS sam_get_account_domain(const SAM_ACCOUNT_HANDLE *sampass, SAM_DOMAIN_HANDLE **domain)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*domain = sampass->private.domain;
 
@@ -236,7 +236,7 @@ NTSTATUS sam_get_account_domain(const SAM_ACCOUNT_HANDLE *sampass, SAM_DOMAIN_HA
 
 NTSTATUS sam_get_account_fullname(const SAM_ACCOUNT_HANDLE *sampass, char **fullname)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*fullname = sampass->private.full_name;
 
@@ -245,7 +245,7 @@ NTSTATUS sam_get_account_fullname(const SAM_ACCOUNT_HANDLE *sampass, char **full
 
 NTSTATUS sam_get_account_homedir(const SAM_ACCOUNT_HANDLE *sampass, char **homedir)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*homedir = sampass->private.home_dir;
 
@@ -254,7 +254,7 @@ NTSTATUS sam_get_account_homedir(const SAM_ACCOUNT_HANDLE *sampass, char **homed
 
 NTSTATUS sam_get_account_unix_home_dir(const SAM_ACCOUNT_HANDLE *sampass, char **uhomedir)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*uhomedir = sampass->private.unix_home_dir;
 
@@ -263,7 +263,7 @@ NTSTATUS sam_get_account_unix_home_dir(const SAM_ACCOUNT_HANDLE *sampass, char *
 
 NTSTATUS sam_get_account_dir_drive(const SAM_ACCOUNT_HANDLE *sampass, char **dirdrive)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*dirdrive = sampass->private.dir_drive;
 
@@ -272,7 +272,7 @@ NTSTATUS sam_get_account_dir_drive(const SAM_ACCOUNT_HANDLE *sampass, char **dir
 
 NTSTATUS sam_get_account_logon_script(const SAM_ACCOUNT_HANDLE *sampass, char **logon_script)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*logon_script = sampass->private.logon_script;
 
@@ -281,7 +281,7 @@ NTSTATUS sam_get_account_logon_script(const SAM_ACCOUNT_HANDLE *sampass, char **
 
 NTSTATUS sam_get_account_profile_path(const SAM_ACCOUNT_HANDLE *sampass, char **profile_path)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*profile_path = sampass->private.profile_path;
 
@@ -290,7 +290,7 @@ NTSTATUS sam_get_account_profile_path(const SAM_ACCOUNT_HANDLE *sampass, char **
 
 NTSTATUS sam_get_account_description(const SAM_ACCOUNT_HANDLE *sampass, char **description)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*description = sampass->private.acct_desc;
 
@@ -299,7 +299,7 @@ NTSTATUS sam_get_account_description(const SAM_ACCOUNT_HANDLE *sampass, char **d
 
 NTSTATUS sam_get_account_workstations(const SAM_ACCOUNT_HANDLE *sampass, char **workstations)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*workstations = sampass->private.workstations;
 
@@ -308,7 +308,7 @@ NTSTATUS sam_get_account_workstations(const SAM_ACCOUNT_HANDLE *sampass, char **
 
 NTSTATUS sam_get_account_unknown_str(const SAM_ACCOUNT_HANDLE *sampass, char **unknown_str)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*unknown_str = sampass->private.unknown_str;
 
@@ -317,7 +317,7 @@ NTSTATUS sam_get_account_unknown_str(const SAM_ACCOUNT_HANDLE *sampass, char **u
 
 NTSTATUS sam_get_account_munged_dial(const SAM_ACCOUNT_HANDLE *sampass, char **munged_dial)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	*munged_dial = sampass->private.munged_dial;
 
@@ -326,7 +326,7 @@ NTSTATUS sam_get_account_munged_dial(const SAM_ACCOUNT_HANDLE *sampass, char **m
 
 NTSTATUS sam_get_account_unknown_1(const SAM_ACCOUNT_HANDLE *sampass, uint32 *unknown1)
 {
-	if (!sampass || !unknown1) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && unknown1);
 
 	*unknown1 = sampass->private.unknown_1;
 
@@ -335,7 +335,7 @@ NTSTATUS sam_get_account_unknown_1(const SAM_ACCOUNT_HANDLE *sampass, uint32 *un
 
 NTSTATUS sam_get_account_unknown_2(const SAM_ACCOUNT_HANDLE *sampass, uint32 *unknown2)
 {
-	if (!sampass || !unknown2) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && unknown2);
 
 	*unknown2 = sampass->private.unknown_2;
 
@@ -344,7 +344,7 @@ NTSTATUS sam_get_account_unknown_2(const SAM_ACCOUNT_HANDLE *sampass, uint32 *un
 
 NTSTATUS sam_get_account_unknown_3(const SAM_ACCOUNT_HANDLE *sampass, uint32 *unknown3)
 {
-	if (!sampass || !unknown3) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && unknown3);
 
 	*unknown3 = sampass->private.unknown_3;
 
@@ -357,8 +357,7 @@ NTSTATUS sam_get_account_unknown_3(const SAM_ACCOUNT_HANDLE *sampass, uint32 *un
 
 NTSTATUS sam_set_account_acct_ctrl(SAM_ACCOUNT_HANDLE *sampass, uint16 flags)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 		
 	sampass->private.acct_ctrl = flags;
 
@@ -367,8 +366,7 @@ NTSTATUS sam_set_account_acct_ctrl(SAM_ACCOUNT_HANDLE *sampass, uint16 flags)
 
 NTSTATUS sam_set_account_logon_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime, BOOL store)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.logon_time = mytime;
 
@@ -380,8 +378,7 @@ NTSTATUS sam_set_account_logon_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime, 
 
 NTSTATUS sam_set_account_logoff_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime, BOOL store)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.logoff_time = mytime;
 
@@ -393,8 +390,7 @@ NTSTATUS sam_set_account_logoff_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime,
 
 NTSTATUS sam_set_account_kickoff_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime, BOOL store)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.kickoff_time = mytime;
 
@@ -406,8 +402,7 @@ NTSTATUS sam_set_account_kickoff_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime
 
 NTSTATUS sam_set_account_pass_can_change_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime, BOOL store)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.pass_can_change_time = mytime;
 
@@ -419,8 +414,7 @@ NTSTATUS sam_set_account_pass_can_change_time(SAM_ACCOUNT_HANDLE *sampass, NTTIM
 
 NTSTATUS sam_set_account_pass_must_change_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime, BOOL store)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.pass_must_change_time = mytime;
 
@@ -432,8 +426,7 @@ NTSTATUS sam_set_account_pass_must_change_time(SAM_ACCOUNT_HANDLE *sampass, NTTI
 
 NTSTATUS sam_set_account_pass_last_set_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.pass_last_set_time = mytime;
 
@@ -442,8 +435,7 @@ NTSTATUS sam_set_account_pass_last_set_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME 
 
 NTSTATUS sam_set_account_hours_len(SAM_ACCOUNT_HANDLE *sampass, uint32 len)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.hours_len = len;
 	return NT_STATUS_OK;
@@ -451,8 +443,7 @@ NTSTATUS sam_set_account_hours_len(SAM_ACCOUNT_HANDLE *sampass, uint32 len)
 
 NTSTATUS sam_set_account_logon_divs(SAM_ACCOUNT_HANDLE *sampass, uint16 hours)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.logon_divs = hours;
 	return NT_STATUS_OK;
@@ -467,18 +458,16 @@ NTSTATUS sam_set_account_logon_divs(SAM_ACCOUNT_HANDLE *sampass, uint16 hours)
  
 NTSTATUS sam_set_account_init_flag(SAM_ACCOUNT_HANDLE *sampass, uint32 flag)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.init_flag |= flag;
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_set_account_sid(SAM_ACCOUNT_HANDLE *sampass, DOM_SID *u_sid)
+NTSTATUS sam_set_account_sid(SAM_ACCOUNT_HANDLE *sampass, const DOM_SID *u_sid)
 {
-	if (!sampass || !u_sid)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && u_sid);
 	
 	sid_copy(&sampass->private.account_sid, u_sid);
 
@@ -488,11 +477,10 @@ NTSTATUS sam_set_account_sid(SAM_ACCOUNT_HANDLE *sampass, DOM_SID *u_sid)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_set_account_sid_from_string(SAM_ACCOUNT_HANDLE *sampass, fstring u_sid)
+NTSTATUS sam_set_account_sid_from_string(SAM_ACCOUNT_HANDLE *sampass, const char *u_sid)
 {
 	DOM_SID new_sid;
-	if (!sampass || !u_sid)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && u_sid);
 
 	DEBUG(10, ("sam_set_account_sid_from_string: setting account sid %s\n",
 		   u_sid));
@@ -510,10 +498,9 @@ NTSTATUS sam_set_account_sid_from_string(SAM_ACCOUNT_HANDLE *sampass, fstring u_
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_set_account_pgroup_sid(SAM_ACCOUNT_HANDLE *sampass, DOM_SID *g_sid)
+NTSTATUS sam_set_account_pgroup_sid(SAM_ACCOUNT_HANDLE *sampass, const DOM_SID *g_sid)
 {
-	if (!sampass || !g_sid)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && g_sid);
 
 	sid_copy(&sampass->private.group_sid, g_sid);
 
@@ -523,11 +510,10 @@ NTSTATUS sam_set_account_pgroup_sid(SAM_ACCOUNT_HANDLE *sampass, DOM_SID *g_sid)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_set_account_pgroup_string(SAM_ACCOUNT_HANDLE *sampass, fstring g_sid)
+NTSTATUS sam_set_account_pgroup_string(SAM_ACCOUNT_HANDLE *sampass, const char *g_sid)
 {
 	DOM_SID new_sid;
-	if (!sampass || !g_sid)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && g_sid);
 
 	DEBUG(10, ("sam_set_group_sid_from_string: setting group sid %s\n",
 		   g_sid));
@@ -550,8 +536,7 @@ NTSTATUS sam_set_account_pgroup_string(SAM_ACCOUNT_HANDLE *sampass, fstring g_si
 
 NTSTATUS sam_set_account_domain(SAM_ACCOUNT_HANDLE *sampass, SAM_DOMAIN_HANDLE *domain)
 {	
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.domain = domain;
 
@@ -564,8 +549,7 @@ NTSTATUS sam_set_account_domain(SAM_ACCOUNT_HANDLE *sampass, SAM_DOMAIN_HANDLE *
 
 NTSTATUS sam_set_account_name(SAM_ACCOUNT_HANDLE *sampass, const char *account_name)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	DEBUG(10, ("sam_set_account_name: setting nt account_name %s, was %s\n", account_name, sampass->private.account_name));
 
@@ -580,8 +564,7 @@ NTSTATUS sam_set_account_name(SAM_ACCOUNT_HANDLE *sampass, const char *account_n
 
 NTSTATUS sam_set_account_fullname(SAM_ACCOUNT_HANDLE *sampass, const char *full_name)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	DEBUG(10, ("sam_set_account_fullname: setting full name %s, was %s\n", full_name, sampass->private.full_name));
 
@@ -596,8 +579,7 @@ NTSTATUS sam_set_account_fullname(SAM_ACCOUNT_HANDLE *sampass, const char *full_
 
 NTSTATUS sam_set_account_logon_script(SAM_ACCOUNT_HANDLE *sampass, const char *logon_script, BOOL store)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	DEBUG(10, ("sam_set_logon_script: from %s to %s\n", logon_script, sampass->private.logon_script));
 
@@ -614,8 +596,7 @@ NTSTATUS sam_set_account_logon_script(SAM_ACCOUNT_HANDLE *sampass, const char *l
 
 NTSTATUS sam_set_account_profile_path(SAM_ACCOUNT_HANDLE *sampass, const char *profile_path, BOOL store)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	DEBUG(10, ("sam_set_profile_path: setting profile path %s, was %s\n", profile_path, sampass->private.profile_path));
  
@@ -635,8 +616,7 @@ NTSTATUS sam_set_account_profile_path(SAM_ACCOUNT_HANDLE *sampass, const char *p
 
 NTSTATUS sam_set_account_dir_drive(SAM_ACCOUNT_HANDLE *sampass, const char *dir_drive, BOOL store)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	DEBUG(10, ("sam_set_dir_drive: setting dir drive %s, was %s\n", dir_drive,
 			sampass->private.dir_drive));
@@ -657,7 +637,7 @@ NTSTATUS sam_set_account_dir_drive(SAM_ACCOUNT_HANDLE *sampass, const char *dir_
 
 NTSTATUS sam_set_account_homedir(SAM_ACCOUNT_HANDLE *sampass, const char *home_dir, BOOL store)
 {
-	if (!sampass) return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	DEBUG(10, ("sam_set_homedir: setting home dir %s, was %s\n", home_dir,
 		sampass->private.home_dir));
@@ -678,8 +658,7 @@ NTSTATUS sam_set_account_homedir(SAM_ACCOUNT_HANDLE *sampass, const char *home_d
 
 NTSTATUS sam_set_account_unix_homedir(SAM_ACCOUNT_HANDLE *sampass, const char *unix_home_dir)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	DEBUG(10, ("sam_set_unix_homedir: setting home dir %s, was %s\n", unix_home_dir,
 		sampass->private.unix_home_dir));
@@ -695,8 +674,7 @@ NTSTATUS sam_set_account_unix_homedir(SAM_ACCOUNT_HANDLE *sampass, const char *u
 
 NTSTATUS sam_set_account_acct_desc(SAM_ACCOUNT_HANDLE *sampass, const char *acct_desc)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.acct_desc = talloc_strdup(sampass->mem_ctx, acct_desc);
 
@@ -709,8 +687,7 @@ NTSTATUS sam_set_account_acct_desc(SAM_ACCOUNT_HANDLE *sampass, const char *acct
 
 NTSTATUS sam_set_account_workstations(SAM_ACCOUNT_HANDLE *sampass, const char *workstations)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	DEBUG(10, ("sam_set_workstations: setting workstations %s, was %s\n", workstations,
 			sampass->private.workstations));
@@ -726,8 +703,7 @@ NTSTATUS sam_set_account_workstations(SAM_ACCOUNT_HANDLE *sampass, const char *w
 
 NTSTATUS sam_set_account_unknown_str(SAM_ACCOUNT_HANDLE *sampass, const char *unknown_str)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.unknown_str = talloc_strdup(sampass->mem_ctx, unknown_str);
 		
@@ -740,8 +716,7 @@ NTSTATUS sam_set_account_unknown_str(SAM_ACCOUNT_HANDLE *sampass, const char *un
 
 NTSTATUS sam_set_account_munged_dial(SAM_ACCOUNT_HANDLE *sampass, const char *munged_dial)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.munged_dial = talloc_strdup(sampass->mem_ctx, munged_dial);
 	return NT_STATUS_OK;
@@ -751,10 +726,9 @@ NTSTATUS sam_set_account_munged_dial(SAM_ACCOUNT_HANDLE *sampass, const char *mu
  Set the account's NT hash.
  ********************************************************************/
 
-NTSTATUS sam_set_account_nt_pwd(SAM_ACCOUNT_HANDLE *sampass, DATA_BLOB data)
+NTSTATUS sam_set_account_nt_pwd(SAM_ACCOUNT_HANDLE *sampass, const DATA_BLOB data)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.nt_pw = data;
 
@@ -765,10 +739,9 @@ NTSTATUS sam_set_account_nt_pwd(SAM_ACCOUNT_HANDLE *sampass, DATA_BLOB data)
  Set the account's LM hash.
  ********************************************************************/
 
-NTSTATUS sam_set_account_lm_pwd(SAM_ACCOUNT_HANDLE *sampass, DATA_BLOB data)
+NTSTATUS sam_set_account_lm_pwd(SAM_ACCOUNT_HANDLE *sampass, const DATA_BLOB data)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.lm_pw = data;
 
@@ -782,8 +755,7 @@ NTSTATUS sam_set_account_lm_pwd(SAM_ACCOUNT_HANDLE *sampass, DATA_BLOB data)
 
 NTSTATUS sam_set_account_plaintext_pwd(SAM_ACCOUNT_HANDLE *sampass, const char *plain_pwd)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.plaintext_pw = talloc_strdup(sampass->mem_ctx, plain_pwd);
 
@@ -792,8 +764,7 @@ NTSTATUS sam_set_account_plaintext_pwd(SAM_ACCOUNT_HANDLE *sampass, const char *
 
 NTSTATUS sam_set_account_unknown_1(SAM_ACCOUNT_HANDLE *sampass, uint32 unkn)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.unknown_1 = unkn;
 
@@ -802,8 +773,7 @@ NTSTATUS sam_set_account_unknown_1(SAM_ACCOUNT_HANDLE *sampass, uint32 unkn)
 
 NTSTATUS sam_set_account_unknown_2(SAM_ACCOUNT_HANDLE *sampass, uint32 unkn)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.unknown_2 = unkn;
 
@@ -812,8 +782,7 @@ NTSTATUS sam_set_account_unknown_2(SAM_ACCOUNT_HANDLE *sampass, uint32 unkn)
 
 NTSTATUS sam_set_account_unknown_3(SAM_ACCOUNT_HANDLE *sampass, uint32 unkn)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	sampass->private.unknown_3 = unkn;
 	return NT_STATUS_OK;
@@ -821,8 +790,7 @@ NTSTATUS sam_set_account_unknown_3(SAM_ACCOUNT_HANDLE *sampass, uint32 unkn)
 
 NTSTATUS sam_set_account_hours(SAM_ACCOUNT_HANDLE *sampass, const uint8 *hours)
 {
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 
 	if (!hours) {
 		memset ((char *)sampass->private.hours, 0, MAX_HOURS_LEN);
@@ -846,8 +814,7 @@ NTSTATUS sam_set_account_pass_changed_now(SAM_ACCOUNT_HANDLE *sampass)
 	uint32 expire;
 	NTTIME temptime;
 
-	if (!sampass)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass);
 	
 	unix_to_nt_time(&temptime, time(NULL));
 	if (!NT_STATUS_IS_OK(sam_set_account_pass_last_set_time(sampass, temptime)))
@@ -881,8 +848,7 @@ NTSTATUS sam_set_account_passwd(SAM_ACCOUNT_HANDLE *sampass, const char *plainte
 	uchar new_lanman_p16[16];
 	uchar new_nt_p16[16];
 
-	if (!sampass || !plaintext)
-		return NT_STATUS_UNSUCCESSFUL;
+	SAM_ASSERT(sampass && plaintext);
 	
 	nt_lm_owf_gen(plaintext, new_nt_p16, new_lanman_p16);
 
