@@ -322,7 +322,7 @@ void *idr_init(TALLOC_CTX *mem_ctx)
 int idr_get_new(void *idp, void *ptr, int limit)
 {
 	int ret = idr_get_new_above_int((struct idr *)idp, ptr, 0);
-	if (ret >= limit) {
+	if (ret > limit) {
 		idr_remove(idp, ret);
 		return -1;
 	}
@@ -336,7 +336,7 @@ int idr_get_new(void *idp, void *ptr, int limit)
 int idr_get_new_above(void *idp, void *ptr, int starting_id, int limit)
 {
 	int ret = idr_get_new_above_int((struct idr *)idp, ptr, starting_id);
-	if (ret >= limit) {
+	if (ret > limit) {
 		idr_remove(idp, ret);
 		return -1;
 	}

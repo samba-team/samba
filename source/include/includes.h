@@ -466,6 +466,14 @@ typedef int socklen_t;
 #define uint64 uint64_t
 #endif
 
+#ifndef UINT8_MAX
+#define UINT8_MAX 255
+#endif
+
+#ifndef UINT16_MAX
+#define UINT16_MAX 65535
+#endif
+
 /*
  * Types for devices, inodes and offsets.
  */
