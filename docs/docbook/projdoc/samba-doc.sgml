@@ -25,6 +25,7 @@
 <!ENTITY pdb-mysql SYSTEM "pdb_mysql.sgml">
 <!ENTITY pdb-xml SYSTEM "pdb_xml.sgml">
 <!ENTITY VFS SYSTEM "VFS.sgml">
+<!ENTITY GroupProfiles SYSTEM "GroupProfiles.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -119,6 +120,7 @@ part each cover one specific feature.</para>
 &CVS-Access;
 &GROUP-MAPPING-HOWTO;
 &SPEED;
+&GroupProfiles;
 </part>
 
 <part id="Appendixes">
