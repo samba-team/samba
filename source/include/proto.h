@@ -3644,28 +3644,15 @@ BOOL api_spoolss_rpc(pipes_struct *p);
 
 void init_printer_hnd(void);
 void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len);
-uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
-				 PRINTER_DEFAULT *printer_default,
-				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
-				 POLICY_HND *handle);
+uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u);
 BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode);
-uint32 _spoolss_closeprinter(POLICY_HND *handle);
-uint32 _spoolss_deleteprinter(POLICY_HND *handle);
-uint32 _spoolss_getprinterdata(pipes_struct *p, POLICY_HND *handle, UNISTR2 *valuename,
-				uint32 in_size,
-				uint32 *type,
-				uint32 *out_size,
-				uint8 **data,
-				uint32 *needed);
-uint32 _spoolss_rffpcnex(POLICY_HND *handle, uint32 flags, uint32 options,
-			 const UNISTR2 *localmachine, uint32 printerlocal,
-			 SPOOL_NOTIFY_OPTION *option);
-uint32 _spoolss_rfnpcnex( pipes_struct *p, POLICY_HND *handle, uint32 change,
-			  SPOOL_NOTIFY_OPTION *option, SPOOL_NOTIFY_INFO *info);
-uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 level,
-			      NEW_BUFFER *buffer, uint32 offered,
-			      uint32 *needed, uint32 *returned);
+uint32 _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R_CLOSEPRINTER *r_u);
+uint32 _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL_R_DELETEPRINTER *r_u);
+uint32 _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPOOL_R_GETPRINTERDATA *r_u);
+uint32 _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNEX *r_u);
+uint32 _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u);
+uint32 _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_R_ENUMPRINTERS *r_u);
 uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed);
 uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level,
@@ -3682,7 +3669,7 @@ uint32 _spoolss_writeprinter( POLICY_HND *handle,
 				uint32 buffer_size,
 				uint8 *buffer,
 				uint32 *buffer_written);
-uint32 _spoolss_abortprinter(POLICY_HND *handle, pipes_struct *p);
+uint32 _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R_ABORTPRINTER *r_u);
 uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   DEVMODE_CTR devmode_ctr,
@@ -3730,7 +3717,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 				const uint8 *data,
 				uint32 real_len,
 				uint32 numeric_data);
-uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value);
+uint32 _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_u, SPOOL_R_DELETEPRINTERDATA *r_u);
 uint32 _spoolss_addform( POLICY_HND *handle,
 				uint32 level,
 				const FORM *form);

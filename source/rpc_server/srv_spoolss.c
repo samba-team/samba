@@ -28,11 +28,11 @@ extern int DEBUGLEVEL;
 /********************************************************************
  * api_spoolss_open_printer_ex
  ********************************************************************/
+
 static BOOL api_spoolss_open_printer_ex(pipes_struct *p)
 {
 	SPOOL_Q_OPEN_PRINTER_EX q_u;
 	SPOOL_R_OPEN_PRINTER_EX r_u;
-	UNISTR2 *printername = NULL;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -44,13 +44,7 @@ static BOOL api_spoolss_open_printer_ex(pipes_struct *p)
 		return False;
 	}
 
-	if (q_u.printername_ptr != 0)
-		printername = &q_u.printername;
-
-	r_u.status = _spoolss_open_printer_ex( printername, p,
-					       &q_u.printer_default,
-	                                       q_u.user_switch, q_u.user_ctr,
-	                                       &r_u.handle);
+	r_u.status = _spoolss_open_printer_ex( p, &q_u, &r_u);
 
 	if (!spoolss_io_r_open_printer_ex("",&r_u,rdata,0)){
 		DEBUG(0,("spoolss_io_r_open_printer_ex: unable to marshall SPOOL_R_OPEN_PRINTER_EX.\n"));
@@ -65,6 +59,7 @@ static BOOL api_spoolss_open_printer_ex(pipes_struct *p)
  *
  * called from the spoolss dispatcher
  ********************************************************************/
+
 static BOOL api_spoolss_getprinterdata(pipes_struct *p)
 {
 	SPOOL_Q_GETPRINTERDATA q_u;
@@ -81,9 +76,7 @@ static BOOL api_spoolss_getprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_getprinterdata( p, &q_u.handle, &q_u.valuename,
-	                                      q_u.size, &r_u.type, &r_u.size,
-	                                      &r_u.data, &r_u.needed);
+	r_u.status = _spoolss_getprinterdata( p, &q_u, &r_u);
 
 	if (!spoolss_io_r_getprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_getprinterdata: unable to marshall SPOOL_R_GETPRINTERDATA.\n"));
@@ -98,6 +91,7 @@ static BOOL api_spoolss_getprinterdata(pipes_struct *p)
  *
  * called from the spoolss dispatcher
  ********************************************************************/
+
 static BOOL api_spoolss_deleteprinterdata(pipes_struct *p)
 {
 	SPOOL_Q_DELETEPRINTERDATA q_u;
@@ -114,7 +108,7 @@ static BOOL api_spoolss_deleteprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_deleteprinterdata( &q_u.handle, &q_u.valuename);
+	r_u.status = _spoolss_deleteprinterdata( p, &q_u, &r_u);
 
 	if (!spoolss_io_r_deleteprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_deleteprinterdata: unable to marshall SPOOL_R_DELETEPRINTERDATA.\n"));
@@ -129,6 +123,7 @@ static BOOL api_spoolss_deleteprinterdata(pipes_struct *p)
  *
  * called from the spoolss dispatcher
  ********************************************************************/
+
 static BOOL api_spoolss_closeprinter(pipes_struct *p)
 {
 	SPOOL_Q_CLOSEPRINTER q_u;
@@ -144,8 +139,7 @@ static BOOL api_spoolss_closeprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_closeprinter(&q_u.handle);
-	memcpy(&r_u.handle, &q_u.handle, sizeof(r_u.handle));
+	r_u.status = _spoolss_closeprinter(p, &q_u, &r_u);
 
 	if (!spoolss_io_r_closeprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_closeprinter: unable to marshall SPOOL_R_CLOSEPRINTER.\n"));
@@ -160,6 +154,7 @@ static BOOL api_spoolss_closeprinter(pipes_struct *p)
  *
  * called from the spoolss dispatcher
  ********************************************************************/
+
 static BOOL api_spoolss_abortprinter(pipes_struct *p)
 {
 	SPOOL_Q_ABORTPRINTER q_u;
@@ -175,7 +170,7 @@ static BOOL api_spoolss_abortprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_abortprinter(&q_u.handle, p);
+	r_u.status = _spoolss_abortprinter(p, &q_u, &r_u);
 
 	if (!spoolss_io_r_abortprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_abortprinter: unable to marshall SPOOL_R_ABORTPRINTER.\n"));
@@ -190,6 +185,7 @@ static BOOL api_spoolss_abortprinter(pipes_struct *p)
  *
  * called from the spoolss dispatcher
  ********************************************************************/
+
 static BOOL api_spoolss_deleteprinter(pipes_struct *p)
 {
 	SPOOL_Q_DELETEPRINTER q_u;
@@ -205,8 +201,7 @@ static BOOL api_spoolss_deleteprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_deleteprinter(&q_u.handle);
-	memcpy(&r_u.handle, &q_u.handle, sizeof(r_u.handle));
+	r_u.status = _spoolss_deleteprinter(p, &q_u, &r_u);
 
 	if (!spoolss_io_r_deleteprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_deleteprinter: unable to marshall SPOOL_R_DELETEPRINTER.\n"));
@@ -221,6 +216,7 @@ static BOOL api_spoolss_deleteprinter(pipes_struct *p)
  * api_spoolss_rffpcnex
  * ReplyFindFirstPrinterChangeNotifyEx
  ********************************************************************/
+
 static BOOL api_spoolss_rffpcnex(pipes_struct *p)
 {
 	SPOOL_Q_RFFPCNEX q_u;
@@ -236,9 +232,7 @@ static BOOL api_spoolss_rffpcnex(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_rffpcnex(&q_u.handle, q_u.flags,
-	                               q_u.options, &q_u.localmachine,
-	                               q_u.printerlocal, q_u.option);
+	r_u.status = _spoolss_rffpcnex(p, &q_u, &r_u);
 
 	if (!spoolss_io_r_rffpcnex("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_rffpcnex: unable to marshall SPOOL_R_RFFPCNEX.\n"));
@@ -255,6 +249,7 @@ static BOOL api_spoolss_rffpcnex(pipes_struct *p)
  * called from the spoolss dispatcher
  *
  ********************************************************************/
+
 static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
 {
 	SPOOL_Q_RFNPCNEX q_u;
@@ -270,11 +265,7 @@ static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_rfnpcnex(&q_u.handle, q_u.change,
-	                               q_u.option, p->mem_ctx, &r_u.info);
-
-	/* we always have a NOTIFY_INFO struct */
-	r_u.info_ptr=0x1;
+	r_u.status = _spoolss_rfnpcnex(p, &q_u, &r_u);
 
 	if (!spoolss_io_r_rfnpcnex("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_rfnpcnex: unable to marshall SPOOL_R_RFNPCNEX.\n"));
@@ -290,6 +281,7 @@ static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
  * called from the spoolss dispatcher
  *
  ********************************************************************/
+
 static BOOL api_spoolss_enumprinters(pipes_struct *p)
 {
 	SPOOL_Q_ENUMPRINTERS q_u;
@@ -305,12 +297,7 @@ static BOOL api_spoolss_enumprinters(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_enumprinters( q_u.flags, &q_u.servername, q_u.level,
-					    r_u.buffer, q_u.offered,
-					    &r_u.needed, &r_u.returned);
+	r_u.status = _spoolss_enumprinters( p, &q_u, &r_u);
 
 	if (!new_spoolss_io_r_enumprinters("", &r_u, rdata, 0)) {
 		DEBUG(0,("new_spoolss_io_r_enumprinters: unable to marshall SPOOL_R_ENUMPRINTERS.\n"));
