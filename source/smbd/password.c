@@ -253,6 +253,8 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	/* Create an NT_USER_TOKEN struct for this user. */
 	vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups, guest);
 
+	DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
+
 	next_vuid++;
 	num_validated_vuids++;
 
