@@ -42,7 +42,7 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	}
 
 	/* make sure its matches the given attributes */
-	if (!pvfs_match_attrib(pvfs, name, attrib)) {
+	if (!pvfs_match_attrib(pvfs, name, attrib, 0)) {
 		talloc_free(name);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}

@@ -53,7 +53,8 @@ BOOL torture_dirtest1(int dummy)
 		asprintf(&fname, "\\%x", (int)random());
 		fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum == -1) {
-			fprintf(stderr,"Failed to open %s\n", fname);
+			fprintf(stderr,"(%s) Failed to open %s\n", 
+				__location__, fname);
 			return False;
 		}
 		smbcli_close(cli->tree, fnum);
@@ -117,7 +118,8 @@ BOOL torture_dirtest2(int dummy)
 		fnum = smbcli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
 				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 		if (fnum == -1) {
-			fprintf(stderr,"Failed to open %s, error=%s\n", fname, smbcli_errstr(cli->tree));
+			fprintf(stderr,"(%s) Failed to open %s, error=%s\n", 
+				__location__, fname, smbcli_errstr(cli->tree));
 			return False;
 		}
 		free(fname);
@@ -127,7 +129,8 @@ BOOL torture_dirtest2(int dummy)
 		char *fname;
 		asprintf(&fname, "\\LISTDIR\\d%d", i);
 		if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, fname))) {
-			fprintf(stderr,"Failed to open %s, error=%s\n", fname, smbcli_errstr(cli->tree));
+			fprintf(stderr,"(%s) Failed to open %s, error=%s\n", 
+				__location__, fname, smbcli_errstr(cli->tree));
 			return False;
 		}
 		free(fname);
@@ -139,8 +142,8 @@ BOOL torture_dirtest2(int dummy)
 	/* We should see (torture_entries) each of files & directories + . and .. */
 	if (num_seen != (2*torture_entries)+2) {
 		correct = False;
-		fprintf(stderr,"entry count mismatch, should be %d, was %d\n",
-			(2*torture_entries)+2, num_seen);
+		fprintf(stderr,"(%s) entry count mismatch, should be %d, was %d\n",
+			__location__, (2*torture_entries)+2, num_seen);
 	}
 		
 
@@ -151,21 +154,22 @@ BOOL torture_dirtest2(int dummy)
 	printf("num_seen = %d\n", num_seen );
 	if (num_seen != torture_entries+2) {
 		correct = False;
-		fprintf(stderr,"entry count mismatch, should be %d, was %d\n",
-			torture_entries+2, num_seen);
+		fprintf(stderr,"(%s) entry count mismatch, should be %d, was %d\n",
+			__location__, torture_entries+2, num_seen);
 	}
 
 	num_seen = smbcli_list_old(cli->tree, "\\LISTDIR\\*", (FILE_ATTRIBUTE_ARCHIVE<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, NULL);
 	printf("num_seen = %d\n", num_seen );
 	if (num_seen != torture_entries) {
 		correct = False;
-		fprintf(stderr,"entry count mismatch, should be %d, was %d\n",
-			torture_entries, num_seen);
+		fprintf(stderr,"(%s) entry count mismatch, should be %d, was %d\n",
+			__location__, torture_entries, num_seen);
 	}
 
 	/* Delete everything. */
 	if (smbcli_deltree(cli->tree, "\\LISTDIR") == -1) {
-		fprintf(stderr,"Failed to deltree %s, error=%s\n", "\\LISTDIR", smbcli_errstr(cli->tree));
+		fprintf(stderr,"(%s) Failed to deltree %s, error=%s\n", "\\LISTDIR", 
+			__location__, smbcli_errstr(cli->tree));
 		return False;
 	}
 
