@@ -241,17 +241,19 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-syslog \
 	--with-utmp \
 	--with-netatalk \
-	--without-smbwrapper \
+	--with-smbwrapper \
 	--with-libsmbclient \
 	--with-ldapsam \
 	--with-sambabook=$(DESTDIR)/usr/share/swat/using_samba
 
 # Temp disabled - add later - JHT
 #	--with-pam_smbpass \
+#	--with-ldapsam \
+#	--with-krb5=/usr/athena \
 #	--with-nisplus-home \
 #	--with-acl-support \
 
-make all nsswitch/libnss_wins.so torture nsswitch/pam_winbind.so
+make all nsswitch/libnss_wins.so torture nsswitch/pam_winbind.so everything
 
 
 %Install
