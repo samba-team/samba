@@ -96,7 +96,7 @@ kadm5_s_create_principal(void *server_handle,
     ent.keys.val[0].key.keytype = KEYTYPE_DES;
     /* flag as version 4 compatible salt; ignored by _kadm5_set_keys
        if we don't want to be compatible */
-    ent.keys.val[0].salt = calloc(sizeof(*end.keys.val[0].salt));
+    ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
     ent.keys.val[0].salt->type = hdb_pw_salt;
     ent.keys.val[1].key.keytype = KEYTYPE_DES3;
 
