@@ -71,7 +71,7 @@ struct hdbldapdb {
  *
  */
 
-static char *krb5kdcentry_attrs[] = { 
+static char * krb5kdcentry_attrs[] = { 
     "cn",
     "createTimestamp",
     "creatorsName",
@@ -93,6 +93,7 @@ static char *krb5kdcentry_attrs[] = {
     "sambaNTPassword",
     "sambaPwdLastSet",
     "sambaPwdMustChange",
+    "uid",
     NULL
 };
 
