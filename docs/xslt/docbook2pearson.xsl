@@ -6,11 +6,9 @@
 	(C) Jelmer Vernooij <jelmer@samba.org>			2004
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-	xmlns:exsl="http://exslt.org/common"
 	xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"
 	exclude-result-prefixes="doc"
-	version="1.1"
-	extension-element-prefixes="exsl">
+	version="1.1">
 
 	<xsl:import href="../settings.xsl"/>
 
@@ -213,7 +211,19 @@
 	   <t><xsl:apply-templates/></t>
    </xsl:template>
 
-   <xsl:template match="see">
+   <xsl:template match="citerefentry">
+	   <xsl:value-of select="refentrytitle"/><xsl:text>(</xsl:text><xsl:value-of select="manvolnum"/><xsl:text>)</xsl:text>
+   </xsl:template>
+
+   <xsl:template match="formalpara">
+	   <xsl:apply-templates/>
+   </xsl:template>
+
+   <xsl:template match="substeps">
+	   <xsl:apply-templates/>
+   </xsl:template>
+
+   <xsl:template match="see|seealso">
 	   <synonym><xsl:apply-templates/></synonym>
    </xsl:template>
 
@@ -286,10 +296,17 @@
 	   <ul><xsl:apply-templates/></ul>
    </xsl:template>
 
+   <xsl:template match="varlistentry/term">
+	   <dt><xsl:apply-templates/></dt>
+   </xsl:template>
+
+   <xsl:template match="varlistentry/listitem">
+	   <dd><xsl:apply-templates/></dd>
+   </xsl:template>
+
    <xsl:template match="varlistentry">
 	   <dlitem>
-		   <dt><xsl:apply-templates select="term"/></dt>
-		   <dd><xsl:apply-templates select="listitem"/></dd>
+		   	<xsl:apply-templates/>
 	   </dlitem>
    </xsl:template>
 
@@ -780,13 +797,15 @@
 			   <xsl:text>Anhang </xsl:text>
 		   </xsl:when>
 		   <xsl:otherwise>
-			   <xsl:message>
-				   <xsl:text>Cant't handle xref to </xsl:text>
-				   <xsl:value-of select="$refelem"/>
-				   <xsl:text>:</xsl:text>
-				   <xsl:value-of select="@linkend"/>
-			   </xsl:message>
-			   <xsl:text>(??? $refelem)</xsl:text>
+			   <xsl:if test="$refelem != ''">
+				   <xsl:message>
+					   <xsl:text>Cant't handle xref to </xsl:text>
+					   <xsl:value-of select="$refelem"/>
+					   <xsl:text>:</xsl:text>
+					   <xsl:value-of select="@linkend"/>
+				   </xsl:message>
+				   <xsl:text>(??? $refelem)</xsl:text>
+			   </xsl:if>
 		   </xsl:otherwise>
 	   </xsl:choose>
 
@@ -948,13 +967,11 @@
    </xsl:template>
 
    <xsl:template match="procedure">
-	   <xsl:element name="step">
 		   <xsl:apply-templates/>
-	   </xsl:element>
    </xsl:template>
 
-   <xsl:template match="procedure/step">
-	   <xsl:apply-templates/><!--FIXME-->
+   <xsl:template match="step">
+	   <step><xsl:apply-templates/></step>
    </xsl:template>
 
    <xsl:template match="toc">
@@ -989,111 +1006,9 @@
 		<xsl:apply-templates/>
 	</xsl:template>
 
-	<xsl:template match="formalpara">
-		<!--FIXME-->
+
+	<xsl:template match="affiliation">
+		<!-- Ignoring affiliations for now -->
 	</xsl:template>
 
-	<xsl:template match="citerefentry"/><!--FIXME-->
-	<xsl:template match="term"/><!--FIXME-->
-	<xsl:template match="substeps"/><!--FIXME-->
-	<xsl:template match="seealso"/><!--FIXME-->
-	<xsl:template match="affiliation"/><!--FIXME-->
 </xsl:stylesheet>
-
-
-<!--
-<?xml version='1.0'?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-	xmlns:exsl="http://exslt.org/common"
-	version="1.1"
-	extension-element-prefixes="exsl">
-
-
-	<xsl:output method="xml" indent="yes" encoding="UTF-8" doctype-public="-//Pearson//DTD Books//DE" doctype-system="http://www.pearson.de/pearson.dtd"/>
-
-	<xsl:template match="book">
-		<xsl:element name="book">
-			<xsl:apply-templates/>
-		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="pubdate">
-		<xsl:element name="publdate">
-			<xsl:apply-templates/>
-		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="para">
-		<xsl:element name="p">
-			<xsl:apply-templates/>
-		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="ulink">
-		<xsl:apply-templates/>
-		<xsl:element name="footnote">
-			<xsl:element name="url">
-				<xsl:value-of select="@ulink"/>
-			</xsl:element>
-		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="glossentry">
-		<xsl:element name="glossitem">
-			<xsl:apply-templates/>
-		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="glossterm">
-		<xsl:element name="term">
-			<xsl:apply-templates/>
-		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="para/itemizedlist|itemizedlist">
-		<xsl:element name="ul">
-			<xsl:for-each select="listitem">
-				<xsl:element name="li">
-					<xsl:apply-templates/>
-				</xsl:element>
-			</xsl:for-each>
-		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="emphasis">
-		<xsl:element name="em">
-			<xsl:apply-templates/>
-		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="link">
-		FIXME
-		<xsl:element name="xref">
-			<xsl:attribute name="xlink:href">
-				<xsl:value-of select="@linkend"/>
-			</xsl:attribute>
-			<xsl:apply-templates/>
-		</xsl:element>
-	</xsl:template>
-	
-	<xsl:template match="acronym"/>
-	
-	<xsl:template match="glossdef/para">
-		<xsl:element name="glosspara">
-			<xsl:apply-templates/>
-		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="author">
-		<xsl:element name="author">
-			<xsl:value-of select="firstname"/><xsl:text> </xsl:text><xsl:value-of select="surname"/>
-		</xsl:element>
-	</xsl:template>
-	
-	<xsl:template match="editor">
-		<xsl:element name="editor">
-			<xsl:value-of select="firstname"/><xsl:text> </xsl:text><xsl:value-of select="surname"/>
-		</xsl:element>
-	</xsl:template>
-
-</xsl:stylesheet>-->
