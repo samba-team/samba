@@ -459,6 +459,8 @@ syslog only
 
 time offset
 
+time server
+
 unix realname
 
 username map
@@ -517,6 +519,10 @@ dont descend
 exec
 
 fake oplocks
+
+force create mode
+
+force directory mode
 
 force group
 
@@ -862,8 +868,30 @@ A synonym for this parameter is 'create mode'.
 This parameter is the octal modes which are used when converting DOS modes 
 to UNIX modes.
 
-Note that Samba will or this value with 0700 as you must have at least
-user read, write and execute for Samba to work properly.
+When a file is created, the neccessary permissions are calculated
+according to the mapping from DOS modes to UNIX permissions, and
+the resulting UNIX mode is then bit-wise 'AND'ed with this parameter.
+This parameter may be thought of as a bit-wise MASK for the UNIX
+modes of a file. Any bit *not* set here will be removed from the
+modes set on a file when it is created.
+
+The default value of this parameter removes the 'user' execute
+bit and the 'group' and 'other' write and execute bits from the
+UNIX modes.
+
+Following this Samba will bit-wise 'OR' the UNIX mode created from
+this parameter with the value of the "force create mode" parameter 
+which is set to 0700 by default. This causes the 'user' read, write
+and execute bits to be set for every file created. You must have at 
+least 'user' read, write and execute bits set for Samba to work properly.
+
+For Samba 1.9.17 and above this parameter no longer affects directory
+modes. See the parameter 'directory mode' for details.
+
+See also the "force create mode" parameter for forcing particular
+mode bits to be set on created files.
+See also the "directory mode" paramter for masking mode bits on created
+directories.
 
 .B Default:
  	create mask = 0644
@@ -873,6 +901,7 @@ user read, write and execute for Samba to work properly.
 .SS create mode (S)
 See
 .B create mask.
+
 .SS dead time (G)
 The value of the parameter (a decimal integer) represents the number of
 minutes of inactivity before a connection is considered dead, and it
@@ -1022,8 +1051,25 @@ A synonym for this parameter is 'directory mode'.
 This parameter is the octal modes which are used when converting DOS modes 
 to UNIX modes when creating UNIX directories.
 
-Note that Samba will bit-wise 'OR' this value with 0700 as you must have at
-least user read, write and execute for Samba to work properly.
+When a directory is created, the neccessary permissions are calculated
+according to the mapping from DOS modes to UNIX permissions, and
+the resulting UNIX mode is then bit-wise 'AND'ed with this parameter.
+This parameter may be thought of as a bit-wise MASK for the UNIX
+modes of a directory. Any bit *not* set here will be removed from the
+modes set on a directory when it is created.
+
+The default value of this parameter removes the 'group' and 'other'
+write bits from the UNIX mode.
+
+Following this Samba will bit-wise 'OR' the UNIX mode created from
+this parameter with the value of the "force directory mode" parameter. 
+This parameter is set to 000 by default (ie. no extra mode bits are added).
+
+See the "force directory mode" parameter to cause particular mode
+bits to always be set on created directories.
+
+See also the "create mode" parameter for masking mode bits on created
+files.
 
 .B Default:
  	directory mask = 0755
@@ -1105,6 +1151,49 @@ carefully!
 
 This option is disabled by default.
 
+.SS force create mode (S)
+This parameter specifies a set of UNIX mode bit permissions that
+will *always* be set on a file created by Samba. This is done
+by bitwise 'OR'ing these bits onto the mode bits of a file that
+is being created. The default for this parameter is (in octel)
+0700 as files must have at least 'user' read/write/execute bits
+set for Samba to work correctly. This operation is done after
+the mode mask in the parameter "create mask" is applied.
+
+See also the parameter "create mask" for details on masking mode
+bits on created files.
+
+.B Default:
+       force create mode = 0700
+
+.B Example:
+       force create mode = 0755
+
+would force all created files to have read and execute permissions
+set for 'group' and 'other' as well as the read/write/execute bits 
+set for the 'user'.
+
+.SS force directory mode (S)
+This parameter specifies a set of UNIX mode bit permissions that
+will *always* be set on a directory created by Samba. This is done
+by bitwise 'OR'ing these bits onto the mode bits of a directory that
+is being created. The default for this parameter is (in octel)
+0000 which will not add any extra permission bits to a created
+directory. This operation is done after the mode mask in the parameter 
+"directory mask" is applied.
+
+See also the parameter "directory mask" for details on masking mode
+bits on created directories.
+
+.B Default:
+       force directory mode = 000
+
+.B Example:
+       force directory mode = 0755
+
+would force all created directories to have read and execute permissions
+set for 'group' and 'other' as well as the read/write/execute bits 
+set for the 'user'.
 
 .SS force group (S)
 This specifies a group name that all connections to this service
@@ -2855,6 +2944,16 @@ that have incorrect daylight saving time handling.
 
 .B Example:
 	time offset = 60
+
+.SS time server (G)
+This parameter determines if nmbd advertises itself as a time server
+to Windows clients. The default is False.
+
+.B Default:
+	time server = False
+
+.B Example:
+	time server = True
 
 .SS unix realname (G)
 This boolean parameter when set causes samba to supply the real name field
