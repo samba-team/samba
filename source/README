@@ -8,8 +8,11 @@ this will fail, and you will need to delete your cvs tree and start again.
 instructions, in case it was a while since you last did that, are at
 http://samba.org/cvs.html.  remember to use SAMBA_TNG as the tag name.
 
-compilation and usage instructions.  the following are executed at the unix
-prompt, if you hadn't already guessed.
+there is also a FAQ, maintained by Lars Kneschke <lars@kneschke.de>, at
+http://www.kneschke.de/projekte/samba_tng.
+
+basic compilation and usage instructions.  the following are executed at
+the unix prompt, if you hadn't already guessed.
 
 ./configure
 make
@@ -27,7 +30,8 @@ clients' reliability and performance:
 bin/srvsvcd
 bin/wkssvcd
 
-if you intend to operate samba with "encrypt passwords = yes", you will
+if you intend to operate samba with "encrypt passwords = yes", 
+"update encrypted = yes" or "migrate passwords = yes", you will
 also need:
 
 bin/lsarpcd
