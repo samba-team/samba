@@ -173,7 +173,9 @@ static int negprot_spnego(char *p, uint8 cryptkey[8])
 	safe_strcpy(guid, global_myname, 16);
 	strlower(guid);
 
-	asprintf(&principle, "%s$@%s", guid, lp_realm());
+	/* win2000 uses host$@REALM, which we will probably use eventually,
+	   but for now this works */
+	asprintf(&principle, "HOST/%s@%s", guid, lp_realm());
 	blob = spnego_gen_negTokenInit(guid, OIDs, principle);
 	free(principle);
 
