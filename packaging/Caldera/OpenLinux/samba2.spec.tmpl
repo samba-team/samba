@@ -4,7 +4,7 @@
 %define Dist		OpenLinux
 %define EtcSamba 	/etc/samba.d
 %define _defaultdocdir  /usr/doc
-%define LSBservedir	/srv/%{Name}
+%define LSBservedir	/srv/samba
 
 Name        	: samba
 Version     	: %{Version}
@@ -32,6 +32,7 @@ Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}-%{date}.tar.gz
 Patch0: %{Name}-%{Version}-smbmount.patch
 Patch1: %{Name}-%{Version}-install.patch
 #Patch2: %{Name}-%{Version}-smbconf.patch
+Patch3: %{Name}-%{Version}-make.patch
 
 
 %Package doc
@@ -191,6 +192,7 @@ verificar rapidamente o efeite de qualquer alteração.
 %patch0 -p1
 %patch1 -p1
 #%patch2 -p1
+%patch3 -p1
 
 # instead of patch (to help configuration) ...   ;^)
 %{fixUP} -vbT source/Makefile.in -e '
@@ -270,9 +272,10 @@ VVS=packaging/%{Vendor}/%{Dist}
 
 mkdir -p $DESTDIR/etc/{{rc.d/init,logrotate,pam}.d,sysconfig/daemons,skel/Samba}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
-mkdir -p $DESTDIR/usr{/lib/security,/share/swat/using_samba}
+mkdir -p $DESTDIR/usr/share/swat/using_samba
+mkdir -p $DESTDIR/lib/security
 mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
-mkdir -p $DESTDIR/home/samba $DESTDIR%{EtcSamba}/codepages/src $DESTDIR/sbin
+mkdir -p $DESTDIR%{EtcSamba}/codepages/src $DESTDIR/sbin
 
 make -C source  install
 make LOGFILEBASE=/var/log/samba.d -C source install
@@ -288,20 +291,20 @@ install -m 755 source/nsswitch/libnss_wins.so $DESTDIR/lib/libnss_wins.so.2.0
 ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so.2
 ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so
 
-install -m 755 source/nsswitch/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.2.0
-# Make link for wins resolver
-ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
-ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
+# install -m 755 source/nsswitch/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.2.0
+# # Make link for winbind resolver
+# ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
+# ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
 
-install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
+# install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
 
-install -m 755 bin/wbinfo $DESTDIR/usr/bin
+# install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
 
 cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
-#cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf
+cp -p $VVS/smb.conf $DESTDIR%{EtcSamba}/smb.conf
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
 cp -p $VVS/smbprint $DESTDIR/usr/bin
 cp -p $VVS/smbadduser.perl $DESTDIR/usr/bin/smbadduser
@@ -424,4 +427,4 @@ lisa --inetd disable swat $1
 
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec.tmpl,v 1.1.6.1 2001/01/16 15:48:35 jht Exp $
+$Id: samba2.spec.tmpl,v 1.1.6.2 2001/01/17 12:27:08 jht Exp $
