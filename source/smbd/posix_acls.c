@@ -2095,7 +2095,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	if ((file_ace_list == NULL) && (dir_ace_list == NULL)) {
 		/* W2K traverse DACL set - ignore. */
 		return True;
-    }
+	}
 
 	if (!acl_perms) {
 		DEBUG(3,("set_nt_acl: cannot set permissions\n"));

@@ -170,11 +170,13 @@ ssize_t vfswrap_write(files_struct *fsp, int fd, const void *data, size_t n)
 
 SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
 {
-	SMB_OFF_T result;
+	SMB_OFF_T result = 0;
 
 	START_PROFILE(syscall_lseek);
 
-	result = sys_lseek(filedes, offset, whence);
+	/* Cope with 'stat' file opens. */
+	if (filedes != -1)
+		result = sys_lseek(filedes, offset, whence);
 
 	/*
 	 * We want to maintain the fiction that we can seek

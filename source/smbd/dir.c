@@ -675,6 +675,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 	size_t sd_size;
 	files_struct *fsp;
 	int smb_action;
+	int access_mode;
 	NTSTATUS status;
 	uint32 access_granted;
 
@@ -687,10 +688,12 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 	/* Pseudo-open the file (note - no fd's created). */
 
 	if(S_ISDIR(ste.st_mode))	
-		 fsp = open_directory(conn, name, &ste, SET_DENY_MODE(DENY_NONE), FILE_OPEN,
+		 fsp = open_directory(conn, name, &ste, SET_DENY_MODE(DENY_NONE), (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 			unix_mode(conn,aRONLY|aDIR, name), &smb_action);
 	else
-		fsp = open_file_stat(conn,name,&ste,DOS_OPEN_RDONLY,&smb_action);
+		fsp = open_file_shared1(conn, name, &ste, FILE_READ_ATTRIBUTES, SET_DENY_MODE(DENY_NONE), 
+                                (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
+
 	if (!fsp)
 		return False;
 
@@ -704,26 +707,6 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 
 	return se_access_check(psd, current_user.nt_user_token, FILE_READ_DATA,
                                  &access_granted, &status);
-
-#if 0
-	/* Old - crappy check :-). JRA */
-
-	if (ste.st_uid == conn->uid) {
-		return (ste.st_mode & S_IRUSR) == S_IRUSR;
-      	} else {
-		int i;
-		if (ste.st_gid == conn->gid) {
-			return (ste.st_mode & S_IRGRP) == S_IRGRP;
-		}
-		for (i=0; i<conn->ngroups; i++) {
-			if (conn->groups[i] == ste.st_gid) {
-				return (ste.st_mode & S_IRGRP) == S_IRGRP;
-			}
-		}
-	}
-
-	return (ste.st_mode & S_IROTH) == S_IROTH;
-#endif
 }
 
 /*******************************************************************

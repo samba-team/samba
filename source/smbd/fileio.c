@@ -646,3 +646,17 @@ void sync_file(connection_struct *conn, files_struct *fsp)
       conn->vfs_ops.fsync(fsp,fsp->fd);
     }
 }
+
+
+/************************************************************
+ Perform a stat whether a valid fd or not.
+************************************************************/
+
+int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst)
+{
+	if (fsp->fd == -1)
+		return vfs_stat(fsp->conn, fsp->fsp_name, pst);
+	else
+		return vfs_fstat(fsp,fsp->fd, pst);
+}
+
