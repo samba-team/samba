@@ -1720,7 +1720,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture, uint32 version);
 BOOL get_short_archi(char *short_archi, char *long_archi);
-void clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level);
+uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level);
 BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user, uint32 *perr);
 uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model);
 uint32 del_a_printer(char *sharename);
