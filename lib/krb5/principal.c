@@ -886,11 +886,11 @@ krb5_sname_to_principal (krb5_context context,
 
 	error = getaddrinfo (hostname, NULL, &hints, &res);
 	if (error == 0) {
-	    host = strdup (res->ai_canonname);
+	    if (res->ai_canonname != NULL)
+		host = strdup (res->ai_canonname);
+	    else
+		host = strdup (hostname);
 	    freeaddrinfo (res);
-	} else if (res->ai_canonname == NULL) {
-	    freeaddrinfo (res);
-	    host = strdup (hostname);
 	} else {
 	    host = strdup (hostname);
 	}
