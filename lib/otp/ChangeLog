@@ -1,3 +1,7 @@
+2002-05-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* otp_db.c: fix ndbm test
+
 2002-05-17  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: add hooks for ndbm_wrap
