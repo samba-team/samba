@@ -663,6 +663,7 @@ static void smbsrv_recv(struct stream_connection *conn, struct timeval t, uint16
 	status = receive_smb_request(smb_conn, t);
 	if (NT_STATUS_IS_ERR(status)) {
 		talloc_free(conn->event.fde);
+		conn->event.fde = NULL;
 		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
 		return;
 	}
