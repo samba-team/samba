@@ -782,6 +782,11 @@ main (int argc, char **argv)
 
 	ticket_life = tmp;
     }
+    if(renewable_flag == -1)
+	/* this seems somewhat pointless, but whatever */
+	krb5_appdefault_boolean(context, "kinit",
+				krb5_principal_get_realm(context, principal),
+				"renewable", FALSE, &renewable_flag);
     if(get_v4_tgt == -1)
 	krb5_appdefault_boolean(context, "kinit", 
 				krb5_principal_get_realm(context, principal), 
