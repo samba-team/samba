@@ -146,7 +146,7 @@ static void *startsmbfilepwent_internal(const char *pfile, enum pwf_access_type 
   }
 
   /* Set a buffer to do more efficient reads */
-  setvbuf(fp, (char *)NULL, _IOLBF, 0);
+  setvbuf(fp, (char *)NULL, _IOFBF, 1024);
 
   /* Make sure it is only rw by the owner */
   chmod(pfile, 0600);
