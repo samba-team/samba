@@ -643,7 +643,7 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 	}
 	
 	if (sys_getgrouplist(usr->pw_name, usr->pw_gid, *unix_groups, &n_unix_groups) == -1) {
-		*unix_groups = realloc(unix_groups, sizeof(gid_t) * n_unix_groups);
+		*unix_groups = Realloc(unix_groups, sizeof(gid_t) * n_unix_groups);
 		if (sys_getgrouplist(usr->pw_name, usr->pw_gid, *unix_groups, &n_unix_groups) == -1) {
 			DEBUG(0, ("get_user_groups_from_local_sam: failed to get the unix group list\n"));
 			SAFE_FREE(unix_groups);
@@ -657,12 +657,14 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 	DEBUG(5,("get_user_groups_from_local_sam: user is in the unix following groups\n"));
 	for (i = 0; i < n_unix_groups; i++)
 		DEBUGADD(5,("supplementary group gid:%ld\n",(long int)(*unix_groups)[i]));
-	
-	*groups   = malloc(sizeof(DOM_SID) * n_unix_groups);
-	if (!*groups) {
-		DEBUG(0, ("get_user_group_from_local_sam: malloc() failed for DOM_SID list!\n"));
-		SAFE_FREE(unix_groups);
-		return NT_STATUS_NO_MEMORY;
+
+	if (n_unix_groups > 0) {
+		*groups   = malloc(sizeof(DOM_SID) * n_unix_groups);
+		if (!*groups) {
+			DEBUG(0, ("get_user_group_from_local_sam: malloc() failed for DOM_SID list!\n"));
+			SAFE_FREE(unix_groups);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	*n_groups = n_unix_groups;

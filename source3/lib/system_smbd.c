@@ -41,6 +41,11 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 	gid_t *gids_saved;
 	int ret, ngrp_saved;
 
+	if (non_root_mode()) {
+		*grpcnt = 0;
+		return 0;
+	}
+
 	/* work out how many groups we need to save */
 	ngrp_saved = getgroups(0, NULL);
 	if (ngrp_saved == -1) {
