@@ -910,6 +910,15 @@ static int net_ads_password(int argc, const char **argv)
     in realms other than default */
     if (!(ads = ads_init(realm, NULL, NULL))) return -1;
 
+    /* we don't actually need a full connect, but it's the easy way to
+       fill in the KDC's addresss */
+    ads_connect(ads);
+    
+    if (!ads || !ads->config.realm) {
+	    d_printf("Didn't find the kerberos server!\n");
+	    return -1;
+    }
+
     asprintf(&prompt, "Enter new password for %s:", argv[0]);
 
     new_password = getpass(prompt);
