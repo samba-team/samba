@@ -1,205 +1,72 @@
-          WHATS NEW IN 1.9.18 - January 7th 1998.
-          =======================================
+          WHATS NEW IN 2.0.0 ALPHA SERIES
+          ===============================
 
-This is the latest stable release of Samba. This is the
-version that all production Samba servers should be running
-for all current bug-fixes.
+This is an alpha release of Samba. Releases in this series are done
+automatically every week based on the latest code in the Samba CVS
+tree. 
 
-This release contains several major changes and much re-written 
-code.
+THIS RELEASE IS NOT PRODUCTION QUALITY. IT MAY NOT EVEN COMPILE. 
 
-The main changes are :
+If you use this release then be aware of the following:
 
-1). Oplock support now operational.
------------------------------------
+- only use these releases if you can't use CVS for some
+  reason. Getting the code via anonymous cvs is preferable. See
+  http://samba.anu.edu.au/cvs.html 
 
-Samba now supports 'exclusive' and 'batch' oplocks.
-These are an advanced networked file system feature
-that allows clients to obtain a exclusive use of a 
-file. This allows a client to cache any changes it
-makes locally, and greatly improves performance.
+- don't use this code if you are not an experienced programmer. We are
+  doing these releases so that users who cannot access the CVS tree
+  directly for some reason can report/fix bugs. If you find bugs in
+  this release and you want to help fix them then please join the
+  samba-technical mailing list (see http://samba.anu.edu.au/listproc/)
+  and discuss it there.
 
-Windows NT has this feature and prior to this
-release this was one of the reasons Windows NT
-could be faster in some situations. Samba has
-now been benchmarked as out performing Windows
-NT on equivalently priced hardware.
+- the docs are not uptodate. If you find documentation errors then
+  please send patches to fix them. Out of date documentation is one of
+  the main things holding back a Samba 2.0 release.
 
-The oplock code in Samba has been extensively
-tested and is believed to be completely stable.
+Major changes in Samba 2.0
+--------------------------
 
-Please report any problems to the samba-bugs alias.
+There have been several major changes in Samba for version 2.0. Here
+are some of them:
 
-2). NetBIOS name daemon re-written.
------------------------------------
+1). autoconf
+------------
 
-The old nmbd that has caused some users problems
-has now been completely re-written and now is
-much easier to maintain and add changes to.
+You now configure Samba by running "./configure" then make. See
+docs/UNIX_INSTALL.txt 
 
-Changes include support for multi-homed hosts
-in the same way as an NT Server with multiple
-IP interfaces behaves (registers with the WINS
-server as a multi-homed name type), and also
-support for multi-homed name registration in
-the Samba WINS server. Another added feature
-is robustness in the face of WINS server failure,
-nmbd will now keep trying to contact the WINS 
-server until it is successful, in the same
-way as an NT Server.
+2) domain control
+-----------------
 
-Also in this release is an implementation
-of the Lanman announce protocol used by
-OS/2 clients. Thanks to Jacco de Leeuw for 
-this code.
+Samba can now (mostly) act as a NT primary domain controller and
+domain logon server. Unfortunately this is largely undocumented at the
+moment, but to get you started you want smb.conf entries like this:
 
-3). New Internationalization support.
--------------------------------------
+	domain controller = Yes
+	domain logons = Yes
+	preferred master = Yes
+	domain master = Yes
 
-With this release Samba no longer needs to be
-separately compiled for Japanese (Kanji) support,
-the same binary will serve both Kanji and non-Kanji
-clients.
+[netlogon]
+	path = /data/netlogon
+	read only = No
 
-A new method of dynamically loading client code pages
-has been added to allow the case insensitivity to
-be done dependent on the code page of the client.
+further documentation on this still needs to be written :)
 
-Note that Samba still will only handle one client
-code page at a time. This will be fixed when
-Samba is fully UNICODE enabled.
+3) option defaults changed
+--------------------------
 
-Please see the new man page for make_smbcodepage
-for details on adding additional client code page
-support.
+several parameters have changed their default values. The most
+important of these is that the default security mode is now user level
+security rather than share level security.
 
-4). New Printing support.
--------------------------
+4) web based GUI configuration
+------------------------------
 
-An implementation of the Windows 95 automatic printer
-driver installation has been added to smbd. To use this
-new feature please read the document:
-
-docs/PRINTER_DRIVER.txt
-
-Thanks to Jean-Francois Micouleau, and also Herb Lewis
-of Silicon Graphics for this new code.
-
-Printer support on System V systems (notably Solaris)
-has been improved with the addition of code generously
-donated by Norm Jacobs of Sun Microsystems. Sun have
-also made a Solaris SPARC workstation available to the
-Samba Team to aid in their porting efforts.
+Samba now comes with SWAT, a web based GUI config system. See
+swat/README for how to set it up.
 
 
-Changed code.
--------------
-
-Samba no longer needs the libdes library to support
-encrypted passwords. Samba now contains a restricted
-version of DES that can only be used for authentication
-purposes (to comply with the USA export encryption
-regulations and to allow USA Mirror sites to carry
-Samba source code). The 'encrypt passwords' parameter
-may now be used without recompiling.
-
-Much of the internals of Samba has been re-structured
-to support the oplock and Domain controller changes.
-
-Samba now contains an implementation of share modes
-using System V shared memory as well as the mmap()
-based code. This was done to allow the 'FAST_SHARE_MODES'
-to be used on more systems (especially HPUX 9.x) that
-have System V shared memory, but not the mmap() call.
-
-The System V shared memory code is used by default on
-many systems as it has benchmarked as faster on many
-systems.
-
-The Automount code has been slightly re-shuffled, such
-that the home directory (and profile location) can be
-specified by \\%N\homes and \\%N\homes\profiles
-respectively, which are the defaults for these values.
-If -DAUTOMOUNT is enabled, then %N is the server
-component of the user's NIS auto.home entry.  Obviously,
-you will need to be running Samba on the user's home
-server as well as the one they just logged in on.
-
-The RPC Domain code has been moved into a separate directory
-rpc_pipe/, and a LGPL License issued specifically for code
-in this directory.  This is so that people can use this
-code in other projects.
-
-Missing feature.
-----------------
-
-One feature that we wanted to get into this release
-that was not possible due to the re-write of the nmbd
-code was the scalability features in the Samba WINS server.
-This feature is now tentatively scheduled for the next
-release (1.9.19). Apologies to anyone who was hoping
-for this feature to be included. The nmbd re-write
-will make it much easier to add such things in future.
-
-New parameters in smb.conf.
----------------------------
-
-New Global parameters.
-----------------------
-
-Documented in the smb.conf man pages :
-
-	"bind interfaces only"
-
-        "lm announce"
-        "lm interval"
-
-	"logon drive"
-	"logon home"
-
-        "min wins ttl"
-        "max wins ttl"
-
-	"username level"
-
-New Share level parameters.
----------------------------
-
-Documented in the smb.conf man pages :
-
-	"delete veto files"
-	"oplocks"
-
-Nascent web interface for configuration.
-----------------------------------------
-
-source/wsmbconf.c is a cgi-bin program for editing smb.conf. It can
-also be run standalone. This is in a very early stage of development.
-
-Debugging support.
-------------------
-
-smbd and nmbd will now modify their debug log level when
-they receive a USR1 signal (increase debug level by one)
-and USR2 signal (decrease debug level by one). This has
-been added to aid administrators track down faults that
-only occur after long periods of time, or transiently.
-
-Reporting bugs.
----------------
-
-If you have problems, or think you have found a
-bug please email a report to :
-
-	samba-bugs@samba.anu.edu.au
-
-Please state the version number of Samba that
-you are running, and *full details* of the steps
-we need to reproduce the problem.
-
-As always, all bugs are our responsibility.
-
-Regards,
-
-	The Samba Team.
-
+There have been lots of other changes as well. We'll add them here as
+we remember them :)
