@@ -12,7 +12,7 @@ int setenv(const char *var, const char *val, int rewrite);
 #endif
 
 #ifndef HAVE_GETUSERSHELL
-char *getusershell __P((void));
+char *getusershell(void);
 #endif
 
 #ifndef HAVE_STRDUP
@@ -47,7 +47,7 @@ int inet_aton(char *cp, struct in_addr *adr);
 #endif
 #endif
 
-#if !defined(HAVE_GETCWD) || defined(BROKEN_GETCWD)
+#if !defined(HAVE_GETCWD)
 char* getcwd(char *path, int size);
 #endif
 
