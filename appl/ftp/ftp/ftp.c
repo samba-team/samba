@@ -1093,6 +1093,9 @@ initconn(void)
 	int a0, a1, a2, a3, p0, p1;
 
 	if (passivemode) {
+	        u_int32_t tmpaddr;
+		u_int16_t tmpport;
+
 		data = socket(AF_INET, SOCK_STREAM, 0);
 		if (data < 0) {
 			perror("ftp: socket");
@@ -1124,12 +1127,14 @@ initconn(void)
 
 		memset(&data_addr, 0, sizeof(data_addr));
 		data_addr.sin_family = AF_INET;
-		a = (char *)&data_addr.sin_addr.s_addr;
+		tmpaddr = data_addr.sin_addr.s_addr;
+		a = (char *)&tmpaddr;
 		a[0] = a0 & 0xff;
 		a[1] = a1 & 0xff;
 		a[2] = a2 & 0xff;
 		a[3] = a3 & 0xff;
-		p = (char *)&data_addr.sin_port;
+		tmpport = data_addr.sin_port;
+		p = (char *)&tmpport;
 		p[0] = p0 & 0xff;
 		p[1] = p1 & 0xff;
 

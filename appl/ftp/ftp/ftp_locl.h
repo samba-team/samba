@@ -5,6 +5,9 @@
 #include <config.h>
 #endif
 
+#include <sys/bitypes.h>
+#include <sys/cdefs.h>
+
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>

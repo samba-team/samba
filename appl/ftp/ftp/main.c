@@ -118,11 +118,12 @@ main(int argc, char **argv)
 		xargv[4] = NULL;
 		setpeer(argc+1, xargv);
 	}
-	top = setjmp(toplevel) == 0;
-	if (top) {
+	if (setjmp(toplevel) == 0) {
+	        top = 1;
 		(void) signal(SIGINT, intr);
 		(void) signal(SIGPIPE, lostpeer);
-	}
+	} else
+	        top = 0;
 	for (;;) {
 		cmdscanner(top);
 		top = 1;
