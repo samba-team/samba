@@ -1,3 +1,23 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 3.0
+   Samba database functions
+   Copyright (C) Anton Blanchard                   2001
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
 #if STANDALONE
 #if HAVE_CONFIG_H
 #include <config.h>
@@ -41,6 +61,7 @@ static inline int __spin_trylock(spinlock_t *lock)
 
 static inline void __spin_unlock(spinlock_t *lock)
 {
+	asm volatile("":::"memory");
 	*lock = 0;
 }
 
@@ -58,27 +79,27 @@ static inline int __spin_is_locked(spinlock_t *lock)
 
 static inline int __spin_trylock(spinlock_t *lock)
 {
-	int result;
+	unsigned int result;
 
-	__asm__ __volatile__ (
-		"	eieio;"
-		"0:	lwarx %0,0,%1;"
-		"	cmpwi 0,%0,0;"
-		"	bne- 1f;"
-		"	stwcx. %2,0,%1;"
-		"	bne- 0b;"
-		"	sync;"
-		"1:"
-                : "=&r"(result)
-                : "r"(lock), "r"(1)
-                : "cr0", "memory");
+	__asm__ __volatile__(
+"1:	lwarx		%0,0,%1\n\
+	cmpwi		0,%0,0\n\
+	li		%0,0\n\
+	bne-		2f\n\
+	li		%0,1\n\
+	stwcx.		%0,0,%1\n\
+	bne-		1b\n\
+	isync\n\
+2:"	: "=&r"(result)
+	: "r"(lock)
+	: "cr0", "memory");
 
 	return (result == 0) ? 0 : EBUSY;
 }
 
 static inline void __spin_unlock(spinlock_t *lock)
 {
-	asm volatile("sync");
+	asm volatile("eieio":::"memory");
 	*lock = 0;
 }
 
@@ -100,12 +121,15 @@ static inline int __spin_trylock(spinlock_t *lock)
 
 	asm volatile("xchgl %0,%1"
 		: "=r" (oldval), "=m" (*lock)
-		: "0" (0));
+		: "0" (0)
+		: "memory");
+
 	return oldval > 0 ? 0 : EBUSY;
 }
 
 static inline void __spin_unlock(spinlock_t *lock)
 {
+	asm volatile("":::"memory");
 	*lock = 1;
 }
 
@@ -152,11 +176,14 @@ static inline int __spin_trylock(spinlock_t *lock)
 			return EBUSY;
 	} while (!store_conditional(lock, 1));
 
+	asm volatile("":::"memory");
+
 	return 0;
 }
 
 static inline void __spin_unlock(spinlock_t *lock)
 {
+	asm volatile("":::"memory");
 	*lock = 0;
 }
 
