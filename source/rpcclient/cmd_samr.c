@@ -538,6 +538,73 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli,
 	return result;
 }
 
+/* Query aliases a user is a member of */
+
+static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli, 
+                                          TALLOC_CTX *mem_ctx,
+                                          int argc, char **argv) 
+{
+	POLICY_HND 		connect_pol, 
+				domain_pol, 
+				user_pol;
+	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
+	uint32 			user_rid, num_aliases, *alias_rids;
+	int 			i;
+	fstring			server;
+	DOM_SID			tmp_sid;
+	DOM_SID2		sid;
+	DOM_SID global_sid_Builtin;
+
+	string_to_sid(&global_sid_Builtin, "S-1-5-32");
+
+	if (argc != 3) {
+		printf("Usage: %s builtin|domain rid\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	sscanf(argv[2], "%i", &user_rid);
+
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (server);
+		
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (StrCaseCmp(argv[1], "domain")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &domain_sid, &domain_pol);
+	else if (StrCaseCmp(argv[1], "builtin")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &global_sid_Builtin, &domain_pol);
+	else
+		return NT_STATUS_OK;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	sid_copy(&tmp_sid, &domain_sid);
+	sid_append_rid(&tmp_sid, user_rid);
+	init_dom_sid2(&sid, &tmp_sid);
+
+	result = cli_samr_query_useraliases(cli, mem_ctx, &domain_pol, 1, &sid, &num_aliases, &alias_rids);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	for (i = 0; i < num_aliases; i++) {
+		printf("\tgroup rid:[0x%x]\n", alias_rids[i]);
+	}
+
+ done:
+	return result;
+}
+
 /* Query members of a group */
 
 static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli, 
@@ -1163,6 +1230,7 @@ struct cmd_set samr_commands[] = {
 	{ "queryuser", 		cmd_samr_query_user, 		PIPE_SAMR,	"Query user info",         "" },
 	{ "querygroup", 	cmd_samr_query_group, 		PIPE_SAMR,	"Query group info",        "" },
 	{ "queryusergroups", 	cmd_samr_query_usergroups, 	PIPE_SAMR,	"Query user groups",       "" },
+	{ "queryuseraliases", 	cmd_samr_query_useraliases, 	PIPE_SAMR,	"Query user aliases",       "" },
 	{ "querygroupmem", 	cmd_samr_query_groupmem, 	PIPE_SAMR,	"Query group membership",  "" },
 	{ "queryaliasmem", 	cmd_samr_query_aliasmem, 	PIPE_SAMR,	"Query alias membership",  "" },
 	{ "querydispinfo", 	cmd_samr_query_dispinfo, 	PIPE_SAMR,	"Query display info",      "" },

@@ -407,6 +407,55 @@ NTSTATUS cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Query user aliases */
+
+NTSTATUS cli_samr_query_useraliases(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                   POLICY_HND *user_pol, uint32 num_sids, DOM_SID2 *sid,
+				   uint32 *num_aliases, uint32 **als_rids)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_QUERY_USERALIASES q;
+	SAMR_R_QUERY_USERALIASES r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint ptr=1;
+	
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_query_useraliases(&q, user_pol, num_sids, &ptr, sid);
+
+	if (!samr_io_q_query_useraliases("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_QUERY_USERALIASES, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_query_useraliases("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (NT_STATUS_IS_OK(result = r.status)) {
+		*num_aliases = r.num_entries;
+		*als_rids = r.rid;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Query user groups */
 
 NTSTATUS cli_samr_query_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,

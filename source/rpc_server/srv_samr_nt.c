@@ -1849,6 +1849,19 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	struct samr_info *info = NULL;
 	BOOL ret;
 
+	/*
+	 * from the SID in the request:
+	 * we should send back the list of DOMAIN GROUPS
+	 * the user is a member of
+	 *
+	 * and only the DOMAIN GROUPS
+	 * no ALIASES !!! neither aliases of the domain
+	 * nor aliases of the builtin SID
+	 *
+	 * JFM, 12/2/2001
+	 */
+
+
 	r_u->status = NT_STATUS_OK;
 
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
@@ -2703,6 +2716,26 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 		return NT_STATUS_NO_MEMORY;
 	
 	/* until i see a real useraliases query, we fack one up */
+
+	/* I have seen one, JFM 2/12/2001 */
+	/*
+	 * Explanation of what this call does:
+	 * for all the SID given in the request:
+	 * return a list of alias (local groups)
+	 * that have those SID as members.
+	 *
+	 * and that's the alias in the domain specified
+	 * in the policy_handle
+	 *
+	 * if the policy handle is on an incorrect sid
+	 * for example a user's sid
+	 * we should reply NT_STATUS_OBJECT_TYPE_MISMATCH
+	 */
+	
+	
+	
+	
+	
 
 	rid[0] = BUILTIN_ALIAS_RID_USERS;
 
