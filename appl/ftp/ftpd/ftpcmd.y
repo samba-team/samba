@@ -1103,7 +1103,7 @@ yylex(void)
 				cpos = 4;
 			c = cbuf[cpos];
 			cbuf[cpos] = '\0';
-			upper(cbuf);
+			strupr(cbuf);
 			p = lookup(cmdtab, cbuf);
 			cbuf[cpos] = c;
 			if (p != 0) {
@@ -1128,7 +1128,7 @@ yylex(void)
 				cpos = cp2 - cbuf;
 			c = cbuf[cpos];
 			cbuf[cpos] = '\0';
-			upper(cp);
+			strupr(cp);
 			p = lookup(sitetab, cp);
 			cbuf[cpos] = c;
 			if (p != 0) {
@@ -1287,16 +1287,6 @@ yylex(void)
 	}
 }
 
-void
-upper(char *s)
-{
-	while (*s != '\0') {
-		if (islower(*s))
-			*s = toupper(*s);
-		s++;
-	}
-}
-
 static char *
 copy(char *s)
 {
@@ -1359,7 +1349,7 @@ help(struct tab *ctab, char *s)
 		reply(214, "Direct comments to kth-krb-bugs@pdc.kth.se");
 		return;
 	}
-	upper(s);
+	strupr(s);
 	c = lookup(ctab, s);
 	if (c == (struct tab *)0) {
 		reply(502, "Unknown command %s.", s);
