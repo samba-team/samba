@@ -332,10 +332,10 @@ Byte offset   Type     name                description
 #define SMB_QUERY_FILE_UNIX_BASIC      0x200   /* UNIX File Info*/
 #define SMB_SET_FILE_UNIX_BASIC        0x200
 
-#define MODE_NO_CHANGE                 0xFFFFFFFF     /* file mode value which */
+#define SMB_MODE_NO_CHANGE                 0xFFFFFFFF     /* file mode value which */
                                               /* means "don't change it" */
-#define UID_NO_CHANGE                  0xFFFFFFFF
-#define GID_NO_CHANGE                  0xFFFFFFFF
+#define SMB_UID_NO_CHANGE                  0xFFFFFFFF
+#define SMB_GID_NO_CHANGE                  0xFFFFFFFF
 
 /*
 Offset Size         Name

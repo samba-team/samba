@@ -175,7 +175,7 @@ static BOOL cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fna
 BOOL cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
 {
 	return cli_unix_chmod_chown_internal(cli, fname, 
-		unix_perms_to_wire(mode), UID_NO_CHANGE, GID_NO_CHANGE);
+		unix_perms_to_wire(mode), SMB_UID_NO_CHANGE, SMB_GID_NO_CHANGE);
 }
 
 /****************************************************************************
@@ -184,7 +184,7 @@ BOOL cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
 
 BOOL cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid)
 {
-	return cli_unix_chmod_chown_internal(cli, fname, MODE_NO_CHANGE, (uint32)uid, (uint32)gid);
+	return cli_unix_chmod_chown_internal(cli, fname, SMB_MODE_NO_CHANGE, (uint32)uid, (uint32)gid);
 }
 
 /****************************************************************************
