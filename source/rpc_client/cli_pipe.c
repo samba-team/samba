@@ -844,7 +844,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 		uint32 data_len, send_size;
 		uint8 flags = 0;
 		uint32 crc32 = 0;
-		uint32 callid;
+		uint32 callid = 0;
 
 		/*
 		 * how much will we send this time
@@ -862,10 +862,9 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 			return False;
 		}
 
-		if (data_left == prs_offset(data)) {
+		if (data_left == prs_offset(data))
 			flags |= RPC_FLG_FIRST;
-			callid = 0;
-		}
+
 		if (data_left < max_data)
 			flags |= RPC_FLG_LAST;
 		/*
