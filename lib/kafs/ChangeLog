@@ -1,3 +1,9 @@
+2001-06-19  Assar Westerlund  <assar@sics.se>
+
+	* common.c (_kafs_realm_of_cell): changed to first try exact match
+	in CellServDB, then exact match in DNS, and finally in-exact match
+	in CellServDB
+
 2001-05-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: only build resolve.c if doing renaming
