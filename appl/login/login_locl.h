@@ -67,6 +67,15 @@
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
 #endif
+#ifdef HAVE_UDB_H
+#include <udb.h>
+#endif
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+#ifdef HAVE_SYS_CATEGORY_H
+#include <sys/category.h>
+#endif
 #ifdef KRB4
 #include <krb.h>
 #endif
