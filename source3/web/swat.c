@@ -40,6 +40,7 @@ char new2_pswd[] = "new2_passwd";
 char chg_passwd_flag[] = "chg_passwd_flag";
 char add_user_flag[] = "add_user_flag";
 char disable_user_flag[] = "disable_user_flag";
+char enable_user_flag[] = "enable_user_flag";
 
 /* we need these because we link to locking*.o */
  void become_root(BOOL save_dir) {}
@@ -626,9 +627,9 @@ static BOOL talk_to_smbpasswd(char *old, char *new)
 		close(fd2[1]); /* parent doesn't need output side of pipe fd2 */
 
 		/*
-		 * smbpasswd doesn't require any input to disable a user 
+		 * smbpasswd doesn't require any input to disable or enable a user 
 		 */
-		if (cgi_variable(disable_user_flag)) {
+		if (!cgi_variable(disable_user_flag) && !cgi_variable(enable_user_flag)) {
 			/*
 			 * smbpasswd requires a regular old user to send their old password 
 			 */
@@ -742,6 +743,13 @@ static BOOL talk_to_smbpasswd(char *old, char *new)
 				if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", "-d", cgi_variable(user), (char *) 0) < 0) {
 					printf("<p> execl error of smbpasswd");
 				}
+			} else if (cgi_variable(enable_user_flag)) {
+				/* 
+				 * Enable a user 
+				 */
+				if (execl(SMB_PASSWD_PROGRAM, "smbpasswd", "-s", "-e", cgi_variable(user), (char *) 0) < 0) {
+					printf("<p> execl error of smbpasswd");
+				}
 			} else {
 				/* 
 			 	 * Change a users password 
@@ -848,10 +856,10 @@ static void chg_passwd(void)
 	}
 
 	/*
-	 * smbpasswd doesn't require anything but the users name to disable the user,
+	 * smbpasswd doesn't require anything but the users name to disable or enable the user,
 	 * so if that's what we're doing, skip the rest of the checks
 	 */
-	if (!cgi_variable(disable_user_flag)) {
+	if (!cgi_variable(disable_user_flag) && !cgi_variable(enable_user_flag)) {
 
 		/* If current user is not root, make sure old password has been specified */
 		if ((am_root() == False) &&  (strlen( cgi_variable(old_pswd)) <= 0)) {
@@ -886,7 +894,7 @@ static void chg_passwd(void)
 		}
 	}
 
-#ifndef SWAT_DEBUG
+#ifdef SWAT_DEBUG
 	if (pass) printf("<p> User uid %d  gid %d \n", pass->pw_uid, pass->pw_gid);
 	printf("<p> Processes uid %d, euid %d, gid %d, egid %d \n",getuid(),geteuid(),getgid(),getegid());
 	printf("<p> User Name %s     \n", cgi_variable(user));
@@ -897,6 +905,7 @@ static void chg_passwd(void)
 		(cgi_variable( chg_passwd_flag) ? cgi_variable( chg_passwd_flag) : ""),
 		(cgi_variable( add_user_flag) ? cgi_variable( add_user_flag) : ""),
 		(cgi_variable( disable_user_flag) ? cgi_variable( disable_user_flag) : ""));
+		(cgi_variable( enable_user_flag) ? cgi_variable( enable_user_flag) : ""));
 #endif /* SWAT_DEBUG */
 
 
@@ -951,6 +960,7 @@ static void passwd_page(void)
 	if (am_root() == True) {
 		printf("<input type=submit name=%s value=\"Add New User\">", add_user_flag);
 		printf("<input type=submit name=%s value=\"Disable User\">", disable_user_flag);
+		printf("<input type=submit name=%s value=\"Enable User\">", enable_user_flag);
 	}
 	printf("</td>\n");
 
