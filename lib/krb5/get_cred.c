@@ -16,13 +16,7 @@ key_proc (krb5_context context,
 	  krb5_const_pointer keyseed,
 	  krb5_keyblock **key)
 {
-    *key = malloc (sizeof (**key));
-    if (*key == NULL)
-	return ENOMEM;
-    (*key)->keytype = type;
-    (*key)->contents.length = 8;
-    (*key)->contents.data   = malloc(8);
-    memcpy((*key)->contents.data, keyseed, 8);
+    *key = (krb5_keyblock *)keyseed;
     return 0;
 }
 
@@ -59,10 +53,6 @@ krb5_get_credentials (krb5_context context,
 
     PA_DATA foo;
 
-
-    des_key_schedule schedule;
-    des_cblock key;
-    
     /*
      * XXX - Check if cred found in ccache
      */
@@ -123,21 +113,38 @@ krb5_get_credentials (krb5_context context,
 	unsigned char buf[1024];
 	krb5_auth_context ac = NULL;
 	int len;
-	
+	krb5_creds tmp_cred;
 
 	len = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
 				  &a.req_body);
-	in_data.length;
+	in_data.length = len;
 	in_data.data = buf + sizeof(buf) - len;
 	
-	err = krb5_mk_req(context,
-			  &ac,
-			  0,
-			  "krbtgt",
-			  a.req_body.realm,
-			  &in_data,
-			  ccache,
-			  &foo.padata_value);
+	tmp_cred.client = NULL;
+	err = krb5_build_principal(context,
+				   &tmp_cred.server,
+				   strlen(a.req_body.realm),
+				   a.req_body.realm,
+				   "krbtgt",
+				   a.req_body.realm,
+				   NULL);
+	if (err)
+	  return err;
+
+	err = krb5_get_credentials (context,
+				    0,
+				    ccache,
+				    &tmp_cred,
+				    out_creds);
+	if (err)
+	  return err;
+
+	err = krb5_mk_req_extended(context,
+				   &ac,
+				   0,
+				   &in_data,
+				   *out_creds,
+				   &foo.padata_value);
 	if(err)
 	    return err;
 
@@ -193,7 +200,10 @@ krb5_get_credentials (krb5_context context,
 	len = decode_TGS_REP(resp.data, resp.length, &rep.part1);
 	if(len < 0)
 	    return ASN1_PARSE_ERROR;
-	err = extract_ticket(context, &rep, *out_creds, key_proc, key, NULL, NULL);
+	err = extract_ticket(context, &rep, *out_creds, key_proc, 
+			     &(*out_creds)->session,
+			     NULL,
+			     NULL);
 	if(err)
 	    return err;
 	return krb5_cc_store_cred (context, ccache, *out_creds);
