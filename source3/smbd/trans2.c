@@ -629,6 +629,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	if (!fsp) {
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
+			clear_cached_errors();
 			return -1;
 		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
