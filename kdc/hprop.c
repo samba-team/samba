@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -199,8 +199,9 @@ v4_prop(void *arg, Principal *p)
 	ent.max_life = NULL;
     }
 
-    ALLOC(ent.pw_end);
-    *ent.pw_end = p->exp_date;
+    ALLOC(ent.valid_end);
+    *ent.valid_end = p->exp_date;
+
     ret = krb5_make_principal(pd->context, &ent.created_by.principal,
 			      realm,
 			      "kadmin",
@@ -315,11 +316,17 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent,
     ALLOC(hdb.max_life);
     *hdb.max_life = ntohl(ent->max_life);
 
-    if(ntohl(ent->pw_end) != NEVERDATE && ntohl(ent->pw_end) != -1){
-	ALLOC(hdb.pw_end);
-	*hdb.pw_end = ntohl(ent->pw_end);
+    if(ntohl(ent->valid_end) != NEVERDATE && ntohl(ent->valid_end) != -1){
+	ALLOC(hdb.valid_end);
+	*hdb.valid_end = ntohl(ent->valid_end);
     }
     
+    if (ntohl(ent->pw_change) != NEVERDATE && ent->pw_expire != 255) {
+	ALLOC(hdb.pw_end);
+	*hdb.pw_end = ntohl(ent->pw_change)
+	    + 24 * 60 * 60 * ent->pw_expire;
+    }
+
     ret = krb5_make_principal(pd->context, &hdb.created_by.principal,
 			      realm,
 			      "kadmin",
@@ -651,7 +658,8 @@ main(int argc, char **argv)
     } else
 #ifdef KASERVER_DB
 	if (ka_db) {
-				/* no preparation required */
+	    if (database == NULL)
+		database = DEFAULT_DATABASE;
 	} else
 #endif
 #endif /* KRB4 */
