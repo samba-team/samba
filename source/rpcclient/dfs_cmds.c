@@ -25,11 +25,12 @@
 #include "ntdomain.h"
 #include "rpcclient.h"
 #include "rpc_parse.h"
+#include "rpc_client.h"
 
 extern struct client_info cli_info;
 
 /* DFS command completion function */
-char *complete_dfsenum(char *text, int state)
+static char *complete_dfsenum(char *text, int state)
 {
   static uint32 i=0;
   DFS_INFO_CTR ctr;

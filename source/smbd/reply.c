@@ -25,6 +25,7 @@
 
 
 #include "includes.h"
+#include "rpc_client.h"
 #include "trans2.h"
 #include "nterr.h"
 

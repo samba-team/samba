@@ -21,6 +21,8 @@
 */
 
 #include "includes.h"
+#include "rpc_client.h"
+#include "rpcclient.h"
 #include "nterr.h"
 
 extern int DEBUGLEVEL;

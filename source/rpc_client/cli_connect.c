@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "rpc_parse.h"
+#include "rpc_client.h"
 
 struct user_creds *usr_creds = NULL;
 vuser_key *user_key = NULL;

@@ -48,6 +48,7 @@
 
 
 #include "includes.h"
+#include "rpc_client.h"
 #include "sids.h"
 
 extern int DEBUGLEVEL;

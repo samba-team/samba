@@ -25,6 +25,7 @@
 #endif
 
 #include "includes.h"
+#include "rpc_client.h"
 
 #ifndef REGISTER
 #define REGISTER 0

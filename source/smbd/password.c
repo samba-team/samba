@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "rpc_client.h"
 
 extern int DEBUGLEVEL;
 extern int Protocol;

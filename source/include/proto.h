@@ -3821,7 +3821,6 @@ void add_at_commands(void);
 
 /*The following definitions come from  rpcclient/dfs_cmds.c  */
 
-char *complete_dfsenum(char *text, int state);
 void add_dfs_commands(void);
 
 /*The following definitions come from  rpcclient/display_at.c  */

@@ -24,7 +24,7 @@
 
 #include "includes.h"
 #include "rpc_parse.h"
-
+#include "rpc_client.h"
 
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)

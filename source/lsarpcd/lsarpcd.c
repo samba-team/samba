@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "rpc_client.h"
 #include "nterr.h"
 
 fstring pipe_name;
