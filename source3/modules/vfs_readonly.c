@@ -88,7 +88,7 @@ static int readonly_connect(vfs_handle_struct *handle,
 
 static vfs_op_tuple readonly_op_tuples[] = {
 	/* Disk operations */
-  {SMB_VFS_OP(readonly_connect),	SMB_VFS_OP_CONNECT, SMB_VFS_LAYER_OPAQUE},
+  {SMB_VFS_OP(readonly_connect),	SMB_VFS_OP_CONNECT, SMB_VFS_LAYER_TRANSPARENT},
   {SMB_VFS_OP(NULL),   		SMB_VFS_OP_NOOP,    SMB_VFS_LAYER_NOOP}
 };
 
