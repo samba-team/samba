@@ -249,7 +249,6 @@ static NTSTATUS unixdom_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 static NTSTATUS unixdom_set_option(struct socket_context *sock, 
 				   const char *option, const char *val)
 {
-	set_socket_options(sock->fd, option);
 	return NT_STATUS_OK;
 }
 
