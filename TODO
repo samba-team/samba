@@ -82,6 +82,6 @@ crypto: allow scatter/gather creation of checksums
 verify_user: handle non-secure verification failing because of
 host->realm mapping
 
-** lib/roken
+config_file: do it in case-sensitive and/or insensitive
 
-make snprintf handle str == NULL, sz = 0 correctly
+** lib/roken
