@@ -1,3 +1,8 @@
+Sat Mar 21 22:57:13 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/kerberos5.c: Move checking of principal flags to new
+ 	function `check_flags'.
+
 Sat Mar 21 14:38:51 1998  assar westerlund  <assar@sics.se>
 
 	* lib/kadm5/get_s.c (kadm5_s_get_principal): handle an empty salt
