@@ -167,7 +167,7 @@ enum winbindd_result winbindd_info(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
-/* List various tidbits of information */
+/* Tell the client the current interface version */
 
 enum winbindd_result winbindd_interface_version(struct winbindd_cli_state *state)
 {
@@ -175,6 +175,18 @@ enum winbindd_result winbindd_interface_version(struct winbindd_cli_state *state
 	DEBUG(3, ("[%5d]: request interface version\n", state->pid));
 	
 	state->response.data.interface_version = WINBIND_INTERFACE_VERSION;
+
+	return WINBINDD_OK;
+}
+
+/* What domain are we a member of? */
+
+enum winbindd_result winbindd_domain_name(struct winbindd_cli_state *state)
+{
+
+	DEBUG(3, ("[%5d]: request domain name\n", state->pid));
+	
+	fstrcpy(state->response.data.domain_name, lp_workgroup());
 
 	return WINBINDD_OK;
 }
