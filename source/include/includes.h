@@ -205,7 +205,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 #include <sys/file.h>
 
 #ifdef HAVE_NETINET_TCP_H

@@ -2219,7 +2219,7 @@ else
 fi
 done
 
-for ac_hdr in sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h
+for ac_hdr in syslog.h sys/syslog.h sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6

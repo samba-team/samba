@@ -10,9 +10,13 @@
 #include <sys/param.h>
 #include <string.h>
 #include <pwd.h>
-#include <syslog.h>
-#include <sys/syslog.h>
 #include "includes.h"
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
+#ifdef HAVE_SYS_SYSLOG_H
+#include <sys/syslog.h>
+#endif
 #include "winbind_nss_config.h"
 
 #ifdef HAVE_NSS_COMMON_H 
