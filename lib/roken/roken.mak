@@ -57,6 +57,7 @@ CLEAN :
 	-@erase "$(INTDIR)\snprintf.obj"
 	-@erase "$(INTDIR)\strcasecmp.obj"
 	-@erase "$(INTDIR)\strtok_r.obj"
+	-@erase "$(INTDIR)\base64.obj"
 	-@erase "$(OUTDIR)\roken.dll"
 	-@erase "$(OUTDIR)\roken.exp"
 	-@erase "$(OUTDIR)\roken.lib"
@@ -96,7 +97,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\gettimeofday.obj" \
 	"$(INTDIR)\snprintf.obj" \
 	"$(INTDIR)\strcasecmp.obj" \
-	"$(INTDIR)\strtok_r.obj"
+	"$(INTDIR)\strtok_r.obj" \
+	"$(INTDIR)\base64.obj"
 
 "$(OUTDIR)\roken.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -125,6 +127,7 @@ CLEAN :
 	-@erase "$(INTDIR)\snprintf.obj"
 	-@erase "$(INTDIR)\strcasecmp.obj"
 	-@erase "$(INTDIR)\strtok_r.obj"
+	-@erase "$(INTDIR)\base64.obj"
 	-@erase "$(INTDIR)\vc40.idb"
 	-@erase "$(INTDIR)\vc40.pdb"
 	-@erase "$(OUTDIR)\roken.dll"
@@ -169,7 +172,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\gettimeofday.obj" \
 	"$(INTDIR)\snprintf.obj" \
 	"$(INTDIR)\strcasecmp.obj" \
-	"$(INTDIR)\strtok_r.obj"
+	"$(INTDIR)\strtok_r.obj" \
+	"$(INTDIR)\base64.obj"
 
 "$(OUTDIR)\roken.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -288,6 +292,22 @@ DEP_CPP_STRTO=\
 	
 
 "$(INTDIR)\strtok_r.obj" : $(SOURCE) $(DEP_CPP_STRTO) "$(INTDIR)"
+
+
+# End Source File
+################################################################################
+# Begin Source File
+
+SOURCE=.\base64.c
+DEP_CPP_STRTO=\
+	"..\..\include\protos.h"\
+	"..\..\include\win32\config.h"\
+	".\roken.h"\
+	{$(INCLUDE)}"\sys\stat.h"\
+	{$(INCLUDE)}"\sys\types.h"\
+	
+
+"$(INTDIR)\base64.obj" : $(SOURCE) $(DEP_CPP_STRTO) "$(INTDIR)"
 
 
 # End Source File
