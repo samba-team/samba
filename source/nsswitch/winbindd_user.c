@@ -207,7 +207,9 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
         return WINBINDD_ERROR;
     }
 
-    string_sub(user_name, "\\", "/", sizeof(fstring));
+    if (strcmp("\\", lp_winbind_separator())) {
+	    string_sub(user_name, "\\", lp_winbind_separator(), sizeof(fstring));
+    }
 
     /* Get some user info */
     
@@ -363,7 +365,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
             /* Prepend domain to name */
 
 	    slprintf(domain_user_name, sizeof(domain_user_name),
-		     "%s/%s", ent->domain->name, user_name);
+		     "%s%s%s", ent->domain->name, lp_winbind_separator(), user_name);
                 
             /* Get passwd entry from user name */
                 

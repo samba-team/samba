@@ -76,7 +76,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	ZERO_STRUCT(info3);
 
-	if (!_get_trust_account_password(name_domain, trust_passwd, NULL)) return WINBINDD_ERROR;
+	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) return WINBINDD_ERROR;
 
 	nt_lm_owf_gen(state->request.data.auth.pass, ntpw, lmpw);
 
