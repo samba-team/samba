@@ -38,7 +38,7 @@ struct cli_state *cli_spoolss_initialise(struct cli_state *cli,
 
 /* Open printer ex */
 
-uint32 cli_spoolss_open_printer_ex(
+NTSTATUS cli_spoolss_open_printer_ex(
 	struct cli_state *cli, 
 	TALLOC_CTX *mem_ctx,
 	char *printername,
@@ -52,7 +52,7 @@ uint32 cli_spoolss_open_printer_ex(
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_OPEN_PRINTER_EX q;
 	SPOOL_R_OPEN_PRINTER_EX r;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -97,7 +97,7 @@ uint32 cli_spoolss_open_printer_ex(
 
 /* Close a printer handle */
 
-uint32 cli_spoolss_close_printer(
+NTSTATUS cli_spoolss_close_printer(
 	struct cli_state *cli,
 	TALLOC_CTX *mem_ctx,
 	POLICY_HND *pol
@@ -106,7 +106,7 @@ uint32 cli_spoolss_close_printer(
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_CLOSEPRINTER q;
 	SPOOL_R_CLOSEPRINTER r;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -380,7 +380,7 @@ static void decode_printerdriverdir_1 (
 
 /* Enumerate printers */
 
-uint32 cli_spoolss_enum_printers(
+NTSTATUS cli_spoolss_enum_printers(
 	struct cli_state *cli, 
 	TALLOC_CTX *mem_ctx,
 	uint32 flags,
@@ -394,7 +394,7 @@ uint32 cli_spoolss_enum_printers(
         SPOOL_R_ENUMPRINTERS r;
 	NEW_BUFFER buffer;
 	uint32 needed = 100;
-	uint32 result;
+	NTSTATUS result;
 	fstring server;
 
 	ZERO_STRUCT(q);
@@ -458,7 +458,7 @@ uint32 cli_spoolss_enum_printers(
 }
 
 /* Enumerate printer ports */
-uint32 cli_spoolss_enum_ports(
+NTSTATUS cli_spoolss_enum_ports(
 	struct cli_state *cli, 
 	TALLOC_CTX *mem_ctx,
 	uint32 level, 
@@ -471,7 +471,7 @@ uint32 cli_spoolss_enum_ports(
         SPOOL_R_ENUMPORTS r;
 	NEW_BUFFER buffer;
 	uint32 needed = 100;
-	uint32 result;
+	NTSTATUS result;
 	fstring server;
 
 	ZERO_STRUCT(q);
@@ -532,7 +532,7 @@ uint32 cli_spoolss_enum_ports(
 }
 
 /* Get printer info */
-uint32 cli_spoolss_getprinter(
+NTSTATUS cli_spoolss_getprinter(
 	struct cli_state *cli, 
 	TALLOC_CTX *mem_ctx,
 	POLICY_HND *pol,
@@ -545,7 +545,7 @@ uint32 cli_spoolss_getprinter(
 	SPOOL_R_GETPRINTER r;
 	NEW_BUFFER buffer;
 	uint32 needed = 100;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -604,7 +604,7 @@ uint32 cli_spoolss_getprinter(
 /**********************************************************************
  * Set printer info 
  */
-uint32 cli_spoolss_setprinter(
+NTSTATUS cli_spoolss_setprinter(
 	struct cli_state *cli, 
 	TALLOC_CTX *mem_ctx,
 	POLICY_HND *pol,
@@ -616,7 +616,7 @@ uint32 cli_spoolss_setprinter(
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_SETPRINTER q;
 	SPOOL_R_SETPRINTER r;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -654,7 +654,7 @@ done:
 /**********************************************************************
  * Get installed printer drivers for a given printer
  */
-uint32 cli_spoolss_getprinterdriver (
+NTSTATUS cli_spoolss_getprinterdriver (
 	struct cli_state 	*cli, 
 	TALLOC_CTX 		*mem_ctx,
 	POLICY_HND 		*pol, 
@@ -668,7 +668,7 @@ uint32 cli_spoolss_getprinterdriver (
         SPOOL_R_GETPRINTERDRIVER2 r;
 	NEW_BUFFER buffer;
 	uint32 needed = 1024;
-	uint32 result;
+	NTSTATUS result;
 	fstring server;
 
 	ZERO_STRUCT(q);
@@ -734,7 +734,7 @@ uint32 cli_spoolss_getprinterdriver (
 /**********************************************************************
  * Get installed printer drivers for a given printer
  */
-uint32 cli_spoolss_enumprinterdrivers (
+NTSTATUS cli_spoolss_enumprinterdrivers (
 	struct cli_state 	*cli, 
 	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
@@ -748,7 +748,7 @@ uint32 cli_spoolss_enumprinterdrivers (
         SPOOL_R_ENUMPRINTERDRIVERS 	r;
 	NEW_BUFFER 			buffer;
 	uint32 				needed = 0;
-	uint32 				result;
+	NTSTATUS 			result;
 	fstring 			server;
 
 	ZERO_STRUCT(q);
@@ -816,7 +816,7 @@ uint32 cli_spoolss_enumprinterdrivers (
 /**********************************************************************
  * Get installed printer drivers for a given printer
  */
-uint32 cli_spoolss_getprinterdriverdir (
+NTSTATUS cli_spoolss_getprinterdriverdir (
 	struct cli_state 	*cli, 
 	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
@@ -829,7 +829,7 @@ uint32 cli_spoolss_getprinterdriverdir (
         SPOOL_R_GETPRINTERDRIVERDIR 	r;
 	NEW_BUFFER 			buffer;
 	uint32 				needed = 100;
-	uint32 				result;
+	NTSTATUS 			result;
 	fstring 			server;
 
 	ZERO_STRUCT(q);
@@ -887,7 +887,7 @@ uint32 cli_spoolss_getprinterdriverdir (
 /**********************************************************************
  * Install a printer driver
  */
-uint32 cli_spoolss_addprinterdriver (
+NTSTATUS cli_spoolss_addprinterdriver (
 	struct cli_state 	*cli, 
 	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
@@ -897,7 +897,7 @@ uint32 cli_spoolss_addprinterdriver (
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_ADDPRINTERDRIVER 	q;
         SPOOL_R_ADDPRINTERDRIVER 	r;
-	uint32 				result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS 			result = NT_STATUS_UNSUCCESSFUL;
 	fstring 			server;
 
 	ZERO_STRUCT(q);
@@ -943,7 +943,7 @@ done:
 /**********************************************************************
  * Install a printer 
  */
-uint32 cli_spoolss_addprinterex (
+NTSTATUS cli_spoolss_addprinterex (
 	struct cli_state 	*cli, 
 	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
@@ -953,7 +953,7 @@ uint32 cli_spoolss_addprinterex (
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_ADDPRINTEREX 		q;
         SPOOL_R_ADDPRINTEREX 		r;
-	uint32 				result;
+	NTSTATUS 			result;
 	fstring 			server,
 					client,
 					user;
@@ -1006,7 +1006,7 @@ done:
  * Delete a Printer Driver from the server (does not remove 
  * the driver files
  */
-uint32 cli_spoolss_deleteprinterdriver (
+NTSTATUS cli_spoolss_deleteprinterdriver (
 	struct cli_state 	*cli, 
 	TALLOC_CTX		*mem_ctx,
 	char			*arch,
@@ -1016,7 +1016,7 @@ uint32 cli_spoolss_deleteprinterdriver (
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_DELETEPRINTERDRIVER	q;
         SPOOL_R_DELETEPRINTERDRIVER	r;
-	uint32 				result;
+	NTSTATUS			result;
 	fstring				server;
 
 	ZERO_STRUCT(q);

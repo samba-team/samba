@@ -1,4 +1,3 @@
-
 /* 
    Unix SMB/Netbios implementation.
    Version 2.2
@@ -28,24 +27,25 @@
 #include "includes.h"
 
 /* Opens a SMB connection to the WINREG pipe */
+
 struct cli_state *cli_winreg_initialise(struct cli_state *cli, 
-					 char *system_name,
-					 struct ntuser_creds *creds)
+                                        char *system_name,
+                                        struct ntuser_creds *creds)
 {
         return cli_pipe_initialise(cli, system_name, PIPE_WINREG, creds);
 }
 
 /* Shutdown a server */
 
-uint32 cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
-			const char *srv_name, const char *msg,
-			uint32 timeout, uint16 flags)
+NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
+                          const char *srv_name, const char *msg,
+                          uint32 timeout, uint16 flags)
 {
 	prs_struct qbuf;
 	prs_struct rbuf; 
 	REG_Q_SHUTDOWN q_s;
 	REG_R_SHUTDOWN r_s;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	if (msg == NULL) return False;
 
@@ -78,15 +78,14 @@ done:
 
 /* Abort a server shutdown */
 
-uint32 cli_reg_abort_shutdown(struct cli_state * cli,
-				TALLOC_CTX *mem_ctx,
-				const char *srv_name)
+NTSTATUS cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
+                                const char *srv_name)
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 
 	REG_Q_ABORT_SHUTDOWN q_s;
 	REG_R_ABORT_SHUTDOWN r_s;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT (q_s);
 	ZERO_STRUCT (r_s);
@@ -113,4 +112,3 @@ done:
 
 	return result;
 }
-
