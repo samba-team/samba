@@ -1287,7 +1287,7 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, BOOL 
 		while ( (local_count<num_addresses) && next_token(&p,name,LIST_SEP,sizeof(name)) ) {
 			struct in_addr name_ip;
 			
-			/* copy any addersses from the auto lookup */
+			/* copy any addresses from the auto lookup */
 			
 			if ( strequal(name, "*") ) {
 				for ( j=0; j<auto_count; j++ ) 
@@ -1304,6 +1304,8 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, BOOL 
 				
 		}
 				
+		SAFE_FREE(auto_ip_list);
+
 		/* need to remove duplicates in the list if we have 
 		   any explicit password servers */
 		   
