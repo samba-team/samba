@@ -241,7 +241,7 @@ DEP_CPP_STRCA=\
 ################################################################################
 # Begin Source File
 
-SOURCE="\TEMP\krb4-970903\lib\krb\gettimeofday.c"
+SOURCE="..\krb\gettimeofday.c"
 DEP_CPP_GETTI=\
 	"..\..\include\protos.h"\
 	"..\..\include\sys/cdefs.h"\
