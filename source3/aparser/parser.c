@@ -1,5 +1,4 @@
-#include "includes.h"
-
+#include "parser.h"
 
 /*******************************************************************
  Attempt, if needed, to grow a data buffer.
@@ -33,12 +32,7 @@ BOOL io_grow(io_struct *ps, uint32 extra_space)
 
 	extra_space -= (ps->buffer_size - ps->data_offset);
 	if(ps->buffer_size == 0) {
-		/*
-		 * Ensure we have at least a PDU's length, or extra_space, whichever
-		 * is greater.
-		 */
-
-		new_size = MAX(MAX_PDU_FRAG_LEN,extra_space);
+		new_size = extra_space;
 
 		if((new_data = malloc(new_size)) == NULL) {
 			DEBUG(0,("io_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
@@ -169,10 +163,12 @@ BOOL io_align4(io_struct *ps, int offset)
 
 BOOL io_align(io_struct *ps, int align)
 {
-	uint32 mod = ps->data_offset & (align-1);
+	uint32 mod;
 
-	return True; /* HACK! */
-	
+	if (!ps->autoalign) return True;
+
+	mod = ps->data_offset & (align-1);
+
 	if (align != 0 && mod != 0) {
 		uint32 extra_space = (align - mod);
 		if(!io_grow(ps, extra_space))
@@ -430,7 +426,7 @@ BOOL io_wstring(char *name, io_struct *ps, int depth, uint16 *data16s, int len, 
 	q = io_mem_get(ps, len * sizeof(uint16));
 	if (q == NULL) return False;
 
-	DBG_RW_PSVAL(False, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data16s, len)
+	DBG_RW_PSVAL(True, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data16s, len)
 	ps->data_offset += (len * sizeof(uint16));
 
 	return True;

@@ -34,6 +34,11 @@ function parse_error(msg) {
 
 {if (module=="") parse_error("you must specify the module name first");}
 
+/^[ \t]*option/ {
+	set_option($2, $3);
+	next;
+}
+
 /^[ \t]*typedef struct.*\{/ {
 	{if (current_struct!="") parse_error("you cannot have nested structures");}
 	start_struct($3);

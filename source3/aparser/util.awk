@@ -31,3 +31,9 @@ function numlines(fname,
 	close(fname);
 	return count;
 }
+
+# return 1 if the string is a constant
+function is_constant(s) 
+{
+    return match(s,"^[0-9]+$");
+}
