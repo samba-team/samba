@@ -570,6 +570,19 @@ typedef struct lsa_r_getsystemaccount
 } LSA_R_GETSYSTEMACCOUNT;
 
 
+typedef struct lsa_q_lookupprivvalue
+{
+	POLICY_HND pol; /* policy handle */
+	UNIHDR hdr_right;
+	UNISTR2 uni2_right;
+} LSA_Q_LOOKUPPRIVVALUE;
+
+typedef struct lsa_r_lookupprivvalue
+{
+	LUID luid;
+	NTSTATUS status;
+} LSA_R_LOOKUPPRIVVALUE;
+
 #endif /* _RPC_LSA_H */
 /*
 
