@@ -94,50 +94,54 @@ usr2handler (int sig)
 static int
 connect_host (kx_context *kc)
 {
-     int addrlen;
-     struct hostent *hostent;
-     int s;
-     char **p;
-     struct sockaddr_in thisaddr;
-     struct sockaddr_in thataddr;
+    struct addrinfo *ai, *a;
+    struct addrinfo hints;
+    int error;
+    char portstr[NI_MAXSERV];
+    int addrlen;
+    int s;
+    struct sockaddr_storage thisaddr_ss;
+    struct sockaddr *thisaddr = (struct sockaddr *)&thisaddr_ss;
 
-     hostent = gethostbyname (kc->host);
-     if (hostent == NULL) {
-	 warnx ("gethostbyname '%s' failed: %s", kc->host,
-		hstrerror(h_errno));
-	 return -1;
-     }
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
 
-     memset (&thataddr, 0, sizeof(thataddr));
-     thataddr.sin_family = AF_INET;
-     thataddr.sin_port   = kc->port;
-     for(p = hostent->h_addr_list; *p; ++p) {
-	 memcpy (&thataddr.sin_addr, *p, sizeof(thataddr.sin_addr));
+    snprintf (portstr, sizeof(portstr), "%u", ntohs(kc->port));
 
-	 s = socket (AF_INET, SOCK_STREAM, 0);
-	 if (s < 0)
-	     err (1, "socket");
+    error = getaddrinfo (kc->host, portstr, &hints, &ai);
+    if (error) {
+	warnx ("%s: %s", kc->host, gai_strerror(error));
+	return -1;
+    }
+    
+    for (a = ai; a != NULL; a = a->ai_next) {
+	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+	if (s < 0)
+	    continue;
+	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
+	    warn ("connect(%s)", kc->host);
+	    close (s);
+	    continue;
+	}
+	break;
+    }
 
-	 if (connect (s, (struct sockaddr *)&thataddr, sizeof(thataddr)) < 0) {
-	     warn ("connect(%s)", kc->host);
-	     close (s);
-	     continue;
-	 } else {
-	     break;
-	 }
-     }
-     if (*p == NULL)
-	 return -1;
+    if (a == NULL) {
+	freeaddrinfo (ai);
+	return -1;
+    }
 
-     addrlen = sizeof(thisaddr);
-     if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0 ||
-	 addrlen != sizeof(thisaddr))
-	 err(1, "getsockname(%s)", kc->host);
-     kc->thisaddr = thisaddr;
-     kc->thataddr = thataddr;
-     if ((*kc->authenticate)(kc, s))
-	 return -1;
-     return s;
+    addrlen = a->ai_addrlen;
+    if (getsockname (s, thisaddr, &addrlen) < 0 ||
+	addrlen != a->ai_addrlen)
+	err(1, "getsockname(%s)", kc->host);
+    memcpy (&kc->thisaddr, thisaddr, sizeof(kc->thisaddr));
+    memcpy (&kc->thataddr, a->ai_addrlen, sizeof(kc->thataddr));
+    freeaddrinfo (ai);
+    if ((*kc->authenticate)(kc, s))
+	return -1;
+    return s;
 }
 
 /*
