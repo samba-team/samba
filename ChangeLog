@@ -1,4 +1,8 @@
-2005-04-01  Johan Danielsson  <joda@pdc.kth.se>
+2005-04-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/test/uu_client.c: print size_t by casting to unsigned long
+	
+2005-04-01 Johan Danielsson <joda@pdc.kth.se>
 
 	* kdc/kerberos4.c (do_version4): check client and server max_life
 	
