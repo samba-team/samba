@@ -122,3 +122,54 @@ BOOL str_list_equal(const char **list1, const char **list2)
 	}
 	return True;
 }
+
+
+/*
+  add an entry to a string list
+*/
+const char **str_list_add(const char **list, const char *s)
+{
+	size_t len = str_list_length(list);
+	const char **ret;
+
+	ret = talloc_realloc(NULL, list, const char *, len+2);
+	if (ret == NULL) return NULL;
+
+	ret[len] = talloc_strdup(ret, s);
+	if (ret[len] == NULL) return NULL;
+
+	ret[len+1] = NULL;
+
+	return ret;
+}
+
+/*
+  remove an entry from a string list
+*/
+void str_list_remove(const char **list, const char *s)
+{
+	int i;
+
+	for (i=0;list[i];i++) {
+		if (strcmp(list[i], s) == 0) break;
+	}
+	if (!list[i]) return;
+
+	for (;list[i];i++) {
+		list[i] = list[i+1];
+	}
+}
+
+
+/*
+  return True if a string is in a list
+*/
+BOOL str_list_check(const char **list, const char *s)
+{
+	int i;
+
+	for (i=0;list[i];i++) {
+		if (strcmp(list[i], s) == 0) return True;
+	}
+	return False;
+}

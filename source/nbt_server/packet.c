@@ -261,3 +261,46 @@ void nbtd_name_release_reply(struct nbt_name_socket *nbtsock,
 failed:
 	talloc_free(packet);
 }
+
+
+/*
+  send a WACK reply
+*/
+void nbtd_wack_reply(struct nbt_name_socket *nbtsock, 
+		     struct nbt_name_packet *request_packet, 
+		     const char *src_address, int src_port,
+		     uint32_t ttl)
+{
+	struct nbt_name_packet *packet;
+	struct nbt_name *name = &request_packet->questions[0].name;
+
+	packet = talloc_zero(nbtsock, struct nbt_name_packet);
+	if (packet == NULL) return;
+
+	packet->name_trn_id = request_packet->name_trn_id;
+	packet->ancount = 1;
+	packet->operation = 
+		NBT_FLAG_REPLY | 
+		NBT_OPCODE_WACK |
+		NBT_FLAG_AUTHORITIVE;
+	
+	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
+	if (packet->answers == NULL) goto failed;
+
+	packet->answers[0].name              = *name;
+	packet->answers[0].rr_type           = NBT_QTYPE_NETBIOS;
+	packet->answers[0].rr_class          = NBT_QCLASS_IP;
+	packet->answers[0].ttl               = ttl;
+	packet->answers[0].rdata.data.length = 2;
+	packet->answers[0].rdata.data.data   = talloc_size(packet, 2);
+	if (packet->answers[0].rdata.data.data == NULL) goto failed;
+	RSSVAL(packet->answers[0].rdata.data.data, 0, request_packet->operation);
+
+	DEBUG(7,("Sending WACK reply for %s to %s:%d\n", 
+		 nbt_name_string(packet, name), src_address, src_port));
+	
+	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
+
+failed:
+	talloc_free(packet);
+}

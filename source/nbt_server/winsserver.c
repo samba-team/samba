@@ -26,6 +26,16 @@
 #include "system/time.h"
 
 /*
+  work out the ttl we will use given a client requested ttl
+*/
+uint32_t wins_server_ttl(struct wins_server *winssrv, uint32_t ttl)
+{
+	ttl = MIN(ttl, winssrv->max_ttl);
+	ttl = MAX(ttl, winssrv->min_ttl);
+	return ttl;
+}
+
+/*
   register a new name with WINS
 */
 static uint8_t wins_register_new(struct nbt_name_socket *nbtsock, 
@@ -36,13 +46,10 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
-	uint32_t ttl = packet->additional[0].ttl;
+	uint32_t ttl = wins_server_ttl(winssrv, packet->additional[0].ttl);
 	uint16_t nb_flags = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
 	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 	struct winsdb_record rec;
-
-	ttl = MIN(ttl, winssrv->max_ttl);
-	ttl = MAX(ttl, winssrv->min_ttl);
 
 	rec.name          = name;
 	rec.nb_flags      = nb_flags;
@@ -74,12 +81,9 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
-	uint32_t ttl = packet->additional[0].ttl;
+	uint32_t ttl = wins_server_ttl(winssrv, packet->additional[0].ttl);
 	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 	time_t now = time(NULL);
-
-	ttl = MIN(ttl, winssrv->max_ttl);
-	ttl = MAX(ttl, winssrv->min_ttl);
 
 	if (now + ttl > rec->expire_time) {
 		rec->expire_time   = now + ttl;
@@ -91,28 +95,6 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 	
 	return winsdb_modify(winssrv, rec);
 }
-
-
-/*
-  send a WACK reply, then check if the current owners want to keep the name
-*/
-static uint8_t wins_register_wack(struct nbt_name_socket *nbtsock, 
-				  struct nbt_name_packet *packet, 
-				  struct winsdb_record *rec,
-				  const char *src_address, int src_port)
-{
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
-						       struct nbtd_interface);
-	struct wins_server *winssrv = iface->nbtsrv->winssrv;
-	uint32_t ttl = packet->additional[0].ttl;
-	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
-	time_t now = time(NULL);
-
-	DEBUG(0,("TODO: WACK\n"));
-
-	return NBT_RCODE_SVR;
-}
-
 
 /*
   register a name
@@ -129,7 +111,6 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	uint8_t rcode = NBT_RCODE_OK;
 	uint16_t nb_flags = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
 	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
-	int i;
 
 	rec = winsdb_load(winssrv, name, packet);
 	if (rec == NULL) {
@@ -165,15 +146,13 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 
 	/* if the registration is for an address that is currently active, then 
 	   just update the expiry time */
-	for (i=0;rec->addresses[i];i++) {
-		if (strcmp(address, rec->addresses[i]) == 0) {
-			wins_update_ttl(nbtsock, packet, rec, src_address, src_port);
-			goto done;
-		}
+	if (str_list_check(rec->addresses, address)) {
+		wins_update_ttl(nbtsock, packet, rec, src_address, src_port);
+		goto done;
 	}
 
-	/* we have to do a WACK to see if the current owners are willing to give
-	   up their claim */	
+	/* we have to do a WACK to see if the current owner is willing
+	   to give up its claim */	
 	wins_register_wack(nbtsock, packet, rec, src_address, src_port);
 	return;
 
@@ -220,14 +199,26 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	struct winsdb_record *rec;
 
 	rec = winsdb_load(winssrv, name, packet);
-	if (rec != NULL && 
-	    rec->state == WINS_REC_ACTIVE &&
-	    !(rec->nb_flags & NBT_NM_GROUP)) {
-		/* should we release all, or only some of the addresses? */
-		rec->state = WINS_REC_RELEASED;
+	if (rec == NULL || 
+	    rec->state != WINS_REC_ACTIVE || 
+	    (rec->nb_flags & NBT_NM_GROUP)) {
+		goto done;
+	}
+
+	/* we only allow releases from an owner - other releases are
+	   silently ignored */
+	if (str_list_check(rec->addresses, src_address)) {
+		const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
+
+		DEBUG(4,("WINS: released name %s at %s\n", nbt_name_string(rec, rec->name), address));
+		str_list_remove(rec->addresses, address);
+		if (rec->addresses[0] == NULL) {
+			rec->state = WINS_REC_RELEASED;
+		}
 		winsdb_modify(winssrv, rec);
 	}
 
+done:
 	/* we match w2k3 by always giving a positive reply to name releases. */
 	nbtd_name_release_reply(nbtsock, packet, src_address, src_port, NBT_RCODE_OK);
 }

@@ -98,7 +98,7 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 
 	io->out.name = packet->answers[0].name;
 	io->out.num_addrs = packet->answers[0].rdata.netbios.length / 6;
-	io->out.reply_addrs = talloc_array(mem_ctx, const char *, io->out.num_addrs);
+	io->out.reply_addrs = talloc_array(mem_ctx, const char *, io->out.num_addrs+1);
 	if (io->out.reply_addrs == NULL) {
 		talloc_free(req);
 		return NT_STATUS_NO_MEMORY;
@@ -108,6 +108,7 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 		io->out.reply_addrs[i] = talloc_steal(mem_ctx, 
 						      packet->answers[0].rdata.netbios.addresses[i].ipaddr);
 	}
+	io->out.reply_addrs[i] = NULL;
 
 	talloc_steal(mem_ctx, io->out.name.name);
 	talloc_steal(mem_ctx, io->out.name.scope);
