@@ -1218,7 +1218,7 @@ NTSTATUS cli_lsa_query_secobj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				     POLICY_HND *pol, DOM_SID *sid,
-				     uint32 *count, char ***privs_name)
+				     uint32 *count, char ***priv_names)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_ENUM_ACCT_RIGHTS q;
@@ -1226,6 +1226,7 @@ NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	int i;
 	fstring *privileges;
+	char **names;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -1260,15 +1261,17 @@ NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	
 	privileges = TALLOC_ARRAY(mem_ctx, fstring, *count);
-	*privs_name = TALLOC_ARRAY(mem_ctx, char *, *count);
+	names = TALLOC_ARRAY(mem_ctx, char *, *count);
 	for ( i=0; i<*count; i++ ) {
 		/* ensure NULL termination ... what a hack */
 		pull_ucs2(NULL, privileges[i], r.rights.strings[i].string.buffer, 
 			sizeof(fstring), r.rights.strings[i].string.uni_str_len*2 , 0);
 			
 		/* now copy to the return array */
-		*privs_name[i] = talloc_strdup( mem_ctx, privileges[i] );
+		names[i] = talloc_strdup( mem_ctx, privileges[i] );
 	}
+	
+	*priv_names = names;
 
 done:
 

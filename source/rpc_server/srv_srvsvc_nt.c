@@ -1437,28 +1437,6 @@ static char *valid_share_pathname(char *dos_pathname)
 	return ptr;
 }
 
-static BOOL exist_share_pathname(char *unix_pathname)
-{
-	pstring saved_pathname;
-	int ret;
-
-	/* Can we cd to it ? */
-
-	/* First save our current directory. */
-	if (getcwd(saved_pathname, sizeof(saved_pathname)) == NULL)
-		return False;
-
-	ret = chdir(unix_pathname);
-
-	/* We *MUST* be able to chdir back. Abort if we can't. */
-	if (chdir(saved_pathname) == -1)
-		smb_panic("valid_share_pathname: Unable to restore current directory.\n");
-
-	if (ret == -1) return False;
-
-	return True;
-}
-
 /*******************************************************************
  Net share set info. Modify share details.
 ********************************************************************/
@@ -1614,12 +1592,6 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		if ( ret != 0 )
 			return WERR_ACCESS_DENIED;
 
-		/* Check if the new share pathname exist, if not return an error */
-		if (!exist_share_pathname(path)) {
-			DEBUG(1, ("_srv_net_share_set_info: change share command was ok but path (%s) has not been created!\n", path));
-			return WERR_OBJECT_PATH_INVALID;
-		}
-
 		/* Tell everyone we updated smb.conf. */
 		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 	} else {
@@ -1767,44 +1739,6 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	/* Tell everyone we updated smb.conf. */
 	message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
-
-	/* Check if the new share pathname exist, if not try to delete the
-	 * share and return an error */
-
-	if (!exist_share_pathname(path)) 
-	{
-		DEBUG(1, ("_srv_net_share_add: add share command was ok but path (%s) has not been created!\n", path));
-		DEBUG(1, ("_srv_net_share_add: trying to rollback and delete the share\n"));
-
-		if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
-			DEBUG(1, ("_srv_net_share_add: Error! delete share command is not defined! Please check share (%s) in the config file\n", share_name));
-			return WERR_OBJECT_PATH_INVALID;
-		}
-
-		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
-				lp_delete_share_cmd(), dyn_CONFIGFILE, share_name);
-
-		DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
-
-		/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
-
-		if ( is_disk_op )
-			become_root();
-
-		ret = smbrun(command, NULL);
-
-		if ( is_disk_op )
-			unbecome_root();
-
-		/********* END SeDiskOperatorPrivilege BLOCK *********/
-
-		DEBUG(3,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
-
-		if ( ret != 0 )
-			DEBUG(1, ("_srv_net_share_add: Error! delete share command failed! Please check share (%s) in the config file\n", share_name));
-
-		return WERR_OBJECT_PATH_INVALID;
-	}
 
 	if (psd) {
 		if (!set_share_security(p->mem_ctx, share_name, psd)) {

@@ -34,7 +34,7 @@
 static char *netbiosname;
 static char packet[BUFFER_SIZE];
 
-static void save_file(const char *fname, void *packet, size_t length)
+static void save_file(const char *fname, void *ppacket, size_t length)
 {
 	int fd;
 	fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
@@ -42,7 +42,7 @@ static void save_file(const char *fname, void *packet, size_t length)
 		perror(fname);
 		return;
 	}
-	if (write(fd, packet, length) != length) {
+	if (write(fd, ppacket, length) != length) {
 		fprintf(stderr,"Failed to write %s\n", fname);
 		return;
 	}
