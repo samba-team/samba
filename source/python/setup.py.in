@@ -72,7 +72,7 @@ setup(
 
     # Build info
     
-    include_dirs = [samba_srcdir, samba_srcdir + "include",
+    include_dirs = [samba_srcdir + '.', samba_srcdir + "include",
                     samba_srcdir + "ubiqx", samba_srcdir + "smbwrapper",
                     samba_srcdir + "popt", "/usr/kerberos/include",
                     "/usr/local/include"],
@@ -85,8 +85,6 @@ setup(
 
     Extension(name = "spoolss",
               sources = [samba_srcdir + "python/py_spoolss.c",
-                         samba_srcdir + "python/py_spoolss_forms.c",
-                         samba_srcdir + "python/py_spoolss_ports.c",
                          samba_srcdir + "python/py_common.c",
                          samba_srcdir + "python/py_conv.c"],
               libraries = lib_list,

@@ -18,12 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "Python.h"
-
-#include "python/py_conv.h"
-#include "python/py_spoolss.h"
-
 struct pyconv py_FORM[] = {
 	{ "flags", PY_UINT32, offsetof(FORM, flags) },
 	{ "width", PY_UINT32, offsetof(FORM, size_x) },
@@ -49,7 +43,7 @@ struct pyconv py_FORM_1[] = {
 
 /* Add a form */
 
-PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
+static PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -101,7 +95,7 @@ PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Get form properties */
 
-PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
+static PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -114,7 +108,8 @@ PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|i", kwlist, &form_name, &level))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|i", kwlist, 
+					 &form_name, &level))
 		return NULL;
 	
 	/* Call rpc function */
@@ -147,7 +142,7 @@ PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Set form properties */
 
-PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
+static PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -160,7 +155,8 @@ PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "sO!|i", kwlist, 
-					 &form_name, &PyDict_Type, &py_form, &level))
+					 &form_name, &PyDict_Type, &py_form,
+					 &level))
 		return NULL;
 	
 	/* Call rpc function */
@@ -184,7 +180,8 @@ PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Delete a form */
 
-PyObject *spoolss_deleteform(PyObject *self, PyObject *args, PyObject *kw)
+static PyObject *spoolss_deleteform(PyObject *self, PyObject *args, 
+				    PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -215,7 +212,8 @@ PyObject *spoolss_deleteform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Enumerate forms */
 
-PyObject *spoolss_enumforms(PyObject *self, PyObject *args, PyObject *kw)
+static PyObject *spoolss_enumforms(PyObject *self, PyObject *args, 
+				   PyObject *kw)
 {
 	PyObject *result;
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
