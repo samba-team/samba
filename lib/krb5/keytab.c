@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,6 +45,11 @@ krb5_kt_register(krb5_context context,
 		 const krb5_kt_ops *ops)
 {
     struct krb5_keytab_data *tmp;
+
+    if (strlen(ops->prefix) > KRB5_KT_PREFIX_MAX_LEN - 1) {
+	krb5_set_error_string(context, "krb5_kt_register; prefix too long");
+	return KRB5_KT_NAME_TOOLONG;
+    }
 
     tmp = realloc(context->kt_types,
 		  (context->num_kt_types + 1) * sizeof(*context->kt_types));
@@ -203,6 +208,21 @@ krb5_kt_read_service_key(krb5_context context,
     ret = krb5_copy_keyblock (context, &entry.keyblock, key);
     krb5_kt_free_entry(context, &entry);
     return ret;
+}
+
+/*
+ * Return the type of the `keytab' in the string `prefix of length
+ * `prefixsize'.
+ */
+
+krb5_error_code
+krb5_kt_get_type(krb5_context context,
+		 krb5_keytab keytab,
+		 char *prefix,
+		 size_t prefixsize)
+{
+    strlcpy(prefix, keytab->prefix, prefixsize);
+    return 0;
 }
 
 /*
