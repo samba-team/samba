@@ -10,6 +10,7 @@ REQUIRED_SUBSYSTEMS = \
 		LIBCMDLINE \
 		LIBBASIC \
 		LIBSMB \
-		RPC_NDR_SRVSVC
+		RPC_NDR_SRVSVC \
+		LIBCLI_LSA
 # End BINARY smbclient
 #################################

@@ -26,6 +26,7 @@
 #include "clilist.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "system/dir.h"
@@ -1835,6 +1836,112 @@ done:
 	return ret;
 }
 
+/****************************************************************************
+lookup a sid
+****************************************************************************/
+static int cmd_lookupsid(const char **cmd_ptr)
+{
+	fstring buf;
+	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	NTSTATUS status;
+	const char *name;
+
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
+		d_printf("lookupsid <sid>\n");
+		talloc_free(mem_ctx);
+		return 1;
+	}
+
+	status = smblsa_lookup_sid(cli, buf, mem_ctx, &name);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("lsa_LookupSids - %s\n", nt_errstr(status));
+		talloc_free(mem_ctx);
+		return 1;
+	}
+
+	d_printf("%s\n", name);
+
+	talloc_free(mem_ctx);
+
+	return 0;
+}
+
+/****************************************************************************
+lookup a name, showing sid
+****************************************************************************/
+static int cmd_lookupname(const char **cmd_ptr)
+{
+	fstring buf;
+	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	NTSTATUS status;
+	const char *sid;
+
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
+		d_printf("lookupname <name>\n");
+		talloc_free(mem_ctx);
+		return 1;
+	}
+
+	status = smblsa_lookup_name(cli, buf, mem_ctx, &sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("lsa_LookupNames - %s\n", nt_errstr(status));
+		talloc_free(mem_ctx);
+		return 1;
+	}
+
+	d_printf("%s\n", sid);
+
+	talloc_free(mem_ctx);
+
+	return 0;
+}
+
+/****************************************************************************
+show privileges for a user
+****************************************************************************/
+static int cmd_privileges(const char **cmd_ptr)
+{
+	fstring buf;
+	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	NTSTATUS status;
+	struct dom_sid *sid;
+	struct lsa_RightSet rights;
+	unsigned i;
+
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
+		d_printf("lookupsid <sid>\n");
+		talloc_free(mem_ctx);
+		return 1;
+	}
+
+	sid = dom_sid_parse_talloc(mem_ctx, buf);
+	if (sid == NULL) {
+		const char *sid_str;
+		status = smblsa_lookup_name(cli, buf, mem_ctx, &sid_str);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("lsa_LookupNames - %s\n", nt_errstr(status));
+			talloc_free(mem_ctx);
+			return 1;
+		}
+		sid = dom_sid_parse_talloc(mem_ctx, sid_str);
+	}
+
+	status = smblsa_sid_privileges(cli, sid, mem_ctx, &rights);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("lsa_EnumAccountRights - %s\n", nt_errstr(status));
+		talloc_free(mem_ctx);
+		return 1;
+	}
+
+	for (i=0;i<rights.count;i++) {
+		d_printf("\t%s\n", rights.names[i].string);
+	}
+
+	talloc_free(mem_ctx);
+
+	return 0;
+}
+
 
 /****************************************************************************
 ****************************************************************************/
@@ -2403,6 +2510,8 @@ static struct
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
   {"link",cmd_link,"<src> <dest> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"lookupname",cmd_lookupname,"<name> show SID for name",{COMPL_NONE,COMPL_NONE}},
+  {"lookupsid",cmd_lookupsid,"<sid> show name for SID",{COMPL_NONE,COMPL_NONE}},
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
   {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
@@ -2413,6 +2522,7 @@ static struct
   {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
+  {"privileges",cmd_privileges,"<user> show privileges for a user",{COMPL_NONE,COMPL_NONE}},
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},
   {"printmode",cmd_printmode,"<graphics or text> set the print mode",{COMPL_NONE,COMPL_NONE}},
   {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput",{COMPL_NONE,COMPL_NONE}},  

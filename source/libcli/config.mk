@@ -13,6 +13,10 @@ ADD_OBJ_FILES = libcli/unexpected.o \
 		libcli/namecache.o \
 		libcli/nmblib.o \
 		libcli/namequery.o
+REQUIRED_SUBSYSTEMS = RPC_NDR_LSA
+
+[SUBSYSTEM::LIBCLI_LSA]
+ADD_OBJ_FILES = libcli/util/clilsa.o
 
 [SUBSYSTEM::LIBCLI]
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH LIBCLI_NMB
