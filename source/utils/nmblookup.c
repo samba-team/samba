@@ -109,7 +109,8 @@ static void do_node_status(struct nbt_name_socket *nbtsock,
 	io.in.name.type = 0;
 	io.in.name.scope = NULL;
 	io.in.dest_addr = addr;
-	io.in.timeout = 3;
+	io.in.timeout = 1;
+	io.in.retries = 2;
 
 	status = nbt_name_status(nbtsock, nbtsock, &io);
 	if (NT_STATUS_IS_OK(status)) {
@@ -149,7 +150,8 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 	io.in.dest_addr = addr;
 	io.in.broadcast = broadcast;
 	io.in.wins_lookup = options.wins_lookup;
-	io.in.timeout = 3;
+	io.in.timeout = 1;
+	io.in.retries = 2;
 
 	status = nbt_name_query(nbtsock, nbtsock, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
