@@ -421,13 +421,21 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			
 			if (lm_key) {
 				memcpy(lm_key, r->out.validation.sam3->LMSessKey.key, 8);
+			}			
+		} else if (r->in.validation_level == 6) {
+			/* they aren't encrypted! */
+			if (user_session_key) {
+				memcpy(user_session_key, r->out.validation.sam6->key.key, 16);
 			}
-			
+			if (lm_key) {
+				memcpy(lm_key, r->out.validation.sam6->LMSessKey.key, 8);
+			}
 		}
 	}
 
 	return status;
 } 
+
 
 /* 
  * Test the normal 'LM and NTLM' combination
@@ -888,7 +896,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	int i, j;
 	BOOL ret = True;
-
+	int validation_levels[] = {2,3,6};
 	struct samlogon_state samlogon_state;
 	
 	samlogon_state.mem_ctx = mem_ctx;
@@ -918,11 +926,12 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	samlogon_state.r.in.credential = &samlogon_state.auth;
 	samlogon_state.r.in.return_authenticator = &samlogon_state.auth2;
 
-	for (i=2;i<=3;i++) {
-		samlogon_state.r.in.validation_level = i;
+	for (i=0;i<ARRAY_SIZE(validation_levels);i++) {
+		samlogon_state.r.in.validation_level = validation_levels[i];
 		for (j=0; test_table[j].fn; j++) {
 			char *error_string = NULL;
-			printf("Testing SamLogon with '%s' at validation level %d\n", test_table[j].name, i);
+			printf("Testing SamLogon with '%s' at validation level %d\n", 
+			       test_table[j].name, validation_levels[i]);
 	
 			if (!test_table[j].fn(&samlogon_state, &error_string)) {
 				if (test_table[j].expect_fail) {
