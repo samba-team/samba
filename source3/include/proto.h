@@ -2443,6 +2443,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 BOOL make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
                                      prs_struct *ps, int depth);
+void free_spoolss_devmode(DEVICEMODE *devmode);
 BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		const fstring printername, 
 		const fstring datatype, 
@@ -2450,6 +2451,7 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		const fstring clientname,
 		const fstring user_name);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
+void free_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth);
