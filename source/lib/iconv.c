@@ -54,7 +54,7 @@ static size_t ucs2hex_push(void *,const char **, size_t *, char **, size_t *);
 static size_t iconv_copy  (void *,const char **, size_t *, char **, size_t *);
 static size_t iconv_swab  (void *,const char **, size_t *, char **, size_t *);
 
-static struct charset_functions builtin_functions[] = {
+static const struct charset_functions const builtin_functions[] = {
 	{"UCS-2LE",  iconv_copy, iconv_copy},
 	{"UCS-2BE",  iconv_swab, iconv_swab},
 	{"UTF8",   utf8_pull,  utf8_push},
@@ -65,9 +65,9 @@ static struct charset_functions builtin_functions[] = {
 
 static struct charset_functions *charsets = NULL;
 
-static NTSTATUS charset_register_backend(void *_funcs) 
+static NTSTATUS charset_register_backend(const void *_funcs) 
 {
-	struct charset_functions *funcs = (struct charset_functions *)_funcs;
+	struct charset_functions *funcs = memdup(_funcs,sizeof(struct charset_functions));
 	struct charset_functions *c = charsets;
 
 	/* Check whether we already have this charset... */
