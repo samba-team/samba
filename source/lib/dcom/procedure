@@ -1,8 +1,0 @@
-Required infrastructure:
- - CoCreateInstance function
- - Proxy and Stub (class ?)
-
-
- - Bind to IOXIDResolver
- - ServerAlive2()
- - Bind to ISystemActivator
