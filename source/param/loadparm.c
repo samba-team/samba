@@ -821,7 +821,7 @@ static struct parm_struct parm_table[] = {
 	
 	{"nt smb support", P_BOOL, P_GLOBAL, &Globals.bNTSmbSupport, NULL, NULL, 0},
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, 0},
-	{"nt acl support", P_BOOL,  P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, 0},
+	{"nt acl support", P_BOOL,  P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE },
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, 0},
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as, 0},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, 0},
