@@ -563,10 +563,10 @@ NTSTATUS auth_init_samstrict_dc(struct auth_context *auth_context, const char *p
 	return NT_STATUS_OK;
 }
 
-int auth_sam_init(void)
+NTSTATUS auth_sam_init(void)
 {
-	smb_register_auth("samstrict_dc", auth_init_samstrict_dc, AUTH_INTERFACE_VERSION);
-	smb_register_auth("samstrict", auth_init_samstrict, AUTH_INTERFACE_VERSION);
-	smb_register_auth("sam", auth_init_sam, AUTH_INTERFACE_VERSION);
-	return True;
+	smb_register_auth(AUTH_INTERFACE_VERSION, "samstrict_dc", auth_init_samstrict_dc);
+	smb_register_auth(AUTH_INTERFACE_VERSION, "samstrict", auth_init_samstrict);
+	smb_register_auth(AUTH_INTERFACE_VERSION, "sam", auth_init_sam);
+	return NT_STATUS_OK;
 }

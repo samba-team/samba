@@ -401,7 +401,7 @@ NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* para
 	return NT_STATUS_OK;
 }
 
-int auth_server_init(void)
+NTSTATUS auth_server_init(void)
 {
-	return smb_register_auth("smbserver", auth_init_smbserver, AUTH_INTERFACE_VERSION);
+	return smb_register_auth(AUTH_INTERFACE_VERSION, "smbserver", auth_init_smbserver);
 }

@@ -553,7 +553,7 @@ static NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method
 	return NT_STATUS_OK;
 }
 
-int pdb_xml_init(void) 
+NTSTATUS pdb_xml_init(void) 
 {
-	return smb_register_passdb("xml", xmlsam_init, PASSDB_INTERFACE_VERSION);
+	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "xml", xmlsam_init);
 }

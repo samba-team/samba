@@ -1443,7 +1443,7 @@ static BOOL api_samr_set_dom_info(pipes_struct *p)
  array of \PIPE\samr operations
  ********************************************************************/
 
-int rpc_samr_init(void)
+NTSTATUS rpc_samr_init(void)
 {
   static struct api_struct api_samr_cmds [] =
     {
@@ -1501,6 +1501,6 @@ int rpc_samr_init(void)
       {"SAMR_SET_DOMAIN_INFO"   , SAMR_SET_DOMAIN_INFO  , api_samr_set_dom_info     },
       {"SAMR_CONNECT4"          , SAMR_CONNECT4         , api_samr_connect4         }
     };
-  return rpc_pipe_register_commands("samr", "lsass", api_samr_cmds,
+  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "samr", "lsass", api_samr_cmds,
 				    sizeof(api_samr_cmds) / sizeof(struct api_struct));
 }

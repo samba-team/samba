@@ -310,7 +310,7 @@ static int audit_fchmod_acl(struct files_struct *fsp, int fd, mode_t mode)
 	return result;
 }
 
-int vfs_extd_audit_init(void)
+NTSTATUS vfs_extd_audit_init(void)
 {
-	return smb_register_vfs("extd_audit", audit_init, SMB_VFS_INTERFACE_VERSION);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "extd_audit", audit_init);
 }

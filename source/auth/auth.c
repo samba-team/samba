@@ -25,21 +25,28 @@
 
 static struct auth_init_function_entry *backends = NULL;
 
-BOOL smb_register_auth(const char *name, auth_init_function init, int version)
+static struct auth_init_function_entry *auth_find_backend_entry(const char *name);
+
+NTSTATUS smb_register_auth(uint16 version, const char *name, auth_init_function init)
 {
 	struct auth_init_function_entry *entry = backends;
 
-	if(version != AUTH_INTERFACE_VERSION)
-		return False;
+	if (version != AUTH_INTERFACE_VERSION) {
+		DEBUG(0,("Can't register auth_method!\n"
+			 "You tried to register an auth module with AUTH_INTERFACE_VERSION %d, while this version of samba uses %d\n",
+			 version,AUTH_INTERFACE_VERSION));
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+	}
+
+	if (!name || !init) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	DEBUG(5,("Attempting to register auth backend %s\n", name));
 
-	while(entry) {
-		if (strequal(name, entry->name)) {
-			DEBUG(0,("There already is an auth backend registered with the name %s!\n", name));
-			return False;
-		}
-		entry = entry->next;
+	if (auth_find_backend_entry(name)) {
+		DEBUG(0,("There already is an auth method registered with the name %s!\n", name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 	
 	entry = smb_xmalloc(sizeof(struct auth_init_function_entry));
@@ -47,8 +54,8 @@ BOOL smb_register_auth(const char *name, auth_init_function init, int version)
 	entry->init = init;
 
 	DLIST_ADD(backends, entry);
-	DEBUG(5,("Successfully added auth backend '%s'\n", name));
-	return True;
+	DEBUG(5,("Successfully added auth method '%s'\n", name));
+	return NT_STATUS_OK;
 }
 
 static struct auth_init_function_entry *auth_find_backend_entry(const char *name)
@@ -365,7 +372,7 @@ BOOL load_auth_module(struct auth_context *auth_context,
 	
 	entry = auth_find_backend_entry(module_name);
 	
-	if(!(entry = auth_find_backend_entry(module_name)) && !smb_probe_module("auth", module_name) && 
+	if(!(entry = auth_find_backend_entry(module_name)) && NT_STATUS_IS_ERR(smb_probe_module("auth", module_name)) && 
 	   !(entry = auth_find_backend_entry(module_name))) {
 		DEBUG(0,("load_auth_module: can't find auth method %s!\n", module_name));
 	} else if (!NT_STATUS_IS_OK(entry->init(auth_context, module_params, ret))) {

@@ -321,7 +321,7 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
  array of \PIPE\NETLOGON operations
  ********************************************************************/
 
-int rpc_net_init(void)
+NTSTATUS rpc_net_init(void)
 {
   static struct api_struct api_net_cmds [] =
     {
@@ -336,6 +336,6 @@ int rpc_net_init(void)
       { "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     }
     };
 
-  return rpc_pipe_register_commands("NETLOGON", "lsass", api_net_cmds,
+  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "NETLOGON", "lsass", api_net_cmds,
 				    sizeof(api_net_cmds) / sizeof(struct api_struct));
 }

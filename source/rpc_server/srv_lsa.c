@@ -771,7 +771,7 @@ static BOOL api_lsa_remove_acct_rights(pipes_struct *p)
  \PIPE\ntlsa commands
  ***************************************************************************/
 
-int rpc_lsa_init(void)
+NTSTATUS rpc_lsa_init(void)
 {
   static const struct api_struct api_lsa_cmds[] =
     {
@@ -801,6 +801,6 @@ int rpc_lsa_init(void)
       { "LSA_REMOVEACCTRIGHTS", LSA_REMOVEACCTRIGHTS, api_lsa_remove_acct_rights},
     };
 
-  return rpc_pipe_register_commands("lsarpc", "lsass", api_lsa_cmds, 
+  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsass", api_lsa_cmds, 
 				    sizeof(api_lsa_cmds) / sizeof(struct api_struct));
 }
