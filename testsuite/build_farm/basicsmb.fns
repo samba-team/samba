@@ -1,5 +1,9 @@
 test_smb_conf_setup() {
-	cat basicsmb.smb.conf.template | sed "s|PREFIX|$prefix|g" | sed "s|BUILD_FARM|$pwd|g" > $prefix/lib/smb.conf
+	cat basicsmb.smb.conf.template | \
+              sed "s|PREFIX|$prefix|g" | \
+	      sed "s|BUILD_FARM|$pwd|g" | \
+	      sed "s|WHOAMI|$whoami|g" \
+        > $prefix/lib/smb.conf
 
 	echo "127.0.0.1    localhost">$prefix/lib/lmhosts
     echo "127.0.0.1    SHARE">>$prefix/lib/lmhosts
