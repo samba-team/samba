@@ -177,7 +177,7 @@ Wert      Beteutung
 0x0002      ExpandSZ:   string with "%var%" expanding (UNICODE!)
 0x0003      RegBin:           raw-binary value
 0x0004      RegDWord:   Dword
-0x0007      RegMultiSZ:      multiple strings, seperated with 0
+0x0007      RegMultiSZ:      multiple strings, separated with 0
                   (UNICODE!)
 
 The "lf"-record
