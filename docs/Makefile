@@ -39,9 +39,9 @@ help:
 	@echo " samples - Extract examples"
 	@echo " files - Extract other files"
 
-Samba-Guide/index.xml: $(subst Samba-Guide/index.xml,,$(wildcard Samba-Guide/*.xml))
-Samba-HOWTO-Collection/index.xml: $(subst Samba-HOWTO-Collection/index.xml,,$(wildcard Samba-HOWTO-Collection/*.xml)) Samba-HOWTO-Collection-attributions.xml
-Samba-Developers-Guide/index.xml: $(subst Samba-Developers-Guide/index.xml,,$(wildcard Samba-Developers-Guide/*.xml)) Samba-Developers-Guide-attributions.xml
+$(DOCBOOKDIR)/Samba-Guide.xml: $(filter-out Samba-Guide/index.xml,$(wildcard Samba-Guide/*.xml))
+$(DOCBOOKDIR)/Samba-HOWTO-Collection.xml: $(filter-out Samba-HOWTO-Collection/index.xml,$(wildcard Samba-HOWTO-Collection/*.xml)) Samba-HOWTO-Collection-attributions.xml
+$(DOCBOOKDIR)/Samba-Developers-Guide.xml: $(filter-out Samba-Developers-Guide/index.xml,$(wildcard Samba-Developers-Guide/*.xml)) Samba-Developers-Guide-attributions.xml
 
 # Pseudo targets 
 all: $(TARGETS)
@@ -70,7 +70,7 @@ htmlhelp: $(addprefix $(HTMLHELPDIR)/,$(MAIN_DOCS))
 validate: $(addsuffix -validate,$(MAIN_DOCS))
 
 # Intermediate docbook docs
-
+#
 $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
@@ -164,8 +164,10 @@ $(PDFDIR)/%.pdf: %.pdf
 	@echo "$*-images-htmlhelp: \$$(addprefix \$$(HTMLHELPDIR)/$*/, \$$($*-images-html))" >> $@
 	@echo "	touch \$$@" >> $@
 
-ifdef OUTPUTDIR
+ifdef OUTPUTDIR 
+ifneq ($(MAKECMDGOALS),clobber)
 include $(addsuffix .d,$(MAIN_DOCS))
+endif
 endif
 
 # Adobe PDF files
