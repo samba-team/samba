@@ -25,6 +25,8 @@
 #include "winbind_nss_config.h"
 #include "winbindd_nss.h"
 
+#define DEBUG_STUFF 1
+
 /* Prototypes from common.c */
 
 void init_request(struct winbindd_request *req,int rq_type);
@@ -186,9 +188,8 @@ static enum nss_status fill_pwent(struct passwd *result,
    Return NSS_STATUS_TRYAGAIN if we run out of memory. */
 
 static int fill_grent(struct group *result, struct winbindd_gr *gr,
-		      char *extra_data, char **buffer, int *buflen)
+		      char *gr_mem, char **buffer, int *buflen)
 {
-	char *tmp_data;
 	fstring name;
 	int i;
 
@@ -199,8 +200,15 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 
 		/* Out of memory */
 
+#if DEBUG_STUFF
+		fprintf(stderr, "DB> out of memory in gr_name\n");
+#endif
 		return NSS_STATUS_TRYAGAIN;
 	}
+
+#if DEBUG_STUFF
+	fprintf(stderr, "DB> \t returning group %s\n", result->gr_name);
+#endif
 
 	strcpy(result->gr_name, gr->gr_name);
 
@@ -211,6 +219,9 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 
 		/* Out of memory */
 		
+#if DEBUG_STUFF
+		fprintf(stderr, "DB> out of memory in gr_passwd\n");
+#endif
 		return NSS_STATUS_TRYAGAIN;
 	}
 
@@ -222,7 +233,7 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 
 	/* Group membership */
 
-	if ((gr->num_gr_mem < 0) || !extra_data) {
+	if ((gr->num_gr_mem < 0) || !gr_mem) {
 		gr->num_gr_mem = 0;
 	}
 
@@ -232,6 +243,9 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 
 		/* Out of memory */
 
+#if DEBUG_STUFF
+		fprintf(stderr, "DB> out of memory in gr_mem\n");
+#endif
 		return NSS_STATUS_TRYAGAIN;
 	}
 
@@ -246,10 +260,12 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 	/* Start looking at extra data */
 
 	i = 0;
-	tmp_data = &extra_data[gr->gr_mem_ofs];
 
-	while(next_token((char **)&tmp_data, name, ",", 
-			 sizeof(fstring))) {
+#if DEBUG_STUFF
+	fprintf(stderr, "DB> \t mem_ofs = %d\n", gr->gr_mem_ofs);
+#endif
+
+	while(next_token((char **)&gr_mem, name, ",", sizeof(fstring))) {
         
 		/* Allocate space for member */
         
@@ -258,14 +274,26 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
             
 			/* Out of memory */
             
+#if DEBUG_STUFF
+			fprintf(stderr, "DB> out of memory in gr_mem[%d]\n", i);
+#endif
 			return NSS_STATUS_TRYAGAIN;
 		}        
         
+#if DEBUG_STUFF
+		fprintf(stderr, "DB> \t adding group member %s\n", name);
+#endif
+
 		strcpy((result->gr_mem)[i], name);
 		i++;
 	}
 
 	/* Terminate list */
+
+#if DEBUG_STUFF
+	fprintf(stderr, "DB> \t %d members returned, %d added\n", 
+		gr->num_gr_mem, i);
+#endif
 
 	(result->gr_mem)[i] = NULL;
 
@@ -548,6 +576,10 @@ _nss_winbind_getgrent_r(struct group *result,
 	static struct winbindd_request request;
 	static int called_again;
 
+#if DEBUG_STUFF
+	fprintf(stderr, "DB> getgrent(): ndx=%d num=%d again=%d\n",
+		ndx_gr_cache, num_gr_cache, called_again);
+#endif
 	/* Return an entry from the cache if we have one, or if we are
 	   called again because we exceeded our static buffer.  */
 
@@ -571,11 +603,37 @@ _nss_winbind_getgrent_r(struct group *result,
 
 	if (ret == NSS_STATUS_SUCCESS) {
 		struct winbindd_gr *gr_cache;
+		int mem_ofs;
 
 		/* Fill cache */
 
 		ndx_gr_cache = 0;
 		num_gr_cache = getgrent_response.data.num_entries;
+
+#if DEBUG_STUFF
+		fprintf(stderr, "DB> \t fetched %d entries, add ofs %d\n", 
+			num_gr_cache, num_gr_cache * sizeof(struct winbindd_gr));
+#endif
+		{
+			struct winbindd_gr *gr;
+			int i;
+
+			for (i = 0; i < num_gr_cache; i++) {
+				gr = (struct winbindd_gr *)
+					getgrent_response.extra_data;
+
+#if DEBUG_STUFF
+				fprintf(stderr, "DB> \t\t %s gid=%d "
+					"num_mem=%d mem_ofs=%d str=#%16s#\n",
+					gr[i].gr_name, gr[i].gr_gid, 
+					gr[i].num_gr_mem, gr[i].gr_mem_ofs,
+					(char *)(getgrent_response.extra_data +
+						 gr[i].gr_mem_ofs + 
+						getgrent_response.data.num_entries *
+						 sizeof(struct winbindd_gr)));
+#endif
+			}
+		}
 
 		/* Return a result */
 
@@ -589,17 +647,21 @@ _nss_winbind_getgrent_r(struct group *result,
 			return NSS_STATUS_NOTFOUND;
 		}
 
-		/* Adjust group membership offset by the number of group 
-		   entries that were returned. */
+		/* Fill group membership.  The offset into the extra data
+		   for the group membership is the reported offset plus the
+		   size of all the winbindd_gr records returned. */
 
-		gr_cache[ndx_gr_cache].gr_mem_ofs += 
-			getgrent_response.data.num_entries *
-			sizeof(struct winbindd_gr);
+		mem_ofs = gr_cache[ndx_gr_cache].gr_mem_ofs +
+			num_gr_cache * sizeof(struct winbindd_gr);
 
 		ret = fill_grent(result, &gr_cache[ndx_gr_cache],
-				 getgrent_response.extra_data,
-				 &buffer, &buflen);
+				 (char *)(getgrent_response.extra_data +
+					  mem_ofs), &buffer, &buflen);
 		
+#if DEBUG_STUFF
+		fprintf(stderr, "DB> \t fill_grent returned %d\n", ret);
+#endif
+
 		/* Out of memory - try again */
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
@@ -615,6 +677,9 @@ _nss_winbind_getgrent_r(struct group *result,
 		/* If we've finished with this lot of results free cache */
 
 		if (ndx_gr_cache == num_gr_cache) {
+#if DEBUG_STUFF
+			fprintf(stderr, "DB> \t freeing group cache\n");
+#endif
 			ndx_gr_cache = num_gr_cache = 0;
 			free_response(&getgrent_response);
 		}
