@@ -399,7 +399,7 @@ BOOL check_name(pstring name,connection_struct *conn)
 	}
 
 	if (!lp_widelinks(SNUM(conn))) {
-		ret = reduce_name(conn,name,conn->connectpath);
+		ret = reduce_name(conn,name);
 	}
 
 	/* Check if we are allowing users to follow symlinks */

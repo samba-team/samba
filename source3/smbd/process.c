@@ -344,6 +344,7 @@ force write permissions on print services.
 #define CAN_IPC (1<<3)
 #define AS_GUEST (1<<5)
 #define QUEUE_IN_OPLOCK (1<<6)
+#define DO_CHDIR (1<<7)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -373,7 +374,7 @@ static const struct smb_message_struct {
 /* 0x0e */ { "SMBctemp",reply_ctemp,AS_USER | QUEUE_IN_OPLOCK },
 /* 0x0f */ { "SMBmknew",reply_mknew,AS_USER}, 
 /* 0x10 */ { "SMBchkpth",reply_chkpth,AS_USER},
-/* 0x11 */ { "SMBexit",reply_exit,0},
+/* 0x11 */ { "SMBexit",reply_exit,DO_CHDIR},
 /* 0x12 */ { "SMBlseek",reply_lseek,AS_USER},
 /* 0x13 */ { "SMBlockread",reply_lockread,AS_USER},
 /* 0x14 */ { "SMBwriteunlock",reply_writeunlock,AS_USER},
@@ -469,7 +470,7 @@ static const struct smb_message_struct {
 /* 0x6e */ { NULL, NULL, 0 },
 /* 0x6f */ { NULL, NULL, 0 },
 /* 0x70 */ { "SMBtcon",reply_tcon,0},
-/* 0x71 */ { "SMBtdis",reply_tdis,0},
+/* 0x71 */ { "SMBtdis",reply_tdis,DO_CHDIR},
 /* 0x72 */ { "SMBnegprot",reply_negprot,0},
 /* 0x73 */ { "SMBsesssetupX",reply_sesssetup_and_X,0},
 /* 0x74 */ { "SMBulogoffX", reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
@@ -754,7 +755,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			return(ERROR_DOS(ERRSRV,ERRaccess));	    
 
 		/* load service specific parameters */
-		if (conn && !set_current_service(conn,(flags & AS_USER)?True:False))
+		if (conn && !set_current_service(conn,(flags & (AS_USER|DO_CHDIR)?True:False)))
 			return(ERROR_DOS(ERRSRV,ERRaccess));
 
 		/* does this protocol need to be run as guest? */

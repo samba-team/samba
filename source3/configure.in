@@ -2277,7 +2277,21 @@ if test x"$samba_cv_BROKEN_NISPLUS_INCLUDE_FILES" = x"yes"; then
 	AC_DEFINE(BROKEN_NISPLUS_INCLUDE_FILES,1,[Whether the nisplus include files are broken])
 fi
 
+AC_CACHE_CHECK([if the realpath function allows a NULL argument],samba_cv_REALPATH_TAKES_NULL,[
+AC_TRY_RUN([
+#include <stdio.h>
+#include <limits.h>
+main() {
+	char *newpath = realpath("/tmp", NULL);
+	exit ((newpath != NULL) ? 0 : 1);
+}
+],
+samba_cv_REALPATH_TAKES_NULL=yes,samba_cv_REALPATH_TAKES_NULL=no,samba_cv_REALPATH_TAKES_NULL=cross)])
+if test x"$samba_cv_REALPATH_TAKES_NULL" = x"yes"; then
+    AC_DEFINE(REALPATH_TAKES_NULL,1,[Whether the realpath function allows NULL])
+fi
 
+A
 #################################################
 # check for smbwrapper support
 AC_MSG_CHECKING(whether to use smbwrapper)

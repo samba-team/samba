@@ -784,168 +784,123 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	return (path);
 }
 
-
-/* check if the file 'nmae' is a symlink, in that case check that it point to
-   a file that reside under the 'dir' tree */
-
-static BOOL readlink_check(connection_struct *conn, const char *dir, char *name)
-{
-	BOOL ret = True;
-	pstring flink;
-	pstring cleanlink;
-	pstring savedir;
-	pstring realdir;
-	size_t reallen;
-
-	if (!vfs_GetWd(conn, savedir)) {
-		DEBUG(0,("couldn't vfs_GetWd for %s %s\n", name, dir));
-		return False;
-	}
-
-	if (vfs_ChDir(conn, dir) != 0) {
-		DEBUG(0,("couldn't vfs_ChDir to %s\n", dir));
-		return False;
-	}
-
-	if (!vfs_GetWd(conn, realdir)) {
-		DEBUG(0,("couldn't vfs_GetWd for %s\n", dir));
-		vfs_ChDir(conn, savedir);
-		return(False);
-	}
-	
-	reallen = strlen(realdir);
-	if (realdir[reallen -1] == '/') {
-		reallen--;
-		realdir[reallen] = 0;
-	}
-
-	if (SMB_VFS_READLINK(conn, name, flink, sizeof(pstring) -1) != -1) {
-		DEBUG(3,("readlink_check: file path name %s is a symlink\nChecking it's path\n", name));
-		if (*flink == '/') {
-			pstrcpy(cleanlink, flink);
-		} else {
-			pstrcpy(cleanlink, realdir);
-			pstrcat(cleanlink, "/");
-			pstrcat(cleanlink, flink);
-		}
-		unix_clean_name(cleanlink);
-
-		if (strncmp(cleanlink, realdir, reallen) != 0) {
-			DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n", name, realdir, cleanlink, (int)reallen));
-			ret = False;
-		}
-	}
-
-	vfs_ChDir(conn, savedir);
-	
-	return ret;
-}
-
 /*******************************************************************
  Reduce a file name, removing .. elements and checking that
- it is below dir in the heirachy. This uses vfs_GetWd() and so must be run
- on the system that has the referenced file system.
+ it is below dir in the heirachy. This uses realpath.
 ********************************************************************/
 
-BOOL reduce_name(connection_struct *conn, pstring s, const char *dir)
+BOOL reduce_name(connection_struct *conn, pstring fname)
 {
-#ifndef REDUCE_PATHS
-	return True;
+#ifdef REALPATH_TAKES_NULL
+	BOOL free_resolved_name = True;
 #else
-	pstring dir2;
-	pstring wd;
-	pstring base_name;
-	pstring newname;
-	char *p=NULL;
-	BOOL relative = (*s != '/');
-
-	*dir2 = *wd = *base_name = *newname = 0;
-
-	DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
-
-	/* We know there are no double slashes as this comes from srvstr_get_path().
-	   and has gone through check_path_syntax(). JRA */
-
-	pstrcpy(base_name,s);
-	p = strrchr_m(base_name,'/');
-
-	if (!p)
-		return readlink_check(conn, dir, s);
-
-	if (!vfs_GetWd(conn,wd)) {
-		DEBUG(0,("couldn't vfs_GetWd for %s %s\n",s,dir));
-		return(False);
-	}
-
-	if (vfs_ChDir(conn,dir) != 0) {
-		DEBUG(0,("couldn't vfs_ChDir to %s\n",dir));
-		return(False);
-	}
-
-	if (!vfs_GetWd(conn,dir2)) {
-		DEBUG(0,("couldn't vfs_GetWd for %s\n",dir));
-		vfs_ChDir(conn,wd);
-		return(False);
-	}
-
-	if (p && (p != base_name)) {
-		*p = 0;
-		if (strcmp(p+1,".")==0)
-			p[1]=0;
-		if (strcmp(p+1,"..")==0)
-			*p = '/';
-	}
-
-	if (vfs_ChDir(conn,base_name) != 0) {
-		vfs_ChDir(conn,wd);
-		DEBUG(3,("couldn't vfs_ChDir for %s %s basename=%s\n",s,dir,base_name));
-		return(False);
-	}
-
-	if (!vfs_GetWd(conn,newname)) {
-		vfs_ChDir(conn,wd);
-		DEBUG(2,("couldn't get vfs_GetWd for %s %s\n",s,base_name));
-		return(False);
-	}
-
-	if (p && (p != base_name)) {
-		pstrcat(newname,"/");
-		pstrcat(newname,p+1);
-	}
-
-	{
-		size_t l = strlen(dir2);
-		char *last_slash = strrchr_m(dir2, '/');
-
-		if (last_slash && (last_slash[1] == '\0'))
-			l--;
-
-		if (strncmp(newname,dir2,l) != 0) {
-			vfs_ChDir(conn,wd);
-			DEBUG(2,("Bad access attempt: s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,(int)l));
-			return(False);
-		}
-
-		if (!readlink_check(conn, dir, newname)) {
-			DEBUG(2, ("Bad access attemt: %s is a symlink outside the share path", s));
-			return(False);
-		}
-
-		if (relative) {
-			if (newname[l] == '/')
-				pstrcpy(s,newname + l + 1);
-			else
-				pstrcpy(s,newname+l);
-		} else
-			pstrcpy(s,newname);
-	}
-
-	vfs_ChDir(conn,wd);
-
-	if (strlen(s) == 0)
-		pstrcpy(s,"./");
-
-	DEBUG(3,("reduced to %s\n",s));
-	return(True);
+#ifdef PATH_MAX
+        char resolved_name_buf[PATH_MAX+1];
+#else
+        pstring resolved_name_buf;
 #endif
+	BOOL free_resolved_name = False;
+#endif
+	char *resolved_name = NULL;
+	size_t con_path_len = strlen(conn->connectpath);
+	char *p = NULL;
+
+	DEBUG(3,("reduce_name [%s] [%s]\n", fname, conn->connectpath));
+
+#ifdef REALPATH_TAKES_NULL
+	resolved_name = SMB_VFS_REALPATH(conn,fname,NULL);
+#else
+	resolved_name = SMB_VFS_REALPATH(conn,fname,resolved_name_buf);
+#endif
+
+	if (!resolved_name) {
+		switch (errno) {
+			case ENOTDIR:
+				DEBUG(3,("reduce_name: Component not a directory in getting realpath for %s\n", fname));
+				return False;
+			case ENOENT:
+			{
+				pstring tmp_fname;
+				fstring last_component;
+				/* Last component didn't exist. Remove it and try and canonicalise the directory. */
+
+				pstrcpy(tmp_fname, fname);
+				p = strrchr_m(tmp_fname, '/');
+				if (p) {
+					*p++ = '\0';
+					fstrcpy(last_component, p);
+				}
+#ifdef REALPATH_TAKES_NULL
+				resolved_name = SMB_VFS_REALPATH(conn,tmp_fname,NULL);
+#else
+				resolved_name = SMB_VFS_REALPATH(conn,tmp_fname,resolved_name_buf);
+#endif
+				if (!resolved_name) {
+					DEBUG(3,("reduce_name: couldn't get realpath for %s\n", fname));
+					return False;
+				}
+				pstrcpy(tmp_fname, resolved_name);
+				pstrcat(tmp_fname, "/");
+				pstrcat(tmp_fname, last_component);
+#ifdef REALPATH_TAKES_NULL
+				SAFE_FREE(resolved_name);
+				resolved_name = strdup(tmp_fname);
+				if (!resolved_name) {
+					DEBUG(0,("reduce_name: malloc fail for %s\n", tmp_fname));
+					return False;
+				}
+#else
+#ifdef PATH_MAX
+				safe_strcpy(resolved_name_buf, tmp_fname, PATH_MAX);
+#else
+				pstrcpy(pstring resolved_name_buf, tmp_fname);
+#endif
+				resolved_name = resolved_name_buf;
+#endif
+				break;
+			}
+			default:
+				DEBUG(1,("reduce_name: couldn't get realpath for %s\n", fname));
+				return False;
+		}
+	}
+
+	DEBUG(10,("reduce_name realpath [%s] -> [%s]\n", fname, resolved_name));
+
+	if (*resolved_name != '/') {
+		DEBUG(0,("reduce_name: realpath doesn't return absolute paths !\n"));
+		if (free_resolved_name)
+			SAFE_FREE(resolved_name);
+		return False;
+	}
+
+	if (strncmp(conn->connectpath, resolved_name, con_path_len) != 0) {
+		DEBUG(2, ("reduce_name: Bad access attemt: %s is a symlink outside the share path", fname));
+		if (free_resolved_name)
+			SAFE_FREE(resolved_name);
+		return False;
+	}
+
+	/* Move path the connect path to the last part of the filename. */
+	p = resolved_name + con_path_len;
+	if (*p == '/') {
+		p++;
+	}
+
+	if (!*p) {
+		pstrcpy(resolved_name, ".");
+		p = resolved_name;
+	}
+
+	if (!lp_symlinks(SNUM(conn)) && (strcmp(fname, p)!=0)) {
+		DEBUG(3,("reduce_name: denied: file path name %s is a symlink\n",fname));
+		if (free_resolved_name)
+			SAFE_FREE(resolved_name);
+		return False;
+	}
+
+	DEBUG(3,("reduce_name: %s reduced to %s\n", fname, p));
+	if (free_resolved_name)
+		SAFE_FREE(resolved_name);
+	return(True);
 }
