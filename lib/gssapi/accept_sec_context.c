@@ -256,7 +256,7 @@ gss_accept_sec_context
   {
       krb5_authenticator authenticator;
       
-      kret = krb5_auth_getauthenticator(gssapi_krb5_context,
+      kret = krb5_auth_con_getauthenticator(gssapi_krb5_context,
 					(*context_handle)->auth_context,
 					&authenticator);
       if(kret) {
