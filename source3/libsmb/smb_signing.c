@@ -54,6 +54,8 @@ static void store_sequence_for_reply(struct outstanding_packet_lookup **list,
 	DLIST_ADD_END(*list, t, tmp);
 	t->mid = mid;
 	t->reply_seq_num = reply_seq_num;
+	DEBUG(10,("store_sequence_for_reply: stored seq = %u mid = %u\n",
+			(unsigned int)reply_seq_num, (unsigned int)mid ));
 }
 
 static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
@@ -64,6 +66,8 @@ static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
 	for (t = *list; t; t = t->next) {
 		if (t->mid == mid) {
 			*reply_seq_num = t->reply_seq_num;
+			DEBUG(10,("get_sequence_for_reply: found seq = %u mid = %u\n",
+				(unsigned int)t->reply_seq_num, (unsigned int)t->mid ));
 			DLIST_REMOVE(*list, t);
 			SAFE_FREE(t);
 			return True;
@@ -580,16 +584,12 @@ BOOL cli_check_sign_mac(struct cli_state *cli)
 	return True;
 }
 
-static BOOL outgoing_packet_is_oplock_break(char *outbuf)
+static BOOL packet_is_oplock_break(char *buf)
 {
-	if (smb_len(outbuf) < (smb_ss_field + 8 - 4)) {
-		return False;
-	}
-
-	if (CVAL(outbuf,smb_com) != SMBlockingX)
+	if (CVAL(buf,smb_com) != SMBlockingX)
 		return False;
 
-	if (CVAL(outbuf,smb_vwv3) != LOCKING_ANDX_OPLOCK_RELEASE)
+	if (CVAL(buf,smb_vwv3) != LOCKING_ANDX_OPLOCK_RELEASE)
 		return False;
 
 	return True;
@@ -604,7 +604,7 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	unsigned char calc_md5_mac[16];
 	struct smb_basic_signing_context *data = si->signing_context;
 	uint32 send_seq_number = data->send_seq_num;
-	BOOL was_deferred_packet;
+	BOOL was_deferred_packet = False;
 	uint16 mid;
 
 	if (!si->doing_signing) {
@@ -619,7 +619,7 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 				 * mid in the outstanding list. 
 				 */
 
-				if (outgoing_packet_is_oplock_break(outbuf)) {
+				if (packet_is_oplock_break(outbuf)) {
 					store_sequence_for_reply(&data->outstanding_packet_list, 
 								 mid, data->send_seq_num);
 				}
@@ -680,12 +680,11 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 {
 	BOOL good;
-	uint32 reply_seq_number;
+	struct smb_basic_signing_context *data = si->signing_context;
+	uint32 reply_seq_number = data->send_seq_num;
 	unsigned char calc_md5_mac[16];
 	unsigned char *server_sent_mac;
 	uint mid;
-
-	struct smb_basic_signing_context *data = si->signing_context;
 
 	if (!si->doing_signing)
 		return True;
@@ -697,14 +696,16 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 
 	mid = SVAL(inbuf, smb_mid);
 
-	/* Oplock break requests store an outgoing mid in the packet list. */
-	if (!get_sequence_for_reply(&data->outstanding_packet_list, mid, &reply_seq_number)) {
-		if (data->trans_info && (data->trans_info->mid == mid)) {
-			reply_seq_number = data->trans_info->reply_seq_num;
-		} else {
-			reply_seq_number = data->send_seq_num;
-			data->send_seq_num++;
-		}
+	/* Is this part of a trans stream ? */
+	if (data->trans_info && (data->trans_info->mid == mid)) {
+		/* If so we don't increment the sequence. */
+		reply_seq_number = data->trans_info->reply_seq_num;
+	} else {
+		/* We always increment the sequence number. */
+		data->send_seq_num++;
+		/* Oplock break requests store an outgoing mid in the packet list. */
+		if (packet_is_oplock_break(inbuf))
+			get_sequence_for_reply(&data->outstanding_packet_list, mid, &reply_seq_number);
 	}
 
 	simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
@@ -883,6 +884,13 @@ void srv_signing_trans_stop(void)
 	data = (struct smb_basic_signing_context *)srv_sign_info.signing_context;
 	if (!data || !data->trans_info)
 		return;
+
+	DEBUG(10,("srv_signing_trans_stop: removing mid = %u, reply_seq_num = %u, send_seq_num = %u \
+data->send_seq_num = %u\n",
+			(unsigned int)data->trans_info->mid,
+			(unsigned int)data->trans_info->reply_seq_num,
+			(unsigned int)data->trans_info->send_seq_num,
+			(unsigned int)data->send_seq_num ));
 
 	SAFE_FREE(data->trans_info);
 	data->trans_info = NULL;
