@@ -186,17 +186,17 @@ enum pdb_value_state pdb_get_init_flags (const SAM_ACCOUNT *sampass, enum pdb_el
         	return ret;
         	
         if (bitmap_query(sampass->private.set_flags, element)) {
-		DEBUG(10, ("element %d: SET\n", element)); 
+		DEBUG(11, ("element %d: SET\n", element)); 
         	ret = PDB_SET;
 	}
 		
         if (bitmap_query(sampass->private.change_flags, element)) {
-		DEBUG(10, ("element %d: CHANGED\n", element)); 
+		DEBUG(11, ("element %d: CHANGED\n", element)); 
         	ret = PDB_CHANGED;
 	}
 
 	if (ret == PDB_DEFAULT) {
-		DEBUG(10, ("element %d: DEFAULT\n", element)); 
+		DEBUG(11, ("element %d: DEFAULT\n", element)); 
 	}
 
         return ret;
@@ -476,10 +476,10 @@ BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum p
 				return False;
 			}
         		if (!bitmap_set(sampass->private.set_flags, element)) {
-				DEBUG(0,("Can't set flag: %d in set_falgs.\n",element));
+				DEBUG(0,("Can't set flag: %d in set_flags.\n",element));
 				return False;
 			}
-			DEBUG(10, ("element %d -> now CHANGED\n", element)); 
+			DEBUG(11, ("element %d -> now CHANGED\n", element)); 
         		break;
         	case PDB_SET:
         		if (!bitmap_clear(sampass->private.change_flags, element)) {
@@ -487,10 +487,10 @@ BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum p
 				return False;
 			}
         		if (!bitmap_set(sampass->private.set_flags, element)) {
-				DEBUG(0,("Can't set flag: %d in set_falgs.\n",element));
+				DEBUG(0,("Can't set flag: %d in set_flags.\n",element));
 				return False;
 			}
-			DEBUG(10, ("element %d -> now SET\n", element)); 
+			DEBUG(11, ("element %d -> now SET\n", element)); 
         		break;
         	case PDB_DEFAULT:
         	default:
@@ -499,7 +499,7 @@ BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum p
 				return False;
 			}
         		if (!bitmap_clear(sampass->private.set_flags, element)) {
-				DEBUG(0,("Can't set flag: %d in set_falgs.\n",element));
+				DEBUG(0,("Can't set flag: %d in set_flags.\n",element));
 				return False;
 			}
 			DEBUG(10, ("element %d -> now DEFAULT\n", element)); 
