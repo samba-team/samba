@@ -335,6 +335,8 @@ smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 		if (c == *s) return (smb_ucs2_t *)s;
 		s++;
 	}
+	if (c == *s) return (smb_ucs2_t *)s;
+
 	return NULL;
 }
 
