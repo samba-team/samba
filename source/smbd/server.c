@@ -789,6 +789,11 @@ static void usage(char *pname)
 	if (!migrate_from_old_password_file(global_myworkgroup))
 		DEBUG(0,("Failed to migrate from old MAC file.\n"));
 
+	if(!pdb_generate_sam_sid()) {
+		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
+		exit(1);
+	}
+
 	if (!open_sockets(is_daemon,interactive,port))
 		exit(1);
 
@@ -810,11 +815,6 @@ static void usage(char *pname)
 
 	/* possibly reload the services file. */
 	reload_services(True);
-
-	if(!pdb_generate_sam_sid()) {
-		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
-		exit(1);
-	}
 
 	if (*lp_rootdir()) {
 		if (sys_chroot(lp_rootdir()) == 0)
