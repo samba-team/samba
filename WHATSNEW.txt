@@ -48,6 +48,10 @@ o   Gerald Carter <jerry@samba.org>
 o   Steve French <sfrench@us.ibm.com>
 
 
+o   Krischan Jodies <kj@sernet.de>
+    * Implement 'net rpc group delete'
+
+
 o   Volker Lendecke <vl@samba.org>
     * Add support in winbindd for expanding nested local groups.
 
