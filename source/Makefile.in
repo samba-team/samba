@@ -141,9 +141,11 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/namequery.o libsmb/nmblib.o \
 
 RPC_SRVUTIL_OBJ = \
 		rpc_server/srv_pipe_hnd.o \
-		rpc_server/srv_pipe.o 
+		rpc_server/srv_pipe_srv.o 
 
-RPC_SERVER_OBJ = $(RPC_SRVUTIL_OBJ)
+RPC_SERVER_OBJ = \
+		rpc_server/srv_pipe_hnd.o \
+		rpc_server/srv_pipe.o 
 
 RPC_PARSE_OBJ1 = rpc_parse/parse_lsa.o \
                 rpc_parse/parse_net.o \
@@ -479,7 +481,8 @@ PROTO_OBJ = $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) $(SAMRD_OBJ1) \
 		$(LSARPCD_OBJ1) $(SMBD_OBJ) $(NMBD_OBJ) \
 		$(SWAT_OBJ) $(CLIENT_OBJ) \
 		$(SAMPASSDB_OBJ) $(GROUPDB_OBJ) $(PASSDB_OBJ)\
-	    $(RPCCLIENT_OBJ) $(SMBWRAPPER_OBJ) $(SMBPASSWD_OBJ)
+	    $(RPCCLIENT_OBJ) $(SMBWRAPPER_OBJ) $(SMBPASSWD_OBJ) \
+	    $(RPC_SRVUTIL_OBJ)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 PICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)

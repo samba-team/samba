@@ -213,134 +213,6 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 }
 
 
-/****************************************************************************
- writes data to a pipe.
-
- SERIOUSLY ALPHA CODE!
- ****************************************************************************/
-ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
-{
-	DEBUG(6,("write_pipe: %x", p->pnum));
-	DEBUG(6,("name: %s open: %s len: %d",
-		 p->name, BOOLSTR(p->open), n));
-
-	dump_data(50, data, n);
-
-	return rpc_to_smb(p, data, n) ? ((ssize_t)n) : -1;
-}
-
-
-/****************************************************************************
- reads data from a pipe.
-
- headers are interspersed with the data at regular intervals.  by the time
- this function is called, the start of the data could possibly have been
- read by an SMBtrans (file_offset != 0).
-
- calling create_rpc_reply() here is a fudge.  the data should already
- have been prepared into arrays of headers + data stream sections.
-
- ****************************************************************************/
-int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
-{
-	int num = 0;
-	int pdu_len = 0;
-	uint32 hdr_num = 0;
-	int pdu_data_sent; /* amount of current pdu already sent */
-	int data_pos; /* entire rpc data sent - no headers, no auth verifiers */
-	int this_pdu_data_pos;
-	RPC_HDR hdr;
-
-	DEBUG(6,("read_pipe: %x name: %s open: %s pos: %d len: %d",
-		 p->pnum, p->name, BOOLSTR(p->open),
-		 pos, n));
-
-	if (!p || !p->open)
-	{
-		DEBUG(6,("pipe not open\n"));
-		return -1;		
-	}
-
-
-	if (p->rsmb_pdu.data == NULL ||  p->rsmb_pdu.data_size == 0)
-	{
-		return 0;
-	}
-
-	p->rsmb_pdu.offset = 0;
-	p->rsmb_pdu.io = True;
-
-	if (!smb_io_rpc_hdr("hdr", &hdr, &p->rsmb_pdu, 0) ||
-             p->rsmb_pdu.offset != 0x10)
-	{
-		DEBUG(6,("read_pipe: rpc header invalid\n"));
-		return -1;
-	}
-
-	DEBUG(6,("read_pipe: p: %p file_offset: %d file_pos: %d\n",
-		 p, p->file_offset, n));
-
-	/* the read request starts from where the SMBtrans2 left off. */
-	data_pos = p->file_offset - p->hdr_offsets;
-	pdu_data_sent = p->file_offset - p->prev_pdu_file_offset;
-	this_pdu_data_pos = (pdu_data_sent == 0) ? 0 : (pdu_data_sent - 0x18);
-
-	if (!IS_BITS_SET_ALL(hdr.flags, RPC_FLG_LAST))
-	{
-		/* intermediate fragment - possibility of another header */
-		
-		DEBUG(5,("read_pipe: frag_len: %d data_pos: %d pdu_data_sent: %d\n",
-			 hdr.frag_len, data_pos, pdu_data_sent));
-		
-		if (pdu_data_sent == 0)
-		{
-			DEBUG(6,("read_pipe: next fragment header\n"));
-
-			/* this is subtracted from the total data bytes, later */
-			hdr_num = 0x18;
-			p->hdr_offsets += 0x18;
-			data_pos -= 0x18;
-
-			rpc_send_and_rcv_pdu(p);
-		}			
-	}
-	
-	pdu_len = prs_buf_len(&p->rsmb_pdu);
-	num = pdu_len - this_pdu_data_pos;
-	
-	DEBUG(6,("read_pipe: pdu_len: %d num: %d n: %d\n", pdu_len, num, n));
-	
-	if (num > n) num = n;
-	if (num <= 0)
-	{
-		DEBUG(5,("read_pipe: 0 or -ve data length\n"));
-		return 0;
-	}
-
-	if (num < hdr_num)
-	{
-		DEBUG(5,("read_pipe: warning - data read only part of a header\n"));
-	}
-
-	prs_buf_copy(data, &p->rsmb_pdu, pdu_data_sent, num);
-	
-	p->file_offset  += num;
-	pdu_data_sent  += num;
-	
-	if (hdr_num == 0x18 && num == 0x18)
-	{
-		DEBUG(6,("read_pipe: just header read\n"));
-	}
-
-	if (pdu_data_sent == hdr.frag_len)
-	{
-		DEBUG(6,("read_pipe: next fragment expected\n"));
-		p->prev_pdu_file_offset = p->file_offset;
-	}
-
-	return num;
-}
-
 
 /****************************************************************************
   wait device state on a pipe.  exactly what this is for is unknown...
@@ -386,6 +258,20 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state)
 	return False;
 }
 
+/*******************************************************************
+ frees all temporary data used in construction of pdu
+ ********************************************************************/
+void rpcsrv_free_temp(rpcsrv_struct *l)
+{
+	prs_free_data(&l->data_i);		
+
+	prs_free_data(&l->rhdr );
+	prs_free_data(&l->rfault );
+	prs_free_data(&l->rdata_i);		
+	prs_free_data(&l->rauth  );
+	prs_free_data(&l->rverf  );
+	prs_free_data(&l->rntlm  );		
+}
 
 /****************************************************************************
   close an rpc pipe

@@ -2851,6 +2851,7 @@ void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next);
 void prs_align(prs_struct *ps);
 BOOL prs_grow(prs_struct *ps, uint32 new_size);
 BOOL prs_append_data(prs_struct *ps, const char *data, int len);
+BOOL prs_add_data(prs_struct *ps, const char *data, int len);
 BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
 BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
 BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16]);
@@ -2959,6 +2960,7 @@ BOOL reg_io_r_shutdown(char *desc,  REG_R_SHUTDOWN *r_q, prs_struct *ps, int dep
 BOOL make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len);
 BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
+BOOL is_complete_pdu(prs_struct *ps);
 BOOL smb_io_rpc_hdr_fault(char *desc,  RPC_HDR_FAULT *rpc, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_rb(RPC_HDR_RB *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
@@ -3765,17 +3767,10 @@ BOOL api_netlog_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
-void rpcsrv_free_temp(rpcsrv_struct *l);
-BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start);
-void close_msrpc_command_processor(void);
-void add_msrpc_command_processor(char* pipe_name,
-				char* process_name,
-				BOOL (*fn) (rpcsrv_struct *));
-BOOL rpc_add_to_pdu(prs_struct *ps, const char *data, int len);
-BOOL rpc_send_and_rcv_pdu(pipes_struct *p);
-BOOL rpc_to_smb(pipes_struct *p, char *data, int len);
-BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
-				struct api_struct *api_rpc_cmds);
+BOOL rpc_redir_remote(struct msrpc_state *m, prs_struct *req, prs_struct *resp);
+BOOL rpc_to_smb_remote(pipes_struct *p, char *data, int len);
+ssize_t write_pipe(pipes_struct *p, char *data, size_t n);
+int read_pipe(pipes_struct *p, char *data, uint32 pos, int n);
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
@@ -3784,13 +3779,25 @@ void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
 pipes_struct *open_rpc_pipe_p(char *pipe_name, 
 			      connection_struct *conn, uint16 vuid);
-ssize_t write_pipe(pipes_struct *p, char *data, size_t n);
-int read_pipe(pipes_struct *p, char *data, uint32 pos, int n);
 BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority);
 BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
+void rpcsrv_free_temp(rpcsrv_struct *l);
 BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);
 pipes_struct *get_rpc_pipe(int pnum);
+
+/*The following definitions come from  rpc_server/srv_pipe_srv.c  */
+
+BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start);
+void close_msrpc_command_processor(void);
+void add_msrpc_command_processor(char* pipe_name,
+				char* process_name,
+				BOOL (*fn) (rpcsrv_struct *));
+BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
+				const char* name);
+BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
+				struct api_struct *api_rpc_cmds);
+BOOL rpc_to_smb_local(pipes_struct *p, char *data, int len);
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
 

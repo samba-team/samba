@@ -435,6 +435,56 @@ BOOL prs_append_data(prs_struct *ps, const char *data, int len)
 	return True;
 }
 
+BOOL prs_add_data(prs_struct *ps, const char *data, int len)
+{
+	int prev_size;
+	int new_size;
+	char *to = NULL;
+
+	ps->offset = 0;
+
+	if (ps->data == NULL)
+	{
+		DEBUG(10,("prs_add_data: new_size: %d\n", len));
+		prs_init(ps, len, 4, True);
+		prev_size = 0;
+		new_size  = len;
+		if (ps->data == NULL)
+		{
+			return False;
+		}
+	}
+	else
+	{
+		prev_size = ps->data_size;
+		new_size  = prev_size + len;
+		DEBUG(10,("prs_add_data: prev_size: %d new_size: %d\n",
+				prev_size, new_size));
+		if (!prs_realloc_data(ps, new_size))
+		{
+			return False;
+		}
+	}
+
+	DEBUG(10,("ps->start: %d\n", ps->start));
+	ps->start = 0x0;
+
+	to = prs_data(ps, prev_size);
+	if (to == NULL)
+	{
+		DEBUG(10,("prs_add_data: data could not be found\n"));
+		return False;
+	}
+	if (ps->data_size != new_size)
+	{
+		DEBUG(10,("prs_add_data: ERROR: data used %d new_size %d\n",
+				ps->data_size, new_size));
+		return False;
+	}
+	memcpy(to, data, len);
+	return True;
+}
+
 /*******************************************************************
  stream a uint8
  ********************************************************************/

@@ -232,6 +232,33 @@ BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+checks a PDU structure.
+********************************************************************/
+BOOL is_complete_pdu(prs_struct *ps)
+{
+	RPC_HDR hdr;
+	int len = ps->data_size;
+
+	DEBUG(10,("is_complete_pdu - len %d\n", len));
+	ps->offset = 0x0;
+
+	if (!ps->io)
+	{
+		/* writing.  oops!! */
+		DEBUG(4,("is_complete_pdu: write set, not read!\n"));
+		return False;
+	}
+		
+	if (!smb_io_rpc_hdr("hdr", &hdr, ps, 0))
+	{
+		return False;
+	}
+
+	/* check that the fragment length is equal to the data length so far */
+	return hdr.frag_len == len;
+}
+
+/*******************************************************************
 reads or writes an RPC_HDR_FAULT structure.
 ********************************************************************/
 BOOL smb_io_rpc_hdr_fault(char *desc,  RPC_HDR_FAULT *rpc, prs_struct *ps, int depth)

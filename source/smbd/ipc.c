@@ -297,7 +297,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		{
 			case 0x26:
 			{
-				reply = rpc_to_smb(p, data, tdscnt);
+				reply = rpc_to_smb_remote(p, data, tdscnt);
 				if (reply)
 				{
 					api_rpc_trans_reply(outbuf, p);
@@ -329,10 +329,6 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	}
 	return -1;
 }
-
-
-
-
 
 /****************************************************************************
   handle named pipe commands
