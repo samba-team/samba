@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "PDBEDIT" "8" "28 January 2002" "" ""
+.TH "PDBEDIT" "8" "24 April 2002" "" ""
 .SH NAME
 pdbedit \- manage the SAM database
 .SH SYNOPSIS
 .sp
-\fBpdbedit\fR [ \fB-l\fR ]  [ \fB-v\fR ]  [ \fB-w\fR ]  [ \fB-u username\fR ]  [ \fB-f fullname\fR ]  [ \fB-h homedir\fR ]  [ \fB-d drive\fR ]  [ \fB-s script\fR ]  [ \fB-p profile\fR ]  [ \fB-a\fR ]  [ \fB-m\fR ]  [ \fB-x\fR ]  [ \fB-i file\fR ] 
+\fBpdbedit\fR [ \fB-l\fR ]  [ \fB-v\fR ]  [ \fB-w\fR ]  [ \fB-u username\fR ]  [ \fB-f fullname\fR ]  [ \fB-h homedir\fR ]  [ \fB-d drive\fR ]  [ \fB-s script\fR ]  [ \fB-p profile\fR ]  [ \fB-a\fR ]  [ \fB-m\fR ]  [ \fB-x\fR ]  [ \fB-i passdb-backend\fR ]  [ \fB-e passdb-backend\fR ]  [ \fB-D debuglevel\fR ] 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Sambasuite.
@@ -160,15 +160,19 @@ from the database. It need the username be specified with the
 
 Example: \fBpdbedit -x -u bob\fR
 .TP
-\fB-i file\fR
-This command is used to import a smbpasswd
-file into the database.
+\fB-i passdb-backend\fR
+Use a different passdb backend to retrieve users than the one specified in smb.conf.
 
-This option will ease migration from the plain smbpasswd
-file database to more powerful backend databases like tdb and
-ldap.
+This option will ease migration from one passdb backend to another.
 
-Example: \fBpdbedit -i /etc/smbpasswd.old\fR
+Example: \fBpdbedit -i smbpasswd:/etc/smbpasswd.old -e tdbsam:/etc/samba/passwd.tdb\fR
+.TP
+\fB-e passdb-backend\fR
+Export all currently available users to the specified password database backend.
+
+This option will ease migration from one passdb backend to another and will ease backupping
+
+Example: \fBpdbedit -e smbpasswd:/root/samba-users.backup\fR
 .SH "NOTES"
 .PP
 This command may be used only by root.
