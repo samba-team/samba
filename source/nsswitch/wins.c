@@ -137,13 +137,14 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 	char **host_addresses;
 	struct in_addr *ip_list;
 	int i, count;
+	size_t namelen = strlen(name) + 1;
 
 	ip_list = lookup_backend(name, &count);
 	if (!ip_list) {
 		return NSS_STATUS_NOTFOUND;
 	}
 
-	if (buflen < (2*count+1)*INADDRSZ) {
+	if (buflen < namelen + (2*count+1)*INADDRSZ) {
 		/* no ENOMEM error type?! */
 		return NSS_STATUS_NOTFOUND;
 	}
@@ -165,11 +166,11 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 		host_addresses++;
 	}
 
-	if (ip_list) free(ip_list);
+	if (ip_list)
+		free(ip_list);
 
-	if (he->h_name == NULL) {
-		he->h_name = name;
-	}
+	memcpy(buffer, name, namelen);
+	he->h_name = buffer;
 
 	return NSS_STATUS_SUCCESS;
 }
