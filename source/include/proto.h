@@ -466,7 +466,6 @@ char *StrnCpy(char *dest,const char *src,size_t n);
 char *strncpyn(char *dest, const char *src,size_t n, char c);
 size_t strhex_to_str(char *p, size_t len, const char *strhex);
 BOOL in_list(char *s,char *list,BOOL casesensitive);
-BOOL string_init(char **dest,const char *src);
 void string_free(char **s);
 BOOL string_set(char **dest,const char *src);
 void string_sub(char *s,const char *pattern,const char *insert, size_t len);
@@ -753,7 +752,7 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 
 /*The following definitions come from  locking/brlock.c  */
 
-void brl_init(void);
+void brl_init(int read_only);
 BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      uint16 smbpid, pid_t pid, uint16 tid,
 	      br_off start, br_off size, 
@@ -766,6 +765,9 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino,
 		  br_off start, br_off size, 
 		  enum brl_type lock_type);
 void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum);
+int brl_forall(void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
+			  enum brl_type lock_type,
+			  br_off start, br_off size));
 
 /*The following definitions come from  locking/locking.c  */
 
