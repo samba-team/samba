@@ -554,7 +554,7 @@ bin/smbclient: $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS)
 
-bin/net: $(NET_OBJ) bin/.dummy
+bin/net: $(NET_OBJ) bin/.dummy @BUILD_POPT@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
