@@ -1,6 +1,8 @@
-Contributor:	lkcl - Copyright Luke Kenneth Casson Leighton 1997
-Date:		    March 1997
-Status:		    Current
+Contributor:    lkcl - samba-bugs@arvidsjaur.anu.edu.au
+                Copyright 1997  Luke Kenneth Casson Leighton 
+Date:           March 1997
+Status:         Current
+Updated:        12jun97
 
 Subject:	Definition of NetBIOS Protocol and Name Resolution Modes
 =============================================================================
