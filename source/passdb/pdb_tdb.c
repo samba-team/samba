@@ -37,7 +37,7 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 #endif
 
-#define TDBSAM_VERSION	1			/* Most recent TDBSAM version */
+#define TDBSAM_VERSION	1	/* Most recent TDBSAM version */
 #define TDBSAM_VERSION_STRING	"INFO/version"
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define USERPREFIX		"USER_"
@@ -183,8 +183,11 @@ static TDB_CONTEXT * tdbsam_tdbopen (const char *name, int open_flags)
 	tdbsamver_t	version;
 	
 	/* Try to open tdb passwd */
-	if (!(pdb_tdb = tdb_open_log(name, 0, TDB_DEFAULT, open_flags, 0600)))
+	if (!(pdb_tdb = tdb_open_log(name, 0, TDB_DEFAULT, 
+				     open_flags, 0600))) {
+		DEBUG(0, ("Unable to open/create TDB passwd\n"));
 		return NULL;
+	}
 
 	/* Check the version */
 	version = (tdbsamver_t) tdb_fetch_int32(pdb_tdb, 
@@ -230,7 +233,7 @@ static TDB_CONTEXT * tdbsam_tdbopen (const char *name, int open_flags)
 }
 
 /*****************************************************************************
- Utility functions to open the tdb sam database
+ Utility functions to close the tdb sam database
  ****************************************************************************/
 
 static void tdbsam_tdbclose ( struct tdbsam_privates *state )
