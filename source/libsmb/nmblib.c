@@ -1129,12 +1129,14 @@ char *dns_to_netbios_name(char *dns_name)
 
 
 /****************************************************************************
-interpret the weird netbios "name". Return the name type
+interpret the weird netbios "name" into a unix fstring. Return the name type
 ****************************************************************************/
-static int name_interpret(char *in,char *out)
+static int name_interpret(char *in, fstring name)
 {
   int ret;
   int len = (*in++) / 2;
+  fstring out_string;
+  char *out = out_string;
 
   *out=0;
 
@@ -1165,6 +1167,8 @@ static int name_interpret(char *in,char *out)
       in += len;
     }
 #endif
+  pull_ascii(name, out, sizeof(fstring), sizeof(out), STR_TERMINATE);
+
   return(ret);
 }
 
@@ -1245,9 +1249,9 @@ static char *name_ptr(char *buf,int ofs)
 }  
 
 /****************************************************************************
-extract a netbios name from a buf
+extract a netbios name from a buf (into a unix string)
 ****************************************************************************/
-int name_extract(char *buf,int ofs,char *name)
+int name_extract(char *buf,int ofs, fstring name)
 {
   char *p = name_ptr(buf,ofs);
   int d = PTR_DIFF(p,buf+ofs);

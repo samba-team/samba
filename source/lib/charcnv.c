@@ -319,8 +319,7 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 	size_t size;
 	smb_ucs2_t *buffer;
 	
-	size = convert_string_allocate(CH_UNIX, CH_UCS2, src, srclen,
-				       (void **) &buffer);
+	size = push_ucs2_allocate(&buffer, src);
 	if (size == -1) {
 		smb_panic("failed to create UCS2 buffer");
 	}
@@ -332,6 +331,35 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 	size = convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
 	free(buffer);
 	return size;
+}
+
+/**
+ strdup() a unix string to upper case.
+**/
+
+char *strdup_upper(const char *s)
+{
+	size_t size;
+	smb_ucs2_t *buffer;
+	char *out_buffer;
+	
+	size = convert_string_allocate(CH_UNIX, CH_UCS2, s, strlen(s)+1,
+				       (void **) &buffer);
+	if (size == -1) {
+		return NULL;
+	}
+
+	strupper_w(buffer);
+	
+	size = convert_string_allocate(CH_UCS2, CH_UNIX, buffer, size, 
+				       (void **) &out_buffer);
+	SAFE_FREE(buffer);
+
+	if (size == -1) {
+		return NULL;
+	}
+	
+	return out_buffer;
 }
 
 size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
@@ -353,6 +381,34 @@ size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 	return size;
 }
 
+/**
+ strdup() a unix string to lower case.
+**/
+
+char *strdup_lower(const char *s)
+{
+	size_t size;
+	smb_ucs2_t *buffer;
+	char *out_buffer;
+	
+	size = convert_string_allocate(CH_UNIX, CH_UCS2, s, strlen(s),
+				       (void **) &buffer);
+	if (size == -1) {
+		return NULL;
+	}
+
+	strlower_w(buffer);
+	
+	size = convert_string_allocate(CH_UCS2, CH_UNIX, buffer, size, 
+				       (void **) &out_buffer);
+	SAFE_FREE(buffer);
+
+	if (size == -1) {
+		return NULL;
+	}
+	
+	return out_buffer;
+}
 
 static size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 {
@@ -480,17 +536,10 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 {
 	size_t len=0;
 	size_t src_len = strlen(src);
-	pstring tmpbuf;
 
 	/* treat a pstring as "unlimited" length */
 	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
-
-	if (flags & STR_UPPER) {
-		pstrcpy(tmpbuf, src);
-		strupper_m(tmpbuf);
-		src = tmpbuf;
-	}
 
 	if (flags & STR_TERMINATE)
 		src_len++;
@@ -506,6 +555,18 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 	dest_len &= ~1;
 
 	len += convert_string(CH_UNIX, CH_UCS2, src, src_len, dest, dest_len);
+
+	if (flags & STR_UPPER) {
+		smb_ucs2_t *dest_ucs2 = dest;
+		size_t i;
+		for (i = 0; i < (dest_len / 2) && dest_ucs2[i]; i++) {
+			smb_ucs2_t v = toupper_w(dest_ucs2[i]);
+			if (v != dest_ucs2[i]) {
+				dest_ucs2[i] = v;
+			}
+		}
+	}
+
 	return len;
 }
 
@@ -809,44 +870,3 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
 	return 0;
 }
 
-/**
- Convert from unix to ucs2 charset and return the
- allocated and converted string or NULL if an error occurred.
- You must provide a zero terminated string.
- The returning string will be zero terminated.
-**/
-
-smb_ucs2_t *acnv_uxu2(const char *src)
-{
-	size_t slen;
-	size_t dlen;
-	void *dest;
-	
-	slen = strlen(src) + 1;
-	dlen = convert_string_allocate(CH_UNIX, CH_UCS2, src, slen, &dest);
-	if (dlen == (size_t)-1)
-		return NULL;
-	else
-		return dest;
-}
-
-/**
- Convert from dos to ucs2 charset and return the
- allocated and converted string or NULL if an error occurred.
- You must provide a zero terminated string.
- The returning string will be zero terminated.
-**/
-
-smb_ucs2_t *acnv_dosu2(const char *src)
-{
-	size_t slen;
-	size_t dlen;
-	void *dest;
-	
-	slen = strlen(src) + 1;
-	dlen = convert_string_allocate(CH_DOS, CH_UCS2, src, slen, &dest);
-	if (dlen == (size_t)-1)
-		return NULL;
-	else
-		return dest;
-}
