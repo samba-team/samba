@@ -114,7 +114,8 @@ decrypt_tkt (krb5_context context,
 					&dec_rep->enc_part, 
 					&size);
     krb5_data_free (&data);
-    if (ret) return ret;
+    if (ret)
+	return ret;
     return 0;
 }
 
@@ -601,7 +602,7 @@ krb5_get_in_cred(krb5_context context,
 	return ret;
 
     memset (&rep, 0, sizeof(rep));
-    if((ret = decode_AS_REP(resp.data, resp.length, &rep.kdc_rep, &size))){
+    if((ret = decode_AS_REP(resp.data, resp.length, &rep.kdc_rep, &size))) {
 	/* let's try to parse it as a KRB-ERROR */
 	KRB_ERROR error;
 	int ret2;
@@ -645,12 +646,12 @@ krb5_get_in_cred(krb5_context context,
 	ret = krb5_get_pw_salt (context, creds->client, &salt);
 	
 	if (ret)
-	    return ret;
+	    goto out;
 	ret = (*key_proc)(context, etype, salt, keyseed, &key);
 	krb5_free_salt(context, salt);
     }
     if (ret)
-	return ret;
+	goto out;
 	
     ret = _krb5_extract_ticket(context, 
 			       &rep, 
@@ -667,6 +668,7 @@ krb5_get_in_cred(krb5_context context,
     krb5_free_keyblock_contents (context, key);
     free (key);
 
+out:
     if (ret == 0 && ret_as_reply)
 	*ret_as_reply = rep;
     else
