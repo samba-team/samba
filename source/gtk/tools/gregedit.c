@@ -605,6 +605,9 @@ static GtkWidget* create_savefilewin (void)
 		POPT_TABLEEND
 	};
 
+	lp_load(dyn_CONFIGFILE,True,False,False);
+	load_interfaces();
+
 	gtk_init (&argc, &argv);
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);

@@ -402,8 +402,13 @@ create_mainwindow (void)
 
 int main(int argc, char **argv)
 {
+	lp_load(dyn_CONFIGFILE,True,False,False);
+	load_interfaces();
+
 	gtk_init(&argc, &argv);
 	mainwin = create_mainwindow();
 	gtk_widget_show(mainwin);
 	gtk_main();
+
+	return 0;
 }
