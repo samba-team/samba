@@ -45,3 +45,9 @@ typedef struct {
 #define ASN1_ENUMERATED 0xa
 
 #define ASN1_MAX_OIDS 20
+
+/* some well known object IDs */
+#define OID_SPNEGO "1 3 6 1 5 5 2"
+#define OID_NTLMSSP "1 3 6 1 4 1 311 2 2 10"
+#define OID_KERBEROS5_OLD "1 2 840 48018 1 2 2"
+#define OID_KERBEROS5 "1 2 840 113554 1 2 2"

@@ -21,9 +21,6 @@
 
 #include "includes.h"
 
-#define OID_SPNEGO "1 3 6 1 5 5 2"
-#define OID_KERBEROS5 "1 2 840 113554 1 2 2"
-
 /*
   generate a negTokenInit packet given a GUID, a list of supported
   OIDs (the mechanisms) and a principle name string 
@@ -207,8 +204,7 @@ DATA_BLOB spnego_gen_negTokenTarg(struct cli_state *cli, char *principle)
 	fstring service;
 	char *realm;
 	DATA_BLOB tkt, tkt_wrapped, targ;
-	const char *krb_mechs[] = 
-	{"1 2 840 48018 1 2 2", "1 3 6 1 4 1 311 2 2 10", NULL};
+	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_NTLMSSP, NULL};
 
 	fstrcpy(service, principle);
 	p = strchr_m(service, '@');
@@ -254,7 +250,7 @@ BOOL spnego_parse_challenge(DATA_BLOB blob,
 	asn1_end_tag(&data);
 
 	asn1_start_tag(&data,ASN1_CONTEXT(1));
-	asn1_check_OID(&data, "1 3 6 1 4 1 311 2 2 10");
+	asn1_check_OID(&data, OID_NTLMSSP);
 	asn1_end_tag(&data);
 
 	asn1_start_tag(&data,ASN1_CONTEXT(2));
