@@ -56,7 +56,7 @@ pid_t pidfile_pid(char *name)
 		goto ok;
 	}
 
-	if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_WRLCK)==False) {
+	if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_WRLCK)) {
 		/* we could get the lock - it can't be a Samba process */
 		goto ok;
 	}
