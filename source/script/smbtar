@@ -30,7 +30,9 @@ username=$LOGNAME           # Default: same user name as in *nix
 verbose="2>/dev/null"        # Default: no echo to stdout
 log="-d 2"
 newer=""
+newerarg=""
 blocksize=""
+blocksizearg=""
 clientargs="-c 'tarmode full'"
 tarcmd="c"
 tarargs=""
@@ -62,7 +64,7 @@ Options:         (Description)                 (Default)
   exit $ex
 }
 
-echo Params count: $#
+# echo Params count: $#
 
 # DEC OSF AKA Digital UNIX does not seem to return a value in OPTIND if 
 # there are no command line params, so protect us against that ...
@@ -97,7 +99,7 @@ while getopts riavl:b:d:N:s:p:x:u:Xt: c; do
    N) # compare with a file, test if [n]ewer
       if [ -f $OPTARG ]; then
 	newer=$OPTARG
-        tarargs=${tarargs}N
+	newerarg="N"
       else
 	echo >&2 $0: Warning, $OPTARG not found
       fi
@@ -115,7 +117,7 @@ while getopts riavl:b:d:N:s:p:x:u:Xt: c; do
 	*)      echo >&2 "$0: Error, block size not numeric: -b $OPTARG"
 		exit 1
       esac
-      tarargs=${tarargs}b
+      blocksizearg="b"
       ;;
    p) # specify [p]assword to use
       password="$OPTARG"
@@ -155,7 +157,8 @@ if [ -z "$verbose" ]; then
       echo "blocksize is $blocksize"
 fi
 
+tarargs=${tarargs}${blocksizearg}${newerarg}
+
 eval $SMBCLIENT "'\\\\$server\\$service'" "'$password'" -U "'$username'" \
 -E -N $log -D "'$cdcmd'" ${clientargs} \
 -T${tarcmd}${tarargs} $blocksize $newer $tapefile '${1+"$@"}' $verbose
-
