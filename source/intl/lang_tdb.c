@@ -23,6 +23,10 @@
 
 static TDB_CONTEXT *tdb;
 
+/* the currently selected language */
+static char *current_lang;
+
+
 /* load a po file into the tdb */
 static BOOL load_po(const char *po_file)
 {
@@ -84,23 +88,44 @@ static char *get_lang(void)
 	return NULL;
 }
 
-/* initialise the message translation subsystem */
-void lang_tdb_init(void)
+/* initialise the message translation subsystem. If the "lang" argument
+   is NULL then get the language from the normal environment variables */
+BOOL lang_tdb_init(const char *lang)
 {
-	char *lang;
 	char *path = NULL;
+	char *po_path = NULL;
 	struct stat st;
 	static int initialised;
 	time_t loadtime;
 
-	/* we only want to init once per process */
-	if (initialised) return;
+	/* we only want to init once per process, unless given
+	   an override */
+	if (initialised && !lang) return True;
+
+	if (initialised) {
+		/* we are re-initialising, free up any old init */
+		tdb_close(tdb);
+		tdb = NULL;
+		SAFE_FREE(current_lang);
+	}
+
 	initialised = 1;
 
-	lang = get_lang();
+	if (!lang) {
+		/* no lang given, use environment */
+		lang = get_lang();
+	}
 
 	/* if no lang then we don't translate */
-	if (!lang) return;
+	if (!lang) return True;
+
+	asprintf(&po_path, "%s.po", lib_path(lang));
+	if (stat(po_path, &st) != 0) {
+		/* the po file isn't available */
+		free(po_path);
+		return False;
+	}
+	
 
 	asprintf(&path, "%s%s.tdb", lock_path("lang_"), lang);
 
@@ -108,20 +133,25 @@ void lang_tdb_init(void)
 	if (!tdb) {
 		tdb = tdb_open_log(path, 0, TDB_DEFAULT, O_RDONLY, 0);
 		free(path);
-		return;
+		free(po_path);
+		if (!tdb) return False;
+		current_lang = strdup(lang);
+		return True;
 	}
 
 	free(path);
-
-	asprintf(&path, "%s.po", lock_path(lang));
 
 	loadtime = tdb_fetch_int(tdb, "/LOADTIME/");
 
-	if (stat(path, &st) == 0 && (loadtime == -1 || loadtime < st.st_mtime)) {
-		load_po(path);
+	if (loadtime == -1 || loadtime < st.st_mtime) {
+		load_po(po_path);
 		tdb_store_int(tdb, "/LOADTIME/", (int)time(NULL));
 	}
-	free(path);
+	free(po_path);
+
+	current_lang = strdup(lang);
+
+	return True;
 }
 
 /* translate a msgid to a message string in the current language 
@@ -131,7 +161,7 @@ const char *lang_msg(const char *msgid)
 {
 	TDB_DATA key, data;
 
-	lang_tdb_init();
+	lang_tdb_init(NULL);
 
 	if (!tdb) return msgid;
 
@@ -178,4 +208,13 @@ const char *lang_msg_rotate(const char *msgid)
 	next = (next+1) % NUM_LANG_BUFS;
 	
 	return msgstr;
+}
+
+
+/* 
+   return the current language - needed for language file mappings 
+*/
+char *lang_tdb_current(void)
+{
+	return current_lang;
 }

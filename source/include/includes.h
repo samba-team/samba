@@ -627,6 +627,7 @@ extern int errno;
 
 /* Lists, trees, caching, database... */
 #include "xfile.h"
+#include "intl.h"
 #include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
 #include "dlinklist.h"
