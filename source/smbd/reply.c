@@ -1295,7 +1295,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   char *p;
   BOOL ok = False;
   int status_len;
-  char *path;
+  pstring path;
   char status[21];
   int dptr_num= -1;
   BOOL check_descend = False;
@@ -1313,9 +1313,11 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   outsize = set_message(outbuf,1,3,True);
   maxentries = SVAL(inbuf,smb_vwv0); 
   dirtype = SVAL(inbuf,smb_vwv1);
-  path = smb_buf(inbuf) + 1;
-  status_len = SVAL(smb_buf(inbuf),3 + strlen(path));
-
+  p = smb_buf(inbuf) + 1;
+  p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE);
+  p++;
+  status_len = SVAL(p, 0);
+  p += 2;
   
   /* dirtype &= ~aDIR; */
   
@@ -1324,8 +1326,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     SMB_STRUCT_STAT sbuf;
     pstring dir2;
 
-    pstrcpy(directory,smb_buf(inbuf)+1);
-    pstrcpy(dir2,smb_buf(inbuf)+1);
+    pstrcpy(directory,path);
+    pstrcpy(dir2,path);
     unix_convert(directory,conn,0,&bad_path,&sbuf);
     unix_format(dir2);
 
@@ -1357,7 +1359,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   }
   else
   {
-    memcpy(status,smb_buf(inbuf) + 1 + strlen(path) + 4,21);
+    memcpy(status,p,21);
     dirtype = CVAL(status,0) & 0x1F;
     conn->dirptr = dptr_fetch(status+12,&dptr_num);      
     if (!conn->dirptr)
