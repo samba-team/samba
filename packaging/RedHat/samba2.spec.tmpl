@@ -43,6 +43,9 @@ for Shadow passwords and quotas. Do NOT recompile with the
 SHADOW_PWD option enabled
 
 %changelog
+* Mon Aug 1 2001 Tim Potter <tpot@samba.org>
+ - Install winbind daemon, client programs, nss and pam libraries
+
 * Sat Mar 31 2001 Andrew Bartlett <abartlet@pcug.org.au>
  - Changed prefix/share/man for _mandir/share/man
   - Changed this for a sed macro MANDIR_MACRO
@@ -183,12 +186,12 @@ mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
 mkdir -p $RPM_BUILD_ROOT/var/cache/samba
 mkdir -p $RPM_BUILD_ROOT/var/log/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
-mkdir -p $RPM_BUILD_ROOT/lib
+mkdir -p $RPM_BUILD_ROOT/lib/security
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
       make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool \
-      smbcacls smbcontrol
+      smbcacls smbcontrol wbinfo
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -198,7 +201,7 @@ install -m755 source/script/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbumount smbmnt debug2html 
+for i in smbd nmbd swat smbmount smbumount smbmnt debug2html winbindd
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT%{prefix}/sbin
 done
@@ -226,10 +229,15 @@ do
 install -m644 $i $RPM_BUILD_ROOT/etc/codepages/src
 done
 
-# Install the nsswitch library extenstion file
+# Install the nsswitch wins library
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
+
 # Make link for wins resolver
 ( cd $RPM_BUILD_ROOT/lib; ln -s libnss_wins.so libnss_wins.so.2; )
+
+# Install winbind shared libraries
+install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
+install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
@@ -364,6 +372,10 @@ else
 	rm -f /etc/samba/samba.stack
 fi
 
+# Create winbind nss client symlink
+
+ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2
+
 %preun
 if [ $1 = 0 ] ; then
 	/sbin/chkconfig --del smb
@@ -397,6 +409,11 @@ if [ $1 = 0 ] ; then
 		rm -f /var/cache/samba/messages.tdb
 	fi
 
+	# Remove winbind nss client symlink
+
+	if [ -L /lib/libnss_winbind.so.2 ]; then
+		rm -f /lib/libnss_winbind.so.2
+	fi
 fi
 
 %postun
@@ -450,6 +467,7 @@ fi
 %{prefix}/sbin/smbmnt
 %{prefix}/sbin/smbmount
 %{prefix}/sbin/smbumount
+%{prefix}/sbin/winbindd
 /sbin/mount.smbfs
 /sbin/mount.smb
 %{prefix}/bin/mksmbpasswd.sh
@@ -469,6 +487,7 @@ fi
 %{prefix}/bin/smbprint
 %{prefix}/bin/smbcontrol
 %{prefix}/bin/smbcacls
+%{prefix}/bin/wbinfo
 %attr(755,root,root) /lib/libnss_wins.s*
 %{prefix}/share/swat/help/*
 %{prefix}/share/swat/images/*
@@ -491,3 +510,5 @@ MANDIR_MACRO/man8/*
 %attr(755,root,root) %dir /var/cache/samba
 %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
+%attr(-,root,root) /lib/libnss_winbind.so
+%attr(-,root,root) /lib/security/pam_winbind.so
