@@ -4262,7 +4262,10 @@ const char *get_called_name(void)
 	extern fstring local_machine;
 	static fstring called_name;
 
-	if (!*local_machine) {
+	if ( (!*local_machine) ||
+	     (client_socket_port() == 445) ) {
+		/* Everybody coming in on 445 should be able to live with the
+		 * IP address */
 		fstrcpy(called_name, client_socket_addr());
 		DEBUG(8,("get_called_name: assuming that client used IP address [%s] as called name.\n",
 			 called_name));
