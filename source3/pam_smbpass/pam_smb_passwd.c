@@ -33,8 +33,7 @@
 
 #include "support.h"
 
-int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user
-                   , const char *pass_new )
+int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user,  const char *pass_new )
 {
  char		c;
  int		retval, i;
@@ -44,7 +43,7 @@ int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user
     err_str[0] = '\0';
     msg_str[0] = '\0';
 
-    retval = local_password_change( user, LOCAL_SET_PASSWORD, pass_new, err_str, sizeof(err_str),
+    retval = local_password_change( user, 0, pass_new, err_str, sizeof(err_str),
 			            msg_str, sizeof(msg_str) );
 
     if (!retval) {
@@ -93,12 +92,14 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
     extern BOOL in_client;
 
-    struct smb_passwd *smb_pwent=NULL;
+    SAM_ACCOUNT *sampass = NULL;
     const char *user;
     const char *pass_old, *pass_new;
 
     /* Samba initialization. */
     setup_logging( "pam_smbpass", False );
+    charset_initialise();
+    codepage_initialise(lp_client_code_page());
     in_client = True;
 
     ctrl = set_ctrl(flags, argc, argv);
@@ -125,9 +126,10 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     }
 
     /* obtain user record */
-    smb_pwent = getsmbpwnam(user);
+    pdb_init_sam(&sampass);
+    pdb_getsampwnam(sampass,user);
 
-    if (smb_pwent == NULL) {
+    if (sampass == NULL) {
         _log_err( LOG_ALERT, "Failed to find entry for user %s.", user );
         return PAM_USER_UNKNOWN;
     }
@@ -140,10 +142,10 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
         char *Announce;
 
-        if (_smb_blankpasswd( ctrl, smb_pwent )) {
+        if (_smb_blankpasswd( ctrl, sampass )) {
 
+            pdb_free_sam(&sampass);
             return PAM_SUCCESS;
-
         }
 
 	/* Password change by root, or for an expired token, doesn't
@@ -155,6 +157,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             Announce = (char *) malloc(sizeof(greeting)+strlen(user));
             if (Announce == NULL) {
                 _log_err(LOG_CRIT, "password: out of memory");
+                pdb_free_sam(&sampass);
                 return PAM_BUF_ERR;
             }
             strncpy( Announce, greeting, sizeof(greeting) );
@@ -162,23 +165,20 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 #undef greeting
 
             set( SMB__OLD_PASSWD, ctrl );
-            retval = _smb_read_password( pamh, ctrl
-                                         , Announce
-                                         , "Current SMB password: "
-                                         , NULL
-                                         , _SMB_OLD_AUTHTOK
-                                         , &pass_old );
-            free( Announce );
+            retval = _smb_read_password( pamh, ctrl, Announce, "Current SMB password: ",
+                                         NULL, _SMB_OLD_AUTHTOK, &pass_old );
+            SAFE_FREE( Announce );
 
             if (retval != PAM_SUCCESS) {
                 _log_err( LOG_NOTICE
                           , "password - (old) token not obtained" );
+                pdb_free_sam(&sampass);
                 return retval;
             }
 
             /* verify that this is the password for this user */
 
-            retval = _smb_verify_password( pamh, smb_pwent, pass_old, ctrl );
+            retval = _smb_verify_password( pamh, sampass, pass_old, ctrl );
 
         } else {
 	    pass_old = NULL;
@@ -186,16 +186,20 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         }
 
         pass_old = NULL;
+        pdb_free_sam(&sampass);
         return retval;
 
     } else if (flags & PAM_UPDATE_AUTHTOK) {
 
+#if 0
+        /* We used to return when this flag was set, but that breaks
+           password synchronization when /other/ tokens are expired.  For
+           now, we change the password whenever we're asked. SRL */
         if (flags & PAM_CHANGE_EXPIRED_AUTHTOK) {
-            /* NOTE: there is currently no support for password expiring
-               under Samba. Support will be added here when it becomes
-               available. */
+            pdb_free_sam(&sampass);
             return PAM_SUCCESS;
         }
+#endif
         /*
          * obtain the proposed password
          */
@@ -220,6 +224,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
         if (retval != PAM_SUCCESS) {
             _log_err( LOG_NOTICE, "password: user not authenticated" );
+            pdb_free_sam(&sampass);
             return retval;
         }
 
@@ -246,6 +251,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
                           , "password: new password not obtained" );
             }
             pass_old = NULL;                               /* tidy up */
+            pdb_free_sam(&sampass);
             return retval;
         }
 
@@ -264,6 +270,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         if (retval != PAM_SUCCESS) {
             _log_err(LOG_NOTICE, "new password not acceptable");
             pass_new = pass_old = NULL;               /* tidy up */
+            pdb_free_sam(&sampass);
             return retval;
         }
 
@@ -278,7 +285,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         if (retval == PAM_SUCCESS) {
             /* password updated */
             _log_err( LOG_NOTICE, "password for (%s/%d) changed by (%s/%d)"
-                      , user, smb_pwent->smb_userid, uidtoname( getuid() )
+                      , user, pdb_get_uid(sampass), uidtoname( getuid() )
                       , getuid() );
         } else {
             _log_err( LOG_ERR, "password change failed for user %s"
@@ -286,7 +293,10 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         }
 
         pass_old = pass_new = NULL;
-        smb_pwent = NULL;
+	if (sampass) {
+		pdb_free_sam(&sampass);
+		sampass = NULL;
+	}
 
     } else {            /* something has broken with the library */
 
@@ -294,7 +304,13 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         retval = PAM_ABORT;
 
     }
+    
+    if (sampass) {
+    	pdb_free_sam(&sampass);
+	sampass = NULL;
+    }
 
+    pdb_free_sam(&sampass);
     return retval;
 }
 

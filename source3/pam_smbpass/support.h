@@ -12,7 +12,7 @@ extern void _cleanup(pam_handle_t *, void *, int);
  * evidence of old token around for later stack analysis.
  */
 
-extern char *xstrdup(const char *);
+extern char *smbpXstrDup(const char *);
 
 /* ************************************************************** *
  * Useful non-trivial functions                                   *
@@ -26,9 +26,8 @@ extern BOOL strequal(const char *, const char *);
 extern struct smb_passwd *
 _my_get_smbpwnam(FILE *, const char *, BOOL *, BOOL *, long *);
 
-extern int _smb_verify_password( pam_handle_t *pamh
-                                 , const struct smb_passwd *smb_pwent
-				 , const char *p, unsigned int ctrl );
+extern int _smb_verify_password( pam_handle_t *pamh , SAM_ACCOUNT *sampass, 
+	const char *p, unsigned int ctrl );
 
 /*
  * this function obtains the name of the current user and ensures
@@ -40,13 +39,12 @@ extern int _smb_get_user(pam_handle_t *, unsigned int,
 
 /* _smb_blankpasswd() is a quick check for a blank password */
 
-extern int _smb_blankpasswd(unsigned int, const struct smb_passwd *);
+extern int _smb_blankpasswd(unsigned int, SAM_ACCOUNT *);
 
 
 /* obtain a password from the user */
 extern int _smb_read_password( pam_handle_t *, unsigned int, const char*,
-				const char *, const char *, const char *,
-				const char **);
+				const char *, const char *, const char *, char **);
 
 extern int _pam_smb_approve_pass(pam_handle_t *, unsigned int, const char *,
 				 const char *);

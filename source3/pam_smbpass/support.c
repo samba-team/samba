@@ -125,7 +125,8 @@ int make_remark( pam_handle_t * pamh, unsigned int ctrl
 int set_ctrl( int flags, int argc, const char **argv )
 {
     int i = 0;
-    const char *service_file = dyn_CONFIGFILE;
+    static pstring servicesf = CONFIGFILE;
+    const char *service_file = servicesf;
     unsigned int ctrl;
 
     ctrl = SMB_DEFAULTS;	/* the default selection of options */
@@ -215,6 +216,33 @@ void _cleanup( pam_handle_t * pamh, void *x, int error_status )
     x = _pam_delete( (char *) x );
 }
 
+/* JHT
+ *
+ * Safe duplication of character strings. "Paranoid"; don't leave
+ * evidence of old token around for later stack analysis.
+ *
+ */
+char * smbpXstrDup( const char *x )
+{
+    register char *new = NULL;
+
+    if (x != NULL) {
+        register int i;
+
+        for (i = 0; x[i]; ++i); /* length of string */
+        if ((new = malloc(++i)) == NULL) {
+            i = 0;
+            _log_err( LOG_CRIT, "out of memory in smbpXstrDup" );
+        } else {
+            while (i-- > 0) {
+                new[i] = x[i];
+            }
+        }
+        x = NULL;
+    }
+    return new;			/* return the duplicate or NULL on error */
+}
+
 /* ************************************************************** *
  * Useful non-trivial functions                                   *
  * ************************************************************** */
@@ -265,13 +293,12 @@ void _cleanup_failures( pam_handle_t * pamh, void *fl, int err )
         }
         _pam_delete( failure->agent );	/* tidy up */
         _pam_delete( failure->user );	/* tidy up */
-	free( failure );
+	SAFE_FREE( failure );
     }
 }
 
-int _smb_verify_password( pam_handle_t * pamh
-                          , const struct smb_passwd *smb_pwent
-                          , const char *p, unsigned int ctrl )
+int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
+			  const char *p, unsigned int ctrl )
 {
     uchar hash_pass[16];
     uchar lm_pw[16];
@@ -280,10 +307,10 @@ int _smb_verify_password( pam_handle_t * pamh
     char *data_name;
     const char *name;
 
-    if (!smb_pwent)
+    if (!sampass)
         return PAM_ABORT;
 
-    name = smb_pwent->smb_name;
+    name = pdb_get_username(sampass);
 
 #ifdef HAVE_PAM_FAIL_DELAY
     if (off( SMB_NODELAY, ctrl )) {
@@ -291,13 +318,13 @@ int _smb_verify_password( pam_handle_t * pamh
     }
 #endif
 
-    if (!smb_pwent->smb_passwd)
+    if (!pdb_get_lanman_passwd(sampass))
     {
         _log_err( LOG_DEBUG, "user %s has null SMB password"
                   , name );
 
         if (off( SMB__NONULL, ctrl )
-            && (smb_pwent->acct_ctrl & ACB_PWNOTREQ))
+            && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ))
         { /* this means we've succeeded */
             return PAM_SUCCESS;
         } else {
@@ -308,13 +335,12 @@ int _smb_verify_password( pam_handle_t * pamh
                       , "failed auth request by %s for service %s as %s(%d)"
                       , uidtoname( getuid() )
                       , service ? service : "**unknown**", name
-                      , smb_pwent->smb_userid );
+                      , pdb_get_uid(sampass) );
             return PAM_AUTH_ERR;
         }
     }
 
-    data_name = (char *) malloc( sizeof(FAIL_PREFIX) 
-                                 + strlen( name ));
+    data_name = (char *) malloc( sizeof(FAIL_PREFIX) + strlen( name ));
     if (data_name == NULL) {
         _log_err( LOG_CRIT, "no memory for data-name" );
     }
@@ -326,9 +352,9 @@ int _smb_verify_password( pam_handle_t * pamh
     if (strlen( p ) == 16 || (strlen( p ) == 32
          && pdb_gethexpwd( p, (char *) hash_pass ))) {
 
-        if (!memcmp( hash_pass, smb_pwent->smb_passwd, 16 )
-            || (smb_pwent->smb_nt_passwd
-                && !memcmp( hash_pass, smb_pwent->smb_nt_passwd, 16 )))
+        if (!memcmp( hash_pass, pdb_get_lanman_passwd(sampass), 16 )
+            || (pdb_get_nt_passwd(sampass)
+                && !memcmp( hash_pass, pdb_get_nt_passwd(sampass), 16 )))
         {
             retval = PAM_SUCCESS;
             if (data_name) {	/* reset failures */
@@ -336,7 +362,6 @@ int _smb_verify_password( pam_handle_t * pamh
             }
             _pam_delete( data_name );
             memset( hash_pass, '\0', 16 );
-            smb_pwent = NULL;
             return retval;
         }
     }
@@ -351,7 +376,7 @@ int _smb_verify_password( pam_handle_t * pamh
 
     /* the moment of truth -- do we agree with the password? */
 
-    if (!memcmp( nt_pw, smb_pwent->smb_nt_passwd, 16 )) {
+    if (!memcmp( nt_pw, pdb_get_nt_passwd(sampass), 16 )) {
 
         retval = PAM_SUCCESS;
         if (data_name) {		/* reset failures */
@@ -387,12 +412,12 @@ int _smb_verify_password( pam_handle_t * pamh
                       , "failed auth request by %s for service %s as %s(%d)"
                       , uidtoname( getuid() )
                       , service ? service : "**unknown**", name
-                      , smb_pwent->smb_userid );
+                      , pdb_get_uid(sampass) );
                     new->count = 1;
                 }
-                new->user = smb_xstrdup( name );
-                new->id = smb_pwent->smb_userid;
-                new->agent = smb_xstrdup( uidtoname( getuid() ) );
+                new->user = smbpXstrDup( name );
+                new->id = pdb_get_uid(sampass);
+                new->agent = smbpXstrDup( uidtoname( getuid() ) );
                 pam_set_data( pamh, data_name, new, _cleanup_failures );
 
             } else {
@@ -401,20 +426,20 @@ int _smb_verify_password( pam_handle_t * pamh
                       , "failed auth request by %s for service %s as %s(%d)"
                       , uidtoname( getuid() )
                       , service ? service : "**unknown**", name
-                      , smb_pwent->smb_userid );
+                      , pdb_get_uid(sampass) );
             }
         } else {
             _log_err( LOG_NOTICE
                       , "failed auth request by %s for service %s as %s(%d)"
                       , uidtoname( getuid() )
                       , service ? service : "**unknown**", name
-                      , smb_pwent->smb_userid );
+                      , pdb_get_uid(sampass) );
             retval = PAM_AUTH_ERR;
         }
     }
 
     _pam_delete( data_name );
-    smb_pwent = NULL;
+    
     return retval;
 }
 
@@ -426,7 +451,7 @@ int _smb_verify_password( pam_handle_t * pamh
  * - to avoid prompting for one in such cases (CG)
  */
 
-int _smb_blankpasswd( unsigned int ctrl, const struct smb_passwd *smb_pwent )
+int _smb_blankpasswd( unsigned int ctrl, SAM_ACCOUNT *sampass )
 {
 	int retval;
 
@@ -439,7 +464,7 @@ int _smb_blankpasswd( unsigned int ctrl, const struct smb_passwd *smb_pwent )
 	if (on( SMB__NONULL, ctrl ))
 		return 0;		/* will fail but don't let on yet */
 
-	if (smb_pwent->smb_passwd == NULL)
+	if (pdb_get_lanman_passwd(sampass) == NULL)
 		retval = 1;
 	else
 		retval = 0;
@@ -451,10 +476,9 @@ int _smb_blankpasswd( unsigned int ctrl, const struct smb_passwd *smb_pwent )
  * obtain a password from the user
  */
 
-int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl
-                        , const char *comment, const char *prompt1
-                        , const char *prompt2, const char *data_name
-                        , const char **pass )
+int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
+                        const char *comment, const char *prompt1,
+                        const char *prompt2, const char *data_name, char **pass )
 {
     int authtok_flag;
     int retval;
@@ -533,7 +557,7 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl
 
         if (retval == PAM_SUCCESS) {	/* a good conversation */
 
-            token = smb_xstrdup(resp[j++].resp);
+            token = smbpXstrDup(resp[j++].resp);
             if (token != NULL) {
                 if (expect == 2) {
                     /* verify that password entered correctly */
@@ -602,10 +626,10 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl
     return PAM_SUCCESS;
 }
 
-int _pam_smb_approve_pass(pam_handle_t * pamh
-						  ,unsigned int ctrl
-						  ,const char *pass_old
-						  ,const char *pass_new)
+int _pam_smb_approve_pass(pam_handle_t * pamh,
+		unsigned int ctrl,
+		const char *pass_old,
+		const char *pass_new )
 {
 
     /* Further checks should be handled through module stacking. -SRL */
