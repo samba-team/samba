@@ -435,6 +435,7 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 	void *cur_dir;
 	const char *dname;
 	BOOL mangled;
+	long curpos;
 
 	mangled = mangle_is_mangled(name);
 
@@ -459,7 +460,8 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 	}
 
 	/* now scan for matching names */
-	while ((dname = ReadDirName(cur_dir))) {
+	curpos = 0;
+	while ((dname = ReadDirName(cur_dir, &curpos))) {
 
 		/* Is it dot or dot dot. */
 		if ((dname[0] == '.') && (!dname[1] || (dname[1] == '.' && !dname[2]))) {

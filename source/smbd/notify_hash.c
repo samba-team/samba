@@ -45,6 +45,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	size_t remaining_len;
 	size_t fullname_len;
 	void *dp;
+	long offset;
 
 	ZERO_STRUCTP(data);
 
@@ -88,7 +89,8 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	remaining_len = sizeof(full_name) - fullname_len - 1;
 	p = &full_name[fullname_len];
 	
-	while ((fname = ReadDirName(dp))) {
+	offset = 0;
+	while ((fname = ReadDirName(dp, &offset))) {
 		if(strequal(fname, ".") || strequal(fname, ".."))
 			continue;		
 

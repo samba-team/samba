@@ -1614,11 +1614,12 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 		
 		if (dirptr) {
 			error = NT_STATUS_NO_SUCH_FILE;
-			
+			long offset = 0;
+
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
 
-			while ((dname = ReadDirName(dirptr))) {
+			while ((dname = ReadDirName(dirptr, &offset))) {
 				pstring fname;
 				BOOL sys_direntry = False;
 				pstrcpy(fname,dname);
@@ -3361,12 +3362,13 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 {
 	const char *dname = NULL;
 	BOOL ret = False;
+	long offset = 0;
 	void *dirptr = OpenDir(conn, directory, False);
 
 	if(dirptr == NULL)
 		return True;
 
-	while((dname = ReadDirName(dirptr))) {
+	while((dname = ReadDirName(dirptr, &offset))) {
 		pstring fullname;
 		SMB_STRUCT_STAT st;
 
@@ -3428,8 +3430,8 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 		void *dirptr = OpenDir(conn, directory, False);
 
 		if(dirptr != NULL) {
-			int dirpos = TellDir(dirptr);
-			while ((dname = ReadDirName(dirptr))) {
+			long dirpos = TellDir(dirptr);
+			while ((dname = ReadDirName(dirptr,&dirpos))) {
 				if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
 					continue;
 				if(!IS_VETO_PATH(conn, dname)) {
@@ -3440,7 +3442,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 
 			if(all_veto_files) {
 				SeekDir(dirptr,dirpos);
-				while ((dname = ReadDirName(dirptr))) {
+				while ((dname = ReadDirName(dirptr,&dirpos))) {
 					pstring fullname;
 					SMB_STRUCT_STAT st;
 
@@ -3984,13 +3986,14 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 			dirptr = OpenDir(conn, directory, True);
 		
 		if (dirptr) {
+			long offset = 0;
 			error = NT_STATUS_NO_SUCH_FILE;
 /*			Was error = NT_STATUS_OBJECT_NAME_NOT_FOUND; - gentest fix. JRA */
 			
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
 			
-			while ((dname = ReadDirName(dirptr))) {
+			while ((dname = ReadDirName(dirptr, &offset))) {
 				pstring fname;
 				BOOL sysdir_entry = False;
 
@@ -4337,12 +4340,13 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 			dirptr = OpenDir(conn, directory, True);
 
 		if (dirptr) {
+			long offset = 0;
 			error = ERRbadfile;
 
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
 
-			while ((dname = ReadDirName(dirptr))) {
+			while ((dname = ReadDirName(dirptr, &offset))) {
 				pstring fname;
 				pstrcpy(fname,dname);
     
