@@ -5,6 +5,7 @@
 #define STR_NOTERM   LIBNDR_FLAG_STR_NOTERM
 #define STR_NULLTERM LIBNDR_FLAG_STR_NULLTERM
 #define STR_BYTESIZE LIBNDR_FLAG_STR_BYTESIZE
+#define STR_FIXLEN32 LIBNDR_FLAG_STR_FIXLEN32
 
 /*
   a UCS2 string prefixed with [size] [offset] [length], all 32 bits
@@ -26,6 +27,11 @@
   a null terminated UCS2 string
 */
 #define nstring       [flag(STR_NULLTERM)]                  string
+
+/*
+  fixed length 32 character UCS-2 string
+*/
+#define string32       [flag(STR_FIXLEN32)]                 string
 
 /*
   an ascii string prefixed with [size] [offset] [length], all 32 bits
