@@ -226,7 +226,7 @@ open files, %d are available.\n", request_max_open_files, real_max_open_files));
 	}
 	
 	/*
-	 * Ensure that pipe_handle_oppset is set correctly.
+	 * Ensure that pipe_handle_offset is set correctly.
 	 */
 	set_pipe_handle_offset(real_max_open_files);
 }
