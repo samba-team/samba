@@ -29,17 +29,6 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 #define GROUP_PREFIX "UNIXGROUP/"
 #define ALIASMEM_PREFIX "ALIASMEMBERS/"
 
-PRIVS privs[] = {
-	{SE_PRIV_NONE,           "no_privs",                  "No privilege"                    }, /* this one MUST be first */
-	{SE_PRIV_ADD_MACHINES,   "SeMachineAccountPrivilege", "Add workstations to the domain"  },
-	{SE_PRIV_SEC_PRIV,       "SeSecurityPrivilege",       "Manage the audit logs"           },
-	{SE_PRIV_TAKE_OWNER,     "SeTakeOwnershipPrivilege",  "Take ownership of file"          },
-	{SE_PRIV_ADD_USERS,      "SaAddUsers",                "Add users to the domain - Samba" },
-	{SE_PRIV_PRINT_OPERATOR, "SaPrintOp",                 "Add or remove printers - Samba"  },
-	{SE_PRIV_ALL,            "SaAllPrivs",                "all privileges"                  }
-};
-
-
 /****************************************************************************
 dump the mapping group mapping to a text file
 ****************************************************************************/

@@ -3857,7 +3857,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 		if (iServiceIndex >= 0)
 			bRetval = service_ok(iServiceIndex);
 
-	if (lp_config_backend()) {
+	if (*(lp_config_backend())) {
 		modconf_init(lp_config_backend());
 		modconf_load(do_section, do_parameter);
 	}	

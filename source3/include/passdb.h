@@ -362,6 +362,16 @@ typedef struct pdb_context
 	NTSTATUS (*pdb_update_trust_passwd)(struct pdb_context *context, SAM_TRUST_PASSWD* trust);
 	
 	NTSTATUS (*pdb_delete_trust_passwd)(struct pdb_context *context, SAM_TRUST_PASSWD* trust);
+
+	/* privileges functions */
+
+	NTSTATUS (*pdb_add_sid_to_privilege)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
+
+	NTSTATUS (*pdb_remove_sid_from_privilege)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
+
+	NTSTATUS (*pdb_get_privilege_set)(struct pdb_context *context, NT_USER_TOKEN *token, PRIVILEGE_SET *privs);
+	
+	NTSTATUS (*pdb_get_privilege_entry)(struct pdb_context *context, const char *privname, char **sid_list);
 	
 	void (*free_fn)(struct pdb_context **);
 	
@@ -466,6 +476,16 @@ typedef struct pdb_methods
 	NTSTATUS (*update_trust_passwd)(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust);
 	
 	NTSTATUS (*delete_trust_passwd)(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust);
+
+	/* privileges functions */
+
+	NTSTATUS (*add_sid_to_privilege)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
+
+	NTSTATUS (*remove_sid_from_privilege)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
+
+	NTSTATUS (*get_privilege_set)(struct pdb_methods *methods, NT_USER_TOKEN *token, PRIVILEGE_SET *privs);
+
+	NTSTATUS (*get_privilege_entry)(struct pdb_methods *methods, const char *privname, char **sid_list);
 
 } PDB_METHODS;
 

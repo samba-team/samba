@@ -26,6 +26,43 @@
 #define ALLOC_CHECK(ptr, err, label, str) do { if ((ptr) == NULL) { DEBUG(0, ("%s: out of memory!\n", str)); err = NT_STATUS_NO_MEMORY; goto label; } } while(0)
 #define NTSTATUS_CHECK(err, label, str1, str2) do { if (!NT_STATUS_IS_OK(err)) { DEBUG(0, ("%s: %s failed!\n", str1, str2)); } } while(0)
 
+
+PRIVS privs[] = {
+	{SE_NONE,			"no_privs",				"No privilege"}, /* this one MUST be first */
+	{SE_CREATE_TOKEN,		"SeCreateTokenPrivilege",		"Create Token"},
+	{SE_ASSIGN_PRIMARY_TOKEN,	"SeAssignPrimaryTokenPrivilege",	"Assign Primary Token"},
+	{SE_LOCK_MEMORY,		"SeLockMemoryPrivilege",		"Lock Memory"},
+	{SE_INCREASE_QUOTA,		"SeIncreaseQuotaPrivilege",		"Increase Quota"},
+	{SE_UNSOLICITED_INPUT,		"eUnsolicitedInputPrivilege",		"Unsolicited Input"},
+	{SE_MACHINE_ACCOUNT,		"SeMachineAccountPrivilege",		"Can add Machine Accounts to the Domain"},
+	{SE_TCB,			"SeTcbPrivilege",			"TCB"},
+	{SE_SECURITY,			"SeSecurityPrivilege",			"Security Privilege"},
+	{SE_TAKE_OWNERSHIP,		"SeTakeOwnershipPrivilege",		"Take Ownership Privilege"},
+	{SE_LOAD_DRIVER,		"SeLocalDriverPrivilege",		"Local Driver Privilege"},
+	{SE_SYSTEM_PROFILE,		"SeSystemProfilePrivilege",		"System Profile Privilege"},
+	{SE_SYSTEM_TIME,		"SeSystemtimePrivilege",		"System Time"},
+	{SE_PROF_SINGLE_PROCESS,	"SeProfileSingleProcessPrivilege",	"Profile Single Process Privilege"},
+	{SE_INC_BASE_PRIORITY,		"SeIncreaseBasePriorityPrivilege",	"Increase Base Priority Privilege"},
+	{SE_CREATE_PAGEFILE,		"SeCreatePagefilePrivilege",		"Create Pagefile Privilege"},
+	{SE_CREATE_PERMANENT,		"SeCreatePermanentPrivilege",		"Create Permanent"},
+	{SE_BACKUP,			"SeBackupPrivilege",			"Backup Privilege"},
+	{SE_RESTORE,			"SeRestorePrivilege",			"Restore Privilege"},
+	{SE_SHUTDOWN,			"SeShutdownPrivilege",			"Shutdown Privilege"},
+	{SE_DEBUG,			"SeDebugPrivilege",			"Debug Privilege"},
+	{SE_AUDIT,			"SeAuditPrivilege",			"Audit"},
+	{SE_SYSTEM_ENVIRONMENT,		"SeSystemEnvironmentPrivilege",		"System Environment Privilege"},
+	{SE_CHANGE_NOTIFY,		"SeChangeNotifyPrivilege",		"Change Notify"},
+	{SE_REMOTE_SHUTDOWN,		"SeRemoteShutdownPrivilege",		"Remote Shutdown Privilege"},
+	{SE_UNDOCK,			"SeUndockPrivilege",			"Undock"},
+	{SE_SYNC_AGENT,			"SeSynchronizationAgentPrivilege",	"Synchronization Agent"},
+	{SE_ENABLE_DELEGATION,		"SeEnableDelegationPrivilege",		"Enable Delegation"},
+	{SE_PRINT_OPERATOR,		"SePrintOperatorPrivilege",		"Printer Operator"},
+	{SE_ADD_USERS,			"SeAddUsersPrivilege",			"Add Users"},
+	{SE_ALL_PRIVS,			"SeAllPrivileges",			"All Privileges"}
+};
+
+
+
 /****************************************************************************
  Check if a user is a mapped group.
 
@@ -170,6 +207,27 @@ done:
 	return ret;
 }
 
+NTSTATUS add_privilege_by_name(PRIVILEGE_SET *priv_set, const char *name)
+{
+	int e;
+
+	for (e = 0; privs[e].se_priv != SE_ALL_PRIVS; e++) {
+		if (StrCaseCmp(privs[e].priv, name) == 0) {
+			LUID_ATTR la;
+
+			la.attr = 0;
+			la.luid.high = 0;
+			la.luid.low = privs[e].se_priv;
+
+			return add_privilege(priv_set, la);
+		}
+	}
+
+	DEBUG(1, ("add_privilege_by_name: No Such Privilege Found (%s)\n", name));
+
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
 /****************************************************************************
  add all the privileges to a privilege array
  ****************************************************************************/
@@ -182,15 +240,15 @@ NTSTATUS add_all_privilege(PRIVILEGE_SET *priv_set)
 	set.luid.high = 0;
 
 	/* TODO: set a proper list of privileges */
-	set.luid.low = SE_PRIV_ADD_USERS;
+	set.luid.low = SE_ADD_USERS;
 	result = add_privilege(priv_set, set);
 	NTSTATUS_CHECK(result, done, "add_all_privilege", "add_privilege");
 
-	set.luid.low = SE_PRIV_ADD_MACHINES;
+	set.luid.low = SE_MACHINE_ACCOUNT;
 	result = add_privilege(priv_set, set);
 	NTSTATUS_CHECK(result, done, "add_all_privilege", "add_privilege");
 
-	set.luid.low = SE_PRIV_PRINT_OPERATOR;
+	set.luid.low = SE_PRINT_OPERATOR;
 	result = add_privilege(priv_set, set);
 	NTSTATUS_CHECK(result, done, "add_all_privilege", "add_privilege");
 
@@ -329,7 +387,7 @@ NTSTATUS dup_priv_set(PRIVILEGE_SET *new_priv_set, PRIVILEGE_SET *priv_set)
 
 	old_set = priv_set->set;
 
-	new_set = (LUID_ATTR *)talloc(new_priv_set->mem_ctx, (priv_set->count - 1) * (sizeof(LUID_ATTR)));
+	new_set = (LUID_ATTR *)talloc(new_priv_set->mem_ctx, (priv_set->count) * (sizeof(LUID_ATTR)));
 	ALLOC_CHECK(new_set, ret, done, "dup_priv_set");
 
 	for (i=0; i < priv_set->count; i++) {
@@ -348,3 +406,16 @@ NTSTATUS dup_priv_set(PRIVILEGE_SET *new_priv_set, PRIVILEGE_SET *priv_set)
 done:
 	return ret;
 }
+
+
+NTSTATUS user_has_privilege(struct current_user *user, uint32 privilege)
+{
+	LUID_ATTR set;
+
+	set.attr = 0;
+	set.luid.high = 0;
+	set.luid.low = privilege;
+
+	return check_priv_in_privilege(user->privs, set);
+}
+

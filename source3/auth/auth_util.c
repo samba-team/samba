@@ -827,6 +827,23 @@ static NTSTATUS add_user_groups(auth_serversupplied_info **server_info,
 }
 
 /***************************************************************************
+Fill a server_info struct from a SAM_ACCOUNT with its privileges
+***************************************************************************/
+
+static NTSTATUS add_privileges(auth_serversupplied_info **server_info)
+{
+	PRIVILEGE_SET *privs = NULL;
+
+	init_privilege(&privs);
+	if (!pdb_get_privilege_set((*server_info)->ptok, privs))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	(*server_info)->privs = privs;
+
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
  Make (and fill) a user_info struct from a SAM_ACCOUNT
 ***************************************************************************/
 
@@ -856,6 +873,11 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	if (!NT_STATUS_IS_OK(nt_status = add_user_groups(server_info, sampass, 
 							 (*server_info)->uid, 
 							 (*server_info)->gid))) {
+		free_server_info(server_info);
+		return nt_status;
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status = add_privileges(server_info))) {
 		free_server_info(server_info);
 		return nt_status;
 	}

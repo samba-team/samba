@@ -44,7 +44,7 @@ BOOL change_to_guest(void)
 	initgroups(pass->pw_name, pass->pw_gid);
 #endif
 	
-	set_sec_ctx(pass->pw_uid, pass->pw_gid, 0, NULL, NULL);
+	set_sec_ctx(pass->pw_uid, pass->pw_gid, 0, NULL, NULL, NULL);
 	
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
@@ -161,8 +161,9 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 	gid_t gid;
 	uid_t uid;
 	char group_c;
-	BOOL must_free_token = False;
+	BOOL must_free_token_priv = False;
 	NT_USER_TOKEN *token = NULL;
+	PRIVILEGE_SET *privs = NULL;
 
 	if (!conn) {
 		DEBUG(2,("change_to_user: Connection not open\n"));
@@ -195,12 +196,14 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		current_user.groups = conn->groups;
 		current_user.ngroups = conn->ngroups;
 		token = conn->nt_user_token;
+		privs = conn->privs;
 	} else if ((vuser) && check_user_ok(conn, vuser, snum)) {
 		uid = conn->admin_user ? 0 : vuser->uid;
 		gid = vuser->gid;
 		current_user.ngroups = vuser->n_groups;
 		current_user.groups  = vuser->groups;
 		token = vuser->nt_user_token;
+		privs = vuser->privs;
 	} else {
 		DEBUG(2,("change_to_user: Invalid vuid used %d or vuid not permitted access to share.\n",vuid));
 		return False;
@@ -248,17 +251,20 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 			DEBUG(1, ("change_to_user: create_nt_token failed!\n"));
 			return False;
 		}
-		must_free_token = True;
+		pdb_get_privilege_set(token, privs);
+		must_free_token_priv = True;
 	}
 	
-	set_sec_ctx(uid, gid, current_user.ngroups, current_user.groups, token);
+	set_sec_ctx(uid, gid, current_user.ngroups, current_user.groups, token, privs);
 
 	/*
 	 * Free the new token (as set_sec_ctx copies it).
 	 */
 
-	if (must_free_token)
+	if (must_free_token_priv) {
 		delete_nt_token(&token);
+		destroy_privilege(&privs);
+	}
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
@@ -299,7 +305,7 @@ BOOL become_authenticated_pipe_user(pipes_struct *p)
 		return False;
 
 	set_sec_ctx(p->pipe_user.uid, p->pipe_user.gid, 
-		    p->pipe_user.ngroups, p->pipe_user.groups, p->pipe_user.nt_user_token);
+		    p->pipe_user.ngroups, p->pipe_user.groups, p->pipe_user.nt_user_token, p->pipe_user.privs);
 
 	return True;
 }

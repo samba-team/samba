@@ -783,6 +783,8 @@ extern int errno;
 
 #include "version.h"
 
+#include "privileges.h"
+
 #include "smb.h"
 
 #include "nameserv.h"
@@ -790,8 +792,6 @@ extern int errno;
 #include "secrets.h"
 
 #include "byteorder.h"
-
-#include "privileges.h"
 
 #include "rpc_creds.h"
 

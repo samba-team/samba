@@ -40,6 +40,7 @@ extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
 extern rid_name builtin_alias_rids[];
 
+extern PRIVS privs[];
 
 typedef struct _disp_info {
 	BOOL user_dbloaded;
@@ -2137,7 +2138,15 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!NT_STATUS_IS_OK(nt_status = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_USER, "_samr_create_user"))) {
-		return nt_status;
+		if (NT_STATUS_IS_OK(user_has_privilege(&(p->pipe_user), SE_MACHINE_ACCOUNT))) {
+			DEBUG(3, ("_samr_create_user: User should be denied access but was overridden by %s\n", privs[SE_MACHINE_ACCOUNT].priv));
+		} else {
+			if (NT_STATUS_IS_OK(user_has_privilege(&(p->pipe_user), SE_ADD_USERS))) {
+				DEBUG(3, ("_samr_create_user: User should be denied access but was overridden by %s\n", privs[SE_ADD_USERS].priv));
+			} else {
+				return nt_status;
+			}
+		}
 	}
 
 	if (!(acb_info == ACB_NORMAL || acb_info == ACB_DOMTRUST || acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)) { 
@@ -2200,6 +2209,33 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 
 	/* the passdb lookup has failed; check to see if we need to run the
 	   add user/machine script */
+		
+	/* 
+	 * we can't check both the ending $ and the acb_info.
+	 * 
+	 * UserManager creates trust accounts (ending in $,
+	 * normal that hidden accounts) with the acb_info equals to ACB_NORMAL.
+	 * JFM, 11/29/2001
+	 */
+	if (account[strlen(account)-1] == '$') {
+		if (NT_STATUS_IS_OK(user_has_privilege(&(p->pipe_user), SE_MACHINE_ACCOUNT)) || geteuid() == 0) {
+			DEBUG(3, ("user [%s] has been granted Add Machines privilege!\n", p->user_name));
+			become_root();
+			pstrcpy(add_script, lp_addmachine_script());
+		} else {
+			DEBUG(3, ("user [%s] doesn't have Add Machines privilege!\n", p->user_name));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	} else {
+		if (NT_STATUS_IS_OK(user_has_privilege(&(p->pipe_user), SE_ADD_USERS)) || geteuid() == 0) {
+			DEBUG(3, ("user [%s] has been granted Add Users privilege!\n", p->user_name));
+			become_root();
+			pstrcpy(add_script, lp_adduser_script());
+		} else {
+			DEBUG(3, ("user [%s] doesn't have Add Users privilege!\n", p->user_name));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
 	   
 	pw = Get_Pwnam(account);
 	
@@ -2215,17 +2251,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	 *********************************************************************/
 	
 	if ( !pw ) {
-		/* 
-		 * we can't check both the ending $ and the acb_info.
-		 * 
-		 * UserManager creates trust accounts (ending in $,
-		 * normal that hidden accounts) with the acb_info equals to ACB_NORMAL.
-		 * JFM, 11/29/2001
-		 */
-		if (account[strlen(account)-1] == '$')
-			pstrcpy(add_script, lp_addmachine_script());		
-		else 
-			pstrcpy(add_script, lp_adduser_script());
 
 		if (*add_script) {
   			int add_ret;
@@ -2235,7 +2260,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
   		}
 		else	/* no add user script -- ask winbindd to do it */
 		{
-			if ( !winbind_create_user( account, &new_rid ) ) {
+			if (!winbind_create_user(account, &new_rid)) {
 				DEBUG(3,("_samr_create_user: winbind_create_user(%s) failed\n", 
 					account));
 			}
@@ -2246,15 +2271,16 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
 
 	if ( !NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pass, account, new_rid)) )
-		return nt_status;
+		goto done;
 		
  	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
 	
  	if (!pdb_add_sam_account(sam_pass)) {
  		pdb_free_sam(&sam_pass);
- 		DEBUG(0, ("could not add user/computer %s to passdb.  Check permissions?\n", 
+ 		DEBUG(0, ("could not add user/computer %s to passdb !?\n", 
  			  account));
- 		return NT_STATUS_ACCESS_DENIED;		
+ 		nt_status = NT_STATUS_ACCESS_DENIED;
+		goto done;
  	}
  	
 	/* Get the user's SID */
@@ -2265,13 +2291,14 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	if (!NT_STATUS_IS_OK(nt_status = 
 			     access_check_samr_object(psd, p->pipe_user.nt_user_token, 
 						      des_access, &acc_granted, "_samr_create_user"))) {
-		return nt_status;
+		goto done;
 	}
 
 	/* associate the user's SID with the new handle. */
 	if ((info = get_samr_info_by_sid(&sid)) == NULL) {
 		pdb_free_sam(&sam_pass);
-		return NT_STATUS_NO_MEMORY;
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	ZERO_STRUCTP(info);
@@ -2281,7 +2308,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, user_pol, free_samr_info, (void *)info)) {
 		pdb_free_sam(&sam_pass);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		nt_status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto done;
 	}
 
 	r_u->user_rid=pdb_get_user_rid(sam_pass);
@@ -2290,7 +2318,11 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 
 	pdb_free_sam(&sam_pass);
 
-	return NT_STATUS_OK;
+	nt_status = NT_STATUS_OK;
+
+done:
+	unbecome_root();
+	return nt_status;
 }
 
 /*******************************************************************
