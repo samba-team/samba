@@ -34,15 +34,15 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 		return cred;
 	}
 
-	cli_credentials_set_domain(cred, lp_workgroup(), CRED_GUESSED);
-	cli_credentials_set_workstation(cred, lp_netbios_name(), CRED_GUESSED);
-	cli_credentials_set_realm(cred, lp_realm(), CRED_GUESSED);
-	
 	return cred;
 }
 
 const char *cli_credentials_get_username(struct cli_credentials *cred)
 {
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred);
+	}
+
 	if (cred->username_obtained == CRED_CALLBACK) {
 		cred->username = cred->username_cb(cred);
 		cred->username_obtained = CRED_SPECIFIED;
@@ -64,6 +64,10 @@ BOOL cli_credentials_set_username(struct cli_credentials *cred, const char *val,
 
 const char *cli_credentials_get_password(struct cli_credentials *cred)
 {
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred);
+	}
+
 	if (cred->password_obtained == CRED_CALLBACK) {
 		cred->password = cred->password_cb(cred);
 		cred->password_obtained = CRED_SPECIFIED;
@@ -85,6 +89,10 @@ BOOL cli_credentials_set_password(struct cli_credentials *cred, const char *val,
 
 const char *cli_credentials_get_domain(struct cli_credentials *cred)
 {
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred);
+	}
+
 	if (cred->domain_obtained == CRED_CALLBACK) {
 		cred->domain = cred->domain_cb(cred);
 		cred->domain_obtained = CRED_SPECIFIED;
@@ -107,8 +115,8 @@ BOOL cli_credentials_set_domain(struct cli_credentials *cred, const char *val, e
 
 const char *cli_credentials_get_realm(struct cli_credentials *cred)
 {	
-	if (cred == NULL) {
-		return NULL;
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred);
 	}
 
 	if (cred->realm_obtained == CRED_CALLBACK) {
@@ -117,6 +125,14 @@ const char *cli_credentials_get_realm(struct cli_credentials *cred)
 	}
 
 	return cred->realm;
+}
+
+char *cli_credentials_get_principal(struct cli_credentials *cred,
+					   TALLOC_CTX *mem_ctx)
+{
+	return talloc_asprintf(mem_ctx, "%s@%s", 
+			       cli_credentials_get_username(cred),
+			       cli_credentials_get_realm(cred));
 }
 
 BOOL cli_credentials_set_realm(struct cli_credentials *cred, const char *val, enum credentials_obtained obtained)
@@ -132,10 +148,6 @@ BOOL cli_credentials_set_realm(struct cli_credentials *cred, const char *val, en
 
 const char *cli_credentials_get_workstation(struct cli_credentials *cred)
 {
-	if (cred == NULL) {
-		return NULL;
-	}
-
 	if (cred->workstation_obtained == CRED_CALLBACK) {
 		cred->workstation = cred->workstation_cb(cred);
 		cred->workstation_obtained = CRED_SPECIFIED;
@@ -287,10 +299,20 @@ void cli_credentials_parse_string(struct cli_credentials *credentials, const cha
 	cli_credentials_set_username(credentials, uname, obtained);
 }
 
+/* Initialise defaults from the lp_*() functions */
+void cli_credentials_set_conf(struct cli_credentials *cred)
+{
+	cli_credentials_set_domain(cred, lp_workgroup(), CRED_GUESSED);
+	cli_credentials_set_workstation(cred, lp_netbios_name(), CRED_GUESSED);
+	cli_credentials_set_realm(cred, lp_realm(), CRED_GUESSED);
+}
+
 void cli_credentials_guess(struct cli_credentials *cred)
 {
 	char *p;
 
+	cli_credentials_set_conf(cred);
+	
 	if (getenv("LOGNAME")) {
 		cli_credentials_set_username(cred, getenv("LOGNAME"), CRED_GUESSED);
 	}
@@ -319,9 +341,9 @@ void cli_credentials_guess(struct cli_credentials *cred)
 	}
 }
 
-NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *creds)
+NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 {
-	TALLOC_CTX *mem_ctx = talloc_named(creds, 0, "cli_credentials fetch machine password");
+	TALLOC_CTX *mem_ctx;
 	
 	struct ldb_context *ldb;
 	int ldb_ret;
@@ -330,15 +352,24 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *creds)
 	const char *attrs[] = {
 		"secret",
 		"samAccountName",
+		"flatname",
+		"realm",
 		NULL
 	};
 	
 	const char *machine_account;
 	const char *password;
+	const char *domain;
+	const char *realm;
 	
+	/* ok, we are going to get it now, don't recurse back here */
+	cred->machine_account_pending = False;
+
+	mem_ctx = talloc_named(cred, 0, "cli_credentials fetch machine password");
 	/* Local secrets are stored in secrets.ldb */
 	ldb = secrets_db_connect(mem_ctx);
 	if (!ldb) {
+		DEBUG(1, ("Could not open secrets.ldb\n"));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -346,13 +377,15 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *creds)
 	ldb_ret = gendb_search(ldb,
 			       mem_ctx, base_dn, &msgs, attrs,
 			       SECRETS_PRIMARY_DOMAIN_FILTER, 
-			       cli_credentials_get_domain(creds));
+			       cli_credentials_get_domain(cred));
 	if (ldb_ret == 0) {
 		DEBUG(1, ("Could not find join record to domain: %s\n",
-			  lp_workgroup()));
+			  cli_credentials_get_domain(cred)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	} else if (ldb_ret != 1) {
+		DEBUG(1, ("Found more than one (%d) join records to domain: %s\n",
+			  ldb_ret, cli_credentials_get_domain(cred)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -360,7 +393,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *creds)
 	password = ldb_msg_find_string(msgs[0], "secret", NULL);
 	if (!password) {
 		DEBUG(1, ("Could not find 'secret' in join record to domain: %s\n",
-			  cli_credentials_get_domain(creds)));
+			  cli_credentials_get_domain(cred)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -368,16 +401,45 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *creds)
 	machine_account = ldb_msg_find_string(msgs[0], "samAccountName", NULL);
 	if (!machine_account) {
 		DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s\n",
-			  cli_credentials_get_domain(creds)));
+			  cli_credentials_get_domain(cred)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 	
-	cli_credentials_set_username(creds, machine_account, CRED_SPECIFIED);
-	cli_credentials_set_password(creds, password, CRED_SPECIFIED);
+	domain = ldb_msg_find_string(msgs[0], "flatname", NULL);
+	if (domain) {
+		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
+	}
+
+	realm = ldb_msg_find_string(msgs[0], "realm", NULL);
+	if (realm) {
+		cli_credentials_set_realm(cred, realm, CRED_SPECIFIED);
+	}
+	
+	cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
+	cli_credentials_set_password(cred, password, CRED_SPECIFIED);
 	talloc_free(mem_ctx);
 	
 	return NT_STATUS_OK;
+}
+
+void cli_credentials_set_machine_account_pending(struct cli_credentials *cred)
+{
+	cred->machine_account_pending = True;
+}
+/* Attach NETLOGON credentials for use with SCHANNEL */
+
+void cli_credentials_set_netlogon_creds(struct cli_credentials *cred, 
+					struct creds_CredentialState *netlogon_creds)
+{
+	cred->netlogon_creds = talloc_reference(cred, netlogon_creds);
+}
+
+/* Return attached NETLOGON credentials */
+
+struct creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred)
+{
+	return cred->netlogon_creds;
 }
 
 /* Fill in a credentails structure as anonymous */
@@ -388,11 +450,14 @@ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 	cli_credentials_set_password(cred, NULL, CRED_SPECIFIED);
 }
 
-BOOL cli_credentials_is_anonymous(struct cli_credentials *credentials)
+BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
 {
-	const char *username = cli_credentials_get_username(credentials);
+	const char *username = cli_credentials_get_username(cred);
 
-	if (!username || !username[0]) 
+	/* Yes, it is deliberate that we die if we have a NULL pointer
+	 * here - anymous is "", not NULL, which is 'never specified,
+	 * never guessed', ie programmer bug */
+	if (!username[0]) 
 		return True;
 
 	return False;
