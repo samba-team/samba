@@ -220,7 +220,7 @@ krb5_sendto_kdc (krb5_context context,
 		     ret = send_and_recv (fd, context->kdc_timeout, 1,
 					  send, receive);
 		 close (fd);
-		 if(ret == 0)
+		 if(ret == 0 && receive->length != 0)
 		     goto out;
 	     }
 	 }
