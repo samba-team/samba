@@ -27,96 +27,117 @@
 extern int DEBUGLEVEL;
 
 /****************************************************************************
-recv an smb
+  read an msrpc pdu from a fd. 
+  The timeout is in milliseconds. 
 ****************************************************************************/
-BOOL msrpc_receive(struct msrpc_state *msrpc)
+BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout)
 {
-	return receive_smb(msrpc->fd,msrpc->inbuf,0);
-}
+  	BOOL ok;
+  	prs_struct h;
+  	size_t len;
+  	RPC_HDR hdr;
 
-/****************************************************************************
-  send an smb to a fd and re-establish if necessary
-****************************************************************************/
-BOOL msrpc_send_prs(struct msrpc_state *msrpc, prs_struct *ps)
-{
-	size_t len = ps != NULL ? prs_buf_len(ps) : 0;
+	prs_init(data, 16, 4, True);
 
-	DEBUG(10,("msrpc_send_prs: len %d\n", len));
-	dbgflush();
-
-	_smb_setlen(msrpc->outbuf, len);
-	if (len != 0 && !prs_buf_copy(&msrpc->outbuf[4], ps, 0, len))
+	if (timeout > 0)
 	{
+		ok = (read_with_timeout(fd,data->data,16,16,timeout) == 16);
+	}
+	else 
+	{
+		ok = (read_data(fd,data->data,16) == 16);
+	}
+
+	if (!ok)
+	{
+		prs_free_data(&h);
 		return False;
 	}
 
-	if (msrpc_send(msrpc, True))
+	if (!smb_io_rpc_hdr("hdr", &hdr, data, 0))
 	{
-		prs_free_data(ps);
+		prs_free_data(data);
+		return False;
+	}
+
+	len = hdr.frag_len - 16;
+	if (len > 0)
+	{
+		size_t ret;
+		prs_realloc_data(data, hdr.frag_len);
+		ret = read_data(fd, data->data + 16, len);
+		if (ret != len)
+		{
+			prs_free_data(data);
+			return False;
+		}
+		data->start = 0;
+		data->offset = hdr.frag_len;
+		data->end = hdr.frag_len;
 		return True;
 	}
+
+	prs_free_data(data);
 	return False;
 }
 
 /****************************************************************************
-  receive msrpc packet
-****************************************************************************/
-BOOL msrpc_receive_prs(struct msrpc_state *msrpc, prs_struct *ps)
-{
-	int len;
-	char *data;
-
-	if (!msrpc_receive(msrpc))
-	{
-		return False;
-	}
-
-	len = smb_len(msrpc->inbuf);
-
-	dump_data(10, msrpc->inbuf, len+4);
-
-	DEBUG(10,("msrpc_receive_prs: len %d\n", len));
-
-	prs_init(ps, len, 4, False);
-	ps->offset = len;
-	data = prs_data(ps, 0);
-	if (data == NULL || len <= 0)
-	{
-		return False;
-	}
-
-	memcpy(data, smb_base(msrpc->inbuf), len);
-
-	prs_debug_out(ps, "msrpc_receive_prs", 200);
-
-	return True;
-}
-
-/****************************************************************************
   send an smb to a fd and re-establish if necessary
 ****************************************************************************/
-BOOL msrpc_send(struct msrpc_state *msrpc, BOOL show)
+BOOL msrpc_send(int fd, prs_struct *ps)
 {
-	size_t len;
+	size_t len = ps != NULL ? prs_buf_len(ps) : 0;
 	size_t nwritten=0;
 	ssize_t ret;
+	char *outbuf = ps->data;
 
-	len = smb_len(msrpc->outbuf) + 4;
+	DEBUG(10,("msrpc_send_prs: len %d\n", len));
+	dbgflush();
 
-	dump_data(10, msrpc->outbuf, len);
+	dump_data(10, outbuf, len);
 
 	while (nwritten < len)
 	{
-		ret = write_socket(msrpc->fd,msrpc->outbuf+nwritten,len - nwritten);
+		ret = write_socket(fd,outbuf+nwritten,len - nwritten);
 		if (ret <= 0)
 		{
-			DEBUG(0,("Error writing %d bytes to msrpcent. %d. Exiting\n",
+			DEBUG(0,("Error writing %d msrpc bytes. %d.\n",
 				 len,ret));
+			prs_free_data(ps);
 			return False;
 		}
 		nwritten += ret;
 	}
 	
+	prs_free_data(ps);
+	return True;
+}
+
+/****************************************************************************
+  receive msrpc packet
+****************************************************************************/
+BOOL msrpc_receive(int fd, prs_struct *ps)
+{
+	int len;
+
+	if (!receive_msrpc(fd, ps, 0))
+	{
+		return False;
+	}
+
+	len = prs_buf_len(ps);
+
+	if (ps->data == NULL || len <= 0)
+	{
+		return False;
+	}
+
+	dump_data(10, ps->data, len);
+
+	DEBUG(10,("msrpc_receive: len %d\n", len));
+
+	prs_debug_out(ps, "msrpc_receive_prs", 200);
+
 	return True;
 }
 

@@ -139,12 +139,14 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 				{
 					cli_connection_free(con);
 					con->msrpc.cli = NULL;
+					return NULL;
 				}
 			}
 			else
 			{
 				cli_connection_free(con);
 				con->msrpc.cli = NULL;
+				return NULL;
 			}
 		}
 	}
@@ -161,6 +163,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 			DEBUG(0,("rpc_pipe_bind failed\n"));
 			cli_connection_free(con);
 			con->msrpc.cli = NULL;
+			return NULL;
 		}
 	}
 
@@ -630,7 +633,7 @@ BOOL rpc_api_write(struct cli_connection *con, prs_struct *data)
 		{
 			data->offset = data->data_size;
 			prs_link(NULL, data, NULL);
-			return msrpc_send_prs(con->msrpc.local, data);
+			return msrpc_send(con->msrpc.local->fd, data);
 		}
 	}
 	return False;
@@ -649,8 +652,8 @@ BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata)
 		case MSRPC_LOCAL:
 		{
 			BOOL ret;
-			ret = msrpc_send_prs(con->msrpc.local, NULL);
-			ret = msrpc_receive_prs(con->msrpc.local, rdata);
+			ret = msrpc_send   (con->msrpc.local->fd, NULL);
+			ret = msrpc_receive(con->msrpc.local->fd, rdata);
 			rdata->io = True;
 			rdata->offset = 0;
 			rdata->start = 0;
@@ -679,8 +682,8 @@ BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
 			BOOL ret;
 			data->offset = data->data_size;
 			prs_link(NULL, data, NULL);
-			ret = msrpc_send_prs(con->msrpc.local, data) &&
-			      msrpc_receive_prs(con->msrpc.local, rdata);
+			ret = msrpc_send   (con->msrpc.local->fd, data) &&
+			      msrpc_receive(con->msrpc.local->fd, rdata);
 			rdata->io = True;
 			rdata->offset = 0;
 			rdata->start = 0;

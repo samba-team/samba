@@ -279,8 +279,6 @@ exit the server
 void exit_server(char *reason)
 {
 	static int firsttime=1;
-	extern char *last_inbuf;
-
 
 	if (!firsttime) exit(0);
 	firsttime = 0;
@@ -295,11 +293,6 @@ void exit_server(char *reason)
 #endif
 
 	if (!reason) {   
-		int oldlevel = DEBUGLEVEL;
-		DEBUGLEVEL = 10;
-		if (last_inbuf)
-			show_msg(last_inbuf);
-		DEBUGLEVEL = oldlevel;
 		DEBUG(0,("===============================================================\n"));
 #if DUMP_CORE
 		if (dump_core()) return;

@@ -276,10 +276,9 @@ void start_msrpc_agent(char *pipe_name);
 
 /*The following definitions come from  lib/msrpc-client.c  */
 
-BOOL msrpc_receive(struct msrpc_state *msrpc);
-BOOL msrpc_send_prs(struct msrpc_state *msrpc, prs_struct *ps);
-BOOL msrpc_receive_prs(struct msrpc_state *msrpc, prs_struct *ps);
-BOOL msrpc_send(struct msrpc_state *msrpc, BOOL show);
+BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout);
+BOOL msrpc_send(int fd, prs_struct *ps);
+BOOL msrpc_receive(int fd, prs_struct *ps);
 BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name);
 void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
 void msrpc_close_socket(struct msrpc_state *msrpc);

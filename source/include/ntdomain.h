@@ -59,6 +59,7 @@
 	{ \
 		DEBUG(0,("uninitialised structure (%s, %d)\n", \
 		__FUNCTION__, __LINE__)); \
+		sleep(30); \
 	} \
 }
 

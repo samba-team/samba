@@ -871,12 +871,12 @@ static BOOL rpc_redir_remote(pipes_struct *p, prs_struct *req, prs_struct *resp)
 {
 	DEBUG(10,("rpc_redirect\n"));
 
-	if (!msrpc_send_prs(p->m, req))
+	if (!msrpc_send(p->m->fd, req))
 	{
 		DEBUG(2,("msrpc redirect send failed\n"));
 		return False;
 	}
-	if (!msrpc_receive_prs(p->m, resp))
+	if (!msrpc_receive(p->m->fd, resp))
 	{
 		DEBUG(2,("msrpc redirect receive failed\n"));
 		return False;

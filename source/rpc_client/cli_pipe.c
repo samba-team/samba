@@ -504,8 +504,8 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	{
 		prs_struct data_t;
 
-		DEBUG(10,("rpc_api_pipe_req: start: %d end: %d off: %d\n",
-			data_start, data_end, data->offset));
+		DEBUG(10,("rpc_api_pipe_req: start: %d off: %d\n",
+			data_start, data->offset));
 
 		if (!create_request_pdu(con, opnum, data, data_start,
 		                 &data_end, &data_t))
@@ -529,7 +529,17 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 			prs_init(&rpdu, 0, 4, True);
 		}
 
-	} while (data_end != data->offset);
+		data_start = data_end;
+
+	} while (data_end < data->offset);
+
+	if (data_end != data->offset)
+	{
+		DEBUG(2,("rpc_api_pipe_req: data_end: %d and offset %d wrong\n",
+		          data_end, data->offset));
+		prs_free_data(&rpdu);
+		return False;
+	}
 
 	/**** parse the header: check it's a response record */
 

@@ -23,12 +23,6 @@
 
 extern int DEBUGLEVEL;
 
-time_t smb_last_time=(time_t)0;
-
-char *InBuffer = NULL;
-char *OutBuffer = NULL;
-char *last_inbuf = NULL;
-
 /* 
  * Size of data we can send to client. Set
  *  by the client for all protocols above CORE.
@@ -43,9 +37,6 @@ int max_recv = BUFFER_SIZE;
 
 extern int last_message;
 extern pstring sesssetup_user;
-extern char *last_inbuf;
-extern char *InBuffer;
-extern char *OutBuffer;
 extern int smb_read_error;
 extern BOOL reload_after_sighup;
 extern int max_send;
@@ -72,8 +63,8 @@ extern int max_send;
 The timeout is in milli seconds
 ****************************************************************************/
 
-static BOOL receive_message_or_msrpc(int c, char *buffer, int buffer_len, 
-                                   int timeout, BOOL *got_smb)
+static BOOL receive_message_or_msrpc(int c, prs_struct *ps,
+                                   int timeout, BOOL *got_msrpc)
 {
   fd_set fds;
   int selrtn;
@@ -82,7 +73,7 @@ static BOOL receive_message_or_msrpc(int c, char *buffer, int buffer_len,
 
   smb_read_error = 0;
 
-  *got_smb = False;
+  *got_msrpc = False;
 
   /*
    * Check to see if we already have a message on the smb queue.
@@ -117,8 +108,8 @@ static BOOL receive_message_or_msrpc(int c, char *buffer, int buffer_len,
 
   if (FD_ISSET(c,&fds))
   {
-    *got_smb = True;
-    return receive_smb(c, buffer, 0);
+    *got_msrpc = True;
+    return receive_msrpc(c, ps, 0);
   }
 	return False;
 }
@@ -144,64 +135,17 @@ force write permissions on print services.
    please feel free to contribute implementations!
 */
 
-/****************************************************************************
-do a switch on the message type, and return the response size
-****************************************************************************/
-static int do_message(pipes_struct *p,
-				char *inbuf,char *outbuf,int size,int bufsize)
-{
-	static int pid= -1;
 
-	int outsize = -1;
-
-  if (pid == -1)
-    pid = getpid();
-
-	/* dce/rpc command */
-	if (rpc_to_smb(p, smb_base(inbuf), smb_len(inbuf)))
-	{
-		char *copy_into = smb_base(outbuf);
-		outsize = prs_buf_len(&p->rsmb_pdu);
-		if (!prs_buf_copy(copy_into, &p->rsmb_pdu, 0, outsize))
-		{
-			DEBUG(10,("do_message: %d bytes failed\n", outsize));
-			return -1;
-		}
-		prs_free_data(&p->rsmb_pdu);
-	}
-
-	DEBUG(10,("do_message: returned %d bytes\n", outsize));
-
-	return outsize;
-}
-
-
-/****************************************************************************
-  construct a reply to the incoming packet
-****************************************************************************/
-static int construct_reply(pipes_struct *p,
-				char *inbuf,char *outbuf,int size,int bufsize)
-{
-  int outsize = 0;
-  smb_last_time = time(NULL);
-
-  outsize = do_message(p, inbuf,outbuf,size,bufsize) + 4;
-
-  if(outsize > 4)
-    _smb_setlen(outbuf,outsize - 4);
-  return(outsize);
-}
-
+static prs_struct pdu;
 
 /****************************************************************************
   process an smb from the client - split out from the process() code so
   it can be used by the oplock break code.
 ****************************************************************************/
-static void process_msrpc(pipes_struct *p, int c, char *inbuf, char *outbuf)
+static void process_msrpc(pipes_struct *p, int c)
 {
   static int trans_num;
-  int32 len = smb_len(inbuf);
-  int nread = len + 4;
+  int32 len = prs_buf_len(&pdu);
 
   if (trans_num == 0) {
 	  /* on the first packet, check the global hosts allow/ hosts
@@ -218,32 +162,21 @@ static void process_msrpc(pipes_struct *p, int c, char *inbuf, char *outbuf)
   }
 
   DEBUG( 6, ( "got message of len 0x%x\n", len ) );
-  DEBUG( 3, ( "Transaction %d of length %d\n", trans_num, nread ) );
 
-	dump_data(10, inbuf, len);
+	dump_data(10, pdu.data, len);
 
 #ifdef WITH_VTP
-  if(trans_num == 1 && VT_Check(inbuf)) 
+  if(trans_num == 1 && VT_Check(pdu.data)) 
   {
     VT_Process();
     return;
   }
 #endif
 
-  nread = construct_reply(p, inbuf,outbuf,nread,max_send);
-      
-  if(nread > 0) 
-  {
-      dump_data(10, outbuf, nread);
-	
-    if (nread != smb_len(outbuf) + 4) 
-    {
-      DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
-                 nread, smb_len(outbuf)));
-    }
-    else
-      send_smb(c,outbuf);
-  }
+	if (rpc_to_smb(p, pdu.data, len))
+	{
+	      msrpc_send(c, &p->rsmb_pdu);
+	}
   trans_num++;
 }
 
@@ -421,14 +354,6 @@ BOOL msrpcd_init(int c, pipes_struct *p)
 ****************************************************************************/
 void msrpcd_process(int c, pipes_struct *p)
 {
-  InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-  OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-  if ((InBuffer == NULL) || (OutBuffer == NULL)) 
-    return;
-
-  InBuffer += SMB_ALIGNMENT;
-  OutBuffer += SMB_ALIGNMENT;
-
   max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
   /* re-initialise the timezone */
@@ -438,13 +363,13 @@ void msrpcd_process(int c, pipes_struct *p)
   {
     int counter;
     int service_load_counter = 0;
-    BOOL got_smb = False;
+    BOOL got_msrpc = False;
 
     errno = 0;      
 
     for (counter=SMBD_SELECT_LOOP; 
-          !receive_message_or_msrpc(c, InBuffer,BUFFER_SIZE,
-                                  SMBD_SELECT_LOOP*1000,&got_smb); 
+          !receive_message_or_msrpc(c, &pdu, 
+                                  SMBD_SELECT_LOOP*1000,&got_msrpc); 
           counter += SMBD_SELECT_LOOP)
     {
       time_t t;
@@ -463,7 +388,7 @@ void msrpcd_process(int c, pipes_struct *p)
 
       if (smb_read_error == READ_ERROR) 
       {
-        DEBUG(3,("receive_smb error (%s) exiting\n",
+        DEBUG(3,("receive error (%s) exiting\n",
                   strerror(errno)));
         return;
       }
@@ -503,7 +428,7 @@ void msrpcd_process(int c, pipes_struct *p)
 
     }
 
-    if(got_smb)
-      process_msrpc(p, c, InBuffer, OutBuffer);
+    if(got_msrpc)
+      process_msrpc(p, c);
   }
 }

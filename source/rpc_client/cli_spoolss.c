@@ -62,7 +62,7 @@ BOOL spoolss_enum_printers(uint32 flags, const char *srv_name,
 	DEBUG(5,("SPOOLSS Enum Printers (Server: %s level: %d)\n",
 				srv_name, level));
 
-	make_spoolss_q_enumprinters(&q_o, flags, srv_name, level, 0x1500);
+	make_spoolss_q_enumprinters(&q_o, flags, srv_name, level, 0x2000);
 
 	/* turn parameters into data stream */
 	spoolss_io_q_enumprinters("", &q_o, &buf, 0);
