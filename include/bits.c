@@ -218,6 +218,15 @@ int main(int argc, char **argv)
 	fprintf(f, "\n");
 	fprintf(f, "#endif /* __BIT_TYPES_DEFINED__ */\n\n");
     }
+#ifdef KRB5
+    fprintf(f, "\n");
+#if defined(HAVE_SOCKLEN_T)
+    fprintf(f, "typedef socklen_t krb5_socklen_t;\n");
+#else
+    fprintf(f, "typedef int krb5_socklen_t;\n");
+#endif
+    fprintf(f, "\n");
+#endif /* KRB5 */
     fprintf(f, "#endif /* %s */\n", hb);
     return 0;
 }
