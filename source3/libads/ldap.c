@@ -106,12 +106,24 @@ static BOOL ads_find_dc(ADS_STRUCT *ads)
 	struct ip_service *ip_list;
 	pstring realm;
 	BOOL got_realm = False;
+	BOOL use_own_domain = False;
+
+	/* if the realm and workgroup are both empty, assume they are ours */
 
 	/* realm */
 	c_realm = ads->server.realm;
+	
+	if ( !c_realm || !*c_realm ) {
+		/* special case where no realm and no workgroup means our own */
+		if ( !ads->server.workgroup || !*ads->server.workgroup ) {
+			use_own_domain = True;
+			c_realm = lp_realm();
+		}
+	}
+	
 	if (c_realm && *c_realm) 
 		got_realm = True;
-	   
+		   
 again:
 	/* we need to try once with the realm name and fallback to the 
 	   netbios domain name if we fail (if netbios has not been disabled */
@@ -119,7 +131,12 @@ again:
 	if ( !got_realm	&& !lp_disable_netbios() ) {
 		c_realm = ads->server.workgroup;
 		if (!c_realm || !*c_realm) {
-			DEBUG(0,("ads_find_dc: no realm or workgroup!  Was the structure initialized?\n"));
+			if ( use_own_domain )
+				c_realm = lp_workgroup();
+		}
+		
+		if ( !c_realm || !*c_realm ) {
+			DEBUG(0,("ads_find_dc: no realm or workgroup!  Don't know what to do\n"));
 			return False;
 		}
 	}
