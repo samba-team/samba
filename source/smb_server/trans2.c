@@ -35,36 +35,43 @@
 /* grow the data allocation size of a trans2 reply - this guarantees
    that requests to grow the data size later will not change the
    pointer */
-static void trans2_grow_data_allocation(struct smbsrv_request *req, 
+static BOOL trans2_grow_data_allocation(struct smbsrv_request *req, 
 					struct smb_trans2 *trans,
-					uint16_t new_size)
+					uint32_t new_size)
 {
 	if (new_size <= trans->out.data.length) {
-		return;
+		return True;
 	}
 	trans->out.data.data = talloc_realloc(req, trans->out.data.data, new_size);
+	return (trans->out.data.data != NULL);
 }
 
 
 /* grow the data size of a trans2 reply */
-static void trans2_grow_data(struct smbsrv_request *req, 
+static BOOL trans2_grow_data(struct smbsrv_request *req, 
 			     struct smb_trans2 *trans,
-			     uint16_t new_size)
+			     uint32_t new_size)
 {
-	trans2_grow_data_allocation(req, trans, new_size);
+	if (!trans2_grow_data_allocation(req, trans, new_size)) {
+		return False;
+	}
 	trans->out.data.length = new_size;
+	return True;
 }
 
 /* grow the data, zero filling any new bytes */
-static void trans2_grow_data_fill(struct smbsrv_request *req, 
+static BOOL trans2_grow_data_fill(struct smbsrv_request *req, 
 				  struct smb_trans2 *trans,
-				  uint16_t new_size)
+				  uint32_t new_size)
 {
-	uint16_t old_size = trans->out.data.length;
-	trans2_grow_data(req, trans, new_size);
+	uint32_t old_size = trans->out.data.length;
+	if (!trans2_grow_data(req, trans, new_size)) {
+		return False;
+	}
 	if (new_size > old_size) {
 		memset(trans->out.data.data + old_size, 0, new_size - old_size);
 	}
+	return True;
 }
 
 
@@ -1004,7 +1011,7 @@ struct find_state {
 /*
   fill a single entry in a trans2 find reply 
 */
-static void find_fill_info(struct smbsrv_request *req,
+static BOOL find_fill_info(struct smbsrv_request *req,
 			   struct smb_trans2 *trans, 
 			   struct find_state *state,
 			   union smb_search_data *file)
@@ -1065,11 +1072,15 @@ static void find_fill_info(struct smbsrv_request *req,
 	case RAW_SEARCH_EA_LIST:
 		ea_size = ea_list_size(file->ea_list.eas.num_eas, file->ea_list.eas.eas);
 		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
-			trans2_grow_data(req, trans, ofs + 27 + ea_size);
+			if (!trans2_grow_data(req, trans, ofs + 27 + ea_size)) {
+				return False;
+			}
 			SIVAL(trans->out.data.data, ofs, file->ea_list.resume_key);
 			ofs += 4;
 		} else {
-			trans2_grow_data(req, trans, ofs + 23 + ea_size);
+			if (!trans2_grow_data(req, trans, ofs + 23 + ea_size)) {
+				return False;
+			}
 		}
 		data = trans->out.data.data + ofs;
 		srv_push_dos_date2(req->smb_conn, data, 0, file->ea_list.create_time);
@@ -1200,6 +1211,8 @@ static void find_fill_info(struct smbsrv_request *req,
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
 	}
+
+	return True;
 }
 
 /* callback function for trans2 findfirst/findnext */
@@ -1211,10 +1224,8 @@ static BOOL find_callback(void *private, union smb_search_data *file)
 
 	old_length = trans->out.data.length;
 
-	find_fill_info(state->req, trans, state, file);
-
-	/* see if we have gone beyond the user specified maximum */
-	if (trans->out.data.length > trans->in.max_data) {
+	if (!find_fill_info(state->req, trans, state, file) ||
+	    trans->out.data.length > trans->in.max_data) {
 		/* restore the old length and tell the backend to stop */
 		trans2_grow_data(state->req, trans, old_length);
 		return False;
