@@ -23,21 +23,9 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
-/* dce/rpc support */
-#include "rpc_dce.h"
-
-/* miscellaneous structures / defines */
 #include "rpc_misc.h"
-
 #include "rpc_creds.h"
-
-#include "talloc.h"
-
-
-/* security descriptor structures */
 #include "rpc_secdes.h"
-
-/* different dce/rpc pipes */
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"
 
