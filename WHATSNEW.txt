@@ -88,8 +88,25 @@ Changes since 3.0rc3
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
 details:
 
-1)  
-
+1)  Fix incorrect error message in testparm.c regarding 'map system'.
+2)  Protect against core dump if ioctl for print job sends invalid 
+    fid.
+3)  Fix bug in generic hash cacluation.
+4)  Remove references to unused 'strip dot' parameter
+5)  Fix CPU burn bug in multi-byte character conversion.
+6)  Use opt_target_workgroup instead of lp_workgroup() in vampire 
+    code so we can override the value in smb.conf with the -w option.
+7)  Display an error if we can't create a posix account for the 
+    user when running 'net rpc vampire' (bug 323).
+8)  Fix UTF8 conversion bugs in LDAP passdb and idmap code (bug 296).
+9)  Fix smbd crash when changing the machine trust account password 
+    (bug 273).
+10) Remove getpwnam() calls from init_sam_from_xxx().  This means 
+    that %u & %g will no longer expand, but %U and %G still do.	
+    The payback is that winbindd local accounts for users work with 
+    'wbinfo -u' when winbind is running on a PDC.
+11) Fix unitiailized timestamp where merging print_jobs and 
+    lpq listing.
 
 
 Changes since 3.0rc2
