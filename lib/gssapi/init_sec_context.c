@@ -207,8 +207,8 @@ init_auth
     output_token->length = 0;
     output_token->value  = NULL;
 
-    outbuf.length = 0;
-    outbuf.data   = NULL;
+    krb5_data_zero(&outbuf);
+    krb5_data_zero(&fwd_data);
 
     *minor_status = 0;
 
