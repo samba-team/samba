@@ -1,14 +1,172 @@
+		   =================================
+                   Release Notes for Samba 3.0.12rc1
+                             Mar 11, 2005
+                   ==================================
+
+This is a release candidate of the Samba 3.0.12 code base and is 
+provided for testing only.  While close to the final stable release, 
+this snapshot is *not* intended for production servers.  If all 
+goes well, this this version (or something very similar) will become
+the final 3.0.12 stable release. 
+
+Common bugs fixed in 3.0.12rc1 include:
+
+  o Error messages from shared Excel workbooks residing on Samba 
+    file shares.
+  o Missing files in the output of smbclient -c 'dir' when run 
+    against Windows file servers.
+  o Inability for Print Administrators to pause/resume/purge print 
+    queues.
+
+Additional features introduced in Samba 3.0.12rc1:
+
+  o Support for the Novell NDS universal password when using the
+    ldapsam passdb backend.
+  o New 'net rpc trustdom {add,del}' functionality to eventually 
+    replace 'smbpasswd {-a,-x} -i'.
+  o New libsmbclient functionality.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.12pre1
+------------------------
+
+smb.conf changes
+----------------
+
+    Parameter Name                      Action
+    --------------                      ------
+    write cache				Deprecated
+    allocation roundup size		New
+
+
+commits
+-------
+o   Jeremy Allison <jra@samba.org>
+    * BUG 2146: Add new smb.conf option 'allocation roundup size' to
+      work around issues building MS Visual Studio 6.0 project 
+      on a Samba file share while restoring the pre-3.0.21pre1 
+      behavior by default.
+    * BUG 2399 (partial): Ensure we use SMB_VFS_STAT instead of 
+      stat when checking for existence of a pathname.
+    * Check the sticky bit on the parent directory for supporting
+      the new WinXP SP2 file deletion semantics.
+    * Various oplock, share mode, and byte range locking fixes
+      found by Connectathon tests.
+    * BUG 2271: Fix resume key issues in trans2FindFirst() client 
+      code.
+    * BUG 2382, 2045: More pending modtime and delayed write fixes
+      for MS Excel (incorporates partial patches from 
+      ke_miyata@itg.hitachi.co.jp).
+      
+
+o   Vince Brimhall <vbrimhall@novell.com>
+    * Add support for Novell NDS universal password.
+    * BUG 2424: Ensure that uidNumber and gidNumber use match 
+      the RFC2307 schema
+    
+    
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Implement MS-DFS for recursive directory listings in smbclient.
+    * BUG 2394: Fix nmbd linking issue on IRIX.
+    * Only display the publish check box in the client's printer 
+      properties dialog if we are a member of an AD domain.
+    * BUG 2363: allow 'in use' driver to be removed as long as 
+      one 'Windows NT x86' driver remains.
+    * BUG 1881: Allow PRINT_SPOOL_PREFIX to be set in local.h for 
+      porting purposes.
+    * Enforce better printer.tdb cache consistency when removing 
+      jobs from a print queue via SMB.
+    * Ensure that pause/resume/purge print queue commands are run
+      with the appropriate level of privilege necessary to actually
+      work.
+    * BUG 2355: Use bsd style commands (lpq, lpr, etc...) for default
+      for 'printing = cups' installations that do not actually have 
+      libcups.
+    * BUG 2425: Remove incorrect checks for Win98 DFS clients.
+    * BUG 2215: Rewrite questionable code that was causing gcc to 
+      choke.
+    * Add server support for LsaLookupPrivValue().
+      
+
+o   Kevin Dalley <kevin@kelphead.org>
+    * BUG 2398: Don't force smbclient to assume a dry run if the 
+      target tarfile is /dev/null.
+      
+      
+o   Steve French <sfrench@us.ibm.com>
+    * On failed mount (ENXIO) retry share name in uppercase (fix
+      mount to FastConnect AIX SMB server).
+    * Add missing FILE_ATTRIBUTE_XXX defines to smb.h.
+    * Ignore user_xattr mount parm (mount.cifs) so as not to confuse
+      it with a user name.
+    * Update for new CIFS POSIX info levels.
+      
+      
+      
+o   Volker Lendecke <vl@samba.org>
+    * BUG 2401: Flush internal getpwnam() cache after deleting a 
+      user.
+    * BUG 1604: Make winbind work with more than 10 trusted domains.
+    * Cleanup various compiler warnings.
+    
+    
+o   Herb Lewis <herb@samba.org>
+    * BUG 2417: Add help lines for net rpc group addmem and 
+      delmem commands.
+      
+      
+o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
+    * Add support to libsmbclient for getting and setting DOS 
+      attributes using EA functions.
+    * Fix libsmbclient's URL encoding/decoding.
+    * Replace browse listing URI queries with an internal options 
+      structure (previous method violated the SMB URI syntax).
+    * Allow tree connects to be multiplexed over a single CIFS server 
+      connection context.
+    * Ensure that cli_tdis() sets the cnum field to -1 so that callers
+      can determine a dead tree connection.
+    
+
+o   Justin Ossevoort <justin@snt.utwente.nl>
+    * BUG 2316: Fix crashes in pdb_pgsql.
+    
+    
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Fix 'net rpc trustdom add' to correctly add new domain trust 
+      accounts.  This will eventually replace 'smbpasswd -a -i'.
+    * Implement 'net rpc trustdom del', including client side of 
+      samr_remove_sid_from_foreign_domain.
+    * Bring IBM Directory Server schema up to date with openldap 
+      schema.
+    * Allow for better protection of sensitive attributes in IBM
+      Directory Server.
+
+    
+o   James Peach <jpeach@sgi.com>
+    * Fix oplock2 test in client smbtorture.
+    
+    
+o   Jelmer Vernooij <jelmer@samba.org>
+    * BUG 892: Default unknown_6 field to 1260 in mySQL pdb module.
+    * BUG 1957: Implement minimal update of fields in mySQL pdb 
+      module.
+    
+
+o   Torsten Werner <torsten.werner@assyst-intl.com>
+    * BUG 2405: Define 'lpstat' printcap output on HPUX.
+    
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
 		   ==================================
                    Release Notes for Samba 3.0.12pre1
                              Feb 25, 2005
                    ===================================
-
-This is a preview release of the Samba 3.0.12 code base and
-is provided for testing only.  This release is *not* intended
-for production servers.  However, there have been several bug
-fixes and new features added since 3.0.11 that we feel are 
-important to make available to the Samba community for wider 
-testing.
 
 Common bugs fixed in 3.0.12pre1 include:
 
@@ -203,15 +361,13 @@ o   Simo Sorce <idra@samba.org>
     * Debian packaging fixes.
       
       
-o   Doug VanLeuven <roamdad-at-sonic.net>
+o   Doug VanLeuven <roamdad@sonic.net>
     * AIX compile fixes.
     
 
 o   Shlomi Yaakobovich" <Shlomi@exanet.com>
     * Detect infinite loops when traversing tdbs.
     
-
-Release Notes for older release follow:
 
       --------------------------------------------------
 		   ==============================
