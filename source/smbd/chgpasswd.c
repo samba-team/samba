@@ -870,13 +870,8 @@ BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd,
 			 BOOL override)
 {
 	int ret;
-	uchar new_nt_p16[16];
-	uchar new_p16[16];
 
-	nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
-
-	pdb_set_lanman_passwd (hnd, new_p16);
-	pdb_set_nt_passwd     (hnd, new_nt_p16);
+	pdb_set_plaintext_passwd (hnd, new_passwd);
 
 	/* Now write it into the file. */
 	become_root();
