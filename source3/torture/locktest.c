@@ -388,7 +388,7 @@ static void test_locks(char *share[NSERVERS])
 			recorded[n].conn = random() % NCONNECTIONS;
 			recorded[n].f = random() % NFILES;
 			recorded[n].start = LOCKBASE + ((unsigned)random() % (LOCKRANGE-1));
-			recorded[n].len = 1 + 
+			recorded[n].len =  
 				random() % (LOCKRANGE-(recorded[n].start-LOCKBASE));
 			recorded[n].start *= RANGE_MULTIPLE;
 			recorded[n].len *= RANGE_MULTIPLE;
