@@ -384,7 +384,7 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent)
     ALLOC(hdb.max_life);
     *hdb.max_life = ntohl(ent->max_life);
 
-    if(ntohl(ent->valid_end) != NEVERDATE && ntohl(ent->valid_end) != -1){
+    if(ntohl(ent->valid_end) != NEVERDATE && ntohl(ent->valid_end) != 0xffffffff) {
 	ALLOC(hdb.valid_end);
 	*hdb.valid_end = ntohl(ent->valid_end);
     }
@@ -503,7 +503,7 @@ get_creds(krb5_context context, krb5_ccache *cache)
     krb5_keytab keytab;
     krb5_principal client;
     krb5_error_code ret;
-    krb5_get_init_creds_opt init_opts;
+    krb5_get_init_creds_opt *init_opts;
     krb5_preauthtype preauth = KRB5_PADATA_ENC_TIMESTAMP;
     krb5_creds creds;
     
@@ -517,11 +517,14 @@ get_creds(krb5_context context, krb5_ccache *cache)
 			      "kadmin", HPROP_NAME, NULL);
     if(ret) krb5_err(context, 1, ret, "krb5_make_principal");
 
-    krb5_get_init_creds_opt_init(&init_opts);
-    krb5_get_init_creds_opt_set_preauth_list(&init_opts, &preauth, 1);
+    ret = krb5_get_init_creds_opt_alloc(&init_opts);
+    if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
+    krb5_get_init_creds_opt_set_preauth_list(init_opts, &preauth, 1);
 
-    ret = krb5_get_init_creds_keytab(context, &creds, client, keytab, 0, NULL, &init_opts);
+    ret = krb5_get_init_creds_keytab(context, &creds, client, keytab, 0, NULL, init_opts);
     if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds");
+
+    krb5_get_init_creds_opt_free(init_opts);
     
     ret = krb5_kt_close(context, keytab);
     if(ret) krb5_err(context, 1, ret, "krb5_kt_close");
