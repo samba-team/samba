@@ -3419,15 +3419,10 @@ uint32 _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 uint32 _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u);
 uint32 _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_R_ENUMPRINTERS *r_u);
 uint32 _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GETPRINTER *r_u);
-uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level,
-				uint32 clientmajorversion, uint32 clientminorversion,
-				NEW_BUFFER *buffer, uint32 offered,
-				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion);
-uint32 _spoolss_startpageprinter(POLICY_HND *handle);
-uint32 _spoolss_endpageprinter(POLICY_HND *handle);
-uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
-				pipes_struct *p, DOC_INFO *docinfo,
-				uint32 *jobid);
+uint32 _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_u, SPOOL_R_GETPRINTERDRIVER2 *r_u);
+uint32 _spoolss_startpageprinter(pipes_struct *p, SPOOL_Q_STARTPAGEPRINTER *q_u, SPOOL_R_STARTPAGEPRINTER *r_u);
+uint32 _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPOOL_R_ENDPAGEPRINTER *r_u);
+uint32 _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, SPOOL_R_STARTDOCPRINTER *r_u);
 uint32 _spoolss_enddocprinter(POLICY_HND *handle);
 uint32 _spoolss_writeprinter( POLICY_HND *handle,
 				uint32 buffer_size,
