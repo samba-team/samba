@@ -885,7 +885,7 @@ void init_unistr2_from_unistr (UNISTR2 *to, UNISTR *from)
 	found = False;
 	while (!found)
 	{
-		if ((from->buffer)[i]=='\0' && (from->buffer)[(2*i)+1]=='\0')
+		if (from->buffer)[i]=='\0')
 			found = True;
 		else
 			i++;
