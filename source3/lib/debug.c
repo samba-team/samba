@@ -365,7 +365,8 @@ BOOL reopen_logs( void )
 		log_overflow = True;
 		DEBUG(0, ("Unable to open new log file %s: %s\n", debugf, strerror(errno)));
 		log_overflow = False;
-		x_fflush(dbf);
+		if (dbf)
+			x_fflush(dbf);
 		ret = False;
 	} else {
 		x_setbuf(new_dbf, NULL);
