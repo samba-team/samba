@@ -16,20 +16,20 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbtar</command>
+		<arg choice="opt">-r</arg>
+		<arg choice="opt">-i</arg>
+		<arg choice="opt">-a</arg>
+		<arg choice="opt">-v</arg>
 		<arg choice="req">-s server</arg>
 		<arg choice="opt">-p password</arg>
 		<arg choice="opt">-x services</arg>
 		<arg choice="opt">-X</arg>
+		<arg choice="opt">-N filename</arg>
+		<arg choice="opt">-b blocksize</arg>
 		<arg choice="opt">-d directory</arg>
+		<arg choice="opt">-l loglevel</arg>
 		<arg choice="opt">-u user</arg>
 		<arg choice="opt">-t tape</arg>
-		<arg choice="opt">-t tape</arg>
-		<arg choice="opt">-b blocksize</arg>
-		<arg choice="opt">-N filename</arg>
-		<arg choice="opt">-i</arg>
-		<arg choice="opt">-r</arg>
-		<arg choice="opt">-l loglevel</arg>
-		<arg choice="opt">-v</arg>
 		<arg choice="req">filenames</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -100,6 +100,11 @@
 		</varlistentry>
 
 
+		<varlistentry>
+		<term>-a</term>
+		<listitem><para>Reset DOS archive bit mode to 
+		indicate file has been archived. </para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term>-t tape</term>
