@@ -54,7 +54,7 @@ interface epmapper
 		EPM_PROTOCOL_NCACN_SMB     	= 0x0f,
 		EPM_PROTOCOL_NCACN_PIPE    	= 0x10,
 		EPM_PROTOCOL_NCACN_NETBIOS 	= 0x11,
-		EPM_PROTOCOL_NCACN_NB_NB   	= 0x12,
+		EPM_PROTOCOL_NCACN_NB_NB   	= 0x12, /* NetBIOS over NetBEUI */
 		EPM_PROTOCOL_NCACN_HTTP    	= 0x1f
 	} epm_protocols;
 

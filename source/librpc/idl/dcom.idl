@@ -1,6 +1,12 @@
 #include "idl_types.h"
 
+/**
+  DCOM interfaces
+  http://www.grimes.demon.co.uk/DCOM/DCOMSpec.htm
+ */
+
 #define HRESULT uint32
+#define OLESTR unistr
 
 [
 	uuid(99fcfe60-5260-101b-bbcb-00aa0021347a),
@@ -10,13 +16,8 @@ interface ObjectRpcBaseTypes
 {
 	WERROR stub();
 	
-	//////////////////////////////////////////////////////////////
-	// Identifier Definitions
-	////////////////////////////////////////////////////////////
-
 	// Machine Identifier
 #define MID HYPER_T
-
 
 	 // Object Exporter Identifier
 #define OXID HYPER_T
@@ -35,7 +36,12 @@ interface ObjectRpcBaseTypes
 
 #define CLSID GUID
 
+	// Interface identifier
 #define IID GUID
+
+#define LCID uint32
+
+#define DISPID uint32
 
 	//////////////////////////////////////////////////////////////////
 	// ORPC Call Packet Format
@@ -59,6 +65,7 @@ interface ObjectRpcBaseTypes
 	// old constants (for convenience)
 	const uint16 COM_MINOR_VERSION_1 = 1;
 	const uint16 COM_MINOR_VERSION_2 = 2;
+
 	// current version
 	const uint16 COM_MAJOR_VERSION = 5;
 	const uint16 COM_MINOR_VERSION = 3;
@@ -73,12 +80,15 @@ interface ObjectRpcBaseTypes
 
 	// enumeration of additional information present in the call packet.
 	// Should be an enum but DCE IDL does not support sparse enumerators.
-	const uint32 ORPCF_NULL = 0; // no additional info in packet
-	const uint32 ORPCF_LOCAL = 1; // call is local to this machine
-	const uint32 ORPCF_RESERVED1 = 2; // reserved for local use
-	const uint32 ORPCF_RESERVED2 = 4; // reserved for local use
-	const uint32 ORPCF_RESERVED3 = 8; // reserved for local use
-	const uint32 ORPCF_RESERVED4 = 16; // reserved for local use
+	typedef enum {
+		ORPCF_NULL = 0, // no additional info in packet
+		ORPCF_LOCAL = 1, // call is local to this machine
+		ORPCF_RESERVED1 = 2, // reserved for local use
+		ORPCF_RESERVED2 = 4, // reserved for local use
+		ORPCF_RESERVED3 = 8, // reserved for local use
+		ORPCF_RESERVED4 = 16 // reserved for local use
+	} ORPC_FLAGS;
+
 	// Extension to implicit parameters.
 	typedef [public] struct 
 	{ 	
@@ -122,11 +132,6 @@ interface ObjectRpcBaseTypes
 	} 	ORPCTHAT;
 
 
-	//////////////////////////////////////////////////////////////////
-	//
-	// Marshaled COM Interface Wire Format
-	//
-	//////////////////////////////////////////////////////////////////
 	// DUALSTRINGARRAYS are the return type for arrays of network addresses,
 	// arrays of endpoints and arrays of both used in many ORPC interfaces
 	typedef struct 
@@ -170,16 +175,19 @@ interface ObjectRpcBaseTypes
 	// Flag values for a STDOBJREF (standard part of an OBJREF).
 	// SORF_OXRES1 - SORF_OXRES8 are reserved for the object exporters
 	// use only, object importers must ignore them and must not enforce MBZ.
-	const uint32 SORF_OXRES1 = 0x1; // reserved for exporter
-	const uint32 SORF_OXRES2 = 0x20; // reserved for exporter
-	const uint32 SORF_OXRES3 = 0x40; // reserved for exporter
-	const uint32 SORF_OXRES4 = 0x80; // reserved for exporter
-	const uint32 SORF_OXRES5 = 0x100;// reserved for exporter
-	const uint32 SORF_OXRES6 = 0x200;// reserved for exporter
-	const uint32 SORF_OXRES7 = 0x400;// reserved for exporter
-	const uint32 SORF_OXRES8 = 0x800;// reserved for exporter
-	const uint32 SORF_NULL = 0x0; // convenient for initializing SORF
-	const uint32 SORF_NOPING = 0x1000;// Pinging is not required 
+	typedef enum {
+		SORF_NULL   = 0x0000, // convenient for initializing SORF
+		SORF_OXRES1 = 0x0001, // reserved for exporter
+		SORF_OXRES2 = 0x0020, // reserved for exporter
+		SORF_OXRES3 = 0x0040, // reserved for exporter
+		SORF_OXRES4 = 0x0080, // reserved for exporter
+		SORF_OXRES5 = 0x0100, // reserved for exporter
+		SORF_OXRES6 = 0x0200, // reserved for exporter
+		SORF_OXRES7 = 0x0400, // reserved for exporter
+		SORF_OXRES8 = 0x0800, // reserved for exporter
+		SORF_NOPING = 0x1000  // Pinging is not required 
+	} STDOBJREF_FLAGS;
+
 	// standard object reference
 	typedef [public] struct 
 	{
@@ -189,7 +197,6 @@ interface ObjectRpcBaseTypes
 		OID oid; // oid of object with this ipid
 		IPID ipid; // ipid of Interface
 	} 	STDOBJREF;
-
 
 	typedef struct
 	{
@@ -228,13 +235,13 @@ interface ObjectRpcBaseTypes
 		GUID iid; // interface identifier
 		[switch_is(flags), switch_type(uint32)] OBJREF_Types u_objref;
 	} OBJREF;
+
 	// wire representation of a marshalled interface pointer
 	typedef [public] struct 
 	{
 		uint32 ulCntData; // size of data
 		[size_is(ulCntData)] uint8 abData[]; // data (OBJREF)
 	} MInterfacePointer;
-
 }
 
 [
@@ -245,7 +252,8 @@ interface IUnknown
 {
 	/*****************/
 	/* Function 0x00 */
-	HRESULT QueryInterface();
+	HRESULT QueryInterface([in] IID *riid
+						   /*FIXME, [out] void **data*/);
 
 	/*****************/
 	/* Function 0x01 */
@@ -284,7 +292,7 @@ interface IRemUnknown : IUnknown
 		 [in] uint32 cRefs, // count of AddRefs requested
 		 [in] uint16 cIids, // count of IIDs that follow
 		 [in, size_is(cIids)]
-		 IID* iids // IIDs to QI for
+		 IID* iids//, // IIDs to QI for
 		 /*FIXME: [out, size_is(,cIids)]
 		 REMQIRESULT** ppQIResults // results returned*/
 		);
@@ -324,8 +332,8 @@ interface IRemUnknown2 : IRemUnknown
 		 [in] IPID *ripid,
 		 [in] uint16 cIids,
 		 [in, size_is(cIids)] IID *iids,
-		 [out, size_is(cIids)] HRESULT *phr
-		 //FIXME [out, size_is(cIids)] MInterfacePointer **ppMIF
+		 [out, size_is(cIids)] HRESULT *phr,
+		 [out, size_is(cIids)] MInterfacePointer *ppMIF[*]
 		);
 }
 
@@ -365,7 +373,7 @@ interface IOXIDResolver
 	// whole set can subsequently be pinged using SimplePing,
 	// thus reducing network traffic.
 	[idempotent] WERROR ComplexPing (
-		 [in] policy_handle hRpc,
+		 [in,ref] policy_handle *hRpc,
 		 [in, out] SETID *pSetId, // In of 0 on first call for new set.
 		 [in] uint16 SequenceNum,
 		 [in] uint16 cAddToSet,
@@ -389,7 +397,7 @@ interface IOXIDResolver
 	// given its OXID. Supported by DCOM
 	// version 5.2 and above.
 	[idempotent] WERROR ResolveOxid2 (
-											  [in] policy_handle hRpc,
+											  [in,ref] policy_handle *hRpc,
 											  [in] OXID *pOxid,
 											  [in] uint16 cRequestedProtseqs,
 											  [in, size_is(cRequestedProtseqs)]
@@ -421,7 +429,7 @@ interface IRemoteActivation
 
 	const uint32 MODE_GET_CLASS_OBJECT = 0xffffffff;
 	HRESULT RemoteActivation (
-							  [in] policy_handle hRpc,
+							  [in,ref] policy_handle *hRpc,
 							  [in] ORPCTHIS *ORPCthis,
 							  [out] ORPCTHAT *ORPCthat,
 							  [in] GUID *Clsid,
@@ -498,4 +506,68 @@ interface ISystemActivator
 ] interface ISCMLocalActivator
 {
 	WERROR ISCMLocalActivator();
+}
+
+[
+	object,
+	uuid(00020400-0000-0000-C000-000000000046),
+	version(0.0)
+] interface IDispatch : IUnknown
+{
+	/*****************/
+	/* Function 0x03 */
+	HRESULT GetTypeInfoCount(
+						 [out] uint16 *pctinfo);
+
+	/*****************/
+	/* Function 0x04 */
+	HRESULT GetTypeInfo (
+					 [in] uint16 iTInfo,
+					 [in] LCID lcid/*FIXME,
+					 [out] ITypeInfo **ppTInfo*/);
+
+	/*****************/
+	/* Function 0x05 */
+	HRESULT GetIDsOfNames(
+					  [in] IID *riid,
+					  /*FIXME[in,size_is(cNames)] OLESTR *rgszNames[], */
+					  [in] uint16 cNames,
+					  [in] LCID lcid,
+					  [out,size_is(cNames)] DISPID *rgDispId);
+
+	typedef struct {
+		uint16 vartype;
+		uint16 FIXME;
+	} VARIANT;
+	
+	typedef struct {
+		uint16 FIXME;
+	} DISPPARAMS;
+
+	/* Exception ? */
+	typedef struct {
+		uint16 FIXME;
+	} EXCEPINFO;
+	
+	/*****************/
+	/* Function 0x06 */
+	HRESULT Invoke(
+			   [in] DISPID dispIdMember,
+			   [in] IID *riid,
+			   [in] LCID lcid,
+			   [in] uint16 wFlags,
+			   [out,in] DISPPARAMS *pDispParams,
+			   [out] VARIANT *pVarResult,
+			   [out] EXCEPINFO *pExcepInfo,
+			   [out] uint16 *puArgErr);
+}
+
+[
+	object,
+	uuid(330E9E75-DF48-11CF-8E2C-00A0C90DC94B),
+	pointer_default(unique)
+]
+interface IDcomEchoServ : IDispatch
+{
+	HRESULT EchoPlusOne([in] uint32 x, [out] uint32 *y);
 }
