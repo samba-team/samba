@@ -43,25 +43,24 @@ RCSID("$Id$");
 /*
  * send the data in `req' on the socket `fd' (which is datagram iff udp)
  * waiting `tmout' for a reply and returning the reply in `rep'.
+ * iff limit read up to this many bytes
  * returns 0 and data in `rep' if succesful, otherwise -1
  */
 
 static int
-send_and_recv (int fd,
-	       time_t tmout,
-	       int udp,
-	       const krb5_data *req,
-	       krb5_data *rep)
+recv_loop (int fd,
+	   time_t tmout,
+	   int udp,
+	   size_t limit,
+	   krb5_data *rep)
 {
      fd_set fdset;
      struct timeval timeout;
      int ret;
      int nbytes;
 
-     if (send (fd, req->data, req->length, 0) < 0)
-	  return -1;
      krb5_data_zero(rep);
-     do{
+     do {
 	 FD_ZERO(&fdset);
 	 FD_SET(fd, &fdset);
 	 timeout.tv_sec  = tmout;
@@ -83,6 +82,9 @@ send_and_recv (int fd,
 	     if(nbytes == 0)
 		 return 0;
 
+	     if (limit)
+		 nbytes = min(nbytes, limit - rep->length);
+
 	     tmp = realloc (rep->data, rep->length + nbytes);
 	     if (tmp == NULL) {
 		 krb5_data_free (rep);
@@ -96,13 +98,13 @@ send_and_recv (int fd,
 	     }
 	     rep->length += ret;
 	 }
-     }while(!udp);
+     } while(!udp && (limit == 0 || rep->length < limit));
      return 0;
 }
 
 /*
  * Send kerberos requests and receive a reply on a udp or any other kind
- * of a datagram socket.  See `send_and_recv'.
+ * of a datagram socket.  See `recv_loop'.
  */
 
 static int
@@ -111,7 +113,10 @@ send_and_recv_udp(int fd,
 		  const krb5_data *req,
 		  krb5_data *rep)
 {
-    return send_and_recv(fd, tmout, 1, req, rep);
+    if (send (fd, req->data, req->length, 0) < 0)
+	return -1;
+
+    return recv_loop(fd, tmout, 1, 0, rep);
 }
 
 /*
@@ -129,20 +134,24 @@ send_and_recv_tcp(int fd,
 {
     unsigned char len[4];
     unsigned long rep_len;
+    krb5_data len_data;
 
     _krb5_put_int(len, req->length, 4);
-    if(send(fd, len, sizeof(len), 0) < 0)
+    if(net_write(fd, len, sizeof(len)) < 0)
 	return -1;
-    if(send_and_recv(fd, tmout, 0, req, rep))
+    if(net_write(fd, req->data, req->length) < 0)
 	return -1;
-    if(rep->length < 4) {
-	krb5_data_free (rep);
+    if (recv_loop (fd, tmout, 0, 4, &len_data) < 0)
+	return -1;
+    if (len_data.length != 4) {
+	krb5_data_free (&len_data);
 	return -1;
     }
-    _krb5_get_int(rep->data, &rep_len, 4);
-    memmove(rep->data, (char*)rep->data + 4, rep->length - 4);
-    rep->length -= 4;
-    if (rep_len != rep->length) {
+    _krb5_get_int(len_data.data, &rep_len, 4);
+    krb5_data_free (&len_data);
+    if (recv_loop (fd, tmout, 0, rep_len, rep) < 0)
+	return -1;
+    if(rep->length != rep_len) {
 	krb5_data_free (rep);
 	return -1;
     }
@@ -162,7 +171,6 @@ send_and_recv_http(int fd,
 {
     char *request;
     char *str;
-    krb5_data r;
     int ret;
     int len = base64_encode(req->data, req->length, &str);
 
@@ -172,10 +180,11 @@ send_and_recv_http(int fd,
     free(str);
     if (request == NULL)
 	return -1;
-    r.data   = request;
-    r.length = strlen(request);
-    ret = send_and_recv(fd, tmout, 0, &r, rep);
-    free(request);
+    ret = net_write (fd, request, strlen(request));
+    free (request);
+    if (ret < 0)
+	return ret;
+    ret = recv_loop(fd, tmout, 0, 0, rep);
     if(ret)
 	return ret;
     {
