@@ -864,6 +864,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 	struct res_rec answers;
 	struct nmb_packet *orig_nmb = &orig_packet->packet.nmb;
 	BOOL loopback_this_packet = False;
+	BOOL use_null_rr_type = False;
 	const char *packet_type = "unknown";
   
 	/* Check if we are sending to or from ourselves. */
@@ -906,6 +907,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 			packet_type = "nmb_wack";
 			nmb->header.nm_flags.recursion_desired = False;
 			nmb->header.nm_flags.recursion_available = False;
+			use_null_rr_type = True;
 			break;
 		case WINS_REG:
 			packet_type = "wins_reg";
@@ -916,6 +918,9 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 			packet_type = "wins_query";
 			nmb->header.nm_flags.recursion_desired = True;
 			nmb->header.nm_flags.recursion_available = True;
+			if (rcode) {
+				use_null_rr_type = True;
+			}
 			break;
 		default:
 			DEBUG(0,("reply_netbios_packet: Unknown packet type: %s %s to ip %s\n",
@@ -947,7 +952,11 @@ for id %hu\n", packet_type, nmb_namestr(&orig_nmb->question.question_name),
 	memset((char*)nmb->answers,'\0',sizeof(*nmb->answers));
   
 	nmb->answers->rr_name  = orig_nmb->question.question_name;
-	nmb->answers->rr_type  = orig_nmb->question.question_type;
+	if (use_null_rr_type) {
+		nmb->answers->rr_type  = RR_TYPE_NULL;
+	} else {
+		nmb->answers->rr_type  = orig_nmb->question.question_type;
+	}
 	nmb->answers->rr_class = orig_nmb->question.question_class;
 	nmb->answers->ttl      = ttl;
   
