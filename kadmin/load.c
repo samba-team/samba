@@ -63,8 +63,8 @@ skip_next(char *p)
     return p;
 }
 
-time_t*
-parse_time(time_t *t, char *s)
+static time_t*
+parse_time_string(time_t *t, char *s)
 {
     int year, month, date, hour, minute, second;
     struct tm tm;
@@ -157,7 +157,7 @@ parse_event(Event *ev, char *str)
 	ev = malloc(sizeof(*ev));
     memset(ev, 0, sizeof(*ev));
     p = strsep(&str, ":");
-    parse_time(&ev->time, p);
+    parse_time_string(&ev->time, p);
     p = strsep(&str, ":");
     krb5_parse_name(context, p, &ev->principal);
     return ev;
@@ -271,9 +271,9 @@ doit(char *filename, int merge)
 	
 	parse_event(&ent.created_by, e.created);
 	ent.modified_by = parse_event(NULL, e.modified);
-	ent.valid_start = parse_time(NULL, e.valid_start);
-	ent.valid_end = parse_time(NULL, e.valid_end);
-	ent.pw_end = parse_time(NULL, e.pw_end);
+	ent.valid_start = parse_time_string(NULL, e.valid_start);
+	ent.valid_end = parse_time_string(NULL, e.valid_end);
+	ent.pw_end = parse_time_string(NULL, e.pw_end);
 	ent.max_life = parse_integer(NULL, e.max_life);
 	ent.max_renew = parse_integer(NULL, e.max_renew);
 	
@@ -290,7 +290,7 @@ load(int argc, char **argv)
 {
     if(argc < 2){
 	fprintf(stderr, "Usage: load filename\n");
-	return;
+	return 0;
     }
     doit(argv[1], 0);
     return 0;
@@ -301,7 +301,7 @@ merge(int argc, char **argv)
 {
     if(argc < 2){
 	fprintf(stderr, "Usage: merge filename\n");
-	return;
+	return 0;
     }
     doit(argv[1], 1);
     return 0;
