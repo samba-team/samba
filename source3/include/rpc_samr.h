@@ -637,7 +637,7 @@ typedef struct q_samr_enum_dom_groups_info
 	POLICY_HND pol;          /* policy handle */
 
 	/* this is possibly an enumeration context handle... */
-	uint32 unknown_0;         /* 0x0000 0000 */
+	uint32 start_idx;         /* 0x0000 0000 */
 
 	uint32 max_size;              /* 0x0000 ffff */
 
@@ -647,8 +647,8 @@ typedef struct q_samr_enum_dom_groups_info
 /* SAMR_R_ENUM_DOM_GROUPS - SAM rids and names */
 typedef struct r_samr_enum_dom_groups_info
 {
-	uint32 num_entries;
-	uint32 ptr_entries;
+	uint32 next_idx;
+	uint32 ptr_entries1;
 
 	uint32 num_entries2;
 	uint32 ptr_entries2;
@@ -671,7 +671,7 @@ typedef struct q_samr_enum_dom_aliases_info
 	POLICY_HND pol;          /* policy handle */
 
 	/* this is possibly an enumeration context handle... */
-	uint32 unknown_0;         /* 0x0000 0000 */
+	uint32 start_idx;         /* 0x0000 0000 */
 
 	uint32 max_size;              /* 0x0000 ffff */
 
@@ -681,8 +681,8 @@ typedef struct q_samr_enum_dom_aliases_info
 /* SAMR_R_ENUM_DOM_ALIASES - SAM rids and names */
 typedef struct r_samr_enum_dom_aliases_info
 {
-	uint32 num_entries;
-	uint32 ptr_entries;
+	uint32 next_idx;
+	uint32 ptr_entries1;
 
 	uint32 num_entries2;
 	uint32 ptr_entries2;

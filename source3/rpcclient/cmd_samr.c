@@ -1365,11 +1365,12 @@ int msrpc_sam_enum_users(struct client_info *info,
 	int user_idx;
 	BOOL res = True;
 	BOOL res1 = True;
-	uint16 start_idx = 0x0;
+	uint32 start_idx = 0x0;
 	uint16 unk_0 = 0x0;
 	uint16 acb_mask = 0;
 	uint16 unk_1 = 0x0;
 	uint32 ace_perms = 0x304; /* access control permissions */
+	uint32 status = STATUS_MORE_ENTRIES;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -1407,27 +1408,33 @@ int msrpc_sam_enum_users(struct client_info *info,
 				&info->dom.samr_pol_connect) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
+	res1 = res ? samr_open_domain(smb_cli, fnum, 
 	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
+#if 0
 	/* connect to the S-1-5-20 domain */
 	res1 = res ? samr_open_domain(smb_cli, fnum, 
 	            &info->dom.samr_pol_connect, ace_perms, &sid_1_5_20,
 	            &info->dom.samr_pol_open_builtindom) : False;
+#endif
 
 	/* read some users */
-	res = res ? samr_enum_dom_users(smb_cli, fnum, 
+	while (res1 && status == STATUS_MORE_ENTRIES)
+	{
+		status = samr_enum_dom_users(smb_cli, fnum, 
 	             &info->dom.samr_pol_open_domain,
-	             start_idx, acb_mask, unk_1, 0xf0000000,
-	             &info->dom.sam, &info->dom.num_sam_entries) : False;
+	             &start_idx, acb_mask, unk_1, 0x01,
+	             &info->dom.sam, &info->dom.num_sam_entries);
+	}
+			
 
-	if (res && info->dom.num_sam_entries == 0)
+	if (res1 && info->dom.num_sam_entries == 0)
 	{
 		report(out_hnd, "No users\n");
 	}
 
-	if (res)
+	if (res1)
 	{
 		/* query all the users */
 		for (user_idx = 0; res && user_idx <
@@ -1456,8 +1463,10 @@ int msrpc_sam_enum_users(struct client_info *info,
 		}
 	}
 
+#if 0
 	res1 = res1 ? samr_close(smb_cli, fnum,
 	            &info->dom.samr_pol_open_builtindom) : False;
+#endif
 
 	res = res ? samr_close(smb_cli, fnum,
 	            &info->dom.samr_pol_open_domain) : False;
@@ -1864,7 +1873,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	/* read some aliases */
 	res = res ? samr_enum_dom_aliases(smb_cli, fnum,
 	                        &info->dom.samr_pol_open_domain,
-	                        0xffff,
+	                        0x0, 0xffff,
 	                        &info->dom.sam, &info->dom.num_sam_entries) : False;
 
 	if (res && info->dom.num_sam_entries == 0)
@@ -2087,7 +2096,7 @@ void cmd_sam_enum_groups(struct client_info *info)
 	/* read some groups */
 	res = res ? samr_enum_dom_groups(smb_cli, fnum,
 	                        &info->dom.samr_pol_open_domain,
-	                        0xffff,
+	                        0x0, 0x03,
 	                        &info->dom.sam, &info->dom.num_sam_entries) : False;
 
 	if (res && info->dom.num_sam_entries == 0)

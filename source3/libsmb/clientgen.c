@@ -255,10 +255,10 @@ static void cli_setup_packet(struct cli_state *cli)
 	uint16 flgs2 = 0;
 	flgs2 |= FLAGS2_LONG_PATH_COMPONENTS;
 	flgs2 |= FLAGS2_32_BIT_ERROR_CODES;
+	flgs2 |= FLAGS2_EXT_SEC;
 #if 0
 	flgs2 |= FLAGS2_UNICODE_STRINGS;
 #endif
-	flgs2 |= FLAGS2_EXT_SEC;
 
         cli->rap_error = 0;
         cli->nt_error = 0;
@@ -750,8 +750,6 @@ prots[] =
       {PROTOCOL_LANMAN2,"Samba"},
       {PROTOCOL_NT1,"NT LANMAN 1.0"},
       {PROTOCOL_NT1,"NT LM 0.12"},
-#if 0
-#endif
       {-1,NULL}
     };
 
@@ -842,7 +840,7 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
-		SSVAL(cli->outbuf,smb_vwv11,0);
+		SIVAL(cli->outbuf,smb_vwv11, CAP_STATUS32);
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pass,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
@@ -3091,7 +3089,17 @@ BOOL cli_establish_connection(struct cli_state *cli,
 #endif
 		prs_init(&auth_resp, 1024, 4, SAFETY_MARGIN, False);
 
-		pwd_make_lm_nt_owf(&cli->pwd, cli->cryptkey);
+		if (cli->use_ntlmv2 != False)
+		{
+			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
+			pwd_make_lm_nt_owf2(&(cli->pwd), cli->cryptkey,
+			           cli->user_name, calling->name, cli->domain);
+		}
+		else
+		{
+			DEBUG(10,("cli_establish_connection: NTLMv1\n"));
+			pwd_make_lm_nt_owf(&(cli->pwd), cli->cryptkey);
+		}
 
 		create_ntlmssp_resp(&cli->pwd, cli->domain,
 				     cli->user_name, cli->calling.name,

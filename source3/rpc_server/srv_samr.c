@@ -639,7 +639,7 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 	fstring sid_str;
 
 	r_e.status = 0x0;
-	r_e.num_entries = 0;
+	r_e.num_entries2 = 0;
 
 	/* find the policy handle.  open a policy on it. */
 	if (r_e.status == 0x0 && !get_lsa_policy_samr_sid(&q_u->pol, &sid))
@@ -666,7 +666,9 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 
 	if (r_e.status == 0x0)
 	{
-		make_samr_r_enum_dom_groups(&r_e, num_entries, grps, r_e.status);
+		make_samr_r_enum_dom_groups(&r_e,
+		          q_u->start_idx + num_entries,
+		          num_entries, grps, r_e.status);
 	}
 
 	/* store the response in the SMB stream */
@@ -708,7 +710,7 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	fstring sid_str;
 
 	r_e.status = 0x0;
-	r_e.num_entries = 0;
+	r_e.num_entries2 = 0;
 
 	/* find the policy handle.  open a policy on it. */
 	if (r_e.status == 0x0 && !get_lsa_policy_samr_sid(&q_u->pol, &sid))
@@ -750,7 +752,9 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		
 	if (r_e.status == 0x0)
 	{
-		make_samr_r_enum_dom_aliases(&r_e, num_entries, alss, r_e.status);
+		make_samr_r_enum_dom_aliases(&r_e,
+		               q_u->start_idx + num_entries,
+		               num_entries, alss, r_e.status);
 	}
 
 	/* store the response in the SMB stream */
@@ -914,7 +918,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 
 	if ((status == 0) && (num_entries < num_sam_entries))
 	{
-		status = NT_STATUS_MORE_ENTRIES;
+		status = STATUS_MORE_ENTRIES;
 	}
 
 	make_samr_r_query_dispinfo(&r_e, num_entries, data_size,

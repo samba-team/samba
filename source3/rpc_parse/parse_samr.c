@@ -2757,7 +2757,8 @@ BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 /*******************************************************************
 makes a SAMR_Q_ENUM_DOM_GROUPS structure.
 ********************************************************************/
-BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol, uint32 size)
+BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
+				uint32 start_idx, uint32 size)
 {
 	if (q_e == NULL || pol == NULL) return False;
 
@@ -2765,7 +2766,7 @@ BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol, u
 
 	memcpy(&(q_e->pol), pol, sizeof(*pol));
 
-	q_e->unknown_0 = 0;
+	q_e->start_idx = start_idx;
 	q_e->max_size = size;
 
 	return True;
@@ -2787,7 +2788,7 @@ BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_stru
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
 	prs_align(ps);
 
-	prs_uint32("unknown_0", ps, depth, &(q_e->unknown_0));
+	prs_uint32("start_idx", ps, depth, &(q_e->start_idx));
 	prs_uint32("max_size ", ps, depth, &(q_e->max_size ));
 
 	prs_align(ps);
@@ -2800,6 +2801,7 @@ BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_stru
 makes a SAMR_R_ENUM_DOM_GROUPS structure.
 ********************************************************************/
 BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
+		uint32 next_idx,
 		uint32 num_sam_entries, DOMAIN_GRP *grps,
 		uint32 status)
 {
@@ -2816,12 +2818,12 @@ BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 			 num_sam_entries));
 	}
 
-	r_u->num_entries  = num_sam_entries;
+	r_u->next_idx     = next_idx;
+	r_u->ptr_entries1 = 1;
+	r_u->num_entries2 = num_sam_entries;
 
 	if (num_sam_entries > 0)
 	{
-		r_u->ptr_entries  = 1;
-		r_u->num_entries2 = num_sam_entries;
 		r_u->ptr_entries2 = 1;
 		r_u->num_entries3 = num_sam_entries;
 
@@ -2842,7 +2844,7 @@ BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 	}
 	else
 	{
-		r_u->ptr_entries = 0;
+		r_u->num_entries4 = 0;
 	}
 
 	r_u->status = status;
@@ -2864,23 +2866,23 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS *r_u, prs_stru
 
 	prs_align(ps);
 
-	prs_uint32("num_entries", ps, depth, &(r_u->num_entries));
-	prs_uint32("ptr_entries", ps, depth, &(r_u->ptr_entries));
+	prs_uint32("next_idx    ", ps, depth, &(r_u->next_idx    ));
+	prs_uint32("ptr_entries1", ps, depth, &(r_u->ptr_entries1));
+	prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
 	
-	if (r_u->num_entries != 0 && r_u->ptr_entries != 0)
+	if (r_u->num_entries2 != 0 && r_u->ptr_entries1 != 0)
 	{
-		prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
 		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
 		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
 
-		SMB_ASSERT_ARRAY(r_u->sam, r_u->num_entries);
+		SMB_ASSERT_ARRAY(r_u->sam, r_u->num_entries2);
 
-		for (i = 0; i < r_u->num_entries; i++)
+		for (i = 0; i < r_u->num_entries2; i++)
 		{
 			sam_io_sam_entry("", &(r_u->sam[i]), ps, depth);
 		}
 
-		for (i = 0; i < r_u->num_entries; i++)
+		for (i = 0; i < r_u->num_entries2; i++)
 		{
 			smb_io_unistr2("", &(r_u->uni_grp_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
 		}
@@ -2898,7 +2900,8 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS *r_u, prs_stru
 /*******************************************************************
 makes a SAMR_Q_ENUM_DOM_ALIASES structure.
 ********************************************************************/
-BOOL make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, POLICY_HND *pol, uint32 size)
+BOOL make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, POLICY_HND *pol,
+				uint32 start_idx, uint32 size)
 {
 	if (q_e == NULL || pol == NULL) return False;
 
@@ -2906,7 +2909,7 @@ BOOL make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, POLICY_HND *pol,
 
 	memcpy(&(q_e->pol), pol, sizeof(*pol));
 
-	q_e->unknown_0 = 0;
+	q_e->start_idx = start_idx;
 	q_e->max_size = size;
 
 	return True;
@@ -2928,7 +2931,7 @@ BOOL samr_io_q_enum_dom_aliases(char *desc,  SAMR_Q_ENUM_DOM_ALIASES *q_e, prs_s
 	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
 	prs_align(ps);
 
-	prs_uint32("unknown_0", ps, depth, &(q_e->unknown_0));
+	prs_uint32("start_idx", ps, depth, &(q_e->start_idx));
 	prs_uint32("max_size ", ps, depth, &(q_e->max_size ));
 
 	prs_align(ps);
@@ -2941,6 +2944,7 @@ BOOL samr_io_q_enum_dom_aliases(char *desc,  SAMR_Q_ENUM_DOM_ALIASES *q_e, prs_s
 makes a SAMR_R_ENUM_DOM_ALIASES structure.
 ********************************************************************/
 BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
+		uint32 next_idx,
 		uint32 num_sam_entries, LOCAL_GRP *alss,
 		uint32 status)
 {
@@ -2957,12 +2961,12 @@ BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 			 num_sam_entries));
 	}
 
-	r_u->num_entries  = num_sam_entries;
+	r_u->next_idx  = next_idx;
+	r_u->ptr_entries1 = 1;
+	r_u->num_entries2 = num_sam_entries;
 
 	if (num_sam_entries > 0)
 	{
-		r_u->ptr_entries  = 1;
-		r_u->num_entries2 = num_sam_entries;
 		r_u->ptr_entries2 = 1;
 		r_u->num_entries3 = num_sam_entries;
 
@@ -2983,7 +2987,7 @@ BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 	}
 	else
 	{
-		r_u->ptr_entries = 0;
+		r_u->num_entries4 = 0;
 	}
 
 	r_u->status = status;
@@ -3005,23 +3009,23 @@ BOOL samr_io_r_enum_dom_aliases(char *desc,  SAMR_R_ENUM_DOM_ALIASES *r_u, prs_s
 
 	prs_align(ps);
 
-	prs_uint32("num_entries", ps, depth, &(r_u->num_entries));
-	prs_uint32("ptr_entries", ps, depth, &(r_u->ptr_entries));
+	prs_uint32("next_idx    ", ps, depth, &(r_u->next_idx    ));
+	prs_uint32("ptr_entries1", ps, depth, &(r_u->ptr_entries1));
+	prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
 	
-	if (r_u->num_entries != 0 && r_u->ptr_entries != 0)
+	if (r_u->num_entries2 != 0 && r_u->ptr_entries1 != 0)
 	{
-		prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
 		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
 		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
 
-		SMB_ASSERT_ARRAY(r_u->sam, r_u->num_entries);
+		SMB_ASSERT_ARRAY(r_u->sam, r_u->num_entries2);
 
-		for (i = 0; i < r_u->num_entries; i++)
+		for (i = 0; i < r_u->num_entries2; i++)
 		{
 			sam_io_sam_entry("", &(r_u->sam[i]), ps, depth);
 		}
 
-		for (i = 0; i < r_u->num_entries; i++)
+		for (i = 0; i < r_u->num_entries2; i++)
 		{
 			smb_io_unistr2("", &(r_u->uni_grp_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
 		}
