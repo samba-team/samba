@@ -63,6 +63,9 @@ struct dcerpc_pipe {
 		/* a callback to the dcerpc code when a full fragment
 		   has been received */
 		void (*recv_data)(struct dcerpc_pipe *, DATA_BLOB *, NTSTATUS status);
+
+		/* get the transport level session key */
+		NTSTATUS (*session_key)(struct dcerpc_pipe *, DATA_BLOB *);
 	} transport;
 
 	/* the last fault code from a DCERPC fault */

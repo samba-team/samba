@@ -699,21 +699,7 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 				  DATA_BLOB *session_key)
 {
-	struct smbcli_tree *tree;
-
-	if (p->security_state.generic_state) {
-		return gensec_session_key(p->security_state.generic_state, session_key);
-	}
-	
-	tree = dcerpc_smb_tree(p);
-	if (tree) {
-		if (tree->session->user_session_key.data) {
-			*session_key = tree->session->user_session_key;
-			return NT_STATUS_OK;
-		}
-	}
-
-	return NT_STATUS_NO_USER_SESSION_KEY;
+	return p->transport.session_key(p, session_key);
 }
 
 
