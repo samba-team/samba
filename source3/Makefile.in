@@ -14,6 +14,7 @@ CC=@CC@
 SHLD=@SHLD@
 CFLAGS=@CFLAGS@
 CPPFLAGS=@CPPFLAGS@
+EXEEXT=@EXEEXT@
 LDFLAGS=@LDFLAGS@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
 AWK=@AWK@
@@ -100,14 +101,21 @@ PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" -DLOGFILEBASE=\"$(LOGFILEBAS
 PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGFIR)\"
 PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 
-SBIN_PROGS = bin/smbd bin/nmbd bin/swat bin/wrepld @EXTRA_SBIN_PROGS@
+# Note that all executable programs now provide for an optional executable suffix.
 
-BIN_PROGS1 = bin/smbclient bin/net bin/smbspool bin/testparm bin/testprns bin/smbstatus 
-BIN_PROGS2 = bin/smbcontrol bin/smbtree bin/tdbbackup bin/nmblookup bin/pdbedit
-BIN_PROGS3 = bin/smbpasswd bin/rpcclient bin/smbcacls bin/profiles bin/smbgroupedit bin/ntlm_auth
+SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ \
+	bin/wrepld@EXEEXT@ @EXTRA_SBIN_PROGS@
 
-TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest \
-	bin/locktest2 bin/nsstest bin/vfstest
+BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
+	bin/testparm@EXEEXT@ bin/testprns@EXEEXT@ bin/smbstatus@EXEEXT@ 
+BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
+	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@
+BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
+	bin/profiles@EXEEXT@ bin/smbgroupedit@EXEEXT@ bin/ntlm_auth@EXEEXT@
+
+TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
+	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
+	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@
 
 BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
 
@@ -556,27 +564,27 @@ smbwrapper : SHOWFLAGS @SMBWRAPPER@
 
 torture : SHOWFLAGS $(TORTURE_PROGS)
 
-smbtorture : SHOWFLAGS bin/smbtorture
+smbtorture : SHOWFLAGS bin/smbtorture@EXEEXT@
 
-masktest : SHOWFLAGS bin/masktest
+masktest : SHOWFLAGS bin/masktest@EXEEXT@
 
-msgtest : SHOWFLAGS bin/msgtest
+msgtest : SHOWFLAGS bin/msgtest@EXEEXT@
 
-locktest : SHOWFLAGS bin/locktest
+locktest : SHOWFLAGS bin/locktest@EXEEXT@
 
-smbcacls : SHOWFLAGS bin/smbcacls
+smbcacls : SHOWFLAGS bin/smbcacls@EXEEXT@
 
-locktest2 : SHOWFLAGS bin/locktest2
+locktest2 : SHOWFLAGS bin/locktest2@EXEEXT@
 
-rpctorture : SHOWFLAGS bin/rpctorture
+rpctorture : SHOWFLAGS bin/rpctorture@EXEEXT@
 
-debug2html : SHOWFLAGS bin/debug2html
+debug2html : SHOWFLAGS bin/debug2html@EXEEXT@
 
-smbfilter : SHOWFLAGS bin/smbfilter
+smbfilter : SHOWFLAGS bin/smbfilter@EXEEXT@
 
-talloctort : SHOWFLAGS bin/talloctort
+talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
 
-nsswitch : SHOWFLAGS bin/winbindd bin/wbinfo nsswitch/libnss_winbind.so nsswitch/pam_winbind.so
+nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/libnss_winbind.so nsswitch/pam_winbind.so
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
@@ -651,149 +659,149 @@ bin/.dummy:
 	  dir=bin $(MAKEDIR); fi
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
-bin/smbd: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
 	  $(AUTHLIBS) $(LIBS) @BUILD_POPT@
 
-bin/nmbd: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
+bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
-bin/wrepld: $(WREPL_OBJ) bin/.dummy
+bin/wrepld@EXEEXT@: $(WREPL_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(WREPL_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/swat: $(SWAT_OBJ) bin/.dummy
+bin/swat@EXEEXT@: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
 	  $(AUTHLIBS) $(LIBS) 
 
-bin/rpcclient: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
+bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@
 
-bin/smbclient: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@
 
-bin/net: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
+bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
-bin/profiles: utils/profiles.o bin/.dummy
+bin/profiles@EXEEXT@: utils/profiles.o bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ utils/profiles.o $(LDFLAGS) $(LIBS)
 
-bin/smbspool: $(CUPS_OBJ) bin/.dummy
+bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CUPS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbmount: $(MOUNT_OBJ) bin/.dummy
+bin/smbmount@EXEEXT@: $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbmnt: $(MNT_OBJ) bin/.dummy
+bin/smbmnt@EXEEXT@: $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbumount: $(UMOUNT_OBJ) bin/.dummy
+bin/smbumount@EXEEXT@: $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/testparm: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
+bin/testparm@EXEEXT@: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
-bin/testprns: $(TESTPRNS_OBJ) bin/.dummy
+bin/testprns@EXEEXT@: $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(PRINTLIBS) $(LIBS)
 
-bin/smbstatus: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
+bin/smbstatus@EXEEXT@: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
-bin/smbcontrol: $(SMBCONTROL_OBJ) bin/.dummy
+bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) -DUSING_SMBCONTROL $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbtree: $(SMBTREE_OBJ) bin/.dummy
+bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
+bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
-bin/pdbedit: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
+bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
-bin/samtest: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
+bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
-bin/smbgroupedit: $(SMBGROUPEDIT_OBJ) bin/.dummy
+bin/smbgroupedit@EXEEXT@: $(SMBGROUPEDIT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBGROUPEDIT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/nmblookup: $(NMBLOOKUP_OBJ) bin/.dummy
+bin/nmblookup@EXEEXT@: $(NMBLOOKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
+bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/talloctort: $(TALLOCTORT_OBJ) bin/.dummy
+bin/talloctort@EXEEXT@: $(TALLOCTORT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TALLOCTORT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/masktest: $(MASKTEST_OBJ) bin/.dummy
+bin/masktest@EXEEXT@: $(MASKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MASKTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/msgtest: $(MSGTEST_OBJ) bin/.dummy
+bin/msgtest@EXEEXT@: $(MSGTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbcacls: $(SMBCACLS_OBJ) bin/.dummy
+bin/smbcacls@EXEEXT@: $(SMBCACLS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
 
-bin/locktest: $(LOCKTEST_OBJ) bin/.dummy
+bin/locktest@EXEEXT@: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/nsstest: $(NSSTEST_OBJ) bin/.dummy
+bin/nsstest@EXEEXT@: $(NSSTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/vfstest: $(VFSTEST_OBJ) @BUILD_POPT@ bin/.dummy
+bin/vfstest@EXEEXT@: $(VFSTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINTLIBS) $(AUTHLIBS) $(LIBS) @BUILD_POPT@
 
-bin/locktest2: $(LOCKTEST2_OBJ) bin/.dummy
+bin/locktest2@EXEEXT@: $(LOCKTEST2_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/rpctorture: $(RPCTORTURE_OBJ) bin/.dummy
+bin/rpctorture@EXEEXT@: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
 
-bin/debug2html: $(DEBUG2HTML_OBJ) bin/.dummy
+bin/debug2html@EXEEXT@: $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbfilter: $(SMBFILTER_OBJ) bin/.dummy
+bin/smbfilter@EXEEXT@: $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbw_sample: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
+bin/smbw_sample@EXEEXT@: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBW_OBJ) utils/smbw_sample.o $(LDFLAGS) $(LIBS)
 
-bin/smbsh: $(SMBSH_OBJ) bin/.dummy
+bin/smbsh@EXEEXT@: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
 
@@ -828,7 +836,7 @@ nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(NSS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
-bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
+bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS)
 
@@ -877,13 +885,13 @@ bin/vfs_netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
+bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) $(SECRETS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) $(SECRETS_OBJ) $(LIBS) @BUILD_POPT@
 
-bin/ntlm_auth: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
+bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
@@ -896,7 +904,7 @@ bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 	-$(AR) -rc $@ $(LIBMSRPC_PICOBJ) 
 
-bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
+bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
 
