@@ -472,6 +472,11 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 
 	if (global_client_caps == 0) {
 		global_client_caps = IVAL(inbuf,smb_vwv10);
+
+		if (global_client_caps & CAP_STATUS32) {
+			add_to_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
+		}
+
 	}
 		
 	p = (uint8 *)smb_buf(inbuf);
@@ -615,17 +620,22 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		enum remote_arch_types ra_type = get_remote_arch();
 		char *p = smb_buf(inbuf);    
 
-		if(global_client_caps == 0)
+		if(global_client_caps == 0) {
 			global_client_caps = IVAL(inbuf,smb_vwv11);
 		
-		/* client_caps is used as final determination if client is NT or Win95. 
-		   This is needed to return the correct error codes in some
-		   circumstances.
-		*/
+			if (global_client_caps & CAP_STATUS32) {
+				add_to_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
+			}
+
+			/* client_caps is used as final determination if client is NT or Win95. 
+			   This is needed to return the correct error codes in some
+			   circumstances.
+			*/
 		
-		if(ra_type == RA_WINNT || ra_type == RA_WIN2K || ra_type == RA_WIN95) {
-			if(!(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32))) {
-				set_remote_arch( RA_WIN95);
+			if(ra_type == RA_WINNT || ra_type == RA_WIN2K || ra_type == RA_WIN95) {
+				if(!(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32))) {
+					set_remote_arch( RA_WIN95);
+				}
 			}
 		}
 
@@ -686,7 +696,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			ra_lanman_string( native_lanman );
 
 	}
-	
+
 	if (SVAL(inbuf,smb_vwv4) == 0) {
 		setup_new_vc_session();
 	}
