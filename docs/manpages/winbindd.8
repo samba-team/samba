@@ -20,8 +20,10 @@ be configured throught the \f(CW/etc/nsswitch\&.conf\fP file\&.  Users and group
 are allocated as they are resolved to a range of user and group ids
 specified by the administrator of the Samba system\&.  
 .PP 
-The service provided by \fBwinbindd\fP is called `winbind\' and can be used to
-resolve user and group information from a Windows NT server\&.  
+The service provided by \fBwinbindd\fP is called `winbind\' and can be
+used to resolve user and group information from a Windows NT server\&.
+The service can also provide authentication services via an associated
+PAM module\&.
 .PP 
 The following nsswitch databases are implemented by the \fBwinbindd\fP
 service:
@@ -43,9 +45,16 @@ For example, the following simple configuration in the
 information from \f(CW/etc/passwd\fP and \f(CW/etc/group\fP and then from the
 Windows NT server\&.
 .PP 
-\f(CWpasswd:         files winbind\fP
-.PP 
-\f(CWgroup:          files winbind\fP
+
+.nf 
+ 
+
+  passwd:         files winbind
+  group:          files winbind
+
+.fi 
+ 
+
 .PP 
 .SH "OPTIONS" 
 .PP 
@@ -91,6 +100,23 @@ should be specified in the [global] section of
 \fBsmb\&.conf\fP\&.
 .PP 
 .IP 
+.IP "winbind separator" 
+.IP 
+The winbind separator option allows you to specify how NT domain names
+and user names are combined into unix user names when presented to
+users\&. By default winbind will use the traditional \e separator so
+that the unix user names look like DOMAIN\eusername\&. In some cases
+this separator character may cause problems as the \e character has
+special meaning in unix shells\&. In that case you can use the winbind
+separator option to specify an alternative sepataror character\&. Good
+alternatives may be / (although that conflicts with the unix directory
+separator) or a + character\&. The + character appears to be the best
+choice for 100% compatibility with existing unix utilities, but may be
+an aesthetically bad choice depending on your taste\&.
+.IP 
+\fBExample:\fP
+\f(CW     winbind separator = +\fP
+.IP 
 .IP "winbind uid" 
 .IP 
 The winbind uid parameter specifies the range of user ids that are
@@ -121,10 +147,17 @@ conflicts can occur otherwise\&.
 .IP 
 This parameter specifies the number of seconds the
 \fBwinbindd\fP daemon will cache user and group
-information before querying a Windows NT server again\&.
+information before querying a Windows NT server again\&. When a item in
+the cache is older than this time winbindd will ask the domain
+controller for the sequence number of the servers account database\&. If
+the sequence number has not changed then the cached item is marked as
+valid for a further "winbind cache time" seconds\&.  Otherwise the item
+is fetched from the server\&. This means that as long as the account
+database is not actively changing winbindd will only have to send one
+sequence number query packet every "winbind cache time" seconds\&.
 .IP 
 \fBDefault:\fP
-\f(CW     winbind cache type = 15\fP
+\f(CW     winbind cache time = 15\fP
 .IP 
 .IP "template homedir" 
 .IP 
@@ -141,13 +174,115 @@ is present it is substituted with the user\'s Windows NT user name\&.
 .IP 
 When filling out the user information for a Windows NT user, the
 \fBwinbindd\fP daemon uses this parameter to fill in
-the home directory for that user\&.  If the string \f(CW%D\fP is present it is
-substituted with the user\'s Windows NT domain name\&.  If the string \f(CW%U\fP
-is present it is substituted with the user\'s Windows NT user name\&.
+the shell for that user\&.  
 .IP 
 \fBDefault:\fP
-\f(CW     template homedir = /home/%D/%U\fP
+\f(CW     template shell = /bin/false\fP
 .IP 
+.PP 
+.SH "EXAMPLE SETUP" 
+.PP 
+To setup winbindd for user and group lookups plus authentication from
+a domain controller use something like the following setup\&. This was
+tested on a RedHat 6\&.2 Linux box\&.
+.PP 
+In /etc/nsswitch\&.conf put the following:
+
+.nf 
+ 
+
+   passwd:     files winbind
+   group:      files winbind
+
+.fi 
+ 
+
+.PP 
+In /etc/pam\&.d/* replace the auth lines with something like this:
+
+.nf 
+ 
+
+	auth       required	/lib/security/pam_securetty\&.so
+	auth       required	/lib/security/pam_nologin\&.so
+	auth       sufficient	/lib/security/pam_winbind\&.so
+	auth       required     /lib/security/pam_pwdb\&.so use_first_pass shadow nullok
+
+.fi 
+ 
+
+.PP 
+Note in particular the use of the sufficient keyword and the
+use_first_pass keyword\&.
+.PP 
+Now replace the account lines with this:
+
+.nf 
+ 
+
+	account    required	/lib/security/pam_winbind\&.so
+
+.fi 
+ 
+
+.PP 
+The next step is to join the domain\&. To do that use the samedit
+program like this:
+
+.nf 
+ 
+
+	samedit -S \'*\' -W DOMAIN -UAdministrator
+
+.fi 
+ 
+
+.PP 
+Then within samedit run the command:
+
+.nf 
+ 
+
+	createuser MACHINE$ -j DOMAIN -L
+
+.fi 
+ 
+
+.PP 
+This assumes your domain is called DOMAIN and your Samba workstation
+is called MACHINE\&.
+.PP 
+Next copy libnss_winbind\&.so\&.2 to /lib and pam_winbind\&.so to
+/lib/security\&.
+.PP 
+Finally, setup a smb\&.conf containing directives like the following:
+
+.nf 
+ 
+
+  [global]
+        winbind separator = +
+        winbind cache time = 10
+        template shell = /bin/bash
+        template homedir = /home/%D/%U
+        winbind uid = 10000-20000
+        winbind gid = 10000-20000
+        workgroup = DOMAIN
+        security = domain
+        password server = *
+
+.fi 
+ 
+
+.PP 
+Now start winbindd and you should find that your user and group
+database is expanded to include your NT users and groups, and that you
+can login to your unix box as a domain user, using the DOMAIN+user
+syntax for the username\&. You may wish to use the commands "getent
+passwd" and "getent group" to confirm the correct operation of
+winbindd\&. 
+.PP 
+NOTE: nmbd must be running on the local machine for winbindd to work\&.
 .PP 
 .SH "FILES" 
 .PP 
@@ -192,8 +327,7 @@ Storage for cached user and group information\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell samba-bugs@samba\&.org\&. Samba is now developed
-by the Samba Team as an Open Source project similar to the way the
-Linux kernel is developed\&.
+Andrew Tridgell\&. Samba is now developed by the Samba Team as an Open
+Source project\&.
 .PP 
 Winbindd was written by Tim Potter\&.
