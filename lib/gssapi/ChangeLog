@@ -10,6 +10,10 @@
  	`krb5_ticket' in context so that ugly programs such as
  	gss_nt_server can get at it.  uck.
 
+1999-09-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* accept_sec_context.c: set minor_status
+
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
 	* display_status.c (calling_error, routine_error): right shift the

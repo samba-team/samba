@@ -127,6 +127,10 @@
 
 	* lib/asn1/der_get.c: make functions more consistent
 
+1999-09-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c: be more informative in pa-data error messages
+
 1999-09-16  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: test for strlcpy, strlcat
