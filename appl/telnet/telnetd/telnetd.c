@@ -366,10 +366,8 @@ int main(int argc, char **argv)
 
 	memset(&dv, 0, sizeof(dv));
 
-	if (getsysv(&sysv, sizeof(struct sysv)) != 0) {
-	    perror("getsysv");
-	    exit(1);
-	}
+	if (getsysv(&sysv, sizeof(struct sysv)) != 0) 
+	    fatalperror(net, "getsysv");
 
 	/*
 	 *	Get socket security label and set device values
@@ -379,10 +377,9 @@ int main(int argc, char **argv)
 	if ((getsockopt(0, SOL_SOCKET, SO_SECURITY,
 			(void *)&ss, &szss) < 0) ||
 	    (getsockopt(0, SOL_SOCKET, SO_SEC_MULTI,
-			(void *)&sock_multi, &szi) < 0)) {
-	    perror("getsockopt");
-	    exit(1);
-	} else {
+			(void *)&sock_multi, &szi) < 0)) 
+	    fatalperror(net, "getsockopt");
+	else {
 	    dv.dv_actlvl = ss.ss_actlabel.lt_level;
 	    dv.dv_actcmp = ss.ss_actlabel.lt_compart;
 	    if (!sock_multi) {
