@@ -7,7 +7,7 @@ David Bannon
      _________________________________________________________________
      _________________________________________________________________
    
-   Comments, corrections and additions to <D.Bannon@latrobe.edu.au>
+   Comments, corrections and additions to <dbannon@samba.org>
    
    This document explains how to setup Samba as a Primary Domain
    Controller and applies to version 2.2.0. Before using these functions
@@ -251,7 +251,7 @@ A sample conf file
         encrypt passwords = yes
         domain logons =yes
         logon script = scripts\%U.bat
-        domain admin users = root dbannon andrew
+        domain admin group = @adm
         add user script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/n
 ull -s /bin/false %m$
         guest account = ftp
@@ -287,10 +287,17 @@ PDC Config Parameters
           and the other parameters are chosen as suitable for a machine
           account. Works for RH Linux, your system may require changes.
           
+   domain admin group = @adm
+          This parameter specifies a unix group whose members will be
+          granted admin privileges on a NT workstation when logged onto
+          that workstation. See the section called Domain Admin Accounts.
+          
    domain admin users = user1 users2
-          This parameter specifies a unix user who will be granted admin
-          privileges on a NT workstation when logged onto that
-          workstation. See the section called Domain Admin Accounts.
+          It appears that this parameter does not funtion correctly at
+          present. Use the 'domain admin group' instread. This parameter
+          specifies a unix user who will be granted admin privileges on a
+          NT workstation when logged onto that workstation. See the
+          section called Domain Admin Accounts.
           
    encrypt passwords = yes
           This parameter must be 'yes' to allow any of the recent service
@@ -462,16 +469,18 @@ Domain Admin Accounts
    
    Samba 2.2 recognizes particular users as being domain admins and tells
    the NTws when it thinks that it has got one logged on. In the smb.conf
-   file we declare that the Domain Admin users = user1 user2. Any user
-   mentioned here will be treated as a Domain Admin by a NTws when logged
-   onto the Domain. They will have full Administrator rights including
-   the rights to change permissions on files and run the system utilities
-   such as Disk Administrator.
+   file we declare that the Domain Admin group = @adm. Any user who is a
+   menber of the unix group 'adm' is treated as a Domain Admin by a NTws
+   when logged onto the Domain. They will have full Administrator rights
+   including the rights to change permissions on files and run the system
+   utilities such as Disk Administrator. Add users to the group by
+   editing /etc/group/. You do not need to use the 'adm' group, choose
+   any one you like.
    
    Further, and this is very new, they will be allowed to create a new
    machine account when first connecting a new NT or W2K machine to the
-   domain. At present, ie pre-release, only a Domain Admin who also
-   happens to be root can do so. 
+   domain. However, at present, ie pre-release, only a Domain Admin who
+   also happens to be root can do so. 
      _________________________________________________________________
    
 Chapter 4. Profiles, Policies and Logon Scripts

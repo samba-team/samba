@@ -1,4 +1,4 @@
-.TH "smbcontrol " "1" "29 Sep 2000" "Samba" "SAMBA" 
+.TH SMBCONTROL 1 "23 Nov 2000" "smbcontrol 2.2.0-alpha1"
 .PP 
 .SH "NAME" 
 smbcontrol \- send messages to smbd or nmbd processes
@@ -39,7 +39,7 @@ process\&.
 .IP 
 .IP "\fBmessage-type\fP" 
 is one of: debug, force-election, ping, profile,
-debuglevel, or printer-notify\&.
+debuglevel, profilelevel, or printer-notify\&.
 .IP 
 The \fBdebug\fP message-type allows the debug level to be set to the value
 specified by the parameter\&. This can be sent to any of the destinations\&.
@@ -63,6 +63,10 @@ The \fBdebuglevel\fP message-type sends a "request debug level" message\&.
 The current debug level setting is returned by a 
 "debuglevel" message\&. This can be sent to any of the destinations\&.
 .IP 
+The \fBprofilelevel\fP message-type sends a "request profile level" message\&.
+The current profile level setting is returned by a 
+"profilelevel" message\&. This can be sent to any of the destinations\&.
+.IP 
 The \fBprinter-notify\fP message-type sends a message to smbd which in turn 
 sends a printer notify message to any Windows NT clients connected to 
 a printer\&.  This message-type takes an argument of the printer name to 
@@ -83,7 +87,7 @@ This man page is correct for version 2\&.2\&.0 of the Samba suite\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell samba@samba\&.org\&. Samba is now developed
+Andrew Tridgell \fIsamba@samba\&.org\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 
@@ -91,7 +95,7 @@ This man page source was written in YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 for the Samba 2\&.2\&.0 release by Herb Lewis\&.
-samba@samba\&.org\&.
+\fIsamba@samba\&.org\fP\&.
 .PP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,

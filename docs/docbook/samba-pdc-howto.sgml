@@ -25,7 +25,7 @@
 
 <dedication><title></title>
 
-    <para>Comments, corrections and additions to <email>D.Bannon@latrobe.edu.au</email></para>
+    <para>Comments, corrections and additions to <email>dbannon@samba.org</email></para>
 
     <para>
 	This document explains how to setup Samba as a Primary Domain Controller and 
@@ -255,7 +255,7 @@ developmental versions of Samba, particularly
 	encrypt passwords = yes 
 	domain logons =yes 
 	logon script = scripts\%U.bat 
-	domain admin users = root dbannon andrew 
+	domain admin group = @adm 
 	add user script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %m$	
 	guest account = ftp 
 	share modes=no 
@@ -294,8 +294,19 @@ developmental versions of Samba, particularly
 	</listitem>
 </varlistentry>
 
+
+<varlistentry><term>domain admin group = @adm</term>
+	<listitem><para>This parameter specifies a unix group whose members will be granted 
+    admin privileges on a NT workstation when
+	logged onto that workstation. See the section called <link linkend=domainadmin>
+    Domain Admin</> Accounts.</para>
+	</listitem>
+</varlistentry>
+
 <varlistentry><term>domain admin users = user1 users2</term>
-	<listitem><para>This parameter specifies a unix user who will be granted admin privileges 
+	<listitem><para>It appears that this parameter does not funtion correctly at present.
+    Use the 'domain admin group' instread. This parameter specifies a unix user who will 
+    be granted admin privileges 
 	on a NT workstation when
 	logged onto that workstation. See the section called <link linkend=domainadmin>
     Domain Admin</> Accounts.</para>
@@ -510,15 +521,16 @@ developmental versions of Samba, particularly
 	<para>Samba 2.2 recognizes particular users as being
 	domain admins and tells the NTws when it thinks that it has got one logged on. 
 	In the smb.conf file we declare
-	that the <filename>Domain Admin users = user1 user2</filename>. 
-	Any user mentioned here will be treated as a Domain Admin by a NTws when 
+	that the <filename>Domain Admin group = @adm</filename>. 
+	Any user who is a menber of the unix group 'adm' is treated as a Domain Admin by a NTws when 
 	logged onto the Domain. They will have full Administrator rights 
 	including the rights to change permissions on files and run the system 
-	utilities such as Disk Administrator.</para> 
+	utilities such as Disk Administrator. Add users to the group by editing <filename>
+    /etc/group/</>. You do not need to use the 'adm' group, choose any one you like.</para> 
 
 	<para>Further, and this is very new, they will be allowed to create a 
 	new machine account when first connecting a new NT or W2K machine to 
-	the domain. <emphasis>At present, ie pre-release, only a Domain Admin who
+	the domain. <emphasis>However, at present, ie pre-release, only a Domain Admin who
 	also happens to be root can do so. </emphasis></para>
 </sect1>
 </chapter>

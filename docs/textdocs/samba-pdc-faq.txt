@@ -133,12 +133,26 @@ State of Play
 
    It should be noted that 2.2.0 in its pre-release form still has a few
    problems, I'll try and keep this section current while things are
-   still dynamic. At the time of this update (November 13, 2000) the
+   still dynamic. At the time of this update (December 15, 2000) the
    current state of play is :
    
    Comments here about W2K joining the domain apply only to Samba 2.2
    from the CVS after November 27th. The 'snapshot' release
    Samba2.2alpha1 does not work !!! See below on how to get a CVS tree.
+   
+   Known Bug !W2K machines will not successfully join a domain with a
+   name that is made up from an even number of characters. Yep, thats
+   right ! BIOTEST is OK as is MYDOMAI but MYDOMAIN will not work until
+   this bug is fixed. Hmm.., we believe that this bug is fixed, but see
+   below.
+   
+   Known Bug !After some bugs were fixed just before Christmas, W2K SP1
+   machines cannot join the domain. Expected to be fixed early in the new
+   year. Whats that ? yeah, samba developers have a Christmas break too !
+   
+   Know Bug !NTs (and possibly W2K ?) are not told the logged on user is
+   a domain admin if the parameter "domain admin users = user" is used.
+   The alternative, "domain admin group" does work. See the HowTo.
    
    Client Side creation of Machine accounts does work but is not
    complete. Firstly, the add user script runs as the user who's name was
@@ -839,6 +853,8 @@ URLs and similar
      * Lars Kneschke's site covers Samba-TNG at
        http://www.kneschke.de/projekte/samba_tng, but again, a lot of it
        does not apply to the main stream Samba.
+     * See how Scott Merrill simulates a BDC behaviour at
+       http://www.skippy.net/linux/smb-howto.html.
      * Although 2.0.7 has almost had its day as a PDC, I (drb) will keep
        the 2.0.7 PDC pages at http://bioserve.latrobe.edu.au/samba going
        for a while yet.
