@@ -1279,6 +1279,8 @@ default:other:---     &lt;-- inherited permissions for everyone (other)
 	<para>
 	Microsoft Windows NT4/200X ACLs must of necessity be mapped to POSIX ACLs.
 	The mappings for file permissions are shown in <link linkend="fdsacls"/>.
+	The '#' character means this flag is set only when the Windows administrator
+	sets the <constant>Full Control</constant> flag on the file.
 	</para>
 
 	<table frame='all' pgwide='0' id="fdsacls"><title>How Windows File ACLs Map to UNIX POSIX File ACLs</title>
@@ -1287,7 +1289,7 @@ default:other:---     &lt;-- inherited permissions for everyone (other)
 		<colspec align="center"/>
 		<thead>
 		<row>
-			<entry align="center">Windows ACE</entry>
+			<entry align="left">Windows ACE</entry>
 			<entry align="center">File Attribute Flag</entry>
 		</row>
 		</thead>
@@ -1358,6 +1360,19 @@ default:other:---     &lt;-- inherited permissions for everyone (other)
 	that is intended by the Administrator.
 	</para>
 
+	<para>
+	In general the mapping of UNIX POSIX user/group/other permissions will be mapped to
+	Windows ALCs. This has precidence over the creation of POSIX ACLs. POSIX ACLs are necessary
+	to establish access controls for users and groups other than the user and group that
+	own the file or directory.
+	</para>
+
+	<para>
+	The UNIX administrator can set any directory permission from within the UNIX environment.
+	The Windows administrator is more restricted in that it is not possible from within the 
+	Windows Explorer to remove read permission for the file owner.
+	</para>
+
 	</sect3>
 
 	<sect3>
@@ -1367,6 +1382,12 @@ default:other:---     &lt;-- inherited permissions for everyone (other)
 	Interesting things happen in the mapping of UNIX POSIX directory permissions as well
 	as UNIX POSIX ACLs to Windows ACEs (Access Control Entries, the discrete component of
 	an Access Control List (ACL), are mapped to Windows directory ACLs.
+	</para>
+
+	<para>
+	Directory permissions function in much the same way as shown for file permissions, but
+	there are some notable exceptions and a few peculiarities that the astute administrator
+	will want to take into account in the setting up of directory permissions.
 	</para>
 
 	</sect3>
