@@ -147,7 +147,7 @@ BOOL torture_raw_qfsinfo(int dummy)
 	if (count != 0) {
 		ret = False;
 		printf("%d levels failed\n", count);
-		if (count > 10) {
+		if (count > 13) {
 			printf("too many level failures - giving up\n");
 			goto done;
 		}
