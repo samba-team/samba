@@ -334,9 +334,11 @@ implemented */
 #define ERRsharebufexc 36 /* share buffer exceeded */
 #define ERRdiskfull 39
 
+#define PSTRING_LEN 1024
+#define FSTRING_LEN 128
 
-typedef char pstring[1024];
-typedef char fstring[128];
+typedef char pstring[PSTRING_LEN];
+typedef char fstring[FSTRING_LEN];
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
@@ -575,6 +577,77 @@ typedef struct file_fd_struct
 	BOOL delete_on_close;
 } file_fd_struct;
 
+typedef struct files_struct
+{
+	struct files_struct *next, *prev;
+	int fnum;
+	struct connection_struct *conn;
+	file_fd_struct *fd_ptr;
+	SMB_OFF_T pos;
+	SMB_OFF_T size;
+	mode_t mode;
+	uint16 vuid;
+	char *mmap_ptr;
+	SMB_OFF_T mmap_size;
+	write_bmpx_struct *wbmpx_ptr;
+	struct timeval open_time;
+        int share_mode;
+	time_t pending_modtime;
+	BOOL open;
+	BOOL can_lock;
+	BOOL can_read;
+	BOOL can_write;
+	BOOL print_file;
+	BOOL modified;
+	BOOL granted_oplock;
+	BOOL sent_oplock_break;
+	BOOL is_directory;
+	char *fsp_name;
+} files_struct;
+
+/*
+ * Each implementation of the vfs back end needs to support the
+ * following operations.
+ */
+
+struct vfs_ops {
+
+    /* Global operations */
+
+    int (*init)(void);
+
+    /* Disk operations */
+    
+    int (*connect)(struct connection_struct *conn, char *service, char *user);
+    void (*disconnect)(struct connection_struct *conn, char *service);
+    SMB_BIG_UINT (*disk_free)(char *path, SMB_BIG_UINT *bsize, 
+			      SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+    
+    /* Directory operations */
+
+    DIR *(*opendir)(char *fname);
+    struct dirent *(*readdir)(DIR *dirp);
+    int (*mkdir)(char *path, mode_t mode);
+    int (*rmdir)(char *path);
+    
+    /* File operations */
+    
+    int (*open)(char *fname, int flags, mode_t mode);
+    int (*close)(int fd);
+    ssize_t (*read)(int fd, char *data, size_t n);
+    ssize_t (*write)(int fd, char *data, size_t n);
+    SMB_OFF_T (*lseek)(int filedes, SMB_OFF_T offset, int whence);
+    int (*rename)(char *old, char *new);
+    void (*sync)(struct connection_struct *conn, files_struct *fsp);
+    int (*stat)(char *fname, SMB_STRUCT_STAT *sbuf);
+    int (*fstat)(int fd, SMB_STRUCT_STAT *sbuf);
+    int (*lstat)(char *path, SMB_STRUCT_STAT *sbuf);
+    BOOL (*lock)(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+    int (*unlink)(char *path);
+    int (*chmod)(char *path, mode_t mode);
+    int (*utime)(char *path, struct utimbuf *times);
+};
+
 /*
  * Structure used to keep directory state information around.
  * Used in NT change-notify code.
@@ -612,6 +685,8 @@ typedef struct connection_struct
 	char *dirpath;
 	char *connectpath;
 	char *origpath;
+        struct vfs_ops vfs_ops;             /* Filesystem operations */
+
 	char *user; /* name of user who *opened* this connection */
 
 	uid_t uid; /* uid of user who *opened* this connection */
@@ -671,34 +746,6 @@ struct current_user
 	int ngroups;
 	gid_t *groups;
 };
-
-typedef struct files_struct
-{
-	struct files_struct *next, *prev;
-	int fnum;
-	connection_struct *conn;
-	file_fd_struct *fd_ptr;
-	SMB_OFF_T pos;
-	SMB_OFF_T size;
-	mode_t mode;
-	uint16 vuid;
-	char *mmap_ptr;
-	SMB_OFF_T mmap_size;
-	write_bmpx_struct *wbmpx_ptr;
-	struct timeval open_time;
-	int share_mode;
-	time_t pending_modtime;
-	BOOL open;
-	BOOL can_lock;
-	BOOL can_read;
-	BOOL can_write;
-	BOOL print_file;
-	BOOL modified;
-	BOOL granted_oplock;
-	BOOL sent_oplock_break;
-	BOOL is_directory;
-	char *fsp_name;
-} files_struct;
 
 /* Domain controller authentication protocol info */
 struct dcinfo
