@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "version.h"
 #include "dynconfig.h"
+#include "system/filesys.h"
 #include "system/passwd.h"
 #include "lib/cmdline/popt_common.h"
 
@@ -403,7 +404,7 @@ static void popt_common_credentials_callback(poptContext con,
 			snprintf(cmdline_auth_info.username, sizeof(cmdline_auth_info.username), 
 				 "%s$", lp_netbios_name());
 			pstrcpy(cmdline_auth_info.password,opt_password);
-			SAFE_FREE(opt_password);
+			free(opt_password);
 			cmdline_auth_info.got_pass = True;
 
 			pstrcpy(cmdline_auth_info.domain, lp_workgroup());

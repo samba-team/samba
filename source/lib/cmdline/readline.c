@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+#include <unistd.h>
+
 #ifdef HAVE_LIBREADLINE
 #  ifdef HAVE_READLINE_READLINE_H
 #    include <readline/readline.h>
