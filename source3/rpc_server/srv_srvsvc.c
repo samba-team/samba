@@ -300,23 +300,36 @@ static void make_srv_sess_0_info(SESS_INFO_0    *se0, SESS_INFO_0_STR *str0,
 static void make_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *stot)
 {
 	uint32 num_entries = 0;
-	(*stot) = 1;
+	struct connect_record *crec;
+	uint32 session_count;
 
-	if (ss0 == NULL)
+        if (!get_session_count(&crec, &session_count))
 	{
 		(*snum) = 0;
+		(*stot) = 0;
 		return;
 	}
 
-	DEBUG(5,("make_srv_sess_0_ss0\n"));
+	(*stot) = session_count;
+
+	DEBUG(0,("Session Count : %u\n",session_count));
+	
+	if (ss0 == NULL)
+	{
+		(*snum) = 0;
+		free(crec);
+		return;
+	}
 
 	if (snum)
 	{
+		DEBUG(0,("snum ok\n"));
 		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++)
 		{
 			make_srv_sess_0_info(&(ss0->info_0    [num_entries]),
-								 &(ss0->info_0_str[num_entries]), "MACHINE");
+								 &(ss0->info_0_str[num_entries]), crec[num_entries].machine);
 
+			DEBUG(0,("make_srv_sess_0_info\n"));
 			/* move on to creating next session */
 			/* move on to creating next sess */
 			num_entries++;
@@ -337,6 +350,7 @@ static void make_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
 		ss0->ptr_sess_info = 0;
 		ss0->num_entries_read2 = 0;
 	}
+	free(crec);
 }
 
 /*******************************************************************
@@ -368,11 +382,23 @@ static void make_srv_sess_1_info(SESS_INFO_1    *se1, SESS_INFO_1_STR *str1,
 static void make_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *stot)
 {
 	uint32 num_entries = 0;
-	(*stot) = 1;
+	struct connect_record *crec;
+	uint32 session_count;
 
+        if (!get_session_count(&crec, &session_count))
+	{
+		(*snum) = 0;
+		(*stot) = 0;
+		return;
+	}
+
+	(*stot) = session_count;
+
+	DEBUG(0,("Session Count (info1) : %u\n",session_count));
 	if (ss1 == NULL)
 	{
 		(*snum) = 0;
+		free(crec);
 		return;
 	}
 
@@ -382,9 +408,12 @@ static void make_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
 	{
 		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++)
 		{
+			DEBUG(0,("sess1 machine: %s, uid : %u\n",crec[num_entries].machine,crec[num_entries].uid));
 			make_srv_sess_1_info(&(ss1->info_1    [num_entries]),
 								 &(ss1->info_1_str[num_entries]),
-			                     "MACHINE", "dummy_user", 1, 10, 5, 0);
+			                     crec[num_entries].machine, 
+			                     uidtoname(crec[num_entries].uid), 1, 10, 5, 0);
+/* 	What are these on the End ??? */
 
 			/* move on to creating next session */
 			/* move on to creating next sess */
@@ -408,6 +437,7 @@ static void make_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
 		
 		(*stot) = 0;
 	}
+	free(crec);
 }
 
 /*******************************************************************

@@ -47,7 +47,7 @@ BOOL get_connection_status(struct connect_record **crec,
   trim_string(fname,"","/");
   pstrcat(fname,"/STATUS..LCK");
   
-fd = sys_open(fname,O_RDONLY, 0);
+  fd = sys_open(fname,O_RDONLY, 0);
 
   if (fd == -1)
   {
@@ -65,10 +65,11 @@ fd = sys_open(fname,O_RDONLY, 0);
    {
         (*crec) = Realloc((*crec), (conn+1) * sizeof((*crec)[conn]));
         if ((*crec) == NULL)
-        {
-           DEBUG(0,("Realloc failed in get_connection_status\n"));
-           return False;
-        }
+            {
+              DEBUG(0,("Realloc failed in get_connection_status\n"));
+              return False;
+            }
+
 	c = &((*crec)[conn]);
 	if (sys_lseek(fd,i*sizeof(*c),SEEK_SET) != i*sizeof(*c) ||
 	    read(fd,c,sizeof(*c)) != sizeof(*c))
@@ -82,12 +83,78 @@ fd = sys_open(fname,O_RDONLY, 0);
 	/* valid connection, smbd process still going, connection still going */
 	if ( c->magic == 0x280267 && process_exists(c->pid) && c->cnum != -1 )
 	  {
-		conn++;
+	       conn++;
 	  }
+	
       }
-
     close(fd);
     (*connection_count)=conn;
-
     return True;
 }
+
+/*******************************************************************
+Get the number of open Sessions. Not optimal yet. Has at least O(n*log(n)).
+ ********************************************************************/
+BOOL get_session_count(struct connect_record **srec,uint32 *session_count)
+{
+  struct 	connect_record *crec = NULL;
+  struct connect_record *c;
+  
+  uint32 	connection_count;
+  uint32 	conn;	
+  int		*pid;
+  int 		i;
+  int		MaxPid;
+  BOOL		found;
+
+  (*srec) = NULL;
+  pid = NULL;   
+  if (get_connection_status(&crec, &connection_count))
+   {
+     MaxPid = 0;
+     for (conn = 0; conn < connection_count; conn++)
+       {
+         DEBUG(10,("Connection nr : %u\n",conn));
+         found=False;
+         for (i = 0; i < MaxPid; i++) 
+	 {
+           if (crec[conn].pid == pid[i]) 
+	   { 
+             found = True;
+             i=MaxPid;
+           }
+         }
+         if (!found) {
+           (*srec) = Realloc((*srec), (MaxPid+1) * sizeof((*srec)[MaxPid]));
+           if ((*srec) == NULL)
+            {
+              DEBUG(0,("Realloc failed in get_connection_status\n"));
+              return False;
+            }
+           pid = Realloc(pid, (MaxPid+1) * sizeof(int));
+           if (pid == NULL)
+           {
+              DEBUG(0,("Realloc failed in get_session_count\n"));
+   	      free(crec);
+              return False;
+           }
+           c = &((*srec)[MaxPid]);
+           pid[MaxPid]=crec[conn].pid;
+	   pstrcpy(c->machine,crec[conn].machine);
+	   c->uid = crec[conn].uid;
+	   c->pid = crec[conn].pid;
+	   c->cnum = crec[conn].cnum;
+	   pstrcpy(c->name,crec[conn].name);
+	   
+           MaxPid++;
+         }
+       }                                                             
+   } else {
+/* crec is not valid, so no need to free it here */
+     return False;
+   }
+   free(crec);
+   (*session_count) = MaxPid;
+   return True;
+}
+
