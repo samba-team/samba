@@ -1658,9 +1658,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
     case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
     {
-      if (tran_call == TRANSACT2_SETFILEINFO)
+      if ((tran_call == TRANSACT2_SETFILEINFO) && (fsp != NULL))
       {
-        files_struct *fsp = file_fsp(params,0);
         BOOL delete_on_close = (CVAL(pdata,0) ? True : False);
 
         if(fsp->is_directory)
