@@ -26,26 +26,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_samr.h"
-
-enum userinfo_stage { USERINFO_OPENUSER, USERINFO_GETUSER, USERINFO_CLOSEUSER };
-
-struct rpc_composite_userinfo {
-	struct {
-		struct policy_handle domain_handle;
-		const char *sid;
-		uint16_t level;
-	} in;
-	struct {
-		union samr_UserInfo info;
-	} out;
-};
-
-struct userinfo_state {
-	enum userinfo_stage stage;
-	struct dcerpc_pipe *pipe;
-	struct rpc_request *req;
-	struct rpc_composite_userinfo io;
-};
+#include "libnet/composite.h"
 
 static void userinfo_handler(struct rpc_request *req);
 
@@ -187,7 +168,7 @@ struct composite_context* rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 	/* preparing parameters to send rpc request */
 	r = talloc_zero(p, struct samr_OpenUser);
 	r->in.domain_handle  = &s->io.in.domain_handle;
-	r->in.access_mask    = 0;
+	r->in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
 	r->in.rid            = sid->sub_auths[sid->num_auths - 1];
 
 	/* send request */
