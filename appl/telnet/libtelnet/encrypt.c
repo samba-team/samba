@@ -84,7 +84,7 @@ char	*nclearto;
 int encrypt_debug_mode = 0;
 static int decrypt_mode = 0;
 static int encrypt_mode = 0;
-static int encrypt_verbose = 0;
+static int encrypt_verbose = 1;
 static int autoencrypt = 0;
 static int autodecrypt = 0;
 static int havesessionkey = 0;
