@@ -66,6 +66,14 @@ static void sig_usr1(void)
 }
 
 /****************************************************************************
+a useful function for testing the message system
+****************************************************************************/
+void ping_message(int msg_type, pid_t src, void *buf, size_t len)
+{
+	message_send_pid(src, MSG_PONG, buf, len);
+}
+
+/****************************************************************************
  Initialise the messaging functions. 
 ****************************************************************************/
 BOOL message_init(void)
@@ -82,6 +90,8 @@ BOOL message_init(void)
 	}
 
 	CatchSignal(SIGUSR1, sig_usr1);
+
+	message_register(MSG_PING, ping_message);
 
 	return True;
 }
@@ -167,11 +177,11 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len)
 	memcpy(p+dbuf.dsize, &rec, sizeof(rec));
 	if (len > 0) memcpy(p+dbuf.dsize+sizeof(rec), buf, len);
 
+	free(dbuf.dptr);
 	dbuf.dptr = p;
 	dbuf.dsize += len + sizeof(rec);
 	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 	free(dbuf.dptr);
-	free(p);
 
  ok:
 	tdb_unlockchain(tdb, kbuf);
@@ -256,6 +266,7 @@ void message_dispatch(void)
 				dfn->fn(msg_type, src, buf, len);
 			}
 		}
+		if (buf) free(buf);
 	}
 }
 
@@ -276,4 +287,20 @@ void message_register(int msg_type,
 	dfn->fn = fn;
 
 	DLIST_ADD(dispatch_fns, dfn);
+}
+
+/****************************************************************************
+de-register the function for a particular message type
+****************************************************************************/
+void message_deregister(int msg_type)
+{
+	struct dispatch_fns *dfn, *next;
+
+	for (dfn = dispatch_fns; dfn; dfn = next) {
+		next = dfn->next;
+		if (dfn->msg_type == msg_type) {
+			DLIST_REMOVE(dispatch_fns, dfn);
+			free(dfn);
+		}
+	}	
 }
