@@ -73,7 +73,7 @@ void smbw_init(void)
 		exit(1);
 	}
 
-	charset_initialize();
+	charset_initialise();
 
 	in_client = True;
 
@@ -85,7 +85,7 @@ void smbw_init(void)
 
 	lp_load(servicesf,True,False,False);
 
-	charset_initialize();
+	charset_initialise();
 
 	get_myname(global_myname);
 
