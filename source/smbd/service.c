@@ -327,6 +327,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->vuid = vuid;
 	conn->uid = pass->pw_uid;
 	conn->gid = pass->pw_gid;
+	safe_strcpy(conn->client_address, client_addr(Client), sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = time(NULL);
 	conn->service = snum;
@@ -534,7 +535,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
 		extern int Client;
 		
-		dbgtext( "%s (%s) ", remote_machine, client_addr(Client) );
+		dbgtext( "%s (%s) ", remote_machine, conn->client_address );
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
 		dbgtext( "as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
@@ -566,7 +567,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	unbecome_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
-				 remote_machine,client_addr(Client),
+				 remote_machine,conn->client_address,
 				 lp_servicename(SNUM(conn))));
 
 	yield_connection(conn,
@@ -600,5 +601,3 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	
 	conn_free(conn);
 }
-
-
