@@ -1,3 +1,7 @@
+Sun Jun  1 22:45:11 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/str2key.c: Fill in keytype and length.
+
 Sun Jun  1 16:31:23 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/rd_safe.c, lib/krb5/rd_priv.c, lib/krb5/mk_rep.c,
@@ -19,6 +23,10 @@ Sun Jun  1 16:31:23 1997  Assar Westerlund  <assar@sics.se>
 	* kdc/kdc.c: preliminary PREAUTH_ENC_TIMESTAMP
 
 	* configure.in: adapted to automake 1.1p
+
+Mon May 26 22:26:21 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/principal.c: Add contexts to many functions.
 
 Thu May 15 20:25:37 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
