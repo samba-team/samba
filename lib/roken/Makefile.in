@@ -160,7 +160,7 @@ make-roken: make-roken.o
 make-roken.c: roken.h.in roken.awk
 	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
 
-install-roken-h:
+install-roken-h: roken.h
 	@if [ -f ../../include/roken.h ] && cmp -s ../../include/roken.h roken.h ; \
 	then :; else \
 	echo "  $(INSTALL) roken.h ../../include/roken.h"; \
