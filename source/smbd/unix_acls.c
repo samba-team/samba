@@ -59,6 +59,7 @@ static SEC_ACCESS map_unix_perms( int *pacl_type, mode_t perm, int r_mask, int w
 	return sa;
 }
 
+#if 0
 /****************************************************************************
  Validate a SID.
 ****************************************************************************/
@@ -88,6 +89,7 @@ static BOOL validate_unix_sid( DOM_SID *psid, uint32 *prid, DOM_SID *sd_sid)
 
   return True;
 }
+#endif
 
 /****************************************************************************
  Map NT perms to UNIX.
@@ -350,6 +352,15 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
     sid_copy( &group_sid, &global_sid_World);
   } else {
 
+    /*
+     * If there is a VFS redirect, use it.
+     */
+
+    if ((fsp->is_directory || fsp->fd == -1) && fsp->conn->vfs_ops.get_nt_acl)
+      return fsp->conn->vfs_ops.get_nt_acl(dos_to_unix(fsp->fsp_name, False), ppdesc);
+    else if (fsp->conn->vfs_ops.fget_nt_acl)
+      return fsp->conn->vfs_ops.fget_nt_acl(fsp->fd, ppdesc);
+
     if(fsp->is_directory || fsp->fd == -1) {
       if(vfs_stat(fsp->conn,fsp->fsp_name, &sbuf) != 0) {
         return 0;
@@ -452,22 +463,23 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
   BOOL got_dacl = False;
 
   /*
+   * If there is a VFS redirect, use it.
+   */
+
+  if ((fsp->is_directory || fsp->fd == -1) && fsp->conn->vfs_ops.set_nt_acl)
+    return fsp->conn->vfs_ops.set_nt_acl(dos_to_unix(fsp->fsp_name, False), security_info_sent, psd);
+  else if (fsp->conn->vfs_ops.fset_nt_acl)
+    return fsp->conn->vfs_ops.fset_nt_acl(fsp->fd, security_info_sent, psd);
+
+  /*
    * Get the current state of the file.
    */
 
-  if(fsp->is_directory) {
+  if(fsp->is_directory || fsp->fd == -1) {
     if(vfs_stat(fsp->conn,fsp->fsp_name, &sbuf) != 0)
       return False;
   } else {
-
-    int ret;
-
-    if(fsp->fd == -1)
-      ret = vfs_stat(fsp->conn,fsp->fsp_name,&sbuf);
-    else
-      ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
-
-    if(ret != 0)
+    if(conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0)
       return False;
   }
 
