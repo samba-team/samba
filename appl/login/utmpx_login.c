@@ -6,6 +6,26 @@ RCSID("$Id$");
 
 /* utmpx_login - update utmp and wtmp after login */
 
+static
+void
+update(struct utmpx *ut, char *line, char *user, char *host)
+{
+    strncpy(ut->ut_line, line, sizeof(ut->ut_line));
+    strncpy(ut->ut_user, user, sizeof(ut->ut_user));
+    strncpy(ut->ut_host, host, sizeof(ut->ut_host));
+#ifdef HAVE_UT_SYSLEN
+    ut->ut_syslen = strlen(host) + 1;
+    if (ut->ut_syslen > sizeof(ut->ut_host))
+        ut->ut_syslen = sizeof(ut->ut_host);
+#endif
+    ut->ut_type = USER_PROCESS;
+    gettimeofday(&(ut->ut_tv), 0);
+    pututxline(ut);
+#ifdef WTMPX_FILE
+    updwtmpx(WTMPX_FILE, ut);
+#endif
+}
+
 int
 utmpx_login(char *line, char *user, char *host)
 {
@@ -25,27 +45,23 @@ utmpx_login(char *line, char *user, char *host)
      */
 
     while ((ut = getutxent())) {
+        /* Try to find a reusable entry */
 	if (ut->ut_pid == mypid
 	    && (   ut->ut_type == INIT_PROCESS
 		|| ut->ut_type == LOGIN_PROCESS
 		|| ut->ut_type == USER_PROCESS)) {
-	    strncpy(ut->ut_line, line, sizeof(ut->ut_line));
-	    strncpy(ut->ut_user, user, sizeof(ut->ut_user));
-	    strncpy(ut->ut_host, host, sizeof(ut->ut_host));
-#ifdef HAVE_UT_SYSLEN
-	    ut->ut_syslen = strlen(host) + 1;
-	    if (ut->ut_syslen > sizeof(ut->ut_host))
-		ut->ut_syslen = sizeof(ut->ut_host);
-#endif
-	    ut->ut_type = USER_PROCESS;
-	    gettimeofday(&(ut->ut_tv), 0);
-	    pututxline(ut);
-#ifdef WTMPX_FILE
-	    updwtmpx(WTMPX_FILE, ut);
-#endif
+	    update(ut, line, user, host);
 	    ret = 0;
 	    break;
 	}
+    }
+    if (ret == -1) {
+        /* Grow utmpx file by one record. */
+        struct utmpx newut;
+	memset(&newut, 0, sizeof(newut));
+	newut.ut_pid = mypid;
+        update(&newut, line, user, host);
+	ret = 0;
     }
     endutxent();
     return (ret);
