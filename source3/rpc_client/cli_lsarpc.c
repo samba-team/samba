@@ -537,7 +537,8 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *pol, uint16 info_class, 
 				    fstring domain_name, fstring dns_name,
-				    fstring forest_name, GUID *domain_guid,
+				    fstring forest_name, 
+				    struct uuid *domain_guid, 
 				    DOM_SID *domain_sid)
 {
 	prs_struct qbuf, rbuf;
@@ -599,7 +600,7 @@ NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				 sizeof(fstring) - 1);
 	}
 	
-	memcpy(domain_guid, &r.info.dns_dom_info.dom_guid, sizeof(GUID));
+	memcpy(domain_guid, &r.info.dns_dom_info.dom_guid,sizeof(struct uuid));
 
 	if (r.info.dns_dom_info.ptr_dom_sid != 0) {
 		*domain_sid = r.info.dns_dom_info.dom_sid.sid;
