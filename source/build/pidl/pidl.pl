@@ -128,7 +128,7 @@ if ($opt_parser) {
     my($idl) = util::LoadStructure($pidl_file);
     my($parser) = util::ChangeExtension($opt_output, "c");
     print "Generating $parser\n";
-    util::FileSave($parser, IdlParser::Parse($idl));
+    IdlParser::Parse($idl, $parser);
 }
 
 if ($opt_eparser) {
