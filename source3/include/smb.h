@@ -383,6 +383,16 @@ typedef struct domrid2_info
 
 } DOM_RID2;
 
+/* DOM_CLNT_SRV - client / server names */
+typedef struct clnt_srv_info
+{
+  uint32  undoc_buffer; /* undocumented 32 bit buffer pointer */
+  UNISTR2 uni_logon_srv; /* logon server name */
+  uint32  undoc_buffer2; /* undocumented 32 bit buffer pointer */
+  UNISTR2 uni_comp_name; /* client machine name */
+
+} DOM_CLNT_SRV;
+
 /* DOM_LOG_INFO - login info */
 typedef struct log_info
 {
@@ -416,6 +426,14 @@ typedef struct clnt_info
   DOM_CRED     cred;
 
 } DOM_CLNT_INFO;
+
+/* DOM_CLNT_INFO2 - client info */
+typedef struct clnt_info2
+{
+  DOM_CLNT_SRV login;
+  DOM_CRED      cred;
+
+} DOM_CLNT_INFO2;
 
 /* DOM_LOGON_ID - logon id */
 typedef struct logon_info
@@ -452,10 +470,10 @@ typedef struct id_info_1
 /* SAM_INFO - sam logon/off id structure */
 typedef struct sam_info
 {
-  DOM_CLNT_INFO client;
-  DOM_CRED      rtn_cred; /* return credentials */
-  uint16        logon_level;
-  uint32        auth_level; /* undocumented */
+  DOM_CLNT_INFO2 client;
+  DOM_CRED       rtn_cred; /* return credentials */
+  uint16         logon_level;
+  uint32         auth_level; /* undocumented */
   
   union
   {
