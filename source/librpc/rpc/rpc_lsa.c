@@ -51,6 +51,7 @@ NTSTATUS dcerpc_lsa_OpenPolicy(struct dcerpc_pipe *p,
 	r.in.system_name = &s;
 	r.in.attr = attr;
 	r.in.desired_access = access_mask;
+	r.out.handle = handle;
 
 	/* make the call */
 	status = dcerpc_ndr_request(p, LSA_OPENPOLICY, mem_ctx,
@@ -62,7 +63,6 @@ NTSTATUS dcerpc_lsa_OpenPolicy(struct dcerpc_pipe *p,
 	}
 	
 	/* and extract the .out parameters */
-	*handle = *r.out.handle;
 	status = r.out.result;
 
 done:
@@ -93,6 +93,7 @@ NTSTATUS dcerpc_lsa_OpenPolicy2(struct dcerpc_pipe *p,
 	r.in.system_name = server;
 	r.in.attr = attr;
 	r.in.desired_access = access_mask;
+	r.out.handle = handle;
 
 	/* make the call */
 	status = dcerpc_ndr_request(p, LSA_OPENPOLICY2, mem_ctx,
@@ -104,7 +105,6 @@ NTSTATUS dcerpc_lsa_OpenPolicy2(struct dcerpc_pipe *p,
 	}
 	
 	/* and extract the .out parameters */
-	*handle = *r.out.handle;
 	status = r.out.result;
 
 done:
@@ -127,8 +127,11 @@ NTSTATUS dcerpc_lsa_EnumSids(struct dcerpc_pipe *p,
 
 	/* fill the .in side of the call */
 	r.in.handle = handle;
-	r.in.resume_handle = *resume_handle;
+	r.in.resume_handle = resume_handle;
 	r.in.num_entries = num_entries;
+
+	r.out.resume_handle = resume_handle;
+	r.out.sids = sids;
 
 	/* make the call */
 	status = dcerpc_ndr_request(p, LSA_ENUM_ACCOUNTS, mem_ctx,
@@ -140,8 +143,6 @@ NTSTATUS dcerpc_lsa_EnumSids(struct dcerpc_pipe *p,
 	}
 	
 	/* and extract the .out parameters */
-	*resume_handle = r.out.resume_handle;
-	*sids = *r.out.sids;
 	status = r.out.result;
 
 done:

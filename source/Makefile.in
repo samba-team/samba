@@ -734,6 +734,10 @@ pch:
 	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
 
+idl:
+	script/build_idl.sh
+
+
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
 # would be nice if "make prefix=/opt/samba all" also rebuilt things,
