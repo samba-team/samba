@@ -1,3 +1,13 @@
+2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/convert_creds.c: try port kerberos/88 if no response on
+	krb524/4444
+
+	* lib/krb5/convert_creds.c: use krb5_sendto
+
+	* lib/krb5/send_to_kdc.c: add more generic krb5_sendto that send
+	to a port at arbitrary list of hosts
+
 2000-07-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* doc/misc.texi: language; say something about kadmin del_enctype
