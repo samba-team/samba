@@ -2779,6 +2779,7 @@ static void remember_query_host(const char *arg,
 	poptContext pc;
 	char *p;
 	int rc = 0;
+	fstring new_workgroup;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 
@@ -2809,6 +2810,11 @@ static void remember_query_host(const char *arg,
 
 	*query_host = 0;
 	*base_directory = 0;
+	
+	/* initialize the workgroup name so we can determine whether or 
+	   not it was set by a command line option */
+	   
+	set_global_myworkgroup( "" );
 
         /* set default debug level to 0 regardless of what smb.conf sets */
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
@@ -2891,13 +2897,24 @@ static void remember_query_host(const char *arg,
 	 * set by cmdline arg or remain default (0)
 	 */
 	AllowDebugChange = False;
-
+	
+	/* save the workgroup...
+	
+	   FIXME!! do we need to do tyhis for other options as well 
+	   (or maybe a generic way to keep lp_load() from overwriting 
+	   everything)?  */
+	
+	fstrcpy( new_workgroup, lp_workgroup() );		
+	
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
 			argv[0], dyn_CONFIGFILE);
 	}
 	
 	load_interfaces();
+	
+	if ( strlen(new_workgroup) != 0 )
+		set_global_myworkgroup( new_workgroup );
 
 	if(poptPeekArg(pc)) {
 		pstrcpy(service,poptGetArg(pc));  
