@@ -325,10 +325,11 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 			}
 			else
 			{
-				/* we are the WINS server, but not the domain master.
-				   what's going on??? and we're not going to deal with
-				   this case, right now
-				 */
+				/* we are the WINS server, but not the domain master.  */
+				/* XXXX we need to look up the domain master in our
+				   WINS database list, and do_announce_host(). maybe
+				   we could do a name query on the unsuspecting domain
+				   master just to make sure it's awake. */
 			}
 		}
 
