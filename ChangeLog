@@ -9,6 +9,8 @@ Thu Jul 24 08:13:59 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 Thu Jul 24 01:54:43 1997  Assar Westerlund  <assar@sics.se>
 
+	* kuser/kinit.c: implement `-l' aka `--lifetime'
+
 	* lib/roken/parse_units.c, parse_time.c: new files
 
 	* admin/gettime.c (gettime): use `parse_time'
