@@ -423,6 +423,9 @@ void default_unicode_map(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
 BOOL load_unicode_map(const char *codepage, smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
 BOOL load_dos_unicode_map(int codepage);
 BOOL load_unix_unicode_map(const char *unix_char_set);
+char *unicode_to_unix(char *dst, const smb_ucs2_t *src, size_t dst_len);
+char *unicode_to_dos(char *dst, const smb_ucs2_t *src, size_t dst_len);
+size_t wstrlen(const smb_ucs2_t *src);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
@@ -632,23 +635,6 @@ BOOL downgrade_share_oplock(files_struct *fsp);
 BOOL modify_share_mode(files_struct *fsp, int new_mode, uint16 new_oplock);
 int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf);
 int share_mode_forall(void (*fn)(share_mode_entry *, char *));
-void share_status(FILE *f);
-
-/*The following definitions come from  locking/locking_shm.c  */
-
-struct share_ops *locking_shm_init(int ronly);
-
-/*The following definitions come from  locking/locking_slow.c  */
-
-struct share_ops *locking_slow_init(int ronly);
-
-/*The following definitions come from  locking/shmem.c  */
-
-struct shmem_ops *smb_shm_open(int ronly);
-
-/*The following definitions come from  locking/shmem_sysv.c  */
-
-struct shmem_ops *sysv_shm_open(int ronly);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
