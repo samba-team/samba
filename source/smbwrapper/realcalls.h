@@ -177,6 +177,37 @@
 #endif
 
 
+#ifdef HAVE__OPEN64
+#define real_open64(fn,fl,m)            	(_open64(fn,fl,m))
+#elif HAVE___OPEN64
+#define real_open64(fn,fl,m)            	(__open64(fn,fl,m))
+#endif
+
+#ifdef HAVE__PREAD
+#define real_pread(fd,buf,size,ofs)            	(_pread(fd,buf,size,ofs))
+#elif HAVE___PREAD
+#define real_pread(fd,buf,size,ofs)            	(__pread(fd,buf,size,ofs))
+#endif
+
+#ifdef HAVE__PREAD64
+#define real_pread64(fd,buf,size,ofs)            	(_pread64(fd,buf,size,ofs))
+#elif HAVE___PREAD64
+#define real_pread64(fd,buf,size,ofs)            	(__pread64(fd,buf,size,ofs))
+#endif
+
+#ifdef HAVE__PWRITE
+#define real_pwrite(fd,buf,size,ofs)            	(_pwrite(fd,buf,size,ofs))
+#elif HAVE___PWRITE
+#define real_pwrite(fd,buf,size,ofs)            	(__pwrite(fd,buf,size,ofs))
+#endif
+
+#ifdef HAVE__PWRITE64
+#define real_pwrite64(fd,buf,size,ofs)            	(_pwrite64(fd,buf,size,ofs))
+#elif HAVE___PWRITE64
+#define real_pwrite64(fd,buf,size,ofs)            	(__pwrite64(fd,buf,size,ofs))
+#endif
+
+
 #define real_readlink(fn,buf,len)	(syscall(SYS_readlink, (fn), (buf), (len)))
 #define real_rename(fn1, fn2)		(syscall(SYS_rename, (fn1), (fn2)))
 #define real_symlink(fn1, fn2)		(syscall(SYS_symlink, (fn1), (fn2)))

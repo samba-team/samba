@@ -37,6 +37,61 @@ __asm__(".globl __open; __open = open");
 	return real_open(name, flags, mode);
 }
 
+#ifdef HAVE_OPEN64
+ int open64(const char *name, int flags, mode_t mode)
+{
+	if (smbw_path(name)) {
+		return smbw_open(name, flags, mode);
+	}
+
+	return real_open64(name, flags, mode);
+}
+#endif
+
+#ifdef HAVE_PREAD
+ ssize_t pread(int fd, void *buf, size_t size, off_t ofs)
+{
+	if (smbw_fd(fd)) {
+		return smbw_pread(fd, buf, size, ofs);
+	}
+
+	return real_pread(fd, buf, size, ofs);
+}
+#endif
+
+#ifdef HAVE_PREAD64
+ ssize_t pread64(int fd, void *buf, size_t size, off64_t ofs)
+{
+	if (smbw_fd(fd)) {
+		return smbw_pread(fd, buf, size, ofs);
+	}
+
+	return real_pread64(fd, buf, size, ofs);
+}
+#endif
+
+#ifdef HAVE_PWRITE
+ ssize_t pwrite(int fd, void *buf, size_t size, off_t ofs)
+{
+	if (smbw_fd(fd)) {
+		return smbw_pwrite(fd, buf, size, ofs);
+	}
+
+	return real_pwrite(fd, buf, size, ofs);
+}
+#endif
+
+#ifdef HAVE_PWRITE64
+ ssize_t pwrite64(int fd, void *buf, size_t size, off64_t ofs)
+{
+	if (smbw_fd(fd)) {
+		return smbw_pwrite(fd, buf, size, ofs);
+	}
+
+	return real_pwrite64(fd, buf, size, ofs);
+}
+#endif
+
 
 #ifdef HAVE___CHDIR
 __asm__(".globl __chdir; __chdir = chdir");
@@ -627,6 +682,11 @@ __asm__(".globl _write; _write = write");
  int creat(const char *path, mode_t mode)
 {
 	return open(path, O_WRONLY|O_CREAT|O_TRUNC, mode);
+}
+
+ int creat64(const char *path, mode_t mode)
+{
+	return open64(path, O_WRONLY|O_CREAT|O_TRUNC, mode);
 }
 #endif
 
