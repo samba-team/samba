@@ -16,7 +16,7 @@ AUTOCONFFOUND="0"
 ##
 for i in $TESTAUTOHEADER; do
 	if which $i > /dev/null 2>&1; then
-		if [ `$i --version | head -n 1 | cut -d.  -f 2` -ge 53 ]; then
+		if [ `$i --version | head -n 1 | cut -d.  -f 2 | tr -d [:alpha:]` -ge 53 ]; then
 			AUTOHEADER=$i
 			AUTOHEADERFOUND="1"
 			break
@@ -30,7 +30,7 @@ done
 
 for i in $TESTAUTOCONF; do
 	if which $i > /dev/null 2>&1; then
-		if [ `$i --version | head -n 1 | cut -d.  -f 2` -ge 53 ]; then
+		if [ `$i --version | head -n 1 | cut -d.  -f 2 | tr -d [:alpha:]` -ge 53 ]; then
 			AUTOCONF=$i
 			AUTOCONFFOUND="1"
 			break
