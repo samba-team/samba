@@ -257,11 +257,11 @@ static BOOL wbinfo_check_secret(void)
 
         if (result) {
 
-                if (response.data.num_entries == 0)
+                if (response.data.auth.nt_status == 0)
                         printf("Secret is good\n");
                 else
                         printf("Secret is bad\n0x%08x\n", 
-			       response.data.num_entries);
+			       response.data.auth.nt_status);
 
                 return True;
         }
