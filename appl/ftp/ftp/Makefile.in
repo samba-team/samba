@@ -17,6 +17,7 @@ LIBS	 = @LIBS@
 MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
 
 INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
 
 prefix 	= @prefix@
 exec_prefix = @exec_prefix@
@@ -48,7 +49,7 @@ all: $(PROGS)
 install: all
 	$(MKINSTALLDIRS) $(bindir)
 	for x in $(PROGS); do \
-	  $(INSTALL) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:

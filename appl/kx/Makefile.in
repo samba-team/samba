@@ -14,6 +14,7 @@ DEFS = @DEFS@
 CFLAGS = $(XINCS) @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
 LIBS = $(XLIBS) @LIBS@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
@@ -52,10 +53,10 @@ Wall:
 install: all
 	$(MKINSTALLDIRS) $(bindir)
 	for x in $(PROG_BIN); do \
-	  $(INSTALL) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	for x in $(PROG_LIBEXEC); do \
-	  $(INSTALL) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:

@@ -16,6 +16,7 @@ CFLAGS = @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS = @LIBS@
 INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
@@ -52,7 +53,7 @@ telnetd: $(OBJECTS)
 install: all
 	$(MKINSTALLDIRS) $(libexecdir)
 	for x in $(PROGS); do \
-	  $(INSTALL) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:

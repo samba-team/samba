@@ -20,6 +20,7 @@ LIBS	= @LIBS@
 MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
 
 INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
 
 prefix 	= @prefix@
 exec_prefix = @exec_prefix@
@@ -54,7 +55,7 @@ all: ftpd
 install: all
 	$(MKINSTALLDIRS) $(libexecdir)
 	for x in $(PROGS); do \
-	  $(INSTALL) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:

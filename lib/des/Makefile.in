@@ -16,6 +16,7 @@ LD_FLAGS = @LD_FLAGS@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
@@ -66,10 +67,10 @@ mdtest.o: mdtest.c
 
 install: all
 	$(MKINSTALLDIRS) $(libdir)
-	$(INSTALL) -m 0555 $(LIB) $(libdir)
+	$(INSTALL_DATA) -m 0555 $(LIB) $(libdir)
 	$(MKINSTALLDIRS) $(bindir)
 	for x in $(PROGS2INSTALL); do \
-	  $(INSTALL) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:

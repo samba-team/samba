@@ -17,7 +17,8 @@ CFLAGS = $(XINCS) @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS = $(XLIBS) @LIBS@
 INSTALL = @INSTALL@
-INSTALL_DATA = @INSTALL_DATA@
+INSTALL_DATA = $(INSTALL)
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
@@ -50,7 +51,7 @@ Wall:
 install: all
 	$(MKINSTALLDIRS) $(bindir)
 	for x in $(PROG_BIN); do \
-	  $(INSTALL) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	$(MKINSTALLDIRS) $(mandir)/man1
 	(cd $(srcdir); \
