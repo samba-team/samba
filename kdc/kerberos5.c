@@ -2013,10 +2013,8 @@ out2:
     }
     krb5_free_principal(context, cp);
     krb5_free_principal(context, sp);
-    if (ticket) {
+    if (ticket)
 	krb5_free_ticket(context, ticket);
-	free(ticket);
-    }
     free_AP_REQ(&ap_req);
     if(auth_data){
 	free_AuthorizationData(auth_data);
