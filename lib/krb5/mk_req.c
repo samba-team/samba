@@ -85,9 +85,7 @@ krb5_mk_req(krb5_context context,
 			      real_hostname,
 			      NULL);
     free (real_hostname);
-    for (p = realms; *p; ++p)
-	free (*p);
-    free (realms);
+    krb5_free_host_realm (context, realms);
 
     if (r) {
 	krb5_free_principal (context, this_cred.client);
