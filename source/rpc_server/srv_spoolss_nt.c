@@ -5437,11 +5437,13 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 			errcode = WERR_OK;
 		}
 		break;
+#if 0	/* JERRY - Never called */
 	case PRINTER_CONTROL_PURGE:
 		if (print_queue_purge(&user, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
+#endif
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
