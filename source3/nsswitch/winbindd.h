@@ -194,4 +194,9 @@ typedef struct {
 #define SETENV(name, value, overwrite) ;
 #endif
 
+/* Authenticated user info is stored in secrets.tdb under these keys */
+
+#define SECRETS_AUTH_USER      "SECRETS/AUTH_USER"
+#define SECRETS_AUTH_PASSWORD  "SECRETS/AUTH_PASSWORD"
+
 #endif /* _WINBINDD_H */
