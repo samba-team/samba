@@ -336,37 +336,14 @@ BOOL torture_rpc_echo(void)
 		return False;
 	}
 
-	if (!test_addone(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_sinkdata(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_echodata(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_sourcedata(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_testcall(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_testcall2(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_enum(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_sleep(p, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_addone(p, mem_ctx);
+	ret &= test_sinkdata(p, mem_ctx);
+	ret &= test_echodata(p, mem_ctx);
+	ret &= test_sourcedata(p, mem_ctx);
+	ret &= test_testcall(p, mem_ctx);
+	ret &= test_testcall2(p, mem_ctx);
+	ret &= test_enum(p, mem_ctx);
+	ret &= test_sleep(p, mem_ctx);
 
 	printf("\n");
 	
