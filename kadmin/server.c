@@ -345,7 +345,7 @@ v5_loop (krb5_context context,
     for (;;) {
 	n = krb5_net_read(context, &fd, tmp, 4);
 	if (n < 0)
-	    krb5_err (context, 1, ret, "krb5_net_read");
+	    krb5_err (context, 1, errno, "krb5_net_read");
 	if (n == 0)
 	    exit (0);
 	_krb5_get_int (tmp, &len, 4);
