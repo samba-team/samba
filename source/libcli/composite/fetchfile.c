@@ -49,7 +49,7 @@ static NTSTATUS fetchfile_connect(struct composite_context *c,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	state->loadfile = talloc(state, struct smb_composite_loadfile);
-	NT_STATUS_NOT_OK_RETURN(status);
+	NT_STATUS_HAVE_NO_MEMORY(state->loadfile);
 
 	state->loadfile->in.fname = io->in.filename;
 
