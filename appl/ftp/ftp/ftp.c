@@ -313,6 +313,7 @@ getreply (int expecteof)
     int c;
     struct sigaction sa, osa;
     char buf[8192];
+    int reply_code;
     int long_warn = 0;
 
     sigemptyset (&sa.sa_mask);
@@ -322,6 +323,7 @@ getreply (int expecteof)
 
     p = buf;
 
+    reply_code = 0;
     while (1) {
 	c = getc (cin);
 	switch (c) {
@@ -351,14 +353,17 @@ getreply (int expecteof)
 	    if(isdigit(buf[0])){
 		sscanf(buf, "%d", &code);
 		if(code == 631){
+		    code = 0;
 		    sec_read_msg(buf, prot_safe);
 		    sscanf(buf, "%d", &code);
 		    lead_string = "S:";
 		} else if(code == 632){
+		    code = 0;
 		    sec_read_msg(buf, prot_private);
 		    sscanf(buf, "%d", &code);
 		    lead_string = "P:";
 		}else if(code == 633){
+		    code = 0;
 		    sec_read_msg(buf, prot_confidential);
 		    sscanf(buf, "%d", &code);
 		    lead_string = "C:";
@@ -366,9 +371,11 @@ getreply (int expecteof)
 		    lead_string = "!!";
 		else
 		    lead_string = "";
+		if(code != 0 && reply_code == 0)
+		    reply_code = code;
 		if (verbose > 0 || (verbose > -1 && code > 499))
 		    fprintf (stdout, "%s%s\n", lead_string, buf);
-		if (buf[3] == ' ') {
+		if (code == reply_code && buf[3] == ' ') {
 		    strlcpy (reply_string, buf, sizeof(reply_string));
 		    if (code >= 200)
 			cpend = 0;
