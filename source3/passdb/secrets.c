@@ -238,7 +238,7 @@ uint32 get_default_sec_channel(void)
 /************************************************************************
  Routine to get the trust account password for a domain.
  The user of this function must have locked the trust password file using
- the above call.
+ the above secrets_lock_trust_account_password().
 ************************************************************************/
 
 BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
@@ -562,7 +562,8 @@ BOOL secrets_store_ldap_pw(const char* dn, char* pw)
  * @return nt status code of rpc response
  **/ 
 
-NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned int max_num_domains, int *num_domains, TRUSTDOM ***domains)
+NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned int max_num_domains,
+                                     int *num_domains, TRUSTDOM ***domains)
 {
 	TDB_LIST_NODE *keys, *k;
 	TRUSTDOM *dom = NULL;
