@@ -95,10 +95,11 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 	}
 
 	/*
-	 * get all the other gubbins we need
+	 * get all the other gubbins we need.  substitute unix name for %U
+	 * as putting the nt name in is a bit meaningless.
 	 */
 
-	pstrcpy(samlogon_user, user->nt_name);
+	pstrcpy(samlogon_user, user->unix_name);
 
 	if (samlogon_user[strlen(samlogon_user)-1] == '$' && 
 	    user->group_rid != DOMAIN_GROUP_RID_USERS)
@@ -156,9 +157,9 @@ static BOOL add_samfile21pwd_entry(struct sam_passwd *newpwd)
  	return add_smbpwd_entry(pwdb_sam_to_smb(newpwd));
 }
 
-static struct sam_disp_info *getsamfiledispntnam(const char *name)
+static struct sam_disp_info *getsamfiledispntnam(const char *ntname)
 {
-	return pwdb_sam_to_dispinfo(getsam21pwntnam(name));
+	return pwdb_sam_to_dispinfo(getsam21pwntnam(ntname));
 }
 
 static struct sam_disp_info *getsamfiledisprid(uint32 rid)
