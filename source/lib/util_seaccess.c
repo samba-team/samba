@@ -2,6 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 2.0
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000.
+   Copyright (C) Tim Potter 2000.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,256 +25,353 @@
 
 extern int DEBUGLEVEL;
 
-static uint32 acegrant(uint32 mask, uint32 *acc_req, uint32 *acc_grant, uint32 *acc_deny)
+/* Call winbindd to convert uid to sid */
+
+BOOL winbind_uid_to_sid(uid_t uid, DOM_SID *sid)
 {
-	/* maximum allowed: grant what's in the ace */
-	if ((*acc_req) == SEC_RIGHTS_MAXIMUM_ALLOWED)
-	{
-		(*acc_grant) |= mask & ~(*acc_deny);
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+
+	if (!sid) return False;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.data.uid = uid;
+
+	/* Make request */
+
+	result = winbindd_request(WINBINDD_UID_TO_SID, &request, &response);
+
+	/* Copy out result */
+
+	if (result == NSS_STATUS_SUCCESS) {
+		string_to_sid(sid, response.data.sid.sid);
+	} else {
+		sid_copy(sid, &global_sid_NULL);
 	}
-	else
-	{
-		(*acc_grant) |= (*acc_req) & mask;
-		(*acc_req) &= ~(*acc_grant);
-	}
-	if ((*acc_req) == 0x0)
-	{
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	return NT_STATUS_NOPROBLEMO;
+
+	return (result == NSS_STATUS_SUCCESS);
 }
 
-static uint32 acedeny(uint32 mask, uint32 *acc_req, uint32 *acc_grant, uint32 *acc_deny)
+/* Call winbindd to convert uid to sid */
+
+BOOL winbind_gid_to_sid(gid_t gid, DOM_SID *sid)
 {
-	/* maximum allowed: grant what's in the ace */
-	if ((*acc_req) == SEC_RIGHTS_MAXIMUM_ALLOWED)
-	{
-		(*acc_deny) |= mask & ~(*acc_grant);
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result;
+
+	if (!sid) return False;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.data.gid = gid;
+
+	/* Make request */
+
+	result = winbindd_request(WINBINDD_GID_TO_SID, &request, &response);
+
+	/* Copy out result */
+
+	if (result == NSS_STATUS_SUCCESS) {
+		string_to_sid(sid, response.data.sid.sid);
+	} else {
+		sid_copy(sid, &global_sid_NULL);
 	}
-	else
-	{
-		if ((*acc_req) & mask)
-		{
-			return NT_STATUS_ACCESS_DENIED;
-		}
-#if 0
-		(*acc_deny) |= (*acc_req) & mask;
-		(*acc_req) &= ~(*acc_deny);
-#endif
-	}
-	if ((*acc_req) == 0x0)
-	{
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	return NT_STATUS_NOPROBLEMO;
+
+	return (result == NSS_STATUS_SUCCESS);
 }
 
-static BOOL check_ace(const SEC_ACE *ace, BOOL is_owner,
-			const DOM_SID *sid,
-			uint32 *acc_req,
-			uint32 *acc_grant,
-			uint32 *acc_deny,
-			uint32 *status)
+/* Process an access allowed ACE */
+
+static BOOL ace_grant(uint32 mask, uint32 *acc_desired, uint32 *acc_granted)
+{
+	uint32 matches;
+
+	/* If there are any matches in the ACE mask and desired access,
+	   turn them off in the desired access and on in the granted
+	   mask. */ 
+
+	if (*acc_desired == SEC_RIGHTS_MAXIMUM_ALLOWED) {
+		matches = mask;
+		*acc_desired = mask;
+	} else {
+		matches = mask & *acc_desired;
+	}
+
+	if (matches) {
+		*acc_desired = *acc_desired & ~matches;
+		*acc_granted = *acc_granted | matches;
+	}
+
+	return *acc_desired == 0;
+}
+
+/* Process an access denied ACE */
+
+static BOOL ace_deny(uint32 mask, uint32 *acc_desired, uint32 *acc_granted)
+{
+	uint32 matches;
+
+	/* If there are any matches in the ACE mask and the desired access,
+	   all bits are turned off in the desired and granted mask. */
+
+	if (*acc_desired == SEC_RIGHTS_MAXIMUM_ALLOWED) {
+		matches = mask;
+	} else {
+		matches = mask & *acc_desired;
+	}
+
+	if (matches) {
+		*acc_desired = *acc_granted = 0;
+	}
+
+	return *acc_desired == 0;
+}
+
+/* Check an ACE against a SID.  We return true if the ACE clears all the
+   permission bits in the access desired mask.  This indicates that we have
+   make a decision to deny or allow access and the status is updated
+   accordingly. */
+
+static BOOL check_ace(SEC_ACE *ace, BOOL is_owner, DOM_SID *sid, 
+		      uint32 *acc_desired, uint32 *acc_granted, 
+		      uint32 *status)
 {
 	uint32 mask = ace->info.mask;
 
-	if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY)
-	{
-		/* inherit only is ignored */
+	/* Inherit only is ignored */
+
+	if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
 		return False;
 	}
 
-	/* only owner allowed write-owner rights */
-	if (!is_owner)
-	{
+	/* Only owner allowed write-owner rights */
+
+	if (!is_owner) {
 		mask &= (~SEC_RIGHTS_WRITE_OWNER);
 	}
 
-	switch (ace->type)
-	{
-		case SEC_ACE_TYPE_ACCESS_ALLOWED:
-		{
-			/* everyone - or us */
-			if (sid_equal(&ace->sid, global_sid_everyone) ||
-			    sid_equal(&ace->sid, sid))
-			{
-				(*status) = acegrant(mask, acc_req, acc_grant, acc_deny);
-				if ((*status) != NT_STATUS_NOPROBLEMO)
-				{
-					return True;
-				}
+	/* Check the ACE value.  This updates the access_desired and
+	   access_granted values appropriately. */
 
-			}
-			break;
-		}
-		case SEC_ACE_TYPE_ACCESS_DENIED:
-		{
-			/* everyone - or us */
+	switch (ace->type) {
+
+		/* Access allowed ACE */
+
+		case SEC_ACE_TYPE_ACCESS_ALLOWED: {
+
+			/* Everyone - or us */
+
 			if (sid_equal(&ace->sid, global_sid_everyone) ||
-			    sid_equal(&ace->sid, sid))
-			{
-				(*status) = acedeny(mask, acc_req, acc_grant, acc_deny);
-				if ((*status) != NT_STATUS_NOPROBLEMO)
-				{
+			    sid_equal(&ace->sid, sid)) {
+
+				/* Return true if access has been allowed */
+
+				if (ace_grant(mask, acc_desired, 
+					      acc_granted)) {
+					*status = NT_STATUS_NO_PROBLEMO;
 					return True;
 				}
 			}
+
 			break;
 		}
-		case SEC_ACE_TYPE_SYSTEM_AUDIT:
-		{
-			(*status) = NT_STATUS_NOT_IMPLEMENTED;
-			return True;
+
+		/* Access denied ACE */
+
+		case SEC_ACE_TYPE_ACCESS_DENIED: {
+
+			/* Everyone - or us */
+
+			if (sid_equal(&ace->sid, global_sid_everyone) ||
+			    sid_equal(&ace->sid, sid)) {
+				
+				/* Return false if access has been denied */
+
+				if (ace_deny(mask, acc_desired, 
+					     acc_granted)) {
+					*status = NT_STATUS_ACCESS_DENIED;
+					return True;
+				}
+			}
+
+			break;
 		}
+
+		/* Unimplemented ACE types.  These are ignored. */
+
 		case SEC_ACE_TYPE_SYSTEM_ALARM:
-		{
-			(*status) = NT_STATUS_NOT_IMPLEMENTED;
-			return True;
+		case SEC_ACE_TYPE_SYSTEM_AUDIT: {
+			*status = NT_STATUS_NOT_IMPLEMENTED;
+			return False;
 		}
-		default:
-		{
-			(*status) = NT_STATUS_INVALID_PARAMETER;
-			return True;
+
+		/* Unknown ACE type */
+
+		default: {
+			*status = NT_STATUS_INVALID_PARAMETER;
+			return False;
 		}
 	}
+
+	/* There are still some bits set in the access desired mask that
+	   haven't been cleared by an ACE.  More checking is required. */
+
 	return False;
 }
 
-/***********************************************************************
- checks access_requested rights of user against sd.  returns access granted
- and a status code if the grant succeeded, error message if it failed.
+/* Check access rights of a user against a security descriptor.  Look at
+   each ACE in the security descriptor until an access denied ACE denies
+   any of the desired rights to the user or any of the users groups, or one
+   or more ACEs explicitly grant all requested access rights.  See
+   "Access-Checking" document in MSDN. */ 
 
- the previously_granted access rights requires some explanation: if you
- open a policy handle with a set of permissions, you cannot then perform
- operations that require more privileges than those requested.  pass in
- the [previously granted] permissions from the open_policy_hnd call as
- prev_grant_acc, and this function will do the checking for you.
- ***********************************************************************/
-BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
-		     uint32 acc_req, uint32 prev_grant_acc,
-		     uint32 * acc_grant,
-		     uint32 * status)
+BOOL se_access_check(SEC_DESC *sd, uid_t uid, gid_t gid, int ngroups,
+		     gid_t *groups, uint32 acc_desired, 
+		     uint32 *acc_granted, uint32 *status)
 {
-	int num_aces;
-	int num_groups;
-	DOM_SID usr_sid;
-	DOM_SID grp_sid;
-	DOM_SID **grp_sids = NULL;
-	uint32 ngrp_sids = 0;
+	DOM_SID user_sid, group_sid;
+	DOM_SID **group_sids = NULL;
 	BOOL is_owner;
-	BOOL is_system;
-	const SEC_ACL *acl = NULL;
-	uint32 grnt;
-	uint32 deny;
+	int i, j, ngroup_sids = 0;
+	SEC_ACL *acl;
+	uint8 check_ace_type;
 
-	if (status == NULL)
-	{
-		return False;
+	if (!status || !acc_granted) return False;
+
+	*status = NT_STATUS_ACCESS_DENIED;
+	*acc_granted = 0;
+
+	/* No security descriptor allows all access */
+
+	if (!sd) {
+		*status = NT_STATUS_NOPROBLEMO;
+		*acc_granted = acc_desired;
+		acc_desired = 0;
+
+                goto done;
 	}
 
-	(*status) = NT_STATUS_ACCESS_DENIED;
+	/* If desired access mask is empty then no access is allowed */
 
-	if (prev_grant_acc == SEC_RIGHTS_MAXIMUM_ALLOWED)
-	{
-		prev_grant_acc = 0xffffffff;
+	if (acc_desired == 0) {
+		goto done;
 	}
+
+	/* We must know the owner sid */
+
+	if (sd->owner_sid == NULL) {
+		DEBUG(1, ("no owner for security descriptor\n"));
+		goto done;
+	}
+
+	/* Create user sid */
+
+	if (!winbind_uid_to_sid(uid, &user_sid)) {
+		DEBUG(3, ("could not lookup sid for uid %d\n", uid));
+	}
+
+	/* Create group sid */
+
+	if (!winbind_gid_to_sid(gid, &group_sid)) {
+		DEBUG(3, ("could not lookup sid for gid %d\n", gid));
+	}
+
+	/* Preparation: check owner sid, create array of group sids */
+
+	is_owner = sid_equal(&user_sid, sd->owner_sid);
+	add_sid_to_array(&ngroup_sids, &group_sids, &group_sid);
+
+	for (i = 0; i < ngroups; i++) {
+		if (groups[i] != gid &&
+		    winbind_gid_to_sid(groups[i], &group_sid)) {
+			add_sid_to_array(&ngroup_sids, &group_sids, 
+					 &group_sid);
+		} else {
+			DEBUG(3, ("could not lookup sid for gid %d\n", gid));
+		}
+	}
+
+        /* ACL must have something in it */
+
+	acl = sd->dacl;
+
+        if (acl == NULL || acl->ace == NULL || acl->num_aces == 0) {
+
+		/* Checks against a NULL ACL succeed and return access
+		   granted = access requested. */
+
+		*status = NT_STATUS_NOPROBLEMO;
+		*acc_granted = acc_desired;
+		acc_desired = 0;
+
+                goto done;
+        }
+
+	/* Check each ACE in ACL.  We break out of the loop if an ACE is
+	   either explicitly denied or explicitly allowed by the
+	   check_ace2() function.  We also check the Access Denied ACEs
+	   before Access allowed ones as the Platform SDK documentation is
+	   unclear whether ACEs in a ACL are necessarily always in this
+	   order.  See the discussion on "Order of ACEs in a DACL" in
+	   MSDN. */
+
+	check_ace_type = SEC_ACE_TYPE_ACCESS_DENIED;
+
+    check_aces:
+
+        for (i = 0; i < acl->num_aces; i++) {
+                SEC_ACE *ace = &acl->ace[i];
+		BOOL is_group_owner;
+
+		/* Check user sid */
+
+                if (ace->type == check_ace_type &&
+		    check_ace(ace, is_owner, &user_sid, &acc_desired,
+			      acc_granted, status)) {
+			goto done;
+                }
+
+                /* Check group sids */
+
+                for (j = 0; j < ngroup_sids; j++) {
+
+			is_group_owner = sd->grp_sid ? 
+				sid_equal(group_sids[j], sd->grp_sid) : False;
+
+                        if (ace->type == check_ace_type &&
+			    check_ace(ace, is_group_owner, group_sids[j], 
+				      &acc_desired, acc_granted, status)) {
+				goto done;
+                        }
+                }
+        }
+
+	/* Check access allowed ACEs */
+
+	if (check_ace_type == SEC_ACE_TYPE_ACCESS_DENIED) {
+		check_ace_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+		goto check_aces;
+	}
+
+ done:
+        free_sid_array(ngroup_sids, group_sids);
 	
-	/* cannot request any more than previously requested access */
-	acc_req &= prev_grant_acc;
+	/* If any access desired bits are still on, return access denied
+	   and turn off any bits already granted. */
 
-	if (acc_req == 0x0)
-	{
-		goto end;
+	if (acc_desired) {
+		*acc_granted = 0;
+		*status = NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* we must know the owner sid */
-	if (sd->owner_sid == NULL)
-	{
-		goto end;
-	}
-
-	(*status) = NT_STATUS_NOPROBLEMO;
-
-	/* create group sid */
-	sid_copy(&grp_sid, &user->dom_sid.sid);
-	sid_append_rid(&grp_sid, user->group_id);
-
-	/* create user sid */
-	sid_copy(&usr_sid, &user->dom_sid.sid);
-	sid_append_rid(&usr_sid, user->user_id);
-
-	/* preparation: check owner sid, create array of group sids */
-	is_owner = sid_equal(&usr_sid, sd->owner_sid);
-	add_sid_to_array(&ngrp_sids, &grp_sids, &grp_sid);
-
-	for (num_groups = 0; num_groups < user->num_groups; num_groups++)
-	{
-		sid_copy(&grp_sid, &user->dom_sid.sid);
-		sid_append_rid(&grp_sid, user->gids[num_groups].g_rid);
-		add_sid_to_array(&ngrp_sids, &grp_sids, &grp_sid);
-	}
-
-#ifdef SAMBA_MAIN_DOES_NOT_HAVE_GLOBAL_SID_SYSTEM
-	/* check for system acl or user (discretionary) acl */
-	is_system = sid_equal(&usr_sid, global_sid_system);
-	if (is_system)
-	{
-		acl = sd->sacl;
-	}
-	else
-#endif
-	{
-		acl = sd->dacl;
-	}
-
-	/* acl must have something in it */
-	if (acl == NULL || acl->ace == NULL || acl->num_aces == 0)
-	{
-		goto end;
-	}
-
-	/*
-	 * OK!  we have an ACE, it has at least one thing in it,
-	 * we have a user sid, we have an array of group sids.
-	 * let's go!
-	 */
-
-	deny = 0;
-	grnt = 0;
-
-	/* check each ace */
-	for (num_aces = 0; num_aces < acl->num_aces; num_aces++)
-	{
-		const SEC_ACE *ace = &acl->ace[num_aces];
-
-		/* first check the user sid */
-		if (check_ace(ace, is_owner, &usr_sid, &acc_req,
-			      &grnt, &deny, status))
-		{
-			goto end;
-		}
-		/* now check the group sids */
-		for (num_groups = 0; num_groups < ngrp_sids; num_groups++)
-		{
-			if (check_ace(ace, False, grp_sids[num_groups],
-					&acc_req, &grnt, &deny, status))
-			{
-				goto end;
-			}
-		}
-	}
-
-	if (grnt == 0x0 && (*status) == NT_STATUS_NOPROBLEMO)
-	{
-		(*status) = NT_STATUS_ACCESS_DENIED;
-	}
-	else if (acc_grant != NULL)
-	{
-		(*acc_grant) = grnt;
-	}
-
-end:
-	free_sid_array(ngrp_sids, grp_sids);
-	return (*status) != NT_STATUS_NOPROBLEMO;
+        return *status == NT_STATUS_NOPROBLEMO;
 }
-
