@@ -7,6 +7,36 @@
 [] 
 interface misc
 {
+	/* a NULL sid */
+	const string SID_NULL = "S-1-0-0";
+
+	/* the world domain */
+	const string SID_WORLD_DOMAIN = "S-1-1";
+	const string SID_WORLD        = "S-1-1-0";
+
+	/* SECURITY_CREATOR_SID_AUTHORITY */
+	const string SID_CREATOR_OWNER_DOMAIN = "S-1-3";
+	const string SID_CREATOR_OWNER        = "S-1-3-0";
+	const string SID_CREATOR_GROUP        = "S-1-3-1";
+
+	/* SECURITY_NT_AUTHORITY */
+	const string SID_NT_AUTHORITY        = "S-1-5";
+	const string SID_NETWORK             = "S-1-5-2";
+	const string SID_ANONYMOUS           = "S-1-5-7";
+	const string SID_AUTHENTICATED_USERS = "S-1-5-11";
+	const string SID_SYSTEM              = "S-1-5-18";
+
+	/* SECURITY_BUILTIN_DOMAIN_RID */
+	const string SID_BUILTIN                   = "S-1-5-32";
+	const string SID_BUILTIN_ADMINISTRATORS    = "S-1-5-32-544";
+	const string SID_BUILTIN_USERS             = "S-1-5-32-545";
+	const string SID_BUILTIN_GUESTS            = "S-1-5-32-546";
+	const string SID_BUILTIN_POWER_USERS       = "S-1-5-32-547";
+	const string SID_BUILTIN_ACCOUNT_OPERATORS = "S-1-5-32-548";
+	const string SID_BUILTIN_SERVER_OPERATORS  = "S-1-5-32-549";
+	const string SID_BUILTIN_PRINT_OPERATORS   = "S-1-5-32-550";
+	const string SID_BUILTIN_BACKUP_OPERATORS  = "S-1-5-32-551";
+	const string SID_BUILTIN_REPLICATOR        = "S-1-5-32-552";
 
 	typedef [public,noprint] struct {
 		uint32 time_low;

@@ -26,16 +26,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-extern struct dom_sid *global_sid_World;
-extern struct dom_sid *global_sid_Anonymous;
-extern struct dom_sid *global_sid_Network;
-extern struct dom_sid *global_sid_Builtin_Guests;
-extern struct dom_sid *global_sid_Authenticated_Users;
-
 /****************************************************************************
  Create an auth_usersupplied_data structure
 ****************************************************************************/
-
 static NTSTATUS make_user_info(auth_usersupplied_info **user_info, 
                                const char *smb_name, 
                                const char *internal_username,
@@ -459,15 +452,14 @@ NTSTATUS create_nt_user_token(TALLOC_CTX *mem_ctx,
 	 * The only difference between guest and "anonymous" (which we
 	 * don't really support) is the addition of Authenticated_Users.
 	 */
-
-	ptoken->user_sids[2] = global_sid_World;
-	ptoken->user_sids[3] = global_sid_Network;
+	ptoken->user_sids[2] = dom_sid_parse_talloc(mem_ctx, SID_WORLD);
+	ptoken->user_sids[3] = dom_sid_parse_talloc(mem_ctx, SID_NETWORK);
 
 	if (is_guest) {
-		ptoken->user_sids[4] = global_sid_Builtin_Guests;
+		ptoken->user_sids[4] = dom_sid_parse_talloc(mem_ctx, SID_BUILTIN_GUESTS);
 		ptoken->num_sids++;
 	} else {
-		ptoken->user_sids[4] = global_sid_Authenticated_Users;
+		ptoken->user_sids[4] = dom_sid_parse_talloc(mem_ctx, SID_AUTHENTICATED_USERS);
 		ptoken->num_sids++;
 	}
 
@@ -516,11 +508,12 @@ NTSTATUS make_server_info(auth_serversupplied_info **server_info, const char *us
 /***************************************************************************
  Make (and fill) a user_info struct for a guest login.
 ***************************************************************************/
-
 NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	static const char zeros[16];
+	struct dom_sid *sid_Anonymous;
+	struct dom_sid *sid_Builtin_Guests;
 
 	nt_status = make_server_info(server_info, "");
 
@@ -529,9 +522,12 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 	}
 	
 	(*server_info)->guest = True;
+
+	sid_Anonymous = dom_sid_parse_talloc((*server_info)->mem_ctx, SID_ANONYMOUS);
+	sid_Builtin_Guests = dom_sid_parse_talloc((*server_info)->mem_ctx, SID_BUILTIN_GUESTS);
 	
 	if (!NT_STATUS_IS_OK(nt_status = create_nt_user_token((*server_info)->mem_ctx, 
-							      global_sid_Anonymous, global_sid_Builtin_Guests,
+							      sid_Anonymous, sid_Builtin_Guests,
 							      0, NULL, 
 							      True, &(*server_info)->ptok))) {
 		DEBUG(1,("check_sam_security: create_nt_user_token failed with '%s'\n", nt_errstr(nt_status)));
