@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,19 +43,18 @@ krb5_init_etype (krb5_context context,
 {
     int i;
     krb5_error_code ret;
-    krb5_enctype *tmp;
+    krb5_enctype *tmp = NULL;
 
     ret = 0;
-    if (etypes)
-	tmp = (krb5_enctype*)etypes;
-    else {
+    if (etypes == NULL) {
 	ret = krb5_get_default_in_tkt_etypes(context,
 					     &tmp);
 	if (ret)
 	    return ret;
+	etypes = tmp;
     }
 
-    for (i = 0; tmp[i]; ++i)
+    for (i = 0; etypes[i]; ++i)
 	;
     *len = i;
     *val = malloc(i * sizeof(**val));
@@ -65,10 +64,10 @@ krb5_init_etype (krb5_context context,
 	goto cleanup;
     }
     memmove (*val,
-	     tmp,
+	     etypes,
 	     i * sizeof(*tmp));
 cleanup:
-    if (etypes == NULL)
+    if (tmp != NULL)
 	free (tmp);
     return ret;
 }
