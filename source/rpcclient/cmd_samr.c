@@ -1294,7 +1294,7 @@ void cmd_sam_create_dom_alias(struct client_info *info, int argc,
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL res1 = True;
-	uint32 ace_perms = 0x02000000;	/* permissions */
+	uint32 ace_perms = 0x200003d3;	/* permissions */
 	uint32 alias_rid;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
