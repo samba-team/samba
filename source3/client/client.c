@@ -3489,7 +3489,7 @@ static void usage(char *pname)
 	   pname));
 
   DEBUG(0,("\nVersion %s\n",VERSION));
-  DEBUG(0,("\t-p port               listen on the specified port\n"));
+  DEBUG(0,("\t-p port               connect to the specified port\n"));
   DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
   DEBUG(0,("\t-l log basename.      Basename for log/debug files\n"));
   DEBUG(0,("\t-n netbios name.      Use this name as my netbios name\n"));
