@@ -95,6 +95,9 @@ SOURCES = \
 	warnerr.c \
 	warnx.c
 
+EXTRA_SOURCES = \
+	make-print-version.c
+
 OBJECTS = \
 	base64.o \
 	concat.o \
@@ -130,8 +133,8 @@ install: all
 
 uninstall:
 
-TAGS: $(SOURCES)
-	etags $(SOURCES)
+TAGS: $(SOURCES) $(EXTRA_SOURCES)
+	etags $(SOURCES) $(EXTRA_SOURCES)
 
 check:
 
