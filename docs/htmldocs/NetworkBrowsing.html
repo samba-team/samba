@@ -1,0 +1,907 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 10. Samba / MS Windows Network Browsing Guide</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="optional.html" title="Part III. Advanced Configuration"><link rel="next" href="passdb.html" title="Chapter 11. Account Information Databases"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 10. Samba / MS Windows Network Browsing Guide</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="optional.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="passdb.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="NetworkBrowsing"></a>Chapter 10. Samba / MS Windows Network Browsing Guide</h2></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">July 5, 1998</p></div><div><p class="pubdate">Updated: April 21, 2003</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="NetworkBrowsing.html#id2893931">Features and Benefits</a></dt><dt><a href="NetworkBrowsing.html#id2894019">What is Browsing?</a></dt><dt><a href="NetworkBrowsing.html#id2894333">Discussion</a></dt><dd><dl><dt><a href="NetworkBrowsing.html#id2894349">NetBIOS over TCP/IP</a></dt><dt><a href="NetworkBrowsing.html#id2894584">TCP/IP - without NetBIOS</a></dt><dt><a href="NetworkBrowsing.html#id2894750">DNS and Active Directory</a></dt></dl></dd><dt><a href="NetworkBrowsing.html#id2894896">How Browsing Functions</a></dt><dd><dl><dt><a href="NetworkBrowsing.html#DMB">Setting up WORKGROUP Browsing</a></dt><dt><a href="NetworkBrowsing.html#id2895446">Setting up DOMAIN Browsing</a></dt><dt><a href="NetworkBrowsing.html#browse-force-master">Forcing Samba to be the master</a></dt><dt><a href="NetworkBrowsing.html#id2895844">Making Samba the domain master</a></dt><dt><a href="NetworkBrowsing.html#id2896022">Note about broadcast addresses</a></dt><dt><a href="NetworkBrowsing.html#id2896045">Multiple interfaces</a></dt><dt><a href="NetworkBrowsing.html#id2896081">Use of the Remote Announce parameter</a></dt><dt><a href="NetworkBrowsing.html#id2896240">Use of the Remote Browse Sync parameter</a></dt></dl></dd><dt><a href="NetworkBrowsing.html#id2896317">WINS - The Windows Internetworking Name Server</a></dt><dd><dl><dt><a href="NetworkBrowsing.html#id2896504">Setting up a WINS server</a></dt><dt><a href="NetworkBrowsing.html#id2896761">WINS Replication</a></dt><dt><a href="NetworkBrowsing.html#id2896787">Static WINS Entries</a></dt></dl></dd><dt><a href="NetworkBrowsing.html#id2896875">Helpful Hints</a></dt><dd><dl><dt><a href="NetworkBrowsing.html#id2896889">Windows Networking Protocols</a></dt><dt><a href="NetworkBrowsing.html#id2896967">Name Resolution Order</a></dt></dl></dd><dt><a href="NetworkBrowsing.html#id2897133">Technical Overview of browsing</a></dt><dd><dl><dt><a href="NetworkBrowsing.html#id2897187">Browsing support in Samba</a></dt><dt><a href="NetworkBrowsing.html#id2897308">Problem resolution</a></dt><dt><a href="NetworkBrowsing.html#id2897396">Browsing across subnets</a></dt></dl></dd><dt><a href="NetworkBrowsing.html#id2898078">Common Errors</a></dt><dd><dl><dt><a href="NetworkBrowsing.html#id2898092">How can one flush the Samba NetBIOS name cache without restarting Samba?</a></dt><dt><a href="NetworkBrowsing.html#id2898121">My client reports &quot;This server is not configured to list shared resources&quot;</a></dt><dt><a href="NetworkBrowsing.html#id2898166">I get an Unable to browse the network error</a></dt></dl></dd></dl></div><p>
+This document contains detailed information as well as a fast track guide to
+implementing browsing across subnets and / or across workgroups (or domains).
+WINS is the best tool for resolution of NetBIOS names to IP addresses. WINS is
+NOT involved in browse list handling except by way of name to address resolution.
+</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+MS Windows 2000 and later can be configured to operate with NO NetBIOS 
+over TCP/IP. Samba-3 and later also supports this mode of operation.
+When the use of NetBIOS over TCP/IP has been disabled then the primary
+means for resolution of MS Windows machine names is via DNS and Active Directory.
+The following information assumes that your site is running NetBIOS over TCP/IP.
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2893931"></a>Features and Benefits</h2></div></div><div></div></div><p>
+Someone once referred to the past in terms of: <span class="emphasis"><em>They were the worst of times,
+they were the best of times. The more we look back, them more we long for what was and
+hope it never returns!</em></span>.
+</p><a class="indexterm" name="id2893952"></a><p>
+For many MS Windows network administrators, that statement sums up their feelings about
+NetBIOS networking precisely. For those who mastered NetBIOS networking, its fickle
+nature was just par for the course. For those who never quite managed to tame its
+lusty features, NetBIOS is like Paterson's Curse.
+</p><p>
+For those not familiar with botanical problems in Australia: Paterson's curse,
+Echium plantagineum, was introduced to Australia from Europe during the mid-nineteenth
+century. Since then it has spread rapidly. The high seed production, with densities of
+thousands of seeds per square metre, a seed longevity of more than seven years, and an
+ability to germinate at any time of year, given the right conditions, are some of the
+features which make it such a persistent weed.
+</p><p>
+In this chapter we explore vital aspects of SMB (Server Message Block) networking with
+a particular focus on SMB as implemented through running NetBIOS (Network Basic
+Input / Output System) over TCP/IP. Since Samba does NOT implement SMB or NetBIOS over
+any other protocols we need to know how to configure our network environment and simply
+remember to use nothing but TCP/IP on all our MS Windows network clients.
+</p><p>
+Samba provides the ability to implement a WINS (Windows Internetworking Name Server)
+and implements extensions to Microsoft's implementation of WINS. These extensions
+help Samba to affect stable WINS operations beyond the normal scope of MS WINS.
+</p><p>
+Please note that WINS is exclusively a service that applies only to those systems
+that run NetBIOS over TCP/IP. MS Windows 200x / XP have the capacity to turn off
+support for NetBIOS, in which case WINS is of no relevance. Samba supports this also.
+</p><p>
+For those networks on which NetBIOS has been disabled (ie: WINS is NOT required)
+the use of DNS is necessary for host name resolution.
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2894019"></a>What is Browsing?</h2></div></div><div></div></div><p>
+To most people browsing means that they can see the MS Windows and Samba servers
+in the Network Neighborhood, and when the computer icon for a particular server is
+clicked, it opens up and shows the shares and printers available on the target server.
+</p><p>
+What seems so simple is in fact a very complex interaction of different technologies.
+The technologies (or methods) employed in making all of this work includes:
+</p><div class="itemizedlist"><ul type="disc"><li><p>MS Windows machines register their presence to the network</p></li><li><p>Machines announce themselves to other machines on the network</p></li><li><p>One or more machine on the network collates the local announcements</p></li><li><p>The client machine finds the machine that has the collated list of machines</p></li><li><p>The client machine is able to resolve the machine names to IP addresses</p></li><li><p>The client machine is able to connect to a target machine</p></li></ul></div><p>
+The Samba application that controls browse list management and name resolution is
+called <tt class="filename">nmbd</tt>. The configuration parameters involved in nmbd's operation are:
+</p><p>Browsing options: <a class="indexterm" name="id2894104"></a><i class="parameter"><tt>os level</tt></i>(*),
+	<a class="indexterm" name="id2894118"></a><i class="parameter"><tt>lm announce</tt></i>,
+	<a class="indexterm" name="id2894131"></a><i class="parameter"><tt>lm interval</tt></i>,
+	<a class="indexterm" name="id2894145"></a><i class="parameter"><tt>preferred master</tt></i>(*),
+	<a class="indexterm" name="id2894159"></a><i class="parameter"><tt>local master</tt></i>(*),
+	<a class="indexterm" name="id2894173"></a><i class="parameter"><tt>domain master</tt></i>(*),
+	<a class="indexterm" name="id2894187"></a><i class="parameter"><tt>browse list</tt></i>,
+	<a class="indexterm" name="id2894201"></a><i class="parameter"><tt>enhanced browsing</tt></i>.
+</p><p>Name Resolution Method:
+	<a class="indexterm" name="id2894218"></a><i class="parameter"><tt>name resolve order</tt></i>(*).
+</p><p>WINS options:
+	<a class="indexterm" name="id2894238"></a><i class="parameter"><tt>dns proxy</tt></i>,
+	<a class="indexterm" name="id2894251"></a><i class="parameter"><tt>wins proxy</tt></i>,
+	<a class="indexterm" name="id2894265"></a><i class="parameter"><tt>wins server</tt></i>(*),
+	<a class="indexterm" name="id2894279"></a><i class="parameter"><tt>wins support</tt></i>(*),
+	<a class="indexterm" name="id2894293"></a><i class="parameter"><tt>wins hook</tt></i>.
+</p><a class="indexterm" name="id2894308"></a><p>
+For Samba, the WINS Server and WINS Support are mutually exclusive options. Those marked with
+an '*' are the only options that commonly MAY need to be modified. Even if not one of these
+parameters is set <tt class="filename">nmbd</tt> will still do it's job.
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2894333"></a>Discussion</h2></div></div><div></div></div><p>
+Firstly, all MS Windows networking uses SMB (Server Message Block) based messaging.
+SMB messaging may be implemented with or without NetBIOS. MS Windows 200x supports
+NetBIOS over TCP/IP for backwards compatibility. Microsoft is intent on phasing out NetBIOS
+support.
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2894349"></a>NetBIOS over TCP/IP</h3></div></div><div></div></div><p>
+Samba implements NetBIOS, as does MS Windows NT / 200x / XP, by encapsulating it over TCP/IP.
+MS Windows products can do likewise. NetBIOS based networking uses broadcast messaging to
+affect browse list management. When running NetBIOS over TCP/IP, this uses UDP based messaging.
+UDP messages can be broadcast or unicast.
+</p><a class="indexterm" name="id2894367"></a><p>
+Normally, only unicast UDP messaging can be forwarded by routers. The
+<a class="indexterm" name="id2894378"></a><i class="parameter"><tt>remote announce</tt></i> parameter to smb.conf helps to project browse announcements
+to remote network segments via unicast UDP. Similarly, the 
+<a class="indexterm" name="id2894395"></a><i class="parameter"><tt>remote browse sync</tt></i> parameter of <tt class="filename">smb.conf</tt>
+implements browse list collation using unicast UDP.
+</p><p>
+Secondly, in those networks where Samba is the only SMB server technology,
+wherever possible <tt class="filename">nmbd</tt> should be configured on one (1) machine as the WINS
+server. This makes it easy to manage the browsing environment. If each network
+segment is configured with it's own Samba WINS server, then the only way to
+get cross segment browsing to work is by using the 
+<a class="indexterm" name="id2894434"></a><i class="parameter"><tt>remote announce</tt></i> and the <a class="indexterm" name="id2894448"></a><i class="parameter"><tt>remote browse sync</tt></i>
+parameters to your <tt class="filename">smb.conf</tt> file.
+</p><p>
+<a class="indexterm" name="id2894474"></a>
+If only one WINS server is used for an entire multi-segment network then
+the use of the <a class="indexterm" name="id2894484"></a><i class="parameter"><tt>remote announce</tt></i> and the 
+<a class="indexterm" name="id2894498"></a><i class="parameter"><tt>remote browse sync</tt></i> parameters should NOT be necessary.
+</p><p>
+As of Samba 3 WINS replication is being worked on. The bulk of the code has
+been committed, but it still needs maturation. This is NOT a supported feature
+of the Samba-3.0.0 release. Hopefully, this will become a supported feature
+of one of the Samba-3 release series.
+</p><p>
+Right now Samba WINS does not support MS-WINS replication. This means that
+when setting up Samba as a WINS server there must only be one <tt class="filename">nmbd</tt>
+configured as a WINS server on the network. Some sites have used multiple Samba WINS
+servers for redundancy (one server per subnet) and then used 
+<a class="indexterm" name="id2894536"></a><i class="parameter"><tt>remote browse sync</tt></i> and <a class="indexterm" name="id2894552"></a><i class="parameter"><tt>remote announce</tt></i>
+to affect browse list collation across all segments. Note that this means clients
+will only resolve local names, and must be configured to use DNS to resolve names
+on other subnets in order to resolve the IP addresses of the servers they can see
+on other subnets. This setup is not recommended, but is mentioned as a practical
+consideration (ie: an 'if all else fails' scenario).
+</p><p>
+Lastly, take note that browse lists are a collection of unreliable broadcast
+messages that are repeated at intervals of not more than 15 minutes. This means
+that it will take time to establish a browse list and it can take up to 45
+minutes to stabilise, particularly across network segments.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2894584"></a>TCP/IP - without NetBIOS</h3></div></div><div></div></div><p>
+<a class="indexterm" name="id2894596"></a>
+<a class="indexterm" name="id2894604"></a>
+<a class="indexterm" name="id2894613"></a>
+All TCP/IP using systems use various forms of host name resolution. The primary
+methods for TCP/IP hostname resolutions involves either a static file (<tt class="filename">/etc/hosts
+</tt>) or DNS (the Domain Name System). DNS is the technology that makes
+the Internet usable. DNS based host name resolution is supported by nearly all TCP/IP
+enabled systems. Only a few embedded TCP/IP systems do not support DNS.
+</p><p>
+When an MS Windows 200x / XP system attempts to resolve a host name to an IP address
+it follows a defined path:
+</p><div class="orderedlist"><ol type="1"><li><p>
+	Checks the <tt class="filename">hosts</tt> file. It is located in
+	<tt class="filename">C:\WinNT\System32\Drivers\etc</tt>.
+	</p></li><li><p>
+	Does a DNS lookup
+	</p></li><li><p>
+	Checks the NetBIOS name cache
+        </p></li><li><p>
+	Queries the WINS server
+        </p></li><li><p>
+	Does a broadcast name lookup over UDP
+        </p></li><li><p>
+	Looks up entries in LMHOSTS. It is located in
+        <tt class="filename">C:\WinNT\System32\Drivers\etc</tt>.
+        </p></li></ol></div><a class="indexterm" name="id2894710"></a><p>
+Windows 200x / XP can register it's host name with a Dynamic DNS server. You can
+force register with a Dynamic DNS server in Windows 200x / XP using:
+<b class="command">ipconfig /registerdns</b>
+</p><p>
+With Active Directory (ADS), a correctly functioning DNS server is absolutely
+essential. In the absence of a working DNS server that has been correctly configured,
+MS Windows clients and servers will be totally unable to locate each other,
+consequently network services will be severely impaired.
+</p><p>
+The use of Dynamic DNS is highly recommended with Active Directory, in which case
+the use of BIND9 is preferred for it's ability to adequately support the SRV (service)
+records that are needed for Active Directory.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2894750"></a>DNS and Active Directory</h3></div></div><div></div></div><a class="indexterm" name="id2894758"></a><p>
+Occasionally we hear from UNIX network administrators who want to use a UNIX based Dynamic
+DNS server in place of the Microsoft DNS server. While this might be desirable to some, the
+MS Windows 200x DNS server is auto-configured to work with Active Directory. It is possible
+to use BIND version 8 or 9, but it will almost certainly be necessary to create service records
+so that MS Active Directory clients can resolve host names to locate essential network services.
+The following are some of the default service records that Active Directory requires:
+</p><div class="itemizedlist"><ul type="disc"><li><p>_ldap._tcp.pdc.ms-dcs.<span class="emphasis"><em>Domain</em></span></p><p>
+		This provides the address of the Windows NT PDC for the Domain.
+		</p></li><li><p>_ldap._tcp.pdc.ms-dcs.<span class="emphasis"><em>DomainTree</em></span></p><p>
+		Resolves the addresses of Global Catalog servers in the domain.
+                </p></li><li><p>_ldap._tcp.<span class="emphasis"><em>site</em></span>.sites.writable.ms-dcs.<span class="emphasis"><em>Domain</em></span></p><p>
+		Provides list of domain controllers based on sites.
+                </p></li><li><p>_ldap._tcp.writable.ms-dcs.<span class="emphasis"><em>Domain</em></span></p><p>
+		Enumerates list of domain controllers that have the writable	
+		copies of the Active Directory data store.
+                </p></li><li><p>_ldap._tcp.<span class="emphasis"><em>GUID</em></span>.domains.ms-dcs.<span class="emphasis"><em>DomainTree</em></span></p><p>
+		Entry used by MS Windows clients to locate machines using the
+		Global Unique Identifier.
+                </p></li><li><p>_ldap._tcp.<span class="emphasis"><em>Site</em></span>.gc.ms-dcs.<span class="emphasis"><em>DomainTree</em></span></p><p>
+		Used by MS Windows clients to locate site configuration dependent
+		Global Catalog server.
+		</p></li></ul></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2894896"></a>How Browsing Functions</h2></div></div><div></div></div><p>
+MS Windows machines register their NetBIOS names 
+(ie: the machine name for each service type in operation) on start 
+up. The exact method by which this name registration 
+takes place is determined by whether or not the MS Windows client/server 
+has been given a WINS server address, whether or not LMHOSTS lookup 
+is enabled, or if DNS for NetBIOS name resolution is enabled, etc.
+</p><p>
+In the case where there is no WINS server, all name registrations as 
+well as name lookups are done by UDP broadcast. This isolates name 
+resolution to the local subnet, unless LMHOSTS is used to list all 
+names and IP addresses. In such situations Samba provides a means by 
+which the Samba server name may be forcibly injected into the browse 
+list of a remote MS Windows network (using the 
+<a class="indexterm" name="id2894933"></a><i class="parameter"><tt>remote announce</tt></i> parameter).
+</p><p>
+Where a WINS server is used, the MS Windows client will use UDP 
+unicast to register with the WINS server. Such packets can be routed 
+and thus WINS allows name resolution to function across routed networks.
+</p><p>
+During the startup process an election will take place to create a 
+local master browser if one does not already exist. On each NetBIOS network 
+one machine will be elected to function as the domain master browser. This 
+domain browsing has nothing to do with MS security domain control. 
+Instead, the domain master browser serves the role of contacting each local 
+master browser (found by asking WINS or from LMHOSTS) and exchanging browse 
+list contents. This way every master browser will eventually obtain a complete 
+list of all machines that are on the network. Every 11-15 minutes an election 
+is held to determine which machine will be the master browser. By the nature of 
+the election criteria used, the machine with the highest uptime, or the 
+most senior protocol version, or other criteria, will win the election 
+as domain master browser.
+</p><p>
+Clients wishing to browse the network make use of this list, but also depend 
+on the availability of correct name resolution to the respective IP 
+address/addresses. 
+</p><p>
+Any configuration that breaks name resolution and/or browsing intrinsics 
+will annoy users because they will have to put up with protracted 
+inability to use the network services.
+</p><p>
+Samba supports a feature that allows forced synchronisation 
+of browse lists across routed networks using the <a class="indexterm" name="id2894996"></a><i class="parameter"><tt>remote browse sync</tt></i> parameter in the <tt class="filename">smb.conf</tt> file. 
+This causes Samba to contact the local master browser on a remote network and 
+to request browse list synchronisation. This effectively bridges 
+two networks that are separated by routers. The two remote 
+networks may use either broadcast based name resolution or WINS 
+based name resolution, but it should be noted that the <a class="indexterm" name="id2895025"></a><i class="parameter"><tt>remote browse sync</tt></i> parameter provides browse list synchronisation - and 
+that is distinct from name to address resolution, in other 
+words, for cross subnet browsing to function correctly it is 
+essential that a name to address resolution mechanism be provided. 
+This mechanism could be via DNS, <tt class="filename">/etc/hosts</tt>, 
+and so on.
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="DMB"></a>Setting up WORKGROUP Browsing</h3></div></div><div></div></div><p>
+To set up cross subnet browsing on a network containing machines
+in up to be in a WORKGROUP, not an NT Domain you need to set up one
+Samba server to be the Domain Master Browser (note that this is *NOT*
+the same as a Primary Domain Controller, although in an NT Domain the
+same machine plays both roles).  The role of a Domain master browser is
+to collate the browse lists from local master browsers on all the
+subnets that have a machine participating in the workgroup.  Without
+one machine configured as a domain master browser each subnet would
+be an isolated workgroup, unable to see any machines on any other
+subnet.  It is the presence of a domain master browser that makes
+cross subnet browsing possible for a workgroup.
+</p><p>
+In an WORKGROUP environment the domain master browser must be a
+Samba server, and there must only be one domain master browser per
+workgroup name.  To set up a Samba server as a domain master browser,
+set the following option in the <i class="parameter"><tt>[global]</tt></i> section 
+of the <tt class="filename">smb.conf</tt> file :
+</p><p>
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>domain master = yes</tt></i></td></tr></table><p>
+</p><p>
+The domain master browser should also preferably be the local master
+browser for its own subnet.  In order to achieve this set the following
+options in the <i class="parameter"><tt>[global]</tt></i> section of the <tt class="filename">smb.conf</tt> file :
+</p><p>
+	</p><div class="example"><a name="id2895160"></a><p class="title"><b>Example 10.1. Domain master browser smb.conf</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[global]</tt></i></td></tr><tr><td><i class="parameter"><tt>domain master = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>local master = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>preferred master = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>os level = 65</tt></i></td></tr></table></div><p>
+</p><p>
+The domain master browser may be the same machine as the WINS
+server, if you require.
+</p><p>
+Next, you should ensure that each of the subnets contains a
+machine that can act as a local master browser for the
+workgroup.  Any MS Windows NT/2K/XP/2003  machine should be
+able to do this, as will Windows 9x machines (although these
+tend to get rebooted more often, so it's not such a good idea
+to use these).  To make a Samba server a local master browser
+set the following options in the <i class="parameter"><tt>[global]</tt></i> section of the
+<tt class="filename">smb.conf</tt> file :
+</p><p>
+</p><div class="example"><a name="id2895251"></a><p class="title"><b>Example 10.2. Local master browser smb.conf</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[global]</tt></i></td></tr><tr><td><i class="parameter"><tt>domain master = no</tt></i></td></tr><tr><td><i class="parameter"><tt>local master = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>preferred master = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>os level = 65</tt></i></td></tr></table></div><p>
+</p><p>
+Do not do this for more than one Samba server on each subnet,
+or they will war with each other over which is to be the local
+master browser.
+</p><p>
+The <a class="indexterm" name="id2895317"></a><i class="parameter"><tt>local master</tt></i> parameter allows Samba to act as a
+local master browser.  The <a class="indexterm" name="id2895334"></a><i class="parameter"><tt>preferred master</tt></i> causes nmbd
+to force a browser election on startup and the <a class="indexterm" name="id2895349"></a><i class="parameter"><tt>os level</tt></i>
+parameter sets Samba high enough so that it should win any browser elections.
+</p><p>
+If you have an NT machine on the subnet that you wish to
+be the local master browser then you can disable Samba from
+becoming a local master browser by setting the following
+options in the <i class="parameter"><tt>[global]</tt></i> section of the 
+<tt class="filename">smb.conf</tt> file :
+</p><p>
+</p><div class="example"><a name="id2895389"></a><p class="title"><b>Example 10.3. smb.conf for not being a master browser</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[global]</tt></i></td></tr><tr><td><i class="parameter"><tt>domain master = no</tt></i></td></tr><tr><td><i class="parameter"><tt>local master = no</tt></i></td></tr><tr><td><i class="parameter"><tt>preferred master = no</tt></i></td></tr><tr><td><i class="parameter"><tt>os level = 0</tt></i></td></tr></table></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2895446"></a>Setting up DOMAIN Browsing</h3></div></div><div></div></div><p>
+If you are adding Samba servers to a Windows NT Domain then
+you must not set up a Samba server as a domain master browser.
+By default, a Windows NT Primary Domain Controller for a domain
+is also the Domain master browser for that domain, and many
+things will break if a Samba server registers the Domain master
+browser NetBIOS name (<i class="replaceable"><tt>DOMAIN</tt></i>&lt;1B&gt;)
+with WINS instead of the PDC.
+</p><p>
+For subnets other than the one containing the Windows NT PDC
+you may set up Samba servers as local master browsers as
+described.  To make a Samba server a local master browser set 
+the following options in the <i class="parameter"><tt>[global]</tt></i> section 
+of the <tt class="filename">smb.conf</tt> file :
+</p><p>
+	</p><div class="example"><a name="id2895495"></a><p class="title"><b>Example 10.4. Local master browser smb.conf</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[global]</tt></i></td></tr><tr><td><i class="parameter"><tt>domain master = no</tt></i></td></tr><tr><td><i class="parameter"><tt>local master = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>preferred master = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>os level = 65</tt></i></td></tr></table></div><p>
+</p><p>
+If you wish to have a Samba server fight the election with machines
+on the same subnet you may set the <a class="indexterm" name="id2895556"></a><i class="parameter"><tt>os level</tt></i> parameter
+to lower levels.  By doing this you can tune the order of machines that
+will become local master browsers if they are running.  For
+more details on this see the section <a href="NetworkBrowsing.html#browse-force-master" title="Forcing Samba to be the master">
+Forcing Samba to be the master browser</a>
+below.
+</p><p>
+If you have Windows NT machines that are members of the domain
+on all subnets, and you are sure they will always be running then
+you can disable Samba from taking part in browser elections and
+ever becoming a local master browser by setting following options 
+in the <i class="parameter"><tt>[global]</tt></i> section of the <tt class="filename">smb.conf</tt>
+file :
+</p><p>
+</p><div class="example"><a name="id2895612"></a><p class="title"><b>Example 10.5. smb.conf for not being a master browser</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[global]</tt></i></td></tr><tr><td><i class="parameter"><tt>domain master = no</tt></i></td></tr><tr><td><i class="parameter"><tt>local master = no</tt></i></td></tr><tr><td><i class="parameter"><tt>preferred master = no</tt></i></td></tr><tr><td><i class="parameter"><tt>os level = 0</tt></i></td></tr></table></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="browse-force-master"></a>Forcing Samba to be the master</h3></div></div><div></div></div><p>
+Who becomes the master browser is determined by an election
+process using broadcasts.  Each election packet contains a number of parameters
+which determine what precedence (bias) a host should have in the
+election.  By default Samba uses a very low precedence and thus loses
+elections to just about anyone else.
+</p><p>
+If you want Samba to win elections then just set the <a class="indexterm" name="id2895696"></a><i class="parameter"><tt>os level</tt></i> global
+option in <tt class="filename">smb.conf</tt> to a higher number.  It defaults to 0.  Using 34
+would make it win all elections over every other system (except other
+samba systems!)
+</p><p>
+A <a class="indexterm" name="id2895722"></a><i class="parameter"><tt>os level</tt></i> of 2 would make it beat WfWg and Win95, but not MS Windows
+NT/2K Server.  A MS Windows NT/2K Server domain controller uses level 32.
+</p><p>The maximum os level is 255</p><p>
+If you want Samba to force an election on startup, then set the
+<a class="indexterm" name="id2895748"></a><i class="parameter"><tt>preferred master</tt></i> global option in <tt class="filename">smb.conf</tt> to <tt class="constant">yes</tt>.  Samba will
+then have a slight advantage over other potential master browsers
+that are not preferred master browsers.  Use this parameter with
+care, as if you have two hosts (whether they are Windows 95 or NT or
+Samba) on the same local subnet both set with <a class="indexterm" name="id2895778"></a><i class="parameter"><tt>preferred master</tt></i> to
+<tt class="constant">yes</tt>, then periodically and continually they will force an election
+in order to become the local master browser.
+</p><p>
+	If you want Samba to be a <span class="emphasis"><em>domain master browser</em></span>, then it is
+recommended that you also set <a class="indexterm" name="id2895807"></a><i class="parameter"><tt>preferred master</tt></i> to <tt class="constant">yes</tt>, because
+Samba will not become a domain master browser for the whole of your
+LAN or WAN if it is not also a local master browser on its own
+broadcast isolated subnet.
+</p><p>
+It is possible to configure two Samba servers to attempt to become
+the domain master browser for a domain.  The first server that comes
+up will be the domain master browser.  All other Samba servers will
+attempt to become the domain master browser every 5 minutes.  They
+will find that another Samba server is already the domain master
+browser and will fail.  This provides automatic redundancy, should
+the current domain master browser fail.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2895844"></a>Making Samba the domain master</h3></div></div><div></div></div><p>
+The domain master is responsible for collating the browse lists of
+multiple subnets so that browsing can occur between subnets.  You can
+make Samba act as the domain master by setting <a class="indexterm" name="id2895858"></a><i class="parameter"><tt>domain master</tt></i> = yes
+in <tt class="filename">smb.conf</tt>.  By default it will not be a domain master.
+</p><p>
+Note that you should <span class="emphasis"><em>not</em></span> set Samba to be the domain master for a
+workgroup that has the same name as an NT Domain.
+</p><p>
+When Samba is the domain master and the master browser, it will listen
+for master announcements (made roughly every twelve minutes) from local
+master browsers on other subnets and then contact them to synchronise
+browse lists.
+</p><p>
+If you want Samba to be the domain master then I suggest you also set
+the <a class="indexterm" name="id2895904"></a><i class="parameter"><tt>os level</tt></i> high enough to make sure it wins elections, and set
+<a class="indexterm" name="id2895919"></a><i class="parameter"><tt>preferred master</tt></i> to <tt class="constant">yes</tt>, to get Samba to force an election on
+startup.
+</p><p>
+Note that all your servers (including Samba) and clients should be
+using a WINS server to resolve NetBIOS names.  If your clients are only
+using broadcasting to resolve NetBIOS names, then two things will occur:
+</p><div class="orderedlist"><ol type="1"><li><p>
+	your local master browsers will be unable to find a domain master
+	browser, as it will only be looking on the local subnet.
+	</p></li><li><p>
+	if a client happens to get hold of a domain-wide browse list, and
+	a user attempts to access a host in that list, it will be unable to
+	resolve the NetBIOS name of that host.
+	</p></li></ol></div><p>
+If, however, both Samba and your clients are using a WINS server, then:
+</p><div class="orderedlist"><ol type="1"><li><p>
+	your local master browsers will contact the WINS server and, as long as
+	Samba has registered that it is a domain master browser with the WINS
+	server, your local master browser will receive Samba's IP address
+	as its domain master browser.
+	</p></li><li><p>
+	when a client receives a domain-wide browse list, and a user attempts
+	to access a host in that list, it will contact the WINS server to
+	resolve the NetBIOS name of that host.  as long as that host has
+	registered its NetBIOS name with the same WINS server, the user will
+	be able to see that host.  
+	</p></li></ol></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896022"></a>Note about broadcast addresses</h3></div></div><div></div></div><p>
+If your network uses a &quot;0&quot; based broadcast address (for example if it
+ends in a 0) then you will strike problems.  Windows for Workgroups
+does not seem to support a 0's broadcast and you will probably find
+that browsing and name lookups won't work.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896045"></a>Multiple interfaces</h3></div></div><div></div></div><p>
+Samba now supports machines with multiple network interfaces.  If you
+have multiple interfaces then you will need to use the <a class="indexterm" name="id2896057"></a><i class="parameter"><tt>interfaces</tt></i>
+option in <tt class="filename">smb.conf</tt> to configure them. 
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896081"></a>Use of the Remote Announce parameter</h3></div></div><div></div></div><p>
+The <a class="indexterm" name="id2896090"></a><i class="parameter"><tt>remote announce</tt></i> parameter of 
+<tt class="filename">smb.conf</tt> can be used to forcibly ensure
+that all the NetBIOS names on a network get announced to a remote network.
+The syntax of the <a class="indexterm" name="id2896115"></a><i class="parameter"><tt>remote announce</tt></i> parameter is:
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>remote announce = a.b.c.d [e.f.g.h] ...</tt></i></td></tr></table><p>
+<span class="emphasis"><em>or</em></span>
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>remote announce = a.b.c.d/WORKGROUP [e.f.g.h/WORKGROUP] ...</tt></i></td></tr></table><p>
+
+where:
+</p><div class="variablelist"><dl><dt><span class="term"><i class="replaceable"><tt>a.b.c.d</tt></i> and 
+<i class="replaceable"><tt>e.f.g.h</tt></i></span></dt><dd><p>
+		<a class="indexterm" name="id2896185"></a>
+<a class="indexterm" name="id2896196"></a>
+
+		is either the LMB (Local Master Browser) IP address
+or the broadcast address of the remote network.
+ie: the LMB is at 192.168.1.10, or the address
+could be given as 192.168.1.255 where the netmask
+is assumed to be 24 bits (255.255.255.0).
+When the remote announcement is made to the broadcast
+address of the remote network, every host will receive
+our announcements. This is noisy and therefore
+undesirable but may be necessary if we do NOT know
+the IP address of the remote LMB.</p></dd><dt><span class="term"><i class="replaceable"><tt>WORKGROUP</tt></i></span></dt><dd><p>is optional and can be either our own workgroup
+or that of the remote network. If you use the
+workgroup name of the remote network then our
+NetBIOS machine names will end up looking like
+they belong to that workgroup, this may cause
+name resolution problems and should be avoided.
+</p></dd></dl></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896240"></a>Use of the Remote Browse Sync parameter</h3></div></div><div></div></div><p>
+The <a class="indexterm" name="id2896250"></a><i class="parameter"><tt>remote browse sync</tt></i> parameter of 
+<tt class="filename">smb.conf</tt> is used to announce to
+another LMB that it must synchronise its NetBIOS name list with our
+Samba LMB. It works ONLY if the Samba server that has this option is
+simultaneously the LMB on its network segment.
+</p><p>
+The syntax of the <a class="indexterm" name="id2896279"></a><i class="parameter"><tt>remote browse sync</tt></i> parameter is:
+
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>remote browse sync = a.b.c.d</tt></i></td></tr></table><p>
+
+where <i class="replaceable"><tt>a.b.c.d</tt></i> is either the IP address of the
+remote LMB or else is the network broadcast address of the remote segment.
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2896317"></a>WINS - The Windows Internetworking Name Server</h2></div></div><div></div></div><p>
+Use of WINS (either Samba WINS <span class="emphasis"><em>or</em></span> MS Windows NT Server WINS) is highly
+recommended. Every NetBIOS machine registers its name together with a
+name_type value for each of several types of service it has available.
+eg: It registers its name directly as a unique (the type 0x03) name.
+It also registers its name if it is running the LanManager compatible
+server service (used to make shares and printers available to other users)
+by registering the server (the type 0x20) name.
+</p><p>
+All NetBIOS names are up to 15 characters in length. The name_type variable
+is added to the end of the name - thus creating a 16 character name. Any
+name that is shorter than 15 characters is padded with spaces to the 15th
+character. ie: All NetBIOS names are 16 characters long (including the
+name_type information).
+</p><p>
+WINS can store these 16 character names as they get registered. A client
+that wants to log onto the network can ask the WINS server for a list
+of all names that have registered the NetLogon service name_type. This saves
+broadcast traffic and greatly expedites logon processing. Since broadcast
+name resolution can not be used across network segments this type of
+information can only be provided via WINS <span class="emphasis"><em>or</em></span> via statically configured
+<tt class="filename">lmhosts</tt> files that must reside on all clients in the
+absence of WINS.
+</p><p>
+WINS also serves the purpose of forcing browse list synchronisation by all
+LMB's. LMB's must synchronise their browse list with the DMB (domain master
+browser) and WINS helps the LMB to identify it's DMB. By definition this
+will work only within a single workgroup. Note that the domain master browser
+has NOTHING to do with what is referred to as an MS Windows NT Domain. The
+later is a reference to a security environment while the DMB refers to the
+master controller for browse list information only.
+</p><p>
+Use of WINS will work correctly only if EVERY client TCP/IP protocol stack
+has been configured to use the WINS server/s. Any client that has not been
+configured to use the WINS server will continue to use only broadcast based
+name registration so that WINS may NEVER get to know about it. In any case,
+machines that have not registered with a WINS server will fail name to address
+lookup attempts by other clients and will therefore cause workstation access
+errors.
+</p><p>
+To configure Samba as a WINS server just add 
+<a class="indexterm" name="id2896406"></a><i class="parameter"><tt>wins support</tt></i> = yes to the <tt class="filename">smb.conf</tt>
+file [global] section.
+</p><p>
+To configure Samba to register with a WINS server just add
+<a class="indexterm" name="id2896434"></a><i class="parameter"><tt>wins server</tt></i> = a.b.c.d to your <tt class="filename">smb.conf</tt> file <i class="parameter"><tt>[global]</tt></i> section.
+</p><div class="important" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Important</h3><p>
+Never use both <a class="indexterm" name="id2896466"></a><i class="parameter"><tt>wins support</tt></i> = yes together
+with <a class="indexterm" name="id2896482"></a><i class="parameter"><tt>wins server</tt></i> = a.b.c.d
+particularly not using it's own IP address.
+Specifying both will cause <span class="application">nmbd</span> to refuse to start!
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896504"></a>Setting up a WINS server</h3></div></div><div></div></div><p>
+Either a Samba machine or a Windows NT Server machine may be set up
+as a WINS server.  To set a Samba machine to be a WINS server you must
+add the following option to the <tt class="filename">smb.conf</tt> file on the selected machine :
+in the <i class="parameter"><tt>[global]</tt></i> section add the line 
+</p><p>
+	</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>wins support = yes</tt></i></td></tr></table><p>
+</p><p>
+Versions of Samba prior to 1.9.17 had this parameter default to
+yes.  If you have any older versions of Samba on your network it is
+strongly suggested you upgrade to a recent version, or at the very
+least set the parameter to 'no' on all these machines.
+</p><p>
+Machines with <a class="indexterm" name="id2896564"></a><i class="parameter"><tt>wins support</tt></i> = yes will keep a list of 
+all NetBIOS names registered with them, acting as a DNS for NetBIOS names.
+</p><p>
+You should set up only ONE WINS server.  Do NOT set the
+<a class="indexterm" name="id2896585"></a><i class="parameter"><tt>wins support</tt></i> = yes option on more than one Samba 
+server.
+</p><p>
+To set up a Windows NT Server as a WINS server you need to set up
+the WINS service - see your NT documentation for details.  Note that
+Windows NT WINS Servers can replicate to each other, allowing more
+than one to be set up in a complex subnet environment.  As Microsoft
+refuses to document these replication protocols, Samba cannot currently
+participate in these replications.  It is possible in the future that
+a Samba-&gt;Samba WINS replication protocol may be defined, in which
+case more than one Samba machine could be set up as a WINS server
+but currently only one Samba server should have the 
+<a class="indexterm" name="id2896621"></a><i class="parameter"><tt>wins support</tt></i> = yes parameter set.
+</p><p>
+After the WINS server has been configured you must ensure that all
+machines participating on the network are configured with the address
+of this WINS server.  If your WINS server is a Samba machine, fill in
+the Samba machine IP address in the <span class="guilabel">Primary WINS Server</span> field of
+the <span class="guilabel">Control Panel-&gt;Network-&gt;Protocols-&gt;TCP-&gt;WINS Server</span> dialogs
+in Windows 95 or Windows NT.  To tell a Samba server the IP address
+of the WINS server add the following line to the <i class="parameter"><tt>[global]</tt></i> section of
+all <tt class="filename">smb.conf</tt> files :
+</p><p>
+	</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>wins server = &lt;name or IP address&gt;</tt></i></td></tr></table><p>
+</p><p>
+where &lt;name or IP address&gt; is either the DNS name of the WINS server
+machine or its IP address.
+</p><p>
+Note that this line MUST NOT BE SET in the <tt class="filename">smb.conf</tt> file of the Samba
+server acting as the WINS server itself.  If you set both the
+<a class="indexterm" name="id2896719"></a><i class="parameter"><tt>wins support</tt></i> = yes option and the 
+<a class="indexterm" name="id2896734"></a><i class="parameter"><tt>wins server</tt></i> = &lt;name&gt; option then
+nmbd will fail to start.
+</p><p>
+There are two possible scenarios for setting up cross subnet browsing.
+The first details setting up cross subnet browsing on a network containing
+Windows 95, Samba and Windows NT machines that are not configured as
+part of a Windows NT Domain.  The second details setting up cross subnet
+browsing on networks that contain NT Domains.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896761"></a>WINS Replication</h3></div></div><div></div></div><p>
+Samba-3 permits WINS replication through the use of the <tt class="filename">wrepld</tt> utility.
+This tool is not currently capable of being used as it is still in active development.
+As soon as this tool becomes moderately functional we will prepare man pages and enhance this
+section of the documentation to provide usage and technical details.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896787"></a>Static WINS Entries</h3></div></div><div></div></div><p>
+Adding static entries to your Samba WINS server is actually fairly easy.
+All you have to do is add a line to <tt class="filename">wins.dat</tt>, typically
+located in <tt class="filename">/usr/local/samba/var/locks</tt>.
+</p><p>
+Entries in <tt class="filename">wins.dat</tt> take the form of
+
+</p><pre class="programlisting">
+&quot;NAME#TYPE&quot; TTL ADDRESS+ FLAGS
+</pre><p>
+
+where NAME is the NetBIOS name, TYPE is the NetBIOS type, TTL is the
+time-to-live as an absolute time in seconds, ADDRESS+ is one or more
+addresses corresponding to the registration and FLAGS are the NetBIOS
+flags for the registration.
+</p><p>
+A typical dynamic entry looks like:
+</p><pre class="programlisting">
+&quot;MADMAN#03&quot; 1055298378 192.168.1.2 66R
+</pre><p>
+
+To make it static, all that has to be done is set the TTL to 0:
+
+</p><pre class="programlisting">
+&quot;MADMAN#03&quot; 0 192.168.1.2 66R
+</pre><p>
+</p><p>
+Though this method works with early Samba-3 versions, there's a
+possibility that it may change in future versions if WINS replication
+is added.
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2896875"></a>Helpful Hints</h2></div></div><div></div></div><p>
+The following hints should be carefully considered as they are stumbling points
+for many new network administrators.
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896889"></a>Windows Networking Protocols</h3></div></div><div></div></div><div class="warning" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Warning</h3><p>
+Do NOT use more than one (1) protocol on MS Windows machines
+</p></div><p>
+A very common cause of browsing problems results from installing more than
+one protocol on an MS Windows machine.
+</p><p>
+Every NetBIOS machine takes part in a process of electing the LMB (and DMB)
+every 15 minutes. A set of election criteria is used to determine the order
+of precedence for winning this election process. A machine running Samba or
+Windows NT will be biased so that the most suitable machine will predictably
+win and thus retain it's role.
+</p><p>
+The election process is &quot;fought out&quot; so to speak over every NetBIOS network
+interface. In the case of a Windows 9x machine that has both TCP/IP and IPX
+installed and has NetBIOS enabled over both protocols the election will be
+decided over both protocols. As often happens, if the Windows 9x machine is
+the only one with both protocols then the LMB may be won on the NetBIOS
+interface over the IPX protocol. Samba will then lose the LMB role as Windows
+9x will insist it knows who the LMB is. Samba will then cease to function
+as an LMB and thus browse list operation on all TCP/IP only machines will
+fail.
+</p><p><span class="emphasis"><em>
+Windows 95, 98, 98se, Me are referred to generically as Windows 9x.
+The Windows NT4, 2000, XP and 2003 use common protocols. These are roughly
+referred to as the WinNT family, but it should be recognised that 2000 and
+XP/2003 introduce new protocol extensions that cause them to behave 
+differently from MS Windows NT4. Generally, where a server does NOT support
+the newer or extended protocol, these will fall back to the NT4 protocols.
+</em></span></p><p>
+The safest rule of all to follow it this - USE ONLY ONE PROTOCOL!
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896967"></a>Name Resolution Order</h3></div></div><div></div></div><p>
+Resolution of NetBIOS names to IP addresses can take place using a number
+of methods. The only ones that can provide NetBIOS name_type information
+are:
+</p><div class="itemizedlist"><ul type="disc"><li><p>WINS: the best tool!</p></li><li><p>LMHOSTS: is static and hard to maintain.</p></li><li><p>Broadcast: uses UDP and can not resolve names across remote segments.</p></li></ul></div><p>
+Alternative means of name resolution includes:
+</p><div class="itemizedlist"><ul type="disc"><li><p><tt class="filename">/etc/hosts</tt>: is static, hard to maintain, and lacks name_type info</p></li><li><p>DNS: is a good choice but lacks essential name_type info.</p></li></ul></div><p>
+Many sites want to restrict DNS lookups and want to avoid broadcast name
+resolution traffic. The <i class="parameter"><tt>name resolve order</tt></i> parameter is of great help here.
+The syntax of the <i class="parameter"><tt>name resolve order</tt></i> parameter is:
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>name resolve order = wins lmhosts bcast host</tt></i></td></tr></table><p>
+<span class="emphasis"><em>or</em></span>
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>name resolve order = wins lmhosts  	(eliminates bcast and host)</tt></i></td></tr></table><p>
+The default is:
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>name resolve order = host lmhost wins bcast</tt></i></td></tr></table><p>
+where &quot;host&quot; refers to the native methods used by the UNIX system
+to implement the gethostbyname() function call. This is normally
+controlled by <tt class="filename">/etc/host.conf</tt>, <tt class="filename">/etc/nsswitch.conf</tt> and <tt class="filename">/etc/resolv.conf</tt>.
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2897133"></a>Technical Overview of browsing</h2></div></div><div></div></div><p>
+SMB networking provides a mechanism by which clients can access a list
+of machines in a network, a so-called <a class="indexterm" name="id2897145"></a><i class="parameter"><tt>browse list</tt></i>.  This list
+contains machines that are ready to offer file and/or print services
+to other machines within the network. Thus it does not include
+machines which aren't currently able to do server tasks.  The browse
+list is heavily used by all SMB clients.  Configuration of SMB
+browsing has been problematic for some Samba users, hence this
+document.
+</p><p>
+MS Windows 2000 and later, as with Samba 3 and later, can be
+configured to not use NetBIOS over TCP/IP. When configured this way,
+it is imperative that name resolution (using DNS/LDAP/ADS) be correctly
+configured and operative. Browsing will NOT work if name resolution
+from SMB machine names to IP addresses does not function correctly.
+</p><p>
+Where NetBIOS over TCP/IP is enabled use of a WINS server is highly
+recommended to aid the resolution of NetBIOS (SMB) names to IP addresses.
+WINS allows remote segment clients to obtain NetBIOS name_type information
+that can NOT be provided by any other means of name resolution.
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2897187"></a>Browsing support in Samba</h3></div></div><div></div></div><p>
+Samba facilitates browsing.  The browsing is supported by <span class="application">nmbd</span>
+and is also controlled by options in the <tt class="filename">smb.conf</tt> file.
+Samba can act as a local browse master for a workgroup and the ability
+to support domain logons and scripts is now available.
+</p><p>
+Samba can also act as a domain master browser for a workgroup.  This
+means that it will collate lists from local browse masters into a
+wide area network server list.  In order for browse clients to
+resolve the names they may find in this list, it is recommended that
+both Samba and your clients use a WINS server.
+</p><p>
+Note that you should NOT set Samba to be the domain master for a
+workgroup that has the same name as an NT Domain: on each wide area
+network, you must only ever have one domain master browser per workgroup,
+regardless of whether it is NT, Samba or any other type of domain master
+that is providing this service.
+</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+Nmbd can be configured as a WINS server, but it is not
+necessary to specifically use Samba as your WINS server.  MS Windows
+NT4, Server or Advanced Server 2000 or 2003 can be configured as
+your WINS server.  In a mixed NT/2000/2003 server and Samba environment on
+a Wide Area Network, it is recommended that you use the Microsoft
+WINS server capabilities.  In a Samba-only environment, it is
+recommended that you use one and only one Samba server as your WINS server.
+</p></div><p>
+To get browsing to work you need to run nmbd as usual, but will need
+to use the <a class="indexterm" name="id2897254"></a><i class="parameter"><tt>workgroup</tt></i> option in <tt class="filename">smb.conf</tt>
+to control what workgroup Samba becomes a part of.
+</p><p>
+Samba also has a useful option for a Samba server to offer itself for
+browsing on another subnet.  It is recommended that this option is only
+used for 'unusual' purposes: announcements over the internet, for
+example.  See <a class="indexterm" name="id2897285"></a><i class="parameter"><tt>remote announce</tt></i> in the 
+<tt class="filename">smb.conf</tt> man page.  
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2897308"></a>Problem resolution</h3></div></div><div></div></div><p>
+If something doesn't work then hopefully the log.nmbd file will help
+you track down the problem.  Try a debug level of 2 or 3 for finding
+problems. Also note that the current browse list usually gets stored
+in text form in a file called <tt class="filename">browse.dat</tt>.
+</p><p>
+Note that if it doesn't work for you, then you should still be able to
+type the server name as <tt class="filename">\\SERVER</tt> in filemanager then
+hit enter and filemanager should display the list of available shares.
+</p><p>
+Some people find browsing fails because they don't have the global
+<a class="indexterm" name="id2897349"></a><i class="parameter"><tt>guest account</tt></i> set to a valid account.  Remember that the
+IPC$ connection that lists the shares is done as guest, and thus you must
+have a valid guest account.
+</p><p><span class="emphasis"><em>
+MS Windows 2000 and upwards (as with Samba) can be configured to disallow
+anonymous (ie: Guest account) access to the IPC$ share. In that case, the
+MS Windows 2000/XP/2003 machine acting as an SMB/CIFS client will use the
+name of the currently logged in user to query the IPC$ share. MS Windows
+9X clients are not able to do this and thus will NOT be able to browse
+server resources.
+</em></span></p><p>
+The other big problem people have is that their broadcast address,
+netmask or IP address is wrong (specified with the &quot;interfaces&quot; option
+in <tt class="filename">smb.conf</tt>)
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2897396"></a>Browsing across subnets</h3></div></div><div></div></div><p>
+Since the release of Samba 1.9.17(alpha1), Samba has supported the
+replication of browse lists across subnet boundaries. This section
+describes how to set this feature up in different settings.
+</p><p>
+To see browse lists that span TCP/IP subnets (ie.  networks separated
+by routers that don't pass broadcast traffic), you must set up at least
+one WINS server.  The WINS server acts as a DNS for NetBIOS names, allowing
+NetBIOS name to IP address translation to be done by doing a direct
+query of the WINS server.  This is done via a directed UDP packet on
+port 137 to the WINS server machine.  The reason for a WINS server is
+that by default, all NetBIOS name to IP address translation is done
+by broadcasts from the querying machine.  This means that machines
+on one subnet will not be able to resolve the names of machines on
+another subnet without using a WINS server.
+</p><p>
+Remember, for browsing across subnets to work correctly, all machines,
+be they Windows 95, Windows NT, or Samba servers must have the IP address
+of a WINS server given to them by a DHCP server, or by manual configuration 
+(for Win95 and WinNT, this is in the TCP/IP Properties, under Network 
+settings) for Samba this is in the <tt class="filename">smb.conf</tt> file.
+</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2897445"></a>How does cross subnet browsing work ?</h4></div></div><div></div></div><p>
+Cross subnet browsing is a complicated dance, containing multiple
+moving parts.  It has taken Microsoft several years to get the code
+that achieves this correct, and Samba lags behind in some areas.
+Samba is capable of cross subnet browsing when configured correctly.
+</p><p>
+	Consider a network set up as <a href="NetworkBrowsing.html#browsing1" title="Figure 10.1. Cross subnet browsing example">in the diagram below</a>.
+</p><div class="figure"><a name="browsing1"></a><p class="title"><b>Figure 10.1. Cross subnet browsing example</b></p><div class="mediaobject"><img src="projdoc/imagefiles/browsing1.png" width="270" alt="Cross subnet browsing example"></div></div><p>
+Consisting of 3 subnets (1, 2, 3) connected by two routers
+(R1, R2) - these do not pass broadcasts.  Subnet 1 has 5 machines
+on it, subnet 2 has 4 machines, subnet 3 has 4 machines.  Assume
+for the moment that all these machines are configured to be in the
+same workgroup (for simplicity's sake).  Machine N1_C on subnet 1
+is configured as Domain Master Browser (ie.  it will collate the
+browse lists for the workgroup).  Machine N2_D is configured as
+WINS server and all the other machines are configured to register
+their NetBIOS names with it.
+</p><p>
+As all these machines are booted up, elections for master browsers
+will take place on each of the three subnets.  Assume that machine
+N1_C wins on subnet 1, N2_B wins on subnet 2, and N3_D wins on
+subnet 3 - these machines are known as local master browsers for
+their particular subnet.  N1_C has an advantage in winning as the
+local master browser on subnet 1 as it is set up as Domain Master
+Browser.
+</p><p>
+On each of the three networks, machines that are configured to 
+offer sharing services will broadcast that they are offering
+these services.  The local master browser on each subnet will
+receive these broadcasts and keep a record of the fact that
+the machine is offering a service.  This list of records is
+the basis of the browse list.  For this case, assume that
+all the machines are configured to offer services so all machines
+will be on the browse list.
+</p><p>
+For each network, the local master browser on that network is
+considered 'authoritative' for all the names it receives via
+local broadcast.  This is because a machine seen by the local
+master browser via a local broadcast must be on the same 
+network as the local master browser and thus is a 'trusted'
+and 'verifiable' resource.  Machines on other networks that
+the local master browsers learn about when collating their
+browse lists have not been directly seen - these records are
+called 'non-authoritative'.
+</p><p>
+At this point the browse lists look as follows (these are 
+the machines you would see in your network neighborhood if
+you looked in it on a particular network right now).
+</p><p>
+</p><div class="table"><a name="id2897579"></a><p class="title"><b>Table 10.1. Browse subnet example 1</b></p><table summary="Browse subnet example 1" border="1"><colgroup><col><col><col></colgroup><thead><tr><th align="left">Subnet</th><th align="left">Browse Master</th><th align="left">List</th></tr></thead><tbody><tr><td align="left">Subnet1</td><td align="left">N1_C</td><td align="left">N1_A, N1_B, N1_C, N1_D, N1_E</td></tr><tr><td align="left">Subnet2</td><td align="left">N2_B</td><td align="left">N2_A, N2_B, N2_C, N2_D</td></tr><tr><td align="left">Subnet3</td><td align="left">N3_D</td><td align="left">N3_A, N3_B, N3_C, N3_D</td></tr></tbody></table></div><p>
+</p><p>
+Note that at this point all the subnets are separate, no
+machine is seen across any of the subnets.
+</p><p>
+Now examine subnet 2.  As soon as N2_B has become the local
+master browser it looks for a Domain master browser to synchronize
+its browse list with.  It does this by querying the WINS server
+(N2_D) for the IP address associated with the NetBIOS name 
+WORKGROUP&lt;1B&gt;.  This name was registered by the Domain master
+browser (N1_C) with the WINS server as soon as it was booted.
+</p><p>
+Once N2_B knows the address of the Domain master browser it
+tells it that is the local master browser for subnet 2 by
+sending a MasterAnnouncement packet as a UDP port 138 packet.
+It then synchronizes with it by doing a NetServerEnum2 call.  This
+tells the Domain Master Browser to send it all the server
+names it knows about.  Once the domain master browser receives
+the MasterAnnouncement packet it schedules a synchronization
+request to the sender of that packet.  After both synchronizations
+are done the browse lists look like :
+</p><p>
+</p><div class="table"><a name="id2897692"></a><p class="title"><b>Table 10.2. Browse subnet example 2</b></p><table summary="Browse subnet example 2" border="1"><colgroup><col align="left"><col align="left"><col align="justify"></colgroup><thead><tr><th align="left">Subnet</th><th align="left">Browse Master</th><th align="justify">List</th></tr></thead><tbody><tr><td align="left">Subnet1</td><td align="left">N1_C</td><td align="justify">N1_A, N1_B, N1_C, N1_D, N1_E,
+N2_A(*), N2_B(*), N2_C(*), N2_D(*)</td></tr><tr><td align="left">Subnet2</td><td align="left">N2_B</td><td align="justify">N2_A, N2_B, N2_C, N2_D, N1_A(*), 
+N1_B(*), N1_C(*), N1_D(*), N1_E(*)</td></tr><tr><td align="left">Subnet3</td><td align="left">N3_D</td><td align="justify">N3_A, N3_B, N3_C, N3_D</td></tr></tbody></table></div><p>
+
+Servers with a (*) after them are non-authoritative names.
+</p><p>
+At this point users looking in their network neighborhood on
+subnets 1 or 2 will see all the servers on both, users on
+subnet 3 will still only see the servers on their own subnet.
+</p><p>
+The same sequence of events that occurred for N2_B now occurs
+for the local master browser on subnet 3 (N3_D).  When it
+synchronizes browse lists with the domain master browser (N1_A)
+it gets both the server entries on subnet 1, and those on
+subnet 2.  After N3_D has synchronized with N1_C and vica-versa
+the browse lists look like.
+</p><p>
+</p><div class="table"><a name="id2897805"></a><p class="title"><b>Table 10.3. Browse subnet example 3</b></p><table summary="Browse subnet example 3" border="1"><colgroup><col align="left"><col align="left"><col align="justify"></colgroup><thead><tr><th align="left">Subnet</th><th align="left">Browse Master</th><th align="justify">List</th></tr></thead><tbody><tr><td align="left">Subnet1</td><td align="left">N1_C</td><td align="justify">N1_A, N1_B, N1_C, N1_D, N1_E, 
+N2_A(*), N2_B(*), N2_C(*), N2_D(*), N3_A(*), N3_B(*), N3_C(*), N3_D(*)</td></tr><tr><td align="left">Subnet2</td><td align="left">N2_B</td><td align="justify">N2_A, N2_B, N2_C, N2_D, N1_A(*), 
+N1_B(*), N1_C(*), N1_D(*), N1_E(*)</td></tr><tr><td align="left">Subnet3</td><td align="left">N3_D</td><td align="justify">N3_A, N3_B, N3_C, N3_D, N1_A(*), 
+N1_B(*), N1_C(*), N1_D(*), N1_E(*), N2_A(*), N2_B(*), N2_C(*), N2_D(*)</td></tr></tbody></table></div><p>
+
+Servers with a (*) after them are non-authoritative names.
+</p><p>
+At this point users looking in their network neighborhood on
+subnets 1 or 3 will see all the servers on all subnets, users on
+subnet 2 will still only see the servers on subnets 1 and 2, but not 3.
+</p><p>
+Finally, the local master browser for subnet 2 (N2_B) will sync again
+with the domain master browser (N1_C) and will receive the missing
+server entries.  Finally - and as a steady state (if no machines
+are removed or shut off) the browse lists will look like :
+</p><p>
+</p><div class="table"><a name="id2897922"></a><p class="title"><b>Table 10.4. Browse subnet example 4</b></p><table summary="Browse subnet example 4" border="1"><colgroup><col align="left"><col align="left"><col align="justify"></colgroup><thead><tr><th align="left">Subnet</th><th align="left">Browse Master</th><th align="justify">List</th></tr></thead><tbody><tr><td align="left">Subnet1</td><td align="left">N1_C</td><td align="justify">N1_A, N1_B, N1_C, N1_D, N1_E,
+N2_A(*), N2_B(*), N2_C(*), N2_D(*), N3_A(*), N3_B(*), 
+N3_C(*), N3_D(*)</td></tr><tr><td align="left">Subnet2</td><td align="left">N2_B</td><td align="justify">N2_A, N2_B, N2_C, N2_D, N1_A(*), 
+N1_B(*), N1_C(*), N1_D(*), N1_E(*), N3_A(*), N3_B(*), 
+N3_C(*), N3_D(*)</td></tr><tr><td align="left">Subnet3</td><td align="left">N3_D</td><td align="justify">N3_A, N3_B, N3_C, N3_D, N1_A(*), 
+N1_B(*), N1_C(*), N1_D(*), N1_E(*), N2_A(*), N2_B(*), 
+N2_C(*), N2_D(*)</td></tr></tbody></table></div><p>
+	
+Servers with a (*) after them are non-authoritative names.
+</p><p>
+Synchronizations between the domain master browser and local
+master browsers will continue to occur, but this should be a
+steady state situation.
+</p><p>
+If either router R1 or R2 fails the following will occur:
+</p><div class="orderedlist"><ol type="1"><li><p>
+	Names of computers on each side of the inaccessible network fragments
+	will be maintained for as long as 36 minutes, in the network neighbourhood
+	lists.
+	</p></li><li><p>
+	Attempts to connect to these inaccessible computers will fail, but the
+	names will not be removed from the network neighbourhood lists.
+	</p></li><li><p>
+	If one of the fragments is cut off from the WINS server, it will only
+	be able to access servers on its local subnet, by using subnet-isolated
+	broadcast NetBIOS name resolution.  The effects are similar to that of
+	losing access to a DNS server.
+	</p></li></ol></div></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2898078"></a>Common Errors</h2></div></div><div></div></div><p>
+Many questions are asked on the mailing lists regarding browsing. The majority of browsing
+problems originate out of incorrect configuration of NetBIOS name resolution. Some are of
+particular note.
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2898092"></a>How can one flush the Samba NetBIOS name cache without restarting Samba?</h3></div></div><div></div></div><p>
+Samba's nmbd process controls all browse list handling. Under normal circumstances it is
+safe to restart nmbd. This will effectively flush the Samba NetBIOS name cache and cause it
+to be rebuilt. Note that this does NOT make certain that a rogue machine name will not re-appear
+in the browse list. When nmbd is taken out of service another machine on the network will
+become the browse master. This new list may still have the rogue entry in it. If you really
+want to clear a rogue machine from the list then every machine on the network will need to be
+shut down and restarted at after all machines are down. Failing a complete restart, the only
+other thing you can do is wait until the entry times out and is then flushed from the list.
+This may take a long time on some networks (months).
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2898121"></a>My client reports &quot;This server is not configured to list shared resources&quot;</h3></div></div><div></div></div><p>
+Your guest account is probably invalid for some reason. Samba uses the
+guest account for browsing in smbd.  Check that your guest account is
+valid.
+</p><p>See also <a class="indexterm" name="id2898142"></a><i class="parameter"><tt>guest account</tt></i> in the <tt class="filename">smb.conf</tt> man page.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2898166"></a>I get an <span class="errorname">Unable to browse the network</span> error</h3></div></div><div></div></div><p>This error can have multiple causes:</p><div class="itemizedlist"><ul type="disc"><li><p>There is no local master browser. Configure <span class="application">nmbd</span> 
+			or any other machine to serve as local master browser.</p></li><li><p>You can not log onto the machine that is the local master 
+			browser. Can you logon to it as guest user? </p></li><li><p>There is no IP connectivity to the local master browser. 
+			Can you reach it by broadcast?</p></li></ul></div></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="optional.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="passdb.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Part III. Advanced Configuration </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 11. Account Information Databases</td></tr></table></div></body></html>
