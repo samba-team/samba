@@ -761,6 +761,9 @@ each parameter for details. Note that some are synonyms.
 \fIos level\fR
 .TP 0.2i
 \(bu
+\fIos2 driver map\fR
+.TP 0.2i
+\(bu
 \fIpanic action\fR
 .TP 0.2i
 \(bu
@@ -1306,6 +1309,12 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIveto oplock files\fR
+.TP 0.2i
+\(bu
+\fIvfs object\fR
+.TP 0.2i
+\(bu
+\fIvfs options\fR
 .TP 0.2i
 \(bu
 \fIvolume\fR
@@ -4379,6 +4388,26 @@ Default: \fBos level = 20\fR
 
 Example: \fBos level = 65 \fR
 .TP
+\fBos2 driver map (G)\fR
+The parameter is used to define the absolute
+path to a file containing a mapping of Windows NT printer driver
+names to OS/2 printer driver names. The format is:
+
+<nt driver name> = <os2 driver 
+name>.<device name>
+
+For example, a valid entry using the HP LaserJet 5
+printer driver woudl appear as \fBHP LaserJet 5L = LASERJET.HP 
+LaserJet 5L\fR.
+
+The need for the file is due to the printer driver namespace 
+problem described in the Samba 
+Printing HOWTO. For more details on OS/2 clients, please 
+refer to the OS2-Client-HOWTO
+containing in the Samba documentation.
+
+Default: \fBos2 driver map = <empty string>
+\fR.TP
 \fBpanic action (G)\fR
 This is a Samba developer option that allows a 
 system command to be called when either  smbd(8)crashes. This is usually used to draw attention to the fact that 
@@ -6576,6 +6605,23 @@ the particular NetBench share :
 
 Example: \fBveto oplock files = /*;.SEM/
 \fR.TP
+\fBvfs object (S)\fR
+This parameter specifies a shared object file that 
+is used for Samba VFS I/O operations. By default, normal 
+disk I/O operations are used but these can be overloaded 
+with a VFS object. The Samba VFS layer is new to Samba 2.2 and 
+must be enabled at compile time with --with-vfs.
+
+Default : \fBno value\fR
+.TP
+\fBvfs options (S)\fR
+This parameter allows parameters to be passed 
+to the vfs layer at initialisation time. The Samba VFS layer 
+is new to Samba 2.2 and must be enabled at compile time 
+with --with-vfs. See also \fI vfs object\fR.
+
+Default : \fBno value\fR
+.TP
 \fBvolume (S)\fR
 This allows you to override the volume label 
 returned for a share. Useful for CDROMs with installation programs 

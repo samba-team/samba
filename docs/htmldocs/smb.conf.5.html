@@ -1609,6 +1609,15 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
+>os2 driver map</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
 >panic action</I
 ></TT
 ></P
@@ -2275,7 +2284,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN737"
+NAME="AEN740"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3253,6 +3262,24 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
+>vfs object</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>vfs options</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
 >volume</I
 ></TT
 ></P
@@ -3316,7 +3343,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1083"
+NAME="AEN1092"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -11063,6 +11090,47 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="OS2DRIVERMAP"
+></A
+>os2 driver map (G)</DT
+><DD
+><P
+>The parameter is used to define the absolute
+		path to a file containing a mapping of Windows NT printer driver
+		names to OS/2 printer driver names.  The format is:</P
+><P
+>&lt;nt driver name&gt; = &lt;os2 driver 
+		name&gt;.&lt;device name&gt;</P
+><P
+>For example, a valid entry using the HP LaserJet 5
+		printer driver woudl appear as <B
+CLASS="COMMAND"
+>HP LaserJet 5L = LASERJET.HP 
+		LaserJet 5L</B
+>.</P
+><P
+>The need for the file is due to the printer driver namespace 
+		problem described in the <A
+HREF="printer_driver2.html"
+TARGET="_top"
+>Samba 
+		Printing HOWTO</A
+>.  For more details on OS/2 clients, please 
+		refer to the <A
+HREF="OS2-Client-HOWTO.html"
+TARGET="_top"
+>OS2-Client-HOWTO
+		</A
+> containing in the Samba documentation.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>os2 driver map = &lt;empty string&gt;
+		</B
+></P
+></DD
+><DT
+><A
 NAME="PANICACTION"
 ></A
 >panic action (G)</DT
@@ -16361,6 +16429,49 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="VFSOBJECT"
+></A
+>vfs object (S)</DT
+><DD
+><P
+>This parameter specifies a shared object file that 
+		is used for Samba VFS I/O operations.  By default, normal 
+		disk I/O operations are used but these can be overloaded 
+		with a VFS object.  The Samba VFS layer is new to Samba 2.2 and 
+		must be enabled at compile time with --with-vfs.</P
+><P
+>Default : <I
+CLASS="EMPHASIS"
+>no value</I
+></P
+></DD
+><DT
+><A
+NAME="VFSOPTIONS"
+></A
+>vfs options (S)</DT
+><DD
+><P
+>This parameter allows parameters to be passed 
+		to the vfs layer at initialisation time.  The Samba VFS layer 
+		is new to Samba 2.2 and must be enabled at compile time 
+		with --with-vfs.  See also <A
+HREF="#VFSOBJECT"
+><TT
+CLASS="PARAMETER"
+><I
+>		vfs object</I
+></TT
+></A
+>.</P
+><P
+>Default : <I
+CLASS="EMPHASIS"
+>no value</I
+></P
+></DD
+><DT
+><A
 NAME="VOLUME"
 ></A
 >volume (S)</DT
@@ -16905,7 +17016,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5324"
+NAME="AEN5362"
 ></A
 ><H2
 >WARNINGS</H2
@@ -16935,7 +17046,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5330"
+NAME="AEN5368"
 ></A
 ><H2
 >VERSION</H2
@@ -16946,7 +17057,7 @@ NAME="AEN5330"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5333"
+NAME="AEN5371"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -17025,7 +17136,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5353"
+NAME="AEN5391"
 ></A
 ><H2
 >AUTHOR</H2

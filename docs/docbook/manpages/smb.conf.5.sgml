@@ -672,6 +672,7 @@
 		<listitem><para><parameter>null passwords</parameter></para></listitem>
 		<listitem><para><parameter>oplock break wait time</parameter></para></listitem>
 		<listitem><para><parameter>os level</parameter></para></listitem>
+		<listitem><para><parameter>os2 driver map</parameter></para></listitem>
 		<listitem><para><parameter>panic action</parameter></para></listitem>
 		<listitem><para><parameter>passwd chat</parameter></para></listitem>
 		<listitem><para><parameter>passwd chat debug</parameter></para></listitem>
@@ -864,6 +865,8 @@
 		<listitem><para><parameter>valid users</parameter></para></listitem>
 		<listitem><para><parameter>veto files</parameter></para></listitem>
 		<listitem><para><parameter>veto oplock files</parameter></para></listitem>
+		<listitem><para><parameter>vfs object</parameter></para></listitem>
+		<listitem><para><parameter>vfs options</parameter></para></listitem>
 		<listitem><para><parameter>volume</parameter></para></listitem>
 		<listitem><para><parameter>wide links</parameter></para></listitem>
 		<listitem><para><parameter>writable</parameter></para></listitem>
@@ -4704,6 +4707,32 @@
 
 
 		<varlistentry>
+		<term><anchor id="OS2DRIVERMAP">os2 driver map (G)</term>
+		<listitem><para>The parameter is used to define the absolute
+		path to a file containing a mapping of Windows NT printer driver
+		names to OS/2 printer driver names.  The format is:</para>
+		
+		<para>&lt;nt driver name&gt; = &lt;os2 driver 
+		name&gt;.&lt;device name&gt;</para>
+		
+		<para>For example, a valid entry using the HP LaserJet 5
+		printer driver woudl appear as <command>HP LaserJet 5L = LASERJET.HP 
+		LaserJet 5L</command>.</para>
+		
+		<para>The need for the file is due to the printer driver namespace 
+		problem described in the <ulink url="printer_driver2.html">Samba 
+		Printing HOWTO</ulink>.  For more details on OS/2 clients, please 
+		refer to the <ulink url="OS2-Client-HOWTO.html">OS2-Client-HOWTO
+		</ulink> containing in the Samba documentation.</para>
+
+		<para>Default: <command>os2 driver map = &lt;empty string&gt;
+		</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
 		<term><anchor id="PANICACTION">panic action (G)</term>
 		<listitem><para>This is a Samba developer option that allows a 
 		system command to be called when either <ulink url="smbd.8.html">
@@ -7439,6 +7468,35 @@
 
 		<para>Example: <command>veto oplock files = /*;.SEM/
 		</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="VFSOBJECT">vfs object (S)</term>
+		<listitem><para>This parameter specifies a shared object file that 
+		is used for Samba VFS I/O operations.  By default, normal 
+		disk I/O operations are used but these can be overloaded 
+		with a VFS object.  The Samba VFS layer is new to Samba 2.2 and 
+		must be enabled at compile time with --with-vfs.</para>
+		
+		<para>Default : <emphasis>no value</emphasis></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="VFSOPTIONS">vfs options (S)</term>
+		<listitem><para>This parameter allows parameters to be passed 
+		to the vfs layer at initialisation time.  The Samba VFS layer 
+		is new to Samba 2.2 and must be enabled at compile time 
+		with --with-vfs.  See also <link linkend="VFSOBJECT"><parameter>
+		vfs object</parameter></link>.</para>
+		
+		<para>Default : <emphasis>no value</emphasis></para>
 		</listitem>
 		</varlistentry>
 
