@@ -32,6 +32,8 @@
 #define USERPREFIX		"USER_"
 #define RIDPREFIX		"RID_"
 
+#define BASE_RID	0x200
+
 struct tdbsam_privates {
 	TDB_CONTEXT 	*passwd_tdb;
 	TDB_DATA 	key;
@@ -253,8 +255,8 @@ done:
 /**********************************************************************
  Intialize a BYTE buffer from a SAM_ACCOUNT struct
  *********************************************************************/
-static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state, uint8 **buf, 
-				    const SAM_ACCOUNT *sampass, uint32 user_rid, uint32 group_rid)
+static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
+				    uint8 **buf, const SAM_ACCOUNT *sampass)
 {
 	size_t		len, buflen;
 
@@ -267,6 +269,9 @@ static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state, uint8 **b
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time;
+
+	uint32  user_rid, group_rid;
+
 	const char *username;
 	const char *domain;
 	const char *nt_username;
@@ -305,6 +310,8 @@ static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state, uint8 **b
 	pass_must_change_time = (uint32)pdb_get_pass_must_change_time(sampass);
 	pass_last_set_time = (uint32)pdb_get_pass_last_set_time(sampass);
 
+	user_rid = pdb_get_user_rid(sampass);
+	group_rid = pdb_get_group_rid(sampass);
 
 	username = pdb_get_username(sampass);
 	if (username) username_len = strlen(username) +1;
@@ -641,6 +648,56 @@ static BOOL tdbsam_getsampwrid (struct pdb_context *context, SAM_ACCOUNT *user, 
 }
 
 /***************************************************************************
+ Search by rid and give back the uid!
+ **************************************************************************/
+
+uid_t tdbsam_rid_to_uid (struct pdb_context *context, uint32 rid)
+{
+	uid_t ret;
+	SAM_ACCOUNT *sa;
+
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&sa))) return -1;
+	if (!tdbsam_getsampwrid (context, sa, rid)) {
+		ret = -1;
+		goto done;
+	}
+	else {
+		ret = pdb_get_uid(sa);
+	}
+done:
+	pdb_free_sam(&sa);
+	return ret;
+}
+
+/***************************************************************************
+ Search by uid and give back the rid!
+ **************************************************************************/
+
+uint32 tdbsam_uid_to_rid (struct pdb_context *context, uid_t uid)
+{
+	uint32 ret;
+	char *name;
+	struct passwd *pw;
+	SAM_ACCOUNT *sa;
+
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&sa))) return 0;
+	pw = getpwuid(uid);
+	if (!pw) return 0;
+	name = strdup(pw->pw_name);
+	if (!tdbsam_getsampwnam (context, sa, name)) {
+		ret = 0;
+		goto done;
+	}
+	else {
+		ret = pdb_get_user_rid(sa);
+	}
+done:
+	SAFE_FREE(name);
+	pdb_free_sam(&sa);
+	return ret;
+}
+
+/***************************************************************************
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
@@ -709,9 +766,8 @@ static BOOL tdb_update_sam(struct pdb_context *context, const SAM_ACCOUNT* newpw
 	fstring 	keystr;
 	fstring		name;
 	BOOL		ret = True;
-	uint32          user_rid;
-	uint32         group_rid;
-	int32          tdb_ret;
+	uint32		user_rid;
+	int32		tdb_ret;
 
 	/* invalidate the existing TDB iterator if it is open */
 	if (tdb_state->passwd_tdb) {
@@ -727,35 +783,42 @@ static BOOL tdb_update_sam(struct pdb_context *context, const SAM_ACCOUNT* newpw
 		return False;
 	}
 
-	/* if we don't have a RID, then make them up. */
-	if (!(user_rid = pdb_get_user_rid(newpwd))) {
-		if (!tdb_state->permit_non_unix_accounts) {
-			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
-			ret = False;
-			goto done;
-		} else {
-			user_rid = tdb_state->low_nua_rid;
-		        tdb_ret = tdb_change_int32_atomic(pwd_tdb, "NUA_NEXT_RID", &user_rid, RID_MULTIPLIER);
+	/* if flag == TDB_INSERT then make up a new RID else throw an error. */
+	if (!pdb_get_user_rid(newpwd)) {
+		if (flag & TDB_INSERT) {
+			user_rid = BASE_RID;
+		        tdb_ret = tdb_change_int32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
 			if (tdb_ret == -1) {
 				ret = False;
 				goto done;
 			}
+			pdb_set_user_rid(newpwd, user_rid);
+		} else {
+			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
+			ret = False;
+			goto done;
 		}
 	}
 
-	if (!(group_rid = pdb_get_group_rid(newpwd))) {
-		if (!tdb_state->permit_non_unix_accounts) {
+	if (!pdb_get_group_rid(newpwd)) {
+		if (flag & TDB_INSERT) {
+			if (!tdb_state->permit_non_unix_accounts) {
+				DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
+				ret = False;
+				goto done;
+			} else {
+				/* This seems like a good default choice for non-unix users */
+				pdb_set_group_rid(newpwd, DOMAIN_GROUP_RID_USERS);
+			}
+		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
 			ret = False;
 			goto done;
-		} else {
-			/* This seems like a good default choice for non-unix users */
-			group_rid = DOMAIN_GROUP_RID_USERS;
 		}
 	}
 
 	/* copy the SAM_ACCOUNT struct into a BYTE buffer for storage */
-	if ((data.dsize=init_buffer_from_sam (tdb_state, &buf, newpwd, user_rid, group_rid)) == -1) {
+	if ((data.dsize=init_buffer_from_sam (tdb_state, &buf, newpwd)) == -1) {
 		DEBUG(0,("tdb_update_sam: ERROR - Unable to copy SAM_ACCOUNT info BYTE buffer!\n"));
 		ret = False;
 		goto done;
@@ -853,6 +916,8 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	(*pdb_method)->add_sam_account = tdbsam_add_sam_account;
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
+	(*pdb_method)->uid_to_user_rid = tdbsam_uid_to_rid;
+	(*pdb_method)->user_rid_to_uid = tdbsam_rid_to_uid;
 
 	tdb_state = talloc_zero(pdb_context->mem_ctx, sizeof(struct tdbsam_privates));
 
@@ -899,9 +964,9 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	tdb_state->low_nua_rid=pdb_uid_to_user_rid(low_nua_uid);
+	tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
 
-	tdb_state->high_nua_rid=pdb_uid_to_user_rid(high_nua_uid);
+	tdb_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
 
 	return NT_STATUS_OK;
 }

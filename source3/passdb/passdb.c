@@ -432,11 +432,20 @@ BOOL pdb_name_to_rid(const char *user_name, uint32 *u_rid, uint32 *g_rid)
  Converts NT user RID to a UNIX uid.
  ********************************************************************/
 
-uid_t pdb_user_rid_to_uid(uint32 user_rid)
+uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
 {
 	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
 }
 
+
+/*******************************************************************
+ converts UNIX uid to an NT User RID.
+ ********************************************************************/
+
+uint32 fallback_pdb_uid_to_user_rid(uid_t uid)
+{
+	return (((((uint32)uid)*RID_MULTIPLIER) + 1000) | USER_RID_TYPE);
+}
 
 /*******************************************************************
  Converts NT group RID to a UNIX gid.
@@ -445,15 +454,6 @@ uid_t pdb_user_rid_to_uid(uint32 user_rid)
 gid_t pdb_group_rid_to_gid(uint32 group_rid)
 {
 	return (gid_t)(((group_rid & (~GROUP_RID_TYPE))- 1000)/RID_MULTIPLIER);
-}
-
-/*******************************************************************
- converts UNIX uid to an NT User RID.
- ********************************************************************/
-
-uint32 pdb_uid_to_user_rid(uid_t uid)
-{
-	return (((((uint32)uid)*RID_MULTIPLIER) + 1000) | USER_RID_TYPE);
 }
 
 /*******************************************************************

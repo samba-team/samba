@@ -121,6 +121,26 @@ static BOOL context_delete_sam_account(struct pdb_context *context, SAM_ACCOUNT 
 	return context->pdb_selected->delete_sam_account(context, sam_acct);
 }
 
+static uint32 context_uid_to_user_rid(struct pdb_context *context, uid_t uid)
+{
+	if ((!context) || (!context->pdb_selected)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return False;
+	}
+	
+	return context->pdb_selected->uid_to_user_rid(context, uid);
+}
+
+static uid_t context_user_rid_to_uid(struct pdb_context *context, uint32 rid)
+{
+	if ((!context) || (!context->pdb_selected)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return False;
+	}
+	
+	return context->pdb_selected->user_rid_to_uid(context, rid);
+}
+
 static void free_pdb_context(struct pdb_context **context) 
 {
 	if (((*context)->pdb_selected) && ((*context)->pdb_selected->free_private_data)) {
@@ -164,6 +184,8 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_add_sam_account = context_add_sam_account;
 	(*context)->pdb_update_sam_account = context_update_sam_account;
 	(*context)->pdb_delete_sam_account = context_delete_sam_account;
+	(*context)->pdb_uid_to_user_rid = context_uid_to_user_rid;
+	(*context)->pdb_user_rid_to_uid = context_user_rid_to_uid;
 
 	(*context)->free_fn = free_pdb_context;
 	
@@ -345,6 +367,28 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 	}
 	
 	return pdb_context->pdb_delete_sam_account(pdb_context, sam_acct);
+}
+
+uid_t pdb_user_rid_to_uid(uint32 rid)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	
+	if (!pdb_context) {
+		return False;
+	}
+	
+	return pdb_context->pdb_user_rid_to_uid(pdb_context, rid);
+}
+
+uint32 pdb_uid_to_user_rid(uid_t uid)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	
+	if (!pdb_context) {
+		return False;
+	}
+	
+	return pdb_context->pdb_uid_to_user_rid(pdb_context, uid);
 }
 
 #endif /* !defined(WITH_NISPLUS_SAM) */
