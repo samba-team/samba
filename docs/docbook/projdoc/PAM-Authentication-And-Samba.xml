@@ -705,15 +705,15 @@ Options recognized by this module are as follows:
 
 <para>
 <itemizedlist>
-	<listitem><ulink url="mailto:morgan@transmeta.com">Andrew Morgan</ulink>, for providing the Linux-PAM
-	framework, without which none of this would have happened</listitem>
+	<listitem><para><ulink url="mailto:morgan@transmeta.com">Andrew Morgan</ulink>, for providing the Linux-PAM
+			framework, without which none of this would have happened</para></listitem>
 
-	<listitem><ulink url="mailto:gafton@redhat.com">Christian Gafton</ulink> and Andrew Morgan again, for the
-	pam_pwdb module upon which pam_smbpass was originally based</listitem>
+<listitem><para><ulink url="mailto:gafton@redhat.com">Christian Gafton</ulink> and Andrew Morgan again, for the
+		pam_pwdb module upon which pam_smbpass was originally based</para></listitem>
 
-	<listitem><ulink url="mailto:lkcl@switchboard.net">Luke Leighton</ulink> for being receptive to the idea,
+<listitem><para><ulink url="mailto:lkcl@switchboard.net">Luke Leighton</ulink> for being receptive to the idea,
 	and for the occasional good-natured complaint about the project's status
-	that keep me working on it :)</listitem>
+	that keep me working on it :)</para></listitem>
 </itemizedlist>.
 </para>
 
@@ -912,10 +912,12 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 <para>
 	<quote>
 	But the following command just fails:
+</quote>
 <screen>
 &rootprompt;<userinput>chown 'maryo' a_file</userinput>
 chown: `maryo': invalid user
 </screen>
+<quote>
 This is driving me nuts! What can be wrong?
 </quote>
 	</para>

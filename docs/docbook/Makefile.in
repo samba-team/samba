@@ -88,7 +88,7 @@ htmlfaq: $(HTMLDIR) CSS
 	@$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQPROJDOC)/sambafaq.xml
 html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
 html: $(HTMLDIR) CSS Samba-HOWTO-Collection.xml
-	@$(XSLTPROC) xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
+	@$(XSLTPROC) -o $(HTMLDIR) xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
 manpages: $(MANDIR) $(MANPAGES)
 tex: Samba-HOWTO-Collection.tex Samba-Developers-Guide.tex
 
@@ -111,7 +111,7 @@ $(DEVDOC)/attributions.xml: $(DEVDOC)/dev-doc.xml
 clean: 
 	@rm -f *.xml $(MANPAGES) $(TXTDIR)/*.txt $(PSDIR)/*.ps $(PDFDIR)/*.pdf 
 	@rm -f $(SMBDOTCONFDOC)/parameters.*.xml $(DVIDIR)/*.dvi
-	@rm -f samba-doc.* dev-doc.* $(PROJDOC)/attributions.xml
+	@rm -f samba-doc.* dev-doc.* $(PROJDOC)/attributions.xml $(DEVDOC)/attributions.xml
 	@rm -f $(IMAGEPROJDIR)/*.eps $(MANPROJDIR)/smb.conf.5.xml
 
 # Text files
@@ -120,7 +120,7 @@ $(TXTDIR):
 
 $(TXTDIR)/%.txt: %.xml
 	@echo "Converting $< to plain text..."
-	@$(XMLTO) txt -o $(TXTDIR) $<
+	@$(XMLTO) txt -o $(TXTDIR) $< > $@
 
 # Tex files
 %.tex: %.xml

@@ -191,7 +191,17 @@
 
 <xsl:template match="image">
 	<xsl:element name="figure">
-		<xsl:attribute name="id"><xsl:value-of select="imagefile"/></xsl:attribute>
+		<xsl:attribute name="id">
+			<xsl:choose>
+				<xsl:when test="@id != ''">
+					<xsl:value-of select="@id"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="imagefile"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:attribute>
+			
 		<xsl:element name="title">
 			<xsl:value-of select="imagedescription"/>
 		</xsl:element>

@@ -16,7 +16,7 @@
 Major new features:
 </para>
 
-<orderedlist numberation="arabic">
+<orderedlist>
 	<listitem><para>
 	Active Directory support. This release is able to join a ADS realm
 	as a member server and authenticate users using LDAP/kerberos.

@@ -26,7 +26,7 @@ listens on your LAN, analyses the data sent on it and displays it
 on the screen.</para>
 
 <sect2>
-<title>Debugging with Samba itself</title>l
+<title>Debugging with Samba itself</title>
 
   <para>
 One of the best diagnostic tools for debugging problems is Samba itself.  

@@ -324,9 +324,10 @@ one by one; this yields the old <emphasis>LanMan</emphasis> style
 printing; it uses a <filename>\\sambaserver\printershare</filename>
 type of connection.</para></listitem>
 
-<indexterm><primary>point and print</primary></indexterm>
 
-<listitem><para>deposit and prepare the drivers (for later download) on
+<listitem><para>
+<indexterm><primary>point and print</primary></indexterm>
+		deposit and prepare the drivers (for later download) on
 the print server (Samba); this enables the clients to use
 "Point and Print" to get drivers semi-automatically installed the
 first time they access the printer; with this method NT/2K/XP
@@ -447,9 +448,10 @@ method;</para></listitem>
 <emphasis>upload-from-a-UNIX-workstation</emphasis>
 method;</para></listitem>
 
-<indexterm><primary>imprints</primary></indexterm>
 
-<listitem><para>the <emphasis>Imprints</emphasis> Toolset
+<listitem><para>
+<indexterm><primary>imprints</primary></indexterm>
+		the <emphasis>Imprints</emphasis> Toolset
 method.</para></listitem>
 </itemizedlist>
 
@@ -588,7 +590,7 @@ Systems. Their <emphasis>Core Graphic Engine</emphasis> uses a
 
 <para>
 
-<image><imagedescription>Windows Printing to a local Printer</imagedescription><imagefile>1small</imagefile></image>
+<image id="small1"><imagedescription>Windows Printing to a local Printer</imagedescription><imagefile>1small</imagefile></image>
 </para>
 </sect2>
 
@@ -681,7 +683,7 @@ is CUPS....
 </note>
 
 <para>
-	<image><imagedescription>Printing to a Postscript Printer</imagedescription>
+	<image id="small2"><imagedescription>Printing to a Postscript Printer</imagedescription>
 		<imagefile>2small</imagefile></image>
 </para>
 
@@ -714,7 +716,7 @@ to non-PostScript hardware.
 </para>
 
 <para>
-<image><imagedescription>Ghostscript as a RIP for non-postscript printers</imagedescription>
+	<image id="small3"><imagedescription>Ghostscript as a RIP for non-postscript printers</imagedescription>
 	<imagefile>3small</imagefile>
 </image>
 </para>
@@ -1130,7 +1132,7 @@ print options already embedded into the file.
 </para>
 
 <para>
-	<image scale="25"><imagedescription>Prefiltering in CUPS to form Postscript</imagedescription>
+	<image id="small4" scale="25"><imagedescription>Prefiltering in CUPS to form Postscript</imagedescription>
 	<imagefile>4small</imagefile>
 </image>
 </para>
@@ -1149,7 +1151,7 @@ stapling an punching it, etc.) into the PostScript file.
 </para>
 
 <para>
-	<image scale="25"><imagedescription>Adding Device-specific Print Options</imagedescription>
+	<image id="small5" scale="25"><imagedescription>Adding Device-specific Print Options</imagedescription>
 		<imagefile>5small</imagefile>
 	</image>
 </para>
@@ -1190,7 +1192,7 @@ that are able to generate device-specific printer data.
 </para>
 
 <para>
-	<image scale="25"><imagedescription>Postscript to intermediate Raster format</imagedescription><imagefile>6small</imagefile></image>
+	<image id="small6" scale="25"><imagedescription>Postscript to intermediate Raster format</imagedescription><imagefile>6small</imagefile></image>
 </para>
 
 <para>
@@ -1207,7 +1209,7 @@ than one vendor financing the development of CUPS raster drivers).
 </para>
 
 <para>
-	<image><imagedescription>CUPS-raster production using Ghostscript</imagedescription>
+	<image id="small7"><imagedescription>CUPS-raster production using Ghostscript</imagedescription>
 		<imagefile>7small</imagefile>
 	</image>
 </para>
@@ -1243,7 +1245,7 @@ filtering:
 </para>
 
 <para>
-	<image><imagedescription>Image format to CUPS-raster format conversion</imagedescription>
+	<image id="small8"><imagedescription>Image format to CUPS-raster format conversion</imagedescription>
 		<imagefile>8small</imagefile>
 	</image>
 </para>
@@ -1268,7 +1270,7 @@ closely as possible with CUPS.
 </para>
 
 <para>
-	<image><imagedescription>Raster to Printer Specific formats</imagedescription>
+	<image id="small9"><imagedescription>Raster to Printer Specific formats</imagedescription>
 		<imagefile>9small</imagefile>
 	</image>
 </para>
@@ -1744,7 +1746,7 @@ advantages) than other methods.
 </para>
 
 <para>
-	<image><imagedescription>cupsomatic/foomatic processing versus Native CUPS</imagedescription>
+	<image id="small10"><imagedescription>cupsomatic/foomatic processing versus Native CUPS</imagedescription>
 		<imagefile>10small</imagefile>
 	</image>
 </para>
@@ -2034,7 +2036,7 @@ clients.
 </para>
 
 <para>
-	<image><imagedescription>Print Driver execution on the Client</imagedescription>
+	<image id="small11"><imagedescription>Print Driver execution on the Client</imagedescription>
 		<imagefile>11small</imagefile>
 	</image>
 </para>
@@ -2060,7 +2062,7 @@ understand.
 </para>
 
 <para>
-	<image><imagedescription>Print Driver execution on the Server</imagedescription>
+	<image id="small12"><imagedescription>Print Driver execution on the Server</imagedescription>
 		<imagefile>12small</imagefile>
 	</image>
 </para>
@@ -2134,7 +2136,7 @@ simply use <smbconfoption><name>printing</name><value>sysv</value></smbconfoptio
 </para>
 
 <para>
-<image><imagedescription>Printing via CUPS/samba server</imagedescription>
+<image id="small13"><imagedescription>Printing via CUPS/samba server</imagedescription>
 	<imagefile>13small</imagefile>
 </image>
 </para>
@@ -2738,8 +2740,9 @@ items which weigh in favor of the CUPS ones:
 <listitem><para>no hassle with the question <quote>Where do I
 get the ADOBE*.* driver files from?</quote></para></listitem>
 
+<listitem><para>
 <indexterm><primary>PJL</primary></indexterm>
-<listitem><para>the Adobe drivers (on request of the printer PPD
+		the Adobe drivers (on request of the printer PPD
 associated with them) often put a PJL header in front of the main
 PostScript part of the print file. Thus the printfile starts with
 <parameter>&lt;1B &gt;%-12345X</parameter> or
@@ -2934,8 +2937,9 @@ the procedure
 </para>
 
 <orderedlist>
+	<listitem><para>
 	<indexterm><primary>IPP</primary></indexterm>
-<listitem><para>call the CUPS server via IPP and request the
+			call the CUPS server via IPP and request the
 driver files and the PPD file for the named printer;</para></listitem>
 
 <listitem><para>store the files temporarily in the local
@@ -2947,13 +2951,15 @@ TEMPDIR (as defined in
  share's WIN40 (for Win95/98/ME) and W32X86/ (for WinNT/2k/XP) sub
  directories;</para></listitem>
 
+<listitem><para>
 <indexterm><primary>rpcclient</primary><secondary>adddriver</secondary></indexterm>
-<listitem><para>connect via rpcclient to the Samba server and
+		connect via rpcclient to the Samba server and
 execute the "adddriver" command with the correct
 parameters;</para></listitem>
 
+<listitem><para>
 <indexterm><primary>rpcclient</primary><secondary>setdriver</secondary></indexterm>
-<listitem><para>connect via rpcclient to the Samba server a second
+		connect via rpcclient to the Samba server a second
 time and execute the "setdriver" command.</para></listitem>
 </orderedlist>
 
@@ -3046,7 +3052,7 @@ not intended to, and does not work with, "raw" queues!
 </para>
 
 <para>
-	<image><imagedescription>cupsaddsmb flowchart</imagedescription>
+	<image id="small14"><imagedescription>cupsaddsmb flowchart</imagedescription>
 		<imagefile>14small</imagefile></image>
 </para>
 </sect2>
@@ -3177,12 +3183,14 @@ now);</para></listitem>
 <listitem><para>copy all files to
 		<smbconfsection>[print$]</smbconfsection></para></listitem>
 
+<listitem><para>
 <indexterm><primary>rpcclient</primary><secondary>adddriver</secondary></indexterm>
-<listitem><para>run <command>rpcclient adddriver</command>
+		run <command>rpcclient adddriver</command>
 (for each client architecture you want to support):</para></listitem>
 
+<listitem><para>
 <indexterm><primary>rpcclient</primary><secondary>setdriver</secondary></indexterm>
-<listitem><para>run <command>rpcclient
+		run <command>rpcclient
 setdriver.</command></para></listitem>
 </orderedlist>
 
@@ -3563,7 +3571,7 @@ The driver files now are in the W32X86 architecture "root" of
 <para><screen>
 &rootprompt;<userinput>rpcclient -Uroot%xxxx -c `adddriver "Windows NT x86" "mydrivername: \
   cupsdrvr.dll:mysmbtstprn.PPD: \
-  cupsui.dll:cups.hlp:NULL:RAW<citation>:</citation>NULL" \
+  cupsui.dll:cups.hlp:NULL:RAW:NULL" \
   localhost</userinput>
 Printer Driver mydrivername successfully installed.
 </screen></para>
