@@ -99,15 +99,15 @@ parse_integer(unsigned *u, char *s)
 static void
 parse_keys(hdb_entry *ent, char *str)
 {
-    char *save = NULL;
     Key *key;
     int tmp;
     char *p;
     int i;
-    p = strtok_r(str, ":", &save);
+    
+    p = strsep(&str, ":");
     sscanf(p, "%d", &tmp);
     ent->kvno = tmp;
-    p = strtok_r(NULL, ":", &save);
+    p = strsep(&str, ":");
     while(p){
 	Key *key;
 	key = realloc(ent->keys.val, 
@@ -120,16 +120,16 @@ parse_keys(hdb_entry *ent, char *str)
 	memset(key, 0, sizeof(*key));
 	sscanf(p, "%d", &tmp);
 	key->mkvno = tmp;
-	p = strtok_r(NULL, ":", &save);
+	p = strsep(&str, ":");
 	sscanf(p, "%d", &tmp);
 	key->key.keytype = tmp;
-	p = strtok_r(NULL, ":", &save);
+	p = strsep(&str, ":");
 	krb5_data_alloc(&key->key.keyvalue, (strlen(p) - 1) / 2 + 1);
 	for(i = 0; i < strlen(p); i += 2){
 	    sscanf(p + i, "%02x", &tmp);
 	    ((u_char*)key->key.keyvalue.data)[i / 2] = tmp;
 	}
-	p = strtok_r(NULL, ":", &save);
+	p = strsep(&str, ":");
 	if (p == NULL) {
 	    key->salt = malloc(sizeof(*key->salt));
 	    krb5_data_zero (key->salt);
@@ -142,7 +142,7 @@ parse_keys(hdb_entry *ent, char *str)
 		    ((u_char*)key->salt->data)[i / 2] = tmp;
 		}
 	    }
-	    p = strtok_r(NULL, ":", &save);
+	    p = strsep(&str, ":");
 	}
     }
 }
@@ -150,16 +150,15 @@ parse_keys(hdb_entry *ent, char *str)
 static Event*
 parse_event(Event *ev, char *str)
 {
-    char *save = NULL;
     char *p;
     if(strcmp(str, "-") == 0)
 	return NULL;
     if(ev == NULL)
 	ev = malloc(sizeof(*ev));
     memset(ev, 0, sizeof(*ev));
-    p = strtok_r(str, ":", &save);
+    p = strsep(&str, ":");
     parse_time(&ev->time, p);
-    p = strtok_r(NULL, ":", &save);
+    p = strsep(&str, ":");
     krb5_parse_name(context, p, &ev->principal);
     return ev;
 }
