@@ -17,8 +17,21 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+/* 
+ * A function of this type is passed to the '
+ * run_rpc_command' wrapper.  Must go before the net_proto.h 
+ * include
+ */
+
+typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, const char *, 
+				   struct cli_state *, TALLOC_CTX *, int, const char **);
+				   
+/* INCLUDE FILES */
+
 #include "utils/net_proto.h"
  
+/* MACROS & DEFINES */
+
 #define NET_FLAGS_MASTER 1
 #define NET_FLAGS_DMB 2
 
