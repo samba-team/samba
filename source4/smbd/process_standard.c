@@ -101,6 +101,9 @@ static void standard_terminate_connection(struct server_connection *conn, const 
 	   which makes leak checking easier */
 	init_iconv();
 
+	/* the secrets db should really hang off the connection structure */
+	secrets_shutdown();
+
 	/* terminate this process */
 	exit(0);
 }
