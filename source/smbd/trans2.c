@@ -376,7 +376,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
       pstring newname;
       pstrcpy( newname, fname);
-      name_map_mangle( newname, True, SNUM(conn));
+      name_map_mangle( newname, True, False, SNUM(conn));
       got_match = mask_match(newname, mask, case_sensitive, True);
     }
 
@@ -419,7 +419,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
     }
   }
 
-  name_map_mangle(fname,False,SNUM(conn));
+  name_map_mangle(fname,False,True,SNUM(conn));
 
   p = pdata;
   nameptr = p;
@@ -515,7 +515,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SIVAL(p,0,0); p += 4;
       if (!was_8_3) {
         pstrcpy(p+2,fname);
-        if (!name_map_mangle(p+2,True,SNUM(conn)))
+        if (!name_map_mangle(p+2,True,True,SNUM(conn)))
           (p+2)[12] = 0;
       } else
         *(p+2) = 0;
@@ -828,7 +828,7 @@ static int call_trans2findfirst(connection_struct *conn,
    */
 
   if(!is_8_3( mask, False))
-    name_map_mangle(mask, True, SNUM(conn));
+    name_map_mangle(mask, True, True, SNUM(conn));
 
   return(-1);
 }
@@ -975,7 +975,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
        */
 
       if(dname != NULL)
-        name_map_mangle( dname, False, SNUM(conn));
+        name_map_mangle( dname, False, True, SNUM(conn));
 
       if(dname && strcsequal( resume_name, dname))
       {
@@ -1003,7 +1003,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
          */
 
         if(dname != NULL)
-          name_map_mangle( dname, False, SNUM(conn));
+          name_map_mangle( dname, False, True, SNUM(conn));
 
         if(dname && strcsequal( resume_name, dname))
         {
@@ -1425,7 +1425,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
         /* Mangle if not already 8.3 */
         if(!is_8_3(short_name, True))
         {
-          if(!name_map_mangle(short_name,True,SNUM(conn)))
+          if(!name_map_mangle(short_name,True,True,SNUM(conn)))
             *short_name = '\0';
         }
         strupper(short_name);

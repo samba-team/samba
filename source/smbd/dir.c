@@ -558,7 +558,7 @@ BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int di
 }
 
 /****************************************************************************
- Get a directory entry.
+ Get an 8.3 directory entry.
 ****************************************************************************/
 
 BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
@@ -579,64 +579,71 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
 	       strequal(conn->dirpath,".") ||
 	       strequal(conn->dirpath,"/"));
   
-  needslash = 
-        ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
+  needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 
   if (!conn->dirptr)
     return(False);
   
   while (!found)
+  {
+    BOOL filename_is_mask = False;
+    dname = ReadDirName(conn->dirptr);
+
+    DEBUG(6,("readdir on dirptr 0x%lx now at offset %d\n",
+          (long)conn->dirptr,TellDir(conn->dirptr)));
+      
+    if (dname == NULL) 
+      return(False);
+      
+    pstrcpy(filename,dname);      
+
+    if ((filename_is_mask = (strcmp(filename,mask) == 0)) ||
+        (name_map_mangle(filename,True,False,SNUM(conn)) &&
+         mask_match(filename,mask,False,False)))
     {
-      dname = ReadDirName(conn->dirptr);
+      if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
+        continue;
 
-      DEBUG(6,("readdir on dirptr 0x%lx now at offset %d\n",
-	       (long)conn->dirptr,TellDir(conn->dirptr)));
-      
-      if (dname == NULL) 
-	return(False);
-      
-      pstrcpy(filename,dname);      
+      pstrcpy(fname,filename);
+      *path = 0;
+      pstrcpy(path,conn->dirpath);
+      if(needslash)
+        pstrcat(path,"/");
+      pstrcpy(pathreal,path);
+      pstrcat(path,fname);
+      pstrcat(pathreal,dname);
+      if (dos_stat(pathreal,&sbuf) != 0) 
+      {
+        DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",path, strerror(errno) ));
+        continue;
+      }
 
-      if ((strcmp(filename,mask) == 0) ||
-	  (name_map_mangle(filename,True,SNUM(conn)) &&
-	   mask_match(filename,mask,False,False)))
-	{
-	  if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
-	    continue;
-
-	  pstrcpy(fname,filename);
-	  *path = 0;
-	  pstrcpy(path,conn->dirpath);
-          if(needslash)
-  	    pstrcat(path,"/");
-	  pstrcpy(pathreal,path);
-	  pstrcat(path,fname);
-	  pstrcat(pathreal,dname);
-	  if (dos_stat(pathreal,&sbuf) != 0) 
-	    {
-	      DEBUG(5,("Couldn't stat 1 [%s]\n",path));
-	      continue;
-	    }
-
-	  if (check_descend &&
-	      !strequal(fname,".") && !strequal(fname,".."))
-	    continue;
+      if (check_descend && !strequal(fname,".") && !strequal(fname,".."))
+        continue;
 	  
-	  *mode = dos_mode(conn,pathreal,&sbuf);
+      *mode = dos_mode(conn,pathreal,&sbuf);
 
-	  if (!dir_check_ftype(conn,*mode,&sbuf,dirtype)) {
-	    DEBUG(5,("[%s] attribs didn't match %x\n",filename,dirtype));
-	    continue;
-	  }
+      if (!dir_check_ftype(conn,*mode,&sbuf,dirtype)) 
+      {
+        DEBUG(5,("[%s] attribs didn't match %x\n",filename,dirtype));
+        continue;
+      }
 
-	  *size = sbuf.st_size;
-	  *date = sbuf.st_mtime;
+      if (!filename_is_mask)
+      {
+        /* Now we can allow the mangled cache to be updated */
+        pstrcpy(filename,dname);
+        name_map_mangle(filename,True,True,SNUM(conn));
+      }
 
-	  DEBUG(5,("get_dir_entry found %s fname=%s\n",pathreal,fname));
+      *size = sbuf.st_size;
+      *date = sbuf.st_mtime;
+
+      DEBUG(5,("get_dir_entry found %s fname=%s\n",pathreal,fname));
 	  
-	  found = True;
-	}
+      found = True;
     }
+  }
 
   return(found);
 }

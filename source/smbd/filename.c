@@ -730,7 +730,8 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
 	continue;
 
       pstrcpy(name2,dname);
-      if (!name_map_mangle(name2,False,SNUM(conn))) continue;
+      if (!name_map_mangle(name2,False,True,SNUM(conn)))
+        continue;
 
       if ((mangled && mangled_equal(name,name2))
 	  || fname_equal(name, name2))

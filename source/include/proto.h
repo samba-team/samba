@@ -2401,7 +2401,7 @@ BOOL is_8_3( char *fname, BOOL check_case );
 void reset_mangled_cache( void );
 BOOL check_mangled_cache( char *s );
 void mangle_name_83( char *s);
-BOOL name_map_mangle(char *OutName, BOOL need83, int snum);
+BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum);
 
 /*The following definitions come from  smbd/message.c  */
 

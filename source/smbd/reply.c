@@ -1646,12 +1646,12 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   if(com == SMBmknew)
   {
     /* We should fail if file exists. */
-    ofun = 0x10;
+    ofun = FILE_CREATE_IF_NOT_EXIST;
   }
   else
   {
     /* SMBcreate - Create if file doesn't exist, truncate if it does. */
-    ofun = 0x12;
+    ofun = FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE;
   }
 
   /* Open file in dos compatibility share mode. */

@@ -514,7 +514,7 @@ void reset_mangled_cache( void )
  *
  *          If the extension of the raw name maps directly to the
  *          extension of the mangled name, then we'll store both names
- *          *without* extensions.  That way, we can provide consistant
+ *          *without* extensions.  That way, we can provide consistent
  *          reverse mangling for all names that match.  The test here is
  *          a bit more careful than the one done in earlier versions of
  *          mangle.c:
@@ -561,7 +561,7 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
       }
     }
 
-  /* Allocate a new cache entry.  If the allcoation fails, just return. */
+  /* Allocate a new cache entry.  If the allocation fails, just return. */
   i = sizeof( ubi_cacheEntry ) + mangled_len + raw_len + 2;
   new_entry = malloc( i );
   if( !new_entry )
@@ -956,6 +956,11 @@ void mangle_name_83( char *s)
  *                    signal that a client does not require name mangling,
  *                    thus skipping the name mangling even on shares which
  *                    have name-mangling turned on.
+ *          cache83 - If False, the mangled name cache will not be updated.
+ *                    This is usually used to prevent that we overwrite
+ *                    a conflicting cache entry prematurely, i.e. before
+ *                    we know whether the client is really interested in the
+ *                    current name.  (See PR#13758).  UKD.
  *          snum    - Share number.  This identifies the share in which the
  *                    name exists.
  *
@@ -964,11 +969,11 @@ void mangle_name_83( char *s)
  *
  * ****************************************************************************
  */
-BOOL name_map_mangle(char *OutName, BOOL need83, int snum)
+BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 {
 	char *map;
-	DEBUG(5,("name_map_mangle( %s, %s, %d )\n", 
-		 OutName, need83?"TRUE":"FALSE", snum));
+	DEBUG(5,("name_map_mangle( %s, need83 = %s, cache83 = %s, %d )\n", OutName,
+		need83 ? "TRUE" : "FALSE", cache83 ? "TRUE" : "FALSE", snum));
 
 #ifdef MANGLE_LONG_FILENAMES
 	if( !need83 && is_illegal_name(OutName) )
@@ -984,17 +989,19 @@ BOOL name_map_mangle(char *OutName, BOOL need83, int snum)
 
 	/* check if it's already in 8.3 format */
 	if (need83 && !is_8_3(OutName, True)) {
-		char *tmp; 
+		char *tmp = NULL; 
 
 		if (!lp_manglednames(snum)) {
 			return(False);
 		}
 
 		/* mangle it into 8.3 */
-		tmp = strdup(OutName);
+		if (cache83)
+			tmp = strdup(OutName);
+
 		mangle_name_83(OutName);
 
-		if(tmp) {
+		if(tmp != NULL) {
 			cache_mangled_name(OutName, tmp);
 			free(tmp);
 		}
