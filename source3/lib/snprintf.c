@@ -811,6 +811,20 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 }
 #endif
 
+#ifndef HAVE_VSYSLOG
+#ifdef HAVE_SYSLOG
+ void vsyslog (int facility_priority, char *format, va_list arglist)
+{
+	char *msg = NULL;
+	vasprintf(&msg, format, argslist);
+        if (!msg)
+                return;
+        syslog(facility_priority, "%s", msg);
+        free(msg);
+}
+#endif /* HAVE_SYSLOG */
+#endif /* HAVE_VSYSLOG */
+
 #ifdef TEST_SNPRINTF
 
  int sprintf(char *str,const char *fmt,...);
