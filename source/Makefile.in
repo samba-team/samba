@@ -320,7 +320,7 @@ CLIENT_OBJ = client/client.o client/clitar.o \
              $(READLINE_OBJ)
 
 NET_OBJ = utils/net.o utils/net_ads.o \
-	$(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) @BUILD_POPT@
+	$(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -556,7 +556,7 @@ bin/smbclient: $(CLIENT_OBJ) bin/.dummy
 
 bin/net: $(NET_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/smbspool: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
