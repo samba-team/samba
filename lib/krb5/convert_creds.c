@@ -170,9 +170,9 @@ krb524_convert_creds_kdc(krb5_context context,
 	int port;
 	port = krb5_getportbyname (context, "krb524", "udp", 4444);
 	
-	ret = krb5_get_krbhst (context, krb5_princ_realm(context, 
-							 v5_creds->server), 
-			       &hostlist);
+	ret = krb5_get_krb524hst (context, krb5_princ_realm(context, 
+							    v5_creds->server), 
+				  &hostlist);
 	if(ret)
 	    goto out2;
 	
