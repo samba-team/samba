@@ -38,7 +38,6 @@ int ClientNMB       = -1;
 int ClientDGRAM     = -1;
 int global_nmb_port = -1;
 
-extern pstring myhostname;
 static pstring host_file;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
@@ -522,7 +521,7 @@ static BOOL init_structs(void)
 
   if (! *global_myname)
   {
-    fstrcpy( global_myname, myhostname );
+    fstrcpy( global_myname, myhostname() );
     p = strchr( global_myname, '.' );
     if (p)
       *p = 0;
@@ -747,12 +746,6 @@ static void usage(char *pname)
 
   DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
   DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1998\n" ) );
-
-  if(!get_myname( myhostname))
-  {
-    DEBUG( 0, ( "Unable to get my hostname - exiting.\n" ) );
-    return -1;
-  }
 
   if ( !reload_services(False) )
     return(-1);

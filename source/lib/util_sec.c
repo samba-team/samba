@@ -2,6 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 2.0
    Copyright (C) Jeremy Allison 1998.
+   rewritten for version 2.0.6 by Tridge
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,200 +19,235 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef AUTOCONF_TEST
 #include "includes.h"
-
-#ifdef HAVE_TRAPDOOR_UID
-
-/****************************************************************************
- This next section of code is for trapdoor uid systems only.
- Currently the only one known is AIX pre 4.2. JRA.
-****************************************************************************/
-
-#if defined(HAVE_SETUIDX) && defined(HAVE_SETPRIV)
-
-/****************************************************************************
- Ensure we have privs to do what we need to.
-****************************************************************************/
-
-static void trapdoor_set_priv(void)
-{
-	/*
-	 * We can only do the priv stuff if our euid is zero I think.
-	 * I believe we only need to do this once but the older code
-	 * in 1.9.18 always did it. Attempt to do the same.
-	 */
-
-	/* AIX 3 stuff - inspired by a code fragment in wu-ftpd */
-	priv_t priv;
-
-	priv.pv_priv[0] = 0;
-	priv.pv_priv[1] = 0;
-	setpriv(PRIV_SET|PRIV_INHERITED|PRIV_EFFECTIVE|PRIV_BEQUEATH,&priv,sizeof(priv_t));
-}
-#endif /* !defined(HAVE_SETUIDX) || !defined(HAVE_SETPRIV) */
-
-/****************************************************************************
- Set the effective uid on a trapdoor system.
-****************************************************************************/
-
-int trapdoor_set_effective_uid(uid_t uid)
-{
-#if defined(HAVE_SETUIDX) && defined(HAVE_SETPRIV)
-	trapdoor_set_priv();
-	/* AIX3 has setuidx which is NOT a trapoor function (tridge) */
-	return setuidx(ID_EFFECTIVE, uid);
-#endif /* !defined(HAVE_SETUIDX) || !defined(HAVE_SETPRIV) */
-	return -1;
-}
-
-/****************************************************************************
- Set the real uid on a trapdoor system.
-****************************************************************************/
-
-int trapdoor_set_real_uid(uid_t uid)
-{
-#if defined(HAVE_SETUIDX) && defined(HAVE_SETPRIV)
-	trapdoor_set_priv();
-	/* AIX3 has setuidx which is NOT a trapoor function (tridge) */
-	return setuidx(ID_REAL,uid);
-#endif /* !defined(HAVE_SETUIDX) || !defined(HAVE_SETPRIV) */
-	return -1;
-}
-
-/****************************************************************************
- Set the effective gid on a trapdoor system.
-****************************************************************************/
-
-int trapdoor_set_effective_gid(gid_t gid)
-{
-#if defined(HAVE_SETGIDX) && defined(HAVE_SETPRIV)
-	trapdoor_set_priv();
-	/* AIX3 has setgidx which is NOT a trapoor function (tridge) */
-	return setgidx(ID_EFFECTIVE,gid);
-#endif /* !defined(HAVE_SETGIDX) || !defined(HAVE_SETPRIV) */
-	return -1;
-}
-
-#endif /* HAVE_TRAPDOOR_UID */
-
-/****************************************************************************
- Gain root privilege before doing something.
-****************************************************************************/
-
-void gain_root_privilege(void)
-{
-#if defined(HAVE_SETRESUID)
-
-    /*
-     * Ensure all our uids are set to root.
-	 * Easy method - just use setresuid().
-     */
-    setresuid(0,0,0);
-
-#else /* !HAVE_SETRESUID */
-
-    /*
-     * Ensure all our uids are set to root.
-	 * Older method - first use setuid.
-     */
-
-    setuid(0);
-
-#if defined(HAVE_SETREUID)
-	setreuid(0,0);
+extern int DEBUGLEVEL;
 #else
-    seteuid(0);
+/* we are running this code in autoconf test mode to see which type of setuid
+   function works */
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdlib.h>
+#include <stdio.h>
+
+#ifdef HAVE_SYS_PRIV_H
+#include <sys/priv.h>
+#endif
+#ifdef HAVE_SYS_ID_H
+#include <sys/id.h>
 #endif
 
-#endif /* HAVE_SETRESUID */
+#define DEBUG(x, y) printf y
+#define smb_panic(x) exit(1)
+#endif
+
+/****************************************************************************
+abort if we haven't set the uid correctly
+****************************************************************************/
+static void assert_uid(uid_t ruid, uid_t euid)
+{
+	if ((euid != (uid_t)-1 && geteuid() != euid) ||
+	    (ruid != (uid_t)-1 && getuid() != ruid)) {
+		DEBUG(0,("Failed to set uid privileges to (%d,%d) now set to (%d,%d)\n",
+			 (int)ruid, (int)euid,
+			 (int)getuid(), (int)geteuid()));
+		smb_panic("failed to set uid\n");
+		exit(1);
+	}
 }
+
+/****************************************************************************
+abort if we haven't set the gid correctly
+****************************************************************************/
+static void assert_gid(gid_t rgid, gid_t egid)
+{
+	if ((egid != (gid_t)-1 && getegid() != egid) ||
+	    (rgid != (gid_t)-1 && getgid() != rgid)) {
+		DEBUG(0,("Failed to set gid privileges to (%d,%d) now set to (%d,%d) uid=(%d,%d)\n",
+			 (int)rgid, (int)egid,
+			 (int)getgid(), (int)getegid(),
+			 (int)getuid(), (int)geteuid()));
+		smb_panic("failed to set gid\n");
+		exit(1);
+	}
+}
+
+/****************************************************************************
+ Gain root privilege before doing something. 
+ We want to end up with ruid==euid==0
+****************************************************************************/
+void gain_root_privilege(void)
+{	
+#if USE_SETRESUID
+	setresuid(0,0,0);
+#endif
+    
+#if USE_SETEUID
+	seteuid(0);
+#endif
+
+#if USE_SETREUID
+	setreuid(0, 0);
+#endif
+
+#if USE_SETUIDX
+	setuidx(ID_EFFECTIVE, 0);
+	setuidx(ID_REAL, 0);
+#endif
+
+	/* this is needed on some systems */
+	setuid(0);
+
+	assert_uid(0, 0);
+}
+
 
 /****************************************************************************
  Ensure our real and effective groups are zero.
+ we want to end up with rgid==egid==0
 ****************************************************************************/
-
 void gain_root_group_privilege(void)
 {
-#ifdef HAVE_SETRESGID
+#if USE_SETRESUID
 	setresgid(0,0,0);
-#elif defined(HAVE_SETREGID)
+#endif
+
+#if USE_SETREUID
 	setregid(0,0);
-#elif defined(HAVE_SETEGID)
+#endif
+
+#if USE_SETEUID
 	setegid(0);
 #endif
+
+#if USE_SETUIDX
+	setgidx(ID_EFFECTIVE, 0);
+	setgidx(ID_REAL, 0);
+#endif
+
 	setgid(0);
+
+	assert_gid(0, 0);
 }
+
 
 /****************************************************************************
  Set *only* the effective uid.
+ we want to end up with ruid==0 and euid==uid
 ****************************************************************************/
-
-int set_effective_uid(uid_t uid)
+void set_effective_uid(uid_t uid)
 {
-#if defined(HAVE_TRAPDOOR_UID)
-	return trapdoor_set_effective_uid(uid);
-#elif defined(HAVE_SETRESUID)
-    return setresuid(-1,uid,-1);
-#elif defined(HAVE_SETREUID)
-	return setreuid(-1,uid);
-#else
-    if ((seteuid(uid) != 0) && (setuid(uid) != 0))
-		return -1;
-	return 0;
+#if USE_SETRESUID
+	setresuid(-1,uid,-1);
 #endif
+
+#if USE_SETREUID
+	setreuid(-1,uid);
+#endif
+
+#if USE_SETEUID
+	seteuid(uid);
+#endif
+
+#if USE_SETUIDX
+	setuidx(ID_EFFECTIVE, uid);
+#endif
+
+	assert_uid(-1, uid);
 }
 
 /****************************************************************************
  Set *only* the effective gid.
+ we want to end up with rgid==0 and egid==gid
 ****************************************************************************/
-
-int set_effective_gid(gid_t gid)
+void set_effective_gid(gid_t gid)
 {
-#if defined(HAVE_TRAPDOOR_UID)
-	return trapdoor_set_effective_gid(gid);
-#elif defined(HAVE_SETRESGID)
-	return setresgid(-1,gid,-1);
-#elif defined(HAVE_SETREGID)
-	return setregid(-1,gid);
-#else
-	if ((setegid(gid) != 0) && (setgid(gid) != 0))
-		return -1;
+#if USE_SETRESUID
+	setresgid(-1,gid,-1);
+#endif
+
+#if USE_SETREUID
+	setregid(-1,gid);
+#endif
+
+#if USE_SETEUID
+	setegid(gid);
+#endif
+
+#if USE_SETUIDX
+	setgidx(ID_EFFECTIVE, gid);
+#endif
+
+	assert_gid(-1, gid);
+}
+
+static uid_t saved_euid, saved_ruid;
+
+/****************************************************************************
+ save the real and effective uid for later restoration. Used by the quotas
+ code
+****************************************************************************/
+void save_re_uid(void)
+{
+	saved_ruid = getuid();
+	saved_euid = geteuid();
+}
+
+
+/****************************************************************************
+ and restore them!
+****************************************************************************/
+void restore_re_uid(void)
+{
+	set_effective_uid(0);
+	set_effective_uid(saved_euid);
+	if (getuid() != saved_ruid) setuid(saved_ruid);
+	set_effective_uid(saved_euid);
+
+	assert_uid(saved_ruid, saved_euid);
+}
+
+/****************************************************************************
+ set the real AND effective uid to the current effective uid in a way that
+ allows root to be regained.
+ This is only possible on some platforms.
+****************************************************************************/
+int set_re_uid(void)
+{
+	uid_t uid = geteuid();
+
+#if USE_SETRESUID
+	setresuid(geteuid(), -1, -1);
+#endif
+
+#if USE_SETREUID
+	setreuid(0, 0);
+	setreuid(uid, -1);
+	setreuid(-1, uid);
+#endif
+
+#if USE_SETEUID
+	/* can't be done */
+	return -1;
+#endif
+
+#if USE_SETUIDX
+	/* can't be done */
+	return -1;
+#endif
+
+	assert_uid(uid, uid);
 	return 0;
-#endif
 }
 
-/****************************************************************************
- Set *only* the real uid.
-****************************************************************************/
-
-int set_real_uid(uid_t uid)
-{
-#if defined(HAVE_TRAPDOOR_UID)
-	return trapdoor_set_real_uid(uid);
-#elif defined(HAVE_SETRESUID)
-	return setresuid(uid,-1,-1);
-#elif defined(HAVE_SETREUID)
-    return setreuid(uid,-1);
-#else
-	/* 
-	 * Without either setresuid or setreuid we cannot
-	 * independently set the real uid.
-	 */
-    return -1;
-#endif
-}
 
 /****************************************************************************
- Become the specified uid - permanently !
+ Become the specified uid and gid - permanently !
+ there should be no way back if possible
 ****************************************************************************/
-
-BOOL become_user_permanently(uid_t uid, gid_t gid)
+void become_user_permanently(uid_t uid, gid_t gid)
 {
-	/* 
-	 * Now completely lose our privileges. This is a fairly paranoid
-	 * way of doing it, but it does work on all systems that I know of.
-	 */
-
 	/*
 	 * First - gain root privilege. We do this to ensure
 	 * we can lose it again.
@@ -220,46 +256,71 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 	gain_root_privilege();
 	gain_root_group_privilege();
 
-#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
-	/*
-	 * Ensure we change all our gids.
-	 */
+#if USE_SETRESUID
 	setresgid(gid,gid,gid);
-	
-	/*
-	 * Ensure all the uids are the user.
-	 */
-	setresuid(uid,uid,uid);
-#else /* !( defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID) ) */
-
-	/*
-	 * Ensure we change all our gids.
-	 */
 	setgid(gid);
-#if defined(HAVE_SETREGID)
-	setregid(gid,gid);
-#else
-	setegid(gid);
-#endif
-	
-	/*
-	 * Ensure all the uids are the user.
-	 */
+	setresuid(uid,uid,uid);
 	setuid(uid);
-
-#if defined(HAVE_SETREUID)
-	setreuid(uid,uid);
-#else
-	seteuid(uid);
 #endif
 
-#endif /* !( defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID) ) */
+#if USE_SETREUID
+	setregid(gid,gid);
+	setgid(gid);
+	setreuid(uid,uid);
+	setuid(uid);
+#endif
+
+#if USE_SETEUID
+	setegid(gid);
+	setgid(gid);
+	setuid(uid);
+	seteuid(uid);
+	setuid(uid);
+#endif
+
+#if USE_SETUIDX
+	setgidx(ID_REAL, gid);
+	setgidx(ID_EFFECTIVE, gid);
+	setgid(gid);
+	setuidx(ID_REAL, uid);
+	setuidx(ID_EFFECTIVE, uid);
+	setuid(uid);
+#endif
 	
-	if (getuid() != uid || geteuid() != uid ||
-	    getgid() != gid || getegid() != gid) {
-		/* We failed to lose our privileges. */
-		return False;
-	}
-	
-	return(True);
+	assert_uid(uid, uid);
+	assert_gid(gid, gid);
 }
+
+#ifdef AUTOCONF_TEST
+main()
+{
+        if (getuid() != 0) {
+#if (defined(AIX) && defined(USE_SETREUID))
+		/* setreuid is badly broken on AIX 4.1, we avoid it completely */
+                fprintf(stderr,"avoiding possibly broken setreuid\n");
+		exit(1);
+#endif
+
+		/* assume that if we have the functions then they work */
+                fprintf(stderr,"not running as root: assuming OK\n");
+		exit(0);
+	}
+
+	gain_root_privilege();
+	gain_root_group_privilege();
+	set_effective_gid(1);
+	set_effective_uid(1);
+	gain_root_privilege();
+	gain_root_group_privilege();
+	become_user_permanently(1, 1);
+	setuid(0);
+	if (getuid() == 0) {
+		fprintf(stderr,"uid not set permanently\n");
+		exit(1);
+	}
+
+	printf("OK\n");
+
+	exit(0);
+}
+#endif

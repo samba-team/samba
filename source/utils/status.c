@@ -48,7 +48,6 @@ struct session_record{
 
 extern int DEBUGLEVEL;
 extern FILE *dbf;
-extern pstring myhostname;
 
 static pstring Ucrit_username = "";                   /* added by OH */
 pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
@@ -196,8 +195,6 @@ static void print_share_mode(share_mode_entry *e, char *fname)
       return (-1);
     }
   }
-
-  get_myname(myhostname);
 
   if (!lp_load(servicesf,False,False,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);

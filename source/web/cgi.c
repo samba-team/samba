@@ -386,20 +386,7 @@ static BOOL cgi_handle_authorization(char *line)
 			 * We have not authenticated as root,
 			 * become the user *permanently*.
 			 */
-			if(!become_user_permanently(pass->pw_uid, pass->pw_gid)) {
-				/*
-				 * Always give the same error so a cracker
-				 * cannot tell why we fail.
-				 */
-				cgi_setup_error("401 Bad Authorization", "",
-	                "username/password must be supplied");
-		        return False;
-			}
-
-			/*
-			 * On exit from here we are the authenticated
-			 * user - no way back.
-			 */
+			become_user_permanently(pass->pw_uid, pass->pw_gid);
 		}
 
 		/* Save the users name */

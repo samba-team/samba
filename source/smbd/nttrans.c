@@ -876,7 +876,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
 	
-	if(oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
 
 	set_message(outbuf,34,0,True);
@@ -1203,7 +1203,7 @@ static int call_nt_transact_create(connection_struct *conn,
       if (oplock_request && lp_fake_oplocks(SNUM(conn)))
         smb_action |= EXTENDED_OPLOCK_GRANTED;
   
-      if(oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+      if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
         smb_action |= EXTENDED_OPLOCK_GRANTED;
     }
   }

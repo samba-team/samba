@@ -118,7 +118,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		del_share_mode(token, fsp);
 	}
 
-	if(EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
 		release_file_oplock(fsp);
 
 	if(fd_attempt_close(fsp->fd_ptr,&err) == 0)

@@ -45,7 +45,7 @@
 #include <sys/sockio.h>
 #endif
 
-#ifdef AUTOCONF
+#ifdef AUTOCONF_TEST
 struct iface_struct {
 	char name[16];
 	struct in_addr ip;
@@ -377,7 +377,7 @@ int get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 }
 
 
-#ifdef AUTOCONF
+#ifdef AUTOCONF_TEST
 /* this is the autoconf driver to test get_interfaces() */
 
 #define MAX_INTERFACES 128

@@ -311,7 +311,7 @@ BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
 	}
 
 	*class_len      = r_o.hdr_class.uni_max_len;
-	fstrcpy(class, unistr2_to_str(&r_o.uni_class));
+	fstrcpy(class, dos_unistr2_to_str(&r_o.uni_class));
 	*num_subkeys    = r_o.num_subkeys   ;
 	*max_subkeylen  = r_o.max_subkeylen ;
 	*max_subkeysize = r_o.max_subkeysize;
@@ -438,7 +438,7 @@ BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 		return False;
 	}
 
-	fstrcpy(type, buffer2_to_str(&r_o.uni_type));
+	fstrcpy(type, dos_buffer2_to_str(&r_o.uni_type));
 	(*unk_0) = r_o.unknown_0;
 	(*unk_1) = r_o.unknown_1;
 
@@ -825,7 +825,7 @@ BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
 
 	(*unk_1) = r_o.unknown_1;
 	(*unk_2) = r_o.unknown_2;
-	fstrcpy(key_name, unistr2(r_o.key_name.str.buffer));
+	fstrcpy(key_name, dos_unistr2(r_o.key_name.str.buffer));
 	(*mod_time) = nt_time_to_unix(&r_o.time);
 
 	prs_mem_free(&rbuf);
@@ -948,7 +948,7 @@ BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
 	}
 
 	(*val_type) = r_o.type;
-	fstrcpy(val_name, unistr2_to_str(&r_o.uni_name));
+	fstrcpy(val_name, dos_unistr2_to_str(&r_o.uni_name));
 
 	prs_mem_free(&rbuf);
 

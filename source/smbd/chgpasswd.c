@@ -180,10 +180,7 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 
   /* make us completely into the right uid */
   if (!as_root) {
-    if(!become_user_permanently(uid, gid)) {
-      DEBUG(0,("dochild: unable to permanently become uid %d, gid %d\n", (int)uid, (int)gid));
-      return False;
-    }
+	  become_user_permanently(uid, gid);
   }
 
   DEBUG(10, ("Invoking '%s' as password change program.\n", passwordprogram));
@@ -708,7 +705,7 @@ BOOL check_oem_password(char *user,
 		int uni_pw_len = new_pw_len;
 		char *pw;
 		new_pw_len /= 2;
-		pw = unistrn2((uint16*)(&lmdata[512-uni_pw_len]), new_pw_len);
+		pw = dos_unistrn2((uint16*)(&lmdata[512-uni_pw_len]), new_pw_len);
 		memcpy(new_passwd, pw, new_pw_len+1);
 	}
 	else

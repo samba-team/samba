@@ -53,8 +53,6 @@ void init_uid(void)
 
 static BOOL become_uid(uid_t uid)
 {
-	uid_t euid;
-
 	if (uid == (uid_t)-1 || ((sizeof(uid_t) == 2) && (uid == (uid_t)65535))) {
 		static int done;
 		if (!done) {
@@ -63,30 +61,10 @@ static BOOL become_uid(uid_t uid)
 		}
 	}
 
-	if(set_effective_uid(uid) != 0) {
-		DEBUG(0,("Couldn't set effective uid to %d. Currently set to (real=%d,eff=%d). \
-Error was %s\n", (int)uid,(int)getuid(), (int)geteuid(), strerror(errno) ));
+	set_effective_uid(uid);
 
-		if (uid > (uid_t)32000)
-			DEBUG(0,("Could be your OS doesn't like high uid values - \
-try using a different account\n"));
-		return(False);
-	}
-
-	/* Paranioa.... JRA. */
-
-	euid = geteuid();
-
-	if(euid != uid) {
-		DEBUG(0,("become_uid: Unable to become uid %d.\n", (int)uid ));
-
-    	if ((uid == (uid_t)-1) || ((sizeof(uid_t) == 2) && (uid == 65535)))
-		    DEBUG(0,("Invalid uid -1. perhaps you have a account with uid 65535?\n"));
-
-	    return(False);
-    }
-    current_user.uid = uid;
-    return(True);
+	current_user.uid = uid;
+	return(True);
 }
 
 
@@ -100,17 +78,10 @@ static BOOL become_gid(gid_t gid)
 		DEBUG(1,("WARNING: using gid %d is a security risk\n",(int)gid));    
 	}
   
-	if(set_effective_gid(gid) != 0) {
-		DEBUG(0,("Couldn't set effective gid to %d currently set to (real=%d,eff=%d)\n",
-			(int)gid,(int)getgid(),(int)getegid()));
-		if (gid > 32000) {
-			DEBUG(0,("Looks like your OS doesn't like high gid values - try using a different account\n"));
-		}
-		return(False);
-	}
-
+	set_effective_gid(gid);
+	
 	current_user.gid = gid;
-
+	
 	return(True);
 }
 

@@ -320,8 +320,9 @@ clean_and_exit:
 }
 
 /****************************************************************************
-initialise the client codepage.
+ Initialise the client codepage.
 ****************************************************************************/
+
 void codepage_initialise(int client_codepage)
 {
   int i;

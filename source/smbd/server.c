@@ -47,7 +47,6 @@ extern int dcelogin_atmost_once;
 
 extern fstring remote_machine;
 extern pstring OriginalDir;
-extern pstring myhostname;
 
 /****************************************************************************
   when exiting, take the whole family
@@ -448,7 +447,7 @@ static void init_structs(void )
 
 	if (!*global_myname) {
 		char *p;
-		fstrcpy( global_myname, myhostname );
+		fstrcpy( global_myname, myhostname() );
 		p = strchr( global_myname, '.' );
 		if (p) 
 			*p = 0;
@@ -637,8 +636,6 @@ static void usage(char *pname)
 	/*
 	 * Do this before reload_services.
 	 */
-
-	get_myname( myhostname );
 
 	if (!reload_services(False))
 		return(-1);	

@@ -35,7 +35,6 @@ pstring cd_path = "";
 static pstring service;
 static pstring desthost;
 extern pstring global_myname;
-extern pstring myhostname;
 static pstring password;
 static pstring username;
 static pstring workgroup;
@@ -2212,10 +2211,6 @@ static int do_message_op(void)
 
 	TimeInit();
 	charset_initialise();
-
-	if(!get_myname(myhostname)) {
-		DEBUG(0,("Failed to get my hostname.\n"));
-	}
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 

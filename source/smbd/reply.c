@@ -1540,7 +1540,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
     
-  if(EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+  if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   return(outsize);
 }
@@ -1635,7 +1635,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
-  if(ex_oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+  if(ex_oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
@@ -1648,7 +1648,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
-  if(core_oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+  if(core_oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
@@ -1771,7 +1771,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
  
-  if(EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+  if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
  
   DEBUG( 2, ( "new file %s\n", fname ) );
@@ -1845,7 +1845,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
   
-  if(EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+  if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
 
   DEBUG( 2, ( "created temp file %s\n", fname2 ) );
@@ -4147,7 +4147,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
      * Make sure we have granted an exclusive or batch oplock on this file.
      */
 
-    if(!EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+    if(!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     {
       DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
 no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));

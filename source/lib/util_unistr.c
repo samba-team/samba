@@ -29,12 +29,13 @@
 write a string in (little-endian) unicoode format
 ********************************************************************/
 
-int PutUniCode(char *dst,char *src)
+int dos_PutUniCode(char *dst,char *src, ssize_t len)
 {
   int ret = 0;
-  while (*src) {
+  while (*src && (len > 2)) {
     SSVAL(dst,ret,(*src) & 0xFF);
     ret += 2;
+    len -= 2;
     src++;
   }
   SSVAL(dst,ret,0);
@@ -62,7 +63,7 @@ Return a ascii version of a little-endian unicode string.
 Hack alert: uses fixed buffer(s) and only handles ascii strings
 ********************************************************************/
 
-char *unistrn2(uint16 *src, int len)
+char *dos_unistrn2(uint16 *src, int len)
 {
 	static char lbufs[8][MAXUNI];
 	static int nexti;
@@ -71,7 +72,7 @@ char *unistrn2(uint16 *src, int len)
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; (len > 0) && (p-lbuf < MAXUNI-2) && *src; len--, src++)
+	for (p = lbuf; (len > 0) && (p-lbuf < MAXUNI-3) && *src; len--, src++)
 	{
 		*p++ = (SVAL(src,0) & 0xff);
 	}
@@ -88,14 +89,14 @@ Return a ascii version of a little-endian unicode string.
 Hack alert: uses fixed buffer(s) and only handles ascii strings
 ********************************************************************/
 
-char *unistr2(uint16 *src)
+char *dos_unistr2(uint16 *src)
 {
 	char *lbuf = lbufs[nexti];
 	char *p;
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *src && (p-lbuf < MAXUNI-2); p++, src++)
+	for (p = lbuf; *src && (p-lbuf < MAXUNI-3); p++, src++)
 	{
 		*p = (SVAL(src,0) & 0xff);
 	}
@@ -108,12 +109,12 @@ char *unistr2(uint16 *src)
 Return a ascii version of a little-endian unicode string
 ********************************************************************/
 
-char *unistr2_to_str(UNISTR2 *str)
+char *dos_unistr2_to_str(UNISTR2 *str)
 {
 	char *lbuf = lbufs[nexti];
 	char *p;
 	uint16 *src = str->buffer;
-	int max_size = MIN(sizeof(str->buffer)-2, str->uni_str_len);
+	int max_size = MIN(sizeof(str->buffer)-3, str->uni_str_len);
 
 	nexti = (nexti+1)%8;
 
@@ -146,12 +147,12 @@ uint32 buffer2_to_uint32(BUFFER2 *str)
 Return a ascii version of a NOTunicode string
 ********************************************************************/
 
-char *buffer2_to_str(BUFFER2 *str)
+char *dos_buffer2_to_str(BUFFER2 *str)
 {
 	char *lbuf = lbufs[nexti];
 	char *p;
 	uint16 *src = str->buffer;
-	int max_size = MIN(sizeof(str->buffer)-2, str->buf_len/2);
+	int max_size = MIN(sizeof(str->buffer)-3, str->buf_len/2);
 
 	nexti = (nexti+1)%8;
 
@@ -168,7 +169,7 @@ char *buffer2_to_str(BUFFER2 *str)
 Return a ascii version of a NOTunicode string
 ********************************************************************/
 
-char *buffer2_to_multistr(BUFFER2 *str)
+char *dos_buffer2_to_multistr(BUFFER2 *str)
 {
 	char *lbuf = lbufs[nexti];
 	char *p;
@@ -200,7 +201,7 @@ only handles ascii strings
 Unicode strings created are in little-endian format.
 ********************************************************************/
 
-int struni2(char *dst, const char *src)
+int dos_struni2(char *dst, const char *src, size_t max_len)
 {
 	size_t len = 0;
 
@@ -209,7 +210,7 @@ int struni2(char *dst, const char *src)
 
 	if (src != NULL)
 	{
-		for (; *src && len < MAXUNI-2; len++, dst +=2, src++)
+		for (; *src && len < max_len-2; len++, dst +=2, src++)
 		{
 			SSVAL(dst,0,(*src) & 0xFF);
 		}
@@ -225,14 +226,14 @@ Return a ascii version of a little-endian unicode string.
 Hack alert: uses fixed buffer(s) and only handles ascii strings
 ********************************************************************/
 
-char *unistr(char *buf)
+char *dos_unistr(char *buf)
 {
 	char *lbuf = lbufs[nexti];
 	char *p;
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf += 2)
+	for (p = lbuf; *buf && p-lbuf < MAXUNI-3; p++, buf += 2)
 	{
 		*p = (SVAL(buf,0) & 0xff);
 	}

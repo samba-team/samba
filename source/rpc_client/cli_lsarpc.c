@@ -195,8 +195,8 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 			fstring dom_name;
 			fstring full_name;
 			uint32 dom_idx = t_names.name[i].domain_idx;
-			fstrcpy(dom_name, unistr2(ref.ref_dom[dom_idx].uni_dom_name.buffer));
-			fstrcpy(name, unistr2(t_names.uni_name[i].buffer));
+			fstrcpy(dom_name, dos_unistr2(ref.ref_dom[dom_idx].uni_dom_name.buffer));
+			fstrcpy(name, dos_unistr2(t_names.uni_name[i].buffer));
 			
 			slprintf(full_name, sizeof(full_name)-1, "\\%s\\%s",
 			         dom_name, name);
@@ -279,7 +279,7 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 	switch (r_q.info_class) {
 	case 3:
 		if (r_q.dom.id3.buffer_dom_name != 0) {
-			char *dom_name = unistrn2(r_q.dom.id3.uni_domain_name.buffer,
+			char *dom_name = dos_unistrn2(r_q.dom.id3.uni_domain_name.buffer,
 						  r_q.dom.id3.uni_domain_name.uni_str_len);
 			fstrcpy(domain_name, dom_name);
 		}
@@ -288,7 +288,7 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 		break;
 	case 5:
 		if (r_q.dom.id5.buffer_dom_name != 0) {
-			char *dom_name = unistrn2(r_q.dom.id5.uni_domain_name.buffer,
+			char *dom_name = dos_unistrn2(r_q.dom.id5.uni_domain_name.buffer,
 						  r_q.dom.id5.uni_domain_name.uni_str_len);
 			fstrcpy(domain_name, dom_name);
 		}

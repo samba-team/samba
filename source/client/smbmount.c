@@ -45,7 +45,6 @@ extern pstring scope;
 extern pstring global_myname;
 extern BOOL in_client;
 extern pstring user_socket_options;
-extern pstring myhostname;
 
 static pstring password;
 static pstring username;
@@ -350,7 +349,7 @@ static void send_fs_socket(char *service, char *mount_point)
 		/* Wait for a signal from smbfs ... */
 		CatchSignal(SIGUSR1, &usr1_handler);
 		pause();
-#ifndef SMBFS_DEBUG
+#ifdef SMBFS_DEBUG
 		DEBUG(0,("smbmount: got signal, getting new socket\n"));
 #endif
 	}
@@ -549,10 +548,6 @@ static void usage(void)
 
 
 	DEBUG(3,("smbmount started (version %s)\n", VERSION));
-
-	if (!get_myname(myhostname)) {
-		DEBUG(0,("Failed to get my hostname.\n"));
-	}
 
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 

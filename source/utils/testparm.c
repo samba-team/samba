@@ -38,7 +38,6 @@
 /* these live in util.c */
 extern FILE *dbf;
 extern int DEBUGLEVEL;
-extern pstring myhostname;
 
 /***********************************************
  Here we do a set of 'hard coded' checks for bad
@@ -208,11 +207,6 @@ int main(int argc, char *argv[])
 
   printf("Load smb config files from %s\n",configfile);
 
-  if(!get_myname(myhostname)) {
-    printf("Failed to get my hostname.\n");
-    return(1);
-  }
-
   if (!lp_load(configfile,False,True,False)) {
       printf("Error loading services.\n");
       return(1);
@@ -277,7 +271,7 @@ Level II oplocks can only be set if oplocks are also set.\n",
     if (argc == 3) {
       cname = argv[optind];
       caddr = argv[optind+1];
-    } else if (argc == 4) {
+    } else {
       cname = argv[optind+1];
       caddr = argv[optind+2];
     }

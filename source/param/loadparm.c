@@ -693,7 +693,7 @@ static struct parm_struct parm_table[] =
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set, NULL,  0},
   {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL,   NULL,  0},
   {"coding system",    P_STRING,  P_GLOBAL, &Globals.szCodingSystem,    handle_coding_system, NULL,  0},
-  {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	NULL,   NULL,  0},
+  {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	handle_client_code_page,   NULL,  0},
   {"default case",     P_ENUM, P_LOCAL,  &sDefault.iDefaultCase,        NULL,   enum_case, FLAG_SHARE},
   {"case sensitive",   P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"casesignames",     P_BOOL,    P_LOCAL,  &sDefault.bCaseSensitive,   NULL,   NULL,  0},
@@ -1860,13 +1860,31 @@ static BOOL handle_coding_system(char *pszParmValue,char **ptr)
  Handle the interpretation of the character set system parameter.
 ***************************************************************************/
 
+static char *saved_character_set = NULL;
+
 static BOOL handle_character_set(char *pszParmValue,char **ptr)
 {
     /* A dependency here is that the parameter client code page should be
       set before this is called.
     */
 	string_set(ptr,pszParmValue);
-	interpret_character_set(pszParmValue);
+	strupper(*ptr);
+	saved_character_set = strdup(*ptr);
+	interpret_character_set(*ptr,lp_client_code_page());
+	return(True);
+}
+
+/***************************************************************************
+ Handle the interpretation of the client code page parameter.
+ We handle this separately so that we can reset the character set
+ parameter in case this came before 'client code page' in the smb.conf.
+***************************************************************************/
+
+static BOOL handle_client_code_page(char *pszParmValue,char **ptr)
+{
+	Globals.client_code_page = atoi(pszParmValue);
+	if (saved_character_set != NULL)
+		interpret_character_set(saved_character_set,lp_client_code_page());	
 	return(True);
 }
 

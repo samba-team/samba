@@ -47,7 +47,6 @@ try to get the disk space from disk quotas (LINUX version)
 
 BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
-  uid_t euser_id;
   int r;
   struct dqblk D;
   SMB_STRUCT_STAT S;
@@ -55,6 +54,9 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   struct mntent *mnt;
   SMB_DEV_T devno;
   int found;
+  uid_t euser_id;
+
+  euser_id = geteuid();
   
   /* find the block device file */
   
@@ -81,10 +83,10 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
       return(False);
     }
 
-  euser_id=geteuid();
+  save_re_uid();
   set_effective_uid(0);  
   r=quotactl(QCMD(Q_GETQUOTA,USRQUOTA), mnt->mnt_fsname, euser_id, (caddr_t)&D);
-  set_effective_uid(euser_id);
+  restore_re_uid();
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
   *bsize = 1024;
@@ -243,7 +245,7 @@ Quota code by Peter Urbanec (amiga@cse.unsw.edu.au).
 
 BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
-  uid_t user_id, euser_id;
+  uid_t euser_id;
   int ret;
   struct dqblk D;
 #if defined(SUNOS5)
@@ -260,6 +262,8 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   SMB_DEV_T devno ;
   static SMB_DEV_T devno_cached = 0 ;
   int found ;
+
+  euser_id = geteuid();
   
   if ( sys_stat(path,&sbuf) == -1 )
     return(False) ;
@@ -311,14 +315,14 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
       return(False) ;
   }
 
-  euser_id = geteuid();
+  save_re_uid();
   set_effective_uid(0);
 
 #if defined(SUNOS5)
   DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
   if((file=sys_open(name, O_RDONLY,0))<0) {
-    set_effective_uid(euser_id);
-    return(False);
+	  restore_re_uid();
+	  return(False);
   }
   command.op = Q_GETQUOTA;
   command.uid = euser_id;
@@ -330,7 +334,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   ret = quotactl(Q_GETQUOTA, name, euser_id, &D);
 #endif
 
-  set_effective_uid(euser_id);
+  restore_re_uid();
 
   if (ret < 0) {
     DEBUG(5,("disk_quotas ioctl (Solaris) failed. Error = %s\n", strerror(errno) ));
@@ -371,43 +375,26 @@ try to get the disk space from disk quotas - OSF1 version
 
 BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
-  uid_t user_id, euser_id;
   int r, save_errno;
   struct dqblk D;
   SMB_STRUCT_STAT S;
+  uid_t euser_id;
 
   /*
    * This code presumes that OSF1 will only
    * give out quota info when the real uid 
    * matches the effective uid. JRA.
    */
-
   euser_id = geteuid();
-  user_id = getuid();
-
-  /*
-   * To do this correctly we must set eff id back to zero,
-   * set real uid, then set eff uid (thus leaving saved-set). To reverse we set eff
-   * id to zero, set real uid, then set eff uid back.
-   */
-
-  set_effective_uid(0);
-  set_real_uid(euser_id);
-  set_effective_uid(euser_id);
+  save_re_uid();
+  if (set_re_uid() != 0) return False;
 
   r= quotactl(path,QCMD(Q_GETQUOTA, USRQUOTA),euser_id,(char *) &D);
-  if (r)
+  if (r) {
      save_errno = errno;
+  }
 
-  set_effective_uid(0);
-  set_real_uid(user_id);
-  set_effective_uid(euser_id);
-
-  if (geteuid() != euser_id)
-    DEBUG(0,("Unable to reset eff uid to %d. THIS IS A BUG\n", (int)euser_id));
-
-  if (getuid() != user_id)
-    DEBUG(0,("Unable to reset real uid to %d. THIS IS A BUG\n", (int)user_id));
+  restore_re_uid();
 
   *bsize = DEV_BSIZE;
 
@@ -484,6 +471,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   }
 
   euser_id=geteuid();
+  save_re_uid();
   set_effective_uid(0);  
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
@@ -494,7 +482,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   {
     r=quotactl (Q_GETQUOTA, mnt->mnt_fsname, euser_id, (caddr_t) &D);
 
-    set_effective_uid(euser_id); /* Restore the original uid status. */
+    restore_re_uid();
 
     if (r==-1)
       return(False);
@@ -525,7 +513,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   {
     r=quotactl (Q_XGETQUOTA, mnt->mnt_fsname, euser_id, (caddr_t) &F);
 
-    set_effective_uid(euser_id); /* Restore the original uid status. */
+    restore_re_uid();
 
     if (r==-1)
       return(False);
@@ -554,8 +542,8 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   }
   else
   {
-    set_effective_uid(euser_id); /* Restore the original uid status. */
-    return(False);
+	  restore_re_uid();
+	  return(False);
   }
 
   return (True);
@@ -585,9 +573,9 @@ try to get the disk space from disk quotas - default version
 
 BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
-  uid_t euser_id;
   int r;
   struct dqblk D;
+  uid_t euser_id;
 #if !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__)
   char dev_disk[256];
   SMB_STRUCT_STAT S;
@@ -599,49 +587,32 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   euser_id = geteuid();
 
 #ifdef HPUX
-  {
-    uid_t user_id = getuid();
+  /* for HPUX, real uid must be same as euid to execute quotactl for euid */
+  save_re_uid();
+  if (set_re_uid() != 0) return False;
+  
+  r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
 
-    /* for HPUX, real uid must be same as euid to execute quotactl for euid */
-
-    /*
-     * To do this correctly we must set eff id back to zero,
-     * set real uid, then set eff uid (thus leaving saved-set). To reverse we set eff
-     * id to zero, set real uid, then set eff uid back.
-     */
-
-    set_effective_uid(0);
-    set_real_uid(euser_id);
-    set_effective_uid(euser_id);
-
-    r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-
-    set_effective_uid(0);
-    set_real_uid(user_id);
-    set_effective_uid(euser_id);
-
-    if (geteuid() != euser_id)
-      DEBUG(0,("Unable to reset eff uid to %d. THIS IS A BUG\n", (int)euser_id));
-
-    if (getuid() != user_id)
-      DEBUG(0,("Unable to reset real uid to %d. THIS IS A BUG\n", (int)user_id));
-  }
+  restore_re_uid();
 #else 
 #if defined(__FreeBSD__) || defined(__OpenBSD__)
   {
     /* FreeBSD patches from Marty Moll <martym@arbor.edu> */
-    uid_t user_id;
     gid_t egrp_id;
  
-    egrp_id = getegid();
+    save_re_uid();
     set_effective_uid(0);
+
+    egrp_id = getegid();
     r= quotactl(path,QCMD(Q_GETQUOTA,USRQUOTA),euser_id,(char *) &D);
 
     /* As FreeBSD has group quotas, if getting the user
        quota fails, try getting the group instead. */
-    if (r)
-      r= quotactl(path,QCMD(Q_GETQUOTA,GRPQUOTA),egrp_id,(char *) &D);
-    set_effective_uid(euser_id);
+    if (r) {
+	    r= quotactl(path,QCMD(Q_GETQUOTA,GRPQUOTA),egrp_id,(char *) &D);
+    }
+
+    restore_re_uid();
   }
 #elif defined(AIX)
   /* AIX has both USER and GROUP quotas: 
@@ -650,7 +621,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 #else /* !__FreeBSD__ && !AIX && !__OpenBSD__ */
   r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
 #endif /* !__FreeBSD__ && !AIX && !__OpenBSD__ */
-#endif /* HAVE_SETRES */
+#endif /* HPUX */
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
 #if defined(__FreeBSD__) || defined(__OpenBSD__)

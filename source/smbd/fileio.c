@@ -172,7 +172,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
         continue;
 
       /* Paranoia .... */
-      if (EXLUSIVE_OPLOCK_TYPE(share_entry->op_type)) {
+      if (EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) {
         DEBUG(0,("write_file: PANIC. share mode entry %d is an exlusive oplock !\n", i ));
         abort();
       }

@@ -210,7 +210,7 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	if (unicode)
 	{
 		/* Note that passwd should be in DOS oem character set. */
-		struni2( &data[512 - new_pw_len], passwd);
+		dos_struni2( &data[512 - new_pw_len], passwd, 512);
 	}
 	else
 	{

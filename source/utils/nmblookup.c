@@ -28,7 +28,6 @@ extern int DEBUGLEVEL;
 
 extern pstring scope;
 
-extern pstring myhostname;
 extern struct in_addr ipzero;
 
 static BOOL use_bcast = True;
@@ -59,17 +58,6 @@ static BOOL open_sockets(void)
   return True;
 }
 
-
-/****************************************************************************
-  initialise connect, service and file structs
-****************************************************************************/
-static BOOL init_structs(void )
-{
-  if (!get_myname(myhostname))
-    return(False);
-
-  return True;
-}
 
 /****************************************************************************
 usage on the program
@@ -227,8 +215,6 @@ int main(int argc,char *argv[])
     usage();
     exit(1);
   }
-
-  init_structs();
 
   if (!lp_load(servicesf,True,False,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
