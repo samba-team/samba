@@ -1043,6 +1043,105 @@ static BOOL run_tcon2_test(int dummy)
 	return True;
 }
 
+static BOOL tcon_devtest(struct cli_state *cli,
+			 const char *myshare, const char *devtype,
+			 NTSTATUS expected_error)
+{
+	BOOL status;
+	BOOL ret;
+
+	status = cli_send_tconX(cli, myshare, devtype,
+				password, strlen(password)+1);
+
+	if (NT_STATUS_IS_OK(expected_error)) {
+		if (status) {
+			ret = True;
+		} else {
+			printf("tconX to share %s with type %s "
+			       "should have succeeded but failed\n",
+			       myshare, devtype);
+			ret = False;
+		}
+		cli_tdis(cli);
+	} else {
+		if (status) {
+			printf("tconx to share %s with type %s "
+			       "should have failed but succeeded\n",
+			       myshare, devtype);
+			ret = False;
+		} else {
+			if (NT_STATUS_EQUAL(cli_nt_error(cli),
+					    expected_error)) {
+				ret = True;
+			} else {
+				printf("Returned unexpected error\n");
+				ret = False;
+			}
+		}
+	}
+	return ret;
+}
+
+/*
+ checks for correct tconX support
+ */
+static BOOL run_tcon_devtype_test(int dummy)
+{
+	static struct cli_state *cli1 = NULL;
+	BOOL retry;
+	int flags = 0;
+	NTSTATUS status;
+	BOOL ret;
+
+	status = cli_full_connection(&cli1, myname,
+				     host, NULL, port_to_use,
+				     NULL, NULL,
+				     username, workgroup,
+				     password, flags, &retry);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("could not open connection\n");
+		return False;
+	}
+
+	if (!tcon_devtest(cli1, "IPC$", "A:", NT_STATUS_BAD_DEVICE_TYPE))
+		ret = False;
+
+	if (!tcon_devtest(cli1, "IPC$", "?????", NT_STATUS_OK))
+		ret = False;
+
+	if (!tcon_devtest(cli1, "IPC$", "LPT:", NT_STATUS_BAD_DEVICE_TYPE))
+		ret = False;
+
+	if (!tcon_devtest(cli1, "IPC$", "IPC", NT_STATUS_OK))
+		ret = False;
+			
+	if (!tcon_devtest(cli1, "IPC$", "FOOBA", NT_STATUS_BAD_DEVICE_TYPE))
+		ret = False;
+
+	if (!tcon_devtest(cli1, share, "A:", NT_STATUS_OK))
+		ret = False;
+
+	if (!tcon_devtest(cli1, share, "?????", NT_STATUS_OK))
+		ret = False;
+
+	if (!tcon_devtest(cli1, share, "LPT:", NT_STATUS_BAD_DEVICE_TYPE))
+		ret = False;
+
+	if (!tcon_devtest(cli1, share, "IPC", NT_STATUS_BAD_DEVICE_TYPE))
+		ret = False;
+			
+	if (!tcon_devtest(cli1, share, "FOOBA", NT_STATUS_BAD_DEVICE_TYPE))
+		ret = False;
+
+	cli_shutdown(cli1);
+
+	if (ret)
+		printf("Passed tcondevtest\n");
+
+	return ret;
+}
+
 
 /*
   This test checks that 
@@ -4326,6 +4425,7 @@ static struct {
 	{"DENY1",  torture_denytest1, 0},
 	{"DENY2",  torture_denytest2, 0},
 	{"TCON",  run_tcon_test, 0},
+	{"TCONDEV",  run_tcon_devtype_test, 0},
 	{"RW1",  run_readwritetest, 0},
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{"RW3",  run_readwritelarge, 0},
