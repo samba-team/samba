@@ -977,9 +977,11 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 
 		while (asn1_tag_remaining(data) > 0) {
 			struct ldap_mod mod;
+			int v;
 			ZERO_STRUCT(mod);
 			asn1_start_tag(data, ASN1_SEQUENCE(0));
-			asn1_read_enumerated(data, &mod.type);
+			asn1_read_enumerated(data, &v);
+			mod.type = v;
 			ldap_decode_attrib(msg->mem_ctx, data, &mod.attrib);
 			asn1_end_tag(data);
 			if (!add_mod_to_array_talloc(msg->mem_ctx, &mod,
