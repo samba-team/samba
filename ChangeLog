@@ -1,5 +1,44 @@
 2004-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/aes-test.c: remove #if 0'ed code
+	
+	* lib/krb5/krb5.3: add keyblock functions, 177 functions to go
+	
+	* lib/krb5/krb5_verify_user.3: add krb5_verify_opt_set_ccache
+	
+	* lib/krb5/krb5_encrypt.3: document krb5_decrypt_ticket
+	
+	* lib/krb5/krb5_config.3: document krb5_config_free_strings and
+	krb5_config_file_free
+
+	* lib/krb5/krb5_create_checksum.3: add krb5_hmac
+	
+	* lib/krb5/krb5.3: add keyblock functions, 190 functions to go
+
+	* lib/krb5/krb5_keyblock.3: update .Dd
+	
+	* lib/krb5/krb5_keyblock.3: document krb5_copy_keyblock and
+	krb5_generate_random_keyblock
+
+	* lib/krb5/krb5_init_context.3: add krb5_init_ets
+	
+	* lib/krb5/krb5_config.3: add more krb5_config_ functions and
+	prototypes
+
+	* lib/krb5/krb5_init_context.3: document context modifcation
+	functions: address list, config file, use admin kdc, fcc version
+	
+	* lib/krb5/krb5_storage.3: document krb5_storage and related
+	functions
+
+	* lib/krb5/Makefile.am: add acl and krb524_convert_creds_kdc
+	manpages and test_acl test program
+
+	* lib/krb5/krb5.3: add error string functions and sort
+	
+	* lib/krb5/krb5_warn.3: document krb5_abort and error string
+	functions
+
 	* lib/krb5/krb5.3: add missing functions, only 285 left to
 	document
 
