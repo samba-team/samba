@@ -199,7 +199,7 @@ BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
 
 	/* Call initgroups() to get user groups */
 
-	if (initgroups(user,gid) == -1) {
+	if (winbind_initgroups(user,gid) == -1) {
 		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
 		if (getuid() == 0) {
 			if (gid < 0 || gid > 32767 || uid < 0 || uid > 32767) {
