@@ -1006,6 +1006,9 @@ bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringove
 
 bin/t_doschar@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_doschar.o
 	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_doschar.o -L ./bin -lbigballofmud
+bin/t_push_ucs2@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
+	$(CC) $(FLAGS) -o $@ $(LIBS) torture/t_push_ucs2.o -L ./bin -lbigballofmud
+
 install: installbin installman installscripts installdat installswat 
 
 install-everything: install installmodules
@@ -1239,5 +1242,5 @@ check: check-programs
 	python stf/standardcheck.py
 
 # These are called by the test suite
-check-programs: bin/t_strcmp
+check-programs: bin/t_strcmp bin/t_push_ucs2 bin/smbcontrol
 
