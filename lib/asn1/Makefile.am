@@ -109,7 +109,7 @@ CLEANFILES = lex.c parse.c parse.h krb5_asn1.h $(BUILT_SOURCES) \
 
 include_HEADERS = krb5_asn1.h asn1_err.h der.h
 
-$(asn1_compile_OBJECTS): parse.h
+$(asn1_compile_OBJECTS): parse.h parse.c
 
 $(gen_files) krb5_asn1.h: asn1_files
 
