@@ -1949,6 +1949,7 @@ time_t get_create_time(struct stat *st,BOOL fake_dirs);
 
 /*The following definitions come from  trans2.c  */
 
+void mask_convert( char *mask);
 int reply_findclose(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_findnclose(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_transs2(char *inbuf,char *outbuf,int length,int bufsize);

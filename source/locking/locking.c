@@ -51,11 +51,13 @@ static int map_lock_type( files_struct *fsp, int lock_type)
      * Win32 locking semantics allow this.
      * Do the best we can and attempt a read-only lock.
      */
+    DEBUG(10,("map_lock_type: Downgrading write lock to read due to read-only file.\n"));
     return F_RDLCK;
   } else if( (lock_type == F_RDLCK) && (fsp->fd_ptr->real_open_flags == O_WRONLY)) {
     /*
      * Ditto for read locks on write only files.
      */
+    DEBUG(10,("map_lock_type: Changing read lock to write due to write-only file.\n"));
     return F_WRLCK;
   }
 

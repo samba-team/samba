@@ -574,6 +574,33 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 }
   
 /****************************************************************************
+ Convert the directory masks formated for the wire.
+****************************************************************************/
+
+void mask_convert( char *mask)
+{
+  /*
+   * We know mask is a pstring.
+   */
+  char *p = mask;
+  while (*p) {
+    if (*p == '<') {
+      pstring expnd;
+      if(p[1] != '"' && p[1] != '.') {
+        pstrcpy( expnd, p+1 );
+        *p++ = '*';
+        *p = '.';
+        safe_strcpy( p+1, expnd, sizeof(pstring) - (p - mask) - 2);
+      } else
+        *p = '*';
+    }
+    if (*p == '>') *p = '?';
+    if (*p == '"') *p = '.';
+    p++;
+  }
+}
+
+/****************************************************************************
   reply to a TRANS2_FINDFIRST
 ****************************************************************************/
 static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum, 
@@ -678,25 +705,8 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
   if (dptr_num < 0)
     return(ERROR(ERRDOS,ERRbadfile));
 
-  /* convert the formatted masks */
-  {
-    p = mask;
-    while (*p) {
-      if (*p == '<') {
-        pstring expnd;
-        if(p[1] != '"' && p[1] != '.') {
-          pstrcpy( expnd, p+1 );
-          *p++ = '*';
-          *p = '.';
-          safe_strcpy( p+1, expnd, sizeof(mask) - (p - mask) - 2);
-        } else
-          *p = '*';
-      }
-      if (*p == '>') *p = '?';
-      if (*p == '"') *p = '.';
-      p++;
-    }
-  }
+  /* Convert the formatted mask. */
+  mask_convert(mask);
 
 #if 0 /* JRA */
   /*
