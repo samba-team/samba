@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -88,8 +88,8 @@ readline(const char* prompt)
 	if (ret[strlen(ret) - 1] == '\n')
 	    ret[strlen(ret) - 1] = '\0';
 	return strdup(ret);
-    } else
-	return ret;
+    } 
+    return NULL;
 }
 
 void
