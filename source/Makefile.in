@@ -22,12 +22,12 @@ srcdir=@srcdir@
 builddir=@builddir@
 SHELL=/bin/sh
 
-BASEDIR=$(prefix)/samba
-BINDIR = $(BASEDIR)/bin
-SBINDIR = $(BASEDIR)/bin
-LIBDIR = $(BASEDIR)/lib
+BASEDIR=$(prefix)
+BINDIR = @bindir@
+SBINDIR = @sbindir@
+LIBDIR = @libdir@
 VARDIR = $(BASEDIR)/var
-MANDIR = $(BASEDIR)/man
+MANDIR = @mandir@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -42,7 +42,7 @@ LMHOSTSFILE = $(LIBDIR)/lmhosts
 DRIVERFILE = $(LIBDIR)/printers.def
 PASSWD_PROGRAM = /bin/passwd
 SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
-SMB_PASSWD_PROGRAM = $(BASEDIR)/bin/smbpasswd
+SMB_PASSWD_PROGRAM = $(BINDIR)/smbpasswd
 
 # This is where SWAT images and help files go
 SWATDIR = $(BASEDIR)/swat
