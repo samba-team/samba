@@ -38,21 +38,27 @@ RCSID("$Id$");
 int
 main(int argc, char **argv)
 {
-    int i;
+    int i, j;
     krb5_context context;
-    krb5_init_context (&context);
+    int types[] = {KRB5_KRBHST_KDC, KRB5_KRBHST_ADMIN, KRB5_KRBHST_CHANGEPW,
+		   KRB5_KRBHST_KRB524};
+    const char *type_str[] = {"kdc", "admin", "changepw", "krb524"};
     
+    krb5_init_context (&context);
     for(i = 1; i < argc; i++) {
 	krb5_krbhst_handle handle;
 	char host[MAXHOSTNAMELEN];
-	krb5_krbhst_init(context, argv[i], KRB5_KRBHST_KDC, &handle);
-	while(krb5_krbhst_next_as_string(context, handle, host, sizeof(host)) == 0)
-	    printf("%s\n", host);
-	krb5_krbhst_reset(context, handle);
-	printf("----\n");
-	while(krb5_krbhst_next_as_string(context, handle, host, sizeof(host)) == 0)
-	    printf("%s\n", host);
-	krb5_krbhst_free(context, handle);
+
+	for (j = 0; j < sizeof(types)/sizeof(*types); ++j) {
+	    printf ("%s for %s:\n", type_str[j], argv[i]);
+
+	    krb5_krbhst_init(context, argv[i], types[j], &handle);
+	    while(krb5_krbhst_next_as_string(context, handle,
+					     host, sizeof(host)) == 0)
+		printf("%s\n", host);
+	    krb5_krbhst_reset(context, handle);
+	    printf ("\n");
+	}
     }
     return 0;
 }
