@@ -312,7 +312,10 @@ int file_utime(int cnum, char *fname, struct utimbuf *times)
   if(sys_utime(fname, times) == 0)
     return 0;
 
-  if((errno != EPERM) || !lp_dos_filetimes(SNUM(cnum)))
+  if((errno != EPERM) && (errno != EACCESS))
+    return -1;
+
+  if(!lp_dos_filetimes(SNUM(cnum)))
     return -1;
 
   /* We have permission (given by the Samba admin) to
@@ -325,20 +328,18 @@ int file_utime(int cnum, char *fname, struct utimbuf *times)
     return -1;
 
   /* Check if we have write access. */
-  if (CAN_WRITE(cnum) && !lp_alternate_permissions(SNUM(cnum)))
-  {
-    if (((sb.st_mode & S_IWOTH) ||
-        Connections[cnum].admin_user ||
-        ((sb.st_mode & S_IWUSR) && current_user.uid==sb.st_uid) ||
-        ((sb.st_mode & S_IWGRP) &&
-        in_group(sb.st_gid,current_user.gid,
-             current_user.ngroups,current_user.igroups))))
-    {
-      /* We are allowed to become root and change the filetime. */
-      become_root(False);
-      ret = sys_utime(fname, times);
-      unbecome_root(False);
-    }
+  if (CAN_WRITE(cnum)) {
+	  if (((sb.st_mode & S_IWOTH) ||
+	       Connections[cnum].admin_user ||
+	       ((sb.st_mode & S_IWUSR) && current_user.uid==sb.st_uid) ||
+	       ((sb.st_mode & S_IWGRP) &&
+		in_group(sb.st_gid,current_user.gid,
+			 current_user.ngroups,current_user.igroups)))) {
+		  /* We are allowed to become root and change the filetime. */
+		  become_root(False);
+		  ret = sys_utime(fname, times);
+		  unbecome_root(False);
+	  }
   }
 
   return ret;
