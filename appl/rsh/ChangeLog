@@ -1,3 +1,7 @@
+2002-11-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rshd.8: clarify -x and kerberos 5
+
 2002-11-01  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rsh_locl.h: bump COMMAND_SZ to NCARGS+1
