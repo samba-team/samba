@@ -1253,3 +1253,128 @@ int sys_dup2(int oldfd, int newfd)
 #endif
 	SAFE_FREE(msgbuf);
 }
+
+/**************************************************************************
+ Wrappers for extented attribute calls. Based on the Linux package with
+ support for IRIX also. Expand as other systems have them.
+****************************************************************************/
+
+ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size)
+{
+#if defined(HAVE_GETXATTR)
+	return getxattr(path, name, value, size);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t size)
+{
+#if defined(HAVE_LGETXATTR)
+	return lgetxattr(path, name, value, size);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
+{
+#if defined(HAVE_FGETXATTR)
+	return fgetxattr(filedes, name, value, size);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+ssize_t sys_listxattr (const char *path, char *list, size_t size)
+{
+#if defined(HAVE_LISTXATTR)
+	return listxattr(path, list, size);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+ssize_t sys_llistxattr (const char *path, char *list, size_t size)
+{
+#if defined(HAVE_GETXATTR)
+	return llistxattr(path, list, size);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+ssize_t sys_flistxattr (int filedes, char *list, size_t size)
+{
+#if defined(HAVE_FLISTXATTR)
+	return flistxattr(filedes, list, size);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+int sys_removexattr (const char *path, const char *name)
+{
+#if defined(HAVE_REMOVEXATTR)
+	return removexattr(path, name);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+int sys_lremovexattr (const char *path, const char *name)
+{
+#if defined(HAVE_LREMOVEXATTR)
+	return lremovexattr(path, name);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+int sys_fremovexattr (int filedes, const char *name)
+{
+#if defined(HAVE_FREMOVEXATTR)
+	return fremovexattr(filedes, name);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags)
+{
+#if defined(HAVE_SETXATTR)
+	return setxattr(path, name, value, size, flags);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+int sys_lsetxattr (const char *path, const char *name, const void *value, size_t size, int flags)
+{
+#if defined(HAVE_LSETXATTR)
+	return lsetxattr(path, name, value, size, flags);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags)
+{
+#if defined(HAVE_FSETXATTR)
+	return fsetxattr(path, name, value, size, flags);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
