@@ -1327,7 +1327,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
    * open fd table.
    */
   if(sbuf == 0) {
-    if(stat(fname, &statbuf) < 0) {
+    if(sys_stat(fname, &statbuf) < 0) {
       if(errno != ENOENT) {
         DEBUG(3,("Error doing stat on file %s (%s)\n",
                  fname,strerror(errno)));
@@ -1755,7 +1755,7 @@ BOOL check_file_sharing(int cnum,char *fname, BOOL rename_op)
   if(!lp_share_modes(SNUM(cnum)))
     return True;
 
-  if (stat(fname,&sbuf) == -1) return(True);
+  if (sys_stat(fname,&sbuf) == -1) return(True);
 
   dev = (uint32)sbuf.st_dev;
   inode = (uint32)sbuf.st_ino;
@@ -4145,7 +4145,12 @@ reply for the nt protocol
 int reply_nt1(char *outbuf)
 {
   /* dual names + lock_and_read + nt SMBs + remote API calls */
-  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_RPC_REMOTE_APIS;
+  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_RPC_REMOTE_APIS
+#ifdef HAVE_NT_SMBS
+                     |CAP_NT_SMBS
+#endif /* HAVE_NT_SMBS */
+                      ;
+
 /*
   other valid capabilities which we may support at some time...
                      CAP_LARGE_FILES|CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
@@ -4711,6 +4716,14 @@ struct smb_message_struct
    {SMBfindclose, "SMBfindclose", reply_findclose,AS_USER},
    {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER },
    {SMBtranss2, "SMBtranss2", reply_transs2, AS_USER},
+
+#ifdef HAVE_NT_SMBS
+   /* NT PROTOCOL FOLLOWS */
+   {SMBntcreateX, "SMBntcreateX", reply_ntcreate_and_X, AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
+   {SMBnttrans, "SMBnttrans", reply_nttrans, AS_USER | CAN_IPC },
+   {SMBnttranss, "SMBnttranss", reply_nttranss, AS_USER | CAN_IPC },
+   {SMBntcancel, "SMBntcancel", reply_ntcancel, AS_USER },
+#endif /* HAVE_NT_SMBS */
 
    /* messaging routines */
    {SMBsends,"SMBsends",reply_sends,AS_GUEST},

@@ -48,11 +48,12 @@ static char *known_nt_pipes[] = {
 };
 
 /****************************************************************************
-  Send the required number of replies back.
-  We assume all fields other than the data fields are
-  set correctly for the type of call.
-  HACK ! Always assumes smb_setup field is zero.
+ Send the required number of replies back.
+ We assume all fields other than the data fields are
+ set correctly for the type of call.
+ HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
+
 static int send_nt_replies(char *outbuf, int bufsize, char *params,
                            int paramsize, char *pdata, int datasize)
 {
@@ -751,16 +752,17 @@ static int call_nt_transact_rename(char *inbuf, char *outbuf, int bufsize, int c
                                    char **setup, char **params, char **data)
 {
   char *params = *pparams;
-  pstring fname;
+  pstring new_name;
+  pstring old_name;
   int fnum = SVAL(params, 0);
   uint16 rename_flags = SVAL(params,2);
   uint32 total_parameter_count = IVAL(inbuf, smb_nt_TotalParameterCount);
   uint32 fname_len = MIN((((uint32)IVAL(inbuf,smb_nt_TotalParameterCount)-4)),
                          ((uint32)sizeof(fname)-1));
 
-  StrnCpy(fname,params+4,fname_len);
-  unix_convert(fname,cnum,0,&bad_path);
-    
+  StrnCpy(new_name,params+4,fname_len);
+  unix_convert(new_name,cnum,0,&bad_path);
+
 }
    
 /****************************************************************************
