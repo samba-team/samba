@@ -128,7 +128,7 @@ int smb_download_dir(const char *base, const char *name, int resume)
 	while(*relname == '/')relname++;
 	mkdir(relname, 0755);
 	
-	tmpname = strdup(name);
+	tmpname = SMB_STRDUP(name);
 
 	while((dirent = smbc_readdir(dirhandle))) {
 		char *newname;
@@ -231,7 +231,7 @@ void print_progress(const char *name, time_t start, time_t now, off_t start_pos,
 		int required = strlen(name), available = columns - len - strlen("[] ");
 		if(required > available) asprintf(&filename, "...%s", name + required - available + 3);
 		else filename = strndup(name, available);
-	} else filename = strdup(name);
+	} else filename = SMB_STRDUP(name);
 
 	fprintf(stderr, "\r[%s] %s", filename, status);
 
@@ -376,7 +376,7 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 		offset_check = 0;
 	}
 
-	readbuf = malloc(blocksize);
+	readbuf = SMB_MALLOC(blocksize);
 
 	/* Now, download all bytes from offset_download to the end */
 	for(curpos = offset_download; curpos < remotestat.st_size; curpos+=blocksize) {
@@ -487,7 +487,7 @@ int readrcfile(const char *name, const struct poptOption long_options[])
 				break;
 			case POPT_ARG_STRING:
 				stringdata = (char **)long_options[i].arg;
-				*stringdata = strdup(val);
+				*stringdata = SMB_STRDUP(val);
 				break;
 			default:
 				fprintf(stderr, "Invalid variable %s at line %d in %s\n", var, lineno, name);

@@ -743,7 +743,7 @@ int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, const char *path,
       return 0;
   }
 
-  new_path = (char *)malloc(path_len + 1 + strlen(key_tree->name) + 1);
+  new_path = (char *)SMB_MALLOC(path_len + 1 + strlen(key_tree->name) + 1);
   if (!new_path) return 0; /* Errors? */
   new_path[0] = '\0';
   strcat(new_path, path);
@@ -812,7 +812,7 @@ REG_KEY *nt_find_key_by_name(REG_KEY *tree, char *key)
 
   if (!tree || !key || !*key) return NULL;
 
-  lname = strdup(key);
+  lname = SMB_STRDUP(key);
   if (!lname) return NULL;
 
   /*
@@ -1041,7 +1041,7 @@ void *str_to_val(int type, char *val, int *len)
     return (void *)val;
 
   case REG_TYPE_DWORD:
-    dwordp = (unsigned int *)malloc(sizeof(unsigned int));
+    dwordp = SMB_MALLOC_P(unsigned int);
     if (!dwordp) return NULL;
     /* Allow for ddddd and 0xhhhhh and 0ooooo */
     if (strncmp(val, "0x", 2) == 0 || strncmp(val, "0X", 2) == 0) {
@@ -1096,11 +1096,11 @@ VAL_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
    * If we get here, the name was not found, so insert it 
    */
 
-  tmp = (VAL_KEY *)malloc(sizeof(VAL_KEY));
+  tmp = SMB_MALLOC_P(VAL_KEY);
   if (!tmp) goto error;
 
   memset(tmp, 0, sizeof(VAL_KEY));
-  tmp->name = strdup(name);
+  tmp->name = SMB_STRDUP(name);
   tmp->has_name = True;
   if (!tmp->name) goto error;
   tmp->data_type = type;
@@ -1113,7 +1113,7 @@ VAL_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
      * Allocate some more space 
      */
 
-    if ((key->values = (VAL_LIST *)realloc(key->values, sizeof(VAL_LIST) + 
+    if ((key->values = (VAL_LIST *)SMB_REALLOC_ARRAY(key->values, sizeof(VAL_LIST) + 
 					   key->values->val_count - 1 +
 					   REG_KEY_LIST_SIZE))) {
       key->values->max_vals += REG_KEY_LIST_SIZE;
@@ -1178,7 +1178,7 @@ int sid_string_to_sid(sid_t **sid, const char *sid_str)
   int i = 0, auth;
   const char *lstr; 
 
-  *sid = (sid_t *)malloc(sizeof(sid_t));
+  *sid = SMB_MALLOC_P(sid_t);
   if (!*sid) return 0;
 
   memset(*sid, 0, sizeof(sid_t));
@@ -1221,7 +1221,7 @@ ACE *nt_create_ace(int type, int flags, unsigned int perms, const char *sid)
 {
   ACE *ace;
 
-  ace = (ACE *)malloc(sizeof(ACE));
+  ace = SMB_MALLOC_P(ACE);
   if (!ace) goto error;
   ace->type = type;
   ace->flags = flags;
@@ -1243,7 +1243,7 @@ ACL *nt_create_default_acl(REGF *regf)
 {
   ACL *acl;
 
-  acl = (ACL *)malloc(sizeof(ACL) + 7*sizeof(ACE *));
+  acl = (ACL *)SMB_MALLOC(sizeof(ACL) + 7*sizeof(ACE *));
   if (!acl) goto error;
 
   acl->rev = 2;
@@ -1282,7 +1282,7 @@ SEC_DESC *nt_create_def_sec_desc(REGF *regf)
 {
   SEC_DESC *tmp;
 
-  tmp = (SEC_DESC *)malloc(sizeof(SEC_DESC));
+  tmp = SMB_MALLOC_P(SEC_DESC);
   if (!tmp) return NULL;
 
   tmp->rev = 1;
@@ -1321,7 +1321,7 @@ KEY_SEC_DESC *nt_create_init_sec(REGF *regf)
 {
   KEY_SEC_DESC *tsec = NULL;
   
-  tsec = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
+  tsec = SMB_MALLOC_P(KEY_SEC_DESC);
   if (!tsec) return NULL;
 
   tsec->ref_cnt = 1;
@@ -1349,13 +1349,13 @@ REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
   list = key->sub_keys;
   if (!list) { /* Create an empty list */
 
-    list = (KEY_LIST *)malloc(sizeof(KEY_LIST) + (REG_KEY_LIST_SIZE - 1) * sizeof(REG_KEY *));
+    list = (KEY_LIST *)SMB_MALLOC(sizeof(KEY_LIST) + (REG_KEY_LIST_SIZE - 1) * sizeof(REG_KEY *));
     list->key_count = 0;
     list->max_keys = REG_KEY_LIST_SIZE;
 
   }
 
-  lname = strdup(name);
+  lname = SMB_STRDUP(name);
   if (!lname) return NULL;
 
   c1 = lname;
@@ -1382,7 +1382,7 @@ REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
     list->key_count++;
   }
   else { /* Create more space in the list ... */
-    if (!(list = (KEY_LIST *)realloc(list, sizeof(KEY_LIST) + 
+    if (!(list = (KEY_LIST *)SMB_REALLOC(list, sizeof(KEY_LIST) + 
 				     (list->max_keys + REG_KEY_LIST_SIZE - 1) 
 				     * sizeof(REG_KEY *))))
       goto error;
@@ -1400,11 +1400,11 @@ REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
    * We want to create the key, and then do the rest
    */
 
-  tmp = (REG_KEY *)malloc(sizeof(REG_KEY)); 
+  tmp = SMB_MALLOC_P(REG_KEY); 
 
   memset(tmp, 0, sizeof(REG_KEY));
 
-  tmp->name = strdup(c1);
+  tmp->name = SMB_STRDUP(c1);
   if (!tmp->name) goto error;
   tmp->owner = key;
   tmp->type = REG_SUB_KEY;
@@ -1447,7 +1447,7 @@ REG_KEY *nt_add_reg_key(REGF *regf, char *name, int create)
    */
   if (!regf || !name || !*name) return NULL;
 
-  lname = strdup(name);
+  lname = SMB_STRDUP(name);
   if (!lname) return NULL;
 
   c1 = lname;
@@ -1464,10 +1464,10 @@ REG_KEY *nt_add_reg_key(REGF *regf, char *name, int create)
 
   if (!regf->root) {
     
-    tmp = (REG_KEY *)malloc(sizeof(REG_KEY));
+    tmp = SMB_MALLOC_P(REG_KEY);
     if (!tmp) goto error;
     memset(tmp, 0, sizeof(REG_KEY));
-    tmp->name = strdup(c1);
+    tmp->name = SMB_STRDUP(c1);
     if (!tmp->name) goto error;
     tmp->security = nt_create_init_sec(regf);
     if (!tmp->security) goto error;
@@ -1638,13 +1638,13 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent);
 static
 int nt_set_regf_input_file(REGF *regf, char *filename)
 {
-  return ((regf->regfile_name = strdup(filename)) != NULL); 
+  return ((regf->regfile_name = SMB_STRDUP(filename)) != NULL); 
 }
 
 static
 int nt_set_regf_output_file(REGF *regf, char *filename)
 {
-  return ((regf->outfile_name = strdup(filename)) != NULL); 
+  return ((regf->outfile_name = SMB_STRDUP(filename)) != NULL); 
 }
 
 /* Create a regf structure and init it */
@@ -1652,7 +1652,7 @@ int nt_set_regf_output_file(REGF *regf, char *filename)
 static
 REGF *nt_create_regf(void)
 {
-  REGF *tmp = (REGF *)malloc(sizeof(REGF));
+  REGF *tmp = SMB_MALLOC_P(REGF);
   if (!tmp) return tmp;
   memset(tmp, 0, sizeof(REGF));
   tmp->owner_sid_str = def_owner_sid_str;
@@ -1746,7 +1746,7 @@ static
 SK_MAP *alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
 {
  if (!regf->sk_map) { /* Allocate a block of 10 */
-    regf->sk_map = (SK_MAP *)malloc(sizeof(SK_MAP) * 10);
+    regf->sk_map = SMB_MALLOC_ARRAY(SK_MAP, 10);
     if (!regf->sk_map) {
       free(tmp);
       return NULL;
@@ -1759,7 +1759,7 @@ SK_MAP *alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
   else { /* Simply allocate a new slot, unless we have to expand the list */ 
     int ndx = regf->sk_count;
     if (regf->sk_count >= regf->sk_map_size) {
-      regf->sk_map = (SK_MAP *)realloc(regf->sk_map, 
+      regf->sk_map = (SK_MAP *)SMB_REALLOC(regf->sk_map, 
 				       (regf->sk_map_size + 10)*sizeof(SK_MAP));
       if (!regf->sk_map) {
 	free(tmp);
@@ -1811,7 +1811,7 @@ KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
     return tmp;
   }
   else { /* Allocate a new one */
-    tmp = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
+    tmp = SMB_MALLOC_P(KEY_SEC_DESC);
     if (!tmp) {
       return NULL;
     }
@@ -1831,7 +1831,7 @@ KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
 static
 sid_t *dup_sid(sid_t *sid)
 {
-  sid_t *tmp = (sid_t *)malloc(sizeof(sid_t));
+  sid_t *tmp = SMB_MALLOC_P(sid_t);
   int i;
   
   if (!tmp) return NULL;
@@ -1854,7 +1854,7 @@ ACE *dup_ace(REG_ACE *ace)
 {
   ACE *tmp = NULL; 
 
-  tmp = (ACE *)malloc(sizeof(ACE));
+  tmp = SMB_MALLOC_P(ACE);
 
   if (!tmp) return NULL;
 
@@ -1877,7 +1877,7 @@ ACL *dup_acl(REG_ACL *acl)
 
   num_aces = IVAL(&acl->num_aces);
 
-  tmp = (ACL *)malloc(sizeof(ACL) + (num_aces - 1)*sizeof(ACE *));
+  tmp = (ACL *)SMB_MALLOC(sizeof(ACL) + (num_aces - 1)*sizeof(ACE *));
   if (!tmp) return NULL;
 
   tmp->num_aces = num_aces;
@@ -1989,7 +1989,7 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
    */
 
   if (!tmp) {
-    tmp = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
+    tmp = SMB_MALLOC_P(KEY_SEC_DESC);
     if (!tmp) return NULL;
     memset(tmp, 0, sizeof(KEY_SEC_DESC));
     
@@ -2055,7 +2055,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
   dat_len = IVAL(&vk_hdr->dat_len);  /* If top bit, offset contains data */
   dat_off = IVAL(&vk_hdr->dat_off);
 
-  tmp = (VAL_KEY *)malloc(sizeof(VAL_KEY));
+  tmp = SMB_MALLOC_P(VAL_KEY);
   if (!tmp) {
     goto error;
   }
@@ -2065,7 +2065,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
 
   if (flag & 0x01) {
     strncpy(val_name, vk_hdr->dat_name, nam_len);
-    tmp->name = strdup(val_name);
+    tmp->name = SMB_STRDUP(val_name);
     if (!tmp->name) {
       goto error;
     }
@@ -2079,7 +2079,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
 
   if (dat_len) {
     
-    char *dtmp = (char *)malloc(dat_len&0x7FFFFFFF);
+    char *dtmp = (char *)SMB_MALLOC(dat_len&0x7FFFFFFF);
     
     if (!dtmp) {
       goto error;
@@ -2138,7 +2138,7 @@ VAL_LIST *process_vl(REGF *regf, VL_TYPE vl, int count, int size)
     return NULL;
   }
 
-  tmp = (VAL_LIST *)malloc(sizeof(VAL_LIST) + (count - 1) * sizeof(VAL_KEY *));
+  tmp = (VAL_LIST *)SMB_MALLOC(sizeof(VAL_LIST) + (count - 1) * sizeof(VAL_KEY *));
   if (!tmp) {
     goto error;
   }
@@ -2188,7 +2188,7 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size, REG_KEY *parent)
 
   /* Now, we should allocate a KEY_LIST struct and fill it in ... */
 
-  tmp = (KEY_LIST *)malloc(sizeof(KEY_LIST) + (count - 1) * sizeof(REG_KEY *));
+  tmp = (KEY_LIST *)SMB_MALLOC(sizeof(KEY_LIST) + (count - 1) * sizeof(REG_KEY *));
   if (!tmp) {
     goto error;
   }
@@ -2266,7 +2266,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
   assert(name_len < sizeof(key_name));
 
   /* Allocate the key struct now */
-  tmp = (REG_KEY *)malloc(sizeof(REG_KEY));
+  tmp = SMB_MALLOC_P(REG_KEY);
   if (!tmp) return tmp;
   memset(tmp, 0, sizeof(REG_KEY));
 
@@ -2277,7 +2277,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
 
   if (verbose) fprintf(stdout, "Key name: %s\n", key_name);
 
-  tmp->name = strdup(key_name);
+  tmp->name = SMB_STRDUP(key_name);
   if (!tmp->name) {
     goto error;
   }
@@ -2305,7 +2305,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
      * XXX: FIXME
      */
 
-    tmp->class_name = strdup(cls_name);
+    tmp->class_name = SMB_STRDUP(cls_name);
     if (!tmp->class_name) {
       goto error;
     }
@@ -2493,10 +2493,10 @@ HBIN_BLK *nt_create_hbin_blk(REGF *regf, int size)
 
   size = (size + (REGF_HDR_BLKSIZ - 1)) & ~(REGF_HDR_BLKSIZ - 1);
 
-  tmp = (HBIN_BLK *)malloc(sizeof(HBIN_BLK));
+  tmp = (HBIN_BLK *)SMB_MALLOC_P(HBIN_BLK);
   memset(tmp, 0, sizeof(HBIN_BLK));
 
-  tmp->data = malloc(size);
+  tmp->data = SMB_MALLOC(size);
   if (!tmp->data) goto error;
 
   memset(tmp->data, 0, size);  /* Make it pristine */
@@ -2983,13 +2983,13 @@ REGF_HDR *nt_get_reg_header(REGF *regf)
 {
   HBIN_BLK *tmp = NULL;
   
-  tmp = (HBIN_BLK *)malloc(sizeof(HBIN_BLK));
+  tmp = SMB_MALLOC_P(HBIN_BLK);
   if (!tmp) return 0;
 
   memset(tmp, 0, sizeof(HBIN_BLK));
   tmp->type = REG_OUTBLK_HDR;
   tmp->size = REGF_HDR_BLKSIZ;
-  tmp->data = malloc(REGF_HDR_BLKSIZ);
+  tmp->data = SMB_MALLOC(REGF_HDR_BLKSIZ);
   if (!tmp->data) goto error;
 
   memset(tmp->data, 0, REGF_HDR_BLKSIZ);  /* Make it pristine, unlike Windows */
@@ -3163,7 +3163,7 @@ void print_line(struct cmd_line *cl)
 
   if (!cl) return;
 
-  if ((pl = malloc(cl->line_len + 1)) == NULL) {
+  if ((pl = SMB_MALLOC(cl->line_len + 1)) == NULL) {
     fprintf(stderr, "Unable to allocate space to print line: %s\n",
 	    strerror(errno));
     exit(1);
@@ -3187,7 +3187,7 @@ void print_line(struct cmd_line *cl)
 static
 struct cmd_line *get_cmd_line(int fd)
 {
-  struct cmd_line *cl = (CMD_LINE *)malloc(sizeof(CMD_LINE));
+  struct cmd_line *cl = SMB_MALLOC_P(CMD_LINE);
   int i = 0, rc;
   unsigned char ch;
 
@@ -3203,7 +3203,7 @@ struct cmd_line *get_cmd_line(int fd)
    * Allocate some space for the line. We extend later if needed.
    */
 
-  if ((cl->line = (char *)malloc(INIT_ALLOC)) == NULL) {
+  if ((cl->line = (char *)SMB_MALLOC(INIT_ALLOC)) == NULL) {
     fprintf(stderr, "Unable to allocate initial space for line: %s\n",
 	    strerror(errno));
     exit(1);
@@ -3220,7 +3220,7 @@ struct cmd_line *get_cmd_line(int fd)
       /*
        * Allocate some more memory
        */
-      if ((cl->line = realloc(cl->line, cl->len + INIT_ALLOC)) == NULL) {
+      if ((cl->line = SMB_REALLOC(cl->line, cl->len + INIT_ALLOC)) == NULL) {
 	fprintf(stderr, "Unable to realloc space for line: %s\n",
 		strerror(errno));
 	exit(1);
@@ -3260,7 +3260,7 @@ static
 char *dup_str(char *s, int len) 
 { 
   char *nstr; 
-  nstr = (char *)malloc(len + 1);
+  nstr = (char *)SMB_MALLOC(len + 1);
   if (nstr) {
     memcpy(nstr, s, len);
     nstr[len] = 0;
@@ -3406,7 +3406,7 @@ char *parse_key(struct cmd_line *cl, int *cmd)
     start = 2;
     *cmd = CMD_DEL_KEY;
   }
-  tmp = malloc(cl->line_len - 1 - start + 1);
+  tmp = SMB_MALLOC(cl->line_len - 1 - start + 1);
   if (!tmp) return tmp; /* Bail out on no mem ... FIXME */
   strncpy(tmp, &cl->line[start], cl->line_len - 1 - start);
   tmp[cl->line_len - 1 - start] = 0;
@@ -3545,7 +3545,7 @@ CMD *regedit4_get_cmd(int fd)
   struct cmd_line *cl = NULL;
   struct val_spec_list *vl = NULL;
 
-  if ((cmd = (struct command_s *)malloc(sizeof(struct command_s))) == NULL) {
+  if ((cmd = SMB_MALLOC_P(struct command_s)) == NULL) {
     fprintf(stderr, "Unable to malloc space for command: %s\n",
 	    strerror(errno));
     exit(1);
@@ -3593,7 +3593,7 @@ CMD *regedit4_get_cmd(int fd)
 	 * There could be a \ on the end which we need to 
 	 * handle at some time
 	 */
-	vl = (struct val_spec_list *)malloc(sizeof(struct val_spec_list));
+	vl = SMB_MALLOC_P(struct val_spec_list);
 	if (!vl) goto error;
 	vl->next = NULL;
 	vl->val = NULL;
@@ -3718,7 +3718,7 @@ CMD_FILE *cmd_file_create(char *file)
     return NULL;
   }
 
-  tmp = (CMD_FILE *)malloc(sizeof(CMD_FILE)); 
+  tmp = SMB_MALLOC_P(CMD_FILE); 
   if (!tmp) {
     return NULL;
   }
@@ -3727,7 +3727,7 @@ CMD_FILE *cmd_file_create(char *file)
    * Let's fill in some of the fields;
    */
 
-  tmp->name = strdup(file);
+  tmp->name = SMB_STRDUP(file);
 
   if ((tmp->fd = open(file, O_RDONLY, 666)) < 0) {
     free(tmp);
@@ -3985,7 +3985,7 @@ int main(int argc, char *argv[])
       break;
 
     case 'O':
-      def_owner_sid_str = strdup(optarg);
+      def_owner_sid_str = SMB_STRDUP(optarg);
       regf_opt += 2;
       if (!sid_string_to_sid(&lsid, def_owner_sid_str)) {
 	fprintf(stderr, "Default Owner SID: %s is incorrectly formatted\n",
