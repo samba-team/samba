@@ -21,8 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 /*
@@ -54,9 +52,7 @@ int cli_send_mailslot(int dgram_sock, BOOL unique, char *mailslot,
   dgram->header.flags.more = False;
   dgram->header.dgm_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)sys_getpid()%(unsigned)100);
   dgram->header.source_ip.s_addr = src_ip.s_addr;
-  /*fprintf(stderr, "Source IP = %0X\n", dgram->header.source_ip); */
   dgram->header.source_port = ntohs(src_port);
-  fprintf(stderr, "Source Port = %0X\n", dgram->header.source_port);
   dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
   dgram->header.packet_offset = 0;
   
