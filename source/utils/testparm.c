@@ -68,6 +68,44 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		printf("WARNING: lock directory %s should have permissions 0755 for browsing to work\n",
 		       lp_lockdir());
 	}
+
+	/*
+	 * Password chat sanity checks.
+	 */
+
+	if(lp_security() == SEC_USER && lp_unix_password_sync()) {
+
+		/*
+		 * Check that we have a valid lp_passwd_program().
+		 */
+
+		if(lp_passwd_program() == NULL) {
+			printf("ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd program' \
+parameter.\n" );
+		} else {
+			if(access(lp_passwd_program(), F_OK) == -1) {
+				printf("ERROR: the 'unix password sync' parameter is set and the 'passwd program' (%s) \
+cannot be executed (error was %s).\n", lp_passwd_program(), strerror(errno) );
+			}
+		}
+
+		if(lp_passwd_chat() == NULL) {
+			printf("ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd chat' \
+parameter.\n");
+		}
+
+		/*
+		 * Check that we have a valid script and that it hasn't
+		 * been written to expect the old password.
+		 */
+
+		if(lp_encrypted_passwords()) {
+			if(strstr( lp_passwd_chat(), "%o")!=NULL) {
+				printf("ERROR: the 'passwd chat' script expects to use the old plaintext password \
+via the %%o substitution. With encrypted passwords this is not possible.\n" );
+			}
+		}
+	}
 }   
 
  int main(int argc, char *argv[])
