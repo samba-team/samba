@@ -95,12 +95,13 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 		dest_len = sizeof(pstring);
 	}
 
-	if (clistr_align(cli->inbuf, src)) {
+	if (!(flags & STR_ASCII) && clistr_align(cli->inbuf, src)) {
 		src++;
 		if (src_len > 0) src_len--;
 	}
 
-	if (!(flags & STR_UNICODE) && !(SVAL(cli->inbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS)) {
+	if ((flags & STR_ASCII) ||
+	    (!(flags & STR_UNICODE) && !(SVAL(cli->inbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS))) {
 		/* the server doesn't want unicode */
 		if (flags & STR_TERMINATE) {
 			safe_strcpy(dest, src, dest_len);

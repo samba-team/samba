@@ -333,7 +333,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 interpret a short filename structure
 The length of the structure is returned
 ****************************************************************************/
-static int interpret_short_filename(char *p,file_info *finfo)
+static int interpret_short_filename(struct cli_state *cli, char *p,file_info *finfo)
 {
 	extern file_info def_finfo;
 
@@ -345,7 +345,7 @@ static int interpret_short_filename(char *p,file_info *finfo)
 	finfo->ctime = make_unix_date(p+22);
 	finfo->mtime = finfo->atime = finfo->ctime;
 	finfo->size = IVAL(p,26);
-	pstrcpy(finfo->name,p+30);
+	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_CONVERT|STR_ASCII);
 	if (strcmp(finfo->name, "..") && strcmp(finfo->name, "."))
 		fstrcpy(finfo->short_name,finfo->name);
 	
@@ -461,7 +461,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 	for (p=dirlist,i=0;i<num_received;i++) {
 		file_info finfo;
-		p += interpret_short_filename(p,&finfo);
+		p += interpret_short_filename(cli, p,&finfo);
 		fn(&finfo, Mask, state);
 	}
 
