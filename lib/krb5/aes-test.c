@@ -192,6 +192,13 @@ struct {
 	ETYPE_ARCFOUR_HMAC_MD5, 16,
 	NULL,
 	"\xac\x8e\x65\x7f\x83\xdf\x82\xbe\xea\x5d\x43\xbd\xaf\x78\x00\xcc"
+    },
+    {
+	"test", "", -1, 
+	0,
+	ETYPE_ARCFOUR_HMAC_MD5, 16,
+	NULL,
+	"\x0c\xb6\x94\x88\x05\xf7\x97\xbf\x2a\x82\x80\x79\x73\xb8\x95\x37"
     }
 };
 
@@ -230,8 +237,7 @@ string_to_key_test(krb5_context context)
 	    abort();
 
 #ifdef ENABLE_AES
-	if (keys[i].enctype == ETYPE_AES256_CTS_HMAC_SHA1_96 ||
-	    keys[i].enctype == ETYPE_AES256_CTS_HMAC_SHA1_96) {
+	if (keys[i].pbkdf2) {
 
 #ifdef HAVE_OPENSSL
 	    PKCS5_PBKDF2_HMAC_SHA1(password.data, password.length,
