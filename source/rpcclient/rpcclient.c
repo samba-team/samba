@@ -574,7 +574,8 @@ static void usage(void)
 	AllowDebugChange = False;
 
 	/* Parse options */
-	if (argc == 0) {
+
+	if (argc == 1) {
 		usage();
 		return 0;
 	}
