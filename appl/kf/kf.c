@@ -54,6 +54,8 @@ static struct getargs args[] = {
     { "ccache", 'c',arg_string, &ccache_name, "remote cred cache","ccache"},
     { "forwardable",'F',arg_flag,&forwardable,
        "Forward forwardable credentials", NULL },
+    { "forwardable",'G',arg_negative_flag,&forwardable,
+       "Don't forward forwardable credentials", NULL },
     { "help", 'h', arg_flag, &help_flag },
     { "version", 0, arg_flag, &version_flag }
 };
@@ -70,13 +72,26 @@ usage(int code, struct getargs *args, int num_args)
 static int
 client_setup(krb5_context *context, int *argc, char **argv)
 {
-    int optind;
+    int optind = 0;
     int port = 0;
+    int status;
 
-    optind = krb5_program_setup(context, *argc, argv, args, num_args, usage);
+    set_progname (argv[0]);
+ 
+    status = krb5_init_context (context);
+    if (status)
+	errx(1, "krb5_init_context failed: %u", status);
+ 
+    forwardable = krb5_config_get_bool (*context, NULL,
+					"libdefaults",
+					"forwardable",
+					NULL); 
+ 
+    if (getarg (args, num_args, *argc, argv, &optind))
+	usage(1, args, num_args);
 
     if(help_flag)
-	(*usage)(0, args, num_args);
+	usage (0, args, num_args);
     if(version_flag) {
 	print_version(NULL);
 	exit(0);
