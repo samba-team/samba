@@ -25,6 +25,20 @@ extern int DEBUGLEVEL;
 
 
 /*******************************************************************
+reads or writes a UTIME type.
+********************************************************************/
+char* smb_io_utime(BOOL io, UTIME *t, char *q, char *base, int align)
+{
+	if (t == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	RW_IVAL (io, q, t->time, 0); q += 4;
+
+	return q;
+}
+
+/*******************************************************************
 reads or writes an NTTIME structure.
 ********************************************************************/
 char* smb_io_time(BOOL io, NTTIME *nttime, char *q, char *base, int align)
@@ -223,6 +237,20 @@ char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align
 }
 
 /*******************************************************************
+reads or writes a DOM_CHAL structure.
+********************************************************************/
+char* smb_io_chal(BOOL io, DOM_CHAL *chal, char *q, char *base, int align)
+{
+	if (chal == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	RW_PCVAL(io, q, chal->data, 8); q += 8;
+
+	return q;
+}
+
+/*******************************************************************
 reads or writes a DOM_CRED structure.
 ********************************************************************/
 char* smb_io_cred(BOOL io, DOM_CRED *cred, char *q, char *base, int align)
@@ -231,8 +259,8 @@ char* smb_io_cred(BOOL io, DOM_CRED *cred, char *q, char *base, int align)
 
 	q = align_offset(q, base, align);
 	
-	RW_PCVAL(io, q, cred->data, 8); q += 8;
-	RW_IVAL (io, q, cred->timestamp, 0); q += 4;
+	q = smb_io_chal (io, &(cred->challenge), q, base, align);
+	q = smb_io_utime(io, &(cred->timestamp), q, base, align);
 
 	return q;
 }
