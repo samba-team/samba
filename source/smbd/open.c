@@ -312,7 +312,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
   /* this handles a bug in Win95 - it doesn't say to create the file when it 
      should */
   if (conn->printer) {
-	  flags |= O_CREAT;
+	  flags |= (O_CREAT|O_EXCL);
   }
 
 /*
@@ -769,6 +769,9 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
 
   if (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)
     flags2 |= O_TRUNC;
+
+  if (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_FAIL)
+    flags2 |= O_EXCL;
 
   /* note that we ignore the append flag as 
      append does not mean the same thing under dos and unix */
