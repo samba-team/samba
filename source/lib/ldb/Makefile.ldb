@@ -4,7 +4,7 @@ WITH_LDAP=1
 
 ifeq ($(WITH_LDAP),1)
 OPENLDAP_PREFIX=/usr
-LDAP_LIBS=-L$(OPENLDAP_PREFIX)/lib -lldap
+LDAP_LIBS=-L$(OPENLDAP_PREFIX)/lib -llber -lldap
 LDAP_FLAGS=-DHAVE_LDAP=1
 LDB_LDAP_OBJ=ldb_ldap/ldb_ldap.o
 endif
