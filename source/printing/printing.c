@@ -536,7 +536,10 @@ update the internal database from the system print queue for a queue
 ****************************************************************************/
 static void print_queue_update(int snum)
 {
-	message_send_pid(background_lpq_updater_pid, MSG_PRINTER_UPDATE, &snum, sizeof(snum), False);
+	if (background_lpq_updater_pid > 0) {
+		message_send_pid(background_lpq_updater_pid, MSG_PRINTER_UPDATE, 
+				 &snum, sizeof(snum), False);
+	}
 }
 
 /****************************************************************************
