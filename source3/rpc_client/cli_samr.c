@@ -2095,7 +2095,7 @@ NTSTATUS cli_samr_query_sec_obj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Get domain password info */
 
 NTSTATUS cli_samr_get_dom_pwinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				 uint16 *unk_0, uint16 *unk_1, uint16 *unk_2)
+				 uint16 *unk_0, uint16 *unk_1)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_GET_DOM_PWINFO q;
@@ -2134,8 +2134,6 @@ NTSTATUS cli_samr_get_dom_pwinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			*unk_0 = r.unk_0;
 		if (unk_1)
 			*unk_1 = r.unk_1;
-		if (unk_2)
-			*unk_2 = r.unk_2;
 	}
 
  done:

@@ -1470,19 +1470,18 @@ static NTSTATUS cmd_samr_get_dom_pwinfo(struct cli_state *cli,
 					int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint16 unk_0, unk_1, unk_2;
+	uint16 unk_0, unk_1;
 
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	result = cli_samr_get_dom_pwinfo(cli, mem_ctx, &unk_0, &unk_1, &unk_2);
+	result = cli_samr_get_dom_pwinfo(cli, mem_ctx, &unk_0, &unk_1) ;
 	
 	if (NT_STATUS_IS_OK(result)) {
 		printf("unk_0 = 0x%08x\n", unk_0);
 		printf("unk_1 = 0x%08x\n", unk_1);
-		printf("unk_2 = 0x%08x\n", unk_2);
 	}
 
 	return result;
