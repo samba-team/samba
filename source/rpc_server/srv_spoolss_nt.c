@@ -6587,6 +6587,16 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 		return WERR_BADFID;
 	}
 
+ 	if (!get_printer_snum(p, handle, &snum))
+		return ERROR_INVALID_HANDLE;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
+
 	/* can't delete if builtin */
 	if (get_a_builtin_ntform(form_name,&tmpForm)) {
 		return WERR_INVALID_PARAM;
@@ -6642,6 +6652,17 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 		DEBUG(2,("_spoolss_setform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
+
+	if (!get_printer_snum(p, handle, &snum))
+		return ERROR_INVALID_HANDLE;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
+
 	/* can't set if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
 		return WERR_INVALID_PARAM;
