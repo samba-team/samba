@@ -673,7 +673,9 @@ int sys_getgroups(int setlen, gid_t *gidset)
     return -1;
   } 
 
-  if((group_list = (GID_T *)malloc(setlen * sizoef(GID_T))) == NULL) {
+  if (setlen == 0) setlen = 1;
+
+  if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
     DEBUG(0,("sys_getgroups: Malloc fail.\n"));
     return -1;
   }
