@@ -1666,13 +1666,8 @@ between 'keepalive' packets. If this parameter is zero, no keepalive packets
 will be sent. Keepalive packets, if sent, allow the server to tell whether a
 client is still present and responding.
 
-Keepalives should, in general, not be needed if the socket being used
-has the SO_KEEPALIVE attribute set on it (see "socket
-options"). Basically you should only use this option if you strike
-difficulties.
-
 .B Default:
- 	keep alive = 0
+ 	keep alive = 300
 
 .B Example:
  	keep alive = 60
