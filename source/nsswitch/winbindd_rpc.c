@@ -581,11 +581,10 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		goto done;
 
 #ifdef WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK
-	{
-		if (get_ldap_seq( inet_ntoa(hnd->cli->dest_ip), seq) == 0) {
-			result = NT_STATUS_OK;
-			goto done;
-		}
+	if (get_ldap_seq( inet_ntoa(hnd->cli->dest_ip), seq) == 0) {
+		result = NT_STATUS_OK;
+		seqnum = *seq;
+		goto done;
 	}
 #endif /* WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK */
 
