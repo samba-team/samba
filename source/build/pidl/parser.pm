@@ -825,6 +825,9 @@ sub ParseFunctionPrint($)
 			ParseElementPrintScalar($e, "r->out.");
 		}
 	}
+	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
+		$res .= "\tndr_print_$fn->{RETURN_TYPE}(ndr, \"result\", &r->out.result);\n";
+	}
 	$res .= "\tndr->depth--;\n";
 	$res .= "\t}\n";
 	
