@@ -38,12 +38,15 @@ typedef void TALLOC_CTX;
 #define talloc_p(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
 #define talloc_array_p(ctx, type, count) (type *)talloc_array(ctx, sizeof(type), count, __location__)
 #define talloc_realloc_p(p, type, count) (type *)talloc_realloc_array(p, sizeof(type), count, __location__)
+#define talloc_memdup(t, p, size) _talloc_memdup(t, p, size, __location__)
 
 #define talloc_destroy(ctx) talloc_free(ctx)
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
+
+#define data_blob(ptr, size) data_blob_named(ptr, size, __location__)
 
 #endif
 
