@@ -341,3 +341,43 @@ void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key)
 	smbhash(out, buf, key2, 1);
 }
 
+void SamOEMhash( unsigned char *data, unsigned char *key)
+{
+  unsigned char s_box[256];
+  unsigned char index_i = 0;
+  unsigned char index_j = 0;
+  unsigned char j = 0;
+  int ind;
+
+  for (ind = 0; ind < 256; ind++)
+  {
+    s_box[ind] = (unsigned char)ind;
+  }
+
+  for( ind = 0; ind < 256; ind++)
+  {
+     unsigned char tc;
+
+     j += (s_box[ind] + key[ind%16]);
+
+     tc = s_box[ind];
+     s_box[ind] = s_box[j];
+     s_box[j] = tc;
+  }
+
+  for( ind = 0; ind < 516; ind++)
+  {
+    unsigned char tc;
+    unsigned char t;
+
+    index_i++;
+    index_j += s_box[index_i];
+
+    tc = s_box[index_i];
+    s_box[index_i] = s_box[index_j];
+    s_box[index_j] = tc;
+
+    t = s_box[index_i] + s_box[index_j];
+    data[ind] = data[ind] ^ s_box[t];
+  }
+}
