@@ -69,6 +69,12 @@
 	proven wrong on Solaris 8 in 64-bit mode, where they are stored as
 	32-bit quantities but time_t has gone up to 64 bits
 
+2000-03-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* call list_file for broken usages of nlst too
+
+	* ftpd/ftpd.c: call list_file for broken usages of nlst too
+
 2000-02-07  Assar Westerlund  <assar@sics.se>
 
 	* ftp/security.c (sec_read): more paranoia with return value from
