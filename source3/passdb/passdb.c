@@ -992,10 +992,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 /*************************************************************
  Change a password entry in the local smbpasswd file.
 
- FIXME!!  The function needs to be abstracted into the
- passdb interface or something.  It is currently being called
- by _api_samr_create_user() in rpc_server/srv_samr.c,
- in SWAT and by smbpasswd/pdbedit.
+It is currently being called by SWAT and by smbpasswd.
  
  --jerry
  *************************************************************/
