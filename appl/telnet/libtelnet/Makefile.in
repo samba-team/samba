@@ -36,7 +36,7 @@ $(LIB): $(OBJECTS)
 	$(AR) cr $@ $(OBJECTS)
 	-$(RANLIB) $@
 
-install:
+install: all
 	@true
 
 uninstall:
