@@ -12,7 +12,7 @@ Mon Jul  7 11:15:51 1997  Assar Westerlund  <assar@sics.se>
 
 Mon Jul  7 02:46:31 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
-	* lib/krb5/krb5_locl.h: Include <md5.h>
+	* lib/krb5/encrypt.c: Implement as a vector of function pointers.
 
 	* lib/krb5/{decrypt,encrypt}.c: Implement des-cbc-crc, and
  	des-cbc-md5 in separate functions.
