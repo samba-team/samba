@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,15 +40,16 @@
 
 RCSID("$Id$");
 
-krb5_error_code
-krb5_get_krbhst (krb5_context context,
-		 const krb5_realm *realm,
-		 char ***hostlist)
+static krb5_error_code
+get_krbhst (krb5_context context,
+	    const krb5_realm *realm,
+	    const char *conf_string,
+	    char ***hostlist)
 {
     char **res, **r;
     int count;
     res = krb5_config_get_strings(context, NULL, 
-				  "realms", *realm, "kdc", NULL);
+				  "realms", *realm, conf_string, NULL);
     for(r = res, count = 0; r && *r; r++, count++);
     r = realloc(res, (count + 2) * sizeof(*res));
     if(r == NULL){
@@ -64,6 +65,22 @@ krb5_get_krbhst (krb5_context context,
     res[count + 1] = NULL;
     *hostlist = res;
     return 0;
+}
+
+krb5_error_code
+krb5_get_krb_admin_hst (krb5_context context,
+			const krb5_realm *realm,
+			char ***hostlist)
+{
+    return get_krbhst (context, realm, "admin_server", realm);
+}
+
+krb5_error_code
+krb5_get_krbhst (krb5_context context,
+		 const krb5_realm *realm,
+		 char ***hostlist)
+{
+    return get_krbhst (context, realm, "kdc", realm);
 }
 
 krb5_error_code
