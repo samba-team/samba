@@ -141,7 +141,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 	if (cli->fd == -1)
 		return False;
 
-	cli_caclulate_sign_mac(cli);
+	cli_calculate_sign_mac(cli);
 
 	len = smb_len(cli->outbuf) + 4;
 
