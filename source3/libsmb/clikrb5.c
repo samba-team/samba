@@ -133,7 +133,8 @@ krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
 #if defined(HAVE_KRB5_FREE_KTYPES)
 	return krb5_free_ktypes(context, enctypes);
 #else
-	return SAFE_FREE(enctypes);
+	SAFE_FREE(enctypes);
+	return;
 #endif
 }
 
