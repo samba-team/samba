@@ -73,7 +73,7 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
     if(*ctx == NULL)
 	return ENOMEM;
     memset(*ctx, 0, sizeof(**ctx));
-    initialize_kadm5_error_table_r(&context->et_list);
+    krb5_add_et_list (context, initialize_kadm5_error_table_r);
     set_funcs(*ctx);
     (*ctx)->context = context;
     if(params->mask & KADM5_CONFIG_REALM)
