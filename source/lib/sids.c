@@ -518,10 +518,17 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain)
 /**************************************************************************
  turns a well known / domain SID into a name and type.
 ***************************************************************************/
-BOOL map_wk_sid_to_name(const DOM_SID *sid, char *nt_domain, uint32 *type)
+const char *map_wk_sid_to_name(const DOM_SID *sid, char *nt_domain, uint32 *type)
 {
 	fstring sid_str;
 	int i = 0;
+
+	if (sid == NULL)
+	{
+		DEBUG(1, ("map_wk_sid_to_name: NULL sid\n"));
+		return NULL;
+	}
+
 	sid_to_string(sid_str, sid);
 
 	DEBUG(5, ("map_wk_sid_to_name: %s\n", sid_str));
@@ -538,14 +545,14 @@ BOOL map_wk_sid_to_name(const DOM_SID *sid, char *nt_domain, uint32 *type)
 				*type = sid_name_map[i]->type;
 			DEBUG(5, ("  found %s %d\n", sid_name_map[i]->name,
 				  sid_name_map[i]->type));
-			return True;
+			return sid_name_map[i]->name;
 		}
 	}
 
 	sid_to_string(sid_str, sid);
 	DEBUG(1, ("map_wk_sid_to_name: sid %s not found\n", sid_str));
 
-	return False;
+	return NULL;
 }
 
 /**************************************************************************

@@ -177,13 +177,14 @@ static BOOL unix_name_to_nt_name_info(DOM_NAME_MAP * map, DOM_MAP_TYPE type)
 	DOM_SID dom_sid;
 	uint32 rid;
 	int surs_type;
+	const char *ret_name;
 
 	/*
 	 * Attempt to get the unix gid_t for this name.
 	 */
 
-	DEBUG(5,
-	      ("unix_name_to_nt_name_info: unix_name:%s\n", map->unix_name));
+	DEBUG(5, ("unix_name_to_nt_name_info: unix_name:%s\n",
+		  map->unix_name));
 
 	if (type == DOM_MAP_USER)
 	{
@@ -231,7 +232,9 @@ failed. Error was %s.\n",
 	sid_copy(&dom_sid, &map->sid);
 	sid_split_rid(&dom_sid, &rid);
 
-	if (!map_domain_sid_to_name(&dom_sid, map->nt_domain))
+	ret_name = map_wk_sid_to_name(&dom_sid, NULL, NULL);
+	
+	if (!ret_name)
 	{
 		fstring sid_str;
 		sid_to_string(sid_str, &dom_sid);
@@ -239,6 +242,9 @@ failed. Error was %s.\n",
 			  sid_str));
 		return False;
 	}
+
+	safe_free(map->nt_domain);
+	map->nt_domain = strdup(ret_name);
 
 	{
 		fstring sid_str;
