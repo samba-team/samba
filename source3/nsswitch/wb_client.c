@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "nsswitch/nss.h"
+#include "nsswitch/winbind_nss.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
