@@ -95,7 +95,7 @@ originally written by Karl Auer.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * 2: What is the current version of Samba?
 
-At time of writing, the current version was 1.9.15. If you want to be sure
+At time of writing, the current version was 1.9.16. If you want to be sure
 check the bottom of the change-log file. 
 (ftp://samba.anu.edu.au/pub/samba/alpha/change-log)
 
@@ -587,6 +587,84 @@ This info from Stefan Hergeth may be useful:
 
  Stefan Hergeth <hergeth@f7axp1.informatik.fh-muenchen.de>
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 6: Why are my file's timestamps off by an hour, or by a few hours? 
+
+This is from Paul Eggert <eggert@twinsun.com>.
+
+Most likely it's a problem with your time zone settings.
+
+Internally, Samba maintains time in traditional Unix format,
+namely, the number of seconds since 1970-01-01 00:00:00 Universal Time
+(or ``GMT''), not counting leap seconds.
+
+On the server side, Samba uses the Unix TZ variable to convert internal
+timestamps to and from local time.  So on the server side, there are two
+things to get right.
+
+	1.  The Unix system clock must have the correct Universal time.
+	Use the shell command "sh -c 'TZ=UTC0 date'" to check this.
+
+	2.  The TZ environment variable must be set on the server
+	before Samba is invoked.  The details of this depend on the
+	server OS, but typically you must edit a file whose name is
+	/etc/TIMEZONE or /etc/default/init, or run the command `zic -l'.
+
+	3.  TZ must have the correct value.
+	
+		3a.  If possible, use geographical time zone settings
+		(e.g. TZ='America/Los_Angeles' or perhaps
+		TZ=':US/Pacific').  These are supported by most
+		popular Unix OSes, are easier to get right, and are
+		more accurate for historical timestamps.  If your
+		operating system has out-of-date tables, you should be
+		able to update them from the public domain time zone
+		tables at <URL:ftp://elsie.nci.nih.gov/pub/>.
+
+		3b.  If your system does not support geographical time zone
+		settings, you must use a Posix-style TZ strings, e.g.
+		TZ='PST8PDT,M4.1.0/2,M10.5.0/2' for US Pacific time.
+		Posix TZ strings can take the following form (with optional
+		items in brackets):
+
+			StdOffset[Dst[Offset],Date/Time,Date/Time]
+
+		where:
+
+			`Std' is the standard time designation (e.g. `PST').
+		
+			`Offset' is the number of hours behind UTC (e.g. `8').
+			Prepend a `-' if you are ahead of UTC, and
+			append `:30' if you are at a half-hour offset.
+			Omit all the remaining items if you do not use
+			daylight-saving time.
+		
+			`Dst' is the daylight-saving time designation
+			(e.g. `PDT').
+
+			The optional second `Offset' is the number of
+			hours that daylight-saving time is behind UTC.
+			The default is 1 hour ahead of standard time.
+
+			`Date/Time,Date/Time' specify when daylight-saving
+			time starts and ends.  The format for a date is
+			`Mm.n.d', which specifies the dth day (0 is Sunday)
+			of the nth week of the mth month, where week 5 means
+			the last such day in the month.  The format for a
+			time is [h]h[:mm[:ss]], using a 24-hour clock.
+
+		Other Posix string formats are allowed but you don't want
+		to know about them.
+
+On the client side, you must make sure that your client's clock and
+time zone is also set appropriately.  [[I don't know how to do this.]]
+
+Samba traditionally has had many problems dealing with time zones, due
+to the bizarre ways that Microsoft network protocols handle time
+zones.  A common symptom is for file timestamps to be off by an hour.
+To work around the problem, try disconnecting from your Samba server
+and then reconnecting to it; or upgrade your Samba server to
+1.9.16alpha10 or later.
 
 ===============================================================================
 SECTION FIVE: Specific client application problems
