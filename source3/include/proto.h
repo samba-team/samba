@@ -276,11 +276,6 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
 ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
 BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
-BOOL receive_local_message(int fd, char *buffer, int buffer_len, unsigned int timeout);
-BOOL push_oplock_pending_smb_message(char *buf, int msg_len);
-BOOL receive_message_or_smb(int smbfd, int oplock_fd, 
-                           char *buffer, int buffer_len, 
-                           int timeout, BOOL *got_smb);
 BOOL send_smb(int fd,char *buffer);
 int name_extract(char *buf,int ofs,char *name);
 int name_len( char *s );
@@ -1809,11 +1804,14 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 /*The following definitions come from  smbd/oplock.c  */
 
 BOOL open_oplock_ipc(void);
-BOOL process_local_message(int sock, char *buffer, int buf_size);
+BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
+BOOL set_file_oplock(files_struct *fsp);
+int setup_oplock_select_set( fd_set *fds);
+BOOL process_local_message(char *buffer, int buf_size);
 BOOL request_oplock_break(share_mode_entry *share_entry, 
                           SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
-void check_kernel_oplocks(BOOL *have_oplocks);
+void check_kernel_oplocks(void);
 
 /*The following definitions come from  smbd/password.c  */
 
@@ -1857,7 +1855,8 @@ void invalidate_read_prediction(int fd);
 
 /*The following definitions come from  smbd/process.c  */
 
-BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout);
+BOOL push_oplock_pending_smb_message(char *buf, int msg_len);
+BOOL receive_next_smb(char *inbuf, int bufsize, int timeout);
 void process_smb(char *inbuf, char *outbuf);
 char *smb_fn_name(int type);
 void construct_reply_common(char *inbuf,char *outbuf);

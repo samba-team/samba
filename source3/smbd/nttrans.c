@@ -25,7 +25,6 @@
 extern int DEBUGLEVEL;
 extern int Protocol;
 extern int Client;  
-extern int oplock_sock;
 extern int smb_read_error;
 extern int global_oplock_break;
 extern int chain_size;
@@ -1365,8 +1364,7 @@ due to being in oplock break state.\n" ));
     while( num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
       BOOL ret;
 
-      ret = receive_next_smb(Client,oplock_sock,inbuf,bufsize,
-                             SMB_SECONDARY_WAIT);
+      ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
 
       if((ret && (CVAL(inbuf, smb_com) != SMBnttranss)) || !ret) {
         outsize = set_message(outbuf,0,0,True);

@@ -917,7 +917,7 @@ static void init_globals(void)
    * smbd will check after starting to see if this value
    * should be set to "true" or not.
    */
-  Globals.bKernelOplocks = False;
+  lp_set_kernel_oplocks(False);
 
   /*
    * This must be done last as it checks the value in 
