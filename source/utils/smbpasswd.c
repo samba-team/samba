@@ -1,6 +1,6 @@
 /*
  * Unix SMB/Netbios implementation. Version 1.9. smbpasswd module. Copyright
- * (C) Jeremy Allison 1995-1998
+ * (C) Jeremy Allison 1995-1998, 2001.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -538,7 +538,6 @@ static int process_nonroot(int argc, char *argv[])
  done:
 	safe_free(old_passwd);
 	safe_free(new_passwd);
-	safe_free(user_name);
 
 	return result;
 }
