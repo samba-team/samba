@@ -1,4 +1,21 @@
-2004-11-30  Love  <lha@stacken.kth.se>
+2004-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/verify_krb5_conf.8: spelling, from openbsd
+	
+	* lib/krb5/krb5_init_context.3: spelling, from openbsd
+	
+	* lib/krb5/krb5.conf.5: spelling, from openbsd
+	
+	* kuser/kdestroy.1: use keeps around options, spelling, from
+	openbsd
+
+	* kpasswd/kpasswdd.8: use ., use keeps around options, from OpenBSD
+	
+	* kdc/hpropd.8: use keeps around options, from OpenBSD
+	
+	* kdc/hprop.8: use keeps around options, from OpenBSD
+	
+2004-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/context.c (krb5_free_context): clear error string
 	before destroying mutex
