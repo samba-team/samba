@@ -1,7 +1,15 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
-Change in alpha7
+Changes in alpha8
+- fixed compile of wb_client.c (tridge)
+- fixed net time to use localtime (tridge)
+- net help cleanups (jmcd)
+- debug level fix (tpot)
+- utmp string length fixes (monyo)
+
+
+Changes in alpha7
 
 - added "net ads info" to probe basic into on your ads server without
   any authentication
