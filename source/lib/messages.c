@@ -57,8 +57,9 @@ static struct dispatch_fns {
 } *dispatch_fns;
 
 /****************************************************************************
-notifications come in as signals
+ Notifications come in as signals.
 ****************************************************************************/
+
 static void sig_usr1(void)
 {
 	received_signal = 1;
@@ -66,16 +67,20 @@ static void sig_usr1(void)
 }
 
 /****************************************************************************
-a useful function for testing the message system
+ A useful function for testing the message system.
 ****************************************************************************/
+
 void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-	DEBUG(1,("INFO: Received PING message from PID %u\n",(unsigned int)src));
+	char *msg = buf ? buf : "none";
+	DEBUG(1,("INFO: Received PING message from PID %u [%s]\n",(unsigned int)src, msg));
 	message_send_pid(src, MSG_PONG, buf, len, True);
 }
+
 /****************************************************************************
-return current debug level
+ Return current debug level.
 ****************************************************************************/
+
 void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",(unsigned int)src));
@@ -85,12 +90,13 @@ void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 /****************************************************************************
  Initialise the messaging functions. 
 ****************************************************************************/
+
 BOOL message_init(void)
 {
 	if (tdb) return True;
 
 	tdb = tdb_open_log(lock_path("messages.tdb"), 
-		       0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
+		       0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
 		       O_RDWR|O_CREAT,0600);
 
 	if (!tdb) {
@@ -106,10 +112,10 @@ BOOL message_init(void)
 	return True;
 }
 
-
 /*******************************************************************
- form a static tdb key from a pid
+ Form a static tdb key from a pid.
 ******************************************************************/
+
 static TDB_DATA message_key_pid(pid_t pid)
 {
 	static char key[20];
@@ -122,11 +128,11 @@ static TDB_DATA message_key_pid(pid_t pid)
 	return kbuf;
 }
 
-
 /****************************************************************************
-notify a process that it has a message. If the process doesn't exist 
-then delete its record in the database
+ Notify a process that it has a message. If the process doesn't exist 
+ then delete its record in the database.
 ****************************************************************************/
+
 static BOOL message_notify(pid_t pid)
 {
 	if (kill(pid, SIGUSR1) == -1) {
@@ -142,8 +148,9 @@ static BOOL message_notify(pid_t pid)
 }
 
 /****************************************************************************
-send a message to a particular pid
+ Send a message to a particular pid.
 ****************************************************************************/
+
 BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
 {
 	TDB_DATA kbuf;
@@ -228,11 +235,10 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 	return False;
 }
 
-
-
 /****************************************************************************
-retrieve the next message for the current process
+ Retrieve the next message for the current process.
 ****************************************************************************/
+
 static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 {
 	TDB_DATA kbuf;
@@ -284,12 +290,12 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 	return False;
 }
 
-
 /****************************************************************************
-receive and dispatch any messages pending for this process
-notice that all dispatch handlers for a particular msg_type get called,
-so you can register multiple handlers for a message
+ Receive and dispatch any messages pending for this process.
+ Notice that all dispatch handlers for a particular msg_type get called,
+ so you can register multiple handlers for a message.
 ****************************************************************************/
+
 void message_dispatch(void)
 {
 	int msg_type;
@@ -298,10 +304,10 @@ void message_dispatch(void)
 	size_t len;
 	struct dispatch_fns *dfn;
 
-	if (!received_signal)
-		return;
+	if (!received_signal) return;
 
 	DEBUG(10,("message_dispatch: received_signal = %d\n", received_signal));
+
 	received_signal = 0;
 
 	while (message_recv(&msg_type, &src, &buf, &len)) {
@@ -315,10 +321,10 @@ void message_dispatch(void)
 	}
 }
 
-
 /****************************************************************************
-register a dispatch function for a particular message type
+ Register a dispatch function for a particular message type.
 ****************************************************************************/
+
 void message_register(int msg_type, 
 		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len))
 {
@@ -342,8 +348,9 @@ void message_register(int msg_type,
 }
 
 /****************************************************************************
-de-register the function for a particular message type
+ De-register the function for a particular message type.
 ****************************************************************************/
+
 void message_deregister(int msg_type)
 {
 	struct dispatch_fns *dfn, *next;
@@ -365,8 +372,9 @@ struct msg_all {
 };
 
 /****************************************************************************
-send one of the messages for the broadcast
+ Send one of the messages for the broadcast.
 ****************************************************************************/
+
 static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct connections_data crec;
@@ -396,10 +404,11 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 }
 
 /****************************************************************************
-this is a useful function for sending messages to all smbd processes.
-It isn't very efficient, but should be OK for the sorts of applications that 
-use it. When we need efficient broadcast we can add it.
+ This is a useful function for sending messages to all smbd processes.
+ It isn't very efficient, but should be OK for the sorts of applications that 
+ use it. When we need efficient broadcast we can add it.
 ****************************************************************************/
+
 BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
 {
 	struct msg_all msg_all;

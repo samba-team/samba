@@ -178,7 +178,7 @@ static int parse_type(char *mtype)
 /****************************************************************************
 do command
 ****************************************************************************/
-static BOOL do_command(char *dest, char *msg_name, char **params)
+static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 {
 	int i, n, v;
 	int mtype;
@@ -349,7 +349,10 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 		n = atoi(params[0]);
 		pong_count = 0;
 		for (i=0;i<n;i++) {
-			retval = send_message(dest, MSG_PING, NULL, 0, True);
+			if (iparams > 1)
+				retval = send_message(dest, MSG_PING, params[1], strlen(params[1]) + 1, True);
+			else
+				retval = send_message(dest, MSG_PING, NULL, 0, True);
 			if (retval == False) break;
 		}
 		if (retval) {
@@ -404,17 +407,17 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 
 	if (!interactive) {
 		if (argc < 2) usage(True);
-		return (do_command(argv[0],argv[1],argc > 2 ? &argv[2] : 0));
+		return (do_command(argv[0],argv[1], argc-2, argc > 2 ? &argv[2] : 0));
 	}
 
 	while (True) {
-		char *myargv[3];
+		char *myargv[4];
 		int myargc;
 
 		printf("smbcontrol> ");
 		if (!fgets(temp, sizeof(temp)-1, stdin)) break;
 		myargc = 0;
-		while ((myargc < 3) && 
+		while ((myargc < 4) && 
 		       (myargv[myargc] = strtok(myargc?NULL:temp," \t\n"))) {
 			myargc++;
 		}
@@ -422,7 +425,7 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 		if (strequal(myargv[0],"q")) break;
 		if (myargc < 2)
 			usage(False);
-		else if (!do_command(myargv[0],myargv[1],myargc > 2 ? &myargv[2] : 0))
+		else if (!do_command(myargv[0],myargv[1],myargc-2,myargc > 2 ? &myargv[2] : 0))
 			usage(False);
 	}
 	return(0);
