@@ -202,9 +202,6 @@ BOOL create_rpc_reply(pipes_struct *p,
 		prs_link(&p->rhdr, &p->rdata_i, NULL       );
 	}
 
-	/* indicate to subsequent data reads where we are up to */
-	p->next_frag_start = p->hdr.frag_len; 
-	
 	return p->rhdr.data != NULL && p->rhdr.offset == 0x18;
 }
 
