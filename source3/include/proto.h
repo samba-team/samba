@@ -28,6 +28,10 @@ BOOL dbghdr( int level, char *file, char *func, int line );
 
 void fault_setup(void (*fn)(void *));
 
+/*The following definitions come from  lib/genrand.c  */
+
+void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
+
 /*The following definitions come from  lib/getsmbpass.c  */
 
 char *getsmbpass(char *prompt)    ;
@@ -1003,6 +1007,85 @@ BOOL pm_process( char *FileName,
                  BOOL (*sfunc)(char *),
                  BOOL (*pfunc)(char *, char *) );
 
+/*The following definitions come from  param/pcap.c  */
+
+BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
+void pcap_printer_fn(void (*fn)(char *, char *));
+
+/*The following definitions come from  passdb/passdb.c  */
+
+BOOL initialize_password_db(void);
+struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid);
+struct smb_passwd *iterate_getsmbpwnam(char *name);
+void *startsmbpwent(BOOL update);
+void endsmbpwent(void *vp);
+struct smb_passwd *getsmbpwent(void *vp);
+unsigned long getsmbpwpos(void *vp);
+BOOL setsmbpwpos(void *vp, unsigned long tok);
+BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
+BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
+struct smb_passwd *getsmbpwnam(char *name);
+struct smb_passwd *getsmbpwuid(uid_t smb_userid);
+struct sam_passwd *iterate_getsam21pwnam(char *name);
+struct sam_passwd *iterate_getsam21pwrid(uint32 rid);
+struct sam_passwd *iterate_getsam21pwuid(uid_t uid);
+struct sam_disp_info *getsamdispnam(char *name);
+struct sam_disp_info *getsamdisprid(uint32 rid);
+struct sam_disp_info *getsamdispent(void *vp);
+struct sam_passwd *getsam21pwent(void *vp);
+BOOL add_sam21pwd_entry(struct sam_passwd *newpwd);
+BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override);
+struct sam_passwd *getsam21pwnam(char *name);
+struct sam_passwd *getsam21pwrid(uint32 rid);
+struct sam_passwd *getsam21pwuid(uid_t uid);
+void pdb_init_dispinfo(struct sam_disp_info *user);
+void pdb_init_smb(struct smb_passwd *user);
+void pdb_init_sam(struct sam_passwd *user);
+struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user);
+struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user);
+struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user);
+time_t pdb_get_last_set_time(char *p);
+void pdb_set_logon_time(char *p, int max_len, time_t t);
+void pdb_set_logoff_time(char *p, int max_len, time_t t);
+void pdb_set_kickoff_time(char *p, int max_len, time_t t);
+void pdb_set_can_change_time(char *p, int max_len, time_t t);
+void pdb_set_must_change_time(char *p, int max_len, time_t t);
+void pdb_set_last_set_time(char *p, int max_len, time_t t);
+char *pdb_encode_acct_ctrl(uint16 acct_ctrl);
+uint16 pdb_decode_acct_ctrl(char *p);
+BOOL pdb_gethexpwd(char *p, char *pwd);
+void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl);
+BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
+BOOL pdb_generate_machine_sid(void);
+uid_t pdb_user_rid_to_uid(uint32 u_rid);
+gid_t pdb_group_rid_to_gid(uint32 g_rid);
+uint32 pdb_uid_to_user_rid(uid_t uid);
+uint32 pdb_gid_to_group_rid(gid_t gid);
+BOOL pdb_rid_is_well_known(uint32 rid);
+BOOL pdb_rid_is_user(uint32 rid);
+
+/*The following definitions come from  passdb/smbpass.c  */
+
+struct passdb_ops *file_initialize_password_db(void);
+
+/*The following definitions come from  passdb/smbpassfile.c  */
+
+BOOL do_file_lock(int fd, int waitsecs, int type);
+BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth);
+BOOL pw_file_unlock(int fd, int *plock_depth);
+BOOL trust_password_lock( char *domain, char *name, BOOL update);
+BOOL trust_password_unlock(void);
+BOOL trust_password_delete( char *domain, char *name );
+BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
+BOOL set_trust_account_password( unsigned char *md4_new_pwd);
+
+/*The following definitions come from  passdb/username.c  */
+
+char *get_home_dir(char *user);
+BOOL map_username(char *user);
+struct passwd *Get_Pwnam(char *user,BOOL allow_change);
+BOOL user_in_list(char *user,char *list);
+
 /*The following definitions come from  rpc_client/cli_login.c  */
 
 BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16]);
@@ -1768,10 +1851,6 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum );
 char *DirCacheCheck( char *path, char *name, int snum );
 void DirCacheFlush(int snum);
 
-/*The following definitions come from  smbd/genrand.c  */
-
-void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
-
 /*The following definitions come from  smbd/groupname.c  */
 
 void load_groupname_map(void);
@@ -1817,58 +1896,6 @@ void remove_pending_change_notify_requests_by_mid(int mid);
 void process_pending_change_notify_queue(time_t t);
 int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize);
 
-/*The following definitions come from  smbd/passdb.c  */
-
-BOOL initialize_password_db(void);
-struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid);
-struct smb_passwd *iterate_getsmbpwnam(char *name);
-void *startsmbpwent(BOOL update);
-void endsmbpwent(void *vp);
-struct smb_passwd *getsmbpwent(void *vp);
-unsigned long getsmbpwpos(void *vp);
-BOOL setsmbpwpos(void *vp, unsigned long tok);
-BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
-BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
-struct smb_passwd *getsmbpwnam(char *name);
-struct smb_passwd *getsmbpwuid(uid_t smb_userid);
-struct sam_passwd *iterate_getsam21pwnam(char *name);
-struct sam_passwd *iterate_getsam21pwrid(uint32 rid);
-struct sam_passwd *iterate_getsam21pwuid(uid_t uid);
-struct sam_disp_info *getsamdispnam(char *name);
-struct sam_disp_info *getsamdisprid(uint32 rid);
-struct sam_disp_info *getsamdispent(void *vp);
-struct sam_passwd *getsam21pwent(void *vp);
-BOOL add_sam21pwd_entry(struct sam_passwd *newpwd);
-BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override);
-struct sam_passwd *getsam21pwnam(char *name);
-struct sam_passwd *getsam21pwrid(uint32 rid);
-struct sam_passwd *getsam21pwuid(uid_t uid);
-void pdb_init_dispinfo(struct sam_disp_info *user);
-void pdb_init_smb(struct smb_passwd *user);
-void pdb_init_sam(struct sam_passwd *user);
-struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user);
-struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user);
-struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user);
-time_t pdb_get_last_set_time(char *p);
-void pdb_set_logon_time(char *p, int max_len, time_t t);
-void pdb_set_logoff_time(char *p, int max_len, time_t t);
-void pdb_set_kickoff_time(char *p, int max_len, time_t t);
-void pdb_set_can_change_time(char *p, int max_len, time_t t);
-void pdb_set_must_change_time(char *p, int max_len, time_t t);
-void pdb_set_last_set_time(char *p, int max_len, time_t t);
-char *pdb_encode_acct_ctrl(uint16 acct_ctrl);
-uint16 pdb_decode_acct_ctrl(char *p);
-BOOL pdb_gethexpwd(char *p, char *pwd);
-void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl);
-BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
-BOOL pdb_generate_machine_sid(void);
-uid_t pdb_user_rid_to_uid(uint32 u_rid);
-gid_t pdb_group_rid_to_gid(uint32 g_rid);
-uint32 pdb_uid_to_user_rid(uid_t uid);
-uint32 pdb_gid_to_group_rid(gid_t gid);
-BOOL pdb_rid_is_well_known(uint32 rid);
-BOOL pdb_rid_is_user(uint32 rid);
-
 /*The following definitions come from  smbd/password.c  */
 
 void generate_next_challenge(char *challenge);
@@ -1899,11 +1926,6 @@ BOOL server_validate(char *user, char *domain,
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen);
-
-/*The following definitions come from  smbd/pcap.c  */
-
-BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
-void pcap_printer_fn(void (*fn)(char *, char *));
 
 /*The following definitions come from  smbd/pipes.c  */
 
@@ -2046,21 +2068,6 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 void construct_reply_common(char *inbuf,char *outbuf);
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
-/*The following definitions come from  smbd/smbpass.c  */
-
-struct passdb_ops *file_initialize_password_db(void);
-
-/*The following definitions come from  smbd/smbpassfile.c  */
-
-BOOL do_file_lock(int fd, int waitsecs, int type);
-BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth);
-BOOL pw_file_unlock(int fd, int *plock_depth);
-BOOL trust_password_lock( char *domain, char *name, BOOL update);
-BOOL trust_password_unlock(void);
-BOOL trust_password_delete( char *domain, char *name );
-BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
-BOOL set_trust_account_password( unsigned char *md4_new_pwd);
-
 /*The following definitions come from  smbd/ssl.c  */
 
 int sslutil_init(int isServer);
@@ -2087,11 +2094,4 @@ BOOL unbecome_user(void );
 int smbrun(char *cmd,char *outfile,BOOL shared);
 void become_root(BOOL save_dir) ;
 void unbecome_root(BOOL restore_dir);
-
-/*The following definitions come from  smbd/username.c  */
-
-char *get_home_dir(char *user);
-BOOL map_username(char *user);
-struct passwd *Get_Pwnam(char *user,BOOL allow_change);
-BOOL user_in_list(char *user,char *list);
 #endif /* _PROTO_H_ */
