@@ -854,6 +854,15 @@ static BOOL lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen, prs_struct *ps,
 		return False;
 	if(!prs_uint32("ptr_sid_enum", ps, depth, &sen->ptr_sid_enum))
 		return False;
+
+	/*
+	   if the ptr is NULL, leave here. checked from a real w2k trace.
+	   JFM, 11/23/2001
+	 */
+	
+	if (sen->ptr_sid_enum==0)
+		return True;
+
 	if(!prs_uint32("num_entries2", ps, depth, &sen->num_entries2))
 		return False;
 
