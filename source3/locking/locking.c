@@ -168,7 +168,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	
 	if (!OPEN_FSP(fsp) || !fsp->can_lock || (fsp->conn != conn)) {
 		*eclass = ERRDOS;
-		*ecode = ERRlock;
+		*ecode = ERRbadfid;
 		return False;
 	}
 	
@@ -187,7 +187,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		*eclass = ERRDOS;
-		*ecode = ERRlock;
+		*ecode = ERRnotlocked;
 		return False;
 	}
 
