@@ -27,7 +27,9 @@ sub gen_dispatch_switch($)
 		next if ($d->{TYPE} ne "FUNCTION");
 
 		pidl "\tcase $count: {\n";
-		pidl "\t\tNTSTATUS result;\n";
+		if ($d->{RETURN_TYPE} && $d->{RETURN_TYPE} ne "void") {
+			pidl "\t\tNTSTATUS result;\n";
+		}
 		pidl "\t\tstruct $d->{NAME} *r2 = r;\n";
 		pidl "\t\tif (DEBUGLEVEL > 10) {\n";
 		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($d->{NAME}, NDR_IN, r2);\n";
