@@ -47,9 +47,10 @@ static void netlogon_unbind(struct dcesrv_connection *conn, const struct dcesrv_
 {
 	struct server_pipe_state *pipe_state = conn->private;
 
-	if (pipe_state)
+	if (pipe_state) {
 		talloc_destroy(pipe_state->mem_ctx);
-	
+	}
+
 	conn->private = NULL;
 }
 
@@ -424,12 +425,138 @@ static WERROR netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 
 */
+
+#if 0
+
+static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_LogonSamLogon *r)
+{
+	struct server_pipe_state *pipe_state = dce_call->conn->private;
+
+	struct auth_context *auth_context;
+	struct auth_usersupplied_info *user_info;
+	struct auth_serversupplied_info *server_info;
+	NTSTATUS nt_status;
+	const uint8_t *chal;
+	
+	
+	switch (r->in.logon_level) {
+	case 1:
+	case 3:
+		creds_arcfour_crypt(pipe_state->creds, 
+				    r->in.logon.password->lmpassword.hash, 
+				    sizeof(r->in.logon.password->lmpassword.hash));
+		creds_arcfour_crypt(pipe_state->creds, 
+				    r->in.logon.password->ntpassword.hash, 
+				    sizeof(r->in.logon.password->ntpassword.hash));
+
+		nt_status = make_auth_context_subsystem(&auth_context);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		chal = auth_context->get_ntlm_challenge(auth_context);
+		nt_status = make_user_info_netlogon_interactive(&user_info,
+								r->in.logon.password->identity_info.account_name.string,
+								r->in.logon.password->identity_info.domain_name.string,
+								r->in.logon.password->identity_info.workstation.string,
+								chal,
+								&r->in.logon.password->lmpassword,
+								&r->in.logon.password->ntpassword);
+		break;
+		
+	case 2:
+	case 6:
+		nt_status = make_auth_context_fixed(&auth_context, r->in.logon.network->challenge);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		nt_status = make_user_info_netlogon_network(&user_info,
+							    r->in.logon.network->identity_info.account_name.string,
+							    r->in.logon.network->identity_info.domain_name.string,
+							    r->in.logon.network->identity_info.workstation.string,
+							    r->in.logon.network->nt.data, r->in.logon.network->nt.length,
+							    r->in.logon.network->lm.data, r->in.logon.network->lm.length);
+		break;
+	default:
+		free_auth_context(&auth_context);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	nt_status = auth_context->check_ntlm_password(auth_context,
+						      user_info, 
+						      &server_info);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		free_auth_context(&auth_context);
+		return nt_status;
+	}
+	free_auth_context(&auth_context);
+
+	switch (r->in.validation_level) {
+	case 2:
+	{
+		struct netr_SamInfo *sam;
+		sam = talloc_p(mem_ctx, struct netr_SamInfo);
+		r->out.validation.sam = sam;
+			
+		sam->last_logon = server_info->last_logon;
+		sam->last_logoff = server_info->last_logoff;
+		sam->acct_expiry = server_info->acct_expiry;
+		sam->last_password_change = server_info->last_password_change;
+		sam->allow_password_change = server_info->allow_password_change;
+		sam->force_password_change = server_info->force_password_change;
+
+		sam->account_name.string = talloc_strdup(mem_ctx, server_info->account_name);
+		sam->full_name.string = talloc_strdup(mem_ctx, server_info->full_name);
+		sam->logon_script.string = talloc_strdup(mem_ctx, server_info->account_name);
+		sam->profile_path.string = talloc_strdup(mem_ctx, server_info->profile_path);
+		sam->home_directory.string = talloc_strdup(mem_ctx, server_info->home_directory);
+		sam->home_drive.string = talloc_strdup(mem_ctx, server_info->home_drive);
+
+		sam->logon_count = server_info->logon_count;
+		sam->bad_password_count = sam->bad_password_count;
+		sam->rid = server_info->user_sid->sub_auths[server_info->user_sid->num_auths-1];
+		sam->primary_gid = server_info->primary_group_sid->sub_auths[server_info->primary_group_sid->num_auths-1];
+		sam->group_count = 0;
+		sam->groupids = NULL;
+
+		sam->acct_flags = server_info->acct_flags;
+
+		sam->domain.string = talloc_strdup(mem_ctx, server_info->domain);
+
+		/* need to finish */
+
+		break;
+	}
+	case 3:
+	{
+		struct netr_SamInfo2 *sam;
+		sam = talloc_p(mem_ctx, struct netr_SamInfo2);
+		r->out.validation.sam2 = sam;
+		
+		break;
+	}
+	default:
+		break;
+	}
+
+	r->out.authoritative = 1;
+
+	return NT_STATUS_OK;
+}
+#else 
 static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonSamLogon *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
-
+#endif
 
 /* 
   netr_LogonSamLogoff 

@@ -170,6 +170,11 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 	DEBUG(3, ("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
 		  user_info->domain.str, user_info->internal_username.str, user_info->wksta_name.str));
 
+	if (auth_context->challenge.length == 0) {
+		/* get a challenge, if we have not asked for one yet */
+		get_ntlm_challenge(auth_context);
+	}
+
 	if (auth_context->challenge.length != 8) {
 		DEBUG(0, ("check_ntlm_password:  Invalid challenge stored for this auth context - cannot continue\n"));
 		return NT_STATUS_LOGON_FAILURE;
@@ -251,10 +256,10 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
  Clear out a auth_context, and destroy the attached TALLOC_CTX
 ***************************************************************************/
 
-static void free_auth_context(struct auth_context **auth_context)
+void free_auth_context(struct auth_context **auth_context)
 {
 	struct auth_methods *auth_method;
-
+	
 	if (*auth_context) {
 		/* Free private data of context's authentication methods */
 		for (auth_method = (*auth_context)->auth_method_list; auth_method; auth_method = auth_method->next) {
@@ -290,7 +295,6 @@ static NTSTATUS make_auth_context(struct auth_context **auth_context)
 	(*auth_context)->mem_ctx = mem_ctx;
 	(*auth_context)->check_ntlm_password = check_ntlm_password;
 	(*auth_context)->get_ntlm_challenge = get_ntlm_challenge;
-	(*auth_context)->free = free_auth_context;
 	
 	return NT_STATUS_OK;
 }

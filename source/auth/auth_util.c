@@ -157,14 +157,13 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
  Decrypt and encrypt the passwords.
 ****************************************************************************/
 
-BOOL make_user_info_netlogon_network(struct auth_usersupplied_info **user_info, 
+NTSTATUS make_user_info_netlogon_network(struct auth_usersupplied_info **user_info, 
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *wksta_name, 
 				     const uint8_t *lm_network_password, int lm_password_len,
 				     const uint8_t *nt_network_password, int nt_password_len)
 {
-	BOOL ret;
 	NTSTATUS nt_status;
 	DATA_BLOB lm_blob = data_blob(lm_network_password, lm_password_len);
 	DATA_BLOB nt_blob = data_blob(nt_network_password, nt_password_len);
@@ -177,11 +176,9 @@ BOOL make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 				       NULL, NULL, NULL,
 				       True);
 	
-	ret = NT_STATUS_IS_OK(nt_status) ? True : False;
-		
 	data_blob_free(&lm_blob);
 	data_blob_free(&nt_blob);
-	return ret;
+	return nt_status;
 }
 
 /****************************************************************************
@@ -189,99 +186,51 @@ BOOL make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
  Decrypt and encrypt the passwords.
 ****************************************************************************/
 
-BOOL make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_info, 
-					 const char *smb_name, 
-					 const char *client_domain, 
-					 const char *wksta_name, 
-					 const uint8_t chal[8], 
-					 const uint8_t lm_interactive_password[16], 
-					 const uint8_t nt_interactive_password[16], 
-					 const uint8_t *dc_sess_key)
+NTSTATUS make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_info, 
+					     const char *smb_name, 
+					     const char *client_domain, 
+					     const char *wksta_name, 
+					     const uint8_t chal[8], 
+					     const struct samr_Password *lm_interactive_password, 
+					     const struct samr_Password *nt_interactive_password)
 {
-	char lm_password[16];
-	char nt_password[16];
+	NTSTATUS nt_status;
+	DATA_BLOB local_lm_blob;
+	DATA_BLOB local_nt_blob;
+	
+	DATA_BLOB lm_interactive_blob;
+	DATA_BLOB nt_interactive_blob;
 	uint8_t local_lm_response[24];
 	uint8_t local_nt_response[24];
-	uint8_t key[16];
 	
-	ZERO_STRUCT(key);
-	memcpy(key, dc_sess_key, 8);
+	SMBOWFencrypt(lm_interactive_password->hash, chal, local_lm_response);
+	SMBOWFencrypt(nt_interactive_password->hash, chal, local_nt_response);
 	
-	if (lm_interactive_password) memcpy(lm_password, lm_interactive_password, sizeof(lm_password));
-	if (nt_interactive_password) memcpy(nt_password, nt_interactive_password, sizeof(nt_password));
+	local_lm_blob = data_blob(local_lm_response, 
+				  sizeof(local_lm_response));
+	lm_interactive_blob = data_blob(lm_interactive_password, 
+					sizeof(lm_interactive_password));
 	
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("key:"));
-	dump_data(100, (char *)key, sizeof(key));
+	local_nt_blob = data_blob(local_nt_response, 
+				  sizeof(local_nt_response));
+	nt_interactive_blob = data_blob(nt_interactive_password, 
+					sizeof(nt_interactive_password));
 	
-	DEBUG(100,("lm owf password:"));
-	dump_data(100, lm_password, sizeof(lm_password));
+	nt_status = make_user_info_map(user_info, 
+				       smb_name, client_domain, 
+				       wksta_name, 
+				       &local_lm_blob,
+				       &local_nt_blob,
+				       &lm_interactive_blob,
+				       &nt_interactive_blob,
+				       NULL,
+				       True);
 	
-	DEBUG(100,("nt owf password:"));
-	dump_data(100, nt_password, sizeof(nt_password));
-#endif
-	
-	if (lm_interactive_password)
-		arcfour_crypt((uint8_t *)lm_password, key, sizeof(lm_password));
-	
-	if (nt_interactive_password)
-		arcfour_crypt((uint8_t *)nt_password, key, sizeof(nt_password));
-	
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("decrypt of lm owf password:"));
-	dump_data(100, lm_password, sizeof(lm_password));
-	
-	DEBUG(100,("decrypt of nt owf password:"));
-	dump_data(100, nt_password, sizeof(nt_password));
-#endif
-	
-	if (lm_interactive_password)
-		SMBOWFencrypt((const uint8_t *)lm_password, chal, local_lm_response);
-
-	if (nt_interactive_password)
-		SMBOWFencrypt((const uint8_t *)nt_password, chal, local_nt_response);
-	
-	/* Password info paranoia */
-	ZERO_STRUCT(key);
-
-	{
-		BOOL ret;
-		NTSTATUS nt_status;
-		DATA_BLOB local_lm_blob;
-		DATA_BLOB local_nt_blob;
-
-		DATA_BLOB lm_interactive_blob;
-		DATA_BLOB nt_interactive_blob;
-		
-		if (lm_interactive_password) {
-			local_lm_blob = data_blob(local_lm_response, sizeof(local_lm_response));
-			lm_interactive_blob = data_blob(lm_password, sizeof(lm_password));
-			ZERO_STRUCT(lm_password);
-		}
-		
-		if (nt_interactive_password) {
-			local_nt_blob = data_blob(local_nt_response, sizeof(local_nt_response));
-			nt_interactive_blob = data_blob(nt_password, sizeof(nt_password));
-			ZERO_STRUCT(nt_password);
-		}
-
-		nt_status = make_user_info_map(user_info, 
-		                               smb_name, client_domain, 
-		                               wksta_name, 
-		                               lm_interactive_password ? &local_lm_blob : NULL,
-		                               nt_interactive_password ? &local_nt_blob : NULL,
-		                               lm_interactive_password ? &lm_interactive_blob : NULL,
-		                               nt_interactive_password ? &nt_interactive_blob : NULL,
-		                               NULL,
-		                               True);
-
-		ret = NT_STATUS_IS_OK(nt_status) ? True : False;
-		data_blob_free(&local_lm_blob);
-		data_blob_free(&local_nt_blob);
-		data_blob_free(&lm_interactive_blob);
-		data_blob_free(&nt_interactive_blob);
-		return ret;
-	}
+	data_blob_free(&local_lm_blob);
+	data_blob_free(&local_nt_blob);
+	data_blob_free(&lm_interactive_blob);
+	data_blob_free(&nt_interactive_blob);
+	return nt_status;
 }
 
 
@@ -531,6 +480,26 @@ NTSTATUS make_server_info_guest(struct auth_serversupplied_info **server_info)
 	   and it is all zeros! */
 	(*server_info)->user_session_key = data_blob(zeros, sizeof(zeros));
 	(*server_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
+
+	(*server_info)->account_name = "";
+	(*server_info)->domain = "";
+	(*server_info)->full_name = "Anonymous";
+	(*server_info)->logon_script = "";
+	(*server_info)->profile_path = "";
+	(*server_info)->home_directory = "";
+	(*server_info)->home_drive = "";
+
+	(*server_info)->last_logon = 0;
+	(*server_info)->last_logoff = 0;
+	(*server_info)->acct_expiry = 0;
+	(*server_info)->last_password_change = 0;
+	(*server_info)->allow_password_change = 0;
+	(*server_info)->force_password_change = 0;
+
+	(*server_info)->logon_count = 0;
+	(*server_info)->bad_password_count = 0;
+
+	(*server_info)->acct_flags = ACB_NORMAL;
 
 	return nt_status;
 }

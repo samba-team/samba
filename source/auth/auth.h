@@ -71,20 +71,22 @@ struct auth_serversupplied_info
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
 
-	char *account_name;
-	char *full_name;
-	char *logon_script;
-	char *profile_path;
-	char *home_dir;
-	char *home_drive;
-	
-	NTTIME logon_time;
-	NTTIME logoff_time;
-	NTTIME kickoff_time;
-	NTTIME password_last_set;
-	NTTIME password_can_change;
-	NTTIME password_must_change;
+	const char *account_name;
+	const char *domain;
 
+	const char *full_name;
+	const char *logon_script;
+	const char *profile_path;
+	const char *home_directory;
+	const char *home_drive;
+	
+	NTTIME last_logon;
+	NTTIME last_logoff;
+	NTTIME acct_expiry;
+	NTTIME last_password_change;
+	NTTIME allow_password_change;
+	NTTIME force_password_change;
+	
 	uint16 logon_count;
 	uint16 bad_password_count;
 	
@@ -121,7 +123,6 @@ struct auth_context {
 					const struct auth_usersupplied_info *user_info, 
 					struct auth_serversupplied_info **server_info);
 	NTSTATUS (*nt_status_squash)(NTSTATUS nt_status);
-	void (*free)(struct auth_context **auth_context);
 };
 
 struct auth_methods
