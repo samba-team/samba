@@ -823,7 +823,7 @@ static int build_dgram(char *buf,struct packet_struct *p)
 void make_nmb_name( struct nmb_name *n, const char *name, int type)
 {
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
-	push_ascii(n->name, name, 16, STR_TERMINATE|STR_UPPER);
+	push_ascii(n->name, name, sizeof(n->name), STR_TERMINATE|STR_UPPER);
 	n->name_type = (unsigned int)type & 0xFF;
 	StrnCpy( n->scope, global_scope(), 63 );
 	strupper_m( n->scope );
