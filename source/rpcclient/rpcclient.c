@@ -352,38 +352,33 @@ static NTSTATUS cmd_none(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK; 
 }
 
-static NTSTATUS cmd_schannel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			     int argc, const char **argv)
+static NTSTATUS setup_schannel(struct cli_state *cli, int pipe_auth_flags,
+			       int argc, const char **argv)
 {
 	NTSTATUS ret;
+	static uchar zeros[16];
 	uchar trust_password[16];
 	uint32 sec_channel_type;
-	static uchar zeros[16];
-
 	if (argc == 2) {
 		strhex_to_str((char *)cli->auth_info.sess_key,
 			      strlen(argv[1]), 
 			      argv[1]);
 		memcpy(cli->sess_key, cli->auth_info.sess_key, sizeof(cli->sess_key));
 
-		cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
-		cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
-		cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
-
+		cli->pipe_auth_flags = pipe_auth_flags;
 		return NT_STATUS_OK;
 	}
 
 	/* Cleanup */
 
 	if ((memcmp(cli->auth_info.sess_key, zeros, sizeof(cli->auth_info.sess_key)) != 0)) {
-		if (cli->pipe_auth_flags == (AUTH_PIPE_NETSEC|AUTH_PIPE_SIGN|AUTH_PIPE_SEAL)) {
+		if (cli->pipe_auth_flags == pipe_auth_flags) {
 			/* already in this mode nothing to do */
 			return NT_STATUS_OK;
 		} else {
-			/* schannel is setup, just need to use it again */
-			cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
-			cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
-			cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
+			/* schannel is setup, just need to use it again with new flags */
+			cli->pipe_auth_flags = pipe_auth_flags;
+
 			if (cli->nt_pipe_fnum != 0)
 				cli_nt_session_close(cli);
 			return NT_STATUS_OK;
@@ -393,17 +388,13 @@ static NTSTATUS cmd_schannel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (cli->nt_pipe_fnum != 0)
 		cli_nt_session_close(cli);
 
-	cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
-	cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
-	cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
-
 	if (!secrets_fetch_trust_account_password(lp_workgroup(),
 						  trust_password,
 						  NULL, &sec_channel_type)) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ret = cli_nt_setup_netsec(cli, sec_channel_type, trust_password);
+	ret = cli_nt_setup_netsec(cli, sec_channel_type, pipe_auth_flags, trust_password);
 	if (NT_STATUS_IS_OK(ret)) {
 		char *hex_session_key;
 		hex_encode(cli->auth_info.sess_key,
@@ -414,6 +405,24 @@ static NTSTATUS cmd_schannel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 	return ret;
 }
+
+
+static NTSTATUS cmd_schannel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			     int argc, const char **argv)
+{
+	d_printf("Setting schannel - sign and seal\n");
+	return setup_schannel(cli, AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL, 
+			      argc, argv);
+}
+
+static NTSTATUS cmd_schannel_sign(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			     int argc, const char **argv)
+{
+	d_printf("Setting schannel - sign only\n");
+	return setup_schannel(cli, AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN, 
+			      argc, argv);
+}
+
 
 /* Built in rpcclient commands */
 
@@ -430,6 +439,7 @@ static struct cmd_set rpcclient_commands[] = {
 	{ "sign", RPC_RTYPE_NTSTATUS, cmd_sign, NULL,	  -1,	"Force RPC pipe connections to be signed", "" },
 	{ "seal", RPC_RTYPE_NTSTATUS, cmd_seal, NULL,	  -1,	"Force RPC pipe connections to be sealed", "" },
 	{ "schannel", RPC_RTYPE_NTSTATUS, cmd_schannel, NULL,	  -1,	"Force RPC pipe connections to be sealed with 'schannel' (NETSEC).  Assumes valid machine account to this domain controller.", "" },
+	{ "schannelsign", RPC_RTYPE_NTSTATUS, cmd_schannel_sign, NULL,	  -1,	"Force RPC pipe connections to be signed (not sealed) with 'schannel' (NETSEC).  Assumes valid machine account to this domain controller.", "" },
 	{ "none", RPC_RTYPE_NTSTATUS, cmd_none, NULL,	  -1,	"Force RPC pipe connections to have no special properties", "" },
 
 	{ NULL }
@@ -522,9 +532,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	/* some of the DsXXX commands use the netlogon pipe */
 
 	if (lp_client_schannel() && (cmd_entry->pipe_idx == PI_NETLOGON) && !(cli->pipe_auth_flags & AUTH_PIPE_NETSEC)) {
-		/* The 7 here seems to be required to get Win2k not to downgrade us
-		   to NT4.  Actually, anything other than 1ff would seem to do... */
-		uint32 neg_flags = 0x000001ff;
+		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 		uint32 sec_channel_type;
 	
 		if (!secrets_fetch_trust_account_password(lp_workgroup(),
