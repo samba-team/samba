@@ -89,7 +89,7 @@ BOOL message_init(void)
 		return False;
 	}
 
-	CatchSignal(SIGUSR1, sig_usr1);
+	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
 
 	message_register(MSG_PING, ping_message);
 

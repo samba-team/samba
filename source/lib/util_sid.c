@@ -51,8 +51,12 @@ typedef struct _known_sid_users {
 } known_sid_users;
 
 /* static known_sid_users no_users[] = {{0, 0, NULL}}; */
-static known_sid_users everyone_users[] = {{ 0, SID_NAME_WKN_GRP, "Everyone" }, {0, 0, NULL}};
-static known_sid_users creator_owner_users[] = {{ 0, SID_NAME_ALIAS, "Creator Owner" }, {0, 0, NULL}};
+static known_sid_users everyone_users[] = {
+	{ 0, SID_NAME_WKN_GRP, "Everyone" },
+	{0, (enum SID_NAME_USE)0, NULL}};
+static known_sid_users creator_owner_users[] = {
+	{ 0, SID_NAME_ALIAS, "Creator Owner" },
+	{0, (enum SID_NAME_USE)0, NULL}};
 static known_sid_users nt_authority_users[] = {
 	{  1, SID_NAME_ALIAS, "Dialup" },
 	{  2, SID_NAME_ALIAS, "Network"},
@@ -64,7 +68,7 @@ static known_sid_users nt_authority_users[] = {
 	{  9, SID_NAME_ALIAS, "ServerLogon"},
 	{ 11, SID_NAME_ALIAS, "Authenticated Users"},
 	{ 18, SID_NAME_ALIAS, "SYSTEM"},
-	{  0, 0, NULL}};
+	{  0, (enum SID_NAME_USE)0, NULL}};
 
 static struct sid_name_map_info
 {
