@@ -143,14 +143,11 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
                 return NT_STATUS_UNSUCCESSFUL;
 	}
 
-        if (!(*p = dcerpc_pipe_init(cli->tree))) {
-                return NT_STATUS_NO_MEMORY;
-	}
- 
-	status = dcerpc_pipe_open_smb(*p, pipe_name, pipe_uuid, pipe_version);
+	status = dcerpc_pipe_open_smb(p, cli->tree, pipe_name, pipe_uuid, pipe_version);
 	if (!NT_STATUS_IS_OK(status)) {
                 printf("Open of pipe '%s' failed with error (%s)\n",
 		       pipe_name, nt_errstr(status));
+		torture_close_connection(cli);
                 return status;
         }
 
@@ -163,17 +160,8 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 /* close a rpc connection to a named pipe */
 NTSTATUS torture_rpc_close(struct dcerpc_pipe *p)
 {
-	union smb_close io;
-	NTSTATUS status;
-
-	io.close.level = RAW_CLOSE_CLOSE;
-	io.close.in.fnum = p->fnum;
-	io.close.in.write_time = 0;
-	status = smb_raw_close(p->tree, &io);
-
 	dcerpc_pipe_close(p);
-
-	return status;
+	return NT_STATUS_OK;
 }
 
 

@@ -40,10 +40,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(struct cli_tree *tree)
 
 	p->reference_count = 0;
 	p->mem_ctx = mem_ctx;
-	p->tree = tree;
-	p->tree->reference_count++;
 	p->call_id = 1;
-	p->fnum = 0;
 
 	return p;
 }
@@ -54,7 +51,7 @@ void dcerpc_pipe_close(struct dcerpc_pipe *p)
 	if (!p) return;
 	p->reference_count--;
 	if (p->reference_count <= 0) {
-		cli_tree_close(p->tree);
+		p->transport.shutdown_pipe(p);
 		talloc_destroy(p->mem_ctx);
 	}
 }
@@ -167,7 +164,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	status = dcerpc_raw_packet(p, mem_ctx, &blob, &blob_out);
+	status = p->transport.full_request(p, mem_ctx, &blob, &blob_out);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 		return status;
@@ -269,7 +266,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 			return status;
 		}
 		
-		status = dcerpc_raw_packet_initial(p, mem_ctx, &blob_in);
+		status = p->transport.initial_request(p, mem_ctx, &blob_in);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}		
@@ -294,7 +291,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 	}
 
 	/* send the pdu and get the initial response pdu */
-	status = dcerpc_raw_packet(p, mem_ctx, &blob_in, &blob_out);
+	status = p->transport.full_request(p, mem_ctx, &blob_in, &blob_out);
 
 	status = dcerpc_pull(&blob_out, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -320,7 +317,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 	while (!(pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 		uint32 length;
 
-		status = dcerpc_raw_packet_secondary(p, mem_ctx, &blob_out);
+		status = p->transport.secondary_request(p, mem_ctx, &blob_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -596,5 +593,8 @@ failed:
 */
 const char *dcerpc_server_name(struct dcerpc_pipe *p)
 {
-	return p->tree->session->transport->called.name;
+	if (!p->transport.peer_name) {
+		return "";
+	}
+	return p->transport.peer_name(p);
 }
