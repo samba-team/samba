@@ -583,7 +583,7 @@ typedef struct connection_struct
 
 	uid_t uid;		/* uid of user who *opened* this connection */
 	gid_t gid;		/* gid of user who *opened* this connection */
-	char client_address[18];	/* string version of client ip address */
+	char client_address[18]; /* String version of client IP address. */
 
 	/* This groups info is valid for the user that *opened* the connection */
 	int ngroups;
@@ -1795,7 +1795,6 @@ extern int chain_size;
 
 #define KERNEL_OPLOCK_CAPABILITY 0x1
 
-#if defined(HAVE_KERNEL_OPLOCKS)
 /*
  * Oplock break command code sent via the kernel interface.
  *
@@ -1812,7 +1811,18 @@ extern int chain_size;
 #define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
 
-#endif /* HAVE_KERNEL_OPLOCKS */
+
+/* if a kernel does support oplocks then a structure of the following
+   typee is used to describe how to interact with the kernel */
+struct kernel_oplocks {
+	BOOL (*receive_message)(fd_set *fds, char *buffer, int buffer_len);
+	BOOL (*set_oplock)(files_struct *fsp, int oplock_type);
+	void (*release_oplock)(files_struct *fsp);
+	BOOL (*parse_message)(char *msg_start, int msg_len, SMB_INO_T *inode, SMB_DEV_T *dev);
+	BOOL (*msg_waiting)(fd_set *fds);
+	int notification_fd;
+};
+
 
 #define CMD_REPLY 0x8000
 

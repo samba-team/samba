@@ -28,7 +28,7 @@ extern fstring global_myworkgroup;
 extern fstring global_sam_name;
 extern pstring global_myname;
 
-int am_parent = 1;
+static int am_parent = 1;
 
 /* the last message the was processed */
 int last_message = -1;
@@ -62,7 +62,7 @@ int smbd_server_fd(void)
 	return server_fd;
 }
 
-void smbd_set_server_fd(int fd)
+static void smbd_set_server_fd(int fd)
 {
 	server_fd = fd;
 	client_setfd(fd);
@@ -289,13 +289,6 @@ max can be %d\n",
 				   that client substitutions will be
 				   done correctly in the process.  */
 				reset_globals_after_fork();
-
-                /*
-                 * Ensure this child has kernel oplock
-                 * capabilities, but not it's children.
-                 */
-                set_process_capability(KERNEL_OPLOCK_CAPABILITY, True);
-                set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
 
 				return True; 
 			}
@@ -747,8 +740,6 @@ static void usage(char *pname)
 		mkdir(lp_lockdir(), 0755);
 	}
 
-	check_kernel_oplocks();
-
 	if (is_daemon) {
 		pidfile_create("smbd");
 	}
@@ -757,20 +748,20 @@ static void usage(char *pname)
 		exit(1);
 
 	/*
-	 * Note that this call should be done after the fork() call
-	 * in open_sockets(), as some versions of the locking shared
-	 * memory code register openers in a flat file.
+	 * everything after this point is run after the fork()
 	 */ 
 
-	if (!locking_init(0))
+	if (!locking_init(0)) {
 		exit(1);
+	}
 
 	if (!print_backend_init()) {
 		exit(1);
 	}
 
-	if(!pwdb_initialise(True))
+	if(!pwdb_initialise(True)) {
 		exit(1);
+	}
 
 	/* possibly reload the services file. */
 	reload_services(True);
@@ -780,9 +771,10 @@ static void usage(char *pname)
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
 	}
 
-	/* Setup the oplock IPC socket. */
-	if( !open_oplock_ipc() )
+	/* Setup oplocks */
+	if (!init_oplocks()) {
 		exit(1);
+	}
 
 	smbd_process();
 	

@@ -267,6 +267,8 @@ SIDDB_OBJ = lib/sids.o lib/util_seaccess.o
 
 PROFILE_OBJ = profile/profile.o
 
+OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
+
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		lib/set_uid.o smbd/dfree.o smbd/dir.o smbd/password.o \
 		lib/util_unixsd.o \
@@ -276,7 +278,7 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		smbd/message.o smbd/nttrans.o smbd/pipes.o \
 		smbd/$(QUOTAOBJS) smbd/reply.o smbd/ssl.o smbd/trans2.o \
 		smbd/uid.o smbd/dosmode.o smbd/filename.o smbd/open.o \
-		smbd/close.o smbd/blocking.o smbd/process.o smbd/oplock.o \
+		smbd/close.o smbd/blocking.o smbd/process.o \
 		smbd/service.o smbd/error.o smbd/vfs.o smbd/vfs-wrap.o \
 		smbd/challenge.o  lib/util_pwdb.o smbd/afsticket.o \
 		printing/printfsp.o
@@ -365,7 +367,7 @@ SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(UNIXPASSDB_OBJ) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) \
-		$(PROFILE_OBJ) 
+		$(PROFILE_OBJ) $(OPLOCK_OBJ)
 
 SMBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(LIBSURS)
 

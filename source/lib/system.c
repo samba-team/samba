@@ -391,6 +391,8 @@ int sys_chroot(const char *dname)
 		DEBUG(1,("WARNING: no chroot!\n"));
 		done=1;
 	}
+	errno = ENOSYS;
+	return -1;
 #else
 	return(chroot(dname));
 #endif
@@ -438,13 +440,12 @@ struct hostent *sys_gethostbyname(const char *name)
 }
 
 
+#if defined(HAVE_IRIX_SPECIFIC_CAPABILITIES)
 /**************************************************************************
  Try and abstract process capabilities (for systems that have them).
 ****************************************************************************/
-
-BOOL set_process_capability( uint32 cap_flag, BOOL enable )
+static BOOL set_process_capability( uint32 cap_flag, BOOL enable )
 {
-#if defined(HAVE_IRIX_SPECIFIC_CAPABILITIES)
   if(cap_flag == KERNEL_OPLOCK_CAPABILITY)
   {
     cap_t cap = cap_get_proc();
@@ -471,7 +472,6 @@ BOOL set_process_capability( uint32 cap_flag, BOOL enable )
 
     DEBUG(10,("set_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
   }
-#endif
   return True;
 }
 
@@ -479,9 +479,8 @@ BOOL set_process_capability( uint32 cap_flag, BOOL enable )
  Try and abstract inherited process capabilities (for systems that have them).
 ****************************************************************************/
 
-BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
+static BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
 {
-#if defined(HAVE_IRIX_SPECIFIC_CAPABILITIES)
   if(cap_flag == KERNEL_OPLOCK_CAPABILITY)
   {
     cap_t cap = cap_get_proc();
@@ -508,9 +507,9 @@ BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
 
     DEBUG(10,("set_inherited_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
   }
-#endif
   return True;
 }
+#endif
 
 /****************************************************************************
 gain the oplock capability from the kernel if possible

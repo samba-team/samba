@@ -460,8 +460,6 @@ char *sys_getwd(char *s);
 int sys_chown(const char *fname,uid_t uid,gid_t gid);
 int sys_chroot(const char *dname);
 struct hostent *sys_gethostbyname(const char *name);
-BOOL set_process_capability( uint32 cap_flag, BOOL enable );
-BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable );
 void oplock_set_capability(BOOL this_process, BOOL inherit);
 long sys_random(void);
 void sys_srandom(unsigned int seed);
@@ -3946,8 +3944,6 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 /*The following definitions come from  smbd/oplock.c  */
 
 int32 get_number_of_exclusive_open_oplocks(void);
-BOOL setup_kernel_oplock_pipe(void);
-BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
@@ -3958,7 +3954,15 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token);
 BOOL request_oplock_break(share_mode_entry *share_entry, 
                           SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
-void check_kernel_oplocks(void);
+BOOL init_oplocks(void);
+
+/*The following definitions come from  smbd/oplock_irix.c  */
+
+struct kernel_oplocks *irix_init_kernel_oplocks(void) ;
+
+/*The following definitions come from  smbd/oplock_linux.c  */
+
+struct kernel_oplocks *linux_init_kernel_oplocks(void) ;
 
 /*The following definitions come from  smbd/password.c  */
 

@@ -26,11 +26,6 @@ extern int DEBUGLEVEL;
 /* Oplock ipc UDP socket. */
 static int oplock_sock = -1;
 uint16 global_oplock_port = 0;
-static int oplock_pipe_read = -1;
-
-#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-static int oplock_pipe_write = -1;
-#endif
 
 /* Current number of oplocks we have outstanding. */
 static int32 exclusive_oplocks_open = 0;
@@ -39,6 +34,8 @@ BOOL global_client_failed_oplock_break = False;
 BOOL global_oplock_break = False;
 
 extern int smb_read_error;
+
+static struct kernel_oplocks *koplocks;
 
 static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, BOOL local);
 
@@ -52,200 +49,9 @@ int32 get_number_of_exclusive_open_oplocks(void)
 }
 
 
-#if HAVE_KERNEL_OPLOCKS_IRIX
-/****************************************************************************
-test to see if IRIX kernel oplocks work
-****************************************************************************/
-static BOOL irix_oplocks_available(void)
-{
-	int fd;
-	int pfd[2];
-	pstring tmpname;
-
-	oplock_set_capability(True, True);
-
-	slprintf(tmpname,sizeof(tmpname)-1, "%s/koplock.%d", lp_lockdir(), (int)sys_getpid());
-
-	if(pipe(pfd) != 0) {
-		DEBUG(0,("check_kernel_oplocks: Unable to create pipe. Error was %s\n",
-			 strerror(errno) ));
-		return False;
-	}
-
-	if((fd = sys_open(tmpname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC, 0600)) < 0) {
-		DEBUG(0,("check_kernel_oplocks: Unable to open temp test file %s. Error was %s\n",
-			 tmpname, strerror(errno) ));
-		unlink( tmpname );
-		close(pfd[0]);
-		close(pfd[1]);
-		return False;
-	}
-
-	unlink( tmpname );
-
-	if(fcntl(fd, F_OPLKREG, pfd[1]) == -1) {
-		DEBUG(0,("check_kernel_oplocks: Kernel oplocks are not available on this machine. \
-Disabling kernel oplock support.\n" ));
-		close(pfd[0]);
-		close(pfd[1]);
-		close(fd);
-		return False;
-	}
-
-	if(fcntl(fd, F_OPLKACK, OP_REVOKE) < 0 ) {
-		DEBUG(0,("check_kernel_oplocks: Error when removing kernel oplock. Error was %s. \
-Disabling kernel oplock support.\n", strerror(errno) ));
-		close(pfd[0]);
-		close(pfd[1]);
-		close(fd);
-		return False;
-	}
-
-	close(pfd[0]);
-	close(pfd[1]);
-	close(fd);
-
-	return True;
-}
-#endif
-
-/****************************************************************************
- Setup the kernel level oplock backchannel for this process.
-****************************************************************************/
-BOOL setup_kernel_oplock_pipe(void)
-{
-#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-	if(lp_kernel_oplocks()) {
-		int pfd[2];
-
-		if(pipe(pfd) != 0) {
-			DEBUG(0,("setup_kernel_oplock_pipe: Unable to create pipe. Error was %s\n",
-				 strerror(errno) ));
-			return False;
-		}
-
-		oplock_pipe_read = pfd[0];
-		oplock_pipe_write = pfd[1];
-	}
-#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
-	return True;
-}
-
-/****************************************************************************
- Open the oplock IPC socket communication.
-****************************************************************************/
-
-BOOL open_oplock_ipc(void)
-{
-  struct sockaddr_in sock_name;
-  int len = sizeof(sock_name);
-
-  DEBUG(3,("open_oplock_ipc: opening loopback UDP socket.\n"));
-
-  /* Open a lookback UDP socket on a random port. */
-  oplock_sock = open_socket_in(SOCK_DGRAM, 0, 0, htonl(INADDR_LOOPBACK),False);
-  if (oplock_sock == -1)
-  {
-    DEBUG(0,("open_oplock_ipc: Failed to get local UDP socket for \
-address %lx. Error was %s\n", (long)htonl(INADDR_LOOPBACK), strerror(errno)));
-    global_oplock_port = 0;
-    return(False);
-  }
-
-  /* Find out the transient UDP port we have been allocated. */
-  if(getsockname(oplock_sock, (struct sockaddr *)&sock_name, &len)<0)
-  {
-    DEBUG(0,("open_oplock_ipc: Failed to get local UDP port. Error was %s\n",
-            strerror(errno)));
-    close(oplock_sock);
-    oplock_sock = -1;
-    global_oplock_port = 0;
-    return False;
-  }
-  global_oplock_port = ntohs(sock_name.sin_port);
-
-  if(!setup_kernel_oplock_pipe())
-    return False;
-
-  DEBUG(3,("open_oplock ipc: pid = %d, global_oplock_port = %u\n", 
-            (int)sys_getpid(), global_oplock_port));
-
-  return True;
-}
-
-#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-/****************************************************************************
- * Deal with the IRIX kernel <--> smbd
- * oplock break protocol.
-****************************************************************************/
-static BOOL irix_oplock_receive_message(fd_set *fds, char *buffer, int buffer_len, int timeout)
-{
-     oplock_stat_t os;
-     SMB_DEV_T dev;
-     SMB_INO_T inode;
-     char dummy;
-
-     /*
-      * Read one byte of zero to clear the
-      * kernel break notify message.
-      */
-
-     if(read(oplock_pipe_read, &dummy, 1) != 1) {
-	     DEBUG(0,("receive_local_message: read of kernel notification failed. \
-Error was %s.\n", strerror(errno) ));
-	     smb_read_error = READ_ERROR;
-	     return False;
-     }
-
-     /*
-      * Do a query to get the
-      * device and inode of the file that has the break
-      * request outstanding.
-      */
-
-     if(fcntl(oplock_pipe_read, F_OPLKSTAT, &os) < 0) {
-	     DEBUG(0,("receive_local_message: fcntl of kernel notification failed. \
-Error was %s.\n", strerror(errno) ));
-	     if(errno == EAGAIN) {
-		     /*
-		      * Duplicate kernel break message - ignore.
-		      */
-		     memset(buffer, '\0', KERNEL_OPLOCK_BREAK_MSG_LEN);
-		     return True;
-	     }
-	     smb_read_error = READ_ERROR;
-	     return False;
-     }
-
-     dev = (SMB_DEV_T)os.os_dev;
-     inode = (SMB_INO_T)os.os_ino;
-     
-     DEBUG(5,("receive_local_message: kernel oplock break request received for \
-dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
-     
-     /*
-      * Create a kernel oplock break message.
-      */
-     
-     /* Setup the message header */
-     SIVAL(buffer,OPBRK_CMD_LEN_OFFSET,KERNEL_OPLOCK_BREAK_MSG_LEN);
-     SSVAL(buffer,OPBRK_CMD_PORT_OFFSET,0);
-     
-     buffer += OPBRK_CMD_HEADER_LEN;
-     
-     SSVAL(buffer,OPBRK_MESSAGE_CMD_OFFSET,KERNEL_OPLOCK_BREAK_CMD);
-     
-     memcpy(buffer + KERNEL_OPLOCK_BREAK_DEV_OFFSET, (char *)&dev, sizeof(dev));
-     memcpy(buffer + KERNEL_OPLOCK_BREAK_INODE_OFFSET, (char *)&inode, sizeof(inode));	
-     
-     return True;
-}
-#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
-
-
 /****************************************************************************
  Read an oplock break message from either the oplock UDP fd or the
- kernel oplock pipe fd (if kernel oplocks are supported).
+ kernel (if kernel oplocks are supported).
 
  If timeout is zero then *fds contains the file descriptors that
  are ready to be read and acted upon. If timeout is non-zero then
@@ -267,8 +73,9 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
     int selrtn;
     int maxfd = oplock_sock;
 
-    if(lp_kernel_oplocks() && (oplock_pipe_read != -1))
-      maxfd = MAX(maxfd, oplock_pipe_read);
+    if (koplocks && koplocks->notification_fd != -1) {
+	    FD_SET(koplocks->notification_fd, fds);
+    }
 
     to.tv_sec = timeout / 1000;
     to.tv_usec = (timeout % 1000) * 1000;
@@ -289,11 +96,9 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
     }
   }
 
-#if HAVE_KERNEL_OPLOCKS_IRIX
-  if (FD_ISSET(oplock_pipe_read,fds)) {
-	  return irix_receive_message(fds, buffer, buffer_len, timeout);
+  if (koplocks && koplocks->msg_waiting(fds)) {
+	  return koplocks->receive_message(fds, buffer, buffer_len);
   }
-#endif
 
   /*
    * From here down we deal with the smbd <--> smbd
@@ -335,42 +140,12 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
 }
 
 /****************************************************************************
- Attempt to set an kernel oplock on a file. Always returns True if kernel
- oplocks not available.
-****************************************************************************/
-static BOOL set_kernel_oplock(files_struct *fsp, int oplock_type)
-{
-	if(!lp_kernel_oplocks()) return True;
-
-#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-	if (fcntl(fsp->fd, F_OPLKREG, oplock_pipe_write) < 0 ) {
-		if(errno != EAGAIN) {
-			DEBUG(0,("set_file_oplock: Unable to get kernel oplock on file %s, dev = %x, \
-inode = %.0f. Error was %s\n", 
-				 fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
-				 strerror(errno) ));
-		} else {
-			DEBUG(5,("set_file_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
-inode = %.0f. Another process had the file open.\n",
-				 fsp->fsp_name, fsp->fd, (unsigned int)fsp->dev, (double)fsp->inode ));
-		}
-		return False;
-	}
-	
-	DEBUG(10,("set_file_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f\n",
-		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode));
-#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
-
-	return True;
-}
-
-/****************************************************************************
  Attempt to set an oplock on a file. Always succeeds if kernel oplocks are
  disabled (just sets flags). Returns True if oplock set.
 ****************************************************************************/
 BOOL set_file_oplock(files_struct *fsp, int oplock_type)
 {
-	if (!set_kernel_oplock(fsp, oplock_type))
+	if (koplocks && !koplocks->set_oplock(fsp, oplock_type))
 		return False;
 
 	fsp->oplock_type = oplock_type;
@@ -388,46 +163,12 @@ BOOL set_file_oplock(files_struct *fsp, int oplock_type)
 }
 
 /****************************************************************************
- Release a kernel oplock on a file.
-****************************************************************************/
-static void release_kernel_oplock(files_struct *fsp)
-{
-	if (!lp_kernel_oplocks()) return;
-
-#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-	if (DEBUGLVL(10)) {
-		/*
-		 * Check and print out the current kernel
-		 * oplock state of this file.
-		 */
-		int state = fcntl(fsp->fd, F_OPLKACK, -1);
-		dbgtext("release_kernel_oplock: file %s, dev = %x, inode = %.0f has kernel \
-oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
-                        (double)fsp->inode, state );
-	}
-
-	/*
-	 * Remove the kernel oplock on this file.
-	 */
-	if(fcntl(fsp->fd, F_OPLKACK, OP_REVOKE) < 0) {
-		if( DEBUGLVL( 0 )) {
-			dbgtext("release_kernel_oplock: Error when removing kernel oplock on file " );
-			dbgtext("%s, dev = %x, inode = %.0f. Error was %s\n",
-				fsp->fsp_name, (unsigned int)fsp->dev, 
-				(double)fsp->inode, strerror(errno) );
-		}
-	}
-#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
-}
-
-
-/****************************************************************************
  Attempt to release an oplock on a file. Decrements oplock count.
 ****************************************************************************/
 
 void release_file_oplock(files_struct *fsp)
 {
-	release_kernel_oplock(fsp);
+	if (koplocks) koplocks->release_oplock(fsp);
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK)
 		level_II_oplocks_open--;
@@ -446,11 +187,11 @@ void release_file_oplock(files_struct *fsp)
 
 static void downgrade_file_oplock(files_struct *fsp)
 {
-  release_kernel_oplock(fsp);
-  fsp->oplock_type = LEVEL_II_OPLOCK;
-  exclusive_oplocks_open--;
-  level_II_oplocks_open++;
-  fsp->sent_oplock_break = NO_BREAK_SENT;
+	if (koplocks) koplocks->release_oplock(fsp);
+	fsp->oplock_type = LEVEL_II_OPLOCK;
+	exclusive_oplocks_open--;
+	level_II_oplocks_open++;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
 }
 
 /****************************************************************************
@@ -460,48 +201,44 @@ static void downgrade_file_oplock(files_struct *fsp)
 
 BOOL remove_oplock(files_struct *fsp)
 {
-  SMB_DEV_T dev = fsp->dev;
-  SMB_INO_T inode = fsp->inode;
-  BOOL ret = True;
+	SMB_DEV_T dev = fsp->dev;
+	SMB_INO_T inode = fsp->inode;
+	BOOL ret = True;
 
-  /* Remove the oplock flag from the sharemode. */
-  if (lock_share_entry_fsp(fsp) == False) {
-    DEBUG(0,("remove_oplock: failed to lock share entry for file %s\n",
-          fsp->fsp_name ));
-    ret = False;
-  }
+	/* Remove the oplock flag from the sharemode. */
+	if (lock_share_entry_fsp(fsp) == False) {
+		DEBUG(0,("remove_oplock: failed to lock share entry for file %s\n",
+			 fsp->fsp_name ));
+		ret = False;
+	}
 
-  if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT) {
+	if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT) {
+		/*
+		 * Deal with a reply when a break-to-none was sent.
+		 */
 
-    /*
-     * Deal with a reply when a break-to-none was sent.
-     */
-
-    if(remove_share_oplock(fsp)==False) {
-      DEBUG(0,("remove_oplock: failed to remove share oplock for file %s fnum %d, \
+		if(remove_share_oplock(fsp)==False) {
+			DEBUG(0,("remove_oplock: failed to remove share oplock for file %s fnum %d, \
 dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
-      ret = False;
-    }
+			ret = False;
+		}
 
-    release_file_oplock(fsp);
-
-  } else {
-
-    /*
-     * Deal with a reply when a break-to-level II was sent.
-     */
-
-    if(downgrade_share_oplock(fsp)==False) {
-      DEBUG(0,("remove_oplock: failed to downgrade share oplock for file %s fnum %d, \
+		release_file_oplock(fsp);
+	} else {
+		/*
+		 * Deal with a reply when a break-to-level II was sent.
+		 */
+		if(downgrade_share_oplock(fsp)==False) {
+			DEBUG(0,("remove_oplock: failed to downgrade share oplock for file %s fnum %d, \
 dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
-      ret = False;
-    }
+			ret = False;
+		}
+		
+		downgrade_file_oplock(fsp);
+	}
 
-    downgrade_file_oplock(fsp);
-  }
-
-  unlock_share_entry_fsp(fsp);
-  return ret;
+	unlock_share_entry_fsp(fsp);
+	return ret;
 }
 
 /****************************************************************************
@@ -512,26 +249,25 @@ dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)
 
 int setup_oplock_select_set( fd_set *fds)
 {
-  int maxfd = oplock_sock;
+	int maxfd = oplock_sock;
 
-  if(oplock_sock == -1)
-    return 0;
+	if(oplock_sock == -1)
+		return 0;
 
-  FD_SET(oplock_sock,fds);
+	FD_SET(oplock_sock,fds);
 
-  if(lp_kernel_oplocks() && (oplock_pipe_read != -1)) {
-    FD_SET(oplock_pipe_read,fds); 
-    maxfd = MAX(maxfd,oplock_pipe_read);
-  }
+	if (koplocks && koplocks->notification_fd != -1) {
+		FD_SET(koplocks->notification_fd, fds);
+		maxfd = MAX(maxfd, koplocks->notification_fd);
+	}
 
-  return maxfd;
+	return maxfd;
 }
 
 /****************************************************************************
  Process an oplock break message - whether it came from the UDP socket
  or from the kernel.
 ****************************************************************************/
-
 BOOL process_local_message(char *buffer, int buf_size)
 {
   int32 msg_len;
@@ -560,26 +296,15 @@ BOOL process_local_message(char *buffer, int buf_size)
 
   switch(break_cmd_type)
   {
-#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
     case KERNEL_OPLOCK_BREAK_CMD:
-      /* Ensure that the msg length is correct. */
-      if(msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN)
-      {
-        DEBUG(0,("process_local_message: incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, \
-should be %d).\n", msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
-        return False;
-      }
-      {
-        memcpy((char *)&inode, msg_start+KERNEL_OPLOCK_BREAK_INODE_OFFSET, sizeof(inode));
-        memcpy((char *)&dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(dev));
-
-        ptval = NULL;
-
-        DEBUG(5,("process_local_message: kernel oplock break request for \
-file dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode));
-      }
-      break;
-#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
+	    if (!koplocks) {
+		    DEBUG(0,("unexpected kernel oplock break!\n"));
+		    break;
+	    } 
+	    if (!koplocks->parse_message(msg_start, msg_len, &inode, &dev)) {
+		    DEBUG(0,("kernel oplock break parse failure!\n"));
+	    }
+	    break;
 
     case OPLOCK_BREAK_CMD:
     case LEVEL_II_OPLOCK_BREAK_CMD:
@@ -706,18 +431,18 @@ pid %d, port %d, for file dev = %x, inode = %.0f\n",
 
 static void prepare_break_message(char *outbuf, files_struct *fsp, BOOL level2)
 {
-  memset(outbuf,'\0',smb_size);
-  set_message(outbuf,8,0,True);
+	memset(outbuf,'\0',smb_size);
+	set_message(outbuf,8,0,True);
 
-  SCVAL(outbuf,smb_com,SMBlockingX);
-  SSVAL(outbuf,smb_tid,fsp->conn->cnum);
-  SSVAL(outbuf,smb_pid,0xFFFF);
-  SSVAL(outbuf,smb_uid,0);
-  SSVAL(outbuf,smb_mid,0xFFFF);
-  SCVAL(outbuf,smb_vwv0,0xFF);
-  SSVAL(outbuf,smb_vwv2,fsp->fnum);
-  SCVAL(outbuf,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
-  SCVAL(outbuf,smb_vwv3+1,level2 ? OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
+	SCVAL(outbuf,smb_com,SMBlockingX);
+	SSVAL(outbuf,smb_tid,fsp->conn->cnum);
+	SSVAL(outbuf,smb_pid,0xFFFF);
+	SSVAL(outbuf,smb_uid,0);
+	SSVAL(outbuf,smb_mid,0xFFFF);
+	SCVAL(outbuf,smb_vwv0,0xFF);
+	SSVAL(outbuf,smb_vwv2,fsp->fnum);
+	SCVAL(outbuf,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
+	SCVAL(outbuf,smb_vwv3+1,level2 ? OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
 }
 
 /****************************************************************************
@@ -747,7 +472,6 @@ static void wait_before_sending_break(BOOL local_request)
 /****************************************************************************
  Ensure that we have a valid oplock.
 ****************************************************************************/
-
 static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 {
   files_struct *fsp = NULL;
@@ -964,7 +688,10 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
 
   /* Prepare the SMBlockingX message. */
 
-  if ((global_client_caps & CAP_LEVEL_II_OPLOCKS) && !lp_kernel_oplocks() && lp_level2_oplocks(SNUM(fsp->conn))) {
+  if ((global_client_caps & CAP_LEVEL_II_OPLOCKS) && 
+      !koplocks && /* NOTE: we force levelII off for kernel oplocks -
+                      this will change when it is supported */
+      lp_level2_oplocks(SNUM(fsp->conn))) {
 	  using_levelII = True;
   } else {
 	  using_levelII = False;
@@ -1242,8 +969,10 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
 
     FD_ZERO(&fds);
     FD_SET(oplock_sock,&fds);
-    if(lp_kernel_oplocks() && (oplock_pipe_read != -1))
-      FD_SET(oplock_pipe_read,&fds);
+
+    if (koplocks && koplocks->notification_fd != -1) {
+	    FD_SET(koplocks->notification_fd, &fds);
+    }
 
     if(receive_local_message(&fds, op_break_reply, sizeof(op_break_reply),
                time_left ? time_left * 1000 : 1) == False)
@@ -1290,22 +1019,9 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
     reply_msg_start = &op_break_reply[OPBRK_CMD_HEADER_LEN];
 
 
-#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-    if((reply_msg_len != OPLOCK_BREAK_MSG_LEN) && (reply_msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN))
-#else
-    if(reply_msg_len != OPLOCK_BREAK_MSG_LEN)
-#endif
-    {
-      /* Ignore it. */
-      DEBUG( 0, ( "request_oplock_break: invalid message length (%d) received.", reply_msg_len ) );
-      DEBUGADD( 0, ( "  Ignoring.\n" ) );
-      continue;
-    }
-
     /*
      * Test to see if this is the reply we are awaiting.
      */
-
     if((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & CMD_REPLY) &&
        ((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & ~CMD_REPLY) == OPLOCK_BREAK_CMD) &&
        (reply_from_port == share_entry->op_port) && 
@@ -1352,7 +1068,6 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
   Used as a last ditch attempt to free a space in the 
   file table when we have run out.
 ****************************************************************************/
-
 BOOL attempt_close_oplocked_file(files_struct *fsp)
 {
 
@@ -1369,28 +1084,45 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
   return False;
 }
 
+
 /****************************************************************************
- Init function to check if kernel level oplocks are available.
+setup oplocks for this process
 ****************************************************************************/
-
-void check_kernel_oplocks(void)
+BOOL init_oplocks(void)
 {
-	static BOOL done;
+	struct sockaddr_in sock_name;
+	int len = sizeof(sock_name);
 
-	/*
-	 * We only do this check once on startup.
-	 */
-	if(done) return;
-  
-	done = True;
-	lp_set_kernel_oplocks(False);
+	DEBUG(3,("open_oplock_ipc: opening loopback UDP socket.\n"));
 
-#if defined(HAVE_KERNEL_OPLOCKS_IRIX)
-	if (irix_oplocks_available()) {
-		lp_set_kernel_oplocks(True);
-
-		DEBUG(0,("check_kernel_oplocks: Kernel oplocks available and set to %s.\n",
-			 lp_kernel_oplocks() ? "True" : "False" ));
+	/* Open a lookback UDP socket on a random port. */
+	oplock_sock = open_socket_in(SOCK_DGRAM, 0, 0, htonl(INADDR_LOOPBACK),False);
+	if (oplock_sock == -1) {
+		DEBUG(0,("open_oplock_ipc: Failed to get local UDP socket for \
+address %lx. Error was %s\n", (long)htonl(INADDR_LOOPBACK), strerror(errno)));
+		global_oplock_port = 0;
+		return(False);
 	}
-#endif /* HAVE_KERNEL_OPLOCKS_IRIX */
+
+	/* Find out the transient UDP port we have been allocated. */
+	if(getsockname(oplock_sock, (struct sockaddr *)&sock_name, &len)<0) {
+		DEBUG(0,("open_oplock_ipc: Failed to get local UDP port. Error was %s\n",
+			 strerror(errno)));
+		close(oplock_sock);
+		oplock_sock = -1;
+		global_oplock_port = 0;
+		return False;
+	}
+	global_oplock_port = ntohs(sock_name.sin_port);
+
+	if (lp_kernel_oplocks()) {
+#if HAVE_KERNEL_OPLOCKS_IRIX
+		koplocks = irix_init_kernel_oplocks();
+#endif
+	}
+
+	DEBUG(3,("open_oplock ipc: pid = %d, global_oplock_port = %u\n", 
+		 (int)sys_getpid(), global_oplock_port));
+
+	return True;
 }
