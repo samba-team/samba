@@ -641,8 +641,15 @@ struct shmem_ops *sysv_shm_open(int ronly)
 		}
 	}
 	
-	/* try to use an existing key */
-	shm_id = shmget(SHMEM_KEY, shm_size, 0);
+	/* 
+     * Try to use an existing key. Note that
+     * in order to use an existing key successfully
+     * size must be zero else shmget returns EINVAL.
+     * Thanks to Veselin Terzic <vterzic@systems.DHL.COM>
+     * for pointing this out.
+     */
+
+	shm_id = shmget(SHMEM_KEY, 0, 0);
 	
 	/* if that failed then create one */
 	if (shm_id == -1) {

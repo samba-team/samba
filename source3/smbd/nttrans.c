@@ -106,7 +106,7 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
                          ((uint32)sizeof(fname)-1));
   int smb_ofun;
   int smb_open_mode;
-  int smb_attr = file_attributes & SAMBA_ATTRIBUTES_MASK;
+  int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
   /* Breakout the oplock request bits so we can set the
      reply bits separately. */
   int oplock_request = flags & (REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
@@ -334,7 +334,7 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int bufsize, int c
                          ((uint32)sizeof(fname)-1));
   int smb_ofun;
   int smb_open_mode;
-  int smb_attr = file_attributes & SAMBA_ATTRIBUTES_MASK;
+  int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
 }
 
 /****************************************************************************
