@@ -506,10 +506,11 @@ struct packet_struct
 
 /* NETLOGON opcodes */
 
-#define QUERYFORPDC	 7 /* Query for PDC. */
-#define QUERYFORPDC_R	12 /* Response to Query for PDC. */
-#define SAMLOGON	18
-#define SAMLOGON_R	19
+#define QUERYFORPDC  7 /* Query for PDC. */
+#define QUERYFORPDC_R   12 /* Response to Query for PDC. */
+#define SAMLOGON    18
+#define SAMLOGON_R  19
+#define SAMLOGON_UNK_R  21
 
 
 /* Ids for netbios packet types. */

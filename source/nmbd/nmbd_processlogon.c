@@ -117,28 +117,35 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       getdc = skip_string(machine,1);
       unicomp = skip_string(getdc,1);
 
-      q = align2(unicomp, buf);
+      /* at this point we can work out if this is a W9X or NT style
+         request. Experiments show that the difference is wether the
+         packet ends here. For a W9X request we now end with a pair of
+         bytes (usually 0xFE 0xFF) whereas with NT we have two further
+         strings - the following is a simple way of detecting this */
+      if (len - PTR_DIFF(unicomp, buf) > 3) {
+	      short_request = True;
+      } else {
+	      /* A full length (NT style) request */
+	      q = skip_unicode_string(unicomp, 1);
 
-      q = skip_unicode_string(q, 1);
-
-      if ((buf - q) >= len) {    /* Check for a short request */
-
-        short_request = True;
-
-      }
-      else { /* A full length request */
-
-        ntversion = IVAL(q, 0);
-        q += 4;
-        lmnttoken = SVAL(q, 0);
-        q += 2;
-        lm20token = SVAL(q, 0);
-        q += 2;
-
+	      if (len - PTR_DIFF(q, buf) > 8) {
+					/* with NT5 clients we can sometimes
+					   get additional data - a length specificed string
+					   containing the domain name, then 16 bytes of
+					   data (no idea what it is) */
+					int dom_len = CVAL(q, 0);
+					q++;
+					if (dom_len != 0) {
+						q += dom_len + 1;
+					}
+					q += 16;
+	      }
+	      ntversion = IVAL(q, 0);
+	      lmnttoken = SVAL(q, 4);
+	      lm20token = SVAL(q, 6);
       }
 
       /* Construct reply. */
-
       q = outbuf;
       SSVAL(q, 0, QUERYFORPDC_R);
       q += 2;
@@ -152,18 +159,13 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       {
         q = align2(q, buf);
 
-        dos_PutUniCode(q, my_name, sizeof(pstring)); /* PDC name */
-        q = skip_unicode_string(q, 1); 
-
-        dos_PutUniCode(q, global_myworkgroup,sizeof(pstring)); /* Domain name*/
-        q = skip_unicode_string(q, 1); 
+        q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
+        q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True); /* Domain name*/
 
         SIVAL(q, 0, ntversion);
-        q += 4;
-        SSVAL(q, 0, lmnttoken);
-        q += 2;
-        SSVAL(q, 0, lm20token);
-        q += 2;
+        SSVAL(q, 4, lmnttoken);
+        SSVAL(q, 6, lm20token);
+        q += 8;
       }
 
       /* RJS, 21-Feb-2000, we send a short reply if the request was short */
@@ -227,15 +229,17 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       /* Construct reply. */
 
       q = outbuf;
-      SSVAL(q, 0, SAMLOGON_R);
+      if (SVAL(uniuser, 0) == 0) {
+	      SSVAL(q, 0, SAMLOGON_UNK_R);	/* user unknown */
+      }	else {
+	      SSVAL(q, 0, SAMLOGON_R);
+      }
       q += 2;
 
-      dos_PutUniCode(q, reply_name,sizeof(pstring));
-      q = skip_unicode_string(q, 1);
+      q += dos_PutUniCode(q, reply_name,sizeof(pstring), True);
       unistrcpy(q, uniuser);
       q = skip_unicode_string(q, 1); /* User name (workstation trust account) */
-      dos_PutUniCode(q, lp_workgroup(),sizeof(pstring));
-      q = skip_unicode_string(q, 1); /* Domain name. */
+      q += dos_PutUniCode(q, lp_workgroup(),sizeof(pstring), True);
 
       SIVAL(q, 0, ntversion);
       q += 4;

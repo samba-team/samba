@@ -43,36 +43,41 @@ static uint16 *ucs2_to_unixcp;
  the current DOS codepage. len is the length in bytes of the
  string pointed to by dst.
 
- the return value is the length of the string *without* the trailing 
- two bytes of zero
+ if null_terminate is True then null terminate the packet (adds 2 bytes)
+
+ the return value is the length consumed by the string, including the
+ null termination if applied
 ********************************************************************/
 
-int dos_PutUniCode(char *dst,const char *src, ssize_t len)
+int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
 {
-	int ret = 0;
-	while (*src && (len > 2)) {
-		size_t skip = get_character_len(*src);
-		smb_ucs2_t val = (*src & 0xff);
+    int ret = 0;
+    while (*src && (len > 2)) {
+        size_t skip = get_character_len(*src);
+        smb_ucs2_t val = (*src & 0xff);
 
-		/*
-		 * If this is a multibyte character (and all DOS/Windows
-		 * codepages have at maximum 2 byte multibyte characters)
-		 * then work out the index value for the unicode conversion.
-		 */
+        /*
+         * If this is a multibyte character (and all DOS/Windows
+         * codepages have at maximum 2 byte multibyte characters)
+         * then work out the index value for the unicode conversion.
+         */
 
-		if (skip == 2)
-			val = ((val << 8) | (src[1] & 0xff));
+        if (skip == 2)
+            val = ((val << 8) | (src[1] & 0xff));
 
-		SSVAL(dst,ret,doscp_to_ucs2[val]);
-		ret += 2;
-		len -= 2;
-		if (skip)
-			src += skip;
-		else
-			src++;
-	}
-	SSVAL(dst,ret,0);
-	return(ret);
+        SSVAL(dst,ret,doscp_to_ucs2[val]);
+        ret += 2;
+        len -= 2;
+        if (skip)
+            src += skip;
+        else
+            src++;
+    }
+    if (null_terminate) {
+        SSVAL(dst,ret,0);
+        ret += 2;
+    }
+    return(ret);
 }
 
 /*******************************************************************
