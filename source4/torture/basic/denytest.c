@@ -79,7 +79,7 @@ static const char *resultstr(enum deny_result res)
 	return "*";
 }
 
-static struct {
+static const struct {
 	int isexe;
 	int mode1, deny1;
 	int mode2, deny2;
@@ -736,7 +736,7 @@ static struct {
 };
 
 
-static struct {
+static const struct {
 	int isexe;
 	int mode1, deny1;
 	int mode2, deny2;
