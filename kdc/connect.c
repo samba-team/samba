@@ -212,6 +212,8 @@ clear_descr(struct descr *d)
     d->s = -1;
 }
 
+#define TCP_TIMEOUT 4
+
 static void
 handle_tcp(struct descr *d, int index, int min_free)
 {
@@ -235,7 +237,7 @@ handle_tcp(struct descr *d, int index, int min_free)
 	}
 	    
 	d[min_free].s = s;
-	d[min_free].timeout = time(NULL) + 4;
+	d[min_free].timeout = time(NULL) + TCP_TIMEOUT;
 	d[min_free].type = SOCK_STREAM;
 	return;
     }
@@ -308,7 +310,7 @@ handle_tcp(struct descr *d, int index, int min_free)
 		"<TITLE>404 Not found</TITLE>\r\n"
 		"<H1>404 Not found</H1>\r\n"
 		"That page doesn't exist, maybe you are looking for "
-		"<a href=\"http://www.pdc.kth.se/heimdal\">Heimdal</a>?\r\n";
+		"<A HREF=\"http://www.pdc.kth.se/heimdal\">Heimdal</A>?\r\n";
 	    write(d[index].s, msg, strlen(msg));
 	    free(data);
 	    clear_descr(d + index);
@@ -345,6 +347,7 @@ loop(void)
     int ndescr;
     ndescr = init_sockets(&d);
     while(exit_flag == 0){
+	struct timeval tmout;
 	struct fd_set fds;
 	int min_free = -1;
 	int max_fd = 0;
@@ -354,6 +357,13 @@ loop(void)
 	    if(d[i].s >= 0){
 		if(d[i].type == SOCK_STREAM && 
 		   d[i].timeout && d[i].timeout < time(NULL)){
+		    struct sockaddr sa;
+		    size_t salen = sizeof(sa);
+		    char addr[32];
+		    getpeername(d[i].s, &sa, &salen);
+		    addr_to_string(&sa, salen, addr, sizeof(addr));
+		    kdc_log(1, "TCP-connection from %s expired after %u bytes",
+			    addr, d[i].len);
 		    clear_descr(&d[i]);
 		    continue;
 		}
@@ -378,7 +388,9 @@ loop(void)
 	    }
 	}
     
-	switch(select(max_fd + 1, &fds, 0, 0, 0)){
+	tmout.tv_sec = TCP_TIMEOUT;
+	tmout.tv_usec = 0;
+	switch(select(max_fd + 1, &fds, 0, 0, &tmout)){
 	case 0:
 	    break;
 	case -1:
