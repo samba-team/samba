@@ -171,7 +171,7 @@ static int parse_type(char *mtype)
 /****************************************************************************
 do command
 ****************************************************************************/
-static BOOL do_command(char *dest, char *msg_name, char *params[])
+static BOOL do_command(char *dest, char *msg_name, char **params)
 {
 	int i, n, v;
 	int mtype;
@@ -186,7 +186,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params[])
 
 	switch (mtype) {
 	case MSG_DEBUG:
-		if (!params[0]) {
+		if (!params || !params[0]) {
 			fprintf(stderr,"MSG_DEBUG needs a parameter\n");
 			return(False);
 		}
