@@ -33,7 +33,7 @@ fi
 WIN_OUTPUT="$3\\`basename $OUTPUT`"
 
 # create the PDF:
-$PS2PDF $OPTOINS $INPUT $OUTPUT.pdf >/dev/null 2>&1
+$PS2PDF $OPTIONS $INPUT $OUTPUT.pdf >/dev/null 2>&1
 
 # Generate a message to send to the user, and deal with the original file:
 MESSAGE=$(echo "Your PDF file has been created as $WIN_OUTPUT.pdf\n")

@@ -133,9 +133,9 @@
  	
  	become_daemon();
  
---- samba-2.2.4/source/smbd/service.c.orig	Wed May  1 23:15:10 2002
-+++ samba-2.2.4/source/smbd/service.c	Thu May  2 00:20:44 2002
-@@ -713,6 +713,14 @@
+--- samba/source/smbd/service.c.orig	2002-10-12 11:54:24.000000000 -0400
++++ samba/source/smbd/service.c	2002-10-13 01:43:10.000000000 -0400
+@@ -698,6 +698,14 @@
  		smbrun(cmd,NULL);
  	}
  

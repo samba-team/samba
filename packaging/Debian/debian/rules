@@ -4,6 +4,7 @@
 #	solve build problems) introduced in Samba 2.2.1a-5. These
 #	modification were made by Steve Langasek <vorlon@netexpress.net>.
 #
+# $Id: rules,v 1.2.2.6 2002/10/15 21:36:46 jerry Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -75,8 +76,7 @@ configure-stamp:
 		--with-pam_smbpass \
 		--with-libsmbclient \
 		--with-winbind \
-		--with-msdfs \
-		--with-automount)
+		--with-msdfs)
 
 	touch configure-stamp
 
@@ -178,7 +178,7 @@ install: build
 	cp debian/smb.conf $(DESTDIR)/usr/share/samba/
 	cp debian/samba.pamd $(DESTDIR)/etc/pam.d/samba
 
-	# This is to comply with policy (the symlink that ldconfig would 
+	# This is to comply with policy (the symlink that ldconfig would
 	#	produce must exist in the package).
 	/sbin/ldconfig -n $(DESTDIR)/usr/lib/
 

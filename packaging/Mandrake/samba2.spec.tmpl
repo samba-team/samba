@@ -1,5 +1,5 @@
 %define ver 2.2.5
-%define rel 17mdk
+%define rel 21mdk
 %define vscanver 0.2.5c
 
 # 2.2.4 and 1 replace by samba-team at release
@@ -13,11 +13,11 @@
 %define have_pversion %(if [ "%pversion" = `echo "pversion" |tr '[:lower:]' '[:upper:]'` ];then echo 0; else echo 1; fi)
 %define have_prelease %(if [ "%prelease" = `echo "prelease" |tr '[:lower:]' '[:upper:]'` ];then echo 0; else echo 1; fi)
 
-# We might have a prerelease:
-%define have_pre %(echo %pversion|awk '{p=0} /pre/ {p=1} {print p}')
+# We might have a alpha-/beta-/pre-/rc-release:
+%define have_pre %(echo %pversion|awk '{p=0} /[a-z,A-Z][a-z,A-Z]/ {p=1} {print p}')
 %if %have_pre
-%define pre_ver %(echo %pversion|sed -e 's/pre[0-9]//')
-%define pre_pre %(echo %pversion|sed -e 's/[0-9].[0-9].[0-9]//')
+%define pre_ver %(perl -e '$name="%pversion"; print ($name =~ /(.*?)[a-z]/);')
+%define pre_pre %(echo %pversion|sed -e 's/%pre_ver//g')
 %endif
 
 
@@ -155,7 +155,7 @@ Source3: samba.xinetd
 Source4: swat_48.xpm.bz2
 Source5: swat_32.xpm.bz2
 Source6: swat_16.xpm.bz2
-Source7: README.samba-%{version}-%{release}
+Source7: README.%{name}-mandrake-rpm
 %if %build_vscan
 Source8: samba-vscan-%{vscanver}.tar.bz2
 %endif
@@ -178,8 +178,15 @@ Patch32: samba-2.2.5-winbind-init.patch.bz2
 Patch33: samba-2.2.5-pam-password.patch.bz2
 Patch34: samba-2.2.5-win2k_copy_bug.patch.bz2
 Patch35: samba-2.2.5-samba-ldap-include-conf.patch.bz2
+Patch36: samba-2.2.6-smb.conf.patch.bz2
+Patch37: samba-2.2.6-smbumount_lazy.patch.bz2
 %else
 # Version specific patches: upcoming version
+%endif
+# Limbo patches (applied to prereleases, but not preleases, ie destined for 
+# samba CVS)
+%if %have_pversion && %have_pre
+Patch36: samba-2.2.6-smb.conf.patch.bz2
 %endif
 Requires: pam >= 0.64, samba-common = %{version}
 BuildRequires: pam-devel autoconf readline-devel
@@ -229,7 +236,7 @@ docs directory for implementation details.
 
 %if %build_non_default
 WARNING: This RPM was built with command-line options. Please
-see README.samba-%{version}-%{release} in the documentation for
+see README.%{name}-mandrake-rpm in the documentation for
 more information.
 %endif
 
@@ -505,8 +512,10 @@ echo "$RPM_EXTRA_OPTIONS"
 echo "This rpm was built with non-default options, thus, to build ">%{SOURCE7}
 echo "an identical rpm, you need to supply the following options">>%{SOURCE7}
 echo "at build time: $RPM_EXTRA_OPTIONS">>%{SOURCE7}
+echo -e "\n%{name}-%{version}-%{release}\n">>%{SOURCE7}
 %else
 echo "This rpm was built with default options">%{SOURCE7}
+echo -e "\n%{name}-%{version}-%{release}\n">>%{SOURCE7}
 %endif
 
 %if %build_vscan
@@ -522,7 +531,6 @@ echo "This rpm was built with default options">%{SOURCE7}
 %patch12 -p1 -b .buildroot
 %patch17 -p1
 %patch18 -p1 -b .gp-reloc-fix
-
 # Version specific patches: current version
 %if !%have_pversion
 echo "Applying patches for current version: %{ver}"
@@ -535,9 +543,17 @@ echo "Applying patches for current version: %{ver}"
 %patch33 -p1
 %patch34 -p1
 %patch35 -p1
+%patch36 -p1
+%patch37 -p1
 %else
 # Version specific patches: upcoming version
 echo "Applying patches for new versions: %{pversion}"
+%endif
+
+# Limbo patches
+%if %have_pversion && %have_pre
+echo "Appling patches which should only be applied to prereleases"
+%patch36 -p1
 %endif
 
 cp %{SOURCE7} .
@@ -1121,7 +1137,7 @@ fi
 %defattr(-,root,root)
 %doc README COPYING Manifest Read-Manifest-Now
 %doc WHATSNEW.txt Roadmap
-%doc README.samba-%{version}-%{release}
+%doc README.%{name}-mandrake-rpm
 %doc docs
 %doc examples
 %doc swat/README
@@ -1282,6 +1298,27 @@ fi
 %endif
 
 %changelog
+* Thu Oct 10 2002 Buchan Milne <bgmilne@linux-mandrake.com> 2.2.5-21mdk
+- Put docs back (aka rpm sucks, builds cleanly when doc fails)
+- 2.2.6-1.0.rc2.3mdk
+
+* Thu Oct 10 2002 Buchan Milne <bgmilne@linux-mandrake.com> 2.2.5-20mdk
+- Fix typo in print-pdf script
+- Make spec resistant to arbitrary pre/alpha/rc/beta/iamnotfinishedyet strings
+  in version
+- Stop filling CVS with READMEs (use README.samba-mandrake-rpm instead)  
+- Make example profiles share writeable by default, and add auto-creation
+  example (smb.conf)
+- Make ps printing example remove printed files by default (smb.conf)
+- Fix ntlogon example (smb.conf)
+
+* Thu Oct 10 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.5-19mdk
+- almost 2.26 (rc2)!
+
+* Mon Oct 07 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.5-18mdk
+- add lazy umount patch for smbumount to allow smbumount to handle
+  broken connection. (36) (-- <kevin@vega.idv.tw>)
+
 * Thu Sep 05 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.5-17mdk
 - changed localhost entry in /etc/xinetd.d/swat to 127.0.0.1
   for resolving issue.

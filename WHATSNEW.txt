@@ -1,13 +1,29 @@
-            WHAT'S NEW IN Samba 2.2.6rc3  - 11th October 2002
+            WHAT'S NEW IN Samba 2.2.6rc4  - 15th October 2002
             =================================================
 
 This is a preview snapshot of SAMBA_2_2 cvs branch.  This is a non-production
 release provided for testing purposes only.
 
-The following new new smb.conf(5) options have been added in this preview
-release:
+New Parameters
+--------------
+
+Refer to the smb.conf(5) man page for complete descriptions of new parameters.
 
   * profile acls (S)
+
+
+Removed Parameters
+------------------
+
+  * max packet (G)
+  * packet size (G)
+
+
+Modified Parameters
+-------------------
+
+  * max xmit (G)
+
 
 The following options have been added to Samba's configure script
 
@@ -137,11 +153,17 @@ Changes since 2.2.5
 
 80) Default all LDAP connections to v3 with compiling with --with-ldapsam
 
-( Changes since 2.2.6rc1 )
+( Changes since 2.2.6rc2 )
 
 81) Fix memory leak in smbspool
 82) Fix bug in mangling code that resulted in Win9x clients not being
     able to execute batch files in deep, non 8.3  directory paths
+
+( Changes since 2.2.6rc3 )
+
+83) Fix infinite looping bug in winbindd_getgrent()
+84) Fix crash bug on 64-bit systems (merge from HEAD)
+85) Fix extended character bug when setting LanMan/NT password
 
 
               =========================================

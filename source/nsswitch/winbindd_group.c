@@ -505,10 +505,22 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 			   ent->sam_entry_index, ent->num_sam_entries));
 
 		if (ent->num_sam_entries == ent->sam_entry_index) {
+			struct getent_state *next_ent;
+			
+			/* is this the beginning ( == 0 ) or the end ? */
+			
+			if ( ent->sam_entry_index > 0 ) {
+				DEBUG(10, ("end of getgrent: freeing state info for domain %s\n", ent->domain_name)); 
+				SAFE_FREE(ent->sam_entries);
+				next_ent = ent->next;
+				DLIST_REMOVE(state->getgrent_state, ent);
+				SAFE_FREE(ent);
+				ent = next_ent;
+			}
+
+			/* find the next domain's group entries */
 
 			while(ent && !get_sam_group_entries(ent, NULL)) {
-				struct getent_state *next_ent;
-
 				DEBUG(10, ("freeing state info for domain %s\n", ent->domain_name)); 
 
 				/* Free state information for this domain */

@@ -458,9 +458,30 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 		/* Do we need to fetch another chunk of users? */
 
 		if (ent->num_sam_entries == ent->sam_entry_index) {
+			struct getent_state *next_ent;
+
+			/* is this the beginning ( == 0 ) or the end ? */
+
+			/* 
+			 * for some reason this check is not needed here, but is
+			 * in winbindd_getgrent().  I'm putting it in but ifdef'd 
+			 * out for posterity   --jerry 
+			 */
+#if 0 	/* NOT NEEDED APPARENTLY */
+			
+			if ( ent->sam_entry_index > 0 ) {
+				DEBUG(10, ("end of getpwent: freeing state info for domain %s\n", ent->domain_name));
+				SAFE_FREE(ent->sam_entries);
+				next_ent = ent->next;
+				DLIST_REMOVE(state->getgrent_state, ent);
+				SAFE_FREE(ent);
+				ent = next_ent;
+			}
+#endif	/* NOT NEEDED APPARENTLY */
+
+			/* find the next domain's group entries */
 
 			while(ent && !get_sam_user_entries(ent)) {
-				struct getent_state *next_ent;
 
 				/* Free state information for this domain */
 
