@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -110,7 +110,7 @@ del_enctype(int argc, char **argv)
 	if (docopy) {
 	    new_key_data[j++] = *key;
 	} else {
-	    int16_t ignore;
+	    int16_t ignore = 1;
 
 	    kadm5_free_key_data (kadm_handle, &ignore, key);
 	}
