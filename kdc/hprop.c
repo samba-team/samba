@@ -253,7 +253,7 @@ int main(int argc, char **argv)
     ret = krb5_kt_close(context, keytab);
     if(ret) krb5_err(context, 1, ret, "krb5_kt_close");
     
-    ret = krb5_cc_gen_new(context, &mcc_ops, &ccache);
+    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &ccache);
     if(ret) krb5_err(context, 1, ret, "krb5_cc_gen_new");
 
     ret = krb5_cc_initialize(context, ccache, client);
