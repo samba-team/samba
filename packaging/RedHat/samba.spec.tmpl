@@ -18,7 +18,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Prefix: /usr
 
 # Working around perl dependency problem from docs
-%define __perl_requires %{SOURCE999}
+%define REQUIRES_MACRO %{SOURCE999}
 
 %description
 Samba provides an SMB/CIFS server which can be used to provide
