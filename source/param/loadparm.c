@@ -3002,7 +3002,7 @@ static char* append_ldap_suffix( const char *str )
 	return suffix_string;
 }
 
-char *lp_ldap_machine_suffix()
+char *lp_ldap_machine_suffix(void)
 {
 	if (Globals.szLdapMachineSuffix[0])
 		return append_ldap_suffix(Globals.szLdapMachineSuffix);
@@ -3010,7 +3010,7 @@ char *lp_ldap_machine_suffix()
 	return lp_string(Globals.szLdapSuffix);
 }
 
-char *lp_ldap_user_suffix()
+char *lp_ldap_user_suffix(void)
 {
 	if (Globals.szLdapUserSuffix[0])
 		return append_ldap_suffix(Globals.szLdapUserSuffix);
@@ -3018,7 +3018,7 @@ char *lp_ldap_user_suffix()
 	return lp_string(Globals.szLdapSuffix);
 }
 
-char *lp_ldap_group_suffix()
+char *lp_ldap_group_suffix(void)
 {
 	if (Globals.szLdapGroupSuffix[0])
 		return append_ldap_suffix(Globals.szLdapGroupSuffix);
@@ -3026,7 +3026,7 @@ char *lp_ldap_group_suffix()
 	return lp_string(Globals.szLdapSuffix);
 }
 
-char *lp_ldap_idmap_suffix()
+char *lp_ldap_idmap_suffix(void)
 {
 	if (Globals.szLdapIdmapSuffix[0])
 		return append_ldap_suffix(Globals.szLdapIdmapSuffix);
