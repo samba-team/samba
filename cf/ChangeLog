@@ -1,3 +1,7 @@
+2001-06-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* install-catman.sh: try to install links to manpages
+
 2001-06-19  Assar Westerlund  <assar@sics.se>
 
 	* broken-glob.m4: try to handle FreeBSD's GLOB_MAXPATH
