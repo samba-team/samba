@@ -58,7 +58,7 @@ config_binding_to_list (const krb5_config_binding *b,
     *list = malloc (n * sizeof(**list));
     if (*list == NULL)
 	return ENOMEM;
-    for (i = 0, p = b; i < n ; ++i, p = p->next)
+    for (i = 0; i < n; ++i)
 	(*list)[i] = NULL;
     for (i = 0, p = b; p != NULL; ++i, p = p->next) {
 	if (p->type != krb5_config_string)
