@@ -7,7 +7,11 @@ INCLUDES = -I$(top_builddir)/include
 lib_LIBRARIES = libdes.a
 include_HEADERS = des.h
 
-libdes_a_SOURCES =cbc3_enc.c cbc_enc.c cfb64ede.c cfb64enc.c cfb_enc.c \
-	ecb3_enc.c ede_enc.c fcrypt.c key_par.c ncbc_enc.c ofb64ede.c \
-	ofb64enc.c ofb_enc.c pcbc_enc.c qud_cksm.c read_pwd.c rnd_keys.c \
-	str2key.c cbc_cksm.c ecb_enc.c set_key.c md4.c md5.c sha.c
+libdes_a_SOURCES = \
+	cbc3_enc.c cbc_cksm.c cbc_cksm.c cbc_enc.c \
+	cfb64ede.c cfb64enc.c cfb_enc.c des_enc.c \
+	ecb3_enc.c ecb_enc.c ede_enc.c enc_read.c \
+	enc_writ.c fcrypt.c key_par.c md4.c md5.c \
+	ncbc_enc.c ofb64ede.c ofb64enc.c ofb_enc.c \
+	pcbc_enc.c qud_cksm.c read_pwd.c rnd_keys.c \
+	set_key.c sha.c str2key.c
