@@ -597,13 +597,13 @@ static BOOL fill_mods(struct ldap_message *msg, char **chunk)
 		mod.attrib.name = talloc_strdup(msg->mem_ctx, value.data);
 
 		if (strequal(attr_name, "add"))
-			mod.type = LDAP_MOD_ADD;
+			mod.type = LDAP_MODIFY_ADD;
 
 		if (strequal(attr_name, "delete"))
-			mod.type = LDAP_MOD_DELETE;
+			mod.type = LDAP_MODIFY_DELETE;
 
 		if (strequal(attr_name, "replace"))
-			mod.type = LDAP_MOD_REPLACE;
+			mod.type = LDAP_MODIFY_REPLACE;
 
 		if (mod.type == LDAP_MODIFY_NONE) {
 			DEBUG(2, ("ldif modification type %s unsupported\n",
