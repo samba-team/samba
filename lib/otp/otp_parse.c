@@ -2183,12 +2183,13 @@ parse_words(unsigned wn[],
   return 0;
 }
 
-int
-otp_parse_stddict (OtpKey key, char *str)
+static
+otp_parse_internal (OtpKey key, char *str, OtpAlgorithm *alg,
+		    int (*convert)(char *, void *))
 {
   unsigned wn[6];
 
-  if (parse_words (wn, str, get_stdword, NULL))
+  if (parse_words (wn, str, convert, alg))
     return -1;
   compress (key, wn);
   if (otp_checksum (key) != (wn[5] & 0x03))
@@ -2197,16 +2198,15 @@ otp_parse_stddict (OtpKey key, char *str)
 }
 
 int
+otp_parse_stddict (OtpKey key, char *str)
+{
+  return otp_parse_internal (key, str, NULL, get_stdword);
+}
+
+int
 otp_parse_altdict (OtpKey key, char *str, OtpAlgorithm *alg)
 {
-  unsigned wn[6];
-
-  if (parse_words (wn, str, get_altword, alg))
-    return -1;
-  compress (key, wn);
-  if (otp_checksum (key) != (wn[5] & 0x03))
-    return -1;
-  return 0;
+  return otp_parse_internal (key, str, alg, get_altword);
 }
 
 int
