@@ -2,34 +2,39 @@
 
 RCSID("$Id$");
 
-int main(int argc, char **argv)
+void 
+ext_keytab(int argc, char **argv)
 {
     HDB *db;
     hdb_entry ent;
-    krb5_context context;
-    int err;
+    int ret;
     int i;
     krb5_keytab kid;
     krb5_keytab_entry key_entry;
     char *p;
     
-    krb5_init_context(&context);
-    err = hdb_open(context, &db, argv[2], O_RDONLY, 0600);
-    if(err){
-	fprintf(stderr, "%s\n", krb5_get_err_text(context, err));
-	exit(1);
+    if(argc != 2){
+	warnx("Usage: ext_keytab principal\n");
+	return;
+    }
+	
+    
+    ret = hdb_open(context, &db, database, O_RDONLY, 0600);
+    if(ret){
+	warnx("%s", krb5_get_err_text(context, ret));
+	return;
     }
 
-    err = krb5_parse_name (context, argv[1], &ent.principal);
-    if (err) {
-      fprintf (stderr, "%s\n", krb5_get_err_text(context, err));
-      exit(1);
+    ret = krb5_parse_name (context, argv[1], &ent.principal);
+    if (ret) {
+	warnx("%s", krb5_get_err_text(context, ret));
+	return;
     }
 
-    err = db->fetch(context, db, &ent);
-    if (err) {
-      fprintf (stderr, "%s\n", krb5_get_err_text(context, err));
-      exit(1);
+    ret = db->fetch(context, db, &ent);
+    if (ret) {
+	warnx ("%s", krb5_get_err_text(context, ret));
+	return;
     }
 
     krb5_copy_principal (context, ent.principal, &key_entry.principal);
@@ -40,18 +45,18 @@ int main(int argc, char **argv)
 		   ent.keyblock.contents.data,
 		   ent.keyblock.contents.length);
 
-    err = krb5_kt_default (context, &kid);
-    if (err) {
-      fprintf (stderr, "%s\n", krb5_get_err_text(context, err));
-      exit(1);
+    ret = krb5_kt_default (context, &kid);
+    if (ret) {
+	warnx("%s", krb5_get_err_text(context, ret));
+	return;
     }
 
-    err = krb5_kt_add_entry(context,
+    ret = krb5_kt_add_entry(context,
 			    kid,
 			    &key_entry);
-    if (err) {
-      fprintf (stderr, "%s\n", krb5_get_err_text(context, err));
-      exit(1);
+    if (ret) {
+	warnx("%s", krb5_get_err_text(context, ret));
+	return;
     }
     db->close (context, db);
 }
