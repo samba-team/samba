@@ -79,8 +79,8 @@ time_encryption(krb5_context context, size_t size,
 
     timevalsub(&tv2, &tv1);
 
-    printf("%s size: %7d iterations: %d time: %3ld.%06ld\n", 
-	   etype_name, size, iterations,
+    printf("%s size: %7lu iterations: %d time: %3ld.%06ld\n", 
+	   etype_name, (unsigned long)size, iterations,
 	   (long)tv2.tv_sec, (long)tv2.tv_usec);
 
     krb5_crypto_destroy(context, crypto);
