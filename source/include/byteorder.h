@@ -154,16 +154,21 @@ it also defines lots of intermediate macros, just ignore those :-)
 */
 
 /* get single value from an SMB buffer */
-#define SVAL(buf,pos) (*(uint16 *)((char *)(buf) + (pos)))
-#define IVAL(buf,pos) (*(uint32 *)((char *)(buf) + (pos)))
-#define SVALS(buf,pos) (*(int16 *)((char *)(buf) + (pos)))
-#define IVALS(buf,pos) (*(int32 *)((char *)(buf) + (pos)))
+#define SVAL(buf,pos) (*(const uint16 *)((const char *)(buf) + (pos)))
+#define IVAL(buf,pos) (*(const uint32 *)((const char *)(buf) + (pos)))
+#define SVALS(buf,pos) (*(const int16 *)((const char *)(buf) + (pos)))
+#define IVALS(buf,pos) (*(const int32 *)((const char *)(buf) + (pos)))
+
+#define SVALMOD(buf,pos) (*(uint16 *)((char *)(buf) + (pos)))
+#define IVALMOD(buf,pos) (*(uint32 *)((char *)(buf) + (pos)))
+#define SVALMODS(buf,pos) (*(int16 *)((char *)(buf) + (pos)))
+#define IVALMODS(buf,pos) (*(int32 *)((char *)(buf) + (pos)))
 
 /* store single value in an SMB buffer */
-#define SSVAL(buf,pos,val) SVAL(buf,pos)=((uint16)(val))
-#define SIVAL(buf,pos,val) IVAL(buf,pos)=((uint32)(val))
-#define SSVALS(buf,pos,val) SVALS(buf,pos)=((int16)(val))
-#define SIVALS(buf,pos,val) IVALS(buf,pos)=((int32)(val))
+#define SSVAL(buf,pos,val) SVALMOD(buf,pos)=((uint16)(val))
+#define SIVAL(buf,pos,val) IVALMOD(buf,pos)=((uint32)(val))
+#define SSVALS(buf,pos,val) SVALMODS(buf,pos)=((int16)(val))
+#define SIVALS(buf,pos,val) IVALMODS(buf,pos)=((int32)(val))
 
 #endif
 
