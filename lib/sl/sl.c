@@ -181,49 +181,34 @@ sl_make_argv(char *line, int *ret_argc, char ***ret_argv)
 int
 sl_loop (SL_cmd *cmds, char *prompt)
 {
-    unsigned max_count;
-    char **ptr;
-    int ret;
+    char *buf;
+    int argc;
+    char **argv;
+    int ret = 0;
 
-    max_count = 17;
-    ptr = malloc(max_count * sizeof(*ptr));
-    if (ptr == NULL) {
-	printf ("sl_loop: failed to allocate %u bytes of memory\n",
-		(int) max_count * sizeof(*ptr));
-	return -1;
-    }
-
-    for (;;) {
-	char *buf;
-	int count;
-	SL_cmd *c;
-
+    while(ret == 0) {
 	ret = 0;
+	/* XXX should make sure this doesn't do funny things if stdin
+           is not a tty */
 	buf = readline(prompt);
 	if(buf == NULL)
 	    break;
 
 	if(*buf)
 	    add_history(buf);
-	count = 0;
-	ret = sl_make_argv(buf, &count, &ptr);
+	argc = 0;
+	ret = sl_make_argv(buf, &argc, &argv);
 	if(ret) {
 	    fprintf(stderr, "sl_loop: out of memory\n");
 	    return -1;
 	}
-	if (count > 0) {
-	    c = sl_match (cmds, ptr[0], 0);
-	    if (c) {
-		ret = (*c->func)(count, ptr);
-		if (ret != 0) {
-		    free (buf);
-		    break;
-		}
-	    } else
-		printf ("Unrecognized command: %s\n", ptr[0]);
+	ret = sl_command(cmds, argc, argv);
+	if(ret == -1) {
+	    printf ("Unrecognized command: %s\n", argv[0]);
+	    ret = 0;
 	}
+	free(argv);
 	free(buf);
     }
-    free (ptr);
     return 0;
 }
