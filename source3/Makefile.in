@@ -1063,7 +1063,8 @@ installclientlib:
 # Python extensions
 
 PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
-	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ)
+	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+	$(SECRETS_OBJ) $(KRBCLIENT_OBJ)
 
 PY_SPOOLSS_PROTO_OBJ = python/py_spoolss.o \
 		python/py_spoolss_printers.o python/py_spoolss_printers_conv.o\
