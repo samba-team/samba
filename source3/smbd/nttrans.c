@@ -476,12 +476,14 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       return(ERROR(ERRSRV,ERRnofids));
     }
 
+    fsp = &Files[fnum];
+    
     if (!check_name(fname,cnum)) { 
       if((errno == ENOENT) && bad_path) {
         unix_ERR_class = ERRDOS;
         unix_ERR_code = ERRbadpath;
       }
-      Files[fnum].reserved = False;
+      fsp->reserved = False;
 
       restore_case_semantics(file_attributes);
 
@@ -493,39 +495,72 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
     oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
 
+    /*
+     * NB. We have a potential bug here. If we cause an oplock
+     * break to ourselves, then we could end up processing filename
+     * related SMB requests whilst we await the oplock break
+     * response. As we may have changed the filename case
+     * semantics to be POSIX-like, this could mean a filename
+     * request could fail when it should succeed. This is a
+     * rare condition, but eventually we must arrange to restore
+     * the correct case semantics before issuing an oplock break
+     * request to our client. JRA.
+     */
+
     open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
                      oplock_request,&rmode,&smb_action);
 
-    fsp = &Files[fnum];
-    
-    if (!fsp->open) { 
-      if((errno == ENOENT) && bad_path) {
-        unix_ERR_class = ERRDOS;
-        unix_ERR_code = ERRbadpath;
-      }
-      Files[fnum].reserved = False;
-
-      restore_case_semantics(file_attributes);
-
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    } 
-  
-    if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-      close_file(fnum,False);
-
-      restore_case_semantics(file_attributes);
-
-      return(ERROR(ERRDOS,ERRnoaccess));
-    } 
-  
     restore_case_semantics(file_attributes);
 
+    if (!fsp->open) { 
+      /*
+       * We cheat here. The only case we care about is a directory
+       * rename, where the NT client will attempt to open the source
+       * directory for DELETE access. Note that when the NT client
+       * does this it does *not* set the directory bit in the
+       * request packet. This is translated into a read/write open
+       * request. POSIX states that any open for write request on a directory
+       * will generate an EISDIR error, so we can catch this here and open
+       * a pseudo handle that is flagged as a directory. JRA.
+       */
+
+      if(errno == EISDIR) {
+        oplock_request = 0;
+        open_directory(fnum, cnum, fname, &smb_action);
+
+        if(!fsp->open) {
+          fsp->reserved = False;
+          return(UNIXERROR(ERRDOS,ERRnoaccess));
+        }
+      } else {
+        if((errno == ENOENT) && bad_path) {
+          unix_ERR_class = ERRDOS;
+          unix_ERR_code = ERRbadpath;
+        }
+
+        fsp->reserved = False;
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
+      }
+    } 
+  
+    if(fsp->is_directory) {
+      if(stat(fsp->name, &sbuf) != 0) {
+        close_directory(fnum);
+        return(ERROR(ERRDOS,ERRnoaccess));
+      }
+    } else {
+      if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+        close_file(fnum,False);
+        return(ERROR(ERRDOS,ERRnoaccess));
+      } 
+    }
+  
     file_len = sbuf.st_size;
     fmode = dos_mode(cnum,fname,&sbuf);
     if(fmode == 0)
       fmode = FILE_ATTRIBUTE_NORMAL;
     mtime = sbuf.st_mtime;
-    if (fmode & aDIR) {
+    if (!fsp->is_directory && (fmode & aDIR)) {
       close_file(fnum,False);
       return(ERROR(ERRDOS,ERRnoaccess));
     } 
@@ -591,10 +626,12 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     } else {
       SIVAL(p,0,file_len);
     }
+    p += 12;
+    SCVAL(p,0,fsp->is_directory ? 1 : 0);
   }
 
   chain_fnum = fnum;
-    
+
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
