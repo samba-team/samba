@@ -28,14 +28,14 @@ static const struct opcode_names {
 	char *nmb_opcode_name;
 	int opcode;
 } nmb_header_opcode_names[] = {
-      {"Query",           0 },
-      {"Registration",      5 },
-      {"Release",           6 },
-      {"WACK",              7 },
-      {"Refresh",           8 },
-      {"Refresh(altcode)",  9 },
-      {"Multi-homed Registration", 15 },
-      {0, -1 }
+	{"Query",           0 },
+	{"Registration",      5 },
+	{"Release",           6 },
+	{"WACK",              7 },
+	{"Refresh",           8 },
+	{"Refresh(altcode)",  9 },
+	{"Multi-homed Registration", 15 },
+	{0, -1 }
 };
 
 /****************************************************************************
@@ -814,15 +814,15 @@ static int build_dgram(char *buf,struct packet_struct *p)
 }
 
 /*******************************************************************
-  build a nmb name
- *******************************************************************/
+ Build a nmb name
+*******************************************************************/
+
 void make_nmb_name( struct nmb_name *n, const char *name, int type)
 {
-	extern pstring global_scope;
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
 	push_ascii(n->name, name, 16, STR_TERMINATE|STR_UPPER);
 	n->name_type = (unsigned int)type & 0xFF;
-	StrnCpy( n->scope, global_scope, 63 );
+	StrnCpy( n->scope, global_scope(), 63 );
 	strupper( n->scope );
 }
 
@@ -1180,7 +1180,6 @@ int name_mangle( char *In, char *Out, char name_type )
   int   len;
   char  buf[20];
   char *p = Out;
-  extern pstring global_scope;
 
   /* Safely copy the input string, In, into buf[]. */
   (void)memset( buf, 0, 20 );
@@ -1204,9 +1203,9 @@ int name_mangle( char *In, char *Out, char name_type )
   p[0] = '\0';
 
   /* Add the scope string. */
-  for( i = 0, len = 0; NULL != global_scope; i++, len++ )
+  for( i = 0, len = 0; NULL != global_scope(); i++, len++ )
     {
-    switch( global_scope[i] )
+    switch( (global_scope())[i] )
       {
       case '\0':
         p[0]     = len;
@@ -1219,7 +1218,7 @@ int name_mangle( char *In, char *Out, char name_type )
         len  = -1;
         break;
       default:
-        p[len+1] = global_scope[i];
+        p[len+1] = (global_scope())[i];
         break;
       }
     }

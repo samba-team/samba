@@ -697,7 +697,7 @@ BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps
 
 void init_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 				uint32 neg_flgs,
-				fstring myname, fstring domain)
+				const char *myname, const char *domain)
 {
 	int len_myname = strlen(myname);
 	int len_domain = strlen(domain);
@@ -836,7 +836,7 @@ BOOL smb_io_rpc_auth_ntlmssp_chal(char *desc, RPC_AUTH_NTLMSSP_CHAL *chl, prs_st
 
 void init_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 				uchar lm_resp[24], uchar nt_resp[24],
-				char *domain, char *user, char *wks,
+				const char *domain, const char *user, const char *wks,
 				uint32 neg_flags)
 {
 	uint32 offset;

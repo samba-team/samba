@@ -25,7 +25,6 @@ fstring local_machine="";
 fstring remote_arch="UNKNOWN";
 userdom_struct current_user_info;
 fstring remote_proto="UNKNOWN";
-extern pstring global_myname;
 
 static fstring remote_machine="";
 
@@ -230,7 +229,7 @@ static const char *automount_server(const char *user_name)
 	if (local_machine_name && *local_machine_name)
 		pstrcpy(server_name, local_machine_name);
 	else
-		pstrcpy(server_name, global_myname);
+		pstrcpy(server_name, global_myname());
 	
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
@@ -300,7 +299,7 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 			else {
 				pstring temp_name;
 
-				pstrcpy(temp_name, global_myname);
+				pstrcpy(temp_name, global_myname());
 				strlower(temp_name);
 				string_sub(p,"%L", temp_name,l); 
 			}
@@ -458,7 +457,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 			if (local_machine_name && *local_machine_name)
 				t = realloc_string_sub(t, "%L", local_machine_name); 
 			else
-				t = realloc_string_sub(t, "%L", global_myname); 
+				t = realloc_string_sub(t, "%L", global_myname()); 
 			break;
 		case 'M' :
 			t = realloc_string_sub(t, "%M", client_name());

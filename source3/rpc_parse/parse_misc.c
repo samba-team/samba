@@ -244,14 +244,13 @@ BOOL smb_io_dom_sid(char *desc, DOM_SID *sid, prs_struct *ps, int depth)
  identauth >= 2^32 can be detected because it will be specified in hex
 ********************************************************************/
 
-void init_dom_sid(DOM_SID *sid, char *str_sid)
+void init_dom_sid(DOM_SID *sid, const char *str_sid)
 {
 	pstring domsid;
 	int identauth;
 	char *p;
 
-	if (str_sid == NULL)
-	{
+	if (str_sid == NULL) {
 		DEBUG(4,("netlogon domain SID: none\n"));
 		sid->sid_rev_num = 0;
 		sid->num_auths = 0;
@@ -592,7 +591,7 @@ void init_buffer3_uint32(BUFFER3 *str, uint32 val)
  Inits a BUFFER3 structure.
 ********************************************************************/
 
-void init_buffer3_str(BUFFER3 *str, char *buf, int len)
+void init_buffer3_str(BUFFER3 *str, const char *buf, int len)
 {
 	ZERO_STRUCTP(str);
 
@@ -610,7 +609,7 @@ void init_buffer3_str(BUFFER3 *str, char *buf, int len)
  Inits a BUFFER3 structure from a hex string.
 ********************************************************************/
 
-void init_buffer3_hex(BUFFER3 *str, char *buf)
+void init_buffer3_hex(BUFFER3 *str, const char *buf)
 {
 	ZERO_STRUCTP(str);
 	create_buffer3(str, strlen(buf));
@@ -697,7 +696,7 @@ BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
  Inits a BUFFER2 structure.
 ********************************************************************/
 
-void init_buffer2(BUFFER2 *str, uint8 *buf, int len)
+void init_buffer2(BUFFER2 *str, const uint8 *buf, int len)
 {
 	ZERO_STRUCTP(str);
 
@@ -963,7 +962,7 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 /*******************************************************************
  Inits a UNISTR2 structure from a UNISTR
 ********************************************************************/
-void init_unistr2_from_unistr (UNISTR2 *to, UNISTR *from)
+void init_unistr2_from_unistr (UNISTR2 *to, const UNISTR *from)
 {
 
 	uint32 i;
@@ -1138,7 +1137,7 @@ void init_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid)
  Inits a DOM_CLNT_SRV structure.
 ********************************************************************/
 
-static void init_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name)
+static void init_clnt_srv(DOM_CLNT_SRV *log, const char *logon_srv, const char *comp_name)
 {
 	DEBUG(5,("init_clnt_srv: %d\n", __LINE__));
 
@@ -1292,16 +1291,16 @@ BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth)
 ********************************************************************/
 
 void init_clnt_info2(DOM_CLNT_INFO2 *clnt,
-				char *logon_srv, char *comp_name,
-				DOM_CRED *clnt_cred)
+				const char *logon_srv, const char *comp_name,
+				const DOM_CRED *clnt_cred)
 {
 	DEBUG(5,("make_clnt_info: %d\n", __LINE__));
 
-	init_clnt_srv(&(clnt->login), logon_srv, comp_name);
+	init_clnt_srv(&clnt->login, logon_srv, comp_name);
 
 	if (clnt_cred != NULL) {
 		clnt->ptr_cred = 1;
-		memcpy(&(clnt->cred), clnt_cred, sizeof(clnt->cred));
+		memcpy(&clnt->cred, clnt_cred, sizeof(clnt->cred));
 	} else {
 		clnt->ptr_cred = 0;
 	}
@@ -1341,9 +1340,9 @@ BOOL smb_io_clnt_info2(char *desc, DOM_CLNT_INFO2 *clnt, prs_struct *ps, int dep
 ********************************************************************/
 
 void init_clnt_info(DOM_CLNT_INFO *clnt,
-		char *logon_srv, char *acct_name,
-		uint16 sec_chan, char *comp_name,
-				DOM_CRED *cred)
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name,
+		const DOM_CRED *cred)
 {
 	DEBUG(5,("make_clnt_info\n"));
 
@@ -1413,7 +1412,7 @@ BOOL smb_io_logon_id(char *desc, DOM_LOGON_ID *log, prs_struct *ps, int depth)
  Inits an OWF_INFO structure.
 ********************************************************************/
 
-void init_owf_info(OWF_INFO *hash, uint8 data[16])
+void init_owf_info(OWF_INFO *hash, const uint8 data[16])
 {
 	DEBUG(5,("init_owf_info: %d\n", __LINE__));
 	

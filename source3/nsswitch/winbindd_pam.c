@@ -68,8 +68,6 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 
-	extern pstring global_myname;
-
 	/* Ensure null termination */
 	state->request.data.auth.user[sizeof(state->request.data.auth.user)-1]='\0';
 
@@ -135,7 +133,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	result = cli_netlogon_sam_network_logon(cli, mem_ctx,
 						name_user, name_domain, 
-						global_myname, chal, 
+						global_myname(), chal, 
 						lm_resp, nt_resp, 
 						&info3);
         
@@ -169,13 +167,11 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
         struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	char *user = NULL;
-	char *domain = NULL;
-	char *contact_domain;
-	char *workstation;
+	const char *domain = NULL;
+	const char *contact_domain;
+	const char *workstation;
 
 	DATA_BLOB lm_resp, nt_resp;
-
-	extern pstring global_myname;
 
 	/* Ensure null termination */
 	state->request.data.auth_crap.user[sizeof(state->request.data.auth_crap.user)-1]='\0';
@@ -194,9 +190,11 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	}
 
 	if (*state->request.data.auth_crap.domain) {
-		if (pull_utf8_talloc(mem_ctx, &domain, state->request.data.auth_crap.domain) < 0) {
+		char *dom = NULL;
+		if (pull_utf8_talloc(mem_ctx, &dom, state->request.data.auth_crap.domain) < 0) {
 			DEBUG(0, ("winbindd_pam_auth_crap: pull_utf8_talloc failed!\n"));
 		}
+		domain = dom;
 	} else if (lp_winbind_use_default_domain()) {
 		domain = lp_workgroup();
 	} else {
@@ -216,11 +214,13 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	}
 
 	if (*state->request.data.auth_crap.workstation) {
-		if (pull_utf8_talloc(mem_ctx, &workstation, state->request.data.auth_crap.workstation) < 0) {
+		char *wrk = NULL;
+		if (pull_utf8_talloc(mem_ctx, &wrk, state->request.data.auth_crap.workstation) < 0) {
 			DEBUG(0, ("winbindd_pam_auth_crap: pull_utf8_talloc failed!\n"));
 		}
+		workstation = wrk;
 	} else {
-		workstation = global_myname;
+		workstation = global_myname();
 	}
 
 	if (state->request.data.auth_crap.lm_resp_len > sizeof(state->request.data.auth_crap.lm_resp)

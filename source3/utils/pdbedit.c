@@ -50,7 +50,6 @@
 
 #define MASK_ALWAYS_GOOD	0x0000001F
 #define MASK_USER_GOOD		0x00001F00
-extern pstring global_myname;
 
 /*********************************************************
  Add all currently available users to another db
@@ -176,7 +175,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
  Get an Print User Info
 **********************************************************/
 
-static int print_user_info (struct pdb_context *in, char *username, BOOL verbosity, BOOL smbpwdstyle)
+static int print_user_info (struct pdb_context *in, const char *username, BOOL verbosity, BOOL smbpwdstyle)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
@@ -496,7 +495,7 @@ int main (int argc, char **argv)
 	poptGetArg(pc); /* Drop argv[0], the program name */
 
 	if (user_name == NULL) {
-		user_name = poptGetArg(pc);
+		user_name = strdup(poptGetArg(pc));
 	}
 
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
@@ -504,16 +503,8 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-	if (!*global_myname) {
-		char *p2;
-
-		pstrcpy(global_myname, myhostname());
-		p2 = strchr_m(global_myname, '.');
-		if (p2) 
-                        *p2 = 0;
-	}
-	
-	strupper(global_myname);
+	if (!init_names())
+		exit(1);
 
 	setparms =	(backend ? BIT_BACKEND : 0) +
 			(verbose ? BIT_VERBOSE : 0) +

@@ -21,9 +21,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 /*
  * Next two lines needed for SunOS and don't
  * hurt anything else...
@@ -282,17 +279,8 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-	if (!*global_myname) {
-		char *p;
-		pstrcpy( global_myname, myhostname() );
-		p = strchr_m(global_myname, '.' );
-		if (p) 
-			*p = 0;
-	}
-
-	strupper(global_myname);
-
-	fstrcpy(global_myworkgroup, lp_workgroup());
+	if (!init_names())
+		exit(1);
 	
 	if(!initialize_password_db(True)) {
 		fprintf(stderr, "Can't setup password database vectors.\n");

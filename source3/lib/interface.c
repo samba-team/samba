@@ -94,7 +94,7 @@ This handles the following different forms:
 4) ip/mask
 5) bcast/mask
 ****************************************************************************/
-static void interpret_interface(char *token)
+static void interpret_interface(const char *token)
 {
 	struct in_addr ip, nmask;
 	char *p;
@@ -162,7 +162,7 @@ load the list of network interfaces
 ****************************************************************************/
 void load_interfaces(void)
 {
-	char **ptr;
+	const char **ptr;
 	int i;
 	struct iface_struct ifaces[MAX_INTERFACES];
 

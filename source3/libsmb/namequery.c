@@ -471,7 +471,8 @@ BOOL getlmhostsent( XFILE *fp, pstring name, int *name_type, struct in_addr *ipa
 
   while(!x_feof(fp) && !x_ferror(fp)) {
     pstring ip,flags,extra;
-    char *ptr;
+    const char *ptr;
+    char *ptr1;
     int count = 0;
 
     *name_type = -1;
@@ -524,20 +525,20 @@ BOOL getlmhostsent( XFILE *fp, pstring name, int *name_type, struct in_addr *ipa
 
     /* Extra feature. If the name ends in '#XX', where XX is a hex number,
        then only add that name type. */
-    if((ptr = strchr_m(name, '#')) != NULL)
+    if((ptr1 = strchr_m(name, '#')) != NULL)
     {
       char *endptr;
 
-      ptr++;
-      *name_type = (int)strtol(ptr, &endptr, 16);
+      ptr1++;
+      *name_type = (int)strtol(ptr1, &endptr, 16);
 
-      if(!*ptr || (endptr == ptr))
+      if(!*ptr1 || (endptr == ptr1))
       {
         DEBUG(0,("getlmhostsent: invalid name %s containing '#'.\n", name));
         continue;
       }
 
-      *(--ptr) = '\0'; /* Truncate at the '#' */
+      *(--ptr1) = '\0'; /* Truncate at the '#' */
     }
 
     return True;
@@ -787,7 +788,7 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 {
   pstring name_resolve_list;
   fstring tok;
-  char *ptr;
+  const char *ptr;
   BOOL allones = (strcmp(name,"255.255.255.255") == 0);
   BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
   BOOL is_address = is_ipaddress(name);
@@ -1242,7 +1243,7 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count)
 	 */
 
 	if (strequal(domain, lp_workgroup())) {
-		char *p;
+		const char *p;
 		char *pserver = lp_passwordserver();
 		fstring name;
 		int num_adresses = 0;

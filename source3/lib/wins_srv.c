@@ -154,7 +154,7 @@ void wins_srv_died(struct in_addr wins_ip, struct in_addr src_ip)
 */
 unsigned wins_srv_count(void)
 {
-	char **list;
+	const char **list;
 	int count = 0;
 
 	if (lp_wins_support()) {
@@ -163,7 +163,8 @@ unsigned wins_srv_count(void)
 	}
 
 	list = lp_wins_server_list();
-	for (count=0; list && list[count]; count++) /* nop */ ;
+	for (count=0; list && list[count]; count++)
+		/* nop */ ;
 
 	return count;
 }
@@ -202,7 +203,7 @@ char **wins_srv_tags(void)
 {
 	char **ret = NULL;
 	int count=0, i, j;
-	char **list;
+	const char **list;
 
 	if (lp_wins_support()) {
 		/* give the caller something to chew on. This makes
@@ -215,7 +216,8 @@ char **wins_srv_tags(void)
 	}
 
 	list = lp_wins_server_list();
-	if (!list) return NULL;
+	if (!list)
+		return NULL;
 
 	/* yes, this is O(n^2) but n is very small */
 	for (i=0;list[i];i++) {
@@ -268,7 +270,7 @@ void wins_srv_tags_free(char **list)
 */
 struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 {
-	char **list;
+	const char **list;
 	int i;
 	struct tagged_ip t_ip;
 
@@ -324,7 +326,7 @@ struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 */
 unsigned wins_srv_count_tag(const char *tag)
 {
-	char **list;
+	const char **list;
 	int i, count=0;
 
 	/* if we are a wins server then we always just talk to ourselves */

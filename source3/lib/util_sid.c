@@ -24,9 +24,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-extern fstring global_myworkgroup;
-
 /*
  * Some useful sids
  */
@@ -178,7 +175,7 @@ NT_USER_TOKEN *get_system_token(void)
 
 /**************************************************************************
  Splits a name of format \DOMAIN\name or name into its two components.
- Sets the DOMAIN name to global_myname if it has not been specified.
+ Sets the DOMAIN name to global_myname() if it has not been specified.
 ***************************************************************************/
 
 void split_domain_name(const char *fullname, char *domain, char *name)
@@ -202,7 +199,7 @@ void split_domain_name(const char *fullname, char *domain, char *name)
 		fstrcpy(domain, full_name);
 		fstrcpy(name, p+1);
 	} else {
-		fstrcpy(domain, global_myname);
+		fstrcpy(domain, global_myname());
 		fstrcpy(name, full_name);
 	}
 
@@ -280,7 +277,8 @@ const char *sid_string_static(const DOM_SID *sid)
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
 	pstring tok;
-	char *p, *q;
+	char *q;
+	const char *p;
 	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
 	uint32 ia;
   
@@ -291,7 +289,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 
 	memset((char *)sidout, '\0', sizeof(DOM_SID));
 
-	q = p = strdup(sidstr + 2);
+	p = q = strdup(sidstr + 2);
 	if (p == NULL) {
 		DEBUG(0, ("string_to_sid: out of memory!\n"));
 		return False;

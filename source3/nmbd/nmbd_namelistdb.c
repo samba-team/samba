@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern char **my_netbios_names;
-
 uint16 samba_nb_type = 0; /* samba's NetBIOS name type */
 
 
@@ -215,7 +213,7 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
   namerec->data.wins_flags = WINS_ACTIVE;
 
   /* If it's our primary name, flag it as so. */
-  if( strequal( my_netbios_names[0], name ) )
+  if( strequal( my_netbios_names(0), name ) )
     namerec->data.nb_flags |= NB_PERM;
 
   /* Copy the IPs. */

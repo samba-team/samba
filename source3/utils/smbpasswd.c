@@ -19,7 +19,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
 extern BOOL AllowDebugChange;
 
 /*
@@ -585,13 +584,8 @@ int main(int argc, char **argv)
 	 * set from the config file. 
 	 */ 
     
-	if (!*global_myname) {   
-		char *p;
-		fstrcpy(global_myname, myhostname());
-		p = strchr_m(global_myname, '.' );
-		if (p) *p = 0;
-	}           
-	strupper(global_myname);
+	if (!init_names())
+		return 1;
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {

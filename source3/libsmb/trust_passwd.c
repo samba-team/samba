@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
-
 /*********************************************************
  Change the domain password on the PDC.
 
@@ -45,7 +43,7 @@ static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_
 		return result;
 	}
 
-	result = cli_net_srv_pwset(cli, mem_ctx, global_myname, new_trust_passwd_hash);
+	result = cli_net_srv_pwset(cli, mem_ctx, global_myname(), new_trust_passwd_hash);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("just_change_the_password: unable to change password (%s)!\n",
@@ -99,7 +97,7 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 **********************************************************/
 
 NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-					   char *domain) 
+					   const char *domain) 
 {
 	unsigned char old_trust_passwd_hash[16];
 	char *up_domain;

@@ -23,9 +23,6 @@
 
 #include "includes.h"
 
-extern char **my_netbios_names;
-extern fstring global_myworkgroup;
-
 extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
 
 /****************************************************************************
@@ -51,10 +48,10 @@ void register_my_workgroup_one_subnet(struct subnet_record *subrec)
 	struct work_record *work;
 
 	/* Create the workgroup on the subnet. */
-	if((work = create_workgroup_on_subnet(subrec, global_myworkgroup, 
+	if((work = create_workgroup_on_subnet(subrec, lp_workgroup(), 
 					      PERMANENT_TTL)) == NULL) {
 		DEBUG(0,("register_my_workgroup_and_names: Failed to create my workgroup %s on subnet %s. \
-Exiting.\n", global_myworkgroup, subrec->subnet_name));
+Exiting.\n", lp_workgroup(), subrec->subnet_name));
 		return;
 	}
 
@@ -63,14 +60,14 @@ Exiting.\n", global_myworkgroup, subrec->subnet_name));
 	add_samba_names_to_subnet(subrec);
 
 	/* Register all our names including aliases. */
-	for (i=0; my_netbios_names[i]; i++) {
-		register_name(subrec, my_netbios_names[i],0x20,samba_nb_type,
+	for (i=0; my_netbios_names(i); i++) {
+		register_name(subrec, my_netbios_names(i),0x20,samba_nb_type,
 			      NULL,
 			      my_name_register_failed, NULL);
-		register_name(subrec, my_netbios_names[i],0x03,samba_nb_type,
+		register_name(subrec, my_netbios_names(i),0x03,samba_nb_type,
 			      NULL,
 			      my_name_register_failed, NULL);
-		register_name(subrec, my_netbios_names[i],0x00,samba_nb_type,
+		register_name(subrec, my_netbios_names(i),0x00,samba_nb_type,
 			      NULL,
 			      my_name_register_failed, NULL);
 	}
@@ -133,7 +130,7 @@ BOOL register_my_workgroup_and_names(void)
 
   add_samba_names_to_subnet(unicast_subnet);
 
-  for (i=0; my_netbios_names[i]; i++)
+  for (i=0; my_netbios_names(i); i++)
   {
     for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
     {
@@ -142,13 +139,13 @@ BOOL register_my_workgroup_and_names(void)
        */
       struct nmb_name nmbname;
 
-      make_nmb_name(&nmbname, my_netbios_names[i],0x20);
+      make_nmb_name(&nmbname, my_netbios_names(i),0x20);
       insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
 
-      make_nmb_name(&nmbname, my_netbios_names[i],0x3);
+      make_nmb_name(&nmbname, my_netbios_names(i),0x3);
       insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
 
-      make_nmb_name(&nmbname, my_netbios_names[i],0x0);
+      make_nmb_name(&nmbname, my_netbios_names(i),0x0);
       insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type);
     }
   }
@@ -165,10 +162,10 @@ BOOL register_my_workgroup_and_names(void)
      */
     struct nmb_name nmbname;
 
-    make_nmb_name(&nmbname, global_myworkgroup, 0x0);
+    make_nmb_name(&nmbname, lp_workgroup(), 0x0);
     insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
 
-    make_nmb_name(&nmbname, global_myworkgroup, 0x1e);
+    make_nmb_name(&nmbname, lp_workgroup(), 0x1e);
     insert_refresh_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
   }
 

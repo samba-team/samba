@@ -64,7 +64,7 @@ END {
 
 /^FN_LOCAL_LIST/ {
   split($0,a,"[,()]")
-  printf "char **%s(int );\n", a[2]
+  printf "const char **%s(int );\n", a[2]
 }
 
 /^FN_LOCAL_STRING/ {
@@ -94,7 +94,7 @@ END {
 
 /^FN_GLOBAL_LIST/ {
   split($0,a,"[,()]")
-  printf "char **%s(void);\n", a[2]
+  printf "const char **%s(void);\n", a[2]
 }
 
 /^FN_GLOBAL_STRING/ {

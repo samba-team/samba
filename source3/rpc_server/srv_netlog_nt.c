@@ -29,8 +29,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-extern pstring global_myname;
-
 /*************************************************************************
  init_net_r_req_chal:
  *************************************************************************/
@@ -687,8 +685,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		pstrcpy(my_name, global_myname);
-		strupper(my_name);
+		pstrcpy(my_name, global_myname());
 
 		/*
 		 * This is the point at which we get the group

@@ -402,7 +402,7 @@ BOOL winbindd_param_init(void)
 BOOL check_domain_env(char *domain_env, char *domain)
 {
 	fstring name;
-	char *tmp = domain_env;
+	const char *tmp = domain_env;
 
 	while(next_token(&tmp, name, ",", sizeof(fstring))) {
 		if (strequal(name, domain))
@@ -413,7 +413,6 @@ BOOL check_domain_env(char *domain_env, char *domain)
 }
 
 /* Parse a string of the form DOMAIN/user into a domain and a user */
-extern fstring global_myworkgroup;
 
 BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 {
@@ -424,7 +423,7 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 	
 	if(!p && lp_winbind_use_default_domain()) {
 		fstrcpy(user, domuser);
-		fstrcpy(domain, global_myworkgroup);
+		fstrcpy(domain, lp_workgroup());
 	} else {
 		fstrcpy(user, p+1);
 		fstrcpy(domain, domuser);
@@ -439,13 +438,13 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
     'winbind separator' options.
     This means:
 	- omit DOMAIN when 'winbind use default domain = true' and DOMAIN is
-	global_myworkgroup
+	lp_workgroup
 	 
 */
 void fill_domain_username(fstring name, const char *domain, const char *user)
 {
 	if(lp_winbind_use_default_domain() &&
-	    !strcmp(global_myworkgroup, domain)) {
+	    !strcmp(lp_workgroup(), domain)) {
 		strlcpy(name, user, sizeof(fstring));
 	} else {
 		slprintf(name, sizeof(fstring) - 1, "%s%s%s",

@@ -79,7 +79,6 @@ static void generate_random_sid(DOM_SID *sid)
 static BOOL pdb_generate_sam_sid(void)
 {
 	char *fname = NULL;
-	extern pstring global_myname;
 	BOOL is_dc = False;
 
 	if(global_sam_sid==NULL)
@@ -98,7 +97,7 @@ static BOOL pdb_generate_sam_sid(void)
 		break;
 	}
 
-	if (secrets_fetch_domain_sid(global_myname, global_sam_sid)) {
+	if (secrets_fetch_domain_sid(global_myname(), global_sam_sid)) {
 		DOM_SID domain_sid;
 
 		/* We got our sid. If not a pdc/bdc, we're done. */
@@ -137,7 +136,7 @@ static BOOL pdb_generate_sam_sid(void)
 
 	if (read_sid_from_file(fname, global_sam_sid)) {
 		/* remember it for future reference and unlink the old MACHINE.SID */
-		if (!secrets_store_domain_sid(global_myname, global_sam_sid)) {
+		if (!secrets_store_domain_sid(global_myname(), global_sam_sid)) {
 			DEBUG(0,("pdb_generate_sam_sid: Failed to store SID from file.\n"));
 			SAFE_FREE(fname);
 			return False;
@@ -162,7 +161,7 @@ static BOOL pdb_generate_sam_sid(void)
            generate one and save it */
 	generate_random_sid(global_sam_sid);
 
-	if (!secrets_store_domain_sid(global_myname, global_sam_sid)) {
+	if (!secrets_store_domain_sid(global_myname(), global_sam_sid)) {
 		DEBUG(0,("pdb_generate_sam_sid: Failed to store generated machine SID.\n"));
 		return False;
 	}

@@ -44,8 +44,8 @@ static const struct {
  Do an old lanman2 style session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user, 
-				      char *pass, int passlen, const char *workgroup)
+static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user, 
+				      const char *pass, int passlen, const char *workgroup)
 {
 	fstring pword;
 	char *p;
@@ -183,8 +183,8 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
  Do a NT1 plaintext session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user, 
-					char *pass, char *workgroup)
+static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user, 
+					const char *pass, const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
@@ -228,7 +228,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 	return True;
 }
 
-static void set_signing_on_cli (struct cli_state *cli, char* pass, uint8 response[24]) 
+static void set_signing_on_cli (struct cli_state *cli, const char* pass, uint8 response[24]) 
 {
 	uint8 zero_sig[8];
 	ZERO_STRUCT(zero_sig);
@@ -264,10 +264,10 @@ static void set_temp_signing_on_cli(struct cli_state *cli)
    @param workgroup The user's domain.
 ****************************************************************************/
 
-static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user, 
-				  char *pass, int passlen,
-				  char *ntpass, int ntpasslen,
-				  char *workgroup)
+static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user, 
+				  const char *pass, int passlen,
+				  const char *ntpass, int ntpasslen,
+				  const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	uchar pword[24];
@@ -423,7 +423,7 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
  Do a spnego/kerberos encrypted session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principal, char *workgroup)
+static BOOL cli_session_setup_kerberos(struct cli_state *cli, const char *principal, const char *workgroup)
 {
 	DATA_BLOB blob2, negTokenTarg;
 
@@ -453,8 +453,8 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principal, c
  Do a spnego/NTLMSSP encrypted session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user, 
-				      char *pass, char *workgroup)
+static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user, 
+				      const char *pass, const char *workgroup)
 {
 	DATA_BLOB msg1, struct_blob;
 	DATA_BLOB blob, chal1, chal2, auth, challenge_blob;
@@ -581,8 +581,8 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
  Do a spnego encrypted session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user, 
-				     char *pass, char *workgroup)
+static BOOL cli_session_setup_spnego(struct cli_state *cli, const char *user, 
+				     const char *pass, const char *workgroup)
 {
 	char *principal;
 	char *OIDs[ASN1_MAX_OIDS];
@@ -646,10 +646,10 @@ ntlmssp:
 ****************************************************************************/
 
 BOOL cli_session_setup(struct cli_state *cli, 
-		       char *user, 
-		       char *pass, int passlen,
-		       char *ntpass, int ntpasslen,
-		       char *workgroup)
+		       const char *user, 
+		       const char *pass, int passlen,
+		       const char *ntpass, int ntpasslen,
+		       const char *workgroup)
 {
 	char *p;
 	fstring user2;
@@ -1130,8 +1130,8 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
  Initialise client credentials for authenticated pipe access.
 ****************************************************************************/
 
-static void init_creds(struct ntuser_creds *creds, char* username,
-		       char* domain, char* password)
+static void init_creds(struct ntuser_creds *creds, const char* username,
+		       const char* domain, const char* password)
 {
 	ZERO_STRUCTP(creds);
 
@@ -1163,9 +1163,9 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     const char *my_name, 
 			     const char *dest_host, 
 			     struct in_addr *dest_ip, int port,
-			     char *service, char *service_type,
-			     char *user, char *domain, 
-			     char *password, int flags,
+			     const char *service, const char *service_type,
+			     const char *user, const char *domain, 
+			     const char *password, int flags,
 			     BOOL *retry) 
 {
 	struct ntuser_creds creds;
@@ -1174,13 +1174,12 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct nmb_name called;
 	struct cli_state *cli;
 	struct in_addr ip;
-	extern pstring global_myname;
 
 	if (retry)
 		*retry = False;
 
 	if (!my_name) 
-		my_name = global_myname;
+		my_name = global_myname();
 	
 	if (!(cli = cli_initialise(NULL)))
 		return NT_STATUS_NO_MEMORY;
@@ -1258,7 +1257,7 @@ again:
 
 	if (service) {
 		if (!cli_send_tconX(cli, service, service_type,
-				    (char*)password, strlen(password)+1)) {
+				    password, strlen(password)+1)) {
 			DEBUG(1,("failed tcon_X with %s\n", nt_errstr(nt_status)));
 			nt_status = cli_nt_error(cli);
 			cli_shutdown(cli);

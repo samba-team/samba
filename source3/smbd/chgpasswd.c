@@ -290,7 +290,7 @@ static void pwd_sub(char *buf)
 	all_string_sub(buf, "\\t", "\t", 0);
 }
 
-static int talktochild(int master, char *seq)
+static int talktochild(int master, const char *seq)
 {
 	int count = 0;
 	fstring issue, expected;
