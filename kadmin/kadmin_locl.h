@@ -181,4 +181,9 @@ sig_atomic_t term_flag, doing_useful_work;
 void parse_ports(krb5_context, const char*);
 int start_server(krb5_context);
 
+/* server.c */
+
+krb5_error_code
+kadmind_loop (krb5_context, krb5_auth_context, krb5_keytab, int);
+
 #endif /* __ADMIN_LOCL_H__ */
