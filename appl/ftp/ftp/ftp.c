@@ -312,7 +312,8 @@ getreply (int expecteof)
     char *lead_string;
     int c;
     struct sigaction sa, osa;
-    char buf[1024];
+    char buf[8192];
+    int long_warn = 0;
 
     sigemptyset (&sa.sa_mask);
     sa.sa_flags = 0;
@@ -368,7 +369,7 @@ getreply (int expecteof)
 		if (verbose > 0 || (verbose > -1 && code > 499))
 		    fprintf (stdout, "%s%s\n", lead_string, buf);
 		if (buf[3] == ' ') {
-		    strcpy (reply_string, buf);
+		    strlcpy (reply_string, buf, sizeof(reply_string));
 		    if (code >= 200)
 			cpend = 0;
 		    sigaction (SIGINT, &osa, NULL);
@@ -381,17 +382,12 @@ getreply (int expecteof)
 			osa.sa_handler (SIGINT);
 #endif
 		    if (code == 227 || code == 229) {
-			char *p, *q;
+			char *p;
 
-			pasv[0] = 0;
 			p = strchr (reply_string, '(');
 			if (p) {
 			    p++;
-			    q = strchr(p, ')');
-			    if(q){
-				memcpy (pasv, p, q - p);
-				pasv[q - p] = 0;
-			    }
+			    strlcpy(pasv, p, sizeof(pasv));
 			}
 		    }
 		    return code / 100;
@@ -404,9 +400,15 @@ getreply (int expecteof)
 		}
 	    }
 	    p = buf;
+	    long_warn = 0;
 	    continue;
 	default:
-	    *p++ = c;
+	    if(p < buf + sizeof(buf) - 1)
+		*p++ = c; 
+	    else if(long_warn == 0) {
+		fprintf(stderr, "WARNING: incredibly long line received\n");
+		long_warn = 1;
+	    }
 	}
     }
 
