@@ -2950,6 +2950,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#WINBINDUSEDEFAULTDOMAIN"
+><TT
+CLASS="PARAMETER"
+><I
+>winbind use default domain</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#WINSHOOK"
 ><TT
 CLASS="PARAMETER"
@@ -3024,7 +3036,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN978"
+NAME="AEN982"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3582,6 +3594,18 @@ HREF="#INCLUDE"
 CLASS="PARAMETER"
 ><I
 >include</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#INHERITACLS"
+><TT
+CLASS="PARAMETER"
+><I
+>inherit acls</I
 ></TT
 ></A
 ></P
@@ -4491,7 +4515,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1466"
+NAME="AEN1474"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -9280,6 +9304,21 @@ CLASS="COMMAND"
 >include = /usr/local/samba/lib/admin_smb.conf
 		</B
 ></P
+></DD
+><DT
+><A
+NAME="INHERITACLS"
+></A
+>inherit acls(S)</DT
+><DD
+><P
+>		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>inherit acls = no</B
+>
+		</P
 ></DD
 ><DT
 ><A
@@ -18729,7 +18768,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDCACHETIME"
 ></A
->winbind cache time</DT
+>winbind cache time (G)</DT
 ><DD
 ><P
 >This parameter specifies the number of seconds the
@@ -18750,8 +18789,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDENUMUSERS"
 ></A
->winbind enum
-		users</DT
+>winbind enum users (G)</DT
 ><DD
 ><P
 >On large installations using
@@ -18802,8 +18840,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDENUMGROUPS"
 ></A
->winbind enum
-		groups</DT
+>winbind enum groups (G)</DT
 ><DD
 ><P
 >On large installations using
@@ -18853,7 +18890,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDGID"
 ></A
->winbind gid</DT
+>winbind gid (G)</DT
 ><DD
 ><P
 >The winbind gid parameter specifies the range of group 
@@ -18880,7 +18917,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDSEPARATOR"
 ></A
->winbind separator</DT
+>winbind separator (G)</DT
 ><DD
 ><P
 >This parameter allows an admin to define the character 
@@ -18924,7 +18961,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDUID"
 ></A
->winbind uid</DT
+>winbind uid (G)</DT
 ><DD
 ><P
 >The winbind gid parameter specifies the range of group 
@@ -18946,6 +18983,26 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >winbind uid = 10000-20000</B
 ></P
+></DD
+><DT
+><A
+NAME="WINBINDUSEDEFAULTDOMAIN"
+></A
+>winbind use default domain (G)</DT
+><DD
+><P
+>This option controls whether or not smbd
+		should lookup 'username' as 'DOMAIN\username' when winbindd is
+		running on a system.  This is most useful when used in conjunction
+		with pam_winbind.so to prevent a Windows user from having to enter
+		commands like "ssh 'DOMAIN\username@hostname'".  This option is disabled 
+		by default, thus requiring that the DOMAIN\username format be used.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>winbind use default domain = no</B
+>
+		</P
 ></DD
 ><DT
 ><A
@@ -19316,7 +19373,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6104"
+NAME="AEN6126"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19346,7 +19403,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6110"
+NAME="AEN6132"
 ></A
 ><H2
 >VERSION</H2
@@ -19357,7 +19414,7 @@ NAME="AEN6110"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6113"
+NAME="AEN6135"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19436,7 +19493,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6133"
+NAME="AEN6155"
 ></A
 ><H2
 >AUTHOR</H2

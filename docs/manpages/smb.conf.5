@@ -1026,6 +1026,9 @@ each parameter for details. Note that some are synonyms.
 \fIwinbind uid\fR
 .TP 0.2i
 \(bu
+\fIwinbind use default domain\fR
+.TP 0.2i
+\(bu
 \fIwins hook\fR
 .TP 0.2i
 \(bu
@@ -1184,6 +1187,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIinclude\fR
+.TP 0.2i
+\(bu
+\fIinherit acls\fR
 .TP 0.2i
 \(bu
 \fIinherit permissions\fR
@@ -3246,6 +3252,10 @@ Default: \fBno file included\fR
 
 Example: \fBinclude = /usr/local/samba/lib/admin_smb.conf
 \fR.TP
+\fBinherit acls(S)\fR
+
+Default: \fBinherit acls = no\fR
+.TP
 \fBinherit permissions (S)\fR
 The permissions on new files and directories 
 are normally governed by \fI create mask\fR,  \fIdirectory mask\fR, \fIforce create mode\fR
@@ -7150,7 +7160,7 @@ that Samba has to do in order to perform the link checks.
 
 Default: \fBwide links = yes\fR
 .TP
-\fBwinbind cache time\fR
+\fBwinbind cache time (G)\fR
 This parameter specifies the number of seconds the
 winbindd(8)daemon will cache 
 user and group information before querying a Windows NT server 
@@ -7158,7 +7168,7 @@ again.
 
 Default: \fBwinbind cache type = 15\fR
 .TP
-\fBwinbind enum users\fR
+\fBwinbind enum users (G)\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of users through the
@@ -7177,7 +7187,7 @@ usernames.
 
 Default: \fBwinbind enum users = yes \fR
 .TP
-\fBwinbind enum groups\fR
+\fBwinbind enum groups (G)\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of groups through the
@@ -7193,7 +7203,7 @@ enumeration may cause some programs to behave oddly.
 
 Default: \fBwinbind enum groups = yes \fR
 .TP
-\fBwinbind gid\fR
+\fBwinbind gid (G)\fR
 The winbind gid parameter specifies the range of group 
 ids that are allocated by the  winbindd(8)daemon. This range of group ids should have no 
 existing local or NIS groups within it as strange conflicts can 
@@ -7203,7 +7213,7 @@ Default: \fBwinbind gid = <empty string>
 \fR
 Example: \fBwinbind gid = 10000-20000\fR
 .TP
-\fBwinbind separator\fR
+\fBwinbind separator (G)\fR
 This parameter allows an admin to define the character 
 used when listing a username of the form of \fIDOMAIN
 \fR\\\fIuser\fR. This parameter 
@@ -7218,7 +7228,7 @@ Example: \fBwinbind separator = \\\\\fR
 
 Example: \fBwinbind separator = /\fR
 .TP
-\fBwinbind uid\fR
+\fBwinbind uid (G)\fR
 The winbind gid parameter specifies the range of group 
 ids that are allocated by the  winbindd(8)daemon. This range of ids should have no 
 existing local or NIS users within it as strange conflicts can 
@@ -7227,6 +7237,16 @@ occur otherwise.
 Default: \fBwinbind uid = <empty string>
 \fR
 Example: \fBwinbind uid = 10000-20000\fR
+.TP
+\fBwinbind use default domain (G)\fR
+This option controls whether or not smbd
+should lookup 'username' as 'DOMAIN\\username' when winbindd is
+running on a system. This is most useful when used in conjunction
+with pam_winbind.so to prevent a Windows user from having to enter
+commands like "ssh 'DOMAIN\\username@hostname'". This option is disabled 
+by default, thus requiring that the DOMAIN\\username format be used.
+
+Default: \fBwinbind use default domain = no\fR
 .TP
 \fBwins hook (G)\fR
 When Samba is running as a WINS server this 

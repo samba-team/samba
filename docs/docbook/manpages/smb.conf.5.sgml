@@ -766,6 +766,7 @@
 		<listitem><para><link linkend="WINBINDGID"><parameter>winbind gid</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDSEPARATOR"><parameter>winbind separator</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDUID"><parameter>winbind uid</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDUSEDEFAULTDOMAIN"><parameter>winbind use default domain</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSHOOK"><parameter>wins hook</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSPROXY"><parameter>wins proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSSERVER"><parameter>wins server</parameter></link></para></listitem>
@@ -830,6 +831,7 @@
 		<listitem><para><link linkend="HOSTSALLOW"><parameter>hosts allow</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOSTSDENY"><parameter>hosts deny</parameter></link></para></listitem>
 		<listitem><para><link linkend="INCLUDE"><parameter>include</parameter></link></para></listitem>
+		<listitem><para><link linkend="INHERITACLS"><parameter>inherit acls</parameter></link></para></listitem>
 		<listitem><para><link linkend="INHERITPERMISSIONS"><parameter>inherit permissions</parameter></link></para></listitem>
 		<listitem><para><link linkend="INVALIDUSERS"><parameter>invalid users</parameter></link></para></listitem>
 		<listitem><para><link linkend="LEVEL2OPLOCKS"><parameter>level2 oplocks</parameter></link></para></listitem>
@@ -3202,6 +3204,18 @@
 		<para>Example: <command>include = /usr/local/samba/lib/admin_smb.conf
 		</command></para></listitem>
 		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="INHERITACLS">inherit acls(S)</term>
+		<listitem><para>
+		</para>
+
+		<para>Default: <command>inherit acls = no</command>
+		</para></listitem>
+		</varlistentry>
+		
 
 
 
@@ -8182,7 +8196,7 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 
 		<varlistentry>
-		<term><anchor id="WINBINDCACHETIME">winbind cache time</term>
+		<term><anchor id="WINBINDCACHETIME">winbind cache time (G)</term>
 		<listitem><para>This parameter specifies the number of seconds the
 		<ulink url="winbindd.8.html">winbindd(8)</ulink> daemon will cache 
 		user and group information before querying a Windows NT server 
@@ -8194,8 +8208,8 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 
 		<varlistentry>
-		<term><anchor id="WINBINDENUMUSERS">winbind enum
-		users</term> <listitem><para>On large installations using
+		<term><anchor id="WINBINDENUMUSERS">winbind enum users (G)</term> 
+		<listitem><para>On large installations using
 		<ulink url="winbindd.8.html">winbindd(8)</ulink> it may be
 		necessary to suppress the enumeration of users through the
 		<command> setpwent()</command>,
@@ -8216,8 +8230,8 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		</varlistentry>
 		
 		<varlistentry>
-		<term><anchor id="WINBINDENUMGROUPS">winbind enum
-		groups</term> <listitem><para>On large installations using
+		<term><anchor id="WINBINDENUMGROUPS">winbind enum groups (G)</term> 
+		<listitem><para>On large installations using
 		<ulink url="winbindd.8.html">winbindd(8)</ulink> it may be
 		necessary to suppress the enumeration of groups through the
 		<command> setgrent()</command>,
@@ -8237,7 +8251,7 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 	
 		<varlistentry>
-		<term><anchor id="WINBINDGID">winbind gid</term>
+		<term><anchor id="WINBINDGID">winbind gid (G)</term>
 		<listitem><para>The winbind gid parameter specifies the range of group 
 		ids that are allocated by the <ulink url="winbindd.8.html">
 		winbindd(8)</ulink> daemon.  This range of group ids should have no 
@@ -8253,7 +8267,7 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 
 		<varlistentry>
-		<term><anchor id="WINBINDSEPARATOR">winbind separator</term>
+		<term><anchor id="WINBINDSEPARATOR">winbind separator (G)</term>
 		<listitem><para>This parameter allows an admin to define the character 
 		used when listing a username of the form of <replaceable>DOMAIN
 		</replaceable>\<replaceable>user</replaceable>.  This parameter 
@@ -8274,7 +8288,7 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 
 		<varlistentry>
-		<term><anchor id="WINBINDUID">winbind uid</term>
+		<term><anchor id="WINBINDUID">winbind uid (G)</term>
 		<listitem><para>The winbind gid parameter specifies the range of group 
 		ids that are allocated by the <ulink url="winbindd.8.html">
 		winbindd(8)</ulink> daemon.  This range of ids should have no 
@@ -8286,6 +8300,22 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		
 		<para>Example: <command>winbind uid = 10000-20000</command></para>
 		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="WINBINDUSEDEFAULTDOMAIN">winbind use default domain (G)</term>
+		<listitem><para>This option controls whether or not smbd
+		should lookup 'username' as 'DOMAIN\username' when winbindd is
+		running on a system.  This is most useful when used in conjunction
+		with pam_winbind.so to prevent a Windows user from having to enter
+		commands like "ssh 'DOMAIN\username@hostname'".  This option is disabled 
+		by default, thus requiring that the DOMAIN\username format be used.</para>
+
+		<para>Default: <command>winbind use default domain = no</command>
+		</para></listitem>
 		</varlistentry>
 
 
