@@ -490,6 +490,9 @@ static void process(void)
 
     /* free up temp memory */
     lp_talloc_free();
+
+    /* check for internal messages */
+    message_init();
   }
 } /* process */
 
@@ -791,6 +794,7 @@ static void usage(char *pname)
   }
 
   pidfile_create("nmbd");
+  message_init();
 
   DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 
