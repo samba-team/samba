@@ -161,13 +161,16 @@ static void show_parameter(int snum, struct parm_struct *parm)
 {
 	int i;
 	void *ptr = parm->ptr;
+	char* str;
 
 	if (parm->class == P_LOCAL && snum >= 0) {
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
+	str = stripspace(parm->label);
+	strupper (str);
 	printf("<tr><td><A HREF=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\">Help</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s</td><td>", 
-	       stripspace(parm->label), parm->label);
+	       str, parm->label);
 
 	switch (parm->type) {
 	case P_CHAR:
@@ -649,7 +652,7 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 		return ret;
 	}
 
-	if(!initialize_password_db()) {
+	if(!initialize_password_db(True)) {
 		printf("Can't setup password database vectors.\n<p>");
 		return False;
 	}
@@ -873,7 +876,7 @@ static void printers_page(void)
 	printf("<H3>Important Note:</H3>\n");
 	printf("Printer names marked with [*] in the Choose Printer drop-down box ");
 	printf("are autoloaded printers from ");
-	printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">Printcap Name</A>.\n");
+	printf("<A HREF=\"/swat/help/smb.conf.5.html#PRINTCAPNAME\" target=\"docs\">Printcap Name</A>.\n");
 	printf("Attempting to delete these printers from SWAT will have no effect.\n");
 
 	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
