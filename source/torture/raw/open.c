@@ -157,13 +157,13 @@ static BOOL test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Checking RAW_OPEN_OPEN\n");
 
-	io.open.level = RAW_OPEN_OPEN;
-	io.open.in.fname = fname;
-	io.open.in.flags = OPEN_FLAGS_FCB;
-	io.open.in.search_attrs = 0;
+	io.openold.level = RAW_OPEN_OPEN;
+	io.openold.in.fname = fname;
+	io.openold.in.flags = OPEN_FLAGS_FCB;
+	io.openold.in.search_attrs = 0;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-	fnum = io.open.out.fnum;
+	fnum = io.openold.out.fnum;
 
 	smbcli_unlink(cli->tree, fname);
 	CREATE_FILE;
@@ -171,80 +171,80 @@ static BOOL test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.open.out.fnum;
+	fnum = io.openold.out.fnum;
 	CHECK_RDWR(fnum, RDWR_RDWR);
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.open.out.fnum;
+	fnum2 = io.openold.out.fnum;
 	CHECK_RDWR(fnum2, RDWR_RDWR);
 	smbcli_close(cli->tree, fnum2);
 	smbcli_close(cli->tree, fnum);
 
 	/* check the read/write modes */
-	io.open.level = RAW_OPEN_OPEN;
-	io.open.in.fname = fname;
-	io.open.in.search_attrs = 0;
+	io.openold.level = RAW_OPEN_OPEN;
+	io.openold.in.fname = fname;
+	io.openold.in.search_attrs = 0;
 
-	io.open.in.flags = OPEN_FLAGS_OPEN_READ;
+	io.openold.in.flags = OPEN_FLAGS_OPEN_READ;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.open.out.fnum;
+	fnum = io.openold.out.fnum;
 	CHECK_RDWR(fnum, RDWR_RDONLY);
 	smbcli_close(cli->tree, fnum);
 
-	io.open.in.flags = OPEN_FLAGS_OPEN_WRITE;
+	io.openold.in.flags = OPEN_FLAGS_OPEN_WRITE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.open.out.fnum;
+	fnum = io.openold.out.fnum;
 	CHECK_RDWR(fnum, RDWR_WRONLY);
 	smbcli_close(cli->tree, fnum);
 
-	io.open.in.flags = OPEN_FLAGS_OPEN_RDWR;
+	io.openold.in.flags = OPEN_FLAGS_OPEN_RDWR;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.open.out.fnum;
+	fnum = io.openold.out.fnum;
 	CHECK_RDWR(fnum, RDWR_RDWR);
 	smbcli_close(cli->tree, fnum);
 
 	/* check the share modes roughly - not a complete matrix */
-	io.open.in.flags = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_WRITE;
+	io.openold.in.flags = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_WRITE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.open.out.fnum;
+	fnum = io.openold.out.fnum;
 	CHECK_RDWR(fnum, RDWR_RDWR);
 	
-	if (io.open.in.flags != io.open.out.rmode) {
+	if (io.openold.in.flags != io.openold.out.rmode) {
 		printf("(%s) rmode should equal flags - 0x%x 0x%x\n",
-		       __location__, io.open.out.rmode, io.open.in.flags);
+		       __location__, io.openold.out.rmode, io.openold.in.flags);
 	}
 
-	io.open.in.flags = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_NONE;
+	io.openold.in.flags = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_NONE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
-	io.open.in.flags = OPEN_FLAGS_OPEN_READ | OPEN_FLAGS_DENY_NONE;
+	io.openold.in.flags = OPEN_FLAGS_OPEN_READ | OPEN_FLAGS_DENY_NONE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.open.out.fnum;
+	fnum2 = io.openold.out.fnum;
 	CHECK_RDWR(fnum2, RDWR_RDONLY);
 	smbcli_close(cli->tree, fnum);
 	smbcli_close(cli->tree, fnum2);
 
 
 	/* check the returned write time */
-	io.open.level = RAW_OPEN_OPEN;
-	io.open.in.fname = fname;
-	io.open.in.search_attrs = 0;
-	io.open.in.flags = OPEN_FLAGS_OPEN_READ;
+	io.openold.level = RAW_OPEN_OPEN;
+	io.openold.in.fname = fname;
+	io.openold.in.search_attrs = 0;
+	io.openold.in.flags = OPEN_FLAGS_OPEN_READ;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.open.out.fnum;
+	fnum = io.openold.out.fnum;
 
 	/* check other reply fields */
-	CHECK_TIME(io.open.out.write_time, write_time);
-	CHECK_ALL_INFO(io.open.out.size, size);
-	CHECK_ALL_INFO(io.open.out.attrib, attrib & ~FILE_ATTRIBUTE_NONINDEXED);
+	CHECK_TIME(io.openold.out.write_time, write_time);
+	CHECK_ALL_INFO(io.openold.out.size, size);
+	CHECK_ALL_INFO(io.openold.out.attrib, attrib & ~FILE_ATTRIBUTE_NONINDEXED);
 
 done:
 	smbcli_close(cli->tree, fnum);

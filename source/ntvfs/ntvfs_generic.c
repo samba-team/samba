@@ -221,39 +221,39 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 	case RAW_OPEN_OPEN:
 		ZERO_STRUCT(io2->generic.in);
 		io2->generic.level = RAW_OPEN_GENERIC;
-		io2->generic.in.file_attr = io->open.in.search_attrs;
-		io2->generic.in.fname = io->open.in.fname;
+		io2->generic.in.file_attr = io->openold.in.search_attrs;
+		io2->generic.in.fname = io->openold.in.fname;
 		io2->generic.in.open_disposition = NTCREATEX_DISP_OPEN;
 		DEBUG(9,("ntvfs_map_open(OPEN): mapping flags=0x%x\n",
-			io->open.in.flags));
-		switch (io->open.in.flags & OPEN_FLAGS_MODE_MASK) {
+			io->openold.in.flags));
+		switch (io->openold.in.flags & OPEN_FLAGS_MODE_MASK) {
 			case OPEN_FLAGS_OPEN_READ:
 				io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ;
-				io->open.out.rmode = DOS_OPEN_RDONLY;
+				io->openold.out.rmode = DOS_OPEN_RDONLY;
 				break;
 			case OPEN_FLAGS_OPEN_WRITE:
 				io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_WRITE;
-				io->open.out.rmode = DOS_OPEN_WRONLY;
+				io->openold.out.rmode = DOS_OPEN_WRONLY;
 				break;
 			case OPEN_FLAGS_OPEN_RDWR:
 			case 0xf: /* FCB mode */
 				io2->generic.in.access_mask = GENERIC_RIGHTS_FILE_READ |
 					GENERIC_RIGHTS_FILE_WRITE;
-				io->open.out.rmode = DOS_OPEN_RDWR; /* assume we got r/w */
+				io->openold.out.rmode = DOS_OPEN_RDWR; /* assume we got r/w */
 				break;
 			default:
 				DEBUG(2,("ntvfs_map_open(OPEN): invalid mode 0x%x\n",
-					io->open.in.flags & OPEN_FLAGS_MODE_MASK));
+					io->openold.in.flags & OPEN_FLAGS_MODE_MASK));
 				return NT_STATUS_INVALID_PARAMETER;
 		}
 		
-		switch(io->open.in.flags & OPEN_FLAGS_DENY_MASK) {
+		switch(io->openold.in.flags & OPEN_FLAGS_DENY_MASK) {
 			case OPEN_FLAGS_DENY_DOS:
 				/* DENY_DOS is quite strange - it depends on the filename! */
-				if (is_exe_file(io->open.in.fname)) {
+				if (is_exe_file(io->openold.in.fname)) {
 					io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
 				} else {
-					if ((io->open.in.flags & OPEN_FLAGS_MODE_MASK) == 
+					if ((io->openold.in.flags & OPEN_FLAGS_MODE_MASK) == 
 					    OPEN_FLAGS_OPEN_READ) {
 						io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
 					} else {
@@ -279,11 +279,11 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 				break;
 			default:
 				DEBUG(2,("ntvfs_map_open(OPEN): invalid DENY 0x%x\n",
-					io->open.in.flags & OPEN_FLAGS_DENY_MASK));
+					io->openold.in.flags & OPEN_FLAGS_DENY_MASK));
 				return NT_STATUS_INVALID_PARAMETER;
 		}
 		DEBUG(9,("ntvfs_map_open(OPEN): mapped flags=0x%x to access_mask=0x%x and share_access=0x%x\n",
-			io->open.in.flags, io2->generic.in.access_mask, io2->generic.in.share_access));
+			io->openold.in.flags, io2->generic.in.access_mask, io2->generic.in.share_access));
 
 		status = ntvfs->ops->open(ntvfs, req, io2);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -291,11 +291,11 @@ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		}
 		
 		ZERO_STRUCT(io->openx.out);
-		io->open.out.fnum = io2->generic.out.fnum;
-		io->open.out.attrib = io2->generic.out.attrib;
-		io->open.out.write_time = nt_time_to_unix(io2->generic.out.write_time);
-		io->open.out.size = io2->generic.out.size;
-		io->open.out.rmode = DOS_OPEN_RDWR;
+		io->openold.out.fnum = io2->generic.out.fnum;
+		io->openold.out.attrib = io2->generic.out.attrib;
+		io->openold.out.write_time = nt_time_to_unix(io2->generic.out.write_time);
+		io->openold.out.size = io2->generic.out.size;
+		io->openold.out.rmode = DOS_OPEN_RDWR;
 		
 		return NT_STATUS_OK;
 	}

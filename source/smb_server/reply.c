@@ -407,11 +407,11 @@ static void reply_open_send(struct smbsrv_request *req)
 	/* construct reply */
 	req_setup_reply(req, 7, 0);
 
-	SSVAL(req->out.vwv, VWV(0), oi->open.out.fnum);
-	SSVAL(req->out.vwv, VWV(1), oi->open.out.attrib);
-	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(2), oi->open.out.write_time);
-	SIVAL(req->out.vwv, VWV(4), oi->open.out.size);
-	SSVAL(req->out.vwv, VWV(6), oi->open.out.rmode);
+	SSVAL(req->out.vwv, VWV(0), oi->openold.out.fnum);
+	SSVAL(req->out.vwv, VWV(1), oi->openold.out.attrib);
+	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(2), oi->openold.out.write_time);
+	SIVAL(req->out.vwv, VWV(4), oi->openold.out.size);
+	SSVAL(req->out.vwv, VWV(6), oi->openold.out.rmode);
 
 	req_send_reply(req);
 }
@@ -427,13 +427,13 @@ void reply_open(struct smbsrv_request *req)
 	REQ_CHECK_WCT(req, 2);
 	REQ_TALLOC(oi, sizeof(*oi));
 
-	oi->open.level = RAW_OPEN_OPEN;
-	oi->open.in.flags = SVAL(req->in.vwv, VWV(0));
-	oi->open.in.search_attrs = SVAL(req->in.vwv, VWV(1));
+	oi->openold.level = RAW_OPEN_OPEN;
+	oi->openold.in.flags = SVAL(req->in.vwv, VWV(0));
+	oi->openold.in.search_attrs = SVAL(req->in.vwv, VWV(1));
 
-	req_pull_ascii4(req, &oi->open.in.fname, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(req, &oi->openold.in.fname, req->in.data, STR_TERMINATE);
 
-	if (!oi->open.in.fname) {
+	if (!oi->openold.in.fname) {
 		req_reply_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
@@ -1396,7 +1396,7 @@ static void reply_printopen_send(struct smbsrv_request *req)
 	/* construct reply */
 	req_setup_reply(req, 1, 0);
 
-	SSVAL(req->out.vwv, VWV(0), oi->open.out.fnum);
+	SSVAL(req->out.vwv, VWV(0), oi->openold.out.fnum);
 
 	req_send_reply(req);
 }

@@ -1128,7 +1128,7 @@ union smb_open {
 			uint32_t size;
 			uint16_t rmode;
 		} out;
-	} open;
+	} openold;
 
 	/* SMBopenX interface */
 	struct {
