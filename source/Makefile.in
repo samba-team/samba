@@ -272,7 +272,7 @@ PROTO_OBJ = $(SMBD_OBJ_SRV) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
 	    $(PASSDB_OBJ) \
 	    $(READLINE_OBJ) $(CLIENT_OBJ1) \
-	    $(LIB_OBJ) $(POPT_LIB_OBJ) \
+	    $(LIB_OBJ) $(POPT_LIB_OBJ)
 
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
