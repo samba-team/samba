@@ -1,3 +1,8 @@
+2004-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_cred.c (init_tgs_req): if subkey not avaible, use
+	session key for authorization-data
+
 2004-06-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/connect.c (handle_tcp): note who is what that closed the
