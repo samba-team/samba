@@ -18,6 +18,7 @@ libkrb5_a_SOURCES = \
 	cache.c \
 	changepw.c \
 	checksum.c \
+	codec.c \
 	config_file.c \
 	convert_creds.c \
 	constants.c \
