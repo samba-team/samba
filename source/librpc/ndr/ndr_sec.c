@@ -138,3 +138,26 @@ size_t ndr_size_security_descriptor(struct security_descriptor *sd)
 	ret += ndr_size_security_acl(sd->sacl);
 	return ret;
 }
+
+/*
+  add a rid to a domain dom_sid to make a full dom_sid
+*/
+struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx, 
+				const struct dom_sid *domain_sid, 
+				uint32 rid)
+{
+	struct dom_sid *sid;
+
+	sid = talloc_p(mem_ctx, struct dom_sid);
+	if (!sid) return NULL;
+
+	*sid = *domain_sid;
+	sid->sub_auths = talloc_array_p(mem_ctx, uint32, sid->num_auths+1);
+	if (!sid->sub_auths) {
+		return NULL;
+	}
+	memcpy(sid->sub_auths, domain_sid->sub_auths, sid->num_auths*sizeof(uint32));
+	sid->sub_auths[sid->num_auths] = rid;
+	sid->num_auths++;
+	return sid;
+}
