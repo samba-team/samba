@@ -74,7 +74,12 @@ sub ParseElementPushScalar($$$)
 			$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $var_prefix$e->{NAME}));\n";
 		}
 	} else {
-		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}));\n";
+		if (util::is_scalar_type($e->{TYPE}) ||
+		    $e->{POINTERS}) {
+			$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}));\n";
+		} else {
+			$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, &$var_prefix$e->{NAME}));\n";
+		}
 	}
 }
 
@@ -141,7 +146,7 @@ sub ParseElementPushBuffer($$)
 		if (util::is_scalar_type($e->{TYPE})) {
 			$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, *$var_prefix$e->{NAME}));\n";
 		} elsif (!$e->{POINTERS}) {
-			$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, ndr_flags, *$var_prefix$e->{NAME}));\n";
+			$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, ndr_flags, &$var_prefix$e->{NAME}));\n";
 		} elsif (util::is_builtin_type($e->{TYPE})) {
 			$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $var_prefix$e->{NAME}));\n";
 		} else {
@@ -157,10 +162,11 @@ sub ParseElementPushBuffer($$)
 
 #####################################################################
 # parse buffers in a structure element - pull side
-sub ParseElementPullBuffer($$)
+sub ParseElementPullBuffer($$$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
+	my($ndr_flags) = shift;
 
 	if (util::has_property($e->{PROPERTIES}, "ref")) {
 		return;
@@ -179,11 +185,15 @@ sub ParseElementPullBuffer($$)
 	} else {
 		if (!$e->{POINTERS} ||
 		    $e->{TYPE} =~ "unistr") {
-			$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, &$var_prefix$e->{NAME}));\n";
+			if (util::is_builtin_type($e->{TYPE})) {
+				$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, &$var_prefix$e->{NAME}));\n";
+			} else {
+				$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, &$var_prefix$e->{NAME}));\n";
+			}
 		} elsif (util::is_builtin_type($e->{TYPE})) {
 			$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $var_prefix$e->{NAME}));\n";
 		} else {
-			$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, ndr_flags, $var_prefix$e->{NAME}));\n";
+			$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}));\n";
 		}
 	}
 
@@ -292,7 +302,7 @@ sub ParseStructPull($)
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPullBuffer($e, "r->");
+		ParseElementPullBuffer($e, "r->", "ndr_flags");
 	}
 
 	if (defined $struct_len) {
@@ -411,6 +421,16 @@ sub ParseFunctionPull($)
 	# pull function args
 	$res .= "NTSTATUS ndr_pull_$fn->{NAME}(struct ndr_pull *ndr, struct $fn->{NAME} *r)\n{\n";
 
+	# declare any internal pointers we need
+	foreach my $e (@{$fn->{DATA}}) {
+		if (util::has_property($e->{PROPERTIES}, "out") &&
+		    $e->{POINTERS} && 
+		    !util::is_scalar_type($e->{TYPE}) &&
+		    !util::has_property($e->{PROPERTIES}, "ref")) {
+			$res .= "\tuint32 _ptr_$e->{NAME};\n";
+		}
+	}
+
 	foreach my $arg (@{$fn->{DATA}}) {
 		if (util::has_property($arg->{PROPERTIES}, "out")) {
 			if ($arg->{POINTERS} &&
@@ -418,8 +438,7 @@ sub ParseFunctionPull($)
 				$res .= "\tNDR_ALLOC(ndr, r->out.$arg->{NAME});\n";
 			}
 			ParseElementPullScalar($arg, "r->out.", "NDR_SCALARS|NDR_BUFFERS");
-			ParseElementPullBuffer($arg, "r->out.");
-
+			ParseElementPullBuffer($arg, "r->out.", "NDR_SCALARS|NDR_BUFFERS");
 		}
 	}
 
