@@ -10,6 +10,10 @@ for f in $SCHEMA_NEEDED; do
 	    ln -s /etc/ldap/schema/$f.schema tests/schema/$f.schema
 	    continue;
 	fi
+	if [ -r /etc/openldap/schema/$f.schema ]; then
+	    ln -s /etc/openldap/schema/$f.schema tests/schema/$f.schema
+	    continue;
+	fi
 
 	echo "ERROR: you need the following OpenLDAP schema files in tests/schema/"
 	for f in $SCHEMA_NEEDED; do
