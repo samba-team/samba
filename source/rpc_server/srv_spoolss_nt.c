@@ -1208,6 +1208,14 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 	
 	DEBUG(8,("getprinterdata_printer_server:%s\n", value));
 		
+	if (!strcmp(value, "W3SvcInstalled")) {
+		*type = 0x4;
+		if((*data = (uint8 *)talloc_zero(ctx, 4*sizeof(uint8) )) == NULL)
+			return False;
+		*needed = 0x4;			
+		return True;
+	}
+
 	if (!strcmp(value, "BeepEnabled")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
@@ -3533,10 +3541,12 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 		return getprinter_level_2(snum, buffer, offered, needed);
 	case 3:		
 		return getprinter_level_3(snum, buffer, offered, needed);
+#if 0 	/* JERRY */
 	case 4:		
 		return getprinter_level_4(snum, buffer, offered, needed);
 	case 5:		
 		return getprinter_level_5(snum, buffer, offered, needed);
+#endif
 	}
 	return WERR_UNKNOWN_LEVEL;
 }	
@@ -4375,10 +4385,7 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
 		 get_called_name(), lp_servicename(snum));
 	fstrcpy(info->sharename, lp_servicename(snum));
-	info->attributes = PRINTER_ATTRIBUTE_SHARED   \
-		| PRINTER_ATTRIBUTE_LOCAL  \
-		| PRINTER_ATTRIBUTE_RAW_ONLY \
-		| PRINTER_ATTRIBUTE_QUEUED ;
+	info->attributes = PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK;
 	
 	return True;
 }

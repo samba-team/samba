@@ -2538,16 +2538,13 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	fstrcpy(info.printprocessor, "winprint");
 	fstrcpy(info.datatype, "RAW");
 
-	info.attributes = PRINTER_ATTRIBUTE_SHARED   \
-			 | PRINTER_ATTRIBUTE_LOCAL  \
-			 | PRINTER_ATTRIBUTE_RAW_ONLY \
-			 | PRINTER_ATTRIBUTE_QUEUED ;            /* attributes */
+	info.attributes = PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK;      /* attributes */
 
 	info.starttime = 0; /* Minutes since 12:00am GMT */
 	info.untiltime = 0; /* Minutes since 12:00am GMT */
 	info.priority = 1;
 	info.default_priority = 1;
-	info.setuptime = (uint32)time(NULL) - 86400;	/* minus 1 day */
+	info.setuptime = (uint32)time(NULL);
 
 	/*
 	 * I changed this as I think it is better to have a generic
@@ -2635,7 +2632,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 			info.parameters);
 
 	/* Samba has to have shared raw drivers. */
-	info.attributes |= (PRINTER_ATTRIBUTE_SHARED|PRINTER_ATTRIBUTE_RAW_ONLY);
+	info.attributes |= (PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK); 
 
 	/* Restore the stripped strings. */
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
