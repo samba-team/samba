@@ -432,15 +432,6 @@ be determined from a domain name. In essence a samba server that is in
 workgroup mode.
 </para></note>
 
-<note><para>
-<emphasis>Server level</emphasis> security is incompatible with the newer security features
-in recent MS Windows networking protocols. In particular it is incompatible with NTLMv2.
-Server Mode security also breaks Sign and Seal interoperability because only a domain member
-can sign packets in the manner in which it is currently implemented in Samba-3. 
-If you chose to use Server Mode security this means it is necessary to disable Sign and Seal
-on all workstations.
-</para></note>
-
 <sect3>
 <title>Example Configuration</title>
 <para><emphasis>
