@@ -355,11 +355,11 @@ NTSTATUS sam_get_account_unknown_3(const SAM_ACCOUNT_HANDLE *sampass, uint32 *un
  Collection of set...() functions for SAM_ACCOUNT_HANDLE_INFO.
  ********************************************************************/
 
-NTSTATUS sam_set_account_acct_ctrl(SAM_ACCOUNT_HANDLE *sampass, uint16 flags)
+NTSTATUS sam_set_account_acct_ctrl(SAM_ACCOUNT_HANDLE *sampass, uint16 acct_ctrl)
 {
 	SAM_ASSERT(sampass);
 		
-	sampass->private.acct_ctrl = flags;
+	sampass->private.acct_ctrl = acct_ctrl;
 
 	return NT_STATUS_OK;
 }
@@ -370,8 +370,6 @@ NTSTATUS sam_set_account_logon_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime, 
 
 	sampass->private.logon_time = mytime;
 
-	if (store)
-		sam_set_account_init_flag(sampass, FLAG_SAM_LOGONTIME); 
 
 	return NT_STATUS_UNSUCCESSFUL;
 }
@@ -382,9 +380,6 @@ NTSTATUS sam_set_account_logoff_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime,
 
 	sampass->private.logoff_time = mytime;
 
-	if (store)
-		sam_set_account_init_flag(sampass, FLAG_SAM_LOGOFFTIME); 
-
 	return NT_STATUS_OK;
 }
 
@@ -394,8 +389,6 @@ NTSTATUS sam_set_account_kickoff_time(SAM_ACCOUNT_HANDLE *sampass, NTTIME mytime
 
 	sampass->private.kickoff_time = mytime;
 
-	if (store)
-		sam_set_account_init_flag(sampass, FLAG_SAM_KICKOFFTIME); 
 
 	return NT_STATUS_OK;
 }
@@ -406,8 +399,6 @@ NTSTATUS sam_set_account_pass_can_change_time(SAM_ACCOUNT_HANDLE *sampass, NTTIM
 
 	sampass->private.pass_can_change_time = mytime;
 
-	if (store)
-		sam_set_account_init_flag(sampass, FLAG_SAM_CANCHANGETIME); 
 
 	return NT_STATUS_OK;
 }
@@ -417,9 +408,6 @@ NTSTATUS sam_set_account_pass_must_change_time(SAM_ACCOUNT_HANDLE *sampass, NTTI
 	SAM_ASSERT(sampass);
 
 	sampass->private.pass_must_change_time = mytime;
-
-	if (store)
-		sam_set_account_init_flag(sampass, FLAG_SAM_MUSTCHANGETIME); 
 
 	return NT_STATUS_OK;
 }
@@ -585,7 +573,6 @@ NTSTATUS sam_set_account_logon_script(SAM_ACCOUNT_HANDLE *sampass, const char *l
 
 	sampass->private.logon_script = talloc_strdup(sampass->mem_ctx, logon_script);
 	
-	sam_set_account_init_flag(sampass, FLAG_SAM_LOGONSCRIPT);
 
 	return NT_STATUS_OK;
 }
@@ -602,11 +589,6 @@ NTSTATUS sam_set_account_profile_path(SAM_ACCOUNT_HANDLE *sampass, const char *p
  
 	sampass->private.profile_path = talloc_strdup(sampass->mem_ctx, profile_path);
 		
-	if (store) {
-		DEBUG(10, ("sam_set_profile_path: setting profile path sam flag!\n"));
-		sam_set_account_init_flag(sampass, FLAG_SAM_PROFILE);
-	}
-
 	return NT_STATUS_OK;
 }
 
@@ -623,11 +605,6 @@ NTSTATUS sam_set_account_dir_drive(SAM_ACCOUNT_HANDLE *sampass, const char *dir_
  
 	sampass->private.dir_drive = talloc_strdup(sampass->mem_ctx, dir_drive);
 		
-	if (store) {
-		DEBUG(10, ("sam_set_dir_drive: setting dir drive sam flag!\n"));
-		sam_set_account_init_flag(sampass, FLAG_SAM_DRIVE);
-	}
-
 	return NT_STATUS_OK;
 }
 
@@ -644,11 +621,6 @@ NTSTATUS sam_set_account_homedir(SAM_ACCOUNT_HANDLE *sampass, const char *home_d
  
 	sampass->private.home_dir = talloc_strdup(sampass->mem_ctx, home_dir);
 		
-	if (store) {
-		DEBUG(10, ("sam_set_homedir: setting home dir sam flag!\n"));
-		sam_set_account_init_flag(sampass, FLAG_SAM_SMBHOME);
-	}
-
 	return NT_STATUS_OK;
 }
 
@@ -719,6 +691,7 @@ NTSTATUS sam_set_account_munged_dial(SAM_ACCOUNT_HANDLE *sampass, const char *mu
 	SAM_ASSERT(sampass);
 
 	sampass->private.munged_dial = talloc_strdup(sampass->mem_ctx, munged_dial);
+	
 	return NT_STATUS_OK;
 }
 
