@@ -221,7 +221,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Get rid from uid */
 
-	if (!NT_STATUS_IS_OK(idmap_uid_to_sid(&user_sid, state->request.data.uid))) {
+	if (!NT_STATUS_IS_OK(idmap_uid_to_sid(&user_sid, state->request.data.uid, 0))) {
 		DEBUG(1, ("could not convert uid %lu to SID\n", 
 			  (unsigned long)state->request.data.uid));
 		return WINBINDD_ERROR;

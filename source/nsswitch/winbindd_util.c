@@ -526,10 +526,21 @@ void init_domain_list(void)
 	}
 
 	domain->primary = True;
+	setup_domain_child(&domain->child);
+	init_child_connection(domain, NULL, NULL);
 
+	/* Add our local SAM domains */
+
+	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
+				    &global_sid_Builtin);
 	setup_domain_child(&domain->child);
 
-	init_child_connection(domain, NULL, NULL);
+	if (!IS_DC) {
+		domain = add_trusted_domain(get_global_sam_name(), NULL,
+					    &passdb_methods,
+					    get_global_sam_sid());
+		setup_domain_child(&domain->child);
+	}
 }
 
 /** 
@@ -721,83 +732,6 @@ BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
 	}
         
 	return rv;
-}
-
-struct lookup_name_state {
-	TALLOC_CTX *mem_ctx;
-	struct winbindd_response *response;
-	void (*cont)(void *private,
-		     BOOL success,
-		     const char *dom_name,
-		     const char *name,
-		     enum SID_NAME_USE type);
-	void *private;
-};
-
-static void lookup_name_recv(void *private, BOOL success);
-
-enum winbindd_result winbindd_lookup_name_by_sid_async(const DOM_SID *sid,
-						       TALLOC_CTX *mem_ctx,
-						       void (*cont)(void *private,
-								    BOOL success,
-								    const char *dom_name,
-								    const char *name,
-								    enum SID_NAME_USE type),
-						       void *private)
-{
-	struct winbindd_domain *domain;
-	struct winbindd_request *request;
-	struct winbindd_response *response;
-	struct lookup_name_state *state;
-
-	domain = find_lookup_domain_from_sid(sid);
-
-	if (domain == NULL) {
-		DEBUG(5, ("Could not find domain for sid %s\n",
-			  sid_string_static(sid)));
-		cont(private, False, NULL, NULL, SID_NAME_UNKNOWN);
-		return WINBINDD_ERROR;
-	}
-
-	request = TALLOC_ZERO_P(mem_ctx, struct winbindd_request);
-	response = TALLOC_ZERO_P(mem_ctx, struct winbindd_response);
-	state = TALLOC_ZERO_P(mem_ctx, struct lookup_name_state);
-
-	if ((request == NULL) || (response == NULL) || (state == NULL)) {
-		DEBUG(0, ("talloc failed\n"));
-		cont(private, False, NULL, NULL, SID_NAME_UNKNOWN);
-		return WINBINDD_ERROR;
-	}
-
-	state->mem_ctx = mem_ctx;
-	state->response = response;
-	state->cont = cont;
-	state->private = private;
-
-	request->length = sizeof(*request);
-
-	request->cmd = WINBINDD_LOOKUPSID;
-	fstrcpy(request->data.sid, sid_string_static(sid));
-
-	return async_request(mem_ctx, &domain->child,
-			     request, response,
-			     lookup_name_recv, state);
-}
-
-static void lookup_name_recv(void *private, BOOL success)
-{
-	struct lookup_name_state *state = private;
-
-	if ((!success) || (state->response->result != WINBINDD_OK)) {
-		state->cont(state->private, False, NULL, NULL,
-			    SID_NAME_UNKNOWN);
-		return;
-	}
-
-	state->cont(state->private, True,
-		    state->response->data.name.dom_name,
-		    state->response->data.name.name,
-		    state->response->data.name.type);
 }
 
 /* Free state information held for {set,get,end}{pw,gr}ent() functions */

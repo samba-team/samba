@@ -429,6 +429,12 @@ static struct winbindd_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct,
 	  "CHECK_MACHACC" },
 	{ WINBINDD_DUAL_SID2UID, winbindd_dual_sid2uid, "DUAL_SID2UID" },
+	{ WINBINDD_DUAL_SID2GID, winbindd_dual_sid2gid, "DUAL_SID2GID" },
+	{ WINBINDD_DUAL_UID2NAME, winbindd_dual_uid2name, "DUAL_UID2NAME" },
+	{ WINBINDD_DUAL_GID2NAME, winbindd_dual_gid2name, "DUAL_GID2NAME" },
+	{ WINBINDD_DUAL_IDMAPSET, winbindd_dual_idmapset, "DUAL_IDMAPSET" },
+	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_allocate_rid_and_gid,
+	  "ALLOCATE_RID_AND_GID" },
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }

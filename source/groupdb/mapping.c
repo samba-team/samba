@@ -1208,17 +1208,11 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	if (lookup_name(get_global_sam_name(), name, &sid, &type))
 		return NT_STATUS_ALIAS_EXISTS;
 
-	if (!winbind_allocate_rid(&new_rid))
+	if (!winbind_allocate_rid_and_gid(&new_rid, &gid))
 		return NT_STATUS_ACCESS_DENIED;
 
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, new_rid);
-
-	/* Here we allocate the gid */
-	if (!winbind_sid_to_gid(&gid, &sid)) {
-		DEBUG(0, ("Could not get gid for new RID\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	map.gid = gid;
 	sid_copy(&map.sid, &sid);

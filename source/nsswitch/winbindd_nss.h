@@ -74,6 +74,7 @@ enum winbindd_cmd {
 	WINBINDD_UID_TO_SID,
 	WINBINDD_GID_TO_SID,
 	WINBINDD_ALLOCATE_RID,
+	WINBINDD_ALLOCATE_RID_AND_GID,
 
 	/* Miscellaneous other stuff */
 
@@ -120,6 +121,10 @@ enum winbindd_cmd {
 	/* Blocking calls that are not allowed on the main winbind pipe, only
 	 * between parent and children */
 	WINBINDD_DUAL_SID2UID,
+	WINBINDD_DUAL_SID2GID,
+	WINBINDD_DUAL_UID2NAME,
+	WINBINDD_DUAL_GID2NAME,
+	WINBINDD_DUAL_IDMAPSET,
 
 	/* Placeholder for end of cmd list */
 	WINBINDD_NUM_CMDS
@@ -218,6 +223,12 @@ struct winbindd_request {
 			fstring sid;
 			fstring name;
 		} dual_sid2id;
+		struct {
+			int type;
+			uid_t uid;
+			gid_t gid;
+			fstring sid;
+		} dual_idmapset;
 	} data;
 	char null_term;
 };
@@ -283,6 +294,10 @@ struct winbindd_response {
 			char first_8_lm_hash[8];
 		} auth;
 		uint32 rid;	/* create user or group or allocate rid */
+		struct {
+			uint32 rid;
+			gid_t gid;
+		} rid_and_gid;
 		struct {
 			fstring name;
 			fstring alt_name;
