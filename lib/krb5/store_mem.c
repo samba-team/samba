@@ -81,10 +81,9 @@ mem_seek(krb5_storage *sp, off_t offset, int whence)
 	s->ptr = s->base + offset;
 	break;
     case SEEK_CUR:
-	sp->seek(sp, s->ptr - s->base + offset, SEEK_SET);
-	break;
+	return sp->seek(sp, s->ptr - s->base + offset, SEEK_SET);
     case SEEK_END:
-	sp->seek(sp, s->size + offset, SEEK_SET);
+	return sp->seek(sp, s->size + offset, SEEK_SET);
     default:
 	errno = EINVAL;
 	return -1;
