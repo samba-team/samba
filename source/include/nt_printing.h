@@ -183,6 +183,8 @@ typedef struct nt_printer_param
 	struct nt_printer_param *next;
 } NT_PRINTER_PARAM;
 
+#define MAXDEVICENAME	32
+
 typedef struct ntdevicemode
 {
 	fstring	devicename;
