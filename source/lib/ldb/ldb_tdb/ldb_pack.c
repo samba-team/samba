@@ -139,16 +139,6 @@ int ltdb_pack_data(struct ldb_module *module,
 }
 
 /*
-  free the memory allocated from a ltdb_unpack_data()
-*/
-void ltdb_unpack_data_free(struct ldb_module *module,
-			   struct ldb_message *message)
-{
-	talloc_free(message->elements);
-}
-
-
-/*
   unpack a ldb message from a linear buffer in TDB_DATA
 
   Free with ltdb_unpack_data_free()
@@ -267,7 +257,6 @@ int ltdb_unpack_data(struct ldb_module *module,
 	return 0;
 
 failed:
-	ltdb_unpack_data_free(module, message);
-
+	talloc_free(message->elements);
 	return -1;
 }

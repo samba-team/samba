@@ -38,6 +38,57 @@
 #include "ldb/ldb_tdb/ldb_tdb.h"
 #include "ldb/include/ldb_parse.h"
 
+/*
+  find an element in a list, using the given comparison function and
+  assuming that the list is already sorted using comp_fn
+
+  return -1 if not found, or the index of the first occurance of needle if found
+*/
+static int ldb_list_find(const void *needle, 
+			 const void *base, size_t nmemb, size_t size, 
+			 comparison_fn_t comp_fn)
+{
+	const char *base_p = base;
+	size_t min_i, max_i, test_i;
+
+	if (nmemb == 0) {
+		return -1;
+	}
+
+	min_i = 0;
+	max_i = nmemb-1;
+
+	while (min_i < max_i) {
+		int r;
+
+		test_i = (min_i + max_i) / 2;
+		r = comp_fn(needle, *(void * const *)(base_p + (size * test_i)));
+		if (r == 0) {
+			/* scan back for first element */
+			while (test_i > 0 &&
+			       comp_fn(needle, *(void * const *)(base_p + (size * (test_i-1)))) == 0) {
+				test_i--;
+			}
+			return test_i;
+		}
+		if (r < 0) {
+			if (test_i == 0) {
+				return -1;
+			}
+			max_i = test_i - 1;
+		}
+		if (r > 0) {
+			min_i = test_i + 1;
+		}
+	}
+
+	if (comp_fn(needle, *(void * const *)(base_p + (size * min_i))) == 0) {
+		return min_i;
+	}
+
+	return -1;
+}
+
 struct dn_list {
 	unsigned int count;
 	char **dn;
