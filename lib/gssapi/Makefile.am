@@ -69,6 +69,7 @@ libgssapi_la_SOURCES =		\
 	release_oid_set.c	\
 	sequence.c		\
 	process_context_token.c \
+	ticket_flags.c		\
 	test_oid_set_member.c	\
 	unwrap.c		\
 	v1.c			\
