@@ -71,7 +71,7 @@ auth_encrypt_init(const char *local, const char *remote, const char *name,
 }
 
 void
-auth_encrypt_user(char *name)
+auth_encrypt_user(const char *name)
 {
     if (UserNameRequested)
 	free(UserNameRequested);
