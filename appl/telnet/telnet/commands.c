@@ -302,8 +302,8 @@ sendcmd(int argc, char **argv)
     int needconnect = 0;
 
     if (argc < 2) {
-	printf("need at least one argument for 'send' command\n");
-	printf("'send ?' for help\n");
+	printf("need at least one argument for 'send' command\r\n");
+	printf("'send ?' for help\r\n");
 	return 0;
     }
     /*
@@ -316,17 +316,17 @@ sendcmd(int argc, char **argv)
     for (i = 1; i < argc; i++) {
 	s = GETSEND(argv[i]);
 	if (s == 0) {
-	    printf("Unknown send argument '%s'\n'send ?' for help.\n",
+	    printf("Unknown send argument '%s'\r\n'send ?' for help.\r\n",
 			argv[i]);
 	    return 0;
 	} else if (Ambiguous(s)) {
-	    printf("Ambiguous send argument '%s'\n'send ?' for help.\n",
+	    printf("Ambiguous send argument '%s'\r\n'send ?' for help.\r\n",
 			argv[i]);
 	    return 0;
 	}
 	if (i + s->narg >= argc) {
 	    fprintf(stderr,
-	    "Need %d argument%s to 'send %s' command.  'send %s ?' for help.\n",
+	    "Need %d argument%s to 'send %s' command.  'send %s ?' for help.\r\n",
 		s->narg, s->narg == 1 ? "" : "s", s->name, s->name);
 	    return 0;
 	}
@@ -340,23 +340,23 @@ sendcmd(int argc, char **argv)
 	needconnect += s->needconnect;
     }
     if (!connected && needconnect) {
-	printf("?Need to be connected first.\n");
-	printf("'send ?' for help\n");
+	printf("?Need to be connected first.\r\n");
+	printf("'send ?' for help\r\n");
 	return 0;
     }
     /* Now, do we have enough room? */
     if (NETROOM() < count) {
-	printf("There is not enough room in the buffer TO the network\n");
-	printf("to process your request.  Nothing will be done.\n");
-	printf("('send synch' will throw away most data in the network\n");
-	printf("buffer, if this might help.)\n");
+	printf("There is not enough room in the buffer TO the network\r\n");
+	printf("to process your request.  Nothing will be done.\r\n");
+	printf("('send synch' will throw away most data in the network\r\n");
+	printf("buffer, if this might help.)\r\n");
 	return 0;
     }
     /* OK, they are all OK, now go through again and actually send */
     count = 0;
     for (i = 1; i < argc; i++) {
 	if ((s = GETSEND(argv[i])) == 0) {
-	    fprintf(stderr, "Telnet 'send' error - argument disappeared!\n");
+	    fprintf(stderr, "Telnet 'send' error - argument disappeared!\r\n");
 	    quit();
 	    /*NOTREACHED*/
 	}
@@ -414,26 +414,26 @@ send_tncmd(void (*func)(), char *cmd, char *name)
     if (isprefix(name, "help") || isprefix(name, "?")) {
 	int col, len;
 
-	printf("Usage: send %s <value|option>\n", cmd);
-	printf("\"value\" must be from 0 to 255\n");
-	printf("Valid options are:\n\t");
+	printf("Usage: send %s <value|option>\r\n", cmd);
+	printf("\"value\" must be from 0 to 255\r\n");
+	printf("Valid options are:\r\n\t");
 
 	col = 8;
 	for (cpp = telopts; *cpp; cpp++) {
 	    len = strlen(*cpp) + 3;
 	    if (col + len > 65) {
-		printf("\n\t");
+		printf("\r\n\t");
 		col = 8;
 	    }
 	    printf(" \"%s\"", *cpp);
 	    col += len;
 	}
-	printf("\n");
+	printf("\r\n");
 	return 0;
     }
     cpp = genget(name, telopts, sizeof(char *));
     if (Ambiguous(cpp)) {
-	fprintf(stderr,"'%s': ambiguous argument ('send %s ?' for help).\n",
+	fprintf(stderr,"'%s': ambiguous argument ('send %s ?' for help).\r\n",
 					name, cmd);
 	return 0;
     }
@@ -448,17 +448,17 @@ send_tncmd(void (*func)(), char *cmd, char *name)
 	    cp++;
 	}
 	if (*cp != 0) {
-	    fprintf(stderr, "'%s': unknown argument ('send %s ?' for help).\n",
+	    fprintf(stderr, "'%s': unknown argument ('send %s ?' for help).\r\n",
 					name, cmd);
 	    return 0;
 	} else if (val < 0 || val > 255) {
-	    fprintf(stderr, "'%s': bad value ('send %s ?' for help).\n",
+	    fprintf(stderr, "'%s': bad value ('send %s ?' for help).\r\n",
 					name, cmd);
 	    return 0;
 	}
     }
     if (!connected) {
-	printf("?Need to be connected first.\n");
+	printf("?Need to be connected first.\r\n");
 	return 0;
     }
     (*func)(val, 1);
@@ -471,7 +471,7 @@ send_help()
     struct sendlist *s;	/* pointer to current command */
     for (s = Sendlist; s->name; s++) {
 	if (s->help)
-	    printf("%-15s %s\n", s->name, s->help);
+	    printf("%-15s %s\r\n", s->name, s->help);
     }
     return(0);
 }
@@ -501,7 +501,7 @@ togdebug()
 	if (net > 0 && SetSockOpt(net, SOL_SOCKET, SO_DEBUG, 0, 0) < 0)
 	    perror("setsockopt (SO_DEBUG)");
     } else
-	printf("Cannot turn off socket debugging\n");
+	printf("Cannot turn off socket debugging\r\n");
 #endif	/* NOT43 */
     return 1;
 }
@@ -511,9 +511,9 @@ static int
 togcrlf()
 {
     if (crlf) {
-	printf("Will send carriage returns as telnet <CR><LF>.\n");
+	printf("Will send carriage returns as telnet <CR><LF>.\r\n");
     } else {
-	printf("Will send carriage returns as telnet <CR><NUL>.\n");
+	printf("Will send carriage returns as telnet <CR><NUL>.\r\n");
     }
     return 1;
 }
@@ -541,17 +541,17 @@ togbinary(int val)
     if (val == 1) {
 	if (my_want_state_is_will(TELOPT_BINARY) &&
 					my_want_state_is_do(TELOPT_BINARY)) {
-	    printf("Already operating in binary mode with remote host.\n");
+	    printf("Already operating in binary mode with remote host.\r\n");
 	} else {
-	    printf("Negotiating binary mode with remote host.\n");
+	    printf("Negotiating binary mode with remote host.\r\n");
 	    tel_enter_binary(3);
 	}
     } else {
 	if (my_want_state_is_wont(TELOPT_BINARY) &&
 					my_want_state_is_dont(TELOPT_BINARY)) {
-	    printf("Already in network ascii mode with remote host.\n");
+	    printf("Already in network ascii mode with remote host.\r\n");
 	} else {
-	    printf("Negotiating network ascii mode with remote host.\n");
+	    printf("Negotiating network ascii mode with remote host.\r\n");
 	    tel_leave_binary(3);
 	}
     }
@@ -568,16 +568,16 @@ togrbinary(int val)
 
     if (val == 1) {
 	if (my_want_state_is_do(TELOPT_BINARY)) {
-	    printf("Already receiving in binary mode.\n");
+	    printf("Already receiving in binary mode.\r\n");
 	} else {
-	    printf("Negotiating binary mode on input.\n");
+	    printf("Negotiating binary mode on input.\r\n");
 	    tel_enter_binary(1);
 	}
     } else {
 	if (my_want_state_is_dont(TELOPT_BINARY)) {
-	    printf("Already receiving in network ascii mode.\n");
+	    printf("Already receiving in network ascii mode.\r\n");
 	} else {
-	    printf("Negotiating network ascii mode on input.\n");
+	    printf("Negotiating network ascii mode on input.\r\n");
 	    tel_leave_binary(1);
 	}
     }
@@ -594,16 +594,16 @@ togxbinary(int val)
 
     if (val == 1) {
 	if (my_want_state_is_will(TELOPT_BINARY)) {
-	    printf("Already transmitting in binary mode.\n");
+	    printf("Already transmitting in binary mode.\r\n");
 	} else {
-	    printf("Negotiating binary mode on output.\n");
+	    printf("Negotiating binary mode on output.\r\n");
 	    tel_enter_binary(2);
 	}
     } else {
 	if (my_want_state_is_wont(TELOPT_BINARY)) {
-	    printf("Already transmitting in network ascii mode.\n");
+	    printf("Already transmitting in network ascii mode.\r\n");
 	} else {
-	    printf("Negotiating network ascii mode on output.\n");
+	    printf("Negotiating network ascii mode on output.\r\n");
 	    tel_leave_binary(2);
 	}
     }
@@ -753,13 +753,13 @@ togglehelp()
     for (c = Togglelist; c->name; c++) {
 	if (c->help) {
 	    if (*c->help)
-		printf("%-15s toggle %s\n", c->name, c->help);
+		printf("%-15s toggle %s\r\n", c->name, c->help);
 	    else
-		printf("\n");
+		printf("\r\n");
 	}
     }
-    printf("\n");
-    printf("%-15s %s\n", "?", "display help information");
+    printf("\r\n");
+    printf("%-15s %s\r\n", "?", "display help information");
     return 0;
 }
 
@@ -771,10 +771,10 @@ settogglehelp(int set)
     for (c = Togglelist; c->name; c++) {
 	if (c->help) {
 	    if (*c->help)
-		printf("%-15s %s %s\n", c->name, set ? "enable" : "disable",
+		printf("%-15s %s %s\r\n", c->name, set ? "enable" : "disable",
 						c->help);
 	    else
-		printf("\n");
+		printf("\r\n");
 	}
     }
 }
@@ -791,7 +791,7 @@ toggle(int argc, char *argv[])
 
     if (argc < 2) {
 	fprintf(stderr,
-	    "Need an argument to 'toggle' command.  'toggle ?' for help.\n");
+	    "Need an argument to 'toggle' command.  'toggle ?' for help.\r\n");
 	return 0;
     }
     argc--;
@@ -800,18 +800,18 @@ toggle(int argc, char *argv[])
 	name = *argv++;
 	c = GETTOGGLE(name);
 	if (Ambiguous(c)) {
-	    fprintf(stderr, "'%s': ambiguous argument ('toggle ?' for help).\n",
+	    fprintf(stderr, "'%s': ambiguous argument ('toggle ?' for help).\r\n",
 					name);
 	    return 0;
 	} else if (c == 0) {
-	    fprintf(stderr, "'%s': unknown argument ('toggle ?' for help).\n",
+	    fprintf(stderr, "'%s': unknown argument ('toggle ?' for help).\r\n",
 					name);
 	    return 0;
 	} else {
 	    if (c->variable) {
 		*c->variable = !*c->variable;		/* invert it */
 		if (c->actionexplanation) {
-		    printf("%s %s.\n", *c->variable? "Will" : "Won't",
+		    printf("%s %s.\r\n", *c->variable? "Will" : "Won't",
 							c->actionexplanation);
 		}
 	    }
@@ -906,11 +906,11 @@ set_escape_char(char *s)
 {
 	if (rlogin != _POSIX_VDISABLE) {
 		rlogin = (s && *s) ? special(s) : _POSIX_VDISABLE;
-		printf("Telnet rlogin escape character is '%s'.\n",
+		printf("Telnet rlogin escape character is '%s'.\r\n",
 					control(rlogin));
 	} else {
 		escape = (s && *s) ? special(s) : _POSIX_VDISABLE;
-		printf("Telnet escape character is '%s'.\n", control(escape));
+		printf("Telnet escape character is '%s'.\r\n", control(escape));
 	}
 }
 
@@ -922,15 +922,15 @@ setcmd(int argc, char *argv[])
     struct togglelist *c;
 
     if (argc < 2 || argc > 3) {
-	printf("Format is 'set Name Value'\n'set ?' for help.\n");
+	printf("Format is 'set Name Value'\r\n'set ?' for help.\r\n");
 	return 0;
     }
     if ((argc == 2) && (isprefix(argv[1], "?") || isprefix(argv[1], "help"))) {
 	for (ct = Setlist; ct->name; ct++)
-	    printf("%-15s %s\n", ct->name, ct->help);
-	printf("\n");
+	    printf("%-15s %s\r\n", ct->name, ct->help);
+	printf("\r\n");
 	settogglehelp(1);
-	printf("%-15s %s\n", "?", "display help information");
+	printf("%-15s %s\r\n", "?", "display help information");
 	return 0;
     }
 
@@ -938,11 +938,11 @@ setcmd(int argc, char *argv[])
     if (ct == 0) {
 	c = GETTOGGLE(argv[1]);
 	if (c == 0) {
-	    fprintf(stderr, "'%s': unknown argument ('set ?' for help).\n",
+	    fprintf(stderr, "'%s': unknown argument ('set ?' for help).\r\n",
 			argv[1]);
 	    return 0;
 	} else if (Ambiguous(c)) {
-	    fprintf(stderr, "'%s': ambiguous argument ('set ?' for help).\n",
+	    fprintf(stderr, "'%s': ambiguous argument ('set ?' for help).\r\n",
 			argv[1]);
 	    return 0;
 	}
@@ -952,26 +952,26 @@ setcmd(int argc, char *argv[])
 	    else if (strcmp("off", argv[2]) == 0)
 		*c->variable = 0;
 	    else {
-		printf("Format is 'set togglename [on|off]'\n'set ?' for help.\n");
+		printf("Format is 'set togglename [on|off]'\r\n'set ?' for help.\r\n");
 		return 0;
 	    }
 	    if (c->actionexplanation) {
-		printf("%s %s.\n", *c->variable? "Will" : "Won't",
+		printf("%s %s.\r\n", *c->variable? "Will" : "Won't",
 							c->actionexplanation);
 	    }
 	}
 	if (c->handler)
 	    (*c->handler)(1);
     } else if (argc != 3) {
-	printf("Format is 'set Name Value'\n'set ?' for help.\n");
+	printf("Format is 'set Name Value'\r\n'set ?' for help.\r\n");
 	return 0;
     } else if (Ambiguous(ct)) {
-	fprintf(stderr, "'%s': ambiguous argument ('set ?' for help).\n",
+	fprintf(stderr, "'%s': ambiguous argument ('set ?' for help).\r\n",
 			argv[1]);
 	return 0;
     } else if (ct->handler) {
 	(*ct->handler)(argv[2]);
-	printf("%s set to \"%s\".\n", ct->name, (char *)ct->charp);
+	printf("%s set to \"%s\".\r\n", ct->name, (char *)ct->charp);
     } else {
 	if (strcmp("off", argv[2])) {
 	    value = special(argv[2]);
@@ -979,7 +979,7 @@ setcmd(int argc, char *argv[])
 	    value = _POSIX_VDISABLE;
 	}
 	*(ct->charp) = (cc_t)value;
-	printf("%s character is '%s'.\n", ct->name, control(*(ct->charp)));
+	printf("%s character is '%s'.\r\n", ct->name, control(*(ct->charp)));
     }
     slc_check();
     return 1;
@@ -994,15 +994,15 @@ unsetcmd(int argc, char *argv[])
 
     if (argc < 2) {
 	fprintf(stderr,
-	    "Need an argument to 'unset' command.  'unset ?' for help.\n");
+	    "Need an argument to 'unset' command.  'unset ?' for help.\r\n");
 	return 0;
     }
     if (isprefix(argv[1], "?") || isprefix(argv[1], "help")) {
 	for (ct = Setlist; ct->name; ct++)
-	    printf("%-15s %s\n", ct->name, ct->help);
-	printf("\n");
+	    printf("%-15s %s\r\n", ct->name, ct->help);
+	printf("\r\n");
 	settogglehelp(0);
-	printf("%-15s %s\n", "?", "display help information");
+	printf("%-15s %s\r\n", "?", "display help information");
 	return 0;
     }
 
@@ -1014,33 +1014,33 @@ unsetcmd(int argc, char *argv[])
 	if (ct == 0) {
 	    c = GETTOGGLE(name);
 	    if (c == 0) {
-		fprintf(stderr, "'%s': unknown argument ('unset ?' for help).\n",
+		fprintf(stderr, "'%s': unknown argument ('unset ?' for help).\r\n",
 			name);
 		return 0;
 	    } else if (Ambiguous(c)) {
-		fprintf(stderr, "'%s': ambiguous argument ('unset ?' for help).\n",
+		fprintf(stderr, "'%s': ambiguous argument ('unset ?' for help).\r\n",
 			name);
 		return 0;
 	    }
 	    if (c->variable) {
 		*c->variable = 0;
 		if (c->actionexplanation) {
-		    printf("%s %s.\n", *c->variable? "Will" : "Won't",
+		    printf("%s %s.\r\n", *c->variable? "Will" : "Won't",
 							c->actionexplanation);
 		}
 	    }
 	    if (c->handler)
 		(*c->handler)(0);
 	} else if (Ambiguous(ct)) {
-	    fprintf(stderr, "'%s': ambiguous argument ('unset ?' for help).\n",
+	    fprintf(stderr, "'%s': ambiguous argument ('unset ?' for help).\r\n",
 			name);
 	    return 0;
 	} else if (ct->handler) {
 	    (*ct->handler)(0);
-	    printf("%s reset to \"%s\".\n", ct->name, (char *)ct->charp);
+	    printf("%s reset to \"%s\".\r\n", ct->name, (char *)ct->charp);
 	} else {
 	    *(ct->charp) = _POSIX_VDISABLE;
-	    printf("%s character is '%s'.\n", ct->name, control(*(ct->charp)));
+	    printf("%s character is '%s'.\r\n", ct->name, control(*(ct->charp)));
 	}
     }
     return 1;
@@ -1096,8 +1096,8 @@ dolmmode(int bit, int on)
     extern int linemode;
 
     if (my_want_state_is_wont(TELOPT_LINEMODE)) {
-	printf("?Need to have LINEMODE option enabled first.\n");
-	printf("'mode ?' for help.\n");
+	printf("?Need to have LINEMODE option enabled first.\r\n");
+	printf("'mode ?' for help.\r\n");
  	return 0;
     }
 
@@ -1169,13 +1169,13 @@ modehelp()
 {
     struct modelist *mt;
 
-    printf("format is:  'mode Mode', where 'Mode' is one of:\n\n");
+    printf("format is:  'mode Mode', where 'Mode' is one of:\r\n\r\n");
     for (mt = ModeList; mt->name; mt++) {
 	if (mt->help) {
 	    if (*mt->help)
-		printf("%-15s %s\n", mt->name, mt->help);
+		printf("%-15s %s\r\n", mt->name, mt->help);
 	    else
-		printf("\n");
+		printf("\r\n");
 	}
     }
     return 0;
@@ -1190,15 +1190,15 @@ modecmd(int argc, char **argv)
     struct modelist *mt;
 
     if (argc != 2) {
-	printf("'mode' command requires an argument\n");
-	printf("'mode ?' for help.\n");
+	printf("'mode' command requires an argument\r\n");
+	printf("'mode ?' for help.\r\n");
     } else if ((mt = GETMODECMD(argv[1])) == 0) {
-	fprintf(stderr, "Unknown mode '%s' ('mode ?' for help).\n", argv[1]);
+	fprintf(stderr, "Unknown mode '%s' ('mode ?' for help).\r\n", argv[1]);
     } else if (Ambiguous(mt)) {
-	fprintf(stderr, "Ambiguous mode '%s' ('mode ?' for help).\n", argv[1]);
+	fprintf(stderr, "Ambiguous mode '%s' ('mode ?' for help).\r\n", argv[1]);
     } else if (mt->needconnect && !connected) {
-	printf("?Need to be connected first.\n");
-	printf("'mode ?' for help.\n");
+	printf("?Need to be connected first.\r\n");
+	printf("'mode ?' for help.\r\n");
     } else if (mt->handler) {
 	return (*mt->handler)(mt->arg1);
     }
@@ -1222,21 +1222,21 @@ display(int argc, char *argv[])
 			    } else { \
 				printf("won't"); \
 			    } \
-			    printf(" %s.\n", tl->actionexplanation); \
+			    printf(" %s.\r\n", tl->actionexplanation); \
 			}
 
 #define	doset(sl)   if (sl->name && *sl->name != ' ') { \
 			if (sl->handler == 0) \
-			    printf("%-15s [%s]\n", sl->name, control(*sl->charp)); \
+			    printf("%-15s [%s]\r\n", sl->name, control(*sl->charp)); \
 			else \
-			    printf("%-15s \"%s\"\n", sl->name, (char *)sl->charp); \
+			    printf("%-15s \"%s\"\r\n", sl->name, (char *)sl->charp); \
 		    }
 
     if (argc == 1) {
 	for (tl = Togglelist; tl->name; tl++) {
 	    dotog(tl);
 	}
-	printf("\n");
+	printf("\r\n");
 	for (sl = Setlist; sl->name; sl++) {
 	    doset(sl);
 	}
@@ -1247,10 +1247,10 @@ display(int argc, char *argv[])
 	    sl = getset(argv[i]);
 	    tl = GETTOGGLE(argv[i]);
 	    if (Ambiguous(sl) || Ambiguous(tl)) {
-		printf("?Ambiguous argument '%s'.\n", argv[i]);
+		printf("?Ambiguous argument '%s'.\r\n", argv[i]);
 		return 0;
 	    } else if (!sl && !tl) {
-		printf("?Unknown argument '%s'.\n", argv[i]);
+		printf("?Unknown argument '%s'.\r\n", argv[i]);
 		return 0;
 	    } else {
 		if (tl) {
@@ -1286,7 +1286,7 @@ setescape(int argc, char *argv[])
 	char buf[50];
 
 	printf(
-	    "Deprecated usage - please use 'set escape%s%s' in the future.\n",
+	    "Deprecated usage - please use 'set escape%s%s' in the future.\r\n",
 				(argc > 2)? " ":"", (argc > 2)? argv[1]: "");
 	if (argc > 2)
 		arg = argv[1];
@@ -1297,7 +1297,7 @@ setescape(int argc, char *argv[])
 	}
 	if (arg[0] != '\0')
 		escape = arg[0];
-	printf("Escape character is '%s'.\n", control(escape));
+	printf("Escape character is '%s'.\r\n", control(escape));
 
 	fflush(stdout);
 	return 1;
@@ -1307,8 +1307,8 @@ static int
 togcrmod()
 {
     crmod = !crmod;
-    printf("Deprecated usage - please use 'toggle crmod' in the future.\n");
-    printf("%s map carriage return on output.\n", crmod ? "Will" : "Won't");
+    printf("Deprecated usage - please use 'toggle crmod' in the future.\r\n");
+    printf("%s map carriage return on output.\r\n", crmod ? "Will" : "Won't");
     fflush(stdout);
     return 1;
 }
@@ -1337,7 +1337,7 @@ suspend()
     TerminalSaveState();
     setconnmode(0);
 #else
-    printf("Suspend is not supported.  Try the '!' command instead\n");
+    printf("Suspend is not supported.  Try the '!' command instead\r\n");
 #endif
     return 1;
 }
@@ -1352,7 +1352,7 @@ shell(int argc, char **argv)
     err = (TerminalWindowSize(&oldrows, &oldcols) == 0) ? 1 : 0;
     switch(fork()) {
     case -1:
-	perror("Fork failed\n");
+	perror("Fork failed\r\n");
 	break;
 
     case 0:
@@ -1395,7 +1395,7 @@ bye(int argc, char **argv)
 
     if (connected) {
 	shutdown(net, 2);
-	printf("Connection closed.\n");
+	printf("Connection closed.\r\n");
 	NetClose(net);
 	connected = 0;
 	resettermname = 1;
@@ -1460,9 +1460,9 @@ slc_help()
     for (c = SlcList; c->name; c++) {
 	if (c->help) {
 	    if (*c->help)
-		printf("%-15s %s\n", c->name, c->help);
+		printf("%-15s %s\r\n", c->name, c->help);
 	    else
-		printf("\n");
+		printf("\r\n");
 	}
     }
 }
@@ -1481,17 +1481,17 @@ slccmd(int argc, char **argv)
 
     if (argc != 2) {
 	fprintf(stderr,
-	    "Need an argument to 'slc' command.  'slc ?' for help.\n");
+	    "Need an argument to 'slc' command.  'slc ?' for help.\r\n");
 	return 0;
     }
     c = getslc(argv[1]);
     if (c == 0) {
-	fprintf(stderr, "'%s': unknown argument ('slc ?' for help).\n",
+	fprintf(stderr, "'%s': unknown argument ('slc ?' for help).\r\n",
     				argv[1]);
 	return 0;
     }
     if (Ambiguous(c)) {
-	fprintf(stderr, "'%s': ambiguous argument ('slc ?' for help).\n",
+	fprintf(stderr, "'%s': ambiguous argument ('slc ?' for help).\r\n",
     				argv[1]);
 	return 0;
     }
@@ -1547,9 +1547,9 @@ env_help()
     for (c = EnvList; c->name; c++) {
 	if (c->help) {
 	    if (*c->help)
-		printf("%-15s %s\n", c->name, c->help);
+		printf("%-15s %s\r\n", c->name, c->help);
 	    else
-		printf("\n");
+		printf("\r\n");
 	}
     }
 }
@@ -1568,23 +1568,23 @@ env_cmd(int argc, char **argv)
 
     if (argc < 2) {
 	fprintf(stderr,
-	    "Need an argument to 'environ' command.  'environ ?' for help.\n");
+	    "Need an argument to 'environ' command.  'environ ?' for help.\r\n");
 	return 0;
     }
     c = getenvcmd(argv[1]);
     if (c == 0) {
-	fprintf(stderr, "'%s': unknown argument ('environ ?' for help).\n",
+	fprintf(stderr, "'%s': unknown argument ('environ ?' for help).\r\n",
     				argv[1]);
 	return 0;
     }
     if (Ambiguous(c)) {
-	fprintf(stderr, "'%s': ambiguous argument ('environ ?' for help).\n",
+	fprintf(stderr, "'%s': ambiguous argument ('environ ?' for help).\r\n",
     				argv[1]);
 	return 0;
     }
     if (c->narg + 2 != argc) {
 	fprintf(stderr,
-	    "Need %s%d argument%s to 'environ %s' command.  'environ ?' for help.\n",
+	    "Need %s%d argument%s to 'environ %s' command.  'environ ?' for help.\r\n",
 		c->narg < argc + 2 ? "only " : "",
 		c->narg, c->narg == 1 ? "" : "s", c->name);
 	return 0;
@@ -1748,13 +1748,13 @@ env_send(unsigned char *var)
 #endif
 		) {
 		fprintf(stderr,
-		    "Cannot send '%s': Telnet ENVIRON option not enabled\n",
+		    "Cannot send '%s': Telnet ENVIRON option not enabled\r\n",
 									var);
 		return;
 	}
 	ep = env_find(var);
 	if (ep == 0) {
-		fprintf(stderr, "Cannot send '%s': variable not defined\n",
+		fprintf(stderr, "Cannot send '%s': variable not defined\r\n",
 									var);
 		return;
 	}
@@ -1769,7 +1769,7 @@ env_list()
 	struct env_lst *ep;
 
 	for (ep = envlisthead.next; ep; ep = ep->next) {
-		printf("%c %-20s %s\n", ep->export ? '*' : ' ',
+		printf("%c %-20s %s\r\n", ep->export ? '*' : ' ',
 					ep->var, ep->value);
 	}
 }
@@ -1842,9 +1842,9 @@ auth_help()
     for (c = AuthList; c->name; c++) {
 	if (c->help) {
 	    if (*c->help)
-		printf("%-15s %s\n", c->name, c->help);
+		printf("%-15s %s\r\n", c->name, c->help);
 	    else
-		printf("\n");
+		printf("\r\n");
 	}
     }
     return 0;
@@ -1857,25 +1857,25 @@ auth_cmd(int argc, char **argv)
 
     if (argc < 2) {
 	fprintf(stderr,
-	    "Need an argument to 'auth' command.  'auth ?' for help.\n");
+	    "Need an argument to 'auth' command.  'auth ?' for help.\r\n");
 	return 0;
     }
 
     c = (struct authlist *)
 		genget(argv[1], (char **) AuthList, sizeof(struct authlist));
     if (c == 0) {
-	fprintf(stderr, "'%s': unknown argument ('auth ?' for help).\n",
+	fprintf(stderr, "'%s': unknown argument ('auth ?' for help).\r\n",
     				argv[1]);
 	return 0;
     }
     if (Ambiguous(c)) {
-	fprintf(stderr, "'%s': ambiguous argument ('auth ?' for help).\n",
+	fprintf(stderr, "'%s': ambiguous argument ('auth ?' for help).\r\n",
     				argv[1]);
 	return 0;
     }
     if (c->narg + 2 != argc) {
 	fprintf(stderr,
-	    "Need %s%d argument%s to 'auth %s' command.  'auth ?' for help.\n",
+	    "Need %s%d argument%s to 'auth %s' command.  'auth ?' for help.\r\n",
 		c->narg < argc + 2 ? "only " : "",
 		c->narg, c->narg == 1 ? "" : "s", c->name);
 	return 0;
@@ -1948,9 +1948,9 @@ EncryptHelp()
     for (c = EncryptList; c->name; c++) {
 	if (c->help) {
 	    if (*c->help)
-		printf("%-15s %s\n", c->name, c->help);
+		printf("%-15s %s\r\n", c->name, c->help);
 	    else
-		printf("\n");
+		printf("\r\n");
 	}
     }
     return 0;
@@ -1964,12 +1964,12 @@ encrypt_cmd(int argc, char **argv)
     c = (struct encryptlist *)
 		genget(argv[1], (char **) EncryptList, sizeof(struct encryptlist));
     if (c == 0) {
-        fprintf(stderr, "'%s': unknown argument ('encrypt ?' for help).\n",
+        fprintf(stderr, "'%s': unknown argument ('encrypt ?' for help).\r\n",
     				argv[1]);
         return 0;
     }
     if (Ambiguous(c)) {
-        fprintf(stderr, "'%s': ambiguous argument ('encrypt ?' for help).\n",
+        fprintf(stderr, "'%s': ambiguous argument ('encrypt ?' for help).\r\n",
     				argv[1]);
         return 0;
     }
@@ -1983,13 +1983,13 @@ encrypt_cmd(int argc, char **argv)
 	    fprintf(stderr, "Need %s%d-%d arguments ",
 		c->maxarg < argc ? "only " : "", c->minarg, c->maxarg);
 	}
-	fprintf(stderr, "to 'encrypt %s' command.  'encrypt ?' for help.\n",
+	fprintf(stderr, "to 'encrypt %s' command.  'encrypt ?' for help.\r\n",
 		c->name);
 	return 0;
     }
     if (c->needconnect && !connected) {
 	if (!(argc && (isprefix(argv[2], "help") || isprefix(argv[2], "?")))) {
-	    printf("?Need to be connected first.\n");
+	    printf("?Need to be connected first.\r\n");
 	    return 0;
 	}
     }
@@ -2008,36 +2008,36 @@ static int
 status(int argc, char **argv)
 {
     if (connected) {
-	printf("Connected to %s.\n", hostname);
+	printf("Connected to %s.\r\n", hostname);
 	if ((argc < 2) || strcmp(argv[1], "notmuch")) {
 	    int mode = getconnmode();
 
 	    if (my_want_state_is_will(TELOPT_LINEMODE)) {
-		printf("Operating with LINEMODE option\n");
-		printf("%s line editing\n", (mode&MODE_EDIT) ? "Local" : "No");
-		printf("%s catching of signals\n",
+		printf("Operating with LINEMODE option\r\n");
+		printf("%s line editing\r\n", (mode&MODE_EDIT) ? "Local" : "No");
+		printf("%s catching of signals\r\n",
 					(mode&MODE_TRAPSIG) ? "Local" : "No");
 		slcstate();
 #ifdef	KLUDGELINEMODE
 	    } else if (kludgelinemode && my_want_state_is_dont(TELOPT_SGA)) {
-		printf("Operating in obsolete linemode\n");
+		printf("Operating in obsolete linemode\r\n");
 #endif
 	    } else {
-		printf("Operating in single character mode\n");
+		printf("Operating in single character mode\r\n");
 		if (localchars)
-		    printf("Catching signals locally\n");
+		    printf("Catching signals locally\r\n");
 	    }
-	    printf("%s character echo\n", (mode&MODE_ECHO) ? "Local" : "Remote");
+	    printf("%s character echo\r\n", (mode&MODE_ECHO) ? "Local" : "Remote");
 	    if (my_want_state_is_will(TELOPT_LFLOW))
-		printf("%s flow control\n", (mode&MODE_FLOW) ? "Local" : "No");
+		printf("%s flow control\r\n", (mode&MODE_FLOW) ? "Local" : "No");
 #if	defined(ENCRYPTION)
 	    encrypt_display();
 #endif
 	}
     } else {
-	printf("No connection.\n");
+	printf("No connection.\r\n");
     }
-    printf("Escape character is '%s'.\n", control(escape));
+    printf("Escape character is '%s'.\r\n", control(escape));
     fflush(stdout);
     return 1;
 }
@@ -2120,18 +2120,18 @@ cmdrc(char *m1, char *m2)
 	    continue;
 	c = getcmd(margv[0]);
 	if (Ambiguous(c)) {
-	    printf("?Ambiguous command: %s\n", margv[0]);
+	    printf("?Ambiguous command: %s\r\n", margv[0]);
 	    continue;
 	}
 	if (c == 0) {
-	    printf("?Invalid command: %s\n", margv[0]);
+	    printf("?Invalid command: %s\r\n", margv[0]);
 	    continue;
 	}
 	/*
 	 * This should never happen...
 	 */
 	if (c->needconnect && !connected) {
-	    printf("?Need to be connected first for %s.\n", margv[0]);
+	    printf("?Need to be connected first for %s.\r\n", margv[0]);
 	    continue;
 	}
 	(*c->handler)(margc, margv);
@@ -2157,7 +2157,7 @@ tn(int argc, char **argv)
     memset(&sin, 0, sizeof(sin));
 
     if (connected) {
-	printf("?Already connected to %s\n", hostname);
+	printf("?Already connected to %s\r\n", hostname);
 	setuid(getuid());
 	return 0;
     }
@@ -2198,7 +2198,7 @@ tn(int argc, char **argv)
 	    continue;
 	}
     usage:
-	printf("usage: %s [-l user] [-a] host-name [port]\n", cmd);
+	printf("usage: %s [-l user] [-a] host-name [port]\r\n", cmd);
 	setuid(getuid());
 	return 0;
     }
@@ -2213,15 +2213,15 @@ tn(int argc, char **argv)
 	srp = 0;
 	temp = sourceroute(hostp, &srp, &srlen);
 	if (temp == 0) {
-#ifdef __CYGWIN32__
-	    fprintf (stderr, "%s: %s\n", srp ? srp : "", "unknown error");
+#ifdef HAVE_H_ERRNO
+	    fprintf (stderr, "%s: %s\r\n", srp ? srp : "", hstrerror(h_errno));
 #else
-	    fprintf (stderr, "%s: %s\n", srp ? srp : "", hstrerror(h_errno));
+	    fprintf (stderr, "%s: %s\r\n", srp ? srp : "", "unknown error");
 #endif
 	    setuid(getuid());
 	    return 0;
 	} else if (temp == -1) {
-	    printf("Bad source route option: %s\n", hostp);
+	    printf("Bad source route option: %s\r\n", hostp);
 	    setuid(getuid());
 	    return 0;
 	} else {
@@ -2251,12 +2251,11 @@ tn(int argc, char **argv)
 		_hostname[sizeof(_hostname)-1] = '\0';
 		hostname = _hostname;
 	    } else {
-#ifdef __CYGWIN32__
-	        fprintf (stderr, "%s: %s\n", hostp ? hostp : "",
-			 "unknown error");
-#else
-	        fprintf (stderr, "%s: %s\n", hostp ? hostp : "",
+	        fprintf (stderr, "%s: %s\r\n", hostp ? hostp : "",
+#ifdef HAVE_H_ERRNO
 			 hstrerror(h_errno));
+#else
+			 "unknown error");
 #endif
 		setuid(getuid());
 		return 0;
@@ -2277,7 +2276,7 @@ tn(int argc, char **argv)
 	    if (sp)
 		sin.sin_port = sp->s_port;
 	    else {
-		printf("%s: bad port number\n", portp);
+		printf("%s: bad port number\r\n", portp);
 		setuid(getuid());
 		return 0;
 	    }
@@ -2288,7 +2287,7 @@ tn(int argc, char **argv)
 	if (sp == 0) {
 	    sp = getservbyname("telnet", "tcp");
 	    if (sp == 0) {
-		fprintf(stderr, "telnet: tcp/telnet: unknown service\n");
+		fprintf(stderr, "telnet: tcp/telnet: unknown service\r\n");
 		setuid(getuid());
 		return 0;
 	    }
@@ -2296,7 +2295,7 @@ tn(int argc, char **argv)
 	}
 	telnetport = 1;
     }
-    printf("Trying %s...\n", inet_ntoa(sin.sin_addr));
+    printf("Trying %s...\r\n", inet_ntoa(sin.sin_addr));
     do {
 	net = socket(AF_INET, SOCK_STREAM, 0);
 	setuid(getuid());
@@ -2376,7 +2375,7 @@ tn(int argc, char **argv)
     if (setjmp(peerdied) == 0)
 	telnet(user);
     NetClose(net);
-    ExitString("Connection closed by foreign host.\n",1);
+    ExitString("Connection closed by foreign host.\r\n",1);
     /*NOTREACHED*/
 }
 
@@ -2498,7 +2497,7 @@ command(int top, char *tbuf, int cnt)
 		goto getline;
 	    *cp = '\0';
 	    if (rlogin == _POSIX_VDISABLE)
-		printf("%s\n", line);
+		printf("%s\r\n", line);
 	} else {
 	getline:
 	    if (rlogin != _POSIX_VDISABLE)
@@ -2519,15 +2518,15 @@ command(int top, char *tbuf, int cnt)
 	}
 	c = getcmd(margv[0]);
 	if (Ambiguous(c)) {
-	    printf("?Ambiguous command\n");
+	    printf("?Ambiguous command\r\n");
 	    continue;
 	}
 	if (c == 0) {
-	    printf("?Invalid command\n");
+	    printf("?Invalid command\r\n");
 	    continue;
 	}
 	if (c->needconnect && !connected) {
-	    printf("?Need to be connected first.\n");
+	    printf("?Need to be connected first.\r\n");
 	    continue;
 	}
 	if ((*c->handler)(margc, margv)) {
@@ -2552,10 +2551,10 @@ help(int argc, char **argv)
 	Command *c;
 
 	if (argc == 1) {
-		printf("Commands may be abbreviated.  Commands are:\n\n");
+		printf("Commands may be abbreviated.  Commands are:\r\n\r\n");
 		for (c = cmdtab; c->name; c++)
 			if (c->help) {
-				printf("%-*s\t%s\n", HELPINDENT, c->name,
+				printf("%-*s\t%s\r\n", HELPINDENT, c->name,
 								    c->help);
 			}
 		return 0;
@@ -2565,11 +2564,11 @@ help(int argc, char **argv)
 		arg = *++argv;
 		c = getcmd(arg);
 		if (Ambiguous(c))
-			printf("?Ambiguous help command %s\n", arg);
+			printf("?Ambiguous help command %s\r\n", arg);
 		else if (c == (Command *)0)
-			printf("?Invalid help command %s\n", arg);
+			printf("?Invalid help command %s\r\n", arg);
 		else
-			printf("%s\n", c->help);
+			printf("%s\r\n", c->help);
 	}
 	return 0;
 }
