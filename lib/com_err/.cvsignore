@@ -1,1 +1,3 @@
 Makefile.in
+parse.c
+parse.h
