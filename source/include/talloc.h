@@ -21,12 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef DEBUG_TALLOC
-#define BAD_PTR (void*)0xdeadbeef
-#else
-#define BAD_PTR NULL
-#endif
-
 struct talloc_chunk {
 	struct talloc_chunk *next;
 	size_t size;

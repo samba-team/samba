@@ -35,7 +35,7 @@
 
 #include "includes.h"
 
-/* initialissa talloc context. */
+/* initialise talloc context. */
 TALLOC_CTX *talloc_init(void)
 {
 	TALLOC_CTX *t;
@@ -55,13 +55,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 	void *p;
 	struct talloc_chunk *tc;
 
-	if (size == 0) {
-		/* debugging value used to track down
-		   memory problems. BAD_PTR is defined
-		   in talloc.h */
-		p = BAD_PTR;
-		return p;
-	}
+	if (size == 0) return NULL;
 
 	p = malloc(size);
 	if (!p) return p;
@@ -157,4 +151,10 @@ void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size)
 	memcpy(newp, p, size);
 
 	return newp;
+}
+
+/* strdup with a talloc */
+char *talloc_strdup(TALLOC_CTX *t, char *p)
+{
+	return talloc_memdup(t, p, strlen(p) + 1);
 }
