@@ -158,12 +158,24 @@ static void info_tdb(void)
 	printf("%d records totalling %d bytes\n", count, total_bytes);
 }
 
+static char *getline(char *prompt)
+{
+	static char line[1024];
+	char *p;
+	fputs(prompt, stdout);
+	line[0] = 0;
+	p = fgets(line, sizeof(line)-1, stdin);
+	if (p) p = strchr(p, '\n');
+	if (p) *p = 0;
+	return p?line:NULL;
+}
+
 int main(int argc, char *argv[])
 {
 	char *line;
 	char *tok;
 	
-	while ((line=readline("tdb> "))) {
+	while ((line=getline("tdb> "))) {
 		tok = strtok(line," ");
 		if (strcmp(tok,"create") == 0) {
 			create_tdb();

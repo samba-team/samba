@@ -39,7 +39,7 @@
 #define TDB_FREE_MAGIC (~TDB_MAGIC)
 #define TDB_ALIGN 4
 #define MIN_REC_SIZE (2*sizeof(struct list_struct) + TDB_ALIGN)
-#define DEFAULT_HASH_SIZE 512
+#define DEFAULT_HASH_SIZE 128
 #define TDB_PAGE_SIZE 0x2000
 #define TDB_LEN_MULTIPLIER 10
 #define FREELIST_TOP (sizeof(struct tdb_header))
@@ -78,19 +78,6 @@ struct list_struct {
 /* a null data record - useful for error returns */
 static TDB_DATA null_data;
 
-#if STANDALONE
-/* like strdup but for memory */
-static char *memdup(char *d, int size)
-{
-	char *ret;
-	ret = (char *)malloc(size);
-	if (!ret) return NULL;
-	memcpy(ret, d, size);
-	return ret;
-}
-#endif
-
-
 /* a byte range locking function - return 0 on success
    this functions locks/unlocks 1 byte at the specified offset */
 static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset, 
@@ -109,11 +96,14 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 	fl.l_len = 1;
 	fl.l_pid = 0;
 
-	if (fcntl(tdb->fd, lck_type, &fl) != 0 && lck_type == F_SETLKW) {
+	if (fcntl(tdb->fd, lck_type, &fl) != 0) {
 #if TDB_DEBUG
-		printf("lock %d failed at %d (%s)\n", 
-		       set, offset, strerror(errno));
+		if (lck_type == F_SETLKW) {
+			printf("lock %d failed at %d (%s)\n", 
+			       set, offset, strerror(errno));
+		}
 #endif
+		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
 	}
 	return 0;
@@ -153,6 +143,7 @@ static int tdb_unlock(TDB_CONTEXT *tdb, int list)
 #if TDB_DEBUG
 		printf("not locked %d\n", list);
 #endif
+		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
 	}
 	if (tdb->locked[list+1] == 1) {
@@ -202,7 +193,10 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
 	if (offset <= tdb->map_size) return 0;
 
 	fstat(tdb->fd, &st);
-	if (st.st_size <= (ssize_t)tdb->map_size) return -1;
+	if (st.st_size <= (ssize_t)offset) {
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+	}
 
 #if HAVE_MMAP
 	if (tdb->map_ptr) {
@@ -226,18 +220,15 @@ static int tdb_write(TDB_CONTEXT *tdb, tdb_off offset, char *buf, tdb_len len)
 {
 	if (tdb_oob(tdb, offset + len) != 0) {
 		/* oops - trying to write beyond the end of the database! */
-#if TDB_DEBUG
-		printf("write error of length %u at offset %u (max %u)\n",
-		       len, offset, tdb->map_size);
-#endif
 		return -1;
 	}
 
 	if (tdb->map_ptr) {
 		memcpy(offset + (char *)tdb->map_ptr, buf, len);
 	} else {
-		lseek(tdb->fd, offset, SEEK_SET);
-		if (write(tdb->fd, buf, len) != (ssize_t)len) {
+		if (lseek(tdb->fd, offset, SEEK_SET) != offset ||
+		    write(tdb->fd, buf, len) != (ssize_t)len) {
+			tdb->ecode = TDB_ERR_IO;
 			return -1;
 		}
 	}
@@ -249,18 +240,15 @@ static int tdb_read(TDB_CONTEXT *tdb, tdb_off offset, char *buf, tdb_len len)
 {
 	if (tdb_oob(tdb, offset + len) != 0) {
 		/* oops - trying to read beyond the end of the database! */
-#if TDB_DEBUG
-		printf("read error of length %u at offset %u (max %u)\n",
-		       len, offset, tdb->map_size);
-#endif
 		return -1;
 	}
 
 	if (tdb->map_ptr) {
 		memcpy(buf, offset + (char *)tdb->map_ptr, len);
 	} else {
-		lseek(tdb->fd, offset, SEEK_SET);
-		if (read(tdb->fd, buf, len) != (ssize_t)len) {
+		if (lseek(tdb->fd, offset, SEEK_SET) != offset ||
+		    read(tdb->fd, buf, len) != (ssize_t)len) {
+			tdb->ecode = TDB_ERR_IO;
 			return -1;
 		}
 	}
@@ -275,7 +263,10 @@ static char *tdb_alloc_read(TDB_CONTEXT *tdb, tdb_off offset, tdb_len len)
 
 	buf = (char *)malloc(len);
 
-	if (!buf) return NULL;
+	if (!buf) {
+		tdb->ecode = TDB_ERR_OOM;
+		return NULL;
+	}
 
 	if (tdb_read(tdb, offset, buf, len) == -1) {
 		free(buf);
@@ -312,13 +303,10 @@ static int rec_read(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
 		printf("bad magic 0x%08x at offset %d\n",
 		       rec->magic, offset);
 #endif
+		tdb->ecode = TDB_ERR_CORRUPT;
 		return -1;
 	}
 	if (tdb_oob(tdb, rec->next) != 0) {
-#if TDB_DEBUG
-		printf("bad next %d at offset %d\n",
-		       rec->next, offset);
-#endif
 		return -1;
 	}
 	return 0;
@@ -487,19 +475,35 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 	struct tdb_header header;
 	tdb_off offset;
 	int i;
+	tdb_off buf[16];
 
 	/* create the header */
+	memset(&header, 0, sizeof(header));
+	memcpy(header.magic_food, TDB_MAGIC_FOOD, strlen(TDB_MAGIC_FOOD)+1);
 	header.version = TDB_VERSION;
 	header.hash_size = hash_size;
 	lseek(tdb->fd, 0, SEEK_SET);
 	ftruncate(tdb->fd, 0);
 
-	if (write(tdb->fd, &header, sizeof(header)) != sizeof(header)) return -1;
-
+	if (write(tdb->fd, &header, sizeof(header)) != sizeof(header)) {
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+	}
+	
 	/* the freelist and hash pointers */
 	offset = 0;
-	for (i=0;i<hash_size+1;i++) {
-		if (write(tdb->fd, &offset, sizeof(tdb_off)) != sizeof(tdb_off)) return -1;
+	memset(buf, 0, sizeof(buf));
+	for (i=0;(hash_size+1)-i >= 16; i += 16) {
+		if (write(tdb->fd, buf, sizeof(buf)) != sizeof(buf)) {
+			tdb->ecode = TDB_ERR_IO;
+			return -1;
+		}
+	}
+	for (;i<hash_size+1; i++) {
+		if (write(tdb->fd, buf, sizeof(tdb_off)) != sizeof(tdb_off)) {
+			tdb->ecode = TDB_ERR_IO;
+			return -1;
+		}
 	}
 
 #if TDB_DEBUG
@@ -507,6 +511,70 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 	       hash_size);
 #endif
 	return 0;
+}
+
+/* Returns 0 on fail.  On success, return offset of record, and fills
+   in rec */
+static tdb_off tdb_find(TDB_CONTEXT *tdb, TDB_DATA key, unsigned int hash,
+			struct list_struct *rec)
+{
+	tdb_off offset, rec_ptr;
+	
+	/* find the top of the hash chain */
+	offset = tdb_hash_top(tdb, hash);
+
+	/* read in the hash top */
+	if (ofs_read(tdb, offset, &rec_ptr) == -1)
+		return 0;
+
+	/* keep looking until we find the right record */
+	while (rec_ptr) {
+		if (rec_read(tdb, rec_ptr, rec) == -1)
+			return 0;
+
+		if (hash == rec->full_hash && key.dsize == rec->key_len) {
+			char *k;
+			/* a very likely hit - read the key */
+			k = tdb_alloc_read(tdb, rec_ptr + sizeof(*rec), 
+					   rec->key_len);
+
+			if (!k)
+				return 0;
+
+			if (memcmp(key.dptr, k, key.dsize) == 0) {
+				free(k);
+				return rec_ptr;
+			}
+			free(k);
+		}
+
+		/* move to the next record */
+		rec_ptr = rec->next;
+	}
+	return 0;
+}
+
+/* 
+   return an error string for the last tdb error
+*/
+char *tdb_error(TDB_CONTEXT *tdb)
+{
+	int i;
+	static struct {
+		enum TDB_ERROR ecode;
+		char *estring;
+	} emap[] = {
+		{TDB_SUCCESS, "Success"},
+		{TDB_ERR_CORRUPT, "Corrupt database"},
+		{TDB_ERR_IO, "IO Error"},
+		{TDB_ERR_LOCK, "Locking error"},
+		{TDB_ERR_OOM, "Out of memory"},
+		{TDB_ERR_EXISTS, "Record exists"},
+		{-1, NULL}};
+	for (i=0;emap[i].estring;i++) {
+		if (tdb->ecode == emap[i].ecode) return emap[i].estring;
+	}
+	return "Invalid error code";
 }
 
 
@@ -517,130 +585,62 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 {
 	unsigned hash;
-	tdb_off offset, rec_ptr;
 	struct list_struct rec;
-	char *data=NULL;
+	tdb_off rec_ptr;
+	int ret = -1;
 
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
 	tdb_lock(tdb, BUCKET(hash));
+	rec_ptr = tdb_find(tdb, key, hash, &rec);
 
-	/* find the top of the hash chain */
-	offset = tdb_hash_top(tdb, hash);
+	if (!rec_ptr)
+		goto out;
 
-	/* read in the hash top */
-	if (ofs_read(tdb, offset, &rec_ptr) == -1) {
-		goto fail;
-	}
+	/* must be long enough */
+	if (rec.rec_len < key.dsize + dbuf.dsize)
+		goto out;
 
-	/* keep looking until we find the right record */
-	while (rec_ptr) {
-		if (rec_read(tdb, rec_ptr, &rec) == -1) {
-			goto fail;
-		}
+	if (tdb_write(tdb, rec_ptr + sizeof(rec) + rec.key_len,
+		      dbuf.dptr, dbuf.dsize) == -1)
+		goto out;
 
-		if (hash == rec.full_hash && key.dsize == rec.key_len) {
-			/* a very likely hit - read the full key */
-			data = tdb_alloc_read(tdb, rec_ptr + sizeof(rec), 
-					      rec.key_len);
-			if (!data) goto fail;
+	if (dbuf.dsize != rec.data_len) {
+		/* update size */
+		rec.data_len = dbuf.dsize;
+		ret = rec_write(tdb, rec_ptr, &rec);
+	} else
+		ret = 0;
 
-			if (memcmp(key.dptr, data, key.dsize) == 0) {
-				/* definate hit */
-				if (rec.rec_len < key.dsize + dbuf.dsize) {
-					/* the update won't fit! */
-					goto fail;
-				}
-				if (tdb_write(tdb, rec_ptr + sizeof(rec) + rec.key_len,
-					     dbuf.dptr, dbuf.dsize) == -1) {
-					goto fail;
-				}
-				if (dbuf.dsize != rec.data_len) {
-					rec.data_len = dbuf.dsize;
-					if (rec_write(tdb, rec_ptr, &rec) == -1) {
-						goto fail;
-					}
-				}
-				free(data);
-				tdb_unlock(tdb, BUCKET(hash));
-				return 0;
-			}
-
-			/* a miss - drat */
-			free(data);
-			data = NULL;
-		}
-
-		/* move to the next record */
-		rec_ptr = rec.next;
-	}
-
-	/* we didn't find it */
- fail:
+ out:
 	tdb_unlock(tdb, BUCKET(hash));
-	if (data) free(data);
-	return -1;
+	return ret;
 }
-
 
 /* find an entry in the database given a key */
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 {
 	unsigned hash;
-	tdb_off offset, rec_ptr;
+	tdb_off rec_ptr;
 	struct list_struct rec;
-	char *data;
-	TDB_DATA ret;
+	TDB_DATA ret = null_data;
 
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
 	tdb_lock(tdb, BUCKET(hash));
+	rec_ptr = tdb_find(tdb, key, hash, &rec);
 
-	/* find the top of the hash chain */
-	offset = tdb_hash_top(tdb, hash);
-
-	/* read in the hash top */
-	if (ofs_read(tdb, offset, &rec_ptr) == -1) {
-		goto fail;
+	if (rec_ptr) {
+		ret.dptr = tdb_alloc_read(tdb,
+					  rec_ptr + sizeof(rec) + rec.key_len,
+					  rec.data_len);
+		ret.dsize = rec.data_len;
 	}
-
-	/* keep looking until we find the right record */
-	while (rec_ptr) {
-		if (rec_read(tdb, rec_ptr, &rec) == -1) {
-			goto fail;
-		}
-
-		if (hash == rec.full_hash && key.dsize == rec.key_len) {
-			/* a very likely hit - read the full record */
-			data = tdb_alloc_read(tdb, rec_ptr + sizeof(rec), 
-					      rec.key_len + rec.data_len);
-			if (!data) {
-				goto fail;
-			}
-
-			if (memcmp(key.dptr, data, key.dsize) == 0) {
-				/* a definate match */
-				ret.dptr = (char *)memdup(data + rec.key_len, rec.data_len);
-				ret.dsize = rec.data_len;
-				free(data);
-				tdb_unlock(tdb, BUCKET(hash));
-				return ret;
-			}
-
-			/* a miss - drat */
-			free(data);
-		}
-
-		/* move to the next record */
-		rec_ptr = rec.next;
-	}
-
-	/* we didn't find it */
- fail:
+	
 	tdb_unlock(tdb, BUCKET(hash));
-	return null_data;
+	return ret;
 }
 
 /* check if an entry in the database exists 
@@ -652,58 +652,18 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
 {
 	unsigned hash;
-	tdb_off offset, rec_ptr;
+	tdb_off rec_ptr;
 	struct list_struct rec;
-	char *data;
-
+	
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
 	tdb_lock(tdb, BUCKET(hash));
-
-	/* find the top of the hash chain */
-	offset = tdb_hash_top(tdb, hash);
-
-	/* read in the hash top */
-	if (ofs_read(tdb, offset, &rec_ptr) == -1) {
-		goto fail;
-	}
-
-	/* keep looking until we find the right record */
-	while (rec_ptr) {
-		if (rec_read(tdb, rec_ptr, &rec) == -1) {
-			goto fail;
-		}
-
-		if (hash == rec.full_hash && key.dsize == rec.key_len) {
-			/* a very likely hit - read the full record */
-			data = tdb_alloc_read(tdb, rec_ptr + sizeof(rec), 
-					     rec.key_len + rec.data_len);
-			if (!data) {
-				goto fail;
-			}
-
-			if (memcmp(key.dptr, data, key.dsize) == 0) {
-				/* a definate match */
-				free(data);
-				tdb_unlock(tdb, BUCKET(hash));
-				return 1;
-			}
-
-			/* a miss - drat */
-			free(data);
-		}
-
-		/* move to the next record */
-		rec_ptr = rec.next;
-	}
-
-	/* we didn't find it */
- fail:
+	rec_ptr = tdb_find(tdb, key, hash, &rec);
 	tdb_unlock(tdb, BUCKET(hash));
-	return 0;
-}
 
+	return rec_ptr != 0;
+}
 
 /* traverse the entire database - calling fn(tdb, key, data) on each element.
    return -1 on error or the record count traversed
@@ -821,98 +781,49 @@ TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb)
 /* find the next entry in the database, returning its key */
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key)
 {
-	unsigned hash, h;
-	tdb_off offset, rec_ptr;
+	unsigned hash, hbucket;
+	tdb_off rec_ptr, offset;
 	struct list_struct rec;
-	char *data;
 	TDB_DATA ret;
 
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
-
-	tdb_lock(tdb, BUCKET(hash));
-
-	/* find the top of the hash chain */
-	offset = tdb_hash_top(tdb, hash);
-
-	/* read in the hash top */
-	if (ofs_read(tdb, offset, &rec_ptr) == -1) {
-		goto fail;
-	}
-
-	/* look until we find the right record */
-	while (rec_ptr) {
-		if (rec_read(tdb, rec_ptr, &rec) == -1) {
-			goto fail;
-		}
-
-		if (hash == rec.full_hash && key.dsize == rec.key_len) {
-			/* a very likely hit - read the full key */
-			data = tdb_alloc_read(tdb, rec_ptr + sizeof(rec), 
-					     rec.key_len);
-			if (!data) {
-				goto fail;
-			}
-
-			if (memcmp(key.dptr, data, key.dsize) == 0) {
-				/* a definate match - we want the next
-                                   record after this one */
-				rec_ptr = rec.next;
-				free(data);
-				if (rec_ptr == 0) goto next_hash;
-				goto found_record;
-			}
-
-			/* a miss - drat */
-			free(data);
-		}
-
-		/* move to the next record */
+	hbucket = BUCKET(hash);
+	
+	tdb_lock(tdb, hbucket);
+	rec_ptr = tdb_find(tdb, key, hash, &rec);
+	if (rec_ptr) {
+		/* we want the next record after this one */
 		rec_ptr = rec.next;
 	}
 
- next_hash:
-	tdb_unlock(tdb, BUCKET(hash));
-	
-	h = BUCKET(hash);
-	if (h == tdb->header.hash_size - 1) return null_data;
-	
-	/* look for a non-empty hash chain */
-	for (hash = h+1, rec_ptr = 0; 
-	     hash < tdb->header.hash_size;
-	     hash++) {
-		/* find the top of the hash chain */
-		offset = tdb_hash_top(tdb, hash);
-		
-		tdb_lock(tdb, BUCKET(hash));
+	/* not found or last in hash: look for next non-empty hash chain */
+	while (rec_ptr == 0) {
+		tdb_unlock(tdb, hbucket);
+
+		if (++hbucket >= tdb->header.hash_size - 1)
+			return null_data;
+
+		offset = tdb_hash_top(tdb, hbucket);
+		tdb_lock(tdb, hbucket);
 		/* read in the hash top */
 		if (ofs_read(tdb, offset, &rec_ptr) == -1) {
-			goto fail;
+			tdb_unlock(tdb, hbucket);
+			return null_data;
 		}
-
-		if (rec_ptr) break;
-
-		tdb_unlock(tdb, BUCKET(hash));
 	}
 
-	if (rec_ptr == 0) return null_data;
-
- found_record:
-	
-	/* we've found a non-empty chain, now read the record */
-	if (rec_read(tdb, rec_ptr, &rec) == -1) {
-		goto fail;
+	/* Read the record. */
+	if (rec_read(tdb, rec_ptr, &rec) == 0) {
+		tdb_unlock(tdb, hbucket);
+		return null_data;
 	}
-	
-	/* allocate and read the key space */
+	/* allocate and read the key */
 	ret.dptr = tdb_alloc_read(tdb, rec_ptr + sizeof(rec), rec.key_len);
 	ret.dsize = rec.key_len;
-	tdb_unlock(tdb, BUCKET(hash));
-	return ret;
+	tdb_unlock(tdb, hbucket);
 
- fail:
-	tdb_unlock(tdb, BUCKET(hash));
-	return null_data;
+	return ret;
 }
 
 /* delete an entry in the database given a key */
@@ -953,7 +864,7 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 			}
 
 			if (memcmp(key.dptr, data, key.dsize) == 0) {
-				/* a definate match - delete it */
+				/* a definite match - delete it */
 				if (last_ptr == 0) {
 					offset = tdb_hash_top(tdb, hash);
 					if (ofs_write(tdb, offset, &rec.next) == -1) {
@@ -1026,6 +937,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 
 	/* check for it existing */
 	if (flag == TDB_INSERT && tdb_exists(tdb, key)) {
+		tdb->ecode = TDB_ERR_EXISTS;
 		return -1;
 	}
 
@@ -1067,7 +979,10 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	rec.magic = TDB_MAGIC;
 
 	p = (char *)malloc(sizeof(rec) + key.dsize + dbuf.dsize);
-	if (!p) goto fail;
+	if (!p) {
+		tdb->ecode = TDB_ERR_OOM;
+		goto fail;
+	}
 
 	memcpy(p, &rec, sizeof(rec));
 	memcpy(p+sizeof(rec), key.dptr, key.dsize);
@@ -1114,7 +1029,9 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.name = NULL;
 	tdb.map_ptr = NULL;
 
-	if ((open_flags & O_ACCMODE) == O_WRONLY) goto fail;
+	if ((open_flags & O_ACCMODE) == O_WRONLY) {
+		goto fail;
+	}
 
 	if (hash_size == 0) hash_size = DEFAULT_HASH_SIZE;
 
@@ -1123,7 +1040,9 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.read_only = ((open_flags & O_ACCMODE) == O_RDONLY);
 
 	tdb.fd = open(name, open_flags, mode);
-	if (tdb.fd == -1) goto fail;
+	if (tdb.fd == -1) {
+		goto fail;
+	}
 
 	/* ensure there is only one process initialising at once */
 	tdb_brlock(&tdb, GLOBAL_LOCK, LOCK_SET, F_WRLCK, F_SETLKW);
@@ -1141,6 +1060,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb_brlock(&tdb, ACTIVE_LOCK, LOCK_SET, F_RDLCK, F_SETLKW);
 
 	if (read(tdb.fd, &tdb.header, sizeof(tdb.header)) != sizeof(tdb.header) ||
+	    strcmp(tdb.header.magic_food, TDB_MAGIC_FOOD) != 0 ||
 	    tdb.header.version != TDB_VERSION) {
 		/* its not a valid database - possibly initialise it */
 		if (!(open_flags & O_CREAT)) {
@@ -1158,7 +1078,9 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.name = (char *)strdup(name);
 	tdb.locked = (int *)calloc(tdb.header.hash_size+1, 
 				   sizeof(tdb.locked[0]));
-	if (!tdb.locked) goto fail;
+	if (!tdb.locked) {
+		goto fail;
+	}
 	tdb.map_size = st.st_size;
 #if HAVE_MMAP
 	tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
