@@ -2116,8 +2116,6 @@ if test x"$with_ads_support" != x"no"; then
 
   ac_save_CFLAGS="$CFLAGS"
   ac_save_LIBS="$LIBS"
-  CFLAGS=""
-  LIBS=""
 
   #################################################
   # check for krb5-config from recent MIT and Heimdal kerberos 5
