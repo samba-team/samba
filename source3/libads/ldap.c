@@ -47,6 +47,17 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
+#if KRB5_DNS_HACK
+	/* this is a really nasty hack to avoid ADS DNS problems. It needs a patch
+	   to MIT kerberos to work (tridge) */
+	{
+		char *env;
+		asprintf(&env, "KRB5_KDC_ADDRESS_%s", ads->server_realm);
+		setenv(env, inet_ntoa(*interpret_addr2(ads->ldap_server)), 1);
+		free(env);
+	}
+#endif
+
 	if (ads->password) {
 		if ((code = ads_kinit_password(ads)))
 			return ADS_ERROR_KRB5(code);
