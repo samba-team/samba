@@ -289,8 +289,8 @@ typedef struct krb5_kt_cursor {
 enum {
   KRB5_AUTH_CONTEXT_DO_TIME      = 1,
   KRB5_AUTH_CONTEXT_RET_TIME     = 2,
-  KRB5_AUTH_CONTEXT_DO_SEQUENCE  = 3,
-  KRB5_AUTH_CONTEXT_RET_SEQUENCE = 4
+  KRB5_AUTH_CONTEXT_DO_SEQUENCE  = 4,
+  KRB5_AUTH_CONTEXT_RET_SEQUENCE = 8
 };
 
 typedef struct krb5_auth_context_data{
@@ -848,12 +848,14 @@ krb5_create_checksum (krb5_context context,
 		      krb5_cksumtype type,
 		      void *ptr,
 		      size_t len,
+		      const krb5_keyblock *keyblock,
 		      Checksum *result);
 
 krb5_error_code
 krb5_verify_checksum (krb5_context context,
 		      void *ptr,
 		      size_t len,
+		      const krb5_keyblock *keyblock,
 		      Checksum *sum);
 
 krb5_error_code
