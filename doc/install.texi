@@ -40,12 +40,13 @@ following options:
 @item @kbd{--without-berkeley-db}
 DB is preferred before NDBM, but if you for some reason want to use NDBM
 instead, you can use this option.
+
 @item @kbd{--with-krb4=@file{dir}}
 Gives the location of Kerberos 4 libraries and headers. This enables
 Kerberos 4 support in the applications (telnet, rsh, popper, etc) and
-the KDC. Default is to check in @file{/usr/athena}. If you keep
-libraries and headers in different places, you can instead give the path
-to each with the @kbd{--with-krb4-lib=@file{dir}}, and
+the KDC. It is automatically check for in @file{/usr/athena}. If you
+keep libraries and headers in different places, you can instead give the
+path to each with the @kbd{--with-krb4-lib=@file{dir}}, and
 @kbd{--with-krb4-include=@file{dir}} options.
 
 You will need a fairly recent version of our Kerberos 4 distribution for
@@ -54,11 +55,24 @@ You will need a fairly recent version of our Kerberos 4 distribution for
 @item @kbd{--enable-kaserver}
 Enables experimental kaserver support in the KDC. This is the protocol
 used by the ``KDC'' in AFS. Requires Kerberos 4 support.
+
+@item @kbd{--enable-kaserver-db}
+Enables experimental support for reading kaserver databases in hprop.
+This is useful when migrating from a kaserver to a Heimdal KDC.
+
 @item @kbd{--with-readline=@file{dir}}
 Gives the path for the GNU Readline library, which will be used in some
 programs. If no readline library is found, the (simpler) editline
 library will be used instead.
+
 @item @kbd{--disable-otp}
 By default some of the application programs will build with support for
 one-time passwords (OTP).  Use this option to disable that support.
+
+@item @kbd{--enable-new-des3-code}
+To make the new key-deriving 3DES the default.
+
+@item @kbd{--with-hesiod=@file{dir}}
+Enables hesiod support in push.
+
 @end table
