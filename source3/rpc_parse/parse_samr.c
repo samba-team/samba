@@ -5316,7 +5316,6 @@ static BOOL sam_io_user_info11(const char *desc, SAM_USER_INFO_11 * usr,
 /*************************************************************************
  init_sam_user_infoa
 
- unknown_3 = 0x09f8 27fa
  unknown_5 = 0x0001 0000
  unknown_6 = 0x0000 04ec 
 
@@ -5362,7 +5361,6 @@ static BOOL sam_io_user_info24(const char *desc, SAM_USER_INFO_24 * usr,
 /*************************************************************************
  init_sam_user_info23
 
- unknown_3 = 0x09f8 27fa
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -5386,7 +5384,7 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			uint32 user_rid,	/* 0x0000 0000 */
 			uint32 group_rid,
 			uint32 acb_info,
-			uint32 unknown_3,
+			uint32 fields_present,
 			uint16 logon_divs,
 			LOGON_HRS * hrs,
 			uint16 bad_password_count,
@@ -5406,7 +5404,7 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->user_rid = user_rid;	/* 0x0000 0000 */
 	usr->group_rid = group_rid;
 	usr->acb_info = acb_info;
-	usr->unknown_3 = unknown_3;	/* 09f8 27fa */
+	usr->fields_present = fields_present;	/* 09f8 27fa */
 
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
@@ -5464,7 +5462,6 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 /*************************************************************************
  init_sam_user_info23
 
- unknown_3 = 0x09f8 27fa
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -5481,7 +5478,7 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			   char *prof_path, const char *desc, char *wkstas,
 			   char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
 			   uint32 group_rid, uint32 acb_info,
-			   uint32 unknown_3, uint16 logon_divs,
+			   uint32 fields_present, uint16 logon_divs,
 			   LOGON_HRS * hrs, uint16 bad_password_count, uint16 logon_count,
 			   char newpass[516], uint32 unknown_6)
 {
@@ -5500,7 +5497,7 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->user_rid = user_rid;	/* 0x0000 0000 */
 	usr->group_rid = group_rid;
 	usr->acb_info = acb_info;
-	usr->unknown_3 = unknown_3;	/* 09f8 27fa */
+	usr->fields_present = fields_present;	/* 09f8 27fa */
 
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
@@ -5619,7 +5616,7 @@ static BOOL sam_io_user_info23(const char *desc, SAM_USER_INFO_23 * usr,
 	if(!prs_uint32("acb_info      ", ps, depth, &usr->acb_info))
 		return False;
 
-	if(!prs_uint32("unknown_3     ", ps, depth, &usr->unknown_3))
+	if(!prs_uint32("fields_present ", ps, depth, &usr->fields_present))
 		return False;
 	if(!prs_uint16("logon_divs    ", ps, depth, &usr->logon_divs))	/* logon divisions per week */
 		return False;
@@ -5816,7 +5813,6 @@ static BOOL sam_io_user_info25(const char *desc, SAM_USER_INFO_25 * usr, prs_str
 /*************************************************************************
  init_sam_user_info21W
 
- unknown_3 = 0x00ff ffff
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -5843,7 +5839,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 			   uint32 user_rid,
 			   uint32 group_rid,
 			   uint32 acb_info,
-			   uint32 unknown_3,
+			   uint32 fields_present,
 			   uint16 logon_divs,
 			   LOGON_HRS * hrs,
 			   uint16 bad_password_count,
@@ -5863,7 +5859,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	usr->user_rid = user_rid;
 	usr->group_rid = group_rid;
 	usr->acb_info = acb_info;
-	usr->unknown_3 = unknown_3;	/* 0x00ff ffff */
+	usr->fields_present = fields_present;	/* 0x00ff ffff */
 
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
@@ -5918,7 +5914,6 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 /*************************************************************************
  init_sam_user_info21
 
- unknown_3 = 0x00ff ffff
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -6005,14 +6000,14 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 
 	/*
 	  Look at a user on a real NT4 PDC with usrmgr, press
-	  'ok'. Then you will see that unknown_3 is set to
+	  'ok'. Then you will see that fields_present is set to
 	  0x08f827fa. Look at the user immediately after that again,
 	  and you will see that 0x00fffff is returned. This solves
 	  the problem that you get access denied after having looked
 	  at the user.
 	  -- Volker
 	*/
-	usr->unknown_3 = 0x00ffffff;
+	usr->fields_present = pdb_build_fields_present(pw);
 
 	usr->logon_divs = pdb_get_logon_divs(pw); 
 	usr->ptr_logon_hrs = pdb_get_hours(pw) ? 1 : 0;
@@ -6133,7 +6128,7 @@ static BOOL sam_io_user_info21(const char *desc, SAM_USER_INFO_21 * usr,
 	if(!prs_uint32("acb_info      ", ps, depth, &usr->acb_info))
 		return False;
 
-	if(!prs_uint32("unknown_3     ", ps, depth, &usr->unknown_3))
+	if(!prs_uint32("fields_present ", ps, depth, &usr->fields_present))
 		return False;
 	if(!prs_uint16("logon_divs    ", ps, depth, &usr->logon_divs))	/* logon divisions per week */
 		return False;

@@ -79,7 +79,7 @@ void pdb_fill_default_sam(SAM_ACCOUNT *user)
 	user->private.logoff_time           = 
 	user->private.kickoff_time          = 
 	user->private.pass_must_change_time = get_time_t_max();
-	user->private.unknown_3 = 0x00ffffff; 	/* don't know */
+	user->private.fields_present        = 0x00ffffff;
 	user->private.logon_divs = 168; 	/* hours per week */
 	user->private.hours_len = 21; 		/* 21 times 8 bits = 168 */
 	memset(user->private.hours, 0xff, user->private.hours_len); /* available at all hours */
@@ -1332,7 +1332,7 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		fullname_len, homedir_len, logon_script_len,
 		profile_path_len, acct_desc_len, workstations_len;
 		
-	uint32	user_rid, group_rid, unknown_3, hours_len, unknown_6;
+	uint32	user_rid, group_rid, fields_present, hours_len, unknown_6;
 	uint16	acct_ctrl, logon_divs;
 	uint16	bad_password_count, logon_count;
 	uint8	*hours;
@@ -1371,7 +1371,7 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		&lm_pw_len, &lm_pw_ptr,
 		&nt_pw_len, &nt_pw_ptr,
 		&acct_ctrl,
-		&unknown_3,
+		&fields_present,
 		&logon_divs,
 		&hours_len,
 		&hourslen, &hours,
@@ -1449,7 +1449,7 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
 	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
-	pdb_set_unknown_3(sampass, unknown_3, PDB_SET);
+	pdb_set_fields_present(sampass, fields_present, PDB_SET);
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	pdb_set_logon_count(sampass, logon_count, PDB_SET);
@@ -1656,7 +1656,7 @@ uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_
 		lm_pw_len, lm_pw,
 		nt_pw_len, nt_pw,
 		pdb_get_acct_ctrl(sampass),
-		pdb_get_unknown_3(sampass),
+		pdb_get_fields_present(sampass),
 		pdb_get_logon_divs(sampass),
 		pdb_get_hours_len(sampass),
 		MAX_HOURS_LEN, pdb_get_hours(sampass),
@@ -1699,7 +1699,7 @@ uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_
 		lm_pw_len, lm_pw,
 		nt_pw_len, nt_pw,
 		pdb_get_acct_ctrl(sampass),
-		pdb_get_unknown_3(sampass),
+		pdb_get_fields_present(sampass),
 		pdb_get_logon_divs(sampass),
 		pdb_get_hours_len(sampass),
 		MAX_HOURS_LEN, pdb_get_hours(sampass),
