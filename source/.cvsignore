@@ -8,3 +8,5 @@ cvs.log
 so_locations
 libtool
 .deps
+*.log
+*.sum
