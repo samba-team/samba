@@ -2261,6 +2261,7 @@ void rpcclient_init(void);
 BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num);
 void remove_pending_lock_requests_by_fid(files_struct *fsp);
 void remove_pending_lock_requests_by_mid(int mid);
+BOOL blocking_locks_pending(void);
 void process_blocking_lock_queue(time_t t);
 
 /*The following definitions come from  smbd/chgpasswd.c  */

@@ -522,6 +522,16 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 }
 
 /****************************************************************************
+ Return True if the blocking lock queue has entries.
+*****************************************************************************/
+
+BOOL blocking_locks_pending(void)
+{
+  blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst( &blocking_lock_queue );
+  return (blr == NULL ? False : True);
+}
+
+/****************************************************************************
  Process the blocking lock queue. Note that this is only called as root.
 *****************************************************************************/
 

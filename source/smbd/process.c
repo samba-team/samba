@@ -740,20 +740,15 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
  Process any timeout housekeeping. Return False if the caler should exit.
 ****************************************************************************/
 
-static BOOL timeout_processing(int *counter, int deadtime, 
-                               int *last_keepalive, int *service_load_counter)
+static BOOL timeout_processing(int deadtime)
 {
   extern int Client;
-
+  static time_t last_smb_conf_reload_time = 0;
+  static time_t last_keepalive_sent_time = 0;
+  static time_t last_idle_closed_check = 0;
   time_t t;
   BOOL allidle = True;
   extern int keepalive;
-
-  if (*counter > 365 * 3600) /* big number of seconds. */
-  {
-    *counter = 0;
-    *service_load_counter = 0;
-  }
 
   if (smb_read_error == READ_EOF) 
   {
@@ -770,16 +765,24 @@ static BOOL timeout_processing(int *counter, int deadtime,
 
   t = time(NULL);
 
+  if(last_smb_conf_reload_time == 0)
+    last_smb_conf_reload_time = t;
+
+  if(last_keepalive_sent_time == 0)
+    last_keepalive_sent_time = t;
+
+  if(last_idle_closed_check == 0)
+    last_idle_closed_check = t;
+
   /* become root again if waiting */
   unbecome_user();
 
   /* check for smb.conf reload */
-  if (*counter >= *service_load_counter + SMBD_RELOAD_CHECK)
+  if (t >= last_smb_conf_reload_time + SMBD_RELOAD_CHECK)
   {
-    *service_load_counter = *counter;
-
     /* reload services, if files have changed. */
     reload_services(True);
+    last_smb_conf_reload_time = t;
   }
 
   /*
@@ -792,6 +795,7 @@ static BOOL timeout_processing(int *counter, int deadtime,
     DEBUG(0,("Reloading services after SIGHUP\n"));
     reload_services(False);
     reload_after_sighup = False;
+    last_smb_conf_reload_time = t;
     /*
      * Use this as an excuse to print some stats.
      */
@@ -799,13 +803,15 @@ static BOOL timeout_processing(int *counter, int deadtime,
   }
 
   /* automatic timeout if all connections are closed */      
-  if (conn_num_open()==0 && *counter >= IDLE_CLOSED_TIMEOUT) 
+  if (conn_num_open()==0 && (t - last_idle_closed_check) >= IDLE_CLOSED_TIMEOUT) 
   {
     DEBUG( 2, ( "Closing idle connection\n" ) );
     return False;
   }
+  else
+    last_idle_closed_check = t;
 
-  if (keepalive && (*counter-*last_keepalive)>keepalive) 
+  if (keepalive && (t - last_keepalive_sent_time)>keepalive) 
   {
     struct cli_state *cli = server_client();
     if (!send_keepalive(Client)) {
@@ -816,7 +822,7 @@ static BOOL timeout_processing(int *counter, int deadtime,
        connected */
     if (cli && cli->initialised)
       send_keepalive(cli->fd);
-    *last_keepalive = *counter;
+    last_keepalive_sent_time = t;
   }
 
   /* check for connection timeouts */
@@ -895,9 +901,6 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 void smbd_process(void)
 {
   extern int smb_echo_count;
-  int counter = SMBD_SELECT_LOOP;
-  int service_load_counter = 0;
-  int last_keepalive=0;
 
   InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -928,6 +931,7 @@ void smbd_process(void)
   {
     int deadtime = lp_deadtime()*60;
     BOOL got_smb = False;
+    int select_timeout = SMBD_SELECT_TIMEOUT*1000;
 
     if (deadtime <= 0)
       deadtime = DEFAULT_SMBD_TIMEOUT;
@@ -939,11 +943,16 @@ void smbd_process(void)
 
     errno = 0;      
 
-    while(!receive_message_or_smb(InBuffer,BUFFER_SIZE,SMBD_SELECT_LOOP*1000,&got_smb))
+    while(!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout,&got_smb))
     {
-      if(!timeout_processing(&counter, deadtime, &last_keepalive, &service_load_counter))
+      if(!timeout_processing(deadtime))
         return;
-      counter += SMBD_SELECT_LOOP;
+      /*
+       * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
+       * have removed any blocking locks. JRA.
+       */
+      select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
+                                                  SMBD_SELECT_TIMEOUT*1000;
     }
 
     if(got_smb) {
@@ -961,9 +970,16 @@ void smbd_process(void)
       process_smb(InBuffer, OutBuffer);
 
       if(smb_echo_count != num_echos) {
-        if(!timeout_processing(&counter, deadtime, &last_keepalive, &service_load_counter))
+        if(!timeout_processing(deadtime))
           return;
-        counter += SMBD_SELECT_LOOP;
+
+      /*
+       * Lower the select timeout to SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS if we
+       * now have any blocking locks pending. JRA.
+       */
+
+      select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
+                                                  SMBD_SELECT_TIMEOUT*1000;
       }
     }
     else
