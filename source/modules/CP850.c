@@ -281,7 +281,7 @@ static const uint16 to_ucs2[256] = {
   [0xff] = 0x00A0,
 };
 
-static const struct gap from_idx[] = {
+static const struct charset_gap_table from_idx[] = {
     /* start, end, idx */
   { 0x0000, 0x007f, 0 },
   { 0x00a0, 0x00ff, -32 },

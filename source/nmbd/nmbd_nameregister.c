@@ -471,8 +471,18 @@ void register_name(struct subnet_record *subrec,
                    struct userdata_struct *userdata)
 {
 	struct nmb_name nmbname;
-	
-	make_nmb_name(&nmbname, name, type);
+	nstring nname;
+
+        if (strlen(name)+1 > sizeof(nstring)) {
+		memcpy(nname, name,sizeof(nstring)-1);
+		nname[sizeof(nstring)-1] = '\0';
+		DEBUG(0,("register_name: NetBIOS name %s is too long. Truncating to %s\n",
+			name, nname));
+	} else {
+		nstrcpy(nname,name);
+	}
+
+	make_nmb_name(&nmbname, nname, type);
 
 	/* Always set the NB_ACTIVE flag on the name we are
 	   registering. Doesn't make sense without it.
