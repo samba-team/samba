@@ -456,15 +456,51 @@ if test "$LIB_dbopen" != "$LIB_dbm_firstkey"; then
 fi
 AC_SUBST(DBLIB)dnl
 
-AC_CHECK_FUNCS(_getpty _scrsize asnprintf asprintf cgetent fcntl)
-AC_CHECK_FUNCS(getmsg getrlimit getspnam gettimeofday getuid)
-AC_CHECK_FUNCS(grantpt mktime ptsname rand random setproctitle)
-AC_CHECK_FUNCS(revoke select setitimer setpcred setpgid)
-AC_CHECK_FUNCS(setregid setresgid setresuid setreuid setutent)
-AC_CHECK_FUNCS(setsid sigaction strstr)
-AC_CHECK_FUNCS(sysconf sysctl timegm ttyname ttyslot umask uname)
-AC_CHECK_FUNCS(unlockpt vasnprintf vasprintf vhangup)
-AC_CHECK_FUNCS(yp_get_default_domain)
+AC_CHECK_FUNCS([				\
+	_getpty					\
+	_scrsize				\
+	asnprintf				\
+	asprintf				\
+	cgetent					\
+	fcntl					\
+	getconfattr				\
+	getmsg					\
+	getrlimit				\
+	getspnam				\
+	gettimeofday				\
+	getuid					\
+	grantpt					\
+	mktime					\
+	ptsname					\
+	rand					\
+	random					\
+	revoke					\
+	select					\
+	setitimer				\
+	setpcred				\
+	setpgid					\
+	setproctitle				\
+	setregid				\
+	setresgid				\
+	setresuid				\
+	setreuid				\
+	setsid					\
+	setutent				\
+	sigaction				\
+	strstr					\
+	sysconf					\
+	sysctl					\
+	timegm					\
+	ttyname					\
+	ttyslot					\
+	umask					\
+	uname					\
+	unlockpt				\
+	vasnprintf				\
+	vasprintf				\
+	vhangup					\
+	yp_get_default_domain			\
+])
 
 if test "$ac_cv_func_cgetent" = no; then
 	LIBOBJS="$LIBOBJS getcap.o"
@@ -554,7 +590,6 @@ AC_BROKEN([					\
 	freehostent				\
 	gai_strerror				\
 	getaddrinfo				\
-	getconfattr				\
 	getcwd					\
 	getdtablesize				\
 	getegid					\
