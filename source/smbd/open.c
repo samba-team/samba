@@ -25,6 +25,7 @@ extern int DEBUGLEVEL;
 
 extern pstring sesssetup_user;
 extern uint16 global_oplock_port;
+extern BOOL global_client_failed_oplock_break;
 
 /****************************************************************************
 fd support routines - attempt to do a dos_open
@@ -793,7 +794,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
 
 
   /* ignore any oplock requests if oplocks are disabled */
-  if (!lp_oplocks(SNUM(conn))) {
+  if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break) {
 	  oplock_request = 0;
   }
 

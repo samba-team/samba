@@ -35,6 +35,7 @@ static int oplock_pipe_write = -1;
 /* Current number of oplocks we have outstanding. */
 static int32 exclusive_oplocks_open = 0;
 static int32 level_II_oplocks_open = 0;
+BOOL global_client_failed_oplock_break = False;
 BOOL global_oplock_break = False;
 
 extern int smb_read_error;
@@ -1046,6 +1047,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   {
     DEBUG(0,("oplock_break: client failure in oplock break in file %s\n", fsp->fsp_name));
     remove_oplock(fsp);
+    global_client_failed_oplock_break = True; /* Never grant this client an oplock again. */
   }
 
   /*
