@@ -365,7 +365,8 @@ krb5_generate_random_keyblock(krb5_context context,
 }
 
 
-krb5_error_code
+/* is this something that anyone wants to use? */
+static krb5_error_code
 krb5_key_to_string(krb5_context context,
 		   krb5_keyblock key,
 		   krb5_boolean include_keydata,
