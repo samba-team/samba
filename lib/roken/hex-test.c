@@ -75,8 +75,8 @@ main(int argc, char **argv)
 	len = strlen(str);
 	len = hex_decode(t->result, str, len);
 	if(len != t->len) {
-	    fprintf(stderr, "failed test %d: len %d != %d\n", numtest,
-		    len, t->len);
+	    fprintf(stderr, "failed test %d: len %lu != %lu\n", numtest,
+		    (unsigned long)len, (unsigned long)t->len);
 	    numerr++;
 	} else if(memcmp(str, t->data, t->len) != 0) {
 	    fprintf(stderr, "failed test %d: data\n", numtest);
