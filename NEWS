@@ -2,6 +2,8 @@ Changes in release 0.3c
 
  * lib/krb5: memory caches now support the resolve operation
 
+ * appl/login: set PATH to some sane default
+
 Changes in release 0.3b
 
  * kdc: prefer default-salted keys on v5 requests
