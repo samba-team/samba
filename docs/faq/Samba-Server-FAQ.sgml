@@ -337,7 +337,7 @@ network" doesn't fit well with clients possibly running on multiuser
 machines (such as users of smbclient under Unix). Having said that,
 several developers are working hard on building it in to the next
 major version of Samba. If you can contribute, send a message to
-<htmlurl url="mailto:samba-bugs@anu.edu.au" name="samba-bugs@anu.edu.au"> !
+<htmlurl url="mailto:samba@samba.org" name="samba@samba.org"> !
 
 Seeing this message should not affect your ability to mount redirected
 disks and printers, which is really what all this is about.
@@ -383,7 +383,7 @@ as a strictly temporary solution.
 In earlier Samba versions there were some difficulties with the very
 latest Microsoft products, particularly Excel 5 and Word for Windows
 6. These should have all been solved. If not then please let Andrew
-Tridgell know via email at <htmlurl url="mailto:samba-bugs@anu.edu.au" name="samba-bugs@anu.edu.au">.
+Tridgell know via email at <htmlurl url="mailto:samba@samba.org" name="samba@samba.org">.
 
 <sect1>My "server string" doesn't seem to be recognised<p><label id="bad_server_string">
 OR My client reports the default setting, eg. "Samba 1.9.15p4", instead
