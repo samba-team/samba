@@ -1,7 +1,7 @@
-              WHATS NEW IN Samba 2.2.0alpha1
+              WHATS NEW IN Samba 2.2.0alpha2
               ==============================
 
-This is the first alpha release of the new 2.2.0 codebase
+This is the third alpha release of the new 2.2.0 codebase
 for Samba. This version must not be run in production.
 
 This code will almost certainly have some bugs and is
@@ -9,8 +9,48 @@ intended to help the Samba Team prepare an official 2.2.0
 release.
 
 The documentation in this alpha snapshot is not up to date,
-there are many new parameters since 2.0.7. This will be
-corrected in a later alpha release.
+there are many new parameters since 2.0.7 and some defaults
+have changed. This will be corrected in a later alpha release.
+
+Several significant bugs have been fixed between alpha2
+and alpha2, these include :
+
+Inclusion of mapping of NT ACLs to Linux ACLs, using the patch
+found at http://acl.bestbits.at.
+
+This is being done via an abstract interface that needs porting
+to the following UNIXes - IRIX, Solaris, HPUX, AIX - as many
+as can be done will be supported at 2.2.0 release. Please look
+at the code in lib/sysacls.c for the needed work.
+
+Addition of tdb spinlock code for tdb speed.
+Addition of user list lookup from Win2k (thanks to the Samba TNG
+branch code for this).
+Addition of generic to specific mapping of security descriptors
+in printer code.
+Addition of code page 857 (Turkish).
+Addition of "%D" substitution for incoming Domain of user.
+getpwnam/getpwuid cache.
+Many codepage fixes when dealing with printers with extended
+characters (thanks to HP for this fix).
+Inherited security descriptors for printing.
+Creation of internal NT "token" for smbd access checks.
+Addition of NT trans code for client.
+Fix for inheritance of blocked signals (thanks to HP).
+Addition of "total print jobs" parameter.
+Fix for NT not being able to save properties changes on
+PCL drivers.
+Fixes to speed up enumeration of print jobs.
+Cleanup printer spool files on client disconnect.
+Byteswap fixes for printing code (thanks JF).
+New parameter "dos filemode" to allow a user who can write to a
+file to change permissions on it.
+Subtle statcache bugfix.
+Fix for Office2000 print to file bug.
+Fix for MS Access multi-user open problem.
+Valid users now in linked list rather than array.
+SMB lookup now table driven rather than linear search (doh!).
+TDB locking fixes for multiple openers.
 
 Several significant bugs have been fixed between alpha0
 and alpha1, these include :
@@ -37,8 +77,8 @@ driven by a Windows NT4/2000 PDC.
 
 Support for native Windows NT4/2000 printing RPCs.
 This includes support for automatic printer driver
-download. This functionality should be complete in
-alpha1.
+download. It is currently believed this functionality
+is working in alpha2.
 
 Rewritten internal locking semantics for more robustness.
 This alpha supports full 64 bit locking semantics on all
