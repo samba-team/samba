@@ -515,9 +515,9 @@ ARCFOUR_string_to_key(krb5_context context,
 /* iter is really 1 based, so iter == 0 will be 1 iteration */
 
 krb5_error_code
-krb5_PKCS5_PBKDF2(krb5_context context, krb5_cksumtype cktype,
-		  krb5_data password, krb5_salt salt, u_int32_t iter,
-		  krb5_keytype type, krb5_keyblock *key)
+_krb5_PKCS5_PBKDF2(krb5_context context, krb5_cksumtype cktype,
+		   krb5_data password, krb5_salt salt, u_int32_t iter,
+		   krb5_keytype type, krb5_keyblock *key)
 {
     struct checksum_type *c = _find_checksum(cktype);
     struct key_type *kt;
@@ -643,8 +643,8 @@ AES_string_to_key(krb5_context context,
     if (et == NULL)
 	return KRB5_PROG_KEYTYPE_NOSUPP;
 
-    ret = krb5_PKCS5_PBKDF2(context, CKSUMTYPE_SHA1, password, salt, 
-			    iter, enctype, key);
+    ret = _krb5_PKCS5_PBKDF2(context, CKSUMTYPE_SHA1, password, salt, 
+			     iter, enctype, key);
     if (ret)
 	return ret;
 
