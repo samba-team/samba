@@ -416,10 +416,12 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   }
   return (True);
 }
+
 #else
 
 #ifdef        __FreeBSD__
 #include <ufs/ufs/quota.h>
+#include <machine/param.h>
 #elif         AIX
 /* AIX quota patch from Ole Holm Nielsen <ohnielse@fysik.dtu.dk> */
 #include <jfs/quota.h>
@@ -463,7 +465,25 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   }
 #else /* USE_SETRES */
 #if defined(__FreeBSD__)
-  r= quotactl(path,Q_GETQUOTA,euser_id,(char *) &D);
+  {
+    /* FreeBSD patches from Marty Moll <martym@arbor.edu> */
+    uid_t user_id;
+    gid_t egrp_id;
+ 
+    /* Need to be root to get quotas in FreeBSD */
+    user_id = getuid();
+    egrp_id = getegid();
+    setuid(0);
+    seteuid(0);
+    r= quotactl(path,QCMD(Q_GETQUOTA,USRQUOTA),euser_id,(char *) &D);
+
+    /* As FreeBSD has group quotas, if getting the user
+       quota fails, try getting the group instead. */
+    if (r)
+      r= quotactl(path,QCMD(Q_GETQUOTA,GRPQUOTA),egrp_id,(char *) &D);
+    setuid(user_id);
+    seteuid(euser_id);
+  }
 #elif defined(AIX)
   /* AIX has both USER and GROUP quotas: 
      Get the USER quota (ohnielse@fysik.dtu.dk) */
@@ -474,7 +494,12 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 #endif /* USE_SETRES */
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
+#if defined(__FreeBSD__)
+  *bsize = DEV_BSIZE;
+#else /* !__FreeBSD__ */
   *bsize = 1024;
+#endif /*!__FreeBSD__ */
+
   if (r)
     {
       if (errno == EDQUOT) 

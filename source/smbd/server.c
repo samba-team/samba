@@ -703,7 +703,15 @@ int disk_free(char *path,int *bsize,int *dfree,int *dsize)
                            dfree_retval : dfreeq_retval ;
           /* maybe dfree and dfreeq are calculated using different bsizes 
              so convert dfree from bsize into bsizeq */
-          *dfree = ((*dfree) * (*bsize)) / (bsizeq);
+          /* avoid overflows due to multiplication, so do not:
+                *dfree = ((*dfree) * (*bsize)) / (bsizeq);
+             bsize and bsizeq are powers of 2 so its better to
+             to divide them getting a multiplication or division factor
+             for dfree. Rene Nieuwenhuizen (07-10-1997) */
+          if (*bsize >= bsizeq)
+            *dfree = *dfree * (*bsize / bsizeq);
+          else
+            *dfree = *dfree / (bsizeq / *bsize);
           *dfree = ( *dfree < dfreeq ) ? *dfree : dfreeq ; 
           *bsize = bsizeq;
           *dsize = dsizeq;
@@ -793,7 +801,15 @@ if ((*bsize) < 512 || (*bsize)>0xFFFF) *bsize = 1024;
                        dfree_retval : dfreeq_retval ;
       /* maybe dfree and dfreeq are calculated using different bsizes 
          so convert dfree from bsize into bsizeq */
-      *dfree = ((*dfree) * (*bsize)) / (bsizeq);
+      /* avoid overflows due to multiplication, so do not:
+              *dfree = ((*dfree) * (*bsize)) / (bsizeq);
+       bsize and bsizeq are powers of 2 so its better to
+       to divide them getting a multiplication or division factor
+       for dfree. Rene Nieuwenhuizen (07-10-1997) */
+      if (*bsize >= bsizeq)
+        *dfree = *dfree * (*bsize / bsizeq);
+      else
+        *dfree = *dfree / (bsizeq / *bsize);
       *dfree = ( *dfree < dfreeq ) ? *dfree : dfreeq ;
       *bsize = bsizeq;
       *dsize = dsizeq;
@@ -1963,7 +1979,11 @@ struct
   {EPERM,ERRDOS,ERRnoaccess},
   {EACCES,ERRDOS,ERRnoaccess},
   {ENOENT,ERRDOS,ERRbadfile},
+#if 0 /* Go back to old method for now. */
   {ENOTDIR,ERRDOS,ERRbaddirectory},
+#else
+  {ENOTDIR,ERRDOS,ERRbadpath},
+#endif
   {EIO,ERRHRD,ERRgeneral},
   {EBADF,ERRSRV,ERRsrverror},
   {EINVAL,ERRSRV,ERRsrverror},
@@ -1984,6 +2004,7 @@ struct
   {0,0,0}
 };
 
+#if 0 /* Go back to old method for now. */
 /* Mapping for old clients. */
 
 struct
@@ -1997,6 +2018,8 @@ struct
   {ERRbaddirectory, ERRbadpath, (int)PROTOCOL_NT1, RA_WINNT},
   {0,0,0}
 };
+
+#endif /* Go back to old method for now. */
 
 /****************************************************************************
   create an error packet from errno
@@ -2028,6 +2051,8 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
       }
     }
 
+#if 0 /* Go back to old method for now. */
+
   /* Make sure we don't return error codes that old
      clients don't understand. */
 
@@ -2050,6 +2075,7 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
       break;
     }
   }
+#endif /* Go back to old method for now. */
 
   return(error_packet(inbuf,outbuf,eclass,ecode,line));
 }
