@@ -59,6 +59,7 @@ gss_userok(void *app_data, char *username)
     if(gssapi_krb5_context) {
 	krb5_principal client;
 	krb5_error_code ret;
+	OM_uint32 minor_status;
         
 	ret = krb5_parse_name(gssapi_krb5_context, data->client_name, &client);
 	if(ret)
@@ -77,7 +78,6 @@ gss_userok(void *app_data, char *username)
            krb5_ccache ccache = NULL; 
            char* ticketfile;
            struct passwd *pw;
-	   OM_uint32 minor_status;
            
            pw = getpwnam(username);
            
@@ -114,6 +114,7 @@ fail:
            free(ticketfile);
         }
            
+	gss_release_cred(&minor_status, &data->delegated_cred_handle);
 	krb5_free_principal(gssapi_krb5_context, client);
         return ret;
     }
