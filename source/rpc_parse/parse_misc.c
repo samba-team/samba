@@ -216,6 +216,7 @@ BOOL smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth)
 
 	if(!prs_uint8 ("sid_rev_num", ps, depth, &sid->sid_rev_num))
 		return False;
+
 	if(!prs_uint8 ("num_auths  ", ps, depth, &sid->num_auths))
 		return False;
 
@@ -1043,16 +1044,44 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 }
 
 
-/*******************************************************************
- Reads or writes a UNISTR_ARRAY structure.
-********************************************************************/
-BOOL smb_io_unistr_array(const char *desc, UNISTR_ARRAY *array, prs_struct *ps, int depth)
+/*
+  initialise a UNISTR_ARRAY from a char**
+*/
+BOOL init_unistr2_array(UNISTR2_ARRAY *array, 
+		       uint32 count, const char **strings)
 {
 	int i;
 
-	depth++;
+	array->count = count;
+	array->ref_id = count?1:0;
+	if (array->count == 0) {
+		return True;
+	}
 
-	array->count = 0;
+	array->strings = (UNISTR2_ARRAY_EL *)talloc_zero(get_talloc_ctx(), count * sizeof(UNISTR2_ARRAY_EL));
+	if (!array->strings) {
+		return False;
+	}
+
+	for (i=0;i<count;i++) {
+		init_unistr2(&array->strings[i].string, strings[i], strlen(strings[i]));
+		array->strings[i].size = array->strings[i].string.uni_max_len*2;
+		array->strings[i].length = array->strings[i].size;
+		array->strings[i].ref_id = 1;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a UNISTR2_ARRAY structure.
+********************************************************************/
+BOOL smb_io_unistr2_array(const char *desc, UNISTR2_ARRAY *array, prs_struct *ps, int depth)
+{
+	int i;
+
+	prs_debug(ps, depth, desc, "smb_io_unistr2_array");
+	depth++;
 
 	if(!prs_uint32("ref_id", ps, depth, &array->ref_id))
 		return False;
@@ -1068,7 +1097,9 @@ BOOL smb_io_unistr_array(const char *desc, UNISTR_ARRAY *array, prs_struct *ps, 
 		return True;
 	}
 
-	array->strings = talloc_zero(get_talloc_ctx(), array->count * sizeof(array->strings[0]));
+	if (UNMARSHALLING(ps)) {
+		array->strings = talloc_zero(get_talloc_ctx(), array->count * sizeof(array->strings[0]));
+	}
 	if (! array->strings) {
 		return False;
 	}
