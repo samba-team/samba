@@ -2,12 +2,6 @@
 
 RCSID("$Id$");
 
-/* XXX */
-
-#ifdef sun
-#define memmove(a,b,c) bcopy(b,a,c)
-#endif
-
 /* Public principal handling functions */
 
 void
