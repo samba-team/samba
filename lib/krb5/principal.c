@@ -704,9 +704,24 @@ krb5_425_conv_principal(krb5_context context,
 }
 
 
-static char*
+static int
+check_list(const krb5_config_binding *l, const char *name, const char **out)
+{
+    while(l){
+	if (l->type != krb5_config_string)
+	    continue;
+	if(strcmp(name, l->u.string) == 0) {
+	    *out = l->name;
+	    return 1;
+	}
+	l = l->next;
+    }
+    return 0;
+}
+
+static int
 name_convert(krb5_context context, const char *name, const char *realm, 
-	     const char *section)
+	     const char **out)
 {
     const krb5_config_binding *l;
     l = krb5_config_get_list (context,
@@ -714,24 +729,47 @@ name_convert(krb5_context context, const char *name, const char *realm,
 			      "realms",
 			      realm,
 			      "v4_name_convert",
-			      section,
+			      "host",
 			      NULL);
-    if(l == NULL)
-	l = krb5_config_get_list (context,
-				  NULL,
-				  "libdefaults",
-				  "v4_name_convert",
-				  section,
-				  NULL);
+    if(l && check_list(l, name, out))
+	return KRB5_NT_SRV_HST;
+    l = krb5_config_get_list (context,
+			      NULL,
+			      "libdefaults",
+			      "v4_name_convert",
+			      "host",
+			      NULL);
+    if(l && check_list(l, name, out))
+	return KRB5_NT_SRV_HST;
+    l = krb5_config_get_list (context,
+			      NULL,
+			      "realms",
+			      realm,
+			      "v4_name_convert",
+			      "plain",
+			      NULL);
+    if(l && check_list(l, name, out))
+	return KRB5_NT_UNKNOWN;
+    l = krb5_config_get_list (context,
+			      NULL,
+			      "libdefaults",
+			      "v4_name_convert",
+			      "host",
+			      NULL);
+    if(l && check_list(l, name, out))
+	return KRB5_NT_UNKNOWN;
     
-    while(l){
-	if (l->type != krb5_config_string)
-	    continue;
-	if(strcmp(name, l->u.string) == 0)
-	    return l->name;
-	l = l->next;
+    /* didn't find it in config file, try built-in list */
+    {
+	struct v4_name_convert *q;
+	for(q = default_v4_name_convert; q->from; q++) {
+	    if(strcmp(name, q->to) == 0) {
+		*out = q->from;
+		return KRB5_NT_SRV_HST;
+	    }
+	}
     }
-    return NULL;
+    return -1;
 }
 
 krb5_error_code
@@ -741,7 +779,7 @@ krb5_524_conv_principal(krb5_context context,
 			char *instance,
 			char *realm)
 {
-    char *n, *i, *r;
+    const char *n, *i, *r;
     char tmpinst[40];
     int type = princ_type(principal);
 
@@ -761,16 +799,11 @@ krb5_524_conv_principal(krb5_context context,
     }
 
     {
-	char *tmp = name_convert(context, n, r, "host");
-	if(tmp){
-	    type = KRB5_NT_SRV_HST;
+	const char *tmp;
+	int t = name_convert(context, n, r, &tmp);
+	if(t >= 0) {
+	    type = t;
 	    n = tmp;
-	}else{
-	    tmp = name_convert(context, n, r, "plain");
-	    if(tmp){
-		type = KRB5_NT_UNKNOWN;
-		n = tmp;
-	    }
 	}
     }
 
