@@ -97,39 +97,34 @@ usr2handler (int sig)
  */
 
 static int
-connect_host (char *host, char *user, des_cblock *key,
-	      des_key_schedule schedule, int port,
-	      struct sockaddr_in *thisaddr,
-	      struct sockaddr_in *thataddr)
+connect_host (kx_context *kc)
 {
-     CREDENTIALS cred;
-     KTEXT_ST text;
-     MSG_DAT msg;
-     int status;
      int addrlen;
      struct hostent *hostent;
      int s;
      char **p;
+     struct sockaddr_in thisaddr;
+     struct sockaddr_in thataddr;
 
-     hostent = gethostbyname (host);
+     hostent = gethostbyname (kc->host);
      if (hostent == NULL) {
-	 warnx ("gethostbyname '%s' failed: %s", host,
+	 warnx ("gethostbyname '%s' failed: %s", kc->host,
 		hstrerror(h_errno));
 	 return -1;
      }
 
-     memset (thataddr, 0, sizeof(*thataddr));
-     thataddr->sin_family = AF_INET;
-     thataddr->sin_port   = port;
+     memset (&thataddr, 0, sizeof(thataddr));
+     thataddr.sin_family = AF_INET;
+     thataddr.sin_port   = kc->port;
      for(p = hostent->h_addr_list; *p; ++p) {
-	 memcpy (&thataddr->sin_addr, *p, sizeof(thataddr->sin_addr));
+	 memcpy (&thataddr.sin_addr, *p, sizeof(thataddr.sin_addr));
 
 	 s = socket (AF_INET, SOCK_STREAM, 0);
 	 if (s < 0)
 	     err (1, "socket");
 
-	 if (connect (s, (struct sockaddr *)thataddr, sizeof(*thataddr)) < 0) {
-	     warn ("connect(%s)", host);
+	 if (connect (s, (struct sockaddr *)&thataddr, sizeof(thataddr)) < 0) {
+	     warn ("connect(%s)", kc->host);
 	     close (s);
 	     continue;
 	 } else {
@@ -139,19 +134,14 @@ connect_host (char *host, char *user, des_cblock *key,
      if (*p == NULL)
 	 return -1;
 
-     addrlen = sizeof(*thisaddr);
-     if (getsockname (s, (struct sockaddr *)thisaddr, &addrlen) < 0 ||
-	 addrlen != sizeof(*thisaddr))
-	 err(1, "getsockname(%s)", host);
-     status = krb_sendauth (KOPT_DO_MUTUAL, s, &text, "rcmd",
-			    host, krb_realmofhost (host),
-			    getpid(), &msg, &cred, schedule,
-			    thisaddr, thataddr, KX_VERSION);
-     if (status != KSUCCESS) {
-	 warnx ("%s: %s\n", host, krb_get_err_text(status));
+     addrlen = sizeof(thisaddr);
+     if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0 ||
+	 addrlen != sizeof(thisaddr))
+	 err(1, "getsockname(%s)", kc->host);
+     kc->thisaddr = thisaddr;
+     kc->thataddr = thataddr;
+     if ((*kc->authenticate)(kc, s))
 	 return -1;
-     }
-     memcpy(key, cred.session, sizeof(des_cblock));
      return s;
 }
 
@@ -161,23 +151,21 @@ connect_host (char *host, char *user, des_cblock *key,
  */
 
 static int
-passive_session (int xserver, int fd, des_cblock *iv,
-		 des_key_schedule schedule)
+passive_session (int xserver, int fd, kx_context *kc)
 {
     if (replace_cookie (xserver, fd, XauFileName(), 1))
 	return 1;
     else
-	return copy_encrypted (xserver, fd, iv, schedule);
+	return copy_encrypted (kc, xserver, fd);
 }
 
 static int
-active_session (int xserver, int fd, des_cblock *iv,
-		des_key_schedule schedule)
+active_session (int xserver, int fd, kx_context *kc)
 {
     if (verify_and_remove_cookies (xserver, fd, 1))
 	return 1;
     else
-	return copy_encrypted (xserver, fd, iv, schedule);
+	return copy_encrypted (kc, xserver, fd);
 }
 
 static void
@@ -208,24 +196,20 @@ status_output (int debugp)
  */
 
 static int
-doit_passive (char *host, char *user, int debugp, int keepalivep,
-	      int port)
+doit_passive (kx_context *kc)
 {
-     des_key_schedule schedule;
-     des_cblock key;
      int otherside;
-     struct sockaddr_in me, him;
      u_char msg[1024], *p;
      int len;
-     void *ret;
      u_int32_t tmp;
+     char *host = kc->host;
 
-     otherside = connect_host (host, user, &key, schedule, port,
-			       &me, &him);
+     otherside = connect_host (kc);
+
      if (otherside < 0)
 	 return 1;
 #if defined(SO_KEEPALIVE) && defined(HAVE_SETSOCKOPT)
-     if (keepalivep) {
+     if (kc->keepalive_flag) {
 	 int one = 1;
 
 	 setsockopt (otherside, SOL_SOCKET, SO_KEEPALIVE, (void *)&one,
@@ -235,22 +219,20 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 
      p = msg;
      *p++ = INIT;
-     len = strlen(user);
-     p += krb_put_int (len, p, sizeof(msg) - 1, 4);
-     memcpy(p, user, len);
+     len = strlen(kc->user);
+     p += KRB_PUT_INT (len, p, sizeof(msg) - 1, 4);
+     memcpy(p, kc->user, len);
      p += len;
-     *p++ = PASSIVE | (keepalivep ? KEEP_ALIVE : 0);
-     if (write_encrypted (otherside, msg, p - msg, schedule,
-			  &key, &me, &him) < 0)
+     *p++ = PASSIVE | (kc->keepalive_flag ? KEEP_ALIVE : 0);
+     if (kx_write (kc, otherside, msg, p - msg) != p - msg)
 	 err (1, "write to %s", host);
-     len = read_encrypted (otherside, msg, sizeof(msg), &ret,
-			   schedule, &key, &him, &me);
+     len = kx_read (kc, otherside, msg, sizeof(msg));
      if (len <= 0)
 	 errx (1,
 	       "error reading initial message from %s: "
 	       "this probably means it's using an old version.",
 	       host);
-     p = (u_char *)ret;
+     p = (u_char *)msg;
      if (*p == ERROR) {
 	 p++;
 	 p += krb_get_int (p, &tmp, 4, 0);
@@ -269,18 +251,17 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
      xauthfile[tmp] = '\0';
      p += tmp;
 
-     status_output (debugp);
+     status_output (kc->debug_flag);
      for (;;) {
 	 pid_t child;
 
-	 len = read_encrypted (otherside, msg, sizeof(msg), &ret,
-			       schedule, &key, &him, &me);
+	 len = kx_read (kc, otherside, msg, sizeof(msg));
 	 if (len < 0)
 	     err (1, "read from %s", host);
 	 else if (len == 0)
 	     return 0;
 
-	 p = (u_char *)ret;
+	 p = (u_char *)msg;
 	 if (*p == ERROR) {
 	     p++;
 	     p += krb_get_int (p, &tmp, 4, 0);
@@ -302,7 +283,7 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 	     int fd;
 	     int xserver;
 
-	     addr = him;
+	     addr = kc->thataddr;
 	     close (otherside);
 
 	     addr.sin_port = htons(tmp);
@@ -318,7 +299,7 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 	     }
 #endif
 #if defined(SO_KEEPALIVE) && defined(HAVE_SETSOCKOPT)
-	     if (keepalivep) {
+	     if (kc->keepalive_flag) {
 		 int one = 1;
 
 		 setsockopt (fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&one,
@@ -343,7 +324,7 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 		 if (xserver < 0)
 		     return 1;
 	     }
-	     return passive_session (xserver, fd, &key, schedule);
+	     return passive_session (xserver, fd, kc);
 	 } else {
 	 }
      }
@@ -354,31 +335,26 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
  */
 
 static int
-doit_active (char *host, char *user,
-	     int debugpp, int keepalivep, int tcpp, int port)
+doit_active (kx_context *kc)
 {
-    des_key_schedule schedule;
-    des_cblock key;
     int otherside;
     int nsockets;
     struct x_socket *sockets;
-    struct sockaddr_in me, him;
     u_char msg[1024], *p;
-    int len = strlen(user);
-    void *ret;
+    int len = strlen(kc->user);
     int tmp, tmp2;
     char *s;
     int i;
     size_t rem;
     u_int32_t other_port;
     int error;
+    char *host = kc->host;
 
-    otherside = connect_host (host, user, &key, schedule, port,
-			      &me, &him);
+    otherside = connect_host (kc);
     if (otherside < 0)
 	return 1;
 #if defined(SO_KEEPALIVE) && defined(HAVE_SETSOCKOPT)
-    if (keepalivep) {
+    if (kc->keepalive_flag) {
 	int one = 1;
 
 	setsockopt (otherside, SOL_SOCKET, SO_KEEPALIVE, (void *)&one,
@@ -389,23 +365,23 @@ doit_active (char *host, char *user,
     rem = sizeof(msg);
     *p++ = INIT;
     --rem;
-    len = strlen(user);
-    tmp = krb_put_int (len, p, rem, 4);
+    len = strlen(kc->user);
+    tmp = KRB_PUT_INT (len, p, rem, 4);
     if (tmp < 0)
 	return 1;
     p += tmp;
     rem -= tmp;
-    memcpy(p, user, len);
+    memcpy(p, kc->user, len);
     p += len;
     rem -= len;
-    *p++ = (keepalivep ? KEEP_ALIVE : 0);
+    *p++ = (kc->keepalive_flag ? KEEP_ALIVE : 0);
     --rem;
 
     s = getenv("DISPLAY");
     if (s == NULL || (s = strchr(s, ':')) == NULL) 
 	s = ":0";
     len = strlen (s);
-    tmp = krb_put_int (len, p, rem, 4);
+    tmp = KRB_PUT_INT (len, p, rem, 4);
     if (tmp < 0)
 	return 1;
     rem -= tmp;
@@ -418,7 +394,7 @@ doit_active (char *host, char *user,
     if (s == NULL)
 	s = "";
     len = strlen (s);
-    tmp = krb_put_int (len, p, rem, 4);
+    tmp = KRB_PUT_INT (len, p, rem, 4);
     if (tmp < 0)
 	return 1;
     p += len;
@@ -427,15 +403,13 @@ doit_active (char *host, char *user,
     p += len;
     rem -= len;
 
-    if (write_encrypted (otherside, msg, p - msg, schedule,
-			 &key, &me, &him) < 0)
+    if (kx_write (kc, otherside, msg, p - msg) != p - msg)
 	err (1, "write to %s", host);
 
-    len = read_encrypted (otherside, msg, sizeof(msg), &ret,
-			  schedule, &key, &him, &me);
+    len = kx_read (kc, otherside, msg, sizeof(msg));
     if (len < 0)
 	err (1, "read from %s", host);
-    p = (u_char *)ret;
+    p = (u_char *)msg;
     if (*p == ERROR) {
 	u_int32_t u32;
 
@@ -447,11 +421,11 @@ doit_active (char *host, char *user,
     } else
 	p++;
 
-    tmp2 = get_xsockets (&nsockets, &sockets, tcpp);
+    tmp2 = get_xsockets (&nsockets, &sockets, kc->tcp_flag);
     if (tmp2 < 0)
 	return 1;
     display_num = tmp2;
-    if (tcpp)
+    if (kc->tcp_flag)
 	snprintf (display, display_size, "localhost:%u", display_num);
     else
 	snprintf (display, display_size, ":%u", display_num);
@@ -461,7 +435,7 @@ doit_active (char *host, char *user,
 	warnx ("failed creating cookie file: %s", strerror(error));
 	return 1;
     }
-    status_output (debugpp);
+    status_output (kc->debug_flag);
     for (;;) {
 	fd_set fdset;
 	pid_t child;
@@ -488,14 +462,12 @@ doit_active (char *host, char *user,
 
 	p = msg;
 	*p++ = NEW_CONN;
-	if (write_encrypted (otherside, msg, p - msg, schedule,
-			     &key, &me, &him) < 0)
+	if (kx_write (kc, otherside, msg, p - msg) != p - msg)
 	    err (1, "write to %s", host);
-	len = read_encrypted (otherside, msg, sizeof(msg), &ret,
-			      schedule, &key, &him, &me);
+	len = kx_read (kc, otherside, msg, sizeof(msg));
 	if (len < 0)
 	    err (1, "read from %s", host);
-	p = (u_char *)ret;
+	p = (u_char *)msg;
 	if (*p == ERROR) {
 	    u_int32_t val;
 
@@ -521,7 +493,7 @@ doit_active (char *host, char *user,
 	    for (i = 0; i < nsockets; ++i)
 		close (sockets[i].fd);
 
-	    addr = him;
+	    addr = kc->thataddr;
 	    close (otherside);
 
 	    addr.sin_port = htons(other_port);
@@ -537,7 +509,7 @@ doit_active (char *host, char *user,
 	    }
 #endif
 #if defined(SO_KEEPALIVE) && defined(HAVE_SETSOCKOPT)
-	    if (keepalivep) {
+	    if (kc->keepalive_flag) {
 		int one = 1;
 
 		setsockopt (s, SOL_SOCKET, SO_KEEPALIVE, (void *)&one,
@@ -548,7 +520,7 @@ doit_active (char *host, char *user,
 	    if (connect (s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 		err(1, "connect");
 
-	    return active_session (fd, s, &key, schedule);
+	    return active_session (fd, s, kc);
 	} else {
 	    close (fd);
 	}
@@ -573,79 +545,212 @@ check_for_passive (const char *disp)
 	 || strncmp(disp, local_hostname, strlen(local_hostname)) == 0);
 }
 
-static void
-usage(void)
+static int
+doit (kx_context *kc, int passive_flag)
 {
-    fprintf(stderr, "Usage: %s [-p port] [-d] [-D] [-t] [-l remoteuser] host\n",
-	    __progname);
-    exit (1);
+    signal (SIGCHLD, childhandler);
+    signal (SIGUSR1, usr1handler);
+    signal (SIGUSR2, usr2handler);
+    if (passive_flag)
+	return doit_passive (kc);
+    else
+	return doit_active  (kc);
+}
+
+#ifdef KRB4
+static int
+doit_v4 (char *host, int port, char *user, 
+	 int passive_flag, int debug_flag, int keepalive_flag, int tcp_flag)
+{
+    int ret;
+    kx_context context;
+
+    krb4_make_context (&context);
+    context_set (&context,
+		 host, user, port, debug_flag, keepalive_flag, tcp_flag);
+
+    ret = doit (&context, passive_flag);
+    context_destroy (&context);
+    return ret;
+}
+#endif /* KRB4 */
+
+#ifdef KRB5
+
+static int
+doit_v5 (char *host, int port, char *user,
+	 int passive_flag, int debug_flag, int keepalive_flag, int tcp_flag)
+{
+    int ret;
+    kx_context context;
+
+    krb5_make_context (&context);
+    context_set (&context,
+		 host, user, port, debug_flag, keepalive_flag, tcp_flag);
+
+    ret = doit (&context, passive_flag);
+    context_destroy (&context);
+    return ret;
+}
+
+#endif
+
+/*
+ * 
+ */
+
+#ifdef KRB4
+static int use_v4		= 0;
+static int krb_debug_flag	= 0;
+#endif
+#ifdef KRB5
+static int use_v5		= 0;
+static int forward_flag		= 0;
+static int forwardable_flag	= 0;
+#endif
+static char *port_str		= NULL;
+static char *user		= NULL;
+static int tcp_flag		= 0;
+static int passive_flag		= 0;
+static int keepalive_flag	= 1;
+static int debug_flag		= 0;
+static int version_flag		= 0;
+static int help_flag		= 0;
+
+struct getargs args[] = {
+#ifdef KRB4
+    { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
+      NULL },
+    { "krb4-debug", 'D', arg_flag,	&krb_debug_flag,
+      "enable krb4 debugging" },
+#endif
+#ifdef KRB5
+    { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
+      NULL },
+    { "forward", 'f', arg_flag,		&forward_flag,	"Forward credentials",
+      NULL },
+    { "forwardable", 'F', arg_flag,	&forwardable_flag,
+      "Forward forwardable credentials", NULL },
+#endif
+    { "port",	'p', arg_string,	&port_str,	"Use this port",
+      "number-of-service" },
+    { "user",	'l', arg_string,	&user,		"Run as this user",
+      NULL },
+    { "tcp",	't', arg_flag,		&tcp_flag,
+      "Use a TCP connection for X11" },
+    { "passive", 'P', arg_flag,		&passive_flag,
+      "Force a passive connection" },
+    { "keepalive", 'k', arg_negative_flag, &keepalive_flag,
+      "disable keep-alives" },
+    { "debug",	'd',	arg_flag,	&debug_flag,
+      "Enable debug information" },
+    { "version", 0,  arg_flag,		&version_flag,	"Print version",
+      NULL },
+    { "help",	 0,  arg_flag,		&help_flag,	NULL,
+      NULL }
+};
+
+static void
+usage(int ret)
+{
+    arg_printusage (args,
+		    sizeof(args) / sizeof(args[0]),
+		    NULL,
+		    "host");
+    exit (ret);
 }
 
 /*
  * kx - forward x connection over a kerberos-encrypted channel.
- *
  */
 
 int
 main(int argc, char **argv)
 {
-     int force_passive = 0;
-     int keepalivep = 1;
-     char *user = NULL;
-     int debugp = 0, tcpp = 0;
-     int c;
-     int port = 0;
+    int port	= 0;
+    int optind	= 0;
+    int ret	= 1;
+    char *host	= NULL;
 
-     set_progname (argv[0]);
-     while((c = getopt(argc, argv, "ktdDl:p:P")) != EOF) {
-	 switch(c) {
-	 case 'd' :
-	     debugp = 1;
-	     break;
-	 case 'D':
-	     krb_enable_debug();
-	     break;
-	 case 'k':
-	     keepalivep = 0;
-	     break;
-	 case 't' :
-	     tcpp = 1;
-	     break;
-	 case 'l' :
-	     user = optarg;
-	     break;
-	 case 'p' :
-	     port = htons(atoi (optarg));
-	     break;
-	 case 'P' :
-	     force_passive = 1;
-	     break;
-	 case '?':
-	 default:
-	     usage();
-	 }
-     }
+    set_progname (argv[0]);
 
-     argc -= optind;
-     argv += optind;
+    if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
+		&optind))
+	usage (1);
 
-     if (argc != 1)
-	  usage ();
-     if (user == NULL) {
-	  struct passwd *p = k_getpwuid (getuid ());
-	  if (p == NULL)
-	      errx(1, "Who are you?");
-	  user = strdup (p->pw_name);
-	  if (user == NULL)
-	      errx (1, "strdup: out of memory");
-     }
-     if (port == 0)
-	 port = k_getportbyname ("kx", "tcp", htons(KX_PORT));
-     signal (SIGCHLD, childhandler);
-     signal (SIGUSR1, usr1handler);
-     signal (SIGUSR2, usr2handler);
-     if (force_passive || check_for_passive(getenv("DISPLAY")))
-	 return doit_passive (argv[0], user, debugp, keepalivep, port);
-     else
-	 return doit_active  (argv[0], user, debugp, keepalivep, tcpp, port);
+    if (help_flag)
+	usage (0);
+
+    if (version_flag) {
+	print_version (NULL);
+	return 0;
+    }
+
+    if (optind != argc - 1)
+	usage (1);
+
+    if (forwardable_flag)
+	forward_flag = 1;
+
+    host = argv[optind];
+
+    if (port_str) {
+	struct servent *s = roken_getservbyname (port_str, "tcp");
+
+	if (s)
+	    port = s->s_port;
+	else {
+	    char *ptr;
+
+	    port = strtol (port_str, &ptr, 10);
+	    if (port == 0 && ptr == port_str)
+		errx (1, "Bad port `%s'", port_str);
+	    port = htons(port);
+	}
+    }
+
+    if (user == NULL) {
+	struct passwd *pwd = getpwuid (getuid ());
+
+	if (pwd == NULL)
+	    errx (1, "who are you?");
+	user = pwd->pw_name;
+    }
+
+    if (!passive_flag)
+	passive_flag = check_for_passive (getenv("DISPLAY"));
+
+#ifdef KRB4
+    if (krb_debug_flag)
+	krb_enable_debug ();
+#endif
+
+#if defined(KRB5)
+#if defined(KRB4)
+    if (use_v4 == 0 && use_v5 == 0)
+	use_v5 = 1;
+#else
+    use_v5 = 1;
+#endif /* KRB4 */
+#elif defined(KRB4)
+    use_v4 = 1;
+#endif
+
+#ifdef KRB5
+    if (ret && use_v5) {
+	if (port == 0)
+	    port = krb5_getportbyname(NULL, "kx", "tcp", htons(KX_PORT));
+	ret = doit_v5 (host, port, user,
+		       passive_flag, debug_flag, keepalive_flag, tcp_flag);
+    }
+#endif
+#ifdef KRB4
+    if (ret && use_v4) {
+	if (port == 0)
+	    port = k_getportbyname("kx", "tcp", htons(KX_PORT));
+	ret = doit_v4 (host, port, user, 
+		       passive_flag, debug_flag, keepalive_flag, tcp_flag);
+    }
+#endif
+    return ret;
 }
