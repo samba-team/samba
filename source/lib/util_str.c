@@ -495,7 +495,7 @@ char *safe_strcpy_fn(const char *fn, int line, char *dest,const char *src, size_
 		return dest;
 	}  
 
-	len = strlen(src);
+	len = strnlen(src, maxlength+1);
 
 	if (len > maxlength) {
 		DEBUG(0,("ERROR: string overflow by %u (%u - %u) in safe_strcpy [%.50s]\n",
@@ -524,8 +524,8 @@ char *safe_strcat_fn(const char *fn, int line, char *dest, const char *src, size
 	if (!src)
 		return dest;
 	
-	src_len = strlen(src);
-	dest_len = strlen(dest);
+	src_len = strnlen(src, maxlength + 1);
+	dest_len = strnlen(dest, maxlength + 1);
 
 	clobber_region(fn, line, dest + dest_len, maxlength + 1 - dest_len);
 
