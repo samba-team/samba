@@ -381,8 +381,8 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
-int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
-int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
+size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
+size_t cli_write(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
 		  int *attr, uint32 *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time);

@@ -22,14 +22,12 @@ This is code under development. Lots of things don't work yet.
 Things that I have tried and do seem to work include:
 
   emacs, tar, ls, cmp, cp, rsync, du, cat, rm, mv, less, more, wc, head,
-  tail, bash, tcsh, mkdir, rmdir
+  tail, bash, tcsh, mkdir, rmdir, vim, xedit
 
 things that I know don't work:
  
- vi (I don't know why this is)
  anything executing from the share
  anything that uses mmap
-
 
 If you want to help with the development of this code then join the
 samba-technical mailing list.
