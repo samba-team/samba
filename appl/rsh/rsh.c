@@ -476,6 +476,7 @@ construct_command (char **res, int argc, char **argv)
 
     for (i = 0; i < argc; ++i)
 	len += strlen(argv[i]) + 1;
+    len = max (1, len);
     tmp = malloc (len);
     if (tmp == NULL)
 	errx (1, "malloc %u failed", len);
@@ -485,7 +486,8 @@ construct_command (char **res, int argc, char **argv)
 	strcat (tmp, argv[i]);
 	strcat (tmp, " ");
     }
-    strcat (tmp, argv[argc-1]);
+    if (argc > 0)
+	strcat (tmp, argv[argc-1]);
     *res = tmp;
     return len;
 }
