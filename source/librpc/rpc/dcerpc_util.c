@@ -359,6 +359,8 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 		ZERO_STRUCT(b->object);
 	}
 
+	b->object_version = 0;
+
 	p = strchr(s, ':');
 	if (!p) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -641,6 +643,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 
 	/* Set object uuid */
 	binding->object = tower->floors[0].lhs.info.uuid.uuid;
+	binding->object_version = tower->floors[0].lhs.info.uuid.version;
 
 	/* Ignore floor 1, it contains the NDR version info */
 	
@@ -661,18 +664,12 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower **tower)
+NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower)
 {
 	const enum epm_protocols *protseq;
 	int num_protocols = -1, i;
 	NTSTATUS status;
 	
-	*tower = talloc_p(mem_ctx, struct epm_tower);
-
-	if (!(*tower)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Find transport */
 	for (i=0;i<ARRAY_SIZE(transports);i++) {
 		if (transports[i].transport == binding->transport) {
@@ -687,31 +684,34 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	(*tower)->num_floors = 2 + num_protocols;
-	(*tower)->floors = talloc_array_p(mem_ctx, struct epm_floor, (*tower)->num_floors);
+	tower->num_floors = 2 + num_protocols;
+	tower->floors = talloc_array_p(mem_ctx, struct epm_floor, tower->num_floors);
 
 	/* Floor 0 */
-	(*tower)->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
-	(*tower)->floors[0].lhs.info.uuid.uuid = binding->object;
-	(*tower)->floors[0].lhs.info.uuid.version = 0;
+	tower->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
+	tower->floors[0].lhs.info.uuid.uuid = binding->object;
+	tower->floors[0].lhs.info.uuid.version = binding->object_version;
+	tower->floors[0].rhs.uuid.unknown = 0;
 	
 	/* Floor 1 */
-	(*tower)->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
-	(*tower)->floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
-	status = GUID_from_string(NDR_GUID, &(*tower)->floors[1].lhs.info.uuid.uuid);
+	tower->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
+	tower->floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
+	tower->floors[1].rhs.uuid.unknown = 0;
+	status = GUID_from_string(NDR_GUID, &tower->floors[1].lhs.info.uuid.uuid);
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
 	/* Floor 2 to num_protocols */
 	for (i = 0; i < num_protocols; i++) {
-		(*tower)->floors[2 + i].lhs.protocol = protseq[i];
-		ZERO_STRUCT((*tower)->floors[2 + i].rhs);
+		tower->floors[2 + i].lhs.protocol = protseq[i];
+		tower->floors[2 + i].lhs.info.lhs_data = data_blob_talloc(mem_ctx, NULL, 0);
+		ZERO_STRUCT(tower->floors[2 + i].rhs);
 	}
 
 	/* The top floor contains the endpoint */
 	if (num_protocols >= 1 && binding->options && binding->options[0]) {
-		status = floor_set_rhs_data(mem_ctx, &(*tower)->floors[2 + num_protocols - 1], binding->options[0]);
+		status = floor_set_rhs_data(mem_ctx, &tower->floors[2 + num_protocols - 1], binding->options[0]);
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
@@ -719,7 +719,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 
 	/* The second-to-top floor contains the network address */
 	if (num_protocols >= 2 && binding->host) {
-		status = floor_set_rhs_data(mem_ctx, &(*tower)->floors[2 + num_protocols - 2], binding->host);
+		status = floor_set_rhs_data(mem_ctx, &tower->floors[2 + num_protocols - 2], binding->host);
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
