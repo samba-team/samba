@@ -335,7 +335,7 @@ der_get_enckdcreppart (Buffer *b, int msg, EncKdcRepPart *a)
 	  return NULL;
      if (matchid3 (b, &i, UNIV, PRIM, UT_GeneralizedTime) == NULL)
 	  return NULL;
-     getdata (b, &i, &a->authtime);
+     getdata (b, &i, &a->endtime);
      getid (b, &i);
      if (i.tag == 8) {
 	  if (matchid3 (b, &i, UNIV, PRIM, UT_GeneralizedTime) == NULL)
