@@ -659,7 +659,7 @@ BOOL cli_ulogoff(struct cli_state *cli)
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    const char *share, const char *dev, const char *pass, int passlen)
 {
-	fstring fullshare, pword, dos_pword;
+	fstring fullshare, pword;
 	char *p;
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -677,8 +677,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		 * Non-encrypted passwords - convert to DOS codepage before encryption.
 		 */
 		passlen = 24;
-		clistr_push(cli, dos_pword, pass, -1, STR_TERMINATE);
-		SMBencrypt((uchar *)dos_pword,cli->secblob.data,(uchar *)pword);
+		SMBencrypt(pass,cli->secblob.data,(uchar *)pword);
 	} else {
 		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL|NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)) == 0) {
 			/*
@@ -1062,9 +1061,18 @@ static void init_creds(struct ntuser_creds *creds, char* username,
 	}
 }
 
-/****************************************************************************
- Establishes a connection right up to doing tconX, password specified.
-****************************************************************************/
+/**
+   establishes a connection right up to doing tconX, password specified.
+   @param output_cli A fully initialised cli structure, non-null only on success
+   @param dest_host The netbios name of the remote host
+   @param dest_ip (optional) The the destination IP, NULL for name based lookup
+   @param port (optional) The destination port (0 for default)
+   @param service The share to make the connection to.  Should be 'unqualified' in any way.
+   @param service_type The 'type' of serivice. 
+   @param user Username, unix string
+   @param domain User's domain
+   @param password User's password, unencrypted unix string.
+*/
 
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
 			     const char *my_name, const char *dest_host, 
@@ -1079,16 +1087,20 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct nmb_name called;
 	struct cli_state *cli;
 	struct in_addr ip;
-	
-	if (!output_cli)
+	extern pstring global_myname;
+
+	if (!output_cli) {
 		DEBUG(0, ("output_cli is NULL!?!"));
+		SMB_ASSERT("output_cli for cli_full_connection was NULL.\n");
+	}
 
 	*output_cli = NULL;
+
+	if (!my_name) 
+		my_name = global_myname;
 	
 	make_nmb_name(&calling, my_name, 0x0);
 	make_nmb_name(&called , dest_host, 0x20);
-
-again:
 
 	if (!(cli = cli_initialise(NULL)))
 		return NT_STATUS_NO_MEMORY;
@@ -1098,13 +1110,19 @@ again:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ip = *dest_ip;
-	
+	if (dest_ip) {
+		ip = *dest_ip;
+	} else {
+		ZERO_STRUCT(ip);
+	}
+
+again:
+
 	DEBUG(3,("Connecting to host=%s share=%s\n", dest_host, service));
 	
 	if (!cli_connect(cli, dest_host, &ip)) {
 		DEBUG(1,("cli_full_connection: failed to connect to %s (%s)\n",
-			 nmb_namestr(&called), inet_ntoa(*dest_ip)));
+			 nmb_namestr(&called), inet_ntoa(ip)));
 		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
