@@ -5002,6 +5002,7 @@ void init_sam_user_info24(SAM_USER_INFO_24 * usr,
 {
 	DEBUG(10, ("init_sam_user_info24: passlen: %d\n", passlen));
 	memcpy(usr->pass, newpass, sizeof(usr->pass));
+	usr->passlen = passlen;
 }
 
 /*******************************************************************
@@ -5020,7 +5021,14 @@ static BOOL sam_io_user_info24(char *desc, SAM_USER_INFO_24 * usr,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint8s(False, "password", ps, depth, usr->pass, sizeof(usr->pass)))
+	if(!prs_uint8s(False, "password", ps, depth, usr->pass, 
+		       sizeof(usr->pass)))
+		return False;
+	
+	if (!prs_uint16("passlen", ps, depth, &usr->passlen))
+		return False;
+
+	if(!prs_align(ps))
 		return False;
 
 	return True;
