@@ -97,7 +97,11 @@ sub FieldFromPython($$)
     }
 
     if ($e->{TYPE} eq "DATA_BLOB") {
-	$result .= "\tDATA_BLOB_ptr_from_python(mem_ctx, &s->$prefix$e->{NAME}, $obj, \"$e->{NAME}\");\n";
+	if ($e->{POINTERS} == 0) {
+	    $result .= "\tDATA_BLOB_from_python(mem_ctx, &s->$prefix$e->{NAME}, $obj, \"$e->{NAME}\");\n";
+	} else {
+	    $result .= "\tDATA_BLOB_ptr_from_python(mem_ctx, &s->$prefix$e->{NAME}, $obj, \"$e->{NAME}\");\n";
+	}
 	return $result;
     }
 
