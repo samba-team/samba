@@ -677,6 +677,8 @@ void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 
 /*The following definitions come from  smbpass.c  */
 
+int pw_file_lock(char *name, int type, int secs);
+int pw_file_unlock(int fd);
 struct smb_passwd *get_smbpwnam(char *name);
 
 /*The following definitions come from  smbpasswd.c  */

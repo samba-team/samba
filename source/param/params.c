@@ -313,7 +313,7 @@ BOOL pm_process(char *pszFileName,BOOL (*sfunc)(char *),BOOL (*pfunc)(char *,cha
          DEBUG(0,( "Unable to open configuration file \"%s\"!\n", pszParmFile));
       else
       {
-         DEBUG(2,( "Processing configuration file \"%s\"\n", pszParmFile));
+         DEBUG(3,("Processing configuration file \"%s\"\n", pszParmFile));
 	 bRetval = enumerate_sections(fileIn, sfunc, pfunc);
 	 fclose(fileIn);
       }
