@@ -32,26 +32,42 @@ extern int DEBUGLEVEL;
    does not exist */
 pid_t pidfile_pid(char *name)
 {
-	FILE *f;
+	int fd;
+	char pidstr[20];
 	unsigned ret;
 	pstring pidFile;
 
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
 
-	f = sys_fopen(pidFile, "r");
-	if (!f) {
+	fd = open(pidFile, O_NONBLOCK | O_RDWR);
+	if (fd == -1) {
 		return 0;
 	}
 
-	if (fscanf(f,"%u", &ret) != 1) {
-		fclose(f);
-		return 0;
+	ZERO_ARRAY(pidstr);
+
+	if (read(fd, pidstr, sizeof(pidstr)-1) <= 0) {
+		goto ok;
 	}
-	fclose(f);
+
+	ret = atoi(pidstr);
 	
-	if (!process_exists(ret)) return 0;
+	if (!process_exists(ret)) {
+		goto ok;
+	}
 
+	if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_WRLCK)) {
+		/* we could get the lock - it can't be a Samba process */
+		goto ok;
+	}
+
+	close(fd);
 	return (pid_t)ret;
+
+ ok:
+	close(fd);
+	unlink(pidFile);
+	return 0;
 }
 
 /* create a pid file in the lock directory. open it and leave it locked */
@@ -65,14 +81,14 @@ void pidfile_create(char *name)
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_lockdir(), name);
 
 	pid = pidfile_pid(name);
-    if (pid > 0 && process_exists(pid)) {
-      DEBUG(0,("ERROR: %s is already running. File %s exists and process id %d is running.\n", 
-            name, pidFile, pid));
-      exit(1);
-    }
+	if (pid != 0) {
+		DEBUG(0,("ERROR: %s is already running. File %s exists and process id %d is running.\n", 
+			 name, pidFile, pid));
+		exit(1);
+	}
 
-	fd = sys_open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY, 0644);
-	if (fd < 0) {
+	fd = sys_open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY | O_EXCL, 0644);
+	if (fd == -1) {
 		DEBUG(0,("ERROR: can't open %s: Error was %s\n", pidFile, 
 			 strerror(errno)));
 		exit(1);
@@ -93,3 +109,4 @@ void pidfile_create(char *name)
 	}
 	/* Leave pid file open & locked for the duration... */
 }
+
