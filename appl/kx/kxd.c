@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -230,7 +230,7 @@ recv_conn (int sock, kx_context *kc,
 		       remoteaddr, sizeof(remoteaddr), 
 		       NULL, 0, NI_NUMERICHOST);
      if (ret != 0)
-	 fatal (kc, sock, "getnameinfo failed");
+	 fatal (kc, sock, "getnameinfo failed: %s", gai_strerror(ret));
 
      syslog (LOG_INFO, "from %s(%s): %s -> %s",
 	     remotehost, remoteaddr,
