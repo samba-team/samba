@@ -212,7 +212,6 @@ extern int errno;
 #include "smb_interfaces.h"
 #include "smbd/server.h"
 #include "smbd/service.h"
-#include "rpc_server/dcerpc_server.h"
 #include "structs.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"

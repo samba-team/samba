@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_oxidresolver.h"
+#include "rpc_server/dcerpc_server.h"
 
 
 /* 
