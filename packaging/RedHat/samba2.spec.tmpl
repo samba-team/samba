@@ -46,7 +46,6 @@ autoconf
 EXTRA="-D_LARGEFILE64_SOURCE"
 %endif
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
-./autogen.sh
 CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--prefix=%{prefix} \
 	--localstatedir=/var \
