@@ -605,6 +605,15 @@ static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE
 	return True;
 }
 
+void free_spoolss_devmode(DEVICEMODE *devmode)
+{
+	if (devmode == NULL)
+		return;
+
+	safe_free(devmode->private);
+	safe_free(devmode);
+}
+
 /*******************************************************************
  Read or write a DEVICEMODE container
 ********************************************************************/  
@@ -750,6 +759,11 @@ BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_
 		return False;
 		
 	return True;
+}
+
+void free_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u)
+{
+	free_spoolss_devmode(q_u->printer_default.devmode_cont.devmode);
 }
 
 /*******************************************************************

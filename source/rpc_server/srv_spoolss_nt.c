@@ -3109,7 +3109,8 @@ uint32 _spoolss_fcpn(const POLICY_HND *handle)
 	Printer->notify.options=0;
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
-	safe_free(Printer->notify.option->ctr.type);
+	if (Printer->notify.option)
+		safe_free(Printer->notify.option->ctr.type);
 	safe_free(Printer->notify.option);
 	Printer->notify.option=NULL;
 	
