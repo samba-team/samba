@@ -656,7 +656,6 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							 const SAM_ACCOUNT * newpwd, char isupdate)
 {
 	pstring temp;
-	uint32 store = pdb_get_init_flag(newpwd);
 	struct pdb_mysql_data *data;
 	pdb_mysql_query query;
 	fstring sid_str;
@@ -695,7 +694,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 										   CONFIG_ACCT_CTRL_DEFAULT),
 						pdb_get_acct_ctrl(newpwd));
 
-	if (store & PDB_LOGONTIME) {
+	if (pdb_get_init_flags(newpwd, PDB_LOGONTIME) != PDB_DEFAULT) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
 											   "logon time column",
@@ -703,7 +702,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							pdb_get_logon_time(newpwd));
 	}
 
-	if (store & PDB_LOGOFFTIME) {
+	if (pdb_get_init_flags(newpwd, PDB_LOGOFFTIME) != PDB_DEFAULT) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
 											   "logoff time column",
@@ -711,7 +710,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							pdb_get_logoff_time(newpwd));
 	}
 
-	if (store & PDB_KICKOFFTIME) {
+	if (pdb_get_init_flags(newpwd, PDB_KICKOFFTIME) != PDB_DEFAULT) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
 											   "kickoff time column",
@@ -719,7 +718,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							pdb_get_kickoff_time(newpwd));
 	}
 
-	if (store & PDB_CANCHANGETIME) {
+	if (pdb_get_init_flags(newpwd, PDB_CANCHANGETIME) != PDB_DEFAULT) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
 											   "pass can change time column",
@@ -727,7 +726,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							pdb_get_pass_can_change_time(newpwd));
 	}
 
-	if (store & PDB_MUSTCHANGETIME) {
+	if (pdb_get_init_flags(newpwd, PDB_MUSTCHANGETIME) != PDB_DEFAULT) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
 											   "pass must change time column",
@@ -759,14 +758,14 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							pdb_get_logon_divs(newpwd));
 	}
 
-	if (store & PDB_UID) {
+	if (pdb_get_init_flags(newpwd, PDB_UID) != PDB_DEFAULT) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data, "uid column",
 											   CONFIG_UID_DEFAULT),
 							pdb_get_uid(newpwd));
 	}
 
-	if (store & PDB_GID) {
+	if (pdb_get_init_flags(newpwd, PDB_GID) != PDB_DEFAULT) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data, "gid column",
 											   CONFIG_GID_DEFAULT),
@@ -776,13 +775,13 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 	pdb_mysql_string_field(methods, &query,
 						   config_value_write(data, "user sid column",
 											  CONFIG_USER_SID_DEFAULT),
-						   sid_to_string(sid_str, (DOM_SID *)
+						   sid_to_string(sid_str, 
 										 pdb_get_user_sid(newpwd)));
 
 	pdb_mysql_string_field(methods, &query,
 						   config_value_write(data, "group sid column",
 											  CONFIG_GROUP_SID_DEFAULT),
-						   sid_to_string(sid_str, (DOM_SID *)
+						   sid_to_string(sid_str,
 										 pdb_get_group_sid(newpwd)));
 
 	pdb_mysql_string_field(methods, &query,
@@ -861,9 +860,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 								   config_value_read(data,
 													 "user sid column",
 													 CONFIG_USER_SID_DEFAULT),
-								   sid_to_string(sid_str, (DOM_SID *)
-												 pdb_get_user_sid
-												 (newpwd)));
+								   sid_to_string(sid_str, pdb_get_user_sid (newpwd)));
 	} else {
 		query.part2[strlen(query.part2) - 1] = ')';
 		query.part1[strlen(query.part1) - 1] = ')';
