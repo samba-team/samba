@@ -361,7 +361,10 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 	private->last_sec_ctx = NULL;
 	private->last_token = NULL;
 
-	PASS_THRU_REQ(ntvfs, req, connect, (ntvfs, req, sharename));
+	/* we don't use PASS_THRU_REQ here, as the connect operation runs with 
+	   root privileges. This allows the backends to setup any database
+	   links they might need during the connect. */
+	status = ntvfs_next_connect(ntvfs, req, sharename);
 
 	return status;
 }
