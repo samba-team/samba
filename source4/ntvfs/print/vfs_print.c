@@ -29,7 +29,7 @@
   in. For printing shares this should check that the spool directory
   is available
 */
-static NTSTATUS print_connect(struct smbsrv_request *req, const char *sharename)
+static NTSTATUS print_connect(struct smbsrv_request *req, const char *sharename, int depth)
 {
 	return NT_STATUS_OK;
 }
@@ -37,7 +37,7 @@ static NTSTATUS print_connect(struct smbsrv_request *req, const char *sharename)
 /*
   disconnect from a share
 */
-static NTSTATUS print_disconnect(struct smbsrv_tcon *tcon)
+static NTSTATUS print_disconnect(struct smbsrv_tcon *tcon, int depth)
 {
 	return NT_STATUS_OK;
 }
