@@ -40,8 +40,7 @@ static int help_flag;
 static int version_flag;
 int verbose_flag;
 char *keytab_string; 
-
-static char keytab_buf[256];
+char keytab_buf[256];
 
 static int help(int argc, char **argv);
 
@@ -145,17 +144,6 @@ main(int argc, char **argv)
     argv += optind;
     if(argc == 0)
 	usage(1);
-    if(keytab_string) {
-	ret = krb5_kt_resolve(context, keytab_string, &keytab);
-    } else {
-	if(krb5_kt_default_name (context, keytab_buf, sizeof(keytab_buf)))
-	    strlcpy (keytab_buf, "unknown", sizeof(keytab_buf));
-	keytab_string = keytab_buf;
-
-	ret = krb5_kt_default(context, &keytab);
-    }
-    if(ret)
-	krb5_err(context, 1, ret, "resolving keytab");
     ret = sl_command(cmds, argc, argv);
     if(ret == -1)
 	krb5_warnx (context, "unrecognized command: %s", argv[0]);
