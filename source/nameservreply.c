@@ -569,6 +569,15 @@ void reply_name_query(struct packet_struct *p)
     /* look up the name in the cache */
     n = find_name_search(&d, question, FIND_LOCAL, p->ip);
 
+    /* check for a previous DNS lookup */
+    if (!n && (n = find_name_search(&d, question, FIND_WINS, p->ip))) {
+	    if (n->source != DNS && n->source != DNSFAIL) {
+		    n = NULL;
+	    } else {
+		    DEBUG(5,("Found DNS cache entry %s\n", namestr(&n->name)));
+	    }
+    }
+
     /* it is a name that already failed DNS lookup or it's expired */
     if (n && (n->source == DNSFAIL ||
               (n->death_time && n->death_time < p->timestamp)))
