@@ -13,10 +13,10 @@ REL="UP"
 TITLE="Type of installation"
 HREF="type.html"><LINK
 REL="PREVIOUS"
-TITLE="Samba as Stand-Alone server (User and Share security level)"
+TITLE="Samba as Stand-Alone Server"
 HREF="securitylevels.html"><LINK
 REL="NEXT"
-TITLE="How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain"
+TITLE="Samba Backup Domain Controller to Samba Domain Control"
 HREF="samba-bdc.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
@@ -80,7 +80,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN705"
+NAME="AEN785"
 >6.1. Prerequisite Reading</A
 ></H1
 ><P
@@ -103,7 +103,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN710"
+NAME="AEN790"
 >6.2. Background</A
 ></H1
 ><P
@@ -115,31 +115,58 @@ PDC functionality.</P
 ><UL
 ><LI
 ><P
->	domain logons for Windows NT 4.0 / 200x / XP Professional clients.
+>	Domain logons for Windows NT 4.0 / 200x / XP Professional clients.
 	</P
 ></LI
 ><LI
 ><P
->	placing Windows 9x / Me clients in user level security
+>	Placing Windows 9x / Me clients in user level security
 	</P
 ></LI
 ><LI
 ><P
->	retrieving a list of users and groups from a Samba PDC to
+>	Retrieving a list of users and groups from a Samba PDC to
 	Windows 9x / Me / NT / 200x / XP Professional clients
 	</P
 ></LI
 ><LI
 ><P
->	roaming user profiles
+>	Roaming Profiles
 	</P
 ></LI
 ><LI
 ><P
->	Windows NT 4.0-style system policies
+>	Network/System Policies
 	</P
 ></LI
 ></UL
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Roaming Profiles and System/Network policies are advanced network administration topics
+that are covered separately in this document.</P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >The following functionalities are new to the Samba 3.0 release:</P
 ><P
@@ -223,7 +250,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN748"
+NAME="AEN830"
 >6.3. Configuring the Samba Domain Controller</A
 ></H1
 ><P
@@ -420,7 +447,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN790"
+NAME="AEN872"
 >6.4. Creating Machine Trust Accounts and Joining Clients to the Domain</A
 ></H1
 ><P
@@ -606,7 +633,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN833"
+NAME="AEN915"
 >6.4.1. Manual Creation of Machine Trust Accounts</A
 ></H2
 ><P
@@ -776,7 +803,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN874"
+NAME="AEN956"
 >6.4.2. "On-the-Fly" Creation of Machine Trust Accounts</A
 ></H2
 ><P
@@ -813,7 +840,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN883"
+NAME="AEN965"
 >6.4.3. Joining the Client to the Domain</A
 ></H2
 ><P
@@ -881,7 +908,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN898"
+NAME="AEN980"
 >6.5. Common Problems and Errors</A
 ></H1
 ><P
@@ -965,23 +992,16 @@ CLASS="EMPHASIS"
 ><P
 >I joined the domain successfully but after upgrading 
 	to a newer version of the Samba code I get the message, "The system 
-	can not log you on (C000019B), Please try a gain or consult your 
+	can not log you on (C000019B), Please try again or consult your 
 	system administrator" when attempting to logon.
 	</P
 ><P
->	This occurs when the domain SID stored in 
-	<TT
-CLASS="FILENAME"
->private/WORKGROUP.SID</TT
-> is 
-	changed.  For example, you remove the file and <B
-CLASS="COMMAND"
->smbd</B
-> automatically 
-	creates a new one.  Or you are swapping back and forth between 
-	versions 2.0.7, TNG and the HEAD branch code (not recommended).  The 
-	only way to correct the problem is to restore the original domain 
-	SID or remove the domain client from the domain and rejoin.
+>	This occurs when the domain SID stored in the secrets.tdb database
+	is changed. The most common cause of a change in domain SID is when
+	the domain name and/or the server name (netbios name) is changed.
+ 	The only way to correct the problem is to restore the original domain 
+	SID or remove the domain client from the domain and rejoin. The domain
+	SID may be reset using either the smbpasswd or rpcclient utilities.
 	</P
 ></LI
 ><LI
@@ -1087,185 +1107,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN946"
->6.6. System Policies and Profiles</A
-></H1
-><P
->Much of the information necessary to implement System Policies and
-Roving User Profiles in a Samba domain is the same as that for 
-implementing these same items in a Windows NT 4.0 domain. 
-You should read the white paper <A
-HREF="http://www.microsoft.com/ntserver/management/deployment/planguide/prof_policies.asp"
-TARGET="_top"
->Implementing
-Profiles and Policies in Windows NT 4.0</A
-> available from Microsoft.</P
-><P
->Here are some additional details:</P
-><P
-></P
-><UL
-><LI
-><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->What about Windows NT Policy Editor?</I
-></SPAN
->
-	</P
-><P
->	To create or edit <TT
-CLASS="FILENAME"
->ntconfig.pol</TT
-> you must use 
-	the NT Server Policy Editor, <B
-CLASS="COMMAND"
->poledit.exe</B
->	which 
-	is included with NT Server but <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->not NT Workstation</I
-></SPAN
->. 
-	There is a Policy Editor on a NTws 
-	but it is not suitable for creating <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->Domain Policies</I
-></SPAN
->. 
-	Further, although the Windows 95 
-	Policy Editor can be installed on an NT Workstation/Server, it will not
-	work with NT policies because the registry key that are set by the policy templates. 
-	However, the files from the NT Server will run happily enough on an NTws. 	
-	You need <TT
-CLASS="FILENAME"
->poledit.exe, common.adm</TT
-> and <TT
-CLASS="FILENAME"
->winnt.adm</TT
->. It is convenient
-	to put the two *.adm files in <TT
-CLASS="FILENAME"
->c:\winnt\inf</TT
-> which is where
-	the binary will look for them unless told otherwise. Note also that that 
-	directory is 'hidden'.
-	</P
-><P
->	The Windows NT policy editor is also included with the Service Pack 3 (and 
-	later) for Windows NT 4.0. Extract the files using <B
-CLASS="COMMAND"
->servicepackname /x</B
->, 
-	i.e. that's <B
-CLASS="COMMAND"
->Nt4sp6ai.exe /x</B
-> for service pack 6a.  The policy editor, 
-	<B
-CLASS="COMMAND"
->poledit.exe</B
-> and the associated template files (*.adm) should
-	be extracted as well.  It is also possible to downloaded the policy template 
-	files for Office97 and get a copy of the policy editor.  Another possible 
-	location is with the Zero Administration Kit available for download from Microsoft.
-	</P
-></LI
-><LI
-><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->Can Win95 do Policies?</I
-></SPAN
->
-	</P
-><P
->	Install the group policy handler for Win9x to pick up group 
-	policies.   Look on the Win98 CD in <TT
-CLASS="FILENAME"
->\tools\reskit\netadmin\poledit</TT
->. 
-	Install group policies on a Win9x client by double-clicking 
-	<TT
-CLASS="FILENAME"
->grouppol.inf</TT
->. Log off and on again a couple of 
-	times and see if Win98 picks up group policies.  Unfortunately this needs 
-	to be done on every Win9x machine that uses group policies....
-	</P
-><P
->	If group policies don't work one reports suggests getting the updated 
-	(read: working) grouppol.dll for Windows 9x. The group list is grabbed 
-	from /etc/group.
-	</P
-></LI
-><LI
-><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->How do I get 'User Manager' and 'Server Manager'</I
-></SPAN
->
-	</P
-><P
->	Since I don't need to buy an NT Server CD now, how do I get 
-	the 'User Manager for Domains', the 'Server Manager'?
-	</P
-><P
->	Microsoft distributes a version of these tools called nexus for 
-	installation on Windows 95 systems.  The tools set includes
-	</P
-><P
-></P
-><UL
-><LI
-><P
->Server Manager</P
-></LI
-><LI
-><P
->User Manager for Domains</P
-></LI
-><LI
-><P
->Event Viewer</P
-></LI
-></UL
-><P
->	Click here to download the archived file <A
-HREF="ftp://ftp.microsoft.com/Softlib/MSLFILES/NEXUS.EXE"
-TARGET="_top"
->ftp://ftp.microsoft.com/Softlib/MSLFILES/NEXUS.EXE</A
->
-	</P
-><P
->	The Windows NT 4.0 version of the 'User Manager for 
-	Domains' and 'Server Manager' are available from Microsoft via ftp 
-	from <A
-HREF="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE"
-TARGET="_top"
->ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE</A
->
-	</P
-></LI
-></UL
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN990"
->6.7. What other help can I get?</A
+NAME="AEN1026"
+>6.6. What other help can I get?</A
 ></H1
 ><P
 >There are many sources of information available in the form 
@@ -1684,62 +1527,27 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1104"
->6.8. Domain Control for Windows 9x/ME</A
+NAME="AEN1140"
+>6.7. Domain Control for Windows 9x/ME</A
 ></H1
-><DIV
-CLASS="NOTE"
-><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->The following section contains much of the original 
-DOMAIN.txt file previously included with Samba.  Much of 
-the material is based on what went into the book <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->Special 
-Edition, Using Samba</I
-></SPAN
->, by Richard Sharpe.</P
-></TD
-></TR
-></TABLE
-></DIV
 ><P
 >A domain and a workgroup are exactly the same thing in terms of network
 browsing.  The difference is that a distributable authentication
 database is associated with a domain, for secure login access to a
 network.  Also, different access rights can be granted to users if they
-successfully authenticate against a domain logon server (NT server and 
-other systems based on NT server support this, as does at least Samba TNG now).</P
+successfully authenticate against a domain logon server. Samba-3 does this
+now in the same way that MS Windows NT/2K.</P
 ><P
 >The SMB client logging on to a domain has an expectation that every other
 server in the domain should accept the same authentication information.
-Network browsing functionality of domains and workgroups is
-identical and is explained in BROWSING.txt. It should be noted, that browsing
-is totally orthogonal to logon support.</P
+Network browsing functionality of domains and workgroups is identical and
+is explained in this documentation under the browsing discussions.
+It should be noted, that browsing is totally orthogonal to logon support.</P
 ><P
 >Issues related to the single-logon network model are discussed in this
 section.  Samba supports domain logons, network logon scripts, and user
 profiles for MS Windows for workgroups and MS Windows 9X/ME clients
-which will be the focus of this section.</P
+which are the focus of this section.</P
 ><P
 >When an SMB client in a domain wishes to logon it broadcast requests for a
 logon server.  The first one to reply gets the job, and validates its
@@ -1818,8 +1626,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1130"
->6.8.1. Configuration Instructions:	Network Logons</A
+NAME="AEN1163"
+>6.7.1. Configuration Instructions:	Network Logons</A
 ></H2
 ><P
 >The main difference between a PDC and a Windows 9x logon 
@@ -1919,703 +1727,6 @@ for its domain.</P
 ></TABLE
 ></DIV
 ></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN1149"
->6.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
-></H2
-><DIV
-CLASS="WARNING"
-><P
-></P
-><TABLE
-CLASS="WARNING"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
-HSPACE="5"
-ALT="Warning"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->NOTE!</I
-></SPAN
-> Roaming profiles support is different 
-for Win9X and WinNT.</P
-></TD
-></TR
-></TABLE
-></DIV
-><P
->Before discussing how to configure roaming profiles, it is useful to see how
-Win9X and WinNT clients implement these features.</P
-><P
->Win9X clients send a NetUserGetInfo request to the server to get the user's
-profiles location. However, the response does not have room for a separate 
-profiles location field, only the user's home share. This means that Win9X 
-profiles are restricted to being in the user's home directory.</P
-><P
->WinNT clients send a NetSAMLogon RPC request, which contains many fields, 
-including a separate field for the location of the user's profiles. 
-This means that support for profiles is different for Win9X and WinNT.</P
-><DIV
-CLASS="SECT3"
-><H3
-CLASS="SECT3"
-><A
-NAME="AEN1157"
->6.8.2.1. Windows NT Configuration</A
-></H3
-><P
->To support WinNT clients, in the [global] section of smb.conf set the
-following (for example):</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->logon path = \\profileserver\profileshare\profilepath\%U\moreprofilepath</PRE
-></P
-><P
->The default for this option is \\%N\%U\profile, namely
-\\sambaserver\username\profile.  The \\N%\%U service is created
-automatically by the [homes] service.
-If you are using a samba server for the profiles, you _must_ make the
-share specified in the logon path browseable. </P
-><DIV
-CLASS="NOTE"
-><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->[lkcl 26aug96 - we have discovered a problem where Windows clients can
-maintain a connection to the [homes] share in between logins.  The
-[homes] share must NOT therefore be used in a profile path.]</P
-></TD
-></TR
-></TABLE
-></DIV
-></DIV
-><DIV
-CLASS="SECT3"
-><H3
-CLASS="SECT3"
-><A
-NAME="AEN1165"
->6.8.2.2. Windows 9X Configuration</A
-></H3
-><P
->To support Win9X clients, you must use the "logon home" parameter. Samba has
-now been fixed so that "net use/home" now works as well, and it, too, relies
-on the "logon home" parameter.</P
-><P
->By using the logon home parameter, you are restricted to putting Win9X 
-profiles in the user's home directory.   But wait! There is a trick you 
-can use. If you set the following in the [global] section of your 
-smb.conf file:</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->logon home = \\%L\%U\.profiles</PRE
-></P
-><P
->then your Win9X clients will dutifully put their clients in a subdirectory
-of your home directory called .profiles (thus making them hidden).</P
-><P
->Not only that, but 'net use/home' will also work, because of a feature in 
-Win9X. It removes any directory stuff off the end of the home directory area
-and only uses the server and share portion. That is, it looks like you
-specified \\%L\%U for "logon home".</P
-></DIV
-><DIV
-CLASS="SECT3"
-><H3
-CLASS="SECT3"
-><A
-NAME="AEN1173"
->6.8.2.3. Win9X and WinNT Configuration</A
-></H3
-><P
->You can support profiles for both Win9X and WinNT clients by setting both the
-"logon home" and "logon path" parameters. For example:</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->logon home = \\%L\%U\.profiles
-logon path = \\%L\profiles\%U</PRE
-></P
-><DIV
-CLASS="NOTE"
-><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->I have not checked what 'net use /home' does on NT when "logon home" is
-set as above.</P
-></TD
-></TR
-></TABLE
-></DIV
-></DIV
-><DIV
-CLASS="SECT3"
-><H3
-CLASS="SECT3"
-><A
-NAME="AEN1180"
->6.8.2.4. Windows 9X Profile Setup</A
-></H3
-><P
->When a user first logs in on Windows 9X, the file user.DAT is created,
-as are folders "Start Menu", "Desktop", "Programs" and "Nethood".  
-These directories and their contents will be merged with the local
-versions stored in c:\windows\profiles\username on subsequent logins,
-taking the most recent from each.  You will need to use the [global]
-options "preserve case = yes", "short preserve case = yes" and
-"case sensitive = no" in order to maintain capital letters in shortcuts
-in any of the profile folders.</P
-><P
->The user.DAT file contains all the user's preferences.  If you wish to
-enforce a set of preferences, rename their user.DAT file to user.MAN,
-and deny them write access to this file.</P
-><P
-></P
-><OL
-TYPE="1"
-><LI
-><P
->	On the Windows 95 machine, go to Control Panel | Passwords and
-	select the User Profiles tab.  Select the required level of
-	roaming preferences.  Press OK, but do _not_ allow the computer
-	to reboot.
-	</P
-></LI
-><LI
-><P
->	On the Windows 95 machine, go to Control Panel | Network |
-	Client for Microsoft Networks | Preferences.  Select 'Log on to
-	NT Domain'.  Then, ensure that the Primary Logon is 'Client for
-	Microsoft Networks'.  Press OK, and this time allow the computer
-	to reboot.
-	</P
-></LI
-></OL
-><P
->Under Windows 95, Profiles are downloaded from the Primary Logon.
-If you have the Primary Logon as 'Client for Novell Networks', then
-the profiles and logon script will be downloaded from your Novell
-Server.  If you have the Primary Logon as 'Windows Logon', then the
-profiles will be loaded from the local machine - a bit against the
-concept of roaming profiles, if you ask me.</P
-><P
->You will now find that the Microsoft Networks Login box contains
-[user, password, domain] instead of just [user, password].  Type in
-the samba server's domain name (or any other domain known to exist,
-but bear in mind that the user will be authenticated against this
-domain and profiles downloaded from it, if that domain logon server
-supports it), user name and user's password.</P
-><P
->Once the user has been successfully validated, the Windows 95 machine
-will inform you that 'The user has not logged on before' and asks you
-if you wish to save the user's preferences?  Select 'yes'.</P
-><P
->Once the Windows 95 client comes up with the desktop, you should be able
-to examine the contents of the directory specified in the "logon path"
-on the samba server and verify that the "Desktop", "Start Menu",
-"Programs" and "Nethood" folders have been created.</P
-><P
->These folders will be cached locally on the client, and updated when
-the user logs off (if you haven't made them read-only by then :-).
-You will find that if the user creates further folders or short-cuts,
-that the client will merge the profile contents downloaded with the
-contents of the profile directory already on the local client, taking
-the newest folders and short-cuts from each set.</P
-><P
->If you have made the folders / files read-only on the samba server,
-then you will get errors from the w95 machine on logon and logout, as
-it attempts to merge the local and the remote profile.  Basically, if
-you have any errors reported by the w95 machine, check the Unix file
-permissions and ownership rights on the profile directory contents,
-on the samba server.</P
-><P
->If you have problems creating user profiles, you can reset the user's
-local desktop cache, as shown below.  When this user then next logs in,
-they will be told that they are logging in "for the first time".</P
-><P
-></P
-><OL
-TYPE="1"
-><LI
-><P
->	instead of logging in under the [user, password, domain] dialog,
-	press escape.
-	</P
-></LI
-><LI
-><P
->	run the regedit.exe program, and look in:
-	</P
-><P
->	HKEY_LOCAL_MACHINE\Windows\CurrentVersion\ProfileList
-	</P
-><P
->	you will find an entry, for each user, of ProfilePath.  Note the
-	contents of this key (likely to be c:\windows\profiles\username),
-	then delete the key ProfilePath for the required user.
-	</P
-><P
->	[Exit the registry editor].
-	</P
-></LI
-><LI
-><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->WARNING</I
-></SPAN
-> - before deleting the contents of the 
-	directory listed in
-   the ProfilePath (this is likely to be c:\windows\profiles\username),
-   ask them if they have any important files stored on their desktop
-   or in their start menu.  delete the contents of the directory
-   ProfilePath (making a backup if any of the files are needed).
-	</P
-><P
->   This will have the effect of removing the local (read-only hidden
-   system file) user.DAT in their profile directory, as well as the
-   local "desktop", "nethood", "start menu" and "programs" folders.
-	</P
-></LI
-><LI
-><P
->	search for the user's .PWL password-caching file in the c:\windows
-	directory, and delete it.
-	</P
-></LI
-><LI
-><P
->	log off the windows 95 client.
-	</P
-></LI
-><LI
-><P
->	check the contents of the profile path (see "logon path" described
-	above), and delete the user.DAT or user.MAN file for the user,
-	making a backup if required.  
-	</P
-></LI
-></OL
-><P
->If all else fails, increase samba's debug log levels to between 3 and 10,
-and / or run a packet trace program such as tcpdump or netmon.exe, and
-look for any error reports.</P
-><P
->If you have access to an NT server, then first set up roaming profiles
-and / or netlogons on the NT server.  Make a packet trace, or examine
-the example packet traces provided with NT server, and see what the
-differences are with the equivalent samba trace.</P
-></DIV
-><DIV
-CLASS="SECT3"
-><H3
-CLASS="SECT3"
-><A
-NAME="AEN1216"
->6.8.2.5. Windows NT Workstation 4.0</A
-></H3
-><P
->When a user first logs in to a Windows NT Workstation, the profile
-NTuser.DAT is created.  The profile location can be now specified
-through the "logon path" parameter.  </P
-><DIV
-CLASS="NOTE"
-><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->[lkcl 10aug97 - i tried setting the path to
-\\samba-server\homes\profile, and discovered that this fails because
-a background process maintains the connection to the [homes] share
-which does _not_ close down in between user logins.  you have to
-have \\samba-server\%L\profile, where user is the username created
-from the [homes] share].</P
-></TD
-></TR
-></TABLE
-></DIV
-><P
->There is a parameter that is now available for use with NT Profiles:
-"logon drive".  This should be set to "h:" or any other drive, and
-should be used in conjunction with the new "logon home" parameter.</P
-><P
->The entry for the NT 4.0 profile is a _directory_ not a file.  The NT
-help on profiles mentions that a directory is also created with a .PDS
-extension.  The user, while logging in, must have write permission to
-create the full profile path (and the folder with the .PDS extension)
-[lkcl 10aug97 - i found that the creation of the .PDS directory failed,
-and had to create these manually for each user, with a shell script.
-also, i presume, but have not tested, that the full profile path must
-be browseable just as it is for w95, due to the manner in which they
-attempt to create the full profile path: test existence of each path
-component; create path component].</P
-><P
->In the profile directory, NT creates more folders than 95.  It creates
-"Application Data" and others, as well as "Desktop", "Nethood",
-"Start Menu" and "Programs".  The profile itself is stored in a file
-NTuser.DAT.  Nothing appears to be stored in the .PDS directory, and
-its purpose is currently unknown.</P
-><P
->You can use the System Control Panel to copy a local profile onto
-a samba server (see NT Help on profiles: it is also capable of firing
-up the correct location in the System Control Panel for you).  The
-NT Help file also mentions that renaming NTuser.DAT to NTuser.MAN
-turns a profile into a mandatory one.</P
-><DIV
-CLASS="NOTE"
-><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->[lkcl 10aug97 - i notice that NT Workstation tells me that it is
-downloading a profile from a slow link.  whether this is actually the
-case, or whether there is some configuration issue, as yet unknown,
-that makes NT Workstation _think_ that the link is a slow one is a
-matter to be resolved].</P
-><P
->[lkcl 20aug97 - after samba digest correspondence, one user found, and
-another confirmed, that profiles cannot be loaded from a samba server
-unless "security = user" and "encrypt passwords = yes" (see the file
-ENCRYPTION.txt) or "security = server" and "password server = ip.address.
-of.yourNTserver" are used.  Either of these options will allow the NT
-workstation to access the samba server using LAN manager encrypted
-passwords, without the user intervention normally required by NT
-workstation for clear-text passwords].</P
-><P
->[lkcl 25aug97 - more comments received about NT profiles: the case of
-the profile _matters_.  the file _must_ be called NTuser.DAT or, for
-a mandatory profile, NTuser.MAN].</P
-></TD
-></TR
-></TABLE
-></DIV
-></DIV
-><DIV
-CLASS="SECT3"
-><H3
-CLASS="SECT3"
-><A
-NAME="AEN1229"
->6.8.2.6. Windows NT Server</A
-></H3
-><P
->There is nothing to stop you specifying any path that you like for the
-location of users' profiles.  Therefore, you could specify that the
-profile be stored on a samba server, or any other SMB server, as long as
-that SMB server supports encrypted passwords.</P
-></DIV
-><DIV
-CLASS="SECT3"
-><H3
-CLASS="SECT3"
-><A
-NAME="AEN1232"
->6.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
-></H3
-><DIV
-CLASS="WARNING"
-><P
-></P
-><TABLE
-CLASS="WARNING"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
-HSPACE="5"
-ALT="Warning"></TD
-><TH
-ALIGN="LEFT"
-VALIGN="CENTER"
-><B
->Potentially outdated or incorrect material follows</B
-></TH
-></TR
-><TR
-><TD
->&nbsp;</TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->I think this is all bogus, but have not deleted it. (Richard Sharpe)</P
-></TD
-></TR
-></TABLE
-></DIV
-><P
->The default logon path is \\%N\%U.  NT Workstation will attempt to create
-a directory "\\samba-server\username.PDS" if you specify the logon path
-as "\\samba-server\username" with the NT User Manager.  Therefore, you
-will need to specify (for example) "\\samba-server\username\profile".
-NT 4.0 will attempt to create "\\samba-server\username\profile.PDS", which
-is more likely to succeed.</P
-><P
->If you then want to share the same Start Menu / Desktop with W95, you will
-need to specify "logon path = \\samba-server\username\profile" [lkcl 10aug97
-this has its drawbacks: i created a shortcut to telnet.exe, which attempts
-to run from the c:\winnt\system32 directory.  this directory is obviously
-unlikely to exist on a Win95-only host].</P
-><P
->&#13;If you have this set up correctly, you will find separate user.DAT and
-NTuser.DAT files in the same profile directory.</P
-><DIV
-CLASS="NOTE"
-><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->[lkcl 25aug97 - there are some issues to resolve with downloading of
-NT profiles, probably to do with time/date stamps.  i have found that
-NTuser.DAT is never updated on the workstation after the first time that
-it is copied to the local workstation profile directory.  this is in
-contrast to w95, where it _does_ transfer / update profiles correctly].</P
-></TD
-></TR
-></TABLE
-></DIV
-></DIV
-></DIV
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN1242"
->6.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
-></H1
-><DIV
-CLASS="WARNING"
-><P
-></P
-><TABLE
-CLASS="WARNING"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
-HSPACE="5"
-ALT="Warning"></TD
-><TH
-ALIGN="LEFT"
-VALIGN="CENTER"
-><B
->Possibly Outdated Material</B
-></TH
-></TR
-><TR
-><TD
->&nbsp;</TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->	This appendix was originally authored by John H Terpstra of 
-	the Samba Team and is included here for posterity.
-	</P
-></TD
-></TR
-></TABLE
-></DIV
-><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->NOTE :</I
-></SPAN
-> 
-The term "Domain Controller" and those related to it refer to one specific
-method of authentication that can underly an SMB domain. Domain Controllers
-prior to Windows NT Server 3.1 were sold by various companies and based on 
-private extensions to the LAN Manager 2.1 protocol. Windows NT introduced
-Microsoft-specific ways of distributing the user authentication database.
-See DOMAIN.txt for examples of how Samba can participate in or create
-SMB domains based on shared authentication database schemes other than the 
-Windows NT SAM.</P
-><P
->Windows NT Server can be installed as either a plain file and print server
-(WORKGROUP workstation or server) or as a server that participates in Domain
-Control (DOMAIN member, Primary Domain controller or Backup Domain controller).
-The same is true for OS/2 Warp Server, Digital Pathworks and other similar
-products, all of which can participate in Domain Control along with Windows NT.</P
-><P
->To many people these terms can be confusing, so let's try to clear the air.</P
-><P
->Every Windows NT system (workstation or server) has a registry database.
-The registry contains entries that describe the initialization information
-for all services (the equivalent of Unix Daemons) that run within the Windows
-NT environment. The registry also contains entries that tell application
-software where to find dynamically loadable libraries that they depend upon.
-In fact, the registry contains entries that describes everything that anything
-may need to know to interact with the rest of the system.</P
-><P
->The registry files can be located on any Windows NT machine by opening a
-command prompt and typing:</P
-><P
-><SAMP
-CLASS="PROMPT"
->C:\WINNT\&#62;</SAMP
-> dir %SystemRoot%\System32\config</P
-><P
->The environment variable %SystemRoot% value can be obtained by typing:</P
-><P
-><SAMP
-CLASS="PROMPT"
->C:\WINNT&#62;</SAMP
->echo %SystemRoot%</P
-><P
->The active parts of the registry that you may want to be familiar with are
-the files called: default, system, software, sam and security.</P
-><P
->In a domain environment, Microsoft Windows NT domain controllers participate
-in replication of the SAM and SECURITY files so that all controllers within
-the domain have an exactly identical copy of each.</P
-><P
->The Microsoft Windows NT system is structured within a security model that
-says that all applications and services must authenticate themselves before
-they can obtain permission from the security manager to do what they set out
-to do.</P
-><P
->The Windows NT User database also resides within the registry. This part of
-the registry contains the user's security identifier, home directory, group
-memberships, desktop profile, and so on.</P
-><P
->Every Windows NT system (workstation as well as server) will have its own
-registry. Windows NT Servers that participate in Domain Security control
-have a database that they share in common - thus they do NOT own an
-independent full registry database of their own, as do Workstations and
-plain Servers.</P
-><P
->The User database is called the SAM (Security Access Manager) database and
-is used for all user authentication as well as for authentication of inter-
-process authentication (i.e. to ensure that the service action a user has
-requested is permitted within the limits of that user's privileges).</P
-><P
->The Samba team have produced a utility that can dump the Windows NT SAM into 
-smbpasswd format: see ENCRYPTION.txt for information on smbpasswd and
-/pub/samba/pwdump on your nearest Samba mirror for the utility. This 
-facility is useful but cannot be easily used to implement SAM replication
-to Samba systems.</P
-><P
->Windows for Workgroups, Windows 95, and Windows NT Workstations and Servers
-can participate in a Domain security system that is controlled by Windows NT
-servers that have been correctly configured. Almost every domain will have
-ONE Primary Domain Controller (PDC). It is desirable that each domain will
-have at least one Backup Domain Controller (BDC).</P
-><P
->The PDC and BDCs then participate in replication of the SAM database so that
-each Domain Controlling participant will have an up to date SAM component
-within its registry.</P
 ></DIV
 ></DIV
 ><DIV
@@ -2662,7 +1773,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Samba as Stand-Alone server (User and Share security level)</TD
+>Samba as Stand-Alone Server</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -2676,7 +1787,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</TD
+>Samba Backup Domain Controller to Samba Domain Control</TD
 ></TR
 ></TABLE
 ></DIV

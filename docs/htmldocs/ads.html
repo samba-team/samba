@@ -13,7 +13,7 @@ REL="UP"
 TITLE="Type of installation"
 HREF="type.html"><LINK
 REL="PREVIOUS"
-TITLE="How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain"
+TITLE="Samba Backup Domain Controller to Samba Domain Control"
 HREF="samba-bdc.html"><LINK
 REL="NEXT"
 TITLE="Samba as a NT4 or Win2k domain member"
@@ -78,132 +78,19 @@ NAME="ADS"
 ><P
 >This is a rough guide to setting up Samba 3.0 with kerberos authentication against a
 Windows2000 KDC. </P
-><P
->Pieces you need before you begin:</P
-><P
-><P
-></P
-><TABLE
-BORDER="0"
-><TBODY
-><TR
-><TD
->a Windows 2000 server.</TD
-></TR
-><TR
-><TD
->samba 3.0 or higher.</TD
-></TR
-><TR
-><TD
->the MIT kerberos development libraries (either install from the above sources or use a package). The heimdal libraries will not work.</TD
-></TR
-><TR
-><TD
->the OpenLDAP development libraries.</TD
-></TR
-></TBODY
-></TABLE
-><P
-></P
-></P
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1343"
->8.1. Installing the required packages for Debian</A
+NAME="AEN1251"
+>8.1. Setup your <TT
+CLASS="FILENAME"
+>smb.conf</TT
+></A
 ></H1
 ><P
->On Debian you need to install the following packages:</P
-><P
-><P
-></P
-><TABLE
-BORDER="0"
-><TBODY
-><TR
-><TD
->libkrb5-dev</TD
-></TR
-><TR
-><TD
->krb5-user</TD
-></TR
-></TBODY
-></TABLE
-><P
-></P
-></P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN1350"
->8.2. Installing the required packages for RedHat</A
-></H1
-><P
->On RedHat this means you should have at least: </P
-><P
-><P
-></P
-><TABLE
-BORDER="0"
-><TBODY
-><TR
-><TD
->krb5-workstation (for kinit)</TD
-></TR
-><TR
-><TD
->krb5-libs (for linking with)</TD
-></TR
-><TR
-><TD
->krb5-devel (because you are compiling from source)</TD
-></TR
-></TBODY
-></TABLE
-><P
-></P
-></P
-><P
->in addition to the standard development environment.</P
-><P
->Note that these are not standard on a RedHat install, and you may need 
-to get them off CD2.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN1360"
->8.3. Compile Samba</A
-></H1
-><P
->If your kerberos libraries are in a non-standard location then
-  remember to add the configure option --with-krb5=DIR.</P
-><P
->After you run configure make sure that include/config.h it
-  generates contains 
-  lines like this:</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->#define HAVE_KRB5 1
-#define HAVE_LDAP 1</PRE
-></P
-><P
->If it doesn't then configure did not find your krb5 libraries or
-  your ldap libraries. Look in config.log to figure out why and fix
-  it.</P
-><P
->Then compile and install Samba as usual. You must use at least the
-  following 3 options in smb.conf:</P
+>You must use at least the following 3 options in smb.conf:</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
@@ -228,17 +115,19 @@ CLASS="PROGRAMLISTING"
 >You do *not* need a smbpasswd file, and older clients will
   be authenticated as if "security = domain", although it won't do any harm
   and allows you to have local users not in the domain.
-  I expect that the above
-  required options will change soon when we get better active
-  directory integration.</P
+  I expect that the above required options will change soon when we get better
+  active directory integration.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1375"
->8.4. Setup your /etc/krb5.conf</A
+NAME="AEN1262"
+>8.2. Setup your <TT
+CLASS="FILENAME"
+>/etc/krb5.conf</TT
+></A
 ></H1
 ><P
 >The minimal configuration for krb5.conf is:</P
@@ -276,8 +165,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1385"
->8.5. Create the computer account</A
+NAME="AEN1273"
+>8.3. Create the computer account</A
 ></H1
 ><P
 >As a user that has write permission on the Samba private directory
@@ -291,8 +180,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1389"
->8.5.1. Possible errors</A
+NAME="AEN1277"
+>8.3.1. Possible errors</A
 ></H2
 ><P
 ><P
@@ -316,8 +205,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1397"
->8.6. Test your server setup</A
+NAME="AEN1285"
+>8.4. Test your server setup</A
 ></H1
 ><P
 >On a Windows 2000 client try <B
@@ -336,8 +225,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1402"
->8.7. Testing with smbclient</A
+NAME="AEN1290"
+>8.5. Testing with smbclient</A
 ></H1
 ><P
 >On your Samba server try to login to a Win2000 server or your Samba
@@ -349,12 +238,12 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1405"
->8.8. Notes</A
+NAME="AEN1293"
+>8.6. Notes</A
 ></H1
 ><P
->You must change administrator password at least once after DC install,
- to create the right encoding types</P
+>You must change administrator password at least once after DC 
+install, to create the right encoding types</P
 ><P
 >w2k doesn't seem to create the _kerberos._udp and _ldap._tcp in
    their defaults DNS setup. Maybe fixed in service packs?</P
@@ -404,7 +293,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</TD
+>Samba Backup Domain Controller to Samba Domain Control</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"

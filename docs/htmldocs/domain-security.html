@@ -16,7 +16,7 @@ REL="PREVIOUS"
 TITLE="Samba as a ADS domain member"
 HREF="ads.html"><LINK
 REL="NEXT"
-TITLE="Optional configuration"
+TITLE="Advanced Configuration"
 HREF="optional.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
@@ -80,7 +80,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1427"
+NAME="AEN1315"
 >9.1. Joining an NT Domain with Samba 3.0</A
 ></H1
 ><P
@@ -129,12 +129,7 @@ CLASS="PARAMETER"
 ><B
 CLASS="COMMAND"
 >security = domain</B
-> or
-	<B
-CLASS="COMMAND"
->security = ads</B
-> depending on if the PDC is
-	NT4 or running Active Directory respectivly.</P
+></P
 ><P
 >Next change the <A
 HREF="smb.conf.5.html#WORKGROUP"
@@ -208,7 +203,7 @@ CLASS="PROMPT"
 >root# </SAMP
 ><KBD
 CLASS="USERINPUT"
->net join -S DOMPDC
+>net rpc join -S DOMPDC
 	-U<VAR
 CLASS="REPLACEABLE"
 >Administrator%password</VAR
@@ -268,22 +263,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1482"
->9.2. Samba and Windows 2000 Domains</A
-></H1
-><P
->Many people have asked regarding the state of Samba's ability to participate in
-a Windows 2000 Domain.  Samba 3.0 is able to act as a member server of a Windows
-2000 domain operating in mixed or native mode.  The steps above apply
-to both NT4 and Windows 2000.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN1485"
->9.3. Why is this better than security = server?</A
+NAME="AEN1369"
+>9.2. Why is this better than security = server?</A
 ></H1
 ><P
 >Currently, domain security in Samba doesn't free you from 
@@ -341,13 +322,27 @@ CLASS="COMMAND"
 	authenticating to a PDC means that as part of the authentication 
 	reply, the Samba server gets the user identification information such 
 	as the user SID, the list of NT groups the user belongs to, etc. </P
+><DIV
+CLASS="NOTE"
 ><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->NOTE:</I
-></SPAN
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
 > Much of the text of this document 
 	was first published in the Web magazine <A
 HREF="http://www.linuxworld.com"
@@ -360,6 +355,10 @@ TARGET="_top"
 >Doing 
 	the NIS/NT Samba</A
 >.</P
+></TD
+></TR
+></TABLE
+></DIV
 ></DIV
 ></DIV
 ><DIV
@@ -420,7 +419,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Optional configuration</TD
+>Advanced Configuration</TD
 ></TR
 ></TABLE
 ></DIV

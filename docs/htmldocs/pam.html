@@ -11,14 +11,14 @@ REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="UP"
-TITLE="Optional configuration"
+TITLE="Advanced Configuration"
 HREF="optional.html"><LINK
 REL="PREVIOUS"
-TITLE="UNIX Permission Bits and Windows NT Access Control Lists"
-HREF="unix-permissions.html"><LINK
+TITLE="Group mapping HOWTO"
+HREF="groupmapping.html"><LINK
 REL="NEXT"
-TITLE="Hosting a Microsoft Distributed File System tree on Samba"
-HREF="msdfs.html"></HEAD
+TITLE="Printing Support"
+HREF="printing.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -46,7 +46,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="unix-permissions.html"
+HREF="groupmapping.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -60,7 +60,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="msdfs.html"
+HREF="printing.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -75,15 +75,15 @@ CLASS="CHAPTER"
 ><A
 NAME="PAM"
 ></A
->Chapter 12. Configuring PAM for distributed but centrally 
+>Chapter 13. Configuring PAM for distributed but centrally 
 managed authentication</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1926"
->12.1. Samba and PAM</A
+NAME="AEN1866"
+>13.1. Samba and PAM</A
 ></H1
 ><P
 >A number of Unix systems (eg: Sun Solaris), as well as the 
@@ -119,6 +119,45 @@ or by editing individual files that are located in <TT
 CLASS="FILENAME"
 >/etc/pam.d</TT
 >.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>	If the PAM authentication module (loadable link library file) is located in the
+	default location then it is not necessary to specify the path. In the case of
+	Linux, the default location is <TT
+CLASS="FILENAME"
+>/lib/security</TT
+>. If the module
+	is located other than default then the path may be specified as:
+	
+	<PRE
+CLASS="PROGRAMLISTING"
+>	eg: "auth       required      /other_path/pam_strange_module.so"
+	</PRE
+>
+	</P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >The following is an example <TT
 CLASS="FILENAME"
@@ -134,20 +173,20 @@ CLASS="FILENAME"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->#%PAM-1.0
-# The PAM configuration file for the `login' service
-#
-auth 		required	pam_securetty.so
-auth 		required	pam_nologin.so
-# auth 		required	pam_dialup.so
-# auth 		optional	pam_mail.so
-auth		required	pam_pwdb.so shadow md5
-# account    	requisite  	pam_time.so
-account		required	pam_pwdb.so
-session		required	pam_pwdb.so
-# session 	optional	pam_lastlog.so
-# password   	required   	pam_cracklib.so retry=3
-password	required	pam_pwdb.so shadow md5</PRE
+>	#%PAM-1.0
+	# The PAM configuration file for the `login' service
+	#
+	auth 		required	pam_securetty.so
+	auth 		required	pam_nologin.so
+	# auth 		required	pam_dialup.so
+	# auth 		optional	pam_mail.so
+	auth		required	pam_pwdb.so shadow md5
+	# account    	requisite  	pam_time.so
+	account		required	pam_pwdb.so
+	session		required	pam_pwdb.so
+	# session 	optional	pam_lastlog.so
+	# password   	required   	pam_cracklib.so retry=3
+	password	required	pam_pwdb.so shadow md5</PRE
 ></P
 ><P
 >PAM allows use of replacable modules. Those available on a 
@@ -155,19 +194,19 @@ sample system include:</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->$ /bin/ls /lib/security
-pam_access.so    pam_ftp.so          pam_limits.so     
-pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
-pam_cracklib.so  pam_group.so        pam_listfile.so   
-pam_nologin.so   pam_rootok.so       pam_tally.so      
-pam_deny.so      pam_issue.so        pam_mail.so       
-pam_permit.so    pam_securetty.so    pam_time.so       
-pam_dialup.so    pam_lastlog.so      pam_mkhomedir.so  
-pam_pwdb.so      pam_shells.so       pam_unix.so       
-pam_env.so       pam_ldap.so         pam_motd.so       
-pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
-pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
-pam_userdb.so    pam_warn.so         pam_unix_session.so</PRE
+>	$ /bin/ls /lib/security
+	pam_access.so    pam_ftp.so          pam_limits.so     
+	pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
+	pam_cracklib.so  pam_group.so        pam_listfile.so   
+	pam_nologin.so   pam_rootok.so       pam_tally.so      
+	pam_deny.so      pam_issue.so        pam_mail.so       
+	pam_permit.so    pam_securetty.so    pam_time.so       
+	pam_dialup.so    pam_lastlog.so      pam_mkhomedir.so  
+	pam_pwdb.so      pam_shells.so       pam_unix.so       
+	pam_env.so       pam_ldap.so         pam_motd.so       
+	pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
+	pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
+	pam_userdb.so    pam_warn.so         pam_unix_session.so</PRE
 ></P
 ><P
 >The following example for the login program replaces the use of 
@@ -230,13 +269,13 @@ source distribution.</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->#%PAM-1.0
-# The PAM configuration file for the `login' service
-#
-auth		required	pam_smbpass.so nodelay
-account		required	pam_smbpass.so nodelay
-session		required	pam_smbpass.so nodelay
-password	required	pam_smbpass.so nodelay</PRE
+>	#%PAM-1.0
+	# The PAM configuration file for the `login' service
+	#
+	auth		required	pam_smbpass.so nodelay
+	account		required	pam_smbpass.so nodelay
+	session		required	pam_smbpass.so nodelay
+	password	required	pam_smbpass.so nodelay</PRE
 ></P
 ><P
 >The following is the PAM configuration file for a particular 
@@ -247,13 +286,13 @@ CLASS="FILENAME"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->#%PAM-1.0
-# The PAM configuration file for the `samba' service
-#
-auth       required     /lib/security/pam_pwdb.so nullok nodelay shadow audit
-account    required     /lib/security/pam_pwdb.so audit nodelay
-session    required     /lib/security/pam_pwdb.so nodelay
-password   required     /lib/security/pam_pwdb.so shadow md5</PRE
+>	#%PAM-1.0
+	# The PAM configuration file for the `samba' service
+	#
+	auth       required     /lib/security/pam_pwdb.so nullok nodelay shadow audit
+	account    required     /lib/security/pam_pwdb.so audit nodelay
+	session    required     /lib/security/pam_pwdb.so nodelay
+	password   required     /lib/security/pam_pwdb.so shadow md5</PRE
 ></P
 ><P
 >In the following example the decision has been made to use the 
@@ -264,16 +303,36 @@ program.</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->#%PAM-1.0
-# The PAM configuration file for the `samba' service
-#
-auth       required     /lib/security/pam_smbpass.so nodelay
-account    required     /lib/security/pam_pwdb.so audit nodelay
-session    required     /lib/security/pam_pwdb.so nodelay
-password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf</PRE
+>	#%PAM-1.0
+	# The PAM configuration file for the `samba' service
+	#
+	auth       required     /lib/security/pam_smbpass.so nodelay
+	account    required     /lib/security/pam_pwdb.so audit nodelay
+	session    required     /lib/security/pam_pwdb.so nodelay
+	password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf</PRE
 ></P
+><DIV
+CLASS="NOTE"
 ><P
->Note: PAM allows stacking of authentication mechanisms. It is 
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>PAM allows stacking of authentication mechanisms. It is 
 also possible to pass information obtained within one PAM module through 
 to the next module in the PAM stack. Please refer to the documentation for 
 your particular system implementation for details regarding the specific 
@@ -290,14 +349,18 @@ CLASS="FILENAME"
 on the basis that it allows for easier administration. As with all issues in 
 life though, every decision makes trade-offs, so you may want examine the 
 PAM documentation for further helpful information.</P
+></TD
+></TR
+></TABLE
+></DIV
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1970"
->12.2. Distributed Authentication</A
+NAME="AEN1915"
+>13.2. Distributed Authentication</A
 ></H1
 ><P
 >The astute administrator will realize from this that the 
@@ -308,16 +371,9 @@ CLASS="FILENAME"
 <B
 CLASS="COMMAND"
 >winbindd</B
->, and <B
-CLASS="COMMAND"
->rsync</B
-> (see
-<A
-HREF="http://rsync.samba.org/"
-TARGET="_top"
->http://rsync.samba.org/</A
->)
-will allow the establishment of a centrally managed, distributed 
+>, and a distributed 
+passdb backend, such as ldap, will allow the establishment of a
+centrally managed, distributed 
 user/password database that can also be used by all 
 PAM (eg: Linux) aware programs and applications. This arrangement 
 can have particularly potent advantages compared with the 
@@ -329,8 +385,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1977"
->12.3. PAM Configuration in smb.conf</A
+NAME="AEN1920"
+>13.3. PAM Configuration in smb.conf</A
 ></H1
 ><P
 >There is an option in smb.conf called <A
@@ -340,7 +396,7 @@ TARGET="_top"
 >. 
 The following is from the on-line help for this option in SWAT;</P
 ><P
->When Samba 2.2 is configure to enable PAM support (i.e. 
+>When Samba is configured to enable PAM support (i.e. 
 <CODE
 CLASS="CONSTANT"
 >--with-pam</CODE
@@ -381,7 +437,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="unix-permissions.html"
+HREF="groupmapping.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -399,7 +455,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="msdfs.html"
+HREF="printing.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -409,7 +465,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->UNIX Permission Bits and Windows NT Access Control Lists</TD
+>Group mapping HOWTO</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -423,7 +479,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Hosting a Microsoft Distributed File System tree on Samba</TD
+>Printing Support</TD
 ></TR
 ></TABLE
 ></DIV
