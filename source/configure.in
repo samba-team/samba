@@ -2366,6 +2366,10 @@ if test x"$samba_cv_WITH_AFS" != x"no" ||
     fi
 fi
 
+if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no"; then
+	AC_CHECK_LIB( crypto, DES_pcbc_encrypt, LIBS="$LIBS -lcrypto" )
+fi
+
 if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no" && test x"$have_afs_headers" == x"yes"; then
     AC_DEFINE(WITH_FAKE_KASERVER,1,[Whether to include AFS fake-kaserver support])
 fi
