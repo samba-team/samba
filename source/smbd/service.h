@@ -63,17 +63,7 @@ struct server_service_ops {
 	void (*service_exit)(struct server_service *srv_ctx, const char *reason);	
 };
 
-struct socket_ops {
-	int dummy;	
-};
-
-struct socket_context {
-	void *private_data;
-	struct socket_ops *ops;
-	const char *client_addr;
-	uint_t pkt_count;
-	struct fd_event *fde;
-};
+struct socket_context;
 
 struct server_socket {
 	struct server_socket *next,*prev;
