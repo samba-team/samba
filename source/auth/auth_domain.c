@@ -57,13 +57,13 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		   a password server anyways */
 		if ((to_ip.s_addr=inet_addr(server)) == 0xFFFFFFFF) {
 			DEBUG (0,("connect_to_domain_password_server: inet_addr(%s) returned 0xFFFFFFFF!\n", server));
-			return NT_STATUS_UNSUCCESSFUL;
+			return NT_STATUS_NO_LOGON_SERVERS;
 		}
 
 		if (!name_status_find("*", 0x20, 0x20, to_ip, remote_machine)) {
 			DEBUG(0, ("connect_to_domain_password_server: Can't "
 				  "resolve name for IP %s\n", server));
-			return NT_STATUS_UNSUCCESSFUL;
+			return NT_STATUS_NO_LOGON_SERVERS;
 		}
 	} else {
 		fstrcpy(remote_machine, server);
@@ -74,13 +74,13 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 
 	if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
 		DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", remote_machine));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_LOGON_SERVERS;
 	}
   
 	if (ismyip(dest_ip)) {
 		DEBUG(1,("connect_to_domain_password_server: Password server loop - not using password server %s\n",
 			 remote_machine));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_LOGON_SERVERS;
 	}
   
 	/* TODO: Send a SAMLOGON request to determine whether this is a valid
@@ -98,7 +98,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	 */
 
 	if (!grab_server_mutex(server))
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_LOGON_SERVERS;
 	
 	/* Attempt connection */
 	result = cli_full_connection(cli, global_myname, server,
@@ -129,7 +129,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		cli_ulogoff(*cli);
 		cli_shutdown(*cli);
 		release_server_mutex();
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
 	snprintf((*cli)->mach_acct, sizeof((*cli)->mach_acct) - 1, "%s$", setup_creds_as);
@@ -174,10 +174,10 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 	 */
 
 	if (is_zero_ip(*ip))
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_LOGON_SERVERS;
 
 	if (!lookup_dc_name(global_myname, domain, ip, dc_name))
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_LOGON_SERVERS;
 
 	return connect_to_domain_password_server(cli, dc_name, setup_creds_as, sec_chan, trust_passwd);
 }
@@ -196,7 +196,7 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 	struct in_addr *ip_list = NULL;
 	int count = 0;
 	int i;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS nt_status = NT_STATUS_NO_LOGON_SERVERS;
 	time_t time_now = time(NULL);
 	BOOL use_pdc_only = False;
 
@@ -212,7 +212,7 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 		use_pdc_only = True;
 
 	if (!get_dc_list(use_pdc_only, domain, &ip_list, &count))
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_LOGON_SERVERS;
 
 	/*
 	 * Firstly try and contact a PDC/BDC who has the same
@@ -288,7 +288,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	fstring remote_machine;
 	NET_USER_INFO_3 info3;
 	struct cli_state *cli = NULL;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS nt_status = NT_STATUS_NO_LOGON_SERVERS;
 
 	/*
 	 * At this point, smb_apasswd points to the lanman response to
