@@ -80,11 +80,11 @@ extern int h_nerr;
 
 #endif
 
-char *
+const char *
 hstrerror(int herr)
 {
     if (0 <= herr && herr < h_nerr)
-	return (char *) h_errlist[herr];
+	return h_errlist[herr];
     else if(herr == -17)
 	return "unknown error";
     else
