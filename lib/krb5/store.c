@@ -312,7 +312,7 @@ krb5_error_code
 krb5_store_address(krb5_storage *sp, krb5_address p)
 {
     int ret;
-    ret = krb5_store_int16(sp, p.type);
+    ret = krb5_store_int16(sp, p.addr_type);
     if(ret) return ret;
     ret = krb5_store_data(sp, p.address);
     return ret;
@@ -325,7 +325,7 @@ krb5_ret_address(krb5_storage *sp, krb5_address *adr)
     int ret;
     ret = krb5_ret_int16(sp, &t);
     if(ret) return ret;
-    adr->type = t;
+    adr->addr_type = t;
     ret = krb5_ret_data(sp, &adr->address);
     return ret;
 }
