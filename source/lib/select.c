@@ -57,8 +57,8 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 	int ret;
 
 	if (initialised != sys_getpid()) {
-		initialised = sys_getpid();
 		pipe(select_pipe);
+		initialised = sys_getpid();
 	}
 
 	maxfd = MAX(select_pipe[0]+1, maxfd);

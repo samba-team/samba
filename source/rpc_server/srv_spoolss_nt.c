@@ -3564,6 +3564,11 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 	*returned = print_queue_status(snum, &queue, &prt_status);
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
 
+	if (*returned == 0) {
+		safe_free(queue);
+		return NT_STATUS_NO_PROBLEMO;
+	}
+
 	switch (level) {
 	case 1:
 		return enumjobs_level1(queue, snum, buffer, offered, needed, returned);
@@ -3672,7 +3677,8 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
 			ZERO_STRUCT(driver);
 			get_a_printer_driver(&driver, 3, list[i], architecture, version);
-			fill_printer_driver_info_1(&(driver_info_1[*returned+i]), driver, servername, architecture );		
+			fill_printer_driver_info_1(&driver_info_1[*returned+i], driver, servername, architecture );		
+			free_a_printer_driver(driver, 3);
 		}	
 
 		*returned+=ndrivers;
@@ -3682,7 +3688,7 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 	/* check the required size. */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d]'s size\n",i));
-		*needed += spoolss_size_printer_driver_info_1(&(driver_info_1[i]));
+		*needed += spoolss_size_printer_driver_info_1(&driver_info_1[i]);
 	}
 
 	if (!alloc_buffer_size(buffer, *needed)) {
@@ -3693,7 +3699,7 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 	/* fill the buffer with the form structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
-		new_smb_io_printer_driver_info_1("", buffer, &(driver_info_1[i]), 0);
+		new_smb_io_printer_driver_info_1("", buffer, &driver_info_1[i], 0);
 	}
 
 	safe_free(driver_info_1);
@@ -3742,7 +3748,8 @@ static uint32 enumprinterdrivers_level2(fstring servername, fstring architecture
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
 			ZERO_STRUCT(driver);
 			get_a_printer_driver(&driver, 3, list[i], architecture, version);
-			fill_printer_driver_info_2(&(driver_info_2[*returned+i]), driver, servername);		
+			fill_printer_driver_info_2(&driver_info_2[*returned+i], driver, servername);		
+			free_a_printer_driver(driver, 3);
 		}	
 
 		*returned+=ndrivers;
@@ -3812,7 +3819,8 @@ static uint32 enumprinterdrivers_level3(fstring servername, fstring architecture
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
 			ZERO_STRUCT(driver);
 			get_a_printer_driver(&driver, 3, list[i], architecture, version);
-			fill_printer_driver_info_3(&(driver_info_3[*returned+i]), driver, servername);		
+			fill_printer_driver_info_3(&driver_info_3[*returned+i], driver, servername);		
+			free_a_printer_driver(driver, 3);
 		}	
 
 		*returned+=ndrivers;
