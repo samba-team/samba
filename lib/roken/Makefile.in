@@ -55,6 +55,7 @@ SOURCES = \
 	gethostname.c \
 	getopt.c \
 	getusershell.c \
+	glob.c \
 	hstrerror.c \
 	inaddr2str.c \
 	inet_aton.c \
