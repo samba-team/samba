@@ -1,3 +1,36 @@
+Mon Sep  8 01:24:42 1997  Assar Westerlund  <assar@sics.se>
+
+	* kdc/hpropd.c (main): check number of arguments
+
+	* appl/popper/pop_init.c (pop_init): check number of arguments
+
+	* kpasswd/kpasswd.c (main): check number of arguments
+
+	* kdc/string2key.c (main): check number of arguments
+
+	* kuser/kdestroy.c (main): check number of arguments
+
+	* kuser/kinit.c (main): check number of arguments
+
+	* kpasswd/kpasswdd.c (main): use sigaction without SA_RESTART to
+ 	break out of select when a signal arrives
+
+	* kdc/main.c (main): use sigaction without SA_RESTART to break out
+ 	of select when a signal arrives
+
+	* kdc/kstash.c: default to HDB_DB_DIR "/m-key"
+
+	* kdc/config.c (configure): add `--help'.  check the number of
+ 	arguments. handle the case of there being to speicification of
+ 	port numbers
+
+	* admin/util.c: seal and unseal key at appropriate places
+
+	* admin/kdb_edit.c (main): parse arguments, config file and read
+ 	master key iff there's one.
+
+	* admin/extkeytab.c (ext_keytab): unseal key while extracting
+
 Sun Sep  7 20:41:01 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/roken/roken.h: include <fcntl.h>
