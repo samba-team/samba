@@ -289,20 +289,13 @@ krb5_change_password (krb5_context	context,
     krb5_auth_context auth_context = NULL;
     int sock;
     int i;
-    char *buf;
-    struct sockaddr *sa;
-    int sa_size;
+    struct sockaddr_storage __ss;
+    struct sockaddr *sa = (struct sockaddr *)&__ss;
+    int sa_size = sizeof(__ss);
 
     ret = krb5_auth_con_init (context, &auth_context);
     if (ret)
 	return ret;
-
-    buf = malloc (krb5_max_sockaddr_size ());
-    if (buf == NULL) {
-	ret = ENOMEM;
-	goto out;
-    }
-    sa = (struct sockaddr *)buf;
 
     ret = get_kdc_address (context, creds->client->realm, sa, &sa_size);
     if (ret)
@@ -356,6 +349,5 @@ krb5_change_password (krb5_context	context,
 
 out:
     krb5_auth_con_free (context, auth_context);
-    free (buf);
     return ret;
 }
