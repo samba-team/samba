@@ -28,14 +28,16 @@ sub ParseProperties($)
 
 #####################################################################
 # parse an array - push side
-sub ParseArrayPush($)
+sub ParseArrayPush($$)
 {
 	my $e = shift;
+	my $var_prefix = shift;
+
 	my $size = util::has_property($e->{PROPERTIES}, "size_is");
 	if (util::is_scalar_type($e->{TYPE})) {
-		$res .= "\t\tNDR_CHECK(ndr_push_array_$e->{TYPE}(ndr, r->$e->{NAME}, r->$size));\n:";
+		$res .= "\t\tNDR_CHECK(ndr_push_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $var_prefix$size));\n:";
 	} else {
-		$res .= "\t\tNDR_CHECK(ndr_push_array(ndr, ndr_flags, r->$e->{NAME}, sizeof(r->$e->{NAME}\[0]), r->$size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));\n";
+		$res .= "\t\tNDR_CHECK(ndr_push_array(ndr, ndr_flags, $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $var_prefix$size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));\n";
 	}
 }
 
@@ -141,7 +143,7 @@ sub ParseElementPushBuffer($$)
 	}
 	    
 	if (util::has_property($e->{PROPERTIES}, "size_is")) {
-		ParseArrayPush($e);
+		ParseArrayPush($e, "r->");
 	} else {
 		if (util::is_scalar_type($e->{TYPE})) {
 			$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, *$var_prefix$e->{NAME}));\n";
@@ -184,7 +186,7 @@ sub ParseElementPullBuffer($$$)
 		ParseArrayPull($e);
 	} else {
 		if (!$e->{POINTERS} ||
-		    $e->{TYPE} =~ "unistr") {
+		    $e->{TYPE} =~ "unistr.*") {
 			if (util::is_builtin_type($e->{TYPE})) {
 				$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, &$var_prefix$e->{NAME}));\n";
 			} else {
@@ -404,8 +406,15 @@ sub ParseFunctionPush($)
 
 	foreach my $arg (@{$function->{DATA}}) {
 		if (util::has_property($arg->{PROPERTIES}, "in")) {
-			ParseElementPushScalar($arg, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
-			ParseElementPushBuffer($arg, "r->in.");
+			if (util::has_property($arg->{PROPERTIES}, "size_is")) {
+				$res .= "\tif (r->in.$arg->{NAME}) {\n";
+				$res .= "\t\tint ndr_flags = NDR_SCALARS|NDR_BUFFERS;\n";
+				ParseArrayPush($arg, "r->in.");
+				$res .= "\t}\n";
+			} else {
+				ParseElementPushScalar($arg, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
+				ParseElementPushBuffer($arg, "r->in.");
+			}
 		}
 	}
     
