@@ -1234,7 +1234,7 @@ static BOOL lp_add_ipc(void)
   if (i < 0)
     return(False);
 
-  sprintf(comment,"IPC Service (%s)",lp_serverstring());
+  sprintf(comment,"IPC Service (%s)", Globals.szServerString );
 
   string_set(&iSERVICE(i).szPath,tmpdir());
   string_set(&iSERVICE(i).szUsername,"");
