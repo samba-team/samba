@@ -159,10 +159,12 @@ static BOOL test_NetDiskEnum(struct dcerpc_pipe *p,
 	uint32 levels[] = {0};
 	int i;
 	BOOL ret = True;
+	uint32 resume_handle=0;
 
-	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.preferred_len = (uint32)-1;
-	r.in.resume_handle = NULL;
+	r.in.server_unc = NULL;
+	r.in.unknown = 0;
+	r.in.resume_handle = &resume_handle;
+	r.in.ctr.ctr0 = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.level = levels[i];
@@ -273,11 +275,11 @@ BOOL torture_rpc_srvsvc(int dummy)
 	if (!test_NetShareEnumAll(p, mem_ctx)) {
 		ret = False;
 	}
-#if 0
+
 	if (!test_NetDiskEnum(p, mem_ctx)) {
 		ret = False;
 	}
-#endif
+
 	if (!test_NetTransportEnum(p, mem_ctx)) {
 		ret = False;
 	}
