@@ -197,7 +197,7 @@ typedef struct net_user_info_3
 	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
 
 	uint32 num_groups2;        /* num groups */
-	DOM_GID gids[LSA_MAX_GROUPS]; /* group info */
+	DOM_GID *gids;             /* group info */
 
 	UNISTR2 uni_logon_srv; /* logon server unicode string */
 	UNISTR2 uni_logon_dom; /* logon domain unicode string */

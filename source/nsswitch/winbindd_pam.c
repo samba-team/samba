@@ -83,6 +83,12 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 						lmpw, sizeof(lmpw),
 						ntpw, sizeof(ntpw), &info3);
 
+	/* The group rids in the info3 structure are allocated dynamically
+	   so make sure we free them. */
+
+	if (info3.gids)
+		free(info3.gid);
+
 	if (status != NT_STATUS_NOPROBLEMO) {
                 DEBUG(3, ("winbindd_pam_auth() failed with status 0x%08x\n",
                           status));
@@ -129,6 +135,12 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
            state->request.data.auth_crap.nt_resp, 
 	   state->request.data.auth_crap.nt_resp_len,
            &info3);
+
+	/* The group rids in the info3 structure are allocated dynamically
+	   so make sure we free them. */
+
+	if (info3.gids)
+		free(info3.gid);
 
 	if (status != NT_STATUS_NOPROBLEMO) {
                 DEBUG(3, ("winbindd_pam_auth() failed with status 0x%08x\n",

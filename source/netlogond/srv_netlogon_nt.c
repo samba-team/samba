@@ -1302,6 +1302,9 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 					     enc_user_sess_key, &uni_myname,
 					     &uni_sam_name, padding,
 					     &global_sam_sid, NULL);
+			/* XXX: memory will leak from this call as the
+			   info3 group rids array is allocated
+			   dynamically. -tpot */
 			break;
 		}
 		default:

@@ -1772,7 +1772,12 @@ BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 
 	usr->num_groups2 = num_groups;
 
-	SMB_ASSERT_ARRAY(usr->gids, num_groups);
+	usr->gids = (DOM_GID *)malloc(usr->num_groups2 * sizeof(DOM_GID));
+
+	if (!usr->gids) {
+		DEBUG(0, ("make_net_user_info3W: out of memory\n"));
+		return False;
+	}
 
 	for (i = 0; i < num_groups; i++)
 	{
@@ -1881,7 +1886,12 @@ BOOL make_net_user_info3(NET_USER_INFO_3 * usr,
 
 	usr->num_groups2 = num_groups;
 
-	SMB_ASSERT_ARRAY(usr->gids, num_groups);
+	usr->gids = (DOM_GID *)malloc(num_groups * sizeof(DOM_GID));
+
+	if (!usr->gids) {
+		DEBUG(0, ("make_net_user_info3: out of memory\n"));
+		return False;
+	}
 
 	for (i = 0; i < num_groups; i++)
 	{
@@ -1969,7 +1979,16 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct *ps,
 	prs_align(ps);
 
 	prs_uint32("num_groups2   ", ps, depth, &(usr->num_groups2));	/* num groups */
-	SMB_ASSERT_ARRAY(usr->gids, usr->num_groups2);
+
+	if (UNMARSHALLING(ps)) {
+		usr->gids = (DOM_GID *)malloc(usr->num_groups2 *
+					      sizeof(DOM_GID));
+		if (!usr->gids) {
+			DEBUG(0, ("net_io_user_info3: out of memory\n"));
+			return False;
+		}
+	}
+
 	for (i = 0; i < usr->num_groups2; i++)
 	{
 		smb_io_gid("", &(usr->gids[i]), ps, depth);	/* group info */
