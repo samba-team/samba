@@ -687,7 +687,7 @@ In smb.conf [globals]
 			The LDAP ldapsam code has been developed and tested using the OpenLDAP 2.0 and 2.1 server and
 			client libraries.  The same code should work with Netscape's Directory Server and client SDK.
 			However, there are bound to be compile errors and bugs. These should not be hard to fix.
-			Please submit fixes via <link linkend="bugreport"/>.
+			Please submit fixes via <link linkend="bugreport">Bug reporting facility</link>.
 			</para>
 
 		</sect3>
@@ -1069,7 +1069,7 @@ index   default               sub
 
 			<para>
 			The majority of these parameters are only used when Samba is acting as a PDC of
-			a domain (refer to the <link linkend="pdc">Samba as a primary domain controller</link> chapter for details on
+			a domain (refer to the <link linkend="samba-pdc">Samba as a primary domain controller</link> chapter for details on
 			how to configure Samba as a Primary Domain Controller). The following four attributes
 			are only stored with the sambaAccount entry if the values are non-default values:
 			</para>
