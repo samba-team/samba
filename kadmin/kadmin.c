@@ -306,6 +306,8 @@ main(int argc, char **argv)
 					  &kadm_handle);
         actual_cmds = commands + 4; /* XXX */
     } else if (keytab) {
+	if (client_name == NULL)
+	    krb5_errx(context, 1, "keytab mode require principal name");
         ret = kadm5_c_init_with_skey_ctx(context,
 					 client_name,
 					 keytab,
