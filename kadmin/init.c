@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -180,7 +180,10 @@ init(int argc, char **argv)
 	/* Create `changepw/kerberos' (for v4 compat) */
 	krb5_make_principal(context, &princ, realm,
 			    "changepw", "kerberos", NULL);
-	create_random_entry(princ, 60*60, 60*60, 0);
+	create_random_entry(princ, 60*60, 60*60,
+			    KRB5_KDB_DISALLOW_TGT_BASED|
+			    KRB5_KDB_PWCHANGE_SERVICE);
+
 	krb5_free_principal(context, princ);
 
 	/* Create `default' */
