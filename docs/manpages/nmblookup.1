@@ -1,0 +1,126 @@
+.TH NMBLOOKUP 1 "09 Oct 1998" "nmblookup 2.0.0-alpha11"
+.SH NAME
+nmblookup \- NBT client used to lookup netbios names
+.SH SYNOPSIS
+.B nmblookup
+[
+.B \-M
+] [
+.B \-R
+] [
+.B \-S
+] [
+.B \-r
+] [
+.B \-A
+] [
+.B \-B
+.I broadcast address
+] [
+.B \-U
+.I unicast address
+] [
+.B \-d
+.I debuglevel
+]
+.B name
+.SH DESCRIPTION
+This program is part of the Samba suite.
+
+.B nmblookup
+is used to find out NetBIOS names in a network.
+.SH OPTIONS
+.B \-d
+.I debuglevel
+
+.RS 3
+This option sets the debug level. See
+.BR smb.conf (5).
+.RE
+
+.B \-B
+.I broadcast address
+.RS 3
+
+Send the query to the broadcast address
+.I broadcast address.
+The default behavior of nmblookup is to send the query to the broadcast
+address of the primary network interface.
+.RE
+
+.B \-U
+.I unicast address
+.RS 3
+
+Do a unicast query to the specified address or host
+.I unicast address.
+This is needed to query a WINS server.
+.RE
+
+.B \-M
+
+.RS 3
+Searches for a master browser.
+.RE
+
+.B \-R
+
+.RS 3
+Do a recursive lookup (needed to direct the query to the WINS portion
+of the server rather than the broadcast portion.)
+
+.RE
+
+.B \-S
+
+.RS 3
+Lookup node status as well.
+.RE
+
+.B \-r
+
+.RS 3
+Use root port 137 (Win95 only replies to this.)
+.RE
+
+.B \-A
+
+.RS 3
+Do a node status on <name> as an IP Address.
+.RE
+
+.SH EXAMPLES
+
+.B nmblookup
+can be used to query a WINS server (in the same way
+.B nslookup
+is used to query DNS servers). To query a WINS server,
+.B nmblookup
+must be called like this:
+
+.B nmblookup
+-U server -R 'query'
+
+For example, running '
+.B nmblookup
+-U samba.anu.edu.au -R IRIX#1B' would query the WINS server
+samba.anu.edu.au for the domain master browser (1B name) for the 
+IRIX workgroup.
+
+.SH VERSION
+
+This man page is (mostly) correct for version 1.9.16 of the Samba
+suite, plus some of the recent patches to it. These notes will
+necessarily lag behind development of the software, so it is possible
+that your version of the server has extensions or parameter semantics
+that differ from or are not covered by this man page. Please notify
+these to the address below for rectification.
+.SH SEE ALSO
+.BR samba (8), 
+.BR nmbd (8), 
+.BR smb.conf (5)
+.SH CREDITS
+The original Samba software and related utilities were created by 
+Andrew Tridgell (samba-bugs@samba.anu.edu.au). Andrew is also the Keeper
+of the Source for this project.
+
