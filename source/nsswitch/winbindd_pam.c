@@ -54,7 +54,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
- wrapper around retreiving the trsut account password 
+ wrapper around retrieving the trust account password
 *******************************************************************/
 
 static BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
