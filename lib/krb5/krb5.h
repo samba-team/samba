@@ -571,6 +571,9 @@ typedef struct _krb5_verify_init_creds_opt {
 extern const krb5_cc_ops krb5_fcc_ops;
 extern const krb5_cc_ops krb5_mcc_ops;
 
+extern const krb5_kt_ops krb5_fkt_ops;
+extern const krb5_kt_ops krb5_mkt_ops;
+
 #define KRB5_KPASSWD_SUCCESS	0
 #define KRB5_KPASSWD_MALFORMED	0
 #define KRB5_KPASSWD_HARDERROR	0
