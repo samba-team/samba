@@ -1164,10 +1164,24 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 		return False;
 	}
 
+#if 0
+	/*
+	 * ifdef'out by JFM on 11/29/2001.
+	 * this assertion is no longer valid
+	 * and I don't understand the goal 
+	 * and doing the same thing with the group mapping code
+	 * is hairy !
+	 *
+	 * We just have the RID, in which SID is it valid ?
+	 * our domain SID ? well known SID ? local SID ?
+	 */
+
 	if (*gid != pdb_group_rid_to_gid(pdb_get_group_rid(sampass))) {
 		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-gid based primary group RID. \n"));
+		DEBUG(0,("build_sam_pass: %d %d %d. \n", *gid, pdb_group_rid_to_gid(pdb_get_group_rid(sampass)), pdb_get_group_rid(sampass)));
 		return False;
 	}
+#endif
 
 	return True;
 }	
@@ -1207,8 +1221,19 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 	
 	pdb_set_user_rid(sam_pass, pdb_uid_to_user_rid (pwfile->pw_uid));
 
-	/* should check the group mapping here instead of static mappig. JFM */
-	pdb_set_group_rid(sam_pass, pdb_gid_to_group_rid(pwfile->pw_gid)); 
+	{
+		uint32 rid;
+		GROUP_MAP map;
+	
+		if (get_group_map_from_gid(pwfile->pw_gid, &map)) {
+			free_privilege(&map.priv_set);
+			sid_peek_rid(&map.sid, &rid);
+		}
+		else 
+			rid=pdb_gid_to_group_rid(pwfile->pw_gid);
+
+		pdb_set_group_rid(sam_pass, rid); 
+	}
 	
 	pdb_set_username (sam_pass, pw_buf->smb_name);
 	pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd);
@@ -1249,7 +1274,7 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 		
 	} else {
 		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
-		pdb_set_group_rid (sam_pass, DOMAIN_GROUP_RID_USERS); 
+		/*pdb_set_group_rid (sam_pass, DOMAIN_GROUP_RID_USERS); */
 	}
 
 	sam_logon_in_ssb = False;

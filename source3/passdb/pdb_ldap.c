@@ -577,13 +577,22 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, const SAM_ACCO
 	make_a_mod(mods, ldap_state, "description", pdb_get_acct_desc(sampass));
 	make_a_mod(mods, ldap_state, "userWorkstations", pdb_get_workstations(sampass));
 
-       if ( !sampass->user_rid)
+	if ( !sampass->user_rid)
                sampass->user_rid = pdb_uid_to_user_rid(pdb_get_uid(sampass));
 	slprintf(temp, sizeof(temp) - 1, "%i", sampass->user_rid);
 	make_a_mod(mods, ldap_state, "rid", temp);
 
-       if ( !sampass->group_rid)
-               sampass->group_rid = pdb_gid_to_group_rid(pdb_get_gid(sampass));
+	if ( !sampass->group_rid) {
+		GROUP_MAP map;
+	
+		if (get_group_map_from_gid(pdb_get_gid(sampass), &map)) {
+			free_privilege(&map.priv_set);
+			sid_peek_rid(&map.sid, &sampass->group_rid);
+		}
+		else 
+			sampass->group_rid = pdb_gid_to_group_rid(pdb_get_gid(sampass));
+	}
+
 	slprintf(temp, sizeof(temp) - 1, "%i", sampass->group_rid);
 	make_a_mod(mods, ldap_state, "primaryGroupID", temp);
 
