@@ -129,6 +129,7 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 
 	if (flags & STR_TERMINATE) {
 		int i;
+		src_len = strlen_w(src)*2+2;
 		for (i=0; i < src_len; i += 2) {
 			const smb_ucs2_t c = (smb_ucs2_t)SVAL(src, i);
 			if (c == (smb_ucs2_t)0 || (dest_len - i < 3))
@@ -136,7 +137,7 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 			dest += unicode_to_unix_char(dest, c);
 		}
 		*dest++ = 0;
-		len = strlen_w(src) + 2;
+		len = src_len;
 	} else {
 		int i;
 		if (dest_len*2 < src_len)

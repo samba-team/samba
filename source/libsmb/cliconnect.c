@@ -176,9 +176,6 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
 	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
 	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
 	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring),
-			 smb_buflen(cli->inbuf) - PTR_DIFF(p, smb_buf(cli->inbuf)),
-			 0);
 
 	fstrcpy(cli->user_name, "");
 

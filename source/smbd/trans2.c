@@ -1747,7 +1747,7 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
 	if (delete_on_close && !CAN_WRITE(fsp->conn)) {
 		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but write access denied on share.\n",
 				fsp->fsp_name ));
-				return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 	/*
 	 * Only allow delete on close for files/directories opened with delete intent.
@@ -1756,7 +1756,7 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
 	if (delete_on_close && !GET_DELETE_ACCESS_REQUESTED(fsp->share_mode)) {
 		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
 				fsp->fsp_name ));
-				return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if(fsp->is_directory) {
@@ -1784,7 +1784,7 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
 					delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
 
 		if (lock_share_entry_fsp(fsp) == False)
-				return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_ACCESS_DENIED;
 
 		if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
 			DEBUG(0,("set_delete_on_close_internal: failed to change delete on close flag for file %s\n",
