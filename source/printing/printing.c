@@ -188,7 +188,11 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 	pstrcpy(printdb_path, lock_path("printing/"));
 	pstrcat(printdb_path, printername);
 	pstrcat(printdb_path, ".tdb");
+
+	become_root();
 	p->tdb = tdb_open_log(printdb_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	unbecome_root();
+
 	if (!p->tdb) {
 		DEBUG(0,("get_print_db: Failed to open printer backend database %s.\n",
 					printdb_path ));
