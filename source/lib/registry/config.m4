@@ -39,3 +39,8 @@ SMB_BINARY(regshell, [REG], [BIN], lib/registry/tools/regshell.o,[],[CONFIG LIBB
 SMB_BINARY(regtree, [REG], [BIN], lib/registry/tools/regtree.o,[],[CONFIG LIBBASIC LIBCMDLINE REGISTRY])
 SMB_BINARY(gregedit, [REG], [BIN], lib/registry/tools/gregedit.o,[gtk],[CONFIG LIBBASIC LIBCMDLINE REGISTRY])
 
+if test x"$experimental" = xyes; then
+	SMB_LIBRARY_ENABLE(libwinregistry, YES)
+fi
+
+SMB_LIBRARY(libwinregistry, 0, 0, 1, , , REGISTRY) 
