@@ -33,9 +33,9 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 PRIVS privs[] = {
 	{SE_PRIV_NONE, "no_privs", "No privilege"},
 	{SE_PRIV_ADD_USERS, "add_users", "add users"},
-	{SE_PRIV_ADD_MACHINES, "add_computers", ""},
-	{SE_PRIV_PRINT_OPERATOR, "print_op", ""},
-	{SE_PRIV_ALL, "all_privs", ""}
+	{SE_PRIV_ADD_MACHINES, "add_computers", "add computers to domain"},
+	{SE_PRIV_PRINT_OPERATOR, "print_op", "printer operator"},
+	{SE_PRIV_ALL, "all_privs", "all privileges"}
 };
 /*
 PRIVS privs[] = {
@@ -156,7 +156,7 @@ BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 {
 	TDB_DATA kbuf, dbuf;
 	pstring key, buf;
-	fstring string_sid;
+	fstring string_sid="";
 	int len;
 	
 	sid_to_string(string_sid, &map->sid);
@@ -570,7 +570,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 		 * make one based on the unix information */
 		uint32 alias_rid;
 
-		sid_split_rid(&sid, &alias_rid);
+		sid_peek_rid(&sid, &alias_rid);
 		map->gid=pdb_user_rid_to_gid(alias_rid);
 
 		if ((grp=getgrgid(map->gid)) == NULL)
@@ -583,6 +583,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 		map->privilege=SE_PRIV_NONE;
 
+		sid_copy(&map->sid, &sid);
 	}
 
 	return True;
