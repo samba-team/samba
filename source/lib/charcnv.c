@@ -161,11 +161,21 @@ update_map("\370\375\371\205\372\243\373\373\374\201\375\354\376\356\377\372");
 /* Init for russian language (iso8859-5) */
 
 /* Added by Max Khon <max@iclub.nsu.ru> */
-
-static void init_iso8859_5(void)
+/* 1125 mapping added by Alexander Bokovoy <a.bokovoy@sam-solutions.net> */
+static void init_iso8859_5(int codepage)
 {
 	setupmaps();
 
+	if (codepage == 1125) {
+/* MSDOS Code Page 1125 -> ISO8859-5 */
+update_map ("\360\374\361\361\340\340\341\341\320\240\342\342\321\241\300\220");
+update_map ("\364\365\343\343\322\242\301\221\260\200\344\344\323\243\302\222");
+update_map ("\261\201\366\367\241\360\345\345\324\244\303\223\262\202\367\371");
+update_map ("\346\346\325\245\304\224\263\203\347\347\326\246\305\225\264\204");
+update_map ("\244\364\350\350\327\247\306\226\265\205\351\351\330\250\307\227");
+update_map ("\266\206\246\366\331\251\310\230\267\207\247\370\311\231\270\210");
+update_map ("\271\211");
+        } else {
 /* MSDOS Code Page 866 -> ISO8859-5 */
 update_map("\260\200\261\201\262\202\263\203\264\204\265\205\266\206\267\207");
 update_map("\270\210\271\211\272\212\273\213\274\214\275\215\276\216\277\217");
@@ -177,6 +187,7 @@ update_map("\340\340\341\341\342\342\343\343\344\344\345\345\346\346\347\347");
 update_map("\350\350\351\351\352\352\353\353\354\354\355\355\356\356\357\357");
 update_map("\241\360\361\361\244\362\364\363\247\364\367\365\256\366\376\367");
 update_map("\360\374\240\377");
+	}
 }
 
 /* Added by Antonios Kavarnos (Antonios.Kavarnos@softlab.ece.ntua.gr */
@@ -199,6 +210,20 @@ update_map("\332\364\333\365\334\341\335\342\336\343\337\345");
 update_map("\372\344\373\350\374\346\375\347\376\351");
 update_map("\266\352");
 update_map("\270\353\271\354\272\355\274\356\276\357\277\360");
+}
+
+/* Added by Yedidyah Bar-David (didi@tau.ac.il) */
+
+static void init_iso8859_8(void)
+{
+       setupmaps();
+
+/* MSDOS Code Page 862 -> ISO-8859-8 (Hebrew) */
+
+update_map("\340\200\341\201\342\202\343\203\344\204\345\205\346\206\347\207");
+update_map("\350\210\351\211\352\212\353\213\354\214\355\215\356\216\357\217");
+update_map("\360\220\361\221\362\222\363\223\364\224\365\225\366\226\367\227");
+update_map("\370\230\371\231\372\232");
 }
 
 /* Added by Deniz Akkus (akkus@alum.mit.edu) */
@@ -272,12 +297,12 @@ update_map("\370\234\371\233\372\207\373\230\374\235\375\231\376\227\377\232");
 /* Init for Bulgarian, Belarussian, and variants of Russian and Ukrainian locales */
 /* Patch from Alexander Bokovoy. */
 
-static void init_1251(void)
+static void init_1251(int codepage)
 {
 	setupmaps();
 
+	if (codepage == 866) {
 /* MSDOS Code Page 866 -> 1251 */
-
 update_map ("\240\377\241\366\242\367\244\375");
 update_map ("\250\360\252\362\257\364");
 update_map ("\260\370\267\372");
@@ -290,8 +315,57 @@ update_map ("\340\240\341\241\342\242\343\243\344\244\345\245\346\246\347\247");
 update_map ("\350\250\351\251\352\252\353\253\354\254\355\255\356\256\357\257");
 update_map ("\360\340\361\341\362\342\363\343\364\344\365\345\366\346\367\347");
 update_map ("\370\350\371\351\372\352\373\353\374\354\375\355\376\356\377\357");
+	} else {
+/* MSDOS Code Page 1125 (Ukranian) -> 1251 */
+update_map ("\271\374\270\361\360\340\361\341\340\240\362\342\341\241\320\220");
+update_map ("\272\365\363\343\342\242\321\221\300\200\364\344\343\243\322\222");
+update_map ("\301\201\263\367\250\360\365\345\344\244\323\223\302\202\277\371");
+update_map ("\366\346\345\245\324\224\303\203\367\347\346\246\325\225\304\204");
+update_map ("\252\364\370\350\347\247\326\226\305\205\371\351\350\250\327\227");
+update_map ("\306\206\262\366\351\251\330\230\307\207\257\370\331\231\310\210");
+update_map ("\311\211\245\362\264\363");
+	}
 }
 
+
+/* Init for ukrainian language (koi8-u)    */
+/* Added by Oleg Deribas <older@iname.com> */
+
+static void init_koi8_u(int codepage)
+{
+	setupmaps();
+
+    if (codepage == 866) {
+        /* MSDOS Code Page 866 -> KOI8-U */
+        update_map("\x80\xC4\x81\xB3\x82\xDA\x83\xBF\x84\xC0\x85\xD9\x86\xC3\x87\xB4\x88\xC2");
+        update_map("\x89\xC1\x8A\xC5\x8B\xDF\x8C\xDC\x8D\xDB\x8E\xDD\x8F\xDE\x90\xB0\x91\xB1");
+        update_map("\x92\xB2\x94\xFE\x95\xF9\x96\xFB\x9A\xFF\x9C\xF8\x9E\xFA\xA0\xCD\xA1\xBA");
+        update_map("\xA2\xD5\xA3\xF1\xA4\xF3\xA5\xC9\xA7\xF5\xA8\xBB\xA9\xD4\xAA\xD3\xAB\xC8");
+        update_map("\xAC\xBE\xAE\xBC\xAF\xC6\xB0\xC7\xB1\xCC\xB2\xB5\xB3\xF0\xB4\xF2\xB5\xB9");
+        update_map("\xB7\xF4\xB8\xCB\xB9\xCF\xBA\xD0\xBB\xCA\xBC\xD8\xBE\xCE\xC0\xEE\xC1\xA0");
+        update_map("\xC2\xA1\xC3\xE6\xC4\xA4\xC5\xA5\xC6\xE4\xC7\xA3\xC8\xE5\xC9\xA8\xCA\xA9");
+        update_map("\xCB\xAA\xCC\xAB\xCD\xAC\xCE\xAD\xCF\xAE\xD0\xAF\xD1\xEF\xD2\xE0\xD3\xE1");
+        update_map("\xD4\xE2\xD5\xE3\xD6\xA6\xD7\xA2\xD8\xEC\xD9\xEB\xDA\xA7\xDB\xE8\xDC\xED");
+        update_map("\xDD\xE9\xDE\xE7\xDF\xEA\xE0\x9E\xE1\x80\xE2\x81\xE3\x96\xE4\x84\xE5\x85");
+        update_map("\xE6\x94\xE7\x83\xE8\x95\xE9\x88\xEA\x89\xEB\x8A\xEC\x8B\xED\x8C\xEE\x8D");
+        update_map("\xEF\x8E\xF0\x8F\xF1\x9F\xF2\x90\xF3\x91\xF4\x92\xF5\x93\xF6\x86\xF7\x82");
+        update_map("\xF8\x9C\xF9\x9B\xFA\x87\xFB\x98\xFC\x9D\xFD\x99\xFE\x97\xFF\x9A");
+    } else {
+        /* MSDOS Code Page 1125 -> KOI8-U */
+        update_map("\x80\xC4\x81\xB3\x82\xDA\x83\xBF\x84\xC0\x85\xD9\x86\xC3\x87\xB4\x88\xC2\x89\xC1");
+        update_map("\x8A\xC5\x8B\xDF\x8C\xDC\x8D\xDB\x8E\xDD\x8F\xDE\x90\xB0\x91\xB1\x92\xB2\x94\xFE");
+        update_map("\x96\xFB\x9A\xFF\x9E\xFA\xA0\xCD\xA1\xBA\xA2\xD5\xA3\xF1\xA4\xF5\xA5\xC9\xA6\xF7");
+        update_map("\xA7\xF9\xA8\xBB\xA9\xD4\xAA\xD3\xAB\xC8\xAC\xBE\xAD\xF3\xAE\xBC\xAF\xC6\xB0\xC7");
+        update_map("\xB1\xCC\xB2\xB5\xB3\xF0\xB4\xF4\xB5\xB9\xB6\xF6\xB7\xF8\xB8\xCB\xB9\xCF\xBA\xD0");
+        update_map("\xBB\xCA\xBC\xD8\xBD\xF2\xBE\xCE\xC0\xEE\xC1\xA0\xC2\xA1\xC3\xE6\xC4\xA4\xC5\xA5");
+        update_map("\xC6\xE4\xC7\xA3\xC8\xE5\xC9\xA8\xCA\xA9\xCB\xAA\xCC\xAB\xCD\xAC\xCE\xAD\xCF\xAE");
+        update_map("\xD0\xAF\xD1\xEF\xD2\xE0\xD3\xE1\xD4\xE2\xD5\xE3\xD6\xA6\xD7\xA2\xD8\xEC\xD9\xEB");
+        update_map("\xDA\xA7\xDB\xE8\xDC\xED\xDD\xE9\xDE\xE7\xDF\xEA\xE0\x9E\xE1\x80\xE2\x81\xE3\x96");
+        update_map("\xE4\x84\xE5\x85\xE6\x94\xE7\x83\xE8\x95\xE9\x88\xEA\x89\xEB\x8A\xEC\x8B\xED\x8C");
+        update_map("\xEE\x8D\xEF\x8E\xF0\x8F\xF1\x9F\xF2\x90\xF3\x91\xF4\x92\xF5\x93\xF6\x86\xF7\x82");
+        update_map("\xF8\x9C\xF9\x9B\xFA\x87\xFB\x98\xFC\x9D\xFD\x99\xFE\x97\xFF\x9A");
+    }
+}
 
 /* Init for ROMAN-8 (HP-UX) */
 
@@ -385,7 +459,9 @@ void interpret_character_set(char *str, int codepage)
     } else if (strequal (str, "iso8859-2")) {
         init_iso8859_2();
     } else if (strequal (str, "iso8859-5")) {
-        init_iso8859_5();
+        init_iso8859_5(codepage);
+    } else if (strequal (str, "iso8859-8")) {
+        init_iso8859_8();
     } else if (strequal (str, "iso8859-7")) {
         init_iso8859_7();
     } else if (strequal (str, "iso8859-9")) {
@@ -396,8 +472,12 @@ void interpret_character_set(char *str, int codepage)
         init_iso8859_15(codepage);
     } else if (strequal (str, "koi8-r")) {
         init_koi8_r();
+    } else if (strequal (str, "koi8-u")) {
+        init_koi8_u(codepage);
+    } else if (strequal (str, "1251u")) {
+        init_1251(1125);
     } else if (strequal (str, "1251")) {
-        init_1251();
+        init_1251(866);
     } else if (strequal (str, "roman8")) {
         init_roman8();
     } else {
