@@ -704,13 +704,6 @@ backends of the same type. For example, to use two different tdbsam databases:
                 more about configuration and administration of an OpenLDAP server.
 		</para>
 
-		<note>
-		<para>
-		This section is outdated for Samba-3 schema. Samba-3 introduces a new schema
-		that has not been documented at the time of this publication.
-		</para>
-		</note>
-
 		<para>
 		This document describes how to use an LDAP directory for storing Samba user
 		account information traditionally stored in the smbpasswd(5) file.  It is
