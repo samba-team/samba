@@ -1,5 +1,5 @@
 !==
-!== HINTS.txt for Samba release 1.9.18alpha11 03 Nov 1997
+!== HINTS.txt for Samba release 1.9.18alpha12 28 Nov 1997
 !==
 Contributor:	Many
 Updated:	Not for a long time!
