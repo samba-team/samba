@@ -89,6 +89,8 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	gid_t gid;
 	uid_t uid;
 	char group_c;
+	BOOL must_free_token = False;
+	NT_USER_TOKEN *token = NULL;
 
 	if (!conn) {
 		DEBUG(2,("Connection not open\n"));
@@ -125,6 +127,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		gid = conn->gid;
 		current_user.groups = conn->groups;
 		current_user.ngroups = conn->ngroups;
+		token = conn->nt_user_token;
 	} else {
 		if (!vuser) {
 			DEBUG(2,("Invalid vuid used %d\n",vuid));
@@ -134,6 +137,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		gid = vuser->gid;
 		current_user.ngroups = vuser->n_groups;
 		current_user.groups  = vuser->groups;
+		token = vuser->nt_user_token;
 	}
 
 	/*
@@ -162,13 +166,27 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		} else {
 			gid = conn->gid;
 		}
+
+		/*
+		 * We've changed the group list in the token - we must
+		 * re-create it.
+		 */
+
+		token = create_nt_token(uid, gid, current_user.ngroups, current_user.groups);
+		must_free_token = True;
 	}
 	
-	set_sec_ctx(uid, gid, current_user.ngroups, current_user.groups, current_user.nt_user_token);
+	set_sec_ctx(uid, gid, current_user.ngroups, current_user.groups, token);
+
+	/*
+	 * Free the new token (as set_sec_ctx copies it).
+	 */
+
+	if (must_free_token)
+		delete_nt_token(&token);
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
-	current_user.nt_user_token = conn->nt_user_token;
 
 	DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
 		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));

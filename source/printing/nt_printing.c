@@ -417,6 +417,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		unbecome_root();
 		return False;
 	}
+	unbecome_root();
 
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
@@ -424,13 +425,18 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	if (conn == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));
-		unbecome_root();
 		return False;
 	}
 
+	/*
+	 * Save who we are - we are temporarily becoming the connection user.
+	 */
+
+	push_sec_ctx();
+
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("move_driver_to_download_area: Can't become user %s\n", user_name ));
-		unbecome_root();
+		pop_sec_ctx();
 		return False;
 	}
 
@@ -461,62 +467,62 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
 				old_name, new_name ));
 		close_cnum(conn, user->vuid);
-		unbecome_root();
+		pop_sec_ctx();
 		return False;
 	}
 
 	if (!strequal(driver->datafile, driver->driverpath)) {
-	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->datafile);	
-	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->datafile);	
+		slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->datafile);	
+		slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->datafile);	
 		if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
-		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
-				old_name, new_name ));
-		close_cnum(conn, user->vuid);
-		unbecome_root();
-		return False;
-	}
+			DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
+					old_name, new_name ));
+			close_cnum(conn, user->vuid);
+			pop_sec_ctx();
+			return False;
+		}
 	}
 
 	if (!strequal(driver->configfile, driver->driverpath) &&
 		!strequal(driver->configfile, driver->datafile)) {
-	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->configfile);	
-	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->configfile);	
+		slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->configfile);	
+		slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->configfile);	
 		if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
-		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
-			old_name, new_name ));
-		close_cnum(conn, user->vuid);
-		unbecome_root();
-		return False;
-	}
+			DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
+				old_name, new_name ));
+			close_cnum(conn, user->vuid);
+			pop_sec_ctx();
+			return False;
+		}
 	}
 
 	if (!strequal(driver->helpfile, driver->driverpath) &&
-		!strequal(driver->helpfile, driver->datafile) &&
-		!strequal(driver->helpfile, driver->configfile)) {
-	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->helpfile);	
-	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->helpfile);	
+			!strequal(driver->helpfile, driver->datafile) &&
+			!strequal(driver->helpfile, driver->configfile)) {
+		slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->helpfile);	
+		slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->helpfile);	
 		if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
-		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
-			old_name, new_name ));
-		close_cnum(conn, user->vuid);
-		unbecome_root();
-		return False;
-	}
+			DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
+				old_name, new_name ));
+			close_cnum(conn, user->vuid);
+			pop_sec_ctx();
+			return False;
+		}
 	}
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
 			if (!strequal(driver->dependentfiles[i], driver->driverpath) &&
-				!strequal(driver->dependentfiles[i], driver->datafile) &&
-				!strequal(driver->dependentfiles[i], driver->configfile) &&
-				!strequal(driver->dependentfiles[i], driver->helpfile)) {
-			slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->dependentfiles[i]);	
-			slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->dependentfiles[i]);	
+					!strequal(driver->dependentfiles[i], driver->datafile) &&
+					!strequal(driver->dependentfiles[i], driver->configfile) &&
+					!strequal(driver->dependentfiles[i], driver->helpfile)) {
+				slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->dependentfiles[i]);	
+				slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->dependentfiles[i]);	
 				if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
 						old_name, new_name ));
 					close_cnum(conn, user->vuid);
-					unbecome_root();
+					pop_sec_ctx();
 					return False;
 				}
 			}
@@ -524,7 +530,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	}
 
 	close_cnum(conn, user->vuid);
-	unbecome_root();
+	pop_sec_ctx();
 
 	return True;
 }
@@ -1946,7 +1952,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 static SEC_DESC_BUF *construct_default_printer_sdb(void)
 {
-	SEC_ACE ace;
+	SEC_ACE ace[2];
 	SEC_ACCESS sa;
 	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
@@ -1958,7 +1964,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	/* Create an ACE where Everyone is allowed to print */
 
 	init_sec_access(&sa, PRINTER_ACE_PRINT);
-	init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
 
@@ -1969,12 +1975,21 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
 
-		/* Backup plan - make printer owned by world.  This should
+		/* Backup plan - make printer owned by admins or root.  This should
 		   emulate a lanman printer as security settings can't be
 		   changed. */
 
-		sid_copy(&owner_sid, &global_sid_World);
+		if (!lookup_name( "Printer Administrators", &owner_sid, &name_type) &&
+			!lookup_name( "Administrators", &owner_sid, &name_type) &&
+			!lookup_name( "Administrator", &owner_sid, &name_type) &&
+			!lookup_name("root", &owner_sid, &name_type)) {
+						sid_copy(&owner_sid, &global_sid_World);
+		}
 	}
+
+	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+	init_sec_ace(&ace[1], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
 	/* The ACL revision number in rpc_secdesc.h differs from the one
 	   created by NT when setting ACE entries in printer
@@ -1983,7 +1998,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 
 #define NT4_ACL_REVISION 0x2
 
-	if ((psa = make_sec_acl(NT4_ACL_REVISION, 1, &ace)) != NULL) {
+	if ((psa = make_sec_acl(NT4_ACL_REVISION, 2, ace)) != NULL) {
 		psd = make_sec_desc(SEC_DESC_REVISION, 
 				    SEC_DESC_SELF_RELATIVE | 
 				    SEC_DESC_DACL_PRESENT,

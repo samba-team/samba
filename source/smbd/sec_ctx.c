@@ -221,14 +221,16 @@ BOOL push_sec_ctx(void)
 
 	/* Check we don't overflow our stack */
 
-	if (sec_ctx_stack_ndx == (MAX_SEC_CTX_DEPTH)) {
+	if (sec_ctx_stack_ndx == MAX_SEC_CTX_DEPTH) {
 		DEBUG(0, ("Security context stack overflow!\n"));
-		return False;
+		smb_panic("Security context stack overflow!\n");
 	}
 
 	/* Store previous user context */
 
 	sec_ctx_stack_ndx++;
+
+	DEBUG(3, ("push_sec_ctx() : sec_ctx_stack_ndx = %d\n", sec_ctx_stack_ndx ));
 
 	ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
 
@@ -264,7 +266,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 
 	/* Set the security context */
 
-	DEBUG(3, ("setting sec ctx (%d, %d)\n", uid, gid));
+	DEBUG(3, ("setting sec ctx (%d, %d) - sec_ctx_stack_ndx = %d\n", uid, gid, sec_ctx_stack_ndx));
 
 	gain_root();
 
@@ -275,6 +277,11 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	ctx_p->ngroups = ngroups;
 
 	safe_free(ctx_p->groups);
+#if 1 /* JRATEST */
+	if (token && (token == ctx_p->token))
+		smb_panic("DUPLICATE_TOKEN");
+#endif
+
 	delete_nt_token(&ctx_p->token);
 	
 	ctx_p->groups = memdup(groups, sizeof(gid_t) * ngroups);
@@ -318,7 +325,7 @@ BOOL pop_sec_ctx(void)
 
 	if (sec_ctx_stack_ndx == 0) {
 		DEBUG(0, ("Security context stack underflow!\n"));
-		return False;
+		smb_panic("Security context stack underflow!\n");
 	}
 
 	ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
@@ -355,7 +362,7 @@ BOOL pop_sec_ctx(void)
 	current_user.groups = prev_ctx_p->groups;
 	current_user.nt_user_token = prev_ctx_p->token;
 
-	DEBUG(3, ("popped off to sec ctx (%d, %d)\n", geteuid(), getegid()));
+	DEBUG(3, ("pop_sec_ctx (%d, %d) - sec_ctx_stack_ndx = %d\n", geteuid(), getegid(), sec_ctx_stack_ndx));
 
 	return True;
 }
