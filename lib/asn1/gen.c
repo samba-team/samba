@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -142,10 +142,8 @@ define_asn1 (int level, Type *t)
 	break;
     case TBitString: {
 	Member *m;
-	Type i;
 	int tag = -1;
 
-	i.type = TInteger;
 	space(level);
 	fprintf (headerfile, "BIT STRING {\n");
 	for (m = t->members; m && m->val != tag; m = m->next) {
