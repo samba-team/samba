@@ -561,7 +561,8 @@ static BOOL api_spoolss_setprinter(prs_struct *data, prs_struct *rdata)
 	}
 
 	r_u.status = _spoolss_setprinter(&q_u.handle, q_u.level, &q_u.info,
-					 q_u.devmode_ctr, q_u.command);
+					 q_u.devmode_ctr, &q_u.secdesc_ctr,
+					 q_u.command);
 
 	/* now, we can free the memory */
 	if (q_u.info.level == 2 && q_u.info.info_ptr != 0)
