@@ -2933,7 +2933,7 @@ link(bf("security=domain"))(securityequaldomain)) parameter) then
 periodically a running url(bf(smbd))(smbd.8.html) process will try and
 change the bf(MACHINE ACCOUNT PASWORD) stored in the file called
 tt(<Domain>.<Machine>.mac) where tt(<Domain>) is the name of the
-Domain we are a member of and tt<Machine> is the primary
+Domain we are a member of and tt(<Machine>) is the primary
 link(bf("NetBIOS name"))(netbiosname) of the machine
 url(bf(smbd))(smbd.8.html) is running on. This parameter specifies how
 often this password will be changed, in seconds. The default is one
