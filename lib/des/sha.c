@@ -208,7 +208,7 @@ calc (struct sha *m, u_int32_t *in)
  * From `Performance analysis of MD5' by Joseph D. Touch <touch@isi.edu>
  */
 
-#if !defined(WORDS_BIGENDIAN)
+#if !defined(WORDS_BIGENDIAN) || defined(_CRAY)
 static inline u_int32_t
 swap_u_int32_t (u_int32_t t)
 {
