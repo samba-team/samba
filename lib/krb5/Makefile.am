@@ -7,6 +7,7 @@ INCLUDES = -I$(top_builddir)/include
 lib_LIBRARIES = libkrb5.a
 
 libkrb5_a_SOURCES = \
+	addr_families.c \
 	address.c \
 	asn1_glue.c \
 	auth_context.c \
