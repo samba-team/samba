@@ -1,0 +1,166 @@
+#!/usr/bin/env python
+
+from gtk import *
+import sys
+import tdb
+import string
+import re
+
+#
+# The gdbtool user interface.  The design here is to keep all the gtk stuff
+# separate from the tdb stuff so all the user interface magic is stored
+# here.
+#
+
+class gtdbtool:
+
+    # Initialise the user interface.  A dictionary argument is passed
+    # in which is the dictionary to display keys and values on the left
+    # hand and right hand side of the user interface respectively."""
+
+    def __init__(self, dict):        
+        self.dict = dict
+
+    # Create and configure user interface widgets.  A string argument is
+    # used to set the window title.
+
+    def build_ui(self, title):
+        win = GtkWindow()
+        win.set_title(title)
+
+        win.connect("destroy", mainquit)
+
+        hpaned = GtkHPaned()
+        win.add(hpaned)
+        hpaned.set_border_width(5)
+        hpaned.show()
+
+        vbox = GtkVBox()
+        hpaned.add1(vbox)
+        vbox.show()
+
+        scrolled_win = GtkScrolledWindow()
+        scrolled_win.set_policy(POLICY_AUTOMATIC, POLICY_AUTOMATIC)
+        vbox.pack_start(scrolled_win)
+        scrolled_win.set_usize(350,400)
+        scrolled_win.show()
+
+        hbox = GtkHBox()
+        vbox.pack_end(hbox)
+        hbox.show()
+
+        label = GtkLabel("Filter:")
+        hbox.pack_start(label, expand = 0)
+        label.show()
+
+        self.entry = GtkEntry()
+        hbox.pack_end(self.entry)
+        self.entry.show()
+
+        self.entry.connect("activate", self.filter_activated)
+        
+        self.list = GtkList()
+        self.list.set_selection_mode(SELECTION_MULTIPLE)
+        self.list.set_selection_mode(SELECTION_BROWSE)
+        scrolled_win.add_with_viewport(self.list)
+        self.list.show()
+
+        self.list.connect("select_child", self.key_selected)
+
+        scrolled_win = GtkScrolledWindow()
+        scrolled_win.set_policy(POLICY_AUTOMATIC, POLICY_AUTOMATIC)
+        hpaned.add2(scrolled_win)
+        scrolled_win.set_usize(350,400)
+        scrolled_win.show()
+        
+        self.text = GtkText()
+        self.text.set_editable(FALSE)
+        scrolled_win.add_with_viewport(self.text)
+        self.text.show()
+
+        self.text.connect("event", self.event_handler)
+
+        self.menu = GtkMenu()
+        self.menu.show()
+
+        self.filter_regex = ""
+
+        self.update_keylist()
+
+        win.show()
+
+    # Add a key to the left hand side of the user interface
+
+    def add_key(self, key):
+        display_key = self.display_key(key)
+        list_item = GtkListItem(display_key)
+        list_item.set_data("raw_key", key) # Store raw key in item data
+        self.list.add(list_item)
+        list_item.show()
+
+    # Event handler registered by build_ui()
+
+    def event_handler(self, event, menu):
+        return FALSE
+
+    # Set the text to appear in the right hand side of the user interface 
+
+    def set_value_text(self, text):
+        self.text.delete_text(0, self.text.get_length())
+        self.text.insert_defaults(text)        
+
+    # This function is called when a key is selected in the left hand side
+    # of the user interface.
+
+    def key_selected(self, list, list_item):
+        key = list_item.children()[0].get()
+        self.set_value_text(t[list_item.get_data("raw_key")])
+
+    # Refresh the key list by removing all items and re-inserting them.
+    # Items are only inserted if they pass through the filter regexp.
+
+    def update_keylist(self):
+        self.list.remove_items(self.list.children())
+        self.set_value_text("")
+        for k in self.dict.keys():
+            if re.match(self.filter_regex, k):
+                self.add_key(k)
+
+    # Invoked when the user hits return in the filter text entry widget.
+
+    def filter_activated(self, entry):
+        self.filter_regex = entry.get_text()
+        self.update_keylist()
+
+    #
+    # Public methods
+    #
+
+    # Set a function that translates between how keys look in the user
+    # interface (displayed keys) versus how they are represented in the tdb
+    # (raw keys).
+
+    def set_display_key_fn(self, fn):
+        self.display_key = fn
+
+# Open handle on tdb
+
+t = tdb.open(sys.argv[1])
+
+# Create user interface
+
+w = gtdbtool(t)
+
+# Set up a key display function.  A lot of keys have \x00 appended to the
+# end which mucks up gtk.
+
+def display_key_x00(key):
+    return string.replace(key, "\x00", "")
+
+w.set_display_key_fn(display_key_x00)
+    
+# Show user interface
+
+w.build_ui("gtdbtool: %s" % sys.argv[1])
+
+mainloop()
