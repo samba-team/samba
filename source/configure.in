@@ -2512,24 +2512,6 @@ if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
 fi
 fi
 
-# New experimental SAM system
-
-AC_MSG_CHECKING([whether to build the new (experimental) SAM database])
-AC_ARG_WITH(sam,
-[  --with-sam              Build new (experimental) SAM database (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_SAM,1,[Whether to build the new (experimental) SAM database])
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-
 ########################################################################################
 ##
 ## TESTS FOR SAM BACKENDS.  KEEP THESE GROUPED TOGETHER
