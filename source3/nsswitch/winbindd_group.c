@@ -1246,7 +1246,7 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 	 * domain also asks for this info. -- vl */
 
 	if (!IS_DC) {
-		uint32_t *alias_rids = NULL;
+		uint32 *alias_rids = NULL;
 		int num_aliases;
 
 		/* We need to include the user SID to expand */
