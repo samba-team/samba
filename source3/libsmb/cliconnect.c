@@ -392,6 +392,10 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principle, c
 
 	if (!negTokenTarg.data) return False;
 
+#if 0
+	file_save("negTokenTarg.dat", negTokenTarg.data, negTokenTarg.length);
+#endif
+
 	blob2 = cli_session_setup_blob(cli, negTokenTarg);
 
 	/* we don't need this blob for kerberos */

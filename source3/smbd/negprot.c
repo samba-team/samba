@@ -164,10 +164,7 @@ static int negprot_spnego(char *p, uint8 cryptkey[8])
 	extern pstring global_myname;
 	uint8 guid[16];
 	const char *OIDs[] = {OID_NTLMSSP, 
-#if 0
-			      /* not till we add kerberos in the server */
 			      OID_KERBEROS5_OLD,
-#endif
 			      NULL};
 	char *principle;
 	int len;

@@ -22,8 +22,6 @@
 #include "includes.h"
 
 #if HAVE_KRB5
-#include <krb5.h>
-
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
@@ -105,7 +103,7 @@ DATA_BLOB krb5_get_ticket(char *service, char *realm)
 
 	if ((retval = krb5_mk_req2(context, 
 				   &auth_context, 
-				   AP_OPTS_MUTUAL_REQUIRED, 
+				   0, 
 				   service, realm,
 				   ccdef, &packet))) {
 		DEBUG(1,("krb5_mk_req2 failed\n"));
