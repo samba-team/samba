@@ -394,6 +394,13 @@ size_t convert_string(charset_t from, charset_t to,
 #endif
 			}
 		}
+		if (!dlen) {
+			/* Even if we fast path we should note if we ran out of room. */
+			if (((slen != (size_t)-1) && slen) ||
+					((slen == (size_t)-1) && lastp)) {
+				errno = E2BIG;
+			}
+		}
 		return retval;
 	} else if (from == CH_UCS2 && to != CH_UCS2) {
 		const unsigned char *p = (const unsigned char *)src;
@@ -423,6 +430,13 @@ size_t convert_string(charset_t from, charset_t to,
 #endif
 			}
 		}
+		if (!dlen) {
+			/* Even if we fast path we should note if we ran out of room. */
+			if (((slen != (size_t)-1) && slen) ||
+					((slen == (size_t)-1) && lastp)) {
+				errno = E2BIG;
+			}
+		}
 		return retval;
 	} else if (from != CH_UCS2 && to == CH_UCS2) {
 		const unsigned char *p = (const unsigned char *)src;
@@ -450,6 +464,13 @@ size_t convert_string(charset_t from, charset_t to,
 #else
 				return retval + convert_string_internal(from, to, p, slen, q, dlen, allow_bad_conv);
 #endif
+			}
+		}
+		if (!dlen) {
+			/* Even if we fast path we should note if we ran out of room. */
+			if (((slen != (size_t)-1) && slen) ||
+					((slen == (size_t)-1) && lastp)) {
+				errno = E2BIG;
 			}
 		}
 		return retval;
