@@ -770,6 +770,8 @@ extern int errno;
 
 #include "nsswitch/winbind_client.h"
 
+#include "genparser.h"
+
 /*
  * Type for wide character dirent structure.
  * Only d_name is defined by POSIX.
