@@ -23,7 +23,7 @@
 		unistr *domain;
 		uint32 ver_major;
 		uint32 ver_minor;
-		unistr *unknown;
+		unistr *lan_root;
 	} wks_Info101;
 
 	typedef struct {
@@ -32,8 +32,8 @@
 		unistr *domain;
 		uint32 ver_major;
 		uint32 ver_minor;
-		unistr *unknown;
-		uint32 unknown2;
+		unistr *lan_root;
+		uint32 logged_on_users;
 	} wks_Info102;
 
 	typedef union {
@@ -42,10 +42,161 @@
 		case (102) wks_Info102 *info102;
 	} wks_Info;
 
-	NTSTATUS wks_QueryInfo(
+	WERROR wks_QueryInfo(
 		[in]   unistr *server_name,
 		[in]   uint32 level,
 		[out,switch_is(level)]  wks_Info info
 		);
 
+
+	/******************/
+	/* Function: 0x01 */
+	WERROR wks_SetInfo();
+
+	/*****************************/
+	/* Function        0x02      */
+	WERROR WKS_NETRWKSTAUSERENUM ();
+
+	/*****************************/
+	/* Function        0x03      */
+	WERROR WKS_NETRWKSTAUSERGETINFO ();
+
+	/*****************************/
+	/* Function        0x04      */
+	WERROR WKS_NETRWKSTAUSERSETINFO ();
+
+
+	/*****************************/
+	/* Function        0x05      */
+
+	typedef struct {
+		uint32 quality_of_service;
+		uint32 vc_count;
+		unistr *name;
+		unistr *address;
+		uint32 wan_link;
+	} wks_TransportInfo0;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] wks_TransportInfo0 *transports;
+	} wks_TransportInfoArray;
+
+	typedef union {
+		case(0) wks_TransportInfoArray *array;
+	} wks_TransportUnion;
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] wks_TransportUnion u;
+	} wks_TransportInfo;
+
+	WERROR wks_TransportEnum (
+		[in]         unistr *server_name,
+		[in,out,ref] wks_TransportInfo *info,
+		[in]         uint32 max_buffer,
+		[out]        uint32 unknown,
+		[in,out]     uint32 *resume_handle
+		);
+
+
+	/*****************************/
+	/* Function        0x06      */
+	WERROR WKS_NETRWKSTATRANSPORTADD ();
+
+	/*****************************/
+	/* Function        0x07      */
+	WERROR WKS_NETRWKSTATRANSPORTDEL ();
+
+	/*****************************/
+	/* Function        0x08      */
+	WERROR WKS_NETRUSEADD ();
+
+	/*****************************/
+	/* Function        0x09      */
+	WERROR WKS_NETRUSEGETINFO ();
+
+	/*****************************/
+	/* Function        0x0a      */
+	WERROR WKS_NETRUSEDEL ();
+
+	/*****************************/
+	/* Function        0x0b      */
+	WERROR WKS_NETRUSEENUM ();
+
+	/*****************************/
+	/* Function        0x0c      */
+	WERROR WKS_NETRMESSAGEBUFFERSEND ();
+
+	/*****************************/
+	/* Function        0x0d      */
+	WERROR WKS_NETRWORKSTATIONSTATISTICSGET ();
+
+	/*****************************/
+	/* Function        0x0e      */
+	WERROR WKS_NETRLOGONDOMAINNAMEADD ();
+
+	/*****************************/
+	/* Function        0x0f      */
+	WERROR WKS_NETRLOGONDOMAINNAMEDEL ();
+
+	/*****************************/
+	/* Function        0x10      */
+	WERROR WKS_NETRJOINDOMAIN ();
+
+	/*****************************/
+	/* Function        0x11      */
+	WERROR WKS_NETRUNJOINDOMAIN ();
+
+	/*****************************/
+	/* Function        0x12      */
+	WERROR WKS_NETRRENAMEMACHINEINDOMAIN ();
+
+	/*****************************/
+	/* Function        0x13      */
+	WERROR WKS_NETRVALIDATENAME ();
+
+	/*****************************/
+	/* Function        0x14      */
+	WERROR WKS_NETRGETJOININFORMATION ();
+
+	/*****************************/
+	/* Function        0x15      */
+	WERROR WKS_NETRGETJOINABLEOUS ();
+
+	/*****************************/
+	/* Function        0x16      */
+	WERROR WKS_NETRJOINDOMAIN2 ();
+
+	/*****************************/
+	/* Function        0x17      */
+	WERROR WKS_NETRUNJOINDOMAIN2 ();
+
+	/*****************************/
+	/* Function        0x18      */
+	WERROR WKS_NETRRENAMEMACHINEINDOMAIN2 ();
+
+	/*****************************/
+	/* Function        0x19      */
+	WERROR WKS_NETRVALIDATENAME2 ();
+
+	/*****************************/
+	/* Function        0x1a      */
+	WERROR WKS_NETRGETJOINABLEOUS2 ();
+
+	/*****************************/
+	/* Function        0x1b      */
+	WERROR WKS_NETRADDALTERNATECOMPUTERNAME ();
+
+	/*****************************/
+	/* Function        0x1c      */
+	WERROR WKS_NETRREMOVEALTERNATECOMPUTERNAME ();
+
+	/*****************************/
+	/* Function        0x1d      */
+	WERROR WKS_NETRSETPRIMARYCOMPUTERNAME ();
+
+	/*****************************/
+	/* Function        0x1e      */
+	WERROR WKS_NETRENUMERATECOMPUTERNAMES ();
 }
