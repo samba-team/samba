@@ -1,3 +1,7 @@
+2001-08-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* gssapi_locl.h: fix prototype for gssapi_krb5_init
+
 2001-08-13  Johan Danielsson  <joda@pdc.kth.se>
 
 	* accept_sec_context.c (gsskrb5_register_acceptor_identity): init
