@@ -6,6 +6,8 @@
 # script for build solaris Samba package
 #
 
+INSTALL_BASE=/opt/samba
+
 SBINPROS="smbd nmbd winbindd swat"
 BINPROGS="findsmb nmblookup pdbedit rpcclient smbclient smbcquotas smbspool smbtar tdbbackup testparm wbinfo net ntlm_auth profiles smbcacls smbcontrol smbpasswd smbstatus smbtree tdbdump testprns"
 MSGFILES="de.msg en.msg fr.msg it.msg ja.msg nl.msg pl.msg tr.msg"
@@ -48,7 +50,7 @@ add_dynamic_entries()
 
 	echo "#\n# nss_winbind.so\n#"
 	echo f none /usr/lib/nss_winbind.so.1=lib/libnss_winbind.so 0755 root other
-	echo s none /lib/nss_winbind.so.1=/usr/lib/nss_winbind.so.1 0755 root other
+	echo s none /lib/nss_winbind.so.1=../usr/lib/nss_winbind.so.1 0755 root other
 	if [ -f lib/pam_winbind.so ]; then
 		echo f none /usr/lib/security/pam_winbind.so=lib/pam_winbind.so 0755 root other
 	fi
@@ -88,7 +90,7 @@ add_dynamic_entries()
 	done
 
 	# Create entries for docs for the beginner
-	echo s none docs/using_samba=swat/help/using_samba
+	echo s none docs/using_samba=$BASEDIR/swat/help/using_samba
 	for file in docs/*pdf; do
 		echo f none $file 0644 root other
 	done
@@ -112,7 +114,7 @@ echo "Assuming Samba distribution is rooted at $DISTR_BASE.."
 cd $DISTR_BASE/source
 
 if [ "x$1" != "xnobuild" ]; then
-	./configure --prefix=/opt/samba \
+	./configure --prefix=$INSTALL_DIR \
 		--with-acl-support \
 		--with-included-popt \
 		--localstatedir=/var/lib/samba \
@@ -146,7 +148,6 @@ LOGFILEBASE=`bin/smbd -b | grep LOGFILEBASE | awk '{print $2}'`
 LIBDIR=`bin/smbd -b | grep LIBDIR | awk '{print $2}'`
 PIDDIR=`bin/smbd -b | grep PIDDIR | awk '{print $2}'`
 PRIVATE_DIR=`bin/smbd -b | grep PRIVATE_DIR | awk '{print $2}'`
-INSTALL_BASE=`dirname $BINDIR`
 DOCDIR=$INSTALL_BASE/docs
 
 ## 
@@ -186,18 +187,17 @@ done
 ##
 ## Start building the prototype file
 ##
-echo "!SBINDIR=$SBINDIR" > prototype
-echo "!BINDIR=$BINDIR" >> prototype
-echo "!SWATDIR=$SWATDIR" >> prototype
-echo "!CONFIGDIR=$CONFIGDIR" >> prototype
-echo "!LOGFILEBASE=$LOGFILEBASE" >> prototype
-echo "!LIBDIR=$LIBDIR" >> prototype
-echo "!PIDDIR=$PIDDIR" >> prototype
-echo "!DOCDIR=$DOCDIR" >> prototype
-echo "!PRIVATE_DIR=$PRIVATE_DIR" >> prototype
-echo "!INSTALL_BASE=$INSTALL_BASE" >> prototype
+echo "SBINDIR=sbin" >> pkginfo
+echo "BINDIR=bin" >> pkginfo
+echo "SWATDIR=swat" >> pkginfo
+echo "CONFIGDIR=$CONFIGDIR" >> pkginfo
+echo "LOGFILEBASE=$LOGFILEBASE" >> pkginfo
+echo "LIBDIR=lib" >> pkginfo
+echo "PIDDIR=$PIDDIR" >> pkginfo
+echo "DOCDIR=docs" >> pkginfo
+echo "PRIVATE_DIR=$PRIVATE_DIR" >> pkginfo
 
-cat prototype.master >> prototype
+cp prototype.master prototype
 
 # Add the dynamic part to the prototype file
 (add_dynamic_entries >> prototype)
