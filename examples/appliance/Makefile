@@ -39,8 +39,8 @@ installtng: tngb
 	(cd tng; \
 	rm -f $(PREFIX)/bin/samedit $(PREFIX)/bin/winbindd; \
 	cp bin/samedit bin/winbindd $(PREFIX)/bin; \
-	rm -f /lib/libnss_ntdom.so.2 /lib/security/pam_winbind.so; \
-	cp nsswitch/libnss_ntdom.so /lib/libnss_ntdom.so.2; \
+	rm -f /lib/libnss_winbind.so.2 /lib/security/pam_winbind.so; \
+	cp nsswitch/libnss_winbind.so /lib/libnss_winbind.so.2; \
 	cp nsswitch/pam_winbind.so /lib/security/)
 
 stop:
@@ -52,3 +52,16 @@ start:
 	$(PREFIX)/bin/winbindd
 
 restart: stop start
+
+updatehead:
+	(cd head; cvs -z9 update -d)
+
+updatetng:
+	(cd tng; cvs -z9 update -d)
+
+update: updatehead updatetng
+
+checkout:
+	-mkdir head tng
+	(cd head ; cvs -z9 co samba; mv samba head)
+	(cd head ; cvs -z9 co -r SAMBA_TNG samba/source; mv source tng)
