@@ -1,6 +1,11 @@
 #!/bin/sh
 
-LIBDIR=/home/tridge/samba/cvs/source/smbwrapper
+LIBDIR=/home/tridge/samba/source/smbwrapper
+
+if [ ! -f $LIBDIR/smbwrapper.so ]; then
+    echo You need to set LIBDIR in smbsh
+    exit
+fi
 
 # a simple launcher for the smbwrapper.so preloadde library
 
