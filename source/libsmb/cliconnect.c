@@ -1258,7 +1258,7 @@ again:
 		return nt_status;
 	}
 
-	if (!cli_session_setup(cli, user, password, pass_len, NULL, 0, 
+	if (!cli_session_setup(cli, user, password, pass_len, password, pass_len, 
 			       domain)) {
 		DEBUG(1,("failed session setup\n"));
 		nt_status = cli_nt_error(cli);
