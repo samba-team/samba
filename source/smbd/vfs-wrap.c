@@ -305,3 +305,8 @@ int vfswrap_ftruncate(int fd, SMB_OFF_T offset)
     result = sys_ftruncate(fd, offset);
     return result;
 }
+
+BOOL vfswrap_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+{
+	return fcntl_lock(fd, op, offset, count,type);
+}
