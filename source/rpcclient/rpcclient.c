@@ -109,7 +109,7 @@ struct
   {"regenum",    cmd_reg_enum,         "<keyname> Registry Enumeration (keys, values)"},
   {"regdeletekey",cmd_reg_delete_key,  "<keyname> Registry Key Delete"},
   {"regcreatekey",cmd_reg_create_key,  "<keyname> [keyclass] Registry Key Create"},
-  {"shutdown",cmd_reg_shutdown,  "[message] [timeout] Server Shutdown"},
+  {"shutdown",cmd_reg_shutdown,  "[-m message] [-t timeout] [-r or --reboot] Server Shutdown"},
   {"regquerykey",cmd_reg_query_key,    "<keyname> Registry Key Query"},
   {"regdeleteval",cmd_reg_delete_val,  "<valname> Registry Value Delete"},
   {"regcreateval",cmd_reg_create_val,  "<valname> <valtype> <value> Registry Key Create"},
@@ -747,7 +747,7 @@ enum client_action
 	}
 	else 
 	{
-		pwd_read(&(smb_cli->pwd), "Enter Password:", True);
+		pwd_read(&(smb_cli->pwd), "Enter Password:", False);
 	}
 
 	/* paranoia: destroy the local copy of the password */
