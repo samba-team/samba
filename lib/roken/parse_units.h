@@ -41,6 +41,7 @@
 #ifndef __PARSE_UNITS_H__
 #define __PARSE_UNITS_H__
 
+#include <stdio.h>
 #include <stddef.h>
 
 struct units {
@@ -54,6 +55,9 @@ int
 parse_units (const char *s, const struct units *units,
 	     const char *def_unit);
 
+void
+print_units_table (const struct units *units, FILE *f);
+
 int
 parse_flags (const char *s, const struct units *units,
 	     int orig);
@@ -63,5 +67,8 @@ unparse_units (int num, const struct units *units, char *s, size_t len);
 
 size_t
 unparse_flags (int num, const struct units *units, char *s, size_t len);
+
+void
+print_flags_table (const struct units *units, FILE *f);
 
 #endif /* __PARSE_UNITS_H__ */
