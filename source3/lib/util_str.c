@@ -1519,3 +1519,12 @@ void rfc1738_unescape(char *buf)
 	}
 }
 
+#ifdef VALGRIND
+size_t valgrind_strlen(const char *s)
+{
+	size_t count;
+	for(count = 0; *s++; count++)
+		;
+	return count;
+}
+#endif
