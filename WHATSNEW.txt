@@ -1,10 +1,24 @@
                       WHATS NEW IN Samba 3.0.1
-                         December XX, 2003
+                         December 15, 2003
                   ===============================
 
 This is the latest stable release of Samba. This is the 
 version that all production Samba servers should be running 
-for all current bug-fixes.
+for all current bug-fixes.  Some of the more common bugs in
+3.0.0 addressed  in the release include:
+
+  * Substitution problems with smb.conf variables.
+  * Errors in return codes which caused some applications
+    to fail to open files.
+  * General Protection Faults on Windows 2000/XP clients
+    using Samba point-n-print features.
+  * Several miscellaneous crash bugs.
+  * Access problems when enumerating group mappings are 
+    stored in an LDAP Directory.
+  * Several common SWAT bugs when writing changes to 
+    smb.conf.
+  * Internal inconsistencies when 'winbind use default 
+    domain = yes'
 
 
 ######################################################################
@@ -19,9 +33,11 @@ details:
 1)  Fix uninitialized variable in passdb.c.
 2)  Fix formal parameter type in get_static() in nsswitch/wins.c.
 3)  Fix problem mounting directories when mount.cifs is installed 
-    with the setuid on.
+    with the setuid bit on.
 4)  Fix bug that prevent --mandir from overriding the defaults
     given in the --with-fhs macro.
+5)  Fix bug in in-memory Kerberos keytab detection routines 
+    in configure.in
 
 
 Changes since 3.0.1rc1
@@ -34,7 +50,7 @@ Changes since 3.0.1rc1
 4)  Fix detection of Windows 2003 client architecture in the smb.conf
     %a variable.
 5)  Ensure that smbd calls the add user script for a missing UNIX 
-    user on kerberos auth call  (bug 445).
+    user on kerberos auth call (bug 445).
 6)  Fix bugs in hosts allow/deny when using a mismatched 
     network/netmask pair.
 7)  Protect alloc_sub_basic() from crashing when the source string 
@@ -132,7 +148,7 @@ Added Parameters
 
     
 
-Changes since 3.0.1pre4
+Changes since 3.0.1pre2
 -----------------------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
@@ -226,7 +242,7 @@ Changes since 3.0.1pre1
     keyblock in the krb5 structs.
 41) Remove #include <compat.h> in hopes to avoid problems with 
     apache header files.
-42) COrrect winbindd build problems on HP-UX 11
+42) Correct winbindd build problems on HP-UX 11.
 43) Lowercase netgroups lookups (bug 703).
 44) Use the actual size of the buffer in strftime instead of a made
     up value which just happens to be less than sizeof(fstring).  
@@ -324,7 +340,6 @@ Removed Parameters
     files.
 33) Ensure canceling a blocking lock returns the correct error 
     message.
-34) Match Samba 2.2, and make ACB_NORMAL the default ACB value.
 
 
 
