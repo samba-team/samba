@@ -114,7 +114,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/ufc.o lib/genrand.o lib/username.o lib/util_getent.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/snprintf.o lib/wins_srv.o \
 	  lib/util_str.o lib/util_sid.o \
-	  lib/util_unistr.o lib/util_file.o lib/sysacls.o \
+	  lib/util_unistr.o lib/util_file.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
 	  lib/ms_fnmatch.o lib/select.o lib/error.o lib/messages.o \
@@ -189,7 +189,7 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	    smbd/blocking.o smbd/sec_ctx.o \
 	    smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
-            smbd/posix_acls.o \
+            smbd/posix_acls.o lib/sysacls.o \
 	    smbd/process.o smbd/service.o smbd/error.o \
 	    printing/printfsp.o lib/util_seaccess.o
 
