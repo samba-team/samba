@@ -135,11 +135,6 @@ PyObject *spoolss_hnd_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "|i", kwlist, &level))
 		return NULL;
 	
-	if (level < 0 || level > 3) {
-		PyErr_SetString(spoolss_error, "Invalid info level");
-		return NULL;
-	}
-
 	ZERO_STRUCT(ctr);
 
 	/* Call rpc function */
@@ -224,7 +219,7 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 	case 1:
 		ctr.printers_1 = &pinfo.printers_1;
 
-		if (!py_to_PRINTER_INFO_1(&pinfo.printers_1, info)){
+		if (!py_to_PRINTER_INFO_1(ctr.printers_1, info)){
 			PyErr_SetString(spoolss_error, 
 					"error converting printer to info 1");
 			return NULL;
@@ -234,7 +229,7 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 	case 2:
 		ctr.printers_2 = &pinfo.printers_2;
 
-		if (!py_to_PRINTER_INFO_2(&pinfo.printers_2, info,
+		if (!py_to_PRINTER_INFO_2(ctr.printers_2, info,
 					  hnd->mem_ctx)){
 			PyErr_SetString(spoolss_error, 
 					"error converting printer to info 2");
@@ -245,7 +240,7 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 	case 3:
 		ctr.printers_3 = &pinfo.printers_3;
 
-		if (!py_to_PRINTER_INFO_3(&pinfo.printers_3, info,
+		if (!py_to_PRINTER_INFO_3(ctr.printers_3, info,
 					  hnd->mem_ctx)) {
 			PyErr_SetString(spoolss_error,
 					"error converting to printer info 3");
