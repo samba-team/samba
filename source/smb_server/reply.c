@@ -1883,8 +1883,7 @@ void reply_setattrE(struct smbsrv_request *req)
 ****************************************************************************/
 void reply_writebmpx(struct smbsrv_request *req)
 {
-	/* we will need to implement this one for OS/2, but right now I can't be bothered */
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
 }
 
 
@@ -1893,8 +1892,7 @@ void reply_writebmpx(struct smbsrv_request *req)
 ****************************************************************************/
 void reply_writebs(struct smbsrv_request *req)
 {
-	/* see reply_writebmpx */
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
 }
 
 
