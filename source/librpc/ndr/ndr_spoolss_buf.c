@@ -711,3 +711,277 @@ void ndr_print_spoolss_EnumPorts(struct ndr_print *ndr, const char *name, int fl
 	}
 	ndr->depth--;
 }
+
+/*
+  spoolss_EnumMonitors
+*/
+NTSTATUS ndr_push_spoolss_EnumMonitors(struct ndr_push *ndr, int flags, struct spoolss_EnumMonitors *r)
+{
+	if (!(flags & NDR_IN)) goto ndr_out;
+
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.servername));
+	ndr->flags = _flags_save_string;
+	}
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	if (r->in.servername) {
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.servername));
+	}
+	ndr->flags = _flags_save_string;
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level));
+	NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.buffer));
+	if (r->in.buffer) {
+		NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.buffer));
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.buf_size));
+	ndr_out:
+	if (!(flags & NDR_OUT)) goto done;
+
+	NDR_SPOOLSS_PUSH_ENUM_OUT(spoolss_EnumMonitors,spoolss_MonitorInfo);
+
+	done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_spoolss_EnumMonitors(struct ndr_pull *ndr, int flags, struct spoolss_EnumMonitors *r)
+{
+	uint32_t _ptr_servername;
+	uint32_t _ptr_buffer;
+	uint32_t _ptr_info;
+	if (!(flags & NDR_IN)) goto ndr_out;
+
+	ZERO_STRUCT(r->out);
+
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_servername));
+	if (_ptr_servername) {
+		NDR_ALLOC(ndr, r->in.servername);
+	} else {
+		r->in.servername = NULL;
+	}
+	ndr->flags = _flags_save_string;
+	}
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	if (r->in.servername) {
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.servername));
+	}
+	ndr->flags = _flags_save_string;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.level));
+	NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_buffer));
+	if (_ptr_buffer) {
+		NDR_ALLOC(ndr, r->in.buffer);
+	} else {
+		r->in.buffer = NULL;
+	}
+	if (r->in.buffer) {
+		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.buffer));
+	}
+	NDR_ALLOC(ndr, r->in.buf_size);
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.buf_size));
+	NDR_ALLOC(ndr, r->out.buf_size);
+	*r->out.buf_size = *r->in.buf_size;
+	ndr_out:
+	if (!(flags & NDR_OUT)) goto done;
+
+	NDR_SPOOLSS_PULL_ENUM_OUT(spoolss_EnumMonitors,spoolss_MonitorInfo);
+
+	done:
+
+	return NT_STATUS_OK;
+}
+
+void ndr_print_spoolss_EnumMonitors(struct ndr_print *ndr, const char *name, int flags, struct spoolss_EnumMonitors *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_EnumMonitors");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_EnumMonitors");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "servername", r->in.servername);
+		ndr->depth++;
+		if (r->in.servername) {
+			ndr_print_string(ndr, "servername", r->in.servername);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
+		ndr->depth++;
+		if (r->in.buffer) {
+			ndr_print_DATA_BLOB(ndr, "buffer", *r->in.buffer);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "buf_size", r->in.buf_size);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "buf_size", *r->in.buf_size);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		NDR_SPOOLSS_PRINT_ENUM_OUT(spoolss_EnumMonitors,spoolss_MonitorInfo);
+	}
+	ndr->depth--;
+}
+
+/*
+  spoolss_EnumPrintProcessors
+*/
+NTSTATUS ndr_push_spoolss_EnumPrintProcessors(struct ndr_push *ndr, int flags, struct spoolss_EnumPrintProcessors *r)
+{
+	if (!(flags & NDR_IN)) goto ndr_out;
+
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.servername));
+	ndr->flags = _flags_save_string;
+	}
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	if (r->in.servername) {
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.servername));
+	}
+	ndr->flags = _flags_save_string;
+	}
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.environment));
+	ndr->flags = _flags_save_string;
+	}
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	if (r->in.environment) {
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.environment));
+	}
+	ndr->flags = _flags_save_string;
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level));
+	NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.buffer));
+	if (r->in.buffer) {
+		NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.buffer));
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.buf_size));
+	ndr_out:
+	if (!(flags & NDR_OUT)) goto done;
+
+	NDR_SPOOLSS_PUSH_ENUM_OUT(spoolss_EnumPrintProcessors,spoolss_PrintProcessorInfo);
+
+	done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_spoolss_EnumPrintProcessors(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrintProcessors *r)
+{
+	uint32_t _ptr_servername;
+	uint32_t _ptr_environment;
+	uint32_t _ptr_buffer;
+	uint32_t _ptr_info;
+	if (!(flags & NDR_IN)) goto ndr_out;
+
+	ZERO_STRUCT(r->out);
+
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_servername));
+	if (_ptr_servername) {
+		NDR_ALLOC(ndr, r->in.servername);
+	} else {
+		r->in.servername = NULL;
+	}
+	ndr->flags = _flags_save_string;
+	}
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	if (r->in.servername) {
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.servername));
+	}
+	ndr->flags = _flags_save_string;
+	}
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_environment));
+	if (_ptr_environment) {
+		NDR_ALLOC(ndr, r->in.environment);
+	} else {
+		r->in.environment = NULL;
+	}
+	ndr->flags = _flags_save_string;
+	}
+	{ uint32_t _flags_save_string = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4);
+	if (r->in.environment) {
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.environment));
+	}
+	ndr->flags = _flags_save_string;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.level));
+	NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_buffer));
+	if (_ptr_buffer) {
+		NDR_ALLOC(ndr, r->in.buffer);
+	} else {
+		r->in.buffer = NULL;
+	}
+	if (r->in.buffer) {
+		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.buffer));
+	}
+	NDR_ALLOC(ndr, r->in.buf_size);
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.buf_size));
+	NDR_ALLOC(ndr, r->out.buf_size);
+	*r->out.buf_size = *r->in.buf_size;
+	ndr_out:
+	if (!(flags & NDR_OUT)) goto done;
+
+	NDR_SPOOLSS_PULL_ENUM_OUT(spoolss_EnumPrintProcessors,spoolss_PrintProcessorInfo);
+
+	done:
+
+	return NT_STATUS_OK;
+}
+
+void ndr_print_spoolss_EnumPrintProcessors(struct ndr_print *ndr, const char *name, int flags, struct spoolss_EnumPrintProcessors *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_EnumPrintProcessors");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "spoolss_EnumPrintProcessors");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "servername", r->in.servername);
+		ndr->depth++;
+		if (r->in.servername) {
+			ndr_print_string(ndr, "servername", r->in.servername);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "environment", r->in.environment);
+		ndr->depth++;
+		if (r->in.environment) {
+			ndr_print_string(ndr, "environment", r->in.environment);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
+		ndr->depth++;
+		if (r->in.buffer) {
+			ndr_print_DATA_BLOB(ndr, "buffer", *r->in.buffer);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "buf_size", r->in.buf_size);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "buf_size", *r->in.buf_size);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		NDR_SPOOLSS_PRINT_ENUM_OUT(spoolss_EnumPrintProcessors,spoolss_PrintProcessorInfo);
+	}
+	ndr->depth--;
+}
