@@ -683,6 +683,7 @@ struct winbindd_state server_state;   /* Server state information */
 static void usage(void)
 {
 	printf("Usage: winbindd [options]\n");
+	printf("Version: %s\n", VERSION);
 	printf("\t-i                interactive mode\n");
 	printf("\t-n                disable cacheing\n");
 	printf("\t-d level          set debug level\n");

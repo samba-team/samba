@@ -31,6 +31,7 @@ static void
 usage(void)
 {
         printf("usage: smbumount mountpoint\n");
+	printf("Version: %s\n", VERSION);
 }
 
 static int

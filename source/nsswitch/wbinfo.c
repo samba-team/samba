@@ -642,6 +642,7 @@ static void usage(void)
 {
 	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
                "| -[aA] user%%password\n");
+	printf("Version: %s\n", VERSION);
 	printf("\t-u\t\t\tlists all domain users\n");
 	printf("\t-g\t\t\tlists all domain groups\n");
 	printf("\t-n name\t\t\tconverts name to sid\n");

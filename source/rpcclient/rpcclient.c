@@ -585,6 +585,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 static void usage(void)
 {
 	printf("Usage: rpcclient [options] server\n");
+	printf("Version: %s\n", VERSION);
 
 	printf("\t-A authfile           file containing user credentials\n");
 	printf("\t-c \"command string\"   execute semicolon separated cmds\n");
