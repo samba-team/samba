@@ -94,7 +94,7 @@ doit (const char *nodename, const char *servname)
 	    printf ("\tbad address?\n");
 	    continue;
 	} 
-	printf ("\t(family = %d, socktype = %d, protocol = %d, "
+	printf ("\tfamily = %d, socktype = %d, protocol = %d, "
 		"address = \"%s\", port = %d",
 		r->ai_family, r->ai_socktype, r->ai_protocol,
 		addrstr,
