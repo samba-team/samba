@@ -43,7 +43,7 @@ void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
 
 	trn->sid_name_use = sid_name_use;
 	init_uni_hdr(&trn->hdr_name, len_name);
-	init_unistr2(uni_name, name, len_name);
+	init_unistr2(uni_name, name);
 	trn->domain_idx = idx;
 }
 
@@ -346,8 +346,7 @@ void init_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, const char *server_name,
 
 	r_q->des_access = desired_access;
 
-	init_unistr2(&r_q->uni_server_name, server_name, 
-		     strlen(server_name) + 1);
+	init_unistr2(&r_q->uni_server_name, server_name);
 
 	init_lsa_obj_attr(&r_q->attr, attributes, qos);
 }
@@ -1091,7 +1090,7 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 		len = strlen(names[i]);
 
 		init_uni_hdr(&q_l->hdr_name[i], len);
-		init_unistr2(&q_l->uni_name[i], names[i], len);
+		init_unistr2(&q_l->uni_name[i], names[i]);
 	}
 }
 
@@ -1444,7 +1443,7 @@ void init_lsa_priv_get_dispname(LSA_Q_PRIV_GET_DISPNAME *trn, POLICY_HND *hnd, c
 	memcpy(&trn->pol, hnd, sizeof(trn->pol));
 
 	init_uni_hdr(&trn->hdr_name, len_name);
-	init_unistr2(&trn->name, name, len_name);
+	init_unistr2(&trn->name, name);
 	trn->lang_id = lang_id;
 	trn->lang_id_sys = lang_id_sys;
 }
@@ -1957,7 +1956,7 @@ void init_lsa_q_lookupprivvalue(LSA_Q_LOOKUPPRIVVALUE *trn, POLICY_HND *hnd, con
 		len_name = 1;
 
 	init_uni_hdr(&trn->hdr_right, len_name);
-	init_unistr2(&trn->uni2_right, name, len_name);
+	init_unistr2(&trn->uni2_right, name);
 }
 
 /*******************************************************************

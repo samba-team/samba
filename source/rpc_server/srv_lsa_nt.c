@@ -77,7 +77,7 @@ static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_si
 	d_q->buffer_dom_sid = dom_sid != NULL ? 1 : 0;  /* domain sid pointer */
 
 	/* this string is supposed to be character short */
-	init_unistr2(&d_q->uni_domain_name, dom_name, domlen);
+	init_unistr2(&d_q->uni_domain_name, dom_name);
 	d_q->uni_domain_name.uni_max_len++;
 
 	if (dom_sid != NULL)
@@ -121,7 +121,7 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 	init_uni_hdr(&ref->hdr_ref_dom[num].hdr_dom_name, len);
 	ref->hdr_ref_dom[num].ptr_dom_sid = dom_sid != NULL ? 1 : 0;
 
-	init_unistr2(&ref->ref_dom[num].uni_dom_name, dom_name, len);
+	init_unistr2(&ref->ref_dom[num].uni_dom_name, dom_name);
 	init_dom_sid2(&ref->ref_dom[num].ref_dom, dom_sid );
 
 	return num;
@@ -350,24 +350,21 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 {
 	if (nb_name && *nb_name) {
 		init_uni_hdr(&r_l->hdr_nb_dom_name, strlen(nb_name));
-		init_unistr2(&r_l->uni_nb_dom_name, nb_name, 
-			     strlen(nb_name));
+		init_unistr2(&r_l->uni_nb_dom_name, nb_name);
 		r_l->hdr_nb_dom_name.uni_max_len += 2;
 		r_l->uni_nb_dom_name.uni_max_len += 1;
 	}
 	
 	if (dns_name && *dns_name) {
 		init_uni_hdr(&r_l->hdr_dns_dom_name, strlen(dns_name));
-		init_unistr2(&r_l->uni_dns_dom_name, dns_name,
-			     strlen(dns_name));
+		init_unistr2(&r_l->uni_dns_dom_name, dns_name);
 		r_l->hdr_dns_dom_name.uni_max_len += 2;
 		r_l->uni_dns_dom_name.uni_max_len += 1;
 	}
 
 	if (forest_name && *forest_name) {
 		init_uni_hdr(&r_l->hdr_forest_name, strlen(forest_name));
-		init_unistr2(&r_l->uni_forest_name, forest_name,
-			     strlen(forest_name));
+		init_unistr2(&r_l->uni_forest_name, forest_name);
 		r_l->hdr_forest_name.uni_max_len += 2;
 		r_l->uni_forest_name.uni_max_len += 1;
 	}
@@ -770,12 +767,12 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	for (i = 0; i < PRIV_ALL_INDEX; i++, entry++) {
 		if( i<enum_context) {
 			init_uni_hdr(&entry->hdr_name, 0);
-			init_unistr2(&entry->name, NULL, 0 );
+			init_unistr2(&entry->name, NULL);
 			entry->luid_low = 0;
 			entry->luid_high = 0;
 		} else {
 			init_uni_hdr(&entry->hdr_name, strlen(privs[i+1].priv));
-			init_unistr2(&entry->name, privs[i+1].priv, strlen(privs[i+1].priv) );
+			init_unistr2(&entry->name, privs[i+1].priv);
 			entry->luid_low = privs[i+1].se_priv;
 			entry->luid_high = 0;
 		}
@@ -818,7 +815,7 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 	if (privs[i].se_priv!=SE_PRIV_ALL) {
 		DEBUG(10,(": %s\n", privs[i].description));
 		init_uni_hdr(&r_u->hdr_desc, strlen(privs[i].description));
-		init_unistr2(&r_u->desc, privs[i].description, strlen(privs[i].description) );
+		init_unistr2(&r_u->desc, privs[i].description);
 
 		r_u->ptr_info=0xdeadbeef;
 		r_u->lang_id=q_u->lang_id;
@@ -899,13 +896,13 @@ NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA
   
 	init_uni_hdr(&r_u->hdr_user_name, ulen);
 	r_u->ptr_user_name = 1;
-	init_unistr2(&r_u->uni2_user_name, username, ulen);
+	init_unistr2(&r_u->uni2_user_name, username);
 
 	r_u->unk1 = 1;
   
 	init_uni_hdr(&r_u->hdr_dom_name, dlen);
 	r_u->ptr_dom_name = 1;
-	init_unistr2(&r_u->uni2_dom_name, domname, dlen);
+	init_unistr2(&r_u->uni2_dom_name, domname);
 
 	r_u->status = NT_STATUS_OK;
   

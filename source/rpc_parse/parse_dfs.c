@@ -80,9 +80,9 @@ BOOL init_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, char *entrypath,
 			   char *servername, char *sharename)
 {
 	DEBUG(5,("init_dfs_q_dfs_remove\n"));
-	init_unistr2(&q_d->DfsEntryPath, entrypath,  strlen(entrypath)+1);
-	init_unistr2(&q_d->ServerName,   servername, strlen(servername)+1);
-	init_unistr2(&q_d->ShareName,    sharename,  strlen(sharename)+1);
+	init_unistr2(&q_d->DfsEntryPath, entrypath);
+	init_unistr2(&q_d->ServerName,   servername);
+	init_unistr2(&q_d->ShareName,    sharename);
 	q_d->ptr_ServerName = q_d->ptr_ShareName = 1;
 	return True;
 }
@@ -154,11 +154,11 @@ BOOL init_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, char *entrypath, char *servername,
 {
 	DEBUG(5,("init_dfs_q_dfs_add\n"));
 	q_d->ptr_DfsEntryPath = q_d->ptr_ServerName = q_d->ptr_ShareName = 1;
-	init_unistr2(&q_d->DfsEntryPath, entrypath,  strlen(entrypath)+1);
-	init_unistr2(&q_d->ServerName,   servername, strlen(servername)+1);
-	init_unistr2(&q_d->ShareName,    sharename,  strlen(sharename)+1);
+	init_unistr2(&q_d->DfsEntryPath, entrypath);
+	init_unistr2(&q_d->ServerName,   servername);
+	init_unistr2(&q_d->ShareName,    sharename);
 	if(comment != NULL) {
-		init_unistr2(&q_d->Comment,      comment,    strlen(comment)+1);
+		init_unistr2(&q_d->Comment,      comment);
 		q_d->ptr_Comment = 1;
 	} else {
 		q_d->ptr_Comment = 0;
@@ -236,9 +236,9 @@ BOOL init_dfs_q_dfs_get_info(DFS_Q_DFS_GET_INFO *q_d, char *entrypath,
 			     uint32 info_level)
 {
 	DEBUG(5,("init_dfs_q2_get_info\n"));
-	init_unistr2(&q_d->uni_path, entrypath,  strlen(entrypath)+1);
-	init_unistr2(&q_d->uni_server,   servername, strlen(servername)+1);
-	init_unistr2(&q_d->uni_share,    sharename,  strlen(sharename)+1);
+	init_unistr2(&q_d->uni_path, entrypath);
+	init_unistr2(&q_d->uni_server,   servername);
+	init_unistr2(&q_d->uni_share,    sharename);
 	q_d->level = info_level;
 	q_d->ptr_server = q_d->ptr_share = 1;
 	return True;
