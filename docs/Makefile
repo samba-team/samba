@@ -4,49 +4,7 @@
 # 		James Moore <jmoore@php.net>
 # 		Gerald Carter <jerry@samba.org>
 # 		Jelmer Vernooij <jelmer@samba.org>
-
-# Programs
-XSLTPROC = @XSLTPROC@
-XMLLINT = @XMLLINT@
-DVIPS = @DVIPS@
-PNGTOPNM = @PNGTOPNM@
-EPSTOPNM = @EPSTOPNM@
-PNMTOPNG = @PNMTOPNG@
-DIA = @DIA@
-PNMTOPS = @PNMTOPS@
-HTML2TEXT = @HTML2TEXT@
-PLUCKERBUILD = @PLUCKERBUILD@
-COPY_IMAGES = ./scripts/copy-images.sh
-THUMBPDF = @THUMBPDF@
-PDFLATEX = TEXINPUTS=xslt/latex:.: @PDFLATEX@ --file-line-error-style
-LATEX = TEXINPUTS=xslt/latex:.: @LATEX@ --file-line-error-style
-RM = @RM@
-ifndef DEBUG_LATEX
-PDFLATEX += --interaction nonstopmode
-LATEX += --interaction nonstopmode
-endif
-
-# Paths
-OUTPUTDIR = output
-ARCHIVEDIR = archive
-SRCDIR = @SAMBASOURCEDIR@
-MANDIR = $(OUTPUTDIR)/manpages
-EPSTOPDF = @EPSTOPDF@
-MANPAGEDIR = manpages
-MAKEINDEX = @MAKEINDEX@
-EXAMPLESDIR = examples
-SMBDOTCONFDOC = smbdotconf
-DOCBOOKDIR = tmp
-PSDIR = $(OUTPUTDIR)
-PDFDIR = $(OUTPUTDIR)
-DVIDIR = $(OUTPUTDIR)
-FODIR = $(OUTPUTDIR)
-HTMLHELPDIR = $(OUTPUTDIR)/htmlhelp
-VALIDATEDIR = $(OUTPUTDIR)/validate
-PEARSONDIR = $(OUTPUTDIR)/pearson
-TXTDIR = $(OUTPUTDIR)/textdocs
-HTMLDIR=$(OUTPUTDIR)/htmldocs
-PLUCKERDIR=$(OUTPUTDIR)/plucker
+-include Makefile.settings
 
 # Docs to build
 MAIN_DOCS = $(patsubst %/index.xml,$(DOCBOOKDIR)/%.xml,$(wildcard */index.xml))
@@ -55,6 +13,16 @@ MANPAGES = $(wildcard $(MANPAGEDIR)/*.?.xml)
 # Lists of files to process
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
 MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES))
+
+ifndef OUTPUTDIR
+Makefile.settings: Makefile.settings.in configure
+	@echo Makefile.settings not present, trying to run configure...
+	@./configure
+
+configure: configure.in
+	@echo configure not present, trying to generate
+	@autoreconf
+endif
 
 help: 
 	@echo "Supported make targets:"
@@ -68,6 +36,8 @@ help:
 	@echo " undocumented - Output list of undocumented smb.conf options"
 	@echo " samples - Extract examples"
 	@echo " files - Extract other files"
+
+
 
 Samba-Guide/index.xml: $(subst Samba-Guide/index.xml,,$(wildcard Samba-Guide/*.xml))
 Samba-HOWTO-Collection/index.xml: $(subst Samba-HOWTO-Collection/index.xml,,$(wildcard Samba-HOWTO-Collection/*.xml)) Samba-HOWTO-Collection-attributions.xml
@@ -137,7 +107,7 @@ $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl
 	$(XSLTPROC) --xinclude xslt/generate-attributions.xsl $*/index.xml > $@
 
 clobber: clean
-	rm Makefile settings.xsl config.status config.log configure
+	rm Makefile.settings settings.xsl config.status config.log configure
 
 clean: 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
