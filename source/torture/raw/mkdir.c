@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+#define BASEDIR "\\mkdirtest"
+
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
@@ -35,13 +37,13 @@ static BOOL test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_mkdir md;
 	struct smb_rmdir rd;
-	const char *path = "\\test_mkdir.dir";
+	const char *path = BASEDIR "\\mkdir.dir";
 	NTSTATUS status;
 	BOOL ret = True;
 
-	/* cleanup */
-	smbcli_rmdir(cli->tree, path);
-	smbcli_unlink(cli->tree, path);
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
 
 	/* 
 	   basic mkdir
@@ -95,23 +97,43 @@ static BOOL test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	md.t2mkdir.in.path = path;
 	md.t2mkdir.in.num_eas = 0;	
 	status = smb_raw_mkdir(cli->tree, &md);
-	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb_raw_rmdir(cli->tree, &rd);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("testing t2mkdir with EAs\n");
 
 	/* with EAs */
-	md.t2mkdir.in.num_eas = 1;
-	md.t2mkdir.in.eas = talloc_p(mem_ctx, struct ea_struct);
+	md.t2mkdir.level = RAW_MKDIR_T2MKDIR;
+	md.t2mkdir.in.path = path;
+	md.t2mkdir.in.num_eas = 3;
+	md.t2mkdir.in.eas = talloc_array_p(mem_ctx, struct ea_struct, md.t2mkdir.in.num_eas);
 	md.t2mkdir.in.eas[0].flags = 0;
 	md.t2mkdir.in.eas[0].name.s = "EAONE";
-	md.t2mkdir.in.eas[0].value = data_blob_talloc(mem_ctx, "1", 1);
+	md.t2mkdir.in.eas[0].value = data_blob_talloc(mem_ctx, "blah", 4);
+	md.t2mkdir.in.eas[1].flags = 0;
+	md.t2mkdir.in.eas[1].name.s = "EA TWO";
+	md.t2mkdir.in.eas[1].value = data_blob_talloc(mem_ctx, "foo bar", 7);
+	md.t2mkdir.in.eas[2].flags = 0;
+	md.t2mkdir.in.eas[2].name.s = "EATHREE";
+	md.t2mkdir.in.eas[2].value = data_blob_talloc(mem_ctx, "xx1", 3);
 	status = smb_raw_mkdir(cli->tree, &md);
-	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
+	status = torture_check_ea(cli, path, "EAONE", "blah");
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = torture_check_ea(cli, path, "EA TWO", "foo bar");
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = torture_check_ea(cli, path, "EATHREE", "xx1");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb_raw_rmdir(cli->tree, &rd);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 done:
-	smbcli_rmdir(cli->tree, path);
-	smbcli_unlink(cli->tree, path);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
