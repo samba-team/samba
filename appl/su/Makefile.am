@@ -4,8 +4,7 @@ include $(top_srcdir)/Makefile.am.common
 
 INCLUDES += $(INCLUDE_krb4)
 
-noinst_PROGRAMS = su
-#bin_SUIDS = su
+bin_SUIDS = su
 su_SOURCES = su.c
 
 LDADD = $(LIB_kafs) \
