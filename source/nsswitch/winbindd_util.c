@@ -135,6 +135,20 @@ BOOL get_domain_info(void)
 	BOOL rv = False;
 	TALLOC_CTX *mem_ctx;
 	extern struct winbindd_methods msrpc_methods;
+	struct winbindd_methods *methods;
+
+	switch (lp_security()) {
+#ifdef HAVE_ADS
+	case SEC_ADS:
+	{
+		extern struct winbindd_methods ads_methods;
+		methods = &ads_methods;
+		break;
+	}
+#endif
+	default:
+		methods = &msrpc_methods;
+	}
 	
 	DEBUG(1, ("getting trusted domain list\n"));
 
@@ -152,7 +166,7 @@ BOOL get_domain_info(void)
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	add_trusted_domain(lp_workgroup(), &domain_sid, &msrpc_methods);
+	add_trusted_domain(lp_workgroup(), &domain_sid, methods);
 	
 	/* Enumerate list of trusted domains */	
 
@@ -168,7 +182,7 @@ BOOL get_domain_info(void)
 	/* Add each domain to the trusted domain list */
 
 	for(i = 0; i < num_doms; i++)
-		add_trusted_domain(domains[i], &sids[i], &msrpc_methods);
+		add_trusted_domain(domains[i], &sids[i], methods);
 
 	rv = True;	
 
