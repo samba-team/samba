@@ -161,10 +161,10 @@ int setup_groups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_gro
 
 	if (-1 == initgroups(user,gid))
 	{
+		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
 		if (getuid() == 0)
 		{
-			DEBUG(0,("Unable to initgroups!\n"));
-			if (gid < 0 || gid > 16000 || uid < 0 || uid > 16000)
+			if (gid < 0 || gid > 32767 || uid < 0 || uid > 32767)
 			{
 				DEBUG(0,("This is probably a problem with the account %s\n", user));
 			}

@@ -670,7 +670,7 @@ fi
 
 AC_CACHE_CHECK([whether getpass should be replaced],samba_cv_REPLACE_GETPASS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/include -I${srcdir-.}/ubiqx"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/smbwrapper"
 AC_TRY_COMPILE([
 #define REPLACE_GETPASS 1
 #define NO_CONFIG_H 1

@@ -7816,7 +7816,7 @@ if eval "test \"`echo '$''{'samba_cv_REPLACE_GETPASS'+set}'`\" = set"; then
 else
   
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/include -I${srcdir-.}/ubiqx"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/smbwrapper"
 cat > conftest.$ac_ext <<EOF
 #line 7822 "configure"
 #include "confdefs.h"
