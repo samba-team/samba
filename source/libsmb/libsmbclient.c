@@ -523,8 +523,6 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 	}
 	DEBUG(0,("Using netbios name %s.\n", my_netbios_name));
 
-	name_register_wins(my_netbios_name, 0);
-
 	/* 
 	 * Now initialize the file descriptor array and figure out what the
 	 * max open files is, so we can return FD's that are above the max
