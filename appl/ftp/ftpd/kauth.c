@@ -94,8 +94,6 @@ store_ticket(KTEXT cip)
 
     int kerror;
     
-    time_t kdc_time;
-
     ptr = (char *) cip->dat;
 
     /* extract session key */
@@ -156,14 +154,18 @@ store_ticket(KTEXT cip)
     
 #if 0
     /* check KDC time stamp */
-    memmove(&kdc_time, ptr, sizeof(kdc_time));
-    if (swap_bytes) swap_u_long(kdc_time);
+    {
+	time_t kdc_time;
 
-    ptr += 4;
+	memmove(&kdc_time, ptr, sizeof(kdc_time));
+	if (swap_bytes) swap_u_long(kdc_time);
+
+	ptr += 4;
     
-    if (abs((int)(local_time - kdc_time)) > CLOCK_SKEW) {
-        return(RD_AP_TIME);		/* XXX should probably be better
+	if (abs((int)(local_time - kdc_time)) > CLOCK_SKEW) {
+	    return(RD_AP_TIME);		/* XXX should probably be better
 					   code */
+	}
     }
 #endif
 

@@ -77,8 +77,10 @@ void
 logwtmp(char *line, char *name, char *host)
 {
     static int init = 0;
-    static int fd, fdx;
-    struct timeval tv;
+    static int fd;
+#ifdef WTMPX_FILE
+    static int fdx;
+#endif
     struct utmp ut;
 #ifdef WTMPX_FILE
     struct utmpx utx;
@@ -110,9 +112,13 @@ logwtmp(char *line, char *name, char *host)
     if (utx.ut_syslen > sizeof(utx.ut_host))
         utx.ut_syslen = sizeof(utx.ut_host);
 #endif
-    gettimeofday (&tv, 0);
-    utx.ut_tv.tv_sec = tv.tv_sec;
-    utx.ut_tv.tv_usec = tv.tv_usec;
+    {
+	struct timeval tv;
+
+	gettimeofday (&tv, 0);
+	utx.ut_tv.tv_sec = tv.tv_sec;
+	utx.ut_tv.tv_usec = tv.tv_usec;
+    }
 
     if(name[0])
 	utx.ut_type = USER_PROCESS;
