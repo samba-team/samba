@@ -2,6 +2,8 @@ Thu Jul 17 00:21:22 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* Release 0.0a
 
+	* kdc/main.c: Add -p flag to disable pa-enc-timestamp requirement.
+
 Wed Jul 16 03:37:41 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos5.c (tgs_rep2): Free ticket and ap_req.
