@@ -103,8 +103,9 @@ static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
 }
 
 int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribute, 
-		 void (*fn)(file_info *, const char *, void *), 
-		 void *caller_state)
+		    enum smb_search_level level,
+		    void (*fn)(file_info *, const char *, void *), 
+		    void *caller_state)
 {
 	union smb_search_first first_parms;
 	union smb_search_next next_parms;
@@ -125,11 +126,14 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	state.dirlist = talloc(state.mem_ctx, 0);
 	mask = talloc_strdup(state.mem_ctx, Mask);
 
-	if (tree->session->transport->negotiate.capabilities & CAP_NT_SMBS) {
-		state.info_level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
-	} else {
-		state.info_level = RAW_SEARCH_STANDARD;
+	if (level == RAW_SEARCH_GENERIC) {
+		if (tree->session->transport->negotiate.capabilities & CAP_NT_SMBS) {
+			level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+		} else {
+			level = RAW_SEARCH_STANDARD;
+		}
 	}
+	state.info_level = level;
 
 	while (1) {
 		state.ff_searchcount = 0;
@@ -336,5 +340,5 @@ int smbcli_list(struct smbcli_tree *tree, const char *Mask,uint16_t attribute,
 {
 	if (tree->session->transport->negotiate.protocol <= PROTOCOL_LANMAN1)
 		return smbcli_list_old(tree, Mask, attribute, fn, state);
-	return smbcli_list_new(tree, Mask, attribute, fn, state);
+	return smbcli_list_new(tree, Mask, attribute, RAW_SEARCH_GENERIC, fn, state);
 }
