@@ -42,6 +42,7 @@
 #define __ROKEN_H__
 
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <signal.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -131,6 +132,14 @@ char *getstr(char *id, char **cpp);
 struct passwd *k_getpwnam (char *user);
 struct passwd *k_getpwuid (uid_t uid);
 
+#ifndef HAVE_SETEUID
+int seteuid(int euid);
+#endif
+
+#ifndef HAVE_SETEGID
+int setegid(int egid);
+#endif
+
 #include <time.h>
 #include <sys/time.h>
 time_t tm2time (struct tm tm, int local);
@@ -167,6 +176,10 @@ void mini_inetd (int port);
 
 #include <syslog.h>
 /* Misc definitions for old syslogs */
+
+#ifndef HAVE_VSYSLOG
+void vsyslog(int pri, const char *fmt, va_list ap);
+#endif
 
 #ifndef LOG_DAEMON
 #define openlog(id,option,facility) openlog((id),(option))

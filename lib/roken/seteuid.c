@@ -41,6 +41,10 @@
 RCSID("$Id$");
 #endif
 
+#include <unistd.h>
+
+#include "roken.h"
+
 int
 seteuid(int euid)
 {

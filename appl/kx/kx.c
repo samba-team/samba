@@ -111,7 +111,6 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
      struct hostent *hostent;
      int s;
      u_char b;
-     char tmp[16];
      char **p;
 
      hostent = gethostbyname (host);
@@ -329,7 +328,6 @@ doit (char *host, int passivep, int debugp, int tcpp)
      if (passivep) {
 	  struct sockaddr_in newaddr;
 	  int addrlen;
-	  u_char b = passivep;
 	  int otherside;
 
 	  otherside = connect_host (host, &key, schedule, passivep);

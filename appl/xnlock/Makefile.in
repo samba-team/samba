@@ -40,7 +40,7 @@ OBJECTS = xnlock.o
 all: $(PROGS)
 
 Wall:
-	make CFLAGS="$(XINCS) -g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
+	make CFLAGS="$(XINCS) -g -Wall -Wno-comment -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $<

@@ -70,6 +70,7 @@ string_to_type(const char *name)
     return -1;
 }
 
+#if 0
 static char *
 type_to_string(int type)
 {
@@ -79,6 +80,7 @@ type_to_string(int type)
 	    return p->name;
     return NULL;
 }
+#endif
 
 void
 dns_free_data(struct dns_reply *r)
@@ -126,7 +128,7 @@ parse_reply(unsigned char *data, int len)
     p += 2;
     rr = &r->head;
     while(p < data + len){
-	int type, class, ttl, size, priority, weight, port;
+	int type, class, ttl, size;
 	status = dn_expand(data, data + len, p, host, sizeof(host));
 	if(status < 0){
 	    dns_free_data(r);
@@ -160,7 +162,6 @@ parse_reply(unsigned char *data, int len)
 	    break;
 	case T_MX:
 	case T_AFSDB:{
-	    struct mx_record *mx;
 	    status = dn_expand(data, data + len, p + 2, host, sizeof(host));
 	    if(status < 0){
 		dns_free_data(r);
@@ -173,7 +174,6 @@ parse_reply(unsigned char *data, int len)
 	    break;
 	}
 	case T_SRV:{
-	    struct srv_record *srv;
 	    status = dn_expand(data, data + len, p + 6, host,
 			       sizeof((char*)host));
 	    if(status < 0){

@@ -1934,7 +1934,7 @@ restart(int argc, char **argv)
 		printf("restart: offset not specified\n");
 	else {
 		off_t restart_point = atol(argv[1]);
-		printf("restarting at %qd. %s\n", restart_point,
+		printf("restarting at %ld. %s\n", (long)restart_point,
 		       "execute get, put or append to initiate transfer");
 	}
 }

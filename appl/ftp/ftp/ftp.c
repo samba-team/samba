@@ -538,13 +538,12 @@ copy_stream(FILE *from, FILE *to)
     char buf[BUFSIZ];
     int n;
     int bytes = 0;
-    struct stat st;
-
     int werr;
     
+#ifdef HAVE_MMAP
+    struct stat st;
     void *chunk;
 
-#ifdef HAVE_MMAP
     if(fstat(fileno(from), &st) == 0 && S_ISREG(st.st_mode)){
 	chunk = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fileno(from), 0);
 	if(chunk != NULL){

@@ -164,8 +164,12 @@ sigALRM(int sig)
 #endif
 
 #if !defined(HAVE_RANDOM) && defined(HAVE_RAND)
+#ifndef srandom
 #define srandom srand
+#endif
+#ifndef random
 #define random rand
+#endif
 #endif
 
 #ifdef HAVE_RANDOM

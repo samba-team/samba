@@ -128,7 +128,7 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
 int
 get_xsockets (int *unix_socket, int *tcp_socket)
 {
-     int unixfd, tcpfd;
+     int unixfd, tcpfd = -1;
      struct sockaddr_un unixaddr;
      struct sockaddr_in tcpaddr;
      int dpy;

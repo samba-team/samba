@@ -51,6 +51,7 @@ usage (void)
   exit (1);
 }
 
+#if 0
 static void
 strlwr (char *s)
 {
@@ -59,6 +60,7 @@ strlwr (char *s)
     s++;
   }
 }
+#endif
 
 static int
 print (int argc,

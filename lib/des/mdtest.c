@@ -47,6 +47,7 @@ RCSID("$Id$");
 #include <md5.h>
 #include <sha.h>
 
+static
 int
 md4_tests (void)
 {
@@ -89,6 +90,7 @@ md4_tests (void)
   return 0;
 }
 
+static
 int
 md5_tests (void)
 {
@@ -123,6 +125,7 @@ md5_tests (void)
   return 0;
 }
 
+static
 int
 sha_tests (void)
 {
