@@ -603,7 +603,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct dcesrv_handle *u_handle;
 	int ret;
 	NTSTATUS status;
-	const char *container;
+	const char *container, *additional_class=NULL;
 
 	ZERO_STRUCTP(r->out.acct_handle);
 	*r->out.access_granted = 0;
@@ -651,6 +651,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		}
 
 		container = "Computers";
+		additional_class = "computer";
 
 	} else if (r->in.acct_flags == ACB_SVRTRUST) {
 		/* pull in all the template attributes */
@@ -662,6 +663,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		}
 
 		container = "DomainControllers";
+		additional_class = "computer";
 
 	} else if (r->in.acct_flags == ACB_DOMTRUST) {
 		/* pull in all the template attributes */
@@ -673,6 +675,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		}
 
 		container = "ForeignDomains";  /* FIXME: Is this correct?*/
+		additional_class = "computer";
 
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -700,6 +703,9 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "cn", username);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "sAMAccountName", username);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "objectClass", "user");
+	if (additional_class) {
+		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "objectClass", additional_class);
+	}
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg, "objectSid", sidstr);
 	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, &msg, "whenCreated", now);
 	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, &msg, "whenChanged", now);
@@ -1829,10 +1835,230 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
   samr_ChangePasswordUser 
 */
 static NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_ChangePasswordUser *r)
+					struct samr_ChangePasswordUser *r)
+{
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	struct ldb_message **res, mod, *msg;
+	int i, ret;
+	struct samr_Hash *lmPwdHash=NULL, *ntPwdHash=NULL;
+	struct samr_Hash new_lmPwdHash, new_ntPwdHash, checkHash;
+	NTSTATUS status = NT_STATUS_OK;
+	const char * const attrs[] = { "lmPwdHash", "ntPwdHash" , NULL };
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
+
+	a_state = h->data;
+
+	/* fetch the old hashes */
+	ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
+			   "dn=%s", a_state->account_dn);
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	msg = res[0];
+
+	/* basic sanity checking on parameters */
+	if (!r->in.lm_present || !r->in.nt_present ||
+	    !r->in.old_lm_crypted || !r->in.new_lm_crypted ||
+	    !r->in.old_nt_crypted || !r->in.new_nt_crypted) {
+		/* we should really handle a change with lm not
+		   present */
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	if (!r->in.cross1_present || !r->in.nt_cross) {
+		return NT_STATUS_NT_CROSS_ENCRYPTION_REQUIRED;
+	}
+	if (!r->in.cross2_present || !r->in.lm_cross) {
+		return NT_STATUS_LM_CROSS_ENCRYPTION_REQUIRED;
+	}
+
+	ret = samdb_result_hashes(mem_ctx, msg, "lmPwdHash", &lmPwdHash);
+	if (ret != 1) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+	ret = samdb_result_hashes(mem_ctx, msg, "ntPwdHash", &ntPwdHash);
+	if (ret != 1) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* decrypt and check the new lm hash */
+	D_P16(lmPwdHash->hash, r->in.new_lm_crypted->hash, new_lmPwdHash.hash);
+	D_P16(new_lmPwdHash.hash, r->in.old_lm_crypted->hash, checkHash.hash);
+	if (memcmp(checkHash.hash, lmPwdHash->hash, 16) != 0) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* decrypt and check the new nt hash */
+	D_P16(ntPwdHash->hash, r->in.new_nt_crypted->hash, new_ntPwdHash.hash);
+	D_P16(new_ntPwdHash.hash, r->in.old_nt_crypted->hash, checkHash.hash);
+	if (memcmp(checkHash.hash, ntPwdHash->hash, 16) != 0) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+	
+	/* check the nt cross hash */
+	D_P16(lmPwdHash->hash, r->in.nt_cross->hash, checkHash.hash);
+	if (memcmp(checkHash.hash, new_ntPwdHash.hash, 16) != 0) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* check the lm cross hash */
+	D_P16(ntPwdHash->hash, r->in.lm_cross->hash, checkHash.hash);
+	if (memcmp(checkHash.hash, new_lmPwdHash.hash, 16) != 0) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	ZERO_STRUCT(mod);
+	mod.dn = talloc_strdup(mem_ctx, a_state->account_dn);
+	if (!mod.dn) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = samdb_set_password(a_state->sam_ctx, mem_ctx,
+				    a_state->account_dn, a_state->domain_state->domain_dn,
+				    &mod, NULL, &new_lmPwdHash, &new_ntPwdHash, True);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	for (i=0;i<mod.num_elements;i++) {
+		mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	/* modify the samdb record */
+	ret = samdb_modify(a_state->sam_ctx, mem_ctx, &mod);
+	if (ret != 0) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/* 
+  samr_OemChangePasswordUser2 
+*/
+static NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					    struct samr_OemChangePasswordUser2 *r)
+{
+	NTSTATUS status;
+	char new_pass[512];
+	uint32 new_pass_len;
+	struct samr_CryptPassword *pwbuf = r->in.password;
+	void *sam_ctx;
+	const char *user_dn, *domain_dn;
+	int ret;
+	struct ldb_message **res, mod;
+	const char * const attrs[] = { "objectSid", "lmPwdHash", NULL };
+	const char *domain_sid;
+	struct samr_Hash *lmPwdHash;
+
+	if (pwbuf == NULL) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* this call doesn't take a policy handle, so we need to open
+	   the sam db from scratch */
+	sam_ctx = samdb_connect();
+	if (sam_ctx == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	/* we need the users dn and the domain dn (derived from the
+	   user SID). We also need the current lm password hash in
+	   order to decrypt the incoming password */
+	ret = samdb_search(sam_ctx, 
+			   mem_ctx, NULL, &res, attrs,
+			   "(&(sAMAccountName=%s)(objectclass=user))",
+			   r->in.account->name);
+	if (ret != 1) {
+		samdb_close(sam_ctx);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	user_dn = res[0]->dn;
+
+	ret = samdb_result_hashes(mem_ctx, res[0], "lmPwdHash", &lmPwdHash);
+	if (ret != 1) {
+		samdb_close(sam_ctx);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* decrypt the password we have been given */
+	SamOEMhash(pwbuf->data, lmPwdHash->hash, 516);
+
+	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
+			      &new_pass_len, STR_ASCII)) {
+		DEBUG(3,("samr: failed to decode password buffer\n"));
+		samdb_close(sam_ctx);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* work out the domain dn */
+	domain_sid = samdb_result_sid_prefix(mem_ctx, res[0], "objectSid");
+	if (domain_sid == NULL) {
+		samdb_close(sam_ctx);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	domain_dn = samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
+					"(objectSid=%s)", domain_sid);
+	if (!domain_dn) {
+		samdb_close(sam_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+
+	ZERO_STRUCT(mod);
+	mod.dn = talloc_strdup(mem_ctx, user_dn);
+	if (!mod.dn) {
+		samdb_close(sam_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* set the password - samdb needs to know both the domain and user DNs,
+	   so the domain password policy can be used */
+	status = samdb_set_password(sam_ctx, mem_ctx,
+				    user_dn, domain_dn, 
+				    &mod, new_pass, 
+				    NULL, NULL,
+				    True);
+	if (!NT_STATUS_IS_OK(status)) {
+		samdb_close(sam_ctx);
+		return status;
+	}
+
+	/* modify the samdb record */
+	ret = samdb_modify(sam_ctx, mem_ctx, &mod);
+	if (ret != 0) {
+		samdb_close(sam_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	samdb_close(sam_ctx);
+	return NT_STATUS_OK;
+}
+
+
+/* 
+  samr_ChangePasswordUser2 
+*/
+static NTSTATUS samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct samr_ChangePasswordUser2 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
+
+
+/* 
+  samr_ChangePasswordUser3 
+*/
+static NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct samr_ChangePasswordUser3 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
 
 
 /* 
@@ -2001,26 +2227,6 @@ static NTSTATUS samr_RemoveMultipleMembersFromAlias(struct dcesrv_call_state *dc
 
 
 /* 
-  samr_OemChangePasswordUser2 
-*/
-static NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_OemChangePasswordUser2 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  samr_ChangePasswordUser2 
-*/
-static NTSTATUS samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_ChangePasswordUser2 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
   samr_GetDomPwInfo 
 
   this fetches the default password properties for a domain
@@ -2149,16 +2355,6 @@ static NTSTATUS samr_Connect4(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	c.out.handle = r->out.handle;
 
 	return samr_Connect(dce_call, mem_ctx, &c);
-}
-
-
-/* 
-  samr_ChangePasswordUser3 
-*/
-static NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_ChangePasswordUser3 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
