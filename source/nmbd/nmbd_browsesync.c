@@ -585,20 +585,25 @@ void sync_all_dmbs(time_t t)
      
 	/* count how many syncs we might need to do */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
-		if (strcmp(global_myworkgroup, work->work_group) &&
-		    !ip_equal(work->dmb_addr, ipzero)) {
+		if (strcmp(global_myworkgroup, work->work_group)) {
 			count++;
 		}
 	}
 
 	/* sync with a probability of 1/count */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
-		if (strcmp(global_myworkgroup, work->work_group) &&
-		    !ip_equal(work->dmb_addr, ipzero)) {
-
+		if (strcmp(global_myworkgroup, work->work_group)) {
 			if (((unsigned)random()) % count != 0) continue;
 
 			lastrun = t;
+
+			if (!work->dmb_name.name[0]) {
+				/* we don't know the DMB - assume it is
+				   the same as the unicast local master */
+				make_nmb_name(&work->dmb_name, 
+					      work->local_master_browser_name,
+					      0x20, scope);
+			}
 
 			DEBUG(3,("initiating DMB<->DMB sync with %s(%s)\n",
 				 work->dmb_name.name, 
