@@ -438,7 +438,7 @@ void notify_printer_byname( char *printername, uint32 change, char *value )
 	if ( snum == -1 )
 		return;
 		
-	send_notify_field_buffer( printername, type, change, snum, strlen(value), value );
+	send_notify_field_buffer( printername, type, change, snum, strlen(value)+1, value );
 } 
 
 
