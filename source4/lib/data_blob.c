@@ -173,3 +173,10 @@ DATA_BLOB data_blob_string_const(const char *str)
 	return blob;
 }
 
+DATA_BLOB data_blob_const(const void *p, size_t length)
+{
+	DATA_BLOB blob;
+	blob.data = discard_const(p);
+	blob.length = length;
+	return blob;
+}
