@@ -114,8 +114,10 @@ main (int argc, char **argv)
     switch (ret) {
     case 0:
 	break;
-    case KRB5KRB_AP_ERR_BAD_INTEGRITY:
-    case KRB5KRB_AP_ERR_MODIFIED:
+    case KRB5_LIBOS_PWDINTR :
+	return 1;
+    case KRB5KRB_AP_ERR_BAD_INTEGRITY :
+    case KRB5KRB_AP_ERR_MODIFIED :
 	krb5_errx(context, 1, "Password incorrect");
 	break;
     default:

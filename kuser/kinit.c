@@ -357,7 +357,7 @@ main (int argc, char **argv)
     switch(ret){
     case 0:
 	break;
-    case KRB5KDC_ERR_NONE: /* XXX hack in krb5_get_init_creds_password */
+    case KRB5_LIBOS_PWDINTR: /* don't print anything if it was just C-c:ed */
 	exit(1);
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KRB_AP_ERR_MODIFIED:
