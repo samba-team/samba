@@ -37,7 +37,7 @@ void start_smbd(void)
 		return;
 	}
 
-	slprintf(binfile, sizeof(pstring) - 1, "%s/smbd", SBINDIR);
+	slprintf(binfile, sizeof(pstring) - 1, "%s/smbd", BINDIR);
 
 	become_daemon();
 
@@ -58,7 +58,7 @@ void start_nmbd(void)
 		return;
 	}
 
-	slprintf(binfile, sizeof(pstring) - 1, "%s/nmbd", SBINDIR);
+	slprintf(binfile, sizeof(pstring) - 1, "%s/nmbd", BINDIR);
 	
 	become_daemon();
 
