@@ -687,7 +687,7 @@
 		static double xx[70];
 		void *d;
 		d = (void *)readdir(dir);
-		if (!d) return NULL;
+		if (!d) return (void *)0;
 		dirent64_convert(d, xx);
 		return xx;
 	}
@@ -699,4 +699,3 @@
 {
 	return smbw_fork();
 }
-
