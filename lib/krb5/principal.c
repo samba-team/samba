@@ -59,6 +59,23 @@ krb5_free_principal(krb5_context context,
     }
 }
 
+const char *
+krb5_principal_get_realm(krb5_context context,
+			 krb5_principal principal)
+{
+    return princ_realm(principal);
+}			 
+
+const char *
+krb5_principal_get_comp_string(krb5_context context,
+			       krb5_principal principal,
+			       unsigned int component)
+{
+    if(component >= princ_num_comp(principal))
+       return NULL;
+    return princ_ncomp(principal, component);
+}
+
 krb5_error_code
 krb5_parse_name(krb5_context context,
 		const char *name,
