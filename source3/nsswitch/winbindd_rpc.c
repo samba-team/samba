@@ -153,11 +153,43 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	return status;
 }
 
+/*
+  convert a domain SID to a user or group name
+*/
+NTSTATUS winbindd_rpc_sid_to_name(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  DOM_SID *sid,
+				  char **name,
+				  enum SID_NAME_USE *type)
+{
+	CLI_POLICY_HND *hnd;
+	char **names;
+	uint32 *types;
+	int num_names;
+	NTSTATUS status;
+
+	if (!(hnd = cm_get_lsa_handle(domain->name)))
+		return NT_STATUS_UNSUCCESSFUL;
+        
+	status = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol,
+				     1, sid, &names, &types, 
+				     &num_names);
+
+	if (NT_STATUS_IS_OK(status)) {
+		*type = types[0];
+		*name = names[0];
+		DEBUG(5,("Mapped sid to %s\n", *name));
+	}
+
+	return status;
+}
+
 
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
 	query_dispinfo,
 	enum_dom_groups,
-	name_to_sid
+	name_to_sid,
+	winbindd_rpc_sid_to_name
 };
 

@@ -498,7 +498,7 @@ BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid)
 {
 	size_t i;
 
-	if(len < sid_size(sid))
+	if (len < sid_size(sid))
 		return False;
 
 	SCVAL(outbuf,0,sid->sid_rev_num);
@@ -527,6 +527,28 @@ BOOL sid_parse(char *inbuf, size_t len, DOM_SID *sid)
 	return True;
 }
 
+
+/*****************************************************************
+ Compare the domain portion of two sids.
+*****************************************************************/  
+int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
+{
+	int i;
+
+	if (sid1 == sid2) return 0;
+	if (!sid1) return -1;
+	if (!sid2) return 1;
+
+	if (sid1->sid_rev_num != sid2->sid_rev_num)
+		return sid1->sid_rev_num - sid2->sid_rev_num;
+
+	for (i = 0; i < 6; i++)
+		if (sid1->id_auth[i] != sid2->id_auth[i])
+			return sid1->id_auth[i] - sid2->id_auth[i];
+
+	return 0;
+}
+
 /*****************************************************************
  Compare two sids.
 *****************************************************************/  
@@ -539,28 +561,20 @@ int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2)
 	if (!sid2) return 1;
 
 	/* compare most likely different rids, first: i.e start at end */
+	if (sid1->num_auths != sid2->num_auths)
+		return sid1->num_auths - sid2->num_auths;
+
 	for (i = sid1->num_auths-1; i >= 0; --i)
 		if (sid1->sub_auths[i] != sid2->sub_auths[i])
 			return sid1->sub_auths[i] - sid2->sub_auths[i];
 
-	if (sid1->num_auths != sid2->num_auths)
-		return sid1->num_auths - sid2->num_auths;
-
-	if (sid1->sid_rev_num != sid2->sid_rev_num)
-		return sid1->sid_rev_num - sid2->sid_rev_num;
-
-	for (i = 0; i < 6; i++)
-		if (sid1->id_auth[i] != sid2->id_auth[i])
-			return sid1->id_auth[i] - sid2->id_auth[i];
-
-	return 0;
+	return sid_compare_domain(sid1, sid2);
 }
 
 
 /*****************************************************************
  Compare two sids.
 *****************************************************************/  
-
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	return sid_compare(sid1, sid2) == 0;

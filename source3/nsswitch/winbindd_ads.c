@@ -271,11 +271,15 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
-/* the rpc backend methods are exposed via this structure */
+/* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
 	query_dispinfo,
 	enum_dom_groups,
-	name_to_sid
+	name_to_sid,
+	/* I can't see a good way to do a sid to name mapping with ldap,
+	   and MS servers always allow RPC for this (even in native mode) so
+	   just use RPC. Maybe that's why they allow it? */
+	winbindd_rpc_sid_to_name
 };
 
 #endif

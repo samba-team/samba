@@ -103,6 +103,12 @@ struct winbindd_methods {
 				const char *name,
 				DOM_SID *sid,
 				enum SID_NAME_USE *type);
+
+	NTSTATUS (*sid_to_name)(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				DOM_SID *sid,
+				char **name,
+				enum SID_NAME_USE *type);
 };
 
 /* Structures to hold per domain information */
