@@ -93,3 +93,9 @@ There are two mailing lists with talk about
 Heimdal. @email{heimdal-announce@@sics.se} is a low-volume announcement
 list, while @email{heimdal-discuss@@sics.se} is for general discussion.
 Send a message to @email{majordomo@@sics.se} to subscribe.
+
+@heading Heimdal source code, binaries and the manual
+
+The source code for heimdal, links to binaries and the manual (this
+document) can be found on our web-page at
+@url{http://www.pdc.kth.se/heimdal/}.
