@@ -357,18 +357,31 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 	exit(1);
 }
 
+/*********************************************************
+a strdup with exit
+**********************************************************/
+static char *xstrdup(char *s)
+{
+	s = strdup(s);
+	if (!s) {
+		fprintf(stderr,"out of memory\n");
+		exit(1);
+	}
+	return s;
+}
+
 
 /****************************************************************************
 mount smbfs
 ****************************************************************************/
 static void init_mount(void)
 {
-	int retval;
 	char mount_point[MAXPATHLEN+1];
-	pstring mount_command;
+	pstring tmp;
 	pstring svc2;
-	char *p;
 	struct cli_state *c;
+	char *args[20];
+	int i, retval;
 
 	if (realpath(mpoint, mount_point) == NULL) {
 		fprintf(stderr, "Could not resolve mount point %s\n", mpoint);
@@ -392,37 +405,46 @@ static void init_mount(void)
 	string_replace(svc2, '\\','/');
 	string_replace(svc2, ' ','_');
 
-	p = mount_command;
-	p += slprintf(p,sizeof(mount_command) - (p-mount_command),
-		      "smbmnt %s -s %s", mount_point, svc2);
+	memset(args, 0, sizeof(args[0])*20);
+
+	i=0;
+	args[i++] = "smbmnt";
+
+	args[i++] = mount_point;
+	args[i++] = "-s";
+	args[i++] = svc2;
+
 	if (mount_ro) {
-		p += slprintf(p,sizeof(mount_command) - (p-mount_command),
-			      " -r");
+		args[i++] = "-r";
 	}
 	if (mount_uid) {
-		p += slprintf(p,sizeof(mount_command) - (p-mount_command),
-			      " -u %d", mount_uid);
+		slprintf(tmp, sizeof(tmp), "%d", mount_uid);
+		args[i++] = "-u";
+		args[i++] = xstrdup(tmp);
 	}
 	if (mount_gid) {
-		p += slprintf(p,sizeof(mount_command) - (p-mount_command),
-			      " -g %d", mount_gid);
+		slprintf(tmp, sizeof(tmp), "%d", mount_gid);
+		args[i++] = "-g";
+		args[i++] = xstrdup(tmp);
 	}
 	if (mount_fmask) {
-		p += slprintf(p,sizeof(mount_command) - (p-mount_command),
-			      " -f 0%o", mount_fmask);
+		slprintf(tmp, sizeof(tmp), "0%o", mount_fmask);
+		args[i++] = "-f";
+		args[i++] = xstrdup(tmp);
 	}
 	if (mount_dmask) {
-		p += slprintf(p,sizeof(mount_command) - (p-mount_command),
-			      " -d 0%o", mount_dmask);
+		slprintf(tmp, sizeof(tmp), "0%o", mount_dmask);
+		args[i++] = "-d";
+		args[i++] = xstrdup(tmp);
 	}
 
-#if 0
-	fprintf(stderr, "[%s]\n", mount_command);
-#endif
-
-	if ((retval = system(mount_command)) != 0) {
-		fprintf(stderr, "mount failed [%s]\n", mount_command);
-		exit(1);
+	if (fork() == 0) {
+		exit(execvp("smbmnt", args));
+	}
+	retval = -1;
+	waitpid(-1, &retval, 0);
+	if (retval) {
+		fprintf(stderr,"smbmnt failed\n");
 	}
 
 	/* Ok...  This is the rubicon for that mount point...  At any point
