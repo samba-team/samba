@@ -1,3 +1,8 @@
+2000-07-07  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd.c: do not call setproctitle with a variable as the
+	format string
+
 2000-07-01  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpd_locl.h: krb5.h before kafs.h
