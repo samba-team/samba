@@ -493,6 +493,11 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 		ret = False;
 	}
 
+	if (!test_FlushKey(p, mem_ctx, &handle)) {
+		printf("FlushKey failed\n");
+		ret = False;
+	}
+
 	if (!test_OpenKey(p, mem_ctx, &handle, "spottyfoot", &newhandle)) {
 		printf("CreateKey failed (OpenKey after Create didn't work)\n");
 		ret = False;
@@ -500,6 +505,11 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 
 	if (!test_DeleteKey(p, mem_ctx, &handle, "spottyfoot")) {
 		printf("DeleteKey failed\n");
+		ret = False;
+	}
+
+	if (!test_FlushKey(p, mem_ctx, &handle)) {
+		printf("FlushKey failed\n");
 		ret = False;
 	}
 
@@ -512,12 +522,6 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 		printf("GetVersion failed\n");
 		ret = False;
 	}
-
-	if (!test_FlushKey(p, mem_ctx, &handle)) {
-		printf("FlushKey failed\n");
-		ret = False;
-	}
-
 
 	/* The HKCR hive has a very large fanout */
 

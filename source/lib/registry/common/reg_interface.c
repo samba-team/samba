@@ -214,7 +214,11 @@ WERROR reg_key_num_subkeys(REG_KEY *key, int *count)
 {
 	if(!key) return WERR_INVALID_PARAM;
 	
-	if(!key->handle->functions->num_subkeys) {
+	if(key->handle->functions->num_subkeys) {
+		return key->handle->functions->num_subkeys(key, count);
+	}
+
+	if(key->handle->functions->fetch_subkeys) {
 		if(!key->cache_subkeys) 
 			key->handle->functions->fetch_subkeys(key, &key->cache_subkeys_count, &key->cache_subkeys);
 
@@ -222,7 +226,20 @@ WERROR reg_key_num_subkeys(REG_KEY *key, int *count)
 		return WERR_OK;
 	}
 
-	return key->handle->functions->num_subkeys(key, count);
+	if(key->handle->functions->get_subkey_by_index) {
+		int i;
+		WERROR error;
+		REG_KEY *dest;
+		for(i = 0; W_ERROR_IS_OK(error = key->handle->functions->get_subkey_by_index(key, i, &dest)); i++) {
+			reg_key_free(dest);
+		}
+
+		*count = i;
+		if(W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) return WERR_OK;
+		return error;
+	}
+
+	return WERR_NOT_SUPPORTED;
 }
 
 WERROR reg_key_num_values(REG_KEY *key, int *count)
@@ -306,8 +323,7 @@ WERROR reg_key_get_subkey_by_name(REG_KEY *key, const char *name, REG_KEY **subk
 
 WERROR reg_key_get_value_by_name(REG_KEY *key, const char *name, REG_VAL **val)
 {
-	int i, max;
-	REG_VAL *ret = NULL;
+	int i;
 	WERROR error = WERR_OK;
 
 	if(!key) return WERR_INVALID_PARAM;
@@ -361,7 +377,6 @@ WERROR reg_sync(REG_KEY *h, const char *location)
 
 WERROR reg_key_del_recursive(REG_KEY *key)
 {
-	BOOL succeed = True;
 	WERROR error = WERR_OK;
 	int i;
 	
@@ -542,4 +557,28 @@ WERROR reg_save(REG_HANDLE *h, const char *location)
 {
 	/* FIXME */	
 	return WERR_NOT_SUPPORTED;
+}
+
+WERROR reg_key_get_parent(REG_KEY *key, REG_KEY **parent)
+{
+	char *parent_name;
+	char *last;
+	REG_KEY *root;
+	WERROR error;
+
+	error = reg_get_root(key->handle, &root);
+	if(!W_ERROR_IS_OK(error)) return error;
+
+	parent_name = strdup(reg_key_get_path(key));
+	last = strrchr(parent_name, '\\');
+
+	if(!last) {
+		SAFE_FREE(parent_name);
+		return WERR_FOOBAR;
+	}
+	*last = '\0';
+
+	error = reg_open_key(root, parent_name, parent);
+	SAFE_FREE(parent_name);
+	return error;
 }

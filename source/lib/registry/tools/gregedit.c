@@ -84,6 +84,7 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 	g_assert(k);
 	
 	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(k, i, &sub)); i++) {
+		int count;
 		/* Replace the blank child with the first directory entry
            You may be tempted to remove the blank child node and then 
            append a new one.  Don't.  If you remove the blank child 
@@ -103,14 +104,8 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 						sub,
 						-1);
 		
-		gtk_tree_store_append(store_keys, &tmpiter, &iter);
-	}
-
-	/* Remove placeholder child */
-	if(i == 0) {
-	    gtk_tree_model_iter_children(GTK_TREE_MODEL(store_keys), 
-                                     &iter, parent);
-		gtk_tree_store_remove(store_keys, &iter);
+		if(W_ERROR_IS_OK(reg_key_num_subkeys(sub, &count)) && count > 0) 
+			gtk_tree_store_append(store_keys, &tmpiter, &iter);
 	}
 
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(error);

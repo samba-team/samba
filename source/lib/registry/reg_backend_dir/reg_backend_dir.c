@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "lib/registry/common/registry.h"
 
-static WERROR reg_dir_add_key(REG_KEY *parent, const char *name, uint32 access_mask, SEC_DESC *desc)
+static WERROR reg_dir_add_key(REG_KEY *parent, const char *name, uint32 access_mask, SEC_DESC *desc, REG_KEY **result)
 {
 	char *path;
 	int ret;
@@ -29,7 +29,7 @@ static WERROR reg_dir_add_key(REG_KEY *parent, const char *name, uint32 access_m
 	path = reg_path_win2unix(path);
 	ret = mkdir(path, 0700);
 	SAFE_FREE(path);
-	if(ret == 0)return WERR_OK;
+	if(ret == 0)return WERR_OK; /* FIXME */
 	return WERR_INVALID_PARAM;
 }
 
@@ -83,7 +83,6 @@ static WERROR reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
 		if(e->d_type == DT_DIR && 
 		   strcmp(e->d_name, ".") &&
 		   strcmp(e->d_name, "..")) {
-			char *newfullpath;
 			ar[(*count)] = reg_key_new_rel(e->d_name, k, NULL);
 			ar[(*count)]->backend_data = talloc_asprintf(ar[*count]->mem_ctx, "%s/%s", fullpath, e->d_name);
 			if(ar[(*count)])(*count)++;
@@ -106,16 +105,8 @@ static WERROR reg_dir_open(REG_HANDLE *h, const char *loc, const char *credentia
 	return WERR_OK;
 }
 
-static WERROR reg_dir_add_value(REG_KEY *p, const char *name, int type, void *data, int len, REG_VAL **value)
+static WERROR reg_dir_add_value(REG_KEY *p, const char *name, int type, void *data, int len)
 {
-	char *fullpath;
-	FILE *fd;
-	*value = reg_val_new(p, NULL);
-	(*value)->name = name?talloc_strdup((*value)->mem_ctx, name):NULL;
-	fullpath = reg_path_win2unix(strdup(reg_val_get_path(*value)));
-	
-	fd = fopen(fullpath, "w+");
-	
 	/* FIXME */
 	return WERR_NOT_SUPPORTED;
 }

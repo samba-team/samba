@@ -58,8 +58,8 @@ struct reg_val_s {
 };
 
 /* FIXME */
-typedef void (*key_notification_function) ();
-typedef void (*value_notification_function) ();
+typedef void (*key_notification_function) (void);
+typedef void (*value_notification_function) (void);
 
 
 /* 
