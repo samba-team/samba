@@ -566,7 +566,8 @@ int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx,
 			if (strcasecmp(el->name, "objectClass") == 0 &&
 			    (strcasecmp((char *)el->values[j].data, "Template") == 0 ||
 			     strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "groupTemplate") == 0)) {
+			     strcasecmp((char *)el->values[j].data, "groupTemplate") == 0 ||
+			     strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0)) {
 				continue;
 			}
 			samdb_msg_add_string(ctx, mem_ctx, msg, el->name, 
