@@ -968,7 +968,7 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 
 
 
-#if 0
+#if 1
 #define MANGLE_TDB_VERSION		"20010927"
 #define MANGLE_TDB_FILE_NAME		"mangle.tdb"
 #define MANGLED_PREFIX			"MANGLED_"
@@ -978,13 +978,7 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 #define MANGLE_SUFFIX_SIZE		2
 
 
-struct mt_enum_info {
-	TDB_CONTEXT	*mangle_tdb;
-	TDB_DATA	key;
-};
-
-
-static struct mt_enum_info	global_mt_ent = {0, 0};
+static TDB_CONTEXT	*mangle_tdb;
 
 static int POW10(unsigned int exp)
 {
@@ -998,20 +992,17 @@ static int POW10(unsigned int exp)
 	return result;
 }
 
-static BOOL init_mangle_tdb(void)
+BOOL init_mangle_tdb(void)
 {
 	char *tdbfile;
 	
-	if (global_mt_ent.mangle_tdb == 0)
-	{
-		tdbfile = lock_path(MANGLE_TDB_FILE_NAME); /* this return a static pstring do not try to free it */
+	tdbfile = lock_path(MANGLE_TDB_FILE_NAME); /* this return a static pstring do not try to free it */
 
-		/* Open tdb */
-		if (!(global_mt_ent.mangle_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0600)))
-		{
-			DEBUG(0, ("Unable to open Mangle TDB\n"));
-			return False;
-		}
+	/* Open tdb */
+	if (!(mangle_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0600)))
+	{
+		DEBUG(0, ("Unable to open Mangle TDB\n"));
+		return False;
 	}
 
 	return True;
@@ -1128,7 +1119,6 @@ smb_ucs2_t *unmangle(const smb_ucs2_t *mangled)
 
 	if (strlen_w(mangled) > 12) return NULL;
 	if (!strchr_wa(mangled, '~')) return NULL;
-	if (!init_mangle_tdb()) return NULL;
 	
 	ret = mangle_get_prefix(mangled, &pref, &ext);
 	if (!ret) return NULL;
@@ -1143,11 +1133,11 @@ smb_ucs2_t *unmangle(const smb_ucs2_t *mangled)
 	key.dsize = strlen (keystr) + 1;
 	
 	/* get the record */
-	data = tdb_fetch(global_mt_ent.mangle_tdb, key);
+	data = tdb_fetch(mangle_tdb, key);
 	
 	if (!data.dptr) /* not found */
 	{
-		DEBUG(5,("unmangle: failed retrieve from db %s\n", tdb_errorstr(global_mt_ent.mangle_tdb)));
+		DEBUG(5,("unmangle: failed retrieve from db %s\n", tdb_errorstr(mangle_tdb)));
 		retstr = NULL;
 		goto done;
 	}
@@ -1197,15 +1187,13 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 	fstring mufname;
 	fstring prefix;
 	BOOL tclock = False;
-	char suffix[MANGLE_SUFFIX_SIZE + 1];
+	char suffix[7];
 	smb_ucs2_t *mangled = NULL;
 	smb_ucs2_t *um, *ext, *p = NULL;
 	smb_ucs2_t temp[8];
 	size_t pref_len, ext_len;
 	size_t um_len;
 	uint32 n, c, pos;
-
-	if (!init_mangle_tdb()) return NULL;
 
 	/* TODO: if it is a path return a failure ?? */
 	if (!mangle_get_prefix(unmangled, &um, &ext)) return NULL;
@@ -1219,13 +1207,13 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 	key.dsize = strlen(keystr) + 1;
 
 	/* get the record */
-	data = tdb_fetch (global_mt_ent.mangle_tdb, key);
+	data = tdb_fetch (mangle_tdb, key);
 	if (!data.dptr) /* not found */
 	{
-		if (tdb_error(global_mt_ent.mangle_tdb) != TDB_ERR_NOEXIST)
+		if (tdb_error(mangle_tdb) != TDB_ERR_NOEXIST)
 		{
 			DEBUG(0, ("mangle: database retrieval error: %s\n",
-					tdb_errorstr(global_mt_ent.mangle_tdb)));
+					tdb_errorstr(mangle_tdb)));
 			goto done;
 		}
 
@@ -1242,6 +1230,7 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 				goto done;
 			}
 			strncpy_w(temp, um, pos);
+			temp[pos] = 0;
 			strlower_w(temp);
 
 			ucs2_to_dos(NULL, prefix, temp, sizeof(prefix), 0, STR_TERMINATE);
@@ -1259,29 +1248,44 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 		   fail (correct) otherwise it will create a new entry with counter set
 		   to 0
 		 */
-		tdb_store(global_mt_ent.mangle_tdb, klock, data, TDB_INSERT);
+		if(tdb_store(mangle_tdb, klock, data, TDB_INSERT) != TDB_SUCCESS)
+		{
+			if (tdb_error(mangle_tdb) != TDB_ERR_EXISTS)
+			{
+				DEBUG(0, ("mangle: database store error: %s\n",
+					tdb_errorstr(mangle_tdb)));
+				goto done;
+			}
+		}
 
 		/* lock the mangle counter for this prefix */		
-		if (!tdb_chainlock(global_mt_ent.mangle_tdb, klock))
+		if (tdb_chainlock(mangle_tdb, klock))
 		{
 			DEBUG(0,("mangle: failed to lock database\n!"));
 			goto done;
 		}
 		tclock = True;
 
-		data = tdb_fetch(global_mt_ent.mangle_tdb, klock);
+		data = tdb_fetch(mangle_tdb, klock);
 		if (!data.dptr)
 		{
 			DEBUG(0, ("mangle: database retrieval error: %s\n",
-					tdb_errorstr(global_mt_ent.mangle_tdb)));
+					tdb_errorstr(mangle_tdb)));
 			goto done;
 		}
 		c = *((uint32 *)data.dptr);
 		c++;
+		
+		if (c > MANGLE_COUNTER_MAX)
+		{
+			DEBUG(0, ("mangle: error, counter overflow!\n"));
+			goto done;
+		}
 			
 		temp[pos] = UCS2_CHAR('~');
 		temp[pos+1] = 0;
-		snprintf(suffix, MANGLE_SUFFIX_SIZE + 1, "%.6d", c);
+		snprintf(suffix, 7, "%.6d", c);
+		printf("[%s]\n", suffix);
 		strncat_wa(temp, &suffix[6 - MANGLE_SUFFIX_SIZE], MANGLE_SUFFIX_SIZE + 1);
 
 		ucs2_to_dos(NULL, mufname, temp, sizeof(mufname), 0, STR_TERMINATE);
@@ -1298,10 +1302,10 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 		data.dsize = (strlen_w(um) + 1) * sizeof (smb_ucs2_t);
 		data.dptr = (void *)um;
 
-		if (tdb_store(global_mt_ent.mangle_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
+		if (tdb_store(mangle_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
 		{
 			DEBUG(0, ("mangle: database store error: %s\n",
-					tdb_errorstr(global_mt_ent.mangle_tdb)));
+					tdb_errorstr(mangle_tdb)));
 			goto done;
 		}
 
@@ -1312,16 +1316,16 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 		key.dsize = strlen (keystr) + 1;
 		data.dsize = strlen(mufname +1);
 		data.dptr = mufname;
-		if (tdb_store(global_mt_ent.mangle_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
+		if (tdb_store(mangle_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
 		{
-			DEBUG(0, ("mangle: store failed: %s\n",
-					tdb_errorstr(global_mt_ent.mangle_tdb)));
+			DEBUG(0, ("mangle: database store failed: %s\n",
+					tdb_errorstr(mangle_tdb)));
 
 			/* try to delete the mangled key entry to avoid later inconsistency */
 			slprintf(keystr, sizeof(keystr)-1, "%s%s", MANGLED_PREFIX, mufname);
 			key.dptr = keystr;
 			key.dsize = strlen (keystr) + 1;
-			if (!tdb_delete(global_mt_ent.mangle_tdb, key))
+			if (!tdb_delete(mangle_tdb, key))
 			{
 				DEBUG(0, ("mangle: severe error, mangled tdb may be inconsistent!\n"));
 			}
@@ -1337,22 +1341,23 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 		
 		data.dptr = (char *)&c;
 		data.dsize = sizeof(uint32);
-		if(!tdb_store(global_mt_ent.mangle_tdb, klock, data, TDB_INSERT))
+		/* store the counter */
+		if(tdb_store(mangle_tdb, klock, data, TDB_REPLACE) != TDB_SUCCESS)
 		{
-			DEBUG(0, ("mangle: store failed: %s\n",
-					tdb_errorstr(global_mt_ent.mangle_tdb)));
+			DEBUG(0, ("mangle: database store failed: %s\n",
+					tdb_errorstr(mangle_tdb)));
 			/* try to delete the mangled and long key entry to avoid later inconsistency */
 			slprintf(keystr, sizeof(keystr)-1, "%s%s", MANGLED_PREFIX, mufname);
 			key.dptr = keystr;
 			key.dsize = strlen (keystr) + 1;
-			if (!tdb_delete(global_mt_ent.mangle_tdb, key))
+			if (!tdb_delete(mangle_tdb, key))
 			{
 				DEBUG(0, ("mangle: severe error, mangled tdb may be inconsistent!\n"));
 			}
 			slprintf(keystr, sizeof(keystr)-1, "%s%s", LONG_PREFIX, longname);
 			key.dptr = keystr;
 			key.dsize = strlen (keystr) + 1;
-			if (!tdb_delete(global_mt_ent.mangle_tdb, key))
+			if (!tdb_delete(mangle_tdb, key))
 			{
 				DEBUG(0, ("mangle: severe error, mangled tdb may be inconsistent!\n"));
 			}
@@ -1360,7 +1365,7 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 		}
 
 		tclock = False;
-		tdb_chainunlock(global_mt_ent.mangle_tdb, klock);
+		tdb_chainunlock(mangle_tdb, klock);
 	}
 	else /* FOUND */
 	{
@@ -1399,7 +1404,7 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 	}
 
 done:
-	if (tclock) tdb_chainunlock(global_mt_ent.mangle_tdb, klock);
+	if (tclock) tdb_chainunlock(mangle_tdb, klock);
 	SAFE_FREE(p);
 	SAFE_FREE(um);
 	SAFE_FREE(ext);
@@ -1409,7 +1414,7 @@ done:
 
 #endif /* 0 */
 
-#ifdef TEST_MANGLE_CODE
+#if 1 /* TEST_MANGLE_CODE */
 
 #define LONG		"this_is_a_long_file_name"
 #define	LONGM		"this_~01"
@@ -1430,7 +1435,7 @@ static void unmangle_test (char *name, char *ext)
 	if (ext)
 	{
 		strncat_wa(ucs2_name, ".", 1);
-		strncat_wa(ucs2_name, ext, strlen(ext));
+		strncat_wa(ucs2_name, ext, strlen(ext) + 1);
 	}
 	retstr = unmangle(ucs2_name);
 	if(retstr) pull_ucs2(NULL, unix_name, retstr, sizeof(unix_name), 0, STR_TERMINATE);
@@ -1450,7 +1455,7 @@ static void mangle_test (char *name, char *ext)
 	if (ext)
 	{
 		strncat_wa(ucs2_name, ".", 1);
-		strncat_wa(ucs2_name, ext, strlen(ext));
+		strncat_wa(ucs2_name, ext, strlen(ext) + 1);
 	}
 	retstr = _mangle(ucs2_name);
 	if(retstr) pull_ucs2(NULL, unix_name, retstr, sizeof(unix_name), 0, STR_TERMINATE);
@@ -1462,6 +1467,8 @@ static void mangle_test (char *name, char *ext)
 
 void mangle_test_code(void)
 {
+	init_mangle_tdb();
+
 	/* unmangle every */
 	unmangle_test (LONG, NULL);
 	unmangle_test (LONG, EXT1);
