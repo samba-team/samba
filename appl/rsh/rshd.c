@@ -149,7 +149,7 @@ recv_bsd_auth (int s, u_char *buf,
     
     *client_username = read_str (s, USERNAME_SZ, "local username");
     *server_username = read_str (s, USERNAME_SZ, "remote username");
-    *cmd = read_str (s, ARG_MAX, "command");
+    *cmd = read_str (s, ARG_MAX + 1, "command");
     pwd = getpwnam(*server_username);
     if (pwd == NULL)
 	fatal(s, NULL, "Login incorrect.");
@@ -206,7 +206,7 @@ recv_krb4_auth (int s, u_char *buf,
     *server_username = read_str (s, USERNAME_SZ, "remote username");
     if (kuserok (&auth, *server_username) != 0)
 	fatal (s, NULL, "Permission denied.");
-    *cmd = read_str (s, ARG_MAX, "command");
+    *cmd = read_str (s, ARG_MAX + 1, "command");
 
     syslog(LOG_INFO|LOG_AUTH,
 	   "kerberos v4 shell from %s on %s as %s, cmd '%.80s'",
@@ -348,8 +348,8 @@ recv_krb5_auth (int s, u_char *buf,
 			krb5_get_err_text(context, status));
 
     *server_username = read_str (s, USERNAME_SZ, "remote username");
-    *cmd = read_str (s, ARG_MAX, "command");
-    *client_username = read_str (s, ARG_MAX, "local username");
+    *cmd = read_str (s, ARG_MAX + 1, "command");
+    *client_username = read_str (s, ARG_MAX + 1, "local username");
 
     if(protocol_version == 2) {
 	status = krb5_auth_con_getremotesubkey(context, auth_context, 
