@@ -69,7 +69,13 @@ enum winbindd_result {
 /* Winbind response structure */
 
 struct winbindd_response {
-    enum winbindd_result result;
+    
+    /* Header information */
+
+    int length;                           /* Length of response */
+    enum winbindd_result result;          /* Result code */
+
+    /* Fixed length return data */
 
     union {
         
@@ -92,12 +98,15 @@ struct winbindd_response {
             pstring gr_name;
             pstring gr_passwd;
             gid_t gr_gid;
-            pstring gr_mem;
             int num_gr_mem;
             int grent_ndx;
         } gr;
 
     } data;
+
+    /* Variable length return data */
+
+    void *extra_data;                    /* getgrnam, getgrgid, getgrent */
 };
 
 #endif
