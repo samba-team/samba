@@ -125,6 +125,7 @@ struct
   {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
   {"lookupsids", cmd_lsa_lookup_sids,  "Resolve names from SIDs"},
   {"lookupnames",cmd_lsa_lookup_names,  "Resolve SIDs from names"},
+  {"lookupdomain",cmd_sam_lookup_domain, "Obtain SID for a local domain"},
   {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)"},
   {"addgroupmem",cmd_sam_add_groupmem,"<group rid> [member rid1] [member rid2] ... SAM Add Domain Group Member"},
   {"addaliasmem",cmd_sam_add_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Add Domain Alias Member"},
