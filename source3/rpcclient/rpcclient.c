@@ -599,7 +599,8 @@ static void usage(void)
 	BOOL 			interactive = True;
 	int 			opt;
 	int 			olddebug;
-	static char		*cmdstr = "", *server;
+	static char		*cmdstr = "";
+	const char *server;
 	struct cli_state	*cli;
 	fstring 		password="",
 				username="",
