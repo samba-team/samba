@@ -649,57 +649,6 @@ BOOL yesno(char *p)
   return(False);
 }
 
-/****************************************************************************
-set the length of a file from a filedescriptor.
-Returns 0 on success, -1 on failure.
-****************************************************************************/
-
-/* tpot vfs need to recode this function */
-
-int set_filelen(int fd, SMB_OFF_T len)
-{
-/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
-   extend a file with ftruncate. Provide alternate implementation
-   for this */
-
-#ifdef HAVE_FTRUNCATE_EXTEND
-  return sys_ftruncate(fd, len);
-#else
-  SMB_STRUCT_STAT st;
-  char c = 0;
-  SMB_OFF_T currpos = sys_lseek(fd, (SMB_OFF_T)0, SEEK_CUR);
-
-  if(currpos == -1)
-    return -1;
-  /* Do an fstat to see if the file is longer than
-     the requested size (call ftruncate),
-     or shorter, in which case seek to len - 1 and write 1
-     byte of zero */
-  if(sys_fstat(fd, &st)<0)
-    return -1;
-
-#ifdef S_ISFIFO
-  if (S_ISFIFO(st.st_mode))
-    return 0;
-#endif
-
-  if(st.st_size == len)
-    return 0;
-  if(st.st_size > len)
-    return sys_ftruncate(fd, len);
-
-  if(sys_lseek(fd, len-1, SEEK_SET) != len -1)
-    return -1;
-  if(write(fd, &c, 1)!=1)
-    return -1;
-  /* Seek to where we were */
-  if(sys_lseek(fd, currpos, SEEK_SET) != currpos)
-    return -1;
-  return 0;
-#endif
-}
-
-
 #ifdef HPUX
 /****************************************************************************
 this is a version of setbuffer() for those machines that only have setvbuf

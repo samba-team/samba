@@ -130,6 +130,7 @@ struct cli_state {
 	uint32 ntlmssp_flags;
 
 	BOOL use_oplocks; /* should we use oplocks? */
+	BOOL use_level_II_oplocks; /* should we use level II oplocks? */
 };
 
 #endif /* _CLIENT_H */
