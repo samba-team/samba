@@ -136,10 +136,12 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define PVAL(buf,pos) ((unsigned)CVAL(buf,pos))
 #define SCVAL(buf,pos,val) (CVAL(buf,pos) = (val))
 
+#define CVALCONST(buf,pos) (((const unsigned char *)(buf))[pos])
+#define PVALCONST(buf,pos) ((const unsigned)CVAL(buf,pos))
 
 #if CAREFUL_ALIGNMENT
 
-#define SVAL(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
+#define SVAL(buf,pos) (PVALCONST(buf,pos)|PVALCONST(buf,(pos)+1)<<8)
 #define IVAL(buf,pos) (SVAL(buf,pos)|SVAL(buf,(pos)+2)<<16)
 #define SSVALX(buf,pos,val) (CVAL(buf,pos)=(val)&0xFF,CVAL(buf,pos+1)=(val)>>8)
 #define SIVALX(buf,pos,val) (SSVALX(buf,pos,val&0xFFFF),SSVALX(buf,pos+2,val>>16))
@@ -149,6 +151,11 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define SIVAL(buf,pos,val) SIVALX((buf),(pos),((uint32)(val)))
 #define SSVALS(buf,pos,val) SSVALX((buf),(pos),((int16)(val)))
 #define SIVALS(buf,pos,val) SIVALX((buf),(pos),((int32)(val)))
+
+#define SVALMOD(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
+#define IVALMOD(buf,pos) (SVALMOD(buf,pos)|SVALMOD(buf,(pos)+2)<<16)
+#define SVALSMOD(buf,pos) ((int16)SVALMOD(buf,pos))
+#define IVALSMOD(buf,pos) ((int32)IVALMOD(buf,pos))
 
 #else /* CAREFUL_ALIGNMENT */
 
