@@ -458,3 +458,24 @@ BOOL cli_check_sign_mac(struct cli_state *cli)
 
 	return True;
 }
+
+/***********************************************************
+ SMB signing - server API's.
+************************************************************/
+
+void srv_enable_signing(void)
+{
+}
+
+void srv_disable_signing(void)
+{
+}
+
+BOOL srv_check_sign_mac(char *buf)
+{
+	return True;
+}
+
+void srv_calculate_sign_mac(char *buf)
+{
+}
