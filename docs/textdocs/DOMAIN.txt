@@ -24,16 +24,22 @@ Configuration Instructions:	Network Logons
 
 To use domain logons and profiles you need to do the following:
 
-1) Setup nmbd and smbd and configure the smb.conf so that Samba is
-acting as the master browser. See INSTALL.txt and BROWSING.txt for
-details. 
 
-2) create a share called [netlogon] in your smb.conf. This share should
-be readable by all users, and probably should not be writeable. This
-share will hold your network logon scripts, and the CONFIG.POL file
-(Note: for details on the CONFIG.POL file, refer to the Microsoft
-Windows NT Administration documentation.  The format of these files
-is not known, so you will need to use Microsoft tools.)
+1) Setup nmbd and smbd by configuring smb.conf so that Samba is
+   acting as the master browser. See INSTALL.txt and BROWSING.txt
+   for details.
+
+2) Setup a WINS server (see NetBIOS.txt) and configure all your clients
+   to use that WINS service.  [lkcl 12jul97 - problems occur where
+   clients do not pick up the profiles properly unless they are using a
+   WINS server.  this is still under investigation].
+
+3) create a share called [netlogon] in your smb.conf. This share should
+   be readable by all users, and probably should not be writeable. This
+   share will hold your network logon scripts, and the CONFIG.POL file
+   (Note: for details on the CONFIG.POL file, refer to the Microsoft
+   Windows NT Administration documentation.  The format of these files
+   is not known, so you will need to use Microsoft tools.)
 
 For example I have used:
 
@@ -47,7 +53,7 @@ users, in a secure environment: ordinary users should not be allowed
 to modify or add files that another user's computer would then download
 when they log in.
 
-3) in the [global] section of smb.conf set the following:
+4) in the [global] section of smb.conf set the following:
 
    domain logons = yes
    logon script = %U.bat
@@ -56,25 +62,25 @@ the choice of batch file is, of course, up to you. The above would
 give each user a separate batch file as the %U will be changed to
 their username automatically. The other standard % macros may also be
 used. You can make the batch files come from a subdirectory by using
-soemthing like:
+something like:
 
    logon script = scripts\%U.bat
 
-4) create the batch files to be run when the user logs in. If the batch
-file doesn't exist then no batch file will be run. 
+5) create the batch files to be run when the user logs in. If the batch
+   file doesn't exist then no batch file will be run. 
 
 In the batch files you need to be careful to use DOS style cr/lf line
 endings. If you don't then DOS may get confused. I suggest you use a
 DOS editor to remotely edit the files if you don't know how to produce
 DOS style files under unix.
 
-5) Use smbclient with the -U option for some users to make sure that
-the \\server\NETLOGON share is available, the batch files are visible
-and they are readable by the users.
+6) Use smbclient with the -U option for some users to make sure that
+   the \\server\NETLOGON share is available, the batch files are
+   visible and they are readable by the users.
 
-6) you will probabaly find that your clients automatically mount the
-\\SERVER\NETLOGON share as drive z: while logging in. You can put some
-useful programs there to execute from the batch files.
+7) you will probabaly find that your clients automatically mount the
+   \\SERVER\NETLOGON share as drive z: while logging in. You can put
+   some useful programs there to execute from the batch files.
 
 NOTE: You must be using "security = user" or "security = server" for
 domain logons to work correctly. Share level security won't work
@@ -102,7 +108,10 @@ When a user first logs in on Windows 95, the file user.dat is created,
 as are folders "start menu", "desktop", "programs" and "nethood".  
 These directories and their contents will be merged with the local
 versions stored in c:\windows\profiles\username on subsequent logins,
-taking the most recent from each.
+taking the most recent from each.  You will need to use the [global]
+options "preserve case = yes", "short case preserve = yes" and
+"case sensitive = no" in order to maintain capital letters in shortcuts
+in any of the profile folders.
 
 The user.dat file contains all the user's preferences.  If you wish to
 enforce a set of preferences, rename their user.dat file to user.man,
@@ -115,7 +124,15 @@ and deny them write access to the file.
 
 3) On the Windows 95 machine, go to Control Panel | Network |
    Client for Microsoft Networks | Preferences.  Select 'Log on to
-   NT Domain'.  Press OK, and this time allow the computer to reboot.
+   NT Domain'.  Then, ensure that the Primary Logon is 'Client for
+   Microsoft Networks'.  Press OK, and this time allow the computer
+   to reboot.
+
+[If you have the Primary Logon as 'Client for Novell Networks', then
+the profiles and logon script will be downloaded from your Novell
+Server.  If you have the Primary Logon as 'Windows Logon', then the
+profiles will be loaded from the local machine - a bit against the
+concept of roaming profiles, if you ask me].
 
 You will now find that the Microsoft Networks Login box contains
 [user, password, domain] instead of just [user, password].  Type in
@@ -133,6 +150,11 @@ to examine the contents of the directory specified in the "logon path"
 
 These folders will be cached locally on the client, and updated when
 the user logs off (if you haven't made them read-only by then :-).
+If you make the folders read-only, then you will find that if the user
+creates further folders or short-cuts, that the client will merge the
+profile contents downloaded with the contents of the profile directory
+already on the local client, taking the newest folders and short-cuts
+from each set.
 
 
 If you have problems creating user profiles, you can reset the user's
@@ -170,10 +192,15 @@ they will be told that they are logging in "for the first time".
 
 6) check the contents of the profile path (see "logon path" described
    above), and delete the user.dat or user.man file for the user,
-   making a backup if required.
+   making a backup if required.  
 
 
 If all else fails, increase samba's debug log levels to between 3 and 10,
 and / or run a packet trace program such as tcpdump or netmon.exe, and
 look for any error reports.
+
+If you have access to an NT server, then first set up roaming profiles
+and / or netlogons on the NT server.  Make a packet trace, or examine
+the example packet traces provided with NT server, and see what the
+differences are with the equivalent samba trace.
 

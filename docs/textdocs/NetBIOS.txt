@@ -1,6 +1,6 @@
-Contributor:	Unknown
-Date:		Unknown
-Status:		Current
+Contributor:	lkcl - Copyright Luke Kenneth Casson Leighton 1997
+Date:		    March 1997
+Status:		    Current
 
 Subject:	Definition of NetBIOS Protocol and Name Resolution Modes
 =============================================================================
@@ -17,7 +17,17 @@ rfc1001.txt and rfc1002.txt.
 NetBEUI is a raw NetBIOS frame protocol implementation that allows NetBIOS
 datagrams to be sent out over the 'wire' embedded within LLC frames.
 NetBEUI is not required when using NetBIOS over TCP/IP protocols and it
-is preferrable NOT to install NetBEUI if it can be avoided.
+is preferable NOT to install NetBEUI if it can be avoided.
+
+IPX/SPX is also not required when using NetBIOS over TCP/IP, and it is
+preferable NOT to install the IPX/SPX transport unless you are using Novell
+servers.  At the very least, it is recommended that you do not install
+'NetBIOS over IPX/SPX'.
+
+[When installing Windows 95, you will find that NetBEUI and IPX/SPX are
+installed as the default protocols.  This is because they are the simplest
+to manage: no Windows 95 user-configuration is required].
+
 
 NetBIOS applications (such as samba) offer their services (for example,
 SMB file and print sharing) on a NetBIOS name.  They must claim this name
@@ -40,6 +50,7 @@ NetBIOS names are either UNIQUE or GROUP.  Only one application can claim a
 UNIQUE NetBIOS name on a network.
 
 There are two kinds of NetBIOS Name resolution: Broadcast and Point-to-Point.
+
 
 =================
 BROADCAST NetBIOS
@@ -102,13 +113,21 @@ because a Browse Server is a WINS client, which is _not_ the same thing].
 Clients can claim names, and therefore offer services on successfully claimed
 names, on their broadcast-isolated subnet.  One way to get NetBIOS services
 (such as browsing: see ftp.microsoft.com/drg/developr/CIFS/browdiff.txt; and
-SMB file/print sharing: see cifs4.txt) working on a LAN or WAN is to make
+SMB file/print sharing: see cifs6.txt) working on a LAN or WAN is to make
 your routers forward all broadcast packets from TCP/IP ports 137, 138 and 139.
+You will find, however, if you do this on a large LAN or a WAN, that your
+network is completely swamped by NetBIOS and browsing packets, which is why
+WINS was developed to minimise the necessity of broadcast traffic.
 
 WINS Clients therefore claim names from the WINS server.  If the WINS
 server allows them to register a name, the client's NetBIOS session service
 can then offer services on this name.  Other WINS clients will then
 contact the WINS server to resolve a NetBIOS name.
+
+
+=======================
+Samba WINS Capabilities
+=======================
 
 To configure samba as a WINS server, you must add "wins support = yes" to
 the [global] section of your smb.conf file.  This will enable WINS server

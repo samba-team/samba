@@ -35,7 +35,7 @@ software where to find dynamically loadable libraries that they depend upon.
 In fact, the registry contains entries that describes everything that anything
 may need to know to interact with the rest of the system.
 
-The registry files will can be located on any Windows NT machine by opening a
+The registry files can be located on any Windows NT machine by opening a
 command prompt and typing:
 	dir %SystemRoot%\System32\config
 
@@ -58,16 +58,16 @@ The Windows NT User database also resides within the registry. This part of
 the registry contains the user's security identifier, home directory, group
 memberships, desktop profile, and so on.
 
-Every Windows NT system (workstation as well as server) will have it's own
+Every Windows NT system (workstation as well as server) will have its own
 registry. Windows NT Servers that participate in Domain Security control
 have a database that they share in common - thus they do NOT own an
-independant full registry database of their own, as do Workstations and
+independent full registry database of their own, as do Workstations and
 plain Servers.
 
 The User database is called the SAM (Security Access Manager) database and
 is used for all user authentication as well as for authentication of inter-
 process authentication (ie: to ensure that the service action a user has
-requested is permitted within the limits of that user's privilidges).
+requested is permitted within the limits of that user's privileges).
 
 Windows for Workgroups, Windows 95, and Windows NT Workstations and Servers
 can participate in a Domain security system that is controlled by Windows NT
