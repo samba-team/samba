@@ -675,6 +675,8 @@ krb5_425_conv_principal_ext(krb5_context context,
 	return HEIM_ERR_V4_PRINC_NO_CONV;
     }
 	
+    if (*p == '.')
+	++p;
     snprintf(host, sizeof(host), "%s.%s", instance, p);
     ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
     if(func == NULL || (*func)(context, pr)){
