@@ -386,7 +386,7 @@ typedef struct
 	BOOL bMap_archive;
 	BOOL bStoreDosAttributes;
 	BOOL bLocking;
-	BOOL bStrictLocking;
+	int iStrictLocking;
 	BOOL bPosixLocking;
 	BOOL bShareModes;
 	BOOL bOpLocks;
@@ -511,7 +511,7 @@ static service sDefault = {
 	True,			/* bMap_archive */
 	False,			/* bStoreDosAttributes */
 	True,			/* bLocking */
-	True,			/* bStrictLocking */
+	True,			/* iStrictLocking */
 	True,			/* bPosixLocking */
 	True,			/* bShareModes */
 	True,			/* bOpLocks */
@@ -1075,7 +1075,7 @@ static struct parm_struct parm_table[] = {
 	{"oplock break wait time", P_INTEGER, P_GLOBAL, &Globals.oplock_break_wait_time, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL}, 
 	{"oplock contention limit", P_INTEGER, P_LOCAL, &sDefault.iOplockContentionLimit, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"posix locking", P_BOOL, P_LOCAL, &sDefault.bPosixLocking, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"strict locking", P_BOOL, P_LOCAL, &sDefault.bStrictLocking, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"strict locking", P_ENUM, P_LOCAL, &sDefault.iStrictLocking, NULL, enum_bool_auto, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"share modes", P_BOOL, P_LOCAL,  &sDefault.bShareModes, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 
 	{N_("Ldap Options"), P_SEP, P_SEPARATOR}, 
@@ -1858,7 +1858,7 @@ FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_store_dos_attributes, bStoreDosAttributes)
 FN_LOCAL_BOOL(lp_locking, bLocking)
-FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
+FN_LOCAL_INTEGER(lp_strict_locking, iStrictLocking)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
 FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
