@@ -110,7 +110,7 @@ static NTSTATUS nbench_connect(struct smbsrv_request *req, const char *sharename
 
 	ntvfs_set_private(req->tcon, depth, private);
 	
-	PASS_THRU(req->tcon, connect, (req, sharename, depth+1));
+	status = PASS_THRU(req->tcon, connect, (req, sharename, depth+1));
 
 	return status;
 }
@@ -125,7 +125,7 @@ static NTSTATUS nbench_disconnect(struct smbsrv_tcon *tcon, int depth)
 
 	close(private->log_fd);
 
-	PASS_THRU(tcon, disconnect, (tcon, depth+1));
+	status = PASS_THRU(tcon, disconnect, (tcon, depth+1));
 
 	return status;
 }
