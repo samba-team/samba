@@ -11,7 +11,6 @@ use smb_build_h;
 use input;
 use config_mk;
 use output;
-use direct;
 use dot;
 use strict;
 
@@ -60,8 +59,6 @@ sub smb_build_main($)
 	for my $mkfile (@mkfiles) {
 		config_mk::import_file($SMB_BUILD_CTX{INPUT}, $mkfile);
 	}
-
-	print Data::Dumper::Dumper($SMB_BUILD_CTX{INPUT});
 
 	%{$SMB_BUILD_CTX{DEPEND}} = input::check(\%SMB_BUILD_CTX);
 	
