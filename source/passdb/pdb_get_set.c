@@ -1183,6 +1183,23 @@ const smb_ucs2_t* pdb_get_tp_domain_name(const SAM_TRUST_PASSWD *trust)
 	return strdup_w(name);
 }
 
+/* Often useful for routines using domain name to form a string */
+const char* pdb_get_tp_domain_name_c(const SAM_TRUST_PASSWD *trust)
+{
+	char name[32];
+	size_t len;
+	
+	if (!trust)
+		return NULL;
+	
+	len = pull_ucs2(NULL, name, trust->private.uni_name, sizeof(name),
+	                trust->private.uni_name_len * 2, 0);
+	if (!len)
+		return NULL;
+
+	return strdup(name);
+}
+
 const char* pdb_get_tp_pass(const SAM_TRUST_PASSWD *trust)
 {
 	if (!trust)
