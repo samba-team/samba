@@ -40,10 +40,7 @@ NTSTATUS ndr_push_echo_SourceData(struct ndr_push *ndr, struct echo_SourceData *
 
 NTSTATUS ndr_push_TestCall(struct ndr_push *ndr, struct TestCall *r)
 {
-	NDR_CHECK(ndr_push_ptr(ndr, r->in.s));
-	if (r->in.s) {
-		NDR_CHECK(ndr_push_unistr(ndr, r->in.s));
-	}
+	NDR_CHECK(ndr_push_uint16(ndr, r->in.level));
 
 	return NT_STATUS_OK;
 }
@@ -94,8 +91,62 @@ NTSTATUS ndr_pull_echo_SourceData(struct ndr_pull *ndr, struct echo_SourceData *
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_pull_echo_ServerRole(struct ndr_pull *ndr, int ndr_flags, struct echo_ServerRole *r)
+{
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 2));
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->role));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_echo_PolicyInformation(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union echo_PolicyInformation *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	NDR_CHECK(ndr_pull_uint16(ndr, level));
+	switch (*level) {
+	case 6: {
+	NDR_CHECK(ndr_pull_echo_ServerRole(ndr, NDR_SCALARS, &r->role));
+	break; }
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	switch (*level) {
+	case 6:
+		NDR_CHECK(ndr_pull_echo_ServerRole(ndr, NDR_BUFFERS, &r->role));
+	break;
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_pull_TestCall(struct ndr_pull *ndr, struct TestCall *r)
 {
+	uint32 _ptr_info;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info));
+	if (_ptr_info) {
+		NDR_ALLOC(ndr, r->out.info);
+	} else {
+		r->out.info = NULL;
+	}
+	if (r->out.info) {
+	{ uint16 _level = r->in.level;
+	NDR_CHECK(ndr_pull_echo_PolicyInformation(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
+	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	}
+	}
 
 	return NT_STATUS_OK;
 }
@@ -195,6 +246,27 @@ void ndr_print_echo_SourceData(struct ndr_print *ndr, const char *name, int flag
 	ndr->depth--;
 }
 
+void ndr_print_echo_ServerRole(struct ndr_print *ndr, const char *name, struct echo_ServerRole *r)
+{
+	ndr_print_struct(ndr, name, "echo_ServerRole");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "role", r->role);
+	ndr->depth--;
+}
+
+void ndr_print_echo_PolicyInformation(struct ndr_print *ndr, const char *name, uint16 level, union echo_PolicyInformation *r)
+{
+	ndr_print_union(ndr, name, level, "echo_PolicyInformation");
+	switch (level) {
+	case 6:
+	ndr_print_echo_ServerRole(ndr, "role", &r->role);
+	break;
+
+	default:
+		ndr_print_bad_level(ndr, name, level);
+	}
+}
+
 void ndr_print_TestCall(struct ndr_print *ndr, const char *name, int flags, struct TestCall *r)
 {
 	ndr_print_struct(ndr, name, "TestCall");
@@ -202,17 +274,18 @@ void ndr_print_TestCall(struct ndr_print *ndr, const char *name, int flags, stru
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "TestCall");
 	ndr->depth++;
-	ndr_print_ptr(ndr, "s", r->in.s);
-	ndr->depth++;
-	if (r->in.s) {
-		ndr_print_unistr(ndr, "s", r->in.s);
-	}
-	ndr->depth--;
+	ndr_print_uint16(ndr, "level", r->in.level);
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "TestCall");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "info", r->out.info);
+	ndr->depth++;
+	if (r->out.info) {
+	ndr_print_echo_PolicyInformation(ndr, "info", r->in.level, r->out.info);
+	}
+	ndr->depth--;
 	ndr->depth--;
 	}
 	ndr->depth--;

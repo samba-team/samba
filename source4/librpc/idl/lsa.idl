@@ -132,6 +132,7 @@
 	} lsa_PDAccountInfo;
 
 	typedef struct {
+		uint16 unknown; /* an midl padding bug? */
 		uint16 role;
 	} lsa_ServerRole;
 
@@ -155,12 +156,13 @@
 	} lsa_ModificationInfo;
 
 	typedef struct {
-		uint32 shutdown_on_full;
+		uint8 shutdown_on_full;
 	} lsa_AuditFullSetInfo;
 
 	typedef struct {
-		uint32 shutdown_on_full;
-		uint32 log_is_full;
+		uint16 unknown; /* an midl padding bug? */
+		uint8 shutdown_on_full;
+		uint8 log_is_full;
 	} lsa_AuditFullQueryInfo;
 
 	typedef struct {
