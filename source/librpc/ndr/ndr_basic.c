@@ -999,6 +999,12 @@ void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 	ndr->print(ndr, "%s: struct %s", name, type);
 }
 
+void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type, 
+		    const char *val, uint32_t value)
+{
+	ndr->print(ndr, "%-25s: %s (%u)", name, val?val:"UNKNOWN", value);
+}
+
 void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%02x (%u)", name, v, v);
