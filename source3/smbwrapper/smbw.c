@@ -47,6 +47,7 @@ struct smbw_dir {
 	int offset, count, malloced;
 	struct smbw_server *srv;
 	struct file_info *list;
+	char *path;
 };
 
 static struct smbw_file *smbw_files;
@@ -546,6 +547,7 @@ static void free_dir(struct smbw_dir *dir)
 	if (dir->list) {
 		free(dir->list);
 	}
+	if (dir->path) free(dir->path);
 	ZERO_STRUCTP(dir);
 	free(dir);
 }
@@ -602,6 +604,7 @@ int smbw_dir_open(const char *fname, int flags)
 	struct smbw_dir *dir=NULL;
 	pstring mask;
 	int fd;
+	char *s;
 
 	DEBUG(4,("%s\n", __FUNCTION__));
 
@@ -613,7 +616,7 @@ int smbw_dir_open(const char *fname, int flags)
 	smbw_init();
 
 	/* work out what server they are after */
-	smbw_parse_path(fname, server, share, path);
+	s = smbw_parse_path(fname, server, share, path);
 
 	DEBUG(4,("dir_open share=%s\n", share));
 
@@ -665,6 +668,7 @@ int smbw_dir_open(const char *fname, int flags)
 
 	dir->fd = fd + SMBW_FD_OFFSET;
 	dir->srv = srv;
+	dir->path = strdup(s);
 
 	DEBUG(4,("  -> %d\n", dir->count));
 
@@ -987,7 +991,7 @@ int smbw_dir_close(int fd)
 	bitmap_clear(file_bmap, dir->fd - SMBW_FD_OFFSET);
 	
 	DLIST_REMOVE(smbw_dirs, dir);
-	
+
 	free_dir(dir);
 
 	return 0;
@@ -1633,4 +1637,27 @@ char *smbw_getcwd(char *buf, size_t size)
 
 	smbw_busy--;
 	return buf;
+}
+
+/***************************************************** 
+a wrapper for fchdir()
+*******************************************************/
+int smbw_fchdir(unsigned int fd)
+{
+	struct smbw_dir *dir;
+
+	DEBUG(4,("%s\n", __FUNCTION__));
+
+	smbw_busy++;
+
+	dir = smbw_dir(fd);
+	if (!dir) {
+		errno = EBADF;
+		smbw_busy--;
+		return -1;
+	}	
+
+	smbw_busy--;
+	
+	return chdir(dir->path);
 }
