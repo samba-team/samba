@@ -924,20 +924,9 @@ static void expand_one(char *Mask,int len)
 /****************************************************************************
 parse out a directory name from a path name. Assumes dos style filenames.
 ****************************************************************************/
-static char *dirname_dos(char *path,char *buf)
+static void dirname_dos(char *path,char *buf)
 {
-  char *p = strrchr(path,'\\');
-
-  if (!p)
-    pstrcpy(buf,path);
-  else
-    {
-      *p = 0;
-      pstrcpy(buf,path);
-      *p = '\\';
-    }
-
-  return(buf);
+	split_at_last_component(path, buf, '\\', NULL);
 }
 
 
@@ -3052,4 +3041,57 @@ int set_maxfiles(int requested_max)
 	 */
 	return requested_max;
 #endif
+}
+
+
+/*****************************************************************
+ splits out the last subkey of a key
+ *****************************************************************/  
+void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name)
+{
+	split_at_last_component(full_keyname, key_name, '\\', subkey_name);
+}
+
+/*****************************************************************
+ splits out the start of the key (HKLM or HKU) and the rest of the key
+ *****************************************************************/  
+BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
+{
+	pstring tmp;
+
+	if (!next_token(&full_keyname, tmp, "\\", sizeof(tmp)))
+	{
+		return False;
+	}
+
+	(*reg_type) = 0;
+
+	DEBUG(10, ("reg_split_key: hive %s\n", tmp));
+
+	if (strequal(tmp, "HKLM") || strequal(tmp, "HKEY_LOCAL_MACHINE"))
+	{
+		(*reg_type) = HKEY_LOCAL_MACHINE;
+	}
+	else if (strequal(tmp, "HKU") || strequal(tmp, "HKEY_USERS"))
+	{
+		(*reg_type) = HKEY_USERS;
+	}
+	else
+	{
+		DEBUG(10,("reg_split_key: unrecognised hive key %s\n", tmp));
+		return False;
+	}
+	
+	if (next_token(NULL, tmp, "\n\r", sizeof(tmp)))
+	{
+		fstrcpy(key_name, tmp);
+	}
+	else
+	{
+		key_name[0] = 0;
+	}
+
+	DEBUG(10, ("reg_split_key: name %s\n", key_name));
+
+	return True;
 }

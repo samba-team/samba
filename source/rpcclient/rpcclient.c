@@ -106,13 +106,12 @@ struct
 } commands[] = 
 {
   {"regenum",    cmd_reg_enum,         "<keyname> Registry Enumeration (keys, values)"},
-  {"regdeletekey",cmd_reg_delete_key,  "<parentname> <keyname> Registry Key Delete"},
-  {"regcreatekey",cmd_reg_create_key,  "<parentname> <keyname> [keyclass] Registry Key Create"},
+  {"regdeletekey",cmd_reg_delete_key,  "<keyname> Registry Key Delete"},
+  {"regcreatekey",cmd_reg_create_key,  "<keyname> [keyclass] Registry Key Create"},
   {"regquerykey",cmd_reg_query_key,    "<keyname> Registry Key Query"},
-  {"regdeleteval",cmd_reg_delete_val,  "<parentname> <valname> Registry Value Delete"},
-  {"regcreateval",cmd_reg_create_val,  "<parentname> <valname> <valtype> <value> Registry Key Create"},
-  {"regtest2",   cmd_reg_test2,        "Registry Testing No 2"},
-  {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> | <valname> Registry Key Security"},
+  {"regdeleteval",cmd_reg_delete_val,  "<valname> Registry Value Delete"},
+  {"regcreateval",cmd_reg_create_val,  "<valname> <valtype> <value> Registry Key Create"},
+  {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> Registry Key Security"},
   {"ntlogin",    cmd_netlogon_login_test, "[username] [password] NT Domain login test"},
   {"wksinfo",    cmd_wks_query_info,   "Workstation Query Info"},
   {"srvinfo",    cmd_srv_query_info,   "Server Query Info"},

@@ -31,62 +31,57 @@
 
 extern int DEBUGLEVEL;
 
-
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL do_reg_connect(struct cli_state *cli, char *full_keyname,
-				POLICY_HND *reg_hnd,
-				POLICY_HND *key_hnd)
+BOOL do_reg_connect(struct cli_state *cli, char *full_keyname, char *key_name,
+				POLICY_HND *reg_hnd)
 {
-	fstring key_name;
-	char *srch;
-	BOOL res1;
-	BOOL res = False;
-	BOOL hklm = False;
-	BOOL hku  = False;
+	BOOL res = True;
+	uint32 reg_type = 0;
 
 	if (full_keyname == NULL)
 	{
 		return False;
 	}
 
-	srch = "HKLM";
-	if (strnequal(full_keyname, srch, strlen(srch)))
+	ZERO_STRUCTP(reg_hnd);
+
+	/*
+	 * open registry receive a policy handle
+	 */
+
+	if (!reg_split_key(full_keyname, &reg_type, key_name))
 	{
-		full_keyname += strlen(srch);
-		if (*full_keyname == '\\')
+		DEBUG(0,("do_reg_connect: unrecognised key name %s\n", full_keyname));	
+		return False;
+	}
+
+	switch (reg_type)
+	{
+		case HKEY_LOCAL_MACHINE:
 		{
-			full_keyname++;
-			fstrcpy(key_name, full_keyname);
+			res = res ? do_reg_open_hklm(cli,
+					0x84E0, 0x02000000,
+					reg_hnd) : False;
+			break;
 		}
-		else if (*full_keyname != 0)
+	
+		case HKEY_USERS:
 		{
+			res = res ? do_reg_open_hku(cli,
+					0x84E0, 0x02000000,
+					reg_hnd) : False;
+			break;
+		}
+		default:
+		{
+			DEBUG(0,("do_reg_connect: unrecognised hive key\n"));	
 			return False;
 		}
 	}
 
-	/* open registry receive a policy handle */
-
-	if (hklm)
-	{
-		res = do_reg_open_hklm(cli,
-				0x84E0, 0x02000000,
-				reg_hnd);
-	}
-	
-	if (hku)
-	{
-		res = do_reg_open_hku(cli,
-				0x84E0, 0x02000000,
-				reg_hnd);
-	}
-
-	/* open an entry */
-	res1 = res  ? do_reg_open_entry(cli, reg_hnd,
-	                         key_name, 0x02000000, key_hnd) : False;
-
-	return res1 && res;
+	return res;
 }
 
 /****************************************************************************

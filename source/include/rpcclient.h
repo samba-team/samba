@@ -60,15 +60,14 @@ struct nt_client_info
     /************** \PIPE\winreg stuff ********************/
 
     POLICY_HND reg_pol_connect;
-    POLICY_HND reg_pol_unk_4;
 
     /************** \PIPE\lsarpc stuff ********************/
 
     POLICY_HND lsa_info_pol;
 
     /* domain member */
-    fstring level3_sid;
-    fstring level5_sid;
+    DOM_SID level3_sid;
+    DOM_SID level5_sid;
 
     /* domain controller */
     fstring level3_dom;

@@ -105,7 +105,8 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 			POLICY_HND *hnd,
 			int num_sids,
 			DOM_SID **sids,
-			char **names)
+			char ***names,
+			int *num_names)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -150,8 +151,53 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 
 		if (p)
 		{
-			valid_response = True;
-			*names = NULL;
+			if (t_names.ptr_trans_names != 0 && ref.undoc_buffer != 0)
+			{
+				valid_response = True;
+			}
+		}
+
+		if (num_names != NULL && valid_response)
+		{
+			(*num_names) = t_names.num_entries;
+		}
+		if (valid_response)
+		{
+			int i;
+			for (i = 0; i < t_names.num_entries; i++)
+			{
+				if (t_names.name[i].domain_idx >= ref.num_ref_doms_1)
+				{
+					DEBUG(0,("LSA_LOOKUP_SIDS: domain index out of bounds\n"));
+					valid_response = False;
+					break;
+				}
+			}
+		}
+
+		if (names != NULL && valid_response && t_names.num_entries != 0)
+		{
+			(*names) = (char**)malloc((*num_names) * sizeof(char*));
+		}
+
+		if (names != NULL && (*names) != NULL)
+		{
+			int i;
+			/* take each name, construct a \DOMAIN\name string */
+			for (i = 0; i < (*num_names); i++)
+			{
+				fstring name;
+				fstring dom_name;
+				fstring full_name;
+				uint32 dom_idx = t_names.name[i].domain_idx;
+				fstrcpy(dom_name, unistr2(ref.ref_dom[dom_idx].uni_dom_name.buffer));
+				fstrcpy(name    , unistr2(t_names.uni_name[i].buffer));
+				
+				snprintf(full_name, sizeof(full_name), "\\%s\\%s",
+				         dom_name, name);
+
+				(*names)[i] = strdup(full_name);
+			}
 		}
 	}
 
@@ -166,12 +212,15 @@ do a LSA Query Info Policy
 ****************************************************************************/
 BOOL do_lsa_query_info_pol(struct cli_state *cli,
 			POLICY_HND *hnd, uint16 info_class,
-			fstring domain_name, fstring domain_sid)
+			fstring domain_name, DOM_SID *domain_sid)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	LSA_Q_QUERY_INFO q_q;
 	BOOL valid_response = False;
+
+	ZERO_STRUCTP(domain_sid);
+	domain_name[0] = 0;
 
 	if (hnd == NULL || domain_name == NULL || domain_sid == NULL) return False;
 
@@ -214,25 +263,38 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 
 		if (p)
 		{
+			fstring sid_str;
 			/* ok, at last: we're happy. */
 			switch (r_q.info_class)
 			{
 				case 3:
 				{
-					char *dom_name = unistrn2(r_q.dom.id3.uni_domain_name.buffer,
-					                          r_q.dom.id3.uni_domain_name.uni_str_len);
-					fstrcpy(domain_name, dom_name);
-					sid_to_string(domain_sid, &(r_q.dom.id3.dom_sid.sid));
+					if (r_q.dom.id3.buffer_dom_name != 0)
+					{
+						char *dom_name = unistrn2(r_q.dom.id3.uni_domain_name.buffer,
+									  r_q.dom.id3.uni_domain_name.uni_str_len);
+						fstrcpy(domain_name, dom_name);
+					}
+					if (r_q.dom.id3.buffer_dom_sid != 0)
+					{
+						*domain_sid = r_q.dom.id3.dom_sid.sid;
+					}
 
 					valid_response = True;
 					break;
 				}
 				case 5:
 				{
-					char *dom_name = unistrn2(r_q.dom.id5.uni_domain_name.buffer,
-					                          r_q.dom.id5.uni_domain_name.uni_str_len);
-					fstrcpy(domain_name, dom_name);
-					sid_to_string(domain_sid, &(r_q.dom.id5.dom_sid.sid));
+					if (r_q.dom.id5.buffer_dom_name != 0)
+					{
+						char *dom_name = unistrn2(r_q.dom.id5.uni_domain_name.buffer,
+									  r_q.dom.id5.uni_domain_name.uni_str_len);
+						fstrcpy(domain_name, dom_name);
+					}
+					if (r_q.dom.id5.buffer_dom_sid != 0)
+					{
+						*domain_sid = r_q.dom.id5.dom_sid.sid;
+					}
 
 					valid_response = True;
 					break;
@@ -241,13 +303,14 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 				{
 					DEBUG(3,("LSA_QUERYINFOPOLICY: unknown info class\n"));
 					domain_name[0] = 0;
-					domain_sid [0] = 0;
 
 					break;
 				}
 			}
+		
+			sid_to_string(sid_str, domain_sid);
 			DEBUG(3,("LSA_QUERYINFOPOLICY (level %x): domain:%s  domain sid:%s\n",
-			          r_q.info_class, domain_name, domain_sid));
+			          r_q.info_class, domain_name, sid_str));
 		}
 	}
 

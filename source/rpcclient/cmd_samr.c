@@ -57,7 +57,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	uchar lm_hshhash[16];
 	uchar lm_oldhash[16];
 
-	fstrcpy(sid   , info->dom.level5_sid);
+	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	fstrcpy(srv_name, "\\\\");
@@ -125,7 +125,7 @@ void cmd_sam_test(struct client_info *info)
 	fstring sid;
 	BOOL res = True;
 
-	fstrcpy(sid   , info->dom.level5_sid);
+	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
 /*
@@ -192,7 +192,7 @@ void cmd_sam_enum_users(struct client_info *info)
 	uint32 admin_rid = 0x304; /* absolutely no idea. */
 	fstring tmp;
 
-	fstrcpy(sid   , info->dom.level5_sid);
+	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (strlen(sid) == 0)
@@ -366,7 +366,7 @@ void cmd_sam_query_user(struct client_info *info)
 
 	SAM_USER_INFO_21 usr;
 
-	fstrcpy(sid   , info->dom.level5_sid);
+	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (strlen(sid) == 0)
@@ -457,7 +457,7 @@ void cmd_sam_query_groups(struct client_info *info)
 	uint32 switch_value = 2;
 	uint32 admin_rid = 0x304; /* absolutely no idea. */
 
-	fstrcpy(sid   , info->dom.level5_sid);
+	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
 	if (strlen(sid) == 0)
@@ -538,7 +538,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	fstring alias_names [3];
 	uint32  num_als_usrs[3];
 
-	fstrcpy(sid   , info->dom.level3_sid);
+	sid_to_string(sid, &info->dom.level3_sid);
 	fstrcpy(domain, info->dom.level3_dom);
 #if 0
 	fstrcpy(sid   , "S-1-5-20");

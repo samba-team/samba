@@ -1024,3 +1024,34 @@ BOOL string_sub(char *s,char *pattern,char *insert)
   return(ret);
 }
 
+/****************************************************************************
+ splits out the front and back at a separator.
+****************************************************************************/
+void split_at_last_component(char *path, char *front, char sep, char *back)
+{
+	char *p = strrchr(path, sep);
+
+	if (p != NULL)
+	{
+		*p = 0;
+	}
+	if (front != NULL)
+	{
+		pstrcpy(front, path);
+	}
+	if (p != NULL)
+	{
+		if (back != NULL)
+		{
+			pstrcpy(back, p+1);
+		}
+		*p = '\\';
+	}
+	else
+	{
+		if (back != NULL)
+		{
+			back[0] = 0;
+		}
+	}
+}
