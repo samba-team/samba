@@ -82,29 +82,12 @@ set_master_key(EncryptionKey *key)
 Key *
 unseal_key(Key *key)
 {
-    int i;
-    des_cblock iv;
-    int num = 0;
-    Key *new_key;
-
-    ALLOC(new_key);
-    copy_Key(key, new_key);
+    Key *new;
     if(master_key_set){
-	memset(&iv, 0, sizeof(iv));
-	des_cfb64_encrypt(key->key.keyvalue.data, 
-			  new_key->key.keyvalue.data, 
-			  key->key.keyvalue.length, 
-			  master_key, &iv, &num, 0);
+	new = hdb_unseal_key(key, master_key);
+    }else{
+	new = ALLOC(new);
+	copy_Key(key, new);
     }
-    return new_key;
-}
-
-void
-free_key(Key *key)
-{
-    memset(key->key.keyvalue.data, 
-	   0,
-	   key->key.keyvalue.length);
-    free_Key(key);
-    free(key);
+    return new;
 }
