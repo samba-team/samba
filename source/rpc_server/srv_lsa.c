@@ -212,45 +212,38 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 
 	for (i = 0; i < num_entries; i++) {
 		BOOL status = False;
-		DOM_SID dom_sid;
 		DOM_SID sid;
 		uint32 rid = 0xffffffff;
 		int dom_idx = -1;
 		pstring full_name;
-		fstring dom_name;
-		fstring user;
-		enum SID_NAME_USE sid_name_use = SID_NAME_UNKNOWN;
+		fstring dom_name, user;
+		enum SID_NAME_USE name_type = SID_NAME_UNKNOWN;
+
+		/* Split name into domain and user component */
 
 		pstrcpy(full_name, dos_unistr2_to_str(&name[i]));
-
-		/*
-		 * Try and split the name into a DOMAIN and
-		 * user component.
-		 */
-
 		split_domain_name(full_name, dom_name, user);
 
-		/*
-		 * We only do anything with this name if we
-		 * can map the Domain into a SID we know.
-		 */
+		/* Lookup name */
 
-		if (map_domain_name_to_sid(&dom_sid, dom_name)) {
-			dom_idx = init_dom_ref(ref, dom_name, &dom_sid);
+		DEBUG(5, ("init_lsa_rid2s: looking up name %s\n", full_name));
 
-			if (local_lookup_name(dom_name, user, &sid, &sid_name_use) && sid_split_rid(&sid, &rid)) 
-				status = True;
-		}
+		status = lookup_name(full_name, &sid, &name_type);
 
-		if (status)
+		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
+			  "not found"));
+
+		if (status) {
+			sid_split_rid(&sid, &rid);
+			dom_idx = init_dom_ref(ref, dom_name, &sid);
 			(*mapped_count)++;
-		else {
+		} else {
 			dom_idx = -1;
 			rid = 0xffffffff;
-			sid_name_use = SID_NAME_UNKNOWN;
+			name_type = SID_NAME_UNKNOWN;
 		}
 
-		init_dom_rid2(&rid2[total], rid, sid_name_use, dom_idx);
+		init_dom_rid2(&rid2[total], rid, name_type, dom_idx);
 		total++;
 	}
 }
@@ -300,12 +293,18 @@ static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
 		fstring name, dom_name;
 		enum SID_NAME_USE sid_name_use = (enum SID_NAME_USE)0;
 
+		sid_to_string(name, &find_sid);
+		DEBUG(5, ("init_lsa_trans_names: looking up sid %s\n", name));
+
 		/* Lookup sid from winbindd */
 
 		memset(dom_name, '\0', sizeof(dom_name));
 		memset(name, '\0', sizeof(name));
 
 		status = lookup_sid(&find_sid, dom_name, name, &sid_name_use);
+
+		DEBUG(5, ("init_lsa_trans_names: %s\n", status ? "found" : 
+			  "not found"));
 
 		if (!status) {
 			sid_name_use = SID_NAME_UNKNOWN;
