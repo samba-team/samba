@@ -38,6 +38,8 @@
 struct ipc_private {
 	struct idr_context *idtree_fnum;
 
+	struct dcesrv_context *dcesrv;
+
 	/* a list of open pipes */
 	struct pipe_state {
 		struct pipe_state *next, *prev;
@@ -73,6 +75,7 @@ static struct pipe_state *pipe_state_find(struct ipc_private *private, uint16_t 
 static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 			    struct smbsrv_request *req, const char *sharename)
 {
+	NTSTATUS status;
 	struct smbsrv_tcon *tcon = req->tcon;
 	struct ipc_private *private;
 
@@ -80,18 +83,19 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 	tcon->dev_type = talloc_strdup(tcon, "IPC");
 
 	/* prepare the private state for this connection */
-	private = talloc_p(tcon, struct ipc_private);
-	if (!private) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	private = talloc(tcon, struct ipc_private);
+	NT_STATUS_HAVE_NO_MEMORY(private);
+
 	ntvfs->private_data = private;
 
 	private->pipe_list = NULL;
 
 	private->idtree_fnum = idr_init(private);
-	if (private->idtree_fnum == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(private->idtree_fnum);
+
+	/* setup the DCERPC server subsystem */
+	status = dcesrv_init_context(private, &private->dcesrv);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
 }
@@ -226,7 +230,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 		session_info = req->session->session_info;
 	}
 
-	status = dcesrv_endpoint_search_connect(req->smb_conn->dcesrv, 
+	status = dcesrv_endpoint_search_connect(private->dcesrv, 
 						&ep_description, 
 						session_info,
 						&p->dce_conn);
