@@ -261,7 +261,105 @@ at how Samba helps to bridge the differences.
 	<title>File and Directory Access Control</title>
 
 	<para>
-	Explain the anatomy of a directory listing, permissions and what they mean.
+	The network administrator is strongly advised to read foundational training manuals and reference materials
+	regarding file and directory permissions maintenance. Much can be achieved with the basic Unix permissions
+	without having to resort to more complex facilities like POSIX Access Control Lists (ACLs) or Extended
+	Attributes (EAs).
+	</para>
+
+	<para>
+	Unix/Linux file and directory access permissions invloves setting three (3) primary sets of data and one (1) control set.
+	A Unix file listing looks as follows:-
+
+	<programlisting>
+	jht@frodo:~/stuff> ls -la
+	total 632
+	drwxr-xr-x   13 jht   users      816 2003-05-12 22:56 .
+	drwxr-xr-x   37 jht   users     3800 2003-05-12 22:29 ..
+	d---------    2 jht   users       48 2003-05-12 22:29 muchado00
+	d--x--x--x    2 jht   users       48 2003-05-12 22:29 muchado01
+	dr-xr-xr-x    2 jht   users       48 2003-05-12 22:29 muchado02
+	drwxrwxrwx    2 jht   users       48 2003-05-12 22:29 muchado03
+	drw-rw-rw-    2 jht   users       48 2003-05-12 22:29 muchado04
+	d-w--w--w-    2 jht   users       48 2003-05-12 22:29 muchado05
+	dr--r--r--    2 jht   users       48 2003-05-12 22:29 muchado06
+	drwxrwxrwt    2 jht   users       48 2003-05-12 22:29 muchado07
+	drwsrwsrwx    2 jht   users       48 2003-05-12 22:29 muchado08
+	----------    1 jht   users     1242 2003-05-12 22:31 mydata00.lst
+	---x--x--x    1 jht   users     1674 2003-05-12 22:33 mydata01.lst
+	--w--w--w-    1 jht   users     7754 2003-05-12 22:33 mydata02.lst
+	--wx-wx-wx    1 jht   users   260179 2003-05-12 22:33 mydata03.lst
+	-r--r--r--    1 jht   users    21017 2003-05-12 22:32 mydata04.lst
+	-r-xr-xr-x    1 jht   users   206339 2003-05-12 22:32 mydata05.lst
+	-rw-rw-rw-    1 jht   users    41105 2003-05-12 22:32 mydata06.lst
+	-rwxrwxrwx    1 jht   users    19312 2003-05-12 22:32 mydata07.lst
+	jht@frodo:~/stuff>
+	</programlisting>
+	</para>
+
+	<para>
+	The columns above represent (from left to right): permissions, no blocks used, owner, group, size (bytes), access date, access time, file name.
+	</para>
+
+	<para>
+	The permissions field is made up of:
+
+	<programlisting>
+	[ type  ] [ users ] [ group ] [ others ]   [File, Directory Permissions]
+	[ d | l ] [ r w x ] [ r w x ] [ r w x  ]
+	  |   |     | | |     | | |     | | |
+	  |   |     | | |     | | |     | | |-----> Can Execute, List files
+	  |   |     | | |     | | |     | |-------> Can Write,   Create files
+	  |   |     | | |     | | |     |---------> Can Read,    Read files
+	  |   |     | | |     | | |---------------> Can Execute, List files
+	  |   |     | | |     | |-----------------> Can Write,   Create files
+	  |   |     | | |     |-------------------> Can Read,    Read files
+	  |   |     | | |-------------------------> Can Execute, List files
+	  |   |     | |---------------------------> Can Write,   Create files
+	  |   |     |-----------------------------> Can Read,    Read files
+	  |   |-----------------------------------> Is a symbolic Link
+	  |---------------------------------------> Is a directory
+	</programlisting>
+	</para>
+
+	<para>
+	Any bit flag may be unset. An unset bit flag is the equivalent of 'Can NOT' and is represented as a '-' character.
+	<programlisting>
+	<title>Example File</title>
+		-rwxr-x---   Means: The owner (user) can read, write, execute
+		                    the group can read and execute
+		                    everyone else can NOT do anything with it
+	</programlisting>
+	</para>
+
+	<para>
+	Additional posibilities in the [type] field are: c = character device, b = block device, p = pipe device, s = Unix Domain Socket.
+	</para>
+
+	<para>
+	The letters `rwxXst' set permissions for the user, group and others as: read (r), write (w), execute (or access for directories) (x),r
+	execute  only  if  the  file  is a directory or already has execute permission for some user (X), set user or group ID on execution (s),
+	sticky (t).
+	</para>
+
+	<para>
+	When the sticky bit is set on a directory, files in that directory may be unlinked (deleted) or renamed only by root or their owner. 
+	Without the sticky  bit, anyone able to write to the directory can delete or rename files. The sticky bit is commonly found on
+	directories, such as /tmp, that are world-writable.
+	</para>
+
+	<para>
+	When the set user or group ID bit (s) is set on a directory, then all files created within it will be owned by the user and/or
+	group whose 'set user or group' bit is set. This can be very helpful in setting up directories that for which it is desired that
+	all users who are in a group should be able to write to and read from a file, particularly when it is undesirable for that file
+	to be exclusively owned by a user who's primary group is not the group that all such users belong to.
+	</para>
+
+	<para>
+	When a directory is set <command>drw-r-----</command> this means that the owner can read and create (write) files in it, but because
+	the (x) execute flags are not set files can not be listed (seen) in the directory by anyone. The group can read files in the
+	directory but can NOT create new files. NOTE: If files in the directory are set to be readable and writable for the group, then
+	group members will be able to write to (or delete) them.
 	</para>
 
 	</sect2>
