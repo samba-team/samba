@@ -945,6 +945,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	struct cli_state	*cli = NULL;
 				/* i think we only need our forest and downlevel trusted domains */
 	uint32			flags = DS_DOMAIN_IN_FOREST | DS_DOMAIN_DIRECT_OUTBOUND;
+	char 			*contact_domain_name;
 
 	DEBUG(3,("ads: trusted_domains\n"));
 
@@ -953,9 +954,10 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	*names       = NULL;
 	*dom_sids    = NULL;
 		
-	if ( !NT_STATUS_IS_OK(result = cm_fresh_connection(domain->name, PI_NETLOGON, &cli)) ) {
+	contact_domain_name = *domain->alt_name ? domain->alt_name : domain->name;
+	if ( !NT_STATUS_IS_OK(result = cm_fresh_connection(contact_domain_name, PI_NETLOGON, &cli)) ) {
 		DEBUG(5, ("trusted_domains: Could not open a connection to %s for PIPE_NETLOGON (%s)\n", 
-			  domain->name, nt_errstr(result)));
+			  contact_domain_name, nt_errstr(result)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
