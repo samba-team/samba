@@ -6,7 +6,7 @@ SMB_MODULE(pdb_guest,PASSDB,STATIC,[passdb/pdb_guest.o])
 SMB_MODULE(pdb_unix,PASSDB,STATIC,[passdb/pdb_unix.o])
 
 if test x"$with_ldap_support" = x"yes"; then
-	SMB_MODULE_DEFAULT(STATIC,pdb_ldap)
+	SMB_MODULE_DEFAULT(pdb_ldap,STATIC)
 fi
 SMB_MODULE(pdb_ldap,PASSDB,NOT,[passdb/pdb_ldap.o],[],[$LDAP_LIBS])
 
