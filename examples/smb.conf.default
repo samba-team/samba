@@ -68,7 +68,9 @@
 
 # Using the following line enables you to customise your configuration
 # on a per machine basis. The %m gets replaced with the netbios name
-# of the machine that is connecting
+# of the machine that is connecting.
+# Note: Consider carefully the location in the configuration file of
+#       this line.  The included file is read at that point.
 ;   include = /usr/local/samba/lib/smb.conf.%m
 
 # Most people will find that this option gives better performance.
