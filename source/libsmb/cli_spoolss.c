@@ -221,7 +221,7 @@ static void decode_printer_info_0(
         uint32 i;
         PRINTER_INFO_0  *inf;
 
-        inf=(PRINTER_INFO_0 *)malloc(returned*sizeof(PRINTER_INFO_0));
+        inf=(PRINTER_INFO_0 *)talloc(mem_ctx,returned*sizeof(PRINTER_INFO_0));
 
         buffer->prs.data_offset=0;
 
