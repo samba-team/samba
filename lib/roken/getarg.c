@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -223,6 +223,23 @@ arg_printusage (struct getargs *args,
 	columns = 80;
     col = 0;
     col += fprintf (stderr, "Usage: %s", progname);
+    buf[0] = '\0';
+    for (i = 0; i < num_args; ++i) {
+	if(args[i].short_name && ISFLAG(args[i])) {
+	    char s[2];
+	    if(buf[0] == '\0')
+		strlcpy(buf, "[-", sizeof(buf));
+	    s[0] = args[i].short_name;
+	    s[1] = '\0';
+	    strlcat(buf, s, sizeof(buf));
+	}
+    }
+    if(buf[0] != '\0') {
+	strlcat(buf, "]", sizeof(buf));
+	col = check_column(stderr, col, strlen(buf) + 1, columns);
+	col += fprintf(stderr, " %s", buf);
+    }
+
     for (i = 0; i < num_args; ++i) {
 	size_t len = 0;
 
@@ -244,7 +261,7 @@ arg_printusage (struct getargs *args,
 	    col = check_column(stderr, col, strlen(buf) + 1, columns);
 	    col += fprintf(stderr, " %s", buf);
 	}
-	if (args[i].short_name) {
+	if (args[i].short_name && !ISFLAG(args[i])) {
 	    snprintf(buf, sizeof(buf), "[-%c", args[i].short_name);
 	    len += 2;
 	    len += print_arg(buf + strlen(buf), sizeof(buf) - strlen(buf), 
