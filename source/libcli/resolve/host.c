@@ -165,13 +165,12 @@ struct smbcli_composite *resolve_name_host_send(struct nbt_name *name,
 	fde.flags = EVENT_FD_READ;
 	fde.handler = pipe_handler;
 	fde.private = c;
-	state->fde = event_add_fd(c->event_ctx, &fde);
+	state->fde = event_add_fd(c->event_ctx, &fde, state);
 	if (state->fde == NULL) {
 		close(fd[0]);
 		close(fd[1]);
 		goto failed;
 	}
-	talloc_steal(state, state->fde);
 
 	/* signal handling in posix really sucks - doing this in a library
 	   affects the whole app, but what else to do?? */

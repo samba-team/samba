@@ -321,8 +321,8 @@ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 	te.next_event = timeval_current_ofs(0, period);
 	te.handler = idle_handler;
 	te.private = transport;
-	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, &te);
-	talloc_steal(transport, transport->socket->event.te);
+	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, 
+						      &te, transport);
 }
 
 /*

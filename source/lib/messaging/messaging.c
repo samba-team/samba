@@ -220,9 +220,7 @@ static void messaging_listen_handler(struct event_context *ev, struct fd_event *
 	fde2.flags	= EVENT_FD_READ;
 	fde2.handler	= messaging_recv_handler;
 
-	rec->fde	= event_add_fd(msg->event.ev, &fde2);
-
-	talloc_steal(rec, rec->fde);
+	rec->fde	= event_add_fd(msg->event.ev, &fde2, rec);
 }
 
 /*
@@ -358,8 +356,7 @@ static void messaging_backoff_handler(struct event_context *ev, struct timed_eve
 	fde.flags	= EVENT_FD_WRITE;
 	fde.handler	= messaging_send_handler;
 
-	rec->fde	= event_add_fd(msg->event.ev, &fde);
-	talloc_steal(rec, rec->fde);
+	rec->fde	= event_add_fd(msg->event.ev, &fde, rec);
 
 	messaging_send_handler(msg->event.ev, rec->fde, timeval_zero(), EVENT_FD_WRITE);
 }
@@ -408,7 +405,7 @@ NTSTATUS messaging_send(struct messaging_context *msg, servid_t server, uint32_t
 		te.next_event = timeval_current_ofs(0, MESSAGING_BACKOFF);
 		te.handler = messaging_backoff_handler;
 		te.private = rec;
-		event_add_timed(msg->event.ev, &te);
+		event_add_timed(msg->event.ev, &te, rec);
 		return NT_STATUS_OK;
 	}
 
@@ -422,8 +419,7 @@ NTSTATUS messaging_send(struct messaging_context *msg, servid_t server, uint32_t
 	fde.flags	= EVENT_FD_WRITE;
 	fde.handler	= messaging_send_handler;
 
-	rec->fde	= event_add_fd(msg->event.ev, &fde);
-	talloc_steal(rec, rec->fde);
+	rec->fde	= event_add_fd(msg->event.ev, &fde, rec);
 
 	messaging_send_handler(msg->event.ev, rec->fde, timeval_zero(), EVENT_FD_WRITE);
 
@@ -501,8 +497,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, servid_t server_id
 	fde.handler	= messaging_listen_handler;
 
 	msg->event.ev   = talloc_reference(msg,ev);
-	msg->event.fde	= event_add_fd(ev, &fde);
-	talloc_steal(msg, msg->event.fde);
+	msg->event.fde	= event_add_fd(ev, &fde, msg);
 
 	talloc_set_destructor(msg, messaging_destructor);
 	

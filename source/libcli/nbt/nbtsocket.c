@@ -266,9 +266,7 @@ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 	fde.flags = 0;
 	fde.handler = nbt_name_socket_handler;
 	fde.private = nbtsock;
-	nbtsock->fde = event_add_fd(nbtsock->event_ctx, &fde);
-
-	talloc_steal(nbtsock, nbtsock->fde);
+	nbtsock->fde = event_add_fd(nbtsock->event_ctx, &fde, nbtsock);
 	
 	return nbtsock;
 
@@ -344,8 +342,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	te.next_event = timeout;
 	te.handler = nbt_name_socket_timeout;
 	te.private = req;
-	req->te = event_add_timed(nbtsock->event_ctx, &te);
-	talloc_steal(req, req->te);
+	req->te = event_add_timed(nbtsock->event_ctx, &te, req);
 	
 	talloc_set_destructor(req, nbt_name_request_destructor);	
 

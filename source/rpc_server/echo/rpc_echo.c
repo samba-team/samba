@@ -159,11 +159,10 @@ static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 	te.private	= p;
 	te.next_event	= timeval_add(&dce_call->time, r->in.seconds, 0);
 
-	p->te = event_add_timed(dce_call->event_ctx, &te);
+	p->te = event_add_timed(dce_call->event_ctx, &te, p);
 	if (!p->te) {
 		return 0;
 	}
-	talloc_steal(p, p->te);
 
 	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
 	return 0;
