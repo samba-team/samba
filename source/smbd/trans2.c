@@ -2375,8 +2375,9 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
 }
 
 /****************************************************************************
-  reply to a SMBfindclose (stop trans2 directory search)
+ Reply to a SMBfindclose (stop trans2 directory search).
 ****************************************************************************/
+
 int reply_findclose(connection_struct *conn,
 		    char *inbuf,char *outbuf,int length,int bufsize)
 {
@@ -2397,8 +2398,9 @@ int reply_findclose(connection_struct *conn,
 }
 
 /****************************************************************************
-  reply to a SMBfindnclose (stop FINDNOTIFYFIRST directory search)
+ Reply to a SMBfindnclose (stop FINDNOTIFYFIRST directory search).
 ****************************************************************************/
+
 int reply_findnclose(connection_struct *conn, 
 		     char *inbuf,char *outbuf,int length,int bufsize)
 {
@@ -2422,10 +2424,10 @@ int reply_findnclose(connection_struct *conn,
 	return(outsize);
 }
 
-
 /****************************************************************************
-  reply to a SMBtranss2 - just ignore it!
+ Reply to a SMBtranss2 - just ignore it!
 ****************************************************************************/
+
 int reply_transs2(connection_struct *conn,
 		  char *inbuf,char *outbuf,int length,int bufsize)
 {
