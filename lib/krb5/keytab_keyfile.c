@@ -297,7 +297,7 @@ akf_add_entry(krb5_context context,
     fd = open (d->filename, O_RDWR | O_BINARY);
     if (fd < 0) {
 	fd = open (d->filename,
-		   O_RDWR | O_BINARY | O_CREAT, 0600);
+		   O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0600);
 	if (fd < 0) {
 	    ret = errno;
 	    krb5_set_error_string(context, "open(%s): %s", d->filename,

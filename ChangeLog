@@ -8,6 +8,9 @@
 	calculations.  Potential problem areas pointed out by 
 	Sebastian Krahmer <krahmer@suse.de>.
 
+	* lib/krb5/keytab_keyfile.c (akf_add_entry): Use O_EXCL when
+	creating a new keyfile.
+
 2002-09-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: don't try to build pam module
