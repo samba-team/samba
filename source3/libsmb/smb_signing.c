@@ -230,7 +230,7 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
 	/* Calculate the 16 byte MAC - but don't alter the data in the
 	   incoming packet.
 	   
-	   This makes for a bit for fussing about, but it's not too bad.
+	   This makes for a bit of fussing about, but it's not too bad.
 	*/
 	MD5Init(&md5_ctx);
 
