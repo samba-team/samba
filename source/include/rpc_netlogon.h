@@ -51,7 +51,9 @@
 #define SAM_DELTA_ALIAS_INFO   0x09 /* Local groups */
 #define SAM_DELTA_ALIAS_MEM    0x0C /* Local group membership */
 #define SAM_DELTA_DOM_INFO     0x0D /* Privilige stuff */
+#define SAM_DELTA_UNK0E_INFO   0x0e /* Privilige stuff */
 #define SAM_DELTA_PRIVS_INFO   0x10 /* Privilige stuff */
+#define SAM_DELTA_UNK12_INFO   0x12 /* Privilige stuff */
 #define SAM_DELTA_SAM_STAMP    0x16 /* Some kind of journal record? */
 
 /* SAM database types */
@@ -735,6 +737,25 @@ typedef struct
 
 } SAM_DELTA_DOM;
 
+/* SAM_DELTA_UNK0E (0x0e) */
+typedef struct
+{
+	uint32 buf_size;
+	SEC_DESC *sec_desc;
+	DOM_SID2 sid;
+	UNIHDR hdr_domain;
+	
+	uint32 unknown0;
+	uint32 unknown1;
+	uint32 unknown2;
+	
+	uint32 buf_size2;
+	uint32 ptr;
+
+	uint32 unknown3;
+	UNISTR2 domain;
+
+} SAM_DELTA_UNK0E;
 
 /* SAM_DELTA_PRIVS (0x10) */
 typedef struct
@@ -773,6 +794,42 @@ typedef struct
 
 } SAM_DELTA_PRIVS;
 
+/* SAM_DELTA_UNK12 (0x12) */
+typedef struct
+{
+	uint32 buf_size;
+	SEC_DESC *sec_desc;
+	UNISTR2 secret;
+
+	uint32 count1;
+	uint32 count2;
+	uint32 ptr;
+	NTTIME time1;
+	uint32 count3;
+	uint32 count4;
+	uint32 ptr2;
+	NTTIME time2;
+	uint32 unknow1;
+
+	uint32 buf_size2;
+	uint32 ptr3;
+	uint32 unknow2; /* 0x0 12 times */
+
+	uint32 chal_len;
+	uint32 reserved1; /* 0 */
+	uint32 chal_len2;
+	uint8 chal[16];
+
+	uint32 key_len;
+	uint32 reserved2; /* 0 */
+	uint32 key_len2;
+	uint8 key[8];
+
+	uint32 buf_size3;
+	SEC_DESC *sec_desc2;
+
+} SAM_DELTA_UNK12;
+
 /* SAM_DELTA_STAMP (0x16) */
 typedef struct
 {
@@ -792,6 +849,8 @@ typedef union sam_delta_ctr_info
 	SAM_DELTA_DOM	   dom_info;
 	SAM_DELTA_PRIVS    privs_info;
 	SAM_DELTA_STAMP    stamp;
+	SAM_DELTA_UNK0E    unk0e_info;
+	SAM_DELTA_UNK12    unk12_info;
 } SAM_DELTA_CTR;
 
 /* NET_R_SAM_SYNC */
