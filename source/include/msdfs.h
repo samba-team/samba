@@ -22,8 +22,6 @@
 #ifndef _MSDFS_H
 #define _MSDFS_H
 
-#ifdef MS_DFS
-
 #define REFERRAL_TTL 600
 
 /* Flags used in trans2 Get Referral reply */
@@ -45,6 +43,16 @@ struct junction_map
   int referral_count;
   struct referral* referral_list;
 };
+
+struct dfs_path
+{
+  pstring hostname;
+  pstring servicename;
+  pstring volumename;
+  pstring restofthepath;
+};
+
+#ifdef MS_DFS
 
 #define RESOLVE_DFSPATH(name, conn, inbuf, outbuf) \
 { if(((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES)) && \

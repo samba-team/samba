@@ -3201,20 +3201,11 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
  Start the first part of an RPC reply which began with an SMBtrans request.
 ****************************************************************************/
 
-static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p,
-				char *redir_data, int redir_len)
+static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
 {
-	char *rdata;
+	char *rdata = malloc(p->max_trans_reply);
 	int data_len;
 
-	if (redir_data != NULL)
-	{
-		send_trans_reply(outbuf, NULL, 0, redir_data, redir_len,
-		                 redir_len > p->max_trans_reply);
-		return True;
-	}
-
-	rdata = malloc(p->max_trans_reply);
 	if(rdata == NULL) {
 		DEBUG(0,("api_rpc_trans_reply: malloc fail.\n"));
 		return False;
@@ -3340,23 +3331,11 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 
 	switch (subcommand) {
 	case 0x26:
-	{
-		char *rdata = NULL;
-		int rlen = mdrcnt;
-
-		if (p->m)
-		{
-			reply = readwrite_pipe(p, data, tdscnt, &rdata, &rlen);
-		}
-		else
-		{
-			/* dce/rpc command */
-			reply = rpc_command(p, data, tdscnt);
-		}
+		/* dce/rpc command */
+		reply = write_to_pipe(p, data, tdscnt);
 		if (reply)
-			reply = api_rpc_trans_reply(outbuf, p, rdata, rlen);
+			reply = api_rpc_trans_reply(outbuf, p);
 		break;
-	}
 	case 0x53:
 		/* Wait Named Pipe Handle state */
 		reply = api_WNPHS(outbuf, p, params, tpscnt);

@@ -1,3 +1,6 @@
+#ifndef NT_PRINTING_H_
+#define NT_PRINTING_H_
+
 #define ORIENTATION      0x00000001L
 #define PAPERSIZE        0x00000002L
 #define PAPERLENGTH      0x00000004L
@@ -235,3 +238,4 @@ typedef struct _form
        UNISTR2 name;
 } FORM;
 */
+#endif /* NT_PRINTING_H_ */

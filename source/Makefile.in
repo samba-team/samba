@@ -118,7 +118,7 @@ RPC_SERVER_OBJ = rpc_server/srv_lsa.o \
                  rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o \
                  rpc_server/srv_samr.o rpc_server/srv_srvsvc.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o \
-                 rpc_server/srv_pipe_srv.o rpc_server/srv_pipe.o \
+                 rpc_server/srv_pipe.o \
 		 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
 
 RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \

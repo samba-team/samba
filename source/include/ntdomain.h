@@ -24,10 +24,6 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
-/* 
- * A bunch of stuff that was put into smb.h
- * in the NTDOM branch - it didn't belong there.
- */
 
 /* dce/rpc support */
 #include "rpc_dce.h"
@@ -35,8 +31,10 @@
 /* miscellaneous structures / defines */
 #include "rpc_misc.h"
 
-/* security descriptor structures */
-#include "rpc_secdes.h" 
+/*
+ * A bunch of stuff that was put into smb.h
+ * in the NTDOM branch - it didn't belong there.
+ */
  
 typedef struct _prs_struct 
 {
@@ -63,32 +61,8 @@ typedef struct _prs_struct
 #define MARSHALLING(ps) (!(ps)->io)
 #define UNMARSHALLING(ps) ((ps)->io)
 
-typedef struct _input_data {
-	/*
-	 * This is the current incoming pdu. The data here
-	 * is collected via multiple writes until a complete
-	 * pdu is seen, then the data is copied into the in_data
-	 * structure. The maximum size of this is 64k (2 byte length).
-	 */
-	prs_struct in_pdu;
-
-	/*
-	 * The amount of data needed to complete the in_pdu.
-	 * If this is zero, then we are at the start of a new
-	 * pdu.
-	 */
-	uint32 in_pdu_needed_len;
-
-	/*
-	 * This is the collection of input data with all
-	 * the rpc headers and auth footers removed.
-	 * The maximum length of this is strictly enforced.
-	 */
-	prs_struct in_data;
-} input_data;
-
 typedef struct _output_data {
-	/* 
+	/*
 	 * Raw RPC output data. This does not include RPC headers or footers.
 	 */
 	prs_struct rdata;
@@ -96,7 +70,7 @@ typedef struct _output_data {
 	/* The amount of data sent from the current rdata struct. */
 	uint32 data_sent_length;
 
-	/* 
+	/*
 	 * The current PDU being returned. This inclues
 	 * headers, data and authentication footer.
 	 */
@@ -108,6 +82,37 @@ typedef struct _output_data {
 	/* The amount of data sent from the current PDU. */
 	uint32 current_pdu_sent;
 } output_data;
+
+typedef struct _input_data {
+    /*
+     * This is the current incoming pdu. The data here
+     * is collected via multiple writes until a complete
+     * pdu is seen, then the data is copied into the in_data
+     * structure. The maximum size of this is 0x1630 (MAX_PDU_FRAG_LEN).
+     */
+    unsigned char current_in_pdu[MAX_PDU_FRAG_LEN];
+
+    /*
+     * The amount of data needed to complete the in_pdu.
+     * If this is zero, then we are at the start of a new
+     * pdu.
+     */
+    uint32 pdu_needed_len;
+
+    /*
+     * The amount of data received so far in the in_pdu.
+     * If this is zero, then we are at the start of a new
+     * pdu.
+     */
+    uint32 pdu_received_len;
+
+    /*
+     * This is the collection of input data with all
+     * the rpc headers and auth footers removed.
+     * The maximum length of this (1Mb) is strictly enforced.
+     */
+    prs_struct data;
+} input_data;
 
 typedef struct pipes_struct
 {
@@ -144,6 +149,18 @@ typedef struct pipes_struct
 	fstring unix_user_name;
 	uid_t uid;
 	gid_t gid;
+
+    /*
+     * Set to true when an RPC bind has been done on this pipe.
+     */
+
+    BOOL pipe_bound;
+
+    /*
+     * Set to true when we should return fault PDU's for everything.
+     */
+
+    BOOL fault_state;
 
 	/*
 	 * Struct to deal with multiple pdu inputs.
@@ -185,6 +202,9 @@ struct acct_info
     fstring acct_name; /* account name */
     uint32 smb_userid; /* domain-relative RID */
 };
+
+/* security descriptor structures */
+#include "rpc_secdes.h"
 
 /* different dce/rpc pipes */
 #include "rpc_lsa.h"
