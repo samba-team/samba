@@ -143,7 +143,7 @@ static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 	} else {
 		pea->name = ea_name;
 	}
-	pea->value.data = val;
+	pea->value.data = (unsigned char *)val;
 	pea->value.length = (size_t)sizeret;
 	return True;
 }
@@ -1492,7 +1492,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	if(numentries == 0) {
 		dptr_close(&dptr_num);
-		if (protocol < PROTOCOL_NT1) {
+		if (Protocol < PROTOCOL_NT1) {
 			return ERROR_DOS(ERRDOS,ERRnofiles);
 		} else {
 			return ERROR_BOTH(NT_STATUS_NO_SUCH_FILE,ERRDOS,ERRbadfile);
