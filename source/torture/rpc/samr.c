@@ -70,7 +70,7 @@ static BOOL test_Shutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_Shutdown r;
 
-	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
+	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
 		printf("samr_Shutdown disabled - enable dangerous tests to use\n");
 		return True;
 	}
@@ -96,7 +96,7 @@ static BOOL test_SetDsrmPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_String string;
 	struct samr_Password hash;
 
-	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
+	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
 		printf("samr_SetDsrmPassword disabled - enable dangerous tests to use\n");
 		return True;
 	}
@@ -2176,7 +2176,7 @@ static BOOL test_EnumDomainUsers_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 #define ASYNC_COUNT 100
 	struct rpc_request *req[ASYNC_COUNT];
 
-	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
+	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
 		printf("samr async test disabled - enable dangerous tests to use\n");
 		return True;
 	}
