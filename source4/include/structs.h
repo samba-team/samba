@@ -181,3 +181,6 @@ struct mutex_ops;
 struct ads_struct;
 
 struct wrepl_packet;
+struct wrepl_associate;
+struct wrepl_pull_table;
+struct wrepl_pull_names;
