@@ -864,103 +864,94 @@ and given password ok (%s)\n", user));
 
 static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 {
-  int plus_allowed = 1;
-  char *file_host;
-  char *file_user;
-  char **lines = file_lines_load(equiv_file, NULL, False);
-  int i;
+	int plus_allowed = 1;
+	char *file_host;
+	char *file_user;
+	char **lines = file_lines_load(equiv_file, NULL, False);
+	int i;
 
-  DEBUG(5, ("check_user_equiv %s %s %s\n", user, remote, equiv_file));
-  if (! lines) return False;
-  for (i=0; lines[i]; i++) {
-    char *buf = lines[i];
-    trim_string(buf," "," ");
+	DEBUG(5, ("check_user_equiv %s %s %s\n", user, remote, equiv_file));
 
-    if (buf[0] != '#' && buf[0] != '\n') 
-    {
-      BOOL is_group = False;
-      int plus = 1;
-      char *bp = buf;
-      if (strcmp(buf, "NO_PLUS\n") == 0)
-      {
-	DEBUG(6, ("check_user_equiv NO_PLUS\n"));
-	plus_allowed = 0;
-      }
-      else {
-	if (buf[0] == '+') 
-	{
-	  bp++;
-	  if (*bp == '\n' && plus_allowed) 
-	  {
-	    /* a bare plus means everbody allowed */
-	    DEBUG(6, ("check_user_equiv everybody allowed\n"));
-	    file_lines_free(lines);
-	    return True;
-	  }
-	}
-	else if (buf[0] == '-')
-	{
-	  bp++;
-	  plus = 0;
-	}
-	if (*bp == '@') 
-	{
-	  is_group = True;
-	  bp++;
-	}
-	file_host = strtok(bp, " \t\n");
-	file_user = strtok(NULL, " \t\n");
-	DEBUG(7, ("check_user_equiv %s %s\n", file_host ? file_host : "(null)", 
-                 file_user ? file_user : "(null)" ));
-	if (file_host && *file_host) 
-	{
-	  BOOL host_ok = False;
+	if (! lines)
+		return False;
+
+	for (i=0; lines[i]; i++) {
+		char *buf = lines[i];
+		trim_string(buf," "," ");
+
+		if (buf[0] != '#' && buf[0] != '\n') {
+			BOOL is_group = False;
+			int plus = 1;
+			char *bp = buf;
+			if (strcmp(buf, "NO_PLUS\n") == 0) {
+				DEBUG(6, ("check_user_equiv NO_PLUS\n"));
+				plus_allowed = 0;
+			} else {
+				if (buf[0] == '+') {
+					bp++;
+					if (*bp == '\n' && plus_allowed) {
+						/* a bare plus means everbody allowed */
+						DEBUG(6, ("check_user_equiv everybody allowed\n"));
+						file_lines_free(lines);
+						return True;
+					}
+				} else if (buf[0] == '-') {
+					bp++;
+					plus = 0;
+				}
+				if (*bp == '@') {
+					is_group = True;
+					bp++;
+				}
+				file_host = strtok(bp, " \t\n");
+				file_user = strtok(NULL, " \t\n");
+				DEBUG(7, ("check_user_equiv %s %s\n", file_host ? file_host : "(null)", 
+						file_user ? file_user : "(null)" ));
+				if (file_host && *file_host) {
+					BOOL host_ok = False;
 
 #if defined(HAVE_NETGROUP) && defined(HAVE_YP_GET_DEFAULT_DOMAIN)
-	  if (is_group)
-	    {
-	      static char *mydomain = NULL;
-	      if (!mydomain)
-		yp_get_default_domain(&mydomain);
-	      if (mydomain && innetgr(file_host,remote,user,mydomain))
-		host_ok = True;
-	    }
+					if (is_group) {
+						static char *mydomain = NULL;
+						if (!mydomain)
+							yp_get_default_domain(&mydomain);
+						if (mydomain && innetgr(file_host,remote,user,mydomain))
+							host_ok = True;
+					}
 #else
-	  if (is_group)
-	    {
-	      DEBUG(1,("Netgroups not configured\n"));
-	      continue;
-	    }
+					if (is_group) {
+						DEBUG(1,("Netgroups not configured\n"));
+						continue;
+					}
 #endif
 
-	  /* is it this host */
-	  /* the fact that remote has come from a call of gethostbyaddr
-	   * means that it may have the fully qualified domain name
-	   * so we could look up the file version to get it into
-	   * a canonical form, but I would rather just type it
-	   * in full in the equiv file
-	   */
-	  if (!host_ok && !is_group && strequal(remote, file_host))
-	    host_ok = True;
+					/* is it this host */
+					/* the fact that remote has come from a call of gethostbyaddr
+					 * means that it may have the fully qualified domain name
+					 * so we could look up the file version to get it into
+					 * a canonical form, but I would rather just type it
+					 * in full in the equiv file
+					 */
+					if (!host_ok && !is_group && strequal(remote, file_host))
+						host_ok = True;
 
-	  if (!host_ok)
-	    continue;
+					if (!host_ok)
+						continue;
 
-	  /* is it this user */
-	  if (file_user == 0 || strequal(user, file_user)) 
-	    {
-	      DEBUG(5, ("check_user_equiv matched %s%s %s\n",
-			(plus ? "+" : "-"), file_host,
-			(file_user ? file_user : "")));
-	      file_lines_free(lines);
-	      return (plus ? True : False);
-	    }
+					/* is it this user */
+					if (file_user == 0 || strequal(user, file_user)) {
+						DEBUG(5, ("check_user_equiv matched %s%s %s\n",
+							(plus ? "+" : "-"), file_host,
+							(file_user ? file_user : "")));
+						file_lines_free(lines);
+						return (plus ? True : False);
+					}
+				}
+			}
+		}
 	}
-      }
-    }
-  }
-  file_lines_free(lines);
-  return False;
+	file_lines_free(lines);
+	return False;
 }
 
 /****************************************************************************
@@ -1191,155 +1182,153 @@ use this machine as the password server.\n"));
 ************************************************************************/
 
 static BOOL connect_to_domain_password_server(struct cli_state *pcli, 
-								char *server, unsigned char *trust_passwd)
+						char *server, unsigned char *trust_passwd)
 {
-  struct in_addr dest_ip;
-  fstring remote_machine;
+	struct in_addr dest_ip;
+	fstring remote_machine;
 
-  if(!cli_initialise(pcli)) {
-    DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
-    return False;
-  }
+	if(!cli_initialise(pcli)) {
+		DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
+		return False;
+	}
 
-  if (is_ipaddress(server)) {
-	  struct in_addr to_ip;
+	if (is_ipaddress(server)) {
+		struct in_addr to_ip;
 
-	  /* we shouldn't have 255.255.255.255 forthe IP address of
-             a password server anyways */
-	  if ((to_ip.s_addr=inet_addr(server)) == 0xFFFFFFFF) {
-		DEBUG (0,("connect_to_domain_password_server: inet_addr(%s) returned 0xFFFFFFFF!\n", server));
-          	return False;
-	  }
+		/* we shouldn't have 255.255.255.255 forthe IP address of a password server anyways */
+		if ((to_ip.s_addr=inet_addr(server)) == 0xFFFFFFFF) {
+			DEBUG (0,("connect_to_domain_password_server: inet_addr(%s) returned 0xFFFFFFFF!\n", server));
+			return False;
+		}
 
-	  if (!name_status_find("*", 0, 0x20, to_ip, remote_machine)) {
-		  DEBUG(1, ("connect_to_domain_password_server: Can't "
-			    "resolve name for IP %s\n", server));
-		  return False;
-	  }
-  } else {
-	  fstrcpy(remote_machine, server);
-  }
+		if (!name_status_find("*", 0, 0x20, to_ip, remote_machine)) {
+			DEBUG(1, ("connect_to_domain_password_server: Can't " "resolve name for IP %s\n", server));
+			return False;
+		}
+	} else {
+		fstrcpy(remote_machine, server);
+	}
 
-  standard_sub_basic(remote_machine);
-  strupper(remote_machine);
+	standard_sub_basic(remote_machine);
+	strupper(remote_machine);
 
-  if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
-    DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", remote_machine));
-    cli_shutdown(pcli);
-    return False;
-  }
+	if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
+		DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", remote_machine));
+		cli_shutdown(pcli);
+		return False;
+	}
   
-  if (ismyip(dest_ip)) {
-    DEBUG(1,("connect_to_domain_password_server: Password server loop - not using password server %s\n",
-         remote_machine));
-    cli_shutdown(pcli);
-    return False;
-  }
+	if (ismyip(dest_ip)) {
+		DEBUG(1,("connect_to_domain_password_server: Password server loop - not using password server %s\n",
+			remote_machine));
+		cli_shutdown(pcli);
+		return False;
+	}
 
-  /* we use a mutex to prevent two connections at once - when a NT PDC gets
-     two connections where one hasn't completed a negprot yet it will send a
-     TCP reset to the first connection (tridge) */
+	/* we use a mutex to prevent two connections at once - when a NT PDC gets
+		two connections where one hasn't completed a negprot yet it will send a
+		TCP reset to the first connection (tridge) */
 
-  if (!message_named_mutex(server, 20)) {
-          DEBUG(1,("connect_to_domain_password_server: domain mutex failed for %s\n", server));
-          return False;
-  }
+	if (!message_named_mutex(server, 20)) {
+		DEBUG(1,("connect_to_domain_password_server: domain mutex failed for %s\n", server));
+		return False;
+	}
 
-  if (!cli_connect(pcli, remote_machine, &dest_ip)) {
-    DEBUG(0,("connect_to_domain_password_server: unable to connect to SMB server on \
+	if (!cli_connect(pcli, remote_machine, &dest_ip)) {
+		DEBUG(0,("connect_to_domain_password_server: unable to connect to SMB server on \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
-    cli_shutdown(pcli);
-    message_named_mutex_release(server);
-    return False;
-  }
+		cli_shutdown(pcli);
+		message_named_mutex_release(server);
+		return False;
+	}
   
-  if (!attempt_netbios_session_request(pcli, global_myname, remote_machine, &dest_ip)) {
-    DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS \
+	if (!attempt_netbios_session_request(pcli, global_myname, remote_machine, &dest_ip)) {
+		DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS \
 session request. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
-    message_named_mutex_release(server);
-    return False;
-  }
+		message_named_mutex_release(server);
+		return False;
+	}
   
-  pcli->protocol = PROTOCOL_NT1;
+	pcli->protocol = PROTOCOL_NT1;
 
-  if (!cli_negprot(pcli)) {
-    DEBUG(0,("connect_to_domain_password_server: machine %s rejected the negotiate protocol. \
+	if (!cli_negprot(pcli)) {
+		DEBUG(0,("connect_to_domain_password_server: machine %s rejected the negotiate protocol. \
 Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
-    cli_shutdown(pcli);
-    message_named_mutex_release(server);
-    return False;
-  }
+		cli_shutdown(pcli);
+		message_named_mutex_release(server);
+		return False;
+	}
 
-  if (pcli->protocol != PROTOCOL_NT1) {
-    DEBUG(0,("connect_to_domain_password_server: machine %s didn't negotiate NT protocol.\n",
-                   remote_machine));
-    cli_shutdown(pcli);
-    message_named_mutex_release(server);
-    return False;
-  }
+	if (pcli->protocol != PROTOCOL_NT1) {
+		DEBUG(0,("connect_to_domain_password_server: machine %s didn't negotiate NT protocol.\n",
+			remote_machine));
+		cli_shutdown(pcli);
+		message_named_mutex_release(server);
+		return False;
+	}
 
-  /*
-   * Do an anonymous session setup.
-   */
+	/*
+	 * Do an anonymous session setup.
+	 */
 
-  if (!cli_session_setup(pcli, "", "", 0, "", 0, "")) {
-    DEBUG(0,("connect_to_domain_password_server: machine %s rejected the session setup. \
+	if (!cli_session_setup(pcli, "", "", 0, "", 0, "")) {
+		DEBUG(0,("connect_to_domain_password_server: machine %s rejected the session setup. \
 Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
-    cli_shutdown(pcli);
-    message_named_mutex_release(server);
-    return False;
-  }
+		cli_shutdown(pcli);
+		message_named_mutex_release(server);
+		return False;
+	}
 
-  if (!(pcli->sec_mode & 1)) {
-    DEBUG(1,("connect_to_domain_password_server: machine %s isn't in user level security mode\n",
-               remote_machine));
-    cli_shutdown(pcli);
-    message_named_mutex_release(server);
-    return False;
-  }
+	if (!(pcli->sec_mode & 1)) {
+		DEBUG(1,("connect_to_domain_password_server: machine %s isn't in user level security mode\n",
+			remote_machine));
+		cli_shutdown(pcli);
+		message_named_mutex_release(server);
+		return False;
+	}
 
-  if (!cli_send_tconX(pcli, "IPC$", "IPC", "", 1)) {
-    DEBUG(0,("connect_to_domain_password_server: machine %s rejected the tconX on the IPC$ share. \
+	if (!cli_send_tconX(pcli, "IPC$", "IPC", "", 1)) {
+		DEBUG(0,("connect_to_domain_password_server: machine %s rejected the tconX on the IPC$ share. \
 Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
-    cli_shutdown(pcli);
-    message_named_mutex_release(server);
-    return False;
-  }
+		cli_shutdown(pcli);
+		message_named_mutex_release(server);
+		return False;
+	}
 
-  message_named_mutex_release(server);
+	message_named_mutex_release(server);
 
-  /*
-   * We now have an anonymous connection to IPC$ on the domain password server.
-   */
+	/*
+	 * We now have an anonymous connection to IPC$ on the domain password server.
+	 */
 
-  /*
-   * Even if the connect succeeds we need to setup the netlogon
-   * pipe here. We do this as we may just have changed the domain
-   * account password on the PDC and yet we may be talking to
-   * a BDC that doesn't have this replicated yet. In this case
-   * a successful connect to a DC needs to take the netlogon connect
-   * into account also. This patch from "Bjart Kvarme" <bjart.kvarme@usit.uio.no>.
-   */
+	/*
+	 * Even if the connect succeeds we need to setup the netlogon
+	 * pipe here. We do this as we may just have changed the domain
+	 * account password on the PDC and yet we may be talking to
+	 * a BDC that doesn't have this replicated yet. In this case
+	 * a successful connect to a DC needs to take the netlogon connect
+	 * into account also. This patch from "Bjart Kvarme" <bjart.kvarme@usit.uio.no>.
+	 */
 
-  if(cli_nt_session_open(pcli, PIPE_NETLOGON) == False) {
-    DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
+	if(cli_nt_session_open(pcli, PIPE_NETLOGON) == False) {
+		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
-    cli_nt_session_close(pcli);
-    cli_ulogoff(pcli);
-    cli_shutdown(pcli);
-    return False;
-  }
+		cli_nt_session_close(pcli);
+		cli_ulogoff(pcli);
+		cli_shutdown(pcli);
+		return False;
+	}
 
-  if (!NT_STATUS_IS_OK(cli_nt_setup_creds(pcli, trust_passwd))) {
-    DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
+	if (!NT_STATUS_IS_OK(cli_nt_setup_creds(pcli, trust_passwd))) {
+		DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
-    cli_nt_session_close(pcli);
-    cli_ulogoff(pcli);
-    cli_shutdown(pcli);
-    return(False);
-  }
+		cli_nt_session_close(pcli);
+		cli_ulogoff(pcli);
+		cli_shutdown(pcli);
+		return(False);
+	}
 
-  return True;
+	return True;
 }
 
 /***********************************************************************
@@ -1348,19 +1337,19 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
 
 static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, unsigned char *trust_passwd)
 {
-  fstring dc_name;
+	fstring dc_name;
 
-  /*
-   * Ignore addresses we have already tried.
-   */
+	/*
+	 * Ignore addresses we have already tried.
+	 */
 
-  if (is_zero_ip(*ip))
-	  return False;
+	if (is_zero_ip(*ip))
+		return False;
 
-  if (!lookup_dc_name(global_myname, lp_workgroup(), ip, dc_name))
-	  return False;
+	if (!lookup_dc_name(global_myname, lp_workgroup(), ip, dc_name))
+		return False;
 
-  return connect_to_domain_password_server(pcli, dc_name, trust_passwd);
+	return connect_to_domain_password_server(pcli, dc_name, trust_passwd);
 }
 
 /***********************************************************************
@@ -1449,204 +1438,198 @@ BOOL domain_client_validate( char *user, char *domain,
                              char *smb_ntpasswd, int smb_ntpasslen,
                              BOOL *user_exists, NT_USER_TOKEN **pptoken)
 {
-  unsigned char local_challenge[8];
-  unsigned char local_lm_response[24];
-  unsigned char local_nt_response[24];
-  unsigned char trust_passwd[16];
-  fstring remote_machine;
-  char *p, *pserver;
-  NET_ID_INFO_CTR ctr;
-  NET_USER_INFO_3 info3;
-  struct cli_state cli;
-  uint32 smb_uid_low;
-  BOOL connected_ok = False;
-  time_t last_change_time;
-  NTSTATUS status;
+	unsigned char local_challenge[8];
+	unsigned char local_lm_response[24];
+	unsigned char local_nt_response[24];
+	unsigned char trust_passwd[16];
+	fstring remote_machine;
+	char *p, *pserver;
+	NET_ID_INFO_CTR ctr;
+	NET_USER_INFO_3 info3;
+	struct cli_state cli;
+	uint32 smb_uid_low;
+	BOOL connected_ok = False;
+	time_t last_change_time;
+	NTSTATUS status;
 
-  if (pptoken)
-    *pptoken = NULL;
+	if (pptoken)
+		*pptoken = NULL;
 
-  if(user_exists != NULL)
-    *user_exists = True; /* Only set false on a very specific error. */
+	if(user_exists != NULL)
+		*user_exists = True; /* Only set false on a very specific error. */
  
-  /* 
-   * Check that the requested domain is not our own machine name.
-   * If it is, we should never check the PDC here, we use our own local
-   * password file.
-   */
+	/* 
+	 * Check that the requested domain is not our own machine name.
+	 * If it is, we should never check the PDC here, we use our own local
+	 * password file.
+	 */
 
-  if(strequal( domain, global_myname)) {
-    DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
-    return False;
-  }
+	if(strequal( domain, global_myname)) {
+		DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
+		return False;
+	}
 
-  /*
-   * Next, check that the passwords given were encrypted.
-   */
+	/*
+	 * Next, check that the passwords given were encrypted.
+	 */
 
-  if(((smb_apasslen != 24) && (smb_apasslen != 0)) || 
-     ((smb_ntpasslen != 24) && (smb_ntpasslen != 0))) {
+	if(((smb_apasslen != 24) && (smb_apasslen != 0)) || 
+			((smb_ntpasslen != 24) && (smb_ntpasslen != 0))) {
 
-    /*
-     * Not encrypted - do so.
-     */
+		/*
+		 * Not encrypted - do so.
+		 */
 
-    DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
-    generate_random_buffer( local_challenge, 8, False);
-    SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
-    SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_response);
-    smb_apasslen = 24;
-    smb_ntpasslen = 24;
-    smb_apasswd = (char *)local_lm_response;
-    smb_ntpasswd = (char *)local_nt_response;
-  } else {
+		DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
+		generate_random_buffer( local_challenge, 8, False);
+		SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
+		SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_response);
+		smb_apasslen = 24;
+		smb_ntpasslen = 24;
+		smb_apasswd = (char *)local_lm_response;
+		smb_ntpasswd = (char *)local_nt_response;
+	} else {
 
-    /*
-     * Encrypted - get the challenge we sent for these
-     * responses.
-     */
+		/*
+		 * Encrypted - get the challenge we sent for these
+		 * responses.
+		 */
 
-    if (!last_challenge(local_challenge)) {
-      DEBUG(0,("domain_client_validate: no challenge done - password failed\n"));
-      return False;
-    }
-  }
+		if (!last_challenge(local_challenge)) {
+			DEBUG(0,("domain_client_validate: no challenge done - password failed\n"));
+			return False;
+		}
+	}
 
-  /*
-   * Get the machine account password for our primary domain
-   */
-  if (!secrets_fetch_trust_account_password(global_myworkgroup, trust_passwd, &last_change_time))
-  {
-	  DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", global_myworkgroup));
-	  return False;
-  }
+	/*
+	 * Get the machine account password for our primary domain
+	 */
 
-  /* Test if machine password is expired and need to be changed */
-  if (time(NULL) > last_change_time + lp_machine_password_timeout())
-    global_machine_password_needs_changing = True;
+	if (!secrets_fetch_trust_account_password(global_myworkgroup, trust_passwd, &last_change_time)) {
+		DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", global_myworkgroup));
+		return False;
+	}
 
-  /*
-   * At this point, smb_apasswd points to the lanman response to
-   * the challenge in local_challenge, and smb_ntpasswd points to
-   * the NT response to the challenge in local_challenge. Ship
-   * these over the secure channel to a domain controller and
-   * see if they were valid.
-   */
+	/* Test if machine password is expired and need to be changed */
+	if (time(NULL) > last_change_time + lp_machine_password_timeout())
+		global_machine_password_needs_changing = True;
 
-  ZERO_STRUCT(cli);
+	/*
+	 * At this point, smb_apasswd points to the lanman response to
+	 * the challenge in local_challenge, and smb_ntpasswd points to
+	 * the NT response to the challenge in local_challenge. Ship
+	 * these over the secure channel to a domain controller and
+	 * see if they were valid.
+	 */
 
-  /*
-   * Treat each name in the 'password server =' line as a potential
-   * PDC/BDC. Contact each in turn and try and authenticate.
-   */
+	ZERO_STRUCT(cli);
 
-  pserver = lp_passwordserver();
-  if (! *pserver) pserver = "*";
-  p = pserver;
+	/*
+	 * Treat each name in the 'password server =' line as a potential
+	 * PDC/BDC. Contact each in turn and try and authenticate.
+	 */
 
-  while (!connected_ok &&
-	 next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
-	  if(strequal(remote_machine, "*")) {
-		  connected_ok = find_connect_pdc(&cli, trust_passwd, last_change_time);
-	  } else {
-		  connected_ok = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
-	  }
-  }
+	pserver = lp_passwordserver();
+	if (! *pserver)
+		pserver = "*";
+	p = pserver;
 
-  if (!connected_ok) {
-    DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
-    cli_shutdown(&cli);
-    return False;
-  }
+	while (!connected_ok &&
+			next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
+		if(strequal(remote_machine, "*")) {
+			connected_ok = find_connect_pdc(&cli, trust_passwd, last_change_time);
+		} else {
+			connected_ok = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
+		}
+	}
 
-  /* We really don't care what LUID we give the user. */
-  generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
+	if (!connected_ok) {
+		DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
+		cli_shutdown(&cli);
+		return False;
+	}
 
-  ZERO_STRUCT(info3);
+	/* We really don't care what LUID we give the user. */
+	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
-  status = cli_nt_login_network(&cli, domain, user, smb_uid_low, (char *)local_challenge,
-                          ((smb_apasslen != 0) ? smb_apasswd : NULL),
-                          ((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
-                          &ctr, &info3);
+	ZERO_STRUCT(info3);
 
-  if (!NT_STATUS_IS_OK(status)) {
+	status = cli_nt_login_network(&cli, domain, user, smb_uid_low, (char *)local_challenge,
+				((smb_apasslen != 0) ? smb_apasswd : NULL),
+				((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
+				&ctr, &info3);
 
-    DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
+	if (!NT_STATUS_IS_OK(status)) {
+
+		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, get_nt_error_msg(status) ));
-    cli_nt_session_close(&cli);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
+		cli_nt_session_close(&cli);
+		cli_ulogoff(&cli);
+		cli_shutdown(&cli);
 
-    if((NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) && (user_exists != NULL))
-      *user_exists = False;
+		if((NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) && (user_exists != NULL))
+			*user_exists = False;
 
-    return False;
-  }
+		return False;
+	}
 
-  /*
-   * Here, if we really want it, we have lots of info about the user in info3.
-   */
+	/*
+	 * Here, if we really want it, we have lots of info about the user in info3.
+	 */
 
-  /* Return group membership as returned by NT.  This contains group
-     membership in nested groups which doesn't seem to be accessible by any
-     other means.  We merge this into the NT_USER_TOKEN associated with the vuid
-     later on. */
+	/* Return group membership as returned by NT.  This contains group
+	 membership in nested groups which doesn't seem to be accessible by any
+	 other means.  We merge this into the NT_USER_TOKEN associated with the vuid
+	 later on. */
  
-  if (pptoken && (info3.num_groups2 != 0)) {
-    NT_USER_TOKEN *ptok;
-    int i;
-    DOM_SID domain_sid;
+	if (pptoken && (info3.num_groups2 != 0)) {
+		NT_USER_TOKEN *ptok;
+		int i;
  
-    *pptoken = NULL;
+		*pptoken = NULL;
  
-    if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
-      DEBUG(0, ("domain_client_validate: Out of memory allocating NT_USER_TOKEN\n"));
-      return False;
-    }
+		if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
+			DEBUG(0, ("domain_client_validate: Out of memory allocating NT_USER_TOKEN\n"));
+			return False;
+		}
  
-    ptok->num_sids = (size_t)info3.num_groups2;
-    if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
-      DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
-      SAFE_FREE(ptok);
-      return False;
-    }
+		ptok->num_sids = (size_t)info3.num_groups2;
+		if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
+			DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
+			SAFE_FREE(ptok);
+			return False;
+		}
  
-    if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
-      DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
-      delete_nt_token(&ptok);
-      return False;
-    }
- 
-    for (i = 0; i < ptok->num_sids; i++) {
-      sid_copy(&ptok->user_sids[i], &domain_sid);
-      sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
-    }
-    *pptoken = ptok;
-  }
+		for (i = 0; i < ptok->num_sids; i++) {
+			sid_copy(&ptok->user_sids[i], &info3.dom_sid.sid);
+			sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
+		}
+		*pptoken = ptok;
+	}
 
 #if 0
-  /* 
-   * We don't actually need to do this - plus it fails currently with
-   * NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
-   * send here. JRA.
-   */
+	/* 
+	 * We don't actually need to do this - plus it fails currently with
+	 * NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
+	 * send here. JRA.
+	 */
 
-  if(cli_nt_logoff(&cli, &ctr) == False) {
-    DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
+	if(cli_nt_logoff(&cli, &ctr) == False) {
+		DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));        
-    cli_nt_session_close(&cli);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False;
-  }
+		cli_nt_session_close(&cli);
+		cli_ulogoff(&cli);
+		cli_shutdown(&cli);
+		return False;
+	}
 #endif /* 0 */
 
-  /* Note - once the cli stream is shutdown the mem_ctx used
-   to allocate the other_sids and gids structures has been deleted - so
-   these pointers are no longer valid..... */
+	/* Note - once the cli stream is shutdown the mem_ctx used
+	to allocate the other_sids and gids structures has been deleted - so
+	these pointers are no longer valid..... */
 
-  cli_nt_session_close(&cli);
-  cli_ulogoff(&cli);
-  cli_shutdown(&cli);
-  return True;
+	cli_nt_session_close(&cli);
+	cli_ulogoff(&cli);
+	cli_shutdown(&cli);
+	return True;
 }
