@@ -1,0 +1,47 @@
+<chapter id="NT4Migration">
+<chapterinfo>
+	<author>
+		<firstname>John H</firstname><surname>Terpstra</surname>
+	</author>
+	<pubdate>April 3, 2003</pubdate>
+</chapterinfo>
+
+<title>Migration from NT4 PDC to Samba-3 PDC</title>
+
+<para>
+This is a rough guide to assist those wishing to migrate from NT4 domain control to
+Samba-3 based domain control.
+</para>
+
+<sect1>
+<title>Planning and Getting Started</title>
+
+<para>You must use at least the following ...</para>
+
+<sect2>
+<title>Objectives</title>
+
+<para>
+Blah blah objectives here.
+</para>
+
+</sect2>
+<sect2>
+<title>Steps In Migration Process</title>
+
+<para>
+Document steps right here!
+</para>
+
+</sect2>
+</sect1>
+
+<sect1>
+<title>Managing Samba-3 Domain Control</title>
+
+<para>
+Lots of blah blah here.
+</para>
+
+</sect1>
+</chapter>
