@@ -148,3 +148,20 @@ simple_execle(const char *file, ... /* ,char *const envp[] */)
     free(argv);
     return ret;
 }
+
+int
+simple_execl(const char *file, ...) 
+{
+    va_list ap;
+    char **argv;
+    int ret;
+
+    va_start(ap, file);
+    argv = vstrcollect(&ap);
+    va_end(ap);
+    if(argv == NULL)
+	return -1;
+    ret = simple_execve(file, argv, environ);
+    free(argv);
+    return ret;
+}
