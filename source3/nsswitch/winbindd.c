@@ -154,6 +154,8 @@ static void flush_caches(void)
 static void terminate(void)
 {
 	pstring path;
+
+	winbindd_idmap_close();
 	
 	/* Remove socket file */
 	snprintf(path, sizeof(path), "%s/%s", 

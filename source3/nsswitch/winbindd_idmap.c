@@ -240,6 +240,13 @@ BOOL winbindd_idmap_init(void)
     return True;   
 }
 
+BOOL winbindd_idmap_close(void)
+{
+	if (idmap_tdb)
+		return (tdb_close(idmap_tdb) == 0);
+	return True;
+}
+
 /* Dump status information to log file.  Display different stuff based on
    the debug level:
 
