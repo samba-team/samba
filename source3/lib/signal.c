@@ -30,7 +30,7 @@ static void sig_cld(int signum)
 {
 	while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0) ;
 
-	CatchSignal(SIGCLD, SIG_IGN);
+	CatchSignal(SIGCLD, sig_cld);
 }
 
 
