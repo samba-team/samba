@@ -118,13 +118,14 @@ Ensure that the server credential returned matches the session key
 encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
-BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
-                   uint32 neg_flags, DOM_CHAL *srv_chal)
+NTSTATUS cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
+                       uint32 neg_flags, DOM_CHAL *srv_chal)
 {
   prs_struct rbuf;
   prs_struct buf; 
   NET_Q_AUTH_2 q_a;
   BOOL ok = False;
+  NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
   prs_init(&buf , 1024, cli->mem_ctx, MARSHALL);
   prs_init(&rbuf, 0,    cli->mem_ctx, UNMARSHALL);
@@ -144,7 +145,7 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
     DEBUG(0,("cli_net_auth2: Error : failed to marshall NET_Q_AUTH_2 struct.\n"));
     prs_mem_free(&buf);
     prs_mem_free(&rbuf);
-    return False;
+    return result;
   }
 
   /* send the data on \PIPE\ */
@@ -153,11 +154,12 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
     NET_R_AUTH_2 r_a;
 
     ok = net_io_r_auth_2("", &r_a, &rbuf, 0);
-		
-    if (ok && !NT_STATUS_IS_OK(r_a.status))
+    result = r_a.status;
+
+    if (ok && !NT_STATUS_IS_OK(result))
     {
       /* report error code */
-      DEBUG(0,("cli_net_auth2: Error %s\n", get_nt_error_msg(r_a.status)));
+      DEBUG(0,("cli_net_auth2: Error %s\n", get_nt_error_msg(result)));
       ok = False;
     }
 
@@ -200,7 +202,7 @@ password ?).\n", cli->desthost ));
   prs_mem_free(&buf);
   prs_mem_free(&rbuf);
 
-  return ok;
+  return result;
 }
 
 /****************************************************************************

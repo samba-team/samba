@@ -37,6 +37,7 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
 {
 	struct in_addr dest_ip;
 	fstring remote_machine;
+        NTSTATUS result;
 
 	if(cli_initialise(pcli) == NULL) {
 		DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
@@ -154,9 +155,11 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
 		return False;
 	}
 
-	if (cli_nt_setup_creds(pcli, trust_passwd) == False) {
+	result = cli_nt_setup_creds(pcli, trust_passwd);
+
+        if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
-%s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
+%s. Error was : %s.\n", remote_machine, get_nt_error_msg(result)));
 		cli_nt_session_close(pcli);
 		cli_ulogoff(pcli);
 		cli_shutdown(pcli);

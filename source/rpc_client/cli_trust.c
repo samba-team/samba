@@ -35,6 +35,7 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
                           unsigned char new_trust_passwd_hash[16])
 {
   struct cli_state cli;
+  NTSTATUS result;
 
   ZERO_STRUCT(cli);
   if(cli_initialise(&cli) == NULL) {
@@ -131,9 +132,11 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
     return False;
   } 
   
-  if(cli_nt_setup_creds(&cli, orig_trust_passwd_hash) == False) {
+  result = cli_nt_setup_creds(&cli, orig_trust_passwd_hash);
+
+  if (!NT_STATUS_IS_OK(result)) {
     DEBUG(0,("modify_trust_password: unable to setup the PDC credentials to machine \
-%s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+%s. Error was : %s.\n", remote_machine, get_nt_error_msg(result)));
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
