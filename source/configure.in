@@ -473,7 +473,7 @@ AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h 
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
-AC_CHECK_HEADERS(sys/syslog.h syslog.h)
+AC_CHECK_HEADERS(sys/syslog.h syslog.h execinfo.h)
 
 # In valgrind 1.0.x, it's just valgrind.h.  In 1.9.x+ there's a
 # subdirectory of headers.
