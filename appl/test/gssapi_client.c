@@ -63,7 +63,8 @@ proto (int sock, const char *hostname, const char *service)
 				GSS_C_NT_HOSTBASED_SERVICE,
 				&server);
     if (GSS_ERROR(maj_stat))
-	abort ();
+	gss_err (1, min_stat,
+		 "Error importing name `%s@%s':\n", service, hostname);
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -97,7 +98,7 @@ proto (int sock, const char *hostname, const char *service)
 				 NULL,
 				 NULL);
 	if (GSS_ERROR(maj_stat))
-	    abort ();
+	    gss_err (1, min_stat, "gss_init_sec_context");
 	if (output_token->length != 0)
 	    write_token (sock, output_token);
 	if (GSS_ERROR(maj_stat)) {
@@ -126,7 +127,7 @@ proto (int sock, const char *hostname, const char *service)
 			   input_token,
 			   output_token);
     if (GSS_ERROR(maj_stat))
-	abort ();
+	gss_err (1, min_stat, "gss_get_mic");
 
     write_token (sock, input_token);
     write_token (sock, output_token);
@@ -145,7 +146,7 @@ proto (int sock, const char *hostname, const char *service)
 			 NULL,
 			 output_token);
     if (GSS_ERROR(maj_stat))
-	abort ();
+	gss_err (1, min_stat, "gss_wrap");
 
     write_token (sock, output_token);
 

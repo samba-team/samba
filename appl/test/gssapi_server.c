@@ -81,7 +81,7 @@ proto (int sock, const char *service)
 				    NULL,
 				    NULL);
 	if(GSS_ERROR(maj_stat))
-	    abort ();
+	    gss_err (1, min_stat, "gss_accept_sec_context");
 	if (output_token->length != 0)
 	    write_token (sock, output_token);
 	if (GSS_ERROR(maj_stat)) {
@@ -98,7 +98,7 @@ proto (int sock, const char *service)
 				 &name_token,
 				 NULL);
     if (GSS_ERROR(maj_stat))
-	abort ();
+	gss_err (1, min_stat, "gss_display_name");
 
     printf ("User is `%.*s'\n", (int)name_token.length,
 	    (char *)name_token.value);
@@ -114,7 +114,7 @@ proto (int sock, const char *service)
 			       output_token,
 			       NULL);
     if (GSS_ERROR(maj_stat))
-	abort ();
+	gss_err (1, min_stat, "gss_verify_mic");
 
     printf ("gss_verify_mic: %.*s\n", (int)input_token->length,
 	    (char *)input_token->value);
@@ -130,7 +130,7 @@ proto (int sock, const char *service)
 			   NULL,
 			   NULL);
     if(GSS_ERROR(maj_stat))
-	abort ();
+	gss_err (1, min_stat, "gss_unwrap");
 
     printf ("gss_unwrap: %.*s\n", (int)output_token->length,
 	    (char *)output_token->value);
