@@ -409,6 +409,8 @@ static BOOL check_auth_crap(void)
 	char *hex_nt_key;
 	char *error_string;
 	
+	x_setbuf(x_stdout, NULL);
+
 	static uint8 zeros[16];
 
 	if (request_lm_key) 
@@ -428,9 +430,9 @@ static BOOL check_auth_crap(void)
 					      &error_string);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_printf("%s (0x%x)\n", 
-			 error_string,
-			 NT_STATUS_V(nt_status));
+		x_fprintf(x_stdout, "%s (0x%x)\n", 
+			  error_string,
+			  NT_STATUS_V(nt_status));
 		SAFE_FREE(error_string);
 		return False;
 	}
@@ -441,7 +443,7 @@ static BOOL check_auth_crap(void)
 		hex_encode(lm_key,
 			   sizeof(lm_key),
 			   &hex_lm_key);
-		d_printf("LM_KEY: %s\n", hex_lm_key);
+		x_fprintf(x_stdout, "LM_KEY: %s\n", hex_lm_key);
 		SAFE_FREE(hex_lm_key);
 	}
 	if (request_nt_key 
@@ -450,7 +452,7 @@ static BOOL check_auth_crap(void)
 		hex_encode(nt_key, 
 			   sizeof(nt_key), 
 			   &hex_nt_key);
-		d_printf("NT_KEY: %s\n", hex_nt_key);
+		x_fprintf(x_stdout, "NT_KEY: %s\n", hex_nt_key);
 		SAFE_FREE(hex_nt_key);
 	}
 
@@ -1263,6 +1265,14 @@ enum {
 
 	dbf = x_stderr;
 	
+	/* Samba client initialisation */
+
+	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+		d_fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
+			dyn_CONFIGFILE, strerror(errno));
+		exit(1);
+	}
+
 	/* Parse options */
 
 	pc = poptGetContext("ntlm_auth", argc, argv, long_options, 0);
@@ -1280,7 +1290,7 @@ enum {
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_CHALLENGE:
-			challenge = smb_xmalloc((strlen(hex_challenge)+1)/2);
+			challenge = smb_xmalloc((strlen(hex_challenge))/2+1);
 			if ((challenge_len = strhex_to_str(challenge, 
 							   strlen(hex_challenge), 
 							   hex_challenge)) != 8) {
@@ -1292,7 +1302,7 @@ enum {
 			SAFE_FREE(challenge);
 			break;
 		case OPT_LM: 
-			lm_response = smb_xmalloc((strlen(hex_lm_response)+1)/2);
+			lm_response = smb_xmalloc((strlen(hex_lm_response))/2+1);
 			lm_response_len = strhex_to_str(lm_response, 	
 							strlen(hex_lm_response), 
 							hex_lm_response);
@@ -1304,7 +1314,7 @@ enum {
 			SAFE_FREE(lm_response);
 			break;
 		case OPT_NT: 
-			nt_response = smb_xmalloc((strlen(hex_nt_response)+1)/2);
+			nt_response = smb_xmalloc((strlen(hex_nt_response)+2)/2+1);
 			nt_response_len = strhex_to_str(nt_response, 
 							strlen(hex_nt_response), 
 							hex_nt_response);
