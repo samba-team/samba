@@ -1077,7 +1077,7 @@ static void init_printer_values(void)
 			break;
 
 		case PRINT_CUPS:
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
 			string_set(&sDefault.szLpqcommand, "");
 			string_set(&sDefault.szLprmcommand, "");
 			string_set(&sDefault.szPrintcommand, "");
@@ -1103,7 +1103,7 @@ static void init_printer_values(void)
 			string_set(&sDefault.szQueueresumecommand,
 			           "/usr/bin/enable %p");
 			string_set(&Globals.szPrintcapname, "lpstat");
-#endif /* HAVE_LIBCUPS */
+#endif /* HAVE_CUPS */
 			break;
 
 		case PRINT_SYSV:

@@ -395,9 +395,23 @@ AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
 
-# we need libcups for CUPS support...
+############################################
+# for cups support we need libcups, and a handful of header files
+
 AC_CHECK_LIB(cups,httpConnect)
 
+# I wonder if there is a nicer way of doing this?
+
+if test x"$ac_cv_lib_cups_httpConnect" = x"yes"; then
+        AC_CHECK_HEADERS(cups/cups.h cups/language.h)
+        if x"$ac_cv_header_cups_cups_h" = x"yes"; then
+                if x"$ac_cv_header_cups_language_h" = x"yes"; then
+                        AC_DEFINE(HAVE_CUPS)
+                fi
+        fi
+fi
+
+############################################
 # we need libdl for PAM and the new VFS code
 AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
 	AC_DEFINE(HAVE_LIBDL)])

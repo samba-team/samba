@@ -270,10 +270,10 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 	return(False);
       }
 
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
     if (strequal(psz, "cups"))
        return (cups_printername_ok(pszPrintername));
-#endif /* HAVE_LIBCUPS */
+#endif /* HAVE_CUPS */
 
 #ifdef SYSV
     if (strequal(psz, "lpstat"))
@@ -346,12 +346,12 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       return;
     }
 
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
     if (strequal(psz, "cups")) {
       cups_printer_fn(fn);
       return;
     }
-#endif /* HAVE_LIBCUPS */
+#endif /* HAVE_CUPS */
 
 #ifdef SYSV
     if (strequal(psz, "lpstat")) {

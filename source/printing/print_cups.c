@@ -21,7 +21,7 @@
 #include "printing.h"
 #include "smb.h"
 
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
 #include <cups/cups.h>
 #include <cups/language.h>
 
@@ -1188,4 +1188,4 @@ cups_queue_resume(int snum)
 #else
  /* this keeps fussy compilers happy */
  void print_cups_dummy(void) {}
-#endif /* HAVE_LIBCUPS */
+#endif /* HAVE_CUPS */
