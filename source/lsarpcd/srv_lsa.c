@@ -329,6 +329,9 @@ static void make_lsa_trans_names(DOM_R_REF *ref,
 			if (sid_equal(&find_sid, &global_sam_sid) ||
 			    sid_equal(&find_sid, &global_sid_S_1_5_20))
 			{
+				/* lkclXXXX REPLACE THIS FUNCTION WITH
+				   samr_xxxx() routines
+				 */
 				status = lookup_sid(&tmp_sid, name, &sid_name_use);
 			}
 			else
