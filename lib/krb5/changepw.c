@@ -281,10 +281,6 @@ krb5_change_password (krb5_context	context,
     int i;
     struct addrinfo *ai, *a;
 
-    struct sockaddr_storage __ss;
-    struct sockaddr *sa = (struct sockaddr *)&__ss;
-    int sa_size = sizeof(__ss);
-
     ret = krb5_auth_con_init (context, &auth_context);
     if (ret)
 	return ret;
@@ -309,8 +305,8 @@ krb5_change_password (krb5_context	context,
 				&auth_context,
 				creds,
 				sock,
-				sa,
-				sa_size,
+				a->ai_addr,
+				a->ai_addrlen,
 				newpw);
 	    if (ret)
 		goto out;
