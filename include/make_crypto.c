@@ -77,6 +77,9 @@ main(int argc, char **argv)
     fputs("#include <md5.h>\n", f);
     fputs("#include <sha.h>\n", f);
     fputs("#include <rc4.h>\n", f);
+#if ENABLE_AES
+    fputs("#include <aes.h>\n", f);
+#endif    
 #ifdef HAVE_OLD_HASH_NAMES
     fputs("\n", f);
     fputs("    typedef struct md4 MD4_CTX;\n", f);
