@@ -1972,6 +1972,12 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			
 			d_printf("%s%s%s\n", trusted_dom_names[i], padding, ascii_sid);
 		};
+		
+		/*
+		 * in case of no trusted domains say something rather
+		 * than just display blank line
+		 */
+		if (!num_domains) d_printf("none\n");
 
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
@@ -2075,6 +2081,8 @@ static int rpc_trustdom_list(int argc, const char **argv)
 				d_printf("domain controller is not responding\n");
 			};
 		};
+		
+		if (!num_domains) d_printf("none\n");
 		
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 

@@ -439,14 +439,14 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		auth_flags |= AUTH_FLAG_NTLM_RESP;
 	} else if (nthash.length > 24) {
 		auth_flags |= AUTH_FLAG_NTLMv2_RESP;
-	}
+	};
 
-	if (!make_user_info_map(&user_info, 
-				user, workgroup, 
-				machine, 
-				lmhash, nthash,
-				plaintext_password, 
-				auth_flags, True)) {
+	nt_status = make_user_info_map(&user_info, user, workgroup, machine, 
+	                               lmhash, nthash, plaintext_password, 
+	                               auth_flags, True);
+
+	/* it looks a bit weird, but this function returns int type... */
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
@@ -621,7 +621,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	NTSTATUS nt_status;
 
 	BOOL doencrypt = global_encrypted_passwords_negotiated;
-
+	
 	START_PROFILE(SMBsesssetupX);
 
 	ZERO_STRUCT(lm_resp);
@@ -776,11 +776,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		nt_status = check_guest_password(&server_info);
 
 	} else if (doencrypt) {
-		if (!make_user_info_for_reply_enc(&user_info, 
-						  user, domain, 
-						  lm_resp, nt_resp)) {
-			nt_status = NT_STATUS_NO_MEMORY;
-		} else {
+		nt_status = make_user_info_for_reply_enc(&user_info, user, domain,
+		                                         lm_resp, nt_resp);
+		if (NT_STATUS_IS_OK(nt_status)) {
 			nt_status = negprot_global_auth_context->check_ntlm_password(negprot_global_auth_context, 
 										     user_info, 
 										     &server_info);

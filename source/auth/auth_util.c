@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Andrew Bartlett 2001
    Copyright (C) Jeremy Allison 2000-2001
+   Copyright (C) Rafal Szczesniak 2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,7 +57,7 @@ static int smb_create_user(const char *unix_user, const char *homedir)
  Add and Delete UNIX users on demand, based on NTSTATUS codes.
 ****************************************************************************/
 
-void smb_user_control(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info, NTSTATUS nt_status) 
+void smb_user_control(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info, NTSTATUS nt_status)
 {
 	struct passwd *pwd=NULL;
 
@@ -81,15 +82,15 @@ void smb_user_control(const auth_usersupplied_info *user_info, auth_serversuppli
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-static BOOL make_user_info(auth_usersupplied_info **user_info, 
-			   const char *smb_name, 
-			   const char *internal_username,
-			   const char *client_domain, 
-			   const char *domain,
-			   const char *wksta_name, 
-			   DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
-			   DATA_BLOB plaintext, 
-			   uint32 auth_flags, BOOL encrypted)
+static NTSTATUS make_user_info(auth_usersupplied_info **user_info, 
+                               const char *smb_name, 
+                               const char *internal_username,
+                               const char *client_domain, 
+                               const char *domain,
+                               const char *wksta_name, 
+                               DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
+                               DATA_BLOB plaintext, 
+                               uint32 auth_flags, BOOL encrypted)
 {
 
 	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
@@ -97,7 +98,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 	*user_info = malloc(sizeof(**user_info));
 	if (!user_info) {
 		DEBUG(0,("malloc failed for user_info (size %d)\n", sizeof(*user_info)));
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCTP(*user_info);
@@ -109,7 +110,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 		(*user_info)->smb_name.len = strlen(smb_name);
 	} else {
 		free_user_info(user_info);
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 	
 	(*user_info)->internal_username.str = strdup(internal_username);
@@ -117,7 +118,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 		(*user_info)->internal_username.len = strlen(internal_username);
 	} else {
 		free_user_info(user_info);
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*user_info)->domain.str = strdup(domain);
@@ -125,7 +126,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 		(*user_info)->domain.len = strlen(domain);
 	} else {
 		free_user_info(user_info);
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*user_info)->client_domain.str = strdup(client_domain);
@@ -133,7 +134,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 		(*user_info)->client_domain.len = strlen(client_domain);
 	} else {
 		free_user_info(user_info);
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*user_info)->wksta_name.str = strdup(wksta_name);
@@ -141,7 +142,7 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 		(*user_info)->wksta_name.len = strlen(wksta_name);
 	} else {
 		free_user_info(user_info);
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	DEBUG(5,("making blobs for %s's user_info struct\n", internal_username));
@@ -155,26 +156,26 @@ static BOOL make_user_info(auth_usersupplied_info **user_info,
 
 	DEBUG(10,("made an %sencrypted user_info for %s (%s)\n", encrypted ? "":"un" , internal_username, smb_name));
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Create an auth_usersupplied_data structure after appropriate mapping.
 ****************************************************************************/
 
-BOOL make_user_info_map(auth_usersupplied_info **user_info, 
-			const char *smb_name, 
-			const char *client_domain, 
-			const char *wksta_name, 
-			DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
-			DATA_BLOB plaintext, 
-			uint32 ntlmssp_flags, BOOL encrypted)
+NTSTATUS make_user_info_map(auth_usersupplied_info **user_info, 
+			    const char *smb_name, 
+			    const char *client_domain, 
+			    const char *wksta_name, 
+			    DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
+			    DATA_BLOB plaintext, 
+			    uint32 ntlmssp_flags, BOOL encrypted)
 {
 	const char *domain;
 	fstring internal_username;
 	fstrcpy(internal_username, smb_name);
 	map_username(internal_username); 
-
+	
 	DEBUG(5, ("make_user_info_map: Mapping user [%s]\\[%s] from workstation [%s]\n",
 	      client_domain, smb_name, wksta_name));
 	
@@ -203,7 +204,7 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 				 client_domain, lp_winbind_separator(), 
 				 smb_name) < 0) {
 				DEBUG(0, ("make_user_info_map: asprintf() failed!\n"));
-				return False;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			DEBUG(5, ("make_user_info_map: testing for user %s\n", user));
@@ -245,6 +246,7 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 				     const uchar *nt_network_pwd, int nt_pwd_len)
 {
 	BOOL ret;
+	NTSTATUS nt_status;
 	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
 	DATA_BLOB nt_blob = data_blob(nt_network_pwd, nt_pwd_len);
 	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
@@ -258,12 +260,14 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 		auth_flags |= AUTH_FLAG_NTLMv2_RESP; 
 	}
 
-	ret = make_user_info_map(user_info, 
-				 smb_name, client_domain, 
-				 wksta_name, 
-				 lm_blob, nt_blob,
-				 plaintext_blob, 
-				 auth_flags, True);
+	nt_status = make_user_info_map(user_info,
+	                              smb_name, client_domain, 
+                                  wksta_name, 
+	                              lm_blob, nt_blob,
+	                              plaintext_blob, 
+	                              auth_flags, True);
+	
+	ret = NT_STATUS_IS_OK(nt_status) ? True : False;
 		
 	data_blob_free(&lm_blob);
 	data_blob_free(&nt_blob);
@@ -329,6 +333,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 
 	{
 		BOOL ret;
+		NTSTATUS nt_status;
 		DATA_BLOB local_lm_blob = data_blob(local_lm_response, sizeof(local_lm_response));
 		DATA_BLOB local_nt_blob = data_blob(local_nt_response, sizeof(local_nt_response));
 		DATA_BLOB plaintext_blob = data_blob(NULL, 0);
@@ -338,14 +343,15 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 		if (nt_interactive_pwd)
 			auth_flags |= AUTH_FLAG_NTLM_RESP; 
 
-		ret = make_user_info_map(user_info, 
-					 smb_name, client_domain, 
-					 wksta_name, 
-					 local_lm_blob,
-					 local_nt_blob,
-					 plaintext_blob, 
-					 auth_flags, True);
+		nt_status = make_user_info_map(user_info, 
+		                               smb_name, client_domain, 
+		                               wksta_name, 
+		                               local_lm_blob,
+		                               local_nt_blob,
+		                               plaintext_blob, 
+		                               auth_flags, True);
 		
+		ret = NT_STATUS_IS_OK(nt_status) ? True : False;
 		data_blob_free(&local_lm_blob);
 		data_blob_free(&local_nt_blob);
 		return ret;
@@ -366,7 +372,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 
 	DATA_BLOB local_lm_blob;
 	DATA_BLOB local_nt_blob;
-	BOOL ret = False;
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	uint32 auth_flags = AUTH_FLAG_NONE;
 			
 	/*
@@ -397,25 +403,25 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 	}
 	
 	ret = make_user_info_map(user_info, smb_name,
-				 client_domain, 
-				 get_remote_machine_name(),
-				 local_lm_blob,
-				 local_nt_blob,
-				 plaintext_password, 
-				 auth_flags, False);
+	                         client_domain, 
+	                         get_remote_machine_name(),
+	                         local_lm_blob,
+	                         local_nt_blob,
+	                         plaintext_password, 
+	                         auth_flags, False);
 	
 	data_blob_free(&local_lm_blob);
-	return ret;
+	return NT_STATUS_IS_OK(ret) ? True : False;
 }
 
 /****************************************************************************
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-BOOL make_user_info_for_reply_enc(auth_usersupplied_info **user_info, 
-				  const char *smb_name,
-				  const char *client_domain, 
-				  DATA_BLOB lm_resp, DATA_BLOB nt_resp)
+NTSTATUS make_user_info_for_reply_enc(auth_usersupplied_info **user_info, 
+                                      const char *smb_name,
+                                      const char *client_domain, 
+                                      DATA_BLOB lm_resp, DATA_BLOB nt_resp)
 {
 	uint32 auth_flags = AUTH_FLAG_NONE;
 
@@ -450,14 +456,17 @@ BOOL make_user_info_guest(auth_usersupplied_info **user_info)
 	DATA_BLOB nt_blob = data_blob(NULL, 0);
 	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
 	uint32 auth_flags = AUTH_FLAG_NONE;
+	NTSTATUS nt_status;
 
-	return make_user_info(user_info, 
+	nt_status = make_user_info(user_info, 
 			      "","", 
 			      "","", 
 			      "", 
 			      nt_blob, lm_blob,
 			      plaintext_blob, 
 			      auth_flags, True);
+			      
+	return NT_STATUS_IS_OK(nt_status) ? True : False;
 }
 
 /****************************************************************************
@@ -633,7 +642,14 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 		return NT_STATUS_OK;
 	}
 
-	usr = getpwuid_alloc(uid);
+	/*
+	 * This is _essential_ to prevent occasional segfaults when
+	 * winbind can't find uid -> username mapping
+	 */
+	if (!(usr = getpwuid_alloc(uid))) {
+		DEBUG(0, ("Couldn't find passdb structure for UID = %d ! Aborting.\n", uid));
+		return NT_STATUS_NO_SUCH_USER;
+	};
 	
 	n_unix_groups = groups_max();
 	if ((*unix_groups = malloc( sizeof(gid_t) * groups_max() ) ) == NULL) {

@@ -473,6 +473,8 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	/*
 	 * preferred length is set to 5 as a "our" preferred length
 	 * nt sets this parameter to 2
+	 * update (20.08.2002): it's not preferred length, but preferred size!
+	 * it needs further investigation how to optimally choose this value
 	 */
 	uint32 max_num_domains = q_u->preferred_len < 5 ? q_u->preferred_len : 10;
 	TRUSTDOM **trust_doms;
