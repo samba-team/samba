@@ -157,10 +157,10 @@ read_v4_entry (krb5_context context,
 	       krb5_kt_cursor *c,
 	       struct krb4_cursor_extra_data *ed)
 {
+    unsigned char des_key[8];
     krb5_error_code ret;
     char *service, *instance, *realm;
     int8_t kvno;
-    des_cblock key;
 
     ret = krb5_ret_stringz(c->sp, &service);
     if (ret)
@@ -188,7 +188,7 @@ read_v4_entry (krb5_context context,
 	krb5_free_principal (context, ed->entry.principal);
 	return ret;
     }
-    ret = krb5_storage_read(c->sp, key, 8);
+    ret = krb5_storage_read(c->sp, des_key, sizeof(des_key));
     if (ret < 0) {
 	krb5_free_principal(context, ed->entry.principal);
 	return ret;
@@ -199,7 +199,7 @@ read_v4_entry (krb5_context context,
     }
     ed->entry.vno = kvno;
     ret = krb5_data_copy (&ed->entry.keyblock.keyvalue,
-			  key, 8);
+			  des_key, sizeof(des_key));
     if (ret)
 	return ret;
     ed->entry.timestamp = time(NULL);
