@@ -278,9 +278,9 @@ static void dopr (char *buffer, size_t maxlen, const char *format, va_list args)
 	if (cflags == DP_C_SHORT)
 	  value = va_arg (args, unsigned short int);
 	else if (cflags == DP_C_LONG)
-	  value = va_arg (args, unsigned long int);
+	  value = (long)va_arg (args, unsigned long int);
 	else
-	  value = va_arg (args, unsigned int);
+	  value = (long)va_arg (args, unsigned int);
 	fmtint (buffer, &currlen, maxlen, value, 8, min, max, flags);
 	break;
       case 'u':
@@ -288,9 +288,9 @@ static void dopr (char *buffer, size_t maxlen, const char *format, va_list args)
 	if (cflags == DP_C_SHORT)
 	  value = va_arg (args, unsigned short int);
 	else if (cflags == DP_C_LONG)
-	  value = va_arg (args, unsigned long int);
+	  value = (long)va_arg (args, unsigned long int);
 	else
-	  value = va_arg (args, unsigned int);
+	  value = (long)va_arg (args, unsigned int);
 	fmtint (buffer, &currlen, maxlen, value, 10, min, max, flags);
 	break;
       case 'X':
@@ -300,9 +300,9 @@ static void dopr (char *buffer, size_t maxlen, const char *format, va_list args)
 	if (cflags == DP_C_SHORT)
 	  value = va_arg (args, unsigned short int);
 	else if (cflags == DP_C_LONG)
-	  value = va_arg (args, unsigned long int);
+	  value = (long)va_arg (args, unsigned long int);
 	else
-	  value = va_arg (args, unsigned int);
+	  value = (long)va_arg (args, unsigned int);
 	fmtint (buffer, &currlen, maxlen, value, 16, min, max, flags);
 	break;
       case 'f':
@@ -353,7 +353,7 @@ static void dopr (char *buffer, size_t maxlen, const char *format, va_list args)
 	{
 	  long int *num;
 	  num = va_arg (args, long int *);
-	  *num = currlen;
+	  *num = (long int)currlen;
         } 
 	else 
 	{
@@ -547,7 +547,7 @@ static long round (LDOUBLE value)
 {
   long intpart;
 
-  intpart = value;
+  intpart = (long)value;
   value = value - intpart;
   if (value >= 0.5)
     intpart++;
@@ -592,7 +592,7 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
   if (flags & DP_F_UP) caps = 1; /* Should characters be upper case? */
 #endif
 
-  intpart = ufvalue;
+  intpart = (long)ufvalue;
 
   /* 
    * Sorry, we only support 9 digits past the decimal because of our 
