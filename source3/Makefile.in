@@ -83,7 +83,7 @@ MPROGS = @MPROGS@
 WINBIND_PROGS = nsswitch/pam_winbind.so nsswitch/libnss_winbind.so bin/winbindd bin/wbinfo
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef bin/pdbedit @WINBIND_TARGETS@
 TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest bin/locktest2
-SHLIBS = bin/libsmbclient.so
+SHLIBS = bin/libsmbclient
 
 SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd
 
@@ -610,13 +610,13 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 	@echo Linking shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS)
 
-bin/libsmbclient.so: $(LIBSMBCLIENT_PICOBJS)
-	@echo Linking libsmbclient shared library $@
-	-$(LD) @LDSHFLAGS@ -o $@ $(LIBSMBCLIENT_PICOBJS) $(LIBS) # Anything else?
-
-client/testsmbc: client/testsmbc.o bin/libsmbclient.so
-	@echo Linking testsmbc
-	-$(CC) $(CFLAGS) -o $@ client/testsmbc.o -Lbin -lsmbclient
+bin/libsmbclient: $(LIBSMBCLIENT_PICOBJS)
+	-if [ @BLDSHARED@ ]; then \
+	   echo Linking libsmbclient shared library $@.@SHLIBEXT@; \
+	   $(LD) @LDSHFLAGS@ -o $@.@SHLIBEXT@ $(LIBSMBCLIENT_PICOBJS) $(LIBS); \
+	fi
+	@echo Linking libsmbclient non-shared library $@.a
+	-$(AR) -rc $@.a $(LIBSMBCLIENT_PICOBJS) 
 
 bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
