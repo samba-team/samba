@@ -45,3 +45,15 @@ struct lsa_OpenPolicy {
 		NTSTATUS status;
 	} out;
 };
+
+struct lsa_OpenPolicy2 {
+	struct {
+		const char *system_name;
+		struct lsa_ObjectAttribute *attr;
+		uint32 desired_access;
+	} in;
+	struct {
+		struct policy_handle handle;
+		NTSTATUS status;
+	} out;
+};

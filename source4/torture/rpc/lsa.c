@@ -28,6 +28,8 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p)
 	struct lsa_QosInfo qos;
 	NTSTATUS status;
 
+	printf("testing OpenPolicy\n");
+
 	qos.impersonation_level = 2;
 	qos.context_mode = 1;
 	qos.effective_only = 0;
@@ -51,11 +53,45 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p)
 	return True;
 }
 
+
+static BOOL test_OpenPolicy2(struct dcerpc_pipe *p)
+{
+	struct lsa_ObjectAttribute attr;
+	struct policy_handle handle;
+	struct lsa_QosInfo qos;
+	NTSTATUS status;
+
+	printf("testing OpenPolicy2\n");
+
+	qos.impersonation_level = 2;
+	qos.context_mode = 1;
+	qos.effective_only = 0;
+
+	attr.root_dir = NULL;
+	attr.object_name = NULL;
+	attr.attributes = 0;
+	attr.sec_desc = NULL;
+	attr.sec_qos = &qos;
+
+	status = dcerpc_lsa_OpenPolicy2(p, 
+					"\\",
+					&attr,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 BOOL torture_rpc_lsa(int dummy)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
 
 	mem_ctx = talloc_init("torture_rpc_lsa");
 
@@ -64,9 +100,15 @@ BOOL torture_rpc_lsa(int dummy)
 		return False;
 	}
 	
-	test_OpenPolicy(p);
+	if (!test_OpenPolicy(p)) {
+		ret = False;
+	}
+
+	if (!test_OpenPolicy2(p)) {
+		ret = False;
+	}
 
         torture_rpc_close(p);
 
-	return NT_STATUS_IS_OK(status);
+	return ret;
 }

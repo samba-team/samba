@@ -62,3 +62,45 @@ done:
 	talloc_destroy(mem_ctx);
 	return status;
 }
+
+
+/*
+  OpenPolicy2 interface
+*/
+NTSTATUS dcerpc_lsa_OpenPolicy2(struct dcerpc_pipe *p,
+				const char *server,
+				struct lsa_ObjectAttribute *attr,
+				uint32 access_mask,
+				struct policy_handle *handle)
+{
+	struct lsa_OpenPolicy2 r;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_init("dcerpc_rpcecho_addone");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* fill the .in side of the call */
+	r.in.system_name = server;
+	r.in.attr = attr;
+	r.in.desired_access = access_mask;
+
+	/* make the call */
+	status = dcerpc_ndr_request(p, LSA_OPENPOLICY2, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_lsa_OpenPolicy2,
+				    (ndr_pull_fn_t) ndr_pull_lsa_OpenPolicy2,
+				    &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	
+	/* and extract the .out parameters */
+	*handle = r.out.handle;
+	status = r.out.status;
+
+done:
+	talloc_destroy(mem_ctx);
+	return status;
+}
