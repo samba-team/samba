@@ -55,8 +55,9 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	kbuf.dsize = sizeof(key);
 
 	if (tdb_delete(tdb, kbuf) != 0) {
-		DEBUG(0,("yield_connection: tdb_delete for name %s failed with error %s.\n",
-				name, tdb_errorstr(tdb) ));
+		int dbg_lvl = (!conn && (tdb_error(tdb) == TDB_ERR_NOEXIST)) ? 3 : 0;
+		DEBUG(dbg_lvl,("yield_connection: tdb_delete for name %s failed with error %s.\n",
+			name, tdb_errorstr(tdb) ));
 		return (False);
 	}
 
