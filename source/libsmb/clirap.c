@@ -137,7 +137,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 /****************************************************************************
 call a NetShareEnum - try and browse available connections on a host
 ****************************************************************************/
-int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *))
+int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *, void *), void *state)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -184,7 +184,7 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 					char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
 					dos_to_unix(sname,True);
 					dos_to_unix(cmnt,True);
-					fn(sname, type, cmnt);
+					fn(sname, type, cmnt, state);
 				}
 			} else {
 				DEBUG(4,("NetShareEnum res=%d\n", res));
@@ -210,7 +210,8 @@ The callback function takes 3 arguments: the machine name, the server type and
 the comment.
 ****************************************************************************/
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
-		       void (*fn)(const char *, uint32, const char *))
+		       void (*fn)(const char *, uint32, const char *, void *),
+		       void *state)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -219,16 +220,38 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	pstring param;
 	int uLevel = 1;
 	int count = -1;
+
+	/*
+	 * First, check that the stype is reasonable ...
+	 */
+
+	if (stype&0x80000000 && stype&0x7FFFFFFF) {
+
+	  /* Set an error here ... */
+
+	  return False;
+
+	}
   
 	/* send a SMBtrans command with api NetServerEnum */
 	p = param;
 	SSVAL(p,0,0x68); /* api number */
 	p += 2;
-	pstrcpy(p,"WrLehDz");
+	if (!(stype&0x80000000))
+	  pstrcpy(p,"WrLehDz");
+	else 
+	  pstrcpy(p,"WrLehDO");
 	p = skip_string(p,1);
   
-	pstrcpy(p,"B16BBDz");
-  
+	if (!(stype&0x80000000)) {
+	  pstrcpy(p,"B16BBDz");
+	  uLevel = 1;
+	}
+	else {
+	  pstrcpy(p,"B16");
+	  uLevel = 0;
+	}
+
 	p = skip_string(p,1);
 	SSVAL(p,0,uLevel);
 	SSVAL(p,2,CLI_BUFFER_SIZE);
@@ -255,7 +278,9 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 			count=SVAL(rparam,4);
 			p = rdata;
 					
-			for (i = 0;i < count;i++, p += 26) {
+
+			if (!(stype&0x80000000)) {
+			  for (i = 0;i < count;i++, p += 26) {
 				char *sname = p;
 				int comment_offset = (IVAL(p,22) & 0xFFFF)-converter;
 				char *cmnt = comment_offset?(rdata+comment_offset):"";
@@ -265,7 +290,18 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 
 				dos_to_unix(sname, True);
 				dos_to_unix(cmnt, True);
-				fn(sname, stype, cmnt);
+				fn(sname, stype, cmnt, state);
+			  }
+			}
+			else {
+			  for (i = 0; i < count; i++, p+= 16) {
+			    char *sname = p;
+			    
+			    dos_to_unix(sname, True);
+
+			    fn(sname, stype, NULL, state);
+
+			  }
 			}
 		}
 	}

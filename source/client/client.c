@@ -1533,7 +1533,8 @@ static void cmd_lcd(void)
 /****************************************************************************
 list a share name
 ****************************************************************************/
-static void browse_fn(const char *name, uint32 m, const char *comment)
+static void browse_fn(const char *name, uint32 m, 
+                      const char *comment, void *state)
 {
         fstring typestr;
 
@@ -1566,7 +1567,7 @@ static BOOL browse_host(BOOL sort)
         printf("\n\tSharename      Type      Comment\n");
         printf("\t---------      ----      -------\n");
 
-	if((ret = cli_RNetShareEnum(cli, browse_fn)) == -1)
+	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1)
 		printf("Error returning browse list: %s\n", cli_errstr(cli));
 
 	return (ret != -1);
@@ -1575,7 +1576,8 @@ static BOOL browse_host(BOOL sort)
 /****************************************************************************
 list a server name
 ****************************************************************************/
-static void server_fn(const char *name, uint32 m, const char *comment)
+static void server_fn(const char *name, uint32 m, 
+                      const char *comment, void *state)
 {
         printf("\t%-16.16s     %s\n", name, comment);
 }
@@ -1590,12 +1592,12 @@ static BOOL list_servers(char *wk_grp)
         printf("\n\tServer               Comment\n");
         printf("\t---------            -------\n");
 
-	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn);
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn, NULL);
 
         printf("\n\tWorkgroup            Master\n");
         printf("\t---------            -------\n");
 
-	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, server_fn);
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, server_fn, NULL);
 	return True;
 }
 

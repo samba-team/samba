@@ -1690,7 +1690,7 @@ static void run_randomipc(int dummy)
 
 
 static void browse_callback(const char *sname, uint32 stype, 
-			    const char *comment)
+			    const char *comment, void *state)
 {
 	printf("\t%20.20s %08x %s\n", sname, stype, comment);
 }
@@ -1714,12 +1714,12 @@ static void run_browsetest(int dummy)
 	printf("domain list:\n");
 	cli_NetServerEnum(&cli, cli.server_domain, 
 			  SV_TYPE_DOMAIN_ENUM,
-			  browse_callback);
+			  browse_callback, NULL);
 
 	printf("machine list:\n");
 	cli_NetServerEnum(&cli, cli.server_domain, 
 			  SV_TYPE_ALL,
-			  browse_callback);
+			  browse_callback, NULL);
 
 	close_connection(&cli);
 
