@@ -619,3 +619,174 @@ phone : (+31) 595 552431
 URL http://www.reseau.nl
 ------------------------------------------------------------------------------
 
+------------------------------------------------------------------------------
+OTTAWA - CANADA
+
+Russell McOrmond
+Open Systems Internet Consultant
+Serving individuals and organizations in the Ottawa (Ontario, Canada) area.
+voice: (613) 235-7584   FAX: (613) 230-1258
+russell@flora.org  , http://www.flora.org/russell/work/
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+QUEENSLAND - AUSTRALIA
+
+Plugged In Software Pty Ltd
+PO Box 4130
+4/242 Hawken Drive
+St. Lucia South, Qld 4067
+Australia
+http://www.plugged.net.au
+info@plugged.net.au
++61 7 3876 7140
++61 7 3876 7142 (fax)
+Point of Contact:  David Wood
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+SYDNEY - AUSTRALIA
+
+Philip Rhoades
+Pricom Pty Ltd
+http://www.pricom.com.au = http://203.12.131.20
+GPO Box 3411 Sydney NSW 2001 Australia
+Ph: +61:0411:185652
+Fax: +61:2:9959-3481
+E-mail: philr@mail.austasia.net
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+Brussels - BELGIUM
+
+Phidani Software SPRL
+Rue de l'autonomie, 1
+1070 Brussels
+Belgium
+Tel : +32 (2) 5220663
+Fax: +32 (2) 5220930
+
+We provide commercial support in Belgium to large organisations
+(eg:   N.A.T.O., Unisys, E.C.C. ...)
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ITALY
+
+InfoTecna di Cesana D. & C. s.n.c.
+Via Cesana e Villa, 29
+20046 Biassono (Mi)
+
+Tel: ++39 39 2324054
+Fax: ++39 39 2324054
+
+e-mail: infotecn@tin.it
+URL: http://space.tin.it/internet/dsbragio
+
+We provide Samba support along with generic Linux support. Specifically we
+have implemented a powerful Fax servicing system for Samba with Win95/NT
+clients. Details could be found at our URL, currently, only in Italian.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+NETHERLANDS
+
+BitWizard B.V.
+van Bronckhorststraat 12
+2612 XV  Delft
+The Netherlands
+Tel: +31-15-2137459
+Email: samba@BitWizard.nl
+http: http://www.bitwizard.nl/
+
+Specific activities:
+
+  - Linux support
+  - GNU software support
+  - Linux device driver writing
+  - Data recovery
+
+BitWizard supports freely distributable software,
+especially quality products like "Samba".
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+Johannesburg - SOUTH AFRICA
+
+ Company: Symphony Research (Pty) Ltd
+ Contact: Dr Evan Summers, <evan@sr.co.za>, cell 082 900-8632. 
+keywords: Samba on Linux, support and consulting
+          Johannesburg (South Africa)
+
+Evan Summers, PhD           Tel +27 82 900-8632   Symphony
+Linux systems integration   http://sr.co.za       Research
+Johannesburg, South Africa  mailto:evan@sr.co.za  (Pty)Ltd
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+Nijmegen - The Netherlands
+
+Xtended Internet (http://www.xtdnet.nl/)
+
+Broerdijk 27                    Postbus 170             Tel: 31-24-360 39 19    
+6523 GM Nijmegen                6500 AD Nijmegen        Fax: 31-24-360 19 99
+The Netherlands                 The Netherlands         info@xtdnet.nl
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ONTARIO - CANADA
+
+ Bilyana Aleksic          |Email: baleksic@atitech.ca  |
+                          |                            |
+ATI Technologies Inc.     |Phone: 905-882-2600 x3179   |
+75 Tiverton Court         |Fax  : 905-475-3930         | 
+Unionville, Ontario       |                            |
+Canada, L3R 9S3           |                            |
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+Adelaide - AUSTRALIA
+
+Richard Sharpe, sharpe@ns.aus.com
+NS Computer Software and Services P/L
+PO Box 86,
+Ingle Farm, SA 5098
+Australia
+
+Located in Adelaide, South Australia.
+
+Proficient with Digital UNIX, ULTRIX, SunOS, Linux, Win 95, WfWg, Win NT.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+SAN FRANCISCO BAY AREA - USA
+
+Alex Davis      ---     President of FTL
+Faster Than Light, 2570 Ocean Ave. #114, San Francisco, California, 94132
+HTTP://www.ftl.net/ EMAIL:davis@ftl.net TEL:415.334.2922 FAX:415.337.6135
+
+We are located in the "Bay Area" of California, USA.  We provide
+consultant and training for Unix, Windows, Macintosh applications,
+and hardware.  We also provide Internet access to many of the local 
+companies as a part of our "one-stop-shop" model.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+Luxembourg - EUROPE
+
+E.C.C. sa
+11, Rue Bettlange
+L-9657 HARLANGE
+Grand-Duche de Luxembourg
+Tel. +352 93615 (from 09/97: +352 993615)
+Fax  +352 93569 (from 09/97: +352 993569)
+oontact person: Stefaan A Eeckels
+email: Stefaan.Eeckels@ecc.lumail
+
+We're located in Luxembourg, and recently provided support
+for Samba at Eurostat (the European Commision), who are using
+Samba to integrate Windows NT workstations in their Solaris 
+/ Windows3.1 network. All in all, things run rather smoothly now.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
