@@ -36,6 +36,8 @@ NTSTATUS pull_spoolss_PrinterInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	}
 	NDR_ALLOC_N(ndr, *info, count);
 	for (i=0;i<count;i++) {
+		ndr->data += ndr->offset;
+		ndr->offset = 0;
 		NDR_CHECK(ndr_pull_spoolss_PrinterInfo(ndr, NDR_SCALARS|NDR_BUFFERS, level, &(*info)[i]));
 	}
 	return NT_STATUS_OK;
@@ -88,6 +90,25 @@ NTSTATUS pull_spoolss_DriverInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	NDR_ALLOC_N(ndr, *info, count);
 	for (i=0;i<count;i++) {
 		NDR_CHECK(ndr_pull_spoolss_DriverInfo(ndr, NDR_SCALARS|NDR_BUFFERS, level, &(*info)[i]));
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS pull_spoolss_PortInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
+				      uint32_t level, uint32_t count,
+				      union spoolss_PortInfo **info)
+{
+	int i;
+	struct ndr_pull *ndr;
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	NDR_ALLOC_N(ndr, *info, count);
+	for (i=0;i<count;i++) {
+		ndr->data += ndr->offset;
+		ndr->offset = 0;
+		NDR_CHECK(ndr_pull_spoolss_PortInfo(ndr, NDR_SCALARS|NDR_BUFFERS, level, &(*info)[i]));
 	}
 	return NT_STATUS_OK;
 }

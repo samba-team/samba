@@ -464,9 +464,31 @@
 		[out] uint32 count
 	);
 
+	typedef [flag(RELATIVE_CURRENT)] struct {
+		[relative] nstring *port_name;
+	} spoolss_PortInfo1;
+
+	typedef struct {
+		[relative] nstring *port_name;
+		[relative] nstring *monitor_name;
+		[relative] nstring *description;
+		uint32 port_type;
+		uint32 reserved;
+	} spoolss_PortInfo2;
+
+	typedef [nondiscriminant,public] union {
+		[case(1)] spoolss_PortInfo1 info1;
+		[case(2)] spoolss_PortInfo2 info2;
+	} spoolss_PortInfo;
+
 	/******************/
 	/* Function: 0x23 */
 	WERROR spoolss_EnumPorts(
+		[in] unistr *servername,
+		[in] uint32 level,
+		[in,out] DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
 	);
 
 	/******************/
