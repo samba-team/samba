@@ -47,4 +47,13 @@ do
 done
 echo "#\n# SWAT \n#"
 cd $1
-find swat -type f | pkgproto swat/=samba/swat/
+list=`find swat -type d`
+for i in $list
+do
+	echo "d none samba/$i 0755 root other"
+done
+list=`find swat -type f`
+for i in $list
+do
+	echo "f none samba/$i=$i 0644 root other"
+done
