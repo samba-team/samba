@@ -154,7 +154,7 @@ password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.
 
 <para>
 Note: PAM allows stacking of authentication mechanisms. It is 
-also possible to pass information obtained within on PAM module through 
+also possible to pass information obtained within one PAM module through 
 to the next module in the PAM stack. Please refer to the documentation for 
 your particular system implementation for details regarding the specific 
 capabilities of PAM in this environment. Some Linux implmentations also 

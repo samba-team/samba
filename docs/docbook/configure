@@ -11,8 +11,6 @@
 ac_help=
 ac_default_prefix=/usr/local
 # Any additions from configure.in:
-ac_help="$ac_help
-  --with-sgml-share=DIR   change the default location of SGML stylesheets"
 
 # Initialize some variables set by options.
 # The variables have the same names as the options, with
@@ -524,22 +522,19 @@ fi
 
 
 
-## check for the necesary install tools
-## Openjade includes 'onsgmls' while
-## the older jade package includes 'nsgmls'
-# Extract the first word of "openjade", so it can be a program name with args.
-set dummy openjade; ac_word=$2
+# Extract the first word of "jw", so it can be a program name with args.
+set dummy jw; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:534: checking for $ac_word" >&5
-if eval "test \"`echo '$''{'ac_cv_path_JADE'+set}'`\" = set"; then
+echo "configure:529: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_path_JW'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
-  case "$JADE" in
+  case "$JW" in
   /*)
-  ac_cv_path_JADE="$JADE" # Let the user override the test with a path.
+  ac_cv_path_JW="$JW" # Let the user override the test with a path.
   ;;
   ?:/*)			 
-  ac_cv_path_JADE="$JADE" # Let the user override the test with a dos path.
+  ac_cv_path_JW="$JW" # Let the user override the test with a dos path.
   ;;
   *)
   IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
@@ -547,7 +542,7 @@ else
   for ac_dir in $ac_dummy; do 
     test -z "$ac_dir" && ac_dir=.
     if test -f $ac_dir/$ac_word; then
-      ac_cv_path_JADE="$ac_dir/$ac_word"
+      ac_cv_path_JW="$ac_dir/$ac_word"
       break
     fi
   done
@@ -555,189 +550,9 @@ else
   ;;
 esac
 fi
-JADE="$ac_cv_path_JADE"
-if test -n "$JADE"; then
-  echo "$ac_t""$JADE" 1>&6
-else
-  echo "$ac_t""no" 1>&6
-fi
-
-
-if test -z "$JADE"; then
-	# Extract the first word of "jade", so it can be a program name with args.
-set dummy jade; ac_word=$2
-echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:571: checking for $ac_word" >&5
-if eval "test \"`echo '$''{'ac_cv_path_JADE'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  case "$JADE" in
-  /*)
-  ac_cv_path_JADE="$JADE" # Let the user override the test with a path.
-  ;;
-  ?:/*)			 
-  ac_cv_path_JADE="$JADE" # Let the user override the test with a dos path.
-  ;;
-  *)
-  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
-  ac_dummy="$PATH"
-  for ac_dir in $ac_dummy; do 
-    test -z "$ac_dir" && ac_dir=.
-    if test -f $ac_dir/$ac_word; then
-      ac_cv_path_JADE="$ac_dir/$ac_word"
-      break
-    fi
-  done
-  IFS="$ac_save_ifs"
-  ;;
-esac
-fi
-JADE="$ac_cv_path_JADE"
-if test -n "$JADE"; then
-  echo "$ac_t""$JADE" 1>&6
-else
-  echo "$ac_t""no" 1>&6
-fi
-
-	# Extract the first word of "nsgmls", so it can be a program name with args.
-set dummy nsgmls; ac_word=$2
-echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:606: checking for $ac_word" >&5
-if eval "test \"`echo '$''{'ac_cv_path_NSGMLS'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  case "$NSGMLS" in
-  /*)
-  ac_cv_path_NSGMLS="$NSGMLS" # Let the user override the test with a path.
-  ;;
-  ?:/*)			 
-  ac_cv_path_NSGMLS="$NSGMLS" # Let the user override the test with a dos path.
-  ;;
-  *)
-  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
-  ac_dummy="$PATH"
-  for ac_dir in $ac_dummy; do 
-    test -z "$ac_dir" && ac_dir=.
-    if test -f $ac_dir/$ac_word; then
-      ac_cv_path_NSGMLS="$ac_dir/$ac_word"
-      break
-    fi
-  done
-  IFS="$ac_save_ifs"
-  ;;
-esac
-fi
-NSGMLS="$ac_cv_path_NSGMLS"
-if test -n "$NSGMLS"; then
-  echo "$ac_t""$NSGMLS" 1>&6
-else
-  echo "$ac_t""no" 1>&6
-fi
-
-else
-	# Extract the first word of "onsgmls", so it can be a program name with args.
-set dummy onsgmls; ac_word=$2
-echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:642: checking for $ac_word" >&5
-if eval "test \"`echo '$''{'ac_cv_path_NSGMLS'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  case "$NSGMLS" in
-  /*)
-  ac_cv_path_NSGMLS="$NSGMLS" # Let the user override the test with a path.
-  ;;
-  ?:/*)			 
-  ac_cv_path_NSGMLS="$NSGMLS" # Let the user override the test with a dos path.
-  ;;
-  *)
-  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
-  ac_dummy="$PATH"
-  for ac_dir in $ac_dummy; do 
-    test -z "$ac_dir" && ac_dir=.
-    if test -f $ac_dir/$ac_word; then
-      ac_cv_path_NSGMLS="$ac_dir/$ac_word"
-      break
-    fi
-  done
-  IFS="$ac_save_ifs"
-  ;;
-esac
-fi
-NSGMLS="$ac_cv_path_NSGMLS"
-if test -n "$NSGMLS"; then
-  echo "$ac_t""$NSGMLS" 1>&6
-else
-  echo "$ac_t""no" 1>&6
-fi
-
-fi
-
-# Extract the first word of "htmldoc", so it can be a program name with args.
-set dummy htmldoc; ac_word=$2
-echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:679: checking for $ac_word" >&5
-if eval "test \"`echo '$''{'ac_cv_path_HTMLDOC'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  case "$HTMLDOC" in
-  /*)
-  ac_cv_path_HTMLDOC="$HTMLDOC" # Let the user override the test with a path.
-  ;;
-  ?:/*)			 
-  ac_cv_path_HTMLDOC="$HTMLDOC" # Let the user override the test with a dos path.
-  ;;
-  *)
-  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
-  ac_dummy="$PATH"
-  for ac_dir in $ac_dummy; do 
-    test -z "$ac_dir" && ac_dir=.
-    if test -f $ac_dir/$ac_word; then
-      ac_cv_path_HTMLDOC="$ac_dir/$ac_word"
-      break
-    fi
-  done
-  IFS="$ac_save_ifs"
-  ;;
-esac
-fi
-HTMLDOC="$ac_cv_path_HTMLDOC"
-if test -n "$HTMLDOC"; then
-  echo "$ac_t""$HTMLDOC" 1>&6
-else
-  echo "$ac_t""no" 1>&6
-fi
-
-# Extract the first word of "sgmlspl", so it can be a program name with args.
-set dummy sgmlspl; ac_word=$2
-echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:714: checking for $ac_word" >&5
-if eval "test \"`echo '$''{'ac_cv_path_SGMLSPL'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  case "$SGMLSPL" in
-  /*)
-  ac_cv_path_SGMLSPL="$SGMLSPL" # Let the user override the test with a path.
-  ;;
-  ?:/*)			 
-  ac_cv_path_SGMLSPL="$SGMLSPL" # Let the user override the test with a dos path.
-  ;;
-  *)
-  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
-  ac_dummy="$PATH"
-  for ac_dir in $ac_dummy; do 
-    test -z "$ac_dir" && ac_dir=.
-    if test -f $ac_dir/$ac_word; then
-      ac_cv_path_SGMLSPL="$ac_dir/$ac_word"
-      break
-    fi
-  done
-  IFS="$ac_save_ifs"
-  ;;
-esac
-fi
-SGMLSPL="$ac_cv_path_SGMLSPL"
-if test -n "$SGMLSPL"; then
-  echo "$ac_t""$SGMLSPL" 1>&6
+JW="$ac_cv_path_JW"
+if test -n "$JW"; then
+  echo "$ac_t""$JW" 1>&6
 else
   echo "$ac_t""no" 1>&6
 fi
@@ -745,7 +560,7 @@ fi
 # Extract the first word of "perl", so it can be a program name with args.
 set dummy perl; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:749: checking for $ac_word" >&5
+echo "configure:564: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_PERL'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -777,30 +592,39 @@ else
   echo "$ac_t""no" 1>&6
 fi
 
-
-SGML_SHARE="/usr/local/share/sgml"
-
-# Check whether --with-sgml-share or --without-sgml-share was given.
-if test "${with_sgml_share+set}" = set; then
-  withval="$with_sgml_share"
-  case "$withval" in
-        no) SGML_SHARE=""
-                ;;
-        yes)
-                ;;
-        /*|\\*)
-                SGML_SHARE="$withval"
-                ;;
-        *)
-                SGML_SHARE="/$withval"
-                ;;
+# Extract the first word of "htmldoc", so it can be a program name with args.
+set dummy htmldoc; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:599: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_path_HTMLDOC'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  case "$HTMLDOC" in
+  /*)
+  ac_cv_path_HTMLDOC="$HTMLDOC" # Let the user override the test with a path.
+  ;;
+  ?:/*)			 
+  ac_cv_path_HTMLDOC="$HTMLDOC" # Let the user override the test with a dos path.
+  ;;
+  *)
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$PATH"
+  for ac_dir in $ac_dummy; do 
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_path_HTMLDOC="$ac_dir/$ac_word"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+  ;;
 esac
-
 fi
-
-# The Makefile requires docbook2X in the share/sgml directory
-if  ! test -f $SGML_SHARE/docbook2X/docbook2man-spec.pl ; then
-	{ echo "configure: error: "Unable to find dockbook2X. Make sure it is installed and that the sgml-share path is correct."" 1>&2; exit 1; }
+HTMLDOC="$ac_cv_path_HTMLDOC"
+if test -n "$HTMLDOC"; then
+  echo "$ac_t""$HTMLDOC" 1>&6
+else
+  echo "$ac_t""no" 1>&6
 fi
 
 
@@ -919,7 +743,7 @@ done
 
 ac_given_srcdir=$srcdir
 
-trap 'rm -fr `echo "Makefile stylesheets/ldp.dsl " | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+trap 'rm -fr `echo "Makefile " | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -951,12 +775,9 @@ s%@includedir@%$includedir%g
 s%@oldincludedir@%$oldincludedir%g
 s%@infodir@%$infodir%g
 s%@mandir@%$mandir%g
-s%@JADE@%$JADE%g
-s%@NSGMLS@%$NSGMLS%g
-s%@HTMLDOC@%$HTMLDOC%g
-s%@SGMLSPL@%$SGMLSPL%g
+s%@JW@%$JW%g
 s%@PERL@%$PERL%g
-s%@SGML_SHARE@%$SGML_SHARE%g
+s%@HTMLDOC@%$HTMLDOC%g
 s%@DOC_BUILD_DATE@%$DOC_BUILD_DATE%g
 
 CEOF
@@ -999,7 +820,7 @@ EOF
 
 cat >> $CONFIG_STATUS <<EOF
 
-CONFIG_FILES=\${CONFIG_FILES-"Makefile stylesheets/ldp.dsl "}
+CONFIG_FILES=\${CONFIG_FILES-"Makefile "}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then
