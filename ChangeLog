@@ -1,3 +1,18 @@
+1999-10-03  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/crypto.c (krb5_enctypes_compatible_keys): spell
+ 	correctly
+
+	* lib/krb5/creds.c (krb5_compare_creds): fix spelling of
+ 	krb5_enctypes_compatible_keys
+
+	* lib/krb5/convert_creds.c (krb524_convert_creds_kdc): get new
+ 	credentials from the KDC if the existing one doesn't have a DES
+ 	session key.
+
+	* lib/45/get_ad_tkt.c (get_ad_tkt): update to new
+ 	krb524_convert_creds_kdc
+
 1999-10-03  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/keytab_keyfile.c: make krb5_akf_ops const

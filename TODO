@@ -32,8 +32,6 @@ there's some room for improvement here.
 
 * kdc
 
-should the KDC use keytabs to store its keys?  Then it could use krb5_rd_req.
-
 * kadmin
 
 is in need of a major cleanup

@@ -1,3 +1,8 @@
+1999-10-03  Assar Westerlund  <assar@sics.se>
+
+	* login.c (krb5_start_session): correct the ccache to
+ 	krb524_convert_creds_kdc
+
 1999-09-28  Assar Westerlund  <assar@sics.se>
 
 	* login.c (krb5_verify): use krb5_verify_user_lrealm

@@ -1,3 +1,8 @@
+1999-10-03  Assar Westerlund  <assar@sics.se>
+
+	* afskauthlib/verify.c (verify_krb5): update to new
+ 	krb524_convert_creds_kdc
+
 1999-09-28  Assar Westerlund  <assar@sics.se>
 
 	* sia/sia.c (doauth): use krb5_get_local_realms and

@@ -1,3 +1,7 @@
+1999-10-03  Assar Westerlund  <assar@sics.se>
+
+	* afskrb5.c (get_cred): update to new krb524_convert_creds_kdc
+
 1999-08-12  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: ignore the comlicated aix construct if !krb4
