@@ -726,10 +726,12 @@ SEC_DESC_BUF *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc)
 	/* max buffer size (allocated size) */
 	dst->max_len = (uint32)len;
 	dst->len = (uint32)len;
-
+	
 	if(sec_desc && ((dst->sec = dup_sec_desc(ctx, sec_desc)) == NULL)) {
 		return NULL;
 	}
+
+	dst->undoc = 0x1;
 
 	return dst;
 }
