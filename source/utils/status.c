@@ -61,14 +61,14 @@ static int show_brl;
 
 
 /* added by OH */
-static void Ucrit_addUsername(char *username)
+static void Ucrit_addUsername(const char *username)
 {
 	pstrcpy(Ucrit_username, username);
 	if(strlen(Ucrit_username) > 0)
 		Ucrit_IsActive = 1;
 }
 
-static unsigned int Ucrit_checkUsername(char *username)
+static unsigned int Ucrit_checkUsername(const char *username)
 {
 	if ( !Ucrit_IsActive) return 1;
 	if (strcmp(Ucrit_username,username) ==0) return 1;
