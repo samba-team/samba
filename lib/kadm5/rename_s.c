@@ -84,6 +84,11 @@ kadm5_s_rename_principal(void *server_handle,
 	goto out2;
     ent2.principal = ent.principal;
     ent.principal = target;
+
+    kadm5_log_rename (context,
+		      source,
+		      &ent);
+
     ret = context->db->store(context->context, context->db, 0, &ent);
     if(ret){
 	ent.principal = ent2.principal;
