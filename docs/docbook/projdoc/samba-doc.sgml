@@ -43,7 +43,7 @@
 <title>Abstract</title>
 
 <para>
-<emphasis>Last Update</emphasis> : Thu Aug 15 12:48:45 CDT 2002
+<emphasis>Last Update</emphasis> : $Date: 2002/11/13 15:34:49 $
 </para>
 
 <para>
@@ -52,7 +52,8 @@ I try to ensure that all are current, but sometimes the is a larger job
 than one person can maintain.  The most recent version of this document
 can be found at <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
 on the "Documentation" page.  Please send updates to <ulink 
-url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
+url="mailto:jerry@samba.org">jerry@samba.org</ulink> or 
+<ulink url="mailto:jelmer@samba.org">jelmer@samba.org</ulink>.
 </para>
 
 <para>
@@ -69,7 +70,7 @@ Cheers, jerry
 </dedication>
 
 <!-- Chapters -->
-<part>
+<part id="introduction">
 <title>General installation</title>
 <partintro>
 <title>Introduction</title>
@@ -84,21 +85,23 @@ PLEASE read this.</para>
 &ENCRYPTION;
 </part>
 
-<part>
+<part id="type">
 <title>Type of installation</title>
 <partintro>
 <title>Introduction</title>
-<para>This part contains information on using samba in a (NT 4 or ADS) domain. 
-If you wish to run samba as a domain member or DC, read the appropriate chapter in 
-this part.</para>
+<para>
+Samba can operate in various SMB networks. This part contains information on configuring samba 
+for various environments.
+</para>
 </partintro>
+&SECURITY-LEVEL;
 &Samba-PDC-HOWTO;
 &Samba-BDC-HOWTO;
 &ADS-HOWTO;
 &DOMAIN-MEMBER;
 </part>
 
-<part>
+<part id="optional">
 <title>Optional configuration</title>
 <partintro>
 <title>Introduction</title>
@@ -110,7 +113,6 @@ part each cover one specific feature.</para>
 &Samba-PAM;
 &MS-Dfs-Setup;
 &PRINTER-DRIVER2;
-&SECURITY-LEVEL;
 &WINBIND;
 &pdb-mysql;
 &pdb-xml;
@@ -121,7 +123,7 @@ part each cover one specific feature.</para>
 &SPEED;
 </part>
 
-<part>
+<part id="Appendixes">
 <title>Appendixes</title>
 &Portability;
 &Other-Clients;

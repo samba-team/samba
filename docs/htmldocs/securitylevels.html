@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Security levels</TITLE
+>User and Share security level (for servers not in a domain)</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
@@ -10,14 +10,14 @@ REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="UP"
-TITLE="Optional configuration"
-HREF="p1346.html"><LINK
+TITLE="Type of installation"
+HREF="type.html"><LINK
 REL="PREVIOUS"
-TITLE="Printing Support"
-HREF="printing.html"><LINK
+TITLE="Type of installation"
+HREF="type.html"><LINK
 REL="NEXT"
-TITLE="Unified Logons between Windows NT and UNIX using Winbind"
-HREF="winbind.html"></HEAD
+TITLE="How to Configure Samba as a NT4 Primary Domain Controller"
+HREF="samba-pdc.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="printing.html"
+HREF="type.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="winbind.html"
+HREF="samba-pdc.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -74,61 +74,7 @@ CLASS="CHAPTER"
 ><A
 NAME="SECURITYLEVELS"
 ></A
->Chapter 15. Security levels</H1
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN2186"
-></A
->15.1. Introduction</H1
-><P
->Samba supports the following options to the global smb.conf parameter</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->[global]
-<A
-HREF="smb.conf.5.html#SECURITY"
-TARGET="_top"
-><TT
-CLASS="PARAMETER"
-><I
->security</I
-></TT
-></A
-> = [share|user(default)|server|domain|ads]</PRE
-></P
-><P
->Please refer to the smb.conf man page for usage information and to the document
-<A
-HREF="DOMAIN_MEMBER.html"
-TARGET="_top"
->DOMAIN_MEMBER.html</A
-> for further background details
-on domain mode security.  The Windows 2000 Kerberos domain security model
-(security = ads) is described in the <A
-HREF="ADS-HOWTO.html"
-TARGET="_top"
->ADS-HOWTO.html</A
->.</P
-><P
->Of the above, "security = server" means that Samba reports to clients that
-it is running in "user mode" but actually passes off all authentication
-requests to another "user mode" server. This requires an additional
-parameter "password server =" that points to the real authentication server.
-That real authentication server can be another Samba server or can be a
-Windows NT server, the later natively capable of encrypted password support.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN2197"
-></A
->15.2. More complete description of security levels</H1
+>Chapter 6. User and Share security level (for servers not in a domain)</H1
 ><P
 >A SMB server tells the client at startup what "security level" it is
 running. There are two options "share level" and "user level". Which
@@ -214,7 +160,13 @@ smbpasswd file with SMB style encrypted passwords. It is
 cryptographically impossible to translate from unix style encryption
 to SMB style encryption, although there are some fairly simple management
 schemes by which the two could be kept in sync.</P
-></DIV
+><P
+>"security = server" means that Samba reports to clients that
+it is running in "user mode" but actually passes off all authentication
+requests to another "user mode" server. This requires an additional
+parameter "password server =" that points to the real authentication server.
+That real authentication server can be another Samba server or can be a
+Windows NT server, the later natively capable of encrypted password support.</P
 ></DIV
 ><DIV
 CLASS="NAVFOOTER"
@@ -232,7 +184,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="printing.html"
+HREF="type.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -250,7 +202,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="winbind.html"
+HREF="samba-pdc.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -260,13 +212,13 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Printing Support</TD
+>Type of installation</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="p1346.html"
+HREF="type.html"
 ACCESSKEY="U"
 >Up</A
 ></TD
@@ -274,7 +226,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Unified Logons between Windows NT and UNIX using Winbind</TD
+>How to Configure Samba as a NT4 Primary Domain Controller</TD
 ></TR
 ></TABLE
 ></DIV

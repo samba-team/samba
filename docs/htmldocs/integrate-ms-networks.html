@@ -11,10 +11,10 @@ TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="UP"
 TITLE="Optional configuration"
-HREF="p1346.html"><LINK
+HREF="optional.html"><LINK
 REL="PREVIOUS"
 TITLE="Optional configuration"
-HREF="p1346.html"><LINK
+HREF="optional.html"><LINK
 REL="NEXT"
 TITLE="UNIX Permission Bits and Windows NT Access Control Lists"
 HREF="unix-permissions.html"></HEAD
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="p1346.html"
+HREF="optional.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -74,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="INTEGRATE-MS-NETWORKS"
 ></A
->Chapter 10. Integrating MS Windows networks with Samba</H1
+>Chapter 11. Integrating MS Windows networks with Samba</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1362"
+NAME="AEN1387"
 ></A
->10.1. Agenda</H1
+>11.1. Agenda</H1
 ><P
 >To identify the key functional mechanisms of MS Windows networking 
 to enable the deployment of Samba as a means of extending and/or 
@@ -147,9 +147,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1384"
+NAME="AEN1409"
 ></A
->10.2. Name Resolution in a pure Unix/Linux world</H1
+>11.2. Name Resolution in a pure Unix/Linux world</H1
 ><P
 >The key configuration files covered in this section are:</P
 ><P
@@ -189,9 +189,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1400"
+NAME="AEN1425"
 ></A
->10.2.1. <TT
+>11.2.1. <TT
 CLASS="FILENAME"
 >/etc/hosts</TT
 ></H2
@@ -270,9 +270,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1416"
+NAME="AEN1441"
 ></A
->10.2.2. <TT
+>11.2.2. <TT
 CLASS="FILENAME"
 >/etc/resolv.conf</TT
 ></H2
@@ -308,9 +308,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1427"
+NAME="AEN1452"
 ></A
->10.2.3. <TT
+>11.2.3. <TT
 CLASS="FILENAME"
 >/etc/host.conf</TT
 ></H2
@@ -337,9 +337,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1435"
+NAME="AEN1460"
 ></A
->10.2.4. <TT
+>11.2.4. <TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
 ></H2
@@ -406,9 +406,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1447"
+NAME="AEN1472"
 ></A
->10.3. Name resolution as used within MS Windows networking</H1
+>11.3. Name resolution as used within MS Windows networking</H1
 ><P
 >MS Windows networking is predicated about the name each machine 
 is given. This name is known variously (and inconsistently) as 
@@ -491,9 +491,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1459"
+NAME="AEN1484"
 ></A
->10.3.1. The NetBIOS Name Cache</H2
+>11.3.1. The NetBIOS Name Cache</H2
 ><P
 >All MS Windows machines employ an in memory buffer in which is 
 stored the NetBIOS names and IP addresses for all external 
@@ -518,9 +518,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1464"
+NAME="AEN1489"
 ></A
->10.3.2. The LMHOSTS file</H2
+>11.3.2. The LMHOSTS file</H2
 ><P
 >This file is usually located in MS Windows NT 4.0 or 
 2000 in <TT
@@ -621,9 +621,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1472"
+NAME="AEN1497"
 ></A
->10.3.3. HOSTS file</H2
+>11.3.3. HOSTS file</H2
 ><P
 >This file is usually located in MS Windows NT 4.0 or 2000 in 
 <TT
@@ -643,9 +643,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1477"
+NAME="AEN1502"
 ></A
->10.3.4. DNS Lookup</H2
+>11.3.4. DNS Lookup</H2
 ><P
 >This capability is configured in the TCP/IP setup area in the network 
 configuration facility. If enabled an elaborate name resolution sequence 
@@ -663,9 +663,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1480"
+NAME="AEN1505"
 ></A
->10.3.5. WINS Lookup</H2
+>11.3.5. WINS Lookup</H2
 ><P
 >A WINS (Windows Internet Name Server) service is the equivaent of the 
 rfc1001/1002 specified NBNS (NetBIOS Name Server). A WINS server stores 
@@ -706,9 +706,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1492"
+NAME="AEN1517"
 ></A
->10.4. How browsing functions and how to deploy stable and 
+>11.4. How browsing functions and how to deploy stable and 
 dependable browsing using Samba</H1
 ><P
 >As stated above, MS Windows machines register their NetBIOS names 
@@ -773,9 +773,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1502"
+NAME="AEN1527"
 ></A
->10.5. MS Windows security options and how to configure 
+>11.5. MS Windows security options and how to configure 
 Samba for seemless integration</H1
 ><P
 >MS Windows clients may use encrypted passwords as part of a 
@@ -910,9 +910,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1530"
+NAME="AEN1555"
 ></A
->10.5.1. Use MS Windows NT as an authentication server</H2
+>11.5.1. Use MS Windows NT as an authentication server</H2
 ><P
 >This method involves the additions of the following parameters 
 in the smb.conf file:</P
@@ -946,9 +946,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1538"
+NAME="AEN1563"
 ></A
->10.5.2. Make Samba a member of an MS Windows NT security domain</H2
+>11.5.2. Make Samba a member of an MS Windows NT security domain</H2
 ><P
 >This method involves additon of the following paramters in the smb.conf file:</P
 ><P
@@ -1009,9 +1009,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1555"
+NAME="AEN1580"
 ></A
->10.5.3. Configure Samba as an authentication server</H2
+>11.5.3. Configure Samba as an authentication server</H2
 ><P
 >This mode of authentication demands that there be on the 
 Unix/Linux system both a Unix style account as well as an 
@@ -1046,9 +1046,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1562"
+NAME="AEN1587"
 ></A
->10.5.3.1. Users</H3
+>11.5.3.1. Users</H3
 ><P
 >A user account that may provide a home directory should be 
 created. The following Linux system commands are typical of 
@@ -1069,9 +1069,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1567"
+NAME="AEN1592"
 ></A
->10.5.3.2. MS Windows NT Machine Accounts</H3
+>11.5.3.2. MS Windows NT Machine Accounts</H3
 ><P
 >These are required only when Samba is used as a domain 
 controller.  Refer to the Samba-PDC-HOWTO for more details.</P
@@ -1090,9 +1090,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1572"
+NAME="AEN1597"
 ></A
->10.6. Conclusions</H1
+>11.6. Conclusions</H1
 ><P
 >Samba provides a flexible means to operate as...</P
 ><P
@@ -1138,7 +1138,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="p1346.html"
+HREF="optional.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -1172,7 +1172,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="p1346.html"
+HREF="optional.html"
 ACCESSKEY="U"
 >Up</A
 ></TD

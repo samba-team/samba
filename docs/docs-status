@@ -23,7 +23,6 @@ docs/docbook/projdoc/Samba-PDC-HOWTO.sgml - Needs update to 3.0
 docs/docbook/projdoc/Speed.sgml - contains outdated and invalid information
 docs/docbook/projdoc/UNIX_INSTALL.sgml - Needs a lot of updating (swat, etc)
 docs/docbook/projdoc/printer_driver2.sgml - still up to date?
-docs/docbook/projdoc/security_level.sgml - information about ads and domain should be added (currently only contains pointers to the ads and domain_member docs)
 docs/docbook/projdoc/winbind.sgml - needs documentation for ADS
 docs/textdocs/CUPS-PrintingInfo.txt - needs to be converted to sgml - Kurt Pfeifle
 docs/textdocs/PROFILES.txt - needs to be converted to sgml
@@ -51,6 +50,8 @@ Merge the various docs about wins and browsing
 Windows NT 4.0 Style Trust Relationship
 One Time Migration script from a Windows NT 4.0 PDC to a Samba PDC
 ldap passwd sync
-merge the various pdb docs
+merge the various pdb docs and the doc about encryption
+UNICODE support
+Winbind with samba PDC
 
 http://www.unav.es/cti/ldap-smb/smb-ldap-3-howto.html

@@ -11,13 +11,13 @@ TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="UP"
 TITLE="Optional configuration"
-HREF="p1346.html"><LINK
+HREF="optional.html"><LINK
 REL="PREVIOUS"
 TITLE="Hosting a Microsoft Distributed File System tree on Samba"
 HREF="msdfs.html"><LINK
 REL="NEXT"
-TITLE="Security levels"
-HREF="securitylevels.html"></HEAD
+TITLE="Unified Logons between Windows NT and UNIX using Winbind"
+HREF="winbind.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="securitylevels.html"
+HREF="winbind.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -74,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="PRINTING"
 ></A
->Chapter 14. Printing Support</H1
+>Chapter 15. Printing Support</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1908"
+NAME="AEN1933"
 ></A
->14.1. Introduction</H1
+>15.1. Introduction</H1
 ><P
 >Beginning with the 2.2.0 release, Samba supports 
 the native Windows NT printing mechanisms implemented via 
@@ -163,9 +163,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1930"
+NAME="AEN1955"
 ></A
->14.2. Configuration</H1
+>15.2. Configuration</H1
 ><DIV
 CLASS="WARNING"
 ><P
@@ -229,9 +229,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1938"
+NAME="AEN1963"
 ></A
->14.2.1. Creating [print$]</H2
+>15.2.1. Creating [print$]</H2
 ><P
 >In order to support the uploading of printer driver 
 files, you must first configure a file share named [print$].  
@@ -452,9 +452,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1973"
+NAME="AEN1998"
 ></A
->14.2.2. Setting Drivers for Existing Printers</H2
+>15.2.2. Setting Drivers for Existing Printers</H2
 ><P
 >The initial listing of printers in the Samba host's 
 Printers folder will have no real printer driver assigned 
@@ -524,9 +524,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1989"
+NAME="AEN2014"
 ></A
->14.2.3. Support a large number of printers</H2
+>15.2.3. Support a large number of printers</H2
 ><P
 >One issue that has arisen during the development
 phase of Samba 2.2 is the need to support driver downloads for
@@ -590,9 +590,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2000"
+NAME="AEN2025"
 ></A
->14.2.4. Adding New Printers via the Windows NT APW</H2
+>15.2.4. Adding New Printers via the Windows NT APW</H2
 ><P
 >By default, Samba offers all printer shares defined in <TT
 CLASS="FILENAME"
@@ -759,9 +759,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2030"
+NAME="AEN2055"
 ></A
->14.2.5. Samba and Printer Ports</H2
+>15.2.5. Samba and Printer Ports</H2
 ><P
 >Windows NT/2000 print servers associate a port with each printer.  These normally
 take the form of LPT1:, COM1:, FILE:, etc...  Samba must also support the
@@ -796,9 +796,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2038"
+NAME="AEN2063"
 ></A
->14.3. The Imprints Toolset</H1
+>15.3. The Imprints Toolset</H1
 ><P
 >The Imprints tool set provides a UNIX equivalent of the 
 	Windows NT Add Printer Wizard.  For complete information, please 
@@ -814,9 +814,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2042"
+NAME="AEN2067"
 ></A
->14.3.1. What is Imprints?</H2
+>15.3.1. What is Imprints?</H2
 ><P
 >Imprints is a collection of tools for supporting the goals 
 		of</P
@@ -846,9 +846,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2052"
+NAME="AEN2077"
 ></A
->14.3.2. Creating Printer Driver Packages</H2
+>15.3.2. Creating Printer Driver Packages</H2
 ><P
 >The process of creating printer driver packages is beyond
 		the scope of this document (refer to Imprints.txt also included
@@ -862,9 +862,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2055"
+NAME="AEN2080"
 ></A
->14.3.3. The Imprints server</H2
+>15.3.3. The Imprints server</H2
 ><P
 >The Imprints server is really a database server that 
 		may be queried via standard HTTP mechanisms.  Each printer 
@@ -886,9 +886,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2059"
+NAME="AEN2084"
 ></A
->14.3.4. The Installation Client</H2
+>15.3.4. The Installation Client</H2
 ><P
 >More information regarding the Imprints installation client 
 		is available in the <TT
@@ -980,17 +980,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2081"
+NAME="AEN2106"
 ></A
->14.4. Diagnosis</H1
+>15.4. Diagnosis</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2083"
+NAME="AEN2108"
 ></A
->14.4.1. Introduction</H2
+>15.4.1. Introduction</H2
 ><P
 >This is a short description of how to debug printing problems with
 Samba. This describes how to debug problems with printing from a SMB
@@ -1063,9 +1063,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2099"
+NAME="AEN2124"
 ></A
->14.4.2. Debugging printer problems</H2
+>15.4.2. Debugging printer problems</H2
 ><P
 >One way to debug printing problems is to start by replacing these
 command with shell scripts that record the arguments and the contents
@@ -1120,9 +1120,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2108"
+NAME="AEN2133"
 ></A
->14.4.3. What printers do I have?</H2
+>15.4.3. What printers do I have?</H2
 ><P
 >You can use the 'testprns' program to check to see if the printer
 name you are using is recognized by Samba.  For example,  you can
@@ -1149,9 +1149,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2116"
+NAME="AEN2141"
 ></A
->14.4.4. Setting up printcap and print servers</H2
+>15.4.4. Setting up printcap and print servers</H2
 ><P
 >You may need to set up some printcaps for your Samba system to use.
 It is strongly recommended that you use the facilities provided by
@@ -1233,9 +1233,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2144"
+NAME="AEN2169"
 ></A
->14.4.5. Job sent, no output</H2
+>15.4.5. Job sent, no output</H2
 ><P
 >This is the most frustrating part of printing.  You may have sent the
 job,  verified that the job was forwarded,  set up a wrapper around
@@ -1278,9 +1278,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2155"
+NAME="AEN2180"
 ></A
->14.4.6. Job sent, strange output</H2
+>15.4.6. Job sent, strange output</H2
 ><P
 >Once you have the job printing, you can then start worrying about
 making it print nicely.</P
@@ -1324,9 +1324,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2167"
+NAME="AEN2192"
 ></A
->14.4.7. Raw PostScript printed</H2
+>15.4.7. Raw PostScript printed</H2
 ><P
 >This is a problem that is usually caused by either the print spooling
 system putting information at the start of the print job that makes
@@ -1339,9 +1339,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2170"
+NAME="AEN2195"
 ></A
->14.4.8. Advanced Printing</H2
+>15.4.8. Advanced Printing</H2
 ><P
 >Note that you can do some pretty magic things by using your
 imagination with the "print command" option and some shell scripts.
@@ -1355,9 +1355,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2173"
+NAME="AEN2198"
 ></A
->14.4.9. Real debugging</H2
+>15.4.9. Real debugging</H2
 ><P
 >If the above debug tips don't help, then maybe you need to bring in
 the bug guns, system tracing. See Tracing.txt in this directory.</P
@@ -1398,7 +1398,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="securitylevels.html"
+HREF="winbind.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -1414,7 +1414,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="p1346.html"
+HREF="optional.html"
 ACCESSKEY="U"
 >Up</A
 ></TD
@@ -1422,7 +1422,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Security levels</TD
+>Unified Logons between Windows NT and UNIX using Winbind</TD
 ></TR
 ></TABLE
 ></DIV
