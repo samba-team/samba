@@ -126,6 +126,8 @@ enum SID_NAME_USE ads_atype_map(uint32 atype)
 	switch (atype & 0xF0000000) {
 	case ATYPE_GLOBAL_GROUP:
 		return SID_NAME_DOM_GRP;
+	case ATYPE_SECURITY_LOCAL_GROUP:
+		return SID_NAME_ALIAS;
 	case ATYPE_ACCOUNT:
 		return SID_NAME_USER;
 	default:
