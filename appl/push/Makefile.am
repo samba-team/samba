@@ -14,7 +14,7 @@ pfrom: pfrom.in
 	sed -e "s!%libexecdir%!$(libexecdir)!" $(srcdir)/pfrom.in > $@
 	chmod +x $@
 
-man_MANS = push.8
+man_MANS = push.8 pfrom.1
 
 CLEANFILES = pfrom
 
