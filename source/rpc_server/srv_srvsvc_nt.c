@@ -116,7 +116,8 @@ static void smb_conf_updated(int msg_type, pid_t src, void *buf, size_t len)
  ********************************************************************/
 
 static TDB_CONTEXT *share_tdb; /* used for share security descriptors */
-#define SHARE_DATABASE_VERSION 1
+#define SHARE_DATABASE_VERSION_V1 1
+#define SHARE_DATABASE_VERSION_V2 2 /* version id in little endian. */
 
 BOOL share_info_db_init(void)
 {
@@ -140,15 +141,15 @@ BOOL share_info_db_init(void)
 
 	/* Cope with byte-reversed older versions of the db. */
 	vers_id = tdb_fetch_int32(share_tdb, vstring);
-	if ((vers_id != SHARE_DATABASE_VERSION) && (IREV(vers_id) == SHARE_DATABASE_VERSION)) {
+	if ((vers_id == SHARE_DATABASE_VERSION_V1) || (IREV(vers_id) == SHARE_DATABASE_VERSION_V1)) {
 		/* Written on a bigendian machine with old fetch_int code. Save as le. */
-		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION);
-		vers_id = SHARE_DATABASE_VERSION;
+		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION_V2);
+		vers_id = SHARE_DATABASE_VERSION_V2;
 	}
 
-	if (vers_id != SHARE_DATABASE_VERSION) {
+	if (vers_id != SHARE_DATABASE_VERSION_V2) {
 		tdb_traverse(share_tdb, tdb_traverse_delete_fn, NULL);
-		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION);
+		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION_V2);
 	}
 	tdb_unlock_bystring(share_tdb, vstring);
 
