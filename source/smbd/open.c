@@ -213,16 +213,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 		 conn->num_files_open + 1));
 
-	/*
-	 * Take care of inherited ACLs on created files. JRA.
-	 */
-
-	if ((flags & O_CREAT) && (conn->vfs_ops.fchmod_acl != NULL)) {
-		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
-		if (conn->vfs_ops.fchmod_acl(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
-			errno = saved_errno; /* Ignore ENOSYS */
-	}
-		
 	return True;
 }
 
@@ -930,6 +920,16 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		}
 	}
 	
+	/*
+	 * Take care of inherited ACLs on created files. JRA.
+	 */
+
+	if (!file_existed && (conn->vfs_ops.fchmod_acl != NULL)) {
+		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
+		if (conn->vfs_ops.fchmod_acl(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
+			errno = saved_errno; /* Ignore ENOSYS */
+	}
+		
 	unlock_share_entry_fsp(fsp);
 
 	conn->num_files_open++;
