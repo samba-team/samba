@@ -481,14 +481,11 @@ static WERROR netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 
 /* 
-  netr_LogonSamLogon 
-
-
+  netr_LogonSamLogonWithFlags
 
 */
-
-static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_LogonSamLogon *r)
+static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					    struct netr_LogonSamLogonWithFlags *r)
 {
 	struct server_pipe_state *pipe_state = dce_call->conn->private;
 
@@ -711,6 +708,36 @@ static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	return NT_STATUS_OK;
 }
+
+/* 
+  netr_LogonSamLogon
+*/
+static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				   struct netr_LogonSamLogon *r)
+{
+	struct netr_LogonSamLogonWithFlags r2;
+	NTSTATUS status;
+
+	ZERO_STRUCT(r2);
+
+	r2.in.server_name = r->in.server_name;
+	r2.in.workstation = r->in.workstation;
+	r2.in.credential  = r->in.credential;
+	r2.in.return_authenticator = r->in.return_authenticator;
+	r2.in.logon_level = r->in.logon_level;
+	r2.in.logon = r->in.logon;
+	r2.in.validation_level = r->in.validation_level;
+	r2.in.flags = 0;
+
+	status = netr_LogonSamLogonWithFlags(dce_call, mem_ctx, &r2);
+
+	r->out.return_authenticator = r2.out.return_authenticator;
+	r->out.validation = r2.out.validation;
+	r->out.authoritative = r2.out.authoritative;
+
+	return status;
+}
+
 
 /* 
   netr_LogonSamLogoff 
@@ -1228,16 +1255,6 @@ static WERROR netr_DSRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_ca
 */
 static WERROR netr_NETRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NETRGETFORESTTRUSTINFORMATION *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  netr_NETRLOGONSAMLOGONWITHFLAGS 
-*/
-static WERROR netr_NETRLOGONSAMLOGONWITHFLAGS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRLOGONSAMLOGONWITHFLAGS *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
