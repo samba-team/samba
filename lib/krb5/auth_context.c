@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -245,6 +245,36 @@ krb5_auth_con_getremotesubkey(krb5_context context,
 			      krb5_keyblock **keyblock)
 {
     return copy_key(context, auth_context->remote_subkey, keyblock);
+}
+
+krb5_error_code
+krb5_auth_con_setkey(krb5_context context,
+		     krb5_auth_context auth_context,
+		     krb5_keyblock *keyblock)
+{
+    if(auth_context->keyblock)
+	krb5_free_keyblock(context, auth_context->keyblock);
+    return copy_key(context, keyblock, &auth_context->keyblock);
+}
+
+krb5_error_code
+krb5_auth_con_setlocalsubkey(krb5_context context,
+			     krb5_auth_context auth_context,
+			     krb5_keyblock *keyblock)
+{
+    if(auth_context->local_subkey)
+	krb5_free_keyblock(context, auth_context->local_subkey);
+    return copy_key(context, keyblock, &auth_context->local_subkey);
+}
+
+krb5_error_code
+krb5_auth_con_setremotesubkey(krb5_context context,
+			      krb5_auth_context auth_context,
+			      krb5_keyblock *keyblock)
+{
+    if(auth_context->remote_subkey)
+	krb5_free_keyblock(context, auth_context->remote_subkey);
+    return copy_key(context, keyblock, &auth_context->remote_subkey);
 }
 
 krb5_error_code
