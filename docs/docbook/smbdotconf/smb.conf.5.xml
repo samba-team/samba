@@ -507,9 +507,11 @@ alias|alias|alias|alias...
 	
 		<varlistentry>
 		<term>case sensitive = yes/no</term>
-		<listitem><para>controls whether filenames are case sensitive. If 
-		they aren't then Samba must do a filename search and match on passed 
-		names. Default <emphasis>no</emphasis>.</para></listitem>
+		<listitem><para>controls whether filenames are case sensitive. 
+		Windows clients <emphasis>will</emphasis> break if you enable
+		this parameter.  It is only included for case insentive
+		file systems (such as VFAT) and performance testing.
+		Default <emphasis>no</emphasis>.</para></listitem>
 		</varlistentry> 
 
 		<varlistentry>
