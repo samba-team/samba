@@ -919,10 +919,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 
   if (mdrcnt > 0) {
     *rdata = REALLOC(*rdata,mdrcnt);
-  }
-  desc.base = *rdata;
-  desc.buflen = mdrcnt;
-#if 0
+    desc.base = *rdata;
+    desc.buflen = mdrcnt;
   } else {
     /*
      * Don't return data but need to get correct length
@@ -931,7 +929,6 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
      desc.buflen = getlen(desc.format);
      desc.base = tmpdata = (char *) malloc (desc.buflen);
   }
-#endif
 
   if (init_package(&desc,1,count)) {
 	  desc.subcount = count;
@@ -960,6 +957,15 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	fail_next_srvsvc_open();
   }
 #endif
+  
+  /*
+   * We must set the return code to ERRbuftoosmall
+   * in order to support lanman style printing with Win NT/2k
+   * clients       --jerry
+   */
+  if (!mdrcnt && lp_lanman_printing_only())
+    desc.errcode = ERRbuftoosmall;
+	
 
   *rdata_len = desc.usedlen;
   
