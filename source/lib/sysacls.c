@@ -722,7 +722,7 @@ SMB_ACL_T sys_acl_init(int count)
 	 * acl[] array, this actually allocates an ACL with room
 	 * for (count+1) entries
 	 */
-	if ((a = SMB_MALLOC(sizeof(*a) + count * sizeof(struct acl))) == NULL) {
+	if ((a = SMB_MALLOC(sizeof(struct SMB_ACL_T) + count * sizeof(struct acl))) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -1353,7 +1353,7 @@ SMB_ACL_T sys_acl_init(int count)
 	 * acl[] array, this actually allocates an ACL with room
 	 * for (count+1) entries
 	 */
-	if ((a = SMB_MALLOC(sizeof(*a) + count * sizeof(struct acl))) == NULL) {
+	if ((a = SMB_MALLOC(sizeof(struct SMB_ACL_T) + count * sizeof(struct acl))) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -1982,7 +1982,7 @@ SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type)
 {
 	SMB_ACL_T	a;
 
-	if ((a = SMB_MALLOC_P(SMB_ACL_T)) == NULL) {
+	if ((a = SMB_MALLOC_P(struct SMB_ACL_T)) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -1999,7 +1999,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 {
 	SMB_ACL_T	a;
 
-	if ((a = SMB_MALLOC_P(SMB_ACL_T)) == NULL) {
+	if ((a = SMB_MALLOC_P(struct SMB_ACL_T)) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -2056,7 +2056,7 @@ SMB_ACL_T sys_acl_init(int count)
 		return NULL;
 	}
 
-	if ((a = SMB_MALLOC_P(struct acl)) == NULL) {
+	if ((a = SMB_MALLOC(sizeof(struct SMB_ACL_T) + sizeof(struct acl))) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
