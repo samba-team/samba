@@ -4577,12 +4577,14 @@ static BOOL run_test(const char *name)
 {
 	BOOL ret = True;
 	BOOL result = True;
+	BOOL found = False;
 	int i;
 	double t;
 	if (strequal(name,"ALL")) {
 		for (i=0;torture_ops[i].name;i++) {
 			run_test(torture_ops[i].name);
 		}
+		found = True;
 	}
 	
 	for (i=0;torture_ops[i].name;i++) {
@@ -4590,6 +4592,7 @@ static BOOL run_test(const char *name)
 			 (unsigned)random());
 
 		if (strequal(name, torture_ops[i].name)) {
+			found = True;
 			printf("Running %s\n", name);
 			if (torture_ops[i].flags & FLAG_MULTIPROC) {
 				t = create_procs(torture_ops[i].fn, &result);
@@ -4609,6 +4612,12 @@ static BOOL run_test(const char *name)
 			printf("%s took %g secs\n\n", name, t);
 		}
 	}
+
+	if (!found) {
+		printf("Did not find a test named %s\n", name);
+		ret = False;
+	}
+
 	return ret;
 }
 
@@ -4776,10 +4785,10 @@ static void usage(void)
 	printf("host=%s share=%s user=%s myname=%s\n", 
 	       host, share, username, myname);
 
-	if (argc == 1) {
+	if (argc == optind) {
 		correct = run_test("ALL");
 	} else {
-		for (i=1;i<argc;i++) {
+		for (i=optind;i<argc;i++) {
 			if (!run_test(argv[i])) {
 				correct = False;
 			}
