@@ -48,7 +48,7 @@ static void my_name_register_failed(struct subnet_record *subrec,
   Add my workgroup and my given names to one subnet
   Also add the magic Samba names.
   **************************************************************************/
-static void register_my_workgroup_one_subnet(struct subnet_record *subrec)
+void register_my_workgroup_one_subnet(struct subnet_record *subrec)
 {
 	int i;
 
