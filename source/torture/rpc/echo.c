@@ -207,6 +207,57 @@ static BOOL test_testcall2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
+
+/*
+  test the TestSleep interface
+*/
+static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	int i;
+	NTSTATUS status;
+#define ASYNC_COUNT 5
+	struct rpc_request *req[ASYNC_COUNT];
+	struct echo_TestSleep r[ASYNC_COUNT];
+	int done[ASYNC_COUNT];
+	struct event_context *ctx;
+	int total_done = 0;
+	BOOL ret = True;
+
+	printf("\nTesting TestSleep\n");
+
+	for (i=0;i<ASYNC_COUNT;i++) {
+		done[i] = 0;
+		r[i].in.seconds = ASYNC_COUNT-i;
+		req[i] = dcerpc_echo_TestSleep_send(p, mem_ctx, &r[i]);
+		if (!req[i]) {
+			printf("Failed to send async sleep request\n");
+			return False;
+		}
+	}
+
+	ctx = dcerpc_event_context(p);
+	while (total_done < ASYNC_COUNT) {
+		event_loop_once(ctx);
+		for (i=0;i<ASYNC_COUNT;i++) {
+			if (done[i] == 0 && req[i]->state == RPC_REQUEST_DONE) {
+				total_done++;
+				done[i] = 1;
+				status = dcerpc_ndr_request_recv(req[i]);
+				if (!NT_STATUS_IS_OK(status)) {
+					printf("TestSleep(%d) failed - %s\n",
+					       i, nt_errstr(status));
+					ret = False;
+				} else {
+					printf("Sleep for %d seconds\n", 
+					       r[i].out.result);
+				}
+			}
+		}
+	}
+
+	return ret;
+}
+
 BOOL torture_rpc_echo(int dummy)
 {
         NTSTATUS status;
@@ -247,6 +298,10 @@ BOOL torture_rpc_echo(int dummy)
 	}
 
 	if (!test_testcall2(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_sleep(p, mem_ctx)) {
 		ret = False;
 	}
 
