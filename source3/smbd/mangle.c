@@ -1008,11 +1008,11 @@ BOOL init_mangle_tdb(void)
 	return True;
 }
 
-/* see push_ucs2 */
-int dos_to_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, int flags)
+/* trasform a dos charset string in a terminated unicode string */
+static int dos_to_ucs2(void *dest, const char *src, int dest_len)
 {
 	int len=0;
-	int src_len = strlen(src);
+	int src_len = strlen(src) + 1;
 	pstring tmpbuf;
 
 	/* treat a pstring as "unlimited" length */
@@ -1020,54 +1020,61 @@ int dos_to_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len,
 		dest_len = sizeof(pstring);
 	}
 
-	if (flags & STR_UPPER) {
-		pstrcpy(tmpbuf, src);
-		strupper(tmpbuf);
-		src = tmpbuf;
-	}
-
-	if (flags & STR_TERMINATE) {
-		src_len++;
-	}
-
-	if (ucs2_align(base_ptr, dest, flags)) {
-		*(char *)dest = 0;
-		dest = (void *)((char *)dest + 1);
-		if (dest_len) dest_len--;
-		len++;
-	}
-
 	/* ucs2 is always a multiple of 2 bytes */
 	dest_len &= ~1;
 
-	len += convert_string(CH_DOS, CH_UCS2, src, src_len, dest, dest_len);
+	len = convert_string(CH_DOS, CH_UCS2, src, src_len, dest, dest_len);
 	return len;
 }
 
-/* see pull_ucs2 */
-int ucs2_to_dos(const void *base_ptr, char *dest, const void *src, int dest_len, int src_len, int flags)
+/* trasform a unicode string into a dos charset string */
+static int ucs2_to_dos(char *dest, const smb_ucs2_t *src, int dest_len)
 {
-	int ret;
+	int src_len, ret;
 
 	if (dest_len == -1) {
 		dest_len = sizeof(pstring);
 	}
 
-	if (ucs2_align(base_ptr, src, flags)) {
-		src = (const void *)((char *)src + 1);
-		if (src_len > 0) src_len--;
-	}
-
-	if (flags & STR_TERMINATE) src_len = strlen_w(src)*2+2;
-
-	/* ucs2 is always a multiple of 2 bytes */
-	src_len &= ~1;
+	src_len = strlen_w(src) * sizeof(smb_ucs2_t);
 	
 	ret = convert_string(CH_UCS2, CH_DOS, src, src_len, dest, dest_len);
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
 
-	return src_len;
+	return ret;
 }
+
+/* trasform a ucs2 string in a dos charset string that contain only valid chars for 8.3 filenames */
+static int ucs2_to_dos83(char *dest, const smb_ucs2_t *src, int dest_len)
+{
+	int src_len, u2s_len, ret;
+	smb_ucs2_t *u2s;
+
+	u2s = (smb_ucs2_t *)malloc((strlen_w(src) + 1) * sizeof(smb_ucs2_t));
+	if (!u2s) {
+		DEBUG(0, ("ucs2_to_dos83: out of memory!\n"));
+		return 0;
+	}
+	
+	src_len = strlen_w(src);
+	
+	u2s[src_len] = 0;
+	while (src_len--)
+	{
+		smb_ucs2_t c;
+		
+		c = src[src_len];
+		if (isvalid83_w(c)) u2s[src_len] = c;
+		else u2s[src_len] = UCS2_CHAR('_');
+	}
+	
+	ret = ucs2_to_dos(dest, u2s, dest_len);
+	
+	SAFE_FREE(u2s);
+
+	return ret;
+}
+
 
 /* return False if something fail and
  * return 2 alloced unicode strings that contain prefix and extension
@@ -1076,6 +1083,7 @@ static BOOL mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **prefix
 {
 	size_t str_len;
 	smb_ucs2_t *p;
+	fstring ext;
 
 	*extension = 0;
 	*prefix = strdup_w(ucs2_string);
@@ -1084,14 +1092,13 @@ static BOOL mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **prefix
 		DEBUG(0,("mangle_get_prefix: out of memory!\n"));
 		return False;
 	}
-	str_len = strlen_w(*prefix);
 	if (p = strrchr_wa(*prefix, '.'))
 	{
-	/* TODO: check it is <4 in dos charset */
-		if ((str_len - ((p - *prefix) / sizeof(smb_ucs2_t))) < 4) /* check extension */
+		p++;
+		str_len = ucs2_to_dos83(ext, p, sizeof(ext));
+		if (str_len > 0 && str_len < 4) /* check extension */
 		{
-			*p = 0;
-			p++;
+			*(p - 1) = 0;
 			*extension = strdup_w(p);
 			if (!*extension)
 			{
@@ -1114,7 +1121,7 @@ smb_ucs2_t *unmangle(const smb_ucs2_t *mangled)
 	fstring keystr;
 	fstring mufname;
 	smb_ucs2_t *pref, *ext, *retstr;
-	size_t long_len, ext_len;
+	size_t long_len, ext_len, muf_len;
 	BOOL ret;
 
 	if (strlen_w(mangled) > 12) return NULL;
@@ -1126,8 +1133,10 @@ smb_ucs2_t *unmangle(const smb_ucs2_t *mangled)
 	/* TODO: get out extension */
 	strlower_w(pref);
 	/* set search key */
-	ucs2_to_dos(NULL, mufname, pref, sizeof(mufname), 0, STR_TERMINATE);
+	muf_len = ucs2_to_dos(mufname, pref, sizeof(mufname));
 	SAFE_FREE(pref);
+	if (!muf_len) return NULL;
+	
 	slprintf(keystr, sizeof(keystr) - 1, "%s%s", MANGLED_PREFIX, mufname);
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
@@ -1144,9 +1153,9 @@ smb_ucs2_t *unmangle(const smb_ucs2_t *mangled)
 
 	if (ext)
 	{
-		long_len = data.dsize / 2; /* terminator counted on purpose, will contain '.' */
+		long_len = (data.dsize / 2) - 1;
 		ext_len = strlen_w(ext);
-		retstr = (smb_ucs2_t *)malloc((long_len + ext_len + 1)*sizeof(smb_ucs2_t));
+		retstr = (smb_ucs2_t *)malloc((long_len + ext_len + 2)*sizeof(smb_ucs2_t));
 		if (!retstr)
 		{
 			DEBUG(0, ("unamngle: out of memory!\n"));
@@ -1190,8 +1199,8 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 	char suffix[7];
 	smb_ucs2_t *mangled = NULL;
 	smb_ucs2_t *um, *ext, *p = NULL;
-	smb_ucs2_t temp[8];
-	size_t pref_len, ext_len;
+	smb_ucs2_t temp[9];
+	size_t pref_len, ext_len, ud83_len;
 	size_t um_len;
 	uint32 n, c, pos;
 
@@ -1233,9 +1242,10 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 			temp[pos] = 0;
 			strlower_w(temp);
 
-			ucs2_to_dos(NULL, prefix, temp, sizeof(prefix), 0, STR_TERMINATE);
+			ud83_len = ucs2_to_dos83(prefix, temp, sizeof(prefix));
+			if (!ud83_len) goto done;
 		}
-		while (strlen(prefix) > 8 - (MANGLE_SUFFIX_SIZE + 1));
+		while (ud83_len > 8 - (MANGLE_SUFFIX_SIZE + 1));
 
 		slprintf(keylock, sizeof(keylock)-1, "%s%s", COUNTER_PREFIX, prefix);
 		klock.dptr = keylock;
@@ -1285,11 +1295,11 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 		temp[pos] = UCS2_CHAR('~');
 		temp[pos+1] = 0;
 		snprintf(suffix, 7, "%.6d", c);
-		printf("[%s]\n", suffix);
 		strncat_wa(temp, &suffix[6 - MANGLE_SUFFIX_SIZE], MANGLE_SUFFIX_SIZE + 1);
 
-		ucs2_to_dos(NULL, mufname, temp, sizeof(mufname), 0, STR_TERMINATE);
-		if (strlen(mufname) > 8)
+		ud83_len = ucs2_to_dos(mufname, temp, sizeof(mufname));
+		if (!ud83_len) goto done;
+		if (ud83_len > 8)
 		{
 			DEBUG(0, ("mangle: darn, logic error aborting!\n"));
 			goto done;
@@ -1314,7 +1324,7 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 		slprintf(keystr, sizeof(keystr)-1, "%s%s", LONG_PREFIX, longname);
 		key.dptr = keystr;
 		key.dsize = strlen (keystr) + 1;
-		data.dsize = strlen(mufname +1);
+		data.dsize = strlen(mufname) + 1;
 		data.dptr = mufname;
 		if (tdb_store(mangle_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
 		{
@@ -1375,14 +1385,14 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 			DEBUG(0,("mangle: out of memory!\n"));
 			goto done;
 		}
-		dos_to_ucs2(NULL, p, data.dptr, data.dsize*sizeof(smb_ucs2_t), STR_TERMINATE);
+		dos_to_ucs2(p, data.dptr, data.dsize*sizeof(smb_ucs2_t));
 	}
 		
 	if (ext)
 	{
-		pref_len = strlen_w(p) + 1; /* terminator counted on purpose, will contain '.' */
+		pref_len = strlen_w(p);
 		ext_len = strlen_w(ext);
-		mangled = (smb_ucs2_t *)malloc((pref_len + ext_len + 1)*sizeof(smb_ucs2_t));
+		mangled = (smb_ucs2_t *)malloc((pref_len + ext_len + 2)*sizeof(smb_ucs2_t));
 		if (!mangled)
 		{
 			DEBUG(0,("mangle: out of memory!\n"));
@@ -1424,6 +1434,7 @@ done:
 #define EXT2		"e2"
 #define EXT3		"3"
 #define EXTFAIL		"longext"
+#define EXTNULL		""
 
 static void unmangle_test (char *name, char *ext)
 {
@@ -1470,79 +1481,97 @@ void mangle_test_code(void)
 	init_mangle_tdb();
 
 	/* unmangle every */
+	printf("Unmangle test 1:\n");
+	
 	unmangle_test (LONG, NULL);
 	unmangle_test (LONG, EXT1);
 	unmangle_test (LONG, EXT2);
 	unmangle_test (LONG, EXT3);
 	unmangle_test (LONG, EXTFAIL);
+	unmangle_test (LONG, EXTNULL);
 
 	unmangle_test (LONGM, NULL);
 	unmangle_test (LONGM, EXT1);
 	unmangle_test (LONGM, EXT2);
 	unmangle_test (LONGM, EXT3);
 	unmangle_test (LONGM, EXTFAIL);
+	unmangle_test (LONGM, EXTNULL);
 
 	unmangle_test (SHORT, NULL);
 	unmangle_test (SHORT, EXT1);
 	unmangle_test (SHORT, EXT2);
 	unmangle_test (SHORT, EXT3);
 	unmangle_test (SHORT, EXTFAIL);
+	unmangle_test (SHORT, EXTNULL);
 
 	unmangle_test (SHORTM, NULL);
 	unmangle_test (SHORTM, EXT1);
 	unmangle_test (SHORTM, EXT2);
 	unmangle_test (SHORTM, EXT3);
 	unmangle_test (SHORTM, EXTFAIL);
+	unmangle_test (SHORTM, EXTNULL);
 
 	/* mangle every */
+	printf("Mangle test\n");
+	
 	mangle_test (LONG, NULL);
 	mangle_test (LONG, EXT1);
 	mangle_test (LONG, EXT2);
 	mangle_test (LONG, EXT3);
 	mangle_test (LONG, EXTFAIL);
+	mangle_test (LONG, EXTNULL);
 
 	mangle_test (LONGM, NULL);
 	mangle_test (LONGM, EXT1);
 	mangle_test (LONGM, EXT2);
 	mangle_test (LONGM, EXT3);
 	mangle_test (LONGM, EXTFAIL);
+	mangle_test (LONGM, EXTNULL);
 
 	mangle_test (SHORT, NULL);
 	mangle_test (SHORT, EXT1);
 	mangle_test (SHORT, EXT2);
 	mangle_test (SHORT, EXT3);
 	mangle_test (SHORT, EXTFAIL);
+	mangle_test (SHORT, EXTNULL);
 
 	mangle_test (SHORTM, NULL);
 	mangle_test (SHORTM, EXT1);
 	mangle_test (SHORTM, EXT2);
 	mangle_test (SHORTM, EXT3);
 	mangle_test (SHORTM, EXTFAIL);
+	mangle_test (SHORTM, EXTNULL);
 
 	/* unmangle again every */
+	printf("Unmangle test 2:\n");
+	
 	unmangle_test (LONG, NULL);
 	unmangle_test (LONG, EXT1);
 	unmangle_test (LONG, EXT2);
 	unmangle_test (LONG, EXT3);
 	unmangle_test (LONG, EXTFAIL);
+	unmangle_test (LONG, EXTNULL);
 
 	unmangle_test (LONGM, NULL);
 	unmangle_test (LONGM, EXT1);
 	unmangle_test (LONGM, EXT2);
 	unmangle_test (LONGM, EXT3);
 	unmangle_test (LONGM, EXTFAIL);
+	unmangle_test (LONGM, EXTNULL);
 
 	unmangle_test (SHORT, NULL);
 	unmangle_test (SHORT, EXT1);
 	unmangle_test (SHORT, EXT2);
 	unmangle_test (SHORT, EXT3);
 	unmangle_test (SHORT, EXTFAIL);
+	unmangle_test (SHORT, EXTNULL);
 
 	unmangle_test (SHORTM, NULL);
 	unmangle_test (SHORTM, EXT1);
 	unmangle_test (SHORTM, EXT2);
 	unmangle_test (SHORTM, EXT3);
 	unmangle_test (SHORTM, EXTFAIL);
+	unmangle_test (SHORTM, EXTNULL);
 }
 
 #endif /* TEST_MANGLE_CODE */
