@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
 	char *path;
 
 	charset_initialise();
+	lp_load(CONFIGFILE,1,0,0);
+	codepage_initialise(lp_client_code_page());
 	smbw_setup_shared();
 
 	while ((opt = getopt(argc, argv, "W:U:R:d:P:l:hL:")) != EOF) {
