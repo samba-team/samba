@@ -15,7 +15,6 @@
 WGET = @WGET@
 XSLTPROC = @XSLTPROC@
 DVIPS = @DVIPS@
-CVS2CL = @CVS2CL@
 PNGTOPNM = @PNGTOPNM@
 EPSTOPNM = @EPSTOPNM@
 PNMTOPNG = @PNMTOPNG@
@@ -271,7 +270,8 @@ howto: $(PDFDIR)/Samba-HOWTO-Collection.pdf
 guide: $(PDFDIR)/Samba-Guide.pdf
 
 %/changelog.xml: % $(wildcard %/CVS/*)
-	$(CVS2CL) --stdout --xml $< | $(XSLTPROC) --output $@ xslt/genchangelog.xsl -
+	touch $@
+	# FIXME
 
 $(ARCHIVEDIR):
 	mkdir $(ARCHIVEDIR)

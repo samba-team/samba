@@ -42,7 +42,6 @@ AC_PATH_PROG(PNGTOPNM, pngtopnm)
 AC_PATH_PROG(PNMTOPS, pnmtops)
 AC_PATH_PROG(PERL, perl)
 AC_PATH_PROG(XMLTO, xmlto)
-AC_PATH_PROG(CVS2CL, cvs2cl)
 AC_PATH_PROG(PLUCKERBUILD, plucker-build, [echo -e 'No plucker-build utility was found, ignoring following options:\n'])
 AC_PATH_PROG(EPSTOPDF, epstopdf)
 
