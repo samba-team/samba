@@ -240,6 +240,7 @@ int main(int argc,char *argv[])
 	break;
       case 'd':
 	DEBUGLEVEL = atoi(optarg);
+	/* Prevent smb.conf setting from overridding */
 	AllowDebugChange = False;
 	break;
       case 's':
@@ -268,11 +269,6 @@ int main(int argc,char *argv[])
   if (!lp_load(servicesf,True,False,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
   }
-
-  /*
-   * Ensure we reset DEBUGLEVEL if someone specified it
-   * on the command line.
-   */
 
   load_interfaces();
   if (!open_sockets()) return(1);
