@@ -37,6 +37,7 @@ RCSID("$Id$");
 #endif
 
 #include "roken.h"
+#include <err.h>
 
 void
 verr(int eval, const char *fmt, va_list ap)
