@@ -565,9 +565,8 @@ static void print_asc(int level, const uint8_t *buf,int len)
 		DEBUGADD(level,("%c", isprint(buf[i])?buf[i]:'.'));
 }
 
-void dump_data(int level, const char *buf1,int len)
+void dump_data(int level, const uint8_t *buf,int len)
 {
-	const uint8_t *buf = (const uint8_t *)buf1;
 	int i=0;
 	if (len<=0) return;
 
