@@ -86,6 +86,7 @@ typedef struct parse_struct
 
 typedef struct rpcsrv_struct
 {
+	prs_struct data_i; /* input data (intermediate, for fragments) */
 	prs_struct rhdr; /* output header */
 	prs_struct rfault; /* fault */
 	prs_struct rdata; /* output data */

@@ -158,6 +158,7 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	size_t numtowrite = SVAL(inbuf,smb_vwv10);
 	int nwritten = -1;
 	int smb_doff = SVAL(inbuf, smb_vwv11);
+	int write_mode = SVAL(inbuf, smb_vwv7);
 	char *data;
 
 	if (!p) return(ERROR(ERRDOS,ERRbadfid));
@@ -170,7 +171,18 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	}
 	else
 	{
-		nwritten = write_pipe(p, data, numtowrite);
+		if (write_mode == 0x000c)
+		{
+			nwritten = write_pipe(p, data+2, numtowrite-2);
+			if (nwritten != 0)
+			{
+				nwritten += 2;
+			}
+		}
+		else
+		{
+			nwritten = write_pipe(p, data, numtowrite);
+		}
 	}
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0))

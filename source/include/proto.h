@@ -2031,6 +2031,12 @@ BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data, prs_struct 
 BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 				prs_struct *data,
 				prs_struct *rdata);
+BOOL cli_send_and_rcv_pdu_trans(struct cli_state *cli, uint16 fnum,
+			prs_struct *data, prs_struct *rdata,
+			int max_send_pdu);
+BOOL cli_send_and_rcv_pdu_rw(struct cli_state *cli, uint16 fnum,
+			prs_struct *data, prs_struct *rdata,
+			int max_send_pdu);
 BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 			prs_struct *data, prs_struct *rdata,
 			int max_send_pdu);
@@ -3731,13 +3737,12 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start);
 void close_msrpc_command_processor(void);
 void add_msrpc_command_processor(char* pipe_name,
 				char* process_name,
-				BOOL (*fn) (rpcsrv_struct *, prs_struct *));
+				BOOL (*fn) (rpcsrv_struct *));
 BOOL rpc_add_to_pdu(prs_struct *ps, const char *data, int len);
 BOOL rpc_send_and_rcv_pdu(pipes_struct *p);
 BOOL rpc_to_smb(pipes_struct *p, char *data, int len);
-BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name, struct api_struct *api_rpc_cmds,
-				prs_struct *data);
-BOOL is_complete_pdu(prs_struct *ps);
+BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
+				struct api_struct *api_rpc_cmds);
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
@@ -3767,7 +3772,7 @@ BOOL api_samr_rpc(rpcsrv_struct *p, prs_struct *data);
 void init_printer_hnd(void);
 uint32 size_of_notify_info_data(uint16 type, uint16 field);
 BOOL type_of_notify_info_data(uint16 type, uint16 field);
-BOOL api_spoolss_rpc(rpcsrv_struct *p, prs_struct *data);
+BOOL api_spoolss_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 

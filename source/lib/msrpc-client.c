@@ -120,6 +120,8 @@ BOOL msrpc_receive(int fd, prs_struct *ps)
 {
 	int len;
 
+	DEBUG(10,("msrpc_receive: %d\n", __LINE__));
+
 	if (!receive_msrpc(fd, ps, 0))
 	{
 		return False;

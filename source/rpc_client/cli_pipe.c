@@ -283,7 +283,8 @@ static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, uint8 flags,
 static BOOL create_request_pdu(struct cli_connection *con,
 				uint8 op_num,
 				prs_struct *data, int data_start, int *data_end,
-				prs_struct *dataa)
+				prs_struct *dataa,
+				uint8 *flags)
 {
 	/* fudge this, at the moment: create the header; memcpy the data.  oops. */
 	prs_struct data_t;
@@ -298,7 +299,7 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	uint32 crc32 = 0;
 	char *d = prs_data(data, data_start);
 	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
-	uint8 flags = 0;
+	*flags = 0;
 
 	auth_verify = IS_BITS_SET_ALL(nt->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SIGN);
 	auth_seal   = IS_BITS_SET_ALL(nt->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SEAL);
@@ -308,7 +309,7 @@ static BOOL create_request_pdu(struct cli_connection *con,
 
 	if (data_start == 0)
 	{
-		flags |= RPC_FLG_FIRST;
+		(*flags) |= RPC_FLG_FIRST;
 	}
 
 	if (data_len > nt->max_recv_frag)
@@ -317,7 +318,7 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	}
 	else
 	{
-		flags |= RPC_FLG_LAST;
+		(*flags) |= RPC_FLG_LAST;
 	}
 
 	(*data_end) += data_len;
@@ -334,7 +335,7 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	data_t.end = data_t.data_size;
 	data_t.offset = data_t.data_size;
 
-	create_rpc_request(&hdr, op_num, flags, frag_len, auth_len);
+	create_rpc_request(&hdr, op_num, (*flags), frag_len, auth_len);
 
 	if (auth_seal)
 	{
@@ -494,6 +495,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	RPC_HDR    rhdr;
 	prs_struct rpdu;
 	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
+	uint8 flags;
 
 	int data_start = 0;
 	int data_end = 0;
@@ -508,7 +510,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 			data_start, data->offset));
 
 		if (!create_request_pdu(con, opnum, data, data_start,
-		                 &data_end, &data_t))
+		                 &data_end, &data_t, &flags))
 		{
 			return False;
 		}
@@ -516,19 +518,30 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		DEBUG(10,("rpc_api_pipe_req: end: %d\n", data_end));
 		dbgflush();
 
-		if (!rpc_api_send_rcv_pdu(con, &data_t, &rpdu))
+		if (IS_BITS_CLR_ALL(flags, RPC_FLG_LAST))
 		{
-			prs_free_data(&data_t);
-			return False;
+			if (!rpc_api_write(con, &data_t))
+			{
+				prs_free_data(&data_t);
+				return False;
+			}
+		} 
+		else
+		{
+			if (!rpc_api_send_rcv_pdu(con, &data_t, &rpdu))
+			{
+				prs_free_data(&data_t);
+				return False;
+			}
+
+			if (data_end != data->offset)
+			{
+				prs_free_data(&rpdu);
+				prs_init(&rpdu, 0, 4, True);
+			}
 		}
+
 		prs_free_data(&data_t);
-
-		if (data_end != data->offset)
-		{
-			prs_free_data(&rpdu);
-			prs_init(&rpdu, 0, 4, True);
-		}
-
 		data_start = data_end;
 
 	} while (data_end < data->offset);
@@ -728,7 +741,7 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
  send data on an rpc pipe, which *must* be in one fragment.
  receive response data from an rpc pipe, which may be large...
  ****************************************************************************/
-BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
+BOOL cli_send_and_rcv_pdu_trans(struct cli_state *cli, uint16 fnum,
 			prs_struct *data, prs_struct *rdata,
 			int max_send_pdu)
 {
@@ -742,9 +755,9 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 	size_t data_left = data->data_size;
 	size_t data_len  = data->data_size;
 	int max_data_len = data_len;
-	DEBUG(5,("cli_send_and_rcv_pdu: cmd:%x fnum:%x\n", cmd, fnum));
+	DEBUG(5,("cli_send_and_rcv_pdu_trans: cmd:%x fnum:%x\n", cmd, fnum));
 
-	DEBUG(10,("cli_send_and_rcv_pdu: off: %d len: %d left: %d\n",
+	DEBUG(10,("cli_send_and_rcv_pdu_trans: off: %d len: %d left: %d\n",
 		   data_offset, data_len, data_left));
 
 	if (!cli_send_trans_data(cli, fnum,
@@ -778,11 +791,13 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 		}
 	}
 
+#if 0
 	if (rhdr.pkt_type == RPC_RESPONSE)
 	{
 		RPC_HDR_RESP rhdr_resp;
 		smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, rdata, 0);
 	}
+#endif
 
 	DEBUG(5,("cli_pipe: len left: %d smbtrans read: %d\n",
 		  len, rdata->data_size));
@@ -805,14 +820,12 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 	return True;
 }
 
-
-#if 0
 /****************************************************************************
  send data on an rpc pipe, which *must* be in one fragment.
  receive response data from an rpc pipe, which may be large...
  ****************************************************************************/
 
- BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
+BOOL cli_send_and_rcv_pdu_rw(struct cli_state *cli, uint16 fnum,
 			prs_struct *data, prs_struct *rdata,
 			int max_send_pdu)
 {
@@ -828,11 +841,11 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 	char *d = NULL;
 	size_t data_left = data->data_size;
 	size_t data_len  = data->data_size;
-	DEBUG(5,("cli_send_and_rcv_pdu: cmd:%x fnum:%x\n", cmd, fnum));
+	DEBUG(5,("cli_send_and_rcv_pdu_rw: cmd:%x fnum:%x\n", cmd, fnum));
 
 	while (data_offset < data_len)
 	{
-		DEBUG(10,("cli_send_and_rcv_pdu: off: %d len: %d left: %d\n",
+		DEBUG(10,("cli_send_and_rcv_pdu_rw: off: %d len: %d left: %d\n",
 			   data_offset, data_len, data_left));
 
 		if (d == NULL)
@@ -844,7 +857,7 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 				return False;
 			}
 			SSVAL(d, 0, data_len);
-			memcpy(d+2, data->data->data, data_len);
+			memcpy(d+2, data->data, data_len);
 			data_len += 2;
 		}
 		max_data_len = MIN(max_data_len, data_len - data_offset);
@@ -865,7 +878,7 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 		return False;
 	}
 
-	if (rdata->data->data == NULL) return False;
+	if (rdata->data == NULL) return False;
 
 	/**** parse the header: check it's a response record */
 
@@ -914,7 +927,24 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 	
 	return True;
 }
-#endif
+
+/****************************************************************************
+ send data on an rpc pipe, which *must* be in one fragment.
+ receive response data from an rpc pipe, which may be large...
+ ****************************************************************************/
+BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
+			prs_struct *data, prs_struct *rdata,
+			int max_send_pdu)
+{
+	if (True)
+	{
+		return cli_send_and_rcv_pdu_trans(cli, fnum, data, rdata, max_send_pdu);
+	}
+	else
+	{
+		return cli_send_and_rcv_pdu_rw(cli, fnum, data, rdata, max_send_pdu);
+	}
+}
 
 BOOL cli_rcv_pdu(struct cli_state *cli, uint16 fnum, prs_struct *rdata)
 {

@@ -75,6 +75,8 @@ static void NTLMSSPcalc_p( rpcsrv_struct *p, unsigned char *data, int len)
  ********************************************************************/
 void rpcsrv_free_temp(rpcsrv_struct *l)
 {
+	prs_free_data(&l->data_i);		
+
 	prs_free_data(&l->rhdr );
 	prs_free_data(&l->rfault );
 	prs_free_data(&l->rdata_i);		
@@ -358,22 +360,22 @@ static BOOL api_pipe_ntlmssp_verify(rpcsrv_struct *l)
 	return l->ntlmssp_validated;
 }
 
-static BOOL api_pipe_ntlmssp(rpcsrv_struct *l, prs_struct *pd)
+static BOOL api_pipe_ntlmssp(rpcsrv_struct *l)
 {
 	/* receive a negotiate; send a challenge; receive a response */
 	switch (l->auth_verifier.msg_type)
 	{
 		case NTLMSSP_NEGOTIATE:
 		{
-			smb_io_rpc_auth_ntlmssp_neg("", &l->ntlmssp_neg, pd, 0);
+			smb_io_rpc_auth_ntlmssp_neg("", &l->ntlmssp_neg, &l->data_i, 0);
 			break;
 		}
 		case NTLMSSP_AUTH:
 		{
-			smb_io_rpc_auth_ntlmssp_resp("", &l->ntlmssp_resp, pd, 0);
+			smb_io_rpc_auth_ntlmssp_resp("", &l->ntlmssp_resp, &l->data_i, 0);
 			if (!api_pipe_ntlmssp_verify(l))
 			{
-				pd->offset = 0;
+				l->data_i.offset = 0;
 			}
 			break;
 		}
@@ -386,14 +388,14 @@ static BOOL api_pipe_ntlmssp(rpcsrv_struct *l, prs_struct *pd)
 		}
 	}
 
-	return (pd->offset != 0);
+	return (l->data_i.offset != 0);
 }
 
 struct api_cmd
 {
   char * pipe_clnt_name;
   char * pipe_srv_name;
-  BOOL (*fn) (rpcsrv_struct *, prs_struct *);
+  BOOL (*fn) (rpcsrv_struct *);
 };
 
 static struct api_cmd **api_fd_commands = NULL;
@@ -466,7 +468,7 @@ void close_msrpc_command_processor(void)
 
 void add_msrpc_command_processor(char* pipe_name,
 				char* process_name,
-				BOOL (*fn) (rpcsrv_struct *, prs_struct *))
+				BOOL (*fn) (rpcsrv_struct *))
 {
 	struct api_cmd cmd;
 	cmd.pipe_clnt_name = pipe_name;
@@ -476,27 +478,27 @@ void add_msrpc_command_processor(char* pipe_name,
 	add_api_cmd_to_array(&num_cmds, &api_fd_commands, &cmd);
 }
 
-static BOOL api_pipe_bind_auth_resp(rpcsrv_struct *l, prs_struct *pd)
+static BOOL api_pipe_bind_auth_resp(rpcsrv_struct *l)
 {
 	DEBUG(5,("api_pipe_bind_auth_resp: decode request. %d\n", __LINE__));
 
 	if (l->hdr.auth_len == 0) return False;
 
 	/* decode the authentication verifier response */
-	smb_io_rpc_hdr_autha("", &l->autha_info, pd, 0);
-	if (pd->offset == 0) return False;
+	smb_io_rpc_hdr_autha("", &l->autha_info, &l->data_i, 0);
+	if (l->data_i.offset == 0) return False;
 
 	if (!rpc_hdr_auth_chk(&(l->auth_info))) return False;
 
-	smb_io_rpc_auth_ntlmssp_verifier("", &l->auth_verifier, pd, 0);
-	if (pd->offset == 0) return False;
+	smb_io_rpc_auth_ntlmssp_verifier("", &l->auth_verifier, &l->data_i, 0);
+	if (l->data_i.offset == 0) return False;
 
 	if (!rpc_auth_ntlmssp_verifier_chk(&(l->auth_verifier), "NTLMSSP", NTLMSSP_AUTH)) return False;
 	
-	return api_pipe_ntlmssp(l, pd);
+	return api_pipe_ntlmssp(l);
 }
 
-static BOOL api_pipe_fault_resp(rpcsrv_struct *l, prs_struct *pd, uint32 status)
+static BOOL api_pipe_fault_resp(rpcsrv_struct *l, uint32 status)
 {
 	DEBUG(5,("api_pipe_fault_resp: make response\n"));
 
@@ -535,7 +537,7 @@ static BOOL api_pipe_fault_resp(rpcsrv_struct *l, prs_struct *pd, uint32 status)
 	return True;
 }
 
-static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l, prs_struct *pd, 
+static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l, 
 				const char* ack_pipe_name,
 				enum RPC_PKT_TYPE pkt_type)
 {
@@ -544,29 +546,29 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l, prs_struct *pd,
 	l->ntlmssp_auth = False;
 
 	/* decode the bind request */
-	smb_io_rpc_hdr_rb("", &l->hdr_rb, pd, 0);
+	smb_io_rpc_hdr_rb("", &l->hdr_rb, &l->data_i, 0);
 
-	if (pd->offset == 0) return False;
+	if (l->data_i.offset == 0) return False;
 
 	if (l->hdr.auth_len != 0)
 	{
 		/* decode the authentication verifier */
-		smb_io_rpc_hdr_auth    ("", &l->auth_info    , pd, 0);
-		if (pd->offset == 0) return False;
+		smb_io_rpc_hdr_auth    ("", &l->auth_info    , &l->data_i, 0);
+		if (l->data_i.offset == 0) return False;
 
 		l->ntlmssp_auth = l->auth_info.auth_type = 0x0a;
 
 		if (l->ntlmssp_auth)
 		{
-			smb_io_rpc_auth_ntlmssp_verifier("", &l->auth_verifier, pd, 0);
-			if (pd->offset == 0) return False;
+			smb_io_rpc_auth_ntlmssp_verifier("", &l->auth_verifier, &l->data_i, 0);
+			if (l->data_i.offset == 0) return False;
 
 			l->ntlmssp_auth = strequal(l->auth_verifier.signature, "NTLMSSP");
 		}
 
 		if (l->ntlmssp_auth)
 		{
-			if (!api_pipe_ntlmssp(l, pd)) return False;
+			if (!api_pipe_ntlmssp(l)) return False;
 		}
 	}
 
@@ -665,7 +667,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l, prs_struct *pd,
 	return True;
 }
 
-static BOOL api_pipe_bind_and_alt_req(rpcsrv_struct *l, prs_struct *pd,
+static BOOL api_pipe_bind_and_alt_req(rpcsrv_struct *l, 
 				const char* name,
 				enum RPC_PKT_TYPE pkt_type)
 {
@@ -713,7 +715,7 @@ static BOOL api_pipe_bind_and_alt_req(rpcsrv_struct *l, prs_struct *pd,
 			return False;
 		}
 	}
-	return srv_pipe_bind_and_alt_req(l, pd, ack_pipe_name, pkt_type);
+	return srv_pipe_bind_and_alt_req(l, ack_pipe_name, pkt_type);
 }
 
 /*
@@ -722,19 +724,17 @@ static BOOL api_pipe_bind_and_alt_req(rpcsrv_struct *l, prs_struct *pd,
  * or in the marshalling code. If it's in the later, then Samba
  * have the same bug.
  */
-static BOOL api_pipe_bind_req(rpcsrv_struct *l, prs_struct *pd,
-				const char* name)
+static BOOL api_pipe_bind_req(rpcsrv_struct *l, const char* name)
 {
-	return api_pipe_bind_and_alt_req(l, pd, name, RPC_BINDACK);
+	return api_pipe_bind_and_alt_req(l, name, RPC_BINDACK);
 }
 
-static BOOL api_pipe_alt_req(rpcsrv_struct *l, prs_struct *pd,
-				const char* name)
+static BOOL api_pipe_alt_req(rpcsrv_struct *l, const char* name)
 {
-	return api_pipe_bind_and_alt_req(l, pd, name, RPC_ALTCONTRESP);
+	return api_pipe_bind_and_alt_req(l, name, RPC_ALTCONTRESP);
 }
 
-static BOOL api_pipe_auth_process(rpcsrv_struct *l, prs_struct *pd)
+static BOOL api_pipe_auth_process(rpcsrv_struct *l)
 {
 	BOOL auth_verify = IS_BITS_SET_ALL(l->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_SIGN);
 	BOOL auth_seal   = IS_BITS_SET_ALL(l->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_SEAL);
@@ -757,27 +757,27 @@ static BOOL api_pipe_auth_process(rpcsrv_struct *l, prs_struct *pd)
 
 	if (auth_seal)
 	{
-		char *data = prs_data(pd, pd->offset);
-		DEBUG(5,("api_pipe_auth_process: data %d\n", pd->offset));
+		char *data = prs_data(&l->data_i, l->data_i.offset);
+		DEBUG(5,("api_pipe_auth_process: data %d\n", l->data_i.offset));
 		NTLMSSPcalc_p(l, (uchar*)data, data_len);
 		crc32 = crc32_calc_buffer(data_len, data);
 	}
 
 	/*** skip the data, record the offset so we can restore it again */
-	old_offset = pd->offset;
+	old_offset = l->data_i.offset;
 
 	if (auth_seal || auth_verify)
 	{
-		pd->offset += data_len;
-		smb_io_rpc_hdr_auth("hdr_auth", &l->auth_info, pd, 0);
+		l->data_i.offset += data_len;
+		smb_io_rpc_hdr_auth("hdr_auth", &l->auth_info, &l->data_i, 0);
 	}
 
 	if (auth_verify)
 	{
-		char *req_data = prs_data(pd, pd->offset + 4);
-		DEBUG(5,("api_pipe_auth_process: auth %d\n", pd->offset + 4));
+		char *req_data = prs_data(&l->data_i, l->data_i.offset + 4);
+		DEBUG(5,("api_pipe_auth_process: auth %d\n", l->data_i.offset + 4));
 		NTLMSSPcalc_p(l, (uchar*)req_data, 12);
-		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(l->ntlmssp_chk), pd, 0);
+		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(l->ntlmssp_chk), &l->data_i, 0);
 
 		if (!rpc_auth_ntlmssp_chk(&(l->ntlmssp_chk), crc32,
 		                          l->ntlmssp_seq_num))
@@ -786,18 +786,18 @@ static BOOL api_pipe_auth_process(rpcsrv_struct *l, prs_struct *pd)
 		}
 	}
 
-	pd->offset = old_offset;
+	l->data_i.offset = old_offset;
 
 	return True;
 }
 
-static BOOL api_pipe_request(rpcsrv_struct *l, prs_struct *pd, const char* name)
+static BOOL api_pipe_request(rpcsrv_struct *l, const char* name)
 {
 	int i = 0;
 
 	if (l->ntlmssp_auth && l->ntlmssp_validated)
 	{
-		if (!api_pipe_auth_process(l, pd)) return False;
+		if (!api_pipe_auth_process(l)) return False;
 
 		DEBUG(0,("api_pipe_request: **** MUST CALL become_user() HERE **** \n"));
 #if 0
@@ -811,7 +811,7 @@ static BOOL api_pipe_request(rpcsrv_struct *l, prs_struct *pd, const char* name)
 		    api_fd_commands[i]->fn != NULL)
 		{
 			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i]->pipe_clnt_name));
-			return api_fd_commands[i]->fn(l, pd);
+			return api_fd_commands[i]->fn(l);
 		}
 	}
 	return False;
@@ -869,20 +869,50 @@ BOOL rpc_add_to_pdu(prs_struct *ps, const char *data, int len)
 
 static BOOL rpc_redir_remote(pipes_struct *p, prs_struct *req, prs_struct *resp)
 {
-	DEBUG(10,("rpc_redirect\n"));
+	BOOL last = False;
+	BOOL first = False;
+	BOOL pdu_received;
 
-	if (!msrpc_send(p->m->fd, req))
+	DEBUG(10,("rpc_redir_remote\n"));
+
+	pdu_received = req != NULL && req->data != NULL && req->data_size != 0;
+
+	if (pdu_received)
 	{
-		DEBUG(2,("msrpc redirect send failed\n"));
-		return False;
+		RPC_HDR hdr;
+		/* process incoming PDU */
+		req->offset = 0x0;
+		req->io = True;
+		smb_io_rpc_hdr("", &hdr, req, 0);
+
+		if (req->offset == 0) return False;
+
+		last  = IS_BITS_SET_ALL(hdr.flags, RPC_FLG_LAST);
+		first = IS_BITS_SET_ALL(hdr.flags, RPC_FLG_FIRST);
+
+		if (hdr.pkt_type == RPC_BIND)
+		{
+			last = True;
+			first = True;
+		}
+
+		if (!msrpc_send(p->m->fd, req))
+		{
+			DEBUG(2,("msrpc redirect send failed\n"));
+			return False;
+		}
 	}
-	if (!msrpc_receive(p->m->fd, resp))
+	if (last || !pdu_received)
 	{
-		DEBUG(2,("msrpc redirect receive failed\n"));
-		return False;
+		/* process outgoing PDU */
+		if (!msrpc_receive(p->m->fd, resp))
+		{
+			DEBUG(2,("msrpc redirect receive failed\n"));
+			return False;
+		}
+		prs_link(NULL, resp, NULL);
+		prs_debug_out(resp, "redirect", 100);
 	}
-	prs_link(NULL, resp, NULL);
-	prs_debug_out(resp, "redirect", 100);
 	return True;
 }
 
@@ -890,6 +920,8 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 				const char* name)
 {
 	BOOL reply = False;
+	BOOL last;
+	BOOL first;
 
 	if (req->data == NULL) return False;
 
@@ -903,16 +935,41 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 
 	if (req->offset == 0) return False;
 
+	last  = IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_LAST);
+	first = IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_FIRST);
+
+	if (l->hdr.pkt_type == RPC_BIND)
+	{
+		last = True;
+		first = True;
+	}
+
+	if (first)
+	{
+		prs_init(&l->data_i, 0, 4, True);
+	}
+	if (last)
+	{
+		prs_append_data(&l->data_i,
+		                prs_data(req, req->offset),
+		                req->data_size - req->offset);
+	}
+	else
+	{
+		prs_init(resp, 0, 4, False);
+		return True;
+	}
+
 	switch (l->hdr.pkt_type)
 	{
 		case RPC_BIND   :
 		{
-			reply = api_pipe_bind_req(l, req, name);
+			reply = api_pipe_bind_req(l, name);
 			break;
 		}
 		case RPC_ALTCONT:
 		{
-			reply = api_pipe_alt_req(l, req, name);
+			reply = api_pipe_alt_req(l, name);
  			break;
  		}
 		case RPC_REQUEST:
@@ -927,14 +984,14 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 			else
 			{
 				/* read the rpc header */
-				smb_io_rpc_hdr_req("req", &(l->hdr_req), req, 0);
-				reply = api_pipe_request(l, req, name);
+				smb_io_rpc_hdr_req("req", &(l->hdr_req), &l->data_i, 0);
+				reply = api_pipe_request(l, name);
 			}
 			break;
 		}
 		case RPC_BINDRESP: /* not the real name! */
 		{
-			reply = api_pipe_bind_auth_resp(l, req);
+			reply = api_pipe_bind_auth_resp(l);
 			l->ntlmssp_auth = reply;
 			break;
 		}
@@ -942,7 +999,7 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 
 	if (!reply)
 	{
-		reply = api_pipe_fault_resp(l, req, 0x1c010002);
+		reply = api_pipe_fault_resp(l, 0x1c010002);
 	}
 	
 	if (reply)
@@ -990,6 +1047,30 @@ BOOL rpc_send_and_rcv_pdu(pipes_struct *p)
 	return False;
 }
 
+static BOOL is_complete_pdu(prs_struct *ps)
+{
+	RPC_HDR hdr;
+	int len = ps->data_size;
+
+	DEBUG(10,("is_complete_pdu - len %d\n", len));
+	ps->offset = 0x0;
+
+	if (!ps->io)
+	{
+		/* writing.  oops!! */
+		DEBUG(4,("is_complete_pdu: write set, not read!\n"));
+		return False;
+	}
+		
+	if (!smb_io_rpc_hdr("hdr", &hdr, ps, 0))
+	{
+		return False;
+	}
+
+	/* check that the fragment length is equal to the data length so far */
+	return hdr.frag_len == len;
+}
+
 /*******************************************************************
  entry point from msrpc to smb.  adds data received to pdu; checks
  pdu; hands pdu off to msrpc, which gets a pdu back (except in the
@@ -1027,8 +1108,7 @@ BOOL rpc_to_smb(pipes_struct *p, char *data, int len)
  receives a netlogon pipe and responds.
  ********************************************************************/
 static BOOL api_rpc_command(rpcsrv_struct *l, 
-				char *rpc_name, struct api_struct *api_rpc_cmds,
-				prs_struct *data)
+				char *rpc_name, struct api_struct *api_rpc_cmds)
 {
 	int fn_num;
 	DEBUG(4,("api_rpc_command: %s op 0x%x - ", rpc_name, l->hdr_req.opnum));
@@ -1051,7 +1131,7 @@ static BOOL api_rpc_command(rpcsrv_struct *l,
 	prs_init(&l->rdata, 0, 4, False);
 
 	/* do the actual command */
-	api_rpc_cmds[fn_num].fn(l, data, &(l->rdata));
+	api_rpc_cmds[fn_num].fn(l, &l->data_i, &(l->rdata));
 
 	if (l->rdata.data == NULL || l->rdata.offset == 0)
 	{
@@ -1070,17 +1150,17 @@ static BOOL api_rpc_command(rpcsrv_struct *l,
 /*******************************************************************
  receives a netlogon pipe and responds.
  ********************************************************************/
-BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name, struct api_struct *api_rpc_cmds,
-				prs_struct *data)
+BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
+				struct api_struct *api_rpc_cmds)
 {
-	if (data == NULL || data->data == NULL)
+	if (l->data_i.data == NULL)
 	{
 		DEBUG(2,("%s: NULL data received\n", rpc_name));
 		return False;
 	}
 
 	/* interpret the command */
-	if (!api_rpc_command(l, rpc_name, api_rpc_cmds, data))
+	if (!api_rpc_command(l, rpc_name, api_rpc_cmds))
 	{
 		return False;
 	}
@@ -1096,25 +1176,3 @@ BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name, struct api_struct *api_rpc_cmd
 	return True;
 }
 
-BOOL is_complete_pdu(prs_struct *ps)
-{
-	RPC_HDR hdr;
-	int len = ps->data_size;
-
-	DEBUG(10,("is_complete_pdu - len %d\n", len));
-	ps->offset = 0x0;
-
-	if (!ps->io)
-	{
-		/* writing.  oops!! */
-		DEBUG(4,("is_complete_pdu: write set, not read!\n"));
-		return False;
-	}
-		
-	if (!smb_io_rpc_hdr("hdr", &hdr, ps, 0))
-	{
-		return False;
-	}
-	/* check that the fragment length is equal to the data length so far */
-	return hdr.frag_len == len;
-}
