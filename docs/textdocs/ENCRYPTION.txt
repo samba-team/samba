@@ -259,7 +259,7 @@ password encryption. More complete instructions will probably be added
 later.
 
 1) get and compile the libdes libraries. the source is available from
-nimbus.anu.edu.au in pub/tridge/libdes/libdes.tar.92-10-13.gz
+ftp://samba.anu.edu.au/pub/libdes/
 
 2) enable the encryption stuff in the Samba makefile, making sure you
 point it to the libdes library and include file (it needs des.h)
@@ -328,7 +328,8 @@ The DES library is considered a munition in the USA. Under US Law it is
 illegal to export this software, or to put it in a freely available ftp
 site.
 
-Please do not mirror the DES directory from the site on nimbus.anu.edu.au
+Please do not mirror the libdes directory from the site on
+samba.anu.edu.au
 
 Thank you,
 
