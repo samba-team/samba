@@ -323,7 +323,7 @@ static int process_root(int argc, char *argv[])
 	 * Ensure add/delete user and either remote machine or join domain are
 	 * not both set.
 	 */	
-	if(((local__flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) == (LOCAL_ADD_USER|LOCAL_DELETE_USER)) || 
+	if(((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) == (LOCAL_ADD_USER|LOCAL_DELETE_USER)) || 
 	   ((local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER)) && 
 		((remote_machine != NULL) || joining_domain))) {
 		usage();
