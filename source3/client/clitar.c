@@ -1581,7 +1581,7 @@ static int next_block(char *ltarbuf, char **bufferp, int bufsiz)
 {
   int bufread, total = 0;
 
-  DEBUG(5, ("Advancing to next block: %0x\n", (unsigned int)*bufferp));
+  DEBUG(5, ("Advancing to next block: %0lx\n", (unsigned long)*bufferp));
   *bufferp += TBLOCK;
   total = TBLOCK;
 
