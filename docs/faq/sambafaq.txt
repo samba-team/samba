@@ -547,6 +547,10 @@
   coordinating the effort to get CAP working with Native Ethertalk under
   Linux, but we're not done yet.
 
+  [lkcl - update 09mar97 - the answer is "Yes!".  Thursby now have a
+  CIFS Client / Server - see www.thursby.com.  They test it against
+  Windows 95, Windows NT and samba for compatibility issues].
+
   3.2.  Session request failed (131,130)" error
 
   The following answer is provided by John E. Miller:
@@ -589,6 +593,11 @@
 
   Each time you start your computer (or login for Win95) your PC will
   synchronize it's clock with your Samba server.
+
+  Alternatively, you can set up domain logons - see:
+  ftp://samba.anu.edu.au/pub/samba/BROWSING.txt *** for more information.
+
+  Then, add NET TIME \\%L /SET /YES as one of the lines in the logon script.
 
   3.4.  Problems with WinDD, NTrigue, WinCenterPro etc
 
