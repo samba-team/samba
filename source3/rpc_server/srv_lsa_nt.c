@@ -519,3 +519,33 @@ uint32 _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECR
 {
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
+
+uint32 _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
+{
+  fstring username, domname;
+  int ulen, dlen;
+  user_struct *vuser = get_valid_user_struct(p->vuid);
+  
+  if (vuser == NULL)
+    return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+  
+  fstrcpy(username, vuser->user.smb_name);
+  fstrcpy(domname, vuser->user.domain);
+  
+  ulen = strlen(username);
+  dlen = strlen(domname);
+  
+  init_uni_hdr(&r_u->hdr_user_name, ulen);
+  r_u->ptr_user_name = 1;
+  init_unistr2(&r_u->uni2_user_name, username, ulen);
+
+  r_u->unk1 = 1;
+  
+  init_uni_hdr(&r_u->hdr_dom_name, dlen);
+  r_u->ptr_dom_name = 1;
+  init_unistr2(&r_u->uni2_dom_name, domname, dlen);
+
+  r_u->status = NT_STATUS_NO_PROBLEMO;
+  
+  return r_u->status;
+}
