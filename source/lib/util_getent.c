@@ -21,6 +21,26 @@
 
 #include "includes.h"
 
+static void print_grent_list(struct sys_grent *glist)
+{
+	DEBUG(100, ("print_grent_list: %x\n", glist ));
+	while (glist) {
+		DEBUG(100,("glist: %x ", glist));
+		if (glist->gr_name)
+			DEBUG(100,(": gr_name = (%x) %s ", glist->gr_name, glist->gr_name));
+		if (glist->gr_passwd)
+			DEBUG(100,(": gr_passwd = (%x) %s ", glist->gr_passwd, glist->gr_passwd));
+		if (glist->gr_mem) {
+			int i;
+			for (i = 0; glist->gr_mem[i]; i++)
+				DEBUG(100,(" : gr_mem[%d] = (%x) %s ", i, glist->gr_mem[i], glist->gr_mem[i]));
+		}
+		DEBUG(100,(": gr_next = %x\n", glist->next ));
+		glist = glist->next;
+	}
+	DEBUG(100,("FINISHED !\n\n"));
+}
+
 /****************************************************************
  Returns a single linked list of group entries.
  Use grent_free() to free it after use.
@@ -37,14 +57,20 @@ struct sys_grent * getgrent_list(void)
 		DEBUG (0, ("Out of memory in getgrent_list!\n"));
 		return NULL;
 	}
+	memset(gent, '\0', sizeof(struct sys_grent));
 	glist = gent;
 	
 	setgrent();
 	grp = getgrent();
+	if (grp == NULL) {
+		endgrent();
+		free(glist);
+		return NULL;
+	}
+
 	while (grp != NULL) {
 		int i,num;
 		
-		memset(gent, '\0', sizeof(struct sys_grent));
 		if (grp->gr_name) {
 			if ((gent->gr_name = strdup(grp->gr_name)) == NULL)
 				goto err;
@@ -60,8 +86,10 @@ struct sys_grent * getgrent_list(void)
 			;
 		
 		/* alloc space for gr_mem string pointers */
-		if ((gent->gr_mem = (char **) malloc(num+1 * sizeof(char *))) == NULL)
+		if ((gent->gr_mem = (char **) malloc((num+1) * sizeof(char *))) == NULL)
 			goto err;
+
+		memset(gent->gr_mem, '\0', (num+1) * sizeof(char *));
 
 		for (i=0; i < num; i++) {
 			if ((gent->gr_mem[i] = strdup(grp->gr_mem[i])) == NULL)
@@ -75,10 +103,13 @@ struct sys_grent * getgrent_list(void)
 			if (gent->next == NULL)
 				goto err;
 			gent = gent->next;
+			memset(gent, '\0', sizeof(struct sys_grent));
 		}
 	}
 	
 	endgrent();
+	print_grent_list(glist);
+	DEBUG(100,("getgrent_list returned %x\n", glist ));
 	return glist;
 
   err:
@@ -96,25 +127,25 @@ struct sys_grent * getgrent_list(void)
 
 void grent_free (struct sys_grent *glist)
 {
+	DEBUG(100,("getgrent_free %x\n", glist ));
 	while (glist) {
-		char **ary;
-		struct sys_grent *temp;
+		struct sys_grent *prev;
 		
+		print_grent_list(glist);
+
 		if (glist->gr_name)
 			free(glist->gr_name);
 		if (glist->gr_passwd)
 			free(glist->gr_passwd);
 		if (glist->gr_mem) {
-			ary = glist->gr_mem;
-			while (*ary) {
-				free(*ary);
-				ary++;
-			}
+			int i;
+			for (i = 0; glist->gr_mem[i]; i++)
+				free(glist->gr_mem[i]);
 			free(glist->gr_mem);
 		}
-		temp = glist->next;
-		free(glist);
-		glist = temp;
+		prev = glist;
+		glist = glist->next;
+		free(prev);
 	}
 }
 
@@ -191,7 +222,7 @@ struct sys_pwent * getpwent_list(void)
 void pwent_free (struct sys_pwent *plist)
 {
 	while (plist) {
-		struct sys_pwent *temp;
+		struct sys_pwent *prev;
 		
 		if (plist->pw_name)
 			free(plist->pw_name);
@@ -204,8 +235,8 @@ void pwent_free (struct sys_pwent *plist)
 		if (plist->pw_shell)
 			free(plist->pw_shell);
 
-		temp = plist->next;
-		free(plist);
-		plist = temp;
+		prev = plist;
+		plist = plist->next;
+		free(prev);
 	}
 }
