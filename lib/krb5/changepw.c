@@ -241,7 +241,7 @@ process_reply (krb5_context context,
       
 	*result_code = (p[0] << 8) | p[1];
 	krb5_data_copy (result_string,
-			result_code_string->data + 2,
+			(unsigned char*)result_code_string->data + 2,
 			result_code_string->length - 2);
 	return 0;
     } else {
