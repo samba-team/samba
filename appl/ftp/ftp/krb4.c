@@ -1,10 +1,11 @@
-
 #include "ftp_locl.h"
+
+RCSID("$Id$");
 
 #include <des.h>
 #include <krb.h>
 
-KTEXT_ST krb4_adat;
+static KTEXT_ST krb4_adat;
 
 static des_cblock key;
 static des_key_schedule schedule;

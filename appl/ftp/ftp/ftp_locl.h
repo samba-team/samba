@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #ifndef __FTP_LOCL_H__
 #define __FTP_LOCL_H__
 
