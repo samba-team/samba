@@ -1,27 +1,27 @@
-                    WHATS NEW IN Samba 3.0.1rc2
-                         December 10, 2003
+                      WHATS NEW IN Samba 3.0.1
+                         December XX, 2003
                   ===============================
 
-This is a release candidate snapshot of the Samba 3.0.1 code base 
-and is provided for testing only.  A release candidate (RC) means 
-that we are close to the the final, stable version and is provided
-for Quality Assurance (QA) purposes. This release is *not* intended 
-for production servers.  Use at your own risk.
-
-There have been several bug fixes since the 3.0.0 release that
-we feel are important to make available to the Samba community
-for wider testings.  See the "Changes" section for details on
-exact updates.
+This is the latest stable release of Samba. This is the 
+version that all production Samba servers should be running 
+for all current bug-fixes.
 
 
 ######################################################################
 Changes
 #######
-Changes since 3.0.1rc1
------------------------
+Changes since 3.0.1rc2
+----------------------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details:
+
+1)  Fix uninitialized variable in passdb.c.
+2)  Fix formal parameter type in get_static() in nsswitch/wins.c.
+
+
+Changes since 3.0.1rc1
+-----------------------
 
 1)  Update version string in smbldap-tools Makefile to 0.8.2.
 2)  Correct a problem with "net rpc vampire" mis-parsing the 
