@@ -26,6 +26,7 @@ kadmin_SOURCES =				\
 	mod.c					\
 	rename.c				\
 	util.c					\
+	pw_quality.c				\
 	random_password.c			\
 	kadmin_locl.h
 
