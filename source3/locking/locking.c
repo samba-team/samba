@@ -109,6 +109,9 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
     return False;
   }
 
+  DEBUG(10,("do_lock: lock type %d start=%d len=%d requested for file %s\n",
+        lock_type, (int)offset, (int)count, fsp->fsp_name ));
+
   if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
     ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,
                     map_lock_type(fsp,lock_type));
@@ -132,6 +135,9 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 
   if (!lp_locking(SNUM(conn)))
     return(True);
+
+  DEBUG(10,("do_unlock: unlock start=%d len=%d requested for file %s\n",
+        (int)offset, (int)count, fsp->fsp_name ));
 
   if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
     ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,F_UNLCK);

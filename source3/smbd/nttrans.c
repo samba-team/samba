@@ -668,7 +668,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	p += 12;
 	SCVAL(p,0,fsp->is_directory ? 1 : 0);
 	
-	DEBUG(5,("reply_ntcreate_and_X: open name = %s\n", fsp->fsp_name));
+	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }

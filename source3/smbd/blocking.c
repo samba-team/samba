@@ -22,6 +22,8 @@
 #include "includes.h"
 extern int DEBUGLEVEL;
 extern int Client;
+extern int chain_size;
+extern char *OutBuffer;
 
 /****************************************************************************
  This is the structure to queue to implement blocking locks.
@@ -30,6 +32,7 @@ extern int Client;
 
 typedef struct {
   ubi_slNode msg_next;
+  int com_type;
   time_t expire_time;
   int lock_num;
   char *inbuf;
@@ -49,16 +52,27 @@ static void free_blocking_lock_record(blocking_lock_record *blr)
 }
 
 /****************************************************************************
- Function to push a blocking lockingX request onto the lock queue.
- NB. We can only get away with this as the CIFS spec only includes
- SMB_COM_LOCKING_ANDX as a head SMB, ie. it is not one that is ever
- generated as part of a chain.
+ Determine if this is a secondary element of a chained SMB.
+  **************************************************************************/
+
+static BOOL in_chained_smb(void)
+{
+  return (chain_size != 0);
+}
+
+/****************************************************************************
+ Function to push a blocking lock request onto the lock queue.
 ****************************************************************************/
 
 BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num)
 {
   blocking_lock_record *blr;
   files_struct *fsp = file_fsp(inbuf,smb_vwv2);
+
+  if(in_chained_smb() ) {
+    DEBUG(0,("push_blocking_lock_request: cannot queue a chained request (currently).\n"));
+    return False;
+  }
 
   /*
    * Now queue an entry on the blocking lock queue. We setup
@@ -76,27 +90,38 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int 
     return False;
   }
 
+  blr->com_type = CVAL(inbuf,smb_com);
+  blr->expire_time = (lock_timeout == -1) ? (time_t)-1 : time(NULL) + (time_t)lock_timeout;
+  blr->lock_num = lock_num;
   memcpy(blr->inbuf, inbuf, length);
   blr->length = length;
-  blr->lock_num = lock_num;
-  blr->expire_time = (lock_timeout == -1) ? (time_t)-1 : time(NULL) + (time_t)lock_timeout;
 
   ubi_slAddTail(&blocking_lock_queue, blr);
 
-  DEBUG(3,("push_blocking_lock_request: lock request blocked with expiry time %d \
-for fnum = %d, name = %s\n", (int)blr->expire_time, fsp->fnum, fsp->fsp_name ));
+  DEBUG(3,("push_blocking_lock_request: lock request length=%d blocked with expiry time %d \
+for fnum = %d, name = %s\n", length, (int)blr->expire_time, fsp->fnum, fsp->fsp_name ));
 
   return True;
 }
 
 /****************************************************************************
- Return a blocking lock success SMB.
+ Return a smd with a given size.
 *****************************************************************************/
 
-static void blocking_lock_reply_success(blocking_lock_record *blr)
+static void send_blocking_reply(char *outbuf, int outsize)
 {
-  extern int chain_size;
-  extern char *OutBuffer;
+  if(outsize > 4)
+    smb_setlen(outbuf,outsize - 4);
+
+  send_smb(Client,outbuf);
+}
+
+/****************************************************************************
+ Return a lockingX success SMB.
+*****************************************************************************/
+
+static void reply_lockingX_success(blocking_lock_record *blr)
+{
   char *outbuf = OutBuffer;
   int bufsize = BUFFER_SIZE;
   char *inbuf = blr->inbuf;
@@ -113,26 +138,37 @@ static void blocking_lock_reply_success(blocking_lock_record *blr)
    * that here and must set up the chain info manually.
    */
 
-  chain_size = 0;
-
   outsize = chain_reply(inbuf,outbuf,blr->length,bufsize);
 
   outsize += chain_size;
 
-  if(outsize > 4)
-    smb_setlen(outbuf,outsize - 4);
+  send_blocking_reply(outbuf,outsize);
+}
 
+/****************************************************************************
+ Return a generic lock fail error blocking call.
+*****************************************************************************/
+
+static void generic_blocking_lock_error(blocking_lock_record *blr, int eclass, int32 ecode)
+{
+  char *outbuf = OutBuffer;
+  char *inbuf = blr->inbuf;
+  construct_reply_common(inbuf, outbuf);
+
+  if(eclass == 0) /* NT Error. */
+    SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+
+  ERROR(eclass,ecode);
   send_smb(Client,outbuf);
 }
 
 /****************************************************************************
- Return a lock fail error. Undo all the locks we have obtained first.
+ Return a lock fail error for a lockingX call. Undo all the locks we have 
+ obtained first.
 *****************************************************************************/
 
-static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int32 ecode)
+static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ecode)
 {
-  extern char *OutBuffer;
-  char *outbuf = OutBuffer;
   char *inbuf = blr->inbuf;
   files_struct *fsp = file_fsp(inbuf,smb_vwv2);
   connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
@@ -156,21 +192,159 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int
     do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
   }
 
-  construct_reply_common(inbuf, outbuf);
-
- if(eclass == 0) /* NT Error. */
-    SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-
-  ERROR(eclass,ecode);
-  send_smb(Client,outbuf);
+  generic_blocking_lock_error(blr, eclass, ecode);
 }
 
 /****************************************************************************
- Attempt to finish off getting all pending blocking locks.
+ Return a lock fail error.
+*****************************************************************************/
+
+static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int32 ecode)
+{
+  switch(blr->com_type) {
+  case SMBlock:
+    generic_blocking_lock_error(blr, eclass, ecode);
+    break;
+  case SMBlockread:
+    generic_blocking_lock_error(blr, eclass, ecode);
+    break;
+  case SMBlockingX:
+    reply_lockingX_error(blr, eclass, ecode);
+    break;
+  default:
+    DEBUG(0,("blocking_lock_reply_error: PANIC - unknown type on blocking lock queue - exiting.!\n"));
+    exit_server("PANIC - unknown type on blocking lock queue");
+  }
+}
+
+/****************************************************************************
+ Attempt to finish off getting all pending blocking locks for a lockread call.
  Returns True if we want to be removed from the list.
 *****************************************************************************/
 
-static BOOL blocking_lock_record_process(blocking_lock_record *blr)
+static BOOL process_lockread(blocking_lock_record *blr)
+{
+  char *outbuf = OutBuffer;
+  char *inbuf = blr->inbuf;
+  int nread = -1;
+  char *data;
+  int outsize = 0;
+  uint32 startpos, numtoread;
+  int eclass;
+  uint32 ecode;
+  connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+
+  numtoread = SVAL(inbuf,smb_vwv1);
+  startpos = IVAL(inbuf,smb_vwv2);
+ 
+  numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
+  data = smb_buf(outbuf) + 3;
+ 
+  if(!do_lock( fsp, conn, numtoread, startpos, F_RDLCK, &eclass, &ecode)) {
+    if((errno != EACCES) && (errno != EAGAIN)) {
+      /*
+       * We have other than a "can't get lock" POSIX
+       * error. Send an error.
+       * Return True so we get dequeued.
+       */
+
+      generic_blocking_lock_error(blr, eclass, ecode);
+      return True;
+    }
+
+    /*
+     * Still waiting for lock....
+     */
+
+    DEBUG(10,("process_lockread: failed to get lock for file = %s. Still waiting....\n",
+          fsp->fsp_name));
+    return False;
+  }
+
+  nread = read_file(fsp,data,startpos,numtoread);
+
+  if (nread < 0) {
+    generic_blocking_lock_error(blr,ERRDOS,ERRnoaccess);
+    return True;
+  }
+
+  construct_reply_common(inbuf, outbuf);
+  outsize = set_message(outbuf,5,3,True);
+
+  outsize += nread;
+  SSVAL(outbuf,smb_vwv0,nread);
+  SSVAL(outbuf,smb_vwv5,nread+3);
+  SSVAL(smb_buf(outbuf),1,nread);
+
+  DEBUG(3, ( "process_lockread file = %s, fnum=%d num=%d nread=%d\n",
+        fsp->fsp_name, fsp->fnum, numtoread, nread ) );
+
+  send_blocking_reply(outbuf,outsize);
+  return True;
+}
+
+/****************************************************************************
+ Attempt to finish off getting all pending blocking locks for a lock call.
+ Returns True if we want to be removed from the list.
+*****************************************************************************/
+
+static BOOL process_lock(blocking_lock_record *blr)
+{
+  char *outbuf = OutBuffer;
+  char *inbuf = blr->inbuf;
+  int outsize;
+  uint32 count,offset;
+  int eclass;
+  uint32 ecode;
+  connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+
+  count = IVAL(inbuf,smb_vwv1);
+  offset = IVAL(inbuf,smb_vwv3);
+
+  errno = 0;
+  if (!do_lock(fsp, conn, count, offset, F_WRLCK, &eclass, &ecode)) {
+    if((errno != EACCES) && (errno != EAGAIN)) {
+
+      /*
+       * We have other than a "can't get lock" POSIX
+       * error. Send an error.
+       * Return True so we get dequeued.
+       */
+
+      blocking_lock_reply_error(blr, eclass, ecode);
+      return True;
+    }
+
+    /*
+     * Still can't get the lock - keep waiting.
+     */
+
+    DEBUG(10,("process_lock: failed to get lock for file = %s. Still waiting....\n",
+          fsp->fsp_name));
+    return False;
+  }
+
+  /*
+   * Success - we got the lock.
+   */
+
+  DEBUG(3,("process_lock : file=%s fnum=%d ofs=%d cnt=%d\n",
+       fsp->fsp_name, fsp->fnum, (int)offset, (int)count));
+
+  construct_reply_common(inbuf, outbuf);
+  outsize = set_message(outbuf,0,0,True);
+  send_blocking_reply(outbuf,outsize);
+  return True;
+}
+
+/****************************************************************************
+ Attempt to finish off getting all pending blocking locks for a lockingX call.
+ Returns True if we want to be removed from the list.
+*****************************************************************************/
+
+static BOOL process_lockingX(blocking_lock_record *blr)
 {
   char *inbuf = blr->inbuf;
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
@@ -193,6 +367,7 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
   for(; blr->lock_num < num_locks; blr->lock_num++) {
     count = IVAL(data,SMB_LKLEN_OFFSET(blr->lock_num));
     offset = IVAL(data,SMB_LKOFF_OFFSET(blr->lock_num));
+    errno = 0;
     if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
                 &eclass, &ecode))
       break;
@@ -204,10 +379,10 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
      * Success - we got all the locks.
      */
 
-    DEBUG(3,("blocking_lock_record_process fnum=%d type=%d num_locks=%d\n",
-          fsp->fnum, (unsigned int)locktype, num_locks) );
+    DEBUG(3,("process_lockingX file = %s, fnum=%d type=%d num_locks=%d\n",
+          fsp->fsp_name, fsp->fnum, (unsigned int)locktype, num_locks) );
 
-    blocking_lock_reply_success(blr);
+    reply_lockingX_success(blr);
     return True;
 
   } else if((errno != EACCES) && (errno != EAGAIN)) {
@@ -226,10 +401,50 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
    * Still can't get all the locks - keep waiting.
    */
 
-  DEBUG(10,("blocking_lock_record_process: only got %d locks of %d needed for fnum = %d. \
-Waiting....\n", blr->lock_num, num_locks, fsp->fnum));
+  DEBUG(10,("process_lockingX: only got %d locks of %d needed for file %s, fnum = %d. \
+Waiting....\n", blr->lock_num, num_locks, fsp->fsp_name, fsp->fnum));
 
   return False;
+}
+
+/****************************************************************************
+ Process a blocking lock SMB.
+ Returns True if we want to be removed from the list.
+*****************************************************************************/
+
+static BOOL blocking_lock_record_process(blocking_lock_record *blr)
+{
+  switch(blr->com_type) {
+  case SMBlock:
+    return process_lock(blr);
+  case SMBlockread:
+    return process_lockread(blr);
+  case SMBlockingX:
+    return process_lockingX(blr);
+  default:
+    DEBUG(0,("blocking_lock_record_process: PANIC - unknown type on blocking lock queue - exiting.!\n"));
+    exit_server("PANIC - unknown type on blocking lock queue");
+  }
+  return False; /* Keep compiler happy. */
+}
+
+/****************************************************************************
+ Get the files_struct given a particular queued SMB.
+*****************************************************************************/
+
+static files_struct *get_fsp_from_blr(blocking_lock_record *blr)
+{
+  switch(blr->com_type) {
+  case SMBlock:
+  case SMBlockread:
+    return file_fsp(blr->inbuf,smb_vwv0);
+  case SMBlockingX:
+    return file_fsp(blr->inbuf,smb_vwv2);
+  default:
+    DEBUG(0,("get_fsp_from_blr: PANIC - unknown type on blocking lock queue - exiting.!\n"));
+    exit_server("PANIC - unknown type on blocking lock queue");
+  }
+  return NULL; /* Keep compiler happy. */
 }
 
 /****************************************************************************
@@ -242,7 +457,7 @@ void remove_pending_lock_requests_by_fid(files_struct *fsp)
   blocking_lock_record *prev = NULL;
 
   while(blr != NULL) {
-    files_struct *req_fsp = file_fsp(blr->inbuf,smb_vwv2);
+    files_struct *req_fsp = get_fsp_from_blr(blr);
 
     if(req_fsp == fsp) {
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
@@ -294,18 +509,18 @@ void process_blocking_lock_queue(time_t t)
    */
 
   while(blr != NULL) {
-    files_struct *fsp = NULL;
     connection_struct *conn = NULL;
     uint16 vuid;
+    files_struct *fsp = get_fsp_from_blr(blr);
 
     /*
      * Ensure we don't have any old chain_fnum values
      * sitting around....
      */
+    chain_size = 0;
     file_chain_reset();
 
     conn = conn_find(SVAL(blr->inbuf,smb_tid));
-    fsp = file_fsp(blr->inbuf,smb_vwv2);
     vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID :
                   SVAL(blr->inbuf,smb_uid);
 
@@ -372,4 +587,3 @@ void process_blocking_lock_queue(time_t t)
     blr = (blocking_lock_record *)ubi_slNext(blr);
   }
 }
-

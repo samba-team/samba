@@ -29,7 +29,6 @@ char *InBuffer = NULL;
 char *OutBuffer = NULL;
 char *last_inbuf = NULL;
 
-
 /* 
  * Size of data we can send to client. Set
  *  by the client for all protocols above CORE.
@@ -485,6 +484,29 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   return(outsize);
 }
 
+/****************************************************************************
+ Helper function for contruct_reply.
+****************************************************************************/
+
+void construct_reply_common(char *inbuf,char *outbuf)
+{
+  bzero(outbuf,smb_size);
+
+  set_message(outbuf,0,0,True);
+  CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
+
+  memcpy(outbuf+4,inbuf+4,4);
+  CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
+  CVAL(outbuf,smb_reh) = 0;
+  CVAL(outbuf,smb_flg) = 0x80 | (CVAL(inbuf,smb_flg) & 0x8); /* bit 7 set
+                                 means a reply */
+  SSVAL(outbuf,smb_flg2,1); /* say we support long filenames */
+  SSVAL(outbuf,smb_err,SMB_SUCCESS);
+  SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
+  SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
+  SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
+  SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
+}
 
 /****************************************************************************
   construct a chained reply and add it to the already made reply
@@ -542,21 +564,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   CVAL(inbuf2,smb_com) = smb_com2;
 
   /* create the out buffer */
-  bzero(outbuf2,smb_size);
-  set_message(outbuf2,0,0,True);
-  CVAL(outbuf2,smb_com) = CVAL(inbuf2,smb_com);
-  
-  memcpy(outbuf2+4,inbuf2+4,4);
-  CVAL(outbuf2,smb_rcls) = SMB_SUCCESS;
-  CVAL(outbuf2,smb_reh) = 0;
-  CVAL(outbuf2,smb_flg) = 0x80 | (CVAL(inbuf2,smb_flg) & 0x8); /* bit 7 set 
-								  means a reply */
-  SSVAL(outbuf2,smb_flg2,1); /* say we support long filenames */
-  SSVAL(outbuf2,smb_err,SMB_SUCCESS);
-  SSVAL(outbuf2,smb_tid,SVAL(inbuf2,smb_tid));
-  SSVAL(outbuf2,smb_pid,SVAL(inbuf2,smb_pid));
-  SSVAL(outbuf2,smb_uid,SVAL(inbuf2,smb_uid));
-  SSVAL(outbuf2,smb_mid,SVAL(inbuf2,smb_mid));
+  construct_reply_common(inbuf2, outbuf2);
 
   DEBUG(3,("Chained message\n"));
   show_msg(inbuf2);
@@ -582,34 +590,10 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   return outsize2;
 }
 
-
-/****************************************************************************
- Helper function for contruct_reply.
-****************************************************************************/
-
-void construct_reply_common(char *inbuf,char *outbuf)
-{
-  bzero(outbuf,smb_size);
-
-  CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
-  set_message(outbuf,0,0,True);
-
-  memcpy(outbuf+4,inbuf+4,4);
-  CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
-  CVAL(outbuf,smb_reh) = 0;
-  CVAL(outbuf,smb_flg) = 0x80 | (CVAL(inbuf,smb_flg) & 0x8); /* bit 7 set
-                                 means a reply */
-  SSVAL(outbuf,smb_flg2,1); /* say we support long filenames */
-  SSVAL(outbuf,smb_err,SMB_SUCCESS);
-  SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
-  SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
-  SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
-  SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
-}
-
 /****************************************************************************
   construct a reply to the incoming packet
 ****************************************************************************/
+
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 {
   int type = CVAL(inbuf,smb_com);
@@ -815,6 +799,12 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
         trust_password_unlock();
         global_machine_pasword_needs_changing = False;
       }
+
+      /*
+       * Check to see if we have any blocking locks
+       * outstanding on the queue.
+       */
+      process_blocking_lock_queue(t);
 
       /*
        * Check to see if we have any change notifies 

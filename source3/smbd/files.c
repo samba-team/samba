@@ -380,10 +380,10 @@ files_struct *file_fsp(char *buf, int where)
 	return NULL;
 }
 
-
 /****************************************************************************
-reset the chained fsp - done at the start of a packet reply
+ Reset the chained fsp - done at the start of a packet reply
 ****************************************************************************/
+
 void file_chain_reset(void)
 {
 	chain_fsp = NULL;
