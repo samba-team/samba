@@ -300,7 +300,7 @@ gss_verify_mic_internal
     case KEYTYPE_ARCFOUR :
 	ret = _gssapi_verify_mic_arcfour (minor_status, context_handle,
 					  message_buffer, token_buffer,
-					  qop_state, type, key);
+					  qop_state, key, type);
 	break;
     default :
 #ifdef HAVE_GSSAPI_CFX
