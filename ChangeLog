@@ -1,9 +1,9 @@
-2004-07-23  Love  <lha@stacken.kth.se>
+2004-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/klist.c (print_cred_verbose): keytypes are no longer, use
 	enctype
 
-2004-07-22  Love  <lha@stacken.kth.se>
+2004-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb-ldap.c (LDAP_entry2mods): allow for pre-c99
 	compilers, From metze at samba.org
