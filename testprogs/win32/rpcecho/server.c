@@ -133,6 +133,12 @@ void echo_TestEnum(echo_Enum1 *foo1,
 	foo2->e1 = ECHO_ENUM2;
 }
 
+void echo_TestSurrounding(echo_Surrounding *data)
+{
+	printf("Incoming array of size %d\n", data->x);
+	data->x *= 2;
+}
+
 void main(int argc, char **argv)
 {
 	RPC_STATUS status;
