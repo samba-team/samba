@@ -12,6 +12,11 @@ The documentation in this alpha snapshot is not up to date,
 there are many new parameters since 2.0.7 and some defaults
 have changed. This will be corrected in a later alpha release.
 
+A known problem is this version of Samba will not act as a PDC
+for Win2k clients (although it works as a member server in a
+Win2k hosted domain). This is being actively worked on and
+it is intended this be fixed before 2.2.0 release.
+
 Several significant bugs have been fixed between alpha2
 and alpha2, these include :
 
