@@ -1,5 +1,10 @@
 Fri Aug  8 05:51:02 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_cred.c: adapt to new `extract_ticket'
+
+	* lib/krb5/get_in_tkt.c: reorganize.  check everything and try to
+ 	return memory even if there are errors.
+
 	* kuser/kverify.c: new file
 
 	* lib/krb5/free_host_realm.c: new file
