@@ -116,7 +116,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       getdc = skip_string(machine,1);
       q = skip_string(getdc,1);
-      q = align2(q, buf);
+      q = ALIGN2(q, buf);
 
       /* at this point we can work out if this is a W9X or NT style
          request. Experiments show that the difference is wether the
@@ -160,7 +160,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       /* PDC and domain name */
       if (!short_request)  /* Make a full reply */
       {
-        q = align2(q, buf);
+        q = ALIGN2(q, buf);
 
         q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
         q += dos_PutUniCode(q, global_myworkgroup,sizeof(pstring), True); /* Domain name*/
@@ -207,7 +207,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       if (domainsidsize != 0) {
 	      q += domainsidsize;
-	      q = align4(q, buf);
+	      q = ALIGN4(q, buf);
       }
       if (len - PTR_DIFF(q, buf) > 8) {
 	      /* with NT5 clients we can sometimes

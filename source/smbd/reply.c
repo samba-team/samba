@@ -2108,7 +2108,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   maxcount = MIN(65535,maxcount);
   maxcount = MAX(mincount,maxcount);
 
-  if (!is_locked(fsp,conn,maxcount,startpos, READ_LOCK))
+  if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK))
   {
     SMB_OFF_T size = fsp->size;
     SMB_OFF_T sizeneeded = startpos + maxcount;
@@ -2206,7 +2206,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
    * for a write lock. JRA.
    */
 
-  if(!do_lock( fsp, conn, numtoread, startpos, WRITE_LOCK, &eclass, &ecode)) {
+  if(!do_lock( fsp, conn, (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK, &eclass, &ecode)) {
     if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
       /*
        * A blocking lock was requested. Package up
@@ -2260,7 +2260,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
   
-  if (is_locked(fsp,conn,numtoread,startpos, READ_LOCK))
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK))
     return(ERROR(ERRDOS,ERRlock));	
 
   if (numtoread > 0)
@@ -2328,7 +2328,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
   }
 
-  if (is_locked(fsp,conn,smb_maxcnt,startpos, READ_LOCK))
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK))
     return(ERROR(ERRDOS,ERRlock));
   nread = read_file(fsp,data,startpos,smb_maxcnt);
   
@@ -2383,7 +2383,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   CVAL(inbuf,smb_com) = SMBwritec;
   CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (is_locked(fsp,conn,tcount,startpos, WRITE_LOCK))
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 
   if (numtowrite>0)
@@ -2471,7 +2471,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fsp,conn,numtowrite,startpos, WRITE_LOCK))
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 
   /* The special X/Open SMB protocol handling of
@@ -2488,7 +2488,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-  if(!do_unlock(fsp, conn, numtowrite, startpos, &eclass, &ecode))
+  if(!do_unlock(fsp, conn, (SMB_BIG_UINT)numtowrite, (SMB_BIG_UINT)startpos, &eclass, &ecode))
     return(ERROR(eclass,ecode));
 
   outsize = set_message(outbuf,1,0,True);
@@ -2525,7 +2525,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fsp,conn,numtowrite,startpos, WRITE_LOCK))
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 
   /* X/Open SMB protocol says that if smb_vwv1 is
@@ -2604,7 +2604,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 #endif /* LARGE_SMB_OFF_T */
   }
 
-  if (is_locked(fsp,conn,numtowrite,startpos, WRITE_LOCK))
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 
   /* X/Open SMB protocol says that, unlike SMBwrite
@@ -2858,7 +2858,7 @@ int reply_writeclose(connection_struct *conn,
 	mtime = make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
-	if (is_locked(fsp,conn,numtowrite,startpos, WRITE_LOCK))
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK))
 		return(ERROR(ERRDOS,ERRlock));
           
 	nwritten = write_file(fsp,data,startpos,numtowrite);
@@ -2893,7 +2893,7 @@ int reply_lock(connection_struct *conn,
 	       char *inbuf,char *outbuf, int length, int dum_buffsize)
 {
 	int outsize = set_message(outbuf,0,0,True);
-	SMB_OFF_T count,offset;
+	SMB_BIG_UINT count,offset;
 	int eclass;
 	uint32 ecode;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
@@ -2901,8 +2901,8 @@ int reply_lock(connection_struct *conn,
 	CHECK_FSP(fsp,conn);
 	CHECK_ERROR(fsp);
 
-	count = IVAL(inbuf,smb_vwv1);
-	offset = IVAL(inbuf,smb_vwv3);
+	count = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv1);
+	offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fd, fsp->fnum, (double)offset, (double)count));
@@ -2930,7 +2930,7 @@ int reply_lock(connection_struct *conn,
 int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
   int outsize = set_message(outbuf,0,0,True);
-  SMB_OFF_T count,offset;
+  SMB_BIG_UINT count,offset;
   int eclass;
   uint32 ecode;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
@@ -2938,8 +2938,8 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, in
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
 
-  count = IVAL(inbuf,smb_vwv1);
-  offset = IVAL(inbuf,smb_vwv3);
+  count = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv1);
+  offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 
   if(!do_unlock(fsp, conn, count, offset, &eclass, &ecode))
     return (ERROR(eclass,ecode));
@@ -3996,27 +3996,23 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
  Get a lock count, dealing with large count requests.
 ****************************************************************************/
 
-SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, BOOL *err)
+SMB_BIG_UINT get_lock_count( char *data, int data_offset, BOOL large_file_format)
 {
-  SMB_OFF_T count = 0;
-
-  *err = False;
+  SMB_BIG_UINT count = 0;
 
   if(!large_file_format) {
-    count = (SMB_OFF_T)IVAL(data,SMB_LKLEN_OFFSET(data_offset));
+    count = (SMB_BIG_UINT)IVAL(data,SMB_LKLEN_OFFSET(data_offset));
   } else {
 
-#if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
-
-    count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset))) << 32) |
-            ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)));
-
-#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+#if defined(HAVE_LONGLONG)
+    count = (((SMB_BIG_UINT) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset))) << 32) |
+            ((SMB_BIG_UINT) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)));
+#else /* HAVE_LONGLONG */
 
     /*
-     * NT4.x seems to be broken in that it sends large file
+     * NT4.x seems to be broken in that it sends large file (64 bit)
      * lockingX calls even if the CAP_LARGE_FILES was *not*
-     * negotiated. For boxes without large file locks truncate the
+     * negotiated. For boxes without large unsigned ints truncate the
      * lock count by dropping the top 32 bits.
      */
 
@@ -4027,33 +4023,10 @@ SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, B
       SIVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset),0);
     }
 
-    if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) != 0) {
-      /*
-       * Before we error out, see if we can sensibly map the top bits
-       * down to the lower bits - or lose the top bits if they are all 1's.
-       * It seems that NT has this horrible bug where it will send 64 bit
-       * lock requests even if told not to. JRA.
-       */
-
-      if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) == (uint32)0xFFFFFFFF)
-        count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset));
-      else if (IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) == (uint32)0xFFFFFFFF)
-        count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
-      else {
-
-        DEBUG(0,("get_lock_count: Error : a large file count (%x << 32 | %x) was sent and we don't \
-support large counts.\n", (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)),
-            (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) ));
-
-        *err = True;
-        return (SMB_OFF_T)-1;
-      }
-    }
-    else
-      count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
-
-#endif /* LARGE_SMB_OFF_T */
+    count = (SMB_BIG_UINT)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
+#endif /* HAVE_LONGLONG */
   }
+
   return count;
 }
 
@@ -4061,27 +4034,25 @@ support large counts.\n", (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(da
  Get a lock offset, dealing with large offset requests.
 ****************************************************************************/
 
-SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err)
+SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err)
 {
-  SMB_OFF_T offset = 0;
+  SMB_BIG_UINT offset = 0;
 
   *err = False;
 
   if(!large_file_format) {
-    offset = (SMB_OFF_T)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
+    offset = (SMB_BIG_UINT)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
   } else {
 
-#if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
-
-    offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) << 32) |
-            ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
-
-#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+#if defined(HAVE_LONGLONG)
+    offset = (((SMB_BIG_UINT) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) << 32) |
+            ((SMB_BIG_UINT) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
+#else /* HAVE_LONGLONG */
 
     /*
-     * NT4.x seems to be broken in that it sends large file
+     * NT4.x seems to be broken in that it sends large file (64 bit)
      * lockingX calls even if the CAP_LARGE_FILES was *not*
-     * negotiated. For boxes without large file locks mangle the
+     * negotiated. For boxes without large unsigned ints mangle the
      * lock offset by mapping the top 32 bits onto the lower 32.
      */
       
@@ -4092,7 +4063,7 @@ SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, 
 
       if((new_low = map_lock_offset(high, low)) == 0) {
         *err = True;
-        return (SMB_OFF_T)-1;
+        return (SMB_BIG_UINT)-1;
       }
 
       DEBUG(3,("get_lock_offset: truncating lock offset (high)0x%x (low)0x%x to offset 0x%x.\n",
@@ -4101,33 +4072,10 @@ SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, 
       SIVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset),new_low);
     }
 
-    if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) != 0){
-      /*
-       * Before we error out, see if we can sensibly map the top bits
-       * down to the lower bits - or lose the top bits if they are all 1's.
-       * It seems that NT has this horrible bug where it will send 64 bit
-       * lock requests even if told not to. JRA.
-       */
-
-      if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)) == (uint32)0xFFFFFFFF)
-        offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset));
-      else if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) == (uint32)0xFFFFFFFF)
-        offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
-      else {
-
-        DEBUG(0,("get_lock_count: Error : a large file offset (%x << 32 | %x) was sent and we don't \
-support large offsets.\n", (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)),
-            (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)) ));
-
-        *err = True;
-        return (SMB_OFF_T)-1;
-      }
-    }
-    else
-      offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
-
+    offset = (SMB_BIG_UINT)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
 #endif /* LARGE_SMB_OFF_T */
   }
+
   return offset;
 }
 
@@ -4144,14 +4092,14 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 #endif
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
-  SMB_OFF_T count = 0, offset = 0;
+  SMB_BIG_UINT count = 0, offset = 0;
   int32 lock_timeout = IVAL(inbuf,smb_vwv4);
   int i;
   char *data;
   uint32 ecode=0, dummy2;
   int eclass=0, dummy1;
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
-  BOOL err1, err2;
+  BOOL err;
 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
@@ -4202,13 +4150,13 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */
   for(i = 0; i < (int)num_ulocks; i++) {
-    count = get_lock_count( data, i, large_file_format, &err1);
-    offset = get_lock_offset( data, i, large_file_format, &err2);
+    count = get_lock_count( data, i, large_file_format);
+    offset = get_lock_offset( data, i, large_file_format, &err);
 
     /*
      * There is no error code marked "stupid client bug".... :-).
      */
-    if(err1 || err2)
+    if(err)
       return ERROR(ERRDOS,ERRnoaccess);
 
     DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for file %s\n",
@@ -4228,13 +4176,13 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
      of smb_lkrng structs */
 
   for(i = 0; i < (int)num_locks; i++) {
-    count = get_lock_count( data, i, large_file_format, &err1);
-    offset = get_lock_offset( data, i, large_file_format, &err2);
+    count = get_lock_count( data, i, large_file_format);
+    offset = get_lock_offset( data, i, large_file_format, &err);
 
     /*
      * There is no error code marked "stupid client bug".... :-).
      */
-    if(err1 || err2)
+    if(err)
       return ERROR(ERRDOS,ERRnoaccess);
  
     DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for file %s\n",
@@ -4264,13 +4212,13 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
      * will delete it (and we shouldn't) .....
      */
     for(i--; i >= 0; i--) {
-      count = get_lock_count( data, i, large_file_format, &err1);
-      offset = get_lock_offset( data, i, large_file_format, &err2);
+      count = get_lock_count( data, i, large_file_format);
+      offset = get_lock_offset( data, i, large_file_format, &err);
 
       /*
        * There is no error code marked "stupid client bug".... :-).
        */
-      if(err1 || err2)
+      if(err)
         return ERROR(ERRDOS,ERRnoaccess);
  
       do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
@@ -4325,7 +4273,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   tcount = maxcount;
   total_read = 0;
 
-  if (is_locked(fsp,conn,maxcount,startpos, READ_LOCK))
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 	
   do
@@ -4387,7 +4335,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
      not an SMBwritebmpx - set this up now so we don't forget */
   CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (is_locked(fsp,conn,tcount,startpos,WRITE_LOCK))
+  if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK))
     return(ERROR(ERRDOS,ERRlock));
 
   nwritten = write_file(fsp,data,startpos,numtowrite);

@@ -331,8 +331,6 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
-char *align2(char *q, char *base);
-char *align4(char *q, char *base);
 void out_ascii(FILE *f, unsigned char *buf,int len);
 void out_data(FILE *f,char *buf1,int len, int per_line);
 void print_asc(int level, unsigned char *buf,int len);
@@ -780,13 +778,13 @@ int brl_forall(BRLOCK_FN(fn));
 
 void locking_close_file(files_struct *fsp);
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
-	       SMB_OFF_T count,SMB_OFF_T offset, 
+	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       enum brl_type lock_type);
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
-             SMB_OFF_T count,SMB_OFF_T offset,enum brl_type lock_type,
+             SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode);
 BOOL do_unlock(files_struct *fsp,connection_struct *conn,
-               SMB_OFF_T count,SMB_OFF_T offset, 
+               SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       int *eclass,uint32 *ecode);
 BOOL locking_init(int read_only);
 BOOL locking_end(void);
@@ -3196,8 +3194,8 @@ int rename_internals(connection_struct *conn,
 int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, BOOL *err);
-SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err);
+SMB_BIG_UINT get_lock_count( char *data, int data_offset, BOOL large_file_format);
+SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err);
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
