@@ -310,8 +310,6 @@ krb5_change_password (krb5_context	context,
 		goto out;
 	    }
 	    if (ret == 1) {
-		replied = 1;
-
 		ret = process_reply (context,
 				     auth_context,
 				     sock,
@@ -320,6 +318,8 @@ krb5_change_password (krb5_context	context,
 				     result_string);
 		if (ret == 0)
 		    done = 1;
+		else if (i > 0 && ret == KRB5KRB_AP_ERR_MUT_FAIL)
+		    replied = 1;
 	    } else {
 		ret = KRB5_KDC_UNREACH;
 	    }
