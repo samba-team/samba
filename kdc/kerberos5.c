@@ -430,15 +430,18 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
  */
 
 static int
-only_older_enctype_p(const hdb_entry *client)
+only_older_enctype_p(const KDC_REQ *req)
 {
     int i;
 
-    for(i = 0; i < client->keys.len; i++) {
-	switch (client->keys.val[i].key.keytype) {
-	case KEYTYPE_DES:
-	case KEYTYPE_DES3:
-	case KEYTYPE_ARCFOUR:
+    for(i = 0; i < req->req_body.etype.len; i++) {
+	switch (req->req_body.etype.val[i]) {
+	case ETYPE_DES_CBC_CRC:
+	case ETYPE_DES_CBC_MD4:
+	case ETYPE_DES_CBC_MD5:
+	case ETYPE_DES3_CBC_SHA1:
+	case ETYPE_ARCFOUR_HMAC_MD5:
+	case ETYPE_ARCFOUR_HMAC_MD5_56:
 	    break;
 	default:
 	    return 0;
@@ -821,7 +824,7 @@ as_rep(KDC_REQ *req,
 	pa->padata_value.data	= NULL;
 
 	/* XXX check ret */
-	if (only_older_enctype_p(client))
+	if (only_older_enctype_p(req))
 	    ret = get_pa_etype_info(&method_data, client, 
 				    b->etype.val, b->etype.len); 
 	/* XXX check ret */
