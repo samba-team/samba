@@ -1,3 +1,7 @@
+Sun Aug 24 03:52:44 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/des/{md4,md5,sha}.c: Now works on Crays.
+
 Sat Aug 23 18:15:01 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* appl/afsutil/afslog.c: If no cells or files specified, get
