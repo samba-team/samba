@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBMNT" "8" "09 July 2001" "" ""
+.TH "SMBMNT" "8" "26 September 2001" "" ""
 .SH NAME
 smbmnt \- helper utility for mounting SMB filesystems
 .SH SYNOPSIS
@@ -13,14 +13,18 @@ smbmnt \- helper utility for mounting SMB filesystems
 .PP
 \fBsmbmnt\fR is a helper application used 
 by the smbmount program to do the actual mounting of SMB shares. 
-\fBsmbmnt\fR is meant to be installed setuid root 
-so that normal users can mount their SMB shares. It checks 
-whether the user has write permissions on the mount point and 
-then mounts the directory.
+\fBsmbmnt\fR can be installed setuid root if you want
+normal users to be able to mount their SMB shares.
+.PP
+A setuid smbmnt will only allow mounts on directories owned
+by the user, and that the user has write permission on.
 .PP
 The \fBsmbmnt\fR program is normally invoked 
 by \fBsmbmount(8)\fR
 . It should not be invoked directly by users. 
+.PP
+smbmount searches the normal PATH for smbmnt. You must ensure
+that the smbmnt version in your path matches the smbmount used.
 .SH "OPTIONS"
 .TP
 \fB-r\fR

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "18 September 2001" "" ""
+.TH "SMB.CONF" "5" "26 September 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -2231,9 +2231,9 @@ see the \fIdelete printer
 command\fR.
 .PP
 .PP
-See also \fIdelete share
+See also \fIadd share
 command\fR, \fIchange 
-share\fR.
+share command\fR.
 .PP
 .PP
 Default: \fBnone\fR
@@ -4655,11 +4655,11 @@ Default: \fBos2 driver map = <empty string>
 With the addition of better PAM support in Samba 2.2, 
 this parameter, it is possible to use PAM's password change control 
 flag for Samba. If enabled, then PAM will be used for password
-changes when requested by an SMB client insted of the program listed in 
+changes when requested by an SMB client instead of the program listed in 
 \fIpasswd program\fR. 
 It should be possible to enable this without changing your 
 \fIpasswd chat\fR
-paramater for most setups.
+parameter for most setups.
 
 Default: \fBpam password change = no\fR
 .TP

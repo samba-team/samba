@@ -15,7 +15,7 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>smbd</command>
+		<command>nmbd</command>
 		<arg choice="opt">-D</arg>
 		<arg choice="opt">-a</arg>
 		<arg choice="opt">-o</arg>

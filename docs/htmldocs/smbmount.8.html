@@ -49,16 +49,17 @@ NAME="AEN14"
 ><B
 CLASS="COMMAND"
 >smbmount</B
-> mounts a SMB filesystem. It 
+> mounts a Linux SMB filesystem. It 
 	is usually invoked as <B
 CLASS="COMMAND"
->mount.smb</B
-> from 
+>mount.smbfs</B
+> by
 	the <B
 CLASS="COMMAND"
 >mount(8)</B
 > command when using the 
-	"-t smb" option. The kernel must support the smbfs filesystem. </P
+	"-t smbfs" option. This command only works in Linux, and the kernel must
+	support the smbfs filesystem. </P
 ><P
 >Options to <B
 CLASS="COMMAND"
@@ -234,7 +235,9 @@ CLASS="FILENAME"
 ><DD
 ><P
 >sets the debug level. This is useful for 
-		tracking down SMB connection problems. </P
+		tracking down SMB connection problems. A suggested value to
+		start with is 4. If set too high there will be a lot of
+		output, possibly hiding the useful output.</P
 ></DD
 ><DT
 >ip=&#60;arg&#62;</DT
@@ -358,8 +361,8 @@ CLASS="ENVAR"
 >The variable <TT
 CLASS="ENVAR"
 >PASSWD_FILE</TT
-> may contain the pathname of
-	a file to read the password from. A single line of input is
+> may contain the pathname
+	of a file to read the password from. A single line of input is
 	read and used as the password.</P
 ></DIV
 ><DIV
@@ -370,8 +373,15 @@ NAME="AEN133"
 ><H2
 >BUGS</H2
 ><P
->Not many known smbmount bugs. But one smbfs bug is
-	important enough to mention here anyway:</P
+>Passwords and other options containing , can not be handled.
+	For passwords an alternative way of passing them is in a credentials
+	file or in the PASSWD environment.</P
+><P
+>The credentials file does not handle usernames or passwords with
+	leading space.</P
+><P
+>One smbfs bug is important enough to mention here, even if it
+	is a bit misplaced:</P
 ><P
 ></P
 ><UL
@@ -379,8 +389,8 @@ NAME="AEN133"
 ><P
 >Mounts sometimes stop working. This is usually
 	caused by smbmount terminating. Since smbfs needs smbmount to
-	reconnect when the server disconnects, the mount will go
-	dead. A re-mount normally fixes this. At least 2 ways to
+	reconnect when the server disconnects, the mount will eventually go
+	dead. An umount/mount normally fixes this. At least 2 ways to
 	trigger this bug are known.</P
 ></LI
 ></UL
@@ -393,18 +403,32 @@ NAME="AEN133"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN140"
+NAME="AEN142"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
->Documentation/filesystems/smbfs.txt in the kernel source tree
-	may contain additional options and information.</P
+>Documentation/filesystems/smbfs.txt in the linux kernel
+	source tree may contain additional options and information.</P
+><P
+>FreeBSD also has a smbfs, but it is not related to smbmount</P
+><P
+>For Solaris, HP-UX and others you may want to look at
+	<A
+HREF="smbsh.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbsh(1)</B
+></A
+> or at other
+	solutions, such as sharity or perhaps replacing the SMB server with
+	a NFS server.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN143"
+NAME="AEN149"
 ></A
 ><H2
 >AUTHOR</H2

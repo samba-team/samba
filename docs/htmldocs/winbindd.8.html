@@ -47,12 +47,11 @@ NAME="AEN14"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
+>This program is part of the <A
 HREF="samba.7.html"
 TARGET="_top"
 >	Samba</A
-> suite version 3.0 and describes functionality not 
-	yet implemented in the main version of Samba.</P
+> suite.</P
 ><P
 ><B
 CLASS="COMMAND"
@@ -666,7 +665,7 @@ CLASS="REFSECT1"
 NAME="AEN183"
 ></A
 ><H2
->Notes</H2
+>NOTES</H2
 ><P
 >The following notes are useful when configuring and 
 	running <B
@@ -697,10 +696,8 @@ CLASS="COMMAND"
 >winbindd</B
 >
 	nsswitch module read an environment variable named <TT
-CLASS="PARAMETER"
-><I
->	$WINBINDD_DOMAIN</I
-></TT
+CLASS="ENVAR"
+>	$WINBINDD_DOMAIN</TT
 >.  If this variable contains a comma separated
 	list of Windows NT domain names, then winbindd will only resolve users
 	and groups within those Windows NT domains. </P
@@ -726,7 +723,7 @@ CLASS="REFSECT1"
 NAME="AEN199"
 ></A
 ><H2
->Signals</H2
+>SIGNALS</H2
 ><P
 >The following signals can be used to manipulate the 
 	<B
@@ -777,7 +774,7 @@ CLASS="REFSECT1"
 NAME="AEN216"
 ></A
 ><H2
->Files</H2
+>FILES</H2
 ><P
 ></P
 ><DIV
@@ -826,9 +823,11 @@ CLASS="FILENAME"
 >Storage for the Windows NT rid to UNIX user/group 
 		id mapping.  The lock directory is specified when Samba is initially 
 		compiled using the <TT
-CLASS="FILENAME"
->--with-lockdir</TT
-> option.  
+CLASS="PARAMETER"
+><I
+>--with-lockdir</I
+></TT
+> option.
 		This directory is by default <TT
 CLASS="FILENAME"
 >/usr/local/samba/var/locks
@@ -853,9 +852,8 @@ NAME="AEN245"
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
-	the Samba suite.  winbindd is however not available in
-	the stable release of Samba as of yet.</P
+>This man page is correct for version 2.2 of
+        the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"

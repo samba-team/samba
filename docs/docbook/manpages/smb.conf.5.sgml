@@ -1960,9 +1960,9 @@
 		</para>
 		
 		<para>
-		See also <link linkend="ADDSHARECOMMAND"><parameter>delete share
+		See also <link linkend="ADDSHARECOMMAND"><parameter>add share
 		command</parameter></link>, <link linkend="CHANGESHARECOMMAND"><parameter>change 
-		share</parameter></link>.
+		share command</parameter></link>.
 		</para>
 		
 		<para>Default: <emphasis>none</emphasis></para>

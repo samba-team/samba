@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBMOUNT" "8" "09 July 2001" "" ""
+.TH "SMBMOUNT" "8" "26 September 2001" "" ""
 .SH NAME
 smbmount \- mount an smbfs filesystem
 .SH SYNOPSIS
@@ -11,10 +11,11 @@ smbmount \- mount an smbfs filesystem
 \fBsmbumount\fR \fBservice\fR \fBmount-point\fR [ \fB-o options\fR ] 
 .SH "DESCRIPTION"
 .PP
-\fBsmbmount\fR mounts a SMB filesystem. It 
-is usually invoked as \fBmount.smb\fR from 
+\fBsmbmount\fR mounts a Linux SMB filesystem. It 
+is usually invoked as \fBmount.smbfs\fR by
 the \fBmount(8)\fR command when using the 
-"-t smb" option. The kernel must support the smbfs filesystem. 
+"-t smbfs" option. This command only works in Linux, and the kernel must
+support the smbfs filesystem. 
 .PP
 Options to \fBsmbmount\fR are specified as a comma-separated
 list of key=value pairs. It is possible to send options other
@@ -102,7 +103,9 @@ The default is based on the current umask.
 .TP
 \fBdebug=<arg>\fR
 sets the debug level. This is useful for 
-tracking down SMB connection problems. 
+tracking down SMB connection problems. A suggested value to
+start with is 4. If set too high there will be a lot of
+output, possibly hiding the useful output.
 .TP
 \fBip=<arg>\fR
 sets the destination host or IP address.
@@ -160,19 +163,26 @@ person using the client. This information is used only if the
 protocol level is high enough to support session-level
 passwords.
 .PP
-The variable \fBPASSWD_FILE\fR may contain the pathname of
-a file to read the password from. A single line of input is
+The variable \fBPASSWD_FILE\fR may contain the pathname
+of a file to read the password from. A single line of input is
 read and used as the password.
 .SH "BUGS"
 .PP
-Not many known smbmount bugs. But one smbfs bug is
-important enough to mention here anyway:
+Passwords and other options containing , can not be handled.
+For passwords an alternative way of passing them is in a credentials
+file or in the PASSWD environment.
+.PP
+The credentials file does not handle usernames or passwords with
+leading space.
+.PP
+One smbfs bug is important enough to mention here, even if it
+is a bit misplaced:
 .TP 0.2i
 \(bu
 Mounts sometimes stop working. This is usually
 caused by smbmount terminating. Since smbfs needs smbmount to
-reconnect when the server disconnects, the mount will go
-dead. A re-mount normally fixes this. At least 2 ways to
+reconnect when the server disconnects, the mount will eventually go
+dead. An umount/mount normally fixes this. At least 2 ways to
 trigger this bug are known.
 .PP
 Note that the typical response to a bug report is suggestion
@@ -182,8 +192,15 @@ when reporting bugs (minimum: samba, kernel, distribution)
 .PP
 .SH "SEE ALSO"
 .PP
-Documentation/filesystems/smbfs.txt in the kernel source tree
-may contain additional options and information.
+Documentation/filesystems/smbfs.txt in the linux kernel
+source tree may contain additional options and information.
+.PP
+FreeBSD also has a smbfs, but it is not related to smbmount
+.PP
+For Solaris, HP-UX and others you may want to look at
+\fBsmbsh(1)\fRor at other
+solutions, such as sharity or perhaps replacing the SMB server with
+a NFS server.
 .SH "AUTHOR"
 .PP
 Volker Lendecke, Andrew Tridgell, Michael H. Warfield 

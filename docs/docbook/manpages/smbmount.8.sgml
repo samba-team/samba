@@ -299,7 +299,7 @@
 	<para>FreeBSD also has a smbfs, but it is not related to smbmount</para>
 
 	<para>For Solaris, HP-UX and others you may want to look at
-	<ulink url="smbsh.1.html"><command>smbsh(1)</command> or at other
+	<ulink url="smbsh.1.html"><command>smbsh(1)</command></ulink> or at other
 	solutions, such as sharity or perhaps replacing the SMB server with
 	a NFS server.</para>
 

@@ -14,7 +14,7 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>nmblookup</command>
+		<command>wbinfo</command>
 		<arg choice="opt">-u</arg>
 		<arg choice="opt">-g</arg>
 		<arg choice="opt">-n name</arg>
@@ -158,8 +158,7 @@
 	<title>VERSION</title>
 
 	<para>This man page is correct for version 2.2 of 
-	the Samba suite.  winbindd is however not available in
-	stable release of Samba as of yet.</para>
+	the Samba suite.</para>
 </refsect1>
 
 <refsect1>
@@ -177,7 +176,7 @@
 	to the way the Linux kernel is developed.</para>
 	
 	<para><command>wbinfo</command> and <command>winbindd</command>
-	were written by TIm Potter.</para>
+	were written by Tim Potter.</para>
 	
 	<para>The conversion to DocBook for Samba 2.2 was done 
 	by Gerald Carter</para>

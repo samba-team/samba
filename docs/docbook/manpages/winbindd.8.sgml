@@ -25,9 +25,8 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite version 3.0 and describes functionality not 
-	yet implemented in the main version of Samba.</para>
+	<para>This program is part of the <ulink url="samba.7.html">
+	Samba</ulink> suite.</para>
 
 	<para><command>winbindd</command> is a daemon that provides 
 	a service for the Name Service Switch capability that is present 
@@ -353,7 +352,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 
 
 <refsect1>
-	<title>Notes</title>
+	<title>NOTES</title>
 
 	<para>The following notes are useful when configuring and 
 	running <command>winbindd</command>: </para>
@@ -366,8 +365,8 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	servers, it must be sent a SIGHUP signal. </para>
 
 	<para>Client processes resolving names through the <command>winbindd</command>
-	nsswitch module read an environment variable named <parameter>
-	$WINBINDD_DOMAIN</parameter>.  If this variable contains a comma separated
+	nsswitch module read an environment variable named <envar>
+	$WINBINDD_DOMAIN</envar>.  If this variable contains a comma separated
 	list of Windows NT domain names, then winbindd will only resolve users
 	and groups within those Windows NT domains. </para>
 
@@ -386,7 +385,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 
 
 <refsect1>
-	<title>Signals</title>
+	<title>SIGNALS</title>
 
 	<para>The following signals can be used to manipulate the 
 	<command>winbindd</command> daemon. </para>
@@ -415,7 +414,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 </refsect1>
 
 <refsect1>
-	<title>Files</title>
+	<title>FILES</title>
 
 	<variablelist>
 		<varlistentry>
@@ -444,7 +443,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 		<term>$LOCKDIR/winbindd_idmap.tdb</term>
 		<listitem><para>Storage for the Windows NT rid to UNIX user/group 
 		id mapping.  The lock directory is specified when Samba is initially 
-		compiled using the <filename>--with-lockdir</filename> option.  
+		compiled using the <parameter>--with-lockdir</parameter> option.
 		This directory is by default <filename>/usr/local/samba/var/locks
 		</filename>. </para></listitem>
 		</varlistentry>
@@ -461,9 +460,8 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
-	the Samba suite.  winbindd is however not available in
-	the stable release of Samba as of yet.</para>
+	<para>This man page is correct for version 2.2 of
+        the Samba suite.</para>
 </refsect1>
 
 <refsect1>
