@@ -433,7 +433,7 @@
 		uint32 type;
 		unistr *comment;
 		uint32 permissions;
-		uint32 max_users;
+		int32 max_users;
 		uint32 current_users;
 		unistr *path;
 		unistr *password;
@@ -447,12 +447,21 @@
 	} srvsvc_NetShareCtr502;
 
 	typedef struct {
-		uint32 dummy;
+		unistr *comment;
 	} srvsvc_NetShareInfo1004;
 
 	typedef struct {
 		uint32 dfs_flags;
 	} srvsvc_NetShareInfo1005;
+
+	typedef struct {
+		int32 max_users;
+	} srvsvc_NetShareInfo1006;
+
+	typedef struct {
+		uint32 reserved;
+		[subcontext(4)] security_descriptor *sd;
+	} srvsvc_NetShareInfo1501;
 
 	typedef union {
 		[case(0)] srvsvc_NetShareInfo0 *info0;
@@ -462,6 +471,8 @@
 		[case(502)] srvsvc_NetShareInfo502 *info502;
 		[case(1004)] srvsvc_NetShareInfo1004 *info1004;
 		[case(1005)] srvsvc_NetShareInfo1005 *info1005;
+		[case(1006)] srvsvc_NetShareInfo1006 *info1006;
+		[case(1501)] srvsvc_NetShareInfo1501 *info1501;
 		[default] ;
 	} srvsvc_NetShareInfo;
 
@@ -548,9 +559,9 @@
 	typedef struct {
 		uint32 platform_id;
 		unistr *server_name;
-		uint32 ver_major;
-		uint32 ver_minor;
-		uint32 type;
+		uint32 version_major;
+		uint32 version_minor;
+		uint32 server_type;
 		unistr *comment;
 	} srvsvc_NetSrvInfo101;
 
@@ -559,7 +570,7 @@
 		unistr *server_name;
 		uint32 ver_major;
 		uint32 ver_minor;
-		uint32 type;
+		uint32 server_type;
 		unistr *comment;
 		uint32 users;
 		uint32 disc;

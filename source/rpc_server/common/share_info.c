@@ -35,12 +35,12 @@ uint32_t dcesrv_common_get_count_of_shares(TALLOC_CTX *mem_ctx, struct dcesrv_co
 
 const char *dcesrv_common_get_share_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
 {
-	return lp_servicename(snum);
+	return talloc_strdup(mem_ctx, lp_servicename(snum));
 }
 
 const char *dcesrv_common_get_share_comment(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
 {
-	return lp_comment(snum);
+	return talloc_strdup(mem_ctx, lp_comment(snum));
 }
 
 /* This hardcoded value should go into a ldb database! */
@@ -84,7 +84,7 @@ uint32_t dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct dcesrv_context
 /* This hardcoded value should go into a ldb database! */
 const char *dcesrv_common_get_share_path(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
 {
-	return "C:\\";
+	return talloc_strdup(mem_ctx, "C:\\");
 }
 
 /* This hardcoded value should go into a ldb database! */
@@ -95,6 +95,12 @@ const char *dcesrv_common_get_share_password(TALLOC_CTX *mem_ctx, struct dcesrv_
 
 /* This hardcoded value should go into a ldb database! */
 uint32_t dcesrv_common_get_share_csc_policy(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+{
+	return 0;
+}
+
+/* This hardcoded value should go into a ldb database! */
+uint32_t dcesrv_common_get_share_dfs_flags(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
 {
 	return 0;
 }
