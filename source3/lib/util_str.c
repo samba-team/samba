@@ -181,7 +181,9 @@ int StrCaseCmp(const char *s, const char *t)
 {
 
 	const char * ps, * pt;
-	pstring buf1, buf2;
+	size_t size;
+	smb_ucs2_t *buffer_s, *buffer_t;
+	int ret;
 
 	for (ps = s, pt = t; ; ps++, pt++) {
 		char us, ut;
@@ -206,16 +208,27 @@ int StrCaseCmp(const char *s, const char *t)
 			return +1;
 	}
 
-	/* TODO: Don't do this with a fixed-length buffer.  This could
-	 * still be much more efficient. */
-	/* TODO: Hardcode a char-by-char comparison for UTF-8, which
-	 * can be much faster. */
-	/* TODO: Test case for this! */
-
-	unix_strupper(ps, strlen(ps)+1, buf1, sizeof(buf1));
-	unix_strupper(pt, strlen(pt)+1, buf2, sizeof(buf2));
-
-	return strcmp(buf1, buf2);
+	size = convert_string_allocate(CH_UNIX, CH_UCS2, s, strlen(s),
+				       (void **) &buffer_s);
+	if (size == -1) {
+		return strcmp(s, t); 
+		/* Not quite the right answer, but finding the right one
+		   under this failure case is expensive, and it's pretty close */
+	}
+	
+	size = convert_string_allocate(CH_UNIX, CH_UCS2, t, strlen(t),
+				       (void **) &buffer_t);
+	if (size == -1) {
+		SAFE_FREE(buffer_s);
+		return strcmp(s, t); 
+		/* Not quite the right answer, but finding the right one
+		   under this failure case is expensive, and it's pretty close */
+	}
+	
+	ret = strcasecmp_w(buffer_s, buffer_t);
+	SAFE_FREE(buffer_s);
+	SAFE_FREE(buffer_t);
+	return ret;
 }
 
 
