@@ -159,12 +159,17 @@ krb5_get_in_tkt(krb5_context context,
     krb5_data salt;
     krb5_keyblock *key;
     size_t size;
+    union {
+	krb5_flags i;
+	KDCOptions f;
+    } opts;
+    opts.i = options;
 
     memset(&a, 0, sizeof(a));
 
     a.pvno = 5;
     a.msg_type = krb_as_req;
-    a.req_body.kdc_options.forwardable = options; /* XXX */
+    a.req_body.kdc_options = opts.f;
     a.req_body.cname = malloc(sizeof(*a.req_body.cname));
     a.req_body.sname = malloc(sizeof(*a.req_body.sname));
     krb5_principal2principalname (a.req_body.cname, creds->client);
