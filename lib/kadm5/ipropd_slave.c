@@ -323,12 +323,14 @@ receive_everything (krb5_context context, int fd,
 
     krb5_data_free (&data);
 
-    ret = mydb->close (context, mydb);
-    if (ret)
-	krb5_err (context, 1, ret, "db->close");
     ret = mydb->rename (context, mydb, server_context->db->name);
     if (ret)
 	krb5_err (context, 1, ret, "db->rename");
+
+    ret = mydb->close (context, mydb);
+    if (ret)
+	krb5_err (context, 1, ret, "db->close");
+
     ret = mydb->destroy (context, mydb);
     if (ret)
 	krb5_err (context, 1, ret, "db->destroy");
