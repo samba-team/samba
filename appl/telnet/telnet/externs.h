@@ -209,7 +209,6 @@ extern void
     TerminalRestoreState (void),
     TerminalSaveState (void),
     tninit (void),
-    upcase (char *),
     willoption (int),
     wontoption (int);
 
