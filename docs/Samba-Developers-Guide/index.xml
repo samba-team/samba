@@ -45,6 +45,8 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 	<xi:fallback/>
 </xi:include>
 
+<?latex \cleardoublepage ?>
+
 <!-- Contents -->
 <toc/>
 
