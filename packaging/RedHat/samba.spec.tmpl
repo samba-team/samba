@@ -185,6 +185,9 @@ install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
 install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
+install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/samba/samba.stack
+install -m644 packaging/RedHat/samba.xinetd $RPM_BUILD_ROOT/etc/samba/samba.xinetd
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 
 # Remove "*.old" files
@@ -290,20 +293,36 @@ fi
 
 # Add swat entry to xinetd.d if needed.
 if [ -d /etc/xinetd.d -a ! -f /etc/xinetd.d/swat ]; then
-	install -m644 packaging/RedHat/samba.xinetd $RPM_BUILD_ROOT/etc/xinetd.d/swat
+	mv /etc/samba/samba.xinetd /etc/xinetd.d/swat
+else
+	rm -f /etc/samba/samba.xinetd
 fi
 
 # Install the correct version of the samba pam file, depending on pam version.
 # (always keep an existing PAM config file)
-if [ ! -f /etc/pam.d/samba ]; then 
+if [ ! -f /lib/security/pam_stack.so ]; then 
 	if [ -f /lib/security/pam_stack.so ]; then
 		echo "Installing stack version of /etc/pam.d/samba..."
-		install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/pam.d/samba
+		mv /etc/samba/samba.stack /etc/pam.d/samba
 	else
 		echo "Installing non-stack version of /etc/pam.d/samba..."
-		install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+		rm -f /etc/samba/samba.stack
 	fi
 fi
+
+#
+# For 3.0.1 we move the tdb files from /var/cache/samba to /var/lib/samba
+#
+echo "Moving tdb files in /var/cache/samba/*.tdb to /var/lib/samba/*.tdb"
+for i in /var/cache/samba/*.tdb
+do
+if [ -f $i ]; then
+        newname=`echo $i | sed -e's|var\/lock\/samba|var\/lib\/samba|'`
+        echo "Moving $i to $newname"
+        mv $i $newname
+fi
+done
+
 
 ## call ldconfig to create the version symlink for libsmbclient.so
 /sbin/ldconfig
@@ -439,6 +458,8 @@ fi
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
 %config(noreplace) /etc/samba/smbusers
+/etc/samba/samba.stack
+/etc/samba/samba.xinetd
 /etc/rc.d/init.d/smb
 /etc/rc.d/init.d/winbind
 /etc/logrotate.d/samba
