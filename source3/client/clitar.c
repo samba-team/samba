@@ -599,9 +599,8 @@ static int padit(char *buf, int bufsize, int padsize)
 static void do_setrattr(char *name, uint16 attr, int set)
 {
 	uint16 oldattr;
-	time_t t;
 
-	if (!cli_getatr(cli, name, &oldattr, NULL, &t)) return;
+	if (!cli_getatr(cli, name, &oldattr, NULL, NULL)) return;
 
 	if (set == ATTRSET) {
 		attr |= oldattr;
@@ -609,7 +608,7 @@ static void do_setrattr(char *name, uint16 attr, int set)
 		attr = oldattr & ~attr;
 	}
 
-	if (!cli_setatr(cli, name, attr, t)) {
+	if (!cli_setatr(cli, name, attr, 0)) {
 		DEBUG(1,("setatr failed: %s\n", cli_errstr(cli)));
 	}
 }
@@ -1354,7 +1353,7 @@ void cmd_setmode(void)
 
   if (!next_token(NULL,buf,NULL,sizeof(buf)))
     {
-      DEBUG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
+      DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
       return;
     }
 
@@ -1385,13 +1384,13 @@ void cmd_setmode(void)
 
   if (attra[ATTRSET]==0 && attra[ATTRRESET]==0)
     {
-      DEBUG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
+      DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
       return;
     }
 
   DEBUG(2, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
-  (void) do_setrattr(fname, attra[ATTRSET], ATTRSET);
-  (void) do_setrattr(fname, attra[ATTRRESET], ATTRRESET);
+  do_setrattr(fname, attra[ATTRSET], ATTRSET);
+  do_setrattr(fname, attra[ATTRRESET], ATTRRESET);
 }
 
 /****************************************************************************
