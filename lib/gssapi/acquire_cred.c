@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -127,6 +127,11 @@ static OM_uint32 acquire_initiator_cred
 	if (kret)
 	    goto end;
     }
+
+    {
+	/* XXX get expiration -> handle->lifetime */
+    }
+
     handle->ccache = ccache;
     ret = GSS_S_COMPLETE;
 
@@ -197,10 +202,30 @@ OM_uint32 gss_acquire_cred
 
     GSSAPI_KRB5_INIT ();
 
-    *minor_status = 0;
+    *output_cred_handle = NULL;
+    if (time_rec)
+	*time_rec = 0;
+    if (actual_mechs)
+	*actual_mechs = GSS_C_NO_OID_SET;
+
+    if (desired_mechs) {
+	OM_uint32 present = 0;
+
+	ret = gss_test_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
+				      desired_mechs, &present); 
+	if (ret)
+	    return ret;
+	if (!present) {
+	    *minor_status = 0;
+	    return GSS_S_BAD_MECH;
+	}
+    }
+
     handle = (gss_cred_id_t)malloc(sizeof(*handle));
-    if (handle == GSS_C_NO_CREDENTIAL)
+    if (handle == GSS_C_NO_CREDENTIAL) {
+	*minor_status = ENOMEM;
         return (GSS_S_FAILURE);
+    }
 
     memset(handle, 0, sizeof (*handle));
 
@@ -219,14 +244,17 @@ OM_uint32 gss_acquire_cred
 	    free(handle);
 	    return (ret);
 	}
-    }
-    if (cred_usage == GSS_C_ACCEPT || cred_usage == GSS_C_BOTH) {
+    } else if (cred_usage == GSS_C_ACCEPT || cred_usage == GSS_C_BOTH) {
 	ret = acquire_acceptor_cred(minor_status, desired_name, time_req,
 	    desired_mechs, cred_usage, handle, actual_mechs, time_rec);
 	if (ret != GSS_S_COMPLETE) {
 	    free(handle);
 	    return (ret);
 	}
+    } else {
+	free(handle);
+	*minor_status = GSS_KRB5_S_G_BAD_USAGE;
+	return GSS_S_FAILURE;
     }
     ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
     if (ret == GSS_S_COMPLETE)
@@ -241,6 +269,9 @@ OM_uint32 gss_acquire_cred
 	free(handle);
 	return (ret);
     } 
+    *minor_status = 0;
+    if (time_rec)
+	*time_rec = time_req;
     /* XXX */
     handle->lifetime = time_req;
     handle->usage = cred_usage;
