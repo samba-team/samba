@@ -51,7 +51,14 @@ struct nbt_name_request {
 	/* the timeout event */
 	struct timed_event *te;
 
-	struct nbt_name_packet *request;
+	/* the name transaction id */
+	uint16_t name_trn_id;
+
+	/* is it a reply? */
+	BOOL is_reply;
+	
+	/* the encoded request */
+	DATA_BLOB encoded;
 
 	/* shall we allow multiple replies? */
 	BOOL allow_multiple_replies;
