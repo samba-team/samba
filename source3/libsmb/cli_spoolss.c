@@ -1492,48 +1492,6 @@ WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/*********************************************************************************
- Win32 API - SetPrinterData()
- ********************************************************************************/
-
-WERROR cli_spoolss_setprinterdata (struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					POLICY_HND *pol, char* valname, char* value)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_SETPRINTERDATA q;
-        SPOOL_R_SETPRINTERDATA r;
-	WERROR result = W_ERROR(ERRgeneral);
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
-
-	/* write the request */
-	make_spoolss_q_setprinterdata(&q, mem_ctx, pol, valname, value);
-
-	/* Marshall data and send request */
-	if (!spoolss_io_q_setprinterdata ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_SETPRINTERDATA, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-	if (spoolss_io_r_setprinterdata ("", &r, &rbuf, 0))
-		goto done;
-		
-	result = r.status;
-
-done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
-	return result;
-}
-
 static void decode_jobs_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
 			  uint32 num_jobs, JOB_INFO_1 **jobs)
 {
@@ -1921,6 +1879,192 @@ WERROR cli_spoolss_enddocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Return output parameters */
 
 	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Get printer data */
+
+WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  uint32 offered, uint32 *needed,
+				  POLICY_HND *hnd, char *valuename, 
+				  uint32 *data_type, char **data, 
+				  uint32 *data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETPRINTERDATA q;
+	SPOOL_R_GETPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_getprinterdata(&q, hnd, valuename, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_getprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+	/* Return output parameters */
+
+	if (data_type)
+		*data_type = r.type;
+
+	if (data) {
+		*data = (char *)talloc(mem_ctx, r.needed);
+		memcpy(*data, r.data, r.needed);
+	}
+
+	if (data_size) 
+		*data_size = r.needed;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set printer data */
+
+WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  POLICY_HND *hnd, char *value, 
+				  uint32 data_type, char *data, 
+				  uint32 data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETPRINTERDATA q;
+	SPOOL_R_SETPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_setprinterdata(&q, hnd, value, data, data_size);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_setprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_setprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Enum printer data */
+
+WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   POLICY_HND *hnd, uint32 ndx,
+				   uint32 value_offered, uint32 data_offered,
+				   uint32 *value_needed, uint32 *data_needed,
+				   char **value, uint32 *data_type, char **data, 
+				   uint32 *data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMPRINTERDATA q;
+	SPOOL_R_ENUMPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enumprinterdata(&q, hnd, ndx, value_offered, data_offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enumprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
+
+	/* Return data */
+
+	if (value_needed)
+		*value_needed = r.realvaluesize;
+
+	if (data_needed)
+		*data_needed = r.realdatasize;
+
+	if (data_type) 
+		*data_type = r.type;
+
+	if (value) {
+		fstring the_value;
+
+		rpcstr_pull(the_value, r.value, sizeof(the_value), -1, 
+			    STR_TERMINATE);
+		
+		*value = talloc_strdup(mem_ctx, the_value);
+	}
+
+	if (data)
+		*data = talloc_memdup(mem_ctx, r.data, r.realdatasize);
+
+	if (data_size)
+		*data_size = r.realdatasize;
 
  done:
 	prs_mem_free(&qbuf);
