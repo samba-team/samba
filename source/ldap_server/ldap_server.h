@@ -80,8 +80,6 @@ struct ldapsrv_partition;
 struct ldapsrv_partition_ops {
 	const char *name;
 	NTSTATUS (*Init)(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn);
-	NTSTATUS (*Bind)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_BindRequest *r);
-	NTSTATUS (*Unbind)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_UnbindRequest *r);
 	NTSTATUS (*Search)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_SearchRequest *r);
 	NTSTATUS (*Modify)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyRequest *r);
 	NTSTATUS (*Add)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_AddRequest *r);
