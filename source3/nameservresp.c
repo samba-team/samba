@@ -143,21 +143,40 @@ static void response_name_reg(struct nmb_name *ans_name,
   NAME_QUERY_SRV_CHK, and NAME_QUERY_FIND_MST dealt with here.
   ****************************************************************************/
 static void response_server_check(struct nmb_name *ans_name, 
-		struct response_record *n, struct subnet_record *d)
+        struct response_record *n, struct subnet_record *d, struct packet_struct *p)
 {
+    struct nmb_packet *nmb = &p->packet.nmb;
+    struct in_addr send_ip;
+    enum state_type cmd;
+
+    /* This next fix was from Bernhard Laeser <nlaesb@ascom.ch>
+       who noticed we were replying directly back to the server
+       we sent to - rather than reading the response.
+     */
+
+    if (nmb->header.rcode == 0 && nmb->answers->rdata)
+      putip((char*)&send_ip,&nmb->answers->rdata[2]);
+    else
+      {
+      
+        DEBUG(2,("response_server_check: name query for %s failed\n", 
+              namestr(ans_name)));
+        return;
+      }
+
     /* issue another state: this time to do a name status check */
 
-    enum state_type cmd = (n->state == NAME_QUERY_DOM_SRV_CHK) ?
+    cmd = (n->state == NAME_QUERY_DOM_SRV_CHK) ?
 	      NAME_STATUS_DOM_SRV_CHK : NAME_STATUS_SRV_CHK;
 
-    /* initiate a name status check on the server that replied 
-       in addition, the workgroup being checked has been stored
+    /* initiate a name status check on address given in the reply
+       record. In addition, the workgroup being checked has been stored
        in the response_record->my_name (see announce_master) we
        also propagate this into the same field. */
     queue_netbios_packet(d,ClientNMB,NMB_STATUS, cmd,
 				ans_name->name, ans_name->name_type,
 				0,0,0,n->my_name,NULL,
-				False,False,n->send_ip,n->reply_to_ip);
+				False,False,send_ip,n->reply_to_ip);
 }
 
 
@@ -720,7 +739,7 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
     case NAME_QUERY_SRV_CHK:
     case NAME_QUERY_FIND_MST:
       {
-	response_server_check(ans_name, n, d);
+	response_server_check(ans_name, n, d, p);
 	break;
       }
     

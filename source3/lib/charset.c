@@ -232,6 +232,15 @@ void codepage_initialise(int client_codepage)
 {
   int i;
   unsigned char (*cp)[4] = NULL;
+  static BOOL done = False;
+
+  if(done == True) 
+  {
+    DEBUG(6,
+      ("codepage_initialise: called twice - ignoring second client code page = %d\n",
+      client_codepage));
+    return;
+  }
 
   DEBUG(6,("codepage_initialise: client code page = %d\n", client_codepage));
 
@@ -259,6 +268,8 @@ void codepage_initialise(int client_codepage)
     for(i = 0; (cp[i][0] != '\0') && (cp[i][1] != '\0'); i++)
       add_dos_char(cp[i][0], (BOOL)cp[i][2], cp[i][1], (BOOL)cp[i][3]);
   }
+
+  done = True;
 }
 
 /*******************************************************************
