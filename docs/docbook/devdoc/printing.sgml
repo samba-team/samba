@@ -60,14 +60,85 @@ C:	Obtain handle to printer or to the printer
 	server via the standard OpenPrinterEx() call.
 S:	Respond with a valid handle to object
 
-C:	Send a RFFPCN request with the previously obtained 
-	handle and either (a)
+C:	Send a RFFPCN request with the previously obtained
+	handle with either (a) set of flags for change events
+	to monitor, or (b) a PRINTER_NOTIFY_OPTIONS structure 
+	containing the event information to monitor.  The windows
+	spooler has only been observed to use (b).
+S:	The opens a new TCP session to the client (thus requiring
+	all print clients to be CIFS servers as well) and sends
+	a ReplyOpenPrinter() request to the client.
+C:	The client responds with a printer handle that can be used to 
+	send event notification messages.
+S:	The server replies success to the RFFPCN request.
+
+C:	The windows spooler follows the RFFPCN with a RFNPCN
+	request to fetch the current values of all monitored 
+	attributes.
+S:	The server replies with an array SPOOL_NOTIFY_INFO_DATA
+	structures (contained in a SPOOL_NOTIFY_INFO structure).
+
+C:	If the change notification handle is ever released by the 
+	client via a PCPCN request, the server sends a ReplyClosePrinter()
+	request back to the client first.  However a request of this 
+	nature from the client is often an indication that the previous
+	notification event was not marshalled correctly by the server
+	or a piece of data was wrong.
+S:	The server closes the internal change notification handle 
+	(POLICY_HND) and does not send any further change notification
+	events to the client for that printer or job.
+
+The current list of notification events supported by Samba can be 
+found by examining the internal tables in srv_spoolss_nt.c
+
+  * printer_notify_table[]
+  * job_notify_table[]
+
+When an event occurs that could be monitored, smbd sends a messages
+to itself about the change.  The list of events to be transmitted 
+are queued by the smbd process sending the message to prevent and 
+overload of TDB usage and the internal message is sent during smbd's
+idle loop (refer to printing/notify.c and the functions
+send_spoolss_notify2_msg() and print_notify_send_messages() ).
 
 
+The decision of whether or not the change is to be sent to connected 
+clients is made by the routine which actually sends the notification.
+( refer to srv_spoolss_nt.c:recieve_notify2_message() ).  
 
-* Back Channel
-* Methods of sending an event
-* Id numbers (print server handles, jobids, & printer handles )
-* event types ( jobs & printer attributes )
-* aggegating notifications
+Because it possible to recieve a listing of multiple changes for 
+multiple printers the notification events must be split into
+categories by the printer name.  This makes it possible to group 
+multiple change events to be sent in a single RPC according to the
+printer handle obtained via a ReplyOpenPrinter().
+
+The actual change notification is performed using the RRPCN request 
+RPC.  This packet contains 
+
+  * the printer handle registered with the client's spooler on 
+    which the change occurred
+  * The change_low value which was sent as part of the last 
+    RFNPCN request from the client
+  * The SPOOL_NOTIFY_INFO container with the event information
+    - the version and flags field are predefined and should not 
+      be changed
+    - The count field is the number of entries in the 
+      SPOOL_NOTIFY_INFO_DATA array
+      o The type defines whether or not this event is for a printer 
+        or a print job
+      o The field is the flag identifying the event
+      o the notify_data union contains the new valuie of the attribute
+      o The enc_type defines the size of the structure for marshalling
+        and unmarshalling
+      o (a) the id must be 0 for a printer event on a printer handle.
+        (b) the id must be the job id for an event on a printer job
+	(c) the id must be the matching number of the printer index used
+	    in the response packet to the RFNPCN when using a print server
+	    handle for notification.  Samba currently uses the snum of
+	    the printer for this which can break if the list of services
+	    has been modified since the notification handle was registered.
+       o The size is either (a) the string length in UNICODE for strings,
+         (b) the size in bytes of the security descriptor, or (c) 0 for
+	 data values.
+
 
