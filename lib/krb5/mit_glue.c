@@ -181,26 +181,30 @@ krb5_c_decrypt(krb5_context context,
 {
     krb5_error_code ret;
     krb5_crypto crypto;
-    size_t blocksize;
 
     ret = krb5_crypto_init(context, &key, input->enctype, &crypto);
     if (ret)
 	return ret;
 
-    ret = krb5_crypto_getblocksize(context, crypto, &blocksize);
-    if (ret) {
+    if (ivec) {
+	size_t blocksize;
+
+	ret = krb5_crypto_getblocksize(context, crypto, &blocksize);
+	if (ret) {
 	krb5_crypto_destroy(context, crypto);
 	return ret;
-    }
-
-    if (blocksize > ivec->length) {
-	krb5_crypto_destroy(context, crypto);
-	return EINVAL; /* XXX */
+	}
+	
+	if (blocksize > ivec->length) {
+	    krb5_crypto_destroy(context, crypto);
+	    return EINVAL; /* XXX */
+	}
     }
 
     ret = krb5_decrypt_ivec(context, crypto, usage, 
 			    input->ciphertext.data, input->ciphertext.length, 
-			    output, ivec->data);
+			    output, 
+			    ivec ? ivec->data : NULL);
 
     krb5_crypto_destroy(context, crypto);
 
@@ -217,26 +221,30 @@ krb5_c_encrypt(krb5_context context,
 {
     krb5_error_code ret;
     krb5_crypto crypto;
-    size_t blocksize;
 
     ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret)
 	return ret;
 
-    ret = krb5_crypto_getblocksize(context, crypto, &blocksize);
-    if (ret) {
-	krb5_crypto_destroy(context, crypto);
-	return ret;
-    }
+    if (ivec) {
+	size_t blocksize;
 
-    if (blocksize > ivec->length) {
-	krb5_crypto_destroy(context, crypto);
-	return EINVAL; /* XXX */
+	ret = krb5_crypto_getblocksize(context, crypto, &blocksize);
+	if (ret) {
+	    krb5_crypto_destroy(context, crypto);
+	    return ret;
+	}
+
+	if (blocksize > ivec->length) {
+	    krb5_crypto_destroy(context, crypto);
+	    return EINVAL; /* XXX */
+	}
     }
 
     ret = krb5_encrypt_ivec(context, crypto, usage, 
 			    input->data, input->length, 
-			    &output->ciphertext, ivec->data);
+			    &output->ciphertext, 
+			    ivec ? ivec->data : NULL);
     output->kvno = 0;
     krb5_crypto_getenctype(context, crypto, &output->enctype);
 
