@@ -82,6 +82,7 @@ typedef int BOOL;
 #define READ_ERROR 3
 #define WRITE_ERROR 4 /* This error code can go into the client smb_rw_error. */
 #define READ_BAD_SIG 5
+#define DO_NOT_DO_TDIS 6 /* cli_close_connection() check for this when smbfs wants to keep tree connected */
 
 #define DIR_STRUCT_SIZE 43
 
