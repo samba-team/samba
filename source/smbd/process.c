@@ -48,7 +48,7 @@ extern char *last_inbuf;
 extern char *InBuffer;
 extern char *OutBuffer;
 extern int smb_read_error;
-extern BOOL reload_after_sighup;
+extern VOLATILE SIG_ATOMIC_T reload_after_sighup;
 extern BOOL global_machine_password_needs_changing;
 extern fstring global_myworkgroup;
 extern pstring global_myname;

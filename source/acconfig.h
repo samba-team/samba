@@ -1,3 +1,4 @@
+#undef HAVE_VOLATILE
 #undef HAVE_BROKEN_READDIR
 #undef HAVE_ERRNO_DECL
 #undef HAVE_LONGLONG
@@ -5,6 +6,7 @@
 #undef HAVE_REMSH
 #undef HAVE_UNSIGNED_CHAR
 #undef HAVE_UTIMBUF
+#undef HAVE_SIG_ATOMIC_T_TYPE
 #undef ssize_t
 #undef ino_t
 #undef ssize_t

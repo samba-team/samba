@@ -742,7 +742,7 @@ static BOOL do_mkdir(char *name)
 
 
 /****************************************************************************
-make a directory of name "name"
+ Exit client.
 ****************************************************************************/
 static void cmd_quit(void)
 {

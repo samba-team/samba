@@ -30,6 +30,16 @@ else
 fi
 AC_SUBST(BROKEN_CC)
 
+dnl Check if the C compiler understands volatile (it should, being ANSI).
+AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
+    AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
+	samba_cv_volatile=yes,samba_cv_volatile=no)])
+if test x"$samba_cv_volatile" = x"yes"; then
+   AC_DEFINE(HAVE_VOLATILE)
+fi
+
+
+
 AC_CANONICAL_SYSTEM
 AC_VALIDATE_CACHE_SYSTEM_TYPE
 SAMBA_MAINTAINER_MODE
@@ -153,9 +163,22 @@ AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 
+AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <signal.h>],[sig_atomic_t i = 0],
+	samba_cv_sig_atomic_t=yes,samba_cv_sig_atomic_t=no)])
+if test x"$samba_cv_sig_atomic_t" = x"yes"; then
+   AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE)
+fi
+
 AC_CACHE_CHECK([for errno in errno.h],samba_cv_errno, [
     AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
-	samba_cv_errno=yes,samba_cv_have_errno_decl=no)])
+	samba_cv_errno=yes,samba_cv_have_errno=no)])
 if test x"$samba_cv_errno" = x"yes"; then
    AC_DEFINE(HAVE_ERRNO_DECL)
 fi
