@@ -1,4 +1,0 @@
-#!/bin/sh
-CFLAGS="-g -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -DDEBUG_PASSWORD -DDEVELOPER"
-export CFLAGS
-`dirname $0`/configure $*

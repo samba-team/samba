@@ -1,6 +1,0 @@
-Date: 		January 9, 2001
-Maintainer: 	John H Terpstra
-Subject:	UnixWare Packaging Files
-Modifications:	Initial release 20010109
-
-Note:		The packaging build files for UnixWare are located under ~samba/packaging/Caldera/UnixWare.
