@@ -52,7 +52,7 @@ struct getent_state {
 	void *sam_entries;
 	uint32 sam_entry_index, num_sam_entries;
 	BOOL got_sam_entries;
-	struct winbindd_domain *domain;
+	fstring domain_name;
 };
 
 /* Storage for cached getpwent() user entries */
@@ -81,6 +81,31 @@ typedef struct {
 	uint32 user_rid;
 	uint32 group_rid; /* primary group */
 } WINBIND_USERINFO;
+
+/* Structures to hold per domain information */
+
+struct winbindd_domain {
+	fstring name;                          /* Domain name */	
+	fstring full_name;                     /* full Domain name (realm) */	
+	DOM_SID sid;                           /* SID for this domain */
+
+	/* Lookup methods for this domain (LDAP or RPC) */
+
+	struct winbindd_methods *methods;
+
+        /* Private data for the backends (used for connection cache) */
+
+	void *private; 
+
+	/* Sequence number stuff */
+
+	time_t last_seq_check;
+	uint32 sequence_number;
+
+	/* Linked list info */
+
+	struct winbindd_domain *prev, *next;
+};
 
 /* per-domain methods. This is how LDAP vs RPC is selected
  */
@@ -149,22 +174,6 @@ struct winbindd_methods {
 	NTSTATUS (*domain_sid)(struct winbindd_domain *domain,
 			       DOM_SID *sid);
 };
-
-/* Structures to hold per domain information */
-struct winbindd_domain {
-	fstring name;                          /* Domain name */	
-	fstring full_name;                     /* full Domain name (realm) */	
-	DOM_SID sid;                           /* SID for this domain */
-	struct winbindd_methods *methods;      /* lookup methods for
-                                                  this domain (LDAP or
-                                                  RPC) */
-	void *private; /* private data for the backends (used for connection cache) */
-	time_t last_seq_check;
-	uint32 sequence_number;
-	struct winbindd_domain *prev, *next;   /* Linked list info */
-};
-
-extern struct winbindd_domain *domain_list;  /* List of domains we know */
 
 /* Used to glue a policy handle and cli_state together */
 

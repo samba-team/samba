@@ -834,10 +834,10 @@ int main(int argc, char **argv)
 	secrets_init();
 
 	/* Get list of domains we look up requests for.  This includes the
-		domain which we are a member of as well as any trusted
-		domains. */ 
+	   domain which we are a member of as well as any trusted
+	   domains. */ 
 
-	get_domain_info();
+	init_domain_list();
 
 	ZERO_STRUCT(server_state);
 

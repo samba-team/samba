@@ -281,10 +281,7 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
         
 	/* Create sam pipes for each domain we know about */
         
-	if (domain_list == NULL)
-		get_domain_info();
-
-	for(domain = domain_list; domain != NULL; domain = domain->next) {
+	for(domain = domain_list(); domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
                 
 		/*
@@ -305,7 +302,7 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
                 
 		ZERO_STRUCTP(domain_state);
 
-		domain_state->domain = domain;
+		fstrcpy(domain_state->domain_name, domain->name);
 
 		/* Add to list of open domains */
                 
@@ -342,6 +339,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	struct getpwent_user *name_list = NULL;
 	BOOL result = False;
 	TALLOC_CTX *mem_ctx;
+	struct winbindd_domain *domain;
 	struct winbindd_methods *methods;
 	int i;
 
@@ -349,10 +347,16 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 		return False;
 
 	if (!(mem_ctx = talloc_init_named("get_sam_user_entries(%s)",
-					  ent->domain->name)))
+					  ent->domain_name)))
 		return False;
 
-	methods = ent->domain->methods;
+	if (!(domain = find_domain_from_name(ent->domain_name))) {
+		DEBUG(3, ("no such domain %s in get_sam_user_entries\n",
+			  ent->domain_name));
+		return False;
+	}
+
+	methods = domain->methods;
 
 	/* Free any existing user info */
 
@@ -360,10 +364,11 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	ent->num_sam_entries = 0;
 	
 	/* Call query_user_list to get a list of usernames and user rids */
+
 	num_entries = 0;
 
-	status = methods->query_user_list(ent->domain, mem_ctx,
-					  &num_entries, &info);
+	status = methods->query_user_list(domain, mem_ctx, &num_entries, 
+					  &info);
 		
 	if (num_entries) {
 		struct getpwent_user *tnl;
@@ -496,11 +501,11 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 		/* Lookup user info */
 		
 		slprintf(domain_user_name, sizeof(domain_user_name) - 1,
-			 "%s%s%s", ent->domain->name, sep,
+			 "%s%s%s", ent->domain_name, sep,
 			 name_list[ent->sam_entry_index].name);
 		
 		result = winbindd_fill_pwent(
-			ent->domain->name, 
+			ent->domain_name, 
 			domain_user_name,
 			name_list[ent->sam_entry_index].user_rid,
 			name_list[ent->sam_entry_index].group_rid,
@@ -547,10 +552,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
 	/* Enumerate over trusted domains */
 
-	if (domain_list == NULL)
-		get_domain_info();
-
-	for (domain = domain_list; domain; domain = domain->next) {
+	for (domain = domain_list(); domain; domain = domain->next) {
 		NTSTATUS status;
 		struct winbindd_methods *methods;
 		int i;

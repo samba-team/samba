@@ -352,10 +352,7 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 	
 	/* Create sam pipes for each domain we know about */
 	
-	if (domain_list == NULL)
-		get_domain_info();
-
-	for (domain = domain_list; domain != NULL; domain = domain->next) {
+	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
 		
 		/* Skip domains other than WINBINDD_DOMAIN environment 
@@ -373,7 +370,7 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		
 		ZERO_STRUCTP(domain_state);
 		
-		domain_state->domain = domain;
+		fstrcpy(domain_state->domain_name, domain->name);
 
 		/* Add to list of open domains */
 		
@@ -410,12 +407,13 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	TALLOC_CTX *mem_ctx;
 	BOOL result = False;
 	struct acct_info *sam_grp_entries = NULL;
+	struct winbindd_domain *domain;
         
 	if (ent->got_sam_entries)
 		return False;
 
 	if (!(mem_ctx = talloc_init_named("get_sam_group_entries(%s)",
-					  ent->domain->name)))
+					  ent->domain_name)))
 		return False;
 		
 	/* Free any existing group info */
@@ -425,12 +423,18 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	ent->got_sam_entries = True;
 
 	/* Enumerate domain groups */
+
 	num_entries = 0;
 
-	status = ent->domain->methods->enum_dom_groups(ent->domain,
-						       mem_ctx, 
-						       &num_entries,
-						       &sam_grp_entries);
+	if (!(domain = find_domain_from_name(ent->domain_name))) {
+		DEBUG(3, ("no such domain %s in get_sam_group_entries\n", ent->domain_name));
+		goto done;
+	}
+
+	status = domain->methods->enum_dom_groups(domain,
+						  mem_ctx, 
+						  &num_entries,
+						  &sam_grp_entries);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		result = False;
@@ -438,6 +442,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	}
 
 	/* Copy entries into return buffer */
+
 	if (num_entries) {
 		name_list = malloc(sizeof(struct acct_info) * num_entries);
 		memcpy(name_list, sam_grp_entries, 
@@ -447,6 +452,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	ent->num_sam_entries = num_entries;
 		
 	/* Fill in remaining fields */
+
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
 
@@ -512,7 +518,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 			while(ent && !get_sam_group_entries(ent)) {
 				struct getent_state *next_ent;
 
-				DEBUG(10, ("freeing state info for domain %s\n", ent->domain->name)); 
+				DEBUG(10, ("freeing state info for domain %s\n", ent->domain_name)); 
 
 				/* Free state information for this domain */
 
@@ -536,7 +542,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		/* Lookup group info */
 		
 		if (!winbindd_idmap_get_gid_from_rid(
-			ent->domain->name,
+			ent->domain_name,
 			name_list[ent->sam_entry_index].rid,
 			&group_gid)) {
 			
@@ -553,7 +559,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		/* Fill in group entry */
 
 		slprintf(domain_group_name, sizeof(domain_group_name) - 1,
-			 "%s%s%s", ent->domain->name, lp_winbind_separator(), 
+			 "%s%s%s", ent->domain_name, lp_winbind_separator(), 
 			 name_list[ent->sam_entry_index].acct_name);
    
 		result = fill_grent(&group_list[group_list_ndx], 
@@ -562,9 +568,19 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		/* Fill in group membership entry */
 
 		if (result) {
+			struct winbindd_domain *domain;
+
+			if (!(domain = 
+			      find_domain_from_name(ent->domain_name))) {
+				DEBUG(3, ("No such domain %s in winbindd_getgrent\n", ent->domain_name));
+				result = False;
+				goto done;
+			}
+
 			/* Get group membership */
+			
 			result = fill_grent_mem(
-				ent->domain,
+				domain,
 				name_list[ent->sam_entry_index].rid,
 				SID_NAME_DOM_GRP,
 				&group_list[group_list_ndx].num_gr_mem, 
@@ -673,10 +689,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 	/* Enumerate over trusted domains */
 
-	if (domain_list == NULL)
-		get_domain_info();
-
-	for (domain = domain_list; domain; domain = domain->next) {
+	for (domain = domain_list(); domain; domain = domain->next) {
 		struct getent_state groups;
 
 		ZERO_STRUCT(groups);
@@ -689,7 +702,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 		/* Get list of sam groups */
 		ZERO_STRUCT(groups);
-		groups.domain = domain;
+		fstrcpy(groups.domain_name, domain->name);
 
 		get_sam_group_entries(&groups);
 			

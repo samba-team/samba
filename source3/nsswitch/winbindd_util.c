@@ -36,53 +36,39 @@
  *
  * Correct code should never look at a field that has this value.
  **/
+
 static const fstring name_deadbeef = "<deadbeef>";
 
+/* The list of trusted domains.  Note that the list can be deleted and
+   recreated using the init_domain_list() function so pointers to
+   individual winbindd_domain structures cannot be made.  Keep a copy of
+   the domain name instead. */
 
-/* Globals for domain list stuff */
-struct winbindd_domain *domain_list = NULL;
+static struct winbindd_domain *_domain_list;
 
-/* Given a domain name, return the struct winbindd domain info for it 
-   if it is actually working. */
-
-struct winbindd_domain *find_domain_from_name(char *domain_name)
+struct winbindd_domain *domain_list(void)
 {
-	struct winbindd_domain *domain;
+	/* Initialise list */
 
-	if (domain_list == NULL)
-		get_domain_info();
+	if (!_domain_list)
+		init_domain_list();
 
-	/* Search through list */
-
-	for (domain = domain_list; domain != NULL; domain = domain->next) {
-		if (strcasecmp(domain_name, domain->name) == 0 ||
-		    strcasecmp(domain_name, domain->full_name) == 0)
-			return domain;
-	}
-
-	/* Not found */
-
-	return NULL;
+	return _domain_list;
 }
 
-/* Given a domain sid, return the struct winbindd domain info for it */
+/* Free all entries in the trusted domain list */
 
-struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
+void free_domain_list(void)
 {
-	struct winbindd_domain *domain;
+	struct winbindd_domain *domain = _domain_list;
 
-	if (domain_list == NULL)
-		get_domain_info();
-
-	/* Search through list */
-	for (domain = domain_list; domain != NULL; domain = domain->next) {
-		if (sid_compare_domain(sid, &domain->sid) == 0)
-			return domain;
+	while(domain) {
+		struct winbindd_domain *next = domain->next;
+		
+		DLIST_REMOVE(_domain_list, domain);
+		SAFE_FREE(domain);
+		domain = next;
 	}
-
-	/* Not found */
-
-	return NULL;
 }
 
 /* Add a trusted domain to our list of domains */
@@ -92,7 +78,10 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name,
 {
 	struct winbindd_domain *domain;
         
-	for (domain = domain_list; domain; domain = domain->next) {
+	/* We can't call domain_list() as this function is called from
+	   init_domain_list() and we'll get stuck in a loop. */
+
+	for (domain = _domain_list; domain; domain = domain->next) {
 		if (strcmp(domain_name, domain->name) == 0) {
 			DEBUG(3, ("domain %s already in domain list\n", 
 				  domain_name));
@@ -117,14 +106,14 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name,
 
 	/* Link to domain list */
         
-	DLIST_ADD(domain_list, domain);
+	DLIST_ADD(_domain_list, domain);
         
 	return domain;
 }
 
 /* Look up global info for the winbind daemon */
 
-BOOL get_domain_info(void)
+BOOL init_domain_list(void)
 {
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
@@ -134,13 +123,20 @@ BOOL get_domain_info(void)
 	char **names;
 	int num_domains = 0;
 
-	if (!(mem_ctx = talloc_init_named("get_domain_info")))
+	if (!(mem_ctx = talloc_init_named("init_domain_list")))
 		return False;
+
+	/* Free existing list */
+
+	free_domain_list();
+
+	/* Add ourselves as the first entry */
 
 	domain = add_trusted_domain(lp_workgroup(), &cache_methods);
 
-	/* now we *must* get the domain sid for our primary domain. Go into a holding
-	   pattern until that is available */
+	/* Now we *must* get the domain sid for our primary domain. Go into
+	   a holding pattern until that is available */
+
 	result = cache_methods.domain_sid(domain, &domain->sid);
 	while (!NT_STATUS_IS_OK(result)) {
 		sleep(10);
@@ -179,10 +175,49 @@ BOOL get_domain_info(void)
 	return True;
 }
 
+/* Given a domain name, return the struct winbindd domain info for it 
+   if it is actually working. */
+
+struct winbindd_domain *find_domain_from_name(char *domain_name)
+{
+	struct winbindd_domain *domain;
+
+	/* Search through list */
+
+	for (domain = domain_list(); domain != NULL; domain = domain->next) {
+		if (strequal(domain_name, domain->name) ||
+		    strequal(domain_name, domain->full_name))
+			return domain;
+	}
+
+	/* Not found */
+
+	return NULL;
+}
+
+/* Given a domain sid, return the struct winbindd domain info for it */
+
+struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
+{
+	struct winbindd_domain *domain;
+
+	/* Search through list */
+
+	for (domain = domain_list(); domain != NULL; domain = domain->next) {
+		if (sid_compare_domain(sid, &domain->sid) == 0)
+			return domain;
+	}
+
+	/* Not found */
+
+	return NULL;
+}
 
 /* Lookup a sid in a domain from a name */
+
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain, 
-				 const char *name, DOM_SID *sid, enum SID_NAME_USE *type)
+				 const char *name, DOM_SID *sid, 
+				 enum SID_NAME_USE *type)
 {
 	NTSTATUS result;
         
@@ -282,19 +317,19 @@ void free_getent_state(struct getent_state *state)
 
 BOOL winbindd_param_init(void)
 {
-    /* Parse winbind uid and winbind_gid parameters */
+	/* Parse winbind uid and winbind_gid parameters */
 
-    if (!lp_winbind_uid(&server_state.uid_low, &server_state.uid_high)) {
-            DEBUG(0, ("winbind uid range missing or invalid\n"));
-            return False;
-    }
-
-    if (!lp_winbind_gid(&server_state.gid_low, &server_state.gid_high)) {
-            DEBUG(0, ("winbind gid range missing or invalid\n"));
-            return False;
-    }
-    
-    return True;
+	if (!lp_winbind_uid(&server_state.uid_low, &server_state.uid_high)) {
+		DEBUG(0, ("winbind uid range missing or invalid\n"));
+		return False;
+	}
+	
+	if (!lp_winbind_gid(&server_state.gid_low, &server_state.gid_high)) {
+		DEBUG(0, ("winbind gid range missing or invalid\n"));
+		return False;
+	}
+	
+	return True;
 }
 
 /* Check if a domain is present in a comma-separated list of domains */
