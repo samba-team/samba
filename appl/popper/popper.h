@@ -301,5 +301,14 @@ state_table *pop_get_command(POP *p, char *mp);
 void pop_lower(char *buf);
 xtnd_table *pop_get_subcommand(POP *p);
 
-int pop_log(POP *p, int stat, char *format, ...);
-int pop_msg(POP *p, int stat, char *format, ...);
+int pop_log(POP *p, int stat, char *format, ...)
+#ifdef __GNUC__
+__attribute__ ((format (printf, 3, 4)))
+#endif
+;
+
+int pop_msg(POP *p, int stat, char *format, ...)
+#ifdef __GNUC__
+__attribute__ ((format (printf, 3, 4)))
+#endif
+;
