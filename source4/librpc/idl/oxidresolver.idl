@@ -21,8 +21,8 @@
 ]
 interface IOXIDResolver
 {
-#define OXID HYPER_T
-#define SETID HYPER_T
+#define OXID hyper
+#define SETID hyper
 #define IPID GUID
 #define OID GUID
 

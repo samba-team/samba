@@ -174,7 +174,7 @@
 	} samr_DomInfo7;
 
 	typedef struct {
-		HYPER_T sequence_num;
+		hyper sequence_num;
 		NTTIME domain_create_time;
 	} samr_DomInfo8;
 
@@ -184,19 +184,19 @@
 
 	typedef struct {
 		samr_DomInfo2 info2;
-		HYPER_T lockout_duration;
-		HYPER_T lockout_window;
+		hyper lockout_duration;
+		hyper lockout_window;
 		uint16 lockout_threshold;
 	} samr_DomInfo11;
 
 	typedef struct {
-		HYPER_T lockout_duration;
-		HYPER_T lockout_window;
+		hyper lockout_duration;
+		hyper lockout_window;
 		uint16 lockout_threshold;
 	} samr_DomInfo12;
 
 	typedef struct {
-		HYPER_T sequence_num;
+		hyper sequence_num;
 		NTTIME domain_create_time;
 		uint32 unknown1;
 		uint32 unknown2;

@@ -150,11 +150,11 @@
 		uint32 min_wss;
 		uint32 max_wss;
 		uint32 pagefile;
-		HYPER_T unknown;
+		hyper unknown;
 	} lsa_DefaultQuotaInfo;
 
 	typedef struct {
-		HYPER_T modified_id;
+		hyper modified_id;
 		NTTIME db_create_time;
 	} lsa_ModificationInfo;
 
