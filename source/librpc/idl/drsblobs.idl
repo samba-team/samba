@@ -9,6 +9,7 @@
 ]
 interface drsblobs {
 	declare bitmap drsuapi_DsReplicaSyncOptions;
+	declare bitmap drsuapi_DsReplicaNeighbourFlags;
 	declare [v1_enum] enum drsuapi_DsAttributeId;
 
 	/*
@@ -95,10 +96,10 @@ interface drsblobs {
 		WERROR result_last_attempt;
 		[relative] repsFromTo1OtherInfo *other_info;
 		[value(ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->flags))] uint32 other_info_length;
-		drsuapi_DsReplicaSyncOptions replica_flags;
+		drsuapi_DsReplicaNeighbourFlags replica_flags;
 		uint8 schedule[84];
 		uint32 reserved;
-		drsuapi_DsReplicaUsnCtr replication_state;
+		drsuapi_DsReplicaHighWaterMark highwatermark;
 		GUID source_dsa_obj_guid; /* the 'objectGuid' field of the CN=NTDS Settings object */
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		GUID transport_guid;
@@ -125,7 +126,7 @@ interface drsblobs {
 		uint32 u2;
 		uint32 u3;
 		uint32 u4;
-		drsuapi_DsReplicaUsnCtr replication_state;
+		drsuapi_DsReplicaHighWaterMark highwatermark;
 		GUID guid1;
 		hyper h4;
 		replUpToDateVectorCtr1 uptodateness_vector;
