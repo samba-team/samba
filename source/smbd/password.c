@@ -1318,9 +1318,10 @@ BOOL server_cryptkey(char *buf)
   CVAL(outbuf,0) = 0x81;
 
   send_smb(password_client,outbuf);
-  receive_smb(password_client,inbuf,5000);
+  
  
-  if (CVAL(inbuf,0) != 0x82) {
+  if (!receive_smb(password_client,inbuf,5000) ||
+      CVAL(inbuf,0) != 0x82) {
     DEBUG(1,("%s rejected the session\n",pserver));
     close(password_client); password_client = -1;
     return(False);

@@ -99,6 +99,9 @@ typedef unsigned int uint32;
 #define DEFAULT_PIPE_TIMEOUT 10000000 /* Ten seconds */
 #endif
 
+/* how long to wait for secondary SMB packets (seconds) */
+#define SMB_SECONDARY_WAIT 30
+
 /* debugging code */
 #ifndef SYSLOG
 #define DEBUG(level,body) ((DEBUGLEVEL>=(level))?(Debug1 body):0)
