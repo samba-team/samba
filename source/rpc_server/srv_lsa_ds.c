@@ -25,6 +25,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+#if 0	/* disabled */
 /*******************************************************************
  api_reg_open_entry
  ********************************************************************/
@@ -51,6 +52,7 @@ static BOOL api_dsrole_get_primary_dominfo(pipes_struct *p)
 
 	return True;
 }
+#endif
 
 /*******************************************************************
  stub functions for unimplemented RPC
