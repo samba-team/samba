@@ -84,7 +84,7 @@ static
 int
 sumFile (const char *name, int len, void *res)
 {
-  u_int32_t sum[2];
+  u_int32_t sum[2] = { 0, 0 };
   u_int32_t buf[1024*2];
   int fd, i;
 
