@@ -5,7 +5,6 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Andrew Bartlett                   2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -984,6 +983,9 @@ void init_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 				unsigned char *lm_chal_resp,
 				unsigned char *nt_chal_resp)
 {
+	int len_domain_name = strlen(domain_name);
+	int len_user_name   = strlen(user_name  );
+	int len_wksta_name  = strlen(wksta_name );
 	int nt_chal_resp_len = ((nt_chal_resp != NULL) ? 24 : 0);
 	int lm_chal_resp_len = ((lm_chal_resp != NULL) ? 24 : 0);
 	unsigned char lm_owf[24];
@@ -993,8 +995,13 @@ void init_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 
 	id->ptr_id_info2 = 1;
 
+	init_uni_hdr(&id->hdr_domain_name, len_domain_name);
+
 	id->param_ctrl = param_ctrl;
 	init_logon_id(&id->logon_id, log_id_low, log_id_high);
+
+	init_uni_hdr(&id->hdr_user_name, len_user_name);
+	init_uni_hdr(&id->hdr_wksta_name, len_wksta_name);
 
 	if (nt_chal_resp) {
 		/* oops.  can only send what-ever-it-is direct */
@@ -1011,9 +1018,9 @@ void init_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 	init_str_hdr(&id->hdr_nt_chal_resp, 24, nt_chal_resp_len, (nt_chal_resp != NULL) ? 1 : 0);
 	init_str_hdr(&id->hdr_lm_chal_resp, 24, lm_chal_resp_len, (lm_chal_resp != NULL) ? 1 : 0);
 
-	init_unistr2_and_hdr(&id->uni_domain_name, &id->hdr_domain_name, domain_name);
-	init_unistr2_and_hdr(&id->uni_user_name, &id->hdr_user_name, user_name);
-	init_unistr2_and_hdr(&id->uni_wksta_name, &id->hdr_wksta_name, wksta_name);
+	init_unistr2(&id->uni_domain_name, domain_name, len_domain_name);
+	init_unistr2(&id->uni_user_name, user_name, len_user_name);
+	init_unistr2(&id->uni_wksta_name, wksta_name, len_wksta_name);
 
 	init_string2(&id->nt_chal_resp, (char *)nt_chal_resp, nt_chal_resp_len);
 	init_string2(&id->lm_chal_resp, (char *)lm_chal_resp, lm_chal_resp_len);
