@@ -1381,7 +1381,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
 				and will think we can't do long filenames */
-			len = srvstr_push(outbuf, pdata+12, fstype, -1, 0);
+			len = srvstr_push(outbuf, pdata+12, fstype, -1, STR_UNICODE);
 			SIVAL(pdata,8,len);
 			data_len = 12 + len;
 			break;
@@ -1403,7 +1403,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ 
 				(str_checksum(local_machine)<<16));
 
-			len = srvstr_push(outbuf, pdata+18, vname, -1, 0);
+			len = srvstr_push(outbuf, pdata+18, vname, -1, STR_UNICODE);
 			SIVAL(pdata,12,len);
 			data_len = 18+len;
 			DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol=%s serv=%s\n", 
