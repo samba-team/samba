@@ -72,6 +72,8 @@ struct vfs_ops default_vfs_ops = {
 	vfswrap_lock,
 	vfswrap_symlink,
 	vfswrap_readlink,
+	vfswrap_link,
+	vfswrap_mknod,
 
 	vfswrap_fget_nt_acl,
 	vfswrap_get_nt_acl,
@@ -237,6 +239,12 @@ static BOOL vfs_init_custom(connection_struct *conn)
 
     if (conn->vfs_ops.readlink == NULL)
 		conn->vfs_ops.readlink = default_vfs_ops.readlink;
+
+    if (conn->vfs_ops.link == NULL)
+		conn->vfs_ops.link = default_vfs_ops.link;
+
+    if (conn->vfs_ops.mknod == NULL)
+		conn->vfs_ops.mknod = default_vfs_ops.mknod;
 
     if (conn->vfs_ops.fget_nt_acl == NULL)
 		conn->vfs_ops.fget_nt_acl = default_vfs_ops.fget_nt_acl;

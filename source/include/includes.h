@@ -475,7 +475,11 @@ typedef int socklen_t;
  */
 
 #ifndef SMB_DEV_T
-#define SMB_DEV_T dev_t
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_DEV64_T)
+#    define SMB_DEV_T dev64_t
+#  else
+#    define SMB_DEV_T dev_t
+#  endif
 #endif
 
 /*

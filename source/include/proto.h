@@ -958,10 +958,12 @@ int sys_creat(const char *path, mode_t mode);
 int sys_open(const char *path, int oflag, mode_t mode);
 FILE *sys_fopen(const char *path, const char *type);
 SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp);
+int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
 int sys_symlink(const char *oldpath, const char *newpath);
 int sys_readlink(const char *path, char *buf, size_t bufsiz);
+int sys_link(const char *oldpath, const char *newpath);
 int sys_chown(const char *fname,uid_t uid,gid_t gid);
 int sys_chroot(const char *dname);
 struct hostent *sys_gethostbyname(const char *name);
@@ -992,6 +994,7 @@ int sys_pclose(int fd);
 void *sys_dlopen(const char *name, int flags);
 void *sys_dlsym(void *handle, char *symbol);
 int sys_dlclose (void *handle);
+const char *sys_dlerror(void);
 
 /*The following definitions come from  lib/talloc.c  */
 
@@ -4588,6 +4591,8 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len);
 BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 int vfswrap_symlink(connection_struct *conn, const char *oldpath, const char *newpath);
 int vfswrap_readlink(connection_struct *conn, const char *path, char *buf, size_t bufsiz);
+int vfswrap_link(connection_struct *conn, const char *oldpath, const char *newpath);
+int vfswrap_mknod(connection_struct *conn, const char *pathname, mode_t mode, SMB_DEV_T dev);
 size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
 size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
 BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd);

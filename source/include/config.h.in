@@ -142,6 +142,7 @@
 #undef WITH_MSDFS
 #undef WITH_VFS
 #undef HAVE_INO64_T
+#undef HAVE_DEV64_T
 #undef HAVE_STRUCT_FLOCK64
 #undef SIZEOF_INO_T
 #undef SIZEOF_OFF_T
@@ -581,6 +582,9 @@
 /* Define if you have the innetgr function.  */
 #undef HAVE_INNETGR
 
+/* Define if you have the link function.  */
+#undef HAVE_LINK
+
 /* Define if you have the llseek function.  */
 #undef HAVE_LLSEEK
 
@@ -595,6 +599,12 @@
 
 /* Define if you have the memset function.  */
 #undef HAVE_MEMSET
+
+/* Define if you have the mknod function.  */
+#undef HAVE_MKNOD
+
+/* Define if you have the mknod64 function.  */
+#undef HAVE_MKNOD64
 
 /* Define if you have the mktime function.  */
 #undef HAVE_MKTIME

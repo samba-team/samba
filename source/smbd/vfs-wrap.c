@@ -672,6 +672,36 @@ int vfswrap_readlink(connection_struct *conn, const char *path, char *buf, size_
     return result;
 }
 
+int vfswrap_link(connection_struct *conn, const char *oldpath, const char *newpath)
+{
+	int result;
+
+	START_PROFILE(syscall_link);
+
+#ifdef VFS_CHECK_NULL
+	if ((oldpath == NULL) || (newpath == NULL))
+                smb_panic("NULL pointer passed to vfswrap_link()\n");
+#endif
+	result = sys_link(oldpath, newpath);
+	END_PROFILE(syscall_link);
+	return result;
+}
+
+int vfswrap_mknod(connection_struct *conn, const char *pathname, mode_t mode, SMB_DEV_T dev)
+{
+	int result;
+
+	START_PROFILE(syscall_mknod);
+
+#ifdef VFS_CHECK_NULL
+	if (pathname == NULL)
+                smb_panic("NULL pointer passed to vfswrap_mknod()\n");
+#endif
+	result = sys_mknod(pathname, mode, dev);
+	END_PROFILE(syscall_mknod);
+	return result;
+}
+
 size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc)
 {
 	size_t result;
