@@ -108,7 +108,7 @@ build () {
     mkdir tmp || logerror "failed to build tmpdir"
     cd tmp || logerror "failed to change dir to tmpdir"
     do_check_p dont_build ${real_ver} || \
-	{ cd .. ; rmdir tmp ; logprint "not building $1" && return 1 ; }
+	{ cd .. ; rmdir tmp ; logprint "not building $1" && return 0 ; }
     cd .. || logerror "failed to change back from tmpdir"
     rmdir tmp || logerror "failed to remove tmpdir"
     logprint "preparing for ${pv}"
