@@ -758,16 +758,14 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 {
 	int opt;
 	poptContext pc;
-	const char *location;
-	const char *credentials = NULL;
 	const char *patch;
-	const char *backend = "rpc";
 	struct registry_context *h;
+	const char *remote = NULL;
 	WERROR error;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"backend", 'b', POPT_ARG_STRING, &backend, 'b', "backend to use", NULL},
-		{"credentials", 'c', POPT_ARG_STRING, &credentials, 'c', "credentials (user%password", NULL},
+		POPT_COMMON_CREDENTIALS
+		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},
 		POPT_TABLEEND
 	};
 
@@ -785,25 +783,22 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 
 	setup_logging(argv[0], True);
 
-	location = poptGetArg(pc);
-	if(!location) {
-		poptPrintUsage(pc, stderr, 0);
-		return 1;
+	if (remote) {
+		error = reg_open_remote (&h, cmdline_get_username(), cmdline_get_userpassword(), remote);
+	} else {
+		error = reg_open_local (&h);
 	}
 
-	error = reg_open(&h, backend, location, credentials);
-	if(!h) {
-		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", location, backend);
+	if (W_ERROR_IS_OK(error)) {
+		fprintf(stderr, "Error: %s\n", win_errstr(error));
 		return 1;
 	}
-
+		
 	patch = poptGetArg(pc);
 	if(!patch) patch = "/dev/stdin";
 	poptFreeContext(pc);
 
 	nt_apply_reg_command_file(h, patch);
-
-	talloc_destroy(h->mem_ctx);
 
 	return 0;
 }

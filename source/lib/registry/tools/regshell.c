@@ -164,15 +164,23 @@ static struct registry_key *cmd_rmval(TALLOC_CTX *mem_ctx, struct registry_key *
 
 static struct registry_key *cmd_hive(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
 {
-	int i;
-	for(i = 0; i < cur->hive->reg_ctx->num_hives; i++) {
-
-		if(argc == 1) {
-			printf("%s\n", cur->hive->reg_ctx->hives[i]->name);
-		} else if(!strcmp(cur->hive->reg_ctx->hives[i]->name, argv[1])) {
-			return cur->hive->reg_ctx->hives[i]->root;
-		} 
+	if (!cur->hive->reg_ctx) {
+		fprintf(stderr, "Only one hive loaded\n");
+		return cur;
 	}
+
+	if (argc == 1) {
+		printf("%s\n", cur->hive->root->name);
+	} else {
+		struct registry_key *newroot;
+		WERROR error = reg_get_hive_by_name(cur->hive->reg_ctx, argv[1], &newroot);
+		if (W_ERROR_IS_OK(error)) {
+			return newroot;
+		} else {
+			fprintf(stderr, "Can't switch to hive %s: %s\n", cur->hive->root->name, win_errstr(error));
+		}
+	}
+
 	return NULL;
 }
 
@@ -274,11 +282,7 @@ static char **reg_complete_command(const char *text, int end)
 		matches[0] = strdup(matches[1]);
 		break;
 	default:
-		matches[0] = malloc(samelen+1);
-		if (!matches[0])
-			goto cleanup;
-		strncpy(matches[0], matches[1], samelen);
-		matches[0][samelen] = 0;
+		matches[0] = strndup(matches[1], samelen);
 	}
 	matches[count] = NULL;
 	return matches;
@@ -295,11 +299,11 @@ cleanup:
 static char **reg_complete_key(const char *text, int end)
 {
 	struct registry_key *subkey;
-	int i, j = 0;
+	int i, j = 1;
+	int samelen = 0;
 	int len;
 	char **matches;
 	TALLOC_CTX *mem_ctx;
-	/* Complete argument */
 
 	matches = malloc_array_p(char *, MAX_COMPLETIONS);
 	if (!matches) return NULL;
@@ -313,6 +317,12 @@ static char **reg_complete_key(const char *text, int end)
 			if(!strncmp(text, subkey->name, len)) {
 				matches[j] = strdup(subkey->name);
 				j++;
+
+				if (j == 1)
+					samelen = strlen(matches[j]);
+				else
+					while (strncmp(matches[j], matches[j-1], samelen) != 0)
+						samelen--;
 			}
 		} else if(W_ERROR_EQUAL(status, WERR_NO_MORE_ITEMS)) {
 			break;
@@ -322,8 +332,20 @@ static char **reg_complete_key(const char *text, int end)
 			return NULL;
 		}
 	}
-	matches[j] = NULL;
 	talloc_destroy(mem_ctx);
+
+	if (j == 1) { /* No matches at all */
+		SAFE_FREE(matches);
+		return NULL;
+	}
+
+	if (j == 2) { /* Exact match */
+		matches[0] = strdup(matches[1]);
+	} else {
+		matches[0] = strndup(matches[1], samelen);
+	}		
+
+	matches[j] = NULL;
 	return matches;
 }
 
@@ -341,18 +363,18 @@ static char **reg_completion(const char *text, int start, int end)
  int main(int argc, char **argv)
 {
 	int opt;
-	const char *backend = "rpc";
-	const char *credentials = NULL;
+	const char *backend = NULL;
 	struct registry_key *curkey = NULL;
 	poptContext pc;
 	WERROR error;
 	TALLOC_CTX *mem_ctx = talloc_init("cmd");
-	struct registry_context *h;
+	const char *remote = NULL;
+	struct registry_context *h = NULL;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		POPT_COMMON_SAMBA
+		POPT_COMMON_CREDENTIALS
 		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
-		{"credentials", 'c', POPT_ARG_STRING, &credentials, 0, "credentials", NULL},
+		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},
 		POPT_TABLEEND
 	};
 
@@ -370,20 +392,31 @@ static char **reg_completion(const char *text, int start, int end)
 
     setup_logging("regtree", True);
 
-	error = reg_open(&h, backend, poptPeekArg(pc), credentials);
+	if (remote) {
+		error = reg_open_remote (&h, cmdline_get_username(), cmdline_get_userpassword(), remote); 
+	} else if (backend) {
+		error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, &curkey);
+	} else {
+		error = reg_open_local(&h);
+	}
+
 	if(!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", poptGetArg(pc), backend);
+		fprintf(stderr, "Unable to open registry\n");
 		return 1;
 	}
+
+	if (h) {
+		/*FIXME: What if HKEY_CLASSES_ROOT is not present ? */
+		reg_get_hive(h, HKEY_CLASSES_ROOT, &curkey);
+	}
+	
 	poptFreeContext(pc);
-
-	curkey = h->hives[0]->root;
-
+	
 	while(True) {
 		char *line, *prompt;
 		
-		if(curkey->hive->name) {
-			asprintf(&prompt, "%s:%s> ", curkey->hive->name, curkey->path);
+		if(curkey->hive->root->name) {
+			asprintf(&prompt, "%s:%s> ", curkey->hive->root->name, curkey->path);
 		} else {
 			asprintf(&prompt, "%s> ", curkey->path);
 		}

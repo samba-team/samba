@@ -29,16 +29,16 @@ static WERROR gerror_to_werror(GError *error)
 	return WERR_FOOBAR;
 }
 
-static WERROR reg_open_gconf_hive(TALLOC_CTX *mem_ctx, struct registry_hive *h, struct registry_key **k)
+static WERROR reg_open_gconf_hive(struct registry_hive *h, struct registry_key **k)
 {
 	g_type_init();
 	h->backend_data = (void *)gconf_client_get_default();
 	if(!h->backend_data) return WERR_FOOBAR;
 	
-	*k = talloc_p(mem_ctx, struct registry_key);
-	(*k)->name = talloc_strdup(mem_ctx, "");
-	(*k)->path = talloc_strdup(mem_ctx, "");
-	(*k)->backend_data = talloc_strdup(mem_ctx, "/");
+	*k = talloc_p(h, struct registry_key);
+	(*k)->name = talloc_strdup(*k, "");
+	(*k)->path = talloc_strdup(*k, "");
+	(*k)->backend_data = talloc_strdup(*k, "/");
 	return WERR_OK;
 }
 
@@ -173,7 +173,7 @@ static WERROR gconf_set_value(struct registry_key *key, const char *valname, int
 	return WERR_NOT_SUPPORTED;
 }
 
-static struct registry_operations reg_backend_gconf = {
+static struct hive_operations reg_backend_gconf = {
 	.name = "gconf",
 	.open_hive = reg_open_gconf_hive,
 	.open_key = gconf_open_key,

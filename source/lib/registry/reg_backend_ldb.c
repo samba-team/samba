@@ -137,7 +137,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const c
 	return WERR_OK;
 }
 
-static WERROR ldb_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *hive, struct registry_key **k)
+static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 {
 	struct ldb_context *c;
 
@@ -151,8 +151,8 @@ static WERROR ldb_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *hive, str
 	ldb_set_debug_stderr(c);
 	hive->backend_data = c;
 
-	hive->root = talloc_zero_p(mem_ctx, struct registry_key);
-	hive->root->name = talloc_strdup(mem_ctx, "");
+	hive->root = talloc_zero_p(hive, struct registry_key);
+	hive->root->name = talloc_strdup(hive->root, "");
 
 	return WERR_OK;
 }
@@ -202,7 +202,7 @@ static WERROR ldb_close_hive (struct registry_hive *hive)
 	return WERR_OK;
 }
 
-static struct registry_operations reg_backend_ldb = {
+static struct hive_operations reg_backend_ldb = {
 	.name = "ldb",
 	.add_key = ldb_add_key,
 	.del_key = ldb_del_key,

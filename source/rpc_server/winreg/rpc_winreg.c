@@ -28,40 +28,34 @@
 
 enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };
 
-static void winreg_destroy_hive(struct dcesrv_connection *c, struct dcesrv_handle *h)
-{
-	reg_close(((struct registry_key *)h->data)->hive->reg_ctx);
-}
-
-static WERROR winreg_openhive (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, const char *hivename, struct policy_handle **outh)
+static NTSTATUS dcerpc_winreg_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
 	struct registry_context *ctx;
+	reg_open_local(&ctx);
+
+	dce_call->conn->private = ctx;
+
+	return NT_STATUS_OK;
+}
+
+#define DCESRV_INTERFACE_WINREG_BIND dcerpc_winreg_bind
+
+static WERROR winreg_openhive (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, uint32_t hkey, struct policy_handle **outh)
+{
+	struct registry_context *ctx = dce_call->conn->private;
 	struct dcesrv_handle *h; 
 	WERROR error;
-	const char *conf = lp_parm_string(-1, "registry", hivename);
-	char *backend, *location;
-	
-	if (!conf) {
-		return WERR_NOT_SUPPORTED;
-	}
 
-	backend = talloc_strdup(mem_ctx, conf);
-	location = strchr(backend, ':');
-
-	if (location) {
-		*location = '\0';
-		location++;
-	}
-
-	error = reg_open(&ctx, backend, location, NULL); 
-	if(!W_ERROR_IS_OK(error)) return error; 
-	
 	h = dcesrv_handle_new(dce_call->conn, HTYPE_REGKEY); 
-	h->data = ctx->hives[0]->root; 
-	SMB_ASSERT(h->data);
-	h->destroy = winreg_destroy_hive;
+
+	error = reg_get_hive(ctx, hkey, (struct registry_key **)&h->data);
+	if (!W_ERROR_IS_OK(error)) {
+		return error;
+	}
+	
 	*outh = &h->wire_handle; 
-	return WERR_OK; 
+
+	return error; 
 }
 
 #define func_winreg_OpenHive(k,n) static WERROR winreg_Open ## k (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct winreg_Open ## k *r) \
@@ -69,15 +63,15 @@ static WERROR winreg_openhive (struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	return winreg_openhive (dce_call, mem_ctx, n, &r->out.handle);\
 }
 
-func_winreg_OpenHive(HKCR,"HKEY_CLASSES_ROOT")
-func_winreg_OpenHive(HKCU,"HKEY_CURRENT_USER")
-func_winreg_OpenHive(HKLM,"HKEY_LOCAL_MACHINE")
-func_winreg_OpenHive(HKPD,"HKEY_PERFORMANCE_DATA")
-func_winreg_OpenHive(HKU,"HKEY_USERS")
-func_winreg_OpenHive(HKCC,"HKEY_CURRENT_CONFIG")
-func_winreg_OpenHive(HKDD,"HKEY_DYN_DATA")
-func_winreg_OpenHive(HKPT,"HKEY_PT")
-func_winreg_OpenHive(HKPN,"HKEY_PN")
+func_winreg_OpenHive(HKCR,HKEY_CLASSES_ROOT)
+func_winreg_OpenHive(HKCU,HKEY_CURRENT_USER)
+func_winreg_OpenHive(HKLM,HKEY_LOCAL_MACHINE)
+func_winreg_OpenHive(HKPD,HKEY_PERFORMANCE_DATA)
+func_winreg_OpenHive(HKU,HKEY_USERS)
+func_winreg_OpenHive(HKCC,HKEY_CURRENT_CONFIG)
+func_winreg_OpenHive(HKDD,HKEY_DYN_DATA)
+func_winreg_OpenHive(HKPT,HKEY_PT)
+func_winreg_OpenHive(HKPN,HKEY_PN)
 
 /* 
   winreg_CloseKey 

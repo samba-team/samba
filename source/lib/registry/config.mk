@@ -6,7 +6,7 @@
 INIT_FUNCTION = registry_nt4_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_nt4/reg_backend_nt4.o
+		lib/registry/reg_backend_nt4.o
 # End MODULE registry_nt4
 ################################################
 
@@ -16,7 +16,7 @@ INIT_OBJ_FILES = \
 INIT_FUNCTION = registry_w95_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_w95/reg_backend_w95.o
+		lib/registry/reg_backend_w95.o
 # End MODULE registry_w95
 ################################################
 
@@ -26,7 +26,7 @@ INIT_OBJ_FILES = \
 INIT_FUNCTION = registry_dir_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_dir/reg_backend_dir.o
+		lib/registry/reg_backend_dir.o
 # End MODULE registry_dir
 ################################################
 
@@ -36,10 +36,12 @@ INIT_OBJ_FILES = \
 INIT_FUNCTION = registry_rpc_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_rpc/reg_backend_rpc.o
+		lib/registry/reg_backend_rpc.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_WINREG
 # End MODULE registry_rpc
 ################################################
+
+
 
 ################################################
 # Start MODULE registry_gconf
@@ -47,7 +49,7 @@ REQUIRED_SUBSYSTEMS = RPC_NDR_WINREG
 INIT_FUNCTION = registry_gconf_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_gconf/reg_backend_gconf.o
+		lib/registry/reg_backend_gconf.o
 REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
 # End MODULE registry_gconf
 ################################################
@@ -58,7 +60,7 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
 INIT_FUNCTION = registry_ldb_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_ldb/reg_backend_ldb.o
+		lib/registry/reg_backend_ldb.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB
 # End MODULE registry_ldb
@@ -70,7 +72,8 @@ REQUIRED_SUBSYSTEMS = \
 INIT_OBJ_FILES = \
 		lib/registry/common/reg_interface.o
 ADD_OBJ_FILES = \
-		lib/registry/common/reg_util.o
+		lib/registry/common/reg_util.o \
+		lib/registry/reg_samba.o
 REQUIRED_SUBSYSTEMS = \
 		LIBBASIC
 # End MODULE registry_ldb

@@ -62,6 +62,7 @@ static GtkWidget* create_FindDialog (void)
 
   FindDialog = gtk_dialog_new ();
   gtk_window_set_title (GTK_WINDOW (FindDialog), "Find Key or Value");
+  gtk_window_set_resizable (GTK_WINDOW (FindDialog), FALSE);
   gtk_window_set_type_hint (GTK_WINDOW (FindDialog), GDK_WINDOW_TYPE_HINT_DIALOG);
 
   dialog_vbox2 = GTK_DIALOG (FindDialog)->vbox;
@@ -135,7 +136,6 @@ static GtkWidget* create_SetValueDialog (void)
 
   SetValueDialog = gtk_dialog_new ();
   gtk_window_set_title (GTK_WINDOW (SetValueDialog), "Set Registry Value");
-  GTK_WINDOW (SetValueDialog)->type = GTK_WINDOW_POPUP;
   gtk_window_set_position (GTK_WINDOW (SetValueDialog), GTK_WIN_POS_CENTER);
   gtk_window_set_resizable (GTK_WINDOW (SetValueDialog), FALSE);
   gtk_window_set_type_hint (GTK_WINDOW (SetValueDialog), GDK_WINDOW_TYPE_HINT_DIALOG);
@@ -207,7 +207,6 @@ static GtkWidget* create_NewKeyDialog (void)
 
   NewKeyDialog = gtk_dialog_new ();
   gtk_window_set_title (GTK_WINDOW (NewKeyDialog), "New Registry Key");
-  GTK_WINDOW (NewKeyDialog)->type = GTK_WINDOW_POPUP;
   gtk_window_set_position (GTK_WINDOW (NewKeyDialog), GTK_WIN_POS_CENTER);
   gtk_window_set_resizable (GTK_WINDOW (NewKeyDialog), FALSE);
   gtk_window_set_type_hint (GTK_WINDOW (NewKeyDialog), GDK_WINDOW_TYPE_HINT_DIALOG);
@@ -287,45 +286,51 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(mainwin, error);
 }
 
+static void registry_load_hive(struct registry_key *root)
+{
+	GtkTreeIter iter, tmpiter;
+	/* Add the root */
+	gtk_tree_store_append(store_keys, &iter, NULL);
+	gtk_tree_store_set (store_keys,
+				    &iter, 
+					0,
+					root->name?root->name:"",
+					1,
+					root,
+					-1);
+
+	gtk_tree_store_append(store_keys, &tmpiter, &iter);
+
+  	gtk_widget_set_sensitive( save, True );
+  	gtk_widget_set_sensitive( save_as, True );
+}
+
 static void registry_load_root(void) 
 {
 	struct registry_key *root;
-	GtkTreeIter iter, tmpiter;
-	int i = 0;
+	uint32_t i = 0;
 	if(!registry) return;
 
 	gtk_tree_store_clear(store_keys);
 
-	for(i = 0; i < registry->num_hives; i++) 
+	for(i = HKEY_CLASSES_ROOT; i <= HKEY_PN; i++) 
 	{
-		root = registry->hives[i]->root;
+		if (!W_ERROR_IS_OK(reg_get_hive(registry, i, &root))) { continue; }
 
-		/* Add the root */
-		gtk_tree_store_append(store_keys, &iter, NULL);
-		gtk_tree_store_set (store_keys,
-					    &iter, 
-						0,
-						root->hive->name?root->hive->name:"",
-						1,
-						root,
-						-1);
-
-		gtk_tree_store_append(store_keys, &tmpiter, &iter);
+		registry_load_hive(root);
 	}
-
-  	gtk_widget_set_sensitive( save, True );
-  	gtk_widget_set_sensitive( save_as, True );
 }
 
 static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	gint result = gtk_dialog_run(GTK_DIALOG(create_openfilewin()));
 	char *filename, *tmp;
+	struct registry_key *root;
 	WERROR error;
 	switch(result) {
 	case GTK_RESPONSE_OK:
 		filename = strdup(gtk_file_selection_get_filename(GTK_FILE_SELECTION(openfilewin)));
-		error = reg_open(&registry, user_data, filename, NULL);
+		error = reg_open_hive(NULL, user_data, filename, NULL, &root);
 		if(!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(mainwin, error);
 			break;
@@ -334,7 +339,8 @@ static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 		tmp = g_strdup_printf("Registry Editor - %s", filename);
 		gtk_window_set_title (GTK_WINDOW (mainwin), tmp);
 		g_free(tmp);
-		registry_load_root();
+		gtk_tree_store_clear(store_keys);
+		registry_load_hive(root);
 		break;
 	default:
 		break;
@@ -346,7 +352,8 @@ static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 static void on_open_gconf_activate                       (GtkMenuItem     *menuitem,
   		                                      gpointer         user_data)
 {
-	WERROR error = reg_open(&registry, "gconf", NULL, NULL);
+	struct registry_key *root;
+	WERROR error = reg_open_hive(NULL, "gconf", NULL, NULL, &root);
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, error);
 		return;
@@ -354,13 +361,12 @@ static void on_open_gconf_activate                       (GtkMenuItem     *menui
 
 	gtk_window_set_title (GTK_WINDOW (mainwin), "Registry Editor - GConf");
 
-	registry_load_root();
+	gtk_tree_store_clear(store_keys);
+	registry_load_hive(root);
 }
 
 static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	char *credentials;
-	const char *location;
 	char *tmp;
 	GtkWidget *rpcwin = GTK_WIDGET(gtk_rpc_binding_dialog_new(FALSE, NULL));
 	gint result = gtk_dialog_run(GTK_DIALOG(rpcwin));
@@ -372,16 +378,16 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 		return;
 	}
 
-	location = gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx);
-	asprintf(&credentials, "%s%%%s", gtk_rpc_binding_dialog_get_username(GTK_RPC_BINDING_DIALOG(rpcwin)), gtk_rpc_binding_dialog_get_password(GTK_RPC_BINDING_DIALOG(rpcwin)));
-	error = reg_open(&registry, "rpc", location, credentials);
+	error = reg_open_remote(&registry, 
+				gtk_rpc_binding_dialog_get_username(GTK_RPC_BINDING_DIALOG(rpcwin)), 
+				gtk_rpc_binding_dialog_get_password(GTK_RPC_BINDING_DIALOG(rpcwin)), 
+				gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx));
 
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, error);
 		gtk_widget_destroy(rpcwin);
 		return;
 	}
-	free(credentials);
 
 	tmp = g_strdup_printf("Registry Editor - Remote Registry at %s", gtk_rpc_binding_dialog_get_host(GTK_RPC_BINDING_DIALOG(rpcwin)));
 	gtk_window_set_title (GTK_WINDOW (mainwin), tmp);
@@ -805,14 +811,10 @@ static GtkWidget* create_savefilewin (void)
  int main(int argc, char *argv[])
 {
 	poptContext pc;
-	const char *backend = NULL;
-	const char *credentials = NULL;
-	const char *location;
+	WERROR error;
 	int opt;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
-		{"credentials", 'c', POPT_ARG_STRING, &credentials, 0, "credentials (user%%password)", NULL},
 		POPT_TABLEEND
 	};
 
@@ -829,32 +831,18 @@ static GtkWidget* create_savefilewin (void)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	location = poptGetArg(pc);
-
-	if(location) {
-		WERROR error;
-
-		if(!backend) {
-			if(credentials)backend = "rpc";
-			else backend = "nt4";
-		}
-
-		error = reg_open(&registry, backend, location, credentials);
-		if(!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(mainwin, error);
-			return -1;
-		}
-		mainwin = create_mainwin ();
-		registry_load_root();
-	} else {
-		mainwin = create_mainwin ();
+	error = reg_open_local(&registry);
+	if(!W_ERROR_IS_OK(error)) {
+		gtk_show_werror(mainwin, error);
+		return -1;
 	}
+	mainwin = create_mainwin ();
+	registry_load_root();
 
 	gtk_widget_show_all (mainwin);
 
 	gtk_main ();
 
-	if(registry)talloc_destroy(registry->mem_ctx);
 	talloc_destroy(mem_ctx);
 	return 0;
 }

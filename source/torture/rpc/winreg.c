@@ -451,6 +451,7 @@ static BOOL test_InitiateSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	struct winreg_InitiateSystemShutdown r;
 	NTSTATUS status;
 	
+	init_winreg_String(&r.in.hostname, NULL);
 	init_winreg_String(&r.in.message, msg);
 	r.in.flags = 0;
 	r.in.timeout = timeout;

@@ -30,32 +30,25 @@ static struct reg_init_function_entry *backends = NULL;
 
 static struct reg_init_function_entry *reg_find_backend_entry(const char *name);
 
-#define reg_make_path(mem_ctx, parent, name) (((parent)->hive->root == (parent))?talloc_strdup(mem_ctx, name):talloc_asprintf(mem_ctx, "%s\\%s", parent->path, name))
-
 /* Register new backend */
-NTSTATUS registry_register(const void *_function)  
+NTSTATUS registry_register(const void *_hive_ops)  
 {
-	const struct registry_operations *functions = _function;
+	const struct hive_operations *hive_ops = _hive_ops;
 	struct reg_init_function_entry *entry = backends;
 
-	if (!functions || !functions->name) {
-		DEBUG(0, ("Invalid arguments while registering registry backend\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	DEBUG(5,("Attempting to register registry backend %s\n", functions->name));
+	DEBUG(5,("Attempting to register registry backend %s\n", hive_ops->name));
 
 	/* Check for duplicates */
-	if (reg_find_backend_entry(functions->name)) {
-		DEBUG(0,("There already is a registry backend registered with the name %s!\n", functions->name));
+	if (reg_find_backend_entry(hive_ops->name)) {
+		DEBUG(0,("There already is a registry backend registered with the name %s!\n", hive_ops->name));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	entry = malloc_p(struct reg_init_function_entry);
-	entry->functions = functions;
+	entry = talloc_p(NULL, struct reg_init_function_entry);
+	entry->hive_functions = hive_ops;
 
 	DLIST_ADD(backends, entry);
-	DEBUG(5,("Successfully added registry backend '%s'\n", functions->name));
+	DEBUG(5,("Successfully added registry backend '%s'\n", hive_ops->name));
 	return NT_STATUS_OK;
 }
 
@@ -67,7 +60,7 @@ static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 	entry = backends;
 
 	while(entry) {
-		if (strcmp(entry->functions->name, name) == 0) return entry;
+		if (strcmp(entry->hive_functions->name, name) == 0) return entry;
 		entry = entry->next;
 	}
 
@@ -80,85 +73,83 @@ BOOL reg_has_backend(const char *backend)
 	return reg_find_backend_entry(backend) != NULL?True:False;
 }
 
-WERROR reg_create(struct registry_context **_ret)
+static struct {
+	uint32 hkey;
+	const char *name;
+} hkey_names[] = 
 {
-	TALLOC_CTX *mem_ctx;
-	struct registry_context *ret;
-	mem_ctx = talloc_init("registry handle");
-	ret = talloc_p(mem_ctx, struct registry_context);
-	ret->mem_ctx = mem_ctx;
-	ZERO_STRUCTP(ret);	
-	*_ret = ret;
-	return WERR_OK;
+	{HKEY_CLASSES_ROOT,"HKEY_CLASSES_ROOT" },
+	{HKEY_CURRENT_USER,"HKEY_CURRENT_USER" },
+	{HKEY_LOCAL_MACHINE, "HKEY_LOCAL_MACHINE" },
+	{HKEY_PERFORMANCE_DATA, "HKEY_PERFORMANCE_DATA" },
+	{HKEY_USERS, "HKEY_USERS" },
+	{HKEY_CURRENT_CONFIG, "HKEY_CURRENT_CONFIG" },
+	{HKEY_DYN_DATA, "HKEY_DYN_DATA" },
+	{HKEY_PT, "HKEY_PT" },
+	{HKEY_PN, "HKEY_PN" },
+	{ 0, NULL }
+};
+
+int reg_list_hives(TALLOC_CTX *mem_ctx, char ***hives, uint32_t **hkeys)
+{
+	int i;
+	*hives = talloc_array_p(mem_ctx, char *, ARRAY_SIZE(hkey_names));
+	*hkeys = talloc_array_p(mem_ctx, uint32_t, ARRAY_SIZE(hkey_names));
+
+	for (i = 0; hkey_names[i].name; i++) {
+		(*hives)[i] = talloc_strdup(mem_ctx, hkey_names[i].name);
+		(*hkeys)[i] = hkey_names[i].hkey;
+	}
+
+	return i;
 }
 
-WERROR reg_list_available_hives(TALLOC_CTX *mem_ctx, const char *backend, const char *location, const char *credentials, char ***hives)
+const char *reg_get_hkey_name(uint32_t hkey)
 {
-	struct reg_init_function_entry *entry;
-	
-	entry = reg_find_backend_entry(backend);
-	
-	if (!entry) {
-		DEBUG(0, ("No such registry backend '%s' loaded!\n", backend));
-		return WERR_GENERAL_FAILURE;
+	int i;
+	for (i = 0; hkey_names[i].name; i++) {
+		if (hkey_names[i].hkey == hkey) return hkey_names[i].name;
 	}
 
-	if(!entry->functions->list_available_hives) {
-		return WERR_NOT_SUPPORTED;
-	}
-
-	return entry->functions->list_available_hives(mem_ctx, location, credentials, hives);
+	return NULL;
 }
 
-WERROR reg_open(struct registry_context **ret, const char *backend, const char *location, const char *credentials)
+WERROR reg_get_hive_by_name(struct registry_context *ctx, const char *name, struct registry_key **key)
 {
-	WERROR error = reg_create(ret), reterror = WERR_NO_MORE_ITEMS;
-	char **hives;
-	int i, j;
-	TALLOC_CTX *mem_ctx = talloc_init("reg_open");
-
-	if(!W_ERROR_IS_OK(error)) return error;
-
-	error = reg_list_available_hives(mem_ctx, backend, location, credentials, &hives);
-
-	if(W_ERROR_EQUAL(error, WERR_NOT_SUPPORTED)) {
-		return reg_import_hive(*ret, backend, location, credentials, NULL);
-	}
-	   
-	if(!W_ERROR_IS_OK(error)) return error;
-
-	j = 0;
-	for(i = 0; hives[i]; i++)
-	{
-		error = reg_import_hive(*ret, backend, location, credentials, hives[i]);
-		if (W_ERROR_IS_OK(error)) { 
-			reterror = WERR_OK;
-			(*ret)->hives[j]->name = talloc_strdup((*ret)->mem_ctx, hives[i]);
-			j++;
-		} else if (!W_ERROR_IS_OK(reterror)) reterror = error;
+	int i;
+	
+	for (i = 0; hkey_names[i].name; i++) {
+		if (!strcmp(hkey_names[i].name, name)) return reg_get_hive(ctx, hkey_names[i].hkey, key);
 	}
 
-	return reterror;
+	DEBUG(1, ("No hive with name '%s'\n", name));
+	
+	return WERR_BADFILE;
 }
 
 WERROR reg_close (struct registry_context *ctx)
 {
-	int i;
-	for (i = 0; i < ctx->num_hives; i++) {
-		if (ctx->hives[i]->functions->close_hive) {
-			ctx->hives[i]->functions->close_hive(ctx->hives[i]);
-		}
-	}
 	talloc_destroy(ctx);
 
 	return WERR_OK;
 }
 
+WERROR reg_get_hive(struct registry_context *ctx, uint32_t hkey, struct registry_key **key)
+{
+	WERROR ret = ctx->get_hive(ctx, hkey, key);
+
+	if (W_ERROR_IS_OK(ret)) {
+		(*key)->name = talloc_strdup(*key, reg_get_hkey_name(hkey));
+		(*key)->path = ""; 
+	}
+
+	return ret;
+}
+
 /* Open a registry file/host/etc */
-WERROR reg_import_hive(struct registry_context *h, const char *backend, const char *location, const char *credentials, const char *hivename)
+WERROR reg_open_hive(struct registry_context *parent_ctx, const char *backend, const char *location, const char *credentials, struct registry_key **root)
 {
 	struct registry_hive *ret;
-	TALLOC_CTX *mem_ctx;
 	struct reg_init_function_entry *entry;
 	WERROR werr;
 
@@ -169,24 +160,21 @@ WERROR reg_import_hive(struct registry_context *h, const char *backend, const ch
 		return WERR_GENERAL_FAILURE;
 	}
 
-	if(!entry->functions->open_hive) {
+	if(!entry->hive_functions || !entry->hive_functions->open_hive) {
 		return WERR_NOT_SUPPORTED;
 	}
 	
-	
-	mem_ctx = h->mem_ctx;
-	ret = talloc_p(mem_ctx, struct registry_hive);
-	ret->location = location?talloc_strdup(mem_ctx, location):NULL;
-	ret->backend_hivename = hivename?talloc_strdup(mem_ctx, hivename):NULL;
-	ret->credentials = credentials?talloc_strdup(mem_ctx, credentials):NULL;
-	ret->functions = entry->functions;
+	ret = talloc_p(parent_ctx, struct registry_hive);
+	ret->location = location?talloc_strdup(ret, location):NULL;
+	ret->functions = entry->hive_functions;
 	ret->backend_data = NULL;
-	ret->reg_ctx = h;
-	ret->name = NULL;
+	ret->reg_ctx = parent_ctx;
 
-	werr = entry->functions->open_hive(mem_ctx, ret, &ret->root);
+	werr = entry->hive_functions->open_hive(ret, &ret->root);
 
-	if(!W_ERROR_IS_OK(werr)) return werr;
+	if(!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 	
 	if(!ret->root) {
 		DEBUG(0, ("Backend %s didn't provide root key!\n", backend));
@@ -195,12 +183,9 @@ WERROR reg_import_hive(struct registry_context *h, const char *backend, const ch
 
 	ret->root->hive = ret;
 	ret->root->name = NULL;
-	ret->root->path = talloc_strdup(mem_ctx, "");
-
-	/* Add hive to context */
-	h->num_hives++;
-	h->hives = talloc_realloc_p(h, h->hives, struct registry_hive *, h->num_hives);
-	h->hives[h->num_hives-1] = ret;
+	ret->root->path = talloc_strdup(ret, "");
+	
+	*root = ret->root;
 
 	return WERR_OK;
 }
@@ -217,7 +202,7 @@ WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, co
 	else hivelength = strlen(name);
 
 	hivename = strndup(name, hivelength);
-	error = reg_get_hive(handle, hivename, &hive);
+	error = reg_get_hive_by_name(handle, hivename, &hive);
 	SAFE_FREE(hivename);
 
 	if(!W_ERROR_IS_OK(error)) {
@@ -272,7 +257,8 @@ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char
 		return WERR_NOT_SUPPORTED;
 	}
 
-	fullname = reg_make_path(mem_ctx, parent, name);
+
+	fullname = ((parent->hive->root == parent)?talloc_strdup(mem_ctx, name):talloc_asprintf(mem_ctx, "%s\\%s", parent->path, name));
 
 	error = parent->hive->functions->open_key(mem_ctx, parent->hive, fullname, result);
 
@@ -499,7 +485,7 @@ WERROR reg_key_add_name_recursive_abs(struct registry_context *handle, const cha
 	else hivelength = strlen(name);
 
 	hivename = strndup(name, hivelength);
-	error = reg_get_hive(handle, hivename, &hive);
+	error = reg_get_hive_by_name(handle, hivename, &hive);
 	SAFE_FREE(hivename);
 
 	if(!W_ERROR_IS_OK(error)) return error;
@@ -578,19 +564,7 @@ WERROR reg_val_set(struct registry_key *key, const char *value, int type, void *
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR reg_get_hive(struct registry_context *h, const char *name, struct registry_key **key) 
-{
-	int i;
-	for(i = 0; i < h->num_hives; i++)
-	{
-		if(!strcmp(h->hives[i]->name, name)) {
-			*key = h->hives[i]->root;
-			return WERR_OK;
-		}
-	}
 
-	return WERR_NO_MORE_ITEMS;
-}
 
 WERROR reg_del_value(struct registry_value *val)
 {
