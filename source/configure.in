@@ -6,6 +6,9 @@ AC_PREREQ(2.53)
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
 
+AC_DISABLE_STATIC
+AC_ENABLE_SHARED
+
 #################################################
 # Directory handling stuff to support both the
 # legacy SAMBA directories and FHS compliant
@@ -149,6 +152,7 @@ AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
 AC_SUBST(PRINTLIBS)
 AC_SUBST(AUTHLIBS)
+AC_SUBST(ACLLIBS)
 AC_SUBST(SHLIB_PROGS)
 AC_SUBST(SMBWRAPPER)
 AC_SUBST(EXTRA_BIN_PROGS)
@@ -277,6 +281,7 @@ dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_AWK
+AC_PATH_PROG(PERL, perl)
 
 dnl Check if we use GNU ld
 LD=ld
@@ -725,11 +730,6 @@ fi
 AC_FUNC_MEMCMP
 
 ###############################################
-# test for where we get crypt() from
-AC_SEARCH_LIBS(crypt, [crypt], [AUTHLIBS="$AUTHLIBS -lcrypt";
-	AC_DEFINE(HAVE_CRYPT,1,[Whether the system has the crypt() function])])
-
-###############################################
 # Readline included by default unless explicitly asked not to
 test "${with_readline+set}" != "set" && with_readline=yes
 
@@ -950,9 +950,8 @@ AC_LIBTESTFUNC(sec, bigcrypt)
 AC_LIBTESTFUNC(security, getprpwnam)
 AC_LIBTESTFUNC(sec, getprpwnam)
 
-# this bit needs to be modified for each OS that is suported by
-# smbwrapper. You need to specify how to created a shared library and
-# how to compile C code to produce PIC object files
+# Assume non-shared by default and override below
+BLDSHARED="false"
 
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
@@ -963,12 +962,16 @@ PICFLAG=""
 PICSUFFIX="po"
 POBAD_CC="#"
 SHLIBEXT="so"
-# Assume non-shared by default and override below
-BLDSHARED="false"
-AC_MSG_CHECKING([ability to build shared libraries])
 
-# and these are for particular systems
-case "$host_os" in
+if test "$enable_shared" = "yes"; then
+  # this bit needs to be modified for each OS that is suported by
+  # smbwrapper. You need to specify how to created a shared library and
+  # how to compile C code to produce PIC object files
+
+  AC_MSG_CHECKING([ability to build shared libraries])
+
+  # and these are for particular systems
+  case "$host_os" in
 		*linux*)   AC_DEFINE(LINUX,1,[Whether the host os is linux])
 			BLDSHARED="true"
 			LDSHFLAGS="-shared" 
@@ -1112,13 +1115,14 @@ case "$host_os" in
 		*)
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
-esac
-AC_SUBST(DYNEXP)
-AC_MSG_RESULT($BLDSHARED)
-AC_MSG_CHECKING([linker flags for shared libraries])
-AC_MSG_RESULT([$LDSHFLAGS])
-AC_MSG_CHECKING([compiler flags for position-independent code])
-AC_MSG_RESULT([$PICFLAGS])
+  esac
+  AC_SUBST(DYNEXP)
+  AC_MSG_RESULT($BLDSHARED)
+  AC_MSG_CHECKING([linker flags for shared libraries])
+  AC_MSG_RESULT([$LDSHFLAGS])
+  AC_MSG_CHECKING([compiler flags for position-independent code])
+  AC_MSG_RESULT([$PICFLAGS])
+fi
 
 #######################################################
 # test whether building a shared library actually works
@@ -1480,26 +1484,47 @@ if test x"$samba_cv_HAVE_UX_UT_SYSLEN" = x"yes"; then
 fi 
 
 
-#################################################
-# check for libiconv support
-AC_MSG_CHECKING(whether to use libiconv)
+ICONV_LOCATION=standard
+LOOK_DIRS="/usr /usr/local /sw"
 AC_ARG_WITH(libiconv,
 [  --with-libiconv=BASEDIR Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto) ],
-[ case "$withval" in
-  no)
-    AC_MSG_RESULT(no)
-    ;;
-  *)
-    AC_MSG_RESULT(yes)
-    CFLAGS="$CFLAGS -I$withval/include"
-    LDFLAGS="$LDFLAGS -L$withval/lib"
-    AC_CHECK_LIB(iconv, iconv_open)
-    AC_DEFINE_UNQUOTED(WITH_LIBICONV, "${withval}",[Path to iconv])
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
+[
+  if test "$withval" = "no" ; then
+    AC_MSG_ERROR(I won't take no for an answer)
+  else
+     if test "$withval" != "yes" ; then
+        LOOK_DIRS="$withval $LOOK_DIRS"
+     fi
+  fi
+])
 
+ICONV_FOUND="no"
+for i in $LOOK_DIRS ; do
+    save_LIBS=$LIBS
+    save_LDFLAGS=$LDFLAGS
+    save_CPPFLAGS=$CPPFLAGS
+    CPPFLAGS="-I$i/include"
+    LDFLAGS="-L$i/lib"
+    LIBS=
+    export LDFLAGS LIBS CPPFLAGS
+dnl Try to find iconv(3)
+    jm_ICONV($i)
+
+    CPPFLAGS=$save_CPPFLAGS
+    if test -n "$ICONV_FOUND" ; then
+        LDFLAGS=$save_LDFLAGS
+        LIB_ADD_DIR(LDFLAGS, "$i/lib")
+        CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+        LIBS="$save_LIBS $LIBS"
+        ICONV_LOCATION=$i
+        export LDFLAGS LIBS CPPFLAGS
+        break
+    else
+	LDFLAGS=$save_LDFLAGS
+        LIBS=$save_LIBS
+        export LDFLAGS LIBS CPPFLAGS
+    fi
+done
 
 ############
 # check for iconv in libc
@@ -1515,6 +1540,11 @@ main() {
 samba_cv_HAVE_NATIVE_ICONV=yes,samba_cv_HAVE_NATIVE_ICONV=no,samba_cv_HAVE_NATIVE_ICONV=cross)])
 if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
     AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
+fi
+
+if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; then
+    AC_MSG_WARN([Sufficient support for iconv function was not found. 
+    Install libiconv from http://freshmeat.net/projects/libiconv/ for better charset compatibility!])
 fi
 
 
@@ -2380,15 +2410,10 @@ AC_ARG_WITH(pam_smbpass,
 
 
 ###############################################
-# test for where we get crypt() from, but only
-# if not using PAM
-if test x"$with_pam_for_crypt" = x"no"; then
-AC_CHECK_FUNCS(crypt)
-if test x"$ac_cv_func_crypt" = x"no"; then
-    AC_CHECK_LIB(crypt, crypt, [AUTHLIBS="$AUTHLIBS -lcrypt";
-	AC_DEFINE(HAVE_CRYPT,1,[Whether crypt() is available])])
-fi
-fi
+# test for where we get crypt() from
+AC_SEARCH_LIBS(crypt, [crypt],
+  [test "$ac_cv_search_crypt" = "none required" || AUTHLIBS="-lcrypt $AUTHLIBS"
+  AC_DEFINE(HAVE_CRYPT,1,[Whether the system has the crypt() function])])
 
 ##
 ## moved after the check for -lcrypt in order to
@@ -2627,9 +2652,12 @@ AC_ARG_WITH(libsmbclient,
         LIBSMBCLIENT=libsmbclient
         AC_MSG_RESULT(yes)
      else
+	enable_static=yes
+        AC_MSG_RESULT(no shared library support -- will supply static library)
+     fi
+     if test $enable_static = yes; then
         INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
         LIBSMBCLIENT=libsmbclient
-        AC_MSG_RESULT(no shared library support -- will supply static library)
      fi
      ;;
   esac ],
@@ -2640,10 +2668,13 @@ AC_ARG_WITH(libsmbclient,
      LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
      LIBSMBCLIENT=libsmbclient
      AC_MSG_RESULT(yes)
-  else
+   else
+     enable_static=yes
+     AC_MSG_RESULT(no shared library support -- will supply static library)
+   fi
+   if test $enable_static = yes; then
      INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
      LIBSMBCLIENT=libsmbclient
-     AC_MSG_RESULT(no shared library support -- will supply static library)
   fi]
 )
 
@@ -2912,23 +2943,29 @@ AC_ARG_WITH(acl-support,
 	*osf*)
 		AC_MSG_RESULT(Using Tru64 ACLs)
 		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
-		LIBS="$LIBS -lpacl"
+		ACLLIBS="$ACLLIBS -lpacl"
 		;;
         *)
-		AC_CHECK_LIB(acl,acl_get_file)
+		AC_CHECK_LIB(acl,acl_get_file,[ACLLIBS="$ACLLIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
+		acl_LIBS=$LIBS
+		LIBS="$LIBS -lacl"
 		AC_TRY_LINK([#include <sys/types.h>
 #include <sys/acl.h>],
 [ acl_t acl; int entry_id; acl_entry_t *entry_p; return acl_get_entry( acl, entry_id, entry_p);],
-samba_cv_HAVE_POSIX_ACLS=yes,samba_cv_HAVE_POSIX_ACLS=no)])
+samba_cv_HAVE_POSIX_ACLS=yes,samba_cv_HAVE_POSIX_ACLS=no)
+		LIBS=$acl_LIBS])
 			if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
 				AC_MSG_RESULT(Using posix ACLs)
 				AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
 				AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
+				acl_LIBS=$LIBS
+				LIBS="$LIBS -lacl"
 				AC_TRY_LINK([#include <sys/types.h>
 #include <sys/acl.h>],
 [ acl_permset_t permset_d; acl_perm_t perm; return acl_get_perm_np( permset_d, perm);],
-samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)])
+samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
+				LIBS=$acl_LIBS])
 				if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
 					AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
 				fi

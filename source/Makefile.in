@@ -26,6 +26,7 @@ TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
 PRINTLIBS=@PRINTLIBS@
 AUTHLIBS=@AUTHLIBS@
+ACLLIBS=@ACLLIBS@
 
 LINK=$(CC) $(FLAGS) $(LDFLAGS)
 
@@ -168,7 +169,7 @@ READLINE_OBJ = lib/readline.o
 POPT_LIB_OBJ = lib/popt_common.o 
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
-            ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o ubiqx/debugparse.o
+            ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o 
 
 PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
 
@@ -704,7 +705,7 @@ bin/.dummy:
 bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(LIBS) @BUILD_POPT@
+	  $(AUTHLIBS) $(ACLLIBS) $(LIBS) @BUILD_POPT@
 
 bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -817,7 +818,7 @@ bin/nsstest@EXEEXT@: $(NSSTEST_OBJ) bin/.dummy
 
 bin/vfstest@EXEEXT@: $(VFSTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINTLIBS) $(AUTHLIBS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINTLIBS) $(AUTHLIBS) $(ACLLIBS) $(LIBS) @BUILD_POPT@
 
 bin/locktest2@EXEEXT@: $(LOCKTEST2_OBJ) bin/.dummy
 	@echo Linking $@
@@ -1032,7 +1033,8 @@ installclientlib:
 # Python extensions
 
 PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
-	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ)
+	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+	$(SECRETS_OBJ) $(KRBCLIENT_OBJ)
 
 PY_SPOOLSS_PROTO_OBJ = python/py_spoolss.o \
 		python/py_spoolss_printers.o python/py_spoolss_printers_conv.o\
