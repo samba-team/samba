@@ -492,8 +492,8 @@ _kadm5_set_keys_randomly (kadm5_server_context *context,
 
 #ifdef ENABLE_AES
     ret = gen_random_key(context->context, ETYPE_AES256_CTS_HMAC_SHA1_96,
-			 &keys[n_des_types + 2], 
-			 &hkeys[n_des_types + 2]);
+			 &keys[n_des_types + 1], 
+			 &hkeys[n_des_types + 1]);
     if (ret)
 	goto out;
 #endif
