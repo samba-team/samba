@@ -1,3 +1,7 @@
+2003-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos5.c: fix some more memory leaks
+	
 2003-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* appl/kf/kf.1: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
