@@ -261,5 +261,6 @@ char            *reqHosts, *resignHosts;
 }
 
 #else /* WITH_SSL */
+ void ssl_dummy(void);
  void ssl_dummy(void) {;} /* So some compilers don't complain. */
 #endif  /* WITH_SSL */
