@@ -1114,4 +1114,3 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 
 	return True;
 }
-
