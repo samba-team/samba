@@ -278,7 +278,7 @@ define_type (int level, char *name, Type *t, int typedefp)
     case TSequenceOf: {
 	Type i;
 
-	i.type = TInteger;
+	i.type = TUInteger;
 	i.application = 0;
 
 	space(level);
