@@ -76,6 +76,7 @@ err_code_struct dos_msgs[] = {
   {"ERRmoredata",ERRmoredata,"There is more data to be returned."},
   {"ERRinvgroup",2455,"Invalid workgroup (try the -W option)"},
   {"ERRlogonfailure",ERRlogonfailure,"Logon failure"},
+  {"ERRdiskfull",ERRdiskfull,"Disk full"},
   {NULL,-1,NULL}};
 
 /* Server Error Messages */
