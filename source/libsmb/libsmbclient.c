@@ -378,7 +378,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 		    fstring remote_name;
 		    struct in_addr rem_ip;
 
-		    if (!inet_aton(server, &rem_ip)) {
+		    if ((rem_ip.s_addr=inet_addr(server)) == INADDR_NONE) {
 		      DEBUG(4, ("Could not convert IP address %s to struct in_addr\n", server));
 		      errno = ENOENT;
 		      return NULL;
