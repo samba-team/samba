@@ -1802,6 +1802,9 @@ void set_remote_arch(enum remote_arch_types type)
 	case RA_SAMBA:
 		fstrcpy(remote_arch,"Samba");
 		break;
+	case RA_CIFSFS:
+		fstrcpy(remote_arch,"CIFSFS");
+		break;
 	default:
 		ra_type = RA_UNKNOWN;
 		fstrcpy(remote_arch, "UNKNOWN");
