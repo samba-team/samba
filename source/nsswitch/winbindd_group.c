@@ -880,7 +880,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 			extra_data[extra_data_len++] = ',';
 		}
 
-		free(groups.sam_entries);
+		SAFE_FREE(groups.sam_entries);
 	}
 
 	/* Assign extra_data fields in response structure */
