@@ -181,6 +181,10 @@ extern jmp_buf
     peerdied,
     toplevel;		/* For error conditions. */
 
+int Scheduler(int);
+extern int scheduler_lockout_tty;
+
+
 /* authenc.c */
 
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
