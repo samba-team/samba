@@ -1,9 +1,13 @@
-            WHAT'S NEW IN Samba 2.2.7a - 4th December 2002
-            ==============================================
+            WHAT'S NEW IN Samba 2.2.7a - 10th December 2002
+            ===============================================
 
 This is the latest stable release of Samba. This is the version 
 that all production Samba servers should be running for all current
-bug-fixes.
+bug-fixes.  The primary reason for this release is to correct problems
+with large file (>2Gb) support.   Please see the "Changes..." section
+for more details.
+
+
 
 Changes since 2.2.7
 --------------------
@@ -20,6 +24,7 @@ See the cvs log for SAMBA_2_2 for more details
     attributes on subsequent SMBsearch calls.
 5)  Fix bug in call to standard_sub_advanced giving a 0 length. This
     fixes the string overflow in string_sub errors.
+6)  Correctly handle querygroup rpcclient command
 
 
               =========================================
