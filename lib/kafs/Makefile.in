@@ -83,13 +83,17 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
+$(LIBNAME)_pic.a: $(OBJECTS)
+	rm -f $@
+	$(AR) cr $@ $(OBJECTS)
+	-$(RANLIB) $@
+
 $(LIBNAME).a: $(OBJECTS)
 	rm -f $@
 	$(AR) cr $@ $(OBJECTS)
 	-$(RANLIB) $@
 
-
-$(LIBNAME).$(SHLIBEXT): $(OBJECTS)
+$(LIBNAME).$(SHLIBEXT): $(OBJECTS) $(LIBNAME)_pic.a
 	rm -f $@
 	$(LDSHARED) -o $@ $(OBJECTS) $(LIB_DEPS)
 	@build_symlink_command@

@@ -83,7 +83,7 @@ des_enc.o: des_enc.c
 
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
-	$(INSTALL_DATA) $(LIB) $(DESTDIR)$(libdir)/$(LIB)
+	$(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB)
 	@install_symlink_command@
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	for x in $(PROGS2INSTALL); do \
@@ -115,12 +115,17 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
+$(LIBNAME)_pic.a: $(LIBOBJ)
+	rm -f $@
+	$(AR) cr $@ $(LIBOBJ)
+	-$(RANLIB) $@
+
 $(LIBNAME).a: $(LIBOBJ)
 	rm -f $@
 	$(AR) cr $@ $(LIBOBJ)
 	-$(RANLIB) $@
 
-$(LIBNAME).$(SHLIBEXT): $(LIBOBJ)
+$(LIBNAME).$(SHLIBEXT): $(LIBOBJ) $(LIBNAME)_pic.a
 	rm -f $@
 	$(LDSHARED) -o $@ $(LIBOBJ) $(LIB_DEPS)
 	@build_symlink_command@
