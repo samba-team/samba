@@ -2334,10 +2334,6 @@ BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle,
 			     uint32 change_low, uint32 change_high, uint32 *status);
 BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, uint32 *status);
 
-/* The following definitions come from rpc_client/cli_trust.c  */
-
-BOOL change_trust_account_password( char *domain, char *remote_machine_list);
-
 /* The following definitions come from rpc_client/cli_use.c  */
 
 void init_cli_use(void);
