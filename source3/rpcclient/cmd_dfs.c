@@ -25,7 +25,7 @@
 /* Check DFS is supported by the remote server */
 
 static NTSTATUS cmd_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              int argc, char **argv)
+                              int argc, const char **argv)
 {
 	BOOL dfs_exists;
 	NTSTATUS result;
@@ -44,10 +44,10 @@ static NTSTATUS cmd_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS cmd_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                            int argc, char **argv)
+                            int argc, const char **argv)
 {
 	NTSTATUS result;
-	char *entrypath, *servername, *sharename, *comment;
+	const char *entrypath, *servername, *sharename, *comment;
 	uint32 flags = 0;
 
 	if (argc != 5) {
@@ -68,10 +68,10 @@ static NTSTATUS cmd_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS cmd_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                               int argc, char **argv)
+                               int argc, const char **argv)
 {
 	NTSTATUS result;
-	char *entrypath, *servername, *sharename;
+	const char *entrypath, *servername, *sharename;
 
 	if (argc != 4) {
 		printf("Usage: %s entrypath servername sharename\n", argv[0]);
@@ -169,7 +169,7 @@ static void display_dfs_info_ctr(DFS_INFO_CTR *ctr)
 /* Enumerate dfs shares */
 
 static NTSTATUS cmd_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                             int argc, char **argv)
+                             int argc, const char **argv)
 {
 	DFS_INFO_CTR ctr;
 	NTSTATUS result;
@@ -192,10 +192,10 @@ static NTSTATUS cmd_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS cmd_dfs_getinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                int argc, char **argv)
+                                int argc, const char **argv)
 {
 	NTSTATUS result;
-	char *entrypath, *servername, *sharename;
+	const char *entrypath, *servername, *sharename;
 	uint32 info_level = 1;
 	DFS_INFO_CTR ctr;
 

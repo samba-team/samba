@@ -489,7 +489,7 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Logon domain user */
 
 NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                char *username, char *password,
+                                const char *username, const char *password,
                                 int logon_type)
 {
 	prs_struct qbuf, rbuf;

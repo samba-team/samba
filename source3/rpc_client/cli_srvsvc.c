@@ -230,9 +230,10 @@ WERROR cli_srvsvc_net_share_del(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 WERROR cli_srvsvc_net_share_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				char *netname, uint32 type, char *remark, 
-				uint32 perms, uint32 max_uses, uint32 num_uses,
-				char *path, char *passwd)
+				const char *netname, uint32 type, 
+				const char *remark, uint32 perms, 
+				uint32 max_uses, uint32 num_uses, 
+				const char *path, const char *passwd)
 {
 	prs_struct qbuf, rbuf;
 	SRV_Q_NET_SHARE_ADD q;

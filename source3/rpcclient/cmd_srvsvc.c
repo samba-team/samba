@@ -181,7 +181,7 @@ static void display_srv_info_102(SRV_INFO_102 *sv102)
 /* Server query info */
 static NTSTATUS cmd_srvsvc_srv_query_info(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
-                                          int argc, char **argv)
+                                          int argc, const char **argv)
 {
 	uint32 info_level = 101;
 	SRV_INFO_CTR ctr;
@@ -248,7 +248,7 @@ static void display_share_info_2(SRV_SHARE_INFO_2 *info2)
 
 static NTSTATUS cmd_srvsvc_net_share_enum(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
-                                          int argc, char **argv)
+                                          int argc, const char **argv)
 {
 	uint32 info_level = 2;
 	SRV_SHARE_INFO_CTR ctr;
@@ -294,7 +294,7 @@ static NTSTATUS cmd_srvsvc_net_share_enum(struct cli_state *cli,
 
 static NTSTATUS cmd_srvsvc_net_remote_tod(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
-                                          int argc, char **argv)
+                                          int argc, const char **argv)
 {
 	TIME_OF_DAY_INFO tod;
 	WERROR result;
@@ -316,7 +316,7 @@ static NTSTATUS cmd_srvsvc_net_remote_tod(struct cli_state *cli,
 
 static NTSTATUS cmd_srvsvc_net_file_enum(struct cli_state *cli, 
 					 TALLOC_CTX *mem_ctx,
-					 int argc, char **argv)
+					 int argc, const char **argv)
 {
 	uint32 info_level = 3;
 	SRV_FILE_INFO_CTR ctr;

@@ -304,7 +304,7 @@ static NTSTATUS cmd_listcommands(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Display help on commands */
 
 static NTSTATUS cmd_help(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                         int argc, char **argv)
+                         int argc, const char **argv)
 {
 	struct cmd_list *tmp;
         struct cmd_set *tmp_set;
@@ -381,7 +381,7 @@ static NTSTATUS cmd_debuglevel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS cmd_quit(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                         int argc, char **argv)
+                         int argc, const char **argv)
 {
 	exit(0);
 	return NT_STATUS_OK; /* NOTREACHED */

@@ -26,7 +26,7 @@
 
 static NTSTATUS cmd_ds_dsrole_getprimarydominfo(struct cli_state *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
-				     char **argv) 
+				     const char **argv) 
 {
 	NTSTATUS result;
 	DS_DOMINFO_CTR	ctr;

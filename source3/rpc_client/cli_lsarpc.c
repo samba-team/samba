@@ -805,7 +805,8 @@ NTSTATUS cli_lsa_enum_privilege(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /** Get privilege name */
 
 NTSTATUS cli_lsa_get_dispname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, char *name, uint16 lang_id, uint16 lang_id_sys,
+			      POLICY_HND *pol, const char *name, 
+			      uint16 lang_id, uint16 lang_id_sys,
 			      fstring description, uint16 *lang_id_desc)
 {
 	prs_struct qbuf, rbuf;
@@ -1050,7 +1051,7 @@ NTSTATUS cli_lsa_enum_privsaccount(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /** Get a privilege value given its name */
 
 NTSTATUS cli_lsa_lookupprivvalue(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, char *name, LUID *luid)
+				 POLICY_HND *pol, const char *name, LUID *luid)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUPPRIVVALUE q;
