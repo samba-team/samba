@@ -1012,6 +1012,18 @@ void smbd_process(void)
     /* free up temporary memory */
     lp_talloc_free();
 
+    /*
+     * If reload_after_sighup == True then we got a SIGHUP
+     * and are being asked to reload. Fix from <branko.cibej@hermes.si>
+     */
+    if (reload_after_sighup) {
+	    /* become root */
+	    unbecome_user();
+	    DEBUG(1,("Reloading services after SIGHUP\n"));
+	    reload_services(False);
+	    reload_after_sighup = False;
+    }
+
     while(!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout,&got_smb))
     {
       if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
