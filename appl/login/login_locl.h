@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -92,7 +92,7 @@
 
 #ifdef HAVE_OSFC2
 #define getargs OSFgetargs
-#include <prot.h>
+#include "/usr/include/prot.h"
 #undef getargs
 #endif
 
