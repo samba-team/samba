@@ -157,4 +157,5 @@ main(int argc, char **argv)
 	
 	kadmind_loop(context, ac, client, fd);
     }
+    return 0;
 }
