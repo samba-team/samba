@@ -16,6 +16,13 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbsh</command>
+		<arg choice="opt">-W workgroup</arg>
+		<arg choice="opt">-U username</arg>
+		<arg choice="opt">-P prefix</arg>
+		<arg choice="opt">-R &lt;name resolve order&gt;</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">-l logfile</arg>
+		<arg choice="opt">-L libdir</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -30,6 +37,129 @@
 	egrep</command>, and <command>rcp</command>. You must use a 
 	shell that is dynamically linked in order for <command>smbsh</command> 
 	to work correctly.</para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+	    <varlistentry>
+		<term>-W WORKGROUP</term>
+		<listitem><para>Override the default workgroup specified in the 
+		workgroup parameter of the <filename>smb.conf</filename> file 
+		for this session. This may be needed to connect to some 
+		servers. </para></listitem>
+	    </varlistentry>
+		
+	    <varlistentry>
+		<term>-U username[%pass]</term>
+		<listitem><para>Sets the SMB username or username and password.
+		If this option is not specified, the user will be prompted for 
+		both the username and the password.  If %pass is not specified, 
+		the user will be prompted for the password.
+		</para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+		<term>-P prefix</term><listitem><para>This option allows
+		the user to set the directory prefix for SMB access. The 
+		default value if this option is not specified is 
+		<emphasis>smb</emphasis>.
+		</para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+		<term>-R &lt;name resolve order&gt;</term> 
+		<listitem><para>This option is used to determine what naming 
+		services and in what order to resolve 
+		host names to IP addresses. The option takes a space-separated 
+		string of different name resolution options.</para>
+
+		<para>The options are :"lmhosts", "host", "wins" and "bcast". 
+		They cause names to be resolved as follows :</para>
+
+		<itemizedlist>
+			<listitem><para><constant>lmhosts</constant> : 
+			Lookup an IP address in the Samba lmhosts file. If the 
+			line in lmhosts has no name type attached to the 
+			NetBIOS name 
+			(see the <ulink url="lmhosts.5.html">lmhosts(5)</ulink>
+			for details) then any name type matches for lookup.
+			</para></listitem>
+
+			<listitem><para><constant>host</constant> : 
+			Do a standard host name to IP address resolution, using
+			the system <filename>/etc/hosts</filename>, NIS, or DNS
+			lookups. This method of name resolution is operating 
+			system dependent, for instance on IRIX or Solaris this 
+			may be controlled by the <filename>/etc/nsswitch.conf
+			</filename> file).  Note that this method is only used 
+			if the NetBIOS name type being queried is the 0x20 
+			(server) name type, otherwise it is ignored.
+			</para></listitem>
+
+			<listitem><para><constant>wins</constant> : 
+			Query a name with the IP address listed in the 
+			<parameter>wins server</parameter> parameter.  If no 
+			WINS server has been specified this method will be 
+			ignored.
+			</para></listitem>
+
+			<listitem><para><constant>bcast</constant> : 
+			Do a broadcast on each of the known local interfaces 
+			listed in the <parameter>interfaces</parameter>
+			parameter. This is the least reliable of the name 
+			resolution methods as it depends on the target host 
+			being on a locally connected subnet.
+			</para></listitem>
+		</itemizedlist>
+
+		<para>If this parameter is not set then the name resolve order 
+		defined in the <filename>smb.conf</filename> file parameter  
+		(name resolve order) will be used. </para>
+
+		<para>The default order is lmhosts, host, wins, bcast. Without 
+		this parameter or any entry in the <parameter>name resolve order
+		</parameter> parameter of the <filename>smb.conf</filename> 
+		file, the name resolution methods will be attempted in this 
+		order. </para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+		<term>-d &lt;debug level&gt;</term>
+		<listitem><para>debug level is an integer from 0 to 10.</para>
+
+		<para>The default value if this parameter is not specified
+		is zero.</para>
+
+		<para>The higher this value, the more detail will be logged
+		about the activities of <command>nmblookup</command>. At level
+		0, only critical errors and serious warnings will be logged.
+		</para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+		<term>-l logfilename</term>
+		<listitem><para>If specified causes all debug messages to be
+		written to the file specified by <replaceable>logfilename
+		</replaceable>. If not specified then all messages will be 
+		written to<replaceable>stderr</replaceable>.
+		</para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+		<term>-L libdir</term>
+		<listitem><para>This parameter specifies the location of the 
+		shared libraries used by <command>smbsh</copmmand>. The default
+		value is specified at compile time.
+		</para></listitem>
+	    </varlistentry>
+
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
 
 	<para>To use the <command>smbsh</command> command, execute <command>
 	smbsh</command> from the prompt and enter the username and password 

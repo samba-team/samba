@@ -29,6 +29,7 @@ static struct smbw_server *smbw_srvs;
 
 struct bitmap *smbw_file_bmap;
 extern pstring global_myname;
+extern BOOL AllowDebugChange;
 
 fstring smbw_prefix = SMBW_PREFIX;
 
@@ -59,6 +60,7 @@ void smbw_init(void)
 	smbw_busy++;
 
 	DEBUGLEVEL = 0;
+	AllowDebugChange = False;
 	setup_logging("smbsh",True);
 
 	dbf = stderr;

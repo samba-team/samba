@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern BOOL AllowDebugChange;
+
 static void smbsh_usage(void)
 {
 	printf("smbsh [options]\n\n");
@@ -46,6 +48,9 @@ int main(int argc, char *argv[])
 
 	dbf = stdout;
 
+	AllowDebugChange = False;
+	DEBUGLEVEL = 0;
+
 	charset_initialise();
 	lp_load(CONFIGFILE,True,False,False);
 	codepage_initialise(lp_client_code_page());
@@ -68,6 +73,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'd':
 			smbw_setshared("DEBUG", optarg);
+			DEBUGLEVEL = atoi(optarg);
 			break;
 		case 'U':
 			p = strchr(optarg,'%');
