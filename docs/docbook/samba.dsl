@@ -45,7 +45,6 @@
 (define %section-autolabel% #t)
 (define (toc-depth nd) 3)
 
-(define %root-filename% "Samba-HOWTO")	;; name for the root html file
 (define %html-ext% ".html")		;; default extension for html output files
 (define %html-prefix% "")               ;; prefix for all filenames generated (except root)
 (define %use-id-as-filename% #t)
