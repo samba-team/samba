@@ -868,29 +868,33 @@ BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, i
 makes a structure.
 ********************************************************************/
 
-void init_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
-				time_t unix_time, uint8 major, uint8 minor)
+BOOL init_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char* val_name)
 {
-	int len_type  = strlen(product_type);
+        int len_type = val_name != NULL ? strlen(val_name) + 1 : 0;
 
-	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
+        if (q_i == NULL)
+                return False;
 
-	init_uni_hdr(&q_i->hdr_type, len_type);
-	init_unistr2(&q_i->uni_type, product_type, len_type);
+        q_i->pol = *pol;
 
-	q_i->ptr1 = 1;
-	unix_to_nt_time(&q_i->time, unix_time);
-	q_i->major_version1 = major;
-	q_i->minor_version1 = minor;
-	memset(q_i->pad1, 0, sizeof(q_i->pad1));
+        init_uni_hdr(&(q_i->hdr_type), len_type);
+        init_unistr2(&(q_i->uni_type), val_name, len_type);
 
-	q_i->ptr2 = 1;
-	q_i->major_version2 = major;
-	q_i->minor_version2 = minor;
-	memset(q_i->pad2, 0, sizeof(q_i->pad2));
+        q_i->ptr_reserved = 1;
+        q_i->ptr_buf = 1;
 
-	q_i->ptr3 = 1;
-	q_i->unknown = 0x00000000;
+        q_i->ptr_bufsize = 1;
+        q_i->bufsize = 0;
+        q_i->buf_unk = 0;
+
+        q_i->unk1 = 0;
+        q_i->ptr_buflen = 1;
+        q_i->buflen = 0;
+
+        q_i->ptr_buflen2 = 1;
+        q_i->buflen2 = 0;
+
+        return True;
 }
 
 /*******************************************************************
@@ -918,68 +922,66 @@ BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("ptr1", ps, depth, &r_q->ptr1))
+	if(!prs_uint32("ptr_reserved", ps, depth, &(r_q->ptr_reserved)))
 		return False;
 
-	if (r_q->ptr1 != 0) {
-		if(!smb_io_time("", &r_q->time, ps, depth))
+	if(!prs_uint32("ptr_buf", ps, depth, &(r_q->ptr_buf)))
+		return False;
+
+	if(r_q->ptr_buf) {
+		if(!prs_uint32("ptr_bufsize", ps, depth, &(r_q->ptr_bufsize)))
 			return False;
-		if(!prs_uint8 ("major_version1", ps, depth, &r_q->major_version1))
+		if(!prs_uint32("bufsize", ps, depth, &(r_q->bufsize)))
 			return False;
-		if(!prs_uint8 ("minor_version1", ps, depth, &r_q->minor_version1))
-			return False;
-		if(!prs_uint8s(False, "pad1", ps, depth, r_q->pad1, sizeof(r_q->pad1)))
+		if(!prs_uint32("buf_unk", ps, depth, &(r_q->buf_unk)))
 			return False;
 	}
 
-	if(!prs_uint32("ptr2", ps, depth, &r_q->ptr2))
+	if(!prs_uint32("unk1", ps, depth, &(r_q->unk1)))
 		return False;
 
-	if (r_q->ptr2 != 0) {
-		if(!prs_uint8 ("major_version2", ps, depth, &r_q->major_version2))
-			return False;
-		if(!prs_uint8 ("minor_version2", ps, depth, &r_q->minor_version2))
-			return False;
-		if(!prs_uint8s(False, "pad2", ps, depth, r_q->pad2, sizeof(r_q->pad2)))
-			return False;
-	}
-
-	if(!prs_uint32("ptr3", ps, depth, &r_q->ptr3))
+	if(!prs_uint32("ptr_buflen", ps, depth, &(r_q->ptr_buflen)))
+		return False;
+	if(!prs_uint32("buflen", ps, depth, &(r_q->buflen)))
 		return False;
 
-	if (r_q->ptr3 != 0) {
-		if(!prs_uint32("unknown", ps, depth, &r_q->unknown))
-			return False;
-	}
+	if(!prs_uint32("ptr_buflen2", ps, depth, &(r_q->ptr_buflen2)))
+		return False;
+	if(!prs_uint32("buflen2", ps, depth, &(r_q->buflen2)))
+		return False;
 
-	return True;
+ 	return True;
 }
 
 /*******************************************************************
  Inits a structure.
 ********************************************************************/
 
-void init_reg_r_info(REG_R_INFO *r_r,
-				uint32 level, char *os_type,
-				uint32 unknown_0, uint32 unknown_1,
-				uint32 status)
+BOOL init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
+		     BUFFER2* buf, uint32 type, uint32 status)
 {
-	uint8 buf[512];
-	int len = dos_struni2((char *)buf, os_type, sizeof(buf));
+  if(r_r == NULL)
+    return False;
 
-	r_r->ptr1 = 1;
-	r_r->level = level;
+  
+  r_r->ptr_type = 1;
+  r_r->type = type;
 
-	r_r->ptr_type = 1;
-	init_buffer2(&r_r->uni_type, buf, len*2);
+  /* if include_keyval is not set, don't send the key value, just
+     the buflen data. probably used by NT5 to allocate buffer space - SK */
+  r_r->ptr_uni_val = include_keyval ? 1:0;
+  r_r->uni_val = buf;
 
-	r_r->ptr2 = 1;
-	r_r->unknown_0 = unknown_0;
+  r_r->ptr_max_len = 1;
+  r_r->buf_max_len = r_r->uni_val->buf_max_len;
 
-	r_r->ptr3 = 1;
-	r_r->unknown_1 = unknown_1;
+  r_r->ptr_len = 1;
+  r_r->buf_len = r_r->uni_val->buf_len;
 
-	r_r->status = status;
+  r_r->status = status;
+
+  return True;
+  
 }
 
 /*******************************************************************
@@ -997,41 +999,44 @@ BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("ptr1", ps, depth, &r_r->ptr1))
+	if(!prs_uint32("ptr_type", ps, depth, &(r_r->ptr_type)))
 		return False;
 
-	if (r_r->ptr1 != 0) {
-		if(!prs_uint32("level", ps, depth, &r_r->level))
+	if (r_r->ptr_type != 0) {
+		if(!prs_uint32("type", ps, depth, &r_r->type))
 			return False;
-		if(!prs_uint32("ptr_type", ps, depth, &r_r->ptr_type))
-			return False;
-
-		if(!smb_io_buffer2("uni_type", &r_r->uni_type, r_r->ptr_type, ps, depth))
-			return False;
-		if(!prs_align(ps))
-			return False;
-
-		if(!prs_uint32("ptr2", ps, depth, &r_r->ptr2))
-			return False;
-
-		if (r_r->ptr2 != 0) {
-			if(!prs_uint32("unknown_0", ps, depth, &r_r->unknown_0))
-				return False;
-		}
-
-		if(!prs_uint32("ptr3", ps, depth, &r_r->ptr3))
-			return False;
-
-		if (r_r->ptr3 != 0) {
-			if(!prs_uint32("unknown_1", ps, depth, &r_r->unknown_1))
-				return False;
-		}
-
 	}
+
+	if(!prs_uint32("ptr_uni_val", ps, depth, &(r_r->ptr_uni_val)))
+		return False;
+
+	if(r_r->ptr_uni_val != 0) {
+		if(!smb_io_buffer2("uni_val", r_r->uni_val, r_r->ptr_uni_val, ps, depth))
+			return False;
+	}
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_max_len", ps, depth, &(r_r->ptr_max_len)))
+		return False;
+
+	if (r_r->ptr_max_len != 0) {
+		if(!prs_uint32("buf_max_len", ps, depth, &(r_r->buf_max_len)))
+		return False;
+	}
+
+	if(!prs_uint32("ptr_len", ps, depth, &(r_r->ptr_len)))
+		return False;
+	if (r_r->ptr_len != 0) {
+		if(!prs_uint32("buf_len", ps, depth, &(r_r->buf_len)))
+			return False;
+	}
+
 	if(!prs_uint32("status", ps, depth, &r_r->status))
 		return False;
 
-	return True;
+ 	return True;
 }
 
 /*******************************************************************
