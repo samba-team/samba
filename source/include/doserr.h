@@ -136,11 +136,15 @@
 /* these are win32 error codes. There are only a few places where
    these matter for Samba, primarily in the NT printing code */
 #define WERR_OK W_ERROR(0)
+#define WERR_ACCESS_DENIED W_ERROR(5)
 #define WERR_BADFID W_ERROR(6)
+#define WERR_BADFUNC W_ERROR(1)
 #define WERR_INSUFFICIENT_BUFFER W_ERROR(122)
+#define WERR_INVALID_PARAM W_ERROR(87)
 #define WERR_NOMEM W_ERROR(8)
 #define WERR_INVALID_NAME W_ERROR(123)
 #define WERR_UNKNOWN_LEVEL W_ERROR(124)
+#define WERR_NO_MORE_ITEMS W_ERROR(259)
 #define WERR_UNKNOWN_PRINTER_DRIVER W_ERROR(1797)
 #define WERR_INVALID_PRINTER_NAME W_ERROR(1801)
 #define WERR_INVALID_DATATYPE W_ERROR(1804)
