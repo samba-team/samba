@@ -1,6 +1,5 @@
-PROD:SKUNK2000:Samba:
-description = "Samba - A Windows SMB/CIFS fileserver for UNIX"
-version     = 2.2
-packages    = SKUNK2000:Samba
-required    = SKUNK2000:Samba
+PROD:SCO:Samba:
+description = $Samba_NAME
+version     = $Samba_VER
+packages    = SCO:Samba::$Samba_VER
 cmpntFiles  = Samba.cmpnt

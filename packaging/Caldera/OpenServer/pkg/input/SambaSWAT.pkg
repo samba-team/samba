@@ -1,0 +1,417 @@
+
+PKG:SambaSWAT:
+description        = "Samba Web Administration Tool"
+dependencies       = 
+distTreeRootSHARED = $Samba_DIR
+distTreeRootCLIENT = $Samba_DIR
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/sbin/swat:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/sbin/swat
+
+DIR:SambaSWAT:SHARED:usr/lib/samba/swat:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+DIR:SambaSWAT:SHARED:usr/lib/samba/swat/images:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/images/globals.gif:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/images/globals.gif
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/images/home.gif:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/images/home.gif
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/images/passwd.gif:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/images/passwd.gif
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/images/printers.gif:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/images/printers.gif
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/images/samba.gif:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/images/samba.gif
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/images/shares.gif:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/images/shares.gif
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/images/status.gif:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/images/status.gif
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/images/viewconfig.gif:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/images/viewconfig.gif
+
+DIR:SambaSWAT:SHARED:usr/lib/samba/swat/help:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/welcome.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/welcome.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/DOMAIN_MEMBER.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/DOMAIN_MEMBER.html
+exportPath = /usr/share/doc/samba/help/DOMAIN_MEMBER.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/NT_Security.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/NT_Security.html
+exportPath = /usr/share/doc/samba/help/NT_Security.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/OS2-Client-HOWTO.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/OS2-Client-HOWTO.html
+exportPath = /usr/share/doc/samba/help/OS2-Client-HOWTO.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/Samba-HOWTO-Collection.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/Samba-HOWTO-Collection.html
+exportPath = /usr/share/doc/samba/help/Samba-HOWTO-Collection.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/UNIX_INSTALL.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/UNIX_INSTALL.html
+exportPath = /usr/share/doc/samba/help/UNIX_INSTALL.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/findsmb.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/findsmb.1.html
+exportPath = /usr/share/doc/samba/help/findsmb.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/lmhosts.5.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/lmhosts.5.html
+exportPath = /usr/share/doc/samba/help/lmhosts.5.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/make_smbcodepage.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/make_smbcodepage.1.html
+exportPath = /usr/share/doc/samba/help/make_smbcodepage.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/msdfs_setup.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/msdfs_setup.html
+exportPath = /usr/share/doc/samba/help/msdfs_setup.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/nmbd.8.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/nmbd.8.html
+exportPath = /usr/share/doc/samba/help/nmbd.8.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/nmblookup.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/nmblookup.1.html
+exportPath = /usr/share/doc/samba/help/nmblookup.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/printer_driver2.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/printer_driver2.html
+exportPath = /usr/share/doc/samba/help/printer_driver2.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/rpcclient.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/rpcclient.1.html
+exportPath = /usr/share/doc/samba/help/rpcclient.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/samba-pdc-faq.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/samba-pdc-faq.html
+exportPath = /usr/share/doc/samba/help/samba-pdc-faq.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/samba-pdc-howto.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/samba-pdc-howto.html
+exportPath = /usr/share/doc/samba/help/samba-pdc-howto.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/samba.7.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/samba.7.html
+exportPath = /usr/share/doc/samba/help/samba.7.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smb.conf.5.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smb.conf.5.html
+exportPath = /usr/share/doc/samba/help/smb.conf.5.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbcacls.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbcacls.1.html
+exportPath = /usr/share/doc/samba/help/smbcacls.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbclient.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbclient.1.html
+exportPath = /usr/share/doc/samba/help/smbclient.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbcontrol.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbcontrol.1.html
+exportPath = /usr/share/doc/samba/help/smbcontrol.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbd.8.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbd.8.html
+exportPath = /usr/share/doc/samba/help/smbd.8.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbmnt.8.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbmnt.8.html
+exportPath = /usr/share/doc/samba/help/smbmnt.8.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbmount.8.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbmount.8.html
+exportPath = /usr/share/doc/samba/help/smbmount.8.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbpasswd.5.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbpasswd.5.html
+exportPath = /usr/share/doc/samba/help/smbpasswd.5.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbpasswd.8.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbpasswd.8.html
+exportPath = /usr/share/doc/samba/help/smbpasswd.8.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbrun.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbrun.1.html
+exportPath = /usr/share/doc/samba/help/smbrun.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbsh.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbsh.1.html
+exportPath = /usr/share/doc/samba/help/smbsh.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbspool.8.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbspool.8.html
+exportPath = /usr/share/doc/samba/help/smbspool.8.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbstatus.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbstatus.1.html
+exportPath = /usr/share/doc/samba/help/smbstatus.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbtar.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbtar.1.html
+exportPath = /usr/share/doc/samba/help/smbtar.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbumount.8.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/smbumount.8.html
+exportPath = /usr/share/doc/samba/help/smbumount.8.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/swat.8.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/swat.8.html
+exportPath = /usr/share/doc/samba/help/swat.8.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/testparm.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/testparm.1.html
+exportPath = /usr/share/doc/samba/help/testparm.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/testprns.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/testprns.1.html
+exportPath = /usr/share/doc/samba/help/testprns.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/wbinfo.1.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/wbinfo.1.html
+exportPath = /usr/share/doc/samba/help/wbinfo.1.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/winbind.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/winbind.html
+exportPath = /usr/share/doc/samba/help/winbind.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/winbindd.8.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/winbindd.8.html
+exportPath = /usr/share/doc/samba/help/winbindd.8.html
+
+DIR:SambaSWAT:SHARED:usr/lib/samba/swat/include:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/include/footer.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/include/footer.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/include/header.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/include/header.html
+
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/README:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/README

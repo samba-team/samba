@@ -1,0 +1,47 @@
+#!/bin/sh
+# Samba mkdev script for SCO OpenServer
+#
+# Run "initconfig" to set up initial Samba configuration;
+# move init script into place so that Samba will be started
+# at boot time.
+
+# Prompt with mesg, return non-zero on q
+prompt() {
+        FAIL=1 OK=0
+        while   echo "\n${mesg}or enter q to quit: \c" >&2
+        do      read cmd
+                case $cmd in
+                +x|-x)  set $cmd                                        ;;
+                Q|q)    return $FAIL                                    ;;
+                !*)     eval `expr "$cmd" : "!\(.*\)"`                  ;;
+                "")     # If there is an argument use it as the default
+                        # else loop until 'cmd' is set
+                        [ "$1" ] && {
+                                cmd=$1
+                                return $OK
+                        }
+                        : continue
+                        ;;
+                *)      return $OK                                      ;;
+                esac
+        done
+}
+
+mesg="\tSamba Configuration\n
+\t1. Configure and activate Samba
+\t2. Deactivate Samba\n
+Select an option "
+
+while true ; do
+        prompt || exit 1
+        case $cmd in
+        1)      /usr/lib/samba/bin/initconfig
+		cp -f /etc/init.d/samba /etc/rc2.d/S92samba
+		exit 0
+		;;
+	2)	rm -f /etc/rc2.d/S92samba
+		exit 0
+		;;
+	esac
+done
+

@@ -12,8 +12,11 @@ CFLAGS="-O3 -I/usr/local/include -L/usr/local/lib"
 CXX="g++"
 CXXFLAGS="-O3 -I/usr/local/include/stl -I/usr/local/include -L/usr/local/lib"
 RANLIB=true
-MAKE=/usr/local/bin/make
-PREFIX=/usr/local/samba
+MAKE=/usr/gnu/bin/make
+PREFIX=/usr/lib/samba
+LIBDIR=/etc/samba.d
+PRIVATEDIR=/etc/samba.d
+LOCKDIR=/var/locks/samba.d
 if [ "$V" = "echo" ]
 then
     echo "exporting the following shell variables:"
@@ -41,6 +44,9 @@ if [ "$V" = "echo" ]
 then
     echo "./configure \
 	--prefix=${PREFIX} \
+	--libdir=${LIBDIR} \
+	--with-privatedir=${PRIVATEDIR} \
+        --with-lockdir={$LOCKDIR} \
 	--with-profile \
 	--with-syslog \
 	--with-utmp \
@@ -51,6 +57,9 @@ then
 else
     ./configure \
 	--prefix=${PREFIX} \
+	--libdir=${LIBDIR} \
+	--with-privatedir=${PRIVATEDIR} \
+        --with-lockdir={$LOCKDIR} \
 	--with-profile \
 	--with-syslog \
 	--with-utmp \
