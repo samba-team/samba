@@ -1,3 +1,7 @@
+1999-10-06  Assar Westerlund  <assar@sics.se>
+
+	* getarg.c (getarg): also set optind when returning error
+
 1999-09-26  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: add parse_bytes.[ch]
