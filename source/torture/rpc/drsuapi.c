@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-#define TEST_MACHINE_NAME "torturetest"
-
 static BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		      struct policy_handle *bind_handle)
 {
@@ -216,6 +214,86 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_DsGetDCInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		      struct policy_handle *bind_handle)
+{
+	NTSTATUS status;
+	struct drsuapi_DsGetDomainControllerInfo r;
+	BOOL ret = True;
+
+	r.in.bind_handle = bind_handle;
+	r.in.level = 1;
+	r.in.req.req1.domain_name = talloc_strdup(mem_ctx, lp_realm());
+	r.in.req.req1.level = 1;
+
+	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsGetDomainControllerInfo failed - %s\n", errstr);
+		ret = False;
+	}
+
+	r.in.req.req1.level = 2;
+
+	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsGetDomainControllerInfo failed - %s\n", errstr);
+		ret = False;
+	}
+
+	r.in.req.req1.level = -1;
+
+	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsGetDomainControllerInfo failed - %s\n", errstr);
+		ret = False;
+	}
+
+	r.in.req.req1.domain_name = talloc_strdup(mem_ctx, lp_workgroup());
+	r.in.req.req1.level = 2;
+
+	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsGetDomainControllerInfo failed - %s\n", errstr);
+		ret = False;
+	}
+
+	r.in.req.req1.domain_name = "__UNKNOWN_DOMAIN__";
+	r.in.req.req1.level = 2;
+
+	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS(0x0000208d))) {
+			printf("drsuapi_DsGetDomainControllerInfo level %d with invalid domain name\n"
+				" - %s != NTSTATUS[0x0000208d]\n",
+					r.in.req.req1.level, errstr);
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
 static BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			struct policy_handle *bind_handle)
 {
@@ -260,6 +338,10 @@ BOOL torture_rpc_drsuapi(int dummy)
 	mem_ctx = talloc_init("torture_rpc_drsuapi");
 
 	if (!test_DsBind(p, mem_ctx, &bind_handle)) {
+		ret = False;
+	}
+
+	if (!test_DsGetDCInfo(p, mem_ctx, &bind_handle)) {
 		ret = False;
 	}
 

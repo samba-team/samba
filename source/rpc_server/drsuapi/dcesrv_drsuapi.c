@@ -226,10 +226,10 @@ static NTSTATUS DRSUAPI_REMOVE_DS_DOMAIN(struct dcesrv_call_state *dce_call, TAL
 
 
 /* 
-  DRSUAPI_DOMAIN_CONTROLLER_INFO 
+  drsuapi_DsGetDomainControllerInfo 
 */
-static NTSTATUS DRSUAPI_DOMAIN_CONTROLLER_INFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_DOMAIN_CONTROLLER_INFO *r)
+static NTSTATUS drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsGetDomainControllerInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

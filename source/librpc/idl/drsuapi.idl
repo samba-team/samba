@@ -158,7 +158,80 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x10 */
-	NTSTATUS DRSUAPI_DOMAIN_CONTROLLER_INFO();
+	typedef struct {
+		unistr *domain_name; /* netbios or dns */
+		int32 level; /* specifies the switch level for the request */
+	} drsuapi_DsGetDCInfoRequest1;
+
+	typedef union {
+		[case(1)] drsuapi_DsGetDCInfoRequest1 req1;
+	} drsuapi_DsGetDCInfoRequest;
+
+	typedef struct {
+		unistr *netbios_name;
+		unistr *dns_name;
+		unistr *site_name;
+		unistr *computer_dn;
+		unistr *server_dn;
+		uint32 is_pdc;
+		uint32 is_enabled;
+	} drsuapi_DsGetDCInfo1;
+
+	typedef struct {
+		[range(0,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsGetDCInfo1 *array;
+	} drsuapi_DsGetDCInfoCtr1;
+
+	typedef struct {
+		unistr *netbios_name;
+		unistr *dns_name;
+		unistr *site_name;
+		unistr *site_dn;
+		unistr *computer_dn;
+		unistr *server_dn;
+		unistr *ntds_dn;
+		uint32 is_pdc;
+		uint32 is_enabled;
+		uint32 is_gc;
+		GUID site_guid;
+		GUID computer_guid;
+		GUID server_guid;
+		GUID ntds_guid;
+	} drsuapi_DsGetDCInfo2;
+
+	typedef struct {
+		[range(0,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsGetDCInfo2 *array;
+	} drsuapi_DsGetDCInfoCtr2;
+
+	typedef struct {
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
+		uint32 unknown4;
+		uint32 unknown5;
+		uint32 unknown6;
+		unistr *server_nt4_account;
+	} drsuapi_DsGetDCInfo01;
+
+	typedef struct {
+		[range(0,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsGetDCInfo01 *array;
+	} drsuapi_DsGetDCInfoCtr01;
+
+	typedef union {
+		[case(1)] drsuapi_DsGetDCInfoCtr1 ctr1;
+		[case(2)] drsuapi_DsGetDCInfoCtr2 ctr2;
+		[case(-1)] drsuapi_DsGetDCInfoCtr01 ctr01;
+	} drsuapi_DsGetDCInfoCtr;
+
+	/* maybe WERROR function */
+	NTSTATUS drsuapi_DsGetDomainControllerInfo(
+		[in,ref] policy_handle *bind_handle,
+		[in, out] int32 level,
+		[in,switch_is(level)] drsuapi_DsGetDCInfoRequest req,
+		[out,switch_is(level)] drsuapi_DsGetDCInfoCtr ctr
+		);
 
 	/*****************/
         /* Function 0x11 */
