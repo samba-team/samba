@@ -263,8 +263,8 @@ static int parse_trans2_search(struct cli_tree *tree,
 		data->standard.attrib      = SVAL(blob->data, 20);
 		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
 					   &data->standard.name,
-					   22, 23, STR_LEN8BIT);
-		return (len + 23 + 3) & ~3;
+					   22, 23, STR_LEN8BIT | STR_TERMINATE | STR_LEN_NOTERM);
+		return len + 23;
 
 	case RAW_SEARCH_EA_SIZE:
 		if (flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
@@ -283,8 +283,8 @@ static int parse_trans2_search(struct cli_tree *tree,
 		data->ea_size.ea_size     = IVAL(blob->data, 22);
 		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
 					   &data->ea_size.name,
-					   26, 27, STR_LEN8BIT | STR_NOALIGN);
-		return len + 27;
+					   26, 27, STR_LEN8BIT | STR_TERMINATE | STR_NOALIGN);
+		return len + 27 + 1;
 
 	case RAW_SEARCH_DIRECTORY_INFO:
 		if (blob->length < 65) return -1;

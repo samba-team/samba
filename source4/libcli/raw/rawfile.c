@@ -48,7 +48,7 @@ struct cli_request *smb_raw_rename_send(struct cli_tree *tree,
 		SETUP_REQUEST(SMBntrename, 4, 0);
 		SSVAL(req->out.vwv, VWV(0), parms->ntrename.in.attrib);
 		SSVAL(req->out.vwv, VWV(1), parms->ntrename.in.flags);
-		SIVAL(req->out.vwv, VWV(2), parms->ntrename.in.unknown);
+		SIVAL(req->out.vwv, VWV(2), parms->ntrename.in.cluster_size);
 		cli_req_append_ascii4(req, parms->ntrename.in.old_name, STR_TERMINATE);
 		cli_req_append_ascii4(req, parms->ntrename.in.new_name, STR_TERMINATE);
 		break;

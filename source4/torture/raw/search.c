@@ -412,6 +412,12 @@ static NTSTATUS multiple_search(struct cli_state *cli,
 				if (level == RAW_SEARCH_STANDARD) {
 					io2.t2fnext.in.resume_key = 
 						result->list[result->count-1].standard.resume_key;
+				} else if (level == RAW_SEARCH_EA_SIZE) {
+					io2.t2fnext.in.resume_key = 
+						result->list[result->count-1].ea_size.resume_key;
+				} else if (level == RAW_SEARCH_DIRECTORY_INFO) {
+					io2.t2fnext.in.resume_key = 
+						result->list[result->count-1].directory_info.file_index;
 				} else {
 					io2.t2fnext.in.resume_key = 
 						result->list[result->count-1].both_directory_info.file_index;
@@ -423,6 +429,12 @@ static NTSTATUS multiple_search(struct cli_state *cli,
 				if (level == RAW_SEARCH_STANDARD) {
 					io2.t2fnext.in.last_name = 
 						result->list[result->count-1].standard.name.s;
+				} else if (level == RAW_SEARCH_EA_SIZE) {
+					io2.t2fnext.in.last_name = 
+						result->list[result->count-1].ea_size.name.s;
+				} else if (level == RAW_SEARCH_DIRECTORY_INFO) {
+					io2.t2fnext.in.last_name = 
+						result->list[result->count-1].directory_info.name.s;
 				} else {
 					io2.t2fnext.in.last_name = 
 						result->list[result->count-1].both_directory_info.name.s;
@@ -478,6 +490,16 @@ static int search_standard_compare(union smb_search_data *d1, union smb_search_d
 	return strcmp(d1->standard.name.s, d2->standard.name.s);
 }
 
+static int search_ea_size_compare(union smb_search_data *d1, union smb_search_data *d2)
+{
+	return strcmp(d1->ea_size.name.s, d2->ea_size.name.s);
+}
+
+static int search_directory_info_compare(union smb_search_data *d1, union smb_search_data *d2)
+{
+	return strcmp(d1->directory_info.name.s, d2->directory_info.name.s);
+}
+
 static int search_old_compare(union smb_search_data *d1, union smb_search_data *d2)
 {
 	return strcmp(d1->search.name, d2->search.name);
@@ -507,6 +529,12 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		{"STANDARD",            "FLAGS", RAW_SEARCH_STANDARD,            CONT_FLAGS},
 		{"STANDARD",            "KEY",   RAW_SEARCH_STANDARD,            CONT_RESUME_KEY},
 		{"STANDARD",            "NAME",  RAW_SEARCH_STANDARD,            CONT_NAME},
+		{"EA_SIZE",             "FLAGS", RAW_SEARCH_EA_SIZE,             CONT_FLAGS},
+		{"EA_SIZE",             "KEY",   RAW_SEARCH_EA_SIZE,             CONT_RESUME_KEY},
+		{"EA_SIZE",             "NAME",  RAW_SEARCH_EA_SIZE,             CONT_NAME},
+		{"DIRECTORY_INFO",      "FLAGS", RAW_SEARCH_DIRECTORY_INFO,      CONT_FLAGS},
+		{"DIRECTORY_INFO",      "KEY",   RAW_SEARCH_DIRECTORY_INFO,      CONT_RESUME_KEY},
+		{"DIRECTORY_INFO",      "NAME",  RAW_SEARCH_DIRECTORY_INFO,      CONT_NAME},
 		{"SEARCH",              "ID",    RAW_SEARCH_SEARCH,              CONT_RESUME_KEY}
 	};
 
@@ -519,7 +547,7 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Creating %d files\n", num_files);
 
 	for (i=0;i<num_files;i++) {
-		asprintf(&fname, BASEDIR "\\test%03d.txt", i);
+		asprintf(&fname, BASEDIR "\\t%03d-%d.txt", i, i);
 		fnum = cli_open(cli, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, cli_errstr(cli));
@@ -551,6 +579,12 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		} else if (search_types[t].level == RAW_SEARCH_STANDARD) {
 			qsort(result.list, result.count, sizeof(result.list[0]), 
 			      QSORT_CAST search_standard_compare);
+		} else if (search_types[t].level == RAW_SEARCH_EA_SIZE) {
+			qsort(result.list, result.count, sizeof(result.list[0]), 
+			      QSORT_CAST search_ea_size_compare);
+		} else if (search_types[t].level == RAW_SEARCH_DIRECTORY_INFO) {
+			qsort(result.list, result.count, sizeof(result.list[0]), 
+			      QSORT_CAST search_directory_info_compare);
 		} else {
 			qsort(result.list, result.count, sizeof(result.list[0]), 
 			      QSORT_CAST search_old_compare);
@@ -562,10 +596,14 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 				s = result.list[i].both_directory_info.name.s;
 			} else if (search_types[t].level == RAW_SEARCH_STANDARD) {
 				s = result.list[i].standard.name.s;
+			} else if (search_types[t].level == RAW_SEARCH_EA_SIZE) {
+				s = result.list[i].ea_size.name.s;
+			} else if (search_types[t].level == RAW_SEARCH_DIRECTORY_INFO) {
+				s = result.list[i].directory_info.name.s;
 			} else {
 				s = result.list[i].search.name;
 			}
-			asprintf(&fname, "test%03d.txt", i);
+			asprintf(&fname, "t%03d-%d.txt", i, i);
 			if (strcmp(fname, s)) {
 				printf("Incorrect name %s at entry %d\n", s, i);
 				ret = False;
