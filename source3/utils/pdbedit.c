@@ -185,6 +185,8 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	uchar new_nt_p16[16];
 	char *password1, *password2;
 	
+	ZERO_STRUCT(sam_pwent);
+
 	if (pdb_getsampwnam (username))
 	{
 		fprintf (stderr, "Username already exist in database!\n");
