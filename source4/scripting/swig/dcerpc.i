@@ -51,6 +51,11 @@ void set_ntstatus_exception(int status)
 
 uint8 uint8_from_python(PyObject *obj, char *name)
 {
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return 0;
+	}
+
 	if (!PyInt_Check(obj)) {
 		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
 		return 0;
@@ -66,6 +71,11 @@ PyObject *uint8_to_python(uint8 obj)
 
 uint16 uint16_from_python(PyObject *obj, char *name)
 {
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return 0;
+	}
+
 	if (!PyInt_Check(obj)) {
 		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
 		return 0;
@@ -81,6 +91,11 @@ PyObject *uint16_to_python(uint16 obj)
 
 uint32 uint32_from_python(PyObject *obj, char *name)
 {
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return 0;
+	}
+
 	if (!PyInt_Check(obj)) {
 		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
 		return 0;
@@ -96,6 +111,11 @@ PyObject *uint32_to_python(uint32 obj)
 
 int64 int64_from_python(PyObject *obj, char *name)
 {
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return 0;
+	}
+
 	if (!PyInt_Check(obj)) {
 		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
 		return 0;
@@ -111,6 +131,11 @@ PyObject *int64_to_python(int64 obj)
 
 uint64 uint64_from_python(PyObject *obj, char *name)
 {
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return 0;
+	}
+
 	if (!PyInt_Check(obj)) {
 		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
 		return 0;
@@ -126,6 +151,11 @@ PyObject *uint64_to_python(uint64 obj)
 
 NTTIME NTTIME_from_python(PyObject *obj, char *name)
 {
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return 0;
+	}
+
 	if (!PyInt_Check(obj)) {
 		PyErr_Format(PyExc_TypeError, "Expecting integer value for %s", name);
 		return 0;
@@ -141,6 +171,11 @@ PyObject *NTTIME_to_python(NTTIME obj)
 
 HYPER_T HYPER_T_from_python(PyObject *obj, char *name)
 {
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return 0;
+	}
+
 	if (!PyInt_Check(obj)) {
 		PyErr_Format(PyExc_TypeError, "Expecting integer value for %s", name);
 		return 0;
@@ -159,12 +194,17 @@ PyObject *HYPER_T_to_python(HYPER_T obj)
 
 char *string_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj, char *name)
 {
+	if (obj == NULL) {
+		PyErr_Format(PyExc_ValueError, "Expecting key %s", name);
+		return NULL;
+	}
+
 	if (obj == Py_None)
 		return NULL;
 
 	if (!PyString_Check(obj)) {
 		PyErr_Format(PyExc_TypeError, "Expecting string value for %s", name);
-		return 0;
+		return NULL;
 	}
 
 	return PyString_AsString(obj);
