@@ -483,7 +483,7 @@ static BOOL find_connect_pdc(char *domain, struct in_addr *dc_ip)
 ****************************************************************************/
 BOOL get_any_dc_name(char *domain, fstring srv_name)
 {
-	BOOL connected_ok = False;
+	BOOL connected_ok = False, triedagain = False;
 	struct in_addr dest_ip;
 	pstring remote_machine;
 	char *p;
@@ -545,8 +545,9 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 	/* All our specified password servers are broken so try again with
 	   ones that may not have been specified. */
 
-	if (!connected_ok && !strequal(p, "*")) {
+	if (!connected_ok && !triedagain) {
 		p = "*";
+		triedagain = True;
 		goto tryagain;
 	}
 
