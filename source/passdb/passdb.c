@@ -83,7 +83,8 @@ void pdb_fill_default_sam(SAM_ACCOUNT *user)
 	user->private.logon_divs = 168; 	/* hours per week */
 	user->private.hours_len = 21; 		/* 21 times 8 bits = 168 */
 	memset(user->private.hours, 0xff, user->private.hours_len); /* available at all hours */
-	user->private.unknown_5 = 0x00000000; /* don't know */
+	user->private.bad_password_count = 0;
+	user->private.logon_count = 0;
 	user->private.unknown_6 = 0x000004ec; /* don't know */
 
 	/* Some parts of samba strlen their pdb_get...() returns, 
@@ -1280,7 +1281,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
  Marshall/unmarshall SAM_ACCOUNT structs.
  *********************************************************************/
 
-#define TDB_FORMAT_STRING       "ddddddBBBBBBBBBBBBddBBwdwdBdd"
+#define TDB_FORMAT_STRING       "ddddddBBBBBBBBBBBBddBBwdwdBwwd"
 
 /**********************************************************************
  Intialize a SAM_ACCOUNT struct from a BYTE buffer of size len
@@ -1315,8 +1316,9 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		fullname_len, homedir_len, logon_script_len,
 		profile_path_len, acct_desc_len, workstations_len;
 		
-	uint32	user_rid, group_rid, unknown_3, hours_len, unknown_5, unknown_6;
+	uint32	user_rid, group_rid, unknown_3, hours_len, unknown_6;
 	uint16	acct_ctrl, logon_divs;
+	uint16	bad_password_count, logon_count;
 	uint8	*hours;
 	static uint8	*lm_pw_ptr, *nt_pw_ptr;
 	uint32		len = 0;
@@ -1357,7 +1359,8 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		&logon_divs,
 		&hours_len,
 		&hourslen, &hours,
-		&unknown_5,
+		&bad_password_count,
+		&logon_count,
 		&unknown_6);
 		
 	if (len == -1)  {
@@ -1432,7 +1435,8 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	pdb_set_unknown_3(sampass, unknown_3, PDB_SET);
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
-	pdb_set_unknown_5(sampass, unknown_5, PDB_SET);
+	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
+	pdb_set_logon_count(sampass, logon_count, PDB_SET);
 	pdb_set_unknown_6(sampass, unknown_6, PDB_SET);
 	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
 	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
@@ -1640,7 +1644,8 @@ uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_
 		pdb_get_logon_divs(sampass),
 		pdb_get_hours_len(sampass),
 		MAX_HOURS_LEN, pdb_get_hours(sampass),
-		pdb_get_unknown_5(sampass),
+		pdb_get_bad_password_count(sampass),
+		pdb_get_logon_count(sampass),
 		pdb_get_unknown_6(sampass));
 
 
@@ -1682,7 +1687,8 @@ uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_
 		pdb_get_logon_divs(sampass),
 		pdb_get_hours_len(sampass),
 		MAX_HOURS_LEN, pdb_get_hours(sampass),
-		pdb_get_unknown_5(sampass),
+		pdb_get_bad_password_count(sampass),
+		pdb_get_logon_count(sampass),
 		pdb_get_unknown_6(sampass));
 	
 	

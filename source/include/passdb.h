@@ -57,7 +57,8 @@ enum pdb_elements {
 	PDB_MUNGEDDIAL,
 	PDB_HOURS,
 	PDB_UNKNOWN3,
-	PDB_UNKNOWN5,
+	PDB_BAD_PASSWORD_COUNT,
+	PDB_LOGON_COUNT,
 	PDB_UNKNOWN6,
 	PDB_LMPASSWD,
 	PDB_NTPASSWD,
@@ -136,7 +137,10 @@ typedef struct sam_passwd
 		uint32 hours_len; /* normally 21 bytes */
 		uint8 hours[MAX_HOURS_LEN];
 		
-		uint32 unknown_5; /* 0x0002 0000 */
+		/* Was unknown_5. */
+		uint16 bad_password_count;
+		uint16 logon_count;
+
 		uint32 unknown_6; /* 0x0000 04ec */
 		/* a tag for who added the private methods */
 		const struct pdb_methods *backend_private_methods;
