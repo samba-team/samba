@@ -660,8 +660,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 
 		length = pkt.u.response.stub_and_verifier.length;
 
-		payload.data = talloc_realloc(mem_ctx, 
-					      payload.data, 
+		payload.data = talloc_realloc(payload.data, 
 					      payload.length + length);
 		if (!payload.data) {
 			return NT_STATUS_NO_MEMORY;

@@ -174,7 +174,7 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 		while (blob->length - ofs >= 24) {
 			uint_t n = parms->stream_info.out.num_streams;
 			parms->stream_info.out.streams = 
-				talloc_realloc(mem_ctx,parms->stream_info.out.streams,
+				talloc_realloc(parms->stream_info.out.streams,
 					       (n+1) * sizeof(parms->stream_info.out.streams[0]));
 			if (!parms->stream_info.out.streams) {
 				return NT_STATUS_NO_MEMORY;

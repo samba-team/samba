@@ -249,14 +249,6 @@ const smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	return NULL;
 }
 
-static int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
-{
-	size_t n = 0;
-	while ((n < len) && *b && *a == *b) { a++; b++; n++;}
-	return (len - n)?(*a - *b):0;	
-}
-
-
 /*******************************************************************
  Convert a string to lower case.
  return True if any char is converted

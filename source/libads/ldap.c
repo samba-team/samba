@@ -795,7 +795,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	for (curmod=0; modlist[curmod] && modlist[curmod] != (LDAPMod *) -1;
 	     curmod++);
 	if (modlist[curmod] == (LDAPMod *) -1) {
-		if (!(modlist = talloc_realloc(ctx, modlist, 
+		if (!(modlist = talloc_realloc(modlist, 
 			(curmod+ADS_MODLIST_ALLOC_SIZE+1)*sizeof(LDAPMod *))))
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		memset(&modlist[curmod], 0, 
@@ -1703,7 +1703,7 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 		return NULL;
 	}
 
-	strings = talloc_realloc(mem_ctx, current_strings,
+	strings = talloc_realloc(current_strings,
 				 sizeof(*current_strings) *
 				 (*num_strings + num_new_strings));
 	

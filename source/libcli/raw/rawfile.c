@@ -34,7 +34,7 @@
 struct smbcli_request *smb_raw_rename_send(struct smbcli_tree *tree,
 					union smb_rename *parms)
 {
-	struct smbcli_request *req; 
+	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
 	case RAW_RENAME_RENAME:
@@ -490,7 +490,7 @@ NTSTATUS smb_raw_open(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_o
 ****************************************************************************/
 struct smbcli_request *smb_raw_close_send(struct smbcli_tree *tree, union smb_close *parms)
 {
-	struct smbcli_request *req; 
+	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
 	case RAW_CLOSE_GENERIC:
@@ -536,7 +536,7 @@ NTSTATUS smb_raw_close(struct smbcli_tree *tree, union smb_close *parms)
 ****************************************************************************/
 struct smbcli_request *smb_raw_lock_send(struct smbcli_tree *tree, union smb_lock *parms)
 {
-	struct smbcli_request *req; 
+	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
 	case RAW_LOCK_GENERIC:

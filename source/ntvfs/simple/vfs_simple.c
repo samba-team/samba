@@ -580,8 +580,8 @@ static NTSTATUS svfs_close(struct smbsrv_request *req, union smb_close *io)
 	}
 
 	DLIST_REMOVE(private->open_files, f);
-	talloc_free(req->tcon->mem_ctx, f->name);
-	talloc_free(req->tcon->mem_ctx, f);
+	talloc_free(f->name);
+	talloc_free(f);
 
 	return NT_STATUS_OK;
 }
@@ -766,7 +766,7 @@ static NTSTATUS svfs_search_first(struct smbsrv_request *req, union smb_search_f
 
 	dir = svfs_list(mem_ctx, req, io->t2ffirst.in.pattern);
 	if (!dir) {
-		talloc_destroy_pool(mem_ctx);
+		talloc_free(mem_ctx);
 		return NT_STATUS_FOOBAR;
 	}
 

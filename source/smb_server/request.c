@@ -89,7 +89,7 @@ static void req_setup_chain_reply(struct smbsrv_request *req, uint_t wct, uint_t
 	/* over allocate by a small amount */
 	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
 
-	req->out.buffer = talloc_realloc(req->mem_ctx, req->out.buffer, req->out.allocated);
+	req->out.buffer = talloc_realloc(req->out.buffer, req->out.allocated);
 	if (!req->out.buffer) {
 		smbsrv_terminate_connection(req->smb_conn, "allocation failed");
 	}
@@ -203,7 +203,7 @@ static void req_grow_allocation(struct smbsrv_request *req, uint_t new_size)
 
 	/* we need to realloc */
 	req->out.allocated = req->out.size + delta + REQ_OVER_ALLOCATION;
-	buf2 = talloc_realloc(req->mem_ctx, req->out.buffer, req->out.allocated);
+	buf2 = talloc_realloc(req->out.buffer, req->out.allocated);
 	if (buf2 == NULL) {
 		smb_panic("out of memory in req_grow_allocation");
 	}

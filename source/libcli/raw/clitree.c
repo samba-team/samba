@@ -70,7 +70,7 @@ void smbcli_tree_close(struct smbcli_tree *tree)
 ****************************************************************************/
 struct smbcli_request *smb_tree_connect_send(struct smbcli_tree *tree, union smb_tcon *parms)
 {
-	struct smbcli_request *req;
+	struct smbcli_request *req = NULL;
 
 	switch (parms->tcon.level) {
 	case RAW_TCON_TCON:

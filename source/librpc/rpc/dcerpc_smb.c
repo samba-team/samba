@@ -98,7 +98,7 @@ static NTSTATUS dcerpc_raw_recv(struct dcerpc_pipe *p,
 	}
 
 	/* make sure the payload can hold the whole fragment */
-	payload.data = talloc_realloc(mem_ctx, payload.data, frag_length);
+	payload.data = talloc_realloc(payload.data, frag_length);
 	if (!payload.data) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -203,7 +203,7 @@ static NTSTATUS smb_secondary_request(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	blob->data = talloc_realloc(mem_ctx, blob->data, frag_length);
+	blob->data = talloc_realloc(blob->data, frag_length);
 	if (!blob->data) {
 		return NT_STATUS_NO_MEMORY;
 	}

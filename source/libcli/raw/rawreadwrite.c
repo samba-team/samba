@@ -33,7 +33,7 @@
 struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_read *parms)
 {
 	BOOL bigoffset = False;
-	struct smbcli_request *req; 
+	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
 	case RAW_READ_GENERIC:
@@ -185,7 +185,7 @@ NTSTATUS smb_raw_read(struct smbcli_tree *tree, union smb_read *parms)
 struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_write *parms)
 {
 	BOOL bigoffset = False;
-	struct smbcli_request *req; 
+	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
 	case RAW_WRITE_GENERIC:

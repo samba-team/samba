@@ -65,7 +65,7 @@ static WERROR reg_dir_open_key(REG_HANDLE *h, int hive, const char *name, REG_KE
 	}
 	closedir(d);
 	ret = reg_key_new_abs(name, h, fullpath);
-	talloc_steal(mem_ctx, ret->mem_ctx, fullpath);
+	talloc_steal(ret->mem_ctx, fullpath);
 	talloc_destroy(mem_ctx);
 	*subkey = ret;
 	return WERR_OK;

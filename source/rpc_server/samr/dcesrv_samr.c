@@ -572,7 +572,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = d_state;
-	a_state->account_dn = talloc_steal(mem_ctx, mem_ctx2, msg.dn);
+	a_state->account_dn = talloc_steal(mem_ctx2, msg.dn);
 	a_state->account_sid = talloc_strdup(mem_ctx2, sidstr);
 	a_state->account_name = talloc_strdup(mem_ctx2, groupname);
 	if (!a_state->account_name || !a_state->account_sid) {
@@ -756,7 +756,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = d_state;
-	a_state->account_dn = talloc_steal(mem_ctx, mem_ctx2, msg.dn);
+	a_state->account_dn = talloc_steal(mem_ctx2, msg.dn);
 	a_state->account_sid = talloc_strdup(mem_ctx2, sidstr);
 	a_state->account_name = talloc_strdup(mem_ctx2, account_name);
 	if (!a_state->account_name || !a_state->account_sid) {
@@ -1074,7 +1074,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = d_state;
-	a_state->account_dn = talloc_steal(mem_ctx, mem_ctx2, msgs[0]->dn);
+	a_state->account_dn = talloc_steal(mem_ctx2, msgs[0]->dn);
 	a_state->account_sid = talloc_strdup(mem_ctx2, sidstr);
 	a_state->account_name = talloc_strdup(mem_ctx2, groupname);
 	if (!a_state->account_name || !a_state->account_sid) {
@@ -1453,7 +1453,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = d_state;
-	a_state->account_dn = talloc_steal(mem_ctx, mem_ctx2, msgs[0]->dn);
+	a_state->account_dn = talloc_steal(mem_ctx2, msgs[0]->dn);
 	a_state->account_sid = talloc_strdup(mem_ctx2, sidstr);
 	a_state->account_name = talloc_strdup(mem_ctx2, account_name);
 	if (!a_state->account_name || !a_state->account_sid) {

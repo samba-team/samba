@@ -126,7 +126,7 @@ static WERROR gconf_fetch_values(REG_KEY *p, int *count, REG_VAL ***vals)
 		} else newval->data_type = REG_NONE; 
 
 		ar[(*count)] = newval;
-		ar = talloc_realloc(p->mem_ctx, ar, sizeof(REG_VAL *) * ((*count)+2));
+		ar = talloc_realloc(ar, sizeof(REG_VAL *) * ((*count)+2));
 		(*count)++;
 		g_free(cur->data);
 		cur = cur->next;
@@ -151,7 +151,7 @@ static WERROR gconf_fetch_subkeys(REG_KEY *p, int *count, REG_KEY ***subs)
 		ar[(*count)] = reg_key_new_abs(winpath, p->handle,NULL);
 		free(winpath);
 		ar[(*count)]->backend_data = reg_path_win2unix(talloc_strdup(ar[*count]->mem_ctx, cur->data));
-		ar = talloc_realloc_p(p->mem_ctx, ar, REG_KEY *, (*count)+2);
+		ar = talloc_realloc_p(ar, REG_KEY *, (*count)+2);
 		(*count)++;
 		g_free(cur->data);
 		cur = cur->next;

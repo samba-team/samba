@@ -3,8 +3,8 @@
 /* 
    Unix SMB/CIFS implementation.
    Samba temporary memory allocation functions
-   Copyright (C) Andrew Tridgell 2000
-   Copyright (C) 2001 by Martin Pool <mbp@samba.org>
+
+   Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,40 +21,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/**
- * @ingroup talloc
- * @{
- * @sa talloc.c
- */
-
-/**
- * talloc allocation pool.  All allocated blocks can be freed in one go.
- **/
-typedef struct talloc_ctx TALLOC_CTX;
-
-TALLOC_CTX *talloc_init(char const *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
-
-char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
-	PRINTF_ATTRIBUTE(2, 0);
-
-char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
-	PRINTF_ATTRIBUTE(2, 3);
-
-char *talloc_vasprintf_append(TALLOC_CTX *t, char *, const char *, va_list ap)
-	PRINTF_ATTRIBUTE(3, 0);
-
-char *talloc_asprintf_append(TALLOC_CTX *t, char *, const char *, ...)
-	PRINTF_ATTRIBUTE(3, 4);
+/* this is only needed for compatibility with the old talloc */
+typedef void TALLOC_CTX;
 
 /* useful macros for creating type checked pointers */
 #define talloc_p(ctx, type) (type *)talloc(ctx, sizeof(type))
-#define talloc_array_p(ctx, type, count) (type *)talloc_realloc_array(ctx, NULL, sizeof(type), count)
-#define talloc_realloc_p(ctx, p, type, count) (type *)talloc_realloc_array(ctx, p, sizeof(type), count)
+#define talloc_array_p(ctx, type, count) (type *)talloc_array(ctx, sizeof(type), count)
+#define talloc_realloc_p(p, type, count) (type *)talloc_realloc_array(p, sizeof(type), count)
+
+#define talloc_destroy(ctx) talloc_free(ctx)
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
 
-/** @} */
+#endif
 
-#endif /* ndef _TALLOC_H_ */

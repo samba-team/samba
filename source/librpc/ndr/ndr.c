@@ -188,7 +188,7 @@ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t size)
 	if (size > ndr->alloc_size) {
 		ndr->alloc_size = size;
 	}
-	ndr->data = talloc_realloc(ndr->mem_ctx, ndr->data, ndr->alloc_size);
+	ndr->data = talloc_realloc(ndr->data, ndr->alloc_size);
 	if (!ndr->data) {
 		return ndr_push_error(ndr, NDR_ERR_ALLOC, "Failed to push_expand to %u",
 				      ndr->alloc_size);

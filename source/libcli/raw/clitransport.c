@@ -296,7 +296,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 {
 	uint8_t *buffer, *hdr, *vwv;
 	int len;
-	uint16_t wct, mid = 0;
+	uint16_t wct=0, mid = 0;
 	struct smbcli_request *req;
 
 	buffer = transport->recv_buffer.buffer;
@@ -309,7 +309,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 
 	/* see if it could be an oplock break request */
 	if (handle_oplock_break(transport, len, hdr, vwv)) {
-		talloc_free(transport->mem_ctx, buffer);
+		talloc_free(buffer);
 		return;
 	}
 
@@ -325,7 +325,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 		if (!req) goto error;
 
 		req->in.buffer = buffer;
-		talloc_steal(transport->mem_ctx, req->mem_ctx, buffer);
+		talloc_steal(req->mem_ctx, buffer);
 		req->in.size = len;
 		req->in.allocated = req->in.size;
 		goto async;
@@ -349,7 +349,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 
 	/* fill in the 'in' portion of the matching request */
 	req->in.buffer = buffer;
-	talloc_steal(transport->mem_ctx, req->mem_ctx, buffer);
+	talloc_steal(req->mem_ctx, buffer);
 	req->in.size = len;
 	req->in.allocated = req->in.size;
 

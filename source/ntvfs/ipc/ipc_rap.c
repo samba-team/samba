@@ -178,7 +178,7 @@ static NTSTATUS rap_push_string(struct ndr_push *data_push,
 	NDR_CHECK(ndr_push_uint16(data_push, heap->offset));
 	NDR_CHECK(ndr_push_uint16(data_push, 0));
 
-	heap->strings = talloc_realloc(heap->mem_ctx, heap->strings,
+	heap->strings = talloc_realloc(heap->strings,
 				       sizeof(*heap->strings) *
 				       (heap->num_strings + 1));
 
