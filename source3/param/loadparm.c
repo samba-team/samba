@@ -3267,8 +3267,12 @@ int lp_servicenumber(char *pszServiceName)
 char *volume_label(int snum)
 {
 	char *ret = lp_volume(snum);
-	if (!*ret)
-		return (lp_servicename(snum));
+	if (!*ret) {
+		/* lp_volume returns a unix charset - lp_servicename returns a
+		   dos codepage - convert so volume_label() always returns UNIX.
+		*/
+		return (dos_to_unix(lp_servicename(snum), False));
+	}
 	return (ret);
 }
 
