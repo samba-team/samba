@@ -112,9 +112,9 @@ get_des_key(hdb_entry *principal, krb5_boolean prefer_afs_key, Key **ret_key)
     Key *key = NULL;
     Key *v5_key = NULL, *v4_key = NULL, *afs_key = NULL;
     int i;
-    krb5_enctype etypes = { ETYPE_DES_CBC_MD5, 
-			    ETYPE_DES_CBC_MD4, 
-			    ETYPE_DES_CBC_CRC };
+    krb5_enctype etypes[] = { ETYPE_DES_CBC_MD5, 
+			      ETYPE_DES_CBC_MD4, 
+			      ETYPE_DES_CBC_CRC };
 
     for(i = 0; i < 3; i++) {
 	key = NULL;
