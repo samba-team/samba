@@ -101,7 +101,7 @@ int ldb_search_free(struct ldb_context *ldb, struct ldb_message **msgs)
 int ldb_add(struct ldb_context *ldb, 
 	    const struct ldb_message *message)
 {
-	return ldb->ops->add(ldb, message);
+	return ldb->ops->add_record(ldb, message);
 }
 
 /*
@@ -110,7 +110,7 @@ int ldb_add(struct ldb_context *ldb,
 int ldb_modify(struct ldb_context *ldb, 
 	       const struct ldb_message *message)
 {
-	return ldb->ops->modify(ldb, message);
+	return ldb->ops->modify_record(ldb, message);
 }
 
 

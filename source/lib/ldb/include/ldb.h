@@ -126,8 +126,8 @@ struct ldb_backend_ops {
 	int (*search)(struct ldb_context *, const char *, enum ldb_scope,
 		      const char *, const char *[], struct ldb_message ***);
 	int (*search_free)(struct ldb_context *, struct ldb_message **);
-	int (*add)(struct ldb_context *, const struct ldb_message *);
-	int (*modify)(struct ldb_context *, const struct ldb_message *);
+	int (*add_record)(struct ldb_context *, const struct ldb_message *);
+	int (*modify_record)(struct ldb_context *, const struct ldb_message *);
 	int (*delete_record)(struct ldb_context *, const char *);
 	const char * (*errstring)(struct ldb_context *);
 };
