@@ -1630,33 +1630,45 @@ static BOOL net_io_sam_group_info(char *desc, SAM_GROUP_INFO *info, prs_struct *
 /*******************************************************************
 makes a SAM_ACCOUNT_INFO structure.
 ********************************************************************/
-BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
-			   char *full_name, uint32 user_rid, uint32 group_rid,
-			   char *home_dir, char *dir_drive, char *logon_script,
-			   char *acct_desc, uint32 acb_info, char *profile)
+BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info,
+				const UNISTR2 *user_name,
+				const UNISTR2 *full_name,
+				uint32 user_rid, uint32 group_rid,
+				const UNISTR2 *home_dir,
+				const UNISTR2 *dir_drive,
+				const UNISTR2 *log_scr,
+				const UNISTR2 *desc,
+				uint32 acb_info,
+				const UNISTR2 *prof_path,
+				const UNISTR2 *wkstas,
+				const UNISTR2 *unk_str,
+				const UNISTR2 *mung_dial)
 {
-	int len_user_name = strlen(user_name);
-	int len_full_name = strlen(full_name);
-	int len_home_dir = strlen(home_dir);
-	int len_dir_drive = strlen(dir_drive);
-	int len_logon_script = strlen(logon_script);
-	int len_acct_desc = strlen(acct_desc);
-	int len_profile = strlen(profile);
+	int len_user_name    = user_name != NULL ? user_name->uni_str_len : 0;
+	int len_full_name    = full_name != NULL ? full_name->uni_str_len : 0;
+	int len_home_dir     = home_dir  != NULL ? home_dir ->uni_str_len : 0;
+	int len_dir_drive    = dir_drive != NULL ? dir_drive->uni_str_len : 0;
+	int len_logon_script = log_scr   != NULL ? log_scr  ->uni_str_len : 0;
+	int len_profile_path = prof_path != NULL ? prof_path->uni_str_len : 0;
+	int len_description  = desc      != NULL ? desc     ->uni_str_len : 0;
+	int len_workstations = wkstas    != NULL ? wkstas   ->uni_str_len : 0;
+	int len_unknown_str  = unk_str   != NULL ? unk_str  ->uni_str_len : 0;
+	int len_munged_dial  = mung_dial != NULL ? mung_dial->uni_str_len : 0;
 
 	DEBUG(5,("make_sam_account_info\n"));
 
-        make_uni_hdr(&(info->hdr_acct_name   ), len_user_name   );
-        make_uni_hdr(&(info->hdr_full_name   ), len_full_name   );
-        make_uni_hdr(&(info->hdr_home_dir    ), len_home_dir    );
-        make_uni_hdr(&(info->hdr_dir_drive   ), len_dir_drive   );
-        make_uni_hdr(&(info->hdr_logon_script), len_logon_script);
-        make_uni_hdr(&(info->hdr_acct_desc   ), len_acct_desc   );
-        make_uni_hdr(&(info->hdr_profile     ), len_profile     );
+	make_uni_hdr(&(info->hdr_acct_name   ), len_user_name   );
+	make_uni_hdr(&(info->hdr_full_name   ), len_full_name   );
+	make_uni_hdr(&(info->hdr_home_dir    ), len_home_dir    );
+	make_uni_hdr(&(info->hdr_dir_drive   ), len_dir_drive   );
+	make_uni_hdr(&(info->hdr_logon_script), len_logon_script);
+	make_uni_hdr(&(info->hdr_profile     ), len_profile_path);
+	make_uni_hdr(&(info->hdr_acct_desc   ), len_description );
+	make_uni_hdr(&(info->hdr_workstations), len_workstations);
+	make_uni_hdr(&(info->hdr_comment     ), len_unknown_str );
+	make_uni_hdr(&(info->hdr_parameters  ), len_munged_dial );
 
 	/* not present */
-        make_uni_hdr(&(info->hdr_workstations), 0);
-        make_uni_hdr(&(info->hdr_comment), 0);
-        make_uni_hdr(&(info->hdr_parameters), 0);
 	make_bufhdr2(&(info->hdr_sec_desc), 0, 0, 0);
 
 	info->user_rid = user_rid;
@@ -1682,13 +1694,16 @@ BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
 	info->unknown1 = 0x4EC;
 	info->unknown2 = 0;
 
-	make_unistr2(&(info->uni_acct_name), user_name, len_user_name+1);
-	make_unistr2(&(info->uni_full_name), full_name, len_full_name+1);
-	make_unistr2(&(info->uni_home_dir ), home_dir , len_home_dir +1);
-	make_unistr2(&(info->uni_dir_drive), dir_drive, len_dir_drive+1);
-	make_unistr2(&(info->uni_logon_script), logon_script, len_logon_script+1);
-	make_unistr2(&(info->uni_acct_desc), acct_desc, len_acct_desc+1);
-	make_unistr2(&(info->uni_profile  ), profile  , len_profile  +1);
+	copy_unistr2(&(info->uni_acct_name   ), user_name);
+	copy_unistr2(&(info->uni_full_name   ), full_name);
+	copy_unistr2(&(info->uni_home_dir    ), home_dir );
+	copy_unistr2(&(info->uni_dir_drive   ), dir_drive);
+	copy_unistr2(&(info->uni_logon_script), log_scr  );
+	copy_unistr2(&(info->uni_profile     ), prof_path);
+	copy_unistr2(&(info->uni_acct_desc   ), desc     );
+	copy_unistr2(&(info->uni_workstations), wkstas   );
+	copy_unistr2(&(info->uni_comment     ), unk_str  );
+	copy_unistr2(&(info->uni_parameters  ), mung_dial);
 
 	return True;
 }

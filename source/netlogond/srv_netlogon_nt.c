@@ -1057,34 +1057,100 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 	fstring trust_name;
 
 	int i = 0;
-	struct sam_passwd *pwd;
-	void *vp;
+
+	POLICY_HND sam_pol;
+	POLICY_HND dom_pol;
+
+	uint32 enum_status;
+
+	SAM_ENTRY *sam = NULL;
+	UNISTR2 *uni_acct_name = NULL;
+	uint32 start_idx = 0x0;
+	uint32 num_sam_users = 0;
+	uint32 idx;
 
 	unistr2_to_ascii(trust_name, uni_cli_name, sizeof(trust_name)-1);
 
 	(*sync_context) = 1;
 
-	if ((vp = startsmbpwent(False)) == NULL)
+	if (_samr_connect(NULL, 0x02000000, &sam_pol) != NT_STATUS_NOPROBLEMO)
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	/* Give the poor BDC some accounts */
-
-	while (((pwd = getsam21pwent(vp)) != NULL) && (i < MAX_SAM_DELTAS))
+	if (_samr_open_domain(&sam_pol, 0x02000000,
+			&global_sam_sid, &dom_pol) != NT_STATUS_NOPROBLEMO)
 	{
-		make_sam_delta_hdr(&hdr_deltas[i], 5, pwd->user_rid);
-		make_sam_account_info(&deltas[i].account_info,
-				 	    pwd->nt_name, pwd->full_name, pwd->user_rid,
-				 	    pwd->group_rid, pwd->home_dir, pwd->dir_drive,
-				 	    pwd->logon_script, pwd->acct_desc,
-				 	    pwd->acct_ctrl, pwd->profile_path);
-		i++;
+		_samr_close(&sam_pol);
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	endsmbpwent(vp);
+	/*
+	 * enumerate users, first
+	 */
 
-	*num_deltas = *num_deltas2 = i;
+	do
+	{
+		enum_status = _samr_enum_dom_users(&dom_pol,
+					&start_idx, 
+					0x0, 0x0, 0x10000,
+			                &sam,
+			                &uni_acct_name,
+			                &num_sam_users);
+
+	} while (enum_status == STATUS_MORE_ENTRIES);
+
+	for (idx = 0; idx < num_sam_users; idx++)
+	{
+		SAM_USERINFO_CTR ctr;
+		POLICY_HND usr_pol;
+		uint32 status_usr = NT_STATUS_NOPROBLEMO;
+
+		ZERO_STRUCT(ctr);
+
+		status_usr = _samr_open_user(&dom_pol, 0x02000000, sam[idx].rid,
+		                             &usr_pol);
+		if (status_usr == NT_STATUS_NOPROBLEMO &&
+		    _samr_query_userinfo(&usr_pol, 0x21, &ctr) ==
+		                  NT_STATUS_NOPROBLEMO)
+		{
+			SAM_USER_INFO_21 *usr = ctr.info.id21;
+
+			make_sam_delta_hdr(&hdr_deltas[i], 5, usr->user_rid);
+			make_sam_account_info(&deltas[i].account_info,
+				 	    &usr->uni_user_name,
+				 	    &usr->uni_full_name, usr->user_rid,
+				 	    usr->group_rid,
+				 	    &usr->uni_home_dir, 
+				 	    &usr->uni_dir_drive,
+				 	    &usr->uni_logon_script, 
+				 	    &usr->uni_acct_desc,
+				 	    usr->acb_info, 
+				 	    &usr->uni_profile_path,
+				 	    &usr->uni_workstations, 
+				 	    &usr->uni_unknown_str, 
+				 	    &usr->uni_munged_dial);
+
+			i++;
+		}
+
+		if (status_usr == NT_STATUS_NOPROBLEMO)
+		{
+			_samr_close(&usr_pol);
+		}
+	}
+
+	safe_free(sam);
+	safe_free(uni_acct_name);
+
+	sam = NULL;
+	uni_acct_name = NULL;
+	num_sam_users = 0;
+
+	_samr_close(&dom_pol);
+	_samr_close(&sam_pol);
+
+	(*num_deltas2) = i;
+	(*num_deltas) = i;
 
 	return NT_STATUS_NOPROBLEMO;
 }

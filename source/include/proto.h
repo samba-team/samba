@@ -2966,10 +2966,19 @@ BOOL make_q_sam_sync(NET_Q_SAM_SYNC *q_s,
 				DOM_CRED *cli_creds, uint32 database_id);
 BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC *q_s, prs_struct *ps, int depth);
 BOOL make_sam_delta_hdr(SAM_DELTA_HDR *delta, uint16 type, uint32 rid);
-BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
-			   char *full_name, uint32 user_rid, uint32 group_rid,
-			   char *home_dir, char *dir_drive, char *logon_script,
-			   char *acct_desc, uint32 acb_info, char *profile);
+BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info,
+				const UNISTR2 *user_name,
+				const UNISTR2 *full_name,
+				uint32 user_rid, uint32 group_rid,
+				const UNISTR2 *home_dir,
+				const UNISTR2 *dir_drive,
+				const UNISTR2 *log_scr,
+				const UNISTR2 *desc,
+				uint32 acb_info,
+				const UNISTR2 *prof_path,
+				const UNISTR2 *wkstas,
+				const UNISTR2 *unk_str,
+				const UNISTR2 *mung_dial);
 BOOL make_r_sam_sync(NET_R_SAM_SYNC *r_s, 
 			   const DOM_CRED *srv_cred,
 			   uint32 sync_context,
