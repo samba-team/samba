@@ -416,6 +416,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 		transport->error.etype = ETYPE_SOCKET;
 		transport->error.e.socket_error = SOCKET_READ_BAD_SIG;
 		req->state = SMBCLI_REQUEST_ERROR;
+		req->status = NT_STATUS_ACCESS_DENIED;
 		goto error;
 	};
 
