@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
+#include "libcli/composite/composite.h"
 
 static int destroy_transport(void *ptr)
 {
@@ -106,7 +107,7 @@ static NTSTATUS anon_ipc(struct smbcli_transport *transport,
 {
 	struct smbcli_tree *tree;
 	struct smbcli_session *session;
-	union smb_sesssetup setup;
+	struct smb_composite_sesssetup setup;
 	union smb_tcon tcon;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
@@ -122,22 +123,21 @@ static NTSTATUS anon_ipc(struct smbcli_transport *transport,
 	}
 
 	/* prepare a session setup to establish a security context */
-	setup.generic.level = RAW_SESSSETUP_GENERIC;
-	setup.generic.in.sesskey = transport->negotiate.sesskey;
-	setup.generic.in.capabilities = transport->negotiate.capabilities;
-	setup.generic.in.password = NULL;
-	setup.generic.in.user = "";
-	setup.generic.in.domain = "";
-	setup.generic.in.capabilities &= ~CAP_EXTENDED_SECURITY;
+	setup.in.sesskey = transport->negotiate.sesskey;
+	setup.in.capabilities = transport->negotiate.capabilities;
+	setup.in.password = NULL;
+	setup.in.user = "";
+	setup.in.domain = "";
+	setup.in.capabilities &= ~CAP_EXTENDED_SECURITY;
 
-	status = smb_raw_session_setup(session, mem_ctx, &setup);
+	status = smb_composite_sesssetup(session, &setup);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(session);
 		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	session->vuid = setup.generic.out.vuid;
+	session->vuid = setup.out.vuid;
 
 	talloc_set_destructor(session, destroy_session);
 

@@ -307,10 +307,7 @@ NTSTATUS sesssetup_backend(struct smbsrv_request *req,
 {
 	NTSTATUS status = NT_STATUS_INVALID_LEVEL;
 
-	switch (sess->generic.level) {
-		case RAW_SESSSETUP_GENERIC:
-			status = NT_STATUS_INVALID_LEVEL;
-			break;
+	switch (sess->old.level) {
 		case RAW_SESSSETUP_OLD:
 			status = sesssetup_old(req, sess);
 			break;

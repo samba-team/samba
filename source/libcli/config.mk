@@ -23,7 +23,8 @@ ADD_OBJ_FILES = \
 	libcli/composite/composite.o \
 	libcli/composite/loadfile.o \
 	libcli/composite/savefile.o \
-	libcli/composite/connect.o
+	libcli/composite/connect.o \
+	libcli/composite/sesssetup.o
 
 [SUBSYSTEM::LIBCLI]
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH LIBCLI_NMB LIBCLI_COMPOSITE

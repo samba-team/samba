@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/composite/composite.h"
 
 /*
   wrapper around smbcli_sock_connect()
@@ -66,7 +67,7 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 			      const char *password, 
 			      const char *domain)
 {
-	union smb_sesssetup setup;
+	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
@@ -77,27 +78,26 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 	mem_ctx = talloc_init("smbcli_session_setup");
 	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
 
-	setup.generic.level = RAW_SESSSETUP_GENERIC;
-	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
-	setup.generic.in.capabilities = cli->transport->negotiate.capabilities;
+	setup.in.sesskey = cli->transport->negotiate.sesskey;
+	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	if (!user || !user[0]) {
-		setup.generic.in.password = NULL;
-		setup.generic.in.user = "";
-		setup.generic.in.domain = "";
-		setup.generic.in.capabilities &= ~CAP_EXTENDED_SECURITY;
+		setup.in.password = NULL;
+		setup.in.user = "";
+		setup.in.domain = "";
+		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY;
 	} else {
 		if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
-			setup.generic.in.password = password;
+			setup.in.password = password;
 		} else {
-			setup.generic.in.password = NULL;
+			setup.in.password = NULL;
 		}
-		setup.generic.in.user = user;
-		setup.generic.in.domain = domain;
+		setup.in.user = user;
+		setup.in.domain = domain;
 	}
 
-	status = smb_raw_session_setup(cli->session, mem_ctx, &setup);
+	status = smb_composite_sesssetup(cli->session, &setup);
 
-	cli->session->vuid = setup.generic.out.vuid;
+	cli->session->vuid = setup.out.vuid;
 
 	talloc_free(mem_ctx);
 

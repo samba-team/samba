@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
+
    SMB client tree context management functions
-   Copyright (C) Andrew Tridgell 1994-1998
+
+   Copyright (C) Andrew Tridgell 1994-2005
    Copyright (C) James Myers 2003 <myersjj@samba.org>
    
    This program is free software; you can redistribute it and/or modify
@@ -152,8 +154,7 @@ NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
 
 
 /*
-  a convenient function to establish a smbcli_tree from scratch, using reasonable default
-  parameters
+  a convenient function to establish a smbcli_tree from scratch
 */
 NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 				     struct smbcli_tree **ret_tree, 
@@ -162,146 +163,6 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 				     const char *service, const char *service_type,
 				     const char *user, const char *domain, 
 				     const char *password)
-{
-	struct smbcli_socket *sock;
-	struct smbcli_transport *transport;
-	struct smbcli_session *session;
-	struct smbcli_tree *tree;
-	NTSTATUS status;
-	struct nmb_name calling;
-	struct nmb_name called;
-	union smb_sesssetup setup;
-	union smb_tcon tcon;
-	TALLOC_CTX *mem_ctx;
-	char *in_path = NULL;
-
-	*ret_tree = NULL;
-
-	sock = smbcli_sock_init(parent_ctx);
-	if (!sock) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* open a TCP socket to the server */
-	if (!smbcli_sock_connect_byname(sock, dest_host, port)) {
-		talloc_free(sock);
-		DEBUG(2,("Failed to establish socket connection - %s\n", strerror(errno)));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	transport = smbcli_transport_init(sock);
-	talloc_free(sock);
-	if (!transport) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* send a NBT session request, if applicable */
-	make_nmb_name(&calling, my_name, 0x0);
-	choose_called_name(&called,  dest_host, 0x20);
-
-	if (!smbcli_transport_connect(transport, &calling, &called)) {
-		talloc_free(transport);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-
-	/* negotiate protocol options with the server */
-	status = smb_raw_negotiate(transport, lp_maxprotocol());
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(transport);
-		return status;
-	}
-
-	session = smbcli_session_init(transport);
-	talloc_free(transport);
-	if (!session) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* prepare a session setup to establish a security context */
-	setup.generic.level = RAW_SESSSETUP_GENERIC;
-	setup.generic.in.sesskey = transport->negotiate.sesskey;
-	setup.generic.in.capabilities = transport->negotiate.capabilities;
-	if (!user || !user[0]) {
-		setup.generic.in.password = NULL;
-		setup.generic.in.user = "";
-		setup.generic.in.domain = "";
-	} else {
-		setup.generic.in.password = password;
-		setup.generic.in.user = user;
-		setup.generic.in.domain = domain;
-	}
-
-	mem_ctx = talloc_init("tcon");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = smb_raw_session_setup(session, mem_ctx, &setup);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(session);
-		talloc_free(mem_ctx);
-		return status;
-	}
-
-	session->vuid = setup.generic.out.vuid;
-
-	tree = smbcli_tree_init(session);
-	talloc_free(session);
-	if (!tree) {
-		talloc_free(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* connect to a share using a tree connect */
-	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
-	tcon.tconx.in.password = data_blob(NULL, 0);	
-	asprintf(&in_path, "\\\\%s\\%s", dest_host, service);
-	tcon.tconx.in.path = in_path;
-	if (!service_type) {
-		if (strequal(service, "IPC$"))
-			service_type = "IPC";
-		else
-			service_type = "?????";
-	}
-	tcon.tconx.in.device = service_type;
-	
-	status = smb_tree_connect(tree, mem_ctx, &tcon);
-
-	SAFE_FREE(in_path);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tree);
-		talloc_free(mem_ctx);
-		return status;
-	}
-
-	tree->tid = tcon.tconx.out.tid;
-	if (tcon.tconx.out.dev_type) {
-		tree->device = talloc_strdup(tree, tcon.tconx.out.dev_type);
-	}
-	if (tcon.tconx.out.fs_type) {
-		tree->fs_type = talloc_strdup(tree, tcon.tconx.out.fs_type);
-	}
-
-	talloc_free(mem_ctx);
-
-	*ret_tree = tree;
-	return NT_STATUS_OK;
-}
-
-
-/*
-  a convenient function to establish a smbcli_tree from scratch
-*/
-NTSTATUS async_smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
-					   struct smbcli_tree **ret_tree, 
-					   const char *my_name, 
-					   const char *dest_host, int port,
-					   const char *service, const char *service_type,
-					   const char *user, const char *domain, 
-					   const char *password)
 {
 	struct smb_composite_connect io;
 	NTSTATUS status;
