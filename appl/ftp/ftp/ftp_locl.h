@@ -1,6 +1,10 @@
 #ifndef __FTP_LOCL_H__
 #define __FTP_LOCL_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <sys/param.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
