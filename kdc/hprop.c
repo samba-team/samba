@@ -164,8 +164,6 @@ v4_prop(void *arg, Principal *p)
 	memcpy(key + 4, &p->key_high, 4);
 	kdb_encrypt_key((des_cblock*)key, (des_cblock*)key, &mkey4, msched4, 0);
     }
-    if(encrypt)
-	hdb_seal_keys(&ent, msched5);
 
     ALLOC(ent.max_life);
     *ent.max_life = krb_life_to_time(0, p->max_life);
@@ -181,10 +179,21 @@ v4_prop(void *arg, Principal *p)
 			      "kadmin",
 			      "hprop",
 			      NULL);
+    if(ret){
+	krb5_warn(pd->context, ret, "krb5_make_principal");
+	ret = 0;
+	goto out;
+    }
     ent.created_by.time = time(NULL);
     ALLOC(ent.modified_by);
-    krb5_425_conv_principal(pd->context, p->mod_name, p->mod_instance, realm,
-			    &ent.modified_by->principal);
+    ret = krb5_425_conv_principal(pd->context, p->mod_name, p->mod_instance, 
+				  realm, &ent.modified_by->principal);
+    if(ret){
+	krb5_warn(pd->context, ret, "%s.%s@%s", p->name, p->instance, realm);
+	ent.modified_by->principal = NULL;
+	ret = 0;
+	goto out;
+    }
     ent.modified_by->time = p->mod_date;
 
     ent.flags.forwardable = 1;
@@ -195,6 +204,7 @@ v4_prop(void *arg, Principal *p)
     ent.flags.server = 1;
 
     ret = v5_prop(pd->context, NULL, &ent, pd);
+out:
     hdb_free_entry(pd->context, &ent);
     return ret;
 }
