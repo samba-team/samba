@@ -327,24 +327,18 @@ static BOOL smb_internal_pam_session(pam_handle_t *pamh, char *user, char *tty, 
 #ifdef PAM_TTY
 	DEBUG(4,("PAM: tty set to: %s\n", tty));
 	pam_error = pam_set_item(pamh, PAM_TTY, tty);
-	if (!smb_pam_error_handler(pamh, pam_error, "set tty failed", 0)) {
-		smb_pam_end(pamh);
+	if (!smb_pam_error_handler(pamh, pam_error, "set tty failed", 0))
 		return False;
-	}
 #endif
 
 	if (flag) {
 		pam_error = pam_open_session(pamh, PAM_SILENT);
-		if (!smb_pam_error_handler(pamh, pam_error, "session setup failed", 0)) {
-			smb_pam_end(pamh);
+		if (!smb_pam_error_handler(pamh, pam_error, "session setup failed", 0))
 			return False;
-		}
 	} else {
 		pam_error = pam_close_session(pamh, PAM_SILENT);
-		if (!smb_pam_error_handler(pamh, pam_error, "session close failed", 0)) {
-			smb_pam_end(pamh);
+		if (!smb_pam_error_handler(pamh, pam_error, "session close failed", 0))
 			return False;
-		}
 	}
 	return (True);
 }
@@ -368,12 +362,11 @@ BOOL smb_pam_session(BOOL flag, const char *in_user, char *tty, char *rhost)
 		return False;
 	}
 
-	if (smb_internal_pam_session(pamh, user, tty, flag)) {
-		return smb_pam_end(pamh);
-	} else {
+	if (!smb_internal_pam_session(pamh, user, tty, flag)) {
 		smb_pam_end(pamh);
 		return False;
 	}
+	return smb_pam_end(pamh);
 }
 
 /*
