@@ -293,11 +293,14 @@ static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enu
 	if ((domain = find_domain_from_name(domain_str)) == NULL)
         return False;
 
-	if (winbindd_fetch_sid_cache_entry(domain, name, &sid_ret))
+	if (!winbindd_fetch_sid_cache_entry(domain, name, &sid_ret))
 		return False;
 
 	string_to_sid( sid, sid_ret.sid);
 	*type = (enum SID_NAME_USE)sid_ret.type;
+
+	DEBUG(10,("winbindd_lookup_sid_by_name_in_cache: Cache hit for name %s. SID = %s\n",
+		name, sid_ret.sid ));
 
 	return True;
 }
@@ -409,11 +412,14 @@ static BOOL winbindd_lookup_name_by_sid_in_cache(DOM_SID *sid, fstring name, enu
 
 	sid_to_string(sid_str, sid);
 
-	if (winbindd_fetch_name_cache_entry(domain, sid_str, &name_ret))
+	if (!winbindd_fetch_name_cache_entry(domain, sid_str, &name_ret))
 		return False;
 
 	fstrcpy( name, name_ret.name );
 	*type = (enum SID_NAME_USE)name_ret.type;
+
+	DEBUG(10,("winbindd_lookup_name_by_sid_in_cache: Cache hit for SID = %s, name %s\n",
+		sid_str, name ));
 
 	return True;
 }
