@@ -1,6 +1,6 @@
 %{
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -52,7 +52,7 @@
 void error_message(char *, ...);
 
 static unsigned lineno = 1;
-static char filename[256];
+
 /* ","|"{"|"}"|"("|")"|"["|"]"|"|"	{ return *yytext; } */
 %}
 
