@@ -2737,9 +2737,10 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)])
 #################################################
 # check for sendfile support
 
-AC_MSG_CHECKING(whether to check for support sendfile)
+with_sendfile_support=yes
+AC_MSG_CHECKING(whether to check to support sendfile)
 AC_ARG_WITH(sendfile-support,
-[  --with-sendfile-support      Check for sendfile support (default=no)],
+[  --with-sendfile-support      Check for sendfile support (default=yes)],
 [ case "$withval" in
   yes)
 
@@ -2957,7 +2958,7 @@ samba_cv_HAVE_SENDFILEV=yes,samba_cv_HAVE_SENDFILEV=no)])
     AC_MSG_RESULT(no)
     ;;
   esac ],
-  AC_MSG_RESULT(no)
+  AC_MSG_RESULT(yes)
 )
 
 
