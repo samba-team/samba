@@ -78,7 +78,7 @@ hdb_next_etype2key(krb5_context context,
 {
     krb5_keytype keytype;
     krb5_error_code ret;
-    ret = krb5_etype2keytype(context, etype, &keytype);
+    ret = krb5_etype_to_keytype(context, etype, &keytype);
     if(ret)
 	return ret;
     return hdb_next_keytype2key(context, e, keytype, key);
