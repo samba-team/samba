@@ -120,7 +120,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					opt_user_name, opt_workgroup,
-					opt_password);
+					opt_password, 0);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -150,7 +150,7 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					"", "",
-					"");
+					"", 0);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;

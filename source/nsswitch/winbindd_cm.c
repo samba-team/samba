@@ -351,7 +351,7 @@ static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 	result = cli_full_connection(&(new_conn->cli), global_myname, new_conn->controller, 
 				     &dc_ip, 0, "IPC$", 
 				     "IPC", ipc_username, ipc_domain, 
-				     ipc_password);
+				     ipc_password, 0);
 
 	SAFE_FREE(ipc_username);
 	SAFE_FREE(ipc_domain);

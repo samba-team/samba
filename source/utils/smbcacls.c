@@ -722,7 +722,7 @@ static struct cli_state *connect_one(char *share)
 						&ip, 0,
 						share, "?????",  
 						username, global_myworkgroup,
-						password))) {
+						password, 0))) {
 		return c;
 	} else {
 		return NULL;

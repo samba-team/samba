@@ -155,4 +155,8 @@ struct cli_state {
 	fstring pipe_name;
 };
 
+#define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
+#define CLI_FULL_CONNECTION_USE_KERBEROS 0x0002
+#define CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK 0x0004
+
 #endif /* _CLIENT_H */

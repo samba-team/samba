@@ -77,7 +77,8 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 					     new_trust_passwd_hash);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("%s : change_trust_account_password: Changed password.\n", timestring(False)));
+		DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n", 
+			 timestring(False)));
 		/*
 		 * Return the result of trying to write the new password
 		 * back into the trust account file.
