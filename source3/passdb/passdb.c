@@ -757,8 +757,10 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	if(!(pass = getpwuid_alloc(uid)))
 		return NULL;
 
-	if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user)))
+	if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user))) {
+		passwd_free(&pass);
 		return NULL;
+	}
 	
 	if (!pdb_getsampwnam(sam_user, pass->pw_name)) {
 		pdb_free_sam(&sam_user);
