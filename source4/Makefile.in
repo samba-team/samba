@@ -555,6 +555,8 @@ GENTEST_OBJ = torture/gentest.o torture/torture_util.o $(LOCKING_OBJ) $(LIBSMB_O
 NSSTEST_OBJ = torture/nsstest.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(PARAM_OBJ) \
                  $(LIB_OBJ)
 
+SMBICONV_OBJ = torture/smbiconv.o $(LIB_OBJ) $(PARAM_OBJ) utils/rewrite.o $(LIB_POPT_OBJ)
+
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(READLINE_OBJ)
 
 VFS_AUDIT_OBJ = modules/vfs_audit.o
@@ -900,6 +902,10 @@ bin/locktest@EXEEXT@: $(LOCKTEST_OBJ) bin/.dummy
 bin/nsstest@EXEEXT@: $(NSSTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/smbiconv@EXEEXT@: $(SMBICONV_OBJ) @BUILD_POPT@ bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMBICONV_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/vfstest@EXEEXT@: $(VFSTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
