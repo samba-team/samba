@@ -279,6 +279,68 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 		r_l->status = 0x0;
 }
 
+/* Call winbindd to convert sid to name */
+
+static BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, 
+			       uint8 *name_type)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	enum winbindd_result result;
+	DOM_SID tmp_sid;
+	uint32 rid;
+	fstring sid_str;
+	
+	if (!name_type) return False;
+
+	/* Check if this is our own sid.  This should perhaps be done by
+	   winbind?  For the moment handle it here. */
+
+	sid_to_string(sid_str, sid);
+	DEBUG(0, ("*** looking up sid %s\n", sid_str));
+
+	if (sid->num_auths == 5) {
+		sid_copy(&tmp_sid, sid);
+		sid_split_rid(&tmp_sid, &rid);
+
+		if (sid_equal(&global_sam_sid, &tmp_sid)) {
+
+		sid_to_string(sid_str, &tmp_sid);
+		DEBUG(0, ("*** split up sid %s with rid %d\n", sid_str,
+			  rid));
+
+		sid_to_string(sid_str, &global_sam_sid);
+		DEBUG(0, ("*** my sid is %s\n", sid_str));
+		      
+		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
+			lookup_local_rid(rid, name, name_type);
+		}
+	}
+
+	DEBUG(0, ("*** calling winbindd\n"));
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	sid_to_string(sid_str, sid);
+	fstrcpy(request.data.sid, sid_str);
+	
+	/* Make request */
+
+	result = generic_request(WINBINDD_LOOKUPSID, &request, &response);
+
+	/* Copy out result */
+
+	if (result == WINBINDD_OK) {
+		parse_domain_user(response.data.name.name, dom_name, name);
+		*name_type = response.data.name.type;
+	}
+
+	return (result == WINBINDD_OK);
+}
+
 /***************************************************************************
  Init lsa_trans_names.
  ***************************************************************************/
@@ -286,7 +348,6 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
 				int num_entries, DOM_SID2 sid[MAX_LOOKUP_SIDS], uint32 *mapped_count)
 {
-	extern DOM_SID global_sid_S_1_5_0x20; /* BUILTIN sid. */
 	int i;
 	int total = 0;
 	*mapped_count = 0;
@@ -298,43 +359,28 @@ static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
 		DOM_SID find_sid = sid[i].sid;
 		uint32 rid = 0xffffffff;
 		int dom_idx = -1;
-		fstring name;
-		fstring dom_name;
+		fstring name, dom_name;
 		uint8 sid_name_use = 0;
+
+		/* Lookup sid from winbindd */
 
 		memset(dom_name, '\0', sizeof(dom_name));
 		memset(name, '\0', sizeof(name));
 
-		/*
-		 * First, check to see if the SID is one of the well
-		 * known ones (this includes our own domain SID).
-		 * Next, check if the domain prefix is one of the
-		 * well known ones. If so and the domain prefix was
-		 * either BUILTIN or our own global sid, then lookup
-		 * the RID as a user or group id and translate to
-		 * a name.
-		 */
+		status = winbind_lookup_sid(&find_sid, dom_name, name, 
+					    &sid_name_use);
 
-		if (map_domain_sid_to_name(&find_sid, dom_name)) {
-			sid_name_use = SID_NAME_DOMAIN;
-		} else if (sid_split_rid(&find_sid, &rid) && map_domain_sid_to_name(&find_sid, dom_name)) {
-			if (sid_equal(&find_sid, &global_sam_sid) ||
-				sid_equal(&find_sid, &global_sid_S_1_5_0x20)) {
-				status = lookup_local_rid(rid, name, &sid_name_use);
-			} else  {
-				status = lookup_known_rid(&find_sid, rid, name, &sid_name_use);
-			}
-		}
-
-		DEBUG(10,("init_lsa_trans_names: adding domain '%s' sid %s to referenced list.\n",
-				dom_name, name ));
-
-		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
-
-		if(!status) {
-			slprintf(name, sizeof(name)-1, "unix.%08x", rid);
+		if (!status) {
 			sid_name_use = SID_NAME_UNKNOWN;
 		}
+
+		/* Store domain sid in ref array */
+
+		if (find_sid.num_auths == 5) {
+			sid_split_rid(&find_sid, &rid);
+		}
+
+		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
 
 		DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to referenced list.\n", dom_name, name ));
 
