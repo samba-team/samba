@@ -190,7 +190,13 @@ the password is assumed to be a null terminated ascii string
 ************************************************************************/
 BOOL secrets_store_machine_password(char *pass)
 {
-	return secrets_store(SECRETS_MACHINE_PASSWORD, pass, strlen(pass)+1);
+	char *key;
+	BOOL ret;
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, lp_workgroup());
+	strupper(key);
+	ret = secrets_store(key, pass, strlen(pass)+1);
+	free(key);
+	return ret;
 }
 
 
@@ -200,7 +206,13 @@ the password is assumed to be a null terminated ascii string
 ************************************************************************/
 char *secrets_fetch_machine_password(void)
 {
-	return (char *)secrets_fetch(SECRETS_MACHINE_PASSWORD, NULL);
+	char *key;
+	char *ret;
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, lp_workgroup());
+	strupper(key);
+	ret = (char *)secrets_fetch(key, NULL);
+	free(key);
+	return ret;
 }
 
 
