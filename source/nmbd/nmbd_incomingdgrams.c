@@ -547,7 +547,9 @@ static void send_backup_list_response(struct subnet_record *subrec,
   char *p, *countptr;
   unsigned int count = 0;
   int len;
+#if 0
   struct server_record *servrec;
+#endif
 
   memset(outbuf,'\0',sizeof(outbuf));
 
