@@ -59,34 +59,26 @@ uint32 spoolss_enum_printerdrivers(const char *srv_name, const char *environment
                                 level, buffer, offered);
 
         /* turn parameters into data stream */
-        if (!spoolss_io_q_enumprinterdrivers("", &q_o, &buf, 0) ) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
+        if (spoolss_io_q_enumprinterdrivers("", &q_o, &buf, 0) &&
+	     rpc_con_pipe_req(con, SPOOLSS_ENUMPRINTERDRIVERS, &buf, &rbuf)) 
+	{
+	        prs_mem_free(&buf);
+        	ZERO_STRUCT(r_o);
 
-                cli_connection_unlink(con);
-        }
+	        prs_switch_type(&buffer->prs, UNMARSHALL);
+	        prs_set_offset(&buffer->prs, 0);
+	        r_o.buffer=buffer;
 
-        if(!rpc_con_pipe_req(con, SPOOLSS_ENUMPRINTERDRIVERS, &buf, &rbuf)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-
-                cli_connection_unlink(con);
-        }
-
-        prs_mem_free(&buf);
-        ZERO_STRUCT(r_o);
-
-        prs_switch_type(&buffer->prs, UNMARSHALL);
-        prs_set_offset(&buffer->prs, 0);
-        r_o.buffer=buffer;
-
-        if(!new_spoolss_io_r_enumprinterdrivers("", &r_o, &rbuf, 0)) {
-                prs_mem_free(&rbuf);
-                cli_connection_unlink(con);
-        }
-
-        *needed=r_o.needed;
-        *returned=r_o.returned;
+	        if(new_spoolss_io_r_enumprinterdrivers("", &r_o, &rbuf, 0)) 
+		{
+			if (r_o.status != NT_STATUS_NOPROBLEMO)
+			{
+				DEBUG(0,("SPOOLSS_ENUMPRINTERDRIVERS:  %s\n", get_nt_error_msg(r_o.status)));
+			}
+		        *needed=r_o.needed;
+		        *returned=r_o.returned;
+	        }
+	}
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
@@ -124,34 +116,28 @@ uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
         make_spoolss_q_enumprinters(&q_o, flags, "", level, buffer, offered);
 
         /* turn parameters into data stream */
-        if (!spoolss_io_q_enumprinters("", &q_o, &buf, 0) ) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
+        if (spoolss_io_q_enumprinters("", &q_o, &buf, 0) &&
+	   rpc_con_pipe_req(con, SPOOLSS_ENUMPRINTERS, &buf, &rbuf)) 
+	{
+	        ZERO_STRUCT(r_o);
 
-                cli_connection_unlink(con);
+        	prs_switch_type(&buffer->prs, UNMARSHALL);
+	        prs_set_offset(&buffer->prs, 0);
+	        r_o.buffer=buffer;
+
+        	if(new_spoolss_io_r_enumprinters("", &r_o, &rbuf, 0)) 
+		{
+			if (r_o.status != NT_STATUS_NO_PROBLEMO)
+			{
+                        	/* report error code */
+                        	DEBUG(5,("SPOOLSS_ENUMPRINTERS: %s\n", get_nt_error_msg(r_o.status)));
+			}
+
+        		*needed=r_o.needed;
+        		*returned=r_o.returned;
+        	}
+
         }
-
-        if(!rpc_con_pipe_req(con, SPOOLSS_ENUMPRINTERS, &buf, &rbuf)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-
-                cli_connection_unlink(con);
-        }
-
-        prs_mem_free(&buf );
-        ZERO_STRUCT(r_o);
-
-        prs_switch_type(&buffer->prs, UNMARSHALL);
-        prs_set_offset(&buffer->prs, 0);
-        r_o.buffer=buffer;
-
-        if(!new_spoolss_io_r_enumprinters("", &r_o, &rbuf, 0)) {
-                prs_mem_free(&rbuf);
-                cli_connection_unlink(con);
-        }
-
-        *needed=r_o.needed;
-        *returned=r_o.returned;
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
@@ -189,34 +175,27 @@ uint32 spoolss_enum_ports(fstring srv_name, uint32 level,
         make_spoolss_q_enumports(&q_o, "", level, buffer, offered);
 
         /* turn parameters into data stream */
-        if (!spoolss_io_q_enumports("", &q_o, &buf, 0) ) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
+        if (spoolss_io_q_enumports("", &q_o, &buf, 0) &&
+	     rpc_con_pipe_req(con, SPOOLSS_ENUMPORTS, &buf, &rbuf))
+	{
+	        prs_mem_free(&buf );
+        	ZERO_STRUCT(r_o);
 
-                cli_connection_unlink(con);
+	        prs_switch_type(&buffer->prs, UNMARSHALL);
+	        prs_set_offset(&buffer->prs, 0);
+	        r_o.buffer=buffer;
+
+	        if(new_spoolss_io_r_enumports("", &r_o, &rbuf, 0)) 
+		{
+			if (r_o.status != NT_STATUS_NO_PROBLEMO)
+			{
+				DEBUG(0,("SPOOLSS_ENUMPORTS: %s\n", get_nt_error_msg(r_o.status)));
+			}
+			
+	        	*needed=r_o.needed;
+	        	*returned=r_o.returned;
+		}
         }
-
-        if(!rpc_con_pipe_req(con, SPOOLSS_ENUMPORTS, &buf, &rbuf)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-
-                cli_connection_unlink(con);
-        }
-
-        prs_mem_free(&buf );
-        ZERO_STRUCT(r_o);
-
-        prs_switch_type(&buffer->prs, UNMARSHALL);
-        prs_set_offset(&buffer->prs, 0);
-        r_o.buffer=buffer;
-
-        if(!new_spoolss_io_r_enumports("", &r_o, &rbuf, 0)) {
-                prs_mem_free(&rbuf);
-                cli_connection_unlink(con);
-        }
-
-        *needed=r_o.needed;
-        *returned=r_o.returned;
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
@@ -252,28 +231,24 @@ uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjob
         make_spoolss_q_enumjobs(&q_o, hnd, firstjob, numofjobs, level, buffer, offered);
 
         /* turn parameters into data stream */
-        if (!spoolss_io_q_enumjobs("", &q_o, &buf, 0)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-        }
-
-        if(!rpc_hnd_pipe_req(hnd, SPOOLSS_ENUMJOBS, &buf, &rbuf))
+        if (spoolss_io_q_enumjobs("", &q_o, &buf, 0) &&
+	     rpc_hnd_pipe_req(hnd, SPOOLSS_ENUMJOBS, &buf, &rbuf))
         {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-        }
+	        ZERO_STRUCT(r_o);
+	        prs_mem_free(&buf );
 
-        ZERO_STRUCT(r_o);
-        prs_mem_free(&buf );
+	        r_o.buffer=buffer;
 
-        r_o.buffer=buffer;
-
-        if(!spoolss_io_r_enumjobs("", &r_o, &rbuf, 0)) {
-                prs_mem_free(&rbuf);
-        }
-
-        *needed=r_o.needed;
-        *returned=r_o.returned;
+	        if(spoolss_io_r_enumjobs("", &r_o, &rbuf, 0)) 
+		{
+			if (r_o.status != NT_STATUS_NO_PROBLEMO)
+			{
+				DEBUG(0,("SPOOLSS_ENUMJOBS: %s\n", get_nt_error_msg(r_o.status)));
+			}
+	        	*needed=r_o.needed;
+		        *returned=r_o.returned;
+		}
+	}
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
@@ -313,31 +288,30 @@ uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
         make_spoolss_q_enumprinterdata(&q_o, hnd, idx, *valuelen, *datalen);
 
         /* turn parameters into data stream */
-        if (!spoolss_io_q_enumprinterdata("", &q_o, &buf, 0)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-        }
+        if (spoolss_io_q_enumprinterdata("", &q_o, &buf, 0) &&
+	     rpc_hnd_pipe_req(hnd, SPOOLSS_ENUMPRINTERDATA, &buf, &rbuf)) 
+	{
+	        ZERO_STRUCT(r_o);
+        	prs_mem_free(&buf );
 
-        if(!rpc_hnd_pipe_req(hnd, SPOOLSS_ENUMPRINTERDATA, &buf, &rbuf)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-        }
+	        r_o.data=data;
+        	r_o.value=value;
 
-        ZERO_STRUCT(r_o);
-        prs_mem_free(&buf );
+	        if(spoolss_io_r_enumprinterdata("", &r_o, &rbuf, 0))
+		{
+			if (r_o.status != NT_STATUS_NO_PROBLEMO)
+			{
+				DEBUG(0,("SPOOLSS_ENUMPRINTERDATA: %s\n", get_nt_error_msg(r_o.status)));
+			}
+			
+			*valuelen=r_o.valuesize;
+		        *rvaluelen=r_o.realvaluesize;
+	        	*type=r_o.type;
+	        	*datalen=r_o.datasize;
+		        *rdatalen=r_o.realdatasize;
 
-        r_o.data=data;
-        r_o.value=value;
-
-        if(!spoolss_io_r_enumprinterdata("", &r_o, &rbuf, 0)) {
-                prs_mem_free(&rbuf);
-        }
-
-        *valuelen=r_o.valuesize;
-        *rvaluelen=r_o.realvaluesize;
-        *type=r_o.type;
-        *datalen=r_o.datasize;
-        *rdatalen=r_o.realdatasize;
+		}
+	}
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
@@ -373,28 +347,25 @@ uint32 spoolss_getprinter(const POLICY_HND *hnd, uint32 level,
         make_spoolss_q_getprinter(&q_o, hnd, level, buffer, offered);
 
         /* turn parameters into data stream */
-        if (!spoolss_io_q_getprinter("", &q_o, &buf, 0)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-        }
+        if (spoolss_io_q_getprinter("", &q_o, &buf, 0) &&
+             rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTER, &buf, &rbuf)) 
+	{
+	        ZERO_STRUCT(r_o);
+        	prs_mem_free(&buf );
 
-        if(!rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTER, &buf, &rbuf)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-        }
+	        prs_switch_type(&buffer->prs, UNMARSHALL);
+        	prs_set_offset(&buffer->prs, 0);
+	        r_o.buffer=buffer;
 
-        ZERO_STRUCT(r_o);
-        prs_mem_free(&buf );
-
-        prs_switch_type(&buffer->prs, UNMARSHALL);
-        prs_set_offset(&buffer->prs, 0);
-        r_o.buffer=buffer;
-
-        if(!spoolss_io_r_getprinter("", &r_o, &rbuf, 0)) {
-                prs_mem_free(&rbuf);
-        }
-
-        *needed=r_o.needed;
+	        if(!spoolss_io_r_getprinter("", &r_o, &rbuf, 0)) 
+		{
+			if (r_o.status != NT_STATUS_NO_PROBLEMO)
+			{
+				DEBUG(0,("SPOOLSS_GETPRINTER: %s\n", get_nt_error_msg(r_o.status)));
+			}
+		        *needed=r_o.needed;
+		}
+	}
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
@@ -429,28 +400,26 @@ uint32 spoolss_getprinterdriver(const POLICY_HND *hnd,
         make_spoolss_q_getprinterdriver2(&q_o, hnd, environment, level, 2, 0, buffer, offered);
 
         /* turn parameters into data stream */
-        if (!spoolss_io_q_getprinterdriver2("", &q_o, &buf, 0)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-        }
+        if (spoolss_io_q_getprinterdriver2("", &q_o, &buf, 0) &&
+	     rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTERDRIVER2, &buf, &rbuf)) 
+	{
+	        ZERO_STRUCT(r_o);
+        	prs_mem_free(&buf );
 
-        if(!rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTERDRIVER2, &buf, &rbuf)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-        }
+	        prs_switch_type(&buffer->prs, UNMARSHALL);
+        	prs_set_offset(&buffer->prs, 0);
+	        r_o.buffer=buffer;
 
-        ZERO_STRUCT(r_o);
-        prs_mem_free(&buf );
+	        if(spoolss_io_r_getprinterdriver2("", &r_o, &rbuf, 0)) 
+		{
+			if (r_o.status != NT_STATUS_NO_PROBLEMO)
+			{
+				DEBUG(0,("SPOOLSS_GETPRINTERDRIVER2: %s\n", get_nt_error_msg(r_o.status)));
+			}
 
-        prs_switch_type(&buffer->prs, UNMARSHALL);
-        prs_set_offset(&buffer->prs, 0);
-        r_o.buffer=buffer;
-
-        if(!spoolss_io_r_getprinterdriver2("", &r_o, &rbuf, 0)) {
-                prs_mem_free(&rbuf);
-        }
-
-        *needed=r_o.needed;
+		        *needed=r_o.needed;
+		}
+	}
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
@@ -713,28 +682,26 @@ uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
         make_spoolss_q_getprinterdata(&q_o, hnd, valuename, in_size);
 
         /* turn parameters into data stream */
-        if (!spoolss_io_q_getprinterdata("", &q_o, &buf, 0)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-        }
+        if (spoolss_io_q_getprinterdata("", &q_o, &buf, 0) &&
+             rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTERDATA, &buf, &rbuf)) 
+	{
+	        ZERO_STRUCT(r_o);
+        	prs_mem_free(&buf );
 
-        if (!rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTERDATA, &buf, &rbuf)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-        }
+	        r_o.data=data;
 
-        ZERO_STRUCT(r_o);
-        prs_mem_free(&buf );
+	        if(spoolss_io_r_getprinterdata("", &r_o, &rbuf, 0)) 
+		{
+			if (r_o.status != NT_STATUS_NO_PROBLEMO)
+			{
+				DEBUG(0,("SPOOLSS_GETPRINTERDATA: %s\n", get_nt_error_msg(r_o.status)));
+			}
 
-        r_o.data=data;
-
-        if(!spoolss_io_r_getprinterdata("", &r_o, &rbuf, 0)) {
-                prs_mem_free(&rbuf);
-        }
-
-        *type=r_o.type;
-        *out_size=r_o.size;
-        *needed=r_o.needed;
+		        *type=r_o.type;
+        		*out_size=r_o.size;
+	        	*needed=r_o.needed;
+		}
+	}
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
@@ -772,32 +739,26 @@ uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 le
 					   buffer, offered);
 
         /* turn parameters into data stream */
-        if (!spoolss_io_q_getprinterdriverdir("", &q_o, &buf, 0) ) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
+        if (spoolss_io_q_getprinterdriverdir("", &q_o, &buf, 0) &&
+             rpc_con_pipe_req(con, SPOOLSS_GETPRINTERDRIVERDIRECTORY, &buf, &rbuf)) 
+	{
+	        prs_mem_free(&buf );
+        	ZERO_STRUCT(r_o);
 
-                cli_connection_unlink(con);
-        }
+	        prs_switch_type(&buffer->prs, UNMARSHALL);
+        	prs_set_offset(&buffer->prs, 0);
+	        r_o.buffer=buffer;
 
-        if(!rpc_con_pipe_req(con, SPOOLSS_GETPRINTERDRIVERDIRECTORY, &buf, &rbuf)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
+        	if(spoolss_io_r_getprinterdriverdir("", &r_o, &rbuf, 0)) 
+		{
+			if (r_o.status != NT_STATUS_NO_PROBLEMO)
+			{
+				DEBUG(0,("SPOOLSS_GETPRINTERDRIVERDIRECTORY: %s\n", get_nt_error_msg(r_o.status)));
+			}
 
-                cli_connection_unlink(con);
-        }
-
-        prs_mem_free(&buf );
-        ZERO_STRUCT(r_o);
-
-        prs_switch_type(&buffer->prs, UNMARSHALL);
-        prs_set_offset(&buffer->prs, 0);
-        r_o.buffer=buffer;
-
-        if(!spoolss_io_r_getprinterdriverdir("", &r_o, &rbuf, 0)) {
-                prs_mem_free(&rbuf);
-                cli_connection_unlink(con);
-        }
-        *needed=r_o.needed;
+		        *needed=r_o.needed;
+		}
+	}
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
