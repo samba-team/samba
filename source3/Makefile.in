@@ -962,7 +962,7 @@ nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 		@SONAMEFLAG@`basename $@`
 
 bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
+	@echo "Linking $@"
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS) \
 	 	@LDAP_LIBS@
 
@@ -972,7 +972,7 @@ nsswitch/@WINBIND_NSS@.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
 		@WINBIND_NSS_EXTRA_LIBS@ @SONAMEFLAG@`basename $@`
 
 nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
-	@echo Linking $@
+	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) \
 		@SONAMEFLAG@`basename $@` -lpam
 
