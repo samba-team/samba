@@ -884,10 +884,8 @@ BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size)
 {
 	int i = -1; /* start off at zero after 1st i++ */
-	uint8 *start;
 	CHECK_STRUCT(ps);
 	if (ps->error) return False;
-	start = (uint8*)prs_data(ps, ps->offset);
 
 	DEBUG(200,("_prs_string: string %s len %d max %d\n",
 			str, len, max_buf_size));
@@ -924,8 +922,6 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 			str, len, max_buf_size));
 
 	ps->offset += i+1;
-
-	dump_data(5+depth, (char *)start, i);
 
 	return True;
 }

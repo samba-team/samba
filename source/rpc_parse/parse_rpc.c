@@ -710,6 +710,7 @@ reads or writes an RPC_AUTH_NTLMSSP_NEG structure.
 ********************************************************************/
 BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth)
 {
+	int start_offset = ps->offset;
 	if (neg == NULL) return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_ntlmssp_neg");
@@ -730,11 +731,11 @@ BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_stru
 
 		old_offset = ps->offset;
 
-		ps->offset = neg->hdr_myname  .buffer + 0x50; /* lkclXXXX HACK! */
+		ps->offset = neg->hdr_myname  .buffer + start_offset - 12;
 		prs_uint8s(True , "myname", ps, depth, (uint8*)neg->myname  , MIN(neg->hdr_myname  .str_str_len, sizeof(neg->myname  ))); 
 		old_offset += neg->hdr_myname  .str_str_len;
 
-		ps->offset = neg->hdr_domain  .buffer + 0x50; /* lkclXXXX HACK! */
+		ps->offset = neg->hdr_domain  .buffer + start_offset - 12; 
 		prs_uint8s(True , "domain", ps, depth, (uint8*)neg->domain  , MIN(neg->hdr_domain  .str_str_len, sizeof(neg->domain  ))); 
 		old_offset += neg->hdr_domain  .str_str_len;
 
