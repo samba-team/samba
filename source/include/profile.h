@@ -37,7 +37,7 @@ enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
 #define PROF_SHM_MAGIC 0x6349985
 #define PROF_SHM_VERSION 3
 
-/* time values in the following structure are in milliseconds */
+/* time values in the following structure are in microseconds */
 
 struct profile_stats {
 /* general counters */
@@ -332,7 +332,9 @@ extern BOOL do_profile_times;
 #define INC_PROFILE_COUNT(x) profile_p->x++
 #define DEC_PROFILE_COUNT(x) profile_p->x--
 #define ADD_PROFILE_COUNT(x,y) profile_p->x += (y)
-#define PROFILE_TIME TvalDiff(&profile_starttime,&profile_endtime)
+#define PROFILE_TIME \
+	((profile_endtime.tv_sec - profile_starttime.tv_sec) *1000000 + \
+	((int)profile_endtime.tv_usec - (int)profile_starttime.tv_usec))
 
 #ifdef WITH_PROFILE
 #define DO_PROFILE_INC(x) \
