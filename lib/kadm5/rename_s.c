@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -94,7 +94,7 @@ kadm5_s_rename_principal(void *server_handle,
 	ent.principal = ent2.principal;
 	goto out2;
     }
-    ret = context->db->rename(context->context, context->db, &ent2);
+    ret = context->db->remove(context->context, context->db, &ent2);
     ent.principal = ent2.principal;
 out2:
     context->db->close(context->context, context->db);
