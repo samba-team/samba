@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -65,7 +65,7 @@ krb5_get_host_realm(krb5_context context,
     const krb5_config_binding *l;
     struct in_addr addr;
     struct hostent *hostent;
-    char *orig_host;
+    const char *orig_host;
 
     if (host == NULL) {
 	if (gethostname (hostname, sizeof(hostname)))
