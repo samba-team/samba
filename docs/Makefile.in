@@ -33,7 +33,7 @@ endif
 TOPDIR = $(shell pwd)
 OUTPUTDIR = $(TOPDIR)/output
 ARCHIVEDIR = $(OUTPUTDIR)/archive
-SRCDIR = @srcdir@
+SRCDIR = @SAMBASOURCEDIR@
 MANDIR = $(OUTPUTDIR)/manpages
 EPSTOPDF = @EPSTOPDF@
 MANPAGEDIR = $(TOPDIR)/manpages
@@ -270,7 +270,7 @@ $(MANDIR)/%: %.xml
 # Find undocumented parameters
 
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml
-	$(PERL) scripts/find_missing_doc.pl ../..
+	@$(PERL) scripts/find_missing_doc.pl $(SRCDIR)
 
 # Examples and the like
 
