@@ -1282,7 +1282,7 @@ int main (int argc, char **argv)
 
 		/* trust password deletion */
 		if (!(checkparms & ~(BIT_DELETE + BIT_TRUSTPW + BIT_TRUSTSID + BIT_TRUSTFLAGS))) {
-			return delete_trustpw_entry(bdef, trustpw);
+			return delete_trustpw(bdef, trustpw);
 		}
 	}
 	
