@@ -85,14 +85,6 @@ int ads_kinit_password(ADS_STRUCT *ads)
 {
 	char *s;
 	int ret;
-	char *ccache;
-
-	ccache = lock_path("winbindd_ccache");
-
-	/* we don't want this to affect the users ccache */
-	setenv("KRB5CCNAME", ccache, 1);
-
-	unlink(ccache);
 
 	if (!ads->user_name) {
 		/* by default use the machine account */
