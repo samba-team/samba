@@ -957,7 +957,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
  set ntlmssp negotiation flags
  ****************************************************************************/
 
-BOOL cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs)
+void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs)
 {
 	cli->ntlmssp_cli_flgs = ntlmssp_flgs;
 }

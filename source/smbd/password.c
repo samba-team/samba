@@ -449,39 +449,38 @@ check if a username/password is OK assuming the password is a 24 byte
 SMB hash
 return True if the password is correct, False otherwise
 ****************************************************************************/
-static BOOL pass_check_smb(char *user,char *password, struct passwd *pwd)
+BOOL pass_check_smb(char *user, char *domain,
+		char *challenge, char *lm_pwd, char *nt_pwd,
+		struct passwd *pwd)
 {
 	struct passwd *pass;
-	uchar challenge[8];
 	struct smb_passwd *smb_pass;
-	BOOL challenge_done;
 
-	if (!password) {
+	if (!lm_pwd || !nt_pwd)
+	{
 		return(False);
 	}
 
-	challenge_done = last_challenge(challenge);
-
-	if (!challenge_done) {
-		DEBUG(0,("Error: challenge not done for user=%s\n", user));
-		return False;
-	}
-
-	if (pwd && !user) {
+	if (pwd != NULL && user == NULL)
+	{
 		pass = (struct passwd *) pwd;
 		user = pass->pw_name;
-	} else {
+	}
+	else
+	{
 		pass = Get_Pwnam(user,True);
 	}
 
-	if (!pass) {
+	if (pass != NULL)
+	{
 		DEBUG(3,("Couldn't find user %s\n",user));
 		return(False);
 	}
 
 	smb_pass = getsmbpwnam(user);
 
-	if (!smb_pass) {
+	if (smb_pass != NULL)
+	{
 		DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
 		return(False);
 	}
@@ -493,19 +492,20 @@ static BOOL pass_check_smb(char *user,char *password, struct passwd *pwd)
         }
 
 	/* Ensure the uid's match */
-	if (smb_pass->smb_userid != pass->pw_uid)	{
+	if (smb_pass->smb_userid != pass->pw_uid)
+	{
 		DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
 		return(False);
 	}
 
-	if(password[0] == '\0' && smb_pass->acct_ctrl & ACB_PWNOTREQ && lp_null_passwords()) {
+	if (lm_pwd[0] == '\0' && IS_BITS_SET_ALL(smb_pass->acct_ctrl, ACB_PWNOTREQ) && lp_null_passwords())
+	{
 		DEBUG(3,("account for user %s has no password and null passwords are allowed.\n", smb_pass->smb_name));
 		return(True);
 	}
 
-	if (smb_password_ok(smb_pass, 
-			    (unsigned char *)password,
-			    (uchar *)password)) {
+	if (smb_password_ok(smb_pass, (uchar *)lm_pwd, (uchar *)nt_pwd))
+	{
 		return(True);
 	}
 	
@@ -518,12 +518,21 @@ check if a username/password pair is OK either via the system password
 database or the encrypted SMB password database
 return True if the password is correct, False otherwise
 ****************************************************************************/
-BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
+BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 {
-	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords())) {
-		/* if it is 24 bytes long then assume it is an encrypted
-		   password */
-		return pass_check_smb(user, password, pwd);
+	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords()))
+	{
+		/* if 24 bytes long assume it is an encrypted password */
+		uchar challenge[8];
+
+		if (!last_challenge(challenge))
+		{
+			DEBUG(0,("Error: challenge not done for user=%s\n", user));
+			return False;
+		}
+
+		return pass_check_smb(user, global_myworkgroup,
+		                      challenge, password, password, pwd);
 	} 
 
 	return pass_check(user, password, pwlen, pwd, 

@@ -651,12 +651,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
          128 length unicode */
       if(smb_ntpasslen)
 	{
-	  if(!password_ok(user,smb_ntpasswd,smb_ntpasslen,NULL))
+	  if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL))
 	    DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
 	  else
 	    valid_nt_password = True;
 	} 
-      if (!valid_nt_password && !password_ok(user,smb_apasswd,smb_apasslen,NULL))
+      if (!valid_nt_password && !password_ok(user, smb_apasswd,smb_apasslen,NULL))
 	{
 	  if (lp_security() >= SEC_USER) {
 #if (GUEST_SESSSETUP == 0)

@@ -244,7 +244,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 	memcpy(nt_owf, p->ntlmssp_resp.nt_resp, sizeof(nt_owf));
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,"lm, nt owfs:\n"));
+	DEBUG(100,("lm, nt owfs:\n"));
 	dump_data(100, lm_owf, sizeof(lm_owf));
 	dump_data(100, nt_owf, sizeof(nt_owf));
 #endif
