@@ -22,11 +22,10 @@ krb5_get_host_realm(krb5_context context,
 		    const char *host,
 		    char ***realms)
 {
-    krb5_config_binding *state = NULL;
     char hostname[MAXHOSTNAMELEN];
     char *res = NULL;
     const char *partial = NULL;
-    krb5_config_binding *l;
+    const krb5_config_binding *l;
 
     if (host == NULL) {
 	if (gethostname (hostname, sizeof(hostname)))
@@ -40,9 +39,7 @@ krb5_get_host_realm(krb5_context context,
     (*realms)[0] = NULL;
     (*realms)[1] = NULL;
 
-    for(l = krb5_config_get_next (context->cf,
-				  &state,
-				  LIST,
+    for(l = krb5_config_get_list (context->cf,
 				  "domain_realm",
 				  NULL);
 	l;
