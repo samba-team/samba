@@ -70,8 +70,8 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_AUTH
 [SUBSYSTEM::TORTURE_AUTH]
-#ADD_OBJ_FILES = \
-#		torture/auth/ntlmssp.o
+ADD_OBJ_FILES = \
+		torture/auth/ntlmssp.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
 # End SUBSYSTEM TORTURE_AUTH
