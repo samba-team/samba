@@ -2011,6 +2011,8 @@ Scheduler(int block) /* should we block in the select ? */
     return returnValue;
 }
 
+extern int auth_has_failed; /* XXX should be somewhere else */
+
 /*
  * Select from tty and network...
  */
@@ -2064,7 +2066,6 @@ my_telnet(char *user)
      * forever. 
      */
     if (telnetport && wantencryption) {
-	extern int auth_has_failed;
 	time_t timeout = time(0) + 60;
 
 	send_do(TELOPT_ENCRYPT, 1);
