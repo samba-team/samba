@@ -13326,10 +13326,13 @@ EOF
 
 			echo "$ac_t""yes" 1>&6
 			;;
-	        no)
+	        *)
 			echo "$ac_t""no" 1>&6
 	                ;;
 	  esac 
+else
+  echo "$ac_t""no" 1>&6
+	
 fi
 
 
@@ -13366,7 +13369,7 @@ fi
 # It returns EGID too many times in the list of groups
 # and causes a security problem
 echo $ac_n "checking whether or not getgroups returns EGID too many times""... $ac_c" 1>&6
-echo "configure:13370: checking whether or not getgroups returns EGID too many times" >&5
+echo "configure:13373: checking whether or not getgroups returns EGID too many times" >&5
 if eval "test \"`echo '$''{'samba_cv_have_getgroups_too_many_egids'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -13374,7 +13377,7 @@ else
   samba_cv_have_getgroups_too_many_egids=cross
 else
   cat > conftest.$ac_ext <<EOF
-#line 13378 "configure"
+#line 13381 "configure"
 #include "confdefs.h"
 
 #include <sys/types.h>
@@ -13390,7 +13393,7 @@ int main(int argc, char *argv[])
   exit((n > 1 && groups[0] == getegid() && groups[1] == getegid()) ? 1 : 0);
 }
 EOF
-if { (eval echo configure:13394: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:13397: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   samba_cv_have_getgroups_too_many_egids=no
 else
@@ -13431,20 +13434,20 @@ fi
 #		[#include <pwd.h>])
 
 echo $ac_n "checking whether struct passwd has pw_comment""... $ac_c" 1>&6
-echo "configure:13435: checking whether struct passwd has pw_comment" >&5
+echo "configure:13438: checking whether struct passwd has pw_comment" >&5
 if eval "test \"`echo '$''{'samba_cv_passwd_pw_comment'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
 	cat > conftest.$ac_ext <<EOF
-#line 13441 "configure"
+#line 13444 "configure"
 #include "confdefs.h"
 #include <pwd.h>
 int main() {
 struct passwd p; p.pw_comment;
 ; return 0; }
 EOF
-if { (eval echo configure:13448: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:13451: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_passwd_pw_comment=yes
 else
@@ -13469,20 +13472,20 @@ fi
 #		[#include <pwd.h>])
 
 echo $ac_n "checking whether struct passwd has pw_age""... $ac_c" 1>&6
-echo "configure:13473: checking whether struct passwd has pw_age" >&5
+echo "configure:13476: checking whether struct passwd has pw_age" >&5
 if eval "test \"`echo '$''{'samba_cv_passwd_pw_age'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
 	cat > conftest.$ac_ext <<EOF
-#line 13479 "configure"
+#line 13482 "configure"
 #include "confdefs.h"
 #include <pwd.h>
 int main() {
 struct passwd p; p.pw_age;
 ; return 0; }
 EOF
-if { (eval echo configure:13486: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:13489: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_passwd_pw_age=yes
 else
@@ -13521,7 +13524,7 @@ fi
 
 if test x"$INCLUDED_POPT" != x"yes"; then
     echo $ac_n "checking for poptGetContext in -lpopt""... $ac_c" 1>&6
-echo "configure:13525: checking for poptGetContext in -lpopt" >&5
+echo "configure:13528: checking for poptGetContext in -lpopt" >&5
 ac_lib_var=`echo popt'_'poptGetContext | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -13529,7 +13532,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lpopt  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 13533 "configure"
+#line 13536 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -13540,7 +13543,7 @@ int main() {
 poptGetContext()
 ; return 0; }
 EOF
-if { (eval echo configure:13544: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:13547: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -13564,7 +13567,7 @@ fi
 fi
 
 echo $ac_n "checking whether to use included popt""... $ac_c" 1>&6
-echo "configure:13568: checking whether to use included popt" >&5
+echo "configure:13571: checking whether to use included popt" >&5
 if test x"$INCLUDED_POPT" = x"yes"; then
     echo "$ac_t""$srcdir/popt" 1>&6
     BUILD_POPT='$(POPT_OBJS)'
@@ -13579,16 +13582,16 @@ fi
 #################################################
 # final configure stuff
 echo $ac_n "checking configure summary""... $ac_c" 1>&6
-echo "configure:13583: checking configure summary" >&5
+echo "configure:13586: checking configure summary" >&5
 if test "$cross_compiling" = yes; then
   echo "configure: warning: cannot run when cross-compiling" 1>&2
 else
   cat > conftest.$ac_ext <<EOF
-#line 13588 "configure"
+#line 13591 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:13592: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:13595: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "$ac_t""yes" 1>&6
 else
