@@ -146,6 +146,12 @@ sub process_file($)
 	if ($opt_eparser) {
 		my($parser) = dirname($output) . "/packet-dcerpc-$basename.c";
 		IdlEParser::Parse($pidl, $parser);
+		$parser = dirname($output) . "/packet-dcerpc-proto-$basename.h";
+		IdlEParser::ParseHeader($pidl, $parser);
+		my($header) = dirname($output) . "/packet-dcerpc-proto.h";
+		open(OUT, ">>$header") || die "can't open $header";
+		print OUT "#include \"packet-dcerpc-proto-$basename.h\"\n";
+		close(OUT);
 	}
 
 	if ($opt_diff) {
