@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+# $Id: smbldap-migrate-groups.pl,v 1.1.6.3 2003/12/04 21:59:19 jerry Exp $
+#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -33,52 +35,50 @@ use smbldap_tools;
 use smbldap_conf;
 use Getopt::Std;
 
-
-
 sub process_rec_group
-{
+  {
     my ($group, $mb) = @_;
     my @members;
     
     if (!(@members = group_get_members($group))) {
-	return 0;
+	  return 0;
     }
 
     foreach my $m (@members) {
-	if ( !($m =~ m/^\*/) ) {
+	  if ( !($m =~ m/^\*/) ) {
 	    push @{$mb}, $m;
-	} else {
+	  } else {
 	    my $gname = $m;
 	    $gname =~ s/^.//;
 	    if (!process_rec_group($gname, $mb)) {
-		print "recursive group not added : $gname\n";
+		  print "recursive group not added : $gname\n";
 	    }
-	}
+	  }
     }
-}
+  }
 
 
 # given a group dn and a list of members, update the group
 sub modify_group
-{
+  {
     my ($group, $dn_line, @members, $recgroup) = @_;
     my $m;
     my @new_mb;
 
     foreach $m (@members) {
-	if ( ($m =~ m/^\*/) ) {
+	  if ( ($m =~ m/^\*/) ) {
 	    my $gname = $m;
 	    $gname =~ s/^.//;
 	    if (!$recgroup) {
-		print "recursive group not added : $gname\n";
+		  print "recursive group not added : $gname\n";
 	    } else {
-		if (!process_rec_group($gname, \@new_mb)) {
+		  if (!process_rec_group($gname, \@new_mb)) {
 		    print "recursive group not added : $gname\n";
-		}
+		  }
 	    }
-	} else {
+	  } else {
 	    push @new_mb, $m;
-	}
+	  }
     }
 
     # new_mb contains flat members from group dump
@@ -94,7 +94,7 @@ sub modify_group
     
     my $mbs;
     foreach $m (@new_mb) {
-	    $mbs .= "memberUid: $m\n";
+	  $mbs .= "memberUid: $m\n";
     }
 
     my $mods="$dn_line
@@ -105,16 +105,16 @@ $mbs
 
     #print "$mods\n";
     my $tmpldif =
-"$mods
+	  "$mods
 ";
 
     die "$0: error while modifying group $group\n"
-	unless (do_ldapmodify($tmpldif) == 0);
+	  unless (do_ldapmodify($tmpldif) == 0);
     undef $tmpldif;
-}
+  }
 
 sub display_group
-{
+  {
     my ($group, @members) = @_;
 
     print "Group name $group\n";
@@ -122,43 +122,43 @@ sub display_group
     my $m;
     my $i = 0;
     foreach $m (@members) {
-	print "$m ";
-	if ($i % 5 == 0) {
+	  print "$m ";
+	  if ($i % 5 == 0) {
 	    print "\n";
-	}
-	$i++;
+	  }
+	  $i++;
     }
-}
+  }
 
 sub process_group
-{
+  {
     my ($group, @members, $nocreate, $noupdate, $recgroup) = @_;
 
     my $dn_line;
     if (!defined($dn_line = get_group_dn($group))) {
-	# group not found, create it ?
-	if (!$nocreate) {
+	  # group not found, create it ?
+	  if (!$nocreate) {
 	    system "/usr/local/sbin/smbldap-groupadd.pl \"$group\"; sleep 5";
 	    if (!defined($dn_line = get_group_dn($group))) {
-		return 1;
+		  return 1;
 	    }
 	    modify_group($group, $dn_line, @members, $recgroup);
-	} else {
+	  } else {
 	    # don't create
 	    print "not created:\n";
 	    display_group($group, @members);
-	}
+	  }
     } else {
-	# group found, update it ?
-	if (!$noupdate) {
+	  # group found, update it ?
+	  if (!$noupdate) {
 	    modify_group($group, $dn_line, @members, $recgroup);
-	} else {
+	  } else {
 	    # don't update
 	    print "not updated:\n";
 	    display_group($group, @members);    
-	}
+	  }
     }
-}
+  }
 
 ###################################################
 
@@ -166,11 +166,11 @@ my %Options;
 
 my $ok = getopts('CUr?', \%Options);
 if ( (!$ok) || ($Options{'?'}) ) {
-    print "Usage: $0 [-CUr?] < group_dump\n";
-    print "  -C	    don't create group if it doesn't exist\n";
-    print "  -U	    don't update group if it exists\n";
-    print "  -r	    recursively process groups\n";
-    exit(1);
+  print "Usage: $0 [-CUr?] < group_dump\n";
+  print "  -C	    don't create group if it doesn't exist\n";
+  print "  -U	    don't update group if it exists\n";
+  print "  -r	    recursively process groups\n";
+  exit(1);
 }
 
 my $group_name;
@@ -184,13 +184,13 @@ while (<>) {
   next if ( $line =~ m/^\s*$/ );
 
   if ($group_name eq "") {
-      if ( $line =~ m/^Group name\s+(.+).$/ ) {
+	if ( $line =~ m/^Group name\s+(.+).$/ ) {
 	  $group_name = $1;
 	  next;
-      }
+	}
   }
   if ($group_desc eq "") {
-      if ( $line =~ m/^Comment\s+(.*)$/ ) {
+	if ( $line =~ m/^Comment\s+(.*)$/ ) {
 	  $group_desc = $1;
 	  next;
       }

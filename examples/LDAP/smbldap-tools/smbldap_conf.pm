@@ -2,6 +2,9 @@
 use strict;
 package smbldap_conf;
 
+# $Dource: $
+# $Id: smbldap_conf.pm,v 1.1.6.4 2003/12/04 21:59:19 jerry Exp $
+#
 # smbldap-tools.conf : Q & D configuration file for smbldap-tools
 
 #  This code was developped by IDEALX (http://IDEALX.org/) and
@@ -28,33 +31,33 @@ package smbldap_conf;
 #       . be the configuration file for all smbldap-tools scripts
 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
-$UID_START $GID_START $smbpasswd $slaveLDAP $masterLDAP
-$slavePort $masterPort $ldapSSL $slaveURI $masterURI $with_smbpasswd $mk_ntpasswd
-$ldap_path $ldap_opts $ldapmodify $suffix $usersdn $computersdn
-$groupsdn $scope $binddn $bindpasswd
-$slaveDN $slavePw $masterDN $masterPw
-$_userLoginShell $_userHomePrefix $_userGecos
-$_defaultUserGid $_defaultComputerGid
-$_skeletonDir $_userSmbHome
-$_userProfile $_userHomeDrive
-$_userScript $usersou $computersou $groupsou $SID $hash_encrypt
-);
+			$UID_START $GID_START $smbpasswd $slaveLDAP $masterLDAP
+			$slavePort $masterPort $ldapSSL $slaveURI $masterURI $with_smbpasswd $mk_ntpasswd
+			$ldap_path $ldap_opts $ldapmodify $suffix $usersdn $computersdn
+			$groupsdn $scope $binddn $bindpasswd
+			$slaveDN $slavePw $masterDN $masterPw
+			$_userLoginShell $_userHomePrefix $_userGecos
+			$_defaultUserGid $_defaultComputerGid
+			$_skeletonDir $_userSmbHome
+			$_userProfile $_userHomeDrive
+			$_userScript $usersou $computersou $groupsou $SID $hash_encrypt $_defaultMaxPasswordAge
+		   );
 
 use Exporter;
 $VERSION = 1.00;
 @ISA = qw(Exporter);
 
 @EXPORT = qw(
-$UID_START $GID_START $smbpasswd $slaveLDAP $masterLDAP
-$slavePort $masterPort $ldapSSL $slaveURI $masterURI $with_smbpasswd $mk_ntpasswd
-$ldap_path $ldap_opts $ldapmodify $suffix $usersdn
-$computersdn $groupsdn $scope $binddn $bindpasswd
-$slaveDN $slavePw $masterDN $masterPw
-$_userLoginShell $_userHomePrefix $_userGecos
-$_defaultUserGid $_defaultComputerGid $_skeletonDir 
-$_userSmbHome $_userProfile $_userHomeDrive $_userScript
-$usersou $computersou $groupsou $SID $hash_encrypt
-);
+			 $UID_START $GID_START $smbpasswd $slaveLDAP $masterLDAP
+			 $slavePort $masterPort $ldapSSL $slaveURI $masterURI $with_smbpasswd $mk_ntpasswd
+			 $ldap_path $ldap_opts $ldapmodify $suffix $usersdn
+			 $computersdn $groupsdn $scope $binddn $bindpasswd
+			 $slaveDN $slavePw $masterDN $masterPw
+			 $_userLoginShell $_userHomePrefix $_userGecos
+			 $_defaultUserGid $_defaultComputerGid $_skeletonDir 
+			 $_userSmbHome $_userProfile $_userHomeDrive $_userScript
+			 $usersou $computersou $groupsou $SID $hash_encrypt $_defaultMaxPasswordAge
+			);
 
 
 ##############################################################################
@@ -101,7 +104,7 @@ $ldapSSL = "0";
 
 # LDAP Suffix
 # Ex: $suffix = "dc=IDEALX,dc=ORG";
-$suffix = "dc=IDEALX,dc=ORG";
+$suffix = "dc=IDEALX,dc=COM";
 
 
 # Where are stored Users
@@ -156,7 +159,7 @@ $masterPw = $bindpasswd;
 $_userLoginShell = q(_LOGINSHELL_);
 
 # Home directory prefix (without username)
-#Ex: $_userHomePrefix = q(/home/);
+# Ex: $_userHomePrefix = q(/home/);
 $_userHomePrefix = q(_HOMEPREFIX_);
 
 # Gecos
@@ -171,6 +174,11 @@ $_defaultComputerGid = 553;
 # Skel dir
 $_skeletonDir = q(/etc/skel);
 
+# Default password validation time (time in days) Comment the next line if
+# you don't want password to be enable for $_defaultMaxPasswordAge days (be
+# careful to the sambaPwdMustChange attribute's value)
+$_defaultMaxPasswordAge = 45;
+
 ##############################################################################
 #
 # SAMBA Configuration
@@ -180,11 +188,15 @@ $_skeletonDir = q(/etc/skel);
 # The UNC path to home drives location without the username last extension
 # (will be dynamically prepended)
 # Ex: q(\\\\My-PDC-netbios-name\\homes) for \\My-PDC-netbios-name\homes
+# Just comment this if you want to use the smb.conf 'logon home' directive
+# and/or desabling roaming profiles
 $_userSmbHome = q(\\\\_PDCNAME_\\homes);
 
 # The UNC path to profiles locations without the username last extension
 # (will be dynamically prepended)
 # Ex: q(\\\\My-PDC-netbios-name\\profiles\\) for \\My-PDC-netbios-name\profiles
+# Just comment this if you want to use the smb.conf 'logon path' directive
+# and/or desabling roaming profiles
 $_userProfile = q(\\\\_PDCNAME_\\profiles\\);
 
 # The default Home Drive Letter mapping
@@ -194,7 +206,7 @@ $_userHomeDrive = q(_HOMEDRIVE_);
 
 # The default user netlogon script name
 # if not used, will be automatically username.cmd
-#$_userScript = q(startup.cmd); # make sure script file is edited under dos
+# $_userScript = q(startup.cmd); # make sure script file is edited under dos
 
 
 ##############################################################################
@@ -211,13 +223,13 @@ $mk_ntpasswd = "/usr/local/sbin/mkntpwd";
 
 # those next externals commands are kept fot the migration scripts and
 # for the populate script: this will be updated as soon as possible
-	$slaveURI = "ldap://$slaveLDAP:$slavePort";
-	$masterURI = "ldap://$masterLDAP:$masterPort";
+$slaveURI = "ldap://$slaveLDAP:$slavePort";
+$masterURI = "ldap://$masterLDAP:$masterPort";
 
 $ldap_path = "/usr/bin";
 
 if ( $ldapSSL eq "0" ) {
-$ldap_opts = "-x";
+	$ldap_opts = "-x";
 } elsif ( $ldapSSL eq "1" ) {
 	$ldap_opts = "-x -Z";
 } else {
