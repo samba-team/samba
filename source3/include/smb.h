@@ -622,8 +622,7 @@ struct current_user
 
 #define NUM_FLUSH_REASONS 8 /* Keep this in sync with the enum below. */
 enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
-                         OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH };     
-
+			OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH };
 /* Defines for the sent_oplock_break field above. */
 #define NO_BREAK_SENT 0
 #define EXCLUSIVE_BREAK_SENT 1
