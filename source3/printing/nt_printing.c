@@ -644,7 +644,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
 			driverpath, cversion));
 
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
+	close_file(fsp, True);
 	file_free(fsp);
 	close_cnum(conn, user->vuid);
 	pop_sec_ctx();
@@ -654,7 +654,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	error_exit:
 		if(fsp) {
 			if(fsp->fd != -1)
-				fsp->conn->vfs_ops.close(fsp, fsp->fd);
+				close_file(fsp, True);
 			file_free(fsp);
 		}
 
@@ -1138,7 +1138,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
 	}
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
+	close_file(fsp, True);
 	file_free(fsp);
 
 
@@ -1169,7 +1169,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
 	}
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
+	close_file(fsp, True);
 	file_free(fsp);
 
 	if (use_version) {
@@ -1201,7 +1201,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 		if(fsp) {
 			file_free(fsp);
 			if(fsp->fd != -1)
-				fsp->conn->vfs_ops.close(fsp, fsp->fd);
+				close_file(fsp, True);
 		}
 		return -1;
 }
