@@ -1,8 +1,8 @@
 !==
-!== BROWSING.txt for Samba release 1.9.18 08 Jan 1998
+!== BROWSING.txt for Samba release 1.9.18p8 13 Jun 1998
 !==
 Author/s:	Many (Thanks to Luke, Jeremy, Andrew, etc.)
-Updated:	October 12, 1997
+Updated:	July 5, 1998
 Status:		Current - For VERY Advanced Users ONLY
 
 Summary: This describes how to configure Samba for improved browsing.
@@ -15,6 +15,12 @@ of machines that are available within the network.  This list is called
 the browse list and is heavily used by all SMB clients.  Configuration
 of SMB browsing has been problematic for some Samba users, hence this
 document.
+
+Browsing will NOT work if name resolution from NetBIOS names to IP
+addresses does not function correctly. Use of a WINS server is highly
+recommended to aid the resolution of NetBIOS (SMB) names to IP addresses.
+WINS allows remote segment clients to obtain NetBIOS name_type information
+that can NOT be provided by any other means of name resolution.
 
 =====================================================================
 
