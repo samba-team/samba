@@ -1,3 +1,49 @@
+2004-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.c: adapt to signature change of
+	krb5_get_init_creds_opt_set_pkinit
+	
+	* lib/krb5/krb5_rcache.3: add krb5_get_server_rcache
+	
+	* lib/krb5/krb5_rcache.3: framework for replay cache manpage
+	
+	* lib/krb5/krb5_string_to_key.3: document string to key functions
+	
+	* lib/krb5/Makefile.am: man_MANS += krb5_expand_hostname.3
+	krb5_find_padata.3 krb5_generate_random_block.3
+
+	* lib/krb5/krb5_encrypt.3: document krb5_get_wrapped_length
+	
+	* lib/krb5/krb5.3: add some more, 137 to go
+	
+	* lib/krb5/krb5_principal.3: document krb5_get_default_principal
+	
+	* lib/krb5/krb5_keyblock.3: document krb5_generate_subkey
+	
+	* lib/krb5/krb5_generate_random_block.3: document
+	krb5_generate_random_block
+	
+	* lib/krb5/krb5_find_padata.3: document padata functions
+	
+	* lib/krb5/krb5.3: add some more, 142 to go
+	
+	* lib/krb5/krb5_creds.3: drop .Pp before .Sh
+	
+	* lib/krb5/krb5_set_default_realm.3: document krb5_copy_host_realm
+	
+	* lib/krb5/krb5_expand_hostname.3: document krb5_expand_hostname
+	and krb5_expand_hostname_realms
+
+	* lib/krb5/krb5.3: add more functions, 147 to go
+	
+	* lib/krb5/krb5_creds.3: document krb5_creds
+	
+	* lib/krb5/krb5_get_init_creds.3: add more functions, some more
+	text
+
+	* lib/krb5/krb5_ticket.3: document
+	krb5_ticket_get_authorization_data_type
+
 2004-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/aes-test.c: remove #if 0'ed code
