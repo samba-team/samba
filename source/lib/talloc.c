@@ -35,9 +35,6 @@
 
 #include "includes.h"
 
-#define TALLOC_ALIGN 32
-#define TALLOC_CHUNK_SIZE (0x2000)
-
 /* initialissa talloc context. */
 TALLOC_CTX *talloc_init(void)
 {
@@ -56,8 +53,9 @@ TALLOC_CTX *talloc_init(void)
 void *talloc(TALLOC_CTX *t, size_t size)
 {
 	void *p;
-	if (size == 0)
-	{
+	struct talloc_chunk *tc;
+
+	if (size == 0) {
 		/* debugging value used to track down
 		   memory problems. BAD_PTR is defined
 		   in talloc.h */
@@ -65,32 +63,41 @@ void *talloc(TALLOC_CTX *t, size_t size)
 		return p;
 	}
 
-	/* normal code path */
-	size = (size + (TALLOC_ALIGN-1)) & ~(TALLOC_ALIGN-1);
+	p = malloc(size);
+	if (!p) return p;
 
-	if (!t->list || (t->list->total_size - t->list->alloc_size) < size) {
-		struct talloc_chunk *c;
-		size_t asize = (size + (TALLOC_CHUNK_SIZE-1)) & ~(TALLOC_CHUNK_SIZE-1);
-
-		c = (struct talloc_chunk *)malloc(sizeof(*c));
-		if (!c) return NULL;
-		c->next = t->list;
-		c->ptr = (void *)malloc(asize);
-		if (!c->ptr) {
-			free(c);
-			return NULL;
-		}
-		c->alloc_size = 0;
-		c->total_size = asize;
-		t->list = c;
-		t->total_alloc_size += asize;
+	tc = malloc(sizeof(*tc));
+	if (!tc) {
+		free(p);
+		return NULL;
 	}
 
-	p = ((char *)t->list->ptr) + t->list->alloc_size;
-	t->list->alloc_size += size;
+	tc->ptr = p;
+	tc->size = size;
+	tc->next = t->list;
+	t->list = tc;
+	t->total_alloc_size += size;
 
-	
 	return p;
+}
+
+/* a talloc version of realloc */
+void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
+{
+	struct talloc_chunk *tc;
+
+	for (tc=t->list; tc; tc=tc->next) {
+		if (tc->ptr == ptr) {
+			ptr = realloc(ptr, size);
+			if (ptr) {
+				t->total_alloc_size += (size - tc->size);
+				tc->size = size;
+				tc->ptr = ptr;
+			}
+			return ptr;
+		}
+	}
+	return NULL;
 }
 
 /* destroy a whole pool */
@@ -103,7 +110,7 @@ void talloc_destroy_pool(TALLOC_CTX *t)
 
 	while (t->list) {
 		c = t->list->next;
-		free(t->list->ptr);
+		if (t->list->ptr) free(t->list->ptr);
 		free(t->list);
 		t->list = c;
 	}
@@ -118,14 +125,13 @@ void talloc_destroy(TALLOC_CTX *t)
 	if (!t)
 		return;
 	talloc_destroy_pool(t);
+	memset(t, 0, sizeof(*t));
 	free(t);
 }
 
 /* return the current total size of the pool. */
 size_t talloc_pool_size(TALLOC_CTX *t)
 {
-	if (!t->list)
-		return 0;
 	return t->total_alloc_size;
 }
 

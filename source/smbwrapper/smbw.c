@@ -281,6 +281,7 @@ static char *smbw_find_workgroup(void)
 		if (name_status_find(0x1d, ip_list[i], name)) {
 			slprintf(server, sizeof(server), "%s#1D", name);
 			if (smbw_server(server, "IPC$")) {
+				smbw_setshared("WORKGROUP", name);
 				free(ip_list);
 				return name;
 			}

@@ -26,11 +26,11 @@
 #define SECURITY_SET  0
 
 /* this forces non-unicode */
-#define CAPABILITY_MASK CAP_UNICODE
+#define CAPABILITY_MASK (CAP_NT_SMBS | CAP_RPC_REMOTE_APIS)
 #define CAPABILITY_SET  0
 
 /* and non-unicode for the client too */
-#define CLI_CAPABILITY_MASK CAP_UNICODE
+#define CLI_CAPABILITY_MASK 0
 #define CLI_CAPABILITY_SET  0
 
 static char *netbiosname;
