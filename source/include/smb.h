@@ -1143,6 +1143,7 @@ struct bitmap {
 
 /* this is used on a TConX. I'm not sure the name is very helpful though */
 #define SMB_SUPPORT_SEARCH_BITS        0x0001
+#define SMB_SHARE_IN_DFS               0x0002
 
 /* these are the constants used in the above call. */
 /* DesiredAccess */

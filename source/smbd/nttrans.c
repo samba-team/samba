@@ -692,7 +692,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Now contruct the smb_open_mode value from the filename, 
      * desired access and the share access.
 	 */
-	
+	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+
 	if((smb_open_mode = map_share_mode(&stat_open_only, fname, desired_access, 
 					   share_access, 
 					   file_attributes)) == -1)
@@ -1059,6 +1060,8 @@ static int call_nt_transact_create(connection_struct *conn,
      */
 
     set_posix_case_semantics(file_attributes);
+    
+    RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
     unix_convert(fname,conn,0,&bad_path,NULL);
     

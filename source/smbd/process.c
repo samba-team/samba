@@ -385,7 +385,7 @@ struct smb_message_struct
    /* LANMAN2.0 PROTOCOL FOLLOWS */
    {SMBfindnclose, "SMBfindnclose", reply_findnclose, AS_USER},
    {SMBfindclose, "SMBfindclose", reply_findclose,AS_USER},
-   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER | QUEUE_IN_OPLOCK },
+   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER | QUEUE_IN_OPLOCK | CAN_IPC },
    {SMBtranss2, "SMBtranss2", reply_transs2, AS_USER},
 
    /* NT PROTOCOL FOLLOWS */
@@ -704,7 +704,9 @@ void construct_reply_common(char *inbuf,char *outbuf)
   CVAL(outbuf,smb_reh) = 0;
   SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); /* bit 7 set
                                  means a reply */
-  SSVAL(outbuf,smb_flg2,FLAGS2_LONG_PATH_COMPONENTS); /* say we support long filenames */
+  SSVAL(outbuf,smb_flg2,FLAGS2_LONG_PATH_COMPONENTS);
+	/* say we support long filenames */
+
   SSVAL(outbuf,smb_err,SMB_SUCCESS);
   SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
   SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));

@@ -101,8 +101,8 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
      * the length of the data we send over the wire, as the alignment offsets
      * are sent here. Fix from Marc_Jacobsen@hp.com.
      */
-    total_sent_thistime = MIN(total_sent_thistime, useable_space +
-                                alignment_offset + data_alignment_offset);
+    total_sent_thistime = MIN(total_sent_thistime, useable_space+
+			        alignment_offset + data_alignment_offset);
 
     set_message(outbuf, 10, total_sent_thistime, True);
 
@@ -120,7 +120,7 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
     SSVAL(outbuf,smb_prcnt, params_sent_thistime);
     if(params_sent_thistime == 0)
     {
-      SSVAL(outbuf,smb_proff,0);
+      SSVAL(outbuf,smb_proff,((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf))); 
       SSVAL(outbuf,smb_prdisp,0);
     }
     else
@@ -692,6 +692,8 @@ static int call_trans2findfirst(connection_struct *conn,
 
   pstrcpy(directory, params + 12); /* Complete directory path with 
 				     wildcard mask appended */
+
+  RESOLVE_FINDFIRST_DFSPATH(directory, conn, inbuf, outbuf);
 
   DEBUG(5,("path=%s\n",directory));
 
@@ -1354,6 +1356,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
     fname = &fname1[0];
     pstrcpy(fname,&params[6]);
+
+    RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+
     unix_convert(fname,conn,0,&bad_path,&sbuf);
     if (!check_name(fname,conn) || 
         (!VALID_STAT(sbuf) && conn->vfs_ops.stat(dos_to_unix(fname,False),&sbuf))) {
@@ -2121,6 +2126,49 @@ static int call_trans2findnotifynext(connection_struct *conn,
 }
 
 /****************************************************************************
+  reply to a TRANS2_GET_DFS_REFERRAL - Shirish Kalele <kalele@veritas.com>
+****************************************************************************/
+static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
+				     char* outbuf, int length, int bufsize,
+				     char** pparams, char** ppdata)
+{
+  char *params = *pparams;
+  enum remote_arch_types ra_type = get_remote_arch();
+  BOOL NT_arch = ((ra_type == RA_WINNT) || (ra_type == RA_WIN2K));
+  pstring pathname;
+  int reply_size = 0;
+  char* dfs_referral = NULL;
+  int max_referral_level = SVAL(params,0);
+
+  DEBUG(10,("call_trans2getdfsreferral\n"));
+#ifdef MS_DFS
+  if(!lp_host_msdfs())
+    return(ERROR(ERRDOS,ERRbadfunc));
+
+  /* if pathname is in UNICODE, convert to DOS */
+  /* NT always sends in UNICODE, may not set UNICODE flag */
+  if(NT_arch || (SVAL(inbuf,smb_flg2) & FLAGS2_UNICODE_STRINGS))
+    {
+      unistr_to_dos(pathname, &params[2]);
+      DEBUG(10,("UNICODE referral for %s\n",pathname));
+    }
+  else
+    pstrcpy(pathname,&params[2]);
+
+  if((reply_size = setup_dfs_referral(pathname,max_referral_level,ppdata)) < 0)
+    return(ERROR(ERRDOS,ERRbadfile));
+    
+  SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_UNICODE_STRINGS | 
+	FLAGS2_DFS_PATHNAMES);
+  send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size);
+#else
+  DEBUG(0,("Unexpected DFS referral request!\n"));
+  return(ERROR(ERRDOS,ERRbadfunc));
+#endif
+}
+
+
+/****************************************************************************
   reply to a SMBfindclose (stop trans2 directory search)
 ****************************************************************************/
 int reply_findclose(connection_struct *conn,
@@ -2352,6 +2400,11 @@ int reply_trans2(connection_struct *conn,
 	case TRANSACT2_MKDIR:
 		outsize = call_trans2mkdir(conn, inbuf, outbuf, length, 
 					   bufsize, &params, &data);
+		break;
+
+	case TRANSACT2_GET_DFS_REFERRAL:
+	        outsize = call_trans2getdfsreferral(conn,inbuf,outbuf,length,
+						    bufsize, &params, &data);
 		break;
 	default:
 		/* Error in request */

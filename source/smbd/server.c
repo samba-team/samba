@@ -282,7 +282,8 @@ max can be %d\n",
 BOOL reload_services(BOOL test)
 {
 	BOOL ret;
-
+	int i=0;
+	
 	if (lp_loaded()) {
 		pstring fname;
 		pstrcpy(fname,lp_configfile());
@@ -298,8 +299,14 @@ BOOL reload_services(BOOL test)
 		return(True);
 
 	lp_killunused(conn_snum_used);
-
+	
 	ret = lp_load(servicesf,False,False,True);
+
+	/* load the dfs maps of all the services having 
+	   a dfs_map parameter 
+	   we don't want to do this in lp_load because we want just the smbd
+	   server to load up the dfs maps into msdfds.tdb. not nmbd, swat etc*/
+	load_dfsmaps();
 
 	load_printers();
 
@@ -431,6 +438,9 @@ void exit_server(char *reason)
 	}    
 
 	locking_end();
+#ifdef MS_DFS
+	msdfs_end();
+#endif
 
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
 	exit(0);

@@ -233,4 +233,5 @@ copy an IP address from one buffer to another
 
 #define dos_format(fname) string_replace(fname,'/','\\')
 
+
 #endif /* _SMB_MACROS_H */

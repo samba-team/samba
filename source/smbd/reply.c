@@ -352,7 +352,10 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		/* what does setting this bit do? It is set by NT4 and
 		   may affect the ability to autorun mounted cdroms */
 		SSVAL(outbuf, smb_vwv2, SMB_SUPPORT_SEARCH_BITS); 
+		
+		init_dfsroot(conn, inbuf, outbuf);
 	}
+
   
 	DEBUG(3,("tconX service=%s user=%s\n",
 		 service, user));
@@ -1024,6 +1027,9 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   SMB_STRUCT_STAT st;
  
   pstrcpy(name,smb_buf(inbuf) + 1);
+
+  RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+
   unix_convert(name,conn,0,&bad_path,&st);
 
   mode = SVAL(inbuf,smb_vwv0);
@@ -1085,6 +1091,10 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
 
+  RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+  
+  /* if((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) && dfs_redirect(fname,conn)) return(dfs_path_error(inbuf,outbuf)); 
+   */
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
      under WfWg - weird! */
   if (! (*fname))
@@ -1530,6 +1540,9 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   share_mode = SVAL(inbuf,smb_vwv0);
 
   pstrcpy(fname,smb_buf(inbuf)+1);
+
+  RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+
   unix_convert(fname,conn,0,&bad_path,NULL);
     
   fsp = file_new();
@@ -1632,6 +1645,9 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   /* XXXX we need to handle passed times, sattr and flags */
 
   pstrcpy(fname,smb_buf(inbuf));
+
+  RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+
   unix_convert(fname,conn,0,&bad_path,NULL);
     
   fsp = file_new();
@@ -1766,6 +1782,9 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
+
+  RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+
   unix_convert(fname,conn,0,&bad_path,NULL);
 
   if (createmode & aVOLID)
@@ -1851,6 +1870,9 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
   pstrcat(fname,"/TMXXXXXX");
+
+  RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+
   unix_convert(fname,conn,0,&bad_path,NULL);
   
   unixmode = unix_mode(conn,createmode,fname);
@@ -1955,6 +1977,8 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   pstrcpy(name,smb_buf(inbuf) + 1);
    
+  RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+
   DEBUG(3,("reply_unlink : %s\n",name));
    
   rc = unix_convert(name,conn,0,&bad_path,NULL);
@@ -3419,6 +3443,9 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
 
   pstrcpy(directory,smb_buf(inbuf) + 1);
+
+  RESOLVE_DFSPATH(directory, conn, inbuf, outbuf)
+
   unix_convert(directory,conn, NULL,&bad_path,NULL);
   
   if (check_name(directory,conn))
@@ -3749,7 +3776,10 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, in
 
   pstrcpy(name,smb_buf(inbuf) + 1);
   pstrcpy(newname,smb_buf(inbuf) + 3 + strlen(name));
-   
+
+  RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+  RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
+
   DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 
   outsize = rename_internals(conn, inbuf, outbuf, name, newname, False);
@@ -3881,6 +3911,9 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     DEBUG(3,("Rejecting inter-share copy\n"));
     return(ERROR(ERRSRV,ERRinvdevice));
   }
+
+  RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+  RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
 
   rc = unix_convert(name,conn,0,&bad_path1,NULL);
   unix_convert(newname,conn,0,&bad_path2,NULL);

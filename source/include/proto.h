@@ -24,7 +24,6 @@ BOOL allow_access(char *deny_list,char *allow_list,
 BOOL check_access(int sock, char *allow_list, char *deny_list);
 
 /*The following definitions come from  lib/bitmap.c  */
-
 struct bitmap *bitmap_allocate(int n);
 BOOL bitmap_set(struct bitmap *bm, unsigned i);
 BOOL bitmap_clear(struct bitmap *bm, unsigned i);
@@ -1305,6 +1304,7 @@ char *lp_readlist(int );
 char *lp_writelist(int );
 char *lp_fstype(int );
 char *lp_vfsobj(int );
+char *lp_dfsmap(int );
 char *lp_mangled_map(int );
 char *lp_veto_files(int );
 char *lp_hide_files(int );
