@@ -6,6 +6,25 @@ package util;
 
 use Data::Dumper;
 
+sub dumpit($)
+{
+	my $a = shift;
+	return Dumper $a;
+}
+
+#####################################################################
+# flatten an array of arrays into a single array
+sub FlattenArray2($) 
+{ 
+    my $a = shift;
+    my @b;
+    for my $d (@{$a}) {
+	for my $d1 (@{$d}) {
+	    push(@b, $d1);
+	}
+    }
+    return \@b;
+}
 
 #####################################################################
 # flatten an array of arrays into a single array
@@ -75,7 +94,7 @@ sub FileLoad($)
 {
     my($filename) = shift;
     local(*INPUTFILE);
-    open(INPUTFILE, $filename) || die "can't open $filename";    
+    open(INPUTFILE, $filename) || die "can't load $filename";
     my($saved_delim) = $/;
     undef $/;
     my($data) = <INPUTFILE>;
@@ -124,5 +143,44 @@ sub LoadStructure($)
     return eval FileLoad(shift);
 }
 
+#####################################################################
+# see if a pidl property list contains a give property
+sub has_property($$)
+{
+    my($props) = shift;
+    my($p) = shift;
+
+    foreach my $d (@{$props}) {
+	if (ref($d) ne "HASH") {
+	    return 1, if ($d eq $p);
+	    return 1, if ($d eq "in,out" && ($p eq "in" || $p eq "out"));
+	} else {
+	    foreach my $k (keys %{$d}) {
+		return $d->{$k}, if ($k eq $p);
+	    }
+	}
+    }
+
+    return 0;
+}
+
+
+sub is_scalar_type($)
+{
+    my($type) = shift;
+
+    return 1, if ($type eq "uint32");
+    return 1, if ($type eq "long");
+    return 1, if ($type eq "short");
+    return 1, if ($type eq "char");
+    return 1, if ($type eq "uint8");
+    return 1, if ($type eq "uint16");
+    return 1, if ($type eq "hyper");
+    return 1, if ($type eq "wchar_t");
+
+    return 0;
+}
+
 
 1;
+

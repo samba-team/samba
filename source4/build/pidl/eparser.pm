@@ -1,5 +1,5 @@
 ###################################################
-# Ethereal parser generator for IDL structures
+# parser generator for IDL structures
 # Copyright tpot@samba.org 2001
 # Copyright tridge@samba.org 2000
 # released under the GNU GPL
@@ -9,21 +9,6 @@ package IdlEParser;
 use Data::Dumper;
 
 my($res);
-
-sub is_scalar_type($)
-{
-    my($type) = shift;
-
-    return 1, if ($type eq "uint32");
-    return 1, if ($type eq "long");
-    return 1, if ($type eq "short");
-    return 1, if ($type eq "char");
-    return 1, if ($type eq "uint16");
-    return 1, if ($type eq "hyper");
-    return 1, if ($type eq "wchar_t");
-
-    return 0;
-}
 
 sub has_property($$)
 {
@@ -67,7 +52,7 @@ sub ParseArray($)
     my($elt) = shift;
 
     $res .= "\tfor (i = 0; i < count; i++) {\n";
-    if (is_scalar_type($elt)) {
+    if (util::is_scalar_type($elt)) {
 	$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, NULL, \"$elt->{NAME});\n";
 	$res .= "\t}\n\n";
     } else {
@@ -89,7 +74,7 @@ sub ParseElement($$)
 
     # Arg is a policy handle
 	    
-    if (has_property($elt->{PROPERTIES}, "context_handle")) {
+    if (util::has_property($elt->{PROPERTIES}, "context_handle")) {
 	$res .= "\toffset = prs_policy_hnd(tvb, offset, pinfo, tree);\n";
 	return;
     }
@@ -106,7 +91,7 @@ sub ParseElement($$)
 
 	    # Simple type are scalars too
 
-	    if (is_scalar_type($elt->{TYPE})) {
+	    if (util::is_scalar_type($elt->{TYPE})) {
 		$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, NULL, \"$elt->{NAME}\");\n\n";
 	    }
 	}
@@ -117,7 +102,7 @@ sub ParseElement($$)
 
 	# Scalars are not buffers, except if they are pointed to
 
-	if (!is_scalar_type($elt->{TYPE}) || $elt->{POINTERS}) {
+	if (!util::is_scalar_type($elt->{TYPE}) || $elt->{POINTERS}) {
 
 	    # If we have a pointer, check it
 
@@ -125,11 +110,11 @@ sub ParseElement($$)
 		$res .= "\t\tif (ptr_$elt->{NAME})\n\t";
 	    }
 	    
-	    if (has_property($elt->{PROPERTIES}, "size_is")) {
+	    if (util::has_property($elt->{PROPERTIES}, "size_is")) {
 		ParseArray($elt);
 	    } else {
 		$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, ";
-		if (is_scalar_type($elt->{TYPE})) {
+		if (util::is_scalar_type($elt->{TYPE})) {
 		    $res .= "NULL, ";
 		} else {
 		    $res .= "flags, ";
@@ -236,12 +221,12 @@ sub ParseFunctionArg($$)
     my($arg) = shift;
     my($io) = shift;		# "in" or "out"
 
-    if (has_property($arg->{PROPERTIES}, $io)) {
+    if (util::has_property($arg->{PROPERTIES}, $io)) {
 
 	# For some reason, pointers to elements in function definitions
 	# aren't parsed.
 
-	if (defined($arg->{POINTERS}) && !is_scalar_type($arg->{TYPE})) {
+	if (defined($arg->{POINTERS}) && !util::is_scalar_type($arg->{TYPE})) {
 	    $arg->{POINTERS} -= 1, if ($arg->{POINTERS} > 0);
 	    delete($arg->{POINTERS}), if ($arg->{POINTERS} == 0);
 	}
