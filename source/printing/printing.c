@@ -169,8 +169,8 @@ static int print_run_command(int snum,char *command,
 	pstring_sub(syscmd, "%p", p);
 	standard_sub_snum(snum,syscmd);
 
-    /* Convert script args to unix-codepage */
-    dos_to_unix(syscmd, True);
+	/* Convert script args to unix-codepage */
+	dos_to_unix(syscmd, True);
 	ret = smbrun(syscmd,outfile,False);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
@@ -305,7 +305,7 @@ static void print_cache_flush(int snum)
 	fstring key;
 	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
 	dos_to_unix(key, True);                /* Convert key to unix-codepage */
-    tdb_store_int(tdb, key, -1);
+	tdb_store_int(tdb, key, -1);
 }
 
 /****************************************************************************
