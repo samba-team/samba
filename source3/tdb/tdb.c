@@ -1709,7 +1709,8 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	if (read(tdb->fd, &tdb->header, sizeof(tdb->header)) != sizeof(tdb->header)
 	    || strcmp(tdb->header.magic_food, TDB_MAGIC_FOOD) != 0
-	    || (tdb->header.version != TDB_VERSION
+	    || tdb->header.version != TDB_VERSION
+	    || (tdb->header.hash_size != hash_size
 		&& !(rev = (tdb->header.version==TDB_BYTEREV(TDB_VERSION))))) {
 		/* its not a valid database - possibly initialise it */
 		if (!(open_flags & O_CREAT) || tdb_new_database(tdb, hash_size) == -1) {
