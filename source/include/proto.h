@@ -2291,9 +2291,8 @@ void init_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_e,
 				POLICY_HND *pol,
 				uint16 switch_level);
 BOOL samr_io_q_query_aliasinfo(char *desc,  SAMR_Q_QUERY_ALIASINFO *q_e, prs_struct *ps, int depth);
-void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
-		uint16 switch_value, char *acct_desc,
-		uint32 status);
+void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u, uint32 switch_level,
+				 char* alias, char* alias_desc);
 BOOL samr_io_r_query_aliasinfo(char *desc,  SAMR_R_QUERY_ALIASINFO *r_u, prs_struct *ps, int depth);
 BOOL samr_io_q_lookup_ids(char *desc,  SAMR_Q_LOOKUP_IDS *q_u, prs_struct *ps, int depth);
 void init_samr_r_lookup_ids(SAMR_R_LOOKUP_IDS *r_u,
@@ -2398,6 +2397,17 @@ void init_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 BOOL samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth);
 void init_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER *r_u, uint32 status);
 BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
+BOOL samr_io_q_lookup_domain(char* desc, SAMR_Q_LOOKUP_DOMAIN* q_u, prs_struct *ps, int depth);
+BOOL init_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN * r_u,
+                               DOM_SID *dom_sid, uint32 status);
+BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN * r_u,
+                             prs_struct *ps, int depth);
+BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS * q_e,
+                            prs_struct *ps, int depth);
+BOOL init_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS * r_u,
+                              uint32 next_idx, fstring* domains, uint32 num_sam_entries);
+BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
+                            prs_struct *ps, int depth);
 #endif
 
 /*The following definitions come from  rpc_parse/parse_sec.c  */

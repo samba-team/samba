@@ -78,6 +78,8 @@ SamrTestPrivateFunctionsUser
 ********************************************************************/
 
 #define SAMR_CLOSE_HND         0x01
+#define SAMR_LOOKUP_DOMAIN     0x05
+#define SAMR_ENUM_DOMAINS      0x06
 #define SAMR_OPEN_DOMAIN       0x07
 #define SAMR_QUERY_DOMAIN_INFO 0x08
 #define SAMR_LOOKUP_IDS        0x10
@@ -404,7 +406,7 @@ typedef struct r_samr_query_domain_info
 
 } SAMR_R_QUERY_DOMAIN_INFO;
 
-
+ 
 /****************************************************************************
 SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
 
@@ -431,7 +433,7 @@ typedef struct r_samr_open_domain_info
 } SAMR_R_OPEN_DOMAIN;
 
 
-#define MAX_SAM_ENTRIES 250
+#define MAX_SAM_ENTRIES 600
 
 typedef struct samr_entry_info
 {
@@ -565,6 +567,59 @@ typedef struct r_samr_enum_dom_aliases_info
 
 } SAMR_R_ENUM_DOM_ALIASES;
 
+/***************************************************************************
+ SAMR_Q_LOOKUP_DOMAIN - obtain SID for a local domain
+ ***************************************************************************/
+typedef struct q_samr_lookup_domain_info
+{
+        POLICY_HND connect_pol;
+
+        UNIHDR  hdr_domain;
+        UNISTR2 uni_domain;
+
+} SAMR_Q_LOOKUP_DOMAIN;
+
+/* SAMR_R_LOOKUP_DOMAIN */
+typedef struct r_samr_lookup_domain_info
+{ 
+        uint32   ptr_sid;
+        DOM_SID2 dom_sid;
+
+        uint32 status;
+
+} SAMR_R_LOOKUP_DOMAIN;
+ 
+/**********************************************************************
+ SAMR_Q_ENUM_DOMAINS - SAM rids and names 
+ **********************************************************************/
+typedef struct q_samr_enum_domains_info
+{
+        POLICY_HND pol;     /* policy handle */
+
+        uint32 start_idx;   /* enumeration handle */
+        uint32 max_size;    /* 0x0000 ffff */
+
+} SAMR_Q_ENUM_DOMAINS;
+
+/* SAMR_R_ENUM_DOMAINS - SAM rids and Domain names */
+typedef struct r_samr_enum_domains_info
+{                                   
+        uint32 next_idx;     /* next starting index required for enum */
+        uint32 ptr_entries1;
+
+        uint32 num_entries2;
+        uint32 ptr_entries2;
+
+        uint32 num_entries3;
+
+        SAM_ENTRY *sam;
+        UNISTR2 *uni_dom_name;
+
+        uint32 num_entries4;
+
+        uint32 status;
+
+} SAMR_R_ENUM_DOMAINS;
 
 
 /* SAMR_Q_QUERY_DISPINFO - SAM rids, names and descriptions */
@@ -573,9 +628,8 @@ typedef struct q_samr_query_disp_info
 	POLICY_HND pol;        /* policy handle */
 
 	uint16 switch_level;    /* 0x0001 and 0x0002 seen */
-	uint16 unknown_0;       /* 0x0000 and 0x2000 seen */
 	uint32 start_idx;       /* presumably the start enumeration index */
-	uint32 unknown_1;       /* 0x0000 07d0, 0x0000 0400 and 0x0000 0200 seen */
+	uint32 max_entries;       /* 0x0000 07d0, 0x0000 0400 and 0x0000 0200 seen */
 
 	uint32 max_size;        /* 0x0000 7fff, 0x0000 7ffe and 0x0000 3fff seen*/
 
@@ -679,9 +733,18 @@ typedef struct q_samr_enum_alias_info
 {
 	POLICY_HND pol;        /* policy handle */
 
-	uint16 switch_level;    /* 0x0003 seen */
+	uint16 switch_level;    /* 0x0003 seen  (0x0001 seen from NT5) */
 
 } SAMR_Q_QUERY_ALIASINFO;
+
+typedef struct samr_alias_info1
+{
+  uint32 switch_value_1;
+  UNIHDR hdr_alias_name;
+  UNISTR2 uni_alias_name;
+  UNIHDR hdr_alias_desc;
+  UNISTR2 uni_alias_desc;
+} ALIAS_INFO1;
 
 typedef struct samr_alias_info3
 {
@@ -693,17 +756,18 @@ typedef struct samr_alias_info3
 /* SAMR_R_QUERY_ALIASINFO - SAM rids, names and descriptions */
 typedef struct r_samr_query_aliasinfo_info
 {
-	uint32 ptr;        
-	uint16 switch_value;     /* 0x0003 */
-	/* uint8[2] padding */
+  uint32 ptr;        
+  uint16 switch_value;     /* 0x0003 */
+  /* uint8[2] padding */
 
-	union
- 	{
-		ALIAS_INFO3 info3;
+  union
+  {
+    ALIAS_INFO1 info1;
+    ALIAS_INFO3 info3;
 
-	} alias;
+  } alias;
 
-	uint32 status;
+  uint32 status;
 
 } SAMR_R_QUERY_ALIASINFO;
 
@@ -1016,6 +1080,7 @@ typedef struct r_samr_unknown_38
 	uint16 unk_0;
 	uint16 unk_1;
 	uint16 unk_2;
+	uint16 unk_3;
 	uint32 status;         /* return status */
 
 } SAMR_R_UNKNOWN_38;

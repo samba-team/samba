@@ -1,5 +1,4 @@
 #define OLD_NTDOMAIN 1
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -1301,9 +1300,8 @@ void init_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
 
 	q_e->switch_level = switch_level;
 
-	q_e->unknown_0 = 0;
 	q_e->start_idx = start_idx;
-	q_e->unknown_1 = 0x000007d0;
+	q_e->max_entries = 0;
 	q_e->max_size  = size;
 }
 
@@ -1329,11 +1327,15 @@ BOOL samr_io_q_query_dispinfo(char *desc,  SAMR_Q_QUERY_DISPINFO *q_e, prs_struc
 
 	if(!prs_uint16("switch_level", ps, depth, &q_e->switch_level))
 		return False;
+#if 0
 	if(!prs_uint16("unknown_0   ", ps, depth, &q_e->unknown_0))
 		return False;
+#else
+	prs_align(ps);
+#endif
 	if(!prs_uint32("start_idx   ", ps, depth, &q_e->start_idx))
 		return False;
-	if(!prs_uint32("unknown_1   ", ps, depth, &q_e->unknown_1))
+	if(!prs_uint32("max_entries ", ps, depth, &q_e->max_entries))
 		return False;
 	if(!prs_uint32("max_size    ", ps, depth, &q_e->max_size))
 		return False;
@@ -1446,8 +1448,11 @@ void init_sam_info_1(SAM_INFO_1 *sam, uint32 acb_mask,
 		DEBUG(5,("limiting number of entries to %d\n", 
 			 num_sam_entries));
 	}
+	DEBUG(5,("num_sam_entries: %u, start_idx: %u\n",num_sam_entries,
+		 num_sam_entries));
 
-	for (i = start_idx, entries_added = 0; i < num_sam_entries; i++) {
+	for (i = 0, entries_added = 0; 
+	     i < num_sam_entries; i++) {
 		if (IS_BITS_SET_ALL(pass[i].acb_info, acb_mask)) {
 			init_sam_entry1(&sam->sam[entries_added],
 						start_idx + entries_added + 1,
@@ -1462,7 +1467,7 @@ void init_sam_info_1(SAM_INFO_1 *sam, uint32 acb_mask,
 			copy_unistr2(&sam->str[entries_added].uni_acct_desc, &pass[i].uni_acct_desc);
 
 			entries_added++;
-		}
+		} 
 	}
 
 	sam->num_entries   = entries_added;
@@ -1523,7 +1528,7 @@ void init_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
 {
 	DEBUG(5,("init_samr_r_query_dispinfo\n"));
 
-	if (status == 0x0) {
+	if (status == 0x0 || status == 0x105) {
 		r_u->unknown_0 = 0x0000001;
 		r_u->unknown_1 = 0x0000001;
 	} else {
@@ -1792,37 +1797,52 @@ BOOL samr_io_q_query_aliasinfo(char *desc,  SAMR_Q_QUERY_ALIASINFO *q_e, prs_str
  Inits a SAMR_R_QUERY_ALIASINFO structure.
 ********************************************************************/
 
-void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
-		uint16 switch_value, char *acct_desc,
-		uint32 status)
+void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u, uint32 switch_level,
+				 char* alias, char* alias_desc)
+				 
 {
-	DEBUG(5,("init_samr_r_query_aliasinfo\n"));
+  int alias_desc_len, alias_len;
 
-	r_u->ptr = 0;
+  if(r_u == NULL)
+    return;
 
-	if (status == 0) {
-		r_u->switch_value = switch_value;
+  alias_len = alias?strlen(alias):0;
+  alias_desc_len = alias_desc?strlen(alias_desc):0;
 
-		switch (switch_value) {
-			case 3:
-			{
-				int acct_len = acct_desc ? strlen(acct_desc) : 0;
+  DEBUG(5,("init_samr_r_query_aliasinfo\n"));
 
-				r_u->ptr = 1;
+  r_u->switch_value = switch_level;
 
-				init_uni_hdr(&r_u->alias.info3.hdr_acct_desc, acct_len);
-				init_unistr2(&r_u->alias.info3.uni_acct_desc, acct_desc, acct_len);
-
-				break;
-			}
-			default:
-				DEBUG(4,("init_samr_r_query_aliasinfo: unsupported switch level\n"));
-				break;
-		}
+  if(r_u->status == 0)
+    {
+      switch(switch_level)
+	{
+	case 1: 
+	  {
+	    r_u->ptr = 1;
+	    init_uni_hdr(&r_u->alias.info1.hdr_alias_name, alias_len);
+	    init_unistr2(&r_u->alias.info1.uni_alias_name, alias, alias_len);
+	    r_u->alias.info1.switch_value_1 = switch_level;
+	    init_uni_hdr(&r_u->alias.info1.hdr_alias_desc, alias_desc_len);
+	    init_unistr2(&r_u->alias.info1.uni_alias_desc, alias_desc, alias_desc_len);
+	    break;
+	  }
+	case 3:
+	  {
+	    r_u->ptr = 1;
+	    init_uni_hdr(&r_u->alias.info3.hdr_acct_desc, alias_desc_len);
+	    init_unistr2(&r_u->alias.info3.uni_acct_desc, alias_desc, alias_desc_len);
+	    break;
+	  }
+	default:
+	  {
+	    r_u->status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+	  }
 	}
-
-	r_u->status = status;
+    }
 }
+
+	  
 
 /*******************************************************************
  Reads or writes a structure.
@@ -1830,47 +1850,57 @@ void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
 
 BOOL samr_io_r_query_aliasinfo(char *desc,  SAMR_R_QUERY_ALIASINFO *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL)
-		return False;
+  if (r_u == NULL)
+    return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_query_aliasinfo");
-	depth++;
+  prs_debug(ps, depth, desc, "samr_io_r_query_aliasinfo");
+  depth++;
 
-	if(!prs_align(ps))
-		return False;
+  if(!prs_align(ps))
+    return False;
 
-	if(!prs_uint32("ptr         ", ps, depth, &r_u->ptr))
-		return False;
+  if(!prs_uint32("ptr         ", ps, depth, &r_u->ptr))
+    return False;
 	
-	if (r_u->ptr != 0) {
-		if(!prs_uint16("switch_value", ps, depth, &r_u->switch_value))
-			return False;
-		if(!prs_align(ps))
-			return False;
+  if (r_u->ptr != 0) {
+    if(!prs_uint16("switch_value", ps, depth, &r_u->switch_value))
+      return False;
+    if(!prs_align(ps))
+      return False;
 
-		if (r_u->switch_value != 0) {
-			switch (r_u->switch_value) {
-				case 3:
-					if(!smb_io_unihdr ("", &r_u->alias.info3.hdr_acct_desc, ps, depth))
-						return False;
-					if(!smb_io_unistr2("", &r_u->alias.info3.uni_acct_desc, 
-							r_u->alias.info3.hdr_acct_desc.buffer, ps, depth))
-						return False;
-					break;
-				default:
-					DEBUG(4,("samr_io_r_query_aliasinfo: unsupported switch level\n"));
-					break;
-			}
-		}
-	}
+    if (r_u->switch_value != 0) {
+      switch (r_u->switch_value) {
+      case 1:
+	smb_io_unihdr("",&r_u->alias.info1.hdr_alias_name, ps, depth);
+	prs_uint32("switch_value_1", ps, depth, &r_u->alias.info1.switch_value_1);
+	smb_io_unihdr("",&r_u->alias.info1.hdr_alias_desc, ps, depth);
+	
+	smb_io_unistr2("", &r_u->alias.info1.uni_alias_name, 
+		       r_u->alias.info1.hdr_alias_name.buffer, ps, depth);
+	smb_io_unistr2("", &r_u->alias.info1.uni_alias_desc,
+		       r_u->alias.info1.hdr_alias_desc.buffer, ps, depth);
+	break;
+      case 3:
+	if(!smb_io_unihdr ("", &r_u->alias.info3.hdr_acct_desc, ps, depth))
+	  return False;
+	if(!smb_io_unistr2("", &r_u->alias.info3.uni_acct_desc, 
+			   r_u->alias.info3.hdr_acct_desc.buffer, ps, depth))
+	  return False;
+	break;
+      default:
+	DEBUG(4,("samr_io_r_query_aliasinfo: unsupported switch level\n"));
+	break;
+      }
+    }
+  }
 
-	if(!prs_align(ps))
-		return False;
+  if(!prs_align(ps))
+    return False;
 
-	if(!prs_uint32("status", ps, depth, &r_u->status))
-		return False;
+  if(!prs_uint32("status", ps, depth, &r_u->status))
+    return False;
 
-	return True;
+  return True;
 }
 
 /*******************************************************************
@@ -3402,8 +3432,7 @@ void init_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u)
 	r_u->unk_0 = 0;
 	r_u->unk_1 = 0;
 	r_u->unk_2 = 0;
-
-	r_u->status = 0x0;
+	r_u->unk_3 = 0;
 }
 
 /*******************************************************************
@@ -3433,7 +3462,9 @@ BOOL samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, i
 		return False;
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_u->status))
+	if(!prs_uint16("unk_3", ps, depth, &r_u->unk_3))
+		return False;
+	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -3609,6 +3640,223 @@ BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct
 	return True;
 }
 
+/**********************************************************************
+ Reads or writes a structure
+ **********************************************************************/
+BOOL samr_io_q_lookup_domain(char* desc, SAMR_Q_LOOKUP_DOMAIN* q_u, prs_struct *ps, int depth)
+{
+  if (q_u == NULL)
+    return False;
 
-#undef OLD_NTDOMAIN
+  prs_debug(ps, depth, desc, "samr_io_q_lookup_domain");
+  depth++;
 
+  prs_align(ps);
+
+  smb_io_pol_hnd("connect_pol", &(q_u->connect_pol), ps, depth);
+
+  smb_io_unihdr("hdr_domain", &(q_u->hdr_domain), ps, depth);
+  smb_io_unistr2("uni_domain", &(q_u->uni_domain),
+		 q_u->hdr_domain.buffer, ps, depth);
+  prs_align(ps);
+
+  return True;
+} 
+
+/*******************************************************************
+makes a SAMR_R_LOOKUP_DOMAIN structure.
+********************************************************************/
+BOOL init_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN * r_u,
+                               DOM_SID *dom_sid, uint32 status)
+{
+        if (r_u == NULL)
+                return False;
+
+        DEBUG(5, ("make_samr_r_lookup_domain\n"));
+
+        r_u->status = status;
+        r_u->ptr_sid = 0;
+        if (status == 0x0)
+        {
+                r_u->ptr_sid = 1;
+		init_dom_sid2(&r_u->dom_sid, dom_sid);
+	}
+
+        return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN * r_u,
+                             prs_struct *ps, int depth)
+{
+        if (r_u == NULL)
+                return False;
+
+        prs_debug(ps, depth, desc, "samr_io_r_lookup_domain");
+        depth++;
+
+        prs_align(ps);
+
+        prs_uint32("ptr", ps, depth, &(r_u->ptr_sid));
+
+        if (r_u->ptr_sid != 0)
+        {
+                smb_io_dom_sid2("sid", &(r_u->dom_sid), ps, depth);
+                prs_align(ps);
+        }
+
+        prs_uint32("status", ps, depth, &(r_u->status));
+
+        return True;
+}  
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS * q_e,
+                            prs_struct *ps, int depth)
+{
+        if (q_e == NULL)
+                return False;
+
+        prs_debug(ps, depth, desc, "samr_io_q_enum_domains");
+        depth++;
+
+        prs_align(ps);
+
+        smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
+
+        prs_uint32("start_idx", ps, depth, &(q_e->start_idx));
+        prs_uint32("max_size ", ps, depth, &(q_e->max_size));
+
+        prs_align(ps);
+
+        return True;
+} 
+
+/*******************************************************************
+makes a SAMR_R_ENUM_DOMAINS structure.
+********************************************************************/
+BOOL init_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS * r_u,
+                              uint32 next_idx, fstring* domains, uint32 num_sam_entries)
+{
+  int i=0;
+
+  if (r_u == NULL)
+    return False;
+
+  DEBUG(5, ("init_samr_r_enum_domains\n"));
+
+  r_u->next_idx = next_idx;
+
+  r_u->uni_dom_name = (UNISTR2*) malloc(sizeof(UNISTR2) * num_sam_entries);
+  r_u->sam = (SAM_ENTRY*) malloc(sizeof(SAM_ENTRY) * num_sam_entries);
+  if(r_u->uni_dom_name == NULL || r_u->sam == NULL)
+    {
+      free(r_u->uni_dom_name);
+      free(r_u->sam);
+      r_u->status = NT_STATUS_MEMORY_NOT_ALLOCATED;
+    }
+
+  if(r_u->status == 0)
+    for(i=0;i<num_sam_entries;i++) /* only two domains to send */
+      {
+	init_unistr2(&r_u->uni_dom_name[i],domains[i], strlen(domains[i]));
+	init_sam_entry(&(r_u->sam[i]), strlen(domains[i]), 0);
+      }
+  else
+    {
+      num_sam_entries = 0;
+    }
+  
+  if (num_sam_entries != 0)
+    {
+      r_u->ptr_entries1 = 1;
+      r_u->ptr_entries2 = 1;
+      r_u->num_entries2 = num_sam_entries;
+      r_u->num_entries3 = num_sam_entries;
+
+      r_u->num_entries4 = num_sam_entries;
+    }
+  else
+    {
+      r_u->ptr_entries1 = 0;
+      r_u->num_entries2 = num_sam_entries;
+      r_u->ptr_entries2 = 1;
+    }
+  
+  return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
+                            prs_struct *ps, int depth)
+{
+        uint32 i;
+
+        if (r_u == NULL)
+                return False;
+
+        prs_debug(ps, depth, desc, "samr_io_r_enum_domains");
+        depth++;
+
+        prs_align(ps);
+
+        prs_uint32("next_idx    ", ps, depth, &(r_u->next_idx));
+        prs_uint32("ptr_entries1", ps, depth, &(r_u->ptr_entries1));
+
+        if (r_u->ptr_entries1 != 0)
+        {
+                prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
+                prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
+                prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
+
+                if (UNMARSHALLING(ps))
+                {
+                        r_u->sam = (SAM_ENTRY*) malloc(sizeof(SAM_ENTRY)*
+						       r_u->num_entries2);
+                        r_u->uni_dom_name = (UNISTR2*) malloc(sizeof(UNISTR2)*
+							      r_u->num_entries2);
+                }
+
+                if ((r_u->sam == NULL || r_u->uni_dom_name == NULL)
+                    && r_u->num_entries2 != 0)
+                {
+                        DEBUG(0, ("NULL pointers in SAMR_R_ENUM_DOMAINS\n"));
+                        r_u->num_entries4 = 0;
+                        r_u->status = NT_STATUS_MEMORY_NOT_ALLOCATED;
+                        return False;
+                }
+
+                for (i = 0; i < r_u->num_entries2; i++)
+                {
+                        fstring tmp;
+                        slprintf(tmp, sizeof(tmp) - 1, "domains[%d]", i);
+                        sam_io_sam_entry(tmp, &(r_u->sam[i]), ps, depth);
+                }
+
+                for (i = 0; i < r_u->num_entries2; i++)
+                {
+                        fstring tmp;
+                        slprintf(tmp, sizeof(tmp) - 1, "domains[%d]", i);
+                        smb_io_unistr2(tmp, &(r_u->uni_dom_name[i]),           
+                                       r_u->sam[i].hdr_name.buffer, ps,
+                                       depth);
+                        prs_align(ps);
+                }
+
+                prs_align(ps);
+
+        }
+
+        prs_uint32("num_entries4", ps, depth, &(r_u->num_entries4));
+        prs_uint32("status", ps, depth, &(r_u->status));
+
+        return True;
+}
+
+#undef OLD_NTDOMAIN 
