@@ -208,3 +208,6 @@
 #ifndef _GNU_SOURCE
 #undef _GNU_SOURCE
 #endif
+
+#undef HAVE_RESOLV_RETRANSRETRY
+#undef WITH_WINBIND_AUTH_CRAP
