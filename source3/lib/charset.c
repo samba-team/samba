@@ -145,7 +145,7 @@ static void add_dos_char(int lower, BOOL map_lower_to_upper,
 /****************************************************************************
 initialise the charset arrays
 ****************************************************************************/
-void charset_initialise()
+void charset_initialise(void)
 {
   int i;
 
