@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,7 +53,8 @@ gsskrb5_register_acceptor_identity (char *identity)
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 gss_accept_sec_context
+OM_uint32
+gss_accept_sec_context
            (OM_uint32 * minor_status,
             gss_ctx_id_t * context_handle,
             const gss_cred_id_t acceptor_cred_handle,
@@ -181,6 +182,8 @@ OM_uint32 gss_accept_sec_context
 	  goto failure;
       }
   }
+
+  flags |= GSS_C_TRANS_FLAG;
 
   if (ret_flags)
     *ret_flags = flags;
