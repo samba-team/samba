@@ -98,8 +98,8 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	DOM_SID user_sid;
 	fstring name_domain, name_user, name, gecos_name;
 	enum SID_NAME_USE name_type;
-        struct winbindd_domain *domain;
-        TALLOC_CTX *mem_ctx;
+	struct winbindd_domain *domain;
+	TALLOC_CTX *mem_ctx;
 	
 	DEBUG(3, ("[%5d]: getpwnam %s\n", state->pid,
 		  state->request.data.username));
@@ -115,10 +115,10 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	if (strequal(name_domain, ""))
 		return WINBINDD_ERROR;
 	
-        if ((domain = find_domain_from_name(name_domain)) == NULL) {
-                DEBUG(5, ("No such domain: %s\n", name_domain));
-                return WINBINDD_ERROR;
-        }
+	if ((domain = find_domain_from_name(name_domain)) == NULL) {
+		DEBUG(5, ("No such domain: %s\n", name_domain));
+		return WINBINDD_ERROR;
+	}
 
 	/* Check for cached user entry */
 

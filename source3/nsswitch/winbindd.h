@@ -82,7 +82,7 @@ extern struct winbindd_state server_state;  /* Server information */
 struct winbindd_domain {
 	fstring name;                          /* Domain name */	
 	DOM_SID sid;                           /* SID for this domain */
-        struct winbindd_domain *prev, *next;   /* Linked list info */
+	struct winbindd_domain *prev, *next;   /* Linked list info */
 };
 
 extern struct winbindd_domain *domain_list;  /* List of domains we know */
