@@ -312,42 +312,42 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	 * Allow guest access. Patch from Shirish Kalele <kalele@veritas.com>.
 	 */
 
-	if((strlen(user_name) == 0) && (ntlmssp_resp->hdr_lm_resp.str_str_len==0) && 
-       (ntlmssp_resp->hdr_nt_resp.str_str_len==0)) {
+	if((strlen(user_name) == 0) && 
+	   (ntlmssp_resp->hdr_nt_resp.str_str_len==0))
+	  {
+	    guest_user = True;
+	    
+	    fstrcpy(unix_user_name, lp_guestaccount(-1));
+	    DEBUG(100,("Null user in NTLMSSP verification. Using guest = %s\n", unix_user_name));
+	    
+	    smb_passwd_ptr = null_smb_passwd;
+	    
+	  } else {
 
-		guest_user = True;
-
-        fstrcpy(unix_user_name, lp_guestaccount(-1));
-		DEBUG(100,("Null user in NTLMSSP verification. Using guest = %s\n", unix_user_name));
-
-		smb_passwd_ptr = null_smb_passwd;
-
-	} else {
-
-		/*
+	    /*
 		 * Pass the user through the NT -> unix user mapping
 		 * function.
 		 */
 
-		fstrcpy(unix_user_name, user_name);
-		(void)map_username(unix_user_name);
+	    fstrcpy(unix_user_name, user_name);
+	    (void)map_username(unix_user_name);
 
 	 	/* 
 		 * Do the length checking only if user is not NULL.
 		 */
 
- 		if (ntlmssp_resp->hdr_lm_resp.str_str_len == 0)
- 			return False;
- 		if (ntlmssp_resp->hdr_nt_resp.str_str_len == 0)
- 			return False;
- 		if (ntlmssp_resp->hdr_usr.str_str_len == 0)
- 			return False;
- 		if (ntlmssp_resp->hdr_domain.str_str_len == 0)
- 			return False;
- 		if (ntlmssp_resp->hdr_wks.str_str_len == 0)
- 			return False;
+	    if (ntlmssp_resp->hdr_lm_resp.str_str_len == 0)
+	      return False;
+	    if (ntlmssp_resp->hdr_nt_resp.str_str_len == 0)
+	      return False;
+	    if (ntlmssp_resp->hdr_usr.str_str_len == 0)
+	      return False;
+	    if (ntlmssp_resp->hdr_domain.str_str_len == 0)
+	      return False;
+	    if (ntlmssp_resp->hdr_wks.str_str_len == 0)
+	      return False;
 
-	}
+	  }
 
 	/*
 	 * Find the user in the unix password db.
