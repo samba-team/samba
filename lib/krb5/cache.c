@@ -307,3 +307,13 @@ krb5_cc_copy_cache(krb5_context context,
     krb5_free_principal(context, princ);
     return ret;
 }
+
+krb5_error_code
+krb5_cc_get_version(krb5_context context,
+		    krb5_ccache id)
+{
+    if(id->ops->get_version)
+	return id->ops->get_version(context, id);
+    else
+	return 0;
+}
