@@ -540,7 +540,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 		  workgroup, 
 		  user, 
 		  cli->calling.name,
-		  sess_key, 16,
+		  sess_key, 0,
 		  neg_flags);
 
 	/* wrap it in SPNEGO */
