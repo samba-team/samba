@@ -1,0 +1,20 @@
+This directory contains a set of utility modules that are being used with
+Samba.  The modules themselves do not require Samba, and may be used and
+distributed independantly, under the terms of the GNU LIBRARY GENERAL
+PUBLIC LICENSE (LGPL).  A copy of LGPL should also be included in this
+directory under the name COPYING.  If this file is not present, you can
+obtain a copy of the LGPL by writing to the Free Software Foundation,
+Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+The modules included are:
+
+ubi_dLinkList - Simple doubly linked lists.
+ubi_BinTree   - Simple binary trees.
+ubi_AVLtree   - AVL height balanced binary trees (requires (ubi_BinTree).
+ubi_SplayTree - Splay balanced binary trees (requires (ubi_BinTree).
+
+See http://www.interads.co.uk/~crh/ubiqx/ for more information.
+
+Chris Hertel
+Samba Team
+samba-bugs@samba.anu.edu.au
