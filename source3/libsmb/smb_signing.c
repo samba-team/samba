@@ -915,8 +915,7 @@ BOOL srv_is_signing_negotiated(void)
 }
 
 /***********************************************************
- Returns whether signing is negotiated. We can't use it unless it was
- in the negprot.  
+ Returns whether signing is actually happening
 ************************************************************/
 
 BOOL srv_signing_started(void)
