@@ -1,3 +1,13 @@
+Mon Aug 25 23:02:18 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/roken/roken.h: add F_OK
+
+	* lib/gssapi/acquire_creds.c: fix typo
+
+	* configure.in: call AC_TYPE_MODE_T
+
+	* acinclude.m4: Add AC_TYPE_MODE_T
+
 Sun Aug 24 16:46:53 1997  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.0f
