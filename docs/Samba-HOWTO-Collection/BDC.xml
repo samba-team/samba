@@ -104,10 +104,8 @@ let's consider each possible option and look at the pros and cons for each possi
         <entry><para>tdbsam</para></entry>
         <entry><para>tdbsam + <command>net rpc vampire</command></para></entry>
         <entry><para>
-	Does not work with Samba-3.0.0; may be implemented in a later release. The downside of this solution
-	is that an external process will control account database integrity. This solution may appeal to sites
-	that wish to avoid the complexity of LDAP. The <command>net rpc vampire</command> is used to
-	synchronize domain accounts from the PDC to the BDC.
+	Does not work with Samba-3.0; as Samba does not implement the
+        server-side protocols required.
 	</para></entry>
         </row>
         <row>
@@ -115,8 +113,9 @@ let's consider each possible option and look at the pros and cons for each possi
         <entry><para>tdbsam + <command>rsync</command></para></entry>
         <entry><para>
 	Do not use this configuration.
-	Does not work because the TDB files are live and data may not have been flushed to disk.
-	Use <command>rsync</command> to synchronize the TDB database files from the PDC to the BDC.
+	Does not work because the TDB files are live and data may not
+        have been flushed to disk.  Furthermore, this will cause
+        domain trust breakdown.
 	</para></entry>
         </row>
         <row>
@@ -124,9 +123,9 @@ let's consider each possible option and look at the pros and cons for each possi
         <entry><para>smbpasswd file</para></entry>
         <entry><para>
 	Do not use this configuration.
-	Not an elegant solution due to the delays in synchronization.
-	Use <command>rsync</command> to synchronize the smbpasswd file from the PDC to the BDC.
-	Can be made to work using a <command>cron</command> job to synchronize data from the PDC to the BDC.
+	Not an elegant solution due to the delays in synchronization
+        and also suffers
+        from the issue of domain trust breakdown.
 	</para></entry>
         </row>
         </tbody>
@@ -308,12 +307,19 @@ certificate is recreated with a correct hostname.
 </para>
 
 <para>
-Do not install a Samba PDC on a OpenLDAP slave server. Joining client machines to the domain
+For preference, do not install a Samba PDC on a OpenLDAP slave server. Joining client machines to the domain
 will fail in this configuration because the change to the machine account in the LDAP tree
 must take place on the master LDAP server. This is not replicated rapidly enough to the slave
-server that the PDC queries. It therfore gives an error message on the client machine about
+server that the PDC queries. It therefore gives an error message on the client machine about
 not being able to set up account credentials. The machine account is created on the LDAP server
-but the password fields will be empty.
+but the password fields will be empty.  Unfortunately, some sites are
+unable to avoid such configurations, and these sites should review the
+<smbconfoption><name>ldap replication
+sleep</name></smbconfoption> parameter, intended to slow down Samba sufficiently
+for the replication to catch up.  This is a kludge, and one that the
+administrator must manually duplicate in any scripts (such as the
+<smbconfoption><name>add machine script</name></smbconfoption>) that
+they use.
 </para>
 
 <para>
