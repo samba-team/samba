@@ -86,7 +86,7 @@ char *smb_readline(char *prompt, void (*callback)(void),
 		   char **(completion_fn)(char *text, int start, int end))
 {
 #if HAVE_LIBREADLINE
-	if (isatty(fileno(x_stdin))) {
+	if (isatty(x_fileno(x_stdin))) {
 		char *ret;
 
 		/* Aargh!  Readline does bizzare things with the terminal width
