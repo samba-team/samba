@@ -170,6 +170,565 @@ int sys_acl_free_acl(SMB_ACL_T the_acl)
 	return acl_free(the_acl);
 }
 
+#elif defined(HAVE_UNIXWARE_ACLS)
+
+/*
+ * Donated by Michael Davidson <md@sco.COM> for UnixWare.
+ * As this is generic SVR4.x code, it may also work for Solaris !
+ */
+
+#define	INITIAL_ACL_SIZE	16
+#ifndef	SETACL
+#define	SETACL		ACL_SET
+#endif
+
+#ifndef GETACL
+#define	GETACL		ACL_GET
+#endif
+
+#ifndef GETACLCNT
+#define	GETACLCNT	ACL_CNT
+#endif
+
+#ifndef HAVE__FACL
+/*
+ * until official facl() support shows up in UW 7.1.2
+ */
+int facl(int fd, int cmd, int nentries, struct acl *aclbufp)
+{
+	return syscall(188, fd, cmd, nentries, aclbufp);
+}
+#endif
+
+
+int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p)
+{
+	if (entry_id != SMB_ACL_FIRST_ENTRY && entry_id != SMB_ACL_NEXT_ENTRY) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (entry_p == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (entry_id == SMB_ACL_FIRST_ENTRY) {
+		acl_d->next = 0;
+	}
+
+	if (acl_d->next < 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (acl_d->next >= acl_d->count) {
+		return 0;
+	}
+
+	*entry_p = &acl_d->acl[acl_d->next++];
+
+	return 1;
+}
+
+int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p)
+{
+	*type_p = entry_d->a_type;
+
+	return 0;
+}
+
+int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p)
+{
+	*permset_p = &entry_d->a_perm;
+
+	return 0;
+}
+
+void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d)
+{
+	if (entry_d->a_type != SMB_ACL_USER
+	    && entry_d->a_type != SMB_ACL_GROUP) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	return &entry_d->a_id;
+}
+
+SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type)
+{
+	SMB_ACL_T	acl_d;
+	int		count;		/* # of ACL entries allocated	*/
+	int		naccess;	/* # of access ACL entries	*/
+	int		ndefault;	/* # of default ACL entries	*/
+
+	if (type != SMB_ACL_TYPE_ACCESS && type != SMB_ACL_TYPE_DEFAULT) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	count = INITIAL_ACL_SIZE;
+	if ((acl_d = sys_acl_init(count)) == NULL) {
+		return NULL;
+	}
+
+	while ((count = acl(path_p, GETACL, count, &acl_d->acl[0])) < 0
+	    && errno == ENOSPC) {
+
+		if ((count = acl(path_p, GETACLCNT, 0, NULL)) < 0) {
+			return NULL;
+		}
+
+		sys_acl_free_acl(acl_d);
+
+		if ((acl_d = sys_acl_init(count)) == NULL) {
+			return NULL;
+		}
+	}
+
+	if (count < 0) {
+		return NULL;
+	}
+
+	/*
+	 * calculate the number of access and default ACL entries
+	 *
+	 * Note: we assume that the acl() system call returned a
+	 * well formed ACL which is sorted so that all of the
+	 * access ACL entries preceed any default ACL entries
+	 */
+	for (naccess = 0; naccess < count; naccess++) {
+		if (acl_d->acl[naccess].a_type & ACL_DEFAULT)
+			break;
+	}
+	ndefault = count - naccess;
+	
+	/*
+	 * if the caller wants the default ACL we have to copy
+	 * the entries down to the start of the acl[] buffer
+	 * and mask out the ACL_DEFAULT flag from the type field
+	 */
+	if (type == SMB_ACL_TYPE_DEFAULT) {
+		int	i, j;
+
+		for (i = 0, j = naccess; i < ndefault; i++, j++) {
+			acl_d->acl[i] = acl_d->acl[j];
+			acl_d->acl[i].a_type &= ~ACL_DEFAULT;
+		}
+
+		acl_d->count = ndefault;
+	} else {
+		acl_d->count = naccess;
+	}
+
+	return acl_d;
+}
+
+SMB_ACL_T sys_acl_get_fd(int fd)
+{
+	SMB_ACL_T	acl_d;
+	int		count;		/* # of ACL entries allocated	*/
+	int		naccess;	/* # of access ACL entries	*/
+
+	count = INITIAL_ACL_SIZE;
+	if ((acl_d = sys_acl_init(count)) == NULL) {
+		return NULL;
+	}
+
+	while ((count = facl(fd, GETACL, count, &acl_d->acl[0])) < 0
+	    && errno == ENOSPC) {
+
+		if ((count = facl(fd, GETACLCNT, 0, NULL)) < 0) {
+			return NULL;
+		}
+
+		sys_acl_free_acl(acl_d);
+
+		if ((acl_d = sys_acl_init(count)) == NULL) {
+			return NULL;
+		}
+	}
+
+	if (count < 0) {
+		return NULL;
+	}
+
+	/*
+	 * calculate the number of access ACL entries
+	 */
+	for (naccess = 0; naccess < count; naccess++) {
+		if (acl_d->acl[naccess].a_type & ACL_DEFAULT)
+			break;
+	}
+	
+	acl_d->count = naccess;
+
+	return acl_d;
+}
+
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d)
+{
+	*permset_d = 0;
+
+	return 0;
+}
+
+int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
+{
+	if (perm != SMB_ACL_READ && perm != SMB_ACL_WRITE
+	    && perm != SMB_ACL_EXECUTE) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (permset_d == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*permset_d |= perm;
+
+	return 0;
+}
+
+int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
+{
+	return *permset_d & perm;
+}
+
+char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
+{
+	int	i;
+	int	len, maxlen;
+	char	*text;
+
+	/*
+	 * use an initial estimate of 20 bytes per ACL entry
+	 * when allocating memory for the text representation
+	 * of the ACL
+	 */
+	len	= 0;
+	maxlen	= 20 * acl_d->count;
+	if ((text = malloc(maxlen)) == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	for (i = 0; i < acl_d->count; i++) {
+		struct acl	*ap	= &acl_d->acl[i];
+		struct passwd	*pw;
+		struct group	*gr;
+		char		tagbuf[12];
+		char		idbuf[12];
+		char		*tag;
+		char		*id	= "";
+		char		perms[4];
+		int		nbytes;
+
+		switch (ap->a_type) {
+			/*
+			 * for debugging purposes it's probably more
+			 * useful to dump unknown tag types rather
+			 * than just returning an error
+			 */
+			default:
+				snprintf(tagbuf, sizeof tagbuf, "0x%x",
+					ap->a_type);
+				tag = tagbuf;
+				snprintf(idbuf, sizeof idbuf, "%ld",
+					(long)ap->a_id);
+				id = idbuf;
+				break;
+
+			case SMB_ACL_USER:
+				if ((pw = getpwuid(ap->a_id)) == NULL) {
+					snprintf(idbuf, sizeof idbuf, "%ld",
+						(long)ap->a_id);
+					id = idbuf;
+				} else {
+					id = pw->pw_name;
+				}
+			case SMB_ACL_USER_OBJ:
+				tag = "user";
+				break;
+
+			case SMB_ACL_GROUP:
+				if ((gr = getgrgid(ap->a_id)) == NULL) {
+					snprintf(idbuf, sizeof idbuf, "%ld",
+						(long)ap->a_id);
+					id = idbuf;
+				} else {
+					id = gr->gr_name;
+				}
+			case SMB_ACL_GROUP_OBJ:
+				tag = "group";
+				break;
+
+			case SMB_ACL_OTHER:
+				tag = "other";
+				break;
+
+			case SMB_ACL_MASK:
+				tag = "mask";
+				break;
+
+		}
+
+		perms[0] = (ap->a_perm & S_IRUSR) ? 'r' : '-';
+		perms[1] = (ap->a_perm & S_IWUSR) ? 'w' : '-';
+		perms[2] = (ap->a_perm & S_IXUSR) ? 'x' : '-';
+		perms[3] = '\0';
+
+		/*          <tag>      :  <qualifier>   :  rwx \n  \0 */
+		nbytes = strlen(tag) + 1 + strlen(id) + 1 + 3 + 1 + 1;
+
+		if ((len + nbytes) > maxlen) {
+			/*
+			 * allocate enough additional memory for this
+			 * entry and an estimate of another 20 bytes
+			 * for each entry still to be processed
+			 */
+			maxlen += nbytes + 20 * (acl_d->count - i);
+
+			if ((text = realloc(text, maxlen)) == NULL) {
+				errno = ENOMEM;
+				return NULL;
+			}
+		}
+
+		snprintf(&text[len], nbytes, "%s:%s:%s\n", tag, id, perms);
+		len += nbytes - 1;
+	}
+
+	if (len_p)
+		*len_p = len;
+
+	return text;
+}
+
+SMB_ACL_T sys_acl_init(int count)
+{
+	SMB_ACL_T	a;
+
+	if (count < 0) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/*
+	 * note that since the definition of the structure pointed
+	 * to by the SMB_ACL_T includes the first element of the
+	 * acl[] array, this actually allocates an ACL with room
+	 * for (count+1) entries
+	 */
+	if ((a = malloc(sizeof(*a) + count * sizeof(struct acl))) == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	a->size = count + 1;
+	a->count = 0;
+	a->next = -1;
+
+	return a;
+}
+
+
+int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p)
+{
+	SMB_ACL_T	acl_d;
+	SMB_ACL_ENTRY_T	entry_d;
+
+	if (acl_p == NULL || entry_p == NULL || (acl_d = *acl_p) == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (acl_d->count >= acl_d->size) {
+		errno = ENOSPC;
+		return -1;
+	}
+
+	entry_d		= &acl_d->acl[acl_d->count++];
+	entry_d->a_type	= 0;
+	entry_d->a_id	= -1;
+	entry_d->a_perm	= 0;
+	*entry_p	= entry_d;
+
+	return 0;
+}
+
+int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type)
+{
+	switch (tag_type) {
+		case SMB_ACL_USER:
+		case SMB_ACL_USER_OBJ:
+		case SMB_ACL_GROUP:
+		case SMB_ACL_GROUP_OBJ:
+		case SMB_ACL_OTHER:
+		case SMB_ACL_MASK:
+			entry_d->a_type = tag_type;
+			break;
+		default:
+			errno = EINVAL;
+			return -1;
+	}
+
+	return 0;
+}
+
+int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p)
+{
+	if (entry_d->a_type != SMB_ACL_GROUP
+	    && entry_d->a_type != SMB_ACL_USER) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	entry_d->a_id = *((id_t *)qual_p);
+
+	return 0;
+}
+
+int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d)
+{
+	if (*permset_d & ~(SMB_ACL_READ|SMB_ACL_WRITE|SMB_ACL_EXECUTE)) {
+		return EINVAL;
+	}
+
+	entry_d->a_perm = *permset_d;
+
+	return 0;
+}
+
+int sys_acl_valid(SMB_ACL_T acl_d)
+{
+	if (aclsort(acl_d->count, 0, acl_d->acl) != 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	return 0;
+}
+
+int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
+{
+	struct stat	s;
+	struct acl	*acl_p;
+	int		acl_count;
+	struct acl	*acl_buf	= NULL;
+	int		ret;
+
+	if (type != SMB_ACL_TYPE_ACCESS && type != SMB_ACL_TYPE_DEFAULT) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (stat(name, &s) != 0) {
+		return -1;
+	}
+
+	acl_p		= &acl_d->acl[0];
+	acl_count	= acl_d->count;
+
+	/*
+	 * if it's a directory there is extra work to do
+	 * since the acl() system call will replace both
+	 * the access ACLs and the default ACLs (if any)
+	 */
+	if (S_ISDIR(s.st_mode)) {
+		SMB_ACL_T	acc_acl;
+		SMB_ACL_T	def_acl;
+		SMB_ACL_T	tmp_acl;
+		int		i;
+
+		if (type == SMB_ACL_TYPE_ACCESS) {
+			acc_acl = acl_d;
+			def_acl = 
+			tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_DEFAULT);
+
+		} else {
+			def_acl = acl_d;
+			acc_acl = 
+			tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS);
+		}
+
+		if (tmp_acl == NULL) {
+			return -1;
+		}
+
+		/*
+		 * allocate a temporary buffer for the complete ACL
+		 */
+		acl_count	= acc_acl->count + def_acl->count;
+		acl_p		=
+		acl_buf		= malloc(acl_count * sizeof(acl_buf[0]));
+
+		if (acl_buf == NULL) {
+			sys_acl_free_acl(tmp_acl);
+			errno = ENOMEM;
+			return -1;
+		}
+
+		/*
+		 * copy the access control and default entries into the buffer
+		 */
+		memcpy(&acl_buf[0], &acc_acl->acl[0],
+			acc_acl->count * sizeof(acl_buf[0]));
+
+		memcpy(&acl_buf[acc_acl->count], &def_acl->acl[0],
+			def_acl->count * sizeof(acl_buf[0]));
+
+		/*
+		 * set the ACL_DEFAULT flag on the default entries
+		 */
+		for (i = acc_acl->count; i < acl_count; i++) {
+			acl_buf[i].a_type |= ACL_DEFAULT;
+		}
+
+		sys_acl_free_acl(tmp_acl);
+
+	} else if (type != SMB_ACL_TYPE_ACCESS) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (aclsort(acl_count, 0, acl_p) != 0) {
+		errno = EINVAL;
+		ret = -1;
+	} else {
+		ret = acl(name, SETACL, acl_count, acl_p);
+	}
+
+	if (acl_buf) {
+		free(acl_buf);
+	}
+
+	return ret;
+}
+
+int sys_acl_set_fd(int fd, SMB_ACL_T acl_d)
+{
+	if (aclsort(acl_d->count, 0, acl_d->acl) != 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	return facl(fd, SETACL, acl_d->count, &acl_d->acl[0]);
+}
+
+int sys_acl_free_text(char *text)
+{
+	free(text);
+	return 0;
+}
+
+int sys_acl_free_acl(SMB_ACL_T acl_d) 
+{
+	free(acl_d);
+	return 0;
+}
 #elif defined(HAVE_SOLARIS_ACLS)
 
 #elif defined(HAVE_IRIX_ACLS)
