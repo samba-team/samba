@@ -220,7 +220,9 @@ kerberos4_send(char *name, Authenticator *ap)
 
 	des_key_sched(&cred.session, sched);
 	memcpy (&cred_session, &cred.session, sizeof(cred_session));
+#ifndef HAVE_OPENSSL_DES_H
 	des_init_random_number_generator(&cred.session);
+#endif
 	des_new_random_key(&session_key);
 	des_ecb_encrypt(&session_key, &session_key, sched, 0);
 	des_ecb_encrypt(&session_key, &challenge, sched, 0);
