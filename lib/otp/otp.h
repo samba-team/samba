@@ -58,7 +58,7 @@ typedef unsigned char OtpKey[OTPKEYSIZE];
 
 typedef enum { OTP_ALG_MD4, OTP_ALG_MD5, OTP_ALG_SHA } OtpAlgID;
 
-#define OTP_ALG_DEFAULT "md4"
+#define OTP_ALG_DEFAULT "md5"
 
 typedef struct {
   OtpAlgID id;
@@ -98,5 +98,7 @@ void *otp_db_open (void);
 void otp_db_close (void *);
 int otp_put (void *, OtpContext *ctx);
 int otp_get (void *, OtpContext *ctx);
+int otp_simple_get (void *, OtpContext *ctx);
+int otp_delete (void *, OtpContext *ctx);
 
 #endif /* _OTP_H */
