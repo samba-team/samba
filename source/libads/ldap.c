@@ -255,11 +255,10 @@ got_connection:
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
 	if (!ads->auth.user_name) {
-		/* by default use the machine account */
-		fstring myname;
-		fstrcpy(myname, global_myname());
-		strlower_m(myname);
-		asprintf(&ads->auth.user_name, "HOST/%s", myname);
+		/* have to use the userPrincipalName value here and 
+		   not servicePrincipalName; found by Guenther Deschner @ Sernet */
+
+		asprintf(&ads->auth.user_name, "host/%s", global_myname() );
 	}
 
 	if (!ads->auth.realm) {
