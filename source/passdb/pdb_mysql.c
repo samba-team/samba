@@ -1034,8 +1034,5 @@ static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_metho
 
 int pdb_mysql_init() 
 {
-	if(smb_register_passdb("mysql", mysqlsam_init, PASSDB_INTERFACE_VERSION))
-		return 0;
-
-	return 1;
+	return smb_register_passdb("mysql", mysqlsam_init, PASSDB_INTERFACE_VERSION);
 }
