@@ -45,7 +45,7 @@ krb5_get_credentials (krb5_context context,
     krb5_kdc_flags flags;
 
     /*
-     * XXX - Check if cred found in ccache
+     * Check if cred found in ccache
      */
 
     *out_creds = malloc(sizeof(**out_creds));
