@@ -211,7 +211,7 @@ struct cli_state *cli_state_init(void)
 ****************************************************************************/
 void cli_shutdown(struct cli_state *cli)
 {
-	if (!cli) return;
+	if (!cli || !cli->tree) return;
 	cli->tree->reference_count++;
 	cli_tree_close(cli->tree);
 	if (cli->mem_ctx) {
