@@ -40,6 +40,8 @@ static int version_flag;
 int verbose_flag;
 char *keytab_string; 
 
+static char keytab_buf[256];
+
 static int help(int argc, char **argv);
 
 static SL_cmd cmds[] = {
@@ -143,6 +145,10 @@ main(int argc, char **argv)
     if(keytab_string) {
 	ret = krb5_kt_resolve(context, keytab_string, &keytab);
     } else {
+	if(krb5_kt_default_name (context, keytab_buf, sizeof(keytab_buf)))
+	    strlcpy (keytab_buf, "unknown");
+	keytab_string = keytab_buf;
+
 	ret = krb5_kt_default(context, &keytab);
     }
     if(ret)

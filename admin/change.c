@@ -158,7 +158,7 @@ kt_change (int argc, char **argv)
 
     ret = krb5_kt_start_seq_get(context, keytab, &cursor);
     if(ret){
-	krb5_warn(context, ret, "krb5_kt_start_seq_get");
+	krb5_warn(context, ret, "krb5_kt_start_seq_get %s", keytab_string);
 	return 1;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -83,7 +83,7 @@ srvcreate(int argc, char **argv)
 
     ret = krb5_kt_start_seq_get(context, keytab, &cursor);
     if(ret){
-        krb5_warn(context, ret, "krb5_kt_start_seq_get");
+        krb5_warn(context, ret, "krb5_kt_start_seq_get %s", keytab_string);
         return 1;
     }
 
