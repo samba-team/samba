@@ -4426,8 +4426,9 @@ void exit_server(char *reason)
     if (Connections[i].open)
       close_cnum(i,(uint16)-1);
 #ifdef WITH_DFS
-  if (dcelogin_atmost_once)
+  if (dcelogin_atmost_once) {
     dfs_unlogin();
+  }
 #endif
   if (!reason) {   
     int oldlevel = DEBUGLEVEL;

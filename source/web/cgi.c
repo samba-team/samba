@@ -483,7 +483,7 @@ static int cgi_handle_authorization(char *line)
 	}
 
 
-	return password_ok(user, pass, strlen(pass), NULL);
+	return pass_check(user, pass, strlen(pass), NULL, NULL);
 }
 
 

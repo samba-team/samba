@@ -185,6 +185,13 @@ time_t get_create_time(struct stat *st,BOOL fake_dirs);
 
 char *ufc_crypt(char *key,char *salt);
 
+/*The following definitions come from  lib/username.c  */
+
+char *get_home_dir(char *user);
+BOOL map_username(char *user);
+struct passwd *Get_Pwnam(char *user,BOOL allow_change);
+BOOL user_in_list(char *user,char *list);
+
 /*The following definitions come from  lib/util.c  */
 
 char *tmpdir(void);
@@ -1067,6 +1074,12 @@ BOOL pm_process( char *FileName,
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)(char *, char *));
 
+/*The following definitions come from  passdb/pass_check.c  */
+
+void dfs_unlogin(void);
+BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
+		BOOL (*fn)(char *, char *));
+
 /*The following definitions come from  passdb/passdb.c  */
 
 BOOL initialize_password_db(void);
@@ -1133,13 +1146,6 @@ BOOL trust_password_unlock(void);
 BOOL trust_password_delete( char *domain, char *name );
 BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
 BOOL set_trust_account_password( unsigned char *md4_new_pwd);
-
-/*The following definitions come from  passdb/username.c  */
-
-char *get_home_dir(char *user);
-BOOL map_username(char *user);
-struct passwd *Get_Pwnam(char *user,BOOL allow_change);
-BOOL user_in_list(char *user,char *list);
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
@@ -1947,9 +1953,7 @@ char *validated_username(uint16 vuid);
 int setup_groups(char *user, int uid, int gid, int *p_ngroups, GID_T **p_groups);
 uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOOL guest);
 void add_session_user(char *user);
-BOOL update_smbpassword_file( char *user, fstring password);
-void dfs_unlogin(void);
-BOOL password_check(char *password);
+BOOL update_smbpassword_file(char *user, char *password);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass,
                      uchar lm_pass[24], uchar nt_pass[24]);
