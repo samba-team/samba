@@ -455,11 +455,11 @@ void cgi_setup(const char *rootdir, int auth_required)
 	char *lang;
 
 	if (chdir(rootdir)) {
-		cgi_setup_error("400 Server Error", "",
+		cgi_setup_error("500 Server Error", "",
 				"chdir failed - the server is not configured correctly");
 	}
 
-	/* Handle the possability we might be running as non-root */
+	/* Handle the possibility we might be running as non-root */
 	sec_init();
 
 	if ((lang=getenv("HTTP_ACCEPT_LANGUAGE"))) {
@@ -478,7 +478,7 @@ void cgi_setup(const char *rootdir, int auth_required)
 	inetd_server = True;
 
 	if (!check_access(1, lp_hostsallow(-1), lp_hostsdeny(-1))) {
-		cgi_setup_error("400 Server Error", "",
+		cgi_setup_error("403 Forbidden", "",
 				"Samba is configured to deny access from this client\n<br>Check your \"hosts allow\" and \"hosts deny\" options in smb.conf ");
 	}
 
