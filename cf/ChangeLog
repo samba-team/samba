@@ -1,3 +1,8 @@
+2002-09-03  Assar Westerlund  <assar@kth.se>
+
+	* roken-frag.m4: check for sys/mman.h and mmap (used by
+	parse_reply-test)
+
 2002-08-28  Assar Westerlund  <assar@kth.se>
 
 	* krb-readline.m4: also add LIB_tgetent in the case of editline
