@@ -421,9 +421,6 @@ process (krb5_principal server,
 	return;
     }
 
-    krb5_auth_con_setflags (context, auth_context,
-			    KRB5_AUTH_CONTEXT_DO_SEQUENCE);
-
     ret = krb5_sockaddr2address (sa, &other_addr);
     if (ret) {
 	krb5_warn (context, ret, "krb5_sockaddr2address");
