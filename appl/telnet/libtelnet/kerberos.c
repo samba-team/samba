@@ -166,8 +166,6 @@ kerberos4_send(char *name, Authenticator *ap)
     KTEXT_ST auth;
     char instance[INST_SZ];
     char *realm;
-    char *krb_realmofhost(const char *);
-    char *krb_get_phost(const char *);
     CREDENTIALS cred;
     int r;
 
