@@ -101,36 +101,6 @@ BOOL E_deshash(const char *passwd, uint8_t p16[16])
 	return ret;
 }
 
-/**
- * Creates the MD4 and DES (LM) Hash of the users password.  
- * MD4 is of the NT Unicode, DES is of the DOS UPPERCASE password.
- * @param passwd password in 'unix' charset.
- * @param nt_p16 return password hashed with md4, caller allocated 16 byte buffer
- * @param p16 return password hashed with des, caller allocated 16 byte buffer
- */
- 
-/* Does both the NT and LM owfs of a user's password */
-void nt_lm_owf_gen(const char *pwd, uint8_t nt_p16[16], uint8_t p16[16])
-{
-	/* Calculate the MD4 hash (NT compatible) of the password */
-	memset(nt_p16, '\0', 16);
-	E_md4hash(pwd, nt_p16);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("nt_lm_owf_gen: pwd, nt#\n"));
-	dump_data(120, pwd, strlen(pwd));
-	dump_data(100, (char *)nt_p16, 16);
-#endif
-
-	E_deshash(pwd, (uint8_t *)p16);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
-	dump_data(120, pwd, strlen(pwd));
-	dump_data(100, (char *)p16, 16);
-#endif
-}
-
 /* Does both the NTLMv2 owfs of a user's password */
 BOOL ntv2_owf_gen(const uint8_t owf[16],
 		  const char *user_in, const char *domain_in,
