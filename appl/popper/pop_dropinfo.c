@@ -62,6 +62,8 @@ pop_dropinfo(POP *p)
     int			    msg_num;                /*  Current message 
                                                         counter */
     int                     nchar;                  /*  Bytes written/read */
+    int blank_line = 1; /* previous line was blank */
+    int in_header = 0; /* if we are in a header block */
 #ifdef UIDL
     /* msg_idp points to the current Message-Id to be filled in. The
      * pointer is moved every time we find a From line and we fill in
@@ -98,8 +100,8 @@ pop_dropinfo(POP *p)
 
         nchar  = strlen(buffer);
 
-        if (strncmp(buffer,"From ",5) == 0) {
-
+        if (blank_line && strncmp(buffer,"From ",5) == 0) {
+	    in_header = 1;
             if (++msg_num > p->msg_count) {
                 p->mlp=(MsgInfoList *) realloc(p->mlp,
                     (p->msg_count+=ALLOC_MSGS)*sizeof(MsgInfoList));
@@ -119,9 +121,14 @@ pop_dropinfo(POP *p)
             mp->offset = ftell(p->drop) - nchar;
             mp->del_flag = FALSE;
             mp->retr_flag = FALSE;
-#ifdef UIDL
+#if defined(UIDL) || defined(XOVER)
 	    mp->msg_id = 0;
 	    msg_idp = &mp->msg_id;
+#endif
+#ifdef XOVER
+	    mp->subject = 0;
+	    mp->from = 0;
+	    mp->date = 0;
 #endif
 #ifdef DEBUG
             if(p->debug)
@@ -129,16 +136,50 @@ pop_dropinfo(POP *p)
 			"Msg %d at offset %u being added to list",
 			mp->number, mp->offset);
 #endif /* DEBUG */
-        }
+        }else if(in_header){
+#if defined(UIDL) || defined(XOVER)
+	    if (strncasecmp("Message-Id:",buffer, 11) == 0) {
+		if (mp->msg_id == 0)
+		    *msg_idp = find_value_after_colon(buffer);
+	    } 
 #ifdef UIDL
-	else if (strncasecmp("Message-Id:",buffer, 11) == 0) {
-	  if (mp->msg_id == 0)
-	    *msg_idp = find_value_after_colon(buffer);
-	} else if (strncasecmp(buffer, "X-UIDL:", 7) == 0) {
-	  /* Courtesy to Qualcomm, there is really no such thing as X-UIDL */
-	  *msg_idp = find_value_after_colon(buffer);
-	}
+	    else if (strncasecmp(buffer, "X-UIDL:", 7) == 0) {
+		/* Courtesy to Qualcomm, there really is no such 
+		   thing as X-UIDL */
+		*msg_idp = find_value_after_colon(buffer);
+	    }
 #endif
+#endif
+#ifdef XOVER
+	    else if (strncasecmp("Subject:", buffer, 8) == 0) {
+		if(mp->subject == NULL){
+		    char *p;
+		    mp->subject = find_value_after_colon(buffer);
+		    for(p = mp->subject; *p; p++)
+			if(*p == '\t') *p = ' ';
+		}
+	    }
+	    else if (strncasecmp("From:", buffer, 5) == 0) {
+		if(mp->from == NULL){
+		    char *p;
+		    mp->from = find_value_after_colon(buffer);
+		    for(p = mp->from; *p; p++)
+			if(*p == '\t') *p = ' ';
+		}
+	    }
+	    else if (strncasecmp("Date:", buffer, 5) == 0) {
+		if(mp->date == NULL){
+		    char *p;
+		    mp->date = find_value_after_colon(buffer);
+		    for(p = mp->date; *p; p++)
+			if(*p == '\t') *p = ' ';
+		}
+	    }
+#endif
+	}
+	blank_line = (strncmp(buffer, "\n", nchar) == 0);
+	if(blank_line)
+	    in_header = 0;
         mp->length += nchar;
         p->drop_size += nchar;
         mp->lines++;
